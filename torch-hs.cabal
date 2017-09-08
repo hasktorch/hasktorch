@@ -1,0 +1,32 @@
+name:                torch-hs
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/githubuser/torch-hs#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Austin Huang
+maintainer:          
+copyright:           2017 Austin Huang
+category:            Web
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  build-depends:       base >= 4.7 && < 5
+  default-language:    Haskell2010
+
+Test-Suite test-torch
+  exposed-modules:     Torch
+  ghc-options: -fffi
+  hs-source-dirs:      src
+  type:       exitcode-stdio-1.0
+  main-is:    Test.hs
+  build-depends: base,
+                   torch-hs >= 0.1.0.0
+
+source-repository head
+  type:     git
+  location: https://github.com/githubuser/torch-hs

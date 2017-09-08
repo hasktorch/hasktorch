@@ -1,0 +1,29 @@
+resolver: nightly-2017-09-07
+
+packages:
+- .
+
+extra-deps: []
+
+flags: {}
+
+extra-package-dbs: []
+
+# Control whether we use the GHC we find on the path
+# system-ghc: true
+#
+# Require a specific version of stack, using version ranges
+# require-stack-version: -any # Default
+# require-stack-version: ">=1.5"
+#
+# Override the architecture used by stack, especially useful on Windows
+# arch: i386
+# arch: x86_64
+#
+# Extra directories used by stack for building
+extra-include-dirs: [vendor/torch7/lib/TH/, vendor/torch7/lib/TH/generic/]
+# extra-include-dirs: [vendor/torch7/lib/TH/]
+extra-lib-dirs: [vendor/build/]
+#
+# Allow a newer minor version of GHC than the snapshot specifies
+# compiler-check: newer-minor
