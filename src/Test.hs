@@ -1,4 +1,6 @@
-import Torch
+import Torch as T
+import Foreign.ForeignPtr
 
 main = do
-  test
+  T.test
+  putStrLn "test"

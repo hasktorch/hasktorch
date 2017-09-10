@@ -1,32 +1,45 @@
 name:                torch-hs
 version:             0.1.0.0
--- synopsis:
--- description:
+synopsis:            Bindings to torch core library
+description:         Bindings to torch core library
 homepage:            https://github.com/githubuser/torch-hs#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Austin Huang
 maintainer:          
-copyright:           2017 Austin Huang
+copyright:           
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
+  default-language:    Haskell2010
+  exposed-modules:     Torch
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
   default-language:    Haskell2010
 
 Test-Suite test-torch
-  exposed-modules:     Torch
-  ghc-options: -fffi
+  default-language:    Haskell2010
+  other-modules:       Torch
   hs-source-dirs:      src
   type:       exitcode-stdio-1.0
   main-is:    Test.hs
   build-depends: base,
-                   torch-hs >= 0.1.0.0
+                 torch-hs
 
+Executable torch
+  main-is:             src/Test.hs
+  default-language:    Haskell2010
+  other-modules:       Torch
+  hs-source-dirs:      src
+  main-is:    Test.hs
+  build-depends: base,
+                 torch-hs
+                   
 source-repository head
   type:     git
   location: https://github.com/githubuser/torch-hs
+
+  
