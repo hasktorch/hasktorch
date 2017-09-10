@@ -249,45 +249,111 @@ foreign import ccall "THTensor.h THFloatTensor_set"
 foreign import ccall "THTensor.h THFloatTensor_setStorage"
   c_THFloatTensor_setStorage ::
     (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (CTHFloatPtrDiff) ->
-    (Ptr CTHFloatLongStorage) -> (Ptr CTHFloatLongStorage)
+    (Ptr CTHFloatLongStorage) -> (Ptr CTHFloatLongStorage) -> IO ()
 -- void THTensor_(setStorage)(THTensor *self, THStorage *storage_, ptrdiff_t storageOffset_, THLongStorage *size_, THLongStorage *stride_);
 
+foreign import ccall "THTensor.h THFloatTensor_setStorageNd"
+  c_THFloatTensor_setStorageNd ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CTHFloatPtrDiff -> CInt -> (Ptr CLong) -> (Ptr CLong) -> IO ()
 -- void THTensor_(setStorageNd)(THTensor *self, THStorage *storage_, ptrdiff_t storageOffset_, int nDimension, long *size, long *stride);
+
+foreign import ccall "THTensor.h THFloatTensor_setStorage1d"
+  c_THFloatTensor_setStorage1d ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CTHFloatPtrDiff -> CLong -> CLong -> IO ()
 -- void THTensor_(setStorage1d)(THTensor *self, THStorage *storage_, ptrdiff_t storageOffset_,
 --                                     long size0_, long stride0_);
+
+foreign import ccall "THTensor.h THFloatTensor_setStorage2d"
+  c_THFloatTensor_setStorage2d ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatStorage) -> CTHFloatPtrDiff ->
+    CLong -> CLong -> CLong -> CLong -> IO ()
 -- void THTensor_(setStorage2d)(THTensor *self, THStorage *storage_, ptrdiff_t storageOffset_,
 --                                     long size0_, long stride0_,
 --                                     long size1_, long stride1_);
+
+foreign import ccall "THTensor.h THFloatTensor_setStorage3d"
+  c_THFloatTensor_setStorage3d ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatStorage) -> CTHFloatPtrDiff ->
+    CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ()
 -- void THTensor_(setStorage3d)(THTensor *self, THStorage *storage_, ptrdiff_t storageOffset_,
 --                                     long size0_, long stride0_,
 --                                     long size1_, long stride1_,
 --                                     long size2_, long stride2_);
+
+foreign import ccall "THTensor.h THFloatTensor_setStorage4d"
+  c_THFloatTensor_setStorage4d ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatStorage) -> CTHFloatPtrDiff ->
+    CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ()
 -- void THTensor_(setStorage4d)(THTensor *self, THStorage *storage_, ptrdiff_t storageOffset_,
 --                                     long size0_, long stride0_,
 --                                     long size1_, long stride1_,
 --                                     long size2_, long stride2_,
 --                                     long size3_, long stride3_);
 
+foreign import ccall "THTensor.h THFloatTensor_narrow"
+  c_THFloatTensor_narrow :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> CLong -> CLong -> IO ()
 -- void THTensor_(narrow)(THTensor *self, THTensor *src, int dimension_, long firstIndex_, long size_);
+
+foreign import ccall "THTensor.h THFloatTensor_select"
+  c_THFloatTensor_select :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> CLong -> IO ()
 -- void THTensor_(select)(THTensor *self, THTensor *src, int dimension_, long sliceIndex_);
+
+foreign import ccall "THTensor.h THFloatTensor_transpose"
+  c_THFloatTensor_transpose :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> CInt -> IO ()
 -- void THTensor_(transpose)(THTensor *self, THTensor *src, int dimension1_, int dimension2_);
+
+foreign import ccall "THTensor.h THFloatTensor_unfold"
+  c_THFloatTensor_unfold :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> CLong -> CLong -> IO ()
 -- void THTensor_(unfold)(THTensor *self, THTensor *src, int dimension_, long size_, long step_);
 
+foreign import ccall "THTensor.h THFloatTensor_squeeze"
+  c_THFloatTensor_squeeze :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
 -- void THTensor_(squeeze)(THTensor *self, THTensor *src);
+
+foreign import ccall "THTensor.h THFloatTensor_squeeze1d"
+  c_THFloatTensor_squeeze1d :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> IO ()
 -- void THTensor_(squeeze1d)(THTensor *self, THTensor *src, int dimension_);
+
+foreign import ccall "THTensor.h THFloatTensor_unsqueeze1d"
+  c_THFloatTensor_unsqueeze1d :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> IO ()
 -- void THTensor_(unsqueeze1d)(THTensor *self, THTensor *src, int dimension_);
 
+foreign import ccall "THTensor.h THFloatTensor_isContiguous"
+  c_THFloatTensor_isContiguous :: (Ptr CTHFloatTensor) -> CInt
 -- int THTensor_(isContiguous)(const THTensor *self);
+
+foreign import ccall "THTensor.h THFloatTensor_isSameSizeAs"
+  c_THFloatTensor_isSameSizeAs :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt
 -- int THTensor_(isSameSizeAs)(const THTensor *self, const THTensor *src);
+
+foreign import ccall "THTensor.h THFloatTensor_isSetTo"
+  c_THFloatTensor_isSetTo :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt
 -- int THTensor_(isSetTo)(const THTensor *self, const THTensor *src);
+
+foreign import ccall "THTensor.h THFloatTensor_isSize"
+  c_THTensor_isSize :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatLongStorage)
 -- int THTensor_(isSize)(const THTensor *self, const THLongStorage *dims);
+
+foreign import ccall "THTensor.h THFloatTensor_nElement"
+  c_THFloatTensor_nElement :: (Ptr CTHFloatTensor) -> CTHFloatPtrDiff
 -- ptrdiff_t THTensor_(nElement)(const THTensor *self);
 
+foreign import ccall "THTensor.h THFloatTensor_retain"
+  c_THFloatTensor_retain :: (Ptr CTHFloatTensor) -> IO ()
 -- void THTensor_(retain)(THTensor *self);
+
+foreign import ccall "THTensor.h THFloatTensor_free"
+  c_THFloatTensor_free :: (Ptr CTHFloatTensor) -> IO ()
 -- void THTensor_(free)(THTensor *self);
+
+foreign import ccall "THTensor.h THFloatTensor_freeCopyTo"
+  c_THFloatTensor_freeCopyTo :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
 -- void THTensor_(freeCopyTo)(THTensor *self, THTensor *dst);
 
--- /* Slow access methods [check everything] */
+-- ----------------------------------------
+-- Slow access methods [check everything]
+-- ----------------------------------------
+
 -- void THTensor_(set1d)(THTensor *tensor, long x0, real value);
 -- void THTensor_(set2d)(THTensor *tensor, long x0, long x1, real value);
 -- void THTensor_(set3d)(THTensor *tensor, long x0, long x1, long x2, real value);
