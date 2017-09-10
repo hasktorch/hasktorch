@@ -184,23 +184,74 @@ foreign import ccall "THTensor.h THFloatTensor_newUnfold"
   c_THFloatTensor_newUnfold :: (Ptr CTHFloatTensor) -> CInt -> CLong -> CLong -> (Ptr CTHFloatTensor)
 -- THTensor *THTensor_(newUnfold)(THTensor *tensor, int dimension_, long size_, long step_);
 
+foreign import ccall "THTensor.h THFloatTensor_newView"
+  c_THFloatTensor_newView ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatLongStorage) -> (Ptr CTHFloatTensor)
 -- THTensor *THTensor_(newView)(THTensor *tensor, THLongStorage *size);
+
+foreign import ccall "THTensor.h THFloatTensor_newExpand"
+  c_THFloatTensor_newExpand ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatLongStorage) -> (Ptr CTHFloatTensor)
 -- THTensor *THTensor_(newExpand)(THTensor *tensor, THLongStorage *size);
 
+foreign import ccall "THTensor.h THFloatTensor_expand"
+  c_THFloatTensor_expand ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatLongStorage)
 -- void THTensor_(expand)(THTensor *r, THTensor *tensor, THLongStorage *size);
+
+foreign import ccall "THTensor.h THFloatTensor_expandNd"
+  c_THFloatTensor_expandNd ::
+    (Ptr (Ptr CTHFloatTensor)) -> (Ptr (Ptr CTHFloatTensor)) -> CInt
 -- void THTensor_(expandNd)(THTensor **rets, THTensor **ops, int count);
 
+-- TODO - determine a good way to surface mutating operations
+
+foreign import ccall "THTensor.h THFloatTensor_resize"
+  c_THFloatTensor_resize ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatLongStorage) -> IO ()
 -- void THTensor_(resize)(THTensor *tensor, THLongStorage *size, THLongStorage *stride);
+
+foreign import ccall "THTensor.h THFloatTensor_resizeAs"
+  c_THFloatTensor_resizeAs ::
+     (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
 -- void THTensor_(resizeAs)(THTensor *tensor, THTensor *src);
+
+foreign import ccall "THTensor.h c_THFloatTensor_resizeNd"
+  c_THFloatTensor_resizeNd ::
+    (Ptr CTHFloatTensor) -> CInt -> (Ptr CLong) -> (Ptr CLong) -> IO ()
 -- void THTensor_(resizeNd)(THTensor *tensor, int nDimension, long *size, long *stride);
+
+foreign import ccall "THTensor.h THFloatTensor_resize1d"
+  c_THFloatTensor_resize1d :: (Ptr CTHFloatTensor) -> CLong -> IO ()
 -- void THTensor_(resize1d)(THTensor *tensor, long size0_);
+
+foreign import ccall "THTensor.h THFloatTensor_resize2d"
+  c_THFloatTensor_resize2d :: (Ptr CTHFloatTensor) -> CLong -> CLong -> IO ()
 -- void THTensor_(resize2d)(THTensor *tensor, long size0_, long size1_);
+
+foreign import ccall "THTensor.h THFloatTensor_resize3d"
+  c_THFloatTensor_resize3d :: (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> IO ()
 -- void THTensor_(resize3d)(THTensor *tensor, long size0_, long size1_, long size2_);
+
+foreign import ccall "THTensor.h THFloatTensor_resize4d"
+  c_THFloatTensor_resize4d :: (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CLong -> IO ()
 -- void THTensor_(resize4d)(THTensor *tensor, long size0_, long size1_, long size2_, long size3_);
+
+foreign import ccall "THTensor.h THFloatTensor_resize5d"
+  c_THFloatTensor_resize5d ::
+    (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ()
 -- void THTensor_(resize5d)(THTensor *tensor, long size0_, long size1_, long size2_, long size3_, long size4_);
 
+foreign import ccall "THTensor.h THFloatTensor_set"
+  c_THFloatTensor_set :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
 -- void THTensor_(set)(THTensor *self, THTensor *src);
+
+foreign import ccall "THTensor.h THFloatTensor_setStorage"
+  c_THFloatTensor_setStorage ::
+    (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (CTHFloatPtrDiff) ->
+    (Ptr CTHFloatLongStorage) -> (Ptr CTHFloatLongStorage)
 -- void THTensor_(setStorage)(THTensor *self, THStorage *storage_, ptrdiff_t storageOffset_, THLongStorage *size_, THLongStorage *stride_);
+
 -- void THTensor_(setStorageNd)(THTensor *self, THStorage *storage_, ptrdiff_t storageOffset_, int nDimension, long *size, long *stride);
 -- void THTensor_(setStorage1d)(THTensor *self, THStorage *storage_, ptrdiff_t storageOffset_,
 --                                     long size0_, long stride0_);
