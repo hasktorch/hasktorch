@@ -1,0 +1,17 @@
+dependencies:
+  cache_directories:
+    - "~/.stack"
+  pre:
+    - wget -qO- https://get.haskellstack.org/ | sh
+  override:
+    - stack setup
+
+compile:
+  override:
+    - stack build
+
+test:
+  override:
+    - stack test
+
+
