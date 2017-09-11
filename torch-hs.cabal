@@ -18,6 +18,7 @@ library
   exposed-modules:     Torch
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
+                     , hspec >= 2.4.4
   default-language:    Haskell2010
 
 Test-Suite test-torch
@@ -25,18 +26,10 @@ Test-Suite test-torch
   other-modules:       Torch
   hs-source-dirs:      src
   type:       exitcode-stdio-1.0
-  main-is:    Test.hs
-  build-depends: base,
-                 torch-hs
-
-Executable torch
-  main-is:             src/Test.hs
-  default-language:    Haskell2010
-  other-modules:       Torch
-  hs-source-dirs:      src
-  main-is:    Test.hs
-  build-depends: base,
-                 torch-hs
+  main-is:    Tests.hs
+  build-depends: base >= 4.7 && < 5
+               , torch-hs
+               , hspec >= 2.4.4
                    
 source-repository head
   type:     git
