@@ -4,6 +4,7 @@
 module Main where
 
 import Control.Monad (void)
+import Data.Monoid ((<>))
 import Data.Void
 import Data.Text
 import Data.Text as T
@@ -39,12 +40,12 @@ data THType =
 
 data THArg = THArg {
   thArgType :: THType,
-  thArgName :: String
+  thArgName :: Text
   } deriving Show
 
 data THItem = THSkip
             | THFunction {
-                funName :: String,
+                funName :: Text,
                 funArgs :: [THArg],
                 funReturn :: THType
                 } deriving Show
@@ -73,7 +74,7 @@ data HModule = HModule {
   } deriving Show
 
 -- ----------------------------------------
--- Templated header parser
+-- File parser for TH templated header files
 -- ----------------------------------------
 
 thPtr :: Parser Char
@@ -138,7 +139,7 @@ thType = do
    <|> thRealPtr -- ptr before concrete
    <|> thReal)
 
--- Landmark parsing
+-- Landmarks
 
 thAPI :: Parser String
 thAPI = string "TH_API"
@@ -146,7 +147,7 @@ thAPI = string "TH_API"
 thSemicolon :: Parser Char
 thSemicolon = char ';'
 
--- Function parsing
+-- Function signatures
 
 thFunctionArgVoid = do
   arg <- thVoid
@@ -161,7 +162,7 @@ thFunctionArgNamed = do
   space
   (char ',' :: Parser Char) <|> (char ')' :: Parser Char)
   space
-  pure $ THArg argType argName
+  pure $ THArg argType (T.pack argName)
 
 thFunctionArg = thFunctionArgVoid <|> thFunctionArgNamed
 
@@ -182,7 +183,7 @@ thFunctionTemplate = do
   space
   funArgs <- thFunctionArgs
   thSemicolon
-  pure $ THFunction funName funArgs funRet
+  pure $ THFunction (T.pack funName) funArgs funRet
 
 thSkip = do
   eol <|> (some (notChar '\n') >> eol)
@@ -200,7 +201,8 @@ testString inp = case (parse thFile "" inp) of
 -- Rendering
 -- ----------------------------------------
 
-makePrefix templateType = "TH" ++ templateType ++ "Tensor"
+makePrefix :: Text -> Text
+makePrefix templateType = "TH" <> templateType <> "Tensor"
 
 -- #define Real [X]
 -- spliced text to use for function names
@@ -236,18 +238,31 @@ type2accreal GenInt    = "long"
 type2accreal GenLong   = "long"
 type2accreal GenShort  = "long"
 
+renderExtension :: Text -> Text
+renderExtension extension = "{-# LANGUAGE " <> extension <> "#-}"
+
+renderExtensions :: [Text] -> Text
+renderExtensions extensions = T.intercalate "\n" (renderExtension <$> extensions)
+
+renderModule prefix templateType = "module THTensor" ++ templateType 
+
+renderFunName :: Text -> THItem -> Text
 renderFunName _ THSkip = ""
 renderFunName prefix (THFunction name args ret) =
-  prefix ++ "_" ++ name
+  prefix <> "_" <> name
 
+renderFunSig :: Text -> THItem -> Text
 renderFunSig _ THSkip = ""
 renderFunSig prefix (THFunction name args ret) =
-  prefix ++ "_" ++ name ++ " :: \n"
+  prefix <> "_" <> name <> " :: \n"
   -- TODO signature
 
-renderAll templateType lst =
-  P.foldr (\x y -> x ++ ",\n" ++ y) "" (renderFunName prefix <$> lst)
-  where prefix = makePrefix templateType
+renderAll moduleSpec =
+  -- P.foldr (\x y -> x <> ",\n" <> y) "" (renderFunName . prefix <$> bindings)
+  ""
+  where
+    prefix = makePrefix . type2SpliceReal . modTypeTemplate $ moduleSpec
+    bindings = modBindings moduleSpec
 
 -- ----------------------------------------
 -- Execution
@@ -264,22 +279,30 @@ cleanList (Right lst) = P.filter f lst
 testFile file = do
   res <- parseFromFile thFile file
   pure $ cleanList res
-  -- case res of
-  --   Left err -> putStr (parseErrorPretty err)
-  --   Right val -> putStr $ (ppShow val) ++ "\n"
 
 test1 = do
   testString ex1
   where
-    ex1 = "skip this garbage line line\n" ++
-     "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" ++
+    ex1 = "skip this garbage line line\n" <>
+     "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
      "another garbage line ( )@#R @# 324 32"
 
+makeModule typeTemplate bindings =
+   HModule {
+        modTypeTemplate = typeTemplate,
+        modExtensions = ["ForeignFunctionInterface"],
+        modImports = ["Foreign", "Foreign.C.Types",
+                      "Foreign.C.String", "Foreign.ForeignPtr"],
+        modTypeDefs = [],
+        modBindings = bindings
+  }
+
 main = do
-  res <- testFile "vendor/torch7/lib/TH/generic/THTensor.h"
+  parsedBindings <- testFile "vendor/torch7/lib/TH/generic/THTensor.h"
   putStrLn "First 5 signatures"
-  putStrLn $ ppShow (P.take 5 res)
-  putStrLn $ ppShow (P.take 5 (renderFunName "THIntTensor" <$> res))
+  putStrLn $ ppShow (P.take 5 parsedBindings)
+  putStrLn $ ppShow (P.take 5 (renderFunName "THIntTensor" <$> parsedBindings))
+  let intModule = makeModule GenInt parsedBindings
   putStrLn "Writing test.hs"
-  writeFile "./render/test.hs" (renderAll "Int" res)
+  writeFile "./render/test.hs" (renderAll intModule)
   putStrLn "Done"
