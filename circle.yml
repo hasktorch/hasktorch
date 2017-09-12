@@ -4,7 +4,8 @@ dependencies:
     - ".stack-work"
   pre:
     - sudo apt-get update
-    - curl -sSL https://get.haskellstack.org/ | sh
+    - wget -qO- https://get.haskellstack.org/ | sh
+
   override:
     - stack setup
     - rm -fr $(stack path --dist-dir) $(stack path --local-install-root)
