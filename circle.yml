@@ -3,7 +3,7 @@ dependencies:
     - "~/.stack"
     - ".stack-work"
   pre:
-    - apt-get update
+    - sudo apt-get update
     - curl -sSL https://get.haskellstack.org/ | sh
   override:
     - stack setup
