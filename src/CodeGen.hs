@@ -177,8 +177,14 @@ test1 = do
   where
     ex1 = "skip this line\nTH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
 
+renderFun _ THSkip = ""
+renderFun prefix (THFunction name args ret) =
+  prefix ++ "_" ++ name ++ " :: "
+  -- TODO signature
+
 main = do
   res <- testFile "vendor/torch7/lib/TH/generic/THTensor.h"
   putStrLn "First 5 signatures"
   putStrLn $ ppShow (take 5 res)
+  putStrLn $ ppShow (take 5 (renderFun "THIntTensor" <$> res))
   putStrLn "Done"
