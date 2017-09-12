@@ -1,12 +1,23 @@
+{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Control.Monad (void)
 import Data.Void
+import Data.Text
+import Data.Text as T
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Expr
 import qualified Text.Megaparsec.Char.Lexer as L
+import Prelude as P
 import Text.Show.Pretty
+
+
+-- ----------------------------------------
+-- Parsed types
+-- ----------------------------------------
 
 data THType =
   THVoid
@@ -21,7 +32,10 @@ data THType =
   | THInt
   | THChar
   | THRealPtr
-  | THReal deriving Show
+  | THReal
+  | THAccRealPtr
+  | THAccReal
+  deriving Show
 
 data THArg = THArg {
   thArgType :: THType,
@@ -37,7 +51,30 @@ data THItem = THSkip
 
 type Parser = Parsec Void String
 
-{- Type Parsers -}
+-- ----------------------------------------
+-- Types for rendering output
+-- ----------------------------------------
+
+data TemplateType = GenByte
+                  | GenChar
+                  | GenDouble
+                  | GenFloat
+                  | GenHalf
+                  | GenInt
+                  | GenLong
+                  | GenShort deriving Show
+
+data HModule = HModule {
+  modTypeTemplate :: TemplateType,
+  modExtensions :: [Text],
+  modImports :: [Text],
+  modTypeDefs :: [(Text, Text)],
+  modBindings :: [THItem]
+  } deriving Show
+
+-- ----------------------------------------
+-- Templated header parser
+-- ----------------------------------------
 
 thPtr :: Parser Char
 thPtr = char '*'
@@ -54,7 +91,7 @@ thTensorPtr = string "THTensor" >> space >> thPtr >> pure THTensorPtr
 thTensorPtrPtr :: Parser THType
 -- thTensorPtrPtr = string "THTensor" >> space >> (count 2 thPtr) >> pure THTensorPtrPtr
 thTensorPtrPtr = string "THTensor **" >> pure THTensorPtrPtr
--- TODO : determine a better way to match both double and single pointers
+-- TODO : clean up pointer matching
 
 thStoragePtr :: Parser THType
 thStoragePtr = string "THStorage" >> space >> thPtr >> pure THStoragePtr
@@ -67,7 +104,7 @@ thPtrDiff = string "ptrdiff_t" >> pure THStoragePtr
 
 thLongPtr :: Parser THType
 thLongPtr = string "long *" >> pure THLongPtr
--- TODO : determine a better way to match both pointer/non-pointer
+-- TODO : clean up pointer matching
 
 thLong :: Parser THType
 thLong = string "long" >> pure THLong
@@ -80,7 +117,7 @@ thChar = string "char" >> pure THChar
 
 thRealPtr :: Parser THType
 thRealPtr = string "real *" >> pure THRealPtr
--- TODO : fix pointer/non-pointer match
+-- TODO : clean up pointer matching
 
 thReal :: Parser THType
 thReal = string "real" >> pure THReal
@@ -89,7 +126,7 @@ thType = do
   ((string "const " >> pure ()) <|> space)
   (thVoid
    <|> thDescBuff
-   <|> thTensorPtrPtr
+   <|> thTensorPtrPtr -- match ptr ptr before ptr
    <|> thTensorPtr
    <|> thStoragePtr
    <|> thLongStoragePtr
@@ -98,16 +135,18 @@ thType = do
    <|> thLong
    <|> thInt
    <|> thChar
-   <|> thRealPtr -- ptr before raw
+   <|> thRealPtr -- ptr before concrete
    <|> thReal)
 
-{- Landmarks -}
+-- Landmark parsing
 
 thAPI :: Parser String
 thAPI = string "TH_API"
 
 thSemicolon :: Parser Char
 thSemicolon = char ';'
+
+-- Function parsing
 
 thFunctionArgVoid = do
   arg <- thVoid
@@ -157,10 +196,67 @@ testString inp = case (parse thFile "" inp) of
   Left err -> putStrLn (parseErrorPretty err)
   Right val -> putStrLn $ (ppShow val)
 
+-- ----------------------------------------
+-- Rendering
+-- ----------------------------------------
+
+makePrefix templateType = "TH" ++ templateType ++ "Tensor"
+
+-- #define Real [X]
+-- spliced text to use for function names
+type2SpliceReal :: TemplateType -> Text
+type2SpliceReal GenByte   = "Byte"
+type2SpliceReal GenChar   = "Byte"
+type2SpliceReal GenDouble = "Double"
+type2SpliceReal GenFloat  = "Float"
+type2SpliceReal GenHalf   = "Half"
+type2SpliceReal GenInt    = "Int"
+type2SpliceReal GenLong   = "Long"
+type2SpliceReal GenShort  = "Short"
+
+-- #define real [X]
+type2real :: TemplateType -> Text
+type2real GenByte   = "unsigned char"
+type2real GenChar   = "char"
+type2real GenDouble = "double"
+type2real GenFloat  = "float"
+type2real GenHalf   = "THHalf"
+type2real GenInt    = "int"
+type2real GenLong   = "long"
+type2real GenShort  = "short"
+
+-- #define accreal [X]
+type2accreal :: TemplateType -> Text
+type2accreal GenByte   = "long"
+type2accreal GenChar   = "long"
+type2accreal GenDouble = "double"
+type2accreal GenFloat  = "double"
+type2accreal GenHalf   = "float"
+type2accreal GenInt    = "long"
+type2accreal GenLong   = "long"
+type2accreal GenShort  = "long"
+
+renderFunName _ THSkip = ""
+renderFunName prefix (THFunction name args ret) =
+  prefix ++ "_" ++ name
+
+renderFunSig _ THSkip = ""
+renderFunSig prefix (THFunction name args ret) =
+  prefix ++ "_" ++ name ++ " :: \n"
+  -- TODO signature
+
+renderAll templateType lst =
+  P.foldr (\x y -> x ++ ",\n" ++ y) "" (renderFunName prefix <$> lst)
+  where prefix = makePrefix templateType
+
+-- ----------------------------------------
+-- Execution
+-- ----------------------------------------
+
 parseFromFile p file = runParser p file <$> readFile file
 
 cleanList (Left _) = []
-cleanList (Right lst) = filter f lst
+cleanList (Right lst) = P.filter f lst
   where
     f THSkip = False
     f _ = True
@@ -175,27 +271,15 @@ testFile file = do
 test1 = do
   testString ex1
   where
-    ex1 = "skip this line\nTH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
-
-makePrefix templateType = "TH" ++ templateType ++ "Tensor"
-
-renderFunName _ THSkip = ""
-renderFunName prefix (THFunction name args ret) =
-  prefix ++ "_" ++ name
-
-renderFunSig _ THSkip = ""
-renderFunSig prefix (THFunction name args ret) =
-  prefix ++ "_" ++ name ++ " :: \n"
-  -- TODO signature
-
-renderAll templateType lst =
-  foldr (\x y -> x ++ ",\n" ++ y) "" (renderFunName prefix <$> lst)
-  where prefix = makePrefix templateType
+    ex1 = "skip this garbage line line\n" ++
+     "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" ++
+     "another garbage line ( )@#R @# 324 32"
 
 main = do
   res <- testFile "vendor/torch7/lib/TH/generic/THTensor.h"
   putStrLn "First 5 signatures"
-  putStrLn $ ppShow (take 5 res)
-  -- putStrLn $ ppShow (take 5 (renderFunName "THIntTensor" <$> res))
+  putStrLn $ ppShow (P.take 5 res)
+  putStrLn $ ppShow (P.take 5 (renderFunName "THIntTensor" <$> res))
+  putStrLn "Writing test.hs"
   writeFile "./render/test.hs" (renderAll "Int" res)
   putStrLn "Done"

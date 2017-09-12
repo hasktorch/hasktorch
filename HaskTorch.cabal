@@ -38,6 +38,7 @@ executable codegen
   build-depends:       base >= 4.7 && < 5
                      , megaparsec >= 6.1.1
                      , pretty-show >= 1.6.13
+                     , text >= 1.2.2.2
 
 source-repository head
   type:     git
