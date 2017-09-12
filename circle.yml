@@ -3,6 +3,7 @@ dependencies:
     - "~/.stack"
     - ".stack-work"
   pre:
+    - apt-get update
     - curl -sSL https://get.haskellstack.org/ | sh
   override:
     - stack setup
@@ -14,3 +15,4 @@ dependencies:
 test:
   override:
     - stack test
+    - stack exec codegen
