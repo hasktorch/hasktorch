@@ -6,6 +6,7 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Expr
 import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Show.Pretty
 
 data THType =
   THVoid
@@ -24,9 +25,9 @@ data THArg = THArg {
   } deriving Show
 
 data THFunction = THFunction {
-  funReturn :: THType,
   funName :: String,
-  funArgs :: [THArg]
+  funArgs :: [THArg],
+  funReturn :: THType
   } deriving Show
 
 type Parser = Parsec Void String
@@ -72,6 +73,11 @@ thChar = do
   string "char"
   return THChar
 
+thReal :: Parser THType
+thReal = do
+  string "real"
+  return THChar
+
 sc :: Parser ()
 sc = L.space space1 lineCmnt blockCmnt
   where
@@ -79,12 +85,16 @@ sc = L.space space1 lineCmnt blockCmnt
     blockCmnt = L.skipBlockComment "/*" "*/"
 
 thType = do
-  -- (string "const ") <|> sc
+  ((string "const " >> pure ()) <|> space)
   -- (string "const " <|> some (char ' '))
   (thVoid
    <|> thTensorPtr
    <|> thStoragePtr
-   <|> thLongStoragePtr)
+   <|> thLongStoragePtr
+   <|> thLong
+   <|> thInt
+   <|> thChar
+   <|> thReal)
 
 {- Landmarks -}
 
@@ -95,31 +105,39 @@ thSemicolon :: Parser Char
 thSemicolon = char ';'
 
 thFunctionArg = do
-  thType
+  argType <- thType
   space
   argName <- some alphaNumChar
   space
-  char ',' :: Parser Char
+  (char ',' :: Parser Char) <|> (char ')' :: Parser Char)
   space
+  pure $ THArg argType argName
 
 thFunctionArgs = do
   char '(' :: Parser Char
   functionArgs <- some thFunctionArg
-  char ')' :: Parser Char
-  return functionArgs
+  -- close paren consumed by last thFunctionArg (TODO - clean this up)
+  pure functionArgs
 
 thFunctionTemplate = do
-  thAPI >> space >> thType >> space
-  -- string "THTensor_("
-  -- name <- some alphaNumChar
-  -- char ')' :: Parser Char
-  -- space
-  -- thFunctionArgs
-  -- thSemicolon
+  thAPI >> space
+  funRet <- thType
+  space
+  string "THTensor_("
+  funName <- some alphaNumChar
+  space
+  string ")"
+  space
+  funArgs <- thFunctionArgs
+  thSemicolon
+  pure $ THFunction funName funArgs funRet
 
--- testString = "TH_API void THTensor_(clearFlag)(THTensor *self, const char flag);"
-testString = "TH_API void"
+test inp = case (parse thFunctionTemplate "" inp) of
+  Left err -> putStr (parseErrorPretty err)
+  Right val -> putStr $ (ppShow val) ++ "\n"
 
 main = do
-  parseTest thFunctionTemplate testString
+  test testString1
   putStrLn "Done"
+  where
+    testString1 = "TH_API void THTensor_(setFlag)(THTensor *self, const char flag);"
