@@ -8,6 +8,7 @@ dependencies:
     - ".stack-work"
   pre:
     - sudo apt-get update
+    - mkdir -p ~/.local/bin
     - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 
   override:
