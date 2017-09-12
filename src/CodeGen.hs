@@ -10,13 +10,17 @@ import Text.Show.Pretty
 
 data THType =
   THVoid
+  | THDescBuff
   | THTensorPtr
+  | THTensorPtrPtr
   | THStoragePtr
   | THLongStoragePtr
   | THPtrDiff
+  | THLongPtr
   | THLong
   | THInt
   | THChar
+  | THRealPtr
   | THReal deriving Show
 
 data THArg = THArg {
@@ -24,11 +28,12 @@ data THArg = THArg {
   thArgName :: String
   } deriving Show
 
-data THFunction = THFunction {
-  funName :: String,
-  funArgs :: [THArg],
-  funReturn :: THType
-  } deriving Show
+data THItem = THSkip
+            | THFunction {
+                funName :: String,
+                funArgs :: [THArg],
+                funReturn :: THType
+                } deriving Show
 
 type Parser = Parsec Void String
 
@@ -38,62 +43,62 @@ thPtr :: Parser Char
 thPtr = char '*'
 
 thVoid :: Parser THType
-thVoid = do
-  string "void"
-  return THVoid
+thVoid = string "void" >> pure THVoid
 
-thTensorPtr = do
-  string "THTensor"
-  space
-  thPtr
-  return THTensorPtr
+thDescBuff :: Parser THType
+thDescBuff = string "THDescBuff" >> pure THDescBuff
 
-thStoragePtr = do
-  string "THStorage"
-  space
-  thPtr
-  return THStoragePtr
+thTensorPtr :: Parser THType
+thTensorPtr = string "THTensor" >> space >> thPtr >> pure THTensorPtr
 
-thLongStoragePtr = do
-  string "THLongStorage" >> space >> thPtr
-  return THStoragePtr
+thTensorPtrPtr :: Parser THType
+-- thTensorPtrPtr = string "THTensor" >> space >> (count 2 thPtr) >> pure THTensorPtrPtr
+thTensorPtrPtr = string "THTensor **" >> pure THTensorPtrPtr
+-- TODO : determine a better way to match both double and single pointers
+
+thStoragePtr :: Parser THType
+thStoragePtr = string "THStorage" >> space >> thPtr >> pure THStoragePtr
+
+thLongStoragePtr :: Parser THType
+thLongStoragePtr = string "THLongStorage" >> space >> thPtr >> pure THStoragePtr
+
+thPtrDiff :: Parser THType
+thPtrDiff = string "ptrdiff_t" >> pure THStoragePtr
+
+thLongPtr :: Parser THType
+thLongPtr = string "long *" >> pure THLongPtr
+-- TODO : determine a better way to match both pointer/non-pointer
 
 thLong :: Parser THType
-thLong = do
-  string "long"
-  return THLong
+thLong = string "long" >> pure THLong
 
 thInt :: Parser THType
-thInt = do
-  string "int"
-  return THInt
+thInt = string "int" >> pure THInt
 
 thChar :: Parser THType
-thChar = do
-  string "char"
-  return THChar
+thChar = string "char" >> pure THChar
+
+thRealPtr :: Parser THType
+thRealPtr = string "real *" >> pure THRealPtr
+-- TODO : fix pointer/non-pointer match
 
 thReal :: Parser THType
-thReal = do
-  string "real"
-  return THChar
-
-sc :: Parser ()
-sc = L.space space1 lineCmnt blockCmnt
-  where
-    lineCmnt  = L.skipLineComment "//"
-    blockCmnt = L.skipBlockComment "/*" "*/"
+thReal = string "real" >> pure THReal
 
 thType = do
   ((string "const " >> pure ()) <|> space)
-  -- (string "const " <|> some (char ' '))
   (thVoid
+   <|> thDescBuff
+   <|> thTensorPtrPtr
    <|> thTensorPtr
    <|> thStoragePtr
    <|> thLongStoragePtr
+   <|> thPtrDiff
+   <|> thLongPtr
    <|> thLong
    <|> thInt
    <|> thChar
+   <|> thRealPtr -- ptr before raw
    <|> thReal)
 
 {- Landmarks -}
@@ -104,14 +109,22 @@ thAPI = string "TH_API"
 thSemicolon :: Parser Char
 thSemicolon = char ';'
 
-thFunctionArg = do
+thFunctionArgVoid = do
+  arg <- thVoid
+  space
+  char ')' :: Parser Char -- TODO move this outside
+  pure $ THArg THVoid ""
+
+thFunctionArgNamed = do
   argType <- thType
   space
-  argName <- some alphaNumChar
+  argName <- some (alphaNumChar <|> char '_')
   space
   (char ',' :: Parser Char) <|> (char ')' :: Parser Char)
   space
   pure $ THArg argType argName
+
+thFunctionArg = thFunctionArgVoid <|> thFunctionArgNamed
 
 thFunctionArgs = do
   char '(' :: Parser Char
@@ -132,12 +145,40 @@ thFunctionTemplate = do
   thSemicolon
   pure $ THFunction funName funArgs funRet
 
-test inp = case (parse thFunctionTemplate "" inp) of
-  Left err -> putStr (parseErrorPretty err)
-  Right val -> putStr $ (ppShow val) ++ "\n"
+thSkip = do
+  eol <|> (some (notChar '\n') >> eol)
+  pure $ THSkip
+
+thItem = thFunctionTemplate <|> thSkip -- ordering is important
+
+thFile = some thItem
+
+testString inp = case (parse thFile "" inp) of
+  Left err -> putStrLn (parseErrorPretty err)
+  Right val -> putStrLn $ (ppShow val)
+
+parseFromFile p file = runParser p file <$> readFile file
+
+cleanList (Left _) = []
+cleanList (Right lst) = filter f lst
+  where
+    f THSkip = False
+    f _ = True
+
+testFile file = do
+  res <- parseFromFile thFile file
+  pure $ cleanList res
+  -- case res of
+  --   Left err -> putStr (parseErrorPretty err)
+  --   Right val -> putStr $ (ppShow val) ++ "\n"
+
+test1 = do
+  testString ex1
+  where
+    ex1 = "skip this line\nTH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
 
 main = do
-  test testString1
+  res <- testFile "vendor/torch7/lib/TH/generic/THTensor.h"
+  putStrLn "First 5 signatures"
+  putStrLn $ ppShow (take 5 res)
   putStrLn "Done"
-  where
-    testString1 = "TH_API void THTensor_(setFlag)(THTensor *self, const char flag);"
