@@ -66,7 +66,9 @@ data TemplateType = GenByte
                   | GenShort deriving Show
 
 data HModule = HModule {
+  modPrefix :: Text,
   modTypeTemplate :: TemplateType,
+  modSuffix :: Text,
   modExtensions :: [Text],
   modImports :: [Text],
   modTypeDefs :: [(Text, Text)],
@@ -244,7 +246,14 @@ renderExtension extension = "{-# LANGUAGE " <> extension <> "#-}"
 renderExtensions :: [Text] -> Text
 renderExtensions extensions = T.intercalate "\n" (renderExtension <$> extensions)
 
-renderModule prefix templateType = "module THTensor" ++ templateType 
+renderModule :: Text -> TemplateType -> Text -> Text
+renderModule prefix templateType suffix = "module " <> prefix <> (type2SpliceReal templateType) <> suffix
+
+renderExports :: [Text] -> Text
+renderExports exports = " (\n    " <> (T.intercalate ",\n    " exports) <> ") where\n\n"
+
+renderImports :: [Text] -> Text
+renderImports imports = T.intercalate "\n" $ (\x -> "import " <> x) <$> imports
 
 renderFunName :: Text -> THItem -> Text
 renderFunName _ THSkip = ""
@@ -257,12 +266,15 @@ renderFunSig prefix (THFunction name args ret) =
   prefix <> "_" <> name <> " :: \n"
   -- TODO signature
 
-renderAll moduleSpec =
+renderAll spec =
   -- P.foldr (\x y -> x <> ",\n" <> y) "" (renderFunName . prefix <$> bindings)
-  ""
+  (renderModule (modPrefix spec) (modTypeTemplate spec) (modSuffix spec)
+   <> renderExports ((renderFunName $ "c_TH" <> (type2SpliceReal . modTypeTemplate $ spec) <> "Tensor") <$> modBindings spec)
+   <> renderImports (modImports spec)
+  )
   where
-    prefix = makePrefix . type2SpliceReal . modTypeTemplate $ moduleSpec
-    bindings = modBindings moduleSpec
+    prefix = makePrefix . type2SpliceReal . modTypeTemplate $ spec
+    bindings = modBindings spec
 
 -- ----------------------------------------
 -- Execution
@@ -289,7 +301,9 @@ test1 = do
 
 makeModule typeTemplate bindings =
    HModule {
+        modPrefix = "TH",
         modTypeTemplate = typeTemplate,
+        modSuffix = "Tensor",
         modExtensions = ["ForeignFunctionInterface"],
         modImports = ["Foreign", "Foreign.C.Types",
                       "Foreign.C.String", "Foreign.ForeignPtr"],
@@ -303,6 +317,9 @@ main = do
   putStrLn $ ppShow (P.take 5 parsedBindings)
   putStrLn $ ppShow (P.take 5 (renderFunName "THIntTensor" <$> parsedBindings))
   let intModule = makeModule GenInt parsedBindings
-  putStrLn "Writing test.hs"
-  writeFile "./render/test.hs" (renderAll intModule)
+  let floatModule = makeModule GenFloat parsedBindings
+  putStrLn "Writing THIntTensor.hs"
+  writeFile "./render/THIntTensor.hs" (T.unpack . renderAll $ intModule)
+  putStrLn "Writing THFloatTensor.hs"
+  writeFile "./render/THFloatTensor.hs" (T.unpack . renderAll $ floatModule)
   putStrLn "Done"
