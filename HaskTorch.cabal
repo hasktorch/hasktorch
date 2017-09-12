@@ -1,8 +1,8 @@
-name:                torch-hs
+name:                HaskTorch
 version:             0.1.0.0
 synopsis:            Bindings to torch core library
 description:         Bindings to torch core library
-homepage:            https://github.com/githubuser/torch-hs#readme
+homepage:            https://github.com/austinvhuang/HaskTorch#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Austin Huang
@@ -28,7 +28,7 @@ Test-Suite test-torch
   type:                exitcode-stdio-1.0
   main-is:             Tests.hs
   build-depends:       base >= 4.7 && < 5
-                     , torch-hs
+                     , HaskTorch
                      , hspec >= 2.4.4
 
 executable codegen
@@ -41,6 +41,6 @@ executable codegen
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/torch-hs
+  location: https://github.com/austinvhuang/HaskTorch
 
   

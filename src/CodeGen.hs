@@ -179,19 +179,23 @@ test1 = do
 
 makePrefix templateType = "TH" ++ templateType ++ "Tensor"
 
-renderFun _ THSkip = ""
-renderFun prefix (THFunction name args ret) =
+renderFunName _ THSkip = ""
+renderFunName prefix (THFunction name args ret) =
+  prefix ++ "_" ++ name
+
+renderFunSig _ THSkip = ""
+renderFunSig prefix (THFunction name args ret) =
   prefix ++ "_" ++ name ++ " :: \n"
   -- TODO signature
 
 renderAll templateType lst =
-  foldr (++) "" (renderFun prefix <$> lst)
+  foldr (\x y -> x ++ ",\n" ++ y) "" (renderFunName prefix <$> lst)
   where prefix = makePrefix templateType
 
 main = do
   res <- testFile "vendor/torch7/lib/TH/generic/THTensor.h"
   putStrLn "First 5 signatures"
   putStrLn $ ppShow (take 5 res)
-  putStrLn $ ppShow (take 5 (renderFun "THIntTensor" <$> res))
+  -- putStrLn $ ppShow (take 5 (renderFunName "THIntTensor" <$> res))
   writeFile "./render/test.hs" (renderAll "Int" res)
   putStrLn "Done"
