@@ -1,13 +1,14 @@
 machine:
   environment:
     PATH: ~/.local/bin/:$PATH
+
 dependencies:
   cache_directories:
     - "~/.stack"
     - ".stack-work"
   pre:
     - sudo apt-get update
-    - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 ~/.local/bin '*stack'
+    - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 
   override:
     - stack setup
