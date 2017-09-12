@@ -1,5 +1,3 @@
--- based on begriffs example CI script https://github.com/begriffs/haskell-circle-example/blob/master/circle.yml
-
 dependencies:
   cache_directories:
     - "~/.stack"
