@@ -5,6 +5,7 @@ module Main where
 
 import Control.Monad (void)
 import Data.Monoid ((<>))
+import Data.Maybe
 import Data.Void
 import Data.Text
 import Data.Text as T
@@ -43,12 +44,13 @@ data THArg = THArg {
   thArgName :: Text
   } deriving Show
 
-data THItem = THSkip
-            | THFunction {
+data THFunction = THFunction {
                 funName :: Text,
                 funArgs :: [THArg],
                 funReturn :: THType
                 } deriving Show
+
+-- data THItem = THItemSkip | THItemFunction THFunction deriving Show
 
 type Parser = Parsec Void String
 
@@ -72,7 +74,7 @@ data HModule = HModule {
   modExtensions :: [Text],
   modImports :: [Text],
   modTypeDefs :: [(Text, Text)],
-  modBindings :: [THItem]
+  modBindings :: [THFunction]
   } deriving Show
 
 -- ----------------------------------------
@@ -185,11 +187,11 @@ thFunctionTemplate = do
   space
   funArgs <- thFunctionArgs
   thSemicolon
-  pure $ THFunction (T.pack funName) funArgs funRet
+  pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
 thSkip = do
   eol <|> (some (notChar '\n') >> eol)
-  pure $ THSkip
+  pure $ Nothing
 
 thItem = thFunctionTemplate <|> thSkip -- ordering is important
 
@@ -247,33 +249,43 @@ renderExtensions :: [Text] -> Text
 renderExtensions extensions = T.intercalate "\n" (renderExtension <$> extensions)
 
 renderModuleName :: Text -> Text -> TemplateType -> Text
-renderModuleName prefix suffix templateType = prefix <> (type2SpliceReal templateType) <> suffix
+renderModuleName prefix suffix templateType =
+  prefix <> (type2SpliceReal templateType) <> suffix
 
 renderModule :: Text -> Text -> TemplateType -> Text
-renderModule prefix suffix templateType = "module " <> (renderModuleName prefix suffix templateType) 
+renderModule prefix suffix templateType =
+  "module " <> (renderModuleName prefix suffix templateType) 
 
 renderExports :: [Text] -> Text
-renderExports exports = " (\n    " <> (T.intercalate ",\n    " exports) <> ") where\n\n"
+renderExports exports = (" (\n    "
+                         <> (T.intercalate ",\n    " exports)
+                         <> ") where\n\n")
 
 renderImports :: [Text] -> Text
-renderImports imports = T.intercalate "\n" $ (\x -> "import " <> x) <$> imports
+renderImports imports = (T.intercalate "\n" (singleimport <$> imports)) <> "\n\n"
+  where singleimport x = "import " <> x
 
-renderFunName :: Text -> THItem -> Text
-renderFunName _ THSkip = ""
-renderFunName prefix (THFunction name args ret) =
-  prefix <> "_" <> name
+renderFunName :: Text -> Text -> Text
+renderFunName prefix name = prefix <> "_" <> name
 
-renderFunSig :: Text -> THItem -> Text
-renderFunSig _ THSkip = ""
-renderFunSig prefix (THFunction name args ret) =
-  prefix <> "_" <> name <> " :: \n"
+renderFunSig :: Text -> Text -> Text
+renderFunSig prefix name  =
+  ("foreign import ccall \"THTensor.h" <> name <> "\"\n"
+   <> prefix <> "_" <> name <> " :: \n")
   -- TODO signature
 
+renderFunctions bindings =
+  intercalate "\n\n" ((renderFunSig "TH") <$> (funName <$> bindings))
+
+renderAll :: HModule -> Text
 renderAll spec =
-  -- P.foldr (\x y -> x <> ",\n" <> y) "" (renderFunName . prefix <$> bindings)
-  (renderModule (modPrefix spec) (modSuffix spec) (modTypeTemplate spec)
-   <> renderExports ((renderFunName $ "c_TH" <> (type2SpliceReal . modTypeTemplate $ spec) <> "Tensor") <$> modBindings spec)
-   <> renderImports (modImports spec)
+  (
+    (renderModule (modPrefix spec) (modSuffix spec) (modTypeTemplate spec))
+    <> renderExports (
+    (renderFunName ("c_TH" <> (type2SpliceReal . modTypeTemplate $ spec) <> "Tensor"))
+    <$> (fmap funName (modBindings spec)))
+    <> renderImports (modImports spec)
+    <> renderFunctions (modBindings spec)
   )
   where
     prefix = makePrefix . type2SpliceReal . modTypeTemplate $ spec
@@ -285,11 +297,12 @@ renderAll spec =
 
 parseFromFile p file = runParser p file <$> readFile file
 
+cleanList :: Either (ParseError Char Void) [Maybe THFunction] -> [THFunction]
 cleanList (Left _) = []
-cleanList (Right lst) = P.filter f lst
+cleanList (Right lst) = fromJust <$> (P.filter f lst)
   where
-    f THSkip = False
-    f _ = True
+    f Nothing = False
+    f (Just _) = True
 
 testFile file = do
   res <- parseFromFile thFile file

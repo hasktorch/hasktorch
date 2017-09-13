@@ -426,19 +426,19 @@ foreign import ccall "THTensor.h THFloatTensor_freeCopyTo"
 -- ----------------------------------------
 
 foreign import ccall "THTensor.h THFloatTensor_set1d"
-  c_THFloatTensor_set1d :: (Ptr CTHFloatTensor) -> CLong -> CFloat
+  c_THFloatTensor_set1d :: (Ptr CTHFloatTensor) -> CLong -> CFloat -> IO ()
 -- void THTensor_(set1d)(THTensor *tensor, long x0, real value);
 
 foreign import ccall "THTensor.h THFloatTensor_set2d"
-  c_THFloatTensor_set2d :: (Ptr CTHFloatTensor) -> CLong -> CLong -> CFloat
+  c_THFloatTensor_set2d :: (Ptr CTHFloatTensor) -> CLong -> CLong -> CFloat -> IO ()
 -- void THTensor_(set2d)(THTensor *tensor, long x0, long x1, real value);
 
 foreign import ccall "THTensor.h THFloatTensor_set3d"
-  c_THFloatTensor_set3d :: (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CFloat
+  c_THFloatTensor_set3d :: (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CFloat -> IO ()
 -- void THTensor_(set3d)(THTensor *tensor, long x0, long x1, long x2, real value);
 
 foreign import ccall "THTensor.h THFloatTensor_set4d"
-  c_THFloatTensor_set4d :: (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CLong -> CFloat
+  c_THFloatTensor_set4d :: (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CLong -> CFloat -> IO ()
 -- void THTensor_(set4d)(THTensor *tensor, long x0, long x1, long x2, long x3, real value);
 
 foreign import ccall "THTensor.h THFloatTensor_get1d"
