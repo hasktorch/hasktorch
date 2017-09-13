@@ -10,12 +10,12 @@ dependencies:
     - sudo apt-get update
     - mkdir -p ~/.local/bin
     - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+    - git submodule update --init --recursive
     - cd ./vendor; ./build-torch-core.sh
 
   override:
     - stack setup
     - rm -fr $(stack path --dist-dir) $(stack path --local-install-root)
-    - stack install hlint packdeps cabal-install
     - stack build --fast
     - stack build --fast --pedantic --haddock --test --no-run-tests --no-haddock-deps
 
