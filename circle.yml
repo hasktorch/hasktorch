@@ -10,7 +10,7 @@ dependencies:
     - sudo apt-get update
     - mkdir -p ~/.local/bin
     - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-    - cd build; ./buildTH.sh
+    - cd ./vendor; ./build-torch-core.sh
 
   override:
     - stack setup
