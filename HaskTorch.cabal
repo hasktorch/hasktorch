@@ -23,7 +23,7 @@ library
 
 Test-Suite test-torch
   default-language:    Haskell2010
-  other-modules:       THFloatTensor
+  other-modules:       THFloatTensor, THTypes
   hs-source-dirs:      src
   type:                exitcode-stdio-1.0
   main-is:             Tests.hs
