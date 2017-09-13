@@ -20,6 +20,7 @@ module Torch
      c_THFloatTensor_newWithStorage2d,
      c_THFloatTensor_newWithStorage3d,
      c_THFloatTensor_newWithStorage4d,
+     c_THFloatTensor_newWithSize,
      c_THFloatTensor_newWithSize1d,
      c_THFloatTensor_newWithSize2d,
      c_THFloatTensor_newWithSize3d,
@@ -58,6 +59,7 @@ module Torch
      c_THFloatTensor_unfold,
      c_THFloatTensor_squeeze,
      c_THFloatTensor_squeeze1d,
+     c_THFloatTensor_unsqueeze1d,
 
      -- check methods
      c_THFloatTensor_isContiguous,
@@ -89,9 +91,6 @@ module Torch
 
 import Foreign
 import Foreign.C.Types
-import Foreign.C.String
-import Foreign.ForeignPtr
-import Foreign.Marshal.Array
 
 {- preprocess-generated float types -}
 

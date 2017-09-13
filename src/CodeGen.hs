@@ -246,8 +246,11 @@ renderExtension extension = "{-# LANGUAGE " <> extension <> "#-}"
 renderExtensions :: [Text] -> Text
 renderExtensions extensions = T.intercalate "\n" (renderExtension <$> extensions)
 
-renderModule :: Text -> TemplateType -> Text -> Text
-renderModule prefix templateType suffix = "module " <> prefix <> (type2SpliceReal templateType) <> suffix
+renderModuleName :: Text -> Text -> TemplateType -> Text
+renderModuleName prefix suffix templateType = prefix <> (type2SpliceReal templateType) <> suffix
+
+renderModule :: Text -> Text -> TemplateType -> Text
+renderModule prefix suffix templateType = "module " <> (renderModuleName prefix suffix templateType) 
 
 renderExports :: [Text] -> Text
 renderExports exports = " (\n    " <> (T.intercalate ",\n    " exports) <> ") where\n\n"
@@ -268,7 +271,7 @@ renderFunSig prefix (THFunction name args ret) =
 
 renderAll spec =
   -- P.foldr (\x y -> x <> ",\n" <> y) "" (renderFunName . prefix <$> bindings)
-  (renderModule (modPrefix spec) (modTypeTemplate spec) (modSuffix spec)
+  (renderModule (modPrefix spec) (modSuffix spec) (modTypeTemplate spec)
    <> renderExports ((renderFunName $ "c_TH" <> (type2SpliceReal . modTypeTemplate $ spec) <> "Tensor") <$> modBindings spec)
    <> renderImports (modImports spec)
   )
@@ -305,11 +308,20 @@ makeModule typeTemplate bindings =
         modTypeTemplate = typeTemplate,
         modSuffix = "Tensor",
         modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types",
-                      "Foreign.C.String", "Foreign.ForeignPtr"],
+        modImports = ["Foreign", "Foreign.C.Types"],
         modTypeDefs = [],
         modBindings = bindings
   }
+
+renderTensorFile templateType parsedBindings = do
+  let filename = (renderModuleName "TH" "Tensor" templateType) <> ".hs"
+  let modspec = makeModule templateType parsedBindings
+  putStrLn $ "Writing " <> T.unpack filename
+  writeFile ("./render/" ++ T.unpack filename) (T.unpack . renderAll $ modspec)
+
+genTypes = [GenByte, GenChar,
+            GenDouble, GenFloat, GenHalf,
+            GenInt, GenLong, GenShort] :: [TemplateType]
 
 main = do
   parsedBindings <- testFile "vendor/torch7/lib/TH/generic/THTensor.h"
@@ -318,8 +330,5 @@ main = do
   putStrLn $ ppShow (P.take 5 (renderFunName "THIntTensor" <$> parsedBindings))
   let intModule = makeModule GenInt parsedBindings
   let floatModule = makeModule GenFloat parsedBindings
-  putStrLn "Writing THIntTensor.hs"
-  writeFile "./render/THIntTensor.hs" (T.unpack . renderAll $ intModule)
-  putStrLn "Writing THFloatTensor.hs"
-  writeFile "./render/THFloatTensor.hs" (T.unpack . renderAll $ floatModule)
+  mapM_ (\x -> renderTensorFile x parsedBindings) genTypes
   putStrLn "Done"
