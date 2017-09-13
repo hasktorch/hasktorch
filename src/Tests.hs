@@ -4,14 +4,9 @@ module Main where
 
 import Torch as TR
 
-import Foreign
-import Foreign.C.Types
-import Foreign.C.String
-import Foreign.ForeignPtr
-import Foreign.Marshal.Array
-
 import Test.Hspec
 
+tests :: IO ()
 tests = do
   hspec $ do
     describe "Tensor creation and access methods" $ do
@@ -46,6 +41,7 @@ tests = do
         TR.c_THFloatTensor_size t 3 `shouldBe` 62
         c_THFloatTensor_free t
 
+main :: IO ()
 main = do
   tests
   putStrLn "Done"

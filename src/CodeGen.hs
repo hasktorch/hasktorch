@@ -323,12 +323,12 @@ genTypes = [GenByte, GenChar,
             GenDouble, GenFloat, GenHalf,
             GenInt, GenLong, GenShort] :: [TemplateType]
 
-main = do
+runTensor = do
   parsedBindings <- testFile "vendor/torch7/lib/TH/generic/THTensor.h"
-  putStrLn "First 5 signatures"
-  putStrLn $ ppShow (P.take 5 parsedBindings)
-  putStrLn $ ppShow (P.take 5 (renderFunName "THIntTensor" <$> parsedBindings))
-  let intModule = makeModule GenInt parsedBindings
-  let floatModule = makeModule GenFloat parsedBindings
+  putStrLn "First 3 signatures"
+  putStrLn $ ppShow (P.take 3 parsedBindings)
   mapM_ (\x -> renderTensorFile x parsedBindings) genTypes
+
+main = do
+  runTensor
   putStrLn "Done"
