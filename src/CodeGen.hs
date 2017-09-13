@@ -127,7 +127,7 @@ renderFunctions moduleSpec@HModule{..} =
 renderAll :: HModule -> Text
 renderAll spec =
   (
-    (renderModuleName spec)
+    (renderModule spec)
     <> renderExports (
     (renderFunName ("c_TH" <> (type2SpliceReal . modTypeTemplate $ spec) <> "Tensor"))
     <$> (fmap funName (modBindings spec)))
