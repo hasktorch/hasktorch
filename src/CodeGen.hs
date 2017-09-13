@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -40,10 +41,6 @@ data HModule = HModule {
   modTypeDefs :: [(Text, Text)],
   modBindings :: [THFunction]
   } deriving Show
-
-testString inp = case (parse thFile "" inp) of
-  Left err -> putStrLn (parseErrorPretty err)
-  Right val -> putStrLn $ (ppShow val)
 
 -- ----------------------------------------
 -- Rendering
@@ -92,13 +89,13 @@ renderExtension extension = "{-# LANGUAGE " <> extension <> "#-}"
 renderExtensions :: [Text] -> Text
 renderExtensions extensions = T.intercalate "\n" (renderExtension <$> extensions)
 
-renderModuleName :: Text -> Text -> TemplateType -> Text
-renderModuleName prefix suffix templateType =
-  prefix <> (type2SpliceReal templateType) <> suffix
+renderModuleName :: HModule -> Text
+renderModuleName HModule{..} =
+  modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix
 
-renderModule :: Text -> Text -> TemplateType -> Text
-renderModule prefix suffix templateType =
-  "module " <> (renderModuleName prefix suffix templateType) 
+renderModule :: HModule -> Text
+renderModule moduleSpec =
+  "module " <> (renderModuleName moduleSpec)
 
 renderExports :: [Text] -> Text
 renderExports exports = (" (\n    "
@@ -112,26 +109,30 @@ renderImports imports = (T.intercalate "\n" (singleimport <$> imports)) <> "\n\n
 renderFunName :: Text -> Text -> Text
 renderFunName prefix name = prefix <> "_" <> name
 
-renderFunSig :: Text -> Text -> Text
-renderFunSig prefix name  =
-  ("foreign import ccall \"THTensor.h" <> name <> "\"\n"
-   <> prefix <> "_" <> name <> " :: \n")
+renderFunSig :: Text -> Text
+renderFunSig name  =
+  ("foreign import ccall \"THTensor.h " <> name <> "\"\n"
+   <> "c_" <> name <> " :: \n")
+  where
   -- TODO signature
 
-renderFunctions :: [THFunction] -> Text
-renderFunctions bindings =
+renderFunctions :: HModule -> Text
+renderFunctions moduleSpec@HModule{..} =
   -- TODO fix up function names
-  intercalate "\n\n" ((renderFunSig "c_TH") <$> (funName <$> bindings))
+  intercalate "\n\n" (renderFunSig <$> funNames)
+  where
+    modulePrefix = (renderModuleName moduleSpec) <> "_"
+    funNames = (mappend modulePrefix) <$> funName <$> modBindings
 
 renderAll :: HModule -> Text
 renderAll spec =
   (
-    (renderModule (modPrefix spec) (modSuffix spec) (modTypeTemplate spec))
+    (renderModuleName spec)
     <> renderExports (
     (renderFunName ("c_TH" <> (type2SpliceReal . modTypeTemplate $ spec) <> "Tensor"))
     <$> (fmap funName (modBindings spec)))
     <> renderImports (modImports spec)
-    <> renderFunctions (modBindings spec)
+    <> renderFunctions spec
   )
   where
     prefix = makePrefix . type2SpliceReal . modTypeTemplate $ spec
@@ -150,17 +151,6 @@ cleanList (Right lst) = fromJust <$> (P.filter f lst)
     f Nothing = False
     f (Just _) = True
 
-testFile file = do
-  res <- parseFromFile thFile file
-  pure $ cleanList res
-
-test1 = do
-  testString ex1
-  where
-    ex1 = "skip this garbage line line\n" <>
-     "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
-     "another garbage line ( )@#R @# 324 32"
-
 makeModule typeTemplate bindings =
    HModule {
         modPrefix = "TH",
@@ -173,10 +163,10 @@ makeModule typeTemplate bindings =
   }
 
 renderTensorFile templateType parsedBindings = do
-  let filename = (renderModuleName "TH" "Tensor" templateType) <> ".hs"
-  let modspec = makeModule templateType parsedBindings
   putStrLn $ "Writing " <> T.unpack filename
-  writeFile ("./render/" ++ T.unpack filename) (T.unpack . renderAll $ modspec)
+  writeFile ("./render/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
+  where modSpec = makeModule templateType parsedBindings
+        filename = (renderModuleName modSpec) <> ".hs"
 
 genTypes = [GenByte, GenChar,
             GenDouble, GenFloat, GenHalf,
@@ -187,6 +177,21 @@ runTensor = do
   putStrLn "First 3 signatures"
   putStrLn $ ppShow (P.take 3 parsedBindings)
   mapM_ (\x -> renderTensorFile x parsedBindings) genTypes
+
+testString inp = case (parse thFile "" inp) of
+  Left err -> putStrLn (parseErrorPretty err)
+  Right val -> putStrLn $ (ppShow val)
+
+testFile file = do
+  res <- parseFromFile thFile file
+  pure $ cleanList res
+
+test1 = do
+  testString ex1
+  where
+    ex1 = "skip this garbage line line\n" <>
+     "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
+     "another garbage line ( )@#R @# 324 32"
 
 main = do
   runTensor
