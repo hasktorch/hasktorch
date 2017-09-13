@@ -126,17 +126,16 @@ renderFunctions moduleSpec@HModule{..} =
 
 renderAll :: HModule -> Text
 renderAll spec =
-  (
-    (renderModule spec)
-    <> renderExports (
-    (renderFunName ("c_TH" <> (type2SpliceReal . modTypeTemplate $ spec) <> "Tensor"))
-    <$> (fmap funName (modBindings spec)))
+    renderModule spec
+    <> renderExports exportFunctions
     <> renderImports (modImports spec)
     <> renderFunctions spec
-  )
   where
     prefix = makePrefix . type2SpliceReal . modTypeTemplate $ spec
     bindings = modBindings spec
+    exportFunctions =
+      (renderFunName ("c_" <> renderModuleName spec)
+       <$> (fmap funName (modBindings spec)))
 
 -- ----------------------------------------
 -- Execution
@@ -157,7 +156,7 @@ makeModule typeTemplate bindings =
         modTypeTemplate = typeTemplate,
         modSuffix = "Tensor",
         modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types"],
+        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
         modTypeDefs = [],
         modBindings = bindings
   }
