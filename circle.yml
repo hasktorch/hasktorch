@@ -7,7 +7,8 @@ dependencies:
   cache_directories:
     - "~/.stack"
     - ".stack-work"
-    - "./vendor
+    - "/home/ubuntu/HaskTorch/vendor/build/"
+
   pre:
     - sudo apt-get update
     - mkdir -p ~/.local/bin
