@@ -7,6 +7,7 @@ dependencies:
   cache_directories:
     - "~/.stack"
     - ".stack-work"
+    - "./vendor
   pre:
     - sudo apt-get update
     - mkdir -p ~/.local/bin

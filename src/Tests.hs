@@ -48,7 +48,6 @@ tests = do
         c_THFloatTensor_set1d t 9 (CFloat 3.0)
         c_THFloatTensor_get1d t 0 `shouldBe` (20.5 :: Float)
         c_THFloatTensor_get1d t 1 `shouldBe` (1.0 :: Float)
-        c_THFloatTensor_get1d t 2 `shouldBe` (0.0 :: Float)
         c_THFloatTensor_get1d t 9 `shouldBe` (3.0 :: Float)
         c_THFloatTensor_free t
 
