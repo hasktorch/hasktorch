@@ -1,6 +1,7 @@
 machine:
   environment:
     PATH: ~/.local/bin/:$PATH
+    LD_LIBRARY_PATH: /home/ubuntu/HaskTorch/vendor/build/:$LD_LIBRARY_PATH
 
 dependencies:
   cache_directories:
