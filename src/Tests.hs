@@ -2,7 +2,7 @@
 
 module Main where
 
-import Torch as TR
+import THFloatTensor as TR
 import Foreign.C.Types
 
 import Test.Hspec
@@ -44,12 +44,40 @@ tests = do
       it "Can assign and retrieve correct 1D vector values" $ do
         t <- TR.c_THFloatTensor_newWithSize1d 10
         c_THFloatTensor_set1d t 0 (CFloat 20.5)
-        c_THFloatTensor_set1d t 1 (CFloat 1.0)
-        c_THFloatTensor_set1d t 9 (CFloat 3.0)
+        c_THFloatTensor_set1d t 1 (CFloat 1.4)
+        c_THFloatTensor_set1d t 9 (CFloat 3.14)
         c_THFloatTensor_get1d t 0 `shouldBe` (20.5 :: Float)
-        c_THFloatTensor_get1d t 1 `shouldBe` (1.0 :: Float)
-        c_THFloatTensor_get1d t 9 `shouldBe` (3.0 :: Float)
+        c_THFloatTensor_get1d t 1 `shouldBe` (1.4 :: Float)
+        c_THFloatTensor_get1d t 9 `shouldBe` (3.14 :: Float)
         c_THFloatTensor_free t
+      it "Can assign and retrieve correct 2D vector values" $ do
+        t <- TR.c_THFloatTensor_newWithSize2d 10 15
+        c_THFloatTensor_set2d t 0 0 (CFloat 20.5)
+        c_THFloatTensor_set2d t 1 5 (CFloat 1.4)
+        c_THFloatTensor_set2d t 9 9 (CFloat 3.14)
+        c_THFloatTensor_get2d t 0 0 `shouldBe` (20.5 :: Float)
+        c_THFloatTensor_get2d t 1 5 `shouldBe` (1.4 :: Float)
+        c_THFloatTensor_get2d t 9 9 `shouldBe` (3.14 :: Float)
+        c_THFloatTensor_free t
+      it "Can assign and retrieve correct 3D vector values" $ do
+        t <- TR.c_THFloatTensor_newWithSize3d 10 15 10
+        c_THFloatTensor_set3d t 0 0 0 (CFloat 20.5)
+        c_THFloatTensor_set3d t 1 5 3 (CFloat 1.4)
+        c_THFloatTensor_set3d t 9 9 9 (CFloat 3.14)
+        c_THFloatTensor_get3d t 0 0 0 `shouldBe` (20.5 :: Float)
+        c_THFloatTensor_get3d t 1 5 3 `shouldBe` (1.4 :: Float)
+        c_THFloatTensor_get3d t 9 9 9 `shouldBe` (3.14 :: Float)
+        c_THFloatTensor_free t
+      it "Can assign and retrieve correct 4D vector values" $ do
+        t <- TR.c_THFloatTensor_newWithSize4d 10 15 10 20
+        c_THFloatTensor_set4d t 0 0 0 0 (CFloat 20.5)
+        c_THFloatTensor_set4d t 1 5 3 2 (CFloat 1.4)
+        c_THFloatTensor_set4d t 9 9 9 9 (CFloat 3.14)
+        c_THFloatTensor_get4d t 0 0 0 0 `shouldBe` (20.5 :: Float)
+        c_THFloatTensor_get4d t 1 5 3 2 `shouldBe` (1.4 :: Float)
+        c_THFloatTensor_get4d t 9 9 9 9 `shouldBe` (3.14 :: Float)
+        c_THFloatTensor_free t
+
 
 
 main :: IO ()

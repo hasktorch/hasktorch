@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:     Torch, THTypes
+  exposed-modules:     THFloatTensor, THTypes
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
                      , hspec >= 2.4.4
@@ -23,7 +23,7 @@ library
 
 Test-Suite test-torch
   default-language:    Haskell2010
-  other-modules:       Torch
+  other-modules:       THFloatTensor
   hs-source-dirs:      src
   type:                exitcode-stdio-1.0
   main-is:             Tests.hs

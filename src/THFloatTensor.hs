@@ -1,6 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module Torch
+module THFloatTensor
     (
      -- access methods
      c_THFloatTensor_storage,
