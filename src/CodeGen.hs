@@ -200,12 +200,14 @@ renderFunName prefix name = prefix <> "_" <> name
 
 renderFunSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunSig headerFile modTypeTemplate (name, retType, args) =
-  ("foreign import ccall \"" <> T.pack headerFile <> " " <> name <> "\"\n"
+  (
+   "-- |c_" <> name <> " : "
+   <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType) <> "\n"
+   <> "foreign import ccall \"" <> T.pack headerFile <> " " <> name <> "\"\n"
    <> "  c_" <> name <> " :: "
    <> (T.intercalate " -> " $ catMaybes typeSignature)
    -- TODO : fromJust shouldn't fail, clean this up so it's not unsafe
    <> " -> " <> fromJust (renderHaskellType ReturnValue modTypeTemplate retType) <> "\n"
-   <> "  -- " <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType)
   )
   where
     typeVals = thArgType <$> args
@@ -303,9 +305,11 @@ renderCHeader templateType parsedBindings makeConfig = do
 
 runPipeline headerPath makeModuleConfig = do
   parsedBindings <- parseFile headerPath
-  putStrLn "First 3 signatures"
   putStrLn $ ppShow (P.take 3 parsedBindings)
   mapM_ (\x -> renderCHeader x parsedBindings makeModuleConfig) genTypes
+  putStrLn $ "Number of functios: " ++ (show $ P.length genTypes
+                                        * P.length parsedBindings)
+  putStrLn "First 3 signatures"
 
 testString inp = case (parse thFile "" inp) of
   Left err -> putStrLn (parseErrorPretty err)
