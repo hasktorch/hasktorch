@@ -299,7 +299,7 @@ parseFile file = do
 
 renderCHeader templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
-  writeFile ("./render/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
+  writeFile ("./TH/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
   where modSpec = makeConfig templateType parsedBindings
         filename = (renderModuleFilename modSpec) <> ".hs"
 
