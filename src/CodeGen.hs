@@ -33,6 +33,7 @@ data TemplateType = GenByte
                   | GenShort deriving Show
 
 data HModule = HModule {
+  modHeader :: Text,
   modPrefix :: Text,
   modTypeTemplate :: TemplateType,
   modSuffix :: Text,
@@ -228,6 +229,7 @@ cleanList (Right lst) = fromJust <$> (P.filter f lst)
 
 makeModule typeTemplate bindings =
    HModule {
+        modHeader = "Tensor.h" 
         modPrefix = "TH",
         modTypeTemplate = typeTemplate,
         modSuffix = "Tensor",

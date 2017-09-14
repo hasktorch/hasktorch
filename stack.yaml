@@ -1,4 +1,4 @@
-resolver: nightly-2017-09-11
+resolver: nightly-2017-09-13
 
 packages:
 - .
@@ -16,3 +16,4 @@ extra-lib-dirs:
   - ./vendor/build/
 ghc-options:
   "HaskTorch": -lTH
+
