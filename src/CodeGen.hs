@@ -42,6 +42,8 @@ data HModule = HModule {
   modBindings :: [THFunction]
   } deriving Show
 
+data TypeCategory = ReturnValue | FunctionParam
+
 -- ----------------------------------------
 -- Rendering
 -- ----------------------------------------
@@ -83,6 +85,69 @@ type2accreal GenInt    = "long"
 type2accreal GenLong   = "long"
 type2accreal GenShort  = "long"
 
+renderCType :: THType -> Text
+renderCType THVoid = "void"
+renderCType THDescBuff = "THDescBuff"
+renderCType THTensorPtr = "THTensor *"
+renderCType THTensorPtrPtr = "THTensor **"
+renderCType THStoragePtr = "THStorage *"
+renderCType THLongStoragePtr = "THLongStorage *"
+renderCType THPtrDiff = "ptrdiff_t"
+renderCType THLong = "long"
+renderCType THInt = "int"
+renderCType THChar = "char"
+renderCType THRealPtr = "real *"
+renderCType THReal = "real"
+renderCType THAccRealPtr = "accreal *"
+renderCType THAccReal = "accreal"
+
+renderHaskellType :: TypeCategory -> TemplateType -> THType -> Maybe Text
+renderHaskellType typeCat templateType THVoid =
+  case typeCat of
+    ReturnValue -> Just "IO ()"
+    FunctionParam -> Nothing
+
+renderHaskellType _ _ THDescBuff = Just "CTHDescBuff"
+
+renderHaskellType _ templateType THTensorPtr =
+  Just ("Ptr CTH" <> type2SpliceReal templateType)
+
+renderHaskellType _ templateType THTensorPtrPtr =
+  Just $ "Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
+
+renderHaskellType _ templateType THStoragePtr =
+  Just $ "Ptr CTH" <> type2SpliceReal templateType <> "Storage"
+
+renderHaskellType _ templateType THLongStoragePtr =
+  Just $ "Ptr CTH" <> type2SpliceReal templateType <> "LongStorage"
+
+renderHaskellType _ templateType THPtrDiff =
+  Just "CTHFloatPtrDiff"
+
+renderHaskellType _ templateType THLongPtr =
+  Just "Ptr CLong"
+
+renderHaskellType _ templateType THLong =
+  Just "CLong"
+
+renderHaskellType _ templateType THInt =
+  Just "CInt"
+
+renderHaskellType _ templateType THChar =
+  Just "CChar"
+
+renderHaskellType _ templateType THRealPtr =
+  Just "Ptr " -- TODO
+
+renderHaskellType _ templateType THReal =
+  Just "[XXX]" -- TODO
+
+renderHaskellType _ templateType THAccRealPtr =
+  Just "Ptr [XXX]" -- TODO
+
+renderHaskellType _ templateType THAccReal =
+  Just "[XXX]" -- TODO
+
 renderExtension :: Text -> Text
 renderExtension extension = "{-# LANGUAGE " <> extension <> "#-}"
 
@@ -109,20 +174,31 @@ renderImports imports = (T.intercalate "\n" (singleimport <$> imports)) <> "\n\n
 renderFunName :: Text -> Text -> Text
 renderFunName prefix name = prefix <> "_" <> name
 
-renderFunSig :: Text -> Text
-renderFunSig name  =
+renderFunSig :: TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunSig modTypeTemplate (name, retType, args) =
   ("foreign import ccall \"THTensor.h " <> name <> "\"\n"
-   <> "c_" <> name <> " :: \n")
+   <> "  c_" <> name <> " :: "
+   <> (T.intercalate " -> " $ catMaybes typeSignature)
+   -- TODO : fromJust shouldn't fail, clean this up so it's not unsafe
+   <> " -> " <> fromJust (renderHaskellType ReturnValue modTypeTemplate retType) <> "\n"
+   <> "  -- " <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType)
+  )
   where
-  -- TODO signature
+    typeVals = thArgType <$> args
+    typeSignature = renderHaskellType FunctionParam modTypeTemplate <$> typeVals
+    nameSignature = thArgName <$> args
 
 renderFunctions :: HModule -> Text
 renderFunctions moduleSpec@HModule{..} =
-  -- TODO fix up function names
-  intercalate "\n\n" (renderFunSig <$> funNames)
+  -- iteration over all functions
+  intercalate "\n\n" ((renderFunSig typeTemplate)
+                      <$> (P.zip3 funNames retTypes args) )
   where
     modulePrefix = (renderModuleName moduleSpec) <> "_"
     funNames = (mappend modulePrefix) <$> funName <$> modBindings
+    retTypes = funReturn <$> modBindings
+    args = funArgs <$> modBindings
+    typeTemplate = modTypeTemplate
 
 renderAll :: HModule -> Text
 renderAll spec =

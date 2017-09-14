@@ -3,8 +3,8 @@
 module CodeParse (
   Parser,
   thFile,
-  THType,
-  THArg,
+  THType(..),
+  THArg(..),
   THFunction(..)
   ) where
 
@@ -57,7 +57,6 @@ data THFunction = THFunction {
 -- data THItem = THItemSkip | THItemFunction THFunction deriving Show
 
 type Parser = Parsec Void String
-
 
 -- ----------------------------------------
 -- File parser for TH templated header files
