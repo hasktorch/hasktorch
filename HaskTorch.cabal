@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 library
   default-language:    Haskell2010
   exposed-modules:     THFloatTensor, THTypes
-  hs-source-dirs:      src, TH
+  hs-source-dirs:      src, th-bindings
   build-depends:       base >= 4.7 && < 5
                      , hspec >= 2.4.4
   default-language:    Haskell2010
