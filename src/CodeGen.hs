@@ -97,9 +97,13 @@ renderCType THVoid = "void"
 renderCType THDescBuff = "THDescBuff"
 renderCType THTensorPtr = "THTensor *"
 renderCType THTensorPtrPtr = "THTensor **"
+renderCType THByteTensorPtr = "THByteTensor *"
+renderCType THLongTensorPtr = "THLongTensor *"
+renderCType THGeneratorPtr = "THGenerator *"
 renderCType THStoragePtr = "THStorage *"
 renderCType THLongStoragePtr = "THLongStorage *"
 renderCType THPtrDiff = "ptrdiff_t"
+renderCType THLongPtr = "long *"
 renderCType THLong = "long"
 renderCType THInt = "int"
 renderCType THChar = "char"
@@ -121,6 +125,15 @@ renderHaskellType _ templateType THTensorPtr =
 
 renderHaskellType _ templateType THTensorPtrPtr =
   Just $ "Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
+
+renderHaskellType _ templateType THByteTensorPtr =
+  Just ("Ptr CTHByteTensor") -- concrete type found in TensorMath
+
+renderHaskellType _ templateType THLongTensorPtr =
+  Just ("Ptr CTHLongTensor") -- concrete type found in TensorMath
+
+renderHaskellType _ templateType THGeneratorPtr =
+  Just ("Ptr CTHGenerator") -- concrete type found in TensorMath
 
 renderHaskellType _ templateType THStoragePtr =
   Just $ "Ptr CTH" <> type2SpliceReal templateType <> "Storage"
@@ -307,7 +320,10 @@ test1 = do
 
 main = do
   runPipeline "vendor/torch7/lib/TH/generic/THTensor.h" makeTensorModule
-  -- TODO if any parses fail, the file returns nothing - fix this
   runPipeline "vendor/torch7/lib/TH/generic/THTensorMath.h" makeTensorMathModule
+
+  -- TODO if any parses fail, the file returns nothing - fix this
   runPipeline "vendor/torch7/lib/TH/generic/THTensorRandom.h" makeTensorRandomModule
+  -- runPipeline "vendor/check.h" makeTensorModule
+
   putStrLn "Done"

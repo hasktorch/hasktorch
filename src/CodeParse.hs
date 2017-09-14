@@ -30,6 +30,8 @@ data THType =
   | THDescBuff
   | THTensorPtr
   | THTensorPtrPtr
+  | THByteTensorPtr
+  | THLongTensorPtr
   | THGeneratorPtr
   | THStoragePtr
   | THLongStoragePtr
@@ -56,8 +58,6 @@ data THFunction = THFunction {
                 funReturn :: THType
                 } deriving Show
 
--- data THItem = THItemSkip | THItemFunction THFunction deriving Show
-
 type Parser = Parsec Void String
 
 -- ----------------------------------------
@@ -83,6 +83,13 @@ thTensorPtrPtr :: Parser THType
 -- thTensorPtrPtr = string "THTensor" >> space >> (count 2 thPtr) >> pure THTensorPtrPtr
 thTensorPtrPtr = string "THTensor **" >> pure THTensorPtrPtr
 -- TODO : clean up pointer matching
+
+thByteTensorPtr :: Parser THType
+thByteTensorPtr = string "THByteTensor" >> space >> thPtr >> pure THByteTensorPtr
+
+thLongTensorPtr :: Parser THType
+thLongTensorPtr = string "THLongTensor" >> space >> thPtr >> pure THLongTensorPtr
+
 
 thGeneratorPtr :: Parser THType
 thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THTensorPtr
@@ -116,12 +123,20 @@ thRealPtr = string "real *" >> pure THRealPtr
 thReal :: Parser THType
 thReal = string "real" >> pure THReal
 
+thAccReal :: Parser THType
+thAccReal = string "accreal" >> pure THAccReal
+
+thAccRealPtr :: Parser THType
+thAccRealPtr = string "accreal *" >> pure THAccRealPtr
+
 thType = do
   ((string "const " >> pure ()) <|> space)
   (thVoid
    <|> thDescBuff
    <|> thTensorPtrPtr -- match ptr ptr before ptr
    <|> thTensorPtr
+   <|> thByteTensorPtr
+   <|> thLongTensorPtr
    <|> thGeneratorPtr
    <|> thStoragePtr
    <|> thLongStoragePtr
@@ -132,7 +147,10 @@ thType = do
    <|> thInt
    <|> thChar
    <|> thRealPtr -- ptr before concrete
-   <|> thReal)
+   <|> thReal
+   <|> thAccRealPtr -- TODO : these don't parse - why?
+   <|> thAccReal
+    )
 
 -- Landmarks
 
@@ -188,4 +206,3 @@ thSkip = do
 thItem = thFunctionTemplate <|> thSkip -- ordering is important
 
 thFile = some thItem
-
