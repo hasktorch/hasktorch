@@ -32,11 +32,17 @@ data TemplateType = GenByte
                   | GenLong
                   | GenShort deriving Show
 
+-- List used to iterate through all template types
+genTypes = [GenByte, GenChar,
+            GenDouble, GenFloat, GenHalf,
+            GenInt, GenLong, GenShort] :: [TemplateType]
+
 data HModule = HModule {
-  modHeader :: Text,
+  modHeader :: FilePath,
   modPrefix :: Text,
   modTypeTemplate :: TemplateType,
   modSuffix :: Text,
+  modFileSuffix :: Text,
   modExtensions :: [Text],
   modImports :: [Text],
   modTypeDefs :: [(Text, Text)],
@@ -159,6 +165,10 @@ renderModuleName :: HModule -> Text
 renderModuleName HModule{..} =
   modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix
 
+renderModuleFilename :: HModule -> Text
+renderModuleFilename HModule{..} =
+  modPrefix <> (type2SpliceReal modTypeTemplate) <> modFileSuffix
+
 renderModule :: HModule -> Text
 renderModule moduleSpec =
   "module " <> (renderModuleName moduleSpec)
@@ -175,9 +185,9 @@ renderImports imports = (T.intercalate "\n" (singleimport <$> imports)) <> "\n\n
 renderFunName :: Text -> Text -> Text
 renderFunName prefix name = prefix <> "_" <> name
 
-renderFunSig :: TemplateType -> (Text, THType, [THArg]) -> Text
-renderFunSig modTypeTemplate (name, retType, args) =
-  ("foreign import ccall \"THTensor.h " <> name <> "\"\n"
+renderFunSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunSig headerFile modTypeTemplate (name, retType, args) =
+  ("foreign import ccall \"" <> T.pack headerFile <> " " <> name <> "\"\n"
    <> "  c_" <> name <> " :: "
    <> (T.intercalate " -> " $ catMaybes typeSignature)
    -- TODO : fromJust shouldn't fail, clean this up so it's not unsafe
@@ -192,7 +202,7 @@ renderFunSig modTypeTemplate (name, retType, args) =
 renderFunctions :: HModule -> Text
 renderFunctions moduleSpec@HModule{..} =
   -- iteration over all functions
-  intercalate "\n\n" ((renderFunSig typeTemplate)
+  intercalate "\n\n" ((renderFunSig modHeader typeTemplate)
                       <$> (P.zip3 funNames retTypes args) )
   where
     modulePrefix = (renderModuleName moduleSpec) <> "_"
@@ -227,41 +237,74 @@ cleanList (Right lst) = fromJust <$> (P.filter f lst)
     f Nothing = False
     f (Just _) = True
 
-makeModule typeTemplate bindings =
+makeTensorModule typeTemplate bindings =
    HModule {
-        modHeader = "Tensor.h" 
+        modHeader = "THTensor.h",
         modPrefix = "TH",
         modTypeTemplate = typeTemplate,
         modSuffix = "Tensor",
+        modFileSuffix = "TensorMath",
         modExtensions = ["ForeignFunctionInterface"],
         modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
         modTypeDefs = [],
         modBindings = bindings
   }
 
-renderTensorFile templateType parsedBindings = do
+makeTensorMathModule typeTemplate bindings =
+   HModule {
+        modHeader = "THTensorMath.h",
+        modPrefix = "TH",
+        modTypeTemplate = typeTemplate,
+        modSuffix = "Tensor",
+        modFileSuffix = "TensorMath",
+        modExtensions = ["ForeignFunctionInterface"],
+        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
+        modTypeDefs = [],
+        modBindings = bindings
+  }
+
+makeTensorRandomModule typeTemplate bindings =
+   HModule {
+        modHeader = "THTensorRandom.h",
+        modPrefix = "TH",
+        modTypeTemplate = typeTemplate,
+        modSuffix = "Tensor",
+        modFileSuffix = "TensorRandom",
+        modExtensions = ["ForeignFunctionInterface"],
+        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
+        modTypeDefs = [],
+        modBindings = bindings
+  }
+
+parseFile file = do
+  putStrLn $ "\nParsing " ++ file ++ " ... "
+
+  putStrLn $ "\n  parseTest result:"
+  parseTest thFile file
+  res <- parseFromFile thFile file
+  pure $ cleanList res
+
+renderCHeader templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
   writeFile ("./render/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
-  where modSpec = makeModule templateType parsedBindings
-        filename = (renderModuleName modSpec) <> ".hs"
+  where modSpec = makeConfig templateType parsedBindings
+        filename = (renderModuleFilename modSpec) <> ".hs"
 
-genTypes = [GenByte, GenChar,
-            GenDouble, GenFloat, GenHalf,
-            GenInt, GenLong, GenShort] :: [TemplateType]
-
-runTensor = do
-  parsedBindings <- testFile "vendor/torch7/lib/TH/generic/THTensor.h"
+runTensor headerPath makeModuleConfig = do
+  parsedBindings <- parseFile headerPath
   putStrLn "First 3 signatures"
   putStrLn $ ppShow (P.take 3 parsedBindings)
-  mapM_ (\x -> renderTensorFile x parsedBindings) genTypes
+  mapM_ (\x -> renderCHeader x parsedBindings makeModuleConfig) genTypes
+
+-- runTensorMath = do
+--   parsedBindings <- parseFile "vendor/torch7/lib/TH/generic/THTensorMath.h"
+--   putStrLn "\n\nFirst 3 signatures"
+--   putStrLn $ ppShow (P.take 3 parsedBindings)
+--   mapM_ (\x -> renderCHeader x parsedBindings makeTensorMathModule) genTypes
 
 testString inp = case (parse thFile "" inp) of
   Left err -> putStrLn (parseErrorPretty err)
   Right val -> putStrLn $ (ppShow val)
-
-testFile file = do
-  res <- parseFromFile thFile file
-  pure $ cleanList res
 
 test1 = do
   testString ex1
@@ -271,5 +314,9 @@ test1 = do
      "another garbage line ( )@#R @# 324 32"
 
 main = do
-  runTensor
+  runTensor "vendor/torch7/lib/TH/generic/THTensor.h" makeTensorModule
+  -- TODO if any parses fail, the file returns nothing - fix this
+  runTensor "vendor/torch7/lib/TH/generic/THTensorMath.h" makeTensorMathModule
+  runTensor "vendor/torch7/lib/TH/generic/THTensorRandom.h" makeTensorRandomModule
+  runTensor "vendor/TH/generic/THTensorRandom.h" makeTensorRandomModule
   putStrLn "Done"

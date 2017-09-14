@@ -30,9 +30,11 @@ data THType =
   | THDescBuff
   | THTensorPtr
   | THTensorPtrPtr
+  | THGeneratorPtr
   | THStoragePtr
   | THLongStoragePtr
   | THPtrDiff
+  | THDouble
   | THLongPtr
   | THLong
   | THInt
@@ -68,6 +70,9 @@ thPtr = char '*'
 thVoid :: Parser THType
 thVoid = string "void" >> pure THVoid
 
+thDouble :: Parser THType
+thDouble = string "double" >> pure THDouble
+
 thDescBuff :: Parser THType
 thDescBuff = string "THDescBuff" >> pure THDescBuff
 
@@ -78,6 +83,9 @@ thTensorPtrPtr :: Parser THType
 -- thTensorPtrPtr = string "THTensor" >> space >> (count 2 thPtr) >> pure THTensorPtrPtr
 thTensorPtrPtr = string "THTensor **" >> pure THTensorPtrPtr
 -- TODO : clean up pointer matching
+
+thGeneratorPtr :: Parser THType
+thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THTensorPtr
 
 thStoragePtr :: Parser THType
 thStoragePtr = string "THStorage" >> space >> thPtr >> pure THStoragePtr
@@ -114,8 +122,10 @@ thType = do
    <|> thDescBuff
    <|> thTensorPtrPtr -- match ptr ptr before ptr
    <|> thTensorPtr
+   <|> thGeneratorPtr
    <|> thStoragePtr
    <|> thLongStoragePtr
+   <|> thDouble
    <|> thPtrDiff
    <|> thLongPtr
    <|> thLong
@@ -162,7 +172,7 @@ thFunctionTemplate = do
   funRet <- thType
   space
   string "THTensor_("
-  funName <- some alphaNumChar
+  funName <- some (alphaNumChar <|> char '_')
   space
   string ")"
   space
@@ -170,11 +180,18 @@ thFunctionTemplate = do
   thSemicolon
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
+thBadParse = do
+  -- bad parse - TODO : halt execution w/ error
+  thAPI >> space
+  (some (notChar '\n') >> eol)
+  error "Bad TH_API parse"
+  pure Nothing
+
 thSkip = do
   eol <|> (some (notChar '\n') >> eol)
-  pure $ Nothing
+  pure Nothing
 
-thItem = thFunctionTemplate <|> thSkip -- ordering is important
+thItem = thFunctionTemplate <|> thBadParse <|> thSkip -- ordering is important
 
 thFile = some thItem
 
