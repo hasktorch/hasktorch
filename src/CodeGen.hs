@@ -99,6 +99,8 @@ renderCType THTensorPtr = "THTensor *"
 renderCType THTensorPtrPtr = "THTensor **"
 renderCType THByteTensorPtr = "THByteTensor *"
 renderCType THLongTensorPtr = "THLongTensor *"
+renderCType THDoubleTensorPtr = "THDoubleTensor *"
+renderCType THFloatTensorPtr = "THFloatTensor *"
 renderCType THGeneratorPtr = "THGenerator *"
 renderCType THStoragePtr = "THStorage *"
 renderCType THLongStoragePtr = "THLongStorage *"
@@ -120,17 +122,23 @@ renderHaskellType typeCat templateType THVoid =
 
 renderHaskellType _ _ THDescBuff = Just "CTHDescBuff"
 
-renderHaskellType _ templateType THTensorPtr =
-  Just ("Ptr CTH" <> type2SpliceReal templateType)
-
 renderHaskellType _ templateType THTensorPtrPtr =
   Just $ "Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
+
+renderHaskellType _ templateType THTensorPtr =
+  Just ("Ptr CTH" <> type2SpliceReal templateType)
 
 renderHaskellType _ templateType THByteTensorPtr =
   Just ("Ptr CTHByteTensor") -- concrete type found in TensorMath
 
 renderHaskellType _ templateType THLongTensorPtr =
   Just ("Ptr CTHLongTensor") -- concrete type found in TensorMath
+
+renderHaskellType _ templateType THDoubleTensorPtr =
+  Just ("Ptr CTHDoubleTensor") -- concrete type found in TensorRandom
+
+renderHaskellType _ templateType THFloatTensorPtr =
+  Just ("Ptr CTHFloatTensor") -- concrete type found in TensorRandom
 
 renderHaskellType _ templateType THGeneratorPtr =
   Just ("Ptr CTHGenerator") -- concrete type found in TensorMath
@@ -141,8 +149,12 @@ renderHaskellType _ templateType THStoragePtr =
 renderHaskellType _ templateType THLongStoragePtr =
   Just $ "Ptr CTH" <> type2SpliceReal templateType <> "LongStorage"
 
+renderHaskellType _ templateType THDouble =
+  Just "CDouble" -- added from TensorRandom
+
 renderHaskellType _ templateType THPtrDiff =
-  Just "CTHFloatPtrDiff"
+  Just $ "CTH" <> type2SpliceReal templateType <> "PtrDiff"
+  -- TODO check if it's appropriate to splice here
 
 renderHaskellType _ templateType THLongPtr =
   Just "Ptr CLong"
@@ -299,7 +311,7 @@ parseFile file = do
 
 renderCHeader templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
-  writeFile ("./TH/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
+  writeFile ("./th-bindings/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
   where modSpec = makeConfig templateType parsedBindings
         filename = (renderModuleFilename modSpec) <> ".hs"
 
@@ -323,11 +335,15 @@ test1 = do
      "another garbage line ( )@#R @# 324 32"
 
 main = do
-  runPipeline "vendor/torch7/lib/TH/generic/THTensor.h" makeTensorModule
-  runPipeline "vendor/torch7/lib/TH/generic/THTensorMath.h" makeTensorMathModule
 
-  -- TODO if any parses fail, the file returns nothing - fix this
-  runPipeline "vendor/torch7/lib/TH/generic/THTensorRandom.h" makeTensorRandomModule
+  runPipeline "vendor/torch7/lib/TH/generic/THTensor.h"
+    makeTensorModule
+  runPipeline "vendor/torch7/lib/TH/generic/THTensorMath.h"
+    makeTensorMathModule
+  runPipeline "vendor/torch7/lib/TH/generic/THTensorRandom.h"
+    makeTensorRandomModule
   -- runPipeline "vendor/check.h" makeTensorModule
+
+  -- TODO - other headers
 
   putStrLn "Done"

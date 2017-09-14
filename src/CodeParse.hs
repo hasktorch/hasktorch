@@ -32,10 +32,14 @@ data THType =
   | THTensorPtrPtr
   | THByteTensorPtr
   | THLongTensorPtr
+  | THDoubleTensorPtr
+  | THFloatTensorPtr
+
   | THGeneratorPtr
   | THStoragePtr
   | THLongStoragePtr
   | THPtrDiff
+
   | THDouble
   | THLongPtr
   | THLong
@@ -90,6 +94,11 @@ thByteTensorPtr = string "THByteTensor" >> space >> thPtr >> pure THByteTensorPt
 thLongTensorPtr :: Parser THType
 thLongTensorPtr = string "THLongTensor" >> space >> thPtr >> pure THLongTensorPtr
 
+thDoubleTensorPtr :: Parser THType
+thDoubleTensorPtr = string "THDoubleTensor" >> space >> thPtr >> pure THDoubleTensorPtr
+
+thFloatTensorPtr :: Parser THType
+thFloatTensorPtr = string "THFloatTensor" >> space >> thPtr >> pure THFloatTensorPtr
 
 thGeneratorPtr :: Parser THType
 thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THTensorPtr
@@ -137,6 +146,8 @@ thType = do
    <|> thTensorPtr
    <|> thByteTensorPtr
    <|> thLongTensorPtr
+   <|> thDoubleTensorPtr
+   <|> thFloatTensorPtr
    <|> thGeneratorPtr
    <|> thStoragePtr
    <|> thLongStoragePtr
