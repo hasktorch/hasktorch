@@ -180,6 +180,7 @@ thFunctionTemplate = do
   thSemicolon
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
+-- TODO - exclude thAPI so it doesn't parse if TH_API is invalid
 thSkip = do
   eol <|> (some (notChar '\n') >> eol)
   pure Nothing

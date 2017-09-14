@@ -277,10 +277,8 @@ makeTensorRandomModule typeTemplate bindings =
   }
 
 parseFile file = do
-  putStrLn $ "\nParsing " ++ file ++ " ... "
-
-  putStrLn $ "\n  parseTest result:"
-  parseTest thFile file
+  putStrLn $ "\nRunning " ++ file ++ " ... "
+  putStrLn $ "Parsing ... "
   res <- parseFromFile thFile file
   pure $ cleanList res
 
@@ -290,17 +288,11 @@ renderCHeader templateType parsedBindings makeConfig = do
   where modSpec = makeConfig templateType parsedBindings
         filename = (renderModuleFilename modSpec) <> ".hs"
 
-runTensor headerPath makeModuleConfig = do
+runPipeline headerPath makeModuleConfig = do
   parsedBindings <- parseFile headerPath
   putStrLn "First 3 signatures"
   putStrLn $ ppShow (P.take 3 parsedBindings)
   mapM_ (\x -> renderCHeader x parsedBindings makeModuleConfig) genTypes
-
--- runTensorMath = do
---   parsedBindings <- parseFile "vendor/torch7/lib/TH/generic/THTensorMath.h"
---   putStrLn "\n\nFirst 3 signatures"
---   putStrLn $ ppShow (P.take 3 parsedBindings)
---   mapM_ (\x -> renderCHeader x parsedBindings makeTensorMathModule) genTypes
 
 testString inp = case (parse thFile "" inp) of
   Left err -> putStrLn (parseErrorPretty err)
@@ -314,9 +306,8 @@ test1 = do
      "another garbage line ( )@#R @# 324 32"
 
 main = do
-  runTensor "vendor/torch7/lib/TH/generic/THTensor.h" makeTensorModule
+  runPipeline "vendor/torch7/lib/TH/generic/THTensor.h" makeTensorModule
   -- TODO if any parses fail, the file returns nothing - fix this
-  runTensor "vendor/torch7/lib/TH/generic/THTensorMath.h" makeTensorMathModule
-  runTensor "vendor/torch7/lib/TH/generic/THTensorRandom.h" makeTensorRandomModule
-  runTensor "vendor/TH/generic/THTensorRandom.h" makeTensorRandomModule
+  runPipeline "vendor/torch7/lib/TH/generic/THTensorMath.h" makeTensorMathModule
+  runPipeline "vendor/torch7/lib/TH/generic/THTensorRandom.h" makeTensorRandomModule
   putStrLn "Done"
