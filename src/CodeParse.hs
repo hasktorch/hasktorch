@@ -180,18 +180,11 @@ thFunctionTemplate = do
   thSemicolon
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
-thBadParse = do
-  -- bad parse - TODO : halt execution w/ error
-  thAPI >> space
-  (some (notChar '\n') >> eol)
-  error "Bad TH_API parse"
-  pure Nothing
-
 thSkip = do
   eol <|> (some (notChar '\n') >> eol)
   pure Nothing
 
-thItem = thFunctionTemplate <|> thBadParse <|> thSkip -- ordering is important
+thItem = thFunctionTemplate <|> thSkip -- ordering is important
 
 thFile = some thItem
 
