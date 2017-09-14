@@ -92,6 +92,26 @@ type2accreal GenInt    = "long"
 type2accreal GenLong   = "long"
 type2accreal GenShort  = "long"
 
+realtype2Haskell :: TemplateType -> Text
+realtype2Haskell GenByte   = "CUChar"
+realtype2Haskell GenChar   = "CChar"
+realtype2Haskell GenDouble = "CDouble"
+realtype2Haskell GenFloat  = "CFloat"
+realtype2Haskell GenHalf   = "THHalf"
+realtype2Haskell GenInt    = "CInt"
+realtype2Haskell GenLong   = "CLong"
+realtype2Haskell GenShort  = "CShort"
+
+accrealtype2Haskell :: TemplateType -> Text
+accrealtype2Haskell GenByte   = "CLong"
+accrealtype2Haskell GenChar   = "CLong"
+accrealtype2Haskell GenDouble = "CDouble"
+accrealtype2Haskell GenFloat  = "CDouble"
+accrealtype2Haskell GenHalf   = "CFloat"
+accrealtype2Haskell GenInt    = "CLong"
+accrealtype2Haskell GenLong   = "CLong"
+accrealtype2Haskell GenShort  = "CLong"
+
 renderCType :: THType -> Text
 renderCType THVoid = "void"
 renderCType THDescBuff = "THDescBuff"
@@ -169,16 +189,16 @@ renderHaskellType _ templateType THChar =
   Just "CChar"
 
 renderHaskellType _ templateType THRealPtr =
-  Just "Ptr " -- TODO
+  Just $ "Ptr " <> realtype2Haskell templateType
 
 renderHaskellType _ templateType THReal =
-  Just "[XXX]" -- TODO
+  Just $ realtype2Haskell templateType
 
 renderHaskellType _ templateType THAccRealPtr =
-  Just "Ptr [XXX]" -- TODO
+  Just $ "Ptr " <> accrealtype2Haskell templateType
 
 renderHaskellType _ templateType THAccReal =
-  Just "[XXX]" -- TODO
+  Just $ accrealtype2Haskell templateType
 
 renderExtension :: Text -> Text
 renderExtension extension = "{-# LANGUAGE " <> extension <> "#-}"
