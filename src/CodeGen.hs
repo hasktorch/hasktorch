@@ -127,6 +127,7 @@ renderCType THLongStoragePtr = "THLongStorage *"
 renderCType THPtrDiff = "ptrdiff_t"
 renderCType THLongPtr = "long *"
 renderCType THLong = "long"
+renderCType THIntPtr = "int *"
 renderCType THInt = "int"
 renderCType THChar = "char"
 renderCType THRealPtr = "real *"
@@ -181,6 +182,11 @@ renderHaskellType _ templateType THLongPtr =
 
 renderHaskellType _ templateType THLong =
   Just "CLong"
+
+renderHaskellType _ templateType THIntPtr =
+  Just "CIntPtr"
+
+
 
 renderHaskellType _ templateType THInt =
   Just "CInt"
@@ -284,13 +290,53 @@ cleanList (Right lst) = fromJust <$> (P.filter f lst)
     f Nothing = False
     f (Just _) = True
 
+makeBlasModule typeTemplate bindings =
+   HModule {
+        modHeader = "THBlas.h",
+        modPrefix = "TH",
+        modTypeTemplate = typeTemplate,
+        modSuffix = "Blas",
+        modFileSuffix = "Blas",
+        modExtensions = ["ForeignFunctionInterface"],
+        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
+        modTypeDefs = [],
+        modBindings = bindings
+  }
+
+makeLapackModule typeTemplate bindings =
+   HModule {
+        modHeader = "TH. ",
+        modPrefix = "TH",
+        modTypeTemplate = typeTemplate,
+        modSuffix = "Lapack",
+        modFileSuffix = "Lapack",
+        modExtensions = ["ForeignFunctionInterface"],
+        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
+        modTypeDefs = [],
+        modBindings = bindings
+  }
+
+makeStorageModule typeTemplate bindings =
+   HModule {
+        modHeader = "TH. ",
+        modPrefix = "TH",
+        modTypeTemplate = typeTemplate,
+        modSuffix = "Storage",
+        modFileSuffix = "Storage",
+        modExtensions = ["ForeignFunctionInterface"],
+        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
+        modTypeDefs = [],
+        modBindings = bindings
+  }
+
+
 makeTensorModule typeTemplate bindings =
    HModule {
         modHeader = "THTensor.h",
         modPrefix = "TH",
         modTypeTemplate = typeTemplate,
         modSuffix = "Tensor",
-        modFileSuffix = "TensorMath",
+        modFileSuffix = "Tensor",
         modExtensions = ["ForeignFunctionInterface"],
         modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
         modTypeDefs = [],
@@ -339,9 +385,9 @@ runPipeline headerPath makeModuleConfig = do
   parsedBindings <- parseFile headerPath
   putStrLn $ ppShow (P.take 3 parsedBindings)
   mapM_ (\x -> renderCHeader x parsedBindings makeModuleConfig) genTypes
-  putStrLn $ "Number of functios: " ++ (show $ P.length genTypes
-                                        * P.length parsedBindings)
-  putStrLn "First 3 signatures"
+  putStrLn $ "Number of functions generated: " ++
+    (show $ P.length genTypes * P.length parsedBindings)
+  putStrLn "First 3 signatures:"
 
 testString inp = case (parse thFile "" inp) of
   Left err -> putStrLn (parseErrorPretty err)
@@ -356,13 +402,22 @@ test1 = do
 
 main = do
 
+  runPipeline "vendor/torch7/lib/TH/generic/THBlas.h"
+    makeBlasModule
+  runPipeline "vendor/torch7/lib/TH/generic/THLapack.h"
+    makeLapackModule
+  -- runPipeline "vendor/torch7/lib/TH/generic/THStorage.h"
+  --   makeStorageModule
+  -- runPipeline "vendor/torch7/lib/TH/generic/THStorageCopy.h"
+  --   makeTensorModule
   runPipeline "vendor/torch7/lib/TH/generic/THTensor.h"
     makeTensorModule
+  -- runPipeline "vendor/torch7/lib/TH/generic/THConv.h"
+  --   makeTensorModule
   runPipeline "vendor/torch7/lib/TH/generic/THTensorMath.h"
     makeTensorMathModule
   runPipeline "vendor/torch7/lib/TH/generic/THTensorRandom.h"
     makeTensorRandomModule
-  -- runPipeline "vendor/check.h" makeTensorModule
 
   -- TODO - other headers
 

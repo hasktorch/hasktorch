@@ -38,11 +38,13 @@ data THType =
   | THGeneratorPtr
   | THStoragePtr
   | THLongStoragePtr
+  | THAllocatorPtr
   | THPtrDiff
 
   | THDouble
   | THLongPtr
   | THLong
+  | THIntPtr
   | THInt
   | THChar
   | THRealPtr
@@ -107,7 +109,13 @@ thStoragePtr :: Parser THType
 thStoragePtr = string "THStorage" >> space >> thPtr >> pure THStoragePtr
 
 thLongStoragePtr :: Parser THType
-thLongStoragePtr = string "THLongStorage" >> space >> thPtr >> pure THStoragePtr
+-- thLongStoragePtr = string "THLongStorage" >> space >> thPtr >> pure THStoragePtr
+thLongStoragePtr = (string "THLongStorage *" <|> string "THLongStorage*")
+  >> space >> pure THLongStoragePtr
+
+thLongAllocatorPtr :: Parser THType
+thLongAllocatorPtr = (string "THAllocator *" <|> string "THAllocator*")
+  >> space >> pure THAllocatorPtr
 
 thPtrDiff :: Parser THType
 thPtrDiff = string "ptrdiff_t" >> pure THStoragePtr
@@ -119,6 +127,10 @@ thLongPtr = string "long *" >> pure THLongPtr
 thLong :: Parser THType
 thLong = string "long" >> pure THLong
 
+thIntPtr :: Parser THType
+-- thIntPtr = string "int" >> space >> thPtr >> pure THIntPtr
+thIntPtr = (string "int *" <|> string "int* ") >> pure THIntPtr
+
 thInt :: Parser THType
 thInt = string "int" >> pure THInt
 
@@ -126,7 +138,7 @@ thChar :: Parser THType
 thChar = string "char" >> pure THChar
 
 thRealPtr :: Parser THType
-thRealPtr = string "real *" >> pure THRealPtr
+thRealPtr = (string "real *" <|> string "real* ") >> pure THRealPtr
 -- TODO : clean up pointer matching
 
 thReal :: Parser THType
@@ -155,6 +167,7 @@ thType = do
    <|> thPtrDiff
    <|> thLongPtr
    <|> thLong
+   <|> thIntPtr
    <|> thInt
    <|> thChar
    <|> thRealPtr -- ptr before concrete
@@ -196,11 +209,17 @@ thFunctionArgs = do
   -- close paren consumed by last thFunctionArg (TODO - clean this up)
   pure functionArgs
 
+thFunctionPrefixes =
+  string "THTensor_("
+  <|> string "THBlas_("
+  <|> string "THLapack_("
+  <|> string "THStorage_("
+
 thFunctionTemplate = do
   thAPI >> space
   funRet <- thType
   space
-  string "THTensor_("
+  thFunctionPrefixes
   funName <- some (alphaNumChar <|> char '_')
   space
   string ")"
