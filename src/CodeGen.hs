@@ -152,7 +152,7 @@ renderHaskellType _ templateType THTensorPtrPtr =
   Just $ "Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
 
 renderHaskellType _ templateType THTensorPtr =
-  Just ("Ptr CTH" <> type2SpliceReal templateType)
+  Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
 
 renderHaskellType _ templateType THByteTensorPtr =
   Just ("Ptr CTHByteTensor") -- concrete type found in TensorMath
@@ -226,11 +226,11 @@ renderExtensions extensions = T.intercalate "\n" (renderExtension <$> extensions
 
 renderModuleName :: HModule -> Text
 renderModuleName HModule{..} =
-  modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix
-
-renderModuleFilename :: HModule -> Text
-renderModuleFilename HModule{..} =
   modPrefix <> (type2SpliceReal modTypeTemplate) <> modFileSuffix
+
+-- renderModuleFilename :: HModule -> Text
+-- renderModuleFilename HModule{..} =
+--   modPrefix <> (type2SpliceReal modTypeTemplate) <> modFileSuffix
 
 renderModule :: HModule -> Text
 renderModule moduleSpec =
@@ -255,13 +255,16 @@ renderFunSig headerFile modTypeTemplate (name, retType, args) =
    <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType) <> "\n"
    <> "foreign import ccall \"" <> T.pack headerFile <> " " <> name <> "\"\n"
    <> "  c_" <> name <> " :: "
-   <> (T.intercalate " -> " $ catMaybes typeSignature)
-   -- TODO : fromJust shouldn't fail, clean this up so it's not unsafe
-   <> " -> " <> fromJust (renderHaskellType ReturnValue modTypeTemplate retType) <> "\n"
+   <> (T.intercalate " -> " typeSignatureClean)
+    -- TODO : fromJust shouldn't fail but still clean this up so it's not unsafe
+   <> retArrow <> fromJust (renderHaskellType ReturnValue modTypeTemplate retType)
   )
   where
     typeVals = thArgType <$> args
     typeSignature = renderHaskellType FunctionParam modTypeTemplate <$> typeVals
+    typeSignatureClean = catMaybes typeSignature
+    numArgs = P.length typeSignatureClean
+    retArrow = if numArgs == 0 then "" else " -> "
     nameSignature = thArgName <$> args
 
 renderFunctions :: HModule -> Text
@@ -316,8 +319,7 @@ makeModule modHeader modSuffix modFileSuffix typeTemplate bindings =
   }
 
 parseFile file = do
-  putStrLn $ "\nRunning " ++ file ++ " ... "
-  putStrLn $ "Parsing ... "
+  putStrLn $ "\nParsing " ++ file ++ " ... "
   res <- parseFromFile thFile file
   pure $ cleanList res
 
@@ -325,27 +327,17 @@ renderCHeader templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
   writeFile ("./th-bindings/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
   where modSpec = makeConfig templateType parsedBindings
-        filename = (renderModuleFilename modSpec) <> ".hs"
+        filename = (renderModuleName modSpec) <> ".hs"
 
 runPipeline headerPath makeModuleConfig = do
   parsedBindings <- parseFile headerPath
-  putStrLn $ ppShow (P.take 3 parsedBindings)
+  putStrLn $ "First signature:"
+  putStrLn $ ppShow (P.take 1 parsedBindings)
   mapM_ (\x -> renderCHeader x parsedBindings makeModuleConfig) genTypes
   putStrLn $ "Number of functions generated: " ++
     (show $ P.length genTypes * P.length parsedBindings)
-  putStrLn "First 3 signatures:"
 
-testString inp = case (parse thFile "" inp) of
-  Left err -> putStrLn (parseErrorPretty err)
-  Right val -> putStrLn $ (ppShow val)
-
-test1 = do
-  testString ex1
-  where
-    ex1 = "skip this garbage line line\n" <>
-     "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
-     "another garbage line ( )@#R @# 324 32"
-
+parseFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 parseFiles =
   [
     ("vendor/torch7/lib/TH/generic/THBlas.h",
@@ -364,7 +356,22 @@ parseFiles =
      (makeModule "THTensorRandom.h" "Tensor" "TensorRandom")),
     ("vendor/torch7/lib/TH/generic/THVector.h",
      (makeModule "THVector.h" "Vector" "Vector"))
-  ] :: [(String, TemplateType -> [THFunction] -> HModule)]
+  ]
+
+testString inp = case (parse thFile "" inp) of
+  Left err -> putStrLn (parseErrorPretty err)
+  Right val -> putStrLn $ (ppShow val)
+
+test1 = do
+  testString ex1
+  where
+    ex1 = "skip this garbage line line\n" <>
+     "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
+     "another garbage line ( )@#R @# 324 32"
+
+
+test2 = runPipeline "vendor/check.h"
+  (makeModule "THStorage.h" "Storage" "Storage")
 
 -- |TODO unfinished/nonfunctional parses
 todo = do
@@ -377,8 +384,4 @@ todo = do
 
 main = do
   mapM_ (\(file, spec) -> runPipeline file spec) parseFiles
-
-  -- for testing
-  -- runPipeline "vendor/check.h"
-  --   (makeModule "THStorage.h" "Storage" "Storage")
   putStrLn "Done"

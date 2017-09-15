@@ -2,7 +2,7 @@
 
 module Main where
 
-import THFloatTensor as TR
+import THFloatTensorLegacy as TR
 import Foreign.C.Types
 
 import Test.Hspec

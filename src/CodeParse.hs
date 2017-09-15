@@ -54,18 +54,18 @@ data THType =
   | THReal
   | THAccRealPtr
   | THAccReal
-  deriving Show
+  deriving (Eq, Show)
 
 data THArg = THArg {
   thArgType :: THType,
   thArgName :: Text -- some signatures, e.g. Storage.h have no variable name
-  } deriving Show
+  } deriving (Eq, Show)
 
 data THFunction = THFunction {
                 funName :: Text,
                 funArgs :: [THArg],
                 funReturn :: THType
-                } deriving Show
+                } deriving (Eq, Show)
 
 type Parser = Parsec Void String
 
@@ -109,7 +109,7 @@ thFloatTensorPtr :: Parser THType
 thFloatTensorPtr = string "THFloatTensor" >> space >> thPtr >> pure THFloatTensorPtr
 
 thGeneratorPtr :: Parser THType
-thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THTensorPtr
+thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THGeneratorPtr
 
 thStoragePtr :: Parser THType
 thStoragePtr = (string "THStorage *" <|> string "THStorage*") >> pure THStoragePtr
@@ -212,7 +212,8 @@ thFunctionArgVoid = do
 thFunctionArgNamed = do
   argType <- thType
   space
-  argName <- (some (alphaNumChar <|> char '_')) <|> string "" -- e.g. Storage.h - no variable name
+  -- e.g. declaration sometimes has no variable name - eg Storage.h
+  argName <- (some (alphaNumChar <|> char '_')) <|> string ""
   space
   (char ',' :: Parser Char) <|> (char ')' :: Parser Char)
   space

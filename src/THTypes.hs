@@ -5,6 +5,7 @@ import Foreign.C.Types
 
 type CTHDescBuff = Ptr ()
 type CTHAllocatorPtr = Ptr ()
+type CTHGenerator = () -- TODO - should this be defined in terms of the pointer?
 
 -- ----------------------------------------
 -- Templated types
