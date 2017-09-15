@@ -4,6 +4,7 @@ import Foreign
 import Foreign.C.Types
 
 type CTHDescBuff = Ptr ()
+type CTHAllocatorPtr = Ptr ()
 
 -- ----------------------------------------
 -- Templated types

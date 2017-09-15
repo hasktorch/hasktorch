@@ -26,10 +26,11 @@ import Text.Show.Pretty
 -- ----------------------------------------
 
 data THType =
-  THVoid
+  THVoidPtr
+  | THVoid
   | THDescBuff
-  | THTensorPtr
   | THTensorPtrPtr
+  | THTensorPtr
   | THByteTensorPtr
   | THLongTensorPtr
   | THDoubleTensorPtr
@@ -46,6 +47,8 @@ data THType =
   | THLong
   | THIntPtr
   | THInt
+  | THSize
+  | THCharPtr
   | THChar
   | THRealPtr
   | THReal
@@ -55,7 +58,7 @@ data THType =
 
 data THArg = THArg {
   thArgType :: THType,
-  thArgName :: Text
+  thArgName :: Text -- some signatures, e.g. Storage.h have no variable name
   } deriving Show
 
 data THFunction = THFunction {
@@ -72,6 +75,9 @@ type Parser = Parsec Void String
 
 thPtr :: Parser Char
 thPtr = char '*'
+
+thVoidPtr :: Parser THType
+thVoidPtr = (string "void *" <|> string "void*") >> pure THVoidPtr
 
 thVoid :: Parser THType
 thVoid = string "void" >> pure THVoid
@@ -106,7 +112,7 @@ thGeneratorPtr :: Parser THType
 thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THTensorPtr
 
 thStoragePtr :: Parser THType
-thStoragePtr = string "THStorage" >> space >> thPtr >> pure THStoragePtr
+thStoragePtr = (string "THStorage *" <|> string "THStorage*") >> pure THStoragePtr
 
 thLongStoragePtr :: Parser THType
 -- thLongStoragePtr = string "THLongStorage" >> space >> thPtr >> pure THStoragePtr
@@ -134,6 +140,12 @@ thIntPtr = (string "int *" <|> string "int* ") >> pure THIntPtr
 thInt :: Parser THType
 thInt = string "int" >> pure THInt
 
+thSize :: Parser THType
+thSize = string "size_t" >> pure THSize
+
+thCharPtr :: Parser THType
+thCharPtr = (string "char*" <|> string "char *") >> pure THChar
+
 thChar :: Parser THType
 thChar = string "char" >> pure THChar
 
@@ -152,28 +164,33 @@ thAccRealPtr = string "accreal *" >> pure THAccRealPtr
 
 thType = do
   ((string "const " >> pure ()) <|> space)
-  (thVoid
-   <|> thDescBuff
-   <|> thTensorPtrPtr -- match ptr ptr before ptr
-   <|> thTensorPtr
-   <|> thByteTensorPtr
-   <|> thLongTensorPtr
-   <|> thDoubleTensorPtr
-   <|> thFloatTensorPtr
-   <|> thGeneratorPtr
-   <|> thStoragePtr
-   <|> thLongStoragePtr
-   <|> thDouble
-   <|> thPtrDiff
-   <|> thLongPtr
-   <|> thLong
-   <|> thIntPtr
-   <|> thInt
-   <|> thChar
-   <|> thRealPtr -- ptr before concrete
-   <|> thReal
-   <|> thAccRealPtr -- TODO : these don't parse - why?
-   <|> thAccReal
+  (
+    thVoidPtr
+    <|> thVoid
+    <|> thDescBuff
+    <|> thTensorPtrPtr -- match ptr ptr before ptr
+    <|> thTensorPtr
+    <|> thByteTensorPtr
+    <|> thLongTensorPtr
+    <|> thDoubleTensorPtr
+    <|> thFloatTensorPtr
+    <|> thGeneratorPtr
+    <|> thStoragePtr
+    <|> thLongStoragePtr
+    <|> thLongAllocatorPtr
+    <|> thDouble
+    <|> thPtrDiff
+    <|> thLongPtr
+    <|> thLong
+    <|> thIntPtr
+    <|> thInt
+    <|> thSize
+    <|> thCharPtr
+    <|> thChar
+    <|> thRealPtr
+    <|> thReal
+    <|> thAccRealPtr
+    <|> thAccReal
     )
 
 -- Landmarks
@@ -195,13 +212,13 @@ thFunctionArgVoid = do
 thFunctionArgNamed = do
   argType <- thType
   space
-  argName <- some (alphaNumChar <|> char '_')
+  argName <- (some (alphaNumChar <|> char '_')) <|> string "" -- e.g. Storage.h - no variable name
   space
   (char ',' :: Parser Char) <|> (char ')' :: Parser Char)
   space
   pure $ THArg argType (T.pack argName)
 
-thFunctionArg = thFunctionArgVoid <|> thFunctionArgNamed
+thFunctionArg = thFunctionArgNamed <|> thFunctionArgVoid
 
 thFunctionArgs = do
   char '(' :: Parser Char
@@ -209,11 +226,11 @@ thFunctionArgs = do
   -- close paren consumed by last thFunctionArg (TODO - clean this up)
   pure functionArgs
 
-thFunctionPrefixes =
-  string "THTensor_("
-  <|> string "THBlas_("
-  <|> string "THLapack_("
-  <|> string "THStorage_("
+thFunctionPrefixes = string "THTensor_("
+                     <|> string "THBlas_("
+                     <|> string "THLapack_("
+                     <|> string "THStorage_("
+                     <|> string "THVector_("
 
 thFunctionTemplate = do
   thAPI >> space

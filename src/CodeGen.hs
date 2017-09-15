@@ -129,6 +129,8 @@ renderCType THLongPtr = "long *"
 renderCType THLong = "long"
 renderCType THIntPtr = "int *"
 renderCType THInt = "int"
+renderCType THSize = "size_t"
+renderCType THCharPtr = "char *"
 renderCType THChar = "char"
 renderCType THRealPtr = "real *"
 renderCType THReal = "real"
@@ -136,6 +138,9 @@ renderCType THAccRealPtr = "accreal *"
 renderCType THAccReal = "accreal"
 
 renderHaskellType :: TypeCategory -> TemplateType -> THType -> Maybe Text
+
+renderHaskellType _ templateType THVoidPtr = Just "Ptr ()"
+
 renderHaskellType typeCat templateType THVoid =
   case typeCat of
     ReturnValue -> Just "IO ()"
@@ -170,6 +175,9 @@ renderHaskellType _ templateType THStoragePtr =
 renderHaskellType _ templateType THLongStoragePtr =
   Just $ "Ptr CTH" <> type2SpliceReal templateType <> "LongStorage"
 
+renderHaskellType _ templateType THAllocatorPtr =
+  Just $ "CTHAllocatorPtr"
+
 renderHaskellType _ templateType THDouble =
   Just "CDouble" -- added from TensorRandom
 
@@ -186,10 +194,14 @@ renderHaskellType _ templateType THLong =
 renderHaskellType _ templateType THIntPtr =
   Just "CIntPtr"
 
-
-
 renderHaskellType _ templateType THInt =
   Just "CInt"
+
+renderHaskellType _ templateType THSize =
+  Just "CSize"
+
+renderHaskellType _ templateType THCharPtr =
+  Just "Ptr CChar"
 
 renderHaskellType _ templateType THChar =
   Just "CChar"
@@ -290,79 +302,13 @@ cleanList (Right lst) = fromJust <$> (P.filter f lst)
     f Nothing = False
     f (Just _) = True
 
-makeBlasModule typeTemplate bindings =
+makeModule modHeader modSuffix modFileSuffix typeTemplate bindings =
    HModule {
-        modHeader = "THBlas.h",
+        modHeader = modHeader,
         modPrefix = "TH",
         modTypeTemplate = typeTemplate,
-        modSuffix = "Blas",
-        modFileSuffix = "Blas",
-        modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
-        modTypeDefs = [],
-        modBindings = bindings
-  }
-
-makeLapackModule typeTemplate bindings =
-   HModule {
-        modHeader = "TH. ",
-        modPrefix = "TH",
-        modTypeTemplate = typeTemplate,
-        modSuffix = "Lapack",
-        modFileSuffix = "Lapack",
-        modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
-        modTypeDefs = [],
-        modBindings = bindings
-  }
-
-makeStorageModule typeTemplate bindings =
-   HModule {
-        modHeader = "TH. ",
-        modPrefix = "TH",
-        modTypeTemplate = typeTemplate,
-        modSuffix = "Storage",
-        modFileSuffix = "Storage",
-        modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
-        modTypeDefs = [],
-        modBindings = bindings
-  }
-
-
-makeTensorModule typeTemplate bindings =
-   HModule {
-        modHeader = "THTensor.h",
-        modPrefix = "TH",
-        modTypeTemplate = typeTemplate,
-        modSuffix = "Tensor",
-        modFileSuffix = "Tensor",
-        modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
-        modTypeDefs = [],
-        modBindings = bindings
-  }
-
-makeTensorMathModule typeTemplate bindings =
-   HModule {
-        modHeader = "THTensorMath.h",
-        modPrefix = "TH",
-        modTypeTemplate = typeTemplate,
-        modSuffix = "Tensor",
-        modFileSuffix = "TensorMath",
-        modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
-        modTypeDefs = [],
-        modBindings = bindings
-  }
-
-makeTensorRandomModule typeTemplate bindings =
-   HModule {
-        modHeader = "THTensorRandom.h",
-        modPrefix = "TH",
-        modTypeTemplate = typeTemplate,
-        modSuffix = "Tensor",
-        modFileSuffix = "TensorRandom",
+        modSuffix = modSuffix,
+        modFileSuffix = modFileSuffix,
         modExtensions = ["ForeignFunctionInterface"],
         modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
         modTypeDefs = [],
@@ -400,25 +346,39 @@ test1 = do
      "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
      "another garbage line ( )@#R @# 324 32"
 
+parseFiles =
+  [
+    ("vendor/torch7/lib/TH/generic/THBlas.h",
+     (makeModule "THBlas.h" "Blas" "Blas")),
+    ("vendor/torch7/lib/TH/generic/THLapack.h",
+     (makeModule "THLapack.h" "Lapack" "Lapack")),
+    ("vendor/torch7/lib/TH/generic/THStorage.h",
+     (makeModule "THStorage.h" "Storage" "Storage")),
+    ("vendor/torch7/lib/TH/generic/THTensor.h",
+     (makeModule "THTensor.h" "Tensor" "Tensor")),
+    ("vendor/torch7/lib/TH/generic/THTensorConv.h",
+     (makeModule "THTensorConv.h" "Tensor" "TensorConv")),
+    ("vendor/torch7/lib/TH/generic/THTensorMath.h",
+     (makeModule "THTensorMath.h" "Tensor" "TensorMath")),
+    ("vendor/torch7/lib/TH/generic/THTensorRandom.h",
+     (makeModule "THTensorRandom.h" "Tensor" "TensorRandom")),
+    ("vendor/torch7/lib/TH/generic/THVector.h",
+     (makeModule "THVector.h" "Vector" "Vector"))
+  ] :: [(String, TemplateType -> [THFunction] -> HModule)]
+
+-- |TODO unfinished/nonfunctional parses
+todo = do
+  runPipeline "vendor/torch7/lib/TH/generic/THStorageCopy.h"
+    (makeModule "THStorageCopy.h" "Storage" "StorageCopy")
+  runPipeline "vendor/torch7/lib/TH/generic/THTensorCopy.h"
+    (makeModule "THTensorCopy.h" "Tensor" "TensorCopy")
+  runPipeline "vendor/torch7/lib/TH/generic/THTensorLapack.h"
+    (makeModule "THTensorLapack.h" "Tensor" "TensorLapack")
+
 main = do
+  mapM_ (\(file, spec) -> runPipeline file spec) parseFiles
 
-  runPipeline "vendor/torch7/lib/TH/generic/THBlas.h"
-    makeBlasModule
-  runPipeline "vendor/torch7/lib/TH/generic/THLapack.h"
-    makeLapackModule
-  -- runPipeline "vendor/torch7/lib/TH/generic/THStorage.h"
-  --   makeStorageModule
-  -- runPipeline "vendor/torch7/lib/TH/generic/THStorageCopy.h"
-  --   makeTensorModule
-  runPipeline "vendor/torch7/lib/TH/generic/THTensor.h"
-    makeTensorModule
-  -- runPipeline "vendor/torch7/lib/TH/generic/THConv.h"
-  --   makeTensorModule
-  runPipeline "vendor/torch7/lib/TH/generic/THTensorMath.h"
-    makeTensorMathModule
-  runPipeline "vendor/torch7/lib/TH/generic/THTensorRandom.h"
-    makeTensorRandomModule
-
-  -- TODO - other headers
-
+  -- for testing
+  -- runPipeline "vendor/check.h"
+  --   (makeModule "THStorage.h" "Storage" "Storage")
   putStrLn "Done"
