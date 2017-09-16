@@ -19,7 +19,7 @@ library
                      , THByteTensor
                      , THDoubleTensor
                      , THFloatTensor
-                     , THHalfTensor
+                     -- , THHalfTensor
                      , THIntTensor
                      , THLongTensor
                      , THShortTensor
