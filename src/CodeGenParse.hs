@@ -30,6 +30,7 @@ data THType =
   | THVoid
   | THDescBuff
   | THTensorPtrPtr
+
   | THTensorPtr
   | THByteTensorPtr
   | THLongTensorPtr
@@ -37,8 +38,16 @@ data THType =
   | THFloatTensorPtr
 
   | THGeneratorPtr
+
   | THStoragePtr
+  | THByteStoragePtr
+  | THCharStoragePtr
+  | THShortStoragePtr
+  | THIntStoragePtr
   | THLongStoragePtr
+  | THFloatStoragePtr
+  | THDoubleStoragePtr
+
   | THAllocatorPtr
   | THPtrDiff
 
@@ -114,10 +123,34 @@ thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THGeneratorPtr
 thStoragePtr :: Parser THType
 thStoragePtr = (string "THStorage *" <|> string "THStorage*") >> pure THStoragePtr
 
+thByteStoragePtr :: Parser THType
+thByteStoragePtr = (string "THByteStorage *" <|> string "THByteStorage*")
+  >> space >> pure THByteStoragePtr
+
+thCharStoragePtr :: Parser THType
+thCharStoragePtr = (string "THCharStorage *" <|> string "THCharStorage*")
+  >> space >> pure THCharStoragePtr
+
+thShortStoragePtr :: Parser THType
+thShortStoragePtr = (string "THShortStorage *" <|> string "THShortStorage*")
+  >> space >> pure THShortStoragePtr
+
+thIntStoragePtr :: Parser THType
+thIntStoragePtr = (string "THIntStorage *" <|> string "THIntStorage*")
+  >> space >> pure THIntStoragePtr
+
 thLongStoragePtr :: Parser THType
 -- thLongStoragePtr = string "THLongStorage" >> space >> thPtr >> pure THStoragePtr
 thLongStoragePtr = (string "THLongStorage *" <|> string "THLongStorage*")
   >> space >> pure THLongStoragePtr
+
+thFloatStoragePtr :: Parser THType
+thFloatStoragePtr = (string "THFloatStorage *" <|> string "THFloatStorage*")
+  >> space >> pure THFloatStoragePtr
+
+thDoubleStoragePtr :: Parser THType
+thDoubleStoragePtr = (string "THDoubleStorage *" <|> string "THDoubleStorage*")
+  >> space >> pure THDoubleStoragePtr
 
 thLongAllocatorPtr :: Parser THType
 thLongAllocatorPtr = (string "THAllocator *" <|> string "THAllocator*")
@@ -163,20 +196,34 @@ thAccRealPtr :: Parser THType
 thAccRealPtr = string "accreal *" >> pure THAccRealPtr
 
 thType = do
-  ((string "const " >> pure ()) <|> space)
+  ((string "const " >> pure ())
+    <|> (string "struct " >> pure ()) -- See THStorageCopy.h
+    <|> space)
   (
+    -- pointers take precedence in parsing
     thVoidPtr
     <|> thVoid
     <|> thDescBuff
-    <|> thTensorPtrPtr -- match ptr ptr before ptr
+
+    <|> thTensorPtrPtr
     <|> thTensorPtr
+
     <|> thByteTensorPtr
     <|> thLongTensorPtr
     <|> thDoubleTensorPtr
     <|> thFloatTensorPtr
+
     <|> thGeneratorPtr
+
     <|> thStoragePtr
+    <|> thByteStoragePtr
+    <|> thCharStoragePtr
+    <|> thShortStoragePtr
+    <|> thIntStoragePtr
     <|> thLongStoragePtr
+    <|> thFloatStoragePtr
+    <|> thDoubleStoragePtr
+
     <|> thLongAllocatorPtr
     <|> thDouble
     <|> thPtrDiff

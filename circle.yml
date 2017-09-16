@@ -20,9 +20,9 @@ dependencies:
     - stack setup
     - rm -fr $(stack path --dist-dir) $(stack path --local-install-root)
     - stack build --fast
-    - stack build --fast --pedantic --haddock --test --no-run-tests --no-haddock-deps
 
 test:
   override:
     - stack test
     - stack exec codegen
+    - stack exec specdb
