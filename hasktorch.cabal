@@ -1,7 +1,7 @@
-name:                HaskTorch
+name:                hasktorch
 version:             0.1.0.0
-synopsis:            Bindings to torch core library
-description:         Bindings to torch core library
+synopsis:            Torch for tensors and dynamic neural networks in Haskell
+description:         Torch for tensors and dynamic neural networks in Haskell
 homepage:            https://github.com/austinvhuang/HaskTorch#readme
 license:             BSD3
 license-file:        LICENSE

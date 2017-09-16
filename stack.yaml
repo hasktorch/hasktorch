@@ -15,5 +15,5 @@ extra-package-dbs: []
 extra-lib-dirs:
   - ./vendor/build/
 ghc-options:
-  "HaskTorch": -lTH
+  "hasktorch": -lTH
 
