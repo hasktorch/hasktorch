@@ -28,6 +28,14 @@ removeIfExists fileName = removeFile fileName `catch` handleExists
           | isDoesNotExistError e = return ()
           | otherwise = throwIO e
 
+createDB conn = do
+  removeIfExists "specdb/specdb.db"
+  conn <- open "specdb/specdb.db"
+
+createTables conn = do
+  execute_ conn "CREATE TABLE IF NOT EXISTS tests (id INTEGER PRIMARY KEY, test TEXT)"
+  execute_ conn "CREATE TABLE IF NOT EXISTS template_types (id INTEGER PRIMARY KEY, types TEXT)"
+
 makeTypeTable conn = do
   mapM_ go (type2SpliceReal <$> Y.genTypes)
   where
@@ -35,14 +43,15 @@ makeTypeTable conn = do
     go typename =
       execute conn cmd (Only (T.unpack typename :: String))
 
+makeTests conn = do
+  execute conn "INSERT INTO tests (test) VALUES (?)" (Only ("this is some test" :: String))
+
 main :: IO ()
 main = do
-  removeIfExists "specdb/specdb.db"
-  conn <- open "specdb/specdb.db"
-  execute_ conn "CREATE TABLE IF NOT EXISTS tests (id INTEGER PRIMARY KEY, test TEXT)"
-  execute_ conn "CREATE TABLE IF NOT EXISTS template_types (id INTEGER PRIMARY KEY, types TEXT)"
+  createDB
+  createTables conn
   makeTypeTable conn
-  execute conn "INSERT INTO tests (test) VALUES (?)" (Only ("this is some test" :: String))
+  makeTests conn
   putStrLn "tests table:"
   r <- query_ conn "SELECT * from tests" :: IO [TestField]
   mapM_ print r
