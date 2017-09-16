@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
+
 module THDoubleTensor (
     c_THDoubleTensor_storage,
     c_THDoubleTensor_storageOffset,

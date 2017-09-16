@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
+
 module THFloatTensor (
     c_THFloatTensor_storage,
     c_THFloatTensor_storageOffset,

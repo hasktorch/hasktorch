@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
+
 module THByteTensor (
     c_THByteTensor_storage,
     c_THByteTensor_storageOffset,

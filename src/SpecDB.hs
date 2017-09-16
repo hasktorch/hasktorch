@@ -12,6 +12,7 @@ import System.Directory
 import Control.Exception
 import System.IO.Error hiding (catch)
 
+import CodeGenTypes as Y
 
 data TestField = TestField Int T.Text deriving (Show)
 
@@ -27,17 +28,25 @@ removeIfExists fileName = removeFile fileName `catch` handleExists
           | isDoesNotExistError e = return ()
           | otherwise = throwIO e
 
+makeTypeTable conn = do
+  mapM_ go (type2SpliceReal <$> Y.genTypes)
+  where
+    cmd = "INSERT INTO template_types (types) VALUES (?)"
+    go typename =
+      execute conn cmd (Only (T.unpack typename :: String))
+
 main :: IO ()
 main = do
   removeIfExists "specdb/specdb.db"
   conn <- open "specdb/specdb.db"
   execute_ conn "CREATE TABLE IF NOT EXISTS tests (id INTEGER PRIMARY KEY, test TEXT)"
   execute_ conn "CREATE TABLE IF NOT EXISTS template_types (id INTEGER PRIMARY KEY, types TEXT)"
-  execute conn "INSERT INTO template_types (types) VALUES (?)" (Only ("Float" :: String))
-  execute conn "INSERT INTO template_types (types) VALUES (?)" (Only ("Double" :: String))
+  makeTypeTable conn
   execute conn "INSERT INTO tests (test) VALUES (?)" (Only ("this is some test" :: String))
+  putStrLn "tests table:"
   r <- query_ conn "SELECT * from tests" :: IO [TestField]
   mapM_ print r
+  putStrLn "types table:"
   r <- query_ conn "SELECT * from template_types" :: IO [TestField]
   mapM_ print r
   close conn

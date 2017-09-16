@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
+
 module THIntTensor (
     c_THIntTensor_storage,
     c_THIntTensor_storageOffset,

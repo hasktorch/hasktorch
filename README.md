@@ -5,4 +5,5 @@ Tensors and dynamic neural networks in Haskell using
 
 ## Instructions
 
-Run `buildTH.sh` in the vendor directory before building with stack
+From within the `vendor`, directory, run `build-torch-core.sh` in the vendor
+directory before building with stack

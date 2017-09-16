@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module CodeParse (
+module CodeGenParse (
   Parser,
   thFile,
   THType(..),
