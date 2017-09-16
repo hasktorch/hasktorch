@@ -9,7 +9,6 @@ module CodeGenParse (
   ) where
 
 import Control.Monad (void)
-import Data.Monoid ((<>))
 import Data.Maybe
 import Data.Void
 import Data.Text
@@ -34,6 +33,10 @@ data THType =
   | THTensorPtr
   | THByteTensorPtr
   | THLongTensorPtr
+  | THShortTensorPtr
+  | THIntTensorPtr
+  | THHalfTensorPtr
+  | THCharTensorPtr
   | THDoubleTensorPtr
   | THFloatTensorPtr
 
@@ -45,6 +48,7 @@ data THType =
   | THShortStoragePtr
   | THIntStoragePtr
   | THLongStoragePtr
+  | THHalfStoragePtr
   | THFloatStoragePtr
   | THDoubleStoragePtr
 
@@ -97,6 +101,8 @@ thDouble = string "double" >> pure THDouble
 thDescBuff :: Parser THType
 thDescBuff = string "THDescBuff" >> pure THDescBuff
 
+{- Tensor types -}
+
 thTensorPtr :: Parser THType
 thTensorPtr = string "THTensor" >> space >> thPtr >> pure THTensorPtr
 
@@ -108,8 +114,20 @@ thTensorPtrPtr = string "THTensor **" >> pure THTensorPtrPtr
 thByteTensorPtr :: Parser THType
 thByteTensorPtr = string "THByteTensor" >> space >> thPtr >> pure THByteTensorPtr
 
+thShortTensorPtr :: Parser THType
+thShortTensorPtr = string "THShortTensor" >> space >> thPtr >> pure THShortTensorPtr
+
+thIntTensorPtr :: Parser THType
+thIntTensorPtr = string "THIntTensor" >> space >> thPtr >> pure THIntTensorPtr
+
 thLongTensorPtr :: Parser THType
 thLongTensorPtr = string "THLongTensor" >> space >> thPtr >> pure THLongTensorPtr
+
+thHalfTensorPtr :: Parser THType
+thHalfTensorPtr = string "THHalfTensor" >> space >> thPtr >> pure THHalfTensorPtr
+
+thCharTensorPtr :: Parser THType
+thCharTensorPtr = string "THCharTensor" >> space >> thPtr >> pure THCharTensorPtr
 
 thDoubleTensorPtr :: Parser THType
 thDoubleTensorPtr = string "THDoubleTensor" >> space >> thPtr >> pure THDoubleTensorPtr
@@ -117,8 +135,7 @@ thDoubleTensorPtr = string "THDoubleTensor" >> space >> thPtr >> pure THDoubleTe
 thFloatTensorPtr :: Parser THType
 thFloatTensorPtr = string "THFloatTensor" >> space >> thPtr >> pure THFloatTensorPtr
 
-thGeneratorPtr :: Parser THType
-thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THGeneratorPtr
+{- Storage -}
 
 thStoragePtr :: Parser THType
 thStoragePtr = (string "THStorage *" <|> string "THStorage*") >> pure THStoragePtr
@@ -139,6 +156,11 @@ thIntStoragePtr :: Parser THType
 thIntStoragePtr = (string "THIntStorage *" <|> string "THIntStorage*")
   >> space >> pure THIntStoragePtr
 
+thHalfStoragePtr :: Parser THType
+thHalfStoragePtr = (string "THHalfStorage *" <|> string "THHalfStorage*")
+  >> space >> pure THHalfStoragePtr
+
+
 thLongStoragePtr :: Parser THType
 -- thLongStoragePtr = string "THLongStorage" >> space >> thPtr >> pure THStoragePtr
 thLongStoragePtr = (string "THLongStorage *" <|> string "THLongStorage*")
@@ -151,6 +173,11 @@ thFloatStoragePtr = (string "THFloatStorage *" <|> string "THFloatStorage*")
 thDoubleStoragePtr :: Parser THType
 thDoubleStoragePtr = (string "THDoubleStorage *" <|> string "THDoubleStorage*")
   >> space >> pure THDoubleStoragePtr
+
+{- Other -}
+
+thGeneratorPtr :: Parser THType
+thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THGeneratorPtr
 
 thLongAllocatorPtr :: Parser THType
 thLongAllocatorPtr = (string "THAllocator *" <|> string "THAllocator*")
@@ -209,7 +236,11 @@ thType = do
     <|> thTensorPtr
 
     <|> thByteTensorPtr
+    <|> thShortTensorPtr
+    <|> thIntTensorPtr
     <|> thLongTensorPtr
+    <|> thHalfTensorPtr
+    <|> thCharTensorPtr
     <|> thDoubleTensorPtr
     <|> thFloatTensorPtr
 
@@ -221,6 +252,7 @@ thType = do
     <|> thShortStoragePtr
     <|> thIntStoragePtr
     <|> thLongStoragePtr
+    <|> thHalfStoragePtr
     <|> thFloatStoragePtr
     <|> thDoubleStoragePtr
 

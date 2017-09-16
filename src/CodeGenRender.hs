@@ -81,6 +81,8 @@ renderHaskellType typeCat templateType THVoid =
 
 renderHaskellType _ _ THDescBuff = Just "CTHDescBuff"
 
+{- Tensor -}
+
 renderHaskellType typeCat templateType THTensorPtrPtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor))"
   FunctionParam -> Just $ "Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
@@ -93,29 +95,79 @@ renderHaskellType typeCat templateType THByteTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHByteTensor)"
   FunctionParam -> Just "Ptr CTHByteTensor"
 
+renderHaskellType typeCat templateType THCharTensorPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHCharTensor)"
+  FunctionParam -> Just "Ptr CTHCharTensor"
+
+renderHaskellType typeCat templateType THShortTensorPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHShortTensor)"
+  FunctionParam -> Just "Ptr CTHShortTensor"
+
+renderHaskellType typeCat templateType THHalfTensorPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHHalfTensor)"
+  FunctionParam -> Just "Ptr CTHHalfTensor"
+
+renderHaskellType typeCat templateType THIntTensorPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHIntTensor)"
+  FunctionParam -> Just "Ptr CTHIntTensor"
+
 renderHaskellType typeCat templateType THLongTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHLongTensor)"
   FunctionParam -> Just "Ptr CTHLongTensor"
-
-renderHaskellType typeCat templateType THDoubleTensorPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHDoubleTensor)"
-  FunctionParam -> Just "Ptr CTHDoubleTensor"
 
 renderHaskellType typeCat templateType THFloatTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHFloatTensor)"
   FunctionParam -> Just "Ptr CTHFloatTensor"
 
-renderHaskellType typeCat templateType THGeneratorPtr = case typeCat of
-  ReturnValue -> Just ("IO (Ptr CTHGenerator") -- concrete type found in TensorMat)h
-  FunctionParam -> Just ("Ptr CTHGenerator") -- concrete type found in TensorMath
+renderHaskellType typeCat templateType THDoubleTensorPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHDoubleTensor)"
+  FunctionParam -> Just "Ptr CTHDoubleTensor"
+
+{- Storage -}
 
 renderHaskellType typeCat templateType THStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "Storage)"
   FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "Storage"
 
+renderHaskellType typeCat templateType THByteStoragePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "ByteStorage)"
+  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "ByteStorage"
+
+renderHaskellType typeCat templateType THShortStoragePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "ShortStorage)"
+  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "ShortStorage"
+
+renderHaskellType typeCat templateType THIntStoragePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "IntStorage)"
+  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "IntStorage"
+
 renderHaskellType typeCat templateType THLongStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "LongStorage)"
   FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "LongStorage"
+
+renderHaskellType typeCat templateType THHalfStoragePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "HalfStorage)"
+  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "HalfStorage"
+
+renderHaskellType typeCat templateType THCharStoragePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "CharStorage)"
+  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "CharStorage"
+
+renderHaskellType typeCat templateType THFloatStoragePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "FloatStorage)"
+  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "FloatStorage"
+
+renderHaskellType typeCat templateType THDoubleStoragePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "DoubleStorage)"
+  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "DoubleStorage"
+
+
+
+{- Other -}
+
+renderHaskellType typeCat templateType THGeneratorPtr = case typeCat of
+  ReturnValue -> Just ("IO (Ptr CTHGenerator") -- concrete type found in TensorMat)h
+  FunctionParam -> Just ("Ptr CTHGenerator") -- concrete type found in TensorMath
 
 renderHaskellType typeCat templateType THAllocatorPtr = case typeCat of
   ReturnValue -> Just $ "IO (CTHAllocatorPtr)"
@@ -297,10 +349,16 @@ parseFiles =
      (makeModule "THLapack.h" "Lapack" "Lapack")),
     ("vendor/torch7/lib/TH/generic/THStorage.h",
      (makeModule "THStorage.h" "Storage" "Storage")),
+    ("vendor/torch7/lib/TH/generic/THStorageCopy.h",
+     (makeModule "THStorageCopy.h" "Storage" "StorageCopy")),
     ("vendor/torch7/lib/TH/generic/THTensor.h",
      (makeModule "THTensor.h" "Tensor" "Tensor")),
     ("vendor/torch7/lib/TH/generic/THTensorConv.h",
      (makeModule "THTensorConv.h" "Tensor" "TensorConv")),
+    ("vendor/torch7/lib/TH/generic/THTensorCopy.h",
+     (makeModule "THTensorCopy.h" "Tensor" "TensorCopy")),
+    ("vendor/torch7/lib/TH/generic/THTensorLapack.h",
+     (makeModule "THTensorLapack.h" "Tensor" "TensorLapack")),
     ("vendor/torch7/lib/TH/generic/THTensorMath.h",
      (makeModule "THTensorMath.h" "Tensor" "TensorMath")),
     ("vendor/torch7/lib/TH/generic/THTensorRandom.h",
@@ -324,20 +382,12 @@ test1 = do
 test2 = runPipeline "vendor/check.h"
   (makeModule "THStorage.h" "Storage" "Storage")
 
--- |TODO unfinished/nonfunctional parses
-todoFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
-todoFiles = [
-  ("vendor/torch7/lib/TH/generic/THStorageCopy.h",
-    (makeModule "THStorageCopy.h" "Storage" "StorageCopy")),
-  ("vendor/torch7/lib/TH/generic/THTensorCopy.h",
-    (makeModule "THTensorCopy.h" "Tensor" "TensorCopy")),
-  ("vendor/torch7/lib/TH/generic/THTensorLapack.h",
-    (makeModule "THTensorLapack.h" "Tensor" "TensorLapack"))
-  ]
+-- -- |TODO unfinished/nonfunctional parses
+-- todoFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
+-- todoFiles = [
+--   ]
 
 main :: IO ()
 main = do
   mapM_ (\(file, spec) -> runPipeline file spec) parseFiles
-  -- mapM_ (\(file, spec) -> runPipeline file spec) todoFiles
-  -- test2
   putStrLn "Done"

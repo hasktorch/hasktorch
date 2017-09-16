@@ -22,9 +22,10 @@ data TemplateType = GenByte
                   | GenShort deriving Show
 
 -- List used to iterate through all template types
+genTypes :: [TemplateType]
 genTypes = [GenByte, GenChar,
             GenDouble, GenFloat, GenHalf,
-            GenInt, GenLong, GenShort] :: [TemplateType]
+            GenInt, GenLong, GenShort]
 
 -- #define Real [X]
 -- spliced text to use for function names
