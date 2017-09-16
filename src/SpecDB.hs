@@ -28,9 +28,10 @@ removeIfExists fileName = removeFile fileName `catch` handleExists
           | isDoesNotExistError e = return ()
           | otherwise = throwIO e
 
-createDB conn = do
+createDB = do
   removeIfExists "specdb/specdb.db"
   conn <- open "specdb/specdb.db"
+  pure conn
 
 createTables conn = do
   execute_ conn "CREATE TABLE IF NOT EXISTS tests (id INTEGER PRIMARY KEY, test TEXT)"
@@ -48,7 +49,7 @@ makeTests conn = do
 
 main :: IO ()
 main = do
-  createDB
+  conn <- createDB
   createTables conn
   makeTypeTable conn
   makeTests conn

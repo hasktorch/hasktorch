@@ -325,14 +325,19 @@ test2 = runPipeline "vendor/check.h"
   (makeModule "THStorage.h" "Storage" "Storage")
 
 -- |TODO unfinished/nonfunctional parses
-todo = do
-  runPipeline "vendor/torch7/lib/TH/generic/THStorageCopy.h"
-    (makeModule "THStorageCopy.h" "Storage" "StorageCopy")
-  runPipeline "vendor/torch7/lib/TH/generic/THTensorCopy.h"
-    (makeModule "THTensorCopy.h" "Tensor" "TensorCopy")
-  runPipeline "vendor/torch7/lib/TH/generic/THTensorLapack.h"
-    (makeModule "THTensorLapack.h" "Tensor" "TensorLapack")
+todoFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
+todoFiles = [
+  ("vendor/torch7/lib/TH/generic/THStorageCopy.h",
+    (makeModule "THStorageCopy.h" "Storage" "StorageCopy")),
+  ("vendor/torch7/lib/TH/generic/THTensorCopy.h",
+    (makeModule "THTensorCopy.h" "Tensor" "TensorCopy")),
+  ("vendor/torch7/lib/TH/generic/THTensorLapack.h",
+    (makeModule "THTensorLapack.h" "Tensor" "TensorLapack"))
+  ]
 
+main :: IO ()
 main = do
   mapM_ (\(file, spec) -> runPipeline file spec) parseFiles
+  -- mapM_ (\(file, spec) -> runPipeline file spec) todoFiles
+  -- test2
   putStrLn "Done"
