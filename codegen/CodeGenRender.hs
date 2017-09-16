@@ -228,10 +228,6 @@ renderModuleName :: HModule -> Text
 renderModuleName HModule{..} =
   modPrefix <> (type2SpliceReal modTypeTemplate) <> modFileSuffix
 
--- renderModuleFilename :: HModule -> Text
--- renderModuleFilename HModule{..} =
---   modPrefix <> (type2SpliceReal modTypeTemplate) <> modFileSuffix
-
 renderModule :: HModule -> Text
 renderModule moduleSpec =
   "module " <> (renderModuleName moduleSpec)
@@ -365,6 +361,9 @@ parseFiles =
      (makeModule "THVector.h" "Vector" "Vector"))
   ]
 
+makeReExports = do
+  putStrLn "Re-exported"
+
 testString inp = case (parse thFile "" inp) of
   Left err -> putStrLn (parseErrorPretty err)
   Right val -> putStrLn $ (ppShow val)
@@ -376,14 +375,8 @@ test1 = do
      "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
      "another garbage line ( )@#R @# 324 32"
 
-
 test2 = runPipeline "vendor/check.h"
   (makeModule "THStorage.h" "Storage" "Storage")
-
--- -- |TODO unfinished/nonfunctional parses
--- todoFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
--- todoFiles = [
---   ]
 
 main :: IO ()
 main = do
