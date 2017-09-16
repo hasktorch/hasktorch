@@ -1,13 +1,13 @@
 machine:
   environment:
     PATH: ~/.local/bin/:$PATH
-    LD_LIBRARY_PATH: /home/ubuntu/HaskTorch/vendor/build/:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:$LD_LIBRARY_PATH
 
 dependencies:
   cache_directories:
     - "~/.stack"
     - ".stack-work"
-    - "/home/ubuntu/HaskTorch/vendor/build/"
+    - "/home/ubuntu/hasktorch/vendor/build/"
 
   pre:
     - sudo apt-get update
