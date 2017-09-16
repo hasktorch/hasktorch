@@ -100,11 +100,11 @@ foreign import ccall "THTensor.h THFloatTensor_stride"
 
 -- |c_THFloatTensor_newSizeOf : self -> THLongStorage *
 foreign import ccall "THTensor.h THFloatTensor_newSizeOf"
-  c_THFloatTensor_newSizeOf :: (Ptr CTHFloatTensor) -> IO (Ptr CTHFloatLongStorage)
+  c_THFloatTensor_newSizeOf :: (Ptr CTHFloatTensor) -> IO (Ptr CTHLongStorage)
 
 -- |c_THFloatTensor_newStrideOf : self -> THLongStorage *
 foreign import ccall "THTensor.h THFloatTensor_newStrideOf"
-  c_THFloatTensor_newStrideOf :: (Ptr CTHFloatTensor) -> IO (Ptr CTHFloatLongStorage)
+  c_THFloatTensor_newStrideOf :: (Ptr CTHFloatTensor) -> IO (Ptr CTHLongStorage)
 
 -- |c_THFloatTensor_data : self -> real *
 foreign import ccall "THTensor.h THFloatTensor_data"
@@ -128,7 +128,7 @@ foreign import ccall "THTensor.h THFloatTensor_newWithTensor"
 
 -- |c_THFloatTensor_newWithStorage : storage_ storageOffset_ size_ stride_ -> THTensor *
 foreign import ccall "THTensor.h THFloatTensor_newWithStorage"
-  c_THFloatTensor_newWithStorage :: Ptr CTHFloatStorage -> Ptr CTHFloatStorage -> Ptr CTHFloatLongStorage -> Ptr CTHFloatLongStorage -> IO (Ptr CTHFloatTensor)
+  c_THFloatTensor_newWithStorage :: Ptr CTHFloatStorage -> Ptr CTHFloatStorage -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHFloatTensor)
 
 -- |c_THFloatTensor_newWithStorage1d : storage_ storageOffset_ size0_ stride0_ -> THTensor *
 foreign import ccall "THTensor.h THFloatTensor_newWithStorage1d"
@@ -148,7 +148,7 @@ foreign import ccall "THTensor.h THFloatTensor_newWithStorage4d"
 
 -- |c_THFloatTensor_newWithSize : size_ stride_ -> THTensor *
 foreign import ccall "THTensor.h THFloatTensor_newWithSize"
-  c_THFloatTensor_newWithSize :: Ptr CTHFloatLongStorage -> Ptr CTHFloatLongStorage -> IO (Ptr CTHFloatTensor)
+  c_THFloatTensor_newWithSize :: Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHFloatTensor)
 
 -- |c_THFloatTensor_newWithSize1d : size0_ -> THTensor *
 foreign import ccall "THTensor.h THFloatTensor_newWithSize1d"
@@ -192,15 +192,15 @@ foreign import ccall "THTensor.h THFloatTensor_newUnfold"
 
 -- |c_THFloatTensor_newView : tensor size -> THTensor *
 foreign import ccall "THTensor.h THFloatTensor_newView"
-  c_THFloatTensor_newView :: (Ptr CTHFloatTensor) -> Ptr CTHFloatLongStorage -> IO (Ptr CTHFloatTensor)
+  c_THFloatTensor_newView :: (Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHFloatTensor)
 
 -- |c_THFloatTensor_newExpand : tensor size -> THTensor *
 foreign import ccall "THTensor.h THFloatTensor_newExpand"
-  c_THFloatTensor_newExpand :: (Ptr CTHFloatTensor) -> Ptr CTHFloatLongStorage -> IO (Ptr CTHFloatTensor)
+  c_THFloatTensor_newExpand :: (Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHFloatTensor)
 
 -- |c_THFloatTensor_expand : r tensor size -> void
 foreign import ccall "THTensor.h THFloatTensor_expand"
-  c_THFloatTensor_expand :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CTHFloatLongStorage -> IO ()
+  c_THFloatTensor_expand :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> IO ()
 
 -- |c_THFloatTensor_expandNd : rets ops count -> void
 foreign import ccall "THTensor.h THFloatTensor_expandNd"
@@ -208,7 +208,7 @@ foreign import ccall "THTensor.h THFloatTensor_expandNd"
 
 -- |c_THFloatTensor_resize : tensor size stride -> void
 foreign import ccall "THTensor.h THFloatTensor_resize"
-  c_THFloatTensor_resize :: (Ptr CTHFloatTensor) -> Ptr CTHFloatLongStorage -> Ptr CTHFloatLongStorage -> IO ()
+  c_THFloatTensor_resize :: (Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
 
 -- |c_THFloatTensor_resizeAs : tensor src -> void
 foreign import ccall "THTensor.h THFloatTensor_resizeAs"
@@ -244,7 +244,7 @@ foreign import ccall "THTensor.h THFloatTensor_set"
 
 -- |c_THFloatTensor_setStorage : self storage_ storageOffset_ size_ stride_ -> void
 foreign import ccall "THTensor.h THFloatTensor_setStorage"
-  c_THFloatTensor_setStorage :: (Ptr CTHFloatTensor) -> Ptr CTHFloatStorage -> Ptr CTHFloatStorage -> Ptr CTHFloatLongStorage -> Ptr CTHFloatLongStorage -> IO ()
+  c_THFloatTensor_setStorage :: (Ptr CTHFloatTensor) -> Ptr CTHFloatStorage -> Ptr CTHFloatStorage -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
 
 -- |c_THFloatTensor_setStorageNd : self storage_ storageOffset_ nDimension size stride -> void
 foreign import ccall "THTensor.h THFloatTensor_setStorageNd"
@@ -308,7 +308,7 @@ foreign import ccall "THTensor.h THFloatTensor_isSetTo"
 
 -- |c_THFloatTensor_isSize : self dims -> int
 foreign import ccall "THTensor.h THFloatTensor_isSize"
-  c_THFloatTensor_isSize :: (Ptr CTHFloatTensor) -> Ptr CTHFloatLongStorage -> CInt
+  c_THFloatTensor_isSize :: (Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> CInt
 
 -- |c_THFloatTensor_nElement : self -> THStorage *
 foreign import ccall "THTensor.h THFloatTensor_nElement"

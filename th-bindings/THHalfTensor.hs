@@ -100,11 +100,11 @@ foreign import ccall "THTensor.h THHalfTensor_stride"
 
 -- |c_THHalfTensor_newSizeOf : self -> THLongStorage *
 foreign import ccall "THTensor.h THHalfTensor_newSizeOf"
-  c_THHalfTensor_newSizeOf :: (Ptr CTHHalfTensor) -> IO (Ptr CTHHalfLongStorage)
+  c_THHalfTensor_newSizeOf :: (Ptr CTHHalfTensor) -> IO (Ptr CTHLongStorage)
 
 -- |c_THHalfTensor_newStrideOf : self -> THLongStorage *
 foreign import ccall "THTensor.h THHalfTensor_newStrideOf"
-  c_THHalfTensor_newStrideOf :: (Ptr CTHHalfTensor) -> IO (Ptr CTHHalfLongStorage)
+  c_THHalfTensor_newStrideOf :: (Ptr CTHHalfTensor) -> IO (Ptr CTHLongStorage)
 
 -- |c_THHalfTensor_data : self -> real *
 foreign import ccall "THTensor.h THHalfTensor_data"
@@ -128,7 +128,7 @@ foreign import ccall "THTensor.h THHalfTensor_newWithTensor"
 
 -- |c_THHalfTensor_newWithStorage : storage_ storageOffset_ size_ stride_ -> THTensor *
 foreign import ccall "THTensor.h THHalfTensor_newWithStorage"
-  c_THHalfTensor_newWithStorage :: Ptr CTHHalfStorage -> Ptr CTHHalfStorage -> Ptr CTHHalfLongStorage -> Ptr CTHHalfLongStorage -> IO (Ptr CTHHalfTensor)
+  c_THHalfTensor_newWithStorage :: Ptr CTHHalfStorage -> Ptr CTHHalfStorage -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHHalfTensor)
 
 -- |c_THHalfTensor_newWithStorage1d : storage_ storageOffset_ size0_ stride0_ -> THTensor *
 foreign import ccall "THTensor.h THHalfTensor_newWithStorage1d"
@@ -148,7 +148,7 @@ foreign import ccall "THTensor.h THHalfTensor_newWithStorage4d"
 
 -- |c_THHalfTensor_newWithSize : size_ stride_ -> THTensor *
 foreign import ccall "THTensor.h THHalfTensor_newWithSize"
-  c_THHalfTensor_newWithSize :: Ptr CTHHalfLongStorage -> Ptr CTHHalfLongStorage -> IO (Ptr CTHHalfTensor)
+  c_THHalfTensor_newWithSize :: Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHHalfTensor)
 
 -- |c_THHalfTensor_newWithSize1d : size0_ -> THTensor *
 foreign import ccall "THTensor.h THHalfTensor_newWithSize1d"
@@ -192,15 +192,15 @@ foreign import ccall "THTensor.h THHalfTensor_newUnfold"
 
 -- |c_THHalfTensor_newView : tensor size -> THTensor *
 foreign import ccall "THTensor.h THHalfTensor_newView"
-  c_THHalfTensor_newView :: (Ptr CTHHalfTensor) -> Ptr CTHHalfLongStorage -> IO (Ptr CTHHalfTensor)
+  c_THHalfTensor_newView :: (Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHHalfTensor)
 
 -- |c_THHalfTensor_newExpand : tensor size -> THTensor *
 foreign import ccall "THTensor.h THHalfTensor_newExpand"
-  c_THHalfTensor_newExpand :: (Ptr CTHHalfTensor) -> Ptr CTHHalfLongStorage -> IO (Ptr CTHHalfTensor)
+  c_THHalfTensor_newExpand :: (Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHHalfTensor)
 
 -- |c_THHalfTensor_expand : r tensor size -> void
 foreign import ccall "THTensor.h THHalfTensor_expand"
-  c_THHalfTensor_expand :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> Ptr CTHHalfLongStorage -> IO ()
+  c_THHalfTensor_expand :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> IO ()
 
 -- |c_THHalfTensor_expandNd : rets ops count -> void
 foreign import ccall "THTensor.h THHalfTensor_expandNd"
@@ -208,7 +208,7 @@ foreign import ccall "THTensor.h THHalfTensor_expandNd"
 
 -- |c_THHalfTensor_resize : tensor size stride -> void
 foreign import ccall "THTensor.h THHalfTensor_resize"
-  c_THHalfTensor_resize :: (Ptr CTHHalfTensor) -> Ptr CTHHalfLongStorage -> Ptr CTHHalfLongStorage -> IO ()
+  c_THHalfTensor_resize :: (Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
 
 -- |c_THHalfTensor_resizeAs : tensor src -> void
 foreign import ccall "THTensor.h THHalfTensor_resizeAs"
@@ -244,7 +244,7 @@ foreign import ccall "THTensor.h THHalfTensor_set"
 
 -- |c_THHalfTensor_setStorage : self storage_ storageOffset_ size_ stride_ -> void
 foreign import ccall "THTensor.h THHalfTensor_setStorage"
-  c_THHalfTensor_setStorage :: (Ptr CTHHalfTensor) -> Ptr CTHHalfStorage -> Ptr CTHHalfStorage -> Ptr CTHHalfLongStorage -> Ptr CTHHalfLongStorage -> IO ()
+  c_THHalfTensor_setStorage :: (Ptr CTHHalfTensor) -> Ptr CTHHalfStorage -> Ptr CTHHalfStorage -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
 
 -- |c_THHalfTensor_setStorageNd : self storage_ storageOffset_ nDimension size stride -> void
 foreign import ccall "THTensor.h THHalfTensor_setStorageNd"
@@ -308,7 +308,7 @@ foreign import ccall "THTensor.h THHalfTensor_isSetTo"
 
 -- |c_THHalfTensor_isSize : self dims -> int
 foreign import ccall "THTensor.h THHalfTensor_isSize"
-  c_THHalfTensor_isSize :: (Ptr CTHHalfTensor) -> Ptr CTHHalfLongStorage -> CInt
+  c_THHalfTensor_isSize :: (Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> CInt
 
 -- |c_THHalfTensor_nElement : self -> THStorage *
 foreign import ccall "THTensor.h THHalfTensor_nElement"

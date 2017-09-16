@@ -130,38 +130,36 @@ renderHaskellType typeCat templateType THStoragePtr = case typeCat of
   FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "Storage"
 
 renderHaskellType typeCat templateType THByteStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "ByteStorage)"
-  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "ByteStorage"
+  ReturnValue -> Just $ "IO (Ptr CTHByteStorage)"
+  FunctionParam -> Just $ "Ptr CTHByteStorage"
 
 renderHaskellType typeCat templateType THShortStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "ShortStorage)"
-  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "ShortStorage"
+  ReturnValue -> Just $ "IO (Ptr CTHShortStorage)"
+  FunctionParam -> Just $ "Ptr CTHShortStorage"
 
 renderHaskellType typeCat templateType THIntStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "IntStorage)"
-  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "IntStorage"
+  ReturnValue -> Just $ "IO (Ptr CTHIntStorage)"
+  FunctionParam -> Just $ "Ptr CTHIntStorage"
 
 renderHaskellType typeCat templateType THLongStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "LongStorage)"
-  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "LongStorage"
+  ReturnValue -> Just $ "IO (Ptr CTHLongStorage)"
+  FunctionParam -> Just $ "Ptr CTHLongStorage"
 
 renderHaskellType typeCat templateType THHalfStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "HalfStorage)"
-  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "HalfStorage"
+  ReturnValue -> Just $ "IO (Ptr CTHHalfStorage)"
+  FunctionParam -> Just $ "Ptr CTHHalfStorage"
 
 renderHaskellType typeCat templateType THCharStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "CharStorage)"
-  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "CharStorage"
+  ReturnValue -> Just $ "IO (Ptr CTHCharStorage)"
+  FunctionParam -> Just $ "Ptr CTHCharStorage"
 
 renderHaskellType typeCat templateType THFloatStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "FloatStorage)"
-  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "FloatStorage"
+  ReturnValue -> Just $ "IO (Ptr CTHFloatStorage)"
+  FunctionParam -> Just $ "Ptr CTHFloatStorage"
 
 renderHaskellType typeCat templateType THDoubleStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "DoubleStorage)"
-  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "DoubleStorage"
-
-
+  ReturnValue -> Just $ "IO (Ptr CTHDoubleStorage)"
+  FunctionParam -> Just $ "Ptr CTHDoubleStorage"
 
 {- Other -}
 

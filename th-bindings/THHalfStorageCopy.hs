@@ -26,32 +26,32 @@ foreign import ccall "THStorageCopy.h THHalfStorageCopy_copy"
 
 -- |c_THHalfStorageCopy_copyByte : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorageCopy_copyByte"
-  c_THHalfStorageCopy_copyByte :: Ptr CTHHalfStorage -> Ptr CTHHalfByteStorage -> IO ()
+  c_THHalfStorageCopy_copyByte :: Ptr CTHHalfStorage -> Ptr CTHByteStorage -> IO ()
 
 -- |c_THHalfStorageCopy_copyChar : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorageCopy_copyChar"
-  c_THHalfStorageCopy_copyChar :: Ptr CTHHalfStorage -> Ptr CTHHalfCharStorage -> IO ()
+  c_THHalfStorageCopy_copyChar :: Ptr CTHHalfStorage -> Ptr CTHCharStorage -> IO ()
 
 -- |c_THHalfStorageCopy_copyShort : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorageCopy_copyShort"
-  c_THHalfStorageCopy_copyShort :: Ptr CTHHalfStorage -> Ptr CTHHalfShortStorage -> IO ()
+  c_THHalfStorageCopy_copyShort :: Ptr CTHHalfStorage -> Ptr CTHShortStorage -> IO ()
 
 -- |c_THHalfStorageCopy_copyInt : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorageCopy_copyInt"
-  c_THHalfStorageCopy_copyInt :: Ptr CTHHalfStorage -> Ptr CTHHalfIntStorage -> IO ()
+  c_THHalfStorageCopy_copyInt :: Ptr CTHHalfStorage -> Ptr CTHIntStorage -> IO ()
 
 -- |c_THHalfStorageCopy_copyLong : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorageCopy_copyLong"
-  c_THHalfStorageCopy_copyLong :: Ptr CTHHalfStorage -> Ptr CTHHalfLongStorage -> IO ()
+  c_THHalfStorageCopy_copyLong :: Ptr CTHHalfStorage -> Ptr CTHLongStorage -> IO ()
 
 -- |c_THHalfStorageCopy_copyFloat : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorageCopy_copyFloat"
-  c_THHalfStorageCopy_copyFloat :: Ptr CTHHalfStorage -> Ptr CTHHalfFloatStorage -> IO ()
+  c_THHalfStorageCopy_copyFloat :: Ptr CTHHalfStorage -> Ptr CTHFloatStorage -> IO ()
 
 -- |c_THHalfStorageCopy_copyDouble : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorageCopy_copyDouble"
-  c_THHalfStorageCopy_copyDouble :: Ptr CTHHalfStorage -> Ptr CTHHalfDoubleStorage -> IO ()
+  c_THHalfStorageCopy_copyDouble :: Ptr CTHHalfStorage -> Ptr CTHDoubleStorage -> IO ()
 
 -- |c_THHalfStorageCopy_copyHalf : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorageCopy_copyHalf"
-  c_THHalfStorageCopy_copyHalf :: Ptr CTHHalfStorage -> Ptr CTHHalfHalfStorage -> IO ()
+  c_THHalfStorageCopy_copyHalf :: Ptr CTHHalfStorage -> Ptr CTHHalfStorage -> IO ()
