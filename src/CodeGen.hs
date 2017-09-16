@@ -148,51 +148,64 @@ renderHaskellType typeCat templateType THVoid =
 
 renderHaskellType _ _ THDescBuff = Just "CTHDescBuff"
 
-renderHaskellType _ templateType THTensorPtrPtr =
-  Just $ "Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
+renderHaskellType typeCat templateType THTensorPtrPtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor))"
+  FunctionParam -> Just $ "Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
 
-renderHaskellType _ templateType THTensorPtr =
-  Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
+renderHaskellType typeCat templateType THTensorPtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
+  FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
 
-renderHaskellType _ templateType THByteTensorPtr =
-  Just ("Ptr CTHByteTensor") -- concrete type found in TensorMath
+renderHaskellType typeCat templateType THByteTensorPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHByteTensor)"
+  FunctionParam -> Just "Ptr CTHByteTensor"
 
-renderHaskellType _ templateType THLongTensorPtr =
-  Just ("Ptr CTHLongTensor") -- concrete type found in TensorMath
+renderHaskellType typeCat templateType THLongTensorPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHLongTensor)"
+  FunctionParam -> Just "Ptr CTHLongTensor"
 
-renderHaskellType _ templateType THDoubleTensorPtr =
-  Just ("Ptr CTHDoubleTensor") -- concrete type found in TensorRandom
+renderHaskellType typeCat templateType THDoubleTensorPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHDoubleTensor)"
+  FunctionParam -> Just "Ptr CTHDoubleTensor"
 
-renderHaskellType _ templateType THFloatTensorPtr =
-  Just ("Ptr CTHFloatTensor") -- concrete type found in TensorRandom
+renderHaskellType typeCat templateType THFloatTensorPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHFloatTensor)"
+  FunctionParam -> Just "Ptr CTHFloatTensor"
 
-renderHaskellType _ templateType THGeneratorPtr =
-  Just ("Ptr CTHGenerator") -- concrete type found in TensorMath
+renderHaskellType typeCat templateType THGeneratorPtr = case typeCat of
+  ReturnValue -> Just ("IO (Ptr CTHGenerator") -- concrete type found in TensorMat)h
+  FunctionParam -> Just ("Ptr CTHGenerator") -- concrete type found in TensorMath
 
-renderHaskellType _ templateType THStoragePtr =
-  Just $ "Ptr CTH" <> type2SpliceReal templateType <> "Storage"
+renderHaskellType typeCat templateType THStoragePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "Storage)"
+  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "Storage"
 
-renderHaskellType _ templateType THLongStoragePtr =
-  Just $ "Ptr CTH" <> type2SpliceReal templateType <> "LongStorage"
+renderHaskellType typeCat templateType THLongStoragePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "LongStorage)"
+  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "LongStorage"
 
-renderHaskellType _ templateType THAllocatorPtr =
-  Just $ "CTHAllocatorPtr"
+renderHaskellType typeCat templateType THAllocatorPtr = case typeCat of
+  ReturnValue -> Just $ "IO (CTHAllocatorPtr)"
+  FunctionParam -> Just $ "CTHAllocatorPtr"
 
 renderHaskellType _ templateType THDouble =
   Just "CDouble" -- added from TensorRandom
 
-renderHaskellType _ templateType THPtrDiff =
-  Just $ "CTH" <> type2SpliceReal templateType <> "PtrDiff"
+renderHaskellType typeCat templateType THPtrDiff = case typeCat of
+  ReturnValue -> Just $ "IO (CTH" <> type2SpliceReal templateType <> "PtrDiff)"
+  FunctionParam -> Just $ "CTH" <> type2SpliceReal templateType <> "PtrDiff"
   -- TODO check if it's appropriate to splice here
 
-renderHaskellType _ templateType THLongPtr =
-  Just "Ptr CLong"
+renderHaskellType typeCat templateType THLongPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CLong)"
+  FunctionParam -> Just "Ptr CLong"
 
 renderHaskellType _ templateType THLong =
   Just "CLong"
 
-renderHaskellType _ templateType THIntPtr =
-  Just "CIntPtr"
+renderHaskellType typeCat templateType THIntPtr = case typeCat of
+  ReturnValue -> Just "IO (CIntPtr)"
+  FunctionParam -> Just "CIntPtr"
 
 renderHaskellType _ templateType THInt =
   Just "CInt"
@@ -200,20 +213,23 @@ renderHaskellType _ templateType THInt =
 renderHaskellType _ templateType THSize =
   Just "CSize"
 
-renderHaskellType _ templateType THCharPtr =
-  Just "Ptr CChar"
+renderHaskellType typeCat templateType THCharPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CChar)"
+  FunctionParam -> Just "Ptr CChar"
 
 renderHaskellType _ templateType THChar =
   Just "CChar"
 
-renderHaskellType _ templateType THRealPtr =
-  Just $ "Ptr " <> realtype2Haskell templateType
+renderHaskellType typeCat templateType THRealPtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr " <> realtype2Haskell templateType <> ")"
+  FunctionParam -> Just $ "Ptr " <> realtype2Haskell templateType
 
 renderHaskellType _ templateType THReal =
   Just $ realtype2Haskell templateType
 
-renderHaskellType _ templateType THAccRealPtr =
-  Just $ "Ptr " <> accrealtype2Haskell templateType
+renderHaskellType typeCat templateType THAccRealPtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr " <> accrealtype2Haskell templateType <> ")"
+  FunctionParam -> Just $ "Ptr " <> accrealtype2Haskell templateType
 
 renderHaskellType _ templateType THAccReal =
   Just $ accrealtype2Haskell templateType
@@ -222,7 +238,8 @@ renderExtension :: Text -> Text
 renderExtension extension = "{-# LANGUAGE " <> extension <> "#-}"
 
 renderExtensions :: [Text] -> Text
-renderExtensions extensions = T.intercalate "\n" (renderExtension <$> extensions)
+renderExtensions extensions =
+  (T.intercalate "\n" (renderExtension <$> extensions)) <> "\n"
 
 renderModuleName :: HModule -> Text
 renderModuleName HModule{..} =
@@ -281,10 +298,11 @@ renderFunctions moduleSpec@HModule{..} =
 
 renderAll :: HModule -> Text
 renderAll spec =
-    renderModule spec
-    <> renderExports exportFunctions
-    <> renderImports (modImports spec)
-    <> renderFunctions spec
+  (renderExtensions (modExtensions spec)
+   <> renderModule spec
+   <> renderExports exportFunctions
+   <> renderImports (modImports spec)
+   <> renderFunctions spec)
   where
     prefix = makePrefix . type2SpliceReal . modTypeTemplate $ spec
     bindings = modBindings spec
