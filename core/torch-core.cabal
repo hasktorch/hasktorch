@@ -1,0 +1,50 @@
+name:                torch-core
+version:             0.1.0.0
+synopsis:            Torch for tensors and dynamic neural networks in Haskell
+description:         core C bindings
+homepage:            https://github.com/austinvhuang/hasktorch#readme
+license:             BSD3
+author:              Austin Huang
+maintainer:          
+copyright:           
+category:            
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  default-language:    Haskell2010
+  exposed-modules:     
+                       THByteTensor
+                     , THDoubleTensor
+                     , THFloatTensor
+                     -- , THHalfTensor
+                     , THIntTensor
+                     , THLongTensor
+                     , THShortTensor
+                     , THByteStorage
+                     , THDoubleStorage
+                     , THFloatStorage
+  --                     , THHalfStorage
+                     , THIntStorage
+                     , THLongStorage
+                     , THShortStorage
+                     , THByteStorageCopy
+                     , THDoubleStorageCopy
+                     , THFloatStorageCopy
+  --                     , THHalfStorageCopy
+                     , THIntStorageCopy
+                     , THLongStorageCopy
+                     , THShortStorageCopy
+                     
+  hs-source-dirs:      src
+  build-depends:       base >= 4.7 && < 5
+                     , torch-interface
+                     , hspec >= 2.4.4
+                     , text >= 1.2.2.2
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/austinvhuang/hasktorch
+
+  
