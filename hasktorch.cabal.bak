@@ -1,0 +1,20 @@
+name:                hasktorch
+version:             0.1.0.0
+synopsis:            Torch for tensors and dynamic neural networks in Haskell
+description:         Torch for tensors and dynamic neural networks in Haskell
+homepage:            https://github.com/austinvhuang/hasktorch#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Austin Huang
+maintainer:          
+copyright:           
+category:            Web
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+source-repository head
+  type:     git
+  location: https://github.com/austinvhuang/hasktorch
+
+  

@@ -46,29 +46,29 @@ makePrefix :: Text -> Text
 makePrefix templateType = "TH" <> templateType <> "Tensor"
 
 renderCType :: THType -> Text
-renderCType THVoid = "void"
-renderCType THDescBuff = "THDescBuff"
-renderCType THTensorPtr = "THTensor *"
-renderCType THTensorPtrPtr = "THTensor **"
-renderCType THByteTensorPtr = "THByteTensor *"
-renderCType THLongTensorPtr = "THLongTensor *"
+renderCType THVoid            = "void"
+renderCType THDescBuff        = "THDescBuff"
+renderCType THTensorPtr       = "THTensor *"
+renderCType THTensorPtrPtr    = "THTensor **"
+renderCType THByteTensorPtr   = "THByteTensor *"
+renderCType THLongTensorPtr   = "THLongTensor *"
 renderCType THDoubleTensorPtr = "THDoubleTensor *"
-renderCType THFloatTensorPtr = "THFloatTensor *"
-renderCType THGeneratorPtr = "THGenerator *"
-renderCType THStoragePtr = "THStorage *"
-renderCType THLongStoragePtr = "THLongStorage *"
-renderCType THPtrDiff = "ptrdiff_t"
-renderCType THLongPtr = "long *"
-renderCType THLong = "long"
-renderCType THIntPtr = "int *"
-renderCType THInt = "int"
-renderCType THSize = "size_t"
-renderCType THCharPtr = "char *"
-renderCType THChar = "char"
-renderCType THRealPtr = "real *"
-renderCType THReal = "real"
-renderCType THAccRealPtr = "accreal *"
-renderCType THAccReal = "accreal"
+renderCType THFloatTensorPtr  = "THFloatTensor *"
+renderCType THGeneratorPtr    = "THGenerator *"
+renderCType THStoragePtr      = "THStorage *"
+renderCType THLongStoragePtr  = "THLongStorage *"
+renderCType THPtrDiff         = "ptrdiff_t"
+renderCType THLongPtr         = "long *"
+renderCType THLong            = "long"
+renderCType THIntPtr          = "int *"
+renderCType THInt             = "int"
+renderCType THSize            = "size_t"
+renderCType THCharPtr         = "char *"
+renderCType THChar            = "char"
+renderCType THRealPtr         = "real *"
+renderCType THReal            = "real"
+renderCType THAccRealPtr      = "accreal *"
+renderCType THAccReal         = "accreal"
 
 renderHaskellType :: TypeCategory -> TemplateType -> THType -> Maybe Text
 
@@ -322,7 +322,7 @@ parseFile file = do
 
 renderCHeader templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
-  writeFile ("./th-bindings/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
+  writeFile ("./output/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
   where modSpec = makeConfig templateType parsedBindings
         filename = (renderModuleName modSpec) <> ".hs"
 
@@ -362,7 +362,7 @@ parseFiles =
   ]
 
 makeReExports = do
-  putStrLn "Re-exported"
+  putStrLn "Re-exported Tensors"
 
 testString inp = case (parse thFile "" inp) of
   Left err -> putStrLn (parseErrorPretty err)

@@ -1,9 +1,9 @@
 #!/bin/bash -eu
 
+# rm -rf ./build
 mkdir -p ./build
-mkdir -p ./build-THS
-mkdir -p ./build-THNN
-# rm -rf build/*
+# mkdir -p ./build-THS
+# mkdir -p ./build-THNN
 
 if [ "$(uname)" == "Darwin" ]; then
     if ! [ -x "$(command -v gcc-6)" ]; then

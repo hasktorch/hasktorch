@@ -1,0 +1,33 @@
+name:                torch-tools
+version:             0.1.0.0
+synopsis:            Torch for tensors and dynamic neural networks in Haskell
+description:         misc utilities
+homepage:            https://github.com/austinvhuang/hasktorch#readme
+license:             BSD3
+author:              Austin Huang
+maintainer:          
+copyright:           
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  default-language:    Haskell2010
+  exposed-modules:     
+
+Test-Suite test-torch
+  default-language:    Haskell2010
+  other-modules:       
+  hs-source-dirs:      src
+  type:                exitcode-stdio-1.0
+  main-is:             Tests.hs
+  build-depends:       base >= 4.7 && < 5
+                     , torch-core
+                     , torch-interface
+                     , hspec >= 2.4.4
+
+source-repository head
+  type:     git
+  location: https://github.com/austinvhuang/hasktorch
+
+  

@@ -28,33 +28,32 @@ data THType =
   THVoidPtr
   | THVoid
   | THDescBuff
+  -- Tensor
   | THTensorPtrPtr
-
   | THTensorPtr
   | THByteTensorPtr
-  | THLongTensorPtr
+  | THCharTensorPtr
   | THShortTensorPtr
   | THIntTensorPtr
-  | THHalfTensorPtr
-  | THCharTensorPtr
-  | THDoubleTensorPtr
+  | THLongTensorPtr
   | THFloatTensorPtr
-
-  | THGeneratorPtr
-
+  | THDoubleTensorPtr
+  | THHalfTensorPtr
+  -- Storage
   | THStoragePtr
   | THByteStoragePtr
   | THCharStoragePtr
   | THShortStoragePtr
   | THIntStoragePtr
   | THLongStoragePtr
-  | THHalfStoragePtr
   | THFloatStoragePtr
   | THDoubleStoragePtr
-
+  | THHalfStoragePtr
+  -- Other
+  | THGeneratorPtr
   | THAllocatorPtr
   | THPtrDiff
-
+  -- Primitive
   | THDouble
   | THLongPtr
   | THLong
@@ -63,6 +62,7 @@ data THType =
   | THSize
   | THCharPtr
   | THChar
+  -- Templates
   | THRealPtr
   | THReal
   | THAccRealPtr
@@ -71,7 +71,7 @@ data THType =
 
 data THArg = THArg {
   thArgType :: THType,
-  thArgName :: Text -- some signatures, e.g. Storage.h have no variable name
+  thArgName :: Text
   } deriving (Eq, Show)
 
 data THFunction = THFunction {
@@ -325,7 +325,7 @@ thFunctionTemplate = do
   thSemicolon
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
--- TODO - exclude thAPI so it doesn't parse if TH_API is invalid
+-- TODO - exclude TH_API prefix. Parse should crash if TH_API parse is invalid
 thSkip = do
   eol <|> (some (notChar '\n') >> eol)
   pure Nothing

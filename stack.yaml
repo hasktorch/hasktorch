@@ -1,7 +1,10 @@
 resolver: nightly-2017-09-15
 
 packages:
-- .
+- 'core'
+- 'codegen'
+- 'interface'
+- 'tools'
 
 extra-deps: []
 
@@ -15,5 +18,7 @@ extra-package-dbs: []
 extra-lib-dirs:
   - ./vendor/build/
 ghc-options:
-  "hasktorch": -lTH
+  "torch-core": -lTH
+  "torch-codegen": -lTH
+  "torch-tools": -lTH
 
