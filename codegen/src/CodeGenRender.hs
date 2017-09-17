@@ -5,6 +5,7 @@
 module Main where
 
 import Control.Monad (void)
+import Data.List (nub)
 import Data.Monoid ((<>))
 import Data.Maybe
 import Data.Void
@@ -315,6 +316,7 @@ makeModule modHeader modSuffix modFileSuffix typeTemplate bindings =
         modBindings = bindings
   }
 
+parseFile :: [Char] -> IO [THFunction]
 parseFile file = do
   putStrLn $ "\nParsing " ++ file ++ " ... "
   res <- parseFromFile thFile file
@@ -328,11 +330,13 @@ renderCHeader templateType parsedBindings makeConfig = do
 
 runPipeline headerPath makeModuleConfig = do
   parsedBindings <- parseFile headerPath
+  let bindingsUniq = nub parsedBindings
+  -- TODO nub is a hack until proper treatment of conditioned templates is implemented
   putStrLn $ "First signature:"
-  putStrLn $ ppShow (P.take 1 parsedBindings)
-  mapM_ (\x -> renderCHeader x parsedBindings makeModuleConfig) genTypes
+  putStrLn $ ppShow (P.take 1 bindingsUniq)
+  mapM_ (\x -> renderCHeader x bindingsUniq makeModuleConfig) genTypes
   putStrLn $ "Number of functions generated: " ++
-    (show $ P.length genTypes * P.length parsedBindings)
+    (show $ P.length genTypes * P.length bindingsUniq)
 
 parseFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 parseFiles =
@@ -361,6 +365,7 @@ parseFiles =
      (makeModule "THVector.h" "Vector" "Vector"))
   ]
 
+-- |TODO
 makeReExports = do
   putStrLn "Re-exported Tensors"
 
@@ -375,8 +380,8 @@ test1 = do
      "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
      "another garbage line ( )@#R @# 324 32"
 
-test2 = runPipeline "vendor/check.h"
-  (makeModule "THStorage.h" "Storage" "Storage")
+-- test2 = runPipeline "vendor/check.h"
+--   (makeModule "THStorage.h" "Storage" "Storage")
 
 main :: IO ()
 main = do

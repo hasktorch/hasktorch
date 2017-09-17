@@ -21,20 +21,30 @@ library
                      , THIntTensor
                      , THLongTensor
                      , THShortTensor
+
                      , THByteStorage
                      , THDoubleStorage
                      , THFloatStorage
-  --                     , THHalfStorage
+                     -- , THHalfStorage
                      , THIntStorage
                      , THLongStorage
                      , THShortStorage
+
                      , THByteStorageCopy
                      , THDoubleStorageCopy
                      , THFloatStorageCopy
-  --                     , THHalfStorageCopy
+                     -- , THHalfStorageCopy
                      , THIntStorageCopy
                      , THLongStorageCopy
                      , THShortStorageCopy
+
+                     , THByteTensorMath
+                     , THDoubleTensorMath
+                     , THFloatTensorMath
+                     -- , THHalfTensorMath
+                     , THIntTensorMath
+                     , THLongTensorMath
+                     , THShortTensorMath
                      
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
