@@ -3,10 +3,11 @@
 module Main where
 
 import THFloatTensor as TR
+import THFloatTensorMath as TR
 
 import THDoubleTensor as TR
 import THDoubleTensorMath as TR
-import THDoubleTensorRandom as TR
+
 import Foreign.C.Types
 
 import Test.Hspec
@@ -81,6 +82,75 @@ testsFloat = do
         c_THFloatTensor_get4d t 1 5 3 2 `shouldBe` (1.4 :: CFloat)
         c_THFloatTensor_get4d t 9 9 9 9 `shouldBe` (3.14 :: CFloat)
         c_THFloatTensor_free t
+      it "Can can initialize values with the fill method" $ do
+        t1 <- c_THFloatTensor_newWithSize2d 2 2
+        c_THFloatTensor_fill t1 3.1
+        c_THFloatTensor_get2d t1 0 0 `shouldBe` (3.1 :: CFloat)
+        c_THFloatTensor_free t1
+      it "Can compute correct dot product between 1D vectors" $ do
+        t1 <- c_THFloatTensor_newWithSize1d 3
+        t2 <- c_THFloatTensor_newWithSize1d 3
+        c_THFloatTensor_fill t1 3.0
+        c_THFloatTensor_fill t2 4.0
+        let value = c_THFloatTensor_dot t1 t2
+        value `shouldBe` (36.0)
+        c_THFloatTensor_free t1
+        c_THFloatTensor_free t2
+      it "Can compute correct dot product between 2D tensors" $ do
+        t1 <- c_THFloatTensor_newWithSize2d 2 2
+        t2 <- c_THFloatTensor_newWithSize2d 2 2
+        c_THFloatTensor_fill t1 3.0
+        c_THFloatTensor_fill t2 4.0
+        let value = c_THFloatTensor_dot t1 t2
+        value `shouldBe` (48.0)
+        c_THFloatTensor_free t1
+        c_THFloatTensor_free t2
+      it "Can compute correct dot product between 3D tensors" $ do
+        t1 <- c_THFloatTensor_newWithSize3d 2 2 4
+        t2 <- c_THFloatTensor_newWithSize3d 2 2 4
+        c_THFloatTensor_fill t1 3.0
+        c_THFloatTensor_fill t2 4.0
+        let value = c_THFloatTensor_dot t1 t2
+        value `shouldBe` (192.0)
+        c_THFloatTensor_free t1
+        c_THFloatTensor_free t2
+      it "Can compute correct dot product between 4D tensors" $ do
+        t1 <- c_THFloatTensor_newWithSize4d 2 2 4 3
+        t2 <- c_THFloatTensor_newWithSize4d 2 2 4 3
+        c_THFloatTensor_fill t1 3.0
+        c_THFloatTensor_fill t2 4.0
+        let value = c_THFloatTensor_dot t1 t2
+        value `shouldBe` (576.0)
+        c_THFloatTensor_free t1
+        c_THFloatTensor_free t2
+      it "Can zero out values" $ do
+        t1 <- c_THFloatTensor_newWithSize4d 2 2 4 3
+        c_THFloatTensor_fill t1 3.0
+        let value = c_THFloatTensor_dot t1 t1
+        value `shouldBe` (432.0)
+        c_THFloatTensor_zero t1
+        let value = c_THFloatTensor_dot t1 t1
+        value `shouldBe` (0.0)
+        c_THFloatTensor_free t1
+      it "Can compute sum of all values" $ do
+        t1 <- c_THFloatTensor_newWithSize3d 2 2 4
+        c_THFloatTensor_fill t1 2.5
+        c_THFloatTensor_sumall t1 `shouldBe` 40.0
+        c_THFloatTensor_free t1
+      it "Can compute product of all values" $ do
+        t1 <- c_THFloatTensor_newWithSize2d 2 2
+        c_THFloatTensor_fill t1 1.5
+        c_THFloatTensor_prodall t1 `shouldBe` 5.0625
+        c_THFloatTensor_free t1
+      it "Can take abs of tensor values" $ do
+        t1 <- c_THFloatTensor_newWithSize2d 2 2
+        c_THFloatTensor_fill t1 (-1.5)
+        c_THFloatTensor_sumall t1 `shouldBe` (-6.0)
+        c_THFloatTensor_abs t1 t1
+        c_THFloatTensor_sumall t1 `shouldBe` (6.0)
+        c_THFloatTensor_free t1
+
+
 
 testsDouble :: IO ()
 testsDouble = do
@@ -152,6 +222,73 @@ testsDouble = do
         c_THDoubleTensor_get4d t 1 5 3 2 `shouldBe` (1.4 :: CDouble)
         c_THDoubleTensor_get4d t 9 9 9 9 `shouldBe` (3.14 :: CDouble)
         c_THDoubleTensor_free t
+      it "Can can initialize values with the fill method" $ do
+        t1 <- c_THDoubleTensor_newWithSize2d 2 2
+        c_THDoubleTensor_fill t1 3.1
+        c_THDoubleTensor_get2d t1 0 0 `shouldBe` (3.1 :: CDouble)
+        c_THDoubleTensor_free t1
+      it "Can compute correct dot product between 1D vectors" $ do
+        t1 <- c_THDoubleTensor_newWithSize1d 3
+        t2 <- c_THDoubleTensor_newWithSize1d 3
+        c_THDoubleTensor_fill t1 3.0
+        c_THDoubleTensor_fill t2 4.0
+        let value = c_THDoubleTensor_dot t1 t2
+        value `shouldBe` (36.0 :: CDouble)
+        c_THDoubleTensor_free t1
+        c_THDoubleTensor_free t2
+      it "Can compute correct dot product between 2D tensors" $ do
+        t1 <- c_THDoubleTensor_newWithSize2d 2 2
+        t2 <- c_THDoubleTensor_newWithSize2d 2 2
+        c_THDoubleTensor_fill t1 3.0
+        c_THDoubleTensor_fill t2 4.0
+        let value = c_THDoubleTensor_dot t1 t2
+        value `shouldBe` (48.0 :: CDouble)
+        c_THDoubleTensor_free t1
+        c_THDoubleTensor_free t2
+      it "Can compute correct dot product between 3D tensors" $ do
+        t1 <- c_THDoubleTensor_newWithSize3d 2 2 4
+        t2 <- c_THDoubleTensor_newWithSize3d 2 2 4
+        c_THDoubleTensor_fill t1 3.0
+        c_THDoubleTensor_fill t2 4.0
+        let value = c_THDoubleTensor_dot t1 t2
+        value `shouldBe` (192.0 :: CDouble)
+        c_THDoubleTensor_free t1
+        c_THDoubleTensor_free t2
+      it "Can compute correct dot product between 4D tensors" $ do
+        t1 <- c_THDoubleTensor_newWithSize4d 2 2 4 3
+        t2 <- c_THDoubleTensor_newWithSize4d 2 2 4 3
+        c_THDoubleTensor_fill t1 3.0
+        c_THDoubleTensor_fill t2 4.0
+        let value = c_THDoubleTensor_dot t1 t2
+        value `shouldBe` (576.0 :: CDouble)
+        c_THDoubleTensor_free t1
+        c_THDoubleTensor_free t2
+      it "Can zero out values" $ do
+        t1 <- c_THDoubleTensor_newWithSize4d 2 2 4 3
+        c_THDoubleTensor_fill t1 3.0
+        let value = c_THDoubleTensor_dot t1 t1
+        value `shouldBe` (432.0 :: CDouble)
+        c_THDoubleTensor_zero t1
+        let value = c_THDoubleTensor_dot t1 t1
+        value `shouldBe` (0.0 :: CDouble)
+        c_THDoubleTensor_free t1
+      it "Can compute sum of all values" $ do
+        t1 <- c_THDoubleTensor_newWithSize3d 2 2 4
+        c_THDoubleTensor_fill t1 2.5
+        c_THDoubleTensor_sumall t1 `shouldBe` 40.0
+        c_THDoubleTensor_free t1
+      it "Can compute product of all values" $ do
+        t1 <- c_THDoubleTensor_newWithSize2d 2 2
+        c_THDoubleTensor_fill t1 1.5
+        c_THDoubleTensor_prodall t1 `shouldBe` 5.0625
+        c_THDoubleTensor_free t1
+      it "Can take abs of tensor values" $ do
+        t1 <- c_THDoubleTensor_newWithSize2d 2 2
+        c_THDoubleTensor_fill t1 (-1.5)
+        c_THDoubleTensor_sumall t1 `shouldBe` (-6.0)
+        c_THDoubleTensor_abs t1 t1
+        c_THDoubleTensor_sumall t1 `shouldBe` (6.0)
+        c_THDoubleTensor_free t1
 
 main :: IO ()
 main = do

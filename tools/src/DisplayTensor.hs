@@ -13,13 +13,27 @@ import Foreign
 import Foreign.C.Types
 import THTypes
 
+init t =
+
+size t =
+  fmap (\x -> c_THDoubleTensor_size t x) [0..maxdim]
+  where
+    maxdim = (c_THDoubleTensor_nDimension t) - 1
+
 main = do
-  t <- c_THDoubleTensor_newWithSize2d 2 2
-  c_THDoubleTensor_set2d t 0 0 (CDouble 1.4)
-  print $ c_THDoubleTensor_get2d t 0 0
-  c_THDoubleTensor_fill t 3.0
-  print $ c_THDoubleTensor_get2d t 0 0
-  c_THDoubleTensor_free t
+  t1 <- c_THDoubleTensor_newWithSize2d 2 2
+  t2 <- c_THDoubleTensor_newWithSize2d 2 2
+  t3 <- c_THDoubleTensor_newWithSize2d 2 2
+
+  c_THDoubleTensor_fill t1 3.0
+  print $ c_THDoubleTensor_get2d t1 0 0
+
+  c_THDoubleTensor_fill t2 4.0
+  print $ c_THDoubleTensor_get2d t2 0 0
+
+  print $ c_THDoubleTensor_dot t1 t2
+
+  c_THDoubleTensor_free t1
   putStrLn "test"
 
 
