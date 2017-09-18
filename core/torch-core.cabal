@@ -71,6 +71,29 @@ library
                      , THLongLapack
                      , THShortLapack
 
+                     , THByteTensorConv
+                     , THDoubleTensorConv
+                     , THFloatTensorConv
+                     -- , THHalfTensorConv
+                     , THIntTensorConv
+                     , THLongTensorConv
+                     , THShortTensorConv
+
+                     , THByteTensorCopy
+                     , THDoubleTensorCopy
+                     , THFloatTensorCopy
+                     -- , THHalfTensorCopy
+                     , THIntTensorCopy
+                     , THLongTensorCopy
+                     , THShortTensorCopy
+
+                     , THByteVector
+                     , THDoubleVector
+                     , THFloatVector
+                     -- , THHalfVector
+                     , THIntVector
+                     , THLongVector
+                     , THShortVector
 
 
 
