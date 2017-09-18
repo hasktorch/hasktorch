@@ -268,27 +268,30 @@ renderFunctions :: HModule -> Text
 renderFunctions moduleSpec@HModule{..} =
   -- iteration over all functions
   intercalate "\n\n" ((renderFunSig modHeader typeTemplate)
-                      <$> (P.zip3 funNames retTypes args) )
+                      <$> (P.zip3 funNames retTypes args) ) 
   where
-    modulePrefix = (renderModuleName moduleSpec) <> "_"
+    -- modulePrefix = (renderModuleName moduleSpec) <> "_"
+    modulePrefix = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix <> "_"
     funNames = (mappend modulePrefix) <$> funName <$> modBindings
     retTypes = funReturn <$> modBindings
     args = funArgs <$> modBindings
     typeTemplate = modTypeTemplate
 
 renderAll :: HModule -> Text
-renderAll spec =
-  (renderExtensions (modExtensions spec)
+renderAll spec@HModule{..} =
+  (renderExtensions modExtensions
    <> renderModule spec
    <> renderExports exportFunctions
-   <> renderImports (modImports spec)
+   <> renderImports modImports
    <> renderFunctions spec)
   where
-    prefix = makePrefix . type2SpliceReal . modTypeTemplate $ spec
-    bindings = modBindings spec
+    prefix = makePrefix . type2SpliceReal $ modTypeTemplate
+    bindings = modBindings
+    splice = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix
     exportFunctions =
-      (renderFunName ("c_" <> renderModuleName spec)
-       <$> (fmap funName (modBindings spec)))
+--       (renderFunName ("c_" <> renderModuleName spec)
+      (renderFunName ("c_" <> splice)
+       <$> (fmap funName (modBindings)))
 
 -- ----------------------------------------
 -- Execution

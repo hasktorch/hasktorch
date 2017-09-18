@@ -1,0 +1,6 @@
+*
+!.gitignore
+!*Tensor.hs
+!*TensorMath.hs
+!*TensorRandom.hs
+!*Storage*.hs

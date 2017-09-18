@@ -45,6 +45,15 @@ library
                      , THIntTensorMath
                      , THLongTensorMath
                      , THShortTensorMath
+
+                     , THByteTensorRandom
+                     , THDoubleTensorRandom
+                     , THFloatTensorRandom
+                     -- , THHalfTensorRandom
+                     , THIntTensorRandom
+                     , THLongTensorRandom
+                     , THShortTensorRandom
+
                      
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5

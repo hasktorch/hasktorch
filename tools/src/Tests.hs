@@ -3,7 +3,10 @@
 module Main where
 
 import THFloatTensor as TR
+
 import THDoubleTensor as TR
+import THDoubleTensorMath as TR
+import THDoubleTensorRandom as TR
 import Foreign.C.Types
 
 import Test.Hspec
