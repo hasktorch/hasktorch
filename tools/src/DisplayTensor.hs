@@ -13,8 +13,7 @@ import Foreign
 import Foreign.C.Types
 import THTypes
 
-init t =
-
+size :: (Ptr CTHDoubleTensor) -> [CLong]
 size t =
   fmap (\x -> c_THDoubleTensor_size t x) [0..maxdim]
   where
@@ -27,13 +26,12 @@ main = do
 
   c_THDoubleTensor_fill t1 3.0
   print $ c_THDoubleTensor_get2d t1 0 0
-
   c_THDoubleTensor_fill t2 4.0
   print $ c_THDoubleTensor_get2d t2 0 0
-
   print $ c_THDoubleTensor_dot t1 t2
-
   c_THDoubleTensor_free t1
+
+  t3 <- c_THDoubleTensor_newWithSize3d 2 4 2
   putStrLn "test"
 
 
