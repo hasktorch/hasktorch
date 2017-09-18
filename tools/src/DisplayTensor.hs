@@ -30,8 +30,7 @@ main = do
   print $ c_THDoubleTensor_get2d t2 0 0
   print $ c_THDoubleTensor_dot t1 t2
   c_THDoubleTensor_free t1
-
-  t3 <- c_THDoubleTensor_newWithSize3d 2 4 2
-  putStrLn "test"
+  c_THDoubleTensor_free t2
+  c_THDoubleTensor_free t3
 
 

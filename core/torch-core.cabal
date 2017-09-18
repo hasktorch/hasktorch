@@ -54,6 +54,26 @@ library
                      , THLongTensorRandom
                      , THShortTensorRandom
 
+                     , THByteBlas
+                     , THDoubleBlas
+                     , THFloatBlas
+                     -- , THHalfBlas
+                     , THIntBlas
+                     , THLongBlas
+                     , THShortBlas
+
+                     -- TODO: why are pos def functions not included in TH_API
+                     , THByteLapack
+                     , THDoubleLapack
+                     , THFloatLapack
+                     -- , THHalfLapack
+                     , THIntLapack
+                     , THLongLapack
+                     , THShortLapack
+
+
+
+
                      
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
