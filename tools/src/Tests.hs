@@ -2,6 +2,8 @@
 
 module Main where
 
+import Debug.Trace
+
 import THFloatTensor as TR
 import THFloatTensorMath as TR
 
@@ -268,6 +270,8 @@ testsDouble = do
         value `shouldBe` (432.0 :: CDouble)
         c_THDoubleTensor_zero t1
         let value = c_THDoubleTensor_dot t1 t1
+        -- TODO this fails
+        print value
         value `shouldBe` (0.0 :: CDouble)
         c_THDoubleTensor_free t1
       it "Can compute sum of all values" $ do
@@ -292,4 +296,45 @@ main :: IO ()
 main = do
   testsFloat
   testsDouble
+  bug1
+  bug2
   putStrLn "Done"
+
+bug1 = do
+  t1 <- c_THFloatTensor_newWithSize4d 2 2 4 3
+  c_THFloatTensor_fill t1 3.0
+  t2 <- c_THFloatTensor_newWithSize4d 2 2 4 3
+  c_THFloatTensor_fill t2 3.0
+
+  let value = c_THFloatTensor_dot t1 t1
+  print "should be 432"
+  print value
+
+  let value = c_THFloatTensor_dot t1 t2
+  print "should be 432"
+  print value
+
+  c_THFloatTensor_zero t1
+
+  let value = c_THFloatTensor_dot t1 t1
+  print "should be 0"
+  print value
+  c_THFloatTensor_free t1
+
+bug2 = do
+  t1 <- c_THFloatTensor_newWithSize2d 2 2
+  c_THFloatTensor_fill t1 (-1.5)
+  print "should be -6.0"
+  print $ c_THFloatTensor_sumall t1
+
+  t2 <- c_THFloatTensor_newWithSize2d 2 2
+  c_THFloatTensor_abs t2 t1
+  print "should be 6.0"
+  print $ c_THFloatTensor_sumall t2
+
+  c_THFloatTensor_abs t1 t1
+  print "should be 6.0"
+  print $ c_THFloatTensor_sumall t1
+
+  c_THFloatTensor_free t1
+  c_THFloatTensor_free t2

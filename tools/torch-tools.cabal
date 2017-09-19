@@ -26,6 +26,16 @@ Test-Suite test-torch
                      , torch-interface
                      , hspec >= 2.4.4
 
+executable runtest
+  default-language:    Haskell2010
+  other-modules:       
+  hs-source-dirs:      src
+  main-is:             Tests.hs
+  build-depends:       base >= 4.7 && < 5
+                     , torch-core
+                     , torch-interface
+                     , hspec >= 2.4.4
+
 executable display-test
   default-language:    Haskell2010
   other-modules:       
@@ -35,8 +45,6 @@ executable display-test
                      , torch-core
                      , torch-interface
                      , hspec >= 2.4.4
-
-
 
 source-repository head
   type:     git
