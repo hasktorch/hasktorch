@@ -20,24 +20,7 @@ import Text.Show.Pretty
 
 import CodeGenParse
 import CodeGenTypes
-
--- ----------------------------------------
--- Types for rendering output
--- ----------------------------------------
-
-data HModule = HModule {
-  modHeader :: FilePath,
-  modPrefix :: Text,
-  modTypeTemplate :: TemplateType,
-  modSuffix :: Text,
-  modFileSuffix :: Text,
-  modExtensions :: [Text],
-  modImports :: [Text],
-  modTypeDefs :: [(Text, Text)],
-  modBindings :: [THFunction]
-  } deriving Show
-
-data TypeCategory = ReturnValue | FunctionParam
+import ConditionalCases
 
 -- ----------------------------------------
 -- Rendering
@@ -264,18 +247,25 @@ renderFunSig headerFile modTypeTemplate (name, retType, args) =
     retArrow = if numArgs == 0 then "" else " -> "
     nameSignature = thArgName <$> args
 
-renderFunctions :: HModule -> Text
-renderFunctions moduleSpec@HModule{..} =
+-- TODO clean up redundancy of valid functions vs. functions in moduleSpec
+renderFunctions :: HModule -> [THFunction] -> Text
+renderFunctions moduleSpec@HModule{..} validFunctions =
   -- iteration over all functions
   intercalate "\n\n" ((renderFunSig modHeader typeTemplate)
                       <$> (P.zip3 funNames retTypes args) ) 
   where
     -- modulePrefix = (renderModuleName moduleSpec) <> "_"
     modulePrefix = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix <> "_"
-    funNames = (mappend modulePrefix) <$> funName <$> modBindings
+    -- funNames = (mappend modulePrefix) <$> funName <$> modBindings
+    funNames = (mappend modulePrefix) <$> funName <$> validFunctions
     retTypes = funReturn <$> modBindings
     args = funArgs <$> modBindings
     typeTemplate = modTypeTemplate
+
+-- |Check for conditional templating of functions and filter function list
+checkList :: [THFunction] -> TemplateType -> [THFunction]
+checkList fList templateType =
+  P.filter ((checkFunction templateType) . funName) fList
 
 renderAll :: HModule -> Text
 renderAll spec@HModule{..} =
@@ -283,22 +273,22 @@ renderAll spec@HModule{..} =
    <> renderModule spec
    <> renderExports exportFunctions
    <> renderImports modImports
-   <> renderFunctions spec)
+   <> renderFunctions spec validFunctions)
   where
     prefix = makePrefix . type2SpliceReal $ modTypeTemplate
     bindings = modBindings
     splice = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix
+    validFunctions = checkList modBindings modTypeTemplate
     exportFunctions =
 --       (renderFunName ("c_" <> renderModuleName spec)
       (renderFunName ("c_" <> splice)
-       <$> (fmap funName (modBindings)))
+       <$> (fmap funName (validFunctions)))
 
 -- ----------------------------------------
 -- Execution
 -- ----------------------------------------
 
-parseFromFile p file = runParser p file <$> readFile file
-
+-- |Remove If list was returned, extract non-Nothing values, o/w empty list
 cleanList :: Either (ParseError Char Void) [Maybe THFunction] -> [THFunction]
 cleanList (Left _) = []
 cleanList (Right lst) = fromJust <$> (P.filter f lst)
@@ -324,6 +314,9 @@ parseFile file = do
   putStrLn $ "\nParsing " ++ file ++ " ... "
   res <- parseFromFile thFile file
   pure $ cleanList res
+  where
+    parseFromFile p file = runParser p file <$> readFile file
+
 
 renderCHeader templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename

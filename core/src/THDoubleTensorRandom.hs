@@ -18,9 +18,7 @@ module THDoubleTensorRandom (
     c_THDoubleTensor_logNormal,
     c_THDoubleTensor_multinomial,
     c_THDoubleTensor_multinomialAliasSetup,
-    c_THDoubleTensor_multinomialAliasDraw,
-    c_THDoubleTensor_getRNGState,
-    c_THDoubleTensor_setRNGState) where
+    c_THDoubleTensor_multinomialAliasDraw) where
 
 import Foreign
 import Foreign.C.Types
@@ -97,11 +95,3 @@ foreign import ccall "THTensorRandom.h THDoubleTensor_multinomialAliasSetup"
 -- |c_THDoubleTensor_multinomialAliasDraw : self _generator J q -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_multinomialAliasDraw"
   c_THDoubleTensor_multinomialAliasDraw :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ()
-
--- |c_THDoubleTensor_getRNGState : _generator self -> void
-foreign import ccall "THTensorRandom.h THDoubleTensor_getRNGState"
-  c_THDoubleTensor_getRNGState :: Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> IO ()
-
--- |c_THDoubleTensor_setRNGState : _generator self -> void
-foreign import ccall "THTensorRandom.h THDoubleTensor_setRNGState"
-  c_THDoubleTensor_setRNGState :: Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> IO ()

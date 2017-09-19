@@ -154,9 +154,7 @@ module THDoubleTensorMath (
     c_THDoubleTensor_linspace,
     c_THDoubleTensor_logspace,
     c_THDoubleTensor_rand,
-    c_THDoubleTensor_randn,
-    c_THDoubleTensor_logicalall,
-    c_THDoubleTensor_logicalany) where
+    c_THDoubleTensor_randn) where
 
 import Foreign
 import Foreign.C.Types
@@ -777,11 +775,3 @@ foreign import ccall "THTensorMath.h THDoubleTensor_rand"
 -- |c_THDoubleTensor_randn : r_ _generator size -> void
 foreign import ccall "THTensorMath.h THDoubleTensor_randn"
   c_THDoubleTensor_randn :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
-
--- |c_THDoubleTensor_logicalall : self -> int
-foreign import ccall "THTensorMath.h THDoubleTensor_logicalall"
-  c_THDoubleTensor_logicalall :: (Ptr CTHDoubleTensor) -> CInt
-
--- |c_THDoubleTensor_logicalany : self -> int
-foreign import ccall "THTensorMath.h THDoubleTensor_logicalany"
-  c_THDoubleTensor_logicalany :: (Ptr CTHDoubleTensor) -> CInt

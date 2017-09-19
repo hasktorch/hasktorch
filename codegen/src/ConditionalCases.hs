@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module SpecialCases where
+module ConditionalCases where
 
 import Data.List as L
 import Data.Map as M
@@ -77,18 +77,25 @@ tensorRandomCases = M.fromList [
   ("setRNGState", S.fromList [GenByte])
   ]
 
-checkMath :: Text -> TemplateType -> Bool
-checkMath funName templateType = case M.lookup funName tensorMathCases of
+checkMath :: TemplateType -> Text -> Bool
+checkMath templateType funName = case M.lookup funName tensorMathCases of
   Just inclusion -> S.member templateType inclusion
   Nothing -> True
 
-checkRandom :: Text -> TemplateType -> Bool
-checkRandom funName templateType = case M.lookup funName tensorMathCases of
+checkRandom :: TemplateType -> Text -> Bool
+checkRandom templateType funName = case M.lookup funName tensorRandomCases of
   Just inclusion -> S.member templateType inclusion
   Nothing -> True
 
--- check funName templateType = (checkMath funName) and (checkRandom funName)
+-- |Warning a function that doesn't exist will return True by default (TODO - make this safer)
 
+checkFunction :: TemplateType -> Text -> Bool
+checkFunction templateType funName =
+  and [(checkMath templateType funName),
+       (checkRandom templateType funName)]
 
--- test = do
---   print $ checkMath "logicalAny" GenByte
+test = do
+  print $ checkFunction GenByte "logicalany"
+  print $ checkFunction GenFloat "logicalany"
+  print $ checkFunction GenByte "multinomial"
+  print $ checkFunction GenFloat "multinomial"

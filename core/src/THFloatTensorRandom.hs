@@ -18,9 +18,7 @@ module THFloatTensorRandom (
     c_THFloatTensor_logNormal,
     c_THFloatTensor_multinomial,
     c_THFloatTensor_multinomialAliasSetup,
-    c_THFloatTensor_multinomialAliasDraw,
-    c_THFloatTensor_getRNGState,
-    c_THFloatTensor_setRNGState) where
+    c_THFloatTensor_multinomialAliasDraw) where
 
 import Foreign
 import Foreign.C.Types
@@ -97,11 +95,3 @@ foreign import ccall "THTensorRandom.h THFloatTensor_multinomialAliasSetup"
 -- |c_THFloatTensor_multinomialAliasDraw : self _generator J q -> void
 foreign import ccall "THTensorRandom.h THFloatTensor_multinomialAliasDraw"
   c_THFloatTensor_multinomialAliasDraw :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> (Ptr CTHFloatTensor) -> IO ()
-
--- |c_THFloatTensor_getRNGState : _generator self -> void
-foreign import ccall "THTensorRandom.h THFloatTensor_getRNGState"
-  c_THFloatTensor_getRNGState :: Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> IO ()
-
--- |c_THFloatTensor_setRNGState : _generator self -> void
-foreign import ccall "THTensorRandom.h THFloatTensor_setRNGState"
-  c_THFloatTensor_setRNGState :: Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> IO ()

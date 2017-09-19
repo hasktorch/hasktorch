@@ -154,9 +154,7 @@ module THFloatTensorMath (
     c_THFloatTensor_linspace,
     c_THFloatTensor_logspace,
     c_THFloatTensor_rand,
-    c_THFloatTensor_randn,
-    c_THFloatTensor_logicalall,
-    c_THFloatTensor_logicalany) where
+    c_THFloatTensor_randn) where
 
 import Foreign
 import Foreign.C.Types
@@ -777,11 +775,3 @@ foreign import ccall "THTensorMath.h THFloatTensor_rand"
 -- |c_THFloatTensor_randn : r_ _generator size -> void
 foreign import ccall "THTensorMath.h THFloatTensor_randn"
   c_THFloatTensor_randn :: (Ptr CTHFloatTensor) -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
-
--- |c_THFloatTensor_logicalall : self -> int
-foreign import ccall "THTensorMath.h THFloatTensor_logicalall"
-  c_THFloatTensor_logicalall :: (Ptr CTHFloatTensor) -> CInt
-
--- |c_THFloatTensor_logicalany : self -> int
-foreign import ccall "THTensorMath.h THFloatTensor_logicalany"
-  c_THFloatTensor_logicalany :: (Ptr CTHFloatTensor) -> CInt
