@@ -150,8 +150,6 @@ testsFloat = do
         c_THFloatTensor_sumall t1 `shouldBe` (6.0)
         c_THFloatTensor_free t1
 
-
-
 testsDouble :: IO ()
 testsDouble = do
   hspec $ do
