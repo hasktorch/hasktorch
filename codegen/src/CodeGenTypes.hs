@@ -19,7 +19,7 @@ data TemplateType = GenByte
                   | GenHalf
                   | GenInt
                   | GenLong
-                  | GenShort deriving Show
+                  | GenShort deriving (Eq, Ord, Show)
 
 -- List used to iterate through all template types
 genTypes :: [TemplateType]

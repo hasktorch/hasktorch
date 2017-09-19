@@ -7,7 +7,7 @@ module Main where
 
 import THDoubleTensor
 import THDoubleTensorMath
-import THDoubleTensorRandom
+-- import THDoubleTensorRandom
 
 import Foreign
 import Foreign.C.Types
@@ -20,6 +20,7 @@ size t =
     maxdim = (c_THDoubleTensor_nDimension t) - 1
 
 main = do
+
   t1 <- c_THDoubleTensor_newWithSize2d 2 2
   t2 <- c_THDoubleTensor_newWithSize2d 2 2
   t3 <- c_THDoubleTensor_newWithSize2d 2 2
@@ -29,6 +30,7 @@ main = do
   c_THDoubleTensor_fill t2 4.0
   print $ c_THDoubleTensor_get2d t2 0 0
   print $ c_THDoubleTensor_dot t1 t2
+
   c_THDoubleTensor_free t1
   c_THDoubleTensor_free t2
   c_THDoubleTensor_free t3

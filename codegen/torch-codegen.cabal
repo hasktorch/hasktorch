@@ -17,6 +17,7 @@ executable codegen
   main-is:             CodeGenRender.hs
   other-modules:       CodeGenParse, CodeGenTypes
   build-depends:       base >= 4.7 && < 5
+                     , containers >= 0.5.10.2
                      , megaparsec >= 6.1.1
                      , pretty-show >= 1.6.13
                      , text >= 1.2.2.2
