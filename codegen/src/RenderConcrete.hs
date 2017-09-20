@@ -17,7 +17,9 @@ parseFilesNoTemplate =
      (makeModule "THDiskFile.h" "DiskFile" "DiskFile"))
   ]
 
+
 main :: IO ()
 main = do
   -- mapM_ (\(file, spec) -> runPipeline file spec) parseFilesNoTemplate
   putStrLn "Done"
+

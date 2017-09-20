@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Main where
 
@@ -23,37 +24,8 @@ import CodeGenTypes
 import ConditionalCases
 import RenderShared
 
--- ----------------------------------------
--- Rendering
--- ----------------------------------------
-
 makePrefix :: Text -> Text
 makePrefix templateType = "TH" <> templateType <> "Tensor"
-
-renderCType :: THType -> Text
-renderCType THVoid            = "void"
-renderCType THDescBuff        = "THDescBuff"
-renderCType THTensorPtr       = "THTensor *"
-renderCType THTensorPtrPtr    = "THTensor **"
-renderCType THByteTensorPtr   = "THByteTensor *"
-renderCType THLongTensorPtr   = "THLongTensor *"
-renderCType THDoubleTensorPtr = "THDoubleTensor *"
-renderCType THFloatTensorPtr  = "THFloatTensor *"
-renderCType THGeneratorPtr    = "THGenerator *"
-renderCType THStoragePtr      = "THStorage *"
-renderCType THLongStoragePtr  = "THLongStorage *"
-renderCType THPtrDiff         = "ptrdiff_t"
-renderCType THLongPtr         = "long *"
-renderCType THLong            = "long"
-renderCType THIntPtr          = "int *"
-renderCType THInt             = "int"
-renderCType THSize            = "size_t"
-renderCType THCharPtr         = "char *"
-renderCType THChar            = "char"
-renderCType THRealPtr         = "real *"
-renderCType THReal            = "real"
-renderCType THAccRealPtr      = "accreal *"
-renderCType THAccReal         = "accreal"
 
 renderHaskellType :: TypeCategory -> TemplateType -> THType -> Maybe Text
 
@@ -300,7 +272,7 @@ cleanList (Right lst) = fromJust <$> (P.filter f lst)
 parseFile :: [Char] -> IO [THFunction]
 parseFile file = do
   putStrLn $ "\nParsing " ++ file ++ " ... "
-  res <- parseFromFile thFile file
+  res <- parseFromFile thParseGeneric file
   pure $ cleanList res
   where
     parseFromFile p file = runParser p file <$> readFile file
@@ -311,18 +283,42 @@ renderCHeader templateType parsedBindings makeConfig = do
   where modSpec = makeConfig templateType parsedBindings
         filename = (renderModuleName modSpec) <> ".hs"
 
-runPipeline headerPath makeModuleConfig = do
+runPipeline ::
+  [Char] -> (TemplateType -> [THFunction] -> HModule) -> [TemplateType]-> IO ()
+runPipeline headerPath makeModuleConfig typeList = do
   parsedBindings <- parseFile headerPath
   let bindingsUniq = nub parsedBindings
   -- TODO nub is a hack until proper treatment of conditioned templates is implemented
   putStrLn $ "First signature:"
   putStrLn $ ppShow (P.take 1 bindingsUniq)
-  mapM_ (\x -> renderCHeader x bindingsUniq makeModuleConfig) genTypes
+  mapM_ (\x -> renderCHeader x bindingsUniq makeModuleConfig) typeList
   putStrLn $ "Number of functions generated: " ++
-    (show $ P.length genTypes * P.length bindingsUniq)
+    (show $ P.length typeList * P.length bindingsUniq)
 
-parseFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
-parseFiles =
+-- TODO re-factor to unify w/ parseFile
+parseFileConcrete :: [Char] -> IO [THFunction]
+parseFileConcrete file = do
+  putStrLn $ "\nParsing " ++ file ++ " ... "
+  res <- parseFromFile thParseConcrete file
+  pure $ cleanList res
+  where
+    parseFromFile p file = runParser p file <$> readFile file
+
+-- TODO re-factor to unify w/ runPipeline
+runPipelineConcrete ::
+  [Char] -> (TemplateType -> [THFunction] -> HModule) -> [TemplateType]-> IO ()
+runPipelineConcrete headerPath makeModuleConfig typeList = do
+  parsedBindings <- parseFileConcrete headerPath
+  let bindingsUniq = nub parsedBindings
+  -- TODO nub is a hack until proper treatment of conditioned templates is implemented
+  putStrLn $ "First signature:"
+  putStrLn $ ppShow (P.take 1 bindingsUniq)
+  mapM_ (\x -> renderCHeader x bindingsUniq makeModuleConfig) typeList
+  putStrLn $ "Number of functions generated: " ++
+    (show $ P.length typeList * P.length bindingsUniq)
+
+genericFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
+genericFiles =
   [
     ("vendor/torch7/lib/TH/generic/THBlas.h",
      (makeModule "THBlas.h" "Blas" "Blas")),
@@ -348,25 +344,49 @@ parseFiles =
      (makeModule "THVector.h" "Vector" "Vector"))
   ]
 
--- |TODO
+concreteFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
+concreteFiles =
+  [
+    ("vendor/check.h",
+     (makeModule "THFile.h" "File" "File")),
+    ("vendor/torch7/lib/TH/THFile.h",
+     (makeModule "THFile.h" "File" "File")),
+    ("vendor/torch7/lib/TH/THDiskFile.h",
+     (makeModule "THDiskFile.h" "DiskFile" "DiskFile"))
+  ]
+
+-- |TODO: make a unified module that re-exports all functions
 makeReExports = do
   putStrLn "Re-exported Tensors"
 
-testString inp = case (parse thFile "" inp) of
+testString inp parser = case (parse parser "" inp) of
   Left err -> putStrLn (parseErrorPretty err)
   Right val -> putStrLn $ (ppShow val)
 
-test1 = do
-  testString ex1
+check :: IO ()
+check = do
+  testString exampleText thParseGeneric
   where
-    ex1 = "skip this garbage line line\n" <>
-     "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
-     "another garbage line ( )@#R @# 324 32"
+    exampleText = "skip this garbage line line\n" <>
+      "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
+      "another garbage line ( )@#R @# 324 32"
 
--- test2 = runPipeline "vendor/check.h"
---   (makeModule "THStorage.h" "Storage" "Storage")
+check2 :: IO ()
+check2 = do
+  testString exampleText thParseGeneric
+  where
+    exampleText =
+      "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
+
+check3 :: IO ()
+check3 = do
+  testString exampleText thParseConcrete
+  where
+    exampleText =
+      "TH_API void THTensor_fooasdf(THTensor *self,const char flag);"
 
 main :: IO ()
 main = do
-  mapM_ (\(file, spec) -> runPipeline file spec) parseFiles
+  mapM_ (\(file, spec) -> runPipeline file spec genericTypes) genericFiles
+  -- mapM_ (\(file, spec) -> runPipelineConcrete file spec concreteTypes) concreteFiles
   putStrLn "Done"

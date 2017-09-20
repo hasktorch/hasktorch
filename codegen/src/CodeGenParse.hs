@@ -2,7 +2,8 @@
 
 module CodeGenParse (
   Parser,
-  thFile,
+  thParseGeneric,
+  thParseConcrete,
   THType(..),
   THArg(..),
   THFunction(..)
@@ -162,6 +163,9 @@ thAccReal = string "accreal" >> pure THAccReal
 thAccRealPtr :: Parser THType
 thAccRealPtr = string "accreal *" >> pure THAccRealPtr
 
+thFilePtr :: Parser THType
+thFilePtr = (string "THFile *" <|> string "THFile*") >> pure THFilePtr
+
 thType = do
   ((string "const " >> pure ())
     <|> (string "struct " >> pure ()) -- See THStorageCopy.h
@@ -210,6 +214,8 @@ thType = do
     <|> thReal
     <|> thAccRealPtr
     <|> thAccReal
+
+    <|> thFilePtr
     )
 
 -- Landmarks
@@ -246,7 +252,7 @@ thFunctionArgs = do
   -- close paren consumed by last thFunctionArg (TODO - clean this up)
   pure functionArgs
 
-thFunctionPrefixes = string "THTensor_("
+thGenericPrefixes = string "THTensor_("
                      <|> string "THBlas_("
                      <|> string "THLapack_("
                      <|> string "THStorage_("
@@ -256,10 +262,20 @@ thFunctionTemplate = do
   thAPI >> space
   funRet <- thType
   space
-  thFunctionPrefixes
+  thGenericPrefixes
   funName <- some (alphaNumChar <|> char '_')
   space
   string ")"
+  space
+  funArgs <- thFunctionArgs
+  thSemicolon
+  pure $ Just $ THFunction (T.pack funName) funArgs funRet
+
+thFunctionConcrete = do
+  thAPI >> space
+  funRet <- thType
+  space
+  funName <- some (alphaNumChar <|> char '_')
   space
   funArgs <- thFunctionArgs
   thSemicolon
@@ -272,4 +288,6 @@ thSkip = do
 
 thItem = thFunctionTemplate <|> thSkip -- ordering is important
 
-thFile = some thItem
+thParseGeneric = some thItem
+
+thParseConcrete = some (thFunctionConcrete <|> thSkip)
