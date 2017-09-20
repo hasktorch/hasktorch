@@ -21,6 +21,7 @@ import Text.Show.Pretty
 import CodeGenParse
 import CodeGenTypes
 import ConditionalCases
+import RenderShared
 
 -- ----------------------------------------
 -- Rendering
@@ -113,49 +114,49 @@ renderHaskellType typeCat templateType THStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "Storage)"
   FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "Storage"
 
-renderHaskellType typeCat templateType THByteStoragePtr = case typeCat of
+renderHaskellType typeCat _ THByteStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTHByteStorage)"
   FunctionParam -> Just $ "Ptr CTHByteStorage"
 
-renderHaskellType typeCat templateType THShortStoragePtr = case typeCat of
+renderHaskellType typeCat _ THShortStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTHShortStorage)"
   FunctionParam -> Just $ "Ptr CTHShortStorage"
 
-renderHaskellType typeCat templateType THIntStoragePtr = case typeCat of
+renderHaskellType typeCat _ THIntStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTHIntStorage)"
   FunctionParam -> Just $ "Ptr CTHIntStorage"
 
-renderHaskellType typeCat templateType THLongStoragePtr = case typeCat of
+renderHaskellType typeCat _ THLongStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTHLongStorage)"
   FunctionParam -> Just $ "Ptr CTHLongStorage"
 
-renderHaskellType typeCat templateType THHalfStoragePtr = case typeCat of
+renderHaskellType typeCat _ THHalfStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTHHalfStorage)"
   FunctionParam -> Just $ "Ptr CTHHalfStorage"
 
-renderHaskellType typeCat templateType THCharStoragePtr = case typeCat of
+renderHaskellType typeCat _ THCharStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTHCharStorage)"
   FunctionParam -> Just $ "Ptr CTHCharStorage"
 
-renderHaskellType typeCat templateType THFloatStoragePtr = case typeCat of
+renderHaskellType typeCat _ THFloatStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTHFloatStorage)"
   FunctionParam -> Just $ "Ptr CTHFloatStorage"
 
-renderHaskellType typeCat templateType THDoubleStoragePtr = case typeCat of
+renderHaskellType typeCat _ THDoubleStoragePtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTHDoubleStorage)"
   FunctionParam -> Just $ "Ptr CTHDoubleStorage"
 
 {- Other -}
 
-renderHaskellType typeCat templateType THGeneratorPtr = case typeCat of
+renderHaskellType typeCat _ THGeneratorPtr = case typeCat of
   ReturnValue -> Just ("IO (Ptr CTHGenerator") -- concrete type found in TensorMat)h
   FunctionParam -> Just ("Ptr CTHGenerator") -- concrete type found in TensorMath
 
-renderHaskellType typeCat templateType THAllocatorPtr = case typeCat of
+renderHaskellType typeCat _ THAllocatorPtr = case typeCat of
   ReturnValue -> Just $ "IO (CTHAllocatorPtr)"
   FunctionParam -> Just $ "CTHAllocatorPtr"
 
-renderHaskellType _ templateType THDouble =
+renderHaskellType _ _ THDouble =
   Just "CDouble" -- added from TensorRandom
 
 renderHaskellType typeCat templateType THPtrDiff = case typeCat of
@@ -296,19 +297,6 @@ cleanList (Right lst) = fromJust <$> (P.filter f lst)
     f Nothing = False
     f (Just _) = True
 
-makeModule modHeader modSuffix modFileSuffix typeTemplate bindings =
-   HModule {
-        modHeader = modHeader,
-        modPrefix = "TH",
-        modTypeTemplate = typeTemplate,
-        modSuffix = modSuffix,
-        modFileSuffix = modFileSuffix,
-        modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
-        modTypeDefs = [],
-        modBindings = bindings
-  }
-
 parseFile :: [Char] -> IO [THFunction]
 parseFile file = do
   putStrLn $ "\nParsing " ++ file ++ " ... "
@@ -316,7 +304,6 @@ parseFile file = do
   pure $ cleanList res
   where
     parseFromFile p file = runParser p file <$> readFile file
-
 
 renderCHeader templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
