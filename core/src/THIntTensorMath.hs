@@ -112,7 +112,8 @@ module THIntTensorMath (
     c_THIntTensor_gtTensorT,
     c_THIntTensor_geTensorT,
     c_THIntTensor_neTensorT,
-    c_THIntTensor_eqTensorT) where
+    c_THIntTensor_eqTensorT,
+    c_THIntTensor_abs) where
 
 import Foreign
 import Foreign.C.Types
@@ -565,3 +566,7 @@ foreign import ccall "THTensorMath.h THIntTensor_neTensorT"
 -- |c_THIntTensor_eqTensorT : r_ ta tb -> void
 foreign import ccall "THTensorMath.h THIntTensor_eqTensorT"
   c_THIntTensor_eqTensorT :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
+
+-- |c_THIntTensor_abs : r_ t -> void
+foreign import ccall "THTensorMath.h THIntTensor_abs"
+  c_THIntTensor_abs :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()

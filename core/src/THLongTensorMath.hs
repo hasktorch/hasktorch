@@ -112,7 +112,8 @@ module THLongTensorMath (
     c_THLongTensor_gtTensorT,
     c_THLongTensor_geTensorT,
     c_THLongTensor_neTensorT,
-    c_THLongTensor_eqTensorT) where
+    c_THLongTensor_eqTensorT,
+    c_THLongTensor_abs) where
 
 import Foreign
 import Foreign.C.Types
@@ -565,3 +566,7 @@ foreign import ccall "THTensorMath.h THLongTensor_neTensorT"
 -- |c_THLongTensor_eqTensorT : r_ ta tb -> void
 foreign import ccall "THTensorMath.h THLongTensor_eqTensorT"
   c_THLongTensor_eqTensorT :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
+
+-- |c_THLongTensor_abs : r_ t -> void
+foreign import ccall "THTensorMath.h THLongTensor_abs"
+  c_THLongTensor_abs :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()

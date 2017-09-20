@@ -34,7 +34,7 @@ tensorMathCases = M.fromList [
   ("ceil", S.fromList [GenFloat, GenDouble]),
   ("floor", S.fromList [GenFloat, GenDouble]),
   ("round", S.fromList [GenFloat, GenDouble]),
-  ("abs", S.fromList [GenFloat, GenDouble]),
+  -- ("abs", S.fromList [GenFloat, GenDouble]), -- covered above
   ("trunc", S.fromList [GenFloat, GenDouble]),
   ("frac", S.fromList [GenFloat, GenDouble]),
   ("lerp", S.fromList [GenFloat, GenDouble]),

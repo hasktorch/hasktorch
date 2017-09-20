@@ -19,10 +19,10 @@ dependencies:
   override:
     - stack setup
     - rm -fr $(stack path --dist-dir) $(stack path --local-install-root)
-    - stack build --fast
+    - stack build
 
 test:
   override:
-    - stack test
+    - stack test torch-tools
     - stack exec codegen
     - stack exec specdb

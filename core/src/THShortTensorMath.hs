@@ -112,7 +112,8 @@ module THShortTensorMath (
     c_THShortTensor_gtTensorT,
     c_THShortTensor_geTensorT,
     c_THShortTensor_neTensorT,
-    c_THShortTensor_eqTensorT) where
+    c_THShortTensor_eqTensorT,
+    c_THShortTensor_abs) where
 
 import Foreign
 import Foreign.C.Types
@@ -565,3 +566,7 @@ foreign import ccall "THTensorMath.h THShortTensor_neTensorT"
 -- |c_THShortTensor_eqTensorT : r_ ta tb -> void
 foreign import ccall "THTensorMath.h THShortTensor_eqTensorT"
   c_THShortTensor_eqTensorT :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
+
+-- |c_THShortTensor_abs : r_ t -> void
+foreign import ccall "THTensorMath.h THShortTensor_abs"
+  c_THShortTensor_abs :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()

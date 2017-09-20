@@ -10,6 +10,9 @@ import THFloatTensorMath as TR
 import THDoubleTensor as TR
 import THDoubleTensorMath as TR
 
+import THIntTensor as TR
+import THIntTensorMath as TR
+
 import Foreign.C.Types
 
 import Test.Hspec
@@ -299,51 +302,151 @@ testsDouble = do
         c_THDoubleTensor_sumall t1 `shouldBe` (6.0)
         c_THDoubleTensor_free t1
 
+testsInt :: IO ()
+testsInt = do
+  hspec $ do
+    describe "Int Tensor creation and access methods" $ do
+      it "initializes empty tensor with 0 dimension" $ do
+        t <- c_THIntTensor_new
+        TR.c_THIntTensor_nDimension t `shouldBe` 0
+        c_THIntTensor_free t
+      it "1D tensor has correct dimensions and sizes" $ do
+        t <- TR.c_THIntTensor_newWithSize1d 10
+        TR.c_THIntTensor_nDimension t `shouldBe` 1
+        TR.c_THIntTensor_size t 0 `shouldBe` 10
+        c_THIntTensor_free t
+      it "2D tensor has correct dimensions and sizes" $ do
+        t <- c_THIntTensor_newWithSize2d 10 25
+        TR.c_THIntTensor_nDimension t `shouldBe` 2
+        TR.c_THIntTensor_size t 0 `shouldBe` 10
+        TR.c_THIntTensor_size t 1 `shouldBe` 25
+        c_THIntTensor_free t
+      it "3D tensor has correct dimensions and sizes" $ do
+        t <- c_THIntTensor_newWithSize3d 10 25 5
+        TR.c_THIntTensor_nDimension t `shouldBe` 3
+        TR.c_THIntTensor_size t 0 `shouldBe` 10
+        TR.c_THIntTensor_size t 1 `shouldBe` 25
+        TR.c_THIntTensor_size t 2 `shouldBe` 5
+        c_THIntTensor_free t
+      it "4D tensor has correct dimensions and sizes" $ do
+        t <- c_THIntTensor_newWithSize4d 10 25 5 62
+        TR.c_THIntTensor_nDimension t `shouldBe` 4
+        TR.c_THIntTensor_size t 0 `shouldBe` 10
+        TR.c_THIntTensor_size t 1 `shouldBe` 25
+        TR.c_THIntTensor_size t 2 `shouldBe` 5
+        TR.c_THIntTensor_size t 3 `shouldBe` 62
+        c_THIntTensor_free t
+      it "Can assign and retrieve correct 1D vector values" $ do
+        t <- TR.c_THIntTensor_newWithSize1d 10
+        c_THIntTensor_set1d t 0 (CInt 20)
+        c_THIntTensor_set1d t 1 (CInt 1)
+        c_THIntTensor_set1d t 9 (CInt 3)
+        c_THIntTensor_get1d t 0 `shouldBe` (20 :: CInt)
+        c_THIntTensor_get1d t 1 `shouldBe` (1 :: CInt)
+        c_THIntTensor_get1d t 9 `shouldBe` (3 :: CInt)
+        c_THIntTensor_free t
+      it "Can assign and retrieve correct 2D vector values" $ do
+        t <- TR.c_THIntTensor_newWithSize2d 10 15
+        c_THIntTensor_set2d t 0 0 (CInt 20)
+        c_THIntTensor_set2d t 1 5 (CInt 1)
+        c_THIntTensor_set2d t 9 9 (CInt 3)
+        c_THIntTensor_get2d t 0 0 `shouldBe` (20 :: CInt)
+        c_THIntTensor_get2d t 1 5 `shouldBe` (1 :: CInt)
+        c_THIntTensor_get2d t 9 9 `shouldBe` (3 :: CInt)
+        c_THIntTensor_free t
+      it "Can assign and retrieve correct 3D vector values" $ do
+        t <- TR.c_THIntTensor_newWithSize3d 10 15 10
+        c_THIntTensor_set3d t 0 0 0 (CInt 20)
+        c_THIntTensor_set3d t 1 5 3 (CInt 1)
+        c_THIntTensor_set3d t 9 9 9 (CInt 3)
+        c_THIntTensor_get3d t 0 0 0 `shouldBe` (20 :: CInt)
+        c_THIntTensor_get3d t 1 5 3 `shouldBe` (1 :: CInt)
+        c_THIntTensor_get3d t 9 9 9 `shouldBe` (3 :: CInt)
+        c_THIntTensor_free t
+      it "Can assign and retrieve correct 4D vector values" $ do
+        t <- TR.c_THIntTensor_newWithSize4d 10 15 10 20
+        c_THIntTensor_set4d t 0 0 0 0 (CInt 20)
+        c_THIntTensor_set4d t 1 5 3 2 (CInt 1)
+        c_THIntTensor_set4d t 9 9 9 9 (CInt 3)
+        c_THIntTensor_get4d t 0 0 0 0 `shouldBe` (20 :: CInt)
+        c_THIntTensor_get4d t 1 5 3 2 `shouldBe` (1 :: CInt)
+        c_THIntTensor_get4d t 9 9 9 9 `shouldBe` (3 :: CInt)
+        c_THIntTensor_free t
+      it "Can can initialize values with the fill method" $ do
+        t1 <- c_THIntTensor_newWithSize2d 2 2
+        c_THIntTensor_fill t1 3
+        c_THIntTensor_get2d t1 0 0 `shouldBe` (3 :: CInt)
+        c_THIntTensor_free t1
+      it "Can compute correct dot product between 1D vectors" $ do
+        t1 <- c_THIntTensor_newWithSize1d 3
+        t2 <- c_THIntTensor_newWithSize1d 3
+        c_THIntTensor_fill t1 3
+        c_THIntTensor_fill t2 4
+        let value = c_THIntTensor_dot t1 t2
+        value `shouldBe` 36
+        c_THIntTensor_free t1
+        c_THIntTensor_free t2
+      it "Can compute correct dot product between 2D tensors" $ do
+        t1 <- c_THIntTensor_newWithSize2d 2 2
+        t2 <- c_THIntTensor_newWithSize2d 2 2
+        c_THIntTensor_fill t1 3
+        c_THIntTensor_fill t2 4
+        let value = c_THIntTensor_dot t1 t2
+        value `shouldBe` 48
+        c_THIntTensor_free t1
+        c_THIntTensor_free t2
+      it "Can compute correct dot product between 3D tensors" $ do
+        t1 <- c_THIntTensor_newWithSize3d 2 2 4
+        t2 <- c_THIntTensor_newWithSize3d 2 2 4
+        c_THIntTensor_fill t1 3
+        c_THIntTensor_fill t2 4
+        let value = c_THIntTensor_dot t1 t2
+        value `shouldBe` 192
+        c_THIntTensor_free t1
+        c_THIntTensor_free t2
+      it "Can compute correct dot product between 4D tensors" $ do
+        t1 <- c_THIntTensor_newWithSize4d 2 2 4 3
+        t2 <- c_THIntTensor_newWithSize4d 2 2 4 3
+        c_THIntTensor_fill t1 3
+        c_THIntTensor_fill t2 4
+        let value = c_THIntTensor_dot t1 t2
+        value `shouldBe` 576
+        c_THIntTensor_free t1
+        c_THIntTensor_free t2
+      it "Can zero out values" $ do
+        t1 <- c_THIntTensor_newWithSize4d 2 2 4 3
+        c_THIntTensor_fill t1 3
+        let value = c_THIntTensor_dot t1 t1
+        -- sequencing does not work if there is more than one shouldBe test in
+        -- an "it" monad
+        -- value `shouldBe` (432.0 :: CInt)
+        c_THIntTensor_zero t1
+        let value = c_THIntTensor_dot t1 t1
+        value `shouldBe` 0
+        c_THIntTensor_free t1
+      it "Can compute sum of all values" $ do
+        t1 <- c_THIntTensor_newWithSize3d 2 2 4
+        c_THIntTensor_fill t1 2
+        c_THIntTensor_sumall t1 `shouldBe` 32
+        c_THIntTensor_free t1
+      it "Can compute product of all values" $ do
+        t1 <- c_THIntTensor_newWithSize2d 2 2
+        c_THIntTensor_fill t1 2
+        c_THIntTensor_prodall t1 `shouldBe` 16
+        c_THIntTensor_free t1
+      it "Can take abs of tensor values" $ do
+        t1 <- c_THIntTensor_newWithSize2d 2 2
+        c_THIntTensor_fill t1 (-2)
+        -- sequencing does not work if there is more than one shouldBe test in
+        -- an "it" monad
+        -- c_THIntTensor_sumall t1 `shouldBe` (-6.0)
+        c_THIntTensor_abs t1 t1
+        c_THIntTensor_sumall t1 `shouldBe` (8)
+        c_THIntTensor_free t1
+
 main :: IO ()
 main = do
   testsFloat
   testsDouble
+  testsInt
   putStrLn "Done"
-
---
--- FFI Mutation fails at command line with "stack test" but works in ghci
---
-
-bug1 = do
-  t1 <- c_THFloatTensor_newWithSize4d 2 2 4 3
-  c_THFloatTensor_fill t1 3.0
-  t2 <- c_THFloatTensor_newWithSize4d 2 2 4 3
-  c_THFloatTensor_fill t2 3.0
-
-  let value = c_THFloatTensor_dot t1 t1
-  print "should be 432"
-  print value
-
-  let value = c_THFloatTensor_dot t1 t2
-  print "should be 432"
-  print value
-
-  c_THFloatTensor_zero t1
-
-  let value = c_THFloatTensor_dot t1 t1
-  print "should be 0"
-  print value
-  c_THFloatTensor_free t1
-
-bug2 = do
-  t1 <- c_THFloatTensor_newWithSize2d 2 2
-  c_THFloatTensor_fill t1 (-1.5)
-  print "should be -6.0"
-  print $ c_THFloatTensor_sumall t1
-
-  t2 <- c_THFloatTensor_newWithSize2d 2 2
-  c_THFloatTensor_abs t2 t1
-  print "should be 6.0"
-  print $ c_THFloatTensor_sumall t2
-
-  c_THFloatTensor_abs t1 t1
-  print "should be 6.0"
-  print $ c_THFloatTensor_sumall t1
-
-  c_THFloatTensor_free t1
-  c_THFloatTensor_free t2
