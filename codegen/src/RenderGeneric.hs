@@ -76,35 +76,35 @@ renderHaskellType typeCat templateType THTensorPtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
   FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
 
-renderHaskellType typeCat templateType THByteTensorPtr = case typeCat of
+renderHaskellType typeCat _ THByteTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHByteTensor)"
   FunctionParam -> Just "Ptr CTHByteTensor"
 
-renderHaskellType typeCat templateType THCharTensorPtr = case typeCat of
+renderHaskellType typeCat _ THCharTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHCharTensor)"
   FunctionParam -> Just "Ptr CTHCharTensor"
 
-renderHaskellType typeCat templateType THShortTensorPtr = case typeCat of
+renderHaskellType typeCat _ THShortTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHShortTensor)"
   FunctionParam -> Just "Ptr CTHShortTensor"
 
-renderHaskellType typeCat templateType THHalfTensorPtr = case typeCat of
+renderHaskellType typeCat _ THHalfTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHHalfTensor)"
   FunctionParam -> Just "Ptr CTHHalfTensor"
 
-renderHaskellType typeCat templateType THIntTensorPtr = case typeCat of
+renderHaskellType typeCat _ THIntTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHIntTensor)"
   FunctionParam -> Just "Ptr CTHIntTensor"
 
-renderHaskellType typeCat templateType THLongTensorPtr = case typeCat of
+renderHaskellType typeCat _ THLongTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHLongTensor)"
   FunctionParam -> Just "Ptr CTHLongTensor"
 
-renderHaskellType typeCat templateType THFloatTensorPtr = case typeCat of
+renderHaskellType typeCat _ THFloatTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHFloatTensor)"
   FunctionParam -> Just "Ptr CTHFloatTensor"
 
-renderHaskellType typeCat templateType THDoubleTensorPtr = case typeCat of
+renderHaskellType typeCat _ THDoubleTensorPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CTHDoubleTensor)"
   FunctionParam -> Just "Ptr CTHDoubleTensor"
 
@@ -164,28 +164,28 @@ renderHaskellType typeCat templateType THPtrDiff = case typeCat of
   FunctionParam -> Just $ "CTH" <> type2SpliceReal templateType <> "PtrDiff"
   -- TODO check if it's appropriate to splice here
 
-renderHaskellType typeCat templateType THLongPtr = case typeCat of
+renderHaskellType typeCat _ THLongPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CLong)"
   FunctionParam -> Just "Ptr CLong"
 
-renderHaskellType _ templateType THLong =
+renderHaskellType _ _ THLong =
   Just "CLong"
 
-renderHaskellType typeCat templateType THIntPtr = case typeCat of
+renderHaskellType typeCat _ THIntPtr = case typeCat of
   ReturnValue -> Just "IO (CIntPtr)"
   FunctionParam -> Just "CIntPtr"
 
-renderHaskellType _ templateType THInt =
+renderHaskellType _ _ THInt =
   Just "CInt"
 
-renderHaskellType _ templateType THSize =
+renderHaskellType _ _ THSize =
   Just "CSize"
 
 renderHaskellType typeCat templateType THCharPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CChar)"
   FunctionParam -> Just "Ptr CChar"
 
-renderHaskellType _ templateType THChar =
+renderHaskellType _ _ THChar =
   Just "CChar"
 
 renderHaskellType typeCat templateType THRealPtr = case typeCat of

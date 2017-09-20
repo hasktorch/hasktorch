@@ -14,8 +14,10 @@ parseFilesNoTemplate =
     ("vendor/torch7/lib/TH/THFile.h",
      (makeModule "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THHDiskFile.h",
-     (makeModule "THDiskFile.h" "Vector" "Vector"))
+     (makeModule "THDiskFile.h" "DiskFile" "DiskFile"))
   ]
 
+main :: IO ()
 main = do
+  -- mapM_ (\(file, spec) -> runPipeline file spec) parseFilesNoTemplate
   putStrLn "Done"
