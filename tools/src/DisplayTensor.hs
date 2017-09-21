@@ -7,13 +7,14 @@
 
 module Main where
 
-import THDoubleTensor
-import THDoubleTensorMath
--- import THDoubleTensorRandom
-
 import Foreign
 import Foreign.C.Types
 import THTypes
+import TorchTensor
+
+import THDoubleTensor
+import THDoubleTensorMath
+-- import THDoubleTensorRandom
 
 data PrintOptions = PrintOptions {
   precision :: Int,
@@ -29,28 +30,29 @@ defaultPrintOptions = PrintOptions {
   linewidth = 80
   }
 
-size :: (Ptr CTHDoubleTensor) -> [CLong]
-size t =
-  fmap (\x -> c_THDoubleTensor_size t x) [0..maxdim]
+tensorStr tensor = undefined
   where
-    maxdim = (c_THDoubleTensor_nDimension t) - 1
-
-
+    n = edgeitems defaultPrintOptions
+    sz = size tensor
+    has_hdots = last sz > 2 * n
+    has_vdots = (head . drop 1 . reverse $ sz) > 2 * n
+    print_full_mat = not has_hdots && not has_vdots
+    -- what to do for formatter ?
+    -- print_dots = product >= threshold defaultPrintOptions
 
 main = do
+  putStrLn "Done"
 
-  t1 <- c_THDoubleTensor_newWithSize2d 2 2
-  t2 <- c_THDoubleTensor_newWithSize2d 2 2
-  t3 <- c_THDoubleTensor_newWithSize2d 2 2
-
-  c_THDoubleTensor_fill t1 3.0
-  print $ c_THDoubleTensor_get2d t1 0 0
-  c_THDoubleTensor_fill t2 4.0
-  print $ c_THDoubleTensor_get2d t2 0 0
-  print $ c_THDoubleTensor_dot t1 t2
-
-  c_THDoubleTensor_free t1
-  c_THDoubleTensor_free t2
-  c_THDoubleTensor_free t3
+  -- t1 <- c_THDoubleTensor_newWithSize2d 2 2
+  -- t2 <- c_THDoubleTensor_newWithSize2d 2 2
+  -- t3 <- c_THDoubleTensor_newWithSize2d 2 2
+  -- c_THDoubleTensor_fill t1 3.0
+  -- print $ c_THDoubleTensor_get2d t1 0 0
+  -- c_THDoubleTensor_fill t2 4.0
+  -- print $ c_THDoubleTensor_get2d t2 0 0
+  -- print $ c_THDoubleTensor_dot t1 t2
+  -- c_THDoubleTensor_free t1
+  -- c_THDoubleTensor_free t2
+  -- c_THDoubleTensor_free t3
 
 
