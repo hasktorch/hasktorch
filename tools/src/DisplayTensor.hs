@@ -2,6 +2,8 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
 
 -- Pretty printing of low level tensor representations
+-- approximately
+-- https://github.com/pytorch/pytorch/blob/49ec984c406e67107aae2891d24c8839b7dc7c33/torch/_tensor_str.py
 
 module Main where
 
@@ -13,11 +15,27 @@ import Foreign
 import Foreign.C.Types
 import THTypes
 
+data PrintOptions = PrintOptions {
+  precision :: Int,
+  threshold :: Int,
+  edgeitems :: Int,
+  linewidth :: Int
+  }
+
+defaultPrintOptions = PrintOptions {
+  precision = 4,
+  threshold = 1000,
+  edgeitems = 3,
+  linewidth = 80
+  }
+
 size :: (Ptr CTHDoubleTensor) -> [CLong]
 size t =
   fmap (\x -> c_THDoubleTensor_size t x) [0..maxdim]
   where
     maxdim = (c_THDoubleTensor_nDimension t) - 1
+
+
 
 main = do
 

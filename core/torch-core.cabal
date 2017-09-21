@@ -95,10 +95,9 @@ library
                      , THLongVector
                      , THShortVector
 
+                     , THDiskFile
 
-
-                     
-  hs-source-dirs:      src
+  hs-source-dirs:      src, src/generic
   build-depends:       base >= 4.7 && < 5
                      , torch-interface
                      , hspec >= 2.4.4
