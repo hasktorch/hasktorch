@@ -12,7 +12,8 @@ import System.Directory
 import Control.Exception
 import System.IO.Error hiding (catch)
 
-import CodeGenTypes as Y
+import CodeGenTypes (genericTypes)
+import RenderShared (type2SpliceReal)
 
 data TestField = TestField Int T.Text deriving (Show)
 
@@ -29,8 +30,8 @@ removeIfExists fileName = removeFile fileName `catch` handleExists
           | otherwise = throwIO e
 
 createDB = do
-  removeIfExists "specdb/specdb.db"
-  conn <- open "specdb/specdb.db"
+  removeIfExists "output/specdb.db"
+  conn <- open "output/specdb.db"
   pure conn
 
 createTables conn = do
@@ -38,7 +39,7 @@ createTables conn = do
   execute_ conn "CREATE TABLE IF NOT EXISTS template_types (id INTEGER PRIMARY KEY, types TEXT)"
 
 makeTypeTable conn = do
-  mapM_ go (type2SpliceReal <$> Y.genTypes)
+  mapM_ go (type2SpliceReal <$> genericTypes)
   where
     cmd = "INSERT INTO template_types (types) VALUES (?)"
     go typename =

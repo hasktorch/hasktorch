@@ -873,8 +873,6 @@ testsLong = do
         c_THLongTensor_sumall t1 `shouldBe` (8)
         c_THLongTensor_free t1
 
-
-
 main :: IO ()
 main = do
   testsFloat
