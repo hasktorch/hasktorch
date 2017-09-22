@@ -44,7 +44,19 @@ concreteFiles =
     ("vendor/torch7/lib/TH/THFile.h",
      (makeModule "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THDiskFile.h",
-     (makeModule "THDiskFile.h" "DiskFile" "DiskFile"))
+     (makeModule "THDiskFile.h" "DiskFile" "DiskFile")),
+    ("vendor/torch7/lib/TH/THAtomic.h",
+     (makeModule "THDiskFile.h" "Atomic" "Atomic")),
+    ("vendor/torch7/lib/TH/THHalf.h",
+     (makeModule "THHalf.h" "Half" "Half")),
+    ("vendor/torch7/lib/TH/THLogAdd.h",
+     (makeModule "THLogAdd.h" "LogAdd" "LogAdd")),
+    ("vendor/torch7/lib/TH/THSize.h",
+     (makeModule "THSize.h" "Size" "Size")),
+    ("vendor/torch7/lib/TH/THStorage.h", -- doesn't work
+     (makeModule "THStorage.h" "Storage" "Storage"))
+    -- ("vendor/torch7/lib/TH/THMemoryFile.h",
+    --  (makeModule "THMemoryFile.h" "MemoryFile" "MemoryFile"))
   ]
 
 main :: IO ()
