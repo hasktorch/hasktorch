@@ -14,6 +14,7 @@ import TorchTensor
 
 import THDoubleTensor
 import THDoubleTensorMath
+import TorchTensor
 -- import THDoubleTensorRandom
 
 data PrintOptions = PrintOptions {
