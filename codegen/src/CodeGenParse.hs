@@ -150,6 +150,9 @@ thCharPtr = (string "char*" <|> string "char *") >> pure THChar
 thChar :: Parser THType
 thChar = string "char" >> pure THChar
 
+thShort :: Parser THType
+thShort = string "short" >> pure THShort
+
 thRealPtr :: Parser THType
 thRealPtr = (string "real *" <|> string "real* ") >> pure THRealPtr
 -- TODO : clean up pointer matching
@@ -166,8 +169,10 @@ thAccRealPtr = string "accreal *" >> pure THAccRealPtr
 thFilePtr :: Parser THType
 thFilePtr = (string "THFile *" <|> string "THFile*") >> pure THFilePtr
 
+-- not meant to be a complete C spec, just enough for TH lib
 thType = do
   ((string "const " >> pure ())
+    <|> (string "unsigned " >> pure ())
     <|> (string "struct " >> pure ()) -- See THStorageCopy.h
     <|> space)
   (
@@ -210,6 +215,7 @@ thType = do
     <|> thSize
     <|> thCharPtr
     <|> thChar
+    <|> thShort
     <|> thRealPtr
     <|> thReal
     <|> thAccRealPtr

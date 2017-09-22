@@ -63,6 +63,7 @@ renderCType THInt             = "int"
 renderCType THSize            = "size_t"
 renderCType THCharPtr         = "char *"
 renderCType THChar            = "char"
+renderCType THShort           = "short"
 renderCType THRealPtr         = "real *"
 renderCType THReal            = "real"
 renderCType THAccRealPtr      = "accreal *"
@@ -263,6 +264,9 @@ renderHaskellType typeCat _ THCharPtr = case typeCat of
 
 renderHaskellType _ _ THChar =
   Just "CChar"
+
+renderHaskellType _ _ THShort =
+  Just "CShort"
 
 renderHaskellType typeCat templateType THRealPtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr " <> realtype2Haskell templateType <> ")"

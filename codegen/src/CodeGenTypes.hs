@@ -79,6 +79,7 @@ data THType =
   | THSize
   | THCharPtr
   | THChar
+  | THShort
   | THFilePtr
   -- Templates
   | THRealPtr
