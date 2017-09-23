@@ -4,6 +4,7 @@
 module Main where
 
 import Prelude as P
+import Data.Text
 import Data.List (nub)
 import Text.Megaparsec
 
@@ -12,6 +13,8 @@ import CodeGenTypes
 import ConditionalCases
 import RenderShared
 import Text.Show.Pretty
+
+outDirConcrete = "./output/core/src/" :: Text
 
 -- TODO re-factor to unify w/ parseFile
 parseFileConcrete :: [Char] -> IO [THFunction]
@@ -40,21 +43,21 @@ concreteFiles =
   [
     -- TODO: THFile
     ("vendor/check.h",
-     (makeModule "THFile.h" "File" "File")),
+     (makeModule outDirConcrete "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THFile.h",
-     (makeModule "THFile.h" "File" "File")),
+     (makeModule outDirConcrete "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THDiskFile.h",
-     (makeModule "THDiskFile.h" "DiskFile" "DiskFile")),
+     (makeModule outDirConcrete "THDiskFile.h" "DiskFile" "DiskFile")),
     ("vendor/torch7/lib/TH/THAtomic.h",
-     (makeModule "THDiskFile.h" "Atomic" "Atomic")),
+     (makeModule outDirConcrete "THDiskFile.h" "Atomic" "Atomic")),
     ("vendor/torch7/lib/TH/THHalf.h",
-     (makeModule "THHalf.h" "Half" "Half")),
+     (makeModule outDirConcrete "THHalf.h" "Half" "Half")),
     ("vendor/torch7/lib/TH/THLogAdd.h",
-     (makeModule "THLogAdd.h" "LogAdd" "LogAdd")),
+     (makeModule outDirConcrete "THLogAdd.h" "LogAdd" "LogAdd")),
     ("vendor/torch7/lib/TH/THSize.h",
-     (makeModule "THSize.h" "Size" "Size")),
+     (makeModule outDirConcrete "THSize.h" "Size" "Size")),
     ("vendor/torch7/lib/TH/THStorage.h", -- doesn't work
-     (makeModule "THStorage.h" "Storage" "Storage"))
+     (makeModule outDirConcrete "THStorage.h" "Storage" "Storage"))
     -- ("vendor/torch7/lib/TH/THMemoryFile.h",
     --  (makeModule "THMemoryFile.h" "MemoryFile" "MemoryFile"))
   ]

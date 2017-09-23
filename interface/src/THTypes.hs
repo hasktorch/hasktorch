@@ -2,6 +2,7 @@ module THTypes where
 
 import Foreign
 import Foreign.C.Types
+import Foreign.Storable
 
 type CTHDescBuff = Ptr ()
 type CTHAllocatorPtr = Ptr ()

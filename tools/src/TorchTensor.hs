@@ -3,7 +3,8 @@
 
 module TorchTensor (
   TensorDouble(..),
-  TensorInt(..)
+  TensorInt(..),
+  size
   ) where
 
 import Foreign

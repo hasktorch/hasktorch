@@ -24,31 +24,33 @@ import CodeGenTypes
 import ConditionalCases
 import RenderShared
 
+outDirGeneric = "./output/core/src/generic/" :: Text
+
 genericFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 genericFiles =
   [
     ("vendor/torch7/lib/TH/generic/THBlas.h",
-     (makeModule "THBlas.h" "Blas" "Blas")),
+     (makeModule outDirGeneric "THBlas.h" "Blas" "Blas")),
     ("vendor/torch7/lib/TH/generic/THLapack.h",
-     (makeModule "THLapack.h" "Lapack" "Lapack")),
+     (makeModule outDirGeneric "THLapack.h" "Lapack" "Lapack")),
     ("vendor/torch7/lib/TH/generic/THStorage.h",
-     (makeModule "THStorage.h" "Storage" "Storage")),
+     (makeModule outDirGeneric "THStorage.h" "Storage" "Storage")),
     ("vendor/torch7/lib/TH/generic/THStorageCopy.h",
-     (makeModule "THStorageCopy.h" "Storage" "StorageCopy")),
+     (makeModule outDirGeneric "THStorageCopy.h" "Storage" "StorageCopy")),
     ("vendor/torch7/lib/TH/generic/THTensor.h",
-     (makeModule "THTensor.h" "Tensor" "Tensor")),
+     (makeModule outDirGeneric "THTensor.h" "Tensor" "Tensor")),
     ("vendor/torch7/lib/TH/generic/THTensorConv.h",
-     (makeModule "THTensorConv.h" "Tensor" "TensorConv")),
+     (makeModule outDirGeneric "THTensorConv.h" "Tensor" "TensorConv")),
     ("vendor/torch7/lib/TH/generic/THTensorCopy.h",
-     (makeModule "THTensorCopy.h" "Tensor" "TensorCopy")),
+     (makeModule outDirGeneric "THTensorCopy.h" "Tensor" "TensorCopy")),
     ("vendor/torch7/lib/TH/generic/THTensorLapack.h",
-     (makeModule "THTensorLapack.h" "Tensor" "TensorLapack")),
+     (makeModule outDirGeneric "THTensorLapack.h" "Tensor" "TensorLapack")),
     ("vendor/torch7/lib/TH/generic/THTensorMath.h",
-     (makeModule "THTensorMath.h" "Tensor" "TensorMath")),
+     (makeModule outDirGeneric "THTensorMath.h" "Tensor" "TensorMath")),
     ("vendor/torch7/lib/TH/generic/THTensorRandom.h",
-     (makeModule "THTensorRandom.h" "Tensor" "TensorRandom")),
+     (makeModule outDirGeneric "THTensorRandom.h" "Tensor" "TensorRandom")),
     ("vendor/torch7/lib/TH/generic/THVector.h",
-     (makeModule "THVector.h" "Vector" "Vector"))
+     (makeModule outDirGeneric "THVector.h" "Vector" "Vector"))
   ]
 
 -- |TODO: make a unified module that re-exports all functions
@@ -86,7 +88,6 @@ runPipeline ::
 runPipeline headerPath makeModuleConfig typeList = do
   parsedBindings <- parseFile headerPath
   let bindingsUniq = nub parsedBindings
-  -- TODO nub is a hack until proper treatment of conditioned templates is implemented
   putStrLn $ "First signature:"
   putStrLn $ ppShow (P.take 1 bindingsUniq)
   mapM_ (\x -> renderCHeader x bindingsUniq makeModuleConfig) typeList

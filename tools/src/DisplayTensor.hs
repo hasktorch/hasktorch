@@ -41,6 +41,11 @@ tensorStr tensor = undefined
     -- what to do for formatter ?
     -- print_dots = product >= threshold defaultPrintOptions
 
+testData = do
+  t1 <- c_THDoubleTensor_newWithSize2d 2 2
+  c_THDoubleTensor_fill t1 3.0
+  putStrLn "hi"
+
 main = do
   putStrLn "Done"
 

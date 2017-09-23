@@ -12,7 +12,7 @@ module RenderShared (
 
   renderCHeader,
   parseFile,
-  cleanList 
+  cleanList
   ) where
 
 import Data.List (nub)
@@ -29,7 +29,9 @@ import CodeGenTypes
 import CodeGenParse
 import ConditionalCases
 
-makeModule modHeader modSuffix modFileSuffix typeTemplate bindings =
+makeModule ::
+  Text -> FilePath -> Text -> Text -> TemplateType -> [THFunction] -> HModule
+makeModule outDir modHeader modSuffix modFileSuffix typeTemplate bindings =
    HModule {
         modHeader = modHeader,
         modPrefix = "TH",
@@ -39,7 +41,8 @@ makeModule modHeader modSuffix modFileSuffix typeTemplate bindings =
         modExtensions = ["ForeignFunctionInterface"],
         modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
         modTypeDefs = [],
-        modBindings = bindings
+        modBindings = bindings,
+        modOutDir = outDir
   }
 
 -- TODO : make this total
@@ -365,11 +368,14 @@ renderAll spec@HModule{..} =
       (renderFunName ("c_" <> splice)
        <$> (fmap funName (validFunctions)))
 
+renderCHeader ::
+  TemplateType -> [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> IO ()
 renderCHeader templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
-  writeFile ("./output/" ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
+  writeFile (outDir ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
   where modSpec = makeConfig templateType parsedBindings
         filename = (renderModuleName modSpec) <> ".hs"
+        outDir = T.unpack (modOutDir modSpec)
 
 renderModuleName :: HModule -> Text
 renderModuleName HModule{..} =

@@ -32,7 +32,8 @@ data HModule = HModule {
   modExtensions :: [Text],
   modImports :: [Text],
   modTypeDefs :: [(Text, Text)],
-  modBindings :: [THFunction]
+  modBindings :: [THFunction],
+  modOutDir :: Text
   } deriving Show
 
 data TypeCategory = ReturnValue | FunctionParam
