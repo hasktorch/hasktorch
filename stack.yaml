@@ -1,9 +1,10 @@
-resolver: nightly-2017-09-18
+resolver: nightly-2017-09-20
 
 packages:
 - 'core'
 - 'codegen'
 - 'interface'
+- 'tests'
 - 'tools'
 
 extra-deps: []
@@ -20,5 +21,6 @@ extra-lib-dirs:
 ghc-options:
   "torch-core": -lTH
   "torch-codegen": -lTH
+  "torch-tests": -lTH
   "torch-tools": -lTH
 

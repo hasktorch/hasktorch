@@ -23,7 +23,6 @@ dependencies:
 
 test:
   override:
-    - stack test torch-tools
+    - stack test torch-tests
     - stack exec codegen-generic
     - stack exec codegen-concrete
-    - stack exec specdb
