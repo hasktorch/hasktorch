@@ -69,20 +69,6 @@ check = do
       "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
       "another garbage line ( )@#R @# 324 32"
 
-check2 :: IO ()
-check2 = do
-  testString exampleText thParseGeneric
-  where
-    exampleText =
-      "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
-
-check3 :: IO ()
-check3 = do
-  testString exampleText thParseConcrete
-  where
-    exampleText =
-      "TH_API void THTensor_fooasdf(THTensor *self,const char flag);"
-
 runPipeline ::
   [Char] -> (TemplateType -> [THFunction] -> HModule) -> [TemplateType]-> IO ()
 runPipeline headerPath makeModuleConfig typeList = do
