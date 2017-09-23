@@ -26,3 +26,4 @@ test:
     - stack test torch-tests
     - stack exec codegen-generic
     - stack exec codegen-concrete
+    - stack exec display-test
