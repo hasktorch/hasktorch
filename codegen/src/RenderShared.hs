@@ -67,6 +67,10 @@ renderCType THSize            = "size_t"
 renderCType THCharPtr         = "char *"
 renderCType THChar            = "char"
 renderCType THShort           = "short"
+renderCType THHalf            = "THHalf"
+renderCType THHalfPtr            = "THHalfPtr"
+renderCType THFloat           = "float"
+renderCType THDouble          = "double"
 renderCType THRealPtr         = "real *"
 renderCType THReal            = "real"
 renderCType THAccRealPtr      = "accreal *"
@@ -236,6 +240,10 @@ renderHaskellType typeCat _ THAllocatorPtr = case typeCat of
   ReturnValue -> Just $ "IO (CTHAllocatorPtr)"
   FunctionParam -> Just $ "CTHAllocatorPtr"
 
+renderHaskellType typeCat _ THDoublePtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CDouble)"
+  FunctionParam -> Just "Ptr CDouble"
+
 renderHaskellType _ _ THDouble =
   Just "CDouble" -- added from TensorRandom
 
@@ -247,6 +255,13 @@ renderHaskellType typeCat templateType THPtrDiff = case typeCat of
 renderHaskellType typeCat _ THLongPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CLong)"
   FunctionParam -> Just "Ptr CLong"
+
+renderHaskellType typeCat _ THFloatPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CFloat)"
+  FunctionParam -> Just "Ptr CFloat"
+
+renderHaskellType _ _ THFloat =
+  Just "CFloat"
 
 renderHaskellType _ _ THLong =
   Just "CLong"
@@ -261,6 +276,10 @@ renderHaskellType _ _ THInt =
 renderHaskellType _ _ THSize =
   Just "CSize"
 
+renderHaskellType typeCat _ THCharPtrPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr (Ptr CChar))"
+  FunctionParam -> Just "Ptr (Ptr CChar)"
+
 renderHaskellType typeCat _ THCharPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CChar)"
   FunctionParam -> Just "Ptr CChar"
@@ -268,8 +287,19 @@ renderHaskellType typeCat _ THCharPtr = case typeCat of
 renderHaskellType _ _ THChar =
   Just "CChar"
 
+renderHaskellType typeCat _ THShortPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CShort)"
+  FunctionParam -> Just "Ptr CShort"
+
 renderHaskellType _ _ THShort =
   Just "CShort"
+
+renderHaskellType typeCat _ THHalfPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr CTHHalf)"
+  FunctionParam -> Just "Ptr CTHHalf"
+
+renderHaskellType _ _ THHalf =
+  Just "CTHHalf"
 
 renderHaskellType typeCat templateType THRealPtr = case typeCat of
   ReturnValue -> Just $ "IO (Ptr " <> realtype2Haskell templateType <> ")"
@@ -290,7 +320,7 @@ renderHaskellType typeCat _ THFilePtr = case typeCat of
   FunctionParam -> Just "Ptr CTHFile"
 
 renderExtension :: Text -> Text
-renderExtension extension = "{-# LANGUAGE " <> extension <> "#-}"
+renderExtension extension = "{-# LANGUAGE " <> extension <> " #-}"
 
 renderExtensions :: [Text] -> Text
 renderExtensions extensions =

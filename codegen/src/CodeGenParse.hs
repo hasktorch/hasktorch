@@ -36,6 +36,15 @@ thVoidPtr = (string "void *" <|> string "void*") >> pure THVoidPtr
 thVoid :: Parser THType
 thVoid = string "void" >> pure THVoid
 
+thFloatPtr :: Parser THType
+thFloatPtr = (string "float *" <|> string "float* ") >> pure THFloatPtr
+
+thFloat :: Parser THType
+thFloat = string "float" >> pure THFloat
+
+thDoublePtr :: Parser THType
+thDoublePtr = (string "double *" <|> string "double* ") >> pure THDoublePtr
+
 thDouble :: Parser THType
 thDouble = string "double" >> pure THDouble
 
@@ -144,14 +153,26 @@ thInt = string "int" >> pure THInt
 thSize :: Parser THType
 thSize = string "size_t" >> pure THSize
 
+thCharPtrPtr :: Parser THType
+thCharPtrPtr = (string "char**" <|> string "char **") >> pure THCharPtrPtr
+
 thCharPtr :: Parser THType
-thCharPtr = (string "char*" <|> string "char *") >> pure THChar
+thCharPtr = (string "char*" <|> string "char *") >> pure THCharPtr
 
 thChar :: Parser THType
 thChar = string "char" >> pure THChar
 
+thShortPtr :: Parser THType
+thShortPtr = (string "short *" <|> string "short* ") >> pure (THShortPtr)
+
 thShort :: Parser THType
 thShort = string "short" >> pure THShort
+
+thHalfPtr :: Parser THType
+thHalfPtr = (string "THHalf *" <|> string "THHalf* ") >> pure (THHalfPtr)
+
+thHalf :: Parser THType
+thHalf = string "THHalf" >> pure THHalf
 
 thRealPtr :: Parser THType
 thRealPtr = (string "real *" <|> string "real* ") >> pure THRealPtr
@@ -206,6 +227,9 @@ thType = do
     <|> thDoubleStoragePtr
 
     <|> thLongAllocatorPtr
+    <|> thFloatPtr
+    <|> thFloat
+    <|> thDoublePtr
     <|> thDouble
     <|> thPtrDiff
     <|> thLongPtr
@@ -213,9 +237,13 @@ thType = do
     <|> thIntPtr
     <|> thInt
     <|> thSize
+    <|> thCharPtrPtr
     <|> thCharPtr
     <|> thChar
+    <|> thShortPtr
     <|> thShort
+    <|> thHalfPtr
+    <|> thHalf
     <|> thRealPtr
     <|> thReal
     <|> thAccRealPtr
@@ -226,8 +254,10 @@ thType = do
 
 -- Landmarks
 
-thAPI :: Parser String
+-- thAPI :: Parser Char
 thAPI = string "TH_API"
+-- thAPI = string "TH_AP" >> char 'o'
+-- thAPI = char 'T' >> char 'H' >> char 'A' >> char '_' >> char 'P' >> char 'I'
 
 thSemicolon :: Parser Char
 thSemicolon = char ';'
@@ -278,7 +308,7 @@ thFunctionTemplate = do
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
 thFunctionConcrete = do
-  thAPI >> space
+  -- thAPI >> space
   funRet <- thType
   space
   funName <- some (alphaNumChar <|> char '_')
@@ -287,13 +317,23 @@ thFunctionConcrete = do
   thSemicolon
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
+-- notTHAPI = do
+--   x <- manyTill anyChar (try whitespace)
+
 -- TODO - exclude TH_API prefix. Parse should crash if TH_API parse is invalid
 thSkip = do
+  -- x <- manyTill anyChar (try whitespace)
+  -- if x == "TH_API"
   eol <|> (some (notChar '\n') >> eol)
+  -- eol <|> ((not <?> (string "TH_API")) >> eol)
   pure Nothing
 
 thItem = thFunctionTemplate <|> thSkip -- ordering is important
 
 thParseGeneric = some thItem
 
-thParseConcrete = some (thFunctionConcrete <|> thSkip)
+thParseConcrete = some ((thAPI >> space >> thFunctionConcrete) <|> thSkip)
+
+bar = parseTest thParseConcrete "TH_API \n"
+bar2 = parseTest thParseConcrete "foob TH_API \n"
+bar3 = parseTest thParseConcrete "TH_API size_t THFile_readStringRaw(THFile *self, const char *format, char **str_); /* you must deallocate str_ */"

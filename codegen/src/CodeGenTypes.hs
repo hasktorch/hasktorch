@@ -72,15 +72,22 @@ data THType =
   | THAllocatorPtr
   | THPtrDiff
   -- Primitive
+  | THFloatPtr
+  | THFloat
+  | THDoublePtr
   | THDouble
   | THLongPtr
   | THLong
   | THIntPtr
   | THInt
   | THSize
+  | THCharPtrPtr
   | THCharPtr
   | THChar
+  | THShortPtr
   | THShort
+  | THHalfPtr
+  | THHalf
   | THFilePtr
   -- Templates
   | THRealPtr

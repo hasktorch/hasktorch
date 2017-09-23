@@ -55,11 +55,11 @@ concreteFiles =
     ("vendor/torch7/lib/TH/THLogAdd.h",
      (makeModule outDirConcrete "THLogAdd.h" "LogAdd" "LogAdd")),
     ("vendor/torch7/lib/TH/THSize.h",
-     (makeModule outDirConcrete "THSize.h" "Size" "Size")),
-    ("vendor/torch7/lib/TH/THStorage.h", -- doesn't work
-     (makeModule outDirConcrete "THStorage.h" "Storage" "Storage"))
+     (makeModule outDirConcrete "THSize.h" "Size" "Size"))
+    -- ("vendor/torch7/lib/TH/THStorage.h", -- doesn't work
+    --  (makeModule outDirConcrete "THStorage.h" "Storage" "Storage"))
     -- ("vendor/torch7/lib/TH/THMemoryFile.h",
-    --  (makeModule "THMemoryFile.h" "MemoryFile" "MemoryFile"))
+    --  (makeModule outDirConcrete "THMemoryFile.h" "MemoryFile" "MemoryFile"))
   ]
 
 main :: IO ()

@@ -8,10 +8,26 @@ type CTHDescBuff = Ptr ()
 type CTHAllocatorPtr = Ptr ()
 type CTHGenerator = () -- TODO - should this be defined in terms of the pointer?
 type CTHFile = ()
+type CTHStorage = ()
 
 -- ----------------------------------------
 -- Templated types
 -- ----------------------------------------
+
+-- showStruct :: MyStruct -> IO ()
+-- showStruct ss = peek ss >>= print
+
+-- data CTHIntStorage = CTHIntStorage CInt CChar
+--   deriving (Show, Read, Eq)
+-- type MyStruct = Ptr MyStructType
+
+-- instance Storable MyStructType where
+--   sizeOf _ = 8
+--   alignment = sizeOf
+--   peek ptr = do
+--     a <- peekByteOff ptr 0
+--     b <- peekByteOff ptr 4
+--     return (MyStructType a b)
 
 {- Byte -}
 

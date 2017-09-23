@@ -95,7 +95,10 @@ library
                      , THLongVector
                      , THShortVector
 
+
+                     , THFile
                      , THDiskFile
+                     , THSize
 
   hs-source-dirs:      src, src/generic
   build-depends:       base >= 4.7 && < 5

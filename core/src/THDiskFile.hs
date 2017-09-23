@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THDiskFile (
     c_THDiskFile_THDiskFile_new,
@@ -18,15 +18,15 @@ import THTypes
 
 -- |c_THDiskFile_THDiskFile_new : name mode isQuiet -> THFile *
 foreign import ccall "THDiskFile.h THDiskFile_THDiskFile_new"
-  c_THDiskFile_THDiskFile_new :: CChar -> CChar -> CInt -> IO (Ptr CTHFile)
+  c_THDiskFile_THDiskFile_new :: Ptr CChar -> Ptr CChar -> CInt -> IO (Ptr CTHFile)
 
 -- |c_THDiskFile_THPipeFile_new : name mode isQuiet -> THFile *
 foreign import ccall "THDiskFile.h THDiskFile_THPipeFile_new"
-  c_THDiskFile_THPipeFile_new :: CChar -> CChar -> CInt -> IO (Ptr CTHFile)
+  c_THDiskFile_THPipeFile_new :: Ptr CChar -> Ptr CChar -> CInt -> IO (Ptr CTHFile)
 
--- |c_THDiskFile_THDiskFile_name : self -> char
+-- |c_THDiskFile_THDiskFile_name : self -> char *
 foreign import ccall "THDiskFile.h THDiskFile_THDiskFile_name"
-  c_THDiskFile_THDiskFile_name :: Ptr CTHFile -> CChar
+  c_THDiskFile_THDiskFile_name :: Ptr CTHFile -> IO (Ptr CChar)
 
 -- |c_THDiskFile_THDiskFile_isLittleEndianCPU :  -> int
 foreign import ccall "THDiskFile.h THDiskFile_THDiskFile_isLittleEndianCPU"
