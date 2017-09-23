@@ -1,3 +1,4 @@
-*
+*.hs
+core/src/*.hs
 !.gitignore
 !refresh.sh
