@@ -50,6 +50,12 @@ testData = do
   c_THDoubleTensor_free t1
   putStrLn ""
 
+  t1 <- fromJust $ tensorNew [5, 3]
+  c_THDoubleTensor_fill t1 8.0
+  disp t1
+  c_THDoubleTensor_free t1
+  putStrLn ""
+
   t1 <- fromJust $ tensorNew [6]
   c_THDoubleTensor_fill t1 5.0
   disp t1

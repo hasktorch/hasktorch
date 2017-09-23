@@ -42,8 +42,8 @@ concreteFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 concreteFiles =
   [
     -- TODO: THFile
-    ("vendor/check.h",
-     (makeModule outDirConcrete "THFile.h" "File" "File")),
+    -- ("vendor/check.h",
+    --  (makeModule outDirConcrete "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THFile.h",
      (makeModule outDirConcrete "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THDiskFile.h",
