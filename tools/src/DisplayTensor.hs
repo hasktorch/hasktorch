@@ -7,6 +7,8 @@
 
 module Main where
 
+import Data.Maybe (fromJust)
+
 import Foreign
 import Foreign.C.Types
 import THTypes
@@ -15,7 +17,7 @@ import TorchTensor
 import THDoubleTensor
 import THDoubleTensorMath
 import TorchTensor
--- import THDoubleTensorRandom
+import THDoubleTensorRandom
 
 data PrintOptions = PrintOptions {
   precision :: Int,
@@ -42,23 +44,19 @@ tensorStr tensor = undefined
     -- print_dots = product >= threshold defaultPrintOptions
 
 testData = do
-  t1 <- c_THDoubleTensor_newWithSize2d 2 2
+  t1 <- fromJust $ tensorNew [2,5]
   c_THDoubleTensor_fill t1 3.0
-  putStrLn "hi"
+  disp t1
+  c_THDoubleTensor_free t1
+  putStrLn ""
+
+  t1 <- fromJust $ tensorNew [6]
+  c_THDoubleTensor_fill t1 5.0
+  disp t1
+  c_THDoubleTensor_free t1
 
 main = do
+  testData
   putStrLn "Done"
-
-  -- t1 <- c_THDoubleTensor_newWithSize2d 2 2
-  -- t2 <- c_THDoubleTensor_newWithSize2d 2 2
-  -- t3 <- c_THDoubleTensor_newWithSize2d 2 2
-  -- c_THDoubleTensor_fill t1 3.0
-  -- print $ c_THDoubleTensor_get2d t1 0 0
-  -- c_THDoubleTensor_fill t2 4.0
-  -- print $ c_THDoubleTensor_get2d t2 0 0
-  -- print $ c_THDoubleTensor_dot t1 t2
-  -- c_THDoubleTensor_free t1
-  -- c_THDoubleTensor_free t2
-  -- c_THDoubleTensor_free t3
 
 
