@@ -16,6 +16,44 @@ import Foreign.Ptr
 #field free , FunPtr (Ptr () -> Ptr () -> IO ())
 #stoptype
 
+{- typedef struct THFloatStorage {
+            double * data;
+            ptrdiff_t size;
+            int refcount;
+            char flag;
+            THAllocator * allocator;
+            void * allocatorContext;
+            struct THFloatStorage * view;
+        } THFloatStorage; -}
+#starttype struct THFloatStorage
+#field data , Ptr CDouble
+#field size , CLong
+#field refcount , CInt
+#field flag , CChar
+#field allocator , Ptr <struct THAllocator>
+#field allocatorContext , Ptr ()
+#field view , Ptr <struct THFloatStorage>
+#stoptype
+
+{- typedef struct THFloatTensor {
+            long * size;
+            long * stride;
+            int nDimension;
+            THFloatStorage * storage;
+            ptrdiff_t storageOffset;
+            int refcount;
+            char flag;
+        } THFloatTensor; -}
+#starttype struct THFloatTensor
+#field size , Ptr CLong
+#field stride , Ptr CLong
+#field nDimension , CInt
+#field storage , Ptr <struct THFloatStorage>
+#field storageOffset , CLong
+#field refcount , CInt
+#field flag , CChar
+#stoptype
+
 {- typedef struct THDoubleStorage {
             double * data;
             ptrdiff_t size;
@@ -49,6 +87,44 @@ import Foreign.Ptr
 #field stride , Ptr CLong
 #field nDimension , CInt
 #field storage , Ptr <struct THDoubleStorage>
+#field storageOffset , CLong
+#field refcount , CInt
+#field flag , CChar
+#stoptype
+
+{- typedef struct THIntStorage {
+            double * data;
+            ptrdiff_t size;
+            int refcount;
+            char flag;
+            THAllocator * allocator;
+            void * allocatorContext;
+            struct THIntStorage * view;
+        } THIntStorage; -}
+#starttype struct THIntStorage
+#field data , Ptr CDouble
+#field size , CLong
+#field refcount , CInt
+#field flag , CChar
+#field allocator , Ptr <struct THAllocator>
+#field allocatorContext , Ptr ()
+#field view , Ptr <struct THIntStorage>
+#stoptype
+
+{- typedef struct THIntTensor {
+            long * size;
+            long * stride;
+            int nDimension;
+            THIntStorage * storage;
+            ptrdiff_t storageOffset;
+            int refcount;
+            char flag;
+        } THIntTensor; -}
+#starttype struct THIntTensor
+#field size , Ptr CLong
+#field stride , Ptr CLong
+#field nDimension , CInt
+#field storage , Ptr <struct THIntStorage>
 #field storageOffset , CLong
 #field refcount , CInt
 #field flag , CChar
