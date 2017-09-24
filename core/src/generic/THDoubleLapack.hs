@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THDoubleLapack (
     c_THDoubleLapack_gesv,

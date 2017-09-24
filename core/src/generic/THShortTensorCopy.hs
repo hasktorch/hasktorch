@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THShortTensorCopy (
     c_THShortTensor_copy,

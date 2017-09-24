@@ -14,8 +14,11 @@ cabal-version:       >=1.10
 library
   default-language:    Haskell2010
   exposed-modules:     THTypes
+  other-modules:       TorchStructs
   hs-source-dirs:      src
+  Build-tools:         c2hs
   build-depends:       base >= 4.7 && < 5
+                     , inline-c >= 0.6
 
 source-repository head
   type:     git

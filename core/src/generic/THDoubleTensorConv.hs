@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THDoubleTensorConv (
     c_THDoubleTensor_validXCorr2Dptr,
@@ -58,23 +58,23 @@ foreign import ccall "THTensorConv.h THDoubleTensor_conv2DRevgerm"
 
 -- |c_THDoubleTensor_conv2Dger : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_conv2Dger"
-  c_THDoubleTensor_conv2Dger :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THDoubleTensor_conv2Dger :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THDoubleTensor_conv2Dmv : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_conv2Dmv"
-  c_THDoubleTensor_conv2Dmv :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THDoubleTensor_conv2Dmv :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THDoubleTensor_conv2Dmm : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_conv2Dmm"
-  c_THDoubleTensor_conv2Dmm :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THDoubleTensor_conv2Dmm :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THDoubleTensor_conv2Dmul : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_conv2Dmul"
-  c_THDoubleTensor_conv2Dmul :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THDoubleTensor_conv2Dmul :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THDoubleTensor_conv2Dcmul : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_conv2Dcmul"
-  c_THDoubleTensor_conv2Dcmul :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THDoubleTensor_conv2Dcmul :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THDoubleTensor_validXCorr3Dptr : r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_validXCorr3Dptr"
@@ -102,16 +102,16 @@ foreign import ccall "THTensorConv.h THDoubleTensor_conv3DRevger"
 
 -- |c_THDoubleTensor_conv3Dger : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_conv3Dger"
-  c_THDoubleTensor_conv3Dger :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THDoubleTensor_conv3Dger :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THDoubleTensor_conv3Dmv : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_conv3Dmv"
-  c_THDoubleTensor_conv3Dmv :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THDoubleTensor_conv3Dmv :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THDoubleTensor_conv3Dmul : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_conv3Dmul"
-  c_THDoubleTensor_conv3Dmul :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THDoubleTensor_conv3Dmul :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THDoubleTensor_conv3Dcmul : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THDoubleTensor_conv3Dcmul"
-  c_THDoubleTensor_conv3Dcmul :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THDoubleTensor_conv3Dcmul :: (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()

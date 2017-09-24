@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THShortVector (
     c_THShortVector_fill,

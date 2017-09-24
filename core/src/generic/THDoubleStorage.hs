@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THDoubleStorage (
     c_THDoubleStorage_data,
@@ -74,7 +74,7 @@ foreign import ccall "THStorage.h THDoubleStorage_newWithSize4"
 
 -- |c_THDoubleStorage_newWithMapping : filename size flags -> THStorage *
 foreign import ccall "THStorage.h THDoubleStorage_newWithMapping"
-  c_THDoubleStorage_newWithMapping :: CChar -> Ptr CTHDoubleStorage -> CInt -> IO (Ptr CTHDoubleStorage)
+  c_THDoubleStorage_newWithMapping :: Ptr CChar -> Ptr CTHDoubleStorage -> CInt -> IO (Ptr CTHDoubleStorage)
 
 -- |c_THDoubleStorage_newWithData : data size -> THStorage *
 foreign import ccall "THStorage.h THDoubleStorage_newWithData"

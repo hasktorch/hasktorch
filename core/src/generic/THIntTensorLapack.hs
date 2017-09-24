@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THIntTensorLapack (
     c_THIntTensor_gesv,
@@ -30,7 +30,7 @@ foreign import ccall "THTensorLapack.h THIntTensor_gesv"
 
 -- |c_THIntTensor_trtrs : rb_ ra_ b_ a_ uplo trans diag -> void
 foreign import ccall "THTensorLapack.h THIntTensor_trtrs"
-  c_THIntTensor_trtrs :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> CChar -> CChar -> CChar -> IO ()
+  c_THIntTensor_trtrs :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> Ptr CChar -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THIntTensor_gels : rb_ ra_ b_ a_ -> void
 foreign import ccall "THTensorLapack.h THIntTensor_gels"
@@ -38,19 +38,19 @@ foreign import ccall "THTensorLapack.h THIntTensor_gels"
 
 -- |c_THIntTensor_syev : re_ rv_ a_ jobz uplo -> void
 foreign import ccall "THTensorLapack.h THIntTensor_syev"
-  c_THIntTensor_syev :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> CChar -> CChar -> IO ()
+  c_THIntTensor_syev :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THIntTensor_geev : re_ rv_ a_ jobvr -> void
 foreign import ccall "THTensorLapack.h THIntTensor_geev"
-  c_THIntTensor_geev :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> CChar -> IO ()
+  c_THIntTensor_geev :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> Ptr CChar -> IO ()
 
 -- |c_THIntTensor_gesvd : ru_ rs_ rv_ a jobu -> void
 foreign import ccall "THTensorLapack.h THIntTensor_gesvd"
-  c_THIntTensor_gesvd :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> CChar -> IO ()
+  c_THIntTensor_gesvd :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> Ptr CChar -> IO ()
 
 -- |c_THIntTensor_gesvd2 : ru_ rs_ rv_ ra_ a jobu -> void
 foreign import ccall "THTensorLapack.h THIntTensor_gesvd2"
-  c_THIntTensor_gesvd2 :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> CChar -> IO ()
+  c_THIntTensor_gesvd2 :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> Ptr CChar -> IO ()
 
 -- |c_THIntTensor_getri : ra_ a -> void
 foreign import ccall "THTensorLapack.h THIntTensor_getri"
@@ -58,15 +58,15 @@ foreign import ccall "THTensorLapack.h THIntTensor_getri"
 
 -- |c_THIntTensor_potrf : ra_ a uplo -> void
 foreign import ccall "THTensorLapack.h THIntTensor_potrf"
-  c_THIntTensor_potrf :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> CChar -> IO ()
+  c_THIntTensor_potrf :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> Ptr CChar -> IO ()
 
 -- |c_THIntTensor_potrs : rb_ b_ a_ uplo -> void
 foreign import ccall "THTensorLapack.h THIntTensor_potrs"
-  c_THIntTensor_potrs :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> CChar -> IO ()
+  c_THIntTensor_potrs :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> Ptr CChar -> IO ()
 
 -- |c_THIntTensor_potri : ra_ a uplo -> void
 foreign import ccall "THTensorLapack.h THIntTensor_potri"
-  c_THIntTensor_potri :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> CChar -> IO ()
+  c_THIntTensor_potri :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> Ptr CChar -> IO ()
 
 -- |c_THIntTensor_qr : rq_ rr_ a -> void
 foreign import ccall "THTensorLapack.h THIntTensor_qr"
@@ -82,11 +82,11 @@ foreign import ccall "THTensorLapack.h THIntTensor_orgqr"
 
 -- |c_THIntTensor_ormqr : ra_ a tau c side trans -> void
 foreign import ccall "THTensorLapack.h THIntTensor_ormqr"
-  c_THIntTensor_ormqr :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> CChar -> CChar -> IO ()
+  c_THIntTensor_ormqr :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THIntTensor_pstrf : ra_ rpiv_ a uplo tol -> void
 foreign import ccall "THTensorLapack.h THIntTensor_pstrf"
-  c_THIntTensor_pstrf :: (Ptr CTHIntTensor) -> Ptr CTHIntTensor -> (Ptr CTHIntTensor) -> CChar -> CInt -> IO ()
+  c_THIntTensor_pstrf :: (Ptr CTHIntTensor) -> Ptr CTHIntTensor -> (Ptr CTHIntTensor) -> Ptr CChar -> CInt -> IO ()
 
 -- |c_THIntTensor_btrifact : ra_ rpivots_ rinfo_ pivot a -> void
 foreign import ccall "THTensorLapack.h THIntTensor_btrifact"

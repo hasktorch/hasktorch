@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THFloatTensorConv (
     c_THFloatTensor_validXCorr2Dptr,
@@ -58,23 +58,23 @@ foreign import ccall "THTensorConv.h THFloatTensor_conv2DRevgerm"
 
 -- |c_THFloatTensor_conv2Dger : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_conv2Dger"
-  c_THFloatTensor_conv2Dger :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THFloatTensor_conv2Dger :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THFloatTensor_conv2Dmv : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_conv2Dmv"
-  c_THFloatTensor_conv2Dmv :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THFloatTensor_conv2Dmv :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THFloatTensor_conv2Dmm : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_conv2Dmm"
-  c_THFloatTensor_conv2Dmm :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THFloatTensor_conv2Dmm :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THFloatTensor_conv2Dmul : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_conv2Dmul"
-  c_THFloatTensor_conv2Dmul :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THFloatTensor_conv2Dmul :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THFloatTensor_conv2Dcmul : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_conv2Dcmul"
-  c_THFloatTensor_conv2Dcmul :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THFloatTensor_conv2Dcmul :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THFloatTensor_validXCorr3Dptr : r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_validXCorr3Dptr"
@@ -102,16 +102,16 @@ foreign import ccall "THTensorConv.h THFloatTensor_conv3DRevger"
 
 -- |c_THFloatTensor_conv3Dger : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_conv3Dger"
-  c_THFloatTensor_conv3Dger :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THFloatTensor_conv3Dger :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THFloatTensor_conv3Dmv : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_conv3Dmv"
-  c_THFloatTensor_conv3Dmv :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THFloatTensor_conv3Dmv :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THFloatTensor_conv3Dmul : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_conv3Dmul"
-  c_THFloatTensor_conv3Dmul :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THFloatTensor_conv3Dmul :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THFloatTensor_conv3Dcmul : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THFloatTensor_conv3Dcmul"
-  c_THFloatTensor_conv3Dcmul :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THFloatTensor_conv3Dcmul :: (Ptr CTHFloatTensor) -> CFloat -> CFloat -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()

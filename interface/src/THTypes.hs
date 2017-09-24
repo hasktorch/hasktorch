@@ -1,8 +1,15 @@
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module THTypes where
 
 import Foreign
+import Foreign.C.String
 import Foreign.C.Types
+import Foreign.Ptr
 import Foreign.Storable
+
+import TorchStructs
 
 type CTHDescBuff = Ptr ()
 type CTHAllocatorPtr = Ptr ()
@@ -14,21 +21,6 @@ type CTHHalf = CUShort
 -- ----------------------------------------
 -- Templated types
 -- ----------------------------------------
-
--- showStruct :: MyStruct -> IO ()
--- showStruct ss = peek ss >>= print
-
--- data CTHIntStorage = CTHIntStorage CInt CChar
---   deriving (Show, Read, Eq)
--- type MyStruct = Ptr MyStructType
-
--- instance Storable MyStructType where
---   sizeOf _ = 8
---   alignment = sizeOf
---   peek ptr = do
---     a <- peekByteOff ptr 0
---     b <- peekByteOff ptr 4
---     return (MyStructType a b)
 
 {- Byte -}
 
@@ -46,8 +38,8 @@ type CTHCharPtrDiff = CInt     -- ptrdiff_t / THStorage.h
 
 {- Double -}
 
-type CTHDoubleTensor = ()      -- THTensor / THTensor.h
-type CTHDoubleStorage = ()     -- THStorage / THStorag
+type CTHDoubleTensor = C'THDoubleTensor -- THTensor / THTensor.h
+type CTHDoubleStorage = C'THDoubleStorage
 type CTHDoubleLongStorage = () -- THLongStorage / THStorage.h
 type CTHDoublePtrDiff = CInt     -- ptrdiff_t / THStorage.h
 

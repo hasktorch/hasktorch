@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THHalfTensorConv (
     c_THHalfTensor_validXCorr2Dptr,
@@ -58,23 +58,23 @@ foreign import ccall "THTensorConv.h THHalfTensor_conv2DRevgerm"
 
 -- |c_THHalfTensor_conv2Dger : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_conv2Dger"
-  c_THHalfTensor_conv2Dger :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THHalfTensor_conv2Dger :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THHalfTensor_conv2Dmv : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_conv2Dmv"
-  c_THHalfTensor_conv2Dmv :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THHalfTensor_conv2Dmv :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THHalfTensor_conv2Dmm : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_conv2Dmm"
-  c_THHalfTensor_conv2Dmm :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THHalfTensor_conv2Dmm :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THHalfTensor_conv2Dmul : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_conv2Dmul"
-  c_THHalfTensor_conv2Dmul :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THHalfTensor_conv2Dmul :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THHalfTensor_conv2Dcmul : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_conv2Dcmul"
-  c_THHalfTensor_conv2Dcmul :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THHalfTensor_conv2Dcmul :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THHalfTensor_validXCorr3Dptr : r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_validXCorr3Dptr"
@@ -102,16 +102,16 @@ foreign import ccall "THTensorConv.h THHalfTensor_conv3DRevger"
 
 -- |c_THHalfTensor_conv3Dger : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_conv3Dger"
-  c_THHalfTensor_conv3Dger :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THHalfTensor_conv3Dger :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THHalfTensor_conv3Dmv : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_conv3Dmv"
-  c_THHalfTensor_conv3Dmv :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THHalfTensor_conv3Dmv :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THHalfTensor_conv3Dmul : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_conv3Dmul"
-  c_THHalfTensor_conv3Dmul :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THHalfTensor_conv3Dmul :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- |c_THHalfTensor_conv3Dcmul : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_conv3Dcmul"
-  c_THHalfTensor_conv3Dcmul :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CLong -> CChar -> CChar -> IO ()
+  c_THHalfTensor_conv3Dcmul :: (Ptr CTHHalfTensor) -> THHalf -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()

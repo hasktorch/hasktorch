@@ -248,8 +248,8 @@ renderHaskellType _ _ THDouble =
   Just "CDouble" -- added from TensorRandom
 
 renderHaskellType typeCat templateType THPtrDiff = case typeCat of
-  ReturnValue -> Just $ "IO (CTH" <> type2SpliceReal templateType <> "PtrDiff)"
-  FunctionParam -> Just $ "CTH" <> type2SpliceReal templateType <> "PtrDiff"
+  ReturnValue -> Just $ "CPtrdiff"
+  FunctionParam -> Just $ "CPtrdiff"
   -- TODO check if it's appropriate to splice here
 
 renderHaskellType typeCat _ THLongPtr = case typeCat of

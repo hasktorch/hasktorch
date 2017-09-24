@@ -6,6 +6,10 @@ packages:
 - 'interface'
 - 'tests'
 - 'tools'
+- location:
+    git: https://github.com/austinvhuang/c2hsc.git
+    commit: e31a2cb894faf4c0cf4a3af3058152149f2b2ee3
+  extra-dep: true
 
 extra-deps: []
 
@@ -13,14 +17,16 @@ flags: {}
 
 extra-package-dbs: []
 
+extra-include-dirs: ['vendor/bindings-dsl']
 # extra-include-dirs: ['vendor/torch7/lib/TH/', 'vendor/torch7/lib/TH/generic/']
 
 # _must_ explicitly link TH dylib
 extra-lib-dirs:
   - ./vendor/build/
+
 ghc-options:
   "torch-core": -lTH
   "torch-codegen": -lTH
   "torch-tests": -lTH
-  "torch-tools": -lTH
-
+  "torch-tools": -lTH -fobject-code -O0
+# ghci-options for inline-c

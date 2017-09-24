@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THIntStorage (
     c_THIntStorage_data,
@@ -74,7 +74,7 @@ foreign import ccall "THStorage.h THIntStorage_newWithSize4"
 
 -- |c_THIntStorage_newWithMapping : filename size flags -> THStorage *
 foreign import ccall "THStorage.h THIntStorage_newWithMapping"
-  c_THIntStorage_newWithMapping :: CChar -> Ptr CTHIntStorage -> CInt -> IO (Ptr CTHIntStorage)
+  c_THIntStorage_newWithMapping :: Ptr CChar -> Ptr CTHIntStorage -> CInt -> IO (Ptr CTHIntStorage)
 
 -- |c_THIntStorage_newWithData : data size -> THStorage *
 foreign import ccall "THStorage.h THIntStorage_newWithData"

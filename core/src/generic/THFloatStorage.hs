@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THFloatStorage (
     c_THFloatStorage_data,
@@ -74,7 +74,7 @@ foreign import ccall "THStorage.h THFloatStorage_newWithSize4"
 
 -- |c_THFloatStorage_newWithMapping : filename size flags -> THStorage *
 foreign import ccall "THStorage.h THFloatStorage_newWithMapping"
-  c_THFloatStorage_newWithMapping :: CChar -> Ptr CTHFloatStorage -> CInt -> IO (Ptr CTHFloatStorage)
+  c_THFloatStorage_newWithMapping :: Ptr CChar -> Ptr CTHFloatStorage -> CInt -> IO (Ptr CTHFloatStorage)
 
 -- |c_THFloatStorage_newWithData : data size -> THStorage *
 foreign import ccall "THStorage.h THFloatStorage_newWithData"

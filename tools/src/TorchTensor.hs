@@ -10,6 +10,7 @@ module TorchTensor (
   ) where
 
 import Data.Maybe  (fromJust)
+import qualified Data.Text as T
 
 import Foreign
 import Foreign.C.Types
@@ -40,6 +41,35 @@ data TensorInt = TensorInt {
   val_int :: Ptr CTHIntTensor
   } deriving (Eq, Show)
 
+-- str :: Ptr CTHDoubleTensor -> Text
+-- str tensor
+--   | (length sz) == 0 = "Empty Tensor"
+--   | (length sz) == 1 =
+--       let indexes = [ fromIntegral idx :: CLong
+--                     | idx <- [0..(sz !! 0 - 1)] ] in
+--         ("[ " <>
+--          foldr (\idx -> (show $ c_THDoubleTensor_get1d tensor idx) <> " ")
+--         indexes
+--       putStrLn "]"
+--   | (length sz) == 2 = do
+--       let pairs = [ ((fromIntegral r) :: CLong,
+--                      (fromIntegral c) :: CLong)
+--                   | r <- [0..(sz !! 0 - 1)], c <- [0..(sz !! 1 - 1)] ]
+--       ("[ " :: Text)
+--       mapM_ (\(r, c) -> do
+--                 let val = c_THDoubleTensor_get2d tensor r c
+--                 if c == fromIntegral (sz !! 1) - 1
+--                   then do
+--                   putStrLn (((show val) ++ " ]") :: String)
+--                   putStr (if (fromIntegral r :: Int) < (sz !! 0 - 1)
+--                           then "[ " :: String
+--                           else "")
+--                   else
+--                   putStr $ ((show val) ++ " " :: String)
+--             ) pairs
+--   | otherwise = putStrLn "Can't print this yet."
+--   where
+--     sz = size tensor
 
 disp :: Ptr CTHDoubleTensor -> IO ()
 disp tensor

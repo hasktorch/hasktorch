@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module THByteStorage (
     c_THByteStorage_data,
@@ -74,7 +74,7 @@ foreign import ccall "THStorage.h THByteStorage_newWithSize4"
 
 -- |c_THByteStorage_newWithMapping : filename size flags -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithMapping"
-  c_THByteStorage_newWithMapping :: CChar -> Ptr CTHByteStorage -> CInt -> IO (Ptr CTHByteStorage)
+  c_THByteStorage_newWithMapping :: Ptr CChar -> Ptr CTHByteStorage -> CInt -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithData : data size -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithData"
