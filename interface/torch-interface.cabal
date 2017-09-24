@@ -16,6 +16,8 @@ library
   exposed-modules:     THTypes
   other-modules:       TorchStructs
   hs-source-dirs:      src
+  include-dirs:        src
+  includes:            torch_structs.h
   Build-tools:         c2hs
   build-depends:       base >= 4.7 && < 5
                      , inline-c >= 0.6
