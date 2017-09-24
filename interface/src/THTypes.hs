@@ -9,6 +9,7 @@ type CTHAllocatorPtr = Ptr ()
 type CTHGenerator = () -- TODO - should this be defined in terms of the pointer?
 type CTHFile = ()
 type CTHStorage = ()
+type CTHHalf = CUShort
 
 -- ----------------------------------------
 -- Templated types
