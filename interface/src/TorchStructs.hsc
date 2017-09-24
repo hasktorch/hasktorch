@@ -17,7 +17,7 @@ import Foreign.Ptr
 #stoptype
 
 {- typedef struct THFloatStorage {
-            double * data;
+            float * data;
             ptrdiff_t size;
             int refcount;
             char flag;
@@ -26,7 +26,7 @@ import Foreign.Ptr
             struct THFloatStorage * view;
         } THFloatStorage; -}
 #starttype struct THFloatStorage
-#field data , Ptr CDouble
+#field data , Ptr CFloat
 #field size , CLong
 #field refcount , CInt
 #field flag , CChar
@@ -93,7 +93,7 @@ import Foreign.Ptr
 #stoptype
 
 {- typedef struct THIntStorage {
-            double * data;
+            int * data;
             ptrdiff_t size;
             int refcount;
             char flag;
@@ -102,7 +102,7 @@ import Foreign.Ptr
             struct THIntStorage * view;
         } THIntStorage; -}
 #starttype struct THIntStorage
-#field data , Ptr CDouble
+#field data , Ptr CInt
 #field size , CLong
 #field refcount , CInt
 #field flag , CChar
@@ -125,6 +125,82 @@ import Foreign.Ptr
 #field stride , Ptr CLong
 #field nDimension , CInt
 #field storage , Ptr <struct THIntStorage>
+#field storageOffset , CLong
+#field refcount , CInt
+#field flag , CChar
+#stoptype
+
+{- typedef struct THCharStorage {
+            char * data;
+            ptrdiff_t size;
+            int refcount;
+            char flag;
+            THAllocator * allocator;
+            void * allocatorContext;
+            struct THCharStorage * view;
+        } THCharStorage; -}
+#starttype struct THCharStorage
+#field data , CString
+#field size , CLong
+#field refcount , CInt
+#field flag , CChar
+#field allocator , Ptr <struct THAllocator>
+#field allocatorContext , Ptr ()
+#field view , Ptr <struct THCharStorage>
+#stoptype
+
+{- typedef struct THCharTensor {
+            long * size;
+            long * stride;
+            int nDimension;
+            THCharStorage * storage;
+            ptrdiff_t storageOffset;
+            int refcount;
+            char flag;
+        } THCharTensor; -}
+#starttype struct THCharTensor
+#field size , Ptr CLong
+#field stride , Ptr CLong
+#field nDimension , CInt
+#field storage , Ptr <struct THCharStorage>
+#field storageOffset , CLong
+#field refcount , CInt
+#field flag , CChar
+#stoptype
+
+{- typedef struct THByteStorage {
+            unsigned char * data;
+            ptrdiff_t size;
+            int refcount;
+            char flag;
+            THAllocator * allocator;
+            void * allocatorContext;
+            struct THByteStorage * view;
+        } THByteStorage; -}
+#starttype struct THByteStorage
+#field data , Ptr CUChar
+#field size , CLong
+#field refcount , CInt
+#field flag , CChar
+#field allocator , Ptr <struct THAllocator>
+#field allocatorContext , Ptr ()
+#field view , Ptr <struct THByteStorage>
+#stoptype
+
+{- typedef struct THByteTensor {
+            long * size;
+            long * stride;
+            int nDimension;
+            THByteStorage * storage;
+            ptrdiff_t storageOffset;
+            int refcount;
+            char flag;
+        } THByteTensor; -}
+#starttype struct THByteTensor
+#field size , Ptr CLong
+#field stride , Ptr CLong
+#field nDimension , CInt
+#field storage , Ptr <struct THByteStorage>
 #field storageOffset , CLong
 #field refcount , CInt
 #field flag , CChar

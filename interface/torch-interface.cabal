@@ -13,8 +13,8 @@ cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:     THTypes
-  other-modules:       TorchStructs
+  exposed-modules:     THTypes, TorchStructs
+  other-modules:       
   hs-source-dirs:      src
   include-dirs:        src
   includes:            torch_structs.h

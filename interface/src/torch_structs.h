@@ -8,7 +8,7 @@ typedef struct THAllocator {
 
 typedef struct THFloatStorage
 {
-  double *data;
+  float *data;
   ptrdiff_t size;
   int refcount;
   char flag;
@@ -53,7 +53,7 @@ typedef struct THDoubleTensor
 
 typedef struct THIntStorage
 {
-  double *data;
+  int *data;
   ptrdiff_t size;
   int refcount;
   char flag;
@@ -72,3 +72,47 @@ typedef struct THIntTensor
   int refcount;
   char flag;
 } THIntTensor;
+
+typedef struct THCharStorage
+{
+  char *data;
+  ptrdiff_t size;
+  int refcount;
+  char flag;
+  THAllocator *allocator;
+  void *allocatorContext;
+  struct THCharStorage *view;
+} THCharStorage;
+
+typedef struct THCharTensor
+{
+  long *size;
+  long *stride;
+  int nDimension;
+  THCharStorage *storage;
+  ptrdiff_t storageOffset;
+  int refcount;
+  char flag;
+} THCharTensor;
+
+typedef struct THByteStorage
+{
+  unsigned char *data;
+  ptrdiff_t size;
+  int refcount;
+  char flag;
+  THAllocator *allocator;
+  void *allocatorContext;
+  struct THByteStorage *view;
+} THByteStorage;
+
+typedef struct THByteTensor
+{
+  long *size;
+  long *stride;
+  int nDimension;
+  THByteStorage *storage;
+  ptrdiff_t storageOffset;
+  int refcount;
+  char flag;
+} THByteTensor;

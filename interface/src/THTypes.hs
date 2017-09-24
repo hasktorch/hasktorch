@@ -24,14 +24,14 @@ type CTHHalf = CUShort
 
 {- Byte -}
 
-type CTHByteTensor = ()
-type CTHByteStorage = ()
+type CTHByteTensor = C'THByteTensor
+type CTHByteStorage = C'THByteStorage
+
 
 {- Char -}
 
-type CTHCharTensor = ()
-type CTHCharStorage = ()
-type CTHCharLongStorage = ()
+type CTHCharTensor = C'THCharTensor
+type CTHCharStorage = C'THCharStorage
 
 {- Double -}
 

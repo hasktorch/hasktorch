@@ -60,7 +60,7 @@ instance Storable C'THAllocator where
 {-# LINE 18 "TorchStructs.hsc" #-}
 
 {- typedef struct THFloatStorage {
-            double * data;
+            float * data;
             ptrdiff_t size;
             int refcount;
             char flag;
@@ -85,7 +85,7 @@ instance Storable C'THAllocator where
 
 {-# LINE 36 "TorchStructs.hsc" #-}
 data C'THFloatStorage = C'THFloatStorage{
-  c'THFloatStorage'data :: Ptr CDouble,
+  c'THFloatStorage'data :: Ptr CFloat,
   c'THFloatStorage'size :: CLong,
   c'THFloatStorage'refcount :: CInt,
   c'THFloatStorage'flag :: CChar,
@@ -94,7 +94,7 @@ data C'THFloatStorage = C'THFloatStorage{
   c'THFloatStorage'view :: Ptr C'THFloatStorage
 } deriving (Eq,Show)
 p'THFloatStorage'data p = plusPtr p 0
-p'THFloatStorage'data :: Ptr (C'THFloatStorage) -> Ptr (Ptr CDouble)
+p'THFloatStorage'data :: Ptr (C'THFloatStorage) -> Ptr (Ptr CFloat)
 p'THFloatStorage'size p = plusPtr p 8
 p'THFloatStorage'size :: Ptr (C'THFloatStorage) -> Ptr (CLong)
 p'THFloatStorage'refcount p = plusPtr p 16
@@ -348,7 +348,7 @@ instance Storable C'THDoubleTensor where
 {-# LINE 94 "TorchStructs.hsc" #-}
 
 {- typedef struct THIntStorage {
-            double * data;
+            int * data;
             ptrdiff_t size;
             int refcount;
             char flag;
@@ -373,7 +373,7 @@ instance Storable C'THDoubleTensor where
 
 {-# LINE 112 "TorchStructs.hsc" #-}
 data C'THIntStorage = C'THIntStorage{
-  c'THIntStorage'data :: Ptr CDouble,
+  c'THIntStorage'data :: Ptr CInt,
   c'THIntStorage'size :: CLong,
   c'THIntStorage'refcount :: CInt,
   c'THIntStorage'flag :: CChar,
@@ -382,7 +382,7 @@ data C'THIntStorage = C'THIntStorage{
   c'THIntStorage'view :: Ptr C'THIntStorage
 } deriving (Eq,Show)
 p'THIntStorage'data p = plusPtr p 0
-p'THIntStorage'data :: Ptr (C'THIntStorage) -> Ptr (Ptr CDouble)
+p'THIntStorage'data :: Ptr (C'THIntStorage) -> Ptr (Ptr CInt)
 p'THIntStorage'size p = plusPtr p 8
 p'THIntStorage'size :: Ptr (C'THIntStorage) -> Ptr (CLong)
 p'THIntStorage'refcount p = plusPtr p 16
@@ -490,4 +490,292 @@ instance Storable C'THIntTensor where
     return ()
 
 {-# LINE 132 "TorchStructs.hsc" #-}
+
+{- typedef struct THCharStorage {
+            char * data;
+            ptrdiff_t size;
+            int refcount;
+            char flag;
+            THAllocator * allocator;
+            void * allocatorContext;
+            struct THCharStorage * view;
+        } THCharStorage; -}
+
+{-# LINE 143 "TorchStructs.hsc" #-}
+
+{-# LINE 144 "TorchStructs.hsc" #-}
+
+{-# LINE 145 "TorchStructs.hsc" #-}
+
+{-# LINE 146 "TorchStructs.hsc" #-}
+
+{-# LINE 147 "TorchStructs.hsc" #-}
+
+{-# LINE 148 "TorchStructs.hsc" #-}
+
+{-# LINE 149 "TorchStructs.hsc" #-}
+
+{-# LINE 150 "TorchStructs.hsc" #-}
+data C'THCharStorage = C'THCharStorage{
+  c'THCharStorage'data :: CString,
+  c'THCharStorage'size :: CLong,
+  c'THCharStorage'refcount :: CInt,
+  c'THCharStorage'flag :: CChar,
+  c'THCharStorage'allocator :: Ptr C'THAllocator,
+  c'THCharStorage'allocatorContext :: Ptr (),
+  c'THCharStorage'view :: Ptr C'THCharStorage
+} deriving (Eq,Show)
+p'THCharStorage'data p = plusPtr p 0
+p'THCharStorage'data :: Ptr (C'THCharStorage) -> Ptr (CString)
+p'THCharStorage'size p = plusPtr p 8
+p'THCharStorage'size :: Ptr (C'THCharStorage) -> Ptr (CLong)
+p'THCharStorage'refcount p = plusPtr p 16
+p'THCharStorage'refcount :: Ptr (C'THCharStorage) -> Ptr (CInt)
+p'THCharStorage'flag p = plusPtr p 20
+p'THCharStorage'flag :: Ptr (C'THCharStorage) -> Ptr (CChar)
+p'THCharStorage'allocator p = plusPtr p 24
+p'THCharStorage'allocator :: Ptr (C'THCharStorage) -> Ptr (Ptr C'THAllocator)
+p'THCharStorage'allocatorContext p = plusPtr p 32
+p'THCharStorage'allocatorContext :: Ptr (C'THCharStorage) -> Ptr (Ptr ())
+p'THCharStorage'view p = plusPtr p 40
+p'THCharStorage'view :: Ptr (C'THCharStorage) -> Ptr (Ptr C'THCharStorage)
+instance Storable C'THCharStorage where
+  sizeOf _ = 48
+  alignment _ = 8
+  peek _p = do
+    v0 <- peekByteOff _p 0
+    v1 <- peekByteOff _p 8
+    v2 <- peekByteOff _p 16
+    v3 <- peekByteOff _p 20
+    v4 <- peekByteOff _p 24
+    v5 <- peekByteOff _p 32
+    v6 <- peekByteOff _p 40
+    return $ C'THCharStorage v0 v1 v2 v3 v4 v5 v6
+  poke _p (C'THCharStorage v0 v1 v2 v3 v4 v5 v6) = do
+    pokeByteOff _p 0 v0
+    pokeByteOff _p 8 v1
+    pokeByteOff _p 16 v2
+    pokeByteOff _p 20 v3
+    pokeByteOff _p 24 v4
+    pokeByteOff _p 32 v5
+    pokeByteOff _p 40 v6
+    return ()
+
+{-# LINE 151 "TorchStructs.hsc" #-}
+
+{- typedef struct THCharTensor {
+            long * size;
+            long * stride;
+            int nDimension;
+            THCharStorage * storage;
+            ptrdiff_t storageOffset;
+            int refcount;
+            char flag;
+        } THCharTensor; -}
+
+{-# LINE 162 "TorchStructs.hsc" #-}
+
+{-# LINE 163 "TorchStructs.hsc" #-}
+
+{-# LINE 164 "TorchStructs.hsc" #-}
+
+{-# LINE 165 "TorchStructs.hsc" #-}
+
+{-# LINE 166 "TorchStructs.hsc" #-}
+
+{-# LINE 167 "TorchStructs.hsc" #-}
+
+{-# LINE 168 "TorchStructs.hsc" #-}
+
+{-# LINE 169 "TorchStructs.hsc" #-}
+data C'THCharTensor = C'THCharTensor{
+  c'THCharTensor'size :: Ptr CLong,
+  c'THCharTensor'stride :: Ptr CLong,
+  c'THCharTensor'nDimension :: CInt,
+  c'THCharTensor'storage :: Ptr C'THCharStorage,
+  c'THCharTensor'storageOffset :: CLong,
+  c'THCharTensor'refcount :: CInt,
+  c'THCharTensor'flag :: CChar
+} deriving (Eq,Show)
+p'THCharTensor'size p = plusPtr p 0
+p'THCharTensor'size :: Ptr (C'THCharTensor) -> Ptr (Ptr CLong)
+p'THCharTensor'stride p = plusPtr p 8
+p'THCharTensor'stride :: Ptr (C'THCharTensor) -> Ptr (Ptr CLong)
+p'THCharTensor'nDimension p = plusPtr p 16
+p'THCharTensor'nDimension :: Ptr (C'THCharTensor) -> Ptr (CInt)
+p'THCharTensor'storage p = plusPtr p 24
+p'THCharTensor'storage :: Ptr (C'THCharTensor) -> Ptr (Ptr C'THCharStorage)
+p'THCharTensor'storageOffset p = plusPtr p 32
+p'THCharTensor'storageOffset :: Ptr (C'THCharTensor) -> Ptr (CLong)
+p'THCharTensor'refcount p = plusPtr p 40
+p'THCharTensor'refcount :: Ptr (C'THCharTensor) -> Ptr (CInt)
+p'THCharTensor'flag p = plusPtr p 44
+p'THCharTensor'flag :: Ptr (C'THCharTensor) -> Ptr (CChar)
+instance Storable C'THCharTensor where
+  sizeOf _ = 48
+  alignment _ = 8
+  peek _p = do
+    v0 <- peekByteOff _p 0
+    v1 <- peekByteOff _p 8
+    v2 <- peekByteOff _p 16
+    v3 <- peekByteOff _p 24
+    v4 <- peekByteOff _p 32
+    v5 <- peekByteOff _p 40
+    v6 <- peekByteOff _p 44
+    return $ C'THCharTensor v0 v1 v2 v3 v4 v5 v6
+  poke _p (C'THCharTensor v0 v1 v2 v3 v4 v5 v6) = do
+    pokeByteOff _p 0 v0
+    pokeByteOff _p 8 v1
+    pokeByteOff _p 16 v2
+    pokeByteOff _p 24 v3
+    pokeByteOff _p 32 v4
+    pokeByteOff _p 40 v5
+    pokeByteOff _p 44 v6
+    return ()
+
+{-# LINE 170 "TorchStructs.hsc" #-}
+
+{- typedef struct THByteStorage {
+            unsigned char * data;
+            ptrdiff_t size;
+            int refcount;
+            char flag;
+            THAllocator * allocator;
+            void * allocatorContext;
+            struct THByteStorage * view;
+        } THByteStorage; -}
+
+{-# LINE 181 "TorchStructs.hsc" #-}
+
+{-# LINE 182 "TorchStructs.hsc" #-}
+
+{-# LINE 183 "TorchStructs.hsc" #-}
+
+{-# LINE 184 "TorchStructs.hsc" #-}
+
+{-# LINE 185 "TorchStructs.hsc" #-}
+
+{-# LINE 186 "TorchStructs.hsc" #-}
+
+{-# LINE 187 "TorchStructs.hsc" #-}
+
+{-# LINE 188 "TorchStructs.hsc" #-}
+data C'THByteStorage = C'THByteStorage{
+  c'THByteStorage'data :: Ptr CUChar,
+  c'THByteStorage'size :: CLong,
+  c'THByteStorage'refcount :: CInt,
+  c'THByteStorage'flag :: CChar,
+  c'THByteStorage'allocator :: Ptr C'THAllocator,
+  c'THByteStorage'allocatorContext :: Ptr (),
+  c'THByteStorage'view :: Ptr C'THByteStorage
+} deriving (Eq,Show)
+p'THByteStorage'data p = plusPtr p 0
+p'THByteStorage'data :: Ptr (C'THByteStorage) -> Ptr (Ptr CUChar)
+p'THByteStorage'size p = plusPtr p 8
+p'THByteStorage'size :: Ptr (C'THByteStorage) -> Ptr (CLong)
+p'THByteStorage'refcount p = plusPtr p 16
+p'THByteStorage'refcount :: Ptr (C'THByteStorage) -> Ptr (CInt)
+p'THByteStorage'flag p = plusPtr p 20
+p'THByteStorage'flag :: Ptr (C'THByteStorage) -> Ptr (CChar)
+p'THByteStorage'allocator p = plusPtr p 24
+p'THByteStorage'allocator :: Ptr (C'THByteStorage) -> Ptr (Ptr C'THAllocator)
+p'THByteStorage'allocatorContext p = plusPtr p 32
+p'THByteStorage'allocatorContext :: Ptr (C'THByteStorage) -> Ptr (Ptr ())
+p'THByteStorage'view p = plusPtr p 40
+p'THByteStorage'view :: Ptr (C'THByteStorage) -> Ptr (Ptr C'THByteStorage)
+instance Storable C'THByteStorage where
+  sizeOf _ = 48
+  alignment _ = 8
+  peek _p = do
+    v0 <- peekByteOff _p 0
+    v1 <- peekByteOff _p 8
+    v2 <- peekByteOff _p 16
+    v3 <- peekByteOff _p 20
+    v4 <- peekByteOff _p 24
+    v5 <- peekByteOff _p 32
+    v6 <- peekByteOff _p 40
+    return $ C'THByteStorage v0 v1 v2 v3 v4 v5 v6
+  poke _p (C'THByteStorage v0 v1 v2 v3 v4 v5 v6) = do
+    pokeByteOff _p 0 v0
+    pokeByteOff _p 8 v1
+    pokeByteOff _p 16 v2
+    pokeByteOff _p 20 v3
+    pokeByteOff _p 24 v4
+    pokeByteOff _p 32 v5
+    pokeByteOff _p 40 v6
+    return ()
+
+{-# LINE 189 "TorchStructs.hsc" #-}
+
+{- typedef struct THByteTensor {
+            long * size;
+            long * stride;
+            int nDimension;
+            THByteStorage * storage;
+            ptrdiff_t storageOffset;
+            int refcount;
+            char flag;
+        } THByteTensor; -}
+
+{-# LINE 200 "TorchStructs.hsc" #-}
+
+{-# LINE 201 "TorchStructs.hsc" #-}
+
+{-# LINE 202 "TorchStructs.hsc" #-}
+
+{-# LINE 203 "TorchStructs.hsc" #-}
+
+{-# LINE 204 "TorchStructs.hsc" #-}
+
+{-# LINE 205 "TorchStructs.hsc" #-}
+
+{-# LINE 206 "TorchStructs.hsc" #-}
+
+{-# LINE 207 "TorchStructs.hsc" #-}
+data C'THByteTensor = C'THByteTensor{
+  c'THByteTensor'size :: Ptr CLong,
+  c'THByteTensor'stride :: Ptr CLong,
+  c'THByteTensor'nDimension :: CInt,
+  c'THByteTensor'storage :: Ptr C'THByteStorage,
+  c'THByteTensor'storageOffset :: CLong,
+  c'THByteTensor'refcount :: CInt,
+  c'THByteTensor'flag :: CChar
+} deriving (Eq,Show)
+p'THByteTensor'size p = plusPtr p 0
+p'THByteTensor'size :: Ptr (C'THByteTensor) -> Ptr (Ptr CLong)
+p'THByteTensor'stride p = plusPtr p 8
+p'THByteTensor'stride :: Ptr (C'THByteTensor) -> Ptr (Ptr CLong)
+p'THByteTensor'nDimension p = plusPtr p 16
+p'THByteTensor'nDimension :: Ptr (C'THByteTensor) -> Ptr (CInt)
+p'THByteTensor'storage p = plusPtr p 24
+p'THByteTensor'storage :: Ptr (C'THByteTensor) -> Ptr (Ptr C'THByteStorage)
+p'THByteTensor'storageOffset p = plusPtr p 32
+p'THByteTensor'storageOffset :: Ptr (C'THByteTensor) -> Ptr (CLong)
+p'THByteTensor'refcount p = plusPtr p 40
+p'THByteTensor'refcount :: Ptr (C'THByteTensor) -> Ptr (CInt)
+p'THByteTensor'flag p = plusPtr p 44
+p'THByteTensor'flag :: Ptr (C'THByteTensor) -> Ptr (CChar)
+instance Storable C'THByteTensor where
+  sizeOf _ = 48
+  alignment _ = 8
+  peek _p = do
+    v0 <- peekByteOff _p 0
+    v1 <- peekByteOff _p 8
+    v2 <- peekByteOff _p 16
+    v3 <- peekByteOff _p 24
+    v4 <- peekByteOff _p 32
+    v5 <- peekByteOff _p 40
+    v6 <- peekByteOff _p 44
+    return $ C'THByteTensor v0 v1 v2 v3 v4 v5 v6
+  poke _p (C'THByteTensor v0 v1 v2 v3 v4 v5 v6) = do
+    pokeByteOff _p 0 v0
+    pokeByteOff _p 8 v1
+    pokeByteOff _p 16 v2
+    pokeByteOff _p 24 v3
+    pokeByteOff _p 32 v4
+    pokeByteOff _p 40 v5
+    pokeByteOff _p 44 v6
+    return ()
+
+{-# LINE 208 "TorchStructs.hsc" #-}
 
