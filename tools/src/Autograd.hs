@@ -2,7 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 
-module Autograd where
+module Main where
 
 -- experimental AD implementation
 -- see Just Le's writeup
@@ -41,5 +41,3 @@ main = do
   let network = ih :&~ hh :&~ O ho
   putStrLn "Done"
   pure ()
-
-
