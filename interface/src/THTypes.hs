@@ -13,7 +13,7 @@ import TorchStructs
 
 type CTHDescBuff = Ptr ()
 type CTHAllocatorPtr = Ptr C'THAllocator
-type CTHGenerator = () -- TODO - should this be defined in terms of the pointer?
+type CTHGenerator = C'THGenerator
 type CTHFile = ()
 type CTHStorage = ()
 type CTHHalf = CUShort

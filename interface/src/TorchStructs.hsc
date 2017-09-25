@@ -16,6 +16,29 @@ import Foreign.Ptr
 #field free , FunPtr (Ptr () -> Ptr () -> IO ())
 #stoptype
 
+{- typedef struct THGenerator {
+            unsigned long the_initial_seed;
+            int left;
+            int seeded;
+            unsigned long next;
+            unsigned long state[624];
+            double normal_x;
+            double normal_y;
+            double normal_rho;
+            int normal_is_valid;
+        } THGenerator; -}
+#starttype struct THGenerator
+#field the_initial_seed , CULong
+#field left , CInt
+#field seeded , CInt
+#field next , CULong
+#array_field state , CULong
+#field normal_x , CDouble
+#field normal_y , CDouble
+#field normal_rho , CDouble
+#field normal_is_valid , CInt
+#stoptype
+
 {- typedef struct THFloatStorage {
             float * data;
             ptrdiff_t size;

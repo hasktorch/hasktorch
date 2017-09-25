@@ -1,10 +1,37 @@
 #include <stddef.h>
 
+/*
+  Concrete types
+*/
+
 typedef struct THAllocator {
   void* (*malloc)(void*, ptrdiff_t);
   void* (*realloc)(void*, void*, ptrdiff_t);
   void (*free)(void*, void*);
 } THAllocator;
+
+#define _MERSENNE_STATE_N 624
+#define _MERSENNE_STATE_M 397
+
+typedef struct THGenerator {
+  /* The initial seed. */
+  unsigned long the_initial_seed;
+  int left;  /* = 1; */
+  int seeded; /* = 0; */
+  unsigned long next;
+  unsigned long state[_MERSENNE_STATE_N]; /* the array for the state vector  */
+  /********************************/
+
+  /* For normal distribution */
+  double normal_x;
+  double normal_y;
+  double normal_rho;
+  int normal_is_valid; /* = 0; */
+} THGenerator;
+
+/*
+  Templated generic types
+*/
 
 typedef struct THFloatStorage
 {

@@ -1,10 +1,6 @@
-{-# LINE 1 "TorchStructs.hsc" #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
-{-# LINE 2 "TorchStructs.hsc" #-}
 
-{-# LINE 3 "TorchStructs.hsc" #-}
 
-{-# LINE 4 "TorchStructs.hsc" #-}
 module TorchStructs where
 import Foreign.Ptr
 import Foreign.Ptr (Ptr,FunPtr,plusPtr)
@@ -17,7 +13,6 @@ import Foreign.Marshal.Array (peekArray,pokeArray)
 import Data.Int
 import Data.Word
 
-{-# LINE 7 "TorchStructs.hsc" #-}
 
 {- typedef struct THAllocator {
             void * (* malloc)(void *, ptrdiff_t);
@@ -25,13 +20,9 @@ import Data.Word
             void (* free)(void *, void *);
         } THAllocator; -}
 
-{-# LINE 14 "TorchStructs.hsc" #-}
 
-{-# LINE 15 "TorchStructs.hsc" #-}
 
-{-# LINE 16 "TorchStructs.hsc" #-}
 
-{-# LINE 17 "TorchStructs.hsc" #-}
 data C'THAllocator = C'THAllocator{
   c'THAllocator'malloc :: FunPtr (Ptr () -> CLong -> Ptr ()),
   c'THAllocator'realloc :: FunPtr (Ptr () -> Ptr () -> CLong -> Ptr ()),
@@ -57,7 +48,84 @@ instance Storable C'THAllocator where
     pokeByteOff _p 16 v2
     return ()
 
-{-# LINE 18 "TorchStructs.hsc" #-}
+
+{- typedef struct THGenerator {
+            unsigned long the_initial_seed;
+            int left;
+            int seeded;
+            unsigned long next;
+            unsigned long state[624];
+            double normal_x;
+            double normal_y;
+            double normal_rho;
+            int normal_is_valid;
+        } THGenerator; -}
+
+
+
+
+
+
+
+
+
+
+data C'THGenerator = C'THGenerator{
+  c'THGenerator'the_initial_seed :: CULong,
+  c'THGenerator'left :: CInt,
+  c'THGenerator'seeded :: CInt,
+  c'THGenerator'next :: CULong,
+  c'THGenerator'state :: [CULong],
+  c'THGenerator'normal_x :: CDouble,
+  c'THGenerator'normal_y :: CDouble,
+  c'THGenerator'normal_rho :: CDouble,
+  c'THGenerator'normal_is_valid :: CInt
+} deriving (Eq,Show)
+p'THGenerator'the_initial_seed p = plusPtr p 0
+p'THGenerator'the_initial_seed :: Ptr (C'THGenerator) -> Ptr (CULong)
+p'THGenerator'left p = plusPtr p 8
+p'THGenerator'left :: Ptr (C'THGenerator) -> Ptr (CInt)
+p'THGenerator'seeded p = plusPtr p 12
+p'THGenerator'seeded :: Ptr (C'THGenerator) -> Ptr (CInt)
+p'THGenerator'next p = plusPtr p 16
+p'THGenerator'next :: Ptr (C'THGenerator) -> Ptr (CULong)
+p'THGenerator'state p = plusPtr p 24
+p'THGenerator'state :: Ptr (C'THGenerator) -> Ptr (CULong)
+p'THGenerator'normal_x p = plusPtr p 5016
+p'THGenerator'normal_x :: Ptr (C'THGenerator) -> Ptr (CDouble)
+p'THGenerator'normal_y p = plusPtr p 5024
+p'THGenerator'normal_y :: Ptr (C'THGenerator) -> Ptr (CDouble)
+p'THGenerator'normal_rho p = plusPtr p 5032
+p'THGenerator'normal_rho :: Ptr (C'THGenerator) -> Ptr (CDouble)
+p'THGenerator'normal_is_valid p = plusPtr p 5040
+p'THGenerator'normal_is_valid :: Ptr (C'THGenerator) -> Ptr (CInt)
+instance Storable C'THGenerator where
+  sizeOf _ = 5048
+  alignment _ = 8
+  peek _p = do
+    v0 <- peekByteOff _p 0
+    v1 <- peekByteOff _p 8
+    v2 <- peekByteOff _p 12
+    v3 <- peekByteOff _p 16
+    v4 <- let s4 = div 4992 $ sizeOf $ (undefined :: CULong) in peekArray s4 (plusPtr _p 24)
+    v5 <- peekByteOff _p 5016
+    v6 <- peekByteOff _p 5024
+    v7 <- peekByteOff _p 5032
+    v8 <- peekByteOff _p 5040
+    return $ C'THGenerator v0 v1 v2 v3 v4 v5 v6 v7 v8
+  poke _p (C'THGenerator v0 v1 v2 v3 v4 v5 v6 v7 v8) = do
+    pokeByteOff _p 0 v0
+    pokeByteOff _p 8 v1
+    pokeByteOff _p 12 v2
+    pokeByteOff _p 16 v3
+    let s4 = div 4992 $ sizeOf $ (undefined :: CULong)
+    pokeArray (plusPtr _p 24) (take s4 v4)
+    pokeByteOff _p 5016 v5
+    pokeByteOff _p 5024 v6
+    pokeByteOff _p 5032 v7
+    pokeByteOff _p 5040 v8
+    return ()
+
 
 {- typedef struct THFloatStorage {
             float * data;
@@ -69,21 +137,13 @@ instance Storable C'THAllocator where
             struct THFloatStorage * view;
         } THFloatStorage; -}
 
-{-# LINE 29 "TorchStructs.hsc" #-}
 
-{-# LINE 30 "TorchStructs.hsc" #-}
 
-{-# LINE 31 "TorchStructs.hsc" #-}
 
-{-# LINE 32 "TorchStructs.hsc" #-}
 
-{-# LINE 33 "TorchStructs.hsc" #-}
 
-{-# LINE 34 "TorchStructs.hsc" #-}
 
-{-# LINE 35 "TorchStructs.hsc" #-}
 
-{-# LINE 36 "TorchStructs.hsc" #-}
 data C'THFloatStorage = C'THFloatStorage{
   c'THFloatStorage'data :: Ptr CFloat,
   c'THFloatStorage'size :: CLong,
@@ -129,7 +189,6 @@ instance Storable C'THFloatStorage where
     pokeByteOff _p 40 v6
     return ()
 
-{-# LINE 37 "TorchStructs.hsc" #-}
 
 {- typedef struct THFloatTensor {
             long * size;
@@ -141,21 +200,13 @@ instance Storable C'THFloatStorage where
             char flag;
         } THFloatTensor; -}
 
-{-# LINE 48 "TorchStructs.hsc" #-}
 
-{-# LINE 49 "TorchStructs.hsc" #-}
 
-{-# LINE 50 "TorchStructs.hsc" #-}
 
-{-# LINE 51 "TorchStructs.hsc" #-}
 
-{-# LINE 52 "TorchStructs.hsc" #-}
 
-{-# LINE 53 "TorchStructs.hsc" #-}
 
-{-# LINE 54 "TorchStructs.hsc" #-}
 
-{-# LINE 55 "TorchStructs.hsc" #-}
 data C'THFloatTensor = C'THFloatTensor{
   c'THFloatTensor'size :: Ptr CLong,
   c'THFloatTensor'stride :: Ptr CLong,
@@ -201,7 +252,6 @@ instance Storable C'THFloatTensor where
     pokeByteOff _p 44 v6
     return ()
 
-{-# LINE 56 "TorchStructs.hsc" #-}
 
 {- typedef struct THDoubleStorage {
             double * data;
@@ -213,21 +263,13 @@ instance Storable C'THFloatTensor where
             struct THDoubleStorage * view;
         } THDoubleStorage; -}
 
-{-# LINE 67 "TorchStructs.hsc" #-}
 
-{-# LINE 68 "TorchStructs.hsc" #-}
 
-{-# LINE 69 "TorchStructs.hsc" #-}
 
-{-# LINE 70 "TorchStructs.hsc" #-}
 
-{-# LINE 71 "TorchStructs.hsc" #-}
 
-{-# LINE 72 "TorchStructs.hsc" #-}
 
-{-# LINE 73 "TorchStructs.hsc" #-}
 
-{-# LINE 74 "TorchStructs.hsc" #-}
 data C'THDoubleStorage = C'THDoubleStorage{
   c'THDoubleStorage'data :: Ptr CDouble,
   c'THDoubleStorage'size :: CLong,
@@ -273,7 +315,6 @@ instance Storable C'THDoubleStorage where
     pokeByteOff _p 40 v6
     return ()
 
-{-# LINE 75 "TorchStructs.hsc" #-}
 
 {- typedef struct THDoubleTensor {
             long * size;
@@ -285,21 +326,13 @@ instance Storable C'THDoubleStorage where
             char flag;
         } THDoubleTensor; -}
 
-{-# LINE 86 "TorchStructs.hsc" #-}
 
-{-# LINE 87 "TorchStructs.hsc" #-}
 
-{-# LINE 88 "TorchStructs.hsc" #-}
 
-{-# LINE 89 "TorchStructs.hsc" #-}
 
-{-# LINE 90 "TorchStructs.hsc" #-}
 
-{-# LINE 91 "TorchStructs.hsc" #-}
 
-{-# LINE 92 "TorchStructs.hsc" #-}
 
-{-# LINE 93 "TorchStructs.hsc" #-}
 data C'THDoubleTensor = C'THDoubleTensor{
   c'THDoubleTensor'size :: Ptr CLong,
   c'THDoubleTensor'stride :: Ptr CLong,
@@ -345,7 +378,6 @@ instance Storable C'THDoubleTensor where
     pokeByteOff _p 44 v6
     return ()
 
-{-# LINE 94 "TorchStructs.hsc" #-}
 
 {- typedef struct THIntStorage {
             int * data;
@@ -357,21 +389,13 @@ instance Storable C'THDoubleTensor where
             struct THIntStorage * view;
         } THIntStorage; -}
 
-{-# LINE 105 "TorchStructs.hsc" #-}
 
-{-# LINE 106 "TorchStructs.hsc" #-}
 
-{-# LINE 107 "TorchStructs.hsc" #-}
 
-{-# LINE 108 "TorchStructs.hsc" #-}
 
-{-# LINE 109 "TorchStructs.hsc" #-}
 
-{-# LINE 110 "TorchStructs.hsc" #-}
 
-{-# LINE 111 "TorchStructs.hsc" #-}
 
-{-# LINE 112 "TorchStructs.hsc" #-}
 data C'THIntStorage = C'THIntStorage{
   c'THIntStorage'data :: Ptr CInt,
   c'THIntStorage'size :: CLong,
@@ -417,7 +441,6 @@ instance Storable C'THIntStorage where
     pokeByteOff _p 40 v6
     return ()
 
-{-# LINE 113 "TorchStructs.hsc" #-}
 
 {- typedef struct THIntTensor {
             long * size;
@@ -429,21 +452,13 @@ instance Storable C'THIntStorage where
             char flag;
         } THIntTensor; -}
 
-{-# LINE 124 "TorchStructs.hsc" #-}
 
-{-# LINE 125 "TorchStructs.hsc" #-}
 
-{-# LINE 126 "TorchStructs.hsc" #-}
 
-{-# LINE 127 "TorchStructs.hsc" #-}
 
-{-# LINE 128 "TorchStructs.hsc" #-}
 
-{-# LINE 129 "TorchStructs.hsc" #-}
 
-{-# LINE 130 "TorchStructs.hsc" #-}
 
-{-# LINE 131 "TorchStructs.hsc" #-}
 data C'THIntTensor = C'THIntTensor{
   c'THIntTensor'size :: Ptr CLong,
   c'THIntTensor'stride :: Ptr CLong,
@@ -489,7 +504,6 @@ instance Storable C'THIntTensor where
     pokeByteOff _p 44 v6
     return ()
 
-{-# LINE 132 "TorchStructs.hsc" #-}
 
 {- typedef struct THCharStorage {
             char * data;
@@ -501,21 +515,13 @@ instance Storable C'THIntTensor where
             struct THCharStorage * view;
         } THCharStorage; -}
 
-{-# LINE 143 "TorchStructs.hsc" #-}
 
-{-# LINE 144 "TorchStructs.hsc" #-}
 
-{-# LINE 145 "TorchStructs.hsc" #-}
 
-{-# LINE 146 "TorchStructs.hsc" #-}
 
-{-# LINE 147 "TorchStructs.hsc" #-}
 
-{-# LINE 148 "TorchStructs.hsc" #-}
 
-{-# LINE 149 "TorchStructs.hsc" #-}
 
-{-# LINE 150 "TorchStructs.hsc" #-}
 data C'THCharStorage = C'THCharStorage{
   c'THCharStorage'data :: CString,
   c'THCharStorage'size :: CLong,
@@ -561,7 +567,6 @@ instance Storable C'THCharStorage where
     pokeByteOff _p 40 v6
     return ()
 
-{-# LINE 151 "TorchStructs.hsc" #-}
 
 {- typedef struct THCharTensor {
             long * size;
@@ -573,21 +578,13 @@ instance Storable C'THCharStorage where
             char flag;
         } THCharTensor; -}
 
-{-# LINE 162 "TorchStructs.hsc" #-}
 
-{-# LINE 163 "TorchStructs.hsc" #-}
 
-{-# LINE 164 "TorchStructs.hsc" #-}
 
-{-# LINE 165 "TorchStructs.hsc" #-}
 
-{-# LINE 166 "TorchStructs.hsc" #-}
 
-{-# LINE 167 "TorchStructs.hsc" #-}
 
-{-# LINE 168 "TorchStructs.hsc" #-}
 
-{-# LINE 169 "TorchStructs.hsc" #-}
 data C'THCharTensor = C'THCharTensor{
   c'THCharTensor'size :: Ptr CLong,
   c'THCharTensor'stride :: Ptr CLong,
@@ -633,7 +630,6 @@ instance Storable C'THCharTensor where
     pokeByteOff _p 44 v6
     return ()
 
-{-# LINE 170 "TorchStructs.hsc" #-}
 
 {- typedef struct THByteStorage {
             unsigned char * data;
@@ -645,21 +641,13 @@ instance Storable C'THCharTensor where
             struct THByteStorage * view;
         } THByteStorage; -}
 
-{-# LINE 181 "TorchStructs.hsc" #-}
 
-{-# LINE 182 "TorchStructs.hsc" #-}
 
-{-# LINE 183 "TorchStructs.hsc" #-}
 
-{-# LINE 184 "TorchStructs.hsc" #-}
 
-{-# LINE 185 "TorchStructs.hsc" #-}
 
-{-# LINE 186 "TorchStructs.hsc" #-}
 
-{-# LINE 187 "TorchStructs.hsc" #-}
 
-{-# LINE 188 "TorchStructs.hsc" #-}
 data C'THByteStorage = C'THByteStorage{
   c'THByteStorage'data :: Ptr CUChar,
   c'THByteStorage'size :: CLong,
@@ -705,7 +693,6 @@ instance Storable C'THByteStorage where
     pokeByteOff _p 40 v6
     return ()
 
-{-# LINE 189 "TorchStructs.hsc" #-}
 
 {- typedef struct THByteTensor {
             long * size;
@@ -717,21 +704,13 @@ instance Storable C'THByteStorage where
             char flag;
         } THByteTensor; -}
 
-{-# LINE 200 "TorchStructs.hsc" #-}
 
-{-# LINE 201 "TorchStructs.hsc" #-}
 
-{-# LINE 202 "TorchStructs.hsc" #-}
 
-{-# LINE 203 "TorchStructs.hsc" #-}
 
-{-# LINE 204 "TorchStructs.hsc" #-}
 
-{-# LINE 205 "TorchStructs.hsc" #-}
 
-{-# LINE 206 "TorchStructs.hsc" #-}
 
-{-# LINE 207 "TorchStructs.hsc" #-}
 data C'THByteTensor = C'THByteTensor{
   c'THByteTensor'size :: Ptr CLong,
   c'THByteTensor'stride :: Ptr CLong,
@@ -777,5 +756,4 @@ instance Storable C'THByteTensor where
     pokeByteOff _p 44 v6
     return ()
 
-{-# LINE 208 "TorchStructs.hsc" #-}
 
