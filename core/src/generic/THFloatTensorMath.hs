@@ -376,9 +376,9 @@ foreign import ccall "THTensorMath.h THFloatTensor_baddbmm"
 foreign import ccall "THTensorMath.h THFloatTensor_match"
   c_THFloatTensor_match :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CFloat -> IO ()
 
--- |c_THFloatTensor_numel : t -> THStorage *
+-- |c_THFloatTensor_numel : t -> ptrdiff_t
 foreign import ccall "THTensorMath.h THFloatTensor_numel"
-  c_THFloatTensor_numel :: (Ptr CTHFloatTensor) -> IO (Ptr CTHFloatStorage)
+  c_THFloatTensor_numel :: (Ptr CTHFloatTensor) -> CPtrdiff
 
 -- |c_THFloatTensor_max : values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THFloatTensor_max"

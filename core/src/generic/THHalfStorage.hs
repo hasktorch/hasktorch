@@ -32,9 +32,9 @@ import THTypes
 foreign import ccall "THStorage.h THHalfStorage_data"
   c_THHalfStorage_data :: Ptr CTHHalfStorage -> IO (Ptr THHalf)
 
--- |c_THHalfStorage_size :  -> THStorage *
+-- |c_THHalfStorage_size :  -> ptrdiff_t
 foreign import ccall "THStorage.h THHalfStorage_size"
-  c_THHalfStorage_size :: Ptr CTHHalfStorage -> IO (Ptr CTHHalfStorage)
+  c_THHalfStorage_size :: Ptr CTHHalfStorage -> CPtrdiff
 
 -- |c_THHalfStorage_elementSize :  -> size_t
 foreign import ccall "THStorage.h THHalfStorage_elementSize"
@@ -42,11 +42,11 @@ foreign import ccall "THStorage.h THHalfStorage_elementSize"
 
 -- |c_THHalfStorage_set :    -> void
 foreign import ccall "THStorage.h THHalfStorage_set"
-  c_THHalfStorage_set :: Ptr CTHHalfStorage -> Ptr CTHHalfStorage -> THHalf -> IO ()
+  c_THHalfStorage_set :: Ptr CTHHalfStorage -> CPtrdiff -> THHalf -> IO ()
 
 -- |c_THHalfStorage_get :   -> real
 foreign import ccall "THStorage.h THHalfStorage_get"
-  c_THHalfStorage_get :: Ptr CTHHalfStorage -> Ptr CTHHalfStorage -> THHalf
+  c_THHalfStorage_get :: Ptr CTHHalfStorage -> CPtrdiff -> THHalf
 
 -- |c_THHalfStorage_new :  -> THStorage *
 foreign import ccall "THStorage.h THHalfStorage_new"
@@ -54,7 +54,7 @@ foreign import ccall "THStorage.h THHalfStorage_new"
 
 -- |c_THHalfStorage_newWithSize : size -> THStorage *
 foreign import ccall "THStorage.h THHalfStorage_newWithSize"
-  c_THHalfStorage_newWithSize :: Ptr CTHHalfStorage -> IO (Ptr CTHHalfStorage)
+  c_THHalfStorage_newWithSize :: CPtrdiff -> IO (Ptr CTHHalfStorage)
 
 -- |c_THHalfStorage_newWithSize1 :  -> THStorage *
 foreign import ccall "THStorage.h THHalfStorage_newWithSize1"
@@ -74,19 +74,19 @@ foreign import ccall "THStorage.h THHalfStorage_newWithSize4"
 
 -- |c_THHalfStorage_newWithMapping : filename size flags -> THStorage *
 foreign import ccall "THStorage.h THHalfStorage_newWithMapping"
-  c_THHalfStorage_newWithMapping :: Ptr CChar -> Ptr CTHHalfStorage -> CInt -> IO (Ptr CTHHalfStorage)
+  c_THHalfStorage_newWithMapping :: Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHHalfStorage)
 
 -- |c_THHalfStorage_newWithData : data size -> THStorage *
 foreign import ccall "THStorage.h THHalfStorage_newWithData"
-  c_THHalfStorage_newWithData :: Ptr THHalf -> Ptr CTHHalfStorage -> IO (Ptr CTHHalfStorage)
+  c_THHalfStorage_newWithData :: Ptr THHalf -> CPtrdiff -> IO (Ptr CTHHalfStorage)
 
 -- |c_THHalfStorage_newWithAllocator : size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THHalfStorage_newWithAllocator"
-  c_THHalfStorage_newWithAllocator :: Ptr CTHHalfStorage -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHHalfStorage)
+  c_THHalfStorage_newWithAllocator :: CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHHalfStorage)
 
 -- |c_THHalfStorage_newWithDataAndAllocator : data size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THHalfStorage_newWithDataAndAllocator"
-  c_THHalfStorage_newWithDataAndAllocator :: Ptr THHalf -> Ptr CTHHalfStorage -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHHalfStorage)
+  c_THHalfStorage_newWithDataAndAllocator :: Ptr THHalf -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHHalfStorage)
 
 -- |c_THHalfStorage_setFlag : storage flag -> void
 foreign import ccall "THStorage.h THHalfStorage_setFlag"
@@ -110,7 +110,7 @@ foreign import ccall "THStorage.h THHalfStorage_free"
 
 -- |c_THHalfStorage_resize : storage size -> void
 foreign import ccall "THStorage.h THHalfStorage_resize"
-  c_THHalfStorage_resize :: Ptr CTHHalfStorage -> Ptr CTHHalfStorage -> IO ()
+  c_THHalfStorage_resize :: Ptr CTHHalfStorage -> CPtrdiff -> IO ()
 
 -- |c_THHalfStorage_fill : storage value -> void
 foreign import ccall "THStorage.h THHalfStorage_fill"

@@ -134,7 +134,7 @@ thLongAllocatorPtr = (string "THAllocator *" <|> string "THAllocator*")
   >> space >> pure THAllocatorPtr
 
 thPtrDiff :: Parser THType
-thPtrDiff = string "ptrdiff_t" >> pure THStoragePtr
+thPtrDiff = string "ptrdiff_t" >> pure THPtrDiff
 
 thLongPtr :: Parser THType
 thLongPtr = string "long *" >> pure THLongPtr
@@ -272,6 +272,7 @@ thFunctionArgVoid = do
 
 thFunctionArgNamed = do
   argType <- thType
+  --space <|> (space >> string "volatile" >> space)
   space
   -- e.g. declaration sometimes has no variable name - eg Storage.h
   argName <- (some (alphaNumChar <|> char '_')) <|> string ""
@@ -308,7 +309,6 @@ thFunctionTemplate = do
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
 thFunctionConcrete = do
-  -- thAPI >> space
   funRet <- thType
   space
   funName <- some (alphaNumChar <|> char '_')

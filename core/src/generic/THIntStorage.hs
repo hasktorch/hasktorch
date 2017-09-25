@@ -32,9 +32,9 @@ import THTypes
 foreign import ccall "THStorage.h THIntStorage_data"
   c_THIntStorage_data :: Ptr CTHIntStorage -> IO (Ptr CInt)
 
--- |c_THIntStorage_size :  -> THStorage *
+-- |c_THIntStorage_size :  -> ptrdiff_t
 foreign import ccall "THStorage.h THIntStorage_size"
-  c_THIntStorage_size :: Ptr CTHIntStorage -> IO (Ptr CTHIntStorage)
+  c_THIntStorage_size :: Ptr CTHIntStorage -> CPtrdiff
 
 -- |c_THIntStorage_elementSize :  -> size_t
 foreign import ccall "THStorage.h THIntStorage_elementSize"
@@ -42,11 +42,11 @@ foreign import ccall "THStorage.h THIntStorage_elementSize"
 
 -- |c_THIntStorage_set :    -> void
 foreign import ccall "THStorage.h THIntStorage_set"
-  c_THIntStorage_set :: Ptr CTHIntStorage -> Ptr CTHIntStorage -> CInt -> IO ()
+  c_THIntStorage_set :: Ptr CTHIntStorage -> CPtrdiff -> CInt -> IO ()
 
 -- |c_THIntStorage_get :   -> real
 foreign import ccall "THStorage.h THIntStorage_get"
-  c_THIntStorage_get :: Ptr CTHIntStorage -> Ptr CTHIntStorage -> CInt
+  c_THIntStorage_get :: Ptr CTHIntStorage -> CPtrdiff -> CInt
 
 -- |c_THIntStorage_new :  -> THStorage *
 foreign import ccall "THStorage.h THIntStorage_new"
@@ -54,7 +54,7 @@ foreign import ccall "THStorage.h THIntStorage_new"
 
 -- |c_THIntStorage_newWithSize : size -> THStorage *
 foreign import ccall "THStorage.h THIntStorage_newWithSize"
-  c_THIntStorage_newWithSize :: Ptr CTHIntStorage -> IO (Ptr CTHIntStorage)
+  c_THIntStorage_newWithSize :: CPtrdiff -> IO (Ptr CTHIntStorage)
 
 -- |c_THIntStorage_newWithSize1 :  -> THStorage *
 foreign import ccall "THStorage.h THIntStorage_newWithSize1"
@@ -74,19 +74,19 @@ foreign import ccall "THStorage.h THIntStorage_newWithSize4"
 
 -- |c_THIntStorage_newWithMapping : filename size flags -> THStorage *
 foreign import ccall "THStorage.h THIntStorage_newWithMapping"
-  c_THIntStorage_newWithMapping :: Ptr CChar -> Ptr CTHIntStorage -> CInt -> IO (Ptr CTHIntStorage)
+  c_THIntStorage_newWithMapping :: Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHIntStorage)
 
 -- |c_THIntStorage_newWithData : data size -> THStorage *
 foreign import ccall "THStorage.h THIntStorage_newWithData"
-  c_THIntStorage_newWithData :: Ptr CInt -> Ptr CTHIntStorage -> IO (Ptr CTHIntStorage)
+  c_THIntStorage_newWithData :: Ptr CInt -> CPtrdiff -> IO (Ptr CTHIntStorage)
 
 -- |c_THIntStorage_newWithAllocator : size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THIntStorage_newWithAllocator"
-  c_THIntStorage_newWithAllocator :: Ptr CTHIntStorage -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHIntStorage)
+  c_THIntStorage_newWithAllocator :: CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHIntStorage)
 
 -- |c_THIntStorage_newWithDataAndAllocator : data size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THIntStorage_newWithDataAndAllocator"
-  c_THIntStorage_newWithDataAndAllocator :: Ptr CInt -> Ptr CTHIntStorage -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHIntStorage)
+  c_THIntStorage_newWithDataAndAllocator :: Ptr CInt -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHIntStorage)
 
 -- |c_THIntStorage_setFlag : storage flag -> void
 foreign import ccall "THStorage.h THIntStorage_setFlag"
@@ -110,7 +110,7 @@ foreign import ccall "THStorage.h THIntStorage_free"
 
 -- |c_THIntStorage_resize : storage size -> void
 foreign import ccall "THStorage.h THIntStorage_resize"
-  c_THIntStorage_resize :: Ptr CTHIntStorage -> Ptr CTHIntStorage -> IO ()
+  c_THIntStorage_resize :: Ptr CTHIntStorage -> CPtrdiff -> IO ()
 
 -- |c_THIntStorage_fill : storage value -> void
 foreign import ccall "THStorage.h THIntStorage_fill"

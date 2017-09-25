@@ -12,6 +12,6 @@ import THTypes
 foreign import ccall "THSize.h THSize_THSize_isSameSizeAs"
   c_THSize_THSize_isSameSizeAs :: Ptr CLong -> CLong -> Ptr CLong -> CLong -> CInt
 
--- |c_THSize_THSize_nElement : dims size -> THStorage *
+-- |c_THSize_THSize_nElement : dims size -> ptrdiff_t
 foreign import ccall "THSize.h THSize_THSize_nElement"
-  c_THSize_THSize_nElement :: CLong -> Ptr CLong -> IO (Ptr CTHStorage)
+  c_THSize_THSize_nElement :: CLong -> Ptr CLong -> CPtrdiff

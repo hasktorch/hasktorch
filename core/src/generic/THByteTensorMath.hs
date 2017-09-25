@@ -334,9 +334,9 @@ foreign import ccall "THTensorMath.h THByteTensor_baddbmm"
 foreign import ccall "THTensorMath.h THByteTensor_match"
   c_THByteTensor_match :: (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CChar -> IO ()
 
--- |c_THByteTensor_numel : t -> THStorage *
+-- |c_THByteTensor_numel : t -> ptrdiff_t
 foreign import ccall "THTensorMath.h THByteTensor_numel"
-  c_THByteTensor_numel :: (Ptr CTHByteTensor) -> IO (Ptr CTHByteStorage)
+  c_THByteTensor_numel :: (Ptr CTHByteTensor) -> CPtrdiff
 
 -- |c_THByteTensor_max : values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THByteTensor_max"

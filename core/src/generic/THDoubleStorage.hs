@@ -32,9 +32,9 @@ import THTypes
 foreign import ccall "THStorage.h THDoubleStorage_data"
   c_THDoubleStorage_data :: Ptr CTHDoubleStorage -> IO (Ptr CDouble)
 
--- |c_THDoubleStorage_size :  -> THStorage *
+-- |c_THDoubleStorage_size :  -> ptrdiff_t
 foreign import ccall "THStorage.h THDoubleStorage_size"
-  c_THDoubleStorage_size :: Ptr CTHDoubleStorage -> IO (Ptr CTHDoubleStorage)
+  c_THDoubleStorage_size :: Ptr CTHDoubleStorage -> CPtrdiff
 
 -- |c_THDoubleStorage_elementSize :  -> size_t
 foreign import ccall "THStorage.h THDoubleStorage_elementSize"
@@ -42,11 +42,11 @@ foreign import ccall "THStorage.h THDoubleStorage_elementSize"
 
 -- |c_THDoubleStorage_set :    -> void
 foreign import ccall "THStorage.h THDoubleStorage_set"
-  c_THDoubleStorage_set :: Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> CDouble -> IO ()
+  c_THDoubleStorage_set :: Ptr CTHDoubleStorage -> CPtrdiff -> CDouble -> IO ()
 
 -- |c_THDoubleStorage_get :   -> real
 foreign import ccall "THStorage.h THDoubleStorage_get"
-  c_THDoubleStorage_get :: Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> CDouble
+  c_THDoubleStorage_get :: Ptr CTHDoubleStorage -> CPtrdiff -> CDouble
 
 -- |c_THDoubleStorage_new :  -> THStorage *
 foreign import ccall "THStorage.h THDoubleStorage_new"
@@ -54,7 +54,7 @@ foreign import ccall "THStorage.h THDoubleStorage_new"
 
 -- |c_THDoubleStorage_newWithSize : size -> THStorage *
 foreign import ccall "THStorage.h THDoubleStorage_newWithSize"
-  c_THDoubleStorage_newWithSize :: Ptr CTHDoubleStorage -> IO (Ptr CTHDoubleStorage)
+  c_THDoubleStorage_newWithSize :: CPtrdiff -> IO (Ptr CTHDoubleStorage)
 
 -- |c_THDoubleStorage_newWithSize1 :  -> THStorage *
 foreign import ccall "THStorage.h THDoubleStorage_newWithSize1"
@@ -74,19 +74,19 @@ foreign import ccall "THStorage.h THDoubleStorage_newWithSize4"
 
 -- |c_THDoubleStorage_newWithMapping : filename size flags -> THStorage *
 foreign import ccall "THStorage.h THDoubleStorage_newWithMapping"
-  c_THDoubleStorage_newWithMapping :: Ptr CChar -> Ptr CTHDoubleStorage -> CInt -> IO (Ptr CTHDoubleStorage)
+  c_THDoubleStorage_newWithMapping :: Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHDoubleStorage)
 
 -- |c_THDoubleStorage_newWithData : data size -> THStorage *
 foreign import ccall "THStorage.h THDoubleStorage_newWithData"
-  c_THDoubleStorage_newWithData :: Ptr CDouble -> Ptr CTHDoubleStorage -> IO (Ptr CTHDoubleStorage)
+  c_THDoubleStorage_newWithData :: Ptr CDouble -> CPtrdiff -> IO (Ptr CTHDoubleStorage)
 
 -- |c_THDoubleStorage_newWithAllocator : size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THDoubleStorage_newWithAllocator"
-  c_THDoubleStorage_newWithAllocator :: Ptr CTHDoubleStorage -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHDoubleStorage)
+  c_THDoubleStorage_newWithAllocator :: CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHDoubleStorage)
 
 -- |c_THDoubleStorage_newWithDataAndAllocator : data size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THDoubleStorage_newWithDataAndAllocator"
-  c_THDoubleStorage_newWithDataAndAllocator :: Ptr CDouble -> Ptr CTHDoubleStorage -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHDoubleStorage)
+  c_THDoubleStorage_newWithDataAndAllocator :: Ptr CDouble -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHDoubleStorage)
 
 -- |c_THDoubleStorage_setFlag : storage flag -> void
 foreign import ccall "THStorage.h THDoubleStorage_setFlag"
@@ -110,7 +110,7 @@ foreign import ccall "THStorage.h THDoubleStorage_free"
 
 -- |c_THDoubleStorage_resize : storage size -> void
 foreign import ccall "THStorage.h THDoubleStorage_resize"
-  c_THDoubleStorage_resize :: Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ()
+  c_THDoubleStorage_resize :: Ptr CTHDoubleStorage -> CPtrdiff -> IO ()
 
 -- |c_THDoubleStorage_fill : storage value -> void
 foreign import ccall "THStorage.h THDoubleStorage_fill"

@@ -32,9 +32,9 @@ import THTypes
 foreign import ccall "THStorage.h THLongStorage_data"
   c_THLongStorage_data :: Ptr CTHLongStorage -> IO (Ptr CLong)
 
--- |c_THLongStorage_size :  -> THStorage *
+-- |c_THLongStorage_size :  -> ptrdiff_t
 foreign import ccall "THStorage.h THLongStorage_size"
-  c_THLongStorage_size :: Ptr CTHLongStorage -> IO (Ptr CTHLongStorage)
+  c_THLongStorage_size :: Ptr CTHLongStorage -> CPtrdiff
 
 -- |c_THLongStorage_elementSize :  -> size_t
 foreign import ccall "THStorage.h THLongStorage_elementSize"
@@ -42,11 +42,11 @@ foreign import ccall "THStorage.h THLongStorage_elementSize"
 
 -- |c_THLongStorage_set :    -> void
 foreign import ccall "THStorage.h THLongStorage_set"
-  c_THLongStorage_set :: Ptr CTHLongStorage -> Ptr CTHLongStorage -> CLong -> IO ()
+  c_THLongStorage_set :: Ptr CTHLongStorage -> CPtrdiff -> CLong -> IO ()
 
 -- |c_THLongStorage_get :   -> real
 foreign import ccall "THStorage.h THLongStorage_get"
-  c_THLongStorage_get :: Ptr CTHLongStorage -> Ptr CTHLongStorage -> CLong
+  c_THLongStorage_get :: Ptr CTHLongStorage -> CPtrdiff -> CLong
 
 -- |c_THLongStorage_new :  -> THStorage *
 foreign import ccall "THStorage.h THLongStorage_new"
@@ -54,7 +54,7 @@ foreign import ccall "THStorage.h THLongStorage_new"
 
 -- |c_THLongStorage_newWithSize : size -> THStorage *
 foreign import ccall "THStorage.h THLongStorage_newWithSize"
-  c_THLongStorage_newWithSize :: Ptr CTHLongStorage -> IO (Ptr CTHLongStorage)
+  c_THLongStorage_newWithSize :: CPtrdiff -> IO (Ptr CTHLongStorage)
 
 -- |c_THLongStorage_newWithSize1 :  -> THStorage *
 foreign import ccall "THStorage.h THLongStorage_newWithSize1"
@@ -74,19 +74,19 @@ foreign import ccall "THStorage.h THLongStorage_newWithSize4"
 
 -- |c_THLongStorage_newWithMapping : filename size flags -> THStorage *
 foreign import ccall "THStorage.h THLongStorage_newWithMapping"
-  c_THLongStorage_newWithMapping :: Ptr CChar -> Ptr CTHLongStorage -> CInt -> IO (Ptr CTHLongStorage)
+  c_THLongStorage_newWithMapping :: Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHLongStorage)
 
 -- |c_THLongStorage_newWithData : data size -> THStorage *
 foreign import ccall "THStorage.h THLongStorage_newWithData"
-  c_THLongStorage_newWithData :: Ptr CLong -> Ptr CTHLongStorage -> IO (Ptr CTHLongStorage)
+  c_THLongStorage_newWithData :: Ptr CLong -> CPtrdiff -> IO (Ptr CTHLongStorage)
 
 -- |c_THLongStorage_newWithAllocator : size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THLongStorage_newWithAllocator"
-  c_THLongStorage_newWithAllocator :: Ptr CTHLongStorage -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHLongStorage)
+  c_THLongStorage_newWithAllocator :: CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHLongStorage)
 
 -- |c_THLongStorage_newWithDataAndAllocator : data size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THLongStorage_newWithDataAndAllocator"
-  c_THLongStorage_newWithDataAndAllocator :: Ptr CLong -> Ptr CTHLongStorage -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHLongStorage)
+  c_THLongStorage_newWithDataAndAllocator :: Ptr CLong -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHLongStorage)
 
 -- |c_THLongStorage_setFlag : storage flag -> void
 foreign import ccall "THStorage.h THLongStorage_setFlag"
@@ -110,7 +110,7 @@ foreign import ccall "THStorage.h THLongStorage_free"
 
 -- |c_THLongStorage_resize : storage size -> void
 foreign import ccall "THStorage.h THLongStorage_resize"
-  c_THLongStorage_resize :: Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
+  c_THLongStorage_resize :: Ptr CTHLongStorage -> CPtrdiff -> IO ()
 
 -- |c_THLongStorage_fill : storage value -> void
 foreign import ccall "THStorage.h THLongStorage_fill"
