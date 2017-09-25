@@ -12,5 +12,5 @@ import Test.Hspec
 
 testRawInterface = do
   putStrLn "Raw Types"
-  putStrLn "Done"
 
+  putStrLn "Done"

@@ -233,7 +233,7 @@ renderHaskellType typeCat _ THDoubleStoragePtr = case typeCat of
 {- Other -}
 
 renderHaskellType typeCat _ THGeneratorPtr = case typeCat of
-  ReturnValue -> Just ("IO (Ptr CTHGenerator") -- concrete type found in TensorMat)h
+  ReturnValue -> Just ("IO (Ptr CTHGenerator)") -- concrete type found in TensorMat)h
   FunctionParam -> Just ("Ptr CTHGenerator") -- concrete type found in TensorMath
 
 renderHaskellType typeCat _ THAllocatorPtr = case typeCat of

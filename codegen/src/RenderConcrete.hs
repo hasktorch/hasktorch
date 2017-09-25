@@ -54,6 +54,8 @@ concreteFiles =
      (makeModule outDirConcrete "THHalf.h" "Half" "Half")),
     ("vendor/torch7/lib/TH/THLogAdd.h",
      (makeModule outDirConcrete "THLogAdd.h" "LogAdd" "LogAdd")),
+    ("vendor/torch7/lib/TH/THRandom.h",
+     (makeModule outDirConcrete "THRandom.h" "Random" "Random")),
     ("vendor/torch7/lib/TH/THSize.h",
      (makeModule outDirConcrete "THSize.h" "Size" "Size"))
     -- ("vendor/torch7/lib/TH/THStorage.h", -- doesn't work

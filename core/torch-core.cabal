@@ -95,9 +95,9 @@ library
                      , THLongVector
                      , THShortVector
 
-
                      , THFile
                      , THDiskFile
+                     , THRandom
                      , THSize
 
   hs-source-dirs:      src, src/generic

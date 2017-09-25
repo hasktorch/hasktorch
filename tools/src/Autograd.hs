@@ -30,9 +30,12 @@ infixr 5 :&~
 
 main = do
   w1 <- fromJust $ tensorNew [5]
+  putStrLn "w1"
   disp w1
   w2 <- fromJust $ tensorNew [5]
+  putStrLn "w2"
   disp w2
+  putStrLn "w3"
   w3 <- fromJust $ tensorNew [5]
   disp w3
   ih <- W <$> (fromJust $ tensorNew [5])
