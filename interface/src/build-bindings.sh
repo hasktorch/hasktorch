@@ -16,7 +16,7 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     sed -i 's/^#synonym_t.*//g' TorchStructs.hsc
     hsc2hs TorchStructs.hsc -o TorchStructs.hs
     sed -i '/.*LINE.*/d' TorchStructs.hs
-    rm ./TorchStructs.hsc
+    rm ./TobchStructs.hsc
 fi
 
 echo "Done"

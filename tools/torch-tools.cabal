@@ -13,7 +13,13 @@ cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:     
+  exposed-modules:     TorchTensor
+  hs-source-dirs:      src
+  build-depends:       base >= 4.7 && < 5
+                     , torch-core
+                     , torch-interface
+                     , text >= 1.2.2.2
+
 
 executable display-test
   default-language:    Haskell2010
@@ -23,6 +29,7 @@ executable display-test
   build-depends:       base >= 4.7 && < 5
                      , torch-core
                      , torch-interface
+                     , torch-tools
                      , hspec >= 2.4.4
                      -- for displaying
                      , hmatrix >= 0.18.1.0
@@ -36,6 +43,7 @@ executable autograd
   build-depends:       base >= 4.7 && < 5
                      , torch-core
                      , torch-interface
+                     , torch-tools
                      , hspec >= 2.4.4
                      , text >= 1.2.2.2
 

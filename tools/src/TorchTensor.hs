@@ -6,7 +6,9 @@ module TorchTensor (
   TensorInt(..),
   disp,
   size,
-  tensorNew
+  tensorNew,
+  tensorFloatNew,
+  tensorIntNew
   ) where
 
 import Data.Maybe  (fromJust)
@@ -19,6 +21,8 @@ import THTypes
 
 import THDoubleTensor
 import THDoubleTensorMath
+import THFloatTensor
+import THFloatTensorMath
 import THIntTensor
 import THIntTensorMath
 -- import THDoubleTensorRandom
@@ -121,6 +125,43 @@ tensorNew dims
     cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
     create = (flip c_THDoubleTensor_fill) 0.0
     fill x = create x >> pure x
+
+tensorFloatNew :: [Int] -> Maybe (IO (Ptr CTHFloatTensor))
+tensorFloatNew dims
+  | ndim == 0 = Just c_THFloatTensor_new
+  | ndim == 1 = Just $ (c_THFloatTensor_newWithSize1d $ head cdims) >>= fill
+  | ndim == 2 = Just $ c_THFloatTensor_newWithSize2d (cdims !! 0) (cdims !! 1) >>= fill
+  | ndim == 3 = Just $ (c_THFloatTensor_newWithSize3d
+                        (cdims !! 0) (cdims !! 1) (cdims !! 2)) >>= fill
+  | ndim == 4 = Just $ (c_THFloatTensor_newWithSize4d
+                        (cdims !! 0) (cdims !! 1) (cdims !! 2) (cdims !! 3)
+                        >>= fill)
+  | otherwise = Nothing
+  where
+    ndim = length dims
+    cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
+    create = (flip c_THFloatTensor_fill) 0.0
+    fill x = create x >> pure x
+
+tensorIntNew :: [Int] -> Maybe (IO (Ptr CTHIntTensor))
+tensorIntNew dims
+  | ndim == 0 = Just c_THIntTensor_new
+  | ndim == 1 = Just $ (c_THIntTensor_newWithSize1d $ head cdims) >>= fill
+  | ndim == 2 = Just $ c_THIntTensor_newWithSize2d (cdims !! 0) (cdims !! 1) >>= fill
+  | ndim == 3 = Just $ (c_THIntTensor_newWithSize3d
+                        (cdims !! 0) (cdims !! 1) (cdims !! 2)) >>= fill
+  | ndim == 4 = Just $ (c_THIntTensor_newWithSize4d
+                        (cdims !! 0) (cdims !! 1) (cdims !! 2) (cdims !! 3)
+                        >>= fill)
+  | otherwise = Nothing
+  where
+    ndim = length dims
+    cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
+    create = (flip c_THIntTensor_fill) 0
+    fill x = create x >> pure x
+
+
+
 
 size :: (Ptr CTHDoubleTensor) -> [Int]
 size t =
