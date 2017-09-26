@@ -15,6 +15,7 @@ dependencies:
     - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - git submodule update --init --recursive
     - cd ./vendor; ./build-torch-core.sh
+    - stack install c2hsc
 
   override:
     - stack setup
@@ -27,3 +28,4 @@ test:
     - stack exec codegen-generic
     - stack exec codegen-concrete
     - stack exec display-test
+    - stack exec autograd
