@@ -9,12 +9,14 @@ if [ "$(uname)" == "Darwin" ]; then
     sed -i '' 's/^#synonym_t.*//g' TorchStructs.hsc
     hsc2hs TorchStructs.hsc -o TorchStructs.hs
     sed -i '' '/.*LINE.*/d' TorchStructs.hs
+    rm ./TorchStructs.hsc
 elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     ## Linux
     sed -i 's/<bindings.dsl.h>/"bindings.dsl.h"/g' TorchStructs.hsc
     sed -i 's/^#synonym_t.*//g' TorchStructs.hsc
     hsc2hs TorchStructs.hsc -o TorchStructs.hs
     sed -i '/.*LINE.*/d' TorchStructs.hs
+    rm ./TorchStructs.hsc
 fi
 
 echo "Done"
