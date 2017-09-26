@@ -10,6 +10,7 @@ module TorchTensor (
   ) where
 
 import Data.Maybe  (fromJust)
+import Numeric (showGFloat)
 import qualified Data.Text as T
 
 import Foreign
@@ -71,6 +72,8 @@ data TensorInt = TensorInt {
 --   where
 --     sz = size tensor
 
+showLim x = showGFloat (Just 2) x ""
+
 disp :: Ptr CTHDoubleTensor -> IO ()
 disp tensor
   | (length sz) == 0 = putStrLn "Empty Tensor"
@@ -79,7 +82,7 @@ disp tensor
                     | idx <- [0..(sz !! 0 - 1)] ]
       putStr "[ "
       mapM_ (\idx -> putStr $
-                     (show $ c_THDoubleTensor_get1d tensor idx) ++ " ")
+                     (showLim $ c_THDoubleTensor_get1d tensor idx) ++ " ")
         indexes
       putStrLn "]"
   | (length sz) == 2 = do
@@ -91,12 +94,12 @@ disp tensor
                 let val = c_THDoubleTensor_get2d tensor r c
                 if c == fromIntegral (sz !! 1) - 1
                   then do
-                  putStrLn (((show val) ++ " ]") :: String)
+                  putStrLn (((showLim val) ++ " ]") :: String)
                   putStr (if (fromIntegral r :: Int) < (sz !! 0 - 1)
                           then "[ " :: String
                           else "")
                   else
-                  putStr $ ((show val) ++ " " :: String)
+                  putStr $ ((showLim val) ++ " " :: String)
             ) pairs
   | otherwise = putStrLn "Can't print this yet."
   where
