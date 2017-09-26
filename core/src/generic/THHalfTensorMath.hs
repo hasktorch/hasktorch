@@ -21,7 +21,6 @@ module THHalfTensorMath (
     c_THHalfTensor_medianall,
     c_THHalfTensor_sumall,
     c_THHalfTensor_prodall,
-    c_THHalfTensor_neg,
     c_THHalfTensor_add,
     c_THHalfTensor_sub,
     c_THHalfTensor_mul,
@@ -196,10 +195,6 @@ foreign import ccall "THTensorMath.h THHalfTensor_sumall"
 -- |c_THHalfTensor_prodall : t -> accreal
 foreign import ccall "THTensorMath.h THHalfTensor_prodall"
   c_THHalfTensor_prodall :: (Ptr CTHHalfTensor) -> CFloat
-
--- |c_THHalfTensor_neg : self src -> void
-foreign import ccall "THTensorMath.h THHalfTensor_neg"
-  c_THHalfTensor_neg :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
 
 -- |c_THHalfTensor_add : r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_add"

@@ -60,7 +60,8 @@ tensorMathCases = M.fromList [
 
   -- cinv doesn't seem to be excluded by the preprocessor, yet is not
   -- implemented for Int. TODO - file issue report?
-  ("cinv", S.fromList [GenFloat, GenDouble])
+  ("cinv", S.fromList [GenFloat, GenDouble]),
+  ("neg", S.fromList [GenFloat, GenDouble, GenLong, GenShort, GenInt])
 
   ]
 
