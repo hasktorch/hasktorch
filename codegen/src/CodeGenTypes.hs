@@ -24,16 +24,17 @@ import Data.Void
 -- ----------------------------------------
 
 data HModule = HModule {
-  modHeader :: FilePath,
-  modPrefix :: Text,
+  modHeader       :: FilePath,
+  modPrefix       :: Text,
   modTypeTemplate :: TemplateType,
-  modSuffix :: Text,
-  modFileSuffix :: Text,
-  modExtensions :: [Text],
-  modImports :: [Text],
-  modTypeDefs :: [(Text, Text)],
-  modBindings :: [THFunction],
-  modOutDir :: Text
+  modSuffix       :: Text,
+  modFileSuffix   :: Text,
+  modExtensions   :: [Text],
+  modImports      :: [Text],
+  modTypeDefs     :: [(Text, Text)],
+  modBindings     :: [THFunction],
+  modOutDir       :: Text,
+  modIsTemplate   :: Bool
   } deriving Show
 
 data TypeCategory = ReturnValue | FunctionParam

@@ -15,6 +15,7 @@ import Foreign.Ptr
 import THDoubleTensor
 import THDoubleTensorMath
 import THDoubleTensorRandom
+import THRandom
 import THTypes
 import TorchTensor
 
@@ -27,6 +28,13 @@ data Network :: * where
   (:&~) :: Weights -> Network -> Network
 
 infixr 5 :&~
+
+randInit = do
+  gen <- c_THGenerator_new
+  t <- fromJust $ tensorNew [5]
+  disp t
+  c_THDoubleTensor_uniform t gen (-1.0) (1.0)
+  disp t
 
 main = do
   w1 <- fromJust $ tensorNew [5]

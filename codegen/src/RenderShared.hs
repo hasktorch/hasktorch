@@ -10,7 +10,7 @@ module RenderShared (
   realtype2Haskell,
   accrealtype2Haskell,
 
-  renderCHeader,
+  renderCHeaderFile,
   parseFile,
   cleanList
   ) where
@@ -30,8 +30,8 @@ import CodeGenParse
 import ConditionalCases
 
 makeModule ::
-  Text -> FilePath -> Text -> Text -> TemplateType -> [THFunction] -> HModule
-makeModule outDir modHeader modSuffix modFileSuffix typeTemplate bindings =
+  Text -> Bool -> FilePath -> Text -> Text -> TemplateType -> [THFunction] -> HModule
+makeModule outDir isTemplate modHeader modSuffix modFileSuffix typeTemplate bindings =
    HModule {
         modHeader = modHeader,
         modPrefix = "TH",
@@ -42,7 +42,8 @@ makeModule outDir modHeader modSuffix modFileSuffix typeTemplate bindings =
         modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
         modTypeDefs = [],
         modBindings = bindings,
-        modOutDir = outDir
+        modOutDir = outDir,
+        modIsTemplate = isTemplate
   }
 
 -- TODO : make this total
@@ -368,10 +369,11 @@ renderFunctions moduleSpec@HModule{..} validFunctions =
   intercalate "\n\n" ((renderFunSig modHeader typeTemplate)
                       <$> (P.zip3 funNames retTypes args) ) 
   where
-    -- modulePrefix = (renderModuleName moduleSpec) <> "_"
     modulePrefix = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix <> "_"
-    -- funNames = (mappend modulePrefix) <$> funName <$> modBindings
-    funNames = (mappend modulePrefix) <$> funName <$> validFunctions
+    funNames = if modIsTemplate then
+                 (mappend modulePrefix) <$> funName <$> validFunctions
+               else
+                 funName <$> validFunctions
     retTypes = funReturn <$> modBindings
     args = funArgs <$> modBindings
     typeTemplate = modTypeTemplate
@@ -394,13 +396,14 @@ renderAll spec@HModule{..} =
     splice = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix
     validFunctions = checkList modBindings modTypeTemplate
     exportFunctions =
---       (renderFunName ("c_" <> renderModuleName spec)
-      (renderFunName ("c_" <> splice)
-       <$> (fmap funName (validFunctions)))
+      if modIsTemplate then
+        (renderFunName ("c_" <> splice) <$> (fmap funName (validFunctions)))
+      else
+        (renderFunName "c" <$> (fmap funName (validFunctions)))
 
-renderCHeader ::
+renderCHeaderFile ::
   TemplateType -> [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> IO ()
-renderCHeader templateType parsedBindings makeConfig = do
+renderCHeaderFile templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
   writeFile (outDir ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
   where modSpec = makeConfig templateType parsedBindings

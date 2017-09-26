@@ -34,34 +34,38 @@ runPipelineConcrete headerPath makeModuleConfig typeList = do
   -- TODO nub is a hack until proper treatment of conditioned templates is implemented
   putStrLn $ "First signature:"
   putStrLn $ ppShow (P.take 1 bindingsUniq)
-  mapM_ (\x -> renderCHeader x bindingsUniq makeModuleConfig) typeList
+  mapM_ (\x -> renderCHeaderFile x bindingsUniq makeModuleConfig) typeList
   putStrLn $ "Number of functions generated: " ++
     (show $ P.length typeList * P.length bindingsUniq)
 
 concreteFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 concreteFiles =
+  -- [
+  --   ("vendor/torch7/lib/TH/THRandom.h",
+  --    (makeModule outDirConcrete False "THRandom.h" "Random" "Random"))
+  -- ]
   [
     -- TODO: THFile
     -- ("vendor/check.h",
     --  (makeModule outDirConcrete "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THFile.h",
-     (makeModule outDirConcrete "THFile.h" "File" "File")),
+     (makeModule outDirConcrete False "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THDiskFile.h",
-     (makeModule outDirConcrete "THDiskFile.h" "DiskFile" "DiskFile")),
+     (makeModule outDirConcrete False "THDiskFile.h" "DiskFile" "DiskFile")),
     ("vendor/torch7/lib/TH/THAtomic.h",
-     (makeModule outDirConcrete "THDiskFile.h" "Atomic" "Atomic")),
+     (makeModule outDirConcrete False "THDiskFile.h" "Atomic" "Atomic")),
     ("vendor/torch7/lib/TH/THHalf.h",
-     (makeModule outDirConcrete "THHalf.h" "Half" "Half")),
+     (makeModule outDirConcrete False "THHalf.h" "Half" "Half")),
     ("vendor/torch7/lib/TH/THLogAdd.h",
-     (makeModule outDirConcrete "THLogAdd.h" "LogAdd" "LogAdd")),
+     (makeModule outDirConcrete False "THLogAdd.h" "LogAdd" "LogAdd")),
     ("vendor/torch7/lib/TH/THRandom.h",
-     (makeModule outDirConcrete "THRandom.h" "Random" "Random")),
+     (makeModule outDirConcrete False "THRandom.h" "Random" "Random")),
     ("vendor/torch7/lib/TH/THSize.h",
-     (makeModule outDirConcrete "THSize.h" "Size" "Size"))
+     (makeModule outDirConcrete False "THSize.h" "Size" "Size"))
     -- ("vendor/torch7/lib/TH/THStorage.h", -- doesn't work
-    --  (makeModule outDirConcrete "THStorage.h" "Storage" "Storage"))
+    --  (makeModule outDirConcrete False "THStorage.h" "Storage" "Storage"))
     -- ("vendor/torch7/lib/TH/THMemoryFile.h",
-    --  (makeModule outDirConcrete "THMemoryFile.h" "MemoryFile" "MemoryFile"))
+    --  (makeModule outDirConcrete False "THMemoryFile.h" "MemoryFile" "MemoryFile"))
   ]
 
 main :: IO ()
