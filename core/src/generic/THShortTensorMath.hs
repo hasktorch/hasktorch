@@ -22,7 +22,6 @@ module THShortTensorMath (
     c_THShortTensor_sumall,
     c_THShortTensor_prodall,
     c_THShortTensor_neg,
-    c_THShortTensor_cinv,
     c_THShortTensor_add,
     c_THShortTensor_sub,
     c_THShortTensor_mul,
@@ -202,10 +201,6 @@ foreign import ccall "THTensorMath.h THShortTensor_prodall"
 -- |c_THShortTensor_neg : self src -> void
 foreign import ccall "THTensorMath.h THShortTensor_neg"
   c_THShortTensor_neg :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
-
--- |c_THShortTensor_cinv : self src -> void
-foreign import ccall "THTensorMath.h THShortTensor_cinv"
-  c_THShortTensor_cinv :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
 
 -- |c_THShortTensor_add : r_ t value -> void
 foreign import ccall "THTensorMath.h THShortTensor_add"

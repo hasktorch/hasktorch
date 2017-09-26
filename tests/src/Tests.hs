@@ -1,10 +1,12 @@
 module Main where
 
-import TestTH (testTH)
+import TestMath (testMath)
 import TestRandom (testsRandom)
 import TestRawInterface (testRawInterface)
+import TestTH (testTH)
 
 main = do
+  testMath
   testRawInterface
-  testTH
   testsRandom
+  testTH

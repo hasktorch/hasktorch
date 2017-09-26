@@ -22,7 +22,6 @@ module THIntTensorMath (
     c_THIntTensor_sumall,
     c_THIntTensor_prodall,
     c_THIntTensor_neg,
-    c_THIntTensor_cinv,
     c_THIntTensor_add,
     c_THIntTensor_sub,
     c_THIntTensor_mul,
@@ -202,10 +201,6 @@ foreign import ccall "THTensorMath.h THIntTensor_prodall"
 -- |c_THIntTensor_neg : self src -> void
 foreign import ccall "THTensorMath.h THIntTensor_neg"
   c_THIntTensor_neg :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
-
--- |c_THIntTensor_cinv : self src -> void
-foreign import ccall "THTensorMath.h THIntTensor_cinv"
-  c_THIntTensor_cinv :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
 
 -- |c_THIntTensor_add : r_ t value -> void
 foreign import ccall "THTensorMath.h THIntTensor_add"

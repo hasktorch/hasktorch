@@ -22,7 +22,6 @@ module THLongTensorMath (
     c_THLongTensor_sumall,
     c_THLongTensor_prodall,
     c_THLongTensor_neg,
-    c_THLongTensor_cinv,
     c_THLongTensor_add,
     c_THLongTensor_sub,
     c_THLongTensor_mul,
@@ -202,10 +201,6 @@ foreign import ccall "THTensorMath.h THLongTensor_prodall"
 -- |c_THLongTensor_neg : self src -> void
 foreign import ccall "THTensorMath.h THLongTensor_neg"
   c_THLongTensor_neg :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
-
--- |c_THLongTensor_cinv : self src -> void
-foreign import ccall "THTensorMath.h THLongTensor_cinv"
-  c_THLongTensor_cinv :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
 
 -- |c_THLongTensor_add : r_ t value -> void
 foreign import ccall "THTensorMath.h THLongTensor_add"

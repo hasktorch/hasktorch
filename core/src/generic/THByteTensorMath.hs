@@ -22,7 +22,6 @@ module THByteTensorMath (
     c_THByteTensor_sumall,
     c_THByteTensor_prodall,
     c_THByteTensor_neg,
-    c_THByteTensor_cinv,
     c_THByteTensor_add,
     c_THByteTensor_sub,
     c_THByteTensor_mul,
@@ -201,10 +200,6 @@ foreign import ccall "THTensorMath.h THByteTensor_prodall"
 -- |c_THByteTensor_neg : self src -> void
 foreign import ccall "THTensorMath.h THByteTensor_neg"
   c_THByteTensor_neg :: (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ()
-
--- |c_THByteTensor_cinv : self src -> void
-foreign import ccall "THTensorMath.h THByteTensor_cinv"
-  c_THByteTensor_cinv :: (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ()
 
 -- |c_THByteTensor_add : r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_add"

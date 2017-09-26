@@ -374,8 +374,10 @@ renderFunctions moduleSpec@HModule{..} validFunctions =
                  (mappend modulePrefix) <$> funName <$> validFunctions
                else
                  funName <$> validFunctions
-    retTypes = funReturn <$> modBindings
-    args = funArgs <$> modBindings
+    retTypes = funReturn <$> validFunctions
+    args = funArgs <$> validFunctions
+    -- retTypes = funReturn <$> modBindings
+    -- args = funArgs <$> modBindings
     typeTemplate = modTypeTemplate
 
 -- |Check for conditional templating of functions and filter function list

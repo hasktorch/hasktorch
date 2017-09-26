@@ -56,7 +56,12 @@ tensorMathCases = M.fromList [
   ("randn", S.fromList [GenFloat, GenDouble]),
 
   ("logicalall", S.fromList [GenByte]),
-  ("logicalany", S.fromList [GenByte])
+  ("logicalany", S.fromList [GenByte]),
+
+  -- cinv doesn't seem to be excluded by the preprocessor, yet is not
+  -- implemented for Int. TODO - file issue report?
+  ("cinv", S.fromList [GenFloat, GenDouble])
+
   ]
 
 tensorRandomCases :: Map Text (Set TemplateType)
