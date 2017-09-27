@@ -1,4 +1,4 @@
-resolver: nightly-2017-09-20
+resolver: nightly-2017-09-26
 
 packages:
 - 'core'
@@ -27,6 +27,6 @@ extra-lib-dirs:
 ghc-options:
   "torch-core": -lTH
   "torch-codegen": -lTH
-  "torch-tests": -lTH -fobject-code -O0
-  "torch-tools": -lTH -fobject-code -O0
-# ghci-options for inline-c
+  "torch-tests": -lTH
+  "torch-tools": -lTH
+# ghci-options for inline-c should include -fobject-code -O0

@@ -77,6 +77,7 @@ data THType =
   | THFloat
   | THDoublePtr
   | THDouble
+  | THLongPtrPtr
   | THLongPtr
   | THLong
   | THIntPtr

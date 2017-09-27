@@ -45,9 +45,8 @@ concreteFiles =
   --    (makeModule outDirConcrete False "THRandom.h" "Random" "Random"))
   -- ]
   [
-    -- TODO: THFile
     -- ("vendor/check.h",
-    --  (makeModule outDirConcrete "THFile.h" "File" "File")),
+    --  (makeModule outDirConcrete False "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THFile.h",
      (makeModule outDirConcrete False "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THDiskFile.h",
@@ -61,9 +60,9 @@ concreteFiles =
     ("vendor/torch7/lib/TH/THRandom.h",
      (makeModule outDirConcrete False "THRandom.h" "Random" "Random")),
     ("vendor/torch7/lib/TH/THSize.h",
-     (makeModule outDirConcrete False "THSize.h" "Size" "Size"))
-    -- ("vendor/torch7/lib/TH/THStorage.h", -- doesn't work
-    --  (makeModule outDirConcrete False "THStorage.h" "Storage" "Storage"))
+     (makeModule outDirConcrete False "THSize.h" "Size" "Size")),
+    ("vendor/torch7/lib/TH/THStorage.h", -- doesn't work
+     (makeModule outDirConcrete False "THStorage.h" "Storage" "Storage"))
     -- ("vendor/torch7/lib/TH/THMemoryFile.h",
     --  (makeModule outDirConcrete False "THMemoryFile.h" "MemoryFile" "MemoryFile"))
   ]

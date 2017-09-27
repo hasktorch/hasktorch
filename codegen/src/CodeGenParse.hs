@@ -136,8 +136,11 @@ thLongAllocatorPtr = (string "THAllocator *" <|> string "THAllocator*")
 thPtrDiff :: Parser THType
 thPtrDiff = string "ptrdiff_t" >> pure THPtrDiff
 
+thLongPtrPtr :: Parser THType
+thLongPtrPtr = string "long **" >> pure THLongPtrPtr
+
 thLongPtr :: Parser THType
-thLongPtr = string "long *" >> pure THLongPtr
+thLongPtr = string "long *" <|> string "long* " >> pure THLongPtr
 -- TODO : clean up pointer matching
 
 thLong :: Parser THType
@@ -232,6 +235,7 @@ thType = do
     <|> thDoublePtr
     <|> thDouble
     <|> thPtrDiff
+    <|> thLongPtrPtr
     <|> thLongPtr
     <|> thLong
     <|> thIntPtr

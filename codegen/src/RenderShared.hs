@@ -60,6 +60,7 @@ renderCType THGeneratorPtr    = "THGenerator *"
 renderCType THStoragePtr      = "THStorage *"
 renderCType THLongStoragePtr  = "THLongStorage *"
 renderCType THPtrDiff         = "ptrdiff_t"
+renderCType THLongPtrPtr         = "long **"
 renderCType THLongPtr         = "long *"
 renderCType THLong            = "long"
 renderCType THIntPtr          = "int *"
@@ -252,6 +253,10 @@ renderHaskellType typeCat templateType THPtrDiff = case typeCat of
   ReturnValue -> Just $ "CPtrdiff"
   FunctionParam -> Just $ "CPtrdiff"
   -- TODO check if it's appropriate to splice here
+
+renderHaskellType typeCat _ THLongPtrPtr = case typeCat of
+  ReturnValue -> Just "IO (Ptr (Ptr CLong))"
+  FunctionParam -> Just "Ptr (Ptr CLong)"
 
 renderHaskellType typeCat _ THLongPtr = case typeCat of
   ReturnValue -> Just "IO (Ptr CLong)"
