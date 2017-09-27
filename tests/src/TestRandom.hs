@@ -1,4 +1,4 @@
- {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module TestRandom (testsRandom) where
 

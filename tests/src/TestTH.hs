@@ -239,7 +239,7 @@ testsDouble = do
         c_THDoubleTensor_get4d t 1 5 3 2 `shouldBe` (1.4 :: CDouble)
         c_THDoubleTensor_get4d t 9 9 9 9 `shouldBe` (3.14 :: CDouble)
         c_THDoubleTensor_free t
-      it "Can can initialize values with the fill method" $ do
+      it "Can initialize values with the fill method" $ do
         t1 <- c_THDoubleTensor_newWithSize2d 2 2
         c_THDoubleTensor_fill t1 3.1
         c_THDoubleTensor_get2d t1 0 0 `shouldBe` (3.1 :: CDouble)

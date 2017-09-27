@@ -26,9 +26,10 @@ If everything built, you should be able to run tests successfully:
 stack test torch-tests
 ```
 
-## Acknowledgements
+## References and Acknowledgements
 
-Thanks to Adam Paszke for his writeup on the [torch
-internals](https://apaszke.github.io/torch-internals.html) and to Edward Z. Yang
-for his example writeup on [Haskell/Torch binding using
-backpack](http://blog.ezyang.com/2017/08/backpack-for-deep-learning/).
+- [torch internals](https://apaszke.github.io/torch-internals.html) 
+- [A Tour of PyTorch Internals (Part I)](http://pytorch.org/2017/05/11/Internals.html)
+- [Haskell/Torch binding using backpack](http://blog.ezyang.com/2017/08/backpack-for-deep-learning/).
+- [Practical dependent types in Haskell](https://blog.jle.im/entry/practical-dependent-types-in-haskell-1.html)
+

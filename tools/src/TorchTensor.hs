@@ -4,6 +4,8 @@
 module TorchTensor (
   TensorDouble(..),
   TensorInt(..),
+  apply,
+  invlogit,
   disp,
   size,
   tensorNew,
@@ -25,7 +27,6 @@ import THFloatTensor
 import THFloatTensorMath
 import THIntTensor
 import THIntTensorMath
--- import THDoubleTensorRandom
 
 {-
 
@@ -38,9 +39,51 @@ import THTypes
 import THDoubleStorage
 import THDoubleTensor
 
-data TensorDouble = TensorDouble {
-  val_double :: Ptr CTHDoubleTensor
-  } deriving (Eq, Show)
+apply ::
+  (TensorDouble -> TensorDouble -> IO ())
+  -> TensorDouble -> IO TensorDouble
+apply f t1 = do
+  -- r_ <- fromJust $ tensorNew (size t1)
+  r_ <- c_THDoubleTensor_new
+  f r_ t1
+  pure r_
+
+apply2 ::
+  (TensorDouble -> TensorDouble -> TensorDouble -> IO ())
+  -> TensorDouble -> TensorDouble -> IO TensorDouble
+apply2 f t1 t2 = do
+  r_ <- c_THDoubleTensor_new
+  f r_ t1 t2
+  pure r_
+
+invlogit :: TensorDouble -> IO TensorDouble
+invlogit = apply c_THDoubleTensor_sigmoid
+
+nrows tensor = (size tensor) !! 0
+
+ncols tensor = (size tensor) !! 1
+
+-- initialize values tensor = do
+--   [(r, c) |
+--     x <- [1..(nrows tensor)],
+--     y <- [1..(ncols tensor)]]
+--   mapM_ ((r, c) -> c_THDoubleTensor_set2d
+--                    (fromIntegral r)
+--                    (fromIntegral c)
+--   where
+--     idx = product . size $ tensor
+
+-- TODO: need bindings to THStorage to use c_THDoubleTensor_resize
+initialize values sz = do
+  tensor <- c_THDoubleTensor_newWithSize1d nel
+  mapM_
+    (\(idx, value) -> c_THDoubleTensor_set1d tensor idx value)
+    (zip [1..nel], values)
+  pure tensor
+  where
+    nel = product sz
+
+type TensorDouble = Ptr CTHDoubleTensor
 
 data TensorInt = TensorInt {
   val_int :: Ptr CTHIntTensor
@@ -111,7 +154,7 @@ disp tensor
 
 tensorNew :: [Int] -> Maybe (IO (Ptr CTHDoubleTensor))
 tensorNew dims
-  | ndim == 0 = Just c_THDoubleTensor_new
+  | ndim == 0 = Just $ c_THDoubleTensor_new
   | ndim == 1 = Just $ (c_THDoubleTensor_newWithSize1d $ head cdims) >>= fill
   | ndim == 2 = Just $ c_THDoubleTensor_newWithSize2d (cdims !! 0) (cdims !! 1) >>= fill
   | ndim == 3 = Just $ (c_THDoubleTensor_newWithSize3d
@@ -159,9 +202,6 @@ tensorIntNew dims
     cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
     create = (flip c_THIntTensor_fill) 0
     fill x = create x >> pure x
-
-
-
 
 size :: (Ptr CTHDoubleTensor) -> [Int]
 size t =

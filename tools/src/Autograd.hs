@@ -44,6 +44,22 @@ showWeights w label = do
   putStrLn label
   disp w
 
+test = do
+  gen <- c_THGenerator_new
+  w1 <- fromJust $ tensorNew [5]
+  c_THDoubleTensor_uniform w1 gen (-1.0) (1.0)
+  showWeights w1 "w1"
+  -- invlogit 
+  --w2 <- fromJust $ tensorNew [5]
+
+-- runLayer :: Weights -> Vector Double -> Vector Double
+-- runLayer (W wB wN) v = wB + wN #> v
+
+-- runNet :: Network -> Vector Double -> Vector Double
+-- runNet (O w)      !v = logistic (runLayer w v)
+-- runNet (w :&~ n') !v = let v' = logistic (runLayer w v)
+--                        in  runNet n' v'
+
 main = do
   gen <- c_THGenerator_new
   w1 <- fromJust $ tensorNew [5]
