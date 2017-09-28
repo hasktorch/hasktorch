@@ -13,7 +13,7 @@ cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:     TorchTensor
+  exposed-modules:     TorchTensor, HMatrixBridge
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
                      , torch-core

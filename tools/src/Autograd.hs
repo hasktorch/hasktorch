@@ -8,7 +8,9 @@ module Main where
 -- see Just Le's writeup
 -- https://blog.jle.im/entry/practical-dependent-types-in-haskell-1.html
 
-import Data.Maybe
+import Control.Exception.Base (assert)
+import Data.Monoid ((<>))
+import Data.Maybe (fromJust)
 import Foreign.C.Types
 import Foreign.Ptr
 
@@ -54,17 +56,33 @@ test = do
   --w2 <- fromJust $ tensorNew [5]
 
 -- runLayer :: Weights -> Vector Double -> Vector Double
--- runLayer (W wB wN) v = wB + wN #> v
+-- runLayer (W w) v = c_THDoubleTensor_dot w v
 
 -- runNet :: Network -> Vector Double -> Vector Double
 -- runNet (O w)      !v = logistic (runLayer w v)
 -- runNet (w :&~ n') !v = let v' = logistic (runLayer w v)
 --                        in  runNet n' v'
 
+mvTest = do
+  mat <- fromJust $ tensorNew [5,3]
+  vec <- fromJust $ tensorNew [3]
+  res <- fromJust $ tensorNew [5]
+  zero <- fromJust $ tensorNew [5]
+  print $ "dimension check matrix:" <>
+    show (c_THDoubleTensor_nDimension mat == 2)
+  print $ "dimension check vector:" <>
+    show (c_THDoubleTensor_nDimension vec == 1)
+  c_THDoubleTensor_fill mat 3.0
+  c_THDoubleTensor_fill vec 2.0
+  disp mat
+  disp vec
+  c_THDoubleTensor_addmv res 1.0 zero 1.0 mat vec
+  disp res
+
 main = do
   gen <- c_THGenerator_new
   w1 <- fromJust $ tensorNew [5]
-  w2 <- fromJust $ tensorNew [5]
+  w2 <- fromJust $ tensorNew [3]
   w3 <- fromJust $ tensorNew [5]
   c_THDoubleTensor_uniform w1 gen (-1.0) (1.0)
   showWeights w1 "w1"

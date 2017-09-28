@@ -56,6 +56,14 @@ apply2 f t1 t2 = do
   f r_ t1 t2
   pure r_
 
+apply3 ::
+  (TensorDouble -> TensorDouble -> TensorDouble -> TensorDouble -> IO ())
+  -> TensorDouble -> TensorDouble -> TensorDouble -> IO TensorDouble
+apply3 f t1 t2 t3 = do
+  r_ <- c_THDoubleTensor_new
+  f r_ t1 t2 t3
+  pure r_
+
 invlogit :: TensorDouble -> IO TensorDouble
 invlogit = apply c_THDoubleTensor_sigmoid
 
@@ -125,14 +133,16 @@ disp :: Ptr CTHDoubleTensor -> IO ()
 disp tensor
   | (length sz) == 0 = putStrLn "Empty Tensor"
   | (length sz) == 1 = do
+      putStrLn ""
       let indexes = [ fromIntegral idx :: CLong
                     | idx <- [0..(sz !! 0 - 1)] ]
       putStr "[ "
       mapM_ (\idx -> putStr $
                      (showLim $ c_THDoubleTensor_get1d tensor idx) ++ " ")
         indexes
-      putStrLn "]"
+      putStrLn "]\n"
   | (length sz) == 2 = do
+      putStrLn ""
       let pairs = [ ((fromIntegral r) :: CLong,
                      (fromIntegral c) :: CLong)
                   | r <- [0..(sz !! 0 - 1)], c <- [0..(sz !! 1 - 1)] ]
@@ -148,6 +158,7 @@ disp tensor
                   else
                   putStr $ ((showLim val) ++ " " :: String)
             ) pairs
+      putStrLn ""
   | otherwise = putStrLn "Can't print this yet."
   where
     sz = size tensor
