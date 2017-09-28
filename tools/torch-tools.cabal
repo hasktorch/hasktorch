@@ -16,7 +16,7 @@ library
   exposed-modules:     TorchTensor, HMatrixBridge
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
-                     , hmatrix >= 0.18.1.0 -- for hmatrix bridge
+                     , hmatrix >= 0.18.1.0
                      , torch-core
                      , torch-interface
                      , text >= 1.2.2.2
