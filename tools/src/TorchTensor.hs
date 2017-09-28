@@ -7,6 +7,7 @@ module TorchTensor (
   apply,
   invlogit,
   disp,
+  mvSimple,
   size,
   tensorNew,
   tensorFloatNew,
@@ -14,6 +15,7 @@ module TorchTensor (
   ) where
 
 import Data.Maybe  (fromJust)
+import Data.Monoid ((<>))
 import Numeric (showGFloat)
 import qualified Data.Text as T
 
@@ -70,6 +72,17 @@ invlogit = apply c_THDoubleTensor_sigmoid
 nrows tensor = (size tensor) !! 0
 
 ncols tensor = (size tensor) !! 1
+
+mvSimple :: TensorDouble -> TensorDouble -> IO TensorDouble
+mvSimple mat vec = do
+  res <- fromJust $ tensorNew $ [nrows mat]
+  zero <- fromJust $ tensorNew $ [nrows mat]
+  print $ "dimension check matrix:" <>
+    show (c_THDoubleTensor_nDimension mat == 2)
+  print $ "dimension check vector:" <>
+    show (c_THDoubleTensor_nDimension vec == 1)
+  c_THDoubleTensor_addmv res 1.0 zero 1.0 mat vec
+  pure res
 
 -- initialize values tensor = do
 --   [(r, c) |
