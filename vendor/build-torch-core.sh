@@ -30,6 +30,6 @@ echo "Compilers:"
 echo "  $CXX"
 echo "  $CC"
 
-cd ./build; cmake ../TH-pytorch/CMakeLists.txt -B. -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC; make; cd ..
+cd ./build; cmake ../TH/CMakeLists.txt -B. -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC; make; cd ..
 # cd ./build-THNN; cmake ../THNN-pytorch/CMakeLists.txt -B. -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC; make; cd ..
 # cd ./build-THS; cmake ../THS-pytorch/CMakeLists.txt -B. -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC; make; cd ..

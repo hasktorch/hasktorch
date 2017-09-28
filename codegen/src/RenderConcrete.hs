@@ -41,8 +41,8 @@ runPipelineConcrete headerPath makeModuleConfig typeList = do
 concreteFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 concreteFiles =
   [
-    ("vendor/check.h",
-     (makeModule outDirConcrete False "THFile.h" "File" "File")),
+    -- ("vendor/check.h",
+    --  (makeModule outDirConcrete False "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THFile.h",
      (makeModule outDirConcrete False "THFile.h" "File" "File")),
     ("vendor/torch7/lib/TH/THDiskFile.h",
