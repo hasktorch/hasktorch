@@ -757,3 +757,255 @@ instance Storable C'THByteTensor where
     return ()
 
 
+{- typedef struct THLongStorage {
+            long * data;
+            ptrdiff_t size;
+            int refcount;
+            char flag;
+            THAllocator * allocator;
+            void * allocatorContext;
+            struct THByteStorage * view;
+        } THLongStorage; -}
+
+
+
+
+
+
+
+
+data C'THLongStorage = C'THLongStorage{
+  c'THLongStorage'data :: Ptr CLong,
+  c'THLongStorage'size :: CLong,
+  c'THLongStorage'refcount :: CInt,
+  c'THLongStorage'flag :: CChar,
+  c'THLongStorage'allocator :: Ptr C'THAllocator,
+  c'THLongStorage'allocatorContext :: Ptr (),
+  c'THLongStorage'view :: Ptr C'THByteStorage
+} deriving (Eq,Show)
+p'THLongStorage'data p = plusPtr p 0
+p'THLongStorage'data :: Ptr (C'THLongStorage) -> Ptr (Ptr CLong)
+p'THLongStorage'size p = plusPtr p 8
+p'THLongStorage'size :: Ptr (C'THLongStorage) -> Ptr (CLong)
+p'THLongStorage'refcount p = plusPtr p 16
+p'THLongStorage'refcount :: Ptr (C'THLongStorage) -> Ptr (CInt)
+p'THLongStorage'flag p = plusPtr p 20
+p'THLongStorage'flag :: Ptr (C'THLongStorage) -> Ptr (CChar)
+p'THLongStorage'allocator p = plusPtr p 24
+p'THLongStorage'allocator :: Ptr (C'THLongStorage) -> Ptr (Ptr C'THAllocator)
+p'THLongStorage'allocatorContext p = plusPtr p 32
+p'THLongStorage'allocatorContext :: Ptr (C'THLongStorage) -> Ptr (Ptr ())
+p'THLongStorage'view p = plusPtr p 40
+p'THLongStorage'view :: Ptr (C'THLongStorage) -> Ptr (Ptr C'THByteStorage)
+instance Storable C'THLongStorage where
+  sizeOf _ = 48
+  alignment _ = 8
+  peek _p = do
+    v0 <- peekByteOff _p 0
+    v1 <- peekByteOff _p 8
+    v2 <- peekByteOff _p 16
+    v3 <- peekByteOff _p 20
+    v4 <- peekByteOff _p 24
+    v5 <- peekByteOff _p 32
+    v6 <- peekByteOff _p 40
+    return $ C'THLongStorage v0 v1 v2 v3 v4 v5 v6
+  poke _p (C'THLongStorage v0 v1 v2 v3 v4 v5 v6) = do
+    pokeByteOff _p 0 v0
+    pokeByteOff _p 8 v1
+    pokeByteOff _p 16 v2
+    pokeByteOff _p 20 v3
+    pokeByteOff _p 24 v4
+    pokeByteOff _p 32 v5
+    pokeByteOff _p 40 v6
+    return ()
+
+
+{- typedef struct THLongTensor {
+            long * size;
+            long * stride;
+            int nDimension;
+            THLongStorage * storage;
+            ptrdiff_t storageOffset;
+            int refcount;
+            char flag;
+        } THLongTensor; -}
+
+
+
+
+
+
+
+
+data C'THLongTensor = C'THLongTensor{
+  c'THLongTensor'size :: Ptr CLong,
+  c'THLongTensor'stride :: Ptr CLong,
+  c'THLongTensor'nDimension :: CInt,
+  c'THLongTensor'storage :: Ptr C'THLongStorage,
+  c'THLongTensor'storageOffset :: CLong,
+  c'THLongTensor'refcount :: CInt,
+  c'THLongTensor'flag :: CChar
+} deriving (Eq,Show)
+p'THLongTensor'size p = plusPtr p 0
+p'THLongTensor'size :: Ptr (C'THLongTensor) -> Ptr (Ptr CLong)
+p'THLongTensor'stride p = plusPtr p 8
+p'THLongTensor'stride :: Ptr (C'THLongTensor) -> Ptr (Ptr CLong)
+p'THLongTensor'nDimension p = plusPtr p 16
+p'THLongTensor'nDimension :: Ptr (C'THLongTensor) -> Ptr (CInt)
+p'THLongTensor'storage p = plusPtr p 24
+p'THLongTensor'storage :: Ptr (C'THLongTensor) -> Ptr (Ptr C'THLongStorage)
+p'THLongTensor'storageOffset p = plusPtr p 32
+p'THLongTensor'storageOffset :: Ptr (C'THLongTensor) -> Ptr (CLong)
+p'THLongTensor'refcount p = plusPtr p 40
+p'THLongTensor'refcount :: Ptr (C'THLongTensor) -> Ptr (CInt)
+p'THLongTensor'flag p = plusPtr p 44
+p'THLongTensor'flag :: Ptr (C'THLongTensor) -> Ptr (CChar)
+instance Storable C'THLongTensor where
+  sizeOf _ = 48
+  alignment _ = 8
+  peek _p = do
+    v0 <- peekByteOff _p 0
+    v1 <- peekByteOff _p 8
+    v2 <- peekByteOff _p 16
+    v3 <- peekByteOff _p 24
+    v4 <- peekByteOff _p 32
+    v5 <- peekByteOff _p 40
+    v6 <- peekByteOff _p 44
+    return $ C'THLongTensor v0 v1 v2 v3 v4 v5 v6
+  poke _p (C'THLongTensor v0 v1 v2 v3 v4 v5 v6) = do
+    pokeByteOff _p 0 v0
+    pokeByteOff _p 8 v1
+    pokeByteOff _p 16 v2
+    pokeByteOff _p 24 v3
+    pokeByteOff _p 32 v4
+    pokeByteOff _p 40 v5
+    pokeByteOff _p 44 v6
+    return ()
+
+
+{- typedef struct THShortStorage {
+            short * data;
+            ptrdiff_t size;
+            int refcount;
+            char flag;
+            THAllocator * allocator;
+            void * allocatorContext;
+            struct THByteStorage * view;
+        } THShortStorage; -}
+
+
+
+
+
+
+
+
+data C'THShortStorage = C'THShortStorage{
+  c'THShortStorage'data :: Ptr CShort,
+  c'THShortStorage'size :: CLong,
+  c'THShortStorage'refcount :: CInt,
+  c'THShortStorage'flag :: CChar,
+  c'THShortStorage'allocator :: Ptr C'THAllocator,
+  c'THShortStorage'allocatorContext :: Ptr (),
+  c'THShortStorage'view :: Ptr C'THByteStorage
+} deriving (Eq,Show)
+p'THShortStorage'data p = plusPtr p 0
+p'THShortStorage'data :: Ptr (C'THShortStorage) -> Ptr (Ptr CShort)
+p'THShortStorage'size p = plusPtr p 8
+p'THShortStorage'size :: Ptr (C'THShortStorage) -> Ptr (CLong)
+p'THShortStorage'refcount p = plusPtr p 16
+p'THShortStorage'refcount :: Ptr (C'THShortStorage) -> Ptr (CInt)
+p'THShortStorage'flag p = plusPtr p 20
+p'THShortStorage'flag :: Ptr (C'THShortStorage) -> Ptr (CChar)
+p'THShortStorage'allocator p = plusPtr p 24
+p'THShortStorage'allocator :: Ptr (C'THShortStorage) -> Ptr (Ptr C'THAllocator)
+p'THShortStorage'allocatorContext p = plusPtr p 32
+p'THShortStorage'allocatorContext :: Ptr (C'THShortStorage) -> Ptr (Ptr ())
+p'THShortStorage'view p = plusPtr p 40
+p'THShortStorage'view :: Ptr (C'THShortStorage) -> Ptr (Ptr C'THByteStorage)
+instance Storable C'THShortStorage where
+  sizeOf _ = 48
+  alignment _ = 8
+  peek _p = do
+    v0 <- peekByteOff _p 0
+    v1 <- peekByteOff _p 8
+    v2 <- peekByteOff _p 16
+    v3 <- peekByteOff _p 20
+    v4 <- peekByteOff _p 24
+    v5 <- peekByteOff _p 32
+    v6 <- peekByteOff _p 40
+    return $ C'THShortStorage v0 v1 v2 v3 v4 v5 v6
+  poke _p (C'THShortStorage v0 v1 v2 v3 v4 v5 v6) = do
+    pokeByteOff _p 0 v0
+    pokeByteOff _p 8 v1
+    pokeByteOff _p 16 v2
+    pokeByteOff _p 20 v3
+    pokeByteOff _p 24 v4
+    pokeByteOff _p 32 v5
+    pokeByteOff _p 40 v6
+    return ()
+
+
+{- typedef struct THShortTensor {
+            long * size;
+            long * stride;
+            int nDimension;
+            THShortStorage * storage;
+            ptrdiff_t storageOffset;
+            int refcount;
+            char flag;
+        } THShortTensor; -}
+
+
+
+
+
+
+
+
+data C'THShortTensor = C'THShortTensor{
+  c'THShortTensor'size :: Ptr CLong,
+  c'THShortTensor'stride :: Ptr CLong,
+  c'THShortTensor'nDimension :: CInt,
+  c'THShortTensor'storage :: Ptr C'THShortStorage,
+  c'THShortTensor'storageOffset :: CLong,
+  c'THShortTensor'refcount :: CInt,
+  c'THShortTensor'flag :: CChar
+} deriving (Eq,Show)
+p'THShortTensor'size p = plusPtr p 0
+p'THShortTensor'size :: Ptr (C'THShortTensor) -> Ptr (Ptr CLong)
+p'THShortTensor'stride p = plusPtr p 8
+p'THShortTensor'stride :: Ptr (C'THShortTensor) -> Ptr (Ptr CLong)
+p'THShortTensor'nDimension p = plusPtr p 16
+p'THShortTensor'nDimension :: Ptr (C'THShortTensor) -> Ptr (CInt)
+p'THShortTensor'storage p = plusPtr p 24
+p'THShortTensor'storage :: Ptr (C'THShortTensor) -> Ptr (Ptr C'THShortStorage)
+p'THShortTensor'storageOffset p = plusPtr p 32
+p'THShortTensor'storageOffset :: Ptr (C'THShortTensor) -> Ptr (CLong)
+p'THShortTensor'refcount p = plusPtr p 40
+p'THShortTensor'refcount :: Ptr (C'THShortTensor) -> Ptr (CInt)
+p'THShortTensor'flag p = plusPtr p 44
+p'THShortTensor'flag :: Ptr (C'THShortTensor) -> Ptr (CChar)
+instance Storable C'THShortTensor where
+  sizeOf _ = 48
+  alignment _ = 8
+  peek _p = do
+    v0 <- peekByteOff _p 0
+    v1 <- peekByteOff _p 8
+    v2 <- peekByteOff _p 16
+    v3 <- peekByteOff _p 24
+    v4 <- peekByteOff _p 32
+    v5 <- peekByteOff _p 40
+    v6 <- peekByteOff _p 44
+    return $ C'THShortTensor v0 v1 v2 v3 v4 v5 v6
+  poke _p (C'THShortTensor v0 v1 v2 v3 v4 v5 v6) = do
+    pokeByteOff _p 0 v0
+    pokeByteOff _p 8 v1
+    pokeByteOff _p 16 v2
+    pokeByteOff _p 24 v3
+    pokeByteOff _p 32 v4
+    pokeByteOff _p 40 v5
+    pokeByteOff _p 44 v6
+    return ()
+
+

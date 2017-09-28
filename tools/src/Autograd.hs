@@ -16,6 +16,7 @@ import THDoubleTensor
 import THDoubleTensorMath
 import THDoubleTensorRandom
 import THRandom
+import THStorage
 import THTypes
 import TorchTensor
 

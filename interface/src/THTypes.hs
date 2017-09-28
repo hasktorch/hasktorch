@@ -15,7 +15,6 @@ type CTHDescBuff = Ptr ()
 type CTHAllocatorPtr = Ptr C'THAllocator
 type CTHGenerator = C'THGenerator
 type CTHFile = ()
-type CTHStorage = ()
 type CTHHalf = CUShort
 
 -- ----------------------------------------
@@ -55,10 +54,10 @@ type CTHIntStorage = C'THIntStorage
 
 {- Long -}
 
-type CTHLongTensor = ()
-type CTHLongStorage = ()
+type CTHLongTensor = C'THLongTensor
+type CTHLongStorage = C'THLongStorage
 
 {- Short -}
 
-type CTHShortTensor = ()
-type CTHShortStorage = ()
+type CTHShortTensor = C'THShortTensor
+type CTHShortStorage = C'THShortStorage

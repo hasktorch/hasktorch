@@ -31,6 +31,7 @@ typedef struct THGenerator {
 
 /*
   Templated generic types
+  THStorage - generic/THStorage.h
 */
 
 typedef struct THFloatStorage
@@ -143,3 +144,48 @@ typedef struct THByteTensor
   int refcount;
   char flag;
 } THByteTensor;
+
+
+typedef struct THLongStorage
+{
+  long *data;
+  ptrdiff_t size;
+  int refcount;
+  char flag;
+  THAllocator *allocator;
+  void *allocatorContext;
+  struct THByteStorage *view;
+} THLongStorage;
+
+typedef struct THLongTensor
+{
+  long *size;
+  long *stride;
+  int nDimension;
+  THLongStorage *storage;
+  ptrdiff_t storageOffset;
+  int refcount;
+  char flag;
+} THLongTensor;
+
+typedef struct THShortStorage
+{
+  short *data;
+  ptrdiff_t size;
+  int refcount;
+  char flag;
+  THAllocator *allocator;
+  void *allocatorContext;
+  struct THByteStorage *view;
+} THShortStorage;
+
+typedef struct THShortTensor
+{
+  long *size;
+  long *stride;
+  int nDimension;
+  THShortStorage *storage;
+  ptrdiff_t storageOffset;
+  int refcount;
+  char flag;
+} THShortTensor;
