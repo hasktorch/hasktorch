@@ -23,8 +23,11 @@ import THTypes
 import TorchTensor
 
 data Weights = W {
-  weights :: Ptr CTHDoubleTensor
-  }
+  weights :: TensorDouble
+  } deriving (Eq)
+
+instance Show Weights where
+  show w = "TODO implementat show"
 
 data Network :: * where
   O :: Weights -> Network
@@ -32,14 +35,11 @@ data Network :: * where
 
 infixr 5 :&~
 
-randInit = do
+randInit sz lower upper = do
   gen <- c_THGenerator_new
-  t <- fromJust $ tensorNew [5]
-  putStrLn "initialized vector"
-  disp t
-  putStrLn "random vectors"
+  t <- fromJust $ tensorNew sz
   mapM_ (\x -> do
-            c_THDoubleTensor_uniform t gen (-1.0) (1.0)
+            c_THDoubleTensor_uniform t gen lower upper
             disp t
         ) [0..3]
 

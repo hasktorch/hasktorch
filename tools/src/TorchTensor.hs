@@ -2,12 +2,17 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
 
 module TorchTensor (
+  TensorByte(..),
   TensorDouble(..),
+  TensorFloat(..),
   TensorInt(..),
   apply,
-  invlogit,
+  apply2,
+  apply3,
   disp,
+  invlogit,
   mvSimple,
+  randInit,
   size,
   tensorNew,
   tensorFloatNew,
@@ -23,8 +28,10 @@ import Foreign
 import Foreign.C.Types
 import THTypes
 
+import THRandom
 import THDoubleTensor
 import THDoubleTensorMath
+import THDoubleTensorRandom
 import THFloatTensor
 import THFloatTensorMath
 import THIntTensor
@@ -41,6 +48,12 @@ import THTypes
 import THDoubleStorage
 import THDoubleTensor
 
+type TensorByte = Ptr CTHByteTensor
+type TensorDouble = Ptr CTHDoubleTensor
+type TensorFloat = Ptr CTHFloatTensor
+type TensorInt = Ptr CTHIntTensor
+
+-- |apply a tensor transforming function to a tensor
 apply ::
   (TensorDouble -> TensorDouble -> IO ())
   -> TensorDouble -> IO TensorDouble
@@ -50,6 +63,7 @@ apply f t1 = do
   f r_ t1
   pure r_
 
+-- |apply an operation on 2 tensors
 apply2 ::
   (TensorDouble -> TensorDouble -> TensorDouble -> IO ())
   -> TensorDouble -> TensorDouble -> IO TensorDouble
@@ -58,6 +72,7 @@ apply2 f t1 t2 = do
   f r_ t1 t2
   pure r_
 
+-- |apply an operation on 3 tensors
 apply3 ::
   (TensorDouble -> TensorDouble -> TensorDouble -> TensorDouble -> IO ())
   -> TensorDouble -> TensorDouble -> TensorDouble -> IO TensorDouble
@@ -66,33 +81,9 @@ apply3 f t1 t2 t3 = do
   f r_ t1 t2 t3
   pure r_
 
+-- |apply inverse logit to all values of a tensor
 invlogit :: TensorDouble -> IO TensorDouble
 invlogit = apply c_THDoubleTensor_sigmoid
-
-nrows tensor = (size tensor) !! 0
-
-ncols tensor = (size tensor) !! 1
-
-mvSimple :: TensorDouble -> TensorDouble -> IO TensorDouble
-mvSimple mat vec = do
-  res <- fromJust $ tensorNew $ [nrows mat]
-  zero <- fromJust $ tensorNew $ [nrows mat]
-  print $ "dimension check matrix:" <>
-    show (c_THDoubleTensor_nDimension mat == 2)
-  print $ "dimension check vector:" <>
-    show (c_THDoubleTensor_nDimension vec == 1)
-  c_THDoubleTensor_addmv res 1.0 zero 1.0 mat vec
-  pure res
-
--- initialize values tensor = do
---   [(r, c) |
---     x <- [1..(nrows tensor)],
---     y <- [1..(ncols tensor)]]
---   mapM_ ((r, c) -> c_THDoubleTensor_set2d
---                    (fromIntegral r)
---                    (fromIntegral c)
---   where
---     idx = product . size $ tensor
 
 -- TODO: need bindings to THStorage to use c_THDoubleTensor_resize
 initialize values sz = do
@@ -104,11 +95,33 @@ initialize values sz = do
   where
     nel = product sz
 
-type TensorDouble = Ptr CTHDoubleTensor
+-- |simplified matrix vector multiplication
+mvSimple :: TensorDouble -> TensorDouble -> IO TensorDouble
+mvSimple mat vec = do
+  res <- fromJust $ tensorNew $ [nrows mat]
+  zero <- fromJust $ tensorNew $ [nrows mat]
+  print $ "dimension check matrix:" <>
+    show (c_THDoubleTensor_nDimension mat == 2)
+  print $ "dimension check vector:" <>
+    show (c_THDoubleTensor_nDimension vec == 1)
+  c_THDoubleTensor_addmv res 1.0 zero 1.0 mat vec
+  pure res
 
-data TensorInt = TensorInt {
-  val_int :: Ptr CTHIntTensor
-  } deriving (Eq, Show)
+-- |number of rows of a tensor (unsafe)
+nrows tensor = (size tensor) !! 0
+
+-- |number of cols of a tensor (unsafe)
+ncols tensor = (size tensor) !! 1
+
+-- initialize values tensor = do
+--   [(r, c) |
+--     x <- [1..(nrows tensor)],
+--     y <- [1..(ncols tensor)]]
+--   mapM_ ((r, c) -> c_THDoubleTensor_set2d
+--                    (fromIntegral r)
+--                    (fromIntegral c)
+--   where
+--     idx = product . size $ tensor
 
 -- str :: Ptr CTHDoubleTensor -> Text
 -- str tensor
@@ -140,8 +153,11 @@ data TensorInt = TensorInt {
 --   where
 --     sz = size tensor
 
+-- |Show a real value with limited precision (convenience function)
+showLim :: RealFloat a => a -> String
 showLim x = showGFloat (Just 2) x ""
 
+-- |display a tensor
 disp :: Ptr CTHDoubleTensor -> IO ()
 disp tensor
   | (length sz) == 0 = putStrLn "Empty Tensor"
@@ -176,6 +192,25 @@ disp tensor
   where
     sz = size tensor
 
+-- |randomly initialize a tensor with uniform random values from a range
+-- TODO - finish implementation to handle sizes correctly
+randInit sz lower upper = do
+  gen <- c_THGenerator_new
+  t <- fromJust $ tensorNew sz
+  mapM_ (\x -> do
+            c_THDoubleTensor_uniform t gen lower upper
+            disp t
+        ) [0..3]
+
+-- |Dimensions of a tensor as a list
+size :: (Ptr CTHDoubleTensor) -> [Int]
+size t =
+  fmap f [0..maxdim]
+  where
+    maxdim = (c_THDoubleTensor_nDimension t) - 1
+    f x = fromIntegral (c_THDoubleTensor_size t x) :: Int
+
+-- |Create a new (double) tensor of specified dimensions and fill it with 0
 tensorNew :: [Int] -> Maybe (IO (Ptr CTHDoubleTensor))
 tensorNew dims
   | ndim == 0 = Just $ c_THDoubleTensor_new
@@ -226,13 +261,6 @@ tensorIntNew dims
     cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
     create = (flip c_THIntTensor_fill) 0
     fill x = create x >> pure x
-
-size :: (Ptr CTHDoubleTensor) -> [Int]
-size t =
-  fmap f [0..maxdim]
-  where
-    maxdim = (c_THDoubleTensor_nDimension t) - 1
-    f x = fromIntegral (c_THDoubleTensor_size t x) :: Int
 
 main = do
   disp =<< (fromJust $ tensorNew [4,3])
