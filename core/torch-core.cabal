@@ -97,6 +97,9 @@ library
 
                      , THFile
                      , THDiskFile
+                     , THLogAdd
+                     , THMemoryFile
+                     , THStorage
                      , THRandom
                      , THSize
 

@@ -9,6 +9,8 @@ module CodeGenParse (
   THFunction(..)
   ) where
 
+import Data.Functor.Identity
+
 import Control.Monad (void)
 import Data.Maybe
 import Data.Void
@@ -310,7 +312,18 @@ thFunctionTemplate = do
   space
   funArgs <- thFunctionArgs
   thSemicolon
+  optional $ try thComment
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
+
+
+thComment :: ParsecT Void String Identity ()
+--  :: ParsecT Void String Data.Functor.Identity.Identity (Maybe a)
+thComment = do
+  space
+  string "/*"
+  some (alphaNumChar <|> char '_' <|> char ' ')
+  string "*/"
+  pure ()
 
 thFunctionConcrete = do
   funRet <- thType
@@ -319,6 +332,7 @@ thFunctionConcrete = do
   space
   funArgs <- thFunctionArgs
   thSemicolon
+  optional $ try thComment
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
 -- notTHAPI = do
@@ -332,12 +346,22 @@ thSkip = do
   -- eol <|> ((not <?> (string "TH_API")) >> eol)
   pure Nothing
 
-thItem = thFunctionTemplate <|> thSkip -- ordering is important
+thConstant = do
+  -- THLogAdd has constants, these are not surfaced
+  thAPI >> space
+  string "const" >> space
+  thType >> space
+  (some (alphaNumChar <|> char '_')) >> char ';'
+  pure Nothing
+
+thItem = try thConstant <|> thFunctionTemplate <|> thSkip -- ordering is important
 
 thParseGeneric = some thItem
 
-thParseConcrete = some ((thAPI >> space >> thFunctionConcrete) <|> thSkip)
+thParseConcrete = some (try thConstant <|> (thAPI >> space >> thFunctionConcrete) <|> thSkip)
 
-bar = parseTest thParseConcrete "TH_API \n"
-bar2 = parseTest thParseConcrete "foob TH_API \n"
-bar3 = parseTest thParseConcrete "TH_API size_t THFile_readStringRaw(THFile *self, const char *format, char **str_); /* you must deallocate str_ */"
+test1 = parseTest thParseConcrete "TH_API \n"
+test2 = parseTest thParseConcrete "foob TH_API \n"
+test3 = parseTest thParseConcrete "TH_API size_t THFile_readStringRaw(THFile *self, const char *format, char **str_); /* you must deallocate str_ */"
+test4 = parseTest thParseConcrete "TH_API const double THLog2Pi;"
+test5 = parseTest thParseConcrete "TH_API double THLogAdd(double log_a, double log_b);"
