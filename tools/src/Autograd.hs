@@ -35,14 +35,6 @@ data Network :: * where
 
 infixr 5 :&~
 
-randInit sz lower upper = do
-  gen <- c_THGenerator_new
-  t <- fromJust $ tensorNew sz
-  mapM_ (\x -> do
-            c_THDoubleTensor_uniform t gen lower upper
-            disp t
-        ) [0..3]
-
 showWeights w label = do
   putStrLn label
   disp w

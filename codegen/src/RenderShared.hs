@@ -349,12 +349,14 @@ renderImports imports = (T.intercalate "\n" (singleimport <$> imports)) <> "\n\n
 renderFunName :: Text -> Text -> Text
 renderFunName prefix name = prefix <> "_" <> name
 
+-- |Render a single function signature. Torch never calls back into haskell, so
+-- unsafe is appropriate here
 renderFunSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunSig headerFile modTypeTemplate (name, retType, args) =
   (
    "-- |c_" <> name <> " : "
    <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType) <> "\n"
-   <> "foreign import ccall \"" <> T.pack headerFile <> " " <> name <> "\"\n"
+   <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " " <> name <> "\"\n"
    <> "  c_" <> name <> " :: "
    <> (T.intercalate " -> " typeSignatureClean)
     -- TODO : fromJust shouldn't fail but still clean this up so it's not unsafe

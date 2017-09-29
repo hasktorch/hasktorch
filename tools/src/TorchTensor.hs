@@ -28,6 +28,8 @@ import Foreign
 import Foreign.C.Types
 import THTypes
 
+import System.IO.Unsafe
+
 import THRandom
 import THDoubleTensor
 import THDoubleTensorMath
@@ -94,6 +96,15 @@ initialize values sz = do
   pure tensor
   where
     nel = product sz
+
+-- |matrix vector multiplication, no error checking for now
+-- |tag: unsafe
+-- TODO - determine how to deal with resource allocation
+(#>) :: TensorDouble -> TensorDouble -> TensorDouble
+mat #> vec = unsafePerformIO $ do
+  res <- fromJust $ tensorNew $ [nrows mat]
+  c_THDoubleTensor_addmv res 1.0 res 1.0 mat vec
+  pure res
 
 -- |simplified matrix vector multiplication
 mvSimple :: TensorDouble -> TensorDouble -> IO TensorDouble

@@ -29,89 +29,89 @@ import Foreign.C.Types
 import THTypes
 
 -- |c_THByteStorage_data :  -> real *
-foreign import ccall "THStorage.h THByteStorage_data"
+foreign import ccall unsafe "THStorage.h THByteStorage_data"
   c_THByteStorage_data :: Ptr CTHByteStorage -> IO (Ptr CChar)
 
 -- |c_THByteStorage_size :  -> ptrdiff_t
-foreign import ccall "THStorage.h THByteStorage_size"
+foreign import ccall unsafe "THStorage.h THByteStorage_size"
   c_THByteStorage_size :: Ptr CTHByteStorage -> CPtrdiff
 
 -- |c_THByteStorage_elementSize :  -> size_t
-foreign import ccall "THStorage.h THByteStorage_elementSize"
+foreign import ccall unsafe "THStorage.h THByteStorage_elementSize"
   c_THByteStorage_elementSize :: CSize
 
 -- |c_THByteStorage_set :    -> void
-foreign import ccall "THStorage.h THByteStorage_set"
+foreign import ccall unsafe "THStorage.h THByteStorage_set"
   c_THByteStorage_set :: Ptr CTHByteStorage -> CPtrdiff -> CChar -> IO ()
 
 -- |c_THByteStorage_get :   -> real
-foreign import ccall "THStorage.h THByteStorage_get"
+foreign import ccall unsafe "THStorage.h THByteStorage_get"
   c_THByteStorage_get :: Ptr CTHByteStorage -> CPtrdiff -> CChar
 
 -- |c_THByteStorage_new :  -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_new"
+foreign import ccall unsafe "THStorage.h THByteStorage_new"
   c_THByteStorage_new :: IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithSize : size -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_newWithSize"
+foreign import ccall unsafe "THStorage.h THByteStorage_newWithSize"
   c_THByteStorage_newWithSize :: CPtrdiff -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithSize1 :  -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_newWithSize1"
+foreign import ccall unsafe "THStorage.h THByteStorage_newWithSize1"
   c_THByteStorage_newWithSize1 :: CChar -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithSize2 :   -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_newWithSize2"
+foreign import ccall unsafe "THStorage.h THByteStorage_newWithSize2"
   c_THByteStorage_newWithSize2 :: CChar -> CChar -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithSize3 :    -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_newWithSize3"
+foreign import ccall unsafe "THStorage.h THByteStorage_newWithSize3"
   c_THByteStorage_newWithSize3 :: CChar -> CChar -> CChar -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithSize4 :     -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_newWithSize4"
+foreign import ccall unsafe "THStorage.h THByteStorage_newWithSize4"
   c_THByteStorage_newWithSize4 :: CChar -> CChar -> CChar -> CChar -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithMapping : filename size flags -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_newWithMapping"
+foreign import ccall unsafe "THStorage.h THByteStorage_newWithMapping"
   c_THByteStorage_newWithMapping :: Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithData : data size -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_newWithData"
+foreign import ccall unsafe "THStorage.h THByteStorage_newWithData"
   c_THByteStorage_newWithData :: Ptr CChar -> CPtrdiff -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithAllocator : size allocator allocatorContext -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_newWithAllocator"
+foreign import ccall unsafe "THStorage.h THByteStorage_newWithAllocator"
   c_THByteStorage_newWithAllocator :: CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_newWithDataAndAllocator : data size allocator allocatorContext -> THStorage *
-foreign import ccall "THStorage.h THByteStorage_newWithDataAndAllocator"
+foreign import ccall unsafe "THStorage.h THByteStorage_newWithDataAndAllocator"
   c_THByteStorage_newWithDataAndAllocator :: Ptr CChar -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHByteStorage)
 
 -- |c_THByteStorage_setFlag : storage flag -> void
-foreign import ccall "THStorage.h THByteStorage_setFlag"
+foreign import ccall unsafe "THStorage.h THByteStorage_setFlag"
   c_THByteStorage_setFlag :: Ptr CTHByteStorage -> CChar -> IO ()
 
 -- |c_THByteStorage_clearFlag : storage flag -> void
-foreign import ccall "THStorage.h THByteStorage_clearFlag"
+foreign import ccall unsafe "THStorage.h THByteStorage_clearFlag"
   c_THByteStorage_clearFlag :: Ptr CTHByteStorage -> CChar -> IO ()
 
 -- |c_THByteStorage_retain : storage -> void
-foreign import ccall "THStorage.h THByteStorage_retain"
+foreign import ccall unsafe "THStorage.h THByteStorage_retain"
   c_THByteStorage_retain :: Ptr CTHByteStorage -> IO ()
 
 -- |c_THByteStorage_swap : storage1 storage2 -> void
-foreign import ccall "THStorage.h THByteStorage_swap"
+foreign import ccall unsafe "THStorage.h THByteStorage_swap"
   c_THByteStorage_swap :: Ptr CTHByteStorage -> Ptr CTHByteStorage -> IO ()
 
 -- |c_THByteStorage_free : storage -> void
-foreign import ccall "THStorage.h THByteStorage_free"
+foreign import ccall unsafe "THStorage.h THByteStorage_free"
   c_THByteStorage_free :: Ptr CTHByteStorage -> IO ()
 
 -- |c_THByteStorage_resize : storage size -> void
-foreign import ccall "THStorage.h THByteStorage_resize"
+foreign import ccall unsafe "THStorage.h THByteStorage_resize"
   c_THByteStorage_resize :: Ptr CTHByteStorage -> CPtrdiff -> IO ()
 
 -- |c_THByteStorage_fill : storage value -> void
-foreign import ccall "THStorage.h THByteStorage_fill"
+foreign import ccall unsafe "THStorage.h THByteStorage_fill"
   c_THByteStorage_fill :: Ptr CTHByteStorage -> CChar -> IO ()
