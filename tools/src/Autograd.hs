@@ -55,6 +55,13 @@ test = do
 -- runNet (w :&~ n') !v = let v' = logistic (runLayer w v)
 --                        in  runNet n' v'
 
+-- |try out nicer (but unsafe / resource-leaky) syntax
+mvTest2 = disp $ (tensorNew_ (D2 2 2) 3.0) #> (tensorNew_ (D1 2) 2.0 )
+
+-- |dauses runtime exception
+mvTest3 = disp $ (tensorNew_ (D2 3 3) 3.0) #> (tensorNew_ (D1 2) 2.0 )
+
+-- |low level matrix multiplication
 mvTest = do
   mat <- fromJust $ tensorNew [5,3]
   vec <- fromJust $ tensorNew [3]

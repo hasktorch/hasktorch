@@ -2,6 +2,7 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
 
 module TorchTensor (
+  TensorDim(..),
   TensorByte(..),
   TensorDouble(..),
   TensorFloat(..),
@@ -12,15 +13,18 @@ module TorchTensor (
   disp,
   invlogit,
   mvSimple,
+  (#>),
   randInit,
   size,
   tensorNew,
+  tensorNew_,
   tensorFloatNew,
   tensorIntNew
   ) where
 
 import Data.Maybe  (fromJust)
 import Data.Monoid ((<>))
+import Data.Word
 import Numeric (showGFloat)
 import qualified Data.Text as T
 
@@ -54,6 +58,21 @@ type TensorByte = Ptr CTHByteTensor
 type TensorDouble = Ptr CTHDoubleTensor
 type TensorFloat = Ptr CTHFloatTensor
 type TensorInt = Ptr CTHIntTensor
+
+data TensorDim a =
+  D0
+  | D1 { d1_1 :: a }
+  | D2 { d2_1 :: a, d2_2 :: a }
+  | D3 { d3_1 :: a, d3_2 :: a, d3_3 :: a }
+  | D4 { d4_1 :: a, d4_2 :: a, d4_3 :: a, d4_4 :: a }
+  deriving (Eq, Show)
+
+instance Functor TensorDim where
+  fmap f D0 = D0
+  fmap f (D1 d1) = D1 (f d1)
+  fmap f (D2 d1 d2) = D2 (f d1) (f d2)
+  fmap f (D3 d1 d2 d3) = D3 (f d1) (f d2) (f d3)
+  fmap f (D4 d1 d2 d3 d4) = D4 (f d1) (f d2) (f d3) (f d4)
 
 -- |apply a tensor transforming function to a tensor
 apply ::
@@ -221,8 +240,29 @@ size t =
     maxdim = (c_THDoubleTensor_nDimension t) - 1
     f x = fromIntegral (c_THDoubleTensor_size t x) :: Int
 
+-- |word 2 clong
+w2cl :: Word -> CLong
+w2cl = fromIntegral
+
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
-tensorNew :: [Int] -> Maybe (IO (Ptr CTHDoubleTensor))
+-- |tag: unsafe
+tensorNew_ :: TensorDim Word -> Double -> TensorDouble
+tensorNew_ dims value = unsafePerformIO $ fill =<< (go dims)
+  where
+    create = (flip c_THDoubleTensor_fill) (realToFrac value)
+    fill x = create x >> pure x
+    -- go dims = undefined
+    go D0 = c_THDoubleTensor_new
+    go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
+    go (D2 d1 d2) = c_THDoubleTensor_newWithSize2d
+                    (w2cl d1) (w2cl d2)
+    go (D3 d1 d2 d3) = c_THDoubleTensor_newWithSize3d
+                       (w2cl d1) (w2cl d2) (w2cl d3)
+    go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
+                          (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+
+-- |Create a new (double) tensor of specified dimensions and fill it with 0
+tensorNew :: [Int] -> Maybe (IO TensorDouble)
 tensorNew dims
   | ndim == 0 = Just $ c_THDoubleTensor_new
   | ndim == 1 = Just $ (c_THDoubleTensor_newWithSize1d $ head cdims) >>= fill
