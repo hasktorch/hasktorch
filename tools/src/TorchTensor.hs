@@ -3,10 +3,7 @@
 
 module TorchTensor (
   TensorDim(..),
-  TensorByte(..),
   TensorDouble(..),
-  TensorFloat(..),
-  TensorInt(..),
   apply,
   apply2,
   disp,
@@ -19,8 +16,6 @@ module TorchTensor (
   size,
   tensorNew,
   tensorNew_,
-  tensorFloatNew,
-  tensorIntNew
   ) where
 
 import Data.Maybe  (fromJust)
@@ -36,7 +31,7 @@ import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
                            newForeignPtr )
 import GHC.Ptr (FunPtr)
 
-import System.IO.Unsafe
+import System.IO.Unsafe (unsafePerformIO)
 
 import THTypes
 import THRandom
@@ -59,10 +54,7 @@ import THTypes
 import THDoubleStorage
 import THDoubleTensor
 
-type TensorByte = Ptr CTHByteTensor
 type TensorDouble = Ptr CTHDoubleTensor
-type TensorFloat = Ptr CTHFloatTensor
-type TensorInt = Ptr CTHIntTensor
 
 data TensorDim a =
   D0
@@ -303,40 +295,6 @@ tensorNew dims
   where
     ndim = length dims
     cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
-
-tensorFloatNew :: [Int] -> Maybe (IO (Ptr CTHFloatTensor))
-tensorFloatNew dims
-  | ndim == 0 = Just c_THFloatTensor_new
-  | ndim == 1 = Just $ (c_THFloatTensor_newWithSize1d $ head cdims) >>= fill
-  | ndim == 2 = Just $ c_THFloatTensor_newWithSize2d (cdims !! 0) (cdims !! 1) >>= fill
-  | ndim == 3 = Just $ (c_THFloatTensor_newWithSize3d
-                        (cdims !! 0) (cdims !! 1) (cdims !! 2)) >>= fill
-  | ndim == 4 = Just $ (c_THFloatTensor_newWithSize4d
-                        (cdims !! 0) (cdims !! 1) (cdims !! 2) (cdims !! 3)
-                        >>= fill)
-  | otherwise = Nothing
-  where
-    ndim = length dims
-    cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
-    create = (flip c_THFloatTensor_fill) 0.0
-    fill x = create x >> pure x
-
-tensorIntNew :: [Int] -> Maybe (IO (Ptr CTHIntTensor))
-tensorIntNew dims
-  | ndim == 0 = Just c_THIntTensor_new
-  | ndim == 1 = Just $ (c_THIntTensor_newWithSize1d $ head cdims) >>= fill
-  | ndim == 2 = Just $ c_THIntTensor_newWithSize2d (cdims !! 0) (cdims !! 1) >>= fill
-  | ndim == 3 = Just $ (c_THIntTensor_newWithSize3d
-                        (cdims !! 0) (cdims !! 1) (cdims !! 2)) >>= fill
-  | ndim == 4 = Just $ (c_THIntTensor_newWithSize4d
-                        (cdims !! 0) (cdims !! 1) (cdims !! 2) (cdims !! 3)
-                        >>= fill)
-  | otherwise = Nothing
-  where
-    ndim = length dims
-    cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
-    create = (flip c_THIntTensor_fill) 0
-    fill x = create x >> pure x
 
 main = do
   disp =<< (fromJust $ tensorNew [4,3])

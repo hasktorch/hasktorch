@@ -29,5 +29,6 @@ instance Functor TensorDim where
   fmap f (D4 d1 d2 d3 d4) = D4 (f d1) (f d2) (f d3) (f d4)
 
 data TensorDouble_ = TensorDouble_ {
-  tdTensor :: !(ForeignPtr CTHDoubleTensor)
+  tdTensor :: !(ForeignPtr CTHDoubleTensor),
+  tdDim :: !(TensorDim Word)
   } deriving (Eq, Show)
