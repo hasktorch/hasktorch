@@ -15,6 +15,7 @@ import Foreign.Ptr
 import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
                            newForeignPtr )
 import GHC.Ptr (FunPtr)
+import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
 import TensorTypes

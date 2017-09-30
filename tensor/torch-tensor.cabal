@@ -25,7 +25,7 @@ library
 executable memory-test
   default-language:    Haskell2010
   main-is:             MemoryTest.hs
-  other-modules: Tensor, TensorTypes, TensorUtils
+  other-modules: Tensor, TensorTypes, TensorUtils, TensorRaw
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
                      , torch-core
