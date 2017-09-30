@@ -1,5 +1,7 @@
 module TensorRaw (
   dispRaw,
+  fillRaw,
+  fillRaw0,
   randInitRaw,
   randInitRawTest,
   tensorRaw_
@@ -84,7 +86,7 @@ tensorRaw_ :: TensorDim Word -> Double -> Ptr CTHDoubleTensor
 tensorRaw_ dims value = unsafePerformIO $ do
   newPtr <- go dims
   -- fillPtr <- fill0 newPtr
-  fill value newPtr
+  fillRaw value newPtr
   pure newPtr
   where
     go D0 = c_THDoubleTensor_new
@@ -116,6 +118,15 @@ sizeRaw t =
   where
     maxdim = (c_THDoubleTensor_nDimension t) - 1
     f x = fromIntegral (c_THDoubleTensor_size t x) :: Int
+
+-- |Returns a function that accepts a tensor and fills it with specified value
+-- and returns the IO context with the mutated tensor
+fillRaw :: Real a => a -> TensorDoubleRaw -> IO ()
+fillRaw value = (flip c_THDoubleTensor_fill) (realToFrac value)
+
+-- |Fill a raw Double tensor with 0.0
+fillRaw0 :: TensorDoubleRaw -> IO (TensorDoubleRaw)
+fillRaw0 tensor = fillRaw 0.0 tensor >> pure tensor
 
 testRaw = do
   let tmp = tensorRaw_ (D1 5) 25.0

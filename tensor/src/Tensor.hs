@@ -18,6 +18,7 @@ import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
+import TensorRaw
 import TensorTypes
 import TensorUtils
 import THTypes
@@ -39,14 +40,14 @@ testGCTensor = do
 
 fillCopy_ value tensor =
   withForeignPtr(tdTensor nt) (\t -> do
-                                  fill value t
+                                  fillRaw value t
                                   pure nt
                               )
   where nt = tensorNew_ (tdDim tensor)
 
 fillMutate_ value tensor =
   (withForeignPtr(tdTensor tensor) (\t -> do
-                                       fill value t
+                                       fillRaw value t
                                        -- wrap t
                                        pure ()
                                    ))
@@ -76,7 +77,7 @@ tensorNew_ :: TensorDim Word -> TensorDouble_
 tensorNew_ dims = unsafePerformIO $ do
   newPtr <- go dims
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
-  withForeignPtr fPtr fill0
+  withForeignPtr fPtr fillRaw0
   pure $ TensorDouble_ fPtr dims
   where
     wrap ptr = newForeignPtr p_THDoubleTensor_free ptr
