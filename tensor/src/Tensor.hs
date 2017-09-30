@@ -24,6 +24,7 @@ import TensorUtils
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
+import THDoubleLapack
 
 -- test0 = do
 --   let tensor = tensorNew_ (D2 8 4)
@@ -36,6 +37,10 @@ mat #> vec = undefined -- unsafePerformIO $ do
   -- res <- fromJust $ tensorNew_ $ [nrows mat]
   -- c_THDoubleTensor_addmv res 1.0 res 1.0 mat vec
   -- pure res
+
+-- ----------------------------------------
+-- Tensor-constant operations to constant operations
+-- ----------------------------------------
 
 apply1_ transformation mtx val = unsafePerformIO $ do
   withForeignPtr (tdTensor res)
@@ -58,6 +63,70 @@ subConst :: TensorDouble_ -> Double -> TensorDouble_
 subConst mtx val = apply1_ tSub mtx val
   where
     tSub r_ t = c_THDoubleTensor_sub r_ t (realToFrac val)
+
+mulConst :: TensorDouble_ -> Double -> TensorDouble_
+mulConst mtx val = apply1_ tMul mtx val
+  where
+    tMul r_ t = c_THDoubleTensor_mul r_ t (realToFrac val)
+
+divConst :: TensorDouble_ -> Double -> TensorDouble_
+divConst mtx val = apply1_ tDiv mtx val
+  where
+    tDiv r_ t = c_THDoubleTensor_div r_ t (realToFrac val)
+
+-- ----------------------------------------
+-- Collapse to constant operations
+-- ----------------------------------------
+
+-- |Generalize non-mutating collapse of a tensor to a constant or another tensor
+apply0_ :: (Ptr CTHDoubleTensor -> a) -> TensorDouble_ -> a
+apply0_ operation tensor = unsafePerformIO $ do
+  withForeignPtr (tdTensor tensor) (\t -> pure $ operation t)
+
+minAll :: TensorDouble_ -> Double
+minAll tensor = apply0_ tMinAll tensor
+  where
+    tMinAll t = realToFrac $ c_THDoubleTensor_minall t
+
+maxAll :: TensorDouble_ -> Double
+maxAll tensor = apply0_ tMaxAll tensor
+  where
+    tMaxAll t = realToFrac $ c_THDoubleTensor_maxall t
+
+medianAll :: TensorDouble_ -> Double
+medianAll tensor = apply0_ tMedianAll tensor
+  where
+    tMedianAll t = realToFrac $ c_THDoubleTensor_medianall t
+
+sumAll :: TensorDouble_ -> Double
+sumAll tensor = apply0_ tSumAll tensor
+  where
+    tSumAll t = realToFrac $ c_THDoubleTensor_sumall t
+
+prodAll :: TensorDouble_ -> Double
+prodAll tensor = apply0_ tProdAll tensor
+  where
+    tProdAll t = realToFrac $ c_THDoubleTensor_prodall t
+
+-- |Wrapper to apply tensor -> tensor non-mutating operation
+apply0Tensor op resDim t = unsafePerformIO $ do
+  let res = tensorNew_ resDim
+  withForeignPtr (tdTensor res) (\r_ -> op r_ t)
+  pure res
+
+neg :: TensorDouble_ -> TensorDouble_
+neg tensor = apply0_ tNeg tensor
+  where
+    tNeg t = apply0Tensor c_THDoubleTensor_neg (tdDim tensor) t
+
+sigmoid :: TensorDouble_ -> TensorDouble_
+sigmoid tensor = apply0_ tSigmoid tensor
+  where
+    tSigmoid t = apply0Tensor c_THDoubleTensor_sigmoid (tdDim tensor) t
+
+-- ----------------------------------------
+-- Tensor fill operations
+-- ----------------------------------------
 
 fillCopy_ :: Real a => a -> TensorDouble_ -> TensorDouble_
 fillCopy_ value tensor = unsafePerformIO $
@@ -126,6 +195,11 @@ testGCTensor = do
       t1 = t0
   fillMutate_ 3.0 t1
   let t2 = fillCopy_ 6.0 t1
-  disp_ t0 -- should be matrix of 3
-  disp_ t1 -- should be matrix of 3
-  disp_ t2 -- should be matrix of 6
+  disp_ t0 -- should be matrix of 3.0
+  disp_ t1 -- should be matrix of 3.0
+  disp_ t2 -- should be matrix of 6.0
+
+testOps = do
+  disp_ $ neg $ addConst (tensorNew_ (D2 2 2)) 3
+  disp_ $ sigmoid $ neg $ addConst (tensorNew_ (D2 2 2)) 3
+  disp_ $ sigmoid $ addConst (tensorNew_ (D2 2 2)) 3
