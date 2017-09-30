@@ -23,34 +23,53 @@ import TensorTypes
 import TensorUtils
 import THTypes
 import THDoubleTensor
+import THDoubleTensorMath
 
 -- test0 = do
 --   let tensor = tensorNew_ (D2 8 4)
 --   pure ()
 
--- |basic test of garbage collected tensor
-testGCTensor = do
-  let t0 = tensorNew_ (D2 8 4)
-      t1 = t0
-  fillMutate_ 3.0 t1
-  t2 <- fillCopy_ 6.0 t1
-  disp_ t0
-  disp_ t1
-  disp_ t2
+-- |tag: unsafe
+-- TODO - determine how to deal with resource allocation
+(#>) :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+mat #> vec = undefined -- unsafePerformIO $ do
+  -- res <- fromJust $ tensorNew_ $ [nrows mat]
+  -- c_THDoubleTensor_addmv res 1.0 res 1.0 mat vec
+  -- pure res
 
-fillCopy_ value tensor =
+apply1_ transformation mtx val = unsafePerformIO $ do
+  withForeignPtr (tdTensor res)
+    (\r_ -> withForeignPtr (tdTensor mtx)
+            (\t -> do
+                transformation r_ t
+                pure r_
+            )
+    )
+  pure res
+  where
+    res = tensorNew_ (tdDim mtx)
+
+addConst :: TensorDouble_ -> Double -> TensorDouble_
+addConst mtx val = apply1_ tAdd mtx val
+  where
+    tAdd r_ t = c_THDoubleTensor_add r_ t (realToFrac val)
+
+subConst :: TensorDouble_ -> Double -> TensorDouble_
+subConst mtx val = apply1_ tSub mtx val
+  where
+    tSub r_ t = c_THDoubleTensor_sub r_ t (realToFrac val)
+
+fillCopy_ :: Real a => a -> TensorDouble_ -> TensorDouble_
+fillCopy_ value tensor = unsafePerformIO $
   withForeignPtr(tdTensor nt) (\t -> do
                                   fillRaw value t
                                   pure nt
                               )
   where nt = tensorNew_ (tdDim tensor)
 
+fillMutate_ :: Real a => a -> TensorDouble_ -> IO ()
 fillMutate_ value tensor =
-  (withForeignPtr(tdTensor tensor) (\t -> do
-                                       fillRaw value t
-                                       -- wrap t
-                                       pure ()
-                                   ))
+  withForeignPtr(tdTensor tensor) (\t -> fillRaw value t)
 
 disp_ tensor =
   (withForeignPtr(tdTensor tensor) disp)
@@ -100,3 +119,13 @@ tensorNew_ dims = unsafePerformIO $ do
 --             disp t
 --         ) [0..3]
 
+
+-- |basic test of garbage collected tensor
+testGCTensor = do
+  let t0 = tensorNew_ (D2 8 4)
+      t1 = t0
+  fillMutate_ 3.0 t1
+  let t2 = fillCopy_ 6.0 t1
+  disp_ t0 -- should be matrix of 3
+  disp_ t1 -- should be matrix of 3
+  disp_ t2 -- should be matrix of 6
