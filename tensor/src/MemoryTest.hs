@@ -3,15 +3,30 @@ module Main where
 import Tensor
 import TensorTypes
 
-memoryTest = do
+-- |Iteration - allocate a tensor, print a value, allocate another tensor... etc.
+memoryTest :: TensorDim Word -> Int -> IO ()
+memoryTest dim niter = do
+  putStrLn $ (show $ memSizeGB dim) ++ " GB per allocation x " ++ (show niter)
   mapM_ (\iter -> do
-            putStr (show iter ++ " ")
-            let x = tensorNew_ (D4 200 200 200 200)
-            x <- get_ (D4 5 5 5 5) x
-            putStrLn (show x) -- Need some IO with value
+            putStr ("Iteration : " ++ show iter ++ " / ")
+            let x = tensorNew_ dim
+            x <- get_ (D4 0 0 0 0) x
+            putStrLn $ "Printing dummy value: " ++
+              (show x) -- Need some IO with value
             pure ()
-        ) [1..1000000]
+        ) [1..niter]
   putStrLn "Done"
 
--- |confirm that memory is deallocated - seems to work
-main = memoryTest
+
+-- |Get size per allocation
+memSizeGB :: (TensorDim Word) -> Double
+memSizeGB dim = fromIntegral((foldr (*) 1 dim) * 8) / 1000000000.0
+
+memoryTestLarge =
+  memoryTest (D4 200 200 200 200) 1000000 -- 12.8 GB x 1M = 12M GB
+
+memoryTestSmall =
+  memoryTest (D4 100 100 100 7) 150 -- 50 MB x 150 = 7.5 GB
+
+-- |Confirm that memory is deallocated (works)
+main = memoryTestSmall
