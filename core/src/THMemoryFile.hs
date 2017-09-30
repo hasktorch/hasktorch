@@ -30,18 +30,18 @@ foreign import ccall unsafe "THMemoryFile.h THMemoryFile_storage"
 foreign import ccall unsafe "THMemoryFile.h THMemoryFile_longSize"
   c_THMemoryFile_longSize :: Ptr CTHFile -> CInt -> IO ()
 
--- |p_THMemoryFile_newWithStorage : Pointer to storage mode -> THFile *
+-- |p_THMemoryFile_newWithStorage : Pointer to function storage mode -> THFile *
 foreign import ccall unsafe "THMemoryFile.h &THMemoryFile_newWithStorage"
   p_THMemoryFile_newWithStorage :: FunPtr (Ptr CTHCharStorage -> Ptr CChar -> IO (Ptr CTHFile))
 
--- |p_THMemoryFile_new : Pointer to mode -> THFile *
+-- |p_THMemoryFile_new : Pointer to function mode -> THFile *
 foreign import ccall unsafe "THMemoryFile.h &THMemoryFile_new"
   p_THMemoryFile_new :: FunPtr (Ptr CChar -> IO (Ptr CTHFile))
 
--- |p_THMemoryFile_storage : Pointer to self -> THCharStorage *
+-- |p_THMemoryFile_storage : Pointer to function self -> THCharStorage *
 foreign import ccall unsafe "THMemoryFile.h &THMemoryFile_storage"
   p_THMemoryFile_storage :: FunPtr (Ptr CTHFile -> IO (Ptr CTHCharStorage))
 
--- |p_THMemoryFile_longSize : Pointer to self size -> void
+-- |p_THMemoryFile_longSize : Pointer to function self size -> void
 foreign import ccall unsafe "THMemoryFile.h &THMemoryFile_longSize"
   p_THMemoryFile_longSize :: FunPtr (Ptr CTHFile -> CInt -> IO ())

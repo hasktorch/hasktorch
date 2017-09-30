@@ -66,42 +66,42 @@ foreign import ccall unsafe "THDiskFile.h THDiskFile_longSize"
 foreign import ccall unsafe "THDiskFile.h THDiskFile_noBuffer"
   c_THDiskFile_noBuffer :: Ptr CTHFile -> IO ()
 
--- |p_THDiskFile_new : Pointer to name mode isQuiet -> THFile *
+-- |p_THDiskFile_new : Pointer to function name mode isQuiet -> THFile *
 foreign import ccall unsafe "THDiskFile.h &THDiskFile_new"
   p_THDiskFile_new :: FunPtr (Ptr CChar -> Ptr CChar -> CInt -> IO (Ptr CTHFile))
 
--- |p_THPipeFile_new : Pointer to name mode isQuiet -> THFile *
+-- |p_THPipeFile_new : Pointer to function name mode isQuiet -> THFile *
 foreign import ccall unsafe "THDiskFile.h &THPipeFile_new"
   p_THPipeFile_new :: FunPtr (Ptr CChar -> Ptr CChar -> CInt -> IO (Ptr CTHFile))
 
--- |p_THDiskFile_name : Pointer to self -> char *
+-- |p_THDiskFile_name : Pointer to function self -> char *
 foreign import ccall unsafe "THDiskFile.h &THDiskFile_name"
   p_THDiskFile_name :: FunPtr (Ptr CTHFile -> IO (Ptr CChar))
 
--- |p_THDiskFile_isLittleEndianCPU : Pointer to  -> int
+-- |p_THDiskFile_isLittleEndianCPU : Pointer to function  -> int
 foreign import ccall unsafe "THDiskFile.h &THDiskFile_isLittleEndianCPU"
   p_THDiskFile_isLittleEndianCPU :: FunPtr (CInt)
 
--- |p_THDiskFile_isBigEndianCPU : Pointer to  -> int
+-- |p_THDiskFile_isBigEndianCPU : Pointer to function  -> int
 foreign import ccall unsafe "THDiskFile.h &THDiskFile_isBigEndianCPU"
   p_THDiskFile_isBigEndianCPU :: FunPtr (CInt)
 
--- |p_THDiskFile_nativeEndianEncoding : Pointer to self -> void
+-- |p_THDiskFile_nativeEndianEncoding : Pointer to function self -> void
 foreign import ccall unsafe "THDiskFile.h &THDiskFile_nativeEndianEncoding"
   p_THDiskFile_nativeEndianEncoding :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THDiskFile_littleEndianEncoding : Pointer to self -> void
+-- |p_THDiskFile_littleEndianEncoding : Pointer to function self -> void
 foreign import ccall unsafe "THDiskFile.h &THDiskFile_littleEndianEncoding"
   p_THDiskFile_littleEndianEncoding :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THDiskFile_bigEndianEncoding : Pointer to self -> void
+-- |p_THDiskFile_bigEndianEncoding : Pointer to function self -> void
 foreign import ccall unsafe "THDiskFile.h &THDiskFile_bigEndianEncoding"
   p_THDiskFile_bigEndianEncoding :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THDiskFile_longSize : Pointer to self size -> void
+-- |p_THDiskFile_longSize : Pointer to function self size -> void
 foreign import ccall unsafe "THDiskFile.h &THDiskFile_longSize"
   p_THDiskFile_longSize :: FunPtr (Ptr CTHFile -> CInt -> IO ())
 
--- |p_THDiskFile_noBuffer : Pointer to self -> void
+-- |p_THDiskFile_noBuffer : Pointer to function self -> void
 foreign import ccall unsafe "THDiskFile.h &THDiskFile_noBuffer"
   p_THDiskFile_noBuffer :: FunPtr (Ptr CTHFile -> IO ())

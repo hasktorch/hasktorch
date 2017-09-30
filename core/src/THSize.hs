@@ -18,10 +18,10 @@ foreign import ccall unsafe "THSize.h THSize_isSameSizeAs"
 foreign import ccall unsafe "THSize.h THSize_nElement"
   c_THSize_nElement :: CLong -> Ptr CLong -> CPtrdiff
 
--- |p_THSize_isSameSizeAs : Pointer to sizeA dimsA sizeB dimsB -> int
+-- |p_THSize_isSameSizeAs : Pointer to function sizeA dimsA sizeB dimsB -> int
 foreign import ccall unsafe "THSize.h &THSize_isSameSizeAs"
   p_THSize_isSameSizeAs :: FunPtr (Ptr CLong -> CLong -> Ptr CLong -> CLong -> CInt)
 
--- |p_THSize_nElement : Pointer to dims size -> ptrdiff_t
+-- |p_THSize_nElement : Pointer to function dims size -> ptrdiff_t
 foreign import ccall unsafe "THSize.h &THSize_nElement"
   p_THSize_nElement :: FunPtr (CLong -> Ptr CLong -> CPtrdiff)

@@ -426,282 +426,282 @@ foreign import ccall unsafe "THFile.h THFile_close"
 foreign import ccall unsafe "THFile.h THFile_free"
   c_THFile_free :: Ptr CTHFile -> IO ()
 
--- |p_THFile_isOpened : Pointer to self -> int
+-- |p_THFile_isOpened : Pointer to function self -> int
 foreign import ccall unsafe "THFile.h &THFile_isOpened"
   p_THFile_isOpened :: FunPtr (Ptr CTHFile -> CInt)
 
--- |p_THFile_isQuiet : Pointer to self -> int
+-- |p_THFile_isQuiet : Pointer to function self -> int
 foreign import ccall unsafe "THFile.h &THFile_isQuiet"
   p_THFile_isQuiet :: FunPtr (Ptr CTHFile -> CInt)
 
--- |p_THFile_isReadable : Pointer to self -> int
+-- |p_THFile_isReadable : Pointer to function self -> int
 foreign import ccall unsafe "THFile.h &THFile_isReadable"
   p_THFile_isReadable :: FunPtr (Ptr CTHFile -> CInt)
 
--- |p_THFile_isWritable : Pointer to self -> int
+-- |p_THFile_isWritable : Pointer to function self -> int
 foreign import ccall unsafe "THFile.h &THFile_isWritable"
   p_THFile_isWritable :: FunPtr (Ptr CTHFile -> CInt)
 
--- |p_THFile_isBinary : Pointer to self -> int
+-- |p_THFile_isBinary : Pointer to function self -> int
 foreign import ccall unsafe "THFile.h &THFile_isBinary"
   p_THFile_isBinary :: FunPtr (Ptr CTHFile -> CInt)
 
--- |p_THFile_isAutoSpacing : Pointer to self -> int
+-- |p_THFile_isAutoSpacing : Pointer to function self -> int
 foreign import ccall unsafe "THFile.h &THFile_isAutoSpacing"
   p_THFile_isAutoSpacing :: FunPtr (Ptr CTHFile -> CInt)
 
--- |p_THFile_hasError : Pointer to self -> int
+-- |p_THFile_hasError : Pointer to function self -> int
 foreign import ccall unsafe "THFile.h &THFile_hasError"
   p_THFile_hasError :: FunPtr (Ptr CTHFile -> CInt)
 
--- |p_THFile_binary : Pointer to self -> void
+-- |p_THFile_binary : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_binary"
   p_THFile_binary :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_ascii : Pointer to self -> void
+-- |p_THFile_ascii : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_ascii"
   p_THFile_ascii :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_autoSpacing : Pointer to self -> void
+-- |p_THFile_autoSpacing : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_autoSpacing"
   p_THFile_autoSpacing :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_noAutoSpacing : Pointer to self -> void
+-- |p_THFile_noAutoSpacing : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_noAutoSpacing"
   p_THFile_noAutoSpacing :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_quiet : Pointer to self -> void
+-- |p_THFile_quiet : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_quiet"
   p_THFile_quiet :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_pedantic : Pointer to self -> void
+-- |p_THFile_pedantic : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_pedantic"
   p_THFile_pedantic :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_clearError : Pointer to self -> void
+-- |p_THFile_clearError : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_clearError"
   p_THFile_clearError :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_readByteScalar : Pointer to self -> char
+-- |p_THFile_readByteScalar : Pointer to function self -> char
 foreign import ccall unsafe "THFile.h &THFile_readByteScalar"
   p_THFile_readByteScalar :: FunPtr (Ptr CTHFile -> CChar)
 
--- |p_THFile_readCharScalar : Pointer to self -> char
+-- |p_THFile_readCharScalar : Pointer to function self -> char
 foreign import ccall unsafe "THFile.h &THFile_readCharScalar"
   p_THFile_readCharScalar :: FunPtr (Ptr CTHFile -> CChar)
 
--- |p_THFile_readShortScalar : Pointer to self -> short
+-- |p_THFile_readShortScalar : Pointer to function self -> short
 foreign import ccall unsafe "THFile.h &THFile_readShortScalar"
   p_THFile_readShortScalar :: FunPtr (Ptr CTHFile -> CShort)
 
--- |p_THFile_readIntScalar : Pointer to self -> int
+-- |p_THFile_readIntScalar : Pointer to function self -> int
 foreign import ccall unsafe "THFile.h &THFile_readIntScalar"
   p_THFile_readIntScalar :: FunPtr (Ptr CTHFile -> CInt)
 
--- |p_THFile_readLongScalar : Pointer to self -> long
+-- |p_THFile_readLongScalar : Pointer to function self -> long
 foreign import ccall unsafe "THFile.h &THFile_readLongScalar"
   p_THFile_readLongScalar :: FunPtr (Ptr CTHFile -> CLong)
 
--- |p_THFile_readFloatScalar : Pointer to self -> float
+-- |p_THFile_readFloatScalar : Pointer to function self -> float
 foreign import ccall unsafe "THFile.h &THFile_readFloatScalar"
   p_THFile_readFloatScalar :: FunPtr (Ptr CTHFile -> CFloat)
 
--- |p_THFile_readDoubleScalar : Pointer to self -> double
+-- |p_THFile_readDoubleScalar : Pointer to function self -> double
 foreign import ccall unsafe "THFile.h &THFile_readDoubleScalar"
   p_THFile_readDoubleScalar :: FunPtr (Ptr CTHFile -> CDouble)
 
--- |p_THFile_writeByteScalar : Pointer to self scalar -> void
+-- |p_THFile_writeByteScalar : Pointer to function self scalar -> void
 foreign import ccall unsafe "THFile.h &THFile_writeByteScalar"
   p_THFile_writeByteScalar :: FunPtr (Ptr CTHFile -> CChar -> IO ())
 
--- |p_THFile_writeCharScalar : Pointer to self scalar -> void
+-- |p_THFile_writeCharScalar : Pointer to function self scalar -> void
 foreign import ccall unsafe "THFile.h &THFile_writeCharScalar"
   p_THFile_writeCharScalar :: FunPtr (Ptr CTHFile -> CChar -> IO ())
 
--- |p_THFile_writeShortScalar : Pointer to self scalar -> void
+-- |p_THFile_writeShortScalar : Pointer to function self scalar -> void
 foreign import ccall unsafe "THFile.h &THFile_writeShortScalar"
   p_THFile_writeShortScalar :: FunPtr (Ptr CTHFile -> CShort -> IO ())
 
--- |p_THFile_writeIntScalar : Pointer to self scalar -> void
+-- |p_THFile_writeIntScalar : Pointer to function self scalar -> void
 foreign import ccall unsafe "THFile.h &THFile_writeIntScalar"
   p_THFile_writeIntScalar :: FunPtr (Ptr CTHFile -> CInt -> IO ())
 
--- |p_THFile_writeLongScalar : Pointer to self scalar -> void
+-- |p_THFile_writeLongScalar : Pointer to function self scalar -> void
 foreign import ccall unsafe "THFile.h &THFile_writeLongScalar"
   p_THFile_writeLongScalar :: FunPtr (Ptr CTHFile -> CLong -> IO ())
 
--- |p_THFile_writeFloatScalar : Pointer to self scalar -> void
+-- |p_THFile_writeFloatScalar : Pointer to function self scalar -> void
 foreign import ccall unsafe "THFile.h &THFile_writeFloatScalar"
   p_THFile_writeFloatScalar :: FunPtr (Ptr CTHFile -> CFloat -> IO ())
 
--- |p_THFile_writeDoubleScalar : Pointer to self scalar -> void
+-- |p_THFile_writeDoubleScalar : Pointer to function self scalar -> void
 foreign import ccall unsafe "THFile.h &THFile_writeDoubleScalar"
   p_THFile_writeDoubleScalar :: FunPtr (Ptr CTHFile -> CDouble -> IO ())
 
--- |p_THFile_readByte : Pointer to self storage -> size_t
+-- |p_THFile_readByte : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readByte"
   p_THFile_readByte :: FunPtr (Ptr CTHFile -> Ptr CTHByteStorage -> CSize)
 
--- |p_THFile_readChar : Pointer to self storage -> size_t
+-- |p_THFile_readChar : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readChar"
   p_THFile_readChar :: FunPtr (Ptr CTHFile -> Ptr CTHCharStorage -> CSize)
 
--- |p_THFile_readShort : Pointer to self storage -> size_t
+-- |p_THFile_readShort : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readShort"
   p_THFile_readShort :: FunPtr (Ptr CTHFile -> Ptr CTHShortStorage -> CSize)
 
--- |p_THFile_readInt : Pointer to self storage -> size_t
+-- |p_THFile_readInt : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readInt"
   p_THFile_readInt :: FunPtr (Ptr CTHFile -> Ptr CTHIntStorage -> CSize)
 
--- |p_THFile_readLong : Pointer to self storage -> size_t
+-- |p_THFile_readLong : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readLong"
   p_THFile_readLong :: FunPtr (Ptr CTHFile -> Ptr CTHLongStorage -> CSize)
 
--- |p_THFile_readFloat : Pointer to self storage -> size_t
+-- |p_THFile_readFloat : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readFloat"
   p_THFile_readFloat :: FunPtr (Ptr CTHFile -> Ptr CTHFloatStorage -> CSize)
 
--- |p_THFile_readDouble : Pointer to self storage -> size_t
+-- |p_THFile_readDouble : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readDouble"
   p_THFile_readDouble :: FunPtr (Ptr CTHFile -> Ptr CTHDoubleStorage -> CSize)
 
--- |p_THFile_writeByte : Pointer to self storage -> size_t
+-- |p_THFile_writeByte : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeByte"
   p_THFile_writeByte :: FunPtr (Ptr CTHFile -> Ptr CTHByteStorage -> CSize)
 
--- |p_THFile_writeChar : Pointer to self storage -> size_t
+-- |p_THFile_writeChar : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeChar"
   p_THFile_writeChar :: FunPtr (Ptr CTHFile -> Ptr CTHCharStorage -> CSize)
 
--- |p_THFile_writeShort : Pointer to self storage -> size_t
+-- |p_THFile_writeShort : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeShort"
   p_THFile_writeShort :: FunPtr (Ptr CTHFile -> Ptr CTHShortStorage -> CSize)
 
--- |p_THFile_writeInt : Pointer to self storage -> size_t
+-- |p_THFile_writeInt : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeInt"
   p_THFile_writeInt :: FunPtr (Ptr CTHFile -> Ptr CTHIntStorage -> CSize)
 
--- |p_THFile_writeLong : Pointer to self storage -> size_t
+-- |p_THFile_writeLong : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeLong"
   p_THFile_writeLong :: FunPtr (Ptr CTHFile -> Ptr CTHLongStorage -> CSize)
 
--- |p_THFile_writeFloat : Pointer to self storage -> size_t
+-- |p_THFile_writeFloat : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeFloat"
   p_THFile_writeFloat :: FunPtr (Ptr CTHFile -> Ptr CTHFloatStorage -> CSize)
 
--- |p_THFile_writeDouble : Pointer to self storage -> size_t
+-- |p_THFile_writeDouble : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeDouble"
   p_THFile_writeDouble :: FunPtr (Ptr CTHFile -> Ptr CTHDoubleStorage -> CSize)
 
--- |p_THFile_readByteRaw : Pointer to self data n -> size_t
+-- |p_THFile_readByteRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readByteRaw"
   p_THFile_readByteRaw :: FunPtr (Ptr CTHFile -> Ptr CChar -> CSize -> CSize)
 
--- |p_THFile_readCharRaw : Pointer to self data n -> size_t
+-- |p_THFile_readCharRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readCharRaw"
   p_THFile_readCharRaw :: FunPtr (Ptr CTHFile -> Ptr CChar -> CSize -> CSize)
 
--- |p_THFile_readShortRaw : Pointer to self data n -> size_t
+-- |p_THFile_readShortRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readShortRaw"
   p_THFile_readShortRaw :: FunPtr (Ptr CTHFile -> Ptr CShort -> CSize -> CSize)
 
--- |p_THFile_readIntRaw : Pointer to self data n -> size_t
+-- |p_THFile_readIntRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readIntRaw"
   p_THFile_readIntRaw :: FunPtr (Ptr CTHFile -> CIntPtr -> CSize -> CSize)
 
--- |p_THFile_readLongRaw : Pointer to self data n -> size_t
+-- |p_THFile_readLongRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readLongRaw"
   p_THFile_readLongRaw :: FunPtr (Ptr CTHFile -> Ptr CLong -> CSize -> CSize)
 
--- |p_THFile_readFloatRaw : Pointer to self data n -> size_t
+-- |p_THFile_readFloatRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readFloatRaw"
   p_THFile_readFloatRaw :: FunPtr (Ptr CTHFile -> Ptr CFloat -> CSize -> CSize)
 
--- |p_THFile_readDoubleRaw : Pointer to self data n -> size_t
+-- |p_THFile_readDoubleRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readDoubleRaw"
   p_THFile_readDoubleRaw :: FunPtr (Ptr CTHFile -> Ptr CDouble -> CSize -> CSize)
 
--- |p_THFile_readStringRaw : Pointer to self format str_ -> size_t
+-- |p_THFile_readStringRaw : Pointer to function self format str_ -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readStringRaw"
   p_THFile_readStringRaw :: FunPtr (Ptr CTHFile -> Ptr CChar -> Ptr (Ptr CChar) -> CSize)
 
--- |p_THFile_writeByteRaw : Pointer to self data n -> size_t
+-- |p_THFile_writeByteRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeByteRaw"
   p_THFile_writeByteRaw :: FunPtr (Ptr CTHFile -> Ptr CChar -> CSize -> CSize)
 
--- |p_THFile_writeCharRaw : Pointer to self data n -> size_t
+-- |p_THFile_writeCharRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeCharRaw"
   p_THFile_writeCharRaw :: FunPtr (Ptr CTHFile -> Ptr CChar -> CSize -> CSize)
 
--- |p_THFile_writeShortRaw : Pointer to self data n -> size_t
+-- |p_THFile_writeShortRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeShortRaw"
   p_THFile_writeShortRaw :: FunPtr (Ptr CTHFile -> Ptr CShort -> CSize -> CSize)
 
--- |p_THFile_writeIntRaw : Pointer to self data n -> size_t
+-- |p_THFile_writeIntRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeIntRaw"
   p_THFile_writeIntRaw :: FunPtr (Ptr CTHFile -> CIntPtr -> CSize -> CSize)
 
--- |p_THFile_writeLongRaw : Pointer to self data n -> size_t
+-- |p_THFile_writeLongRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeLongRaw"
   p_THFile_writeLongRaw :: FunPtr (Ptr CTHFile -> Ptr CLong -> CSize -> CSize)
 
--- |p_THFile_writeFloatRaw : Pointer to self data n -> size_t
+-- |p_THFile_writeFloatRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeFloatRaw"
   p_THFile_writeFloatRaw :: FunPtr (Ptr CTHFile -> Ptr CFloat -> CSize -> CSize)
 
--- |p_THFile_writeDoubleRaw : Pointer to self data n -> size_t
+-- |p_THFile_writeDoubleRaw : Pointer to function self data n -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeDoubleRaw"
   p_THFile_writeDoubleRaw :: FunPtr (Ptr CTHFile -> Ptr CDouble -> CSize -> CSize)
 
--- |p_THFile_writeStringRaw : Pointer to self str size -> size_t
+-- |p_THFile_writeStringRaw : Pointer to function self str size -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeStringRaw"
   p_THFile_writeStringRaw :: FunPtr (Ptr CTHFile -> Ptr CChar -> CSize -> CSize)
 
--- |p_THFile_readHalfScalar : Pointer to self -> THHalf
+-- |p_THFile_readHalfScalar : Pointer to function self -> THHalf
 foreign import ccall unsafe "THFile.h &THFile_readHalfScalar"
   p_THFile_readHalfScalar :: FunPtr (Ptr CTHFile -> CTHHalf)
 
--- |p_THFile_writeHalfScalar : Pointer to self scalar -> void
+-- |p_THFile_writeHalfScalar : Pointer to function self scalar -> void
 foreign import ccall unsafe "THFile.h &THFile_writeHalfScalar"
   p_THFile_writeHalfScalar :: FunPtr (Ptr CTHFile -> CTHHalf -> IO ())
 
--- |p_THFile_readHalf : Pointer to self storage -> size_t
+-- |p_THFile_readHalf : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readHalf"
   p_THFile_readHalf :: FunPtr (Ptr CTHFile -> Ptr CTHHalfStorage -> CSize)
 
--- |p_THFile_writeHalf : Pointer to self storage -> size_t
+-- |p_THFile_writeHalf : Pointer to function self storage -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeHalf"
   p_THFile_writeHalf :: FunPtr (Ptr CTHFile -> Ptr CTHHalfStorage -> CSize)
 
--- |p_THFile_readHalfRaw : Pointer to self data size -> size_t
+-- |p_THFile_readHalfRaw : Pointer to function self data size -> size_t
 foreign import ccall unsafe "THFile.h &THFile_readHalfRaw"
   p_THFile_readHalfRaw :: FunPtr (Ptr CTHFile -> Ptr CTHHalf -> CSize -> CSize)
 
--- |p_THFile_writeHalfRaw : Pointer to self data size -> size_t
+-- |p_THFile_writeHalfRaw : Pointer to function self data size -> size_t
 foreign import ccall unsafe "THFile.h &THFile_writeHalfRaw"
   p_THFile_writeHalfRaw :: FunPtr (Ptr CTHFile -> Ptr CTHHalf -> CSize -> CSize)
 
--- |p_THFile_synchronize : Pointer to self -> void
+-- |p_THFile_synchronize : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_synchronize"
   p_THFile_synchronize :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_seek : Pointer to self position -> void
+-- |p_THFile_seek : Pointer to function self position -> void
 foreign import ccall unsafe "THFile.h &THFile_seek"
   p_THFile_seek :: FunPtr (Ptr CTHFile -> CSize -> IO ())
 
--- |p_THFile_seekEnd : Pointer to self -> void
+-- |p_THFile_seekEnd : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_seekEnd"
   p_THFile_seekEnd :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_position : Pointer to self -> size_t
+-- |p_THFile_position : Pointer to function self -> size_t
 foreign import ccall unsafe "THFile.h &THFile_position"
   p_THFile_position :: FunPtr (Ptr CTHFile -> CSize)
 
--- |p_THFile_close : Pointer to self -> void
+-- |p_THFile_close : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_close"
   p_THFile_close :: FunPtr (Ptr CTHFile -> IO ())
 
--- |p_THFile_free : Pointer to self -> void
+-- |p_THFile_free : Pointer to function self -> void
 foreign import ccall unsafe "THFile.h &THFile_free"
   p_THFile_free :: FunPtr (Ptr CTHFile -> IO ())

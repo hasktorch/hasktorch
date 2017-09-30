@@ -4,6 +4,7 @@ packages:
 - 'core'
 - 'codegen'
 - 'interface'
+- 'tensor'
 - 'tests'
 - 'tools'
 - location:
@@ -27,6 +28,7 @@ extra-lib-dirs:
 ghc-options:
   "torch-core": -lTH
   "torch-codegen": -lTH
+  "torch-tensor": -lTH
   "torch-tests": -lTH
   "torch-tools": -lTH
 # ghci-options for inline-c should include -fobject-code -O0

@@ -36,22 +36,22 @@ foreign import ccall unsafe "THStorage.h THLongStorage_inferSizeN"
 foreign import ccall unsafe "THStorage.h THLongStorage_inferExpandGeometry"
   c_THLongStorage_inferExpandGeometry :: Ptr CLong -> Ptr CLong -> CLong -> Ptr CTHLongStorage -> Ptr (Ptr CLong) -> Ptr (Ptr CLong) -> Ptr CChar -> CInt -> CInt
 
--- |p_THLongStorage_sizeDesc : Pointer to size -> THDescBuff
+-- |p_THLongStorage_sizeDesc : Pointer to function size -> THDescBuff
 foreign import ccall unsafe "THStorage.h &THLongStorage_sizeDesc"
   p_THLongStorage_sizeDesc :: FunPtr (Ptr CTHLongStorage -> CTHDescBuff)
 
--- |p_THLongStorage_newInferSize : Pointer to size nElement -> THLongStorage *
+-- |p_THLongStorage_newInferSize : Pointer to function size nElement -> THLongStorage *
 foreign import ccall unsafe "THStorage.h &THLongStorage_newInferSize"
   p_THLongStorage_newInferSize :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> IO (Ptr CTHLongStorage))
 
--- |p_THLongStorage_inferSize2 : Pointer to output sizesA dimsA sizesB dimsB error_buffer buffer_len -> int
+-- |p_THLongStorage_inferSize2 : Pointer to function output sizesA dimsA sizesB dimsB error_buffer buffer_len -> int
 foreign import ccall unsafe "THStorage.h &THLongStorage_inferSize2"
   p_THLongStorage_inferSize2 :: FunPtr (Ptr CTHLongStorage -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> Ptr CChar -> CInt -> CInt)
 
--- |p_THLongStorage_inferSizeN : Pointer to output n sizes dims error_buffer buffer_len -> int
+-- |p_THLongStorage_inferSizeN : Pointer to function output n sizes dims error_buffer buffer_len -> int
 foreign import ccall unsafe "THStorage.h &THLongStorage_inferSizeN"
   p_THLongStorage_inferSizeN :: FunPtr (Ptr CTHLongStorage -> CInt -> Ptr (Ptr CLong) -> Ptr CLong -> Ptr CChar -> CInt -> CInt)
 
--- |p_THLongStorage_inferExpandGeometry : Pointer to tensorSizes tensorStrides tensorDim sizes expandedSizes expandedStrides error_buffer buffer_len -> int
+-- |p_THLongStorage_inferExpandGeometry : Pointer to function tensorSizes tensorStrides tensorDim sizes expandedSizes expandedStrides error_buffer buffer_len -> int
 foreign import ccall unsafe "THStorage.h &THLongStorage_inferExpandGeometry"
   p_THLongStorage_inferExpandGeometry :: FunPtr (Ptr CLong -> Ptr CLong -> CLong -> Ptr CTHLongStorage -> Ptr (Ptr CLong) -> Ptr (Ptr CLong) -> Ptr CChar -> CInt -> CInt)

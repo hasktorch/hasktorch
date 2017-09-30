@@ -9,8 +9,9 @@ module TorchTensor (
   TensorInt(..),
   apply,
   apply2,
-  apply3,
   disp,
+  fill,
+  fill0,
   invlogit,
   mvSimple,
   (#>),
@@ -30,16 +31,14 @@ import qualified Data.Text as T
 
 import Foreign
 import Foreign.C.Types
-import Foreign.ForeignPtr
 import Foreign.Ptr
-import GHC.Ptr
-
--- import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
---                            newForeignPtr )
-import THTypes
+import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
+                           newForeignPtr )
+import GHC.Ptr (FunPtr)
 
 import System.IO.Unsafe
 
+import THTypes
 import THRandom
 import THDoubleTensor
 import THDoubleTensorMath
@@ -80,12 +79,21 @@ instance Functor TensorDim where
   fmap f (D3 d1 d2 d3) = D3 (f d1) (f d2) (f d3)
   fmap f (D4 d1 d2 d3 d4) = D4 (f d1) (f d2) (f d3) (f d4)
 
-data TensorDouble_ =
-  TensorDouble_ !(ForeignPtr (Ptr CTHDoubleTensor))
-  deriving (Eq, Show)
+data TensorDouble_ = TensorDouble_ {
+  tdTensor :: !(ForeignPtr CTHDoubleTensor)
+  } deriving (Eq, Show)
 
-foo :: (Ptr ()) -> IO ()
-foo = undefined
+-- -- |test garbage collected tensor
+-- gcPtr = do
+--   nptr <- c_THDoubleTensor_newWithSize1d 10
+--   fptr <- newForeignPtr p_THDoubleTensor_free nptr
+--   pure $ TensorDouble_ fptr
+
+-- test = do
+--   mapM_ (\_ -> do
+--             td <- gcPtr
+--             withForeignPtr (tdTensor td) disp
+--         ) [0..100]
 
 -- |apply a tensor transforming function to a tensor
 apply ::
@@ -104,15 +112,6 @@ apply2 ::
 apply2 f t1 t2 = do
   r_ <- c_THDoubleTensor_new
   f r_ t1 t2
-  pure r_
-
--- |apply an operation on 3 tensors
-apply3 ::
-  (TensorDouble -> TensorDouble -> TensorDouble -> TensorDouble -> IO ())
-  -> TensorDouble -> TensorDouble -> TensorDouble -> IO TensorDouble
-apply3 f t1 t2 t3 = do
-  r_ <- c_THDoubleTensor_new
-  f r_ t1 t2 t3
   pure r_
 
 -- |apply inverse logit to all values of a tensor
@@ -200,7 +199,7 @@ ncols tensor = (size tensor) !! 1
 showLim :: RealFloat a => a -> String
 showLim x = showGFloat (Just 2) x ""
 
--- |display a tensor
+-- |displaying tensor values
 disp :: Ptr CTHDoubleTensor -> IO ()
 disp tensor
   | (length sz) == 0 = putStrLn "Empty Tensor"
@@ -257,28 +256,20 @@ size t =
 w2cl :: Word -> CLong
 w2cl = fromIntegral
 
--- foreign import ccall unsafe "THTensor.h &THDoubleTensor_free"
---   p_THDoubleTensor_free :: FunPtr ((Ptr CTHDoubleTensor) -> IO ())
-
--- fr :: FunPtr (Ptr a -> IO ())
--- fr = FunPtr (Ptr )
--- fr = FunPtr $ c_THDoubleTensor_free
-
--- finalizer = FunPtr go
---   where
---     go x = c_THDoubleTensor_free x
-
--- getPtr = newForeignPtr p_THDoubleTensor_f8ree
--- newForeignPtr :: FinalizerPtr a -> Ptr a -> IO (ForeignPtr a)
+-- |basic test of garbage collected tensor
+testGCTensor = do
+  let tensor = tensorNew_ (D2 8 4) 3.0
+  withForeignPtr (tdTensor tensor) disp
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
--- |tag: unsafe
-tensorNew_ :: TensorDim Word -> Double -> TensorDouble
-tensorNew_ dims value = unsafePerformIO $ fill =<< (go dims)
+tensorNew_ :: TensorDim Word -> Double -> TensorDouble_
+tensorNew_ dims value = unsafePerformIO $ do
+  newPtr <- go dims
+  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  withForeignPtr fPtr fill0
+  pure $ TensorDouble_ fPtr
   where
-    create = (flip c_THDoubleTensor_fill) (realToFrac value)
-    fill x = create x >> pure x
-    -- go dims = undefined
+    wrap ptr = newForeignPtr p_THDoubleTensor_free ptr
     go D0 = c_THDoubleTensor_new
     go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
     go (D2 d1 d2) = c_THDoubleTensor_newWithSize2d
@@ -288,23 +279,30 @@ tensorNew_ dims value = unsafePerformIO $ fill =<< (go dims)
     go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
                           (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
+-- |Returns a function that accepts a tensor and fills it with specified value
+-- and returns the IO context with the mutated tensor
+fill :: Real a => a -> Ptr CTHDoubleTensor -> IO ()
+fill value = (flip c_THDoubleTensor_fill) (realToFrac value)
+
+-- |Fill a raw Double tensor with 0.0
+fill0 :: Ptr CTHDoubleTensor -> IO (Ptr CTHDoubleTensor)
+fill0 tensor = fill 0.0 tensor >> pure tensor
+
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 tensorNew :: [Int] -> Maybe (IO TensorDouble)
 tensorNew dims
   | ndim == 0 = Just $ c_THDoubleTensor_new
-  | ndim == 1 = Just $ (c_THDoubleTensor_newWithSize1d $ head cdims) >>= fill
-  | ndim == 2 = Just $ c_THDoubleTensor_newWithSize2d (cdims !! 0) (cdims !! 1) >>= fill
+  | ndim == 1 = Just $ (c_THDoubleTensor_newWithSize1d $ head cdims) >>= fill0
+  | ndim == 2 = Just $ c_THDoubleTensor_newWithSize2d (cdims !! 0) (cdims !! 1) >>= fill0
   | ndim == 3 = Just $ (c_THDoubleTensor_newWithSize3d
-                        (cdims !! 0) (cdims !! 1) (cdims !! 2)) >>= fill
+                        (cdims !! 0) (cdims !! 1) (cdims !! 2)) >>= fill0
   | ndim == 4 = Just $ (c_THDoubleTensor_newWithSize4d
                         (cdims !! 0) (cdims !! 1) (cdims !! 2) (cdims !! 3)
-                        >>= fill)
+                        >>= fill0)
   | otherwise = Nothing
   where
     ndim = length dims
     cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
-    create = (flip c_THDoubleTensor_fill) 0.0
-    fill x = create x >> pure x
 
 tensorFloatNew :: [Int] -> Maybe (IO (Ptr CTHFloatTensor))
 tensorFloatNew dims

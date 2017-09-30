@@ -24,14 +24,14 @@ foreign import ccall unsafe "THLogAdd.h THLogSub"
 foreign import ccall unsafe "THLogAdd.h THExpMinusApprox"
   c_THExpMinusApprox :: CDouble -> CDouble
 
--- |p_THLogAdd : Pointer to log_a log_b -> double
+-- |p_THLogAdd : Pointer to function log_a log_b -> double
 foreign import ccall unsafe "THLogAdd.h &THLogAdd"
   p_THLogAdd :: FunPtr (CDouble -> CDouble -> CDouble)
 
--- |p_THLogSub : Pointer to log_a log_b -> double
+-- |p_THLogSub : Pointer to function log_a log_b -> double
 foreign import ccall unsafe "THLogAdd.h &THLogSub"
   p_THLogSub :: FunPtr (CDouble -> CDouble -> CDouble)
 
--- |p_THExpMinusApprox : Pointer to x -> double
+-- |p_THExpMinusApprox : Pointer to function x -> double
 foreign import ccall unsafe "THLogAdd.h &THExpMinusApprox"
   p_THExpMinusApprox :: FunPtr (CDouble -> CDouble)
