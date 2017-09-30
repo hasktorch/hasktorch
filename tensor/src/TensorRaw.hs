@@ -1,7 +1,11 @@
 module TensorRaw (
   dispRaw,
+  randInitRaw,
+  randInitRawTest,
   tensorRaw_
   ) where
+
+import Data.Maybe (fromJust)
 
 import Foreign
 import Foreign.C.Types
@@ -16,6 +20,11 @@ import TensorTypes
 import TensorUtils
 import THTypes
 import THDoubleTensor
+import THDoubleTensorMath
+import THDoubleTensorRandom
+import THRandom
+
+type TensorDoubleRaw = Ptr CTHDoubleTensor
 
 -- |displaying raw tensor values
 dispRaw :: Ptr CTHDoubleTensor -> IO ()
@@ -47,7 +56,6 @@ dispRaw tensor
                   else
                   putStr $ ((showLim val) ++ " " :: String)
             ) pairs
-      putStrLn ""
   | otherwise = putStrLn "Can't print this yet."
   where
     --size :: (Ptr CTHDoubleTensor) -> [Int]
@@ -59,6 +67,17 @@ dispRaw tensor
     -- showLim :: RealFloat a => a -> String
     showLim x = showGFloat (Just 2) x ""
     sz = size tensor
+
+-- |randomly initialize a tensor with uniform random values from a range
+-- TODO - finish implementation to handle sizes correctly
+randInitRaw gen dims lower upper = do
+  let t = tensorRaw_ dims 0.0
+  c_THDoubleTensor_uniform t gen lower upper
+  pure t
+
+randInitRawTest = do
+  gen <- c_THGenerator_new
+  mapM_ (\_ -> dispRaw =<< (randInitRaw gen (D2 2 2) (-1.0) 3.0)) [0..10]
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 tensorRaw_ :: TensorDim Word -> Double -> Ptr CTHDoubleTensor
@@ -77,4 +96,30 @@ tensorRaw_ dims value = unsafePerformIO $ do
     go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
                           (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
-testRaw = dispRaw $ tensorRaw_ (D1 5) 25.0
+-- |apply a tensor transforming function to a tensor
+applyRaw ::
+  (TensorDoubleRaw -> TensorDoubleRaw -> IO ())
+  -> TensorDoubleRaw -> IO TensorDoubleRaw
+applyRaw f t1 = do
+  r_ <- c_THDoubleTensor_new
+  f r_ t1
+  pure r_
+
+-- |apply inverse logit to all values of a tensor
+invlogit :: TensorDoubleRaw -> IO TensorDoubleRaw
+invlogit = applyRaw c_THDoubleTensor_sigmoid
+
+-- |Dimensions of a tensor as a list
+sizeRaw :: (Ptr CTHDoubleTensor) -> [Int]
+sizeRaw t =
+  fmap f [0..maxdim]
+  where
+    maxdim = (c_THDoubleTensor_nDimension t) - 1
+    f x = fromIntegral (c_THDoubleTensor_size t x) :: Int
+
+testRaw = do
+  let tmp = tensorRaw_ (D1 5) 25.0
+  dispRaw tmp
+  t2 <- invlogit $ tensorRaw_ (D1 5) 25.0
+  dispRaw t2
+  dispRaw tmp

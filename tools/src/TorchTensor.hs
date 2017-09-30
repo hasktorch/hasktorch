@@ -5,14 +5,11 @@ module TorchTensor (
   TensorDim(..),
   TensorDouble(..),
   apply,
-  apply2,
   disp,
   fill,
   fill0,
-  invlogit,
   mvSimple,
   (#>),
-  randInit,
   size,
   tensorNew,
   tensorNew_,
@@ -96,19 +93,6 @@ apply f t1 = do
   r_ <- c_THDoubleTensor_new
   f r_ t1
   pure r_
-
--- |apply an operation on 2 tensors
-apply2 ::
-  (TensorDouble -> TensorDouble -> TensorDouble -> IO ())
-  -> TensorDouble -> TensorDouble -> IO TensorDouble
-apply2 f t1 t2 = do
-  r_ <- c_THDoubleTensor_new
-  f r_ t1 t2
-  pure r_
-
--- |apply inverse logit to all values of a tensor
-invlogit :: TensorDouble -> IO TensorDouble
-invlogit = apply c_THDoubleTensor_sigmoid
 
 -- TODO: need bindings to THStorage to use c_THDoubleTensor_resize
 initialize values sz = do
@@ -226,16 +210,6 @@ disp tensor
   where
     sz = size tensor
 
--- |randomly initialize a tensor with uniform random values from a range
--- TODO - finish implementation to handle sizes correctly
-randInit sz lower upper = do
-  gen <- c_THGenerator_new
-  t <- fromJust $ tensorNew sz
-  mapM_ (\x -> do
-            c_THDoubleTensor_uniform t gen lower upper
-            disp t
-        ) [0..3]
-
 -- |Dimensions of a tensor as a list
 size :: (Ptr CTHDoubleTensor) -> [Int]
 size t =
@@ -247,11 +221,6 @@ size t =
 -- |Word to CLong conversion
 w2cl :: Word -> CLong
 w2cl = fromIntegral
-
--- |basic test of garbage collected tensor
-testGCTensor = do
-  let tensor = tensorNew_ (D2 8 4) 3.0
-  withForeignPtr (tdTensor tensor) disp
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 tensorNew_ :: TensorDim Word -> Double -> TensorDouble_
@@ -297,5 +266,5 @@ tensorNew dims
     cdims = (\x -> (fromIntegral x) :: CLong) <$> dims
 
 main = do
-  disp =<< (fromJust $ tensorNew [4,3])
+  -- disp =<< (fromJust $ tensorNew [4,3])
   putStrLn "Done"
