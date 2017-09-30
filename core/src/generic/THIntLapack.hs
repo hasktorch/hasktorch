@@ -9,7 +9,16 @@ module THIntLapack (
     c_THIntLapack_gesvd,
     c_THIntLapack_getrf,
     c_THIntLapack_getrs,
-    c_THIntLapack_getri) where
+    c_THIntLapack_getri,
+    p_THIntLapack_gesv,
+    p_THIntLapack_trtrs,
+    p_THIntLapack_gels,
+    p_THIntLapack_syev,
+    p_THIntLapack_geev,
+    p_THIntLapack_gesvd,
+    p_THIntLapack_getrf,
+    p_THIntLapack_getrs,
+    p_THIntLapack_getri) where
 
 import Foreign
 import Foreign.C.Types
@@ -50,3 +59,39 @@ foreign import ccall unsafe "THLapack.h THIntLapack_getrs"
 -- |c_THIntLapack_getri : n a lda ipiv work lwork info -> void
 foreign import ccall unsafe "THLapack.h THIntLapack_getri"
   c_THIntLapack_getri :: CInt -> Ptr CInt -> CInt -> CIntPtr -> Ptr CInt -> CInt -> CIntPtr -> IO ()
+
+-- |p_THIntLapack_gesv : Pointer to n nrhs a lda ipiv b ldb info -> void
+foreign import ccall unsafe "THLapack.h &THIntLapack_gesv"
+  p_THIntLapack_gesv :: FunPtr (CInt -> CInt -> Ptr CInt -> CInt -> CIntPtr -> Ptr CInt -> CInt -> CIntPtr -> IO ())
+
+-- |p_THIntLapack_trtrs : Pointer to uplo trans diag n nrhs a lda b ldb info -> void
+foreign import ccall unsafe "THLapack.h &THIntLapack_trtrs"
+  p_THIntLapack_trtrs :: FunPtr (CChar -> CChar -> CChar -> CInt -> CInt -> Ptr CInt -> CInt -> Ptr CInt -> CInt -> CIntPtr -> IO ())
+
+-- |p_THIntLapack_gels : Pointer to trans m n nrhs a lda b ldb work lwork info -> void
+foreign import ccall unsafe "THLapack.h &THIntLapack_gels"
+  p_THIntLapack_gels :: FunPtr (CChar -> CInt -> CInt -> CInt -> Ptr CInt -> CInt -> Ptr CInt -> CInt -> Ptr CInt -> CInt -> CIntPtr -> IO ())
+
+-- |p_THIntLapack_syev : Pointer to jobz uplo n a lda w work lwork info -> void
+foreign import ccall unsafe "THLapack.h &THIntLapack_syev"
+  p_THIntLapack_syev :: FunPtr (CChar -> CChar -> CInt -> Ptr CInt -> CInt -> Ptr CInt -> Ptr CInt -> CInt -> CIntPtr -> IO ())
+
+-- |p_THIntLapack_geev : Pointer to jobvl jobvr n a lda wr wi vl ldvl vr ldvr work lwork info -> void
+foreign import ccall unsafe "THLapack.h &THIntLapack_geev"
+  p_THIntLapack_geev :: FunPtr (CChar -> CChar -> CInt -> Ptr CInt -> CInt -> Ptr CInt -> Ptr CInt -> Ptr CInt -> CInt -> Ptr CInt -> CInt -> Ptr CInt -> CInt -> CIntPtr -> IO ())
+
+-- |p_THIntLapack_gesvd : Pointer to jobu jobvt m n a lda s u ldu vt ldvt work lwork info -> void
+foreign import ccall unsafe "THLapack.h &THIntLapack_gesvd"
+  p_THIntLapack_gesvd :: FunPtr (CChar -> CChar -> CInt -> CInt -> Ptr CInt -> CInt -> Ptr CInt -> Ptr CInt -> CInt -> Ptr CInt -> CInt -> Ptr CInt -> CInt -> CIntPtr -> IO ())
+
+-- |p_THIntLapack_getrf : Pointer to m n a lda ipiv info -> void
+foreign import ccall unsafe "THLapack.h &THIntLapack_getrf"
+  p_THIntLapack_getrf :: FunPtr (CInt -> CInt -> Ptr CInt -> CInt -> CIntPtr -> CIntPtr -> IO ())
+
+-- |p_THIntLapack_getrs : Pointer to trans n nrhs a lda ipiv b ldb info -> void
+foreign import ccall unsafe "THLapack.h &THIntLapack_getrs"
+  p_THIntLapack_getrs :: FunPtr (CChar -> CInt -> CInt -> Ptr CInt -> CInt -> CIntPtr -> Ptr CInt -> CInt -> CIntPtr -> IO ())
+
+-- |p_THIntLapack_getri : Pointer to n a lda ipiv work lwork info -> void
+foreign import ccall unsafe "THLapack.h &THIntLapack_getri"
+  p_THIntLapack_getri :: FunPtr (CInt -> Ptr CInt -> CInt -> CIntPtr -> Ptr CInt -> CInt -> CIntPtr -> IO ())

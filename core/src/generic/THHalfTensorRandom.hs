@@ -7,7 +7,14 @@ module THHalfTensorRandom (
     c_THHalfTensor_geometric,
     c_THHalfTensor_bernoulli,
     c_THHalfTensor_bernoulli_FloatTensor,
-    c_THHalfTensor_bernoulli_DoubleTensor) where
+    c_THHalfTensor_bernoulli_DoubleTensor,
+    p_THHalfTensor_random,
+    p_THHalfTensor_clampedRandom,
+    p_THHalfTensor_cappedRandom,
+    p_THHalfTensor_geometric,
+    p_THHalfTensor_bernoulli,
+    p_THHalfTensor_bernoulli_FloatTensor,
+    p_THHalfTensor_bernoulli_DoubleTensor) where
 
 import Foreign
 import Foreign.C.Types
@@ -40,3 +47,31 @@ foreign import ccall unsafe "THTensorRandom.h THHalfTensor_bernoulli_FloatTensor
 -- |c_THHalfTensor_bernoulli_DoubleTensor : self _generator p -> void
 foreign import ccall unsafe "THTensorRandom.h THHalfTensor_bernoulli_DoubleTensor"
   c_THHalfTensor_bernoulli_DoubleTensor :: (Ptr CTHHalfTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
+
+-- |p_THHalfTensor_random : Pointer to self _generator -> void
+foreign import ccall unsafe "THTensorRandom.h &THHalfTensor_random"
+  p_THHalfTensor_random :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHGenerator -> IO ())
+
+-- |p_THHalfTensor_clampedRandom : Pointer to self _generator min max -> void
+foreign import ccall unsafe "THTensorRandom.h &THHalfTensor_clampedRandom"
+  p_THHalfTensor_clampedRandom :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHGenerator -> CLong -> CLong -> IO ())
+
+-- |p_THHalfTensor_cappedRandom : Pointer to self _generator max -> void
+foreign import ccall unsafe "THTensorRandom.h &THHalfTensor_cappedRandom"
+  p_THHalfTensor_cappedRandom :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHGenerator -> CLong -> IO ())
+
+-- |p_THHalfTensor_geometric : Pointer to self _generator p -> void
+foreign import ccall unsafe "THTensorRandom.h &THHalfTensor_geometric"
+  p_THHalfTensor_geometric :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
+
+-- |p_THHalfTensor_bernoulli : Pointer to self _generator p -> void
+foreign import ccall unsafe "THTensorRandom.h &THHalfTensor_bernoulli"
+  p_THHalfTensor_bernoulli :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
+
+-- |p_THHalfTensor_bernoulli_FloatTensor : Pointer to self _generator p -> void
+foreign import ccall unsafe "THTensorRandom.h &THHalfTensor_bernoulli_FloatTensor"
+  p_THHalfTensor_bernoulli_FloatTensor :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ())
+
+-- |p_THHalfTensor_bernoulli_DoubleTensor : Pointer to self _generator p -> void
+foreign import ccall unsafe "THTensorRandom.h &THHalfTensor_bernoulli_DoubleTensor"
+  p_THHalfTensor_bernoulli_DoubleTensor :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())

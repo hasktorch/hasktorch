@@ -22,7 +22,29 @@ module THShortStorage (
     c_THShortStorage_swap,
     c_THShortStorage_free,
     c_THShortStorage_resize,
-    c_THShortStorage_fill) where
+    c_THShortStorage_fill,
+    p_THShortStorage_data,
+    p_THShortStorage_size,
+    p_THShortStorage_elementSize,
+    p_THShortStorage_set,
+    p_THShortStorage_get,
+    p_THShortStorage_new,
+    p_THShortStorage_newWithSize,
+    p_THShortStorage_newWithSize1,
+    p_THShortStorage_newWithSize2,
+    p_THShortStorage_newWithSize3,
+    p_THShortStorage_newWithSize4,
+    p_THShortStorage_newWithMapping,
+    p_THShortStorage_newWithData,
+    p_THShortStorage_newWithAllocator,
+    p_THShortStorage_newWithDataAndAllocator,
+    p_THShortStorage_setFlag,
+    p_THShortStorage_clearFlag,
+    p_THShortStorage_retain,
+    p_THShortStorage_swap,
+    p_THShortStorage_free,
+    p_THShortStorage_resize,
+    p_THShortStorage_fill) where
 
 import Foreign
 import Foreign.C.Types
@@ -115,3 +137,91 @@ foreign import ccall unsafe "THStorage.h THShortStorage_resize"
 -- |c_THShortStorage_fill : storage value -> void
 foreign import ccall unsafe "THStorage.h THShortStorage_fill"
   c_THShortStorage_fill :: Ptr CTHShortStorage -> CShort -> IO ()
+
+-- |p_THShortStorage_data : Pointer to  -> real *
+foreign import ccall unsafe "THStorage.h &THShortStorage_data"
+  p_THShortStorage_data :: FunPtr (Ptr CTHShortStorage -> IO (Ptr CShort))
+
+-- |p_THShortStorage_size : Pointer to  -> ptrdiff_t
+foreign import ccall unsafe "THStorage.h &THShortStorage_size"
+  p_THShortStorage_size :: FunPtr (Ptr CTHShortStorage -> CPtrdiff)
+
+-- |p_THShortStorage_elementSize : Pointer to  -> size_t
+foreign import ccall unsafe "THStorage.h &THShortStorage_elementSize"
+  p_THShortStorage_elementSize :: FunPtr (CSize)
+
+-- |p_THShortStorage_set : Pointer to    -> void
+foreign import ccall unsafe "THStorage.h &THShortStorage_set"
+  p_THShortStorage_set :: FunPtr (Ptr CTHShortStorage -> CPtrdiff -> CShort -> IO ())
+
+-- |p_THShortStorage_get : Pointer to   -> real
+foreign import ccall unsafe "THStorage.h &THShortStorage_get"
+  p_THShortStorage_get :: FunPtr (Ptr CTHShortStorage -> CPtrdiff -> CShort)
+
+-- |p_THShortStorage_new : Pointer to  -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_new"
+  p_THShortStorage_new :: FunPtr (IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_newWithSize : Pointer to size -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_newWithSize"
+  p_THShortStorage_newWithSize :: FunPtr (CPtrdiff -> IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_newWithSize1 : Pointer to  -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_newWithSize1"
+  p_THShortStorage_newWithSize1 :: FunPtr (CShort -> IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_newWithSize2 : Pointer to   -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_newWithSize2"
+  p_THShortStorage_newWithSize2 :: FunPtr (CShort -> CShort -> IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_newWithSize3 : Pointer to    -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_newWithSize3"
+  p_THShortStorage_newWithSize3 :: FunPtr (CShort -> CShort -> CShort -> IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_newWithSize4 : Pointer to     -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_newWithSize4"
+  p_THShortStorage_newWithSize4 :: FunPtr (CShort -> CShort -> CShort -> CShort -> IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_newWithMapping : Pointer to filename size flags -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_newWithMapping"
+  p_THShortStorage_newWithMapping :: FunPtr (Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_newWithData : Pointer to data size -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_newWithData"
+  p_THShortStorage_newWithData :: FunPtr (Ptr CShort -> CPtrdiff -> IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_newWithAllocator : Pointer to size allocator allocatorContext -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_newWithAllocator"
+  p_THShortStorage_newWithAllocator :: FunPtr (CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_newWithDataAndAllocator : Pointer to data size allocator allocatorContext -> THStorage *
+foreign import ccall unsafe "THStorage.h &THShortStorage_newWithDataAndAllocator"
+  p_THShortStorage_newWithDataAndAllocator :: FunPtr (Ptr CShort -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHShortStorage))
+
+-- |p_THShortStorage_setFlag : Pointer to storage flag -> void
+foreign import ccall unsafe "THStorage.h &THShortStorage_setFlag"
+  p_THShortStorage_setFlag :: FunPtr (Ptr CTHShortStorage -> CChar -> IO ())
+
+-- |p_THShortStorage_clearFlag : Pointer to storage flag -> void
+foreign import ccall unsafe "THStorage.h &THShortStorage_clearFlag"
+  p_THShortStorage_clearFlag :: FunPtr (Ptr CTHShortStorage -> CChar -> IO ())
+
+-- |p_THShortStorage_retain : Pointer to storage -> void
+foreign import ccall unsafe "THStorage.h &THShortStorage_retain"
+  p_THShortStorage_retain :: FunPtr (Ptr CTHShortStorage -> IO ())
+
+-- |p_THShortStorage_swap : Pointer to storage1 storage2 -> void
+foreign import ccall unsafe "THStorage.h &THShortStorage_swap"
+  p_THShortStorage_swap :: FunPtr (Ptr CTHShortStorage -> Ptr CTHShortStorage -> IO ())
+
+-- |p_THShortStorage_free : Pointer to storage -> void
+foreign import ccall unsafe "THStorage.h &THShortStorage_free"
+  p_THShortStorage_free :: FunPtr (Ptr CTHShortStorage -> IO ())
+
+-- |p_THShortStorage_resize : Pointer to storage size -> void
+foreign import ccall unsafe "THStorage.h &THShortStorage_resize"
+  p_THShortStorage_resize :: FunPtr (Ptr CTHShortStorage -> CPtrdiff -> IO ())
+
+-- |p_THShortStorage_fill : Pointer to storage value -> void
+foreign import ccall unsafe "THStorage.h &THShortStorage_fill"
+  p_THShortStorage_fill :: FunPtr (Ptr CTHShortStorage -> CShort -> IO ())

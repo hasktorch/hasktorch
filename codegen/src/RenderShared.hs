@@ -349,6 +349,7 @@ renderImports imports = (T.intercalate "\n" (singleimport <$> imports)) <> "\n\n
 renderFunName :: Text -> Text -> Text
 renderFunName prefix name = prefix <> "_" <> name
 
+
 -- |Render a single function signature. Torch never calls back into haskell, so
 -- unsafe is appropriate here
 renderFunSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
@@ -370,12 +371,36 @@ renderFunSig headerFile modTypeTemplate (name, retType, args) =
     retArrow = if numArgs == 0 then "" else " -> "
     nameSignature = thArgName <$> args
 
+-- |Render function pointer signature
+renderFunPtrSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunPtrSig headerFile modTypeTemplate (name, retType, args) =
+  (
+   "-- |p_" <> name <> " : Pointer to "
+   <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType) <> "\n"
+   <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " &" <> name <> "\"\n"
+   <> "  p_" <> name <> " :: FunPtr ("
+   <> (T.intercalate " -> " typeSignatureClean)
+    -- TODO : fromJust shouldn't fail but still clean this up so it's not unsafe
+   <> retArrow <> fromJust (renderHaskellType ReturnValue modTypeTemplate retType)
+   <> ")"
+  )
+  where
+    typeVals = thArgType <$> args
+    typeSignature = renderHaskellType FunctionParam modTypeTemplate <$> typeVals
+    typeSignatureClean = catMaybes typeSignature
+    numArgs = P.length typeSignatureClean
+    retArrow = if numArgs == 0 then "" else " -> "
+    nameSignature = thArgName <$> args
+
 -- TODO clean up redundancy of valid functions vs. functions in moduleSpec
 renderFunctions :: HModule -> [THFunction] -> Text
 renderFunctions moduleSpec@HModule{..} validFunctions =
   -- iteration over all functions
-  intercalate "\n\n" ((renderFunSig modHeader typeTemplate)
-                      <$> (P.zip3 funNames retTypes args) ) 
+  intercalate "\n\n" (((renderFunSig modHeader typeTemplate)
+                       <$> (P.zip3 funNames retTypes args))
+                      <> ((renderFunPtrSig modHeader typeTemplate)
+                          <$> (P.zip3 funNames retTypes args))
+                     )
   where
     modulePrefix = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix <> "_"
     funNames = if modIsTemplate then
@@ -384,8 +409,6 @@ renderFunctions moduleSpec@HModule{..} validFunctions =
                  funName <$> validFunctions
     retTypes = funReturn <$> validFunctions
     args = funArgs <$> validFunctions
-    -- retTypes = funReturn <$> modBindings
-    -- args = funArgs <$> modBindings
     typeTemplate = modTypeTemplate
 
 -- |Check for conditional templating of functions and filter function list
@@ -407,9 +430,11 @@ renderAll spec@HModule{..} =
     validFunctions = checkList modBindings modTypeTemplate
     exportFunctions =
       if modIsTemplate then
-        (renderFunName ("c_" <> splice) <$> (fmap funName (validFunctions)))
+        ((renderFunName ("c_" <> splice) <$> (fmap funName (validFunctions)))
+         <> (renderFunName ("p_" <> splice) <$> (fmap funName (validFunctions))))
       else
-        (renderFunName "c" <$> (fmap funName (validFunctions)))
+        ((renderFunName "c" <$> (fmap funName (validFunctions)))
+         <> (renderFunName "p" <$> (fmap funName (validFunctions))))
 
 renderCHeaderFile ::
   TemplateType -> [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> IO ()

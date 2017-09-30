@@ -22,7 +22,29 @@ module THHalfStorage (
     c_THHalfStorage_swap,
     c_THHalfStorage_free,
     c_THHalfStorage_resize,
-    c_THHalfStorage_fill) where
+    c_THHalfStorage_fill,
+    p_THHalfStorage_data,
+    p_THHalfStorage_size,
+    p_THHalfStorage_elementSize,
+    p_THHalfStorage_set,
+    p_THHalfStorage_get,
+    p_THHalfStorage_new,
+    p_THHalfStorage_newWithSize,
+    p_THHalfStorage_newWithSize1,
+    p_THHalfStorage_newWithSize2,
+    p_THHalfStorage_newWithSize3,
+    p_THHalfStorage_newWithSize4,
+    p_THHalfStorage_newWithMapping,
+    p_THHalfStorage_newWithData,
+    p_THHalfStorage_newWithAllocator,
+    p_THHalfStorage_newWithDataAndAllocator,
+    p_THHalfStorage_setFlag,
+    p_THHalfStorage_clearFlag,
+    p_THHalfStorage_retain,
+    p_THHalfStorage_swap,
+    p_THHalfStorage_free,
+    p_THHalfStorage_resize,
+    p_THHalfStorage_fill) where
 
 import Foreign
 import Foreign.C.Types
@@ -115,3 +137,91 @@ foreign import ccall unsafe "THStorage.h THHalfStorage_resize"
 -- |c_THHalfStorage_fill : storage value -> void
 foreign import ccall unsafe "THStorage.h THHalfStorage_fill"
   c_THHalfStorage_fill :: Ptr CTHHalfStorage -> THHalf -> IO ()
+
+-- |p_THHalfStorage_data : Pointer to  -> real *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_data"
+  p_THHalfStorage_data :: FunPtr (Ptr CTHHalfStorage -> IO (Ptr THHalf))
+
+-- |p_THHalfStorage_size : Pointer to  -> ptrdiff_t
+foreign import ccall unsafe "THStorage.h &THHalfStorage_size"
+  p_THHalfStorage_size :: FunPtr (Ptr CTHHalfStorage -> CPtrdiff)
+
+-- |p_THHalfStorage_elementSize : Pointer to  -> size_t
+foreign import ccall unsafe "THStorage.h &THHalfStorage_elementSize"
+  p_THHalfStorage_elementSize :: FunPtr (CSize)
+
+-- |p_THHalfStorage_set : Pointer to    -> void
+foreign import ccall unsafe "THStorage.h &THHalfStorage_set"
+  p_THHalfStorage_set :: FunPtr (Ptr CTHHalfStorage -> CPtrdiff -> THHalf -> IO ())
+
+-- |p_THHalfStorage_get : Pointer to   -> real
+foreign import ccall unsafe "THStorage.h &THHalfStorage_get"
+  p_THHalfStorage_get :: FunPtr (Ptr CTHHalfStorage -> CPtrdiff -> THHalf)
+
+-- |p_THHalfStorage_new : Pointer to  -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_new"
+  p_THHalfStorage_new :: FunPtr (IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_newWithSize : Pointer to size -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_newWithSize"
+  p_THHalfStorage_newWithSize :: FunPtr (CPtrdiff -> IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_newWithSize1 : Pointer to  -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_newWithSize1"
+  p_THHalfStorage_newWithSize1 :: FunPtr (THHalf -> IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_newWithSize2 : Pointer to   -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_newWithSize2"
+  p_THHalfStorage_newWithSize2 :: FunPtr (THHalf -> THHalf -> IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_newWithSize3 : Pointer to    -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_newWithSize3"
+  p_THHalfStorage_newWithSize3 :: FunPtr (THHalf -> THHalf -> THHalf -> IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_newWithSize4 : Pointer to     -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_newWithSize4"
+  p_THHalfStorage_newWithSize4 :: FunPtr (THHalf -> THHalf -> THHalf -> THHalf -> IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_newWithMapping : Pointer to filename size flags -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_newWithMapping"
+  p_THHalfStorage_newWithMapping :: FunPtr (Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_newWithData : Pointer to data size -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_newWithData"
+  p_THHalfStorage_newWithData :: FunPtr (Ptr THHalf -> CPtrdiff -> IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_newWithAllocator : Pointer to size allocator allocatorContext -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_newWithAllocator"
+  p_THHalfStorage_newWithAllocator :: FunPtr (CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_newWithDataAndAllocator : Pointer to data size allocator allocatorContext -> THStorage *
+foreign import ccall unsafe "THStorage.h &THHalfStorage_newWithDataAndAllocator"
+  p_THHalfStorage_newWithDataAndAllocator :: FunPtr (Ptr THHalf -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHHalfStorage))
+
+-- |p_THHalfStorage_setFlag : Pointer to storage flag -> void
+foreign import ccall unsafe "THStorage.h &THHalfStorage_setFlag"
+  p_THHalfStorage_setFlag :: FunPtr (Ptr CTHHalfStorage -> CChar -> IO ())
+
+-- |p_THHalfStorage_clearFlag : Pointer to storage flag -> void
+foreign import ccall unsafe "THStorage.h &THHalfStorage_clearFlag"
+  p_THHalfStorage_clearFlag :: FunPtr (Ptr CTHHalfStorage -> CChar -> IO ())
+
+-- |p_THHalfStorage_retain : Pointer to storage -> void
+foreign import ccall unsafe "THStorage.h &THHalfStorage_retain"
+  p_THHalfStorage_retain :: FunPtr (Ptr CTHHalfStorage -> IO ())
+
+-- |p_THHalfStorage_swap : Pointer to storage1 storage2 -> void
+foreign import ccall unsafe "THStorage.h &THHalfStorage_swap"
+  p_THHalfStorage_swap :: FunPtr (Ptr CTHHalfStorage -> Ptr CTHHalfStorage -> IO ())
+
+-- |p_THHalfStorage_free : Pointer to storage -> void
+foreign import ccall unsafe "THStorage.h &THHalfStorage_free"
+  p_THHalfStorage_free :: FunPtr (Ptr CTHHalfStorage -> IO ())
+
+-- |p_THHalfStorage_resize : Pointer to storage size -> void
+foreign import ccall unsafe "THStorage.h &THHalfStorage_resize"
+  p_THHalfStorage_resize :: FunPtr (Ptr CTHHalfStorage -> CPtrdiff -> IO ())
+
+-- |p_THHalfStorage_fill : Pointer to storage value -> void
+foreign import ccall unsafe "THStorage.h &THHalfStorage_fill"
+  p_THHalfStorage_fill :: FunPtr (Ptr CTHHalfStorage -> THHalf -> IO ())

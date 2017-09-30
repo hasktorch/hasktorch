@@ -8,7 +8,15 @@ module THShortBlas (
     c_THShortBlas_dot,
     c_THShortBlas_gemv,
     c_THShortBlas_ger,
-    c_THShortBlas_gemm) where
+    c_THShortBlas_gemm,
+    p_THShortBlas_swap,
+    p_THShortBlas_scal,
+    p_THShortBlas_copy,
+    p_THShortBlas_axpy,
+    p_THShortBlas_dot,
+    p_THShortBlas_gemv,
+    p_THShortBlas_ger,
+    p_THShortBlas_gemm) where
 
 import Foreign
 import Foreign.C.Types
@@ -45,3 +53,35 @@ foreign import ccall unsafe "THBlas.h THShortBlas_ger"
 -- |c_THShortBlas_gemm : transa transb m n k alpha a lda b ldb beta c ldc -> void
 foreign import ccall unsafe "THBlas.h THShortBlas_gemm"
   c_THShortBlas_gemm :: CChar -> CChar -> CLong -> CLong -> CLong -> CShort -> Ptr CShort -> CLong -> Ptr CShort -> CLong -> CShort -> Ptr CShort -> CLong -> IO ()
+
+-- |p_THShortBlas_swap : Pointer to n x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THShortBlas_swap"
+  p_THShortBlas_swap :: FunPtr (CLong -> Ptr CShort -> CLong -> Ptr CShort -> CLong -> IO ())
+
+-- |p_THShortBlas_scal : Pointer to n a x incx -> void
+foreign import ccall unsafe "THBlas.h &THShortBlas_scal"
+  p_THShortBlas_scal :: FunPtr (CLong -> CShort -> Ptr CShort -> CLong -> IO ())
+
+-- |p_THShortBlas_copy : Pointer to n x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THShortBlas_copy"
+  p_THShortBlas_copy :: FunPtr (CLong -> Ptr CShort -> CLong -> Ptr CShort -> CLong -> IO ())
+
+-- |p_THShortBlas_axpy : Pointer to n a x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THShortBlas_axpy"
+  p_THShortBlas_axpy :: FunPtr (CLong -> CShort -> Ptr CShort -> CLong -> Ptr CShort -> CLong -> IO ())
+
+-- |p_THShortBlas_dot : Pointer to n x incx y incy -> real
+foreign import ccall unsafe "THBlas.h &THShortBlas_dot"
+  p_THShortBlas_dot :: FunPtr (CLong -> Ptr CShort -> CLong -> Ptr CShort -> CLong -> CShort)
+
+-- |p_THShortBlas_gemv : Pointer to trans m n alpha a lda x incx beta y incy -> void
+foreign import ccall unsafe "THBlas.h &THShortBlas_gemv"
+  p_THShortBlas_gemv :: FunPtr (CChar -> CLong -> CLong -> CShort -> Ptr CShort -> CLong -> Ptr CShort -> CLong -> CShort -> Ptr CShort -> CLong -> IO ())
+
+-- |p_THShortBlas_ger : Pointer to m n alpha x incx y incy a lda -> void
+foreign import ccall unsafe "THBlas.h &THShortBlas_ger"
+  p_THShortBlas_ger :: FunPtr (CLong -> CLong -> CShort -> Ptr CShort -> CLong -> Ptr CShort -> CLong -> Ptr CShort -> CLong -> IO ())
+
+-- |p_THShortBlas_gemm : Pointer to transa transb m n k alpha a lda b ldb beta c ldc -> void
+foreign import ccall unsafe "THBlas.h &THShortBlas_gemm"
+  p_THShortBlas_gemm :: FunPtr (CChar -> CChar -> CLong -> CLong -> CLong -> CShort -> Ptr CShort -> CLong -> Ptr CShort -> CLong -> CShort -> Ptr CShort -> CLong -> IO ())

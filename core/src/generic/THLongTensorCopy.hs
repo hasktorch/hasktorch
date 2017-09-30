@@ -9,7 +9,16 @@ module THLongTensorCopy (
     c_THLongTensor_copyLong,
     c_THLongTensor_copyFloat,
     c_THLongTensor_copyDouble,
-    c_THLongTensor_copyHalf) where
+    c_THLongTensor_copyHalf,
+    p_THLongTensor_copy,
+    p_THLongTensor_copyByte,
+    p_THLongTensor_copyChar,
+    p_THLongTensor_copyShort,
+    p_THLongTensor_copyInt,
+    p_THLongTensor_copyLong,
+    p_THLongTensor_copyFloat,
+    p_THLongTensor_copyDouble,
+    p_THLongTensor_copyHalf) where
 
 import Foreign
 import Foreign.C.Types
@@ -50,3 +59,39 @@ foreign import ccall unsafe "THTensorCopy.h THLongTensor_copyDouble"
 -- |c_THLongTensor_copyHalf : tensor src -> void
 foreign import ccall unsafe "THTensorCopy.h THLongTensor_copyHalf"
   c_THLongTensor_copyHalf :: (Ptr CTHLongTensor) -> Ptr CTHHalfTensor -> IO ()
+
+-- |p_THLongTensor_copy : Pointer to tensor src -> void
+foreign import ccall unsafe "THTensorCopy.h &THLongTensor_copy"
+  p_THLongTensor_copy :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
+
+-- |p_THLongTensor_copyByte : Pointer to tensor src -> void
+foreign import ccall unsafe "THTensorCopy.h &THLongTensor_copyByte"
+  p_THLongTensor_copyByte :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHByteTensor -> IO ())
+
+-- |p_THLongTensor_copyChar : Pointer to tensor src -> void
+foreign import ccall unsafe "THTensorCopy.h &THLongTensor_copyChar"
+  p_THLongTensor_copyChar :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHCharTensor -> IO ())
+
+-- |p_THLongTensor_copyShort : Pointer to tensor src -> void
+foreign import ccall unsafe "THTensorCopy.h &THLongTensor_copyShort"
+  p_THLongTensor_copyShort :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHShortTensor -> IO ())
+
+-- |p_THLongTensor_copyInt : Pointer to tensor src -> void
+foreign import ccall unsafe "THTensorCopy.h &THLongTensor_copyInt"
+  p_THLongTensor_copyInt :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHIntTensor -> IO ())
+
+-- |p_THLongTensor_copyLong : Pointer to tensor src -> void
+foreign import ccall unsafe "THTensorCopy.h &THLongTensor_copyLong"
+  p_THLongTensor_copyLong :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongTensor -> IO ())
+
+-- |p_THLongTensor_copyFloat : Pointer to tensor src -> void
+foreign import ccall unsafe "THTensorCopy.h &THLongTensor_copyFloat"
+  p_THLongTensor_copyFloat :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHFloatTensor -> IO ())
+
+-- |p_THLongTensor_copyDouble : Pointer to tensor src -> void
+foreign import ccall unsafe "THTensorCopy.h &THLongTensor_copyDouble"
+  p_THLongTensor_copyDouble :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHDoubleTensor -> IO ())
+
+-- |p_THLongTensor_copyHalf : Pointer to tensor src -> void
+foreign import ccall unsafe "THTensorCopy.h &THLongTensor_copyHalf"
+  p_THLongTensor_copyHalf :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHHalfTensor -> IO ())

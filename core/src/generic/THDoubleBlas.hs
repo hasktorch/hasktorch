@@ -8,7 +8,15 @@ module THDoubleBlas (
     c_THDoubleBlas_dot,
     c_THDoubleBlas_gemv,
     c_THDoubleBlas_ger,
-    c_THDoubleBlas_gemm) where
+    c_THDoubleBlas_gemm,
+    p_THDoubleBlas_swap,
+    p_THDoubleBlas_scal,
+    p_THDoubleBlas_copy,
+    p_THDoubleBlas_axpy,
+    p_THDoubleBlas_dot,
+    p_THDoubleBlas_gemv,
+    p_THDoubleBlas_ger,
+    p_THDoubleBlas_gemm) where
 
 import Foreign
 import Foreign.C.Types
@@ -45,3 +53,35 @@ foreign import ccall unsafe "THBlas.h THDoubleBlas_ger"
 -- |c_THDoubleBlas_gemm : transa transb m n k alpha a lda b ldb beta c ldc -> void
 foreign import ccall unsafe "THBlas.h THDoubleBlas_gemm"
   c_THDoubleBlas_gemm :: CChar -> CChar -> CLong -> CLong -> CLong -> CDouble -> Ptr CDouble -> CLong -> Ptr CDouble -> CLong -> CDouble -> Ptr CDouble -> CLong -> IO ()
+
+-- |p_THDoubleBlas_swap : Pointer to n x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THDoubleBlas_swap"
+  p_THDoubleBlas_swap :: FunPtr (CLong -> Ptr CDouble -> CLong -> Ptr CDouble -> CLong -> IO ())
+
+-- |p_THDoubleBlas_scal : Pointer to n a x incx -> void
+foreign import ccall unsafe "THBlas.h &THDoubleBlas_scal"
+  p_THDoubleBlas_scal :: FunPtr (CLong -> CDouble -> Ptr CDouble -> CLong -> IO ())
+
+-- |p_THDoubleBlas_copy : Pointer to n x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THDoubleBlas_copy"
+  p_THDoubleBlas_copy :: FunPtr (CLong -> Ptr CDouble -> CLong -> Ptr CDouble -> CLong -> IO ())
+
+-- |p_THDoubleBlas_axpy : Pointer to n a x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THDoubleBlas_axpy"
+  p_THDoubleBlas_axpy :: FunPtr (CLong -> CDouble -> Ptr CDouble -> CLong -> Ptr CDouble -> CLong -> IO ())
+
+-- |p_THDoubleBlas_dot : Pointer to n x incx y incy -> real
+foreign import ccall unsafe "THBlas.h &THDoubleBlas_dot"
+  p_THDoubleBlas_dot :: FunPtr (CLong -> Ptr CDouble -> CLong -> Ptr CDouble -> CLong -> CDouble)
+
+-- |p_THDoubleBlas_gemv : Pointer to trans m n alpha a lda x incx beta y incy -> void
+foreign import ccall unsafe "THBlas.h &THDoubleBlas_gemv"
+  p_THDoubleBlas_gemv :: FunPtr (CChar -> CLong -> CLong -> CDouble -> Ptr CDouble -> CLong -> Ptr CDouble -> CLong -> CDouble -> Ptr CDouble -> CLong -> IO ())
+
+-- |p_THDoubleBlas_ger : Pointer to m n alpha x incx y incy a lda -> void
+foreign import ccall unsafe "THBlas.h &THDoubleBlas_ger"
+  p_THDoubleBlas_ger :: FunPtr (CLong -> CLong -> CDouble -> Ptr CDouble -> CLong -> Ptr CDouble -> CLong -> Ptr CDouble -> CLong -> IO ())
+
+-- |p_THDoubleBlas_gemm : Pointer to transa transb m n k alpha a lda b ldb beta c ldc -> void
+foreign import ccall unsafe "THBlas.h &THDoubleBlas_gemm"
+  p_THDoubleBlas_gemm :: FunPtr (CChar -> CChar -> CLong -> CLong -> CLong -> CDouble -> Ptr CDouble -> CLong -> Ptr CDouble -> CLong -> CDouble -> Ptr CDouble -> CLong -> IO ())

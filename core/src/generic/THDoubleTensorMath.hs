@@ -154,7 +154,161 @@ module THDoubleTensorMath (
     c_THDoubleTensor_linspace,
     c_THDoubleTensor_logspace,
     c_THDoubleTensor_rand,
-    c_THDoubleTensor_randn) where
+    c_THDoubleTensor_randn,
+    p_THDoubleTensor_fill,
+    p_THDoubleTensor_zero,
+    p_THDoubleTensor_maskedFill,
+    p_THDoubleTensor_maskedCopy,
+    p_THDoubleTensor_maskedSelect,
+    p_THDoubleTensor_nonzero,
+    p_THDoubleTensor_indexSelect,
+    p_THDoubleTensor_indexCopy,
+    p_THDoubleTensor_indexAdd,
+    p_THDoubleTensor_indexFill,
+    p_THDoubleTensor_gather,
+    p_THDoubleTensor_scatter,
+    p_THDoubleTensor_scatterAdd,
+    p_THDoubleTensor_scatterFill,
+    p_THDoubleTensor_dot,
+    p_THDoubleTensor_minall,
+    p_THDoubleTensor_maxall,
+    p_THDoubleTensor_medianall,
+    p_THDoubleTensor_sumall,
+    p_THDoubleTensor_prodall,
+    p_THDoubleTensor_neg,
+    p_THDoubleTensor_cinv,
+    p_THDoubleTensor_add,
+    p_THDoubleTensor_sub,
+    p_THDoubleTensor_mul,
+    p_THDoubleTensor_div,
+    p_THDoubleTensor_lshift,
+    p_THDoubleTensor_rshift,
+    p_THDoubleTensor_fmod,
+    p_THDoubleTensor_remainder,
+    p_THDoubleTensor_clamp,
+    p_THDoubleTensor_bitand,
+    p_THDoubleTensor_bitor,
+    p_THDoubleTensor_bitxor,
+    p_THDoubleTensor_cadd,
+    p_THDoubleTensor_csub,
+    p_THDoubleTensor_cmul,
+    p_THDoubleTensor_cpow,
+    p_THDoubleTensor_cdiv,
+    p_THDoubleTensor_clshift,
+    p_THDoubleTensor_crshift,
+    p_THDoubleTensor_cfmod,
+    p_THDoubleTensor_cremainder,
+    p_THDoubleTensor_cbitand,
+    p_THDoubleTensor_cbitor,
+    p_THDoubleTensor_cbitxor,
+    p_THDoubleTensor_addcmul,
+    p_THDoubleTensor_addcdiv,
+    p_THDoubleTensor_addmv,
+    p_THDoubleTensor_addmm,
+    p_THDoubleTensor_addr,
+    p_THDoubleTensor_addbmm,
+    p_THDoubleTensor_baddbmm,
+    p_THDoubleTensor_match,
+    p_THDoubleTensor_numel,
+    p_THDoubleTensor_max,
+    p_THDoubleTensor_min,
+    p_THDoubleTensor_kthvalue,
+    p_THDoubleTensor_mode,
+    p_THDoubleTensor_median,
+    p_THDoubleTensor_sum,
+    p_THDoubleTensor_prod,
+    p_THDoubleTensor_cumsum,
+    p_THDoubleTensor_cumprod,
+    p_THDoubleTensor_sign,
+    p_THDoubleTensor_trace,
+    p_THDoubleTensor_cross,
+    p_THDoubleTensor_cmax,
+    p_THDoubleTensor_cmin,
+    p_THDoubleTensor_cmaxValue,
+    p_THDoubleTensor_cminValue,
+    p_THDoubleTensor_zeros,
+    p_THDoubleTensor_zerosLike,
+    p_THDoubleTensor_ones,
+    p_THDoubleTensor_onesLike,
+    p_THDoubleTensor_diag,
+    p_THDoubleTensor_eye,
+    p_THDoubleTensor_arange,
+    p_THDoubleTensor_range,
+    p_THDoubleTensor_randperm,
+    p_THDoubleTensor_reshape,
+    p_THDoubleTensor_sort,
+    p_THDoubleTensor_topk,
+    p_THDoubleTensor_tril,
+    p_THDoubleTensor_triu,
+    p_THDoubleTensor_cat,
+    p_THDoubleTensor_catArray,
+    p_THDoubleTensor_equal,
+    p_THDoubleTensor_ltValue,
+    p_THDoubleTensor_leValue,
+    p_THDoubleTensor_gtValue,
+    p_THDoubleTensor_geValue,
+    p_THDoubleTensor_neValue,
+    p_THDoubleTensor_eqValue,
+    p_THDoubleTensor_ltValueT,
+    p_THDoubleTensor_leValueT,
+    p_THDoubleTensor_gtValueT,
+    p_THDoubleTensor_geValueT,
+    p_THDoubleTensor_neValueT,
+    p_THDoubleTensor_eqValueT,
+    p_THDoubleTensor_ltTensor,
+    p_THDoubleTensor_leTensor,
+    p_THDoubleTensor_gtTensor,
+    p_THDoubleTensor_geTensor,
+    p_THDoubleTensor_neTensor,
+    p_THDoubleTensor_eqTensor,
+    p_THDoubleTensor_ltTensorT,
+    p_THDoubleTensor_leTensorT,
+    p_THDoubleTensor_gtTensorT,
+    p_THDoubleTensor_geTensorT,
+    p_THDoubleTensor_neTensorT,
+    p_THDoubleTensor_eqTensorT,
+    p_THDoubleTensor_abs,
+    p_THDoubleTensor_sigmoid,
+    p_THDoubleTensor_log,
+    p_THDoubleTensor_lgamma,
+    p_THDoubleTensor_log1p,
+    p_THDoubleTensor_exp,
+    p_THDoubleTensor_cos,
+    p_THDoubleTensor_acos,
+    p_THDoubleTensor_cosh,
+    p_THDoubleTensor_sin,
+    p_THDoubleTensor_asin,
+    p_THDoubleTensor_sinh,
+    p_THDoubleTensor_tan,
+    p_THDoubleTensor_atan,
+    p_THDoubleTensor_atan2,
+    p_THDoubleTensor_tanh,
+    p_THDoubleTensor_pow,
+    p_THDoubleTensor_tpow,
+    p_THDoubleTensor_sqrt,
+    p_THDoubleTensor_rsqrt,
+    p_THDoubleTensor_ceil,
+    p_THDoubleTensor_floor,
+    p_THDoubleTensor_round,
+    p_THDoubleTensor_trunc,
+    p_THDoubleTensor_frac,
+    p_THDoubleTensor_lerp,
+    p_THDoubleTensor_mean,
+    p_THDoubleTensor_std,
+    p_THDoubleTensor_var,
+    p_THDoubleTensor_norm,
+    p_THDoubleTensor_renorm,
+    p_THDoubleTensor_dist,
+    p_THDoubleTensor_histc,
+    p_THDoubleTensor_bhistc,
+    p_THDoubleTensor_meanall,
+    p_THDoubleTensor_varall,
+    p_THDoubleTensor_stdall,
+    p_THDoubleTensor_normall,
+    p_THDoubleTensor_linspace,
+    p_THDoubleTensor_logspace,
+    p_THDoubleTensor_rand,
+    p_THDoubleTensor_randn) where
 
 import Foreign
 import Foreign.C.Types
@@ -775,3 +929,619 @@ foreign import ccall unsafe "THTensorMath.h THDoubleTensor_rand"
 -- |c_THDoubleTensor_randn : r_ _generator size -> void
 foreign import ccall unsafe "THTensorMath.h THDoubleTensor_randn"
   c_THDoubleTensor_randn :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
+
+-- |p_THDoubleTensor_fill : Pointer to r_ value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_fill"
+  p_THDoubleTensor_fill :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_zero : Pointer to r_ -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_zero"
+  p_THDoubleTensor_zero :: FunPtr ((Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_maskedFill : Pointer to tensor mask value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_maskedFill"
+  p_THDoubleTensor_maskedFill :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHByteTensor -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_maskedCopy : Pointer to tensor mask src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_maskedCopy"
+  p_THDoubleTensor_maskedCopy :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_maskedSelect : Pointer to tensor src mask -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_maskedSelect"
+  p_THDoubleTensor_maskedSelect :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> Ptr CTHByteTensor -> IO ())
+
+-- |p_THDoubleTensor_nonzero : Pointer to subscript tensor -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_nonzero"
+  p_THDoubleTensor_nonzero :: FunPtr (Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_indexSelect : Pointer to tensor src dim index -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_indexSelect"
+  p_THDoubleTensor_indexSelect :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> Ptr CTHLongTensor -> IO ())
+
+-- |p_THDoubleTensor_indexCopy : Pointer to tensor dim index src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_indexCopy"
+  p_THDoubleTensor_indexCopy :: FunPtr ((Ptr CTHDoubleTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_indexAdd : Pointer to tensor dim index src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_indexAdd"
+  p_THDoubleTensor_indexAdd :: FunPtr ((Ptr CTHDoubleTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_indexFill : Pointer to tensor dim index val -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_indexFill"
+  p_THDoubleTensor_indexFill :: FunPtr ((Ptr CTHDoubleTensor) -> CInt -> Ptr CTHLongTensor -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_gather : Pointer to tensor src dim index -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_gather"
+  p_THDoubleTensor_gather :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> Ptr CTHLongTensor -> IO ())
+
+-- |p_THDoubleTensor_scatter : Pointer to tensor dim index src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_scatter"
+  p_THDoubleTensor_scatter :: FunPtr ((Ptr CTHDoubleTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_scatterAdd : Pointer to tensor dim index src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_scatterAdd"
+  p_THDoubleTensor_scatterAdd :: FunPtr ((Ptr CTHDoubleTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_scatterFill : Pointer to tensor dim index val -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_scatterFill"
+  p_THDoubleTensor_scatterFill :: FunPtr ((Ptr CTHDoubleTensor) -> CInt -> Ptr CTHLongTensor -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_dot : Pointer to t src -> accreal
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_dot"
+  p_THDoubleTensor_dot :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble)
+
+-- |p_THDoubleTensor_minall : Pointer to t -> real
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_minall"
+  p_THDoubleTensor_minall :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble)
+
+-- |p_THDoubleTensor_maxall : Pointer to t -> real
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_maxall"
+  p_THDoubleTensor_maxall :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble)
+
+-- |p_THDoubleTensor_medianall : Pointer to t -> real
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_medianall"
+  p_THDoubleTensor_medianall :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble)
+
+-- |p_THDoubleTensor_sumall : Pointer to t -> accreal
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_sumall"
+  p_THDoubleTensor_sumall :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble)
+
+-- |p_THDoubleTensor_prodall : Pointer to t -> accreal
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_prodall"
+  p_THDoubleTensor_prodall :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble)
+
+-- |p_THDoubleTensor_neg : Pointer to self src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_neg"
+  p_THDoubleTensor_neg :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cinv : Pointer to self src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cinv"
+  p_THDoubleTensor_cinv :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_add : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_add"
+  p_THDoubleTensor_add :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_sub : Pointer to self src value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_sub"
+  p_THDoubleTensor_sub :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_mul : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_mul"
+  p_THDoubleTensor_mul :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_div : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_div"
+  p_THDoubleTensor_div :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_lshift : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_lshift"
+  p_THDoubleTensor_lshift :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_rshift : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_rshift"
+  p_THDoubleTensor_rshift :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_fmod : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_fmod"
+  p_THDoubleTensor_fmod :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_remainder : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_remainder"
+  p_THDoubleTensor_remainder :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_clamp : Pointer to r_ t min_value max_value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_clamp"
+  p_THDoubleTensor_clamp :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_bitand : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_bitand"
+  p_THDoubleTensor_bitand :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_bitor : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_bitor"
+  p_THDoubleTensor_bitor :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_bitxor : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_bitxor"
+  p_THDoubleTensor_bitxor :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_cadd : Pointer to r_ t value src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cadd"
+  p_THDoubleTensor_cadd :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_csub : Pointer to self src1 value src2 -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_csub"
+  p_THDoubleTensor_csub :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cmul : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cmul"
+  p_THDoubleTensor_cmul :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cpow : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cpow"
+  p_THDoubleTensor_cpow :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cdiv : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cdiv"
+  p_THDoubleTensor_cdiv :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_clshift : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_clshift"
+  p_THDoubleTensor_clshift :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_crshift : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_crshift"
+  p_THDoubleTensor_crshift :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cfmod : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cfmod"
+  p_THDoubleTensor_cfmod :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cremainder : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cremainder"
+  p_THDoubleTensor_cremainder :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cbitand : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cbitand"
+  p_THDoubleTensor_cbitand :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cbitor : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cbitor"
+  p_THDoubleTensor_cbitor :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cbitxor : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cbitxor"
+  p_THDoubleTensor_cbitxor :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_addcmul : Pointer to r_ t value src1 src2 -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_addcmul"
+  p_THDoubleTensor_addcmul :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_addcdiv : Pointer to r_ t value src1 src2 -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_addcdiv"
+  p_THDoubleTensor_addcdiv :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_addmv : Pointer to r_ beta t alpha mat vec -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_addmv"
+  p_THDoubleTensor_addmv :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_addmm : Pointer to r_ beta t alpha mat1 mat2 -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_addmm"
+  p_THDoubleTensor_addmm :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_addr : Pointer to r_ beta t alpha vec1 vec2 -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_addr"
+  p_THDoubleTensor_addr :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_addbmm : Pointer to r_ beta t alpha batch1 batch2 -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_addbmm"
+  p_THDoubleTensor_addbmm :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_baddbmm : Pointer to r_ beta t alpha batch1 batch2 -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_baddbmm"
+  p_THDoubleTensor_baddbmm :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_match : Pointer to r_ m1 m2 gain -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_match"
+  p_THDoubleTensor_match :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_numel : Pointer to t -> ptrdiff_t
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_numel"
+  p_THDoubleTensor_numel :: FunPtr ((Ptr CTHDoubleTensor) -> CPtrdiff)
+
+-- |p_THDoubleTensor_max : Pointer to values_ indices_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_max"
+  p_THDoubleTensor_max :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_min : Pointer to values_ indices_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_min"
+  p_THDoubleTensor_min :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_kthvalue : Pointer to values_ indices_ t k dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_kthvalue"
+  p_THDoubleTensor_kthvalue :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> CLong -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_mode : Pointer to values_ indices_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_mode"
+  p_THDoubleTensor_mode :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_median : Pointer to values_ indices_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_median"
+  p_THDoubleTensor_median :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_sum : Pointer to r_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_sum"
+  p_THDoubleTensor_sum :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_prod : Pointer to r_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_prod"
+  p_THDoubleTensor_prod :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_cumsum : Pointer to r_ t dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cumsum"
+  p_THDoubleTensor_cumsum :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> IO ())
+
+-- |p_THDoubleTensor_cumprod : Pointer to r_ t dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cumprod"
+  p_THDoubleTensor_cumprod :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> IO ())
+
+-- |p_THDoubleTensor_sign : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_sign"
+  p_THDoubleTensor_sign :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_trace : Pointer to t -> accreal
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_trace"
+  p_THDoubleTensor_trace :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble)
+
+-- |p_THDoubleTensor_cross : Pointer to r_ a b dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cross"
+  p_THDoubleTensor_cross :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> IO ())
+
+-- |p_THDoubleTensor_cmax : Pointer to r t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cmax"
+  p_THDoubleTensor_cmax :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cmin : Pointer to r t src -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cmin"
+  p_THDoubleTensor_cmin :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cmaxValue : Pointer to r t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cmaxValue"
+  p_THDoubleTensor_cmaxValue :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_cminValue : Pointer to r t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cminValue"
+  p_THDoubleTensor_cminValue :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_zeros : Pointer to r_ size -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_zeros"
+  p_THDoubleTensor_zeros :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongStorage -> IO ())
+
+-- |p_THDoubleTensor_zerosLike : Pointer to r_ input -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_zerosLike"
+  p_THDoubleTensor_zerosLike :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_ones : Pointer to r_ size -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_ones"
+  p_THDoubleTensor_ones :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongStorage -> IO ())
+
+-- |p_THDoubleTensor_onesLike : Pointer to r_ input -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_onesLike"
+  p_THDoubleTensor_onesLike :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_diag : Pointer to r_ t k -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_diag"
+  p_THDoubleTensor_diag :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> IO ())
+
+-- |p_THDoubleTensor_eye : Pointer to r_ n m -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_eye"
+  p_THDoubleTensor_eye :: FunPtr ((Ptr CTHDoubleTensor) -> CLong -> CLong -> IO ())
+
+-- |p_THDoubleTensor_arange : Pointer to r_ xmin xmax step -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_arange"
+  p_THDoubleTensor_arange :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> CDouble -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_range : Pointer to r_ xmin xmax step -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_range"
+  p_THDoubleTensor_range :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> CDouble -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_randperm : Pointer to r_ _generator n -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_randperm"
+  p_THDoubleTensor_randperm :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CLong -> IO ())
+
+-- |p_THDoubleTensor_reshape : Pointer to r_ t size -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_reshape"
+  p_THDoubleTensor_reshape :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> Ptr CTHLongStorage -> IO ())
+
+-- |p_THDoubleTensor_sort : Pointer to rt_ ri_ t dimension descendingOrder -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_sort"
+  p_THDoubleTensor_sort :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_topk : Pointer to rt_ ri_ t k dim dir sorted -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_topk"
+  p_THDoubleTensor_topk :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> CLong -> CInt -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_tril : Pointer to r_ t k -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_tril"
+  p_THDoubleTensor_tril :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> IO ())
+
+-- |p_THDoubleTensor_triu : Pointer to r_ t k -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_triu"
+  p_THDoubleTensor_triu :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> IO ())
+
+-- |p_THDoubleTensor_cat : Pointer to r_ ta tb dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cat"
+  p_THDoubleTensor_cat :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> IO ())
+
+-- |p_THDoubleTensor_catArray : Pointer to result inputs numInputs dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_catArray"
+  p_THDoubleTensor_catArray :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_equal : Pointer to ta tb -> int
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_equal"
+  p_THDoubleTensor_equal :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt)
+
+-- |p_THDoubleTensor_ltValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_ltValue"
+  p_THDoubleTensor_ltValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_leValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_leValue"
+  p_THDoubleTensor_leValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_gtValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_gtValue"
+  p_THDoubleTensor_gtValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_geValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_geValue"
+  p_THDoubleTensor_geValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_neValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_neValue"
+  p_THDoubleTensor_neValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_eqValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_eqValue"
+  p_THDoubleTensor_eqValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_ltValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_ltValueT"
+  p_THDoubleTensor_ltValueT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_leValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_leValueT"
+  p_THDoubleTensor_leValueT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_gtValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_gtValueT"
+  p_THDoubleTensor_gtValueT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_geValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_geValueT"
+  p_THDoubleTensor_geValueT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_neValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_neValueT"
+  p_THDoubleTensor_neValueT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_eqValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_eqValueT"
+  p_THDoubleTensor_eqValueT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_ltTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_ltTensor"
+  p_THDoubleTensor_ltTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_leTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_leTensor"
+  p_THDoubleTensor_leTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_gtTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_gtTensor"
+  p_THDoubleTensor_gtTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_geTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_geTensor"
+  p_THDoubleTensor_geTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_neTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_neTensor"
+  p_THDoubleTensor_neTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_eqTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_eqTensor"
+  p_THDoubleTensor_eqTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_ltTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_ltTensorT"
+  p_THDoubleTensor_ltTensorT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_leTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_leTensorT"
+  p_THDoubleTensor_leTensorT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_gtTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_gtTensorT"
+  p_THDoubleTensor_gtTensorT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_geTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_geTensorT"
+  p_THDoubleTensor_geTensorT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_neTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_neTensorT"
+  p_THDoubleTensor_neTensorT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_eqTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_eqTensorT"
+  p_THDoubleTensor_eqTensorT :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_abs : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_abs"
+  p_THDoubleTensor_abs :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_sigmoid : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_sigmoid"
+  p_THDoubleTensor_sigmoid :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_log : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_log"
+  p_THDoubleTensor_log :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_lgamma : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_lgamma"
+  p_THDoubleTensor_lgamma :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_log1p : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_log1p"
+  p_THDoubleTensor_log1p :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_exp : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_exp"
+  p_THDoubleTensor_exp :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cos : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cos"
+  p_THDoubleTensor_cos :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_acos : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_acos"
+  p_THDoubleTensor_acos :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_cosh : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_cosh"
+  p_THDoubleTensor_cosh :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_sin : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_sin"
+  p_THDoubleTensor_sin :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_asin : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_asin"
+  p_THDoubleTensor_asin :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_sinh : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_sinh"
+  p_THDoubleTensor_sinh :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_tan : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_tan"
+  p_THDoubleTensor_tan :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_atan : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_atan"
+  p_THDoubleTensor_atan :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_atan2 : Pointer to r_ tx ty -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_atan2"
+  p_THDoubleTensor_atan2 :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_tanh : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_tanh"
+  p_THDoubleTensor_tanh :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_pow : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_pow"
+  p_THDoubleTensor_pow :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_tpow : Pointer to r_ value t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_tpow"
+  p_THDoubleTensor_tpow :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_sqrt : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_sqrt"
+  p_THDoubleTensor_sqrt :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_rsqrt : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_rsqrt"
+  p_THDoubleTensor_rsqrt :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_ceil : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_ceil"
+  p_THDoubleTensor_ceil :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_floor : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_floor"
+  p_THDoubleTensor_floor :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_round : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_round"
+  p_THDoubleTensor_round :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_trunc : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_trunc"
+  p_THDoubleTensor_trunc :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_frac : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_frac"
+  p_THDoubleTensor_frac :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_lerp : Pointer to r_ a b weight -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_lerp"
+  p_THDoubleTensor_lerp :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_mean : Pointer to r_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_mean"
+  p_THDoubleTensor_mean :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_std : Pointer to r_ t dimension biased keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_std"
+  p_THDoubleTensor_std :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_var : Pointer to r_ t dimension biased keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_var"
+  p_THDoubleTensor_var :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_norm : Pointer to r_ t value dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_norm"
+  p_THDoubleTensor_norm :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> CInt -> CInt -> IO ())
+
+-- |p_THDoubleTensor_renorm : Pointer to r_ t value dimension maxnorm -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_renorm"
+  p_THDoubleTensor_renorm :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> CInt -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_dist : Pointer to a b value -> accreal
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_dist"
+  p_THDoubleTensor_dist :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CDouble -> CDouble)
+
+-- |p_THDoubleTensor_histc : Pointer to hist tensor nbins minvalue maxvalue -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_histc"
+  p_THDoubleTensor_histc :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CDouble -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_bhistc : Pointer to hist tensor nbins minvalue maxvalue -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_bhistc"
+  p_THDoubleTensor_bhistc :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> CLong -> CDouble -> CDouble -> IO ())
+
+-- |p_THDoubleTensor_meanall : Pointer to self -> accreal
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_meanall"
+  p_THDoubleTensor_meanall :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble)
+
+-- |p_THDoubleTensor_varall : Pointer to self biased -> accreal
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_varall"
+  p_THDoubleTensor_varall :: FunPtr ((Ptr CTHDoubleTensor) -> CInt -> CDouble)
+
+-- |p_THDoubleTensor_stdall : Pointer to self biased -> accreal
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_stdall"
+  p_THDoubleTensor_stdall :: FunPtr ((Ptr CTHDoubleTensor) -> CInt -> CDouble)
+
+-- |p_THDoubleTensor_normall : Pointer to t value -> accreal
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_normall"
+  p_THDoubleTensor_normall :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> CDouble)
+
+-- |p_THDoubleTensor_linspace : Pointer to r_ a b n -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_linspace"
+  p_THDoubleTensor_linspace :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> CDouble -> CLong -> IO ())
+
+-- |p_THDoubleTensor_logspace : Pointer to r_ a b n -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_logspace"
+  p_THDoubleTensor_logspace :: FunPtr ((Ptr CTHDoubleTensor) -> CDouble -> CDouble -> CLong -> IO ())
+
+-- |p_THDoubleTensor_rand : Pointer to r_ _generator size -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_rand"
+  p_THDoubleTensor_rand :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ())
+
+-- |p_THDoubleTensor_randn : Pointer to r_ _generator size -> void
+foreign import ccall unsafe "THTensorMath.h &THDoubleTensor_randn"
+  p_THDoubleTensor_randn :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ())

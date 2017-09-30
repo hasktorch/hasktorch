@@ -30,6 +30,12 @@ import qualified Data.Text as T
 
 import Foreign
 import Foreign.C.Types
+import Foreign.ForeignPtr
+import Foreign.Ptr
+import GHC.Ptr
+
+-- import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
+--                            newForeignPtr )
 import THTypes
 
 import System.IO.Unsafe
@@ -73,6 +79,13 @@ instance Functor TensorDim where
   fmap f (D2 d1 d2) = D2 (f d1) (f d2)
   fmap f (D3 d1 d2 d3) = D3 (f d1) (f d2) (f d3)
   fmap f (D4 d1 d2 d3 d4) = D4 (f d1) (f d2) (f d3) (f d4)
+
+data TensorDouble_ =
+  TensorDouble_ !(ForeignPtr (Ptr CTHDoubleTensor))
+  deriving (Eq, Show)
+
+foo :: (Ptr ()) -> IO ()
+foo = undefined
 
 -- |apply a tensor transforming function to a tensor
 apply ::
@@ -243,6 +256,20 @@ size t =
 -- |word 2 clong
 w2cl :: Word -> CLong
 w2cl = fromIntegral
+
+-- foreign import ccall unsafe "THTensor.h &THDoubleTensor_free"
+--   p_THDoubleTensor_free :: FunPtr ((Ptr CTHDoubleTensor) -> IO ())
+
+-- fr :: FunPtr (Ptr a -> IO ())
+-- fr = FunPtr (Ptr )
+-- fr = FunPtr $ c_THDoubleTensor_free
+
+-- finalizer = FunPtr go
+--   where
+--     go x = c_THDoubleTensor_free x
+
+-- getPtr = newForeignPtr p_THDoubleTensor_free 
+-- newForeignPtr :: FinalizerPtr a -> Ptr a -> IO (ForeignPtr a)
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 -- |tag: unsafe

@@ -9,7 +9,16 @@ module THFloatVector (
     c_THFloatVector_cdiv,
     c_THFloatVector_divs,
     c_THFloatVector_copy,
-    c_THFloatVector_vectorDispatchInit) where
+    c_THFloatVector_vectorDispatchInit,
+    p_THFloatVector_fill,
+    p_THFloatVector_cadd,
+    p_THFloatVector_adds,
+    p_THFloatVector_cmul,
+    p_THFloatVector_muls,
+    p_THFloatVector_cdiv,
+    p_THFloatVector_divs,
+    p_THFloatVector_copy,
+    p_THFloatVector_vectorDispatchInit) where
 
 import Foreign
 import Foreign.C.Types
@@ -50,3 +59,39 @@ foreign import ccall unsafe "THVector.h THFloatVector_copy"
 -- |c_THFloatVector_vectorDispatchInit :  -> void
 foreign import ccall unsafe "THVector.h THFloatVector_vectorDispatchInit"
   c_THFloatVector_vectorDispatchInit :: IO ()
+
+-- |p_THFloatVector_fill : Pointer to x c n -> void
+foreign import ccall unsafe "THVector.h &THFloatVector_fill"
+  p_THFloatVector_fill :: FunPtr (Ptr CFloat -> CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_cadd : Pointer to z x y c n -> void
+foreign import ccall unsafe "THVector.h &THFloatVector_cadd"
+  p_THFloatVector_cadd :: FunPtr (Ptr CFloat -> Ptr CFloat -> Ptr CFloat -> CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_adds : Pointer to y x c n -> void
+foreign import ccall unsafe "THVector.h &THFloatVector_adds"
+  p_THFloatVector_adds :: FunPtr (Ptr CFloat -> Ptr CFloat -> CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_cmul : Pointer to z x y n -> void
+foreign import ccall unsafe "THVector.h &THFloatVector_cmul"
+  p_THFloatVector_cmul :: FunPtr (Ptr CFloat -> Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_muls : Pointer to y x c n -> void
+foreign import ccall unsafe "THVector.h &THFloatVector_muls"
+  p_THFloatVector_muls :: FunPtr (Ptr CFloat -> Ptr CFloat -> CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_cdiv : Pointer to z x y n -> void
+foreign import ccall unsafe "THVector.h &THFloatVector_cdiv"
+  p_THFloatVector_cdiv :: FunPtr (Ptr CFloat -> Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_divs : Pointer to y x c n -> void
+foreign import ccall unsafe "THVector.h &THFloatVector_divs"
+  p_THFloatVector_divs :: FunPtr (Ptr CFloat -> Ptr CFloat -> CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_copy : Pointer to y x n -> void
+foreign import ccall unsafe "THVector.h &THFloatVector_copy"
+  p_THFloatVector_copy :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_vectorDispatchInit : Pointer to  -> void
+foreign import ccall unsafe "THVector.h &THFloatVector_vectorDispatchInit"
+  p_THFloatVector_vectorDispatchInit :: FunPtr (IO ())

@@ -8,7 +8,15 @@ module THIntBlas (
     c_THIntBlas_dot,
     c_THIntBlas_gemv,
     c_THIntBlas_ger,
-    c_THIntBlas_gemm) where
+    c_THIntBlas_gemm,
+    p_THIntBlas_swap,
+    p_THIntBlas_scal,
+    p_THIntBlas_copy,
+    p_THIntBlas_axpy,
+    p_THIntBlas_dot,
+    p_THIntBlas_gemv,
+    p_THIntBlas_ger,
+    p_THIntBlas_gemm) where
 
 import Foreign
 import Foreign.C.Types
@@ -45,3 +53,35 @@ foreign import ccall unsafe "THBlas.h THIntBlas_ger"
 -- |c_THIntBlas_gemm : transa transb m n k alpha a lda b ldb beta c ldc -> void
 foreign import ccall unsafe "THBlas.h THIntBlas_gemm"
   c_THIntBlas_gemm :: CChar -> CChar -> CLong -> CLong -> CLong -> CInt -> Ptr CInt -> CLong -> Ptr CInt -> CLong -> CInt -> Ptr CInt -> CLong -> IO ()
+
+-- |p_THIntBlas_swap : Pointer to n x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THIntBlas_swap"
+  p_THIntBlas_swap :: FunPtr (CLong -> Ptr CInt -> CLong -> Ptr CInt -> CLong -> IO ())
+
+-- |p_THIntBlas_scal : Pointer to n a x incx -> void
+foreign import ccall unsafe "THBlas.h &THIntBlas_scal"
+  p_THIntBlas_scal :: FunPtr (CLong -> CInt -> Ptr CInt -> CLong -> IO ())
+
+-- |p_THIntBlas_copy : Pointer to n x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THIntBlas_copy"
+  p_THIntBlas_copy :: FunPtr (CLong -> Ptr CInt -> CLong -> Ptr CInt -> CLong -> IO ())
+
+-- |p_THIntBlas_axpy : Pointer to n a x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THIntBlas_axpy"
+  p_THIntBlas_axpy :: FunPtr (CLong -> CInt -> Ptr CInt -> CLong -> Ptr CInt -> CLong -> IO ())
+
+-- |p_THIntBlas_dot : Pointer to n x incx y incy -> real
+foreign import ccall unsafe "THBlas.h &THIntBlas_dot"
+  p_THIntBlas_dot :: FunPtr (CLong -> Ptr CInt -> CLong -> Ptr CInt -> CLong -> CInt)
+
+-- |p_THIntBlas_gemv : Pointer to trans m n alpha a lda x incx beta y incy -> void
+foreign import ccall unsafe "THBlas.h &THIntBlas_gemv"
+  p_THIntBlas_gemv :: FunPtr (CChar -> CLong -> CLong -> CInt -> Ptr CInt -> CLong -> Ptr CInt -> CLong -> CInt -> Ptr CInt -> CLong -> IO ())
+
+-- |p_THIntBlas_ger : Pointer to m n alpha x incx y incy a lda -> void
+foreign import ccall unsafe "THBlas.h &THIntBlas_ger"
+  p_THIntBlas_ger :: FunPtr (CLong -> CLong -> CInt -> Ptr CInt -> CLong -> Ptr CInt -> CLong -> Ptr CInt -> CLong -> IO ())
+
+-- |p_THIntBlas_gemm : Pointer to transa transb m n k alpha a lda b ldb beta c ldc -> void
+foreign import ccall unsafe "THBlas.h &THIntBlas_gemm"
+  p_THIntBlas_gemm :: FunPtr (CChar -> CChar -> CLong -> CLong -> CLong -> CInt -> Ptr CInt -> CLong -> Ptr CInt -> CLong -> CInt -> Ptr CInt -> CLong -> IO ())

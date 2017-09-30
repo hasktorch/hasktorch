@@ -8,7 +8,15 @@ module THHalfBlas (
     c_THHalfBlas_dot,
     c_THHalfBlas_gemv,
     c_THHalfBlas_ger,
-    c_THHalfBlas_gemm) where
+    c_THHalfBlas_gemm,
+    p_THHalfBlas_swap,
+    p_THHalfBlas_scal,
+    p_THHalfBlas_copy,
+    p_THHalfBlas_axpy,
+    p_THHalfBlas_dot,
+    p_THHalfBlas_gemv,
+    p_THHalfBlas_ger,
+    p_THHalfBlas_gemm) where
 
 import Foreign
 import Foreign.C.Types
@@ -45,3 +53,35 @@ foreign import ccall unsafe "THBlas.h THHalfBlas_ger"
 -- |c_THHalfBlas_gemm : transa transb m n k alpha a lda b ldb beta c ldc -> void
 foreign import ccall unsafe "THBlas.h THHalfBlas_gemm"
   c_THHalfBlas_gemm :: CChar -> CChar -> CLong -> CLong -> CLong -> THHalf -> Ptr THHalf -> CLong -> Ptr THHalf -> CLong -> THHalf -> Ptr THHalf -> CLong -> IO ()
+
+-- |p_THHalfBlas_swap : Pointer to n x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THHalfBlas_swap"
+  p_THHalfBlas_swap :: FunPtr (CLong -> Ptr THHalf -> CLong -> Ptr THHalf -> CLong -> IO ())
+
+-- |p_THHalfBlas_scal : Pointer to n a x incx -> void
+foreign import ccall unsafe "THBlas.h &THHalfBlas_scal"
+  p_THHalfBlas_scal :: FunPtr (CLong -> THHalf -> Ptr THHalf -> CLong -> IO ())
+
+-- |p_THHalfBlas_copy : Pointer to n x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THHalfBlas_copy"
+  p_THHalfBlas_copy :: FunPtr (CLong -> Ptr THHalf -> CLong -> Ptr THHalf -> CLong -> IO ())
+
+-- |p_THHalfBlas_axpy : Pointer to n a x incx y incy -> void
+foreign import ccall unsafe "THBlas.h &THHalfBlas_axpy"
+  p_THHalfBlas_axpy :: FunPtr (CLong -> THHalf -> Ptr THHalf -> CLong -> Ptr THHalf -> CLong -> IO ())
+
+-- |p_THHalfBlas_dot : Pointer to n x incx y incy -> real
+foreign import ccall unsafe "THBlas.h &THHalfBlas_dot"
+  p_THHalfBlas_dot :: FunPtr (CLong -> Ptr THHalf -> CLong -> Ptr THHalf -> CLong -> THHalf)
+
+-- |p_THHalfBlas_gemv : Pointer to trans m n alpha a lda x incx beta y incy -> void
+foreign import ccall unsafe "THBlas.h &THHalfBlas_gemv"
+  p_THHalfBlas_gemv :: FunPtr (CChar -> CLong -> CLong -> THHalf -> Ptr THHalf -> CLong -> Ptr THHalf -> CLong -> THHalf -> Ptr THHalf -> CLong -> IO ())
+
+-- |p_THHalfBlas_ger : Pointer to m n alpha x incx y incy a lda -> void
+foreign import ccall unsafe "THBlas.h &THHalfBlas_ger"
+  p_THHalfBlas_ger :: FunPtr (CLong -> CLong -> THHalf -> Ptr THHalf -> CLong -> Ptr THHalf -> CLong -> Ptr THHalf -> CLong -> IO ())
+
+-- |p_THHalfBlas_gemm : Pointer to transa transb m n k alpha a lda b ldb beta c ldc -> void
+foreign import ccall unsafe "THBlas.h &THHalfBlas_gemm"
+  p_THHalfBlas_gemm :: FunPtr (CChar -> CChar -> CLong -> CLong -> CLong -> THHalf -> Ptr THHalf -> CLong -> Ptr THHalf -> CLong -> THHalf -> Ptr THHalf -> CLong -> IO ())

@@ -18,7 +18,25 @@ module THFloatTensorLapack (
     c_THFloatTensor_ormqr,
     c_THFloatTensor_pstrf,
     c_THFloatTensor_btrifact,
-    c_THFloatTensor_btrisolve) where
+    c_THFloatTensor_btrisolve,
+    p_THFloatTensor_gesv,
+    p_THFloatTensor_trtrs,
+    p_THFloatTensor_gels,
+    p_THFloatTensor_syev,
+    p_THFloatTensor_geev,
+    p_THFloatTensor_gesvd,
+    p_THFloatTensor_gesvd2,
+    p_THFloatTensor_getri,
+    p_THFloatTensor_potrf,
+    p_THFloatTensor_potrs,
+    p_THFloatTensor_potri,
+    p_THFloatTensor_qr,
+    p_THFloatTensor_geqrf,
+    p_THFloatTensor_orgqr,
+    p_THFloatTensor_ormqr,
+    p_THFloatTensor_pstrf,
+    p_THFloatTensor_btrifact,
+    p_THFloatTensor_btrisolve) where
 
 import Foreign
 import Foreign.C.Types
@@ -95,3 +113,75 @@ foreign import ccall unsafe "THTensorLapack.h THFloatTensor_btrifact"
 -- |c_THFloatTensor_btrisolve : rb_ b atf pivots -> void
 foreign import ccall unsafe "THTensorLapack.h THFloatTensor_btrisolve"
   c_THFloatTensor_btrisolve :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CTHIntTensor -> IO ()
+
+-- |p_THFloatTensor_gesv : Pointer to rb_ ra_ b_ a_ -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_gesv"
+  p_THFloatTensor_gesv :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_trtrs : Pointer to rb_ ra_ b_ a_ uplo trans diag -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_trtrs"
+  p_THFloatTensor_trtrs :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CChar -> Ptr CChar -> Ptr CChar -> IO ())
+
+-- |p_THFloatTensor_gels : Pointer to rb_ ra_ b_ a_ -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_gels"
+  p_THFloatTensor_gels :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_syev : Pointer to re_ rv_ a_ jobz uplo -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_syev"
+  p_THFloatTensor_syev :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CChar -> Ptr CChar -> IO ())
+
+-- |p_THFloatTensor_geev : Pointer to re_ rv_ a_ jobvr -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_geev"
+  p_THFloatTensor_geev :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CChar -> IO ())
+
+-- |p_THFloatTensor_gesvd : Pointer to ru_ rs_ rv_ a jobu -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_gesvd"
+  p_THFloatTensor_gesvd :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CChar -> IO ())
+
+-- |p_THFloatTensor_gesvd2 : Pointer to ru_ rs_ rv_ ra_ a jobu -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_gesvd2"
+  p_THFloatTensor_gesvd2 :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CChar -> IO ())
+
+-- |p_THFloatTensor_getri : Pointer to ra_ a -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_getri"
+  p_THFloatTensor_getri :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_potrf : Pointer to ra_ a uplo -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_potrf"
+  p_THFloatTensor_potrf :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CChar -> IO ())
+
+-- |p_THFloatTensor_potrs : Pointer to rb_ b_ a_ uplo -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_potrs"
+  p_THFloatTensor_potrs :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CChar -> IO ())
+
+-- |p_THFloatTensor_potri : Pointer to ra_ a uplo -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_potri"
+  p_THFloatTensor_potri :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CChar -> IO ())
+
+-- |p_THFloatTensor_qr : Pointer to rq_ rr_ a -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_qr"
+  p_THFloatTensor_qr :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_geqrf : Pointer to ra_ rtau_ a -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_geqrf"
+  p_THFloatTensor_geqrf :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_orgqr : Pointer to ra_ a tau -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_orgqr"
+  p_THFloatTensor_orgqr :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_ormqr : Pointer to ra_ a tau c side trans -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_ormqr"
+  p_THFloatTensor_ormqr :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CChar -> Ptr CChar -> IO ())
+
+-- |p_THFloatTensor_pstrf : Pointer to ra_ rpiv_ a uplo tol -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_pstrf"
+  p_THFloatTensor_pstrf :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHIntTensor -> (Ptr CTHFloatTensor) -> Ptr CChar -> CFloat -> IO ())
+
+-- |p_THFloatTensor_btrifact : Pointer to ra_ rpivots_ rinfo_ pivot a -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_btrifact"
+  p_THFloatTensor_btrifact :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CInt -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_btrisolve : Pointer to rb_ b atf pivots -> void
+foreign import ccall unsafe "THTensorLapack.h &THFloatTensor_btrisolve"
+  p_THFloatTensor_btrisolve :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CTHIntTensor -> IO ())

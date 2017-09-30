@@ -112,7 +112,119 @@ module THShortTensorMath (
     c_THShortTensor_geTensorT,
     c_THShortTensor_neTensorT,
     c_THShortTensor_eqTensorT,
-    c_THShortTensor_abs) where
+    c_THShortTensor_abs,
+    p_THShortTensor_fill,
+    p_THShortTensor_zero,
+    p_THShortTensor_maskedFill,
+    p_THShortTensor_maskedCopy,
+    p_THShortTensor_maskedSelect,
+    p_THShortTensor_nonzero,
+    p_THShortTensor_indexSelect,
+    p_THShortTensor_indexCopy,
+    p_THShortTensor_indexAdd,
+    p_THShortTensor_indexFill,
+    p_THShortTensor_gather,
+    p_THShortTensor_scatter,
+    p_THShortTensor_scatterAdd,
+    p_THShortTensor_scatterFill,
+    p_THShortTensor_dot,
+    p_THShortTensor_minall,
+    p_THShortTensor_maxall,
+    p_THShortTensor_medianall,
+    p_THShortTensor_sumall,
+    p_THShortTensor_prodall,
+    p_THShortTensor_neg,
+    p_THShortTensor_add,
+    p_THShortTensor_sub,
+    p_THShortTensor_mul,
+    p_THShortTensor_div,
+    p_THShortTensor_lshift,
+    p_THShortTensor_rshift,
+    p_THShortTensor_fmod,
+    p_THShortTensor_remainder,
+    p_THShortTensor_clamp,
+    p_THShortTensor_bitand,
+    p_THShortTensor_bitor,
+    p_THShortTensor_bitxor,
+    p_THShortTensor_cadd,
+    p_THShortTensor_csub,
+    p_THShortTensor_cmul,
+    p_THShortTensor_cpow,
+    p_THShortTensor_cdiv,
+    p_THShortTensor_clshift,
+    p_THShortTensor_crshift,
+    p_THShortTensor_cfmod,
+    p_THShortTensor_cremainder,
+    p_THShortTensor_cbitand,
+    p_THShortTensor_cbitor,
+    p_THShortTensor_cbitxor,
+    p_THShortTensor_addcmul,
+    p_THShortTensor_addcdiv,
+    p_THShortTensor_addmv,
+    p_THShortTensor_addmm,
+    p_THShortTensor_addr,
+    p_THShortTensor_addbmm,
+    p_THShortTensor_baddbmm,
+    p_THShortTensor_match,
+    p_THShortTensor_numel,
+    p_THShortTensor_max,
+    p_THShortTensor_min,
+    p_THShortTensor_kthvalue,
+    p_THShortTensor_mode,
+    p_THShortTensor_median,
+    p_THShortTensor_sum,
+    p_THShortTensor_prod,
+    p_THShortTensor_cumsum,
+    p_THShortTensor_cumprod,
+    p_THShortTensor_sign,
+    p_THShortTensor_trace,
+    p_THShortTensor_cross,
+    p_THShortTensor_cmax,
+    p_THShortTensor_cmin,
+    p_THShortTensor_cmaxValue,
+    p_THShortTensor_cminValue,
+    p_THShortTensor_zeros,
+    p_THShortTensor_zerosLike,
+    p_THShortTensor_ones,
+    p_THShortTensor_onesLike,
+    p_THShortTensor_diag,
+    p_THShortTensor_eye,
+    p_THShortTensor_arange,
+    p_THShortTensor_range,
+    p_THShortTensor_randperm,
+    p_THShortTensor_reshape,
+    p_THShortTensor_sort,
+    p_THShortTensor_topk,
+    p_THShortTensor_tril,
+    p_THShortTensor_triu,
+    p_THShortTensor_cat,
+    p_THShortTensor_catArray,
+    p_THShortTensor_equal,
+    p_THShortTensor_ltValue,
+    p_THShortTensor_leValue,
+    p_THShortTensor_gtValue,
+    p_THShortTensor_geValue,
+    p_THShortTensor_neValue,
+    p_THShortTensor_eqValue,
+    p_THShortTensor_ltValueT,
+    p_THShortTensor_leValueT,
+    p_THShortTensor_gtValueT,
+    p_THShortTensor_geValueT,
+    p_THShortTensor_neValueT,
+    p_THShortTensor_eqValueT,
+    p_THShortTensor_ltTensor,
+    p_THShortTensor_leTensor,
+    p_THShortTensor_gtTensor,
+    p_THShortTensor_geTensor,
+    p_THShortTensor_neTensor,
+    p_THShortTensor_eqTensor,
+    p_THShortTensor_ltTensorT,
+    p_THShortTensor_leTensorT,
+    p_THShortTensor_gtTensorT,
+    p_THShortTensor_geTensorT,
+    p_THShortTensor_neTensorT,
+    p_THShortTensor_eqTensorT,
+    p_THShortTensor_abs) where
 
 import Foreign
 import Foreign.C.Types
@@ -565,3 +677,451 @@ foreign import ccall unsafe "THTensorMath.h THShortTensor_eqTensorT"
 -- |c_THShortTensor_abs : r_ t -> void
 foreign import ccall unsafe "THTensorMath.h THShortTensor_abs"
   c_THShortTensor_abs :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
+
+-- |p_THShortTensor_fill : Pointer to r_ value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_fill"
+  p_THShortTensor_fill :: FunPtr ((Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_zero : Pointer to r_ -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_zero"
+  p_THShortTensor_zero :: FunPtr ((Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_maskedFill : Pointer to tensor mask value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_maskedFill"
+  p_THShortTensor_maskedFill :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHByteTensor -> CShort -> IO ())
+
+-- |p_THShortTensor_maskedCopy : Pointer to tensor mask src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_maskedCopy"
+  p_THShortTensor_maskedCopy :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_maskedSelect : Pointer to tensor src mask -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_maskedSelect"
+  p_THShortTensor_maskedSelect :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> Ptr CTHByteTensor -> IO ())
+
+-- |p_THShortTensor_nonzero : Pointer to subscript tensor -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_nonzero"
+  p_THShortTensor_nonzero :: FunPtr (Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_indexSelect : Pointer to tensor src dim index -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_indexSelect"
+  p_THShortTensor_indexSelect :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt -> Ptr CTHLongTensor -> IO ())
+
+-- |p_THShortTensor_indexCopy : Pointer to tensor dim index src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_indexCopy"
+  p_THShortTensor_indexCopy :: FunPtr ((Ptr CTHShortTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_indexAdd : Pointer to tensor dim index src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_indexAdd"
+  p_THShortTensor_indexAdd :: FunPtr ((Ptr CTHShortTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_indexFill : Pointer to tensor dim index val -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_indexFill"
+  p_THShortTensor_indexFill :: FunPtr ((Ptr CTHShortTensor) -> CInt -> Ptr CTHLongTensor -> CShort -> IO ())
+
+-- |p_THShortTensor_gather : Pointer to tensor src dim index -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_gather"
+  p_THShortTensor_gather :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt -> Ptr CTHLongTensor -> IO ())
+
+-- |p_THShortTensor_scatter : Pointer to tensor dim index src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_scatter"
+  p_THShortTensor_scatter :: FunPtr ((Ptr CTHShortTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_scatterAdd : Pointer to tensor dim index src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_scatterAdd"
+  p_THShortTensor_scatterAdd :: FunPtr ((Ptr CTHShortTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_scatterFill : Pointer to tensor dim index val -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_scatterFill"
+  p_THShortTensor_scatterFill :: FunPtr ((Ptr CTHShortTensor) -> CInt -> Ptr CTHLongTensor -> CShort -> IO ())
+
+-- |p_THShortTensor_dot : Pointer to t src -> accreal
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_dot"
+  p_THShortTensor_dot :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CLong)
+
+-- |p_THShortTensor_minall : Pointer to t -> real
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_minall"
+  p_THShortTensor_minall :: FunPtr ((Ptr CTHShortTensor) -> CShort)
+
+-- |p_THShortTensor_maxall : Pointer to t -> real
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_maxall"
+  p_THShortTensor_maxall :: FunPtr ((Ptr CTHShortTensor) -> CShort)
+
+-- |p_THShortTensor_medianall : Pointer to t -> real
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_medianall"
+  p_THShortTensor_medianall :: FunPtr ((Ptr CTHShortTensor) -> CShort)
+
+-- |p_THShortTensor_sumall : Pointer to t -> accreal
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_sumall"
+  p_THShortTensor_sumall :: FunPtr ((Ptr CTHShortTensor) -> CLong)
+
+-- |p_THShortTensor_prodall : Pointer to t -> accreal
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_prodall"
+  p_THShortTensor_prodall :: FunPtr ((Ptr CTHShortTensor) -> CLong)
+
+-- |p_THShortTensor_neg : Pointer to self src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_neg"
+  p_THShortTensor_neg :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_add : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_add"
+  p_THShortTensor_add :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_sub : Pointer to self src value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_sub"
+  p_THShortTensor_sub :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_mul : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_mul"
+  p_THShortTensor_mul :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_div : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_div"
+  p_THShortTensor_div :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_lshift : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_lshift"
+  p_THShortTensor_lshift :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_rshift : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_rshift"
+  p_THShortTensor_rshift :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_fmod : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_fmod"
+  p_THShortTensor_fmod :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_remainder : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_remainder"
+  p_THShortTensor_remainder :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_clamp : Pointer to r_ t min_value max_value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_clamp"
+  p_THShortTensor_clamp :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> CShort -> IO ())
+
+-- |p_THShortTensor_bitand : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_bitand"
+  p_THShortTensor_bitand :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_bitor : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_bitor"
+  p_THShortTensor_bitor :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_bitxor : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_bitxor"
+  p_THShortTensor_bitxor :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_cadd : Pointer to r_ t value src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cadd"
+  p_THShortTensor_cadd :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_csub : Pointer to self src1 value src2 -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_csub"
+  p_THShortTensor_csub :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cmul : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cmul"
+  p_THShortTensor_cmul :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cpow : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cpow"
+  p_THShortTensor_cpow :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cdiv : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cdiv"
+  p_THShortTensor_cdiv :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_clshift : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_clshift"
+  p_THShortTensor_clshift :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_crshift : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_crshift"
+  p_THShortTensor_crshift :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cfmod : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cfmod"
+  p_THShortTensor_cfmod :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cremainder : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cremainder"
+  p_THShortTensor_cremainder :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cbitand : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cbitand"
+  p_THShortTensor_cbitand :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cbitor : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cbitor"
+  p_THShortTensor_cbitor :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cbitxor : Pointer to r_ t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cbitxor"
+  p_THShortTensor_cbitxor :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_addcmul : Pointer to r_ t value src1 src2 -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_addcmul"
+  p_THShortTensor_addcmul :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_addcdiv : Pointer to r_ t value src1 src2 -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_addcdiv"
+  p_THShortTensor_addcdiv :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_addmv : Pointer to r_ beta t alpha mat vec -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_addmv"
+  p_THShortTensor_addmv :: FunPtr ((Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_addmm : Pointer to r_ beta t alpha mat1 mat2 -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_addmm"
+  p_THShortTensor_addmm :: FunPtr ((Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_addr : Pointer to r_ beta t alpha vec1 vec2 -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_addr"
+  p_THShortTensor_addr :: FunPtr ((Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_addbmm : Pointer to r_ beta t alpha batch1 batch2 -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_addbmm"
+  p_THShortTensor_addbmm :: FunPtr ((Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_baddbmm : Pointer to r_ beta t alpha batch1 batch2 -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_baddbmm"
+  p_THShortTensor_baddbmm :: FunPtr ((Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> CShort -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_match : Pointer to r_ m1 m2 gain -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_match"
+  p_THShortTensor_match :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_numel : Pointer to t -> ptrdiff_t
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_numel"
+  p_THShortTensor_numel :: FunPtr ((Ptr CTHShortTensor) -> CPtrdiff)
+
+-- |p_THShortTensor_max : Pointer to values_ indices_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_max"
+  p_THShortTensor_max :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_min : Pointer to values_ indices_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_min"
+  p_THShortTensor_min :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_kthvalue : Pointer to values_ indices_ t k dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_kthvalue"
+  p_THShortTensor_kthvalue :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> CLong -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_mode : Pointer to values_ indices_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_mode"
+  p_THShortTensor_mode :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_median : Pointer to values_ indices_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_median"
+  p_THShortTensor_median :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_sum : Pointer to r_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_sum"
+  p_THShortTensor_sum :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_prod : Pointer to r_ t dimension keepdim -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_prod"
+  p_THShortTensor_prod :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_cumsum : Pointer to r_ t dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cumsum"
+  p_THShortTensor_cumsum :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt -> IO ())
+
+-- |p_THShortTensor_cumprod : Pointer to r_ t dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cumprod"
+  p_THShortTensor_cumprod :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt -> IO ())
+
+-- |p_THShortTensor_sign : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_sign"
+  p_THShortTensor_sign :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_trace : Pointer to t -> accreal
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_trace"
+  p_THShortTensor_trace :: FunPtr ((Ptr CTHShortTensor) -> CLong)
+
+-- |p_THShortTensor_cross : Pointer to r_ a b dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cross"
+  p_THShortTensor_cross :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt -> IO ())
+
+-- |p_THShortTensor_cmax : Pointer to r t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cmax"
+  p_THShortTensor_cmax :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cmin : Pointer to r t src -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cmin"
+  p_THShortTensor_cmin :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_cmaxValue : Pointer to r t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cmaxValue"
+  p_THShortTensor_cmaxValue :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_cminValue : Pointer to r t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cminValue"
+  p_THShortTensor_cminValue :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_zeros : Pointer to r_ size -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_zeros"
+  p_THShortTensor_zeros :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHLongStorage -> IO ())
+
+-- |p_THShortTensor_zerosLike : Pointer to r_ input -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_zerosLike"
+  p_THShortTensor_zerosLike :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_ones : Pointer to r_ size -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_ones"
+  p_THShortTensor_ones :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHLongStorage -> IO ())
+
+-- |p_THShortTensor_onesLike : Pointer to r_ input -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_onesLike"
+  p_THShortTensor_onesLike :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_diag : Pointer to r_ t k -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_diag"
+  p_THShortTensor_diag :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt -> IO ())
+
+-- |p_THShortTensor_eye : Pointer to r_ n m -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_eye"
+  p_THShortTensor_eye :: FunPtr ((Ptr CTHShortTensor) -> CLong -> CLong -> IO ())
+
+-- |p_THShortTensor_arange : Pointer to r_ xmin xmax step -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_arange"
+  p_THShortTensor_arange :: FunPtr ((Ptr CTHShortTensor) -> CLong -> CLong -> CLong -> IO ())
+
+-- |p_THShortTensor_range : Pointer to r_ xmin xmax step -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_range"
+  p_THShortTensor_range :: FunPtr ((Ptr CTHShortTensor) -> CLong -> CLong -> CLong -> IO ())
+
+-- |p_THShortTensor_randperm : Pointer to r_ _generator n -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_randperm"
+  p_THShortTensor_randperm :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHGenerator -> CLong -> IO ())
+
+-- |p_THShortTensor_reshape : Pointer to r_ t size -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_reshape"
+  p_THShortTensor_reshape :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> Ptr CTHLongStorage -> IO ())
+
+-- |p_THShortTensor_sort : Pointer to rt_ ri_ t dimension descendingOrder -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_sort"
+  p_THShortTensor_sort :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_topk : Pointer to rt_ ri_ t k dim dir sorted -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_topk"
+  p_THShortTensor_topk :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHLongTensor -> (Ptr CTHShortTensor) -> CLong -> CInt -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_tril : Pointer to r_ t k -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_tril"
+  p_THShortTensor_tril :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CLong -> IO ())
+
+-- |p_THShortTensor_triu : Pointer to r_ t k -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_triu"
+  p_THShortTensor_triu :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CLong -> IO ())
+
+-- |p_THShortTensor_cat : Pointer to r_ ta tb dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_cat"
+  p_THShortTensor_cat :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt -> IO ())
+
+-- |p_THShortTensor_catArray : Pointer to result inputs numInputs dimension -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_catArray"
+  p_THShortTensor_catArray :: FunPtr ((Ptr CTHShortTensor) -> Ptr (Ptr CTHShortTensor) -> CInt -> CInt -> IO ())
+
+-- |p_THShortTensor_equal : Pointer to ta tb -> int
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_equal"
+  p_THShortTensor_equal :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CInt)
+
+-- |p_THShortTensor_ltValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_ltValue"
+  p_THShortTensor_ltValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_leValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_leValue"
+  p_THShortTensor_leValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_gtValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_gtValue"
+  p_THShortTensor_gtValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_geValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_geValue"
+  p_THShortTensor_geValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_neValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_neValue"
+  p_THShortTensor_neValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_eqValue : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_eqValue"
+  p_THShortTensor_eqValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_ltValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_ltValueT"
+  p_THShortTensor_ltValueT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_leValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_leValueT"
+  p_THShortTensor_leValueT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_gtValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_gtValueT"
+  p_THShortTensor_gtValueT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_geValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_geValueT"
+  p_THShortTensor_geValueT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_neValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_neValueT"
+  p_THShortTensor_neValueT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_eqValueT : Pointer to r_ t value -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_eqValueT"
+  p_THShortTensor_eqValueT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> CShort -> IO ())
+
+-- |p_THShortTensor_ltTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_ltTensor"
+  p_THShortTensor_ltTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_leTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_leTensor"
+  p_THShortTensor_leTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_gtTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_gtTensor"
+  p_THShortTensor_gtTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_geTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_geTensor"
+  p_THShortTensor_geTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_neTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_neTensor"
+  p_THShortTensor_neTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_eqTensor : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_eqTensor"
+  p_THShortTensor_eqTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_ltTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_ltTensorT"
+  p_THShortTensor_ltTensorT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_leTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_leTensorT"
+  p_THShortTensor_leTensorT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_gtTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_gtTensorT"
+  p_THShortTensor_gtTensorT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_geTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_geTensorT"
+  p_THShortTensor_geTensorT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_neTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_neTensorT"
+  p_THShortTensor_neTensorT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_eqTensorT : Pointer to r_ ta tb -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_eqTensorT"
+  p_THShortTensor_eqTensorT :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
+
+-- |p_THShortTensor_abs : Pointer to r_ t -> void
+foreign import ccall unsafe "THTensorMath.h &THShortTensor_abs"
+  p_THShortTensor_abs :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
