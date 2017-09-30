@@ -54,34 +54,34 @@ foreign import ccall unsafe "THBlas.h THLongBlas_ger"
 foreign import ccall unsafe "THBlas.h THLongBlas_gemm"
   c_THLongBlas_gemm :: CChar -> CChar -> CLong -> CLong -> CLong -> CLong -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> CLong -> Ptr CLong -> CLong -> IO ()
 
--- |p_THLongBlas_swap : Pointer to n x incx y incy -> void
+-- |p_THLongBlas_swap : Pointer to function n x incx y incy -> void
 foreign import ccall unsafe "THBlas.h &THLongBlas_swap"
   p_THLongBlas_swap :: FunPtr (CLong -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> IO ())
 
--- |p_THLongBlas_scal : Pointer to n a x incx -> void
+-- |p_THLongBlas_scal : Pointer to function n a x incx -> void
 foreign import ccall unsafe "THBlas.h &THLongBlas_scal"
   p_THLongBlas_scal :: FunPtr (CLong -> CLong -> Ptr CLong -> CLong -> IO ())
 
--- |p_THLongBlas_copy : Pointer to n x incx y incy -> void
+-- |p_THLongBlas_copy : Pointer to function n x incx y incy -> void
 foreign import ccall unsafe "THBlas.h &THLongBlas_copy"
   p_THLongBlas_copy :: FunPtr (CLong -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> IO ())
 
--- |p_THLongBlas_axpy : Pointer to n a x incx y incy -> void
+-- |p_THLongBlas_axpy : Pointer to function n a x incx y incy -> void
 foreign import ccall unsafe "THBlas.h &THLongBlas_axpy"
   p_THLongBlas_axpy :: FunPtr (CLong -> CLong -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> IO ())
 
--- |p_THLongBlas_dot : Pointer to n x incx y incy -> real
+-- |p_THLongBlas_dot : Pointer to function n x incx y incy -> real
 foreign import ccall unsafe "THBlas.h &THLongBlas_dot"
   p_THLongBlas_dot :: FunPtr (CLong -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> CLong)
 
--- |p_THLongBlas_gemv : Pointer to trans m n alpha a lda x incx beta y incy -> void
+-- |p_THLongBlas_gemv : Pointer to function trans m n alpha a lda x incx beta y incy -> void
 foreign import ccall unsafe "THBlas.h &THLongBlas_gemv"
   p_THLongBlas_gemv :: FunPtr (CChar -> CLong -> CLong -> CLong -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> CLong -> Ptr CLong -> CLong -> IO ())
 
--- |p_THLongBlas_ger : Pointer to m n alpha x incx y incy a lda -> void
+-- |p_THLongBlas_ger : Pointer to function m n alpha x incx y incy a lda -> void
 foreign import ccall unsafe "THBlas.h &THLongBlas_ger"
   p_THLongBlas_ger :: FunPtr (CLong -> CLong -> CLong -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> IO ())
 
--- |p_THLongBlas_gemm : Pointer to transa transb m n k alpha a lda b ldb beta c ldc -> void
+-- |p_THLongBlas_gemm : Pointer to function transa transb m n k alpha a lda b ldb beta c ldc -> void
 foreign import ccall unsafe "THBlas.h &THLongBlas_gemm"
   p_THLongBlas_gemm :: FunPtr (CChar -> CChar -> CLong -> CLong -> CLong -> CLong -> Ptr CLong -> CLong -> Ptr CLong -> CLong -> CLong -> Ptr CLong -> CLong -> IO ())

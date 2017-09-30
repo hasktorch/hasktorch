@@ -60,38 +60,38 @@ foreign import ccall unsafe "THVector.h THIntVector_copy"
 foreign import ccall unsafe "THVector.h THIntVector_vectorDispatchInit"
   c_THIntVector_vectorDispatchInit :: IO ()
 
--- |p_THIntVector_fill : Pointer to x c n -> void
+-- |p_THIntVector_fill : Pointer to function x c n -> void
 foreign import ccall unsafe "THVector.h &THIntVector_fill"
   p_THIntVector_fill :: FunPtr (Ptr CInt -> CInt -> CPtrdiff -> IO ())
 
--- |p_THIntVector_cadd : Pointer to z x y c n -> void
+-- |p_THIntVector_cadd : Pointer to function z x y c n -> void
 foreign import ccall unsafe "THVector.h &THIntVector_cadd"
   p_THIntVector_cadd :: FunPtr (Ptr CInt -> Ptr CInt -> Ptr CInt -> CInt -> CPtrdiff -> IO ())
 
--- |p_THIntVector_adds : Pointer to y x c n -> void
+-- |p_THIntVector_adds : Pointer to function y x c n -> void
 foreign import ccall unsafe "THVector.h &THIntVector_adds"
   p_THIntVector_adds :: FunPtr (Ptr CInt -> Ptr CInt -> CInt -> CPtrdiff -> IO ())
 
--- |p_THIntVector_cmul : Pointer to z x y n -> void
+-- |p_THIntVector_cmul : Pointer to function z x y n -> void
 foreign import ccall unsafe "THVector.h &THIntVector_cmul"
   p_THIntVector_cmul :: FunPtr (Ptr CInt -> Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ())
 
--- |p_THIntVector_muls : Pointer to y x c n -> void
+-- |p_THIntVector_muls : Pointer to function y x c n -> void
 foreign import ccall unsafe "THVector.h &THIntVector_muls"
   p_THIntVector_muls :: FunPtr (Ptr CInt -> Ptr CInt -> CInt -> CPtrdiff -> IO ())
 
--- |p_THIntVector_cdiv : Pointer to z x y n -> void
+-- |p_THIntVector_cdiv : Pointer to function z x y n -> void
 foreign import ccall unsafe "THVector.h &THIntVector_cdiv"
   p_THIntVector_cdiv :: FunPtr (Ptr CInt -> Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ())
 
--- |p_THIntVector_divs : Pointer to y x c n -> void
+-- |p_THIntVector_divs : Pointer to function y x c n -> void
 foreign import ccall unsafe "THVector.h &THIntVector_divs"
   p_THIntVector_divs :: FunPtr (Ptr CInt -> Ptr CInt -> CInt -> CPtrdiff -> IO ())
 
--- |p_THIntVector_copy : Pointer to y x n -> void
+-- |p_THIntVector_copy : Pointer to function y x n -> void
 foreign import ccall unsafe "THVector.h &THIntVector_copy"
   p_THIntVector_copy :: FunPtr (Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ())
 
--- |p_THIntVector_vectorDispatchInit : Pointer to  -> void
+-- |p_THIntVector_vectorDispatchInit : Pointer to function  -> void
 foreign import ccall unsafe "THVector.h &THIntVector_vectorDispatchInit"
   p_THIntVector_vectorDispatchInit :: FunPtr (IO ())

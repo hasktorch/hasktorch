@@ -138,90 +138,90 @@ foreign import ccall unsafe "THStorage.h THDoubleStorage_resize"
 foreign import ccall unsafe "THStorage.h THDoubleStorage_fill"
   c_THDoubleStorage_fill :: Ptr CTHDoubleStorage -> CDouble -> IO ()
 
--- |p_THDoubleStorage_data : Pointer to  -> real *
+-- |p_THDoubleStorage_data : Pointer to function  -> real *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_data"
   p_THDoubleStorage_data :: FunPtr (Ptr CTHDoubleStorage -> IO (Ptr CDouble))
 
--- |p_THDoubleStorage_size : Pointer to  -> ptrdiff_t
+-- |p_THDoubleStorage_size : Pointer to function  -> ptrdiff_t
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_size"
   p_THDoubleStorage_size :: FunPtr (Ptr CTHDoubleStorage -> CPtrdiff)
 
--- |p_THDoubleStorage_elementSize : Pointer to  -> size_t
+-- |p_THDoubleStorage_elementSize : Pointer to function  -> size_t
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_elementSize"
   p_THDoubleStorage_elementSize :: FunPtr (CSize)
 
--- |p_THDoubleStorage_set : Pointer to    -> void
+-- |p_THDoubleStorage_set : Pointer to function    -> void
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_set"
   p_THDoubleStorage_set :: FunPtr (Ptr CTHDoubleStorage -> CPtrdiff -> CDouble -> IO ())
 
--- |p_THDoubleStorage_get : Pointer to   -> real
+-- |p_THDoubleStorage_get : Pointer to function   -> real
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_get"
   p_THDoubleStorage_get :: FunPtr (Ptr CTHDoubleStorage -> CPtrdiff -> CDouble)
 
--- |p_THDoubleStorage_new : Pointer to  -> THStorage *
+-- |p_THDoubleStorage_new : Pointer to function  -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_new"
   p_THDoubleStorage_new :: FunPtr (IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_newWithSize : Pointer to size -> THStorage *
+-- |p_THDoubleStorage_newWithSize : Pointer to function size -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_newWithSize"
   p_THDoubleStorage_newWithSize :: FunPtr (CPtrdiff -> IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_newWithSize1 : Pointer to  -> THStorage *
+-- |p_THDoubleStorage_newWithSize1 : Pointer to function  -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_newWithSize1"
   p_THDoubleStorage_newWithSize1 :: FunPtr (CDouble -> IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_newWithSize2 : Pointer to   -> THStorage *
+-- |p_THDoubleStorage_newWithSize2 : Pointer to function   -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_newWithSize2"
   p_THDoubleStorage_newWithSize2 :: FunPtr (CDouble -> CDouble -> IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_newWithSize3 : Pointer to    -> THStorage *
+-- |p_THDoubleStorage_newWithSize3 : Pointer to function    -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_newWithSize3"
   p_THDoubleStorage_newWithSize3 :: FunPtr (CDouble -> CDouble -> CDouble -> IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_newWithSize4 : Pointer to     -> THStorage *
+-- |p_THDoubleStorage_newWithSize4 : Pointer to function     -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_newWithSize4"
   p_THDoubleStorage_newWithSize4 :: FunPtr (CDouble -> CDouble -> CDouble -> CDouble -> IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_newWithMapping : Pointer to filename size flags -> THStorage *
+-- |p_THDoubleStorage_newWithMapping : Pointer to function filename size flags -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_newWithMapping"
   p_THDoubleStorage_newWithMapping :: FunPtr (Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_newWithData : Pointer to data size -> THStorage *
+-- |p_THDoubleStorage_newWithData : Pointer to function data size -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_newWithData"
   p_THDoubleStorage_newWithData :: FunPtr (Ptr CDouble -> CPtrdiff -> IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_newWithAllocator : Pointer to size allocator allocatorContext -> THStorage *
+-- |p_THDoubleStorage_newWithAllocator : Pointer to function size allocator allocatorContext -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_newWithAllocator"
   p_THDoubleStorage_newWithAllocator :: FunPtr (CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_newWithDataAndAllocator : Pointer to data size allocator allocatorContext -> THStorage *
+-- |p_THDoubleStorage_newWithDataAndAllocator : Pointer to function data size allocator allocatorContext -> THStorage *
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_newWithDataAndAllocator"
   p_THDoubleStorage_newWithDataAndAllocator :: FunPtr (Ptr CDouble -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHDoubleStorage))
 
--- |p_THDoubleStorage_setFlag : Pointer to storage flag -> void
+-- |p_THDoubleStorage_setFlag : Pointer to function storage flag -> void
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_setFlag"
   p_THDoubleStorage_setFlag :: FunPtr (Ptr CTHDoubleStorage -> CChar -> IO ())
 
--- |p_THDoubleStorage_clearFlag : Pointer to storage flag -> void
+-- |p_THDoubleStorage_clearFlag : Pointer to function storage flag -> void
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_clearFlag"
   p_THDoubleStorage_clearFlag :: FunPtr (Ptr CTHDoubleStorage -> CChar -> IO ())
 
--- |p_THDoubleStorage_retain : Pointer to storage -> void
+-- |p_THDoubleStorage_retain : Pointer to function storage -> void
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_retain"
   p_THDoubleStorage_retain :: FunPtr (Ptr CTHDoubleStorage -> IO ())
 
--- |p_THDoubleStorage_swap : Pointer to storage1 storage2 -> void
+-- |p_THDoubleStorage_swap : Pointer to function storage1 storage2 -> void
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_swap"
   p_THDoubleStorage_swap :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ())
 
--- |p_THDoubleStorage_free : Pointer to storage -> void
+-- |p_THDoubleStorage_free : Pointer to function storage -> void
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_free"
   p_THDoubleStorage_free :: FunPtr (Ptr CTHDoubleStorage -> IO ())
 
--- |p_THDoubleStorage_resize : Pointer to storage size -> void
+-- |p_THDoubleStorage_resize : Pointer to function storage size -> void
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_resize"
   p_THDoubleStorage_resize :: FunPtr (Ptr CTHDoubleStorage -> CPtrdiff -> IO ())
 
--- |p_THDoubleStorage_fill : Pointer to storage value -> void
+-- |p_THDoubleStorage_fill : Pointer to function storage value -> void
 foreign import ccall unsafe "THStorage.h &THDoubleStorage_fill"
   p_THDoubleStorage_fill :: FunPtr (Ptr CTHDoubleStorage -> CDouble -> IO ())

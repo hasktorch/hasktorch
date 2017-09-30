@@ -60,38 +60,38 @@ foreign import ccall unsafe "THVector.h THDoubleVector_copy"
 foreign import ccall unsafe "THVector.h THDoubleVector_vectorDispatchInit"
   c_THDoubleVector_vectorDispatchInit :: IO ()
 
--- |p_THDoubleVector_fill : Pointer to x c n -> void
+-- |p_THDoubleVector_fill : Pointer to function x c n -> void
 foreign import ccall unsafe "THVector.h &THDoubleVector_fill"
   p_THDoubleVector_fill :: FunPtr (Ptr CDouble -> CDouble -> CPtrdiff -> IO ())
 
--- |p_THDoubleVector_cadd : Pointer to z x y c n -> void
+-- |p_THDoubleVector_cadd : Pointer to function z x y c n -> void
 foreign import ccall unsafe "THVector.h &THDoubleVector_cadd"
   p_THDoubleVector_cadd :: FunPtr (Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> CDouble -> CPtrdiff -> IO ())
 
--- |p_THDoubleVector_adds : Pointer to y x c n -> void
+-- |p_THDoubleVector_adds : Pointer to function y x c n -> void
 foreign import ccall unsafe "THVector.h &THDoubleVector_adds"
   p_THDoubleVector_adds :: FunPtr (Ptr CDouble -> Ptr CDouble -> CDouble -> CPtrdiff -> IO ())
 
--- |p_THDoubleVector_cmul : Pointer to z x y n -> void
+-- |p_THDoubleVector_cmul : Pointer to function z x y n -> void
 foreign import ccall unsafe "THVector.h &THDoubleVector_cmul"
   p_THDoubleVector_cmul :: FunPtr (Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
 
--- |p_THDoubleVector_muls : Pointer to y x c n -> void
+-- |p_THDoubleVector_muls : Pointer to function y x c n -> void
 foreign import ccall unsafe "THVector.h &THDoubleVector_muls"
   p_THDoubleVector_muls :: FunPtr (Ptr CDouble -> Ptr CDouble -> CDouble -> CPtrdiff -> IO ())
 
--- |p_THDoubleVector_cdiv : Pointer to z x y n -> void
+-- |p_THDoubleVector_cdiv : Pointer to function z x y n -> void
 foreign import ccall unsafe "THVector.h &THDoubleVector_cdiv"
   p_THDoubleVector_cdiv :: FunPtr (Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
 
--- |p_THDoubleVector_divs : Pointer to y x c n -> void
+-- |p_THDoubleVector_divs : Pointer to function y x c n -> void
 foreign import ccall unsafe "THVector.h &THDoubleVector_divs"
   p_THDoubleVector_divs :: FunPtr (Ptr CDouble -> Ptr CDouble -> CDouble -> CPtrdiff -> IO ())
 
--- |p_THDoubleVector_copy : Pointer to y x n -> void
+-- |p_THDoubleVector_copy : Pointer to function y x n -> void
 foreign import ccall unsafe "THVector.h &THDoubleVector_copy"
   p_THDoubleVector_copy :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
 
--- |p_THDoubleVector_vectorDispatchInit : Pointer to  -> void
+-- |p_THDoubleVector_vectorDispatchInit : Pointer to function  -> void
 foreign import ccall unsafe "THVector.h &THDoubleVector_vectorDispatchInit"
   p_THDoubleVector_vectorDispatchInit :: FunPtr (IO ())

@@ -66,42 +66,42 @@ foreign import ccall unsafe "THStorageCopy.h THShortStorage_copyDouble"
 foreign import ccall unsafe "THStorageCopy.h THShortStorage_copyHalf"
   c_THShortStorage_copyHalf :: Ptr CTHShortStorage -> Ptr CTHHalfStorage -> IO ()
 
--- |p_THShortStorage_rawCopy : Pointer to storage src -> void
+-- |p_THShortStorage_rawCopy : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_rawCopy"
   p_THShortStorage_rawCopy :: FunPtr (Ptr CTHShortStorage -> Ptr CShort -> IO ())
 
--- |p_THShortStorage_copy : Pointer to storage src -> void
+-- |p_THShortStorage_copy : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_copy"
   p_THShortStorage_copy :: FunPtr (Ptr CTHShortStorage -> Ptr CTHShortStorage -> IO ())
 
--- |p_THShortStorage_copyByte : Pointer to storage src -> void
+-- |p_THShortStorage_copyByte : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_copyByte"
   p_THShortStorage_copyByte :: FunPtr (Ptr CTHShortStorage -> Ptr CTHByteStorage -> IO ())
 
--- |p_THShortStorage_copyChar : Pointer to storage src -> void
+-- |p_THShortStorage_copyChar : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_copyChar"
   p_THShortStorage_copyChar :: FunPtr (Ptr CTHShortStorage -> Ptr CTHCharStorage -> IO ())
 
--- |p_THShortStorage_copyShort : Pointer to storage src -> void
+-- |p_THShortStorage_copyShort : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_copyShort"
   p_THShortStorage_copyShort :: FunPtr (Ptr CTHShortStorage -> Ptr CTHShortStorage -> IO ())
 
--- |p_THShortStorage_copyInt : Pointer to storage src -> void
+-- |p_THShortStorage_copyInt : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_copyInt"
   p_THShortStorage_copyInt :: FunPtr (Ptr CTHShortStorage -> Ptr CTHIntStorage -> IO ())
 
--- |p_THShortStorage_copyLong : Pointer to storage src -> void
+-- |p_THShortStorage_copyLong : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_copyLong"
   p_THShortStorage_copyLong :: FunPtr (Ptr CTHShortStorage -> Ptr CTHLongStorage -> IO ())
 
--- |p_THShortStorage_copyFloat : Pointer to storage src -> void
+-- |p_THShortStorage_copyFloat : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_copyFloat"
   p_THShortStorage_copyFloat :: FunPtr (Ptr CTHShortStorage -> Ptr CTHFloatStorage -> IO ())
 
--- |p_THShortStorage_copyDouble : Pointer to storage src -> void
+-- |p_THShortStorage_copyDouble : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_copyDouble"
   p_THShortStorage_copyDouble :: FunPtr (Ptr CTHShortStorage -> Ptr CTHDoubleStorage -> IO ())
 
--- |p_THShortStorage_copyHalf : Pointer to storage src -> void
+-- |p_THShortStorage_copyHalf : Pointer to function storage src -> void
 foreign import ccall unsafe "THStorageCopy.h &THShortStorage_copyHalf"
   p_THShortStorage_copyHalf :: FunPtr (Ptr CTHShortStorage -> Ptr CTHHalfStorage -> IO ())

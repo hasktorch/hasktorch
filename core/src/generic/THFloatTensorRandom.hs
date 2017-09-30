@@ -114,74 +114,74 @@ foreign import ccall unsafe "THTensorRandom.h THFloatTensor_multinomialAliasSetu
 foreign import ccall unsafe "THTensorRandom.h THFloatTensor_multinomialAliasDraw"
   c_THFloatTensor_multinomialAliasDraw :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> (Ptr CTHFloatTensor) -> IO ()
 
--- |p_THFloatTensor_random : Pointer to self _generator -> void
+-- |p_THFloatTensor_random : Pointer to function self _generator -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_random"
   p_THFloatTensor_random :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> IO ())
 
--- |p_THFloatTensor_clampedRandom : Pointer to self _generator min max -> void
+-- |p_THFloatTensor_clampedRandom : Pointer to function self _generator min max -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_clampedRandom"
   p_THFloatTensor_clampedRandom :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_cappedRandom : Pointer to self _generator max -> void
+-- |p_THFloatTensor_cappedRandom : Pointer to function self _generator max -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_cappedRandom"
   p_THFloatTensor_cappedRandom :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CLong -> IO ())
 
--- |p_THFloatTensor_geometric : Pointer to self _generator p -> void
+-- |p_THFloatTensor_geometric : Pointer to function self _generator p -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_geometric"
   p_THFloatTensor_geometric :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_THFloatTensor_bernoulli : Pointer to self _generator p -> void
+-- |p_THFloatTensor_bernoulli : Pointer to function self _generator p -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_bernoulli"
   p_THFloatTensor_bernoulli :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_THFloatTensor_bernoulli_FloatTensor : Pointer to self _generator p -> void
+-- |p_THFloatTensor_bernoulli_FloatTensor : Pointer to function self _generator p -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_bernoulli_FloatTensor"
   p_THFloatTensor_bernoulli_FloatTensor :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ())
 
--- |p_THFloatTensor_bernoulli_DoubleTensor : Pointer to self _generator p -> void
+-- |p_THFloatTensor_bernoulli_DoubleTensor : Pointer to function self _generator p -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_bernoulli_DoubleTensor"
   p_THFloatTensor_bernoulli_DoubleTensor :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
 
--- |p_THFloatTensor_uniform : Pointer to self _generator a b -> void
+-- |p_THFloatTensor_uniform : Pointer to function self _generator a b -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_uniform"
   p_THFloatTensor_uniform :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
 
--- |p_THFloatTensor_normal : Pointer to self _generator mean stdv -> void
+-- |p_THFloatTensor_normal : Pointer to function self _generator mean stdv -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_normal"
   p_THFloatTensor_normal :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
 
--- |p_THFloatTensor_normal_means : Pointer to self gen means stddev -> void
+-- |p_THFloatTensor_normal_means : Pointer to function self gen means stddev -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_normal_means"
   p_THFloatTensor_normal_means :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> CDouble -> IO ())
 
--- |p_THFloatTensor_normal_stddevs : Pointer to self gen mean stddevs -> void
+-- |p_THFloatTensor_normal_stddevs : Pointer to function self gen mean stddevs -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_normal_stddevs"
   p_THFloatTensor_normal_stddevs :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> (Ptr CTHFloatTensor) -> IO ())
 
--- |p_THFloatTensor_normal_means_stddevs : Pointer to self gen means stddevs -> void
+-- |p_THFloatTensor_normal_means_stddevs : Pointer to function self gen means stddevs -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_normal_means_stddevs"
   p_THFloatTensor_normal_means_stddevs :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
 
--- |p_THFloatTensor_exponential : Pointer to self _generator lambda -> void
+-- |p_THFloatTensor_exponential : Pointer to function self _generator lambda -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_exponential"
   p_THFloatTensor_exponential :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_THFloatTensor_cauchy : Pointer to self _generator median sigma -> void
+-- |p_THFloatTensor_cauchy : Pointer to function self _generator median sigma -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_cauchy"
   p_THFloatTensor_cauchy :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
 
--- |p_THFloatTensor_logNormal : Pointer to self _generator mean stdv -> void
+-- |p_THFloatTensor_logNormal : Pointer to function self _generator mean stdv -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_logNormal"
   p_THFloatTensor_logNormal :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
 
--- |p_THFloatTensor_multinomial : Pointer to self _generator prob_dist n_sample with_replacement -> void
+-- |p_THFloatTensor_multinomial : Pointer to function self _generator prob_dist n_sample with_replacement -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_multinomial"
   p_THFloatTensor_multinomial :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> CInt -> CInt -> IO ())
 
--- |p_THFloatTensor_multinomialAliasSetup : Pointer to prob_dist J q -> void
+-- |p_THFloatTensor_multinomialAliasSetup : Pointer to function prob_dist J q -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_multinomialAliasSetup"
   p_THFloatTensor_multinomialAliasSetup :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHLongTensor -> (Ptr CTHFloatTensor) -> IO ())
 
--- |p_THFloatTensor_multinomialAliasDraw : Pointer to self _generator J q -> void
+-- |p_THFloatTensor_multinomialAliasDraw : Pointer to function self _generator J q -> void
 foreign import ccall unsafe "THTensorRandom.h &THFloatTensor_multinomialAliasDraw"
   p_THFloatTensor_multinomialAliasDraw :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> (Ptr CTHFloatTensor) -> IO ())

@@ -253,7 +253,7 @@ size t =
     maxdim = (c_THDoubleTensor_nDimension t) - 1
     f x = fromIntegral (c_THDoubleTensor_size t x) :: Int
 
--- |word 2 clong
+-- |Word to CLong conversion
 w2cl :: Word -> CLong
 w2cl = fromIntegral
 
@@ -268,7 +268,7 @@ w2cl = fromIntegral
 --   where
 --     go x = c_THDoubleTensor_free x
 
--- getPtr = newForeignPtr p_THDoubleTensor_free 
+-- getPtr = newForeignPtr p_THDoubleTensor_f8ree
 -- newForeignPtr :: FinalizerPtr a -> Ptr a -> IO (ForeignPtr a)
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0

@@ -8,80 +8,111 @@ import Data.Text
 
 import CodeGenTypes
 
+makeSet = S.fromList
+
+
+
 tensorMathCases :: Map Text (Set TemplateType)
 tensorMathCases = M.fromList [
-  ("abs", S.fromList [GenShort, GenInt, GenLong, GenFloat, GenDouble]),
+  ("abs", makeSet [GenShort, GenInt, GenLong, GenFloat, GenDouble]),
 
-  ("sigmoid", S.fromList [GenFloat, GenDouble]),
-  ("log", S.fromList [GenFloat, GenDouble]),
-  ("lgamma", S.fromList [GenFloat, GenDouble]),
-  ("log1p", S.fromList [GenFloat, GenDouble]),
-  ("exp", S.fromList [GenFloat, GenDouble]),
-  ("cos", S.fromList [GenFloat, GenDouble]),
-  ("acos", S.fromList [GenFloat, GenDouble]),
-  ("cosh", S.fromList [GenFloat, GenDouble]),
-  ("sin", S.fromList [GenFloat, GenDouble]),
-  ("asin", S.fromList [GenFloat, GenDouble]),
-  ("sinh", S.fromList [GenFloat, GenDouble]),
-  ("tan", S.fromList [GenFloat, GenDouble]),
-  ("atan", S.fromList [GenFloat, GenDouble]),
-  ("atan2", S.fromList [GenFloat, GenDouble]),
-  ("tanh", S.fromList [GenFloat, GenDouble]),
-  ("pow", S.fromList [GenFloat, GenDouble]),
-  ("tpow", S.fromList [GenFloat, GenDouble]),
-  ("sqrt", S.fromList [GenFloat, GenDouble]),
-  ("rsqrt", S.fromList [GenFloat, GenDouble]),
-  ("ceil", S.fromList [GenFloat, GenDouble]),
-  ("floor", S.fromList [GenFloat, GenDouble]),
-  ("round", S.fromList [GenFloat, GenDouble]),
-  -- ("abs", S.fromList [GenFloat, GenDouble]), -- covered above
-  ("trunc", S.fromList [GenFloat, GenDouble]),
-  ("frac", S.fromList [GenFloat, GenDouble]),
-  ("lerp", S.fromList [GenFloat, GenDouble]),
-  ("mean", S.fromList [GenFloat, GenDouble]),
-  ("std", S.fromList [GenFloat, GenDouble]),
-  ("var", S.fromList [GenFloat, GenDouble]),
-  ("norm", S.fromList [GenFloat, GenDouble]),
-  ("renorm", S.fromList [GenFloat, GenDouble]),
-  ("dist", S.fromList [GenFloat, GenDouble]),
-  ("histc", S.fromList [GenFloat, GenDouble]),
-  ("bhistc", S.fromList [GenFloat, GenDouble]),
-  ("meanall", S.fromList [GenFloat, GenDouble]),
-  ("varall", S.fromList [GenFloat, GenDouble]),
-  ("stdall", S.fromList [GenFloat, GenDouble]),
-  ("normall", S.fromList [GenFloat, GenDouble]),
-  ("linspace", S.fromList [GenFloat, GenDouble]),
-  ("logspace", S.fromList [GenFloat, GenDouble]),
-  ("rand", S.fromList [GenFloat, GenDouble]),
-  ("randn", S.fromList [GenFloat, GenDouble]),
+  ("sigmoid", makeSet [GenFloat, GenDouble]),
+  ("log", makeSet [GenFloat, GenDouble]),
+  ("lgamma", makeSet [GenFloat, GenDouble]),
+  ("log1p", makeSet [GenFloat, GenDouble]),
+  ("exp", makeSet [GenFloat, GenDouble]),
+  ("cos", makeSet [GenFloat, GenDouble]),
+  ("acos", makeSet [GenFloat, GenDouble]),
+  ("cosh", makeSet [GenFloat, GenDouble]),
+  ("sin", makeSet [GenFloat, GenDouble]),
+  ("asin", makeSet [GenFloat, GenDouble]),
+  ("sinh", makeSet [GenFloat, GenDouble]),
+  ("tan", makeSet [GenFloat, GenDouble]),
+  ("atan", makeSet [GenFloat, GenDouble]),
+  ("atan2", makeSet [GenFloat, GenDouble]),
+  ("tanh", makeSet [GenFloat, GenDouble]),
+  ("pow", makeSet [GenFloat, GenDouble]),
+  ("tpow", makeSet [GenFloat, GenDouble]),
+  ("sqrt", makeSet [GenFloat, GenDouble]),
+  ("rsqrt", makeSet [GenFloat, GenDouble]),
+  ("ceil", makeSet [GenFloat, GenDouble]),
+  ("floor", makeSet [GenFloat, GenDouble]),
+  ("round", makeSet [GenFloat, GenDouble]),
+  -- ("abs", makeSet [GenFloat, GenDouble]), -- covered above
+  ("trunc", makeSet [GenFloat, GenDouble]),
+  ("frac", makeSet [GenFloat, GenDouble]),
+  ("lerp", makeSet [GenFloat, GenDouble]),
+  ("mean", makeSet [GenFloat, GenDouble]),
+  ("std", makeSet [GenFloat, GenDouble]),
+  ("var", makeSet [GenFloat, GenDouble]),
+  ("norm", makeSet [GenFloat, GenDouble]),
+  ("renorm", makeSet [GenFloat, GenDouble]),
+  ("dist", makeSet [GenFloat, GenDouble]),
+  ("histc", makeSet [GenFloat, GenDouble]),
+  ("bhistc", makeSet [GenFloat, GenDouble]),
+  ("meanall", makeSet [GenFloat, GenDouble]),
+  ("varall", makeSet [GenFloat, GenDouble]),
+  ("stdall", makeSet [GenFloat, GenDouble]),
+  ("normall", makeSet [GenFloat, GenDouble]),
+  ("linspace", makeSet [GenFloat, GenDouble]),
+  ("logspace", makeSet [GenFloat, GenDouble]),
+  ("rand", makeSet [GenFloat, GenDouble]),
+  ("randn", makeSet [GenFloat, GenDouble]),
 
-  ("logicalall", S.fromList [GenByte]),
-  ("logicalany", S.fromList [GenByte]),
+  ("logicalall", makeSet [GenByte]),
+  ("logicalany", makeSet [GenByte]),
 
   -- cinv doesn't seem to be excluded by the preprocessor, yet is not
   -- implemented for Int. TODO - file issue report?
-  ("cinv", S.fromList [GenFloat, GenDouble]),
-  ("neg", S.fromList [GenFloat, GenDouble, GenLong, GenShort, GenInt])
-
+  ("cinv", makeSet [GenFloat, GenDouble]),
+  ("neg", makeSet [GenFloat, GenDouble, GenLong, GenShort, GenInt])
   ]
 
 tensorRandomCases :: Map Text (Set TemplateType)
 tensorRandomCases = M.fromList [
-  ("uniform", S.fromList [GenFloat, GenDouble]),
-  ("normal", S.fromList [GenFloat, GenDouble]),
-  ("normal_means", S.fromList [GenFloat, GenDouble]),
-  ("normal_stddevs", S.fromList [GenFloat, GenDouble]),
-  ("normal_means_stddevs", S.fromList [GenFloat, GenDouble]),
-  ("exponential", S.fromList [GenFloat, GenDouble]),
-  ("cauchy", S.fromList [GenFloat, GenDouble]),
-  ("logNormal", S.fromList [GenFloat, GenDouble]),
-  ("multinomial", S.fromList [GenFloat, GenDouble]),
-  ("multinomialAliasSetup", S.fromList [GenFloat, GenDouble]),
-  ("multinomialAliasDraw", S.fromList [GenFloat, GenDouble]),
-
-  ("getRNGState", S.fromList [GenByte]),
-  ("setRNGState", S.fromList [GenByte])
+  ("uniform", makeSet [GenFloat, GenDouble]),
+  ("normal", makeSet [GenFloat, GenDouble]),
+  ("normal_means", makeSet [GenFloat, GenDouble]),
+  ("normal_stddevs", makeSet [GenFloat, GenDouble]),
+  ("normal_means_stddevs", makeSet [GenFloat, GenDouble]),
+  ("exponential", makeSet [GenFloat, GenDouble]),
+  ("cauchy", makeSet [GenFloat, GenDouble]),
+  ("logNormal", makeSet [GenFloat, GenDouble]),
+  ("multinomial", makeSet [GenFloat, GenDouble]),
+  ("multinomialAliasSetup", makeSet [GenFloat, GenDouble]),
+  ("multinomialAliasDraw", makeSet [GenFloat, GenDouble]),
+  ("getRNGState", makeSet [GenByte]),
+  ("setRNGState", makeSet [GenByte])
   ]
+
+
+-- TODO: check lapack bindings - not obvious from source, but there are
+-- problems loading shared library with these functions for Byte
+tensorLapackCases = M.fromList [
+  ("gesv", makeSet [GenFloat, GenDouble]),
+  ("trtrs", makeSet [GenFloat, GenDouble]),
+  ("gels", makeSet [GenFloat, GenDouble]),
+  ("syev", makeSet [GenFloat, GenDouble]),
+  ("geev", makeSet [GenFloat, GenDouble]),
+  ("gesvd", makeSet [GenFloat, GenDouble]),
+  ("gesvd2", makeSet [GenFloat, GenDouble]),
+  ("getrf", makeSet [GenFloat, GenDouble]),
+  ("getrs", makeSet [GenFloat, GenDouble]),
+  ("getri", makeSet [GenFloat, GenDouble]),
+  ("potrf", makeSet [GenFloat, GenDouble]),
+  ("potrs", makeSet [GenFloat, GenDouble]),
+  ("potri", makeSet [GenFloat, GenDouble]),
+  ("qr", makeSet [GenFloat, GenDouble]),
+  ("geqrf", makeSet [GenFloat, GenDouble]),
+  ("orgqr", makeSet [GenFloat, GenDouble]),
+  ("ormqr", makeSet [GenFloat, GenDouble]),
+  ("pstrf", makeSet [GenFloat, GenDouble]),
+  ("btrifact", makeSet [GenFloat, GenDouble]),
+  ("btrisolve", makeSet [GenFloat, GenDouble])]
+  -- ("geev", makeSet [GenFloat, GenDouble]),
+  -- ("gels", makeSet [GenFloat, GenDouble]),
+  -- ("gesv", makeSet [GenFloat, GenDouble]),
+  -- ("gesvd", makeSet [GenFloat, GenDouble])
 
 checkMath :: TemplateType -> Text -> Bool
 checkMath templateType funName = case M.lookup funName tensorMathCases of
@@ -93,12 +124,21 @@ checkRandom templateType funName = case M.lookup funName tensorRandomCases of
   Just inclusion -> S.member templateType inclusion
   Nothing -> True
 
+checkLapack :: TemplateType -> Text -> Bool
+checkLapack templateType funName = case M.lookup funName tensorLapackCases of
+  Just inclusion -> S.member templateType inclusion
+  Nothing -> True
+
+
+
 -- |Warning a function that doesn't exist will return True by default (TODO - make this safer)
 
 checkFunction :: TemplateType -> Text -> Bool
 checkFunction templateType funName =
   and [(checkMath templateType funName),
-       (checkRandom templateType funName)]
+       (checkRandom templateType funName),
+       (checkLapack templateType funName)
+       ]
 
 test = do
   print $ checkFunction GenByte "logicalany"

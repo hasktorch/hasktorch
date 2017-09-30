@@ -60,38 +60,38 @@ foreign import ccall unsafe "THLapack.h THDoubleLapack_getrs"
 foreign import ccall unsafe "THLapack.h THDoubleLapack_getri"
   c_THDoubleLapack_getri :: CInt -> Ptr CDouble -> CInt -> CIntPtr -> Ptr CDouble -> CInt -> CIntPtr -> IO ()
 
--- |p_THDoubleLapack_gesv : Pointer to n nrhs a lda ipiv b ldb info -> void
+-- |p_THDoubleLapack_gesv : Pointer to function n nrhs a lda ipiv b ldb info -> void
 foreign import ccall unsafe "THLapack.h &THDoubleLapack_gesv"
   p_THDoubleLapack_gesv :: FunPtr (CInt -> CInt -> Ptr CDouble -> CInt -> CIntPtr -> Ptr CDouble -> CInt -> CIntPtr -> IO ())
 
--- |p_THDoubleLapack_trtrs : Pointer to uplo trans diag n nrhs a lda b ldb info -> void
+-- |p_THDoubleLapack_trtrs : Pointer to function uplo trans diag n nrhs a lda b ldb info -> void
 foreign import ccall unsafe "THLapack.h &THDoubleLapack_trtrs"
   p_THDoubleLapack_trtrs :: FunPtr (CChar -> CChar -> CChar -> CInt -> CInt -> Ptr CDouble -> CInt -> Ptr CDouble -> CInt -> CIntPtr -> IO ())
 
--- |p_THDoubleLapack_gels : Pointer to trans m n nrhs a lda b ldb work lwork info -> void
+-- |p_THDoubleLapack_gels : Pointer to function trans m n nrhs a lda b ldb work lwork info -> void
 foreign import ccall unsafe "THLapack.h &THDoubleLapack_gels"
   p_THDoubleLapack_gels :: FunPtr (CChar -> CInt -> CInt -> CInt -> Ptr CDouble -> CInt -> Ptr CDouble -> CInt -> Ptr CDouble -> CInt -> CIntPtr -> IO ())
 
--- |p_THDoubleLapack_syev : Pointer to jobz uplo n a lda w work lwork info -> void
+-- |p_THDoubleLapack_syev : Pointer to function jobz uplo n a lda w work lwork info -> void
 foreign import ccall unsafe "THLapack.h &THDoubleLapack_syev"
   p_THDoubleLapack_syev :: FunPtr (CChar -> CChar -> CInt -> Ptr CDouble -> CInt -> Ptr CDouble -> Ptr CDouble -> CInt -> CIntPtr -> IO ())
 
--- |p_THDoubleLapack_geev : Pointer to jobvl jobvr n a lda wr wi vl ldvl vr ldvr work lwork info -> void
+-- |p_THDoubleLapack_geev : Pointer to function jobvl jobvr n a lda wr wi vl ldvl vr ldvr work lwork info -> void
 foreign import ccall unsafe "THLapack.h &THDoubleLapack_geev"
   p_THDoubleLapack_geev :: FunPtr (CChar -> CChar -> CInt -> Ptr CDouble -> CInt -> Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> CInt -> Ptr CDouble -> CInt -> Ptr CDouble -> CInt -> CIntPtr -> IO ())
 
--- |p_THDoubleLapack_gesvd : Pointer to jobu jobvt m n a lda s u ldu vt ldvt work lwork info -> void
+-- |p_THDoubleLapack_gesvd : Pointer to function jobu jobvt m n a lda s u ldu vt ldvt work lwork info -> void
 foreign import ccall unsafe "THLapack.h &THDoubleLapack_gesvd"
   p_THDoubleLapack_gesvd :: FunPtr (CChar -> CChar -> CInt -> CInt -> Ptr CDouble -> CInt -> Ptr CDouble -> Ptr CDouble -> CInt -> Ptr CDouble -> CInt -> Ptr CDouble -> CInt -> CIntPtr -> IO ())
 
--- |p_THDoubleLapack_getrf : Pointer to m n a lda ipiv info -> void
+-- |p_THDoubleLapack_getrf : Pointer to function m n a lda ipiv info -> void
 foreign import ccall unsafe "THLapack.h &THDoubleLapack_getrf"
   p_THDoubleLapack_getrf :: FunPtr (CInt -> CInt -> Ptr CDouble -> CInt -> CIntPtr -> CIntPtr -> IO ())
 
--- |p_THDoubleLapack_getrs : Pointer to trans n nrhs a lda ipiv b ldb info -> void
+-- |p_THDoubleLapack_getrs : Pointer to function trans n nrhs a lda ipiv b ldb info -> void
 foreign import ccall unsafe "THLapack.h &THDoubleLapack_getrs"
   p_THDoubleLapack_getrs :: FunPtr (CChar -> CInt -> CInt -> Ptr CDouble -> CInt -> CIntPtr -> Ptr CDouble -> CInt -> CIntPtr -> IO ())
 
--- |p_THDoubleLapack_getri : Pointer to n a lda ipiv work lwork info -> void
+-- |p_THDoubleLapack_getri : Pointer to function n a lda ipiv work lwork info -> void
 foreign import ccall unsafe "THLapack.h &THDoubleLapack_getri"
   p_THDoubleLapack_getri :: FunPtr (CInt -> Ptr CDouble -> CInt -> CIntPtr -> Ptr CDouble -> CInt -> CIntPtr -> IO ())

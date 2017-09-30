@@ -60,38 +60,38 @@ foreign import ccall unsafe "THVector.h THHalfVector_copy"
 foreign import ccall unsafe "THVector.h THHalfVector_vectorDispatchInit"
   c_THHalfVector_vectorDispatchInit :: IO ()
 
--- |p_THHalfVector_fill : Pointer to x c n -> void
+-- |p_THHalfVector_fill : Pointer to function x c n -> void
 foreign import ccall unsafe "THVector.h &THHalfVector_fill"
   p_THHalfVector_fill :: FunPtr (Ptr THHalf -> THHalf -> CPtrdiff -> IO ())
 
--- |p_THHalfVector_cadd : Pointer to z x y c n -> void
+-- |p_THHalfVector_cadd : Pointer to function z x y c n -> void
 foreign import ccall unsafe "THVector.h &THHalfVector_cadd"
   p_THHalfVector_cadd :: FunPtr (Ptr THHalf -> Ptr THHalf -> Ptr THHalf -> THHalf -> CPtrdiff -> IO ())
 
--- |p_THHalfVector_adds : Pointer to y x c n -> void
+-- |p_THHalfVector_adds : Pointer to function y x c n -> void
 foreign import ccall unsafe "THVector.h &THHalfVector_adds"
   p_THHalfVector_adds :: FunPtr (Ptr THHalf -> Ptr THHalf -> THHalf -> CPtrdiff -> IO ())
 
--- |p_THHalfVector_cmul : Pointer to z x y n -> void
+-- |p_THHalfVector_cmul : Pointer to function z x y n -> void
 foreign import ccall unsafe "THVector.h &THHalfVector_cmul"
   p_THHalfVector_cmul :: FunPtr (Ptr THHalf -> Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ())
 
--- |p_THHalfVector_muls : Pointer to y x c n -> void
+-- |p_THHalfVector_muls : Pointer to function y x c n -> void
 foreign import ccall unsafe "THVector.h &THHalfVector_muls"
   p_THHalfVector_muls :: FunPtr (Ptr THHalf -> Ptr THHalf -> THHalf -> CPtrdiff -> IO ())
 
--- |p_THHalfVector_cdiv : Pointer to z x y n -> void
+-- |p_THHalfVector_cdiv : Pointer to function z x y n -> void
 foreign import ccall unsafe "THVector.h &THHalfVector_cdiv"
   p_THHalfVector_cdiv :: FunPtr (Ptr THHalf -> Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ())
 
--- |p_THHalfVector_divs : Pointer to y x c n -> void
+-- |p_THHalfVector_divs : Pointer to function y x c n -> void
 foreign import ccall unsafe "THVector.h &THHalfVector_divs"
   p_THHalfVector_divs :: FunPtr (Ptr THHalf -> Ptr THHalf -> THHalf -> CPtrdiff -> IO ())
 
--- |p_THHalfVector_copy : Pointer to y x n -> void
+-- |p_THHalfVector_copy : Pointer to function y x n -> void
 foreign import ccall unsafe "THVector.h &THHalfVector_copy"
   p_THHalfVector_copy :: FunPtr (Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ())
 
--- |p_THHalfVector_vectorDispatchInit : Pointer to  -> void
+-- |p_THHalfVector_vectorDispatchInit : Pointer to function  -> void
 foreign import ccall unsafe "THVector.h &THHalfVector_vectorDispatchInit"
   p_THHalfVector_vectorDispatchInit :: FunPtr (IO ())

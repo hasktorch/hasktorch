@@ -6,7 +6,13 @@ A Haskell library for tensors and dynamic neural networks using
 *This library is in early development and is not recommended for use except by
 project contributors*
 
-## Installation Instructions
+## Setup Instructions
+
+Retrieve git submodules with
+
+```
+git submodule update --init --recursive`
+```
 
 From within the `vendor`, directory, run:
 
@@ -26,7 +32,7 @@ If everything built, you should be able to run tests successfully:
 stack test torch-tests
 ```
 
-## References and Acknowledgements
+## References
 
 - [torch internals](https://apaszke.github.io/torch-internals.html) 
 - [A Tour of PyTorch Internals (Part I)](http://pytorch.org/2017/05/11/Internals.html)

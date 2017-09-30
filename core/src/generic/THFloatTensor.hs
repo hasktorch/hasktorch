@@ -438,290 +438,290 @@ foreign import ccall unsafe "THTensor.h THFloatTensor_desc"
 foreign import ccall unsafe "THTensor.h THFloatTensor_sizeDesc"
   c_THFloatTensor_sizeDesc :: (Ptr CTHFloatTensor) -> CTHDescBuff
 
--- |p_THFloatTensor_storage : Pointer to self -> THStorage *
+-- |p_THFloatTensor_storage : Pointer to function self -> THStorage *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_storage"
   p_THFloatTensor_storage :: FunPtr ((Ptr CTHFloatTensor) -> IO (Ptr CTHFloatStorage))
 
--- |p_THFloatTensor_storageOffset : Pointer to self -> ptrdiff_t
+-- |p_THFloatTensor_storageOffset : Pointer to function self -> ptrdiff_t
 foreign import ccall unsafe "THTensor.h &THFloatTensor_storageOffset"
   p_THFloatTensor_storageOffset :: FunPtr ((Ptr CTHFloatTensor) -> CPtrdiff)
 
--- |p_THFloatTensor_nDimension : Pointer to self -> int
+-- |p_THFloatTensor_nDimension : Pointer to function self -> int
 foreign import ccall unsafe "THTensor.h &THFloatTensor_nDimension"
   p_THFloatTensor_nDimension :: FunPtr ((Ptr CTHFloatTensor) -> CInt)
 
--- |p_THFloatTensor_size : Pointer to self dim -> long
+-- |p_THFloatTensor_size : Pointer to function self dim -> long
 foreign import ccall unsafe "THTensor.h &THFloatTensor_size"
   p_THFloatTensor_size :: FunPtr ((Ptr CTHFloatTensor) -> CInt -> CLong)
 
--- |p_THFloatTensor_stride : Pointer to self dim -> long
+-- |p_THFloatTensor_stride : Pointer to function self dim -> long
 foreign import ccall unsafe "THTensor.h &THFloatTensor_stride"
   p_THFloatTensor_stride :: FunPtr ((Ptr CTHFloatTensor) -> CInt -> CLong)
 
--- |p_THFloatTensor_newSizeOf : Pointer to self -> THLongStorage *
+-- |p_THFloatTensor_newSizeOf : Pointer to function self -> THLongStorage *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newSizeOf"
   p_THFloatTensor_newSizeOf :: FunPtr ((Ptr CTHFloatTensor) -> IO (Ptr CTHLongStorage))
 
--- |p_THFloatTensor_newStrideOf : Pointer to self -> THLongStorage *
+-- |p_THFloatTensor_newStrideOf : Pointer to function self -> THLongStorage *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newStrideOf"
   p_THFloatTensor_newStrideOf :: FunPtr ((Ptr CTHFloatTensor) -> IO (Ptr CTHLongStorage))
 
--- |p_THFloatTensor_data : Pointer to self -> real *
+-- |p_THFloatTensor_data : Pointer to function self -> real *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_data"
   p_THFloatTensor_data :: FunPtr ((Ptr CTHFloatTensor) -> IO (Ptr CFloat))
 
--- |p_THFloatTensor_setFlag : Pointer to self flag -> void
+-- |p_THFloatTensor_setFlag : Pointer to function self flag -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_setFlag"
   p_THFloatTensor_setFlag :: FunPtr ((Ptr CTHFloatTensor) -> CChar -> IO ())
 
--- |p_THFloatTensor_clearFlag : Pointer to self flag -> void
+-- |p_THFloatTensor_clearFlag : Pointer to function self flag -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_clearFlag"
   p_THFloatTensor_clearFlag :: FunPtr ((Ptr CTHFloatTensor) -> CChar -> IO ())
 
--- |p_THFloatTensor_new : Pointer to  -> THTensor *
+-- |p_THFloatTensor_new : Pointer to function  -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_new"
   p_THFloatTensor_new :: FunPtr (IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithTensor : Pointer to tensor -> THTensor *
+-- |p_THFloatTensor_newWithTensor : Pointer to function tensor -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithTensor"
   p_THFloatTensor_newWithTensor :: FunPtr ((Ptr CTHFloatTensor) -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithStorage : Pointer to storage_ storageOffset_ size_ stride_ -> THTensor *
+-- |p_THFloatTensor_newWithStorage : Pointer to function storage_ storageOffset_ size_ stride_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithStorage"
   p_THFloatTensor_newWithStorage :: FunPtr (Ptr CTHFloatStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithStorage1d : Pointer to storage_ storageOffset_ size0_ stride0_ -> THTensor *
+-- |p_THFloatTensor_newWithStorage1d : Pointer to function storage_ storageOffset_ size0_ stride0_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithStorage1d"
   p_THFloatTensor_newWithStorage1d :: FunPtr (Ptr CTHFloatStorage -> CPtrdiff -> CLong -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithStorage2d : Pointer to storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> THTensor *
+-- |p_THFloatTensor_newWithStorage2d : Pointer to function storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithStorage2d"
   p_THFloatTensor_newWithStorage2d :: FunPtr (Ptr CTHFloatStorage -> CPtrdiff -> CLong -> CLong -> CLong -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithStorage3d : Pointer to storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> THTensor *
+-- |p_THFloatTensor_newWithStorage3d : Pointer to function storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithStorage3d"
   p_THFloatTensor_newWithStorage3d :: FunPtr (Ptr CTHFloatStorage -> CPtrdiff -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithStorage4d : Pointer to storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> THTensor *
+-- |p_THFloatTensor_newWithStorage4d : Pointer to function storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithStorage4d"
   p_THFloatTensor_newWithStorage4d :: FunPtr (Ptr CTHFloatStorage -> CPtrdiff -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithSize : Pointer to size_ stride_ -> THTensor *
+-- |p_THFloatTensor_newWithSize : Pointer to function size_ stride_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithSize"
   p_THFloatTensor_newWithSize :: FunPtr (Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithSize1d : Pointer to size0_ -> THTensor *
+-- |p_THFloatTensor_newWithSize1d : Pointer to function size0_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithSize1d"
   p_THFloatTensor_newWithSize1d :: FunPtr (CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithSize2d : Pointer to size0_ size1_ -> THTensor *
+-- |p_THFloatTensor_newWithSize2d : Pointer to function size0_ size1_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithSize2d"
   p_THFloatTensor_newWithSize2d :: FunPtr (CLong -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithSize3d : Pointer to size0_ size1_ size2_ -> THTensor *
+-- |p_THFloatTensor_newWithSize3d : Pointer to function size0_ size1_ size2_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithSize3d"
   p_THFloatTensor_newWithSize3d :: FunPtr (CLong -> CLong -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newWithSize4d : Pointer to size0_ size1_ size2_ size3_ -> THTensor *
+-- |p_THFloatTensor_newWithSize4d : Pointer to function size0_ size1_ size2_ size3_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newWithSize4d"
   p_THFloatTensor_newWithSize4d :: FunPtr (CLong -> CLong -> CLong -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newClone : Pointer to self -> THTensor *
+-- |p_THFloatTensor_newClone : Pointer to function self -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newClone"
   p_THFloatTensor_newClone :: FunPtr ((Ptr CTHFloatTensor) -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newContiguous : Pointer to tensor -> THTensor *
+-- |p_THFloatTensor_newContiguous : Pointer to function tensor -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newContiguous"
   p_THFloatTensor_newContiguous :: FunPtr ((Ptr CTHFloatTensor) -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newSelect : Pointer to tensor dimension_ sliceIndex_ -> THTensor *
+-- |p_THFloatTensor_newSelect : Pointer to function tensor dimension_ sliceIndex_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newSelect"
   p_THFloatTensor_newSelect :: FunPtr ((Ptr CTHFloatTensor) -> CInt -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newNarrow : Pointer to tensor dimension_ firstIndex_ size_ -> THTensor *
+-- |p_THFloatTensor_newNarrow : Pointer to function tensor dimension_ firstIndex_ size_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newNarrow"
   p_THFloatTensor_newNarrow :: FunPtr ((Ptr CTHFloatTensor) -> CInt -> CLong -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newTranspose : Pointer to tensor dimension1_ dimension2_ -> THTensor *
+-- |p_THFloatTensor_newTranspose : Pointer to function tensor dimension1_ dimension2_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newTranspose"
   p_THFloatTensor_newTranspose :: FunPtr ((Ptr CTHFloatTensor) -> CInt -> CInt -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newUnfold : Pointer to tensor dimension_ size_ step_ -> THTensor *
+-- |p_THFloatTensor_newUnfold : Pointer to function tensor dimension_ size_ step_ -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newUnfold"
   p_THFloatTensor_newUnfold :: FunPtr ((Ptr CTHFloatTensor) -> CInt -> CLong -> CLong -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newView : Pointer to tensor size -> THTensor *
+-- |p_THFloatTensor_newView : Pointer to function tensor size -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newView"
   p_THFloatTensor_newView :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_newExpand : Pointer to tensor size -> THTensor *
+-- |p_THFloatTensor_newExpand : Pointer to function tensor size -> THTensor *
 foreign import ccall unsafe "THTensor.h &THFloatTensor_newExpand"
   p_THFloatTensor_newExpand :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHFloatTensor))
 
--- |p_THFloatTensor_expand : Pointer to r tensor size -> void
+-- |p_THFloatTensor_expand : Pointer to function r tensor size -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_expand"
   p_THFloatTensor_expand :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> IO ())
 
--- |p_THFloatTensor_expandNd : Pointer to rets ops count -> void
+-- |p_THFloatTensor_expandNd : Pointer to function rets ops count -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_expandNd"
   p_THFloatTensor_expandNd :: FunPtr (Ptr (Ptr CTHFloatTensor) -> Ptr (Ptr CTHFloatTensor) -> CInt -> IO ())
 
--- |p_THFloatTensor_resize : Pointer to tensor size stride -> void
+-- |p_THFloatTensor_resize : Pointer to function tensor size stride -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_resize"
   p_THFloatTensor_resize :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ())
 
--- |p_THFloatTensor_resizeAs : Pointer to tensor src -> void
+-- |p_THFloatTensor_resizeAs : Pointer to function tensor src -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_resizeAs"
   p_THFloatTensor_resizeAs :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
 
--- |p_THFloatTensor_resizeNd : Pointer to tensor nDimension size stride -> void
+-- |p_THFloatTensor_resizeNd : Pointer to function tensor nDimension size stride -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_resizeNd"
   p_THFloatTensor_resizeNd :: FunPtr ((Ptr CTHFloatTensor) -> CInt -> Ptr CLong -> Ptr CLong -> IO ())
 
--- |p_THFloatTensor_resize1d : Pointer to tensor size0_ -> void
+-- |p_THFloatTensor_resize1d : Pointer to function tensor size0_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_resize1d"
   p_THFloatTensor_resize1d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> IO ())
 
--- |p_THFloatTensor_resize2d : Pointer to tensor size0_ size1_ -> void
+-- |p_THFloatTensor_resize2d : Pointer to function tensor size0_ size1_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_resize2d"
   p_THFloatTensor_resize2d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_resize3d : Pointer to tensor size0_ size1_ size2_ -> void
+-- |p_THFloatTensor_resize3d : Pointer to function tensor size0_ size1_ size2_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_resize3d"
   p_THFloatTensor_resize3d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_resize4d : Pointer to tensor size0_ size1_ size2_ size3_ -> void
+-- |p_THFloatTensor_resize4d : Pointer to function tensor size0_ size1_ size2_ size3_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_resize4d"
   p_THFloatTensor_resize4d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_resize5d : Pointer to tensor size0_ size1_ size2_ size3_ size4_ -> void
+-- |p_THFloatTensor_resize5d : Pointer to function tensor size0_ size1_ size2_ size3_ size4_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_resize5d"
   p_THFloatTensor_resize5d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_set : Pointer to self src -> void
+-- |p_THFloatTensor_set : Pointer to function self src -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_set"
   p_THFloatTensor_set :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
 
--- |p_THFloatTensor_setStorage : Pointer to self storage_ storageOffset_ size_ stride_ -> void
+-- |p_THFloatTensor_setStorage : Pointer to function self storage_ storageOffset_ size_ stride_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_setStorage"
   p_THFloatTensor_setStorage :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHFloatStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ())
 
--- |p_THFloatTensor_setStorageNd : Pointer to self storage_ storageOffset_ nDimension size stride -> void
+-- |p_THFloatTensor_setStorageNd : Pointer to function self storage_ storageOffset_ nDimension size stride -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_setStorageNd"
   p_THFloatTensor_setStorageNd :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHFloatStorage -> CPtrdiff -> CInt -> Ptr CLong -> Ptr CLong -> IO ())
 
--- |p_THFloatTensor_setStorage1d : Pointer to self storage_ storageOffset_ size0_ stride0_ -> void
+-- |p_THFloatTensor_setStorage1d : Pointer to function self storage_ storageOffset_ size0_ stride0_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_setStorage1d"
   p_THFloatTensor_setStorage1d :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHFloatStorage -> CPtrdiff -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_setStorage2d : Pointer to self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> void
+-- |p_THFloatTensor_setStorage2d : Pointer to function self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_setStorage2d"
   p_THFloatTensor_setStorage2d :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHFloatStorage -> CPtrdiff -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_setStorage3d : Pointer to self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> void
+-- |p_THFloatTensor_setStorage3d : Pointer to function self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_setStorage3d"
   p_THFloatTensor_setStorage3d :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHFloatStorage -> CPtrdiff -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_setStorage4d : Pointer to self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> void
+-- |p_THFloatTensor_setStorage4d : Pointer to function self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_setStorage4d"
   p_THFloatTensor_setStorage4d :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHFloatStorage -> CPtrdiff -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_narrow : Pointer to self src dimension_ firstIndex_ size_ -> void
+-- |p_THFloatTensor_narrow : Pointer to function self src dimension_ firstIndex_ size_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_narrow"
   p_THFloatTensor_narrow :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_select : Pointer to self src dimension_ sliceIndex_ -> void
+-- |p_THFloatTensor_select : Pointer to function self src dimension_ sliceIndex_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_select"
   p_THFloatTensor_select :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> CLong -> IO ())
 
--- |p_THFloatTensor_transpose : Pointer to self src dimension1_ dimension2_ -> void
+-- |p_THFloatTensor_transpose : Pointer to function self src dimension1_ dimension2_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_transpose"
   p_THFloatTensor_transpose :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> CInt -> IO ())
 
--- |p_THFloatTensor_unfold : Pointer to self src dimension_ size_ step_ -> void
+-- |p_THFloatTensor_unfold : Pointer to function self src dimension_ size_ step_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_unfold"
   p_THFloatTensor_unfold :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> CLong -> CLong -> IO ())
 
--- |p_THFloatTensor_squeeze : Pointer to self src -> void
+-- |p_THFloatTensor_squeeze : Pointer to function self src -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_squeeze"
   p_THFloatTensor_squeeze :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
 
--- |p_THFloatTensor_squeeze1d : Pointer to self src dimension_ -> void
+-- |p_THFloatTensor_squeeze1d : Pointer to function self src dimension_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_squeeze1d"
   p_THFloatTensor_squeeze1d :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> IO ())
 
--- |p_THFloatTensor_unsqueeze1d : Pointer to self src dimension_ -> void
+-- |p_THFloatTensor_unsqueeze1d : Pointer to function self src dimension_ -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_unsqueeze1d"
   p_THFloatTensor_unsqueeze1d :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt -> IO ())
 
--- |p_THFloatTensor_isContiguous : Pointer to self -> int
+-- |p_THFloatTensor_isContiguous : Pointer to function self -> int
 foreign import ccall unsafe "THTensor.h &THFloatTensor_isContiguous"
   p_THFloatTensor_isContiguous :: FunPtr ((Ptr CTHFloatTensor) -> CInt)
 
--- |p_THFloatTensor_isSameSizeAs : Pointer to self src -> int
+-- |p_THFloatTensor_isSameSizeAs : Pointer to function self src -> int
 foreign import ccall unsafe "THTensor.h &THFloatTensor_isSameSizeAs"
   p_THFloatTensor_isSameSizeAs :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt)
 
--- |p_THFloatTensor_isSetTo : Pointer to self src -> int
+-- |p_THFloatTensor_isSetTo : Pointer to function self src -> int
 foreign import ccall unsafe "THTensor.h &THFloatTensor_isSetTo"
   p_THFloatTensor_isSetTo :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> CInt)
 
--- |p_THFloatTensor_isSize : Pointer to self dims -> int
+-- |p_THFloatTensor_isSize : Pointer to function self dims -> int
 foreign import ccall unsafe "THTensor.h &THFloatTensor_isSize"
   p_THFloatTensor_isSize :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHLongStorage -> CInt)
 
--- |p_THFloatTensor_nElement : Pointer to self -> ptrdiff_t
+-- |p_THFloatTensor_nElement : Pointer to function self -> ptrdiff_t
 foreign import ccall unsafe "THTensor.h &THFloatTensor_nElement"
   p_THFloatTensor_nElement :: FunPtr ((Ptr CTHFloatTensor) -> CPtrdiff)
 
--- |p_THFloatTensor_retain : Pointer to self -> void
+-- |p_THFloatTensor_retain : Pointer to function self -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_retain"
   p_THFloatTensor_retain :: FunPtr ((Ptr CTHFloatTensor) -> IO ())
 
--- |p_THFloatTensor_free : Pointer to self -> void
+-- |p_THFloatTensor_free : Pointer to function self -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_free"
   p_THFloatTensor_free :: FunPtr ((Ptr CTHFloatTensor) -> IO ())
 
--- |p_THFloatTensor_freeCopyTo : Pointer to self dst -> void
+-- |p_THFloatTensor_freeCopyTo : Pointer to function self dst -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_freeCopyTo"
   p_THFloatTensor_freeCopyTo :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
 
--- |p_THFloatTensor_set1d : Pointer to tensor x0 value -> void
+-- |p_THFloatTensor_set1d : Pointer to function tensor x0 value -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_set1d"
   p_THFloatTensor_set1d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CFloat -> IO ())
 
--- |p_THFloatTensor_set2d : Pointer to tensor x0 x1 value -> void
+-- |p_THFloatTensor_set2d : Pointer to function tensor x0 x1 value -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_set2d"
   p_THFloatTensor_set2d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> CFloat -> IO ())
 
--- |p_THFloatTensor_set3d : Pointer to tensor x0 x1 x2 value -> void
+-- |p_THFloatTensor_set3d : Pointer to function tensor x0 x1 x2 value -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_set3d"
   p_THFloatTensor_set3d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CFloat -> IO ())
 
--- |p_THFloatTensor_set4d : Pointer to tensor x0 x1 x2 x3 value -> void
+-- |p_THFloatTensor_set4d : Pointer to function tensor x0 x1 x2 x3 value -> void
 foreign import ccall unsafe "THTensor.h &THFloatTensor_set4d"
   p_THFloatTensor_set4d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CLong -> CFloat -> IO ())
 
--- |p_THFloatTensor_get1d : Pointer to tensor x0 -> real
+-- |p_THFloatTensor_get1d : Pointer to function tensor x0 -> real
 foreign import ccall unsafe "THTensor.h &THFloatTensor_get1d"
   p_THFloatTensor_get1d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CFloat)
 
--- |p_THFloatTensor_get2d : Pointer to tensor x0 x1 -> real
+-- |p_THFloatTensor_get2d : Pointer to function tensor x0 x1 -> real
 foreign import ccall unsafe "THTensor.h &THFloatTensor_get2d"
   p_THFloatTensor_get2d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> CFloat)
 
--- |p_THFloatTensor_get3d : Pointer to tensor x0 x1 x2 -> real
+-- |p_THFloatTensor_get3d : Pointer to function tensor x0 x1 x2 -> real
 foreign import ccall unsafe "THTensor.h &THFloatTensor_get3d"
   p_THFloatTensor_get3d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CFloat)
 
--- |p_THFloatTensor_get4d : Pointer to tensor x0 x1 x2 x3 -> real
+-- |p_THFloatTensor_get4d : Pointer to function tensor x0 x1 x2 x3 -> real
 foreign import ccall unsafe "THTensor.h &THFloatTensor_get4d"
   p_THFloatTensor_get4d :: FunPtr ((Ptr CTHFloatTensor) -> CLong -> CLong -> CLong -> CLong -> CFloat)
 
--- |p_THFloatTensor_desc : Pointer to tensor -> THDescBuff
+-- |p_THFloatTensor_desc : Pointer to function tensor -> THDescBuff
 foreign import ccall unsafe "THTensor.h &THFloatTensor_desc"
   p_THFloatTensor_desc :: FunPtr ((Ptr CTHFloatTensor) -> CTHDescBuff)
 
--- |p_THFloatTensor_sizeDesc : Pointer to tensor -> THDescBuff
+-- |p_THFloatTensor_sizeDesc : Pointer to function tensor -> THDescBuff
 foreign import ccall unsafe "THTensor.h &THFloatTensor_sizeDesc"
   p_THFloatTensor_sizeDesc :: FunPtr ((Ptr CTHFloatTensor) -> CTHDescBuff)

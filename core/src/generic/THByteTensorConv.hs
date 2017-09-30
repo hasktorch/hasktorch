@@ -138,90 +138,90 @@ foreign import ccall unsafe "THTensorConv.h THByteTensor_conv3Dmul"
 foreign import ccall unsafe "THTensorConv.h THByteTensor_conv3Dcmul"
   c_THByteTensor_conv3Dcmul :: (Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ()
 
--- |p_THByteTensor_validXCorr2Dptr : Pointer to r_ alpha t_ ir ic k_ kr kc sr sc -> void
+-- |p_THByteTensor_validXCorr2Dptr : Pointer to function r_ alpha t_ ir ic k_ kr kc sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_validXCorr2Dptr"
   p_THByteTensor_validXCorr2Dptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_validConv2Dptr : Pointer to r_ alpha t_ ir ic k_ kr kc sr sc -> void
+-- |p_THByteTensor_validConv2Dptr : Pointer to function r_ alpha t_ ir ic k_ kr kc sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_validConv2Dptr"
   p_THByteTensor_validConv2Dptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_fullXCorr2Dptr : Pointer to r_ alpha t_ ir ic k_ kr kc sr sc -> void
+-- |p_THByteTensor_fullXCorr2Dptr : Pointer to function r_ alpha t_ ir ic k_ kr kc sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_fullXCorr2Dptr"
   p_THByteTensor_fullXCorr2Dptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_fullConv2Dptr : Pointer to r_ alpha t_ ir ic k_ kr kc sr sc -> void
+-- |p_THByteTensor_fullConv2Dptr : Pointer to function r_ alpha t_ ir ic k_ kr kc sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_fullConv2Dptr"
   p_THByteTensor_fullConv2Dptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_validXCorr2DRevptr : Pointer to r_ alpha t_ ir ic k_ kr kc sr sc -> void
+-- |p_THByteTensor_validXCorr2DRevptr : Pointer to function r_ alpha t_ ir ic k_ kr kc sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_validXCorr2DRevptr"
   p_THByteTensor_validXCorr2DRevptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_conv2DRevger : Pointer to r_ beta alpha t_ k_ srow scol -> void
+-- |p_THByteTensor_conv2DRevger : Pointer to function r_ beta alpha t_ k_ srow scol -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv2DRevger"
   p_THByteTensor_conv2DRevger :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_conv2DRevgerm : Pointer to r_ beta alpha t_ k_ srow scol -> void
+-- |p_THByteTensor_conv2DRevgerm : Pointer to function r_ beta alpha t_ k_ srow scol -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv2DRevgerm"
   p_THByteTensor_conv2DRevgerm :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_conv2Dger : Pointer to r_ beta alpha t_ k_ srow scol vf xc -> void
+-- |p_THByteTensor_conv2Dger : Pointer to function r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv2Dger"
   p_THByteTensor_conv2Dger :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ())
 
--- |p_THByteTensor_conv2Dmv : Pointer to r_ beta alpha t_ k_ srow scol vf xc -> void
+-- |p_THByteTensor_conv2Dmv : Pointer to function r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv2Dmv"
   p_THByteTensor_conv2Dmv :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ())
 
--- |p_THByteTensor_conv2Dmm : Pointer to r_ beta alpha t_ k_ srow scol vf xc -> void
+-- |p_THByteTensor_conv2Dmm : Pointer to function r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv2Dmm"
   p_THByteTensor_conv2Dmm :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ())
 
--- |p_THByteTensor_conv2Dmul : Pointer to r_ beta alpha t_ k_ srow scol vf xc -> void
+-- |p_THByteTensor_conv2Dmul : Pointer to function r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv2Dmul"
   p_THByteTensor_conv2Dmul :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ())
 
--- |p_THByteTensor_conv2Dcmul : Pointer to r_ beta alpha t_ k_ srow scol vf xc -> void
+-- |p_THByteTensor_conv2Dcmul : Pointer to function r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv2Dcmul"
   p_THByteTensor_conv2Dcmul :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ())
 
--- |p_THByteTensor_validXCorr3Dptr : Pointer to r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
+-- |p_THByteTensor_validXCorr3Dptr : Pointer to function r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_validXCorr3Dptr"
   p_THByteTensor_validXCorr3Dptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_validConv3Dptr : Pointer to r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
+-- |p_THByteTensor_validConv3Dptr : Pointer to function r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_validConv3Dptr"
   p_THByteTensor_validConv3Dptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_fullXCorr3Dptr : Pointer to r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
+-- |p_THByteTensor_fullXCorr3Dptr : Pointer to function r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_fullXCorr3Dptr"
   p_THByteTensor_fullXCorr3Dptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_fullConv3Dptr : Pointer to r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
+-- |p_THByteTensor_fullConv3Dptr : Pointer to function r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_fullConv3Dptr"
   p_THByteTensor_fullConv3Dptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_validXCorr3DRevptr : Pointer to r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
+-- |p_THByteTensor_validXCorr3DRevptr : Pointer to function r_ alpha t_ it ir ic k_ kt kr kc st sr sc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_validXCorr3DRevptr"
   p_THByteTensor_validXCorr3DRevptr :: FunPtr (Ptr CChar -> CChar -> Ptr CChar -> CLong -> CLong -> CLong -> Ptr CChar -> CLong -> CLong -> CLong -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_conv3DRevger : Pointer to r_ beta alpha t_ k_ sdepth srow scol -> void
+-- |p_THByteTensor_conv3DRevger : Pointer to function r_ beta alpha t_ k_ sdepth srow scol -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv3DRevger"
   p_THByteTensor_conv3DRevger :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THByteTensor_conv3Dger : Pointer to r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
+-- |p_THByteTensor_conv3Dger : Pointer to function r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv3Dger"
   p_THByteTensor_conv3Dger :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ())
 
--- |p_THByteTensor_conv3Dmv : Pointer to r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
+-- |p_THByteTensor_conv3Dmv : Pointer to function r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv3Dmv"
   p_THByteTensor_conv3Dmv :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ())
 
--- |p_THByteTensor_conv3Dmul : Pointer to r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
+-- |p_THByteTensor_conv3Dmul : Pointer to function r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv3Dmul"
   p_THByteTensor_conv3Dmul :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ())
 
--- |p_THByteTensor_conv3Dcmul : Pointer to r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
+-- |p_THByteTensor_conv3Dcmul : Pointer to function r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall unsafe "THTensorConv.h &THByteTensor_conv3Dcmul"
   p_THByteTensor_conv3Dcmul :: FunPtr ((Ptr CTHByteTensor) -> CChar -> CChar -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> CLong -> CLong -> CLong -> Ptr CChar -> Ptr CChar -> IO ())

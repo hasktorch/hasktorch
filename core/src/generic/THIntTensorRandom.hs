@@ -48,30 +48,30 @@ foreign import ccall unsafe "THTensorRandom.h THIntTensor_bernoulli_FloatTensor"
 foreign import ccall unsafe "THTensorRandom.h THIntTensor_bernoulli_DoubleTensor"
   c_THIntTensor_bernoulli_DoubleTensor :: (Ptr CTHIntTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
 
--- |p_THIntTensor_random : Pointer to self _generator -> void
+-- |p_THIntTensor_random : Pointer to function self _generator -> void
 foreign import ccall unsafe "THTensorRandom.h &THIntTensor_random"
   p_THIntTensor_random :: FunPtr ((Ptr CTHIntTensor) -> Ptr CTHGenerator -> IO ())
 
--- |p_THIntTensor_clampedRandom : Pointer to self _generator min max -> void
+-- |p_THIntTensor_clampedRandom : Pointer to function self _generator min max -> void
 foreign import ccall unsafe "THTensorRandom.h &THIntTensor_clampedRandom"
   p_THIntTensor_clampedRandom :: FunPtr ((Ptr CTHIntTensor) -> Ptr CTHGenerator -> CLong -> CLong -> IO ())
 
--- |p_THIntTensor_cappedRandom : Pointer to self _generator max -> void
+-- |p_THIntTensor_cappedRandom : Pointer to function self _generator max -> void
 foreign import ccall unsafe "THTensorRandom.h &THIntTensor_cappedRandom"
   p_THIntTensor_cappedRandom :: FunPtr ((Ptr CTHIntTensor) -> Ptr CTHGenerator -> CLong -> IO ())
 
--- |p_THIntTensor_geometric : Pointer to self _generator p -> void
+-- |p_THIntTensor_geometric : Pointer to function self _generator p -> void
 foreign import ccall unsafe "THTensorRandom.h &THIntTensor_geometric"
   p_THIntTensor_geometric :: FunPtr ((Ptr CTHIntTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_THIntTensor_bernoulli : Pointer to self _generator p -> void
+-- |p_THIntTensor_bernoulli : Pointer to function self _generator p -> void
 foreign import ccall unsafe "THTensorRandom.h &THIntTensor_bernoulli"
   p_THIntTensor_bernoulli :: FunPtr ((Ptr CTHIntTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_THIntTensor_bernoulli_FloatTensor : Pointer to self _generator p -> void
+-- |p_THIntTensor_bernoulli_FloatTensor : Pointer to function self _generator p -> void
 foreign import ccall unsafe "THTensorRandom.h &THIntTensor_bernoulli_FloatTensor"
   p_THIntTensor_bernoulli_FloatTensor :: FunPtr ((Ptr CTHIntTensor) -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ())
 
--- |p_THIntTensor_bernoulli_DoubleTensor : Pointer to self _generator p -> void
+-- |p_THIntTensor_bernoulli_DoubleTensor : Pointer to function self _generator p -> void
 foreign import ccall unsafe "THTensorRandom.h &THIntTensor_bernoulli_DoubleTensor"
   p_THIntTensor_bernoulli_DoubleTensor :: FunPtr ((Ptr CTHIntTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())

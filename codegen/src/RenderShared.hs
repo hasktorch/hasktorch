@@ -375,7 +375,7 @@ renderFunSig headerFile modTypeTemplate (name, retType, args) =
 renderFunPtrSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunPtrSig headerFile modTypeTemplate (name, retType, args) =
   (
-   "-- |p_" <> name <> " : Pointer to "
+   "-- |p_" <> name <> " : Pointer to function "
    <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType) <> "\n"
    <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " &" <> name <> "\"\n"
    <> "  p_" <> name <> " :: FunPtr ("

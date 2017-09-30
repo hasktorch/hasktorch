@@ -678,450 +678,450 @@ foreign import ccall unsafe "THTensorMath.h THLongTensor_eqTensorT"
 foreign import ccall unsafe "THTensorMath.h THLongTensor_abs"
   c_THLongTensor_abs :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
 
--- |p_THLongTensor_fill : Pointer to r_ value -> void
+-- |p_THLongTensor_fill : Pointer to function r_ value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_fill"
   p_THLongTensor_fill :: FunPtr ((Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_zero : Pointer to r_ -> void
+-- |p_THLongTensor_zero : Pointer to function r_ -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_zero"
   p_THLongTensor_zero :: FunPtr ((Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_maskedFill : Pointer to tensor mask value -> void
+-- |p_THLongTensor_maskedFill : Pointer to function tensor mask value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_maskedFill"
   p_THLongTensor_maskedFill :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHByteTensor -> CLong -> IO ())
 
--- |p_THLongTensor_maskedCopy : Pointer to tensor mask src -> void
+-- |p_THLongTensor_maskedCopy : Pointer to function tensor mask src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_maskedCopy"
   p_THLongTensor_maskedCopy :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_maskedSelect : Pointer to tensor src mask -> void
+-- |p_THLongTensor_maskedSelect : Pointer to function tensor src mask -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_maskedSelect"
   p_THLongTensor_maskedSelect :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> Ptr CTHByteTensor -> IO ())
 
--- |p_THLongTensor_nonzero : Pointer to subscript tensor -> void
+-- |p_THLongTensor_nonzero : Pointer to function subscript tensor -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_nonzero"
   p_THLongTensor_nonzero :: FunPtr (Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_indexSelect : Pointer to tensor src dim index -> void
+-- |p_THLongTensor_indexSelect : Pointer to function tensor src dim index -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_indexSelect"
   p_THLongTensor_indexSelect :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> Ptr CTHLongTensor -> IO ())
 
--- |p_THLongTensor_indexCopy : Pointer to tensor dim index src -> void
+-- |p_THLongTensor_indexCopy : Pointer to function tensor dim index src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_indexCopy"
   p_THLongTensor_indexCopy :: FunPtr ((Ptr CTHLongTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_indexAdd : Pointer to tensor dim index src -> void
+-- |p_THLongTensor_indexAdd : Pointer to function tensor dim index src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_indexAdd"
   p_THLongTensor_indexAdd :: FunPtr ((Ptr CTHLongTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_indexFill : Pointer to tensor dim index val -> void
+-- |p_THLongTensor_indexFill : Pointer to function tensor dim index val -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_indexFill"
   p_THLongTensor_indexFill :: FunPtr ((Ptr CTHLongTensor) -> CInt -> Ptr CTHLongTensor -> CLong -> IO ())
 
--- |p_THLongTensor_gather : Pointer to tensor src dim index -> void
+-- |p_THLongTensor_gather : Pointer to function tensor src dim index -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_gather"
   p_THLongTensor_gather :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> Ptr CTHLongTensor -> IO ())
 
--- |p_THLongTensor_scatter : Pointer to tensor dim index src -> void
+-- |p_THLongTensor_scatter : Pointer to function tensor dim index src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_scatter"
   p_THLongTensor_scatter :: FunPtr ((Ptr CTHLongTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_scatterAdd : Pointer to tensor dim index src -> void
+-- |p_THLongTensor_scatterAdd : Pointer to function tensor dim index src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_scatterAdd"
   p_THLongTensor_scatterAdd :: FunPtr ((Ptr CTHLongTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_scatterFill : Pointer to tensor dim index val -> void
+-- |p_THLongTensor_scatterFill : Pointer to function tensor dim index val -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_scatterFill"
   p_THLongTensor_scatterFill :: FunPtr ((Ptr CTHLongTensor) -> CInt -> Ptr CTHLongTensor -> CLong -> IO ())
 
--- |p_THLongTensor_dot : Pointer to t src -> accreal
+-- |p_THLongTensor_dot : Pointer to function t src -> accreal
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_dot"
   p_THLongTensor_dot :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong)
 
--- |p_THLongTensor_minall : Pointer to t -> real
+-- |p_THLongTensor_minall : Pointer to function t -> real
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_minall"
   p_THLongTensor_minall :: FunPtr ((Ptr CTHLongTensor) -> CLong)
 
--- |p_THLongTensor_maxall : Pointer to t -> real
+-- |p_THLongTensor_maxall : Pointer to function t -> real
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_maxall"
   p_THLongTensor_maxall :: FunPtr ((Ptr CTHLongTensor) -> CLong)
 
--- |p_THLongTensor_medianall : Pointer to t -> real
+-- |p_THLongTensor_medianall : Pointer to function t -> real
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_medianall"
   p_THLongTensor_medianall :: FunPtr ((Ptr CTHLongTensor) -> CLong)
 
--- |p_THLongTensor_sumall : Pointer to t -> accreal
+-- |p_THLongTensor_sumall : Pointer to function t -> accreal
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_sumall"
   p_THLongTensor_sumall :: FunPtr ((Ptr CTHLongTensor) -> CLong)
 
--- |p_THLongTensor_prodall : Pointer to t -> accreal
+-- |p_THLongTensor_prodall : Pointer to function t -> accreal
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_prodall"
   p_THLongTensor_prodall :: FunPtr ((Ptr CTHLongTensor) -> CLong)
 
--- |p_THLongTensor_neg : Pointer to self src -> void
+-- |p_THLongTensor_neg : Pointer to function self src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_neg"
   p_THLongTensor_neg :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_add : Pointer to r_ t value -> void
+-- |p_THLongTensor_add : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_add"
   p_THLongTensor_add :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_sub : Pointer to self src value -> void
+-- |p_THLongTensor_sub : Pointer to function self src value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_sub"
   p_THLongTensor_sub :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_mul : Pointer to r_ t value -> void
+-- |p_THLongTensor_mul : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_mul"
   p_THLongTensor_mul :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_div : Pointer to r_ t value -> void
+-- |p_THLongTensor_div : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_div"
   p_THLongTensor_div :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_lshift : Pointer to r_ t value -> void
+-- |p_THLongTensor_lshift : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_lshift"
   p_THLongTensor_lshift :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_rshift : Pointer to r_ t value -> void
+-- |p_THLongTensor_rshift : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_rshift"
   p_THLongTensor_rshift :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_fmod : Pointer to r_ t value -> void
+-- |p_THLongTensor_fmod : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_fmod"
   p_THLongTensor_fmod :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_remainder : Pointer to r_ t value -> void
+-- |p_THLongTensor_remainder : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_remainder"
   p_THLongTensor_remainder :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_clamp : Pointer to r_ t min_value max_value -> void
+-- |p_THLongTensor_clamp : Pointer to function r_ t min_value max_value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_clamp"
   p_THLongTensor_clamp :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> CLong -> IO ())
 
--- |p_THLongTensor_bitand : Pointer to r_ t value -> void
+-- |p_THLongTensor_bitand : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_bitand"
   p_THLongTensor_bitand :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_bitor : Pointer to r_ t value -> void
+-- |p_THLongTensor_bitor : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_bitor"
   p_THLongTensor_bitor :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_bitxor : Pointer to r_ t value -> void
+-- |p_THLongTensor_bitxor : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_bitxor"
   p_THLongTensor_bitxor :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_cadd : Pointer to r_ t value src -> void
+-- |p_THLongTensor_cadd : Pointer to function r_ t value src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cadd"
   p_THLongTensor_cadd :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_csub : Pointer to self src1 value src2 -> void
+-- |p_THLongTensor_csub : Pointer to function self src1 value src2 -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_csub"
   p_THLongTensor_csub :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cmul : Pointer to r_ t src -> void
+-- |p_THLongTensor_cmul : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cmul"
   p_THLongTensor_cmul :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cpow : Pointer to r_ t src -> void
+-- |p_THLongTensor_cpow : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cpow"
   p_THLongTensor_cpow :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cdiv : Pointer to r_ t src -> void
+-- |p_THLongTensor_cdiv : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cdiv"
   p_THLongTensor_cdiv :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_clshift : Pointer to r_ t src -> void
+-- |p_THLongTensor_clshift : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_clshift"
   p_THLongTensor_clshift :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_crshift : Pointer to r_ t src -> void
+-- |p_THLongTensor_crshift : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_crshift"
   p_THLongTensor_crshift :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cfmod : Pointer to r_ t src -> void
+-- |p_THLongTensor_cfmod : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cfmod"
   p_THLongTensor_cfmod :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cremainder : Pointer to r_ t src -> void
+-- |p_THLongTensor_cremainder : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cremainder"
   p_THLongTensor_cremainder :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cbitand : Pointer to r_ t src -> void
+-- |p_THLongTensor_cbitand : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cbitand"
   p_THLongTensor_cbitand :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cbitor : Pointer to r_ t src -> void
+-- |p_THLongTensor_cbitor : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cbitor"
   p_THLongTensor_cbitor :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cbitxor : Pointer to r_ t src -> void
+-- |p_THLongTensor_cbitxor : Pointer to function r_ t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cbitxor"
   p_THLongTensor_cbitxor :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_addcmul : Pointer to r_ t value src1 src2 -> void
+-- |p_THLongTensor_addcmul : Pointer to function r_ t value src1 src2 -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_addcmul"
   p_THLongTensor_addcmul :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_addcdiv : Pointer to r_ t value src1 src2 -> void
+-- |p_THLongTensor_addcdiv : Pointer to function r_ t value src1 src2 -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_addcdiv"
   p_THLongTensor_addcdiv :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_addmv : Pointer to r_ beta t alpha mat vec -> void
+-- |p_THLongTensor_addmv : Pointer to function r_ beta t alpha mat vec -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_addmv"
   p_THLongTensor_addmv :: FunPtr ((Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_addmm : Pointer to r_ beta t alpha mat1 mat2 -> void
+-- |p_THLongTensor_addmm : Pointer to function r_ beta t alpha mat1 mat2 -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_addmm"
   p_THLongTensor_addmm :: FunPtr ((Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_addr : Pointer to r_ beta t alpha vec1 vec2 -> void
+-- |p_THLongTensor_addr : Pointer to function r_ beta t alpha vec1 vec2 -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_addr"
   p_THLongTensor_addr :: FunPtr ((Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_addbmm : Pointer to r_ beta t alpha batch1 batch2 -> void
+-- |p_THLongTensor_addbmm : Pointer to function r_ beta t alpha batch1 batch2 -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_addbmm"
   p_THLongTensor_addbmm :: FunPtr ((Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_baddbmm : Pointer to r_ beta t alpha batch1 batch2 -> void
+-- |p_THLongTensor_baddbmm : Pointer to function r_ beta t alpha batch1 batch2 -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_baddbmm"
   p_THLongTensor_baddbmm :: FunPtr ((Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> CLong -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_match : Pointer to r_ m1 m2 gain -> void
+-- |p_THLongTensor_match : Pointer to function r_ m1 m2 gain -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_match"
   p_THLongTensor_match :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_numel : Pointer to t -> ptrdiff_t
+-- |p_THLongTensor_numel : Pointer to function t -> ptrdiff_t
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_numel"
   p_THLongTensor_numel :: FunPtr ((Ptr CTHLongTensor) -> CPtrdiff)
 
--- |p_THLongTensor_max : Pointer to values_ indices_ t dimension keepdim -> void
+-- |p_THLongTensor_max : Pointer to function values_ indices_ t dimension keepdim -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_max"
   p_THLongTensor_max :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_min : Pointer to values_ indices_ t dimension keepdim -> void
+-- |p_THLongTensor_min : Pointer to function values_ indices_ t dimension keepdim -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_min"
   p_THLongTensor_min :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_kthvalue : Pointer to values_ indices_ t k dimension keepdim -> void
+-- |p_THLongTensor_kthvalue : Pointer to function values_ indices_ t k dimension keepdim -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_kthvalue"
   p_THLongTensor_kthvalue :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> CLong -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_mode : Pointer to values_ indices_ t dimension keepdim -> void
+-- |p_THLongTensor_mode : Pointer to function values_ indices_ t dimension keepdim -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_mode"
   p_THLongTensor_mode :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_median : Pointer to values_ indices_ t dimension keepdim -> void
+-- |p_THLongTensor_median : Pointer to function values_ indices_ t dimension keepdim -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_median"
   p_THLongTensor_median :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_sum : Pointer to r_ t dimension keepdim -> void
+-- |p_THLongTensor_sum : Pointer to function r_ t dimension keepdim -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_sum"
   p_THLongTensor_sum :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_prod : Pointer to r_ t dimension keepdim -> void
+-- |p_THLongTensor_prod : Pointer to function r_ t dimension keepdim -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_prod"
   p_THLongTensor_prod :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_cumsum : Pointer to r_ t dimension -> void
+-- |p_THLongTensor_cumsum : Pointer to function r_ t dimension -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cumsum"
   p_THLongTensor_cumsum :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> IO ())
 
--- |p_THLongTensor_cumprod : Pointer to r_ t dimension -> void
+-- |p_THLongTensor_cumprod : Pointer to function r_ t dimension -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cumprod"
   p_THLongTensor_cumprod :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> IO ())
 
--- |p_THLongTensor_sign : Pointer to r_ t -> void
+-- |p_THLongTensor_sign : Pointer to function r_ t -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_sign"
   p_THLongTensor_sign :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_trace : Pointer to t -> accreal
+-- |p_THLongTensor_trace : Pointer to function t -> accreal
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_trace"
   p_THLongTensor_trace :: FunPtr ((Ptr CTHLongTensor) -> CLong)
 
--- |p_THLongTensor_cross : Pointer to r_ a b dimension -> void
+-- |p_THLongTensor_cross : Pointer to function r_ a b dimension -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cross"
   p_THLongTensor_cross :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> IO ())
 
--- |p_THLongTensor_cmax : Pointer to r t src -> void
+-- |p_THLongTensor_cmax : Pointer to function r t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cmax"
   p_THLongTensor_cmax :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cmin : Pointer to r t src -> void
+-- |p_THLongTensor_cmin : Pointer to function r t src -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cmin"
   p_THLongTensor_cmin :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_cmaxValue : Pointer to r t value -> void
+-- |p_THLongTensor_cmaxValue : Pointer to function r t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cmaxValue"
   p_THLongTensor_cmaxValue :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_cminValue : Pointer to r t value -> void
+-- |p_THLongTensor_cminValue : Pointer to function r t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cminValue"
   p_THLongTensor_cminValue :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_zeros : Pointer to r_ size -> void
+-- |p_THLongTensor_zeros : Pointer to function r_ size -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_zeros"
   p_THLongTensor_zeros :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> IO ())
 
--- |p_THLongTensor_zerosLike : Pointer to r_ input -> void
+-- |p_THLongTensor_zerosLike : Pointer to function r_ input -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_zerosLike"
   p_THLongTensor_zerosLike :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_ones : Pointer to r_ size -> void
+-- |p_THLongTensor_ones : Pointer to function r_ size -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_ones"
   p_THLongTensor_ones :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> IO ())
 
--- |p_THLongTensor_onesLike : Pointer to r_ input -> void
+-- |p_THLongTensor_onesLike : Pointer to function r_ input -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_onesLike"
   p_THLongTensor_onesLike :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_diag : Pointer to r_ t k -> void
+-- |p_THLongTensor_diag : Pointer to function r_ t k -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_diag"
   p_THLongTensor_diag :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> IO ())
 
--- |p_THLongTensor_eye : Pointer to r_ n m -> void
+-- |p_THLongTensor_eye : Pointer to function r_ n m -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_eye"
   p_THLongTensor_eye :: FunPtr ((Ptr CTHLongTensor) -> CLong -> CLong -> IO ())
 
--- |p_THLongTensor_arange : Pointer to r_ xmin xmax step -> void
+-- |p_THLongTensor_arange : Pointer to function r_ xmin xmax step -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_arange"
   p_THLongTensor_arange :: FunPtr ((Ptr CTHLongTensor) -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THLongTensor_range : Pointer to r_ xmin xmax step -> void
+-- |p_THLongTensor_range : Pointer to function r_ xmin xmax step -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_range"
   p_THLongTensor_range :: FunPtr ((Ptr CTHLongTensor) -> CLong -> CLong -> CLong -> IO ())
 
--- |p_THLongTensor_randperm : Pointer to r_ _generator n -> void
+-- |p_THLongTensor_randperm : Pointer to function r_ _generator n -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_randperm"
   p_THLongTensor_randperm :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHGenerator -> CLong -> IO ())
 
--- |p_THLongTensor_reshape : Pointer to r_ t size -> void
+-- |p_THLongTensor_reshape : Pointer to function r_ t size -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_reshape"
   p_THLongTensor_reshape :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> IO ())
 
--- |p_THLongTensor_sort : Pointer to rt_ ri_ t dimension descendingOrder -> void
+-- |p_THLongTensor_sort : Pointer to function rt_ ri_ t dimension descendingOrder -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_sort"
   p_THLongTensor_sort :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_topk : Pointer to rt_ ri_ t k dim dir sorted -> void
+-- |p_THLongTensor_topk : Pointer to function rt_ ri_ t k dim dir sorted -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_topk"
   p_THLongTensor_topk :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongTensor -> (Ptr CTHLongTensor) -> CLong -> CInt -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_tril : Pointer to r_ t k -> void
+-- |p_THLongTensor_tril : Pointer to function r_ t k -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_tril"
   p_THLongTensor_tril :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_triu : Pointer to r_ t k -> void
+-- |p_THLongTensor_triu : Pointer to function r_ t k -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_triu"
   p_THLongTensor_triu :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_cat : Pointer to r_ ta tb dimension -> void
+-- |p_THLongTensor_cat : Pointer to function r_ ta tb dimension -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_cat"
   p_THLongTensor_cat :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> IO ())
 
--- |p_THLongTensor_catArray : Pointer to result inputs numInputs dimension -> void
+-- |p_THLongTensor_catArray : Pointer to function result inputs numInputs dimension -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_catArray"
   p_THLongTensor_catArray :: FunPtr ((Ptr CTHLongTensor) -> Ptr (Ptr CTHLongTensor) -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_equal : Pointer to ta tb -> int
+-- |p_THLongTensor_equal : Pointer to function ta tb -> int
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_equal"
   p_THLongTensor_equal :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt)
 
--- |p_THLongTensor_ltValue : Pointer to r_ t value -> void
+-- |p_THLongTensor_ltValue : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_ltValue"
   p_THLongTensor_ltValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_leValue : Pointer to r_ t value -> void
+-- |p_THLongTensor_leValue : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_leValue"
   p_THLongTensor_leValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_gtValue : Pointer to r_ t value -> void
+-- |p_THLongTensor_gtValue : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_gtValue"
   p_THLongTensor_gtValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_geValue : Pointer to r_ t value -> void
+-- |p_THLongTensor_geValue : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_geValue"
   p_THLongTensor_geValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_neValue : Pointer to r_ t value -> void
+-- |p_THLongTensor_neValue : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_neValue"
   p_THLongTensor_neValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_eqValue : Pointer to r_ t value -> void
+-- |p_THLongTensor_eqValue : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_eqValue"
   p_THLongTensor_eqValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_ltValueT : Pointer to r_ t value -> void
+-- |p_THLongTensor_ltValueT : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_ltValueT"
   p_THLongTensor_ltValueT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_leValueT : Pointer to r_ t value -> void
+-- |p_THLongTensor_leValueT : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_leValueT"
   p_THLongTensor_leValueT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_gtValueT : Pointer to r_ t value -> void
+-- |p_THLongTensor_gtValueT : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_gtValueT"
   p_THLongTensor_gtValueT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_geValueT : Pointer to r_ t value -> void
+-- |p_THLongTensor_geValueT : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_geValueT"
   p_THLongTensor_geValueT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_neValueT : Pointer to r_ t value -> void
+-- |p_THLongTensor_neValueT : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_neValueT"
   p_THLongTensor_neValueT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_eqValueT : Pointer to r_ t value -> void
+-- |p_THLongTensor_eqValueT : Pointer to function r_ t value -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_eqValueT"
   p_THLongTensor_eqValueT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CLong -> IO ())
 
--- |p_THLongTensor_ltTensor : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_ltTensor : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_ltTensor"
   p_THLongTensor_ltTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_leTensor : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_leTensor : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_leTensor"
   p_THLongTensor_leTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_gtTensor : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_gtTensor : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_gtTensor"
   p_THLongTensor_gtTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_geTensor : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_geTensor : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_geTensor"
   p_THLongTensor_geTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_neTensor : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_neTensor : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_neTensor"
   p_THLongTensor_neTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_eqTensor : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_eqTensor : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_eqTensor"
   p_THLongTensor_eqTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_ltTensorT : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_ltTensorT : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_ltTensorT"
   p_THLongTensor_ltTensorT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_leTensorT : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_leTensorT : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_leTensorT"
   p_THLongTensor_leTensorT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_gtTensorT : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_gtTensorT : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_gtTensorT"
   p_THLongTensor_gtTensorT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_geTensorT : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_geTensorT : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_geTensorT"
   p_THLongTensor_geTensorT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_neTensorT : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_neTensorT : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_neTensorT"
   p_THLongTensor_neTensorT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_eqTensorT : Pointer to r_ ta tb -> void
+-- |p_THLongTensor_eqTensorT : Pointer to function r_ ta tb -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_eqTensorT"
   p_THLongTensor_eqTensorT :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
 
--- |p_THLongTensor_abs : Pointer to r_ t -> void
+-- |p_THLongTensor_abs : Pointer to function r_ t -> void
 foreign import ccall unsafe "THTensorMath.h &THLongTensor_abs"
   p_THLongTensor_abs :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
