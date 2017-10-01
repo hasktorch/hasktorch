@@ -26,6 +26,7 @@ test:
     - stack test torch-tests
     - stack exec codegen-generic
     - stack exec codegen-concrete
+    - stack exec codegen-managed
     - stack exec display-test
     - stack exec memory-test
     - stack exec autograd
