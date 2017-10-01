@@ -108,6 +108,15 @@ prodAll tensor = apply0_ tProdAll tensor
   where
     tProdAll t = realToFrac $ c_THDoubleTensor_prodall t
 
+meanAll :: TensorDouble_ -> Double
+meanAll tensor = apply0_ tMeanAll tensor
+  where
+    tMeanAll t = realToFrac $ c_THDoubleTensor_meanall t
+
+-- ----------------------------------------
+-- Tensor to Tensor transformation
+-- ----------------------------------------
+
 -- |Wrapper to apply tensor -> tensor non-mutating operation
 apply0Tensor op resDim t = unsafePerformIO $ do
   let res = tensorNew_ resDim
@@ -119,10 +128,25 @@ neg tensor = apply0_ tNeg tensor
   where
     tNeg t = apply0Tensor c_THDoubleTensor_neg (tdDim tensor) t
 
+abs :: TensorDouble_ -> TensorDouble_
+abs tensor = apply0_ tAbs tensor
+  where
+    tAbs t = apply0Tensor c_THDoubleTensor_abs (tdDim tensor) t
+
 sigmoid :: TensorDouble_ -> TensorDouble_
 sigmoid tensor = apply0_ tSigmoid tensor
   where
     tSigmoid t = apply0Tensor c_THDoubleTensor_sigmoid (tdDim tensor) t
+
+logT :: TensorDouble_ -> TensorDouble_
+logT tensor = apply0_ tLog tensor
+  where
+    tLog t = apply0Tensor c_THDoubleTensor_log (tdDim tensor) t
+
+lgamma :: TensorDouble_ -> TensorDouble_
+lgamma tensor = apply0_ tLgamma tensor
+  where
+    tLgamma t = apply0Tensor c_THDoubleTensor_lgamma (tdDim tensor) t
 
 -- ----------------------------------------
 -- Tensor fill operations
