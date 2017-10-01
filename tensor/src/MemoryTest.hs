@@ -26,7 +26,7 @@ memoryTestLarge =
   memoryTest (D4 200 200 200 200) 1000000 -- 12.8 GB x 1M = 12M GB
 
 memoryTestSmall =
-  memoryTest (D4 100 100 100 7) 150 -- 50 MB x 150 = 7.5 GB
+  memoryTest (D4 100 100 100 7) 300 -- 50 MB x 300 = 15 GB
 
 -- |Confirm that memory is deallocated (works)
 main = memoryTestSmall

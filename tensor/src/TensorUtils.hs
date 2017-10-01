@@ -13,6 +13,7 @@ import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
 import TensorTypes
+
 import THDoubleTensor
 import THDoubleTensorMath
 import THTypes
@@ -67,3 +68,7 @@ showLim x = showGFloat (Just 2) x ""
 -- |Word to CLong conversion
 w2cl :: Word -> CLong
 w2cl = fromIntegral
+
+-- |Display memory managed tensor
+disp_ tensor =
+  (withForeignPtr(tdTensor tensor) disp)
