@@ -64,6 +64,12 @@ initialSeed gen = unsafePerformIO $ do
   initial <- applyGen c_THRandom_initialSeed gen
   pure (fromIntegral initial)
 
+type Arg2DoubleFun = Ptr CTHGenerator -> CDouble -> CDouble -> CDouble
+type Arg1DoubleFun = Ptr CTHGenerator -> CDouble -> CDouble
+type Arg1IntFun = Ptr CTHGenerator -> CDouble -> CInt
+
+apply2Double :: RandGen -> Double -> Double -> Arg2DoubleFun
+             -> IO Double
 apply2Double gen arg1 arg2 cFun = do
   value <- applyGen fun gen
   pure (realToFrac value)
@@ -72,6 +78,8 @@ apply2Double gen arg1 arg2 cFun = do
     arg2C = realToFrac arg2
     fun = (flip . flip cFun) arg1C arg2C
 
+apply1Double :: RandGen -> Double -> Arg1DoubleFun
+             -> IO Double
 apply1Double gen arg1 cFun = do
   value <- applyGen fun gen
   pure (realToFrac value)
@@ -79,6 +87,8 @@ apply1Double gen arg1 cFun = do
     arg1C = realToFrac arg1
     fun = (flip cFun) arg1C
 
+apply1Int :: RandGen -> Double -> Arg1IntFun
+          -> IO Int
 apply1Int gen arg1 cFun = do
   value <- applyGen fun gen
   pure (fromIntegral value)
