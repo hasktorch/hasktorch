@@ -19,10 +19,8 @@ module TensorRandom (
 import Foreign
 import Foreign.C.Types
 import Foreign.Ptr
-import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
-                           newForeignPtr )
+import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
-import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
 import TensorRaw
@@ -37,41 +35,93 @@ data RandGen = RandGen {
   rng :: !(ForeignPtr CTHGenerator)
   } deriving (Eq, Show)
 
-newRNG :: RandGen
-newRNG = unsafePerformIO $ do
+applyGen :: (Ptr CTHGenerator -> a) -> RandGen -> IO (a)
+applyGen operation gen = do
+  withForeignPtr (rng gen) (\g -> pure $ operation g)
+
+newRNG :: IO RandGen
+newRNG = do
   newPtr <- c_THGenerator_new
   fPtr <- newForeignPtr p_THGenerator_free newPtr
   pure $ RandGen fPtr
 
-seed :: RandGen -> Int
-seed = undefined
+seed :: RandGen -> IO Int
+seed gen = do
+  value <- applyGen c_THRandom_seed gen
+  pure (fromIntegral value)
 
+-- |TODO - this doesn't seem to set the seed as intended based on output from
+-- seed/initialSeed
 manualSeed :: RandGen -> Int -> IO ()
-manualSeed = undefined
+manualSeed gen seedVal = do
+  newContext <- applyGen ((flip c_THRandom_manualSeed) valC) gen
+  newContext
+  where
+    valC = (fromIntegral seedVal) :: CLong
 
 initialSeed :: RandGen -> Int
-initialSeed = undefined
+initialSeed gen = unsafePerformIO $ do
+  initial <- applyGen c_THRandom_initialSeed gen
+  pure (fromIntegral initial)
 
-random :: RandGen -> Int
-random = undefined
+apply2Double gen arg1 arg2 cFun = do
+  value <- applyGen fun gen
+  pure (realToFrac value)
+  where
+    arg1C = realToFrac arg1
+    arg2C = realToFrac arg2
+    fun = (flip . flip cFun) arg1C arg2C
 
-uniform :: RandGen -> Double -> Double -> Double
-uniform = undefined
+apply1Double gen arg1 cFun = do
+  value <- applyGen fun gen
+  pure (realToFrac value)
+  where
+    arg1C = realToFrac arg1
+    fun = (flip cFun) arg1C
 
-normal :: RandGen -> Double -> Double -> Double
-normal = undefined
+apply1Int gen arg1 cFun = do
+  value <- applyGen fun gen
+  pure (fromIntegral value)
+  where
+    arg1C = realToFrac arg1
+    fun = (flip cFun) arg1C
 
-exponential :: RandGen -> Double -> Double
-exponential = undefined
+random :: RandGen -> IO Int
+random gen = do
+  value <- applyGen c_THRandom_random gen
+  pure ((fromIntegral value) :: Int)
 
-cauchy :: RandGen -> Double -> Double -> Double
-cauchy = undefined
+uniform :: RandGen -> Double -> Double -> IO Double
+uniform gen lower upper = apply2Double gen lower upper c_THRandom_uniform
 
-logNormal :: RandGen -> Double -> Double -> Double
-logNormal = undefined
+normal :: RandGen -> Double -> Double -> IO Double
+normal gen mean stdev = apply2Double gen mean stdev c_THRandom_normal
 
-geometric :: RandGen -> Double -> Int
-geometric = undefined
+exponential :: RandGen -> Double -> IO Double
+exponential gen lambda = apply1Double gen lambda c_THRandom_exponential
 
-bernoulli :: RandGen -> Double -> Int
-bernoulli = undefined
+cauchy :: RandGen -> Double -> Double -> IO Double
+cauchy gen med sigma = apply2Double gen med sigma c_THRandom_cauchy
+
+logNormal :: RandGen -> Double -> Double -> IO Double
+logNormal gen mean stdev = apply2Double gen mean stdev c_THRandom_logNormal
+
+geometric :: RandGen -> Double -> IO Int
+geometric gen p = apply1Int gen p c_THRandom_geometric
+
+bernoulli :: RandGen -> Double -> IO Int
+bernoulli gen p = apply1Int gen p c_THRandom_bernoulli
+
+test = do
+  foo <- newRNG
+  manualSeed foo 332323401
+  val1 <- normal foo 0.0 1000.0
+  val2 <- normal foo 0.0 1000.0
+  print val1
+  print val2
+  print (val1 /= val2)
+  manualSeed foo 332323401
+  manualSeed foo 332323401
+  val3 <- normal foo 0.0 1000.0
+  print val3
+  print (val1 == val3)
