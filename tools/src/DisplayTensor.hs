@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ForeignFunctionInterface#-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 -- Pretty printing of low level tensor representations
 -- approximately
@@ -18,6 +18,8 @@ import THDoubleTensor
 import THDoubleTensorMath
 import TorchTensor
 import THDoubleTensorRandom
+
+main = undefined
 
 -- tensorStr tensor = undefined
 --   where
