@@ -129,8 +129,6 @@ checkLapack templateType funName = case M.lookup funName tensorLapackCases of
   Just inclusion -> S.member templateType inclusion
   Nothing -> True
 
-
-
 -- |Warning a function that doesn't exist will return True by default (TODO - make this safer)
 
 checkFunction :: TemplateType -> Text -> Bool
