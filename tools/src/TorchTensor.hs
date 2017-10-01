@@ -12,7 +12,6 @@ module TorchTensor (
   (#>),
   size,
   tensorNew,
-  tensorNew_,
   ) where
 
 import Data.Maybe  (fromJust)
@@ -72,18 +71,6 @@ data TensorDouble_ = TensorDouble_ {
   tdTensor :: !(ForeignPtr CTHDoubleTensor)
   } deriving (Eq, Show)
 
--- -- |test garbage collected tensor
--- gcPtr = do
---   nptr <- c_THDoubleTensor_newWithSize1d 10
---   fptr <- newForeignPtr p_THDoubleTensor_free nptr
---   pure $ TensorDouble_ fptr
-
--- test = do
---   mapM_ (\_ -> do
---             td <- gcPtr
---             withForeignPtr (tdTensor td) disp
---         ) [0..100]
-
 -- |apply a tensor transforming function to a tensor
 apply ::
   (TensorDouble -> TensorDouble -> IO ())
@@ -130,46 +117,6 @@ nrows tensor = (size tensor) !! 0
 
 -- |number of cols of a tensor (unsafe)
 ncols tensor = (size tensor) !! 1
-
--- initialize values tensor = do
---   [(r, c) |
---     x <- [1..(nrows tensor)],
---     y <- [1..(ncols tensor)]]
---   mapM_ ((r, c) -> c_THDoubleTensor_set2d
---                    (fromIntegral r)
---                    (fromIntegral c)
---   where
---     idx = product . size $ tensor
-
--- str :: Ptr CTHDoubleTensor -> Text
--- str tensor
---   | (length sz) == 0 = "Empty Tensor"
---   | (length sz) == 1 =
---       let indexes = [ fromIntegral idx :: CLong
---                     | idx <- [0..(sz !! 0 - 1)] ] in
---         ("[ " <>
---          foldr (\idx -> (show $ c_THDoubleTensor_get1d tensor idx) <> " ")
---         indexes
---       putStrLn "]"
---   | (length sz) == 2 = do
---       let pairs = [ ((fromIntegral r) :: CLong,
---                      (fromIntegral c) :: CLong)
---                   | r <- [0..(sz !! 0 - 1)], c <- [0..(sz !! 1 - 1)] ]
---       ("[ " :: Text)
---       mapM_ (\(r, c) -> do
---                 let val = c_THDoubleTensor_get2d tensor r c
---                 if c == fromIntegral (sz !! 1) - 1
---                   then do
---                   putStrLn (((show val) ++ " ]") :: String)
---                   putStr (if (fromIntegral r :: Int) < (sz !! 0 - 1)
---                           then "[ " :: String
---                           else "")
---                   else
---                   putStr $ ((show val) ++ " " :: String)
---             ) pairs
---   | otherwise = putStrLn "Can't print this yet."
---   where
---     sz = size tensor
 
 -- |Show a real value with limited precision (convenience function)
 showLim :: RealFloat a => a -> String
@@ -221,24 +168,6 @@ size t =
 -- |Word to CLong conversion
 w2cl :: Word -> CLong
 w2cl = fromIntegral
-
--- |Create a new (double) tensor of specified dimensions and fill it with 0
-tensorNew_ :: TensorDim Word -> Double -> TensorDouble_
-tensorNew_ dims value = unsafePerformIO $ do
-  newPtr <- go dims
-  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
-  withForeignPtr fPtr fill0
-  pure $ TensorDouble_ fPtr
-  where
-    wrap ptr = newForeignPtr p_THDoubleTensor_free ptr
-    go D0 = c_THDoubleTensor_new
-    go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
-    go (D2 d1 d2) = c_THDoubleTensor_newWithSize2d
-                    (w2cl d1) (w2cl d2)
-    go (D3 d1 d2 d3) = c_THDoubleTensor_newWithSize3d
-                       (w2cl d1) (w2cl d2) (w2cl d3)
-    go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
-                          (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
 -- |Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor

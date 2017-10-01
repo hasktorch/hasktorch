@@ -1,1 +1,1 @@
-# Bindings to core TH library
+# Raw bindings to core TorcH (TH) library

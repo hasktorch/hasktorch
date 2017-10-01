@@ -19,50 +19,14 @@ import THDoubleTensorMath
 import TorchTensor
 import THDoubleTensorRandom
 
-data PrintOptions = PrintOptions {
-  precision :: Int,
-  threshold :: Int,
-  edgeitems :: Int,
-  linewidth :: Int
-  }
-
-defaultPrintOptions = PrintOptions {
-  precision = 4,
-  threshold = 1000,
-  edgeitems = 3,
-  linewidth = 80
-  }
-
-tensorStr tensor = undefined
-  where
-    n = edgeitems defaultPrintOptions
-    sz = size tensor
-    has_hdots = last sz > 2 * n
-    has_vdots = (head . drop 1 . reverse $ sz) > 2 * n
-    print_full_mat = not has_hdots && not has_vdots
-    -- what to do for formatter ?
-    -- print_dots = product >= threshold defaultPrintOptions
-
-testData = do
-  t1 <- fromJust $ tensorNew [2,5]
-  c_THDoubleTensor_fill t1 3.0
-  disp t1
-  c_THDoubleTensor_free t1
-  putStrLn ""
-
-  t1 <- fromJust $ tensorNew [5, 3]
-  c_THDoubleTensor_fill t1 8.0
-  disp t1
-  c_THDoubleTensor_free t1
-  putStrLn ""
-
-  t1 <- fromJust $ tensorNew [6]
-  c_THDoubleTensor_fill t1 5.0
-  disp t1
-  c_THDoubleTensor_free t1
-
-main = do
-  testData
-  putStrLn "Done"
+-- tensorStr tensor = undefined
+--   where
+--     n = edgeitems defaultPrintOptions
+--     sz = size tensor
+--     has_hdots = last sz > 2 * n
+--     has_vdots = (head . drop 1 . reverse $ sz) > 2 * n
+--     print_full_mat = not has_hdots && not has_vdots
+--     -- what to do for formatter ?
+--     -- print_dots = product >= threshold defaultPrintOptions
 
 
