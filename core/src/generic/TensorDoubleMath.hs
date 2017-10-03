@@ -25,6 +25,7 @@ module TensorDoubleMath (
   cadd,
   csub,
   cmul,
+  cpow,
   cdiv,
 
   neg,
@@ -196,8 +197,12 @@ lgamma tensor = apply0_ tLgamma tensor
     tLgamma t = apply0Tensor c_THDoubleTensor_lgamma (tdDim tensor) t
 
 -- ----------------------------------------
--- c*
+-- c* cadd, cmul, cdiv, cpow, ...
 -- ----------------------------------------
+
+-- TODO : refactor withForeignPointer wrapping below
+-- apply2 :: (CTHTensorDouble ) TensorDouble_ -> TensorDouble -> TensorDouble
+-- apply2 
 
 -- cadd = z <- y + scalar * x, z value discarded
 -- allocate r_ for the user instead of taking it as an argument
@@ -246,6 +251,21 @@ cmul t src = unsafePerformIO $ do
     )
   pure r_
 
+cpow :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cpow t src = unsafePerformIO $ do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src)
+              (\srcPtr ->
+                  c_THDoubleTensor_cpow rPtr tPtr srcPtr
+              )
+         )
+    )
+  pure r_
+
 cdiv :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
 cdiv t src = unsafePerformIO $ do
   let r_ = tensorNew_ (tdDim t)
@@ -260,8 +280,6 @@ cdiv t src = unsafePerformIO $ do
          )
     )
   pure r_
-
-
 
 
 -- ----------------------------------------

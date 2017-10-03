@@ -12,16 +12,9 @@ import Data.Maybe (fromJust)
 import Foreign.C.Types
 import Foreign.Ptr
 
--- import THDoubleTensor
--- import THDoubleTensorMath
--- import THDoubleTensorRandom
--- import THRandom
--- import THStorage
--- import THTypes
-
-import Tensor
+import TensorDouble
 import TensorRaw
-import TensorRandom
+import Random
 import TensorTypes
 
 data Weights = W {
