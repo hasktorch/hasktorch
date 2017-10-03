@@ -1,6 +1,12 @@
 module TensorTests where
 
-import Tensor
+import TensorRaw
+import THDoubleTensorMath
+
+import TensorDouble
+import TensorDoubleMath
+import TensorUtils
+import TensorTypes
 
 -- |basic test of garbage collected tensor
 testGCTensor = do
@@ -16,3 +22,21 @@ testOps = do
   disp_ $ neg $ addConst (tensorNew_ (D2 2 2)) 3
   disp_ $ sigmoid $ neg $ addConst (tensorNew_ (D2 2 2)) 3
   disp_ $ sigmoid $ addConst (tensorNew_ (D2 2 2)) 3
+
+  let foo = fillCopy_ 3.0 $ tensorNew_ (D1 5)
+  print $ 3.0 * 3.0 * 5
+  print $ dot foo foo
+
+  disp_ $ (tensorNew_ (D1 5)) ^+ 2.0
+  disp_ $ ((tensorNew_ (D1 5)) ^+ 2.0) ^/ 4.0
+
+rawTest = do
+  x <- tensorRaw (D1 5) 2.0
+  y <- tensorRaw (D1 5) 3.0
+  z <- tensorRaw (D1 5) 4.0
+  disp x
+
+  -- cadd = z <- y + scalar * x, z value discarded
+  print $ 2.0 * 4.4 + 3.0
+  c_THDoubleTensor_cadd z y 4.4 x
+  disp z

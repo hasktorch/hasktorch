@@ -13,9 +13,9 @@ cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:     Tensor
-                     , TensorMath
-                     , TensorRandom
+  exposed-modules:     TensorDouble
+                     , TensorDoubleMath
+                     , Random
                      , TensorRaw
                      , TensorTypes
                      , TensorUtils
@@ -28,8 +28,8 @@ library
 executable memory-test
   default-language:    Haskell2010
   main-is:             MemoryTest.hs
-  other-modules:       Tensor
-                     , TensorMath
+  other-modules:       TensorDouble
+                     , TensorDoubleMath
                      , TensorRaw
                      , TensorTypes
                      , TensorUtils

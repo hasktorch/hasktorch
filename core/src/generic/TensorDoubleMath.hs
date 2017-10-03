@@ -8,6 +8,13 @@ module TensorDoubleMath (
   mulConst,
   divConst,
 
+  (^+),
+  (^-),
+  (^*),
+  (^/),
+
+  dot,
+
   minAll,
   maxAll,
   medianAll,
@@ -91,6 +98,24 @@ divConst mtx val = apply1_ tDiv mtx val
   where
     tDiv r_ t = c_THDoubleTensor_div r_ t (realToFrac val)
 
+(^+) = addConst
+(^-) = subConst
+(^*) = mulConst
+(^/) = divConst
+
+-- ----------------------------------------
+-- Linear algebra
+-- ----------------------------------------
+
+dot :: TensorDouble_ -> TensorDouble_ -> Double
+dot t src = realToFrac $ unsafePerformIO $ do
+  withForeignPtr (tdTensor t)
+    (\tPtr -> withForeignPtr (tdTensor src)
+      (\srcPtr ->
+          pure $ c_THDoubleTensor_dot tPtr srcPtr
+      )
+    )
+
 -- ----------------------------------------
 -- Collapse to constant operations
 -- ----------------------------------------
@@ -164,6 +189,13 @@ lgamma :: TensorDouble_ -> TensorDouble_
 lgamma tensor = apply0_ tLgamma tensor
   where
     tLgamma t = apply0Tensor c_THDoubleTensor_lgamma (tdDim tensor) t
+
+-- ----------------------------------------
+-- c*
+-- ----------------------------------------
+
+-- TH_API void THTensor_(cadd)(THTensor *r_, THTensor *t, real value, THTensor *src);
+
 
 -- ----------------------------------------
 -- Matrix-vector

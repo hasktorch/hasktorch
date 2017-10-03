@@ -1,5 +1,6 @@
 module TensorUtils (
   disp,
+  disp_,
   w2cl
   ) where
 
@@ -17,6 +18,9 @@ import TensorTypes
 import THDoubleTensor
 import THDoubleTensorMath
 import THTypes
+
+import TensorDouble
+import TensorDoubleMath
 
 -- |displaying tensor values
 disp :: Ptr CTHDoubleTensor -> IO ()
@@ -53,6 +57,10 @@ disp tensor
   where
     sz = size tensor
 
+-- |Display memory managed tensor
+disp_ tensor =
+  (withForeignPtr(tdTensor tensor) disp)
+
 -- |Dimensions of a tensor as a list
 size :: (Ptr CTHDoubleTensor) -> [Int]
 size t =
@@ -68,7 +76,3 @@ showLim x = showGFloat (Just 2) x ""
 -- |Word to CLong conversion
 w2cl :: Word -> CLong
 w2cl = fromIntegral
-
--- |Display memory managed tensor
-disp_ tensor =
-  (withForeignPtr(tdTensor tensor) disp)

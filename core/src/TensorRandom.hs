@@ -1,4 +1,4 @@
-module TensorRandom (
+module Random (
   newRNG,
   seed,
   manualSeed,

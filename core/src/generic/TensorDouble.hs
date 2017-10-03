@@ -18,13 +18,14 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import TensorRaw
 import TensorTypes
-import TensorUtils
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
 import THDoubleLapack
 
 wrap tensor = TensorDouble_ <$> (newForeignPtr p_THDoubleTensor_free tensor)
+
+w2cl = fromIntegral
 
 get_ loc tensor =
    (withForeignPtr(tdTensor tensor) (\t ->

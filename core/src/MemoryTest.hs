@@ -1,6 +1,7 @@
 module Main where
 
-import Tensor
+import TensorDouble
+
 import TensorTypes
 
 -- |Iteration - allocate a tensor, print a value, allocate another tensor... etc.
