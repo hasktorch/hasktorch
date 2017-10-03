@@ -22,6 +22,11 @@ module TensorDoubleMath (
   prodAll,
   meanAll,
 
+  cadd,
+  csub,
+  cmul,
+  cdiv,
+
   neg,
   absT,
   sigmoid,
@@ -194,7 +199,69 @@ lgamma tensor = apply0_ tLgamma tensor
 -- c*
 -- ----------------------------------------
 
--- TH_API void THTensor_(cadd)(THTensor *r_, THTensor *t, real value, THTensor *src);
+-- cadd = z <- y + scalar * x, z value discarded
+-- allocate r_ for the user instead of taking it as an argument
+cadd :: TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_
+cadd t scale src = unsafePerformIO $ do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src)
+              (\srcPtr ->
+                  c_THDoubleTensor_cadd rPtr tPtr (realToFrac scale) srcPtr
+              )
+         )
+    )
+  pure r_
+
+csub :: TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_
+csub t scale src = unsafePerformIO $ do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src)
+              (\srcPtr ->
+                  c_THDoubleTensor_csub rPtr tPtr (realToFrac scale) srcPtr
+              )
+         )
+    )
+  pure r_
+
+cmul :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cmul t src = unsafePerformIO $ do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src)
+              (\srcPtr ->
+                  c_THDoubleTensor_cmul rPtr tPtr srcPtr
+              )
+         )
+    )
+  pure r_
+
+cdiv :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cdiv t src = unsafePerformIO $ do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src)
+              (\srcPtr ->
+                  c_THDoubleTensor_cdiv rPtr tPtr srcPtr
+              )
+         )
+    )
+  pure r_
+
+
 
 
 -- ----------------------------------------

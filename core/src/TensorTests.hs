@@ -40,3 +40,9 @@ rawTest = do
   print $ 2.0 * 4.4 + 3.0
   c_THDoubleTensor_cadd z y 4.4 x
   disp z
+
+testCadd = do
+  let foo = fillCopy_ 5.0 $ tensorNew_ (D1 5)
+  let bar = fillCopy_ 2.0 $ tensorNew_ (D1 5)
+  print $ 5 + 3 * 2
+  disp_ $ cadd foo 3.0 bar
