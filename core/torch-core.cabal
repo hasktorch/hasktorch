@@ -19,7 +19,7 @@ library
                      , TensorRaw
                      , TensorTypes
                      , TensorUtils
-  hs-source-dirs:      src
+  hs-source-dirs:      src, src/generic
   build-depends:       base >= 4.7 && < 5
                      , torch-raw
                      , torch-interface
@@ -33,7 +33,7 @@ executable memory-test
                      , TensorRaw
                      , TensorTypes
                      , TensorUtils
-  hs-source-dirs:      src
+  hs-source-dirs:      src, src/generic
   build-depends:       base >= 4.7 && < 5
                      , torch-raw
                      , torch-interface

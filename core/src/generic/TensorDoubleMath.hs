@@ -1,4 +1,4 @@
-module TensorMath (
+module TensorDoubleMath (
 
   fillCopy_,
   fillMutate_,
@@ -28,7 +28,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 import System.IO.Unsafe (unsafePerformIO)
 
-import Tensor
+import TensorDouble
 import TensorRaw
 import TensorTypes
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ForeignFunctionInterface#-}
 
-module Tensor (
+module TensorDouble (
   get_,
   tensorNew_
   )
