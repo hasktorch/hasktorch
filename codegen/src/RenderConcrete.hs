@@ -14,7 +14,7 @@ import ConditionalCases
 import RenderShared
 import Text.Show.Pretty
 
-outDirConcrete = "./output/core/src/" :: Text
+outDirConcrete = "./output/raw/src/" :: Text
 
 -- TODO re-factor to unify w/ parseFile
 parseFileConcrete :: [Char] -> IO [THFunction]

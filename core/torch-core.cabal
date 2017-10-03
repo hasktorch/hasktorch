@@ -1,114 +1,42 @@
 name:                torch-core
 version:             0.1.0.0
 synopsis:            Torch for tensors and dynamic neural networks in Haskell
-description:         core C bindings
+description:         higher level tensor interface
 homepage:            https://github.com/austinvhuang/hasktorch#readme
 license:             BSD3
 author:              Austin Huang
 maintainer:          
 copyright:           
-category:            
+category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:     
-                       THByteTensor
-                     , THDoubleTensor
-                     , THFloatTensor
-                     -- , THHalfTensor
-                     , THIntTensor
-                     , THLongTensor
-                     , THShortTensor
-
-                     , THByteStorage
-                     , THDoubleStorage
-                     , THFloatStorage
-                     -- , THHalfStorage
-                     , THIntStorage
-                     , THLongStorage
-                     , THShortStorage
-
-                     , THByteStorageCopy
-                     , THDoubleStorageCopy
-                     , THFloatStorageCopy
-                     -- , THHalfStorageCopy
-                     , THIntStorageCopy
-                     , THLongStorageCopy
-                     , THShortStorageCopy
-
-                     , THByteTensorMath
-                     , THDoubleTensorMath
-                     , THFloatTensorMath
-                     -- , THHalfTensorMath
-                     , THIntTensorMath
-                     , THLongTensorMath
-                     , THShortTensorMath
-
-                     , THByteTensorRandom
-                     , THDoubleTensorRandom
-                     , THFloatTensorRandom
-                     -- , THHalfTensorRandom
-                     , THIntTensorRandom
-                     , THLongTensorRandom
-                     , THShortTensorRandom
-
-                     , THByteBlas
-                     , THDoubleBlas
-                     , THFloatBlas
-                     -- , THHalfBlas
-                     , THIntBlas
-                     , THLongBlas
-                     , THShortBlas
-
-                     -- TODO: why are pos def functions not included in TH_API
-                     , THByteLapack
-                     , THDoubleLapack
-                     , THFloatLapack
-                     -- , THHalfLapack
-                     , THIntLapack
-                     , THLongLapack
-                     , THShortLapack
-
-                     , THByteTensorConv
-                     , THDoubleTensorConv
-                     , THFloatTensorConv
-                     -- , THHalfTensorConv
-                     , THIntTensorConv
-                     , THLongTensorConv
-                     , THShortTensorConv
-
-                     , THByteTensorCopy
-                     , THDoubleTensorCopy
-                     , THFloatTensorCopy
-                     -- , THHalfTensorCopy
-                     , THIntTensorCopy
-                     , THLongTensorCopy
-                     , THShortTensorCopy
-
-                     , THByteVector
-                     , THDoubleVector
-                     , THFloatVector
-                     -- , THHalfVector
-                     , THIntVector
-                     , THLongVector
-                     , THShortVector
-
-                     , THFile
-                     , THDiskFile
-                     , THLogAdd
-                     , THMemoryFile
-                     , THStorage
-                     , THRandom
-                     , THSize
-
-  hs-source-dirs:      src, src/generic
+  exposed-modules:     Tensor
+                     , TensorMath
+                     , TensorRandom
+                     , TensorRaw
+                     , TensorTypes
+                     , TensorUtils
+  hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
+                     , torch-raw
                      , torch-interface
-                     , hspec >= 2.4.4
                      , text >= 1.2.2.2
+
+executable memory-test
   default-language:    Haskell2010
+  main-is:             MemoryTest.hs
+  other-modules:       Tensor
+                     , TensorMath
+                     , TensorRaw
+                     , TensorTypes
+                     , TensorUtils
+  hs-source-dirs:      src
+  build-depends:       base >= 4.7 && < 5
+                     , torch-raw
+                     , torch-interface
 
 source-repository head
   type:     git

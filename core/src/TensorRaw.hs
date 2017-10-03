@@ -4,7 +4,7 @@ module TensorRaw (
   fillRaw0,
   randInitRaw,
   randInitRawTest,
-  tensorRaw_
+  tensorRaw
   ) where
 
 import Data.Maybe (fromJust)
@@ -73,7 +73,7 @@ dispRaw tensor
 -- |randomly initialize a tensor with uniform random values from a range
 -- TODO - finish implementation to handle sizes correctly
 randInitRaw gen dims lower upper = do
-  let t = tensorRaw_ dims 0.0
+  t <- tensorRaw dims 0.0
   c_THDoubleTensor_uniform t gen lower upper
   pure t
 
@@ -82,8 +82,9 @@ randInitRawTest = do
   mapM_ (\_ -> dispRaw =<< (randInitRaw gen (D2 2 2) (-1.0) 3.0)) [0..10]
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
-tensorRaw_ :: TensorDim Word -> Double -> Ptr CTHDoubleTensor
-tensorRaw_ dims value = unsafePerformIO $ do
+-- safe version
+tensorRaw :: TensorDim Word -> Double -> IO TensorDoubleRaw
+tensorRaw dims value = do
   newPtr <- go dims
   -- fillPtr <- fill0 newPtr
   fillRaw value newPtr
@@ -97,6 +98,7 @@ tensorRaw_ dims value = unsafePerformIO $ do
                        (w2cl d1) (w2cl d2) (w2cl d3)
     go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
                           (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+
 
 -- |apply a tensor transforming function to a tensor
 applyRaw ::
@@ -129,8 +131,8 @@ fillRaw0 :: TensorDoubleRaw -> IO (TensorDoubleRaw)
 fillRaw0 tensor = fillRaw 0.0 tensor >> pure tensor
 
 testRaw = do
-  let tmp = tensorRaw_ (D1 5) 25.0
+  tmp <- tensorRaw (D1 5) 25.0
   dispRaw tmp
-  t2 <- invlogit $ tensorRaw_ (D1 5) 25.0
+  t2 <- invlogit =<< tensorRaw (D1 5) 25.0
   dispRaw t2
   dispRaw tmp

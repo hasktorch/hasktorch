@@ -18,6 +18,7 @@ library
   build-depends:       base >= 4.7 && < 5
                      , hmatrix >= 0.18.1.0
                      , torch-core
+                     , torch-raw
                      , torch-interface
                      , text >= 1.2.2.2
 
@@ -30,6 +31,7 @@ executable autograd
   build-depends:       base >= 4.7 && < 5
                      , torch-core
                      , torch-interface
+                     , torch-raw
                      , torch-tools
                      , hspec >= 2.4.4
                      , text >= 1.2.2.2

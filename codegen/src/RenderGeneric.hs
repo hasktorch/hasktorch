@@ -24,7 +24,7 @@ import CodeGenTypes
 import ConditionalCases
 import RenderShared
 
-outDirGeneric = "./output/core/src/generic/" :: Text
+outDirGeneric = "./output/raw/src/generic/" :: Text
 
 genericFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 genericFiles =

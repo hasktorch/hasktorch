@@ -20,7 +20,7 @@ t2list t = do
 
 t2vector = vector . t2list
 
-test1 = do
-  vec <- fromJust $ tensorNew [3]
-  c_THDoubleTensor_fill vec 2.0
-  print $ t2vector vec
+-- test1 = do
+--   vec <- fromJust $ tensorNew [3]
+--   c_THDoubleTensor_fill vec 2.0
+--   print $ t2vector vec

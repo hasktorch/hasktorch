@@ -1,1 +1,2 @@
-# Raw bindings to core TorcH (TH) library
+Higher-level interface to basic tensor operations, including memory/resource
+management via foreign pointers.

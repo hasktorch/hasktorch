@@ -1,4 +1,4 @@
 #!/bin/bash
 
-rsync -arv ./core/src/*.hs ../core/src/
-rsync -arv ./core/src/generic/*.hs ../core/src/generic/
+rsync -arv ./raw/src/*.hs ../raw/src/
+rsync -arv ./raw/src/generic/*.hs ../raw/src/generic/

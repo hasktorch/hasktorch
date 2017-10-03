@@ -27,6 +27,6 @@ Test-Suite test-torch
   build-depends:       base >= 4.7 && < 5
                      , torch-core
                      , torch-interface
-                     , torch-tensor
+                     , torch-raw
                      , torch-tools
                      , hspec >= 2.4.4
