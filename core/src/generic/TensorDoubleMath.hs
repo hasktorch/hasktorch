@@ -22,17 +22,33 @@ module TensorDoubleMath (
   prodAll,
   meanAll,
 
+  neg,
+  absT,
+  sigmoid,
+  logT,
+  lgamma,
+
   cadd,
   csub,
   cmul,
   cpow,
   cdiv,
+  clshift,
+  crshift,
+  cfmod,
+  cremainder,
+  cbitand,
+  cbitor,
+  cbitxor,
+  addcmul,
+  addcdiv,
+  addmv,
+  addmm,
+  addbmm,
+  baddbmm,
+  match,
 
-  neg,
-  absT,
-  sigmoid,
-  logT,
-  lgamma
+  (#>)
 
   ) where
 
@@ -217,6 +233,10 @@ swap1 fun a b c d = fun b c a d
 -- c is applied at position 2, type 2 is arg3
 -- d is applied at position 4, type 4 is arg 4
 
+swap2 fun a b c d e = fun b c a d e
+
+swap3 fun a b c d e f = fun c a d b e f
+
 apply2 :: Raw3Arg -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
 apply2 fun t src = do
   let r_ = tensorNew_ (tdDim t)
@@ -231,10 +251,6 @@ apply2 fun t src = do
          )
     )
   pure r_
-
-swap2 fun a b c d e = fun b c a d e
-
-swap3 fun a b c d e f = fun c a d b e f
 
 apply3 :: Raw4Arg -> TensorDouble_ -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
 apply3 fun t src1 src2 = do
@@ -253,7 +269,6 @@ apply3 fun t src1 src2 = do
          )
     )
   pure r_
-
 
 -- cadd = z <- y + scalar * x, z value discarded
 -- allocate r_ for the user instead of taking it as an argument
@@ -319,32 +334,33 @@ addcdiv t scale src1 src2 = unsafePerformIO $ do
 
 addmv :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
 addmv beta t alpha src1 src2 = unsafePerformIO $ do
-  apply3 ((swap3 c_THDoubleTensor_addmv) beta alpha) t src1 src2
+  apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
   where
-    beta = (realToFrac beta) :: CDouble
-    alpha = (realToFrac alpha) :: CDouble
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+
+(#>) :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+mat #> vec =
+  addmv 1.0 zero 1.0 mat vec
+  where
+    zero = tensorNew_ $ tdDim vec -- TODO - more efficient version w/o allocaiton?
 
 addmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
 addmm beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmm) beta alpha) t src1 src2
   where
-    beta = (realToFrac beta) :: CDouble
-    alpha = (realToFrac alpha) :: CDouble
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
 addbmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
 addbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addbmm) beta alpha) t batch1 batch2
   where
-    beta = (realToFrac beta) :: CDouble
-    alpha = (realToFrac alpha) :: CDouble
-
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
 baddbmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
 baddbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_baddbmm) beta alpha) t batch1 batch2
   where
-    beta = (realToFrac beta) :: CDouble
-    alpha = (realToFrac alpha) :: CDouble
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
 match :: TensorDouble_ -> TensorDouble_ -> Double -> TensorDouble_
 match m1 m2 gain = unsafePerformIO $ do
@@ -353,4 +369,17 @@ match m1 m2 gain = unsafePerformIO $ do
     gainC = realToFrac gain
     swap fun gain b c d = fun b c d gain
 
+-- TH_API ptrdiff_t THTensor_(numel)(THTensor *t);
+-- TH_API void THTensor_(max)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+-- TH_API void THTensor_(min)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+-- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);
+-- TH_API void THTensor_(mode)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+-- TH_API void THTensor_(median)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+-- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
+-- TH_API void THTensor_(prod)(THTensor *r_, THTensor *t, int dimension, int keepdim);
+-- TH_API void THTensor_(cumsum)(THTensor *r_, THTensor *t, int dimension);
+-- TH_API void THTensor_(cumprod)(THTensor *r_, THTensor *t, int dimension);
+-- TH_API void THTensor_(sign)(THTensor *r_, THTensor *t);
+-- TH_API accreal THTensor_(trace)(THTensor *t);
+-- TH_API void THTensor_(cross)(THTensor *r_, THTensor *a, THTensor *b, int dimension);
 
