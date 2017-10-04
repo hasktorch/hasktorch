@@ -200,87 +200,107 @@ lgamma tensor = apply0_ tLgamma tensor
 -- c* cadd, cmul, cdiv, cpow, ...
 -- ----------------------------------------
 
--- TODO : refactor withForeignPointer wrapping below
--- apply2 :: (CTHTensorDouble ) TensorDouble_ -> TensorDouble -> TensorDouble
--- apply2 
+-- usually this is 1 mutation arg + 2 parameter args
+type Raw3Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
+
+-- usually this is 1 mutation arg + 3 parameter args
+type Raw4Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
+
+-- argument rotations - used so that the constants are curried and only tensor
+-- pointers are needed for apply* functions
+-- mnemonic for reasoning about the type signature - "where did the argument end up" defines the new ordering
+swapArgs
+  :: (t1 -> t2 -> t3 -> t4 -> t5) -> t3 -> t1 -> t2 -> t4 -> t5
+swapArgs f a b c d = f b c a d
+-- a is applied at position 3, type 3 is arg1
+-- b is applied at position 1, type 1 is arg2
+-- c is applied at position 2, type 2 is arg3
+-- d is applied at position 4, type 4 is arg 4
+
+apply2 :: Raw3Arg -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
+apply2 fun t src = do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src)
+              (\srcPtr ->
+                  fun rPtr tPtr srcPtr
+              )
+         )
+    )
+  pure r_
+
+apply3 :: Raw4Arg -> TensorDouble_ -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
+apply3 fun t src1 src2 = do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src1)
+              (\src1Ptr ->
+                 withForeignPtr (tdTensor src2)
+                   (\src2Ptr ->
+                      fun rPtr tPtr src1Ptr src2Ptr
+                   )
+              )
+         )
+    )
+  pure r_
 
 -- cadd = z <- y + scalar * x, z value discarded
 -- allocate r_ for the user instead of taking it as an argument
 cadd :: TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_
-cadd t scale src = unsafePerformIO $ do
-  let r_ = tensorNew_ (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor src)
-              (\srcPtr ->
-                  c_THDoubleTensor_cadd rPtr tPtr (realToFrac scale) srcPtr
-              )
-         )
-    )
-  pure r_
+cadd t scale src = unsafePerformIO $
+  apply2 ((swapArgs c_THDoubleTensor_cadd) scaleC) t src
+  where scaleC = realToFrac scale
 
 csub :: TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_
 csub t scale src = unsafePerformIO $ do
-  let r_ = tensorNew_ (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor src)
-              (\srcPtr ->
-                  c_THDoubleTensor_csub rPtr tPtr (realToFrac scale) srcPtr
-              )
-         )
-    )
-  pure r_
+  apply2 ((swapArgs c_THDoubleTensor_csub) scaleC) t src
+  where scaleC = realToFrac scale
 
 cmul :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
 cmul t src = unsafePerformIO $ do
-  let r_ = tensorNew_ (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor src)
-              (\srcPtr ->
-                  c_THDoubleTensor_cmul rPtr tPtr srcPtr
-              )
-         )
-    )
-  pure r_
+  apply2 c_THDoubleTensor_cmul t src
 
 cpow :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
 cpow t src = unsafePerformIO $ do
-  let r_ = tensorNew_ (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor src)
-              (\srcPtr ->
-                  c_THDoubleTensor_cpow rPtr tPtr srcPtr
-              )
-         )
-    )
-  pure r_
+  apply2 c_THDoubleTensor_cpow t src
 
 cdiv :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
 cdiv t src = unsafePerformIO $ do
-  let r_ = tensorNew_ (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor src)
-              (\srcPtr ->
-                  c_THDoubleTensor_cdiv rPtr tPtr srcPtr
-              )
-         )
-    )
-  pure r_
+  apply2 c_THDoubleTensor_cdiv t src
 
+clshift :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+clshift t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_clshift t src
+
+crshift :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+crshift t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_crshift t src
+
+cfmod :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cfmod t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cfmod t src
+
+cremainder :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cremainder t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cremainder t src
+
+cbitand :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cbitand  t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cbitand t src
+
+cbitor :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cbitor  t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cbitor t src
+
+cbitxor :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cbitxor  t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cbitxor t src
 
 -- ----------------------------------------
 -- Matrix-vector
