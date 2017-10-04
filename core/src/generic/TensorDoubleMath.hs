@@ -43,12 +43,11 @@ module TensorDoubleMath (
   addcmul,
   addcdiv,
   addmv,
+  (!*),
   addmm,
   addbmm,
   baddbmm,
   match,
-
-  (#>)
 
   ) where
 
@@ -143,37 +142,37 @@ dot t src = realToFrac $ unsafePerformIO $ do
 -- ----------------------------------------
 
 -- |Generalize non-mutating collapse of a tensor to a constant or another tensor
-apply0_ :: (Ptr CTHDoubleTensor -> a) -> TensorDouble_ -> a
-apply0_ operation tensor = unsafePerformIO $ do
+apply0_ :: (Ptr CTHDoubleTensor -> a) -> TensorDouble_ -> IO a
+apply0_ operation tensor = do
   withForeignPtr (tdTensor tensor) (\t -> pure $ operation t)
 
 minAll :: TensorDouble_ -> Double
-minAll tensor = apply0_ tMinAll tensor
+minAll tensor = unsafePerformIO $ apply0_ tMinAll tensor
   where
     tMinAll t = realToFrac $ c_THDoubleTensor_minall t
 
 maxAll :: TensorDouble_ -> Double
-maxAll tensor = apply0_ tMaxAll tensor
+maxAll tensor = unsafePerformIO $ apply0_ tMaxAll tensor
   where
     tMaxAll t = realToFrac $ c_THDoubleTensor_maxall t
 
 medianAll :: TensorDouble_ -> Double
-medianAll tensor = apply0_ tMedianAll tensor
+medianAll tensor = unsafePerformIO $ apply0_ tMedianAll tensor
   where
     tMedianAll t = realToFrac $ c_THDoubleTensor_medianall t
 
 sumAll :: TensorDouble_ -> Double
-sumAll tensor = apply0_ tSumAll tensor
+sumAll tensor = unsafePerformIO $ apply0_ tSumAll tensor
   where
     tSumAll t = realToFrac $ c_THDoubleTensor_sumall t
 
 prodAll :: TensorDouble_ -> Double
-prodAll tensor = apply0_ tProdAll tensor
+prodAll tensor = unsafePerformIO $ apply0_ tProdAll tensor
   where
     tProdAll t = realToFrac $ c_THDoubleTensor_prodall t
 
 meanAll :: TensorDouble_ -> Double
-meanAll tensor = apply0_ tMeanAll tensor
+meanAll tensor = unsafePerformIO $ apply0_ tMeanAll tensor
   where
     tMeanAll t = realToFrac $ c_THDoubleTensor_meanall t
 
@@ -188,27 +187,27 @@ apply0Tensor op resDim t = unsafePerformIO $ do
   pure res
 
 neg :: TensorDouble_ -> TensorDouble_
-neg tensor = apply0_ tNeg tensor
+neg tensor = unsafePerformIO $ apply0_ tNeg tensor
   where
     tNeg t = apply0Tensor c_THDoubleTensor_neg (tdDim tensor) t
 
 absT :: TensorDouble_ -> TensorDouble_
-absT tensor = apply0_ tAbs tensor
+absT tensor = unsafePerformIO $ apply0_ tAbs tensor
   where
     tAbs t = apply0Tensor c_THDoubleTensor_abs (tdDim tensor) t
 
 sigmoid :: TensorDouble_ -> TensorDouble_
-sigmoid tensor = apply0_ tSigmoid tensor
+sigmoid tensor = unsafePerformIO $ apply0_ tSigmoid tensor
   where
     tSigmoid t = apply0Tensor c_THDoubleTensor_sigmoid (tdDim tensor) t
 
 logT :: TensorDouble_ -> TensorDouble_
-logT tensor = apply0_ tLog tensor
+logT tensor = unsafePerformIO $ apply0_ tLog tensor
   where
     tLog t = apply0Tensor c_THDoubleTensor_log (tdDim tensor) t
 
 lgamma :: TensorDouble_ -> TensorDouble_
-lgamma tensor = apply0_ tLgamma tensor
+lgamma tensor = unsafePerformIO $ apply0_ tLgamma tensor
   where
     tLgamma t = apply0Tensor c_THDoubleTensor_lgamma (tdDim tensor) t
 
@@ -338,8 +337,8 @@ addmv beta t alpha src1 src2 = unsafePerformIO $ do
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
-(#>) :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
-mat #> vec =
+(!*) :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+mat !* vec =
   addmv 1.0 zero 1.0 mat vec
   where
     zero = tensorNew_ $ tdDim vec -- TODO - more efficient version w/o allocaiton?
@@ -369,8 +368,10 @@ match m1 m2 gain = unsafePerformIO $ do
     gainC = realToFrac gain
     swap fun gain b c d = fun b c d gain
 
--- TH_API ptrdiff_t THTensor_(numel)(THTensor *t);
-
+numel :: TensorDouble_ -> Int
+numel t = unsafePerformIO $ do
+  result <- apply0_ c_THDoubleTensor_numel t
+  pure $ fromIntegral result
 
 -- ret2 :: Raw3Arg -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
 ret2 fun t dimension keepdim = do
@@ -391,12 +392,27 @@ ret2 fun t dimension keepdim = do
     keepdimC = if keepdim then 1 else 0
     dimensionC = fromIntegral dimension
 
--- maxT t dimension keepdim = ret2 c_THDoubleTensor_max t dimension keepdim
--- minT t dimension keepdim = ret2 c_THDoubleTensor_min t dimension keepdim
-
 -- TH_API void THTensor_(max)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+maxT :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
+maxT t dimension keepdim = unsafePerformIO $
+  ret2 c_THDoubleTensor_max t dimension keepdim
+
 -- TH_API void THTensor_(min)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
--- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);
+minT :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
+minT t dimension keepdim = unsafePerformIO $
+  ret2 c_THDoubleTensor_min t dimension keepdim
+
+
+-- -- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);
+-- kthvalue :: TensorDouble_ -> Int -> Int -> Bool -> (TensorDouble_, TensorLong)
+-- kthvalue t k dimension keepdim = unsafePerformIO $
+--   ret2 ((swap c_THDoubleTensor_kthvalue) kC) t dimension keepdim
+--   where
+--     -- TODO: fix swap
+--     swap fun k_ t_ dimension_ keepdim_ values_ indices_ =
+--       fun values_ indices_ t_ k_ dimension_ keepdim_
+--     kC = fromIntegral k
+
 -- TH_API void THTensor_(mode)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
 -- TH_API void THTensor_(median)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
 -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
