@@ -35,7 +35,41 @@ instance Foldable TensorDim where
   foldr func val (D3 d1 d2 d3) = foldr func val [d1, d2, d3]
   foldr func val (D4 d1 d2 d3 d4) = foldr func val [d1, d2, d3, d4]
 
+-- Float types
+
+data TensorFloat = TensorFloat {
+  tfTensor :: !(ForeignPtr CTHFloatTensor),
+  tfDim :: !(TensorDim Word)
+  } deriving (Eq, Show)
+
 data TensorDouble_ = TensorDouble_ {
   tdTensor :: !(ForeignPtr CTHDoubleTensor),
   tdDim :: !(TensorDim Word)
+  } deriving (Eq, Show)
+
+-- Int types
+
+data TensorByte = TensorByte {
+  tbTensor :: !(ForeignPtr CTHByteTensor),
+  tbDim :: !(TensorDim Word)
+  } deriving (Eq, Show)
+
+data TensorChar = TensorChar {
+  tcTensor :: !(ForeignPtr CTHCharTensor),
+  tcDim :: !(TensorDim Word)
+  } deriving (Eq, Show)
+
+data TensorShort = TensorShort {
+  tsTensor :: !(ForeignPtr CTHShortTensor),
+  tsDim :: !(TensorDim Word)
+  } deriving (Eq, Show)
+
+data TensorInt = TensorInt {
+  tiTensor :: !(ForeignPtr CTHIntTensor),
+  tiDim :: !(TensorDim Word)
+  } deriving (Eq, Show)
+
+data TensorLong = TensorLong {
+  tlTensor :: !(ForeignPtr CTHLongTensor),
+  tlDim :: !(TensorDim Word)
   } deriving (Eq, Show)

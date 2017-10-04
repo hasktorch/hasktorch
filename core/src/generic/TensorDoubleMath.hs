@@ -83,7 +83,6 @@ fillMutate_ :: Real a => a -> TensorDouble_ -> IO ()
 fillMutate_ value tensor =
   withForeignPtr(tdTensor tensor) (\t -> fillRaw value t)
 
-
 -- ----------------------------------------
 -- Tensor-constant operations to constant operations
 -- ----------------------------------------
