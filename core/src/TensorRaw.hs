@@ -4,7 +4,10 @@ module TensorRaw (
   fillRaw0,
   randInitRaw,
   randInitRawTest,
-  tensorRaw
+  tensorRaw,
+
+  TensorDoubleRaw,
+  TensorLongRaw
   ) where
 
 import Data.Maybe (fromJust)
@@ -28,6 +31,7 @@ import THRandom
 import TensorTypes
 
 type TensorDoubleRaw = Ptr CTHDoubleTensor
+type TensorLongRaw = Ptr CTHLongTensor
 
 -- |displaying raw tensor values
 dispRaw :: Ptr CTHDoubleTensor -> IO ()

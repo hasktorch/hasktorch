@@ -58,6 +58,7 @@ import Foreign.Ptr
 import System.IO.Unsafe (unsafePerformIO)
 
 import TensorDouble
+import TensorLong
 import TensorRaw
 import TensorTypes
 
@@ -345,19 +346,19 @@ mat #> vec =
 
 addmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
 addmm beta t alpha src1 src2 = unsafePerformIO $ do
-  apply3 ((swap3 c_THDoubleTensor_addmm) beta alpha) t src1 src2
+  apply3 ((swap3 c_THDoubleTensor_addmm) betaC alphaC) t src1 src2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
 addbmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
 addbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
-  apply3 ((swap3 c_THDoubleTensor_addbmm) beta alpha) t batch1 batch2
+  apply3 ((swap3 c_THDoubleTensor_addbmm) betaC alphaC) t batch1 batch2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
 baddbmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
 baddbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
-  apply3 ((swap3 c_THDoubleTensor_baddbmm) beta alpha) t batch1 batch2
+  apply3 ((swap3 c_THDoubleTensor_baddbmm) betaC alphaC) t batch1 batch2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
@@ -369,6 +370,30 @@ match m1 m2 gain = unsafePerformIO $ do
     swap fun gain b c d = fun b c d gain
 
 -- TH_API ptrdiff_t THTensor_(numel)(THTensor *t);
+
+
+-- ret2 :: Raw3Arg -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
+ret2 fun t dimension keepdim = do
+  let values_ = tensorNew_ (tdDim t)
+  let indices_ = tensorNewLong (tdDim t)
+  withForeignPtr (tdTensor values_)
+    (\vPtr ->
+       withForeignPtr (tlTensor indices_)
+         (\iPtr ->
+            withForeignPtr (tdTensor t)
+              (\tPtr ->
+                  fun vPtr iPtr tPtr dimensionC keepdimC
+              )
+         )
+    )
+  pure (values_, indices_)
+  where
+    keepdimC = if keepdim then 1 else 0
+    dimensionC = fromIntegral dimension
+
+-- maxT t dimension keepdim = ret2 c_THDoubleTensor_max t dimension keepdim
+-- minT t dimension keepdim = ret2 c_THDoubleTensor_min t dimension keepdim
+
 -- TH_API void THTensor_(max)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
 -- TH_API void THTensor_(min)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
 -- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);

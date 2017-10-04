@@ -1,6 +1,12 @@
 module TensorTypes (
   TensorDim(..),
-  TensorDouble_(..)
+  TensorFloat(..),
+  TensorDouble_(..),
+  TensorByte(..),
+  TensorChar(..),
+  TensorShort(..),
+  TensorInt(..),
+  TensorLong(..)
   ) where
 
 import Foreign
