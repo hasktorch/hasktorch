@@ -209,9 +209,9 @@ type Raw4Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor
 -- argument rotations - used so that the constants are curried and only tensor
 -- pointers are needed for apply* functions
 -- mnemonic for reasoning about the type signature - "where did the argument end up" defines the new ordering
-swapArgs
+swap1
   :: (t1 -> t2 -> t3 -> t4 -> t5) -> t3 -> t1 -> t2 -> t4 -> t5
-swapArgs f a b c d = f b c a d
+swap1 fun a b c d = fun b c a d
 -- a is applied at position 3, type 3 is arg1
 -- b is applied at position 1, type 1 is arg2
 -- c is applied at position 2, type 2 is arg3
@@ -232,6 +232,10 @@ apply2 fun t src = do
     )
   pure r_
 
+swap2 fun a b c d e = fun b c a d e
+
+swap3 fun a b c d e f = fun c a d b e f
+
 apply3 :: Raw4Arg -> TensorDouble_ -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
 apply3 fun t src1 src2 = do
   let r_ = tensorNew_ (tdDim t)
@@ -250,16 +254,17 @@ apply3 fun t src1 src2 = do
     )
   pure r_
 
+
 -- cadd = z <- y + scalar * x, z value discarded
 -- allocate r_ for the user instead of taking it as an argument
 cadd :: TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_
 cadd t scale src = unsafePerformIO $
-  apply2 ((swapArgs c_THDoubleTensor_cadd) scaleC) t src
+  apply2 ((swap1 c_THDoubleTensor_cadd) scaleC) t src
   where scaleC = realToFrac scale
 
 csub :: TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_
 csub t scale src = unsafePerformIO $ do
-  apply2 ((swapArgs c_THDoubleTensor_csub) scaleC) t src
+  apply2 ((swap1 c_THDoubleTensor_csub) scaleC) t src
   where scaleC = realToFrac scale
 
 cmul :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
@@ -299,17 +304,53 @@ cbitor  t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cbitor t src
 
 cbitxor :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
-cbitxor  t src = unsafePerformIO $ do
+cbitxor t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cbitxor t src
 
--- ----------------------------------------
--- Matrix-vector
--- ----------------------------------------
+addcmul :: TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
+addcmul t scale src1 src2 = unsafePerformIO $ do
+  apply3 ((swap2 c_THDoubleTensor_addcmul) scaleC) t src1 src2
+  where scaleC = (realToFrac scale) :: CDouble
 
--- |tag: unsafe
--- TODO - determine how to deal with resource allocation
-(#>) :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
-mat #> vec = undefined -- unsafePerformIO $ do
-  -- res <- fromJust $ tensorNew_ $ [nrows mat]
-  -- c_THDoubleTensor_addmv res 1.0 res 1.0 mat vec
-  -- pure res
+addcdiv :: TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
+addcdiv t scale src1 src2 = unsafePerformIO $ do
+  apply3 ((swap2 c_THDoubleTensor_addcdiv) scaleC) t src1 src2
+  where scaleC = (realToFrac scale) :: CDouble
+
+addmv :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
+addmv beta t alpha src1 src2 = unsafePerformIO $ do
+  apply3 ((swap3 c_THDoubleTensor_addmv) beta alpha) t src1 src2
+  where
+    beta = (realToFrac beta) :: CDouble
+    alpha = (realToFrac alpha) :: CDouble
+
+addmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
+addmm beta t alpha src1 src2 = unsafePerformIO $ do
+  apply3 ((swap3 c_THDoubleTensor_addmm) beta alpha) t src1 src2
+  where
+    beta = (realToFrac beta) :: CDouble
+    alpha = (realToFrac alpha) :: CDouble
+
+addbmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
+addbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
+  apply3 ((swap3 c_THDoubleTensor_addbmm) beta alpha) t batch1 batch2
+  where
+    beta = (realToFrac beta) :: CDouble
+    alpha = (realToFrac alpha) :: CDouble
+
+
+baddbmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
+baddbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
+  apply3 ((swap3 c_THDoubleTensor_baddbmm) beta alpha) t batch1 batch2
+  where
+    beta = (realToFrac beta) :: CDouble
+    alpha = (realToFrac alpha) :: CDouble
+
+match :: TensorDouble_ -> TensorDouble_ -> Double -> TensorDouble_
+match m1 m2 gain = unsafePerformIO $ do
+  apply2 ((swap c_THDoubleTensor_match) gainC) m1 m2
+  where
+    gainC = realToFrac gain
+    swap fun gain b c d = fun b c d gain
+
+
