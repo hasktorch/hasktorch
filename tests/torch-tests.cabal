@@ -30,3 +30,14 @@ Test-Suite test-torch
                      , torch-raw
                      , torch-tools
                      , hspec >= 2.4.4
+
+Test-Suite memory-test
+  default-language:    Haskell2010
+  main-is:             MemoryTest.hs
+  hs-source-dirs:      src
+  type:                exitcode-stdio-1.0
+  build-depends:       base >= 4.7 && < 5
+                     , torch-core
+                     , torch-raw
+                     , torch-interface
+

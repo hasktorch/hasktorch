@@ -26,20 +26,6 @@ library
                      , torch-interface
                      , text >= 1.2.2.2
 
-executable memory-test
-  default-language:    Haskell2010
-  main-is:             MemoryTest.hs
-  other-modules:       TensorDouble
-                     , TensorDoubleMath
-                     , TensorLong
-                     , TensorRaw
-                     , TensorTypes
-                     , TensorUtils
-  hs-source-dirs:      src, src/generic
-  build-depends:       base >= 4.7 && < 5
-                     , torch-raw
-                     , torch-interface
-
 source-repository head
   type:     git
   location: https://github.com/austinvhuang/hasktorch

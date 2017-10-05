@@ -23,9 +23,9 @@ dependencies:
 
 test:
   override:
-    - stack test torch-tests
+    - stack test torch-tests:test-torch
+    - stack test torch-tests:memory-test
     - stack exec codegen-generic
     - stack exec codegen-concrete
     - stack exec codegen-managed
-    - stack exec memory-test
     - stack exec autograd
