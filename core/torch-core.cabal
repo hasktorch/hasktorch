@@ -17,6 +17,7 @@ library
                      , TensorDoubleMath
                      , Random
                      , TensorRaw
+                     , TensorLong
                      , TensorTypes
                      , TensorUtils
   hs-source-dirs:      src, src/generic
@@ -30,6 +31,7 @@ executable memory-test
   main-is:             MemoryTest.hs
   other-modules:       TensorDouble
                      , TensorDoubleMath
+                     , TensorLong
                      , TensorRaw
                      , TensorTypes
                      , TensorUtils
