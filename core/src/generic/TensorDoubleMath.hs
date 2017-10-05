@@ -78,6 +78,104 @@ import THDoubleTensor
 import THDoubleTensorMath
 import THTypes
 
+-- ----------------------------------------
+-- Foreign pointer application helper functions
+-- ----------------------------------------
+
+apply1_ transformation mtx val = unsafePerformIO $ do
+  withForeignPtr (tdTensor res)
+    (\r_ -> withForeignPtr (tdTensor mtx)
+            (\t -> do
+                transformation r_ t
+                pure r_
+            )
+    )
+  pure res
+  where
+    res = tensorNew_ (tdDim mtx)
+
+-- |Generalize non-mutating collapse of a tensor to a constant or another tensor
+apply0_ :: (Ptr CTHDoubleTensor -> a) -> TensorDouble_ -> IO a
+apply0_ operation tensor = do
+  withForeignPtr (tdTensor tensor) (\t -> pure $ operation t)
+
+-- |Wrapper to apply tensor -> tensor non-mutating operation
+apply0Tensor op resDim t = unsafePerformIO $ do
+  let res = tensorNew_ resDim
+  withForeignPtr (tdTensor res) (\r_ -> op r_ t)
+  pure res
+
+-- usually this is 1 mutation arg + 2 parameter args
+type Raw3Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
+
+-- usually this is 1 mutation arg + 3 parameter args
+type Raw4Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor ->Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
+
+apply2 :: Raw3Arg -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
+apply2 fun t src = do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src)
+              (\srcPtr ->
+                  fun rPtr tPtr srcPtr
+              )
+         )
+    )
+  pure r_
+
+apply3 :: Raw4Arg -> TensorDouble_ -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
+apply3 fun t src1 src2 = do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src1)
+              (\src1Ptr ->
+                 withForeignPtr (tdTensor src2)
+                   (\src2Ptr ->
+                      fun rPtr tPtr src1Ptr src2Ptr
+                   )
+              )
+         )
+    )
+  pure r_
+
+type Ret2Fun =
+  Ptr CTHDoubleTensor -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> CInt -> CInt -> IO ()
+
+ret2 :: Ret2Fun -> TensorDouble_ -> Int -> Bool -> IO (TensorDouble_, TensorLong)
+ret2 fun t dimension keepdim = do
+  let values_ = tensorNew_ (tdDim t)
+  let indices_ = tensorNewLong (tdDim t)
+  withForeignPtr (tdTensor values_)
+    (\vPtr ->
+       withForeignPtr (tlTensor indices_)
+         (\iPtr ->
+            withForeignPtr (tdTensor t)
+              (\tPtr ->
+                  fun vPtr iPtr tPtr dimensionC keepdimC
+              )
+         )
+    )
+  pure (values_, indices_)
+  where
+    keepdimC = if keepdim then 1 else 0
+    dimensionC = fromIntegral dimension
+
+apply1 fun t = do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            fun rPtr tPtr
+         )
+    )
+  pure r_
 
 -- ----------------------------------------
 -- Tensor fill operations
@@ -98,18 +196,6 @@ fillMutate_ value tensor =
 -- ----------------------------------------
 -- Tensor-constant operations to constant operations
 -- ----------------------------------------
-
-apply1_ transformation mtx val = unsafePerformIO $ do
-  withForeignPtr (tdTensor res)
-    (\r_ -> withForeignPtr (tdTensor mtx)
-            (\t -> do
-                transformation r_ t
-                pure r_
-            )
-    )
-  pure res
-  where
-    res = tensorNew_ (tdDim mtx)
 
 addConst :: TensorDouble_ -> Double -> TensorDouble_
 addConst mtx val = apply1_ tAdd mtx val
@@ -153,11 +239,6 @@ dot t src = realToFrac $ unsafePerformIO $ do
 -- Collapse to constant operations
 -- ----------------------------------------
 
--- |Generalize non-mutating collapse of a tensor to a constant or another tensor
-apply0_ :: (Ptr CTHDoubleTensor -> a) -> TensorDouble_ -> IO a
-apply0_ operation tensor = do
-  withForeignPtr (tdTensor tensor) (\t -> pure $ operation t)
-
 minAll :: TensorDouble_ -> Double
 minAll tensor = unsafePerformIO $ apply0_ tMinAll tensor
   where
@@ -192,12 +273,6 @@ meanAll tensor = unsafePerformIO $ apply0_ tMeanAll tensor
 -- Tensor to Tensor transformation
 -- ----------------------------------------
 
--- |Wrapper to apply tensor -> tensor non-mutating operation
-apply0Tensor op resDim t = unsafePerformIO $ do
-  let res = tensorNew_ resDim
-  withForeignPtr (tdTensor res) (\r_ -> op r_ t)
-  pure res
-
 neg :: TensorDouble_ -> TensorDouble_
 neg tensor = unsafePerformIO $ apply0_ tNeg tensor
   where
@@ -227,12 +302,6 @@ lgamma tensor = unsafePerformIO $ apply0_ tLgamma tensor
 -- c* cadd, cmul, cdiv, cpow, ...
 -- ----------------------------------------
 
--- usually this is 1 mutation arg + 2 parameter args
-type Raw3Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
-
--- usually this is 1 mutation arg + 3 parameter args
-type Raw4Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
-
 -- argument rotations - used so that the constants are curried and only tensor
 -- pointers are needed for apply* functions
 -- mnemonic for reasoning about the type signature - "where did the argument end up" defines the new ordering
@@ -247,39 +316,6 @@ swap1 fun a b c d = fun b c a d
 swap2 fun a b c d e = fun b c a d e
 
 swap3 fun a b c d e f = fun c a d b e f
-
-apply2 :: Raw3Arg -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
-apply2 fun t src = do
-  let r_ = tensorNew_ (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor src)
-              (\srcPtr ->
-                  fun rPtr tPtr srcPtr
-              )
-         )
-    )
-  pure r_
-
-apply3 :: Raw4Arg -> TensorDouble_ -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
-apply3 fun t src1 src2 = do
-  let r_ = tensorNew_ (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor src1)
-              (\src1Ptr ->
-                 withForeignPtr (tdTensor src2)
-                   (\src2Ptr ->
-                      fun rPtr tPtr src1Ptr src2Ptr
-                   )
-              )
-         )
-    )
-  pure r_
 
 -- cadd = z <- y + scalar * x, z value discarded
 -- allocate r_ for the user instead of taking it as an argument
@@ -385,26 +421,6 @@ numel t = unsafePerformIO $ do
   result <- apply0_ c_THDoubleTensor_numel t
   pure $ fromIntegral result
 
-type Ret2Fun = Ptr CTHDoubleTensor -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> CInt -> CInt -> IO ()
-ret2 :: Ret2Fun -> TensorDouble_ -> Int -> Bool -> IO (TensorDouble_, TensorLong)
-ret2 fun t dimension keepdim = do
-  let values_ = tensorNew_ (tdDim t)
-  let indices_ = tensorNewLong (tdDim t)
-  withForeignPtr (tdTensor values_)
-    (\vPtr ->
-       withForeignPtr (tlTensor indices_)
-         (\iPtr ->
-            withForeignPtr (tdTensor t)
-              (\tPtr ->
-                  fun vPtr iPtr tPtr dimensionC keepdimC
-              )
-         )
-    )
-  pure (values_, indices_)
-  where
-    keepdimC = if keepdim then 1 else 0
-    dimensionC = fromIntegral dimension
-
 -- TH_API void THTensor_(max)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
 maxT :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
 maxT t dimension keepdim = unsafePerformIO $
@@ -414,7 +430,6 @@ maxT t dimension keepdim = unsafePerformIO $
 minT :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
 minT t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_min t dimension keepdim
-
 
 -- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);
 kthvalue :: TensorDouble_ -> Int -> Int -> Bool -> (TensorDouble_, TensorLong)
@@ -433,17 +448,6 @@ mode t dimension keepdim = unsafePerformIO $
 median :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
 median t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_median t dimension keepdim
-
-apply1 fun t = do
-  let r_ = tensorNew_ (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            fun rPtr tPtr
-         )
-    )
-  pure r_
 
 -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
 sumT :: TensorDouble_ -> Int -> Bool -> TensorDouble_
@@ -496,7 +500,6 @@ cross a b dimension = unsafePerformIO $ do
   where
     dimensionC = fromIntegral dimension
     swap fun a b c d = fun b c d a
-
 
 -- TH_API void THTensor_(cmax)(THTensor *r, THTensor *t, THTensor *src);
 -- TH_API void THTensor_(cmin)(THTensor *r, THTensor *t, THTensor *src);
