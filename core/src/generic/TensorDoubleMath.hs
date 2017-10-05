@@ -48,6 +48,12 @@ module TensorDoubleMath (
   addbmm,
   baddbmm,
   match,
+  numel,
+  maxT,
+  minT,
+  kthvalue,
+  mode,
+  median
 
   ) where
 
@@ -373,7 +379,8 @@ numel t = unsafePerformIO $ do
   result <- apply0_ c_THDoubleTensor_numel t
   pure $ fromIntegral result
 
--- ret2 :: Raw3Arg -> TensorDouble_ -> TensorDouble_ -> IO TensorDouble_
+type Ret2Fun = Ptr CTHDoubleTensor -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> CInt -> CInt -> IO ()
+ret2 :: Ret2Fun -> TensorDouble_ -> Int -> Bool -> IO (TensorDouble_, TensorLong)
 ret2 fun t dimension keepdim = do
   let values_ = tensorNew_ (tdDim t)
   let indices_ = tensorNewLong (tdDim t)
@@ -403,19 +410,29 @@ minT t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_min t dimension keepdim
 
 
--- -- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);
--- kthvalue :: TensorDouble_ -> Int -> Int -> Bool -> (TensorDouble_, TensorLong)
--- kthvalue t k dimension keepdim = unsafePerformIO $
---   ret2 ((swap c_THDoubleTensor_kthvalue) kC) t dimension keepdim
---   where
---     -- TODO: fix swap
---     swap fun k_ t_ dimension_ keepdim_ values_ indices_ =
---       fun values_ indices_ t_ k_ dimension_ keepdim_
---     kC = fromIntegral k
+-- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);
+kthvalue :: TensorDouble_ -> Int -> Int -> Bool -> (TensorDouble_, TensorLong)
+kthvalue t k dimension keepdim = unsafePerformIO $
+  ret2 ((swap c_THDoubleTensor_kthvalue) kC) t dimension keepdim
+  where
+    swap fun a b c d e f = fun b c d a e f -- curry k (4th argument)
+    kC = fromIntegral k
 
 -- TH_API void THTensor_(mode)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+mode :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
+mode t dimension keepdim = unsafePerformIO $
+  ret2 c_THDoubleTensor_mode t dimension keepdim
+
 -- TH_API void THTensor_(median)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
--- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
+median :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
+median t dimension keepdim = unsafePerformIO $
+  ret2 c_THDoubleTensor_median t dimension keepdim
+
+-- -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
+-- sum :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
+-- sum t dimension keepdim = unsafePerformIO $
+--   apply1_ (c_THDoubleTensor_sum t dimension keepdim
+
 -- TH_API void THTensor_(prod)(THTensor *r_, THTensor *t, int dimension, int keepdim);
 -- TH_API void THTensor_(cumsum)(THTensor *r_, THTensor *t, int dimension);
 -- TH_API void THTensor_(cumprod)(THTensor *r_, THTensor *t, int dimension);
