@@ -53,8 +53,14 @@ module TensorDoubleMath (
   minT,
   kthvalue,
   mode,
-  median
-
+  median,
+  sumT,
+  prod,
+  cumsum,
+  cumprod,
+  sign,
+  trace,
+  cross
   ) where
 
 import Foreign
@@ -428,15 +434,99 @@ median :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
 median t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_median t dimension keepdim
 
--- -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
--- sum :: TensorDouble_ -> Int -> Bool -> (TensorDouble_, TensorLong)
--- sum t dimension keepdim = unsafePerformIO $
---   apply1_ (c_THDoubleTensor_sum t dimension keepdim
+apply1 fun t = do
+  let r_ = tensorNew_ (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            fun rPtr tPtr
+         )
+    )
+  pure r_
+
+-- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
+sumT :: TensorDouble_ -> Int -> Bool -> TensorDouble_
+sumT t dimension keepdim = unsafePerformIO $ do
+  apply1 ((swap c_THDoubleTensor_sum) dimensionC keepdimC) t
+  where
+    swap fun a b c d = fun c d a b
+    dimensionC = fromIntegral dimension
+    keepdimC = if keepdim then 1 else 0
 
 -- TH_API void THTensor_(prod)(THTensor *r_, THTensor *t, int dimension, int keepdim);
+prod :: TensorDouble_ -> Int -> Bool -> TensorDouble_
+prod t dimension keepdim = unsafePerformIO $ do
+  apply1 ((swap c_THDoubleTensor_prod) dimensionC keepdimC) t
+  where
+    swap fun a b c d = fun c d a b
+    dimensionC = fromIntegral dimension
+    keepdimC = if keepdim then 1 else 0
+
 -- TH_API void THTensor_(cumsum)(THTensor *r_, THTensor *t, int dimension);
+cumsum :: TensorDouble_ -> Int -> TensorDouble_
+cumsum t dimension = unsafePerformIO $ do
+  apply1 ((swap c_THDoubleTensor_cumsum) dimensionC) t
+  where
+    swap fun a b c = fun b c a
+    dimensionC = fromIntegral dimension
+
 -- TH_API void THTensor_(cumprod)(THTensor *r_, THTensor *t, int dimension);
+cumprod :: TensorDouble_ -> Int -> TensorDouble_
+cumprod t dimension = unsafePerformIO $ do
+  apply1 ((swap c_THDoubleTensor_cumprod) dimensionC) t
+  where
+    swap fun a b c = fun b c a
+    dimensionC = fromIntegral dimension
+
 -- TH_API void THTensor_(sign)(THTensor *r_, THTensor *t);
+sign :: TensorDouble_ -> TensorDouble_
+sign t = unsafePerformIO $ do
+  apply1 c_THDoubleTensor_sign t
+
 -- TH_API accreal THTensor_(trace)(THTensor *t);
+trace :: TensorDouble_ -> Double
+trace t = realToFrac $ unsafePerformIO $ do
+  apply0_ c_THDoubleTensor_trace t
+
 -- TH_API void THTensor_(cross)(THTensor *r_, THTensor *a, THTensor *b, int dimension);
+cross :: TensorDouble_ -> TensorDouble_ -> Int -> TensorDouble_
+cross a b dimension = unsafePerformIO $ do
+  apply2 ((swap c_THDoubleTensor_cross) dimensionC) a b
+  where
+    dimensionC = fromIntegral dimension
+    swap fun a b c d = fun b c d a
+
+
+-- TH_API void THTensor_(cmax)(THTensor *r, THTensor *t, THTensor *src);
+-- TH_API void THTensor_(cmin)(THTensor *r, THTensor *t, THTensor *src);
+-- TH_API void THTensor_(cmaxValue)(THTensor *r, THTensor *t, real value);
+-- TH_API void THTensor_(cminValue)(THTensor *r, THTensor *t, real value);
+
+-- TH_API void THTensor_(zeros)(THTensor *r_, THLongStorage *size);
+-- TH_API void THTensor_(zerosLike)(THTensor *r_, THTensor *input);
+-- TH_API void THTensor_(ones)(THTensor *r_, THLongStorage *size);
+-- TH_API void THTensor_(onesLike)(THTensor *r_, THTensor *input);
+-- TH_API void THTensor_(diag)(THTensor *r_, THTensor *t, int k);
+-- TH_API void THTensor_(eye)(THTensor *r_, long n, long m);
+-- TH_API void THTensor_(arange)(THTensor *r_, accreal xmin, accreal xmax, accreal step);
+-- TH_API void THTensor_(range)(THTensor *r_, accreal xmin, accreal xmax, accreal step);
+-- TH_API void THTensor_(randperm)(THTensor *r_, THGenerator *_generator, long n);
+
+-- TH_API void THTensor_(reshape)(THTensor *r_, THTensor *t, THLongStorage *size);
+-- TH_API void THTensor_(sort)(THTensor *rt_, THLongTensor *ri_, THTensor *t, int dimension, int descendingOrder);
+-- TH_API void THTensor_(topk)(THTensor *rt_, THLongTensor *ri_, THTensor *t, long k, int dim, int dir, int sorted);
+-- TH_API void THTensor_(tril)(THTensor *r_, THTensor *t, long k);
+-- TH_API void THTensor_(triu)(THTensor *r_, THTensor *t, long k);
+-- TH_API void THTensor_(cat)(THTensor *r_, THTensor *ta, THTensor *tb, int dimension);
+-- TH_API void THTensor_(catArray)(THTensor *result, THTensor **inputs, int numInputs, int dimension);
+
+-- TH_API int THTensor_(equal)(THTensor *ta, THTensor *tb);
+
+-- TH_API void THTensor_(ltValue)(THByteTensor *r_, THTensor* t, real value);
+-- TH_API void THTensor_(leValue)(THByteTensor *r_, THTensor* t, real value);
+-- TH_API void THTensor_(gtValue)(THByteTensor *r_, THTensor* t, real value);
+-- TH_API void THTensor_(geValue)(THByteTensor *r_, THTensor* t, real value);
+-- TH_API void THTensor_(neValue)(THByteTensor *r_, THTensor* t, real value);
+-- TH_API void THTensor_(eqValue)(THByteTensor *r_, THTensor* t, real value);
 
