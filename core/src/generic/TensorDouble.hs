@@ -50,7 +50,6 @@ tensorNew_ dims = unsafePerformIO $ do
   withForeignPtr fPtr fillRaw0
   pure $ TensorDouble_ fPtr dims
   where
-    wrap ptr = newForeignPtr p_THDoubleTensor_free ptr
     go D0 = c_THDoubleTensor_new
     go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
     go (D2 d1 d2) = c_THDoubleTensor_newWithSize2d

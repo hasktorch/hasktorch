@@ -502,8 +502,21 @@ cross a b dimension = unsafePerformIO $ do
     swap fun a b c d = fun b c d a
 
 -- TH_API void THTensor_(cmax)(THTensor *r, THTensor *t, THTensor *src);
+cmax :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
+
 -- TH_API void THTensor_(cmin)(THTensor *r, THTensor *t, THTensor *src);
--- TH_API void THTensor_(cmaxValue)(THTensor *r, THTensor *t, real value);
+cmin :: TensorDouble_ -> TensorDouble_ -> TensorDouble_
+cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
+
+-- -- TH_API void THTensor_(cmaxValue)(THTensor *r, THTensor *t, real value);
+-- cmaxValue :: TensorDouble_ -> TensorDouble_ -> Double -> TensorDouble_
+-- cmaxValue t src value = unsafePerformIO $
+--   apply2 c_THDoubleTensor_cmaxValue t src
+--   where
+--     swap 
+
+
 -- TH_API void THTensor_(cminValue)(THTensor *r, THTensor *t, real value);
 
 -- TH_API void THTensor_(zeros)(THTensor *r_, THLongStorage *size);
