@@ -1,7 +1,7 @@
 name:                torch-core
 version:             0.1.0.0
 synopsis:            Torch for tensors and dynamic neural networks in Haskell
-description:         higher level tensor interface
+description:         higher level memory-managed interface to core data types
 homepage:            https://github.com/austinvhuang/hasktorch#readme
 license:             BSD3
 author:              Austin Huang

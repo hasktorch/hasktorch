@@ -35,17 +35,5 @@ test = do
   let w1 = tensorNew_ (D1 5)
   pure ()
 
--- runLayer :: Weights -> Vector Double -> Vector Double
--- runLayer (W w) v = c_THDoubleTensor_dot w v
-
--- runNet :: Network -> Vector Double -> Vector Double
--- runNet (O w)      !v = logistic (runLayer w v)
--- runNet (w :&~ n') !v = let v' = logistic (runLayer w v)
---                        in  runNet n' v'
-
-{-
-simpler but unsafe version
--}
-
 main = do
   putStrLn "Done"

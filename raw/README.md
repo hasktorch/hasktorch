@@ -1,1 +1,3 @@
-# Raw bindings to core TorcH (TH) library
+# torch-raw
+
+Comprehensive Raw bindings to core TorcH (TH) C library.
