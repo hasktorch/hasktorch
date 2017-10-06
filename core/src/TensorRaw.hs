@@ -1,4 +1,5 @@
 module TensorRaw (
+  dimFromRaw,
   dispRaw,
   fillRaw,
   fillRaw0,
@@ -120,13 +121,26 @@ applyRaw f t1 = do
 invlogit :: TensorDoubleRaw -> IO TensorDoubleRaw
 invlogit = applyRaw c_THDoubleTensor_sigmoid
 
--- |Dimensions of a tensor as a list
+-- |Dimensions of a raw tensor as a list
 sizeRaw :: (Ptr CTHDoubleTensor) -> [Int]
 sizeRaw t =
   fmap f [0..maxdim]
   where
     maxdim = (c_THDoubleTensor_nDimension t) - 1
     f x = fromIntegral (c_THDoubleTensor_size t x) :: Int
+
+-- |Dimensions of a raw tensor as a TensorDim value
+dimFromRaw :: TensorDoubleRaw -> TensorDim Word
+dimFromRaw raw =
+  case (length sz) of 0 -> D0
+                      1 -> D1 (getN 0)
+                      2 -> D2 (getN 0) (getN 1)
+                      3 -> D3 (getN 0) (getN 1) (getN 2)
+                      4 -> D4 (getN 0) (getN 1) (getN 2) (getN 3)
+                      _ -> undefined -- TODO - make this safe
+  where
+    sz = sizeRaw raw
+    getN n = fromIntegral (sz !! n)
 
 -- |Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor

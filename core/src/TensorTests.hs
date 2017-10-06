@@ -5,6 +5,8 @@ import THDoubleTensorMath
 
 import TensorDouble
 import TensorDoubleMath
+import TensorDoubleRandom
+
 import TensorUtils
 import TensorTypes
 
@@ -46,3 +48,17 @@ testCadd = do
   let bar = fillCopy_ 2.0 $ tensorNew_ (D1 5)
   print $ 5 + 3 * 2
   disp_ $ cadd foo 3.0 bar
+
+testCopy :: IO ()
+testCopy = do
+  let foo = fillCopy_ 5.0 $ tensorNew_ (D2 3 3)
+  let bar = newWithTensor foo
+  disp_ foo
+  disp_ bar
+  let baz = foo ^+ 2.0
+  let fob = bar ^- 2.0
+  disp_ foo
+  disp_ bar
+  disp_ baz
+  disp_ fob
+  pure ()

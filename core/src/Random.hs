@@ -1,4 +1,5 @@
 module Random (
+  RandGen(..),
   newRNG,
   seed,
   manualSeed,

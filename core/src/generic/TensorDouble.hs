@@ -3,14 +3,16 @@
 
 module TensorDouble (
   get_,
-  tensorNew_
+  tensorNew_,
+
+  newWithTensor
   )
 where
 
 import Foreign
 import Foreign.C.Types
 import Foreign.Ptr
-import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
+import Foreign.ForeignPtr( ForeignPtr, withForeignPtr,
                            newForeignPtr )
 import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
@@ -41,6 +43,14 @@ get_ loc tensor =
     getter (D4 d1 d2 d3 d4) t = c_THDoubleTensor_get4d t
                                 (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
+newWithTensor :: TensorDouble_ -> TensorDouble_
+newWithTensor t = unsafePerformIO $ do
+  newPtr <- withForeignPtr (tdTensor t) (
+    \tPtr -> c_THDoubleTensor_newWithTensor tPtr
+    )
+  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  pure $ TensorDouble_ newFPtr (dimFromRaw newPtr)
+
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 tensorNew_ :: TensorDim Word -> TensorDouble_
@@ -58,3 +68,9 @@ tensorNew_ dims = unsafePerformIO $ do
                        (w2cl d1) (w2cl d2) (w2cl d3)
     go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
                           (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+
+test :: IO ()
+test = do
+  let foo = tensorNew_ (D1 5)
+  -- disp_ foo
+  pure ()
