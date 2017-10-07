@@ -1,4 +1,4 @@
-resolver: nightly-2017-10-03
+resolver: nightly-2017-10-05
 
 packages:
 - 'core'
