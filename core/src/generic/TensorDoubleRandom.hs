@@ -1,5 +1,16 @@
 module TensorDoubleRandom (
   randomT
+  , clampedRandomT
+  , cappedRandomT
+  , geometricT
+  , bernoulliT
+  , bernoulliFloatTensor
+  , bernoulliDoubleTensor
+  , uniformT
+  , normalT
+  , exponentialT
+  , cauchyT
+  , multinomialT
   ) where
 
 import Foreign
@@ -71,8 +82,8 @@ geometricT self gen p = do
   where pC = realToFrac p
 
 -- TH_API void THTensor_(bernoulli)(THTensor *self, THGenerator *_generator, double p);
-bernoulli :: TensorDouble_ -> RandGen -> Double -> IO TensorDouble_
-bernoulli self gen p = do
+bernoulliT :: TensorDouble_ -> RandGen -> Double -> IO TensorDouble_
+bernoulliT self gen p = do
   withForeignPtr (tdTensor self)
     (\s ->
        withForeignPtr (rng gen)
@@ -142,8 +153,8 @@ normalT self gen mean stdv = do
 -- TH_API void THTensor_(normal_stddevs)(THTensor *self, THGenerator *gen, double mean, THTensor *stddevs);
 -- TH_API void THTensor_(normal_means_stddevs)(THTensor *self, THGenerator *gen, THTensor *means, THTensor *stddevs);
 
-exponential :: TensorDouble_ -> RandGen -> Double -> IO TensorDouble_
-exponential self gen lambda = do
+exponentialT :: TensorDouble_ -> RandGen -> Double -> IO TensorDouble_
+exponentialT self gen lambda = do
   withForeignPtr (tdTensor self)
     (\s ->
        withForeignPtr (rng gen)
@@ -154,8 +165,8 @@ exponential self gen lambda = do
   pure self
   where lambdaC = realToFrac lambda
 
-cauchy :: TensorDouble_ -> RandGen -> Double -> Double -> IO TensorDouble_
-cauchy self gen median sigma = do
+cauchyT :: TensorDouble_ -> RandGen -> Double -> Double -> IO TensorDouble_
+cauchyT self gen median sigma = do
   withForeignPtr (tdTensor self)
     (\s ->
        withForeignPtr (rng gen)
@@ -181,8 +192,8 @@ logNormalT self gen mean stdv = do
         stdvC = realToFrac stdv
 
 
-multinomial :: TensorLong -> RandGen -> TensorDouble_ -> Int -> Bool -> IO TensorLong
-multinomial self gen prob_dist n_sample with_replacement = do
+multinomialT :: TensorLong -> RandGen -> TensorDouble_ -> Int -> Bool -> IO TensorLong
+multinomialT self gen prob_dist n_sample with_replacement = do
   withForeignPtr (tlTensor self)
     (\s ->
        withForeignPtr (rng gen)
