@@ -37,10 +37,12 @@ fakeBool = ["keepdim"]
 renderConversion :: THArg -> Text
 renderConversion arg =
   case (thArgType arg) of
+    THChar -> integralCase
+    THShort -> integralCase
     THInt -> integralCase
     THLong -> integralCase
-    THFloat -> integralCase
-    THDouble -> integralCase
+    THFloat -> realCase
+    THDouble -> realCase
     _ -> ""
   where
     integralCase =
