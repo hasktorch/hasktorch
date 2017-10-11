@@ -26,12 +26,19 @@ files =
   [
     ("vendor/torch7/lib/TH/generic/THTensor.h",
      (makeModule outDirManaged True "THTensor.h" "Tensor" "Tensor")),
+    ("vendor/torch7/lib/TH/generic/THTensorRandom.h",
+     (makeModule outDirManaged True "THTensorRandom.h" "Tensor" "Tensor")),
     ("vendor/torch7/lib/TH/generic/THTensorMath.h",
      (makeModule outDirManaged True "THTensorMath.h" "Tensor" "TensorMath"))
   ]
 
--- |variable names corresponding to "fake" boolean values
-fakeBool = ["keepdim"]
+-- |variable names of int args corresponding to boolean values
+fakeBoolVars = [
+  -- Tensor
+  "keepdim",
+  -- TensorRandom
+  "with_replacement"
+  ] :: [Text]
 
 -- |render Haskell to C conversions for a single function argument
 renderConversion :: THArg -> Text
@@ -40,6 +47,7 @@ renderConversion arg =
     THChar -> integralCase
     THShort -> integralCase
     THInt -> integralCase
+    THPtrDiff -> integralCase
     THLong -> integralCase
     THFloat -> realCase
     THDouble -> realCase
@@ -55,11 +63,12 @@ renderConversions :: [THArg] -> Text
 renderConversions args =
   if conversions /= "" then
     ("  where\n" <> conversions)
-  else "\n"
+  else "  -- no argument conversions needed\n"
   where conversions = intercalate "" (renderConversion <$> args)
 
+-- |entrypoint for processing managed-memory files
 runPipelineManaged headerPath makeModuleConfig typeList = do
-  let headerPath = "vendor/torch7/lib/TH/generic/THTensorMath.h"
+  -- let headerPath = "vendor/torch7/lib/TH/generic/THTensorMath.h"
   parsedBindings <- parseFile headerPath
   let bindingsUniq = nub parsedBindings
   putStrLn $ "First signature:"
