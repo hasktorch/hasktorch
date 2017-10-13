@@ -29,3 +29,4 @@ test:
     - stack exec codegen-concrete
     - stack exec codegen-managed
     - stack exec autograd
+    - stack exec raw-lapack-svd

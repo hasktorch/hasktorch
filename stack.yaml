@@ -3,6 +3,7 @@ resolver: nightly-2017-10-08
 packages:
 - 'core'
 - 'codegen'
+- 'examples'
 - 'interface'
 - 'raw'
 - 'tests'
@@ -28,6 +29,7 @@ extra-lib-dirs:
 ghc-options:
   "torch-core": -lTH
   "torch-codegen": -lTH
+  "hasktorch-examples": -lTH
   "torch-raw": -lTH
   "torch-tests": -lTH
   "torch-tools": -lTH

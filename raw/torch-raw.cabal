@@ -71,6 +71,14 @@ library
                      , THLongLapack
                      , THShortLapack
 
+                     , THByteTensorLapack
+                     , THDoubleTensorLapack
+                     , THFloatTensorLapack
+                     -- , THHalfTensorLapack
+                     , THIntTensorLapack
+                     , THLongTensorLapack
+                     , THShortTensorLapack
+
                      , THByteTensorConv
                      , THDoubleTensorConv
                      , THFloatTensorConv
