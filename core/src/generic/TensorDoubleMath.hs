@@ -100,6 +100,8 @@ apply0_ operation tensor = do
   withForeignPtr (tdTensor tensor) (\t -> pure $ operation t)
 
 -- |Wrapper to apply tensor -> tensor non-mutating operation
+apply0Tensor :: (Ptr CTHDoubleTensor -> t -> IO a) -> TensorDim Word -> t
+  -> TensorDouble_
 apply0Tensor op resDim t = unsafePerformIO $ do
   let res = tensorNew_ resDim
   withForeignPtr (tdTensor res) (\r_ -> op r_ t)
@@ -545,4 +547,14 @@ cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 -- TH_API void THTensor_(geValue)(THByteTensor *r_, THTensor* t, real value);
 -- TH_API void THTensor_(neValue)(THByteTensor *r_, THTensor* t, real value);
 -- TH_API void THTensor_(eqValue)(THByteTensor *r_, THTensor* t, real value);
+
+
+
+-- TH_API void THTensor_(round)(THTensor *r_, THTensor *t);
+
+-- -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
+-- roundT :: TensorDouble_ -> TensorDouble_
+-- roundT t = unsafePerformIO $ do
+--   result <- apply0Tensor c_THDoubleTensor_round (tdDim t) t
+--   pure result
 
