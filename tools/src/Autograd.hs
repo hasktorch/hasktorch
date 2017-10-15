@@ -13,7 +13,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 
 import TensorDouble
-import TensorDoubleMath (sigmoid)
+import TensorDoubleMath (sigmoid, (!*), addmv)
 import TensorDoubleRandom
 import TensorRaw
 import Random
@@ -31,6 +31,7 @@ data Weights = W {
 data Network :: * where
   O :: Weights -> Network
   (:~) :: Weights -> Network -> Network
+  deriving Show
 
 infixr 5 :~
 
@@ -51,13 +52,15 @@ randomWeights i o = do
 randomNet i [] o = O <$> randomWeights i o
 randomNet i (h:hs) o = (:~) <$> randomWeights i h <*> randomNet h hs o
 
-runLayer w wB wN v = undefined
+runLayer :: Weights -> TensorDouble_ -> TensorDouble_
+runLayer (W wB wN) v = addmv 1.0 wB 1.0 wN v
 
--- runNet (O w) v = undefined
--- runNet w :~ n' = undefined
+runNet :: Network -> TensorDouble_ -> TensorDouble_
+runNet (O w) v = sigmoid (runLayer w v)
+runNet (w :~ n') v = let v' = sigmoid (runLayer w v) in runNet n' v'
 
 main = do
   w <- randomWeights 5 3
   dispWeights w
-  randomNet 5 [3, 2, 4] 2
+  net <- randomNet 5 [3, 2, 4] 2
   putStrLn "Done"

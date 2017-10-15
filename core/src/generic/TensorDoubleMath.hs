@@ -391,7 +391,7 @@ addmv beta t alpha src1 src2 = unsafePerformIO $ do
 mat !* vec =
   addmv 1.0 zero 1.0 mat vec
   where
-    zero = tensorNew_ $ tdDim vec -- TODO - more efficient version w/o allocaiton?
+    zero = tensorNew_ $ (D1 (d2_1 $ tdDim mat)) -- TODO - more efficient version w/o allocaiton?
 
 addmm :: Double -> TensorDouble_ -> Double -> TensorDouble_ -> TensorDouble_ -> TensorDouble_
 addmm beta t alpha src1 src2 = unsafePerformIO $ do

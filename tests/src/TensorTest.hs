@@ -1,14 +1,15 @@
-module TensorTests where
-
-import TensorRaw
-import THDoubleTensorMath
+module Main where
 
 import TensorDouble
 import TensorDoubleMath
 import TensorDoubleRandom
-
-import TensorUtils
+import Random
 import TensorTypes
+import TensorUtils
+
+-- TODO : move raw tests elsewhere?
+import TensorRaw
+import THDoubleTensorMath
 
 -- |basic test of garbage collected tensor
 testGCTensor = do
@@ -32,12 +33,12 @@ testOps = do
   disp_ $ (tensorNew_ (D1 5)) ^+ 2.0
   disp_ $ ((tensorNew_ (D1 5)) ^+ 2.0) ^/ 4.0
 
+-- TODO : move raw test elsewhere?
 rawTest = do
   x <- tensorRaw (D1 5) 2.0
   y <- tensorRaw (D1 5) 3.0
   z <- tensorRaw (D1 5) 4.0
   disp x
-
   -- cadd = z <- y + scalar * x, z value discarded
   print $ 2.0 * 4.4 + 3.0
   c_THDoubleTensor_cadd z y 4.4 x
@@ -62,3 +63,25 @@ testCopy = do
   disp_ baz
   disp_ fob
   pure ()
+
+
+matrixMultTest = do
+  gen <- newRNG
+  mapM_ (\_ -> go gen) [1..10]
+  where
+    go gen = do
+      let mat = (tensorDoubleInit (D2 10 7) 2.2)
+      let vec = (tensorDoubleInit (D1 7) 1.0)
+      mat <- uniformT mat gen (-10.0) (10.0)
+      vec <- uniformT vec gen (-10.0) (10.0)
+      disp_ mat
+      disp_ vec
+      disp_ $ mat !* vec
+
+main = do
+  testGCTensor
+  testOps
+  rawTest
+  testCadd
+  testCopy
+  matrixMultTest

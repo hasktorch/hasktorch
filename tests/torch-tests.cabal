@@ -40,4 +40,26 @@ Test-Suite memory-test
                      , torch-core
                      , torch-raw
                      , torch-interface
+ 
+Test-Suite tensor-test 
+  default-language:    Haskell2010
+  main-is:             TensorTest.hs
+  hs-source-dirs:      src
+  type:                exitcode-stdio-1.0
+  build-depends:       base >= 4.7 && < 5
+                     , torch-core
+                     , torch-raw
+                     , torch-interface
+
+-- TODO : figure out why intero doesn't load tests properly unless it is an executable
+executable tensor-test-exec
+  default-language:    Haskell2010
+  main-is:             TensorTest.hs
+  hs-source-dirs:      src
+  build-depends:       base >= 4.7 && < 5
+                     , torch-core
+                     , torch-raw
+                     , torch-interface
+
+
 

@@ -19,6 +19,7 @@ import GHC.Ptr (FunPtr)
 import THTypes
 import THDoubleTensor
 
+-- TODO what should happen when accessor are applied to the wrong type here?
 data TensorDim a =
   D0
   | D1 { d1_1 :: a }

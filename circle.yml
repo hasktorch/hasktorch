@@ -25,6 +25,7 @@ test:
   override:
     - stack test torch-tests:test-torch
     - stack test torch-tests:memory-test
+    - stack exec torch-tests:tensor-test
     - stack exec codegen-generic
     - stack exec codegen-concrete
     - stack exec codegen-managed
