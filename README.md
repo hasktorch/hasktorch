@@ -1,26 +1,39 @@
-# HaskTorch
+# hasktorch
 
-A Haskell library for tensors and dynamic neural networks using
+A Haskell library for tensors and neural networks using
 [Torch](https://github.com/torch/torch7).
 
 *This library is in early development and is not recommended for use except by
 project contributors*
 
+## Project Organization
+
+- `codegen/` - Parsers that wrap TH C files and generate raw Haskell bindings.
+- `core/` - Memory-managed low-level operations that wrap raw bindings.
+- `examples/` - Usage examples
+- `interface/` - Shared types
+- `output/` - staging directory for `codegen/` output, should not be under
+  source control.
+- `raw/` - Comprehensive raw bindings to C TorcH (TH) functions.
+- `tests/` - Integration tests
+- `tools/` - Misc tools
+- `vendor/` - 3rd party dependencies as git submodules (links to TH C library)
+
 ## Setup Instructions
 
-Retrieve git submodules with
+Retrieve git submodules (includes TorcH library) with
 
 ```
 git submodule update --init --recursive`
 ```
 
-From within the `vendor`, directory, run:
+From within the `vendor/`, directory, run:
 
 ```
 build-torch-core.sh
 ```
 
-Then build using stack:
+Then build the project using stack:
 
 ```
 stack build

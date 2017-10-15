@@ -13,7 +13,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 
 import TensorDouble
-import TensorDoubleMath
+import TensorDoubleMath (sigmoid)
 import TensorDoubleRandom
 import TensorRaw
 import Random
@@ -28,33 +28,36 @@ data Weights = W {
 -- instance Show Weights where
 --   show w = "TODO implementat show"
 
--- randomWeights :: MonadRandom m => Int -> Int -> m Weights
--- randomWeights i o = do
---   let gen = newRNG
---       wB = uniform gen (-1.0) 1.0
---         let wB = randomVector  seed1 Uniform o * 2 - 1
---         wN = uniformSample seed2 o (replicate i (-1, 1))
---     return $ W wB wN
-
-
 data Network :: * where
   O :: Weights -> Network
-  (:&~) :: Weights -> Network -> Network
+  (:~) :: Weights -> Network -> Network
 
-infixr 5 :&~
+infixr 5 :~
 
 dispWeights w = do
+  putStrLn "Biases:"
   disp_ (biases w)
+  putStrLn "Weights:"
   disp_ (nodes w)
 
-test = do
+randomWeights i o = do
   gen <- newRNG
-  let w1 = W { biases = tensorNew_ (D1 3), nodes = tensorNew_ (D2 3 2) }
+  let w1 = W { biases = tensorNew_ (D1 o), nodes = tensorNew_ (D2 i o) }
   dispWeights w1
   b <- uniformT (biases w1) gen (-1.0) (1.0)
-  disp_ b
-  pure ()
+  w <- uniformT (nodes w1) gen (-1.0) (1.0)
+  pure W { biases = b, nodes = w }
+
+randomNet i [] o = O <$> randomWeights i o
+randomNet i (h:hs) o = (:~) <$> randomWeights i h <*> randomNet h hs o
+
+runLayer w wB wN v = undefined
+
+-- runNet (O w) v = undefined
+-- runNet w :~ n' = undefined
 
 main = do
-  test
+  w <- randomWeights 5 3
+  dispWeights w
+  randomNet 5 [3, 2, 4] 2
   putStrLn "Done"

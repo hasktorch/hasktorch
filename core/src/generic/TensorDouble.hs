@@ -4,7 +4,7 @@
 module TensorDouble (
   get_,
   tensorNew_,
-
+  tensorDoubleInit,
   newWithTensor
   )
 where
@@ -68,6 +68,24 @@ tensorNew_ dims = unsafePerformIO $ do
                        (w2cl d1) (w2cl d2) (w2cl d3)
     go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
                           (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+
+
+tensorDoubleInit :: TensorDim Word -> Double -> TensorDouble_
+tensorDoubleInit dims value = unsafePerformIO $ do
+  newPtr <- go dims
+  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  withForeignPtr fPtr (fillRaw value)
+  pure $ TensorDouble_ fPtr dims
+  where
+    go D0 = c_THDoubleTensor_new
+    go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
+    go (D2 d1 d2) = c_THDoubleTensor_newWithSize2d
+                    (w2cl d1) (w2cl d2)
+    go (D3 d1 d2 d3) = c_THDoubleTensor_newWithSize3d
+                       (w2cl d1) (w2cl d2) (w2cl d3)
+    go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
+                          (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+
 
 test :: IO ()
 test = do
