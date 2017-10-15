@@ -20,8 +20,6 @@ import THRandom
 import Foreign.C.Types
 import Test.Hspec
 
-import TorchTensor
-
 testMath = do
   hspec $ do
     describe "Math" $ do

@@ -16,8 +16,6 @@ import THRandom
 import Foreign.C.Types
 import Test.Hspec
 
--- import TorchTensor
--- import Tensor
 import TensorRaw
 import TensorTypes
 -- import TensorRandom
