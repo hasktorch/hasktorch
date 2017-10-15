@@ -13,7 +13,7 @@ cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:     TorchTensor, HMatrixBridge
+  exposed-modules:     HMatrixBridge
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
                      , hmatrix >= 0.18.1.0
@@ -25,7 +25,7 @@ library
 
 executable autograd
   default-language:    Haskell2010
-  other-modules:       TorchTensor
+  other-modules:       
   hs-source-dirs:      src
   main-is:             Autograd.hs
   build-depends:       base >= 4.7 && < 5
