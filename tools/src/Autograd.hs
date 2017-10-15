@@ -41,11 +41,13 @@ dispW w = do
   putStrLn "Weights:"
   disp_ (nodes w)
 
+dispN (O w) = dispW w
+dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
+
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
   gen <- newRNG
   let w1 = W { biases = tensorNew_ (D1 o), nodes = tensorNew_ (D2 o i) }
-  dispW w1
   b <- uniformT (biases w1) gen (-1.0) (1.0)
   w <- uniformT (nodes w1) gen (-1.0) (1.0)
   pure W { biases = b, nodes = w }
@@ -77,8 +79,13 @@ train rate x0 target = fst . go x0
   where go x (O w@(W wB wN)) = undefined
 
 main = do
-  net <- randomNet 5 [3, 2, 4] 2
+  net <- randomNet 5 [3, 2, 4, 2, 3] 2
   dat <- randomData 5
+  putStrLn "Data\n--------"
+  disp_ dat
+  putStrLn "Network\n--------"
+  dispN net
   let result = runNet net dat
+  putStrLn "Result\n--------"
   disp_ result
   putStrLn "Done"
