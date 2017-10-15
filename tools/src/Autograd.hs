@@ -35,20 +35,29 @@ data Network :: * where
 
 infixr 5 :~
 
-dispWeights w = do
+dispW w = do
   putStrLn "Biases:"
   disp_ (biases w)
   putStrLn "Weights:"
   disp_ (nodes w)
 
+randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
   gen <- newRNG
-  let w1 = W { biases = tensorNew_ (D1 o), nodes = tensorNew_ (D2 i o) }
-  dispWeights w1
+  let w1 = W { biases = tensorNew_ (D1 o), nodes = tensorNew_ (D2 o i) }
+  dispW w1
   b <- uniformT (biases w1) gen (-1.0) (1.0)
   w <- uniformT (nodes w1) gen (-1.0) (1.0)
   pure W { biases = b, nodes = w }
 
+randomData :: Word -> IO TensorDouble_
+randomData i = do
+  gen <- newRNG
+  let dat = tensorNew_ (D1 i)
+  dat <- uniformT dat gen (-1.0) (1.0)
+  pure dat
+
+randomNet :: Word -> [Word] -> Word -> IO Network
 randomNet i [] o = O <$> randomWeights i o
 randomNet i (h:hs) o = (:~) <$> randomWeights i h <*> randomNet h hs o
 
@@ -59,8 +68,17 @@ runNet :: Network -> TensorDouble_ -> TensorDouble_
 runNet (O w) v = sigmoid (runLayer w v)
 runNet (w :~ n') v = let v' = sigmoid (runLayer w v) in runNet n' v'
 
+train :: Double
+      -> TensorDouble_
+      -> TensorDouble_
+      -> Network
+      -> Network
+train rate x0 target = fst . go x0
+  where go x (O w@(W wB wN)) = undefined
+
 main = do
-  w <- randomWeights 5 3
-  dispWeights w
   net <- randomNet 5 [3, 2, 4] 2
+  dat <- randomData 5
+  let result = runNet net dat
+  disp_ result
   putStrLn "Done"
