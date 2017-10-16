@@ -8,16 +8,27 @@ project contributors*
 
 ## Project Organization
 
-- `codegen/` - Parsers that wrap TH C files and generate raw Haskell bindings.
-- `core/` - Memory-managed low-level operations that wrap raw bindings.
-- `examples/` - Usage examples
-- `interface/` - Shared types
-- `output/` - staging directory for `codegen/` output, should not be under
-  source control.
-- `raw/` - Comprehensive raw bindings to C TorcH (TH) functions.
-- `tests/` - Integration tests
-- `tools/` - Misc tools
-- `vendor/` - 3rd party dependencies as git submodules (links to TH C library)
+| Directory | Description |
+| --------- | ----------- |
+| [`codegen/`][codegen] | Parsers that wrap TH C files and generate raw Haskell bindings.
+| [`core/`][core] | Memory-managed low-level operations that wrap raw bindings.
+| [`examples/`][examples] | Usage examples
+| [`interface/`][interface] | Shared types
+| [`output/`][output] | staging directory for `codegen/` output, contents should not be under source control.
+| [`raw/`][raw] | Comprehensive raw bindings to C TorcH (TH) functions.
+| [`tests/`][tests] | Integration tests
+| [`tools/`][tools] | Misc tools
+| [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C library)
+
+[codegen]: [/codegen]
+[core]: [/core]
+[examples]: [/examples]
+[interface]: [/interface]
+[output]: [/output]
+[raw]: [/raw]
+[tests]: [/tests]
+[tools]: [/tools]
+[vendor]: [/vendor]
 
 ## Build Instructions
 
