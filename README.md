@@ -20,15 +20,15 @@ project contributors*
 | [`tools/`][tools] | Misc tools
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C library)
 
-[codegen]: [/codegen]
-[core]: [/core]
-[examples]: [/examples]
-[interface]: [/interface]
-[output]: [/output]
-[raw]: [/raw]
-[tests]: [/tests]
-[tools]: [/tools]
-[vendor]: [/vendor]
+[codegen]: [codegen]
+[core]: [core]
+[examples]: [examples]
+[interface]: [interface]
+[output]: [output]
+[raw]: [raw]
+[tests]: [tests]
+[tools]: [tools]
+[vendor]: [vendor]
 
 ## Build Instructions
 
