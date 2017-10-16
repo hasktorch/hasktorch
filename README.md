@@ -4,9 +4,9 @@ A Haskell library for tensors and neural networks using
 [Torch](https://github.com/torch/torch7).
 
 *This library is in early development and is not recommended for use except by
-project contributors*
+contributors*
 
-## Project Organization
+## Project Structure
 
 | Directory | Description |
 | --------- | ----------- |
@@ -32,9 +32,8 @@ project contributors*
 
 ## Build Instructions
 
-Currently building hasktorch is only supported on OSX and linux.
-
-To start, retrieve git submodules (includes TorcH library) with
+Currently building hasktorch is only supported on OSX and linux. To start,
+retrieve git submodules (includes TorcH library) with:
 
 ```
 git submodule update --init --recursive`
@@ -47,6 +46,9 @@ within the `vendor/`, directory:
 ```
 build-torch-core.sh
 ```
+
+If successful, this builds the TH shared library and places it in the
+`vendor/build/` directory.
 
 Then build the project using stack:
 
@@ -61,6 +63,20 @@ stack test torch-tests:test-torch
 stack test torch-tests:memory-test
 stack test torch-tests:tensor-tests
 ```
+
+## Code Generation
+
+The `raw/` modules are generated using the scripts in `codegen`. Since the
+outputs are already included in the repo, you should not need to run `codegen`
+programs to use hasktorch.
+
+However, if you are contributing to hasktorch itself, you may want to
+modify/re-generate the code generation processes. Currently there are three main
+operations:
+
+- `stack exec codegen-generic` - Builds generic modules (one version per tensor type).
+- `stack exec codegen-concrete` - Builds non-generic modules.
+- `stack exec codegen-managed` - Build memory-managed interfaces to TH (not working yet).
 
 ## References
 
