@@ -1,6 +1,5 @@
 module TensorUtils (
   disp,
-  disp_,
   w2cl
   ) where
 
@@ -23,8 +22,8 @@ import TensorDouble
 import TensorDoubleMath
 
 -- |displaying tensor values
-disp :: Ptr CTHDoubleTensor -> IO ()
-disp tensor
+dispRaw :: Ptr CTHDoubleTensor -> IO ()
+dispRaw tensor
   | (length sz) == 0 = putStrLn "Empty Tensor"
   | (length sz) == 1 = do
       putStrLn ""
@@ -58,8 +57,8 @@ disp tensor
     sz = size tensor
 
 -- |Display memory managed tensor
-disp_ tensor =
-  (withForeignPtr(tdTensor tensor) disp)
+disp tensor =
+  (withForeignPtr(tdTensor tensor) dispRaw)
 
 -- |Dimensions of a tensor as a list
 size :: (Ptr CTHDoubleTensor) -> [Int]

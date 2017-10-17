@@ -3,7 +3,7 @@
 
 module TensorDouble (
   get_,
-  tensorNew_,
+  tdNew,
   tensorDoubleInit,
   newWithTensor
   )
@@ -25,7 +25,7 @@ import THDoubleTensor
 import THDoubleTensorMath
 import THDoubleLapack
 
-wrap tensor = TensorDouble_ <$> (newForeignPtr p_THDoubleTensor_free tensor)
+wrap tensor = TensorDouble <$> (newForeignPtr p_THDoubleTensor_free tensor)
 
 w2cl = fromIntegral
 
@@ -43,22 +43,22 @@ get_ loc tensor =
     getter (D4 d1 d2 d3 d4) t = c_THDoubleTensor_get4d t
                                 (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
-newWithTensor :: TensorDouble_ -> TensorDouble_
+newWithTensor :: TensorDouble -> TensorDouble
 newWithTensor t = unsafePerformIO $ do
   newPtr <- withForeignPtr (tdTensor t) (
     \tPtr -> c_THDoubleTensor_newWithTensor tPtr
     )
   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
-  pure $ TensorDouble_ newFPtr (dimFromRaw newPtr)
+  pure $ TensorDouble newFPtr (dimFromRaw newPtr)
 
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
-tensorNew_ :: TensorDim Word -> TensorDouble_
-tensorNew_ dims = unsafePerformIO $ do
+tdNew :: TensorDim Word -> TensorDouble
+tdNew dims = unsafePerformIO $ do
   newPtr <- go dims
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   withForeignPtr fPtr fillRaw0
-  pure $ TensorDouble_ fPtr dims
+  pure $ TensorDouble fPtr dims
   where
     go D0 = c_THDoubleTensor_new
     go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
@@ -70,12 +70,12 @@ tensorNew_ dims = unsafePerformIO $ do
                           (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
 
-tensorDoubleInit :: TensorDim Word -> Double -> TensorDouble_
+tensorDoubleInit :: TensorDim Word -> Double -> TensorDouble
 tensorDoubleInit dims value = unsafePerformIO $ do
   newPtr <- go dims
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   withForeignPtr fPtr (fillRaw value)
-  pure $ TensorDouble_ fPtr dims
+  pure $ TensorDouble fPtr dims
   where
     go D0 = c_THDoubleTensor_new
     go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
@@ -89,6 +89,6 @@ tensorDoubleInit dims value = unsafePerformIO $ do
 
 test :: IO ()
 test = do
-  let foo = tensorNew_ (D1 5)
-  -- disp_ foo
+  let foo = tdNew (D1 5)
+  -- disp foo
   pure ()

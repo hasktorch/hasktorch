@@ -1,7 +1,7 @@
 module TensorTypes (
   TensorDim(..),
   TensorFloat(..),
-  TensorDouble_(..),
+  TensorDouble(..),
   TensorByte(..),
   TensorChar(..),
   TensorShort(..),
@@ -49,7 +49,7 @@ data TensorFloat = TensorFloat {
   tfDim :: !(TensorDim Word)
   } deriving (Eq, Show)
 
-data TensorDouble_ = TensorDouble_ {
+data TensorDouble = TensorDouble {
   tdTensor :: !(ForeignPtr CTHDoubleTensor),
   tdDim :: !(TensorDim Word)
   } deriving (Eq, Show)

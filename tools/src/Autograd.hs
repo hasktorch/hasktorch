@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 
@@ -20,9 +20,11 @@ import Random
 import TensorTypes
 import TensorUtils
 
+import GHC.TypeLits
+
 data Weights = W {
-  biases :: TensorDouble_,
-  nodes :: TensorDouble_
+  biases :: TensorDouble,
+  nodes :: TensorDouble
   } deriving (Eq, Show)
 
 -- instance Show Weights where
@@ -37,9 +39,9 @@ infixr 5 :~
 
 dispW w = do
   putStrLn "Biases:"
-  disp_ (biases w)
+  disp (biases w)
   putStrLn "Weights:"
-  disp_ (nodes w)
+  disp (nodes w)
 
 dispN (O w) = dispW w
 dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
@@ -47,15 +49,15 @@ dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
   gen <- newRNG
-  let w1 = W { biases = tensorNew_ (D1 o), nodes = tensorNew_ (D2 o i) }
+  let w1 = W { biases = tdNew (D1 o), nodes = tdNew (D2 o i) }
   b <- uniformT (biases w1) gen (-1.0) (1.0)
   w <- uniformT (nodes w1) gen (-1.0) (1.0)
   pure W { biases = b, nodes = w }
 
-randomData :: Word -> IO TensorDouble_
+randomData :: Word -> IO TensorDouble
 randomData i = do
   gen <- newRNG
-  let dat = tensorNew_ (D1 i)
+  let dat = tdNew (D1 i)
   dat <- uniformT dat gen (-1.0) (1.0)
   pure dat
 
@@ -63,16 +65,16 @@ randomNet :: Word -> [Word] -> Word -> IO Network
 randomNet i [] o = O <$> randomWeights i o
 randomNet i (h:hs) o = (:~) <$> randomWeights i h <*> randomNet h hs o
 
-runLayer :: Weights -> TensorDouble_ -> TensorDouble_
+runLayer :: Weights -> TensorDouble -> TensorDouble
 runLayer (W wB wN) v = addmv 1.0 wB 1.0 wN v
 
-runNet :: Network -> TensorDouble_ -> TensorDouble_
+runNet :: Network -> TensorDouble -> TensorDouble
 runNet (O w) v = sigmoid (runLayer w v)
 runNet (w :~ n') v = let v' = sigmoid (runLayer w v) in runNet n' v'
 
 train :: Double
-      -> TensorDouble_
-      -> TensorDouble_
+      -> TensorDouble
+      -> TensorDouble
       -> Network
       -> Network
 train rate x0 target = fst . go x0
@@ -82,10 +84,10 @@ main = do
   net <- randomNet 5 [3, 2, 4, 2, 3] 2
   dat <- randomData 5
   putStrLn "Data\n--------"
-  disp_ dat
+  disp dat
   putStrLn "Network\n--------"
   dispN net
   let result = runNet net dat
   putStrLn "Result\n--------"
-  disp_ result
+  disp result
   putStrLn "Done"

@@ -10,7 +10,7 @@ memoryTest dim niter = do
   putStrLn $ (show $ memSizeGB dim) ++ " GB per allocation x " ++ (show niter)
   mapM_ (\iter -> do
             putStr ("Iteration : " ++ show iter ++ " / ")
-            let x = tensorNew_ dim
+            let x = tdNew dim
             x <- get_ (D4 0 0 0 0) x
             putStrLn $ "Printing dummy value: " ++
               (show x) -- Need some IO with value

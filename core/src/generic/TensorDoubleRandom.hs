@@ -34,7 +34,7 @@ import THDoubleTensorRandom
 
 import THFloatTensor
 
-randomT :: TensorDouble_ -> RandGen -> IO TensorDouble_
+randomT :: TensorDouble -> RandGen -> IO TensorDouble
 randomT self gen = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -56,7 +56,7 @@ clampedRandomT self gen minVal maxVal = do
   pure self
   where (minC, maxC) = (fromIntegral minVal, fromIntegral maxVal)
 
-cappedRandomT :: TensorDouble_ -> RandGen -> Int -> IO TensorDouble_
+cappedRandomT :: TensorDouble -> RandGen -> Int -> IO TensorDouble
 cappedRandomT self gen maxVal = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -69,7 +69,7 @@ cappedRandomT self gen maxVal = do
   where maxC = fromIntegral maxVal
 
 -- TH_API void THTensor_(geometric)(THTensor *self, THGenerator *_generator, double p);
-geometricT :: TensorDouble_ -> RandGen -> Double -> IO TensorDouble_
+geometricT :: TensorDouble -> RandGen -> Double -> IO TensorDouble
 geometricT self gen p = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -82,7 +82,7 @@ geometricT self gen p = do
   where pC = realToFrac p
 
 -- TH_API void THTensor_(bernoulli)(THTensor *self, THGenerator *_generator, double p);
-bernoulliT :: TensorDouble_ -> RandGen -> Double -> IO TensorDouble_
+bernoulliT :: TensorDouble -> RandGen -> Double -> IO TensorDouble
 bernoulliT self gen p = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -94,7 +94,7 @@ bernoulliT self gen p = do
   pure self
   where pC = realToFrac p
 
-bernoulliFloatTensor :: TensorDouble_ -> RandGen -> TensorFloat -> IO ()
+bernoulliFloatTensor :: TensorDouble -> RandGen -> TensorFloat -> IO ()
 bernoulliFloatTensor self gen p = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -108,7 +108,7 @@ bernoulliFloatTensor self gen p = do
     )
   where pC = tfTensor p
 
-bernoulliDoubleTensor :: TensorDouble_ -> RandGen -> TensorDouble_ -> IO TensorDouble_
+bernoulliDoubleTensor :: TensorDouble -> RandGen -> TensorDouble -> IO TensorDouble
 bernoulliDoubleTensor self gen p = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -123,7 +123,7 @@ bernoulliDoubleTensor self gen p = do
   pure self
   where pC = tdTensor p
 
-uniformT :: TensorDouble_ -> RandGen -> Double -> Double -> IO TensorDouble_
+uniformT :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
 uniformT self gen a b = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -136,7 +136,7 @@ uniformT self gen a b = do
   where aC = realToFrac a
         bC = realToFrac b
 
-normalT :: TensorDouble_ -> RandGen -> Double -> Double -> IO TensorDouble_
+normalT :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
 normalT self gen mean stdv = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -153,7 +153,7 @@ normalT self gen mean stdv = do
 -- TH_API void THTensor_(normal_stddevs)(THTensor *self, THGenerator *gen, double mean, THTensor *stddevs);
 -- TH_API void THTensor_(normal_means_stddevs)(THTensor *self, THGenerator *gen, THTensor *means, THTensor *stddevs);
 
-exponentialT :: TensorDouble_ -> RandGen -> Double -> IO TensorDouble_
+exponentialT :: TensorDouble -> RandGen -> Double -> IO TensorDouble
 exponentialT self gen lambda = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -165,7 +165,7 @@ exponentialT self gen lambda = do
   pure self
   where lambdaC = realToFrac lambda
 
-cauchyT :: TensorDouble_ -> RandGen -> Double -> Double -> IO TensorDouble_
+cauchyT :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
 cauchyT self gen median sigma = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -178,7 +178,7 @@ cauchyT self gen median sigma = do
   where medianC = realToFrac median
         sigmaC = realToFrac sigma
 
-logNormalT :: TensorDouble_ -> RandGen -> Double -> Double -> IO TensorDouble_
+logNormalT :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
 logNormalT self gen mean stdv = do
   withForeignPtr (tdTensor self)
     (\s ->
@@ -192,7 +192,7 @@ logNormalT self gen mean stdv = do
         stdvC = realToFrac stdv
 
 
-multinomialT :: TensorLong -> RandGen -> TensorDouble_ -> Int -> Bool -> IO TensorLong
+multinomialT :: TensorLong -> RandGen -> TensorDouble -> Int -> Bool -> IO TensorLong
 multinomialT self gen prob_dist n_sample with_replacement = do
   withForeignPtr (tlTensor self)
     (\s ->
@@ -213,9 +213,9 @@ multinomialT self gen prob_dist n_sample with_replacement = do
 -- #endif
 
 test = do
-  let foo = tensorNew_ (D1 3)
-  disp_ foo
+  let foo = tdNew (D1 3)
+  disp foo
   gen <- newRNG
   randomT foo gen
-  disp_ foo
+  disp foo
   pure ()

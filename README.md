@@ -80,7 +80,7 @@ operations:
 
 ## References
 
-### Using Torch
+### Torch Internals
 
 - [Torch Internals Writeup by Adam Paszke](https://apaszke.github.io/torch-internals.html) 
 - [A Tour of PyTorch Internals (Part I)](http://pytorch.org/2017/05/11/Internals.html)
@@ -90,6 +90,7 @@ operations:
 
 - [Practical dependent types in Haskell](https://blog.jle.im/entry/practical-dependent-types-in-haskell-1.html)
 - [Monday Morning Haskell: Deep Learning and Deep Types: Tensor Flow and Dependent Types](https://mmhaskell.com/blog/2017/9/11/deep-learning-and-deep-types-tensor-flow-and-dependent-types)
+- ["Dependent Types in Haskell" by Stephanie Weirich](https://www.youtube.com/watch?v=wNa3MMbhwS4)
 
 ### Automatic Differentiation
 
