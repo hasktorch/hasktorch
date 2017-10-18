@@ -65,9 +65,9 @@ stack test torch-tests
 
 ## Code Generation
 
-The `raw/` modules are generated using the scripts in `codegen`. Since the
-outputs are already included in the repo, you should not need to run `codegen`
-programs to use hasktorch.
+The [`raw/`][raw] modules are generated using the scripts in
+[`codegen/`][codegen]. Since the outputs are already part of the repo, you
+should not need to run [`codegen/`][codegen] programs to use hasktorch.
 
 However, if you are contributing to hasktorch itself, you may want to
 modify/re-generate the code generation processes. Currently there are three main
@@ -77,8 +77,11 @@ operations:
 - `stack exec codegen-concrete` - Builds non-generic modules.
 - `stack exec codegen-managed` - Build memory-managed interfaces to TH (not working yet).
 
+All of these programs write `.hs` files into the [`output/`][output] directory
+as a staging area (rather than overwriting [`raw/`][raw] directly).
+
 For details on the TH library's pseudo-templating preprocessor mechanism for
-underlying the "generic" modules, see [Adam Paszke's
+underlying the generic modules, see [Adam Paszke's
 writeup](https://apaszke.github.io/torch-internals.html).
 
 ## References
