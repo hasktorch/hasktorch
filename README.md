@@ -14,7 +14,7 @@ contributors*
 | [`core/`][core] | Memory-managed low-level operations that wrap raw bindings.
 | [`examples/`][examples] | Usage examples
 | [`interface/`][interface] | Shared types
-| [`output/`][output] | staging directory for `codegen/` output, contents should not be under source control.
+| [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
 | [`raw/`][raw] | Comprehensive raw bindings to C TorcH (TH) functions.
 | [`tests/`][tests] | Continuous integration tests
 | [`tools/`][tools] | Misc tools
@@ -41,16 +41,17 @@ git submodule update --init --recursive`
 
 A recent version of the gcc C compiler is used to build the TorcH C library. If
 gcc is already installed, you should be able to run this shell script from
-within the `vendor/`, directory:
+within the `vendor/` directory:
 
 ```
-build-torch-core.sh
+cd vendor; ./build-torch-core.sh
 ```
+
+On OSX the above script looks for the gcc-6 binary which needs to be installed
+using [homebrew](https://brew.sh/). On linux, this simply uses gcc. 
 
 If successful, this builds the TH shared library and places it in the
-`vendor/build/` directory.
-
-Then build the project using stack:
+`vendor/build/` directory. Then build the project using stack:
 
 ```
 stack build
@@ -59,9 +60,7 @@ stack build
 If everything built, you should be able to run tests successfully:
 
 ```
-stack test torch-tests:test-torch
-stack test torch-tests:memory-test
-stack test torch-tests:tensor-tests
+stack test torch-tests
 ```
 
 ## Code Generation
@@ -78,6 +77,10 @@ operations:
 - `stack exec codegen-concrete` - Builds non-generic modules.
 - `stack exec codegen-managed` - Build memory-managed interfaces to TH (not working yet).
 
+For details on the TH library's pseudo-templating preprocessor mechanism for
+underlying the "generic" modules, see [Adam Paszke's
+writeup](https://apaszke.github.io/torch-internals.html).
+
 ## References
 
 ### Torch Internals
@@ -86,11 +89,11 @@ operations:
 - [A Tour of PyTorch Internals (Part I)](http://pytorch.org/2017/05/11/Internals.html)
 - [Haskell/Torch binding using backpack](http://blog.ezyang.com/2017/08/backpack-for-deep-learning/).
 
-###  Dependent type NN Implementations
+###  Background on Dependent types in Haskell and NN Implementations
 
 - [Practical dependent types in Haskell](https://blog.jle.im/entry/practical-dependent-types-in-haskell-1.html)
 - [Monday Morning Haskell: Deep Learning and Deep Types: Tensor Flow and Dependent Types](https://mmhaskell.com/blog/2017/9/11/deep-learning-and-deep-types-tensor-flow-and-dependent-types)
-- ["Dependent Types in Haskell" by Stephanie Weirich](https://www.youtube.com/watch?v=wNa3MMbhwS4)
+- [Basic Type Level Programming in Haskell](http://www.parsonsmatt.org/2017/04/26/basic_type_level_programming_in_haskell.html)
 
 ### Automatic Differentiation
 
