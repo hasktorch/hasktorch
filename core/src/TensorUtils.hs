@@ -20,41 +20,7 @@ import THTypes
 
 import TensorDouble
 import TensorDoubleMath
-
--- |displaying tensor values
-dispRaw :: Ptr CTHDoubleTensor -> IO ()
-dispRaw tensor
-  | (length sz) == 0 = putStrLn "Empty Tensor"
-  | (length sz) == 1 = do
-      putStrLn ""
-      let indexes = [ fromIntegral idx :: CLong
-                    | idx <- [0..(sz !! 0 - 1)] ]
-      putStr "[ "
-      mapM_ (\idx -> putStr $
-                     (showLim $ c_THDoubleTensor_get1d tensor idx) ++ " ")
-        indexes
-      putStrLn "]\n"
-  | (length sz) == 2 = do
-      putStrLn ""
-      let pairs = [ ((fromIntegral r) :: CLong,
-                     (fromIntegral c) :: CLong)
-                  | r <- [0..(sz !! 0 - 1)], c <- [0..(sz !! 1 - 1)] ]
-      putStr ("[ " :: String)
-      mapM_ (\(r, c) -> do
-                let val = c_THDoubleTensor_get2d tensor r c
-                if c == fromIntegral (sz !! 1) - 1
-                  then do
-                  putStrLn (((showLim val) ++ " ]") :: String)
-                  putStr (if (fromIntegral r :: Int) < (sz !! 0 - 1)
-                          then "[ " :: String
-                          else "")
-                  else
-                  putStr $ ((showLim val) ++ " " :: String)
-            ) pairs
-      putStrLn ""
-  | otherwise = putStrLn "Can't print this yet."
-  where
-    sz = size tensor
+import TensorRaw (dispRaw)
 
 -- |Display memory managed tensor
 disp tensor =

@@ -1,5 +1,4 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds, TypeFamilies, TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 
 module Main where
@@ -20,7 +19,7 @@ import Random
 import TensorTypes
 import TensorUtils
 
-import GHC.TypeLits
+-- import GHC.TypeLits
 
 data Weights = W {
   biases :: TensorDouble,
