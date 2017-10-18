@@ -16,7 +16,7 @@ contributors*
 | [`interface/`][interface] | Shared types
 | [`output/`][output] | staging directory for `codegen/` output, contents should not be under source control.
 | [`raw/`][raw] | Comprehensive raw bindings to C TorcH (TH) functions.
-| [`tests/`][tests] | Integration tests
+| [`tests/`][tests] | Continuous integration tests
 | [`tools/`][tools] | Misc tools
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C library)
 

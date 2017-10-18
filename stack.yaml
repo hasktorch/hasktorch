@@ -1,8 +1,8 @@
-resolver: nightly-2017-10-12
+resolver: nightly-2017-10-13
 
 packages:
-- 'core'
 - 'codegen'
+- 'core'
 - 'examples'
 - 'interface'
 - 'raw'
@@ -27,10 +27,10 @@ extra-lib-dirs:
   - ./vendor/build/
 
 ghc-options:
-  "torch-core": -lTH
-  "torch-codegen": -lTH
+  "hasktorch-core": -lTH
+  "hasktorch-codegen": -lTH
   "hasktorch-examples": -lTH
-  "torch-raw": -lTH
-  "torch-tests": -lTH
-  "torch-tools": -lTH
+  "hasktorch-raw": -lTH
+  "hasktorch-tests": -lTH
+  "hasktorch-tools": -lTH
 # ghci-options for inline-c should include -fobject-code -O0

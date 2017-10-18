@@ -213,9 +213,9 @@ multinomialT self gen prob_dist n_sample with_replacement = do
 -- #endif
 
 test = do
-  let foo = tdNew (D1 3)
-  disp foo
+  let t = tdNew (D1 3)
+  disp t
   gen <- newRNG
-  randomT foo gen
-  disp foo
+  randomT t gen
+  disp t
   pure ()

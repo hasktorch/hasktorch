@@ -14,9 +14,6 @@ module Random (
   bernoulli
   ) where
 
--- TODO - refactor core to raw/memory-managed. This should probably go into
--- core/memory-managed.
-
 import Foreign
 import Foreign.C.Types
 import Foreign.Ptr
@@ -123,16 +120,17 @@ geometric gen p = apply1Int gen p c_THRandom_geometric
 bernoulli :: RandGen -> Double -> IO Int
 bernoulli gen p = apply1Int gen p c_THRandom_bernoulli
 
+-- |Check that seeds work as intended
 test = do
-  foo <- newRNG
-  manualSeed foo 332323401
-  val1 <- normal foo 0.0 1000.0
-  val2 <- normal foo 0.0 1000.0
+  rng <- newRNG
+  manualSeed rng 332323401
+  val1 <- normal rng 0.0 1000.0
+  val2 <- normal rng 0.0 1000.0
   print val1
   print val2
   print (val1 /= val2)
-  manualSeed foo 332323401
-  manualSeed foo 332323401
-  val3 <- normal foo 0.0 1000.0
+  manualSeed rng 332323401
+  manualSeed rng 332323401
+  val3 <- normal rng 0.0 1000.0
   print val3
   print (val1 == val3)

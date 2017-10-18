@@ -1,4 +1,4 @@
-name:                torch-core
+name:                hasktorch-core
 version:             0.1.0.0
 synopsis:            Torch for tensors and dynamic neural networks in Haskell
 description:         higher level memory-managed interface to core data types
@@ -28,8 +28,8 @@ library
 
   hs-source-dirs:      src, src/generic
   build-depends:       base >= 4.7 && < 5
-                     , torch-raw
-                     , torch-interface
+                     , hasktorch-raw
+                     , hasktorch-interface
                      , text >= 1.2.2.2
 
 source-repository head

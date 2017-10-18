@@ -16,7 +16,7 @@ executable raw-lapack-svd
   main-is:             RawLapackSVD.hs
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
-                     , torch-core
-                     , torch-raw
-                     , torch-interface
+                     , hasktorch-core
+                     , hasktorch-raw
+                     , hasktorch-interface
 

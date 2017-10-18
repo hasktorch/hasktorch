@@ -1,4 +1,4 @@
-name:                torch-interface
+name:                hasktorch-interface
 version:             0.1.0.0
 synopsis:            Torch for tensors and dynamic neural networks in Haskell
 description:         Shared types

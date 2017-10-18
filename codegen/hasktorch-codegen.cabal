@@ -1,4 +1,4 @@
-name:                torch-codegen
+name:                hasktorch-codegen
 version:             0.1.0.0
 synopsis:            Torch for tensors and dynamic neural networks in Haskell
 description:         Code generation tools

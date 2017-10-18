@@ -1,4 +1,4 @@
-name:                torch-tools
+name:                hasktorch-tools
 version:             0.1.0.0
 synopsis:            Torch for tensors and dynamic neural networks in Haskell
 description:         misc utilities
@@ -17,9 +17,9 @@ library
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
                      , hmatrix >= 0.18.1.0
-                     , torch-core
-                     , torch-raw
-                     , torch-interface
+                     , hasktorch-core
+                     , hasktorch-raw
+                     , hasktorch-interface
                      , text >= 1.2.2.2
 
 
@@ -29,10 +29,10 @@ executable autograd
   hs-source-dirs:      src
   main-is:             Autograd.hs
   build-depends:       base >= 4.7 && < 5
-                     , torch-core
-                     , torch-interface
-                     , torch-raw
-                     , torch-tools
+                     , hasktorch-core
+                     , hasktorch-interface
+                     , hasktorch-raw
+                     , hasktorch-tools
                      , hspec >= 2.4.4
                      , text >= 1.2.2.2
 

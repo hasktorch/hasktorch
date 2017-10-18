@@ -1,4 +1,4 @@
-name:                torch-tests
+name:                hasktorch-tests
 version:             0.1.0.0
 synopsis:            Torch for tensors and dynamic neural networks in Haskell
 description:         tests
@@ -25,10 +25,10 @@ Test-Suite test-torch
   type:                exitcode-stdio-1.0
   main-is:             Tests.hs
   build-depends:       base >= 4.7 && < 5
-                     , torch-core
-                     , torch-interface
-                     , torch-raw
-                     , torch-tools
+                     , hasktorch-core
+                     , hasktorch-interface
+                     , hasktorch-raw
+                     , hasktorch-tools
                      , hspec >= 2.4.4
 
 Test-Suite memory-test
@@ -37,9 +37,9 @@ Test-Suite memory-test
   hs-source-dirs:      src
   type:                exitcode-stdio-1.0
   build-depends:       base >= 4.7 && < 5
-                     , torch-core
-                     , torch-raw
-                     , torch-interface
+                     , hasktorch-core
+                     , hasktorch-raw
+                     , hasktorch-interface
  
 Test-Suite tensor-test 
   default-language:    Haskell2010
@@ -47,9 +47,9 @@ Test-Suite tensor-test
   hs-source-dirs:      src
   type:                exitcode-stdio-1.0
   build-depends:       base >= 4.7 && < 5
-                     , torch-core
-                     , torch-raw
-                     , torch-interface
+                     , hasktorch-core
+                     , hasktorch-raw
+                     , hasktorch-interface
 
 -- TODO : figure out why intero doesn't load tests properly unless it is an executable
 executable tensor-test-exec
@@ -57,9 +57,9 @@ executable tensor-test-exec
   main-is:             TensorTest.hs
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
-                     , torch-core
-                     , torch-raw
-                     , torch-interface
+                     , hasktorch-core
+                     , hasktorch-raw
+                     , hasktorch-interface
 
 
 

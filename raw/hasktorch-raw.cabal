@@ -1,4 +1,4 @@
-name:                torch-raw
+name:                hasktorch-raw
 version:             0.1.0.0
 synopsis:            Torch for tensors and dynamic neural networks in Haskell
 description:         core C bindings
@@ -113,7 +113,7 @@ library
 
   hs-source-dirs:      src, src/generic
   build-depends:       base >= 4.7 && < 5
-                     , torch-interface
+                     , hasktorch-interface
                      , hspec >= 2.4.4
                      , text >= 1.2.2.2
   default-language:    Haskell2010
