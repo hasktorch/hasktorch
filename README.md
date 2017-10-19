@@ -10,8 +10,8 @@ contributors*
 
 | Directory | Description |
 | --------- | ----------- |
-| [`codegen/`][codegen] | Parsers that wrap TH C files and generate raw Haskell bindings.
-| [`core/`][core] | Memory-managed low-level operations that wrap raw bindings.
+| [`codegen/`][codegen] | Parsers that parse .h files in the C TH library and generate low-level raw Haskell bindings.
+| [`core/`][core] | Memory-managed tensors and core data types that wrap raw C bindings to TH.
 | [`examples/`][examples] | Usage examples
 | [`interface/`][interface] | Shared types
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.

@@ -1,6 +1,7 @@
 module Main where
 
 import TensorDouble
+import TensorDoubleLapack
 import TensorDoubleMath
 import TensorDoubleRandom
 import Random
@@ -77,10 +78,27 @@ matrixMultTest = do
       disp vec
       disp $ mat !* vec
 
+testLapack = do
+  rng <- newRNG
+  let rnd = tdNew (D2 2 2)
+  t <- uniformT rnd rng (-1.0) 1.0
+
+  let b = tensorDoubleInit (D1 2) 1.0
+  let (resA, resB) = gesv t b
+  disp resA
+  disp resB
+
+  let (resQ, resR) = qr t
+  disp resQ
+  disp resR
+  pure ()
+
 main = do
   testGCTensor
   testOps
   rawTest
   testCadd
   testCopy
+  testLapack
   matrixMultTest
+
