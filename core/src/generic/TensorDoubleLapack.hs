@@ -1,6 +1,10 @@
  module TensorDoubleLapack (
   gesv
   , gesv_
+  , gels
+  , gels_
+  , getri
+  , getri_
   , qr
   , qr_
   ) where
@@ -59,6 +63,67 @@ gesv_ resA resB a b = do
                    )
               )
          )
+    )
+  pure ()
+
+gels :: TensorDouble -> TensorDouble -> (TensorDouble, TensorDouble)
+gels a b = unsafePerformIO $ do
+  let resB = tdNew (tdDim a)
+  let resA = tdNew (tdDim a)
+  withForeignPtr (tdTensor resB)
+    (\resBRaw ->
+       withForeignPtr (tdTensor resA)
+         (\resARaw ->
+            withForeignPtr (tdTensor b)
+              (\bRaw ->
+                 withForeignPtr (tdTensor a)
+                   (\aRaw ->
+                      c_THDoubleTensor_gels resBRaw resARaw bRaw aRaw
+                   )
+              )
+         )
+    )
+  pure (resA, resB)
+
+gels_
+  :: TensorDouble
+     -> TensorDouble -> TensorDouble -> TensorDouble -> IO ()
+gels_ resA resB a b = do
+  withForeignPtr (tdTensor resB)
+    (\resBRaw ->
+       withForeignPtr (tdTensor resA)
+         (\resARaw ->
+            withForeignPtr (tdTensor b)
+              (\bRaw ->
+                 withForeignPtr (tdTensor a)
+                   (\aRaw ->
+                      c_THDoubleTensor_gels resBRaw resARaw bRaw aRaw
+                   )
+              )
+         )
+    )
+  pure ()
+
+getri :: TensorDouble -> TensorDouble
+getri a = unsafePerformIO $ do
+  let resA = tdNew (tdDim a)
+  withForeignPtr (tdTensor resA)
+    (\resARaw ->
+        withForeignPtr (tdTensor a)
+        (\aRaw ->
+            c_THDoubleTensor_getri resARaw aRaw
+        )
+    )
+  pure resA
+
+getri_ :: TensorDouble -> TensorDouble -> IO ()
+getri_ resA a = do
+  withForeignPtr (tdTensor resA)
+    (\resARaw ->
+        withForeignPtr (tdTensor a)
+        (\aRaw ->
+            c_THDoubleTensor_getri resARaw aRaw
+        )
     )
   pure ()
 
