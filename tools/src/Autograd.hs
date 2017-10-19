@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, TypeFamilies, TypeOperators #-}
+{-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 
 module Main where
