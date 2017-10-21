@@ -1,13 +1,7 @@
-{-# LANGUAGE DataKinds, KindSignatures #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
 
 module TensorStaticTypes (
   mkT,
@@ -16,12 +10,9 @@ module TensorStaticTypes (
   TDS'(..)
   ) where
 
-import Foreign
-import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
-                           newForeignPtr )
-import GHC.Ptr (FunPtr)
+import Foreign (Ptr)
+import Foreign.C.Types (CLong)
+import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 
 import TensorRaw
 import TensorDouble
@@ -30,7 +21,6 @@ import THTypes
 import THDoubleTensor
 
 import GHC.TypeLits
-import GHC.Generics (Generic)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Data.Proxy (Proxy(..))
@@ -80,7 +70,7 @@ instance (KnownNat n) => StaticTensor (TDS n) where
 data TDS (n :: Nat) = TDS {
   tdsTensor :: !(ForeignPtr CTHDoubleTensor),
   tdsDim :: TensorDim Word
-  } deriving (Show, Generic)
+  } deriving (Show)
 
 testStatic = do
   let foo = (mkT (D2 2 2)) :: TDS 2
@@ -94,7 +84,7 @@ testStatic = do
 data TDS' (n :: Nat) (d :: (Nat, Nat, Nat, Nat)) = TDS' {
   tdsTensor' :: !(ForeignPtr CTHDoubleTensor),
   tdsDim' :: TensorDim Word
-  } deriving (Show, Generic)
+  } deriving (Show)
 
 instance (KnownNat n, KnownNat d0, KnownNat d1, KnownNat d2, KnownNat d3) =>
   StaticTensor (TDS' n '(d0 , d1 , d2 , d3) )  where
