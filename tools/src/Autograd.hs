@@ -19,8 +19,6 @@ import Random
 import TensorTypes
 import TensorUtils
 
--- import GHC.TypeLits
-
 data Weights = W {
   biases :: TensorDouble,
   nodes :: TensorDouble
