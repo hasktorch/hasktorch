@@ -66,7 +66,7 @@ instance (KnownNat n, KnownNat d0, KnownNat d1, KnownNat d2, KnownNat d3) =>
       makeStatic dims fptr = (TDS fptr dims) :: TDS n '(d0, d1, d2, d3)
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
-{- Version 2: type level # dimensions -}
+{- Version 2: type level representation for # dimensions only -}
 
 instance (KnownNat n) => StaticTensor (TDS' n) where
   mkT dims = unsafePerformIO $ do
