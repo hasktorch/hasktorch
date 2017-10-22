@@ -65,15 +65,15 @@ randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
   gen <- newRNG
   let w1 = W { biases = tdNew (D1 o), nodes = tdNew (D2 o i) }
-  b <- uniformT (biases w1) gen (-1.0) (1.0)
-  w <- uniformT (nodes w1) gen (-1.0) (1.0)
+  b <- td_uniform (biases w1) gen (-1.0) (1.0)
+  w <- td_uniform (nodes w1) gen (-1.0) (1.0)
   pure W { biases = b, nodes = w }
 
 randomData :: Word -> IO TensorDouble
 randomData i = do
   gen <- newRNG
   let dat = tdNew (D1 i)
-  dat <- uniformT dat gen (-1.0) (1.0)
+  dat <- td_uniform dat gen (-1.0) (1.0)
   pure dat
 
 randomNet :: Word -> [Word] -> Word -> IO Network

@@ -165,8 +165,8 @@ gesvd2 = undefined
 test = do
   rng <- newRNG
   let rnd = tdNew (D2 2 2)
-  t <- uniformT rnd rng (-1.0) 1.0
-  let b = tensorDoubleInit (D1 2) 1.0
+  t <- td_uniform rnd rng (-1.0) 1.0
+  let b = td_init (D1 2) 1.0
   let (resA, resB) = gesv t b
   disp resA
   disp resB

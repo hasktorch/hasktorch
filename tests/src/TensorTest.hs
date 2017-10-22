@@ -70,10 +70,10 @@ matrixMultTest = do
   mapM_ (\_ -> go gen) [1..10]
   where
     go gen = do
-      let mat = (tensorDoubleInit (D2 10 7) 2.2)
-      let vec = (tensorDoubleInit (D1 7) 1.0)
-      mat <- uniformT mat gen (-10.0) (10.0)
-      vec <- uniformT vec gen (-10.0) (10.0)
+      let mat = (td_init (D2 10 7) 2.2)
+      let vec = (td_init (D1 7) 1.0)
+      mat <- td_uniform mat gen (-10.0) (10.0)
+      vec <- td_uniform vec gen (-10.0) (10.0)
       disp mat
       disp vec
       disp $ mat !* vec
@@ -81,9 +81,9 @@ matrixMultTest = do
 testLapack = do
   rng <- newRNG
   let rnd = tdNew (D2 2 2)
-  t <- uniformT rnd rng (-1.0) 1.0
+  t <- td_uniform rnd rng (-1.0) 1.0
 
-  let b = tensorDoubleInit (D1 2) 1.0
+  let b = td_init (D1 2) 1.0
   let (resA, resB) = gesv t b
   disp resA
   disp resB
