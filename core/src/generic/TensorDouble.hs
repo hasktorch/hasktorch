@@ -3,8 +3,7 @@
 
 module TensorDouble (
   tdNew,
-  tensorDoubleInit,
-
+  td_init,
   -- TODO - use this convention for everything
   td_get,
   td_newWithTensor
@@ -61,8 +60,8 @@ tdNew dims = unsafePerformIO $ do
   withForeignPtr fPtr fillRaw0
   pure $ TensorDouble fPtr dims
 
-tensorDoubleInit :: TensorDim Word -> Double -> TensorDouble
-tensorDoubleInit dims value = unsafePerformIO $ do
+td_init :: TensorDim Word -> Double -> TensorDouble
+td_init dims value = unsafePerformIO $ do
   newPtr <- tensorRaw dims value
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   withForeignPtr fPtr (fillRaw value)

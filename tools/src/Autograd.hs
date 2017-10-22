@@ -22,14 +22,19 @@ import Random
 import TensorTypes
 import TensorUtils
 
+{- Statically Typed Implementation -}
+
+type SW = StaticWeights
+type SN = StaticNetwork
+
 data StaticWeights i o = SW {
   s_biases :: TDS 1 '[o],
   s_nodes :: TDS 2 '[i, o]
   } deriving (Show)
 
 data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
-  O_s :: StaticWeights i o -> StaticNetwork i '[] o
-  (:&~) :: (KnownNat h) => StaticWeights i h -> StaticNetwork h hs o -> StaticNetwork i (h ': hs) o
+  O_s :: SW i o -> StaticNetwork i '[] o
+  (:&~) :: (KnownNat h) => SW i h -> SN h hs o -> SN i (h ': hs) o
 
 infixr 5 :&~
 
@@ -38,8 +43,7 @@ data Weights = W {
   nodes :: TensorDouble
   } deriving (Eq, Show)
 
--- instance Show Weights where
---   show w = "TODO implementat show"
+{- Dynamically Typed Implementation -}
 
 data Network :: * where
   O :: Weights -> Network
