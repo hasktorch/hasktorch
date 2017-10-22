@@ -20,7 +20,7 @@ import Random
 import TensorTypes
 import TensorUtils
 
-data Weights i o = W {
+data Weights = W {
   biases :: TensorDouble,
   nodes :: TensorDouble
   } deriving (Eq, Show)
