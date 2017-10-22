@@ -54,7 +54,7 @@ testCadd = do
 testCopy :: IO ()
 testCopy = do
   let foo = fillCopy_ 5.0 $ tdNew (D2 3 3)
-  let bar = newWithTensor foo
+  let bar = td_newWithTensor foo
   disp foo
   disp bar
   let baz = foo ^+ 2.0
