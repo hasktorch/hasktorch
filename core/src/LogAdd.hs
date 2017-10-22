@@ -16,7 +16,8 @@ logAdd log_a log_b =
 logSub :: Double -> Double -> Double
 logSub log_a log_b =
   if log_a < log_b then
-    (unsafePerformIO $ (fail "log_a must be greater than log_b") >> pure 0) else
+    unsafePerformIO $ fail "log_a must be greater than log_b"
+  else
     realToFrac $ c_THLogSub log_aC log_aB
   where
     (log_aC, log_aB) = (realToFrac log_a, realToFrac log_b)
@@ -33,6 +34,8 @@ test = do
   print $ logAdd (-3.0) (2.0)
   -- print $ logSub (-3.0) (-2.0)
   print $ logSub (3.0) (-2.0)
+  print $ logSub (3.0) (3.0)
+  print $ logSub (0.0) (0.0)
   -- print $ logSub (-3.0) (2.0)
   print $ expMinusApprox (3.0)
   print $ expMinusApprox (-3.0)

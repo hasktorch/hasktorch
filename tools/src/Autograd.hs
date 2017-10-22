@@ -11,6 +11,7 @@ import Data.Maybe (fromJust)
 import Foreign.C.Types
 import Foreign.Ptr
 
+import StaticTensorDouble
 import TensorDouble
 import TensorDoubleMath (sigmoid, (!*), addmv)
 import TensorDoubleRandom
@@ -19,7 +20,7 @@ import Random
 import TensorTypes
 import TensorUtils
 
-data Weights = W {
+data Weights i o = W {
   biases :: TensorDouble,
   nodes :: TensorDouble
   } deriving (Eq, Show)

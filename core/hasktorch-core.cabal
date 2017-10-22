@@ -1,7 +1,7 @@
 name:                hasktorch-core
 version:             0.1.0.0
 synopsis:            Torch for tensors and dynamic neural networks in Haskell
-description:         memory-managed tensors and core data types
+description:         core abstractions wrapping raw TH bindings
 homepage:            https://github.com/austinvhuang/hasktorch#readme
 license:             BSD3
 author:              Austin Huang
@@ -13,19 +13,20 @@ cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:     TensorDouble
-                     , TensorDoubleLapack
-                     , TensorDoubleMath
-                     , TensorDoubleRandom
-                     , TensorRaw
-                     , TensorLong
-                     , TensorTypes
-                     , TensorUtils
+  exposed-modules:   StaticTensorDouble
+                   , TensorDouble
+                   , TensorDoubleLapack
+                   , TensorDoubleMath
+                   , TensorDoubleRandom
+                   , TensorRaw
+                   , TensorLong
+                   , TensorTypes
+                   , TensorUtils
 
-                     , Random
+                   , Random
 
-                     , StorageTypes
-                     , StorageDouble
+                   , StorageTypes
+                   , StorageDouble
 
   hs-source-dirs:      src, src/generic
   build-depends:       base >= 4.7 && < 5
