@@ -94,7 +94,6 @@ w2cl = fromIntegral
 tensorRaw :: TensorDim Word -> Double -> IO TensorDoubleRaw
 tensorRaw dims value = do
   newPtr <- go dims
-  -- fillPtr <- fill0 newPtr
   fillRaw value newPtr
   pure newPtr
   where

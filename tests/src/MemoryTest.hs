@@ -1,7 +1,6 @@
 module Main where
 
 import TensorDouble
-
 import TensorTypes
 
 -- |Iteration - allocate a tensor, print a value, allocate another tensor... etc.
@@ -11,7 +10,7 @@ memoryTest dim niter = do
   mapM_ (\iter -> do
             putStr ("Iteration : " ++ show iter ++ " / ")
             let x = tdNew dim
-            x <- get_ (D4 0 0 0 0) x
+            x <- td_get (D4 0 0 0 0) x
             putStrLn $ "Printing dummy value: " ++
               (show x) -- Need some IO with value
             pure ()

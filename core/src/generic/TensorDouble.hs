@@ -2,10 +2,12 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
 
 module TensorDouble (
-  get_,
   tdNew,
   tensorDoubleInit,
-  newWithTensor
+
+  -- TODO - use this convention for everything
+  td_get,
+  td_newWithTensor
   )
 where
 
@@ -25,14 +27,13 @@ import THDoubleTensor
 import THDoubleTensorMath
 import THDoubleLapack
 
-wrap tensor = TensorDouble <$> (newForeignPtr p_THDoubleTensor_free tensor)
-
 w2cl = fromIntegral
 
-get_ loc tensor =
-   (withForeignPtr(tdTensor tensor) (\t ->
-                                        pure $ getter loc t
-                                    ))
+td_get :: TensorDim Integer -> TensorDouble -> IO Double
+td_get loc tensor =
+  withForeignPtr
+    (tdTensor tensor)
+    (\t -> pure . realToFrac $ getter loc t)
   where
     getter D0 t = undefined
     getter (D1 d1) t = c_THDoubleTensor_get1d t $ w2cl d1
@@ -43,8 +44,8 @@ get_ loc tensor =
     getter (D4 d1 d2 d3 d4) t = c_THDoubleTensor_get4d t
                                 (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
-newWithTensor :: TensorDouble -> TensorDouble
-newWithTensor t = unsafePerformIO $ do
+td_newWithTensor :: TensorDouble -> TensorDouble
+td_newWithTensor t = unsafePerformIO $ do
   newPtr <- withForeignPtr (tdTensor t) (
     \tPtr -> c_THDoubleTensor_newWithTensor tPtr
     )
@@ -55,37 +56,17 @@ newWithTensor t = unsafePerformIO $ do
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 tdNew :: TensorDim Word -> TensorDouble
 tdNew dims = unsafePerformIO $ do
-  newPtr <- go dims
+  newPtr <- tensorRaw dims 0.0
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   withForeignPtr fPtr fillRaw0
   pure $ TensorDouble fPtr dims
-  where
-    go D0 = c_THDoubleTensor_new
-    go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
-    go (D2 d1 d2) = c_THDoubleTensor_newWithSize2d
-                    (w2cl d1) (w2cl d2)
-    go (D3 d1 d2 d3) = c_THDoubleTensor_newWithSize3d
-                       (w2cl d1) (w2cl d2) (w2cl d3)
-    go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
-                          (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
-
 
 tensorDoubleInit :: TensorDim Word -> Double -> TensorDouble
 tensorDoubleInit dims value = unsafePerformIO $ do
-  newPtr <- go dims
+  newPtr <- tensorRaw dims value
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   withForeignPtr fPtr (fillRaw value)
   pure $ TensorDouble fPtr dims
-  where
-    go D0 = c_THDoubleTensor_new
-    go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
-    go (D2 d1 d2) = c_THDoubleTensor_newWithSize2d
-                    (w2cl d1) (w2cl d2)
-    go (D3 d1 d2 d3) = c_THDoubleTensor_newWithSize3d
-                       (w2cl d1) (w2cl d2) (w2cl d3)
-    go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
-                          (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
-
 
 test :: IO ()
 test = do
