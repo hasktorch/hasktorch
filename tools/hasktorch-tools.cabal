@@ -22,20 +22,6 @@ library
                      , hasktorch-interface
                      , text >= 1.2.2.2
 
-
-executable autograd
-  default-language:    Haskell2010
-  other-modules:       
-  hs-source-dirs:      src
-  main-is:             Autograd.hs
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch-core
-                     , hasktorch-interface
-                     , hasktorch-raw
-                     , hasktorch-tools
-                     , hspec >= 2.4.4
-                     , text >= 1.2.2.2
-
 source-repository head
   type:     git
   location: https://github.com/austinvhuang/hasktorch

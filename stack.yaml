@@ -5,6 +5,7 @@ packages:
 - 'core'
 - 'examples'
 - 'interface'
+- 'nn'
 - 'raw'
 - 'tests'
 - 'tools'
@@ -30,6 +31,7 @@ ghc-options:
   "hasktorch-core": -lTH
   "hasktorch-codegen": -lTH
   "hasktorch-examples": -lTH
+  "hasktorch-nn": -lTH
   "hasktorch-raw": -lTH
   "hasktorch-tests": -lTH
   "hasktorch-tools": -lTH

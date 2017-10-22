@@ -15,6 +15,7 @@ contributing developers**
 | [`core/`][core] | Memory-managed tensors and core data types that wrap raw C bindings to TH.
 | [`examples/`][examples] | Usage examples
 | [`interface/`][interface] | Shared types
+| [`nn/`][nn] | Neural network library
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
 | [`raw/`][raw] | Comprehensive raw bindings to C TorcH (TH) functions.
 | [`tests/`][tests] | Continuous integration tests
@@ -25,6 +26,7 @@ contributing developers**
 [core]: ./core/
 [examples]: ./examples/
 [interface]: ./interface/
+[nn]: ./nn/
 [output]: ./output/
 [raw]: ./raw/
 [tests]: ./tests/
