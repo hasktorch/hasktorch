@@ -20,6 +20,11 @@ import Random
 import TensorTypes
 import TensorUtils
 
+data StaticWeights i o = SW {
+  s_biases :: TDS 1 '[o],
+  s_nodes :: TDS 2 '[i, o]
+  } deriving (Show)
+
 data Weights = W {
   biases :: TensorDouble,
   nodes :: TensorDouble
