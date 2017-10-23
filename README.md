@@ -5,8 +5,8 @@ foundational low level [TorcH](https://github.com/torch/torch7) library
 implementation used by [Torch](http://torch.ch/) and
 [PyTorch](http://pytorch.org/).
 
-** --- NOTE: This library is in early development and is not recommended for use
-except by contributing developers --- **
+**NOTE: This library is in early development and is not recommended for use
+except by contributing developers.**
 
 ## Project Structure
 
@@ -18,7 +18,7 @@ except by contributing developers --- **
 | [`interface/`][interface] | Shared types
 | [`nn/`][nn] | Neural network library
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
-| [`raw/`][raw] | Comprehensive raw bindings to C TorcH (TH) functions.
+| [`raw/`][raw] | Comprehensive raw bindings to several hundred C TorcH (TH) operations, including separate bindings for all tensor types.
 | [`tests/`][tests] | Continuous integration tests
 | [`tools/`][tools] | Misc tools
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C library)
