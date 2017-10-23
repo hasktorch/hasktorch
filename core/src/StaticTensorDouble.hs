@@ -6,7 +6,8 @@
 
 
 module StaticTensorDouble (
-  mkT,
+  tds_new,
+  tds_init,
   dispS,
   TensorDoubleStatic(..),
   TDS(..),
@@ -32,9 +33,9 @@ import Data.Proxy (Proxy)
 
 class StaticTensor t where
   -- |create tensor
-  mkT :: t
+  tds_new :: t
   -- |create and initialize tensor
-  mkTInit :: Double -> t
+  tds_init :: Double -> t
   -- |Display tensor
   dispS :: t -> IO ()
 
@@ -80,80 +81,80 @@ instance Eq (TensorDoubleStatic n d) where
 
 instance (KnownNat d0, KnownNat d1, KnownNat d2, KnownNat d3) =>
   StaticTensor (TensorDoubleStatic 4 '[d0, d1, d2, d3] )  where
-  mkTInit initVal = mkTHelper dims 4 makeStatic initVal
+  tds_init initVal = mkTHelper dims 4 makeStatic initVal
     where
       dims = D4 s0 s1 s2 s3
       makeStatic dims fptr = (TDS fptr dims) :: TDS 4 '[d0, d1, d2, d3]
       [s0, s1, s2, s3] = fromIntegral <$>
                          [natVal (Proxy :: Proxy d0), natVal (Proxy :: Proxy d1),
                           natVal (Proxy :: Proxy d2), natVal (Proxy :: Proxy d3)]
-  mkT = mkTInit 0.0
+  tds_new = tds_init 0.0
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 instance (KnownNat d0, KnownNat d1, KnownNat d2) =>
   StaticTensor (TensorDoubleStatic 3 '[d0, d1, d2] )  where
-  mkTInit initVal = mkTHelper dims 3 makeStatic initVal
+  tds_init initVal = mkTHelper dims 3 makeStatic initVal
     where
       makeStatic dims fptr = (TDS fptr dims) :: TDS 3 '[d0, d1, d2]
       [s0, s1, s2] = fromIntegral <$>
                      [natVal (Proxy :: Proxy d0), natVal (Proxy :: Proxy d1),
                       natVal (Proxy :: Proxy d2)]
       dims = D3 s0 s1 s2
-  mkT = mkTInit 0.0
+  tds_new = tds_init 0.0
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 instance (KnownNat d0, KnownNat d1) =>
   StaticTensor (TensorDoubleStatic 2 '[d0, d1] )  where
-  mkTInit initVal = mkTHelper dims 2 makeStatic initVal
+  tds_init initVal = mkTHelper dims 2 makeStatic initVal
     where
       makeStatic dims fptr = (TDS fptr dims) :: TDS 2 '[d0, d1]
       [s0, s1] = fromIntegral <$>
                  [natVal (Proxy :: Proxy d0), natVal (Proxy :: Proxy d1)]
       dims = D2 s0 s1
-  mkT = mkTInit 0.0
+  tds_new = tds_init 0.0
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 
 instance (KnownNat d0) =>
   StaticTensor (TensorDoubleStatic 1 '[d0] )  where
-  mkTInit initVal = mkTHelper dims 1 makeStatic initVal
+  tds_init initVal = mkTHelper dims 1 makeStatic initVal
     where
       makeStatic dims fptr = (TDS fptr dims) :: TDS 1 '[d0]
       s0 = fromIntegral $ natVal (Proxy :: Proxy d0)
       dims = D1 s0
-  mkT = mkTInit 0.0
+  tds_new = tds_init 0.0
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 instance StaticTensor (TensorDoubleStatic 0 '[] )  where
-  mkTInit initVal = mkTHelper dims 0 makeStatic initVal
+  tds_init initVal = mkTHelper dims 0 makeStatic initVal
     where
       dims = D0
       makeStatic dims fptr = (TDS fptr dims) :: TDS 0 '[]
-  mkT = mkTInit 0.0
+  tds_new = tds_init 0.0
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 {- Sanity checks -}
 
 testStatic = do
   print("1")
-  let t1 = mkT :: TDS 2 '[2, 2]
+  let t1 = tds_new :: TDS 2 '[2, 2]
   dispS t1 -- passes
   print("2")
-  let t2 = mkT :: TDS 2 '[2, 4] -- should fail but doesn't yet
+  let t2 = tds_new :: TDS 2 '[2, 4] -- should fail but doesn't yet
   dispS t2
   print("3")
-  let t3 = mkT :: TDS 3 '[2, 2, 2] -- fails due to dim mismatch
+  let t3 = tds_new :: TDS 3 '[2, 2, 2] -- fails due to dim mismatch
   dispS t3
   print("4")
-  let t4 = mkT :: TDS 2 '[8, 4] -- fails due to dim mismatch
+  let t4 = tds_new :: TDS 2 '[8, 4] -- fails due to dim mismatch
   dispS t4
   pure ()
 
 testEq = do
   print "Should be True:"
-  print $ (mkTInit 4.0 :: TDS 2 '[2,3]) ==  (mkTInit 4.0 :: TDS 2 '[2,3])
+  print $ (tds_init 4.0 :: TDS 2 '[2,3]) ==  (tds_init 4.0 :: TDS 2 '[2,3])
   print "Should be False:"
-  print $ (mkTInit 3.0 :: TDS 2 '[2,3]) ==  (mkTInit 1.0 :: TDS 2 '[2,3])
+  print $ (tds_init 3.0 :: TDS 2 '[2,3]) ==  (tds_init 1.0 :: TDS 2 '[2,3])
 
 test = do
   testStatic

@@ -81,7 +81,5 @@ dispW w = do
 -- train rate x0 target = fst . go x0
 --   where go x (O w@(SW wB wN)) = undefined
 
-
-
 main = do
     putStrLn "Done"
