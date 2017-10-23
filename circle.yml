@@ -29,5 +29,5 @@ test:
     - stack exec codegen-generic
     - stack exec codegen-concrete
     - stack exec codegen-managed
-    - stack exec autograd
+    - stack exec ff-untyped
     - stack exec raw-lapack-svd

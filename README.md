@@ -1,11 +1,12 @@
 # hasktorch
 
-A Haskell library for tensors and neural networks. Shares the
-[TorcH](https://github.com/torch/torch7) low level library used by
-[luaTorch](http://torch.ch/) and [PyTorch](http://pytorch.org/).
+A Haskell library for tensors and neural networks. Hasktorch shares the
+foundational low level [TorcH](https://github.com/torch/torch7) library
+implementation used by [Torch](http://torch.ch/) and
+[PyTorch](http://pytorch.org/).
 
-**This library is in early development and is not recommended for use except by
-contributing developers**
+** --- NOTE: This library is in early development and is not recommended for use
+except by contributing developers --- **
 
 ## Project Structure
 
