@@ -16,7 +16,8 @@ import GHC.TypeLits (Nat, KnownNat, natVal)
 import StaticTensorDouble
 import TensorDouble
 --import TensorDoubleMath (sigmoid, (!*), addmv)
-import TensorDoubleRandom
+-- import TensorDoubleRandom
+import StaticTensorDoubleRandom
 import Random
 import TensorTypes
 import TensorUtils
@@ -50,9 +51,9 @@ dispW w = do
 -- randomWeights :: Word -> Word -> IO (SW i o)
 -- randomWeights i o = do
 --   gen <- newRNG
---   let w1 = SW { biases = tdNew (D1 o), nodes = tdNew (D2 o i) }
---   b <- td_uniform (biases w1) gen (-1.0) (1.0)
---   w <- td_uniform (nodes w1) gen (-1.0) (1.0)
+--   let w1 = SW { biases = (tds_new :: TDS 1 '[o]) , nodes = tds_new :: TDS 2 '[o, i] }
+--   b <- tds_uniform (biases w1) gen (-1.0) (1.0)
+--   w <- tds_uniform (nodes w1) gen (-1.0) (1.0)
 --   pure SW { biases = b, nodes = w }
 
 -- randomData :: Word -> IO TensorDouble

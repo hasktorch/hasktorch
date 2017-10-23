@@ -14,6 +14,7 @@ cabal-version:       >=1.10
 library
   default-language:    Haskell2010
   exposed-modules:   StaticTensorDouble
+                   , StaticTensorDoubleRandom
                    , TensorDouble
                    , TensorDoubleLapack
                    , TensorDoubleMath
