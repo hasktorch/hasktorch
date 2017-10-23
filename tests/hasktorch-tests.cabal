@@ -1,6 +1,6 @@
 name:                hasktorch-tests
 version:             0.1.0.0
-synopsis:            Torch for tensors and dynamic neural networks in Haskell
+synopsis:            Torch for tensors and neural networks in Haskell
 description:         tests
 homepage:            https://github.com/austinvhuang/hasktorch#readme
 license:             BSD3
@@ -60,6 +60,16 @@ executable tensor-test-exec
                      , hasktorch-core
                      , hasktorch-raw
                      , hasktorch-interface
+
+executable raw-lapack-svd
+  default-language:    Haskell2010
+  main-is:             RawLapackSVD.hs
+  hs-source-dirs:      src
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch-core
+                     , hasktorch-raw
+                     , hasktorch-interface
+
 
 
 

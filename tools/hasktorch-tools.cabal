@@ -1,6 +1,6 @@
 name:                hasktorch-tools
 version:             0.1.0.0
-synopsis:            Torch for tensors and dynamic neural networks in Haskell
+synopsis:            Torch for tensors and neural networks in Haskell
 description:         misc utilities
 homepage:            https://github.com/austinvhuang/hasktorch#readme
 license:             BSD3
