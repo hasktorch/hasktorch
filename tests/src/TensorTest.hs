@@ -16,20 +16,20 @@ import THDoubleTensorMath
 testGCTensor = do
   let t0 = tdNew (D2 8 4)
       t1 = t0
-  fillMutate_ 3.0 t1
-  let t2 = fillCopy_ 6.0 t1
+  td_fill_ 3.0 t1
+  let t2 = td_fill 6.0 t1
   disp t0 -- should be matrix of 3.0
   disp t1 -- should be matrix of 3.0
   disp t2 -- should be matrix of 6.0
 
 testOps = do
-  disp $ neg $ addConst (tdNew (D2 2 2)) 3
-  disp $ sigmoid $ neg $ addConst (tdNew (D2 2 2)) 3
-  disp $ sigmoid $ addConst (tdNew (D2 2 2)) 3
+  disp $ td_neg $ td_addConst (tdNew (D2 2 2)) 3
+  disp $ td_sigmoid $ td_neg $ td_addConst (tdNew (D2 2 2)) 3
+  disp $ td_sigmoid $ td_addConst (tdNew (D2 2 2)) 3
 
-  let foo = fillCopy_ 3.0 $ tdNew (D1 5)
+  let foo = td_fill 3.0 $ tdNew (D1 5)
   print $ 3.0 * 3.0 * 5
-  print $ dot foo foo
+  print $ td_dot foo foo
 
   disp $ (tdNew (D1 5)) ^+ 2.0
   disp $ ((tdNew (D1 5)) ^+ 2.0) ^/ 4.0
@@ -46,14 +46,14 @@ rawTest = do
   dispRaw z
 
 testCadd = do
-  let foo = fillCopy_ 5.0 $ tdNew (D1 5)
-  let bar = fillCopy_ 2.0 $ tdNew (D1 5)
+  let foo = td_fill 5.0 $ tdNew (D1 5)
+  let bar = td_fill 2.0 $ tdNew (D1 5)
   print $ 5 + 3 * 2
-  disp $ cadd foo 3.0 bar
+  disp $ td_cadd foo 3.0 bar
 
 testCopy :: IO ()
 testCopy = do
-  let foo = fillCopy_ 5.0 $ tdNew (D2 3 3)
+  let foo = td_fill 5.0 $ tdNew (D2 3 3)
   let bar = td_newWithTensor foo
   disp foo
   disp bar

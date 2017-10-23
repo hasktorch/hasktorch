@@ -1,66 +1,66 @@
 module TensorDoubleMath (
 
-  fillCopy_,
-  fillMutate_,
+  td_fill,
+  td_fill_,
 
-  addConst,
-  subConst,
-  mulConst,
-  divConst,
+  td_addConst,
+  td_subConst,
+  td_mulConst,
+  td_divConst,
 
   (^+),
   (^-),
   (^*),
   (^/),
 
-  dot,
+  td_dot,
 
-  minAll,
-  maxAll,
-  medianAll,
-  sumAll,
-  prodAll,
-  meanAll,
+  td_minAll,
+  td_maxAll,
+  td_medianAll,
+  td_sumAll,
+  td_prodAll,
+  td_meanAll,
 
-  neg,
-  absT,
-  sigmoid,
-  logT,
-  lgamma,
+  td_neg,
+  td_absT,
+  td_sigmoid,
+  td_logT,
+  td_lgamma,
 
-  cadd,
-  csub,
-  cmul,
-  cpow,
-  cdiv,
-  clshift,
-  crshift,
-  cfmod,
-  cremainder,
-  cbitand,
-  cbitor,
-  cbitxor,
-  addcmul,
-  addcdiv,
-  addmv,
+  td_cadd,
+  td_csub,
+  td_cmul,
+  td_cpow,
+  td_cdiv,
+  td_clshift,
+  td_crshift,
+  td_cfmod,
+  td_cremainder,
+  td_cbitand,
+  td_cbitor,
+  td_cbitxor,
+  td_addcmul,
+  td_addcdiv,
+  td_addmv,
   (!*),
-  addmm,
-  addbmm,
-  baddbmm,
-  match,
-  numel,
-  maxT,
-  minT,
-  kthvalue,
-  mode,
-  median,
-  sumT,
-  prod,
-  cumsum,
-  cumprod,
-  sign,
-  trace,
-  cross
+  td_addmm,
+  td_addbmm,
+  td_baddbmm,
+  td_match,
+  td_numel,
+  td_maxT,
+  td_minT,
+  td_kthvalue,
+  td_mode,
+  td_median,
+  td_sumT,
+  td_prod,
+  td_cumsum,
+  td_cumprod,
+  td_sign,
+  td_trace,
+  td_cross
   ) where
 
 import Foreign
@@ -183,53 +183,53 @@ apply1 fun t = do
 -- Tensor fill operations
 -- ----------------------------------------
 
-fillCopy_ :: Real a => a -> TensorDouble -> TensorDouble
-fillCopy_ value tensor = unsafePerformIO $
+td_fill :: Real a => a -> TensorDouble -> TensorDouble
+td_fill value tensor = unsafePerformIO $
   withForeignPtr(tdTensor nt) (\t -> do
                                   fillRaw value t
                                   pure nt
                               )
   where nt = tdNew (tdDim tensor)
 
-fillMutate_ :: Real a => a -> TensorDouble -> IO ()
-fillMutate_ value tensor =
+td_fill_ :: Real a => a -> TensorDouble -> IO ()
+td_fill_ value tensor =
   withForeignPtr(tdTensor tensor) (\t -> fillRaw value t)
 
 -- ----------------------------------------
 -- Tensor-constant operations to constant operations
 -- ----------------------------------------
 
-addConst :: TensorDouble -> Double -> TensorDouble
-addConst mtx val = apply1_ tAdd mtx val
+td_addConst :: TensorDouble -> Double -> TensorDouble
+td_addConst mtx val = apply1_ tAdd mtx val
   where
     tAdd r_ t = c_THDoubleTensor_add r_ t (realToFrac val)
 
-subConst :: TensorDouble -> Double -> TensorDouble
-subConst mtx val = apply1_ tSub mtx val
+td_subConst :: TensorDouble -> Double -> TensorDouble
+td_subConst mtx val = apply1_ tSub mtx val
   where
     tSub r_ t = c_THDoubleTensor_sub r_ t (realToFrac val)
 
-mulConst :: TensorDouble -> Double -> TensorDouble
-mulConst mtx val = apply1_ tMul mtx val
+td_mulConst :: TensorDouble -> Double -> TensorDouble
+td_mulConst mtx val = apply1_ tMul mtx val
   where
     tMul r_ t = c_THDoubleTensor_mul r_ t (realToFrac val)
 
-divConst :: TensorDouble -> Double -> TensorDouble
-divConst mtx val = apply1_ tDiv mtx val
+td_divConst :: TensorDouble -> Double -> TensorDouble
+td_divConst mtx val = apply1_ tDiv mtx val
   where
     tDiv r_ t = c_THDoubleTensor_div r_ t (realToFrac val)
 
-(^+) = addConst
-(^-) = subConst
-(^*) = mulConst
-(^/) = divConst
+(^+) = td_addConst
+(^-) = td_subConst
+(^*) = td_mulConst
+(^/) = td_divConst
 
 -- ----------------------------------------
 -- Linear algebra
 -- ----------------------------------------
 
-dot :: TensorDouble -> TensorDouble -> Double
-dot t src = realToFrac $ unsafePerformIO $ do
+td_dot :: TensorDouble -> TensorDouble -> Double
+td_dot t src = realToFrac $ unsafePerformIO $ do
   withForeignPtr (tdTensor t)
     (\tPtr -> withForeignPtr (tdTensor src)
       (\srcPtr ->
@@ -241,33 +241,33 @@ dot t src = realToFrac $ unsafePerformIO $ do
 -- Collapse to constant operations
 -- ----------------------------------------
 
-minAll :: TensorDouble -> Double
-minAll tensor = unsafePerformIO $ apply0_ tMinAll tensor
+td_minAll :: TensorDouble -> Double
+td_minAll tensor = unsafePerformIO $ apply0_ tMinAll tensor
   where
     tMinAll t = realToFrac $ c_THDoubleTensor_minall t
 
-maxAll :: TensorDouble -> Double
-maxAll tensor = unsafePerformIO $ apply0_ tMaxAll tensor
+td_maxAll :: TensorDouble -> Double
+td_maxAll tensor = unsafePerformIO $ apply0_ tMaxAll tensor
   where
     tMaxAll t = realToFrac $ c_THDoubleTensor_maxall t
 
-medianAll :: TensorDouble -> Double
-medianAll tensor = unsafePerformIO $ apply0_ tMedianAll tensor
+td_medianAll :: TensorDouble -> Double
+td_medianAll tensor = unsafePerformIO $ apply0_ tMedianAll tensor
   where
     tMedianAll t = realToFrac $ c_THDoubleTensor_medianall t
 
-sumAll :: TensorDouble -> Double
-sumAll tensor = unsafePerformIO $ apply0_ tSumAll tensor
+td_sumAll :: TensorDouble -> Double
+td_sumAll tensor = unsafePerformIO $ apply0_ tSumAll tensor
   where
     tSumAll t = realToFrac $ c_THDoubleTensor_sumall t
 
-prodAll :: TensorDouble -> Double
-prodAll tensor = unsafePerformIO $ apply0_ tProdAll tensor
+td_prodAll :: TensorDouble -> Double
+td_prodAll tensor = unsafePerformIO $ apply0_ tProdAll tensor
   where
     tProdAll t = realToFrac $ c_THDoubleTensor_prodall t
 
-meanAll :: TensorDouble -> Double
-meanAll tensor = unsafePerformIO $ apply0_ tMeanAll tensor
+td_meanAll :: TensorDouble -> Double
+td_meanAll tensor = unsafePerformIO $ apply0_ tMeanAll tensor
   where
     tMeanAll t = realToFrac $ c_THDoubleTensor_meanall t
 
@@ -275,28 +275,28 @@ meanAll tensor = unsafePerformIO $ apply0_ tMeanAll tensor
 -- Tensor to Tensor transformation
 -- ----------------------------------------
 
-neg :: TensorDouble -> TensorDouble
-neg tensor = unsafePerformIO $ apply0_ tNeg tensor
+td_neg :: TensorDouble -> TensorDouble
+td_neg tensor = unsafePerformIO $ apply0_ tNeg tensor
   where
     tNeg t = apply0Tensor c_THDoubleTensor_neg (tdDim tensor) t
 
-absT :: TensorDouble -> TensorDouble
-absT tensor = unsafePerformIO $ apply0_ tAbs tensor
+td_absT :: TensorDouble -> TensorDouble
+td_absT tensor = unsafePerformIO $ apply0_ tAbs tensor
   where
     tAbs t = apply0Tensor c_THDoubleTensor_abs (tdDim tensor) t
 
-sigmoid :: TensorDouble -> TensorDouble
-sigmoid tensor = unsafePerformIO $ apply0_ tSigmoid tensor
+td_sigmoid :: TensorDouble -> TensorDouble
+td_sigmoid tensor = unsafePerformIO $ apply0_ tSigmoid tensor
   where
     tSigmoid t = apply0Tensor c_THDoubleTensor_sigmoid (tdDim tensor) t
 
-logT :: TensorDouble -> TensorDouble
-logT tensor = unsafePerformIO $ apply0_ tLog tensor
+td_logT :: TensorDouble -> TensorDouble
+td_logT tensor = unsafePerformIO $ apply0_ tLog tensor
   where
     tLog t = apply0Tensor c_THDoubleTensor_log (tdDim tensor) t
 
-lgamma :: TensorDouble -> TensorDouble
-lgamma tensor = unsafePerformIO $ apply0_ tLgamma tensor
+td_lgamma :: TensorDouble -> TensorDouble
+td_lgamma tensor = unsafePerformIO $ apply0_ tLgamma tensor
   where
     tLgamma t = apply0Tensor c_THDoubleTensor_lgamma (tdDim tensor) t
 
@@ -321,139 +321,139 @@ swap3 fun a b c d e f = fun c a d b e f
 
 -- cadd = z <- y + scalar * x, z value discarded
 -- allocate r_ for the user instead of taking it as an argument
-cadd :: TensorDouble -> Double -> TensorDouble -> TensorDouble
-cadd t scale src = unsafePerformIO $
+td_cadd :: TensorDouble -> Double -> TensorDouble -> TensorDouble
+td_cadd t scale src = unsafePerformIO $
   apply2 ((swap1 c_THDoubleTensor_cadd) scaleC) t src
   where scaleC = realToFrac scale
 
-csub :: TensorDouble -> Double -> TensorDouble -> TensorDouble
-csub t scale src = unsafePerformIO $ do
+td_csub :: TensorDouble -> Double -> TensorDouble -> TensorDouble
+td_csub t scale src = unsafePerformIO $ do
   apply2 ((swap1 c_THDoubleTensor_csub) scaleC) t src
   where scaleC = realToFrac scale
 
-cmul :: TensorDouble -> TensorDouble -> TensorDouble
-cmul t src = unsafePerformIO $ do
+td_cmul :: TensorDouble -> TensorDouble -> TensorDouble
+td_cmul t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cmul t src
 
-cpow :: TensorDouble -> TensorDouble -> TensorDouble
-cpow t src = unsafePerformIO $ do
+td_cpow :: TensorDouble -> TensorDouble -> TensorDouble
+td_cpow t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cpow t src
 
-cdiv :: TensorDouble -> TensorDouble -> TensorDouble
-cdiv t src = unsafePerformIO $ do
+td_cdiv :: TensorDouble -> TensorDouble -> TensorDouble
+td_cdiv t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cdiv t src
 
-clshift :: TensorDouble -> TensorDouble -> TensorDouble
-clshift t src = unsafePerformIO $ do
+td_clshift :: TensorDouble -> TensorDouble -> TensorDouble
+td_clshift t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_clshift t src
 
-crshift :: TensorDouble -> TensorDouble -> TensorDouble
-crshift t src = unsafePerformIO $ do
+td_crshift :: TensorDouble -> TensorDouble -> TensorDouble
+td_crshift t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_crshift t src
 
-cfmod :: TensorDouble -> TensorDouble -> TensorDouble
-cfmod t src = unsafePerformIO $ do
+td_cfmod :: TensorDouble -> TensorDouble -> TensorDouble
+td_cfmod t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cfmod t src
 
-cremainder :: TensorDouble -> TensorDouble -> TensorDouble
-cremainder t src = unsafePerformIO $ do
+td_cremainder :: TensorDouble -> TensorDouble -> TensorDouble
+td_cremainder t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cremainder t src
 
-cbitand :: TensorDouble -> TensorDouble -> TensorDouble
-cbitand  t src = unsafePerformIO $ do
+td_cbitand :: TensorDouble -> TensorDouble -> TensorDouble
+td_cbitand  t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cbitand t src
 
-cbitor :: TensorDouble -> TensorDouble -> TensorDouble
-cbitor  t src = unsafePerformIO $ do
+td_cbitor :: TensorDouble -> TensorDouble -> TensorDouble
+td_cbitor  t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cbitor t src
 
-cbitxor :: TensorDouble -> TensorDouble -> TensorDouble
-cbitxor t src = unsafePerformIO $ do
+td_cbitxor :: TensorDouble -> TensorDouble -> TensorDouble
+td_cbitxor t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cbitxor t src
 
-addcmul :: TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
-addcmul t scale src1 src2 = unsafePerformIO $ do
+td_addcmul :: TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
+td_addcmul t scale src1 src2 = unsafePerformIO $ do
   apply3 ((swap2 c_THDoubleTensor_addcmul) scaleC) t src1 src2
   where scaleC = (realToFrac scale) :: CDouble
 
-addcdiv :: TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
-addcdiv t scale src1 src2 = unsafePerformIO $ do
+td_addcdiv :: TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
+td_addcdiv t scale src1 src2 = unsafePerformIO $ do
   apply3 ((swap2 c_THDoubleTensor_addcdiv) scaleC) t src1 src2
   where scaleC = (realToFrac scale) :: CDouble
 
-addmv :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
-addmv beta t alpha src1 src2 = unsafePerformIO $ do
+td_addmv :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
+td_addmv beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
 (!*) :: TensorDouble -> TensorDouble -> TensorDouble
 mat !* vec =
-  addmv 1.0 zero 1.0 mat vec
+  td_addmv 1.0 zero 1.0 mat vec
   where
     zero = tdNew $ (D1 (d2_1 $ tdDim mat)) -- TODO - more efficient version w/o allocaiton?
 
-addmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
-addmm beta t alpha src1 src2 = unsafePerformIO $ do
+td_addmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
+td_addmm beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmm) betaC alphaC) t src1 src2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
-addbmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
-addbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
+td_addbmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
+td_addbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addbmm) betaC alphaC) t batch1 batch2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
-baddbmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
-baddbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
+td_baddbmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
+td_baddbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_baddbmm) betaC alphaC) t batch1 batch2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
-match :: TensorDouble -> TensorDouble -> Double -> TensorDouble
-match m1 m2 gain = unsafePerformIO $ do
+td_match :: TensorDouble -> TensorDouble -> Double -> TensorDouble
+td_match m1 m2 gain = unsafePerformIO $ do
   apply2 ((swap c_THDoubleTensor_match) gainC) m1 m2
   where
     gainC = realToFrac gain
     swap fun gain b c d = fun b c d gain
 
-numel :: TensorDouble -> Int
-numel t = unsafePerformIO $ do
+td_numel :: TensorDouble -> Int
+td_numel t = unsafePerformIO $ do
   result <- apply0_ c_THDoubleTensor_numel t
   pure $ fromIntegral result
 
 -- TH_API void THTensor_(max)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
-maxT :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
-maxT t dimension keepdim = unsafePerformIO $
+td_maxT :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
+td_maxT t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_max t dimension keepdim
 
 -- TH_API void THTensor_(min)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
-minT :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
-minT t dimension keepdim = unsafePerformIO $
+td_minT :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
+td_minT t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_min t dimension keepdim
 
 -- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);
-kthvalue :: TensorDouble -> Int -> Int -> Bool -> (TensorDouble, TensorLong)
-kthvalue t k dimension keepdim = unsafePerformIO $
+td_kthvalue :: TensorDouble -> Int -> Int -> Bool -> (TensorDouble, TensorLong)
+td_kthvalue t k dimension keepdim = unsafePerformIO $
   ret2 ((swap c_THDoubleTensor_kthvalue) kC) t dimension keepdim
   where
     swap fun a b c d e f = fun b c d a e f -- curry k (4th argument)
     kC = fromIntegral k
 
 -- TH_API void THTensor_(mode)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
-mode :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
-mode t dimension keepdim = unsafePerformIO $
+td_mode :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
+td_mode t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_mode t dimension keepdim
 
 -- TH_API void THTensor_(median)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
-median :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
-median t dimension keepdim = unsafePerformIO $
+td_median :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
+td_median t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_median t dimension keepdim
 
 -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
-sumT :: TensorDouble -> Int -> Bool -> TensorDouble
-sumT t dimension keepdim = unsafePerformIO $ do
+td_sumT :: TensorDouble -> Int -> Bool -> TensorDouble
+td_sumT t dimension keepdim = unsafePerformIO $ do
   apply1 ((swap c_THDoubleTensor_sum) dimensionC keepdimC) t
   where
     swap fun a b c d = fun c d a b
@@ -461,8 +461,8 @@ sumT t dimension keepdim = unsafePerformIO $ do
     keepdimC = if keepdim then 1 else 0
 
 -- TH_API void THTensor_(prod)(THTensor *r_, THTensor *t, int dimension, int keepdim);
-prod :: TensorDouble -> Int -> Bool -> TensorDouble
-prod t dimension keepdim = unsafePerformIO $ do
+td_prod :: TensorDouble -> Int -> Bool -> TensorDouble
+td_prod t dimension keepdim = unsafePerformIO $ do
   apply1 ((swap c_THDoubleTensor_prod) dimensionC keepdimC) t
   where
     swap fun a b c d = fun c d a b
@@ -470,46 +470,46 @@ prod t dimension keepdim = unsafePerformIO $ do
     keepdimC = if keepdim then 1 else 0
 
 -- TH_API void THTensor_(cumsum)(THTensor *r_, THTensor *t, int dimension);
-cumsum :: TensorDouble -> Int -> TensorDouble
-cumsum t dimension = unsafePerformIO $ do
+td_cumsum :: TensorDouble -> Int -> TensorDouble
+td_cumsum t dimension = unsafePerformIO $ do
   apply1 ((swap c_THDoubleTensor_cumsum) dimensionC) t
   where
     swap fun a b c = fun b c a
     dimensionC = fromIntegral dimension
 
 -- TH_API void THTensor_(cumprod)(THTensor *r_, THTensor *t, int dimension);
-cumprod :: TensorDouble -> Int -> TensorDouble
-cumprod t dimension = unsafePerformIO $ do
+td_cumprod :: TensorDouble -> Int -> TensorDouble
+td_cumprod t dimension = unsafePerformIO $ do
   apply1 ((swap c_THDoubleTensor_cumprod) dimensionC) t
   where
     swap fun a b c = fun b c a
     dimensionC = fromIntegral dimension
 
 -- TH_API void THTensor_(sign)(THTensor *r_, THTensor *t);
-sign :: TensorDouble -> TensorDouble
-sign t = unsafePerformIO $ do
+td_sign :: TensorDouble -> TensorDouble
+td_sign t = unsafePerformIO $ do
   apply1 c_THDoubleTensor_sign t
 
 -- TH_API accreal THTensor_(trace)(THTensor *t);
-trace :: TensorDouble -> Double
-trace t = realToFrac $ unsafePerformIO $ do
+td_trace :: TensorDouble -> Double
+td_trace t = realToFrac $ unsafePerformIO $ do
   apply0_ c_THDoubleTensor_trace t
 
 -- TH_API void THTensor_(cross)(THTensor *r_, THTensor *a, THTensor *b, int dimension);
-cross :: TensorDouble -> TensorDouble -> Int -> TensorDouble
-cross a b dimension = unsafePerformIO $ do
+td_cross :: TensorDouble -> TensorDouble -> Int -> TensorDouble
+td_cross a b dimension = unsafePerformIO $ do
   apply2 ((swap c_THDoubleTensor_cross) dimensionC) a b
   where
     dimensionC = fromIntegral dimension
     swap fun a b c d = fun b c d a
 
 -- TH_API void THTensor_(cmax)(THTensor *r, THTensor *t, THTensor *src);
-cmax :: TensorDouble -> TensorDouble -> TensorDouble
-cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
+td_cmax :: TensorDouble -> TensorDouble -> TensorDouble
+td_cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
 
 -- TH_API void THTensor_(cmin)(THTensor *r, THTensor *t, THTensor *src);
-cmin :: TensorDouble -> TensorDouble -> TensorDouble
-cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
+td_cmin :: TensorDouble -> TensorDouble -> TensorDouble
+td_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 
 -- -- TH_API void THTensor_(cmaxValue)(THTensor *r, THTensor *t, real value);
 -- cmaxValue :: TensorDouble -> TensorDouble -> Double -> TensorDouble

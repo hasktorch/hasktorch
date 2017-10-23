@@ -14,7 +14,7 @@ import Foreign.Ptr
 import GHC.TypeLits (Nat, KnownNat, natVal)
 
 import TensorDouble
-import TensorDoubleMath (sigmoid, (!*), addmv)
+import TensorDoubleMath (td_sigmoid, (!*), td_addmv)
 import TensorDoubleRandom
 import TensorRaw
 import Random
@@ -64,11 +64,11 @@ randomNet i [] o = O <$> randomWeights i o
 randomNet i (h:hs) o = (:~) <$> randomWeights i h <*> randomNet h hs o
 
 runLayer :: Weights -> TensorDouble -> TensorDouble
-runLayer (W wB wN) v = addmv 1.0 wB 1.0 wN v
+runLayer (W wB wN) v = td_addmv 1.0 wB 1.0 wN v
 
 runNet :: Network -> TensorDouble -> TensorDouble
-runNet (O w) v = sigmoid (runLayer w v)
-runNet (w :~ n') v = let v' = sigmoid (runLayer w v) in runNet n' v'
+runNet (O w) v = td_sigmoid (runLayer w v)
+runNet (w :~ n') v = let v' = td_sigmoid (runLayer w v) in runNet n' v'
 
 train :: Double
       -> TensorDouble
