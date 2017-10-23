@@ -1,8 +1,8 @@
 # hasktorch
 
-A Haskell library for tensors and neural networks. Hasktorch shares the
-foundational low level [TorcH](https://github.com/torch/torch7) library
-implementation used by [Torch](http://torch.ch/) and
+A Haskell library for tensors and neural networks. Hasktorch uses the low-level
+[TorcH](https://github.com/pytorch/pytorch/tree/master/torch/lib/TH) C
+tensor/math operations shared by [Torch](http://torch.ch/) and
 [PyTorch](http://pytorch.org/).
 
 **NOTE: This library is in early development and is not recommended for use
@@ -14,7 +14,6 @@ except by contributing developers.**
 | --------- | ----------- |
 | [`codegen/`][codegen] | Parsers that parse .h files in the C TH library and generate low-level raw Haskell bindings.
 | [`core/`][core] | Memory-managed tensors and core data types that wrap raw C bindings to TH.
-| [`examples/`][examples] | Usage examples
 | [`interface/`][interface] | Shared types
 | [`nn/`][nn] | Neural network library
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
