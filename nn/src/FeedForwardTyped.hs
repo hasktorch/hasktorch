@@ -22,6 +22,8 @@ import Random
 import TensorTypes
 import TensorUtils
 
+import Data.Singletons
+
 {- Statically Typed Implementation -}
 
 type SW = StaticWeights
@@ -32,8 +34,11 @@ data StaticWeights i o = SW {
   nodes :: TDS 2 '[i, o]
   } deriving (Show)
 
+mkW :: (KnownNat i, KnownNat o) => SW i o
+mkW = SW tds_new tds_new
+
 data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
-  O :: SW i o -> StaticNetwork i '[] o
+  O :: SW i o -> SN i '[] o
   (:~) :: (KnownNat h) => SW i h -> SN h hs o -> SN i (h ': hs) o
 
 infixr 5 :~
@@ -48,24 +53,18 @@ dispW w = do
 -- dispN (O w) = dispW w
 -- dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 
--- randomWeights :: Word -> Word -> IO (SW i o)
--- randomWeights i o = do
---   gen <- newRNG
---   let w1 = SW { biases = (tds_new :: TDS 1 '[o]) , nodes = tds_new :: TDS 2 '[o, i] }
---   b <- tds_uniform (biases w1) gen (-1.0) (1.0)
---   w <- tds_uniform (nodes w1) gen (-1.0) (1.0)
---   pure SW { biases = b, nodes = w }
+randomWeights :: (KnownNat i, KnownNat o) => IO (SW i o)
+randomWeights = do
+  gen <- newRNG
+  b <- tds_uniform (biases storeResult) gen (-1.0) (1.0)
+  w <- tds_uniform (nodes storeResult) gen (-1.0) (1.0)
+  pure SW { biases = b, nodes = w }
+  where
+    storeResult = mkW
 
--- randomData :: Word -> IO TensorDouble
--- randomData i = do
---   gen <- newRNG
---   let dat = tdNew (D1 i)
---   dat <- td_uniform dat gen (-1.0) (1.0)
---   pure dat
-
--- randomNet :: Word -> [Word] -> Word -> IO (SN i h o)
--- randomNet i [] o = O <$> randomWeights i o
--- randomNet i (h:hs) o = (:~) <$> randomWeights i h <*> randomNet h hs o
+-- randomNet :: (KnownNat i, [KnownNat] h, KnownNat o) => IO (SN i h o)
+-- randomNet = O <$> randomWeights
+-- randomNet = (:~) <$> randomWeights <*> randomNet
 
 -- runLayer :: SW i o -> TensorDouble -> TensorDouble
 -- runLayer (SW wB wN) v = addmv 1.0 wB 1.0 wN v
@@ -81,6 +80,14 @@ dispW w = do
 --       -> SN i h o
 -- train rate x0 target = fst . go x0
 --   where go x (O w@(SW wB wN)) = undefined
+
+ih = mkW :: StaticWeights 10 7
+hh = mkW :: StaticWeights  7 4
+ho = mkW :: StaticWeights  4 2
+
+net1 = O ho :: SN 4 '[] 2
+net2 = hh :~ O ho :: SN 7 '[4] 2
+net3 = ih :~ hh :~ O ho :: SN 10 '[7,4] 2
 
 main = do
     putStrLn "Done"

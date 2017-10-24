@@ -35,6 +35,7 @@ executable ff-typed
                      , hasktorch-raw
                      , hasktorch-tools
                      , hspec >= 2.4.4
+                     , singletons >= 2.3.1
                      , text >= 1.2.2.2
 
 
