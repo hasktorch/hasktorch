@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, TypeOperators #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase          #-}
 
 module Main where
 
@@ -23,6 +25,8 @@ import TensorTypes
 import TensorUtils
 
 import Data.Singletons
+import Data.Singletons.Prelude
+import Data.Singletons.TypeLits
 
 {- Statically Typed Implementation -}
 
@@ -53,6 +57,14 @@ dispW w = do
 -- dispN (O w) = dispW w
 -- dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 
+-- dispN :: forall i hs o. (KnownNat i, SingI hs, KnownNat o) => IO (SN i hs o)
+-- dispN = go sing
+--   where go :: forall h hs'. KnownNat h => Sing hs' -> IO (SN h hs' o)
+--         go = \case
+--           SNil            ->     O <$> randomWeights
+--           SNat `SCons` ss -> (:~) <$> randomWeights <*> go ss
+
+
 randomWeights :: (KnownNat i, KnownNat o) => IO (SW i o)
 randomWeights = do
   gen <- newRNG
@@ -62,12 +74,15 @@ randomWeights = do
   where
     storeResult = mkW
 
--- randomNet :: (KnownNat i, [KnownNat] h, KnownNat o) => IO (SN i h o)
--- randomNet = O <$> randomWeights
--- randomNet = (:~) <$> randomWeights <*> randomNet
+randomNet :: forall i hs o. (KnownNat i, SingI hs, KnownNat o) => IO (SN i hs o)
+randomNet = go sing
+  where go :: forall h hs'. KnownNat h => Sing hs' -> IO (SN h hs' o)
+        go = \case
+          SNil            ->     O <$> randomWeights
+          SNat `SCons` ss -> (:~) <$> randomWeights <*> go ss
 
--- runLayer :: SW i o -> TensorDouble -> TensorDouble
--- runLayer (SW wB wN) v = addmv 1.0 wB 1.0 wN v
+-- runLayer :: SW i o -> TDS -> TensorDouble
+-- runLayer sw v = addmv 1.0 wB 1.0 wN v
 
 -- runNet :: SN i h o -> TensorDouble -> TensorDouble
 -- runNet (O w) v = sigmoid (runLayer w v)
@@ -90,4 +105,5 @@ net2 = hh :~ O ho :: SN 7 '[4] 2
 net3 = ih :~ hh :~ O ho :: SN 10 '[7,4] 2
 
 main = do
-    putStrLn "Done"
+  (foo  :: SN 4 '[] 2) <- randomNet
+  putStrLn "Done"
