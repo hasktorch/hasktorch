@@ -82,6 +82,9 @@ import THTypes
 -- Foreign pointer application helper functions
 -- ----------------------------------------
 
+apply1_
+  :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO a)
+     -> TensorDouble -> p -> TensorDouble
 apply1_ transformation mtx val = unsafePerformIO $ do
   withForeignPtr (tdTensor res)
     (\r_ -> withForeignPtr (tdTensor mtx)

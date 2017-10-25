@@ -3,8 +3,6 @@
 
 module Main where
 
--- experimental AD implementation
-
 import Control.Exception.Base (assert)
 import Data.Monoid ((<>))
 import Data.Maybe (fromJust)

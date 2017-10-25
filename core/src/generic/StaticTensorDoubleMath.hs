@@ -43,7 +43,7 @@ module StaticTensorDoubleMath (
   tds_addcmul,
   tds_addcdiv,
   tds_addmv,
-  (!*),
+--  (!*),
   tds_addmm,
   tds_addbmm,
   tds_baddbmm,
@@ -82,6 +82,9 @@ import THTypes
 -- Foreign pointer application helper functions
 -- ----------------------------------------
 
+apply1_
+  :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO a)
+     -> (TDS n d) -> p -> (TDS n d)
 apply1_ transformation mtx val = unsafePerformIO $ do
   withForeignPtr (tdsTensor res)
     (\r_ -> withForeignPtr (tdsTensor mtx)
@@ -387,11 +390,11 @@ tds_addmv beta t alpha src1 src2 = unsafePerformIO $ do
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
-(!*) :: (TDS n d) -> (TDS n d) -> (TDS n d)
-mat !* vec =
-  tds_addmv 1.0 zero 1.0 mat vec
-  where
-    zero = tds_new
+-- (!*) :: (TDS n d) -> (TDS n d) -> (TDS n d)
+-- mat !* vec =
+--   tds_addmv 1.0 zero 1.0 mat vec
+--   where
+--     zero = tds_new
 
 tds_addmm :: Double -> (TDS n d) -> Double -> (TDS n d) -> (TDS n d) -> (TDS n d)
 tds_addmm beta t alpha src1 src2 = unsafePerformIO $ do

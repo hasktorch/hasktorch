@@ -8,6 +8,7 @@
 module StaticTensorDouble (
   tds_new,
   tds_init,
+  tds_cloneDim,
   dispS,
   TensorDoubleStatic(..),
   TDS(..),
@@ -34,6 +35,8 @@ import Data.Proxy (Proxy)
 class StaticTensor t where
   -- |create tensor
   tds_new :: t
+  -- |create tensor of the same dimensions
+  tds_cloneDim :: t -> t -- takes unused argument, gets dimensions by matching types
   -- |create and initialize tensor
   tds_init :: Double -> t
   -- |Display tensor
@@ -89,6 +92,7 @@ instance (KnownNat d0, KnownNat d1, KnownNat d2, KnownNat d3) =>
                          [natVal (Proxy :: Proxy d0), natVal (Proxy :: Proxy d1),
                           natVal (Proxy :: Proxy d2), natVal (Proxy :: Proxy d3)]
   tds_new = tds_init 0.0
+  tds_cloneDim _ = tds_new :: TDS 4 '[d0, d1, d2, d3]
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 instance (KnownNat d0, KnownNat d1, KnownNat d2) =>
@@ -101,6 +105,7 @@ instance (KnownNat d0, KnownNat d1, KnownNat d2) =>
                       natVal (Proxy :: Proxy d2)]
       dims = D3 s0 s1 s2
   tds_new = tds_init 0.0
+  tds_cloneDim _ = tds_new :: TDS 3 '[d0, d1, d2]
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 instance (KnownNat d0, KnownNat d1) =>
@@ -112,6 +117,7 @@ instance (KnownNat d0, KnownNat d1) =>
                  [natVal (Proxy :: Proxy d0), natVal (Proxy :: Proxy d1)]
       dims = D2 s0 s1
   tds_new = tds_init 0.0
+  tds_cloneDim _ = tds_new :: TDS 2 '[d0, d1]
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 
@@ -123,6 +129,7 @@ instance (KnownNat d0) =>
       s0 = fromIntegral $ natVal (Proxy :: Proxy d0)
       dims = D1 s0
   tds_new = tds_init 0.0
+  tds_cloneDim _ = tds_new :: TDS 1 '[d0]
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 instance StaticTensor (TensorDoubleStatic 0 '[] )  where
@@ -131,6 +138,7 @@ instance StaticTensor (TensorDoubleStatic 0 '[] )  where
       dims = D0
       makeStatic dims fptr = (TDS fptr dims) :: TDS 0 '[]
   tds_new = tds_init 0.0
+  tds_cloneDim _ = tds_new :: TDS 0 '[]
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 {- Sanity checks -}
