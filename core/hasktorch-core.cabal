@@ -34,6 +34,7 @@ library
                      , hasktorch-raw
                      , hasktorch-interface
                      , text >= 1.2.2.2
+                     , typelits-witnesses >= 0.2.3.0
 
 source-repository head
   type:     git

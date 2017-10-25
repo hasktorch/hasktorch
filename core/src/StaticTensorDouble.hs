@@ -27,6 +27,7 @@ import THDoubleTensor
 import THDoubleTensorMath
 
 import GHC.TypeLits (Nat, KnownNat, natVal)
+-- import GHC.TypeLits.List (KnownNats)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Data.Proxy (Proxy(..))
@@ -81,6 +82,10 @@ instance Eq (TensorDoubleStatic n d) where
 
 -- instance StaticTensor (TensorDoubleStatic n d) where
 --   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
+
+-- instance (KnownNat n, KnownNats d) =>
+--   StaticTensor (TensorDoubleStatic n d)  where
+--   tds_cloneDim _ = tds_new :: TDS n d
 
 instance (KnownNat d0, KnownNat d1, KnownNat d2, KnownNat d3) =>
   StaticTensor (TensorDoubleStatic 4 '[d0, d1, d2, d3] )  where

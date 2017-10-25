@@ -82,8 +82,7 @@ import THTypes
 -- Foreign pointer application helper functions
 -- ----------------------------------------
 
-apply1_
-  :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO a)
+apply1_ :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO a)
      -> (TDS n d) -> p -> (TDS n d)
 apply1_ transformation mtx val = unsafePerformIO $ do
   withForeignPtr (tdsTensor res)
@@ -95,7 +94,7 @@ apply1_ transformation mtx val = unsafePerformIO $ do
     )
   pure res
   where
-    res = tds_new
+    res = tds_cloneDim mtx
 
 -- |Generalize non-mutating collapse of a tensor to a constant or another tensor
 apply0_ :: (Ptr CTHDoubleTensor -> a) -> (TDS n d) -> IO a
