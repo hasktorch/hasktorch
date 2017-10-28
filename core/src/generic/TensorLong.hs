@@ -2,8 +2,8 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
 
 module TensorLong (
-  getLong,
-  tensorNewLong
+  tl_get,
+  tl_new
   )
 where
 
@@ -27,7 +27,7 @@ wrapLong tensor = TensorLong <$> (newForeignPtr p_THLongTensor_free tensor)
 
 w2cl = fromIntegral
 
-getLong loc tensor =
+tl_get loc tensor =
    (withForeignPtr(tlTensor tensor) (\t ->
                                         pure $ getter loc t
                                     ))
@@ -53,8 +53,8 @@ fillRaw0 tensor = fillRaw 0 tensor >> pure tensor
 
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
-tensorNewLong :: TensorDim Word -> TensorLong
-tensorNewLong dims = unsafePerformIO $ do
+tl_new :: TensorDim Word -> TensorLong
+tl_new dims = unsafePerformIO $ do
   newPtr <- go dims
   fPtr <- newForeignPtr p_THLongTensor_free newPtr
   withForeignPtr fPtr fillRaw0

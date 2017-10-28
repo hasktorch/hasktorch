@@ -154,7 +154,7 @@ type Ret2Fun =
 ret2 :: Ret2Fun -> (TDS n d) -> Int -> Bool -> IO ((TDS n d), TensorLong)
 ret2 fun t dimension keepdim = do
   let values_ = tds_new
-  let indices_ = tensorNewLong (tdsDim t)
+  let indices_ = tl_new (tdsDim t)
   withForeignPtr (tdsTensor values_)
     (\vPtr ->
        withForeignPtr (tlTensor indices_)
@@ -512,3 +512,5 @@ tds_cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
 -- TH_API void THTensor_(cmin)(THTensor *r, THTensor *t, THTensor *src);
 tds_cmin :: (TDS n d) -> (TDS n d) -> (TDS n d)
 tds_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
+
+

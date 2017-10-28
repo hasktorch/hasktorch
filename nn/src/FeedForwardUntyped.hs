@@ -45,7 +45,7 @@ dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
   gen <- newRNG
-  let w1 = W { biases = tdNew (D1 o), nodes = tdNew (D2 o i) }
+  let w1 = W { biases = td_new (D1 o), nodes = td_new (D2 o i) }
   b <- td_uniform (biases w1) gen (-1.0) (1.0)
   w <- td_uniform (nodes w1) gen (-1.0) (1.0)
   pure W { biases = b, nodes = w }
@@ -53,7 +53,7 @@ randomWeights i o = do
 randomData :: Word -> IO TensorDouble
 randomData i = do
   gen <- newRNG
-  let dat = tdNew (D1 i)
+  let dat = td_new (D1 i)
   dat <- td_uniform dat gen (-1.0) (1.0)
   pure dat
 

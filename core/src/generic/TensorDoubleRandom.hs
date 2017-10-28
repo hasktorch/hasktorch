@@ -213,7 +213,7 @@ td_multinomial self gen prob_dist n_sample with_replacement = do
 -- #endif
 
 test = do
-  let t = tdNew (D1 3)
+  let t = td_new (D1 3)
   disp t
   gen <- newRNG
   td_random t gen

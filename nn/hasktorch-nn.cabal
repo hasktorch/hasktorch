@@ -36,6 +36,7 @@ executable ff-typed
                      , hasktorch-tools
                      , hspec >= 2.4.4
                      , singletons >= 2.3.1
+                     , typelits-witnesses >= 0.2.3.0
                      , text >= 1.2.2.2
 
 

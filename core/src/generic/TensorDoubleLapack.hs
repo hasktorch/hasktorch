@@ -30,8 +30,8 @@ import THDoubleTensorLapack
 
 gesv :: TensorDouble -> TensorDouble -> (TensorDouble, TensorDouble)
 gesv a b = unsafePerformIO $ do
-  let resB = tdNew (tdDim a)
-  let resA = tdNew (tdDim a)
+  let resB = td_new (tdDim a)
+  let resA = td_new (tdDim a)
   withForeignPtr (tdTensor resB)
     (\resBRaw ->
        withForeignPtr (tdTensor resA)
@@ -68,8 +68,8 @@ gesv_ resA resB a b = do
 
 gels :: TensorDouble -> TensorDouble -> (TensorDouble, TensorDouble)
 gels a b = unsafePerformIO $ do
-  let resB = tdNew (tdDim a)
-  let resA = tdNew (tdDim a)
+  let resB = td_new (tdDim a)
+  let resA = td_new (tdDim a)
   withForeignPtr (tdTensor resB)
     (\resBRaw ->
        withForeignPtr (tdTensor resA)
@@ -106,7 +106,7 @@ gels_ resA resB a b = do
 
 getri :: TensorDouble -> TensorDouble
 getri a = unsafePerformIO $ do
-  let resA = tdNew (tdDim a)
+  let resA = td_new (tdDim a)
   withForeignPtr (tdTensor resA)
     (\resARaw ->
         withForeignPtr (tdTensor a)
@@ -130,8 +130,8 @@ getri_ resA a = do
 
 qr :: TensorDouble -> (TensorDouble, TensorDouble)
 qr a = unsafePerformIO $ do
-  let resQ = tdNew (tdDim a)
-  let resR = tdNew (tdDim a)
+  let resQ = td_new (tdDim a)
+  let resR = td_new (tdDim a)
   withForeignPtr (tdTensor resQ)
     (\resQRaw ->
        withForeignPtr (tdTensor resR)
@@ -164,7 +164,7 @@ gesvd2 = undefined
 
 test = do
   rng <- newRNG
-  let rnd = tdNew (D2 2 2)
+  let rnd = td_new (D2 2 2)
   t <- td_uniform rnd rng (-1.0) 1.0
   let b = td_init (D1 2) 1.0
   let (resA, resB) = gesv t b

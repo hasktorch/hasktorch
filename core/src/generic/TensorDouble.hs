@@ -2,7 +2,7 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
 
 module TensorDouble (
-  tdNew,
+  td_new,
   td_init,
   -- TODO - use this convention for everything
   td_get,
@@ -61,8 +61,8 @@ td_newWithTensor t = unsafePerformIO $ do
   pure $ TensorDouble newFPtr (dimFromRaw newPtr)
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
-tdNew :: TensorDim Word -> TensorDouble
-tdNew dims = unsafePerformIO $ do
+td_new :: TensorDim Word -> TensorDouble
+td_new dims = unsafePerformIO $ do
   newPtr <- tensorRaw dims 0.0
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   withForeignPtr fPtr fillRaw0
@@ -88,7 +88,7 @@ td_transpose dim1 dim2 t = unsafePerformIO $ do
 
 test :: IO ()
 test = do
-  let foo = tdNew (D1 5)
+  let foo = td_new (D1 5)
   -- disp foo
   let t = td_init (D2 5 2) 3.0
   disp $ td_transpose 1 0 (td_transpose 1 0 t)

@@ -14,7 +14,7 @@ import THDoubleTensorMath
 
 -- |basic test of garbage collected tensor
 testGCTensor = do
-  let t0 = tdNew (D2 8 4)
+  let t0 = td_new (D2 8 4)
       t1 = t0
   td_fill_ 3.0 t1
   let t2 = td_fill 6.0 t1
@@ -23,16 +23,16 @@ testGCTensor = do
   disp t2 -- should be matrix of 6.0
 
 testOps = do
-  disp $ td_neg $ td_addConst (tdNew (D2 2 2)) 3
-  disp $ td_sigmoid $ td_neg $ td_addConst (tdNew (D2 2 2)) 3
-  disp $ td_sigmoid $ td_addConst (tdNew (D2 2 2)) 3
+  disp $ td_neg $ td_addConst (td_new (D2 2 2)) 3
+  disp $ td_sigmoid $ td_neg $ td_addConst (td_new (D2 2 2)) 3
+  disp $ td_sigmoid $ td_addConst (td_new (D2 2 2)) 3
 
-  let foo = td_fill 3.0 $ tdNew (D1 5)
+  let foo = td_fill 3.0 $ td_new (D1 5)
   print $ 3.0 * 3.0 * 5
   print $ td_dot foo foo
 
-  disp $ (tdNew (D1 5)) ^+ 2.0
-  disp $ ((tdNew (D1 5)) ^+ 2.0) ^/ 4.0
+  disp $ (td_new (D1 5)) ^+ 2.0
+  disp $ ((td_new (D1 5)) ^+ 2.0) ^/ 4.0
 
 -- TODO : move raw test elsewhere?
 rawTest = do
@@ -46,14 +46,14 @@ rawTest = do
   dispRaw z
 
 testCadd = do
-  let foo = td_fill 5.0 $ tdNew (D1 5)
-  let bar = td_fill 2.0 $ tdNew (D1 5)
+  let foo = td_fill 5.0 $ td_new (D1 5)
+  let bar = td_fill 2.0 $ td_new (D1 5)
   print $ 5 + 3 * 2
   disp $ td_cadd foo 3.0 bar
 
 testCopy :: IO ()
 testCopy = do
-  let foo = td_fill 5.0 $ tdNew (D2 3 3)
+  let foo = td_fill 5.0 $ td_new (D2 3 3)
   let bar = td_newWithTensor foo
   disp foo
   disp bar
@@ -80,7 +80,7 @@ matrixMultTest = do
 
 testLapack = do
   rng <- newRNG
-  let rnd = tdNew (D2 2 2)
+  let rnd = td_new (D2 2 2)
   t <- td_uniform rnd rng (-1.0) 1.0
 
   let b = td_init (D1 2) 1.0

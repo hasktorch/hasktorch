@@ -60,7 +60,9 @@ module TensorDoubleMath (
   td_cumprod,
   td_sign,
   td_trace,
-  td_cross
+  td_cross,
+
+  td_equal
   ) where
 
 import Foreign
@@ -95,7 +97,7 @@ apply1_ transformation mtx val = unsafePerformIO $ do
     )
   pure res
   where
-    res = tdNew (tdDim mtx)
+    res = td_new (tdDim mtx)
 
 -- |Generalize non-mutating collapse of a tensor to a constant or another tensor
 apply0_ :: (Ptr CTHDoubleTensor -> a) -> TensorDouble -> IO a
@@ -106,7 +108,7 @@ apply0_ operation tensor = do
 apply0Tensor :: (Ptr CTHDoubleTensor -> t -> IO a) -> TensorDim Word -> t
   -> TensorDouble
 apply0Tensor op resDim t = unsafePerformIO $ do
-  let res = tdNew resDim
+  let res = td_new resDim
   withForeignPtr (tdTensor res) (\r_ -> op r_ t)
   pure res
 
@@ -118,7 +120,7 @@ type Raw4Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor ->Ptr CTHDoubleTensor 
 
 apply2 :: Raw3Arg -> TensorDouble -> TensorDouble -> IO TensorDouble
 apply2 fun t src = do
-  let r_ = tdNew (tdDim t)
+  let r_ = td_new (tdDim t)
   withForeignPtr (tdTensor r_)
     (\rPtr ->
        withForeignPtr (tdTensor t)
@@ -133,7 +135,7 @@ apply2 fun t src = do
 
 apply3 :: Raw4Arg -> TensorDouble -> TensorDouble -> TensorDouble -> IO TensorDouble
 apply3 fun t src1 src2 = do
-  let r_ = tdNew (tdDim t)
+  let r_ = td_new (tdDim t)
   withForeignPtr (tdTensor r_)
     (\rPtr ->
        withForeignPtr (tdTensor t)
@@ -154,8 +156,8 @@ type Ret2Fun =
 
 ret2 :: Ret2Fun -> TensorDouble -> Int -> Bool -> IO (TensorDouble, TensorLong)
 ret2 fun t dimension keepdim = do
-  let values_ = tdNew (tdDim t)
-  let indices_ = tensorNewLong (tdDim t)
+  let values_ = td_new (tdDim t)
+  let indices_ = tl_new (tdDim t)
   withForeignPtr (tdTensor values_)
     (\vPtr ->
        withForeignPtr (tlTensor indices_)
@@ -172,7 +174,7 @@ ret2 fun t dimension keepdim = do
     dimensionC = fromIntegral dimension
 
 apply1 fun t = do
-  let r_ = tdNew (tdDim t)
+  let r_ = td_new (tdDim t)
   withForeignPtr (tdTensor r_)
     (\rPtr ->
        withForeignPtr (tdTensor t)
@@ -192,7 +194,7 @@ td_fill value tensor = unsafePerformIO $
                                   fillRaw value t
                                   pure nt
                               )
-  where nt = tdNew (tdDim tensor)
+  where nt = td_new (tdDim tensor)
 
 td_fill_ :: Real a => a -> TensorDouble -> IO ()
 td_fill_ value tensor =
@@ -394,7 +396,7 @@ td_addmv beta t alpha src1 src2 = unsafePerformIO $ do
 mat !* vec =
   td_addmv 1.0 zero 1.0 mat vec
   where
-    zero = tdNew $ (D1 (d2_1 $ tdDim mat)) -- TODO - more efficient version w/o allocaiton?
+    zero = td_new $ (D1 (d2_1 $ tdDim mat)) -- TODO - more efficient version w/o allocaiton?
 
 td_addmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
 td_addmm beta t alpha src1 src2 = unsafePerformIO $ do
@@ -515,6 +517,8 @@ td_cmin :: TensorDouble -> TensorDouble -> TensorDouble
 td_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 
 
+
+
 -- -- TH_API void THTensor_(cmaxValue)(THTensor *r, THTensor *t, real value);
 -- cmaxValue :: TensorDouble -> TensorDouble -> Double -> TensorDouble
 -- cmaxValue t src value = unsafePerformIO $
@@ -545,14 +549,21 @@ td_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 
 -- TH_API int THTensor_(equal)(THTensor *ta, THTensor *tb);
 
+td_equal :: TensorDouble -> TensorDouble -> Bool
+td_equal t1 t2 = unsafePerformIO $
+  withForeignPtr (tdTensor t1)
+    (\t1c ->
+        withForeignPtr (tdTensor t2)
+        (\t2c -> pure $ (c_THDoubleTensor_equal t1c t2c) == 1
+        )
+    )
+
 -- TH_API void THTensor_(ltValue)(THByteTensor *r_, THTensor* t, real value);
 -- TH_API void THTensor_(leValue)(THByteTensor *r_, THTensor* t, real value);
 -- TH_API void THTensor_(gtValue)(THByteTensor *r_, THTensor* t, real value);
 -- TH_API void THTensor_(geValue)(THByteTensor *r_, THTensor* t, real value);
 -- TH_API void THTensor_(neValue)(THByteTensor *r_, THTensor* t, real value);
 -- TH_API void THTensor_(eqValue)(THByteTensor *r_, THTensor* t, real value);
-
-
 
 -- TH_API void THTensor_(round)(THTensor *r_, THTensor *t);
 
