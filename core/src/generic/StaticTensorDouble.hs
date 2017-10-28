@@ -8,7 +8,7 @@
 module StaticTensorDouble (
   tds_new,
   tds_init,
-  tds_cloneDim,
+  -- tds_cloneDim,
   dispS,
   TensorDoubleStatic(..),
   TDS(..),
@@ -27,7 +27,7 @@ import THDoubleTensor
 import THDoubleTensorMath
 
 import GHC.TypeLits (Nat, KnownNat, natVal)
--- import GHC.TypeLits.List (KnownNats)
+import GHC.TypeLits.List (KnownNats)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Data.Proxy (Proxy(..))
@@ -124,7 +124,6 @@ instance (KnownNat d0, KnownNat d1) =>
   tds_new = tds_init 0.0
   tds_cloneDim _ = tds_new :: TDS 2 '[d0, d1]
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
-
 
 instance (KnownNat d0) =>
   StaticTensor (TensorDoubleStatic 1 '[d0] )  where

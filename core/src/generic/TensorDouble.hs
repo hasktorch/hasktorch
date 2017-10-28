@@ -6,7 +6,8 @@ module TensorDouble (
   td_init,
   -- TODO - use this convention for everything
   td_get,
-  td_newWithTensor
+  td_newWithTensor,
+  td_transpose,
   )
 where
 
@@ -26,7 +27,15 @@ import THDoubleTensor
 import THDoubleTensorMath
 import THDoubleLapack
 
+
+disp tensor =
+  (withForeignPtr(tdTensor tensor) dispRaw)
+
+w2cl :: Word -> CLong
 w2cl = fromIntegral
+
+i2cl :: Integer -> CLong
+i2cl = fromIntegral
 
 td_get :: TensorDim Integer -> TensorDouble -> IO Double
 td_get loc tensor =
@@ -35,13 +44,13 @@ td_get loc tensor =
     (\t -> pure . realToFrac $ getter loc t)
   where
     getter D0 t = undefined
-    getter (D1 d1) t = c_THDoubleTensor_get1d t $ w2cl d1
+    getter (D1 d1) t = c_THDoubleTensor_get1d t $ i2cl d1
     getter (D2 d1 d2) t = c_THDoubleTensor_get2d t
-                          (w2cl d1) (w2cl d2)
+                          (i2cl d1) (i2cl d2)
     getter (D3 d1 d2 d3) t = c_THDoubleTensor_get3d t
-                             (w2cl d1) (w2cl d2) (w2cl d3)
+                             (i2cl d1) (i2cl d2) (i2cl d3)
     getter (D4 d1 d2 d3 d4) t = c_THDoubleTensor_get4d t
-                                (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+                                (i2cl d1) (i2cl d2) (i2cl d3) (i2cl d4)
 
 td_newWithTensor :: TensorDouble -> TensorDouble
 td_newWithTensor t = unsafePerformIO $ do
@@ -50,7 +59,6 @@ td_newWithTensor t = unsafePerformIO $ do
     )
   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   pure $ TensorDouble newFPtr (dimFromRaw newPtr)
-
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 tdNew :: TensorDim Word -> TensorDouble
@@ -67,8 +75,21 @@ td_init dims value = unsafePerformIO $ do
   withForeignPtr fPtr (fillRaw value)
   pure $ TensorDouble fPtr dims
 
+td_transpose :: Word -> Word -> TensorDouble -> TensorDouble
+td_transpose dim1 dim2 t = unsafePerformIO $ do
+  newPtr <- withForeignPtr (tdTensor t) (
+    \tPtr -> c_THDoubleTensor_newTranspose tPtr dim1C dim2C
+    )
+  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  pure $ TensorDouble newFPtr (dimFromRaw newPtr)
+  where
+    dim1C = fromIntegral dim1
+    dim2C = fromIntegral dim2
+
 test :: IO ()
 test = do
   let foo = tdNew (D1 5)
   -- disp foo
+  let t = td_init (D2 5 2) 3.0
+  disp $ td_transpose 1 0 (td_transpose 1 0 t)
   pure ()

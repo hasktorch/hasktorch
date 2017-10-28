@@ -103,6 +103,9 @@ writeup](https://apaszke.github.io/torch-internals.html).
 - [static dimension checking](http://dis.um.es/~alberto/hmatrix/static.html)
 - [defunctionalization](https://typesandkinds.wordpress.com/2013/04/01/defunctionalization-for-the-win/)
 - [An introduction to DataKinds and GHC.TypeLits](http://ponies.io/posts/2014-07-30-typelits.html)
+- [Applying Type-Level and Generic Programming in Haskell](https://www.cs.ox.ac.uk/projects/utgp/school/andres.pdf)
+
+
 
 ### Automatic Differentiation
 

@@ -514,6 +514,7 @@ td_cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
 td_cmin :: TensorDouble -> TensorDouble -> TensorDouble
 td_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 
+
 -- -- TH_API void THTensor_(cmaxValue)(THTensor *r, THTensor *t, real value);
 -- cmaxValue :: TensorDouble -> TensorDouble -> Double -> TensorDouble
 -- cmaxValue t src value = unsafePerformIO $
