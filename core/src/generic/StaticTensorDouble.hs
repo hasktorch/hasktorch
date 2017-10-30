@@ -8,7 +8,7 @@
 module StaticTensorDouble (
   tds_new,
   tds_init,
-  -- tds_cloneDim,
+  tds_cloneDim,
   dispS,
   TensorDoubleStatic(..),
   TDS(..),
@@ -26,12 +26,14 @@ import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
 
-import GHC.TypeLits (Nat, KnownNat, natVal)
-import GHC.TypeLits.List (KnownNats)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Data.Proxy (Proxy(..))
 import Data.Proxy (Proxy)
+
+import Data.Singletons
+-- import Data.Singletons.Prelude
+import Data.Singletons.TypeLits
 
 class StaticTensor t where
   -- |create tensor
@@ -56,117 +58,68 @@ dimCheck dims n = case dims of
   D3 _ _ _ -> if n == 3 then pure () else fail "Incorrect Dimensions"
   D4 _ _ _ _ -> if n == 4 then pure () else fail "Incorrect Dimensions"
 
-data TensorDoubleStatic (n :: Nat) (d :: [Nat]) = TDS {
-  tdsTensor :: !(ForeignPtr CTHDoubleTensor),
-  tdsDim :: TensorDim Word
+list2dim :: (Num a2, Integral a1) => [a1] -> TensorDim a2
+list2dim lst  = case (length lst) of
+  0 -> D0
+  1 -> D1 (d !! 0)
+  2 -> D2 (d !! 0) (d !! 1)
+  3 -> D3 (d !! 0) (d !! 1) (d !! 2)
+  4 -> D4 (d !! 0) (d !! 1) (d !! 2) (d !! 3)
+  _ -> error "Tensor type signature has invalid dimensions"
+  where
+    d = fromIntegral <$> lst -- cast as needed for tensordim
+
+data TensorDoubleStatic (d :: [Nat]) = TDS {
+  tdsTensor :: !(ForeignPtr CTHDoubleTensor)
   } deriving (Show)
 
 type TDS = TensorDoubleStatic
 
--- |Make a low level pointer according to dimensions
-mkPtr dim value = tensorRaw dim value
-
-mkTHelper dims ndim makeStatic value = unsafePerformIO $ do
-  newPtr <- mkPtr dims value
-  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
-  -- dimCheck dims ndim
-  pure $ makeStatic dims fPtr
-
-instance Eq (TensorDoubleStatic n d) where
+instance Eq (TensorDoubleStatic d) where
   (==) t1 t2 = unsafePerformIO $ withForeignPtr (tdsTensor t1)
-    (\t1c ->
-        withForeignPtr (tdsTensor t2)
-          (\t2c -> pure $ (c_THDoubleTensor_equal t1c t2c) == 1
-          )
+    (\t1c -> withForeignPtr (tdsTensor t2)
+             (\t2c -> pure $ (c_THDoubleTensor_equal t1c t2c) == 1)
     )
 
--- instance StaticTensor (TensorDoubleStatic n d) where
---   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
+-- |Make a low level pointer according to dimensions
+mkTHelper dims makeStatic value = unsafePerformIO $ do
+  newPtr <- mkPtr dims value
+  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  pure $ makeStatic dims fPtr
+  where
+    mkPtr dim value = tensorRaw dim value
 
--- instance (KnownNat n, KnownNats d) =>
---   StaticTensor (TensorDoubleStatic n d)  where
---   tds_cloneDim _ = tds_new :: TDS n d
-
-instance (KnownNat d0, KnownNat d1, KnownNat d2, KnownNat d3) =>
-  StaticTensor (TensorDoubleStatic 4 '[d0, d1, d2, d3] )  where
-  tds_init initVal = mkTHelper dims 4 makeStatic initVal
+instance SingI d => StaticTensor (TensorDoubleStatic d)  where
+  tds_init initVal = mkTHelper dims makeStatic initVal
     where
-      dims = D4 s0 s1 s2 s3
-      makeStatic dims fptr = (TDS fptr dims) :: TDS 4 '[d0, d1, d2, d3]
-      [s0, s1, s2, s3] = fromIntegral <$>
-                         [natVal (Proxy :: Proxy d0), natVal (Proxy :: Proxy d1),
-                          natVal (Proxy :: Proxy d2), natVal (Proxy :: Proxy d3)]
+      dims = list2dim $ fromSing (sing :: Sing d)
+      makeStatic dims fptr = (TDS fptr) :: TDS d
   tds_new = tds_init 0.0
-  tds_cloneDim _ = tds_new :: TDS 4 '[d0, d1, d2, d3]
-  dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
-
-instance (KnownNat d0, KnownNat d1, KnownNat d2) =>
-  StaticTensor (TensorDoubleStatic 3 '[d0, d1, d2] )  where
-  tds_init initVal = mkTHelper dims 3 makeStatic initVal
-    where
-      makeStatic dims fptr = (TDS fptr dims) :: TDS 3 '[d0, d1, d2]
-      [s0, s1, s2] = fromIntegral <$>
-                     [natVal (Proxy :: Proxy d0), natVal (Proxy :: Proxy d1),
-                      natVal (Proxy :: Proxy d2)]
-      dims = D3 s0 s1 s2
-  tds_new = tds_init 0.0
-  tds_cloneDim _ = tds_new :: TDS 3 '[d0, d1, d2]
-  dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
-
-instance (KnownNat d0, KnownNat d1) =>
-  StaticTensor (TensorDoubleStatic 2 '[d0, d1] )  where
-  tds_init initVal = mkTHelper dims 2 makeStatic initVal
-    where
-      makeStatic dims fptr = (TDS fptr dims) :: TDS 2 '[d0, d1]
-      [s0, s1] = fromIntegral <$>
-                 [natVal (Proxy :: Proxy d0), natVal (Proxy :: Proxy d1)]
-      dims = D2 s0 s1
-  tds_new = tds_init 0.0
-  tds_cloneDim _ = tds_new :: TDS 2 '[d0, d1]
-  dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
-
-instance (KnownNat d0) =>
-  StaticTensor (TensorDoubleStatic 1 '[d0] )  where
-  tds_init initVal = mkTHelper dims 1 makeStatic initVal
-    where
-      makeStatic dims fptr = (TDS fptr dims) :: TDS 1 '[d0]
-      s0 = fromIntegral $ natVal (Proxy :: Proxy d0)
-      dims = D1 s0
-  tds_new = tds_init 0.0
-  tds_cloneDim _ = tds_new :: TDS 1 '[d0]
-  dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
-
-instance StaticTensor (TensorDoubleStatic 0 '[] )  where
-  tds_init initVal = mkTHelper dims 0 makeStatic initVal
-    where
-      dims = D0
-      makeStatic dims fptr = (TDS fptr dims) :: TDS 0 '[]
-  tds_new = tds_init 0.0
-  tds_cloneDim _ = tds_new :: TDS 0 '[]
+  tds_cloneDim _ = tds_new :: TDS d
   dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 {- Sanity checks -}
 
 testStatic = do
   print("1")
-  let t1 = tds_new :: TDS 2 '[2, 2]
+  let t1 = tds_new :: TDS '[2, 2]
   dispS t1 -- passes
   print("2")
-  let t2 = tds_new :: TDS 2 '[2, 4] -- should fail but doesn't yet
+  let t2 = tds_new :: TDS '[2, 4]
   dispS t2
   print("3")
-  let t3 = tds_new :: TDS 3 '[2, 2, 2] -- fails due to dim mismatch
+  let t3 = tds_new :: TDS '[2, 2, 2]
   dispS t3
   print("4")
-  let t4 = tds_new :: TDS 2 '[8, 4] -- fails due to dim mismatch
+  let t4 = tds_new :: TDS '[8, 4]
   dispS t4
   pure ()
 
 testEq = do
   print "Should be True:"
-  print $ (tds_init 4.0 :: TDS 2 '[2,3]) ==  (tds_init 4.0 :: TDS 2 '[2,3])
+  print $ (tds_init 4.0 :: TDS '[2,3]) ==  (tds_init 4.0 :: TDS '[2,3])
   print "Should be False:"
-  print $ (tds_init 3.0 :: TDS 2 '[2,3]) ==  (tds_init 1.0 :: TDS 2 '[2,3])
+  print $ (tds_init 3.0 :: TDS '[2,3]) ==  (tds_init 1.0 :: TDS '[2,3])
 
 test = do
   testStatic

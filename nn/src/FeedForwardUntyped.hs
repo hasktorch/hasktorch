@@ -9,8 +9,6 @@ import Data.Maybe (fromJust)
 import Foreign.C.Types
 import Foreign.Ptr
 
-import GHC.TypeLits (Nat, KnownNat, natVal)
-
 import TensorDouble
 import TensorDoubleMath (td_sigmoid, (!*), td_addmv)
 import TensorDoubleRandom

@@ -27,7 +27,6 @@ import TensorUtils
 import Data.Singletons
 import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
-
 import GHC.TypeLits.Witnesses
 
 {- Statically Typed Implementation -}
@@ -108,4 +107,5 @@ net3 = ih :~ hh :~ O ho :: SN 10 '[7,4] 2
 
 main = do
   (foo  :: SN 4 '[] 2) <- randomNet
+  (bar :: SN 4 '[3, 2] 2) <- randomNet
   putStrLn "Done"

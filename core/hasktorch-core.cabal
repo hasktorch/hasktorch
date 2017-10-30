@@ -33,6 +33,7 @@ library
   build-depends:       base >= 4.7 && < 5
                      , hasktorch-raw
                      , hasktorch-interface
+                     , singletons >= 2.3.1
                      , text >= 1.2.2.2
                      , typelits-witnesses >= 0.2.3.0
 
