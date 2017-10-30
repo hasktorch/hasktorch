@@ -6,6 +6,7 @@
 
 
 module StaticTensorDouble (
+  tds_dim,
   tds_new,
   tds_init,
   tds_cloneDim,
@@ -36,6 +37,7 @@ import Data.Singletons
 import Data.Singletons.TypeLits
 
 class StaticTensor t where
+  -- |tensor dimensions
   -- |create tensor
   tds_new :: t
   -- |create tensor of the same dimensions
@@ -88,6 +90,9 @@ mkTHelper dims makeStatic value = unsafePerformIO $ do
   pure $ makeStatic dims fPtr
   where
     mkPtr dim value = tensorRaw dim value
+
+tds_dim :: (Num a2, SingI d) => TensorDoubleStatic d -> TensorDim a2
+tds_dim (x :: TensorDoubleStatic d) = list2dim $ fromSing (sing :: Sing d)
 
 instance SingI d => StaticTensor (TensorDoubleStatic d)  where
   tds_init initVal = mkTHelper dims makeStatic initVal
