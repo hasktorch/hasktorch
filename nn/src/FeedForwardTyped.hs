@@ -13,7 +13,7 @@ import Data.Maybe (fromJust)
 import Foreign.C.Types
 import Foreign.Ptr
 
-import GHC.TypeLits (Nat, KnownNat, natVal)
+-- import GHC.TypeLits (Nat, KnownNat, natVal)
 
 import StaticTensorDouble
 import TensorDouble
@@ -34,13 +34,14 @@ import GHC.TypeLits.Witnesses
 type SW = StaticWeights
 type SN = StaticNetwork
 
-data StaticWeights i o = SW {
-  biases :: TDS 1 '[o],
-  nodes :: TDS 2 '[i, o]
+data StaticWeights (i :: Nat) (o :: Nat) = SW {
+  biases :: TDS '[o],
+  nodes :: TDS '[i, o]
   } deriving (Show)
 
 mkW :: (KnownNat i, KnownNat o) => SW i o
-mkW = SW tds_new tds_new
+mkW = SW biases nodes
+  where (biases, nodes) = (tds_new, tds_new)
 
 data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
   O :: SW i o -> SN i '[] o
@@ -82,7 +83,7 @@ randomNet = go sing
           SNil            ->     O <$> randomWeights
           SNat `SCons` ss -> (:~) <$> randomWeights <*> go ss
 
--- runLayer :: SW i o -> TDS -> TensorDouble
+-- runLayer :: SW i o -> (TDS d) -> TensorDouble
 -- runLayer sw v = addmv 1.0 wB 1.0 wN v
 
 -- runNet :: SN i h o -> TensorDouble -> TensorDouble
