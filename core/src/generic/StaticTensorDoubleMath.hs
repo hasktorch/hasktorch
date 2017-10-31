@@ -28,14 +28,31 @@ module StaticTensorDoubleMath (
   , tds_log
   , tds_lgamma
 
+  , tds_cadd
+  , tds_csub
+  , tds_cmul
+  , tds_cpow
+  , tds_cdiv
+  , tds_clshift
+  , tds_crshift
+  , tds_cfmod
+  , tds_cremainder
+  , tds_cbitand
+  , tds_cbitor
+  , tds_cbitxor
+  , tds_addcmul
+  , tds_addcdiv
+  , tds_addmv
+
   ) where
+
 
 
 import Data.Singletons
 -- import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 import Foreign (Ptr)
-import Foreign.C.Types (CLong)
+import Foreign.C.Types (CLong, CDouble)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -174,4 +191,132 @@ tds_lgamma :: SingI d => TDS d -> TDS d
 tds_lgamma tensor = unsafePerformIO $ apply0_ tLgamma tensor
   where
     tLgamma t = apply0Tensor c_THDoubleTensor_lgamma t
+
+-- ----------------------------------------
+-- c* cadd, cmul, cdiv, cpow, ...
+-- ----------------------------------------
+
+-- usually this is 1 mutation arg + 2 parameter args
+type Raw3Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
+
+-- usually this is 1 mutation arg + 3 parameter args
+type Raw4Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor ->Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
+
+apply2 :: SingI d => Raw3Arg -> (TDS d) -> (TDS d) -> IO (TDS d)
+apply2 fun t src = do
+  let r_ = tds_new
+  withForeignPtr (tdsTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdsTensor t)
+         (\tPtr ->
+            withForeignPtr (tdsTensor src)
+              (\srcPtr ->
+                  fun rPtr tPtr srcPtr
+              )
+         )
+    )
+  pure r_
+
+apply3 :: SingI d => Raw4Arg -> (TDS d) -> (TDS d) -> (TDS d) -> IO (TDS d)
+apply3 fun t src1 src2 = do
+  let r_ = tds_new
+  withForeignPtr (tdsTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdsTensor t)
+         (\tPtr ->
+            withForeignPtr (tdsTensor src1)
+              (\src1Ptr ->
+                 withForeignPtr (tdsTensor src2)
+                   (\src2Ptr ->
+                      fun rPtr tPtr src1Ptr src2Ptr
+                   )
+              )
+         )
+    )
+  pure r_
+
+
+
+-- argument rotations - used so that the constants are curried and only tensor
+-- pointers are needed for apply* functions
+-- mnemonic for reasoning about the type signature - "where did the argument end up" defines the new ordering
+swap1
+  :: (t1 -> t2 -> t3 -> t4 -> t5) -> t3 -> t1 -> t2 -> t4 -> t5
+swap1 fun a b c d = fun b c a d
+-- a is applied at position 3, type 3 is arg1
+-- b is applied at position 1, type 1 is arg2
+-- c is applied at position 2, type 2 is arg3
+-- d is applied at position 4, type 4 is arg 4
+
+swap2 fun a b c d e = fun b c a d e
+
+swap3 fun a b c d e f = fun c a d b e f
+
+-- cadd = z <- y + scalar * x, z value discarded
+-- allocate r_ for the user instead of taking it as an argument
+tds_cadd :: SingI d => (TDS d) -> Double -> (TDS d) -> (TDS d)
+tds_cadd t scale src = unsafePerformIO $
+  apply2 ((swap1 c_THDoubleTensor_cadd) scaleC) t src
+  where scaleC = realToFrac scale
+
+tds_csub :: SingI d => (TDS d) -> Double -> (TDS d) -> (TDS d)
+tds_csub t scale src = unsafePerformIO $ do
+  apply2 ((swap1 c_THDoubleTensor_csub) scaleC) t src
+  where scaleC = realToFrac scale
+
+tds_cmul :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_cmul t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cmul t src
+
+tds_cpow :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_cpow t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cpow t src
+
+tds_cdiv :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_cdiv t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cdiv t src
+
+tds_clshift :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_clshift t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_clshift t src
+
+tds_crshift :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_crshift t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_crshift t src
+
+tds_cfmod :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_cfmod t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cfmod t src
+
+tds_cremainder :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_cremainder t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cremainder t src
+
+tds_cbitand :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_cbitand  t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cbitand t src
+
+tds_cbitor :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_cbitor  t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cbitor t src
+
+tds_cbitxor :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
+tds_cbitxor t src = unsafePerformIO $ do
+  apply2 c_THDoubleTensor_cbitxor t src
+
+tds_addcmul :: SingI d => (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+tds_addcmul t scale src1 src2 = unsafePerformIO $ do
+  apply3 ((swap2 c_THDoubleTensor_addcmul) scaleC) t src1 src2
+  where scaleC = (realToFrac scale) :: CDouble
+
+tds_addcdiv :: SingI d => (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+tds_addcdiv t scale src1 src2 = unsafePerformIO $ do
+  apply3 ((swap2 c_THDoubleTensor_addcdiv) scaleC) t src1 src2
+  where scaleC = (realToFrac scale) :: CDouble
+
+tds_addmv :: SingI d => Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+tds_addmv beta t alpha src1 src2 = unsafePerformIO $ do
+  apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
+  where
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
