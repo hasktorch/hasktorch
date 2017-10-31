@@ -1,12 +1,12 @@
  module TensorDoubleLapack (
-  gesv
-  , gesv_
-  , gels
-  , gels_
-  , getri
-  , getri_
-  , qr
-  , qr_
+  td_gesv
+  , td_gesv_
+  , td_gels
+  , td_gels_
+  , td_getri
+  , td_getri_
+  , td_qr
+  , td_qr_
   ) where
 
 import Foreign
@@ -28,8 +28,8 @@ import THRandom
 import THDoubleTensor
 import THDoubleTensorLapack
 
-gesv :: TensorDouble -> TensorDouble -> (TensorDouble, TensorDouble)
-gesv a b = unsafePerformIO $ do
+td_gesv :: TensorDouble -> TensorDouble -> (TensorDouble, TensorDouble)
+td_gesv a b = unsafePerformIO $ do
   let resB = td_new (tdDim a)
   let resA = td_new (tdDim a)
   withForeignPtr (tdTensor resB)
@@ -47,10 +47,10 @@ gesv a b = unsafePerformIO $ do
     )
   pure (resA, resB)
 
-gesv_
+td_gesv_
   :: TensorDouble
      -> TensorDouble -> TensorDouble -> TensorDouble -> IO ()
-gesv_ resA resB a b = do
+td_gesv_ resA resB a b = do
   withForeignPtr (tdTensor resB)
     (\resBRaw ->
        withForeignPtr (tdTensor resA)
@@ -66,8 +66,8 @@ gesv_ resA resB a b = do
     )
   pure ()
 
-gels :: TensorDouble -> TensorDouble -> (TensorDouble, TensorDouble)
-gels a b = unsafePerformIO $ do
+td_gels :: TensorDouble -> TensorDouble -> (TensorDouble, TensorDouble)
+td_gels a b = unsafePerformIO $ do
   let resB = td_new (tdDim a)
   let resA = td_new (tdDim a)
   withForeignPtr (tdTensor resB)
@@ -85,10 +85,10 @@ gels a b = unsafePerformIO $ do
     )
   pure (resA, resB)
 
-gels_
+td_gels_
   :: TensorDouble
      -> TensorDouble -> TensorDouble -> TensorDouble -> IO ()
-gels_ resA resB a b = do
+td_gels_ resA resB a b = do
   withForeignPtr (tdTensor resB)
     (\resBRaw ->
        withForeignPtr (tdTensor resA)
@@ -104,8 +104,8 @@ gels_ resA resB a b = do
     )
   pure ()
 
-getri :: TensorDouble -> TensorDouble
-getri a = unsafePerformIO $ do
+td_getri :: TensorDouble -> TensorDouble
+td_getri a = unsafePerformIO $ do
   let resA = td_new (tdDim a)
   withForeignPtr (tdTensor resA)
     (\resARaw ->
@@ -116,8 +116,8 @@ getri a = unsafePerformIO $ do
     )
   pure resA
 
-getri_ :: TensorDouble -> TensorDouble -> IO ()
-getri_ resA a = do
+td_getri_ :: TensorDouble -> TensorDouble -> IO ()
+td_getri_ resA a = do
   withForeignPtr (tdTensor resA)
     (\resARaw ->
         withForeignPtr (tdTensor a)
@@ -128,8 +128,8 @@ getri_ resA a = do
   pure ()
 
 
-qr :: TensorDouble -> (TensorDouble, TensorDouble)
-qr a = unsafePerformIO $ do
+td_qr :: TensorDouble -> (TensorDouble, TensorDouble)
+td_qr a = unsafePerformIO $ do
   let resQ = td_new (tdDim a)
   let resR = td_new (tdDim a)
   withForeignPtr (tdTensor resQ)
@@ -144,8 +144,8 @@ qr a = unsafePerformIO $ do
     )
   pure (resQ, resR)
 
-qr_ :: TensorDouble -> TensorDouble -> TensorDouble -> IO ()
-qr_ resQ resR a = do
+td_qr_ :: TensorDouble -> TensorDouble -> TensorDouble -> IO ()
+td_qr_ resQ resR a = do
   withForeignPtr (tdTensor resQ)
     (\resQRaw ->
        withForeignPtr (tdTensor resR)
@@ -158,20 +158,20 @@ qr_ resQ resR a = do
     )
   pure ()
 
-gesvd = undefined
+td_gesvd = undefined
 
-gesvd2 = undefined
+td_gesvd2 = undefined
 
 test = do
   rng <- newRNG
   let rnd = td_new (D2 2 2)
   t <- td_uniform rnd rng (-1.0) 1.0
   let b = td_init (D1 2) 1.0
-  let (resA, resB) = gesv t b
+  let (resA, resB) = td_gesv t b
   disp resA
   disp resB
 
-  let (resQ, resR) = qr t
+  let (resQ, resR) = td_qr t
   disp resQ
   disp resR
   pure ()

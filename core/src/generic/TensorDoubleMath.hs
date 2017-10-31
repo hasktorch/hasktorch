@@ -23,9 +23,9 @@ module TensorDoubleMath (
   td_meanAll,
 
   td_neg,
-  td_absT,
+  td_abs,
   td_sigmoid,
-  td_logT,
+  td_log,
   td_lgamma,
 
   td_cadd,
@@ -190,7 +190,7 @@ apply1 fun t = do
 
 td_fill :: Real a => a -> TensorDouble -> TensorDouble
 td_fill value tensor = unsafePerformIO $
-  withForeignPtr(tdTensor nt) (\t -> do
+  withForeignPtr (tdTensor nt) (\t -> do
                                   fillRaw value t
                                   pure nt
                               )
@@ -198,7 +198,7 @@ td_fill value tensor = unsafePerformIO $
 
 td_fill_ :: Real a => a -> TensorDouble -> IO ()
 td_fill_ value tensor =
-  withForeignPtr(tdTensor tensor) (\t -> fillRaw value t)
+  withForeignPtr (tdTensor tensor) (\t -> fillRaw value t)
 
 -- ----------------------------------------
 -- Tensor-constant operations to constant operations
@@ -285,8 +285,8 @@ td_neg tensor = unsafePerformIO $ apply0_ tNeg tensor
   where
     tNeg t = apply0Tensor c_THDoubleTensor_neg (tdDim tensor) t
 
-td_absT :: TensorDouble -> TensorDouble
-td_absT tensor = unsafePerformIO $ apply0_ tAbs tensor
+td_abs :: TensorDouble -> TensorDouble
+td_abs tensor = unsafePerformIO $ apply0_ tAbs tensor
   where
     tAbs t = apply0Tensor c_THDoubleTensor_abs (tdDim tensor) t
 
@@ -295,8 +295,8 @@ td_sigmoid tensor = unsafePerformIO $ apply0_ tSigmoid tensor
   where
     tSigmoid t = apply0Tensor c_THDoubleTensor_sigmoid (tdDim tensor) t
 
-td_logT :: TensorDouble -> TensorDouble
-td_logT tensor = unsafePerformIO $ apply0_ tLog tensor
+td_log :: TensorDouble -> TensorDouble
+td_log tensor = unsafePerformIO $ apply0_ tLog tensor
   where
     tLog t = apply0Tensor c_THDoubleTensor_log (tdDim tensor) t
 

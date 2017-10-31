@@ -2,23 +2,29 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
-
 
 module StaticTensorDouble (
   tds_dim,
   tds_new,
   tds_init,
   tds_cloneDim,
+  tds_transpose,
   dispS,
   TensorDoubleStatic(..),
   TDS(..),
   Nat -- re-export for kind signature readability
   ) where
 
+
+import Data.Singletons
+-- import Data.Singletons.Prelude
+import Data.Singletons.TypeLits
 import Foreign (Ptr)
 import Foreign.C.Types (CLong)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
+import System.IO.Unsafe (unsafePerformIO)
 
 import TensorRaw
 import TensorDouble
@@ -26,15 +32,6 @@ import TensorTypes
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
-
-import System.IO.Unsafe (unsafePerformIO)
-
-import Data.Proxy (Proxy(..))
-import Data.Proxy (Proxy)
-
-import Data.Singletons
--- import Data.Singletons.Prelude
-import Data.Singletons.TypeLits
 
 class StaticTensor t where
   -- |tensor dimensions
@@ -91,6 +88,21 @@ mkTHelper dims makeStatic value = unsafePerformIO $ do
   where
     mkPtr dim value = tensorRaw dim value
 
+tds_transpose :: Word -> Word -> TensorDoubleStatic d1 -> TensorDoubleStatic d2
+tds_transpose = undefined
+
+-- tds_transpose dim1 dim2 t = unsafePerformIO $ do
+--   newPtr <- withForeignPtr (tdsTensor t) (
+--     \tPtr -> c_THDoubleTensor_newTranspose tPtr dim1C dim2C
+--     )
+--   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+--   pure $ TensorDouble newFPtr (dimFromRaw newPtr)
+--   where
+--     dim1C = fromIntegral dim1
+--     dim2C = fromIntegral dim2
+
+-- type family TransposeDim d1 d2 dims :: Nat -> Nat -> [Nat] where
+
 tds_dim :: (Num a2, SingI d) => TensorDoubleStatic d -> TensorDim a2
 tds_dim (x :: TensorDoubleStatic d) = list2dim $ fromSing (sing :: Sing d)
 
@@ -108,7 +120,7 @@ instance SingI d => StaticTensor (TensorDoubleStatic d)  where
 testStatic = do
   print("1")
   let t1 = tds_new :: TDS '[2, 2]
-  dispS t1 -- passes
+  dispS t1
   print("2")
   let t2 = tds_new :: TDS '[2, 4]
   dispS t2
