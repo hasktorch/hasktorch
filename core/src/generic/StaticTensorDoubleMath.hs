@@ -54,7 +54,7 @@ module StaticTensorDoubleMath (
   , tds_kthvalue
   , tds_mode
   , tds_median
-  , tds_sumT
+  , tds_sum
   , tds_prod
   , tds_cumsum
   , tds_cumprod
@@ -442,8 +442,8 @@ tds_median t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_median t dimension keepdim
 
 -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
--- tds_sumT :: (TDS d) -> Int -> Bool -> (TDS d)
-tds_sumT t dimension keepdim = unsafePerformIO $ do
+-- tds_sum :: (TDS d) -> Int -> Bool -> (TDS d)
+tds_sum t dimension keepdim = unsafePerformIO $ do
   apply1 ((swap c_THDoubleTensor_sum) dimensionC keepdimC) t
   where
     swap fun a b c d = fun c d a b

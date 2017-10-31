@@ -43,6 +43,7 @@ module TensorDoubleMath (
   td_addcmul,
   td_addcdiv,
   td_addmv,
+  td_mv,
   (!*),
   td_addmm,
   td_addbmm,
@@ -54,7 +55,7 @@ module TensorDoubleMath (
   td_kthvalue,
   td_mode,
   td_median,
-  td_sumT,
+  td_sum,
   td_prod,
   td_cumsum,
   td_cumprod,
@@ -392,11 +393,14 @@ td_addmv beta t alpha src1 src2 = unsafePerformIO $ do
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
-(!*) :: TensorDouble -> TensorDouble -> TensorDouble
-mat !* vec =
-  td_addmv 1.0 zero 1.0 mat vec
+td_mv :: TensorDouble -> TensorDouble -> TensorDouble
+td_mv mat vec =
+  td_addmv 0.0 zero 1.0 mat vec
   where
     zero = td_new $ (D1 (d2_1 $ tdDim mat)) -- TODO - more efficient version w/o allocaiton?
+
+(!*) :: TensorDouble -> TensorDouble -> TensorDouble
+mat !* vec = td_mv mat vec
 
 td_addmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
 td_addmm beta t alpha src1 src2 = unsafePerformIO $ do
@@ -457,8 +461,8 @@ td_median t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_median t dimension keepdim
 
 -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
-td_sumT :: TensorDouble -> Int -> Bool -> TensorDouble
-td_sumT t dimension keepdim = unsafePerformIO $ do
+td_sum :: TensorDouble -> Int -> Bool -> TensorDouble
+td_sum t dimension keepdim = unsafePerformIO $ do
   apply1 ((swap c_THDoubleTensor_sum) dimensionC keepdimC) t
   where
     swap fun a b c d = fun c d a b
@@ -515,9 +519,6 @@ td_cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
 -- TH_API void THTensor_(cmin)(THTensor *r, THTensor *t, THTensor *src);
 td_cmin :: TensorDouble -> TensorDouble -> TensorDouble
 td_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
-
-
-
 
 -- -- TH_API void THTensor_(cmaxValue)(THTensor *r, THTensor *t, real value);
 -- cmaxValue :: TensorDouble -> TensorDouble -> Double -> TensorDouble
