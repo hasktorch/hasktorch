@@ -40,24 +40,42 @@ module StaticTensorDoubleMath (
   , tds_cbitand
   , tds_cbitor
   , tds_cbitxor
-  , tds_addcmul
-  , tds_addcdiv
+  -- , tds_addcmul
+  -- , tds_addcdiv
   , tds_addmv
 
+  , tds_addmm
+  , tds_addbmm
+  , tds_baddbmm
+  , tds_match
+  , tds_numel
+  , tds_max
+  , tds_min
+  , tds_kthvalue
+  , tds_mode
+  , tds_median
+  , tds_sumT
+  , tds_prod
+  , tds_cumsum
+  , tds_cumprod
+  , tds_sign
+  , tds_trace
+  , tds_cross
+
+
   ) where
-
-
 
 import Data.Singletons
 -- import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 import Foreign (Ptr)
-import Foreign.C.Types (CLong, CDouble)
+import Foreign.C.Types (CLong, CDouble, CInt)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 import System.IO.Unsafe (unsafePerformIO)
 
 import TensorRaw
 import TensorDouble
+import TensorLong
 import TensorTypes
 import THTypes
 import THDoubleTensor
@@ -202,7 +220,8 @@ type Raw3Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor
 -- usually this is 1 mutation arg + 3 parameter args
 type Raw4Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor ->Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
 
-apply2 :: SingI d => Raw3Arg -> (TDS d) -> (TDS d) -> IO (TDS d)
+apply2 :: (SingI d1, SingI d2, SingI d3) =>
+  Raw3Arg -> (TDS d1) -> (TDS d2) -> IO (TDS d3)
 apply2 fun t src = do
   let r_ = tds_new
   withForeignPtr (tdsTensor r_)
@@ -217,7 +236,8 @@ apply2 fun t src = do
     )
   pure r_
 
-apply3 :: SingI d => Raw4Arg -> (TDS d) -> (TDS d) -> (TDS d) -> IO (TDS d)
+apply3 :: (SingI d1, SingI d2, SingI d3, SingI d4) =>
+  Raw4Arg -> (TDS d1) -> (TDS d2) -> (TDS d3) -> IO (TDS d4)
 apply3 fun t src1 src2 = do
   let r_ = tds_new
   withForeignPtr (tdsTensor r_)
@@ -234,8 +254,6 @@ apply3 fun t src1 src2 = do
          )
     )
   pure r_
-
-
 
 -- argument rotations - used so that the constants are curried and only tensor
 -- pointers are needed for apply* functions
@@ -304,19 +322,183 @@ tds_cbitxor :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
 tds_cbitxor t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cbitxor t src
 
-tds_addcmul :: SingI d => (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
-tds_addcmul t scale src1 src2 = unsafePerformIO $ do
-  apply3 ((swap2 c_THDoubleTensor_addcmul) scaleC) t src1 src2
-  where scaleC = (realToFrac scale) :: CDouble
+-- TODO - fix constraints on type signatures for addcmul and addcdiv
 
-tds_addcdiv :: SingI d => (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
-tds_addcdiv t scale src1 src2 = unsafePerformIO $ do
-  apply3 ((swap2 c_THDoubleTensor_addcdiv) scaleC) t src1 src2
-  where scaleC = (realToFrac scale) :: CDouble
+-- tds_addcmul :: SingI d => (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+-- tds_addcmul t scale src1 src2 = unsafePerformIO $ do
+--   apply3 ((swap2 c_THDoubleTensor_addcmul) scaleC) t src1 src2
+--   where scaleC = (realToFrac scale) :: CDouble
 
-tds_addmv :: SingI d => Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+-- tds_addcdiv :: SingI d => (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+-- tds_addcdiv t scale src1 src2 = unsafePerformIO $ do
+--   apply3 ((swap2 c_THDoubleTensor_addcdiv) scaleC) t src1 src2
+--   where scaleC = (realToFrac scale) :: CDouble
+
+-- |beta * t + alpha * (src1 #> src2)
+tds_addmv :: (KnownNat c, KnownNat r) =>
+  Double -> (TDS '[c]) -> Double -> (TDS '[r, c]) -> (TDS '[c]) -> (TDS '[r])
 tds_addmv beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+
+-- | added simplified use of addmv: src1 #> src2
+tds_mv :: (KnownNat c, KnownNat r) => (TDS '[r, c]) -> (TDS '[c]) -> (TDS '[r])
+tds_mv m v = tds_addmv 0.0 tds_new 1.0 m v
+
+-- apply1 :: SingI d => 
+
+apply1 fun t = do
+  let r_ = tds_new
+  withForeignPtr (tdsTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdsTensor t)
+         (\tPtr ->
+            fun rPtr tPtr
+         )
+    )
+  pure r_
+
+type Ret2Fun =
+  Ptr CTHDoubleTensor -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> CInt -> CInt -> IO ()
+
+ret2 :: SingI d => Ret2Fun -> (TDS d) -> Int -> Bool -> IO ((TDS d), TensorLong)
+ret2 fun t dimension keepdim = do
+  let values_ = tds_new
+  let indices_ = tl_new (tds_dim t)
+  withForeignPtr (tdsTensor values_)
+    (\vPtr ->
+       withForeignPtr (tlTensor indices_)
+         (\iPtr ->
+            withForeignPtr (tdsTensor t)
+              (\tPtr ->
+                  fun vPtr iPtr tPtr dimensionC keepdimC
+              )
+         )
+    )
+  pure (values_, indices_)
+  where
+    keepdimC = if keepdim then 1 else 0
+    dimensionC = fromIntegral dimension
+
+
+
+--tds_addmm :: Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+tds_addmm beta t alpha src1 src2 = unsafePerformIO $ do
+  apply3 ((swap3 c_THDoubleTensor_addmm) betaC alphaC) t src1 src2
+  where
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+
+-- tds_addbmm :: Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+tds_addbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
+  apply3 ((swap3 c_THDoubleTensor_addbmm) betaC alphaC) t batch1 batch2
+  where
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+
+-- tds_baddbmm :: Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+tds_baddbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
+  apply3 ((swap3 c_THDoubleTensor_baddbmm) betaC alphaC) t batch1 batch2
+  where
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+
+-- tds_match :: (TDS d) -> (TDS d) -> Double -> (TDS d)
+tds_match m1 m2 gain = unsafePerformIO $ do
+  apply2 ((swap c_THDoubleTensor_match) gainC) m1 m2
+  where
+    gainC = realToFrac gain
+    swap fun gain b c d = fun b c d gain
+
+tds_numel :: (TDS d) -> Int
+tds_numel t = unsafePerformIO $ do
+  result <- apply0_ c_THDoubleTensor_numel t
+  pure $ fromIntegral result
+
+-- TH_API void THTensor_(max)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+tds_max :: SingI d => (TDS d) -> Int -> Bool -> ((TDS d), TensorLong)
+tds_max t dimension keepdim = unsafePerformIO $
+  ret2 c_THDoubleTensor_max t dimension keepdim
+
+-- TH_API void THTensor_(min)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+-- tds_minT :: (TDS d) -> Int -> Bool -> ((TDS d), TensorLong)
+tds_min t dimension keepdim = unsafePerformIO $
+  ret2 c_THDoubleTensor_min t dimension keepdim
+
+-- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);
+-- tds_kthvalue :: (TDS d) -> Int -> Int -> Bool -> ((TDS d), TensorLong)
+tds_kthvalue t k dimension keepdim = unsafePerformIO $
+  ret2 ((swap c_THDoubleTensor_kthvalue) kC) t dimension keepdim
+  where
+    swap fun a b c d e f = fun b c d a e f -- curry k (4th argument)
+    kC = fromIntegral k
+
+-- TH_API void THTensor_(mode)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+-- tds_mode :: (TDS d) -> Int -> Bool -> ((TDS d), TensorLong)
+tds_mode t dimension keepdim = unsafePerformIO $
+  ret2 c_THDoubleTensor_mode t dimension keepdim
+
+-- TH_API void THTensor_(median)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
+tds_median :: SingI d => (TDS d) -> Int -> Bool -> ((TDS d), TensorLong)
+tds_median t dimension keepdim = unsafePerformIO $
+  ret2 c_THDoubleTensor_median t dimension keepdim
+
+-- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
+-- tds_sumT :: (TDS d) -> Int -> Bool -> (TDS d)
+tds_sumT t dimension keepdim = unsafePerformIO $ do
+  apply1 ((swap c_THDoubleTensor_sum) dimensionC keepdimC) t
+  where
+    swap fun a b c d = fun c d a b
+    dimensionC = fromIntegral dimension
+    keepdimC = if keepdim then 1 else 0
+
+-- TH_API void THTensor_(prod)(THTensor *r_, THTensor *t, int dimension, int keepdim);
+-- tds_prod :: (TDS d) -> Int -> Bool -> (TDS d)
+tds_prod t dimension keepdim = unsafePerformIO $ do
+  apply1 ((swap c_THDoubleTensor_prod) dimensionC keepdimC) t
+  where
+    swap fun a b c d = fun c d a b
+    dimensionC = fromIntegral dimension
+    keepdimC = if keepdim then 1 else 0
+
+-- TH_API void THTensor_(cumsum)(THTensor *r_, THTensor *t, int dimension);
+-- tds_cumsum :: (TDS d) -> Int -> (TDS d)
+tds_cumsum t dimension = unsafePerformIO $ do
+  apply1 ((swap c_THDoubleTensor_cumsum) dimensionC) t
+  where
+    swap fun a b c = fun b c a
+    dimensionC = fromIntegral dimension
+
+-- TH_API void THTensor_(cumprod)(THTensor *r_, THTensor *t, int dimension);
+-- tds_cumprod :: (TDS d) -> Int -> (TDS d)
+tds_cumprod t dimension = unsafePerformIO $ do
+  apply1 ((swap c_THDoubleTensor_cumprod) dimensionC) t
+  where
+    swap fun a b c = fun b c a
+    dimensionC = fromIntegral dimension
+
+-- TH_API void THTensor_(sign)(THTensor *r_, THTensor *t);
+tds_sign :: SingI d => (TDS d) -> (TDS d)
+tds_sign t = unsafePerformIO $ do
+  apply1 c_THDoubleTensor_sign t
+
+-- TH_API accreal THTensor_(trace)(THTensor *t);
+tds_trace :: (TDS d) -> Double
+tds_trace t = realToFrac $ unsafePerformIO $ do
+  apply0_ c_THDoubleTensor_trace t
+
+-- TH_API void THTensor_(cross)(THTensor *r_, THTensor *a, THTensor *b, int dimension);
+-- tds_cross :: (TDS d) -> (TDS d) -> Int -> (TDS d)
+tds_cross a b dimension = unsafePerformIO $ do
+  apply2 ((swap c_THDoubleTensor_cross) dimensionC) a b
+  where
+    dimensionC = fromIntegral dimension
+    swap fun a b c d = fun b c d a
+
+-- TH_API void THTensor_(cmax)(THTensor *r, THTensor *t, THTensor *src);
+-- tds_cmax :: (TDS d) -> (TDS d) -> (TDS d)
+tds_cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
+
+-- TH_API void THTensor_(cmin)(THTensor *r, THTensor *t, THTensor *src);
+-- tds_cmin :: (TDS d) -> (TDS d) -> (TDS d)
+tds_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
+
 

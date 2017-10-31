@@ -49,8 +49,8 @@ module TensorDoubleMath (
   td_baddbmm,
   td_match,
   td_numel,
-  td_maxT,
-  td_minT,
+  td_max,
+  td_min,
   td_kthvalue,
   td_mode,
   td_median,
@@ -429,13 +429,13 @@ td_numel t = unsafePerformIO $ do
   pure $ fromIntegral result
 
 -- TH_API void THTensor_(max)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
-td_maxT :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
-td_maxT t dimension keepdim = unsafePerformIO $
+td_max :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
+td_max t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_max t dimension keepdim
 
 -- TH_API void THTensor_(min)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
-td_minT :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
-td_minT t dimension keepdim = unsafePerformIO $
+td_min :: TensorDouble -> Int -> Bool -> (TensorDouble, TensorLong)
+td_min t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_min t dimension keepdim
 
 -- TH_API void THTensor_(kthvalue)(THTensor *values_, THLongTensor *indices_, THTensor *t, long k, int dimension, int keepdim);
