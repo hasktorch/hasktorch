@@ -43,19 +43,19 @@ data TensorDim a =
 --   | D4 { d4_1 :: a, d4_2 :: a, d4_3 :: a, d4_4 :: a }
 --   deriving (Eq, Show)
 
--- instance Functor TensorDim where
---   fmap f D0 = D0
---   fmap f (D1 d1) = D1 (f d1)
---   fmap f (D2 d1 d2) = D2 (f d1) (f d2)
---   fmap f (D3 d1 d2 d3) = D3 (f d1) (f d2) (f d3)
---   fmap f (D4 d1 d2 d3 d4) = D4 (f d1) (f d2) (f d3) (f d4)
+instance Functor TensorDim where
+  fmap f D0 = D0
+  fmap f (D1 d1) = D1 (f d1)
+  fmap f (D2 (d1, d2)) = D2 ((f d1), (f d2))
+  fmap f (D3 (d1, d2, d3)) = D3 ((f d1), (f d2), (f d3))
+  fmap f (D4 (d1, d2, d3, d4)) = D4 ((f d1), (f d2), (f d3), (f d4))
 
--- instance Foldable TensorDim where
---   foldr func val (D0) = val
---   foldr func val (D1 d1) = foldr func val [d1]
---   foldr func val (D2 d1 d2) = foldr func val [d1, d2]
---   foldr func val (D3 d1 d2 d3) = foldr func val [d1, d2, d3]
---   foldr func val (D4 d1 d2 d3 d4) = foldr func val [d1, d2, d3, d4]
+instance Foldable TensorDim where
+  foldr func val (D0) = val
+  foldr func val (D1 d1) = foldr func val [d1]
+  foldr func val (D2 (d1, d2)) = foldr func val [d1, d2]
+  foldr func val (D3 (d1, d2, d3)) = foldr func val [d1, d2, d3]
+  foldr func val (D4 (d1, d2, d3, d4)) = foldr func val [d1, d2, d3, d4]
 
 -- Float types
 
