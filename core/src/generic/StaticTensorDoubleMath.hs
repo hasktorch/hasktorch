@@ -336,7 +336,7 @@ tds_cbitxor t src = unsafePerformIO $ do
 
 -- |beta * t + alpha * (src1 #> src2)
 tds_addmv :: (KnownNat c, KnownNat r) =>
-  Double -> (TDS '[c]) -> Double -> (TDS '[r, c]) -> (TDS '[c]) -> (TDS '[r])
+  Double -> (TDS '[r]) -> Double -> (TDS '[r, c]) -> (TDS '[c]) -> (TDS '[r])
 tds_addmv beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
   where
@@ -345,8 +345,6 @@ tds_addmv beta t alpha src1 src2 = unsafePerformIO $ do
 -- | added simplified use of addmv: src1 #> src2
 tds_mv :: (KnownNat c, KnownNat r) => (TDS '[r, c]) -> (TDS '[c]) -> (TDS '[r])
 tds_mv m v = tds_addmv 0.0 tds_new 1.0 m v
-
--- apply1 :: SingI d => 
 
 apply1 fun t = do
   let r_ = tds_new
@@ -380,8 +378,6 @@ ret2 fun t dimension keepdim = do
   where
     keepdimC = if keepdim then 1 else 0
     dimensionC = fromIntegral dimension
-
-
 
 --tds_addmm :: Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
 tds_addmm beta t alpha src1 src2 = unsafePerformIO $ do
@@ -481,7 +477,7 @@ tds_sign t = unsafePerformIO $ do
   apply1 c_THDoubleTensor_sign t
 
 -- TH_API accreal THTensor_(trace)(THTensor *t);
-tds_trace :: (TDS d) -> Double
+tds_trace :: SingI d => (TDS d) -> Double
 tds_trace t = realToFrac $ unsafePerformIO $ do
   apply0_ c_THDoubleTensor_trace t
 
