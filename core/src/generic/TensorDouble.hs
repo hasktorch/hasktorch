@@ -2,6 +2,7 @@
 {-# LANGUAGE ForeignFunctionInterface#-}
 
 module TensorDouble (
+  disp,
   td_new,
   td_init,
   -- TODO - use this convention for everything
@@ -27,7 +28,6 @@ import THDoubleTensor
 import THDoubleTensorMath
 import THDoubleLapack
 
-
 disp tensor =
   (withForeignPtr(tdTensor tensor) dispRaw)
 
@@ -45,12 +45,12 @@ td_get loc tensor =
   where
     getter D0 t = undefined
     getter (D1 d1) t = c_THDoubleTensor_get1d t $ i2cl d1
-    getter (D2 d1 d2) t = c_THDoubleTensor_get2d t
-                          (i2cl d1) (i2cl d2)
-    getter (D3 d1 d2 d3) t = c_THDoubleTensor_get3d t
-                             (i2cl d1) (i2cl d2) (i2cl d3)
-    getter (D4 d1 d2 d3 d4) t = c_THDoubleTensor_get4d t
-                                (i2cl d1) (i2cl d2) (i2cl d3) (i2cl d4)
+    getter (D2 (d1, d2)) t = c_THDoubleTensor_get2d t
+                             (i2cl d1) (i2cl d2)
+    getter (D3 (d1, d2, d3)) t = c_THDoubleTensor_get3d t
+                                 (i2cl d1) (i2cl d2) (i2cl d3)
+    getter (D4 (d1, d2, d3, d4)) t = c_THDoubleTensor_get4d t
+                                     (i2cl d1) (i2cl d2) (i2cl d3) (i2cl d4)
 
 td_newWithTensor :: TensorDouble -> TensorDouble
 td_newWithTensor t = unsafePerformIO $ do
@@ -90,6 +90,6 @@ test :: IO ()
 test = do
   let foo = td_new (D1 5)
   -- disp foo
-  let t = td_init (D2 5 2) 3.0
+  let t = td_init (D2 (5, 2)) 3.0
   disp $ td_transpose 1 0 (td_transpose 1 0 t)
   pure ()

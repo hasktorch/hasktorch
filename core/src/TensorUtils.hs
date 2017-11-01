@@ -22,9 +22,9 @@ import TensorDouble
 import TensorDoubleMath
 import TensorRaw (dispRaw)
 
--- |Display memory managed tensor
-disp tensor =
-  (withForeignPtr(tdTensor tensor) dispRaw)
+-- -- |Display memory managed tensor
+-- disp tensor =
+--   (withForeignPtr(tdTensor tensor) dispRaw)
 
 -- |Dimensions of a tensor as a list
 size :: (Ptr CTHDoubleTensor) -> [Int]

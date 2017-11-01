@@ -164,7 +164,7 @@ td_gesvd2 = undefined
 
 test = do
   rng <- newRNG
-  let rnd = td_new (D2 2 2)
+  let rnd = td_new $ D2 (2, 2)
   t <- td_uniform rnd rng (-1.0) 1.0
   let b = td_init (D1 2) 1.0
   let (resA, resB) = td_gesv t b

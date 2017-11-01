@@ -34,11 +34,11 @@ tl_get loc tensor =
   where
     getter D0 t = undefined
     getter (D1 d1) t = c_THLongTensor_get1d t $ w2cl d1
-    getter (D2 d1 d2) t = c_THLongTensor_get2d t
+    getter (D2 (d1, d2)) t = c_THLongTensor_get2d t
                           (w2cl d1) (w2cl d2)
-    getter (D3 d1 d2 d3) t = c_THLongTensor_get3d t
+    getter (D3 (d1, d2, d3)) t = c_THLongTensor_get3d t
                              (w2cl d1) (w2cl d2) (w2cl d3)
-    getter (D4 d1 d2 d3 d4) t = c_THLongTensor_get4d t
+    getter (D4 (d1, d2, d3, d4)) t = c_THLongTensor_get4d t
                                 (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
 
@@ -63,9 +63,9 @@ tl_new dims = unsafePerformIO $ do
     wrap ptr = newForeignPtr p_THLongTensor_free ptr
     go D0 = c_THLongTensor_new
     go (D1 d1) = c_THLongTensor_newWithSize1d $ w2cl d1
-    go (D2 d1 d2) = c_THLongTensor_newWithSize2d
+    go (D2 (d1, d2)) = c_THLongTensor_newWithSize2d
                     (w2cl d1) (w2cl d2)
-    go (D3 d1 d2 d3) = c_THLongTensor_newWithSize3d
+    go (D3 (d1, d2, d3)) = c_THLongTensor_newWithSize3d
                        (w2cl d1) (w2cl d2) (w2cl d3)
-    go (D4 d1 d2 d3 d4) = c_THLongTensor_newWithSize4d
+    go (D4 (d1, d2, d3, d4)) = c_THLongTensor_newWithSize4d
                           (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)

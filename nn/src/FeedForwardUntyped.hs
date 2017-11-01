@@ -10,7 +10,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 
 import TensorDouble
-import TensorDoubleMath (td_sigmoid, (!*), td_addmv)
+import TensorDoubleMath (td_sigmoid, td_addmv)
 import TensorDoubleRandom
 import TensorRaw
 import Random
@@ -43,7 +43,7 @@ dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
   gen <- newRNG
-  let w1 = W { biases = td_new (D1 o), nodes = td_new (D2 o i) }
+  let w1 = W { biases = td_new (D1 o), nodes = td_new (D2 (o, i)) }
   b <- td_uniform (biases w1) gen (-1.0) (1.0)
   w <- td_uniform (nodes w1) gen (-1.0) (1.0)
   pure W { biases = b, nodes = w }

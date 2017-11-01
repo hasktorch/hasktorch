@@ -85,7 +85,7 @@ randInitRaw gen dims lower upper = do
 
 randInitRawTest = do
   gen <- c_THGenerator_new
-  mapM_ (\_ -> dispRaw =<< (randInitRaw gen (D2 2 2) (-1.0) 3.0)) [0..10]
+  mapM_ (\_ -> dispRaw =<< (randInitRaw gen (D2 (2, 2)) (-1.0) 3.0)) [0..10]
 
 w2cl = fromIntegral
 
@@ -99,12 +99,12 @@ tensorRaw dims value = do
   where
     go D0 = c_THDoubleTensor_new
     go (D1 d1) = c_THDoubleTensor_newWithSize1d $ w2cl d1
-    go (D2 d1 d2) = c_THDoubleTensor_newWithSize2d
-                    (w2cl d1) (w2cl d2)
-    go (D3 d1 d2 d3) = c_THDoubleTensor_newWithSize3d
-                       (w2cl d1) (w2cl d2) (w2cl d3)
-    go (D4 d1 d2 d3 d4) = c_THDoubleTensor_newWithSize4d
-                          (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+    go (D2 (d1, d2)) = c_THDoubleTensor_newWithSize2d
+                       (w2cl d1) (w2cl d2)
+    go (D3 (d1, d2, d3)) = c_THDoubleTensor_newWithSize3d
+                           (w2cl d1) (w2cl d2) (w2cl d3)
+    go (D4 (d1, d2, d3, d4)) = c_THDoubleTensor_newWithSize4d
+                               (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
 
 -- |apply a tensor transforming function to a tensor
@@ -133,9 +133,9 @@ dimFromRaw :: TensorDoubleRaw -> TensorDim Word
 dimFromRaw raw =
   case (length sz) of 0 -> D0
                       1 -> D1 (getN 0)
-                      2 -> D2 (getN 0) (getN 1)
-                      3 -> D3 (getN 0) (getN 1) (getN 2)
-                      4 -> D4 (getN 0) (getN 1) (getN 2) (getN 3)
+                      2 -> D2 ((getN 0), (getN 1))
+                      3 -> D3 ((getN 0), (getN 1), (getN 2))
+                      4 -> D4 ((getN 0), (getN 1), (getN 2), (getN 3))
                       _ -> undefined -- TODO - make this safe
   where
     sz = sizeRaw raw

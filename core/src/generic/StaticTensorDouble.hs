@@ -53,17 +53,17 @@ dimCheck :: Monad m => TensorDim Word -> Integer -> m ()
 dimCheck dims n = case dims of
   D0 -> if n == 0 then pure () else fail "Incorrect Dimensions"
   D1 _ -> if n == 1 then pure () else fail "Incorrect Dimensions"
-  D2 _ _ -> if n == 2 then pure () else fail "Incorrect Dimensions"
-  D3 _ _ _ -> if n == 3 then pure () else fail "Incorrect Dimensions"
-  D4 _ _ _ _ -> if n == 4 then pure () else fail "Incorrect Dimensions"
+  D2 _ -> if n == 2 then pure () else fail "Incorrect Dimensions"
+  D3 _ -> if n == 3 then pure () else fail "Incorrect Dimensions"
+  D4 _ -> if n == 4 then pure () else fail "Incorrect Dimensions"
 
 list2dim :: (Num a2, Integral a1) => [a1] -> TensorDim a2
 list2dim lst  = case (length lst) of
   0 -> D0
   1 -> D1 (d !! 0)
-  2 -> D2 (d !! 0) (d !! 1)
-  3 -> D3 (d !! 0) (d !! 1) (d !! 2)
-  4 -> D4 (d !! 0) (d !! 1) (d !! 2) (d !! 3)
+  2 -> D2 ((d !! 0), (d !! 1))
+  3 -> D3 ((d !! 0), (d !! 1), (d !! 2))
+  4 -> D4 ((d !! 0), (d !! 1), (d !! 2), (d !! 3))
   _ -> error "Tensor type signature has invalid dimensions"
   where
     d = fromIntegral <$> lst -- cast as needed for tensordim
