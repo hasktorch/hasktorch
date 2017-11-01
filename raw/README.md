@@ -14,6 +14,12 @@ Convention for function names is that prepending function names with `c_`
 correspond to raw bindings to functions, while prepending function names `p_`
 corresponds bindings to function pointers.
 
+Some functions will have exit conditions for handling errors (handled by
+`THError(...)`), for example, if tensor dimensions are mismatched for a certain
+function. These conditions are not checked or captured by these raw bindings.
+Instead, preconditions are expected to be handled by the higher-level APIs
+either via the type representation or by conditional data checks.
+
 For more background, refer to references on TH internals:
 
 - [Torch Internals Writeup by Adam Paszke](https://apaszke.github.io/torch-internals.html) 
