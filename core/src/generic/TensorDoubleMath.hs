@@ -46,8 +46,8 @@ module TensorDoubleMath (
   td_addcmul,
   td_addcdiv,
   td_addmv,
-  -- td_mv,
-  -- (!*),
+  td_mv,
+  (!*),
   td_addmm,
   td_addbmm,
   td_baddbmm,
@@ -74,6 +74,7 @@ import Control.Exception
 import Foreign
 import Foreign.C.Types
 import Foreign.Ptr
+import Lens.Micro
 import System.IO.Unsafe (unsafePerformIO)
 
 import TensorDouble
@@ -394,32 +395,40 @@ td_addcdiv t scale src1 src2 = unsafePerformIO $ do
 
 td_addmv :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
 td_addmv beta t alpha src1 src2 = unsafePerformIO $ do
-  -- case src1 of
-  --   D2 _ _ -> pure
-  --   _ -> error "expected"
+  case (dim1, dim2, dimt) of
+    (D2 _, D1 _, D1 _) -> pure ()
+    _ -> error "Expected: 1D vector + 2D matrix x 1D vector"
+  case (d2 dim1 ^. _2 == d1 dim2) of
+    True -> pure ()
+    False -> error "Matrix x vector dimension mismatch"
+  case (d2 dim1 ^. _1 == d1 dimt) of
+    True -> pure ()
+    False -> error "Incorrect dimension for added vector"
   apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
-  -- See exception handling : https://wiki.haskell.org/FFI_cook_book
-  -- if res < 0
-  --   then error "error occurred"
-  --   else undefined
-  -- if result < 0
-  --   then error "Error"
+  where
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+    (dim1, dim2, dimt) = (tdDim src1, tdDim src2, tdDim t)
+
+td_addmv_fast :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
+td_addmv_fast beta t alpha src1 src2 = unsafePerformIO $ do
+  apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
--- >   rc <- ociHandleAlloc env ptr handleType 0 nullPtr
--- >   if rc < 0
--- >     then throwOCI (OCIException rc "allocate handle")
--- >     else peek ptr
+td_mv :: TensorDouble -> TensorDouble -> TensorDouble
+td_mv mat vec =
+  td_addmv 0.0 zero 1.0 mat vec
+  where
+    zero = td_new $ (D1 ((^. _1) . d2 . tdDim $ mat))
 
--- td_mv :: TensorDouble -> TensorDouble -> TensorDouble
--- td_mv mat vec =
---   td_addmv 0.0 zero 1.0 mat vec
---   where
---     zero = td_new $ (D1 (d2_1 $ tdDim mat)) -- TODO - more efficient version w/o allocaiton?
+td_mv_fast :: TensorDouble -> TensorDouble -> TensorDouble
+td_mv_fast mat vec =
+  td_addmv_fast 0.0 zero 1.0 mat vec
+  where
+    zero = td_new $ (D1 ((^. _1) . d2 . tdDim $ mat))
 
--- (!*) :: tensordouble -> TensorDouble -> TensorDouble
--- mat !* vec = td_mv mat vec
+(!*) :: TensorDouble -> TensorDouble -> TensorDouble
+mat !* vec = td_mv mat vec
 
 td_addmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
 td_addmm beta t alpha src1 src2 = unsafePerformIO $ do
@@ -595,10 +604,12 @@ td_equal t1 t2 = unsafePerformIO $
 
 test = do
   -- check exception case
-  let (m, v) = (td_init (D2 (2, 2)) 3.0 , td_init (D1 3) 2.0)
+  let (m, v) = (td_init (D2 (3, 2)) 3.0 , td_init (D1 2) 2.0)
   disp m
   disp v
-  --(foo :: Either SomeException TensorDouble) <- try (pure $ td_mv m v)
-  -- print foo
+  disp $ td_mv m v
+
+  let (m, v) = (td_init (D3 (1, 3, 2)) 3.0 , td_init (D1 2) 2.0)
+  disp $ td_mv m v
   print "Done"
   pure () :: IO ()
