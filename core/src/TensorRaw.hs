@@ -31,9 +31,6 @@ import THRandom
 
 import TensorTypes
 
-type TensorDoubleRaw = Ptr CTHDoubleTensor
-type TensorLongRaw = Ptr CTHLongTensor
-
 -- |displaying raw tensor values
 dispRaw :: Ptr CTHDoubleTensor -> IO ()
 dispRaw tensor

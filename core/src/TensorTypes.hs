@@ -6,7 +6,18 @@ module TensorTypes (
   TensorChar(..),
   TensorShort(..),
   TensorInt(..),
-  TensorLong(..)
+  TensorLong(..),
+
+  TensorFloatRaw(..),
+  TensorDoubleRaw(..),
+  TensorByteRaw(..),
+  TensorCharRaw(..),
+  TensorShortRaw(..),
+  TensorIntRaw(..),
+  TensorLongRaw(..),
+
+  (^.), -- re-export for dimension tuple access
+  _1, _2, _3, _4, _5
   ) where
 
 
@@ -23,7 +34,14 @@ import Lens.Micro
 import THTypes
 import THDoubleTensor
 
--- TODO what should happen when accessor are applied to the wrong type here?
+type TensorFloatRaw  = Ptr CTHFloatTensor
+type TensorDoubleRaw = Ptr CTHDoubleTensor
+type TensorByteRaw   = Ptr CTHByteTensor
+type TensorCharRaw   = Ptr CTHCharTensor
+type TensorShortRaw  = Ptr CTHShortTensor
+type TensorIntRaw    = Ptr CTHIntTensor
+type TensorLongRaw   = Ptr CTHLongTensor
+
 data TensorDim a =
   D0
   | D1 { d1 :: a }
@@ -31,17 +49,6 @@ data TensorDim a =
   | D3 { d3 :: (a, a, a) }
   | D4 { d4 :: (a, a, a, a) }
   deriving (Eq, Show)
-
-
-
--- -- TODO what should happen when accessor are applied to the wrong type here?
--- data TensorDim a =
---   D0
---   | D1 { d1_1 :: a }
---   | D2 { d2_1 :: a, d2_2 :: a }
---   | D3 { d3_1 :: a, d3_2 :: a, d3_3 :: a }
---   | D4 { d4_1 :: a, d4_2 :: a, d4_3 :: a, d4_4 :: a }
---   deriving (Eq, Show)
 
 instance Functor TensorDim where
   fmap f D0 = D0

@@ -166,8 +166,8 @@ testEq = do
   print $ (tds_init 3.0 :: TDS '[2,3]) ==  (tds_init 1.0 :: TDS '[2,3])
 
 testTranspose = do
-  dispS $ tds_tr . tds_tr . tds_tr $ (tds_init 3.0 :: TDS '[3,2])
-  print $ (tds_tr . tds_tr $ (tds_init 3.0 :: TDS '[3,2])) == (tds_init 3.0 :: TDS '[3,2])
+  dispS $ tds_trans . tds_trans . tds_trans $ (tds_init 3.0 :: TDS '[3,2])
+  print $ (tds_trans . tds_trans $ (tds_init 3.0 :: TDS '[3,2])) == (tds_init 3.0 :: TDS '[3,2])
 
 test = do
   testCreate

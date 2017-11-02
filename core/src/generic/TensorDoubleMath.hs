@@ -68,6 +68,8 @@ module TensorDoubleMath (
   td_trace,
   td_cross,
 
+  td_eye,
+
   td_equal
   ) where
 
@@ -576,7 +578,21 @@ td_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 -- TH_API void THTensor_(ones)(THTensor *r_, THLongStorage *size);
 -- TH_API void THTensor_(onesLike)(THTensor *r_, THTensor *input);
 -- TH_API void THTensor_(diag)(THTensor *r_, THTensor *t, int k);
+
 -- TH_API void THTensor_(eye)(THTensor *r_, long n, long m);
+td_eye :: Word -> Word -> TensorDouble
+td_eye d1 d2 = unsafePerformIO $ do
+  withForeignPtr (tdTensor res)
+    (\r_ -> do
+        c_THDoubleTensor_eye r_ d1C d2C
+        pure r_
+    )
+  pure res
+  where
+    res = td_new (D2 (d1, d2))
+    d1C = fromIntegral d1
+    d2C = fromIntegral d2
+
 -- TH_API void THTensor_(arange)(THTensor *r_, accreal xmin, accreal xmax, accreal step);
 -- TH_API void THTensor_(range)(THTensor *r_, accreal xmin, accreal xmax, accreal step);
 -- TH_API void THTensor_(randperm)(THTensor *r_, THGenerator *_generator, long n);
@@ -590,7 +606,6 @@ td_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 -- TH_API void THTensor_(catArray)(THTensor *result, THTensor **inputs, int numInputs, int dimension);
 
 -- TH_API int THTensor_(equal)(THTensor *ta, THTensor *tb);
-
 td_equal :: TensorDouble -> TensorDouble -> Bool
 td_equal t1 t2 = unsafePerformIO $
   withForeignPtr (tdTensor t1)
