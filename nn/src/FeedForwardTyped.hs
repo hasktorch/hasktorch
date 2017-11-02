@@ -29,6 +29,8 @@ import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 import GHC.TypeLits.Witnesses
 
+import Data.Singletons as S
+
 {- Statically Typed Implementation -}
 
 type SW = StaticWeights

@@ -43,6 +43,7 @@ module StaticTensorDoubleMath (
   -- , tds_addcmul
   -- , tds_addcdiv
   , tds_addmv
+  , tds_mv
 
   , tds_addmm
   , tds_addbmm
@@ -409,6 +410,10 @@ tds_numel t = unsafePerformIO $ do
   result <- apply0_ c_THDoubleTensor_numel t
   pure $ fromIntegral result
 
+{-
+TODO : need type computations for resulting dimensions
+-}
+
 -- TH_API void THTensor_(max)(THTensor *values_, THLongTensor *indices_, THTensor *t, int dimension, int keepdim);
 tds_max :: SingI d => (TDS d) -> Int -> Bool -> ((TDS d), TensorLong)
 tds_max t dimension keepdim = unsafePerformIO $
@@ -498,3 +503,9 @@ tds_cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
 tds_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 
 
+test = do
+  let foo = (tds_init 3.0 :: TDS '[3,2])
+  dispS foo
+  print $ tds_trace foo
+  print $ tds_numel foo
+  pure ()

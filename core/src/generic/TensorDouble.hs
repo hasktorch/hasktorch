@@ -3,12 +3,14 @@
 
 module TensorDouble (
   disp,
+  td_p,
   td_new,
   td_init,
   -- TODO - use this convention for everything
   td_get,
   td_newWithTensor,
   td_transpose,
+  td_trans,
   )
 where
 
@@ -30,6 +32,8 @@ import THDoubleLapack
 
 disp tensor =
   (withForeignPtr(tdTensor tensor) dispRaw)
+
+td_p = disp
 
 w2cl :: Word -> CLong
 w2cl = fromIntegral
@@ -85,6 +89,14 @@ td_transpose dim1 dim2 t = unsafePerformIO $ do
   where
     dim1C = fromIntegral dim1
     dim2C = fromIntegral dim2
+
+td_trans :: TensorDouble -> TensorDouble
+td_trans t = unsafePerformIO $ do
+  newPtr <- withForeignPtr (tdTensor t) (
+    \tPtr -> c_THDoubleTensor_newTranspose tPtr 1 0
+    )
+  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  pure $ TensorDouble newFPtr (dimFromRaw newPtr)
 
 test :: IO ()
 test = do

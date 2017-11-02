@@ -10,14 +10,15 @@ module StaticTensorDouble (
   tds_new,
   tds_init,
   tds_cloneDim,
-  tds_transpose,
-  tds_tr, -- matrix specialization of transpose
+  tds_newClone,
+  tds_toDynamic,
+  tds_fromDynamic,
+  tds_trans, -- matrix specialization of transpose
   dispS,
   TensorDoubleStatic(..),
   TDS(..),
   Nat -- re-export for kind signature readability
   ) where
-
 
 import Data.Singletons
 -- import Data.Singletons.Prelude
@@ -89,23 +90,40 @@ mkTHelper dims makeStatic value = unsafePerformIO $ do
   where
     mkPtr dim value = tensorRaw dim value
 
--- |generalized transpose
-tds_transpose :: Word -> Word -> TensorDoubleStatic d1 -> TensorDoubleStatic d2
-tds_transpose = undefined
+tds_toDynamic :: TensorDoubleStatic d -> TensorDouble
+tds_toDynamic t = unsafePerformIO $ do
+  newPtr <- withForeignPtr (tdsTensor t) (
+    \tPtr -> c_THDoubleTensor_newClone tPtr
+    )
+  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  let dim = dimFromRaw newPtr
+  pure $ TensorDouble newFPtr dim
 
--- tds_transpose dim1 dim2 t = unsafePerformIO $ do
---   newPtr <- withForeignPtr (tdsTensor t) (
---     \tPtr -> c_THDoubleTensor_newTranspose tPtr dim1C dim2C
---     )
---   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
---   pure $ TensorDouble newFPtr (dimFromRaw newPtr)
---   where
---     dim1C = fromIntegral dim1
---     dim2C = fromIntegral dim2
+
+-- |TODO: add dimension check
+tds_fromDynamic :: SingI d => TensorDouble -> TensorDoubleStatic d
+tds_fromDynamic t = unsafePerformIO $ do
+  newPtr <- withForeignPtr (tdTensor t) (
+    \tPtr -> c_THDoubleTensor_newClone tPtr
+    )
+  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  pure $ TDS newFPtr
+
+tds_newClone :: TensorDoubleStatic d -> TensorDoubleStatic d
+tds_newClone t = unsafePerformIO $ do
+  newPtr <- withForeignPtr (tdsTensor t) (
+    \tPtr -> c_THDoubleTensor_newClone tPtr
+    )
+  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  pure $ TDS newFPtr
+
+-- -- |generalized transpose - needs type level determination of perturbed dimensions
+-- tds_transpose :: Word -> Word -> TensorDoubleStatic d1 -> TensorDoubleStatic d2
+-- tds_transpose = undefined
 
 -- |matrix specialization of transpose transpose
-tds_tr:: TensorDoubleStatic '[r, c] -> TensorDoubleStatic '[c, r]
-tds_tr t = unsafePerformIO $ do
+tds_trans :: TensorDoubleStatic '[r, c] -> TensorDoubleStatic '[c, r]
+tds_trans t = unsafePerformIO $ do
   newPtr <- withForeignPtr (tdsTensor t) (
     \tPtr -> c_THDoubleTensor_newTranspose tPtr 1 0
     )
@@ -155,3 +173,5 @@ test = do
   testCreate
   testEq
   testTranspose
+  disp $ tds_toDynamic (tds_init 2.0 :: TDS '[3, 4])
+  dispS $ tds_newClone (tds_init 2.0 :: TDS '[2, 3])
