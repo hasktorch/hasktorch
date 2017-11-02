@@ -11,6 +11,7 @@ module StaticTensorDouble (
   tds_init,
   tds_cloneDim,
   tds_transpose,
+  tds_tr, -- matrix specialization of transpose
   dispS,
   TensorDoubleStatic(..),
   TDS(..),
@@ -80,7 +81,7 @@ instance Eq (TensorDoubleStatic d) where
              (\t2c -> pure $ (c_THDoubleTensor_equal t1c t2c) == 1)
     )
 
--- |Make a low level pointer according to dimensions
+-- |Make a foreign pointer from requested dimensions
 mkTHelper dims makeStatic value = unsafePerformIO $ do
   newPtr <- mkPtr dims value
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
@@ -88,6 +89,7 @@ mkTHelper dims makeStatic value = unsafePerformIO $ do
   where
     mkPtr dim value = tensorRaw dim value
 
+-- |generalized transpose
 tds_transpose :: Word -> Word -> TensorDoubleStatic d1 -> TensorDoubleStatic d2
 tds_transpose = undefined
 
@@ -101,7 +103,14 @@ tds_transpose = undefined
 --     dim1C = fromIntegral dim1
 --     dim2C = fromIntegral dim2
 
--- type family TransposeDim d1 d2 dims :: Nat -> Nat -> [Nat] where
+-- |matrix specialization of transpose transpose
+tds_tr:: TensorDoubleStatic '[r, c] -> TensorDoubleStatic '[c, r]
+tds_tr t = unsafePerformIO $ do
+  newPtr <- withForeignPtr (tdsTensor t) (
+    \tPtr -> c_THDoubleTensor_newTranspose tPtr 1 0
+    )
+  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  pure $ TDS newFPtr
 
 tds_dim :: (Num a2, SingI d) => TensorDoubleStatic d -> TensorDim a2
 tds_dim (x :: TensorDoubleStatic d) = list2dim $ fromSing (sing :: Sing d)
@@ -117,7 +126,7 @@ instance SingI d => StaticTensor (TensorDoubleStatic d)  where
 
 {- Sanity checks -}
 
-testStatic = do
+testCreate = do
   print("1")
   let t1 = tds_new :: TDS '[2, 2]
   dispS t1
@@ -138,6 +147,11 @@ testEq = do
   print "Should be False:"
   print $ (tds_init 3.0 :: TDS '[2,3]) ==  (tds_init 1.0 :: TDS '[2,3])
 
+testTranspose = do
+  dispS $ tds_tr . tds_tr . tds_tr $ (tds_init 3.0 :: TDS '[3,2])
+  print $ (tds_tr . tds_tr $ (tds_init 3.0 :: TDS '[3,2])) == (tds_init 3.0 :: TDS '[3,2])
+
 test = do
-  testStatic
+  testCreate
   testEq
+  testTranspose
