@@ -4,9 +4,9 @@ A Haskell library for tensors and neural networks. Hasktorch uses the low-level
 [TorcH](https://github.com/pytorch/pytorch/tree/master/torch/lib/TH) C
 tensor/math library shared by [Torch](http://torch.ch/) and
 [PyTorch](http://pytorch.org/). This project is an independent
-unsponsored/unaffiliated open source effort.
+(unsponsored/unaffiliated) open source effort.
 
-**hasktorch is in early development and should only be used by
+**NOTE: hasktorch is in early development and should only be used by
 contributing developers at the current time.**
 
 ## Project Structure

@@ -72,6 +72,7 @@ module TensorDoubleMath (
   ) where
 
 import Control.Exception
+import Control.Monad (unless)
 
 import Foreign
 import Foreign.C.Types
@@ -333,48 +334,61 @@ swap2 fun a b c d e = fun b c a d e
 
 swap3 fun a b c d e f = fun c a d b e f
 
+checkdim t src fun =
+  unless ((tdDim t) == (tdDim src)) $ error ("Mismatched " ++ fun ++ " dimensions")
+
 -- cadd = z <- y + scalar * x, z value discarded
 -- allocate r_ for the user instead of taking it as an argument
 td_cadd :: TensorDouble -> Double -> TensorDouble -> TensorDouble
-td_cadd t scale src = unsafePerformIO $
+td_cadd t scale src = unsafePerformIO $ do
+  checkdim t src "cadd"
   apply2 ((swap1 c_THDoubleTensor_cadd) scaleC) t src
   where scaleC = realToFrac scale
 
 td_csub :: TensorDouble -> Double -> TensorDouble -> TensorDouble
 td_csub t scale src = unsafePerformIO $ do
+  checkdim t src "csub"
   apply2 ((swap1 c_THDoubleTensor_csub) scaleC) t src
   where scaleC = realToFrac scale
 
 td_cmul :: TensorDouble -> TensorDouble -> TensorDouble
 td_cmul t src = unsafePerformIO $ do
+  checkdim t src "cmul"
   apply2 c_THDoubleTensor_cmul t src
 
 td_cpow :: TensorDouble -> TensorDouble -> TensorDouble
 td_cpow t src = unsafePerformIO $ do
+  checkdim t src "cpow"
   apply2 c_THDoubleTensor_cpow t src
 
 td_cdiv :: TensorDouble -> TensorDouble -> TensorDouble
 td_cdiv t src = unsafePerformIO $ do
+  checkdim t src "cdiv"
   apply2 c_THDoubleTensor_cdiv t src
 
 td_clshift :: TensorDouble -> TensorDouble -> TensorDouble
 td_clshift t src = unsafePerformIO $ do
+  checkdim t src "clshift"
   apply2 c_THDoubleTensor_clshift t src
 
 td_crshift :: TensorDouble -> TensorDouble -> TensorDouble
 td_crshift t src = unsafePerformIO $ do
+  checkdim t src "crshift"
   apply2 c_THDoubleTensor_crshift t src
 
 td_cfmod :: TensorDouble -> TensorDouble -> TensorDouble
 td_cfmod t src = unsafePerformIO $ do
+  checkdim t src "cfmod"
   apply2 c_THDoubleTensor_cfmod t src
 
 td_cremainder :: TensorDouble -> TensorDouble -> TensorDouble
 td_cremainder t src = unsafePerformIO $ do
+  checkdim t src "cremainder"
   apply2 c_THDoubleTensor_cremainder t src
 
 td_cbitand :: TensorDouble -> TensorDouble -> TensorDouble
 td_cbitand  t src = unsafePerformIO $ do
+  checkdim t src "cbitand"
   apply2 c_THDoubleTensor_cbitand t src
 
 td_cbitor :: TensorDouble -> TensorDouble -> TensorDouble
@@ -383,6 +397,7 @@ td_cbitor  t src = unsafePerformIO $ do
 
 td_cbitxor :: TensorDouble -> TensorDouble -> TensorDouble
 td_cbitxor t src = unsafePerformIO $ do
+  checkdim t src "cbitxor"
   apply2 c_THDoubleTensor_cbitxor t src
 
 td_addcmul :: TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
@@ -400,12 +415,8 @@ td_addmv beta t alpha src1 src2 = unsafePerformIO $ do
   case (dim1, dim2, dimt) of
     (D2 _, D1 _, D1 _) -> pure ()
     _ -> error "Expected: 1D vector + 2D matrix x 1D vector"
-  case (d2 dim1 ^. _2 == d1 dim2) of
-    True -> pure ()
-    False -> error "Matrix x vector dimension mismatch"
-  case (d2 dim1 ^. _1 == d1 dimt) of
-    True -> pure ()
-    False -> error "Incorrect dimension for added vector"
+  unless (d2 dim1 ^. _2 == d1 dim2) $ error "Matrix x vector dimension mismatch"
+  unless (d2 dim1 ^. _1 == d1 dimt) $ error "Incorrect dimension for added vector"
   apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)

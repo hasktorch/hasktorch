@@ -1,4 +1,4 @@
-resolver: nightly-2017-10-26
+resolver: nightly-2017-10-28
 
 packages:
 - 'codegen'
