@@ -16,10 +16,11 @@ import Foreign.Ptr
 -- import GHC.TypeLits (Nat, KnownNat, natVal)
 
 import StaticTensorDouble
-import TensorDouble
+import StaticTensorDoubleMath
 --import TensorDoubleMath (sigmoid, (!*), addmv)
 -- import TensorDoubleRandom
 import StaticTensorDoubleRandom
+import TensorDouble
 import Random
 import TensorTypes
 import TensorUtils
@@ -85,8 +86,10 @@ randomNet = go sing
           SNil            ->     O <$> randomWeights
           SNat `SCons` ss -> (:~) <$> randomWeights <*> go ss
 
--- runLayer :: SW i o -> (TDS d) -> TensorDouble
--- runLayer sw v = addmv 1.0 wB 1.0 wN v
+-- runLayer :: SW i o -> (TDS d1) -> TDS '[o]
+-- runLayer sw v = tds_addmv 1.0 wB 1.0 wN v
+--   where wB = (biases sw) :: TDS '[o]
+--         wN = nodes sw :: TDS '[i, o]
 
 -- runNet :: SN i h o -> TensorDouble -> TensorDouble
 -- runNet (O w) v = sigmoid (runLayer w v)

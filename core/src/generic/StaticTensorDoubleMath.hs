@@ -83,6 +83,15 @@ import THDoubleTensor
 import THDoubleTensorMath
 import StaticTensorDouble
 
+-- |Experimental num instance for static tensors
+instance SingI d => Num (TensorDoubleStatic d) where
+  (+) t1 t2 = tds_cadd t1 1.0 t2
+  (-) t1 t2 = tds_csub t1 1.0  t2
+  (*) t1 t2 = tds_cmul t1 t2
+  abs t = tds_abs t
+  signum t = error "signum not defined for tensors"
+  fromInteger t = error "signum not defined for tensors"
+
 -- |Generalize non-mutating collapse of a tensor to a constant or another tensor
 apply0_ :: (Ptr CTHDoubleTensor -> a) -> (TDS d) -> IO a
 apply0_ operation tensor = do

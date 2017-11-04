@@ -92,6 +92,15 @@ import THDoubleTensor
 import THDoubleTensorMath
 import THTypes
 
+-- |Experimental num instance for static tensors
+instance Num TensorDouble where
+  (+) t1 t2 = td_cadd t1 1.0 t2
+  (-) t1 t2 = td_csub t1 1.0  t2
+  (*) t1 t2 = td_cmul t1 t2
+  abs t = td_abs t
+  signum t = error "signum not defined for tensors"
+  fromInteger t = error "signum not defined for tensors"
+
 -- ----------------------------------------
 -- Foreign pointer application helper functions
 -- ----------------------------------------
@@ -623,12 +632,11 @@ td_equal t1 t2 = unsafePerformIO $
 -- TH_API void THTensor_(eqValue)(THByteTensor *r_, THTensor* t, real value);
 
 -- TH_API void THTensor_(round)(THTensor *r_, THTensor *t);
+td_round tensor = unsafePerformIO $ apply0_ tround tensor
+  where
+    tround t = apply0Tensor c_THDoubleTensor_round (tdDim tensor) t
 
 -- -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
--- roundT :: TensorDouble -> TensorDouble
--- roundT t = unsafePerformIO $ do
---   result <- apply0Tensor c_THDoubleTensor_round (tdDim t) t
---   pure result
 
 test = do
   -- check exception case
