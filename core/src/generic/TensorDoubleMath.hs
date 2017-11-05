@@ -3,6 +3,19 @@
 
 module TensorDoubleMath (
 
+  (^+^),
+  (^-^),
+  (!*),
+  (^+),
+  (^-),
+  (+^),
+  (-^),
+  (^*),
+  (^/),
+  (*^),
+  (/^),
+  (<.>),
+
   td_fill,
   td_fill_,
 
@@ -10,11 +23,6 @@ module TensorDoubleMath (
   td_subConst,
   td_mulConst,
   td_divConst,
-
-  (^+),
-  (^-),
-  (^*),
-  (^/),
 
   td_dot,
 
@@ -49,7 +57,6 @@ module TensorDoubleMath (
   td_addmv_fast,
   td_mv,
   td_mv_fast,
-  (!*),
 
   td_addmm,
   td_addbmm,

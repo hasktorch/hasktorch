@@ -5,6 +5,20 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module StaticTensorDoubleMath (
+
+  (^+^),
+  (^-^),
+  (!*),
+  (^+),
+  (^-),
+  (+^),
+  (-^),
+  (^*),
+  (^/),
+  (*^),
+  (/^),
+  (<.>),
+
   tds_fill
   , tds_fill_
 
@@ -44,7 +58,6 @@ module StaticTensorDoubleMath (
   -- , tds_addcdiv
   , tds_addmv
   , tds_mv
-  , (!*)
 
   , tds_addmm
   , tds_addbmm
