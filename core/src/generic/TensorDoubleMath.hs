@@ -50,6 +50,7 @@ module TensorDoubleMath (
   td_mv,
   td_mv_fast,
   (!*),
+
   td_addmm,
   td_addbmm,
   td_baddbmm,
@@ -100,6 +101,19 @@ instance Num TensorDouble where
   abs t = td_abs t
   signum t = error "signum not defined for tensors"
   fromInteger t = error "signum not defined for tensors"
+
+(^+^) t1 t2 = td_cadd t1 1.0 t2
+(^-^) t1 t2 = td_csub t1 1.0 t2
+(!*) = td_mv
+(^+) = td_addConst
+(^-) = td_subConst
+(+^) = flip td_addConst
+(-^) = flip td_subConst
+(^*) = td_mulConst
+(^/) = td_divConst
+(*^) = flip td_mulConst
+(/^) = flip td_divConst
+(<.>) = td_dot
 
 -- ----------------------------------------
 -- Foreign pointer application helper functions
@@ -244,11 +258,6 @@ td_divConst :: TensorDouble -> Double -> TensorDouble
 td_divConst mtx val = apply1_ tDiv mtx val
   where
     tDiv r_ t = c_THDoubleTensor_div r_ t (realToFrac val)
-
-(^+) = td_addConst
-(^-) = td_subConst
-(^*) = td_mulConst
-(^/) = td_divConst
 
 -- ----------------------------------------
 -- Linear algebra
@@ -450,9 +459,6 @@ td_mv_fast mat vec =
   td_addmv_fast 0.0 zero 1.0 mat vec
   where
     zero = td_new $ (D1 ((^. _1) . d2 . tdDim $ mat))
-
-(!*) :: TensorDouble -> TensorDouble -> TensorDouble
-mat !* vec = td_mv mat vec
 
 td_addmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
 td_addmm beta t alpha src1 src2 = unsafePerformIO $ do

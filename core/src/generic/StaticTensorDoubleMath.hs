@@ -44,6 +44,7 @@ module StaticTensorDoubleMath (
   -- , tds_addcdiv
   , tds_addmv
   , tds_mv
+  , (!*)
 
   , tds_addmm
   , tds_addbmm
@@ -83,6 +84,8 @@ import THDoubleTensor
 import THDoubleTensorMath
 import StaticTensorDouble
 
+{- Operators -}
+
 -- |Experimental num instance for static tensors
 instance SingI d => Num (TensorDoubleStatic d) where
   (+) t1 t2 = tds_cadd t1 1.0 t2
@@ -91,6 +94,40 @@ instance SingI d => Num (TensorDoubleStatic d) where
   abs t = tds_abs t
   signum t = error "signum not defined for tensors"
   fromInteger t = error "signum not defined for tensors"
+
+(^+^) t1 t2 = tds_cadd t1 1.0 t2
+(^-^) t1 t2 = tds_csub t1 1.0 t2
+
+(!*) :: (KnownNat c, KnownNat r) => (TDS '[r, c]) -> (TDS '[c]) -> (TDS '[r])
+(!*) m v = tds_mv m v
+
+(^+) :: (Real p, SingI d) => TDS d -> p -> TDS d
+(^+) = tds_addConst
+
+(^-) :: (Real p, SingI d) => TDS d -> p -> TDS d
+(^-) = tds_subConst
+
+(+^) :: (Real p, SingI d) => p -> TDS d -> TDS d
+(+^) = flip tds_addConst
+
+(-^) :: (Real p, SingI d) => p -> TDS d -> TDS d
+(-^) = flip tds_subConst
+
+(^*) :: (SingI d, Real p) => TDS d -> p -> TDS d
+(^*) t const = tds_mulConst t const
+
+(^/) :: (SingI d, Real p) => TDS d -> p -> TDS d
+(^/) t const = tds_divConst t const
+
+(*^) :: (SingI d, Real p) => p -> TDS d -> TDS d
+(*^) const t = tds_mulConst t const
+
+(/^) :: (SingI d, Real p) => p -> TDS d -> TDS d
+(/^) const t = tds_divConst t const
+
+(<.>) t1 t2 = tds_dot t1 t2
+
+{- Helper functions -}
 
 -- |Generalize non-mutating collapse of a tensor to a constant or another tensor
 apply0_ :: (Ptr CTHDoubleTensor -> a) -> (TDS d) -> IO a

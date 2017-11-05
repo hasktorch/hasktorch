@@ -52,7 +52,7 @@ fillRaw0 :: TensorLongRaw -> IO (TensorLongRaw)
 fillRaw0 tensor = fillRaw 0 tensor >> pure tensor
 
 
--- |Create a new (double) tensor of specified dimensions and fill it with 0
+-- |Create a new (Long) tensor of specified dimensions and fill it with 0
 tl_new :: TensorDim Word -> TensorLong
 tl_new dims = unsafePerformIO $ do
   newPtr <- go dims
