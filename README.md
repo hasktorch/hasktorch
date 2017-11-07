@@ -88,6 +88,12 @@ For details on the TH library's pseudo-templating preprocessor mechanism for
 underlying the generic modules, see [Adam Paszke's
 writeup](https://apaszke.github.io/torch-internals.html).
 
+## Contributing
+
+Contributions are welcome. For a list of things that need to get done, see:
+
+https://github.com/austinvhuang/hasktorch/projects/1
+
 ## References
 
 ### Torch Internals
