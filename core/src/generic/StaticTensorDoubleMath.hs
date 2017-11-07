@@ -447,14 +447,14 @@ ret2 fun t dimension keepdim = do
     keepdimC = if keepdim then 1 else 0
     dimensionC = fromIntegral dimension
 
---tds_addmm :: Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
+-- TODO- add proper type signature with dimensions specified
 tds_addmm beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmm) betaC alphaC) t src1 src2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
-
-tds_addr :: (KnownNat r, KnownNat c) => Double -> TDS '[r, c]-> Double -> TDS '[r] -> TDS '[c]-> TDS '[r, c]
+tds_addr :: (KnownNat r, KnownNat c) =>
+  Double -> TDS '[r, c]-> Double -> TDS '[r] -> TDS '[c]-> TDS '[r, c]
 tds_addr beta t alpha vec1 vec2 = unsafePerformIO $ do
   let r_ = tds_new
   withForeignPtr (tdsTensor r_)
@@ -474,16 +474,18 @@ tds_addr beta t alpha vec1 vec2 = unsafePerformIO $ do
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
-tds_outer
-  :: (KnownNat r, KnownNat c) => TDS '[r] -> TDS '[c] -> TDS '[r, c]
+tds_outer :: (KnownNat r, KnownNat c) =>
+             TDS '[r] -> TDS '[c] -> TDS '[r, c]
 tds_outer vec1 vec2 = tds_addr 0.0 tds_new 1.0 vec1 vec2
 
+-- TODO- add proper type signature with dimensions specified
 -- tds_addbmm :: Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
 tds_addbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addbmm) betaC alphaC) t batch1 batch2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
+-- TODO- add proper type signature with dimensions specified
 -- tds_baddbmm :: Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
 tds_baddbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_baddbmm) betaC alphaC) t batch1 batch2
