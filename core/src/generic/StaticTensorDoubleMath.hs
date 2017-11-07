@@ -61,6 +61,8 @@ module StaticTensorDoubleMath (
   , tds_mv
 
   , tds_addmm
+  , tds_addr
+  , tds_outer
   , tds_addbmm
   , tds_baddbmm
   , tds_match
@@ -451,6 +453,31 @@ tds_addmm beta t alpha src1 src2 = unsafePerformIO $ do
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
 
+
+tds_addr :: (KnownNat r, KnownNat c) => Double -> TDS '[r, c]-> Double -> TDS '[r] -> TDS '[c]-> TDS '[r, c]
+tds_addr beta t alpha vec1 vec2 = unsafePerformIO $ do
+  let r_ = tds_new
+  withForeignPtr (tdsTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdsTensor t)
+         (\tPtr ->
+            withForeignPtr (tdsTensor vec1)
+              (\vec1Ptr ->
+                 withForeignPtr (tdsTensor vec2)
+                   (\vec2Ptr ->
+                      c_THDoubleTensor_addr rPtr betaC tPtr alphaC vec1Ptr vec2Ptr
+                   )
+              )
+         )
+    )
+  pure r_
+  where
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+
+tds_outer
+  :: (KnownNat r, KnownNat c) => TDS '[r] -> TDS '[c] -> TDS '[r, c]
+tds_outer vec1 vec2 = tds_addr 0.0 tds_new 1.0 vec1 vec2
+
 -- tds_addbmm :: Double -> (TDS d) -> Double -> (TDS d) -> (TDS d) -> (TDS d)
 tds_addbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addbmm) betaC alphaC) t batch1 batch2
@@ -585,3 +612,5 @@ test = do
   -- 1.25
   dispS $ 5.0 /^ (tds_init 4.0 :: TDS '[10])
   pure ()
+
+  dispS (tds_outer (tds_init 2.0) (tds_init 3.0) :: TDS '[3,2])

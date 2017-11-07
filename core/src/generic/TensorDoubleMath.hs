@@ -60,6 +60,7 @@ module TensorDoubleMath (
   td_mv_fast,
 
   td_addmm,
+  td_addr,
   td_addbmm,
   td_baddbmm,
   td_match,
@@ -455,6 +456,7 @@ td_addmv beta t alpha src1 src2 = unsafePerformIO $ do
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
     (dim1, dim2, dimt) = (tdDim src1, tdDim src2, tdDim t)
 
+-- |No dimension checks (halts execution if they're incorrect)
 td_addmv_fast :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
 td_addmv_fast beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
@@ -467,6 +469,7 @@ td_mv mat vec =
   where
     zero = td_new $ (D1 ((^. _1) . d2 . tdDim $ mat))
 
+-- |No dimension checks (halts execution if they're incorrect)
 td_mv_fast :: TensorDouble -> TensorDouble -> TensorDouble
 td_mv_fast mat vec =
   td_addmv_fast 0.0 zero 1.0 mat vec
@@ -478,6 +481,43 @@ td_addmm beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmm) betaC alphaC) t src1 src2
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+
+-- |outer product - see https://github.com/torch/torch7/blob/master/doc/maths.md#res-torchaddrres-v1-mat-v2-vec1-vec2
+td_addr :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
+td_addr beta t alpha vec1 vec2 = unsafePerformIO $ do
+  case (dimt, dim1, dim2) of
+    (D2 _, D1 _, D1 _) -> pure ()
+    _ -> error "Expected: 1D vector + 2D matrix x 1D vector"
+  unless (d2 dimt ^. _1 == d1 dim1) $ error "Matrix dimension mismatch with vec1"
+  unless (d2 dimt ^. _2 == d1 dim2) $ error "Matrix dimension mismatch with vec2"
+  let r_ = td_new (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor vec1)
+              (\vec1Ptr ->
+                 withForeignPtr (tdTensor vec2)
+                   (\vec2Ptr ->
+                      c_THDoubleTensor_addr rPtr betaC tPtr alphaC vec1Ptr vec2Ptr
+                   )
+              )
+         )
+    )
+  pure r_
+  where
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+    (dim1, dim2, dimt) = (tdDim vec1, tdDim vec2, tdDim t)
+
+td_outer vec1 vec2 = unsafePerformIO $ do
+  case (dim1, dim2) of
+    (D1 _, D1 _) -> pure ()
+    _ -> error "Expected: 1D vectors"
+  pure $ td_addr 0.0 emptyMtx 1.0 vec1 vec2
+  where
+    (dim1, dim2) = (tdDim vec1, tdDim vec2)
+    emptyMtx = td_init (D2 ((d1 dim1), (d1 dim2))) 0.0
+
 
 td_addbmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
 td_addbmm beta t alpha batch1 batch2 = unsafePerformIO $ do
@@ -665,6 +705,13 @@ test = do
   disp $ td_mv m v
 
   let (m, v) = (td_init (D3 (1, 3, 2)) 3.0 , td_init (D1 2) 2.0)
-  disp $ td_mv m v
+  -- disp $ td_mv m v
+
+  disp $ td_addr
+    0.0 (td_init (D2 (3,2)) 0.0)
+    1.0 (td_init (D1 3) 2.0) (td_init (D1 2) 3.0)
+
+  disp $ td_outer (td_init (D1 3) 2.0) (td_init (D1 2) 3.0)
+
   print "Done"
-  pure () :: IO ()
+  pure ()
