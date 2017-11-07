@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, TypeOperators #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Main where
 
@@ -22,7 +23,7 @@ data Weights = W {
   nodes :: TensorDouble
   } deriving (Eq, Show)
 
-{- Dynamically Typed Implementation -}
+{- Simple FF neural network, dynamically typed version, based on JL's example -}
 
 data Network :: * where
   O :: Weights -> Network
@@ -66,9 +67,6 @@ runNet :: Network -> TensorDouble -> TensorDouble
 runNet (O w) v = td_sigmoid (runLayer w v)
 runNet (w :~ n') v = let v' = td_sigmoid (runLayer w v) in runNet n' v'
 
-train :: Double -> TensorDouble -> TensorDouble -> Network -> Network
-train rate x0 target = fst . go x0
-  where go x (O w@(W wB wN)) = undefined
 
 main = do
   net <- randomNet 5 [3, 2, 4, 2, 3] 2

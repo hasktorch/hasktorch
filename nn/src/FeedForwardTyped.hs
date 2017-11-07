@@ -2,10 +2,9 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Main where
-
--- experimental AD implementation
 
 import StaticTensorDouble
 import StaticTensorDoubleMath
@@ -19,7 +18,7 @@ import Data.Singletons
 import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 
-{- Statically Typed Implementation -}
+{- Simple FF neural network, statically typed version, based on JL's example -}
 
 type SW = StaticWeights
 type SN = StaticNetwork

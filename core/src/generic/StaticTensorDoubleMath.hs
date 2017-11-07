@@ -37,6 +37,7 @@ module StaticTensorDoubleMath (
   , tds_meanAll
 
   , tds_neg
+  , tds_cinv
   , tds_abs
   , tds_sigmoid
   , tds_log
@@ -120,23 +121,23 @@ instance SingI d => Num (TensorDoubleStatic d) where
 (^-) :: (Real p, SingI d) => TDS d -> p -> TDS d
 (^-) = tds_subConst
 
+(^*) :: (SingI d, Real p) => TDS d -> p -> TDS d
+(^*) = tds_mulConst
+
+(^/) :: (SingI d, Real p) => TDS d -> p -> TDS d
+(^/) = tds_divConst
+
 (+^) :: (Real p, SingI d) => p -> TDS d -> TDS d
 (+^) = flip tds_addConst
 
 (-^) :: (Real p, SingI d) => p -> TDS d -> TDS d
-(-^) = flip tds_subConst
-
-(^*) :: (SingI d, Real p) => TDS d -> p -> TDS d
-(^*) t const = tds_mulConst t const
-
-(^/) :: (SingI d, Real p) => TDS d -> p -> TDS d
-(^/) t const = tds_divConst t const
+(-^) val t = tds_addConst (tds_neg t) val
 
 (*^) :: (SingI d, Real p) => p -> TDS d -> TDS d
-(*^) const t = tds_mulConst t const
+(*^) = flip tds_mulConst
 
 (/^) :: (SingI d, Real p) => p -> TDS d -> TDS d
-(/^) const t = tds_divConst t const
+(/^) val t = tds_mulConst (tds_cinv t) val
 
 (<.>) t1 t2 = tds_dot t1 t2
 
@@ -249,6 +250,11 @@ tds_neg :: SingI d => TDS d -> TDS d
 tds_neg tensor = unsafePerformIO $ apply0_ tNeg tensor
   where
     tNeg t = apply0Tensor c_THDoubleTensor_neg t
+
+tds_cinv :: SingI d => TDS d -> TDS d
+tds_cinv tensor = unsafePerformIO $ apply0_ tInv tensor
+  where
+    tInv t = apply0Tensor c_THDoubleTensor_cinv t
 
 tds_abs :: SingI d => TDS d -> TDS d
 tds_abs tensor = unsafePerformIO $ apply0_ tAbs tensor
@@ -572,4 +578,10 @@ test = do
   print $ tds_numel t
   print("Dot product")
   print ((tds_init 2.0 :: TDS '[5]) <.> (tds_init 2.0 :: TDS '[5]))
+
+  -- .33..
+  dispS $ tds_cinv (tds_init 3.0 :: TDS '[5])
+
+  -- 1.25
+  dispS $ 5.0 /^ (tds_init 4.0 :: TDS '[10])
   pure ()

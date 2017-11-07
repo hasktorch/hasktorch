@@ -34,6 +34,7 @@ module TensorDoubleMath (
   td_meanAll,
 
   td_neg,
+  td_cinv,
   td_abs,
   td_sigmoid,
   td_log,
@@ -114,12 +115,12 @@ instance Num TensorDouble where
 (!*) = td_mv
 (^+) = td_addConst
 (^-) = td_subConst
-(+^) = flip td_addConst
-(-^) = flip td_subConst
 (^*) = td_mulConst
 (^/) = td_divConst
+(+^) = flip td_addConst
+(-^) val t = td_addConst (td_neg t) val
 (*^) = flip td_mulConst
-(/^) = flip td_divConst
+(/^) val t = td_mulConst (td_cinv t) val
 (<.>) = td_dot
 
 -- ----------------------------------------
@@ -321,6 +322,11 @@ td_neg :: TensorDouble -> TensorDouble
 td_neg tensor = unsafePerformIO $ apply0_ tNeg tensor
   where
     tNeg t = apply0Tensor c_THDoubleTensor_neg (tdDim tensor) t
+
+td_cinv :: TensorDouble -> TensorDouble
+td_cinv tensor = unsafePerformIO $ apply0_ cinv tensor
+  where
+    cinv t = apply0Tensor c_THDoubleTensor_cinv (tdDim tensor) t
 
 td_abs :: TensorDouble -> TensorDouble
 td_abs tensor = unsafePerformIO $ apply0_ tAbs tensor
