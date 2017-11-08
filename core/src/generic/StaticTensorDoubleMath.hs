@@ -111,11 +111,12 @@ instance SingI d => Num (TensorDoubleStatic d) where
   signum t = error "signum not defined for tensors"
   fromInteger t = error "signum not defined for tensors"
 
-(^+^) t1 t2 = tds_cadd t1 1.0 t2
-(^-^) t1 t2 = tds_csub t1 1.0 t2
 
 (!*) :: (KnownNat c, KnownNat r) => (TDS '[r, c]) -> (TDS '[c]) -> (TDS '[r])
 (!*) m v = tds_mv m v
+
+(^+^) t1 t2 = tds_cadd t1 1.0 t2
+(^-^) t1 t2 = tds_csub t1 1.0 t2
 
 (^+) :: (Real p, SingI d) => TDS d -> p -> TDS d
 (^+) = tds_addConst
