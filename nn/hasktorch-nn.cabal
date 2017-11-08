@@ -14,8 +14,7 @@ cabal-version:       >=1.10
 library
   default-language:    Haskell2010
   exposed-modules:   Layer
-                   , FeedForwardTyped
-                   , FeedForwardUntyped
+  hs-source-dirs:      src
   build-depends: base >= 4.7 && < 5
                , hasktorch-core
                , singletons >= 2.3.1
