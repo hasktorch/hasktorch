@@ -3,6 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Layer where
 
@@ -36,6 +37,7 @@ data instance Sing (shapeType :: Shape) where
   L3Sing :: (KnownNat a, KnownNat b, KnownNat c)             => Sing ('L3 a b c)
   L4Sing :: (KnownNat a, KnownNat b, KnownNat c, KnownNat d) => Sing ('L4 a b c d)
 
+-- derive value-level singleton from layer shape types (L1...L4)
 instance KnownNat a => SingI ('L1 a) where
   sing = L1Sing
 instance (KnownNat a, KnownNat b) => SingI ('L2 a b) where
@@ -45,9 +47,27 @@ instance (KnownNat a, KnownNat b, KnownNat c) => SingI ('L3 a b c) where
 instance (KnownNat a, KnownNat b, KnownNat c, KnownNat d) => SingI ('L4 a b c d) where
   sing = L4Sing
 
+-- typeclass 1: layers can be updated and randomly instantiated
 class UpdateLayer layer where
   type Gradient layer :: *
-  updateLayer :: LearningParameters -> layer -> Gradient layer -> layer 
+  updateLayer :: LearningParameters -> layer -> Gradient layer -> layer
+  createRandom :: IO layer
 
-data LearningParameters = LP -- TODO : fill-in
+-- typeclass 2: layers can be run forward and backward propagated
+class UpdateLayer x => Layer x (i :: Shape) (o :: Shape) where
+  type Tape x i o :: *
+  runForwards :: x -> S i -> (Tape x i o, S o)
+  runBackwards :: x -> (Tape x i o, S o) -> S o -> (Gradient x, S i)
 
+-- learning parameter values
+data LearningParameters = LearningParameters {
+  lp_rate :: Double
+  , lp_momentum :: Double
+  , lp_regularizer :: Double
+  } deriving (Eq, Show)
+
+-- a network is a list of layers
+data Network :: [*] -> [Shape] -> * where
+  NNil :: SingI i => Network '[] '[i]
+  NCons :: (SingI i, SingI h, Layer x i h) =>
+    x -> (Network xs (h ': hs)) -> Network (x ': xs) (i ': h ': hs)
