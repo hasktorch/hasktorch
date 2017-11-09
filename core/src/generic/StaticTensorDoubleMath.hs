@@ -42,6 +42,13 @@ module StaticTensorDoubleMath (
   , tds_sigmoid
   , tds_log
   , tds_lgamma
+  , tds_log1p
+  , tds_pow
+  , tds_tpow
+  , tds_sqrt
+  , tds_rsqrt
+  , tds_ceil
+  , tds_floor
 
   , tds_cadd
   , tds_csub
@@ -278,6 +285,65 @@ tds_lgamma :: SingI d => TDS d -> TDS d
 tds_lgamma tensor = unsafePerformIO $ apply0_ tLgamma tensor
   where
     tLgamma t = apply0Tensor c_THDoubleTensor_lgamma t
+
+tds_log1p :: SingI d => TDS d -> TDS d
+tds_log1p tensor = unsafePerformIO $ apply0_ tLog1p tensor
+  where
+    tLog1p t = apply0Tensor c_THDoubleTensor_log1p t
+
+tds_pow :: SingI d => TDS d -> Double -> TDS d
+tds_pow tensor value = unsafePerformIO $ do
+  let res = tds_new
+  withForeignPtr (tdsTensor res)
+    (\r_ -> withForeignPtr (tdsTensor tensor)
+            (\t -> do
+                c_THDoubleTensor_pow r_ t valueC
+                pure r_
+            )
+    )
+  pure res
+  where
+    valueC = realToFrac value
+
+tds_tpow :: SingI d => Double -> TDS d -> TDS d
+tds_tpow value tensor = unsafePerformIO $ do
+  let res = tds_new
+  withForeignPtr (tdsTensor res)
+    (\r_ -> withForeignPtr (tdsTensor tensor)
+            (\t -> do
+                c_THDoubleTensor_tpow r_ valueC t
+                pure r_
+            )
+    )
+  pure res
+  where
+    valueC = realToFrac value
+
+tds_sqrt :: SingI d => TDS d -> TDS d
+tds_sqrt tensor = unsafePerformIO $ apply0_ tSqrt tensor
+  where
+    tSqrt t = apply0Tensor c_THDoubleTensor_sqrt t
+
+tds_rsqrt :: SingI d => TDS d -> TDS d
+tds_rsqrt tensor = unsafePerformIO $ apply0_ tRsqrt tensor
+  where
+    tRsqrt t = apply0Tensor c_THDoubleTensor_rsqrt t
+
+tds_ceil :: SingI d => TDS d -> TDS d
+tds_ceil tensor = unsafePerformIO $ apply0_ tCeil tensor
+  where
+    tCeil t = apply0Tensor c_THDoubleTensor_ceil t
+
+tds_floor :: SingI d => TDS d -> TDS d
+tds_floor tensor = unsafePerformIO $ apply0_ tFloor tensor
+  where
+    tFloor t = apply0Tensor c_THDoubleTensor_floor t
+
+tds_round :: SingI d => TDS d -> TDS d
+tds_round tensor = unsafePerformIO $ apply0_ tRound tensor
+  where
+    tRound t = apply0Tensor c_THDoubleTensor_round t
+
 
 -- ----------------------------------------
 -- c* cadd, cmul, cdiv, cpow, ...
