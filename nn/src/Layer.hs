@@ -1,9 +1,10 @@
-{-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, TypeOperators #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds, GADTs, KindSignatures, TypeFamilies, TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 
 module Layer where
 
@@ -57,7 +58,7 @@ class UpdateLayer layer where
 class UpdateLayer x => Layer x (i :: Shape) (o :: Shape) where
   type Tape x i o :: *
   runForwards :: x -> S i -> (Tape x i o, S o)
-  runBackwards :: x -> (Tape x i o, S o) -> S o -> (Gradient x, S i)
+  runBackwards :: x -> Tape x i o -> S o -> (Gradient x, S i)
 
 -- learning parameter values
 data LearningParameters = LearningParameters {
@@ -70,4 +71,42 @@ data LearningParameters = LearningParameters {
 data Network :: [*] -> [Shape] -> * where
   NNil :: SingI i => Network '[] '[i]
   NCons :: (SingI i, SingI h, Layer x i h) =>
-    x -> (Network xs (h ': hs)) -> Network (x ': xs) (i ': h ': hs)
+    x -> (Network xs (h : hs)) -> Network (x : xs) (i : h : hs)
+
+--
+-- Layer definiions
+--
+
+{- Logit -}
+
+data Logit = Logit
+  deriving Show
+
+instance UpdateLayer Logit where
+  type Gradient Logit = ()
+  updateLayer _ _ _ = Logit
+  createRandom = return Logit
+
+-- instance (a ~ b, SingI a) => Layer Logit a b where
+--   type Tape Logit a b = S a
+--   runForwards _ a = (a, logistic a)
+--   runBackwards _ a g = ((), logistic' a * g)
+logistic x = 1 / (1 + exp (-x))
+logistic' x = (logistic x) * (1 - (logistic x))
+
+{- Logit -}
+
+data Tanh = Tanh
+  deriving Show
+
+instance UpdateLayer Tanh where
+  type Gradient Tanh = ()
+  updateLayer _ _ _ = Tanh
+  createRandom = return Tanh
+
+-- instance (a ~ b, SingI a) => Layer Tanh a b where
+--   type Tape Tanh a b = S a
+--   runForwards _ a = (a, tanh a)
+--   runBackwards _ a g = ((), tanh' a * g)
+
+tanh' t = 1 - s ^ (2 :: Int)  where s = tanh t
