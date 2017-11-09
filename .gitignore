@@ -2,3 +2,4 @@
 .DS_Store
 logo/
 *.#*
+vendor/build/
