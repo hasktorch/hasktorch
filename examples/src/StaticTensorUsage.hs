@@ -9,7 +9,7 @@ import StaticTensorDoubleMath
 import StaticTensorDoubleRandom
 
 transformations = do
-  putStrLn "Example bulk tensor transformations"
+  putStrLn "\nExample bulk tensor transformations"
   putStrLn "-----------------------------------"
   gen <- newRNG
   randMat :: TDS '[4, 4] <- tds_uniform tds_new gen (1.0) (3.0)
@@ -26,9 +26,9 @@ transformations = do
   putStrLn "\nRound:"
   tds_p $ tds_round randMat
 
-matrixVectorMultiplication = do
-  putStrLn "Matrix Vector Multiplication"
-  putStrLn "----------------------------"
+matrixVectorOps = do
+  putStrLn "\nMatrix/vector operations"
+  putStrLn "------------------------"
   gen <- newRNG
   randMat :: TDS '[2, 2] <- tds_uniform tds_new gen (-1.0) (1.0)
   let constVec = tds_init 2.0 :: TDS '[2]
@@ -37,13 +37,17 @@ matrixVectorMultiplication = do
   tds_p randMat
   putStrLn "\nConstant vector:"
   tds_p constVec
-  putStrLn "\nMatrix x vector result:"
-  tds_p result
+  putStrLn "\nMatrix x vector:"
+  tds_p $ randMat !* constVec 
+  putStrLn "\nVector outer product:"
+  tds_p $ constVec `tds_outer` constVec 
+  putStrLn "\nVector dot product:"
+  print $ constVec <.> constVec 
   pure ()
 
 main = do
   putStrLn "Statically Typed Tensors Example Usage"
   putStrLn "======================================\n"
-  matrixVectorMultiplication
+  matrixVectorOps
   transformations
   pure ()
