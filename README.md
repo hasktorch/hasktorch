@@ -23,24 +23,13 @@ contributing developers at the current time.**
 | [`tools/`][tools] | Misc tools
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C and other libraries)
 
-[codegen]: ./codegen/
-[core]: ./core/
-[examples]: ./examples/
-[interface]: ./interface/
-[nn]: ./nn/
-[output]: ./output/
-[raw]: ./raw/
-[tests]: ./tests/
-[tools]: ./tools/
-[vendor]: ./vendor/
-
 ## Build Instructions
 
 Currently building hasktorch is only supported on OSX and linux. To start,
 retrieve git submodules (includes TorcH library) with:
 
 ```
-git submodule update --init --recursive`
+git submodule update --init --recursive
 ```
 
 A recent version of the gcc C compiler is used to build the TorcH C library. If
@@ -64,7 +53,7 @@ stack build
 If everything built, you should be able to run tests successfully:
 
 ```
-stack test torch-tests
+stack test hasktorch-tests
 ```
 
 ## Code Generation
@@ -118,3 +107,19 @@ https://github.com/austinvhuang/hasktorch/projects/1
 
 - [Automatic Propagation of Uncertainty with AD](https://blog.jle.im/entry/automatic-propagation-of-uncertainty-with-ad.html)
 - [Automatic Differentiation is Trivial in Haskell](http://www.danielbrice.net/blog/2015-12-01/])
+
+
+<!-- project directory links -->
+
+[codegen]: ./codegen/
+[core]: ./core/
+[examples]: ./examples/
+[interface]: ./interface/
+[nn]: ./nn/
+[output]: ./output/
+[raw]: ./raw/
+[tests]: ./tests/
+[tools]: ./tools/
+[vendor]: ./vendor/
+
+
