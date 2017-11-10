@@ -39,16 +39,28 @@ module StaticTensorDoubleMath (
   , tds_neg
   , tds_cinv
   , tds_abs
+
   , tds_sigmoid
   , tds_log
   , tds_lgamma
   , tds_log1p
+  , tds_exp
+  , tds_acos
+  , tds_cosh
+  , tds_sin
+  , tds_asin
+  , tds_sinh
+  , tds_tan
+  , tds_atan
+  -- , tds_atan2
+  , tds_tanh
   , tds_pow
   , tds_tpow
   , tds_sqrt
   , tds_rsqrt
   , tds_ceil
   , tds_floor
+  , tds_round
 
   , tds_cadd
   , tds_csub
@@ -290,6 +302,56 @@ tds_log1p :: SingI d => TDS d -> TDS d
 tds_log1p tensor = unsafePerformIO $ apply0_ tLog1p tensor
   where
     tLog1p t = apply0Tensor c_THDoubleTensor_log1p t
+
+tds_exp :: SingI d => TDS d -> TDS d
+tds_exp tensor = unsafePerformIO $ apply0_ tExp tensor
+  where
+    tExp t = apply0Tensor c_THDoubleTensor_exp t
+
+tds_cos :: SingI d => TDS d -> TDS d
+tds_cos tensor = unsafePerformIO $ apply0_ tCos tensor
+  where
+    tCos t = apply0Tensor c_THDoubleTensor_cos t
+
+tds_acos :: SingI d => TDS d -> TDS d
+tds_acos tensor = unsafePerformIO $ apply0_ tAcos tensor
+  where
+    tAcos t = apply0Tensor c_THDoubleTensor_acos t
+
+tds_cosh :: SingI d => TDS d -> TDS d
+tds_cosh tensor = unsafePerformIO $ apply0_ tCosh tensor
+  where
+    tCosh t = apply0Tensor c_THDoubleTensor_cosh t
+
+tds_sin :: SingI d => TDS d -> TDS d
+tds_sin tensor = unsafePerformIO $ apply0_ tSin tensor
+  where
+    tSin t = apply0Tensor c_THDoubleTensor_sin t
+
+tds_asin :: SingI d => TDS d -> TDS d
+tds_asin tensor = unsafePerformIO $ apply0_ tAsin tensor
+  where
+    tAsin t = apply0Tensor c_THDoubleTensor_asin t
+
+tds_sinh :: SingI d => TDS d -> TDS d
+tds_sinh tensor = unsafePerformIO $ apply0_ tSinh tensor
+  where
+    tSinh t = apply0Tensor c_THDoubleTensor_sinh t
+
+tds_tan :: SingI d => TDS d -> TDS d
+tds_tan tensor = unsafePerformIO $ apply0_ tTan tensor
+  where
+    tTan t = apply0Tensor c_THDoubleTensor_tan t
+
+tds_atan :: SingI d => TDS d -> TDS d
+tds_atan tensor = unsafePerformIO $ apply0_ tAtan tensor
+  where
+    tAtan t = apply0Tensor c_THDoubleTensor_atan t
+
+tds_tanh :: SingI d => TDS d -> TDS d
+tds_tanh tensor = unsafePerformIO $ apply0_ tTanh tensor
+  where
+    tTanh t = apply0Tensor c_THDoubleTensor_tanh t
 
 tds_pow :: SingI d => TDS d -> Double -> TDS d
 tds_pow tensor value = unsafePerformIO $ do

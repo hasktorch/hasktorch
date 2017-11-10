@@ -31,3 +31,4 @@ test:
     - stack exec codegen-managed
     - stack exec ff-untyped
     - stack exec raw-lapack-svd
+    - stack exec static-tensor-usage
