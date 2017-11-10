@@ -49,4 +49,4 @@ source-repository head
   type:     git
   location: https://github.com/austinvhuang/hasktorch
 
-  
+
