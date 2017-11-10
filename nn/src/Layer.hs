@@ -5,7 +5,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-
 module Layer where
 
 import StaticTensorDouble
@@ -38,7 +37,7 @@ data instance Sing (shapeType :: Shape) where
   L3Sing :: (KnownNat a, KnownNat b, KnownNat c)             => Sing ('L3 a b c)
   L4Sing :: (KnownNat a, KnownNat b, KnownNat c, KnownNat d) => Sing ('L4 a b c d)
 
--- derive value-level singleton from layer shape types (L1...L4)
+-- derive value-level singleton from layer shape types (L1...L4) via sing
 instance KnownNat a => SingI ('L1 a) where
   sing = L1Sing
 instance (KnownNat a, KnownNat b) => SingI ('L2 a b) where
@@ -91,10 +90,11 @@ instance UpdateLayer Logit where
 --   type Tape Logit a b = S a
 --   runForwards _ a = (a, logistic a)
 --   runBackwards _ a g = ((), logistic' a * g)
+
 logistic x = 1 / (1 + exp (-x))
 logistic' x = (logistic x) * (1 - (logistic x))
 
-{- Logit -}
+{- Tanh -}
 
 data Tanh = Tanh
   deriving Show
@@ -109,4 +109,4 @@ instance UpdateLayer Tanh where
 --   runForwards _ a = (a, tanh a)
 --   runBackwards _ a g = ((), tanh' a * g)
 
-tanh' t = 1 - s ^ (2 :: Int)  where s = tanh t
+-- tanh' t = 1 - s ^ (2 :: Int)  where s = tanh t

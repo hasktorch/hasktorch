@@ -11,10 +11,10 @@ module StaticTensorDouble (
   tds_init,
   tds_cloneDim,
   tds_newClone,
+  tds_p,
   tds_toDynamic,
   tds_fromDynamic,
   tds_trans, -- matrix specialization of transpose
-  dispS,
   TensorDoubleStatic(..),
   TDS(..),
   Nat -- re-export for kind signature readability
@@ -44,7 +44,7 @@ class StaticTensor t where
   -- |create and initialize tensor
   tds_init :: Double -> t
   -- |Display tensor
-  dispS :: t -> IO ()
+  tds_p ::  t -> IO ()
 
 -- |Convert word to CLong
 w2cl :: Word -> CLong
@@ -140,23 +140,23 @@ instance SingI d => StaticTensor (TensorDoubleStatic d)  where
       makeStatic dims fptr = (TDS fptr) :: TDS d
   tds_new = tds_init 0.0
   tds_cloneDim _ = tds_new :: TDS d
-  dispS tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
+  tds_p tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
 
 {- Sanity checks -}
 
 testCreate = do
   print("1")
   let t1 = tds_new :: TDS '[2, 2]
-  dispS t1
+  tds_p t1
   print("2")
   let t2 = tds_new :: TDS '[2, 4]
-  dispS t2
+  tds_p t2
   print("3")
   let t3 = tds_new :: TDS '[2, 2, 2]
-  dispS t3
+  tds_p t3
   print("4")
   let t4 = tds_new :: TDS '[8, 4]
-  dispS t4
+  tds_p t4
   pure ()
 
 testEq = do
@@ -166,7 +166,7 @@ testEq = do
   print $ (tds_init 3.0 :: TDS '[2,3]) ==  (tds_init 1.0 :: TDS '[2,3])
 
 testTranspose = do
-  dispS $ tds_trans . tds_trans . tds_trans $ (tds_init 3.0 :: TDS '[3,2])
+  tds_p $ tds_trans . tds_trans . tds_trans $ (tds_init 3.0 :: TDS '[3,2])
   print $ (tds_trans . tds_trans $ (tds_init 3.0 :: TDS '[3,2])) == (tds_init 3.0 :: TDS '[3,2])
 
 test = do
@@ -174,4 +174,4 @@ test = do
   testEq
   testTranspose
   disp $ tds_toDynamic (tds_init 2.0 :: TDS '[3, 4])
-  dispS $ tds_newClone (tds_init 2.0 :: TDS '[2, 3])
+  tds_p $ tds_newClone (tds_init 2.0 :: TDS '[2, 3])

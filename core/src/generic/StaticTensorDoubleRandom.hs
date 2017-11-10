@@ -219,8 +219,8 @@ tds_multinomial self gen prob_dist n_sample with_replacement = do
 
 test = do
   let t = tds_new :: TDS '[5]
-  dispS t
+  tds_p t
   gen <- newRNG
   tds_random t gen
-  dispS t
+  tds_p t
   pure ()

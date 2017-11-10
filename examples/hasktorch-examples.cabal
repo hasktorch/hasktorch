@@ -23,3 +23,11 @@ executable download-mnist
                      , filepath
                      , network-uri
 
+executable static-tensor-usage
+  default-language:    Haskell2010
+  main-is:             StaticTensorUsage.hs
+  hs-source-dirs:      src
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch-core
+
+

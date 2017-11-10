@@ -19,7 +19,6 @@ Test-Suite test-torch
   default-language:    Haskell2010
   other-modules:       TestMath
                      , TestRandom
-                     , TestRawInterface
                      , TestTH
   hs-source-dirs:      src
   type:                exitcode-stdio-1.0

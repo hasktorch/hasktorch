@@ -667,7 +667,7 @@ tds_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 test = do
   print("initialization")
   let t = (tds_init 3.0 :: TDS '[3,2])
-  dispS t
+  tds_p t
   print("trace ")
   print $ tds_trace t
   print("num el")
@@ -676,10 +676,10 @@ test = do
   print ((tds_init 2.0 :: TDS '[5]) <.> (tds_init 2.0 :: TDS '[5]))
 
   -- .33..
-  dispS $ tds_cinv (tds_init 3.0 :: TDS '[5])
+  tds_p $ tds_cinv (tds_init 3.0 :: TDS '[5])
 
   -- 1.25
-  dispS $ 5.0 /^ (tds_init 4.0 :: TDS '[10])
+  tds_p $ 5.0 /^ (tds_init 4.0 :: TDS '[10])
   pure ()
 
-  dispS (tds_outer (tds_init 2.0) (tds_init 3.0) :: TDS '[3,2])
+  tds_p (tds_outer (tds_init 2.0) (tds_init 3.0) :: TDS '[3,2])
