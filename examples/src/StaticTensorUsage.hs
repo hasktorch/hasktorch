@@ -3,10 +3,10 @@
 
 module Main where
 
-import Random
+import Random (newRNG)
 import StaticTensorDouble
 import StaticTensorDoubleMath
-import StaticTensorDoubleRandom
+import StaticTensorDoubleRandom (tds_uniform)
 
 transformations = do
   putStrLn "\nExample bulk tensor transformations"
@@ -43,6 +43,8 @@ matrixVectorOps = do
   tds_p $ constVec `tds_outer` constVec 
   putStrLn "\nVector dot product:"
   print $ constVec <.> constVec 
+  putStrLn "\nMatrix trace:"
+  print $ tds_trace randMat
   pure ()
 
 main = do
