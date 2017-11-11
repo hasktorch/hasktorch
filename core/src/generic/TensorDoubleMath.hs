@@ -376,13 +376,35 @@ checkdim t src fun =
 td_cadd :: TensorDouble -> Double -> TensorDouble -> TensorDouble
 td_cadd t scale src = unsafePerformIO $ do
   checkdim t src "cadd"
-  apply2 ((swap1 c_THDoubleTensor_cadd) scaleC) t src
+  let r_ = td_new (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src)
+              (\srcPtr ->
+                 c_THDoubleTensor_cadd rPtr tPtr scaleC srcPtr
+              )
+         )
+    )
+  pure r_
   where scaleC = realToFrac scale
 
 td_csub :: TensorDouble -> Double -> TensorDouble -> TensorDouble
 td_csub t scale src = unsafePerformIO $ do
   checkdim t src "csub"
-  apply2 ((swap1 c_THDoubleTensor_csub) scaleC) t src
+  let r_ = td_new (tdDim t)
+  withForeignPtr (tdTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdTensor t)
+         (\tPtr ->
+            withForeignPtr (tdTensor src)
+              (\srcPtr ->
+                 c_THDoubleTensor_csub rPtr tPtr scaleC srcPtr
+              )
+         )
+    )
+  pure r_
   where scaleC = realToFrac scale
 
 td_cmul :: TensorDouble -> TensorDouble -> TensorDouble
