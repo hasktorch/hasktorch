@@ -32,6 +32,7 @@ data S (shapeType :: Shape) where
 
 -- singleton machinery to apply a tensor transformation function to a layer
 
+-- l1apply :: (KnownNat o) => (TDS '[o] -> TDS '[o]) -> S ('L1 o) -> S ('L1 o)
 l1apply :: (KnownNat o) => (TDS '[o] -> TDS '[o]) -> S ('L1 o) -> S ('L1 o)
 l1apply f (S1L x) = S1L (f x)
 
@@ -50,7 +51,7 @@ l4apply f (S4L x) = S4L (f x)
 test :: forall l2 ltype . Sing l2 -> S ltype -> S ltype
 test = undefined
 
-lapply :: forall d l . SingI l => (TDS d -> TDS d) -> S l -> S l
+lapply :: forall d l . (SingI l) => (TDS d -> TDS d) -> S l -> S l
 lapply f layer = go (sing :: Sing l) layer
   where
     go :: forall l . SingI l => (Sing l) -> S l -> S l
@@ -137,9 +138,9 @@ instance UpdateLayer Tanh where
   updateLayer _ _ _ = Tanh
   createRandom = return Tanh
 
--- instance (a ~ b, SingI a) => Layer Tanh a b where
---   type Tape Tanh a b = S a
---   runForwards _ a = (a, tanh a)
---   runBackwards _ a g = ((), tanh' a * g)
-
--- tanh' t = 1 - s ^ (2 :: Int)  where s = tanh t
+instance (a ~ b, SingI a) => Layer Tanh a b where
+  type Tape Tanh a b = S a
+  runForwards _ a = (a, undefined)
+  runBackwards _ a g = ((), undefined)
+  -- runForwards _ a = (a, tanh a)
+  -- runBackwards _ a g = ((), tanh' a * g)
