@@ -1,6 +1,8 @@
 # hasktorch
 
-![CI Status](https://circleci.com/gh/austinvhuang/hasktorch/tree/master.svg?style=shield&circle-token=:9455d7cc953a58204f4d8dd683e9fa03fd5b2744)
+![ci Status][badge]
+
+[badge]: https://circleci.com/gh/austinvhuang/hasktorch/tree/master.svg?style=shield&circle-token=:9455d7cc953a58204f4d8dd683e9fa03fd5b2744
 
 A Haskell library for tensors and neural networks. Hasktorch uses the low-level
 [TorcH](https://github.com/pytorch/pytorch/tree/master/torch/lib/TH) C
