@@ -27,16 +27,16 @@ lmap :: forall d . (SingI d) => (TDS d -> TDS d) -> S d -> S d
 lmap f (S t) = S (f t)
 
 -- typeclass 1: layers can be updated and randomly instantiated
-class UpdateLayer layer where
-  type Gradient layer :: *
-  updateLayer :: LearningParameters -> layer -> Gradient layer -> layer
-  createRandom :: IO layer
+class UpdateLayer l where
+  type Gradient l :: *
+  updateLayer :: LearningParameters -> l -> Gradient l -> l
+  createRandom :: IO l
 
 -- typeclass 2: layers can be run forward and backward propagated
-class UpdateLayer x => Layer x (i :: [Nat]) (o :: [Nat]) where
-  type Tape x i o :: *
-  runForwards :: x -> S i -> (Tape x i o, S o)
-  runBackwards :: x -> Tape x i o -> S o -> (Gradient x, S i)
+class UpdateLayer l => Layer l (i :: [Nat]) (o :: [Nat]) where
+  type Tape oper i o :: *
+  runForwards :: l -> S i -> (Tape l i o, S o)
+  runBackwards :: l -> Tape l i o -> S o -> (Gradient l, S i)
 
 -- learning parameter values
 data LearningParameters = LearningParameters {
@@ -67,16 +67,12 @@ instance UpdateLayer Logit where
 
 instance (a ~ b, SingI a) => Layer Logit a b where
   type Tape Logit a b = S a
-  runForwards _ a = (a, undefined)
-  runBackwards _ a g = ((), undefined)
-  -- runForwards _ a = (a, logistic a)
-  -- runBackwards _ a g = ((), logistic' a * g)
+  runForwards _ input@(S it) = (input, S (tds_sigmoid it))
+  runBackwards _ input@(S it) grad@(S ot) = ((), S $ tds_cmul (tds_sigmoid' it) ot)
 
--- -- logistic :: Floating a => a -> a
--- -- logistic x = 1 / (1 + exp (-x))
--- -- logistic' x = (logistic x) * (1 - (logistic x))
+tds_sigmoid' t = tds_cmul (tds_sigmoid t) (1.0 -^ (tds_sigmoid t))
 
--- {- Tanh -}
+{- Tanh -}
 
 data Tanh = Tanh
   deriving Show
@@ -88,7 +84,8 @@ instance UpdateLayer Tanh where
 
 instance (a ~ b, SingI a) => Layer Tanh a b where
   type Tape Tanh a b = S a
-  runForwards _ a = (a, undefined)
-  runBackwards _ a g = ((), undefined)
-  -- runForwards _ a = (a, tanh a)
-  -- runBackwards _ a g = ((), tanh' a * g)
+  runForwards _ input@(S it) = (input, S (tds_tanh it))
+  runBackwards _ input@(S it) grad@(S ot) = ((), S (tds_cmul (tanh' it) ot))
+
+tanh' t = 1.0 -^ (tds_pow s 2.0)
+  where s = tds_tanh t

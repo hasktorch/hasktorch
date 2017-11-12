@@ -8,6 +8,8 @@ module StaticTensorDoubleMath (
 
   (^+^),
   (^-^),
+  (^*^),
+  (^/^),
   (!*),
   (^+),
   (^-),
@@ -136,6 +138,8 @@ instance SingI d => Num (TensorDoubleStatic d) where
 
 (^+^) t1 t2 = tds_cadd t1 1.0 t2
 (^-^) t1 t2 = tds_csub t1 1.0 t2
+(^*^) t1 t2 = tds_cmul t1 t2
+(^/^) t1 t2 = tds_cdiv t1 t2
 
 (^+) :: (Real p, SingI d) => TDS d -> p -> TDS d
 (^+) = tds_addConst
