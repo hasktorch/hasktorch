@@ -25,13 +25,17 @@ import THByteLapack
 
 w2cl = fromIntegral
 
+-- |Returns a function that accepts a tensor and fills it with specified value
+-- and returns the IO context with the mutated tensor
+fillRaw value = (flip c_THByteTensor_fill) (fromIntegral value)
+
 -- |Fill a raw Byte tensor with 0.0
 fillRaw0 :: TensorByteRaw -> IO (TensorByteRaw)
 fillRaw0 tensor = fillRaw 0 tensor >> pure tensor
 
 -- |Create a new (byte) tensor of specified dimensions and fill it with 0
-tl_new :: TensorDim Word -> TensorByte
-tl_new dims = unsafePerformIO $ do
+tb_new :: TensorDim Word -> TensorByte
+tb_new dims = unsafePerformIO $ do
   newPtr <- go dims
   fPtr <- newForeignPtr p_THByteTensor_free newPtr
   withForeignPtr fPtr fillRaw0

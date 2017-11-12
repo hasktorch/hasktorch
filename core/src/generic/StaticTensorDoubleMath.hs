@@ -132,7 +132,6 @@ instance SingI d => Num (TensorDoubleStatic d) where
   signum t = error "signum not defined for tensors"
   fromInteger t = error "signum not defined for tensors"
 
-
 (!*) :: (KnownNat c, KnownNat r) => (TDS '[r, c]) -> (TDS '[c]) -> (TDS '[r])
 (!*) m v = tds_mv m v
 
@@ -729,6 +728,33 @@ tds_cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
 -- tds_cmin :: (TDS d) -> (TDS d) -> (TDS d)
 tds_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 
+----------
+
+tds_equal :: SingI d => (TDS d) -> (TDS d) -> Bool
+tds_equal ta tb = unsafePerformIO $ do
+  res <- fromIntegral <$> withForeignPtr (tdsTensor ta)
+         (\taPtr ->
+             withForeignPtr (tdsTensor tb)
+               (\tbPtr ->
+                   pure $ c_THDoubleTensor_equal taPtr tbPtr
+               )
+         )
+  pure $ res == 1
+
+-- tds_geValue :: SingI d => (TDS d) -> (TDS d) -> Double -> Bool
+-- tds_geValue ta tb = unsafePerformIO $ do
+--   let res = tbs_new
+--   res <- fromIntegral <$> withForeignPtr (tdsTensor ta)
+--          (\taPtr ->
+--              withForeignPtr (tdsTensor tb)
+--                (\tbPtr ->
+--                    pure $ c_THDoubleTensor_geValue taPtr tbPtr
+--                )
+--          )
+--   pure $ res == 1
+
+
+
 
 test = do
   print("initialization")
@@ -749,3 +775,6 @@ test = do
   pure ()
 
   tds_p (tds_outer (tds_init 2.0) (tds_init 3.0) :: TDS '[3,2])
+
+  print $ tds_equal (tds_init 3.0 :: TDS '[4]) (tds_init 2.0 :: TDS '[4])
+  print $ tds_equal (tds_init 3.0 :: TDS '[4]) (tds_init 3.0 :: TDS '[4])
