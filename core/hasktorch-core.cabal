@@ -50,3 +50,21 @@ library
     , singletons >=2.3.1
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: tests/Spec.hs
+  hs-source-dirs:
+      tests/
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw
+    , hasktorch-interface
+    , microlens >=0.4.8.1
+    , singletons >=2.3.1
+    , text >=1.2.2.2
+    , typelits-witnesses >=0.2.3.0
+    , QuickCheck
+    , hspec
+    , hasktorch-core
+  default-language: Haskell2010

@@ -20,3 +20,13 @@ library:
   source-dirs:
   - src
   - src/generic
+
+tests:
+  spec:
+    main: tests/Spec.hs
+    source-dirs:
+      - tests/
+    dependencies:
+      - QuickCheck
+      - hspec
+      - hasktorch-core
