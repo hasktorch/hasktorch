@@ -1,0 +1,33 @@
+name: hasktorch-core
+version: '0.1.0.0'
+synopsis: Torch for tensors and neural networks in Haskell
+description: core abstractions wrapping raw TH bindings
+category: Tensors, Machine Learning
+author: Austin Huang
+license: BSD3
+github: austinvhuang/hasktorch
+
+dependencies:
+- base >=4.7 && <5
+- hasktorch-raw
+- hasktorch-interface
+- microlens >=0.4.8.1
+- singletons >=2.3.1
+- text >=1.2.2.2
+- typelits-witnesses >=0.2.3.0
+
+library:
+  source-dirs:
+  - src
+  - src/generic
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - tests
+      - tests/generic
+    dependencies:
+      - QuickCheck
+      - hspec
+      - hasktorch-core

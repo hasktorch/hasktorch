@@ -16,7 +16,6 @@ import TensorDoubleRandom
 import TensorRaw
 import Random
 import TensorTypes
-import TensorUtils
 
 data Weights = W {
   biases :: TensorDouble,

@@ -23,6 +23,7 @@ import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
+import Torch.Core.Internal (w2cl, i2cl)
 import TensorRaw
 import TensorTypes
 import THTypes
@@ -35,11 +36,6 @@ disp tensor =
 
 td_p = disp
 
-w2cl :: Word -> CLong
-w2cl = fromIntegral
-
-i2cl :: Integer -> CLong
-i2cl = fromIntegral
 
 td_get :: TensorDim Integer -> TensorDouble -> IO Double
 td_get loc tensor =

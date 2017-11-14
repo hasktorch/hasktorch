@@ -16,6 +16,7 @@ import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
+import Torch.Core.Internal (w2cl)
 import TensorRaw hiding (fillRaw, fillRaw0)
 import TensorTypes
 import THTypes
@@ -24,8 +25,6 @@ import THLongTensorMath
 import THLongLapack
 
 wrapLong tensor = TensorLong <$> (newForeignPtr p_THLongTensor_free tensor)
-
-w2cl = fromIntegral
 
 tl_get loc tensor =
    (withForeignPtr(tlTensor tensor) (\t ->

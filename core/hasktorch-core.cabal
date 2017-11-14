@@ -1,46 +1,78 @@
+-- This file has been generated from package.yaml by hpack version 0.18.1.
+--
+-- see: https://github.com/sol/hpack
+
 name:                hasktorch-core
 version:             0.1.0.0
 synopsis:            Torch for tensors and neural networks in Haskell
 description:         core abstractions wrapping raw TH bindings
 homepage:            https://github.com/austinvhuang/hasktorch#readme
+bug-reports:         https://github.com/austinvhuang/hasktorch/issues
 license:             BSD3
 author:              Austin Huang
-maintainer:          
-copyright:           
-category:            Web
+category:            Tensors, Machine Learning
 build-type:          Simple
-cabal-version:       >=1.10
-
-library
-  default-language:    Haskell2010
-  exposed-modules:   StaticTensorDouble
-                   , StaticTensorDoubleMath
-                   , StaticTensorDoubleRandom
-                   , TensorDouble
-                   , TensorDoubleLapack
-                   , TensorDoubleMath
-                   , TensorDoubleRandom
-                   , TensorRaw
-                   , TensorLong
-                   , TensorTypes
-                   , TensorUtils
-
-                   , Random
-
-                   , StorageTypes
-                   , StorageDouble
-
-  hs-source-dirs:      src, src/generic
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch-raw
-                     , hasktorch-interface
-                     , microlens >= 0.4.8.1
-                     , singletons >= 2.3.1
-                     , text >= 1.2.2.2
-                     , typelits-witnesses >= 0.2.3.0
+cabal-version:       >= 1.10
 
 source-repository head
-  type:     git
+  type: git
   location: https://github.com/austinvhuang/hasktorch
 
-  
+library
+  default-language: Haskell2010
+  exposed-modules:
+      LogAdd
+      Random
+      StorageTypes
+      TensorRaw
+      TensorTypes
+      Torch.Core.Internal
+      Torch.Core.Tensor.Index
+      Torch.Core.Tensor.Raw
+      StaticTensorByte
+      StaticTensorDouble
+      StaticTensorDoubleMath
+      StaticTensorDoubleRandom
+      StorageDouble
+      TensorByte
+      TensorDouble
+      TensorDoubleLapack
+      TensorDoubleMath
+      TensorDoubleRandom
+      TensorLong
+  other-modules:
+      Paths_hasktorch_core
+  hs-source-dirs:
+      src
+      src/generic
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw
+    , hasktorch-interface
+    , microlens >=0.4.8.1
+    , singletons >=2.3.1
+    , text >=1.2.2.2
+    , typelits-witnesses >=0.2.3.0
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs:
+      tests
+      tests/generic
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw
+    , hasktorch-interface
+    , microlens >=0.4.8.1
+    , singletons >=2.3.1
+    , text >=1.2.2.2
+    , typelits-witnesses >=0.2.3.0
+    , QuickCheck
+    , hspec
+    , hasktorch-core
+  other-modules:
+      Orphans
+      TensorRawSpec
+      Torch.Core.Tensor.RawSpec
+  default-language: Haskell2010

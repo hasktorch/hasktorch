@@ -23,7 +23,6 @@ import System.IO.Unsafe (unsafePerformIO)
 import TensorDouble
 import TensorRaw
 import TensorTypes
-import TensorUtils
 import Random
 
 import THTypes

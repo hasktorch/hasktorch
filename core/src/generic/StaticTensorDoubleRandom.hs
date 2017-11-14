@@ -26,7 +26,6 @@ import StaticTensorDouble
 import TensorDouble
 import TensorRaw
 import TensorTypes
-import TensorUtils
 import Random
 
 import THTypes

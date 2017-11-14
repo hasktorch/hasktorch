@@ -28,6 +28,7 @@ import Foreign.C.Types (CLong)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 import System.IO.Unsafe (unsafePerformIO)
 
+import Torch.Core.Internal (w2cl)
 import TensorRaw
 import TensorDouble
 import TensorTypes
@@ -45,10 +46,6 @@ class StaticTensor t where
   tds_init :: Double -> t
   -- |Display tensor
   tds_p ::  t -> IO ()
-
--- |Convert word to CLong
-w2cl :: Word -> CLong
-w2cl = fromIntegral
 
 -- |Runtime type-level check of # dimensions
 dimCheck :: Monad m => TensorDim Word -> Integer -> m ()

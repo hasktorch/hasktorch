@@ -23,6 +23,7 @@ dependencies:
 
 test:
   override:
+    - stack test hasktorch-core
     - stack test hasktorch-tests:test-torch
     - stack test hasktorch-tests:memory-test
     - stack test hasktorch-tests:tensor-test

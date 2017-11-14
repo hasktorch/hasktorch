@@ -12,7 +12,6 @@ import StaticTensorDoubleRandom
 import TensorDouble
 import Random
 import TensorTypes
-import TensorUtils
 
 import Data.Singletons
 import Data.Singletons.Prelude
