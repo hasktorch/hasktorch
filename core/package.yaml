@@ -23,9 +23,10 @@ library:
 
 tests:
   spec:
-    main: tests/Spec.hs
+    main: Spec.hs
     source-dirs:
-      - tests/
+      - tests
+      - tests/generic
     dependencies:
       - QuickCheck
       - hspec
