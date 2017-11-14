@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module TensorByte (
-  tb_new
+module TensorByte
+  ( tb_new
+  , fillRaw
+  , fillRaw0
   ) where
 
 import Foreign
@@ -12,16 +14,13 @@ import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
+import Torch.Core.Internal
 import TensorRaw hiding (fillRaw, fillRaw0)
 import TensorTypes
 import THTypes
 import THByteTensor
 import THByteTensorMath
 import THByteLapack
-
-
-w2cl :: Word -> CLong
-w2cl = fromIntegral
 
 
 -- | Returns a function that accepts a tensor and fills it with specified value
