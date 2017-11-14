@@ -26,7 +26,7 @@ library
       StorageTypes
       TensorRaw
       TensorTypes
-      TensorUtils
+      Torch.Core.Internal
       StaticTensorDouble
       StaticTensorDoubleMath
       StaticTensorDoubleRandom
