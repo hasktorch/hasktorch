@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eu
 
 stack build hasktorch-codegen || {
   echo "can't build torch-codegen, exiting early"
