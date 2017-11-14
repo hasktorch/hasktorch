@@ -1,10 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ForeignFunctionInterface#-}
-
-module TensorLong (
+module TensorByte (
   tb_new
-  )
-where
+  ) where
 
 import Foreign
 import Foreign.C.Types
@@ -23,31 +20,36 @@ import THByteTensorMath
 import THByteLapack
 
 
+w2cl :: Word -> CLong
 w2cl = fromIntegral
 
--- |Returns a function that accepts a tensor and fills it with specified value
--- and returns the IO context with the mutated tensor
-fillRaw value = (flip c_THByteTensor_fill) (fromIntegral value)
 
--- |Fill a raw Byte tensor with 0.0
-fillRaw0 :: TensorByteRaw -> IO (TensorByteRaw)
-fillRaw0 tensor = fillRaw 0 tensor >> pure tensor
+-- | Returns a function that accepts a tensor and fills it with specified value
+-- and returns the IO context with the mutated tensor.
+fillRaw :: Int8 -> TensorByteRaw -> IO ()
+fillRaw v = flip c_THByteTensor_fill (CChar v)
 
--- |Create a new (byte) tensor of specified dimensions and fill it with 0
+
+-- | Fill a raw Byte tensor with 0.0
+fillRaw0 :: TensorByteRaw -> IO TensorByteRaw
+fillRaw0 t = fillRaw 0 t >> pure t
+
+
+-- | Create a new (byte) tensor of specified dimensions and fill it with 0
 tb_new :: TensorDim Word -> TensorByte
 tb_new dims = unsafePerformIO $ do
   newPtr <- go dims
   fPtr <- newForeignPtr p_THByteTensor_free newPtr
   withForeignPtr fPtr fillRaw0
-  pure $ TensorByte fPtr dims
+  pure (TensorByte fPtr dims)
   where
+    wrap :: Ptr CTHByteTensor -> IO (ForeignPtr CTHByteTensor)
     wrap ptr = newForeignPtr p_THByteTensor_free ptr
-    go D0 = c_THByteTensor_new
-    go (D1 d1) = c_THByteTensor_newWithSize1d $ w2cl d1
-    go (D2 (d1, d2)) = c_THByteTensor_newWithSize2d
-                    (w2cl d1) (w2cl d2)
-    go (D3 (d1, d2, d3)) = c_THByteTensor_newWithSize3d
-                       (w2cl d1) (w2cl d2) (w2cl d3)
-    go (D4 (d1, d2, d3, d4)) = c_THByteTensor_newWithSize4d
-                          (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+
+    go :: TensorDim Word -> IO (Ptr CTHByteTensor)
+    go  D0                   = c_THByteTensor_new
+    go (D1 d1)               = c_THByteTensor_newWithSize1d (w2cl d1)
+    go (D2 (d1, d2))         = c_THByteTensor_newWithSize2d (w2cl d1) (w2cl d2)
+    go (D3 (d1, d2, d3))     = c_THByteTensor_newWithSize3d (w2cl d1) (w2cl d2) (w2cl d3)
+    go (D4 (d1, d2, d3, d4)) = c_THByteTensor_newWithSize4d (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
 
