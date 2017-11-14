@@ -1,6 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
 module TensorRaw (
-  tmap,
   dimFromRaw,
   dispRaw,
   fillRaw,
@@ -13,9 +11,6 @@ module TensorRaw (
   TensorLongRaw
   ) where
 
-import Data.Maybe (fromJust)
-import Debug.Trace
-
 import Foreign (Ptr)
 import Foreign.C.Types (CLong, CDouble, CInt)
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, mallocForeignPtrArray, newForeignPtr)
@@ -25,43 +20,14 @@ import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad (forM_)
 
 import Torch.Core.Internal (w2cl, onDims)
+import Torch.Core.Tensor.Index (TIdx(..))
 import THTypes (CTHDoubleTensor, CTHGenerator)
-import TensorTypes (TensorDim(..), TensorDoubleRaw, TensorLongRaw, TIdx(..), (^.), _1, _2, _3, _4)
+import TensorTypes (TensorDim(..), TensorDoubleRaw, TensorLongRaw, (^.), _1, _2, _3, _4)
 
 import qualified THDoubleTensor as T
 import qualified THDoubleTensorMath as M (c_THDoubleTensor_sigmoid, c_THDoubleTensor_fill)
 import qualified THDoubleTensorRandom as R (c_THDoubleTensor_uniform)
 import qualified THRandom as R (c_THGenerator_new)
-
-
--- | Map across a C TH Tensor -- this _could_ be rolled into Data.Foldable.toList
-tmap :: (CDouble -> b) -> Ptr CTHDoubleTensor -> [b]
-tmap f tensor =
-  case length size of
-    0 -> mempty
-    1 -> fmap (\t -> f (T.c_THDoubleTensor_get1d tensor (t ^. _1))) indexes
-    2 -> fmap (\t -> f (T.c_THDoubleTensor_get2d tensor (t ^. _1) (t ^. _2))) indexes
-    3 -> fmap (\t -> f (T.c_THDoubleTensor_get3d tensor (t ^. _1) (t ^. _2) (t ^. _3))) indexes
-    4 -> fmap (\t -> f (T.c_THDoubleTensor_get4d tensor (t ^. _1) (t ^. _2) (t ^. _3) (t ^. _4))) indexes
-    _ -> undefined
-  where
-    size :: [Int]
-    size = fmap (fromIntegral . T.c_THDoubleTensor_size tensor) [0 .. T.c_THDoubleTensor_nDimension tensor - 1]
-
-    indexes :: [TIdx CLong]
-    indexes = idx size
-
-    range :: Integral i => Int -> [i]
-    range mx = [0 .. fromIntegral mx - 1]
-
-    idx :: [Int] -> [TIdx CLong]
-    idx = \case
-      []               -> [I0]
-      [nx]             -> [I1 x | x <- range nx ]
-      [nx, ny]         -> [I2 x y | x <- range nx, y <- range ny ]
-      [nx, ny, nz]     -> [I3 x y z | x <- range nx, y <- range ny, z <- range nz]
-      [nx, ny, nz, nq] -> [I4 x y z q | x <- range nx, y <- range ny, z <- range nz, q <- range nq]
-      _ -> error "should not be run"
 
 
 -- |displaying raw tensor values
@@ -70,8 +36,12 @@ dispRaw tensor
   | (length sz) == 0 = putStrLn "Empty Tensor"
   | (length sz) == 1 = do
       putStrLn ""
+      let indexes = [ fromIntegral idx :: CLong
+                    | idx <- [0..(sz !! 0 - 1)] ]
       putStr "[ "
-      forM_ indexes (\idx -> putStr $ (showLim $ T.c_THDoubleTensor_get1d tensor idx) ++ " ")
+      mapM_ (\idx -> putStr $
+                     (showLim $ T.c_THDoubleTensor_get1d tensor idx) ++ " ")
+        indexes
       putStrLn "]\n"
   | (length sz) == 2 = do
       putStrLn ""
@@ -92,12 +62,6 @@ dispRaw tensor
             ) pairs
   | otherwise = putStrLn "Can't print this yet."
   where
-    sz :: [Int]
-    sz = size tensor
-
-    indexes :: [CLong]
-    indexes = [ fromIntegral idx | idx <- [0..(sz !! 0 - 1)] ]
-
     size :: Ptr CTHDoubleTensor -> [Int]
     size t =
       fmap f [0..maxdim]
@@ -107,6 +71,9 @@ dispRaw tensor
 
     showLim :: RealFloat a => a -> String
     showLim x = showGFloat (Just 2) x ""
+
+    sz :: [Int]
+    sz = size tensor
 
 -- |randomly initialize a tensor with uniform random values from a range
 -- TODO - finish implementation to handle sizes correctly
@@ -167,13 +134,12 @@ sizeRaw t =
 -- |Dimensions of a raw tensor as a TensorDim value
 dimFromRaw :: TensorDoubleRaw -> TensorDim Word
 dimFromRaw raw =
-  case length sz of
-    0 -> D0
-    1 -> D1  (getN 0)
-    2 -> D2 ((getN 0), (getN 1))
-    3 -> D3 ((getN 0), (getN 1), (getN 2))
-    4 -> D4 ((getN 0), (getN 1), (getN 2), (getN 3))
-    _ -> undefined -- TODO - make this safe
+  case (length sz) of 0 -> D0
+                      1 -> D1 (getN 0)
+                      2 -> D2 ((getN 0), (getN 1))
+                      3 -> D3 ((getN 0), (getN 1), (getN 2))
+                      4 -> D4 ((getN 0), (getN 1), (getN 2), (getN 3))
+                      _ -> undefined -- TODO - make this safe
   where
     sz :: [Int]
     sz = sizeRaw raw

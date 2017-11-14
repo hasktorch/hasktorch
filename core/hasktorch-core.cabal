@@ -27,6 +27,9 @@ library
       TensorRaw
       TensorTypes
       Torch.Core.Internal
+      Torch.Core.Tensor.Index
+      Torch.Core.Tensor.Raw
+      StaticTensorByte
       StaticTensorDouble
       StaticTensorDoubleMath
       StaticTensorDoubleRandom
@@ -69,5 +72,7 @@ test-suite spec
     , hspec
     , hasktorch-core
   other-modules:
+      Orphans
       TensorRawSpec
+      Torch.Core.Tensor.RawSpec
   default-language: Haskell2010
