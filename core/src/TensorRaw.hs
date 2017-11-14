@@ -22,7 +22,7 @@ import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
--- import TensorTypes
+import Torch.Core.Internal (w2cl)
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
@@ -84,7 +84,6 @@ randInitRawTest = do
   gen <- c_THGenerator_new
   mapM_ (\_ -> dispRaw =<< (randInitRaw gen (D2 (2, 2)) (-1.0) 3.0)) [0..10]
 
-w2cl = fromIntegral
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 -- safe version

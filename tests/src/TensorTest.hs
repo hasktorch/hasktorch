@@ -6,7 +6,6 @@ import TensorDoubleMath
 import TensorDoubleRandom
 import Random
 import TensorTypes
-import TensorUtils
 
 -- TODO : move raw tests elsewhere?
 import TensorRaw
