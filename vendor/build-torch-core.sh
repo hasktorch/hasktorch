@@ -1,11 +1,13 @@
-#!/bin/bash -eu
+#!/usr/bin/env bash
+set -eu
 
 # rm -rf ./build
 mkdir -p ./build
 # mkdir -p ./build-THS
 # mkdir -p ./build-THNN
 
-if [ "$(uname)" == "Darwin" ]; then
+case "$(uname)" in
+  "Darwin")
     if ! [ -x "$(command -v gcc-6)" ]; then
         echo 'Error: gcc-6 is not installed, use homebrew to install it.' >&2
         exit 1
@@ -13,7 +15,9 @@ if [ "$(uname)" == "Darwin" ]; then
     echo "Running as OSX ..."
     CXX=g++-6
     CC=gcc-6
-elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+    ;;
+
+  "Linux")
     if ! [ -x "$(command -v gcc)" ]; then
         echo 'Error: gcc is not installed.' >&2
         exit 1
@@ -21,10 +25,22 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     echo "Running as Linux ..."
     CXX=g++
     CC=gcc
-else
+    ;;
+
+  "FreeBSD")
+    if ! [ -x "$(command -v gcc)" ]; then
+        echo 'Error: gcc is not installed.' >&2
+        exit 1
+    fi
+    echo "Running as FreeBSD..."
+    CXX=g++
+    CC=gcc
+    ;;
+  *)
     echo "Unknown OS"
-    exit
-fi
+    exit 1
+    ;;
+  esac
 
 echo "Compilers:"
 echo "  $CXX"
