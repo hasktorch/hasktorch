@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE ConstraintKinds       #-}
 
 module Layer where
 
@@ -28,9 +29,7 @@ import Data.Singletons.TypeLits
 data S (d :: [Nat]) where
   S :: TDS d -> S d
 
--- class constraint for a type-level list of shapes
-class KnownShapes (ns :: [[Nat]]) where
-  natsVal  :: p ns -> [[Integer]]
+type KnownShapes (ns :: [[Nat]]) = SingI ns
 
 -- fmap-like application to layer applies it to the associated tensor
 lmap :: forall d . (SingI d) => (TDS d -> TDS d) -> S d -> S d
@@ -64,7 +63,7 @@ instance Show (Network '[] '[i]) where
 instance (Show x, Show (Network xs rs)) => Show (Network (x ': xs) (i ': rs)) where
   show (x :~ xs) = show x ++ "\n~\n" ++ show xs
 
-runNetwork :: forall layers shapes . KnownShapes shapes =>
+runNetwork :: forall layers shapes . SingI (shapes :: [[Nat]]) =>
               Network layers shapes -> S (Head shapes)
            -> (Tapes layers shapes, S (Last shapes))
 runNetwork = go
@@ -76,7 +75,7 @@ runNetwork = go
             (tapes, answer) = go n forward
     go NNil x = (TNil, x)
 
-runGradient :: forall layers shapes . KnownShapes shapes =>
+runGradient :: forall layers shapes . SingI (shapes :: [[Nat]]) =>
                Network layers shapes -> Tapes layers shapes -> S (Last shapes)
             -> (Gradients layers, S (Head shapes))
 runGradient net tapes o = go net tapes
