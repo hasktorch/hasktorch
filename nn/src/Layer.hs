@@ -19,7 +19,6 @@ import Data.Singletons
 import Data.Singletons.Prelude
 import Data.Singletons.Prelude.List
 import Data.Singletons.TypeLits
-import GHC.TypeLits.List
 
 --
 -- Layer representation
@@ -89,6 +88,16 @@ runGradient net tapes o = go net tapes
             (layer', backGrad) = runBackwards layer tape feed
     go NNil TNil = (GNil, o)
 
+data Gradients :: [*] -> * where
+   GNil  :: Gradients '[]
+   (:/>) :: UpdateLayer x =>
+            Gradient x -> Gradients xs -> Gradients (x : xs)
+
+data Tapes :: [*] -> [[Nat]] -> * where
+   TNil  :: SingI i => Tapes '[] '[i]
+   (:\>) :: (SingI i, SingI h, Layer x i h) =>
+         (Tape x i h) -> (Tapes xs (h : hs)) -> Tapes (x : xs) (i : h : hs)
+
 --
 -- Learning parameters
 --
@@ -154,16 +163,6 @@ instance (din ~ dout, SingI din) => Layer Relu (din :: [Nat]) (dout :: [Nat]) wh
   runBackwards _ (S y) (S dEdy) = ((), S (tds_cmul (relu' y) dEdy))
     where
       relu' t = undefined
-
-data Gradients :: [*] -> * where
-   GNil  :: Gradients '[]
-   (:/>) :: UpdateLayer x =>
-            Gradient x -> Gradients xs -> Gradients (x ': xs)
-
-data Tapes :: [*] -> [[Nat]] -> * where
-   TNil  :: SingI i => Tapes '[] '[i]
-   (:\>) :: (SingI i, SingI h, Layer x i h) =>
-         (Tape x i h) -> (Tapes xs (h ': hs)) -> Tapes (x ': xs) (i ': h ': hs)
 
 {- Tests -}
 
