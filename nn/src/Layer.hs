@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module Layer where
 
@@ -137,7 +138,7 @@ instance UpdateLayer Tanh where
   updateLayer _ _ _ = Tanh
   createRandom = return Tanh
 
-instance (din ~ dout, SingI din) => Layer Tanh (din :: [Nat]) (dout :: [Nat]) where
+instance (din ~ dout, SingI (din :: [Nat]))  => Layer Tanh (din :: [Nat]) (dout :: [Nat]) where
   type Tape Tanh din dout = S din
   runForwards _ input@(S it) = (input, S (tds_tanh it))
   runBackwards _ input@(S it) grad@(S ot) = ((), S (tds_cmul (tanh' it) ot))
@@ -156,15 +157,51 @@ instance UpdateLayer Relu where
 
 instance (din ~ dout, SingI din) => Layer Relu (din :: [Nat]) (dout :: [Nat]) where
   type Tape Relu din dout = S din
-  runForwards _ (S y) = (S y, S(relu y))
+  runForwards _ (S y) = (S y, S (relu y))
     where
       relu t = undefined
   runBackwards _ (S y) (S dEdy) = ((), S (tds_cmul (relu' y) dEdy))
     where
       relu' t = undefined
 
+{- Fully Connected -}
+
+data FullyConnected i o = FullyConnected
+                        (FullyConnected' i o)   -- Neuron weights
+                        (FullyConnected' i o)   -- Neuron momentum
+
+data FullyConnected' i o = FullyConnected'
+                         (TDS '[o])   -- Bias
+                         (TDS '[o, i]) -- Activations
+
+instance (KnownNat i, KnownNat o) => UpdateLayer (FullyConnected i o) where
+  type Gradient (FullyConnected i o) = (FullyConnected' i o)
+  updateLayer (p@LearningParameters{..})
+    (FullyConnected (FullyConnected' oldBias oldActivations)
+                    (FullyConnected' oldBiasMomentum oldMomentum))
+    (FullyConnected' biasGradient activationGradient) =
+      FullyConnected (FullyConnected' newBias newActivations)
+                     (FullyConnected' newBiasMomentum newMomentum)
+    where
+      gdVector = undefined
+      gdMatrix = undefined
+      (newBias, newBiasMomentum)    = gdVector p -- TODO
+      (newActivations, newMomentum) = gdMatrix p -- TODO
+  createRandom = undefined
+
+instance (KnownNat din, KnownNat dout) =>
+  Layer (FullyConnected din dout) '[din] '[dout] where
+  type Tape (FullyConnected din dout) '[din] '[dout] = S '[din]
+  runForwards (FullyConnected (FullyConnected' wB wN) _) (S v) =
+    (S v, S (wB ^+^ (wN !* v)))
+  runBackwards (FullyConnected (FullyConnected' _ wN) _) (S x) (S dEdy) =
+          let wB'  = dEdy
+              mm'  = dEdy `tds_outer` x
+              dWs  = (tds_trans wN) !* dEdy
+          in  (FullyConnected' wB' mm', S dWs)
+
 {- Tests -}
 
 type Net0 = Network '[ ]             '[ ]
 type Net1 = Network '[ Logit ]       '[ '[1] ]
-type Net2 = Network '[ Logit, Tanh ] '[ '[1], '[5] ]
+type Net2 = Network '[ (FullyConnected 4 1), Logit, Tanh ] '[ '[4], '[1], '[5] ]
