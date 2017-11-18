@@ -25,10 +25,25 @@ contributing developers at the current time.**
 | [`tools/`][tools] | Misc tools
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C and other libraries)
 
-## Build Instructions
+## Automated Build Instructions (Recommended)
 
-Currently building hasktorch is only supported on OSX and linux. To start,
-retrieve git submodules (includes TorcH library) with:
+Currently building hasktorch is only supported on OSX and linux.
+
+The easy way to build is to use the Makefile:
+
+```
+make init
+```
+
+This should retrieve submodules including TorcH library dependencies, build
+them, build hasktorch itself, then run tests.
+
+Alternatively, these steps can be done manually as described in the following
+section.
+
+## Manual Build Instructions
+
+To start, retrieve git submodules (includes TorcH library) with:
 
 ```
 git submodule update --init --recursive

@@ -167,8 +167,8 @@ instance (din ~ dout, SingI din) => Layer Relu (din :: [Nat]) (dout :: [Nat]) wh
 {- Fully Connected -}
 
 data FullyConnected i o = FullyConnected
-                        (FullyConnected' i o)   -- Neuron weights
-                        (FullyConnected' i o)   -- Neuron momentum
+                        (FullyConnected' i o)   -- weights
+                        (FullyConnected' i o)   -- momentum
 
 data FullyConnected' i o = FullyConnected'
                          (TDS '[o])   -- Bias
