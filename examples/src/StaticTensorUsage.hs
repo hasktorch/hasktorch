@@ -3,10 +3,10 @@
 
 module Main where
 
-import Random (newRNG)
-import StaticTensorDouble
-import StaticTensorDoubleMath
-import StaticTensorDoubleRandom (tds_uniform)
+import Torch.Core.Random (newRNG)
+import Torch.Core.Tensor.Static.Double
+import Torch.Core.Tensor.Static.DoubleMath
+import Torch.Core.Tensor.Static.DoubleRandom (tds_uniform)
 
 transformations = do
   putStrLn "\nExample bulk tensor transformations"
@@ -38,11 +38,11 @@ matrixVectorOps = do
   putStrLn "\nConstant vector:"
   tds_p constVec
   putStrLn "\nMatrix x vector:"
-  tds_p $ randMat !* constVec 
+  tds_p $ randMat !* constVec
   putStrLn "\nVector outer product:"
-  tds_p $ constVec `tds_outer` constVec 
+  tds_p $ constVec `tds_outer` constVec
   putStrLn "\nVector dot product:"
-  print $ constVec <.> constVec 
+  print $ constVec <.> constVec
   putStrLn "\nMatrix trace:"
   print $ tds_trace randMat
   pure ()

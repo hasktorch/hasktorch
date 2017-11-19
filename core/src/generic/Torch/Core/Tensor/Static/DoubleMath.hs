@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module StaticTensorDoubleMath (
+module Torch.Core.Tensor.Static.DoubleMath (
 
   (^+^),
   (^-^),
@@ -112,14 +112,14 @@ import Foreign.C.Types (CLong, CDouble, CInt)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 import System.IO.Unsafe (unsafePerformIO)
 
-import TensorRaw
-import TensorDouble
-import TensorLong
-import TensorTypes
+import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types
+import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Long
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
-import StaticTensorDouble
+import Torch.Core.Tensor.Static.Double
 
 {- Operators -}
 

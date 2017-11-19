@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module StaticTensorDouble (
+module Torch.Core.Tensor.Static.Double (
   tds_dim,
   tds_new,
   tds_init,
@@ -29,9 +29,9 @@ import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl)
-import TensorRaw
-import TensorDouble
-import TensorTypes
+import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath

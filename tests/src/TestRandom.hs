@@ -16,8 +16,8 @@ import THRandom
 import Foreign.C.Types
 import Test.Hspec
 
-import TensorRaw
-import TensorTypes
+import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types
 -- import TensorRandom
 
 testsDouble = do

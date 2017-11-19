@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Torch.Core.Math.LogAdd
+module Torch.Core.LogAdd
   ( logAdd
   , logSub
   , expMinusApprox

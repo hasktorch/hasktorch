@@ -1,9 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Torch.Core.Math.LogSpec (spec) where
+module Torch.Core.LogAddSpec (spec) where
 
 import Test.Hspec
 import Test.QuickCheck
-import Torch.Core.Math.LogAdd
+import Torch.Core.LogAdd
 
 
 main :: IO ()

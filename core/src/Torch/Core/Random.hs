@@ -1,4 +1,4 @@
-module Random (
+module Torch.Core.Random (
   RandGen(..),
   newRNG,
   seed,
@@ -21,8 +21,8 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import TensorRaw
-import TensorTypes
+import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types
 import THTypes
 import THRandom
 import THDoubleTensor

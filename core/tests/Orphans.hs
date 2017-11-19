@@ -3,7 +3,7 @@ module Orphans where
 
 import Test.QuickCheck
 
-import TensorTypes (TensorDim(..))
+import Torch.Core.Tensor.Types (TensorDim(..))
 
 instance (Ord a, Num a, Arbitrary a) => Arbitrary (TensorDim a) where
   arbitrary = do

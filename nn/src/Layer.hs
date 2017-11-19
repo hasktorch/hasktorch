@@ -10,12 +10,12 @@
 
 module Layer where
 
-import StaticTensorDouble
-import StaticTensorDoubleMath
-import StaticTensorDoubleRandom
-import TensorDouble
-import Random
-import TensorTypes
+import Torch.Core.Tensor.Static.Double
+import Torch.Core.Tensor.Static.DoubleMath
+import Torch.Core.Tensor.Static.DoubleRandom
+import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Types
+import Torch.Core.Random
 
 import Data.Singletons
 import Data.Singletons.Prelude

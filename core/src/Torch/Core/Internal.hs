@@ -8,7 +8,7 @@ module Torch.Core.Internal
 
 import Foreign (Word, Ptr)
 import Foreign.C.Types (CLong)
-import TensorTypes (TensorDim(..))
+import Torch.Core.Tensor.Types (TensorDim(..))
 import Numeric (showGFloat)
 
 w2cl :: Word -> CLong

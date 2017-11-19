@@ -21,27 +21,25 @@ source-repository head
 library
   default-language: Haskell2010
   exposed-modules:
-      LogAdd
-      Random
-      StorageTypes
-      TensorRaw
-      TensorTypes
       Torch.Core.Exceptions
       Torch.Core.Internal
-      Torch.Core.Math.LogAdd
+      Torch.Core.LogAdd
+      Torch.Core.Random
+      Torch.Core.StorageTypes
       Torch.Core.Tensor.Index
       Torch.Core.Tensor.Raw
-      StaticTensorByte
-      StaticTensorDouble
-      StaticTensorDoubleMath
-      StaticTensorDoubleRandom
-      StorageDouble
-      TensorByte
-      TensorDouble
-      TensorDoubleLapack
-      TensorDoubleMath
-      TensorDoubleRandom
-      TensorLong
+      Torch.Core.Tensor.Types
+      Torch.Core.StorageDouble
+      Torch.Core.Tensor.Byte
+      Torch.Core.Tensor.Double
+      Torch.Core.Tensor.DoubleLapack
+      Torch.Core.Tensor.DoubleMath
+      Torch.Core.Tensor.DoubleRandom
+      Torch.Core.Tensor.Long
+      Torch.Core.Tensor.Static.Byte
+      Torch.Core.Tensor.Static.Double
+      Torch.Core.Tensor.Static.DoubleMath
+      Torch.Core.Tensor.Static.DoubleRandom
   other-modules:
       Paths_hasktorch_core
   hs-source-dirs:
@@ -78,5 +76,6 @@ test-suite spec
   other-modules:
       Orphans
       TensorRawSpec
+      Torch.Core.LogAddSpec
       Torch.Core.Tensor.RawSpec
   default-language: Haskell2010
