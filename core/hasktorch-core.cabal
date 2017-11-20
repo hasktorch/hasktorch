@@ -30,6 +30,7 @@ library
       Torch.Core.Tensor.Raw
       Torch.Core.Tensor.Types
       Torch.Core.StorageDouble
+      Torch.Core.Tensor
       Torch.Core.Tensor.Byte
       Torch.Core.Tensor.Double
       Torch.Core.Tensor.DoubleLapack
