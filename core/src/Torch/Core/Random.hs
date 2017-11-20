@@ -21,6 +21,7 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
+import Torch.Core.Internal
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import THTypes
@@ -84,8 +85,7 @@ apply1Double gen arg1 cFun = do
     arg1C = realToFrac arg1
     fun = (flip cFun) arg1C
 
-apply1Int :: RandGen -> Double -> Arg1IntFun
-          -> IO Int
+apply1Int :: RandGen -> Double -> Arg1IntFun -> IO Int
 apply1Int gen arg1 cFun = do
   value <- applyGen fun gen
   pure (fromIntegral value)
@@ -94,15 +94,13 @@ apply1Int gen arg1 cFun = do
     fun = (flip cFun) arg1C
 
 random :: RandGen -> IO Int
-random gen = do
-  value <- applyGen c_THRandom_random gen
-  pure ((fromIntegral value) :: Int)
+random gen = fromIntegral <$> applyGen c_THRandom_random gen
 
 uniform :: RandGen -> Double -> Double -> IO Double
 uniform gen lower upper = apply2Double gen lower upper c_THRandom_uniform
 
-normal :: RandGen -> Double -> Double -> IO Double
-normal gen mean stdev = apply2Double gen mean stdev c_THRandom_normal
+normal :: RandGen -> Double -> Positive Double -> IO Double
+normal gen mean stdev = apply2Double gen mean (fromPositive stdev) c_THRandom_normal
 
 exponential :: RandGen -> Double -> IO Double
 exponential gen lambda = apply1Double gen lambda c_THRandom_exponential

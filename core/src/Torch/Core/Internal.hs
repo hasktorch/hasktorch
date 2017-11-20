@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Core.Internal
   ( w2cl
   , i2cl
@@ -6,6 +7,10 @@ module Torch.Core.Internal
   , showLim
   , genOp1
   , genOp2
+
+  , Positive
+  , mkPositive
+  , fromPositive
   ) where
 
 import Foreign (Word, Ptr)
@@ -49,4 +54,17 @@ genOp1 thop a = realToFrac $ thop (realToFrac a)
 genOp2 :: (Real a, Fractional b) => (CDouble -> CDouble -> CDouble) -> a -> a -> b
 genOp2 thop a b = realToFrac $ thop (realToFrac a) (realToFrac b)
 
+
+-- ========================================================================= --
+
+newtype Positive n = Positive { unPositive :: n }
+  deriving (Eq, Ord, Show, Num, Fractional)
+
+mkPositive :: (Ord n, Num n) => n -> Maybe (Positive n)
+mkPositive n
+  | n < 0 = Nothing
+  | otherwise = Just (Positive n)
+
+fromPositive :: Positive n -> n
+fromPositive = unPositive
 
