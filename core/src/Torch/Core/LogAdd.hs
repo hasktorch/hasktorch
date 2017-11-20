@@ -10,6 +10,7 @@ import Foreign.C.Types (CDouble)
 import THLogAdd
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.Core.Exceptions
+import Torch.Core.Internal (genOp1, genOp2)
 
 -- | Add two log values, calling out to TH
 logAdd :: (Real a, Fractional b) => a -> a -> b
@@ -27,16 +28,6 @@ logSub log_a log_b =
 -- | Subtract two log values, calling out to TH
 unsafeLogSub :: forall a b . (Real a, Fractional b) => a -> a -> b
 unsafeLogSub a b = unsafePerformIO (logSub a b :: IO b)
-
-
--- | generic function for operators in this module
-genOp2 :: (Real a, Fractional b) => (CDouble -> CDouble -> CDouble) -> a -> a -> b
-genOp2 thop a b = realToFrac $ thop (realToFrac a) (realToFrac b)
-
-
--- | generic function for operators in this module
-genOp1 :: (Real a, Fractional b) => (CDouble -> CDouble) -> a -> b
-genOp1 thop a = realToFrac $ thop (realToFrac a)
 
 
 expMinusApprox :: (Real a, Fractional b) => a -> b

@@ -119,17 +119,3 @@ geometric gen p = apply1Int gen p c_THRandom_geometric
 bernoulli :: RandGen -> Double -> IO Int
 bernoulli gen p = apply1Int gen p c_THRandom_bernoulli
 
--- |Check that seeds work as intended
-test = do
-  rng <- newRNG
-  manualSeed rng 332323401
-  val1 <- normal rng 0.0 1000.0
-  val2 <- normal rng 0.0 1000.0
-  print val1
-  print val2
-  print (val1 /= val2)
-  manualSeed rng 332323401
-  manualSeed rng 332323401
-  val3 <- normal rng 0.0 1000.0
-  print val3
-  print (val1 == val3)

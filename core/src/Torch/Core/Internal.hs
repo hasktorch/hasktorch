@@ -4,10 +4,12 @@ module Torch.Core.Internal
   , i2cl
   , onDims
   , showLim
+  , genOp1
+  , genOp2
   ) where
 
 import Foreign (Word, Ptr)
-import Foreign.C.Types (CLong)
+import Foreign.C.Types (CLong, CDouble)
 import Torch.Core.Tensor.Types (TensorDim(..))
 import Numeric (showGFloat)
 
@@ -38,4 +40,13 @@ onDims ap f0 f1 f2 f3 f4 = \case
 -- | Show a real value with limited precision
 showLim :: RealFloat a => a -> String
 showLim x = showGFloat (Just 2) x ""
+
+-- | generic function for 1-arity, monomorphic CDouble functions
+genOp1 :: (Real a, Fractional b) => (CDouble -> CDouble) -> a -> b
+genOp1 thop a = realToFrac $ thop (realToFrac a)
+
+-- | generic function for 2-arity, monomorphic CDouble functions
+genOp2 :: (Real a, Fractional b) => (CDouble -> CDouble -> CDouble) -> a -> a -> b
+genOp2 thop a b = realToFrac $ thop (realToFrac a) (realToFrac b)
+
 
