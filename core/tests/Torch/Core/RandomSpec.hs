@@ -41,16 +41,21 @@ newRNGSpec = do
   it "always creates a new random number" $
     zipWith (==) (tail rngs) (init rngs) `shouldNotContain` [True]
 
+-- TODO - rngs gets used after its deallocated
 seedSpec :: Spec
 seedSpec = do
-  -- TODO - rngs gets used after its deallocated
-  rngs <- runIO (replicateM 10 newRNG)
-  rng1 <- runIO $ mapM seed rngs
-  rng2 <- runIO $ mapM seed rngs
-  it "this check gets rid of the malloc bug" $ -- TODO - figure out how to get rid of malloc bug without this
-    length rngs `shouldBe` 10
-  it "generates different values, given the same starting generators" $
-    zipWith (==) rng1 rng2 `shouldNotContain` [True]
+  beforeAll
+    (do
+        rngs <- (replicateM 10 newRNG)
+        rng1 <- mapM seed rngs
+        rng2 <- mapM seed rngs
+        pure (rngs, rng1, rng2)
+    )
+    (describe "seedSpec" $ do
+      it "generates different values, given the same starting generators" $
+        \(rngs, rng1, rng2) -> do
+          zipWith (==) rng1 rng2 `shouldNotContain` [True]
+    )
 
 manualSeedSpec :: Spec
 manualSeedSpec = do

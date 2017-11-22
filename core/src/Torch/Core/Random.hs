@@ -143,6 +143,6 @@ test2 = do
   rngs <- (replicateM 10 newRNG)
   rng1 <- mapM seed rngs
   rng2 <- mapM seed rngs
-  print $ zipWith (==) (tail rngs) (init rngs)
+  print $ zipWith (==) rng1 rng2
   pure ()
 
