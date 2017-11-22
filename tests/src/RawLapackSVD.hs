@@ -9,8 +9,8 @@ import THDoubleTensorLapack
 import THDoubleTensorMath
 import THDoubleTensorRandom
 
-import TensorTypes
-import TensorRaw
+import Torch.Core.Tensor.Types
+import Torch.Core.Tensor.Raw
 
 pcaRaw :: IO ()
 pcaRaw = do

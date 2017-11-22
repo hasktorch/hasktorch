@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE BangPatterns #-}
 
-module TensorDoubleMath (
+module Torch.Core.Tensor.DoubleMath (
 
   (^+^),
   (^-^),
@@ -92,10 +92,10 @@ import Foreign.Ptr
 import Lens.Micro
 import System.IO.Unsafe (unsafePerformIO)
 
-import TensorDouble
-import TensorLong
-import TensorRaw
-import TensorTypes
+import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Long
+import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types
 
 import THDoubleTensor
 import THDoubleTensor
@@ -658,7 +658,7 @@ td_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 -- cmaxValue t src value = unsafePerformIO $
 --   apply2 c_THDoubleTensor_cmaxValue t src
 --   where
---     swap 
+--     swap
 
 
 -- TH_API void THTensor_(cminValue)(THTensor *r, THTensor *t, real value);

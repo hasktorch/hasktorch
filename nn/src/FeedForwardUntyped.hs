@@ -10,12 +10,12 @@ import Data.Maybe (fromJust)
 import Foreign.C.Types
 import Foreign.Ptr
 
-import TensorDouble
-import TensorDoubleMath (td_sigmoid, td_addmv)
-import TensorDoubleRandom
-import TensorRaw
-import Random
-import TensorTypes
+import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.DoubleMath (td_sigmoid, td_addmv)
+import Torch.Core.Tensor.DoubleRandom
+import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types
+import Torch.Core.Random
 
 data Weights = W {
   biases :: TensorDouble,
