@@ -138,7 +138,9 @@ instance UpdateLayer Tanh where
   updateLayer _ _ _ = Tanh
   createRandom = return Tanh
 
-instance (din ~ dout, SingI (din :: [Nat]))  => Layer Tanh (din :: [Nat]) (dout :: [Nat]) where
+instance (din ~ dout, SingI (din :: [Nat])) =>
+  Layer Tanh (din :: [Nat]) (dout :: [Nat]) where
+
   type Tape Tanh din dout = S din
   runForwards _ input@(S it) = (input, S (tds_tanh it))
   runBackwards _ input@(S it) grad@(S ot) = ((), S (tds_cmul (tanh' it) ot))
@@ -155,7 +157,9 @@ instance UpdateLayer Relu where
   updateLayer _ _ _ = Relu
   createRandom = return Relu
 
-instance (din ~ dout, SingI din) => Layer Relu (din :: [Nat]) (dout :: [Nat]) where
+instance (din ~ dout, SingI din) =>
+  Layer Relu (din :: [Nat]) (dout :: [Nat]) where
+
   type Tape Relu din dout = S din
   runForwards _ (S y) = (S y, S (relu y))
     where
@@ -171,7 +175,7 @@ data FullyConnected i o = FullyConnected
                         (FullyConnected' i o)   -- momentum
 
 data FullyConnected' i o = FullyConnected'
-                         (TDS '[o])   -- Bias
+                         (TDS '[o]) -- Bias
                          (TDS '[o, i]) -- Activations
 
 instance (KnownNat i, KnownNat o) => UpdateLayer (FullyConnected i o) where

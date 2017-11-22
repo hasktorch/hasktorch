@@ -33,3 +33,4 @@ test:
     - stack exec ff-untyped
     - stack exec raw-lapack-svd
     - stack exec static-tensor-usage
+    - make init
