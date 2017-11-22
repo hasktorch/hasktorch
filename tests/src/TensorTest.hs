@@ -1,14 +1,14 @@
 module Main where
 
-import TensorDouble
-import TensorDoubleLapack
-import TensorDoubleMath
-import TensorDoubleRandom
-import Random
-import TensorTypes
+import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.DoubleLapack
+import Torch.Core.Tensor.DoubleMath
+import Torch.Core.Tensor.DoubleRandom
+import Torch.Core.Tensor.Types
+import Torch.Core.Random
 
 -- TODO : move raw tests elsewhere?
-import TensorRaw
+import Torch.Core.Tensor.Raw
 import THDoubleTensorMath
 
 import Lens.Micro

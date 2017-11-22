@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module StaticTensorByte (
+module Torch.Core.Tensor.Static.Byte (
   tbs_new,
   tbs_cloneDim,
   tbs_init,
@@ -20,7 +20,7 @@ import Foreign.C.Types (CLong)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 import System.IO.Unsafe (unsafePerformIO)
 
-import TensorTypes
+import Torch.Core.Tensor.Types
 import THByteTensor
 import THByteTensorMath
 import THTypes

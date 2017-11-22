@@ -1,4 +1,4 @@
-module TensorTypes (
+module Torch.Core.Tensor.Types (
   TensorDim(..),
   TensorFloat(..),
   TensorDouble(..),

@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 
-module StaticTensorDoubleRandom (
-  tds_random
+module Torch.Core.Tensor.Static.DoubleRandom
+  ( tds_random
   , tds_clampedRandom
   , tds_cappedRandom
   , tds_geometric
@@ -22,11 +22,11 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import StaticTensorDouble
-import TensorDouble
-import TensorRaw
-import TensorTypes
-import Random
+import Torch.Core.Tensor.Static.Double
+import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types
+import Torch.Core.Random
 
 import THTypes
 import THRandom

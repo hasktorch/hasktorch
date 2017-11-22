@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ForeignFunctionInterface#-}
 
-module TensorDouble (
+module Torch.Core.Tensor.Double (
   disp,
   td_p,
   td_new,
@@ -24,8 +24,8 @@ import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl, i2cl)
-import TensorRaw
-import TensorTypes
+import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath

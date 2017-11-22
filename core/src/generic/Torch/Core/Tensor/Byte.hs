@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module TensorByte
+module Torch.Core.Tensor.Byte
   ( tb_new
   , fillRaw
   , fillRaw0
@@ -15,8 +15,8 @@ import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl, onDims)
-import TensorRaw hiding (fillRaw, fillRaw0)
-import TensorTypes
+import Torch.Core.Tensor.Raw hiding (fillRaw, fillRaw0)
+import Torch.Core.Tensor.Types
 import THTypes
 import THByteTensor
 import THByteTensorMath

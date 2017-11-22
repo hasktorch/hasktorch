@@ -1,5 +1,5 @@
-module TensorDoubleRandom (
-  td_random
+module Torch.Core.Tensor.DoubleRandom
+  ( td_random
   , td_clampedRandom
   , td_cappedRandom
   , td_geometric
@@ -20,10 +20,10 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import TensorDouble
-import TensorRaw
-import TensorTypes
-import Random
+import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types
+import Torch.Core.Random
 
 import THTypes
 import THRandom

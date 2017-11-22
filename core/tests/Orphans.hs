@@ -1,9 +1,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Orphans where
 
-import Test.QuickCheck
+import Test.QuickCheck hiding (Positive)
 
-import TensorTypes (TensorDim(..))
+import Torch.Core.Tensor.Types (TensorDim(..))
+import Torch.Core.Internal (Positive, mkPositive)
 
 instance (Ord a, Num a, Arbitrary a) => Arbitrary (TensorDim a) where
   arbitrary = do
@@ -19,5 +20,13 @@ instance (Ord a, Num a, Arbitrary a) => Arbitrary (TensorDim a) where
     -- torch will not deallocate some(?) tensors, which can tank tests
     predicate :: Num a => a -> Bool
     predicate = (< 7)
+
+
+instance (Ord a, Num a, Arbitrary a) => Arbitrary (Positive a) where
+  arbitrary = do
+    mp <- mkPositive <$> suchThat arbitrary (>= 0)
+    case mp of
+      Nothing -> error "impossible: check arbitrary instance condition"
+      Just p -> pure p
 
 

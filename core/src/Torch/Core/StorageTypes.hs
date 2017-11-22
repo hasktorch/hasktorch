@@ -1,4 +1,4 @@
-module StorageTypes (
+module Torch.Core.StorageTypes (
   StorageSize(..),
   StorageDouble(..)
   ) where

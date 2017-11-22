@@ -1,11 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ForeignFunctionInterface#-}
 
-module TensorLong (
-  tl_get,
-  tl_new
-  )
-where
+module Torch.Core.Tensor.Long
+  ( tl_get
+  , tl_new
+  ) where
 
 import Foreign
 import Foreign.C.Types
@@ -17,8 +16,8 @@ import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl)
-import TensorRaw hiding (fillRaw, fillRaw0)
-import TensorTypes
+import Torch.Core.Tensor.Raw hiding (fillRaw, fillRaw0)
+import Torch.Core.Tensor.Types
 import THTypes
 import THLongTensor
 import THLongTensorMath
