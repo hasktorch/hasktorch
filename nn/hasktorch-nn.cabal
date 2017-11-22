@@ -13,7 +13,7 @@ cabal-version:       >=1.10
 
 library
   default-language:    Haskell2010
-  exposed-modules:   Layer
+  exposed-modules:   Torch.NN.Experimental.Layer
   hs-source-dirs:      src
   build-depends: base >= 4.7 && < 5
                , hasktorch-core
@@ -22,7 +22,7 @@ library
 executable ff-untyped
   default-language:    Haskell2010
   other-modules:       
-  hs-source-dirs:      src
+  hs-source-dirs:      src/Torch/NN/Experimental
   main-is:             FeedForwardUntyped.hs
   build-depends:       base >= 4.7 && < 5
                      , hasktorch-core
@@ -35,7 +35,7 @@ executable ff-untyped
 executable ff-typed
   default-language:    Haskell2010
   other-modules:       
-  hs-source-dirs:      src
+  hs-source-dirs:      src/Torch/NN/Experimental
   main-is:             FeedForwardTyped.hs
   build-depends:       base >= 4.7 && < 5
                      , hasktorch-core

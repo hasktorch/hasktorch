@@ -8,7 +8,7 @@
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Layer where
+module Torch.NN.Experimental.Layer where
 
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
