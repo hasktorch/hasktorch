@@ -1,7 +1,7 @@
 module Main where
 
-import TensorDouble
-import TensorTypes
+import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Types
 
 -- |Iteration - allocate a tensor, print a value, allocate another tensor... etc.
 memoryTest :: TensorDim Word -> Int -> IO ()
