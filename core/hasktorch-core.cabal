@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 69af2d2f582c82dfbdee045f1f06dcc2e01841402f546193987beb3630f4bcdb
+-- hash: 5ce788e892551d4ee434be08e37ab5eaced4d8df8fa4553642f0a94eb1337035
 
 name:                hasktorch-core
 version:             0.1.0.0
@@ -23,7 +23,6 @@ source-repository head
 library
   default-language: Haskell2010
   exposed-modules:
-      Random
       Torch.Core.Exceptions
       Torch.Core.Internal
       Torch.Core.LogAdd

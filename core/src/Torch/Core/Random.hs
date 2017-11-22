@@ -14,6 +14,7 @@ module Torch.Core.Random (
   bernoulli
   ) where
 
+import Control.Monad (replicateM)
 import Foreign
 import Foreign.C.Types
 import Foreign.Ptr
@@ -116,4 +117,32 @@ geometric gen p = apply1Int gen p c_THRandom_geometric
 
 bernoulli :: RandGen -> Double -> IO Int
 bernoulli gen p = apply1Int gen p c_THRandom_bernoulli
+
+-- |Check that seeds work as intended
+-- TODO: remove this once CI is working properly
+test = do
+  rng <- newRNG
+  manualSeed rng 332323401
+  val1 <- normal rng 0.0 1000.0
+  val2 <- normal rng 0.0 1000.0
+  let seedVal = initialSeed rng
+  print $ seedVal
+  print (seedVal == 332323401) -- should be true
+  print val1
+  print val2
+  print (val1 /= val2) -- should be true
+  manualSeed rng 332323401
+  manualSeed rng 332323401
+  val3 <- normal rng 0.0 1000.0
+  print val3
+  print (val1 == val3) -- should be true
+
+-- | reproduce malloc bug from seedSpec
+-- TODO: remove this once CI is working properly
+test2 = do
+  rngs <- (replicateM 10 newRNG)
+  rng1 <- mapM seed rngs
+  rng2 <- mapM seed rngs
+  print $ zipWith (==) (tail rngs) (init rngs)
+  pure ()
 
