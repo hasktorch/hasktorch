@@ -23,11 +23,11 @@ module Torch.Core.Tensor.Static.DoubleLapack (
 
   ) where
 
-
 import Data.Singletons
 import Data.Singletons.TypeLits
 import Foreign (Ptr)
-import Foreign.C.Types (CLong, CDouble, CInt)
+import Foreign.C.String
+import Foreign.C.Types (CLong, CDouble, CInt, CChar)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -41,6 +41,11 @@ import THDoubleTensorMath
 import THDoubleTensorLapack
 import Torch.Core.Tensor.Static.Double
 
+data UpperLower = Upper | Lower deriving (Eq, Show)
+
+-- toChar :: UpperLower -> CChar
+toChar Upper = newCString "U"
+toChar Lower = newCString "L"
 
 -- TH_API void THTensor_(gesv)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_);
 tds_gesv b a = do
@@ -80,12 +85,12 @@ tds_gels b a = do
     )
   pure (rb, ra)
 
-
-
 -- TH_API void THTensor_(syev)(THTensor *re_, THTensor *rv_, THTensor *a_, const char *jobz, const char *uplo);
+
 -- TH_API void THTensor_(geev)(THTensor *re_, THTensor *rv_, THTensor *a_, const char *jobvr);
 
 -- TH_API void THTensor_(gesvd)(THTensor *ru_, THTensor *rs_, THTensor *rv_, THTensor *a, const char *jobu);
+
 -- TH_API void THTensor_(gesvd2)(THTensor *ru_, THTensor *rs_, THTensor *rv_, THTensor *ra_, THTensor *a, const char *jobu);
 
 -- TH_API void THTensor_(getri)(THTensor *ra_, THTensor *a);
@@ -101,8 +106,51 @@ tds_getri a = do
   pure ra
 
 -- TH_API void THTensor_(potrf)(THTensor *ra_, THTensor *a, const char *uplo);
+tds_potrf a ul = do
+  let ra = tds_new
+  ulC <- toChar ul
+  withForeignPtr (tdsTensor ra)
+    (\pra ->
+        withForeignPtr (tdsTensor a)
+          (\pa ->
+              c_THDoubleTensor_potrf pra pa ulC
+          )
+    )
+  pure ra
+
+
+
 -- TH_API void THTensor_(potrs)(THTensor *rb_, THTensor *b_, THTensor *a_,  const char *uplo);
+tds_potrs b a ul = do
+  let rb = tds_new
+  ulC <- toChar ul
+  withForeignPtr (tdsTensor rb)
+    (\prb ->
+        withForeignPtr (tdsTensor b)
+          (\pb ->
+             withForeignPtr (tdsTensor a)
+              (\pa ->
+                 c_THDoubleTensor_potrs prb pb pa ulC
+              )
+          )
+    )
+  pure rb
+
 -- TH_API void THTensor_(potri)(THTensor *ra_, THTensor *a, const char *uplo);
+tds_potri b a ul = do
+  let ra = tds_new
+  ulC <- toChar ul
+  withForeignPtr (tdsTensor ra)
+    (\pra ->
+        withForeignPtr (tdsTensor b)
+          (\pb ->
+             withForeignPtr (tdsTensor a)
+              (\pa ->
+                 c_THDoubleTensor_potrs pra pb pa ulC
+              )
+          )
+    )
+  pure ra
 
 -- TH_API void THTensor_(qr)(THTensor *rq_, THTensor *rr_, THTensor *a);
 tds_qr a = do
@@ -149,10 +197,8 @@ tds_orgqr a tau = do
     )
   pure ra
 
-
-
-
 -- TH_API void THTensor_(ormqr)(THTensor *ra_, THTensor *a, THTensor *tau, THTensor *c, const char *side, const char *trans);
+
 -- TH_API void THTensor_(pstrf)(THTensor *ra_, THIntTensor *rpiv_, THTensor*a, const char* uplo, real tol);
 
 -- TH_API void THTensor_(btrifact)(THTensor *ra_, THIntTensor *rpivots_, THIntTensor *rinfo_, int pivot, THTensor *a);
