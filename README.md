@@ -3,7 +3,7 @@
 [![Build Status](https://circleci.com/gh/austinvhuang/hasktorch/tree/master.svg?style=shield&circle-token=9455d7cc953a58204f4d8dd683e9fa03fd5b2744)](https://circleci.com/gh/austinvhuang/hasktorch/tree/master)
 
 A Haskell library for tensors and neural networks. Hasktorch uses the low-level
-[TorcH](https://github.com/pytorch/pytorch/tree/master/torch/lib/TH) C
+[TorcH](https://github.com/pytorch/pytorch/tree/master/aten/src/TH) C
 tensor/math library shared by [Torch](http://torch.ch/) and
 [PyTorch](http://pytorch.org/). Hasktorch is an independent open source
 community project.
@@ -11,7 +11,7 @@ community project.
 **NOTE: hasktorch is in early development and should only be used by
 contributing developers at the current time.**
 
-## Project Structure
+## Project Organization
 
 | Directory | Description |
 | --------- | ----------- |
@@ -107,7 +107,7 @@ https://hasktorch.slack.com
 ### Automatic Differentiation
 
 - [Automatic Propagation of Uncertainty with AD](https://blog.jle.im/entry/automatic-propagation-of-uncertainty-with-ad.html)
-- [Automatic Differentiation is Trivial in Haskell](http://www.danielbrice.net/blog/2015-12-01/])
+- [Automatic Differentiation is Trivial in Haskell](http://www.danielbrice.net/blog/2015-12-01/)
 
 
 <!-- project directory links -->
@@ -122,5 +122,3 @@ https://hasktorch.slack.com
 [tests]: ./tests/
 [tools]: ./tools/
 [vendor]: ./vendor/
-
-
