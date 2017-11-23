@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
@@ -21,11 +22,14 @@ data Samples = X {
   xMat :: TDS '[N, P]
   } deriving (Eq, Show)
 
-type P = 10
-type N = 100
+type P = 2
+type N = 10
 
 -- TODO fill-in
 main = do
+  rng <- newRNG
+  (x :: TDS '[N,P]) <- tds_uniform rng 0.0 20.0
+  tds_p x
   let x1 = tds_init 1.0 :: TDS '[5, 3]
       x2 = tds_init 2.0 :: TDS '[3, 4]
       x3 = (x1 !*! x2)

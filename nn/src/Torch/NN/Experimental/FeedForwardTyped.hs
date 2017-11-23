@@ -53,11 +53,9 @@ dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispW w >> dispN n'
 randomWeights :: (KnownNat i, KnownNat o) => IO (SW i o)
 randomWeights = do
   gen <- newRNG
-  b <- tds_uniform (biases storeResult) gen (-1.0) (1.0)
-  w <- tds_uniform (nodes storeResult) gen (-1.0) (1.0)
+  b <- tds_uniform gen (-1.0) (1.0)
+  w <- tds_uniform gen (-1.0) (1.0)
   pure SW { biases = b, nodes = w }
-  where
-    storeResult = mkW
 
 randomNet :: forall i hs o. (KnownNat i, SingI hs, KnownNat o) => IO (SN i hs o)
 randomNet = go (sing :: Sing hs)
