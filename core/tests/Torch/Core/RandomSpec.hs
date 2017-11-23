@@ -41,7 +41,6 @@ newRNGSpec = do
   it "always creates a new random number" $
     zipWith (==) (tail rngs) (init rngs) `shouldNotContain` [True]
 
--- TODO - rngs gets used after its deallocated
 seedSpec :: Spec
 seedSpec = do
   beforeAll

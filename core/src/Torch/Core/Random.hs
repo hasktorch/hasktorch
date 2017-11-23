@@ -136,13 +136,3 @@ test = do
   val3 <- normal rng 0.0 1000.0
   print val3
   print (val1 == val3) -- should be true
-
--- | reproduce malloc bug from seedSpec
--- TODO: remove this once CI is working properly
-test2 = do
-  rngs <- (replicateM 10 newRNG)
-  rng1 <- mapM seed rngs
-  rng2 <- mapM seed rngs
-  print $ zipWith (==) rng1 rng2
-  pure ()
-

@@ -5,8 +5,8 @@
 A Haskell library for tensors and neural networks. Hasktorch uses the low-level
 [TorcH](https://github.com/pytorch/pytorch/tree/master/torch/lib/TH) C
 tensor/math library shared by [Torch](http://torch.ch/) and
-[PyTorch](http://pytorch.org/). This project is an independent
-(unsponsored/unaffiliated) open source effort.
+[PyTorch](http://pytorch.org/). Hasktorch is an independent open source
+community project.
 
 **NOTE: hasktorch is in early development and should only be used by
 contributing developers at the current time.**
@@ -18,18 +18,23 @@ contributing developers at the current time.**
 | [`codegen/`][codegen] | Parsers that parse .h files in the C TH library and generate low-level raw Haskell bindings.
 | [`core/`][core] | Memory-managed tensors and core data types that wrap raw C bindings to TH.
 | [`nn/`][nn] | Neural network library (not much here atm)
-| [`interface/`][interface] | Shared types
+| [`interface/`][interface] | Type interface used by raw bindings
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
 | [`raw/`][raw] | Comprehensive raw bindings to several hundred C TorcH (TH) operations, including separate bindings for all tensor types.
 | [`tests/`][tests] | Continuous integration tests
 | [`tools/`][tools] | Misc tools
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C and other libraries)
 
-## Automated Build Instructions (Recommended)
+## Build Instructions 
 
-Currently building hasktorch is only supported on OSX and linux.
+Currently building hasktorch is only supported on OSX and linux. Building
+Hasktorch requires retrieving submodules which include TorcH library C
+dependencies, followed by building with
+[Stack](https://docs.haskellstack.org/en/stable/README/).
 
-The easy way to build is to use the Makefile:
+These steps can be done automatically using the Makefile or manually.
+
+### Build Hasktorch using the Makefile (Recommended)
 
 ```
 make init
@@ -38,10 +43,7 @@ make init
 This should retrieve submodules including TorcH library dependencies, build
 them, build hasktorch itself, then run tests.
 
-Alternatively, these steps can be done manually as described in the following
-section.
-
-## Manual Build Instructions
+### Build Hasktorch Manually
 
 To start, retrieve git submodules (includes TorcH library) with:
 
@@ -73,32 +75,16 @@ If everything built, you should be able to run tests successfully:
 stack test hasktorch-tests
 ```
 
-## Code Generation
-
-The [`raw/`][raw] modules are generated using the scripts in
-[`codegen/`][codegen]. Since the outputs are already part of the repo, you
-should not need to run [`codegen/`][codegen] programs to use hasktorch.
-
-However, if you are contributing to hasktorch itself, you may want to
-modify/re-generate the code generation processes. Currently there are three main
-operations:
-
-- `stack exec codegen-generic` - Builds generic modules (one version per tensor type).
-- `stack exec codegen-concrete` - Builds non-generic modules.
-- `stack exec codegen-managed` - Build memory-managed interfaces to TH (not working yet).
-
-All of these programs write `.hs` files into the [`output/`][output] directory
-as a staging area (rather than overwriting [`raw/`][raw] directly).
-
-For details on the TH library's pseudo-templating preprocessor mechanism for
-underlying the generic modules, see [Adam Paszke's
-writeup](https://apaszke.github.io/torch-internals.html).
-
 ## Contributing
 
 Contributions are welcome. For a list of things that need to get done, see:
 
 https://github.com/austinvhuang/hasktorch/projects/1
+
+
+Contact maintainers for access to the private hasktorch slack channel at:
+
+https://hasktorch.slack.com 
 
 ## References
 
@@ -117,8 +103,6 @@ https://github.com/austinvhuang/hasktorch/projects/1
 - [defunctionalization](https://typesandkinds.wordpress.com/2013/04/01/defunctionalization-for-the-win/)
 - [An introduction to DataKinds and GHC.TypeLits](http://ponies.io/posts/2014-07-30-typelits.html)
 - [Applying Type-Level and Generic Programming in Haskell](https://www.cs.ox.ac.uk/projects/utgp/school/andres.pdf)
-
-
 
 ### Automatic Differentiation
 
