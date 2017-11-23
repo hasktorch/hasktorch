@@ -30,4 +30,12 @@ executable static-tensor-usage
   build-depends:       base >= 4.7 && < 5
                      , hasktorch-core
 
+executable bayesian-regression
+  default-language:    Haskell2010
+  main-is:             BayesianRegression.hs
+  hs-source-dirs:      src
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch-core
+
+
 

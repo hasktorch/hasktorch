@@ -11,6 +11,7 @@ module Torch.Core.Tensor.Static.DoubleMath (
   (^*^),
   (^/^),
   (!*),
+  (!*!),
   (^+),
   (^-),
   (+^),
@@ -134,6 +135,10 @@ instance SingI d => Num (TensorDoubleStatic d) where
 
 (!*) :: (KnownNat c, KnownNat r) => (TDS '[r, c]) -> (TDS '[c]) -> (TDS '[r])
 (!*) m v = tds_mv m v
+
+(!*!) :: (KnownNat a, KnownNat b, KnownNat c) =>
+  TDS '[a, b] -> TDS '[b, c] -> TDS '[a,c]
+(!*!) m1 m2 = tds_addmm 1.0 tds_new 1.0 m1 m2
 
 (^+^) t1 t2 = tds_cadd t1 1.0 t2
 (^-^) t1 t2 = tds_csub t1 1.0 t2
@@ -579,7 +584,9 @@ ret2 fun t dimension keepdim = do
     keepdimC = if keepdim then 1 else 0
     dimensionC = fromIntegral dimension
 
--- TODO- add proper type signature with dimensions specified
+
+tds_addmm :: (KnownNat a, KnownNat b, KnownNat c) =>
+  Double -> TDS [a,c] -> Double -> TDS [a, b] -> TDS [b, c] -> TDS [a,c]
 tds_addmm beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmm) betaC alphaC) t src1 src2
   where

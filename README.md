@@ -32,9 +32,11 @@ Hasktorch requires retrieving submodules which include TorcH library C
 dependencies, followed by building with
 [Stack](https://docs.haskellstack.org/en/stable/README/).
 
-These steps can be done automatically using the Makefile or manually.
+These steps can be done automatically using the [Makefile][makefile] or manually.
 
-### Build Hasktorch using the Makefile (Recommended)
+### Build Hasktorch with `make` (Recommended)
+
+Run:
 
 ```
 make init
@@ -112,6 +114,7 @@ https://hasktorch.slack.com
 
 <!-- project directory links -->
 
+[makefile]: ./Makefile
 [codegen]: ./codegen/
 [core]: ./core/
 [examples]: ./examples/
