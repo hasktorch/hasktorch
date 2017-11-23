@@ -106,7 +106,6 @@ module Torch.Core.Tensor.Static.DoubleMath (
   ) where
 
 import Data.Singletons
--- import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 import Foreign (Ptr)
 import Foreign.C.Types (CLong, CDouble, CInt)

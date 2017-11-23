@@ -39,6 +39,17 @@ import THDoubleTensorRandom
 import THFloatTensor
 
 import Data.Singletons
+import Data.Singletons.Prelude
+import Data.Singletons.TypeLits
+
+-- |generate multivariate normal samples using Cholesky decomposition
+tds_mvn :: (KnownNat r, KnownNat c) =>
+  RandGen -> TDS '[c] -> TDS '[c,c] -> IO (TDS '[r,c])
+tds_mvn rng mu cov = do
+  let result = tds_new
+  -- TODO: implement after core lapack functions implemented
+  error "not implemented"
+  pure result
 
 -- TODO: get rid of self parameter arguments since they are overwritten
 
