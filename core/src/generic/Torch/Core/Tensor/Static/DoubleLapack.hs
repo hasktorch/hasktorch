@@ -40,6 +40,7 @@ import THDoubleTensor
 import THDoubleTensorMath
 import THDoubleTensorLapack
 import Torch.Core.Tensor.Static.Double
+import Torch.Core.Tensor.Static.DoubleMath
 
 data UpperLower = Upper | Lower deriving (Eq, Show)
 
@@ -48,7 +49,8 @@ toChar Upper = newCString "U"
 toChar Lower = newCString "L"
 
 -- TH_API void THTensor_(gesv)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_);
-tds_gesv b a = do
+tds_gesv :: KnownNat d => TDS '[d] -> TDS '[d, d] -> (TDS '[d, d], TDS '[d, d])
+tds_gesv b a = unsafePerformIO $ do
   let (rb, ra) = (tds_new, tds_new)
   withForeignPtr (tdsTensor rb)
     (\prb ->
@@ -64,6 +66,16 @@ tds_gesv b a = do
         )
     )
   pure (rb, ra)
+
+test = do
+  let a = (tds_init 2.0 :: TDS '[2, 2]) !*! (tds_init 2.0 :: TDS '[2, 2])
+  let b = tds_new :: TDS '[2]
+  tds_p a
+  tds_p b
+  let (resb, resa) = tds_gesv b a
+  tds_p resb
+  tds_p resa
+  pure ()
 
 -- TH_API void THTensor_(trtrs)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_, const char *uplo, const char *trans, const char *diag);
 

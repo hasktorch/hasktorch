@@ -4,14 +4,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Torch.Core.Tensor.Static.Double (
   tds_dim,
   tds_new,
+  tds_fromList,
   tds_init,
   tds_cloneDim,
   tds_newClone,
   tds_p,
+  tds_resize,
   tds_toDynamic,
   tds_fromDynamic,
   tds_trans, -- matrix specialization of transpose
@@ -20,12 +23,14 @@ module Torch.Core.Tensor.Static.Double (
   Nat -- re-export for kind signature readability
   ) where
 
+import Control.DeepSeq
 import Data.Singletons
--- import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
+import Data.Singletons.Prelude.List
 import Foreign (Ptr)
 import Foreign.C.Types (CLong)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
+import GHC.Exts
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl)
@@ -46,6 +51,59 @@ class StaticTensor t where
   tds_init :: Double -> t
   -- |Display tensor
   tds_p ::  t -> IO ()
+  -- tds_resize :: t -> TDS d2
+
+instance KnownNat l => IsList (TDS '[l]) where
+  type Item (TDS '[l]) = Double
+  fromList l = if (fromIntegral $ natVal (Proxy :: Proxy l)) /= length l
+               then error "Incorrect tensor dimensions"
+               else unsafePerformIO $ go result
+               -- TODO: trying to force evaluation
+               -- but `go` never executes with deepseq:
+               -- else unsafePerformIO $ pure (deepseq go result)
+    where
+      result = tds_new
+      go t = do
+        mapM_ mutTensor (zip [0..length l - 1] l)
+        pure t
+        where
+          mutTensor (idx, value) =
+            let (idxC, valueC) = (fromIntegral idx, realToFrac value) in
+              withForeignPtr (tdsTensor t)
+                (\tp -> do
+                    -- print idx -- for checking when mutation actions are evaluated
+                    c_THDoubleTensor_set1d tp idxC valueC
+                    pure t
+                )
+  toList t = undefined -- TODO
+  -- check when fromList evaluates
+  -- let foo = (tds_fromList [1..3] :: TDS '[3])
+  -- tds_p foo -- prints indexes
+
+-- |Resize tensor
+-- |TODO: rewrite this without the tuple hack to get correct output dimensions
+tds_resize :: (Product d1 ~ Product d2, SingI d1, SingI d2) => TDS d1 -> TDS d2
+tds_resize t = fst (go t)
+  where
+    go :: (Product d1 ~ Product d2, SingI d1, SingI d2) => TDS d1 -> (TDS d2, TDS d2)
+    go t = unsafePerformIO $ do
+      let resDummy = tds_new
+      newPtr <- withForeignPtr (tdsTensor t) (
+        \tPtr ->
+          c_THDoubleTensor_newClone tPtr
+        )
+      newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+      withForeignPtr (newFPtr)
+        (\selfp ->
+           withForeignPtr (tdsTensor resDummy)
+             (\srcp ->
+                c_THDoubleTensor_resizeAs selfp srcp
+             )
+        )
+      pure $ (TDS newFPtr, resDummy)
+
+tds_fromList :: KnownNat l => [Double] -> TDS '[l]
+tds_fromList lst = fromList lst
 
 -- |Runtime type-level check of # dimensions
 dimCheck :: Monad m => TensorDim Word -> Integer -> m ()
@@ -78,14 +136,6 @@ instance Eq (TensorDoubleStatic d) where
     (\t1c -> withForeignPtr (tdsTensor t2)
              (\t2c -> pure $ (c_THDoubleTensor_equal t1c t2c) == 1)
     )
-
--- |Make a foreign pointer from requested dimensions
-mkTHelper dims makeStatic value = unsafePerformIO $ do
-  newPtr <- mkPtr dims value
-  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
-  pure $ makeStatic dims fPtr
-  where
-    mkPtr dim value = tensorRaw dim value
 
 tds_toDynamic :: TensorDoubleStatic d -> TensorDouble
 tds_toDynamic t = unsafePerformIO $ do
@@ -130,14 +180,25 @@ tds_trans t = unsafePerformIO $ do
 tds_dim :: (Num a2, SingI d) => TensorDoubleStatic d -> TensorDim a2
 tds_dim (x :: TensorDoubleStatic d) = list2dim $ fromSing (sing :: Sing d)
 
+-- |Make an initialized raw pointer with requested dimensions
+mkPtr :: TensorDim Word -> Double -> IO TensorDoubleRaw
+mkPtr dim value = tensorRaw dim value
+
+-- |Make a foreign pointer from requested dimensions
+mkTHelper :: TensorDim Word -> (ForeignPtr CTHDoubleTensor -> TDS d) -> Double -> TDS d
+mkTHelper dims makeStatic value = unsafePerformIO $ do
+  newPtr <- mkPtr dims value
+  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  pure $ makeStatic fPtr
+
 instance SingI d => StaticTensor (TensorDoubleStatic d)  where
   tds_init initVal = mkTHelper dims makeStatic initVal
     where
       dims = list2dim $ fromSing (sing :: Sing d)
-      makeStatic dims fptr = (TDS fptr) :: TDS d
+      makeStatic fptr = (TDS fptr) :: TDS d
   tds_new = tds_init 0.0
   tds_cloneDim _ = tds_new :: TDS d
-  tds_p tensor = (withForeignPtr(tdsTensor tensor) dispRaw)
+  tds_p tensor = (withForeignPtr (tdsTensor tensor) dispRaw)
 
 {- Sanity checks -}
 
@@ -155,6 +216,15 @@ testCreate = do
   let t4 = tds_new :: TDS '[8, 4]
   tds_p t4
   pure ()
+
+-- -- | from flat list
+-- instance (SingI r, Num a) => IsList (TDS (r :: [Nat])) where
+--     fromList l = Tensor $ V.fromList $ take n $ l ++ repeat 0
+--       where
+--         n = case (sing :: Sing r) of
+--           SNil -> 1
+--           (SCons x xs') -> product $ fromIntegral <$> (fromSing x: fromSing xs')
+--     toList (Tensor v) = V.toList v
 
 testEq = do
   print "Should be True:"
