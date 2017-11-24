@@ -56,29 +56,61 @@ class StaticTensor t where
 instance KnownNat l => IsList (TDS '[l]) where
   type Item (TDS '[l]) = Double
   fromList l = if (fromIntegral $ natVal (Proxy :: Proxy l)) /= length l
-               then error "Incorrect tensor dimensions"
+               then error "List length does not match tensor dimensions"
                else unsafePerformIO $ go result
-               -- TODO: trying to force evaluation
-               -- but `go` never executes with deepseq:
+               -- TODO: try to force strict evaluation
+               -- to avoid potential FFI + IO + mutation bugs.
+               -- however `go` never executes with deepseq:
                -- else unsafePerformIO $ pure (deepseq go result)
     where
       result = tds_new
       go t = do
-        mapM_ mutTensor (zip [0..length l - 1] l)
+        mapM_ mutTensor (zip [0..(length l) - 1] l)
         pure t
         where
           mutTensor (idx, value) =
             let (idxC, valueC) = (fromIntegral idx, realToFrac value) in
               withForeignPtr (tdsTensor t)
                 (\tp -> do
-                    -- print idx -- for checking when mutation actions are evaluated
+                    -- print idx -- check to see when mutation happens
                     c_THDoubleTensor_set1d tp idxC valueC
-                    pure t
                 )
   toList t = undefined -- TODO
   -- check when fromList evaluates
   -- let foo = (tds_fromList [1..3] :: TDS '[3])
   -- tds_p foo -- prints indexes
+
+-- |Initialize a 1D tensor from a list
+tds_fromList :: KnownNat n => [Double] -> TDS '[n]
+tds_fromList l = fromList l
+
+-- TODO : 1-step function from list -> tensor of arbitrary dimensions
+-- currently having trouble deducing the intermediate 1D vector type
+-- tds_fromList2 :: (SingI d) => [Double] -> TDS d
+-- tds_fromList2 lst = tds_resizeFrom1D $ go lst
+--   where
+--     go :: KnownNat n => [Double] -> TDS '[n]
+--     go l = fromList l
+
+tds_resizeFrom1D :: (n ~ Product d, KnownNat n, SingI d) => TDS '[n] -> TDS d
+tds_resizeFrom1D t = fst $ go t
+  where
+    go :: (n ~ Product d2, KnownNat n, SingI d2) => TDS '[n] -> (TDS d2, TDS d2)
+    go t = unsafePerformIO $ do
+      let resDummy = tds_new
+      newPtr <- withForeignPtr (tdsTensor t) (
+        \tPtr ->
+          c_THDoubleTensor_newClone tPtr
+        )
+      newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+      withForeignPtr (newFPtr)
+        (\selfp ->
+           withForeignPtr (tdsTensor resDummy)
+             (\srcp ->
+                c_THDoubleTensor_resizeAs selfp srcp
+             )
+        )
+      pure $ (TDS newFPtr, resDummy)
 
 -- |Resize tensor
 -- |TODO: rewrite this without the tuple hack to get correct output dimensions
@@ -101,9 +133,6 @@ tds_resize t = fst (go t)
              )
         )
       pure $ (TDS newFPtr, resDummy)
-
-tds_fromList :: KnownNat l => [Double] -> TDS '[l]
-tds_fromList lst = fromList lst
 
 -- |Runtime type-level check of # dimensions
 dimCheck :: Monad m => TensorDim Word -> Integer -> m ()
@@ -236,9 +265,17 @@ testTranspose = do
   tds_p $ tds_trans . tds_trans . tds_trans $ (tds_init 3.0 :: TDS '[3,2])
   print $ (tds_trans . tds_trans $ (tds_init 3.0 :: TDS '[3,2])) == (tds_init 3.0 :: TDS '[3,2])
 
+testResize = do
+  let vec = tds_fromList [1.0, 5.0, 2.0, 4.0, 3.0, 3.5] :: TDS '[6]
+  let mtx = tds_resize vec :: TDS '[3,2]
+  tds_p vec
+  tds_p mtx
+
 test = do
   testCreate
   testEq
   testTranspose
   disp $ tds_toDynamic (tds_init 2.0 :: TDS '[3, 4])
   tds_p $ tds_newClone (tds_init 2.0 :: TDS '[2, 3])
+  testResize
+

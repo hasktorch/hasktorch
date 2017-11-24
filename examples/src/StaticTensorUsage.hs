@@ -8,21 +8,54 @@ import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom (tds_uniform)
 
-transformations = do
-  putStrLn "\nExample bulk tensor transformations"
-  putStrLn "-----------------------------------"
+initialization = do
+  putStrLn "\nInitialization"
+  putStrLn "--------------"
+
+  putStrLn "\nZeros:"
+  let zeroMat = tds_new :: TDS '[3,2]
+  tds_p zeroMat
+
+  putStrLn "\nConstant:"
+  let constVec = tds_init 2.0 :: TDS '[2]
+  tds_p constVec
+
+  putStrLn "\nInitialize 1D vector from list:"
+  let listVec = tds_fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: TDS '[6]
+  tds_p listVec
+
+  putStrLn "\nResize 1D vector as 2D matrix:"
+  let asMat = tds_resize listVec :: TDS '[3, 2]
+  -- let asMat = tds_resize listVec :: TDS '[3, 3] -- won't type check
+  tds_p asMat
+
+  putStrLn "\nRandom values:"
   gen <- newRNG
   randMat :: TDS '[4, 4] <- tds_uniform gen (1.0) (3.0)
-  putStrLn "\nRandom matrix:"
   tds_p randMat
+
+
+valueTransformations = do
+  putStrLn "\nBatch tensor value transformations"
+  putStrLn "-----------------------------------"
+  gen <- newRNG
+
+  putStrLn "\nRandom matrix:"
+  randMat :: TDS '[4, 4] <- tds_uniform gen (1.0) (3.0)
+  tds_p randMat
+
   putStrLn "\nNegated:"
   tds_p $ tds_neg randMat
+
   putStrLn "\nSigmoid:"
   tds_p $ tds_sigmoid randMat
+
   putStrLn "\nTanh:"
   tds_p $ tds_tanh randMat
+
   putStrLn "\nLog:"
   tds_p $ tds_log randMat
+
   putStrLn "\nRound:"
   tds_p $ tds_round randMat
 
@@ -48,8 +81,9 @@ matrixVectorOps = do
   pure ()
 
 main = do
-  putStrLn "Statically Typed Tensors Example Usage"
-  putStrLn "======================================\n"
+  putStrLn "\nExample Usage of Typed Tensors"
+  putStrLn "=============================="
+  initialization
   matrixVectorOps
-  transformations
+  valueTransformations
   pure ()
