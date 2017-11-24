@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -51,7 +52,6 @@ class StaticTensor t where
   tds_init :: Double -> t
   -- |Display tensor
   tds_p ::  t -> IO ()
-  -- tds_resize :: t -> TDS d2
 
 instance KnownNat l => IsList (TDS '[l]) where
   type Item (TDS '[l]) = Double
@@ -81,58 +81,32 @@ instance KnownNat l => IsList (TDS '[l]) where
   -- tds_p foo -- prints indexes
 
 -- |Initialize a 1D tensor from a list
-tds_fromList :: KnownNat n => [Double] -> TDS '[n]
-tds_fromList l = fromList l
+tds_fromList1D :: KnownNat n => [Double] -> TDS '[n]
+tds_fromList1D l = fromList l
 
--- TODO : 1-step function from list -> tensor of arbitrary dimensions
--- currently having trouble deducing the intermediate 1D vector type
--- tds_fromList2 :: (SingI d) => [Double] -> TDS d
--- tds_fromList2 lst = tds_resizeFrom1D $ go lst
---   where
---     go :: KnownNat n => [Double] -> TDS '[n]
---     go l = fromList l
+-- |Initialize a tensor of arbitrary dimension from a list
+tds_fromList
+  :: forall d2 . (SingI '[Product d2], SingI d2, KnownNat (Product d2)) =>
+     [Double] -> TDS d2
+tds_fromList l = tds_resize (tds_fromList1D l :: TDS '[Product d2])
 
-tds_resizeFrom1D :: (n ~ Product d, KnownNat n, SingI d) => TDS '[n] -> TDS d
-tds_resizeFrom1D t = fst $ go t
-  where
-    go :: (n ~ Product d2, KnownNat n, SingI d2) => TDS '[n] -> (TDS d2, TDS d2)
-    go t = unsafePerformIO $ do
-      let resDummy = tds_new
-      newPtr <- withForeignPtr (tdsTensor t) (
-        \tPtr ->
-          c_THDoubleTensor_newClone tPtr
-        )
-      newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
-      withForeignPtr (newFPtr)
-        (\selfp ->
-           withForeignPtr (tdsTensor resDummy)
-             (\srcp ->
-                c_THDoubleTensor_resizeAs selfp srcp
-             )
-        )
-      pure $ (TDS newFPtr, resDummy)
-
--- |Resize tensor
--- |TODO: rewrite this without the tuple hack to get correct output dimensions
-tds_resize :: (Product d1 ~ Product d2, SingI d1, SingI d2) => TDS d1 -> TDS d2
-tds_resize t = fst (go t)
-  where
-    go :: (Product d1 ~ Product d2, SingI d1, SingI d2) => TDS d1 -> (TDS d2, TDS d2)
-    go t = unsafePerformIO $ do
-      let resDummy = tds_new
-      newPtr <- withForeignPtr (tdsTensor t) (
-        \tPtr ->
-          c_THDoubleTensor_newClone tPtr
-        )
-      newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
-      withForeignPtr (newFPtr)
-        (\selfp ->
-           withForeignPtr (tdsTensor resDummy)
-             (\srcp ->
-                c_THDoubleTensor_resizeAs selfp srcp
-             )
-        )
-      pure $ (TDS newFPtr, resDummy)
+tds_resize :: forall d1 d2. (Product d1 ~ Product d2, SingI d1, SingI d2) =>
+  TDS d1 -> TDS d2
+tds_resize t = unsafePerformIO $ do
+  let resDummy = tds_new :: TDS d2
+  newPtr <- withForeignPtr (tdsTensor t) (
+    \tPtr ->
+      c_THDoubleTensor_newClone tPtr
+    )
+  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  withForeignPtr (newFPtr)
+    (\selfp ->
+        withForeignPtr (tdsTensor resDummy)
+          (\srcp ->
+             c_THDoubleTensor_resizeAs selfp srcp
+          )
+    )
+  pure $ TDS newFPtr
 
 -- |Runtime type-level check of # dimensions
 dimCheck :: Monad m => TensorDim Word -> Integer -> m ()

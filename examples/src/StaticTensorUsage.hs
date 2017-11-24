@@ -29,6 +29,10 @@ initialization = do
   -- let asMat = tds_resize listVec :: TDS '[3, 3] -- won't type check
   tds_p asMat
 
+  putStrLn "\nInitialize arbitrary dimensions directly from list:"
+  let listVec = tds_fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: TDS '[3, 2]
+  tds_p listVec
+
   putStrLn "\nRandom values:"
   gen <- newRNG
   randMat :: TDS '[4, 4] <- tds_uniform gen (1.0) (3.0)
