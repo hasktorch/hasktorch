@@ -1,6 +1,6 @@
 module Main where
 
-import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Types
 
 -- |Iteration - allocate a tensor, print a value, allocate another tensor... etc.
