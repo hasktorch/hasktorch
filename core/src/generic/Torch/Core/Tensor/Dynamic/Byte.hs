@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Torch.Core.Tensor.Byte
+
+module Torch.Core.Tensor.Dynamic.Byte
   ( tb_new
   , fillRaw
   , fillRaw0

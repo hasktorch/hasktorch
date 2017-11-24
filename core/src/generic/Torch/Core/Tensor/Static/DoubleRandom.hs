@@ -24,8 +24,8 @@ import GHC.Ptr (FunPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Static.Double
-import Torch.Core.Tensor.Double
-import Torch.Core.Tensor.Long
+-- import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Dynamic.Long
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import Torch.Core.Random

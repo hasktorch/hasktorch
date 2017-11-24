@@ -59,26 +59,33 @@ valueTransformations = do
   putStrLn "\nRound:"
   tds_p $ tds_round randMat
 
+
 matrixVectorOps = do
   putStrLn "\nMatrix/vector operations"
   putStrLn "------------------------"
   gen <- newRNG
-  randMat :: TDS '[2, 2] <- tds_uniform gen (-1.0) (1.0)
-  let constVec = tds_init 2.0 :: TDS '[2]
-  let result = randMat !* constVec
+
   putStrLn "\nRandom matrix:"
+  randMat :: TDS '[2, 2] <- tds_uniform gen (-1.0) (1.0)
   tds_p randMat
+
   putStrLn "\nConstant vector:"
+  let constVec = tds_init 2.0 :: TDS '[2]
   tds_p constVec
+
   putStrLn "\nMatrix x vector:"
+  let result = randMat !* constVec
   tds_p $ randMat !* constVec
+
   putStrLn "\nVector outer product:"
   tds_p $ constVec `tds_outer` constVec
+
   putStrLn "\nVector dot product:"
   print $ constVec <.> constVec
+
   putStrLn "\nMatrix trace:"
   print $ tds_trace randMat
-  pure ()
+
 
 main = do
   putStrLn "\nExample Usage of Typed Tensors"

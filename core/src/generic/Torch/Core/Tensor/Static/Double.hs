@@ -34,7 +34,7 @@ import GHC.Exts
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl)
-import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import THTypes

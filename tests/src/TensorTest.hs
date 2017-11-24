@@ -1,9 +1,9 @@
 module Main where
 
-import Torch.Core.Tensor.Double
-import Torch.Core.Tensor.DoubleLapack
-import Torch.Core.Tensor.DoubleMath
-import Torch.Core.Tensor.DoubleRandom
+import Torch.Core.Tensor.Dynamic.Double
+import Torch.Core.Tensor.Dynamic.DoubleLapack
+import Torch.Core.Tensor.Dynamic.DoubleMath
+import Torch.Core.Tensor.Dynamic.DoubleRandom
 import Torch.Core.Tensor.Types
 import Torch.Core.Random
 

@@ -10,9 +10,9 @@ import Data.Maybe (fromJust)
 import Foreign.C.Types
 import Foreign.Ptr
 
-import Torch.Core.Tensor.Double
-import Torch.Core.Tensor.DoubleMath (td_sigmoid, td_addmv)
-import Torch.Core.Tensor.DoubleRandom
+import Torch.Core.Tensor.Dynamic.Double
+import Torch.Core.Tensor.Dynamic.DoubleMath (td_sigmoid, td_addmv)
+import Torch.Core.Tensor.Dynamic.DoubleRandom
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import Torch.Core.Random

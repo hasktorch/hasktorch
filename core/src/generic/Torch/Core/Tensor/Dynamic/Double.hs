@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ForeignFunctionInterface#-}
 
-module Torch.Core.Tensor.Double (
+module Torch.Core.Tensor.Dynamic.Double (
   disp,
   td_p,
   td_new,

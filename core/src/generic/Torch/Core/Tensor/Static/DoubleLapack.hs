@@ -33,8 +33,8 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
-import Torch.Core.Tensor.Double
-import Torch.Core.Tensor.Long
+-- import Torch.Core.Tensor.Dynamic.Double
+-- import Torch.Core.Tensor.Dynamic.Long
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath

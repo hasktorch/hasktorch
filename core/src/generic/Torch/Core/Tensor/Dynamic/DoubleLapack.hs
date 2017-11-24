@@ -1,4 +1,4 @@
- module Torch.Core.Tensor.DoubleLapack (
+ module Torch.Core.Tensor.Dynamic.DoubleLapack (
   td_gesv
   , td_gesv_
   , td_gels
@@ -16,8 +16,8 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import Torch.Core.Tensor.Double
-import Torch.Core.Tensor.DoubleRandom
+import Torch.Core.Tensor.Dynamic.Double
+import Torch.Core.Tensor.Dynamic.DoubleRandom
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import Torch.Core.Random

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ForeignFunctionInterface#-}
 
-module Torch.Core.Tensor.Long
+module Torch.Core.Tensor.Dynamic.Long
   ( tl_get
   , tl_new
   ) where

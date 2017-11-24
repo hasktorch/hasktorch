@@ -2,12 +2,12 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fef5e3f8967a984095695e815c396177840510f9b0fe1e0f91c3c3f0a3a180cc
+-- hash: ff9da8d0997e416ecbc7fc1cf038f5a43c5c139d05db4d388e12fc11b8417be4
 
 name:                hasktorch-core
 version:             0.1.0.0
 synopsis:            Torch for tensors and neural networks in Haskell
-description:         core abstractions wrapping raw TH bindings
+description:         core tensor abstractions wrapping raw TH bindings
 homepage:            https://github.com/austinvhuang/hasktorch#readme
 bug-reports:         https://github.com/austinvhuang/hasktorch/issues
 license:             BSD3
@@ -33,12 +33,12 @@ library
       Torch.Core.Tensor.Types
       Torch.Core.StorageDouble
       Torch.Core.Tensor
-      Torch.Core.Tensor.Byte
-      Torch.Core.Tensor.Double
-      Torch.Core.Tensor.DoubleLapack
-      Torch.Core.Tensor.DoubleMath
-      Torch.Core.Tensor.DoubleRandom
-      Torch.Core.Tensor.Long
+      Torch.Core.Tensor.Dynamic.Byte
+      Torch.Core.Tensor.Dynamic.Double
+      Torch.Core.Tensor.Dynamic.DoubleLapack
+      Torch.Core.Tensor.Dynamic.DoubleMath
+      Torch.Core.Tensor.Dynamic.DoubleRandom
+      Torch.Core.Tensor.Dynamic.Long
       Torch.Core.Tensor.Static.Byte
       Torch.Core.Tensor.Static.Double
       Torch.Core.Tensor.Static.DoubleLapack

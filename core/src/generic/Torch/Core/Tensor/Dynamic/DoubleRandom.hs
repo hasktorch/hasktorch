@@ -1,4 +1,4 @@
-module Torch.Core.Tensor.DoubleRandom
+module Torch.Core.Tensor.Dynamic.DoubleRandom
   ( td_random
   , td_clampedRandom
   , td_cappedRandom
@@ -20,7 +20,7 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import Torch.Core.Tensor.Double
+import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import Torch.Core.Random
