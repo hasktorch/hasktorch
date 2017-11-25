@@ -7,10 +7,6 @@
 
 #include "error_handler.h"
 
-extern "C" void errorHandler(const char *format, ...);
-extern "C" void argErrorHandler(int arg, const char * msg, void * data);
-extern "C" void testFunction();
-
 // errorHandler is cast as THErrorHandlerFunction, see THGeneral.h.in
 // typedef void (*THErrorHandlerFunction)(const char *msg, void *data);
 // void runtime_error(const char *format, ...) {
@@ -24,14 +20,16 @@ void errorHandler(const char *format, ...) {
   va_start(fmt_args, format);
   vsnprintf(error_buf, ERROR_BUF_SIZE, format, fmt_args);
   va_end(fmt_args);
-
-  throw std::runtime_error(error_buf);
+  std::cerr << error_buf << std::endl;
+  std::cout << "--- exiting error handler ---" << std::endl;
+  // throw std::runtime_error(error_buf);
 }
 
 void argErrorHandler(int arg, const char * msg, void * data) {
   std::stringstream new_error;
   new_error << "invalid argument " << arg << ": " << msg;
-  throw std::runtime_error(new_error.str());
+  std::cerr << new_error.str() << std::endl;
+  // throw std::runtime_error(new_error.str());
 }
 
 void testFunction() {

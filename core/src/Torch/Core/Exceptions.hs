@@ -3,8 +3,10 @@
 module Torch.Core.Exceptions
   ( TorchException(..)
   , module X
+  , c_testHasktorchLib
   , p_errorHandler
   , p_argErrorHandler
+  , c_THSetErrorHandler 
   ) where
 
 import Control.Exception.Safe as X
@@ -17,17 +19,27 @@ import Foreign.C.String
 import Foreign.C.Types
 import THTypes
 
+import THDoubleTensor
+import THDoubleTensorLapack
+import THDoubleTensorMath
+import THDoubleTensorRandom
+
+import Torch.Core.Tensor.Types
+import Torch.Core.Tensor.Raw
+
 data TorchException
   = MathException Text
   deriving (Show, Typeable)
 
 instance Exception TorchException
 
+{- Hasktorch error handler -}
+
 foreign import ccall unsafe "error_handler.h testFunction"
-  c_testFunction :: IO ()
+  c_testHasktorchLib :: IO ()
 
 foreign import ccall unsafe "error_handler.h &testFunction"
-  p_testFunction :: FunPtr (IO ())
+  p_testHasktorchLib :: FunPtr (IO ())
 
 foreign import ccall unsafe "error_handler.h errorHandler"
   c_errorHandler :: CString -> IO ()
@@ -41,5 +53,38 @@ foreign import ccall unsafe "error_handler.h argErrorHandler"
 foreign import ccall unsafe "error_handler.h &argErrorHandler"
   p_argErrorHandler :: FunPtr (CString -> IO ())
 
+{- THGeneral options to configure error handler -}
+
+-- TH_API double THLog1p(const double x);
+foreign import ccall unsafe "THGeneral.h.in THLog1p"
+  c_THLog1p :: CDouble -> CDouble
+
+-- TH_API void THSetErrorHandler(THErrorHandlerFunction new_handler, void *data);
+foreign import ccall "THGeneral.h.in THSetErrorHandler"
+  c_THSetErrorHandler :: FunPtr (CString -> IO ()) -> IO ()
+
+lapackTest :: IO ()
+lapackTest = do
+  putStrLn "Setting error handler"
+  c_THSetErrorHandler p_errorHandler
+  putStrLn "Cholesky decomposition should fail:"
+  opt <- newCString "U"
+  a <- tensorRaw (D2 (2, 2)) 2.0
+  c_THDoubleTensor_set2d a 0 0 1.0
+  c_THDoubleTensor_set2d a 0 1 0.0
+  c_THDoubleTensor_set2d a 1 1 (-1.0)
+  c_THDoubleTensor_set2d a 1 0 0.0
+  resA <- tensorRaw (D2 (2, 2)) 5.0
+  dispRaw a
+  c_THDoubleTensor_potrf resA a opt
+  dispRaw a
+  -- dispRaw resA -- TODO: what should happen when potrf has an error
+  c_THDoubleTensor_free a
+  c_THDoubleTensor_free resA
+  pure ()
+
 test = do
-  c_testFunction
+  c_testHasktorchLib
+  c_THSetErrorHandler p_errorHandler
+  lapackTest
+  putStrLn "Done"

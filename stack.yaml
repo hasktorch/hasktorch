@@ -26,6 +26,7 @@ extra-include-dirs: ['vendor/bindings-dsl']
 # _must_ explicitly link TH dylib
 extra-lib-dirs: 
 - ./vendor/build
+- /Users/huanga13/projects-personal/hasktorch/vendor/build
 
 ghc-options:
   "hasktorch-core": -lTH -lEHX
