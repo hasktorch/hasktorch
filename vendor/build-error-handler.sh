@@ -56,8 +56,8 @@ $CXX -dynamiclib -undefined suppress -flat_namespace ./libEHX*.o -o libEHX.$EXTE
 rm -f libEHX.o
 mv libEHX.$EXTENSION ./build/
 
-if [ -x "$(command -v nm)" ]; then
-    echo "Checking symbols in dylib:"
-    nm -gU ./build/libEHX.dylib
-    exit 1
-fi
+# if [ -x "$(command -v nm)" ]; then
+#     echo "Checking symbols in dylib:"
+#     nm -gU ./build/libEHX.dylib
+#     exit 1
+# fi

@@ -45,8 +45,8 @@ echo "  $CC"
 
 cd ./build; cmake ../TH/CMakeLists.txt -B. -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC; make; cd ..
 
-if [ -x "$(command -v nm)" ]; then
-    echo "Checking symbols in dylib:"
-    nm -gU ./build/libTH.dylib
-    exit 1
-fi
+# if [ -x "$(command -v nm)" ]; then
+#     echo "Checking symbols in dylib:"
+#     nm -gU ./build/libTH.dylib
+#     exit 1
+# fi
