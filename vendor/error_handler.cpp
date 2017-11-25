@@ -1,14 +1,13 @@
 #include <iostream>
 #include <sstream>
+#include <cstdarg>
 #include <stdexcept>
 #include <typeinfo>
 
 #include "error_handler.h"
 
 extern "C" void errorHandler(const char *format, ...);
-
 extern "C" void argErrorHandler(int arg, const char * msg, void * data);
-
 extern "C" void testFunction();
 
 // errorHandler is cast as THErrorHandlerFunction, see THGeneral.h.in
@@ -20,9 +19,9 @@ void errorHandler(const char *format, ...) {
 
   std::cout << "--- custom error handler ---" << std::endl;
 
-  va_list fmt_args;
+  std::va_list fmt_args;
   va_start(fmt_args, format);
-  vsnprintf(error_buf, ERROR_BUF_SIZE, format, fmt_args);
+  std::vsnprintf(error_buf, ERROR_BUF_SIZE, format, fmt_args);
   va_end(fmt_args);
 
   throw std::runtime_error(error_buf);
