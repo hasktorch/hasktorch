@@ -51,7 +51,7 @@ echo "  $CXX"
 echo "  $CC"
 
 rm -f ./libEH.o ./libEH.$EXTENSION ./build/libEH.$EXTENSION
-$CXX -Wall -c error_handler.cpp -fno-common -o libEHX.o
+$CXX -Wall -c error_handler.cpp -fno-common -fPIC -o libEHX.o
 $CXX $DLARG ./libEHX*.o -o libEHX.$EXTENSION
 rm -f libEHX.o
 mv libEHX.$EXTENSION ./build/
