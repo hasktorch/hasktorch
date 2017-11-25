@@ -13,6 +13,7 @@ case "$(uname)" in
         CXX=g++-6
         CC=gcc-6
         EXTENSION=dylib
+        DLARG=-dynamiclib
         ;;
 
     "Linux")
@@ -24,6 +25,7 @@ case "$(uname)" in
         CXX=g++
         CC=gcc
         EXTENSION=so
+        DLARG=-shared
         ;;
 
     "FreeBSD")
@@ -35,6 +37,7 @@ case "$(uname)" in
         CXX=g++
         CC=gcc
         EXTENSION=so
+        DLARG=-shared
         ;;
     *)
 
@@ -48,11 +51,9 @@ echo "  $CXX"
 echo "  $CC"
 
 # TODO - does -dynamiclib work on linux? 
-rm -f ./libEH.o
-rm -f ./libEH.$EXTENSION
-rm -f ./build/libEH.$EXTENSION
-$CXX -Wall -c error_handler.cpp -fno-common -flat_namespace -dynamiclib -o libEHX.o
-$CXX -dynamiclib -undefined suppress -flat_namespace ./libEHX*.o -o libEHX.$EXTENSION
+rm -f ./libEH.o ./libEH.$EXTENSION ./build/libEH.$EXTENSION
+$CXX -Wall -c error_handler.cpp -fno-common -o libEHX.o
+$CXX $DLARG ./libEHX*.o -o libEHX.$EXTENSION
 rm -f libEHX.o
 mv libEHX.$EXTENSION ./build/
 
