@@ -1,15 +1,16 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module Torch.Core.Tensor.Static.Double (
   tds_dim,
   tds_new,
+  tds_fromDynamic,
   tds_fromList,
   tds_init,
   tds_cloneDim,
@@ -17,11 +18,10 @@ module Torch.Core.Tensor.Static.Double (
   tds_p,
   tds_resize,
   tds_toDynamic,
-  tds_fromDynamic,
   tds_trans, -- matrix specialization of transpose
   TensorDoubleStatic(..),
   TDS(..),
-  Nat -- re-export for kind signature readability
+  Nat
   ) where
 
 import Control.DeepSeq
@@ -30,7 +30,7 @@ import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List
 import Foreign (Ptr)
 import Foreign.C.Types (CLong)
-import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
+import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, newForeignPtr)
 import GHC.Exts
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -42,6 +42,8 @@ import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
 
+-- TODO: get rid of this double-specific typeclass and just extend functionality
+-- as independent functions using singletons
 class StaticTensor t where
   -- |tensor dimensions
   -- |create tensor
@@ -90,6 +92,7 @@ tds_fromList
      [Double] -> TDS d2
 tds_fromList l = tds_resize (tds_fromList1D l :: TDS '[Product d2])
 
+-- |Make a resized tensor
 tds_resize :: forall d1 d2. (Product d1 ~ Product d2, SingI d1, SingI d2) =>
   TDS d1 -> TDS d2
 tds_resize t = unsafePerformIO $ do
@@ -219,15 +222,6 @@ testCreate = do
   let t4 = tds_new :: TDS '[8, 4]
   tds_p t4
   pure ()
-
--- -- | from flat list
--- instance (SingI r, Num a) => IsList (TDS (r :: [Nat])) where
---     fromList l = Tensor $ V.fromList $ take n $ l ++ repeat 0
---       where
---         n = case (sing :: Sing r) of
---           SNil -> 1
---           (SCons x xs') -> product $ fromIntegral <$> (fromSing x: fromSing xs')
---     toList (Tensor v) = V.toList v
 
 testEq = do
   print "Should be True:"

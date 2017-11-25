@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# source this if needed when building on OSX if there are linker errors.
+# dylib files in extra-lib-dirs  don't get forwarded to ghc
+# in some versions of OSX. See https://github.com/commercialhaskell/stack/issues/1826
+
+export DYLD_LIBRARY_PATH=$(PWD)/vendor/build/

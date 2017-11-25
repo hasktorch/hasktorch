@@ -1,4 +1,4 @@
-resolver: nightly-2017-11-21
+resolver: nightly-2017-11-22
 
 packages:
 - 'codegen'
@@ -24,15 +24,15 @@ extra-include-dirs: ['vendor/bindings-dsl']
 # extra-include-dirs: ['vendor/torch7/lib/TH/', 'vendor/torch7/lib/TH/generic/']
 
 # _must_ explicitly link TH dylib
-extra-lib-dirs:
-  - ./vendor/build/
+extra-lib-dirs: 
+- ./vendor/build
 
 ghc-options:
-  "hasktorch-core": -lTH
-  "hasktorch-codegen": -lTH
-  "hasktorch-examples": -lTH
-  "hasktorch-nn": -lTH
-  "hasktorch-raw": -lTH
-  "hasktorch-tests": -lTH
-  "hasktorch-tools": -lTH
+  "hasktorch-core": -lTH -lEHX
+  "hasktorch-codegen": -lTH -lEHX
+  "hasktorch-examples": -lTH -lEHX
+  "hasktorch-nn": -lTH -lEHX
+  "hasktorch-raw": -lTH -lEHX
+  "hasktorch-tests": -lTH -lEHX
+  "hasktorch-tools": -lTH -lEHX
 # ghci-options for inline-c should include -fobject-code -O0

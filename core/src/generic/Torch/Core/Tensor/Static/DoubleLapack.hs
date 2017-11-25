@@ -10,9 +10,9 @@ module Torch.Core.Tensor.Static.DoubleLapack (
   -- tds_gesvd,
   -- tds_gesvd2,
   tds_getri,
-  -- tds_potrf,
-  -- tds_potrs,
-  -- tds_potri,
+  tds_potrf,
+  tds_potrs,
+  tds_potri,
   tds_qr,
   tds_geqrf,
   tds_orgqr,
@@ -48,6 +48,15 @@ data UpperLower = Upper | Lower deriving (Eq, Show)
 toChar Upper = newCString "U"
 toChar Lower = newCString "L"
 
+-- X, LU = gesv(B, A) returns the solution of AX = B and LU contains L and
+-- U factors for LU factorization of A. A has to be a square and non-singular
+-- matrix (2D Tensor). A and LU are m × m, X is m × k and B is m × k. If resb
+-- and resa are given, then they will be used for temporary storage and
+-- returning the result.
+-- - resa will contain L and U factors for LU factorization of A.
+-- - resb will contain the solution X.
+-- Note: Irrespective of the original strides, the returned matrices resb and
+-- resa will be transposed, i.e. with strides 1, m instead of m, 1.
 -- TH_API void THTensor_(gesv)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_);
 tds_gesv :: KnownNat d => TDS '[d] -> TDS '[d, d] -> (TDS '[d, d], TDS '[d, d])
 tds_gesv b a = unsafePerformIO $ do
@@ -67,18 +76,18 @@ tds_gesv b a = unsafePerformIO $ do
     )
   pure (rb, ra)
 
-test = do
-  let a = (tds_init 2.0 :: TDS '[2, 2]) !*! (tds_init 2.0 :: TDS '[2, 2])
-  let b = tds_new :: TDS '[2]
-  tds_p a
-  tds_p b
-  let (resb, resa) = tds_gesv b a
-  tds_p resb
-  tds_p resa
-  pure ()
-
 -- TH_API void THTensor_(trtrs)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_, const char *uplo, const char *trans, const char *diag);
 
+-- gels([resb, resa,] b, a)
+-- Solution of least squares and least norm problems for a full rank m × n
+-- matrix A.
+-- - If n ≤ m, then solve ||AX-B||_F.
+-- - If n > m , then solve min ||X||_F s.t. AX = B.
+-- On return, first n rows of x matrix contains the solution and the rest
+-- contains residual information. Square root of sum squares of elements of each
+-- column of x starting at row n + 1 is the residual for corresponding column.
+-- Note: Irrespective of the original strides, the returned matrices resb and
+-- resa will be transposed, i.e. with strides 1, m instead of m, 1.
 -- TH_API void THTensor_(gels)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_);
 tds_gels b a = do
   let (rb, ra) = (tds_new, tds_new)
@@ -117,8 +126,18 @@ tds_getri a = do
     )
   pure ra
 
+-- Cholesky Decomposition of 2D Tensor A. The matrix A has to be a positive-definite and either symmetric or complex Hermitian.
+-- The factorization has the form
+--  A = U**T * U,   if UPLO = 'U', or
+--  A = L  * L**T,  if UPLO = 'L',
+-- where U is an upper triangular matrix and L is lower triangular.
+-- The optional character uplo = {'U', 'L'} specifies whether the upper or lower triangulardecomposition should be returned. By default, uplo = 'U'.
+-- U = torch.potrf(A, 'U') returns the upper triangular Cholesky decomposition of A.
+-- L = torch.potrf(A, 'L') returns the lower triangular Cholesky decomposition of A.
 -- TH_API void THTensor_(potrf)(THTensor *ra_, THTensor *a, const char *uplo);
-tds_potrf a ul = do
+tds_potrf
+  :: KnownNat d => TDS '[d, d] -> UpperLower -> TDS '[d, d]
+tds_potrf a ul = unsafePerformIO $ do
   let ra = tds_new
   ulC <- toChar ul
   withForeignPtr (tdsTensor ra)
@@ -130,8 +149,10 @@ tds_potrf a ul = do
     )
   pure ra
 
-
-
+-- Returns the solution to linear system AX = B using the Cholesky decomposition
+-- chol of 2D Tensor A. Square matrix chol should be triangular; and, righthand
+-- side matrix B should be of full rank. Optional character ul = Upper / Lower
+-- specifies matrix chol as either upper or lower triangular
 -- TH_API void THTensor_(potrs)(THTensor *rb_, THTensor *b_, THTensor *a_,  const char *uplo);
 tds_potrs b a ul = do
   let rb = tds_new
@@ -149,6 +170,9 @@ tds_potrs b a ul = do
   pure rb
 
 -- TH_API void THTensor_(potri)(THTensor *ra_, THTensor *a, const char *uplo);
+-- Returns the inverse of 2D Tensor A given its Cholesky decomposition chol.
+-- Square matrix chol should be triangular.
+-- ul specifies matrix chol as either upper or lower triangular
 tds_potri b a ul = do
   let ra = tds_new
   ulC <- toChar ul
@@ -164,6 +188,14 @@ tds_potri b a ul = do
     )
   pure ra
 
+-- Compute a QR decomposition of the matrix x: matrices q and r such that x = q
+-- * r, with q orthogonal and r upper triangular. This returns the thin
+-- (reduced) QR factorization. Note that precision may be lost if the magnitudes
+-- of the elements of x are large. Note also that, while it should always give
+-- you a valid decomposition, it may not give you the same one across platforms
+-- - it will depend on your LAPACK implementation. Note: Irrespective of the
+-- original strides, the returned matrix q will be transposed, i.e. with strides
+-- 1, m instead of m, 1.
 -- TH_API void THTensor_(qr)(THTensor *rq_, THTensor *rr_, THTensor *a);
 tds_qr a = do
   let (rq, rr) = (tds_new, tds_new)
@@ -179,6 +211,11 @@ tds_qr a = do
     )
   pure (rq, rr)
 
+-- This is a low-level function for calling LAPACK directly. You'll generally
+-- want to use torch.qr() instead. Computes a QR decomposition of a, but without
+-- constructing Q and R as explicit separate matrices. Rather, this directly
+-- calls the underlying LAPACK function ?geqrf which produces a sequence of
+-- 'elementary reflectors'. See LAPACK documentation for further details.
 -- TH_API void THTensor_(geqrf)(THTensor *ra_, THTensor *rtau_, THTensor *a);
 tds_geqrf a = do
   let (ra, rtau) = (tds_new, tds_new)
@@ -194,6 +231,10 @@ tds_geqrf a = do
     )
   pure (ra, rtau)
 
+-- This is a low-level function for calling LAPACK directly. You'll generally
+-- want to use torch.qr() instead. Constructs a Q matrix from a sequence of
+-- elementary reflectors, such as that given by torch.geqrf. See LAPACK
+-- documentation for further details.
 -- TH_API void THTensor_(orgqr)(THTensor *ra_, THTensor *a, THTensor *tau);
 tds_orgqr a tau = do
   let ra = tds_new
@@ -216,6 +257,30 @@ tds_orgqr a tau = do
 -- TH_API void THTensor_(btrifact)(THTensor *ra_, THIntTensor *rpivots_, THIntTensor *rinfo_, int pivot, THTensor *a);
 -- TH_API void THTensor_(btrisolve)(THTensor *rb_, THTensor *b, THTensor *atf, THIntTensor *pivots);
 
+ct = do
+  let x = (tds_fromList [10.0,8.0,2.0, 3.0, 27.0, 8.0, 4.0, 10.0, 3.0] :: TDS [3,3])
+  tds_p x
+  let y = tds_potrf x Upper
+  tds_p y
+  --tds_p (y !*! (tds_trans y))
+  tds_p ((tds_trans y) !*! y)
 
+test = do
+  let a = (tds_init 2.0 :: TDS '[2, 2]) !*! (tds_init 2.0 :: TDS '[2, 2])
+  let b = tds_new :: TDS '[2]
+  tds_p a
+  tds_p b
 
+  let x = (tds_fromList [10,5,7,4] :: TDS [2,2])
+  let c = tds_init 1.0 :: TDS '[2]
+  let (resb, resa) = tds_gesv c x
+  tds_p resb
+  tds_p resa
 
+  -- let potrf = tds_potrf x Upper
+
+  -- crashes
+  let (resb, resa) = tds_gesv b a
+  tds_p resb
+  tds_p resa
+  pure ()
