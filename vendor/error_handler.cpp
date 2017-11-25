@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstdarg>
+#include <cstdio>
 #include <stdexcept>
 #include <typeinfo>
 
@@ -21,7 +22,7 @@ void errorHandler(const char *format, ...) {
 
   std::va_list fmt_args;
   va_start(fmt_args, format);
-  std::vsnprintf(error_buf, ERROR_BUF_SIZE, format, fmt_args);
+  vsnprintf(error_buf, ERROR_BUF_SIZE, format, fmt_args);
   va_end(fmt_args);
 
   throw std::runtime_error(error_buf);
