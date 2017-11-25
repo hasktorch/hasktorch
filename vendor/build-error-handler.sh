@@ -50,7 +50,6 @@ echo "Compilers:"
 echo "  $CXX"
 echo "  $CC"
 
-# TODO - does -dynamiclib work on linux? 
 rm -f ./libEH.o ./libEH.$EXTENSION ./build/libEH.$EXTENSION
 $CXX -Wall -c error_handler.cpp -fno-common -o libEHX.o
 $CXX $DLARG ./libEHX*.o -o libEHX.$EXTENSION
