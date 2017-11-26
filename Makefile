@@ -1,6 +1,7 @@
 init:
 	git submodule update --init --recursive
 	( cd vendor; ./build-aten.sh )
+	( cd vendor; ./build-aten-declarations.sh )
 	( cd vendor; ./build-error-handler.sh )
 	stack build
 	stack test hasktorch-tests

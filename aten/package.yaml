@@ -11,6 +11,8 @@ dependencies:
 - base >=4.7 && <5
 - singletons >=2.3.1
 - text >=1.2.2.2
+- aeson-pretty >= 0.8.5
+- bytestring >= 0.10.8.2
 - yaml >=0.8.25
 
 library:
