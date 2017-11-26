@@ -1,6 +1,6 @@
 init:
 	git submodule update --init --recursive
-	( cd vendor; ./build-torch-core.sh )
+	( cd vendor; ./build-aten.sh )
 	stack build
 	stack test hasktorch-tests
 
@@ -14,8 +14,8 @@ refresh:
 	rsync -arv ./output/raw/src/*.hs ./raw/src/
 	rsync -arv ./output/raw/src/generic/*.hs ./raw/src/generic/
 
-build-torch-core:
-	cd vendor && ./build-torch-core.sh
+build-aten:
+	cd vendor && ./build-aten.sh
 
 codegen-generic: build
 	stack exec codegen-generic
