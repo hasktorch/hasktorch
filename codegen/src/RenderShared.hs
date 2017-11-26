@@ -61,17 +61,23 @@ renderCType THStoragePtr      = "THStorage *"
 renderCType THCharStoragePtr  = "THCharStorage *"
 renderCType THLongStoragePtr  = "THLongStorage *"
 renderCType THPtrDiff         = "ptrdiff_t"
-renderCType THLongPtrPtr         = "long **"
+renderCType THLongPtrPtr      = "long **"
 renderCType THLongPtr         = "long *"
 renderCType THLong            = "long"
 renderCType THIntPtr          = "int *"
 renderCType THInt             = "int"
+renderCType THUInt64          = "uint64_t"
+renderCType THUInt64Ptr       = "uint64_t *"
+renderCType THUInt64PtrPtr       = "uint64_t **"
+renderCType THInt64           = "int64_t"
+renderCType THInt64Ptr        = "int64_t *"
+renderCType THInt64PtrPtr        = "int64_t **"
 renderCType THSize            = "size_t"
 renderCType THCharPtr         = "char *"
 renderCType THChar            = "char"
 renderCType THShort           = "short"
 renderCType THHalf            = "THHalf"
-renderCType THHalfPtr            = "THHalfPtr"
+renderCType THHalfPtr         = "THHalfPtr"
 renderCType THFloat           = "float"
 renderCType THDouble          = "double"
 renderCType THRealPtr         = "real *"
@@ -279,6 +285,25 @@ renderHaskellType typeCat _ THIntPtr = case typeCat of
 
 renderHaskellType _ _ THInt =
   Just "CInt"
+
+-- https://www.haskell.org/onlinereport/haskell2010/haskellch8.html
+renderHaskellType _ _ THUInt64 =
+  Just "HsWord64"
+
+renderHaskellType _ _ THUInt64Ptr =
+  Just "Ptr HsWord64"
+
+renderHaskellType _ _ THUInt64PtrPtr =
+  Just "Ptr (Ptr HsWord64)"
+
+renderHaskellType _ _ THInt64 =
+  Just "HsInt64"
+
+renderHaskellType _ _ THInt64Ptr =
+  Just "Ptr HsInt64"
+
+renderHaskellType _ _ THInt64PtrPtr =
+  Just "Ptr (Ptr HsInt64)"
 
 renderHaskellType _ _ THSize =
   Just "CSize"

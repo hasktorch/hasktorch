@@ -129,7 +129,8 @@ thDoubleStoragePtr = (string "THDoubleStorage *" <|> string "THDoubleStorage*")
 {- Other -}
 
 thGeneratorPtr :: Parser THType
-thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THGeneratorPtr
+-- thGeneratorPtr = string "THGenerator" >> space >> thPtr >> pure THGeneratorPtr
+thGeneratorPtr = (string "THGenerator * "  <|> string "THGenerator *" <|> string "THGenerator* ") >> pure THGeneratorPtr
 
 thLongAllocatorPtr :: Parser THType
 thLongAllocatorPtr = (string "THAllocator *" <|> string "THAllocator*")
@@ -154,6 +155,24 @@ thIntPtr = (string "int *" <|> string "int* ") >> pure THIntPtr
 
 thInt :: Parser THType
 thInt = string "int" >> pure THInt
+
+thUInt64 :: Parser THType
+thUInt64 = string "uint64_t" >> pure THUInt64
+
+thUInt64Ptr :: Parser THType
+thUInt64Ptr = (string "uint64_t *" <|> string "uint64_t* ") >> pure THUInt64Ptr
+
+thUInt64PtrPtr :: Parser THType
+thUInt64PtrPtr = (string "uint64_t **" <|> string "uint64_t** ") >> pure THUInt64PtrPtr
+
+thInt64 :: Parser THType
+thInt64 = string "int64_t" >> pure THInt64
+
+thInt64Ptr :: Parser THType
+thInt64Ptr = (string "int64_t *" <|> string "int64_t* ") >> pure THInt64Ptr
+
+thInt64PtrPtr :: Parser THType
+thInt64PtrPtr = (string "int64_t **" <|> string "int64_t** ") >> pure THInt64PtrPtr
 
 thSize :: Parser THType
 thSize = string "size_t" >> pure THSize
@@ -240,6 +259,13 @@ thType = do
     <|> thLongPtrPtr
     <|> thLongPtr
     <|> thLong
+
+    <|> thUInt64PtrPtr
+    <|> thUInt64Ptr
+    <|> thUInt64
+    <|> thInt64PtrPtr -- must come before thInt*
+    <|> thInt64Ptr
+    <|> thInt64
     <|> thIntPtr
     <|> thInt
     <|> thSize

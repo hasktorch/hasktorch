@@ -24,11 +24,11 @@ outDirManaged = "./output/tensor/src/" :: Text
 files :: [(String, TemplateType -> [THFunction] -> HModule)]
 files =
   [
-    ("vendor/torch7/lib/TH/generic/THTensor.h",
+    ("vendor/TH/generic/THTensor.h",
      (makeModule outDirManaged True "THTensor.h" "Tensor" "Tensor")),
-    ("vendor/torch7/lib/TH/generic/THTensorRandom.h",
+    ("vendor/TH/generic/THTensorRandom.h",
      (makeModule outDirManaged True "THTensorRandom.h" "Tensor" "Tensor")),
-    ("vendor/torch7/lib/TH/generic/THTensorMath.h",
+    ("vendor/TH/generic/THTensorMath.h",
      (makeModule outDirManaged True "THTensorMath.h" "Tensor" "TensorMath"))
   ]
 
@@ -70,7 +70,7 @@ renderConversions args =
 
 -- |entrypoint for processing managed-memory files
 runPipelineManaged headerPath makeModuleConfig typeList = do
-  -- let headerPath = "vendor/torch7/lib/TH/generic/THTensorMath.h"
+  -- let headerPath = "vendor/TH/generic/THTensorMath.h"
   parsedBindings <- parseFile headerPath
   let bindingsUniq = nub parsedBindings
   putStrLn $ "First signature:"

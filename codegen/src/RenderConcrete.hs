@@ -41,26 +41,29 @@ runPipelineConcrete headerPath makeModuleConfig typeList = do
 concreteFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 concreteFiles =
   [
-    -- ("vendor/check.h",
-    --  (makeModule outDirConcrete False "THFile.h" "File" "File")),
-    ("vendor/torch7/lib/TH/THFile.h",
+
+    -- ("vendor/scratch.h",
+    --  (makeModule outDirConcrete False "scratch.h" "Scratch" "Scratch"))
+
+    ("vendor/TH/THFile.h",
      (makeModule outDirConcrete False "THFile.h" "File" "File")),
-    ("vendor/torch7/lib/TH/THDiskFile.h",
+    ("vendor/TH/THDiskFile.h",
      (makeModule outDirConcrete False "THDiskFile.h" "DiskFile" "DiskFile")),
-    ("vendor/torch7/lib/TH/THAtomic.h",
+    ("vendor/TH/THAtomic.h",
      (makeModule outDirConcrete False "THDiskFile.h" "Atomic" "Atomic")),
-    ("vendor/torch7/lib/TH/THHalf.h",
+    ("vendor/TH/THHalf.h",
      (makeModule outDirConcrete False "THHalf.h" "Half" "Half")),
-    ("vendor/torch7/lib/TH/THLogAdd.h",
+    ("vendor/TH/THLogAdd.h",
      (makeModule outDirConcrete False "THLogAdd.h" "LogAdd" "LogAdd")),
-    ("vendor/torch7/lib/TH/THRandom.h",
+    ("vendor/TH/THRandom.h",
      (makeModule outDirConcrete False "THRandom.h" "Random" "Random")),
-    ("vendor/torch7/lib/TH/THSize.h",
+    ("vendor/TH/THSize.h",
      (makeModule outDirConcrete False "THSize.h" "Size" "Size")),
-    ("vendor/torch7/lib/TH/THStorage.h",
+    ("vendor/TH/THStorage.h",
      (makeModule outDirConcrete False "THStorage.h" "Storage" "Storage")),
-    ("vendor/torch7/lib/TH/THMemoryFile.h",
+    ("vendor/TH/THMemoryFile.h",
      (makeModule outDirConcrete False "THMemoryFile.h" "MemoryFile" "MemoryFile"))
+
   ]
 
 main :: IO ()

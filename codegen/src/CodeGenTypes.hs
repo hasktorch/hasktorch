@@ -82,6 +82,12 @@ data THType =
   | THLong
   | THIntPtr
   | THInt
+  | THUInt64
+  | THUInt64Ptr
+  | THUInt64PtrPtr
+  | THInt64
+  | THInt64Ptr
+  | THInt64PtrPtr
   | THSize
   | THCharPtrPtr
   | THCharPtr

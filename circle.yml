@@ -12,13 +12,6 @@ dependencies:
 
   pre:
     - sudo apt-get update
-    - mkdir -p ~/.local/bin
-    - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-    - git submodule update --init --recursive
-    - cd ./vendor; ./build-aten.sh
-    - cd ./vendor; ./build-error-handler.sh
-
-  override:
     - >
       if [ ! -d ~/cmake-3.10.0-Linux-x86_64 ]; then
         echo "No cache - building CMake"
@@ -26,6 +19,13 @@ dependencies:
       else
         echo "Cached CMake found"
       fi
+    - mkdir -p ~/.local/bin
+    - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+    - git submodule update --init --recursive
+    - cd ./vendor; ./build-aten.sh
+    - cd ./vendor; ./build-error-handler.sh
+
+  override:
     - stack setup
     - rm -fr $(stack path --dist-dir) $(stack path --local-install-root)
     - stack build

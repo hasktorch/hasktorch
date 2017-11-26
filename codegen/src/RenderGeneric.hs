@@ -29,27 +29,27 @@ outDirGeneric = "./output/raw/src/generic/" :: Text
 genericFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 genericFiles =
   [
-    ("vendor/torch7/lib/TH/generic/THBlas.h",
+    ("vendor/TH/generic/THBlas.h",
      (makeModule outDirGeneric True "THBlas.h" "Blas" "Blas")),
-    ("vendor/torch7/lib/TH/generic/THLapack.h",
+    ("vendor/TH/generic/THLapack.h",
      (makeModule outDirGeneric True "THLapack.h" "Lapack" "Lapack")),
-    ("vendor/torch7/lib/TH/generic/THStorage.h",
+    ("vendor/TH/generic/THStorage.h",
      (makeModule outDirGeneric True "THStorage.h" "Storage" "Storage")),
-    ("vendor/torch7/lib/TH/generic/THStorageCopy.h",
+    ("vendor/TH/generic/THStorageCopy.h",
      (makeModule outDirGeneric True "THStorageCopy.h" "Storage" "StorageCopy")),
-    ("vendor/torch7/lib/TH/generic/THTensor.h",
+    ("vendor/TH/generic/THTensor.h",
      (makeModule outDirGeneric True "THTensor.h" "Tensor" "Tensor")),
-    ("vendor/torch7/lib/TH/generic/THTensorConv.h",
+    ("vendor/TH/generic/THTensorConv.h",
      (makeModule outDirGeneric True "THTensorConv.h" "Tensor" "TensorConv")),
-    ("vendor/torch7/lib/TH/generic/THTensorCopy.h",
+    ("vendor/TH/generic/THTensorCopy.h",
      (makeModule outDirGeneric True "THTensorCopy.h" "Tensor" "TensorCopy")),
-    ("vendor/torch7/lib/TH/generic/THTensorLapack.h",
+    ("vendor/TH/generic/THTensorLapack.h",
      (makeModule outDirGeneric True "THTensorLapack.h" "Tensor" "TensorLapack")),
-    ("vendor/torch7/lib/TH/generic/THTensorMath.h",
+    ("vendor/TH/generic/THTensorMath.h",
      (makeModule outDirGeneric True "THTensorMath.h" "Tensor" "TensorMath")),
-    ("vendor/torch7/lib/TH/generic/THTensorRandom.h",
+    ("vendor/TH/generic/THTensorRandom.h",
      (makeModule outDirGeneric True "THTensorRandom.h" "Tensor" "TensorRandom")),
-    ("vendor/torch7/lib/TH/generic/THVector.h",
+    ("vendor/TH/generic/THVector.h",
      (makeModule outDirGeneric True "THVector.h" "Vector" "Vector"))
   ]
 
