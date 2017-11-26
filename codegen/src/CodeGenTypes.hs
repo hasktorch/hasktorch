@@ -82,12 +82,33 @@ data THType =
   | THLong
   | THIntPtr
   | THInt
+
   | THUInt64
   | THUInt64Ptr
   | THUInt64PtrPtr
+  | THUInt32
+  | THUInt32Ptr
+  | THUInt32PtrPtr
+  | THUInt16
+  | THUInt16Ptr
+  | THUInt16PtrPtr
+  | THUInt8
+  | THUInt8Ptr
+  | THUInt8PtrPtr
+
   | THInt64
   | THInt64Ptr
   | THInt64PtrPtr
+  | THInt32
+  | THInt32Ptr
+  | THInt32PtrPtr
+  | THInt16
+  | THInt16Ptr
+  | THInt16PtrPtr
+  | THInt8
+  | THInt8Ptr
+  | THInt8PtrPtr
+
   | THSize
   | THCharPtrPtr
   | THCharPtr

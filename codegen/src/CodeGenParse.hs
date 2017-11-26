@@ -165,6 +165,35 @@ thUInt64Ptr = (string "uint64_t *" <|> string "uint64_t* ") >> pure THUInt64Ptr
 thUInt64PtrPtr :: Parser THType
 thUInt64PtrPtr = (string "uint64_t **" <|> string "uint64_t** ") >> pure THUInt64PtrPtr
 
+thUInt32 :: Parser THType
+thUInt32 = string "uint32_t" >> pure THInt32
+
+thUInt32Ptr :: Parser THType
+thUInt32Ptr = (string "uint32_t *" <|> string "uint32_t* ") >> pure THInt32Ptr
+
+thUInt32PtrPtr :: Parser THType
+thUInt32PtrPtr = (string "uint32_t **" <|> string "uint32_t** ") >> pure THInt32PtrPtr
+
+thUInt16 :: Parser THType
+thUInt16 = string "uint16_t" >> pure THInt16
+
+thUInt16Ptr :: Parser THType
+thUInt16Ptr = (string "uint16_t *" <|> string "uint16_t* ") >> pure THInt16Ptr
+
+thUInt16PtrPtr :: Parser THType
+thUInt16PtrPtr = (string "uint16_t **" <|> string "uint16_t** ") >> pure THInt16PtrPtr
+
+thUInt8 :: Parser THType
+thUInt8 = string "uint8_t" >> pure THInt8
+
+thUInt8Ptr :: Parser THType
+thUInt8Ptr = (string "uint8_t *" <|> string "uint8_t* ") >> pure THInt8Ptr
+
+thUInt8PtrPtr :: Parser THType
+thUInt8PtrPtr = (string "uint8_t **" <|> string "uint8_t** ") >> pure THInt8PtrPtr
+
+
+
 thInt64 :: Parser THType
 thInt64 = string "int64_t" >> pure THInt64
 
@@ -173,6 +202,37 @@ thInt64Ptr = (string "int64_t *" <|> string "int64_t* ") >> pure THInt64Ptr
 
 thInt64PtrPtr :: Parser THType
 thInt64PtrPtr = (string "int64_t **" <|> string "int64_t** ") >> pure THInt64PtrPtr
+
+thInt32 :: Parser THType
+thInt32 = string "int32_t" >> pure THInt32
+
+thInt32Ptr :: Parser THType
+thInt32Ptr = (string "int32_t *" <|> string "int32_t* ") >> pure THInt32Ptr
+
+thInt32PtrPtr :: Parser THType
+thInt32PtrPtr = (string "int32_t **" <|> string "int32_t** ") >> pure THInt32PtrPtr
+
+thInt16 :: Parser THType
+thInt16 = string "int16_t" >> pure THInt16
+
+thInt16Ptr :: Parser THType
+thInt16Ptr = (string "int16_t *" <|> string "int16_t* ") >> pure THInt16Ptr
+
+thInt16PtrPtr :: Parser THType
+thInt16PtrPtr = (string "int16_t **" <|> string "int16_t** ") >> pure THInt16PtrPtr
+
+thInt8 :: Parser THType
+thInt8 = string "int8_t" >> pure THInt8
+
+thInt8Ptr :: Parser THType
+thInt8Ptr = (string "int8_t *" <|> string "int8_t* ") >> pure THInt8Ptr
+
+thInt8PtrPtr :: Parser THType
+thInt8PtrPtr = (string "int8_t **" <|> string "int8_t** ") >> pure THInt8PtrPtr
+
+
+
+
 
 thSize :: Parser THType
 thSize = string "size_t" >> pure THSize
@@ -263,9 +323,28 @@ thType = do
     <|> thUInt64PtrPtr
     <|> thUInt64Ptr
     <|> thUInt64
+    <|> thUInt32PtrPtr
+    <|> thUInt32Ptr
+    <|> thUInt32
+    <|> thUInt16PtrPtr
+    <|> thUInt16Ptr
+    <|> thUInt16
+    <|> thUInt8PtrPtr
+    <|> thUInt8Ptr
+    <|> thUInt8
+
     <|> thInt64PtrPtr -- must come before thInt*
     <|> thInt64Ptr
     <|> thInt64
+    <|> thInt32PtrPtr
+    <|> thInt32Ptr
+    <|> thInt32
+    <|> thInt16PtrPtr
+    <|> thInt16Ptr
+    <|> thInt16
+    <|> thInt8PtrPtr
+    <|> thInt8Ptr
+    <|> thInt8
     <|> thIntPtr
     <|> thInt
     <|> thSize

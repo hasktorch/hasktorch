@@ -66,12 +66,33 @@ renderCType THLongPtr         = "long *"
 renderCType THLong            = "long"
 renderCType THIntPtr          = "int *"
 renderCType THInt             = "int"
+
 renderCType THUInt64          = "uint64_t"
 renderCType THUInt64Ptr       = "uint64_t *"
-renderCType THUInt64PtrPtr       = "uint64_t **"
+renderCType THUInt64PtrPtr    = "uint64_t **"
+renderCType THUInt32           = "uint32_t"
+renderCType THUInt32Ptr        = "uint32_t *"
+renderCType THUInt32PtrPtr     = "uint32_t **"
+renderCType THUInt16           = "uint16_t"
+renderCType THUInt16Ptr        = "uint16_t *"
+renderCType THUInt16PtrPtr     = "uint16_t **"
+renderCType THUInt8            = "uint8_t"
+renderCType THUInt8Ptr         = "uint8_t *"
+renderCType THUInt8PtrPtr      = "uint8_t **"
+
+
 renderCType THInt64           = "int64_t"
 renderCType THInt64Ptr        = "int64_t *"
-renderCType THInt64PtrPtr        = "int64_t **"
+renderCType THInt64PtrPtr     = "int64_t **"
+renderCType THInt32           = "int32_t"
+renderCType THInt32Ptr        = "int32_t *"
+renderCType THInt32PtrPtr     = "int32_t **"
+renderCType THInt16           = "int16_t"
+renderCType THInt16Ptr        = "int16_t *"
+renderCType THInt16PtrPtr     = "int16_t **"
+renderCType THInt8            = "int8_t"
+renderCType THInt8Ptr         = "int8_t *"
+renderCType THInt8PtrPtr      = "int8_t **"
 renderCType THSize            = "size_t"
 renderCType THCharPtr         = "char *"
 renderCType THChar            = "char"
@@ -296,6 +317,33 @@ renderHaskellType _ _ THUInt64Ptr =
 renderHaskellType _ _ THUInt64PtrPtr =
   Just "Ptr (Ptr HsWord64)"
 
+renderHaskellType _ _ THUInt32 =
+  Just "HsWord32"
+
+renderHaskellType _ _ THUInt32Ptr =
+  Just "Ptr HsWord32"
+
+renderHaskellType _ _ THUInt32PtrPtr =
+  Just "Ptr (Ptr HsWord32)"
+
+renderHaskellType _ _ THUInt16 =
+  Just "HsWord16"
+
+renderHaskellType _ _ THUInt16Ptr =
+  Just "Ptr HsWord16"
+
+renderHaskellType _ _ THUInt16PtrPtr =
+  Just "Ptr (Ptr HsWord16)"
+
+renderHaskellType _ _ THUInt8 =
+  Just "HsWord8"
+
+renderHaskellType _ _ THUInt8Ptr =
+  Just "Ptr HsWord8"
+
+renderHaskellType _ _ THUInt8PtrPtr =
+  Just "Ptr (Ptr HsWord8)"
+
 renderHaskellType _ _ THInt64 =
   Just "HsInt64"
 
@@ -304,6 +352,33 @@ renderHaskellType _ _ THInt64Ptr =
 
 renderHaskellType _ _ THInt64PtrPtr =
   Just "Ptr (Ptr HsInt64)"
+
+renderHaskellType _ _ THInt32 =
+  Just "HsInt32"
+
+renderHaskellType _ _ THInt32Ptr =
+  Just "Ptr HsInt32"
+
+renderHaskellType _ _ THInt32PtrPtr =
+  Just "Ptr (Ptr HsInt32)"
+
+renderHaskellType _ _ THInt16 =
+  Just "HsInt16"
+
+renderHaskellType _ _ THInt16Ptr =
+  Just "Ptr HsInt16"
+
+renderHaskellType _ _ THInt16PtrPtr =
+  Just "Ptr (Ptr HsInt16)"
+
+renderHaskellType _ _ THInt8 =
+  Just "HsInt8"
+
+renderHaskellType _ _ THInt8Ptr =
+  Just "Ptr HsInt8"
+
+renderHaskellType _ _ THInt8PtrPtr =
+  Just "Ptr (Ptr HsInt8)"
 
 renderHaskellType _ _ THSize =
   Just "CSize"
