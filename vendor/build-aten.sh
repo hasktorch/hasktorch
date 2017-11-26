@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 
-mkdir -rf ./build
+rm -rf ./build
 mkdir -p ./build
 
 case "$(uname)" in
