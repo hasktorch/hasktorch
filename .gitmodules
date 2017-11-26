@@ -1,6 +1,3 @@
-[submodule "vendor/torch7"]
-	path = vendor/torch7
-	url = https://github.com/torch/torch7.git
 [submodule "vendor/pytorch"]
 	path = vendor/pytorch
 	url = https://github.com/pytorch/pytorch.git
