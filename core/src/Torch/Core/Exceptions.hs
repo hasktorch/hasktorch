@@ -63,6 +63,11 @@ foreign import ccall unsafe "THGeneral.h.in THLog1p"
 foreign import ccall "THGeneral.h.in THSetErrorHandler"
   c_THSetErrorHandler :: FunPtr (CString -> IO ()) -> IO ()
 
+-- safe version of potrf
+-- |c_THDoubleTensor_potrf : ra_ a uplo -> void
+foreign import ccall "THTensorLapack.h THDoubleTensor_potrf"
+  c_safe_THDoubleTensor_potrf :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> Ptr CChar -> IO ()
+
 lapackTest :: IO ()
 lapackTest = do
   putStrLn "Setting error handler"
@@ -76,7 +81,7 @@ lapackTest = do
   c_THDoubleTensor_set2d a 1 0 0.0
   resA <- tensorRaw (D2 (2, 2)) 5.0
   dispRaw a
-  c_THDoubleTensor_potrf resA a opt
+  c_safe_THDoubleTensor_potrf resA a opt
   dispRaw a
   -- dispRaw resA -- TODO: what should happen when potrf has an error
   c_THDoubleTensor_free a

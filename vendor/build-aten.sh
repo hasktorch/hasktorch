@@ -43,7 +43,8 @@ echo "Compilers:"
 echo "  $CXX"
 echo "  $CC"
 
-cd ./build; cmake ../TH/CMakeLists.txt -B. -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC; make; cd ..
+cd ./build; cmake ../aten/CMakeLists.txt -B. -DNO_CUDA=true -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC; make; cd ..
+cp ./build/src/ATen/*.dylib ./build/
 
 # if [ -x "$(command -v nm)" ]; then
 #     echo "Checking symbols in dylib:"

@@ -14,7 +14,7 @@ dependencies:
     - mkdir -p ~/.local/bin
     - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - git submodule update --init --recursive
-    - cd ./vendor; ./build-torch-core.sh
+    - cd ./vendor; ./build-aten.sh
     - cd ./vendor; ./build-error-handler.sh
 
   override:
