@@ -23,7 +23,7 @@ import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
-import Torch.Core.Internal (w2cl, i2cl)
+import Torch.Core.Internal (w2cl, i2cl, i2cll)
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import THTypes
@@ -44,13 +44,13 @@ td_get loc tensor =
     (\t -> pure . realToFrac $ getter loc t)
   where
     getter D0 t = undefined
-    getter (D1 d1) t = c_THDoubleTensor_get1d t $ i2cl d1
+    getter (D1 d1) t = c_THDoubleTensor_get1d t $ i2cll d1
     getter (D2 (d1, d2)) t = c_THDoubleTensor_get2d t
-                             (i2cl d1) (i2cl d2)
+                             (i2cll d1) (i2cll d2)
     getter (D3 (d1, d2, d3)) t = c_THDoubleTensor_get3d t
-                                 (i2cl d1) (i2cl d2) (i2cl d3)
+                                 (i2cll d1) (i2cll d2) (i2cll d3)
     getter (D4 (d1, d2, d3, d4)) t = c_THDoubleTensor_get4d t
-                                     (i2cl d1) (i2cl d2) (i2cl d3) (i2cl d4)
+                                     (i2cll d1) (i2cll d2) (i2cll d3) (i2cll d4)
 
 td_newWithTensor :: TensorDouble -> TensorDouble
 td_newWithTensor t = unsafePerformIO $ do

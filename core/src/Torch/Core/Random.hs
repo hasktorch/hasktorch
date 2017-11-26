@@ -56,7 +56,7 @@ manualSeed gen seedVal = do
   newContext <- applyGen ((flip c_THRandom_manualSeed) valC) gen
   newContext
   where
-    valC = (fromIntegral seedVal) :: CLong
+    valC = (fromIntegral seedVal) :: CULong
 
 initialSeed :: RandGen -> Int
 initialSeed gen = unsafePerformIO $ do

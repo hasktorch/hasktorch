@@ -39,7 +39,7 @@ makeModule outDir isTemplate modHeader modSuffix modFileSuffix typeTemplate bind
         modSuffix = modSuffix,
         modFileSuffix = modFileSuffix,
         modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types", "THTypes"],
+        modImports = ["Foreign", "Foreign.C.Types", "THTypes", "Data.Word", "Data.Int"],
         modTypeDefs = [],
         modBindings = bindings,
         modOutDir = outDir,
@@ -307,78 +307,81 @@ renderHaskellType typeCat _ THIntPtr = case typeCat of
 renderHaskellType _ _ THInt =
   Just "CInt"
 
+-- int/uint conversions, see
 -- https://www.haskell.org/onlinereport/haskell2010/haskellch8.html
+-- https://hackage.haskell.org/package/base-4.10.0.0/docs/Foreign-C-Types.html
+
 renderHaskellType _ _ THUInt64 =
-  Just "HsWord64"
+  Just "CULong"
 
 renderHaskellType _ _ THUInt64Ptr =
-  Just "Ptr HsWord64"
+  Just "Ptr CULong"
 
 renderHaskellType _ _ THUInt64PtrPtr =
-  Just "Ptr (Ptr HsWord64)"
+  Just "Ptr (Ptr CULong)"
 
 renderHaskellType _ _ THUInt32 =
-  Just "HsWord32"
+  Just "CUInt"
 
 renderHaskellType _ _ THUInt32Ptr =
-  Just "Ptr HsWord32"
+  Just "Ptr CUInt"
 
 renderHaskellType _ _ THUInt32PtrPtr =
-  Just "Ptr (Ptr HsWord32)"
+  Just "Ptr (Ptr CUInt)"
 
 renderHaskellType _ _ THUInt16 =
-  Just "HsWord16"
+  Just "CUShort"
 
 renderHaskellType _ _ THUInt16Ptr =
-  Just "Ptr HsWord16"
+  Just "Ptr CUShort"
 
 renderHaskellType _ _ THUInt16PtrPtr =
-  Just "Ptr (Ptr HsWord16)"
+  Just "Ptr (Ptr CUShort)"
 
 renderHaskellType _ _ THUInt8 =
-  Just "HsWord8"
+  Just "CBool"
 
 renderHaskellType _ _ THUInt8Ptr =
-  Just "Ptr HsWord8"
+  Just "Ptr CBool"
 
 renderHaskellType _ _ THUInt8PtrPtr =
-  Just "Ptr (Ptr HsWord8)"
+  Just "Ptr (Ptr CBool)"
 
 renderHaskellType _ _ THInt64 =
-  Just "HsInt64"
+  Just "CLLong"
 
 renderHaskellType _ _ THInt64Ptr =
-  Just "Ptr HsInt64"
+  Just "Ptr CLLong"
 
 renderHaskellType _ _ THInt64PtrPtr =
-  Just "Ptr (Ptr HsInt64)"
+  Just "Ptr (Ptr CLLong)"
 
 renderHaskellType _ _ THInt32 =
-  Just "HsInt32"
+  Just "Int"
 
 renderHaskellType _ _ THInt32Ptr =
-  Just "Ptr HsInt32"
+  Just "Ptr Int"
 
 renderHaskellType _ _ THInt32PtrPtr =
-  Just "Ptr (Ptr HsInt32)"
+  Just "Ptr (Ptr Int)"
 
 renderHaskellType _ _ THInt16 =
-  Just "HsInt16"
+  Just "CShort"
 
 renderHaskellType _ _ THInt16Ptr =
-  Just "Ptr HsInt16"
+  Just "Ptr CShort"
 
 renderHaskellType _ _ THInt16PtrPtr =
-  Just "Ptr (Ptr HsInt16)"
+  Just "Ptr (Ptr CShort)"
 
 renderHaskellType _ _ THInt8 =
-  Just "HsInt8"
+  Just "CSChar"
 
 renderHaskellType _ _ THInt8Ptr =
-  Just "Ptr HsInt8"
+  Just "Ptr CSChar"
 
 renderHaskellType _ _ THInt8PtrPtr =
-  Just "Ptr (Ptr HsInt8)"
+  Just "Ptr (Ptr CSChar)"
 
 renderHaskellType _ _ THSize =
   Just "CSize"
@@ -450,14 +453,14 @@ renderFunName :: Text -> Text -> Text
 renderFunName prefix name = prefix <> "_" <> name
 
 
--- |Render a single function signature. Torch never calls back into haskell, so
--- unsafe is appropriate here
+-- |Render a single function signature.
 renderFunSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunSig headerFile modTypeTemplate (name, retType, args) =
   (
    "-- |c_" <> name <> " : "
    <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType) <> "\n"
-   <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " " <> name <> "\"\n"
+   --   <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " " <> name <> "\"\n"
+   <> "foreign import ccall \"" <> T.pack headerFile <> " " <> name <> "\"\n"
    <> "  c_" <> name <> " :: "
    <> (T.intercalate " -> " typeSignatureClean)
     -- TODO : fromJust shouldn't fail but still clean this up so it's not unsafe
@@ -477,7 +480,8 @@ renderFunPtrSig headerFile modTypeTemplate (name, retType, args) =
   (
    "-- |p_" <> name <> " : Pointer to function : "
    <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType) <> "\n"
-   <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " &" <> name <> "\"\n"
+   -- <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " &" <> name <> "\"\n"
+   <> "foreign import ccall \"" <> T.pack headerFile <> " &" <> name <> "\"\n"
    <> "  p_" <> name <> " :: FunPtr ("
    <> (T.intercalate " -> " typeSignatureClean)
     -- TODO : fromJust shouldn't fail but still clean this up so it's not unsafe

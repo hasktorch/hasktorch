@@ -15,7 +15,7 @@ import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
-import Torch.Core.Internal (w2cl)
+import Torch.Core.Internal (w2cll)
 import Torch.Core.Tensor.Raw hiding (fillRaw, fillRaw0)
 import Torch.Core.Tensor.Types
 import THTypes
@@ -31,13 +31,13 @@ tl_get loc tensor =
                                     ))
   where
     getter D0 t = undefined
-    getter (D1 d1) t = c_THLongTensor_get1d t $ w2cl d1
+    getter (D1 d1) t = c_THLongTensor_get1d t $ w2cll d1
     getter (D2 (d1, d2)) t = c_THLongTensor_get2d t
-                          (w2cl d1) (w2cl d2)
+                          (w2cll d1) (w2cll d2)
     getter (D3 (d1, d2, d3)) t = c_THLongTensor_get3d t
-                             (w2cl d1) (w2cl d2) (w2cl d3)
+                             (w2cll d1) (w2cll d2) (w2cll d3)
     getter (D4 (d1, d2, d3, d4)) t = c_THLongTensor_get4d t
-                                (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+                                (w2cll d1) (w2cll d2) (w2cll d3) (w2cll d4)
 
 
 -- |Returns a function that accepts a tensor and fills it with specified value
@@ -60,10 +60,10 @@ tl_new dims = unsafePerformIO $ do
   where
     wrap ptr = newForeignPtr p_THLongTensor_free ptr
     go D0 = c_THLongTensor_new
-    go (D1 d1) = c_THLongTensor_newWithSize1d $ w2cl d1
+    go (D1 d1) = c_THLongTensor_newWithSize1d $ w2cll d1
     go (D2 (d1, d2)) = c_THLongTensor_newWithSize2d
-                    (w2cl d1) (w2cl d2)
+                    (w2cll d1) (w2cll d2)
     go (D3 (d1, d2, d3)) = c_THLongTensor_newWithSize3d
-                       (w2cl d1) (w2cl d2) (w2cl d3)
+                       (w2cll d1) (w2cll d2) (w2cll d3)
     go (D4 (d1, d2, d3, d4)) = c_THLongTensor_newWithSize4d
-                          (w2cl d1) (w2cl d2) (w2cl d3) (w2cl d4)
+                          (w2cll d1) (w2cll d2) (w2cll d3) (w2cll d4)

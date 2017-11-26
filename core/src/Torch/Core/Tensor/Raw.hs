@@ -13,7 +13,7 @@ module Torch.Core.Tensor.Raw
   ) where
 
 import Foreign (Ptr)
-import Foreign.C.Types (CLong, CDouble, CInt)
+import Foreign.C.Types (CLLong, CLong, CDouble, CInt)
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, mallocForeignPtrArray, newForeignPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
@@ -21,7 +21,7 @@ import Control.Monad (forM_)
 
 import GHC.Ptr (FunPtr)
 
-import Torch.Core.Internal (w2cl, onDims)
+import Torch.Core.Internal (w2cll, onDims)
 import Torch.Core.Tensor.Index (TIdx(..))
 import THTypes (CTHDoubleTensor, CTHGenerator)
 import Torch.Core.Tensor.Types (TensorDim(..), TensorDoubleRaw, TensorLongRaw, (^.), _1, _2, _3, _4)
@@ -46,13 +46,13 @@ toList tensor =
     size :: [Int]
     size = fmap (fromIntegral . T.c_THDoubleTensor_size tensor) [0 .. T.c_THDoubleTensor_nDimension tensor - 1]
 
-    indexes :: [TIdx CLong]
+    indexes :: [TIdx CLLong]
     indexes = idx size
 
     range :: Integral i => Int -> [i]
     range mx = [0 .. fromIntegral mx - 1]
 
-    idx :: [Int] -> [TIdx CLong]
+    idx :: [Int] -> [TIdx CLLong]
     idx = \case
       []               -> [I0]
       [nx]             -> [I1 x | x <- range nx ]
@@ -69,7 +69,7 @@ dispRaw tensor
   | (length sz) == 0 = putStrLn "Empty Tensor"
   | (length sz) == 1 = do
       putStrLn ""
-      let indexes = [ fromIntegral idx :: CLong
+      let indexes = [ fromIntegral idx :: CLLong
                     | idx <- [0..(sz !! 0 - 1)] ]
       putStr "[ "
       mapM_ (\idx -> putStr $
@@ -78,8 +78,8 @@ dispRaw tensor
       putStrLn "]\n"
   | (length sz) == 2 = do
       putStrLn ""
-      let pairs = [ ((fromIntegral r) :: CLong,
-                     (fromIntegral c) :: CLong)
+      let pairs = [ ((fromIntegral r) :: CLLong,
+                     (fromIntegral c) :: CLLong)
                   | r <- [0..(sz !! 0 - 1)], c <- [0..(sz !! 1 - 1)] ]
       putStr ("[ " :: String)
       mapM_ (\(r, c) -> do
@@ -131,7 +131,7 @@ tensorRaw dims value = do
   pure newPtr
   where
     go :: TensorDim Word -> IO TensorDoubleRaw
-    go = onDims w2cl
+    go = onDims w2cll
       T.c_THDoubleTensor_new
       T.c_THDoubleTensor_newWithSize1d
       T.c_THDoubleTensor_newWithSize2d

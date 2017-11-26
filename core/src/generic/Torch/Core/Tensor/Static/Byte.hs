@@ -16,7 +16,7 @@ import Data.Singletons
 import Data.Singletons.TypeLits
 
 import Foreign (Ptr)
-import Foreign.C.Types (CLong)
+import Foreign.C.Types (CLLong)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -104,7 +104,7 @@ dispByteRaw tensor
   | (length sz) == 0 = putStrLn "Empty Tensor"
   | (length sz) == 1 = do
       putStrLn ""
-      let indexes = [ fromIntegral idx :: CLong
+      let indexes = [ fromIntegral idx :: CLLong
                     | idx <- [0..(sz !! 0 - 1)] ]
       putStr "[ "
       mapM_ (\idx -> putStr $
@@ -113,8 +113,8 @@ dispByteRaw tensor
       putStrLn "]\n"
   | (length sz) == 2 = do
       putStrLn ""
-      let pairs = [ ((fromIntegral r) :: CLong,
-                     (fromIntegral c) :: CLong)
+      let pairs = [ ((fromIntegral r) :: CLLong,
+                     (fromIntegral c) :: CLLong)
                   | r <- [0..(sz !! 0 - 1)], c <- [0..(sz !! 1 - 1)] ]
       putStr ("[ " :: String)
       mapM_ (\(r, c) -> do

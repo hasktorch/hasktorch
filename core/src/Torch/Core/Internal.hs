@@ -2,7 +2,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Core.Internal
   ( w2cl
+  , w2cll
   , i2cl
+  , i2cll
+  , fromIntegral
   , onDims
   , showLim
   , genOp1
@@ -14,15 +17,23 @@ module Torch.Core.Internal
   ) where
 
 import Foreign (Word, Ptr)
-import Foreign.C.Types (CLong, CDouble)
+import Foreign.C.Types (CLLong, CLong, CDouble)
 import Torch.Core.Tensor.Types (TensorDim(..))
 import Numeric (showGFloat)
+
+w2cll :: Word -> CLLong
+w2cll = fromIntegral
 
 w2cl :: Word -> CLong
 w2cl = fromIntegral
 
 i2cl :: Integer -> CLong
 i2cl = fromIntegral
+
+i2cll :: Integer -> CLLong
+i2cll = fromIntegral
+
+fi = fromIntegral
 
 -- | simple helper to clean up common pattern matching on TensorDim
 onDims

@@ -1,6 +1,6 @@
 machine:
   environment:
-    PATH: ~/.local/bin/:$PATH
+    PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:$PATH
     LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:$LD_LIBRARY_PATH
 
 dependencies:
@@ -8,7 +8,7 @@ dependencies:
     - "~/.stack"
     - ".stack-work"
     - "/home/ubuntu/hasktorch/vendor/build/"
-    - ~/cmake-3.10.0-Linux-x86_64
+    - "~/cmake-3.10.0-Linux-x86_64"
 
   pre:
     - sudo apt-get update
@@ -22,6 +22,8 @@ dependencies:
     - mkdir -p ~/.local/bin
     - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - git submodule update --init --recursive
+    - alias cmake=~/cmake-3.10.0-Linux-x86_64/bin/cmake
+    - sudo pip install pyyaml
     - cd ./vendor; ./build-aten.sh
     - cd ./vendor; ./build-error-handler.sh
 

@@ -15,7 +15,7 @@ import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
-import Torch.Core.Internal (w2cl, onDims)
+import Torch.Core.Internal (w2cl, w2cll, onDims)
 import Torch.Core.Tensor.Raw hiding (fillRaw, fillRaw0)
 import Torch.Core.Tensor.Types
 import THTypes
@@ -47,7 +47,7 @@ tb_new dims = unsafePerformIO $ do
     wrap ptr = newForeignPtr p_THByteTensor_free ptr
 
     go :: TensorDim Word -> IO (Ptr CTHByteTensor)
-    go = onDims w2cl
+    go = onDims w2cll
       c_THByteTensor_new
       c_THByteTensor_newWithSize1d
       c_THByteTensor_newWithSize2d
