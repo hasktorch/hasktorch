@@ -1,6 +1,7 @@
 resolver: nightly-2017-11-24
 
 packages:
+- 'aten'
 - 'codegen'
 - 'core'
 - 'examples'
@@ -23,12 +24,11 @@ extra-package-dbs: []
 extra-include-dirs: ['vendor/bindings-dsl']
 # extra-include-dirs: ['vendor/torch7/lib/TH/', 'vendor/torch7/lib/TH/generic/']
 
-# _must_ explicitly link TH dylib
 extra-lib-dirs: 
 - ./vendor/build
-- /Users/huanga13/projects-personal/hasktorch/vendor/build
 
 ghc-options:
+  "hasktorch-aten": -lATen -lEHX
   "hasktorch-core": -lATen -lEHX
   "hasktorch-codegen": -lATen -lEHX
   "hasktorch-examples": -lATen -lEHX
