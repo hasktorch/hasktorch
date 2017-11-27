@@ -9,6 +9,10 @@ init:
 clean:
 	stack clean
 
+purge: clean
+	rm -rf vendor
+	git checkout -- vendor
+
 build: clean
 	stack build
 
