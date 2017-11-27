@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aec605963a13bc66c0c4331551b115bc10b223092048dc3bfab7762a78fd6187
+-- hash: dc3d111251e9ce87f2735b7393b8d637f31c9ebbe12cc1358b948a771199bd90
 
 name:           hasktorch-aten
 version:        0.1.0.0
@@ -24,7 +24,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      aeson-pretty >=0.8.5
+      aeson >=1.2.3.0
+    , aeson-pretty >=0.8.5
     , base >=4.7 && <5
     , bytestring >=0.10.8.2
     , singletons >=2.3.1
