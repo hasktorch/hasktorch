@@ -60,6 +60,6 @@ sed -e 's/^\[\[$/-/g' \
     -e '/^$/d' \
     ./pytorch/aten/src/ATen/Declarations.cwrap > aten-spec/Declarations.yaml
 
-head -50 aten-declarations.yaml
+head -30 aten-spec/Declarations.yaml
 
 printf ".\n.\n.\n\nWrote ATen spec files"

@@ -59,7 +59,7 @@ instance ToJSON Entry where
 
 -- yaml-ified ATen spec, generated from vendor/aten/src/ATen/Declarations.cwrap
 -- using the script vendor/build-aten-declarations.sh
-specFile = "vendor/aten-declarations.yaml"
+specFile = "vendor/aten-spec/Declarations.yaml"
 
 -- |given an optional accessor filter entries for entries where that accessor is
 -- not nothing
