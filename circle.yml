@@ -25,7 +25,7 @@ dependencies:
     - alias cmake=~/cmake-3.10.0-Linux-x86_64/bin/cmake
     - sudo pip install pyyaml
     - cd ./vendor; ./build-aten.sh
-    - cd ./vendor; ./build-aten-declarations.sh
+    - cd ./vendor; ./build-aten-spec.sh
     - cd ./vendor; ./build-error-handler.sh
 
   override:

@@ -15,6 +15,7 @@ contributing developers at the current time.**
 
 | Directory | Description |
 | --------- | ----------- |
+| [`aten/`][aten] | Modules to interact with ATen library & spec files (experimental).
 | [`codegen/`][codegen] | Parsers that parse .h files in the C TH library and generate low-level raw Haskell bindings.
 | [`core/`][core] | Memory-managed tensors and core data types that wrap raw C bindings to TH.
 | [`nn/`][nn] | Neural network library (not much here atm)
@@ -54,7 +55,7 @@ git submodule update --init --recursive
 ```
 
 A recent version of the gcc C compiler is used to build the TorcH C library. If
-gcc is already installed, you should be able to run this shell script from
+gcc is already installed, you should be able to run these scripts from
 within the `vendor/` directory:
 
 ```
@@ -115,6 +116,7 @@ https://hasktorch.slack.com
 <!-- project directory links -->
 
 [makefile]: ./Makefile
+[aten]: ./aten/
 [codegen]: ./codegen/
 [core]: ./core/
 [examples]: ./examples/
