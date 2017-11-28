@@ -1,28 +1,24 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
+module Torch.Core.Tensor.Static.DoubleMath
+  ( (^+^)
+  , (^-^)
+  , (^*^)
+  , (^/^)
+  , (!*)
+  , (!*!)
+  , (^+)
+  , (^-)
+  , (+^)
+  , (-^)
+  , (^*)
+  , (^/)
+  , (*^)
+  , (/^)
+  , (<.>)
 
-module Torch.Core.Tensor.Static.DoubleMath (
-
-  (^+^),
-  (^-^),
-  (^*^),
-  (^/^),
-  (!*),
-  (!*!),
-  (^+),
-  (^-),
-  (+^),
-  (-^),
-  (^*),
-  (^/),
-  (*^),
-  (/^),
-  (<.>),
-
-  tds_fill
+  , tds_fill
   , tds_fill_
 
   , tds_addConst

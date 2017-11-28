@@ -88,8 +88,8 @@ tds_fromList1D l = fromList l
 
 -- |Initialize a tensor of arbitrary dimension from a list
 tds_fromList
-  :: forall d2 . (SingI '[Product d2], SingI d2, KnownNat (Product d2)) =>
-     [Double] -> TDS d2
+  :: forall d2 . (SingI '[Product d2], SingI d2, KnownNat (Product d2))
+  => [Double] -> TDS d2
 tds_fromList l = tds_resize (tds_fromList1D l :: TDS '[Product d2])
 
 -- |Make a resized tensor
@@ -131,8 +131,8 @@ list2dim lst  = case (length lst) of
   where
     d = fromIntegral <$> lst -- cast as needed for tensordim
 
-data TensorDoubleStatic (d :: [Nat]) = TDS {
-  tdsTensor :: !(ForeignPtr CTHDoubleTensor)
+newtype TensorDoubleStatic (d :: [Nat]) = TDS {
+  tdsTensor :: ForeignPtr CTHDoubleTensor
   } deriving (Show)
 
 type TDS = TensorDoubleStatic
@@ -206,44 +206,4 @@ instance SingI d => StaticTensor (TensorDoubleStatic d)  where
   tds_cloneDim _ = tds_new :: TDS d
   tds_p tensor = (withForeignPtr (tdsTensor tensor) dispRaw)
 
-{- Sanity checks -}
-
-testCreate = do
-  print("1")
-  let t1 = tds_new :: TDS '[2, 2]
-  tds_p t1
-  print("2")
-  let t2 = tds_new :: TDS '[2, 4]
-  tds_p t2
-  print("3")
-  let t3 = tds_new :: TDS '[2, 2, 2]
-  tds_p t3
-  print("4")
-  let t4 = tds_new :: TDS '[8, 4]
-  tds_p t4
-  pure ()
-
-testEq = do
-  print "Should be True:"
-  print $ (tds_init 4.0 :: TDS '[2,3]) ==  (tds_init 4.0 :: TDS '[2,3])
-  print "Should be False:"
-  print $ (tds_init 3.0 :: TDS '[2,3]) ==  (tds_init 1.0 :: TDS '[2,3])
-
-testTranspose = do
-  tds_p $ tds_trans . tds_trans . tds_trans $ (tds_init 3.0 :: TDS '[3,2])
-  print $ (tds_trans . tds_trans $ (tds_init 3.0 :: TDS '[3,2])) == (tds_init 3.0 :: TDS '[3,2])
-
-testResize = do
-  let vec = tds_fromList [1.0, 5.0, 2.0, 4.0, 3.0, 3.5] :: TDS '[6]
-  let mtx = tds_resize vec :: TDS '[3,2]
-  tds_p vec
-  tds_p mtx
-
-test = do
-  testCreate
-  testEq
-  testTranspose
-  disp $ tds_toDynamic (tds_init 2.0 :: TDS '[3, 4])
-  tds_p $ tds_newClone (tds_init 2.0 :: TDS '[2, 3])
-  testResize
 
