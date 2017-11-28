@@ -35,8 +35,7 @@ dependencies:
 
 test:
   override:
-    - stack test hasktorch-core
-    - stack test hasktorch-raw
+    - stack test
     - stack exec codegen-generic
     - stack exec codegen-concrete
     - stack exec codegen-managed
