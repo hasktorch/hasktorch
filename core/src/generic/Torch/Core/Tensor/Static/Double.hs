@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeFamilies        #-}
 
 module Torch.Core.Tensor.Static.Double (
+  StaticTensor,
   tds_dim,
   tds_new,
   tds_fromDynamic,

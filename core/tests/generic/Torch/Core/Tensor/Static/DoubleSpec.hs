@@ -4,19 +4,14 @@ module Torch.Core.Tensor.Static.DoubleSpec (spec) where
 
 import Control.Monad (replicateM, void)
 import Foreign (Ptr)
-import Test.Hspec
-import Test.QuickCheck
-import Test.QuickCheck.Monadic
-import Debug.Trace
 
 import Torch.Core.Tensor.Types
 import Torch.Core.Tensor.Dynamic.Double (disp)
 import Torch.Core.Tensor.Static.Double
 import qualified THRandom as R (c_THGenerator_new)
 
+import Torch.Prelude.Extras
 import Torch.Core.Random
-import Extras
-import Orphans ()
 
 main :: IO ()
 main = hspec spec

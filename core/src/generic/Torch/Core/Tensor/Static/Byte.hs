@@ -8,7 +8,9 @@ module Torch.Core.Tensor.Static.Byte (
   tbs_new,
   tbs_cloneDim,
   tbs_init,
-  tbs_p
+  tbs_p,
+  TBS,
+  TensorByteStatic(..)
   ) where
 
 import Data.Singletons
@@ -36,8 +38,8 @@ class StaticByteTensor t where
   -- |Display tensor
   tbs_p ::  t -> IO ()
 
-data TensorByteStatic (d :: [Nat]) = TBS {
-  tbsTensor :: !(ForeignPtr CTHByteTensor)
+newtype TensorByteStatic (d :: [Nat]) = TBS {
+  tbsTensor :: ForeignPtr CTHByteTensor
   } deriving (Show)
 
 type TBS = TensorByteStatic
@@ -139,4 +141,3 @@ dispByteRaw tensor
     showLim x = show x
     sz = size tensor
 
-test = tbs_p (tbs_init 3 :: TBS '[4,2])
