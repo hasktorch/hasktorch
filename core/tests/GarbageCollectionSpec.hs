@@ -1,4 +1,4 @@
-module Main where
+module GarbageCollectionSpec (spec) where
 
 import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Dynamic.DoubleLapack
@@ -11,17 +11,32 @@ import Torch.Core.Random
 import Torch.Core.Tensor.Raw
 import THDoubleTensorMath
 
-import Lens.Micro
+import Lens.Micro ()
+import Torch.Prelude.Extras
 
--- |basic test of garbage collected tensor
-testGCTensor = do
+main :: IO ()
+main = hspec spec
+
+spec :: Spec
+spec = do
+  it "runs scenario: testGCTensor" testGCTensor
+  it "runs scenario: testOps" testOps
+  it "runs scenario: rawTest" rawTest
+  it "runs scenario: testCadd" testCadd
+  it "runs scenario: testCopy" testCopy
+  it "runs scenario: testLapack" testLapack
+  it "runs scenario: matrixMultTest" matrixMultTest
+
+-- | basic test of garbage collected tensor
+testGCTensor :: Property
+testGCTensor = monadicIO $ do
   let t0 = td_new (D2 (8, 4))
       t1 = t0
-  td_fill_ 3.0 t1
+  run $ td_fill_ 3.0 t1
   let t2 = td_fill 6.0 t1
-  disp t0 -- should be matrix of 3.0
-  disp t1 -- should be matrix of 3.0
-  disp t2 -- should be matrix of 6.0
+  run $ disp t0 -- should be matrix of 3.0
+  run $ disp t1 -- should be matrix of 3.0
+  run $ disp t2 -- should be matrix of 6.0
 
 testOps = do
   disp $ td_neg $ td_addConst (td_new (D2 (2, 2))) 3
@@ -93,13 +108,4 @@ testLapack = do
   disp resQ
   disp resR
   pure ()
-
-main = do
-  testGCTensor
-  testOps
-  rawTest
-  testCadd
-  testCopy
-  testLapack
-  matrixMultTest
 

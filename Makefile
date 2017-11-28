@@ -4,7 +4,7 @@ init:
 	( cd vendor; ./build-aten-spec.sh )
 	( cd vendor; ./build-error-handler.sh )
 	stack build
-	stack test hasktorch-tests
+	stack test
 
 clean:
 	stack clean
