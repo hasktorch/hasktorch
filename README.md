@@ -22,7 +22,6 @@ contributing developers at the current time.**
 | [`interface/`][interface] | Type interface used by raw bindings
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
 | [`raw/`][raw] | Comprehensive raw bindings to several hundred C TorcH (TH) operations, including separate bindings for all tensor types.
-| [`tests/`][tests] | Continuous integration tests
 | [`tools/`][tools] | Misc tools
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C and other libraries)
 
@@ -71,6 +70,5 @@ https://hasktorch.slack.com
 [nn]: ./nn/
 [output]: ./output/
 [raw]: ./raw/
-[tests]: ./tests/
 [tools]: ./tools/
 [vendor]: ./vendor/
