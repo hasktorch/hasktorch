@@ -1,28 +1,24 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
+module Torch.Core.Tensor.Static.DoubleMath
+  ( (^+^)
+  , (^-^)
+  , (^*^)
+  , (^/^)
+  , (!*)
+  , (!*!)
+  , (^+)
+  , (^-)
+  , (+^)
+  , (-^)
+  , (^*)
+  , (^/)
+  , (*^)
+  , (/^)
+  , (<.>)
 
-module Torch.Core.Tensor.Static.DoubleMath (
-
-  (^+^),
-  (^-^),
-  (^*^),
-  (^/^),
-  (!*),
-  (!*!),
-  (^+),
-  (^-),
-  (+^),
-  (-^),
-  (^*),
-  (^/),
-  (*^),
-  (/^),
-  (<.>),
-
-  tds_fill
+  , tds_fill
   , tds_fill_
 
   , tds_addConst
@@ -102,6 +98,7 @@ module Torch.Core.Tensor.Static.DoubleMath (
   , tds_trace
   , tds_cross
 
+  , tds_equal
 
   ) where
 
@@ -761,26 +758,3 @@ tds_equal ta tb = unsafePerformIO $ do
 
 
 
-
-test = do
-  print("initialization")
-  let t = (tds_init 3.0 :: TDS '[3,2])
-  tds_p t
-  print("trace ")
-  print $ tds_trace t
-  print("num el")
-  print $ tds_numel t
-  print("Dot product")
-  print ((tds_init 2.0 :: TDS '[5]) <.> (tds_init 2.0 :: TDS '[5]))
-
-  -- .33..
-  tds_p $ tds_cinv (tds_init 3.0 :: TDS '[5])
-
-  -- 1.25
-  tds_p $ 5.0 /^ (tds_init 4.0 :: TDS '[10])
-  pure ()
-
-  tds_p (tds_outer (tds_init 2.0) (tds_init 3.0) :: TDS '[3,2])
-
-  print $ tds_equal (tds_init 3.0 :: TDS '[4]) (tds_init 2.0 :: TDS '[4])
-  print $ tds_equal (tds_init 3.0 :: TDS '[4]) (tds_init 3.0 :: TDS '[4])

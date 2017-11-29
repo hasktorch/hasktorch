@@ -4,4 +4,17 @@
 # dylib files in extra-lib-dirs  don't get forwarded to ghc
 # in some versions of OSX. See https://github.com/commercialhaskell/stack/issues/1826
 
-export DYLD_LIBRARY_PATH=$(PWD)/vendor/build/
+case "$(uname)" in
+  "Darwin")
+    DYLD_LIBRARY_PATH=$(pwd)/vendor/build/
+    export DYLD_LIBRARY_PATH
+    ;;
+  "Linux"|"FreeBSD")
+    LD_LIBRARY_PATH=$(pwd)/vendor/build/
+    export LD_LIBRARY_PATH
+    ;;
+  *)
+    echo "OS doesn't have known environment variable hacks to set"
+    ;;
+esac
+
