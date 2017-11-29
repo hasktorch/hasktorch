@@ -36,12 +36,5 @@ ghc-options:
   "hasktorch-raw": -lATen -lEHX
   "hasktorch-tests": -lATen -lEHX
   "hasktorch-tools": -lATen -lEHX
-  # "hasktorch-core": -lTH -lEHX
-  # "hasktorch-codegen": -lTH -lEHX
-  # "hasktorch-examples": -lTH -lEHX
-  # "hasktorch-nn": -lTH -lEHX
-  # "hasktorch-raw": -lTH -lEHX
-  # "hasktorch-tests": -lTH -lEHX
-  # "hasktorch-tools": -lTH -lEHX
 
 # ghci-options for inline-c should include -fobject-code -O0

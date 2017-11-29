@@ -1,7 +1,8 @@
 machine:
   environment:
     PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:$PATH
-    LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:/usr/lib/x86_64-linux-gnu/$LD_LIBRARY_PATH
+    LLVM_CONFIG: /usr/lib/llvm-3.8/bin/llvm-config
 
 dependencies:
   cache_directories:
@@ -47,6 +48,5 @@ test:
     - stack exec codegen-concrete
     - stack exec codegen-managed
     - stack exec ff-untyped
-    - stack exec raw-lapack-svd
     - stack exec static-tensor-usage
     - make init
