@@ -2,6 +2,7 @@ machine:
   environment:
     PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:$PATH
     LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:$LD_LIBRARY_PATH
+    LLVM_CONFIG: /usr/lib/llvm-3.9/bin/llvm-config
 
 dependencies:
   cache_directories:
@@ -12,6 +13,7 @@ dependencies:
 
   pre:
     - sudo apt-get update
+    - sudo apt-get install llvm-3.9
     - >
       if [ ! -d ~/cmake-3.10.0-Linux-x86_64 ]; then
         echo "No cache - building CMake"
