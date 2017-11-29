@@ -14,6 +14,8 @@ module Torch.Core.Internal
   , Positive
   , mkPositive
   , fromPositive
+
+  , impossible
   ) where
 
 import Foreign (Word, Ptr)
@@ -79,3 +81,7 @@ mkPositive n
 fromPositive :: Positive n -> n
 fromPositive = unPositive
 
+-- ========================================================================= --
+
+impossible :: String -> a
+impossible = error

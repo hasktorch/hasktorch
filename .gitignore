@@ -3,3 +3,6 @@
 logo/
 *.#*
 vendor/build/
+*.core
+vendor/aten-spec/*.yaml
+

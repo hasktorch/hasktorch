@@ -1,13 +1,17 @@
 module Torch.Core.Tensor.RawSpec (spec) where
 
 import Foreign (Ptr)
-import Test.Hspec
-import Test.QuickCheck
+import Foreign.C.Types (CInt)
+
+import THRandom (c_THGenerator_new)
+import THDoubleTensor (c_THDoubleTensor_free)
+import THDoubleTensorMath (c_THDoubleTensor_stdall, c_THDoubleTensor_meanall, c_THDoubleTensor_maxall)
+import THDoubleTensorRandom (c_THDoubleTensor_normal, c_THDoubleTensor_uniform)
 
 import Torch.Core.Tensor.Types (TensorDim(..), TensorDoubleRaw)
 import Torch.Core.Tensor.Raw
 
-import qualified THRandom as R (c_THGenerator_new)
+import Torch.Prelude.Extras
 
 
 main :: IO ()
@@ -45,13 +49,13 @@ invlogitSpec = do
 randInitRawSpec :: Spec
 randInitRawSpec = do
   describe "0 dimensional tensors" $ do
-    gen <- runIO R.c_THGenerator_new
+    gen <- runIO c_THGenerator_new
     rands <- runIO $ mapM (\_ -> randInitRaw gen D0 (-1.0) 3.0) [0..10]
     it "should only return empty tensors" $
       map toList rands `shouldSatisfy` all null
 
   describe "1 dimensional tensors" $ do
-    gen <- runIO R.c_THGenerator_new
+    gen <- runIO c_THGenerator_new
     let runRandInit = randInitRaw gen (D1 5) (-1.0) 3.0
     rands0 <- runIO $ toList <$> runRandInit
     rands1 <- runIO $ toList <$> runRandInit
@@ -73,7 +77,7 @@ randInitRawSpec = do
  where
   assertSequencesAreUnique :: TensorDim Word -> Spec
   assertSequencesAreUnique d = do
-    gen <- runIO R.c_THGenerator_new
+    gen <- runIO c_THGenerator_new
     let runRandInit = randInitRaw gen d (-1.0) 3.0
     rands' <- runIO $ mapM (const $ toList <$> runRandInit) [0..10]
     let comp = zip (init rands') (tail rands')
@@ -111,5 +115,35 @@ toListSpec = do
     t <- runIO (mkTensor25 d)
     it "returns the correct length"     $ length (toList t) `shouldBe` fromIntegral (product d)
     it "returns the correct values"     $ toList t   `shouldSatisfy` all (== 25)
+
+
+testsRawRandomScenario :: IO ()
+testsRawRandomScenario = do
+  gen <- c_THGenerator_new
+  hspec $ do
+    describe "random vectors" $ do
+      it "uniform random is < bound" $ do
+        t <- tensorRaw (D1 1000) 0.0
+        c_THDoubleTensor_uniform t gen (-1.0) (1.0)
+        c_THDoubleTensor_maxall t `shouldSatisfy` (< 1.001)
+        c_THDoubleTensor_free t
+      it "uniform random is > bound" $ do
+        t <- tensorRaw (D1 1000) 0.0
+        c_THDoubleTensor_uniform t gen (-1.0) (1.0)
+        c_THDoubleTensor_maxall t `shouldSatisfy` (> (-1.001))
+        c_THDoubleTensor_free t
+      it "normal mean follows law of large numbers" $ do
+        t <- tensorRaw (D1 10000) 0.0
+        c_THDoubleTensor_normal t gen 1.55 0.25
+        c_THDoubleTensor_meanall t `shouldSatisfy` (\x -> and [(x < 1.6), (x > 1.5)])
+        c_THDoubleTensor_free t
+      it "normal std follows law of large numbers" $ do
+        t <- tensorRaw (D1 10000) 0.0
+        c_THDoubleTensor_normal t gen 1.55 0.25
+        c_THDoubleTensor_stdall t biased `shouldSatisfy` (\x -> and [(x < 0.3), (x > 0.2)])
+        c_THDoubleTensor_free t
+  where
+    biased :: CInt
+    biased = 0
 
 

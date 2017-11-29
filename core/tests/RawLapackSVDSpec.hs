@@ -1,6 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
-
-module Main where
+module RawLapackSVDSpec where
 
 import Foreign.C.Types
 
@@ -9,8 +7,17 @@ import THDoubleTensorLapack
 import THDoubleTensorMath
 import THDoubleTensorRandom
 
-import Torch.Core.Tensor.Types
-import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Types (TensorDim(D1, D2))
+import Torch.Core.Tensor.Raw (dispRaw, tensorRaw)
+
+import Torch.Prelude.Extras
+
+main :: IO ()
+main = hspec spec
+
+spec :: Spec
+spec = do
+  it "scenario: pcaRaw" pcaRaw
 
 pcaRaw :: IO ()
 pcaRaw = do
@@ -33,6 +40,3 @@ pcaRaw = do
   c_THDoubleTensor_free resB
   pure ()
 
-main = do
-  pcaRaw
-  pure ()

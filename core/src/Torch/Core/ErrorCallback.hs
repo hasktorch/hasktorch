@@ -1,6 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
-module ErrorCallback where
+module Torch.Core.ErrorCallback where
 
 import Foreign.C.Types
 

@@ -31,7 +31,7 @@ stack build
 If everything built, you should be able to run tests successfully:
 
 ```
-stack test hasktorch-tests
+stack test
 ```
 
 ## References

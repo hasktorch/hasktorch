@@ -1,5 +1,5 @@
 # Usage examples
 
-Also see `tests/` for additional examples of API usage.
+Also see [`core/tests/`](../core/tests/) and [`raw/tests/`](../raw/tests/) for additional examples of API usage.
 
 

@@ -11,6 +11,8 @@ module Torch.Core.Tensor.Dynamic.DoubleRandom
   , td_exponential
   , td_cauchy
   , td_multinomial
+
+  , module Torch.Core.Random
   ) where
 
 import Foreign
@@ -211,10 +213,3 @@ td_multinomial self gen prob_dist n_sample with_replacement = do
 -- TH_API void THTensor_(multinomialAliasDraw)(THLongTensor *self, THGenerator *_generator, THLongTensor *J, THTensor *q);
 -- #endif
 
-test = do
-  let t = td_new (D1 3)
-  disp t
-  gen <- newRNG
-  td_random t gen
-  disp t
-  pure ()

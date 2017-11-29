@@ -1,10 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Core.LogAddSpec (spec) where
 
-import Test.Hspec
-import Test.QuickCheck
 import Torch.Core.LogAdd
-import Extras
+import Torch.Prelude.Extras
 
 
 main :: IO ()

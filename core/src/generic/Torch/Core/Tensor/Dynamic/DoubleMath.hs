@@ -80,7 +80,9 @@ module Torch.Core.Tensor.Dynamic.DoubleMath (
 
   td_eye,
 
-  td_equal
+  td_equal,
+
+  td_outer
   ) where
 
 import Control.Exception
@@ -719,21 +721,4 @@ td_round tensor = unsafePerformIO $ apply0_ tround tensor
 
 -- -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
 
-test = do
-  -- check exception case
-  let (m, v) = (td_init (D2 (3, 2)) 3.0 , td_init (D1 2) 2.0)
-  disp m
-  disp v
-  disp $ td_mv m v
 
-  let (m, v) = (td_init (D3 (1, 3, 2)) 3.0 , td_init (D1 2) 2.0)
-  -- disp $ td_mv m v
-
-  disp $ td_addr
-    0.0 (td_init (D2 (3,2)) 0.0)
-    1.0 (td_init (D1 3) 2.0) (td_init (D1 2) 3.0)
-
-  disp $ td_outer (td_init (D1 3) 2.0) (td_init (D1 2) 3.0)
-
-  print "Done"
-  pure ()

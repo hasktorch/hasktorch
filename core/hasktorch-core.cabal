@@ -1,8 +1,6 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
+-- This file has been generated from package.yaml by hpack version 0.18.1.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: ff9da8d0997e416ecbc7fc1cf038f5a43c5c139d05db4d388e12fc11b8417be4
 
 name:                hasktorch-core
 version:             0.1.0.0
@@ -23,6 +21,7 @@ source-repository head
 library
   default-language: Haskell2010
   exposed-modules:
+      Torch.Core.ErrorCallback
       Torch.Core.Exceptions
       Torch.Core.Internal
       Torch.Core.LogAdd
@@ -49,13 +48,14 @@ library
   hs-source-dirs:
       src
       src/generic
+  ghc-options: -fllvm -Wincomplete-patterns
   build-depends:
       base >=4.7 && <5
-    , deepseq >=1.3.0.0
-    , hasktorch-interface
+    , deepseq >= 1.3.0.0
     , hasktorch-raw
+    , hasktorch-interface
     , microlens >=0.4.8.1
-    , safe-exceptions >=0.1.0.0
+    , safe-exceptions >= 0.1.0.0
     , singletons >=2.3.1
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
@@ -65,24 +65,37 @@ test-suite spec
   main-is: Spec.hs
   hs-source-dirs:
       tests
+      tests/generic
+  ghc-options: -fllvm -Wincomplete-patterns
   build-depends:
-      QuickCheck
-    , base >=4.7 && <5
-    , deepseq >=1.3.0.0
-    , hasktorch-core
-    , hasktorch-interface
+      base >=4.7 && <5
+    , deepseq >= 1.3.0.0
     , hasktorch-raw
-    , hspec
+    , hasktorch-interface
     , microlens >=0.4.8.1
-    , safe-exceptions >=0.1.0.0
+    , safe-exceptions >= 0.1.0.0
     , singletons >=2.3.1
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
+    , QuickCheck
+    , hspec
+    , hasktorch-core
   other-modules:
-      Extras
+      GarbageCollectionSpec
+      MemorySpec
       Orphans
+      RawLapackSVDSpec
       Torch.Core.LogAddSpec
       Torch.Core.RandomSpec
       Torch.Core.Tensor.RawSpec
-      Paths_hasktorch_core
+      Torch.Prelude.Extras
+      Torch.Core.Tensor.Dynamic.DoubleLapackSpec
+      Torch.Core.Tensor.Dynamic.DoubleMathSpec
+      Torch.Core.Tensor.Dynamic.DoubleRandomSpec
+      Torch.Core.Tensor.Dynamic.DoubleSpec
+      Torch.Core.Tensor.Static.ByteSpec
+      Torch.Core.Tensor.Static.DoubleLapackSpec
+      Torch.Core.Tensor.Static.DoubleMathSpec
+      Torch.Core.Tensor.Static.DoubleRandomSpec
+      Torch.Core.Tensor.Static.DoubleSpec
   default-language: Haskell2010

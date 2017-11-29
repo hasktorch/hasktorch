@@ -44,7 +44,7 @@ import Torch.Core.Tensor.Static.DoubleMath
 
 data UpperLower = Upper | Lower deriving (Eq, Show)
 
--- toChar :: UpperLower -> CChar
+toChar :: UpperLower -> IO CString
 toChar Upper = newCString "U"
 toChar Lower = newCString "L"
 
@@ -265,22 +265,3 @@ ct = do
   --tds_p (y !*! (tds_trans y))
   tds_p ((tds_trans y) !*! y)
 
-test = do
-  let a = (tds_init 2.0 :: TDS '[2, 2]) !*! (tds_init 2.0 :: TDS '[2, 2])
-  let b = tds_new :: TDS '[2]
-  tds_p a
-  tds_p b
-
-  let x = (tds_fromList [10,5,7,4] :: TDS [2,2])
-  let c = tds_init 1.0 :: TDS '[2]
-  let (resb, resa) = tds_gesv c x
-  tds_p resb
-  tds_p resa
-
-  -- let potrf = tds_potrf x Upper
-
-  -- crashes
-  let (resb, resa) = tds_gesv b a
-  tds_p resb
-  tds_p resa
-  pure ()

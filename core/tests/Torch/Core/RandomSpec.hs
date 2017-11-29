@@ -4,16 +4,11 @@ module Torch.Core.RandomSpec (spec) where
 
 import Control.Monad (replicateM)
 import Foreign (Ptr)
-import Test.Hspec
-import Test.QuickCheck
-import Test.QuickCheck.Monadic
-import Debug.Trace
 
 import qualified THRandom as R (c_THGenerator_new)
 
 import Torch.Core.Random
-import Extras
-import Orphans ()
+import Torch.Prelude.Extras
 
 main :: IO ()
 main = hspec spec
