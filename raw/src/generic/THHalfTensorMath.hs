@@ -115,8 +115,6 @@ module THHalfTensorMath (
     c_THHalfTensor_geTensorT,
     c_THHalfTensor_neTensorT,
     c_THHalfTensor_eqTensorT,
-    c_THHalfTensor_erf,
-    c_THHalfTensor_erfinv,
     p_THHalfTensor_fill,
     p_THHalfTensor_zero,
     p_THHalfTensor_maskedFill,
@@ -230,9 +228,7 @@ module THHalfTensorMath (
     p_THHalfTensor_gtTensorT,
     p_THHalfTensor_geTensorT,
     p_THHalfTensor_neTensorT,
-    p_THHalfTensor_eqTensorT,
-    p_THHalfTensor_erf,
-    p_THHalfTensor_erfinv) where
+    p_THHalfTensor_eqTensorT) where
 
 import Foreign
 import Foreign.C.Types
@@ -696,14 +692,6 @@ foreign import ccall "THTensorMath.h THHalfTensor_neTensorT"
 foreign import ccall "THTensorMath.h THHalfTensor_eqTensorT"
   c_THHalfTensor_eqTensorT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
 
--- |c_THHalfTensor_erf : r_ t -> void
-foreign import ccall "THTensorMath.h THHalfTensor_erf"
-  c_THHalfTensor_erf :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
-
--- |c_THHalfTensor_erfinv : r_ t -> void
-foreign import ccall "THTensorMath.h THHalfTensor_erfinv"
-  c_THHalfTensor_erfinv :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
-
 -- |p_THHalfTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_fill"
   p_THHalfTensor_fill :: FunPtr ((Ptr CTHHalfTensor) -> THHalf -> IO ())
@@ -1159,11 +1147,3 @@ foreign import ccall "THTensorMath.h &THHalfTensor_neTensorT"
 -- |p_THHalfTensor_eqTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_eqTensorT"
   p_THHalfTensor_eqTensorT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
-
--- |p_THHalfTensor_erf : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THHalfTensor_erf"
-  p_THHalfTensor_erf :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
-
--- |p_THHalfTensor_erfinv : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THHalfTensor_erfinv"
-  p_THHalfTensor_erfinv :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())

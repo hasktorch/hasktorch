@@ -44,7 +44,7 @@ test:
     - stack test hasktorch-raw
     - stack test hasktorch-core
     ### examples
-    - stack exec basic-static-tensor-usage
+    - stack exec static-tensor-usage
     - stack exec ff-typed
     - stack exec ff-untyped
     - stack exec static-tensor-usage

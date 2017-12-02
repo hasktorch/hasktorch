@@ -117,8 +117,6 @@ module THShortTensorMath (
     c_THShortTensor_neTensorT,
     c_THShortTensor_eqTensorT,
     c_THShortTensor_abs,
-    c_THShortTensor_erf,
-    c_THShortTensor_erfinv,
     p_THShortTensor_fill,
     p_THShortTensor_zero,
     p_THShortTensor_maskedFill,
@@ -234,9 +232,7 @@ module THShortTensorMath (
     p_THShortTensor_geTensorT,
     p_THShortTensor_neTensorT,
     p_THShortTensor_eqTensorT,
-    p_THShortTensor_abs,
-    p_THShortTensor_erf,
-    p_THShortTensor_erfinv) where
+    p_THShortTensor_abs) where
 
 import Foreign
 import Foreign.C.Types
@@ -708,14 +704,6 @@ foreign import ccall "THTensorMath.h THShortTensor_eqTensorT"
 foreign import ccall "THTensorMath.h THShortTensor_abs"
   c_THShortTensor_abs :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
 
--- |c_THShortTensor_erf : r_ t -> void
-foreign import ccall "THTensorMath.h THShortTensor_erf"
-  c_THShortTensor_erf :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
-
--- |c_THShortTensor_erfinv : r_ t -> void
-foreign import ccall "THTensorMath.h THShortTensor_erfinv"
-  c_THShortTensor_erfinv :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
-
 -- |p_THShortTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THShortTensor_fill"
   p_THShortTensor_fill :: FunPtr ((Ptr CTHShortTensor) -> CShort -> IO ())
@@ -1179,11 +1167,3 @@ foreign import ccall "THTensorMath.h &THShortTensor_eqTensorT"
 -- |p_THShortTensor_abs : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THShortTensor_abs"
   p_THShortTensor_abs :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
-
--- |p_THShortTensor_erf : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THShortTensor_erf"
-  p_THShortTensor_erf :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
-
--- |p_THShortTensor_erfinv : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THShortTensor_erfinv"
-  p_THShortTensor_erfinv :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())

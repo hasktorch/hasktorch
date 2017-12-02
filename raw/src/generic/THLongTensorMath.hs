@@ -117,8 +117,6 @@ module THLongTensorMath (
     c_THLongTensor_neTensorT,
     c_THLongTensor_eqTensorT,
     c_THLongTensor_abs,
-    c_THLongTensor_erf,
-    c_THLongTensor_erfinv,
     p_THLongTensor_fill,
     p_THLongTensor_zero,
     p_THLongTensor_maskedFill,
@@ -234,9 +232,7 @@ module THLongTensorMath (
     p_THLongTensor_geTensorT,
     p_THLongTensor_neTensorT,
     p_THLongTensor_eqTensorT,
-    p_THLongTensor_abs,
-    p_THLongTensor_erf,
-    p_THLongTensor_erfinv) where
+    p_THLongTensor_abs) where
 
 import Foreign
 import Foreign.C.Types
@@ -708,14 +704,6 @@ foreign import ccall "THTensorMath.h THLongTensor_eqTensorT"
 foreign import ccall "THTensorMath.h THLongTensor_abs"
   c_THLongTensor_abs :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
 
--- |c_THLongTensor_erf : r_ t -> void
-foreign import ccall "THTensorMath.h THLongTensor_erf"
-  c_THLongTensor_erf :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
-
--- |c_THLongTensor_erfinv : r_ t -> void
-foreign import ccall "THTensorMath.h THLongTensor_erfinv"
-  c_THLongTensor_erfinv :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
-
 -- |p_THLongTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THLongTensor_fill"
   p_THLongTensor_fill :: FunPtr ((Ptr CTHLongTensor) -> CLong -> IO ())
@@ -1179,11 +1167,3 @@ foreign import ccall "THTensorMath.h &THLongTensor_eqTensorT"
 -- |p_THLongTensor_abs : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THLongTensor_abs"
   p_THLongTensor_abs :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
-
--- |p_THLongTensor_erf : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THLongTensor_erf"
-  p_THLongTensor_erf :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
-
--- |p_THLongTensor_erfinv : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THLongTensor_erfinv"
-  p_THLongTensor_erfinv :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())

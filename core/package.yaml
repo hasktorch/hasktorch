@@ -7,7 +7,7 @@ author: Austin Huang
 license: BSD3
 github: austinvhuang/hasktorch
 
-# ghc-options: -fllvm -Wincomplete-patterns # -Wall
+# ghc-options: -Wincomplete-patterns # -fllvm -Wall
 
 dependencies:
 - base >=4.7 && <5

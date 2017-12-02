@@ -10,8 +10,6 @@ module THShortVector (
     c_THShortVector_divs,
     c_THShortVector_copy,
     c_THShortVector_abs,
-    c_THShortVector_erf,
-    c_THShortVector_erfinv,
     c_THShortVector_neg,
     c_THShortVector_vectorDispatchInit,
     p_THShortVector_fill,
@@ -23,8 +21,6 @@ module THShortVector (
     p_THShortVector_divs,
     p_THShortVector_copy,
     p_THShortVector_abs,
-    p_THShortVector_erf,
-    p_THShortVector_erfinv,
     p_THShortVector_neg,
     p_THShortVector_vectorDispatchInit) where
 
@@ -70,14 +66,6 @@ foreign import ccall "THVector.h THShortVector_copy"
 foreign import ccall "THVector.h THShortVector_abs"
   c_THShortVector_abs :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
 
--- |c_THShortVector_erf : y x n -> void
-foreign import ccall "THVector.h THShortVector_erf"
-  c_THShortVector_erf :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
-
--- |c_THShortVector_erfinv : y x n -> void
-foreign import ccall "THVector.h THShortVector_erfinv"
-  c_THShortVector_erfinv :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
-
 -- |c_THShortVector_neg : y x n -> void
 foreign import ccall "THVector.h THShortVector_neg"
   c_THShortVector_neg :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
@@ -121,14 +109,6 @@ foreign import ccall "THVector.h &THShortVector_copy"
 -- |p_THShortVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THShortVector_abs"
   p_THShortVector_abs :: FunPtr (Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ())
-
--- |p_THShortVector_erf : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THShortVector_erf"
-  p_THShortVector_erf :: FunPtr (Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ())
-
--- |p_THShortVector_erfinv : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THShortVector_erfinv"
-  p_THShortVector_erfinv :: FunPtr (Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ())
 
 -- |p_THShortVector_neg : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THShortVector_neg"

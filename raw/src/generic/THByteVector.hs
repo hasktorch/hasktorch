@@ -9,8 +9,6 @@ module THByteVector (
     c_THByteVector_cdiv,
     c_THByteVector_divs,
     c_THByteVector_copy,
-    c_THByteVector_erf,
-    c_THByteVector_erfinv,
     c_THByteVector_vectorDispatchInit,
     p_THByteVector_fill,
     p_THByteVector_cadd,
@@ -20,8 +18,6 @@ module THByteVector (
     p_THByteVector_cdiv,
     p_THByteVector_divs,
     p_THByteVector_copy,
-    p_THByteVector_erf,
-    p_THByteVector_erfinv,
     p_THByteVector_vectorDispatchInit) where
 
 import Foreign
@@ -62,14 +58,6 @@ foreign import ccall "THVector.h THByteVector_divs"
 foreign import ccall "THVector.h THByteVector_copy"
   c_THByteVector_copy :: Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ()
 
--- |c_THByteVector_erf : y x n -> void
-foreign import ccall "THVector.h THByteVector_erf"
-  c_THByteVector_erf :: Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ()
-
--- |c_THByteVector_erfinv : y x n -> void
-foreign import ccall "THVector.h THByteVector_erfinv"
-  c_THByteVector_erfinv :: Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ()
-
 -- |c_THByteVector_vectorDispatchInit :  -> void
 foreign import ccall "THVector.h THByteVector_vectorDispatchInit"
   c_THByteVector_vectorDispatchInit :: IO ()
@@ -105,14 +93,6 @@ foreign import ccall "THVector.h &THByteVector_divs"
 -- |p_THByteVector_copy : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THByteVector_copy"
   p_THByteVector_copy :: FunPtr (Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ())
-
--- |p_THByteVector_erf : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THByteVector_erf"
-  p_THByteVector_erf :: FunPtr (Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ())
-
--- |p_THByteVector_erfinv : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THByteVector_erfinv"
-  p_THByteVector_erfinv :: FunPtr (Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ())
 
 -- |p_THByteVector_vectorDispatchInit : Pointer to function :  -> void
 foreign import ccall "THVector.h &THByteVector_vectorDispatchInit"

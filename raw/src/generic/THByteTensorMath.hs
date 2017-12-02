@@ -115,8 +115,6 @@ module THByteTensorMath (
     c_THByteTensor_geTensorT,
     c_THByteTensor_neTensorT,
     c_THByteTensor_eqTensorT,
-    c_THByteTensor_erf,
-    c_THByteTensor_erfinv,
     p_THByteTensor_fill,
     p_THByteTensor_zero,
     p_THByteTensor_maskedFill,
@@ -230,9 +228,7 @@ module THByteTensorMath (
     p_THByteTensor_gtTensorT,
     p_THByteTensor_geTensorT,
     p_THByteTensor_neTensorT,
-    p_THByteTensor_eqTensorT,
-    p_THByteTensor_erf,
-    p_THByteTensor_erfinv) where
+    p_THByteTensor_eqTensorT) where
 
 import Foreign
 import Foreign.C.Types
@@ -696,14 +692,6 @@ foreign import ccall "THTensorMath.h THByteTensor_neTensorT"
 foreign import ccall "THTensorMath.h THByteTensor_eqTensorT"
   c_THByteTensor_eqTensorT :: (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ()
 
--- |c_THByteTensor_erf : r_ t -> void
-foreign import ccall "THTensorMath.h THByteTensor_erf"
-  c_THByteTensor_erf :: (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ()
-
--- |c_THByteTensor_erfinv : r_ t -> void
-foreign import ccall "THTensorMath.h THByteTensor_erfinv"
-  c_THByteTensor_erfinv :: (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ()
-
 -- |p_THByteTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_fill"
   p_THByteTensor_fill :: FunPtr ((Ptr CTHByteTensor) -> CChar -> IO ())
@@ -1159,11 +1147,3 @@ foreign import ccall "THTensorMath.h &THByteTensor_neTensorT"
 -- |p_THByteTensor_eqTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THByteTensor_eqTensorT"
   p_THByteTensor_eqTensorT :: FunPtr ((Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ())
-
--- |p_THByteTensor_erf : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THByteTensor_erf"
-  p_THByteTensor_erf :: FunPtr ((Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ())
-
--- |p_THByteTensor_erfinv : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THByteTensor_erfinv"
-  p_THByteTensor_erfinv :: FunPtr ((Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ())

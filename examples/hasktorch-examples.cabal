@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 52d22837cca395aa23333a129856c0e552ef6aacbe2e43293f5eae7f5bb8a204
+-- hash: a45221fb3da1a34e97ae72abeeba1e94ca6ae6196956e52bc8503449ca1cbc96
 
 name:                hasktorch-examples
 version:             0.1.0.0
@@ -20,18 +20,6 @@ source-repository head
   type: git
   location: https://github.com/austinvhuang/hasktorch
 
-executable basic-static-tensor-usage
-  main-is: StaticTensorUsage.hs
-  hs-source-dirs:
-      basic-static-tensor-usage
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core
-    , singletons >=2.3.1
-  other-modules:
-      Paths_hasktorch_examples
-  default-language: Haskell2010
-
 executable bayesian-regression
   default-language: Haskell2010
   main-is: BayesianRegression.hs
@@ -40,6 +28,8 @@ executable bayesian-regression
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
+    , hasktorch-interface
+    , hasktorch-raw
     , singletons >=2.3.1
   other-modules:
       Paths_hasktorch_examples
@@ -56,6 +46,8 @@ executable download-mnist
     , directory
     , filepath
     , hasktorch-core
+    , hasktorch-interface
+    , hasktorch-raw
     , network-uri
     , singletons >=2.3.1
   other-modules:
@@ -69,6 +61,8 @@ executable ff-typed
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
+    , hasktorch-interface
+    , hasktorch-raw
     , singletons >=2.3.1
   other-modules:
       Paths_hasktorch_examples
@@ -81,6 +75,22 @@ executable ff-untyped
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
+    , hasktorch-interface
+    , hasktorch-raw
+    , singletons >=2.3.1
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
+
+executable static-tensor-usage
+  main-is: StaticTensorUsage.hs
+  hs-source-dirs:
+      static-tensor-usage
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , hasktorch-interface
+    , hasktorch-raw
     , singletons >=2.3.1
   other-modules:
       Paths_hasktorch_examples

@@ -10,8 +10,6 @@ import CodeGenTypes
 
 makeSet = S.fromList
 
-
-
 tensorMathCases :: Map Text (Set TemplateType)
 tensorMathCases = M.fromList [
   ("abs", makeSet [GenShort, GenInt, GenLong, GenFloat, GenDouble]),
@@ -21,6 +19,8 @@ tensorMathCases = M.fromList [
   ("lgamma", makeSet [GenFloat, GenDouble]),
   ("log1p", makeSet [GenFloat, GenDouble]),
   ("exp", makeSet [GenFloat, GenDouble]),
+  ("erf", makeSet [GenFloat, GenDouble]),
+  ("erfinv", makeSet [GenFloat, GenDouble]),
   ("cos", makeSet [GenFloat, GenDouble]),
   ("acos", makeSet [GenFloat, GenDouble]),
   ("cosh", makeSet [GenFloat, GenDouble]),

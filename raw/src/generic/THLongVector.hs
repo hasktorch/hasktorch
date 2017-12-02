@@ -10,8 +10,6 @@ module THLongVector (
     c_THLongVector_divs,
     c_THLongVector_copy,
     c_THLongVector_abs,
-    c_THLongVector_erf,
-    c_THLongVector_erfinv,
     c_THLongVector_neg,
     c_THLongVector_vectorDispatchInit,
     p_THLongVector_fill,
@@ -23,8 +21,6 @@ module THLongVector (
     p_THLongVector_divs,
     p_THLongVector_copy,
     p_THLongVector_abs,
-    p_THLongVector_erf,
-    p_THLongVector_erfinv,
     p_THLongVector_neg,
     p_THLongVector_vectorDispatchInit) where
 
@@ -70,14 +66,6 @@ foreign import ccall "THVector.h THLongVector_copy"
 foreign import ccall "THVector.h THLongVector_abs"
   c_THLongVector_abs :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
 
--- |c_THLongVector_erf : y x n -> void
-foreign import ccall "THVector.h THLongVector_erf"
-  c_THLongVector_erf :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
-
--- |c_THLongVector_erfinv : y x n -> void
-foreign import ccall "THVector.h THLongVector_erfinv"
-  c_THLongVector_erfinv :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
-
 -- |c_THLongVector_neg : y x n -> void
 foreign import ccall "THVector.h THLongVector_neg"
   c_THLongVector_neg :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
@@ -121,14 +109,6 @@ foreign import ccall "THVector.h &THLongVector_copy"
 -- |p_THLongVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THLongVector_abs"
   p_THLongVector_abs :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
-
--- |p_THLongVector_erf : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THLongVector_erf"
-  p_THLongVector_erf :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
-
--- |p_THLongVector_erfinv : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THLongVector_erfinv"
-  p_THLongVector_erfinv :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
 
 -- |p_THLongVector_neg : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THLongVector_neg"

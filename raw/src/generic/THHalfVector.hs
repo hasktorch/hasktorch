@@ -9,8 +9,6 @@ module THHalfVector (
     c_THHalfVector_cdiv,
     c_THHalfVector_divs,
     c_THHalfVector_copy,
-    c_THHalfVector_erf,
-    c_THHalfVector_erfinv,
     c_THHalfVector_vectorDispatchInit,
     p_THHalfVector_fill,
     p_THHalfVector_cadd,
@@ -20,8 +18,6 @@ module THHalfVector (
     p_THHalfVector_cdiv,
     p_THHalfVector_divs,
     p_THHalfVector_copy,
-    p_THHalfVector_erf,
-    p_THHalfVector_erfinv,
     p_THHalfVector_vectorDispatchInit) where
 
 import Foreign
@@ -62,14 +58,6 @@ foreign import ccall "THVector.h THHalfVector_divs"
 foreign import ccall "THVector.h THHalfVector_copy"
   c_THHalfVector_copy :: Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ()
 
--- |c_THHalfVector_erf : y x n -> void
-foreign import ccall "THVector.h THHalfVector_erf"
-  c_THHalfVector_erf :: Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ()
-
--- |c_THHalfVector_erfinv : y x n -> void
-foreign import ccall "THVector.h THHalfVector_erfinv"
-  c_THHalfVector_erfinv :: Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ()
-
 -- |c_THHalfVector_vectorDispatchInit :  -> void
 foreign import ccall "THVector.h THHalfVector_vectorDispatchInit"
   c_THHalfVector_vectorDispatchInit :: IO ()
@@ -105,14 +93,6 @@ foreign import ccall "THVector.h &THHalfVector_divs"
 -- |p_THHalfVector_copy : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THHalfVector_copy"
   p_THHalfVector_copy :: FunPtr (Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ())
-
--- |p_THHalfVector_erf : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THHalfVector_erf"
-  p_THHalfVector_erf :: FunPtr (Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ())
-
--- |p_THHalfVector_erfinv : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THHalfVector_erfinv"
-  p_THHalfVector_erfinv :: FunPtr (Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ())
 
 -- |p_THHalfVector_vectorDispatchInit : Pointer to function :  -> void
 foreign import ccall "THVector.h &THHalfVector_vectorDispatchInit"

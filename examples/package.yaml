@@ -7,18 +7,20 @@ author: Austin Huang
 license: BSD3
 github: austinvhuang/hasktorch
 
-# ghc-options: -fllvm -Wincomplete-patterns # -Wall
+ # ghc-options: -Wincomplete-patterns # -fllvm -Wall
 
 dependencies:
 - base >=4.7 && <5
 - hasktorch-core
+- hasktorch-interface
+- hasktorch-raw
 - singletons >= 2.3.1
 
 executables:
 
-  basic-static-tensor-usage:
+  static-tensor-usage:
     main: StaticTensorUsage.hs
-    source-dirs: [basic-static-tensor-usage]
+    source-dirs: [static-tensor-usage]
 
   bayesian-regression:
     main: BayesianRegression.hs

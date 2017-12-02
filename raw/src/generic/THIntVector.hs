@@ -10,8 +10,6 @@ module THIntVector (
     c_THIntVector_divs,
     c_THIntVector_copy,
     c_THIntVector_abs,
-    c_THIntVector_erf,
-    c_THIntVector_erfinv,
     c_THIntVector_neg,
     c_THIntVector_vectorDispatchInit,
     p_THIntVector_fill,
@@ -23,8 +21,6 @@ module THIntVector (
     p_THIntVector_divs,
     p_THIntVector_copy,
     p_THIntVector_abs,
-    p_THIntVector_erf,
-    p_THIntVector_erfinv,
     p_THIntVector_neg,
     p_THIntVector_vectorDispatchInit) where
 
@@ -70,14 +66,6 @@ foreign import ccall "THVector.h THIntVector_copy"
 foreign import ccall "THVector.h THIntVector_abs"
   c_THIntVector_abs :: Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ()
 
--- |c_THIntVector_erf : y x n -> void
-foreign import ccall "THVector.h THIntVector_erf"
-  c_THIntVector_erf :: Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ()
-
--- |c_THIntVector_erfinv : y x n -> void
-foreign import ccall "THVector.h THIntVector_erfinv"
-  c_THIntVector_erfinv :: Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ()
-
 -- |c_THIntVector_neg : y x n -> void
 foreign import ccall "THVector.h THIntVector_neg"
   c_THIntVector_neg :: Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ()
@@ -121,14 +109,6 @@ foreign import ccall "THVector.h &THIntVector_copy"
 -- |p_THIntVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THIntVector_abs"
   p_THIntVector_abs :: FunPtr (Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ())
-
--- |p_THIntVector_erf : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THIntVector_erf"
-  p_THIntVector_erf :: FunPtr (Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ())
-
--- |p_THIntVector_erfinv : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THIntVector_erfinv"
-  p_THIntVector_erfinv :: FunPtr (Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ())
 
 -- |p_THIntVector_neg : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THIntVector_neg"

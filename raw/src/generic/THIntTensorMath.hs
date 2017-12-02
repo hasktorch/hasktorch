@@ -117,8 +117,6 @@ module THIntTensorMath (
     c_THIntTensor_neTensorT,
     c_THIntTensor_eqTensorT,
     c_THIntTensor_abs,
-    c_THIntTensor_erf,
-    c_THIntTensor_erfinv,
     p_THIntTensor_fill,
     p_THIntTensor_zero,
     p_THIntTensor_maskedFill,
@@ -234,9 +232,7 @@ module THIntTensorMath (
     p_THIntTensor_geTensorT,
     p_THIntTensor_neTensorT,
     p_THIntTensor_eqTensorT,
-    p_THIntTensor_abs,
-    p_THIntTensor_erf,
-    p_THIntTensor_erfinv) where
+    p_THIntTensor_abs) where
 
 import Foreign
 import Foreign.C.Types
@@ -708,14 +704,6 @@ foreign import ccall "THTensorMath.h THIntTensor_eqTensorT"
 foreign import ccall "THTensorMath.h THIntTensor_abs"
   c_THIntTensor_abs :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
 
--- |c_THIntTensor_erf : r_ t -> void
-foreign import ccall "THTensorMath.h THIntTensor_erf"
-  c_THIntTensor_erf :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
-
--- |c_THIntTensor_erfinv : r_ t -> void
-foreign import ccall "THTensorMath.h THIntTensor_erfinv"
-  c_THIntTensor_erfinv :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
-
 -- |p_THIntTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THIntTensor_fill"
   p_THIntTensor_fill :: FunPtr ((Ptr CTHIntTensor) -> CInt -> IO ())
@@ -1179,11 +1167,3 @@ foreign import ccall "THTensorMath.h &THIntTensor_eqTensorT"
 -- |p_THIntTensor_abs : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THIntTensor_abs"
   p_THIntTensor_abs :: FunPtr ((Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ())
-
--- |p_THIntTensor_erf : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THIntTensor_erf"
-  p_THIntTensor_erf :: FunPtr ((Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ())
-
--- |p_THIntTensor_erfinv : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THIntTensor_erfinv"
-  p_THIntTensor_erfinv :: FunPtr ((Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ())
