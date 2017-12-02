@@ -1,41 +1,87 @@
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 52d22837cca395aa23333a129856c0e552ef6aacbe2e43293f5eae7f5bb8a204
+
 name:                hasktorch-examples
 version:             0.1.0.0
 synopsis:            Torch for tensors and neural networks in Haskell
-description:         examples
+description:         Example usage
 homepage:            https://github.com/austinvhuang/hasktorch#readme
+bug-reports:         https://github.com/austinvhuang/hasktorch/issues
 license:             BSD3
 author:              Austin Huang
-maintainer:          
-copyright:           
-category:            Web
+category:            Tensors, Machine Learning
 build-type:          Simple
-cabal-version:       >=1.10
+cabal-version:       >= 1.10
 
-executable download-mnist
-  default-language:    Haskell2010
-  main-is:             DownloadMNIST.hs
-  hs-source-dirs:      src
-  build-depends:       base >= 4.7 && < 5
-                     , HTTP
-                     , bytestring
-                     , cryptonite
-                     , directory
-                     , filepath
-                     , network-uri
+source-repository head
+  type: git
+  location: https://github.com/austinvhuang/hasktorch
 
-executable static-tensor-usage
-  default-language:    Haskell2010
-  main-is:             StaticTensorUsage.hs
-  hs-source-dirs:      src
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch-core
+executable basic-static-tensor-usage
+  main-is: StaticTensorUsage.hs
+  hs-source-dirs:
+      basic-static-tensor-usage
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , singletons >=2.3.1
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
 
 executable bayesian-regression
-  default-language:    Haskell2010
-  main-is:             BayesianRegression.hs
-  hs-source-dirs:      src
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch-core
+  default-language: Haskell2010
+  main-is: BayesianRegression.hs
+  hs-source-dirs:
+      bayesian-regression
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , singletons >=2.3.1
+  other-modules:
+      Paths_hasktorch_examples
 
+executable download-mnist
+  main-is: DownloadMNIST.hs
+  hs-source-dirs:
+      download-mnist
+  build-depends:
+      HTTP
+    , base >=4.7 && <5
+    , bytestring
+    , cryptonite
+    , directory
+    , filepath
+    , hasktorch-core
+    , network-uri
+    , singletons >=2.3.1
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
 
+executable ff-typed
+  main-is: FeedForwardTyped.hs
+  hs-source-dirs:
+      ff-typed
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , singletons >=2.3.1
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
 
+executable ff-untyped
+  main-is: FeedForwardUntyped.hs
+  hs-source-dirs:
+      ff-untyped
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , singletons >=2.3.1
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010

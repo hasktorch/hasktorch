@@ -1,0 +1,44 @@
+name: hasktorch-examples
+version: '0.1.0.0'
+synopsis: Torch for tensors and neural networks in Haskell
+description: Example usage
+category: Tensors, Machine Learning
+author: Austin Huang
+license: BSD3
+github: austinvhuang/hasktorch
+
+# ghc-options: -fllvm -Wincomplete-patterns # -Wall
+
+dependencies:
+- base >=4.7 && <5
+- hasktorch-core
+- singletons >= 2.3.1
+
+executables:
+
+  basic-static-tensor-usage:
+    main: StaticTensorUsage.hs
+    source-dirs: [basic-static-tensor-usage]
+
+  bayesian-regression:
+    main: BayesianRegression.hs
+    source-dirs: [bayesian-regression]
+
+  download-mnist:
+    main: DownloadMNIST.hs
+    source-dirs: [download-mnist]
+    dependencies:
+      - bytestring
+      - cryptonite
+      - directory
+      - filepath
+      - HTTP
+      - network-uri
+
+  ff-typed:
+    main: FeedForwardTyped.hs
+    source-dirs: [ff-typed]
+
+  ff-untyped:
+    main: FeedForwardUntyped.hs
+    source-dirs: [ff-untyped]
