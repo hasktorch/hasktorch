@@ -11,10 +11,10 @@ init:
 ifeq ($(UNAME),Darwin)
 	ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
 	ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
-	@echo "Created shared library symlinks for OSX:"
-	ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
+	@echo "\nCreated shared library symlinks for OSX:\n"
+	@ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
+	@echo
 endif
-	stack clean
 	stack build
 
 clean:

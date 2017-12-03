@@ -6,6 +6,7 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Torch.Core.Tensor.Static.Double (
   StaticTensor,
@@ -29,10 +30,12 @@ import Control.DeepSeq
 import Data.Singletons
 import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List
+import Data.Singletons.Prelude.Num
 import Foreign (Ptr)
 import Foreign.C.Types (CLong)
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, newForeignPtr)
 import GHC.Exts
+import GHC.TypeNats hiding (natVal)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl)

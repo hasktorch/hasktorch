@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Torch.Core.Tensor.Static.DoubleMath
   ( (^+^)
   , (^-^)
@@ -100,10 +102,13 @@ module Torch.Core.Tensor.Static.DoubleMath
 
   , tds_equal
 
+  , tds_cat
+
   ) where
 
 import Data.Singletons
 import Data.Singletons.TypeLits
+import Data.Singletons.Prelude.List
 import Foreign (Ptr)
 import Foreign.C.Types (CLong, CDouble, CInt)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
@@ -757,4 +762,22 @@ tds_equal ta tb = unsafePerformIO $ do
 --   pure $ res == 1
 
 
+tds_cat :: forall n1 n2 n . (SingI n1, SingI n2, SingI n, n ~ Sum [n1, n2]) =>
+  TDS '[n1] -> TDS '[n2] -> TDS '[n]
+tds_cat ta tb = unsafePerformIO $ do
+  let r_= tds_new :: TDS '[n]
+  withForeignPtr (tdsTensor r_)
+    (\rPtr ->
+       withForeignPtr (tdsTensor ta)
+         (\taPtr ->
+            withForeignPtr (tdsTensor tb)
+              (\tbPtr ->
+                  c_THDoubleTensor_cat rPtr taPtr tbPtr 0
+              )
+         )
+    )
+  pure r_
+
+
+-- tds_p $ tds_concat (tds_new :: TDS '[3]) (tds_new :: TDS '[4])
 
