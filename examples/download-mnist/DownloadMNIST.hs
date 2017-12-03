@@ -22,7 +22,7 @@ download outDir downloadFile = do
     BR.request $ BR.defaultGETRequest_ uri
   case (rspCode result) of
     (2, 0, 0) -> B.writeFile outFile (rspBody result)
-    s -> error ( "Error: " ++ show s ++ " " ++ url) 
+    s -> error ( "Error: " ++ show s ++ " " ++ url)
 
 run :: FilePath -> IO ()
 run dir = mapM_ (download dir) [

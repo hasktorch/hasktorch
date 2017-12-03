@@ -1,10 +1,21 @@
+UNAME:=$(shell uname)
+PWD:=$(shell pwd)
+
+# intero and stack ghci are unable to use DYLD_LIBRARY_PATH on OSX
+# See https://ghc.haskell.org/trac/ghc/ticket/11617
 init:
 	git submodule update --init --recursive
 	( cd vendor; ./build-aten.sh )
 	( cd vendor; ./build-aten-spec.sh )
 	( cd vendor; ./build-error-handler.sh )
+ifeq ($(UNAME),Darwin)
+	ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
+	ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
+	@echo "Created shared library symlinks for OSX:"
+	ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
+endif
+	stack clean
 	stack build
-	stack test
 
 clean:
 	stack clean
