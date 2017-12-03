@@ -6,6 +6,7 @@ module Torch.NN.Experimental.SGD (
  ) where
 
 import Data.Function ((&))
+import GHC.TypeLits
 
 import Pipes
 import qualified Pipes.Prelude as P
@@ -17,7 +18,8 @@ import Torch.Core.Random
 
 -- toy test case
 
-type N = 100
+type N = 100 -- sample size
+type B = 10  -- batch size
 
 genData :: IO (TDS '[2, N], TDS '[N])
 genData = do
@@ -40,6 +42,14 @@ loss (x, y) param =
   & flip tds_pow 2.0
   & tds_sumAll
 
+gradient :: forall n . (KnownNat n) =>
+  (TDS '[2,n], TDS '[n]) -> TDS '[1, 2] -> Double -> TDS '[2]
+gradient (x, y) param rate =
+  tds_sum (x !*! err) 1 False
+  where
+    err :: TDS '[n, 1] =
+      tds_trans (rate *^ ((tds_resize y) ^-^ (param !*! x)))
+
 main = do
   dat <- genData
   let p0 :: TDS '[1, 2] = tds_fromList [0.0, 0.0]
@@ -50,4 +60,10 @@ main = do
   print $ loss dat p1
   print $ loss dat p2
   print $ loss dat p
+
+  let rate = 0.001
+  tds_p $ gradient dat p0 rate
+  tds_p $ gradient dat p1 rate
+  tds_p $ gradient dat p2 rate
+  tds_p $ gradient dat p rate
   putStrLn "Done"
