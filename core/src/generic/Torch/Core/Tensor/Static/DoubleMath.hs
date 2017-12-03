@@ -66,6 +66,7 @@ module Torch.Core.Tensor.Static.DoubleMath
   , tds_cadd
   , tds_csub
   , tds_cmul
+  , tds_square
   , tds_cpow
   , tds_cdiv
   , tds_clshift
@@ -93,6 +94,8 @@ module Torch.Core.Tensor.Static.DoubleMath
   , tds_mode
   , tds_median
   , tds_sum
+  , tds_colsum
+  , tds_rowsum
   , tds_prod
   , tds_cumsum
   , tds_cumprod
@@ -492,6 +495,9 @@ tds_cmul :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
 tds_cmul t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cmul t src
 
+tds_square :: SingI d => TDS d -> TDS d
+tds_square t = tds_cmul t t
+
 tds_cpow :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
 tds_cpow t src = unsafePerformIO $ do
   apply2 c_THDoubleTensor_cpow t src
@@ -676,6 +682,7 @@ tds_median :: SingI d => (TDS d) -> Int -> Bool -> ((TDS d), TensorLong)
 tds_median t dimension keepdim = unsafePerformIO $
   ret2 c_THDoubleTensor_median t dimension keepdim
 
+-- TODO - types
 -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
 -- tds_sum :: (TDS d) -> Int -> Bool -> (TDS d)
 tds_sum t dimension keepdim = unsafePerformIO $ do
@@ -684,6 +691,12 @@ tds_sum t dimension keepdim = unsafePerformIO $ do
     swap fun a b c d = fun c d a b
     dimensionC = fromIntegral dimension
     keepdimC = if keepdim then 1 else 0
+
+tds_rowsum :: (KnownNat r, KnownNat c) => TDS [r, c] -> TDS [1, c]
+tds_rowsum t = tds_sum t 0 True
+
+tds_colsum :: (KnownNat r, KnownNat c) => TDS [r, c] -> TDS [r, 1]
+tds_colsum t = tds_sum t 1 True
 
 -- TH_API void THTensor_(prod)(THTensor *r_, THTensor *t, int dimension, int keepdim);
 -- tds_prod :: (TDS d) -> Int -> Bool -> (TDS d)
