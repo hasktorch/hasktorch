@@ -44,3 +44,14 @@ executables:
   ff-untyped:
     main: FeedForwardUntyped.hs
     source-dirs: [ff-untyped]
+
+  gradient-descent:
+    main: GradientDescent.hs
+    source-dirs: [gradient-descent]
+    dependencies:
+      - base >=4.7 && <5
+      - hasktorch-core
+      - microlens >= 0.4.8.1
+      - singletons >= 2.3.1
+
+

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a45221fb3da1a34e97ae72abeeba1e94ca6ae6196956e52bc8503449ca1cbc96
+-- hash: e31bf9c301a4118799fa8e3af69b8b72fac59244316d8b95b76ffa8e46ade367
 
 name:                hasktorch-examples
 version:             0.1.0.0
@@ -77,6 +77,21 @@ executable ff-untyped
     , hasktorch-core
     , hasktorch-interface
     , hasktorch-raw
+    , singletons >=2.3.1
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
+
+executable gradient-descent
+  main-is: GradientDescent.hs
+  hs-source-dirs:
+      gradient-descent
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , hasktorch-interface
+    , hasktorch-raw
+    , microlens >=0.4.8.1
     , singletons >=2.3.1
   other-modules:
       Paths_hasktorch_examples
