@@ -1,16 +1,18 @@
 machine:
+
   environment:
     PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:$PATH
     LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:/usr/lib/x86_64-linux-gnu/$LD_LIBRARY_PATH
     LLVM_CONFIG: /usr/lib/llvm-3.8/bin/llvm-config
 
 dependencies:
+
   cache_directories:
     - "~/.stack"
-    - ".stack-work"
-    - "/home/ubuntu/hasktorch/vendor/build/"
     - "~/cmake-3.10.0-Linux-x86_64"
     - "/usr/lib/llvm-3.9"
+    - ".stack-work"
+    - "/home/ubuntu/hasktorch/vendor/build/"
 
   pre:
     - wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -39,6 +41,7 @@ dependencies:
     - stack build
 
 test:
+
   override:
     ### tests
     - stack test hasktorch-raw

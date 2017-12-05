@@ -1,4 +1,4 @@
-resolver: nightly-2017-11-24
+resolver: nightly-2017-11-23
 
 packages:
 - 'aten'
