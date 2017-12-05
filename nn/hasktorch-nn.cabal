@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4d3ea7979672bcbbf3f0e3dd1f796d3b9f640712ffa95060d704ca59f1700424
+-- hash: 7a705c4d1567dcce58a580695e164223670ffc135a532f70995713767fcb28ec
 
 name:                hasktorch-nn
 version:             0.1.0.0
@@ -33,5 +33,6 @@ library
       base >=4.7 && <5
     , hasktorch-core
     , hspec >=2.4.4
+    , microlens >=0.4.8.1
     , pipes >=4.3.7
     , singletons >=2.3.1

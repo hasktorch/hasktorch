@@ -5,10 +5,13 @@
 module Torch.NN.Experimental.SGD (
  ) where
 
+import Data.Monoid ((<>))
 import Data.Function ((&))
+import Data.Singletons
 import GHC.TypeLits
+import Lens.Micro
 
-import Pipes
+import Pipes hiding (Proxy)
 import qualified Pipes.Prelude as P
 
 import Torch.Core.Tensor.Static.Double
@@ -16,9 +19,9 @@ import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom
 import Torch.Core.Random
 
--- toy test case
+-- Toy test case
 
-type N = 1000 -- sample size
+type N = 100000 -- sample size
 type B = 10  -- batch size
 type P = '[1, 2]
 
@@ -44,27 +47,32 @@ loss (x, y) param =
   & tds_sumAll
 
 gradient :: forall n . (KnownNat n) =>
-  (TDS '[2, n], TDS '[n]) -> TDS '[1, 2] -> Double -> TDS '[2, 1]
-gradient (x, y) param rate =
-  tds_colsum (x !*! err)
+  (TDS '[2, n], TDS '[n]) -> TDS '[1, 2] -> TDS '[1, 2]
+gradient (x, y) param =
+  ((-2.0) / nsamp) *^ (err !*! tds_trans x)
   where
-    err :: TDS '[n, 1] =
-      tds_trans (rate *^ ((tds_resize y) ^-^ (param !*! x))) :: TDS '[n, 1]
+    nsamp = realToFrac $ natVal (Proxy :: Proxy n)
+    err :: TDS '[1,n] = tds_resize y - (param !*! x)
+
+gradientDescent (x, y) param rate eps =
+  if (tds_sumAll $ tds_abs g) < eps then []
+  else
+    ([(param, j, g)] <>
+     gradientDescent (x, y) (param - rate *^ g) rate eps
+    )
+  where
+    j = loss (x, y) param
+    g = gradient (x, y) param
+
+p0 :: TDS '[1, 2] = tds_fromList [0.0, 0.0]
+
+diff [] = []
+diff ls = zipWith (-) (tail ls) ls
 
 main = do
   dat <- genData
-  let p0 :: TDS '[1, 2] = tds_fromList [0.0, 0.0]
-  let p1 :: TDS '[1, 2] = tds_fromList [1.0, 1.0]
-  let p2 :: TDS '[1, 2] = tds_fromList [2.0, 2.0]
-  let p  :: TDS '[1, 2] = tds_fromList [3.5, 4.2]
-  print $ loss dat p0
-  print $ loss dat p1
-  print $ loss dat p2
-  print $ loss dat p
+  let result = gradientDescent dat p0 0.001 0.1
+  let r = tds_sumAll . tds_abs . (^. _3) . last $ take 10000 result
+  print r
 
-  let rate = 0.000001
-  tds_p $ gradient dat p0 rate
-  tds_p $ gradient dat p1 rate
-  tds_p $ gradient dat p2 rate
-  tds_p $ gradient dat p rate
-  putStrLn "Done"
+
