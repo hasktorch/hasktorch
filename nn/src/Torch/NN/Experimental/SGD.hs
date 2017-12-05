@@ -21,12 +21,12 @@ import Torch.Core.Random
 
 -- Toy test case
 
-type N = 100000 -- sample size
-type B = 10  -- batch size
+type N = 10000 -- sample size
+type B = 100  -- batch size
 type P = '[1, 2]
 
-genData :: IO (TDS '[2, N], TDS '[N])
-genData = do
+genData :: TDS '[1,2] -> IO (TDS '[2, N], TDS '[N])
+genData param = do
   rng <- newRNG
   noise        :: TDS '[N] <- tds_normal rng 0.0 2.0
   predictorVal :: TDS '[N] <- tds_normal rng 0.0 10.0
@@ -34,7 +34,6 @@ genData = do
         predictorVal
         & tds_cat (tds_init 1.0)
         & tds_resize
-      param :: TDS '[1, 2] = tds_fromList [3.5, 4.2]
       y = (tds_trans (param !*! x))
           & tds_resize
           & (+) noise
@@ -64,15 +63,22 @@ gradientDescent (x, y) param rate eps =
     j = loss (x, y) param
     g = gradient (x, y) param
 
-p0 :: TDS '[1, 2] = tds_fromList [0.0, 0.0]
-
-diff [] = []
-diff ls = zipWith (-) (tail ls) ls
-
 main = do
-  dat <- genData
-  let result = gradientDescent dat p0 0.001 0.1
-  let r = tds_sumAll . tds_abs . (^. _3) . last $ take 10000 result
-  print r
+  -- Generate data w/ ground truth params
+  dat <- genData (tds_fromList [3.5, 4.2])
 
+  -- Run computation
+  let p0 :: TDS '[1, 2] = tds_fromList [0.0, 0.0]
+      result = gradientDescent dat p0 0.001 0.001
 
+  -- Results
+  let final = last $ take 10000 result
+      g = tds_sumAll . tds_abs . (^. _3) $ final
+      j = (^. _2) final
+      p = (^. _1) final
+  putStrLn "Gradient magnitude after 10000 Steps"
+  print g
+  putStrLn "Loss after 10000 Steps"
+  print j
+  putStrLn "Parameter estimate after 10000 Steps:"
+  tds_p p
