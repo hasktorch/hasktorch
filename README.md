@@ -27,10 +27,9 @@ contributing developers at the current time.**
 
 ## Build Instructions 
 
-Currently building hasktorch is only supported on OSX and linux. Building
-Hasktorch requires retrieving submodules which include TorcH library C
-dependencies, followed by building with
-[Stack](https://docs.haskellstack.org/en/stable/README/).
+Currently hasktorch only supports OSX and Linux builds. Building Hasktorch
+requires retrieving submodules followed by building with the
+[Stack](https://docs.haskellstack.org/en/stable/README/) tool.
 
 These steps can be done automatically using the [Makefile][makefile] or manually.
 
@@ -44,8 +43,8 @@ Run:
 make init
 ```
 
-This should retrieve submodules including TorcH library dependencies, build
-them, build hasktorch itself, then run tests.
+This should retrieve submodules including torch library dependencies, build
+them, and then build hasktorch modules.
 
 ## Contributing
 
