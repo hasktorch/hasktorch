@@ -56,7 +56,7 @@ library
     , hasktorch-raw
     , microlens >=0.4.8.1
     , safe-exceptions >=0.1.0.0
-    , singletons >=2.3.1
+    , singletons >=2.2
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
 

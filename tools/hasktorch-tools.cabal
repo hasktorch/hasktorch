@@ -16,7 +16,7 @@ library
   exposed-modules:     HMatrixBridge
   hs-source-dirs:      src
   build-depends:       base >= 4.7 && < 5
-                     , hmatrix >= 0.18.1.0
+                     , hmatrix >= 0.18.0.0
                      , hasktorch-core
                      , hasktorch-raw
                      , hasktorch-interface

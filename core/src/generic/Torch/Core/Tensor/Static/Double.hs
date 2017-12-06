@@ -35,7 +35,6 @@ import Foreign (Ptr)
 import Foreign.C.Types (CLong)
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, newForeignPtr)
 import GHC.Exts
-import GHC.TypeNats hiding (natVal)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl)

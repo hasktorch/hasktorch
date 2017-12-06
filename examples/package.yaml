@@ -14,7 +14,7 @@ dependencies:
 - hasktorch-core
 - hasktorch-interface
 - hasktorch-raw
-- singletons >= 2.3.1
+- singletons >= 2.2
 
 executables:
 
@@ -52,6 +52,6 @@ executables:
       - base >=4.7 && <5
       - hasktorch-core
       - microlens >= 0.4.8.1
-      - singletons >= 2.3.1
+      - singletons >= 2.2
 
 
