@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}

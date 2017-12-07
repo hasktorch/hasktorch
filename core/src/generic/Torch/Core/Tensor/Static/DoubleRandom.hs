@@ -23,7 +23,6 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
-import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Static.Double
 -- import Torch.Core.Tensor.Double

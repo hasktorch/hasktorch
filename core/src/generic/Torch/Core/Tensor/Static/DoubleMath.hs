@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
