@@ -80,6 +80,8 @@ instance KnownNat l => IsList (TDS '[l]) where
                     -- print idx -- check to see when mutation happens
                     c_THDoubleTensor_set1d tp idxC valueC
                 )
+  {-# NOINLINE fromList #-}
+
   toList t = undefined -- TODO
   -- check when fromList evaluates
   -- let foo = (tds_fromList [1..3] :: TDS '[3])
@@ -113,6 +115,7 @@ tds_resize t = unsafePerformIO $ do
           )
     )
   pure $ TDS newFPtr
+{-# NOINLINE tds_resize #-}
 
 -- |Runtime type-level check of # dimensions
 dimCheck :: Monad m => TensorDim Word -> Integer -> m ()
@@ -145,6 +148,7 @@ instance Eq (TensorDoubleStatic d) where
     (\t1c -> withForeignPtr (tdsTensor t2)
              (\t2c -> pure $ (c_THDoubleTensor_equal t1c t2c) == 1)
     )
+  {-# NOINLINE (==) #-}
 
 tds_toDynamic :: TensorDoubleStatic d -> TensorDouble
 tds_toDynamic t = unsafePerformIO $ do
@@ -154,6 +158,7 @@ tds_toDynamic t = unsafePerformIO $ do
   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   let dim = dimFromRaw newPtr
   pure $ TensorDouble newFPtr dim
+{-# NOINLINE tds_toDynamic #-}
 
 
 -- |TODO: add dimension check
@@ -164,6 +169,7 @@ tds_fromDynamic t = unsafePerformIO $ do
     )
   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   pure $ TDS newFPtr
+{-# NOINLINE tds_fromDynamic #-}
 
 tds_newClone :: TensorDoubleStatic d -> TensorDoubleStatic d
 tds_newClone t = unsafePerformIO $ do
@@ -172,6 +178,7 @@ tds_newClone t = unsafePerformIO $ do
     )
   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   pure $ TDS newFPtr
+{-# NOINLINE tds_newClone #-}
 
 -- -- |generalized transpose - needs type level determination of perturbed dimensions
 -- tds_transpose :: Word -> Word -> TensorDoubleStatic d1 -> TensorDoubleStatic d2
@@ -185,6 +192,7 @@ tds_trans t = unsafePerformIO $ do
     )
   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   pure $ TDS newFPtr
+{-# NOINLINE tds_trans #-}
 
 tds_dim :: (Num a2, SingI d) => TensorDoubleStatic d -> TensorDim a2
 tds_dim (x :: TensorDoubleStatic d) = list2dim $ fromSing (sing :: Sing d)
@@ -199,6 +207,7 @@ mkTHelper dims makeStatic value = unsafePerformIO $ do
   newPtr <- mkPtr dims value
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   pure $ makeStatic fPtr
+{-# NOINLINE mkTHelper #-}
 
 instance SingI d => StaticTensor (TensorDoubleStatic d)  where
   tds_init initVal = mkTHelper dims makeStatic initVal

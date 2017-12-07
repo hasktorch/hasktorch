@@ -75,6 +75,7 @@ tds_gesv b a = unsafePerformIO $ do
         )
     )
   pure (rb, ra)
+{-# NOINLINE tds_gesv #-}
 
 -- TH_API void THTensor_(trtrs)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_, const char *uplo, const char *trans, const char *diag);
 
@@ -105,6 +106,7 @@ tds_gels b a = do
         )
     )
   pure (rb, ra)
+{-# NOINLINE tds_gels #-}
 
 -- TH_API void THTensor_(syev)(THTensor *re_, THTensor *rv_, THTensor *a_, const char *jobz, const char *uplo);
 
@@ -148,6 +150,7 @@ tds_potrf a ul = unsafePerformIO $ do
           )
     )
   pure ra
+{-# NOINLINE tds_potrf #-}
 
 -- Returns the solution to linear system AX = B using the Cholesky decomposition
 -- chol of 2D Tensor A. Square matrix chol should be triangular; and, righthand
@@ -168,6 +171,7 @@ tds_potrs b a ul = do
           )
     )
   pure rb
+{-# NOINLINE tds_potrs #-}
 
 -- TH_API void THTensor_(potri)(THTensor *ra_, THTensor *a, const char *uplo);
 -- Returns the inverse of 2D Tensor A given its Cholesky decomposition chol.
@@ -187,6 +191,7 @@ tds_potri b a ul = do
           )
     )
   pure ra
+{-# NOINLINE tds_potri #-}
 
 -- Compute a QR decomposition of the matrix x: matrices q and r such that x = q
 -- * r, with q orthogonal and r upper triangular. This returns the thin
@@ -210,6 +215,7 @@ tds_qr a = do
         )
     )
   pure (rq, rr)
+{-# NOINLINE tds_qr #-}
 
 -- This is a low-level function for calling LAPACK directly. You'll generally
 -- want to use torch.qr() instead. Computes a QR decomposition of a, but without
@@ -230,6 +236,7 @@ tds_geqrf a = do
         )
     )
   pure (ra, rtau)
+{-# NOINLINE tds_geqrf #-}
 
 -- This is a low-level function for calling LAPACK directly. You'll generally
 -- want to use torch.qr() instead. Constructs a Q matrix from a sequence of
@@ -249,6 +256,7 @@ tds_orgqr a tau = do
         )
     )
   pure ra
+{-# NOINLINE tds_orgqr #-}
 
 -- TH_API void THTensor_(ormqr)(THTensor *ra_, THTensor *a, THTensor *tau, THTensor *c, const char *side, const char *trans);
 

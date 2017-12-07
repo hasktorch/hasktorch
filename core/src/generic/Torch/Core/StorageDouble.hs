@@ -31,4 +31,4 @@ newStorageDouble size = unsafePerformIO $ do
                        (d2cd s1) (d2cd s2) (d2cd s3)
     go (S4 s1 s2 s3 s4) = c_THDoubleStorage_newWithSize4
                           (d2cd s1) (d2cd s2) (d2cd s3) (d2cd s4)
-
+{-# NOINLINE newStorageDouble #-}

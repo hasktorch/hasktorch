@@ -90,6 +90,7 @@ mkTHelper dims makeStatic value = unsafePerformIO $ do
   pure $ makeStatic dims fPtr
   where
     mkPtr dim value = tensorRaw dim value
+{-# NOINLINE mkTHelper #-}
 
 instance SingI d => StaticByteTensor (TensorByteStatic (d :: [Nat]))  where
   tbs_init initVal = mkTHelper dims makeStatic initVal
