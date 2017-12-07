@@ -28,6 +28,7 @@ dependencies:
       fi
     - mkdir -p ~/.local/bin
     - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+    - stack upgrade
     - stack update
     - git submodule update --init --recursive
     - alias cmake=~/cmake-3.10.0-Linux-x86_64/bin/cmake
