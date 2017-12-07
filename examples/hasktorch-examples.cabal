@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d969d0d2e839aab94fd14f662bc0adcb9b2ef0a5af2fa3fc8b3a95471e0866ea
+-- hash: 27980f98b32c9ef4ced4b51bb972a65029b144f010ab7bc60b79dff4abcefe15
 
 name:                hasktorch-examples
 version:             0.1.0.0
@@ -25,6 +25,7 @@ executable bayesian-regression
   main-is: BayesianRegression.hs
   hs-source-dirs:
       bayesian-regression
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
@@ -38,6 +39,7 @@ executable download-mnist
   main-is: DownloadMNIST.hs
   hs-source-dirs:
       download-mnist
+  ghc-options: -Wall -fno-cse
   build-depends:
       HTTP
     , base >=4.7 && <5
@@ -58,6 +60,7 @@ executable ff-typed
   main-is: FeedForwardTyped.hs
   hs-source-dirs:
       ff-typed
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
@@ -72,6 +75,7 @@ executable ff-untyped
   main-is: FeedForwardUntyped.hs
   hs-source-dirs:
       ff-untyped
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
@@ -86,6 +90,7 @@ executable gradient-descent
   main-is: GradientDescent.hs
   hs-source-dirs:
       gradient-descent
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
@@ -101,6 +106,7 @@ executable static-tensor-usage
   main-is: StaticTensorUsage.hs
   hs-source-dirs:
       static-tensor-usage
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core

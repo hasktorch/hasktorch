@@ -98,11 +98,11 @@ runExample = do
   res <- runN iters 10000
   pure res
 
-  -- peek at value w/o dispRaw pretty-printing
-  putStrLn "Peek at raw pointer value of 2nd parameter:"
-  let testVal = unsafePerformIO $ do
-        withForeignPtr (tdsTensor res) (\pPtr -> pure $ c_THDoubleTensor_get2d pPtr 0 1)
-  print testVal
+  -- -- peek at value w/o dispRaw pretty-printing
+  -- putStrLn "Peek at raw pointer value of 2nd parameter:"
+  -- let testVal = unsafePerformIO $ do
+  --       withForeignPtr (tdsTensor res) (\pPtr -> pure $ c_THDoubleTensor_get2d pPtr 0 1)
+  -- print testVal
 
 main = do
   putStrLn "\nRun #1"
