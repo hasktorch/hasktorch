@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4ceb226a841b30c3bcaebe53d24a25b87a5719bf2090fb46342873aa65803ba8
+-- hash: 4fd593fdf834e12b57c0ce610e2c539aeb61a8e5d3f54f4759deecce3a78283c
 
 name:                hasktorch-core
 version:             0.1.0.0
@@ -44,12 +44,13 @@ library
       Torch.Core.Tensor.Static.DoubleLapack
       Torch.Core.Tensor.Static.DoubleMath
       Torch.Core.Tensor.Static.DoubleRandom
+      Torch.Core.Tensor.Static.Long
   other-modules:
       Paths_hasktorch_core
   hs-source-dirs:
       src
       src/generic
-  ghc-options: -Wall -fno-cse -fno-full-laziness
+  ghc-options: -fno-cse -fno-full-laziness
   build-depends:
       base >=4.7 && <5
     , deepseq >=1.3.0.0
@@ -67,7 +68,7 @@ test-suite spec
   hs-source-dirs:
       tests
       tests/generic
-  ghc-options: -Wall -fno-cse -fno-full-laziness
+  ghc-options: -fno-cse -fno-full-laziness
   build-depends:
       QuickCheck
     , base >=4.7 && <5

@@ -3,9 +3,11 @@ module Torch.Core.Tensor.Raw
   ( dimFromRaw
   , dispRaw
   , fillRaw
+  , fillLongRaw
   , fillRaw0
   , randInitRaw
   , tensorRaw
+  , tensorLongRaw
   , toList
   , invlogit
   , TensorDoubleRaw
@@ -27,7 +29,9 @@ import THTypes (CTHDoubleTensor, CTHGenerator)
 import Torch.Core.Tensor.Types (TensorDim(..), TensorDoubleRaw, TensorLongRaw, (^.), _1, _2, _3, _4)
 
 import qualified THDoubleTensor as T
+import qualified THLongTensor as T
 import qualified THDoubleTensorMath as M (c_THDoubleTensor_sigmoid, c_THDoubleTensor_fill)
+import qualified THLongTensorMath as M (c_THLongTensor_fill)
 import qualified THDoubleTensorRandom as R (c_THDoubleTensor_uniform)
 import qualified THRandom as R (c_THGenerator_new)
 
@@ -138,6 +142,21 @@ tensorRaw dims value = do
       T.c_THDoubleTensor_newWithSize3d
       T.c_THDoubleTensor_newWithSize4d
 
+-- |Create a new (Long) tensor of specified dimensions and fill it with 0
+-- safe version
+tensorLongRaw :: TensorDim Word -> Int -> IO TensorLongRaw
+tensorLongRaw dims value = do
+  newPtr <- go dims
+  fillLongRaw value newPtr
+  pure newPtr
+  where
+    go :: TensorDim Word -> IO TensorLongRaw
+    go = onDims w2cll
+      T.c_THLongTensor_new
+      T.c_THLongTensor_newWithSize1d
+      T.c_THLongTensor_newWithSize2d
+      T.c_THLongTensor_newWithSize3d
+      T.c_THLongTensor_newWithSize4d
 
 -- |apply a tensor transforming function to a tensor
 applyRaw
@@ -184,6 +203,11 @@ dimFromRaw raw =
 -- and returns the IO context with the mutated tensor
 fillRaw :: Real a => a -> TensorDoubleRaw -> IO ()
 fillRaw value = (flip M.c_THDoubleTensor_fill) (realToFrac value)
+
+-- |Returns a function that accepts a tensor and fills it with specified value
+-- and returns the IO context with the mutated tensor
+fillLongRaw :: Int -> TensorLongRaw -> IO ()
+fillLongRaw value = (flip M.c_THLongTensor_fill) (fromIntegral value)
 
 -- |Fill a raw Double tensor with 0.0
 fillRaw0 :: TensorDoubleRaw -> IO TensorDoubleRaw

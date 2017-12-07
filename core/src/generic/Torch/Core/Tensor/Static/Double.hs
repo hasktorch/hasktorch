@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE FlexibleInstances   #-}
@@ -26,7 +25,6 @@ module Torch.Core.Tensor.Static.Double (
   Nat
   ) where
 
-import Control.DeepSeq
 import Data.Singletons
 import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List
@@ -41,6 +39,7 @@ import Torch.Core.Internal (w2cl)
 import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
+
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath

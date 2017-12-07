@@ -12,7 +12,7 @@ github: austinvhuang/hasktorch
 # core uses unsafePerformIO to wrap FFI, follow recommendations here:
 # https://hackage.haskell.org/package/base-4.10.1.0/docs/src/GHC.IO.Unsafe.html
 # in using -fnocase -fno-full-laziness
-ghc-options: -Wall -fno-cse -fno-full-laziness
+ghc-options: -fno-cse -fno-full-laziness
 
 dependencies:
 - base >=4.7 && <5
