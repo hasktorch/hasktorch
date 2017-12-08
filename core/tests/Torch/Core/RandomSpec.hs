@@ -1,12 +1,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE BangPatterns #-}
+
 module Torch.Core.RandomSpec (spec) where
 
 import Control.Monad (replicateM)
 import Foreign (Ptr)
 
 import qualified THRandom as R (c_THGenerator_new)
-
+import qualified Control.Exception as E
 import Torch.Core.Random
 import Torch.Prelude.Extras
 
@@ -28,7 +29,7 @@ spec = do
   describe "geometric" geometricSpec
   describe "bernoulli" bernoulliSpec
   describe "scenario" $ do
-    it "runs this scenario as expected" . property $ testScenario
+    it "runs this scenario as expected" $ testScenario
 
 newRNGSpec :: Spec
 newRNGSpec = do
@@ -110,19 +111,19 @@ bernoulliSpec = do
   rng <- runIO newRNG
   distributed1BoundsCheck rng bernoulli (\a x -> doesn'tCrash ())
 
-
 -- |Check that seeds work as intended
-testScenario :: Property
-testScenario = monadicIO $ do
-  rng <- run newRNG
-  run $ manualSeed rng 332323401
-  val1 <- run $ normal rng 0.0 1000
-  val2 <- run $ normal rng 0.0 1000
-  -- assert (val1 /= val2) -- TODO: rng should addvance and this should not fail
-  run $ manualSeed rng 332323401
-  run $ manualSeed rng 332323401
-  val3 <- run $ normal rng 0.0 1000.0
-  assert (val1 == val3)
+testScenario :: IO ()
+testScenario = do
+  rng <- newRNG
+  manualSeed rng 332323401
+  val1 <- normal rng 0.0 1000
+  val2 <- normal rng 0.0 1000
+  E.assert (val1 /= val2) pure ()
+  manualSeed rng 332323401
+  manualSeed rng 332323401
+  val3 <- normal rng 0.0 1000.0
+  E.assert (val1 == val3) pure ()
+
 
 -- ========================================================================= --
 
