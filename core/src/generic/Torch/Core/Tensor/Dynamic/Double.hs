@@ -1,7 +1,10 @@
+{-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
+
 module Torch.Core.Tensor.Dynamic.Double
   ( disp
   , td_p
   , td_new
+  , td_new_
   , td_init
   , td_get
   , td_newWithTensor
@@ -27,7 +30,7 @@ import THDoubleTensorMath
 import THDoubleLapack
 
 disp :: TensorDouble -> IO ()
-disp tensor = withForeignPtr(tdTensor tensor) dispRaw
+disp tensor = withForeignPtr (tdTensor tensor) dispRaw
 
 td_p :: TensorDouble -> IO ()
 td_p = disp
@@ -52,10 +55,20 @@ td_newWithTensor t = unsafePerformIO $ do
   newPtr <- withForeignPtr (tdTensor t) (\tPtr -> c_THDoubleTensor_newWithTensor tPtr)
   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   pure $ TensorDouble newFPtr (dimFromRaw newPtr)
+{-# NOINLINE td_newWithTensor #-}
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 td_new :: TensorDim Word -> TensorDouble
 td_new dims = unsafePerformIO $ do
+  newPtr <- tensorRaw dims 0.0
+  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  withForeignPtr fPtr fillRaw0
+  pure $ TensorDouble fPtr dims
+{-# NOINLINE td_new #-}
+
+-- |Create a new (double) tensor of specified dimensions and fill it with 0
+td_new_ :: TensorDim Word -> IO TensorDouble
+td_new_ dims = do
   newPtr <- tensorRaw dims 0.0
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   withForeignPtr fPtr fillRaw0
@@ -67,6 +80,7 @@ td_init dims value = unsafePerformIO $ do
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   withForeignPtr fPtr (fillRaw value)
   pure $ TensorDouble fPtr dims
+{-# NOINLINE td_init #-}
 
 td_transpose :: Word -> Word -> TensorDouble -> TensorDouble
 td_transpose dim1 dim2 t = unsafePerformIO $ do
@@ -77,11 +91,13 @@ td_transpose dim1 dim2 t = unsafePerformIO $ do
     dim1C, dim2C :: CInt
     dim1C = fromIntegral dim1
     dim2C = fromIntegral dim2
+{-# NOINLINE td_transpose #-}
 
 td_trans :: TensorDouble -> TensorDouble
 td_trans t = unsafePerformIO $ do
   newPtr <- withForeignPtr (tdTensor t) (\tPtr -> c_THDoubleTensor_newTranspose tPtr 1 0)
   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   pure $ TensorDouble newFPtr (dimFromRaw newPtr)
+{-# NOINLINE td_trans #-}
 
 

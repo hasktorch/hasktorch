@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module MemorySpec (spec) where
 
 import Control.Monad (forM_)
@@ -21,7 +23,8 @@ memoryTest dim niter = do
 
   forM_ [1..niter] $ \iter -> do
     putStr ("Iteration : " ++ show iter ++ " / ")
-    x <- td_get (D4 (0, 0, 0, 0)) (td_new dim)
+    !t <- td_new_ dim
+    !x <- td_get (D4 (0, 0, 0, 0)) t
     putStrLn $ "Printing dummy value: " ++ show x -- Need some IO with value
 
   putStrLn "Done"
@@ -36,4 +39,7 @@ memoryTestLarge = memoryTest (D4 (200, 200, 200, 200)) 1000000 -- 12.8 GB x 1M =
 
 memoryTestSmall :: IO ()
 memoryTestSmall = memoryTest (D4 (100, 100, 100, 7)) 300 -- 50 MB x 300 = 15 GB
+
+memoryTestFast :: IO ()
+memoryTestFast = memoryTest (D4 (50, 50, 50, 5)) 10000 -- 5 MB x 1000 = 5 GB
 

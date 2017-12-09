@@ -5,13 +5,13 @@ mkdir -p ./build
 
 case "$(uname)" in
   "Darwin")
-    if ! [ -x "$(command -v gcc-6)" ]; then
-        echo 'Error: gcc-6 is not installed, use homebrew to install it.' >&2
+    if ! [ -x "$(command -v gcc-7)" ]; then
+        echo 'Error: gcc-7 is not installed, use homebrew to install it.' >&2
         exit 1
     fi
     echo "Running as OSX ..."
-    CXX=g++-6
-    CC=gcc-6
+    CXX=g++-7
+    CC=gcc-7
     ;;
 
   "Linux")

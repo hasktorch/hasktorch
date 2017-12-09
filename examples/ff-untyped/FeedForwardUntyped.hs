@@ -4,18 +4,10 @@
 
 module Main where
 
-import Control.Exception.Base (assert)
-import Data.Monoid ((<>))
-import Data.Maybe (fromJust)
-import Foreign.C.Types
-import Foreign.Ptr
-
 import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Dynamic.DoubleMath (td_sigmoid, td_addmv)
 import Torch.Core.Tensor.Dynamic.DoubleRandom
-import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
-import Torch.Core.Random
 
 data Weights = W {
   biases :: TensorDouble,
@@ -31,12 +23,14 @@ data Network :: * where
 
 infixr 5 :~
 
+dispW :: Weights -> IO ()
 dispW w = do
   putStrLn "Biases:"
   disp (biases w)
   putStrLn "Weights:"
   disp (nodes w)
 
+dispN :: Network -> IO ()
 dispN (O w) = dispW w
 dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 
@@ -52,8 +46,7 @@ randomData :: Word -> IO TensorDouble
 randomData i = do
   gen <- newRNG
   let dat = td_new (D1 i)
-  dat <- td_uniform dat gen (-1.0) (1.0)
-  pure dat
+  td_uniform dat gen (-1.0) (1.0)
 
 randomNet :: Word -> [Word] -> Word -> IO Network
 randomNet i [] o = O <$> randomWeights i o
@@ -67,6 +60,7 @@ runNet (O w) v = td_sigmoid (runLayer w v)
 runNet (w :~ n') v = let v' = td_sigmoid (runLayer w v) in runNet n' v'
 
 
+main :: IO ()
 main = do
   net <- randomNet 5 [3, 2, 4, 2, 3] 2
   dat <- randomData 5

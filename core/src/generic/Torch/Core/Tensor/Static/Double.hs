@@ -12,6 +12,7 @@ module Torch.Core.Tensor.Static.Double (
   StaticTensor,
   tds_dim,
   tds_new,
+  tds_new_,
   tds_fromDynamic,
   tds_fromList,
   tds_init,
@@ -50,10 +51,12 @@ import THDoubleTensorMath
 class StaticTensor t where
   -- |tensor dimensions
   -- |create tensor
+  tds_new_ :: IO t
   tds_new :: t
   -- |create tensor of the same dimensions
   tds_cloneDim :: t -> t -- takes unused argument, gets dimensions by matching types
   -- |create and initialize tensor
+  tds_init_ :: Double -> IO t
   tds_init :: Double -> t
   -- |Display tensor
   tds_p ::  t -> IO ()
@@ -209,12 +212,24 @@ mkTHelper dims makeStatic value = unsafePerformIO $ do
   pure $ makeStatic fPtr
 {-# NOINLINE mkTHelper #-}
 
+-- |Make a foreign pointer from requested dimensions
+mkTHelper_ :: TensorDim Word -> (ForeignPtr CTHDoubleTensor -> TDS d) -> Double -> IO (TDS d)
+mkTHelper_ dims makeStatic value = do
+  newPtr <- mkPtr dims value
+  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  pure $ makeStatic fPtr
+
 instance SingI d => StaticTensor (TensorDoubleStatic d)  where
   tds_init initVal = mkTHelper dims makeStatic initVal
     where
       dims = list2dim $ fromSing (sing :: Sing d)
       makeStatic fptr = (TDS fptr) :: TDS d
+  tds_init_ initVal = mkTHelper_ dims makeStatic initVal
+    where
+      dims = list2dim $ fromSing (sing :: Sing d)
+      makeStatic fptr = (TDS fptr) :: TDS d
   tds_new = tds_init 0.0
+  tds_new_ = tds_init_ 0.0
   tds_cloneDim _ = tds_new :: TDS d
   tds_p tensor = (withForeignPtr (tdsTensor tensor) dispRaw)
 

@@ -25,7 +25,7 @@ data Samples = X {
 type P = 2
 type N = 10
 
--- TODO fill-in
+main :: IO ()
 main = do
   rng <- newRNG
   (x :: TDS '[N,P]) <- tds_uniform rng 0.0 20.0
