@@ -5,7 +5,6 @@ import Torch.Core.Tensor.Dynamic.DoubleLapack
 import Torch.Core.Tensor.Dynamic.DoubleMath
 import Torch.Core.Tensor.Dynamic.DoubleRandom
 import Torch.Core.Tensor.Types
-import Torch.Core.Random
 
 -- TODO : move raw tests elsewhere?
 import Torch.Core.Tensor.Raw
@@ -32,23 +31,24 @@ testGCTensor :: Property
 testGCTensor = monadicIO $ do
   let t0 = td_new (D2 (8, 4))
       t1 = t0
-  run $ td_fill_ 3.0 t1
-  let t2 = td_fill 6.0 t1
-  run $ disp t0 -- should be matrix of 3.0
-  run $ disp t1 -- should be matrix of 3.0
-  run $ disp t2 -- should be matrix of 6.0
+  run $ td_fill_ (3.0 :: Double) t1
+  let t2 = td_fill (6.0 :: Double) t1
+  run $ td_p t0 -- should be matrix of 3.0
+  run $ td_p t1 -- should be matrix of 3.0
+  run $ td_p t2 -- should be matrix of 6.0
 
+testOps :: IO ()
 testOps = do
-  disp $ td_neg $ td_addConst (td_new (D2 (2, 2))) 3
-  disp $ td_sigmoid $ td_neg $ td_addConst (td_new $ D2 (2,2)) 3
-  disp $ td_sigmoid $ td_addConst (td_new $ D2 (2, 2)) 3
+  td_p $ td_neg $ td_addConst (td_new (D2 (2, 2))) 3
+  td_p $ td_sigmoid $ td_neg $ td_addConst (td_new $ D2 (2,2)) 3
+  td_p $ td_sigmoid $ td_addConst (td_new $ D2 (2, 2)) 3
 
-  let foo = td_fill 3.0 $ td_new (D1 5)
-  print $ 3.0 * 3.0 * 5
+  let foo = td_fill (3.0 :: Double) $ td_new (D1 5)
+  print $ (3.0 * 3.0 * 5 :: Double)
   print $ td_dot foo foo
 
-  disp $ (td_new (D1 5)) ^+ 2.0
-  disp $ ((td_new (D1 5)) ^+ 2.0) ^/ 4.0
+  td_p $ (td_new (D1 5)) ^+ 2.0
+  td_p $ ((td_new (D1 5)) ^+ 2.0) ^/ 4.0
 
 -- TODO : move raw test elsewhere?
 rawTest = do
@@ -57,7 +57,7 @@ rawTest = do
   z <- tensorRaw (D1 5) 4.0
   dispRaw x
   -- cadd = z <- y + scalar * x, z value discarded
-  print $ 2.0 * 4.4 + 3.0
+  print $ (2.0 * 4.4 + 3.0 :: Double)
   c_THDoubleTensor_cadd z y 4.4 x
   dispRaw z
 
@@ -65,22 +65,23 @@ testCadd = do
   let foo = td_fill 5.0 $ td_new (D1 5)
   let bar = td_fill 2.0 $ td_new (D1 5)
   print $ 5 + 3 * 2
-  disp $ td_cadd foo 3.0 bar
+  td_p $ td_cadd foo 3.0 bar
 
 testCopy :: IO ()
 testCopy = do
   let foo = td_fill 5.0 $ td_new $ D2 (3, 3)
   let bar = td_newWithTensor foo
-  disp foo
-  disp bar
+  td_p foo
+  td_p bar
   let baz = foo ^+ 2.0
   let fob = bar ^- 2.0
-  disp foo
-  disp bar
-  disp baz
-  disp fob
+  td_p foo
+  td_p bar
+  td_p baz
+  td_p fob
   pure ()
 
+matrixMultTest :: IO ()
 matrixMultTest = do
   gen <- newRNG
   mapM_ (\_ -> go gen) [1..10]
@@ -90,10 +91,11 @@ matrixMultTest = do
       let vec = (td_init (D1 7) 1.0)
       mat <- td_uniform mat gen (-10.0) (10.0)
       vec <- td_uniform vec gen (-10.0) (10.0)
-      disp mat
-      disp vec
-      -- disp $ mat !* vec
+      td_p mat
+      td_p vec
+      -- td_p $ mat !* vec
 
+testLapack :: IO ()
 testLapack = do
   rng <- newRNG
   let rnd = td_new (D2 (2, 2))
@@ -101,11 +103,11 @@ testLapack = do
 
   let b = td_init (D1 2) 1.0
   let (resA, resB) = td_gesv t b
-  disp resA
-  disp resB
+  td_p resA
+  td_p resB
 
   let (resQ, resR) = td_qr t
-  disp resQ
-  disp resR
+  td_p resQ
+  td_p resR
   pure ()
 

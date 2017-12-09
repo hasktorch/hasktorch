@@ -8,6 +8,7 @@ import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom (tds_uniform)
 
+initialization :: IO ()
 initialization = do
   putStrLn "\nInitialization"
   putStrLn "--------------"
@@ -30,15 +31,15 @@ initialization = do
   tds_p asMat
 
   putStrLn "\nInitialize arbitrary dimensions directly from list:"
-  let listVec = tds_fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: TDS '[3, 2]
-  tds_p listVec
+  let listVec2 = tds_fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: TDS '[3, 2]
+  tds_p listVec2
 
   putStrLn "\nRandom values:"
   gen <- newRNG
   randMat :: TDS '[4, 4] <- tds_uniform gen (1.0) (3.0)
   tds_p randMat
 
-
+valueTransformations :: IO ()
 valueTransformations = do
   putStrLn "\nBatch tensor value transformations"
   putStrLn "-----------------------------------"
@@ -63,7 +64,7 @@ valueTransformations = do
   putStrLn "\nRound:"
   tds_p $ tds_round randMat
 
-
+matrixVectorOps :: IO ()
 matrixVectorOps = do
   putStrLn "\nMatrix/vector operations"
   putStrLn "------------------------"
@@ -78,7 +79,6 @@ matrixVectorOps = do
   tds_p constVec
 
   putStrLn "\nMatrix x vector:"
-  let result = randMat !* constVec
   tds_p $ randMat !* constVec
 
   putStrLn "\nVector outer product:"
@@ -90,7 +90,7 @@ matrixVectorOps = do
   putStrLn "\nMatrix trace:"
   print $ tds_trace randMat
 
-
+main :: IO ()
 main = do
   putStrLn "\nExample Usage of Typed Tensors"
   putStrLn "=============================="
