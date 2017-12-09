@@ -70,6 +70,7 @@ filt f dat = filter
       Nothing -> False
   ) dat
 
+pp :: ToJSON a => a -> IO ()
 pp x = putStrLn . B.unpack . encodePretty $ x
 
 readYaml :: IO (Either ParseException [Entry])
@@ -79,8 +80,10 @@ getDat :: IO [Entry]
 getDat = fromRight undefined <$> readYaml
 
 -- |extract functions with cname
+cFunctions :: [Entry] -> [Entry]
 cFunctions dat = filt aten_cname dat
 
+explore :: IO ()
 explore = do
   dat <- getDat
   pp $ head dat
@@ -89,6 +92,7 @@ explore = do
   mapM_ (\x -> putStrLn $ show . fromJust $ x) (aten_cname <$> (cFunctions dat))
   pure ()
 
+main :: IO ()
 main = do
   (result :: Either ParseException [Entry]) <- decodeFileEither specFile
   case result of

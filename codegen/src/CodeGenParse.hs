@@ -11,17 +11,12 @@ module CodeGenParse (
 
 import Data.Functor.Identity
 
-import Control.Monad (void)
 import Data.Maybe
 import Data.Void
-import Data.Text
 import Data.Text as T
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import Text.Megaparsec.Expr
-import qualified Text.Megaparsec.Char.Lexer as L
 import Prelude as P
-import Text.Show.Pretty
 
 import CodeGenTypes
 
@@ -275,6 +270,7 @@ thFilePtr :: Parser THType
 thFilePtr = (string "THFile *" <|> string "THFile*") >> pure THFilePtr
 
 -- not meant to be a complete C spec, just enough for TH lib
+thType :: ParsecT Void String Identity THType
 thType = do
   ((string "const " >> pure ())
     <|> (string "unsigned " >> pure ())

@@ -46,6 +46,13 @@ executables:
     main: FeedForwardUntyped.hs
     source-dirs: [ff-untyped]
 
+  playground:
+    main: Playground.hs
+    source-dirs: [playground]
+    dependencies:
+      - base >=4.7 && <5
+      - singletons >= 2.2
+
   gradient-descent:
     main: GradientDescent.hs
     source-dirs: [gradient-descent]
