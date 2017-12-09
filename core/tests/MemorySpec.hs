@@ -20,13 +20,11 @@ spec = do
 memoryTest :: TensorDim Word -> Int -> IO ()
 memoryTest dim niter = do
   putStrLn $ show (memSizeGB dim) ++ " GB per allocation x " ++ show niter
-
   forM_ [1..niter] $ \iter -> do
     putStr ("Iteration : " ++ show iter ++ " / ")
     !t <- td_new_ dim
     !x <- td_get (D4 (0, 0, 0, 0)) t
     putStrLn $ "Printing dummy value: " ++ show x -- Need some IO with value
-
   putStrLn "Done"
 
 
