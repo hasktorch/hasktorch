@@ -81,6 +81,7 @@ testCopy = do
   td_p fob
   pure ()
 
+matrixMultTest :: IO ()
 matrixMultTest = do
   gen <- newRNG
   mapM_ (\_ -> go gen) [1..10]
@@ -94,6 +95,7 @@ matrixMultTest = do
       td_p vec
       -- td_p $ mat !* vec
 
+testLapack :: IO ()
 testLapack = do
   rng <- newRNG
   let rnd = td_new (D2 (2, 2))

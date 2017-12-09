@@ -41,4 +41,3 @@ memoryTestSmall = memoryTest (D4 (100, 100, 100, 7)) 300 -- 50 MB x 300 = 15 GB
 
 memoryTestFast :: IO ()
 memoryTestFast = memoryTest (D4 (50, 50, 50, 5)) 10000 -- 5 MB x 1000 = 5 GB
-

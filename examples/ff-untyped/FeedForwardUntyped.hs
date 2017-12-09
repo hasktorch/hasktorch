@@ -26,9 +26,9 @@ infixr 5 :~
 dispW :: Weights -> IO ()
 dispW w = do
   putStrLn "Biases:"
-  disp (biases w)
+  td_p (biases w)
   putStrLn "Weights:"
-  disp (nodes w)
+  td_p (nodes w)
 
 dispN :: Network -> IO ()
 dispN (O w) = dispW w
@@ -65,10 +65,10 @@ main = do
   net <- randomNet 5 [3, 2, 4, 2, 3] 2
   dat <- randomData 5
   putStrLn "Data\n--------"
-  disp dat
+  td_p dat
   putStrLn "Network\n--------"
   dispN net
   let result = runNet net dat
   putStrLn "Result\n--------"
-  disp result
+  td_p result
   putStrLn "Done"
