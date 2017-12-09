@@ -15,21 +15,19 @@ import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom
 import Torch.Core.Random
 
-import THDoubleTensor
-import Foreign.ForeignPtr
-import System.IO.Unsafe
-
 type N = 1000 -- sample size
 type NumP = 2
 type P = '[1, 2]
+
+seedVal :: Int
 seedVal = 223
 
 genData :: TDS '[1,2] -> IO (TDS '[2, N], TDS '[N])
 genData param = do
-  rng <- newRNG
-  manualSeed rng seedVal
-  noise        :: TDS '[N] <- tds_normal rng 0.0 2.0
-  predictorVal :: TDS '[N] <- tds_normal rng 0.0 10.0
+  gen <- newRNG
+  manualSeed gen seedVal
+  noise        :: TDS '[N] <- tds_normal gen 0.0 2.0
+  predictorVal :: TDS '[N] <- tds_normal gen 0.0 10.0
   let x :: TDS '[2, N] =
         predictorVal
         & tds_cat (tds_init 1.0)
@@ -50,7 +48,7 @@ gradient :: forall n . (KnownNat n) =>
 gradient (x, y) param =
   ((-2.0) / nsamp) *^ (err !*! tds_trans x)
   where
-    nsamp = realToFrac $ natVal (Proxy :: Proxy n)
+    nsamp = (realToFrac $ natVal (Proxy :: Proxy n)) :: Double
     err :: TDS '[1,n] = tds_resize y - (param !*! x)
 
 gradientDescent ::
@@ -83,6 +81,7 @@ runN lazyIters nIter = do
   tds_p p
   pure p
 
+runExample :: IO (TDS '[1,2])
 runExample = do
   -- Generate data w/ ground truth params
   putStrLn "True parameters"
@@ -95,8 +94,7 @@ runExample = do
       iters = gradientDescent dat p0 0.001 0.001
 
   -- Results
-  res <- runN iters 10000
-  pure res
+  runN iters 10000
 
   -- -- peek at value w/o dispRaw pretty-printing
   -- putStrLn "Peek at raw pointer value of 2nd parameter:"
@@ -104,8 +102,9 @@ runExample = do
   --       withForeignPtr (tdsTensor res) (\pPtr -> pure $ c_THDoubleTensor_get2d pPtr 0 1)
   -- print testVal
 
+main :: IO ()
 main = do
   putStrLn "\nRun #1"
-  runExample
   putStrLn "\nRun #2 using the same random seed"
   runExample
+  pure ()

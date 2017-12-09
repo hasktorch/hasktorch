@@ -8,6 +8,7 @@ import qualified Network.Browser as BR
 import Network.HTTP (rspCode, rspBody)
 import Network.URI (parseURI)
 
+downloadSite :: FilePath
 downloadSite = "http://yann.lecun.com/exdb/mnist/"
 
 download :: FilePath -> String -> IO ()
@@ -32,6 +33,7 @@ run dir = mapM_ (download dir) [
   "t10k-images-idx3-ubyte.gz"
   ]
 
+main :: IO ()
 main = do
   run "./"
   putStrLn "Finished downloading"

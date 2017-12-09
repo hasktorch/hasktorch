@@ -20,8 +20,7 @@ flags: {}
 
 extra-package-dbs: []
 
-extra-include-dirs: ['vendor/bindings-dsl']
-# extra-include-dirs: ['vendor/torch7/lib/TH/', 'vendor/torch7/lib/TH/generic/']
+extra-include-dirs: []
 
 extra-lib-dirs: 
 - ./vendor/build

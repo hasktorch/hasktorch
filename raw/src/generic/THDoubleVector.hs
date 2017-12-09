@@ -9,6 +9,7 @@ module THDoubleVector (
     c_THDoubleVector_cdiv,
     c_THDoubleVector_divs,
     c_THDoubleVector_copy,
+    c_THDoubleVector_neg,
     c_THDoubleVector_abs,
     c_THDoubleVector_log,
     c_THDoubleVector_lgamma,
@@ -35,7 +36,6 @@ module THDoubleVector (
     c_THDoubleVector_trunc,
     c_THDoubleVector_frac,
     c_THDoubleVector_cinv,
-    c_THDoubleVector_neg,
     c_THDoubleVector_vectorDispatchInit,
     p_THDoubleVector_fill,
     p_THDoubleVector_cadd,
@@ -45,6 +45,7 @@ module THDoubleVector (
     p_THDoubleVector_cdiv,
     p_THDoubleVector_divs,
     p_THDoubleVector_copy,
+    p_THDoubleVector_neg,
     p_THDoubleVector_abs,
     p_THDoubleVector_log,
     p_THDoubleVector_lgamma,
@@ -71,7 +72,6 @@ module THDoubleVector (
     p_THDoubleVector_trunc,
     p_THDoubleVector_frac,
     p_THDoubleVector_cinv,
-    p_THDoubleVector_neg,
     p_THDoubleVector_vectorDispatchInit) where
 
 import Foreign
@@ -111,6 +111,10 @@ foreign import ccall "THVector.h THDoubleVector_divs"
 -- |c_THDoubleVector_copy : y x n -> void
 foreign import ccall "THVector.h THDoubleVector_copy"
   c_THDoubleVector_copy :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
+
+-- |c_THDoubleVector_neg : y x n -> void
+foreign import ccall "THVector.h THDoubleVector_neg"
+  c_THDoubleVector_neg :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
 
 -- |c_THDoubleVector_abs : y x n -> void
 foreign import ccall "THVector.h THDoubleVector_abs"
@@ -216,10 +220,6 @@ foreign import ccall "THVector.h THDoubleVector_frac"
 foreign import ccall "THVector.h THDoubleVector_cinv"
   c_THDoubleVector_cinv :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
 
--- |c_THDoubleVector_neg : y x n -> void
-foreign import ccall "THVector.h THDoubleVector_neg"
-  c_THDoubleVector_neg :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
-
 -- |c_THDoubleVector_vectorDispatchInit :  -> void
 foreign import ccall "THVector.h THDoubleVector_vectorDispatchInit"
   c_THDoubleVector_vectorDispatchInit :: IO ()
@@ -255,6 +255,10 @@ foreign import ccall "THVector.h &THDoubleVector_divs"
 -- |p_THDoubleVector_copy : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THDoubleVector_copy"
   p_THDoubleVector_copy :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
+
+-- |p_THDoubleVector_neg : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THDoubleVector_neg"
+  p_THDoubleVector_neg :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
 
 -- |p_THDoubleVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THDoubleVector_abs"
@@ -359,10 +363,6 @@ foreign import ccall "THVector.h &THDoubleVector_frac"
 -- |p_THDoubleVector_cinv : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THDoubleVector_cinv"
   p_THDoubleVector_cinv :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
-
--- |p_THDoubleVector_neg : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THDoubleVector_neg"
-  p_THDoubleVector_neg :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
 
 -- |p_THDoubleVector_vectorDispatchInit : Pointer to function :  -> void
 foreign import ccall "THVector.h &THDoubleVector_vectorDispatchInit"
