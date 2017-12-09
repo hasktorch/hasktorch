@@ -18,7 +18,7 @@ spec =
 testScenario :: Property
 testScenario = monadicIO $ do
   let t = td_new (D1 3)
-  run $ disp t
+  run $ td_p t
   gen <- run newRNG
   run $ td_random t gen
-  run $ disp t
+  run $ td_p t

@@ -19,15 +19,15 @@ testScenario = monadicIO $ do
 
   -- check exception case
   let (m, v) = (td_init (D2 (3, 2)) 3.0 , td_init (D1 2) 2.0)
-  run $ disp m
-  run $ disp v
-  run $ disp (td_mv m v)
+  run $ td_p m
+  run $ td_p v
+  run $ td_p (td_mv m v)
 
   let (m, v) = (td_init (D3 (1, 3, 2)) 3.0 , td_init (D1 2) 2.0)
 
-  run $ disp $ td_addr
+  run $ td_p $ td_addr
     0.0 (td_init (D2 (3,2)) 0.0)
     1.0 (td_init (D1 3) 2.0) (td_init (D1 2) 3.0)
 
-  run $ disp $ td_outer (td_init (D1 3) 2.0) (td_init (D1 2) 3.0)
+  run $ td_p $ td_outer (td_init (D1 3) 2.0) (td_init (D1 2) 3.0)
 

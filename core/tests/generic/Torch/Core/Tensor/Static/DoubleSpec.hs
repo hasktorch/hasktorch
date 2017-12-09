@@ -6,7 +6,7 @@ import Control.Monad (replicateM, void)
 import Foreign (Ptr)
 
 import Torch.Core.Tensor.Types
-import Torch.Core.Tensor.Dynamic.Double (disp)
+import Torch.Core.Tensor.Dynamic.Double (td_p)
 import Torch.Core.Tensor.Static.Double
 import qualified THRandom as R (c_THGenerator_new)
 
@@ -35,7 +35,7 @@ testScenario = monadicIO $ do
   run $ putStrLn "\n4 - new [8, 4]"
   run $ tds_p (tds_new :: TDS '[8, 4])
   run $ putStrLn "\n5 - init [3, 4]"
-  run $ disp $ tds_toDynamic (tds_init 2.0 :: TDS '[3, 4])
+  run $ td_p $ tds_toDynamic (tds_init 2.0 :: TDS '[3, 4])
   run $ putStrLn "\n6 - newClone [2, 3]"
   run $ tds_p $ tds_newClone (tds_init 2.0 :: TDS '[2, 3])
 

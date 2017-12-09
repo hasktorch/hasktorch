@@ -1,41 +1,82 @@
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Torch.Core.Tensor.Dynamic.Double
-  ( disp
-  , td_p
+  (td_p
   , td_new
   , td_new_
+  , td_fromList
   , td_init
   , td_free_
   , td_get
   , td_newWithTensor
+  , td_resize
   , td_transpose
   , td_trans
   ) where
 
-import Foreign
+import Foreign (finalizeForeignPtr)
 import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.ForeignPtr( ForeignPtr, withForeignPtr,
-                           newForeignPtr )
-import GHC.Ptr (FunPtr)
-import Numeric (showGFloat)
+import Foreign.ForeignPtr (withForeignPtr, newForeignPtr)
+import GHC.Exts (fromList, toList, IsList, Item, Ptr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import Torch.Core.Internal (w2cl, i2cl, i2cll, onDims, impossible)
+import Torch.Core.Internal (i2cll, onDims, impossible)
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import THTypes
 import THDoubleTensor
-import THDoubleTensorMath
-import THDoubleLapack
-
-disp :: TensorDouble -> IO ()
-disp tensor = withForeignPtr (tdTensor tensor) dispRaw
 
 td_p :: TensorDouble -> IO ()
-td_p = disp
+td_p tensor = withForeignPtr (tdTensor tensor) dispRaw
+
+instance IsList (TensorDouble) where
+  type Item (TensorDouble) = Double
+  fromList l = unsafePerformIO $ go result
+    where
+      result = td_new (D1 (fromIntegral $ length l))
+      go t = do
+        mapM_ mutTensor (zip [0..(length l) - 1] l)
+        pure t
+        where
+          mutTensor (idx, value) =
+            let (idxC, valueC) = (fromIntegral idx, realToFrac value) in
+              withForeignPtr (tdTensor t)
+                (\tp -> do
+                    c_THDoubleTensor_set1d tp idxC valueC
+                )
+  {-# NOINLINE fromList #-}
+  toList t = undefined -- TODO
+
+-- |Initialize a 1D tensor from a list
+td_fromList1D :: [Double] -> TensorDouble
+td_fromList1D l = fromList l
+
+-- |Initialize a tensor of arbitrary dimension from a list
+td_fromList :: [Double] -> TensorDim Word -> TensorDouble
+td_fromList l d = case fromIntegral (product d) == length l of
+  True -> td_resize (td_fromList1D l) d
+  False -> error "Incorrect tensor dimensions specified."
+
+-- |Copy contents of tensor into a new one of specified size
+td_resize :: TensorDouble -> TensorDim Word -> TensorDouble
+td_resize t d = unsafePerformIO $ do
+  let resDummy = td_new d
+  newPtr <- withForeignPtr (tdTensor t) (
+    \tPtr ->
+      c_THDoubleTensor_newClone tPtr
+    )
+  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  withForeignPtr (newFPtr)
+    (\selfp ->
+        withForeignPtr (tdTensor resDummy)
+          (\srcp ->
+             c_THDoubleTensor_resizeAs selfp srcp
+          )
+    )
+  pure $ TensorDouble newFPtr d
+{-# NOINLINE td_resize #-}
 
 td_get :: TensorDim Integer -> TensorDouble -> IO Double
 td_get loc tensor =
@@ -101,9 +142,9 @@ td_transpose dim1 dim2 t = unsafePerformIO $ do
 
 td_trans :: TensorDouble -> TensorDouble
 td_trans t = unsafePerformIO $ do
-  newPtr <- withForeignPtr (tdTensor t) (\tPtr -> c_THDoubleTensor_newTranspose tPtr 1 0)
+  newPtr <- withForeignPtr
+    (tdTensor t)
+    (\tPtr -> c_THDoubleTensor_newTranspose tPtr 1 0)
   newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   pure $ TensorDouble newFPtr (dimFromRaw newPtr)
 {-# NOINLINE td_trans #-}
-
-

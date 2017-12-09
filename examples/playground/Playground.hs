@@ -33,12 +33,12 @@ main :: IO ()
 main = do
   putStrLn "Done"
 
--- twoTensor :: IO ()
--- twoTensor = do
---   let dim = D4 (200, 200, 200, 200)
---   let t1 = td_new dim
---   let t2 = td_new dim
---   putStrLn "Done"
+twoTensor :: IO ()
+twoTensor = do
+  let dim = D4 (200, 200, 200, 200)
+  let t1 = td_new dim
+  let t2 = td_new dim
+  putStrLn "Done"
 
 -- -- |Iteration - allocate a tensor, print a value, allocate another tensor... etc.
 -- memoryTest :: TensorDim Word -> Int -> IO ()
