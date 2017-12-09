@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Torch.Core.Tensor.Dynamic.Double
   ( disp
@@ -6,6 +7,7 @@ module Torch.Core.Tensor.Dynamic.Double
   , td_new
   , td_new_
   , td_init
+  , td_free_
   , td_get
   , td_newWithTensor
   , td_transpose
@@ -73,6 +75,10 @@ td_new_ dims = do
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   withForeignPtr fPtr fillRaw0
   pure $ TensorDouble fPtr dims
+
+td_free_ :: TensorDouble -> IO ()
+td_free_ t =
+  finalizeForeignPtr $! (tdTensor t)
 
 td_init :: TensorDim Word -> Double -> TensorDouble
 td_init dims value = unsafePerformIO $ do

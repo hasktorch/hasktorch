@@ -9,8 +9,6 @@ module Main where
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom
-import Torch.Core.Tensor.Types
-import Torch.Core.Random
 
 import Data.Singletons
 import Data.Singletons.Prelude
@@ -27,8 +25,8 @@ data StaticWeights (i :: Nat) (o :: Nat) = SW {
   } deriving (Show)
 
 mkW :: (KnownNat i, KnownNat o) => SW i o
-mkW = SW biases nodes
-  where (biases, nodes) = (tds_new, tds_new)
+mkW = SW b n
+  where (b, n) = (tds_new, tds_new)
 
 data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
   O :: (KnownNat i, KnownNat o) =>
@@ -74,14 +72,21 @@ runNet :: (KnownNat i, KnownNat o) => SN i hs o -> TDS '[i] -> TDS '[o]
 runNet (O w) v = tds_sigmoid (runLayer w v)
 runNet (w :~ n') v = let v' = tds_sigmoid (runLayer w v) in runNet n' v'
 
-ih = mkW :: StaticWeights 10 7
-hh = mkW :: StaticWeights  7 4
-ho = mkW :: StaticWeights  4 2
+ih :: StaticWeights 10 7
+hh :: StaticWeights  7 4
+ho :: StaticWeights  4 2
+ih = mkW
+hh = mkW
+ho = mkW
 
-net1 = O ho :: SN 4 '[] 2
-net2 = hh :~ O ho :: SN 7 '[4] 2
-net3 = ih :~ hh :~ O ho :: SN 10 '[7,4] 2
+net1 :: SN 4 '[] 2
+net1 = O ho
+net2 :: SN 7 '[4] 2
+net2 = hh :~ O ho
+net3 :: SN 10 '[7,4] 2
+net3 = ih :~ hh :~ O ho
 
+main :: IO ()
 main = do
   putStrLn "\n=========\nNETWORK 1\n========="
   n1 <- (randomNet :: IO (SN 4 '[] 2))
