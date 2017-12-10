@@ -16,6 +16,9 @@ spec :: Spec
 spec =
   describe "scenario" $
     it "runs this scenario as expected without crashing" testScenario
+  describe "tensor distributions" $ do
+    it "runs samples from a variety of distributions without crashing" $
+      testTensorDistributions
 
 testScenario :: Property
 testScenario = monadicIO $ do
@@ -23,8 +26,8 @@ testScenario = monadicIO $ do
   t :: TDS '[5] <- run $ tds_random gen
   run $ tds_p t
 
-testDistributions :: IO ()
-testDistributions = do
+testTensorDistributions :: IO ()
+testTensorDistributions = do
   gen <- newRNG
   t_unif:: TDS '[10] <- tds_uniform gen (-5.0) 5.0
   t_norm :: TDS '[10] <- tds_normal gen 100.0 10.0
