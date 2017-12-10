@@ -2,33 +2,45 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4fd593fdf834e12b57c0ce610e2c539aeb61a8e5d3f54f4759deecce3a78283c
+-- hash: af7f13548d3cb0bf732ec5a67d22b30ad971992d241f110c004fc330978e7e96
 
-name:                hasktorch-core
-version:             0.1.0.0
-synopsis:            Torch for tensors and neural networks in Haskell
-description:         core tensor abstractions wrapping raw TH bindings
-homepage:            https://github.com/austinvhuang/hasktorch#readme
-bug-reports:         https://github.com/austinvhuang/hasktorch/issues
-license:             BSD3
-author:              Austin Huang
-category:            Tensors, Machine Learning
-build-type:          Simple
-cabal-version:       >= 1.10
+name:           hasktorch-core
+version:        0.1.0.0
+synopsis:       Torch for tensors and neural networks in Haskell
+description:    core tensor abstractions wrapping raw TH bindings
+category:       Tensors, Machine Learning
+homepage:       https://github.com/austinvhuang/hasktorch#readme
+bug-reports:    https://github.com/austinvhuang/hasktorch/issues
+author:         Austin Huang
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.10
 
 source-repository head
   type: git
   location: https://github.com/austinvhuang/hasktorch
 
 library
-  default-language: Haskell2010
+  hs-source-dirs:
+      src
+      src/generic
+  ghc-options: -fno-cse -fno-full-laziness
+  build-depends:
+      base >=4.7 && <5
+    , deepseq >=1.3.0.0
+    , hasktorch-interface
+    , hasktorch-raw
+    , microlens >=0.4.8.1
+    , safe-exceptions >=0.1.0.0
+    , singletons >=2.2
+    , text >=1.2.2.2
+    , typelits-witnesses >=0.2.3.0
   exposed-modules:
       Torch.Core.Exceptions
       Torch.Core.Internal
       Torch.Core.LogAdd
       Torch.Core.Random
       Torch.Core.StorageTypes
-      Torch.Core.Tensor.Index
       Torch.Core.Tensor.Raw
       Torch.Core.Tensor.Types
       Torch.Core.StorageDouble
@@ -47,20 +59,7 @@ library
       Torch.Core.Tensor.Static.Long
   other-modules:
       Paths_hasktorch_core
-  hs-source-dirs:
-      src
-      src/generic
-  ghc-options: -fno-cse -fno-full-laziness
-  build-depends:
-      base >=4.7 && <5
-    , deepseq >=1.3.0.0
-    , hasktorch-interface
-    , hasktorch-raw
-    , microlens >=0.4.8.1
-    , safe-exceptions >=0.1.0.0
-    , singletons >=2.2
-    , text >=1.2.2.2
-    , typelits-witnesses >=0.2.3.0
+  default-language: Haskell2010
 
 test-suite spec
   type: exitcode-stdio-1.0
