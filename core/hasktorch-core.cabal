@@ -76,6 +76,7 @@ test-suite spec
     , hasktorch-interface
     , hasktorch-raw
     , hspec
+    , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
     , safe-exceptions >=0.1.0.0
     , singletons >=2.2
