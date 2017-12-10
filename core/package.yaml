@@ -19,6 +19,7 @@ dependencies:
 - deepseq >= 1.3.0.0
 - hasktorch-raw
 - hasktorch-interface
+- managed >=1.0.0 && < 1.1
 - microlens >=0.4.8.1
 - safe-exceptions >= 0.1.0.0
 - singletons >=2.2
