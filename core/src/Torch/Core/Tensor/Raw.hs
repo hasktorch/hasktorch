@@ -24,7 +24,6 @@ import Control.Monad (forM_)
 import GHC.Ptr (FunPtr)
 
 import Torch.Core.Internal (w2cll, onDims)
-import Torch.Core.Tensor.Index (TIdx(..))
 import THTypes (CTHDoubleTensor, CTHGenerator)
 import Torch.Core.Tensor.Types (TensorDim(..), TensorDoubleRaw, TensorLongRaw, (^.), _1, _2, _3, _4)
 
@@ -39,33 +38,33 @@ import qualified THRandom as R (c_THGenerator_new)
 -- | flatten a CTHDoubleTensor into a list
 toList :: Ptr CTHDoubleTensor -> [CDouble]
 toList tensor =
-  case length size of
-    0 -> mempty
-    1 -> fmap (\t -> T.c_THDoubleTensor_get1d tensor (t ^. _1)) indexes
-    2 -> fmap (\t -> T.c_THDoubleTensor_get2d tensor (t ^. _1) (t ^. _2)) indexes
-    3 -> fmap (\t -> T.c_THDoubleTensor_get3d tensor (t ^. _1) (t ^. _2) (t ^. _3)) indexes
-    4 -> fmap (\t -> T.c_THDoubleTensor_get4d tensor (t ^. _1) (t ^. _2) (t ^. _3) (t ^. _4)) indexes
+  case size of
+    [] -> mempty
+    [nx] ->
+      T.c_THDoubleTensor_get1d tensor
+        <$> range nx
+    [nx, ny] ->
+      T.c_THDoubleTensor_get2d tensor
+        <$> range nx
+        <*> range ny
+    [nx, ny, nz] ->
+      T.c_THDoubleTensor_get3d tensor
+        <$> range nx
+        <*> range ny
+        <*> range nz
+    [nx, ny, nz, nq] ->
+      T.c_THDoubleTensor_get4d tensor
+        <$> range nx
+        <*> range ny
+        <*> range nz
+        <*> range nq
     _ -> undefined
   where
     size :: [Int]
-    size = fmap (fromIntegral . T.c_THDoubleTensor_size tensor) [0 .. T.c_THDoubleTensor_nDimension tensor - 1]
-
-    indexes :: [TIdx CLLong]
-    indexes = idx size
+    size = map (fromIntegral . T.c_THDoubleTensor_size tensor) [0 .. T.c_THDoubleTensor_nDimension tensor - 1]
 
     range :: Integral i => Int -> [i]
     range mx = [0 .. fromIntegral mx - 1]
-
-    idx :: [Int] -> [TIdx CLLong]
-    idx = \case
-      []               -> [I0]
-      [nx]             -> [I1 x | x <- range nx ]
-      [nx, ny]         -> [I2 x y | x <- range nx, y <- range ny ]
-      [nx, ny, nz]     -> [I3 x y z | x <- range nx, y <- range ny, z <- range nz]
-      [nx, ny, nz, nq] -> [I4 x y z q | x <- range nx, y <- range ny, z <- range nz, q <- range nq]
-      _ -> error "should not be run"
-
-
 
 -- |displaying raw tensor values
 dispRaw :: Ptr CTHDoubleTensor -> IO ()
