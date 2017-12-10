@@ -29,7 +29,7 @@ iteratorAssign dim niter = do
     putStrLn $ "Printing dummy value: " ++ show x
   putStrLn "Done"
 
--- |Releases memory
+-- |Releases memory on OSX (but not consistently on linux)
 iteratorMonadic :: TensorDim Word -> Int -> IO ()
 iteratorMonadic dim niter = do
   putStrLn $ show (memSizeGB dim) ++ " GB per allocation x " ++ show niter
