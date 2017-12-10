@@ -18,6 +18,8 @@ module Torch.Core.Tensor.Static.DoubleRandom
   , module Torch.Core.Random
   ) where
 
+import Control.Monad.Managed
+
 import Foreign
 import Foreign.C.Types
 import Foreign.Ptr
@@ -25,7 +27,6 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
 
 import Torch.Core.Tensor.Static.Double
--- import Torch.Core.Tensor.Double
 import Torch.Core.Tensor.Dynamic.Long
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
@@ -57,37 +58,28 @@ tds_mvn rng mu cov = do
 tds_random :: SingI d => RandGen -> IO (TDS d)
 tds_random gen = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_random s g
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO $ c_THDoubleTensor_random s g
   pure result
 
 tds_clampedRandom gen minVal maxVal = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_clampedRandom s g minC maxC
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO $ c_THDoubleTensor_clampedRandom s g minC maxC
   pure result
   where (minC, maxC) = (fromIntegral minVal, fromIntegral maxVal)
 
 tds_cappedRandom :: SingI d => RandGen -> Int -> IO (TDS d)
 tds_cappedRandom gen maxVal = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_cappedRandom s g maxC
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO $ c_THDoubleTensor_cappedRandom s g maxC
   pure result
   where maxC = fromIntegral maxVal
 
@@ -95,13 +87,10 @@ tds_cappedRandom gen maxVal = do
 tds_geometric :: SingI d => RandGen -> Double -> IO (TDS d)
 tds_geometric gen p = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_geometric s g pC
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO $ c_THDoubleTensor_geometric s g pC
   pure result
   where pC = realToFrac p
 
@@ -109,58 +98,41 @@ tds_geometric gen p = do
 tds_bernoulli :: SingI d => RandGen -> Double -> IO (TDS d)
 tds_bernoulli gen p = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_bernoulli s g pC
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_bernoulli s g pC)
   pure result
   where pC = realToFrac p
 
 tds_bernoulliFloat :: SingI d => RandGen -> TensorFloat -> IO (TDS d)
 tds_bernoulliFloat gen p = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-            withForeignPtr (pC)
-              (\pTensor ->
-                 c_THDoubleTensor_bernoulli_FloatTensor s g pTensor
-              )
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    pC <- managed (withForeignPtr (tfTensor p))
+    liftIO (c_THDoubleTensor_bernoulli_FloatTensor s g pC)
   pure result
-  where pC = tfTensor p
 
 tds_bernoulliDouble :: SingI d => RandGen -> TDS d -> IO (TDS d)
 tds_bernoulliDouble gen p = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-            withForeignPtr (pC)
-              (\pTensor ->
-                 c_THDoubleTensor_bernoulli_DoubleTensor s g pTensor
-              )
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    pC <- managed (withForeignPtr (tdsTensor p))
+    liftIO (c_THDoubleTensor_bernoulli_DoubleTensor s g pC)
   pure result
   where pC = tdsTensor p
 
 tds_uniform :: SingI d => RandGen -> Double -> Double -> IO (TDS d)
 tds_uniform gen a b = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_uniform s g aC bC
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_uniform s g aC bC)
   pure result
   where aC = realToFrac a
         bC = realToFrac b
@@ -168,13 +140,10 @@ tds_uniform gen a b = do
 tds_normal :: SingI d => RandGen -> Double -> Double -> IO (TDS d)
 tds_normal gen mean stdv = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_normal s g meanC stdvC
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_normal s g meanC stdvC)
   pure result
   where meanC = realToFrac mean
         stdvC = realToFrac stdv
@@ -186,56 +155,43 @@ tds_normal gen mean stdv = do
 tds_exponential :: SingI d => RandGen -> Double -> IO (TDS d)
 tds_exponential gen lambda = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_exponential s g lambdaC
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_exponential s g lambdaC)
   pure result
   where lambdaC = realToFrac lambda
 
 tds_cauchy :: SingI d => RandGen -> Double -> Double -> IO (TDS d)
 tds_cauchy gen median sigma = do
   let result = tds_new
-  withForeignPtr (tdsTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_cauchy s g medianC sigmaC
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_cauchy s g medianC sigmaC)
   pure result
   where medianC = realToFrac median
         sigmaC = realToFrac sigma
 
-tds_logNormal :: SingI d => TDS d -> RandGen -> Double -> Double -> IO (TDS d)
-tds_logNormal self gen mean stdv = do
-  withForeignPtr (tdsTensor self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_logNormal s g meanC stdvC
-         )
-    )
-  pure self
+tds_logNormal :: SingI d => RandGen -> Double -> Double -> IO (TDS d)
+tds_logNormal gen mean stdv = do
+  let result = tds_new
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_logNormal s g meanC stdvC)
+  pure result
   where meanC = realToFrac mean
         stdvC = realToFrac stdv
 
 tds_multinomial :: SingI d => RandGen -> TDS d -> Int -> Bool -> TensorDim Word -> IO (TensorLong)
 tds_multinomial gen prob_dist n_sample with_replacement dim = do
   let result = tl_new dim
-  withForeignPtr (tlTensor result)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-            withForeignPtr (tdsTensor prob_dist)
-              (\p ->
-                 c_THDoubleTensor_multinomial s g p n_sampleC with_replacementC
-              )
-         )
-    )
+  runManaged $ do
+    s <- managed (withForeignPtr (tlTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    p <- managed (withForeignPtr (tdsTensor prob_dist))
+    liftIO (c_THDoubleTensor_multinomial s g p n_sampleC with_replacementC)
   pure result
   where n_sampleC = fromIntegral n_sample
         with_replacementC = if with_replacement then 1 else 0

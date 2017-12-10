@@ -13,14 +13,13 @@ import Lens.Micro
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom
-import Torch.Core.Random
 
-type N = 1000 -- sample size
+type N = 2000 -- sample size
 type NumP = 2
 type P = '[1, 2]
 
 seedVal :: Int
-seedVal = 223
+seedVal = 3141592653579
 
 genData :: TDS '[1,2] -> IO (TDS '[2, N], TDS '[N])
 genData param = do
@@ -91,7 +90,7 @@ runExample = do
 
   -- Setup GD
   let p0 :: TDS '[1, 2] = tds_fromList [0.0, 0.0]
-      iters = gradientDescent dat p0 0.001 0.001
+      iters = gradientDescent dat p0 0.0005 0.0001
 
   -- Results
   runN iters 10000
@@ -106,5 +105,5 @@ main :: IO ()
 main = do
   putStrLn "\nRun #1"
   putStrLn "\nRun #2 using the same random seed"
-  runExample
+  _ <- runExample
   pure ()
