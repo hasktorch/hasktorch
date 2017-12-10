@@ -18,16 +18,6 @@ sed -e 's/^\[\[$/-/g' \
 sed -e 's/^\[\[$/-/g' \
     -e 's/^\]\]$//g' \
     -e '/^$/d' \
-    ./pytorch/torch/csrc/cudnn/cuDNN.cwrap > aten-spec/cuDNN.yaml
-
-sed -e 's/^\[\[$/-/g' \
-    -e 's/^\]\]$//g' \
-    -e '/^$/d' \
-    ./pytorch/torch/csrc/generic/methods/TensorSerialization.cwrap > aten-spec/TensorSerialization.yaml
-
-sed -e 's/^\[\[$/-/g' \
-    -e 's/^\]\]$//g' \
-    -e '/^$/d' \
     ./pytorch/torch/csrc/generic/methods/SparseTensor.cwrap > aten-spec/SparseTensor.yaml
 
 sed -e 's/^\[\[$/-/g' \
