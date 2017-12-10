@@ -14,6 +14,7 @@ module THRandom (
     c_THRandom_uniformFloat,
     c_THRandom_normal,
     c_THRandom_exponential,
+    c_THRandom_standard_gamma,
     c_THRandom_cauchy,
     c_THRandom_logNormal,
     c_THRandom_geometric,
@@ -31,6 +32,7 @@ module THRandom (
     p_THRandom_uniformFloat,
     p_THRandom_normal,
     p_THRandom_exponential,
+    p_THRandom_standard_gamma,
     p_THRandom_cauchy,
     p_THRandom_logNormal,
     p_THRandom_geometric,
@@ -93,6 +95,10 @@ foreign import ccall "THRandom.h THRandom_normal"
 -- |c_THRandom_exponential : _generator lambda -> double
 foreign import ccall "THRandom.h THRandom_exponential"
   c_THRandom_exponential :: Ptr CTHGenerator -> CDouble -> CDouble
+
+-- |c_THRandom_standard_gamma : _generator alpha -> double
+foreign import ccall "THRandom.h THRandom_standard_gamma"
+  c_THRandom_standard_gamma :: Ptr CTHGenerator -> CDouble -> CDouble
 
 -- |c_THRandom_cauchy : _generator median sigma -> double
 foreign import ccall "THRandom.h THRandom_cauchy"
@@ -161,6 +167,10 @@ foreign import ccall "THRandom.h &THRandom_normal"
 -- |p_THRandom_exponential : Pointer to function : _generator lambda -> double
 foreign import ccall "THRandom.h &THRandom_exponential"
   p_THRandom_exponential :: FunPtr (Ptr CTHGenerator -> CDouble -> CDouble)
+
+-- |p_THRandom_standard_gamma : Pointer to function : _generator alpha -> double
+foreign import ccall "THRandom.h &THRandom_standard_gamma"
+  p_THRandom_standard_gamma :: FunPtr (Ptr CTHGenerator -> CDouble -> CDouble)
 
 -- |p_THRandom_cauchy : Pointer to function : _generator median sigma -> double
 foreign import ccall "THRandom.h &THRandom_cauchy"

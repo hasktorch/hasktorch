@@ -3,10 +3,13 @@
 
 module Main where
 
+import Data.Function ((&))
 import Torch.Core.Random (newRNG)
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
-import Torch.Core.Tensor.Static.DoubleRandom (tds_uniform)
+import Torch.Core.Tensor.Static.DoubleRandom
+
+{- Types -}
 
 data Likelihood = Likelihood {
   l_mu :: Double,
@@ -25,10 +28,32 @@ data Samples = X {
 type P = 2
 type N = 10
 
+{- Helper functions -}
+
+seedVal :: Int
+seedVal = 31415926535
+
+genData :: TDS '[1,2] -> IO (TDS '[2, N], TDS '[N])
+genData param = do
+  gen <- newRNG
+  manualSeed gen seedVal
+  noise        :: TDS '[N] <- tds_normal gen 0.0 2.0
+  predictorVal :: TDS '[N] <- tds_normal gen 0.0 10.0
+  let x :: TDS '[2, N] =
+        predictorVal
+        & tds_cat (tds_init 1.0)
+        & tds_resize
+      y = (tds_trans (param !*! x))
+          & tds_resize
+          & (+) noise
+  pure (x, y)
+
+{- Main -}
+
 main :: IO ()
 main = do
-  rng <- newRNG
-  (x :: TDS '[N,P]) <- tds_uniform rng 0.0 20.0
+  gen <- newRNG
+  (x :: TDS '[N,P]) <- tds_uniform gen 0.0 20.0
   tds_p x
   let x1 = tds_init 1.0 :: TDS '[5, 3]
       x2 = tds_init 2.0 :: TDS '[3, 4]

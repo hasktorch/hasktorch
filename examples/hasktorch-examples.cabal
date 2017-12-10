@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aaa3e129199c146a79078990040634ec726ea1c5bf0d8746e20c9314bfc6e390
+-- hash: 852e55cc35cdf02e6bd66694cf204ba8b9b8e3fb750fba517a99b1f708e64285
 
 name:                hasktorch-examples
 version:             0.1.0.0
@@ -25,7 +25,7 @@ executable bayesian-regression
   main-is: BayesianRegression.hs
   hs-source-dirs:
       bayesian-regression
-  ghc-options: -Wall -fno-cse -fno-full-laziness
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
@@ -39,7 +39,7 @@ executable download-mnist
   main-is: DownloadMNIST.hs
   hs-source-dirs:
       download-mnist
-  ghc-options: -Wall -fno-cse -fno-full-laziness
+  ghc-options: -Wall -fno-cse
   build-depends:
       HTTP
     , base >=4.7 && <5
@@ -60,7 +60,7 @@ executable ff-typed
   main-is: FeedForwardTyped.hs
   hs-source-dirs:
       ff-typed
-  ghc-options: -Wall -fno-cse -fno-full-laziness
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
@@ -75,7 +75,7 @@ executable ff-untyped
   main-is: FeedForwardUntyped.hs
   hs-source-dirs:
       ff-untyped
-  ghc-options: -Wall -fno-cse -fno-full-laziness
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
@@ -90,7 +90,7 @@ executable gradient-descent
   main-is: GradientDescent.hs
   hs-source-dirs:
       gradient-descent
-  ghc-options: -Wall -fno-cse -fno-full-laziness
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
@@ -106,7 +106,7 @@ executable playground
   main-is: Playground.hs
   hs-source-dirs:
       playground
-  ghc-options: -Wall -fno-cse -fno-full-laziness
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
@@ -122,7 +122,7 @@ executable static-tensor-usage
   main-is: StaticTensorUsage.hs
   hs-source-dirs:
       static-tensor-usage
-  ghc-options: -Wall -fno-cse -fno-full-laziness
+  ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core

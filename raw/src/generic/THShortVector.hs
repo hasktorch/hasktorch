@@ -9,8 +9,8 @@ module THShortVector (
     c_THShortVector_cdiv,
     c_THShortVector_divs,
     c_THShortVector_copy,
-    c_THShortVector_abs,
     c_THShortVector_neg,
+    c_THShortVector_abs,
     c_THShortVector_vectorDispatchInit,
     p_THShortVector_fill,
     p_THShortVector_cadd,
@@ -20,8 +20,8 @@ module THShortVector (
     p_THShortVector_cdiv,
     p_THShortVector_divs,
     p_THShortVector_copy,
-    p_THShortVector_abs,
     p_THShortVector_neg,
+    p_THShortVector_abs,
     p_THShortVector_vectorDispatchInit) where
 
 import Foreign
@@ -62,13 +62,13 @@ foreign import ccall "THVector.h THShortVector_divs"
 foreign import ccall "THVector.h THShortVector_copy"
   c_THShortVector_copy :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
 
--- |c_THShortVector_abs : y x n -> void
-foreign import ccall "THVector.h THShortVector_abs"
-  c_THShortVector_abs :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
-
 -- |c_THShortVector_neg : y x n -> void
 foreign import ccall "THVector.h THShortVector_neg"
   c_THShortVector_neg :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
+
+-- |c_THShortVector_abs : y x n -> void
+foreign import ccall "THVector.h THShortVector_abs"
+  c_THShortVector_abs :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
 
 -- |c_THShortVector_vectorDispatchInit :  -> void
 foreign import ccall "THVector.h THShortVector_vectorDispatchInit"
@@ -106,13 +106,13 @@ foreign import ccall "THVector.h &THShortVector_divs"
 foreign import ccall "THVector.h &THShortVector_copy"
   p_THShortVector_copy :: FunPtr (Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ())
 
--- |p_THShortVector_abs : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THShortVector_abs"
-  p_THShortVector_abs :: FunPtr (Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ())
-
 -- |p_THShortVector_neg : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THShortVector_neg"
   p_THShortVector_neg :: FunPtr (Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ())
+
+-- |p_THShortVector_abs : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THShortVector_abs"
+  p_THShortVector_abs :: FunPtr (Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ())
 
 -- |p_THShortVector_vectorDispatchInit : Pointer to function :  -> void
 foreign import ccall "THVector.h &THShortVector_vectorDispatchInit"

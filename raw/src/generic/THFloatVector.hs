@@ -9,6 +9,7 @@ module THFloatVector (
     c_THFloatVector_cdiv,
     c_THFloatVector_divs,
     c_THFloatVector_copy,
+    c_THFloatVector_neg,
     c_THFloatVector_abs,
     c_THFloatVector_log,
     c_THFloatVector_lgamma,
@@ -35,7 +36,6 @@ module THFloatVector (
     c_THFloatVector_trunc,
     c_THFloatVector_frac,
     c_THFloatVector_cinv,
-    c_THFloatVector_neg,
     c_THFloatVector_vectorDispatchInit,
     p_THFloatVector_fill,
     p_THFloatVector_cadd,
@@ -45,6 +45,7 @@ module THFloatVector (
     p_THFloatVector_cdiv,
     p_THFloatVector_divs,
     p_THFloatVector_copy,
+    p_THFloatVector_neg,
     p_THFloatVector_abs,
     p_THFloatVector_log,
     p_THFloatVector_lgamma,
@@ -71,7 +72,6 @@ module THFloatVector (
     p_THFloatVector_trunc,
     p_THFloatVector_frac,
     p_THFloatVector_cinv,
-    p_THFloatVector_neg,
     p_THFloatVector_vectorDispatchInit) where
 
 import Foreign
@@ -111,6 +111,10 @@ foreign import ccall "THVector.h THFloatVector_divs"
 -- |c_THFloatVector_copy : y x n -> void
 foreign import ccall "THVector.h THFloatVector_copy"
   c_THFloatVector_copy :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
+
+-- |c_THFloatVector_neg : y x n -> void
+foreign import ccall "THVector.h THFloatVector_neg"
+  c_THFloatVector_neg :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
 
 -- |c_THFloatVector_abs : y x n -> void
 foreign import ccall "THVector.h THFloatVector_abs"
@@ -216,10 +220,6 @@ foreign import ccall "THVector.h THFloatVector_frac"
 foreign import ccall "THVector.h THFloatVector_cinv"
   c_THFloatVector_cinv :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
 
--- |c_THFloatVector_neg : y x n -> void
-foreign import ccall "THVector.h THFloatVector_neg"
-  c_THFloatVector_neg :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
-
 -- |c_THFloatVector_vectorDispatchInit :  -> void
 foreign import ccall "THVector.h THFloatVector_vectorDispatchInit"
   c_THFloatVector_vectorDispatchInit :: IO ()
@@ -255,6 +255,10 @@ foreign import ccall "THVector.h &THFloatVector_divs"
 -- |p_THFloatVector_copy : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THFloatVector_copy"
   p_THFloatVector_copy :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_neg : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THFloatVector_neg"
+  p_THFloatVector_neg :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
 
 -- |p_THFloatVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THFloatVector_abs"
@@ -359,10 +363,6 @@ foreign import ccall "THVector.h &THFloatVector_frac"
 -- |p_THFloatVector_cinv : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THFloatVector_cinv"
   p_THFloatVector_cinv :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
-
--- |p_THFloatVector_neg : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THFloatVector_neg"
-  p_THFloatVector_neg :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
 
 -- |p_THFloatVector_vectorDispatchInit : Pointer to function :  -> void
 foreign import ccall "THVector.h &THFloatVector_vectorDispatchInit"

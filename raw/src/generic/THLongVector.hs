@@ -9,8 +9,8 @@ module THLongVector (
     c_THLongVector_cdiv,
     c_THLongVector_divs,
     c_THLongVector_copy,
-    c_THLongVector_abs,
     c_THLongVector_neg,
+    c_THLongVector_abs,
     c_THLongVector_vectorDispatchInit,
     p_THLongVector_fill,
     p_THLongVector_cadd,
@@ -20,8 +20,8 @@ module THLongVector (
     p_THLongVector_cdiv,
     p_THLongVector_divs,
     p_THLongVector_copy,
-    p_THLongVector_abs,
     p_THLongVector_neg,
+    p_THLongVector_abs,
     p_THLongVector_vectorDispatchInit) where
 
 import Foreign
@@ -62,13 +62,13 @@ foreign import ccall "THVector.h THLongVector_divs"
 foreign import ccall "THVector.h THLongVector_copy"
   c_THLongVector_copy :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
 
--- |c_THLongVector_abs : y x n -> void
-foreign import ccall "THVector.h THLongVector_abs"
-  c_THLongVector_abs :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
-
 -- |c_THLongVector_neg : y x n -> void
 foreign import ccall "THVector.h THLongVector_neg"
   c_THLongVector_neg :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
+
+-- |c_THLongVector_abs : y x n -> void
+foreign import ccall "THVector.h THLongVector_abs"
+  c_THLongVector_abs :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
 
 -- |c_THLongVector_vectorDispatchInit :  -> void
 foreign import ccall "THVector.h THLongVector_vectorDispatchInit"
@@ -106,13 +106,13 @@ foreign import ccall "THVector.h &THLongVector_divs"
 foreign import ccall "THVector.h &THLongVector_copy"
   p_THLongVector_copy :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
 
--- |p_THLongVector_abs : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THLongVector_abs"
-  p_THLongVector_abs :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
-
 -- |p_THLongVector_neg : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THLongVector_neg"
   p_THLongVector_neg :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
+
+-- |p_THLongVector_abs : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THLongVector_abs"
+  p_THLongVector_abs :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
 
 -- |p_THLongVector_vectorDispatchInit : Pointer to function :  -> void
 foreign import ccall "THVector.h &THLongVector_vectorDispatchInit"
