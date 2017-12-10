@@ -8,15 +8,13 @@ module THByteTensorRandom (
     c_THByteTensor_bernoulli,
     c_THByteTensor_bernoulli_FloatTensor,
     c_THByteTensor_bernoulli_DoubleTensor,
-    c_THByteTensor_standard_gamma,
     p_THByteTensor_random,
     p_THByteTensor_clampedRandom,
     p_THByteTensor_cappedRandom,
     p_THByteTensor_geometric,
     p_THByteTensor_bernoulli,
     p_THByteTensor_bernoulli_FloatTensor,
-    p_THByteTensor_bernoulli_DoubleTensor,
-    p_THByteTensor_standard_gamma) where
+    p_THByteTensor_bernoulli_DoubleTensor) where
 
 import Foreign
 import Foreign.C.Types
@@ -52,10 +50,6 @@ foreign import ccall "THTensorRandom.h THByteTensor_bernoulli_FloatTensor"
 foreign import ccall "THTensorRandom.h THByteTensor_bernoulli_DoubleTensor"
   c_THByteTensor_bernoulli_DoubleTensor :: (Ptr CTHByteTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
 
--- |c_THByteTensor_standard_gamma : self _generator alpha -> void
-foreign import ccall "THTensorRandom.h THByteTensor_standard_gamma"
-  c_THByteTensor_standard_gamma :: (Ptr CTHByteTensor) -> Ptr CTHGenerator -> (Ptr CTHByteTensor) -> IO ()
-
 -- |p_THByteTensor_random : Pointer to function : self _generator -> void
 foreign import ccall "THTensorRandom.h &THByteTensor_random"
   p_THByteTensor_random :: FunPtr ((Ptr CTHByteTensor) -> Ptr CTHGenerator -> IO ())
@@ -83,7 +77,3 @@ foreign import ccall "THTensorRandom.h &THByteTensor_bernoulli_FloatTensor"
 -- |p_THByteTensor_bernoulli_DoubleTensor : Pointer to function : self _generator p -> void
 foreign import ccall "THTensorRandom.h &THByteTensor_bernoulli_DoubleTensor"
   p_THByteTensor_bernoulli_DoubleTensor :: FunPtr ((Ptr CTHByteTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
-
--- |p_THByteTensor_standard_gamma : Pointer to function : self _generator alpha -> void
-foreign import ccall "THTensorRandom.h &THByteTensor_standard_gamma"
-  p_THByteTensor_standard_gamma :: FunPtr ((Ptr CTHByteTensor) -> Ptr CTHGenerator -> (Ptr CTHByteTensor) -> IO ())

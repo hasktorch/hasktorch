@@ -76,6 +76,7 @@ tensorRandomCases = M.fromList [
   ("normal_stddevs", makeSet [GenFloat, GenDouble]),
   ("normal_means_stddevs", makeSet [GenFloat, GenDouble]),
   ("exponential", makeSet [GenFloat, GenDouble]),
+  ("standard_gamma", makeSet [GenFloat, GenDouble]),
   ("cauchy", makeSet [GenFloat, GenDouble]),
   ("logNormal", makeSet [GenFloat, GenDouble]),
   ("multinomial", makeSet [GenFloat, GenDouble]),

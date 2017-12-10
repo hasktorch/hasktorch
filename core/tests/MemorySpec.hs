@@ -14,7 +14,7 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  it "scenario: memoryTestSmall" memoryTestSmall
+  it "scenario: memoryTestSmall" memoryTestLarge
 
 -- |Iteration - allocate a tensor, print a value, allocate another tensor... etc.
 memoryTest :: TensorDim Word -> Int -> IO ()
@@ -25,7 +25,7 @@ memoryTest dim niter = do
     !t <- td_new_ dim
     !x <- td_get (D4 (0, 0, 0, 0)) t
     putStrLn $ "Printing dummy value: " ++ show x
-    td_free_ t
+    -- td_free_ t
   putStrLn "Done"
 
 
