@@ -110,6 +110,7 @@ module Torch.Core.Tensor.Static.DoubleMath
 
   ) where
 
+import Control.Monad.Managed
 import Data.Singletons
 import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List
@@ -468,35 +469,23 @@ apply2 :: (SingI d1, SingI d2, SingI d3) =>
   Raw3Arg -> (TDS d1) -> (TDS d2) -> IO (TDS d3)
 apply2 fun t src = do
   let r_ = tds_new
-  withForeignPtr (tdsTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdsTensor t)
-         (\tPtr ->
-            withForeignPtr (tdsTensor src)
-              (\srcPtr ->
-                  fun rPtr tPtr srcPtr
-              )
-         )
-    )
+  runManaged $ do
+    rPtr <- managed $ withForeignPtr (tdsTensor r_)
+    tPtr <- managed $ withForeignPtr (tdsTensor t)
+    srcPtr <- managed $ withForeignPtr (tdsTensor src)
+    liftIO $ fun rPtr tPtr srcPtr
   pure r_
 
 apply3 :: (SingI d1, SingI d2, SingI d3, SingI d4) =>
   Raw4Arg -> (TDS d1) -> (TDS d2) -> (TDS d3) -> IO (TDS d4)
 apply3 fun t src1 src2 = do
   let r_ = tds_new
-  withForeignPtr (tdsTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdsTensor t)
-         (\tPtr ->
-            withForeignPtr (tdsTensor src1)
-              (\src1Ptr ->
-                 withForeignPtr (tdsTensor src2)
-                   (\src2Ptr ->
-                      fun rPtr tPtr src1Ptr src2Ptr
-                   )
-              )
-         )
-    )
+  runManaged $ do
+    rPtr <- managed $ withForeignPtr (tdsTensor r_)
+    tPtr <- managed $ withForeignPtr (tdsTensor t)
+    src1Ptr <- managed $ withForeignPtr (tdsTensor src1)
+    src2Ptr <- managed $ withForeignPtr (tdsTensor src2)
+    liftIO $ fun rPtr tPtr src1Ptr src2Ptr
   pure r_
 
 -- argument rotations - used so that the constants are curried and only tensor
@@ -624,16 +613,11 @@ ret2 :: SingI d => Ret2Fun -> (TDS d) -> Int -> Bool -> IO ((TDS d), TensorLong)
 ret2 fun t dimension keepdim = do
   let values_ = tds_new
   let indices_ = tl_new (tds_dim t)
-  withForeignPtr (tdsTensor values_)
-    (\vPtr ->
-       withForeignPtr (tlTensor indices_)
-         (\iPtr ->
-            withForeignPtr (tdsTensor t)
-              (\tPtr ->
-                  fun vPtr iPtr tPtr dimensionC keepdimC
-              )
-         )
-    )
+  runManaged $ do
+    vPtr <- managed $ withForeignPtr (tdsTensor values_)
+    iPtr <- managed $ withForeignPtr (tlTensor indices_)
+    tPtr <- managed $ withForeignPtr (tdsTensor t)
+    liftIO $ fun vPtr iPtr tPtr dimensionC keepdimC
   pure (values_, indices_)
   where
     keepdimC = if keepdim then 1 else 0
@@ -652,19 +636,12 @@ tds_addr :: (KnownNat r, KnownNat c) =>
   Double -> TDS '[r, c]-> Double -> TDS '[r] -> TDS '[c]-> TDS '[r, c]
 tds_addr beta t alpha vec1 vec2 = unsafePerformIO $ do
   let r_ = tds_new
-  withForeignPtr (tdsTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdsTensor t)
-         (\tPtr ->
-            withForeignPtr (tdsTensor vec1)
-              (\vec1Ptr ->
-                 withForeignPtr (tdsTensor vec2)
-                   (\vec2Ptr ->
-                      c_THDoubleTensor_addr rPtr betaC tPtr alphaC vec1Ptr vec2Ptr
-                   )
-              )
-         )
-    )
+  runManaged $ do
+    rPtr <- managed $ withForeignPtr (tdsTensor r_)
+    tPtr <- managed $ withForeignPtr (tdsTensor t)
+    vec1Ptr <- managed $ withForeignPtr (tdsTensor vec1)
+    vec2Ptr <- managed $ withForeignPtr (tdsTensor vec2)
+    liftIO $ c_THDoubleTensor_addr rPtr betaC tPtr alphaC vec1Ptr vec2Ptr
   pure r_
   where
     (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
@@ -849,16 +826,11 @@ tds_cat :: forall n1 n2 n . (SingI n1, SingI n2, SingI n, n ~ Sum [n1, n2]) =>
   TDS '[n1] -> TDS '[n2] -> TDS '[n]
 tds_cat ta tb = unsafePerformIO $ do
   let r_= tds_new :: TDS '[n]
-  withForeignPtr (tdsTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdsTensor ta)
-         (\taPtr ->
-            withForeignPtr (tdsTensor tb)
-              (\tbPtr ->
-                  c_THDoubleTensor_cat rPtr taPtr tbPtr 0
-              )
-         )
-    )
+  runManaged $ do
+    rPtr <- managed $ withForeignPtr (tdsTensor r_)
+    taPtr <- managed $ withForeignPtr (tdsTensor ta)
+    tbPtr <- managed $ withForeignPtr (tdsTensor tb)
+    liftIO $ c_THDoubleTensor_cat rPtr taPtr tbPtr 0
   pure r_
 {-# NOINLINE tds_cat #-}
 

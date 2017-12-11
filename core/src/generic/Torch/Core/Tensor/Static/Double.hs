@@ -27,6 +27,7 @@ module Torch.Core.Tensor.Static.Double (
   Nat
   ) where
 
+import Control.Monad.Managed
 import Data.Singletons
 import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List

@@ -2,7 +2,7 @@
 
 module Main where
 
--- Minimal full stack implementation
+-- Minimal implementation
 
 import Foreign.ForeignPtr( withForeignPtr,
                            newForeignPtr )
