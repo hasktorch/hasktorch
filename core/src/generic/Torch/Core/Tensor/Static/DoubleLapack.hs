@@ -24,6 +24,8 @@ module Torch.Core.Tensor.Static.DoubleLapack (
 
   ) where
 
+
+import Control.Monad.Managed
 import Data.Singletons
 import Data.Singletons.TypeLits
 import Foreign (Ptr)
@@ -62,19 +64,12 @@ toChar Lower = newCString "L"
 tds_gesv :: KnownNat d => TDS '[d] -> TDS '[d, d] -> (TDS '[d, d], TDS '[d, d])
 tds_gesv b a = unsafePerformIO $ do
   let (rb, ra) = (tds_new, tds_new)
-  withForeignPtr (tdsTensor rb)
-    (\prb ->
-      withForeignPtr (tdsTensor ra)
-        (\pra ->
-           withForeignPtr (tdsTensor b)
-             (\pb ->
-                withForeignPtr (tdsTensor a)
-                  (\pa ->
-                     c_THDoubleTensor_gesv prb pra pb pa
-                  )
-             )
-        )
-    )
+  runManaged $ do
+    prb <- managed $ withForeignPtr (tdsTensor rb)
+    pra <- managed $ withForeignPtr (tdsTensor ra)
+    pb <- managed $ withForeignPtr (tdsTensor b)
+    pa <- managed $ withForeignPtr (tdsTensor a)
+    liftIO $ c_THDoubleTensor_gesv prb pra pb pa
   pure (rb, ra)
 {-# NOINLINE tds_gesv #-}
 
@@ -93,19 +88,12 @@ tds_gesv b a = unsafePerformIO $ do
 -- TH_API void THTensor_(gels)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_);
 tds_gels b a = do
   let (rb, ra) = (tds_new, tds_new)
-  withForeignPtr (tdsTensor rb)
-    (\prb ->
-      withForeignPtr (tdsTensor ra)
-        (\pra ->
-           withForeignPtr (tdsTensor b)
-             (\pb ->
-                withForeignPtr (tdsTensor a)
-                  (\pa ->
-                     c_THDoubleTensor_gels prb pra pb pa
-                  )
-             )
-        )
-    )
+  runManaged $ do
+    prb <- managed $ withForeignPtr (tdsTensor rb)
+    pra <- managed $ withForeignPtr (tdsTensor ra)
+    pb <- managed $ withForeignPtr (tdsTensor b)
+    pa <- managed $ withForeignPtr (tdsTensor a)
+    liftIO $c_THDoubleTensor_gels prb pra pb pa
   pure (rb, ra)
 {-# NOINLINE tds_gels #-}
 
@@ -120,13 +108,10 @@ tds_gels b a = do
 -- TH_API void THTensor_(getri)(THTensor *ra_, THTensor *a);
 tds_getri a = do
   let ra = tds_new
-  withForeignPtr (tdsTensor ra)
-    (\pra ->
-        withForeignPtr (tdsTensor a)
-          (\pa ->
-              c_THDoubleTensor_getri pra pa
-          )
-    )
+  runManaged $ do
+    pra <- managed $ withForeignPtr (tdsTensor ra)
+    pa <- managed $ withForeignPtr (tdsTensor a)
+    liftIO $ c_THDoubleTensor_getri pra pa
   pure ra
 
 -- Cholesky Decomposition of 2D Tensor A. The matrix A has to be a positive-definite and either symmetric or complex Hermitian.
@@ -143,13 +128,10 @@ tds_potrf
 tds_potrf a ul = unsafePerformIO $ do
   let ra = tds_new
   ulC <- toChar ul
-  withForeignPtr (tdsTensor ra)
-    (\pra ->
-        withForeignPtr (tdsTensor a)
-          (\pa ->
-              c_THDoubleTensor_potrf pra pa ulC
-          )
-    )
+  runManaged $ do
+    pra <- managed $ withForeignPtr (tdsTensor ra)
+    pa <- managed $ withForeignPtr (tdsTensor a)
+    liftIO $ c_THDoubleTensor_potrf pra pa ulC
   pure ra
 {-# NOINLINE tds_potrf #-}
 
@@ -161,16 +143,11 @@ tds_potrf a ul = unsafePerformIO $ do
 tds_potrs b a ul = do
   let rb = tds_new
   ulC <- toChar ul
-  withForeignPtr (tdsTensor rb)
-    (\prb ->
-        withForeignPtr (tdsTensor b)
-          (\pb ->
-             withForeignPtr (tdsTensor a)
-              (\pa ->
-                 c_THDoubleTensor_potrs prb pb pa ulC
-              )
-          )
-    )
+  runManaged $ do
+    prb <- managed $ withForeignPtr (tdsTensor rb)
+    pb <- managed $ withForeignPtr (tdsTensor b)
+    pa <- managed $ withForeignPtr (tdsTensor a)
+    liftIO $ c_THDoubleTensor_potrs prb pb pa ulC
   pure rb
 {-# NOINLINE tds_potrs #-}
 
@@ -181,16 +158,10 @@ tds_potrs b a ul = do
 tds_potri b a ul = do
   let ra = tds_new
   ulC <- toChar ul
-  withForeignPtr (tdsTensor ra)
-    (\pra ->
-        withForeignPtr (tdsTensor b)
-          (\pb ->
-             withForeignPtr (tdsTensor a)
-              (\pa ->
-                 c_THDoubleTensor_potrs pra pb pa ulC
-              )
-          )
-    )
+  runManaged $ do
+    pra <- managed $ withForeignPtr (tdsTensor ra)
+    pa <- managed $ withForeignPtr (tdsTensor a)
+    liftIO $ c_THDoubleTensor_potri pra pa ulC
   pure ra
 {-# NOINLINE tds_potri #-}
 
@@ -205,16 +176,11 @@ tds_potri b a ul = do
 -- TH_API void THTensor_(qr)(THTensor *rq_, THTensor *rr_, THTensor *a);
 tds_qr a = do
   let (rq, rr) = (tds_new, tds_new)
-  withForeignPtr (tdsTensor rq)
-    (\prq ->
-      withForeignPtr (tdsTensor rr)
-        (\prr ->
-           withForeignPtr (tdsTensor a)
-             (\pa ->
-                 c_THDoubleTensor_qr prq prr pa
-             )
-        )
-    )
+  runManaged $ do
+    prq <- managed $ withForeignPtr (tdsTensor rq)
+    prr <- managed $ withForeignPtr (tdsTensor rr)
+    pa <- managed $ withForeignPtr (tdsTensor a)
+    liftIO $ c_THDoubleTensor_qr prq prr pa
   pure (rq, rr)
 {-# NOINLINE tds_qr #-}
 
@@ -246,16 +212,11 @@ tds_geqrf a = do
 -- TH_API void THTensor_(orgqr)(THTensor *ra_, THTensor *a, THTensor *tau);
 tds_orgqr a tau = do
   let ra = tds_new
-  withForeignPtr (tdsTensor ra)
-    (\pra ->
-      withForeignPtr (tdsTensor a)
-        (\pa ->
-           withForeignPtr (tdsTensor tau)
-             (\ptau ->
-                 c_THDoubleTensor_orgqr pra pa ptau
-             )
-        )
-    )
+  runManaged $ do
+    pra <- managed $ withForeignPtr (tdsTensor ra)
+    pa <- managed $ withForeignPtr (tdsTensor a)
+    ptau <- managed $ withForeignPtr (tdsTensor tau)
+    liftIO $ c_THDoubleTensor_orgqr pra pa ptau
   pure ra
 {-# NOINLINE tds_orgqr #-}
 
