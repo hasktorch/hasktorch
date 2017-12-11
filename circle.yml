@@ -8,10 +8,10 @@ machine:
 dependencies:
 
   cache_directories:
-    - "~/.stack"
-    - "~/cmake-3.10.0-Linux-x86_64"
+    - "/home/ubuntu/.stack"
+    - "/home/ubuntu/cmake-3.10.0-Linux-x86_64"
     - "/usr/lib/llvm-3.9"
-    - ".stack-work"
+    - "/home/ubuntu/hasktorch/.stack-work"
     - "/home/ubuntu/hasktorch/vendor/build/"
 
   pre:
