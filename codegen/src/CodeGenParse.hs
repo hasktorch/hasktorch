@@ -361,7 +361,7 @@ thType = do
 
 -- Landmarks
 
--- thAPI :: Parser Char
+thAPI :: Parser String
 thAPI = string "TH_API"
 -- thAPI = string "TH_AP" >> char 'o'
 -- thAPI = char 'T' >> char 'H' >> char 'A' >> char '_' >> char 'P' >> char 'I'
@@ -371,12 +371,14 @@ thSemicolon = char ';'
 
 -- Function signatures
 
+thFunctionArgVoid :: Parser THArg
 thFunctionArgVoid = do
   arg <- thVoid
   space
   char ')' :: Parser Char -- TODO move this outside
   pure $ THArg THVoid ""
 
+thFunctionArgNamed :: Parser THArg
 thFunctionArgNamed = do
   argType <- thType
   --space <|> (space >> string "volatile" >> space)
@@ -388,20 +390,24 @@ thFunctionArgNamed = do
   space
   pure $ THArg argType (T.pack argName)
 
+thFunctionArg :: Parser THArg
 thFunctionArg = thFunctionArgNamed <|> thFunctionArgVoid
 
+thFunctionArgs :: Parser [THArg]
 thFunctionArgs = do
   char '(' :: Parser Char
   functionArgs <- some thFunctionArg
   -- close paren consumed by last thFunctionArg (TODO - clean this up)
   pure functionArgs
 
+thGenericPrefixes :: Parser String
 thGenericPrefixes = string "THTensor_("
                      <|> string "THBlas_("
                      <|> string "THLapack_("
                      <|> string "THStorage_("
                      <|> string "THVector_("
 
+thFunctionTemplate :: Parser (Maybe THFunction)
 thFunctionTemplate = do
   thAPI >> space
   funRet <- thType
@@ -417,7 +423,7 @@ thFunctionTemplate = do
   pure $ Just $ THFunction (T.pack funName) funArgs funRet
 
 
-thComment :: ParsecT Void String Identity ()
+thComment :: Parser ()
 --  :: ParsecT Void String Data.Functor.Identity.Identity (Maybe a)
 thComment = do
   space
@@ -426,6 +432,7 @@ thComment = do
   string "*/"
   pure ()
 
+thFunctionConcrete :: Parser (Maybe THFunction)
 thFunctionConcrete = do
   funRet <- thType
   space
@@ -440,6 +447,7 @@ thFunctionConcrete = do
 --   x <- manyTill anyChar (try whitespace)
 
 -- TODO - exclude TH_API prefix. Parse should crash if TH_API parse is invalid
+thSkip :: Parser (Maybe THFunction)
 thSkip = do
   -- x <- manyTill anyChar (try whitespace)
   -- if x == "TH_API"
@@ -447,6 +455,7 @@ thSkip = do
   -- eol <|> ((not <?> (string "TH_API")) >> eol)
   pure Nothing
 
+thConstant :: Parser (Maybe THFunction)
 thConstant = do
   -- THLogAdd has constants, these are not surfaced
   thAPI >> space
@@ -455,14 +464,11 @@ thConstant = do
   (some (alphaNumChar <|> char '_')) >> char ';'
   pure Nothing
 
+thItem :: Parser (Maybe THFunction)
 thItem = try thConstant <|> thFunctionTemplate <|> thSkip -- ordering is important
 
+thParseGeneric :: Parser [Maybe THFunction]
 thParseGeneric = some thItem
 
+thParseConcrete :: Parser [Maybe THFunction]
 thParseConcrete = some (try thConstant <|> (thAPI >> space >> thFunctionConcrete) <|> thSkip)
-
-test1 = parseTest thParseConcrete "TH_API \n"
-test2 = parseTest thParseConcrete "foob TH_API \n"
-test3 = parseTest thParseConcrete "TH_API size_t THFile_readStringRaw(THFile *self, const char *format, char **str_); /* you must deallocate str_ */"
-test4 = parseTest thParseConcrete "TH_API const double THLog2Pi;"
-test5 = parseTest thParseConcrete "TH_API double THLogAdd(double log_a, double log_b);"
