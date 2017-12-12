@@ -3,6 +3,7 @@
 
 module Torch.Core.Tensor.Static.DoubleRandom
   ( tds_random
+  , tds_mvn
   , tds_clampedRandom
   , tds_cappedRandom
   , tds_geometric
@@ -19,7 +20,6 @@ module Torch.Core.Tensor.Static.DoubleRandom
   ) where
 
 import Control.Monad.Managed
-
 import Foreign
 import Foreign.C.Types
 import Foreign.Ptr
@@ -27,6 +27,7 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
 import GHC.Ptr (FunPtr)
 
 import Torch.Core.Tensor.Static.Double
+import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Dynamic.Long
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
@@ -44,14 +45,25 @@ import Data.Singletons
 import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 
--- |generate multivariate normal samples using Cholesky decomposition
-tds_mvn :: (KnownNat r, KnownNat c) =>
-  RandGen -> TDS '[c] -> TDS '[c,c] -> IO (TDS '[r,c])
-tds_mvn rng mu cov = do
-  let result = tds_new
-  -- TODO: implement after core lapack functions implemented
-  error "not implemented"
+-- |generate correlated multivariate normal samples by specifying eigendecomposition
+tds_mvn :: forall n p . (KnownNat n, KnownNat p) =>
+  RandGen -> TDS '[p] -> TDS '[p,p] -> TDS '[p] -> IO (TDS '[n, p])
+tds_mvn gen mu eigenvectors eigenvalues = do
+  samps <- tds_normal gen 0.0 1.0 :: IO (TDS '[p, n])
+  let result = tds_trans ((tds_trans eigenvectors)
+                          !*! (tds_diag eigenvalues)
+                          !*! eigenvectors
+                          !*! samps)
   pure result
+
+test_mvn :: IO ()
+test_mvn = do
+  gen <- newRNG
+  let eigenvectors = tds_fromList [1, 0, 0, 1] :: TDS '[2,2]
+  let eigenvalues = tds_fromList [10, 30] :: TDS '[2]
+  let mu = tds_init 0.0 :: TDS '[2]
+  result <- tds_mvn gen mu eigenvectors eigenvalues :: IO (TDS '[10, 2])
+  tds_p result
 
 -- TODO: get rid of self parameter arguments since they are overwritten
 
@@ -101,7 +113,7 @@ tds_bernoulli gen p = do
   runManaged $ do
     s <- managed (withForeignPtr (tdsTensor result))
     g <- managed (withForeignPtr (rng gen))
-    liftIO (c_THDoubleTensor_bernoulli s g pC)
+    liftIO $ c_THDoubleTensor_bernoulli s g pC
   pure result
   where pC = realToFrac p
 

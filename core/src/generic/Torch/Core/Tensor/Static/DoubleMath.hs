@@ -107,6 +107,7 @@ module Torch.Core.Tensor.Static.DoubleMath
   , tds_equal
 
   , tds_cat
+  , tds_diag
 
   ) where
 
@@ -821,11 +822,10 @@ tds_equal ta tb = unsafePerformIO $ do
 --   pure $ res == 1
 -- {-# NOINLINE tds_geValue #-}
 
-
 tds_cat :: forall n1 n2 n . (SingI n1, SingI n2, SingI n, n ~ Sum [n1, n2]) =>
   TDS '[n1] -> TDS '[n2] -> TDS '[n]
 tds_cat ta tb = unsafePerformIO $ do
-  let r_= tds_new :: TDS '[n]
+  let r_ = tds_new :: TDS '[n]
   runManaged $ do
     rPtr <- managed $ withForeignPtr (tdsTensor r_)
     taPtr <- managed $ withForeignPtr (tdsTensor ta)
@@ -834,5 +834,15 @@ tds_cat ta tb = unsafePerformIO $ do
   pure r_
 {-# NOINLINE tds_cat #-}
 
--- tds_p $ tds_concat (tds_new :: TDS '[3]) (tds_new :: TDS '[4])
+tds_diag :: forall d . SingI d => TDS '[d] -> TDS '[d,d]
+tds_diag t = unsafePerformIO $ do
+  let r_ = tds_new :: TDS '[d,d]
+  runManaged $ do
+    rPtr <- managed $ withForeignPtr (tdsTensor r_)
+    tPtr <- managed $ withForeignPtr (tdsTensor t)
+    liftIO $ c_THDoubleTensor_diag rPtr tPtr k
+  pure r_
+  where k = 0
+{-# NOINLINE tds_diag #-}
 
+-- tds_p $ tds_concat (tds_new :: TDS '[3]) (tds_new :: TDS '[4])

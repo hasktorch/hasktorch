@@ -39,6 +39,7 @@ import GHC.Exts
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl)
+import Torch.Core.StorageTypes
 import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
@@ -200,6 +201,17 @@ tds_trans t = unsafePerformIO $ do
 
 tds_dim :: (Num a2, SingI d) => TensorDoubleStatic d -> TensorDim a2
 tds_dim (x :: TensorDoubleStatic d) = list2dim $ fromSing (sing :: Sing d)
+
+tds_expand :: forall d1 d2 . (SingI d1, SingI d2) => TDS d1 -> StorageLong -> TDS d2
+tds_expand t s = unsafePerformIO $ do
+  let r_ = tds_new
+  runManaged $ do
+    rPtr <- managed (withForeignPtr (tdsTensor r_))
+    tPtr <- managed (withForeignPtr (tdsTensor t))
+    sPtr <- managed (withForeignPtr (slStorage s))
+    liftIO $ c_THDoubleTensor_expand rPtr tPtr sPtr
+  pure r_
+{-# NOINLINE tds_expand #-}
 
 -- |Make an initialized raw pointer with requested dimensions
 mkPtr :: TensorDim Word -> Double -> IO TensorDoubleRaw

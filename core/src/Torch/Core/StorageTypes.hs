@@ -1,6 +1,7 @@
 module Torch.Core.StorageTypes (
   StorageSize(..),
-  StorageDouble(..)
+  StorageDouble(..),
+  StorageLong(..)
   ) where
 
 import Foreign
@@ -39,4 +40,9 @@ instance Foldable StorageSize where
 data StorageDouble = StorageDouble  {
   sdStorage :: !(ForeignPtr CTHDoubleStorage),
   sdSize :: !(StorageSize Double)
+  } deriving (Eq, Show)
+
+data StorageLong = StorageLong  {
+  slStorage :: !(ForeignPtr CTHLongStorage),
+  slSize :: !(StorageSize Int)
   } deriving (Eq, Show)
