@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 852e55cc35cdf02e6bd66694cf204ba8b9b8e3fb750fba517a99b1f708e64285
+-- hash: 57ff268ab62a66ca021081be2a6c270431a084b3588ba084403852b1a8f91d1e
 
 name:                hasktorch-examples
 version:             0.1.0.0
@@ -97,6 +97,21 @@ executable gradient-descent
     , hasktorch-interface
     , hasktorch-raw
     , microlens >=0.4.8.1
+    , singletons >=2.2
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
+
+executable multivariate-normal
+  main-is: MultivariateNormal.hs
+  hs-source-dirs:
+      multivariate-normal
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , hasktorch-interface
+    , hasktorch-raw
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples

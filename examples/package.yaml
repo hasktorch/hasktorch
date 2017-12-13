@@ -45,7 +45,7 @@ executables:
   ff-untyped:
     main: FeedForwardUntyped.hs
     source-dirs: [ff-untyped]
-
+ 
   playground:
     main: Playground.hs
     source-dirs: [playground]
@@ -59,7 +59,14 @@ executables:
     dependencies:
       - base >=4.7 && <5
       - hasktorch-core
-      - microlens >= 0.4.8.1
+      - microlens >=0.4.8.1
       - singletons >= 2.2
+
+  multivariate-normal:
+    main: MultivariateNormal.hs
+    source-dirs: [multivariate-normal]
+    dependencies:
+      - base >=4.7 && <5
+      - hasktorch-core
 
 

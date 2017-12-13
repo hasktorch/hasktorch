@@ -25,10 +25,10 @@ newStorageDouble size = unsafePerformIO $ do
     d2cd = realToFrac -- Double to CDouble
     go S0 = c_THDoubleStorage_new
     go (S1 s1) = c_THDoubleStorage_newWithSize1 $ d2cd s1
-    go (S2 s1 s2) = c_THDoubleStorage_newWithSize2
+    go (S2 (s1, s2)) = c_THDoubleStorage_newWithSize2
                     (d2cd s1) (d2cd s2)
-    go (S3 s1 s2 s3) = c_THDoubleStorage_newWithSize3
+    go (S3 (s1, s2, s3)) = c_THDoubleStorage_newWithSize3
                        (d2cd s1) (d2cd s2) (d2cd s3)
-    go (S4 s1 s2 s3 s4) = c_THDoubleStorage_newWithSize4
+    go (S4 (s1, s2, s3, s4)) = c_THDoubleStorage_newWithSize4
                           (d2cd s1) (d2cd s2) (d2cd s3) (d2cd s4)
 {-# NOINLINE newStorageDouble #-}
