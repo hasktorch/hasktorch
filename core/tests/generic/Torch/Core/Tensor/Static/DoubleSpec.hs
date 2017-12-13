@@ -23,6 +23,8 @@ spec = do
   describe "resize"      resizeSpec
   describe "scenario" $
     it "runs this scenario as expected without crashing" testScenario
+  describe "expand" $
+    it "can expand a vector without crashing" expandScenario
 
 testScenario :: Property
 testScenario = monadicIO $ do
@@ -57,3 +59,8 @@ resizeSpec = do
   vec = tds_fromList [1.0, 5.0, 2.0, 4.0, 3.0, 3.5] :: TDS '[6]
   mtx = tds_resize vec :: TDS '[3,2]
 
+expandScenario :: IO ()
+expandScenario = do
+  let foo = tds_fromList [1,2,3,4] :: TDS '[4]
+  let result = tds_expand foo :: TDS '[3, 4]
+  tds_p result

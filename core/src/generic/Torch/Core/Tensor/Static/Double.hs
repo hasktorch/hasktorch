@@ -11,6 +11,7 @@
 module Torch.Core.Tensor.Static.Double (
   StaticTensor,
   tds_dim,
+  tds_expand,
   tds_new,
   tds_new_,
   tds_fromDynamic,
@@ -39,6 +40,7 @@ import GHC.Exts
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cl)
+import Torch.Core.StorageLong
 import Torch.Core.StorageTypes
 import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Raw
@@ -202,8 +204,10 @@ tds_trans t = unsafePerformIO $ do
 tds_dim :: (Num a2, SingI d) => TensorDoubleStatic d -> TensorDim a2
 tds_dim (x :: TensorDoubleStatic d) = list2dim $ fromSing (sing :: Sing d)
 
-tds_expand :: forall d1 d2 . (SingI d1, SingI d2) => TDS d1 -> StorageLong -> TDS d2
-tds_expand t s = unsafePerformIO $ do
+-- |Expand a vector by copying into a matrix by set dimensions, TODO -
+-- generalize this beyond the matrix case
+tds_expand :: forall d1 d2 . (KnownNat d1, KnownNat d2) => TDS '[d1] -> TDS '[d2, d1]
+tds_expand t = unsafePerformIO $ do
   let r_ = tds_new
   runManaged $ do
     rPtr <- managed (withForeignPtr (tdsTensor r_))
@@ -211,7 +215,16 @@ tds_expand t s = unsafePerformIO $ do
     sPtr <- managed (withForeignPtr (slStorage s))
     liftIO $ c_THDoubleTensor_expand rPtr tPtr sPtr
   pure r_
+  where
+    s1 = fromIntegral $ natVal (Proxy :: Proxy d1)
+    s2 = fromIntegral $ natVal (Proxy :: Proxy d2)
+    s = newStorageLong (S2 (s2, s1))
 {-# NOINLINE tds_expand #-}
+
+test = do
+  let foo = tds_fromList [1,2,3,4] :: TDS '[4]
+  let result = tds_expand foo :: TDS '[3, 4]
+  tds_p result
 
 -- |Make an initialized raw pointer with requested dimensions
 mkPtr :: TensorDim Word -> Double -> IO TensorDoubleRaw
@@ -245,5 +258,4 @@ instance SingI d => StaticTensor (TensorDoubleStatic d)  where
   tds_new_ = tds_init_ 0.0
   tds_cloneDim _ = tds_new :: TDS d
   tds_p tensor = (withForeignPtr (tdsTensor tensor) dispRaw)
-
 

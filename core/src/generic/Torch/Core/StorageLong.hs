@@ -25,10 +25,10 @@ newStorageLong size = unsafePerformIO $ do
     w2cl = fromIntegral
     go S0 = c_THLongStorage_new
     go (S1 s1) = c_THLongStorage_newWithSize1 $ w2cl s1
-    go (S2 s1 s2) = c_THLongStorage_newWithSize2
-                    (w2cl s1) (w2cl s2)
-    go (S3 s1 s2 s3) = c_THLongStorage_newWithSize3
-                       (w2cl s1) (w2cl s2) (w2cl s3)
-    go (S4 s1 s2 s3 s4) = c_THLongStorage_newWithSize4
-                          (w2cl s1) (w2cl s2) (w2cl s3) (w2cl s4)
+    go (S2 (s1, s2)) = c_THLongStorage_newWithSize2
+                       (w2cl s1) (w2cl s2)
+    go (S3 (s1, s2, s3)) = c_THLongStorage_newWithSize3
+                           (w2cl s1) (w2cl s2) (w2cl s3)
+    go (S4 (s1, s2, s3, s4)) = c_THLongStorage_newWithSize4
+                               (w2cl s1) (w2cl s2) (w2cl s3) (w2cl s4)
 {-# NOINLINE newStorageLong #-}
