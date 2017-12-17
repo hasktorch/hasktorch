@@ -16,7 +16,7 @@ interfaces, where statically typed tensors represent tensor dimensions at the
 type level (example from `Double.hs`):
 
 ```
-newtype TensorDoubleStatic (d :: [Nat]) = TDS {
+data TensorDoubleStatic (d :: [Nat]) = TDS {
   tdsTensor :: !(ForeignPtr CTHDoubleTensor)
   } deriving (Show)
 

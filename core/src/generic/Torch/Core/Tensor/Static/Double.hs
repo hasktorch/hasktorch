@@ -144,7 +144,7 @@ list2dim lst  = case (length lst) of
   where
     d = fromIntegral <$> lst -- cast as needed for tensordim
 
-newtype TensorDoubleStatic (d :: [Nat]) = TDS {
+data TensorDoubleStatic (d :: [Nat]) = TDS {
   tdsTensor :: !(ForeignPtr CTHDoubleTensor)
   } deriving (Show)
 
