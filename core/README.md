@@ -16,8 +16,8 @@ interfaces, where statically typed tensors represent tensor dimensions at the
 type level (example from `Double.hs`):
 
 ```
-data TensorDoubleStatic (d :: [Nat]) = TDS {
-  tdsTensor :: !(ForeignPtr CTHDoubleTensor)
+newtype TensorDoubleStatic (d :: [Nat]) = TDS {
+  tdsTensor :: ForeignPtr CTHDoubleTensor
   } deriving (Show)
 
 type TDS = TensorDoubleStatic
@@ -61,9 +61,19 @@ A common pattern in the TH API is for the first argument to be a tensor pointer
 storing the result (`r_`), which is modified as a post-condition to the
 procedure.
 
-While it is possible to work with such an API directly, it quickly becomes
-cumbersome, as many mathematical operations are pure functions, it is only due
-to the underlying representation and FFI API that such operations must be done
+While it is possible to work with an API in this manner, it quickly becomes
+cumbersome, as many mathematical operations are conceptually pure, but due to
+the underlying representation and FFI API such operations must be accomplished
 monadically.
 
-... (TODO - rules around use of unsafe operations)
+Thus, unsafe operations are used to provide a functional API if and only if the
+operation is functional module allocation / deallocation. Just as native types
+do not treat memory allocation as IO, operations in core that do not perform
+mutation but do perform allocation are presented as pure functions. In many of
+these cases, if the return value is a tensor, it is allocated within the
+function and returned with populated values.
+
+In the future, in-place mutation equivalents will be provided which _do_ use
+monadic computations will be surfaced, folowing the pytorch convention of adding
+an underscore `_` suffix to the function name to distinguish it from the
+immutable equivalent.
