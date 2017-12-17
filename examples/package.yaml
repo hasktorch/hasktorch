@@ -23,6 +23,10 @@ executables:
     main: StaticTensorUsage.hs
     source-dirs: [static-tensor-usage]
 
+  backprop:
+    main: Backprop.hs
+    source-dirs: [backprop]
+
   bayesian-regression:
     main: BayesianRegression.hs
     source-dirs: [bayesian-regression]

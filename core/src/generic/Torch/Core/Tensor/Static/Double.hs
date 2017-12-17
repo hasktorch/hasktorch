@@ -221,11 +221,6 @@ tds_expand t = unsafePerformIO $ do
     s = newStorageLong (S2 (s2, s1))
 {-# NOINLINE tds_expand #-}
 
-test = do
-  let foo = tds_fromList [1,2,3,4] :: TDS '[4]
-  let result = tds_expand foo :: TDS '[3, 4]
-  tds_p result
-
 -- |Make an initialized raw pointer with requested dimensions
 mkPtr :: TensorDim Word -> Double -> IO TensorDoubleRaw
 mkPtr dim value = tensorRaw dim value

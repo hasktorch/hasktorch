@@ -188,13 +188,11 @@ apply0_ operation tensor = do
 apply1_ :: SingI d => (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO a)
      -> (TDS d) -> p -> (TDS d)
 apply1_ transformation mtx val = unsafePerformIO $ do
-  withForeignPtr (tdsTensor res)
-    (\r_ -> withForeignPtr (tdsTensor mtx)
-            (\t -> do
-                transformation r_ t
-                pure r_
-            )
-    )
+  runManaged $ do
+    rPtr <- managed $ withForeignPtr (tdsTensor res)
+    tPtr <- managed $ withForeignPtr (tdsTensor mtx)
+    liftIO $ transformation rPtr tPtr
+    liftIO (pure ())
   pure res
   where
     res = tds_cloneDim mtx
@@ -202,7 +200,7 @@ apply1_ transformation mtx val = unsafePerformIO $ do
 
 tds_fill :: (Real a, SingI d) => a -> p -> TensorDoubleStatic d
 tds_fill value tensor = unsafePerformIO $
-  withForeignPtr(tdsTensor nt) (\t -> do
+  withForeignPtr (tdsTensor nt) (\t -> do
                                   fillRaw value t
                                   pure nt
                               )
@@ -235,14 +233,12 @@ tds_divConst mtx val = apply1_ tDiv mtx val
 
 tds_dot :: (TDS d) -> (TDS d) -> Double
 tds_dot t src = realToFrac $ unsafePerformIO $ do
-  withForeignPtr (tdsTensor t)
-    (\tPtr -> withForeignPtr (tdsTensor src)
-      (\srcPtr ->
-          pure $ c_THDoubleTensor_dot tPtr srcPtr
-      )
-    )
+  with (do
+    tPtr <- managed $ withForeignPtr (tdsTensor t)
+    srcPtr <- managed $ withForeignPtr (tdsTensor src)
+    pure (tPtr, srcPtr))
+    (\(tPtr, srcPtr) -> pure $ c_THDoubleTensor_dot tPtr srcPtr)
 {-# NOINLINE tds_dot #-}
-
 
 tds_minAll :: (TDS d) -> Double
 tds_minAll tensor = unsafePerformIO $ apply0_ tMinAll tensor
