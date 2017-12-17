@@ -145,7 +145,7 @@ list2dim lst  = case (length lst) of
     d = fromIntegral <$> lst -- cast as needed for tensordim
 
 newtype TensorDoubleStatic (d :: [Nat]) = TDS {
-  tdsTensor :: ForeignPtr CTHDoubleTensor
+  tdsTensor :: !(ForeignPtr CTHDoubleTensor)
   } deriving (Show)
 
 type TDS = TensorDoubleStatic
@@ -220,11 +220,6 @@ tds_expand t = unsafePerformIO $ do
     s2 = fromIntegral $ natVal (Proxy :: Proxy d2)
     s = newStorageLong (S2 (s2, s1))
 {-# NOINLINE tds_expand #-}
-
-test = do
-  let foo = tds_fromList [1,2,3,4] :: TDS '[4]
-  let result = tds_expand foo :: TDS '[3, 4]
-  tds_p result
 
 -- |Make an initialized raw pointer with requested dimensions
 mkPtr :: TensorDim Word -> Double -> IO TensorDoubleRaw
