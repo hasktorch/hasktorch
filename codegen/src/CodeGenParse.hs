@@ -410,17 +410,17 @@ thGenericPrefixes = string "THTensor_("
 thFunctionTemplate :: Parser (Maybe THFunction)
 thFunctionTemplate = do
   thAPI >> space
-  funRet <- thType
+  funReturn' <- thType
   space
   thGenericPrefixes
-  funName <- some (alphaNumChar <|> char '_')
+  funName' <- some (alphaNumChar <|> char '_')
   space
   string ")"
   space
-  funArgs <- thFunctionArgs
+  funArgs' <- thFunctionArgs
   thSemicolon
   optional $ try thComment
-  pure $ Just $ THFunction (T.pack funName) funArgs funRet
+  pure $ Just $ THFunction (T.pack funName') funArgs' funReturn'
 
 
 thComment :: Parser ()
@@ -434,14 +434,14 @@ thComment = do
 
 thFunctionConcrete :: Parser (Maybe THFunction)
 thFunctionConcrete = do
-  funRet <- thType
+  funReturn' <- thType
   space
-  funName <- some (alphaNumChar <|> char '_')
+  funName' <- some (alphaNumChar <|> char '_')
   space
-  funArgs <- thFunctionArgs
+  funArgs' <- thFunctionArgs
   thSemicolon
   optional $ try thComment
-  pure $ Just $ THFunction (T.pack funName) funArgs funRet
+  pure $ Just $ THFunction (T.pack funName') funArgs' funReturn'
 
 -- notTHAPI = do
 --   x <- manyTill anyChar (try whitespace)

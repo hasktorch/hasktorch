@@ -5,7 +5,6 @@ packages:
 - 'codegen'
 - 'core'
 - 'examples'
-- 'interface'
 - 'nn'
 - 'raw'
 - location:

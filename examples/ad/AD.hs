@@ -1,12 +1,15 @@
-{-# LANGUAGE DataKinds, GADTs, KindSignatures,  TypeFamilies, TypeOperators #-}
-{-# LANGUAGE LambdaCase                                                     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes                                                     #-}
-{-# LANGUAGE ScopedTypeVariables                                            #-}
-{-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-imports -Wno-missing-signatures #-}
+{-# LANGUAGE DataKinds, GADTs, TypeFamilies, TypeOperators    #-}
+-- {-# LANGUAGE DataKinds, GADTs, KindSignatures,  TypeFamilies, TypeOperators    #-}
+{-# LANGUAGE LambdaCase                                                        #-}
+{-# LANGUAGE MultiParamTypeClasses                                             #-}
+-- {-# LANGUAGE RankNTypes                                                        #-}
+{-# LANGUAGE ScopedTypeVariables                                               #-}
+{-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-imports -Wno-missing-signatures -Wno-unused-matches #-}
 
 module Main where
 
+import Torch.Core.Tensor.Dynamic.Double
+import Torch.Core.Tensor.Dynamic.DoubleMath
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom
@@ -15,37 +18,43 @@ import Data.Singletons
 import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 
-type SW = StaticWeights
 type SN = StaticNetwork
+
+type SW = StaticWeights
 
 data StaticWeights (i :: Nat) (o :: Nat) = SW {
   biases :: TDS '[o],
-  nodes :: TDS '[o, i]
+  weights :: TDS '[o, i]
   } deriving (Show)
 
-data Sigmoid (i :: Nat) (o :: Nat) =
+data Sigmoid (i :: Nat) =
   Sigmoid deriving Show
 
 data Layer (i :: Nat) (o :: Nat) =
   LinearLayer (SW i o)
-  | SigmoidLayer (Sigmoid i o)
+  | SigmoidLayer (Sigmoid i)
   deriving Show
 
-type ForwardFunction = forall (i :: Nat) (o :: Nat) . TDS '[i] -> TDS '[o]
+forwardProp :: forall i o . (KnownNat i, KnownNat o) =>
+  TDS '[i] -> (Layer i o) -> TDS '[o]
 
-class Prop l (i :: Nat) (o :: Nat) where
-  forwardProp :: TDS '[i] -> l i o -> TDS '[o]
+forwardProp t (LinearLayer (SW b w) :: Layer i o) =
+  tds_resize ( w !*! t' + b')
+  where
+    t' = (tds_resize t :: TDS '[i, 1])
+    b' = tds_resize b
 
--- instance (KnownNat i, KnownNat o) => Prop (Layer i o) where
---   forwardProp inTensor LinearLayer (SW i o) =
---     undefined
+-- TODO: is there a better workaround?
+-- This adds 2 allocations
+forwardProp t (SigmoidLayer Sigmoid) =
+  tds_fromDynamic $ td_sigmoid (tds_toDynamic t) :: TDS '[o]
 
 mkW :: (SingI i, SingI o) => SW i o
 mkW = SW b n
   where (b, n) = (tds_new, tds_new)
 
 sigmoid :: forall d . (SingI d) => Layer d d
-sigmoid = SigmoidLayer (Sigmoid :: Sigmoid d d)
+sigmoid = SigmoidLayer (Sigmoid :: Sigmoid d)
 
 linear  :: forall i o . (SingI i, SingI o) => Layer i o
 linear = LinearLayer (mkW :: SW i o)
@@ -69,6 +78,10 @@ dispL layer = do
 dispN :: SN h hs c -> IO ()
 dispN (O w) = dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
+
+forwardN :: forall din dout h hs c . TDS din -> SN h hs c -> TDS dout
+forwardN t (O w) = undefined
+forwardN t (w :~ n') = undefined -- forwardN (forwardProp t w)
 
 li :: Layer 10 7
 li = linear
@@ -96,4 +109,4 @@ main = do
   dispN net2
   putStrLn "Done"
   where
-    s = Sigmoid :: Sigmoid (3 :: Nat) (4 :: Nat)
+    s = Sigmoid :: Sigmoid (3 :: Nat)

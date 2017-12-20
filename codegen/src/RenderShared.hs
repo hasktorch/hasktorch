@@ -277,7 +277,7 @@ renderHaskellType typeCat _ THDoublePtr = case typeCat of
 renderHaskellType _ _ THDouble =
   Just "CDouble" -- added from TensorRandom
 
-renderHaskellType typeCat templateType THPtrDiff = case typeCat of
+renderHaskellType typeCat _ THPtrDiff = case typeCat of
   ReturnValue -> Just $ "CPtrdiff"
   FunctionParam -> Just $ "CPtrdiff"
   -- TODO check if it's appropriate to splice here
@@ -529,7 +529,6 @@ renderAll spec@HModule{..} =
    <> renderFunctions spec validFunctions)
   where
     prefix = makePrefix . type2SpliceReal $ modTypeTemplate
-    bindings = modBindings
     splice = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix
     validFunctions = checkList modBindings modTypeTemplate
     exportFunctions =

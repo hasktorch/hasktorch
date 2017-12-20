@@ -111,10 +111,14 @@ library
                      , THRandom
                      , THSize
 
-  hs-source-dirs:      src, src/generic
+                     , THTypes
+                     , TorchStructs
+
+  hs-source-dirs:      src, src/generic, src/types
   build-depends:       base >= 4.7 && < 5
-                     , hasktorch-interface
+                     , inline-c >= 0.5
                      , text >= 1.2.2.2
+  Build-tools:         c2hs
   default-language:    Haskell2010
 
 test-suite spec
@@ -124,7 +128,6 @@ test-suite spec
       tests
   build-depends:
       base >=4.7 && <5
-    , hasktorch-interface
     , text >=1.2.2.2
     , QuickCheck
     , hspec >= 2.4.4

@@ -19,7 +19,6 @@ contributing developers at the current time.**
 | [`codegen/`][codegen] | Parsers that parse .h files in the C TH library and generate low-level raw Haskell bindings.
 | [`core/`][core] | Memory-managed tensors and core data types that wrap raw C bindings to TH.
 | [`nn/`][nn] | Neural network library (not much here atm)
-| [`interface/`][interface] | Type interface used by raw bindings
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
 | [`raw/`][raw] | Comprehensive raw bindings to several hundred C TorcH (TH) operations, including separate bindings for all tensor types.
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C and other libraries)
@@ -64,7 +63,6 @@ https://hasktorch.slack.com
 [codegen]: ./codegen/
 [core]: ./core/
 [examples]: ./examples/
-[interface]: ./interface/
 [nn]: ./nn/
 [output]: ./output/
 [raw]: ./raw/
