@@ -36,9 +36,9 @@ type ForwardFunction = forall (i :: Nat) (o :: Nat) . TDS '[i] -> TDS '[o]
 class Prop l (i :: Nat) (o :: Nat) where
   forwardProp :: TDS '[i] -> l i o -> TDS '[o]
 
-instance (KnownNat i, KnownNat o) => Prop (Layer i o) where
-  forwardProp inTensor LinearLayer (SW i o) =
-    undefined
+-- instance (KnownNat i, KnownNat o) => Prop (Layer i o) where
+--   forwardProp inTensor LinearLayer (SW i o) =
+--     undefined
 
 mkW :: (SingI i, SingI o) => SW i o
 mkW = SW b n
