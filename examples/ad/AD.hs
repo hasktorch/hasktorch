@@ -1,8 +1,6 @@
 {-# LANGUAGE DataKinds, GADTs, TypeFamilies, TypeOperators    #-}
--- {-# LANGUAGE DataKinds, GADTs, KindSignatures,  TypeFamilies, TypeOperators    #-}
 {-# LANGUAGE LambdaCase                                                        #-}
 {-# LANGUAGE MultiParamTypeClasses                                             #-}
--- {-# LANGUAGE RankNTypes                                                        #-}
 {-# LANGUAGE ScopedTypeVariables                                               #-}
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-imports -Wno-missing-signatures -Wno-unused-matches #-}
 
@@ -44,10 +42,15 @@ forwardProp t (LinearLayer (SW b w) :: Layer i o) =
     t' = (tds_resize t :: TDS '[i, 1])
     b' = tds_resize b
 
--- TODO: is there a better workaround?
--- This adds 2 allocations
+-- TODO: is there a better approach? This adds 2 allocations
 forwardProp t (SigmoidLayer Sigmoid) =
   tds_fromDynamic $ td_sigmoid (tds_toDynamic t) :: TDS '[o]
+
+-- Not possible to implement value-level network representation alongside
+-- type-level tensor representation?
+forwardNetwork :: forall din dout h hs c . TDS din -> SN h hs c -> TDS dout
+forwardNetwork t (O w) = undefined -- t (?)
+forwardNetwork t (w :~ n') = undefined -- forwardNetwork (forwardProp t w) n' (?)
 
 mkW :: (SingI i, SingI o) => SW i o
 mkW = SW b n
@@ -78,10 +81,6 @@ dispL layer = do
 dispN :: SN h hs c -> IO ()
 dispN (O w) = dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
-
-forwardN :: forall din dout h hs c . TDS din -> SN h hs c -> TDS dout
-forwardN t (O w) = undefined
-forwardN t (w :~ n') = undefined -- forwardN (forwardProp t w)
 
 li :: Layer 10 7
 li = linear
