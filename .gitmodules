@@ -1,6 +1,3 @@
 [submodule "vendor/pytorch"]
 	path = vendor/pytorch
 	url = https://github.com/pytorch/pytorch.git
-[submodule "vendor/bindings-dsl"]
-	path = vendor/bindings-dsl
-	url = https://github.com/austinvhuang/bindings-dsl.git

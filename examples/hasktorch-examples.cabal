@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4b82b880acfe181f625dc2f18a5319def2f4cc12c50a5c522224a92ffa8da7ec
+-- hash: bb61c2efd13fdcd2cdc7bffa2d126763e8c578d79d1051e9b21819ae1753b168
 
 name:                hasktorch-examples
 version:             0.1.0.0
@@ -20,10 +20,10 @@ source-repository head
   type: git
   location: https://github.com/austinvhuang/hasktorch
 
-executable backprop
-  main-is: Backprop.hs
+executable ad
+  main-is: AD.hs
   hs-source-dirs:
-      backprop
+      ad
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5

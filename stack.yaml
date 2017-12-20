@@ -8,7 +8,6 @@ packages:
 - 'interface'
 - 'nn'
 - 'raw'
-- 'tools'
 - location:
     git: https://github.com/austinvhuang/c2hsc.git
     commit: e31a2cb894faf4c0cf4a3af3058152149f2b2ee3
@@ -32,6 +31,5 @@ ghc-options:
   "hasktorch-examples": -lATen -lEHX
   "hasktorch-nn": -lATen -lEHX
   "hasktorch-raw": -lATen -lEHX
-  "hasktorch-tools": -lATen -lEHX
 
 # ghci-options for inline-c should include -fobject-code -O0
