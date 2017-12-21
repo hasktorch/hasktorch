@@ -15,9 +15,9 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  it "scenario: memoryTestSmall" memoryTestSmall
+  it "scenario: memoryTestMinimal" memoryTestMinimal
 
-iterator = iteratorBracket
+iterator = iteratorAssign
 
 -- |Leaks memory
 iteratorAssign :: TensorDim Word -> Int -> IO ()
@@ -85,3 +85,6 @@ memoryTestSmall = iterator (D4 (100, 100, 100, 7)) 300 -- 50 MB x 300 = 15 GB
 
 memoryTestFast :: IO ()
 memoryTestFast = iterator (D4 (50, 50, 50, 5)) 10000 -- 5 MB x 1000 = 5 GB
+
+memoryTestMinimal :: IO ()
+memoryTestMinimal = iterator (D4 (50, 50, 50, 5)) 100 -- 5 MB x 100 = 500 MB
