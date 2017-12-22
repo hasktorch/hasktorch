@@ -52,11 +52,9 @@ forwardProp t (LinearLayer (SW b w) :: Layer i o) =
 forwardProp t (SigmoidLayer Sigmoid) =
   tds_sigmoid t
 
--- Not possible to implement value-level network representation alongside
--- type-level tensor representation?
--- forwardNetwork :: forall din dout h hs c . TDS din -> SN h hs c -> TDS dout
--- forwardNetwork t (O w) = forwardProp t w
--- forwardNetwork t (w :~ n') = undefined -- forwardNetwork (forwardProp t w) n' (?)
+forwardNetwork :: forall i h o . TDS '[i] -> SN i h o  -> TDS '[o]
+forwardNetwork t (O w) = forwardProp t w
+forwardNetwork t (h :~ n) = forwardNetwork (forwardProp t h) n
 
 mkW :: (SingI i, SingI o) => SW i o
 mkW = SW b n
@@ -82,6 +80,7 @@ data StaticNetwork2 :: [Nat] -> * where
 
 -- set precedence to chain layers without adding parentheses
 infixr 5 :~
+infixr 5 :&~
 
 dispL :: forall o i . (KnownNat o, KnownNat i) => Layer i o -> IO ()
 dispL layer = do
@@ -94,31 +93,46 @@ dispN :: SN h hs c -> IO ()
 dispN (O w) = dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
 
+dispN2 :: SN2 (h:hs) -> IO ()
+dispN2 (O2 w) = dispL w
+dispN2 (w :&~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN2 n'
+
 li :: Layer 10 7
 li = linear
-
 l2 :: Layer 7 7
 l2 = sigmoid
-
 l3 :: Layer 7 4
 l3 = linear
-
 l4 :: Layer 4 4
 l4 = sigmoid
-
 lo :: Layer 4 2
 lo = linear
 
 net = li :~ l2 :~ l3 :~ l4 :~ O lo
+net2 = li :&~ l2 :&~ l3 :&~ l4 :&~ O2 lo
 
 fstLayer ::
   forall i h hs o . SN i (h : hs) o -> Layer i h
 fstLayer (f :~ r) = f
 
+fstLayer2 ::
+  forall i h hs . SN2 (i : h : hs) -> Layer i h
+fstLayer2 (O2 o) = o
+fstLayer2 (f :&~ r) = f
+
+rstLayer2 ::
+  forall i h hs . SN2 (i : h : hs) -> SN2 (h : hs)
+rstLayer2 (O2 o) = undefined
+rstLayer2 (f :&~ r) = r
+
 main :: IO ()
 main = do
   print s
   dispN net
+  tds_p $ forwardNetwork (tds_init 5.0) net
+  dispN2 net2
+  dispL $ fstLayer2 . rstLayer2 . rstLayer2 . rstLayer2 . rstLayer2  $ net2
+
   putStrLn "Done"
   where
     s = Sigmoid :: Sigmoid (3 :: Nat)
