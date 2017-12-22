@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module ProcessSpec where
+module Main where
 
 import Data.Either (fromRight)
 import Data.Maybe

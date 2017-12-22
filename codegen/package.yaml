@@ -16,6 +16,7 @@ dependencies:
 library:
   source-dirs:
   - src
+  - src/aten
 
 tests:
   spec:
@@ -46,3 +47,16 @@ executables:
     dependencies:
       - hasktorch-codegen
       - raw-strings-qq >= 1.1
+
+  aten-process-spec:
+    source-dirs:      exe/aten
+    main:             ProcessSpec.hs
+    dependencies:
+      - base >=4.7 && <5
+      - aeson >= 1.1
+      - aeson-pretty >= 0.8.5
+      - bytestring >= 0.10.8
+      - singletons >=2.2
+      - text >=1.2.2.2
+      - yaml >=0.8.25
+

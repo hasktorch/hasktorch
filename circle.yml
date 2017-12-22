@@ -52,6 +52,7 @@ test:
     - stack exec ff-typed
     - stack exec ff-untyped
     - stack exec gradient-descent
+    - stack exec ad
     - stack exec static-tensor-usage
     ### code generation
     - stack exec codegen-generic

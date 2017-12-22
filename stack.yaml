@@ -1,11 +1,9 @@
 resolver: nightly-2017-11-24
 
 packages:
-- 'aten'
 - 'codegen'
 - 'core'
 - 'examples'
-- 'interface'
 - 'nn'
 - 'raw'
 - location:
@@ -25,9 +23,8 @@ extra-lib-dirs:
 - ./vendor/build
 
 ghc-options:
-  "hasktorch-aten": -lATen -lEHX
-  "hasktorch-core": -lATen -lEHX
   "hasktorch-codegen": -lATen -lEHX
+  "hasktorch-core": -lATen -lEHX
   "hasktorch-examples": -lATen -lEHX
   "hasktorch-nn": -lATen -lEHX
   "hasktorch-raw": -lATen -lEHX

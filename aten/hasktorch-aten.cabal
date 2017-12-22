@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0dd868976f0bc47785192829c43d0289afc8393bf6a5b5dab9009aff86ad76e4
+-- hash: fca78331d89f0a6b114e8ac32979f5b864a2b825ebd540411930b0f95f73d5b8
 
 name:           hasktorch-aten
 version:        0.1.0.0
@@ -31,8 +31,6 @@ library
     , singletons >=2.2
     , text >=1.2.2.2
     , yaml >=0.8.25
-  exposed-modules:
-      ProcessSpec
   other-modules:
       Paths_hasktorch_aten
   default-language: Haskell2010

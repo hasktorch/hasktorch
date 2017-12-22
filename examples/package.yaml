@@ -13,7 +13,6 @@ ghc-options: -Wall -fno-cse
 dependencies:
 - base >=4.7 && <5
 - hasktorch-core
-- hasktorch-interface
 - hasktorch-raw
 - singletons >= 2.2
 

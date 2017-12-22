@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bb61c2efd13fdcd2cdc7bffa2d126763e8c578d79d1051e9b21819ae1753b168
+-- hash: d05415e210f9217e1bd3904e8c5066a0fa36d5a0a09260dc0c0155888b33382c
 
 name:                hasktorch-examples
 version:             0.1.0.0
@@ -28,7 +28,6 @@ executable ad
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-interface
     , hasktorch-raw
     , singletons >=2.2
   other-modules:
@@ -44,7 +43,6 @@ executable bayesian-regression
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-interface
     , hasktorch-raw
     , singletons >=2.2
   other-modules:
@@ -63,7 +61,6 @@ executable download-mnist
     , directory
     , filepath
     , hasktorch-core
-    , hasktorch-interface
     , hasktorch-raw
     , network-uri
     , singletons >=2.2
@@ -79,7 +76,6 @@ executable ff-typed
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-interface
     , hasktorch-raw
     , singletons >=2.2
   other-modules:
@@ -94,7 +90,6 @@ executable ff-untyped
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-interface
     , hasktorch-raw
     , singletons >=2.2
   other-modules:
@@ -109,7 +104,6 @@ executable gradient-descent
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-interface
     , hasktorch-raw
     , microlens >=0.4.8.1
     , singletons >=2.2
@@ -125,7 +119,6 @@ executable multivariate-normal
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-interface
     , hasktorch-raw
     , singletons >=2.2
   other-modules:
@@ -140,7 +133,6 @@ executable playground
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-interface
     , hasktorch-raw
     , singletons >=2.2
   other-modules:
@@ -156,7 +148,6 @@ executable static-tensor-usage
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-interface
     , hasktorch-raw
     , singletons >=2.2
   other-modules:
