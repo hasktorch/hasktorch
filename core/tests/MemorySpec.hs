@@ -8,6 +8,7 @@ import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Types
 
 import Torch.Prelude.Extras
+import System.Mem
 
 -- |Confirm that memory is deallocated (works)
 main :: IO ()
@@ -17,7 +18,7 @@ spec :: Spec
 spec = do
   it "scenario: memoryTestMinimal" memoryTestMinimal
 
-iterator = iteratorAssign
+iterator = iteratorBracket
 
 -- |Leaks memory
 iteratorAssign :: TensorDim Word -> Int -> IO ()

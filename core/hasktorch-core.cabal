@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ac5161e9a3b09bb12c9fd91414b969e1436f9d4cb5405b97cc2c2e0f01c478e6
+-- hash: bbb37a6dfd9c0a3407b4d22705f23ade2acbe04e4f5bc74128683708b6bdfe29
 
 name:           hasktorch-core
 version:        0.1.0.0
@@ -67,6 +67,7 @@ test-suite spec
   main-is: Spec.hs
   hs-source-dirs:
       tests
+      tests/Torch/Prelude
       tests/generic
   ghc-options: -fno-cse -fno-full-laziness
   build-depends:
@@ -91,6 +92,7 @@ test-suite spec
       Torch.Core.RandomSpec
       Torch.Core.Tensor.RawSpec
       Torch.Prelude.Extras
+      Extras
       Torch.Core.Tensor.Dynamic.DoubleLapackSpec
       Torch.Core.Tensor.Dynamic.DoubleMathSpec
       Torch.Core.Tensor.Dynamic.DoubleRandomSpec

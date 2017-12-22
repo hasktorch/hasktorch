@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 97e088ded79c36f0dceee678ff512f5fd814077ecb23114503af7ab2c3b528f2
+-- hash: 49d48503c6f24557aa949ae7e403cf7a825ffa635d7c258cef5394aa9070a516
 
 name:                hasktorch-codegen
 version:             0.1.0.0
@@ -22,7 +22,6 @@ source-repository head
 library
   hs-source-dirs:
       src
-      src/aten
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
