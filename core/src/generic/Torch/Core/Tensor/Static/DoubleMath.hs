@@ -295,6 +295,7 @@ apply0Tensor op t = unsafePerformIO $ do
   pure res
 {-# NOINLINE apply0Tensor #-}
 
+-- |Returns a tensor with values negated
 tds_neg :: SingI d => TDS d -> TDS d
 tds_neg tensor = unsafePerformIO $ apply0_ tNeg tensor
   where
@@ -311,32 +312,38 @@ tds_cinv tensor = unsafePerformIO $ apply0_ tInv tensor
 -- Tensor vs. tensor comparison, retaining double type
 -- ----------------------------------------
 
-tds_ltTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+-- |Returns a tensor of 0.0 and 1.0 by comparing whether ta < tb for each value
+tds_ltTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
 tds_ltTensorT ta tb = unsafePerformIO $
   apply2 c_THDoubleTensor_ltTensorT ta tb
 {-# NOINLINE tds_ltTensorT #-}
 
-tds_leTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+-- |Returns a tensor of 0.0 and 1.0 by comparing whether ta <= tb for each value
+tds_leTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
 tds_leTensorT ta tb = unsafePerformIO $
   apply2 c_THDoubleTensor_leTensorT ta tb
 {-# NOINLINE tds_leTensorT #-}
 
-tds_gtTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+-- |Returns a tensor of 0.0 and 1.0 by comparing whether ta > tb for each value
+tds_gtTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
 tds_gtTensorT ta tb = unsafePerformIO $
   apply2 c_THDoubleTensor_gtTensorT ta tb
 {-# NOINLINE tds_gtTensorT #-}
 
-tds_geTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+-- |Returns a tensor of 0.0 and 1.0 by comparing whether ta >= tb for each value
+tds_geTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
 tds_geTensorT ta tb = unsafePerformIO $
   apply2 c_THDoubleTensor_geTensorT ta tb
 {-# NOINLINE tds_geTensorT #-}
 
-tds_neTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+-- |Returns a tensor of 0.0 and 1.0 by comparing whether ta /= tb for each value
+tds_neTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
 tds_neTensorT ta tb = unsafePerformIO $
   apply2 c_THDoubleTensor_neTensorT ta tb
 {-# NOINLINE tds_neTensorT #-}
 
-tds_eqTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+-- |Returns a tensor of 0.0 and 1.0 by comparing whether ta == tb for each value
+tds_eqTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d)
 tds_eqTensorT ta tb = unsafePerformIO $
   apply2 c_THDoubleTensor_eqTensorT ta tb
 {-# NOINLINE tds_eqTensorT #-}
@@ -345,18 +352,24 @@ tds_eqTensorT ta tb = unsafePerformIO $
 -- Additional transformations
 -- ----------------------------------------
 
+-- |Returns a tensor where each value of the input tensor is transformed as its
+-- absolute value
 tds_abs :: SingI d => TDS d -> TDS d
-tds_abs tensor = unsafePerformIO $ apply0_ tAbs tensor
+tds_abs t = unsafePerformIO $ apply0_ tAbs t
   where
     tAbs t = apply0Tensor c_THDoubleTensor_abs t
 {-# NOINLINE tds_abs #-}
 
+-- |Returns a tensor where each value of the input tensor is transformed as the
+-- sigmoid of the value
 tds_sigmoid :: SingI d => TDS d -> TDS d
 tds_sigmoid tensor = unsafePerformIO $ apply0_ tSigmoid tensor
   where
     tSigmoid t = apply0Tensor c_THDoubleTensor_sigmoid t
 {-# NOINLINE tds_sigmoid #-}
 
+-- |Returns a tensor where each value of the input tensor is transformed as the
+-- log of the value
 tds_log :: SingI d => TDS d -> TDS d
 tds_log tensor = unsafePerformIO $ apply0_ tLog tensor
   where
@@ -375,6 +388,8 @@ tds_log1p tensor = unsafePerformIO $ apply0_ tLog1p tensor
     tLog1p t = apply0Tensor c_THDoubleTensor_log1p t
 {-# NOINLINE tds_log1p #-}
 
+-- |Returns a tensor where each value of the input tensor is transformed as the
+-- exp of the value
 tds_exp :: SingI d => TDS d -> TDS d
 tds_exp tensor = unsafePerformIO $ apply0_ tExp tensor
   where
@@ -436,30 +451,24 @@ tds_tanh tensor = unsafePerformIO $ apply0_ tTanh tensor
 {-# NOINLINE tds_tanh #-}
 
 tds_pow :: SingI d => TDS d -> Double -> TDS d
-tds_pow tensor value = unsafePerformIO $ do
+tds_pow t value = unsafePerformIO $ do
   let res = tds_new
-  withForeignPtr (tdsTensor res)
-    (\r_ -> withForeignPtr (tdsTensor tensor)
-            (\t -> do
-                c_THDoubleTensor_pow r_ t valueC
-                pure r_
-            )
-    )
+  runManaged $ do
+    rPtr <- managed $ withForeignPtr (tdsTensor res)
+    tPtr <- managed $ withForeignPtr (tdsTensor t)
+    liftIO $ c_THDoubleTensor_pow rPtr tPtr valueC
   pure res
   where
     valueC = realToFrac value
 {-# NOINLINE tds_pow #-}
 
 tds_tpow :: SingI d => Double -> TDS d -> TDS d
-tds_tpow value tensor = unsafePerformIO $ do
+tds_tpow value t = unsafePerformIO $ do
   let res = tds_new
-  withForeignPtr (tdsTensor res)
-    (\r_ -> withForeignPtr (tdsTensor tensor)
-            (\t -> do
-                c_THDoubleTensor_tpow r_ valueC t
-                pure r_
-            )
-    )
+  runManaged $ do
+    rPtr <- managed $ withForeignPtr (tdsTensor res)
+    tPtr <- managed $ withForeignPtr (tdsTensor t)
+    liftIO $ c_THDoubleTensor_tpow rPtr valueC tPtr
   pure res
   where
     valueC = realToFrac value
@@ -545,7 +554,6 @@ swap2 fun a b c d e = fun b c a d e
 swap3 fun a b c d e f = fun c a d b e f
 
 -- cadd = z <- y + scalar * x, z value discarded
--- allocate r_ for the user instead of taking it as an argument
 tds_cadd :: SingI d => (TDS d) -> Double -> (TDS d) -> (TDS d)
 tds_cadd t scale src = unsafePerformIO $
   apply2 ((swap1 c_THDoubleTensor_cadd) scaleC) t src
@@ -663,7 +671,6 @@ ret2 fun t dimension keepdim = do
   where
     keepdimC = if keepdim then 1 else 0
     dimensionC = fromIntegral dimension
-
 
 tds_addmm :: (KnownNat a, KnownNat b, KnownNat c) =>
   Double -> TDS [a,c] -> Double -> TDS [a, b] -> TDS [b, c] -> TDS [a,c]
@@ -817,7 +824,6 @@ tds_trace t = realToFrac $ unsafePerformIO $ do
 {-# NOINLINE tds_trace #-}
 
 -- TH_API void THTensor_(cross)(THTensor *r_, THTensor *a, THTensor *b, int dimension);
--- tds_cross :: (TDS d) -> (TDS d) -> Int -> (TDS d)
 tds_cross a b dimension = unsafePerformIO $ do
   apply2 ((swap c_THDoubleTensor_cross) dimensionC) a b
   where
@@ -826,12 +832,10 @@ tds_cross a b dimension = unsafePerformIO $ do
 {-# NOINLINE tds_cross #-}
 
 -- TH_API void THTensor_(cmax)(THTensor *r, THTensor *t, THTensor *src);
--- tds_cmax :: (TDS d) -> (TDS d) -> (TDS d)
 tds_cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
 {-# NOINLINE tds_cmax #-}
 
 -- TH_API void THTensor_(cmin)(THTensor *r, THTensor *t, THTensor *src);
--- tds_cmin :: (TDS d) -> (TDS d) -> (TDS d)
 tds_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 {-# NOINLINE tds_cmin #-}
 
@@ -884,5 +888,3 @@ tds_diag t = unsafePerformIO $ do
   pure r_
   where k = 0
 {-# NOINLINE tds_diag #-}
-
--- tds_p $ tds_concat (tds_new :: TDS '[3]) (tds_new :: TDS '[4])

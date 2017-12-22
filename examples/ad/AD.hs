@@ -141,11 +141,17 @@ rstLayer2 (f :&~ r) = r
 
 main :: IO ()
 main = do
+
+  gen <- newRNG
+  t <- tds_normal gen 0.0 5.0 :: IO (TDS '[10])
+  tds_p $ tds_gtTensorT t tds_new
+
   print s
   dispN net
   tds_p $ forwardNetwork (tds_init 5.0) net
   dispN2 net2
   dispL $ fstLayer2 . rstLayer2 . rstLayer2 . rstLayer2 . rstLayer2  $ net2
+
 
   putStrLn "Done"
   where
