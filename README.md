@@ -15,8 +15,7 @@ contributing developers at the current time.**
 
 | Directory | Description |
 | --------- | ----------- |
-| [`aten/`][aten] | Modules to interact with ATen library & spec files (experimental).
-| [`codegen/`][codegen] | Parsers that parse .h files in the C TH library and generate low-level raw Haskell bindings.
+| [`codegen/`][codegen] | Parsers that parse .h files in the C TH library and generate low-level raw Haskell bindings. Also includes experimental aten cwrap file parsing.
 | [`core/`][core] | Memory-managed tensors and core data types that wrap raw C bindings to TH.
 | [`nn/`][nn] | Neural network library (not much here atm)
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
@@ -59,7 +58,6 @@ https://hasktorch.slack.com
 <!-- project directory links -->
 [developers]: ./DEVELOPERS.md
 [makefile]: ./Makefile
-[aten]: ./aten/
 [codegen]: ./codegen/
 [core]: ./core/
 [examples]: ./examples/
