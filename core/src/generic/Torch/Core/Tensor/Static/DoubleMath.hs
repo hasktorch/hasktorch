@@ -40,6 +40,12 @@ module Torch.Core.Tensor.Static.DoubleMath
 
   , tds_neg
   , tds_cinv
+  , tds_ltTensorT
+  , tds_leTensorT
+  , tds_gtTensorT
+  , tds_geTensorT
+  , tds_neTensorT
+  , tds_eqTensorT
   , tds_abs
 
   , tds_sigmoid
@@ -300,6 +306,44 @@ tds_cinv tensor = unsafePerformIO $ apply0_ tInv tensor
   where
     tInv t = apply0Tensor c_THDoubleTensor_cinv t
 {-# NOINLINE tds_cinv #-}
+
+-- ----------------------------------------
+-- Tensor vs. tensor comparison, retaining double type
+-- ----------------------------------------
+
+tds_ltTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+tds_ltTensorT ta tb = unsafePerformIO $
+  apply2 c_THDoubleTensor_ltTensorT ta tb
+{-# NOINLINE tds_ltTensorT #-}
+
+tds_leTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+tds_leTensorT ta tb = unsafePerformIO $
+  apply2 c_THDoubleTensor_leTensorT ta tb
+{-# NOINLINE tds_leTensorT #-}
+
+tds_gtTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+tds_gtTensorT ta tb = unsafePerformIO $
+  apply2 c_THDoubleTensor_gtTensorT ta tb
+{-# NOINLINE tds_gtTensorT #-}
+
+tds_geTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+tds_geTensorT ta tb = unsafePerformIO $
+  apply2 c_THDoubleTensor_geTensorT ta tb
+{-# NOINLINE tds_geTensorT #-}
+
+tds_neTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+tds_neTensorT ta tb = unsafePerformIO $
+  apply2 c_THDoubleTensor_neTensorT ta tb
+{-# NOINLINE tds_neTensorT #-}
+
+tds_eqTensorT :: SingI d => (TDS d) -> (TDS d) -> (TDS d) 
+tds_eqTensorT ta tb = unsafePerformIO $
+  apply2 c_THDoubleTensor_eqTensorT ta tb
+{-# NOINLINE tds_eqTensorT #-}
+
+-- ----------------------------------------
+-- Additional transformations
+-- ----------------------------------------
 
 tds_abs :: SingI d => TDS d -> TDS d
 tds_abs tensor = unsafePerformIO $ apply0_ tAbs tensor

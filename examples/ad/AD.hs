@@ -28,9 +28,13 @@ data StaticWeights (i :: Nat) (o :: Nat) = SW {
 data Sigmoid (i :: Nat) =
   Sigmoid deriving Show
 
+data Relu (i :: Nat) =
+  Relu deriving Show
+
 data Layer (i :: Nat) (o :: Nat) where
   LinearLayer  :: SW i o    -> Layer i o
   SigmoidLayer :: Sigmoid i -> Layer i i
+  ReluLayer :: Relu i -> Layer i i
 
 instance (KnownNat i, KnownNat o) => Show (Layer i o) where
   show (LinearLayer x) = "LinearLayer "
@@ -39,6 +43,10 @@ instance (KnownNat i, KnownNat o) => Show (Layer i o) where
   show (SigmoidLayer x) = "SigmoidLayer "
                          ++ (show (natVal (Proxy :: Proxy i))) ++ " "
                          ++ (show (natVal (Proxy :: Proxy o)))
+  show (ReluLayer x) = "ReluLayer "
+                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
+                         ++ (show (natVal (Proxy :: Proxy o)))
+
 
 forwardProp :: forall i o . (KnownNat i, KnownNat o) =>
   TDS '[i] -> (Layer i o) -> TDS '[o]
@@ -52,6 +60,9 @@ forwardProp t (LinearLayer (SW b w) :: Layer i o) =
 forwardProp t (SigmoidLayer Sigmoid) =
   tds_sigmoid t
 
+forwardProp t (ReluLayer Relu) =
+  undefined -- TODO
+
 forwardNetwork :: forall i h o . TDS '[i] -> SN i h o  -> TDS '[o]
 forwardNetwork t (O w) = forwardProp t w
 forwardNetwork t (h :~ n) = forwardNetwork (forwardProp t h) n
@@ -62,6 +73,9 @@ mkW = SW b n
 
 sigmoid :: forall d . (SingI d) => Layer d d
 sigmoid = SigmoidLayer (Sigmoid :: Sigmoid d)
+
+relu :: forall d . (SingI d) => Layer d d
+relu = ReluLayer (Relu :: Relu d)
 
 linear  :: forall i o . (SingI i, SingI o) => Layer i o
 linear = LinearLayer (mkW :: SW i o)
