@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0ef13f7accba869cec38e21ee0ca9b03bf5dfa9d995e8b1a496d3397b96ae633
+-- hash: d05415e210f9217e1bd3904e8c5066a0fa36d5a0a09260dc0c0155888b33382c
 
 name:                hasktorch-examples
 version:             0.1.0.0
@@ -20,6 +20,20 @@ source-repository head
   type: git
   location: https://github.com/austinvhuang/hasktorch
 
+executable ad
+  main-is: AD.hs
+  hs-source-dirs:
+      ad
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , hasktorch-raw
+    , singletons >=2.2
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
+
 executable bayesian-regression
   default-language: Haskell2010
   main-is: BayesianRegression.hs
@@ -33,20 +47,6 @@ executable bayesian-regression
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
-
-executable bd
-  main-is: AD.hs
-  hs-source-dirs:
-      ad
-  ghc-options: -Wall -fno-cse
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core
-    , hasktorch-raw
-    , singletons >=2.2
-  other-modules:
-      Paths_hasktorch_examples
-  default-language: Haskell2010
 
 executable download-mnist
   main-is: DownloadMNIST.hs

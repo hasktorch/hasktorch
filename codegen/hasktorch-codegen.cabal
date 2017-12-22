@@ -1,6 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.17.1.
+-- This file has been generated from package.yaml by hpack version 0.20.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: 3f98984297443ae764bf558917bb442a767f2102a17f06057a7a4c8ef5b55bbd
 
 name:                hasktorch-codegen
 version:             0.1.0.0
@@ -22,15 +24,17 @@ library
       src
   build-depends:
       base >=4.7 && <5
-    , containers >= 0.5.7
-    , megaparsec >= 5.3
-    , pretty-show >= 1.6.13
-    , text >= 1.2.2.2
+    , containers >=0.5.7
+    , megaparsec >=5.3
+    , pretty-show >=1.6.13
+    , text >=1.2.2.2
   exposed-modules:
       CodeGenParse
       CodeGenTypes
       ConditionalCases
       RenderShared
+  other-modules:
+      Paths_hasktorch_codegen
   default-language: Haskell2010
 
 executable codegen-concrete
@@ -40,11 +44,13 @@ executable codegen-concrete
   main-is: RenderConcrete.hs
   build-depends:
       base >=4.7 && <5
-    , containers >= 0.5.7
-    , megaparsec >= 5.3
-    , pretty-show >= 1.6.13
-    , text >= 1.2.2.2
+    , containers >=0.5.7
     , hasktorch-codegen
+    , megaparsec >=5.3
+    , pretty-show >=1.6.13
+    , text >=1.2.2.2
+  other-modules:
+      Paths_hasktorch_codegen
 
 executable codegen-generic
   default-language: Haskell2010
@@ -53,11 +59,13 @@ executable codegen-generic
   main-is: RenderGeneric.hs
   build-depends:
       base >=4.7 && <5
-    , containers >= 0.5.7
-    , megaparsec >= 5.3
-    , pretty-show >= 1.6.13
-    , text >= 1.2.2.2
+    , containers >=0.5.7
     , hasktorch-codegen
+    , megaparsec >=5.3
+    , pretty-show >=1.6.13
+    , text >=1.2.2.2
+  other-modules:
+      Paths_hasktorch_codegen
 
 executable codegen-managed
   default-language: Haskell2010
@@ -66,12 +74,14 @@ executable codegen-managed
   main-is: RenderManaged.hs
   build-depends:
       base >=4.7 && <5
-    , containers >= 0.5.7
-    , megaparsec >= 5.3
-    , pretty-show >= 1.6.13
-    , text >= 1.2.2.2
+    , containers >=0.5.7
     , hasktorch-codegen
-    , raw-strings-qq >= 1.1
+    , megaparsec >=5.3
+    , pretty-show >=1.6.13
+    , raw-strings-qq >=1.1
+    , text >=1.2.2.2
+  other-modules:
+      Paths_hasktorch_codegen
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -79,14 +89,15 @@ test-suite spec
   hs-source-dirs:
       tests
   build-depends:
-      base >=4.7 && <5
-    , containers >= 0.5.7
-    , megaparsec >= 5.3
-    , pretty-show >= 1.6.13
-    , text >= 1.2.2.2
-    , QuickCheck
-    , hspec
+      QuickCheck
+    , base >=4.7 && <5
+    , containers >=0.5.7
     , hasktorch-codegen
+    , hspec
+    , megaparsec >=5.3
+    , pretty-show >=1.6.13
+    , text >=1.2.2.2
   other-modules:
       CodeGenParseSpec
+      Paths_hasktorch_codegen
   default-language: Haskell2010

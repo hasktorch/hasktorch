@@ -22,7 +22,7 @@ executables:
     main: StaticTensorUsage.hs
     source-dirs: [static-tensor-usage]
 
-  bd:
+  ad:
     main: AD.hs
     source-dirs: [ad]
 
