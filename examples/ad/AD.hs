@@ -47,7 +47,6 @@ instance (KnownNat i, KnownNat o) => Show (Layer i o) where
                          ++ (show (natVal (Proxy :: Proxy i))) ++ " "
                          ++ (show (natVal (Proxy :: Proxy o)))
 
-
 forwardProp :: forall i o . (KnownNat i, KnownNat o) =>
   TDS '[i] -> (Layer i o) -> TDS '[o]
 
@@ -61,7 +60,7 @@ forwardProp t (SigmoidLayer Sigmoid) =
   tds_sigmoid t
 
 forwardProp t (ReluLayer Relu) =
-  undefined -- TODO
+  tds_cmul (tds_gtTensorT t (tds_new)) t
 
 forwardNetwork :: forall i h o . TDS '[i] -> SN i h o  -> TDS '[o]
 forwardNetwork t (O w) = forwardProp t w

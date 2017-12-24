@@ -35,7 +35,6 @@ tests:
     main: Spec.hs
     source-dirs:
       - tests
-      - tests/Torch/Prelude
       - tests/generic
     dependencies:
       - QuickCheck
