@@ -31,10 +31,29 @@ data Sigmoid (i :: Nat) =
 data Relu (i :: Nat) =
   Relu deriving Show
 
+data Trivial (i :: Nat) =
+  Trivial deriving Show
+
 data Layer (i :: Nat) (o :: Nat) where
+  TrivialLayer :: Trivial i -> Layer i i
   LinearLayer  :: SW i o    -> Layer i o
   SigmoidLayer :: Sigmoid i -> Layer i i
   ReluLayer :: Relu i -> Layer i i
+
+class Prop l where
+  runForwards    :: forall i o . TDS '[i] -> (l i o) -> TDS '[o]
+
+instance (KnownNat i, KnownNat o) => Prop (Layer i o) where
+  runForwards ti (TrivialLayer l) = ti
+  runForwards ti (LinearLayer l) = undefined
+  runForwards ti (SigmoidLayer l) = undefined
+  runForwards ti (ReluLayer l) = undefined
+
+  -- runBackwards ti (TrivialLayer l) = undefined
+  -- runBackwards ti (LinearLayer l) = undefined
+  -- runBackwards ti (SigmoidLayer l) = undefined
+  -- runBackwards ti (ReluLayer l) = undefined
+
 
 instance (KnownNat i, KnownNat o) => Show (Layer i o) where
   show (LinearLayer x) = "LinearLayer "
