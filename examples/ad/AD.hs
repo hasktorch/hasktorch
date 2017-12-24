@@ -40,22 +40,24 @@ data Layer (i :: Nat) (o :: Nat) where
   SigmoidLayer :: Sigmoid i -> Layer i i
   ReluLayer :: Relu i -> Layer i i
 
-class Prop l where
-  runForwards    :: forall i o . TDS '[i] -> (l i o) -> TDS '[o]
+class Propagate l where
+  runForwards :: forall i o . (KnownNat i, KnownNat o) =>
+    TDS '[i] -> (l i o) -> TDS '[o]
 
-instance (KnownNat i, KnownNat o) => Prop (Layer i o) where
-  runForwards ti (TrivialLayer l) = ti
-  runForwards ti (LinearLayer l) = undefined
-  runForwards ti (SigmoidLayer l) = undefined
-  runForwards ti (ReluLayer l) = undefined
-
-  -- runBackwards ti (TrivialLayer l) = undefined
-  -- runBackwards ti (LinearLayer l) = undefined
-  -- runBackwards ti (SigmoidLayer l) = undefined
-  -- runBackwards ti (ReluLayer l) = undefined
-
+instance Propagate Layer where
+  runForwards t (TrivialLayer l) = t
+  runForwards t (LinearLayer (SW b w) :: Layer i o) =
+    tds_resize ( w !*! t' + b')
+    where
+      t' = (tds_resize t :: TDS '[i, 1])
+      b' = tds_resize b
+  runForwards t (SigmoidLayer l) = tds_sigmoid t
+  runForwards t (ReluLayer l) = tds_cmul (tds_gtTensorT t (tds_new)) t
 
 instance (KnownNat i, KnownNat o) => Show (Layer i o) where
+  show (TrivialLayer x) = "TrivialLayer "
+                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
+                         ++ (show (natVal (Proxy :: Proxy o)))
   show (LinearLayer x) = "LinearLayer "
                          ++ (show (natVal (Proxy :: Proxy i))) ++ " "
                          ++ (show (natVal (Proxy :: Proxy o)))
@@ -66,24 +68,9 @@ instance (KnownNat i, KnownNat o) => Show (Layer i o) where
                          ++ (show (natVal (Proxy :: Proxy i))) ++ " "
                          ++ (show (natVal (Proxy :: Proxy o)))
 
-forwardProp :: forall i o . (KnownNat i, KnownNat o) =>
-  TDS '[i] -> (Layer i o) -> TDS '[o]
-
-forwardProp t (LinearLayer (SW b w) :: Layer i o) =
-  tds_resize ( w !*! t' + b')
-  where
-    t' = (tds_resize t :: TDS '[i, 1])
-    b' = tds_resize b
-
-forwardProp t (SigmoidLayer Sigmoid) =
-  tds_sigmoid t
-
-forwardProp t (ReluLayer Relu) =
-  tds_cmul (tds_gtTensorT t (tds_new)) t
-
 forwardNetwork :: forall i h o . TDS '[i] -> SN i h o  -> TDS '[o]
-forwardNetwork t (O w) = forwardProp t w
-forwardNetwork t (h :~ n) = forwardNetwork (forwardProp t h) n
+forwardNetwork t (O w) = runForwards t w
+forwardNetwork t (h :~ n) = forwardNetwork (runForwards t h) n
 
 mkW :: (SingI i, SingI o) => SW i o
 mkW = SW b n
