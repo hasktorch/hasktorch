@@ -1,3 +1,5 @@
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 module Torch.Core.Tensor.Raw
   ( dimFromRaw
@@ -21,14 +23,16 @@ import Foreign (Ptr)
 import Foreign.C.Types (CLLong, CLong, CDouble, CInt)
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, mallocForeignPtrArray, newForeignPtr)
 import Numeric (showGFloat)
+import Numeric.Dimensions
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad (forM_)
 
 import GHC.Ptr (FunPtr)
 
-import Torch.Core.Internal (w2cll, onDims)
+import Torch.Core.Internal (onDims)
+import Torch.Core.Tensor.Dim
 import THTypes (CTHDoubleTensor, CTHFloatTensor, CTHGenerator)
-import Torch.Core.Tensor.Types (TensorDim(..), TensorDoubleRaw, TensorFloatRaw, TensorLongRaw, (^.), _1, _2, _3, _4)
+import Torch.Core.Tensor.Types (TensorDoubleRaw, TensorFloatRaw, TensorLongRaw, (^.), _1, _2, _3, _4)
 
 import qualified THDoubleTensor as T
 import qualified THFloatTensor as T
@@ -72,7 +76,7 @@ toList tensor =
     range mx = [0 .. fromIntegral mx - 1]
 
 showLim :: RealFloat a => a -> String
-showLim x = 
+showLim x =
   if (x < 0) then
     numStr
   else
@@ -140,7 +144,7 @@ dispRawFloat tensor
                     | r <- [0..(sz !! 2 - 1)], c <- [0..(sz !! 3 - 1)] ]
         putStr ("[ " :: String)
         mapM_ (\(r, c) -> do
-                  let val = T.c_THFloatTensor_get4d tensor 
+                  let val = T.c_THFloatTensor_get4d tensor
                              (fromIntegral i) (fromIntegral j) r c
                   if c == fromIntegral (sz !! 3) - 1
                     then do
@@ -224,7 +228,7 @@ dispRaw tensor
                     | r <- [0..(sz !! 2 - 1)], c <- [0..(sz !! 3 - 1)] ]
         putStr ("[ " :: String)
         mapM_ (\(r, c) -> do
-                  let val = T.c_THDoubleTensor_get4d tensor 
+                  let val = T.c_THDoubleTensor_get4d tensor
                              (fromIntegral i) (fromIntegral j) r c
                   if c == fromIntegral (sz !! 3) - 1
                     then do
@@ -254,7 +258,7 @@ dispRaw tensor
 -- TODO - finish implementation to handle sizes correctly
 randInitRaw
   :: Ptr CTHGenerator
-  -> TensorDim Word
+  -> Dim (dims :: [k])
   -> CDouble
   -> CDouble
   -> IO TensorDoubleRaw
@@ -266,14 +270,14 @@ randInitRaw gen dims lower upper = do
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 -- safe version
-tensorRaw :: TensorDim Word -> Double -> IO TensorDoubleRaw
+tensorRaw :: Dim (ns::[k]) -> Double -> IO TensorDoubleRaw
 tensorRaw dims value = do
   newPtr <- go dims
   fillRaw value newPtr
   pure newPtr
   where
-    go :: TensorDim Word -> IO TensorDoubleRaw
-    go = onDims w2cll
+    go :: Dim (ns::[k]) -> IO TensorDoubleRaw
+    go = onDims fromIntegral
       T.c_THDoubleTensor_new
       T.c_THDoubleTensor_newWithSize1d
       T.c_THDoubleTensor_newWithSize2d
@@ -299,14 +303,14 @@ tensorFloatRaw dims value = do
 
 -- |Create a new (Long) tensor of specified dimensions and fill it with 0
 -- safe version
-tensorLongRaw :: TensorDim Word -> Int -> IO TensorLongRaw
+tensorLongRaw :: Dim (ns::[k]) -> Int -> IO TensorLongRaw
 tensorLongRaw dims value = do
   newPtr <- go dims
   fillLongRaw value newPtr
   pure newPtr
   where
-    go :: TensorDim Word -> IO TensorLongRaw
-    go = onDims w2cll
+    go :: Dim (ns::[k]) -> IO TensorLongRaw
+    go = onDims fromIntegral
       T.c_THLongTensor_new
       T.c_THLongTensor_newWithSize1d
       T.c_THLongTensor_newWithSize2d
@@ -339,25 +343,27 @@ sizeRaw t =
     f x = fromIntegral (T.c_THDoubleTensor_size t x)
 
 -- |Dimensions of a raw tensor as a TensorDim value
-dimFromRaw :: TensorDoubleRaw -> TensorDim Word
+dimFromRaw :: TensorDoubleRaw -> DimView
 dimFromRaw raw =
-  case (length sz) of 0 -> D0
-                      1 -> D1 (getN 0)
-                      2 -> D2 ((getN 0), (getN 1))
-                      3 -> D3 ((getN 0), (getN 1), (getN 2))
-                      4 -> D4 ((getN 0), (getN 1), (getN 2), (getN 3))
-                      _ -> undefined -- TODO - make this safe
+  case length sz of
+    0 -> D0
+    1 -> D1 (at 0)
+    2 -> D2 (at 0) (at 1)
+    3 -> D3 (at 0) (at 1) (at 2)
+    4 -> D4 (at 0) (at 1) (at 2) (at 3)
+    5 -> D5 (at 0) (at 1) (at 2) (at 3) (at 5)
+    _ -> undefined -- TODO - make this safe
   where
     sz :: [Int]
     sz = sizeRaw raw
 
-    getN :: Int -> Word
-    getN n = fromIntegral (sz !! n)
+    at :: Int -> Int
+    at n = fromIntegral (sz !! n)
 
 -- |Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
 fillRaw :: Real a => a -> TensorDoubleRaw -> IO ()
-fillRaw value = (flip M.c_THDoubleTensor_fill) (realToFrac value)
+fillRaw value = flip M.c_THDoubleTensor_fill (realToFrac value)
 
 -- |Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
@@ -367,7 +373,7 @@ fillFloatRaw value = (flip M.c_THFloatTensor_fill) (realToFrac value)
 -- |Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
 fillLongRaw :: Int -> TensorLongRaw -> IO ()
-fillLongRaw value = (flip M.c_THLongTensor_fill) (fromIntegral value)
+fillLongRaw value = flip M.c_THLongTensor_fill (fromIntegral value)
 
 -- |Fill a raw Double tensor with 0.0
 fillRaw0 :: TensorDoubleRaw -> IO TensorDoubleRaw

@@ -27,6 +27,7 @@ library
   ghc-options: -fno-cse -fno-full-laziness
   build-depends:
       base >=4.7 && <5
+    , containers
     , deepseq >=1.3.0.0
     , dimensions >=0.3.2.0
     , hasktorch-raw
@@ -42,12 +43,10 @@ library
       Torch.Core.LogAdd
       Torch.Core.Random
       Torch.Core.StorageTypes
+      Torch.Core.Tensor.Dim
+      Torch.Core.Tensor.Generic
       Torch.Core.Tensor.Raw
       Torch.Core.Tensor.Types
-      Torch.Core.StorageDouble
-      Torch.Core.StorageLong
-      Torch.Core.Tensor
-      Torch.Core.Tensor.Dynamic.Byte
       Torch.Core.Tensor.Dynamic.Double
       Torch.Core.Tensor.Dynamic.DoubleLapack
       Torch.Core.Tensor.Dynamic.DoubleMath
@@ -75,6 +74,7 @@ test-suite spec
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , containers
     , deepseq >=1.3.0.0
     , dimensions >=0.3.2.0
     , hasktorch-core
