@@ -36,8 +36,6 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
--- import Torch.Core.Tensor.Dynamic.Double
--- import Torch.Core.Tensor.Dynamic.Long
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
@@ -86,7 +84,9 @@ tds_gesv b a = unsafePerformIO $ do
 -- Note: Irrespective of the original strides, the returned matrices resb and
 -- resa will be transposed, i.e. with strides 1, m instead of m, 1.
 -- TH_API void THTensor_(gels)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_);
-tds_gels b a = do
+tds_gels :: (SingI d1, SingI d2) =>
+     TDS d3 -> TDS d4 -> (TDS d1, TDS d2)
+tds_gels b a = unsafePerformIO $ do
   let (rb, ra) = (tds_new, tds_new)
   runManaged $ do
     prb <- managed $ withForeignPtr (tdsTensor rb)
@@ -123,8 +123,7 @@ tds_getri a = do
 -- U = torch.potrf(A, 'U') returns the upper triangular Cholesky decomposition of A.
 -- L = torch.potrf(A, 'L') returns the lower triangular Cholesky decomposition of A.
 -- TH_API void THTensor_(potrf)(THTensor *ra_, THTensor *a, const char *uplo);
-tds_potrf
-  :: KnownNat d => TDS '[d, d] -> UpperLower -> TDS '[d, d]
+tds_potrf :: KnownNat d => TDS '[d, d] -> UpperLower -> TDS '[d, d]
 tds_potrf a ul = unsafePerformIO $ do
   let ra = tds_new
   ulC <- toChar ul
@@ -140,7 +139,10 @@ tds_potrf a ul = unsafePerformIO $ do
 -- side matrix B should be of full rank. Optional character ul = Upper / Lower
 -- specifies matrix chol as either upper or lower triangular
 -- TH_API void THTensor_(potrs)(THTensor *rb_, THTensor *b_, THTensor *a_,  const char *uplo);
-tds_potrs b a ul = do
+
+tds_potrs :: SingI d1 =>
+             TDS d2 -> TDS d3 -> UpperLower -> TDS d1
+tds_potrs b a ul = unsafePerformIO $ do
   let rb = tds_new
   ulC <- toChar ul
   runManaged $ do
@@ -155,7 +157,9 @@ tds_potrs b a ul = do
 -- Returns the inverse of 2D Tensor A given its Cholesky decomposition chol.
 -- Square matrix chol should be triangular.
 -- ul specifies matrix chol as either upper or lower triangular
-tds_potri b a ul = do
+
+tds_potri :: SingI d1 => TDS d2 -> UpperLower -> TDS d1
+tds_potri a ul = unsafePerformIO $ do
   let ra = tds_new
   ulC <- toChar ul
   runManaged $ do
@@ -174,6 +178,9 @@ tds_potri b a ul = do
 -- original strides, the returned matrix q will be transposed, i.e. with strides
 -- 1, m instead of m, 1.
 -- TH_API void THTensor_(qr)(THTensor *rq_, THTensor *rr_, THTensor *a);
+
+tds_qr :: (SingI d1, SingI d2) =>
+          TDS d3 -> IO (TDS d1, TDS d2)
 tds_qr a = do
   let (rq, rr) = (tds_new, tds_new)
   runManaged $ do
@@ -190,6 +197,9 @@ tds_qr a = do
 -- calls the underlying LAPACK function ?geqrf which produces a sequence of
 -- 'elementary reflectors'. See LAPACK documentation for further details.
 -- TH_API void THTensor_(geqrf)(THTensor *ra_, THTensor *rtau_, THTensor *a);
+tds_geqrf
+  :: (SingI d1, SingI d2) =>
+     TDS d3 -> IO (TDS d1, TDS d2)
 tds_geqrf a = do
   let (ra, rtau) = (tds_new, tds_new)
   withForeignPtr (tdsTensor ra)
@@ -210,7 +220,9 @@ tds_geqrf a = do
 -- elementary reflectors, such as that given by torch.geqrf. See LAPACK
 -- documentation for further details.
 -- TH_API void THTensor_(orgqr)(THTensor *ra_, THTensor *a, THTensor *tau);
-tds_orgqr a tau = do
+tds_orgqr :: SingI d1 =>
+     TDS d2 -> TDS d3 -> TDS d1
+tds_orgqr a tau = unsafePerformIO $ do
   let ra = tds_new
   runManaged $ do
     pra <- managed $ withForeignPtr (tdsTensor ra)

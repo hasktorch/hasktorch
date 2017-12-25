@@ -28,35 +28,49 @@ data StaticWeights (i :: Nat) (o :: Nat) = SW {
 data Sigmoid (i :: Nat) =
   Sigmoid deriving Show
 
+data Relu (i :: Nat) =
+  Relu deriving Show
+
+data Trivial (i :: Nat) =
+  Trivial deriving Show
+
 data Layer (i :: Nat) (o :: Nat) where
+  TrivialLayer :: Trivial i -> Layer i i
   LinearLayer  :: SW i o    -> Layer i o
   SigmoidLayer :: Sigmoid i -> Layer i i
+  ReluLayer :: Relu i -> Layer i i
+
+class Propagate l where
+  runForwards :: forall i o . (KnownNat i, KnownNat o) =>
+    TDS '[i] -> (l i o) -> TDS '[o]
+
+instance Propagate Layer where
+  runForwards t (TrivialLayer l) = t
+  runForwards t (LinearLayer (SW b w) :: Layer i o) =
+    tds_resize ( w !*! t' + b')
+    where
+      t' = (tds_resize t :: TDS '[i, 1])
+      b' = tds_resize b
+  runForwards t (SigmoidLayer l) = tds_sigmoid t
+  runForwards t (ReluLayer l) = tds_cmul (tds_gtTensorT t (tds_new)) t
 
 instance (KnownNat i, KnownNat o) => Show (Layer i o) where
+  show (TrivialLayer x) = "TrivialLayer "
+                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
+                         ++ (show (natVal (Proxy :: Proxy o)))
   show (LinearLayer x) = "LinearLayer "
                          ++ (show (natVal (Proxy :: Proxy i))) ++ " "
                          ++ (show (natVal (Proxy :: Proxy o)))
   show (SigmoidLayer x) = "SigmoidLayer "
                          ++ (show (natVal (Proxy :: Proxy i))) ++ " "
                          ++ (show (natVal (Proxy :: Proxy o)))
+  show (ReluLayer x) = "ReluLayer "
+                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
+                         ++ (show (natVal (Proxy :: Proxy o)))
 
-forwardProp :: forall i o . (KnownNat i, KnownNat o) =>
-  TDS '[i] -> (Layer i o) -> TDS '[o]
-
-forwardProp t (LinearLayer (SW b w) :: Layer i o) =
-  tds_resize ( w !*! t' + b')
-  where
-    t' = (tds_resize t :: TDS '[i, 1])
-    b' = tds_resize b
-
-forwardProp t (SigmoidLayer Sigmoid) =
-  tds_sigmoid t
-
--- Not possible to implement value-level network representation alongside
--- type-level tensor representation?
--- forwardNetwork :: forall din dout h hs c . TDS din -> SN h hs c -> TDS dout
--- forwardNetwork t (O w) = forwardProp t w
--- forwardNetwork t (w :~ n') = undefined -- forwardNetwork (forwardProp t w) n' (?)
+forwardNetwork :: forall i h o . TDS '[i] -> SN i h o  -> TDS '[o]
+forwardNetwork t (O w) = runForwards t w
+forwardNetwork t (h :~ n) = forwardNetwork (runForwards t h) n
 
 mkW :: (SingI i, SingI o) => SW i o
 mkW = SW b n
@@ -64,6 +78,9 @@ mkW = SW b n
 
 sigmoid :: forall d . (SingI d) => Layer d d
 sigmoid = SigmoidLayer (Sigmoid :: Sigmoid d)
+
+relu :: forall d . (SingI d) => Layer d d
+relu = ReluLayer (Relu :: Relu d)
 
 linear  :: forall i o . (SingI i, SingI o) => Layer i o
 linear = LinearLayer (mkW :: SW i o)
@@ -82,6 +99,7 @@ data StaticNetwork2 :: [Nat] -> * where
 
 -- set precedence to chain layers without adding parentheses
 infixr 5 :~
+infixr 5 :&~
 
 dispL :: forall o i . (KnownNat o, KnownNat i) => Layer i o -> IO ()
 dispL layer = do
@@ -94,31 +112,52 @@ dispN :: SN h hs c -> IO ()
 dispN (O w) = dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
 
+dispN2 :: SN2 (h:hs) -> IO ()
+dispN2 (O2 w) = dispL w
+dispN2 (w :&~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN2 n'
+
 li :: Layer 10 7
 li = linear
-
 l2 :: Layer 7 7
 l2 = sigmoid
-
 l3 :: Layer 7 4
 l3 = linear
-
 l4 :: Layer 4 4
 l4 = sigmoid
-
 lo :: Layer 4 2
 lo = linear
 
 net = li :~ l2 :~ l3 :~ l4 :~ O lo
+net2 = li :&~ l2 :&~ l3 :&~ l4 :&~ O2 lo
 
 fstLayer ::
   forall i h hs o . SN i (h : hs) o -> Layer i h
 fstLayer (f :~ r) = f
 
+fstLayer2 ::
+  forall i h hs . SN2 (i : h : hs) -> Layer i h
+fstLayer2 (O2 o) = o
+fstLayer2 (f :&~ r) = f
+
+rstLayer2 ::
+  forall i h hs . SN2 (i : h : hs) -> SN2 (h : hs)
+rstLayer2 (O2 o) = undefined
+rstLayer2 (f :&~ r) = r
+
 main :: IO ()
 main = do
+
+  gen <- newRNG
+  t <- tds_normal gen 0.0 5.0 :: IO (TDS '[10])
+  tds_p $ tds_gtTensorT t tds_new
+
   print s
   dispN net
+  tds_p $ forwardNetwork (tds_init 5.0) net
+  dispN2 net2
+  dispL $ fstLayer2 . rstLayer2 . rstLayer2 . rstLayer2 . rstLayer2  $ net2
+
+
   putStrLn "Done"
   where
     s = Sigmoid :: Sigmoid (3 :: Nat)

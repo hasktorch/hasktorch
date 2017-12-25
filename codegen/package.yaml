@@ -16,7 +16,6 @@ dependencies:
 library:
   source-dirs:
   - src
-  - src/aten
 
 tests:
   spec:
