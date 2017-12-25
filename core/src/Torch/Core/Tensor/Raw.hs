@@ -66,6 +66,15 @@ toList tensor =
     range :: Integral i => Int -> [i]
     range mx = [0 .. fromIntegral mx - 1]
 
+showLim :: RealFloat a => a -> String
+showLim x = 
+  if (x < 0) then
+    numStr
+  else
+    " " ++ numStr
+  where
+    numStr = showGFloat (Just 2) x ""
+
 -- |displaying raw tensor values
 dispRaw :: Ptr CTHDoubleTensor -> IO ()
 dispRaw tensor
@@ -96,6 +105,49 @@ dispRaw tensor
                   else
                   putStr $ ((showLim val) ++ " " :: String)
             ) pairs
+  | (length sz) == 3 = do
+      putStrLn ""
+      mapM_ (\i -> do
+        putStrLn $ "(" ++ (show i) ++ ",.,.)"
+        let pairs = [ ((fromIntegral r) :: CLLong,
+                       (fromIntegral c) :: CLLong)
+                    | r <- [0..(sz !! 1 - 1)], c <- [0..(sz !! 2 - 1)] ]
+        putStr ("[ " :: String)
+        mapM_ (\(r, c) -> do
+                  let val = T.c_THDoubleTensor_get3d tensor (fromIntegral i) r c
+                  if c == fromIntegral (sz !! 2) - 1
+                    then do
+                    putStrLn (((showLim val) ++ " ]") :: String)
+                    putStr (if (fromIntegral r :: Int) < (sz !! 1 - 1)
+                            then "[ " :: String
+                            else "")
+                    else
+                    putStr $ ((showLim val) ++ " " :: String)
+              ) pairs
+        putStrLn ""
+        ) [0..(sz !!0 -1)]
+  | (length sz) == 4 = do
+      putStrLn ""
+      mapM_ (\(i,j) -> do
+        putStrLn $ "(" ++ (show i) ++ "," ++ (show j) ++".,.)"
+        let pairs = [ ((fromIntegral r) :: CLLong,
+                       (fromIntegral c) :: CLLong)
+                    | r <- [0..(sz !! 2 - 1)], c <- [0..(sz !! 3 - 1)] ]
+        putStr ("[ " :: String)
+        mapM_ (\(r, c) -> do
+                  let val = T.c_THDoubleTensor_get4d tensor 
+                             (fromIntegral i) (fromIntegral j) r c
+                  if c == fromIntegral (sz !! 3) - 1
+                    then do
+                    putStrLn (((showLim val) ++ " ]") :: String)
+                    putStr (if (fromIntegral r :: Int) < (sz !! 2 - 1)
+                            then "[ " :: String
+                            else "")
+                    else
+                    putStr $ ((showLim val) ++ " " :: String)
+              ) pairs
+        putStrLn ""
+        ) [ (f,s) | f <- [0..(sz !! 0 - 1)], s <- [0..(sz !! 1 - 1)]]
   | otherwise = putStrLn "Can't print this yet."
   where
     size :: Ptr CTHDoubleTensor -> [Int]
@@ -104,9 +156,6 @@ dispRaw tensor
       where
         maxdim = (T.c_THDoubleTensor_nDimension t) - 1
         f x = fromIntegral (T.c_THDoubleTensor_size t x) :: Int
-
-    showLim :: RealFloat a => a -> String
-    showLim x = showGFloat (Just 2) x ""
 
     sz :: [Int]
     sz = size tensor
