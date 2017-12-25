@@ -10,8 +10,6 @@ module Torch.Core.Internal
   , genOp1
   , genOp2
 
-  , HaskType
-
   , Positive
   , mkPositive
   , fromPositive
@@ -51,15 +49,6 @@ genOp1 thop a = realToFrac $ thop (realToFrac a)
 -- | generic function for 2-arity, monomorphic CDouble functions
 genOp2 :: (Real a, Fractional b) => (CDouble -> CDouble -> CDouble) -> a -> a -> b
 genOp2 thop a b = realToFrac $ thop (realToFrac a) (realToFrac b)
-
-
-type family HaskType t
-type instance HaskType CTHByteTensor = CChar
-type instance HaskType CTHDoubleTensor = CDouble
-type instance HaskType CTHFloatTensor = CFloat
-type instance HaskType CTHIntTensor = CInt
-type instance HaskType CTHLongTensor = CLong
-type instance HaskType CTHShortTensor = CShort
 
 -- ========================================================================= --
 

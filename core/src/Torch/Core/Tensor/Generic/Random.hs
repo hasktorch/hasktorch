@@ -1,13 +1,10 @@
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Core.Tensor.GenericRandom where
+module Torch.Core.Tensor.Generic.Random where
 
-import Foreign (Ptr)
-import Foreign.C.Types
 import qualified THFloatTensorRandom as T
 import qualified THDoubleTensorRandom as T
 
-import THTypes
--- import Torch.Core.Internal (HaskType)
+import Torch.Core.Internal
 
 type SHOULD_BE_HASK_TYPE = CDouble
 
