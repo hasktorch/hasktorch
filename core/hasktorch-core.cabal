@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6b3ea3db020e7baafc62f55a092644ee379a6901da1885f808ff203aab22df4d
+-- hash: 7506d92ed460417afbce2afe920a58c6451753e0cf1ba86b95dd59019ac6e6e8
 
 name:           hasktorch-core
 version:        0.1.0.0
@@ -28,6 +28,7 @@ library
   build-depends:
       base >=4.7 && <5
     , deepseq >=1.3.0.0
+    , dimensions >=0.3.2.0
     , hasktorch-raw
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
@@ -75,6 +76,7 @@ test-suite spec
       QuickCheck
     , base >=4.7 && <5
     , deepseq >=1.3.0.0
+    , dimensions >=0.3.2.0
     , hasktorch-core
     , hasktorch-raw
     , hspec

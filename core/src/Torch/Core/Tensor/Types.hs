@@ -1,5 +1,19 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances,  FunctionalDependencies #-}
+{-# LANGUAGE DataKinds, KindSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE Rank2Types #-}
+{-  LANGUAGE TypeFamilies #-}
+{-  LANGUAGE TypeOperators #-}
+{-  LANGUAGE DataKinds #-}
+{-  LANGUAGE PolyKinds #-}
+{-  LANGUAGE KindSignatures #-}
+{-  LANGUAGE FlexibleInstances #-}
+{-  LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Torch.Core.Tensor.Types (
-  TensorDim(..),
   TensorFloat(..),
   TensorDouble(..),
   TensorByte(..),
@@ -25,6 +39,8 @@ import Data.Functor.Identity
 import Foreign
 import Foreign.C.Types
 import Foreign.Ptr
+import Data.Proxy
+
 import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
                            newForeignPtr )
 import GHC.Ptr (FunPtr)
@@ -33,6 +49,7 @@ import Lens.Micro
 
 import THTypes
 import THDoubleTensor
+import Numeric.Dimensions (Dim)
 
 type TensorFloatRaw  = Ptr CTHFloatTensor
 type TensorDoubleRaw = Ptr CTHDoubleTensor
@@ -42,63 +59,41 @@ type TensorShortRaw  = Ptr CTHShortTensor
 type TensorIntRaw    = Ptr CTHIntTensor
 type TensorLongRaw   = Ptr CTHLongTensor
 
-data TensorDim a =
-  D0
-  | D1 { d1 :: a }
-  | D2 { d2 :: (a, a) }
-  | D3 { d3 :: (a, a, a) }
-  | D4 { d4 :: (a, a, a, a) }
-  deriving (Eq, Show)
-
-instance Functor TensorDim where
-  fmap f D0 = D0
-  fmap f (D1 d1) = D1 (f d1)
-  fmap f (D2 (d1, d2)) = D2 ((f d1), (f d2))
-  fmap f (D3 (d1, d2, d3)) = D3 ((f d1), (f d2), (f d3))
-  fmap f (D4 (d1, d2, d3, d4)) = D4 ((f d1), (f d2), (f d3), (f d4))
-
-instance Foldable TensorDim where
-  foldr func val (D0) = val
-  foldr func val (D1 d1) = foldr func val [d1]
-  foldr func val (D2 (d1, d2)) = foldr func val [d1, d2]
-  foldr func val (D3 (d1, d2, d3)) = foldr func val [d1, d2, d3]
-  foldr func val (D4 (d1, d2, d3, d4)) = foldr func val [d1, d2, d3, d4]
-
 -- Float types
 
-data TensorFloat = TensorFloat {
+data TensorFloat dims = TensorFloat {
   tfTensor :: !(ForeignPtr CTHFloatTensor),
-  tfDim :: !(TensorDim Word)
-  } deriving (Eq, Show)
+  tfDim :: Dim dims
+  } deriving (Show, Eq)
 
-data TensorDouble = TensorDouble {
+data TensorDouble dims = TensorDouble {
   tdTensor :: !(ForeignPtr CTHDoubleTensor),
-  tdDim :: !(TensorDim Word)
+  tdDim :: Dim dims
   } deriving (Eq, Show)
 
 -- Int types
 
-data TensorByte = TensorByte {
+data TensorByte dims = TensorByte {
   tbTensor :: !(ForeignPtr CTHByteTensor),
-  tbDim :: !(TensorDim Word)
+  tbDim :: Dim dims
   } deriving (Eq, Show)
 
-data TensorChar = TensorChar {
+data TensorChar dims = TensorChar {
   tcTensor :: !(ForeignPtr CTHCharTensor),
-  tcDim :: !(TensorDim Word)
+  tcDim :: Dim dims
   } deriving (Eq, Show)
 
-data TensorShort = TensorShort {
+data TensorShort dims = TensorShort {
   tsTensor :: !(ForeignPtr CTHShortTensor),
-  tsDim :: !(TensorDim Word)
+  tsDim :: Dim dims
   } deriving (Eq, Show)
 
-data TensorInt = TensorInt {
+data TensorInt dims = TensorInt {
   tiTensor :: !(ForeignPtr CTHIntTensor),
-  tiDim :: !(TensorDim Word)
+  tiDim :: Dim dims
   } deriving (Eq, Show)
 
-data TensorLong = TensorLong {
+data TensorLong dims = TensorLong {
   tlTensor :: !(ForeignPtr CTHLongTensor),
-  tlDim :: !(TensorDim Word)
+  tlDim :: Dim dims
   } deriving (Eq, Show)
