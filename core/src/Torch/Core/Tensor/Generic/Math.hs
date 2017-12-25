@@ -1,9 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Core.Tensor.GenericMath where
+module Torch.Core.Tensor.Generic.Math where
 
-import THTypes
-import Foreign (Ptr)
-import Foreign.C.Types
 import qualified THByteTensorMath as T
 import qualified THDoubleTensorMath as T
 import qualified THFloatTensorMath as T
@@ -11,7 +8,7 @@ import qualified THIntTensorMath as T
 import qualified THLongTensorMath as T
 import qualified THShortTensorMath as T
 
-import Torch.Core.Internal (HaskType)
+import Torch.Core.Tensor.Generic.Internal
 
 type SHOULD_BE_HASK_TYPE = CDouble
 
