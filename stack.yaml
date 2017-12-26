@@ -10,7 +10,8 @@ packages:
     commit: e31a2cb894faf4c0cf4a3af3058152149f2b2ee3
   extra-dep: true
 
-extra-deps: []
+extra-deps:
+- dimensions-0.3.2.0
 
 flags: {}
 
