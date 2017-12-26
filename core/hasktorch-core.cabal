@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ac5161e9a3b09bb12c9fd91414b969e1436f9d4cb5405b97cc2c2e0f01c478e6
+-- hash: 8aa24ef82b6b9f79dfcb20d01d7f91fea9980430d1e26814ef9ea54e6a8f33dd
 
 name:           hasktorch-core
 version:        0.1.0.0
@@ -27,7 +27,9 @@ library
   ghc-options: -fno-cse -fno-full-laziness
   build-depends:
       base >=4.7 && <5
+    , containers
     , deepseq >=1.3.0.0
+    , dimensions >=0.3.2.0
     , hasktorch-raw
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
@@ -41,23 +43,16 @@ library
       Torch.Core.LogAdd
       Torch.Core.Random
       Torch.Core.StorageTypes
+      Torch.Core.Tensor.Dim
+      Torch.Core.Tensor.Generic
+      Torch.Core.Tensor.Generic.Internal
+      Torch.Core.Tensor.Generic.Math
+      Torch.Core.Tensor.Generic.Ops
+      Torch.Core.Tensor.Generic.Random
       Torch.Core.Tensor.Raw
       Torch.Core.Tensor.Types
-      Torch.Core.StorageDouble
-      Torch.Core.StorageLong
-      Torch.Core.Tensor
-      Torch.Core.Tensor.Dynamic.Byte
       Torch.Core.Tensor.Dynamic.Double
-      Torch.Core.Tensor.Dynamic.DoubleLapack
-      Torch.Core.Tensor.Dynamic.DoubleMath
-      Torch.Core.Tensor.Dynamic.DoubleRandom
-      Torch.Core.Tensor.Dynamic.Long
-      Torch.Core.Tensor.Static.Byte
       Torch.Core.Tensor.Static.Double
-      Torch.Core.Tensor.Static.DoubleLapack
-      Torch.Core.Tensor.Static.DoubleMath
-      Torch.Core.Tensor.Static.DoubleRandom
-      Torch.Core.Tensor.Static.Long
   other-modules:
       Paths_hasktorch_core
   default-language: Haskell2010
@@ -72,7 +67,9 @@ test-suite spec
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , containers
     , deepseq >=1.3.0.0
+    , dimensions >=0.3.2.0
     , hasktorch-core
     , hasktorch-raw
     , hspec

@@ -24,6 +24,8 @@ dependencies:
 - singletons >=2.2
 - text >=1.2.2.2
 - typelits-witnesses >=0.2.3.0
+- dimensions >= 0.3.2.0
+- containers 
 
 library:
   source-dirs:
