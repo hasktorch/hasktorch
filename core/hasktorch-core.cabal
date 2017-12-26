@@ -45,9 +45,14 @@ library
       Torch.Core.StorageTypes
       Torch.Core.Tensor.Dim
       Torch.Core.Tensor.Generic
+      Torch.Core.Tensor.Generic.Internal
+      Torch.Core.Tensor.Generic.Math
+      Torch.Core.Tensor.Generic.Ops
+      Torch.Core.Tensor.Generic.Random
       Torch.Core.Tensor.Raw
       Torch.Core.Tensor.Types
       Torch.Core.Tensor.Dynamic.Double
+      Torch.Core.Tensor.Static.Double
   other-modules:
       Paths_hasktorch_core
   default-language: Haskell2010
