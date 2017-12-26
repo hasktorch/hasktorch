@@ -3,11 +3,9 @@
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators #-}
-
 module Torch.Core.Tensor.Static.Double (
   tds_dim,
   tds_expand,
