@@ -5,7 +5,6 @@ module Torch.Core.Internal
   , i2cl
   , i2cll
   , fromIntegral
-  , onDims
   , showLim
   , genOp1
   , genOp2
@@ -21,8 +20,6 @@ import Foreign (Word, Ptr)
 import Foreign.C.Types (CLLong, CLong, CDouble, CShort, CLong, CChar, CInt, CFloat)
 import THTypes
 import Numeric (showGFloat)
-
-import Torch.Core.Tensor.Dim
 
 w2cll :: Word -> CLLong
 w2cll = fromIntegral
@@ -67,3 +64,4 @@ fromPositive = unPositive
 
 impossible :: String -> a
 impossible = error
+
