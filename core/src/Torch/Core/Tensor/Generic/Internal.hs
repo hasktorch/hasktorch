@@ -6,7 +6,7 @@ module Torch.Core.Tensor.Generic.Internal
   ) where
 
 import Foreign as X (Ptr)
-import Foreign.C.Types as X (CLLong, CLong, CDouble, CShort, CLong, CChar, CInt, CFloat)
+import Foreign.C.Types as X (CPtrdiff, CLLong, CLong, CDouble, CShort, CLong, CChar, CInt, CFloat)
 import THTypes as X
 
 type family HaskType t

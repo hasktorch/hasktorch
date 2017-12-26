@@ -4,7 +4,7 @@ module Torch.Core.Tensor.Generic.Random where
 import qualified THFloatTensorRandom as T
 import qualified THDoubleTensorRandom as T
 
-import Torch.Core.Internal
+import Torch.Core.Tensor.Generic.Internal
 
 type SHOULD_BE_HASK_TYPE = CDouble
 

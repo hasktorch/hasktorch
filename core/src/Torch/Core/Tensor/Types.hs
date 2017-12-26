@@ -1,18 +1,8 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances,  FunctionalDependencies #-}
-{-# LANGUAGE DataKinds, KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE Rank2Types #-}
-{-  LANGUAGE TypeFamilies #-}
-{-  LANGUAGE TypeOperators #-}
-{-  LANGUAGE DataKinds #-}
-{-  LANGUAGE PolyKinds #-}
-{-  LANGUAGE KindSignatures #-}
-{-  LANGUAGE FlexibleInstances #-}
-{-  LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 module Torch.Core.Tensor.Types (
   TensorFloat(..),
   TensorDouble(..),
@@ -22,13 +12,13 @@ module Torch.Core.Tensor.Types (
   TensorInt(..),
   TensorLong(..),
 
-  TensorFloatRaw(..),
-  TensorDoubleRaw(..),
-  TensorByteRaw(..),
-  TensorCharRaw(..),
-  TensorShortRaw(..),
-  TensorIntRaw(..),
-  TensorLongRaw(..),
+  TensorFloatRaw,
+  TensorDoubleRaw,
+  TensorByteRaw,
+  TensorCharRaw,
+  TensorShortRaw,
+  TensorIntRaw,
+  TensorLongRaw,
 
   (^.), -- re-export for dimension tuple access
   _1, _2, _3, _4, _5
@@ -49,7 +39,7 @@ import Lens.Micro
 
 import THTypes
 import THDoubleTensor
-import Numeric.Dimensions (Dim)
+import Numeric.Dimensions (Dim, SomeDims)
 
 type TensorFloatRaw  = Ptr CTHFloatTensor
 type TensorDoubleRaw = Ptr CTHDoubleTensor
@@ -61,39 +51,40 @@ type TensorLongRaw   = Ptr CTHLongTensor
 
 -- Float types
 
-data TensorFloat dims = TensorFloat {
+data TensorFloat = TensorFloat {
   tfTensor :: !(ForeignPtr CTHFloatTensor),
-  tfDim :: Dim dims
+  tfDim :: SomeDims
   } deriving (Show, Eq)
 
-data TensorDouble dims = TensorDouble {
+data TensorDouble = TensorDouble {
   tdTensor :: !(ForeignPtr CTHDoubleTensor),
-  tdDim :: Dim dims
+  tdDim :: SomeDims
   } deriving (Eq, Show)
+
 
 -- Int types
 
-data TensorByte dims = TensorByte {
+data TensorByte = TensorByte {
   tbTensor :: !(ForeignPtr CTHByteTensor),
-  tbDim :: Dim dims
+  tbDim :: SomeDims
   } deriving (Eq, Show)
 
-data TensorChar dims = TensorChar {
+data TensorChar = TensorChar {
   tcTensor :: !(ForeignPtr CTHCharTensor),
-  tcDim :: Dim dims
+  tcDim :: SomeDims
   } deriving (Eq, Show)
 
-data TensorShort dims = TensorShort {
+data TensorShort = TensorShort {
   tsTensor :: !(ForeignPtr CTHShortTensor),
-  tsDim :: Dim dims
+  tsDim :: SomeDims
   } deriving (Eq, Show)
 
-data TensorInt dims = TensorInt {
+data TensorInt = TensorInt {
   tiTensor :: !(ForeignPtr CTHIntTensor),
-  tiDim :: Dim dims
+  tiDim :: SomeDims
   } deriving (Eq, Show)
 
-data TensorLong dims = TensorLong {
+data TensorLong = TensorLong {
   tlTensor :: !(ForeignPtr CTHLongTensor),
-  tlDim :: Dim dims
+  tlDim :: SomeDims
   } deriving (Eq, Show)
