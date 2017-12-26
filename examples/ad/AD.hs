@@ -41,18 +41,18 @@ data Layer (i :: Nat) (o :: Nat) where
   ReluLayer :: Relu i -> Layer i i
 
 class Propagate l where
-  runForwards :: forall i o . (KnownNat i, KnownNat o) =>
+  forwardProp :: forall i o . (KnownNat i, KnownNat o) =>
     TDS '[i] -> (l i o) -> TDS '[o]
 
 instance Propagate Layer where
-  runForwards t (TrivialLayer l) = t
-  runForwards t (LinearLayer (SW b w) :: Layer i o) =
+  forwardProp t (TrivialLayer l) = t
+  forwardProp t (LinearLayer (SW b w) :: Layer i o) =
     tds_resize ( w !*! t' + b')
     where
       t' = (tds_resize t :: TDS '[i, 1])
       b' = tds_resize b
-  runForwards t (SigmoidLayer l) = tds_sigmoid t
-  runForwards t (ReluLayer l) = tds_cmul (tds_gtTensorT t (tds_new)) t
+  forwardProp t (SigmoidLayer l) = tds_sigmoid t
+  forwardProp t (ReluLayer l) = tds_cmul (tds_gtTensorT t (tds_new)) t
 
 instance (KnownNat i, KnownNat o) => Show (Layer i o) where
   show (TrivialLayer x) = "TrivialLayer "
@@ -69,8 +69,8 @@ instance (KnownNat i, KnownNat o) => Show (Layer i o) where
                          ++ (show (natVal (Proxy :: Proxy o)))
 
 forwardNetwork :: forall i h o . TDS '[i] -> SN i h o  -> TDS '[o]
-forwardNetwork t (O w) = runForwards t w
-forwardNetwork t (h :~ n) = forwardNetwork (runForwards t h) n
+forwardNetwork t (O w) = forwardProp t w
+forwardNetwork t (h :~ n) = forwardNetwork (forwardProp t h) n
 
 mkW :: (SingI i, SingI o) => SW i o
 mkW = SW b n

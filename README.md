@@ -8,18 +8,18 @@ tensor/math library shared by [Torch](http://torch.ch/) and
 [PyTorch](http://pytorch.org/). Hasktorch is an independent open source
 community project.
 
-**NOTE: hasktorch is in early development and should only be used by
-contributing developers at the current time.**
+**This project is in early development and should only be used by contributing
+developers at the current time.**
 
 ## Project Organization
 
 | Directory | Description |
 | --------- | ----------- |
-| [`codegen/`][codegen] | Parsers that parse .h files in the C TH library and generate low-level raw Haskell bindings. Also includes experimental aten cwrap file parsing.
+| [`codegen/`][codegen] | Code generation to produce low-level raw Haskell bindings. Also includes experimental aten cwrap file parsing.
 | [`core/`][core] | Memory-managed tensors and core data types that wrap raw C bindings to TH.
 | [`nn/`][nn] | Neural network library (not much here atm)
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
-| [`raw/`][raw] | Comprehensive raw bindings to several hundred C TorcH (TH) operations, including separate bindings for all tensor types.
+| [`raw/`][raw] | Comprehensive raw bindings to C TorcH (TH) operations.
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C and other libraries)
 
 ## Build Instructions 
@@ -28,13 +28,9 @@ Currently hasktorch only supports OSX and Linux builds. Building Hasktorch
 requires retrieving submodules followed by building with the
 [Stack](https://docs.haskellstack.org/en/stable/README/) tool.
 
-These steps can be done automatically using the [Makefile][makefile] or manually.
-
-See the [developer guide][developers] for manual build instructions.
-
-### Build Hasktorch with `make` (Recommended)
-
-Run:
+These steps can be done automatically using the [Makefile][makefile] or
+manually. It is recommended to use the makefile to build the project and its
+dependencies:
 
 ```
 make init
@@ -42,6 +38,18 @@ make init
 
 This should retrieve submodules including torch library dependencies, build
 them, and then build hasktorch modules.
+
+For manually building the project, see the [developer guide][developers] for
+details as well as [the `vendor/` README][vendor] for information on external
+dependencies built by the Makefile.
+
+## Getting started
+
+As a starting point, for an example of basic end-user API usage, see the [static
+tensor usage
+example](https://github.com/austinvhuang/hasktorch/blob/master/examples/static-tensor-usage/StaticTensorUsage.hs)
+and the [toy gradient descent
+example](https://github.com/austinvhuang/hasktorch/blob/master/examples/gradient-descent/GradientDescent.hs).
 
 ## Contributing
 
