@@ -4,7 +4,6 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeInType #-}
-
 module Torch.Core.Tensor.Dim
   ( DimView(..)
   , someDimsM
