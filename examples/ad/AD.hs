@@ -62,11 +62,11 @@ updateMatrix :: (KnownNat o, KnownNat i, d ~ [o, i]) =>
   TDS d -> Gradient d -> Double -> TDS [o, i]
 updateMatrix t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
 
-class State s g where
-  update :: Layer i o -> s -> Layer i o
+-- class State s g where
+--   update :: Layer i o -> s -> Layer i o
 
-instance State (Layer i o) (TDS d) where
-  update layer grad = undefined
+-- instance State (Layer i o) (TDS d) where
+--   update layer grad = undefined
 
 -- instance State Layer where
 --   -- update (TrivialLayer l) _ _ = TrivialLayer l
