@@ -20,21 +20,21 @@ module Torch.Core.Tensor.Dynamic.Double
 
 import Control.Monad (void)
 import Foreign.C.Types
-import Foreign (ForeignPtr, withForeignPtr, newForeignPtr, finalizeForeignPtr)
+import Foreign (Ptr, ForeignPtr, withForeignPtr, newForeignPtr, finalizeForeignPtr)
 import GHC.TypeLits (Nat)
 import GHC.Exts (fromList, toList, IsList, Item)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Dim (Dim(..), SomeDims(..), someDimsM)
-import Torch.Core.Tensor.Generic.Internal (CTHDoubleTensor)
+import Torch.Core.Tensor.Generic.Internal (CTHDoubleTensor, CTHLongTensor)
 import qualified THDoubleTensor as T
+import qualified THLongTensor as T
 import qualified Torch.Core.Tensor.Generic as Gen
 import qualified Torch.Core.Tensor.Dim as Dim
 
 
 data TensorDouble = TensorDouble {
-  tdTensor :: !(ForeignPtr CTHDoubleTensor),
-  tdDim :: SomeDims
+  tdTensor :: !(ForeignPtr CTHDoubleTensor)
   } deriving (Show, Eq)
 
 
@@ -105,7 +105,7 @@ td_resize t d = unsafePerformIO $ do
   newPtr <- withForeignPtr (tdTensor t) Gen.newClone
   newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
   withForeignPtr newFPtr (withForeignPtr (tdTensor resDummy) . Gen.resizeAs)
-  pure $ TensorDouble newFPtr (SomeDims d)
+  pure $ TensorDouble newFPtr
 {-# NOINLINE td_resize #-}
 
 td_get :: Dim (d::[k]) -> TensorDouble -> Double
@@ -118,8 +118,8 @@ td_newWithTensor :: TensorDouble -> TensorDouble
 td_newWithTensor t = unsafePerformIO $ do
   newPtr <- withForeignPtr (tdTensor t) T.c_THDoubleTensor_newWithTensor
   newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
-  ds <- someDimsM (Gen.dimList newPtr)
-  pure $ TensorDouble newFPtr ds
+  -- ds <- someDimsM (Gen.dimList newPtr)
+  pure $ TensorDouble newFPtr
 {-# NOINLINE td_newWithTensor #-}
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
@@ -128,7 +128,7 @@ td_new dims = unsafePerformIO $ do
   newPtr <- Gen.constant dims 0.0
   fPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
   void $ withForeignPtr fPtr Gen.fillZeros
-  pure $ TensorDouble fPtr (SomeDims dims)
+  pure $ TensorDouble fPtr -- (SomeDims dims)
 {-# NOINLINE td_new #-}
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
@@ -137,7 +137,7 @@ td_new' sdims = unsafePerformIO $ do
   newPtr <- Gen.constant' sdims 0
   fPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
   void $ withForeignPtr fPtr Gen.fillZeros
-  pure $ TensorDouble fPtr sdims
+  pure $ TensorDouble fPtr -- sdims
 {-# NOINLINE td_new' #-}
 
 
@@ -147,7 +147,7 @@ td_new_ ds = do
   newPtr <- Gen.constant ds 0.0
   fPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
   void $ withForeignPtr fPtr Gen.fillZeros
-  pure $ TensorDouble fPtr (SomeDims ds)
+  pure $ TensorDouble fPtr -- (SomeDims ds)
 
 td_free_ :: TensorDouble -> IO ()
 td_free_ t = finalizeForeignPtr $! tdTensor t
@@ -157,15 +157,15 @@ td_init ds val = unsafePerformIO $ do
   newPtr <- Gen.constant ds (realToFrac val)
   fPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
   withForeignPtr fPtr (Gen.inplaceFill val)
-  pure $ TensorDouble fPtr (SomeDims ds)
+  pure $ TensorDouble fPtr -- (SomeDims ds)
 {-# NOINLINE td_init #-}
 
 td_transpose :: Word -> Word -> TensorDouble -> TensorDouble
 td_transpose dim1 dim2 t = unsafePerformIO $ do
   newPtr <- withForeignPtr (tdTensor t) (\p -> Gen.newTranspose p dim1C dim2C)
   newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
-  ds <- someDimsM (Gen.dimList newPtr)
-  pure $ TensorDouble newFPtr ds
+  -- ds <- someDimsM (Gen.dimList newPtr)
+  pure $ TensorDouble newFPtr -- ds
  where
   dim1C, dim2C :: CInt
   dim1C = fromIntegral dim1
@@ -176,7 +176,7 @@ td_trans :: TensorDouble -> TensorDouble
 td_trans t = unsafePerformIO $ do
   newPtr <- withForeignPtr (tdTensor t) (\p -> Gen.newTranspose p 1 0)
   newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
-  ds <- someDimsM (Gen.dimList newPtr)
-  pure $ TensorDouble newFPtr ds
+  -- ds <- someDimsM (Gen.dimList newPtr)
+  pure $ TensorDouble newFPtr -- ds
 {-# NOINLINE td_trans #-}
 
