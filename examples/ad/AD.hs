@@ -51,8 +51,8 @@ type Sensitivity i = TDS '[i]
 class Propagate l  where
   forwardProp :: forall i o . (KnownNat i, KnownNat o) =>
     TDS '[i] -> (l i o) -> TDS '[o]
-  backProp :: forall i o . (KnownNat i, KnownNat o) =>
-    Sensitivity o -> (UpdateFunction i o, Sensitivity i)
+  -- backProp :: forall i o . (KnownNat i, KnownNat o) =>
+  --   Sensitivity o -> (UpdateFunction i o, Sensitivity i)
 
 instance Propagate Layer where
   forwardProp t (TrivialLayer l) = t
@@ -67,7 +67,7 @@ instance Propagate Layer where
   --     b' = tds_resize b
   forwardProp t (SigmoidLayer l) = tds_sigmoid t
   forwardProp t (ReluLayer l) = (tds_gtTensorT t (tds_new)) ^*^ t
-  backProp = undefined -- TODO
+  -- backProp = undefined -- TODO
 
 trivial' :: SingI d => TDS d -> TDS d
 trivial' t = tds_init 1.0
