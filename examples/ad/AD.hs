@@ -51,7 +51,7 @@ type Sensitivity i = TDS '[i]
 class Propagate l  where
   forwardProp :: forall i o . (KnownNat i, KnownNat o) =>
     TDS '[i] -> (l i o) -> TDS '[o]
-  -- backProp :: forall i o . (KnownNat i, KnownNat o) =>
+  -- backProp :: forall e o . (KnownNat i, KnownNat o) =>
   --   Sensitivity o -> (UpdateFunction i o, Sensitivity i)
 
 instance Propagate Layer where
