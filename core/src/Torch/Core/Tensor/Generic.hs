@@ -14,6 +14,7 @@ module Torch.Core.Tensor.Generic
   , applyInPlaceFn
   , dimList
   , dimView
+  , getDynamicDim
   , fillZeros
   , inplaceFill
   , genericNew
@@ -29,9 +30,10 @@ module Torch.Core.Tensor.Generic
   , dispRaw
   ) where
 
-import Numeric.Dimensions (Dim(..))
+import Numeric.Dimensions (Dim(..), someDimsVal)
 import Foreign (Ptr)
 import Foreign.C.Types
+import Data.Maybe (fromJust)
 import qualified Numeric as Num (showGFloat)
 
 import Torch.Core.Internal (impossible, i2cll)
@@ -150,7 +152,7 @@ applyInPlaceFn f t1 = do
   f r_ t1
   pure r_
 
--- |Dimensions of a raw tensor as a list
+-- | Dimensions of a raw tensor as a list
 dimList :: GenericOps t => Ptr t -> [Int]
 dimList t = getDim <$> [0 .. nDimension t - 1]
   where
@@ -174,6 +176,12 @@ dimView t =
 
     at :: Int -> Int
     at n = fromIntegral (sz !! n)
+
+-- | Dimensions of a raw tensor as a SomeDims value.
+getDynamicDim :: GenericOps t => Ptr t -> SomeDims
+getDynamicDim
+-- Note: we can safely call 'fromJust' since these values are maintained by TH which does the bounds-checking
+  = fromJust . someDimsVal . dimList
 
 -- | Fill a raw Double tensor with 0.0
 fillZeros :: (GenericMath t, GenericOps t, Num (HaskType t)) => Ptr t -> IO (Ptr t)

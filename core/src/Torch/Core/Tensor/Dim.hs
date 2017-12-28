@@ -15,6 +15,7 @@ module Torch.Core.Tensor.Dim
   , dimVals
   , dimVals'
   , view
+  , view'
   , view4
   , product'
   , module Dim
@@ -41,6 +42,7 @@ data DimView
   | D8  Int Int Int Int Int Int Int Int
   | D9  Int Int Int Int Int Int Int Int Int
   | D10 Int Int Int Int Int Int Int Int Int Int
+  deriving (Eq, Ord, Show)
 
 someDimsM :: MonadThrow m => [Int] -> m SomeDims
 someDimsM d = case Dim.someDimsVal d of
@@ -94,6 +96,8 @@ view d = case dimVals d of
   [d1,d2,d3,d4,d5,d6,d7,d8,d9,d10] -> D10 d1 d2 d3 d4 d5 d6 d7 d8 d9 d10
   _  -> error "tensor rank is not accounted for in view pattern"
 
+view' :: SomeDims -> DimView
+view' (SomeDims d) = view d
 
 -- | should be up to rank 5, these are the "most common" cases
 view4 :: Dim (ns::[k]) -> DimView
