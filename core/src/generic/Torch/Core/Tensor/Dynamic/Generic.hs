@@ -26,41 +26,17 @@ import qualified THLongTensor as T
 import qualified Torch.Core.Tensor.Generic as Gen
 import qualified Torch.Core.Tensor.Dim as Dim
 
-class THTensor t where
-  construct :: ForeignPtr (TensorPtrType t) -> t
-  getForeign :: t -> ForeignPtr (TensorPtrType t)
-
-type family TensorPtrType t
-type instance TensorPtrType TensorDouble = CTHDoubleTensor
-type instance TensorPtrType TensorFloat = CTHFloatTensor
-
-newtype TensorDouble = TensorDouble { tdTensor :: ForeignPtr CTHDoubleTensor }
-  deriving (Show, Eq)
+import Torch.Core.Tensor.Dynamic.Generic.Internal
 
 instance IsList TensorDouble where
   type Item TensorDouble = Double
   fromList = genericFromList1d realToFrac
   toList = genericToList realToFrac
 
-instance THTensor TensorDouble where
-  construct = TensorDouble
-  getForeign = tdTensor
-
-newtype TensorFloat = TensorFloat { tfTensor :: ForeignPtr CTHFloatTensor }
-  deriving (Show, Eq)
-
 instance IsList TensorFloat where
   type Item TensorFloat = Float
   fromList = genericFromList1d realToFrac
   toList = genericToList realToFrac
-
-instance THTensor TensorFloat where
-  construct = TensorFloat
-  getForeign = tfTensor
-
-type GenericMath' t = (Gen.GenericOps (TensorPtrType t), Gen.GenericMath (TensorPtrType t), THTensor t)
-type GenericOps' t = (Gen.GenericOps (TensorPtrType t), THTensor t)
-type HaskType' t = (HaskType (TensorPtrType t))
 
 genericWrapRaw :: GenericOps' t => Ptr (TensorPtrType t) -> IO t
 genericWrapRaw tensor = construct <$> newForeignPtr Gen._free tensor
@@ -166,152 +142,6 @@ genericTrans t = unsafePerformIO $ do
 {-# NOINLINE genericTrans #-}
 
 
-
-{-
-tl_get loc tensor =
-   (withForeignPtr(getForeign tensor) (\t ->
-                                        pure $ getter loc t
-                                    ))
-  where
-    getter D0 t = undefined
-    getter (D1 d1) t = c_THLongTensor_get1d t $ w2cll d1
-    getter (D2 (d1, d2)) t = c_THLongTensor_get2d t
-                          (w2cll d1) (w2cll d2)
-    getter (D3 (d1, d2, d3)) t = c_THLongTensor_get3d t
-                             (w2cll d1) (w2cll d2) (w2cll d3)
-    getter (D4 (d1, d2, d3, d4)) t = c_THLongTensor_get4d t
-                                (w2cll d1) (w2cll d2) (w2cll d3) (w2cll d4)
-
-
--- |Returns a function that accepts a tensor and fills it with specified value
--- and returns the IO context with the mutated tensor
--- fillRaw :: Real a => a -> TensorLongRaw -> IO ()
-fillRaw value = (flip c_THLongTensor_fill) (fromIntegral value)
-
--- |Fill a raw Long tensor with 0.0
-fillRaw0 :: TensorLongRaw -> IO (TensorLongRaw)
-fillRaw0 tensor = fillRaw 0 tensor >> pure tensor
-
-
--- | Create a new (Long) tensor of specified dimensions and fill it with 0
-tl_new :: TensorDim Word -> TensorLong
-tl_new dims = unsafePerformIO $ do
-  newPtr <- go dims
-  fPtr <- newForeignPtr p_THLongTensor_free newPtr
-  withForeignPtr fPtr fillRaw0
-  pure $ TensorLong fPtr dims
-  where
-    wrap ptr = newForeignPtr p_THLongTensor_free ptr
-    go D0 = c_THLongTensor_new
-    go (D1 d1) = c_THLongTensor_newWithSize1d $ w2cll d1
-    go (D2 (d1, d2)) = c_THLongTensor_newWithSize2d
-                    (w2cll d1) (w2cll d2)
-    go (D3 (d1, d2, d3)) = c_THLongTensor_newWithSize3d
-                       (w2cll d1) (w2cll d2) (w2cll d3)
-    go (D4 (d1, d2, d3, d4)) = c_THLongTensor_newWithSize4d
-                          (w2cll d1) (w2cll d2) (w2cll d3) (w2cll d4)
-                          -}
-{-
--- BYTE TENSOR
--- | Returns a function that accepts a tensor and fills it with specified value
--- and returns the IO context with the mutated tensor.
-fillRaw :: Int8 -> TensorByteRaw -> IO ()
-fillRaw v = flip c_THByteTensor_fill (CChar v)
-
-
--- | Fill a raw Byte tensor with 0.0
-fillRaw0 :: TensorByteRaw -> IO TensorByteRaw
-fillRaw0 t = fillRaw 0 t >> pure t
-
-
--- | Create a new (byte) tensor of specified dimensions and fill it with 0
-tb_new :: TensorDim Word -> TensorByte
-tb_new dims = unsafePerformIO $ do
-  newPtr <- go dims
-  fPtr <- newForeignPtr p_THByteTensor_free newPtr
-  withForeignPtr fPtr fillRaw0
-  pure (TensorByte fPtr dims)
-  where
-    wrap :: Ptr CTHByteTensor -> IO (ForeignPtr CTHByteTensor)
-    wrap ptr = newForeignPtr p_THByteTensor_free ptr
-
-    go :: TensorDim Word -> IO (Ptr CTHByteTensor)
-    go = onDims w2cll
-      c_THByteTensor_new
-      c_THByteTensor_newWithSize1d
-      c_THByteTensor_newWithSize2d
-      c_THByteTensor_newWithSize3d
-      c_THByteTensor_newWithSize4d
-
-   -}
-{-
--------------------------------------------------------------------------------
--- DOUBLE LAPACK
--------------------------------------------------------------------------------
-
-
-td_gesv :: TensorDouble -> TensorDouble -> (TensorDouble, TensorDouble)
-td_gesv a b = unsafePerformIO $ do
-  let resB = td_new (tdDim a)
-  let resA = td_new (tdDim a)
-  td_gesv_ resA resB a b
-  pure (resA, resB)
-
-td_gesv_
-  :: TensorDouble -> TensorDouble -> TensorDouble -> TensorDouble -> IO ()
-td_gesv_ resA resB a b = runManaged $ do
-  resBRaw <- managed (withForeignPtr (tdTensor resB))
-  resARaw <- managed (withForeignPtr (tdTensor resA))
-  bRaw <- managed (withForeignPtr (tdTensor b))
-  aRaw <- managed (withForeignPtr (tdTensor a))
-  liftIO (c_THDoubleTensor_gesv resBRaw resARaw bRaw aRaw)
-
-td_gels :: TensorDouble -> TensorDouble -> (TensorDouble, TensorDouble)
-td_gels a b = unsafePerformIO $ do
-  let resB = td_new (tdDim a)
-  let resA = td_new (tdDim a)
-  td_gels_ resA resB a b
-  pure (resA, resB)
-
-td_gels_
-  :: TensorDouble -> TensorDouble -> TensorDouble -> TensorDouble -> IO ()
-td_gels_ resA resB a b = runManaged $ do
-  resBRaw <- managed (withForeignPtr (tdTensor resB))
-  resARaw <- managed (withForeignPtr (tdTensor resA))
-  bRaw <- managed (withForeignPtr (tdTensor b))
-  aRaw <- managed (withForeignPtr (tdTensor a))
-  liftIO (c_THDoubleTensor_gels resBRaw resARaw bRaw aRaw)
-
-td_getri :: TensorDouble -> TensorDouble
-td_getri a = unsafePerformIO $ do
-  let resA = td_new (tdDim a)
-  td_getri_ resA a
-  pure resA
-
-td_getri_ :: TensorDouble -> TensorDouble -> IO ()
-td_getri_ resA a = runManaged $ do
-  resARaw <- managed (withForeignPtr (tdTensor resA))
-  aRaw <- managed (withForeignPtr (tdTensor a))
-  liftIO (c_THDoubleTensor_getri resARaw aRaw)
-
-td_qr :: TensorDouble -> (TensorDouble, TensorDouble)
-td_qr a = unsafePerformIO $ do
-  let resQ = td_new (tdDim a)
-  let resR = td_new (tdDim a)
-  td_qr_ resQ resR a
-  pure (resQ, resR)
-
-td_qr_ :: TensorDouble -> TensorDouble -> TensorDouble -> IO ()
-td_qr_ resQ resR a = runManaged $ do
-  resQRaw <- managed (withForeignPtr (tdTensor resQ))
-  resRRaw <- managed (withForeignPtr (tdTensor resR))
-  aRaw <- managed (withForeignPtr (tdTensor a))
-  liftIO (c_THDoubleTensor_qr resQRaw resRRaw aRaw)
-
-td_gesvd = undefined
-
-td_gesvd2 = undefined
--}
 {-
 -------------------------------------------------------------------------------
 -- DOUBLE MATH
