@@ -8,17 +8,7 @@
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE ConstraintKinds #-}
 module Torch.Core.Tensor.Dynamic.Generic
-  ( td_p
-  , td_new
-  , td_new_
-  , td_init
-  , td_free_
-  , td_get
-  , td_newWithTensor
-  , td_resize
-  , td_transpose
-  , td_trans
-  , TensorDouble(..)
+  ( TensorDouble(..)
   , THTensor(..)
   ) where
 
@@ -33,7 +23,7 @@ import Torch.Core.Tensor.Dim (Dim(..), SomeDims(..), someDimsM)
 import Torch.Core.Tensor.Generic.Internal (CTHDoubleTensor, CTHFloatTensor, HaskType)
 import qualified THDoubleTensor as T
 import qualified THLongTensor as T
-import qualified Torch.Core.Tensor.Generic as Gen hiding (genericNew)
+import qualified Torch.Core.Tensor.Generic as Gen
 import qualified Torch.Core.Tensor.Dim as Dim
 
 class THTensor t where
@@ -49,7 +39,7 @@ newtype TensorDouble = TensorDouble { tdTensor :: ForeignPtr CTHDoubleTensor }
 
 instance IsList TensorDouble where
   type Item TensorDouble = Double
-  fromList = td_fromList1d
+  fromList = genericFromList1d realToFrac
   toList = genericToList realToFrac
 
 instance THTensor TensorDouble where
@@ -150,14 +140,6 @@ genericNew'
   => SomeDims -> t
 genericNew' (SomeDims ds) = genericNew ds
 
--- |Create a new (double) tensor of specified dimensions and fill it with 0
-genericNew_ :: (GenericMath' t, Fractional (HaskType' t)) => k ~ Nat => Dim (d::[k]) -> IO t
-genericNew_ ds = do
-  newPtr <- Gen.constant ds 0.0
-  fPtr <- newForeignPtr Gen._free newPtr
-  void $ withForeignPtr fPtr Gen.fillZeros
-  pure $ construct fPtr
-
 genericFree_ :: THTensor t => t -> IO ()
 genericFree_ t = finalizeForeignPtr $! getForeign t
 
@@ -182,57 +164,6 @@ genericTrans t = unsafePerformIO $ do
   newFPtr <- newForeignPtr Gen._free newPtr
   pure $ construct newFPtr
 {-# NOINLINE genericTrans #-}
-
--- ========================================================================= --
-
-td_wrapRaw :: Ptr CTHDoubleTensor -> IO TensorDouble
-td_wrapRaw = genericWrapRaw
-
-td_p :: TensorDouble -> IO ()
-td_p = genericP
-
--- | Initialize a tensor of arbitrary dimension from a list
--- FIXME(stites): This should go in MonadThrow
-td_fromListNd :: k ~ Nat => Dim (d::[k]) -> [Double] -> TensorDouble
-td_fromListNd = genericFromListNd realToFrac
-
--- |Initialize a 1D tensor from a list
-td_fromList1d :: [Double] -> TensorDouble
-td_fromList1d = genericFromList1d realToFrac
-
--- |Copy contents of tensor into a new one of specified size
-td_resize :: k ~ Nat => TensorDouble -> Dim (d::[k]) -> TensorDouble
-td_resize = genericResize
-
-td_get :: k ~ Nat => Dim (d::[k]) -> TensorDouble -> Double
-td_get = genericGet realToFrac
-
-td_newWithTensor :: TensorDouble -> TensorDouble
-td_newWithTensor = genericNewWithTensor
-
--- |Create a new (double) tensor of specified dimensions and fill it with 0
-td_new :: k ~ Nat => Dim (d::[k]) -> TensorDouble
-td_new = genericNew
-
--- |Create a new (double) tensor of specified dimensions and fill it with 0
-td_new' :: SomeDims -> TensorDouble
-td_new' = genericNew'
-
--- |Create a new (double) tensor of specified dimensions and fill it with 0
-td_new_ :: k ~ Nat => Dim (d::[k]) -> IO TensorDouble
-td_new_ = genericNew_
-
-td_free_ :: TensorDouble -> IO ()
-td_free_ = genericFree_
-
-td_init :: k ~ Nat => Dim (d::[k]) -> Double -> TensorDouble
-td_init = genericInit realToFrac
-
-td_transpose :: Word -> Word -> TensorDouble -> TensorDouble
-td_transpose = genericTranspose
-
-td_trans :: TensorDouble -> TensorDouble
-td_trans = genericTrans
 
 
 
