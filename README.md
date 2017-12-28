@@ -9,7 +9,8 @@ tensor/math library shared by [Torch](http://torch.ch/) and
 community project.
 
 **This project is in early development and should only be used by contributing
-developers at the current time.**
+developers at the current time. Expect substantial changes to the library API as
+it evolves.**
 
 ## Project Organization
 
