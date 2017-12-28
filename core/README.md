@@ -33,6 +33,9 @@ data TensorDouble = TensorDouble {
   } deriving (Eq, Show)
 ```
 
+Both implementations are a work-in-progress, however the statically typed
+implementation is recommended as a default.
+
 In order to preserve pure functional semantics, accessors such as `tdsTensor`
 and `tdTensor` are only intended to be used by the API implementation and not by
 end users at the application level.

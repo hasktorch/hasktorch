@@ -1,6 +1,6 @@
 # Information for Developers
 
-## Build Hasktorch Manually
+## Building Hasktorch Manually
 
 To start, retrieve git submodules (includes TorcH library) with:
 
@@ -17,6 +17,13 @@ cd vendor
 ./build-aten.sh
 ./build-error-handler.sh
 ```
+
+the `build-aten.sh` script builds `libATen.so`, while the
+`build-error-handler.sh` script builds libEHX.so (or .dylib on OSX). Currently
+the error handler isn't fully implemented, but developers can refer to
+[Exceptions.hs](https://github.com/austinvhuang/hasktorch/blob/master/core/src/Torch/Core/Exceptions.hs)
+for an example of how the custom exception handling is integrated with the TH
+API.
 
 On OSX the above script looks for the gcc-6 binary which needs to be installed
 using [homebrew](https://brew.sh/). On linux, this simply uses gcc. 

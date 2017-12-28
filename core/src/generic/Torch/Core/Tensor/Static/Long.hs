@@ -25,11 +25,11 @@ import Torch.Core.Tensor.Types
 import THTypes
 import THLongTensor
 
-newtype TensorLongStatic (d :: [Nat]) = TLS {
+newtype TLClass (d :: [Nat]) = TLS {
   tlsTensor :: ForeignPtr CTHLongTensor
   } deriving (Show)
 
-type TLS = TensorLongStatic
+type TLS = TLClass
 
 class StaticLongTensor t where
   tls_new :: t
@@ -48,8 +48,8 @@ list2dim lst  = case (length lst) of
   where
     d = fromIntegral <$> lst -- cast as needed for tensordim
 
-tls_dim :: (Num a2, SingI d) => TensorLongStatic d -> TensorDim a2
-tls_dim (x :: TensorLongStatic d) = list2dim $ fromSing (sing :: Sing d)
+tls_dim :: (Num a2, SingI d) => TLClass d -> TensorDim a2
+tls_dim (x :: TLClass d) = list2dim $ fromSing (sing :: Sing d)
 
 -- |Make an initialized raw pointer with requested dimensions
 mkPtr :: TensorDim Word -> Int -> IO TensorLongRaw
@@ -63,7 +63,7 @@ mkTHelper dims makeStatic value = unsafePerformIO $ do
   pure $ makeStatic fPtr
 {-# NOINLINE mkTHelper #-}
 
-instance SingI d => StaticLongTensor (TensorLongStatic d)  where
+instance SingI d => StaticLongTensor (TLClass d)  where
   tls_init initVal = mkTHelper dims makeStatic initVal
     where
       dims = list2dim $ fromSing (sing :: Sing d)
@@ -95,3 +95,4 @@ instance KnownNat l => IsList (TLS '[l]) where
                     c_THLongTensor_set1d tp idxC valueC
                 )
   {-# NOINLINE fromList #-}
+  toList l = undefined -- TODO

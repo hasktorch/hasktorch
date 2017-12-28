@@ -357,97 +357,100 @@ tds_eqTensorT ta tb = unsafePerformIO $
 tds_abs :: SingI d => TDS d -> TDS d
 tds_abs t = unsafePerformIO $ apply0_ tAbs t
   where
-    tAbs t = apply0Tensor c_THDoubleTensor_abs t
+    tAbs t' = apply0Tensor c_THDoubleTensor_abs t'
 {-# NOINLINE tds_abs #-}
 
--- |Returns a tensor where each value of the input tensor is transformed as the
+-- |Returns a t where each value of the input tensor is transformed as the
 -- sigmoid of the value
 tds_sigmoid :: SingI d => TDS d -> TDS d
-tds_sigmoid tensor = unsafePerformIO $ apply0_ tSigmoid tensor
+tds_sigmoid t = unsafePerformIO $ apply0_ tSigmoid t
   where
-    tSigmoid t = apply0Tensor c_THDoubleTensor_sigmoid t
+    tSigmoid t' = apply0Tensor c_THDoubleTensor_sigmoid t'
 {-# NOINLINE tds_sigmoid #-}
 
 -- |Returns a tensor where each value of the input tensor is transformed as the
 -- log of the value
 tds_log :: SingI d => TDS d -> TDS d
-tds_log tensor = unsafePerformIO $ apply0_ tLog tensor
+tds_log t = unsafePerformIO $ apply0_ tLog t
   where
-    tLog t = apply0Tensor c_THDoubleTensor_log t
+    tLog t' = apply0Tensor c_THDoubleTensor_log t'
 {-# NOINLINE tds_log #-}
 
+-- |Returns a tensor where each value of the input tensor is transformed as the
+-- log gamma of the value
 tds_lgamma :: SingI d => TDS d -> TDS d
-tds_lgamma tensor = unsafePerformIO $ apply0_ tLgamma tensor
+tds_lgamma t = unsafePerformIO $ apply0_ tLgamma t
   where
-    tLgamma t = apply0Tensor c_THDoubleTensor_lgamma t
+    tLgamma t' = apply0Tensor c_THDoubleTensor_lgamma t'
 {-# NOINLINE tds_lgamma #-}
 
+-- |Returns a new tensor with the natural log of 1 + the elements
 tds_log1p :: SingI d => TDS d -> TDS d
-tds_log1p tensor = unsafePerformIO $ apply0_ tLog1p tensor
+tds_log1p t = unsafePerformIO $ apply0_ tLog1p t
   where
-    tLog1p t = apply0Tensor c_THDoubleTensor_log1p t
+    tLog1p t' = apply0Tensor c_THDoubleTensor_log1p t'
 {-# NOINLINE tds_log1p #-}
 
 -- |Returns a tensor where each value of the input tensor is transformed as the
 -- exp of the value
 tds_exp :: SingI d => TDS d -> TDS d
-tds_exp tensor = unsafePerformIO $ apply0_ tExp tensor
+tds_exp t = unsafePerformIO $ apply0_ tExp t
   where
-    tExp t = apply0Tensor c_THDoubleTensor_exp t
+    tExp t' = apply0Tensor c_THDoubleTensor_exp t'
 {-# NOINLINE tds_exp #-}
 
 tds_cos :: SingI d => TDS d -> TDS d
-tds_cos tensor = unsafePerformIO $ apply0_ tCos tensor
+tds_cos t = unsafePerformIO $ apply0_ tCos t
   where
-    tCos t = apply0Tensor c_THDoubleTensor_cos t
+    tCos t' = apply0Tensor c_THDoubleTensor_cos t'
 {-# NOINLINE tds_cos #-}
 
 tds_acos :: SingI d => TDS d -> TDS d
-tds_acos tensor = unsafePerformIO $ apply0_ tAcos tensor
+tds_acos t = unsafePerformIO $ apply0_ tAcos t
   where
-    tAcos t = apply0Tensor c_THDoubleTensor_acos t
+    tAcos t' = apply0Tensor c_THDoubleTensor_acos t'
 {-# NOINLINE tds_acos #-}
 
 tds_cosh :: SingI d => TDS d -> TDS d
-tds_cosh tensor = unsafePerformIO $ apply0_ tCosh tensor
+tds_cosh t = unsafePerformIO $ apply0_ tCosh t
   where
-    tCosh t = apply0Tensor c_THDoubleTensor_cosh t
+    tCosh t' = apply0Tensor c_THDoubleTensor_cosh t'
 {-# NOINLINE tds_cosh #-}
 
 tds_sin :: SingI d => TDS d -> TDS d
-tds_sin tensor = unsafePerformIO $ apply0_ tSin tensor
+tds_sin t = unsafePerformIO $ apply0_ tSin t
   where
-    tSin t = apply0Tensor c_THDoubleTensor_sin t
+    tSin t' = apply0Tensor c_THDoubleTensor_sin t'
 {-# NOINLINE tds_sin #-}
 
 tds_asin :: SingI d => TDS d -> TDS d
-tds_asin tensor = unsafePerformIO $ apply0_ tAsin tensor
+tds_asin t = unsafePerformIO $ apply0_ tAsin t
   where
-    tAsin t = apply0Tensor c_THDoubleTensor_asin t
+    tAsin t' = apply0Tensor c_THDoubleTensor_asin t'
 {-# NOINLINE tds_asin #-}
 
 tds_sinh :: SingI d => TDS d -> TDS d
-tds_sinh tensor = unsafePerformIO $ apply0_ tSinh tensor
+tds_sinh t = unsafePerformIO $ apply0_ tSinh t
   where
-    tSinh t = apply0Tensor c_THDoubleTensor_sinh t
+    tSinh t' = apply0Tensor c_THDoubleTensor_sinh t'
 {-# NOINLINE tds_sinh #-}
 
 tds_tan :: SingI d => TDS d -> TDS d
-tds_tan tensor = unsafePerformIO $ apply0_ tTan tensor
+tds_tan t = unsafePerformIO $ apply0_ tTan t
   where
-    tTan t = apply0Tensor c_THDoubleTensor_tan t
+    tTan t' = apply0Tensor c_THDoubleTensor_tan t'
 {-# NOINLINE tds_tan #-}
 
 tds_atan :: SingI d => TDS d -> TDS d
-tds_atan tensor = unsafePerformIO $ apply0_ tAtan tensor
+tds_atan t = unsafePerformIO $ apply0_ tAtan t
   where
-    tAtan t = apply0Tensor c_THDoubleTensor_atan t
+    tAtan t' = apply0Tensor c_THDoubleTensor_atan t'
 {-# NOINLINE tds_atan #-}
 
 tds_tanh :: SingI d => TDS d -> TDS d
-tds_tanh tensor = unsafePerformIO $ apply0_ tTanh tensor
+tds_tanh t = unsafePerformIO $ apply0_ tTanh t
   where
-    tTanh t = apply0Tensor c_THDoubleTensor_tanh t
+    tTanh t' = apply0Tensor c_THDoubleTensor_tanh t'
 {-# NOINLINE tds_tanh #-}
 
 tds_pow :: SingI d => TDS d -> Double -> TDS d
@@ -475,33 +478,33 @@ tds_tpow value t = unsafePerformIO $ do
 {-# NOINLINE tds_tpow #-}
 
 tds_sqrt :: SingI d => TDS d -> TDS d
-tds_sqrt tensor = unsafePerformIO $ apply0_ tSqrt tensor
+tds_sqrt t = unsafePerformIO $ apply0_ tSqrt t
   where
-    tSqrt t = apply0Tensor c_THDoubleTensor_sqrt t
+    tSqrt t' = apply0Tensor c_THDoubleTensor_sqrt t'
 {-# NOINLINE tds_sqrt #-}
 
 tds_rsqrt :: SingI d => TDS d -> TDS d
-tds_rsqrt tensor = unsafePerformIO $ apply0_ tRsqrt tensor
+tds_rsqrt t = unsafePerformIO $ apply0_ tRsqrt t
   where
-    tRsqrt t = apply0Tensor c_THDoubleTensor_rsqrt t
+    tRsqrt t' = apply0Tensor c_THDoubleTensor_rsqrt t'
 {-# NOINLINE tds_rsqrt #-}
 
 tds_ceil :: SingI d => TDS d -> TDS d
-tds_ceil tensor = unsafePerformIO $ apply0_ tCeil tensor
+tds_ceil t = unsafePerformIO $ apply0_ tCeil t
   where
-    tCeil t = apply0Tensor c_THDoubleTensor_ceil t
+    tCeil t' = apply0Tensor c_THDoubleTensor_ceil t'
 {-# NOINLINE tds_ceil #-}
 
 tds_floor :: SingI d => TDS d -> TDS d
-tds_floor tensor = unsafePerformIO $ apply0_ tFloor tensor
+tds_floor t = unsafePerformIO $ apply0_ tFloor t
   where
-    tFloor t = apply0Tensor c_THDoubleTensor_floor t
+    tFloor t' = apply0Tensor c_THDoubleTensor_floor t'
 {-# NOINLINE tds_floor #-}
 
 tds_round :: SingI d => TDS d -> TDS d
-tds_round tensor = unsafePerformIO $ apply0_ tRound tensor
+tds_round t = unsafePerformIO $ apply0_ tRound t
   where
-    tRound t = apply0Tensor c_THDoubleTensor_round t
+    tRound t' = apply0Tensor c_THDoubleTensor_round t'
 {-# NOINLINE tds_round #-}
 
 
@@ -777,9 +780,11 @@ tds_sum t dimension keepdim = unsafePerformIO $ do
     keepdimC = if keepdim then 1 else 0
 {-# NOINLINE tds_sum #-}
 
+-- |row sums of a matrix
 tds_rowsum :: (KnownNat r, KnownNat c) => TDS [r, c] -> TDS [1, c]
 tds_rowsum t = tds_sum t 0 True
 
+-- |column sums of a matrix
 tds_colsum :: (KnownNat r, KnownNat c) => TDS [r, c] -> TDS [r, 1]
 tds_colsum t = tds_sum t 1 True
 
@@ -841,6 +846,7 @@ tds_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 
 ----------
 
+-- |Test for equality between all elements of two tensors between two tensors
 tds_equal :: SingI d => (TDS d) -> (TDS d) -> Bool
 tds_equal ta tb = unsafePerformIO $ do
   res <- fromIntegral <$> withForeignPtr (tdsTensor ta)
@@ -866,6 +872,7 @@ tds_equal ta tb = unsafePerformIO $ do
 --   pure $ res == 1
 -- {-# NOINLINE tds_geValue #-}
 
+-- |Concatenate two vectors
 tds_cat :: forall n1 n2 n . (SingI n1, SingI n2, SingI n, n ~ Sum [n1, n2]) =>
   TDS '[n1] -> TDS '[n2] -> TDS '[n]
 tds_cat ta tb = unsafePerformIO $ do
@@ -878,6 +885,7 @@ tds_cat ta tb = unsafePerformIO $ do
   pure r_
 {-# NOINLINE tds_cat #-}
 
+-- |Create a diagonal matrix from a 1D vector
 tds_diag :: forall d . SingI d => TDS '[d] -> TDS '[d,d]
 tds_diag t = unsafePerformIO $ do
   let r_ = tds_new :: TDS '[d,d]

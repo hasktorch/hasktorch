@@ -28,7 +28,7 @@ import THByteTensor
 import THByteTensorMath
 import THTypes
 
-class StaticByteTensor t where
+class TBClass t where
   -- |tensor dimensions
   -- |create tensor
   tbs_new :: t
@@ -93,7 +93,7 @@ mkTHelper dims makeStatic value = unsafePerformIO $ do
     mkPtr dim value = tensorRaw dim value
 {-# NOINLINE mkTHelper #-}
 
-instance SingI d => StaticByteTensor (TensorByteStatic (d :: [Nat]))  where
+instance SingI d => TBClass (TensorByteStatic (d :: [Nat]))  where
   tbs_init initVal = mkTHelper dims makeStatic initVal
     where
       dims = list2dim $ fromSing (sing :: Sing d)
