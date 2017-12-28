@@ -34,25 +34,51 @@ data Trivial (i :: Nat) =
 data Layer (i :: Nat) (o :: Nat) where
   TrivialLayer :: Trivial i -> Layer i i
   -- LinearLayer  :: SW i o    -> Layer i o
-  LinearLayer  :: TDS '[o, i]    -> Layer i o
+  LinearLayer  :: TDS '[o, i] -> Layer i o
   SigmoidLayer :: Sigmoid i -> Layer i i
   ReluLayer :: Relu i -> Layer i i
-
-data Values (i:: Nat) (o :: Nat) where
-  TrivialValues :: ((), TDS '[i]) -> Values i i
-  LinearValues :: (TDS '[o, i], TDS '[o]) -> Values i o
-
-data GradientInfo = GradientInfo
 
 type UpdateFunction i o = Layer i o -> Layer i o
 
 type Sensitivity i = TDS '[i]
+type Gradient d = TDS d
 
-class Propagate l  where
+fstLayer :: forall i h hs o . SN i (h : hs) o -> Layer i h
+fstLayer (f :~ r) = f
+
+rstLayers :: forall i h hs o . SN i (h : hs) o -> SN h hs o
+rstLayers (f :~ r) = r
+
+data Table :: Nat -> [Nat] -> Nat -> * where
+  V :: (KnownNat i, KnownNat o) =>
+       (Gradient d, Sensitivity i) -> Table i '[] o
+  (:&~) :: (KnownNat h, KnownNat i, KnownNat o, SingI d) =>
+          (Gradient d, Sensitivity i) -> Table h hs o -> Table i (h ': hs) o
+
+updateTensor :: SingI d => TDS d -> TDS d -> Double -> TDS d
+updateTensor t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
+
+updateMatrix :: (KnownNat o, KnownNat i, d ~ [o, i]) =>
+  TDS d -> Gradient d -> Double -> TDS [o, i]
+updateMatrix t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
+
+class State s g where
+  update :: Layer i o -> s -> Layer i o
+
+instance State (Layer i o) (TDS d) where
+  update layer grad = undefined
+
+-- instance State Layer where
+--   -- update (TrivialLayer l) _ _ = TrivialLayer l
+--   -- update _ _ _ = undefined
+
+class Propagate l where
   forwardProp :: forall i o . (KnownNat i, KnownNat o) =>
     TDS '[i] -> (l i o) -> TDS '[o]
-  -- backProp :: forall e o . (KnownNat i, KnownNat o) =>
-  --   Sensitivity o -> (UpdateFunction i o, Sensitivity i)
+  backProp :: forall i o d . (KnownNat i, KnownNat o, SingI d) =>
+    Sensitivity o -> (l i o) -> (Gradient d, Sensitivity i)
+  -- update :: forall d i o . SingI d => l i o -> Gradient d -> Double -> l i o
+  -- ISSUE: need to specialize d to more specific types that are dependent on the layer type
 
 instance Propagate Layer where
   forwardProp t (TrivialLayer l) = t
@@ -67,7 +93,12 @@ instance Propagate Layer where
   --     b' = tds_resize b
   forwardProp t (SigmoidLayer l) = tds_sigmoid t
   forwardProp t (ReluLayer l) = (tds_gtTensorT t (tds_new)) ^*^ t
-  -- backProp = undefined -- TODO
+  backProp dEds layer = (tds_new, tds_new)
+  -- update (TrivialLayer l) _ _ = TrivialLayer l
+  -- update (LinearLayer w :: Layer i o) gradient learningRate =
+  --   (LinearLayer (updateTensor w gradient learningRate) :: Layer i o)
+    -- ISSUE: need to specialize d to [i, o] in this case
+  -- update _ _ _ = undefined      -- 
 
 trivial' :: SingI d => TDS d -> TDS d
 trivial' t = tds_init 1.0
@@ -101,10 +132,6 @@ data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
        Layer i o -> SN i '[] o
   (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
           Layer i h -> SN h hs o -> SN i (h ': hs) o
-
-
--- data Values where
---   (:&~) :: (KnownNat h, KnownNat i, KnownNat o) =>
 
 -- set precedence to chain layers without adding parentheses
 infixr 5 :~
@@ -146,10 +173,6 @@ lo :: Layer 4 2
 lo = linear
 
 net = li :~ l2 :~ l3 :~ l4 :~ O lo
-
-fstLayer ::
-  forall i h hs o . SN i (h : hs) o -> Layer i h
-fstLayer (f :~ r) = f
 
 main :: IO ()
 main = do

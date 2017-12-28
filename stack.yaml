@@ -4,7 +4,6 @@ packages:
 - 'codegen'
 - 'core'
 - 'examples'
-- 'nn'
 - 'raw'
 - location:
     git: https://github.com/austinvhuang/c2hsc.git
@@ -26,7 +25,6 @@ ghc-options:
   "hasktorch-codegen": -lATen -lEHX
   "hasktorch-core": -lATen -lEHX
   "hasktorch-examples": -lATen -lEHX
-  "hasktorch-nn": -lATen -lEHX
   "hasktorch-raw": -lATen -lEHX
 
 # ghci-options for inline-c should include -fobject-code -O0

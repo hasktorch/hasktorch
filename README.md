@@ -18,7 +18,6 @@ it evolves.**
 | --------- | ----------- |
 | [`codegen/`][codegen] | Code generation to produce low-level raw Haskell bindings. Also includes experimental aten cwrap file parsing.
 | [`core/`][core] | Memory-managed tensors and core data types that wrap raw C bindings to TH.
-| [`nn/`][nn] | Neural network library (not much here atm)
 | [`output/`][output] | Staging directory for `codegen/` output, contents should not be under source control.
 | [`raw/`][raw] | Comprehensive raw bindings to C TorcH (TH) operations.
 | [`vendor/`][vendor] | 3rd party dependencies as git submodules (links to TH C and other libraries)
