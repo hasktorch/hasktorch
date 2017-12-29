@@ -10,7 +10,7 @@ community project.
 
 **This project is in early development and should only be used by contributing
 developers at the current time. Expect substantial changes to the library API as
-it evolves.**
+it evolves. Contributions and PRs are welcome (see details below).**
 
 ## Project Organization
 
@@ -51,6 +51,11 @@ example](https://github.com/austinvhuang/hasktorch/blob/master/examples/static-t
 and the [toy gradient descent
 example](https://github.com/austinvhuang/hasktorch/blob/master/examples/gradient-descent/GradientDescent.hs).
 
+For details on implementation and usage of raw C bindings and the core library,
+refer to their respective README documentation in [`raw/`][raw] and
+[`core/`][core] package directories. Additional examples can be found in
+[`examples/`][examples] as well as the test modules.
+
 ## Contributing
 
 Contributions are welcome. For a list of things that need to get done, see:
@@ -69,8 +74,5 @@ https://hasktorch.slack.com
 [codegen]: ./codegen/
 [core]: ./core/
 [examples]: ./examples/
-[nn]: ./nn/
 [output]: ./output/
 [raw]: ./raw/
-[tools]: ./tools/
-[vendor]: ./vendor/
