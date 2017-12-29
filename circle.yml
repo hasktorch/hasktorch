@@ -17,8 +17,8 @@ dependencies:
   pre:
     - wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
     - sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main"
-    - sudo apt-get update
-    - sudo apt-get install clang-3.9 lldb-3.9
+    - sudo apt-get update --fix-missing
+    - sudo apt-get install clang-3.9 lldb-3.9 --fix-missing
     - >
       if [ ! -d ~/cmake-3.10.0-Linux-x86_64 ]; then
         echo "No cache - building CMake"
