@@ -17,11 +17,11 @@ import Data.Singletons.TypeLits
 
 data LayerType = LTrivial | LLinear | LSigmoid | LRelu
 
-data AffineWeights (i :: Nat) (o :: Nat) = AW {
-  biases :: TDS '[o],
-  weights :: TDS '[o, i]
-  } deriving (Show)
-type AW = AffineWeights
+-- data AffineWeights (i :: Nat) (o :: Nat) = AW {
+--   biases :: TDS '[o],
+--   weights :: TDS '[o, i]
+--   } deriving (Show)
+-- type AW = AffineWeights
 
 data Layer (l :: LayerType) (i :: Nat) (o :: Nat) where
   LayerTrivial :: Layer 'LTrivial i i
@@ -41,10 +41,18 @@ data Table :: Nat -> [Nat] -> Nat -> * where
   (:&~) :: (KnownNat h, KnownNat i, KnownNat o) =>
           (Gradient l i o, Sensitivity i) -> Table h hs o -> Table i (h ': hs) o
 
-data Values :: Nat -> [Nat] -> Nat -> * where
-  V :: (KnownNat i, KnownNat o) => Output o -> Values i '[] o
-  (:^~) :: (KnownNat h, KnownNat i, KnownNat o) =>
-           Output o -> Values h hs o -> Values i (h ': hs) o
+data Values :: [Nat] -> Nat -> * where
+  -- V :: KnownNat o => Output o -> Values '[] o
+  -- VNil :: Values '[]
+  V :: (KnownNat o) => Output o -> Values '[] o
+  (:^~) :: (KnownNat h, KnownNat o) =>
+           Output h -> Values hs o -> Values (h ': hs) o
+
+data Network :: Nat -> [Nat] -> Nat -> * where
+  O :: (KnownNat i, KnownNat o) =>
+       Layer l i o -> NW i '[] o
+  (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
+          Layer l i h -> NW h hs o -> NW i (h ': hs) o
 
 updateTensor :: SingI d => TDS d -> TDS d -> Double -> TDS d
 updateTensor t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
@@ -87,19 +95,21 @@ sigmoid' t = (tds_sigmoid t) ^*^ ((tds_init 1.0) ^-^ tds_sigmoid t)
 relu' :: SingI d => TDS d -> TDS d
 relu' t = (tds_gtTensorT t (tds_new))
 
+-- forward prop, don't retain values
 forwardNetwork :: forall i h o . TDS '[i] -> NW i h o  -> TDS '[o]
 forwardNetwork t (O w) = forwardProp t w
-forwardNetwork t (h :~ n) = forwardNetwork (forwardProp t h) n
+forwardNetwork t (hh :~ hr) = forwardNetwork (forwardProp t hh) hr
 
-mkW :: (SingI i, SingI o) => AW i o
-mkW = AW b n
-  where (b, n) = (tds_new, tds_new)
+-- forward prop, retain values
+forwardNetwork' :: forall i h o . TDS '[i] -> NW i h o -> Values h o
+-- forwardNetwork' t (h :~ O w) = V (forwardProp t h)
+forwardNetwork' t (O olayer) = V (forwardProp t olayer)
+forwardNetwork' t (h :~ hs) = output :^~ (forwardNetwork' output hs)
+  where output = forwardProp t h
 
-data Network :: Nat -> [Nat] -> Nat -> * where
-  O :: (KnownNat i, KnownNat o) =>
-       Layer l i o -> NW i '[] o
-  (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
-          Layer l i h -> NW h hs o -> NW i (h ': hs) o
+-- mkW :: (SingI i, SingI o) => AW i o
+-- mkW = AW b n
+--   where (b, n) = (tds_new, tds_new)
 
 type NW = Network
 
@@ -127,8 +137,12 @@ dispL layer = do
     print $ "inputs: " ++ (show inVal) ++ "    outputs: " ++ show (outVal)
 
 dispN :: NW h hs c -> IO ()
-dispN (O w) = dispL w
+dispN (O w) = putStrLn "\nOutput Layer ::::" >> dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
+
+dispV :: Values hs o -> IO ()
+dispV (V o)= putStrLn "\nOutput Layer ::::" >> tds_p o
+dispV (v :^~ n) = putStrLn "\nCurrent Layer ::::" >> tds_p v >> dispV n
 
 li :: Layer 'LLinear 10 7
 li = LayerLinear tds_new
@@ -148,9 +162,14 @@ main = do
 
   gen <- newRNG
   t <- tds_normal gen 0.0 5.0 :: IO (TDS '[10])
+  putStrLn "Input"
   tds_p $ tds_gtTensorT t tds_new
 
+  putStrLn "Network"
   dispN net
-  tds_p $ forwardNetwork (tds_init 5.0) net
+
+  putStrLn "\nValues"
+  let v = forwardNetwork' (tds_init 5.0) net
+  dispV v
 
   putStrLn "Done"
