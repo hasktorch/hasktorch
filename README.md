@@ -7,9 +7,9 @@ Haskell. It is an independent open source community project which leverages the
 core C libraries shared by [Torch](http://torch.ch/) and
 [PyTorch](http://pytorch.org/).
 
-**This project is in early development and should only be used by
-contributing developers. Expect substantial changes to the library API as it
-evolves. Contributions and PRs are welcome (see details below).**
+**This project is in early development and should only be used by contributing
+developers. Expect substantial changes to the library API as it evolves.
+Contributions and PRs are welcome (see details below).**
 
 ## Project Organization
 
@@ -25,27 +25,23 @@ evolves. Contributions and PRs are welcome (see details below).**
 ## Build Instructions 
 
 Currently hasktorch only supports OSX and Linux builds. Building Hasktorch
-requires retrieving submodules followed by building with the
-[Stack](https://docs.haskellstack.org/en/stable/README/) tool.
-
-These steps can be done automatically using the [Makefile][makefile]:
+requires retrieving and building C++ torch dependencies as submodules followed
+by building with the [Stack](https://docs.haskellstack.org/en/stable/README/)
+tool. These steps are done automatically using the [Makefile][makefile]:
 
 ```
 make init
 ```
 
-If successful, his should retrieve submodules including torch library
-dependencies, build dependencies, and then build hasktorch modules.
-
-For manually building the project, see the [developer guide][developers] for
-instructions as well as [the `vendor/` README][vendor] for details on external
+For manual steps to build the project, see the [developer guide][developers] for
+instructions and the [`vendor/`][vendor] README for details on external
 dependencies.
 
 ## Getting started
 
-As a starting point, for an example of basic end-user API usage, see the [static
+For an example of basic end-user API usage, see the example on [statically typed
 tensor usage
-example](https://github.com/austinvhuang/hasktorch/blob/master/examples/static-tensor-usage/StaticTensorUsage.hs)
+](https://github.com/austinvhuang/hasktorch/blob/master/examples/static-tensor-usage/StaticTensorUsage.hs)
 and the [simple gradient descent
 example](https://github.com/austinvhuang/hasktorch/blob/master/examples/gradient-descent/GradientDescent.hs).
 
@@ -56,17 +52,17 @@ refer to their respective README documentation in [`raw/`][raw] and
 
 ## Contributing
 
-Contributions are welcome. For a list of things that need to get done, see:
+We welcome new contributors. For a rough list of outstanding items on deck
+(there are many places to contribute), refer to:
 
 https://github.com/austinvhuang/hasktorch/projects/1
-
 
 Contact Austin Huang for access to the private hasktorch slack channel at:
 
 https://hasktorch.slack.com 
 
-Thanks to all hasktorch developers who have contributed to this community
-effort. This project is also indebted to prior work on typed functional
+Thanks to all hasktorch developers who have contributed to this community effort
+so far. This project is also indebted to prior work on typed functional
 programming for deep learning by Justin Le, Huw Campbell, and Kaixi Ruan, as
 well as to the Torch and PyTorch frameworks.
 
@@ -78,4 +74,4 @@ well as to the Torch and PyTorch frameworks.
 [examples]: ./examples/
 [output]: ./output/
 [raw]: ./raw/
-[vendor]: ./raw/
+[vendor]: ./vendor/

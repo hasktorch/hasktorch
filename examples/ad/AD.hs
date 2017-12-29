@@ -17,15 +17,16 @@ import Data.Singletons.TypeLits
 
 data LayerType = LTrivial | LLinear | LSigmoid | LRelu
 
-data StaticWeights (i :: Nat) (o :: Nat) = SW {
+data AffineWeights (i :: Nat) (o :: Nat) = AW {
   biases :: TDS '[o],
   weights :: TDS '[o, i]
   } deriving (Show)
-type SW = StaticWeights
+type AW = AffineWeights
 
 data Layer (l :: LayerType) (i :: Nat) (o :: Nat) where
   LayerTrivial :: Layer 'LTrivial i i
   LayerLinear  :: (TDS '[o, i]) -> Layer 'LLinear i o
+  -- LayerAffine :: (AffineWeights i o) -> Layer 'LLinear i o
   LayerSigmoid :: Layer 'LSigmoid i i
   LayerRelu    :: Layer 'LRelu i i
 
@@ -56,6 +57,7 @@ updateLayer _ LayerRelu _ = LayerRelu
 updateLayer learningRate (LayerLinear w) (LayerLinear gradient) =
   LayerLinear (updateTensor w gradient learningRate)
 
+-- TODO: write to Values
 forwardProp :: forall l i o . (KnownNat i, KnownNat o) =>
   TDS '[i] -> (Layer l i o) -> TDS '[o]
 forwardProp t LayerTrivial = t
@@ -65,12 +67,13 @@ forwardProp t (LayerLinear w) =
       t' = (tds_resize t :: TDS '[i, 1])
 forwardProp t LayerSigmoid = tds_sigmoid t
 forwardProp t LayerRelu = (tds_gtTensorT t (tds_new)) ^*^ t
--- forwardProp t (LayerLinear (SW b w) :: Layer i o) =
+-- forwardProp t (LayerAffine (AW b w) :: Layer i o) =
 --   tds_resize ( w !*! t' + b')
 --   where
 --     t' = (tds_resize t :: TDS '[i, 1])
 --     b' = tds_resize b
 
+-- TODO: write to Table
 backProp :: forall l i o . (KnownNat i, KnownNat o) =>
     Sensitivity o -> (Layer l i o) -> (Gradient l i o, Sensitivity i)
 backProp dEds layer = (undefined, undefined)
@@ -88,8 +91,8 @@ forwardNetwork :: forall i h o . TDS '[i] -> NW i h o  -> TDS '[o]
 forwardNetwork t (O w) = forwardProp t w
 forwardNetwork t (h :~ n) = forwardNetwork (forwardProp t h) n
 
-mkW :: (SingI i, SingI o) => SW i o
-mkW = SW b n
+mkW :: (SingI i, SingI o) => AW i o
+mkW = AW b n
   where (b, n) = (tds_new, tds_new)
 
 data Network :: Nat -> [Nat] -> Nat -> * where
