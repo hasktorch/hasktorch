@@ -1,7 +1,14 @@
 # hasktorch-core
 
-This package includes higher-level interface to basic tensor operations,
-including memory/resource management via foreign pointers.
+`hasktorch-core` includes higher-level interface to basic tensor creation and
+math operations and manages allocation/deallocation via foreign pointers.
+
+Currently implementations focus on double tensors, additional types (float,
+integral) are forthcoming.
+
+## Package Structure
+
+[TODO]
 
 ## Basic Implementation Concepts: Foreign Pointer Abstractions
 

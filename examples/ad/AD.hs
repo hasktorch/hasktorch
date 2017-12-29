@@ -31,16 +31,19 @@ type Sensitivity i = TDS '[i]
 
 type Output o = TDS '[o]
 
+-- Backprop sensitivity and parameter gradients
 data Table :: Nat -> [Nat] -> Nat -> * where
   T :: (KnownNat i, KnownNat o) => (Gradient l i o, Sensitivity i) -> Table i '[] o
   (:&~) :: (KnownNat h, KnownNat i, KnownNat o) =>
           (Gradient l i o, Sensitivity i) -> Table h hs o -> Table i (h ': hs) o
 
+-- Forwardprop values
 data Values :: [Nat] -> Nat -> * where
   V :: (KnownNat o) => Output o -> Values '[] o
   (:^~) :: (KnownNat h, KnownNat o) =>
            Output h -> Values hs o -> Values (h ': hs) o
 
+-- Network architecture
 data Network :: Nat -> [Nat] -> Nat -> * where
   O :: (KnownNat i, KnownNat o) =>
        Layer l i o -> NW i '[] o
@@ -60,7 +63,7 @@ updateLayer :: (KnownNat i, KnownNat o) =>
   Double -> Layer l i o -> Gradient l i o -> Layer l i o
 updateLayer _ LayerTrivial _ = LayerTrivial
 updateLayer _ LayerSigmoid _ = LayerSigmoid
-updateLayer _ LayerRelu _ = LayerRelu
+updateLayer _ LayerRelu _    = LayerRelu
 updateLayer learningRate (LayerLinear w) (LayerLinear gradient) =
   LayerLinear (updateTensor w gradient learningRate)
 updateLayer learningRate (LayerAffine w) (LayerAffine gradient) =
@@ -85,7 +88,11 @@ forwardProp t (LayerAffine (AW b w)) =
 -- TODO: write to Table
 backProp :: forall l i o . (KnownNat i, KnownNat o) =>
     Sensitivity o -> (Layer l i o) -> (Gradient l i o, Sensitivity i)
-backProp dEds layer = (undefined, undefined)
+backProp dEds LayerTrivial           = (LayerTrivial, dEds)
+backProp dEds LayerSigmoid           = (LayerSigmoid, undefined)
+backProp dEds LayerRelu              = (LayerRelu, undefined)
+backProp dEds (LayerLinear w)        = (undefined , undefined)
+backProp dEds (LayerAffine (AW w b)) = (undefined , undefined)
 
 trivial' :: SingI d => TDS d -> TDS d
 trivial' t = tds_init 1.0

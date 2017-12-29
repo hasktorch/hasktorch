@@ -1,6 +1,4 @@
-# Usage examples
-
-Also see [`core/tests/`](../core/tests/) and [`raw/tests/`](../raw/tests/) for additional examples of API usage.
+# Example usage
 
 Basic usage examples:
 
@@ -23,3 +21,6 @@ Experimental prototyping and work-in-progress:
   example](https://blog.jle.im/entry/practical-dependent-types-in-haskell-1.html)
   (forward prop only)
 - *playground* - stripped down implementation of untyped tensors for debugging.
+
+See also [`core/tests/`](../core/tests/) and [`raw/tests/`](../raw/tests/) for
+additional examples of API usage.
