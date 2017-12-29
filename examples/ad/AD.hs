@@ -15,18 +15,13 @@ import Data.Singletons
 import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 
-data LayerType = LTrivial | LLinear | LSigmoid | LRelu
-
--- data AffineWeights (i :: Nat) (o :: Nat) = AW {
---   biases :: TDS '[o],
---   weights :: TDS '[o, i]
---   } deriving (Show)
--- type AW = AffineWeights
+-- Promoted layer types promoted
+data LayerType = LTrivial | LLinear | LAffine | LSigmoid | LRelu
 
 data Layer (l :: LayerType) (i :: Nat) (o :: Nat) where
   LayerTrivial :: Layer 'LTrivial i i
   LayerLinear  :: (TDS '[o, i]) -> Layer 'LLinear i o
-  -- LayerAffine :: (AffineWeights i o) -> Layer 'LLinear i o
+  LayerAffine :: (AffineWeights i o) -> Layer 'LAffine i o
   LayerSigmoid :: Layer 'LSigmoid i i
   LayerRelu    :: Layer 'LRelu i i
 
@@ -42,8 +37,6 @@ data Table :: Nat -> [Nat] -> Nat -> * where
           (Gradient l i o, Sensitivity i) -> Table h hs o -> Table i (h ': hs) o
 
 data Values :: [Nat] -> Nat -> * where
-  -- V :: KnownNat o => Output o -> Values '[] o
-  -- VNil :: Values '[]
   V :: (KnownNat o) => Output o -> Values '[] o
   (:^~) :: (KnownNat h, KnownNat o) =>
            Output h -> Values hs o -> Values (h ': hs) o
@@ -53,6 +46,12 @@ data Network :: Nat -> [Nat] -> Nat -> * where
        Layer l i o -> NW i '[] o
   (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
           Layer l i h -> NW h hs o -> NW i (h ': hs) o
+
+data AffineWeights (i :: Nat) (o :: Nat) = AW {
+  biases :: TDS '[o],
+  weights :: TDS '[o, i]
+  } deriving (Show)
+type AW = AffineWeights
 
 updateTensor :: SingI d => TDS d -> TDS d -> Double -> TDS d
 updateTensor t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
@@ -64,8 +63,10 @@ updateLayer _ LayerSigmoid _ = LayerSigmoid
 updateLayer _ LayerRelu _ = LayerRelu
 updateLayer learningRate (LayerLinear w) (LayerLinear gradient) =
   LayerLinear (updateTensor w gradient learningRate)
+updateLayer learningRate (LayerAffine w) (LayerAffine gradient) =
+  LayerAffine $ AW (updateTensor (biases w) (biases gradient) learningRate)
+                   (updateTensor (weights w) (weights gradient) learningRate)
 
--- TODO: write to Values
 forwardProp :: forall l i o . (KnownNat i, KnownNat o) =>
   TDS '[i] -> (Layer l i o) -> TDS '[o]
 forwardProp t LayerTrivial = t
@@ -75,11 +76,11 @@ forwardProp t (LayerLinear w) =
       t' = (tds_resize t :: TDS '[i, 1])
 forwardProp t LayerSigmoid = tds_sigmoid t
 forwardProp t LayerRelu = (tds_gtTensorT t (tds_new)) ^*^ t
--- forwardProp t (LayerAffine (AW b w) :: Layer i o) =
---   tds_resize ( w !*! t' + b')
---   where
---     t' = (tds_resize t :: TDS '[i, 1])
---     b' = tds_resize b
+forwardProp t (LayerAffine (AW b w)) =
+  tds_resize ( w !*! t' + b')
+  where
+    t' = (tds_resize t :: TDS '[i, 1])
+    b' = tds_resize b
 
 -- TODO: write to Table
 backProp :: forall l i o . (KnownNat i, KnownNat o) =>
@@ -102,14 +103,13 @@ forwardNetwork t (hh :~ hr) = forwardNetwork (forwardProp t hh) hr
 
 -- forward prop, retain values
 forwardNetwork' :: forall i h o . TDS '[i] -> NW i h o -> Values h o
--- forwardNetwork' t (h :~ O w) = V (forwardProp t h)
 forwardNetwork' t (O olayer) = V (forwardProp t olayer)
 forwardNetwork' t (h :~ hs) = output :^~ (forwardNetwork' output hs)
   where output = forwardProp t h
 
--- mkW :: (SingI i, SingI o) => AW i o
--- mkW = AW b n
---   where (b, n) = (tds_new, tds_new)
+mkW :: (SingI i, SingI o) => AW i o
+mkW = AW b n
+  where (b, n) = (tds_new, tds_new)
 
 type NW = Network
 
@@ -120,6 +120,10 @@ instance (KnownNat i, KnownNat o) => Show (Layer l i o) where
                          ++ (show (natVal (Proxy :: Proxy i))) ++ " "
                          ++ (show (natVal (Proxy :: Proxy o)))
   show (LayerLinear x) = "LayerLinear "
+                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
+                         ++ (show (natVal (Proxy :: Proxy o)))
+
+  show (LayerAffine x) = "LayerAffine "
                          ++ (show (natVal (Proxy :: Proxy i))) ++ " "
                          ++ (show (natVal (Proxy :: Proxy o)))
   show (LayerSigmoid) = "LayerSigmoid "
