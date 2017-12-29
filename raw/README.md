@@ -1,4 +1,4 @@
-# torch-raw
+# hasktorch-raw
 
 Comprehensive Raw bindings to core TorcH (TH) C library. This library includes
 hundreds of functions with varied math and tensor operations.

@@ -2,15 +2,14 @@
 
 [![Build Status](https://circleci.com/gh/austinvhuang/hasktorch/tree/master.svg?style=shield&circle-token=9455d7cc953a58204f4d8dd683e9fa03fd5b2744)](https://circleci.com/gh/austinvhuang/hasktorch/tree/master)
 
-A Haskell library for tensors and neural networks. Hasktorch uses the low-level
-[TorcH](https://github.com/pytorch/pytorch/tree/master/aten/src/TH) C
-tensor/math library shared by [Torch](http://torch.ch/) and
-[PyTorch](http://pytorch.org/). Hasktorch is an independent open source
-community project.
+Hasktorch is a library-in-development for tensors and neural networks in
+Haskell. It is an independent open source community project which leverages the
+core C libraries shared by [Torch](http://torch.ch/) and
+[PyTorch](http://pytorch.org/).
 
-**This project is in early development and should only be used by contributing
-developers at the current time. Expect substantial changes to the library API as
-it evolves. Contributions and PRs are welcome (see details below).**
+**This project is in very early development and should only be used by
+contributing developers. Expect substantial changes to the library API as it
+evolves. Contributions and PRs are welcome (see details below).**
 
 ## Project Organization
 
@@ -63,10 +62,14 @@ Contributions are welcome. For a list of things that need to get done, see:
 https://github.com/austinvhuang/hasktorch/projects/1
 
 
-Contact maintainers for access to the private hasktorch slack channel at:
+Contact Austin Huang for access to the private hasktorch slack channel at:
 
 https://hasktorch.slack.com 
 
+Thanks to all hasktorch developers who have contributed to this community
+effort. This project is also indebted to prior work on typed functional
+programming for deep learning by Justin Le, Huw Campbell, and Kaixi Ruan, as
+well as to the Torch and PyTorch frameworks.
 
 <!-- project directory links -->
 [developers]: ./DEVELOPERS.md
@@ -76,3 +79,4 @@ https://hasktorch.slack.com
 [examples]: ./examples/
 [output]: ./output/
 [raw]: ./raw/
+[vendor]: ./raw/

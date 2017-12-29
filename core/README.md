@@ -1,7 +1,7 @@
-# torch-core
+# hasktorch-core
 
-Higher-level interface to basic tensor operations, including memory/resource
-management via foreign pointers.
+This package includes higher-level interface to basic tensor operations,
+including memory/resource management via foreign pointers.
 
 ## Basic Implementation Concepts: Foreign Pointer Abstractions
 

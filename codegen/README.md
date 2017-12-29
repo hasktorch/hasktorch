@@ -1,4 +1,4 @@
-# codegen
+# hasktorch-codegen
 
 Parse source files from the [TH][th] library and generate low-level bindings in
 Haskell.
@@ -33,7 +33,6 @@ writeup](https://apaszke.github.io/torch-internals.html).
 [codegen]: ./codegen/
 [core]: ./core/
 [examples]: ./examples/
-[nn]: ./nn/
 [output]: ./output/
 [raw]: ./raw/
 [vendor]: ./vendor/
