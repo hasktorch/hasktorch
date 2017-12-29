@@ -7,7 +7,7 @@ Haskell. It is an independent open source community project which leverages the
 core C libraries shared by [Torch](http://torch.ch/) and
 [PyTorch](http://pytorch.org/).
 
-**This project is in very early development and should only be used by
+**This project is in early development and should only be used by
 contributing developers. Expect substantial changes to the library API as it
 evolves. Contributions and PRs are welcome (see details below).**
 
@@ -28,27 +28,25 @@ Currently hasktorch only supports OSX and Linux builds. Building Hasktorch
 requires retrieving submodules followed by building with the
 [Stack](https://docs.haskellstack.org/en/stable/README/) tool.
 
-These steps can be done automatically using the [Makefile][makefile] or
-manually. It is recommended to use the makefile to build the project and its
-dependencies:
+These steps can be done automatically using the [Makefile][makefile]:
 
 ```
 make init
 ```
 
-This should retrieve submodules including torch library dependencies, build
-them, and then build hasktorch modules.
+If successful, his should retrieve submodules including torch library
+dependencies, build dependencies, and then build hasktorch modules.
 
 For manually building the project, see the [developer guide][developers] for
-details as well as [the `vendor/` README][vendor] for information on external
-dependencies built by the Makefile.
+instructions as well as [the `vendor/` README][vendor] for details on external
+dependencies.
 
 ## Getting started
 
 As a starting point, for an example of basic end-user API usage, see the [static
 tensor usage
 example](https://github.com/austinvhuang/hasktorch/blob/master/examples/static-tensor-usage/StaticTensorUsage.hs)
-and the [toy gradient descent
+and the [simple gradient descent
 example](https://github.com/austinvhuang/hasktorch/blob/master/examples/gradient-descent/GradientDescent.hs).
 
 For details on implementation and usage of raw C bindings and the core library,

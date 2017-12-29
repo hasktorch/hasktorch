@@ -15,19 +15,13 @@ import Data.Singletons
 import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 
-type SN = StaticNetwork
-type SW = StaticWeights
-
 data LayerType = LTrivial | LLinear | LSigmoid | LRelu
-
-{- State representations of layers -}
 
 data StaticWeights (i :: Nat) (o :: Nat) = SW {
   biases :: TDS '[o],
   weights :: TDS '[o, i]
   } deriving (Show)
-
-{- Layer representation in a network, wraps layer state as a type argument -}
+type SW = StaticWeights
 
 data Layer (l :: LayerType) (i :: Nat) (o :: Nat) where
   LayerTrivial :: Layer 'LTrivial i i
@@ -39,26 +33,28 @@ type Gradient l i o = Layer l i o
 
 type Sensitivity i = TDS '[i]
 
+type Output o = TDS '[o]
+
 data Table :: Nat -> [Nat] -> Nat -> * where
-  V :: (KnownNat i, KnownNat o) =>
-       (Gradient l i o, Sensitivity i) -> Table i '[] o
+  T :: (KnownNat i, KnownNat o) => (Gradient l i o, Sensitivity i) -> Table i '[] o
   (:&~) :: (KnownNat h, KnownNat i, KnownNat o) =>
           (Gradient l i o, Sensitivity i) -> Table h hs o -> Table i (h ': hs) o
 
--- updateTensor :: SingI d => TDS d -> TDS d -> Double -> TDS d
--- updateTensor t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
+data Values :: Nat -> [Nat] -> Nat -> * where
+  V :: (KnownNat i, KnownNat o) => Output o -> Values i '[] o
+  (:^~) :: (KnownNat h, KnownNat i, KnownNat o) =>
+           Output o -> Values h hs o -> Values i (h ': hs) o
 
-updateMatrix :: (KnownNat o, KnownNat i) =>
-  TDS [o, i] -> TDS [o, i] -> Double -> TDS [o, i]
-updateMatrix t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
+updateTensor :: SingI d => TDS d -> TDS d -> Double -> TDS d
+updateTensor t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
 
 updateLayer :: (KnownNat i, KnownNat o) =>
-  Layer l i o -> Gradient l i o -> Layer l i o
-updateLayer LayerTrivial _ = LayerTrivial
-updateLayer LayerSigmoid _ = LayerSigmoid
-updateLayer LayerRelu _ = LayerRelu
-updateLayer (LayerLinear w) (LayerLinear gradient) = 
-  LayerLinear (updateMatrix undefined undefined 0.0001)
+  Double -> Layer l i o -> Gradient l i o -> Layer l i o
+updateLayer _ LayerTrivial _ = LayerTrivial
+updateLayer _ LayerSigmoid _ = LayerSigmoid
+updateLayer _ LayerRelu _ = LayerRelu
+updateLayer learningRate (LayerLinear w) (LayerLinear gradient) =
+  LayerLinear (updateTensor w gradient learningRate)
 
 forwardProp :: forall l i o . (KnownNat i, KnownNat o) =>
   TDS '[i] -> (Layer l i o) -> TDS '[o]
@@ -88,7 +84,7 @@ sigmoid' t = (tds_sigmoid t) ^*^ ((tds_init 1.0) ^-^ tds_sigmoid t)
 relu' :: SingI d => TDS d -> TDS d
 relu' t = (tds_gtTensorT t (tds_new))
 
-forwardNetwork :: forall i h o . TDS '[i] -> SN i h o  -> TDS '[o]
+forwardNetwork :: forall i h o . TDS '[i] -> NW i h o  -> TDS '[o]
 forwardNetwork t (O w) = forwardProp t w
 forwardNetwork t (h :~ n) = forwardNetwork (forwardProp t h) n
 
@@ -96,13 +92,14 @@ mkW :: (SingI i, SingI o) => SW i o
 mkW = SW b n
   where (b, n) = (tds_new, tds_new)
 
-data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
+data Network :: Nat -> [Nat] -> Nat -> * where
   O :: (KnownNat i, KnownNat o) =>
-       Layer l i o -> SN i '[] o
+       Layer l i o -> NW i '[] o
   (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
-          Layer l i h -> SN h hs o -> SN i (h ': hs) o
+          Layer l i h -> NW h hs o -> NW i (h ': hs) o
 
--- set precedence to chain layers without adding parentheses
+type NW = Network
+
 infixr 5 :~
 
 instance (KnownNat i, KnownNat o) => Show (Layer l i o) where
@@ -126,7 +123,7 @@ dispL layer = do
     print layer
     print $ "inputs: " ++ (show inVal) ++ "    outputs: " ++ show (outVal)
 
-dispN :: SN h hs c -> IO ()
+dispN :: NW h hs c -> IO ()
 dispN (O w) = dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
 

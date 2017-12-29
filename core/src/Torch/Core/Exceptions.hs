@@ -6,7 +6,7 @@ module Torch.Core.Exceptions
   , c_testHasktorchLib
   , p_errorHandler
   , p_argErrorHandler
-  , c_THSetErrorHandler 
+  , c_THSetErrorHandler
   ) where
 
 import Control.Exception.Safe as X
