@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 module Torch.Core.Tensor.Static.DoubleMathSpec where
 
-import Torch.Core.Tensor.Static.Double (TDS, StaticTensor(..))
+import Torch.Core.Tensor.Static.Double (TDS, tds_init, tds_p)
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Random (newRNG)
 

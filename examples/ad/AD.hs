@@ -1,13 +1,12 @@
-{-# LANGUAGE DataKinds, GADTs, TypeFamilies, TypeOperators    #-}
-{-# LANGUAGE LambdaCase                                                        #-}
-{-# LANGUAGE MultiParamTypeClasses                                             #-}
-{-# LANGUAGE ScopedTypeVariables                                               #-}
+{-# LANGUAGE DataKinds, GADTs, TypeFamilies, TypeOperators #-}
+{-# LANGUAGE LambdaCase                                    #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses                         #-}
+{-# LANGUAGE ScopedTypeVariables                           #-}
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-imports -Wno-missing-signatures -Wno-unused-matches #-}
 
 module Main where
 
-import Torch.Core.Tensor.Dynamic.Double
-import Torch.Core.Tensor.Dynamic.DoubleMath
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom
@@ -17,91 +16,110 @@ import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 
 type SN = StaticNetwork
-type SN2 = StaticNetwork2
 type SW = StaticWeights
+
+data LayerType = LTrivial | LLinear | LSigmoid | LRelu
+
+{- State representations of layers -}
 
 data StaticWeights (i :: Nat) (o :: Nat) = SW {
   biases :: TDS '[o],
   weights :: TDS '[o, i]
   } deriving (Show)
 
-data Sigmoid (i :: Nat) =
-  Sigmoid deriving Show
+{- Layer representation in a network, wraps layer state as a type argument -}
 
-data Relu (i :: Nat) =
-  Relu deriving Show
+data Layer (l :: LayerType) (i :: Nat) (o :: Nat) where
+  LayerTrivial :: Layer 'LTrivial i i
+  LayerLinear  :: (TDS '[o, i]) -> Layer 'LLinear i o
+  LayerSigmoid :: Layer 'LSigmoid i i
+  LayerRelu    :: Layer 'LRelu i i
 
-data Trivial (i :: Nat) =
-  Trivial deriving Show
+type Gradient l i o = Layer l i o
 
-data Layer (i :: Nat) (o :: Nat) where
-  TrivialLayer :: Trivial i -> Layer i i
-  LinearLayer  :: SW i o    -> Layer i o
-  SigmoidLayer :: Sigmoid i -> Layer i i
-  ReluLayer :: Relu i -> Layer i i
+type Sensitivity i = TDS '[i]
 
-class Propagate l where
-  runForwards :: forall i o . (KnownNat i, KnownNat o) =>
-    TDS '[i] -> (l i o) -> TDS '[o]
+data Table :: Nat -> [Nat] -> Nat -> * where
+  V :: (KnownNat i, KnownNat o) =>
+       (Gradient l i o, Sensitivity i) -> Table i '[] o
+  (:&~) :: (KnownNat h, KnownNat i, KnownNat o) =>
+          (Gradient l i o, Sensitivity i) -> Table h hs o -> Table i (h ': hs) o
 
-instance Propagate Layer where
-  runForwards t (TrivialLayer l) = t
-  runForwards t (LinearLayer (SW b w) :: Layer i o) =
-    tds_resize ( w !*! t' + b')
+-- updateTensor :: SingI d => TDS d -> TDS d -> Double -> TDS d
+-- updateTensor t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
+
+updateMatrix :: (KnownNat o, KnownNat i) =>
+  TDS [o, i] -> TDS [o, i] -> Double -> TDS [o, i]
+updateMatrix t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
+
+updateLayer :: (KnownNat i, KnownNat o) =>
+  Layer l i o -> Gradient l i o -> Layer l i o
+updateLayer LayerTrivial _ = LayerTrivial
+updateLayer LayerSigmoid _ = LayerSigmoid
+updateLayer LayerRelu _ = LayerRelu
+updateLayer (LayerLinear w) (LayerLinear gradient) = 
+  LayerLinear (updateMatrix undefined undefined 0.0001)
+
+forwardProp :: forall l i o . (KnownNat i, KnownNat o) =>
+  TDS '[i] -> (Layer l i o) -> TDS '[o]
+forwardProp t LayerTrivial = t
+forwardProp t (LayerLinear w) =
+  tds_resize ( w !*! t')
     where
       t' = (tds_resize t :: TDS '[i, 1])
-      b' = tds_resize b
-  runForwards t (SigmoidLayer l) = tds_sigmoid t
-  runForwards t (ReluLayer l) = tds_cmul (tds_gtTensorT t (tds_new)) t
+forwardProp t LayerSigmoid = tds_sigmoid t
+forwardProp t LayerRelu = (tds_gtTensorT t (tds_new)) ^*^ t
+-- forwardProp t (LayerLinear (SW b w) :: Layer i o) =
+--   tds_resize ( w !*! t' + b')
+--   where
+--     t' = (tds_resize t :: TDS '[i, 1])
+--     b' = tds_resize b
 
-instance (KnownNat i, KnownNat o) => Show (Layer i o) where
-  show (TrivialLayer x) = "TrivialLayer "
-                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
-                         ++ (show (natVal (Proxy :: Proxy o)))
-  show (LinearLayer x) = "LinearLayer "
-                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
-                         ++ (show (natVal (Proxy :: Proxy o)))
-  show (SigmoidLayer x) = "SigmoidLayer "
-                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
-                         ++ (show (natVal (Proxy :: Proxy o)))
-  show (ReluLayer x) = "ReluLayer "
-                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
-                         ++ (show (natVal (Proxy :: Proxy o)))
+backProp :: forall l i o . (KnownNat i, KnownNat o) =>
+    Sensitivity o -> (Layer l i o) -> (Gradient l i o, Sensitivity i)
+backProp dEds layer = (undefined, undefined)
+
+trivial' :: SingI d => TDS d -> TDS d
+trivial' t = tds_init 1.0
+
+sigmoid' :: SingI d => TDS d -> TDS d
+sigmoid' t = (tds_sigmoid t) ^*^ ((tds_init 1.0) ^-^ tds_sigmoid t)
+
+relu' :: SingI d => TDS d -> TDS d
+relu' t = (tds_gtTensorT t (tds_new))
 
 forwardNetwork :: forall i h o . TDS '[i] -> SN i h o  -> TDS '[o]
-forwardNetwork t (O w) = runForwards t w
-forwardNetwork t (h :~ n) = forwardNetwork (runForwards t h) n
+forwardNetwork t (O w) = forwardProp t w
+forwardNetwork t (h :~ n) = forwardNetwork (forwardProp t h) n
 
 mkW :: (SingI i, SingI o) => SW i o
 mkW = SW b n
   where (b, n) = (tds_new, tds_new)
 
-sigmoid :: forall d . (SingI d) => Layer d d
-sigmoid = SigmoidLayer (Sigmoid :: Sigmoid d)
-
-relu :: forall d . (SingI d) => Layer d d
-relu = ReluLayer (Relu :: Relu d)
-
-linear  :: forall i o . (SingI i, SingI o) => Layer i o
-linear = LinearLayer (mkW :: SW i o)
-
 data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
   O :: (KnownNat i, KnownNat o) =>
-       Layer i o -> SN i '[] o
+       Layer l i o -> SN i '[] o
   (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
-          Layer i h -> SN h hs o -> SN i (h ': hs) o
-
-data StaticNetwork2 :: [Nat] -> * where
-  O2 :: (KnownNat i, KnownNat o) =>
-       Layer i o -> SN2 '[i, o]
-  (:&~) :: (KnownNat h, KnownNat i) =>
-          Layer i h -> SN2 (h : hs) -> SN2 (i ': h ': hs)
+          Layer l i h -> SN h hs o -> SN i (h ': hs) o
 
 -- set precedence to chain layers without adding parentheses
 infixr 5 :~
-infixr 5 :&~
 
-dispL :: forall o i . (KnownNat o, KnownNat i) => Layer i o -> IO ()
+instance (KnownNat i, KnownNat o) => Show (Layer l i o) where
+  show (LayerTrivial) = "LayerTrivial "
+                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
+                         ++ (show (natVal (Proxy :: Proxy o)))
+  show (LayerLinear x) = "LayerLinear "
+                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
+                         ++ (show (natVal (Proxy :: Proxy o)))
+  show (LayerSigmoid) = "LayerSigmoid "
+                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
+                         ++ (show (natVal (Proxy :: Proxy o)))
+  show (LayerRelu) = "LayerRelu "
+                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
+                         ++ (show (natVal (Proxy :: Proxy o)))
+
+dispL :: forall o i l . (KnownNat o, KnownNat i) => Layer l i o -> IO ()
 dispL layer = do
     let inVal = natVal (Proxy :: Proxy i)
     let outVal = natVal (Proxy :: Proxy o)
@@ -112,37 +130,18 @@ dispN :: SN h hs c -> IO ()
 dispN (O w) = dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
 
-dispN2 :: SN2 (h:hs) -> IO ()
-dispN2 (O2 w) = dispL w
-dispN2 (w :&~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN2 n'
-
-li :: Layer 10 7
-li = linear
-l2 :: Layer 7 7
-l2 = sigmoid
-l3 :: Layer 7 4
-l3 = linear
-l4 :: Layer 4 4
-l4 = sigmoid
-lo :: Layer 4 2
-lo = linear
+li :: Layer 'LLinear 10 7
+li = LayerLinear tds_new
+l2 :: Layer 'LSigmoid 7 7
+l2 = LayerSigmoid
+l3 :: Layer 'LLinear 7 4
+l3 = LayerLinear tds_new
+l4 :: Layer 'LSigmoid 4 4
+l4 = LayerSigmoid
+lo :: Layer 'LLinear 4 2
+lo = LayerLinear tds_new
 
 net = li :~ l2 :~ l3 :~ l4 :~ O lo
-net2 = li :&~ l2 :&~ l3 :&~ l4 :&~ O2 lo
-
-fstLayer ::
-  forall i h hs o . SN i (h : hs) o -> Layer i h
-fstLayer (f :~ r) = f
-
-fstLayer2 ::
-  forall i h hs . SN2 (i : h : hs) -> Layer i h
-fstLayer2 (O2 o) = o
-fstLayer2 (f :&~ r) = f
-
-rstLayer2 ::
-  forall i h hs . SN2 (i : h : hs) -> SN2 (h : hs)
-rstLayer2 (O2 o) = undefined
-rstLayer2 (f :&~ r) = r
 
 main :: IO ()
 main = do
@@ -151,13 +150,7 @@ main = do
   t <- tds_normal gen 0.0 5.0 :: IO (TDS '[10])
   tds_p $ tds_gtTensorT t tds_new
 
-  print s
   dispN net
   tds_p $ forwardNetwork (tds_init 5.0) net
-  dispN2 net2
-  dispL $ fstLayer2 . rstLayer2 . rstLayer2 . rstLayer2 . rstLayer2  $ net2
-
 
   putStrLn "Done"
-  where
-    s = Sigmoid :: Sigmoid (3 :: Nat)

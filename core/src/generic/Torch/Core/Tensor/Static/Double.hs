@@ -9,7 +9,6 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Torch.Core.Tensor.Static.Double (
-  StaticTensor,
   tds_dim,
   tds_expand,
   tds_new,
@@ -22,7 +21,7 @@ module Torch.Core.Tensor.Static.Double (
   tds_p,
   tds_resize,
   tds_toDynamic,
-  tds_trans, -- matrix specialization of transpose
+  tds_trans,
   TensorDoubleStatic(..),
   TDS(..),
   Nat
@@ -52,7 +51,7 @@ import THDoubleTensorMath
 
 -- TODO: get rid of this double-specific typeclass and just extend functionality
 -- as independent functions using singletons
-class StaticTensor t where
+class TDClass t where
   -- |tensor dimensions
   -- |create tensor
   tds_new_ :: IO t
@@ -240,7 +239,7 @@ mkTHelper_ dims makeStatic value = do
   fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
   pure $ makeStatic fPtr
 
-instance SingI d => StaticTensor (TensorDoubleStatic d)  where
+instance SingI d => TDClass (TensorDoubleStatic d)  where
   tds_init initVal = mkTHelper dims makeStatic initVal
     where
       dims = list2dim $ fromSing (sing :: Sing d)

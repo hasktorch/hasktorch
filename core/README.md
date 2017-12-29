@@ -1,7 +1,7 @@
-# torch-core
+# hasktorch-core
 
-Higher-level interface to basic tensor operations, including memory/resource
-management via foreign pointers.
+This package includes higher-level interface to basic tensor operations,
+including memory/resource management via foreign pointers.
 
 ## Basic Implementation Concepts: Foreign Pointer Abstractions
 
@@ -32,6 +32,9 @@ data TensorDouble = TensorDouble {
   tdDim :: !(TensorDim Word)
   } deriving (Eq, Show)
 ```
+
+Both implementations are a work-in-progress, however the statically typed
+implementation is recommended as a default.
 
 In order to preserve pure functional semantics, accessors such as `tdsTensor`
 and `tdTensor` are only intended to be used by the API implementation and not by

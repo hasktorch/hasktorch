@@ -1,4 +1,4 @@
-# torch-raw
+# hasktorch-raw
 
 Comprehensive Raw bindings to core TorcH (TH) C library. This library includes
 hundreds of functions with varied math and tensor operations.
@@ -10,15 +10,19 @@ Each tensor type-templated module in `TH/generic` is written to separate Haskell
 modules, one for each type. Thus the convention for both files and function
 prefixes follows `TH[Tensor-Type][ModuleName]`.
 
-Convention for function names is that prepending function names with `c_`
+The convention for function names is that prepending function names with `c_`
 correspond to raw bindings to functions, while prepending function names `p_`
 corresponds bindings to function pointers.
 
 Some functions will have exit conditions for handling errors (handled by
 `THError(...)`), for example, if tensor dimensions are mismatched for a certain
 function. These conditions are not checked or captured by these raw bindings.
-Instead, preconditions are expected to be handled by the higher-level APIs
-either via the type representation or by conditional data checks.
+
+Instead, preconditions are either expected to be handled by the higher-level
+APIs either via the type representation or by conditional data checks. Exception
+hooks are currently a
+(work-in-progress)[https://github.com/austinvhuang/hasktorch/projects/1] to
+propagate these errors more gracefully.
 
 For more background, refer to references on TH internals:
 
