@@ -10,49 +10,45 @@ import qualified THShortTensorMath as T
 
 import Torch.Core.Tensor.Generic.Internal
 
-type SHOULD_BE_HASK_TYPE = CDouble
-
 class GenericMath t where
-  fill         :: Ptr t -> HaskType t -> IO ()
+  fill         :: Ptr t -> HaskReal t -> IO ()
   zero         :: Ptr t -> IO ()
-  maskedFill   :: Ptr t -> Ptr CTHByteTensor -> HaskType t -> IO ()
+  maskedFill   :: Ptr t -> Ptr CTHByteTensor -> HaskReal t -> IO ()
   maskedCopy   :: Ptr t -> Ptr CTHByteTensor -> Ptr t -> IO ()
   maskedSelect :: Ptr t -> Ptr t -> Ptr CTHByteTensor -> IO ()
   nonzero      :: Ptr CTHLongTensor -> Ptr t -> IO ()
   indexSelect  :: Ptr t -> Ptr t -> CInt -> Ptr CTHLongTensor -> IO ()
   indexCopy    :: Ptr t -> CInt -> Ptr CTHLongTensor -> Ptr t -> IO ()
   indexAdd     :: Ptr t -> CInt -> Ptr CTHLongTensor -> Ptr t -> IO ()
-  indexFill    :: Ptr t -> CInt -> Ptr CTHLongTensor -> HaskType t -> IO ()
+  indexFill    :: Ptr t -> CInt -> Ptr CTHLongTensor -> HaskReal t -> IO ()
   take         :: Ptr t -> Ptr t -> Ptr CTHLongTensor -> IO ()
   put          :: Ptr t -> Ptr CTHLongTensor -> Ptr t -> CInt -> IO ()
   gather       :: Ptr t -> Ptr t -> CInt -> Ptr CTHLongTensor -> IO ()
   scatter      :: Ptr t -> CInt -> Ptr CTHLongTensor -> Ptr t -> IO ()
   scatterAdd   :: Ptr t -> CInt -> Ptr CTHLongTensor -> Ptr t -> IO ()
-  scatterFill  :: Ptr t -> CInt -> Ptr CTHLongTensor -> HaskType t -> IO ()
-  dot          :: Ptr t -> Ptr t -> SHOULD_BE_HASK_TYPE
-  minall       :: Ptr t -> HaskType t
-  maxall       :: Ptr t -> HaskType t
-  medianall    :: Ptr t -> HaskType t
-  sumall       :: Ptr t -> SHOULD_BE_HASK_TYPE
-  prodall      :: Ptr t -> SHOULD_BE_HASK_TYPE
-  neg          :: Ptr t -> Ptr t -> IO ()
-  cinv         :: Ptr t -> Ptr t -> IO ()
-  add          :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  sub          :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  add_scaled   :: Ptr t -> Ptr t -> HaskType t -> HaskType t -> IO ()
-  sub_scaled   :: Ptr t -> Ptr t -> HaskType t -> HaskType t -> IO ()
-  mul          :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  div          :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  lshift       :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  rshift       :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  fmod         :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  remainder    :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  clamp        :: Ptr t -> Ptr t -> HaskType t -> HaskType t -> IO ()
-  bitand       :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  bitor        :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  bitxor       :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  cadd         :: Ptr t -> Ptr t -> HaskType t -> Ptr t -> IO ()
-  csub         :: Ptr t -> Ptr t -> HaskType t -> Ptr t -> IO ()
+  scatterFill  :: Ptr t -> CInt -> Ptr CTHLongTensor -> HaskReal t -> IO ()
+  dot          :: Ptr t -> Ptr t -> HaskAccReal t
+  minall       :: Ptr t -> HaskReal t
+  maxall       :: Ptr t -> HaskReal t
+  medianall    :: Ptr t -> HaskReal t
+  sumall       :: Ptr t -> HaskAccReal t
+  prodall      :: Ptr t -> HaskAccReal t
+  add          :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  sub          :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  add_scaled   :: Ptr t -> Ptr t -> HaskReal t -> HaskReal t -> IO ()
+  sub_scaled   :: Ptr t -> Ptr t -> HaskReal t -> HaskReal t -> IO ()
+  mul          :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  div          :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  lshift       :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  rshift       :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  fmod         :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  remainder    :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  clamp        :: Ptr t -> Ptr t -> HaskReal t -> HaskReal t -> IO ()
+  bitand       :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  bitor        :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  bitxor       :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  cadd         :: Ptr t -> Ptr t -> HaskReal t -> Ptr t -> IO ()
+  csub         :: Ptr t -> Ptr t -> HaskReal t -> Ptr t -> IO ()
   cmul         :: Ptr t -> Ptr t -> Ptr t -> IO ()
   cpow         :: Ptr t -> Ptr t -> Ptr t -> IO ()
   cdiv         :: Ptr t -> Ptr t -> Ptr t -> IO ()
@@ -63,14 +59,14 @@ class GenericMath t where
   cbitand      :: Ptr t -> Ptr t -> Ptr t -> IO ()
   cbitor       :: Ptr t -> Ptr t -> Ptr t -> IO ()
   cbitxor      :: Ptr t -> Ptr t -> Ptr t -> IO ()
-  addcmul      :: Ptr t -> Ptr t -> HaskType t -> Ptr t -> Ptr t -> IO ()
-  addcdiv      :: Ptr t -> Ptr t -> HaskType t -> Ptr t -> Ptr t -> IO ()
-  addmv        :: Ptr t -> HaskType t -> Ptr t -> HaskType t -> Ptr t -> Ptr t -> IO ()
-  addmm        :: Ptr t -> HaskType t -> Ptr t -> HaskType t -> Ptr t -> Ptr t -> IO ()
-  addr         :: Ptr t -> HaskType t -> Ptr t -> HaskType t -> Ptr t -> Ptr t -> IO ()
-  addbmm       :: Ptr t -> HaskType t -> Ptr t -> HaskType t -> Ptr t -> Ptr t -> IO ()
-  baddbmm      :: Ptr t -> HaskType t -> Ptr t -> HaskType t -> Ptr t -> Ptr t -> IO ()
-  match        :: Ptr t -> Ptr t -> Ptr t -> HaskType t -> IO ()
+  addcmul      :: Ptr t -> Ptr t -> HaskReal t -> Ptr t -> Ptr t -> IO ()
+  addcdiv      :: Ptr t -> Ptr t -> HaskReal t -> Ptr t -> Ptr t -> IO ()
+  addmv        :: Ptr t -> HaskReal t -> Ptr t -> HaskReal t -> Ptr t -> Ptr t -> IO ()
+  addmm        :: Ptr t -> HaskReal t -> Ptr t -> HaskReal t -> Ptr t -> Ptr t -> IO ()
+  addr         :: Ptr t -> HaskReal t -> Ptr t -> HaskReal t -> Ptr t -> Ptr t -> IO ()
+  addbmm       :: Ptr t -> HaskReal t -> Ptr t -> HaskReal t -> Ptr t -> Ptr t -> IO ()
+  baddbmm      :: Ptr t -> HaskReal t -> Ptr t -> HaskReal t -> Ptr t -> Ptr t -> IO ()
+  match        :: Ptr t -> Ptr t -> Ptr t -> HaskReal t -> IO ()
   numel        :: Ptr t -> CPtrdiff
   max          :: Ptr t -> Ptr CTHLongTensor -> Ptr t -> CInt -> CInt -> IO ()
   min          :: Ptr t -> Ptr CTHLongTensor -> Ptr t -> CInt -> CInt -> IO ()
@@ -82,20 +78,20 @@ class GenericMath t where
   cumsum       :: Ptr t -> Ptr t -> CInt -> IO ()
   cumprod      :: Ptr t -> Ptr t -> CInt -> IO ()
   sign         :: Ptr t -> Ptr t -> IO ()
-  trace        :: Ptr t -> SHOULD_BE_HASK_TYPE
+  trace        :: Ptr t -> HaskAccReal t
   cross        :: Ptr t -> Ptr t -> Ptr t -> CInt -> IO ()
   cmax         :: Ptr t -> Ptr t -> Ptr t -> IO ()
   cmin         :: Ptr t -> Ptr t -> Ptr t -> IO ()
-  cmaxValue    :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  cminValue    :: Ptr t -> Ptr t -> HaskType t -> IO ()
+  cmaxValue    :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  cminValue    :: Ptr t -> Ptr t -> HaskReal t -> IO ()
   zeros        :: Ptr t -> Ptr CTHLongStorage -> IO ()
   zerosLike    :: Ptr t -> Ptr t -> IO ()
   ones         :: Ptr t -> Ptr CTHLongStorage -> IO ()
   onesLike     :: Ptr t -> Ptr t -> IO ()
   diag         :: Ptr t -> Ptr t -> CInt -> IO ()
   eye          :: Ptr t -> CLLong -> CLLong -> IO ()
-  arange       :: Ptr t -> SHOULD_BE_HASK_TYPE -> SHOULD_BE_HASK_TYPE -> SHOULD_BE_HASK_TYPE -> IO ()
-  range        :: Ptr t -> SHOULD_BE_HASK_TYPE -> SHOULD_BE_HASK_TYPE -> SHOULD_BE_HASK_TYPE -> IO ()
+  arange       :: Ptr t -> HaskAccReal t -> HaskAccReal t -> HaskAccReal t -> IO ()
+  range        :: Ptr t -> HaskAccReal t -> HaskAccReal t -> HaskAccReal t -> IO ()
   randperm     :: Ptr t -> Ptr CTHGenerator -> CLLong -> IO ()
   reshape      :: Ptr t -> Ptr t -> Ptr CTHLongStorage -> IO ()
   sort         :: Ptr t -> Ptr CTHLongTensor -> Ptr t -> CInt -> CInt -> IO ()
@@ -105,18 +101,18 @@ class GenericMath t where
   cat          :: Ptr t -> Ptr t -> Ptr t -> CInt -> IO ()
   catArray     :: Ptr t -> Ptr (Ptr t) -> CInt -> CInt -> IO ()
   equal        :: Ptr t -> Ptr t -> CInt
-  ltValue      :: Ptr CTHByteTensor -> Ptr t -> HaskType t -> IO ()
-  leValue      :: Ptr CTHByteTensor -> Ptr t -> HaskType t -> IO ()
-  gtValue      :: Ptr CTHByteTensor -> Ptr t -> HaskType t -> IO ()
-  geValue      :: Ptr CTHByteTensor -> Ptr t -> HaskType t -> IO ()
-  neValue      :: Ptr CTHByteTensor -> Ptr t -> HaskType t -> IO ()
-  eqValue      :: Ptr CTHByteTensor -> Ptr t -> HaskType t -> IO ()
-  ltValueT     :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  leValueT     :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  gtValueT     :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  geValueT     :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  neValueT     :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  eqValueT     :: Ptr t -> Ptr t -> HaskType t -> IO ()
+  ltValue      :: Ptr CTHByteTensor -> Ptr t -> HaskReal t -> IO ()
+  leValue      :: Ptr CTHByteTensor -> Ptr t -> HaskReal t -> IO ()
+  gtValue      :: Ptr CTHByteTensor -> Ptr t -> HaskReal t -> IO ()
+  geValue      :: Ptr CTHByteTensor -> Ptr t -> HaskReal t -> IO ()
+  neValue      :: Ptr CTHByteTensor -> Ptr t -> HaskReal t -> IO ()
+  eqValue      :: Ptr CTHByteTensor -> Ptr t -> HaskReal t -> IO ()
+  ltValueT     :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  leValueT     :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  gtValueT     :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  geValueT     :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  neValueT     :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  eqValueT     :: Ptr t -> Ptr t -> HaskReal t -> IO ()
   ltTensor     :: Ptr CTHByteTensor -> Ptr t -> Ptr t -> IO ()
   leTensor     :: Ptr CTHByteTensor -> Ptr t -> Ptr t -> IO ()
   gtTensor     :: Ptr CTHByteTensor -> Ptr t -> Ptr t -> IO ()
@@ -129,6 +125,10 @@ class GenericMath t where
   geTensorT    :: Ptr t -> Ptr t -> Ptr t -> IO ()
   neTensorT    :: Ptr t -> Ptr t -> Ptr t -> IO ()
   eqTensorT    :: Ptr t -> Ptr t -> Ptr t -> IO ()
+
+class GenericMath t => GenericFloatingMath t where
+  neg          :: Ptr t -> Ptr t -> IO ()
+  cinv         :: Ptr t -> Ptr t -> IO ()
   abs          :: Ptr t -> Ptr t -> IO ()
   sigmoid      :: Ptr t -> Ptr t -> IO ()
   log          :: Ptr t -> Ptr t -> IO ()
@@ -147,8 +147,8 @@ class GenericMath t where
   tanh         :: Ptr t -> Ptr t -> IO ()
   erf          :: Ptr t -> Ptr t -> IO ()
   erfinv       :: Ptr t -> Ptr t -> IO ()
-  pow          :: Ptr t -> Ptr t -> HaskType t -> IO ()
-  tpow         :: Ptr t -> HaskType t -> Ptr t -> IO ()
+  pow          :: Ptr t -> Ptr t -> HaskReal t -> IO ()
+  tpow         :: Ptr t -> HaskReal t -> Ptr t -> IO ()
   sqrt         :: Ptr t -> Ptr t -> IO ()
   rsqrt        :: Ptr t -> Ptr t -> IO ()
   ceil         :: Ptr t -> Ptr t -> IO ()
@@ -156,23 +156,140 @@ class GenericMath t where
   round        :: Ptr t -> Ptr t -> IO ()
   trunc        :: Ptr t -> Ptr t -> IO ()
   frac         :: Ptr t -> Ptr t -> IO ()
-  lerp         :: Ptr t -> Ptr t -> Ptr t -> HaskType t -> IO ()
+  lerp         :: Ptr t -> Ptr t -> Ptr t -> HaskReal t -> IO ()
   mean         :: Ptr t -> Ptr t -> CInt -> CInt -> IO ()
   std          :: Ptr t -> Ptr t -> CInt -> CInt -> CInt -> IO ()
   var          :: Ptr t -> Ptr t -> CInt -> CInt -> CInt -> IO ()
-  norm         :: Ptr t -> Ptr t -> HaskType t -> CInt -> CInt -> IO ()
-  renorm       :: Ptr t -> Ptr t -> HaskType t -> CInt -> HaskType t -> IO ()
-  dist         :: Ptr t -> Ptr t -> HaskType t -> SHOULD_BE_HASK_TYPE
-  histc        :: Ptr t -> Ptr t -> CLLong -> HaskType t -> HaskType t -> IO ()
-  bhistc       :: Ptr t -> Ptr t -> CLLong -> HaskType t -> HaskType t -> IO ()
-  meanall      :: Ptr t -> SHOULD_BE_HASK_TYPE
-  varall       :: Ptr t -> CInt -> SHOULD_BE_HASK_TYPE
-  stdall       :: Ptr t -> CInt -> SHOULD_BE_HASK_TYPE
-  normall      :: Ptr t -> HaskType t -> SHOULD_BE_HASK_TYPE
-  linspace     :: Ptr t -> HaskType t -> HaskType t -> CLLong -> IO ()
-  logspace     :: Ptr t -> HaskType t -> HaskType t -> CLLong -> IO ()
+  norm         :: Ptr t -> Ptr t -> HaskReal t -> CInt -> CInt -> IO ()
+  renorm       :: Ptr t -> Ptr t -> HaskReal t -> CInt -> HaskReal t -> IO ()
+  dist         :: Ptr t -> Ptr t -> HaskReal t -> HaskAccReal t
+  histc        :: Ptr t -> Ptr t -> CLLong -> HaskReal t -> HaskReal t -> IO ()
+  bhistc       :: Ptr t -> Ptr t -> CLLong -> HaskReal t -> HaskReal t -> IO ()
+  meanall      :: Ptr t -> HaskAccReal t
+  varall       :: Ptr t -> CInt -> HaskAccReal t
+  stdall       :: Ptr t -> CInt -> HaskAccReal t
+  normall      :: Ptr t -> HaskReal t -> HaskAccReal t
+  linspace     :: Ptr t -> HaskReal t -> HaskReal t -> CLLong -> IO ()
+  logspace     :: Ptr t -> HaskReal t -> HaskReal t -> CLLong -> IO ()
   rand         :: Ptr t -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
   randn        :: Ptr t -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
+
+
+instance GenericMath CTHByteTensor where
+  fill = T.c_THByteTensor_fill
+  zero = T.c_THByteTensor_zero
+  maskedFill = T.c_THByteTensor_maskedFill
+  maskedCopy = T.c_THByteTensor_maskedCopy
+  maskedSelect = T.c_THByteTensor_maskedSelect
+  nonzero = T.c_THByteTensor_nonzero
+  indexSelect = T.c_THByteTensor_indexSelect
+  indexCopy = T.c_THByteTensor_indexCopy
+  indexAdd = T.c_THByteTensor_indexAdd
+  indexFill = T.c_THByteTensor_indexFill
+  take = T.c_THByteTensor_take
+  put = T.c_THByteTensor_put
+  gather = T.c_THByteTensor_gather
+  scatter = T.c_THByteTensor_scatter
+  scatterAdd = T.c_THByteTensor_scatterAdd
+  scatterFill = T.c_THByteTensor_scatterFill
+  dot = T.c_THByteTensor_dot
+  minall = T.c_THByteTensor_minall
+  maxall = T.c_THByteTensor_maxall
+  medianall = T.c_THByteTensor_medianall
+  sumall = T.c_THByteTensor_sumall
+  prodall = T.c_THByteTensor_prodall
+  add = T.c_THByteTensor_add
+  sub = T.c_THByteTensor_sub
+  add_scaled = T.c_THByteTensor_add_scaled
+  sub_scaled = T.c_THByteTensor_sub_scaled
+  mul = T.c_THByteTensor_mul
+  div = T.c_THByteTensor_div
+  lshift = T.c_THByteTensor_lshift
+  rshift = T.c_THByteTensor_rshift
+  fmod = T.c_THByteTensor_fmod
+  remainder = T.c_THByteTensor_remainder
+  clamp = T.c_THByteTensor_clamp
+  bitand = T.c_THByteTensor_bitand
+  bitor = T.c_THByteTensor_bitor
+  bitxor = T.c_THByteTensor_bitxor
+  cadd = T.c_THByteTensor_cadd
+  csub = T.c_THByteTensor_csub
+  cmul = T.c_THByteTensor_cmul
+  cpow = T.c_THByteTensor_cpow
+  cdiv = T.c_THByteTensor_cdiv
+  clshift = T.c_THByteTensor_clshift
+  crshift = T.c_THByteTensor_crshift
+  cfmod = T.c_THByteTensor_cfmod
+  cremainder = T.c_THByteTensor_cremainder
+  cbitand = T.c_THByteTensor_cbitand
+  cbitor = T.c_THByteTensor_cbitor
+  cbitxor = T.c_THByteTensor_cbitxor
+  addcmul = T.c_THByteTensor_addcmul
+  addcdiv = T.c_THByteTensor_addcdiv
+  addmv = T.c_THByteTensor_addmv
+  addmm = T.c_THByteTensor_addmm
+  addr = T.c_THByteTensor_addr
+  addbmm = T.c_THByteTensor_addbmm
+  baddbmm = T.c_THByteTensor_baddbmm
+  match = T.c_THByteTensor_match
+  numel = T.c_THByteTensor_numel
+  max = T.c_THByteTensor_max
+  min = T.c_THByteTensor_min
+  kthvalue = T.c_THByteTensor_kthvalue
+  mode = T.c_THByteTensor_mode
+  median = T.c_THByteTensor_median
+  sum = T.c_THByteTensor_sum
+  prod = T.c_THByteTensor_prod
+  cumsum = T.c_THByteTensor_cumsum
+  cumprod = T.c_THByteTensor_cumprod
+  sign = T.c_THByteTensor_sign
+  trace = T.c_THByteTensor_trace
+  cross = T.c_THByteTensor_cross
+  cmax = T.c_THByteTensor_cmax
+  cmin = T.c_THByteTensor_cmin
+  cmaxValue = T.c_THByteTensor_cmaxValue
+  cminValue = T.c_THByteTensor_cminValue
+  zeros = T.c_THByteTensor_zeros
+  zerosLike = T.c_THByteTensor_zerosLike
+  ones = T.c_THByteTensor_ones
+  onesLike = T.c_THByteTensor_onesLike
+  diag = T.c_THByteTensor_diag
+  eye = T.c_THByteTensor_eye
+  arange = T.c_THByteTensor_arange
+  range = T.c_THByteTensor_range
+  randperm = T.c_THByteTensor_randperm
+  reshape = T.c_THByteTensor_reshape
+  sort = T.c_THByteTensor_sort
+  topk = T.c_THByteTensor_topk
+  tril = T.c_THByteTensor_tril
+  triu = T.c_THByteTensor_triu
+  cat = T.c_THByteTensor_cat
+  catArray = T.c_THByteTensor_catArray
+  equal = T.c_THByteTensor_equal
+  ltValue = T.c_THByteTensor_ltValue
+  leValue = T.c_THByteTensor_leValue
+  gtValue = T.c_THByteTensor_gtValue
+  geValue = T.c_THByteTensor_geValue
+  neValue = T.c_THByteTensor_neValue
+  eqValue = T.c_THByteTensor_eqValue
+  ltValueT = T.c_THByteTensor_ltValueT
+  leValueT = T.c_THByteTensor_leValueT
+  gtValueT = T.c_THByteTensor_gtValueT
+  geValueT = T.c_THByteTensor_geValueT
+  neValueT = T.c_THByteTensor_neValueT
+  eqValueT = T.c_THByteTensor_eqValueT
+  ltTensor = T.c_THByteTensor_ltTensor
+  leTensor = T.c_THByteTensor_leTensor
+  gtTensor = T.c_THByteTensor_gtTensor
+  geTensor = T.c_THByteTensor_geTensor
+  neTensor = T.c_THByteTensor_neTensor
+  eqTensor = T.c_THByteTensor_eqTensor
+  ltTensorT = T.c_THByteTensor_ltTensorT
+  leTensorT = T.c_THByteTensor_leTensorT
+  gtTensorT = T.c_THByteTensor_gtTensorT
+  geTensorT = T.c_THByteTensor_geTensorT
+  neTensorT = T.c_THByteTensor_neTensorT
+  eqTensorT = T.c_THByteTensor_eqTensorT
 
 instance GenericMath CTHDoubleTensor where
   fill = T.c_THDoubleTensor_fill
@@ -197,8 +314,6 @@ instance GenericMath CTHDoubleTensor where
   medianall = T.c_THDoubleTensor_medianall
   sumall = T.c_THDoubleTensor_sumall
   prodall = T.c_THDoubleTensor_prodall
-  neg = T.c_THDoubleTensor_neg
-  cinv = T.c_THDoubleTensor_cinv
   add = T.c_THDoubleTensor_add
   sub = T.c_THDoubleTensor_sub
   add_scaled = T.c_THDoubleTensor_add_scaled
@@ -291,6 +406,10 @@ instance GenericMath CTHDoubleTensor where
   geTensorT = T.c_THDoubleTensor_geTensorT
   neTensorT = T.c_THDoubleTensor_neTensorT
   eqTensorT = T.c_THDoubleTensor_eqTensorT
+
+instance GenericFloatingMath CTHDoubleTensor where
+  neg = T.c_THDoubleTensor_neg
+  cinv = T.c_THDoubleTensor_cinv
   abs = T.c_THDoubleTensor_abs
   sigmoid = T.c_THDoubleTensor_sigmoid
   log = T.c_THDoubleTensor_log
@@ -359,8 +478,6 @@ instance GenericMath CTHFloatTensor where
   medianall = T.c_THFloatTensor_medianall
   sumall = T.c_THFloatTensor_sumall
   prodall = T.c_THFloatTensor_prodall
-  neg = T.c_THFloatTensor_neg
-  cinv = T.c_THFloatTensor_cinv
   add = T.c_THFloatTensor_add
   sub = T.c_THFloatTensor_sub
   add_scaled = T.c_THFloatTensor_add_scaled
@@ -453,6 +570,10 @@ instance GenericMath CTHFloatTensor where
   geTensorT = T.c_THFloatTensor_geTensorT
   neTensorT = T.c_THFloatTensor_neTensorT
   eqTensorT = T.c_THFloatTensor_eqTensorT
+
+instance GenericFloatingMath CTHFloatTensor where
+  neg = T.c_THFloatTensor_neg
+  cinv = T.c_THFloatTensor_cinv
   abs = T.c_THFloatTensor_abs
   sigmoid = T.c_THFloatTensor_sigmoid
   log = T.c_THFloatTensor_log

@@ -13,16 +13,16 @@ import qualified THShortTensor as T
 class GenericOps t where
   -- C-functions
   clearFlag :: Ptr t -> CChar -> IO ()
-  tensordata :: Ptr t -> IO (Ptr (HaskType t))
+  tensordata :: Ptr t -> IO (Ptr (HaskReal t))
   desc :: Ptr t -> CTHDescBuff
   expand :: Ptr t -> Ptr t -> Ptr CTHLongStorage -> IO ()
   expandNd :: Ptr (Ptr t) -> Ptr (Ptr t) -> CInt -> IO ()
   free :: Ptr t -> IO ()
   freeCopyTo :: Ptr t -> Ptr t -> IO ()
-  get1d :: Ptr t -> CLLong -> HaskType t
-  get2d :: Ptr t -> CLLong -> CLLong -> HaskType t
-  get3d :: Ptr t -> CLLong -> CLLong -> CLLong -> HaskType t
-  get4d :: Ptr t -> CLLong -> CLLong -> CLLong -> CLLong -> HaskType t
+  get1d :: Ptr t -> CLLong -> HaskReal t
+  get2d :: Ptr t -> CLLong -> CLLong -> HaskReal t
+  get3d :: Ptr t -> CLLong -> CLLong -> CLLong -> HaskReal t
+  get4d :: Ptr t -> CLLong -> CLLong -> CLLong -> CLLong -> HaskReal t
   isContiguous :: Ptr t -> CInt
   isSameSizeAs :: Ptr t -> Ptr t -> CInt
   isSetTo :: Ptr t -> Ptr t -> CInt
@@ -63,10 +63,10 @@ class GenericOps t where
   retain :: Ptr t -> IO ()
   select :: Ptr t -> Ptr t -> CInt -> CLLong -> IO ()
   set :: Ptr t -> Ptr t -> IO ()
-  set1d :: Ptr t -> CLLong -> HaskType t -> IO ()
-  set2d :: Ptr t -> CLLong -> CLLong -> HaskType t -> IO ()
-  set3d :: Ptr t -> CLLong -> CLLong -> CLLong -> HaskType t -> IO ()
-  set4d :: Ptr t -> CLLong -> CLLong -> CLLong -> CLLong -> HaskType t -> IO ()
+  set1d :: Ptr t -> CLLong -> HaskReal t -> IO ()
+  set2d :: Ptr t -> CLLong -> CLLong -> HaskReal t -> IO ()
+  set3d :: Ptr t -> CLLong -> CLLong -> CLLong -> HaskReal t -> IO ()
+  set4d :: Ptr t -> CLLong -> CLLong -> CLLong -> CLLong -> HaskReal t -> IO ()
   setFlag :: Ptr t -> CChar -> IO ()
   setStorage :: Ptr t -> Ptr (Storage t) -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
   setStorage1d :: Ptr t -> Ptr (Storage t) -> CPtrdiff -> CLLong -> CLLong -> IO ()
@@ -88,16 +88,16 @@ class GenericOps t where
   -- C-Function Pointers
 
   _clearFlag :: FunPtr (Ptr t -> CChar -> IO ())
-  _tensordata :: FunPtr (Ptr t -> IO (Ptr (HaskType t)))
+  _tensordata :: FunPtr (Ptr t -> IO (Ptr (HaskReal t)))
   _desc :: FunPtr (Ptr t -> CTHDescBuff)
   _expand :: FunPtr (Ptr t -> Ptr t -> Ptr CTHLongStorage -> IO ())
   _expandNd :: FunPtr (Ptr (Ptr t) -> Ptr (Ptr t) -> CInt -> IO ())
   _free :: FunPtr (Ptr t -> IO ())
   _freeCopyTo :: FunPtr (Ptr t -> Ptr t -> IO ())
-  _get1d :: FunPtr (Ptr t -> CLLong -> HaskType t)
-  _get2d :: FunPtr (Ptr t -> CLLong -> CLLong -> HaskType t)
-  _get3d :: FunPtr (Ptr t -> CLLong -> CLLong -> CLLong -> HaskType t)
-  _get4d :: FunPtr (Ptr t -> CLLong -> CLLong -> CLLong -> CLLong -> HaskType t)
+  _get1d :: FunPtr (Ptr t -> CLLong -> HaskReal t)
+  _get2d :: FunPtr (Ptr t -> CLLong -> CLLong -> HaskReal t)
+  _get3d :: FunPtr (Ptr t -> CLLong -> CLLong -> CLLong -> HaskReal t)
+  _get4d :: FunPtr (Ptr t -> CLLong -> CLLong -> CLLong -> CLLong -> HaskReal t)
   _isContiguous :: FunPtr (Ptr t -> CInt)
   _isSameSizeAs :: FunPtr (Ptr t -> Ptr t -> CInt)
   _isSetTo :: FunPtr (Ptr t -> Ptr t -> CInt)
@@ -138,10 +138,10 @@ class GenericOps t where
   _retain :: FunPtr (Ptr t -> IO ())
   _select :: FunPtr (Ptr t -> Ptr t -> CInt -> CLLong -> IO ())
   _set :: FunPtr (Ptr t -> Ptr t -> IO ())
-  _set1d :: FunPtr (Ptr t -> CLLong -> HaskType t -> IO ())
-  _set2d :: FunPtr (Ptr t -> CLLong -> CLLong -> HaskType t -> IO ())
-  _set3d :: FunPtr (Ptr t -> CLLong -> CLLong -> CLLong -> HaskType t -> IO ())
-  _set4d :: FunPtr (Ptr t -> CLLong -> CLLong -> CLLong -> CLLong -> HaskType t -> IO ())
+  _set1d :: FunPtr (Ptr t -> CLLong -> HaskReal t -> IO ())
+  _set2d :: FunPtr (Ptr t -> CLLong -> CLLong -> HaskReal t -> IO ())
+  _set3d :: FunPtr (Ptr t -> CLLong -> CLLong -> CLLong -> HaskReal t -> IO ())
+  _set4d :: FunPtr (Ptr t -> CLLong -> CLLong -> CLLong -> CLLong -> HaskReal t -> IO ())
   _setFlag :: FunPtr (Ptr t -> CChar -> IO ())
   _setStorage :: FunPtr (Ptr t -> Ptr (Storage t) -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ())
   _setStorage1d :: FunPtr (Ptr t -> Ptr (Storage t) -> CPtrdiff -> CLLong -> CLLong -> IO ())

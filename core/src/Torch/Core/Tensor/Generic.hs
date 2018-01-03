@@ -46,7 +46,7 @@ import Torch.Core.Tensor.Generic.Ops
 import THTypes
 
 -- | flatten a CTHDoubleTensor into a list
-flatten :: GenericOps t => Ptr t -> [HaskType t]
+flatten :: GenericOps t => Ptr t -> [HaskReal t]
 flatten tensor =
   case map getDim [0 .. nDimension tensor - 1] of
     []           -> mempty
@@ -65,7 +65,7 @@ flatten tensor =
 -- |randomly initialize a tensor with uniform random values from a range
 -- TODO - finish implementation to handle sizes correctly
 randInit
-  :: (GenericMath t, GenericRandom t, GenericOps t, Num (HaskType t))
+  :: (GenericMath t, GenericRandom t, GenericOps t, Num (HaskReal t))
   => Ptr CTHGenerator
   -> Dim (dims :: [k])
   -> CDouble
@@ -79,7 +79,7 @@ randInit gen dims lower upper = do
 -- |randomly initialize a tensor with uniform random values from a range
 -- TODO - finish implementation to handle sizes correctly
 randInit'
-  :: (GenericMath t, GenericRandom t, GenericOps t, Num (HaskType t))
+  :: (GenericMath t, GenericRandom t, GenericOps t, Num (HaskReal t))
   => Ptr CTHGenerator
   -> SomeDims
   -> CDouble
@@ -92,13 +92,13 @@ randInit' gen dims lower upper = do
 
 -- | Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
--- fillDouble :: (GenericMath t, GenericOps t) => HaskType t -> Ptr t -> IO ()
+-- fillDouble :: (GenericMath t, GenericOps t) => HaskReal t -> Ptr t -> IO ()
 -- fillDouble = flip fill . realToFrac
 
 -- | Create a new (double) tensor of specified dimensions and fill it with 0
 -- safe version
 -- tensorRaw :: Dim (ns::[k]) -> Double -> IO TensorDoubleRaw
-constant :: forall ns t . (GenericMath t, GenericOps t) => Dim (ns::[k]) -> HaskType t -> IO (Ptr t)
+constant :: forall ns t . (GenericMath t, GenericOps t) => Dim (ns::[k]) -> HaskReal t -> IO (Ptr t)
 constant dims value = do
   newPtr <- genericNew dims
   fill newPtr value
@@ -106,7 +106,7 @@ constant dims value = do
 
 -- | Create a new (double) tensor of specified dimensions and fill it with 0
 -- safe version
-constant' :: forall ns t . (GenericMath t, GenericOps t) => SomeDims -> HaskType t -> IO (Ptr t)
+constant' :: forall ns t . (GenericMath t, GenericOps t) => SomeDims -> HaskReal t -> IO (Ptr t)
 constant' dims value = do
   newPtr <- genericNew' dims
   fill newPtr value
@@ -128,7 +128,7 @@ genericNew' = onDims' fromIntegral
   newWithSize3d
   newWithSize4d
 
-genericGet :: GenericOps t => Ptr t -> Dim (ns::[k]) -> HaskType t
+genericGet :: GenericOps t => Ptr t -> Dim (ns::[k]) -> HaskReal t
 genericGet t = onDims fromIntegral
   (impossible "0-rank will never be called")
   (get1d t)
@@ -136,7 +136,7 @@ genericGet t = onDims fromIntegral
   (get3d t)
   (get4d t)
 
-genericGet' :: GenericOps t => Ptr t -> SomeDims -> HaskType t
+genericGet' :: GenericOps t => Ptr t -> SomeDims -> HaskReal t
 genericGet' t = onDims' fromIntegral
   (impossible "0-rank will never be called")
   (get1d t)
@@ -184,7 +184,7 @@ getDynamicDim
   = fromJust . someDimsVal . dimList
 
 -- | Fill a raw Double tensor with 0.0
-fillZeros :: (GenericMath t, GenericOps t, Num (HaskType t)) => Ptr t -> IO (Ptr t)
+fillZeros :: (GenericMath t, GenericOps t, Num (HaskReal t)) => Ptr t -> IO (Ptr t)
 fillZeros t = fill t 0 >> pure t
 
 -- ========================================================================= --
@@ -192,7 +192,7 @@ fillZeros t = fill t 0 >> pure t
 -- ========================================================================= --
 
 -- | displaying raw tensor values
-dispRaw :: forall t . (GenericOps t, RealFloat (HaskType t)) => Ptr t -> IO ()
+dispRaw :: forall t . (GenericOps t, Show (HaskReal t)) => Ptr t -> IO ()
 dispRaw tensor
   | length sz == 0 = putStrLn "Empty Tensor"
   | length sz == 1 = do
@@ -229,8 +229,8 @@ dispRaw tensor
     sizes :: Ptr t -> [Int]
     sizes t = fmap (fromIntegral . size t) [0..nDimension t - 1]
 
-    showLim :: HaskType t -> String
-    showLim x = Num.showGFloat (Just 2) x ""
+    showLim :: HaskReal t -> String
+    showLim x = show x
 
     sz :: [Int]
     sz = sizes tensor
@@ -238,9 +238,10 @@ dispRaw tensor
 -- | Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
 inplaceFill
-  :: (Real a, GenericMath t, Fractional (HaskType t))
-  => a
+  :: (GenericMath t)
+  => (a -> HaskReal t)
+  -> a
   -> Ptr t
   -> IO ()
-inplaceFill value = flip fill (realToFrac value)
+inplaceFill translate value = flip fill (translate value)
 
