@@ -23,7 +23,6 @@ import GHC.Ptr (FunPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal
-import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import THTypes
 import THRandom
