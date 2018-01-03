@@ -31,8 +31,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Data.Proxy
 
-import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
-                           newForeignPtr )
+import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, mallocForeignPtrArray, newForeignPtr)
 import GHC.Ptr (FunPtr)
 
 import Lens.Micro
@@ -50,41 +49,25 @@ type TensorIntRaw    = Ptr CTHIntTensor
 type TensorLongRaw   = Ptr CTHLongTensor
 
 -- Float types
+newtype TensorFloat = TensorFloat { tfTensor :: ForeignPtr CTHFloatTensor }
+  deriving (Show, Eq)
 
-data TensorFloat = TensorFloat {
-  tfTensor :: !(ForeignPtr CTHFloatTensor),
-  tfDim :: SomeDims
-  } deriving (Show, Eq)
-
-data TensorDouble = TensorDouble {
-  tdTensor :: !(ForeignPtr CTHDoubleTensor),
-  tdDim :: SomeDims
-  } deriving (Eq, Show)
+newtype TensorDouble = TensorDouble { tdTensor :: ForeignPtr CTHDoubleTensor }
+  deriving (Eq, Show)
 
 
 -- Int types
+newtype TensorByte = TensorByte { tbTensor :: ForeignPtr CTHByteTensor }
+  deriving (Eq, Show)
 
-data TensorByte = TensorByte {
-  tbTensor :: !(ForeignPtr CTHByteTensor),
-  tbDim :: SomeDims
-  } deriving (Eq, Show)
+newtype TensorChar = TensorChar { tcTensor :: ForeignPtr CTHCharTensor }
+  deriving (Eq, Show)
 
-data TensorChar = TensorChar {
-  tcTensor :: !(ForeignPtr CTHCharTensor),
-  tcDim :: SomeDims
-  } deriving (Eq, Show)
+newtype TensorShort = TensorShort { tsTensor :: ForeignPtr CTHShortTensor }
+  deriving (Eq, Show)
 
-data TensorShort = TensorShort {
-  tsTensor :: !(ForeignPtr CTHShortTensor),
-  tsDim :: SomeDims
-  } deriving (Eq, Show)
+newtype TensorInt = TensorInt { tiTensor :: ForeignPtr CTHIntTensor }
+  deriving (Eq, Show)
 
-data TensorInt = TensorInt {
-  tiTensor :: !(ForeignPtr CTHIntTensor),
-  tiDim :: SomeDims
-  } deriving (Eq, Show)
-
-data TensorLong = TensorLong {
-  tlTensor :: !(ForeignPtr CTHLongTensor),
-  tlDim :: SomeDims
-  } deriving (Eq, Show)
+newtype TensorLong = TensorLong { tlTensor :: ForeignPtr CTHLongTensor }
+  deriving (Eq, Show)
