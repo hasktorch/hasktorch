@@ -126,10 +126,12 @@ class GenericMath t where
   neTensorT    :: Ptr t -> Ptr t -> Ptr t -> IO ()
   eqTensorT    :: Ptr t -> Ptr t -> Ptr t -> IO ()
 
-class GenericMath t => GenericFloatingMath t where
+class GenericMath t => GenericNegativeOps t where
   neg          :: Ptr t -> Ptr t -> IO ()
-  cinv         :: Ptr t -> Ptr t -> IO ()
   abs          :: Ptr t -> Ptr t -> IO ()
+
+class GenericMath t => GenericFloatingMath t where
+  cinv         :: Ptr t -> Ptr t -> IO ()
   sigmoid      :: Ptr t -> Ptr t -> IO ()
   log          :: Ptr t -> Ptr t -> IO ()
   lgamma       :: Ptr t -> Ptr t -> IO ()
@@ -407,10 +409,12 @@ instance GenericMath CTHDoubleTensor where
   neTensorT = T.c_THDoubleTensor_neTensorT
   eqTensorT = T.c_THDoubleTensor_eqTensorT
 
-instance GenericFloatingMath CTHDoubleTensor where
+instance GenericNegativeOps CTHDoubleTensor where
   neg = T.c_THDoubleTensor_neg
-  cinv = T.c_THDoubleTensor_cinv
   abs = T.c_THDoubleTensor_abs
+
+instance GenericFloatingMath CTHDoubleTensor where
+  cinv = T.c_THDoubleTensor_cinv
   sigmoid = T.c_THDoubleTensor_sigmoid
   log = T.c_THDoubleTensor_log
   lgamma = T.c_THDoubleTensor_lgamma
@@ -571,10 +575,12 @@ instance GenericMath CTHFloatTensor where
   neTensorT = T.c_THFloatTensor_neTensorT
   eqTensorT = T.c_THFloatTensor_eqTensorT
 
-instance GenericFloatingMath CTHFloatTensor where
+instance GenericNegativeOps CTHFloatTensor where
   neg = T.c_THFloatTensor_neg
-  cinv = T.c_THFloatTensor_cinv
   abs = T.c_THFloatTensor_abs
+
+instance GenericFloatingMath CTHFloatTensor where
+  cinv = T.c_THFloatTensor_cinv
   sigmoid = T.c_THFloatTensor_sigmoid
   log = T.c_THFloatTensor_log
   lgamma = T.c_THFloatTensor_lgamma
@@ -620,3 +626,122 @@ instance GenericFloatingMath CTHFloatTensor where
   randn = T.c_THFloatTensor_randn
 
 
+instance GenericMath CTHIntTensor where
+  fill = T.c_THIntTensor_fill
+  zero = T.c_THIntTensor_zero
+  maskedFill = T.c_THIntTensor_maskedFill
+  maskedCopy = T.c_THIntTensor_maskedCopy
+  maskedSelect = T.c_THIntTensor_maskedSelect
+  nonzero = T.c_THIntTensor_nonzero
+  indexSelect = T.c_THIntTensor_indexSelect
+  indexCopy = T.c_THIntTensor_indexCopy
+  indexAdd = T.c_THIntTensor_indexAdd
+  indexFill = T.c_THIntTensor_indexFill
+  take = T.c_THIntTensor_take
+  put = T.c_THIntTensor_put
+  gather = T.c_THIntTensor_gather
+  scatter = T.c_THIntTensor_scatter
+  scatterAdd = T.c_THIntTensor_scatterAdd
+  scatterFill = T.c_THIntTensor_scatterFill
+  dot = T.c_THIntTensor_dot
+  minall = T.c_THIntTensor_minall
+  maxall = T.c_THIntTensor_maxall
+  medianall = T.c_THIntTensor_medianall
+  sumall = T.c_THIntTensor_sumall
+  prodall = T.c_THIntTensor_prodall
+  add = T.c_THIntTensor_add
+  sub = T.c_THIntTensor_sub
+  add_scaled = T.c_THIntTensor_add_scaled
+  sub_scaled = T.c_THIntTensor_sub_scaled
+  mul = T.c_THIntTensor_mul
+  div = T.c_THIntTensor_div
+  lshift = T.c_THIntTensor_lshift
+  rshift = T.c_THIntTensor_rshift
+  fmod = T.c_THIntTensor_fmod
+  remainder = T.c_THIntTensor_remainder
+  clamp = T.c_THIntTensor_clamp
+  bitand = T.c_THIntTensor_bitand
+  bitor = T.c_THIntTensor_bitor
+  bitxor = T.c_THIntTensor_bitxor
+  cadd = T.c_THIntTensor_cadd
+  csub = T.c_THIntTensor_csub
+  cmul = T.c_THIntTensor_cmul
+  cpow = T.c_THIntTensor_cpow
+  cdiv = T.c_THIntTensor_cdiv
+  clshift = T.c_THIntTensor_clshift
+  crshift = T.c_THIntTensor_crshift
+  cfmod = T.c_THIntTensor_cfmod
+  cremainder = T.c_THIntTensor_cremainder
+  cbitand = T.c_THIntTensor_cbitand
+  cbitor = T.c_THIntTensor_cbitor
+  cbitxor = T.c_THIntTensor_cbitxor
+  addcmul = T.c_THIntTensor_addcmul
+  addcdiv = T.c_THIntTensor_addcdiv
+  addmv = T.c_THIntTensor_addmv
+  addmm = T.c_THIntTensor_addmm
+  addr = T.c_THIntTensor_addr
+  addbmm = T.c_THIntTensor_addbmm
+  baddbmm = T.c_THIntTensor_baddbmm
+  match = T.c_THIntTensor_match
+  numel = T.c_THIntTensor_numel
+  max = T.c_THIntTensor_max
+  min = T.c_THIntTensor_min
+  kthvalue = T.c_THIntTensor_kthvalue
+  mode = T.c_THIntTensor_mode
+  median = T.c_THIntTensor_median
+  sum = T.c_THIntTensor_sum
+  prod = T.c_THIntTensor_prod
+  cumsum = T.c_THIntTensor_cumsum
+  cumprod = T.c_THIntTensor_cumprod
+  sign = T.c_THIntTensor_sign
+  trace = T.c_THIntTensor_trace
+  cross = T.c_THIntTensor_cross
+  cmax = T.c_THIntTensor_cmax
+  cmin = T.c_THIntTensor_cmin
+  cmaxValue = T.c_THIntTensor_cmaxValue
+  cminValue = T.c_THIntTensor_cminValue
+  zeros = T.c_THIntTensor_zeros
+  zerosLike = T.c_THIntTensor_zerosLike
+  ones = T.c_THIntTensor_ones
+  onesLike = T.c_THIntTensor_onesLike
+  diag = T.c_THIntTensor_diag
+  eye = T.c_THIntTensor_eye
+  arange = T.c_THIntTensor_arange
+  range = T.c_THIntTensor_range
+  randperm = T.c_THIntTensor_randperm
+  reshape = T.c_THIntTensor_reshape
+  sort = T.c_THIntTensor_sort
+  topk = T.c_THIntTensor_topk
+  tril = T.c_THIntTensor_tril
+  triu = T.c_THIntTensor_triu
+  cat = T.c_THIntTensor_cat
+  catArray = T.c_THIntTensor_catArray
+  equal = T.c_THIntTensor_equal
+  ltValue = T.c_THIntTensor_ltValue
+  leValue = T.c_THIntTensor_leValue
+  gtValue = T.c_THIntTensor_gtValue
+  geValue = T.c_THIntTensor_geValue
+  neValue = T.c_THIntTensor_neValue
+  eqValue = T.c_THIntTensor_eqValue
+  ltValueT = T.c_THIntTensor_ltValueT
+  leValueT = T.c_THIntTensor_leValueT
+  gtValueT = T.c_THIntTensor_gtValueT
+  geValueT = T.c_THIntTensor_geValueT
+  neValueT = T.c_THIntTensor_neValueT
+  eqValueT = T.c_THIntTensor_eqValueT
+  ltTensor = T.c_THIntTensor_ltTensor
+  leTensor = T.c_THIntTensor_leTensor
+  gtTensor = T.c_THIntTensor_gtTensor
+  geTensor = T.c_THIntTensor_geTensor
+  neTensor = T.c_THIntTensor_neTensor
+  eqTensor = T.c_THIntTensor_eqTensor
+  ltTensorT = T.c_THIntTensor_ltTensorT
+  leTensorT = T.c_THIntTensor_leTensorT
+  gtTensorT = T.c_THIntTensor_gtTensorT
+  geTensorT = T.c_THIntTensor_geTensorT
+  neTensorT = T.c_THIntTensor_neTensorT
+  eqTensorT = T.c_THIntTensor_eqTensorT
+
+instance GenericNegativeOps CTHIntTensor where
+  neg = T.c_THIntTensor_neg
+  abs = T.c_THIntTensor_abs
