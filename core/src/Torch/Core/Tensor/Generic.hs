@@ -26,6 +26,7 @@ module Torch.Core.Tensor.Generic
   , GenericOps(..)
   , GenericMath(..)
   , GenericRandom(..)
+  , LapackOps(..)
 
   , dispRaw
   ) where
@@ -40,6 +41,7 @@ import Torch.Core.Internal (impossible, i2cll)
 import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Generic.Internal
 import Torch.Core.Tensor.Generic.Math
+import Torch.Core.Tensor.Generic.Lapack
 import Torch.Core.Tensor.Generic.Random
 import Torch.Core.Tensor.Generic.Ops
 
