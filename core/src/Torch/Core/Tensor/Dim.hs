@@ -7,6 +7,7 @@
 module Torch.Core.Tensor.Dim
   ( DimView(..)
   , someDimsM
+  , unsafeSomeDims
   , showdim
   , showdim'
   , onDims
@@ -22,6 +23,7 @@ module Torch.Core.Tensor.Dim
 
 import Control.Exception.Safe (throwString, MonadThrow)
 import Data.Foldable (toList)
+import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 import Data.Sequence (Seq, (|>))
 import Numeric.Dimensions (Dim(..), SomeDims(..))
@@ -47,6 +49,12 @@ someDimsM :: MonadThrow m => [Int] -> m SomeDims
 someDimsM d = case Dim.someDimsVal d of
   Nothing -> throwString "User Defined Error: included dimension of size 0, review tensor dimensionality."
   Just sd -> pure sd
+
+unsafeSomeDims :: [Int] -> SomeDims
+unsafeSomeDims d = fromMaybe impureError (Dim.someDimsVal d)
+ where
+  impureError = error "User Defined Error: included dimension of size 0, review tensor dimensionality."
+
 
 showdim :: Dim (ds::[k]) -> String
 showdim = go mempty
