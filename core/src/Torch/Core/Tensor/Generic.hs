@@ -21,7 +21,7 @@ module Torch.Core.Tensor.Generic
   , genericNew'
   , genericGet
   , genericGet'
-
+  , genericInvLogit
 
   , GenericOps(..)
   , GenericMath(..)
@@ -143,6 +143,11 @@ genericGet' t = onDims' fromIntegral
   (c_get2d t)
   (c_get3d t)
   (c_get4d t)
+
+
+-- | apply inverse logit to all values of a tensor
+genericInvLogit :: (GenericFloatingMath t, GenericOps t) => Ptr t -> IO (Ptr t)
+genericInvLogit = applyInPlaceFn c_sigmoid
 
 
 -- |apply a tensor transforming function to a tensor

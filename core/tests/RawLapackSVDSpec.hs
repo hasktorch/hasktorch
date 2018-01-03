@@ -7,8 +7,7 @@ import THDoubleTensorLapack
 import THDoubleTensorMath
 import THDoubleTensorRandom
 
-import Torch.Core.Tensor.Types (TensorDim(D1, D2))
-import Torch.Core.Tensor.Raw (dispRaw, tensorRaw)
+import Torch.Core.Tensor.Generic (dispRaw, tensorRaw)
 
 import Torch.Prelude.Extras
 
