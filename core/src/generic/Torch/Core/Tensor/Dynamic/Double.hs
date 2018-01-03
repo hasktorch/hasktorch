@@ -95,16 +95,16 @@ td_fromList1d l = unsafePerformIO $ do
  where
   mutTensor :: ForeignPtr CTHDoubleTensor -> (Int, Double) -> IO ()
   mutTensor t (idx, value) = withForeignPtr t $ \tp ->
-    Gen.set1d tp (fromIntegral idx) (realToFrac value)
+    Gen.c_set1d tp (fromIntegral idx) (realToFrac value)
 {-# NOINLINE td_fromList1d #-}
 
 -- |Copy contents of tensor into a new one of specified size
 td_resize :: k ~ Nat => TensorDouble -> Dim (d::[k]) -> TensorDouble
 td_resize t d = unsafePerformIO $ do
   let resDummy = td_new d
-  newPtr <- withForeignPtr (tdTensor t) Gen.newClone
+  newPtr <- withForeignPtr (tdTensor t) Gen.c_newClone
   newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
-  withForeignPtr newFPtr (withForeignPtr (tdTensor resDummy) . Gen.resizeAs)
+  withForeignPtr newFPtr (withForeignPtr (tdTensor resDummy) . Gen.c_resizeAs)
   pure $ TensorDouble newFPtr
 {-# NOINLINE td_resize #-}
 
@@ -156,13 +156,13 @@ td_init :: k ~ Nat => Dim (d::[k]) -> Double -> TensorDouble
 td_init ds val = unsafePerformIO $ do
   newPtr <- Gen.constant ds (realToFrac val)
   fPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
-  withForeignPtr fPtr (Gen.inplaceFill val)
+  withForeignPtr fPtr (Gen.inplaceFill realToFrac val)
   pure $ TensorDouble fPtr -- (SomeDims ds)
 {-# NOINLINE td_init #-}
 
 td_transpose :: Word -> Word -> TensorDouble -> TensorDouble
 td_transpose dim1 dim2 t = unsafePerformIO $ do
-  newPtr <- withForeignPtr (tdTensor t) (\p -> Gen.newTranspose p dim1C dim2C)
+  newPtr <- withForeignPtr (tdTensor t) (\p -> Gen.c_newTranspose p dim1C dim2C)
   newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
   -- ds <- someDimsM (Gen.dimList newPtr)
   pure $ TensorDouble newFPtr -- ds
@@ -174,8 +174,8 @@ td_transpose dim1 dim2 t = unsafePerformIO $ do
 
 td_trans :: TensorDouble -> TensorDouble
 td_trans t = unsafePerformIO $ do
-  newPtr <- withForeignPtr (tdTensor t) (\p -> Gen.newTranspose p 1 0)
-  newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
+  newPtr <- withForeignPtr (tdTensor t) (\p -> Gen.c_newTranspose p 1 0)
+  newFPtr <- newForeignPtr Gen.p_free newPtr
   -- ds <- someDimsM (Gen.dimList newPtr)
   pure $ TensorDouble newFPtr -- ds
 {-# NOINLINE td_trans #-}

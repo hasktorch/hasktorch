@@ -15,6 +15,8 @@ module Torch.Core.Tensor.Dynamic.Generic
   , genericFromList1d
   , genericResize
   , genericGet
+  , genericNew
+  , genericNew'
   , genericDynamicDims
   ) where
 

@@ -6,6 +6,7 @@ module Torch.Core.Tensor.Dynamic.Generic.Internal
   , TensorPtrType
   , GenericOps'
   , GenericMath'
+  , LapackOps'
   , HaskReal'
 
   , TensorByte(..)
@@ -16,8 +17,9 @@ module Torch.Core.Tensor.Dynamic.Generic.Internal
 import Foreign (ForeignPtr)
 
 import Torch.Core.Tensor.Generic.Internal
-import Torch.Core.Tensor.Generic (GenericOps, GenericMath)
+import Torch.Core.Tensor.Generic (GenericOps, GenericMath, LapackOps)
 
+type LapackOps' t = (LapackOps (TensorPtrType t), THTensor t)
 type GenericMath' t = (GenericOps (TensorPtrType t), GenericMath (TensorPtrType t), THTensor t)
 type GenericOps' t = (GenericOps (TensorPtrType t), THTensor t)
 type HaskReal' t = (HaskReal (TensorPtrType t))
