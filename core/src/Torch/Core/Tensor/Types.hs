@@ -3,25 +3,22 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE UndecidableInstances #-}
-module Torch.Core.Tensor.Types (
-  TensorFloat(..),
-  TensorDouble(..),
-  TensorByte(..),
-  TensorChar(..),
-  TensorShort(..),
-  TensorInt(..),
-  TensorLong(..),
+module Torch.Core.Tensor.Types
+  ( TensorFloat(..)
+  , TensorDouble(..)
+  , TensorByte(..)
+  , TensorChar(..)
+  , TensorShort(..)
+  , TensorInt(..)
+  , TensorLong(..)
 
-  TensorFloatRaw,
-  TensorDoubleRaw,
-  TensorByteRaw,
-  TensorCharRaw,
-  TensorShortRaw,
-  TensorIntRaw,
-  TensorLongRaw,
-
-  (^.), -- re-export for dimension tuple access
-  _1, _2, _3, _4, _5
+  , TensorFloatRaw
+  , TensorDoubleRaw
+  , TensorByteRaw
+  , TensorCharRaw
+  , TensorShortRaw
+  , TensorIntRaw
+  , TensorLongRaw
   ) where
 
 
@@ -33,8 +30,6 @@ import Data.Proxy
 
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, mallocForeignPtrArray, newForeignPtr)
 import GHC.Ptr (FunPtr)
-
-import Lens.Micro
 
 import THTypes
 import THDoubleTensor

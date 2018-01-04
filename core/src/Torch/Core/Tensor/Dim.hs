@@ -3,6 +3,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeInType #-}
 module Torch.Core.Tensor.Dim
   ( DimView(..)
@@ -10,6 +12,7 @@ module Torch.Core.Tensor.Dim
   , unsafeSomeDims
   , showdim
   , showdim'
+  , rankCheck
   , onDims
   , onDims'
   , dimVals
@@ -20,13 +23,15 @@ module Torch.Core.Tensor.Dim
   , product'
   , module Dim
   ) where
-
+import Data.Singletons
+import Data.Proxy (Proxy(..))
+import Control.Monad (unless)
 import Control.Exception.Safe (throwString, MonadThrow)
 import Data.Foldable (toList)
 import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 import Data.Sequence (Seq, (|>))
-import Numeric.Dimensions (Dim(..), SomeDims(..))
+import Numeric.Dimensions (Dim(..), SomeDims(..), Nat)
 import Torch.Core.Internal (impossible)
 
 import qualified Numeric.Dimensions as Dim
@@ -55,6 +60,18 @@ unsafeSomeDims d = fromMaybe impureError (Dim.someDimsVal d)
  where
   impureError = error "User Defined Error: included dimension of size 0, review tensor dimensionality."
 
+{-
+transferDims :: Proxy (ds::[Nat]) -> Dim ds
+transferDims p = undefined
+ where
+
+go :: forall f m . Proxy (m::[Nat]) -> Dim (f :: [Nat])
+go _ =
+  if null (fromSing (sing :: Sing m))
+  then (D  :: Dim f)
+  else (Dn :: (x:xs) ~ m => Dim (x::Nat)) :* (go (Proxy :: (x:xs) ~ m => Proxy xs))
+-- -}
+
 
 showdim :: Dim (ds::[k]) -> String
 showdim = go mempty
@@ -74,6 +91,14 @@ showdim = go mempty
 
 showdim' :: SomeDims -> String
 showdim' (SomeDims ds) = showdim ds
+
+-- | Runtime type-level check of # dimensions, ported from core/src/generic/Torch/Core/Static/Double.hs
+-- TODO: possibly remove this function?
+rankCheck :: MonadThrow m => SomeDims -> Int -> m ()
+rankCheck dims n
+  = unless
+    (length (dimVals' dims) == n)
+    (throwString "Incorrect Dimensions")
 
 -- Helper function to debug dimensions package
 dimVals :: Dim (ns::[k]) -> [Int]
