@@ -18,6 +18,9 @@ module Torch.Core.Tensor.Dynamic.Generic
   , genericNew
   , genericNew'
   , genericDynamicDims
+
+  , with2ForeignPtrs
+  , module Torch.Core.Tensor.Dynamic.Generic.Internal
   ) where
 
 import Control.Monad (void)
@@ -46,7 +49,7 @@ instance IsList TensorFloat where
   fromList = genericFromList1d realToFrac
   toList = genericToList realToFrac
 
-genericWrapRaw :: GenericOps' t => Ptr (TensorPtrType t) -> IO t
+genericWrapRaw :: GenericOps' t => Ptr (THPtrType t) -> IO t
 genericWrapRaw tensor = construct <$> newForeignPtr Gen.p_free tensor
 
 genericP :: (GenericOps' t, Show (HaskReal' t)) => t -> IO ()
@@ -76,7 +79,7 @@ genericFromList1d translate l = unsafePerformIO $ do
   mapM_ (mutTensor (getForeign res)) (zip [0..length l - 1] l)
   pure res
  where
-  mutTensor :: ForeignPtr (TensorPtrType t) -> (Int, Item t) -> IO ()
+  mutTensor :: ForeignPtr (THPtrType t) -> (Int, Item t) -> IO ()
   mutTensor t (idx, value) = withForeignPtr t $ \tp -> Gen.c_set1d tp (fromIntegral idx) (translate value)
 {-# NOINLINE genericFromList1d #-}
 
@@ -92,10 +95,10 @@ genericResize t d = unsafePerformIO $ do
   pure $ construct newFPtr
 {-# NOINLINE genericResize #-}
 
-with2ForeignPtrs :: ForeignPtr f -> ForeignPtr f -> (Ptr f -> Ptr f -> IO x) -> IO x
+with2ForeignPtrs :: ForeignPtr f0 -> ForeignPtr f1 -> (Ptr f0 -> Ptr f1 -> IO x) -> IO x
 with2ForeignPtrs fp1 fp2 fn = withForeignPtr fp1 (withForeignPtr fp2 . fn)
 
-genericGet :: (GenericOps' t, k ~ Nat) => (HaskReal (TensorPtrType t) -> Item t) -> Dim (d::[k]) -> t -> Item t
+genericGet :: (GenericOps' t, k ~ Nat) => (HaskReal (THPtrType t) -> Item t) -> Dim (d::[k]) -> t -> Item t
 genericGet translate loc tensor = unsafePerformIO $ withForeignPtr
   (getForeign tensor)
   (\t -> pure . translate $ t `Gen.genericGet` loc)

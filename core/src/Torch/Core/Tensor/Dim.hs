@@ -34,7 +34,7 @@ import Data.Sequence (Seq, (|>))
 import Numeric.Dimensions (Dim(..), SomeDims(..), Nat)
 import Torch.Core.Internal (impossible)
 
-import qualified Numeric.Dimensions as Dim
+import Numeric.Dimensions as Dim
 
 data DimView
   = D0

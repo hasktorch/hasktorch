@@ -26,16 +26,12 @@ import GHC.Exts (fromList, toList, IsList, Item)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Dim (Dim(..), SomeDims(..), someDimsM)
+import Torch.Core.Tensor.Dynamic.Generic.Internal (TensorDouble(..))
 import Torch.Core.Tensor.Generic.Internal (CTHDoubleTensor, CTHLongTensor)
 import qualified THDoubleTensor as T
 import qualified THLongTensor as T
 import qualified Torch.Core.Tensor.Generic as Gen
 import qualified Torch.Core.Tensor.Dim as Dim
-
-
-data TensorDouble = TensorDouble {
-  tdTensor :: !(ForeignPtr CTHDoubleTensor)
-  } deriving (Show, Eq)
 
 
 instance IsList TensorDouble where

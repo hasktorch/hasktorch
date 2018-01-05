@@ -4,15 +4,15 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE UndecidableInstances #-}
 module Torch.Core.Tensor.Types
-  ( TensorFloat(..)
-  , TensorDouble(..)
-  , TensorByte(..)
-  , TensorChar(..)
-  , TensorShort(..)
-  , TensorInt(..)
-  , TensorLong(..)
+  -- ( TensorFloat(..)
+  -- , TensorDouble(..)
+  -- , TensorByte(..)
+  -- , TensorChar(..)
+  -- , TensorShort(..)
+  -- , TensorInt(..)
+  -- , TensorLong(..)
 
-  , TensorFloatRaw
+  ( TensorFloatRaw
   , TensorDoubleRaw
   , TensorByteRaw
   , TensorCharRaw
@@ -43,26 +43,26 @@ type TensorShortRaw  = Ptr CTHShortTensor
 type TensorIntRaw    = Ptr CTHIntTensor
 type TensorLongRaw   = Ptr CTHLongTensor
 
--- Float types
-newtype TensorFloat = TensorFloat { tfTensor :: ForeignPtr CTHFloatTensor }
-  deriving (Show, Eq)
-
-newtype TensorDouble = TensorDouble { tdTensor :: ForeignPtr CTHDoubleTensor }
-  deriving (Eq, Show)
-
-
--- Int types
-newtype TensorByte = TensorByte { tbTensor :: ForeignPtr CTHByteTensor }
-  deriving (Eq, Show)
-
-newtype TensorChar = TensorChar { tcTensor :: ForeignPtr CTHCharTensor }
-  deriving (Eq, Show)
-
-newtype TensorShort = TensorShort { tsTensor :: ForeignPtr CTHShortTensor }
-  deriving (Eq, Show)
-
-newtype TensorInt = TensorInt { tiTensor :: ForeignPtr CTHIntTensor }
-  deriving (Eq, Show)
-
-newtype TensorLong = TensorLong { tlTensor :: ForeignPtr CTHLongTensor }
-  deriving (Eq, Show)
+-- -- Float types
+-- newtype TensorFloat = TensorFloat { tfTensor :: ForeignPtr CTHFloatTensor }
+--   deriving (Show, Eq)
+--
+-- newtype TensorDouble = TensorDouble { tdTensor :: ForeignPtr CTHDoubleTensor }
+--   deriving (Eq, Show)
+--
+--
+-- -- Int types
+-- newtype TensorByte = TensorByte { tbTensor :: ForeignPtr CTHByteTensor }
+--   deriving (Eq, Show)
+--
+-- newtype TensorChar = TensorChar { tcTensor :: ForeignPtr CTHCharTensor }
+--   deriving (Eq, Show)
+--
+-- newtype TensorShort = TensorShort { tsTensor :: ForeignPtr CTHShortTensor }
+--   deriving (Eq, Show)
+--
+-- newtype TensorInt = TensorInt { tiTensor :: ForeignPtr CTHIntTensor }
+--   deriving (Eq, Show)
+--
+-- newtype TensorLong = TensorLong { tlTensor :: ForeignPtr CTHLongTensor }
+--   deriving (Eq, Show)

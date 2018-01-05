@@ -29,6 +29,7 @@ module Torch.Core.Tensor.Generic
   , LapackOps(..)
 
   , dispRaw
+  , module Torch.Core.Tensor.Generic.Internal
   ) where
 
 import Numeric.Dimensions (Dim(..), someDimsVal)
