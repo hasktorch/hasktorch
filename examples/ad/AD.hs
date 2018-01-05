@@ -89,8 +89,8 @@ forwardProp t (LayerAffine (AW b w)) =
 backProp :: forall l i o . (KnownNat i, KnownNat o) =>
     Sensitivity o -> (Layer l i o) -> (Gradient l i o, Sensitivity i)
 backProp dEds LayerTrivial           = (LayerTrivial, dEds)
-backProp dEds LayerSigmoid           = (LayerSigmoid, undefined)
-backProp dEds LayerRelu              = (LayerRelu, undefined)
+backProp dEds LayerSigmoid           = (LayerSigmoid, dEds ^*^ undefined)
+backProp dEds LayerRelu              = (LayerRelu, dEds ^*^ undefined)
 backProp dEds (LayerLinear w)        = (undefined , undefined)
 backProp dEds (LayerAffine (AW w b)) = (undefined , undefined)
 
