@@ -1,0 +1,211 @@
+{-# LANGUAGE DataKinds, GADTs, KindSignatures, TypeFamilies, TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE RecordWildCards       #-}
+
+module Torch.NN.Experimental.Layer where
+
+import Torch.Core.Tensor.Static.Double
+import Torch.Core.Tensor.Static.DoubleMath
+import Torch.Core.Tensor.Static.DoubleRandom
+import Torch.Core.Tensor.Types
+import Torch.Core.Tensor.Dim (Dimensions, SingDimensions)
+import Torch.Core.Random
+
+import Data.Singletons
+import Data.Singletons.Prelude
+import Data.Singletons.Prelude.List
+import Data.Singletons.TypeLits
+
+--
+-- Layer representation
+--
+
+-- each layer is associated with a single tensor of arbitrary dimension
+data S (d :: [Nat]) where
+  S :: TDS d -> S d
+
+type KnownShapes (ns :: [[Nat]]) = SingI ns
+
+-- fmap-like application to layer applies it to the associated tensor
+lmap :: forall d . (SingI d) => (TDS d -> TDS d) -> S d -> S d
+lmap f (S t) = S (f t)
+
+-- layers can be updated and randomly instantiated
+class UpdateLayer l where
+  type Gradient l :: *
+  updateLayer :: LearningParameters -> l -> Gradient l -> l
+  createRandom :: IO l
+
+-- layers can be run forward and backward propagated
+class (Dimensions i, UpdateLayer l) => Layer l (i :: [Nat]) (o :: [Nat]) where
+  type Tape oper i o :: *
+  runForwards :: l -> S i -> (Tape l i o, S o)
+  runBackwards :: l -> Tape l i o -> S o -> (Gradient l, S i)
+
+--
+-- Network representation
+--
+
+-- a network is a list of layer shapes
+data Network :: [*] -> [[Nat]] -> * where
+  NNil :: SingI i => Network '[] '[i]
+  (:~) :: (SingI i, SingI h, Layer x i h) =>
+    x -> (Network xs (h ': hs)) -> Network (x ': xs) (i ': h ': hs)
+
+-- show instance for networks
+instance Show (Network '[] '[i]) where
+  show NNil = "NNil"
+instance (Show x, Show (Network xs rs)) => Show (Network (x ': xs) (i ': rs)) where
+  show (x :~ xs) = show x ++ "\n~\n" ++ show xs
+
+runNetwork :: forall layers shapes . SingI (shapes :: [[Nat]]) =>
+              Network layers shapes -> S (Head shapes)
+           -> (Tapes layers shapes, S (Last shapes))
+runNetwork = go
+  where
+    go  :: forall js ss. (Last js ~ Last shapes)
+        => Network ss js -> S (Head js) -> (Tapes ss js, S (Last js))
+    go (layer :~ n) !x = (tape :\> tapes, answer)
+      where (tape, forward) = runForwards layer x
+            (tapes, answer) = go n forward
+    go NNil x = (TNil, x)
+
+runGradient :: forall layers shapes . SingI (shapes :: [[Nat]]) =>
+               Network layers shapes -> Tapes layers shapes -> S (Last shapes)
+            -> (Gradients layers, S (Head shapes))
+runGradient net tapes o = go net tapes
+  where
+    go :: forall js ss. (Last js ~ Last shapes) =>
+        Network ss js -> Tapes ss js -> (Gradients ss, S (Head js))
+    go (layer :~ n) (tape :\> nt) = (layer' :/> gradients, backGrad)
+      where (gradients, feed)  = go n nt
+            (layer', backGrad) = runBackwards layer tape feed
+    go NNil TNil = (GNil, o)
+
+data Gradients :: [*] -> * where
+   GNil  :: Gradients '[]
+   (:/>) :: UpdateLayer x =>
+            Gradient x -> Gradients xs -> Gradients (x : xs)
+
+data Tapes :: [*] -> [[Nat]] -> * where
+   TNil  :: SingI i => Tapes '[] '[i]
+   (:\>) :: (SingI i, SingI h, Layer x i h) =>
+         (Tape x i h) -> (Tapes xs (h : hs)) -> Tapes (x : xs) (i : h : hs)
+
+--
+-- Learning parameters
+--
+
+-- learning parameter values
+data LearningParameters = LearningParameters {
+  lp_rate :: Double
+  , lp_momentum :: Double
+  , lp_regularizer :: Double
+  } deriving (Eq, Show)
+
+--
+-- Layer definiions
+--
+
+{- Logit -}
+
+data Logit = Logit deriving Show
+
+instance UpdateLayer Logit where
+  type Gradient Logit = ()
+  updateLayer _ _ _ = Logit
+  createRandom = return Logit
+
+instance (din ~ dout, SingDimensions din) => Layer Logit din dout where
+  type Tape Logit din dout = S din
+  runForwards _ input@(S it) = (input, S (tds_sigmoid it))
+  runBackwards _ input@(S it) grad@(S ot) = ((), S $ tds_cmul (tds_sigmoid' it) ot)
+
+tds_sigmoid' t = tds_cmul (tds_sigmoid t) (1.0 -^ (tds_sigmoid t))
+
+{- Tanh -}
+
+data Tanh = Tanh deriving Show
+
+instance UpdateLayer Tanh where
+  type Gradient Tanh = ()
+  updateLayer _ _ _ = Tanh
+  createRandom = return Tanh
+
+instance (din ~ dout, SingDimensions (din :: [Nat])) =>
+  Layer Tanh (din :: [Nat]) (dout :: [Nat]) where
+
+  type Tape Tanh din dout = S din
+  runForwards _ input@(S it) = (input, S (tds_tanh it))
+  runBackwards _ input@(S it) grad@(S ot) = ((), S (tds_cmul (tanh' it) ot))
+
+tanh' t = 1.0 -^ (tds_pow s 2.0)
+  where s = tds_tanh t
+
+{- Relu -}
+
+data Relu = Relu deriving Show
+
+instance UpdateLayer Relu where
+  type Gradient Relu = ()
+  updateLayer _ _ _ = Relu
+  createRandom = return Relu
+
+instance (din ~ dout, SingDimensions din) =>
+  Layer Relu (din :: [Nat]) (dout :: [Nat]) where
+
+  type Tape Relu din dout = S din
+  runForwards _ (S y) = (S y, S (relu y))
+    where
+      relu t = undefined
+  runBackwards _ (S y) (S dEdy) = ((), S (tds_cmul (relu' y) dEdy))
+    where
+      relu' t = undefined
+
+{- Fully Connected -}
+
+data FullyConnected i o = FullyConnected
+                        (FullyConnected' i o)   -- weights
+                        (FullyConnected' i o)   -- momentum
+
+data FullyConnected' i o = FullyConnected'
+                         (TDS '[o]) -- Bias
+                         (TDS '[o, i]) -- Activations
+
+instance (KnownNat i, KnownNat o) => UpdateLayer (FullyConnected i o) where
+  type Gradient (FullyConnected i o) = (FullyConnected' i o)
+  updateLayer (p@LearningParameters{..})
+    (FullyConnected (FullyConnected' oldBias oldActivations)
+                    (FullyConnected' oldBiasMomentum oldMomentum))
+    (FullyConnected' biasGradient activationGradient) =
+      FullyConnected (FullyConnected' newBias newActivations)
+                     (FullyConnected' newBiasMomentum newMomentum)
+    where
+      gdVector = undefined
+      gdMatrix = undefined
+      (newBias, newBiasMomentum)    = gdVector p -- TODO
+      (newActivations, newMomentum) = gdMatrix p -- TODO
+  createRandom = undefined
+
+instance (KnownNat din, KnownNat dout) =>
+  Layer (FullyConnected din dout) '[din] '[dout] where
+  type Tape (FullyConnected din dout) '[din] '[dout] = S '[din]
+  runForwards (FullyConnected (FullyConnected' wB wN) _) (S v) =
+    (S v, S (wB ^+^ (wN !* v)))
+  runBackwards (FullyConnected (FullyConnected' _ wN) _) (S x) (S dEdy) =
+          let wB'  = dEdy
+              mm'  = dEdy `tds_outer` x
+              dWs  = (tds_trans wN) !* dEdy
+          in  (FullyConnected' wB' mm', S dWs)
+
+{- Tests -}
+
+type Net0 = Network '[ ]             '[ ]
+type Net1 = Network '[ Logit ]       '[ '[1] ]
+type Net2 = Network '[ (FullyConnected 4 1), Logit, Tanh ] '[ '[4], '[1], '[5] ]
