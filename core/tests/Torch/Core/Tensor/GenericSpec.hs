@@ -11,7 +11,7 @@ import THDoubleTensorRandom (c_THDoubleTensor_normal, c_THDoubleTensor_uniform)
 
 import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Types (TensorDoubleRaw)
-import Torch.Core.Tensor.Generic
+import Torch.Raw.Tensor.Generic
 
 import Torch.Prelude.Extras
 

@@ -4,18 +4,23 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeInType #-}
 module Torch.Core.Tensor.Dynamic.Double
-  ( td_p
-  , td_new
-  , td_new_
-  , td_init
-  , td_free_
+  ( TensorDouble(..)
+  , DynamicTH(..)
+  , shapeList
+  , rank
+  -- These don't need to be exported, but concrete types help with tests
+  , td_fromListNd
+  , td_fromList1d
+  , td_resize
   , td_get
   , td_newWithTensor
-  , td_resize
+  , td_new
+  , td_new_
+  , td_free_
+  , td_init
   , td_transpose
   , td_trans
-  , TensorDouble(..)
-  , THTensor(..)
+  , td_shape
   ) where
 
 import Control.Monad (void)
@@ -26,52 +31,54 @@ import GHC.Exts (fromList, toList, IsList, Item)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Dim (Dim(..), SomeDims(..), someDimsM)
-import Torch.Core.Tensor.Dynamic.Generic.Internal (TensorDouble(..))
-import Torch.Core.Tensor.Generic.Internal (CTHDoubleTensor, CTHLongTensor)
+import Torch.Core.Tensor.Types (TensorDouble(..), THForeignRef(getForeign))
+import Torch.Raw.Internal (CTHDoubleTensor, CTHLongTensor)
 import qualified THDoubleTensor as T
 import qualified THLongTensor as T
-import qualified Torch.Core.Tensor.Generic as Gen
+import qualified Torch.Raw.Tensor.Generic as Gen
 import qualified Torch.Core.Tensor.Dim as Dim
 
 
 instance IsList TensorDouble where
   type Item TensorDouble = Double
   fromList = td_fromList1d
-  toList td = unsafePerformIO $ withForeignPtr (tdTensor td) (pure . fmap realToFrac . Gen.flatten)
+  toList td = unsafePerformIO $ withForeignPtr (getForeign td) (pure . fmap realToFrac . Gen.flatten)
   {-# NOINLINE toList #-}
 
 
-class IsList t => THTensor t where
+class IsList t => DynamicTH t where
   printTensor :: t -> IO ()
-  fromListNd :: k ~ Nat => Dim (d::[k]) -> [Item t] -> t
+  fromListNd :: SomeDims -> [Item t] -> t
   fromList1d :: [Item t] -> t
-  resize :: k ~ Nat => t -> Dim (d::[k]) -> t
-  get :: k ~ Nat => Dim (d::[k]) -> t -> Item t
+  resize :: t -> SomeDims -> t
+  get :: SomeDims -> t -> Item t
   newWithTensor :: t -> t
-  new :: k ~ Nat => Dim (d::[k]) -> t
-  new_ :: k ~ Nat => Dim (d::[k]) -> IO t
+  new :: SomeDims -> t
+  new_ :: SomeDims -> IO t
   free_ :: t -> IO ()
-  init :: k ~ Nat => Dim (d::[k]) -> Item t -> t
+  init :: SomeDims -> Item t -> t
   transpose :: Word -> Word -> t -> t
   trans :: t -> t
+  shape :: t -> SomeDims
 
 
-instance THTensor TensorDouble where
+instance DynamicTH TensorDouble where
   printTensor = td_p
-  fromListNd = td_fromListNd
+  fromListNd (SomeDims d) = td_fromListNd d
   fromList1d = td_fromList1d
-  resize = td_resize
-  get = td_get
+  resize t (SomeDims d) = td_resize t d
+  get (SomeDims d) = td_get d
   newWithTensor = td_newWithTensor
-  new = td_new
-  new_ = td_new_
+  new (SomeDims d) = td_new d
+  new_ (SomeDims d) = td_new_ d
   free_ = td_free_
-  init = td_init
+  init (SomeDims d) = td_init d
   transpose = td_transpose
   trans = td_trans
+  shape = td_shape
 
 td_p :: TensorDouble -> IO ()
-td_p t = withForeignPtr (tdTensor t) Gen.dispRaw
+td_p t = withForeignPtr (getForeign t) Gen.dispRaw
 
 -- | Initialize a tensor of arbitrary dimension from a list
 -- FIXME(stites): This should go in MonadThrow
@@ -86,7 +93,7 @@ td_fromList1d :: [Double] -> TensorDouble
 td_fromList1d l = unsafePerformIO $ do
   sdims <- someDimsM [length l]
   let res = td_new' sdims
-  mapM_ (mutTensor (tdTensor res)) (zip [0..length l - 1] l)
+  mapM_ (mutTensor (getForeign res)) (zip [0..length l - 1] l)
   pure res
  where
   mutTensor :: ForeignPtr CTHDoubleTensor -> (Int, Double) -> IO ()
@@ -98,22 +105,22 @@ td_fromList1d l = unsafePerformIO $ do
 td_resize :: k ~ Nat => TensorDouble -> Dim (d::[k]) -> TensorDouble
 td_resize t d = unsafePerformIO $ do
   let resDummy = td_new d
-  newPtr <- withForeignPtr (tdTensor t) Gen.c_newClone
+  newPtr <- withForeignPtr (getForeign t) Gen.c_newClone
   newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
-  withForeignPtr newFPtr (withForeignPtr (tdTensor resDummy) . Gen.c_resizeAs)
+  withForeignPtr newFPtr (withForeignPtr (getForeign resDummy) . Gen.c_resizeAs)
   pure $ TensorDouble newFPtr
 {-# NOINLINE td_resize #-}
 
 td_get :: Dim (d::[k]) -> TensorDouble -> Double
 td_get loc tensor = unsafePerformIO $ withForeignPtr
-  (tdTensor tensor)
+  (getForeign tensor)
   (\t -> pure . realToFrac $ t `Gen.genericGet` loc)
 {-# NOINLINE td_get #-}
 
 td_newWithTensor :: TensorDouble -> TensorDouble
 td_newWithTensor t = unsafePerformIO $ do
-  newPtr <- withForeignPtr (tdTensor t) T.c_THDoubleTensor_newWithTensor
-  newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
+  newPtr <- withForeignPtr (getForeign t) Gen.c_newWithTensor
+  newFPtr <- newForeignPtr Gen.p_free newPtr
   -- ds <- someDimsM (Gen.dimList newPtr)
   pure $ TensorDouble newFPtr
 {-# NOINLINE td_newWithTensor #-}
@@ -146,7 +153,7 @@ td_new_ ds = do
   pure $ TensorDouble fPtr -- (SomeDims ds)
 
 td_free_ :: TensorDouble -> IO ()
-td_free_ t = finalizeForeignPtr $! tdTensor t
+td_free_ t = finalizeForeignPtr $! getForeign t
 
 td_init :: k ~ Nat => Dim (d::[k]) -> Double -> TensorDouble
 td_init ds val = unsafePerformIO $ do
@@ -158,7 +165,7 @@ td_init ds val = unsafePerformIO $ do
 
 td_transpose :: Word -> Word -> TensorDouble -> TensorDouble
 td_transpose dim1 dim2 t = unsafePerformIO $ do
-  newPtr <- withForeignPtr (tdTensor t) (\p -> Gen.c_newTranspose p dim1C dim2C)
+  newPtr <- withForeignPtr (getForeign t) (\p -> Gen.c_newTranspose p dim1C dim2C)
   newFPtr <- newForeignPtr T.p_THDoubleTensor_free newPtr
   -- ds <- someDimsM (Gen.dimList newPtr)
   pure $ TensorDouble newFPtr -- ds
@@ -170,9 +177,17 @@ td_transpose dim1 dim2 t = unsafePerformIO $ do
 
 td_trans :: TensorDouble -> TensorDouble
 td_trans t = unsafePerformIO $ do
-  newPtr <- withForeignPtr (tdTensor t) (\p -> Gen.c_newTranspose p 1 0)
+  newPtr <- withForeignPtr (getForeign t) (\p -> Gen.c_newTranspose p 1 0)
   newFPtr <- newForeignPtr Gen.p_free newPtr
-  -- ds <- someDimsM (Gen.dimList newPtr)
-  pure $ TensorDouble newFPtr -- ds
+  pure $ TensorDouble newFPtr
 {-# NOINLINE td_trans #-}
 
+td_shape :: TensorDouble -> SomeDims
+td_shape t = unsafePerformIO $ withForeignPtr (getForeign t) (pure . Gen.getDynamicDim)
+{-# NOINLINE td_shape #-}
+
+shapeList :: DynamicTH t => t -> [Int]
+shapeList = Dim.dimVals' . shape
+
+rank :: DynamicTH t => t -> Int
+rank = Dim.rank' . shape

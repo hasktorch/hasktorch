@@ -6,8 +6,11 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeInType #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Torch.Core.Tensor.Dim
-  ( DimView(..)
+  ( KnownNatDim
+  , SingDimensions
+  , DimView(..)
   , someDimsM
   , unsafeSomeDims
   , showdim
@@ -17,12 +20,14 @@ module Torch.Core.Tensor.Dim
   , onDims'
   , dimVals
   , dimVals'
+  , rank'
   , view
   , view'
   , view4
   , product'
   , module Dim
   ) where
+
 import Data.Singletons
 import Data.Proxy (Proxy(..))
 import Control.Monad (unless)
@@ -31,10 +36,14 @@ import Data.Foldable (toList)
 import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 import Data.Sequence (Seq, (|>))
+import GHC.TypeLits (KnownNat)
 import Numeric.Dimensions (Dim(..), SomeDims(..), Nat)
 import Torch.Core.Internal (impossible)
 
 import Numeric.Dimensions as Dim
+
+type KnownNatDim n = (KnownDim n, KnownNat n)
+type SingDimensions d = (SingI d, Dimensions d)
 
 data DimView
   = D0
@@ -111,6 +120,9 @@ dimVals = go mempty
 
 dimVals' :: SomeDims -> [Int]
 dimVals' (SomeDims ds) = dimVals ds
+
+rank' :: SomeDims -> Int
+rank' = length . dimVals'
 
 -- Helper function to debug dimensions package
 view :: Dim (ns::[k]) -> DimView

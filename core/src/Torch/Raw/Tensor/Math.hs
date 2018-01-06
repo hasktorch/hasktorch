@@ -1,5 +1,12 @@
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Core.Tensor.Generic.Math where
+module Torch.Raw.Tensor.Math
+  ( THTensorMath(..)
+  , THTensorMathNegative(..)
+  , THTensorMathFloating(..)
+  , module X
+  ) where
+
+import Torch.Raw.Internal as X
 
 import qualified THByteTensorMath as T
 import qualified THDoubleTensorMath as T
@@ -8,9 +15,7 @@ import qualified THIntTensorMath as T
 import qualified THLongTensorMath as T
 import qualified THShortTensorMath as T
 
-import Torch.Core.Tensor.Generic.Internal
-
-class GenericMath t where
+class THTensorMath t where
   c_fill         :: Ptr t -> HaskReal t -> IO ()
   c_zero         :: Ptr t -> IO ()
   c_maskedFill   :: Ptr t -> Ptr CTHByteTensor -> HaskReal t -> IO ()
@@ -126,11 +131,11 @@ class GenericMath t where
   c_neTensorT    :: Ptr t -> Ptr t -> Ptr t -> IO ()
   c_eqTensorT    :: Ptr t -> Ptr t -> Ptr t -> IO ()
 
-class GenericMath t => GenericNegativeOps t where
+class THTensorMath t => THTensorMathNegative t where
   c_neg          :: Ptr t -> Ptr t -> IO ()
   c_abs          :: Ptr t -> Ptr t -> IO ()
 
-class GenericMath t => GenericFloatingMath t where
+class THTensorMath t => THTensorMathFloating t where
   c_cinv         :: Ptr t -> Ptr t -> IO ()
   c_sigmoid      :: Ptr t -> Ptr t -> IO ()
   c_log          :: Ptr t -> Ptr t -> IO ()
@@ -177,7 +182,7 @@ class GenericMath t => GenericFloatingMath t where
   c_randn        :: Ptr t -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
 
 
-instance GenericMath CTHByteTensor where
+instance THTensorMath CTHByteTensor where
   c_fill = T.c_THByteTensor_fill
   c_zero = T.c_THByteTensor_zero
   c_maskedFill = T.c_THByteTensor_maskedFill
@@ -293,7 +298,7 @@ instance GenericMath CTHByteTensor where
   c_neTensorT = T.c_THByteTensor_neTensorT
   c_eqTensorT = T.c_THByteTensor_eqTensorT
 
-instance GenericMath CTHDoubleTensor where
+instance THTensorMath CTHDoubleTensor where
   c_fill = T.c_THDoubleTensor_fill
   c_zero = T.c_THDoubleTensor_zero
   c_maskedFill = T.c_THDoubleTensor_maskedFill
@@ -409,11 +414,11 @@ instance GenericMath CTHDoubleTensor where
   c_neTensorT = T.c_THDoubleTensor_neTensorT
   c_eqTensorT = T.c_THDoubleTensor_eqTensorT
 
-instance GenericNegativeOps CTHDoubleTensor where
+instance THTensorMathNegative CTHDoubleTensor where
   c_neg = T.c_THDoubleTensor_neg
   c_abs = T.c_THDoubleTensor_abs
 
-instance GenericFloatingMath CTHDoubleTensor where
+instance THTensorMathFloating CTHDoubleTensor where
   c_cinv = T.c_THDoubleTensor_cinv
   c_sigmoid = T.c_THDoubleTensor_sigmoid
   c_log = T.c_THDoubleTensor_log
@@ -459,7 +464,7 @@ instance GenericFloatingMath CTHDoubleTensor where
   c_rand = T.c_THDoubleTensor_rand
   c_randn = T.c_THDoubleTensor_randn
 
-instance GenericMath CTHFloatTensor where
+instance THTensorMath CTHFloatTensor where
   c_fill = T.c_THFloatTensor_fill
   c_zero = T.c_THFloatTensor_zero
   c_maskedFill = T.c_THFloatTensor_maskedFill
@@ -575,11 +580,11 @@ instance GenericMath CTHFloatTensor where
   c_neTensorT = T.c_THFloatTensor_neTensorT
   c_eqTensorT = T.c_THFloatTensor_eqTensorT
 
-instance GenericNegativeOps CTHFloatTensor where
+instance THTensorMathNegative CTHFloatTensor where
   c_neg = T.c_THFloatTensor_neg
   c_abs = T.c_THFloatTensor_abs
 
-instance GenericFloatingMath CTHFloatTensor where
+instance THTensorMathFloating CTHFloatTensor where
   c_cinv = T.c_THFloatTensor_cinv
   c_sigmoid = T.c_THFloatTensor_sigmoid
   c_log = T.c_THFloatTensor_log
@@ -626,7 +631,7 @@ instance GenericFloatingMath CTHFloatTensor where
   c_randn = T.c_THFloatTensor_randn
 
 
-instance GenericMath CTHIntTensor where
+instance THTensorMath CTHIntTensor where
   c_fill = T.c_THIntTensor_fill
   c_zero = T.c_THIntTensor_zero
   c_maskedFill = T.c_THIntTensor_maskedFill
@@ -742,11 +747,11 @@ instance GenericMath CTHIntTensor where
   c_neTensorT = T.c_THIntTensor_neTensorT
   c_eqTensorT = T.c_THIntTensor_eqTensorT
 
-instance GenericNegativeOps CTHIntTensor where
+instance THTensorMathNegative CTHIntTensor where
   c_neg = T.c_THIntTensor_neg
   c_abs = T.c_THIntTensor_abs
 
-instance GenericMath CTHLongTensor where
+instance THTensorMath CTHLongTensor where
   c_fill = T.c_THLongTensor_fill
   c_zero = T.c_THLongTensor_zero
   c_maskedFill = T.c_THLongTensor_maskedFill
@@ -862,11 +867,11 @@ instance GenericMath CTHLongTensor where
   c_neTensorT = T.c_THLongTensor_neTensorT
   c_eqTensorT = T.c_THLongTensor_eqTensorT
 
-instance GenericNegativeOps CTHLongTensor where
+instance THTensorMathNegative CTHLongTensor where
   c_neg = T.c_THLongTensor_neg
   c_abs = T.c_THLongTensor_abs
 
-instance GenericMath CTHShortTensor where
+instance THTensorMath CTHShortTensor where
   c_fill = T.c_THShortTensor_fill
   c_zero = T.c_THShortTensor_zero
   c_maskedFill = T.c_THShortTensor_maskedFill
@@ -982,7 +987,7 @@ instance GenericMath CTHShortTensor where
   c_neTensorT = T.c_THShortTensor_neTensorT
   c_eqTensorT = T.c_THShortTensor_eqTensorT
 
-instance GenericNegativeOps CTHShortTensor where
+instance THTensorMathNegative CTHShortTensor where
   c_neg = T.c_THShortTensor_neg
   c_abs = T.c_THShortTensor_abs
 

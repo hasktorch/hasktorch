@@ -1,12 +1,15 @@
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Core.Tensor.Generic.Lapack where
+module Torch.Raw.Tensor.Lapack
+  ( THTensorLapack(..)
+  , module X
+  ) where
 
-import Torch.Core.Tensor.Generic.Internal
+import Torch.Raw.Internal as X
 
 import qualified THDoubleTensorLapack as T
 import qualified THFloatTensorLapack as T
 
-class LapackOps t where
+class THTensorLapack t where
     c_gesv      :: Ptr t -> Ptr t -> Ptr t -> Ptr t -> IO ()
     c_trtrs     :: Ptr t -> Ptr t -> Ptr t -> Ptr t -> Ptr CChar -> Ptr CChar -> Ptr CChar -> IO ()
     c_gels      :: Ptr t -> Ptr t -> Ptr t -> Ptr t -> IO ()
@@ -44,7 +47,7 @@ class LapackOps t where
     p_btrifact  :: FunPtr (Ptr t -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CInt -> Ptr t -> IO ())
     p_btrisolve :: FunPtr (Ptr t -> Ptr t -> Ptr t -> Ptr CTHIntTensor -> IO ())
 
-instance LapackOps CTHDoubleTensor where
+instance THTensorLapack CTHDoubleTensor where
     c_gesv      = T.c_THDoubleTensor_gesv
     c_trtrs     = T.c_THDoubleTensor_trtrs
     c_gels      = T.c_THDoubleTensor_gels
@@ -83,7 +86,7 @@ instance LapackOps CTHDoubleTensor where
     p_btrisolve = T.p_THDoubleTensor_btrisolve
 
 
-instance LapackOps CTHFloatTensor where
+instance THTensorLapack CTHFloatTensor where
     c_gesv      = T.c_THFloatTensor_gesv
     c_trtrs     = T.c_THFloatTensor_trtrs
     c_gels      = T.c_THFloatTensor_gels

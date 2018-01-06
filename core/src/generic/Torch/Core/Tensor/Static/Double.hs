@@ -37,25 +37,14 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, newForeignPtr)
 import GHC.Exts
 import System.IO.Unsafe (unsafePerformIO)
 
-import THTypes
-import THDoubleTensor
-import THDoubleTensorMath
-
-import Torch.Core.Internal (w2cl)
-import Torch.Core.StorageLong
-import Torch.Core.StorageTypes
-import Torch.Core.Tensor.Dynamic.Double
-import Torch.Core.Tensor.Types
-import Torch.Core.Tensor.Dim hiding (KnownNat)
-import Torch.Core.Tensor.Dynamic.Generic (THPtrType)
-import Torch.Core.Tensor.Generic (Storage)
-import Torch.Core.Tensor.Generic.Internal ()
-import Torch.Core.Tensor.Dynamic.Generic.Internal (THPtrType, TensorDouble)
+import Torch.Core.StorageLong (newStorageLong)
+import Torch.Core.StorageTypes (StorageLong, StorageSize(..))
+import Torch.Core.Tensor.Types (THForeignRef(..), THForeignType, TensorDouble(..))
+import Torch.Core.Tensor.Dim (KnownDim, Dimensions, Dim, SomeDims(..))
+import Torch.Raw.Tensor.Generic (Storage, CTHDoubleTensor, CTHLongStorage)
 import qualified Torch.Core.Tensor.Dim as Dim
-import qualified Numeric.Dimensions.Dim as Dim
 import qualified Torch.Core.Tensor.Dynamic.Generic as Gen
-import qualified Torch.Core.Tensor.Dynamic.Generic.Internal as Gen
-import qualified Torch.Core.Tensor.Generic as GenRaw
+import qualified Torch.Raw.Tensor.Generic as GenRaw
 
 -- ========================================================================= --
 -- Types for static tensors
@@ -65,8 +54,8 @@ newtype TensorDoubleStatic (ds :: [Nat])
   deriving (Show)
 
 type TDS = TensorDoubleStatic
-type instance Gen.THPtrType (TensorDoubleStatic (dim :: [Nat])) = CTHDoubleTensor
-type instance GenRaw.Storage (TensorDoubleStatic (dim :: [Nat])) = StorageLong
+type instance THForeignType (TensorDoubleStatic (dim :: [Nat])) = CTHDoubleTensor
+type instance Storage (TensorDoubleStatic (dim :: [Nat])) = StorageLong
 
 instance Eq (TensorDoubleStatic d) where
   (==) t1 t2 = unsafePerformIO $
@@ -76,7 +65,7 @@ instance Eq (TensorDoubleStatic d) where
       (\t1c t2c -> pure . (== 1) $ GenRaw.c_equal t1c t2c)
   {-# NOINLINE (==) #-}
 
-instance Gen.THTensor (TensorDoubleStatic (dim :: [Nat])) where
+instance THForeignRef (TensorDoubleStatic (dim :: [Nat])) where
   construct = TDS
   getForeign = tdsTensor
 
@@ -94,7 +83,7 @@ fromList1d l =
   res = tds_new
 
   upd :: TDS '[n] -> (Int, Double) -> IO ()
-  upd t (idx, value) = withForeignPtr (tdsTensor t) (\tp -> c_THDoubleTensor_set1d tp (fromIntegral idx) (realToFrac value))
+  upd t (idx, value) = withForeignPtr (tdsTensor t) (\tp -> GenRaw.c_set1d tp (fromIntegral idx) (realToFrac value))
 {-# NOINLINE fromList1d #-}
 
 -- ========================================================================= --
@@ -115,11 +104,28 @@ class StaticTensor t where
   -- | Display tensor
   tds_p ::  t -> IO ()
 
+{-
+class IsList t => StaticTH t where
+  printTensor :: t -> IO ()
+  fromListNd :: k ~ Nat => Dim (d::[k]) -> [Item t] -> t
+  fromList1d :: [Item t] -> t
+  resize :: k ~ Nat => t -> Dim (d::[k]) -> t
+  get :: k ~ Nat => Dim (d::[k]) -> t -> Item t
+  newWithTensor :: t -> t
+  new :: k ~ Nat => Dim (d::[k]) -> t
+  new_ :: k ~ Nat => Dim (d::[k]) -> IO t
+  free_ :: t -> IO ()
+  init :: k ~ Nat => Dim (d::[k]) -> Item t -> t
+  transpose :: Word -> Word -> t -> t
+  trans :: t -> t
+-}
+
+
 -- Not sure how important this is
 instance KnownNat l => IsList (TDS '[l]) where
   type Item (TDS '[l]) = Double
   fromList = tds_fromList1D
-  toList t = unsafePerformIO (withForeignPtr (Gen.getForeign t) (pure . map realToFrac . GenRaw.flatten))
+  toList t = unsafePerformIO (withForeignPtr (getForeign t) (pure . map realToFrac . GenRaw.flatten))
   {-# NOINLINE toList #-}
 
 -- | Initialize a 1D tensor from a list
@@ -139,9 +145,9 @@ tds_resize
   => TDS d1 -> TDS d2
 tds_resize t = unsafePerformIO $ do
   let resDummy = tds_new :: TDS d2
-  newPtr <- withForeignPtr (tdsTensor t) c_THDoubleTensor_newClone
-  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
-  Gen.with2ForeignPtrs newFPtr (Gen.getForeign resDummy) GenRaw.c_resizeAs
+  newPtr <- withForeignPtr (getForeign t) GenRaw.c_newClone
+  newFPtr <- newForeignPtr GenRaw.p_free newPtr
+  Gen.with2ForeignPtrs newFPtr (getForeign resDummy) GenRaw.c_resizeAs
   pure (TDS newFPtr)
 {-# NOINLINE tds_resize #-}
 
@@ -152,14 +158,14 @@ tds_toDynamic (TDS fp) = TensorDouble fp
 -- |TODO: add dimension check
 tds_fromDynamic :: SingI d => TensorDouble -> TensorDoubleStatic d
 tds_fromDynamic t = unsafePerformIO $ do
-  newPtr :: Ptr CTHDoubleTensor <- withForeignPtr (Gen.getForeign t) GenRaw.c_newClone
+  newPtr :: Ptr CTHDoubleTensor <- withForeignPtr (getForeign t) GenRaw.c_newClone
   newFPtr :: ForeignPtr CTHDoubleTensor <- newForeignPtr GenRaw.p_free newPtr
   pure $ TDS newFPtr
 {-# NOINLINE tds_fromDynamic #-}
 
 tds_newClone :: TensorDoubleStatic d -> TensorDoubleStatic d
 tds_newClone t = unsafePerformIO $ do
-  newPtr <- withForeignPtr (Gen.getForeign t) GenRaw.c_newClone
+  newPtr <- withForeignPtr (getForeign t) GenRaw.c_newClone
   newFPtr <- newForeignPtr GenRaw.p_free newPtr
   pure $ TDS newFPtr
 {-# NOINLINE tds_newClone #-}
@@ -171,10 +177,8 @@ tds_newClone t = unsafePerformIO $ do
 -- |matrix specialization of transpose transpose
 tds_trans :: TensorDoubleStatic '[r, c] -> TensorDoubleStatic '[c, r]
 tds_trans t = unsafePerformIO $ do
-  newPtr <- withForeignPtr (tdsTensor t) (
-    \tPtr -> c_THDoubleTensor_newTranspose tPtr 1 0
-    )
-  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  newPtr <- withForeignPtr (tdsTensor t) (\tPtr -> GenRaw.c_newTranspose tPtr 1 0)
+  newFPtr <- newForeignPtr GenRaw.p_free newPtr
   pure $ TDS newFPtr
 {-# NOINLINE tds_trans #-}
 
@@ -205,9 +209,9 @@ _withManaged3
   :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHLongStorage -> IO ())
   -> TDS (a::[Nat]) -> TDS (b::[Nat]) -> StorageLong -> IO ()
 _withManaged3 fn a b c = runManaged $ do
-  a' <- managed (withForeignPtr (Gen.getForeign a))
-  b' <- managed (withForeignPtr (Gen.getForeign b))
-  c' <- managed (withForeignPtr (Gen.getForeign c))
+  a' <- managed (withForeignPtr (getForeign a))
+  b' <- managed (withForeignPtr (getForeign b))
+  c' <- managed (withForeignPtr (getForeign c))
   liftIO (fn a' b' c')
 
 -- | unsafePerformIO call to 'mkTHelperIO'
@@ -228,5 +232,5 @@ instance (Dimensions d, SingI d) => StaticTensor (TensorDoubleStatic d)  where
   tds_new = tds_init 0.0
   tds_new_ = tds_init_ 0.0
   tds_cloneDim _ = tds_new :: TDS d
-  tds_p tensor = (withForeignPtr (tdsTensor tensor) GenRaw.dispRaw)
+  tds_p tensor = withForeignPtr (tdsTensor tensor) GenRaw.dispRaw
 

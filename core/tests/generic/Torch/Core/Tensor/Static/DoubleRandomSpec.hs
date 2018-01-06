@@ -3,7 +3,7 @@
 
 module Torch.Core.Tensor.Static.DoubleRandomSpec (spec) where
 
-import Torch.Core.Tensor.Types (TensorDim(D1))
+import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleRandom
 

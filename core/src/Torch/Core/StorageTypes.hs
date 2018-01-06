@@ -15,7 +15,7 @@ import GHC.Ptr (FunPtr)
 
 import THTypes
 import THDoubleStorage
-import Torch.Core.Tensor.Dynamic.Generic.Internal (THTensor(..), THPtrType)
+import Torch.Core.Tensor.Types (THForeignRef(..), THForeignType)
 
 -- TODO - consider a shared backend type for TensorDim and StorageSize
 data StorageSize a =
@@ -50,12 +50,12 @@ data StorageLong = StorageLong
   -- , slSize :: !(StorageSize Int)
   } deriving (Eq, Show)
 
-instance THTensor StorageDouble where
+instance THForeignRef StorageDouble where
   construct = StorageDouble
   getForeign = sdStorage
-type instance THPtrType StorageDouble = CTHDoubleStorage
+type instance THForeignType StorageDouble = CTHDoubleStorage
 
-instance THTensor StorageLong where
+instance THForeignRef StorageLong where
   construct = StorageLong
   getForeign = slStorage
-type instance THPtrType StorageLong = CTHLongStorage
+type instance THForeignType StorageLong = CTHLongStorage

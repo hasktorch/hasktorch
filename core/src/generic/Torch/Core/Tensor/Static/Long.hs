@@ -4,10 +4,9 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
-
 module Torch.Core.Tensor.Static.Long (
   ) where
-
+{-
 import Data.Singletons
 import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List
@@ -95,4 +94,4 @@ instance KnownNat l => IsList (TLS '[l]) where
                     c_THLongTensor_set1d tp idxC valueC
                 )
   {-# NOINLINE fromList #-}
-  toList l = undefined -- TODO
+  -}

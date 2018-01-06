@@ -7,13 +7,14 @@ typeclasses and dimensions TODO:
   + [ ] Merge Tensor folders
   + [ ] remove extra Generic and Generic.Internal files (see Dynamic versions)
 - Figure out parity for:
-  + [ ] Dynamic.Long
+  + [x] Dynamic.Long
   + [ ] Dynamic.Byte
+  + [x] Dynamic.Double
   + [ ] Dynamic.DoubleMath
   + [ ] Dynamic.DoubleRandom
   + [ ] Static.Long
   + [ ] Static.Byte
-  + [ ] Static.DoubleMath
+  + [x] Static.DoubleMath
   + [ ] Static.DoubleRandom
   + [ ] Static.DoubleLapack
 - [ ] Come up with CORE typeclasses (not Raw Typeclasses like the current situation).
@@ -28,16 +29,16 @@ typeclasses and dimensions TODO:
   + [ ] THSize.hs
   + [ ] THStorage.hs
 - Typeclasses:
-  + [ ] Blas.hs
-  + [ ] Lapack.hs
-  + [ ] StorageCopy.hs
-  + [ ] Storage.hs      -> This will be the last one for the current PR
-  + [ ] TensorConv.hs
-  + [ ] TensorCopy.hs
-  + [x] Tensor.hs       -> Torch.Core.Tensor.Generic.Ops    (should be in Torch.Raw)
-  + [x] TensorLapack.hs -> Torch.Core.Tensor.Generic.Lapack (should be in Torch.Raw)
-  + [x] TensorMath.hs   -> Torch.Core.Tensor.Generic.Math   (should be in Torch.Raw)
-  + [x] TensorRandom.hs -> Torch.Core.Tensor.Generic.Random (should be in Torch.Raw)
-  + [ ] Vector.hs
+  + [x] Blas.hs         -> Needs instances
+  + [x] Lapack.hs       -> Needs instances
+  + [x] StorageCopy.hs  -> Needs instances
+  + [x] Storage.hs      -> This will be the last one for the current PR
+  + [x] TensorConv.hs   -> Needs instances
+  + [x] TensorCopy.hs   -> Needs instances
+  + [x] Tensor.hs       -> Torch.Raw.Tensor        -> THTensor
+  + [x] TensorLapack.hs -> Torch.Raw.Tensor.Lapack -> THTensorLapack
+  + [x] TensorMath.hs   -> Torch.Raw.Tensor.Math   -> THTensorMath
+  + [x] TensorRandom.hs -> Torch.Raw.Tensor.Random -> THTensorRandom
+  + [x] Vector.hs       -> Needs instances
 
 

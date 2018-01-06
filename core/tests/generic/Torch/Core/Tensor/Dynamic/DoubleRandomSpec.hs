@@ -1,8 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds #-}
 module Torch.Core.Tensor.Dynamic.DoubleRandomSpec (spec) where
 
-import Torch.Core.Tensor.Types (TensorDim(D1))
+import Torch.Core.Tensor.Types
+import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Dynamic.Double
+import qualified Torch.Core.Tensor.Dynamic.Double as DynamicClass
 import Torch.Core.Tensor.Dynamic.DoubleRandom (newRNG, td_random)
 
 import Torch.Prelude.Extras
@@ -17,8 +20,8 @@ spec =
 
 testScenario :: Property
 testScenario = monadicIO $ do
-  let t = td_new (D1 3)
-  run $ td_p t
+  let t = DynamicClass.new (SomeDims (dim :: Dim '[3])) :: TensorDouble
+  run $ DynamicClass.printTensor t
   gen <- run newRNG
   run $ td_random t gen
-  run $ td_p t
+  run $ DynamicClass.printTensor t

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7506d92ed460417afbce2afe920a58c6451753e0cf1ba86b95dd59019ac6e6e8
+-- hash: 9f1f8e5899dece907595e37d27c8c6dc7b5d8968f46bc0eff5337135a4276d21
 
 name:           hasktorch-core
 version:        0.1.0.0
@@ -44,17 +44,30 @@ library
       Torch.Core.Random
       Torch.Core.StorageTypes
       Torch.Core.Tensor.Dim
-      Torch.Core.Tensor.Generic
-      Torch.Core.Tensor.Generic.Internal
-      Torch.Core.Tensor.Generic.Math
-      Torch.Core.Tensor.Generic.Ops
-      Torch.Core.Tensor.Generic.Random
       Torch.Core.Tensor.Raw
       Torch.Core.Tensor.Types
+      Torch.Raw.Blas
+      Torch.Raw.Internal
+      Torch.Raw.Lapack
+      Torch.Raw.Storage
+      Torch.Raw.Storage.Copy
+      Torch.Raw.Tensor
+      Torch.Raw.Tensor.Conv
+      Torch.Raw.Tensor.Copy
+      Torch.Raw.Tensor.Generic
+      Torch.Raw.Tensor.Lapack
+      Torch.Raw.Tensor.Math
+      Torch.Raw.Tensor.Random
+      Torch.Raw.Vector
+      Torch.Core.StorageDouble
+      Torch.Core.StorageLong
+      Torch.Core.Tensor
       Torch.Core.Tensor.Dynamic.Double
-      Torch.Core.Tensor.Dynamic.DoubleLapack
       Torch.Core.Tensor.Dynamic.DoubleMath
       Torch.Core.Tensor.Dynamic.DoubleRandom
+      Torch.Core.Tensor.Dynamic.Float
+      Torch.Core.Tensor.Dynamic.Generic
+      Torch.Core.Tensor.Dynamic.GenericLapack
       Torch.Core.Tensor.Dynamic.Long
       Torch.Core.Tensor.Static.Byte
       Torch.Core.Tensor.Static.Double
@@ -97,12 +110,12 @@ test-suite spec
       RawLapackSVDSpec
       Torch.Core.LogAddSpec
       Torch.Core.RandomSpec
-      Torch.Core.Tensor.RawSpec
+      Torch.Core.Tensor.GenericSpec
       Torch.Prelude.Extras
-      Torch.Core.Tensor.Dynamic.DoubleLapackSpec
       Torch.Core.Tensor.Dynamic.DoubleMathSpec
       Torch.Core.Tensor.Dynamic.DoubleRandomSpec
       Torch.Core.Tensor.Dynamic.DoubleSpec
+      Torch.Core.Tensor.Dynamic.GenericLapackSpec
       Torch.Core.Tensor.Static.ByteSpec
       Torch.Core.Tensor.Static.DoubleLapackSpec
       Torch.Core.Tensor.Static.DoubleMathSpec

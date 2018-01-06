@@ -1,9 +1,7 @@
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE BangPatterns #-}
-
 module Torch.Core.Tensor.Dynamic.DoubleMath (
-
   (^+^),
   (^-^),
   (!*),
@@ -86,7 +84,7 @@ module Torch.Core.Tensor.Dynamic.DoubleMath (
   td_outer
   ) where
 
-import Control.Exception
+import Control.Exception.Safe
 import Control.Monad (unless)
 
 import Foreign
@@ -95,12 +93,13 @@ import Foreign.Ptr
 import Lens.Micro
 import System.IO.Unsafe (unsafePerformIO)
 
-import Torch.Core.Tensor.Dynamic.Double
-import Torch.Core.Tensor.Dynamic.Long
-import Torch.Core.Tensor.Raw
+import Torch.Core.Tensor.Dim
+import Torch.Core.Tensor.Dynamic.Generic
+import Torch.Core.Tensor.Dynamic.Double as DynamicClass
+import Torch.Core.Tensor.Dynamic.Long (tl_new)
 import Torch.Core.Tensor.Types
+import qualified Torch.Raw.Tensor.Generic as GenRaw
 
-import THDoubleTensor
 import THDoubleTensor
 import THDoubleTensorMath
 import THTypes
@@ -132,86 +131,70 @@ instance Num TensorDouble where
 -- ----------------------------------------
 
 apply1_
-  :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO a)
+  :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO x)
      -> TensorDouble -> p -> TensorDouble
 apply1_ transformation mtx val = unsafePerformIO $ do
-  withForeignPtr (tdTensor res)
-    (\r_ -> withForeignPtr (tdTensor mtx)
-            (\t -> do
-                transformation r_ t
-                pure r_
-            )
-    )
+  withForeignPtr (getForeign res) $ \r_ ->
+    withForeignPtr (getForeign mtx) $ \t -> do
+      transformation r_ t
+      pure r_
   pure res
   where
-    res = td_new (tdDim mtx)
+    res :: TensorDouble
+    res = DynamicClass.new (DynamicClass.shape mtx)
 {-# NOINLINE apply1_ #-}
 
 -- |Generalize non-mutating collapse of a tensor to a constant or another tensor
-apply0_ :: (Ptr CTHDoubleTensor -> a) -> TensorDouble -> IO a
-apply0_ operation tensor = do
-  withForeignPtr (tdTensor tensor) (\t -> pure $ operation t)
+apply0_ :: (Ptr CTHDoubleTensor -> x) -> TensorDouble -> IO x
+apply0_ operation tensor = withForeignPtr (getForeign tensor) (pure . operation)
 
 -- |Wrapper to apply tensor -> tensor non-mutating operation
-apply0Tensor :: (Ptr CTHDoubleTensor -> t -> IO a) -> TensorDim Word -> t
-  -> TensorDouble
+apply0Tensor :: (Ptr CTHDoubleTensor -> t -> IO a) -> SomeDims -> t -> TensorDouble
 apply0Tensor op resDim t = unsafePerformIO $ do
-  let res = td_new resDim
-  withForeignPtr (tdTensor res) (\r_ -> op r_ t)
+  let res = DynamicClass.new resDim
+  withForeignPtr (getForeign res) (\r_ -> op r_ t)
   pure res
 {-# NOINLINE apply0Tensor #-}
 
--- usually this is 1 mutation arg + 2 parameter args
-type Raw3Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
 
--- usually this is 1 mutation arg + 3 parameter args
-type Raw4Arg = Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor ->Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
+-- this is 1 mutation arg + 1 parameter args
+apply1
+  :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ())
+  -> TensorDouble -> IO TensorDouble
+apply1 fun t = do
+  let r_ = DynamicClass.new (DynamicClass.shape t)
+  with2THForeignRefs r_ t fun
+  pure r_
 
-apply2 :: Raw3Arg -> TensorDouble -> TensorDouble -> IO TensorDouble
+-- this is 1 mutation arg + 2 parameter args
+apply2
+  :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ())
+  -> TensorDouble -> TensorDouble -> IO TensorDouble
 apply2 fun t src = do
-  let r_ = td_new (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor src)
-              (\srcPtr ->
-                  fun rPtr tPtr srcPtr
-              )
-         )
-    )
+  let r_ = DynamicClass.new (DynamicClass.shape t)
+  with3THForeignRefs r_ t src fun
   pure r_
 
-apply3 :: Raw4Arg -> TensorDouble -> TensorDouble -> TensorDouble -> IO TensorDouble
+-- this is 1 mutation arg + 3 parameter args
+apply3
+  :: (Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor ->Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ())
+  -> TensorDouble -> TensorDouble -> TensorDouble -> IO TensorDouble
 apply3 fun t src1 src2 = do
-  let r_ = td_new (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor src1)
-              (\src1Ptr ->
-                 withForeignPtr (tdTensor src2)
-                   (\src2Ptr ->
-                      fun rPtr tPtr src1Ptr src2Ptr
-                   )
-              )
-         )
-    )
+  let r_ = DynamicClass.new (DynamicClass.shape t)
+  with4THForeignRefs r_ t src1 src2 fun
   pure r_
 
-type Ret2Fun =
-  Ptr CTHDoubleTensor -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> CInt -> CInt -> IO ()
-
-ret2 :: Ret2Fun -> TensorDouble -> Int -> Bool -> IO (TensorDouble, TensorLong)
+ret2
+  :: (Ptr CTHDoubleTensor -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> CInt -> CInt -> IO ())
+  -> TensorDouble -> Int -> Bool -> IO (TensorDouble, TensorLong)
 ret2 fun t dimension keepdim = do
-  let values_ = td_new (tdDim t)
-  let indices_ = tl_new (tdDim t)
-  withForeignPtr (tdTensor values_)
+  let values_ = DynamicClass.new (DynamicClass.shape t)
+  let indices_ = tl_new (DynamicClass.shape t)
+  withForeignPtr (getForeign values_)
     (\vPtr ->
-       withForeignPtr (tlTensor indices_)
+       withForeignPtr (getForeign indices_)
          (\iPtr ->
-            withForeignPtr (tdTensor t)
+            withForeignPtr (getForeign t)
               (\tPtr ->
                   fun vPtr iPtr tPtr dimensionC keepdimC
               )
@@ -222,33 +205,22 @@ ret2 fun t dimension keepdim = do
     keepdimC = if keepdim then 1 else 0
     dimensionC = fromIntegral dimension
 
-apply1 fun t = do
-  let r_ = td_new (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            fun rPtr tPtr
-         )
-    )
-  pure r_
-
 -- ----------------------------------------
 -- Tensor fill operations
 -- ----------------------------------------
 
 td_fill :: Real a => a -> TensorDouble -> TensorDouble
-td_fill value tensor = unsafePerformIO $
-  withForeignPtr (tdTensor nt) (\t -> do
-                                  fillRaw value t
-                                  pure nt
-                              )
-  where nt = td_new (tdDim tensor)
+td_fill value t = unsafePerformIO $
+  withForeignPtr
+    (getForeign nt)
+    (\t -> GenRaw.inplaceFill realToFrac value t >> pure nt)
+  where
+    nt :: TensorDouble
+    nt = DynamicClass.new (DynamicClass.shape t)
 {-# NOINLINE td_fill #-}
 
 td_fill_ :: Real a => a -> TensorDouble -> IO ()
-td_fill_ value tensor =
-  withForeignPtr (tdTensor tensor) (\t -> fillRaw value t)
+td_fill_ value tensor = withForeignPtr (getForeign tensor) (GenRaw.inplaceFill realToFrac value)
 
 -- ----------------------------------------
 -- Tensor-constant operations to constant operations
@@ -280,8 +252,8 @@ td_divConst mtx val = apply1_ tDiv mtx val
 
 td_dot :: TensorDouble -> TensorDouble -> Double
 td_dot t src = realToFrac $ unsafePerformIO $ do
-  withForeignPtr (tdTensor t)
-    (\tPtr -> withForeignPtr (tdTensor src)
+  withForeignPtr (getForeign t)
+    (\tPtr -> withForeignPtr (getForeign src)
       (\srcPtr ->
           pure $ c_THDoubleTensor_dot tPtr srcPtr
       )
@@ -335,37 +307,37 @@ td_meanAll tensor = unsafePerformIO $ apply0_ tMeanAll tensor
 td_neg :: TensorDouble -> TensorDouble
 td_neg tensor = unsafePerformIO $ apply0_ tNeg tensor
   where
-    tNeg t = apply0Tensor c_THDoubleTensor_neg (tdDim tensor) t
+    tNeg t = apply0Tensor c_THDoubleTensor_neg (DynamicClass.shape tensor) t
 {-# NOINLINE td_neg #-}
 
 td_cinv :: TensorDouble -> TensorDouble
 td_cinv tensor = unsafePerformIO $ apply0_ cinv tensor
   where
-    cinv t = apply0Tensor c_THDoubleTensor_cinv (tdDim tensor) t
+    cinv t = apply0Tensor c_THDoubleTensor_cinv (DynamicClass.shape tensor) t
 {-# NOINLINE td_cinv #-}
 
 td_abs :: TensorDouble -> TensorDouble
 td_abs tensor = unsafePerformIO $ apply0_ tAbs tensor
   where
-    tAbs t = apply0Tensor c_THDoubleTensor_abs (tdDim tensor) t
+    tAbs t = apply0Tensor c_THDoubleTensor_abs (DynamicClass.shape tensor) t
 {-# NOINLINE td_abs #-}
 
 td_sigmoid :: TensorDouble -> TensorDouble
 td_sigmoid tensor = unsafePerformIO $ apply0_ tSigmoid tensor
   where
-    tSigmoid t = apply0Tensor c_THDoubleTensor_sigmoid (tdDim tensor) t
+    tSigmoid t = apply0Tensor c_THDoubleTensor_sigmoid (DynamicClass.shape tensor) t
 {-# NOINLINE td_sigmoid #-}
 
 td_log :: TensorDouble -> TensorDouble
 td_log tensor = unsafePerformIO $ apply0_ tLog tensor
   where
-    tLog t = apply0Tensor c_THDoubleTensor_log (tdDim tensor) t
+    tLog t = apply0Tensor c_THDoubleTensor_log (DynamicClass.shape tensor) t
 {-# NOINLINE td_log #-}
 
 td_lgamma :: TensorDouble -> TensorDouble
 td_lgamma tensor = unsafePerformIO $ apply0_ tLgamma tensor
   where
-    tLgamma t = apply0Tensor c_THDoubleTensor_lgamma (tdDim tensor) t
+    tLgamma t = apply0Tensor c_THDoubleTensor_lgamma (DynamicClass.shape tensor) t
 {-# NOINLINE td_lgamma #-}
 
 -- ----------------------------------------
@@ -388,19 +360,19 @@ swap2 fun a b c d e = fun b c a d e
 swap3 fun a b c d e f = fun c a d b e f
 
 checkdim t src fun =
-  unless ((tdDim t) == (tdDim src)) $ error ("Mismatched " ++ fun ++ " dimensions")
+  unless ((DynamicClass.shape t) == (DynamicClass.shape src)) $ error ("Mismatched " ++ fun ++ " dimensions")
 
 -- cadd = z <- y + scalar * x, z value discarded
 -- allocate r_ for the user instead of taking it as an argument
 td_cadd :: TensorDouble -> Double -> TensorDouble -> TensorDouble
 td_cadd t scale src = unsafePerformIO $ do
   checkdim t src "cadd"
-  let r_ = td_new (tdDim t)
-  withForeignPtr (tdTensor r_)
+  let r_ = DynamicClass.new (DynamicClass.shape t)
+  withForeignPtr (getForeign r_)
     (\rPtr ->
-       withForeignPtr (tdTensor t)
+       withForeignPtr (getForeign t)
          (\tPtr ->
-            withForeignPtr (tdTensor src)
+            withForeignPtr (getForeign src)
               (\srcPtr ->
                  c_THDoubleTensor_cadd rPtr tPtr scaleC srcPtr
               )
@@ -413,12 +385,12 @@ td_cadd t scale src = unsafePerformIO $ do
 td_csub :: TensorDouble -> Double -> TensorDouble -> TensorDouble
 td_csub t scale src = unsafePerformIO $ do
   checkdim t src "csub"
-  let r_ = td_new (tdDim t)
-  withForeignPtr (tdTensor r_)
+  let r_ = DynamicClass.new (DynamicClass.shape t)
+  withForeignPtr (getForeign r_)
     (\rPtr ->
-       withForeignPtr (tdTensor t)
+       withForeignPtr (getForeign t)
          (\tPtr ->
-            withForeignPtr (tdTensor src)
+            withForeignPtr (getForeign src)
               (\srcPtr ->
                  c_THDoubleTensor_csub rPtr tPtr scaleC srcPtr
               )
@@ -500,82 +472,90 @@ td_addcdiv t scale src1 src2 = unsafePerformIO $ do
 {-# NOINLINE td_addcdiv #-}
 
 td_addmv :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
-td_addmv beta t alpha src1 src2 = unsafePerformIO $ do
-  case (dim1, dim2, dimt) of
-    (D2 _, D1 _, D1 _) -> pure ()
-    _ -> error "Expected: 1D vector + 2D matrix x 1D vector"
-  unless (d2 dim1 ^. _2 == d1 dim2) $ error "Matrix x vector dimension mismatch"
-  unless (d2 dim1 ^. _1 == d1 dimt) $ error "Incorrect dimension for added vector"
-  apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
-  where
-    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
-    (dim1, dim2, dimt) = (tdDim src1, tdDim src2, tdDim t)
+td_addmv beta t alpha src1 src2 = unsafePerformIO $ td_addmv' beta t alpha src1 src2
 {-# NOINLINE td_addmv #-}
 
--- |No dimension checks (halts execution if they're incorrect)
+td_addmv' :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> IO TensorDouble
+td_addmv' beta t alpha src1 src2 = do
+  case (dim1, dim2, dimt) of
+    ([d1x, d1y], [d2], [dt]) -> do
+      unless (d1y == d2) (throwString "Matrix x vector dimension mismatch")
+      unless (d1x == dt) (throwString "Incorrect dimension for added vector")
+      apply3 ((swap3 GenRaw.c_addmv) betaC alphaC) t src1 src2
+
+    _ -> throwString "Expected: 1D vector + 2D matrix x 1D vector"
+
+  where
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+    (dim1, dim2, dimt) = (shapeList src1, shapeList src2, shapeList t)
+    shapeList :: TensorDouble -> [Int]
+    shapeList = dimVals' . DynamicClass.shape
+
+-- | No dimension checks (halts execution if they're incorrect)
 td_addmv_fast :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
 td_addmv_fast beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmv) betaC alphaC) t src1 src2
   where
-    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+    betaC, alphaC :: CDouble
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha)
 {-# NOINLINE td_addmv_fast #-}
 
-td_mv :: TensorDouble -> TensorDouble -> TensorDouble
-td_mv mat vec =
-  td_addmv 0.0 zero 1.0 mat vec
+getXVectorFromMatrix :: TensorDouble -> TensorDouble
+getXVectorFromMatrix mat = DynamicClass.new (getXLen mat)
   where
-    zero = td_new $ (D1 ((^. _1) . d2 . tdDim $ mat))
+    getXLen :: TensorDouble {- Dim [x,y] -} -> SomeDims {- Dim [x] -}
+    getXLen mat = unsafeSomeDims [head (dimVals' (DynamicClass.shape mat))]
 
--- |No dimension checks (halts execution if they're incorrect)
+td_mv :: TensorDouble -> TensorDouble -> TensorDouble
+td_mv mat vec = td_addmv 0.0 (getXVectorFromMatrix mat) 1.0 mat vec
+
+-- | No dimension checks (halts execution if they're incorrect)
 td_mv_fast :: TensorDouble -> TensorDouble -> TensorDouble
-td_mv_fast mat vec =
-  td_addmv_fast 0.0 zero 1.0 mat vec
-  where
-    zero = td_new $ (D1 ((^. _1) . d2 . tdDim $ mat))
+td_mv_fast mat vec = td_addmv_fast 0.0 (getXVectorFromMatrix mat) 1.0 mat vec
+
 
 td_addmm :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
 td_addmm beta t alpha src1 src2 = unsafePerformIO $ do
   apply3 ((swap3 c_THDoubleTensor_addmm) betaC alphaC) t src1 src2
   where
-    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
+    betaC, alphaC :: CDouble
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha)
 {-# NOINLINE td_addmm #-}
 
 -- |outer product - see https://github.com/torch/torch7/blob/master/doc/maths.md#res-torchaddrres-v1-mat-v2-vec1-vec2
 td_addr :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> TensorDouble
-td_addr beta t alpha vec1 vec2 = unsafePerformIO $ do
-  case (dimt, dim1, dim2) of
-    (D2 _, D1 _, D1 _) -> pure ()
-    _ -> error "Expected: 1D vector + 2D matrix x 1D vector"
-  unless (d2 dimt ^. _1 == d1 dim1) $ error "Matrix dimension mismatch with vec1"
-  unless (d2 dimt ^. _2 == d1 dim2) $ error "Matrix dimension mismatch with vec2"
-  let r_ = td_new (tdDim t)
-  withForeignPtr (tdTensor r_)
-    (\rPtr ->
-       withForeignPtr (tdTensor t)
-         (\tPtr ->
-            withForeignPtr (tdTensor vec1)
-              (\vec1Ptr ->
-                 withForeignPtr (tdTensor vec2)
-                   (\vec2Ptr ->
-                      c_THDoubleTensor_addr rPtr betaC tPtr alphaC vec1Ptr vec2Ptr
-                   )
-              )
-         )
-    )
-  pure r_
-  where
-    (betaC, alphaC) = (realToFrac beta, realToFrac alpha) :: (CDouble, CDouble)
-    (dim1, dim2, dimt) = (tdDim vec1, tdDim vec2, tdDim t)
+td_addr beta t alpha vec1 vec2 = unsafePerformIO $ td_addr' beta t alpha vec1 vec2
 {-# NOINLINE td_addr #-}
 
+td_addr' :: Double -> TensorDouble -> Double -> TensorDouble -> TensorDouble -> IO TensorDouble
+td_addr' beta t alpha vec1 vec2 = do
+  case (dim1, dim2, dimt) of
+    ([d1], [d2], [dtx, dty]) -> do
+      unless (dtx == d1) $ throwString "Matrix dimension mismatch with vec1"
+      unless (dty == d2) $ throwString "Matrix dimension mismatch with vec2"
+      let r_ = DynamicClass.new (DynamicClass.shape t)
+      with4THForeignRefs r_ t vec1 vec2 (\rp tp v1p v2p -> GenRaw.c_addr rp betaC tp alphaC v1p v2p)
+      pure r_
+    _ -> throwString "Expected: 1D vector + 2D matrix x 1D vector"
+
+  where
+    betaC, alphaC :: CDouble
+    (betaC, alphaC) = (realToFrac beta, realToFrac alpha)
+
+    dim1, dim2, dimt :: [Int]
+    (dim1, dim2, dimt) = (shapeList vec1, shapeList vec2, shapeList t)
+
+
+td_outer :: TensorDouble -> TensorDouble -> TensorDouble
 td_outer vec1 vec2 = unsafePerformIO $ do
-  case (dim1, dim2) of
-    (D1 _, D1 _) -> pure ()
-    _ -> error "Expected: 1D vectors"
+  unless (length dim1 == 1 && length dim2 == 1) (throwString "Expected: 1D vectors")
   pure $ td_addr 0.0 emptyMtx 1.0 vec1 vec2
   where
-    (dim1, dim2) = (tdDim vec1, tdDim vec2)
-    emptyMtx = td_init (D2 ((d1 dim1), (d1 dim2))) 0.0
+    dim1, dim2 :: [Int]
+    (dim1, dim2) = (DynamicClass.shapeList vec1, DynamicClass.shapeList vec2)
+
+    emptyMtx :: TensorDouble
+    emptyMtx = DynamicClass.init (unsafeSomeDims [head dim1, head dim2]) 0
 {-# NOINLINE td_outer #-}
 
 
@@ -728,16 +708,14 @@ td_cmin t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmin t src
 -- TH_API void THTensor_(eye)(THTensor *r_, long n, long m);
 td_eye :: Word -> Word -> TensorDouble
 td_eye d1 d2 = unsafePerformIO $ do
-  withForeignPtr (tdTensor res)
-    (\r_ -> do
-        c_THDoubleTensor_eye r_ d1C d2C
-        pure r_
-    )
+  withForeignPtr (getForeign res) $ \r_ -> do
+    c_THDoubleTensor_eye r_ (fromIntegral d1) (fromIntegral d2)
+    pure r_
   pure res
   where
-    res = td_new (D2 (d1, d2))
-    d1C = fromIntegral d1
-    d2C = fromIntegral d2
+    res :: TensorDouble
+    res = DynamicClass.new (unsafeSomeDims [fromIntegral d1, fromIntegral d2])
+
 {-# NOINLINE td_eye #-}
 
 -- TH_API void THTensor_(arange)(THTensor *r_, accreal xmin, accreal xmax, accreal step);
@@ -755,9 +733,9 @@ td_eye d1 d2 = unsafePerformIO $ do
 -- TH_API int THTensor_(equal)(THTensor *ta, THTensor *tb);
 td_equal :: TensorDouble -> TensorDouble -> Bool
 td_equal t1 t2 = unsafePerformIO $
-  withForeignPtr (tdTensor t1)
+  withForeignPtr (getForeign t1)
     (\t1c ->
-        withForeignPtr (tdTensor t2)
+        withForeignPtr (getForeign t2)
         (\t2c -> pure $ (c_THDoubleTensor_equal t1c t2c) == 1
         )
     )
@@ -773,7 +751,7 @@ td_equal t1 t2 = unsafePerformIO $
 -- TH_API void THTensor_(round)(THTensor *r_, THTensor *t);
 td_round tensor = unsafePerformIO $ apply0_ tround tensor
   where
-    tround t = apply0Tensor c_THDoubleTensor_round (tdDim tensor) t
+    tround t = apply0Tensor c_THDoubleTensor_round (DynamicClass.shape tensor) t
 {-# NOINLINE td_round #-}
 
 -- -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);

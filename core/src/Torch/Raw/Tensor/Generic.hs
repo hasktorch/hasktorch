@@ -5,7 +5,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-module Torch.Core.Tensor.Generic
+module Torch.Raw.Tensor.Generic
   ( flatten
   , randInit
   , randInit'
@@ -23,13 +23,9 @@ module Torch.Core.Tensor.Generic
   , genericGet'
   , genericInvLogit
 
-  , GenericOps(..)
-  , GenericMath(..)
-  , GenericRandom(..)
-  , LapackOps(..)
-
   , dispRaw
-  , module Torch.Core.Tensor.Generic.Internal
+
+  , module X
   ) where
 
 import Numeric.Dimensions (Dim(..), someDimsVal)
@@ -38,18 +34,19 @@ import Foreign.C.Types
 import Data.Maybe (fromJust)
 import qualified Numeric as Num (showGFloat)
 
-import Torch.Core.Internal (impossible, i2cll)
+import Torch.Core.Internal (impossible)
 import Torch.Core.Tensor.Dim
-import Torch.Core.Tensor.Generic.Internal
-import Torch.Core.Tensor.Generic.Math
-import Torch.Core.Tensor.Generic.Lapack
-import Torch.Core.Tensor.Generic.Random
-import Torch.Core.Tensor.Generic.Ops
+
+import Torch.Raw.Internal as X
+import Torch.Raw.Tensor as X
+import Torch.Raw.Tensor.Math as X
+import Torch.Raw.Tensor.Lapack as X
+import Torch.Raw.Tensor.Random as X
 
 import THTypes
 
 -- | flatten a CTHDoubleTensor into a list
-flatten :: GenericOps t => Ptr t -> [HaskReal t]
+flatten :: THTensor t => Ptr t -> [HaskReal t]
 flatten tensor =
   case map getDim [0 .. c_nDimension tensor - 1] of
     []           -> mempty
@@ -68,11 +65,11 @@ flatten tensor =
 -- |randomly initialize a tensor with uniform random values from a range
 -- TODO - finish implementation to handle sizes correctly
 randInit
-  :: (GenericMath t, GenericRandom t, GenericOps t, Num (HaskReal t))
+  :: (THTensorMath t, THTensorRandom t, THTensor t, Num (HaskReal t))
   => Ptr CTHGenerator
   -> Dim (dims :: [k])
-  -> CDouble
-  -> CDouble
+  -> HaskAccReal t
+  -> HaskAccReal t
   -> IO (Ptr t)
 randInit gen dims lower upper = do
   t <- constant dims 0
@@ -82,11 +79,11 @@ randInit gen dims lower upper = do
 -- |randomly initialize a tensor with uniform random values from a range
 -- TODO - finish implementation to handle sizes correctly
 randInit'
-  :: (GenericMath t, GenericRandom t, GenericOps t, Num (HaskReal t))
+  :: (THTensorMath t, THTensorRandom t, THTensor t, Num (HaskReal t))
   => Ptr CTHGenerator
   -> SomeDims
-  -> CDouble
-  -> CDouble
+  -> HaskAccReal t
+  -> HaskAccReal t
   -> IO (Ptr t)
 randInit' gen dims lower upper = do
   t <- constant' dims 0
@@ -95,13 +92,13 @@ randInit' gen dims lower upper = do
 
 -- | Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
--- fillDouble :: (GenericMath t, GenericOps t) => HaskReal t -> Ptr t -> IO ()
+-- fillDouble :: (THTensorMath t, THTensor t) => HaskReal t -> Ptr t -> IO ()
 -- fillDouble = flip c_fill . realToFrac
 
 -- | Create a new (double) tensor of specified dimensions and c_fill it with 0
 -- safe version
 -- tensorRaw :: Dim (ns::[k]) -> Double -> IO TensorDoubleRaw
-constant :: forall ns t . (GenericMath t, GenericOps t) => Dim (ns::[k]) -> HaskReal t -> IO (Ptr t)
+constant :: forall ns t . (THTensorMath t, THTensor t) => Dim (ns::[k]) -> HaskReal t -> IO (Ptr t)
 constant dims value = do
   newPtr <- genericNew dims
   c_fill newPtr value
@@ -109,13 +106,13 @@ constant dims value = do
 
 -- | Create a new (double) tensor of specified dimensions and c_fill it with 0
 -- safe version
-constant' :: forall ns t . (GenericMath t, GenericOps t) => SomeDims -> HaskReal t -> IO (Ptr t)
+constant' :: forall ns t . (THTensorMath t, THTensor t) => SomeDims -> HaskReal t -> IO (Ptr t)
 constant' dims value = do
   newPtr <- genericNew' dims
   c_fill newPtr value
   pure newPtr
 
-genericNew :: GenericOps t => Dim (ns::[k]) -> IO (Ptr t)
+genericNew :: THTensor t => Dim (ns::[k]) -> IO (Ptr t)
 genericNew = onDims fromIntegral
   c_new
   c_newWithSize1d
@@ -123,7 +120,7 @@ genericNew = onDims fromIntegral
   c_newWithSize3d
   c_newWithSize4d
 
-genericNew' :: GenericOps t => SomeDims -> IO (Ptr t)
+genericNew' :: THTensor t => SomeDims -> IO (Ptr t)
 genericNew' = onDims' fromIntegral
   c_new
   c_newWithSize1d
@@ -131,7 +128,7 @@ genericNew' = onDims' fromIntegral
   c_newWithSize3d
   c_newWithSize4d
 
-genericGet :: GenericOps t => Ptr t -> Dim (ns::[k]) -> HaskReal t
+genericGet :: THTensor t => Ptr t -> Dim (ns::[k]) -> HaskReal t
 genericGet t = onDims fromIntegral
   (impossible "0-rank will never be called")
   (c_get1d t)
@@ -139,7 +136,7 @@ genericGet t = onDims fromIntegral
   (c_get3d t)
   (c_get4d t)
 
-genericGet' :: GenericOps t => Ptr t -> SomeDims -> HaskReal t
+genericGet' :: THTensor t => Ptr t -> SomeDims -> HaskReal t
 genericGet' t = onDims' fromIntegral
   (impossible "0-rank will never be called")
   (c_get1d t)
@@ -149,26 +146,26 @@ genericGet' t = onDims' fromIntegral
 
 
 -- | apply inverse logit to all values of a tensor
-genericInvLogit :: (GenericFloatingMath t, GenericOps t) => Ptr t -> IO (Ptr t)
+genericInvLogit :: (THTensorMathFloating t, THTensor t) => Ptr t -> IO (Ptr t)
 genericInvLogit = applyInPlaceFn c_sigmoid
 
 
 -- |apply a tensor transforming function to a tensor
-applyInPlaceFn :: GenericOps t => (Ptr t -> Ptr t -> IO ()) -> Ptr t -> IO (Ptr t)
+applyInPlaceFn :: THTensor t => (Ptr t -> Ptr t -> IO ()) -> Ptr t -> IO (Ptr t)
 applyInPlaceFn f t1 = do
   r_ <- c_new
   f r_ t1
   pure r_
 
 -- | Dimensions of a raw tensor as a list
-dimList :: GenericOps t => Ptr t -> [Int]
+dimList :: THTensor t => Ptr t -> [Int]
 dimList t = getDim <$> [0 .. c_nDimension t - 1]
   where
     getDim :: CInt -> Int
     getDim = fromIntegral . c_size t
 
 -- |Dimensions of a raw tensor as a TensorDim value
-dimView :: GenericOps t => Ptr t -> DimView
+dimView :: THTensor t => Ptr t -> DimView
 dimView t =
   case length sz of
     0 -> D0
@@ -186,13 +183,13 @@ dimView t =
     at n = fromIntegral (sz !! n)
 
 -- | Dimensions of a raw tensor as a SomeDims value.
-getDynamicDim :: GenericOps t => Ptr t -> SomeDims
+getDynamicDim :: THTensor t => Ptr t -> SomeDims
 getDynamicDim
 -- Note: we can safely call 'fromJust' since these values are maintained by TH which does the bounds-checking
   = fromJust . someDimsVal . dimList
 
 -- | c_fill a raw Double tensor with 0.0
-fillZeros :: (GenericMath t, GenericOps t, Num (HaskReal t)) => Ptr t -> IO (Ptr t)
+fillZeros :: (THTensorMath t, THTensor t, Num (HaskReal t)) => Ptr t -> IO (Ptr t)
 fillZeros t = c_fill t 0 >> pure t
 
 -- ========================================================================= --
@@ -200,7 +197,7 @@ fillZeros t = c_fill t 0 >> pure t
 -- ========================================================================= --
 
 -- | displaying raw tensor values
-dispRaw :: forall t . (GenericOps t, Show (HaskReal t)) => Ptr t -> IO ()
+dispRaw :: forall t . (THTensor t, Show (HaskReal t)) => Ptr t -> IO ()
 dispRaw tensor
   | length sz == 0 = putStrLn "Empty Tensor"
   | length sz == 1 = do
@@ -245,8 +242,10 @@ dispRaw tensor
 
 -- | Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
+--
+-- renamed from @fillRaw :: Real a => a -> TensorDoubleRaw -> IO ()@
 inplaceFill
-  :: (GenericMath t)
+  :: (THTensorMath t)
   => (a -> HaskReal t)
   -> a
   -> Ptr t

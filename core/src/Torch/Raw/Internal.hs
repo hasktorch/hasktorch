@@ -1,13 +1,14 @@
 {-# LANGUAGE TypeFamilies #-}
-module Torch.Core.Tensor.Generic.Internal
-  ( module X
-  , HaskReal
+module Torch.Raw.Internal
+  ( HaskReal
   , HaskAccReal
   , Storage
+
+  , module X
   ) where
 
 import Foreign as X (Ptr, FunPtr)
-import Foreign.C.Types as X (CPtrdiff, CLLong, CLong, CDouble, CShort, CLong, CChar, CInt, CFloat)
+import Foreign.C.Types as X (CPtrdiff, CLLong, CLong, CDouble, CShort, CLong, CChar, CInt, CIntPtr, CFloat)
 import THTypes as X
 
 -- | the "real" type of the bytetensor -- notation is taken from TH.

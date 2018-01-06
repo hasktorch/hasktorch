@@ -1,7 +1,10 @@
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Core.Tensor.Generic.Ops where
+module Torch.Raw.Tensor
+  ( THTensor(..)
+  , module X
+  ) where
 
-import Torch.Core.Tensor.Generic.Internal
+import Torch.Raw.Internal as X
 
 import qualified THByteTensor as T
 import qualified THDoubleTensor as T
@@ -10,7 +13,7 @@ import qualified THIntTensor as T
 import qualified THLongTensor as T
 import qualified THShortTensor as T
 
-class GenericOps t where
+class THTensor t where
   -- C-functions
   c_clearFlag :: Ptr t -> CChar -> IO ()
   c_tensordata :: Ptr t -> IO (Ptr (HaskReal t))
@@ -161,7 +164,7 @@ class GenericOps t where
   p_unsqueeze1d :: FunPtr (Ptr t -> Ptr t -> CInt -> IO ())
 
 
-instance GenericOps CTHByteTensor where
+instance THTensor CTHByteTensor where
   c_storage = T.c_THByteTensor_storage
   c_storageOffset = T.c_THByteTensor_storageOffset
   c_nDimension = T.c_THByteTensor_nDimension
@@ -307,7 +310,7 @@ instance GenericOps CTHByteTensor where
   p_desc = T.p_THByteTensor_desc
   p_sizeDesc = T.p_THByteTensor_sizeDesc
 
-instance GenericOps CTHDoubleTensor where
+instance THTensor CTHDoubleTensor where
   c_clearFlag = T.c_THDoubleTensor_clearFlag
   c_tensordata = T.c_THDoubleTensor_data
   c_desc = T.c_THDoubleTensor_desc
@@ -455,7 +458,7 @@ instance GenericOps CTHDoubleTensor where
   p_unsqueeze1d = T.p_THDoubleTensor_unsqueeze1d
 
 
-instance GenericOps CTHFloatTensor where
+instance THTensor CTHFloatTensor where
   c_clearFlag = T.c_THFloatTensor_clearFlag
   c_tensordata = T.c_THFloatTensor_data
   c_desc = T.c_THFloatTensor_desc
@@ -603,7 +606,7 @@ instance GenericOps CTHFloatTensor where
   p_unsqueeze1d = T.p_THFloatTensor_unsqueeze1d
 
 
-instance GenericOps CTHIntTensor where
+instance THTensor CTHIntTensor where
   c_clearFlag = T.c_THIntTensor_clearFlag
   c_tensordata = T.c_THIntTensor_data
   c_desc = T.c_THIntTensor_desc
@@ -751,7 +754,7 @@ instance GenericOps CTHIntTensor where
   p_unsqueeze1d = T.p_THIntTensor_unsqueeze1d
 
 
-instance GenericOps CTHLongTensor where
+instance THTensor CTHLongTensor where
   c_clearFlag = T.c_THLongTensor_clearFlag
   c_tensordata = T.c_THLongTensor_data
   c_desc = T.c_THLongTensor_desc
@@ -899,7 +902,7 @@ instance GenericOps CTHLongTensor where
   p_unsqueeze1d = T.p_THLongTensor_unsqueeze1d
 
 
-instance GenericOps CTHShortTensor where
+instance THTensor CTHShortTensor where
   c_clearFlag = T.c_THShortTensor_clearFlag
   c_tensordata = T.c_THShortTensor_data
   c_desc = T.c_THShortTensor_desc

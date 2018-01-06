@@ -1,69 +1,64 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ForeignFunctionInterface#-}
-
+{-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
+{-# LANGUAGE InstanceSigs, RankNTypes, PolyKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeInType #-}
 module Torch.Core.Tensor.Dynamic.Long
-  ( tl_get
+  ( TensorLong(..)
+  , tl_get
   , tl_new
+  , fillRaw
+  , fillRaw0
+  , wrapLong
   ) where
 
-import Foreign
+import Control.Monad (void)
 import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
-                           newForeignPtr )
+import Foreign (Ptr, ForeignPtr, withForeignPtr, newForeignPtr, finalizeForeignPtr)
+import GHC.TypeLits (Nat)
+import GHC.Exts (fromList, toList, IsList, Item)
+
+import Torch.Core.Tensor.Dim (Dim(..), SomeDims(..), someDimsM)
+import Torch.Raw.Internal (CTHDoubleTensor, CTHLongTensor)
+import qualified THDoubleTensor as T
+import qualified THLongTensor as T
+import qualified Torch.Raw.Tensor.Generic as GenRaw
+import qualified Torch.Core.Tensor.Dynamic.Generic as Gen
+import qualified Torch.Core.Tensor.Dim as Dim
+
 import GHC.Ptr (FunPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Internal (w2cll)
-import Torch.Core.Tensor.Raw hiding (fillRaw, fillRaw0)
-import Torch.Core.Tensor.Types
+import Torch.Core.Tensor.Types (TensorLong(..), TensorLongRaw, THForeignRef(getForeign))
+
 import THTypes
 import THLongTensor
 import THLongTensorMath
 import THLongLapack
 
-wrapLong tensor = TensorLong <$> (newForeignPtr p_THLongTensor_free tensor)
+wrapLong :: TensorLongRaw -> IO TensorLong
+wrapLong = fmap TensorLong . newForeignPtr GenRaw.p_free
 
-tl_get loc tensor =
-   (withForeignPtr(tlTensor tensor) (\t ->
-                                        pure $ getter loc t
-                                    ))
-  where
-    getter D0 t = undefined
-    getter (D1 d1) t = c_THLongTensor_get1d t $ w2cll d1
-    getter (D2 (d1, d2)) t = c_THLongTensor_get2d t
-                          (w2cll d1) (w2cll d2)
-    getter (D3 (d1, d2, d3)) t = c_THLongTensor_get3d t
-                             (w2cll d1) (w2cll d2) (w2cll d3)
-    getter (D4 (d1, d2, d3, d4)) t = c_THLongTensor_get4d t
-                                (w2cll d1) (w2cll d2) (w2cll d3) (w2cll d4)
+tl_get :: SomeDims -> TensorLong -> IO CLong
+tl_get loc t = withForeignPtr (getForeign t) (pure . flip GenRaw.genericGet' loc)
 
-
--- |Returns a function that accepts a tensor and fills it with specified value
+-- | Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
--- fillRaw :: Real a => a -> TensorLongRaw -> IO ()
-fillRaw value = (flip c_THLongTensor_fill) (fromIntegral value)
+fillRaw :: Integral a => a -> TensorLongRaw -> IO ()
+fillRaw value = flip GenRaw.c_fill (fromIntegral value)
 
--- |Fill a raw Long tensor with 0.0
+-- | Fill a raw Long tensor with 0.0
 fillRaw0 :: TensorLongRaw -> IO (TensorLongRaw)
-fillRaw0 tensor = fillRaw 0 tensor >> pure tensor
+fillRaw0 t = fillRaw 0 t >> pure t
 
-
--- |Create a new (Long) tensor of specified dimensions and fill it with 0
-tl_new :: TensorDim Word -> TensorLong
+-- | Create a new (Long) tensor of specified dimensions and fill it with 0
+tl_new :: SomeDims -> TensorLong
 tl_new dims = unsafePerformIO $ do
-  newPtr <- go dims
-  fPtr <- newForeignPtr p_THLongTensor_free newPtr
+  newPtr <- GenRaw.genericNew' dims
+  fPtr <- newForeignPtr GenRaw.p_free newPtr
   withForeignPtr fPtr fillRaw0
-  pure $ TensorLong fPtr dims
-  where
-    wrap ptr = newForeignPtr p_THLongTensor_free ptr
-    go D0 = c_THLongTensor_new
-    go (D1 d1) = c_THLongTensor_newWithSize1d $ w2cll d1
-    go (D2 (d1, d2)) = c_THLongTensor_newWithSize2d
-                    (w2cll d1) (w2cll d2)
-    go (D3 (d1, d2, d3)) = c_THLongTensor_newWithSize3d
-                       (w2cll d1) (w2cll d2) (w2cll d3)
-    go (D4 (d1, d2, d3, d4)) = c_THLongTensor_newWithSize4d
-                          (w2cll d1) (w2cll d2) (w2cll d3) (w2cll d4)
+  pure $ TensorLong fPtr
+{-# NOINLINE tl_new #-}
+

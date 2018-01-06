@@ -1,35 +1,36 @@
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Core.Tensor.Generic.Random where
+module Torch.Raw.Tensor.Random
+  ( THTensorRandom(..)
+  , module X
+  ) where
 
 import qualified THFloatTensorRandom as T
 import qualified THDoubleTensorRandom as T
 
-import Torch.Core.Tensor.Generic.Internal
+import Torch.Raw.Internal as X
 
-type SHOULD_BE_HASK_TYPE = CDouble
-
-class GenericRandom t where
+class THTensorRandom t where
   c_random :: Ptr t -> Ptr CTHGenerator -> IO ()
   c_clampedRandom :: Ptr t -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ()
   c_cappedRandom :: Ptr t -> Ptr CTHGenerator -> CLLong -> IO ()
-  c_geometric :: Ptr t -> Ptr CTHGenerator -> SHOULD_BE_HASK_TYPE -> IO ()
-  c_bernoulli :: Ptr t -> Ptr CTHGenerator -> SHOULD_BE_HASK_TYPE -> IO ()
+  c_geometric :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> IO ()
+  c_bernoulli :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> IO ()
   c_bernoulli_FloatTensor :: Ptr t -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
   c_bernoulli_DoubleTensor :: Ptr t -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
-  c_uniform :: Ptr t -> Ptr CTHGenerator -> SHOULD_BE_HASK_TYPE -> SHOULD_BE_HASK_TYPE -> IO ()
-  c_normal :: Ptr t -> Ptr CTHGenerator -> SHOULD_BE_HASK_TYPE -> SHOULD_BE_HASK_TYPE -> IO ()
-  c_normal_means :: Ptr t -> Ptr CTHGenerator -> Ptr t -> SHOULD_BE_HASK_TYPE -> IO ()
-  c_normal_stddevs :: Ptr t -> Ptr CTHGenerator -> SHOULD_BE_HASK_TYPE -> Ptr t -> IO ()
+  c_uniform :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> HaskAccReal t -> IO ()
+  c_normal :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> HaskAccReal t -> IO ()
+  c_normal_means :: Ptr t -> Ptr CTHGenerator -> Ptr t -> HaskAccReal t -> IO ()
+  c_normal_stddevs :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> Ptr t -> IO ()
   c_normal_means_stddevs :: Ptr t -> Ptr CTHGenerator -> Ptr t -> Ptr t -> IO ()
-  c_exponential :: Ptr t -> Ptr CTHGenerator -> SHOULD_BE_HASK_TYPE -> IO ()
+  c_exponential :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> IO ()
   c_standard_gamma :: Ptr t -> Ptr CTHGenerator -> Ptr t -> IO ()
-  c_cauchy :: Ptr t -> Ptr CTHGenerator -> SHOULD_BE_HASK_TYPE -> SHOULD_BE_HASK_TYPE -> IO ()
-  c_logNormal :: Ptr t -> Ptr CTHGenerator -> SHOULD_BE_HASK_TYPE -> SHOULD_BE_HASK_TYPE -> IO ()
+  c_cauchy :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> HaskAccReal t -> IO ()
+  c_logNormal :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> HaskAccReal t -> IO ()
   c_multinomial :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr t -> CInt -> CInt -> IO ()
   c_multinomialAliasSetup :: Ptr t -> Ptr CTHLongTensor -> Ptr t -> IO ()
   c_multinomialAliasDraw :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Ptr t -> IO ()
 
-instance GenericRandom CTHDoubleTensor where
+instance THTensorRandom CTHDoubleTensor where
   c_random = T.c_THDoubleTensor_random
   c_clampedRandom = T.c_THDoubleTensor_clampedRandom
   c_cappedRandom = T.c_THDoubleTensor_cappedRandom
@@ -50,7 +51,7 @@ instance GenericRandom CTHDoubleTensor where
   c_multinomialAliasSetup = T.c_THDoubleTensor_multinomialAliasSetup
   c_multinomialAliasDraw = T.c_THDoubleTensor_multinomialAliasDraw
 
-instance GenericRandom CTHFloatTensor where
+instance THTensorRandom CTHFloatTensor where
   c_random = T.c_THFloatTensor_random
   c_clampedRandom = T.c_THFloatTensor_clampedRandom
   c_cappedRandom = T.c_THFloatTensor_cappedRandom
