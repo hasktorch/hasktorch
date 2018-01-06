@@ -1,12 +1,14 @@
 {-# LANGUAGE DataKinds, GADTs, TypeFamilies, TypeOperators #-}
-{-# LANGUAGE LambdaCase                                    #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses                         #-}
-{-# LANGUAGE ScopedTypeVariables                           #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-imports -Wno-missing-signatures -Wno-unused-matches #-}
-
 module Main where
 
+import Torch.Core.Tensor.Dim
+import Torch.Core.Tensor.Dynamic.Double
+import Torch.Core.Tensor.Dynamic.DoubleMath
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom

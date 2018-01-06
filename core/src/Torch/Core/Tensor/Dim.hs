@@ -9,6 +9,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 module Torch.Core.Tensor.Dim
   ( KnownNatDim
+  , SingDim
   , SingDimensions
   , DimView(..)
   , someDimsM
@@ -43,6 +44,7 @@ import Torch.Core.Internal (impossible)
 import Numeric.Dimensions as Dim
 
 type KnownNatDim n = (KnownDim n, KnownNat n)
+type SingDim n = (SingI n, KnownDim n)
 type SingDimensions d = (SingI d, Dimensions d)
 
 data DimView
