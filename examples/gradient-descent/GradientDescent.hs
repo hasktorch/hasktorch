@@ -10,6 +10,7 @@ import Data.Singletons
 import GHC.TypeLits
 import Lens.Micro
 
+import Torch.Core.Tensor.Dim hiding (N)
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom
@@ -42,7 +43,7 @@ loss (x, y) param =
   & tds_square
   & tds_sumAll
 
-gradient :: forall n . (KnownNat n) =>
+gradient :: forall n . (KnownNatDim n) =>
   (TDS '[2, n], TDS '[n]) -> TDS '[1, 2] -> TDS '[1, 2]
 gradient (x, y) param =
   ((-2.0) / nsamp) *^ (err !*! tds_trans x)

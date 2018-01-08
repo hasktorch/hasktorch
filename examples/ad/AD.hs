@@ -8,7 +8,7 @@ module Main where
 
 import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Dynamic.Double
-import Torch.Core.Tensor.Dynamic.DoubleMath
+import Torch.Core.Tensor.Dynamic.DoubleMath hiding ((^+^), (*^), (^-^))
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom
@@ -58,10 +58,10 @@ data AffineWeights (i :: Nat) (o :: Nat) = AW {
   } deriving (Show)
 type AW = AffineWeights
 
-updateTensor :: SingI d => TDS d -> TDS d -> Double -> TDS d
+updateTensor :: SingDimensions d => TDS d -> TDS d -> Double -> TDS d
 updateTensor t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
 
-updateLayer :: (KnownNat i, KnownNat o) =>
+updateLayer :: (KnownNatDim i, KnownNatDim o) =>
   Double -> Layer l i o -> Gradient l i o -> Layer l i o
 updateLayer _ LayerTrivial _ = LayerTrivial
 updateLayer _ LayerSigmoid _ = LayerSigmoid
@@ -72,7 +72,7 @@ updateLayer learningRate (LayerAffine w) (LayerAffine gradient) =
   LayerAffine $ AW (updateTensor (biases w) (biases gradient) learningRate)
                    (updateTensor (weights w) (weights gradient) learningRate)
 
-forwardProp :: forall l i o . (KnownNat i, KnownNat o) =>
+forwardProp :: forall l i o . (KnownNatDim i, KnownNatDim o) =>
   TDS '[i] -> (Layer l i o) -> TDS '[o]
 forwardProp t LayerTrivial = t
 forwardProp t (LayerLinear w) =
@@ -88,7 +88,7 @@ forwardProp t (LayerAffine (AW b w)) =
     b' = tds_resize b
 
 -- TODO: write to Table
-backProp :: forall l i o . (KnownNat i, KnownNat o) =>
+backProp :: forall l i o . (KnownNatDim i, KnownNatDim o) =>
     Sensitivity o -> (Layer l i o) -> (Gradient l i o, Sensitivity i)
 backProp dEds LayerTrivial           = (LayerTrivial, dEds)
 backProp dEds LayerSigmoid           = (LayerSigmoid, dEds ^*^ undefined)
@@ -96,27 +96,27 @@ backProp dEds LayerRelu              = (LayerRelu, dEds ^*^ undefined)
 backProp dEds (LayerLinear w)        = (undefined , undefined)
 backProp dEds (LayerAffine (AW w b)) = (undefined , undefined)
 
-trivial' :: SingI d => TDS d -> TDS d
+trivial' :: SingDimensions d => TDS d -> TDS d
 trivial' t = tds_init 1.0
 
-sigmoid' :: SingI d => TDS d -> TDS d
+sigmoid' :: SingDimensions d => TDS d -> TDS d
 sigmoid' t = (tds_sigmoid t) ^*^ ((tds_init 1.0) ^-^ tds_sigmoid t)
 
-relu' :: SingI d => TDS d -> TDS d
+relu' :: SingDimensions d => TDS d -> TDS d
 relu' t = (tds_gtTensorT t (tds_new))
 
 -- forward prop, don't retain values
-forwardNetwork :: forall i h o . TDS '[i] -> NW i h o  -> TDS '[o]
+forwardNetwork :: forall i h o . (KnownDim i, KnownDim o) => TDS '[i] -> NW i h o  -> TDS '[o]
 forwardNetwork t (O w) = forwardProp t w
 forwardNetwork t (hh :~ hr) = forwardNetwork (forwardProp t hh) hr
 
 -- forward prop, retain values
-forwardNetwork' :: forall i h o . TDS '[i] -> NW i h o -> Values h o
+forwardNetwork' :: forall i h o . (KnownDim i, KnownDim o) => TDS '[i] -> NW i h o -> Values h o
 forwardNetwork' t (O olayer) = V (forwardProp t olayer)
 forwardNetwork' t (h :~ hs) = output :^~ (forwardNetwork' output hs)
   where output = forwardProp t h
 
-mkW :: (SingI i, SingI o) => AW i o
+mkW :: (SingI i, KnownDim i, KnownDim o, SingI o) => AW i o
 mkW = AW b n
   where (b, n) = (tds_new, tds_new)
 
@@ -153,7 +153,7 @@ dispN :: NW h hs c -> IO ()
 dispN (O w) = putStrLn "\nOutput Layer ::::" >> dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
 
-dispV :: Values hs o -> IO ()
+dispV :: KnownDim o => Values hs o -> IO ()
 dispV (V o)= putStrLn "\nOutput Layer ::::" >> tds_p o
 dispV (v :^~ n) = putStrLn "\nCurrent Layer ::::" >> tds_p v >> dispV n
 

@@ -6,6 +6,7 @@
 
 module Main where
 
+import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
 import Torch.Core.Tensor.Static.DoubleRandom
@@ -24,19 +25,19 @@ data StaticWeights (i :: Nat) (o :: Nat) = SW {
   nodes :: TDS '[o, i]
   } deriving (Show)
 
-mkW :: (KnownNat i, KnownNat o) => SW i o
+mkW :: (KnownNatDim i, KnownNatDim o) => SW i o
 mkW = SW b n
   where (b, n) = (tds_new, tds_new)
 
 data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
-  O :: (KnownNat i, KnownNat o) =>
+  O :: (KnownNatDim i, KnownNatDim o) =>
        SW i o -> SN i '[] o
-  (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
+  (:~) :: (KnownNatDim h, KnownNatDim i, KnownNatDim o) =>
           SW i h -> SN h hs o -> SN i (h ': hs) o
 
 infixr 5 :~
 
-dispW :: (KnownNat o, KnownNat i) => StaticWeights i o -> IO ()
+dispW :: (KnownNatDim o, KnownNatDim i) => StaticWeights i o -> IO ()
 dispW w = do
   putStrLn "\nBiases:"
   tds_p (biases w)
@@ -47,28 +48,28 @@ dispN :: SN h hs c -> IO ()
 dispN (O w) = dispW w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispW w >> dispN n'
 
-randomWeights :: (KnownNat i, KnownNat o) => IO (SW i o)
+randomWeights :: (KnownNatDim i, KnownNatDim o) => IO (SW i o)
 randomWeights = do
   gen <- newRNG
   b <- tds_uniform gen (-1.0) (1.0)
   w <- tds_uniform gen (-1.0) (1.0)
   pure SW { biases = b, nodes = w }
 
-randomNet :: forall i hs o. (KnownNat i, SingI hs, KnownNat o) => IO (SN i hs o)
+randomNet :: forall i hs o. (KnownNatDim i, SingI hs, KnownNatDim o) => IO (SN i hs o)
 randomNet = go (sing :: Sing hs)
-  where go :: forall h hs'. KnownNat h => Sing hs' -> IO (SN h hs' o)
+  where go :: forall h hs'. KnownNatDim h => Sing hs' -> IO (SN h hs' o)
         go = \case
           SNil ->
             O <$> randomWeights
           SNat `SCons` ss ->
             (:~) <$> randomWeights <*> go ss
 
-runLayer :: (KnownNat i, KnownNat o) => SW i o -> TDS '[i] -> TDS '[o]
+runLayer :: (KnownNatDim i, KnownNatDim o) => SW i o -> TDS '[i] -> TDS '[o]
 runLayer sw v = tds_addmv 1.0 wB 1.0 wN v -- v are the inputs
   where wB = biases sw
         wN = nodes sw
 
-runNet :: (KnownNat i, KnownNat o) => SN i hs o -> TDS '[i] -> TDS '[o]
+runNet :: (KnownNatDim i, KnownNatDim o) => SN i hs o -> TDS '[i] -> TDS '[o]
 runNet (O w) v = tds_sigmoid (runLayer w v)
 runNet (w :~ n') v = let v' = tds_sigmoid (runLayer w v) in runNet n' v'
 
