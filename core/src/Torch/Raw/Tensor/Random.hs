@@ -23,7 +23,7 @@ class THTensorRandom t where
   c_normal_stddevs :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> Ptr t -> IO ()
   c_normal_means_stddevs :: Ptr t -> Ptr CTHGenerator -> Ptr t -> Ptr t -> IO ()
   c_exponential :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> IO ()
-  c_standard_gamma :: Ptr t -> Ptr CTHGenerator -> Ptr t -> IO ()
+  -- c_standard_gamma :: Ptr t -> Ptr CTHGenerator -> Ptr t -> IO ()
   c_cauchy :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> HaskAccReal t -> IO ()
   c_logNormal :: Ptr t -> Ptr CTHGenerator -> HaskAccReal t -> HaskAccReal t -> IO ()
   c_multinomial :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr t -> CInt -> CInt -> IO ()
@@ -44,7 +44,7 @@ instance THTensorRandom CTHDoubleTensor where
   c_normal_stddevs = T.c_THDoubleTensor_normal_stddevs
   c_normal_means_stddevs = T.c_THDoubleTensor_normal_means_stddevs
   c_exponential = T.c_THDoubleTensor_exponential
-  c_standard_gamma = T.c_THDoubleTensor_standard_gamma
+  -- c_standard_gamma = T.c_THDoubleTensor_standard_gamma
   c_cauchy = T.c_THDoubleTensor_cauchy
   c_logNormal = T.c_THDoubleTensor_logNormal
   c_multinomial = T.c_THDoubleTensor_multinomial
@@ -65,7 +65,7 @@ instance THTensorRandom CTHFloatTensor where
   c_normal_stddevs = T.c_THFloatTensor_normal_stddevs
   c_normal_means_stddevs = T.c_THFloatTensor_normal_means_stddevs
   c_exponential = T.c_THFloatTensor_exponential
-  c_standard_gamma = T.c_THFloatTensor_standard_gamma
+  -- c_standard_gamma = T.c_THFloatTensor_standard_gamma
   c_cauchy = T.c_THFloatTensor_cauchy
   c_logNormal = T.c_THFloatTensor_logNormal
   c_multinomial = T.c_THFloatTensor_multinomial
