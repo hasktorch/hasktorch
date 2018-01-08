@@ -17,6 +17,7 @@ module Torch.Raw.Tensor.Generic
   , getDynamicDim
   , fillZeros
   , inplaceFill
+  , genericEqual
   , genericNew
   , genericNew'
   , genericGet
@@ -111,6 +112,12 @@ constant' dims value = do
   newPtr <- genericNew' dims
   c_fill newPtr value
   pure newPtr
+
+
+-- | Generic equality
+genericEqual :: THTensorMath t => Ptr t -> Ptr t -> Bool
+genericEqual a b = 1 == c_equal a b
+
 
 genericNew :: THTensor t => Dim (ns::[k]) -> IO (Ptr t)
 genericNew = onDims fromIntegral

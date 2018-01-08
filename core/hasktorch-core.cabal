@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9f1f8e5899dece907595e37d27c8c6dc7b5d8968f46bc0eff5337135a4276d21
+-- hash: 0bb57a602fbb24941b65c14496be40f7f24089484bc2bf5287cc612450c9a991
 
 name:           hasktorch-core
 version:        0.1.0.0
@@ -44,7 +44,6 @@ library
       Torch.Core.Random
       Torch.Core.StorageTypes
       Torch.Core.Tensor.Dim
-      Torch.Core.Tensor.Raw
       Torch.Core.Tensor.Types
       Torch.Raw.Blas
       Torch.Raw.Internal
@@ -76,6 +75,7 @@ library
       Torch.Core.Tensor.Static.DoubleRandom
       Torch.Core.Tensor.Static.Float
       Torch.Core.Tensor.Static.FloatMath
+      Torch.Core.Tensor.Static.Generic
       Torch.Core.Tensor.Static.Long
   other-modules:
       Paths_hasktorch_core

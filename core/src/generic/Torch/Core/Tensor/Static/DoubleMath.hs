@@ -377,7 +377,7 @@ tds_log t = unsafePerformIO $ apply0_ tLog t
 
 -- | Returns a tensor where each value of the input tensor is transformed as the
 -- log gamma of the value
-tds_lgamma :: SingI d => TDS d -> TDS d
+tds_lgamma :: SingDimensions d => TDS d -> TDS d
 tds_lgamma t = unsafePerformIO $ apply0_ tLgamma t
   where
     tLgamma t' = apply0Tensor c_THDoubleTensor_lgamma t'

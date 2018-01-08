@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Torch.Core.Tensor.Static.Float (
+{-
   tfs_dim,
   tfs_expand,
   tfs_new,
@@ -23,8 +24,9 @@ module Torch.Core.Tensor.Static.Float (
   TensorFloatStatic(..),
   TFS(..),
   Nat
+-}
   ) where
-
+{-
 import Control.Monad.Managed
 import Data.Singletons
 import Data.Singletons.TypeLits
@@ -39,7 +41,6 @@ import System.IO.Unsafe (unsafePerformIO)
 import Torch.Core.Internal (w2cl)
 import Torch.Core.StorageLong
 import Torch.Core.StorageTypes
-import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 
 import THTypes
@@ -228,4 +229,4 @@ instance SingI d => TFClass (TensorFloatStatic d)  where
   tfs_new_ = tfs_init_ 0.0
   tfs_cloneDim _ = tfs_new :: TFS d
   tfs_p tensor = (withForeignPtr (tdsTensor tensor) dispRawFloat)
-
+-}
