@@ -28,10 +28,11 @@ import GHC.Ptr (FunPtr)
 
 import Torch.Core.Tensor.Static.Double
 import Torch.Core.Tensor.Static.DoubleMath
+import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Dynamic.Long
-import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import Torch.Core.Random
+import Torch.Raw.Tensor.Generic
 
 import THTypes
 import THRandom
@@ -46,7 +47,7 @@ import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
 
 -- |generate correlated multivariate normal samples by specifying eigendecomposition
-tds_mvn :: forall n p . (KnownNat n, KnownNat p) =>
+tds_mvn :: forall n p . (KnownNatDim n, KnownNatDim p) =>
   RandGen -> TDS '[p] -> TDS '[p,p] -> TDS '[p] -> IO (TDS '[n, p])
 tds_mvn gen mu eigenvectors eigenvalues = do
   let offset = tds_expand mu :: TDS '[n, p]
@@ -70,7 +71,7 @@ test_mvn = do
 
 -- TODO: get rid of self parameter arguments since they are overwritten
 
-tds_random :: SingI d => RandGen -> IO (TDS d)
+tds_random :: SingDimensions d => RandGen -> IO (TDS d)
 tds_random gen = do
   let result = tds_new
   runManaged $ do
@@ -88,7 +89,7 @@ tds_clampedRandom gen minVal maxVal = do
   pure result
   where (minC, maxC) = (fromIntegral minVal, fromIntegral maxVal)
 
-tds_cappedRandom :: SingI d => RandGen -> Int -> IO (TDS d)
+tds_cappedRandom :: SingDimensions d => RandGen -> Int -> IO (TDS d)
 tds_cappedRandom gen maxVal = do
   let result = tds_new
   runManaged $ do
@@ -99,7 +100,7 @@ tds_cappedRandom gen maxVal = do
   where maxC = fromIntegral maxVal
 
 -- TH_API void THTensor_(geometric)(THTensor *self, THGenerator *_generator, double p);
-tds_geometric :: SingI d => RandGen -> Double -> IO (TDS d)
+tds_geometric :: SingDimensions d => RandGen -> Double -> IO (TDS d)
 tds_geometric gen p = do
   let result = tds_new
   runManaged $ do
@@ -110,7 +111,7 @@ tds_geometric gen p = do
   where pC = realToFrac p
 
 -- TH_API void THTensor_(bernoulli)(THTensor *self, THGenerator *_generator, double p);
-tds_bernoulli :: SingI d => RandGen -> Double -> IO (TDS d)
+tds_bernoulli :: SingDimensions d => RandGen -> Double -> IO (TDS d)
 tds_bernoulli gen p = do
   let result = tds_new
   runManaged $ do
@@ -120,7 +121,7 @@ tds_bernoulli gen p = do
   pure result
   where pC = realToFrac p
 
-tds_bernoulliFloat :: SingI d => RandGen -> TensorFloat -> IO (TDS d)
+tds_bernoulliFloat :: SingDimensions d => RandGen -> TensorFloat -> IO (TDS d)
 tds_bernoulliFloat gen p = do
   let result = tds_new
   runManaged $ do
@@ -130,7 +131,7 @@ tds_bernoulliFloat gen p = do
     liftIO (c_THDoubleTensor_bernoulli_FloatTensor s g pC)
   pure result
 
-tds_bernoulliDouble :: SingI d => RandGen -> TDS d -> IO (TDS d)
+tds_bernoulliDouble :: SingDimensions d => RandGen -> TDS d -> IO (TDS d)
 tds_bernoulliDouble gen p = do
   let result = tds_new
   runManaged $ do
@@ -141,7 +142,7 @@ tds_bernoulliDouble gen p = do
   pure result
   where pC = tdsTensor p
 
-tds_uniform :: SingI d => RandGen -> Double -> Double -> IO (TDS d)
+tds_uniform :: SingDimensions d => RandGen -> Double -> Double -> IO (TDS d)
 tds_uniform gen a b = do
   let result = tds_new
   runManaged $ do
@@ -152,7 +153,7 @@ tds_uniform gen a b = do
   where aC = realToFrac a
         bC = realToFrac b
 
-tds_normal :: SingI d => RandGen -> Double -> Double -> IO (TDS d)
+tds_normal :: SingDimensions d => RandGen -> Double -> Double -> IO (TDS d)
 tds_normal gen mean stdv = do
   let result = tds_new
   runManaged $ do
@@ -167,7 +168,7 @@ tds_normal gen mean stdv = do
 -- TH_API void THTensor_(normal_stddevs)(THTensor *self, THGenerator *gen, double mean, THTensor *stddevs);
 -- TH_API void THTensor_(normal_means_stddevs)(THTensor *self, THGenerator *gen, THTensor *means, THTensor *stddevs);
 
-tds_exponential :: SingI d => RandGen -> Double -> IO (TDS d)
+tds_exponential :: SingDimensions d => RandGen -> Double -> IO (TDS d)
 tds_exponential gen lambda = do
   let result = tds_new
   runManaged $ do
@@ -177,7 +178,7 @@ tds_exponential gen lambda = do
   pure result
   where lambdaC = realToFrac lambda
 
-tds_cauchy :: SingI d => RandGen -> Double -> Double -> IO (TDS d)
+tds_cauchy :: SingDimensions d => RandGen -> Double -> Double -> IO (TDS d)
 tds_cauchy gen median sigma = do
   let result = tds_new
   runManaged $ do
@@ -188,7 +189,7 @@ tds_cauchy gen median sigma = do
   where medianC = realToFrac median
         sigmaC = realToFrac sigma
 
-tds_logNormal :: SingI d => RandGen -> Double -> Double -> IO (TDS d)
+tds_logNormal :: SingDimensions d => RandGen -> Double -> Double -> IO (TDS d)
 tds_logNormal gen mean stdv = do
   let result = tds_new
   runManaged $ do
@@ -199,7 +200,7 @@ tds_logNormal gen mean stdv = do
   where meanC = realToFrac mean
         stdvC = realToFrac stdv
 
-tds_multinomial :: SingI d => RandGen -> TDS d -> Int -> Bool -> TensorDim Word -> IO (TensorLong)
+tds_multinomial :: SingDimensions d => RandGen -> TDS d -> Int -> Bool -> SomeDims -> IO TensorLong
 tds_multinomial gen prob_dist n_sample with_replacement dim = do
   let result = tl_new dim
   runManaged $ do

@@ -25,7 +25,9 @@ import THDoubleTensorMath
 import THDoubleTensorRandom
 
 import Torch.Core.Tensor.Types
-import Torch.Core.Tensor.Raw
+import Torch.Raw.Tensor.Generic
+import qualified Torch.Core.Tensor.Dim as Dim
+import qualified Torch.Raw.Tensor.Generic as Gen
 
 data TorchException
   = MathException Text
@@ -74,12 +76,14 @@ lapackTest = do
   c_THSetErrorHandler p_errorHandler
   putStrLn "Cholesky decomposition should fail:"
   opt <- newCString "U"
-  a <- tensorRaw (D2 (2, 2)) 2.0
-  c_THDoubleTensor_set2d a 0 0 1.0
-  c_THDoubleTensor_set2d a 0 1 0.0
-  c_THDoubleTensor_set2d a 1 1 (-1.0)
-  c_THDoubleTensor_set2d a 1 0 0.0
-  resA <- tensorRaw (D2 (2, 2)) 5.0
+  dims <- Dim.someDimsM [2, 2]
+  a <- constant' dims 2
+
+  Gen.c_set2d a 0 0 1.0
+  Gen.c_set2d a 0 1 0.0
+  Gen.c_set2d a 1 1 (-1.0)
+  Gen.c_set2d a 1 0 0.0
+  resA <- constant' dims 5.0
   dispRaw a
   c_safe_THDoubleTensor_potrf resA a opt
   dispRaw a

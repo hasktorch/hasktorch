@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+
 module Torch.Core.StorageTypes (
   StorageSize(..),
   StorageDouble(..),
@@ -13,6 +15,7 @@ import GHC.Ptr (FunPtr)
 
 import THTypes
 import THDoubleStorage
+import Torch.Core.Tensor.Types (THForeignRef(..), THForeignType)
 
 -- TODO - consider a shared backend type for TensorDim and StorageSize
 data StorageSize a =
@@ -37,12 +40,22 @@ instance Foldable StorageSize where
   foldr func val (S3 (s1, s2, s3)) = foldr func val [s1, s2, s3]
   foldr func val (S4 (s1, s2, s3, s4)) = foldr func val [s1, s2, s3, s4]
 
-data StorageDouble = StorageDouble  {
-  sdStorage :: !(ForeignPtr CTHDoubleStorage),
-  sdSize :: !(StorageSize Double)
+data StorageDouble = StorageDouble
+  { sdStorage :: !(ForeignPtr CTHDoubleStorage)
+  -- , sdSize :: !(StorageSize Double)
   } deriving (Eq, Show)
 
-data StorageLong = StorageLong  {
-  slStorage :: !(ForeignPtr CTHLongStorage),
-  slSize :: !(StorageSize Int)
+data StorageLong = StorageLong
+  { slStorage :: !(ForeignPtr CTHLongStorage)
+  -- , slSize :: !(StorageSize Int)
   } deriving (Eq, Show)
+
+instance THForeignRef StorageDouble where
+  construct = StorageDouble
+  getForeign = sdStorage
+type instance THForeignType StorageDouble = CTHDoubleStorage
+
+instance THForeignRef StorageLong where
+  construct = StorageLong
+  getForeign = slStorage
+type instance THForeignType StorageLong = CTHLongStorage

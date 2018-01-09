@@ -1,8 +1,11 @@
 .stack-work/
+.vscode/
+.dir-locals.el
 .DS_Store
 logo/
 *.#*
 vendor/build/
 *.core
 vendor/aten-spec/*.yaml
+vendor/*.o
 

@@ -1,104 +1,172 @@
-module Torch.Core.Tensor.Types (
-  TensorDim(..),
-  TensorFloat(..),
-  TensorDouble(..),
-  TensorByte(..),
-  TensorChar(..),
-  TensorShort(..),
-  TensorInt(..),
-  TensorLong(..),
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE UndecidableInstances #-}
+module Torch.Core.Tensor.Types
+  ( THForeignRef(..)
+  , THForeignType
 
-  TensorFloatRaw(..),
-  TensorDoubleRaw(..),
-  TensorByteRaw(..),
-  TensorCharRaw(..),
-  TensorShortRaw(..),
-  TensorIntRaw(..),
-  TensorLongRaw(..),
+  , TensorByte(..)
+  , TensorByteRaw
+  , TensorChar(..)
+  , TensorCharRaw
+  , TensorDouble(..)
+  , TensorDoubleRaw
+  , TensorFloat(..)
+  , TensorFloatRaw
+  , TensorInt(..)
+  , TensorIntRaw
+  , TensorLong(..)
+  , TensorLongRaw
+  , TensorShort(..)
+  , TensorShortRaw
 
-  (^.), -- re-export for dimension tuple access
-  _1, _2, _3, _4, _5
+  , withManaged4
+  , withManaged3
+  , withManaged2
+  , withManaged1
   ) where
 
 
-import Data.Functor.Identity
-import Foreign
-import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
-                           newForeignPtr )
-import GHC.Ptr (FunPtr)
-
-import Lens.Micro
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Managed (managed, runManaged)
+import Foreign (ForeignPtr, Ptr, withForeignPtr)
 
 import THTypes
-import THDoubleTensor
 
-type TensorFloatRaw  = Ptr CTHFloatTensor
-type TensorDoubleRaw = Ptr CTHDoubleTensor
-type TensorByteRaw   = Ptr CTHByteTensor
+-- ========================================================================= --
+
+class THForeignRef t where
+  construct :: ForeignPtr (THForeignType t) -> t
+  getForeign :: t -> ForeignPtr (THForeignType t)
+
+type family THForeignType t
+
+-------------------------------------------------------------------------------
+
+newtype TensorByte = TensorByte { tbTensor :: ForeignPtr CTHByteTensor }
+  deriving (Show, Eq)
+
+instance THForeignRef TensorByte where
+  construct = TensorByte
+  getForeign = tbTensor
+
+type instance THForeignType TensorByte = CTHByteTensor
+type TensorByteRaw = Ptr CTHByteTensor
+
+-------------------------------------------------------------------------------
+
+newtype TensorChar = TensorChar { tcTensor :: ForeignPtr CTHCharTensor }
+  deriving (Show, Eq)
+
+instance THForeignRef TensorChar where
+  construct = TensorChar
+  getForeign = tcTensor
+
+type instance THForeignType TensorChar = CTHCharTensor
 type TensorCharRaw   = Ptr CTHCharTensor
-type TensorShortRaw  = Ptr CTHShortTensor
+
+-------------------------------------------------------------------------------
+
+newtype TensorDouble = TensorDouble { tdTensor :: ForeignPtr CTHDoubleTensor }
+  deriving (Show, Eq)
+
+instance THForeignRef TensorDouble where
+  construct = TensorDouble
+  getForeign = tdTensor
+
+type instance THForeignType TensorDouble = CTHDoubleTensor
+type TensorDoubleRaw = Ptr CTHDoubleTensor
+
+-------------------------------------------------------------------------------
+
+newtype TensorFloat = TensorFloat { tfTensor :: ForeignPtr CTHFloatTensor }
+  deriving (Show, Eq)
+
+instance THForeignRef TensorFloat where
+  construct = TensorFloat
+  getForeign = tfTensor
+
+type instance THForeignType TensorFloat = CTHFloatTensor
+type TensorFloatRaw  = Ptr CTHFloatTensor
+
+-------------------------------------------------------------------------------
+
+newtype TensorInt = TensorInt { tiTensor :: ForeignPtr CTHIntTensor }
+  deriving (Show, Eq)
+
+instance THForeignRef TensorInt where
+  construct = TensorInt
+  getForeign = tiTensor
+
+type instance THForeignType TensorInt = CTHIntTensor
 type TensorIntRaw    = Ptr CTHIntTensor
-type TensorLongRaw   = Ptr CTHLongTensor
 
-data TensorDim a =
-  D0
-  | D1 { d1 :: a }
-  | D2 { d2 :: (a, a) }
-  | D3 { d3 :: (a, a, a) }
-  | D4 { d4 :: (a, a, a, a) }
-  deriving (Eq, Show)
+-------------------------------------------------------------------------------
 
-instance Functor TensorDim where
-  fmap f D0 = D0
-  fmap f (D1 d1) = D1 (f d1)
-  fmap f (D2 (d1, d2)) = D2 ((f d1), (f d2))
-  fmap f (D3 (d1, d2, d3)) = D3 ((f d1), (f d2), (f d3))
-  fmap f (D4 (d1, d2, d3, d4)) = D4 ((f d1), (f d2), (f d3), (f d4))
+newtype TensorLong = TensorLong { tlTensor :: ForeignPtr CTHLongTensor }
+  deriving (Show, Eq)
 
-instance Foldable TensorDim where
-  foldr func val (D0) = val
-  foldr func val (D1 d1) = foldr func val [d1]
-  foldr func val (D2 (d1, d2)) = foldr func val [d1, d2]
-  foldr func val (D3 (d1, d2, d3)) = foldr func val [d1, d2, d3]
-  foldr func val (D4 (d1, d2, d3, d4)) = foldr func val [d1, d2, d3, d4]
+instance THForeignRef TensorLong where
+  construct = TensorLong
+  getForeign = tlTensor
 
--- Float types
+type instance THForeignType TensorLong = CTHLongTensor
+type TensorLongRaw = Ptr CTHLongTensor
 
-data TensorFloat = TensorFloat {
-  tfTensor :: !(ForeignPtr CTHFloatTensor),
-  tfDim :: !(TensorDim Word)
-  } deriving (Eq, Show)
+-------------------------------------------------------------------------------
 
-data TensorDouble = TensorDouble {
-  tdTensor :: !(ForeignPtr CTHDoubleTensor),
-  tdDim :: !(TensorDim Word)
-  } deriving (Eq, Show)
+newtype TensorShort = TensorShort { tsTensor :: ForeignPtr CTHShortTensor }
+  deriving (Show, Eq)
 
--- Int types
+instance THForeignRef TensorShort where
+  construct = TensorShort
+  getForeign = tsTensor
 
-data TensorByte = TensorByte {
-  tbTensor :: !(ForeignPtr CTHByteTensor),
-  tbDim :: !(TensorDim Word)
-  } deriving (Eq, Show)
+type instance THForeignType TensorShort = CTHShortTensor
+type TensorShortRaw = Ptr CTHShortTensor
 
-data TensorChar = TensorChar {
-  tcTensor :: !(ForeignPtr CTHCharTensor),
-  tcDim :: !(TensorDim Word)
-  } deriving (Eq, Show)
+-- ========================================================================= --
+-- helper functions:
 
-data TensorShort = TensorShort {
-  tsTensor :: !(ForeignPtr CTHShortTensor),
-  tsDim :: !(TensorDim Word)
-  } deriving (Eq, Show)
+withManaged4
+  :: (THForeignRef t)
+  => (Ptr (THForeignType t) -> Ptr (THForeignType t) -> Ptr (THForeignType t) -> Ptr (THForeignType t) -> IO ())
+  -> t -> t -> t -> t -> IO ()
+withManaged4 fn resA resB a b = runManaged $ do
+  resBRaw <- managed (withForeignPtr (getForeign resB))
+  resARaw <- managed (withForeignPtr (getForeign resA))
+  bRaw <- managed (withForeignPtr (getForeign b))
+  aRaw <- managed (withForeignPtr (getForeign a))
+  liftIO (fn resBRaw resARaw bRaw aRaw)
 
-data TensorInt = TensorInt {
-  tiTensor :: !(ForeignPtr CTHIntTensor),
-  tiDim :: !(TensorDim Word)
-  } deriving (Eq, Show)
+withManaged3
+  :: (THForeignRef t)
+  => (Ptr (THForeignType t) -> Ptr (THForeignType t) -> Ptr (THForeignType t) -> IO ())
+  -> t -> t -> t -> IO ()
+withManaged3 fn a b c = runManaged $ do
+  a' <- managed (withForeignPtr (getForeign a))
+  b' <- managed (withForeignPtr (getForeign b))
+  c' <- managed (withForeignPtr (getForeign c))
+  liftIO (fn a' b' c')
 
-data TensorLong = TensorLong {
-  tlTensor :: !(ForeignPtr CTHLongTensor),
-  tlDim :: !(TensorDim Word)
-  } deriving (Eq, Show)
+withManaged2
+  :: (THForeignRef t)
+  => (Ptr (THForeignType t) -> Ptr (THForeignType t) -> IO ())
+  -> t -> t -> IO ()
+withManaged2 fn resA a = runManaged $ do
+  resARaw <- managed (withForeignPtr (getForeign resA))
+  aRaw <- managed (withForeignPtr (getForeign a))
+  liftIO (fn resARaw aRaw)
+
+withManaged1
+  :: (THForeignRef t)
+  => (Ptr (THForeignType t) -> IO ())
+  -> t -> IO ()
+withManaged1 fn a = runManaged $ do
+  a' <- managed (withForeignPtr (getForeign a))
+  liftIO (fn a')
+
+

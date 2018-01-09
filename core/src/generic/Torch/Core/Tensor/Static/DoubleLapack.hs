@@ -34,8 +34,9 @@ import Foreign.C.Types (CLong, CDouble, CInt, CChar)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
 import System.IO.Unsafe (unsafePerformIO)
 
-import Torch.Core.Tensor.Raw
+import Torch.Raw.Tensor.Generic
 import Torch.Core.Tensor.Types
+import Torch.Core.Tensor.Dim
 import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
@@ -59,7 +60,7 @@ toChar Lower = newCString "L"
 -- Note: Irrespective of the original strides, the returned matrices resb and
 -- resa will be transposed, i.e. with strides 1, m instead of m, 1.
 -- TH_API void THTensor_(gesv)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_);
-tds_gesv :: KnownNat d => TDS '[d] -> TDS '[d, d] -> (TDS '[d, d], TDS '[d, d])
+tds_gesv :: KnownNatDim d => TDS '[d] -> TDS '[d, d] -> (TDS '[d, d], TDS '[d, d])
 tds_gesv b a = unsafePerformIO $ do
   let (rb, ra) = (tds_new, tds_new)
   runManaged $ do
@@ -84,8 +85,9 @@ tds_gesv b a = unsafePerformIO $ do
 -- Note: Irrespective of the original strides, the returned matrices resb and
 -- resa will be transposed, i.e. with strides 1, m instead of m, 1.
 -- TH_API void THTensor_(gels)(THTensor *rb_, THTensor *ra_, THTensor *b_, THTensor *a_);
-tds_gels :: (SingI d1, SingI d2) =>
-     TDS d3 -> TDS d4 -> (TDS d1, TDS d2)
+tds_gels
+  :: (SingDimensions d1, SingDimensions d2)
+  => TDS d3 -> TDS d4 -> (TDS d1, TDS d2)
 tds_gels b a = unsafePerformIO $ do
   let (rb, ra) = (tds_new, tds_new)
   runManaged $ do
@@ -123,7 +125,7 @@ tds_getri a = do
 -- U = torch.potrf(A, 'U') returns the upper triangular Cholesky decomposition of A.
 -- L = torch.potrf(A, 'L') returns the lower triangular Cholesky decomposition of A.
 -- TH_API void THTensor_(potrf)(THTensor *ra_, THTensor *a, const char *uplo);
-tds_potrf :: KnownNat d => TDS '[d, d] -> UpperLower -> TDS '[d, d]
+tds_potrf :: KnownNatDim d => TDS '[d, d] -> UpperLower -> TDS '[d, d]
 tds_potrf a ul = unsafePerformIO $ do
   let ra = tds_new
   ulC <- toChar ul
@@ -140,8 +142,9 @@ tds_potrf a ul = unsafePerformIO $ do
 -- specifies matrix chol as either upper or lower triangular
 -- TH_API void THTensor_(potrs)(THTensor *rb_, THTensor *b_, THTensor *a_,  const char *uplo);
 
-tds_potrs :: SingI d1 =>
-             TDS d2 -> TDS d3 -> UpperLower -> TDS d1
+tds_potrs
+  :: SingDimensions d1
+  => TDS d2 -> TDS d3 -> UpperLower -> TDS d1
 tds_potrs b a ul = unsafePerformIO $ do
   let rb = tds_new
   ulC <- toChar ul
@@ -158,7 +161,7 @@ tds_potrs b a ul = unsafePerformIO $ do
 -- Square matrix chol should be triangular.
 -- ul specifies matrix chol as either upper or lower triangular
 
-tds_potri :: SingI d1 => TDS d2 -> UpperLower -> TDS d1
+tds_potri :: SingDimensions d1 => TDS d2 -> UpperLower -> TDS d1
 tds_potri a ul = unsafePerformIO $ do
   let ra = tds_new
   ulC <- toChar ul
@@ -179,8 +182,9 @@ tds_potri a ul = unsafePerformIO $ do
 -- 1, m instead of m, 1.
 -- TH_API void THTensor_(qr)(THTensor *rq_, THTensor *rr_, THTensor *a);
 
-tds_qr :: (SingI d1, SingI d2) =>
-          TDS d3 -> IO (TDS d1, TDS d2)
+tds_qr
+  :: (SingDimensions d1, SingDimensions d2)
+  => TDS d3 -> IO (TDS d1, TDS d2)
 tds_qr a = do
   let (rq, rr) = (tds_new, tds_new)
   runManaged $ do
@@ -198,8 +202,8 @@ tds_qr a = do
 -- 'elementary reflectors'. See LAPACK documentation for further details.
 -- TH_API void THTensor_(geqrf)(THTensor *ra_, THTensor *rtau_, THTensor *a);
 tds_geqrf
-  :: (SingI d1, SingI d2) =>
-     TDS d3 -> IO (TDS d1, TDS d2)
+  :: (SingDimensions d1, SingDimensions d2)
+  => TDS d3 -> IO (TDS d1, TDS d2)
 tds_geqrf a = do
   let (ra, rtau) = (tds_new, tds_new)
   withForeignPtr (tdsTensor ra)
@@ -220,8 +224,9 @@ tds_geqrf a = do
 -- elementary reflectors, such as that given by torch.geqrf. See LAPACK
 -- documentation for further details.
 -- TH_API void THTensor_(orgqr)(THTensor *ra_, THTensor *a, THTensor *tau);
-tds_orgqr :: SingI d1 =>
-     TDS d2 -> TDS d3 -> TDS d1
+tds_orgqr
+  :: SingDimensions d1
+  => TDS d2 -> TDS d3 -> TDS d1
 tds_orgqr a tau = unsafePerformIO $ do
   let ra = tds_new
   runManaged $ do

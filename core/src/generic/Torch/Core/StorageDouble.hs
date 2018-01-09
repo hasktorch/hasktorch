@@ -20,7 +20,7 @@ newStorageDouble :: StorageSize Double -> StorageDouble
 newStorageDouble size = unsafePerformIO $ do
   newPtr <- go size
   fPtr <- newForeignPtr p_THDoubleStorage_free newPtr
-  pure $ StorageDouble fPtr size
+  pure $ StorageDouble fPtr -- size
   where
     d2cd = realToFrac -- Double to CDouble
     go S0 = c_THDoubleStorage_new

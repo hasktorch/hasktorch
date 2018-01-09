@@ -20,7 +20,7 @@ newStorageLong :: StorageSize Int -> StorageLong
 newStorageLong size = unsafePerformIO $ do
   newPtr <- go size
   fPtr <- newForeignPtr p_THLongStorage_free newPtr
-  pure $ StorageLong fPtr size
+  pure $ StorageLong fPtr -- size
   where
     w2cl = fromIntegral
     go S0 = c_THLongStorage_new

@@ -1,10 +1,13 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Core.Tensor.Dynamic.DoubleSpec (spec) where
 
 import Torch.Prelude.Extras
 
 import Torch.Core.Tensor.Types
+import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Dynamic.Double
+import qualified Torch.Core.Tensor.Dynamic.Double as DynamicClass
 
 main :: IO ()
 main = hspec spec
@@ -16,6 +19,6 @@ spec =
 
 testScenario :: Property
 testScenario = monadicIO $ do
-  let foo = td_new (D1 5)
-  let t = td_init (D2 (5, 2)) 3.0
-  run (td_p (td_transpose 1 0 (td_transpose 1 0 t)))
+  let foo = DynamicClass.new (SomeDims (dim :: Dim '[5])) :: TensorDouble
+      t = DynamicClass.init (SomeDims (dim :: Dim '[5, 2])) 3.0  :: TensorDouble
+  run (printTensor (DynamicClass.transpose 1 0 (DynamicClass.transpose 1 0 t)))

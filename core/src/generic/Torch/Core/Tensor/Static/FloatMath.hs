@@ -5,6 +5,8 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Torch.Core.Tensor.Static.FloatMath
+  () where
+{-
   ( (^+^)
   , (^-^)
   , (^*^)
@@ -895,3 +897,4 @@ tfs_diag t = unsafePerformIO $ do
   pure r_
   where k = 0
 {-# NOINLINE tfs_diag #-}
+-}

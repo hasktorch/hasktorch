@@ -1,6 +1,6 @@
 # hasktorch
 
-[![Build Status](https://circleci.com/gh/austinvhuang/hasktorch/tree/master.svg?style=shield&circle-token=9455d7cc953a58204f4d8dd683e9fa03fd5b2744)](https://circleci.com/gh/austinvhuang/hasktorch/tree/master)
+[![Build Status](https://circleci.com/gh/hasktorch/hasktorch/tree/master.svg?style=shield&circle-token=9455d7cc953a58204f4d8dd683e9fa03fd5b2744)](https://circleci.com/gh/hasktorch/hasktorch/tree/master)
 
 Hasktorch is a library-in-development for tensors and neural networks in
 Haskell. It is an independent open source community project which leverages the
@@ -41,9 +41,9 @@ dependencies.
 
 For an example of basic end-user API usage, see the example on [statically typed
 tensor usage
-](https://github.com/austinvhuang/hasktorch/blob/master/examples/static-tensor-usage/StaticTensorUsage.hs)
+](https://github.com/hasktorch/hasktorch/blob/master/examples/static-tensor-usage/StaticTensorUsage.hs)
 and the [simple gradient descent
-example](https://github.com/austinvhuang/hasktorch/blob/master/examples/gradient-descent/GradientDescent.hs).
+example](https://github.com/hasktorch/hasktorch/blob/master/examples/gradient-descent/GradientDescent.hs).
 
 For details on implementation and usage of raw C bindings and the core library,
 refer to their respective README documentation in [`raw/`][raw] and
@@ -55,7 +55,7 @@ refer to their respective README documentation in [`raw/`][raw] and
 We welcome new contributors. For a rough list of outstanding items on deck
 (there are many places to contribute), refer to:
 
-https://github.com/austinvhuang/hasktorch/projects/1
+https://github.com/hasktorch/hasktorch/projects/1
 
 Contact Austin Huang for access to the private hasktorch slack channel at:
 

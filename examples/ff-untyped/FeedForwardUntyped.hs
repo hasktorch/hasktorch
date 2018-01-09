@@ -4,14 +4,14 @@
 
 module Main where
 
+import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Dynamic.Double
 import Torch.Core.Tensor.Dynamic.DoubleMath (td_sigmoid, td_addmv)
 import Torch.Core.Tensor.Dynamic.DoubleRandom
-import Torch.Core.Tensor.Types
 
-data Weights = W {
-  biases :: TensorDouble,
-  nodes :: TensorDouble
+data Weights = W
+  { biases :: TensorDouble
+  , nodes :: TensorDouble
   } deriving (Eq, Show)
 
 {- Simple FF neural network, dynamically typed version, based on JL's example -}
@@ -26,9 +26,9 @@ infixr 5 :~
 dispW :: Weights -> IO ()
 dispW w = do
   putStrLn "Biases:"
-  td_p (biases w)
+  printTensor (biases w)
   putStrLn "Weights:"
-  td_p (nodes w)
+  printTensor (nodes w)
 
 dispN :: Network -> IO ()
 dispN (O w) = dispW w
@@ -37,7 +37,9 @@ dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
   gen <- newRNG
-  let w1 = W { biases = td_new (D1 o), nodes = td_new (D2 (o, i)) }
+  d1 <- someDimsM [fromIntegral o]
+  d2 <- someDimsM [fromIntegral o, fromIntegral i]
+  let w1 = W { biases = new d1, nodes = new d2 }
   b <- td_uniform (biases w1) gen (-1.0) (1.0)
   w <- td_uniform (nodes w1) gen (-1.0) (1.0)
   pure W { biases = b, nodes = w }
@@ -45,7 +47,8 @@ randomWeights i o = do
 randomData :: Word -> IO TensorDouble
 randomData i = do
   gen <- newRNG
-  let dat = td_new (D1 i)
+  someD1 <- someDimsM [fromIntegral i]
+  let dat = new someD1
   td_uniform dat gen (-1.0) (1.0)
 
 randomNet :: Word -> [Word] -> Word -> IO Network
@@ -65,10 +68,10 @@ main = do
   net <- randomNet 5 [3, 2, 4, 2, 3] 2
   dat <- randomData 5
   putStrLn "Data\n--------"
-  td_p dat
+  printTensor dat
   putStrLn "Network\n--------"
   dispN net
   let result = runNet net dat
   putStrLn "Result\n--------"
-  td_p result
+  printTensor result
   putStrLn "Done"

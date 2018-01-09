@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 module Torch.Core.Tensor.Dynamic.DoubleRandom
   ( td_random
   , td_clampedRandom
@@ -23,9 +24,9 @@ import GHC.Ptr (FunPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Dynamic.Double
-import Torch.Core.Tensor.Raw
 import Torch.Core.Tensor.Types
 import Torch.Core.Random
+import Torch.Raw.Tensor.Generic
 
 import THTypes
 import THRandom
@@ -37,7 +38,7 @@ import THFloatTensor
 
 td_random :: TensorDouble -> RandGen -> IO TensorDouble
 td_random self gen = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -47,7 +48,7 @@ td_random self gen = do
   pure self
 
 td_clampedRandom self gen minVal maxVal = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -59,7 +60,7 @@ td_clampedRandom self gen minVal maxVal = do
 
 td_cappedRandom :: TensorDouble -> RandGen -> Int -> IO TensorDouble
 td_cappedRandom self gen maxVal = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -72,7 +73,7 @@ td_cappedRandom self gen maxVal = do
 -- TH_API void THTensor_(geometric)(THTensor *self, THGenerator *_generator, double p);
 td_geometric :: TensorDouble -> RandGen -> Double -> IO TensorDouble
 td_geometric self gen p = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -85,7 +86,7 @@ td_geometric self gen p = do
 -- TH_API void THTensor_(bernoulli)(THTensor *self, THGenerator *_generator, double p);
 td_bernoulli :: TensorDouble -> RandGen -> Double -> IO TensorDouble
 td_bernoulli self gen p = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -97,7 +98,7 @@ td_bernoulli self gen p = do
 
 td_bernoulliFloat :: TensorDouble -> RandGen -> TensorFloat -> IO ()
 td_bernoulliFloat self gen p = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -111,7 +112,7 @@ td_bernoulliFloat self gen p = do
 
 td_bernoulliDouble :: TensorDouble -> RandGen -> TensorDouble -> IO TensorDouble
 td_bernoulliDouble self gen p = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -122,11 +123,11 @@ td_bernoulliDouble self gen p = do
          )
     )
   pure self
-  where pC = tdTensor p
+  where pC = getForeign p
 
 td_uniform :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
 td_uniform self gen a b = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -139,7 +140,7 @@ td_uniform self gen a b = do
 
 td_normal :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
 td_normal self gen mean stdv = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -156,7 +157,7 @@ td_normal self gen mean stdv = do
 
 td_exponential :: TensorDouble -> RandGen -> Double -> IO TensorDouble
 td_exponential self gen lambda = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -168,7 +169,7 @@ td_exponential self gen lambda = do
 
 td_cauchy :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
 td_cauchy self gen median sigma = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -181,7 +182,7 @@ td_cauchy self gen median sigma = do
 
 td_logNormal :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
 td_logNormal self gen mean stdv = do
-  withForeignPtr (tdTensor self)
+  withForeignPtr (getForeign self)
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
@@ -199,7 +200,7 @@ td_multinomial self gen prob_dist n_sample with_replacement = do
     (\s ->
        withForeignPtr (rng gen)
          (\g ->
-            withForeignPtr (tdTensor prob_dist)
+            withForeignPtr (getForeign prob_dist)
               (\p ->
                  c_THDoubleTensor_multinomial s g p n_sampleC with_replacementC
               )

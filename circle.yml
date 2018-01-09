@@ -27,7 +27,8 @@ dependencies:
         echo "Cached CMake found"
       fi
     - mkdir -p ~/.local/bin
-    - curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+    # full path to curl circumvents errors with /usr/local/bin/curl incompatabilities with libcurl
+    - /usr/bin/curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - stack upgrade
     - stack update
     - git submodule update --init --recursive
