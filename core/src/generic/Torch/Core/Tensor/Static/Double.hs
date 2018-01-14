@@ -46,6 +46,8 @@ import qualified Torch.Core.Tensor.Dim as Dim
 import qualified Torch.Core.Tensor.Dynamic.Generic as Gen
 import qualified Torch.Raw.Tensor.Generic as GenRaw
 
+import THDoubleTensor (c_THDoubleTensor_set1d)
+
 -- ========================================================================= --
 -- Types for static tensors
 
@@ -124,7 +126,26 @@ class IsList t => StaticTH t where
 -- Not sure how important this is
 instance KnownNat l => IsList (TDS '[l]) where
   type Item (TDS '[l]) = Double
-  fromList = tds_fromList1D
+  fromList l = if (fromIntegral $ natVal (Proxy :: Proxy l)) /= length l
+               then error "List length does not match tensor dimensions"
+               else unsafePerformIO $ go result
+               -- TODO: try to force strict evaluation
+               -- to avoid potential FFI + IO + mutation bugs.
+               -- however `go` never executes with deepseq:
+               -- else unsafePerformIO $ pure (deepseq go result)
+    where
+      result = tds_new
+      go t = do
+        mapM_ mutTensor (zip [0..(length l) - 1] l)
+        pure t
+        where
+          mutTensor (idx, value) =
+            let (idxC, valueC) = (fromIntegral idx, realToFrac value) in
+              withForeignPtr (tdsTensor t)
+                (\tp -> do
+                    -- print idx -- check to see when mutation happens
+                    c_THDoubleTensor_set1d tp idxC valueC
+                )
   toList t = unsafePerformIO (withForeignPtr (getForeign t) (pure . map realToFrac . GenRaw.flatten))
   {-# NOINLINE toList #-}
 
@@ -134,14 +155,16 @@ tds_fromList1D l = fromList l
 
 -- |Initialize a tensor of arbitrary dimension from a list
 tds_fromList
-  :: forall d2 . (Dimensions d2, SingI '[Product d2], SingI d2, KnownNat (Product d2), KnownDim (Product d2))
+  :: forall d2 . (Dimensions d2, SingI '[Product d2], SingI d2,
+                  KnownNat (Product d2), KnownDim (Product d2))
   => [Double]
   -> TDS d2
 tds_fromList l = tds_resize (tds_fromList1D l :: TDS '[Product d2])
 
 -- |Make a resized tensor
 tds_resize
-  :: forall d1 d2. (Product d1 ~ Product d2, Dimensions d1, Dimensions d2, SingI d1, SingI d2)
+  :: forall d1 d2. (Product d1 ~ Product d2, Dimensions d1, Dimensions d2,
+                    SingI d1, SingI d2)
   => TDS d1 -> TDS d2
 tds_resize t = unsafePerformIO $ do
   let resDummy = tds_new :: TDS d2
