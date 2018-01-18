@@ -78,7 +78,7 @@ instance DynamicTH TensorDouble where
   shape = td_shape
 
 td_p :: TensorDouble -> IO ()
-td_p t = withForeignPtr (getForeign t) Gen.dispRaw
+td_p t = withForeignPtr (getForeign t) Gen.dispRawRealFloat
 
 -- | Initialize a tensor of arbitrary dimension from a list
 -- FIXME(stites): This should go in MonadThrow

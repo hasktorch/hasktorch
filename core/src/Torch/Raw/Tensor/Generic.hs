@@ -25,15 +25,21 @@ module Torch.Raw.Tensor.Generic
   , genericInvLogit
 
   , dispRaw
+  , dispRawRealFloat
+  , minLogScale
+  , numberFormat
 
   , module X
   ) where
 
 import Numeric.Dimensions (Dim(..), someDimsVal)
+import qualified Numeric.Limits as NL
 import Foreign (Ptr)
 import Foreign.C.Types
 import Data.Maybe (fromJust)
+import Data.Fixed (mod')
 import qualified Numeric as Num (showGFloat)
+import Text.Printf (printf)
 
 import Torch.Core.Internal (impossible)
 import Torch.Core.Tensor.Dim
@@ -199,53 +205,176 @@ getDynamicDim
 fillZeros :: (THTensorMath t, THTensor t, Num (HaskReal t)) => Ptr t -> IO (Ptr t)
 fillZeros t = c_fill t 0 >> pure t
 
+-- Display stuff
+minLogScale :: Int
+minLogScale =
+    ceiling $ logBase 10 p
+  where
+    minPositive = NL.minValue * NL.epsilon  -- get smallest denormal
+    p = if (minPositive == 0) then NL.minValue else minPositive
+
+numberFormat :: RealFloat a => Int -> Int -> [a] -> (String, a, Int)
+numberFormat precision minSz xs = (format, scale, sz)
+  where
+    listParams :: (RealFloat a) => [a] -> (a, a, Bool, Bool, Bool)
+    listParams z =
+      f (NL.infinity, -NL.infinity, True, False, False) z
+      where
+        f z [] = z
+        f (minAcc, maxAcc, intModeAcc, hasInvalidAcc, hasNegInfAcc) (x:xs) = 
+            f acc xs
+          where
+            val = abs x
+            newHasNegInf = (x == -NL.infinity) || hasNegInfAcc
+            acc =
+              if (isNaN val || val == NL.infinity) then
+                (minAcc, maxAcc, intModeAcc, True, newHasNegInf) 
+              else 
+                (newMin, newMax, newIntMode, newHasInvalid, newHasNegInf)
+                  where
+                    !newHasInvalid = hasInvalidAcc
+                    !newMin = min minAcc val
+                    !newMax = max maxAcc val
+                    !newIntMode = if (intModeAcc) then
+                                    if (val == NL.infinity) then intModeAcc
+                                    else mod' val 1 == 0
+                                  else 
+                                    False
+    prec = precision
+    defaultScale = 1.0
+    (minAbs, maxAbs, intMode, hasInvalid, hasNegInf) = listParams xs
+    expMin = if (minAbs > 0.0) then 1 + (floor $ logBase 10 minAbs) else 1
+    expMax = if (maxAbs > 0.0) then 1 + (floor $ logBase 10 maxAbs) else 1
+    myMinSz = if hasInvalid then max minSz $ 3 + (if hasNegInf then 1 else 0)
+              else max minSz 2
+    (format, scale, sz) =
+      let expSz = (prec + 4 + (max (length (show expMax)) 
+                                   (length (show expMin)))) in
+      if (intMode) then
+        if (expMax > prec + 1) then
+          let tmpSz = max myMinSz expSz in
+          let format = "%" ++ show tmpSz ++ "." ++ show prec ++ "e" in
+          (format, defaultScale, tmpSz)
+        else
+          let tmpSz = max myMinSz (expMax + 1) in
+          let format = "%" ++ show tmpSz ++ ".0f" in
+          (format, defaultScale, tmpSz) 
+      else
+        if (expMax - expMin > prec) then
+          let tmpSz = max myMinSz expSz in
+          let format = "%" ++ show tmpSz ++ "." ++ show prec ++ "e" in
+          (format, 1.0, tmpSz) 
+        else
+          if (expMax > prec + 1) || (expMax < 0) then
+            let tmpSz = max myMinSz 7 in
+            let format = "%" ++ show tmpSz ++ "." ++ show prec ++ "f" in
+            (format, 10.0**fromIntegral(max minLogScale (expMax - 1)), tmpSz)
+          else
+            let tmpSz = if (expMax > 0) then expMax + 6 else 7 in
+            let format = "%" ++ show tmpSz ++ "." ++ show prec ++ "f" in
+            (format, 1.0, max myMinSz tmpSz)
+
+
+dispRawIntegral tensor = undefined
+
+dispRawRealFloat :: (THTensor t, RealFloat (HaskReal t)) => Ptr t -> IO ()
+dispRawRealFloat tensor
+ | length sz == 0 = putStrLn "Empty Tensor"
+ | length sz == 1 = do
+     putStrLn ""
+     let indexes = [ fromIntegral idx :: CLLong
+                   | idx <- [0..head sz - 1]
+                   ]
+     putStr "[ "
+     mapM_ (\idx -> putStr $ showLim (c_get1d tensor idx) ++ " ")
+       indexes
+     putStrLn "]\n"
+ | length sz == 2 = do
+     putStrLn ""
+     let
+       pairs :: [(CLLong, CLLong)]
+       pairs = [ (fromIntegral r, fromIntegral c)
+               | r <- [0..sz !! 0 - 1]
+               , c <- [0..sz !! 1 - 1]
+               ]
+     putStr ("[ " :: String)
+     mapM_ (\(r, c) -> do
+               let val = c_get2d tensor r c
+               if c == fromIntegral (sz !! 1) - 1
+                 then do
+                 putStrLn (showLim val ++ " ]")
+                 putStr (if (fromIntegral r :: Int) < (sz !! 0) - 1
+                         then "[ " :: String
+                         else "")
+                 else
+                 putStr $ showLim val ++ " "
+           ) pairs
+ | otherwise = putStrLn "Can't print this yet."
+ where
+   sizes :: (THTensor t) => Ptr t -> [Int]
+   sizes t = fmap (fromIntegral . c_size t) [0..c_nDimension t - 1]
+
+   sz :: [Int]
+   sz = sizes tensor
+
+   (fmt, scale, size) = numberFormat 4 3 $ flatten tensor
+
+   showLim :: RealFloat a => a -> String
+   showLim val = 
+     if (val == NL.infinity) then 
+       Text.Printf.printf ("%"++show size++"s") "Inf"
+     else if (val == -NL.infinity) then 
+       Text.Printf.printf ("%"++show size++"s") "-Inf"
+     else Text.Printf.printf fmt (((realToFrac val)::Double)/realToFrac(scale))
+  
+
 -- ========================================================================= --
 -- TO BE REMOVED: dispRaw
 -- ========================================================================= --
-
+--
 -- | displaying raw tensor values
 dispRaw :: forall t . (THTensor t, Show (HaskReal t)) => Ptr t -> IO ()
 dispRaw tensor
-  | length sz == 0 = putStrLn "Empty Tensor"
-  | length sz == 1 = do
-      putStrLn ""
-      let indexes = [ fromIntegral idx :: CLLong
-                    | idx <- [0..head sz - 1]
-                    ]
-      putStr "[ "
-      mapM_ (\idx -> putStr $ showLim (c_get1d tensor idx) ++ " ")
-        indexes
-      putStrLn "]\n"
-  | length sz == 2 = do
-      putStrLn ""
-      let
-        pairs :: [(CLLong, CLLong)]
-        pairs = [ (fromIntegral r, fromIntegral c)
-                | r <- [0..sz !! 0 - 1]
-                , c <- [0..sz !! 1 - 1]
-                ]
-      putStr ("[ " :: String)
-      mapM_ (\(r, c) -> do
-                let val = c_get2d tensor r c
-                if c == fromIntegral (sz !! 1) - 1
-                  then do
-                  putStrLn (showLim val ++ " ]")
-                  putStr (if (fromIntegral r :: Int) < (sz !! 0) - 1
-                          then "[ " :: String
-                          else "")
-                  else
-                  putStr $ showLim val ++ " "
-            ) pairs
-  | otherwise = putStrLn "Can't print this yet."
-  where
-    sizes :: Ptr t -> [Int]
-    sizes t = fmap (fromIntegral . c_size t) [0..c_nDimension t - 1]
+ | length sz == 0 = putStrLn "Empty Tensor"
+ | length sz == 1 = do
+     putStrLn ""
+     let indexes = [ fromIntegral idx :: CLLong
+                   | idx <- [0..head sz - 1]
+                   ]
+     putStr "[ "
+     mapM_ (\idx -> putStr $ showLim (c_get1d tensor idx) ++ " ")
+       indexes
+     putStrLn "]\n"
+ | length sz == 2 = do
+     putStrLn ""
+     let
+       pairs :: [(CLLong, CLLong)]
+       pairs = [ (fromIntegral r, fromIntegral c)
+               | r <- [0..sz !! 0 - 1]
+               , c <- [0..sz !! 1 - 1]
+               ]
+     putStr ("[ " :: String)
+     mapM_ (\(r, c) -> do
+               let val = c_get2d tensor r c
+               if c == fromIntegral (sz !! 1) - 1
+                 then do
+                 putStrLn (showLim val ++ " ]")
+                 putStr (if (fromIntegral r :: Int) < (sz !! 0) - 1
+                         then "[ " :: String
+                         else "")
+                 else
+                 putStr $ showLim val ++ " "
+           ) pairs
+ | otherwise = putStrLn "Can't print this yet."
+ where
+   sizes :: Ptr t -> [Int]
+   sizes t = fmap (fromIntegral . c_size t) [0..c_nDimension t - 1]
 
-    showLim :: HaskReal t -> String
-    showLim x = show x
+   showLim :: HaskReal t -> String
+   showLim x = show x
 
-    sz :: [Int]
-    sz = sizes tensor
+   sz :: [Int]
+   sz = sizes tensor
 
 -- | Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor

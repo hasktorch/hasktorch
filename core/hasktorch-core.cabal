@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0bb57a602fbb24941b65c14496be40f7f24089484bc2bf5287cc612450c9a991
+-- hash: 2ae078d447c6ec69055085d5899a175e1e3249190e4875685997f032cf6d33aa
 
 name:           hasktorch-core
 version:        0.1.0.0
@@ -33,6 +33,7 @@ library
     , hasktorch-raw
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
+    , numeric-limits
     , safe-exceptions >=0.1.0.0
     , singletons >=2.2
     , text >=1.2.2.2
@@ -99,6 +100,7 @@ test-suite spec
     , hspec
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
+    , numeric-limits
     , safe-exceptions >=0.1.0.0
     , singletons >=2.2
     , text >=1.2.2.2

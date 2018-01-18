@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module Torch.Raw.Storage
   ( THStorage(..)
   , module X
@@ -5,13 +7,20 @@ module Torch.Raw.Storage
 
 import Torch.Raw.Internal as X
 
+import qualified THByteStorage as S
+import qualified THDoubleStorage as S
+import qualified THFloatStorage as S
+import qualified THIntStorage as S 
+import qualified THLongStorage as S
+import qualified THShortStorage as S
+
 -- CTHDoubleStorage -> CDouble
 class THStorage t where
   c_data :: Ptr t -> IO (Ptr CDouble)
   c_size :: Ptr t -> CPtrdiff
   -- c_elementSize :: CSize
   c_set :: Ptr t -> CPtrdiff -> CDouble -> IO ()
-  c_get :: Ptr t -> CPtrdiff -> CDouble
+  c_get :: Ptr t -> CPtrdiff -> (HaskReal t)
   c_new :: IO (Ptr t)
   c_newWithSize :: CPtrdiff -> IO (Ptr t)
   c_newWithSize1 :: CDouble -> IO (Ptr t)
@@ -51,3 +60,23 @@ class THStorage t where
   p_free :: FunPtr (Ptr t -> IO ())
   p_resize :: FunPtr (Ptr t -> CPtrdiff -> IO ())
   p_fill :: FunPtr (Ptr t -> CDouble -> IO ())
+
+
+-- TODO: Complete the implementations
+instance THStorage CTHByteStorage where
+  c_get = S.c_THByteStorage_get
+
+instance THStorage CTHDoubleStorage where
+  c_get = S.c_THDoubleStorage_get
+
+instance THStorage CTHFloatStorage where
+  c_get = S.c_THFloatStorage_get
+
+instance THStorage CTHIntStorage where
+  c_get = S.c_THIntStorage_get
+
+instance THStorage CTHLongStorage where
+  c_get = S.c_THLongStorage_get
+
+instance THStorage CTHShortStorage where
+  c_get = S.c_THShortStorage_get
