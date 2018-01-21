@@ -14,7 +14,7 @@ module THFloatTensorRandom (
     c_THFloatTensor_normal_stddevs,
     c_THFloatTensor_normal_means_stddevs,
     c_THFloatTensor_exponential,
-    -- c_THFloatTensor_standard_gamma,
+    c_THFloatTensor_standard_gamma,
     c_THFloatTensor_cauchy,
     c_THFloatTensor_logNormal,
     c_THFloatTensor_multinomial,
@@ -33,7 +33,7 @@ module THFloatTensorRandom (
     p_THFloatTensor_normal_stddevs,
     p_THFloatTensor_normal_means_stddevs,
     p_THFloatTensor_exponential,
-    -- p_THFloatTensor_standard_gamma,
+    p_THFloatTensor_standard_gamma,
     p_THFloatTensor_cauchy,
     p_THFloatTensor_logNormal,
     p_THFloatTensor_multinomial,
@@ -99,8 +99,8 @@ foreign import ccall "THTensorRandom.h THFloatTensor_exponential"
   c_THFloatTensor_exponential :: (Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> IO ()
 
 -- |c_THFloatTensor_standard_gamma : self _generator alpha -> void
--- foreign import ccall "THTensorRandom.h THFloatTensor_standard_gamma"
---   c_THFloatTensor_standard_gamma :: (Ptr CTHFloatTensor) -> Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> IO ()
+foreign import ccall "THTensorRandom.h THFloatTensor_standard_gamma"
+  c_THFloatTensor_standard_gamma :: (Ptr CTHFloatTensor) -> Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> IO ()
 
 -- |c_THFloatTensor_cauchy : self _generator median sigma -> void
 foreign import ccall "THTensorRandom.h THFloatTensor_cauchy"
@@ -175,8 +175,8 @@ foreign import ccall "THTensorRandom.h &THFloatTensor_exponential"
   p_THFloatTensor_exponential :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
 
 -- |p_THFloatTensor_standard_gamma : Pointer to function : self _generator alpha -> void
--- foreign import ccall "THTensorRandom.h &THFloatTensor_standard_gamma"
---   p_THFloatTensor_standard_gamma :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> IO ())
+foreign import ccall "THTensorRandom.h &THFloatTensor_standard_gamma"
+  p_THFloatTensor_standard_gamma :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> IO ())
 
 -- |p_THFloatTensor_cauchy : Pointer to function : self _generator median sigma -> void
 foreign import ccall "THTensorRandom.h &THFloatTensor_cauchy"
