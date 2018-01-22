@@ -121,8 +121,12 @@ module THFloatTensorMath (
     c_THFloatTensor_sigmoid,
     c_THFloatTensor_log,
     c_THFloatTensor_lgamma,
+    c_THFloatTensor_digamma,
+    c_THFloatTensor_trigamma,
+    c_THFloatTensor_polygamma,
     c_THFloatTensor_log1p,
     c_THFloatTensor_exp,
+    c_THFloatTensor_expm1,
     c_THFloatTensor_cos,
     c_THFloatTensor_acos,
     c_THFloatTensor_cosh,
@@ -161,6 +165,7 @@ module THFloatTensorMath (
     c_THFloatTensor_logspace,
     c_THFloatTensor_rand,
     c_THFloatTensor_randn,
+    c_THFloatTensor_dirichlet_grad,
     p_THFloatTensor_fill,
     p_THFloatTensor_zero,
     p_THFloatTensor_maskedFill,
@@ -281,8 +286,12 @@ module THFloatTensorMath (
     p_THFloatTensor_sigmoid,
     p_THFloatTensor_log,
     p_THFloatTensor_lgamma,
+    p_THFloatTensor_digamma,
+    p_THFloatTensor_trigamma,
+    p_THFloatTensor_polygamma,
     p_THFloatTensor_log1p,
     p_THFloatTensor_exp,
+    p_THFloatTensor_expm1,
     p_THFloatTensor_cos,
     p_THFloatTensor_acos,
     p_THFloatTensor_cosh,
@@ -320,7 +329,8 @@ module THFloatTensorMath (
     p_THFloatTensor_linspace,
     p_THFloatTensor_logspace,
     p_THFloatTensor_rand,
-    p_THFloatTensor_randn) where
+    p_THFloatTensor_randn,
+    p_THFloatTensor_dirichlet_grad) where
 
 import Foreign
 import Foreign.C.Types
@@ -808,6 +818,18 @@ foreign import ccall "THTensorMath.h THFloatTensor_log"
 foreign import ccall "THTensorMath.h THFloatTensor_lgamma"
   c_THFloatTensor_lgamma :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
 
+-- |c_THFloatTensor_digamma : r_ t -> void
+foreign import ccall "THTensorMath.h THFloatTensor_digamma"
+  c_THFloatTensor_digamma :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
+
+-- |c_THFloatTensor_trigamma : r_ t -> void
+foreign import ccall "THTensorMath.h THFloatTensor_trigamma"
+  c_THFloatTensor_trigamma :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
+
+-- |c_THFloatTensor_polygamma : r_ n t -> void
+foreign import ccall "THTensorMath.h THFloatTensor_polygamma"
+  c_THFloatTensor_polygamma :: (Ptr CTHFloatTensor) -> CLLong -> (Ptr CTHFloatTensor) -> IO ()
+
 -- |c_THFloatTensor_log1p : r_ t -> void
 foreign import ccall "THTensorMath.h THFloatTensor_log1p"
   c_THFloatTensor_log1p :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
@@ -815,6 +837,10 @@ foreign import ccall "THTensorMath.h THFloatTensor_log1p"
 -- |c_THFloatTensor_exp : r_ t -> void
 foreign import ccall "THTensorMath.h THFloatTensor_exp"
   c_THFloatTensor_exp :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
+
+-- |c_THFloatTensor_expm1 : r_ t -> void
+foreign import ccall "THTensorMath.h THFloatTensor_expm1"
+  c_THFloatTensor_expm1 :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
 
 -- |c_THFloatTensor_cos : r_ t -> void
 foreign import ccall "THTensorMath.h THFloatTensor_cos"
@@ -967,6 +993,10 @@ foreign import ccall "THTensorMath.h THFloatTensor_rand"
 -- |c_THFloatTensor_randn : r_ _generator size -> void
 foreign import ccall "THTensorMath.h THFloatTensor_randn"
   c_THFloatTensor_randn :: (Ptr CTHFloatTensor) -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
+
+-- |c_THFloatTensor_dirichlet_grad : self x alpha total -> void
+foreign import ccall "THTensorMath.h THFloatTensor_dirichlet_grad"
+  c_THFloatTensor_dirichlet_grad :: (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ()
 
 -- |p_THFloatTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_fill"
@@ -1448,6 +1478,18 @@ foreign import ccall "THTensorMath.h &THFloatTensor_log"
 foreign import ccall "THTensorMath.h &THFloatTensor_lgamma"
   p_THFloatTensor_lgamma :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
 
+-- |p_THFloatTensor_digamma : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_digamma"
+  p_THFloatTensor_digamma :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_trigamma : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_trigamma"
+  p_THFloatTensor_trigamma :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_polygamma : Pointer to function : r_ n t -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_polygamma"
+  p_THFloatTensor_polygamma :: FunPtr ((Ptr CTHFloatTensor) -> CLLong -> (Ptr CTHFloatTensor) -> IO ())
+
 -- |p_THFloatTensor_log1p : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_log1p"
   p_THFloatTensor_log1p :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
@@ -1455,6 +1497,10 @@ foreign import ccall "THTensorMath.h &THFloatTensor_log1p"
 -- |p_THFloatTensor_exp : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_exp"
   p_THFloatTensor_exp :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
+
+-- |p_THFloatTensor_expm1 : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_expm1"
+  p_THFloatTensor_expm1 :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())
 
 -- |p_THFloatTensor_cos : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_cos"
@@ -1607,3 +1653,7 @@ foreign import ccall "THTensorMath.h &THFloatTensor_rand"
 -- |p_THFloatTensor_randn : Pointer to function : r_ _generator size -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_randn"
   p_THFloatTensor_randn :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ())
+
+-- |p_THFloatTensor_dirichlet_grad : Pointer to function : self x alpha total -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_dirichlet_grad"
+  p_THFloatTensor_dirichlet_grad :: FunPtr ((Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> (Ptr CTHFloatTensor) -> IO ())

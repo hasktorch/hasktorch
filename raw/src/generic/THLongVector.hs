@@ -10,7 +10,11 @@ module THLongVector (
     c_THLongVector_divs,
     c_THLongVector_copy,
     c_THLongVector_neg,
+    c_THLongVector_normal_fill,
     c_THLongVector_abs,
+    c_THLongVector_digamma,
+    c_THLongVector_trigamma,
+    c_THLongVector_expm1,
     c_THLongVector_vectorDispatchInit,
     p_THLongVector_fill,
     p_THLongVector_cadd,
@@ -21,7 +25,11 @@ module THLongVector (
     p_THLongVector_divs,
     p_THLongVector_copy,
     p_THLongVector_neg,
+    p_THLongVector_normal_fill,
     p_THLongVector_abs,
+    p_THLongVector_digamma,
+    p_THLongVector_trigamma,
+    p_THLongVector_expm1,
     p_THLongVector_vectorDispatchInit) where
 
 import Foreign
@@ -66,9 +74,25 @@ foreign import ccall "THVector.h THLongVector_copy"
 foreign import ccall "THVector.h THLongVector_neg"
   c_THLongVector_neg :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
 
+-- |c_THLongVector_normal_fill : data size generator mean stddev -> void
+foreign import ccall "THVector.h THLongVector_normal_fill"
+  c_THLongVector_normal_fill :: Ptr CLong -> CLLong -> Ptr CTHGenerator -> CLong -> CLong -> IO ()
+
 -- |c_THLongVector_abs : y x n -> void
 foreign import ccall "THVector.h THLongVector_abs"
   c_THLongVector_abs :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
+
+-- |c_THLongVector_digamma : y x n -> void
+foreign import ccall "THVector.h THLongVector_digamma"
+  c_THLongVector_digamma :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
+
+-- |c_THLongVector_trigamma : y x n -> void
+foreign import ccall "THVector.h THLongVector_trigamma"
+  c_THLongVector_trigamma :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
+
+-- |c_THLongVector_expm1 : y x n -> void
+foreign import ccall "THVector.h THLongVector_expm1"
+  c_THLongVector_expm1 :: Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ()
 
 -- |c_THLongVector_vectorDispatchInit :  -> void
 foreign import ccall "THVector.h THLongVector_vectorDispatchInit"
@@ -110,9 +134,25 @@ foreign import ccall "THVector.h &THLongVector_copy"
 foreign import ccall "THVector.h &THLongVector_neg"
   p_THLongVector_neg :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
 
+-- |p_THLongVector_normal_fill : Pointer to function : data size generator mean stddev -> void
+foreign import ccall "THVector.h &THLongVector_normal_fill"
+  p_THLongVector_normal_fill :: FunPtr (Ptr CLong -> CLLong -> Ptr CTHGenerator -> CLong -> CLong -> IO ())
+
 -- |p_THLongVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THLongVector_abs"
   p_THLongVector_abs :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
+
+-- |p_THLongVector_digamma : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THLongVector_digamma"
+  p_THLongVector_digamma :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
+
+-- |p_THLongVector_trigamma : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THLongVector_trigamma"
+  p_THLongVector_trigamma :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
+
+-- |p_THLongVector_expm1 : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THLongVector_expm1"
+  p_THLongVector_expm1 :: FunPtr (Ptr CLong -> Ptr CLong -> CPtrdiff -> IO ())
 
 -- |p_THLongVector_vectorDispatchInit : Pointer to function :  -> void
 foreign import ccall "THVector.h &THLongVector_vectorDispatchInit"

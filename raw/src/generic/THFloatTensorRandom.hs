@@ -8,6 +8,7 @@ module THFloatTensorRandom (
     c_THFloatTensor_bernoulli,
     c_THFloatTensor_bernoulli_FloatTensor,
     c_THFloatTensor_bernoulli_DoubleTensor,
+    c_THFloatTensor_bernoulli_Tensor,
     c_THFloatTensor_uniform,
     c_THFloatTensor_normal,
     c_THFloatTensor_normal_means,
@@ -27,6 +28,7 @@ module THFloatTensorRandom (
     p_THFloatTensor_bernoulli,
     p_THFloatTensor_bernoulli_FloatTensor,
     p_THFloatTensor_bernoulli_DoubleTensor,
+    p_THFloatTensor_bernoulli_Tensor,
     p_THFloatTensor_uniform,
     p_THFloatTensor_normal,
     p_THFloatTensor_normal_means,
@@ -73,6 +75,10 @@ foreign import ccall "THTensorRandom.h THFloatTensor_bernoulli_FloatTensor"
 -- |c_THFloatTensor_bernoulli_DoubleTensor : self _generator p -> void
 foreign import ccall "THTensorRandom.h THFloatTensor_bernoulli_DoubleTensor"
   c_THFloatTensor_bernoulli_DoubleTensor :: (Ptr CTHFloatTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
+
+-- |c_THFloatTensor_bernoulli_Tensor : self _generator p -> void
+foreign import ccall "THTensorRandom.h THFloatTensor_bernoulli_Tensor"
+  c_THFloatTensor_bernoulli_Tensor :: (Ptr CTHFloatTensor) -> Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> IO ()
 
 -- |c_THFloatTensor_uniform : self _generator a b -> void
 foreign import ccall "THTensorRandom.h THFloatTensor_uniform"
@@ -149,6 +155,10 @@ foreign import ccall "THTensorRandom.h &THFloatTensor_bernoulli_FloatTensor"
 -- |p_THFloatTensor_bernoulli_DoubleTensor : Pointer to function : self _generator p -> void
 foreign import ccall "THTensorRandom.h &THFloatTensor_bernoulli_DoubleTensor"
   p_THFloatTensor_bernoulli_DoubleTensor :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
+
+-- |p_THFloatTensor_bernoulli_Tensor : Pointer to function : self _generator p -> void
+foreign import ccall "THTensorRandom.h &THFloatTensor_bernoulli_Tensor"
+  p_THFloatTensor_bernoulli_Tensor :: FunPtr ((Ptr CTHFloatTensor) -> Ptr CTHGenerator -> (Ptr CTHFloatTensor) -> IO ())
 
 -- |p_THFloatTensor_uniform : Pointer to function : self _generator a b -> void
 foreign import ccall "THTensorRandom.h &THFloatTensor_uniform"

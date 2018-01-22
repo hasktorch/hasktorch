@@ -115,6 +115,11 @@ module THHalfTensorMath (
     c_THHalfTensor_geTensorT,
     c_THHalfTensor_neTensorT,
     c_THHalfTensor_eqTensorT,
+    c_THHalfTensor_digamma,
+    c_THHalfTensor_trigamma,
+    c_THHalfTensor_polygamma,
+    c_THHalfTensor_expm1,
+    c_THHalfTensor_dirichlet_grad,
     p_THHalfTensor_fill,
     p_THHalfTensor_zero,
     p_THHalfTensor_maskedFill,
@@ -228,7 +233,12 @@ module THHalfTensorMath (
     p_THHalfTensor_gtTensorT,
     p_THHalfTensor_geTensorT,
     p_THHalfTensor_neTensorT,
-    p_THHalfTensor_eqTensorT) where
+    p_THHalfTensor_eqTensorT,
+    p_THHalfTensor_digamma,
+    p_THHalfTensor_trigamma,
+    p_THHalfTensor_polygamma,
+    p_THHalfTensor_expm1,
+    p_THHalfTensor_dirichlet_grad) where
 
 import Foreign
 import Foreign.C.Types
@@ -692,6 +702,26 @@ foreign import ccall "THTensorMath.h THHalfTensor_neTensorT"
 foreign import ccall "THTensorMath.h THHalfTensor_eqTensorT"
   c_THHalfTensor_eqTensorT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
 
+-- |c_THHalfTensor_digamma : r_ t -> void
+foreign import ccall "THTensorMath.h THHalfTensor_digamma"
+  c_THHalfTensor_digamma :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+
+-- |c_THHalfTensor_trigamma : r_ t -> void
+foreign import ccall "THTensorMath.h THHalfTensor_trigamma"
+  c_THHalfTensor_trigamma :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+
+-- |c_THHalfTensor_polygamma : r_ n t -> void
+foreign import ccall "THTensorMath.h THHalfTensor_polygamma"
+  c_THHalfTensor_polygamma :: (Ptr CTHHalfTensor) -> CLLong -> (Ptr CTHHalfTensor) -> IO ()
+
+-- |c_THHalfTensor_expm1 : r_ t -> void
+foreign import ccall "THTensorMath.h THHalfTensor_expm1"
+  c_THHalfTensor_expm1 :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+
+-- |c_THHalfTensor_dirichlet_grad : self x alpha total -> void
+foreign import ccall "THTensorMath.h THHalfTensor_dirichlet_grad"
+  c_THHalfTensor_dirichlet_grad :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+
 -- |p_THHalfTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_fill"
   p_THHalfTensor_fill :: FunPtr ((Ptr CTHHalfTensor) -> THHalf -> IO ())
@@ -1147,3 +1177,23 @@ foreign import ccall "THTensorMath.h &THHalfTensor_neTensorT"
 -- |p_THHalfTensor_eqTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_eqTensorT"
   p_THHalfTensor_eqTensorT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+
+-- |p_THHalfTensor_digamma : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THHalfTensor_digamma"
+  p_THHalfTensor_digamma :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+
+-- |p_THHalfTensor_trigamma : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THHalfTensor_trigamma"
+  p_THHalfTensor_trigamma :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+
+-- |p_THHalfTensor_polygamma : Pointer to function : r_ n t -> void
+foreign import ccall "THTensorMath.h &THHalfTensor_polygamma"
+  p_THHalfTensor_polygamma :: FunPtr ((Ptr CTHHalfTensor) -> CLLong -> (Ptr CTHHalfTensor) -> IO ())
+
+-- |p_THHalfTensor_expm1 : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THHalfTensor_expm1"
+  p_THHalfTensor_expm1 :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+
+-- |p_THHalfTensor_dirichlet_grad : Pointer to function : self x alpha total -> void
+foreign import ccall "THTensorMath.h &THHalfTensor_dirichlet_grad"
+  p_THHalfTensor_dirichlet_grad :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())

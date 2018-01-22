@@ -8,13 +8,15 @@ module THShortTensorRandom (
     c_THShortTensor_bernoulli,
     c_THShortTensor_bernoulli_FloatTensor,
     c_THShortTensor_bernoulli_DoubleTensor,
+    c_THShortTensor_bernoulli_Tensor,
     p_THShortTensor_random,
     p_THShortTensor_clampedRandom,
     p_THShortTensor_cappedRandom,
     p_THShortTensor_geometric,
     p_THShortTensor_bernoulli,
     p_THShortTensor_bernoulli_FloatTensor,
-    p_THShortTensor_bernoulli_DoubleTensor) where
+    p_THShortTensor_bernoulli_DoubleTensor,
+    p_THShortTensor_bernoulli_Tensor) where
 
 import Foreign
 import Foreign.C.Types
@@ -50,6 +52,10 @@ foreign import ccall "THTensorRandom.h THShortTensor_bernoulli_FloatTensor"
 foreign import ccall "THTensorRandom.h THShortTensor_bernoulli_DoubleTensor"
   c_THShortTensor_bernoulli_DoubleTensor :: (Ptr CTHShortTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
 
+-- |c_THShortTensor_bernoulli_Tensor : self _generator p -> void
+foreign import ccall "THTensorRandom.h THShortTensor_bernoulli_Tensor"
+  c_THShortTensor_bernoulli_Tensor :: (Ptr CTHShortTensor) -> Ptr CTHGenerator -> (Ptr CTHShortTensor) -> IO ()
+
 -- |p_THShortTensor_random : Pointer to function : self _generator -> void
 foreign import ccall "THTensorRandom.h &THShortTensor_random"
   p_THShortTensor_random :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHGenerator -> IO ())
@@ -77,3 +83,7 @@ foreign import ccall "THTensorRandom.h &THShortTensor_bernoulli_FloatTensor"
 -- |p_THShortTensor_bernoulli_DoubleTensor : Pointer to function : self _generator p -> void
 foreign import ccall "THTensorRandom.h &THShortTensor_bernoulli_DoubleTensor"
   p_THShortTensor_bernoulli_DoubleTensor :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
+
+-- |p_THShortTensor_bernoulli_Tensor : Pointer to function : self _generator p -> void
+foreign import ccall "THTensorRandom.h &THShortTensor_bernoulli_Tensor"
+  p_THShortTensor_bernoulli_Tensor :: FunPtr ((Ptr CTHShortTensor) -> Ptr CTHGenerator -> (Ptr CTHShortTensor) -> IO ())

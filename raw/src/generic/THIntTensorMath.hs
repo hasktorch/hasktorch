@@ -117,6 +117,11 @@ module THIntTensorMath (
     c_THIntTensor_neTensorT,
     c_THIntTensor_eqTensorT,
     c_THIntTensor_abs,
+    c_THIntTensor_digamma,
+    c_THIntTensor_trigamma,
+    c_THIntTensor_polygamma,
+    c_THIntTensor_expm1,
+    c_THIntTensor_dirichlet_grad,
     p_THIntTensor_fill,
     p_THIntTensor_zero,
     p_THIntTensor_maskedFill,
@@ -232,7 +237,12 @@ module THIntTensorMath (
     p_THIntTensor_geTensorT,
     p_THIntTensor_neTensorT,
     p_THIntTensor_eqTensorT,
-    p_THIntTensor_abs) where
+    p_THIntTensor_abs,
+    p_THIntTensor_digamma,
+    p_THIntTensor_trigamma,
+    p_THIntTensor_polygamma,
+    p_THIntTensor_expm1,
+    p_THIntTensor_dirichlet_grad) where
 
 import Foreign
 import Foreign.C.Types
@@ -704,6 +714,26 @@ foreign import ccall "THTensorMath.h THIntTensor_eqTensorT"
 foreign import ccall "THTensorMath.h THIntTensor_abs"
   c_THIntTensor_abs :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
 
+-- |c_THIntTensor_digamma : r_ t -> void
+foreign import ccall "THTensorMath.h THIntTensor_digamma"
+  c_THIntTensor_digamma :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
+
+-- |c_THIntTensor_trigamma : r_ t -> void
+foreign import ccall "THTensorMath.h THIntTensor_trigamma"
+  c_THIntTensor_trigamma :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
+
+-- |c_THIntTensor_polygamma : r_ n t -> void
+foreign import ccall "THTensorMath.h THIntTensor_polygamma"
+  c_THIntTensor_polygamma :: (Ptr CTHIntTensor) -> CLLong -> (Ptr CTHIntTensor) -> IO ()
+
+-- |c_THIntTensor_expm1 : r_ t -> void
+foreign import ccall "THTensorMath.h THIntTensor_expm1"
+  c_THIntTensor_expm1 :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
+
+-- |c_THIntTensor_dirichlet_grad : self x alpha total -> void
+foreign import ccall "THTensorMath.h THIntTensor_dirichlet_grad"
+  c_THIntTensor_dirichlet_grad :: (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ()
+
 -- |p_THIntTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THIntTensor_fill"
   p_THIntTensor_fill :: FunPtr ((Ptr CTHIntTensor) -> CInt -> IO ())
@@ -1167,3 +1197,23 @@ foreign import ccall "THTensorMath.h &THIntTensor_eqTensorT"
 -- |p_THIntTensor_abs : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THIntTensor_abs"
   p_THIntTensor_abs :: FunPtr ((Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ())
+
+-- |p_THIntTensor_digamma : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THIntTensor_digamma"
+  p_THIntTensor_digamma :: FunPtr ((Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ())
+
+-- |p_THIntTensor_trigamma : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THIntTensor_trigamma"
+  p_THIntTensor_trigamma :: FunPtr ((Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ())
+
+-- |p_THIntTensor_polygamma : Pointer to function : r_ n t -> void
+foreign import ccall "THTensorMath.h &THIntTensor_polygamma"
+  p_THIntTensor_polygamma :: FunPtr ((Ptr CTHIntTensor) -> CLLong -> (Ptr CTHIntTensor) -> IO ())
+
+-- |p_THIntTensor_expm1 : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THIntTensor_expm1"
+  p_THIntTensor_expm1 :: FunPtr ((Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ())
+
+-- |p_THIntTensor_dirichlet_grad : Pointer to function : self x alpha total -> void
+foreign import ccall "THTensorMath.h &THIntTensor_dirichlet_grad"
+  p_THIntTensor_dirichlet_grad :: FunPtr ((Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> (Ptr CTHIntTensor) -> IO ())

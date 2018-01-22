@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+echo "Recommended to run this script using `source ./codegen-and-rebuild.sh` to evaluate it in the current shell"
+
 set -eu
 
 stack build hasktorch-codegen || {
