@@ -121,8 +121,12 @@ module THDoubleTensorMath (
     c_THDoubleTensor_sigmoid,
     c_THDoubleTensor_log,
     c_THDoubleTensor_lgamma,
+    c_THDoubleTensor_digamma,
+    c_THDoubleTensor_trigamma,
+    c_THDoubleTensor_polygamma,
     c_THDoubleTensor_log1p,
     c_THDoubleTensor_exp,
+    c_THDoubleTensor_expm1,
     c_THDoubleTensor_cos,
     c_THDoubleTensor_acos,
     c_THDoubleTensor_cosh,
@@ -161,6 +165,7 @@ module THDoubleTensorMath (
     c_THDoubleTensor_logspace,
     c_THDoubleTensor_rand,
     c_THDoubleTensor_randn,
+    c_THDoubleTensor_dirichlet_grad,
     p_THDoubleTensor_fill,
     p_THDoubleTensor_zero,
     p_THDoubleTensor_maskedFill,
@@ -281,8 +286,12 @@ module THDoubleTensorMath (
     p_THDoubleTensor_sigmoid,
     p_THDoubleTensor_log,
     p_THDoubleTensor_lgamma,
+    p_THDoubleTensor_digamma,
+    p_THDoubleTensor_trigamma,
+    p_THDoubleTensor_polygamma,
     p_THDoubleTensor_log1p,
     p_THDoubleTensor_exp,
+    p_THDoubleTensor_expm1,
     p_THDoubleTensor_cos,
     p_THDoubleTensor_acos,
     p_THDoubleTensor_cosh,
@@ -320,7 +329,8 @@ module THDoubleTensorMath (
     p_THDoubleTensor_linspace,
     p_THDoubleTensor_logspace,
     p_THDoubleTensor_rand,
-    p_THDoubleTensor_randn) where
+    p_THDoubleTensor_randn,
+    p_THDoubleTensor_dirichlet_grad) where
 
 import Foreign
 import Foreign.C.Types
@@ -808,6 +818,18 @@ foreign import ccall "THTensorMath.h THDoubleTensor_log"
 foreign import ccall "THTensorMath.h THDoubleTensor_lgamma"
   c_THDoubleTensor_lgamma :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ()
 
+-- |c_THDoubleTensor_digamma : r_ t -> void
+foreign import ccall "THTensorMath.h THDoubleTensor_digamma"
+  c_THDoubleTensor_digamma :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ()
+
+-- |c_THDoubleTensor_trigamma : r_ t -> void
+foreign import ccall "THTensorMath.h THDoubleTensor_trigamma"
+  c_THDoubleTensor_trigamma :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ()
+
+-- |c_THDoubleTensor_polygamma : r_ n t -> void
+foreign import ccall "THTensorMath.h THDoubleTensor_polygamma"
+  c_THDoubleTensor_polygamma :: (Ptr CTHDoubleTensor) -> CLLong -> (Ptr CTHDoubleTensor) -> IO ()
+
 -- |c_THDoubleTensor_log1p : r_ t -> void
 foreign import ccall "THTensorMath.h THDoubleTensor_log1p"
   c_THDoubleTensor_log1p :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ()
@@ -815,6 +837,10 @@ foreign import ccall "THTensorMath.h THDoubleTensor_log1p"
 -- |c_THDoubleTensor_exp : r_ t -> void
 foreign import ccall "THTensorMath.h THDoubleTensor_exp"
   c_THDoubleTensor_exp :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ()
+
+-- |c_THDoubleTensor_expm1 : r_ t -> void
+foreign import ccall "THTensorMath.h THDoubleTensor_expm1"
+  c_THDoubleTensor_expm1 :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ()
 
 -- |c_THDoubleTensor_cos : r_ t -> void
 foreign import ccall "THTensorMath.h THDoubleTensor_cos"
@@ -967,6 +993,10 @@ foreign import ccall "THTensorMath.h THDoubleTensor_rand"
 -- |c_THDoubleTensor_randn : r_ _generator size -> void
 foreign import ccall "THTensorMath.h THDoubleTensor_randn"
   c_THDoubleTensor_randn :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
+
+-- |c_THDoubleTensor_dirichlet_grad : self x alpha total -> void
+foreign import ccall "THTensorMath.h THDoubleTensor_dirichlet_grad"
+  c_THDoubleTensor_dirichlet_grad :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ()
 
 -- |p_THDoubleTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THDoubleTensor_fill"
@@ -1448,6 +1478,18 @@ foreign import ccall "THTensorMath.h &THDoubleTensor_log"
 foreign import ccall "THTensorMath.h &THDoubleTensor_lgamma"
   p_THDoubleTensor_lgamma :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
 
+-- |p_THDoubleTensor_digamma : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THDoubleTensor_digamma"
+  p_THDoubleTensor_digamma :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_trigamma : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THDoubleTensor_trigamma"
+  p_THDoubleTensor_trigamma :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_polygamma : Pointer to function : r_ n t -> void
+foreign import ccall "THTensorMath.h &THDoubleTensor_polygamma"
+  p_THDoubleTensor_polygamma :: FunPtr ((Ptr CTHDoubleTensor) -> CLLong -> (Ptr CTHDoubleTensor) -> IO ())
+
 -- |p_THDoubleTensor_log1p : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THDoubleTensor_log1p"
   p_THDoubleTensor_log1p :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
@@ -1455,6 +1497,10 @@ foreign import ccall "THTensorMath.h &THDoubleTensor_log1p"
 -- |p_THDoubleTensor_exp : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THDoubleTensor_exp"
   p_THDoubleTensor_exp :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+
+-- |p_THDoubleTensor_expm1 : Pointer to function : r_ t -> void
+foreign import ccall "THTensorMath.h &THDoubleTensor_expm1"
+  p_THDoubleTensor_expm1 :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
 
 -- |p_THDoubleTensor_cos : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THDoubleTensor_cos"
@@ -1607,3 +1653,7 @@ foreign import ccall "THTensorMath.h &THDoubleTensor_rand"
 -- |p_THDoubleTensor_randn : Pointer to function : r_ _generator size -> void
 foreign import ccall "THTensorMath.h &THDoubleTensor_randn"
   p_THDoubleTensor_randn :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ())
+
+-- |p_THDoubleTensor_dirichlet_grad : Pointer to function : self x alpha total -> void
+foreign import ccall "THTensorMath.h &THDoubleTensor_dirichlet_grad"
+  p_THDoubleTensor_dirichlet_grad :: FunPtr ((Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())

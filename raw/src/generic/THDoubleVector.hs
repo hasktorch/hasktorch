@@ -10,12 +10,16 @@ module THDoubleVector (
     c_THDoubleVector_divs,
     c_THDoubleVector_copy,
     c_THDoubleVector_neg,
+    c_THDoubleVector_normal_fill,
     c_THDoubleVector_abs,
     c_THDoubleVector_log,
     c_THDoubleVector_lgamma,
+    c_THDoubleVector_digamma,
+    c_THDoubleVector_trigamma,
     c_THDoubleVector_log1p,
     c_THDoubleVector_sigmoid,
     c_THDoubleVector_exp,
+    c_THDoubleVector_expm1,
     c_THDoubleVector_erf,
     c_THDoubleVector_erfinv,
     c_THDoubleVector_cos,
@@ -46,12 +50,16 @@ module THDoubleVector (
     p_THDoubleVector_divs,
     p_THDoubleVector_copy,
     p_THDoubleVector_neg,
+    p_THDoubleVector_normal_fill,
     p_THDoubleVector_abs,
     p_THDoubleVector_log,
     p_THDoubleVector_lgamma,
+    p_THDoubleVector_digamma,
+    p_THDoubleVector_trigamma,
     p_THDoubleVector_log1p,
     p_THDoubleVector_sigmoid,
     p_THDoubleVector_exp,
+    p_THDoubleVector_expm1,
     p_THDoubleVector_erf,
     p_THDoubleVector_erfinv,
     p_THDoubleVector_cos,
@@ -116,6 +124,10 @@ foreign import ccall "THVector.h THDoubleVector_copy"
 foreign import ccall "THVector.h THDoubleVector_neg"
   c_THDoubleVector_neg :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
 
+-- |c_THDoubleVector_normal_fill : data size generator mean stddev -> void
+foreign import ccall "THVector.h THDoubleVector_normal_fill"
+  c_THDoubleVector_normal_fill :: Ptr CDouble -> CLLong -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
+
 -- |c_THDoubleVector_abs : y x n -> void
 foreign import ccall "THVector.h THDoubleVector_abs"
   c_THDoubleVector_abs :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
@@ -128,6 +140,14 @@ foreign import ccall "THVector.h THDoubleVector_log"
 foreign import ccall "THVector.h THDoubleVector_lgamma"
   c_THDoubleVector_lgamma :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
 
+-- |c_THDoubleVector_digamma : y x n -> void
+foreign import ccall "THVector.h THDoubleVector_digamma"
+  c_THDoubleVector_digamma :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
+
+-- |c_THDoubleVector_trigamma : y x n -> void
+foreign import ccall "THVector.h THDoubleVector_trigamma"
+  c_THDoubleVector_trigamma :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
+
 -- |c_THDoubleVector_log1p : y x n -> void
 foreign import ccall "THVector.h THDoubleVector_log1p"
   c_THDoubleVector_log1p :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
@@ -139,6 +159,10 @@ foreign import ccall "THVector.h THDoubleVector_sigmoid"
 -- |c_THDoubleVector_exp : y x n -> void
 foreign import ccall "THVector.h THDoubleVector_exp"
   c_THDoubleVector_exp :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
+
+-- |c_THDoubleVector_expm1 : y x n -> void
+foreign import ccall "THVector.h THDoubleVector_expm1"
+  c_THDoubleVector_expm1 :: Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ()
 
 -- |c_THDoubleVector_erf : y x n -> void
 foreign import ccall "THVector.h THDoubleVector_erf"
@@ -260,6 +284,10 @@ foreign import ccall "THVector.h &THDoubleVector_copy"
 foreign import ccall "THVector.h &THDoubleVector_neg"
   p_THDoubleVector_neg :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
 
+-- |p_THDoubleVector_normal_fill : Pointer to function : data size generator mean stddev -> void
+foreign import ccall "THVector.h &THDoubleVector_normal_fill"
+  p_THDoubleVector_normal_fill :: FunPtr (Ptr CDouble -> CLLong -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
+
 -- |p_THDoubleVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THDoubleVector_abs"
   p_THDoubleVector_abs :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
@@ -272,6 +300,14 @@ foreign import ccall "THVector.h &THDoubleVector_log"
 foreign import ccall "THVector.h &THDoubleVector_lgamma"
   p_THDoubleVector_lgamma :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
 
+-- |p_THDoubleVector_digamma : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THDoubleVector_digamma"
+  p_THDoubleVector_digamma :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
+
+-- |p_THDoubleVector_trigamma : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THDoubleVector_trigamma"
+  p_THDoubleVector_trigamma :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
+
 -- |p_THDoubleVector_log1p : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THDoubleVector_log1p"
   p_THDoubleVector_log1p :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
@@ -283,6 +319,10 @@ foreign import ccall "THVector.h &THDoubleVector_sigmoid"
 -- |p_THDoubleVector_exp : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THDoubleVector_exp"
   p_THDoubleVector_exp :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
+
+-- |p_THDoubleVector_expm1 : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THDoubleVector_expm1"
+  p_THDoubleVector_expm1 :: FunPtr (Ptr CDouble -> Ptr CDouble -> CPtrdiff -> IO ())
 
 -- |p_THDoubleVector_erf : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THDoubleVector_erf"

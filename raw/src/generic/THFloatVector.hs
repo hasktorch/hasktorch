@@ -10,12 +10,16 @@ module THFloatVector (
     c_THFloatVector_divs,
     c_THFloatVector_copy,
     c_THFloatVector_neg,
+    c_THFloatVector_normal_fill,
     c_THFloatVector_abs,
     c_THFloatVector_log,
     c_THFloatVector_lgamma,
+    c_THFloatVector_digamma,
+    c_THFloatVector_trigamma,
     c_THFloatVector_log1p,
     c_THFloatVector_sigmoid,
     c_THFloatVector_exp,
+    c_THFloatVector_expm1,
     c_THFloatVector_erf,
     c_THFloatVector_erfinv,
     c_THFloatVector_cos,
@@ -46,12 +50,16 @@ module THFloatVector (
     p_THFloatVector_divs,
     p_THFloatVector_copy,
     p_THFloatVector_neg,
+    p_THFloatVector_normal_fill,
     p_THFloatVector_abs,
     p_THFloatVector_log,
     p_THFloatVector_lgamma,
+    p_THFloatVector_digamma,
+    p_THFloatVector_trigamma,
     p_THFloatVector_log1p,
     p_THFloatVector_sigmoid,
     p_THFloatVector_exp,
+    p_THFloatVector_expm1,
     p_THFloatVector_erf,
     p_THFloatVector_erfinv,
     p_THFloatVector_cos,
@@ -116,6 +124,10 @@ foreign import ccall "THVector.h THFloatVector_copy"
 foreign import ccall "THVector.h THFloatVector_neg"
   c_THFloatVector_neg :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
 
+-- |c_THFloatVector_normal_fill : data size generator mean stddev -> void
+foreign import ccall "THVector.h THFloatVector_normal_fill"
+  c_THFloatVector_normal_fill :: Ptr CFloat -> CLLong -> Ptr CTHGenerator -> CFloat -> CFloat -> IO ()
+
 -- |c_THFloatVector_abs : y x n -> void
 foreign import ccall "THVector.h THFloatVector_abs"
   c_THFloatVector_abs :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
@@ -128,6 +140,14 @@ foreign import ccall "THVector.h THFloatVector_log"
 foreign import ccall "THVector.h THFloatVector_lgamma"
   c_THFloatVector_lgamma :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
 
+-- |c_THFloatVector_digamma : y x n -> void
+foreign import ccall "THVector.h THFloatVector_digamma"
+  c_THFloatVector_digamma :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
+
+-- |c_THFloatVector_trigamma : y x n -> void
+foreign import ccall "THVector.h THFloatVector_trigamma"
+  c_THFloatVector_trigamma :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
+
 -- |c_THFloatVector_log1p : y x n -> void
 foreign import ccall "THVector.h THFloatVector_log1p"
   c_THFloatVector_log1p :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
@@ -139,6 +159,10 @@ foreign import ccall "THVector.h THFloatVector_sigmoid"
 -- |c_THFloatVector_exp : y x n -> void
 foreign import ccall "THVector.h THFloatVector_exp"
   c_THFloatVector_exp :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
+
+-- |c_THFloatVector_expm1 : y x n -> void
+foreign import ccall "THVector.h THFloatVector_expm1"
+  c_THFloatVector_expm1 :: Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ()
 
 -- |c_THFloatVector_erf : y x n -> void
 foreign import ccall "THVector.h THFloatVector_erf"
@@ -260,6 +284,10 @@ foreign import ccall "THVector.h &THFloatVector_copy"
 foreign import ccall "THVector.h &THFloatVector_neg"
   p_THFloatVector_neg :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
 
+-- |p_THFloatVector_normal_fill : Pointer to function : data size generator mean stddev -> void
+foreign import ccall "THVector.h &THFloatVector_normal_fill"
+  p_THFloatVector_normal_fill :: FunPtr (Ptr CFloat -> CLLong -> Ptr CTHGenerator -> CFloat -> CFloat -> IO ())
+
 -- |p_THFloatVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THFloatVector_abs"
   p_THFloatVector_abs :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
@@ -272,6 +300,14 @@ foreign import ccall "THVector.h &THFloatVector_log"
 foreign import ccall "THVector.h &THFloatVector_lgamma"
   p_THFloatVector_lgamma :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
 
+-- |p_THFloatVector_digamma : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THFloatVector_digamma"
+  p_THFloatVector_digamma :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_trigamma : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THFloatVector_trigamma"
+  p_THFloatVector_trigamma :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
+
 -- |p_THFloatVector_log1p : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THFloatVector_log1p"
   p_THFloatVector_log1p :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
@@ -283,6 +319,10 @@ foreign import ccall "THVector.h &THFloatVector_sigmoid"
 -- |p_THFloatVector_exp : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THFloatVector_exp"
   p_THFloatVector_exp :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
+
+-- |p_THFloatVector_expm1 : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &THFloatVector_expm1"
+  p_THFloatVector_expm1 :: FunPtr (Ptr CFloat -> Ptr CFloat -> CPtrdiff -> IO ())
 
 -- |p_THFloatVector_erf : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THFloatVector_erf"

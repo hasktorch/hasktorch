@@ -10,6 +10,7 @@ module THShortVector (
     c_THShortVector_divs,
     c_THShortVector_copy,
     c_THShortVector_neg,
+    c_THShortVector_normal_fill,
     c_THShortVector_abs,
     c_THShortVector_vectorDispatchInit,
     p_THShortVector_fill,
@@ -21,6 +22,7 @@ module THShortVector (
     p_THShortVector_divs,
     p_THShortVector_copy,
     p_THShortVector_neg,
+    p_THShortVector_normal_fill,
     p_THShortVector_abs,
     p_THShortVector_vectorDispatchInit) where
 
@@ -66,6 +68,10 @@ foreign import ccall "THVector.h THShortVector_copy"
 foreign import ccall "THVector.h THShortVector_neg"
   c_THShortVector_neg :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
 
+-- |c_THShortVector_normal_fill : data size generator mean stddev -> void
+foreign import ccall "THVector.h THShortVector_normal_fill"
+  c_THShortVector_normal_fill :: Ptr CShort -> CLLong -> Ptr CTHGenerator -> CShort -> CShort -> IO ()
+
 -- |c_THShortVector_abs : y x n -> void
 foreign import ccall "THVector.h THShortVector_abs"
   c_THShortVector_abs :: Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ()
@@ -109,6 +115,10 @@ foreign import ccall "THVector.h &THShortVector_copy"
 -- |p_THShortVector_neg : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THShortVector_neg"
   p_THShortVector_neg :: FunPtr (Ptr CShort -> Ptr CShort -> CPtrdiff -> IO ())
+
+-- |p_THShortVector_normal_fill : Pointer to function : data size generator mean stddev -> void
+foreign import ccall "THVector.h &THShortVector_normal_fill"
+  p_THShortVector_normal_fill :: FunPtr (Ptr CShort -> CLLong -> Ptr CTHGenerator -> CShort -> CShort -> IO ())
 
 -- |p_THShortVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THShortVector_abs"

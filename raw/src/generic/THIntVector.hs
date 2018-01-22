@@ -10,6 +10,7 @@ module THIntVector (
     c_THIntVector_divs,
     c_THIntVector_copy,
     c_THIntVector_neg,
+    c_THIntVector_normal_fill,
     c_THIntVector_abs,
     c_THIntVector_vectorDispatchInit,
     p_THIntVector_fill,
@@ -21,6 +22,7 @@ module THIntVector (
     p_THIntVector_divs,
     p_THIntVector_copy,
     p_THIntVector_neg,
+    p_THIntVector_normal_fill,
     p_THIntVector_abs,
     p_THIntVector_vectorDispatchInit) where
 
@@ -66,6 +68,10 @@ foreign import ccall "THVector.h THIntVector_copy"
 foreign import ccall "THVector.h THIntVector_neg"
   c_THIntVector_neg :: Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ()
 
+-- |c_THIntVector_normal_fill : data size generator mean stddev -> void
+foreign import ccall "THVector.h THIntVector_normal_fill"
+  c_THIntVector_normal_fill :: Ptr CInt -> CLLong -> Ptr CTHGenerator -> CInt -> CInt -> IO ()
+
 -- |c_THIntVector_abs : y x n -> void
 foreign import ccall "THVector.h THIntVector_abs"
   c_THIntVector_abs :: Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ()
@@ -109,6 +115,10 @@ foreign import ccall "THVector.h &THIntVector_copy"
 -- |p_THIntVector_neg : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THIntVector_neg"
   p_THIntVector_neg :: FunPtr (Ptr CInt -> Ptr CInt -> CPtrdiff -> IO ())
+
+-- |p_THIntVector_normal_fill : Pointer to function : data size generator mean stddev -> void
+foreign import ccall "THVector.h &THIntVector_normal_fill"
+  p_THIntVector_normal_fill :: FunPtr (Ptr CInt -> CLLong -> Ptr CTHGenerator -> CInt -> CInt -> IO ())
 
 -- |p_THIntVector_abs : Pointer to function : y x n -> void
 foreign import ccall "THVector.h &THIntVector_abs"
