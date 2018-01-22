@@ -30,6 +30,9 @@ thPtr = char '*'
 thVoidPtr :: Parser THType
 thVoidPtr = (string "void *" <|> string "void*") >> pure THVoidPtr
 
+thBool :: Parser THType
+thBool = string "bool" >> pure THBool
+
 thVoid :: Parser THType
 thVoid = string "void" >> pure THVoid
 
@@ -47,6 +50,17 @@ thDouble = string "double" >> pure THDouble
 
 thDescBuff :: Parser THType
 thDescBuff = string "THDescBuff" >> pure THDescBuff
+
+{- NN types -}
+
+thNNStatePtr :: Parser THType
+thNNStatePtr = string "THNNState" >> space >> thPtr >> pure THNNStatePtr
+
+thIndexTensorPtr :: Parser THType
+thIndexTensorPtr = string "THIndexTensor" >> space >> thPtr >> pure THIndexTensorPtr
+
+thIntegerTensorPtr :: Parser THType
+thIntegerTensorPtr = string "THIntegerTensor" >> space >> thPtr >> pure THIntegerTensorPtr
 
 {- Tensor types -}
 
@@ -282,6 +296,12 @@ thType = do
     <|> thVoid
     <|> thDescBuff
 
+    <|> thBool
+
+    <|> thNNStatePtr
+    <|> thIndexTensorPtr
+    <|> thIntegerTensorPtr
+
     <|> thTensorPtrPtr
     <|> thTensorPtr
 
@@ -406,6 +426,7 @@ thGenericPrefixes = string "THTensor_("
                      <|> string "THLapack_("
                      <|> string "THStorage_("
                      <|> string "THVector_("
+                     <|> string "THNN_("
 
 thFunctionTemplate :: Parser (Maybe THFunction)
 thFunctionTemplate = do
@@ -422,6 +443,13 @@ thFunctionTemplate = do
   optional $ try thComment
   pure $ Just $ THFunction (T.pack funName') funArgs' funReturn'
 
+thInlineComment :: Parser ()
+thInlineComment = do
+  some space
+  string "//"
+  some (alphaNumChar <|> char '_' <|> char ' ')
+  eol <|> (some (notChar '\n') >> eol)
+  pure ()
 
 thComment :: Parser ()
 --  :: ParsecT Void String Data.Functor.Identity.Identity (Maybe a)

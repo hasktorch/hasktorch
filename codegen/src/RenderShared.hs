@@ -49,8 +49,12 @@ makeModule outDir isTemplate modHeader modSuffix modFileSuffix typeTemplate bind
 -- TODO : make this total
 renderCType :: THType -> Text
 renderCType THVoid            = "void"
+renderCType THBool            = "bool"
 renderCType THDescBuff        = "THDescBuff"
+renderCType THNNStatePtr      = "THNNState *"
 renderCType THTensorPtr       = "THTensor *"
+renderCType THIntegerTensorPtr= "THIntegerTensor *"
+renderCType THIndexTensorPtr  = "THIndexTensor *"
 renderCType THTensorPtrPtr    = "THTensor **"
 renderCType THByteTensorPtr   = "THByteTensor *"
 renderCType THLongTensorPtr   = "THLongTensor *"
@@ -180,6 +184,20 @@ renderHaskellType typeCat templateType THVoid =
 
 renderHaskellType _ _ THDescBuff = Just "CTHDescBuff"
 
+{- NN -}
+
+renderHaskellType typeCat templateType THNNStatePtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "NNState)"
+  FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "NNState)"
+
+renderHaskellType typeCat templateType THIndexTensorPtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "IndexTensor)"
+  FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "IndexTensor)"
+
+renderHaskellType typeCat templateType THIntegerTensorPtr = case typeCat of
+  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "IntegerTensor)"
+  FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "IntegerTensor)"
+
 {- Tensor -}
 
 renderHaskellType typeCat templateType THTensorPtrPtr = case typeCat of
@@ -299,6 +317,9 @@ renderHaskellType _ _ THFloat =
 
 renderHaskellType _ _ THLong =
   Just "CLong"
+
+renderHaskellType _ _ THBool =
+  Just "CBool"
 
 renderHaskellType typeCat _ THIntPtr = case typeCat of
   ReturnValue -> Just "IO (CIntPtr)"

@@ -45,6 +45,8 @@ concreteFiles =
     -- ("vendor/scratch.h",
     --  (makeModule outDirConcrete False "scratch.h" "Scratch" "Scratch"))
 
+    ("vendor/aten/src/THNN/THNN.h",
+     (makeModule outDirConcrete False "THNN.h" "NN" "NN")),
     ("vendor/TH/THFile.h",
      (makeModule outDirConcrete False "THFile.h" "File" "File")),
     ("vendor/TH/THDiskFile.h",
