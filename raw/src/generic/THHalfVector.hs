@@ -10,9 +10,6 @@ module THHalfVector (
     c_THHalfVector_divs,
     c_THHalfVector_copy,
     c_THHalfVector_normal_fill,
-    c_THHalfVector_digamma,
-    c_THHalfVector_trigamma,
-    c_THHalfVector_expm1,
     c_THHalfVector_vectorDispatchInit,
     p_THHalfVector_fill,
     p_THHalfVector_cadd,
@@ -23,9 +20,6 @@ module THHalfVector (
     p_THHalfVector_divs,
     p_THHalfVector_copy,
     p_THHalfVector_normal_fill,
-    p_THHalfVector_digamma,
-    p_THHalfVector_trigamma,
-    p_THHalfVector_expm1,
     p_THHalfVector_vectorDispatchInit) where
 
 import Foreign
@@ -70,18 +64,6 @@ foreign import ccall "THVector.h THHalfVector_copy"
 foreign import ccall "THVector.h THHalfVector_normal_fill"
   c_THHalfVector_normal_fill :: Ptr THHalf -> CLLong -> Ptr CTHGenerator -> THHalf -> THHalf -> IO ()
 
--- |c_THHalfVector_digamma : y x n -> void
-foreign import ccall "THVector.h THHalfVector_digamma"
-  c_THHalfVector_digamma :: Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ()
-
--- |c_THHalfVector_trigamma : y x n -> void
-foreign import ccall "THVector.h THHalfVector_trigamma"
-  c_THHalfVector_trigamma :: Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ()
-
--- |c_THHalfVector_expm1 : y x n -> void
-foreign import ccall "THVector.h THHalfVector_expm1"
-  c_THHalfVector_expm1 :: Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ()
-
 -- |c_THHalfVector_vectorDispatchInit :  -> void
 foreign import ccall "THVector.h THHalfVector_vectorDispatchInit"
   c_THHalfVector_vectorDispatchInit :: IO ()
@@ -121,18 +103,6 @@ foreign import ccall "THVector.h &THHalfVector_copy"
 -- |p_THHalfVector_normal_fill : Pointer to function : data size generator mean stddev -> void
 foreign import ccall "THVector.h &THHalfVector_normal_fill"
   p_THHalfVector_normal_fill :: FunPtr (Ptr THHalf -> CLLong -> Ptr CTHGenerator -> THHalf -> THHalf -> IO ())
-
--- |p_THHalfVector_digamma : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THHalfVector_digamma"
-  p_THHalfVector_digamma :: FunPtr (Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ())
-
--- |p_THHalfVector_trigamma : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THHalfVector_trigamma"
-  p_THHalfVector_trigamma :: FunPtr (Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ())
-
--- |p_THHalfVector_expm1 : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THHalfVector_expm1"
-  p_THHalfVector_expm1 :: FunPtr (Ptr THHalf -> Ptr THHalf -> CPtrdiff -> IO ())
 
 -- |p_THHalfVector_vectorDispatchInit : Pointer to function :  -> void
 foreign import ccall "THVector.h &THHalfVector_vectorDispatchInit"

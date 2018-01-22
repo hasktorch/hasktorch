@@ -117,10 +117,6 @@ module THShortTensorMath (
     c_THShortTensor_neTensorT,
     c_THShortTensor_eqTensorT,
     c_THShortTensor_abs,
-    c_THShortTensor_digamma,
-    c_THShortTensor_trigamma,
-    c_THShortTensor_polygamma,
-    c_THShortTensor_expm1,
     p_THShortTensor_fill,
     p_THShortTensor_zero,
     p_THShortTensor_maskedFill,
@@ -236,11 +232,7 @@ module THShortTensorMath (
     p_THShortTensor_geTensorT,
     p_THShortTensor_neTensorT,
     p_THShortTensor_eqTensorT,
-    p_THShortTensor_abs,
-    p_THShortTensor_digamma,
-    p_THShortTensor_trigamma,
-    p_THShortTensor_polygamma,
-    p_THShortTensor_expm1) where
+    p_THShortTensor_abs) where
 
 import Foreign
 import Foreign.C.Types
@@ -712,22 +704,6 @@ foreign import ccall "THTensorMath.h THShortTensor_eqTensorT"
 foreign import ccall "THTensorMath.h THShortTensor_abs"
   c_THShortTensor_abs :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
 
--- |c_THShortTensor_digamma : r_ t -> void
-foreign import ccall "THTensorMath.h THShortTensor_digamma"
-  c_THShortTensor_digamma :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
-
--- |c_THShortTensor_trigamma : r_ t -> void
-foreign import ccall "THTensorMath.h THShortTensor_trigamma"
-  c_THShortTensor_trigamma :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
-
--- |c_THShortTensor_polygamma : r_ n t -> void
-foreign import ccall "THTensorMath.h THShortTensor_polygamma"
-  c_THShortTensor_polygamma :: (Ptr CTHShortTensor) -> CLLong -> (Ptr CTHShortTensor) -> IO ()
-
--- |c_THShortTensor_expm1 : r_ t -> void
-foreign import ccall "THTensorMath.h THShortTensor_expm1"
-  c_THShortTensor_expm1 :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
-
 -- |p_THShortTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THShortTensor_fill"
   p_THShortTensor_fill :: FunPtr ((Ptr CTHShortTensor) -> CShort -> IO ())
@@ -1191,19 +1167,3 @@ foreign import ccall "THTensorMath.h &THShortTensor_eqTensorT"
 -- |p_THShortTensor_abs : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THShortTensor_abs"
   p_THShortTensor_abs :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
-
--- |p_THShortTensor_digamma : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THShortTensor_digamma"
-  p_THShortTensor_digamma :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
-
--- |p_THShortTensor_trigamma : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THShortTensor_trigamma"
-  p_THShortTensor_trigamma :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
-
--- |p_THShortTensor_polygamma : Pointer to function : r_ n t -> void
-foreign import ccall "THTensorMath.h &THShortTensor_polygamma"
-  p_THShortTensor_polygamma :: FunPtr ((Ptr CTHShortTensor) -> CLLong -> (Ptr CTHShortTensor) -> IO ())
-
--- |p_THShortTensor_expm1 : Pointer to function : r_ t -> void
-foreign import ccall "THTensorMath.h &THShortTensor_expm1"
-  p_THShortTensor_expm1 :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
