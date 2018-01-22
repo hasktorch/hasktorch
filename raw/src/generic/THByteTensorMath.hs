@@ -119,7 +119,6 @@ module THByteTensorMath (
     c_THByteTensor_trigamma,
     c_THByteTensor_polygamma,
     c_THByteTensor_expm1,
-    c_THByteTensor_dirichlet_grad,
     p_THByteTensor_fill,
     p_THByteTensor_zero,
     p_THByteTensor_maskedFill,
@@ -237,8 +236,7 @@ module THByteTensorMath (
     p_THByteTensor_digamma,
     p_THByteTensor_trigamma,
     p_THByteTensor_polygamma,
-    p_THByteTensor_expm1,
-    p_THByteTensor_dirichlet_grad) where
+    p_THByteTensor_expm1) where
 
 import Foreign
 import Foreign.C.Types
@@ -718,10 +716,6 @@ foreign import ccall "THTensorMath.h THByteTensor_polygamma"
 foreign import ccall "THTensorMath.h THByteTensor_expm1"
   c_THByteTensor_expm1 :: (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ()
 
--- |c_THByteTensor_dirichlet_grad : self x alpha total -> void
-foreign import ccall "THTensorMath.h THByteTensor_dirichlet_grad"
-  c_THByteTensor_dirichlet_grad :: (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ()
-
 -- |p_THByteTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_fill"
   p_THByteTensor_fill :: FunPtr ((Ptr CTHByteTensor) -> CChar -> IO ())
@@ -1193,7 +1187,3 @@ foreign import ccall "THTensorMath.h &THByteTensor_polygamma"
 -- |p_THByteTensor_expm1 : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THByteTensor_expm1"
   p_THByteTensor_expm1 :: FunPtr ((Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ())
-
--- |p_THByteTensor_dirichlet_grad : Pointer to function : self x alpha total -> void
-foreign import ccall "THTensorMath.h &THByteTensor_dirichlet_grad"
-  p_THByteTensor_dirichlet_grad :: FunPtr ((Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> (Ptr CTHByteTensor) -> IO ())

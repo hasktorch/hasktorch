@@ -121,7 +121,6 @@ module THShortTensorMath (
     c_THShortTensor_trigamma,
     c_THShortTensor_polygamma,
     c_THShortTensor_expm1,
-    c_THShortTensor_dirichlet_grad,
     p_THShortTensor_fill,
     p_THShortTensor_zero,
     p_THShortTensor_maskedFill,
@@ -241,8 +240,7 @@ module THShortTensorMath (
     p_THShortTensor_digamma,
     p_THShortTensor_trigamma,
     p_THShortTensor_polygamma,
-    p_THShortTensor_expm1,
-    p_THShortTensor_dirichlet_grad) where
+    p_THShortTensor_expm1) where
 
 import Foreign
 import Foreign.C.Types
@@ -730,10 +728,6 @@ foreign import ccall "THTensorMath.h THShortTensor_polygamma"
 foreign import ccall "THTensorMath.h THShortTensor_expm1"
   c_THShortTensor_expm1 :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
 
--- |c_THShortTensor_dirichlet_grad : self x alpha total -> void
-foreign import ccall "THTensorMath.h THShortTensor_dirichlet_grad"
-  c_THShortTensor_dirichlet_grad :: (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ()
-
 -- |p_THShortTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THShortTensor_fill"
   p_THShortTensor_fill :: FunPtr ((Ptr CTHShortTensor) -> CShort -> IO ())
@@ -1213,7 +1207,3 @@ foreign import ccall "THTensorMath.h &THShortTensor_polygamma"
 -- |p_THShortTensor_expm1 : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THShortTensor_expm1"
   p_THShortTensor_expm1 :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())
-
--- |p_THShortTensor_dirichlet_grad : Pointer to function : self x alpha total -> void
-foreign import ccall "THTensorMath.h &THShortTensor_dirichlet_grad"
-  p_THShortTensor_dirichlet_grad :: FunPtr ((Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> (Ptr CTHShortTensor) -> IO ())

@@ -121,7 +121,6 @@ module THLongTensorMath (
     c_THLongTensor_trigamma,
     c_THLongTensor_polygamma,
     c_THLongTensor_expm1,
-    c_THLongTensor_dirichlet_grad,
     p_THLongTensor_fill,
     p_THLongTensor_zero,
     p_THLongTensor_maskedFill,
@@ -241,8 +240,7 @@ module THLongTensorMath (
     p_THLongTensor_digamma,
     p_THLongTensor_trigamma,
     p_THLongTensor_polygamma,
-    p_THLongTensor_expm1,
-    p_THLongTensor_dirichlet_grad) where
+    p_THLongTensor_expm1) where
 
 import Foreign
 import Foreign.C.Types
@@ -730,10 +728,6 @@ foreign import ccall "THTensorMath.h THLongTensor_polygamma"
 foreign import ccall "THTensorMath.h THLongTensor_expm1"
   c_THLongTensor_expm1 :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
 
--- |c_THLongTensor_dirichlet_grad : self x alpha total -> void
-foreign import ccall "THTensorMath.h THLongTensor_dirichlet_grad"
-  c_THLongTensor_dirichlet_grad :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
-
 -- |p_THLongTensor_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THLongTensor_fill"
   p_THLongTensor_fill :: FunPtr ((Ptr CTHLongTensor) -> CLong -> IO ())
@@ -1213,7 +1207,3 @@ foreign import ccall "THTensorMath.h &THLongTensor_polygamma"
 -- |p_THLongTensor_expm1 : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THLongTensor_expm1"
   p_THLongTensor_expm1 :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
-
--- |p_THLongTensor_dirichlet_grad : Pointer to function : self x alpha total -> void
-foreign import ccall "THTensorMath.h &THLongTensor_dirichlet_grad"
-  p_THLongTensor_dirichlet_grad :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
