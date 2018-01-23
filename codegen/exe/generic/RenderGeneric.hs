@@ -29,7 +29,7 @@ outDirGeneric = "./output/raw/src/generic/" :: Text
 genericFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 genericFiles =
   [
-    ("vendor/THNN/generic/THNN.h",
+    ("vendor/pytorch/aten/src/THNN/generic/THNN.h",
      (makeModule outDirGeneric True "THNN.h" "NN" "NN")),
     ("vendor/TH/generic/THBlas.h",
      (makeModule outDirGeneric True "THBlas.h" "Blas" "Blas")),
