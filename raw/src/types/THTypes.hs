@@ -17,6 +17,19 @@ type CTHGenerator = C'THGenerator
 type CTHFile = ()
 type CTHHalf = CUShort
 
+-- in THNN.h
+-- typedef void THNNState
+type CTHDoubleNNState = Ptr ()
+type CTHFloatNNState = Ptr ()
+
+-- typedef int64_t THIndex_t;
+-- typedef int32_t THInteger_t;
+type CTHIndexTensor = CLong
+type CTHIntegerTensor = CInt
+
+-- bool mapping
+type CBool = CInt
+
 -- ----------------------------------------
 -- Templated types
 -- ----------------------------------------
