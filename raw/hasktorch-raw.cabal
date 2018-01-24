@@ -22,6 +22,9 @@ library
                      , THLongTensor
                      , THShortTensor
 
+                     , THFloatNN
+                     , THDoubleNN
+
                      , THByteStorage
                      , THDoubleStorage
                      , THFloatStorage
@@ -135,6 +138,7 @@ test-suite spec
   other-modules:
       MathSpec
       TensorSpec
+      NNSpec
   default-language: Haskell2010
 
 source-repository head
