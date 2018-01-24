@@ -191,12 +191,12 @@ renderHaskellType typeCat templateType THNNStatePtr = case typeCat of
   FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "NNState)"
 
 renderHaskellType typeCat templateType THIndexTensorPtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "IndexTensor)"
-  FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "IndexTensor)"
+  ReturnValue -> Just $ "IO (Ptr CTHIndexTensor)"
+  FunctionParam -> Just $ "(Ptr CTHIndexTensor)"
 
 renderHaskellType typeCat templateType THIntegerTensorPtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "IntegerTensor)"
-  FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "IntegerTensor)"
+  ReturnValue -> Just $ "IO (Ptr CTHIntegerTensor)"
+  FunctionParam -> Just $ "(Ptr CTHIntegerTensor)"
 
 {- Tensor -}
 
