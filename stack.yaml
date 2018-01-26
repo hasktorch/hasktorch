@@ -12,6 +12,7 @@ packages:
 
 extra-deps:
 - dimensions-0.3.2.0
+- numeric-limits-0.1.0.0
 
 flags: {}
 
