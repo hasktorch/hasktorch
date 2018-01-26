@@ -20,6 +20,13 @@ type instance HaskReal CTHIntTensor = CInt
 type instance HaskReal CTHLongTensor = CLong
 type instance HaskReal CTHShortTensor = CShort
 
+type instance HaskReal CTHByteStorage = CChar
+type instance HaskReal CTHDoubleStorage = CDouble
+type instance HaskReal CTHFloatStorage = CFloat
+type instance HaskReal CTHIntStorage = CInt
+type instance HaskReal CTHLongStorage = CLong
+type instance HaskReal CTHShortStorage = CShort
+
 -- | the "accreal" type of the bytetensor -- notation is taken from TH.
 type family HaskAccReal t
 type instance HaskAccReal CTHByteTensor = CLong
