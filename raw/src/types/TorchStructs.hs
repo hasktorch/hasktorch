@@ -21,8 +21,6 @@ import Data.Word
         } THAllocator; -}
 
 
-
-
 data C'THAllocator = C'THAllocator{
   c'THAllocator'malloc :: FunPtr (Ptr () -> CLong -> Ptr ()),
   c'THAllocator'realloc :: FunPtr (Ptr () -> Ptr () -> CLong -> Ptr ()),

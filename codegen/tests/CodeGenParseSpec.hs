@@ -14,3 +14,4 @@ spec = do
   it "test3" $ parseTest thParseConcrete "TH_API size_t THFile_readStringRaw(THFile *self, const char *format, char **str_); /* you must deallocate str_ */"
   it "test4" $ parseTest thParseConcrete "TH_API const double THLog2Pi;"
   it "test5" $ parseTest thParseConcrete "TH_API double THLogAdd(double log_a, double log_b);"
+  it "test6" $ parseTest thParseGeneric "TH_API void THNN_(Abs_updateOutput)(THNNState *state, THTensor *input, THTensor *output);"

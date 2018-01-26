@@ -45,8 +45,13 @@ data TypeCategory = ReturnValue | FunctionParam
 
 data THType =
   THVoidPtr
+  | THBool
   | THVoid
   | THDescBuff
+  -- NN
+  | THNNStatePtr
+  | THIndexTensorPtr
+  | THIntegerTensorPtr
   -- Tensor
   | THTensorPtrPtr
   | THTensorPtr

@@ -17,6 +17,16 @@ type CTHGenerator = C'THGenerator
 type CTHFile = ()
 type CTHHalf = CUShort
 
+-- in THNN.h
+-- typedef void THNNState
+type CTHDoubleNNState = ()
+type CTHFloatNNState = ()
+
+-- typedef int64_t THIndex_t;
+-- typedef int32_t THInteger_t;
+type CTHIndexTensor = CLong
+type CTHIntegerTensor = CInt
+
 -- ----------------------------------------
 -- Templated types
 -- ----------------------------------------
