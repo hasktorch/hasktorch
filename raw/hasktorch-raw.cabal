@@ -60,7 +60,7 @@ library
                      , THByteBlas
                      , THDoubleBlas
                      , THFloatBlas
-                     -- , THHalfBlas
+                     , THHalfBlas
                      , THIntBlas
                      , THLongBlas
                      , THShortBlas
