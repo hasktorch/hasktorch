@@ -19,8 +19,8 @@ import qualified THHalfStorageCopy as S
 
 
 -- CTHDoubleStorage -> CDouble
-class THStorageCopy t tt where
-  c_rawCopy    :: Ptr t -> Ptr tt -> IO ()
+class THStorageCopy t where
+  c_rawCopy    :: Ptr t -> Ptr (HaskReal t) -> IO ()
   c_copy       :: Ptr t -> Ptr t -> IO ()
   c_copyByte   :: Ptr t -> Ptr CTHByteStorage -> IO ()
   c_copyChar   :: Ptr t -> Ptr CTHCharStorage -> IO ()
@@ -30,7 +30,7 @@ class THStorageCopy t tt where
   c_copyFloat  :: Ptr t -> Ptr CTHFloatStorage -> IO ()
   c_copyDouble :: Ptr t -> Ptr CTHDoubleStorage -> IO ()
   c_copyHalf   :: Ptr t -> Ptr CTHHalfStorage -> IO ()
-  p_rawCopy    :: FunPtr (Ptr t -> Ptr tt -> IO ())
+  p_rawCopy    :: FunPtr (Ptr t -> Ptr (HaskReal t) -> IO ())
   p_copy       :: FunPtr (Ptr t -> Ptr t -> IO ())
   p_copyByte   :: FunPtr (Ptr t -> Ptr CTHByteStorage -> IO ())
   p_copyChar   :: FunPtr (Ptr t -> Ptr CTHCharStorage -> IO ())
@@ -41,7 +41,7 @@ class THStorageCopy t tt where
   p_copyDouble :: FunPtr (Ptr t -> Ptr CTHDoubleStorage -> IO ())
   p_copyHalf   :: FunPtr (Ptr t -> Ptr CTHHalfStorage -> IO ())
 
-instance THStorageCopy CTHByteStorageCopy CChar where
+instance THStorageCopy CTHByteStorageCopy where
   c_rawCopy    = S.c_THByteStorage_rawCopy
   c_copy       = S.c_THByteStorage_copy
   c_copyByte   = S.c_THByteStorage_copyByte
@@ -63,7 +63,7 @@ instance THStorageCopy CTHByteStorageCopy CChar where
   p_copyDouble = S.p_THByteStorage_copyDouble
   p_copyHalf   = S.p_THByteStorage_copyHalf
 
-instance THStorageCopy CTHShortStorageCopy CShort where
+instance THStorageCopy CTHShortStorageCopy where
   c_rawCopy    = S.c_THShortStorage_rawCopy
   c_copy       = S.c_THShortStorage_copy
   c_copyByte   = S.c_THShortStorage_copyByte
@@ -85,7 +85,7 @@ instance THStorageCopy CTHShortStorageCopy CShort where
   p_copyDouble = S.p_THShortStorage_copyDouble
   p_copyHalf   = S.p_THShortStorage_copyHalf
 
-instance THStorageCopy CTHIntStorageCopy CInt where
+instance THStorageCopy CTHIntStorageCopy where
   c_rawCopy    = S.c_THIntStorage_rawCopy
   c_copy       = S.c_THIntStorage_copy
   c_copyByte   = S.c_THIntStorage_copyByte
@@ -107,7 +107,7 @@ instance THStorageCopy CTHIntStorageCopy CInt where
   p_copyDouble = S.p_THIntStorage_copyDouble
   p_copyHalf   = S.p_THIntStorage_copyHalf
 
-instance THStorageCopy CTHLongStorageCopy CLong where
+instance THStorageCopy CTHLongStorageCopy where
   c_rawCopy    = S.c_THLongStorage_rawCopy
   c_copy       = S.c_THLongStorage_copy
   c_copyByte   = S.c_THLongStorage_copyByte
@@ -129,7 +129,7 @@ instance THStorageCopy CTHLongStorageCopy CLong where
   p_copyDouble = S.p_THLongStorage_copyDouble
   p_copyHalf   = S.p_THLongStorage_copyHalf
 
-instance THStorageCopy CTHFloatStorageCopy CFloat where
+instance THStorageCopy CTHFloatStorageCopy where
   c_rawCopy    = S.c_THFloatStorage_rawCopy
   c_copy       = S.c_THFloatStorage_copy
   c_copyByte   = S.c_THFloatStorage_copyByte
@@ -151,7 +151,7 @@ instance THStorageCopy CTHFloatStorageCopy CFloat where
   p_copyDouble = S.p_THFloatStorage_copyDouble
   p_copyHalf   = S.p_THFloatStorage_copyHalf
 
-instance THStorageCopy CTHDoubleStorageCopy CDouble where
+instance THStorageCopy CTHDoubleStorageCopy where
   c_rawCopy    = S.c_THDoubleStorage_rawCopy
   c_copy       = S.c_THDoubleStorage_copy
   c_copyByte   = S.c_THDoubleStorage_copyByte
@@ -173,7 +173,7 @@ instance THStorageCopy CTHDoubleStorageCopy CDouble where
   p_copyDouble = S.p_THDoubleStorage_copyDouble
   p_copyHalf   = S.p_THDoubleStorage_copyHalf
 
-instance THStorageCopy CTHHalfStorageCopy CTHHalf where
+instance THStorageCopy CTHHalfStorageCopy where
   c_rawCopy    = S.c_THHalfStorage_rawCopy
   c_copy       = S.c_THHalfStorage_copy
   c_copyByte   = S.c_THHalfStorage_copyByte

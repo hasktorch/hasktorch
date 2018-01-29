@@ -8,7 +8,7 @@ module Torch.Raw.Internal
   ) where
 
 import Foreign as X (Ptr, FunPtr)
-import Foreign.C.Types as X (CPtrdiff, CLLong, CLong, CDouble, CShort, CLong, CChar, CInt, CIntPtr, CFloat)
+import Foreign.C.Types as X (CPtrdiff, CLLong, CLong, CDouble, CUShort, CShort, CLong, CChar, CInt, CIntPtr, CFloat)
 import THTypes as X
 
 -- | the "real" type of the bytetensor -- notation is taken from TH.
@@ -33,6 +33,7 @@ type instance HaskReal CTHFloatStorage = CFloat
 type instance HaskReal CTHIntStorage = CInt
 type instance HaskReal CTHLongStorage = CLong
 type instance HaskReal CTHShortStorage = CShort
+type instance HaskReal CTHHalfStorage = CUShort
 
 type instance HaskReal CTHByteStorageCopy = CChar
 type instance HaskReal CTHDoubleStorageCopy = CDouble
@@ -40,6 +41,7 @@ type instance HaskReal CTHFloatStorageCopy = CFloat
 type instance HaskReal CTHIntStorageCopy = CInt
 type instance HaskReal CTHLongStorageCopy = CLong
 type instance HaskReal CTHShortStorageCopy = CShort
+type instance HaskReal CTHHalfStorageCopy = CUShort
 
 -- | the "accreal" type of the bytetensor -- notation is taken from TH.
 type family HaskAccReal t

@@ -17,53 +17,53 @@ import qualified THLongStorage as S
 import qualified THShortStorage as S
 
 -- CTHDoubleStorage -> CDouble
-class THStorage t tt where
-  c_data                    :: Ptr t -> IO (Ptr tt)
+class THStorage t where
+  c_data                    :: Ptr t -> IO (Ptr (HaskReal t))
   c_size                    :: Ptr t -> CPtrdiff
   -- c_elementSize          :: CSize
-  c_set                     :: Ptr t -> CPtrdiff -> tt -> IO ()
+  c_set                     :: Ptr t -> CPtrdiff -> (HaskReal t) -> IO ()
   c_get                     :: Ptr t -> CPtrdiff -> (HaskReal t)
   c_new                     :: IO (Ptr t)
   c_newWithSize             :: CPtrdiff -> IO (Ptr t)
-  c_newWithSize1            :: tt -> IO (Ptr t)
-  c_newWithSize2            :: tt -> tt -> IO (Ptr t)
-  c_newWithSize3            :: tt -> tt -> tt -> IO (Ptr t)
-  c_newWithSize4            :: tt -> tt -> tt -> tt -> IO (Ptr t)
+  c_newWithSize1            :: (HaskReal t) -> IO (Ptr t)
+  c_newWithSize2            :: (HaskReal t) -> (HaskReal t) -> IO (Ptr t)
+  c_newWithSize3            :: (HaskReal t) -> (HaskReal t) -> (HaskReal t) -> IO (Ptr t)
+  c_newWithSize4            :: (HaskReal t) -> (HaskReal t) -> (HaskReal t) -> (HaskReal t) -> IO (Ptr t)
   c_newWithMapping          :: Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr t)
-  c_newWithData             :: Ptr tt -> CPtrdiff -> IO (Ptr t)
+  c_newWithData             :: Ptr (HaskReal t) -> CPtrdiff -> IO (Ptr t)
   c_newWithAllocator        :: CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr t)
-  c_newWithDataAndAllocator :: Ptr tt -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr t)
+  c_newWithDataAndAllocator :: Ptr (HaskReal t) -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr t)
   c_setFlag                 :: Ptr t -> CChar -> IO ()
   c_clearFlag               :: Ptr t -> CChar -> IO ()
   c_retain                  :: Ptr t -> IO ()
   c_swap                    :: Ptr t -> Ptr t -> IO ()
   c_free                    :: Ptr t -> IO ()
   c_resize                  :: Ptr t -> CPtrdiff -> IO ()
-  c_fill                    :: Ptr t -> tt -> IO ()
-  p_data                    :: FunPtr (Ptr t -> IO (Ptr tt))
+  c_fill                    :: Ptr t -> (HaskReal t) -> IO ()
+  p_data                    :: FunPtr (Ptr t -> IO (Ptr (HaskReal t)))
   p_size                    :: FunPtr (Ptr t -> CPtrdiff)
   -- p_elementSize          :: FunPtr CSize
-  p_set                     :: FunPtr (Ptr t -> CPtrdiff -> tt -> IO ())
-  p_get                     :: FunPtr (Ptr t -> CPtrdiff -> tt)
+  p_set                     :: FunPtr (Ptr t -> CPtrdiff -> (HaskReal t) -> IO ())
+  p_get                     :: FunPtr (Ptr t -> CPtrdiff -> (HaskReal t))
   p_new                     :: FunPtr (IO (Ptr t))
   p_newWithSize             :: FunPtr (CPtrdiff -> IO (Ptr t))
-  p_newWithSize1            :: FunPtr (tt -> IO (Ptr t))
-  p_newWithSize2            :: FunPtr (tt -> tt -> IO (Ptr t))
-  p_newWithSize3            :: FunPtr (tt -> tt -> tt -> IO (Ptr t))
-  p_newWithSize4            :: FunPtr (tt -> tt -> tt -> tt -> IO (Ptr t))
+  p_newWithSize1            :: FunPtr ((HaskReal t) -> IO (Ptr t))
+  p_newWithSize2            :: FunPtr ((HaskReal t) -> (HaskReal t) -> IO (Ptr t))
+  p_newWithSize3            :: FunPtr ((HaskReal t) -> (HaskReal t) -> (HaskReal t) -> IO (Ptr t))
+  p_newWithSize4            :: FunPtr ((HaskReal t) -> (HaskReal t) -> (HaskReal t) -> (HaskReal t) -> IO (Ptr t))
   p_newWithMapping          :: FunPtr (Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr t))
-  p_newWithData             :: FunPtr (Ptr tt -> CPtrdiff -> IO (Ptr t))
+  p_newWithData             :: FunPtr (Ptr (HaskReal t) -> CPtrdiff -> IO (Ptr t))
   p_newWithAllocator        :: FunPtr (CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr t))
-  p_newWithDataAndAllocator :: FunPtr (Ptr tt -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr t))
+  p_newWithDataAndAllocator :: FunPtr (Ptr (HaskReal t) -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr t))
   p_setFlag                 :: FunPtr (Ptr t -> CChar -> IO ())
   p_clearFlag               :: FunPtr (Ptr t -> CChar -> IO ())
   p_retain                  :: FunPtr (Ptr t -> IO ())
   p_swap                    :: FunPtr (Ptr t -> Ptr t -> IO ())
   p_free                    :: FunPtr (Ptr t -> IO ())
   p_resize                  :: FunPtr (Ptr t -> CPtrdiff -> IO ())
-  p_fill                    :: FunPtr (Ptr t -> tt -> IO ())
+  p_fill                    :: FunPtr (Ptr t -> (HaskReal t) -> IO ())
 
-instance THStorage CTHByteStorage CChar where
+instance THStorage CTHByteStorage where
   c_get                     = S.c_THByteStorage_get
   c_data                    = S.c_THByteStorage_data
   c_size                    = S.c_THByteStorage_size
@@ -109,7 +109,7 @@ instance THStorage CTHByteStorage CChar where
   p_resize                  = S.p_THByteStorage_resize
   p_fill                    = S.p_THByteStorage_fill
 
-instance THStorage CTHDoubleStorage CDouble where
+instance THStorage CTHDoubleStorage where
   c_get = S.c_THDoubleStorage_get
   c_data                    = S.c_THDoubleStorage_data
   c_size                    = S.c_THDoubleStorage_size
@@ -155,7 +155,7 @@ instance THStorage CTHDoubleStorage CDouble where
   p_resize                  = S.p_THDoubleStorage_resize
   p_fill                    = S.p_THDoubleStorage_fill
 
-instance THStorage CTHFloatStorage CFloat where
+instance THStorage CTHFloatStorage where
   c_get = S.c_THFloatStorage_get
   c_data                    = S.c_THFloatStorage_data
   c_size                    = S.c_THFloatStorage_size
@@ -201,7 +201,7 @@ instance THStorage CTHFloatStorage CFloat where
   p_resize                  = S.p_THFloatStorage_resize
   p_fill                    = S.p_THFloatStorage_fill
 
-instance THStorage CTHIntStorage CInt where
+instance THStorage CTHIntStorage where
   c_get = S.c_THIntStorage_get
   c_data                    = S.c_THIntStorage_data
   c_size                    = S.c_THIntStorage_size
@@ -247,7 +247,7 @@ instance THStorage CTHIntStorage CInt where
   p_resize                  = S.p_THIntStorage_resize
   p_fill                    = S.p_THIntStorage_fill
 
-instance THStorage CTHLongStorage CLong where
+instance THStorage CTHLongStorage where
   c_get = S.c_THLongStorage_get
   c_data                    = S.c_THLongStorage_data
   c_size                    = S.c_THLongStorage_size
@@ -293,7 +293,7 @@ instance THStorage CTHLongStorage CLong where
   p_resize                  = S.p_THLongStorage_resize
   p_fill                    = S.p_THLongStorage_fill
 
-instance THStorage CTHShortStorage CShort where
+instance THStorage CTHShortStorage where
   c_get = S.c_THShortStorage_get
   c_data                    = S.c_THShortStorage_data
   c_size                    = S.c_THShortStorage_size
@@ -338,4 +338,3 @@ instance THStorage CTHShortStorage CShort where
   p_free                    = S.p_THShortStorage_free
   p_resize                  = S.p_THShortStorage_resize
   p_fill                    = S.p_THShortStorage_fill
-
