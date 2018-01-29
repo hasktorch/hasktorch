@@ -33,6 +33,14 @@ type THHalfLapack = CShort
 type THFloatLapack = CFloat
 type THDoubleLapack = CDouble
 
+type CTHLongVector = CLong
+type CTHShortVector = CShort
+type CTHIntVector = CInt
+type CTHByteVector = CChar
+type CTHHalfVector = CShort
+type CTHFloatVector = CFloat
+type CTHDoubleVector = CDouble
+
 -- in THNN.h
 -- typedef void THNNState
 type CTHDoubleNNState = ()
