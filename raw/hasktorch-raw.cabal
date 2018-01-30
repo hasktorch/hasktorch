@@ -28,7 +28,7 @@ library
                      , THByteStorage
                      , THDoubleStorage
                      , THFloatStorage
-                     -- , THHalfStorage
+                     , THHalfStorage
                      , THIntStorage
                      , THLongStorage
                      , THShortStorage
@@ -36,7 +36,7 @@ library
                      , THByteStorageCopy
                      , THDoubleStorageCopy
                      , THFloatStorageCopy
-                     -- , THHalfStorageCopy
+                     , THHalfStorageCopy
                      , THIntStorageCopy
                      , THLongStorageCopy
                      , THShortStorageCopy
@@ -60,7 +60,7 @@ library
                      , THByteBlas
                      , THDoubleBlas
                      , THFloatBlas
-                     -- , THHalfBlas
+                     , THHalfBlas
                      , THIntBlas
                      , THLongBlas
                      , THShortBlas

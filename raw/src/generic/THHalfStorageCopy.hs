@@ -30,7 +30,7 @@ import Data.Int
 
 -- |c_THHalfStorage_rawCopy : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorage_rawCopy"
-  c_THHalfStorage_rawCopy :: Ptr CTHHalfStorage -> Ptr THHalf -> IO ()
+  c_THHalfStorage_rawCopy :: Ptr CTHHalfStorage -> Ptr CTHHalf -> IO ()
 
 -- |c_THHalfStorage_copy : storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorage_copy"
@@ -70,7 +70,7 @@ foreign import ccall "THStorageCopy.h THHalfStorage_copyHalf"
 
 -- |p_THHalfStorage_rawCopy : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THHalfStorage_rawCopy"
-  p_THHalfStorage_rawCopy :: FunPtr (Ptr CTHHalfStorage -> Ptr THHalf -> IO ())
+  p_THHalfStorage_rawCopy :: FunPtr (Ptr CTHHalfStorage -> Ptr CTHHalf -> IO ())
 
 -- |p_THHalfStorage_copy : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THHalfStorage_copy"
