@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module CodeGenTypes (
   genericTypes,
   concreteTypes,
@@ -23,18 +21,18 @@ import Data.Void
 -- Types for rendering output
 -- ----------------------------------------
 
-data HModule = HModule {
-  modHeader       :: FilePath,
-  modPrefix       :: Text,
-  modTypeTemplate :: TemplateType,
-  modSuffix       :: Text,
-  modFileSuffix   :: Text,
-  modExtensions   :: [Text],
-  modImports      :: [Text],
-  modTypeDefs     :: [(Text, Text)],
-  modBindings     :: [THFunction],
-  modOutDir       :: Text,
-  modIsTemplate   :: Bool
+data HModule = HModule
+  { modHeader       :: FilePath
+  , modPrefix       :: Text
+  , modTypeTemplate :: TemplateType
+  , modSuffix       :: Text
+  , modFileSuffix   :: Text
+  , modExtensions   :: [Text]
+  , modImports      :: [Text]
+  , modTypeDefs     :: [(Text, Text)]
+  , modBindings     :: [THFunction]
+  , modOutDir       :: Text
+  , modIsTemplate   :: Bool
   } deriving Show
 
 data TypeCategory = ReturnValue | FunctionParam
@@ -130,16 +128,16 @@ data THType =
   | THAccReal
   deriving (Eq, Show)
 
-data THArg = THArg {
-  thArgType :: THType,
-  thArgName :: Text
+data THArg = THArg
+  { thArgType :: THType
+  , thArgName :: Text
   } deriving (Eq, Show)
 
-data THFunction = THFunction {
-                funName :: Text,
-                funArgs :: [THArg],
-                funReturn :: THType
-                } deriving (Eq, Show)
+data THFunction = THFunction
+  { funName :: Text
+  , funArgs :: [THArg]
+  , funReturn :: THType
+  } deriving (Eq, Show)
 
 type Parser = Parsec Void String
 
@@ -147,21 +145,30 @@ type Parser = Parsec Void String
 -- Types for representing templating
 -- ----------------------------------------
 
-data TemplateType = GenByte
-                  | GenChar
-                  | GenDouble
-                  | GenFloat
-                  | GenHalf
-                  | GenInt
-                  | GenLong
-                  | GenShort
-                  | GenNothing deriving (Eq, Ord, Show)
+data TemplateType
+  = GenByte
+  | GenChar
+  | GenDouble
+  | GenFloat
+  | GenHalf
+  | GenInt
+  | GenLong
+  | GenShort
+  | GenNothing
+  deriving (Eq, Ord, Show)
 
 -- List used to iterate through all template types
 genericTypes :: [TemplateType]
-genericTypes = [GenByte, GenChar,
-                GenDouble, GenFloat, GenHalf,
-                GenInt, GenLong, GenShort]
+genericTypes =
+  [ GenByte
+  , GenChar
+  , GenDouble
+  , GenFloat
+  , GenHalf
+  , GenInt
+  , GenLong
+  , GenShort
+  ]
 
 concreteTypes :: [TemplateType]
 concreteTypes = [GenNothing]

@@ -1,17 +1,15 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Main where
 
 import Control.Monad (void)
-import Data.List (nub)
+import Data.List (nub, intercalate)
 import Data.Monoid ((<>))
 import Data.Maybe
 import Data.Void
-import Data.Text
-import Data.Text as T
+import Data.Text hiding (intercalate)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Expr
@@ -24,63 +22,59 @@ import CodeGenTypes
 import ConditionalCases
 import RenderShared
 
-outDirGeneric = "./output/raw/src/generic/" :: Text
+outDirGeneric :: Text
+thDir, thnnDir :: String
+outDirGeneric = "./output/raw/src/generic/"
+thDir   = "vendor/TH/generic/"
+thnnDir = "vendor/pytorch/aten/src/THNN/generic/"
 
 genericFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
 genericFiles =
-  [
-    ("vendor/pytorch/aten/src/THNN/generic/THNN.h",
-     (makeModule outDirGeneric True "THNN.h" "NN" "NN")),
-    ("vendor/TH/generic/THBlas.h",
-     (makeModule outDirGeneric True "THBlas.h" "Blas" "Blas")),
-    ("vendor/TH/generic/THLapack.h",
-     (makeModule outDirGeneric True "THLapack.h" "Lapack" "Lapack")),
-    ("vendor/TH/generic/THStorage.h",
-     (makeModule outDirGeneric True "THStorage.h" "Storage" "Storage")),
-    ("vendor/TH/generic/THStorageCopy.h",
-     (makeModule outDirGeneric True "THStorageCopy.h" "Storage" "StorageCopy")),
-    ("vendor/TH/generic/THTensor.h",
-     (makeModule outDirGeneric True "THTensor.h" "Tensor" "Tensor")),
-    ("vendor/TH/generic/THTensorConv.h",
-     (makeModule outDirGeneric True "THTensorConv.h" "Tensor" "TensorConv")),
-    ("vendor/TH/generic/THTensorCopy.h",
-     (makeModule outDirGeneric True "THTensorCopy.h" "Tensor" "TensorCopy")),
-    ("vendor/TH/generic/THTensorLapack.h",
-     (makeModule outDirGeneric True "THTensorLapack.h" "Tensor" "TensorLapack")),
-    ("vendor/TH/generic/THTensorMath.h",
-     (makeModule outDirGeneric True "THTensorMath.h" "Tensor" "TensorMath")),
-    ("vendor/TH/generic/THTensorRandom.h",
-     (makeModule outDirGeneric True "THTensorRandom.h" "Tensor" "TensorRandom")),
-    ("vendor/TH/generic/THVector.h",
-     (makeModule outDirGeneric True "THVector.h" "Vector" "Vector"))
+  [ (thnnDir <> "THNN.h"         , (makeGenericModule "THNN.h" "NN" "NN"))
+  , (thDir <> "THBlas.h"         , (makeGenericModule "THBlas.h" "Blas" "Blas"))
+  , (thDir <> "THLapack.h"       , (makeGenericModule "THLapack.h" "Lapack" "Lapack"))
+  , (thDir <> "THStorage.h"      , (makeGenericModule "THStorage.h" "Storage" "Storage"))
+  , (thDir <> "THStorageCopy.h"  , (makeGenericModule "THStorageCopy.h" "Storage" "StorageCopy"))
+  , (thDir <> "THTensor.h"       , (makeGenericModule "THTensor.h" "Tensor" "Tensor"))
+  , (thDir <> "THTensorConv.h"   , (makeGenericModule "THTensorConv.h" "Tensor" "TensorConv"))
+  , (thDir <> "THTensorCopy.h"   , (makeGenericModule "THTensorCopy.h" "Tensor" "TensorCopy"))
+  , (thDir <> "THTensorLapack.h" , (makeGenericModule "THTensorLapack.h" "Tensor" "TensorLapack"))
+  , (thDir <> "THTensorMath.h"   , (makeGenericModule "THTensorMath.h" "Tensor" "TensorMath"))
+  , (thDir <> "THTensorRandom.h" , (makeGenericModule "THTensorRandom.h" "Tensor" "TensorRandom"))
+  , (thDir <> "THVector.h"       , (makeGenericModule "THVector.h" "Vector" "Vector"))
   ]
+  where
+    makeGenericModule :: FilePath -> Text -> Text -> (TemplateType -> [THFunction] -> HModule)
+    makeGenericModule = makeModule outDirGeneric True
 
 -- |TODO: make a unified module that re-exports all functions
-makeReExports = do
-  putStrLn "Re-exported Tensors"
+makeReExports :: IO ()
+makeReExports = putStrLn "Re-exported Tensors"
 
-testString inp parser = case (parse parser "" inp) of
-  Left err -> putStrLn (parseErrorPretty err)
-  Right val -> putStrLn $ (ppShow val)
+testString :: String -> Parser [Maybe THFunction] -> IO ()
+testString inp parser =
+  case (parse parser "" inp) of
+    Left err -> putStrLn (parseErrorPretty err)
+    Right val -> putStrLn (ppShow val)
 
 check :: IO ()
-check = do
-  testString exampleText thParseGeneric
+check = testString exampleText thParseGeneric
   where
-    exampleText = "skip this garbage line line\n" <>
-      "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);" <>
-      "another garbage line ( )@#R @# 324 32"
+    exampleText :: String
+    exampleText = intercalate "\n"
+      [ "skip this garbage line line"
+      , "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
+      , "another garbage line ( )@#R @# 324 32"
+      ]
 
-runPipeline ::
-  [Char] -> (TemplateType -> [THFunction] -> HModule) -> [TemplateType]-> IO ()
+runPipeline :: String -> (TemplateType -> [THFunction] -> HModule) -> [TemplateType]-> IO ()
 runPipeline headerPath makeModuleConfig typeList = do
   parsedBindings <- parseFile headerPath
   let bindingsUniq = nub parsedBindings
-  putStrLn $ "First signature:"
+  putStrLn   "First signature:"
   putStrLn $ ppShow (P.take 1 bindingsUniq)
   mapM_ (\x -> renderCHeaderFile x bindingsUniq makeModuleConfig) typeList
-  putStrLn $ "Number of functions generated: " ++
-    (show $ P.length typeList * P.length bindingsUniq)
+  putStrLn $ "Number of functions generated: " ++ show (P.length typeList * P.length bindingsUniq)
 
 main :: IO ()
 main = do
