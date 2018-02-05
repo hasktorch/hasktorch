@@ -24,7 +24,7 @@ purge: clean
 	rm -rf vendor
 	git checkout -- vendor
 
-build: clean
+build:
 	stack build
 
 refresh:

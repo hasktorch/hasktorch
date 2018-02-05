@@ -1,26 +1,21 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
-
 module Main where
+
+import Prelude
 
 import Control.Monad (void)
 import Data.List (nub, intercalate)
 import Data.Monoid ((<>))
-import Data.Maybe
-import Data.Void
-import Data.Text hiding (intercalate)
-import Text.Megaparsec
-import Text.Megaparsec.Char
-import Text.Megaparsec.Expr
-import qualified Text.Megaparsec.Char.Lexer as L
-import Prelude as P
-import Text.Show.Pretty
+import Data.Void (Void)
+import Data.Text (Text)
+import Text.Megaparsec (parse, parseErrorPretty)
+import Text.Show.Pretty (ppShow)
 
-import CodeGenParse
-import CodeGenTypes
-import ConditionalCases
-import RenderShared
+import CodeGenParse (THFunction, Parser, thParseGeneric)
+import CodeGenTypes (HModule, TemplateType, genericTypes)
+import RenderShared (makeModule, renderCHeaderFile, parseFile)
 
 outDirGeneric :: Text
 thDir, thnnDir :: String
@@ -53,7 +48,7 @@ makeReExports = putStrLn "Re-exported Tensors"
 
 testString :: String -> Parser [Maybe THFunction] -> IO ()
 testString inp parser =
-  case (parse parser "" inp) of
+  case parse parser "" inp of
     Left err -> putStrLn (parseErrorPretty err)
     Right val -> putStrLn (ppShow val)
 
@@ -67,16 +62,16 @@ check = testString exampleText thParseGeneric
       , "another garbage line ( )@#R @# 324 32"
       ]
 
-runPipeline :: String -> (TemplateType -> [THFunction] -> HModule) -> [TemplateType]-> IO ()
-runPipeline headerPath makeModuleConfig typeList = do
+runPipeline :: [TemplateType] -> String -> (TemplateType -> [THFunction] -> HModule) -> IO ()
+runPipeline typeList headerPath makeModuleConfig = do
   parsedBindings <- parseFile headerPath
   let bindingsUniq = nub parsedBindings
   putStrLn   "First signature:"
-  putStrLn $ ppShow (P.take 1 bindingsUniq)
+  putStrLn $ ppShow (take 1 bindingsUniq)
   mapM_ (\x -> renderCHeaderFile x bindingsUniq makeModuleConfig) typeList
-  putStrLn $ "Number of functions generated: " ++ show (P.length typeList * P.length bindingsUniq)
+  putStrLn $ "Number of functions generated: " ++ show (length typeList * length bindingsUniq)
 
 main :: IO ()
 main = do
-  mapM_ (\(file, spec) -> runPipeline file spec genericTypes) genericFiles
+  mapM_ (uncurry (runPipeline genericTypes)) genericFiles
   putStrLn "Done"

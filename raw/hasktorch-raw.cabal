@@ -1,148 +1,161 @@
-name:                hasktorch-raw
-version:             0.1.0.0
-synopsis:            Torch for tensors and neural networks in Haskell
-description:         core C bindings
-homepage:            https://github.com/austinvhuang/hasktorch#readme
-license:             BSD3
-author:              Austin Huang
-maintainer:          
-copyright:           
-category:            
-build-type:          Simple
-cabal-version:       >=1.10
+name:          hasktorch-raw
+version:       0.1.0.0
+synopsis:      Torch for tensors and neural networks in Haskell
+description:   core C bindings
+homepage:      https://github.com/hasktorch/hasktorch#readme
+license:       BSD3
+author:        Austin Huang
+build-type:    Simple
+cabal-version: >=1.10
 
 library
-  default-language:    Haskell2010
-  exposed-modules:     
-                       THByteTensor
-                     , THDoubleTensor
-                     , THFloatTensor
-                     -- , THHalfTensor
-                     , THIntTensor
-                     , THLongTensor
-                     , THShortTensor
+  default-language:
+      Haskell2010
 
-                     , THFloatNN
-                     , THDoubleNN
+  exposed-modules:
+      THByteTensor
+    , THDoubleTensor
+    , THFloatTensor
+    , THHalfTensor
+    , THIntTensor
+    , THLongTensor
+    , THShortTensor
 
-                     , THByteStorage
-                     , THDoubleStorage
-                     , THFloatStorage
-                     , THHalfStorage
-                     , THIntStorage
-                     , THLongStorage
-                     , THShortStorage
+    , THFloatNN
+    , THDoubleNN
 
-                     , THByteStorageCopy
-                     , THDoubleStorageCopy
-                     , THFloatStorageCopy
-                     , THHalfStorageCopy
-                     , THIntStorageCopy
-                     , THLongStorageCopy
-                     , THShortStorageCopy
+    , THByteStorage
+    , THDoubleStorage
+    , THFloatStorage
+    , THHalfStorage
+    , THIntStorage
+    , THLongStorage
+    , THShortStorage
 
-                     , THByteTensorMath
-                     , THDoubleTensorMath
-                     , THFloatTensorMath
-                     -- , THHalfTensorMath
-                     , THIntTensorMath
-                     , THLongTensorMath
-                     , THShortTensorMath
+    , THByteStorageCopy
+    , THDoubleStorageCopy
+    , THFloatStorageCopy
+    , THHalfStorageCopy
+    , THIntStorageCopy
+    , THLongStorageCopy
+    , THShortStorageCopy
 
-                     , THByteTensorRandom
-                     , THDoubleTensorRandom
-                     , THFloatTensorRandom
-                     -- , THHalfTensorRandom
-                     , THIntTensorRandom
-                     , THLongTensorRandom
-                     , THShortTensorRandom
+    , THByteTensorMath
+    , THDoubleTensorMath
+    , THFloatTensorMath
+    , THHalfTensorMath
+    , THIntTensorMath
+    , THLongTensorMath
+    , THShortTensorMath
 
-                     , THByteBlas
-                     , THDoubleBlas
-                     , THFloatBlas
-                     , THHalfBlas
-                     , THIntBlas
-                     , THLongBlas
-                     , THShortBlas
+    , THByteTensorRandom
+    , THDoubleTensorRandom
+    , THFloatTensorRandom
+    , THHalfTensorRandom
+    , THIntTensorRandom
+    , THLongTensorRandom
+    , THShortTensorRandom
 
-                     -- TODO: why are pos def functions not included in TH_API
-                     , THByteLapack
-                     , THDoubleLapack
-                     , THFloatLapack
-                     -- , THHalfLapack
-                     , THIntLapack
-                     , THLongLapack
-                     , THShortLapack
+    , THByteBlas
+    , THDoubleBlas
+    , THFloatBlas
+    , THHalfBlas
+    , THIntBlas
+    , THLongBlas
+    , THShortBlas
 
-                     , THByteTensorLapack
-                     , THDoubleTensorLapack
-                     , THFloatTensorLapack
-                     -- , THHalfTensorLapack
-                     , THIntTensorLapack
-                     , THLongTensorLapack
-                     , THShortTensorLapack
+    -- TODO: why are pos def functions not included in TH_API
+    , THByteLapack
+    , THDoubleLapack
+    , THFloatLapack
+    , THHalfLapack
+    , THIntLapack
+    , THLongLapack
+    , THShortLapack
 
-                     , THByteTensorConv
-                     , THDoubleTensorConv
-                     , THFloatTensorConv
-                     -- , THHalfTensorConv
-                     , THIntTensorConv
-                     , THLongTensorConv
-                     , THShortTensorConv
+    , THByteTensorLapack
+    , THDoubleTensorLapack
+    , THFloatTensorLapack
+    , THHalfTensorLapack
+    , THIntTensorLapack
+    , THLongTensorLapack
+    , THShortTensorLapack
 
-                     , THByteTensorCopy
-                     , THDoubleTensorCopy
-                     , THFloatTensorCopy
-                     -- , THHalfTensorCopy
-                     , THIntTensorCopy
-                     , THLongTensorCopy
-                     , THShortTensorCopy
+    , THByteTensorConv
+    , THDoubleTensorConv
+    , THFloatTensorConv
+    , THHalfTensorConv
+    , THIntTensorConv
+    , THLongTensorConv
+    , THShortTensorConv
 
-                     , THByteVector
-                     , THDoubleVector
-                     , THFloatVector
-                     -- , THHalfVector
-                     , THIntVector
-                     , THLongVector
-                     , THShortVector
+    , THByteTensorCopy
+    , THDoubleTensorCopy
+    , THFloatTensorCopy
+    , THHalfTensorCopy
+    , THIntTensorCopy
+    , THLongTensorCopy
+    , THShortTensorCopy
 
-                     , THFile
-                     , THDiskFile
-                     , THLogAdd
-                     , THMemoryFile
-                     , THStorage
-                     , THRandom
-                     , THSize
+    , THByteVector
+    , THDoubleVector
+    , THFloatVector
+    , THHalfVector
+    , THIntVector
+    , THLongVector
+    , THShortVector
 
-                     , THTypes
-                     , TorchStructs
+    , THFile
+    , THDiskFile
+    , THLogAdd
+    , THMemoryFile
+    , THStorage
+    , THRandom
+    , THSize
 
-  hs-source-dirs:      src, src/generic, src/types
-  build-depends:       base >= 4.7 && < 5
-                     , inline-c >= 0.5
-                     , text >= 1.2.2.2
-  Build-tools:         c2hs
-  default-language:    Haskell2010
+    , THTypes
+    , TorchStructs
+
+  hs-source-dirs:
+      src
+    , src/generic
+    , src/types
+    , signatures
+
+  build-depends:
+      base >= 4.7 && < 5
+    , inline-c >= 0.5
+    , text >= 1.2.2.2
+
+  Build-tools:
+      c2hs
+
+  default-language:
+      Haskell2010
 
 test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   hs-source-dirs:
       tests
+
   build-depends:
-      base >=4.7 && <5
-    , text >=1.2.2.2
+      base           >=4.7 && <5
+    , text           >=1.2.2.2
     , QuickCheck
-    , hspec >= 2.4.4
+    , hspec          >= 2.4.4
     , hasktorch-raw
+
   other-modules:
       MathSpec
       TensorSpec
       NNSpec
-  default-language: Haskell2010
+
+  default-language:
+      Haskell2010
 
 source-repository head
   type:     git
-  location: https://github.com/austinvhuang/hasktorch
+  location: https://github.com/hasktorch/hasktorch
 
   

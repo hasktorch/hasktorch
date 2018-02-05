@@ -1,51 +1,64 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-module RenderShared (
-  makeModule,
-  renderCType,
-  type2SpliceReal,
-  type2real,
-  type2accreal,
-  realtype2Haskell,
-  accrealtype2Haskell,
+module RenderShared
+  ( makeModule
+  , renderCType
+  , type2SpliceReal
+  , type2real
+  , type2accreal
+  , realtype2Haskell
+  , accrealtype2Haskell
+  , renderCHeaderFile
 
-  renderCHeaderFile,
-  parseFile,
-  cleanList
+  , parseFile
+  , cleanList
   ) where
+
+import Prelude
 
 import Data.List (nub)
 import Data.Maybe (fromJust, catMaybes, isJust, Maybe)
 import Data.Either (either)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Void
-import Text.Megaparsec
-import Text.Show.Pretty
-import Debug.Trace
-import Prelude
+import Data.Void (Void)
+import Text.Megaparsec (ParseError, runParser)
 import qualified Data.Text as T
-import qualified Prelude as P
 
 import CodeGenTypes
-import CodeGenParse
-import ConditionalCases
+import CodeGenParse (thParseGeneric)
+import ConditionalCases (checkFunction)
 
-makeModule :: Text -> Bool -> FilePath -> Text -> Text -> TemplateType -> [THFunction] -> HModule
-makeModule outDir isTemplate modHeader modSuffix modFileSuffix typeTemplate bindings
+makeModule
+  :: Text
+  -> Bool
+  -> FilePath
+  -> Text
+  -> Text
+  -> TemplateType
+  -> [THFunction]
+  -> HModule
+makeModule
+  modOutDir
+  modIsTemplate
+  modHeader
+  modSuffix
+  modFileSuffix
+  modTypeTemplate
+  modBindings
   = HModule
-  { modHeader = modHeader
+  { modHeader
+  , modTypeTemplate
+  , modSuffix
+  , modFileSuffix
+  , modBindings
+  , modOutDir
+  , modIsTemplate
   , modPrefix = "TH"
-  , modTypeTemplate = typeTemplate
-  , modSuffix = modSuffix
-  , modFileSuffix = modFileSuffix
   , modExtensions = ["ForeignFunctionInterface"]
   , modImports = ["Foreign", "Foreign.C.Types", "THTypes", "Data.Word", "Data.Int"]
   , modTypeDefs = []
-  , modBindings = bindings
-  , modOutDir = outDir
-  , modIsTemplate = isTemplate
   }
 
 -- TODO : make this total
@@ -304,7 +317,7 @@ renderFunName prefix name = prefix <> "_" <> name
 -- |Render a single function signature.
 renderFunSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunSig headerFile modTypeTemplate (name, retType, args) = T.intercalate ""
-  [ "-- |c_" <> name <> " : " <> T.intercalate " " nameSignature <> " -> " <> (renderCType retType) <> "\n"
+  [ "-- | c_" <> name <> " : " <> T.intercalate " " nameSignature <> " -> " <> renderCType retType <> "\n"
    --   <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " " <> name <> "\"\n"
   , "foreign import ccall \"" <> T.pack headerFile <> " " <> name <> "\"\n"
   , "  c_" <> name <> " :: " <> T.intercalate " -> " typeSignatureClean
@@ -315,7 +328,7 @@ renderFunSig headerFile modTypeTemplate (name, retType, args) = T.intercalate ""
   typeVals = thArgType <$> args
   typeSignature = renderHaskellType FunctionParam modTypeTemplate <$> typeVals
   typeSignatureClean = catMaybes typeSignature
-  numArgs = P.length typeSignatureClean
+  numArgs = length typeSignatureClean
   retArrow = if numArgs == 0 then "" else " -> "
   nameSignature = thArgName <$> args
 
@@ -338,7 +351,7 @@ renderFunPtrSig headerFile modTypeTemplate (name, retType, args) = T.intercalate
   typeVals = thArgType <$> args
   typeSignature = renderHaskellType FunctionParam modTypeTemplate <$> typeVals
   typeSignatureClean = catMaybes typeSignature
-  numArgs = P.length typeSignatureClean
+  numArgs = length typeSignatureClean
   retArrow = if numArgs == 0 then "" else " -> "
   nameSignature = thArgName <$> args
 
@@ -363,35 +376,29 @@ renderFunctions m validFunctions =
 
 -- | Check for conditional templating of functions and filter function list
 checkList :: [THFunction] -> TemplateType -> [THFunction]
-checkList fList templateType = P.filter ((checkFunction templateType) . funName) fList
+checkList fList templateType = filter ((checkFunction templateType) . funName) fList
 
 renderAll :: HModule -> Text
-renderAll spec
-  =  trace (show (prefix, splice)) $ renderExtensions (modExtensions spec)
-  <> renderModule spec
+renderAll m
+  =  renderExtensions (modExtensions m)
+  <> renderModule m
   <> renderExports exportFunctions
-  <> renderImports (modImports spec)
-  <> renderFunctions spec validFunctions
+  <> renderImports (modImports m)
+  <> renderFunctions m validFunctions
   where
-    prefix, splice :: Text
-    prefix = makePrefix . type2SpliceReal . modTypeTemplate $ spec
-    splice = {-modPrefix spec <> -} type2SpliceReal (modTypeTemplate spec) <> modSuffix spec
-
     validFunctions :: [THFunction]
-    validFunctions = checkList (modBindings spec) (modTypeTemplate spec)
+    validFunctions = checkList (modBindings m) (modTypeTemplate m)
 
     fun2name :: Text -> THFunction -> Text
     fun2name p = (\f -> p <> "_" <> f) . funName
 
     exportFunctions :: [Text]
-    exportFunctions =
-      if modIsTemplate spec
-      then (fmap (fun2name ("c_" <> splice)) validFunctions)
-        <> (fmap (fun2name ("p_" <> splice)) validFunctions)
-      else (fmap (fun2name "c") validFunctions)
-        <> (fmap (fun2name "p") validFunctions)
+    exportFunctions
+      =  (fmap (fun2name "c") validFunctions)
+      <> (fmap (fun2name "p") validFunctions)
 
-renderCHeaderFile :: TemplateType -> [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> IO ()
+renderCHeaderFile
+  :: TemplateType -> [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> IO ()
 renderCHeaderFile templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
   writeFile (outDir ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
@@ -422,6 +429,10 @@ parseFile file = do
   putStrLn $ "\nParsing " ++ file ++ " ... "
   res <- parseFromFile thParseGeneric file
   pure $ cleanList res
-  where
-    parseFromFile :: Parser [Maybe THFunction] -> String -> IO (Either (ParseError Char Void) [Maybe THFunction])
-    parseFromFile p file = runParser p file <$> readFile file
+ where
+  parseFromFile
+    :: Parser [Maybe THFunction]
+    -> String
+    -> IO (Either (ParseError Char Void) [Maybe THFunction])
+  parseFromFile p file = runParser p file <$> readFile file
+
