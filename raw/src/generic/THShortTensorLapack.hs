@@ -1,7 +1,8 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module THShortTensorLapack (
-    ) where
+module THShortTensorLapack
+  ( 
+  ) where
 
 import Foreign
 import Foreign.C.Types

@@ -1,0 +1,25 @@
+signature Torch.Raw.Tensor.Copy where
+
+data CTensor
+data CReal
+data CAccReal
+
+c_copy       :: Ptr CTensor -> Ptr CTensor -> IO ()
+c_copyByte   :: Ptr CTensor -> Ptr CTHByteTensor -> IO ()
+c_copyChar   :: Ptr CTensor -> Ptr CTHCharTensor -> IO ()
+c_copyShort  :: Ptr CTensor -> Ptr CTHShortTensor -> IO ()
+c_copyInt    :: Ptr CTensor -> Ptr CTHIntTensor -> IO ()
+c_copyLong   :: Ptr CTensor -> Ptr CTHLongTensor -> IO ()
+c_copyFloat  :: Ptr CTensor -> Ptr CTHFloatTensor -> IO ()
+c_copyDouble :: Ptr CTensor -> Ptr CTHDoubleTensor -> IO ()
+c_copyHalf   :: Ptr CTensor -> Ptr CTHHalfTensor -> IO ()
+
+p_copy       :: FunPtr (Ptr CTensor -> Ptr CTensor -> IO ())
+p_copyByte   :: FunPtr (Ptr CTensor -> Ptr CTHByteTensor -> IO ())
+p_copyChar   :: FunPtr (Ptr CTensor -> Ptr CTHCharTensor -> IO ())
+p_copyShort  :: FunPtr (Ptr CTensor -> Ptr CTHShortTensor -> IO ())
+p_copyInt    :: FunPtr (Ptr CTensor -> Ptr CTHIntTensor -> IO ())
+p_copyLong   :: FunPtr (Ptr CTensor -> Ptr CTHLongTensor -> IO ())
+p_copyFloat  :: FunPtr (Ptr CTensor -> Ptr CTHFloatTensor -> IO ())
+p_copyDouble :: FunPtr (Ptr CTensor -> Ptr CTHDoubleTensor -> IO ())
+p_copyHalf   :: FunPtr (Ptr CTensor -> Ptr CTHHalfTensor -> IO ())

@@ -1,26 +1,27 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module THByteStorageCopy (
-    c_THByteStorage_rawCopy,
-    c_THByteStorage_copy,
-    c_THByteStorage_copyByte,
-    c_THByteStorage_copyChar,
-    c_THByteStorage_copyShort,
-    c_THByteStorage_copyInt,
-    c_THByteStorage_copyLong,
-    c_THByteStorage_copyFloat,
-    c_THByteStorage_copyDouble,
-    c_THByteStorage_copyHalf,
-    p_THByteStorage_rawCopy,
-    p_THByteStorage_copy,
-    p_THByteStorage_copyByte,
-    p_THByteStorage_copyChar,
-    p_THByteStorage_copyShort,
-    p_THByteStorage_copyInt,
-    p_THByteStorage_copyLong,
-    p_THByteStorage_copyFloat,
-    p_THByteStorage_copyDouble,
-    p_THByteStorage_copyHalf) where
+module THByteStorageCopy
+  ( c_rawCopy
+  , c_copy
+  , c_copyByte
+  , c_copyChar
+  , c_copyShort
+  , c_copyInt
+  , c_copyLong
+  , c_copyFloat
+  , c_copyDouble
+  , c_copyHalf
+  , p_rawCopy
+  , p_copy
+  , p_copyByte
+  , p_copyChar
+  , p_copyShort
+  , p_copyInt
+  , p_copyLong
+  , p_copyFloat
+  , p_copyDouble
+  , p_copyHalf
+  ) where
 
 import Foreign
 import Foreign.C.Types
@@ -28,82 +29,82 @@ import THTypes
 import Data.Word
 import Data.Int
 
--- |c_THByteStorage_rawCopy : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_rawCopy"
-  c_THByteStorage_rawCopy :: Ptr CTHByteStorage -> Ptr CChar -> IO ()
+-- | c_rawCopy : storage src -> void
+foreign import ccall "THStorageCopy.h rawCopy"
+  c_rawCopy :: Ptr CTHByteStorage -> Ptr CChar -> IO ()
 
--- |c_THByteStorage_copy : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_copy"
-  c_THByteStorage_copy :: Ptr CTHByteStorage -> Ptr CTHByteStorage -> IO ()
+-- | c_copy : storage src -> void
+foreign import ccall "THStorageCopy.h copy"
+  c_copy :: Ptr CTHByteStorage -> Ptr CTHByteStorage -> IO ()
 
--- |c_THByteStorage_copyByte : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_copyByte"
-  c_THByteStorage_copyByte :: Ptr CTHByteStorage -> Ptr CTHByteStorage -> IO ()
+-- | c_copyByte : storage src -> void
+foreign import ccall "THStorageCopy.h copyByte"
+  c_copyByte :: Ptr CTHByteStorage -> Ptr CTHByteStorage -> IO ()
 
--- |c_THByteStorage_copyChar : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_copyChar"
-  c_THByteStorage_copyChar :: Ptr CTHByteStorage -> Ptr CTHCharStorage -> IO ()
+-- | c_copyChar : storage src -> void
+foreign import ccall "THStorageCopy.h copyChar"
+  c_copyChar :: Ptr CTHByteStorage -> Ptr CTHCharStorage -> IO ()
 
--- |c_THByteStorage_copyShort : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_copyShort"
-  c_THByteStorage_copyShort :: Ptr CTHByteStorage -> Ptr CTHShortStorage -> IO ()
+-- | c_copyShort : storage src -> void
+foreign import ccall "THStorageCopy.h copyShort"
+  c_copyShort :: Ptr CTHByteStorage -> Ptr CTHShortStorage -> IO ()
 
--- |c_THByteStorage_copyInt : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_copyInt"
-  c_THByteStorage_copyInt :: Ptr CTHByteStorage -> Ptr CTHIntStorage -> IO ()
+-- | c_copyInt : storage src -> void
+foreign import ccall "THStorageCopy.h copyInt"
+  c_copyInt :: Ptr CTHByteStorage -> Ptr CTHIntStorage -> IO ()
 
--- |c_THByteStorage_copyLong : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_copyLong"
-  c_THByteStorage_copyLong :: Ptr CTHByteStorage -> Ptr CTHLongStorage -> IO ()
+-- | c_copyLong : storage src -> void
+foreign import ccall "THStorageCopy.h copyLong"
+  c_copyLong :: Ptr CTHByteStorage -> Ptr CTHLongStorage -> IO ()
 
--- |c_THByteStorage_copyFloat : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_copyFloat"
-  c_THByteStorage_copyFloat :: Ptr CTHByteStorage -> Ptr CTHFloatStorage -> IO ()
+-- | c_copyFloat : storage src -> void
+foreign import ccall "THStorageCopy.h copyFloat"
+  c_copyFloat :: Ptr CTHByteStorage -> Ptr CTHFloatStorage -> IO ()
 
--- |c_THByteStorage_copyDouble : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_copyDouble"
-  c_THByteStorage_copyDouble :: Ptr CTHByteStorage -> Ptr CTHDoubleStorage -> IO ()
+-- | c_copyDouble : storage src -> void
+foreign import ccall "THStorageCopy.h copyDouble"
+  c_copyDouble :: Ptr CTHByteStorage -> Ptr CTHDoubleStorage -> IO ()
 
--- |c_THByteStorage_copyHalf : storage src -> void
-foreign import ccall "THStorageCopy.h THByteStorage_copyHalf"
-  c_THByteStorage_copyHalf :: Ptr CTHByteStorage -> Ptr CTHHalfStorage -> IO ()
+-- | c_copyHalf : storage src -> void
+foreign import ccall "THStorageCopy.h copyHalf"
+  c_copyHalf :: Ptr CTHByteStorage -> Ptr CTHHalfStorage -> IO ()
 
--- |p_THByteStorage_rawCopy : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_rawCopy"
-  p_THByteStorage_rawCopy :: FunPtr (Ptr CTHByteStorage -> Ptr CChar -> IO ())
+-- |p_rawCopy : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &rawCopy"
+  p_rawCopy :: FunPtr (Ptr CTHByteStorage -> Ptr CChar -> IO ())
 
--- |p_THByteStorage_copy : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_copy"
-  p_THByteStorage_copy :: FunPtr (Ptr CTHByteStorage -> Ptr CTHByteStorage -> IO ())
+-- |p_copy : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &copy"
+  p_copy :: FunPtr (Ptr CTHByteStorage -> Ptr CTHByteStorage -> IO ())
 
--- |p_THByteStorage_copyByte : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_copyByte"
-  p_THByteStorage_copyByte :: FunPtr (Ptr CTHByteStorage -> Ptr CTHByteStorage -> IO ())
+-- |p_copyByte : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &copyByte"
+  p_copyByte :: FunPtr (Ptr CTHByteStorage -> Ptr CTHByteStorage -> IO ())
 
--- |p_THByteStorage_copyChar : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_copyChar"
-  p_THByteStorage_copyChar :: FunPtr (Ptr CTHByteStorage -> Ptr CTHCharStorage -> IO ())
+-- |p_copyChar : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &copyChar"
+  p_copyChar :: FunPtr (Ptr CTHByteStorage -> Ptr CTHCharStorage -> IO ())
 
--- |p_THByteStorage_copyShort : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_copyShort"
-  p_THByteStorage_copyShort :: FunPtr (Ptr CTHByteStorage -> Ptr CTHShortStorage -> IO ())
+-- |p_copyShort : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &copyShort"
+  p_copyShort :: FunPtr (Ptr CTHByteStorage -> Ptr CTHShortStorage -> IO ())
 
--- |p_THByteStorage_copyInt : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_copyInt"
-  p_THByteStorage_copyInt :: FunPtr (Ptr CTHByteStorage -> Ptr CTHIntStorage -> IO ())
+-- |p_copyInt : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &copyInt"
+  p_copyInt :: FunPtr (Ptr CTHByteStorage -> Ptr CTHIntStorage -> IO ())
 
--- |p_THByteStorage_copyLong : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_copyLong"
-  p_THByteStorage_copyLong :: FunPtr (Ptr CTHByteStorage -> Ptr CTHLongStorage -> IO ())
+-- |p_copyLong : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &copyLong"
+  p_copyLong :: FunPtr (Ptr CTHByteStorage -> Ptr CTHLongStorage -> IO ())
 
--- |p_THByteStorage_copyFloat : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_copyFloat"
-  p_THByteStorage_copyFloat :: FunPtr (Ptr CTHByteStorage -> Ptr CTHFloatStorage -> IO ())
+-- |p_copyFloat : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &copyFloat"
+  p_copyFloat :: FunPtr (Ptr CTHByteStorage -> Ptr CTHFloatStorage -> IO ())
 
--- |p_THByteStorage_copyDouble : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_copyDouble"
-  p_THByteStorage_copyDouble :: FunPtr (Ptr CTHByteStorage -> Ptr CTHDoubleStorage -> IO ())
+-- |p_copyDouble : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &copyDouble"
+  p_copyDouble :: FunPtr (Ptr CTHByteStorage -> Ptr CTHDoubleStorage -> IO ())
 
--- |p_THByteStorage_copyHalf : Pointer to function : storage src -> void
-foreign import ccall "THStorageCopy.h &THByteStorage_copyHalf"
-  p_THByteStorage_copyHalf :: FunPtr (Ptr CTHByteStorage -> Ptr CTHHalfStorage -> IO ())
+-- |p_copyHalf : Pointer to function : storage src -> void
+foreign import ccall "THStorageCopy.h &copyHalf"
+  p_copyHalf :: FunPtr (Ptr CTHByteStorage -> Ptr CTHHalfStorage -> IO ())

@@ -1,26 +1,27 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module THByteVector (
-    c_THByteVector_fill,
-    c_THByteVector_cadd,
-    c_THByteVector_adds,
-    c_THByteVector_cmul,
-    c_THByteVector_muls,
-    c_THByteVector_cdiv,
-    c_THByteVector_divs,
-    c_THByteVector_copy,
-    c_THByteVector_normal_fill,
-    c_THByteVector_vectorDispatchInit,
-    p_THByteVector_fill,
-    p_THByteVector_cadd,
-    p_THByteVector_adds,
-    p_THByteVector_cmul,
-    p_THByteVector_muls,
-    p_THByteVector_cdiv,
-    p_THByteVector_divs,
-    p_THByteVector_copy,
-    p_THByteVector_normal_fill,
-    p_THByteVector_vectorDispatchInit) where
+module THByteVector
+  ( c_fill
+  , c_cadd
+  , c_adds
+  , c_cmul
+  , c_muls
+  , c_cdiv
+  , c_divs
+  , c_copy
+  , c_normal_fill
+  , c_vectorDispatchInit
+  , p_fill
+  , p_cadd
+  , p_adds
+  , p_cmul
+  , p_muls
+  , p_cdiv
+  , p_divs
+  , p_copy
+  , p_normal_fill
+  , p_vectorDispatchInit
+  ) where
 
 import Foreign
 import Foreign.C.Types
@@ -28,82 +29,82 @@ import THTypes
 import Data.Word
 import Data.Int
 
--- |c_THByteVector_fill : x c n -> void
-foreign import ccall "THVector.h THByteVector_fill"
-  c_THByteVector_fill :: Ptr CChar -> CChar -> CPtrdiff -> IO ()
+-- | c_fill : x c n -> void
+foreign import ccall "THVector.h fill"
+  c_fill :: Ptr CChar -> CChar -> CPtrdiff -> IO ()
 
--- |c_THByteVector_cadd : z x y c n -> void
-foreign import ccall "THVector.h THByteVector_cadd"
-  c_THByteVector_cadd :: Ptr CChar -> Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ()
+-- | c_cadd : z x y c n -> void
+foreign import ccall "THVector.h cadd"
+  c_cadd :: Ptr CChar -> Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ()
 
--- |c_THByteVector_adds : y x c n -> void
-foreign import ccall "THVector.h THByteVector_adds"
-  c_THByteVector_adds :: Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ()
+-- | c_adds : y x c n -> void
+foreign import ccall "THVector.h adds"
+  c_adds :: Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ()
 
--- |c_THByteVector_cmul : z x y n -> void
-foreign import ccall "THVector.h THByteVector_cmul"
-  c_THByteVector_cmul :: Ptr CChar -> Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ()
+-- | c_cmul : z x y n -> void
+foreign import ccall "THVector.h cmul"
+  c_cmul :: Ptr CChar -> Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ()
 
--- |c_THByteVector_muls : y x c n -> void
-foreign import ccall "THVector.h THByteVector_muls"
-  c_THByteVector_muls :: Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ()
+-- | c_muls : y x c n -> void
+foreign import ccall "THVector.h muls"
+  c_muls :: Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ()
 
--- |c_THByteVector_cdiv : z x y n -> void
-foreign import ccall "THVector.h THByteVector_cdiv"
-  c_THByteVector_cdiv :: Ptr CChar -> Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ()
+-- | c_cdiv : z x y n -> void
+foreign import ccall "THVector.h cdiv"
+  c_cdiv :: Ptr CChar -> Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ()
 
--- |c_THByteVector_divs : y x c n -> void
-foreign import ccall "THVector.h THByteVector_divs"
-  c_THByteVector_divs :: Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ()
+-- | c_divs : y x c n -> void
+foreign import ccall "THVector.h divs"
+  c_divs :: Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ()
 
--- |c_THByteVector_copy : y x n -> void
-foreign import ccall "THVector.h THByteVector_copy"
-  c_THByteVector_copy :: Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ()
+-- | c_copy : y x n -> void
+foreign import ccall "THVector.h copy"
+  c_copy :: Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ()
 
--- |c_THByteVector_normal_fill : data size generator mean stddev -> void
-foreign import ccall "THVector.h THByteVector_normal_fill"
-  c_THByteVector_normal_fill :: Ptr CChar -> CLLong -> Ptr CTHGenerator -> CChar -> CChar -> IO ()
+-- | c_normal_fill : data size generator mean stddev -> void
+foreign import ccall "THVector.h normal_fill"
+  c_normal_fill :: Ptr CChar -> CLLong -> Ptr CTHGenerator -> CChar -> CChar -> IO ()
 
--- |c_THByteVector_vectorDispatchInit :  -> void
-foreign import ccall "THVector.h THByteVector_vectorDispatchInit"
-  c_THByteVector_vectorDispatchInit :: IO ()
+-- | c_vectorDispatchInit :  -> void
+foreign import ccall "THVector.h vectorDispatchInit"
+  c_vectorDispatchInit :: IO ()
 
--- |p_THByteVector_fill : Pointer to function : x c n -> void
-foreign import ccall "THVector.h &THByteVector_fill"
-  p_THByteVector_fill :: FunPtr (Ptr CChar -> CChar -> CPtrdiff -> IO ())
+-- |p_fill : Pointer to function : x c n -> void
+foreign import ccall "THVector.h &fill"
+  p_fill :: FunPtr (Ptr CChar -> CChar -> CPtrdiff -> IO ())
 
--- |p_THByteVector_cadd : Pointer to function : z x y c n -> void
-foreign import ccall "THVector.h &THByteVector_cadd"
-  p_THByteVector_cadd :: FunPtr (Ptr CChar -> Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ())
+-- |p_cadd : Pointer to function : z x y c n -> void
+foreign import ccall "THVector.h &cadd"
+  p_cadd :: FunPtr (Ptr CChar -> Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ())
 
--- |p_THByteVector_adds : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &THByteVector_adds"
-  p_THByteVector_adds :: FunPtr (Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ())
+-- |p_adds : Pointer to function : y x c n -> void
+foreign import ccall "THVector.h &adds"
+  p_adds :: FunPtr (Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ())
 
--- |p_THByteVector_cmul : Pointer to function : z x y n -> void
-foreign import ccall "THVector.h &THByteVector_cmul"
-  p_THByteVector_cmul :: FunPtr (Ptr CChar -> Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ())
+-- |p_cmul : Pointer to function : z x y n -> void
+foreign import ccall "THVector.h &cmul"
+  p_cmul :: FunPtr (Ptr CChar -> Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ())
 
--- |p_THByteVector_muls : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &THByteVector_muls"
-  p_THByteVector_muls :: FunPtr (Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ())
+-- |p_muls : Pointer to function : y x c n -> void
+foreign import ccall "THVector.h &muls"
+  p_muls :: FunPtr (Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ())
 
--- |p_THByteVector_cdiv : Pointer to function : z x y n -> void
-foreign import ccall "THVector.h &THByteVector_cdiv"
-  p_THByteVector_cdiv :: FunPtr (Ptr CChar -> Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ())
+-- |p_cdiv : Pointer to function : z x y n -> void
+foreign import ccall "THVector.h &cdiv"
+  p_cdiv :: FunPtr (Ptr CChar -> Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ())
 
--- |p_THByteVector_divs : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &THByteVector_divs"
-  p_THByteVector_divs :: FunPtr (Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ())
+-- |p_divs : Pointer to function : y x c n -> void
+foreign import ccall "THVector.h &divs"
+  p_divs :: FunPtr (Ptr CChar -> Ptr CChar -> CChar -> CPtrdiff -> IO ())
 
--- |p_THByteVector_copy : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &THByteVector_copy"
-  p_THByteVector_copy :: FunPtr (Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ())
+-- |p_copy : Pointer to function : y x n -> void
+foreign import ccall "THVector.h &copy"
+  p_copy :: FunPtr (Ptr CChar -> Ptr CChar -> CPtrdiff -> IO ())
 
--- |p_THByteVector_normal_fill : Pointer to function : data size generator mean stddev -> void
-foreign import ccall "THVector.h &THByteVector_normal_fill"
-  p_THByteVector_normal_fill :: FunPtr (Ptr CChar -> CLLong -> Ptr CTHGenerator -> CChar -> CChar -> IO ())
+-- |p_normal_fill : Pointer to function : data size generator mean stddev -> void
+foreign import ccall "THVector.h &normal_fill"
+  p_normal_fill :: FunPtr (Ptr CChar -> CLLong -> Ptr CTHGenerator -> CChar -> CChar -> IO ())
 
--- |p_THByteVector_vectorDispatchInit : Pointer to function :  -> void
-foreign import ccall "THVector.h &THByteVector_vectorDispatchInit"
-  p_THByteVector_vectorDispatchInit :: FunPtr (IO ())
+-- |p_vectorDispatchInit : Pointer to function :  -> void
+foreign import ccall "THVector.h &vectorDispatchInit"
+  p_vectorDispatchInit :: FunPtr (IO ())

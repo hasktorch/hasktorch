@@ -1,7 +1,8 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module THShortLapack (
-    ) where
+module THShortLapack
+  ( 
+  ) where
 
 import Foreign
 import Foreign.C.Types

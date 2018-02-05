@@ -1,7 +1,8 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module THIntLapack (
-    ) where
+module THIntLapack
+  ( 
+  ) where
 
 import Foreign
 import Foreign.C.Types
