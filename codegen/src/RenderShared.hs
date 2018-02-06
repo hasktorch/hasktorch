@@ -28,7 +28,7 @@ import qualified Data.Text as T
 
 import CodeGenTypes
 import CodeGenParse (thParseGeneric)
-import ConditionalCases (checkFunction, FunctionName(..))
+import ConditionalCases (checkFunction)
 
 makeModule
   :: Text

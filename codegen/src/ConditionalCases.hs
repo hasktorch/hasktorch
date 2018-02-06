@@ -1,23 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module ConditionalCases where
 
 import GHC.Exts (IsString)
 import Data.Text (Text)
 import Data.HashMap.Strict (HashMap)
-import Data.Set (Set)
+import Data.HashSet (HashSet)
 import Data.Hashable (Hashable)
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as M (lookup)
-import qualified Data.Set as S (member)
+import qualified Data.HashSet as S (member)
 
 import CodeGenTypes
 
-newtype FunctionName = FunctionName { asText :: Text }
-  deriving (Show, Eq, Ord, IsString, Hashable)
-
-tensorMathCases :: HashMap FunctionName (Set TemplateType)
+tensorMathCases :: HashMap FunctionName (HashSet TemplateType)
 tensorMathCases =
   [ ("abs",     [GenShort, GenInt, GenLong, GenFloat, GenDouble])
   , ("sigmoid", [GenFloat, GenDouble])
@@ -72,7 +68,7 @@ tensorMathCases =
   , ("neg",  [GenFloat, GenDouble, GenLong, GenShort, GenInt])
   ]
 
-tensorRandomCases :: HashMap FunctionName (Set TemplateType)
+tensorRandomCases :: HashMap FunctionName (HashSet TemplateType)
 tensorRandomCases =
   [ ("uniform",        [GenFloat, GenDouble])
   , ("normal",         [GenFloat, GenDouble])
@@ -98,7 +94,7 @@ tensorRandomCases =
 
 -- TODO: check lapack bindings - not obvious from source, but there are
 -- problems loading shared library with these functions for Byte
-tensorLapackCases :: HashMap FunctionName (Set TemplateType)
+tensorLapackCases :: HashMap FunctionName (HashSet TemplateType)
 tensorLapackCases =
   [ ("gesv",   [GenFloat, GenDouble])
   , ("trtrs",  [GenFloat, GenDouble])
@@ -136,7 +132,7 @@ checkLapack :: TemplateType -> FunctionName -> Bool
 checkLapack = checkMap tensorLapackCases
 
 checkMap
-  :: HashMap FunctionName (Set TemplateType)
+  :: HashMap FunctionName (HashSet TemplateType)
   -> TemplateType
   -> FunctionName
   -> Bool

@@ -1,21 +1,33 @@
-module CodeGenTypes (
-  genericTypes,
-  concreteTypes,
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+module CodeGenTypes
+  ( genericTypes
+  , concreteTypes
+  , FunctionName(..)
+  , TemplateType(..)
 
-  TemplateType(..),
+  , HModule(..)
+  , TypeCategory(..)
 
-  HModule(..),
-  TypeCategory(..),
-
-  THType(..),
-  THArg(..),
-  THFunction(..),
-  Parser(..)
+  , THType(..)
+  , THArg(..)
+  , THFunction(..)
+  , Parser(..)
   ) where
 
 import Data.Text
 import Text.Megaparsec
 import Data.Void
+import Data.Hashable (Hashable)
+import GHC.Generics (Generic)
+import GHC.Exts (IsString)
+
+-- | a concrete type for function names
+newtype FunctionName = FunctionName { asText :: Text }
+  deriving stock (Show, Eq, Ord)
+  deriving newtype (IsString, Hashable)
 
 -- ----------------------------------------
 -- Types for rendering output
@@ -155,7 +167,8 @@ data TemplateType
   | GenLong
   | GenShort
   | GenNothing
-  deriving (Eq, Ord, Show)
+  deriving stock (Eq, Ord, Show, Generic)
+  deriving anyclass (Hashable)
 
 -- List used to iterate through all template types
 genericTypes :: [TemplateType]

@@ -2,14 +2,14 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 290397322f2952e4fa6de4d01b5151c6e39c2e50ca63c3d3e7d1c8a9dd3568d3
+-- hash: d046a50725da9cff12a43c41881b88f62eada86e36cace7a6d5f57b110d11bfd
 
 name:                hasktorch-codegen
 version:             0.1.0.0
 synopsis:            Torch for tensors and neural networks in Haskell
 description:         Code generation tools
-homepage:            https://github.com/austinvhuang/hasktorch#readme
-bug-reports:         https://github.com/austinvhuang/hasktorch/issues
+homepage:            https://github.com/hasktorch/hasktorch#readme
+bug-reports:         https://github.com/hasktorch/hasktorch/issues
 license:             BSD3
 author:              Austin Huang
 build-type:          Simple
@@ -17,7 +17,7 @@ cabal-version:       >= 1.10
 
 source-repository head
   type: git
-  location: https://github.com/austinvhuang/hasktorch
+  location: https://github.com/hasktorch/hasktorch
 
 library
   hs-source-dirs:
@@ -25,11 +25,11 @@ library
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
-    , hashable
+    , hashable >=1.0.1.1
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
-    , unordered-containers
+    , unordered-containers >=0.1.3.0
   exposed-modules:
       CodeGenParse
       CodeGenTypes
@@ -49,12 +49,12 @@ executable aten-process-spec
     , base >=4.7 && <5
     , bytestring >=0.10.8
     , containers >=0.5.7
-    , hashable
+    , hashable >=1.0.1.1
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , singletons >=2.2
     , text >=1.2.2.2
-    , unordered-containers
+    , unordered-containers >=0.1.3.0
     , yaml >=0.8.25
   other-modules:
       Paths_hasktorch_codegen
@@ -68,12 +68,12 @@ executable codegen-concrete
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
-    , hashable
+    , hashable >=1.0.1.1
     , hasktorch-codegen
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
-    , unordered-containers
+    , unordered-containers >=0.1.3.0
   other-modules:
       Paths_hasktorch_codegen
 
@@ -85,12 +85,12 @@ executable codegen-generic
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
-    , hashable
+    , hashable >=1.0.1.1
     , hasktorch-codegen
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
-    , unordered-containers
+    , unordered-containers >=0.1.3.0
   other-modules:
       Paths_hasktorch_codegen
 
@@ -102,13 +102,13 @@ executable codegen-managed
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
-    , hashable
+    , hashable >=1.0.1.1
     , hasktorch-codegen
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , raw-strings-qq >=1.1
     , text >=1.2.2.2
-    , unordered-containers
+    , unordered-containers >=0.1.3.0
   other-modules:
       Paths_hasktorch_codegen
 
@@ -121,13 +121,13 @@ test-suite spec
       QuickCheck
     , base >=4.7 && <5
     , containers >=0.5.7
-    , hashable
+    , hashable >=1.0.1.1
     , hasktorch-codegen
     , hspec
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
-    , unordered-containers
+    , unordered-containers >=0.1.3.0
   other-modules:
       CodeGenParseSpec
       Paths_hasktorch_codegen
