@@ -1,0 +1,27 @@
+module Torch.Class.Tensor.Random where
+
+import THTypes
+import Foreign
+import Foreign.C.Types
+import Torch.Class.Internal
+
+class TensorRandom t where
+  random                 :: t -> Ptr CTHGenerator -> IO ()
+  clampedRandom          :: t -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ()
+  cappedRandom           :: t -> Ptr CTHGenerator -> CLLong -> IO ()
+  geometric              :: t -> Ptr CTHGenerator -> HsAccReal t -> IO ()
+  bernoulli              :: t -> Ptr CTHGenerator -> HsAccReal t -> IO ()
+  bernoulli_FloatTensor  :: t -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
+  bernoulli_DoubleTensor :: t -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
+  uniform                :: t -> Ptr CTHGenerator -> HsAccReal t -> HsAccReal t -> IO ()
+  normal                 :: t -> Ptr CTHGenerator -> HsAccReal t -> HsAccReal t -> IO ()
+  normal_means           :: t -> Ptr CTHGenerator -> t -> HsAccReal t -> IO ()
+  normal_stddevs         :: t -> Ptr CTHGenerator -> HsAccReal t -> t -> IO ()
+  normal_means_stddevs   :: t -> Ptr CTHGenerator -> t -> t -> IO ()
+  exponential            :: t -> Ptr CTHGenerator -> HsAccReal t -> IO ()
+  standard_gamma         :: t -> Ptr CTHGenerator -> t -> IO ()
+  cauchy                 :: t -> Ptr CTHGenerator -> HsAccReal t -> HsAccReal t -> IO ()
+  logNormal              :: t -> Ptr CTHGenerator -> HsAccReal t -> HsAccReal t -> IO ()
+  multinomial            :: Ptr CTHLongTensor -> Ptr CTHGenerator -> t -> CInt -> CInt -> IO ()
+  multinomialAliasSetup  :: t -> Ptr CTHLongTensor -> t -> IO ()
+  multinomialAliasDraw   :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> t -> IO ()

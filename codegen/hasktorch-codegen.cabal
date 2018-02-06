@@ -2,10 +2,10 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5a40da8d8c9ff70a975369f966e20409f9ca5616453246758d16243bee82d6dd
+-- hash: 076a900449831fd2ac072ee234da3aa36a567717d3177c88bb0c1518feb2cc20
 
 name:                hasktorch-codegen
-version:             0.1.0.0
+version:             0.0.1.0
 synopsis:            Torch for tensors and neural networks in Haskell
 description:         Code generation tools
 homepage:            https://github.com/hasktorch/hasktorch#readme

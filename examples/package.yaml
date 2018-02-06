@@ -1,5 +1,5 @@
 name: hasktorch-examples
-version: '0.1.0.0'
+version: '0.0.1.0'
 synopsis: Torch for tensors and neural networks in Haskell
 description: Example usage
 category: Tensors, Machine Learning

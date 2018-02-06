@@ -1,0 +1,35 @@
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: f7a066935d37cc7f0291e30942e200cfab5577cc54a64ae83fbc49058c36a413
+
+name:           hasktorch-raw-types
+version:        0.0.1.0
+synopsis:       Raw C-types from torch.
+description:    core C types
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         Austin Huang
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+library
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , inline-c >=0.5
+  build-tools:
+      c2hs
+  exposed-modules:
+      THTypes
+      TorchStructs
+  other-modules:
+      Paths_hasktorch_raw_types
+  default-language: Haskell2010

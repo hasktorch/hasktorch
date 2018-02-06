@@ -2,10 +2,10 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d05415e210f9217e1bd3904e8c5066a0fa36d5a0a09260dc0c0155888b33382c
+-- hash: a09417985d1dc0aa62fe4246d7c16c259ca2cabfa5c63ab811db1d73a1eb7c23
 
 name:                hasktorch-examples
-version:             0.1.0.0
+version:             0.0.1.0
 synopsis:            Torch for tensors and neural networks in Haskell
 description:         Example usage
 homepage:            https://github.com/austinvhuang/hasktorch#readme
