@@ -16,7 +16,7 @@ instance Num  CAccReal
 instance Show CAccReal
 
 c_clearFlag :: Ptr CTensor -> CChar -> IO ()
-c_tensordata :: Ptr CTensor -> IO (Ptr CReal)
+c_data :: Ptr CTensor -> IO (Ptr CReal)
 c_desc :: Ptr CTensor -> CTHDescBuff
 c_expand :: Ptr CTensor -> Ptr CTensor -> Ptr CTHLongStorage -> IO ()
 c_expandNd :: Ptr (Ptr CTensor) -> Ptr (Ptr CTensor) -> CInt -> IO ()

@@ -14,19 +14,19 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
-library
-  other-modules:
-      Paths_hasktorch_core
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core-classes
-    , hasktorch-core-indef
-    , hasktorch-raw-types
-  reexported-modules:
-      Torch.Core.TensorLong
-  mixins:
-      hasktorch-core-indef (Torch.Core.Tensor as Torch.Core.TensorLong)
-        requires (Blas as THLongBlas, Lapack as THLongLapack, StorageCopy as THLongStorageCopy, Storage as THLongStorage, TensorConv as THLongTensorConv, TensorCopy as THLongTensorCopy, Tensor as THLongTensor, TensorLapack as THLongTensorLapack, TensorMath as THLongTensorMath, TensorRandom as THLongTensorRandom, Vector as THLongVector)
+-- library
+--   other-modules:
+--       Paths_hasktorch_core
+--   build-depends:
+--       base >=4.7 && <5
+--     , hasktorch-core-classes
+--     , hasktorch-core-indef
+--     , hasktorch-raw-types
+--   reexported-modules:
+--       Torch.Core.TensorLong
+--   mixins:
+--       hasktorch-core-indef (Torch.Core.Tensor as Torch.Core.TensorLong)
+--         requires (Blas as THLongBlas, Lapack as THLongLapack, StorageCopy as THLongStorageCopy, Storage as THLongStorage, TensorConv as THLongTensorConv, TensorCopy as THLongTensorCopy, Tensor as THLongTensor, TensorLapack as THLongTensorLapack, TensorMath as THLongTensorMath, TensorRandom as THLongTensorRandom, Vector as THLongVector)
 
 library hasktorch-core-indef
   hs-source-dirs: src
@@ -37,6 +37,7 @@ library hasktorch-core-indef
     , containers
     , deepseq >=1.3.0.0
     , dimensions >=0.3.2.0
+    , hasktorch-core-classes
     , hasktorch-raw
     , hasktorch-raw-signatures
     , hasktorch-raw-types
@@ -50,31 +51,31 @@ library hasktorch-core-indef
   exposed-modules:
 
       Torch.Core.Random
-    , Torch.Core.LogAdd
-    , Torch.Core.Exceptions
-    , Torch.Core.Internal
+    -- , Torch.Core.LogAdd
+    -- , Torch.Core.Exceptions
+    -- , Torch.Core.Internal
 
     -- classes implementations
-    , Torch.Core.Blas
-    , Torch.Core.Storage
-    , Torch.Core.Storage.Types
+    -- , Torch.Core.Blas
+    -- , Torch.Core.Storage
+    -- , Torch.Core.Storage.Types
     , Torch.Core.Tensor
     , Torch.Core.Tensor.Dim
-    , Torch.Core.Tensor.Types
-    , Torch.Core.Tensor.Dynamic
-    , Torch.Core.Tensor.Dynamic.Math
-    , Torch.Core.Tensor.Static
-    , Torch.Core.Tensor.Static.Lapack
-    , Torch.Core.Tensor.Static.Math
-    , Torch.Core.Tensor.Static.Random
+    -- , Torch.Core.Tensor.Types
+    -- , Torch.Core.Tensor.Dynamic
+    -- , Torch.Core.Tensor.Dynamic.Math
+    -- , Torch.Core.Tensor.Static
+    -- , Torch.Core.Tensor.Static.Lapack
+    -- , Torch.Core.Tensor.Static.Math
+    -- , Torch.Core.Tensor.Static.Random
 
 
 library hasktorch-core-classes
   hs-source-dirs: classes
+  default-language: Haskell2010
   build-depends:
       base >=4.7 && <5
     , hasktorch-raw-types
-  default-language: Haskell2010
   exposed-modules:
       Torch.Class.Internal
     , Torch.Class.Blas
@@ -89,46 +90,46 @@ library hasktorch-core-classes
     , Torch.Class.Tensor.Random
     , Torch.Class.Vector
 
-test-suite spec
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  hs-source-dirs:
-      tests
-      tests/generic
-  ghc-options: -fno-cse -fno-full-laziness
-  build-depends:
-      QuickCheck
-    , base >=4.7 && <5
-    , containers
-    , deepseq >=1.3.0.0
-    , dimensions >=0.3.2.0
-    , hasktorch-core
-    , hasktorch-raw
-    , hspec
-    , managed >=1.0.0 && <1.1
-    , microlens >=0.4.8.1
-    , numeric-limits
-    , safe-exceptions >=0.1.0.0
-    , singletons >=2.2
-    , text >=1.2.2.2
-    , typelits-witnesses >=0.2.3.0
-  other-modules:
-      GarbageCollectionSpec
-      MemorySpec
-      Orphans
-      RawLapackSVDSpec
-      Torch.Core.LogAddSpec
-      Torch.Core.RandomSpec
-      Torch.Core.Tensor.GenericSpec
-      Torch.Prelude.Extras
-      Torch.Core.Tensor.Dynamic.DoubleMathSpec
-      Torch.Core.Tensor.Dynamic.DoubleRandomSpec
-      Torch.Core.Tensor.Dynamic.DoubleSpec
-      Torch.Core.Tensor.Dynamic.GenericLapackSpec
-      Torch.Core.Tensor.Static.ByteSpec
-      Torch.Core.Tensor.Static.DoubleLapackSpec
-      Torch.Core.Tensor.Static.DoubleMathSpec
-      Torch.Core.Tensor.Static.DoubleRandomSpec
-      Torch.Core.Tensor.Static.DoubleSpec
-      Paths_hasktorch_core
-  default-language: Haskell2010
+-- test-suite spec
+--   type: exitcode-stdio-1.0
+--   main-is: Spec.hs
+--   hs-source-dirs:
+--       tests
+--       tests/generic
+--   ghc-options: -fno-cse -fno-full-laziness
+--   build-depends:
+--       QuickCheck
+--     , base >=4.7 && <5
+--     , containers
+--     , deepseq >=1.3.0.0
+--     , dimensions >=0.3.2.0
+--     , hasktorch-core
+--     , hasktorch-raw
+--     , hspec
+--     , managed >=1.0.0 && <1.1
+--     , microlens >=0.4.8.1
+--     , numeric-limits
+--     , safe-exceptions >=0.1.0.0
+--     , singletons >=2.2
+--     , text >=1.2.2.2
+--     , typelits-witnesses >=0.2.3.0
+--   other-modules:
+--       GarbageCollectionSpec
+--       MemorySpec
+--       Orphans
+--       RawLapackSVDSpec
+--       Torch.Core.LogAddSpec
+--       Torch.Core.RandomSpec
+--       Torch.Core.Tensor.GenericSpec
+--       Torch.Prelude.Extras
+--       Torch.Core.Tensor.Dynamic.DoubleMathSpec
+--       Torch.Core.Tensor.Dynamic.DoubleRandomSpec
+--       Torch.Core.Tensor.Dynamic.DoubleSpec
+--       Torch.Core.Tensor.Dynamic.GenericLapackSpec
+--       Torch.Core.Tensor.Static.ByteSpec
+--       Torch.Core.Tensor.Static.DoubleLapackSpec
+--       Torch.Core.Tensor.Static.DoubleMathSpec
+--       Torch.Core.Tensor.Static.DoubleRandomSpec
+--       Torch.Core.Tensor.Static.DoubleSpec
+--       Paths_hasktorch_core
+--   default-language: Haskell2010

@@ -1,34 +1,88 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
-
-module Torch.Core.StorageLong
-  ( newStorageLong
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE TypeFamilies #-}
+module Torch.Core.Storage
+  ( Storage(..)
+  , asStorage
   ) where
 
-import Foreign
+import Foreign (Ptr, withForeignPtr, newForeignPtr)
 import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.ForeignPtr( ForeignPtr, withForeignPtr, mallocForeignPtrArray,
-                           newForeignPtr )
-import GHC.Ptr (FunPtr)
-import Numeric (showGFloat)
-import System.IO.Unsafe (unsafePerformIO)
+import GHC.ForeignPtr (ForeignPtr)
+import Torch.Class.Internal (HsReal)
+import THTypes
 
-import Torch.Core.StorageTypes
-import THLongStorage
+import qualified Storage as Sig
+import qualified Torch.Class.Storage as Class
 
-newStorageLong :: StorageSize Int -> StorageLong
-newStorageLong size = unsafePerformIO $ do
-  newPtr <- go size
-  fPtr <- newForeignPtr p_THLongStorage_free newPtr
-  pure $ StorageLong fPtr -- size
-  where
-    w2cl = fromIntegral
-    go S0 = c_THLongStorage_new
-    go (S1 s1) = c_THLongStorage_newWithSize1 $ w2cl s1
-    go (S2 (s1, s2)) = c_THLongStorage_newWithSize2
-                       (w2cl s1) (w2cl s2)
-    go (S3 (s1, s2, s3)) = c_THLongStorage_newWithSize3
-                           (w2cl s1) (w2cl s2) (w2cl s3)
-    go (S4 (s1, s2, s3, s4)) = c_THLongStorage_newWithSize4
-                               (w2cl s1) (w2cl s2) (w2cl s3) (w2cl s4)
-{-# NOINLINE newStorageLong #-}
+newtype Storage = Storage { storage :: ForeignPtr Sig.CStorage }
+  deriving (Eq, Show)
+
+type instance HsReal Storage = Sig.CReal
+
+asStorage :: Ptr Sig.CStorage -> IO Storage
+asStorage = fmap Storage . newForeignPtr Sig.p_free
+
+instance Class.IsStorage Storage where
+  tensordata :: Storage -> IO (Ptr (HsReal Storage))
+  tensordata s = withForeignPtr (storage s) Sig.c_data
+
+  size :: Storage -> IO CPtrdiff
+  size s = withForeignPtr (storage s) (pure . Sig.c_size)
+
+  set :: Storage -> CPtrdiff -> HsReal Storage -> IO ()
+  set s pd v = withForeignPtr (storage s) $ \s' -> Sig.c_set s' pd v
+
+  get :: Storage -> CPtrdiff -> IO (HsReal Storage)
+  get s pd = withForeignPtr (storage s)  $ \s' -> pure $ Sig.c_get s' pd
+
+  new :: IO Storage
+  new = Sig.c_new >>= asStorage
+
+  newWithSize :: CPtrdiff -> IO Storage
+  newWithSize pd = Sig.c_newWithSize pd >>= asStorage
+
+  newWithSize1 :: HsReal Storage -> IO Storage
+  newWithSize1 a0 = Sig.c_newWithSize1 a0 >>= asStorage
+
+  newWithSize2 :: HsReal Storage -> HsReal Storage -> IO Storage
+  newWithSize2 a0 a1 = Sig.c_newWithSize2 a0 a1 >>= asStorage
+
+  newWithSize3 :: HsReal Storage -> HsReal Storage -> HsReal Storage -> IO Storage
+  newWithSize3 a0 a1 a2 = Sig.c_newWithSize3 a0 a1 a2 >>= asStorage
+
+  newWithSize4 :: HsReal Storage -> HsReal Storage -> HsReal Storage -> HsReal Storage -> IO Storage
+  newWithSize4 a0 a1 a2 a3 = Sig.c_newWithSize4 a0 a1 a2 a3 >>= asStorage
+
+  newWithMapping :: Ptr CChar -> CPtrdiff -> CInt -> IO Storage
+  newWithMapping pcc pd ci = Sig.c_newWithMapping pcc pd ci >>= asStorage
+
+  newWithData :: Ptr (HsReal Storage) -> CPtrdiff -> IO Storage
+  newWithData pr pd = Sig.c_newWithData pr pd >>= asStorage
+
+  newWithAllocator :: CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO Storage
+  newWithAllocator pd calloc whatthehell = Sig.c_newWithAllocator pd calloc whatthehell >>= asStorage
+
+  newWithDataAndAllocator :: Ptr (HsReal Storage) -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO Storage
+  newWithDataAndAllocator pr pd calloc whatthehell = Sig.c_newWithDataAndAllocator pr pd calloc whatthehell >>= asStorage
+
+  setFlag :: Storage -> CChar -> IO ()
+  setFlag s cc = withForeignPtr (storage s) $ \s' -> Sig.c_setFlag s' cc
+
+  clearFlag :: Storage -> CChar -> IO ()
+  clearFlag s cc = withForeignPtr (storage s) $ \s' -> Sig.c_clearFlag s' cc
+
+  retain :: Storage -> IO ()
+  retain s = withForeignPtr (storage s) Sig.c_retain
+
+  swap :: Storage -> Storage -> IO ()
+  swap s0 s1 =
+    withForeignPtr (storage s0) $ \s0' ->
+      withForeignPtr (storage s1) $ \s1' ->
+        Sig.c_swap s0' s1'
+
+  resize :: Storage -> CPtrdiff -> IO ()
+  resize s pd = withForeignPtr (storage s) $ \s' -> Sig.c_resize s' pd
+
+  fill :: Storage -> HsReal Storage -> IO ()
+  fill s v = withForeignPtr (storage s) $ \s' -> Sig.c_fill s' v
+

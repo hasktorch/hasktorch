@@ -5,12 +5,12 @@ import Foreign.C.Types
 import THTypes
 import Torch.Class.Internal
 
-class Storage t where
+class IsStorage t where
   tensordata  :: t -> IO (Ptr (HsReal t))
-  size        :: t -> CPtrdiff
+  size        :: t -> IO CPtrdiff
   -- c_elementSize :: CSize
   set         :: t -> CPtrdiff -> HsReal t -> IO ()
-  get         :: t -> CPtrdiff -> HsReal t
+  get         :: t -> CPtrdiff -> IO (HsReal t)
   new         :: IO t
   newWithSize  :: CPtrdiff -> IO t
   newWithSize1 :: HsReal t -> IO t

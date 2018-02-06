@@ -3,7 +3,6 @@ signature StorageCopy where
 import THTypes
 import Foreign
 
-data CTensor
 data CStorage
 
 data CReal
@@ -14,24 +13,24 @@ data CAccReal
 instance Num  CAccReal
 instance Show CAccReal
 
-c_rawCopy    :: Ptr CTensor -> Ptr CReal -> IO ()
-c_copy       :: Ptr CTensor -> Ptr CTensor -> IO ()
-c_copyByte   :: Ptr CTensor -> Ptr CTHByteStorage -> IO ()
-c_copyChar   :: Ptr CTensor -> Ptr CTHCharStorage -> IO ()
-c_copyShort  :: Ptr CTensor -> Ptr CTHShortStorage -> IO ()
-c_copyInt    :: Ptr CTensor -> Ptr CTHIntStorage -> IO ()
-c_copyLong   :: Ptr CTensor -> Ptr CTHLongStorage -> IO ()
-c_copyFloat  :: Ptr CTensor -> Ptr CTHFloatStorage -> IO ()
-c_copyDouble :: Ptr CTensor -> Ptr CTHDoubleStorage -> IO ()
-c_copyHalf   :: Ptr CTensor -> Ptr CTHHalfStorage -> IO ()
+c_rawCopy    :: Ptr CStorage -> Ptr CReal -> IO ()
+c_copy       :: Ptr CStorage -> Ptr CStorage -> IO ()
+c_copyByte   :: Ptr CStorage -> Ptr CTHByteStorage -> IO ()
+c_copyChar   :: Ptr CStorage -> Ptr CTHCharStorage -> IO ()
+c_copyShort  :: Ptr CStorage -> Ptr CTHShortStorage -> IO ()
+c_copyInt    :: Ptr CStorage -> Ptr CTHIntStorage -> IO ()
+c_copyLong   :: Ptr CStorage -> Ptr CTHLongStorage -> IO ()
+c_copyFloat  :: Ptr CStorage -> Ptr CTHFloatStorage -> IO ()
+c_copyDouble :: Ptr CStorage -> Ptr CTHDoubleStorage -> IO ()
+c_copyHalf   :: Ptr CStorage -> Ptr CTHHalfStorage -> IO ()
 
-p_rawCopy    :: FunPtr (Ptr CTensor -> Ptr CReal -> IO ())
-p_copy       :: FunPtr (Ptr CTensor -> Ptr CTensor -> IO ())
-p_copyByte   :: FunPtr (Ptr CTensor -> Ptr CTHByteStorage -> IO ())
-p_copyChar   :: FunPtr (Ptr CTensor -> Ptr CTHCharStorage -> IO ())
-p_copyShort  :: FunPtr (Ptr CTensor -> Ptr CTHShortStorage -> IO ())
-p_copyInt    :: FunPtr (Ptr CTensor -> Ptr CTHIntStorage -> IO ())
-p_copyLong   :: FunPtr (Ptr CTensor -> Ptr CTHLongStorage -> IO ())
-p_copyFloat  :: FunPtr (Ptr CTensor -> Ptr CTHFloatStorage -> IO ())
-p_copyDouble :: FunPtr (Ptr CTensor -> Ptr CTHDoubleStorage -> IO ())
-p_copyHalf   :: FunPtr (Ptr CTensor -> Ptr CTHHalfStorage -> IO ())
+p_rawCopy    :: FunPtr (Ptr CStorage -> Ptr CReal -> IO ())
+p_copy       :: FunPtr (Ptr CStorage -> Ptr CStorage -> IO ())
+p_copyByte   :: FunPtr (Ptr CStorage -> Ptr CTHByteStorage -> IO ())
+p_copyChar   :: FunPtr (Ptr CStorage -> Ptr CTHCharStorage -> IO ())
+p_copyShort  :: FunPtr (Ptr CStorage -> Ptr CTHShortStorage -> IO ())
+p_copyInt    :: FunPtr (Ptr CStorage -> Ptr CTHIntStorage -> IO ())
+p_copyLong   :: FunPtr (Ptr CStorage -> Ptr CTHLongStorage -> IO ())
+p_copyFloat  :: FunPtr (Ptr CStorage -> Ptr CTHFloatStorage -> IO ())
+p_copyDouble :: FunPtr (Ptr CStorage -> Ptr CTHDoubleStorage -> IO ())
+p_copyHalf   :: FunPtr (Ptr CStorage -> Ptr CTHHalfStorage -> IO ())

@@ -5,24 +5,24 @@ import Foreign
 import Foreign.C.Types
 import Torch.Class.Internal
 
-class Tensor t where
+class IsTensor t where
   clearFlag :: t -> CChar -> IO ()
   tensordata :: t -> IO (Ptr (HsReal t))
-  desc :: t -> CTHDescBuff
+  desc :: t -> IO CTHDescBuff
   expand :: t -> t -> Ptr CTHLongStorage -> IO ()
   expandNd :: Ptr t -> Ptr t -> CInt -> IO ()
   free :: t -> IO ()
   freeCopyTo :: t -> t -> IO ()
-  get1d :: t -> CLLong -> HsReal t
-  get2d :: t -> CLLong -> CLLong -> HsReal t
-  get3d :: t -> CLLong -> CLLong -> CLLong -> HsReal t
-  get4d :: t -> CLLong -> CLLong -> CLLong -> CLLong -> HsReal t
-  isContiguous :: t -> CInt
-  isSameSizeAs :: t -> t -> CInt
-  isSetTo :: t -> t -> CInt
-  isSize :: t -> Ptr CTHLongStorage -> CInt
-  nDimension :: t -> CInt
-  nElement :: t -> CPtrdiff
+  get1d :: t -> CLLong -> IO (HsReal t)
+  get2d :: t -> CLLong -> CLLong -> IO (HsReal t)
+  get3d :: t -> CLLong -> CLLong -> CLLong -> IO (HsReal t)
+  get4d :: t -> CLLong -> CLLong -> CLLong -> CLLong -> IO (HsReal t)
+  isContiguous :: t -> IO Bool
+  isSameSizeAs :: t -> t -> IO Bool
+  isSetTo :: t -> t -> IO Bool
+  isSize :: t -> Ptr CTHLongStorage -> IO Bool
+  nDimension :: t -> IO CInt
+  nElement :: t -> IO CPtrdiff
   narrow :: t -> t -> CInt -> CLLong -> CLLong -> IO ()
   new :: IO t
   newClone :: t -> IO t
@@ -68,13 +68,13 @@ class Tensor t where
   setStorage3d :: t -> HsStorage t -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
   setStorage4d :: t -> HsStorage t -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
   setStorageNd :: t -> HsStorage t -> CPtrdiff -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ()
-  size :: t -> CInt -> CLLong
-  sizeDesc :: t -> CTHDescBuff
+  size :: t -> CInt -> IO CLLong
+  sizeDesc :: t -> IO CTHDescBuff
   squeeze :: t -> t -> IO ()
   squeeze1d :: t -> t -> CInt -> IO ()
   storage :: t -> IO (HsStorage t)
-  storageOffset :: t -> CPtrdiff
-  stride :: t -> CInt -> CLLong
+  storageOffset :: t -> IO CPtrdiff
+  stride :: t -> CInt -> IO CLLong
   transpose :: t -> t -> CInt -> CInt -> IO ()
   unfold :: t -> t -> CInt -> CLLong -> CLLong -> IO ()
   unsqueeze1d :: t -> t -> CInt -> IO ()
