@@ -1,0 +1,53 @@
+<!-- I don't think we are ready for this until we clear up the backpack/typeclass section.
+
+# API Design
+
+This documents the architectural decisions around how the API is designed. It is intended to be as succinct as possible so that it is beginner-friendly, so that we don't over complicate the codebase (details should go elsewhere), and so that we can start documenting any future changes or current pain points.
+
+---
+
+Ideally, we have the following (from high- to low- level):
+- Static tensors:
+  + typeclasses: these just do type-level dimension checks and then call down to dynamic tensors.
+  + newtypes: wrappers around dynamic tensors, generated with backpack
+- Dynamic tensors:
+  + typeclasses: our user api which consolidates the c-library code. Includes runtime and compile time versions, as well as in-place and copy-based operations.
+  + newtypes: foreign pointers of c-level tensors, generated with backpack
+- cffi abstractions (which is generalized via backpack), 
+
+-->
+
+### hasktorch-codegen, -raw, and -core Design
+
+Currently this is a work in progress, feel free to submit a PR changing this document.
+There are two ways to proceed - Have a unified newtype indexed by type parameter and use type families in generic functions to extract out the types.
+
+Alternatively, and preferably, we have multiple opaque tensor types (TensorFloat, TensorDouble, etc.) which instances of high-level, user-facing typeclasses.
+These typeclasses would be memory managed `ForeignPtr`s over our C-based Tensor-types.
+This is more explicit than a type-parameter, and is only possible through the help of [backpack][bp-proposal].
+
+[bp-proposal]: https://github.com/ezyang/ghc-proposals/blob/backpack/proposals/0000-backpack.rst
+
+Unfortunately, there is no good solution here.
+If we use backpack through the entire hasktorch codebase, we wind up with a poor user experience: a different `printTensor` will exist for each type, completely incompatible with all other tensor types.
+If we use type classes throughout the codebase, we wind up with a lot of copy-pasta and a non-trivial type class hierarchy with a lot of redundant code.
+For example, we would have a `TensorMath` typeclass for the low-level C-FFI bindings, as well as a `TensorMath` in the user-facing tensors.
+
+A good balance might lie between these two: using backpack to auto generate low-level signature implementations and newtype instances of some generic typeclass signature.
+Furthermore backpack is new to GHC-8.2 and, as of this writing, is not supported by stack.
+While this isn't a blocker to using backpack, it does mean that exposing backpack signatures to the end-user and expecting them to write indefinite libraries might be a bit ambitious for beginner haskellers coming from the ML community.
+By using backpack internally, essentially in the same way as we would have used typeclasses, we can reduce complexity in our codebase and still expose a small surface area to our users.
+
+This is the current course of action being pursued by @stites in hasktorch-core, and hasktorch-codegen.
+
+### Potential Pitfalls
+
+Casting between the c-types will potentially make the above plan fall apart.
+This might require intermediate libraries which reify the types.
+
+If none of this works, I would say that there is nothing offensive about letting our users work with a typeclass hierarchy as it would be the norm in keeping code dry and is also pretty haskelly.
+Mostly this is problematic for library maintainers and, possibly, when the user runs into some kind of constraint error.
+Backpack, however, seems like it would provide too large of a surface area -- a user would have to import multiple `printTensor`s when using multiple tensor-types.
+This use-case for backpack is still too unclear to move forward with it as user-facing.
+
+
