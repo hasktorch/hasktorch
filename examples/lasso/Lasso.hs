@@ -45,7 +45,7 @@ l1 :: TDS '[M, 1] -> Double
 l1 = tds_sumAll . tds_abs
 
 l2 :: TDS '[M, 1] -> Double
-l2 = tds_sumAll . tds_square
+l2 = sqrt . tds_sumAll . tds_square
 
 prox_l1 :: TDS '[M, 1] -> Double -> TDS '[M, 1]
 prox_l1 w l        = tds_sign w ^*^ max_plus (w ^- l)
