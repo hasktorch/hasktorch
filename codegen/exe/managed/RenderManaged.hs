@@ -11,7 +11,7 @@ import Text.Show.Pretty
 import Text.RawString.QQ
 
 import CodeGenParse
-import CodeGenTypes
+import CodeGen.Types
 import ConditionalCases
 import RenderShared
 
@@ -21,11 +21,11 @@ files :: [(String, TemplateType -> [THFunction] -> HModule)]
 files =
   [
     ("vendor/TH/generic/THTensor.h",
-     (makeModule outDirManaged True "THTensor.h" "Tensor" "Tensor")),
+     (makeTHModule outDirManaged True "THTensor.h" "Tensor" "Tensor")),
     ("vendor/TH/generic/THTensorRandom.h",
-     (makeModule outDirManaged True "THTensorRandom.h" "Tensor" "Tensor")),
+     (makeTHModule outDirManaged True "THTensorRandom.h" "Tensor" "Tensor")),
     ("vendor/TH/generic/THTensorMath.h",
-     (makeModule outDirManaged True "THTensorMath.h" "Tensor" "TensorMath"))
+     (makeTHModule outDirManaged True "THTensorMath.h" "Tensor" "TensorMath"))
   ]
 
 

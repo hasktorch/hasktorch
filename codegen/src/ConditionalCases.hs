@@ -1,69 +1,64 @@
 {-# LANGUAGE OverloadedLists #-}
 module ConditionalCases where
 
-import GHC.Exts (IsString)
-import Data.Text (Text)
-import Data.HashMap.Strict (HashMap)
-import Data.HashSet (HashSet)
-import Data.Hashable (Hashable)
+import CodeGen.Prelude
 import qualified Data.Text as T
-import qualified Data.HashMap.Strict as M (lookup)
-import qualified Data.HashSet as S (member)
+import qualified Data.HashMap.Strict as M
+import qualified Data.HashSet as S
 
-import CodeGenTypes
+import CodeGen.Types
 
-signatureAliases :: TemplateType -> HashSet HsTypeAlias
+signatureAliases :: TemplateType -> Maybe (CTensor, CReal, CAccReal, CStorage)
 signatureAliases = \case
-  GenByte ->
-    [ CTensor  "THTypes.CTHByteTensor"
-    , CReal    "Data.Word.CUChar"
-    , CAccReal "Foreign.C.Types.CLong"
-    , CStorage "THTypes.CTHByteStorage"
-    ]
-  GenChar ->
-    [ CTensor  "THTypes.CTHCharTensor"
-    , CReal    "Foreign.C.Types.CChar"
-    , CAccReal "Foreign.C.Types.CLong"
-    , CStorage "THTypes.CTHCharStorage"
-    ]
-  GenDouble ->
-    [ CTensor  "THTypes.CTHDoubleTensor"
-    , CReal    "Foreign.C.Types.CDouble"
-    , CAccReal "Foreign.C.Types.CDouble"
-    , CStorage "THTypes.CTHDoubleStorage"
-    ]
-  GenFloat ->
-    [ CTensor  "THTypes.CTHFloatTensor"
-    , CReal    "Foreign.C.Types.CFloat"
-    , CAccReal "Foreign.C.Types.CDouble"
-    , CStorage "THTypes.CTHFloatStorage"
-    ]
-  GenHalf ->
-    [ CTensor  "THTypes.CTHHalfTensor"
-    , CReal    "THTypes.CTHHalf"
-    , CAccReal "Foreign.C.Types.CFloat"
-    , CStorage "THTypes.CTHHalfStorage"
-    ]
-  GenInt ->
-    [ CTensor  "THTypes.CTHIntTensor"
-    , CReal    "Foreign.C.Types.CInt"
-    , CAccReal "Foreign.C.Types.CLong"
-    , CStorage "THTypes.CTHIntStorage"
-    ]
-  GenLong ->
-    [ CTensor  "THTypes.CTHLongTensor"
-    , CReal    "Foreign.C.Types.CLong"
-    , CAccReal "Foreign.C.Types.CLong"
-    , CStorage "THTypes.CTHLongStorage"
-    ]
-  GenShort ->
-    [ CTensor  "THTypes.CTHShortTensor"
-    , CReal    "Foreign.C.Types.CShort"
-    , CAccReal "Foreign.C.Types.CLong"
-    , CStorage "THTypes.CTHShortStorage"
-    ]
-  GenNothing -> []
-
+  GenByte -> Just
+    ( CTensor  "THTypes.CTHByteTensor"  "ByteTensor"
+    , CReal    "Foreign.C.Types.CUChar" "unsigned char"
+    , CAccReal "Foreign.C.Types.CLong"  "long"
+    , CStorage "THTypes.CTHByteStorage" "ByteStorage"
+    )
+  GenChar -> Just
+    ( CTensor  "THTypes.CTHCharTensor"  "CharTensor"
+    , CReal    "Foreign.C.Types.CChar"  "char"
+    , CAccReal "Foreign.C.Types.CLong"  "long"
+    , CStorage "THTypes.CTHCharStorage" "CharStorage"
+    )
+  GenDouble -> Just
+    ( CTensor  "THTypes.CTHDoubleTensor"  "DoubleTensor"
+    , CReal    "Foreign.C.Types.CDouble"  "double"
+    , CAccReal "Foreign.C.Types.CDouble"  "double"
+    , CStorage "THTypes.CTHDoubleStorage" "DoubleStorage"
+    )
+  GenFloat -> Just
+    ( CTensor  "THTypes.CTHFloatTensor"  "FloatTensor"
+    , CReal    "Foreign.C.Types.CFloat"  "float"
+    , CAccReal "Foreign.C.Types.CDouble" "double"
+    , CStorage "THTypes.CTHFloatStorage" "FloatStorage"
+    )
+  GenHalf -> Just
+    ( CTensor  "THTypes.CTHHalfTensor"  "HalfTensor"
+    , CReal    "THTypes.CTHHalf"        "THHalf"
+    , CAccReal "Foreign.C.Types.CFloat" "float"
+    , CStorage "THTypes.CTHHalfStorage" "HalfStorage"
+    )
+  GenInt -> Just
+    ( CTensor  "THTypes.CTHIntTensor"  "IntTensor"
+    , CReal    "Foreign.C.Types.CInt"  "int"
+    , CAccReal "Foreign.C.Types.CLong" "long"
+    , CStorage "THTypes.CTHIntStorage" "IntStorage"
+    )
+  GenLong -> Just
+    ( CTensor  "THTypes.CTHLongTensor"  "LongTensor"
+    , CReal    "Foreign.C.Types.CLong"  "long"
+    , CAccReal "Foreign.C.Types.CLong"  "long"
+    , CStorage "THTypes.CTHLongStorage" "LongStorage"
+    )
+  GenShort -> Just
+    ( CTensor  "THTypes.CTHShortTensor"  "ShortTensor"
+    , CReal    "Foreign.C.Types.CShort"  "short"
+    , CAccReal "Foreign.C.Types.CLong"   "long"
+    , CStorage "THTypes.CTHShortStorage" "ShortStorage"
+    )
+  GenNothing -> Nothing
 
 tensorMathCases :: HashMap FunctionName (HashSet TemplateType)
 tensorMathCases =

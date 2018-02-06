@@ -6,7 +6,7 @@ import Data.List (nub)
 import Text.Megaparsec
 
 import CodeGenParse
-import CodeGenTypes
+import CodeGen.Types
 import ConditionalCases
 import RenderShared
 import Text.Show.Pretty
@@ -40,28 +40,28 @@ concreteFiles =
   [
 
     -- ("vendor/scratch.h",
-    --  (makeModule outDirConcrete False "scratch.h" "Scratch" "Scratch"))
+    --  (makeTHModule outDirConcrete False "scratch.h" "Scratch" "Scratch"))
 
     ("vendor/aten/src/THNN/THNN.h",
-     (makeModule outDirConcrete False "THNN.h" "NN" "NN")),
+     (makeTHModule outDirConcrete False "THNN.h" "NN" "NN")),
     ("vendor/TH/THFile.h",
-     (makeModule outDirConcrete False "THFile.h" "File" "File")),
+     (makeTHModule outDirConcrete False "THFile.h" "File" "File")),
     ("vendor/TH/THDiskFile.h",
-     (makeModule outDirConcrete False "THDiskFile.h" "DiskFile" "DiskFile")),
+     (makeTHModule outDirConcrete False "THDiskFile.h" "DiskFile" "DiskFile")),
     ("vendor/TH/THAtomic.h",
-     (makeModule outDirConcrete False "THDiskFile.h" "Atomic" "Atomic")),
+     (makeTHModule outDirConcrete False "THDiskFile.h" "Atomic" "Atomic")),
     ("vendor/TH/THHalf.h",
-     (makeModule outDirConcrete False "THHalf.h" "Half" "Half")),
+     (makeTHModule outDirConcrete False "THHalf.h" "Half" "Half")),
     ("vendor/TH/THLogAdd.h",
-     (makeModule outDirConcrete False "THLogAdd.h" "LogAdd" "LogAdd")),
+     (makeTHModule outDirConcrete False "THLogAdd.h" "LogAdd" "LogAdd")),
     ("vendor/TH/THRandom.h",
-     (makeModule outDirConcrete False "THRandom.h" "Random" "Random")),
+     (makeTHModule outDirConcrete False "THRandom.h" "Random" "Random")),
     ("vendor/TH/THSize.h",
-     (makeModule outDirConcrete False "THSize.h" "Size" "Size")),
+     (makeTHModule outDirConcrete False "THSize.h" "Size" "Size")),
     ("vendor/TH/THStorage.h",
-     (makeModule outDirConcrete False "THStorage.h" "Storage" "Storage")),
+     (makeTHModule outDirConcrete False "THStorage.h" "Storage" "Storage")),
     ("vendor/TH/THMemoryFile.h",
-     (makeModule outDirConcrete False "THMemoryFile.h" "MemoryFile" "MemoryFile"))
+     (makeTHModule outDirConcrete False "THMemoryFile.h" "MemoryFile" "MemoryFile"))
 
   ]
 

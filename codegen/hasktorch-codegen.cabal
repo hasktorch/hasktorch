@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 745bc3b9825058ab8b366fa49cb37a98cbf3f0b584e8c6522b827399e9f0bd78
+-- hash: 5a40da8d8c9ff70a975369f966e20409f9ca5616453246758d16243bee82d6dd
 
 name:                hasktorch-codegen
 version:             0.1.0.0
@@ -32,8 +32,14 @@ library
     , text >=1.2.2.2
     , unordered-containers >=0.1.3.0
   exposed-modules:
+      CodeGen.ParseTypes
+      CodeGen.Prelude
+      CodeGen.Render.C
+      CodeGen.Render.Function
+      CodeGen.Render.Haskell
+      CodeGen.RenderTypes
+      CodeGen.Types
       CodeGenParse
-      CodeGenTypes
       ConditionalCases
       RenderShared
   other-modules:

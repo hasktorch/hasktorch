@@ -1,13 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module CodeGenTypes
+module CodeGen.ParseTypes
   ( genericTypes
   , concreteTypes
-  , FunctionName(..)
-  , HsTypeAlias(..)
-  , talias
   , TemplateType(..)
 
   , HModule(..)
@@ -19,53 +14,21 @@ module CodeGenTypes
   , Parser(..)
   ) where
 
-import Text.Megaparsec
-import Data.Void
-import Data.Text (Text)
-import Data.Hashable (Hashable)
-import GHC.Generics (Generic)
-import GHC.Exts (IsString)
-import qualified Data.Text as T
-
-
--- | a concrete type for function names
-newtype FunctionName = FunctionName { asText :: Text }
-  deriving stock (Show, Eq, Ord)
-  deriving newtype (IsString, Hashable)
-
-data HsTypeAlias
-  = CTensor  Text
-  | CReal    Text
-  | CAccReal Text
-  | CStorage Text
-  deriving (Eq, Ord, Generic, Hashable)
-
-instance Show HsTypeAlias where
-  show = T.unpack . talias
-
-talias :: HsTypeAlias -> Text
-talias = \case
-  CTensor  t -> go "CTensor"  t
-  CReal    t -> go "CReal"    t
-  CAccReal t -> go "CAccReal" t
-  CStorage t -> go "CStorage" t
- where
-  go :: Text -> Text -> Text
-  go a t = T.intercalate " " ["type", a, "=", t]
+import CodeGen.Prelude
 
 -- ----------------------------------------
 -- Types for rendering output
 -- ----------------------------------------
 
 data HModule = HModule
-  { modHeader       :: FilePath
-  , modPrefix       :: Text
-  , modTypeTemplate :: TemplateType
-  , modSuffix       :: Text
-  , modFileSuffix   :: Text
+  { modPrefix       :: Text
   , modExtensions   :: [Text]
   , modImports      :: [Text]
   , modTypeDefs     :: [(Text, Text)]
+  , modHeader       :: FilePath
+  , modTypeTemplate :: TemplateType
+  , modSuffix       :: Text
+  , modFileSuffix   :: Text
   , modBindings     :: [THFunction]
   , modOutDir       :: Text
   , modIsTemplate   :: Bool
@@ -76,9 +39,8 @@ data TypeCategory = ReturnValue | FunctionParam
 -- ----------------------------------------
 -- Parsed types
 -- ----------------------------------------
-
-data THType =
-  THVoidPtr
+data THType
+  = THVoidPtr
   | THBool
   | THVoid
   | THDescBuff
@@ -164,6 +126,7 @@ data THType =
   | THAccReal
   deriving (Eq, Show)
 
+
 data THArg = THArg
   { thArgType :: THType
   , thArgName :: Text
@@ -191,8 +154,7 @@ data TemplateType
   | GenLong
   | GenShort
   | GenNothing
-  deriving stock (Eq, Ord, Show, Generic)
-  deriving anyclass (Hashable)
+  deriving (Eq, Ord, Bounded, Show, Generic, Hashable)
 
 -- List used to iterate through all template types
 genericTypes :: [TemplateType]

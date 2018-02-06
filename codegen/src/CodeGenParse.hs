@@ -17,7 +17,7 @@ import Data.Monoid ((<>))
 import Prelude as P
 import Data.Text as T
 
-import CodeGenTypes
+import CodeGen.Types
 
 -- ----------------------------------------
 -- File parser for TH templated header files

@@ -13,8 +13,8 @@ import Text.Megaparsec (parse, parseErrorPretty)
 import Text.Show.Pretty (ppShow)
 
 import CodeGenParse (THFunction, Parser, thParseGeneric)
-import CodeGenTypes (HModule, TemplateType, genericTypes)
-import RenderShared (makeModule, renderCHeaderFile, parseFile)
+import CodeGen.Types (HModule, TemplateType, genericTypes)
+import RenderShared (makeTHModule, renderCHeaderFile, parseFile)
 
 outDirGeneric :: Text
 thDir, thnnDir :: String
@@ -39,7 +39,7 @@ genericFiles =
   ]
   where
     makeGenericModule :: FilePath -> Text -> Text -> (TemplateType -> [THFunction] -> HModule)
-    makeGenericModule = makeModule outDirGeneric True
+    makeGenericModule = makeTHModule outDirGeneric True
 
 -- |TODO: make a unified module that re-exports all functions
 makeReExports :: IO ()
