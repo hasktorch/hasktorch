@@ -2,17 +2,7 @@ signature TensorCopy where
 
 import THTypes
 import Foreign
-
-data CTensor
-data CStorage
-
-data CReal
-instance Num  CReal
-instance Show CReal
-
-data CAccReal
-instance Num  CAccReal
-instance Show CAccReal
+import SigTypes
 
 c_copy       :: Ptr CTensor -> Ptr CTensor -> IO ()
 c_copyByte   :: Ptr CTensor -> Ptr CTHByteTensor -> IO ()

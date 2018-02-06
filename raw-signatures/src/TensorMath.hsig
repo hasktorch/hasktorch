@@ -3,17 +3,7 @@ signature TensorMath where
 import THTypes
 import Foreign
 import Foreign.C.Types
-
-data CTensor
-data CStorage
-
-data CReal
-instance Num  CReal
-instance Show CReal
-
-data CAccReal
-instance Num  CAccReal
-instance Show CAccReal
+import SigTypes
 
 c_fill         :: Ptr CTensor -> CReal -> IO ()
 c_zero         :: Ptr CTensor -> IO ()

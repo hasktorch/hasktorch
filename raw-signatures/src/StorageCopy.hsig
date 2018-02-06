@@ -2,16 +2,7 @@ signature StorageCopy where
 
 import THTypes
 import Foreign
-
-data CStorage
-
-data CReal
-instance Num  CReal
-instance Show CReal
-
-data CAccReal
-instance Num  CAccReal
-instance Show CAccReal
+import SigTypes
 
 c_rawCopy    :: Ptr CStorage -> Ptr CReal -> IO ()
 c_copy       :: Ptr CStorage -> Ptr CStorage -> IO ()

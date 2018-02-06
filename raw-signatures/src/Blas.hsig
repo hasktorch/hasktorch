@@ -3,17 +3,7 @@ signature Blas where
 import THTypes
 import Foreign
 import Foreign.C.Types
-
-data CTensor
-data CStorage
-
-data CReal
-instance Num  CReal
-instance Show CReal
-
-data CAccReal
-instance Num  CAccReal
-instance Show CAccReal
+import SigTypes
 
 c_swap :: CLLong -> Ptr CTensor -> CLLong -> Ptr CTensor -> CLLong -> IO ()
 c_scal :: CLLong -> CTensor -> Ptr CTensor -> CLLong -> IO ()

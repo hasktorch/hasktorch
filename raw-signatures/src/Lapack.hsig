@@ -3,17 +3,7 @@ signature Lapack where
 import THTypes
 import Foreign
 import Foreign.C.Types
-
-data CTensor
-data CStorage
-
-data CReal
-instance Num  CReal
-instance Show CReal
-
-data CAccReal
-instance Num  CAccReal
-instance Show CAccReal
+import SigTypes
 
 c_gesv  :: CInt -> CInt -> Ptr CTensor -> CInt -> CIntPtr -> Ptr CTensor -> CInt -> CIntPtr -> IO ()
 c_trtrs :: CChar -> CChar -> CChar -> CInt -> CInt -> Ptr CTensor -> CInt -> Ptr CTensor -> CInt -> CIntPtr -> IO ()

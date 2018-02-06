@@ -3,16 +3,7 @@ signature Storage where
 import THTypes
 import Foreign
 import Foreign.C.Types
-
-data CStorage
-
-data CReal
-instance Num  CReal
-instance Show CReal
-
-data CAccReal
-instance Num  CAccReal
-instance Show CAccReal
+import SigTypes
 
 c_data                    :: Ptr CStorage -> IO (Ptr CReal)
 c_size                    :: Ptr CStorage -> CPtrdiff

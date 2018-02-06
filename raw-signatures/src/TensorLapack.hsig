@@ -3,17 +3,7 @@ signature TensorLapack where
 import THTypes
 import Foreign
 import Foreign.C.Types
-
-data CTensor
-data CStorage
-
-data CReal
-instance Num  CReal
-instance Show CReal
-
-data CAccReal
-instance Num  CAccReal
-instance Show CAccReal
+import SigTypes
 
 c_gesv      :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_trtrs     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> Ptr CChar -> IO ()
