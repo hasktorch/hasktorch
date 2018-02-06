@@ -1,9 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+
 module THByteLapack
-  ( CTensor
-  , CReal
-  , CAccReal
-  , CStorage
+  ( 
   ) where
 
 import Foreign
@@ -12,7 +10,3 @@ import THTypes
 import Data.Word
 import Data.Int
 
-type CTensor = THTypes.CTHCharTensor
-type CReal = Foreign.C.Types.CChar
-type CAccReal = Foreign.C.Types.CLong
-type CStorage = THTypes.CTHCharStorage
