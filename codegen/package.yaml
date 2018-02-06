@@ -9,6 +9,8 @@ github: austinvhuang/hasktorch
 dependencies:
 - base >=4.7 && <5
 - containers >= 0.5.7
+- unordered-containers
+- hashable
 - megaparsec >= 5.3
 - pretty-show >= 1.6.13
 - text >= 1.2.2.2

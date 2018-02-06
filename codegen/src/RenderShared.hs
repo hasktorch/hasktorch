@@ -28,7 +28,7 @@ import qualified Data.Text as T
 
 import CodeGenTypes
 import CodeGenParse (thParseGeneric)
-import ConditionalCases (checkFunction)
+import ConditionalCases (checkFunction, FunctionName(..))
 
 makeModule
   :: Text
@@ -376,7 +376,7 @@ renderFunctions m validFunctions =
 
 -- | Check for conditional templating of functions and filter function list
 checkList :: [THFunction] -> TemplateType -> [THFunction]
-checkList fList templateType = filter ((checkFunction templateType) . funName) fList
+checkList fList templateType = filter ((checkFunction templateType) . FunctionName . funName) fList
 
 renderAll :: HModule -> Text
 renderAll m

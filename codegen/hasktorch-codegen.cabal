@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 49d48503c6f24557aa949ae7e403cf7a825ffa635d7c258cef5394aa9070a516
+-- hash: 290397322f2952e4fa6de4d01b5151c6e39c2e50ca63c3d3e7d1c8a9dd3568d3
 
 name:                hasktorch-codegen
 version:             0.1.0.0
@@ -25,9 +25,11 @@ library
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
+    , hashable
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
+    , unordered-containers
   exposed-modules:
       CodeGenParse
       CodeGenTypes
@@ -47,10 +49,12 @@ executable aten-process-spec
     , base >=4.7 && <5
     , bytestring >=0.10.8
     , containers >=0.5.7
+    , hashable
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , singletons >=2.2
     , text >=1.2.2.2
+    , unordered-containers
     , yaml >=0.8.25
   other-modules:
       Paths_hasktorch_codegen
@@ -64,10 +68,12 @@ executable codegen-concrete
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
+    , hashable
     , hasktorch-codegen
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
+    , unordered-containers
   other-modules:
       Paths_hasktorch_codegen
 
@@ -79,10 +85,12 @@ executable codegen-generic
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
+    , hashable
     , hasktorch-codegen
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
+    , unordered-containers
   other-modules:
       Paths_hasktorch_codegen
 
@@ -94,11 +102,13 @@ executable codegen-managed
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
+    , hashable
     , hasktorch-codegen
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , raw-strings-qq >=1.1
     , text >=1.2.2.2
+    , unordered-containers
   other-modules:
       Paths_hasktorch_codegen
 
@@ -111,11 +121,13 @@ test-suite spec
       QuickCheck
     , base >=4.7 && <5
     , containers >=0.5.7
+    , hashable
     , hasktorch-codegen
     , hspec
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
+    , unordered-containers
   other-modules:
       CodeGenParseSpec
       Paths_hasktorch_codegen
