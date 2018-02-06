@@ -13,6 +13,59 @@ import qualified Data.HashSet as S (member)
 
 import CodeGenTypes
 
+signatureAliases :: TemplateType -> HashSet HsTypeAlias
+signatureAliases = \case
+  GenByte ->
+    [ CTensor  "THTypes.CTHByteTensor"
+    , CReal    "Data.Word.CUChar"
+    , CAccReal "Foreign.C.Types.CLong"
+    , CStorage "THTypes.CTHByteStorage"
+    ]
+  GenChar ->
+    [ CTensor  "THTypes.CTHCharTensor"
+    , CReal    "Foreign.C.Types.CChar"
+    , CAccReal "Foreign.C.Types.CLong"
+    , CStorage "THTypes.CTHCharStorage"
+    ]
+  GenDouble ->
+    [ CTensor  "THTypes.CTHDoubleTensor"
+    , CReal    "Foreign.C.Types.CDouble"
+    , CAccReal "Foreign.C.Types.CDouble"
+    , CStorage "THTypes.CTHDoubleStorage"
+    ]
+  GenFloat ->
+    [ CTensor  "THTypes.CTHFloatTensor"
+    , CReal    "Foreign.C.Types.CFloat"
+    , CAccReal "Foreign.C.Types.CDouble"
+    , CStorage "THTypes.CTHFloatStorage"
+    ]
+  GenHalf ->
+    [ CTensor  "THTypes.CTHHalfTensor"
+    , CReal    "THTypes.CTHHalf"
+    , CAccReal "Foreign.C.Types.CFloat"
+    , CStorage "THTypes.CTHHalfStorage"
+    ]
+  GenInt ->
+    [ CTensor  "THTypes.CTHIntTensor"
+    , CReal    "Foreign.C.Types.CInt"
+    , CAccReal "Foreign.C.Types.CLong"
+    , CStorage "THTypes.CTHIntStorage"
+    ]
+  GenLong ->
+    [ CTensor  "THTypes.CTHLongTensor"
+    , CReal    "Foreign.C.Types.CLong"
+    , CAccReal "Foreign.C.Types.CLong"
+    , CStorage "THTypes.CTHLongStorage"
+    ]
+  GenShort ->
+    [ CTensor  "THTypes.CTHShortTensor"
+    , CReal    "Foreign.C.Types.CShort"
+    , CAccReal "Foreign.C.Types.CLong"
+    , CStorage "THTypes.CTHShortStorage"
+    ]
+  GenNothing -> []
+
+
 tensorMathCases :: HashMap FunctionName (HashSet TemplateType)
 tensorMathCases =
   [ ("abs",     [GenShort, GenInt, GenLong, GenFloat, GenDouble])

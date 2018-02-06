@@ -6,6 +6,8 @@ module CodeGenTypes
   ( genericTypes
   , concreteTypes
   , FunctionName(..)
+  , HsTypeAlias(..)
+  , talias
   , TemplateType(..)
 
   , HModule(..)
@@ -17,17 +19,39 @@ module CodeGenTypes
   , Parser(..)
   ) where
 
-import Data.Text
 import Text.Megaparsec
 import Data.Void
+import Data.Text (Text)
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
 import GHC.Exts (IsString)
+import qualified Data.Text as T
+
 
 -- | a concrete type for function names
 newtype FunctionName = FunctionName { asText :: Text }
   deriving stock (Show, Eq, Ord)
   deriving newtype (IsString, Hashable)
+
+data HsTypeAlias
+  = CTensor  Text
+  | CReal    Text
+  | CAccReal Text
+  | CStorage Text
+  deriving (Eq, Ord, Generic, Hashable)
+
+instance Show HsTypeAlias where
+  show = T.unpack . talias
+
+talias :: HsTypeAlias -> Text
+talias = \case
+  CTensor  t -> go "CTensor"  t
+  CReal    t -> go "CReal"    t
+  CAccReal t -> go "CAccReal" t
+  CStorage t -> go "CStorage" t
+ where
+  go :: Text -> Text -> Text
+  go a t = T.intercalate " " ["type", a, "=", t]
 
 -- ----------------------------------------
 -- Types for rendering output
