@@ -48,4 +48,7 @@ codegen-managed: build
 
 codegen: codegen-managed codegen-concrete codegen-generic
 
-.PHONY: clean build refresh codegen init
+dev:
+	sos -p '(raw-.*|core|examples)/[^.].*' -c "rm -rf dist-newstyle && cabal new-build all"
+
+.PHONY: clean build refresh codegen init dev

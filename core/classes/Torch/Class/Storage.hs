@@ -1,6 +1,8 @@
 module Torch.Class.Storage where
 
+import Foreign
 import Foreign.C.Types
+import THTypes
 import Torch.Class.Internal
 
 class Storage t where
@@ -16,9 +18,9 @@ class Storage t where
   newWithSize3 :: HsReal t -> HsReal t -> HsReal t -> IO t
   newWithSize4 :: HsReal t -> HsReal t -> HsReal t -> HsReal t -> IO t
   newWithMapping :: Ptr CChar -> CPtrdiff -> CInt -> IO t
-  newWithData    :: Ptr HsReal t -> CPtrdiff -> IO t
+  newWithData    :: Ptr (HsReal t) -> CPtrdiff -> IO t
   newWithAllocator  :: CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO t
-  newWithDataAndAllocator :: Ptr HsReal t -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO t
+  newWithDataAndAllocator :: Ptr (HsReal t) -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO t
   setFlag   :: t -> CChar -> IO ()
   clearFlag :: t -> CChar -> IO ()
   retain    :: t -> IO ()

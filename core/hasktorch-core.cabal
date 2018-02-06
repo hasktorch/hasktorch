@@ -8,7 +8,7 @@ bug-reports:    https://github.com/hasktorch/hasktorch/issues
 author:         Austin Huang
 license:        BSD3
 build-type:     Simple
-cabal-version:  >= 2.0
+cabal-version:  >= 1.24
 
 source-repository head
   type: git
@@ -76,7 +76,8 @@ library hasktorch-core-classes
     , hasktorch-raw-types
   default-language: Haskell2010
   exposed-modules:
-      Torch.Class.Blas
+      Torch.Class.Internal
+    , Torch.Class.Blas
     , Torch.Class.Lapack
     , Torch.Class.Storage
     , Torch.Class.Storage.Copy
