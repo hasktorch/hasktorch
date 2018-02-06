@@ -1,7 +1,9 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
 module THHalfTensorLapack
-  ( 
+  ( CTensor
+  , CReal
+  , CAccReal
+  , CStorage
   ) where
 
 import Foreign
@@ -10,3 +12,7 @@ import THTypes
 import Data.Word
 import Data.Int
 
+type CTensor = THTypes.CTHHalfTensor
+type CReal = THTypes.CTHHalf
+type CAccReal = Foreign.C.Types.CFloat
+type CStorage = THTypes.CTHHalfStorage
