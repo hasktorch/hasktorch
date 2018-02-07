@@ -6,7 +6,7 @@ import Foreign.C.Types
 import THTypes
 
 class StorageCopy t where
-  rawCopy    :: t -> IO (Ptr (HsReal t))
+  rawCopy    :: t -> IO [HsReal t]
   copy       :: t -> IO t
   copyByte   :: t -> IO (Ptr CTHByteStorage)
   copyChar   :: t -> IO (Ptr CTHCharStorage)

@@ -22,10 +22,10 @@ asStorage = fmap Storage . newForeignPtr Sig.p_free
 
 instance Class.IsStorage Storage where
   tensordata :: Storage -> IO [HsReal Storage]
-  tensordata s = withForeignPtr (storage s) $ \s' -> do
-    let CPtrdiff pd = Sig.c_size s'
-    ss <- Sig.c_data s'
-    (fmap.fmap) c2hsReal (FM.peekArray (fromIntegral pd) ss)
+  tensordata = ptrArray2hs Sig.c_data arrayLen . storage
+   where
+    arrayLen :: Ptr CStorage -> IO Int
+    arrayLen p = case Sig.c_size p of { CPtrdiff pd -> pure (fromIntegral pd) }
 
   size :: Storage -> IO Int64
   size s = withForeignPtr (storage s) $ \s' -> do
@@ -74,7 +74,7 @@ instance Class.IsStorage Storage where
   newWithDataAndAllocator :: [HsReal Storage] -> Int64 -> CTHAllocatorPtr -> Ptr () -> IO Storage
   newWithDataAndAllocator pr pd thalloc whatthehell = do
     pr' <- FM.withArray (hs2cReal <$> pr) (pure . id)
-    s <- Sig.c_newWithDataAndAllocator pr' (CPtrDiff pd) thalloc whatthehell
+    s <- Sig.c_newWithDataAndAllocator pr' (CPtrdiff pd) thalloc whatthehell
     asStorage s
 
   setFlag :: Storage -> Int8 -> IO ()

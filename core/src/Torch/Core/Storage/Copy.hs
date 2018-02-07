@@ -5,8 +5,10 @@ import Torch.Class.Internal (HsReal)
 import Foreign
 import Foreign.C.Types
 import THTypes
+import qualified Foreign.Marshal.Array as FM
+import qualified SigTypes    as Sig
+import qualified Storage     as Sig
 import qualified StorageCopy as Sig
-import qualified Storage as Sig
 import qualified Torch.Class.Storage.Copy as Class
 
 import qualified THLongStorage   as L
@@ -18,7 +20,7 @@ import qualified THIntStorage    as I
 import qualified THDoubleStorage as D
 -- import qualified THHalfStorage   as H
 
-import Torch.Core.Types
+import Torch.Core.Types hiding (HsReal)
 
 copyType :: IO (Ptr a) -> (Ptr CStorage -> Ptr a -> IO ()) -> Storage -> IO (Ptr a)
 copyType newPtr cfun t = do
@@ -27,7 +29,13 @@ copyType newPtr cfun t = do
   pure tar
 
 instance Class.StorageCopy Storage where
-  -- rawCopy :: Storage -> IO (Ptr (HsReal Storage))
+  rawCopy :: Storage -> IO [HsReal Storage]
+  rawCopy s = do
+    sz <- withForeignPtr (storage s) (\s' -> let CPtrdiff pd = Sig.c_size s' in pure pd)
+    res <- FM.mallocArray (fromIntegral sz)
+    withForeignPtr (storage s) (`Sig.c_rawCopy` res)
+    (fmap.fmap) c2hsReal (FM.peekArray (fromIntegral sz) res)
+
   copy :: Storage -> IO Storage
   copy t = do
     tar <- Sig.c_new
@@ -56,6 +64,6 @@ instance Class.StorageCopy Storage where
   copyDouble = copyType D.c_new Sig.c_copyDouble
 
   -- copyHalf   :: Storage -> IO (Ptr CTHHalfStorage)
-  -- copyHalf = copyType F.c_new Sig.c_copyHalf
+  -- copyHalf = copyType H.c_new Sig.c_copyHalf
 
 

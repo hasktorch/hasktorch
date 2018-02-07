@@ -14,8 +14,8 @@ module THFloatTypes
 import Foreign.C.Types
 import THTypes
 
-type CTensor = THFloatTensor
-type CStorage = THFloatStorage
+type CTensor = CTHFloatTensor
+type CStorage = CTHFloatStorage
 type CReal = CFloat
 type CAccReal = CDouble
 type HsReal = Float

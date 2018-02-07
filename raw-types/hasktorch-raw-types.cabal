@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f7a066935d37cc7f0291e30942e200cfab5577cc54a64ae83fbc49058c36a413
+-- hash: 470c674a09b4e32d2e8467703aa352cf4c51380884c44257074e8b9623160db8
 
 name:           hasktorch-raw-types
 version:        0.0.1.0
@@ -28,6 +28,8 @@ library
   build-tools:
       c2hs
   exposed-modules:
+      THFloatTypes
+      THLongTypes
       THTypes
       TorchStructs
   other-modules:

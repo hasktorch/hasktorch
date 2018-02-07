@@ -14,8 +14,8 @@ module THLongTypes
 import Foreign.C.Types
 import THTypes
 
-type CTensor = THLongTensor
-type CStorage = THLongStorage
+type CTensor = CTHLongTensor
+type CStorage = CTHLongStorage
 type CReal = CLong
 type CAccReal = CLong
 type HsReal = Integer
