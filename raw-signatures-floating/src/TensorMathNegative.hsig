@@ -1,0 +1,11 @@
+signature TensorMathNegative where
+
+import THTypes
+import Foreign
+import Foreign.C.Types
+import SigTypes
+
+c_neg          :: Ptr CTensor -> Ptr CTensor -> IO ()
+c_abs          :: Ptr CTensor -> Ptr CTensor -> IO ()
+
+

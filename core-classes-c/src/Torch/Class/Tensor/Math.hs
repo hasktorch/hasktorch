@@ -122,11 +122,11 @@ class TensorMath t where
   neTensorT    :: t -> t -> t -> IO ()
   eqTensorT    :: t -> t -> t -> IO ()
 
-class TensorMath t => TensorMathNegative t where
+class TensorMathNegative t where
   neg          :: t -> t -> IO ()
   abs          :: t -> t -> IO ()
 
-class TensorMath t => TensorMathFloating t where
+class TensorMathFloating t where
   cinv         :: t -> t -> IO ()
   sigmoid      :: t -> t -> IO ()
   log          :: t -> t -> IO ()

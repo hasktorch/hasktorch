@@ -1,0 +1,66 @@
+name:           hasktorch-core-long
+version:        0.0.1.0
+synopsis:       Torch for tensors and neural networks in Haskell
+description:    core tensor abstractions wrapping raw TH bindings
+category:       Tensors, Machine Learning
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         Austin Huang
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.24
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+library
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core-indef
+    , hasktorch-raw
+    , hasktorch-raw-types
+  reexported-modules:
+      Torch.Core.LongTypes
+    , Torch.Core.LongTensor
+    , Torch.Core.LongStorage
+    , Torch.Core.LongStorage.Copy
+    , Torch.Core.LongTensor.Dynamic
+    , Torch.Core.LongTensor.Dynamic.Copy
+    , Torch.Core.LongTensor.Dynamic.Conv
+    , Torch.Core.LongTensor.Dynamic.Lapack
+    , Torch.Core.LongTensor.Dynamic.Math
+    , Torch.Core.LongTensor.Dynamic.Math.Negative
+    , Torch.Core.LongTensor.Dynamic.Random
+
+  mixins:
+      hasktorch-core-indef
+        (Torch.Core.Types                  as Torch.Core.LongTypes
+        ,Torch.Core.Tensor                 as Torch.Core.LongTensor
+        ,Torch.Core.Storage                as Torch.Core.LongStorage
+        ,Torch.Core.Storage.Copy           as Torch.Core.LongStorage.Copy
+        ,Torch.Core.Tensor.Dynamic         as Torch.Core.LongTensor.Dynamic
+        ,Torch.Core.Tensor.Dynamic.Copy    as Torch.Core.LongTensor.Dynamic.Copy
+        ,Torch.Core.Tensor.Dynamic.Conv    as Torch.Core.LongTensor.Dynamic.Conv
+        ,Torch.Core.Tensor.Dynamic.Lapack  as Torch.Core.LongTensor.Dynamic.Lapack
+        ,Torch.Core.Tensor.Dynamic.Math          as Torch.Core.LongTensor.Dynamic.Math
+        ,Torch.Core.Tensor.Dynamic.Math.Negative as Torch.Core.LongTensor.Dynamic.Math.Negative
+        ,Torch.Core.Tensor.Dynamic.Random  as Torch.Core.LongTensor.Dynamic.Random)
+
+        requires
+        -- (Blas         as THLongBlas
+        -- ,Lapack       as THLongLapack
+        -- ,Vector       as THLongVector)
+        (SigTypes     as THLongTypes
+        ,StorageCopy  as THLongStorageCopy
+        ,Storage      as THLongStorage
+        ,TensorConv   as THLongTensorConv
+        ,TensorCopy   as THLongTensorCopy
+        ,Tensor       as THLongTensor
+        ,TensorLapack as THLongTensorLapack
+        ,TensorMath         as THLongTensorMath
+        -- ,TensorMathFloating as THLongTensorMath
+        ,TensorMathNegative as THLongTensorMath
+        ,TensorRandom as THLongTensorRandom)
+

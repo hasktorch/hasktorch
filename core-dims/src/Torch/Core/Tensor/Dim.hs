@@ -35,8 +35,6 @@ import Data.List (intercalate)
 import Data.Sequence (Seq, (|>))
 import GHC.TypeLits (KnownNat)
 import Numeric.Dimensions (Dim(..), SomeDims(..), Nat)
-import Torch.Core.Internal (impossible)
-
 import Numeric.Dimensions as Dim
 
 type KnownNatDim n = (KnownDim n, KnownNat n)
@@ -65,7 +63,6 @@ go _ =
   else (Dn :: (x:xs) ~ m => Dim (x::Nat)) :* (go (Proxy :: (x:xs) ~ m => Proxy xs))
 -- -}
 
-
 showdim :: Dim (ds::[k]) -> String
 showdim = go mempty
   where
@@ -75,7 +72,7 @@ showdim = go mempty
     showScalar :: Dim (ds' :: k) -> String
     showScalar (   d@Dn) =         show (Dim.dimVal d)
     showScalar (Dx d@Dn) = ">=" ++ show (Dim.dimVal d) -- primarily for this rendering change
-    showScalar _ = impossible "only to be called on scalars"
+    showScalar _ = error "only to be called on scalars"
 
     go :: Seq String -> Dim (ds::[k]) -> String
     go acc       D   = printlist acc

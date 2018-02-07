@@ -15,47 +15,17 @@ source-repository head
   location: https://github.com/hasktorch/hasktorch
 
 library
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core-classes
-    , hasktorch-core-indef
-    , hasktorch-raw-types
-    , hasktorch-core-dims
-
-  reexported-modules:
-      Torch.Core.Tensor.Dim
-
-    -- export all long types
-    , Torch.Core.LongTensor
-    , Torch.Core.LongTensor.Dynamic
-    , Torch.Core.LongStorage
-    , Torch.Core.LongTypes
-
-    -- export all float types
-    , Torch.Core.FloatTensor
-    , Torch.Core.FloatTensor.Dynamic
-    , Torch.Core.FloatStorage
-    , Torch.Core.FloatTypes
-
-  mixins:
-    -- satisfy all long types
-      hasktorch-core-indef (Torch.Core.Tensor as Torch.Core.LongTensor, Torch.Core.Tensor.Dynamic as Torch.Core.LongTensor.Dynamic, Torch.Core.Storage as Torch.Core.LongStorage, Torch.Core.Types as Torch.Core.LongTypes)
-        requires (Blas as THLongBlas, Lapack as THLongLapack, StorageCopy as THLongStorageCopy, Storage as THLongStorage, TensorConv as THLongTensorConv, TensorCopy as THLongTensorCopy, Tensor as THLongTensor, TensorLapack as THLongTensorLapack, TensorMath as THLongTensorMath, TensorRandom as THLongTensorRandom, Vector as THLongVector)
-
-    -- satisfy all float types
-    , hasktorch-core-indef (Torch.Core.Tensor as Torch.Core.FloatTensor, Torch.Core.Tensor.Dynamic as Torch.Core.FloatTensor.Dynamic, Torch.Core.Storage as Torch.Core.FloatStorage, Torch.Core.Types as Torch.Core.FloatTypes)
-        requires (Blas as THFloatBlas, Lapack as THFloatLapack, StorageCopy as THFloatStorageCopy, Storage as THFloatStorage, TensorConv as THFloatTensorConv, TensorCopy as THFloatTensorCopy, Tensor as THFloatTensor, TensorLapack as THFloatTensorLapack, TensorMath as THFloatTensorMath, TensorRandom as THFloatTensorRandom, Vector as THFloatVector)
-
-library hasktorch-core-indef
   hs-source-dirs: src
   default-language: Haskell2010
-  ghc-options: -fno-cse -fno-full-laziness
   build-depends:
       base >=4.7 && <5
     , containers
     , deepseq >=1.3.0.0
     , dimensions >=0.3.2.0
-    , hasktorch-core-classes
+    , hasktorch-core-classes-c
+    , hasktorch-core-dims
+    , hasktorch-core-indef
+    , hasktorch-core-indef-floating
     , hasktorch-raw
     , hasktorch-raw-signatures
     , hasktorch-raw-types
@@ -66,105 +36,141 @@ library hasktorch-core-indef
     , singletons >=2.2
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
-  exposed-modules:
-      Torch.Core.Tensor
 
-    --,  Torch.Core.Random
+  reexported-modules:
+      Torch.Core.Tensor.Dim
+    -- , Torch.Core.Internal
+    -- , Torch.Core.Random
     -- , Torch.Core.LogAdd
     -- , Torch.Core.Exceptions
-    -- , Torch.Core.Internal
 
-    -- classes implementations with indefinites
-    , Torch.Core.Types
-    -- , Torch.Core.Blas
-    , Torch.Core.Storage
-    , Torch.Core.Storage.Copy
-    -- , Torch.Core.Tensor.Types
-    , Torch.Core.Tensor.Dynamic
-    , Torch.Core.Tensor.Dynamic.Copy
-    , Torch.Core.Tensor.Dynamic.Conv
-    , Torch.Core.Tensor.Dynamic.Lapack
-    , Torch.Core.Tensor.Dynamic.Math
-    , Torch.Core.Tensor.Dynamic.Random
-    -- , Torch.Core.Tensor.Static
-    -- , Torch.Core.Tensor.Static.Lapack
-    -- , Torch.Core.Tensor.Static.Math
-    -- , Torch.Core.Tensor.Static.Random
+    , Torch.Core.LongTypes
+    , Torch.Core.LongTensor
+    , Torch.Core.LongStorage
+    , Torch.Core.LongStorage.Copy
+    , Torch.Core.LongTensor.Dynamic
+    , Torch.Core.LongTensor.Dynamic.Copy
+    , Torch.Core.LongTensor.Dynamic.Conv
+    , Torch.Core.LongTensor.Dynamic.Lapack
+    , Torch.Core.LongTensor.Dynamic.Math
+    , Torch.Core.LongTensor.Dynamic.Math.Negative
+    , Torch.Core.LongTensor.Dynamic.Random
 
-library hasktorch-core-dims
-  hs-source-dirs: src
-  default-language: Haskell2010
-  build-depends:
-      base >=4.7 && <5
-    , dimensions >=0.3.2.0
-    , singletons >=2.2
-    , typelits-witnesses >=0.2.3.0
-  exposed-modules:
-      Torch.Core.Tensor.Dim
+    -- export all float types
+    , Torch.Core.FloatTypes
+    , Torch.Core.FloatTensor
+    , Torch.Core.FloatStorage
+    , Torch.Core.FloatStorage.Copy
+    , Torch.Core.FloatTensor.Dynamic
+    , Torch.Core.FloatTensor.Dynamic.Copy
+    , Torch.Core.FloatTensor.Dynamic.Conv
+    , Torch.Core.FloatTensor.Dynamic.Lapack
+    , Torch.Core.FloatTensor.Dynamic.Math
+    , Torch.Core.FloatTensor.Dynamic.Math.Floating
+    , Torch.Core.FloatTensor.Dynamic.Math.Negative
+    , Torch.Core.FloatTensor.Dynamic.Random
+    , Torch.Core.FloatTensor.Dynamic.Random.Floating
+
+    -- export all float types
+    , Torch.Core.DoubleTypes
+    , Torch.Core.DoubleTensor
+    , Torch.Core.DoubleStorage
+    , Torch.Core.DoubleStorage.Copy
+    , Torch.Core.DoubleTensor.Dynamic
+    , Torch.Core.DoubleTensor.Dynamic.Copy
+    , Torch.Core.DoubleTensor.Dynamic.Conv
+    , Torch.Core.DoubleTensor.Dynamic.Lapack
+    , Torch.Core.DoubleTensor.Dynamic.Math
+    , Torch.Core.DoubleTensor.Dynamic.Math.Floating
+    , Torch.Core.DoubleTensor.Dynamic.Math.Negative
+    , Torch.Core.DoubleTensor.Dynamic.Random
+    , Torch.Core.DoubleTensor.Dynamic.Random.Floating
 
 
-library hasktorch-core-classes
-  hs-source-dirs: classes
-  default-language: Haskell2010
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-raw-types
-  exposed-modules:
-      Torch.Class.Internal
-    , Torch.Class.Blas
-    , Torch.Class.Lapack
-    -- done
-    , Torch.Class.Storage
-    , Torch.Class.Storage.Copy
-    , Torch.Class.Tensor
-    , Torch.Class.Tensor.Conv
-    , Torch.Class.Tensor.Copy
-    , Torch.Class.Tensor.Lapack
-    , Torch.Class.Tensor.Math
-    , Torch.Class.Tensor.Random
-    -- not done
-    , Torch.Class.Vector
+  other-modules:
+      Torch.Core.Internal
 
--- test-suite spec
---   type: exitcode-stdio-1.0
---   main-is: Spec.hs
---   hs-source-dirs:
---       tests
---       tests/generic
---   ghc-options: -fno-cse -fno-full-laziness
---   build-depends:
---       QuickCheck
---     , base >=4.7 && <5
---     , containers
---     , deepseq >=1.3.0.0
---     , dimensions >=0.3.2.0
---     , hasktorch-core
---     , hasktorch-raw
---     , hspec
---     , managed >=1.0.0 && <1.1
---     , microlens >=0.4.8.1
---     , numeric-limits
---     , safe-exceptions >=0.1.0.0
---     , singletons >=2.2
---     , text >=1.2.2.2
---     , typelits-witnesses >=0.2.3.0
---   other-modules:
---       GarbageCollectionSpec
---       MemorySpec
---       Orphans
---       RawLapackSVDSpec
---       Torch.Core.LogAddSpec
---       Torch.Core.RandomSpec
---       Torch.Core.Tensor.GenericSpec
---       Torch.Prelude.Extras
---       Torch.Core.Tensor.Dynamic.DoubleMathSpec
---       Torch.Core.Tensor.Dynamic.DoubleRandomSpec
---       Torch.Core.Tensor.Dynamic.DoubleSpec
---       Torch.Core.Tensor.Dynamic.GenericLapackSpec
---       Torch.Core.Tensor.Static.ByteSpec
---       Torch.Core.Tensor.Static.DoubleLapackSpec
---       Torch.Core.Tensor.Static.DoubleMathSpec
---       Torch.Core.Tensor.Static.DoubleRandomSpec
---       Torch.Core.Tensor.Static.DoubleSpec
---       Paths_hasktorch_core
---   default-language: Haskell2010
+  mixins:
+      hasktorch-core-indef-floating
+        (Torch.Core.Types                  as Torch.Core.FloatTypes
+        ,Torch.Core.Tensor                 as Torch.Core.FloatTensor
+        ,Torch.Core.Storage                as Torch.Core.FloatStorage
+        ,Torch.Core.Storage.Copy           as Torch.Core.FloatStorage.Copy
+        ,Torch.Core.Tensor.Dynamic         as Torch.Core.FloatTensor.Dynamic
+        ,Torch.Core.Tensor.Dynamic.Copy    as Torch.Core.FloatTensor.Dynamic.Copy
+        ,Torch.Core.Tensor.Dynamic.Conv    as Torch.Core.FloatTensor.Dynamic.Conv
+        ,Torch.Core.Tensor.Dynamic.Lapack  as Torch.Core.FloatTensor.Dynamic.Lapack
+        ,Torch.Core.Tensor.Dynamic.Math          as Torch.Core.FloatTensor.Dynamic.Math
+        ,Torch.Core.Tensor.Dynamic.Math.Floating as Torch.Core.FloatTensor.Dynamic.Math.Floating
+        ,Torch.Core.Tensor.Dynamic.Math.Negative as Torch.Core.FloatTensor.Dynamic.Math.Negative
+        ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.FloatTensor.Dynamic.Random
+        ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.FloatTensor.Dynamic.Random.Floating)
+
+        requires
+        (SigTypes     as THFloatTypes
+        ,StorageCopy  as THFloatStorageCopy
+        ,Storage      as THFloatStorage
+        ,TensorConv   as THFloatTensorConv
+        ,TensorCopy   as THFloatTensorCopy
+        ,Tensor       as THFloatTensor
+        ,TensorLapack as THFloatTensorLapack
+        ,TensorMath         as THFloatTensorMath
+        ,TensorMathFloating as THFloatTensorMath
+        ,TensorMathNegative as THFloatTensorMath
+        ,TensorRandom         as THFloatTensorRandom
+        ,TensorRandomFloating as THFloatTensorRandom)
+
+    , hasktorch-core-indef-floating
+        (Torch.Core.Types                           as Torch.Core.DoubleTypes
+        ,Torch.Core.Tensor                          as Torch.Core.DoubleTensor
+        ,Torch.Core.Storage                         as Torch.Core.DoubleStorage
+        ,Torch.Core.Storage.Copy                    as Torch.Core.DoubleStorage.Copy
+        ,Torch.Core.Tensor.Dynamic                  as Torch.Core.DoubleTensor.Dynamic
+        ,Torch.Core.Tensor.Dynamic.Copy             as Torch.Core.DoubleTensor.Dynamic.Copy
+        ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.DoubleTensor.Dynamic.Conv
+        ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.DoubleTensor.Dynamic.Lapack
+        ,Torch.Core.Tensor.Dynamic.Math             as Torch.Core.DoubleTensor.Dynamic.Math
+        ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.DoubleTensor.Dynamic.Math.Floating
+        ,Torch.Core.Tensor.Dynamic.Math.Negative    as Torch.Core.DoubleTensor.Dynamic.Math.Negative
+        ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.DoubleTensor.Dynamic.Random
+        ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.DoubleTensor.Dynamic.Random.Floating)
+
+        requires
+        (SigTypes             as THDoubleTypes
+        ,StorageCopy          as THDoubleStorageCopy
+        ,Storage              as THDoubleStorage
+        ,TensorConv           as THDoubleTensorConv
+        ,TensorCopy           as THDoubleTensorCopy
+        ,Tensor               as THDoubleTensor
+        ,TensorLapack         as THDoubleTensorLapack
+        ,TensorMath           as THDoubleTensorMath
+        ,TensorMathFloating   as THDoubleTensorMath
+        ,TensorMathNegative   as THDoubleTensorMath
+        ,TensorRandom         as THDoubleTensorRandom
+        ,TensorRandomFloating as THDoubleTensorRandom)
+
+    , hasktorch-core-indef
+        (Torch.Core.Types                           as Torch.Core.LongTypes
+        ,Torch.Core.Tensor                          as Torch.Core.LongTensor
+        ,Torch.Core.Storage                         as Torch.Core.LongStorage
+        ,Torch.Core.Storage.Copy                    as Torch.Core.LongStorage.Copy
+        ,Torch.Core.Tensor.Dynamic                  as Torch.Core.LongTensor.Dynamic
+        ,Torch.Core.Tensor.Dynamic.Copy             as Torch.Core.LongTensor.Dynamic.Copy
+        ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.LongTensor.Dynamic.Conv
+        ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.LongTensor.Dynamic.Lapack
+        ,Torch.Core.Tensor.Dynamic.Math             as Torch.Core.LongTensor.Dynamic.Math
+        ,Torch.Core.Tensor.Dynamic.Math.Negative    as Torch.Core.LongTensor.Dynamic.Math.Negative
+        ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.LongTensor.Dynamic.Random)
+
+        requires
+        (SigTypes             as THLongTypes
+        ,StorageCopy          as THLongStorageCopy
+        ,Storage              as THLongStorage
+        ,TensorConv           as THLongTensorConv
+        ,TensorCopy           as THLongTensorCopy
+        ,Tensor               as THLongTensor
+        ,TensorLapack         as THLongTensorLapack
+        ,TensorMath           as THLongTensorMath
+        ,TensorMathNegative   as THLongTensorMath
+        ,TensorRandom         as THLongTensorRandom)
+
