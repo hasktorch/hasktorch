@@ -31,6 +31,11 @@ module Torch.Core.Tensor.Static.DoubleMath
 
   , tds_dot
 
+  , tds_setElem
+  , tds_getElem
+  , tds_getRow
+  , tds_getColumn
+
   , tds_minAll
   , tds_maxAll
   , tds_medianAll
@@ -96,6 +101,7 @@ module Torch.Core.Tensor.Static.DoubleMath
   , tds_match
   , tds_numel
   , tds_max
+  , tds_cmax
   , tds_min
   , tds_kthvalue
   , tds_mode
@@ -119,8 +125,8 @@ module Torch.Core.Tensor.Static.DoubleMath
 
 import Control.Monad.Managed
 import Data.Singletons
-import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List
+import Data.Singletons.TypeLits
 import Foreign (Ptr)
 import Foreign.C.Types (CLong, CDouble, CInt)
 import Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, newForeignPtr )
@@ -135,6 +141,7 @@ import THTypes
 import THDoubleTensor
 import THDoubleTensorMath
 import Torch.Core.Tensor.Static.Double
+import Torch.Core.Tensor.Static.Long
 
 {- Operators -}
 
@@ -201,8 +208,16 @@ apply1_ transformation mtx val = unsafePerformIO $ do
   where
     res :: TDS d
     res = tds_cloneDim mtx
-
 {-# NOINLINE apply1_ #-}
+
+-- apply an in-place transformation to a tensor
+apply1__
+  :: forall d . (Dimensions d, SingDimensions d)
+  => (Ptr CTHDoubleTensor -> IO ())
+  -> TDS d -> TDS d
+apply1__ transformation mtx = unsafePerformIO $ do
+  withManaged1 transformation mtx
+  pure mtx
 
 tds_fill :: forall a d p . (Dimensions d, Real a, SingDimensions d) => a -> p -> TensorDoubleStatic d
 tds_fill value tensor = unsafePerformIO $
@@ -293,6 +308,56 @@ apply0Tensor op t = unsafePerformIO $ do
   withForeignPtr (getForeign res) (\r_ -> op r_ t)
   pure res
 {-# NOINLINE apply0Tensor #-}
+
+-- retrieves a single row
+tds_getRow :: forall n m . (KnownNatDim n, KnownNatDim m) => TDS '[n, m] -> Integer -> TDS '[1, m]
+tds_getRow t r =
+  if r >= 0 && r < ( round ((realToFrac $ natVal (Proxy :: Proxy n)) :: Double) :: Integer ) then
+    unsafePerformIO $ do
+    let res = tds_new
+        indices_ :: TLS '[1] = tls_fromList [ r ]
+    runManaged $ do
+        tPtr <- managed $ withForeignPtr (getForeign t)
+        resPtr <- managed $ withForeignPtr (getForeign res)
+        iPtr <- managed $ withForeignPtr (tlsTensor indices_)
+        liftIO $ c_THDoubleTensor_indexSelect resPtr tPtr 0 iPtr
+    pure res
+  else
+    error "Row out of bounds"
+
+tds_getColumn :: forall n m . (KnownNatDim n, KnownNatDim m) => TDS '[n, m] -> Integer -> TDS '[n, 1]
+tds_getColumn t r =
+  if r >= 0 && r < ( round ((realToFrac $ natVal (Proxy :: Proxy n)) :: Double) :: Integer ) then
+    unsafePerformIO $ do
+    let res = tds_new
+        indices_ :: TLS '[1] = tls_fromList [ r ]
+    runManaged $ do
+        tPtr <- managed $ withForeignPtr (getForeign t)
+        resPtr <- managed $ withForeignPtr (getForeign res)
+        iPtr <- managed $ withForeignPtr (tlsTensor indices_)
+        liftIO $ c_THDoubleTensor_indexSelect resPtr tPtr 1 iPtr
+    pure res
+  else
+    error "Column out of bounds"
+
+tds_getElem :: forall n m . (KnownNatDim n, KnownNatDim m) => TDS '[n, m] -> Int -> Int -> Double
+tds_getElem t r c =
+  if r >= 0 && r < ( round ((realToFrac $ natVal (Proxy :: Proxy n)) :: Double) :: Int ) &&
+     c >= 0 && c < ( round ((realToFrac $ natVal (Proxy :: Proxy m)) :: Double) :: Int ) then
+    unsafePerformIO $ do
+    e <- withForeignPtr (tdsTensor t) (\t_ ->
+                                              pure $
+                                                  c_THDoubleTensor_get2d
+                                                  t_
+                                                  (fromIntegral r)
+                                                  (fromIntegral c))
+    pure $ realToFrac e
+  else
+    error "Indices out of bounds"
+
+tds_setElem :: forall n m . (KnownNatDim n, KnownNatDim m) => TDS '[n, m] -> Int -> Int -> Double -> TDS '[n, m]
+tds_setElem t r c v = apply1__ tSet t
+  where tSet r_ = c_THDoubleTensor_set2d r_ (fromIntegral r) (fromIntegral c) (realToFrac v)
 
 -- |Returns a tensor with values negated
 tds_neg :: SingDimensions d => TDS d -> TDS d
@@ -836,6 +901,7 @@ tds_cross a b dimension = unsafePerformIO $ do
 {-# NOINLINE tds_cross #-}
 
 -- TH_API void THTensor_(cmax)(THTensor *r, THTensor *t, THTensor *src);
+tds_cmax :: SingDimensions d => (TDS d) -> (TDS d) -> (TDS d)
 tds_cmax t src = unsafePerformIO $ apply2 c_THDoubleTensor_cmax t src
 {-# NOINLINE tds_cmax #-}
 
