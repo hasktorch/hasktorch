@@ -10,7 +10,8 @@ cabal-version: >=1.10
 
 library
   signatures:
-      Blas
+      SigTypes
+    , Blas
     , Lapack
     , StorageCopy
     , Storage

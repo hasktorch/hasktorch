@@ -5,6 +5,10 @@ module THLongTypes
   , CAccReal
   , HsAccReal
   , HsReal
+  , hs2cReal
+  , hs2cAccReal
+  , c2hsReal
+  , c2hsAccReal
   ) where
 
 import Foreign.C.Types

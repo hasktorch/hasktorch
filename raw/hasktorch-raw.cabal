@@ -77,18 +77,18 @@ library
       THFloatTensorMath
       THFloatTensorRandom
       THFloatVector
-      THHalfBlas
-      THHalfLapack
-      THHalfNN
-      THHalfStorage
-      THHalfStorageCopy
-      THHalfTensor
-      THHalfTensorConv
-      THHalfTensorCopy
-      THHalfTensorLapack
-      THHalfTensorMath
-      THHalfTensorRandom
-      THHalfVector
+      -- THHalfBlas
+      -- THHalfLapack
+      -- THHalfNN
+      -- THHalfStorage
+      -- THHalfStorageCopy
+      -- THHalfTensor
+      -- THHalfTensorConv
+      -- THHalfTensorCopy
+      -- THHalfTensorLapack
+      -- THHalfTensorMath
+      -- THHalfTensorRandom
+      -- THHalfVector
       THIntBlas
       THIntLapack
       THIntNN
