@@ -1,15 +1,19 @@
 signature SigTypes where
 
+import Foreign.Storable
+
 data CTensor
 data CStorage
 
 data CReal
 instance Num  CReal
 instance Show CReal
+instance Storable CReal
 
 data CAccReal
 instance Num  CAccReal
 instance Show CAccReal
+instance Storable CAccReal
 
 data HsReal
 instance Num  HsReal

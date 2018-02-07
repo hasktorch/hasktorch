@@ -9,33 +9,40 @@ import Foreign (Ptr, withForeignPtr, newForeignPtr)
 import Foreign.C.Types
 import GHC.ForeignPtr (ForeignPtr)
 import Torch.Class.Internal (HsReal)
+import GHC.Int
 import THTypes
 
 import Torch.Core.Types hiding (HsReal)
 import qualified Storage as Sig
 import qualified Torch.Class.Storage as Class
+import qualified Foreign.Marshal.Array as FM
 
 asStorage :: Ptr CStorage -> IO Storage
 asStorage = fmap Storage . newForeignPtr Sig.p_free
 
 instance Class.IsStorage Storage where
-  -- tensordata :: Storage -> IO (Ptr (HsReal Storage))
-  -- tensordata s = withForeignPtr (storage s) Sig.c_data
+  tensordata :: Storage -> IO [HsReal Storage]
+  tensordata s = withForeignPtr (storage s) $ \s' -> do
+    let CPtrdiff pd = Sig.c_size s'
+    ss <- Sig.c_data s'
+    (fmap.fmap) c2hsReal (FM.peekArray (fromIntegral pd) ss)
 
-  size :: Storage -> IO CPtrdiff
-  size s = withForeignPtr (storage s) (pure . Sig.c_size)
+  size :: Storage -> IO Int64
+  size s = withForeignPtr (storage s) $ \s' -> do
+    let CPtrdiff pd = Sig.c_size s'
+    pure pd
 
-  set :: Storage -> CPtrdiff -> HsReal Storage -> IO ()
-  set s pd v = withForeignPtr (storage s) $ \s' -> Sig.c_set s' pd (hs2cReal v)
+  set :: Storage -> Int64 -> HsReal Storage -> IO ()
+  set s pd v = withForeignPtr (storage s) $ \s' -> Sig.c_set s' (CPtrdiff pd) (hs2cReal v)
 
-  get :: Storage -> CPtrdiff -> IO (HsReal Storage)
-  get s pd = withForeignPtr (storage s)  $ \s' -> pure . c2hsReal $ Sig.c_get s' pd
+  get :: Storage -> Int64 -> IO (HsReal Storage)
+  get s pd = withForeignPtr (storage s)  $ \s' -> pure . c2hsReal $ Sig.c_get s' (CPtrdiff pd)
 
   new :: IO Storage
   new = Sig.c_new >>= asStorage
 
-  newWithSize :: CPtrdiff -> IO Storage
-  newWithSize pd = Sig.c_newWithSize pd >>= asStorage
+  newWithSize :: Int64 -> IO Storage
+  newWithSize pd = Sig.c_newWithSize (CPtrdiff pd) >>= asStorage
 
   newWithSize1 :: HsReal Storage -> IO Storage
   newWithSize1 a0 = Sig.c_newWithSize1 (hs2cReal a0) >>= asStorage
@@ -49,23 +56,32 @@ instance Class.IsStorage Storage where
   newWithSize4 :: HsReal Storage -> HsReal Storage -> HsReal Storage -> HsReal Storage -> IO Storage
   newWithSize4 a0 a1 a2 a3 = Sig.c_newWithSize4 (hs2cReal a0) (hs2cReal a1) (hs2cReal a2) (hs2cReal a3) >>= asStorage
 
-  newWithMapping :: Ptr CChar -> CPtrdiff -> CInt -> IO Storage
-  newWithMapping pcc pd ci = Sig.c_newWithMapping pcc pd ci >>= asStorage
+  newWithMapping :: [Int8] -> Int64 -> Int32 -> IO Storage
+  newWithMapping pcc' pd ci = do
+    pcc <- FM.newArray (map CChar pcc')
+    s <- Sig.c_newWithMapping pcc (CPtrdiff pd) (CInt ci)
+    asStorage s
 
-  -- newWithData :: Ptr (HsReal Storage) -> CPtrdiff -> IO Storage
-  -- newWithData pr pd = Sig.c_newWithData pr pd >>= asStorage
+  newWithData :: [HsReal Storage] -> Int64 -> IO Storage
+  newWithData pr pd = do
+    pr' <- FM.withArray (hs2cReal <$> pr) (pure . id)
+    s <- Sig.c_newWithData pr' (CPtrdiff pd)
+    asStorage s
 
-  newWithAllocator :: CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO Storage
-  newWithAllocator pd calloc whatthehell = Sig.c_newWithAllocator pd calloc whatthehell >>= asStorage
+  newWithAllocator :: Int64 -> CTHAllocatorPtr -> Ptr () -> IO Storage
+  newWithAllocator pd calloc whatthehell = Sig.c_newWithAllocator (CPtrdiff pd) calloc whatthehell >>= asStorage
 
-  -- newWithDataAndAllocator :: Ptr (HsReal Storage) -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO Storage
-  -- newWithDataAndAllocator pr pd calloc whatthehell = Sig.c_newWithDataAndAllocator pr pd calloc whatthehell >>= asStorage
+  newWithDataAndAllocator :: [HsReal Storage] -> Int64 -> CTHAllocatorPtr -> Ptr () -> IO Storage
+  newWithDataAndAllocator pr pd thalloc whatthehell = do
+    pr' <- FM.withArray (hs2cReal <$> pr) (pure . id)
+    s <- Sig.c_newWithDataAndAllocator pr' (CPtrDiff pd) thalloc whatthehell
+    asStorage s
 
-  setFlag :: Storage -> CChar -> IO ()
-  setFlag s cc = withForeignPtr (storage s) $ \s' -> Sig.c_setFlag s' cc
+  setFlag :: Storage -> Int8 -> IO ()
+  setFlag s cc = withForeignPtr (storage s) $ \s' -> Sig.c_setFlag s' (CChar cc)
 
-  clearFlag :: Storage -> CChar -> IO ()
-  clearFlag s cc = withForeignPtr (storage s) $ \s' -> Sig.c_clearFlag s' cc
+  clearFlag :: Storage -> Int8 -> IO ()
+  clearFlag s cc = withForeignPtr (storage s) $ \s' -> Sig.c_clearFlag s' (CChar cc)
 
   retain :: Storage -> IO ()
   retain s = withForeignPtr (storage s) Sig.c_retain
@@ -76,8 +92,8 @@ instance Class.IsStorage Storage where
       withForeignPtr (storage s1) $ \s1' ->
         Sig.c_swap s0' s1'
 
-  resize :: Storage -> CPtrdiff -> IO ()
-  resize s pd = withForeignPtr (storage s) $ \s' -> Sig.c_resize s' pd
+  resize :: Storage -> Int64 -> IO ()
+  resize s pd = withForeignPtr (storage s) $ \s' -> Sig.c_resize s' (CPtrdiff pd)
 
   fill :: Storage -> HsReal Storage -> IO ()
   fill s v = withForeignPtr (storage s) $ \s' -> Sig.c_fill s' (hs2cReal v)
