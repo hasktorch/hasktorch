@@ -45,6 +45,5 @@ library
     , Torch.Core.Tensor.Dynamic.Conv
     , Torch.Core.Tensor.Dynamic.Lapack
     , Torch.Core.Tensor.Dynamic.Math
-    , Torch.Core.Tensor.Dynamic.Math.Negative
     , Torch.Core.Tensor.Dynamic.Random
 

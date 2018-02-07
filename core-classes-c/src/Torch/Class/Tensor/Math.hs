@@ -122,7 +122,7 @@ class TensorMath t where
   neTensorT    :: t -> t -> t -> IO ()
   eqTensorT    :: t -> t -> t -> IO ()
 
-class TensorMathNegative t where
+class TensorMathSigned t where
   neg          :: t -> t -> IO ()
   abs          :: t -> t -> IO ()
 

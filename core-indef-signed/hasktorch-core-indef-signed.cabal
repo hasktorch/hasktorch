@@ -1,4 +1,4 @@
-name:           hasktorch-core-indef-floating
+name:           hasktorch-core-indef-signed
 version:        0.0.1.0
 synopsis:       Torch for tensors and neural networks in Haskell
 description:    core tensor abstractions wrapping raw TH bindings
@@ -15,23 +15,33 @@ source-repository head
   location: https://github.com/hasktorch/hasktorch
 
 library
-  default-language: Haskell2010
   hs-source-dirs: src
+  default-language: Haskell2010
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core-indef-signed
-    , hasktorch-raw
-    , hasktorch-raw-types
-    , hasktorch-raw-signatures-floating
+    , containers
+    , deepseq >=1.3.0.0
+    , dimensions >=0.3.2.0
     , hasktorch-core-classes-c
-
+    , hasktorch-core-indef
+    , hasktorch-raw
+    , hasktorch-raw-signatures
+    , hasktorch-raw-signatures-signed
+    , hasktorch-raw-types
+    , managed >=1.0.0 && <1.1
+    , microlens >=0.4.8.1
+    , numeric-limits
+    , safe-exceptions >=0.1.0.0
+    , singletons >=2.2
+    , text >=1.2.2.2
+    , typelits-witnesses >=0.2.3.0
   exposed-modules:
-      Torch.Core.Tensor.Dynamic.Math.Floating
-    , Torch.Core.Tensor.Dynamic.Random.Floating
+      Torch.Core.Tensor.Dynamic.Math.Signed
 
   reexported-modules:
-      Torch.Core.Types
-    , Torch.Core.Tensor
+      Torch.Core.Tensor
+    -- classes implementations with indefinites
+    , Torch.Core.Types
     , Torch.Core.Storage
     , Torch.Core.Storage.Copy
     , Torch.Core.Tensor.Dynamic
@@ -39,7 +49,5 @@ library
     , Torch.Core.Tensor.Dynamic.Conv
     , Torch.Core.Tensor.Dynamic.Lapack
     , Torch.Core.Tensor.Dynamic.Math
-    , Torch.Core.Tensor.Dynamic.Math.Signed
     , Torch.Core.Tensor.Dynamic.Random
-
 
