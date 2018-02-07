@@ -11,7 +11,6 @@ module Torch.Core.Tensor.Dim
   ( KnownNatDim
   , SingDim
   , SingDimensions
-  , DimView(..)
   , someDimsM
   , unsafeSomeDims
   , showdim
@@ -22,9 +21,6 @@ module Torch.Core.Tensor.Dim
   , dimVals
   , dimVals'
   , rank'
-  , view
-  , view'
-  , view4
   , product'
   , module Dim
   ) where
@@ -46,20 +42,6 @@ import Numeric.Dimensions as Dim
 type KnownNatDim n = (KnownDim n, KnownNat n)
 type SingDim n = (SingI n, KnownDim n)
 type SingDimensions d = (SingI d, Dimensions d)
-
-data DimView
-  = D0
-  | D1  Int
-  | D2  Int Int
-  | D3  Int Int Int
-  | D4  Int Int Int Int
-  | D5  Int Int Int Int Int
-  | D6  Int Int Int Int Int Int
-  | D7  Int Int Int Int Int Int Int
-  | D8  Int Int Int Int Int Int Int Int
-  | D9  Int Int Int Int Int Int Int Int Int
-  | D10 Int Int Int Int Int Int Int Int Int Int
-  deriving (Eq, Ord, Show)
 
 someDimsM :: MonadThrow m => [Int] -> m SomeDims
 someDimsM d = case Dim.someDimsVal d of
@@ -126,36 +108,6 @@ dimVals' (SomeDims ds) = dimVals ds
 rank' :: SomeDims -> Int
 rank' = length . dimVals'
 
--- Helper function to debug dimensions package
-view :: Dim (ns::[k]) -> DimView
-view d = case dimVals d of
-  [] -> D0
-  [d1] -> D1 d1
-  [d1,d2] -> D2 d1 d2
-  [d1,d2,d3] -> D3 d1 d2 d3
-  [d1,d2,d3,d4] -> D4 d1 d2 d3 d4
-  [d1,d2,d3,d4,d5] -> D5 d1 d2 d3 d4 d5
-  [d1,d2,d3,d4,d5,d6] -> D6 d1 d2 d3 d4 d5 d6
-  [d1,d2,d3,d4,d5,d6,d7] -> D7 d1 d2 d3 d4 d5 d6 d7
-  [d1,d2,d3,d4,d5,d6,d7,d8] -> D8 d1 d2 d3 d4 d5 d6 d7 d8
-  [d1,d2,d3,d4,d5,d6,d7,d8,d9] -> D9 d1 d2 d3 d4 d5 d6 d7 d8 d9
-  [d1,d2,d3,d4,d5,d6,d7,d8,d9,d10] -> D10 d1 d2 d3 d4 d5 d6 d7 d8 d9 d10
-  _  -> error "tensor rank is not accounted for in view pattern"
-
-view' :: SomeDims -> DimView
-view' (SomeDims d) = view d
-
--- | should be up to rank 5, these are the "most common" cases
-view4 :: Dim (ns::[k]) -> DimView
-view4 d = case view d of
-  d@D0   -> d
-  d@D1{} -> d
-  d@D2{} -> d
-  d@D3{} -> d
-  d@D4{} -> d
-  _  -> error "tensor rank is not accounted for in view pattern"
-
-
 product' :: SomeDims -> Int
 product' (SomeDims d) = product (dimVals d)
 
@@ -170,12 +122,12 @@ onDims
   -> ( a -> a -> a -> a -> b )
   -> Dim (dims::[k])
   -> b
-onDims ap f0 f1 f2 f3 f4 dim = case view4 dim of
-  D0 -> f0
-  D1 d1 -> f1 (ap d1)
-  D2 d1 d2 -> f2 (ap d1) (ap d2)
-  D3 d1 d2 d3 -> f3 (ap d1) (ap d2) (ap d3)
-  D4 d1 d2 d3 d4 -> f4 (ap d1) (ap d2) (ap d3) (ap d4)
+onDims ap f0 f1 f2 f3 f4 dim = case dimVals dim of
+  [] -> f0
+  [d1]  -> f1 (ap d1)
+  [d1, d2] -> f2 (ap d1) (ap d2)
+  [d1, d2, d3] -> f3 (ap d1) (ap d2) (ap d3)
+  [d1, d2, d3, d4] -> f4 (ap d1) (ap d2) (ap d3) (ap d4)
   _ -> error "impossible pattern match"
 
 

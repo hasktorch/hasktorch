@@ -14,19 +14,37 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
--- library
---   other-modules:
---       Paths_hasktorch_core
---   build-depends:
---       base >=4.7 && <5
---     , hasktorch-core-classes
---     , hasktorch-core-indef
---     , hasktorch-raw-types
---   reexported-modules:
---       Torch.Core.TensorLong
---   mixins:
---       hasktorch-core-indef (Torch.Core.Tensor as Torch.Core.TensorLong)
---         requires (Blas as THLongBlas, Lapack as THLongLapack, StorageCopy as THLongStorageCopy, Storage as THLongStorage, TensorConv as THLongTensorConv, TensorCopy as THLongTensorCopy, Tensor as THLongTensor, TensorLapack as THLongTensorLapack, TensorMath as THLongTensorMath, TensorRandom as THLongTensorRandom, Vector as THLongVector)
+library
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core-classes
+    , hasktorch-core-indef
+    , hasktorch-raw-types
+    , hasktorch-core-dims
+
+  reexported-modules:
+      Torch.Core.Tensor.Dim
+
+    -- export all long types
+    , Torch.Core.LongTensor
+    , Torch.Core.LongTensor.Dynamic
+    , Torch.Core.LongStorage
+    , Torch.Core.LongTypes
+
+    -- export all float types
+    , Torch.Core.FloatTensor
+    , Torch.Core.FloatTensor.Dynamic
+    , Torch.Core.FloatStorage
+    , Torch.Core.FloatTypes
+
+  mixins:
+    -- satisfy all long types
+      hasktorch-core-indef (Torch.Core.Tensor as Torch.Core.LongTensor, Torch.Core.Tensor.Dynamic as Torch.Core.LongTensor.Dynamic, Torch.Core.Storage as Torch.Core.LongStorage, Torch.Core.Types as Torch.Core.LongTypes)
+        requires (Blas as THLongBlas, Lapack as THLongLapack, StorageCopy as THLongStorageCopy, Storage as THLongStorage, TensorConv as THLongTensorConv, TensorCopy as THLongTensorCopy, Tensor as THLongTensor, TensorLapack as THLongTensorLapack, TensorMath as THLongTensorMath, TensorRandom as THLongTensorRandom, Vector as THLongVector)
+
+    -- satisfy all float types
+    , hasktorch-core-indef (Torch.Core.Tensor as Torch.Core.FloatTensor, Torch.Core.Tensor.Dynamic as Torch.Core.FloatTensor.Dynamic, Torch.Core.Storage as Torch.Core.FloatStorage, Torch.Core.Types as Torch.Core.FloatTypes)
+        requires (Blas as THFloatBlas, Lapack as THFloatLapack, StorageCopy as THFloatStorageCopy, Storage as THFloatStorage, TensorConv as THFloatTensorConv, TensorCopy as THFloatTensorCopy, Tensor as THFloatTensor, TensorLapack as THFloatTensorLapack, TensorMath as THFloatTensorMath, TensorRandom as THFloatTensorRandom, Vector as THFloatVector)
 
 library hasktorch-core-indef
   hs-source-dirs: src
@@ -49,25 +67,36 @@ library hasktorch-core-indef
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
   exposed-modules:
+      Torch.Core.Tensor
 
-      Torch.Core.Random
+    --,  Torch.Core.Random
     -- , Torch.Core.LogAdd
     -- , Torch.Core.Exceptions
     -- , Torch.Core.Internal
 
-    -- classes implementations
+    -- classes implementations with indefinites
+    , Torch.Core.Types
     -- , Torch.Core.Blas
-    -- , Torch.Core.Storage
-    -- , Torch.Core.Storage.Types
-    , Torch.Core.Tensor
-    , Torch.Core.Tensor.Dim
+    , Torch.Core.Storage
+    , Torch.Core.Storage.Copy
     -- , Torch.Core.Tensor.Types
-    -- , Torch.Core.Tensor.Dynamic
+    , Torch.Core.Tensor.Dynamic
     -- , Torch.Core.Tensor.Dynamic.Math
     -- , Torch.Core.Tensor.Static
     -- , Torch.Core.Tensor.Static.Lapack
     -- , Torch.Core.Tensor.Static.Math
     -- , Torch.Core.Tensor.Static.Random
+
+library hasktorch-core-dims
+  hs-source-dirs: src
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , dimensions >=0.3.2.0
+    , singletons >=2.2
+    , typelits-witnesses >=0.2.3.0
+  exposed-modules:
+      Torch.Core.Tensor.Dim
 
 
 library hasktorch-core-classes
