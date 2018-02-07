@@ -85,6 +85,7 @@ library hasktorch-core-indef
     , Torch.Core.Tensor.Dynamic.Conv
     , Torch.Core.Tensor.Dynamic.Lapack
     , Torch.Core.Tensor.Dynamic.Math
+    , Torch.Core.Tensor.Dynamic.Random
     -- , Torch.Core.Tensor.Static
     -- , Torch.Core.Tensor.Static.Lapack
     -- , Torch.Core.Tensor.Static.Math
@@ -119,9 +120,9 @@ library hasktorch-core-classes
     , Torch.Class.Tensor.Conv
     , Torch.Class.Tensor.Copy
     , Torch.Class.Tensor.Lapack
-    -- not done
     , Torch.Class.Tensor.Math
     , Torch.Class.Tensor.Random
+    -- not done
     , Torch.Class.Vector
 
 -- test-suite spec

@@ -1,216 +1,70 @@
-{-# LANGUAGE TypeFamilies #-}
-module Torch.Core.Tensor.Dynamic.DoubleRandom
-  ( td_random
-  , td_clampedRandom
-  , td_cappedRandom
-  , td_geometric
-  , td_bernoulli
-  , td_bernoulliFloat
-  , td_bernoulliDouble
-  , td_uniform
-  , td_normal
-  , td_exponential
-  , td_cauchy
-  , td_multinomial
-
-  , module Torch.Core.Random
-  ) where
+{-# LANGUAGE InstanceSigs #-}
+module Torch.Core.Tensor.Dynamic.Random where
 
 import Foreign
 import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
-import GHC.Ptr (FunPtr)
-import System.IO.Unsafe (unsafePerformIO)
-
-import Torch.Core.Tensor.Dynamic.Double
-import Torch.Core.Tensor.Types
-import Torch.Core.Random
-import Torch.Raw.Tensor.Generic
-
+import GHC.Int
+import qualified TensorRandom as Sig
+import qualified Torch.Class.Tensor.Random as Class
 import THTypes
-import THRandom
-import THDoubleTensor
-import THDoubleTensorMath
-import THDoubleTensorRandom
 
-import THFloatTensor
+import Torch.Core.Types
 
-td_random :: TensorDouble -> RandGen -> IO TensorDouble
-td_random self gen = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_random s g
-         )
-    )
-  pure self
+instance Class.TensorRandom Tensor where
+  random :: Tensor -> Ptr CTHGenerator -> IO ()
+  random t g = _withTensor t $ \ t' -> Sig.c_random t' g
 
-td_clampedRandom self gen minVal maxVal = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_clampedRandom s g minC maxC
-         )
-    )
-  pure self
-  where (minC, maxC) = (fromIntegral minVal, fromIntegral maxVal)
+  clampedRandom :: Tensor -> Ptr CTHGenerator -> Int64 -> Int64 -> IO ()
+  clampedRandom t g l0 l1 = _withTensor t $ \ t' -> Sig.c_clampedRandom t' g (CLLong l0) (CLLong l1)
 
-td_cappedRandom :: TensorDouble -> RandGen -> Int -> IO TensorDouble
-td_cappedRandom self gen maxVal = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_cappedRandom s g maxC
-         )
-    )
-  pure self
-  where maxC = fromIntegral maxVal
+  cappedRandom :: Tensor -> Ptr CTHGenerator -> Int64 -> IO ()
+  cappedRandom t g l0 = _withTensor t $ \ t' -> Sig.c_cappedRandom t' g (CLLong l0)
 
--- TH_API void THTensor_(geometric)(THTensor *self, THGenerator *_generator, double p);
-td_geometric :: TensorDouble -> RandGen -> Double -> IO TensorDouble
-td_geometric self gen p = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_geometric s g pC
-         )
-    )
-  pure self
-  where pC = realToFrac p
+  geometric :: Tensor -> Ptr CTHGenerator -> HsAccReal -> IO ()
+  geometric t g ar = _withTensor t $ \ t' -> Sig.c_geometric t' g (hs2cAccReal ar)
 
--- TH_API void THTensor_(bernoulli)(THTensor *self, THGenerator *_generator, double p);
-td_bernoulli :: TensorDouble -> RandGen -> Double -> IO TensorDouble
-td_bernoulli self gen p = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_bernoulli s g pC
-         )
-    )
-  pure self
-  where pC = realToFrac p
+  bernoulli :: Tensor -> Ptr CTHGenerator -> HsAccReal -> IO ()
+  bernoulli t g ar = _withTensor t $ \ t' -> Sig.c_bernoulli t' g (hs2cAccReal ar)
 
-td_bernoulliFloat :: TensorDouble -> RandGen -> TensorFloat -> IO ()
-td_bernoulliFloat self gen p = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-            withForeignPtr (pC)
-              (\pTensor ->
-                 c_THDoubleTensor_bernoulli_FloatTensor s g pTensor
-              )
-         )
-    )
-  where pC = tfTensor p
+  bernoulli_FloatTensor :: Tensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
+  bernoulli_FloatTensor t g ft = _withTensor t $ \ t' -> Sig.c_bernoulli_FloatTensor t' g ft
 
-td_bernoulliDouble :: TensorDouble -> RandGen -> TensorDouble -> IO TensorDouble
-td_bernoulliDouble self gen p = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-            withForeignPtr (pC)
-              (\pTensor ->
-                 c_THDoubleTensor_bernoulli_DoubleTensor s g pTensor
-              )
-         )
-    )
-  pure self
-  where pC = getForeign p
+  bernoulli_DoubleTensor :: Tensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
+  bernoulli_DoubleTensor t g dt = _withTensor t $ \ t' -> Sig.c_bernoulli_DoubleTensor t' g dt
 
-td_uniform :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
-td_uniform self gen a b = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_uniform s g aC bC
-         )
-    )
-  pure self
-  where aC = realToFrac a
-        bC = realToFrac b
+  uniform :: Tensor -> Ptr CTHGenerator -> HsAccReal -> HsAccReal -> IO ()
+  uniform t g ar0 ar1 = _withTensor t $ \ t' -> Sig.c_uniform t' g (hs2cAccReal ar0) (hs2cAccReal ar1)
 
-td_normal :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
-td_normal self gen mean stdv = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_normal s g meanC stdvC
-         )
-    )
-  pure self
-  where meanC = realToFrac mean
-        stdvC = realToFrac stdv
+  normal :: Tensor -> Ptr CTHGenerator -> HsAccReal -> HsAccReal -> IO ()
+  normal t g ar0 ar1 = _withTensor t $ \ t' -> Sig.c_normal t' g (hs2cAccReal ar0) (hs2cAccReal ar1)
 
--- TH_API void THTensor_(normal_means)(THTensor *self, THGenerator *gen, THTensor *means, double stddev);
--- TH_API void THTensor_(normal_stddevs)(THTensor *self, THGenerator *gen, double mean, THTensor *stddevs);
--- TH_API void THTensor_(normal_means_stddevs)(THTensor *self, THGenerator *gen, THTensor *means, THTensor *stddevs);
+  normal_means :: Tensor -> Ptr CTHGenerator -> Tensor -> HsAccReal -> IO ()
+  normal_means t0 g t1 ar = _with2Tensors t0 t1 $ \ t0' t1' -> Sig.c_normal_means t0' g t1' (hs2cAccReal ar)
 
-td_exponential :: TensorDouble -> RandGen -> Double -> IO TensorDouble
-td_exponential self gen lambda = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_exponential s g lambdaC
-         )
-    )
-  pure self
-  where lambdaC = realToFrac lambda
+  normal_stddevs :: Tensor -> Ptr CTHGenerator -> HsAccReal -> Tensor -> IO ()
+  normal_stddevs t0 g ar t1 = _with2Tensors t0 t1 $ \ t0' t1' -> Sig.c_normal_stddevs t0' g (hs2cAccReal ar) t1'
 
-td_cauchy :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
-td_cauchy self gen median sigma = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_cauchy s g medianC sigmaC
-         )
-    )
-  pure self
-  where medianC = realToFrac median
-        sigmaC = realToFrac sigma
+  normal_means_stddevs :: Tensor -> Ptr CTHGenerator -> Tensor -> Tensor -> IO ()
+  normal_means_stddevs t0 g t1 t2 = _with3Tensors t0 t1 t2 $ \ t0' t1' t2' -> Sig.c_normal_means_stddevs t0' g t1' t2'
 
-td_logNormal :: TensorDouble -> RandGen -> Double -> Double -> IO TensorDouble
-td_logNormal self gen mean stdv = do
-  withForeignPtr (getForeign self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-             c_THDoubleTensor_logNormal s g meanC stdvC
-         )
-    )
-  pure self
-  where meanC = realToFrac mean
-        stdvC = realToFrac stdv
+  exponential :: Tensor -> Ptr CTHGenerator -> HsAccReal -> IO ()
+  exponential t g ar = _withTensor t $ \ t' -> Sig.c_exponential t' g (hs2cAccReal ar)
 
+  standard_gamma :: Tensor -> Ptr CTHGenerator -> Tensor -> IO ()
+  standard_gamma t0 g t1 = _with2Tensors t0 t1 $ \ t0' t1' -> Sig.c_standard_gamma t0' g t1'
 
-td_multinomial :: TensorLong -> RandGen -> TensorDouble -> Int -> Bool -> IO TensorLong
-td_multinomial self gen prob_dist n_sample with_replacement = do
-  withForeignPtr (tlTensor self)
-    (\s ->
-       withForeignPtr (rng gen)
-         (\g ->
-            withForeignPtr (getForeign prob_dist)
-              (\p ->
-                 c_THDoubleTensor_multinomial s g p n_sampleC with_replacementC
-              )
-         )
-    )
-  pure self
-  where n_sampleC = fromIntegral n_sample
-        with_replacementC = if with_replacement then 1 else 0
+  cauchy :: Tensor -> Ptr CTHGenerator -> HsAccReal -> HsAccReal -> IO ()
+  cauchy t g ar0 ar1 = _withTensor t $ \ t' -> Sig.c_cauchy t' g (hs2cAccReal ar0) (hs2cAccReal ar1)
 
--- TH_API void THTensor_(multinomialAliasSetup)(THTensor *prob_dist, THLongTensor *J, THTensor *q);
--- TH_API void THTensor_(multinomialAliasDraw)(THLongTensor *self, THGenerator *_generator, THLongTensor *J, THTensor *q);
--- #endif
+  logNormal :: Tensor -> Ptr CTHGenerator -> HsAccReal -> HsAccReal -> IO ()
+  logNormal t g ar0 ar1 = _withTensor t $ \ t' -> Sig.c_logNormal t' g (hs2cAccReal ar0) (hs2cAccReal ar1)
+
+  multinomial :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Tensor -> Int32 -> Int32 -> IO ()
+  multinomial lt g t i0 i1 = _withTensor t $ \ t' -> Sig.c_multinomial lt g t' (CInt i0) (CInt i1)
+
+  multinomialAliasSetup  :: Tensor -> Ptr CTHLongTensor -> Tensor -> IO ()
+  multinomialAliasSetup t0 g t1 = _with2Tensors t0 t1 $ \ t0' t1' -> Sig.c_multinomialAliasSetup t0' g t1'
+
+  multinomialAliasDraw   :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Tensor -> IO ()
+  multinomialAliasDraw lt0 g lt1 t = _withTensor t $ \ t' -> Sig.c_multinomialAliasDraw lt0 g lt1 t'
 
