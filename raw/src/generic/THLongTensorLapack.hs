@@ -1,5 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
 module THLongTensorLapack
   ( c_gesv
   , c_trtrs

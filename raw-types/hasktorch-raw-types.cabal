@@ -28,13 +28,20 @@ library
   build-tools:
       c2hs
   exposed-modules:
+      -- THCharTypes
       THByteTypes
-      THFloatTypes
+
       THShortTypes
-      THDoubleTypes
+      THIntTypes
       THLongTypes
+
+      THFloatTypes
+      -- THHalfTypes
+      THDoubleTypes
+
       THTypes
       TorchStructs
+
   other-modules:
       Paths_hasktorch_raw_types
   default-language: Haskell2010
