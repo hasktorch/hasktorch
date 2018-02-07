@@ -30,6 +30,7 @@ library
   exposed-modules:
       THByteTypes
       THFloatTypes
+      THShortTypes
       THDoubleTypes
       THLongTypes
       THTypes
