@@ -3,6 +3,7 @@ module Torch.Class.Tensor.Lapack where
 import THTypes
 import Foreign
 import Foreign.C.Types
+import GHC.Int
 import Torch.Class.Internal
 
 class TensorLapack t where
@@ -22,5 +23,5 @@ class TensorLapack t where
   orgqr     :: t -> t -> t -> IO ()
   ormqr     :: t -> t -> t -> t -> Ptr CChar -> Ptr CChar -> IO ()
   pstrf     :: t -> Ptr CTHIntTensor -> t -> Ptr CChar -> HsReal t -> IO ()
-  btrifact  :: t -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CInt -> t -> IO ()
+  btrifact  :: t -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> Int32 -> t -> IO ()
   btrisolve :: t -> t -> t -> Ptr CTHIntTensor -> IO ()
