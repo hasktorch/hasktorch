@@ -49,15 +49,15 @@ ptrArray2hs updPtrArray toSize fp = do
 
 -- ========================================================================= --
 
-_withTensor :: Tensor -> (Ptr CTensor -> IO ()) -> IO ()
+_withTensor :: Tensor -> (Ptr CTensor -> IO x) -> IO x
 _withTensor t0 fn = withForeignPtr (tensor t0) fn
 
 withTensor = flip _withTensor
 
 _with2Tensors
   :: Tensor -> Tensor
-  -> (Ptr CTensor -> Ptr CTensor -> IO ())
-  -> IO ()
+  -> (Ptr CTensor -> Ptr CTensor -> IO x)
+  -> IO x
 _with2Tensors t0 t1 fn =
   _withTensor t0 $ \t0' ->
     _withTensor t1 $ \t1' ->
@@ -67,8 +67,8 @@ with2Tensors fn t0 t1 = _with2Tensors t0 t1 fn
 
 _with3Tensors
   :: Tensor -> Tensor -> Tensor
-  -> (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
-  -> IO ()
+  -> (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO x)
+  -> IO x
 _with3Tensors t0 t1 t2 fn =
   _with2Tensors t0 t1 $ \t0' t1' ->
     _withTensor t2 $ \t2' ->
@@ -78,8 +78,8 @@ with3Tensors fn t0 t1 t2 = _with3Tensors t0 t1 t2 fn
 
 _with4Tensors
   :: Tensor -> Tensor -> Tensor -> Tensor
-  -> (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
-  -> IO ()
+  -> (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO x)
+  -> IO x
 _with4Tensors t0 t1 t2 t3 fn =
   _with3Tensors t0 t1 t2 $ \t0' t1' t2' ->
     _withTensor t3 $ \t3' ->
@@ -89,8 +89,8 @@ with4Tensors fn t0 t1 t2 t3 = _with4Tensors t0 t1 t2 t3 fn
 
 _with5Tensors
   :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor
-  -> (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
-  -> IO ()
+  -> (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO x)
+  -> IO x
 _with5Tensors t0 t1 t2 t3 t4 fn =
   _with4Tensors t0 t1 t2 t3 $ \t0' t1' t2' t3' ->
     _withTensor t4 $ \t4' ->

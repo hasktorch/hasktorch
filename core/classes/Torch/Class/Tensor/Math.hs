@@ -4,6 +4,7 @@ import THTypes
 import Foreign
 import Foreign.C.Types
 import Torch.Class.Internal
+import GHC.Int
 
 class TensorMath t where
   fill         :: t -> HsReal t -> IO ()
@@ -12,22 +13,22 @@ class TensorMath t where
   maskedCopy   :: t -> Ptr CTHByteTensor -> t -> IO ()
   maskedSelect :: t -> t -> Ptr CTHByteTensor -> IO ()
   nonzero      :: Ptr CTHLongTensor -> t -> IO ()
-  indexSelect  :: t -> t -> CInt -> Ptr CTHLongTensor -> IO ()
-  indexCopy    :: t -> CInt -> Ptr CTHLongTensor -> t -> IO ()
-  indexAdd     :: t -> CInt -> Ptr CTHLongTensor -> t -> IO ()
-  indexFill    :: t -> CInt -> Ptr CTHLongTensor -> HsReal t -> IO ()
+  indexSelect  :: t -> t -> Int32 -> Ptr CTHLongTensor -> IO ()
+  indexCopy    :: t -> Int32 -> Ptr CTHLongTensor -> t -> IO ()
+  indexAdd     :: t -> Int32 -> Ptr CTHLongTensor -> t -> IO ()
+  indexFill    :: t -> Int32 -> Ptr CTHLongTensor -> HsReal t -> IO ()
   take         :: t -> t -> Ptr CTHLongTensor -> IO ()
-  put          :: t -> Ptr CTHLongTensor -> t -> CInt -> IO ()
-  gather       :: t -> t -> CInt -> Ptr CTHLongTensor -> IO ()
-  scatter      :: t -> CInt -> Ptr CTHLongTensor -> t -> IO ()
-  scatterAdd   :: t -> CInt -> Ptr CTHLongTensor -> t -> IO ()
-  scatterFill  :: t -> CInt -> Ptr CTHLongTensor -> HsReal t -> IO ()
-  dot          :: t -> t -> HsAccReal t
-  minall       :: t -> HsReal t
-  maxall       :: t -> HsReal t
-  medianall    :: t -> HsReal t
-  sumall       :: t -> HsAccReal t
-  prodall      :: t -> HsAccReal t
+  put          :: t -> Ptr CTHLongTensor -> t -> Int32 -> IO ()
+  gather       :: t -> t -> Int32 -> Ptr CTHLongTensor -> IO ()
+  scatter      :: t -> Int32 -> Ptr CTHLongTensor -> t -> IO ()
+  scatterAdd   :: t -> Int32 -> Ptr CTHLongTensor -> t -> IO ()
+  scatterFill  :: t -> Int32 -> Ptr CTHLongTensor -> HsReal t -> IO ()
+  dot          :: t -> t -> IO (HsAccReal t)
+  minall       :: t -> IO (HsReal t)
+  maxall       :: t -> IO (HsReal t)
+  medianall    :: t -> IO (HsReal t)
+  sumall       :: t -> IO (HsAccReal t)
+  prodall      :: t -> IO (HsAccReal t)
   add          :: t -> t -> HsReal t -> IO ()
   sub          :: t -> t -> HsReal t -> IO ()
   add_scaled   :: t -> t -> HsReal t -> HsReal t -> IO ()
@@ -62,19 +63,19 @@ class TensorMath t where
   addbmm       :: t -> HsReal t -> t -> HsReal t -> t -> t -> IO ()
   baddbmm      :: t -> HsReal t -> t -> HsReal t -> t -> t -> IO ()
   match        :: t -> t -> t -> HsReal t -> IO ()
-  numel        :: t -> CPtrdiff
-  max          :: t -> Ptr CTHLongTensor -> t -> CInt -> CInt -> IO ()
-  min          :: t -> Ptr CTHLongTensor -> t -> CInt -> CInt -> IO ()
-  kthvalue     :: t -> Ptr CTHLongTensor -> t -> CLLong -> CInt -> CInt -> IO ()
-  mode         :: t -> Ptr CTHLongTensor -> t -> CInt -> CInt -> IO ()
-  median       :: t -> Ptr CTHLongTensor -> t -> CInt -> CInt -> IO ()
-  sum          :: t -> t -> CInt -> CInt -> IO ()
-  prod         :: t -> t -> CInt -> CInt -> IO ()
-  cumsum       :: t -> t -> CInt -> IO ()
-  cumprod      :: t -> t -> CInt -> IO ()
+  numel        :: t -> IO Int64
+  max          :: t -> Ptr CTHLongTensor -> t -> Int32 -> Int32 -> IO ()
+  min          :: t -> Ptr CTHLongTensor -> t -> Int32 -> Int32 -> IO ()
+  kthvalue     :: t -> Ptr CTHLongTensor -> t -> Int64 -> Int32 -> Int32 -> IO ()
+  mode         :: t -> Ptr CTHLongTensor -> t -> Int32 -> Int32 -> IO ()
+  median       :: t -> Ptr CTHLongTensor -> t -> Int32 -> Int32 -> IO ()
+  sum          :: t -> t -> Int32 -> Int32 -> IO ()
+  prod         :: t -> t -> Int32 -> Int32 -> IO ()
+  cumsum       :: t -> t -> Int32 -> IO ()
+  cumprod      :: t -> t -> Int32 -> IO ()
   sign         :: t -> t -> IO ()
-  trace        :: t -> HsAccReal t
-  cross        :: t -> t -> t -> CInt -> IO ()
+  trace        :: t -> IO (HsAccReal t)
+  cross        :: t -> t -> t -> Int32 -> IO ()
   cmax         :: t -> t -> t -> IO ()
   cmin         :: t -> t -> t -> IO ()
   cmaxValue    :: t -> t -> HsReal t -> IO ()
@@ -83,19 +84,19 @@ class TensorMath t where
   zerosLike    :: t -> t -> IO ()
   ones         :: t -> Ptr CTHLongStorage -> IO ()
   onesLike     :: t -> t -> IO ()
-  diag         :: t -> t -> CInt -> IO ()
-  eye          :: t -> CLLong -> CLLong -> IO ()
+  diag         :: t -> t -> Int32 -> IO ()
+  eye          :: t -> Int64 -> Int64 -> IO ()
   arange       :: t -> HsAccReal t-> HsAccReal t-> HsAccReal t-> IO ()
   range        :: t -> HsAccReal t-> HsAccReal t-> HsAccReal t-> IO ()
-  randperm     :: t -> Ptr CTHGenerator -> CLLong -> IO ()
+  randperm     :: t -> Ptr CTHGenerator -> Int64 -> IO ()
   reshape      :: t -> t -> Ptr CTHLongStorage -> IO ()
-  sort         :: t -> Ptr CTHLongTensor -> t -> CInt -> CInt -> IO ()
-  topk         :: t -> Ptr CTHLongTensor -> t -> CLLong -> CInt -> CInt -> CInt -> IO ()
-  tril         :: t -> t -> CLLong -> IO ()
-  triu         :: t -> t -> CLLong -> IO ()
-  cat          :: t -> t -> t -> CInt -> IO ()
-  catArray     :: t -> Ptr (t) -> CInt -> CInt -> IO ()
-  equal        :: t -> t -> CInt
+  sort         :: t -> Ptr CTHLongTensor -> t -> Int32 -> Int32 -> IO ()
+  topk         :: t -> Ptr CTHLongTensor -> t -> Int64 -> Int32 -> Int32 -> Int32 -> IO ()
+  tril         :: t -> t -> Int64 -> IO ()
+  triu         :: t -> t -> Int64 -> IO ()
+  cat          :: t -> t -> t -> Int32 -> IO ()
+  catArray     :: t -> [t] -> Int32 -> Int32 -> IO ()
+  equal        :: t -> t -> IO Int32
   ltValue      :: Ptr CTHByteTensor -> t -> HsReal t -> IO ()
   leValue      :: Ptr CTHByteTensor -> t -> HsReal t -> IO ()
   gtValue      :: Ptr CTHByteTensor -> t -> HsReal t -> IO ()
@@ -154,20 +155,20 @@ class TensorMath t => TensorMathFloating t where
   trunc        :: t -> t -> IO ()
   frac         :: t -> t -> IO ()
   lerp         :: t -> t -> t -> HsReal t -> IO ()
-  mean         :: t -> t -> CInt -> CInt -> IO ()
-  std          :: t -> t -> CInt -> CInt -> CInt -> IO ()
-  var          :: t -> t -> CInt -> CInt -> CInt -> IO ()
-  norm         :: t -> t -> HsReal t -> CInt -> CInt -> IO ()
-  renorm       :: t -> t -> HsReal t -> CInt -> HsReal t -> IO ()
-  dist         :: t -> t -> HsReal t -> HsAccReal t
-  histc        :: t -> t -> CLLong -> HsReal t -> HsReal t -> IO ()
-  bhistc       :: t -> t -> CLLong -> HsReal t -> HsReal t -> IO ()
-  meanall      :: t -> HsAccReal t
-  varall       :: t -> CInt -> HsAccReal t
-  stdall       :: t -> CInt -> HsAccReal t
-  normall      :: t -> HsReal t -> HsAccReal t
-  linspace     :: t -> HsReal t -> HsReal t -> CLLong -> IO ()
-  logspace     :: t -> HsReal t -> HsReal t -> CLLong -> IO ()
+  mean         :: t -> t -> Int32 -> Int32 -> IO ()
+  std          :: t -> t -> Int32 -> Int32 -> Int32 -> IO ()
+  var          :: t -> t -> Int32 -> Int32 -> Int32 -> IO ()
+  norm         :: t -> t -> HsReal t -> Int32 -> Int32 -> IO ()
+  renorm       :: t -> t -> HsReal t -> Int32 -> HsReal t -> IO ()
+  dist         :: t -> t -> HsReal t -> IO (HsAccReal t)
+  histc        :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()
+  bhistc       :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()
+  meanall      :: t -> IO (HsAccReal t)
+  varall       :: t -> Int32 -> IO (HsAccReal t)
+  stdall       :: t -> Int32 -> IO (HsAccReal t)
+  normall      :: t -> HsReal t -> IO (HsAccReal t)
+  linspace     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
+  logspace     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
   rand         :: t -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
   randn        :: t -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
 

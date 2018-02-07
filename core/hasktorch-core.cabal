@@ -84,7 +84,7 @@ library hasktorch-core-indef
     , Torch.Core.Tensor.Dynamic.Copy
     , Torch.Core.Tensor.Dynamic.Conv
     , Torch.Core.Tensor.Dynamic.Lapack
-    -- , Torch.Core.Tensor.Dynamic.Math
+    , Torch.Core.Tensor.Dynamic.Math
     -- , Torch.Core.Tensor.Static
     -- , Torch.Core.Tensor.Static.Lapack
     -- , Torch.Core.Tensor.Static.Math
