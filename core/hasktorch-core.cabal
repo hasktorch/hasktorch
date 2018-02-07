@@ -82,6 +82,7 @@ library hasktorch-core-indef
     -- , Torch.Core.Tensor.Types
     , Torch.Core.Tensor.Dynamic
     , Torch.Core.Tensor.Dynamic.Copy
+    , Torch.Core.Tensor.Dynamic.Conv
     -- , Torch.Core.Tensor.Dynamic.Math
     -- , Torch.Core.Tensor.Static
     -- , Torch.Core.Tensor.Static.Lapack
@@ -110,11 +111,13 @@ library hasktorch-core-classes
       Torch.Class.Internal
     , Torch.Class.Blas
     , Torch.Class.Lapack
+    -- done
     , Torch.Class.Storage
     , Torch.Class.Storage.Copy
     , Torch.Class.Tensor
     , Torch.Class.Tensor.Conv
     , Torch.Class.Tensor.Copy
+    -- not done
     , Torch.Class.Tensor.Lapack
     , Torch.Class.Tensor.Math
     , Torch.Class.Tensor.Random
