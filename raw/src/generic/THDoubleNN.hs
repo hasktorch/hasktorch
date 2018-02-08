@@ -1,5 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
 module THDoubleNN
   ( 
   ) where

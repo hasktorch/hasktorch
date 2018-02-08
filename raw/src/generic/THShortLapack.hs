@@ -1,5 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
 module THShortLapack
   ( 
   ) where

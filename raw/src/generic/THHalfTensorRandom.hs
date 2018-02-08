@@ -1,5 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
 module THHalfTensorRandom
   ( c_random
   , c_clampedRandom
@@ -25,66 +24,66 @@ import THTypes
 import Data.Word
 import Data.Int
 
--- | c_random : self _generator -> void
-foreign import ccall "THTensorRandom.h random"
+-- | c_random :  self _generator -> void
+foreign import ccall "THTensorRandom.h THHalfTensor_random"
   c_random :: Ptr CTHHalfTensor -> Ptr CTHGenerator -> IO ()
 
--- | c_clampedRandom : self _generator min max -> void
-foreign import ccall "THTensorRandom.h clampedRandom"
+-- | c_clampedRandom :  self _generator min max -> void
+foreign import ccall "THTensorRandom.h THHalfTensor_clampedRandom"
   c_clampedRandom :: Ptr CTHHalfTensor -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ()
 
--- | c_cappedRandom : self _generator max -> void
-foreign import ccall "THTensorRandom.h cappedRandom"
+-- | c_cappedRandom :  self _generator max -> void
+foreign import ccall "THTensorRandom.h THHalfTensor_cappedRandom"
   c_cappedRandom :: Ptr CTHHalfTensor -> Ptr CTHGenerator -> CLLong -> IO ()
 
--- | c_geometric : self _generator p -> void
-foreign import ccall "THTensorRandom.h geometric"
+-- | c_geometric :  self _generator p -> void
+foreign import ccall "THTensorRandom.h THHalfTensor_geometric"
   c_geometric :: Ptr CTHHalfTensor -> Ptr CTHGenerator -> CDouble -> IO ()
 
--- | c_bernoulli : self _generator p -> void
-foreign import ccall "THTensorRandom.h bernoulli"
+-- | c_bernoulli :  self _generator p -> void
+foreign import ccall "THTensorRandom.h THHalfTensor_bernoulli"
   c_bernoulli :: Ptr CTHHalfTensor -> Ptr CTHGenerator -> CDouble -> IO ()
 
--- | c_bernoulli_FloatTensor : self _generator p -> void
-foreign import ccall "THTensorRandom.h bernoulli_FloatTensor"
+-- | c_bernoulli_FloatTensor :  self _generator p -> void
+foreign import ccall "THTensorRandom.h THHalfTensor_bernoulli_FloatTensor"
   c_bernoulli_FloatTensor :: Ptr CTHHalfTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
 
--- | c_bernoulli_DoubleTensor : self _generator p -> void
-foreign import ccall "THTensorRandom.h bernoulli_DoubleTensor"
+-- | c_bernoulli_DoubleTensor :  self _generator p -> void
+foreign import ccall "THTensorRandom.h THHalfTensor_bernoulli_DoubleTensor"
   c_bernoulli_DoubleTensor :: Ptr CTHHalfTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
 
--- | c_bernoulli_Tensor : self _generator p -> void
-foreign import ccall "THTensorRandom.h bernoulli_Tensor"
+-- | c_bernoulli_Tensor :  self _generator p -> void
+foreign import ccall "THTensorRandom.h THHalfTensor_bernoulli_Tensor"
   c_bernoulli_Tensor :: Ptr CTHHalfTensor -> Ptr CTHGenerator -> Ptr CTHHalfTensor -> IO ()
 
--- |p_random : Pointer to function : self _generator -> void
-foreign import ccall "THTensorRandom.h &random"
+-- | p_random : Pointer to function : self _generator -> void
+foreign import ccall "THTensorRandom.h &THHalfTensor_random"
   p_random :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHGenerator -> IO ())
 
--- |p_clampedRandom : Pointer to function : self _generator min max -> void
-foreign import ccall "THTensorRandom.h &clampedRandom"
+-- | p_clampedRandom : Pointer to function : self _generator min max -> void
+foreign import ccall "THTensorRandom.h &THHalfTensor_clampedRandom"
   p_clampedRandom :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ())
 
--- |p_cappedRandom : Pointer to function : self _generator max -> void
-foreign import ccall "THTensorRandom.h &cappedRandom"
+-- | p_cappedRandom : Pointer to function : self _generator max -> void
+foreign import ccall "THTensorRandom.h &THHalfTensor_cappedRandom"
   p_cappedRandom :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHGenerator -> CLLong -> IO ())
 
--- |p_geometric : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &geometric"
+-- | p_geometric : Pointer to function : self _generator p -> void
+foreign import ccall "THTensorRandom.h &THHalfTensor_geometric"
   p_geometric :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_bernoulli : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &bernoulli"
+-- | p_bernoulli : Pointer to function : self _generator p -> void
+foreign import ccall "THTensorRandom.h &THHalfTensor_bernoulli"
   p_bernoulli :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_bernoulli_FloatTensor : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &bernoulli_FloatTensor"
+-- | p_bernoulli_FloatTensor : Pointer to function : self _generator p -> void
+foreign import ccall "THTensorRandom.h &THHalfTensor_bernoulli_FloatTensor"
   p_bernoulli_FloatTensor :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ())
 
--- |p_bernoulli_DoubleTensor : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &bernoulli_DoubleTensor"
+-- | p_bernoulli_DoubleTensor : Pointer to function : self _generator p -> void
+foreign import ccall "THTensorRandom.h &THHalfTensor_bernoulli_DoubleTensor"
   p_bernoulli_DoubleTensor :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
 
--- |p_bernoulli_Tensor : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &bernoulli_Tensor"
+-- | p_bernoulli_Tensor : Pointer to function : self _generator p -> void
+foreign import ccall "THTensorRandom.h &THHalfTensor_bernoulli_Tensor"
   p_bernoulli_Tensor :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHGenerator -> Ptr CTHHalfTensor -> IO ())

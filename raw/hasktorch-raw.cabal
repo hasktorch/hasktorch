@@ -67,90 +67,90 @@ library
       THRandom
       THSize
       THStorage
-      -- THByteBlas
-      -- THByteLapack
-      -- THByteNN
+      THByteBlas
+      THByteLapack
+      THByteNN
       THByteStorage
       THByteStorageCopy
---       THByteTensor
---       -- THByteTensorConv
---       THByteTensorCopy
---       -- THByteTensorLapack
---       -- THByteTensorMath
---       -- THByteTensorRandom
---       -- THByteVector
--- --      THDoubleBlas
--- --      THDoubleLapack
--- --      THDoubleNN
---       THDoubleStorage
--- --      THDoubleStorageCopy
---       THDoubleTensor
--- --      THDoubleTensorConv
--- --      THDoubleTensorCopy
--- --      THDoubleTensorLapack
--- --      THDoubleTensorMath
--- --      THDoubleTensorRandom
--- --      THDoubleVector
--- --      THFloatBlas
--- --      THFloatLapack
--- --      THFloatNN
---       THFloatStorage
--- --      THFloatStorageCopy
---       THFloatTensor
--- --      THFloatTensorConv
--- --      THFloatTensorCopy
--- --      THFloatTensorLapack
--- --      THFloatTensorMath
--- --      THFloatTensorRandom
--- --      THFloatVector
--- --      -- THHalfBlas
--- --      -- THHalfLapack
--- --      -- THHalfNN
---       -- THHalfStorage
--- --      -- THHalfStorageCopy
---       -- THHalfTensor
--- --      -- THHalfTensorConv
--- --      -- THHalfTensorCopy
--- --      -- THHalfTensorLapack
--- --      -- THHalfTensorMath
--- --      -- THHalfTensorRandom
--- --      -- THHalfVector
--- --      THIntBlas
--- --      THIntLapack
--- --      THIntNN
---       THIntStorage
--- --      THIntStorageCopy
---       THIntTensor
--- --      THIntTensorConv
--- --      THIntTensorCopy
--- --      THIntTensorLapack
--- --      THIntTensorMath
--- --      THIntTensorRandom
--- --      THIntVector
--- --      THLongBlas
--- --      THLongLapack
--- --      THLongNN
---       THLongStorage
--- --      THLongStorageCopy
---       THLongTensor
--- --      THLongTensorConv
--- --      THLongTensorCopy
--- --      THLongTensorLapack
--- --      THLongTensorMath
--- --      THLongTensorRandom
--- --      THLongVector
--- --      THShortBlas
--- --      THShortLapack
--- --      THShortNN
+      THByteTensor
+      THByteTensorConv
+      THByteTensorCopy
+      THByteTensorLapack
+      THByteTensorMath
+      THByteTensorRandom
+      THByteVector
+      THDoubleBlas
+      THDoubleLapack
+      THDoubleNN
+      THDoubleStorage
+      THDoubleStorageCopy
+      THDoubleTensor
+      THDoubleTensorConv
+      THDoubleTensorCopy
+      THDoubleTensorLapack
+      THDoubleTensorMath
+      THDoubleTensorRandom
+      THDoubleVector
+      THFloatBlas
+      THFloatLapack
+      THFloatNN
+      THFloatStorage
+      THFloatStorageCopy
+      THFloatTensor
+      THFloatTensorConv
+      THFloatTensorCopy
+      THFloatTensorLapack
+      THFloatTensorMath
+      THFloatTensorRandom
+      THFloatVector
+      THHalfBlas
+      THHalfLapack
+      THHalfNN
+      THHalfStorage
+      THHalfStorageCopy
+      THHalfTensor
+      THHalfTensorConv
+      THHalfTensorCopy
+      THHalfTensorLapack
+      THHalfTensorMath
+      THHalfTensorRandom
+      THHalfVector
+      THIntBlas
+      THIntLapack
+      THIntNN
+      THIntStorage
+      THIntStorageCopy
+      THIntTensor
+      THIntTensorConv
+      THIntTensorCopy
+      THIntTensorLapack
+      THIntTensorMath
+      THIntTensorRandom
+      THIntVector
+      THLongBlas
+      THLongLapack
+      THLongNN
+      THLongStorage
+      THLongStorageCopy
+      THLongTensor
+      THLongTensorConv
+      THLongTensorCopy
+      THLongTensorLapack
+      THLongTensorMath
+      THLongTensorRandom
+      THLongVector
+      THShortBlas
+      THShortLapack
+      THShortNN
       THShortStorage
       THShortStorageCopy
---       THShortTensor
--- --      THShortTensorConv
--- --      THShortTensorCopy
--- --      THShortTensorLapack
--- --      THShortTensorMath
--- --      THShortTensorRandom
--- --      THShortVector
+      THShortTensor
+      THShortTensorConv
+      THShortTensorCopy
+      THShortTensorLapack
+      THShortTensorMath
+      THShortTensorRandom
+      THShortVector
   other-modules:
       Paths_hasktorch_raw
 
