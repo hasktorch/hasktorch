@@ -14,6 +14,14 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
+executable isdefinite
+  main-is: Main.hs
+  hs-source-dirs: exe
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+  default-language: Haskell2010
+
 library
   hs-source-dirs: src
   default-language: Haskell2010
@@ -127,7 +135,7 @@ library
       Torch.Core.Internal
 
   mixins:
-      hasktorch-core-indef-unsigned
+      hasktorch-core-indef-floating
         (Torch.Core.Types                      as Torch.Core.ByteTypes
         ,Torch.Core.Tensor                     as Torch.Core.ByteTensor
         ,Torch.Core.Storage                    as Torch.Core.ByteStorage
@@ -148,9 +156,12 @@ library
         ,Tensor           as THByteTensor
         ,TensorLapack     as THByteTensorLapack
         ,TensorMath       as THByteTensorMath
+        ,TensorMathSigned   as THByteTensorMathSigned
+        ,TensorMathFloating as THByteTensorMathFloating
+        ,TensorRandomFloating as THByteTensorRandomFloating
         ,TensorRandom     as THByteTensorRandom)
 
-    , hasktorch-core-indef-signed
+    , hasktorch-core-indef-floating
         (Torch.Core.Types                      as Torch.Core.ShortTypes
         ,Torch.Core.Tensor                     as Torch.Core.ShortTensor
         ,Torch.Core.Storage                    as Torch.Core.ShortStorage
@@ -173,9 +184,11 @@ library
         ,TensorLapack     as THShortTensorLapack
         ,TensorMath       as THShortTensorMath
         ,TensorMathSigned as THShortTensorMath
+        ,TensorMathFloating as THShortTensorMathFloating
+        ,TensorRandomFloating as THShortTensorRandomFloating
         ,TensorRandom     as THShortTensorRandom)
 
-    , hasktorch-core-indef-signed
+    , hasktorch-core-indef-floating
         (Torch.Core.Types                      as Torch.Core.IntTypes
         ,Torch.Core.Tensor                     as Torch.Core.IntTensor
         ,Torch.Core.Storage                    as Torch.Core.IntStorage
@@ -198,9 +211,11 @@ library
         ,TensorLapack     as THIntTensorLapack
         ,TensorMath       as THIntTensorMath
         ,TensorMathSigned as THIntTensorMath
+        ,TensorMathFloating as THIntTensorMathFloating
+        ,TensorRandomFloating as THIntTensorRandomFloating
         ,TensorRandom     as THIntTensorRandom)
 
-    , hasktorch-core-indef-signed
+    , hasktorch-core-indef-floating
         (Torch.Core.Types                      as Torch.Core.LongTypes
         ,Torch.Core.Tensor                     as Torch.Core.LongTensor
         ,Torch.Core.Storage                    as Torch.Core.LongStorage
@@ -223,6 +238,8 @@ library
         ,TensorLapack     as THLongTensorLapack
         ,TensorMath       as THLongTensorMath
         ,TensorMathSigned as THLongTensorMath
+        ,TensorMathFloating as THLongTensorMathFloating
+        ,TensorRandomFloating as THLongTensorRandomFloating
         ,TensorRandom     as THLongTensorRandom)
 
     , hasktorch-core-indef-floating
