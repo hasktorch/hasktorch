@@ -13,15 +13,15 @@ library
       SigTypes
     -- , Blas
     -- , Lapack
-    , StorageCopy
     , Storage
-    , TensorConv
-    , TensorCopy
-    , Tensor
-    , TensorLapack
-    , TensorMath
-    , TensorRandom
-    -- , Vector
+    , StorageCopy
+    -- --, TensorConv
+    -- , TensorCopy
+    -- , Tensor
+    -- -- , TensorLapack
+    -- -- , TensorMath
+    -- -- , TensorRandom
+    -- -- , Vector
 
   default-language: Haskell2010
   hs-source-dirs: src

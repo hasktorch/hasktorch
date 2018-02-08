@@ -30,10 +30,10 @@ library
     -- done
     , Torch.Class.Storage
     , Torch.Class.Storage.Copy
-    , Torch.Class.Tensor
-    , Torch.Class.Tensor.Conv
-    , Torch.Class.Tensor.Copy
-    , Torch.Class.Tensor.Lapack
-    , Torch.Class.Tensor.Math
-    , Torch.Class.Tensor.Random
+    --, Torch.Class.Tensor
+    --, Torch.Class.Tensor.Conv
+    --, Torch.Class.Tensor.Copy
+    --, Torch.Class.Tensor.Lapack
+    --, Torch.Class.Tensor.Math
+    --, Torch.Class.Tensor.Random
 

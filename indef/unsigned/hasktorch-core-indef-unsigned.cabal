@@ -34,16 +34,16 @@ library
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
   exposed-modules:
-      Torch.Core.Tensor
+    --  Torch.Core.Tensor
 
     -- classes implementations with indefinites
-    , Torch.Core.Types
+      Torch.Core.Types
     , Torch.Core.Storage
     , Torch.Core.Storage.Copy
-    , Torch.Core.Tensor.Dynamic
-    , Torch.Core.Tensor.Dynamic.Copy
-    , Torch.Core.Tensor.Dynamic.Conv
-    , Torch.Core.Tensor.Dynamic.Lapack
-    , Torch.Core.Tensor.Dynamic.Math
-    , Torch.Core.Tensor.Dynamic.Random
+    -- , Torch.Core.Tensor.Dynamic
+    -- , Torch.Core.Tensor.Dynamic.Copy
+    --, Torch.Core.Tensor.Dynamic.Conv
+    --, Torch.Core.Tensor.Dynamic.Lapack
+    --, Torch.Core.Tensor.Dynamic.Math
+    --, Torch.Core.Tensor.Dynamic.Random
 

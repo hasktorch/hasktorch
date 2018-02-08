@@ -19,15 +19,15 @@ import Foreign.C.String
 import Foreign.C.Types
 import THTypes
 
-import THDoubleTensor
-import THDoubleTensorLapack
-import THDoubleTensorMath
-import THDoubleTensorRandom
+-- import THDoubleTensor
+-- import THDoubleTensorLapack
+-- import THDoubleTensorMath
+-- import THDoubleTensorRandom
 
-import Torch.Core.Tensor.Types
-import Torch.Raw.Tensor.Generic
+-- import Torch.Core.Tensor.Types
+-- import Torch.Raw.Tensor.Generic
 import qualified Torch.Core.Tensor.Dim as Dim
-import qualified Torch.Raw.Tensor.Generic as Gen
+-- import qualified Torch.Raw.Tensor.Generic as Gen
 
 data TorchException
   = MathException Text
@@ -70,6 +70,7 @@ foreign import ccall "THGeneral.h.in THSetErrorHandler"
 foreign import ccall "THTensorLapack.h THDoubleTensor_potrf"
   c_safe_THDoubleTensor_potrf :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> Ptr CChar -> IO ()
 
+{-
 lapackTest :: IO ()
 lapackTest = do
   putStrLn "Setting error handler"
@@ -97,3 +98,4 @@ test = do
   c_THSetErrorHandler p_errorHandler
   lapackTest
   putStrLn "Done"
+  -}
