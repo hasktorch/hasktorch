@@ -17,9 +17,7 @@ import GHC.Word
 
 type CTensor = CTHByteTensor
 type CStorage = CTHByteStorage
-type CReal = CChar
--- FIXME: should be:
--- type CReal = CUChar
+type CReal = CUChar
 type CAccReal = CLong
 type HsReal = Word8
 type HsAccReal = Word64

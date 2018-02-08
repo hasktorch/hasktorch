@@ -7,7 +7,8 @@ module THByteTensorRandom
   , c_bernoulli
   , c_bernoulli_FloatTensor
   , c_bernoulli_DoubleTensor
-  , c_bernoulli_Tensor
+  , c_getRNGState
+  , c_setRNGState
   , p_random
   , p_clampedRandom
   , p_cappedRandom
@@ -15,7 +16,8 @@ module THByteTensorRandom
   , p_bernoulli
   , p_bernoulli_FloatTensor
   , p_bernoulli_DoubleTensor
-  , p_bernoulli_Tensor
+  , p_getRNGState
+  , p_setRNGState
   ) where
 
 import Foreign
@@ -52,9 +54,13 @@ foreign import ccall "THTensorRandom.h THByteTensor_bernoulli_FloatTensor"
 foreign import ccall "THTensorRandom.h THByteTensor_bernoulli_DoubleTensor"
   c_bernoulli_DoubleTensor :: Ptr CTHByteTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
 
--- | c_bernoulli_Tensor :  self _generator p -> void
-foreign import ccall "THTensorRandom.h THByteTensor_bernoulli_Tensor"
-  c_bernoulli_Tensor :: Ptr CTHByteTensor -> Ptr CTHGenerator -> Ptr CTHByteTensor -> IO ()
+-- | c_getRNGState :  _generator self -> void
+foreign import ccall "THTensorRandom.h THByteTensor_getRNGState"
+  c_getRNGState :: Ptr CTHGenerator -> Ptr CTHByteTensor -> IO ()
+
+-- | c_setRNGState :  _generator self -> void
+foreign import ccall "THTensorRandom.h THByteTensor_setRNGState"
+  c_setRNGState :: Ptr CTHGenerator -> Ptr CTHByteTensor -> IO ()
 
 -- | p_random : Pointer to function : self _generator -> void
 foreign import ccall "THTensorRandom.h &THByteTensor_random"
@@ -84,6 +90,10 @@ foreign import ccall "THTensorRandom.h &THByteTensor_bernoulli_FloatTensor"
 foreign import ccall "THTensorRandom.h &THByteTensor_bernoulli_DoubleTensor"
   p_bernoulli_DoubleTensor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
 
--- | p_bernoulli_Tensor : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &THByteTensor_bernoulli_Tensor"
-  p_bernoulli_Tensor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHGenerator -> Ptr CTHByteTensor -> IO ())
+-- | p_getRNGState : Pointer to function : _generator self -> void
+foreign import ccall "THTensorRandom.h &THByteTensor_getRNGState"
+  p_getRNGState :: FunPtr (Ptr CTHGenerator -> Ptr CTHByteTensor -> IO ())
+
+-- | p_setRNGState : Pointer to function : _generator self -> void
+foreign import ccall "THTensorRandom.h &THByteTensor_setRNGState"
+  p_setRNGState :: FunPtr (Ptr CTHGenerator -> Ptr CTHByteTensor -> IO ())

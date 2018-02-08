@@ -111,7 +111,7 @@ renderHaskellType tc tt =
 type2SpliceReal :: TemplateType -> Text
 type2SpliceReal = \case
   GenByte    -> "Byte"
-  GenChar    -> "Byte"
+  GenChar    -> "Char"
   GenDouble  -> "Double"
   GenFloat   -> "Float"
   GenHalf    -> "Half"

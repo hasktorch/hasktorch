@@ -8,7 +8,7 @@ import qualified Foreign.Marshal.Array as FM
 import qualified SigTypes    as Sig
 import qualified Storage     as Sig
 import qualified StorageCopy as Sig
-import qualified Torch.Class.Storage.Copy as Class
+import qualified Torch.Class.C.Storage.Copy as Class
 
 --import qualified THLongStorage   as L
 --import qualified THFloatStorage  as F
@@ -30,7 +30,7 @@ copyType newPtr cfun t = do
 instance Class.StorageCopy Storage where
   rawCopy :: Storage -> IO [HsReal]
   rawCopy s = do
-    sz <- withForeignPtr (storage s) (\s' -> let CPtrdiff pd = Sig.c_size s' in pure pd)
+    sz <- withForeignPtr (storage s) (\s' -> fromIntegral <$> Sig.c_size s')
     res <- FM.mallocArray (fromIntegral sz)
     withForeignPtr (storage s) (`Sig.c_rawCopy` res)
     (fmap.fmap) c2hsReal (FM.peekArray (fromIntegral sz) res)

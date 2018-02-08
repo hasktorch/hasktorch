@@ -67,8 +67,10 @@ library
       THRandom
       THSize
       THStorage
-      THByteBlas
-      THByteLapack
+
+      -- THByteBlas
+      -- THByteLapack
+      -- THByteVector
       THByteNN
       THByteStorage
       THByteStorageCopy
@@ -78,9 +80,10 @@ library
       THByteTensorLapack
       THByteTensorMath
       THByteTensorRandom
-      THByteVector
-      THDoubleBlas
-      THDoubleLapack
+
+      -- THDoubleBlas
+      -- THDoubleLapack
+      -- THDoubleVector
       THDoubleNN
       THDoubleStorage
       THDoubleStorageCopy
@@ -90,9 +93,10 @@ library
       THDoubleTensorLapack
       THDoubleTensorMath
       THDoubleTensorRandom
-      THDoubleVector
-      THFloatBlas
-      THFloatLapack
+
+      -- THFloatBlas
+      -- THFloatLapack
+      -- THFloatVector
       THFloatNN
       THFloatStorage
       THFloatStorageCopy
@@ -102,21 +106,23 @@ library
       THFloatTensorLapack
       THFloatTensorMath
       THFloatTensorRandom
-      THFloatVector
-      THHalfBlas
-      THHalfLapack
-      THHalfNN
-      THHalfStorage
-      THHalfStorageCopy
-      THHalfTensor
-      THHalfTensorConv
-      THHalfTensorCopy
-      THHalfTensorLapack
-      THHalfTensorMath
-      THHalfTensorRandom
-      THHalfVector
-      THIntBlas
-      THIntLapack
+
+      -- -- THHalfBlas
+      -- -- THHalfLapack
+      -- -- THHalfVector
+      -- THHalfNN
+      -- THHalfStorage
+      -- THHalfStorageCopy
+      -- THHalfTensor
+      -- THHalfTensorConv
+      -- THHalfTensorCopy
+      -- THHalfTensorLapack
+      -- THHalfTensorMath
+      -- THHalfTensorRandom
+
+      -- THIntBlas
+      -- THIntLapack
+      -- THIntVector
       THIntNN
       THIntStorage
       THIntStorageCopy
@@ -126,9 +132,10 @@ library
       THIntTensorLapack
       THIntTensorMath
       THIntTensorRandom
-      THIntVector
-      THLongBlas
-      THLongLapack
+
+      -- THLongBlas
+      -- THLongLapack
+      -- THLongVector
       THLongNN
       THLongStorage
       THLongStorageCopy
@@ -138,9 +145,10 @@ library
       THLongTensorLapack
       THLongTensorMath
       THLongTensorRandom
-      THLongVector
-      THShortBlas
-      THShortLapack
+
+      -- THShortBlas
+      -- THShortLapack
+      -- THShortVector
       THShortNN
       THShortStorage
       THShortStorageCopy
@@ -150,7 +158,6 @@ library
       THShortTensorLapack
       THShortTensorMath
       THShortTensorRandom
-      THShortVector
   other-modules:
       Paths_hasktorch_raw
 

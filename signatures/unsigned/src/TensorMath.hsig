@@ -21,12 +21,12 @@ c_gather       :: Ptr CTensor -> Ptr CTensor -> CInt -> Ptr CTHLongTensor -> IO 
 c_scatter      :: Ptr CTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTensor -> IO ()
 c_scatterAdd   :: Ptr CTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTensor -> IO ()
 c_scatterFill  :: Ptr CTensor -> CInt -> Ptr CTHLongTensor -> CReal -> IO ()
-c_dot          :: Ptr CTensor -> Ptr CTensor -> CAccReal
-c_minall       :: Ptr CTensor -> CReal
-c_maxall       :: Ptr CTensor -> CReal
-c_medianall    :: Ptr CTensor -> CReal
-c_sumall       :: Ptr CTensor -> CAccReal
-c_prodall      :: Ptr CTensor -> CAccReal
+c_dot          :: Ptr CTensor -> Ptr CTensor -> IO CAccReal
+c_minall       :: Ptr CTensor -> IO CReal
+c_maxall       :: Ptr CTensor -> IO CReal
+c_medianall    :: Ptr CTensor -> IO CReal
+c_sumall       :: Ptr CTensor -> IO CAccReal
+c_prodall      :: Ptr CTensor -> IO CAccReal
 c_add          :: Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
 c_sub          :: Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
 c_add_scaled   :: Ptr CTensor -> Ptr CTensor -> CReal -> CReal -> IO ()
@@ -61,7 +61,7 @@ c_addr         :: Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor ->
 c_addbmm       :: Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_baddbmm      :: Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_match        :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
-c_numel        :: Ptr CTensor -> CPtrdiff
+c_numel        :: Ptr CTensor -> IO CPtrdiff
 c_max          :: Ptr CTensor -> Ptr CTHLongTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
 c_min          :: Ptr CTensor -> Ptr CTHLongTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
 c_kthvalue     :: Ptr CTensor -> Ptr CTHLongTensor -> Ptr CTensor -> CLLong -> CInt -> CInt -> IO ()
@@ -72,7 +72,7 @@ c_prod         :: Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
 c_cumsum       :: Ptr CTensor -> Ptr CTensor -> CInt -> IO ()
 c_cumprod      :: Ptr CTensor -> Ptr CTensor -> CInt -> IO ()
 c_sign         :: Ptr CTensor -> Ptr CTensor -> IO ()
-c_trace        :: Ptr CTensor -> CAccReal
+c_trace        :: Ptr CTensor -> IO CAccReal
 c_cross        :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CInt -> IO ()
 c_cmax         :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_cmin         :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
@@ -94,7 +94,7 @@ c_tril         :: Ptr CTensor -> Ptr CTensor -> CLLong -> IO ()
 c_triu         :: Ptr CTensor -> Ptr CTensor -> CLLong -> IO ()
 c_cat          :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CInt -> IO ()
 c_catArray     :: Ptr CTensor -> Ptr (Ptr CTensor) -> CInt -> CInt -> IO ()
-c_equal        :: Ptr CTensor -> Ptr CTensor -> CInt
+c_equal        :: Ptr CTensor -> Ptr CTensor -> IO CInt
 c_ltValue      :: Ptr CTHByteTensor -> Ptr CTensor -> CReal -> IO ()
 c_leValue      :: Ptr CTHByteTensor -> Ptr CTensor -> CReal -> IO ()
 c_gtValue      :: Ptr CTHByteTensor -> Ptr CTensor -> CReal -> IO ()

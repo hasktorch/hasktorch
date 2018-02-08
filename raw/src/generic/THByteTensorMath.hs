@@ -114,6 +114,8 @@ module THByteTensorMath
   , c_geTensorT
   , c_neTensorT
   , c_eqTensorT
+  , c_logicalall
+  , c_logicalany
   , p_fill
   , p_zero
   , p_maskedFill
@@ -228,6 +230,8 @@ module THByteTensorMath
   , p_geTensorT
   , p_neTensorT
   , p_eqTensorT
+  , p_logicalall
+  , p_logicalany
   ) where
 
 import Foreign
@@ -238,7 +242,7 @@ import Data.Int
 
 -- | c_fill :  r_ value -> void
 foreign import ccall "THTensorMath.h THByteTensor_fill"
-  c_fill :: Ptr CTHByteTensor -> CChar -> IO ()
+  c_fill :: Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_zero :  r_ -> void
 foreign import ccall "THTensorMath.h THByteTensor_zero"
@@ -246,7 +250,7 @@ foreign import ccall "THTensorMath.h THByteTensor_zero"
 
 -- | c_maskedFill :  tensor mask value -> void
 foreign import ccall "THTensorMath.h THByteTensor_maskedFill"
-  c_maskedFill :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_maskedFill :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_maskedCopy :  tensor mask src -> void
 foreign import ccall "THTensorMath.h THByteTensor_maskedCopy"
@@ -274,7 +278,7 @@ foreign import ccall "THTensorMath.h THByteTensor_indexAdd"
 
 -- | c_indexFill :  tensor dim index val -> void
 foreign import ccall "THTensorMath.h THByteTensor_indexFill"
-  c_indexFill :: Ptr CTHByteTensor -> CInt -> Ptr CTHLongTensor -> CChar -> IO ()
+  c_indexFill :: Ptr CTHByteTensor -> CInt -> Ptr CTHLongTensor -> CUChar -> IO ()
 
 -- | c_take :  tensor src index -> void
 foreign import ccall "THTensorMath.h THByteTensor_take"
@@ -298,7 +302,7 @@ foreign import ccall "THTensorMath.h THByteTensor_scatterAdd"
 
 -- | c_scatterFill :  tensor dim index val -> void
 foreign import ccall "THTensorMath.h THByteTensor_scatterFill"
-  c_scatterFill :: Ptr CTHByteTensor -> CInt -> Ptr CTHLongTensor -> CChar -> IO ()
+  c_scatterFill :: Ptr CTHByteTensor -> CInt -> Ptr CTHLongTensor -> CUChar -> IO ()
 
 -- | c_dot :  t src -> accreal
 foreign import ccall "THTensorMath.h THByteTensor_dot"
@@ -306,15 +310,15 @@ foreign import ccall "THTensorMath.h THByteTensor_dot"
 
 -- | c_minall :  t -> real
 foreign import ccall "THTensorMath.h THByteTensor_minall"
-  c_minall :: Ptr CTHByteTensor -> IO (CChar)
+  c_minall :: Ptr CTHByteTensor -> IO (CUChar)
 
 -- | c_maxall :  t -> real
 foreign import ccall "THTensorMath.h THByteTensor_maxall"
-  c_maxall :: Ptr CTHByteTensor -> IO (CChar)
+  c_maxall :: Ptr CTHByteTensor -> IO (CUChar)
 
 -- | c_medianall :  t -> real
 foreign import ccall "THTensorMath.h THByteTensor_medianall"
-  c_medianall :: Ptr CTHByteTensor -> IO (CChar)
+  c_medianall :: Ptr CTHByteTensor -> IO (CUChar)
 
 -- | c_sumall :  t -> accreal
 foreign import ccall "THTensorMath.h THByteTensor_sumall"
@@ -326,67 +330,67 @@ foreign import ccall "THTensorMath.h THByteTensor_prodall"
 
 -- | c_add :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_add"
-  c_add :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_add :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_sub :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_sub"
-  c_sub :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_sub :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_add_scaled :  r_ t value alpha -> void
 foreign import ccall "THTensorMath.h THByteTensor_add_scaled"
-  c_add_scaled :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> CChar -> IO ()
+  c_add_scaled :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> CUChar -> IO ()
 
 -- | c_sub_scaled :  r_ t value alpha -> void
 foreign import ccall "THTensorMath.h THByteTensor_sub_scaled"
-  c_sub_scaled :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> CChar -> IO ()
+  c_sub_scaled :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> CUChar -> IO ()
 
 -- | c_mul :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_mul"
-  c_mul :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_mul :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_div :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_div"
-  c_div :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_div :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_lshift :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_lshift"
-  c_lshift :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_lshift :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_rshift :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_rshift"
-  c_rshift :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_rshift :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_fmod :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_fmod"
-  c_fmod :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_fmod :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_remainder :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_remainder"
-  c_remainder :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_remainder :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_clamp :  r_ t min_value max_value -> void
 foreign import ccall "THTensorMath.h THByteTensor_clamp"
-  c_clamp :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> CChar -> IO ()
+  c_clamp :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> CUChar -> IO ()
 
 -- | c_bitand :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_bitand"
-  c_bitand :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_bitand :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_bitor :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_bitor"
-  c_bitor :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_bitor :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_bitxor :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_bitxor"
-  c_bitxor :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_bitxor :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_cadd :  r_ t value src -> void
 foreign import ccall "THTensorMath.h THByteTensor_cadd"
-  c_cadd :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> IO ()
+  c_cadd :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> IO ()
 
 -- | c_csub :  self src1 value src2 -> void
 foreign import ccall "THTensorMath.h THByteTensor_csub"
-  c_csub :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> IO ()
+  c_csub :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> IO ()
 
 -- | c_cmul :  r_ t src -> void
 foreign import ccall "THTensorMath.h THByteTensor_cmul"
@@ -430,35 +434,35 @@ foreign import ccall "THTensorMath.h THByteTensor_cbitxor"
 
 -- | c_addcmul :  r_ t value src1 src2 -> void
 foreign import ccall "THTensorMath.h THByteTensor_addcmul"
-  c_addcmul :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
+  c_addcmul :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
 
 -- | c_addcdiv :  r_ t value src1 src2 -> void
 foreign import ccall "THTensorMath.h THByteTensor_addcdiv"
-  c_addcdiv :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
+  c_addcdiv :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
 
 -- | c_addmv :  r_ beta t alpha mat vec -> void
 foreign import ccall "THTensorMath.h THByteTensor_addmv"
-  c_addmv :: Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
+  c_addmv :: Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
 
 -- | c_addmm :  r_ beta t alpha mat1 mat2 -> void
 foreign import ccall "THTensorMath.h THByteTensor_addmm"
-  c_addmm :: Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
+  c_addmm :: Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
 
 -- | c_addr :  r_ beta t alpha vec1 vec2 -> void
 foreign import ccall "THTensorMath.h THByteTensor_addr"
-  c_addr :: Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
+  c_addr :: Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
 
 -- | c_addbmm :  r_ beta t alpha batch1 batch2 -> void
 foreign import ccall "THTensorMath.h THByteTensor_addbmm"
-  c_addbmm :: Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
+  c_addbmm :: Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
 
 -- | c_baddbmm :  r_ beta t alpha batch1 batch2 -> void
 foreign import ccall "THTensorMath.h THByteTensor_baddbmm"
-  c_baddbmm :: Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
+  c_baddbmm :: Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
 
 -- | c_match :  r_ m1 m2 gain -> void
 foreign import ccall "THTensorMath.h THByteTensor_match"
-  c_match :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_match :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_numel :  t -> ptrdiff_t
 foreign import ccall "THTensorMath.h THByteTensor_numel"
@@ -522,11 +526,11 @@ foreign import ccall "THTensorMath.h THByteTensor_cmin"
 
 -- | c_cmaxValue :  r t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_cmaxValue"
-  c_cmaxValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_cmaxValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_cminValue :  r t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_cminValue"
-  c_cminValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_cminValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_zeros :  r_ size -> void
 foreign import ccall "THTensorMath.h THByteTensor_zeros"
@@ -598,51 +602,51 @@ foreign import ccall "THTensorMath.h THByteTensor_equal"
 
 -- | c_ltValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_ltValue"
-  c_ltValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_ltValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_leValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_leValue"
-  c_leValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_leValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_gtValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_gtValue"
-  c_gtValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_gtValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_geValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_geValue"
-  c_geValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_geValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_neValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_neValue"
-  c_neValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_neValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_eqValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_eqValue"
-  c_eqValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_eqValue :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_ltValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_ltValueT"
-  c_ltValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_ltValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_leValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_leValueT"
-  c_leValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_leValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_gtValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_gtValueT"
-  c_gtValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_gtValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_geValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_geValueT"
-  c_geValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_geValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_neValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_neValueT"
-  c_neValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_neValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_eqValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THByteTensor_eqValueT"
-  c_eqValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ()
+  c_eqValueT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ()
 
 -- | c_ltTensor :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THByteTensor_ltTensor"
@@ -692,9 +696,17 @@ foreign import ccall "THTensorMath.h THByteTensor_neTensorT"
 foreign import ccall "THTensorMath.h THByteTensor_eqTensorT"
   c_eqTensorT :: Ptr CTHByteTensor -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ()
 
+-- | c_logicalall :  self -> int
+foreign import ccall "THTensorMath.h THByteTensor_logicalall"
+  c_logicalall :: Ptr CTHByteTensor -> IO (CInt)
+
+-- | c_logicalany :  self -> int
+foreign import ccall "THTensorMath.h THByteTensor_logicalany"
+  c_logicalany :: Ptr CTHByteTensor -> IO (CInt)
+
 -- | p_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_fill"
-  p_fill :: FunPtr (Ptr CTHByteTensor -> CChar -> IO ())
+  p_fill :: FunPtr (Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_zero : Pointer to function : r_ -> void
 foreign import ccall "THTensorMath.h &THByteTensor_zero"
@@ -702,7 +714,7 @@ foreign import ccall "THTensorMath.h &THByteTensor_zero"
 
 -- | p_maskedFill : Pointer to function : tensor mask value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_maskedFill"
-  p_maskedFill :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_maskedFill :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_maskedCopy : Pointer to function : tensor mask src -> void
 foreign import ccall "THTensorMath.h &THByteTensor_maskedCopy"
@@ -730,7 +742,7 @@ foreign import ccall "THTensorMath.h &THByteTensor_indexAdd"
 
 -- | p_indexFill : Pointer to function : tensor dim index val -> void
 foreign import ccall "THTensorMath.h &THByteTensor_indexFill"
-  p_indexFill :: FunPtr (Ptr CTHByteTensor -> CInt -> Ptr CTHLongTensor -> CChar -> IO ())
+  p_indexFill :: FunPtr (Ptr CTHByteTensor -> CInt -> Ptr CTHLongTensor -> CUChar -> IO ())
 
 -- | p_take : Pointer to function : tensor src index -> void
 foreign import ccall "THTensorMath.h &THByteTensor_take"
@@ -754,7 +766,7 @@ foreign import ccall "THTensorMath.h &THByteTensor_scatterAdd"
 
 -- | p_scatterFill : Pointer to function : tensor dim index val -> void
 foreign import ccall "THTensorMath.h &THByteTensor_scatterFill"
-  p_scatterFill :: FunPtr (Ptr CTHByteTensor -> CInt -> Ptr CTHLongTensor -> CChar -> IO ())
+  p_scatterFill :: FunPtr (Ptr CTHByteTensor -> CInt -> Ptr CTHLongTensor -> CUChar -> IO ())
 
 -- | p_dot : Pointer to function : t src -> accreal
 foreign import ccall "THTensorMath.h &THByteTensor_dot"
@@ -762,15 +774,15 @@ foreign import ccall "THTensorMath.h &THByteTensor_dot"
 
 -- | p_minall : Pointer to function : t -> real
 foreign import ccall "THTensorMath.h &THByteTensor_minall"
-  p_minall :: FunPtr (Ptr CTHByteTensor -> IO (CChar))
+  p_minall :: FunPtr (Ptr CTHByteTensor -> IO (CUChar))
 
 -- | p_maxall : Pointer to function : t -> real
 foreign import ccall "THTensorMath.h &THByteTensor_maxall"
-  p_maxall :: FunPtr (Ptr CTHByteTensor -> IO (CChar))
+  p_maxall :: FunPtr (Ptr CTHByteTensor -> IO (CUChar))
 
 -- | p_medianall : Pointer to function : t -> real
 foreign import ccall "THTensorMath.h &THByteTensor_medianall"
-  p_medianall :: FunPtr (Ptr CTHByteTensor -> IO (CChar))
+  p_medianall :: FunPtr (Ptr CTHByteTensor -> IO (CUChar))
 
 -- | p_sumall : Pointer to function : t -> accreal
 foreign import ccall "THTensorMath.h &THByteTensor_sumall"
@@ -782,67 +794,67 @@ foreign import ccall "THTensorMath.h &THByteTensor_prodall"
 
 -- | p_add : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_add"
-  p_add :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_add :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_sub : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_sub"
-  p_sub :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_sub :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_add_scaled : Pointer to function : r_ t value alpha -> void
 foreign import ccall "THTensorMath.h &THByteTensor_add_scaled"
-  p_add_scaled :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> CChar -> IO ())
+  p_add_scaled :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> CUChar -> IO ())
 
 -- | p_sub_scaled : Pointer to function : r_ t value alpha -> void
 foreign import ccall "THTensorMath.h &THByteTensor_sub_scaled"
-  p_sub_scaled :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> CChar -> IO ())
+  p_sub_scaled :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> CUChar -> IO ())
 
 -- | p_mul : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_mul"
-  p_mul :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_mul :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_div : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_div"
-  p_div :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_div :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_lshift : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_lshift"
-  p_lshift :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_lshift :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_rshift : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_rshift"
-  p_rshift :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_rshift :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_fmod : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_fmod"
-  p_fmod :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_fmod :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_remainder : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_remainder"
-  p_remainder :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_remainder :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_clamp : Pointer to function : r_ t min_value max_value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_clamp"
-  p_clamp :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> CChar -> IO ())
+  p_clamp :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> CUChar -> IO ())
 
 -- | p_bitand : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_bitand"
-  p_bitand :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_bitand :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_bitor : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_bitor"
-  p_bitor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_bitor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_bitxor : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_bitxor"
-  p_bitxor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_bitxor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_cadd : Pointer to function : r_ t value src -> void
 foreign import ccall "THTensorMath.h &THByteTensor_cadd"
-  p_cadd :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> IO ())
+  p_cadd :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> IO ())
 
 -- | p_csub : Pointer to function : self src1 value src2 -> void
 foreign import ccall "THTensorMath.h &THByteTensor_csub"
-  p_csub :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> IO ())
+  p_csub :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> IO ())
 
 -- | p_cmul : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THByteTensor_cmul"
@@ -886,35 +898,35 @@ foreign import ccall "THTensorMath.h &THByteTensor_cbitxor"
 
 -- | p_addcmul : Pointer to function : r_ t value src1 src2 -> void
 foreign import ccall "THTensorMath.h &THByteTensor_addcmul"
-  p_addcmul :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
+  p_addcmul :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
 
 -- | p_addcdiv : Pointer to function : r_ t value src1 src2 -> void
 foreign import ccall "THTensorMath.h &THByteTensor_addcdiv"
-  p_addcdiv :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
+  p_addcdiv :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
 
 -- | p_addmv : Pointer to function : r_ beta t alpha mat vec -> void
 foreign import ccall "THTensorMath.h &THByteTensor_addmv"
-  p_addmv :: FunPtr (Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
+  p_addmv :: FunPtr (Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
 
 -- | p_addmm : Pointer to function : r_ beta t alpha mat1 mat2 -> void
 foreign import ccall "THTensorMath.h &THByteTensor_addmm"
-  p_addmm :: FunPtr (Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
+  p_addmm :: FunPtr (Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
 
 -- | p_addr : Pointer to function : r_ beta t alpha vec1 vec2 -> void
 foreign import ccall "THTensorMath.h &THByteTensor_addr"
-  p_addr :: FunPtr (Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
+  p_addr :: FunPtr (Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
 
 -- | p_addbmm : Pointer to function : r_ beta t alpha batch1 batch2 -> void
 foreign import ccall "THTensorMath.h &THByteTensor_addbmm"
-  p_addbmm :: FunPtr (Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
+  p_addbmm :: FunPtr (Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
 
 -- | p_baddbmm : Pointer to function : r_ beta t alpha batch1 batch2 -> void
 foreign import ccall "THTensorMath.h &THByteTensor_baddbmm"
-  p_baddbmm :: FunPtr (Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> CChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
+  p_baddbmm :: FunPtr (Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> CUChar -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
 
 -- | p_match : Pointer to function : r_ m1 m2 gain -> void
 foreign import ccall "THTensorMath.h &THByteTensor_match"
-  p_match :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_match :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_numel : Pointer to function : t -> ptrdiff_t
 foreign import ccall "THTensorMath.h &THByteTensor_numel"
@@ -978,11 +990,11 @@ foreign import ccall "THTensorMath.h &THByteTensor_cmin"
 
 -- | p_cmaxValue : Pointer to function : r t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_cmaxValue"
-  p_cmaxValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_cmaxValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_cminValue : Pointer to function : r t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_cminValue"
-  p_cminValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_cminValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_zeros : Pointer to function : r_ size -> void
 foreign import ccall "THTensorMath.h &THByteTensor_zeros"
@@ -1054,51 +1066,51 @@ foreign import ccall "THTensorMath.h &THByteTensor_equal"
 
 -- | p_ltValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_ltValue"
-  p_ltValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_ltValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_leValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_leValue"
-  p_leValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_leValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_gtValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_gtValue"
-  p_gtValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_gtValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_geValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_geValue"
-  p_geValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_geValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_neValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_neValue"
-  p_neValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_neValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_eqValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_eqValue"
-  p_eqValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_eqValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_ltValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_ltValueT"
-  p_ltValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_ltValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_leValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_leValueT"
-  p_leValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_leValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_gtValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_gtValueT"
-  p_gtValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_gtValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_geValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_geValueT"
-  p_geValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_geValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_neValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_neValueT"
-  p_neValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_neValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_eqValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THByteTensor_eqValueT"
-  p_eqValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CChar -> IO ())
+  p_eqValueT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> CUChar -> IO ())
 
 -- | p_ltTensor : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THByteTensor_ltTensor"
@@ -1147,3 +1159,11 @@ foreign import ccall "THTensorMath.h &THByteTensor_neTensorT"
 -- | p_eqTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THByteTensor_eqTensorT"
   p_eqTensorT :: FunPtr (Ptr CTHByteTensor -> Ptr CTHByteTensor -> Ptr CTHByteTensor -> IO ())
+
+-- | p_logicalall : Pointer to function : self -> int
+foreign import ccall "THTensorMath.h &THByteTensor_logicalall"
+  p_logicalall :: FunPtr (Ptr CTHByteTensor -> IO (CInt))
+
+-- | p_logicalany : Pointer to function : self -> int
+foreign import ccall "THTensorMath.h &THByteTensor_logicalany"
+  p_logicalany :: FunPtr (Ptr CTHByteTensor -> IO (CInt))

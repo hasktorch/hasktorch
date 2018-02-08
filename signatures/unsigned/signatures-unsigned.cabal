@@ -15,9 +15,9 @@ library
     -- , Lapack
     , Storage
     , StorageCopy
-    -- --, TensorConv
+    , Tensor
     -- , TensorCopy
-    -- , Tensor
+    --, TensorConv
     -- -- , TensorLapack
     -- -- , TensorMath
     -- -- , TensorRandom

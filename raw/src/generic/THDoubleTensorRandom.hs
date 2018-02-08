@@ -7,7 +7,6 @@ module THDoubleTensorRandom
   , c_bernoulli
   , c_bernoulli_FloatTensor
   , c_bernoulli_DoubleTensor
-  , c_bernoulli_Tensor
   , c_uniform
   , c_normal
   , c_normal_means
@@ -27,7 +26,6 @@ module THDoubleTensorRandom
   , p_bernoulli
   , p_bernoulli_FloatTensor
   , p_bernoulli_DoubleTensor
-  , p_bernoulli_Tensor
   , p_uniform
   , p_normal
   , p_normal_means
@@ -75,10 +73,6 @@ foreign import ccall "THTensorRandom.h THDoubleTensor_bernoulli_FloatTensor"
 -- | c_bernoulli_DoubleTensor :  self _generator p -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_bernoulli_DoubleTensor"
   c_bernoulli_DoubleTensor :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
-
--- | c_bernoulli_Tensor :  self _generator p -> void
-foreign import ccall "THTensorRandom.h THDoubleTensor_bernoulli_Tensor"
-  c_bernoulli_Tensor :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
 
 -- | c_uniform :  self _generator a b -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_uniform"
@@ -155,10 +149,6 @@ foreign import ccall "THTensorRandom.h &THDoubleTensor_bernoulli_FloatTensor"
 -- | p_bernoulli_DoubleTensor : Pointer to function : self _generator p -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_bernoulli_DoubleTensor"
   p_bernoulli_DoubleTensor :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
-
--- | p_bernoulli_Tensor : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &THDoubleTensor_bernoulli_Tensor"
-  p_bernoulli_Tensor :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
 
 -- | p_uniform : Pointer to function : self _generator a b -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_uniform"

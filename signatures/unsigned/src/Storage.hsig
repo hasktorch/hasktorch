@@ -6,10 +6,10 @@ import Foreign.C.Types
 import SigTypes
 
 c_data                    :: Ptr CStorage -> IO (Ptr CReal)
-c_size                    :: Ptr CStorage -> CPtrdiff
+c_size                    :: Ptr CStorage -> IO CPtrdiff
 -- c_elementSize          :: CSize
 c_set                     :: Ptr CStorage -> CPtrdiff -> CReal -> IO ()
-c_get                     :: Ptr CStorage -> CPtrdiff -> CReal
+c_get                     :: Ptr CStorage -> CPtrdiff -> IO CReal
 c_new                     :: IO (Ptr CStorage)
 c_newWithSize             :: CPtrdiff -> IO (Ptr CStorage)
 c_newWithSize1            :: CReal -> IO (Ptr CStorage)
@@ -29,10 +29,10 @@ c_resize                  :: Ptr CStorage -> CPtrdiff -> IO ()
 c_fill                    :: Ptr CStorage -> CReal -> IO ()
 
 p_data                    :: FunPtr (Ptr CStorage -> IO (Ptr CReal))
-p_size                    :: FunPtr (Ptr CStorage -> CPtrdiff)
+p_size                    :: FunPtr (Ptr CStorage -> IO CPtrdiff)
 -- p_elementSize          :: FunPtr CSize
 p_set                     :: FunPtr (Ptr CStorage -> CPtrdiff -> CReal -> IO ())
-p_get                     :: FunPtr (Ptr CStorage -> CPtrdiff -> CReal)
+p_get                     :: FunPtr (Ptr CStorage -> CPtrdiff -> IO CReal)
 p_new                     :: FunPtr (IO (Ptr CStorage))
 p_newWithSize             :: FunPtr (CPtrdiff -> IO (Ptr CStorage))
 p_newWithSize1            :: FunPtr (CReal -> IO (Ptr CStorage))

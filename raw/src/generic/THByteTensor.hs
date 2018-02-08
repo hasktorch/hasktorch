@@ -182,7 +182,7 @@ foreign import ccall "THTensor.h THByteTensor_newStrideOf"
 
 -- | c_data :  self -> real *
 foreign import ccall "THTensor.h THByteTensor_data"
-  c_data :: Ptr CTHByteTensor -> IO (Ptr CChar)
+  c_data :: Ptr CTHByteTensor -> IO (Ptr CUChar)
 
 -- | c_setFlag :  self flag -> void
 foreign import ccall "THTensor.h THByteTensor_setFlag"
@@ -402,35 +402,35 @@ foreign import ccall "THTensor.h THByteTensor_freeCopyTo"
 
 -- | c_set1d :  tensor x0 value -> void
 foreign import ccall "THTensor.h THByteTensor_set1d"
-  c_set1d :: Ptr CTHByteTensor -> CLLong -> CChar -> IO ()
+  c_set1d :: Ptr CTHByteTensor -> CLLong -> CUChar -> IO ()
 
 -- | c_set2d :  tensor x0 x1 value -> void
 foreign import ccall "THTensor.h THByteTensor_set2d"
-  c_set2d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CChar -> IO ()
+  c_set2d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CUChar -> IO ()
 
 -- | c_set3d :  tensor x0 x1 x2 value -> void
 foreign import ccall "THTensor.h THByteTensor_set3d"
-  c_set3d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CChar -> IO ()
+  c_set3d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CUChar -> IO ()
 
 -- | c_set4d :  tensor x0 x1 x2 x3 value -> void
 foreign import ccall "THTensor.h THByteTensor_set4d"
-  c_set4d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CChar -> IO ()
+  c_set4d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CUChar -> IO ()
 
 -- | c_get1d :  tensor x0 -> real
 foreign import ccall "THTensor.h THByteTensor_get1d"
-  c_get1d :: Ptr CTHByteTensor -> CLLong -> IO (CChar)
+  c_get1d :: Ptr CTHByteTensor -> CLLong -> IO (CUChar)
 
 -- | c_get2d :  tensor x0 x1 -> real
 foreign import ccall "THTensor.h THByteTensor_get2d"
-  c_get2d :: Ptr CTHByteTensor -> CLLong -> CLLong -> IO (CChar)
+  c_get2d :: Ptr CTHByteTensor -> CLLong -> CLLong -> IO (CUChar)
 
 -- | c_get3d :  tensor x0 x1 x2 -> real
 foreign import ccall "THTensor.h THByteTensor_get3d"
-  c_get3d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> IO (CChar)
+  c_get3d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> IO (CUChar)
 
 -- | c_get4d :  tensor x0 x1 x2 x3 -> real
 foreign import ccall "THTensor.h THByteTensor_get4d"
-  c_get4d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO (CChar)
+  c_get4d :: Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO (CUChar)
 
 -- | c_desc :  tensor -> THDescBuff
 foreign import ccall "THTensor.h THByteTensor_desc"
@@ -470,7 +470,7 @@ foreign import ccall "THTensor.h &THByteTensor_newStrideOf"
 
 -- | p_data : Pointer to function : self -> real *
 foreign import ccall "THTensor.h &THByteTensor_data"
-  p_data :: FunPtr (Ptr CTHByteTensor -> IO (Ptr CChar))
+  p_data :: FunPtr (Ptr CTHByteTensor -> IO (Ptr CUChar))
 
 -- | p_setFlag : Pointer to function : self flag -> void
 foreign import ccall "THTensor.h &THByteTensor_setFlag"
@@ -690,35 +690,35 @@ foreign import ccall "THTensor.h &THByteTensor_freeCopyTo"
 
 -- | p_set1d : Pointer to function : tensor x0 value -> void
 foreign import ccall "THTensor.h &THByteTensor_set1d"
-  p_set1d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CChar -> IO ())
+  p_set1d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CUChar -> IO ())
 
 -- | p_set2d : Pointer to function : tensor x0 x1 value -> void
 foreign import ccall "THTensor.h &THByteTensor_set2d"
-  p_set2d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CChar -> IO ())
+  p_set2d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CUChar -> IO ())
 
 -- | p_set3d : Pointer to function : tensor x0 x1 x2 value -> void
 foreign import ccall "THTensor.h &THByteTensor_set3d"
-  p_set3d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CChar -> IO ())
+  p_set3d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CUChar -> IO ())
 
 -- | p_set4d : Pointer to function : tensor x0 x1 x2 x3 value -> void
 foreign import ccall "THTensor.h &THByteTensor_set4d"
-  p_set4d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CChar -> IO ())
+  p_set4d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CUChar -> IO ())
 
 -- | p_get1d : Pointer to function : tensor x0 -> real
 foreign import ccall "THTensor.h &THByteTensor_get1d"
-  p_get1d :: FunPtr (Ptr CTHByteTensor -> CLLong -> IO (CChar))
+  p_get1d :: FunPtr (Ptr CTHByteTensor -> CLLong -> IO (CUChar))
 
 -- | p_get2d : Pointer to function : tensor x0 x1 -> real
 foreign import ccall "THTensor.h &THByteTensor_get2d"
-  p_get2d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> IO (CChar))
+  p_get2d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> IO (CUChar))
 
 -- | p_get3d : Pointer to function : tensor x0 x1 x2 -> real
 foreign import ccall "THTensor.h &THByteTensor_get3d"
-  p_get3d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> IO (CChar))
+  p_get3d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> IO (CUChar))
 
 -- | p_get4d : Pointer to function : tensor x0 x1 x2 x3 -> real
 foreign import ccall "THTensor.h &THByteTensor_get4d"
-  p_get4d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO (CChar))
+  p_get4d :: FunPtr (Ptr CTHByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO (CUChar))
 
 -- | p_desc : Pointer to function : tensor -> THDescBuff
 foreign import ccall "THTensor.h &THByteTensor_desc"

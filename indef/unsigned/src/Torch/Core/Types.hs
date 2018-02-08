@@ -24,7 +24,7 @@ import GHC.ForeignPtr (ForeignPtr)
 import qualified Foreign.Marshal.Array as FM
 
 import SigTypes as Sig
-import qualified Torch.Class.Internal as TypeFamilies
+import qualified Torch.Class.C.Internal as TypeFamilies
 
 newtype Storage = Storage { storage :: ForeignPtr Sig.CStorage }
   deriving (Eq, Show)

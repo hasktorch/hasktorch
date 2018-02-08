@@ -21,19 +21,19 @@ library
       base >=4.7 && <5
     , hasktorch-raw-types
   exposed-modules:
-      Torch.Class.Internal
+      Torch.Class.C.Internal
 
     -- not done
-    -- , Torch.Class.Blas
-    -- , Torch.Class.Lapack
-    -- , Torch.Class.Vector
+    -- , Torch.Class.C.Blas
+    -- , Torch.Class.C.Lapack
+    -- , Torch.Class.C.Vector
     -- done
-    , Torch.Class.Storage
-    , Torch.Class.Storage.Copy
-    --, Torch.Class.Tensor
-    --, Torch.Class.Tensor.Conv
-    --, Torch.Class.Tensor.Copy
-    --, Torch.Class.Tensor.Lapack
-    --, Torch.Class.Tensor.Math
-    --, Torch.Class.Tensor.Random
+    , Torch.Class.C.Storage
+    , Torch.Class.C.Storage.Copy
+    , Torch.Class.C.Tensor
+    --, Torch.Class.C.Tensor.Conv
+    --, Torch.Class.C.Tensor.Copy
+    --, Torch.Class.C.Tensor.Lapack
+    --, Torch.Class.C.Tensor.Math
+    --, Torch.Class.C.Tensor.Random
 

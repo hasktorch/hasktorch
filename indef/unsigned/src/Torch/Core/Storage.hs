@@ -14,7 +14,7 @@ import THTypes
 import Torch.Core.Types
 import Torch.Core.Storage.Copy ()
 import qualified Storage as Sig
-import qualified Torch.Class.Storage as Class
+import qualified Torch.Class.C.Storage as Class
 import qualified Foreign.Marshal.Array as FM
 
 asStorage :: Ptr CStorage -> IO Storage
@@ -25,18 +25,16 @@ instance Class.IsStorage Storage where
   tensordata = ptrArray2hs Sig.c_data arrayLen . storage
    where
     arrayLen :: Ptr CStorage -> IO Int
-    arrayLen p = case Sig.c_size p of { CPtrdiff pd -> pure (fromIntegral pd) }
+    arrayLen p = fromIntegral <$> Sig.c_size p
 
   size :: Storage -> IO Int64
-  size s = withForeignPtr (storage s) $ \s' -> do
-    let CPtrdiff pd = Sig.c_size s'
-    pure pd
+  size s = withForeignPtr (storage s) (fmap fromIntegral . Sig.c_size)
 
   set :: Storage -> Int64 -> HsReal -> IO ()
   set s pd v = withForeignPtr (storage s) $ \s' -> Sig.c_set s' (CPtrdiff pd) (hs2cReal v)
 
   get :: Storage -> Int64 -> IO HsReal
-  get s pd = withForeignPtr (storage s)  $ \s' -> pure . c2hsReal $ Sig.c_get s' (CPtrdiff pd)
+  get s pd = withForeignPtr (storage s)  $ \s' -> c2hsReal <$> Sig.c_get s' (CPtrdiff pd)
 
   new :: IO Storage
   new = Sig.c_new >>= asStorage

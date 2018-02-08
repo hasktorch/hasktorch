@@ -124,6 +124,7 @@ tensorRandomCases =
   , ("normal_means_stddevs", [GenFloat, GenDouble])
   , ("exponential",    [GenFloat, GenDouble])
   , ("standard_gamma", [GenFloat, GenDouble])
+
   , ("digamma",        [GenFloat, GenDouble])
   , ("trigamma",       [GenFloat, GenDouble])
   , ("polygamma",      [GenFloat, GenDouble])
@@ -134,8 +135,12 @@ tensorRandomCases =
   , ("multinomial",    [GenFloat, GenDouble])
   , ("multinomialAliasSetup", [GenFloat, GenDouble])
   , ("multinomialAliasDraw",  [GenFloat, GenDouble])
+
   , ("getRNGState", [GenByte])
   , ("setRNGState", [GenByte])
+
+  -- This keeps appearing but isn't in TH. TODO: find out what is happening
+  , ("bernoulli_Tensor", [])
   ]
 
 

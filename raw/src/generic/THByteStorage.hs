@@ -52,7 +52,7 @@ import Data.Int
 
 -- | c_data :   -> real *
 foreign import ccall "THStorage.h THByteStorage_data"
-  c_data :: Ptr CTHByteStorage -> IO (Ptr CChar)
+  c_data :: Ptr CTHByteStorage -> IO (Ptr CUChar)
 
 -- | c_size :   -> ptrdiff_t
 foreign import ccall "THStorage.h THByteStorage_size"
@@ -60,11 +60,11 @@ foreign import ccall "THStorage.h THByteStorage_size"
 
 -- | c_set :     -> void
 foreign import ccall "THStorage.h THByteStorage_set"
-  c_set :: Ptr CTHByteStorage -> CPtrdiff -> CChar -> IO ()
+  c_set :: Ptr CTHByteStorage -> CPtrdiff -> CUChar -> IO ()
 
 -- | c_get :    -> real
 foreign import ccall "THStorage.h THByteStorage_get"
-  c_get :: Ptr CTHByteStorage -> CPtrdiff -> IO (CChar)
+  c_get :: Ptr CTHByteStorage -> CPtrdiff -> IO (CUChar)
 
 -- | c_new :   -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_new"
@@ -76,19 +76,19 @@ foreign import ccall "THStorage.h THByteStorage_newWithSize"
 
 -- | c_newWithSize1 :   -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithSize1"
-  c_newWithSize1 :: CChar -> IO (Ptr CTHByteStorage)
+  c_newWithSize1 :: CUChar -> IO (Ptr CTHByteStorage)
 
 -- | c_newWithSize2 :    -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithSize2"
-  c_newWithSize2 :: CChar -> CChar -> IO (Ptr CTHByteStorage)
+  c_newWithSize2 :: CUChar -> CUChar -> IO (Ptr CTHByteStorage)
 
 -- | c_newWithSize3 :     -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithSize3"
-  c_newWithSize3 :: CChar -> CChar -> CChar -> IO (Ptr CTHByteStorage)
+  c_newWithSize3 :: CUChar -> CUChar -> CUChar -> IO (Ptr CTHByteStorage)
 
 -- | c_newWithSize4 :      -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithSize4"
-  c_newWithSize4 :: CChar -> CChar -> CChar -> CChar -> IO (Ptr CTHByteStorage)
+  c_newWithSize4 :: CUChar -> CUChar -> CUChar -> CUChar -> IO (Ptr CTHByteStorage)
 
 -- | c_newWithMapping :  filename size flags -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithMapping"
@@ -96,7 +96,7 @@ foreign import ccall "THStorage.h THByteStorage_newWithMapping"
 
 -- | c_newWithData :  data size -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithData"
-  c_newWithData :: Ptr CChar -> CPtrdiff -> IO (Ptr CTHByteStorage)
+  c_newWithData :: Ptr CUChar -> CPtrdiff -> IO (Ptr CTHByteStorage)
 
 -- | c_newWithAllocator :  size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithAllocator"
@@ -104,7 +104,7 @@ foreign import ccall "THStorage.h THByteStorage_newWithAllocator"
 
 -- | c_newWithDataAndAllocator :  data size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h THByteStorage_newWithDataAndAllocator"
-  c_newWithDataAndAllocator :: Ptr CChar -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHByteStorage)
+  c_newWithDataAndAllocator :: Ptr CUChar -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHByteStorage)
 
 -- | c_setFlag :  storage flag -> void
 foreign import ccall "THStorage.h THByteStorage_setFlag"
@@ -132,11 +132,11 @@ foreign import ccall "THStorage.h THByteStorage_resize"
 
 -- | c_fill :  storage value -> void
 foreign import ccall "THStorage.h THByteStorage_fill"
-  c_fill :: Ptr CTHByteStorage -> CChar -> IO ()
+  c_fill :: Ptr CTHByteStorage -> CUChar -> IO ()
 
 -- | p_data : Pointer to function :  -> real *
 foreign import ccall "THStorage.h &THByteStorage_data"
-  p_data :: FunPtr (Ptr CTHByteStorage -> IO (Ptr CChar))
+  p_data :: FunPtr (Ptr CTHByteStorage -> IO (Ptr CUChar))
 
 -- | p_size : Pointer to function :  -> ptrdiff_t
 foreign import ccall "THStorage.h &THByteStorage_size"
@@ -144,11 +144,11 @@ foreign import ccall "THStorage.h &THByteStorage_size"
 
 -- | p_set : Pointer to function :    -> void
 foreign import ccall "THStorage.h &THByteStorage_set"
-  p_set :: FunPtr (Ptr CTHByteStorage -> CPtrdiff -> CChar -> IO ())
+  p_set :: FunPtr (Ptr CTHByteStorage -> CPtrdiff -> CUChar -> IO ())
 
 -- | p_get : Pointer to function :   -> real
 foreign import ccall "THStorage.h &THByteStorage_get"
-  p_get :: FunPtr (Ptr CTHByteStorage -> CPtrdiff -> IO (CChar))
+  p_get :: FunPtr (Ptr CTHByteStorage -> CPtrdiff -> IO (CUChar))
 
 -- | p_new : Pointer to function :  -> THStorage *
 foreign import ccall "THStorage.h &THByteStorage_new"
@@ -160,19 +160,19 @@ foreign import ccall "THStorage.h &THByteStorage_newWithSize"
 
 -- | p_newWithSize1 : Pointer to function :  -> THStorage *
 foreign import ccall "THStorage.h &THByteStorage_newWithSize1"
-  p_newWithSize1 :: FunPtr (CChar -> IO (Ptr CTHByteStorage))
+  p_newWithSize1 :: FunPtr (CUChar -> IO (Ptr CTHByteStorage))
 
 -- | p_newWithSize2 : Pointer to function :   -> THStorage *
 foreign import ccall "THStorage.h &THByteStorage_newWithSize2"
-  p_newWithSize2 :: FunPtr (CChar -> CChar -> IO (Ptr CTHByteStorage))
+  p_newWithSize2 :: FunPtr (CUChar -> CUChar -> IO (Ptr CTHByteStorage))
 
 -- | p_newWithSize3 : Pointer to function :    -> THStorage *
 foreign import ccall "THStorage.h &THByteStorage_newWithSize3"
-  p_newWithSize3 :: FunPtr (CChar -> CChar -> CChar -> IO (Ptr CTHByteStorage))
+  p_newWithSize3 :: FunPtr (CUChar -> CUChar -> CUChar -> IO (Ptr CTHByteStorage))
 
 -- | p_newWithSize4 : Pointer to function :     -> THStorage *
 foreign import ccall "THStorage.h &THByteStorage_newWithSize4"
-  p_newWithSize4 :: FunPtr (CChar -> CChar -> CChar -> CChar -> IO (Ptr CTHByteStorage))
+  p_newWithSize4 :: FunPtr (CUChar -> CUChar -> CUChar -> CUChar -> IO (Ptr CTHByteStorage))
 
 -- | p_newWithMapping : Pointer to function : filename size flags -> THStorage *
 foreign import ccall "THStorage.h &THByteStorage_newWithMapping"
@@ -180,7 +180,7 @@ foreign import ccall "THStorage.h &THByteStorage_newWithMapping"
 
 -- | p_newWithData : Pointer to function : data size -> THStorage *
 foreign import ccall "THStorage.h &THByteStorage_newWithData"
-  p_newWithData :: FunPtr (Ptr CChar -> CPtrdiff -> IO (Ptr CTHByteStorage))
+  p_newWithData :: FunPtr (Ptr CUChar -> CPtrdiff -> IO (Ptr CTHByteStorage))
 
 -- | p_newWithAllocator : Pointer to function : size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h &THByteStorage_newWithAllocator"
@@ -188,7 +188,7 @@ foreign import ccall "THStorage.h &THByteStorage_newWithAllocator"
 
 -- | p_newWithDataAndAllocator : Pointer to function : data size allocator allocatorContext -> THStorage *
 foreign import ccall "THStorage.h &THByteStorage_newWithDataAndAllocator"
-  p_newWithDataAndAllocator :: FunPtr (Ptr CChar -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHByteStorage))
+  p_newWithDataAndAllocator :: FunPtr (Ptr CUChar -> CPtrdiff -> CTHAllocatorPtr -> Ptr () -> IO (Ptr CTHByteStorage))
 
 -- | p_setFlag : Pointer to function : storage flag -> void
 foreign import ccall "THStorage.h &THByteStorage_setFlag"
@@ -216,4 +216,4 @@ foreign import ccall "THStorage.h &THByteStorage_resize"
 
 -- | p_fill : Pointer to function : storage value -> void
 foreign import ccall "THStorage.h &THByteStorage_fill"
-  p_fill :: FunPtr (Ptr CTHByteStorage -> CChar -> IO ())
+  p_fill :: FunPtr (Ptr CTHByteStorage -> CUChar -> IO ())

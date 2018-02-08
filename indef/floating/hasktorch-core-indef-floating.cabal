@@ -31,7 +31,6 @@ library
 
   reexported-modules:
       Torch.Core.Types
-    , Torch.Core.Tensor
     , Torch.Core.Storage
     , Torch.Core.Storage.Copy
     , Torch.Core.Tensor.Dynamic
