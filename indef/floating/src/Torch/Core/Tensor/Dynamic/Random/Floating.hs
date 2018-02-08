@@ -38,12 +38,12 @@ instance Class.TensorRandomFloating Tensor where
   logNormal :: Tensor -> Ptr CTHGenerator -> HsAccReal -> HsAccReal -> IO ()
   logNormal t g ar0 ar1 = _withTensor t $ \ t' -> Sig.c_logNormal t' g (hs2cAccReal ar0) (hs2cAccReal ar1)
 
-  multinomial :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Tensor -> Int32 -> Int32 -> IO ()
-  multinomial lt g t i0 i1 = _withTensor t $ \ t' -> Sig.c_multinomial lt g t' (CInt i0) (CInt i1)
-
-  multinomialAliasSetup  :: Tensor -> Ptr CTHLongTensor -> Tensor -> IO ()
-  multinomialAliasSetup t0 g t1 = _with2Tensors t0 t1 $ \ t0' t1' -> Sig.c_multinomialAliasSetup t0' g t1'
-
-  multinomialAliasDraw   :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Tensor -> IO ()
-  multinomialAliasDraw lt0 g lt1 t = _withTensor t $ \ t' -> Sig.c_multinomialAliasDraw lt0 g lt1 t'
+--   multinomial :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Tensor -> Int32 -> Int32 -> IO ()
+--   multinomial lt g t i0 i1 = _withTensor t $ \ t' -> Sig.c_multinomial lt g t' (CInt i0) (CInt i1)
+--
+--   multinomialAliasSetup  :: Tensor -> Ptr CTHLongTensor -> Tensor -> IO ()
+--   multinomialAliasSetup t0 g t1 = _with2Tensors t0 t1 $ \ t0' t1' -> Sig.c_multinomialAliasSetup t0' g t1'
+--
+--   multinomialAliasDraw   :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Tensor -> IO ()
+--   multinomialAliasDraw lt0 g lt1 t = _withTensor t $ \ t' -> Sig.c_multinomialAliasDraw lt0 g lt1 t'
 

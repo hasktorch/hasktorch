@@ -2,11 +2,16 @@ resolver: lts-10.2
 
 packages:
 - 'codegen'
-# - 'core'
+- 'core'
 # - 'examples'
+- 'core-indef-unsigned'
+- 'core-indef-signed'
+- 'core-indef-floating'
 - 'raw'
 - 'raw-types'
-- 'raw-signatures'
+- 'raw-signatures-unsigned'
+- 'raw-signatures-signed'
+- 'raw-signatures-floating'
 - location:
     git: https://github.com/austinvhuang/c2hsc.git
     commit: e31a2cb894faf4c0cf4a3af3058152149f2b2ee3

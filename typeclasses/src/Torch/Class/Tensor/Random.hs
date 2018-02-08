@@ -26,6 +26,7 @@ class TensorRandomFloating t where
   standard_gamma         :: t -> Ptr CTHGenerator -> t -> IO ()
   cauchy                 :: t -> Ptr CTHGenerator -> HsAccReal t -> HsAccReal t -> IO ()
   logNormal              :: t -> Ptr CTHGenerator -> HsAccReal t -> HsAccReal t -> IO ()
-  multinomial            :: Ptr CTHLongTensor -> Ptr CTHGenerator -> t -> Int32 -> Int32 -> IO ()
-  multinomialAliasSetup  :: t -> Ptr CTHLongTensor -> t -> IO ()
-  multinomialAliasDraw   :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> t -> IO ()
+--  multinomial            :: Ptr CTHLongTensor -> Ptr CTHGenerator -> t -> Int32 -> Int32 -> IO ()
+--  multinomialAliasSetup  :: t -> Ptr CTHLongTensor -> t -> IO ()
+--  multinomialAliasDraw   :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> t -> IO ()
+

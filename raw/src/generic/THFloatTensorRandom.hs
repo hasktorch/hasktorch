@@ -18,9 +18,9 @@ module THFloatTensorRandom
   , c_standard_gamma
   , c_cauchy
   , c_logNormal
-  , c_multinomial
-  , c_multinomialAliasSetup
-  , c_multinomialAliasDraw
+  -- , c_multinomial
+  -- , c_multinomialAliasSetup
+  -- , c_multinomialAliasDraw
   , p_random
   , p_clampedRandom
   , p_cappedRandom
@@ -38,9 +38,9 @@ module THFloatTensorRandom
   , p_standard_gamma
   , p_cauchy
   , p_logNormal
-  , p_multinomial
-  , p_multinomialAliasSetup
-  , p_multinomialAliasDraw
+  -- , p_multinomial
+  -- , p_multinomialAliasSetup
+  -- , p_multinomialAliasDraw
   ) where
 
 import Foreign
@@ -117,17 +117,17 @@ foreign import ccall "THTensorRandom.h cauchy"
 foreign import ccall "THTensorRandom.h logNormal"
   c_logNormal :: Ptr CTHFloatTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
 
--- | c_multinomial : self _generator prob_dist n_sample with_replacement -> void
-foreign import ccall "THTensorRandom.h multinomial"
-  c_multinomial :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> CInt -> CInt -> IO ()
+-- -- | c_multinomial : self _generator prob_dist n_sample with_replacement -> void
+-- foreign import ccall "THTensorRandom.h multinomial"
+--   c_multinomial :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> CInt -> CInt -> IO ()
 
--- | c_multinomialAliasSetup : prob_dist J q -> void
-foreign import ccall "THTensorRandom.h multinomialAliasSetup"
-  c_multinomialAliasSetup :: Ptr CTHFloatTensor -> Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ()
+-- -- | c_multinomialAliasSetup : prob_dist J q -> void
+-- foreign import ccall "THTensorRandom.h multinomialAliasSetup"
+--   c_multinomialAliasSetup :: Ptr CTHFloatTensor -> Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ()
 
--- | c_multinomialAliasDraw : self _generator J q -> void
-foreign import ccall "THTensorRandom.h multinomialAliasDraw"
-  c_multinomialAliasDraw :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ()
+-- -- | c_multinomialAliasDraw : self _generator J q -> void
+-- foreign import ccall "THTensorRandom.h multinomialAliasDraw"
+--   c_multinomialAliasDraw :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ()
 
 -- |p_random : Pointer to function : self _generator -> void
 foreign import ccall "THTensorRandom.h &random"
@@ -197,14 +197,14 @@ foreign import ccall "THTensorRandom.h &cauchy"
 foreign import ccall "THTensorRandom.h &logNormal"
   p_logNormal :: FunPtr (Ptr CTHFloatTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
 
--- |p_multinomial : Pointer to function : self _generator prob_dist n_sample with_replacement -> void
-foreign import ccall "THTensorRandom.h &multinomial"
-  p_multinomial :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> CInt -> CInt -> IO ())
+-- -- |p_multinomial : Pointer to function : self _generator prob_dist n_sample with_replacement -> void
+-- foreign import ccall "THTensorRandom.h &multinomial"
+--   p_multinomial :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> CInt -> CInt -> IO ())
 
--- |p_multinomialAliasSetup : Pointer to function : prob_dist J q -> void
-foreign import ccall "THTensorRandom.h &multinomialAliasSetup"
-  p_multinomialAliasSetup :: FunPtr (Ptr CTHFloatTensor -> Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ())
+-- -- |p_multinomialAliasSetup : Pointer to function : prob_dist J q -> void
+-- foreign import ccall "THTensorRandom.h &multinomialAliasSetup"
+--   p_multinomialAliasSetup :: FunPtr (Ptr CTHFloatTensor -> Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ())
 
--- |p_multinomialAliasDraw : Pointer to function : self _generator J q -> void
-foreign import ccall "THTensorRandom.h &multinomialAliasDraw"
-  p_multinomialAliasDraw :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ())
+-- -- |p_multinomialAliasDraw : Pointer to function : self _generator J q -> void
+-- foreign import ccall "THTensorRandom.h &multinomialAliasDraw"
+--   p_multinomialAliasDraw :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ())

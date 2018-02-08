@@ -14,8 +14,8 @@ c_exponential            :: Ptr CTensor -> Ptr CTHGenerator -> CAccReal -> IO ()
 c_standard_gamma         :: Ptr CTensor -> Ptr CTHGenerator -> Ptr CTensor -> IO ()
 c_cauchy                 :: Ptr CTensor -> Ptr CTHGenerator -> CAccReal -> CAccReal -> IO ()
 c_logNormal              :: Ptr CTensor -> Ptr CTHGenerator -> CAccReal -> CAccReal -> IO ()
-c_multinomial            :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTensor -> CInt -> CInt -> IO ()
-c_multinomialAliasSetup  :: Ptr CTensor -> Ptr CTHLongTensor -> Ptr CTensor -> IO ()
-c_multinomialAliasDraw   :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Ptr CTensor -> IO ()
+-- c_multinomial            :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTensor -> CInt -> CInt -> IO ()
+-- c_multinomialAliasSetup  :: Ptr CTensor -> Ptr CTHLongTensor -> Ptr CTensor -> IO ()
+-- c_multinomialAliasDraw   :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Ptr CTensor -> IO ()
 
 

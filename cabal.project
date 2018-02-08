@@ -1,1 +1,12 @@
-packages: core*/*.cabal, raw*/*.cabal
+packages:
+    raw/*.cabal
+  , raw/types/*.cabal
+  , signatures/signed/*cabal
+  , signatures/unsigned/*cabal
+  , signatures/floating/*cabal
+  , typeclasses/*cabal
+  , dimensions/*cabal
+  , core/*cabal
+  , indef/signed/*cabal
+  , indef/unsigned/*cabal
+  , indef/floating/*cabal
