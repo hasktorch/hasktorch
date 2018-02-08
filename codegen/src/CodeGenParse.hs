@@ -292,8 +292,8 @@ thSemicolon = char ';'
 thFunctionArgVoid :: Parser THArg
 thFunctionArgVoid = do
   arg <- thVoid
-  space
-  char ')' :: Parser Char -- TODO move this outside
+  (char ')') <|> (space >> char ')')
+  --char ')' :: Parser Char -- TODO move this outside
   pure $ THArg THVoid ""
 
 thFunctionArgNamed :: Parser THArg

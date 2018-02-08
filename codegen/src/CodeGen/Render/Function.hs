@@ -27,14 +27,17 @@ renderCName prefix name = prefix <> "_" <> name
 
 -- | Render a single function signature.
 renderSig :: SigType -> Bool -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
-renderSig t isTemplate prefix headerFile modTypeTemplate (name, retType, args) = T.intercalate "\n"
-  [ comment, foreignCall t, haskellSig t ]
+renderSig t isTemplate prefix headerFile modTypeTemplate (name, retType, args) =
+  trace (if "THShortStorage" == prefix && "THStorage.h" == headerFile then show (name, thArgType <$> args, retArrow) else "") $
+  T.intercalate "\n"
+    [ comment, foreignCall t, haskellSig t ]
  where
   comment :: Text
   comment = T.intercalate " "
     $  [ "-- |" , ffiPrefix t <> name , ":", if isPtr t then "Pointer to function :" else "" ]
     <> (map thArgName args)
-    <> [ "->", renderCType retType]
+    <> (if null args then [] else ["->"])
+    <> [renderCType retType]
 
   cName :: Text
   cName = if isTemplate then renderCName prefix name else name
@@ -54,11 +57,10 @@ renderSig t isTemplate prefix headerFile modTypeTemplate (name, retType, args) =
   typeSignature :: [Text]
   typeSignature = mapMaybe (renderHaskellType FunctionParam modTypeTemplate . thArgType) args
 
-  -- TODO : fromJust shouldn't fail but still clean this up so it's not unsafe
   retArrow :: Text
   retArrow = case renderHaskellType ReturnValue modTypeTemplate retType of
     Nothing  -> ""
-    Just ret -> " -> " <> ret
+    Just ret -> if null typeSignature then ret else (" -> " <> ret)
 
 
 -- | Render a single function signature.

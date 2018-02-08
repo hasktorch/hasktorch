@@ -19,8 +19,8 @@ renderHaskellType :: TypeCategory -> TemplateType -> THType -> Maybe Text
 renderHaskellType tc tt =
   \case
     THVoid     -> case tc of { ReturnValue -> Just "IO ()" ; FunctionParam -> Nothing }
-    THVoidPtr  -> Just "Ptr ()"
-    THDescBuff -> Just "CTHDescBuff"
+    THVoidPtr  -> tc `typeCatHelper` "Ptr ()"
+    THDescBuff -> tc `typeCatHelper` "CTHDescBuff"
 
     {- NN -}
     THNNStatePtr       -> tc `typeCatHelper` ("Ptr CTH" <> type2SpliceReal tt <> "NNState")
@@ -54,56 +54,56 @@ renderHaskellType tc tt =
     THGeneratorPtr -> tc `typeCatHelper` "Ptr CTHGenerator"  -- concrete type found in TensorMath
     THAllocatorPtr -> tc `typeCatHelper` "CTHAllocatorPtr"
     THDoublePtr    -> tc `typeCatHelper` "Ptr CDouble"
-    THDouble       -> Just "CDouble"                         -- added from TensorRandom
-    THPtrDiff      -> Just "CPtrdiff"                        -- TODO: check if it's appropriate to splice here
+    THDouble       -> tc `typeCatHelper` "CDouble"           -- added from TensorRandom
+    THPtrDiff      -> tc `typeCatHelper` "CPtrdiff"          -- TODO: check if it's appropriate to splice here
     THLongPtrPtr   -> tc `typeCatHelper` "Ptr (Ptr CLong)"
     THLongPtr      -> tc `typeCatHelper` "Ptr CLong"
     THFloatPtr     -> tc `typeCatHelper` "Ptr CFloat"
-    THFloat        -> Just "CFloat"
-    THLong         -> Just "CLong"
-    THBool         -> Just "CBool"
+    THFloat        -> tc `typeCatHelper` "CFloat"
+    THLong         -> tc `typeCatHelper` "CLong"
+    THBool         -> tc `typeCatHelper` "CBool"
     THIntPtr       -> tc `typeCatHelper` "CIntPtr"
-    THInt          -> Just "CInt"
+    THInt          -> tc `typeCatHelper` "CInt"
 
     -- int/uint conversions, see
     -- https://www.haskell.org/onlinereport/haskell2010/haskellch8.html
     -- https://hackage.haskell.org/package/base-4.10.0.0/docs/Foreign-C-Types.html
-    THUInt64       -> Just "CULong"
-    THUInt64Ptr    -> Just "Ptr CULong"
-    THUInt64PtrPtr -> Just "Ptr (Ptr CULong)"
-    THUInt32       -> Just "CUInt"
-    THUInt32Ptr    -> Just "Ptr CUInt"
-    THUInt32PtrPtr -> Just "Ptr (Ptr CUInt)"
-    THUInt16       -> Just "CUShort"
-    THUInt16Ptr    -> Just "Ptr CUShort"
-    THUInt16PtrPtr -> Just "Ptr (Ptr CUShort)"
-    THUInt8        -> Just "CBool"
-    THUInt8Ptr     -> Just "Ptr CBool"
-    THUInt8PtrPtr  -> Just "Ptr (Ptr CBool)"
-    THInt64        -> Just "CLLong"
-    THInt64Ptr     -> Just "Ptr CLLong"
-    THInt64PtrPtr  -> Just "Ptr (Ptr CLLong)"
-    THInt32        -> Just "Int"
-    THInt32Ptr     -> Just "Ptr Int"
-    THInt32PtrPtr  -> Just "Ptr (Ptr Int)"
-    THInt16        -> Just "CShort"
-    THInt16Ptr     -> Just "Ptr CShort"
-    THInt16PtrPtr  -> Just "Ptr (Ptr CShort)"
-    THInt8         -> Just "CSChar"
-    THInt8Ptr      -> Just "Ptr CSChar"
-    THInt8PtrPtr   -> Just "Ptr (Ptr CSChar)"
-    THSize         -> Just "CSize"
+    THUInt64       -> tc `typeCatHelper` "CULong"
+    THUInt64Ptr    -> tc `typeCatHelper` "Ptr CULong"
+    THUInt64PtrPtr -> tc `typeCatHelper` "Ptr (Ptr CULong)"
+    THUInt32       -> tc `typeCatHelper` "CUInt"
+    THUInt32Ptr    -> tc `typeCatHelper` "Ptr CUInt"
+    THUInt32PtrPtr -> tc `typeCatHelper` "Ptr (Ptr CUInt)"
+    THUInt16       -> tc `typeCatHelper` "CUShort"
+    THUInt16Ptr    -> tc `typeCatHelper` "Ptr CUShort"
+    THUInt16PtrPtr -> tc `typeCatHelper` "Ptr (Ptr CUShort)"
+    THUInt8        -> tc `typeCatHelper` "CBool"
+    THUInt8Ptr     -> tc `typeCatHelper` "Ptr CBool"
+    THUInt8PtrPtr  -> tc `typeCatHelper` "Ptr (Ptr CBool)"
+    THInt64        -> tc `typeCatHelper` "CLLong"
+    THInt64Ptr     -> tc `typeCatHelper` "Ptr CLLong"
+    THInt64PtrPtr  -> tc `typeCatHelper` "Ptr (Ptr CLLong)"
+    THInt32        -> tc `typeCatHelper` "Int"
+    THInt32Ptr     -> tc `typeCatHelper` "Ptr Int"
+    THInt32PtrPtr  -> tc `typeCatHelper` "Ptr (Ptr Int)"
+    THInt16        -> tc `typeCatHelper` "CShort"
+    THInt16Ptr     -> tc `typeCatHelper` "Ptr CShort"
+    THInt16PtrPtr  -> tc `typeCatHelper` "Ptr (Ptr CShort)"
+    THInt8         -> tc `typeCatHelper` "CSChar"
+    THInt8Ptr      -> tc `typeCatHelper` "Ptr CSChar"
+    THInt8PtrPtr   -> tc `typeCatHelper` "Ptr (Ptr CSChar)"
+    THSize         -> tc `typeCatHelper` "CSize"
     THCharPtrPtr   -> tc `typeCatHelper` "Ptr (Ptr CChar)"
     THCharPtr      -> tc `typeCatHelper` "Ptr CChar"
-    THChar         -> Just "CChar"
+    THChar         -> tc `typeCatHelper` "CChar"
     THShortPtr     -> tc `typeCatHelper` "Ptr CShort"
-    THShort        -> Just "CShort"
+    THShort        -> tc `typeCatHelper` "CShort"
     THHalfPtr      -> tc `typeCatHelper` "Ptr CTHHalf"
-    THHalf         -> Just "CTHHalf"
+    THHalf         -> tc `typeCatHelper` "CTHHalf"
     THRealPtr      -> tc `typeCatHelper` ("Ptr " <> type2real tt)
-    THReal         -> Just (type2real tt)
+    THReal         -> tc `typeCatHelper` (type2real tt)
     THAccRealPtr   -> tc `typeCatHelper` ("Ptr " <> type2accreal tt)
-    THAccReal      -> Just (type2accreal tt)
+    THAccReal      -> tc `typeCatHelper` (type2accreal tt)
     THFilePtr      -> tc `typeCatHelper` "Ptr CTHFile"
 
 -- #define Real [X]

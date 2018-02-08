@@ -169,6 +169,11 @@ tensorLapackCases =
   -- , ("gesvd", [GenFloat, GenDouble])
   ]
 
+storageCases :: HashMap FunctionName (HashSet TemplateType)
+storageCases =
+  [ ("elementSize", [])
+  ]
+
 checkMath :: TemplateType -> FunctionName -> Bool
 checkMath = checkMap tensorMathCases
 
@@ -177,6 +182,9 @@ checkRandom = checkMap tensorRandomCases
 
 checkLapack :: TemplateType -> FunctionName -> Bool
 checkLapack = checkMap tensorLapackCases
+
+checkStorage :: TemplateType -> FunctionName -> Bool
+checkStorage = checkMap storageCases
 
 checkMap
   :: HashMap FunctionName (HashSet TemplateType)
@@ -196,6 +204,7 @@ checkFunction tt fn
   =  checkMath   tt fn
   && checkRandom tt fn
   && checkLapack tt fn
+  && checkStorage tt fn
 
 test :: IO ()
 test = do
