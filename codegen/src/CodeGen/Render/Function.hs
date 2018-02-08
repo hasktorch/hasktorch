@@ -62,11 +62,11 @@ renderSig t isTemplate prefix headerFile modTypeTemplate (name, retType, args) =
 
 
 -- | Render a single function signature.
-renderFunSig :: FilePath -> Bool -> Text -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunSig :: Bool -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunSig = renderSig IsFun
 
 -- | Render function pointer signature
-renderFunPtrSig :: FilePath -> Bool -> Text -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunPtrSig :: Bool -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunPtrSig = renderSig IsFunPtr
 
 

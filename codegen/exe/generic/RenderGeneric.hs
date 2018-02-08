@@ -65,9 +65,10 @@ runPipeline :: [TemplateType] -> String -> (TemplateType -> [THFunction] -> HMod
 runPipeline typeList headerPath makeModuleConfig = do
   parsedBindings <- parseFile headerPath
   let bindingsUniq = nub parsedBindings
-  putStrLn   "First signature:"
+  putStrLn $ "First signature of " ++ show (length bindingsUniq)
   putStrLn $ ppShow (take 1 bindingsUniq)
-  mapM_ (\x -> renderCHeaderFile x bindingsUniq makeModuleConfig) typeList
+
+  mapM_ (\x ->  renderCHeaderFile x bindingsUniq makeModuleConfig) typeList
   putStrLn $ "Number of functions generated: " ++ show (length typeList * length bindingsUniq)
 
 main :: IO ()

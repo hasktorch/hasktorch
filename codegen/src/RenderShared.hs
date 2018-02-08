@@ -84,8 +84,11 @@ renderFunctions m validFunctions =
     $  (renderFunSig'    <$> triple)
     <> (renderFunPtrSig' <$> triple)
  where
-  renderFunSig'    = renderFunSig    (modIsTemplate m) (modPrefix m) (modHeader m) (modTypeTemplate m)
-  renderFunPtrSig' = renderFunPtrSig (modIsTemplate m) (modPrefix m) (modHeader m) (modTypeTemplate m)
+  renderFunSig'    = renderFunSig    (modIsTemplate m) ffiPrefix (modHeader m) (modTypeTemplate m)
+  renderFunPtrSig' = renderFunPtrSig (modIsTemplate m) ffiPrefix (modHeader m) (modTypeTemplate m)
+
+  ffiPrefix :: Text
+  ffiPrefix = modPrefix m <> Hs.type2SpliceReal (modTypeTemplate m) <> modSuffix m
 
   triple :: [(Text, THType, [THArg])]
   triple = go <$> validFunctions

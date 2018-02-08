@@ -183,7 +183,7 @@ checkMap
   -> TemplateType
   -> FunctionName
   -> Bool
-checkMap map tt n = maybe False (tt `S.member`) (M.lookup n map)
+checkMap map tt n = maybe True (tt `S.member`) (M.lookup n map)
 
 
 -- | Warning a function that doesn't exist will return True by default
