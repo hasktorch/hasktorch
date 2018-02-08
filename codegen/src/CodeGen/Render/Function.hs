@@ -22,12 +22,12 @@ ffiPrefix = \case
 isPtr :: SigType -> Bool
 isPtr f = f == IsFunPtr
 
-renderFunName :: Text -> Text -> Text
-renderFunName prefix name = prefix <> "_" <> name
+renderCName :: Text -> Text -> Text
+renderCName prefix name = prefix <> "_" <> name
 
 -- | Render a single function signature.
-renderSig :: SigType -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
-renderSig t headerFile modTypeTemplate (name, retType, args) = T.intercalate "\n"
+renderSig :: SigType -> Bool -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderSig t isTemplate prefix headerFile modTypeTemplate (name, retType, args) = T.intercalate "\n"
   [ comment, foreignCall t, haskellSig t ]
  where
   comment :: Text
@@ -36,10 +36,13 @@ renderSig t headerFile modTypeTemplate (name, retType, args) = T.intercalate "\n
     <> (map thArgName args)
     <> [ "->", renderCType retType]
 
+  cName :: Text
+  cName = if isTemplate then renderCName prefix name else name
+
   foreignCall :: SigType -> Text
   foreignCall = \case
-    IsFun    -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " "  <> name, "" ]
-    IsFunPtr -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " &" <> name, "" ]
+    IsFun    -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " "  <> cName, "" ]
+    IsFunPtr -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " &" <> cName, "" ]
 
   haskellSig :: SigType -> Text
   haskellSig = \case
@@ -59,11 +62,11 @@ renderSig t headerFile modTypeTemplate (name, retType, args) = T.intercalate "\n
 
 
 -- | Render a single function signature.
-renderFunSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunSig :: FilePath -> Bool -> Text -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunSig = renderSig IsFun
 
 -- | Render function pointer signature
-renderFunPtrSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunPtrSig :: FilePath -> Bool -> Text -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunPtrSig = renderSig IsFunPtr
 
 

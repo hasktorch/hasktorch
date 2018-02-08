@@ -76,18 +76,6 @@ renderExports exports = T.intercalate "\n"
 renderImports :: [Text] -> Text
 renderImports imports = T.intercalate "\n" (("import " <>) <$> imports) <> "\n\n"
 
-renderAliases :: HModule -> Text
-renderAliases m = fromMaybe "" $ do
-  guard (modIsTemplate m)
-  (a, b, c, d) <- signatureAliases (modTypeTemplate m)
-  pure (T.intercalate "\n" [alias a, alias b, alias c, alias d])
-
-renderAliasExports :: HModule -> [Text]
-renderAliasExports m = fromMaybe [] $ do
-  guard (modIsTemplate m)
-  _ <- signatureAliases (modTypeTemplate m)
-  pure ["CTensor", "CReal", "CAccReal", "CStorage"]
-
 
 -- TODO clean up redundancy of valid functions vs. functions in moduleSpec
 renderFunctions :: HModule -> [THFunction] -> Text
@@ -96,8 +84,8 @@ renderFunctions m validFunctions =
     $  (renderFunSig'    <$> triple)
     <> (renderFunPtrSig' <$> triple)
  where
-  renderFunSig'    = renderFunSig    (modHeader m) (modTypeTemplate m)
-  renderFunPtrSig' = renderFunPtrSig (modHeader m) (modTypeTemplate m)
+  renderFunSig'    = renderFunSig    (modIsTemplate m) (modPrefix m) (modHeader m) (modTypeTemplate m)
+  renderFunPtrSig' = renderFunPtrSig (modIsTemplate m) (modPrefix m) (modHeader m) (modTypeTemplate m)
 
   triple :: [(Text, THType, [THArg])]
   triple = go <$> validFunctions
@@ -113,9 +101,8 @@ renderAll :: HModule -> Text
 renderAll m
   =  renderExtensions (modExtensions m)
   <> renderModule m
-  <> renderExports (exportFunctions <> renderAliasExports m)
+  <> renderExports exportFunctions
   <> renderImports (modImports m)
-  <> renderAliases m
   <> renderFunctions m validFunctions
   where
     validFunctions :: [THFunction]
