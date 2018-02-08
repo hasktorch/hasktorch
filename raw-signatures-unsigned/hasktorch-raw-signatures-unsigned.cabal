@@ -1,4 +1,4 @@
-name:          hasktorch-raw-signatures
+name:          hasktorch-raw-signatures-unsigned
 version:       0.1.0.0
 synopsis:      Backpack signature files to pair with hasktorch-raw and hasktorch-core
 description:   CFFI backpack signatures

@@ -18,5 +18,5 @@ library
   build-depends:
       base >= 4.7 && < 5
     , hasktorch-raw-types
-    , hasktorch-raw-signatures
+    , hasktorch-raw-signatures-unsigned
 

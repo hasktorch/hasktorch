@@ -1,4 +1,4 @@
-name:           hasktorch-core-indef
+name:           hasktorch-core-indef-unsigned
 version:        0.0.1.0
 synopsis:       Torch for tensors and neural networks in Haskell
 description:    core tensor abstractions wrapping raw TH bindings
@@ -24,7 +24,7 @@ library
     , dimensions >=0.3.2.0
     , hasktorch-core-classes-c
     , hasktorch-raw
-    , hasktorch-raw-signatures
+    , hasktorch-raw-signatures-unsigned
     , hasktorch-raw-types
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
