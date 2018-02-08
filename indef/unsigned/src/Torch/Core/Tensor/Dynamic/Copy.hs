@@ -6,7 +6,7 @@ import Foreign.C.Types
 import THTypes
 import qualified Tensor     as Sig
 import qualified TensorCopy as Sig
-import qualified Torch.Class.Tensor.Copy as Class
+import qualified Torch.Class.C.Tensor.Copy as Class
 
 import qualified THLongTensor   as L
 import qualified THFloatTensor  as F

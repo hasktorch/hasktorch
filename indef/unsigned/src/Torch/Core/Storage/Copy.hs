@@ -10,13 +10,13 @@ import qualified Storage     as Sig
 import qualified StorageCopy as Sig
 import qualified Torch.Class.C.Storage.Copy as Class
 
---import qualified THLongStorage   as L
---import qualified THFloatStorage  as F
+import qualified THLongStorage   as L
+import qualified THFloatStorage  as F
 import qualified THByteStorage   as B
 -- import qualified THCharStorage   as C
---import qualified THShortStorage  as S
---import qualified THIntStorage    as I
---import qualified THDoubleStorage as D
+import qualified THShortStorage  as S
+import qualified THIntStorage    as I
+import qualified THDoubleStorage as D
 -- import qualified THHalfStorage   as H
 
 import Torch.Core.Types
@@ -41,26 +41,26 @@ instance Class.StorageCopy Storage where
     withForeignPtr (storage t) (`Sig.c_copy` tar)
     Storage <$> newForeignPtr Sig.p_free tar
 
-  --copyLong :: Storage -> IO (Ptr CTHLongStorage)
-  --copyLong = copyType L.c_new Sig.c_copyLong
+  copyLong :: Storage -> IO (Ptr CTHLongStorage)
+  copyLong = copyType L.c_new Sig.c_copyLong
 
-  --copyFloat :: Storage -> IO (Ptr CTHFloatStorage)
-  --copyFloat = copyType F.c_new Sig.c_copyFloat
+  copyFloat :: Storage -> IO (Ptr CTHFloatStorage)
+  copyFloat = copyType F.c_new Sig.c_copyFloat
 
   copyByte :: Storage -> IO (Ptr CTHByteStorage)
   copyByte = copyType B.c_new Sig.c_copyByte
 
-  ---- copyChar :: Storage -> IO (Ptr CTHCharStorage)
-  ---- copyChar = copyType C.c_new Sig.c_copyChar
+  -- copyChar :: Storage -> IO (Ptr CTHCharStorage)
+  -- copyChar = copyType C.c_new Sig.c_copyChar
 
-  --copyShort :: Storage -> IO (Ptr CTHShortStorage)
-  --copyShort = copyType S.c_new Sig.c_copyShort
+  copyShort :: Storage -> IO (Ptr CTHShortStorage)
+  copyShort = copyType S.c_new Sig.c_copyShort
 
-  --copyInt :: Storage -> IO (Ptr CTHIntStorage)
-  --copyInt = copyType I.c_new Sig.c_copyInt
+  copyInt :: Storage -> IO (Ptr CTHIntStorage)
+  copyInt = copyType I.c_new Sig.c_copyInt
 
-  --copyDouble :: Storage -> IO (Ptr CTHDoubleStorage)
-  --copyDouble = copyType D.c_new Sig.c_copyDouble
+  copyDouble :: Storage -> IO (Ptr CTHDoubleStorage)
+  copyDouble = copyType D.c_new Sig.c_copyDouble
 
   -- copyHalf   :: Storage -> IO (Ptr CTHHalfStorage)
   -- copyHalf = copyType H.c_new Sig.c_copyHalf

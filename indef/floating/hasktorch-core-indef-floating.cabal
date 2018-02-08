@@ -34,7 +34,7 @@ library
     , Torch.Core.Storage
     , Torch.Core.Storage.Copy
     , Torch.Core.Tensor.Dynamic
-    --, Torch.Core.Tensor.Dynamic.Copy
+    , Torch.Core.Tensor.Dynamic.Copy
     --, Torch.Core.Tensor.Dynamic.Conv
     --, Torch.Core.Tensor.Dynamic.Lapack
     --, Torch.Core.Tensor.Dynamic.Math

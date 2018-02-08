@@ -16,7 +16,7 @@ library
     , Storage
     , StorageCopy
     , Tensor
-    -- , TensorCopy
+    , TensorCopy
     --, TensorConv
     -- -- , TensorLapack
     -- -- , TensorMath

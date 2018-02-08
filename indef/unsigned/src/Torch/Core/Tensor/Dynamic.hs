@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 module Torch.Core.Tensor.Dynamic
   ( Tensor(..)
+  , asTensor
   ) where
 
 import Foreign (Ptr, withForeignPtr, newForeignPtr)
@@ -15,6 +16,7 @@ import qualified Torch.Class.C.Tensor as Class
 
 import Torch.Core.Types
 import Torch.Core.Storage (asStorage)
+import Torch.Core.Tensor.Dynamic.Copy ()
 
 asTensor :: Ptr CTensor -> IO Tensor
 asTensor = fmap Tensor . newForeignPtr Sig.p_free
