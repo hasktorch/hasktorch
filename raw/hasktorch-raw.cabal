@@ -20,6 +20,32 @@ source-repository head
   location: https://github.com/hasktorch/hasktorch
 
 library
+  -- ghc-options: -L/home/stites/git/hasktorch/vendor/build/ -lATen
+  -- extra-lib-dirs: /home/stites/git/hasktorch/vendor/build/
+  -- extra-libraries: ATen, EHX
+  include-dirs:
+      /home/stites/git/hasktorch/vendor/build/
+    , /home/stites/git/hasktorch/vendor/build/src/TH/
+    , /home/stites/git/hasktorch/vendor/build/src/THNN/
+    , /home/stites/git/hasktorch/vendor/build/src/ATen/
+    , /home/stites/git/hasktorch/vendor/build/src/THS/
+  c-sources:
+    -- /home/stites/git/hasktorch/vendor/build/libATen.so
+      /home/stites/git/hasktorch/vendor/TH/THAllocator.c
+    , /home/stites/git/hasktorch/vendor/TH/THAtomic.c
+    , /home/stites/git/hasktorch/vendor/TH/THBlas.c
+    , /home/stites/git/hasktorch/vendor/TH/THDiskFile.c
+    , /home/stites/git/hasktorch/vendor/TH/THFile.c
+    , /home/stites/git/hasktorch/vendor/TH/THGeneral.c
+    , /home/stites/git/hasktorch/vendor/TH/THHalf.c
+    , /home/stites/git/hasktorch/vendor/TH/THLapack.c
+    , /home/stites/git/hasktorch/vendor/TH/THLogAdd.c
+    , /home/stites/git/hasktorch/vendor/TH/THMemoryFile.c
+    , /home/stites/git/hasktorch/vendor/TH/THRandom.c
+    , /home/stites/git/hasktorch/vendor/TH/THSize.c
+    , /home/stites/git/hasktorch/vendor/TH/THStorage.c
+    , /home/stites/git/hasktorch/vendor/TH/THTensor.c
+    , /home/stites/git/hasktorch/vendor/TH/THVector.c
   hs-source-dirs:
       src
       src/generic
@@ -28,55 +54,55 @@ library
     , hasktorch-raw-types
     , inline-c >=0.5
     , text >=1.2.2.2
-  build-tools:
-      c2hs
+  build-tools: c2hs
+  default-language: Haskell2010
   exposed-modules:
-      THAtomic
-      THDiskFile
-      THFile
-      THHalf
-      THLogAdd
-      THMemoryFile
-      THNN
+--       THAtomic
+--       THDiskFile
+--       THFile
+--       THHalf
+--       THLogAdd
+--       THMemoryFile
+--       THNN
       THRandom
-      THSize
-      THStorage
-      THByteBlas
-      THByteLapack
-      THByteNN
-      THByteStorage
-      THByteStorageCopy
-      THByteTensor
-      THByteTensorConv
-      THByteTensorCopy
-      THByteTensorLapack
-      THByteTensorMath
-      THByteTensorRandom
-      THByteVector
-      THDoubleBlas
-      THDoubleLapack
-      THDoubleNN
-      THDoubleStorage
-      THDoubleStorageCopy
-      THDoubleTensor
-      THDoubleTensorConv
-      THDoubleTensorCopy
-      THDoubleTensorLapack
-      THDoubleTensorMath
-      THDoubleTensorRandom
-      THDoubleVector
-      THFloatBlas
-      THFloatLapack
-      THFloatNN
-      THFloatStorage
-      THFloatStorageCopy
-      THFloatTensor
-      THFloatTensorConv
-      THFloatTensorCopy
-      THFloatTensorLapack
-      THFloatTensorMath
-      THFloatTensorRandom
-      THFloatVector
+--       THSize
+--       THStorage
+--       THByteBlas
+--       THByteLapack
+--       THByteNN
+--       THByteStorage
+--       THByteStorageCopy
+--       THByteTensor
+--       THByteTensorConv
+--       THByteTensorCopy
+--       THByteTensorLapack
+--       THByteTensorMath
+--       THByteTensorRandom
+--       THByteVector
+--       THDoubleBlas
+--       THDoubleLapack
+--       THDoubleNN
+--       THDoubleStorage
+--       THDoubleStorageCopy
+--       THDoubleTensor
+--       THDoubleTensorConv
+--       THDoubleTensorCopy
+--       THDoubleTensorLapack
+--       THDoubleTensorMath
+--       THDoubleTensorRandom
+--       THDoubleVector
+--       THFloatBlas
+--       THFloatLapack
+--       THFloatNN
+--       THFloatStorage
+--       THFloatStorageCopy
+--       THFloatTensor
+--       THFloatTensorConv
+--       THFloatTensorCopy
+--       THFloatTensorLapack
+--       THFloatTensorMath
+--       THFloatTensorRandom
+--       THFloatVector
       -- THHalfBlas
       -- THHalfLapack
       -- THHalfNN
@@ -89,45 +115,44 @@ library
       -- THHalfTensorMath
       -- THHalfTensorRandom
       -- THHalfVector
-      THIntBlas
-      THIntLapack
-      THIntNN
-      THIntStorage
-      THIntStorageCopy
-      THIntTensor
-      THIntTensorConv
-      THIntTensorCopy
-      THIntTensorLapack
-      THIntTensorMath
-      THIntTensorRandom
-      THIntVector
-      THLongBlas
-      THLongLapack
-      THLongNN
-      THLongStorage
-      THLongStorageCopy
-      THLongTensor
-      THLongTensorConv
-      THLongTensorCopy
-      THLongTensorLapack
-      THLongTensorMath
-      THLongTensorRandom
-      THLongVector
-      THShortBlas
-      THShortLapack
-      THShortNN
-      THShortStorage
-      THShortStorageCopy
-      THShortTensor
-      THShortTensorConv
-      THShortTensorCopy
-      THShortTensorLapack
-      THShortTensorMath
-      THShortTensorRandom
-      THShortVector
-  other-modules:
-      Paths_hasktorch_raw
-  default-language: Haskell2010
+--       THIntBlas
+--       THIntLapack
+--       THIntNN
+--       THIntStorage
+--       THIntStorageCopy
+--       THIntTensor
+--       THIntTensorConv
+--       THIntTensorCopy
+--       THIntTensorLapack
+--       THIntTensorMath
+--       THIntTensorRandom
+--       THIntVector
+--       THLongBlas
+--       THLongLapack
+--       THLongNN
+--       THLongStorage
+--       THLongStorageCopy
+--       THLongTensor
+--       THLongTensorConv
+--       THLongTensorCopy
+--       THLongTensorLapack
+--       THLongTensorMath
+--       THLongTensorRandom
+--       THLongVector
+--       THShortBlas
+--       THShortLapack
+--       THShortNN
+--       THShortStorage
+--       THShortStorageCopy
+--       THShortTensor
+--       THShortTensorConv
+--       THShortTensorCopy
+--       THShortTensorLapack
+--       THShortTensorMath
+--       THShortTensorRandom
+--       THShortVector
+--   other-modules:
+--       Paths_hasktorch_raw
 
 test-suite spec
   type: exitcode-stdio-1.0
