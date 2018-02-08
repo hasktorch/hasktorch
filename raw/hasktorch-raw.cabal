@@ -158,6 +158,7 @@ library
       THShortTensorLapack
       THShortTensorMath
       THShortTensorRandom
+
   other-modules:
       Paths_hasktorch_raw
 
