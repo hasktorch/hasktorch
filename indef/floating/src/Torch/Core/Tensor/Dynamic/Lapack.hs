@@ -8,7 +8,7 @@ import qualified Torch.Class.Tensor.Lapack as Class
 import THTypes
 
 import Torch.Core.Types
-{-
+
 instance Class.TensorLapack Tensor where
   gesv :: Tensor -> Tensor -> Tensor -> Tensor -> IO ()
   gesv = with4Tensors Sig.c_gesv
@@ -63,4 +63,4 @@ instance Class.TensorLapack Tensor where
 
   btrisolve :: Tensor -> Tensor -> Tensor -> Ptr CTHIntTensor -> IO ()
   btrisolve t0 t1 t2 it = _with3Tensors t0 t1 t2 (\t0' t1' t2' -> Sig.c_btrisolve t0' t1' t2' it)
-  -}
+

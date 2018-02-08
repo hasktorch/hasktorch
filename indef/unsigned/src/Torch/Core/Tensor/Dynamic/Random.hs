@@ -5,7 +5,7 @@ import Foreign
 import Foreign.C.Types
 import GHC.Int
 import qualified TensorRandom as Sig
-import qualified Torch.Class.Tensor.Random as Class
+import qualified Torch.Class.C.Tensor.Random as Class
 import THTypes
 
 import Torch.Core.Types

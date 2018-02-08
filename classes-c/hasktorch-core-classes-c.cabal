@@ -32,8 +32,8 @@ library
     , Torch.Class.C.Storage.Copy
     , Torch.Class.C.Tensor
     , Torch.Class.C.Tensor.Copy
-    --, Torch.Class.C.Tensor.Conv
-    --, Torch.Class.C.Tensor.Lapack
-    --, Torch.Class.C.Tensor.Math
-    --, Torch.Class.C.Tensor.Random
+    , Torch.Class.C.Tensor.Conv
+    , Torch.Class.C.Tensor.Lapack
+    , Torch.Class.C.Tensor.Math
+    , Torch.Class.C.Tensor.Random
 

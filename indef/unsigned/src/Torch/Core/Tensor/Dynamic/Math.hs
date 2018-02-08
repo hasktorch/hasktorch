@@ -7,7 +7,7 @@ import Foreign.C.Types
 import GHC.Int
 import qualified Tensor     as Sig
 import qualified TensorMath as Sig
-import qualified Torch.Class.Tensor.Math as Class
+import qualified Torch.Class.C.Tensor.Math as Class
 
 import Torch.Core.Types
 
@@ -67,22 +67,22 @@ instance Class.TensorMath Tensor where
   scatterFill t0 i ls v = _withTensor t0 $ \t0' -> Sig.c_scatterFill t0' (CInt i) ls (hs2cReal v)
 
   dot :: Tensor -> Tensor -> IO HsAccReal
-  dot = with2Tensors (\t0' t1' -> pure . c2hsAccReal $ Sig.c_dot t0' t1' )
+  dot = with2Tensors (\t0' t1' -> c2hsAccReal <$> Sig.c_dot t0' t1' )
 
   minall :: Tensor -> IO HsReal
-  minall = withTensor (pure . c2hsReal . Sig.c_minall)
+  minall = withTensor (fmap c2hsReal . Sig.c_minall)
 
   maxall :: Tensor -> IO HsReal
-  maxall = withTensor (pure . c2hsReal . Sig.c_maxall)
+  maxall = withTensor (fmap c2hsReal . Sig.c_maxall)
 
   medianall :: Tensor -> IO HsReal
-  medianall = withTensor (pure . c2hsReal . Sig.c_medianall)
+  medianall = withTensor (fmap c2hsReal . Sig.c_medianall)
 
   sumall :: Tensor -> IO HsAccReal
-  sumall = withTensor (pure . c2hsAccReal . Sig.c_sumall)
+  sumall = withTensor (fmap c2hsAccReal . Sig.c_sumall)
 
   prodall :: Tensor -> IO HsAccReal
-  prodall = withTensor (pure . c2hsAccReal . Sig.c_prodall)
+  prodall = withTensor (fmap c2hsAccReal . Sig.c_prodall)
 
   add :: Tensor -> Tensor -> HsReal -> IO ()
   add = twoTensorsAndReal Sig.c_add
@@ -187,7 +187,7 @@ instance Class.TensorMath Tensor where
   match t0 t1 t2 v0  = _with3Tensors t0 t1 t2 $ \t0' t1' t2' -> Sig.c_match t0' t1' t2' (hs2cReal v0)
 
   numel :: Tensor -> IO Int64
-  numel = withTensor (pure . fromIntegral . Sig.c_numel)
+  numel = withTensor (fmap fromIntegral . Sig.c_numel)
 
   max :: Tensor -> Ptr CTHLongTensor -> Tensor -> Int32 -> Int32 -> IO ()
   max t0 ls t1 i0 i1 = _with2Tensors t0 t1 $ \t0' t1' -> Sig.c_max t0' ls t1' (CInt i0) (CInt i1)
@@ -220,7 +220,7 @@ instance Class.TensorMath Tensor where
   sign = with2Tensors Sig.c_sign
 
   trace :: Tensor -> IO HsAccReal
-  trace = withTensor (pure . c2hsAccReal . Sig.c_trace)
+  trace = withTensor (fmap c2hsAccReal . Sig.c_trace)
 
   cross :: Tensor -> Tensor -> Tensor -> Int32 -> IO ()
   cross t0 t1 t2 i0 = _with3Tensors t0 t1 t2 $ \t0' t1' t2' -> Sig.c_cross t0' t1' t2' (CInt i0)
@@ -285,7 +285,7 @@ instance Class.TensorMath Tensor where
   -- catArray     :: Tensor -> [Tensor] -> Int32 -> Int32 -> IO ()
 
   equal :: Tensor -> Tensor -> IO Int32
-  equal = with2Tensors (\t0' t1' -> pure . fromIntegral $ Sig.c_equal t0' t1' )
+  equal = with2Tensors (\t0' t1' -> fmap fromIntegral $ Sig.c_equal t0' t1' )
 
   ltValue :: Ptr CTHByteTensor -> Tensor -> HsReal -> IO ()
   ltValue bt t0 v = _withTensor t0 $ \t0' -> Sig.c_ltValue bt t0' (hs2cReal v)

@@ -4,7 +4,7 @@ module Torch.Core.Tensor.Dynamic.Conv where
 import Foreign
 import Foreign.C.Types
 import qualified TensorConv as Sig
-import qualified Torch.Class.Tensor.Conv as Class
+import qualified Torch.Class.C.Tensor.Conv as Class
 
 import Torch.Core.Types
 

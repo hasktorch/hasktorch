@@ -1,4 +1,4 @@
-module Torch.Class.Tensor.Lapack where
+module Torch.Class.C.Tensor.Lapack where
 
 import THTypes
 import Foreign

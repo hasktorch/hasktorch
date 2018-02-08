@@ -28,6 +28,7 @@ library
   --exposed-modules:
   --    Torch.Core.Tensor.Dynamic.Math.Floating
   --  , Torch.Core.Tensor.Dynamic.Random.Floating
+  --  , Torch.Core.Tensor.Dynamic.Lapack
 
   reexported-modules:
       Torch.Core.Types
@@ -35,10 +36,9 @@ library
     , Torch.Core.Storage.Copy
     , Torch.Core.Tensor.Dynamic
     , Torch.Core.Tensor.Dynamic.Copy
-    --, Torch.Core.Tensor.Dynamic.Conv
-    --, Torch.Core.Tensor.Dynamic.Lapack
-    --, Torch.Core.Tensor.Dynamic.Math
+    , Torch.Core.Tensor.Dynamic.Conv
+    , Torch.Core.Tensor.Dynamic.Math
     --, Torch.Core.Tensor.Dynamic.Math.Signed
-    --, Torch.Core.Tensor.Dynamic.Random
+    , Torch.Core.Tensor.Dynamic.Random
 
 

@@ -20,7 +20,6 @@ import Torch.Class.C.Internal
 import Torch.Core.Tensor.Dim
 import qualified Torch.Class.C.Tensor as C
 
-
 import Torch.Core.Tensor.Dynamic.Copy (TensorCopy(..))
 
 import qualified Torch.Core.ByteTensor.Dynamic as B
