@@ -6,39 +6,52 @@ module Torch.Core.Tensor.Dynamic
   , ShortTensor
   , IntTensor
   , LongTensor
-  , UserTensor(..)
+  , FloatTensor
+  , DoubleTensor
+
+  , IsTensor(..)
+  , TensorCopy(..)
   ) where
 
-import qualified Torch.Class.C.Tensor as C
--- import Torch.Core.Tensor.Copy as X (UserStorageCopy(..))
 import THTypes
 import Foreign
 import Foreign.C.Types
 import Torch.Class.C.Internal
 import Torch.Core.Tensor.Dim
+import qualified Torch.Class.C.Tensor as C
 
+
+import Torch.Core.Tensor.Dynamic.Copy (TensorCopy(..))
 
 import qualified Torch.Core.ByteTensor.Dynamic as B
 import qualified Torch.Core.ShortTensor.Dynamic as S
 import qualified Torch.Core.IntTensor.Dynamic as I
 import qualified Torch.Core.LongTensor.Dynamic as L
+import qualified Torch.Core.FloatTensor.Dynamic as F
+import qualified Torch.Core.DoubleTensor.Dynamic as D
 
 import qualified Torch.Core.LongStorage as L
 
 type ByteTensor = B.Tensor
+-- type CharTensor = C.Tensor
 type ShortTensor = S.Tensor
 type IntTensor = I.Tensor
-
 type LongTensor = L.Tensor
+-- type HalfTensor = H.Tensor
+type FloatTensor = F.Tensor
+type DoubleTensor = D.Tensor
+
 type LongStorage = L.Storage
 
 
-instance UserTensor ByteTensor
-instance UserTensor ShortTensor
-instance UserTensor IntTensor
-instance UserTensor LongTensor
+instance IsTensor ByteTensor
+instance IsTensor ShortTensor
+instance IsTensor IntTensor
+instance IsTensor LongTensor
+instance IsTensor FloatTensor
+instance IsTensor DoubleTensor
 
-class C.IsTensor t => UserTensor t where
+class C.IsTensor t => IsTensor t where
   clearFlag :: t -> Int8 -> IO ()
   clearFlag = C.clearFlag
 

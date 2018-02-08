@@ -1,5 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
-module Torch.Core.Tensor.Dynamic.Copy where
+module Torch.Core.Tensor.Dynamic.Copy
+  ( TensorCopy(..)
+  ) where
 
 import Control.Monad ((>=>))
 import qualified Torch.Class.C.Tensor.Copy as CCall
@@ -13,7 +15,7 @@ import qualified Torch.Core.IntTensor.Dynamic    as I
 import qualified Torch.Core.DoubleTensor.Dynamic as D
 -- import qualified Torch.Core.HalfTensor.Dynamic   as H
 
-class CCall.TensorCopy t => UserTensorCopy t where
+class CCall.TensorCopy t => TensorCopy t where
   copy :: t -> IO t
   copy = CCall.copy
 
@@ -38,10 +40,10 @@ class CCall.TensorCopy t => UserTensorCopy t where
 
   --copyHalf   :: t -> IO H.Tensor
 
-instance UserTensorCopy B.Tensor where
-instance UserTensorCopy S.Tensor where
-instance UserTensorCopy I.Tensor where
-instance UserTensorCopy L.Tensor where
-instance UserTensorCopy F.Tensor where
-instance UserTensorCopy D.Tensor where
+instance TensorCopy B.Tensor where
+instance TensorCopy S.Tensor where
+instance TensorCopy I.Tensor where
+instance TensorCopy L.Tensor where
+instance TensorCopy F.Tensor where
+instance TensorCopy D.Tensor where
 
