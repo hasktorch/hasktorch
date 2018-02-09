@@ -10,7 +10,7 @@ module Torch.Core.Tensor.Dynamic
   , DoubleTensor
 
   , IsTensor(..)
-  , TensorCopy(..)
+  , module Classes
   ) where
 
 import THTypes
@@ -19,7 +19,10 @@ import Torch.Class.C.Internal
 import Torch.Core.Tensor.Dim
 import qualified Torch.Class.C.Tensor as C
 
-import Torch.Core.Tensor.Dynamic.Copy (TensorCopy(..))
+import Torch.Core.Tensor.Dynamic.Copy as Classes
+import Torch.Core.Tensor.Dynamic.Conv as Classes
+import Torch.Core.Tensor.Dynamic.Math as Classes
+import Torch.Core.Tensor.Dynamic.Random as Classes
 
 import qualified Torch.Core.ByteTensor.Dynamic as B
 import qualified Torch.Core.ShortTensor.Dynamic as S
