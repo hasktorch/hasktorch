@@ -4,10 +4,7 @@ module Torch.Core.Exceptions
   ( TorchException(..)
   , module X
   , c_testHasktorchLib
-  , p_testHasktorchLib
-  , c_errorHandler
   , p_errorHandler
-  , c_argErrorHandler
   , p_argErrorHandler
   , c_THSetErrorHandler
   ) where
@@ -19,8 +16,8 @@ import Data.Text (Text)
 
 import Foreign
 import Foreign.C.String
--- import Foreign.C.Types
--- import THTypes
+import Foreign.C.Types
+import THTypes
 
 -- import THDoubleTensor
 -- import THDoubleTensorLapack
@@ -29,7 +26,7 @@ import Foreign.C.String
 
 -- import Torch.Core.Tensor.Types
 -- import Torch.Raw.Tensor.Generic
--- import qualified Torch.Core.Tensor.Dim as Dim
+import qualified Torch.Core.Tensor.Dim as Dim
 -- import qualified Torch.Raw.Tensor.Generic as Gen
 
 data TorchException
@@ -60,21 +57,20 @@ foreign import ccall unsafe "error_handler.h &argErrorHandler"
 
 {- THGeneral options to configure error handler -}
 
+-- TH_API double THLog1p(const double x);
+foreign import ccall unsafe "THGeneral.h.in THLog1p"
+  c_THLog1p :: CDouble -> CDouble
 
 -- TH_API void THSetErrorHandler(THErrorHandlerFunction new_handler, void *data);
 foreign import ccall "THGeneral.h.in THSetErrorHandler"
   c_THSetErrorHandler :: FunPtr (CString -> IO ()) -> IO ()
-
-{-
--- TH_API double THLog1p(const double x);
-foreign import ccall unsafe "THGeneral.h.in THLog1p"
-  c_THLog1p :: CDouble -> CDouble
 
 -- safe version of potrf
 -- |c_THDoubleTensor_potrf : ra_ a uplo -> void
 foreign import ccall "THTensorLapack.h THDoubleTensor_potrf"
   c_safe_THDoubleTensor_potrf :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> Ptr CChar -> IO ()
 
+{-
 lapackTest :: IO ()
 lapackTest = do
   putStrLn "Setting error handler"

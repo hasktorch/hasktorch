@@ -3,8 +3,8 @@ module Torch.Core.Internal
   , impossible
   ) where
 
--- import Foreign (Word, Ptr)
--- import Foreign.C.Types (CLLong, CLong, CDouble, CShort, CLong, CChar, CInt, CFloat)
+import Foreign (Word, Ptr)
+import Foreign.C.Types (CLLong, CLong, CDouble, CShort, CLong, CChar, CInt, CFloat)
 import Numeric (showGFloat)
 
 -- | Show a real value with limited precision

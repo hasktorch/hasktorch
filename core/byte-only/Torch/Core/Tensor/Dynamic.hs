@@ -3,25 +3,28 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Core.Tensor.Dynamic
   ( ByteTensor
-  , ShortTensor
-  , IntTensor
-  , LongTensor
-  , FloatTensor
-  , DoubleTensor
+  -- , ShortTensor
+  -- , IntTensor
+  -- , LongTensor
+  -- , FloatTensor
+  -- , DoubleTensor
 
   , IsTensor(..)
-  , TensorCopy(..)
+
+  , module X
   ) where
+
+import Torch.Core.Tensor.Dynamic.Copy as X
 
 import THTypes
 import Foreign
+import Foreign.C.Types
 import Torch.Class.C.Internal
 import Torch.Core.Tensor.Dim
-import qualified Torch.Class.C.Tensor as C
-
-import Torch.Core.Tensor.Dynamic.Copy (TensorCopy(..))
+import qualified Torch.Class.C.Tensor as Class
 
 import qualified Torch.Core.ByteTensor.Dynamic as B
+{-
 import qualified Torch.Core.ShortTensor.Dynamic as S
 import qualified Torch.Core.IntTensor.Dynamic as I
 import qualified Torch.Core.LongTensor.Dynamic as L
@@ -41,6 +44,7 @@ type DoubleTensor = D.Tensor
 
 type LongStorage = L.Storage
 
+
 instance IsTensor ByteTensor
 instance IsTensor ShortTensor
 instance IsTensor IntTensor
@@ -58,14 +62,14 @@ class C.IsTensor t => IsTensor t where
   desc :: t -> IO CTHDescBuff
   desc = C.desc
 
-  expand :: t -> t -> LongStorage -> IO ()
-  expand t0 t1 (L.Storage ls) = withForeignPtr ls (C.expand t0 t1)
+  expand :: t -> t -> [LongStorage] -> IO ()
+  -- expand = C.expand
 
   expandNd :: [t] -> [t] -> Int32 -> IO ()
-  expandNd = C.expandNd
+  -- expandNd = C.expandNd
 
   get :: t -> Dim (d :: [Nat]) -> IO (HsReal t)
-  -- get t = -- C.get
+  -- get = C.get
 
   isContiguous :: t -> IO Bool
   isContiguous = C.isContiguous
@@ -76,8 +80,8 @@ class C.IsTensor t => IsTensor t where
   isSetTo :: t -> t -> IO Bool
   isSetTo = C.isSetTo
 
-  isSize :: t -> LongStorage -> IO Bool
-  isSize t (L.Storage ls) = withForeignPtr ls (C.isSize t)
+  isSize :: t -> [LongStorage] -> IO Bool
+  -- isSize = C.isSize
 
   nDimension :: t -> IO Int32
   nDimension = C.nDimension
@@ -97,8 +101,8 @@ class C.IsTensor t => IsTensor t where
   newContiguous :: t -> IO t
   newContiguous = C.newContiguous
 
-  newExpand :: t -> LongStorage -> IO t
-  newExpand t (L.Storage ls) = withForeignPtr ls (C.newExpand t)
+  newExpand :: t -> [LongStorage] -> IO t
+  -- newExpand = C.newExpand
 
   newNarrow :: t -> Int32 -> Int64 -> Int64 -> IO t
   newNarrow = C.newNarrow
@@ -106,11 +110,11 @@ class C.IsTensor t => IsTensor t where
   newSelect :: t -> Int32 -> Int64 -> IO t
   newSelect = C.newSelect
 
-  newSizeOf :: t -> IO LongStorage
-  newSizeOf t = C.newSizeOf t >>= L.asStorage
+  newSizeOf :: t -> IO [LongStorage]
+  -- newSizeOf = C.newSizeOf
 
-  newStrideOf :: t -> IO LongStorage
-  newStrideOf t = C.newStrideOf t >>= L.asStorage
+  newStrideOf :: t -> IO [LongStorage]
+  -- newStrideOf = C.newStrideOf
 
   newTranspose :: t -> Int32 -> Int32 -> IO t
   newTranspose = C.newTranspose
@@ -118,23 +122,17 @@ class C.IsTensor t => IsTensor t where
   newUnfold :: t -> Int32 -> Int64 -> Int64 -> IO t
   newUnfold = C.newUnfold
 
-  newView :: t -> LongStorage -> IO t
-  newView t (L.Storage l) = withForeignPtr l (C.newView t)
+  newView :: t -> [LongStorage] -> IO t
+  -- newView = C.newView
 
-  newWithSize :: LongStorage -> LongStorage -> IO t
-  newWithSize (L.Storage l0) (L.Storage l1) =
-    withForeignPtr l0 $ \l0' ->
-      withForeignPtr l1 $ \l1' ->
-        C.newWithSize l0' l1'
+  newWithSize :: [LongStorage] -> [LongStorage] -> IO t
+  -- newWithSize = C.newWithSize
 
   newWithSizeDim :: Dim (d::[Nat]) -> IO t
   -- newWithSizeDim = C.newWithSizeDim
 
-  newWithStorage :: HsStorage t -> Int64 -> LongStorage -> LongStorage -> IO t
-  newWithStorage s i (L.Storage l0) (L.Storage l1) =
-    withForeignPtr l0 $ \l0' ->
-      withForeignPtr l1 $ \l1' ->
-        C.newWithStorage s i l0' l1'
+  newWithStorage :: HsStorage t -> Int64 -> [LongStorage] -> [LongStorage] -> IO t
+  -- newWithStorage = C.newWithStorage
 
   newWithStorageDim :: HsStorage t -> Dim (d::[Nat]) -> IO t
   -- newWithStorageDim = C.newWithStorageDim
@@ -142,11 +140,8 @@ class C.IsTensor t => IsTensor t where
   newWithTensor :: t -> IO t
   newWithTensor = C.newWithTensor
 
-  resize :: t -> LongStorage -> LongStorage -> IO ()
-  resize t (L.Storage ls0) (L.Storage ls1) =
-    withForeignPtr ls0 $ \l0' ->
-      withForeignPtr ls1 $ \l1' ->
-        C.resize t l0' l1'
+  resize :: t -> [LongStorage] -> [LongStorage] -> IO ()
+  -- resize = C.resize
 
   resizeDim :: t -> Dim (d::[Nat]) -> IO ()
   -- resizeDim = C.resizeDim
@@ -154,7 +149,7 @@ class C.IsTensor t => IsTensor t where
   resizeAs :: t -> t -> IO ()
   resizeAs = C.resizeAs
 
-  resizeNd :: t -> Int32 -> [Int64] -> [Int64] -> IO ()
+  resizeNd :: t -> Int32 -> Ptr CLLong -> Ptr CLLong -> IO ()
   resizeNd = C.resizeNd
 
   retain :: t -> IO ()
@@ -172,17 +167,14 @@ class C.IsTensor t => IsTensor t where
   setFlag :: t -> Int8 -> IO ()
   setFlag = C.setFlag
 
-  setStorage :: t -> HsStorage t -> Int64 -> LongStorage -> LongStorage -> IO ()
-  setStorage t s i (L.Storage l0) (L.Storage l1) =
-    withForeignPtr l0 $ \l0' ->
-      withForeignPtr l1 $ \l1' ->
-        C.setStorage t s i l0' l1'
+  setStorage :: t -> HsStorage t -> Int64 -> [LongStorage] -> [LongStorage] -> IO ()
+  -- setStorage = C.setStorage
 
   setStorageDim :: t -> HsStorage t -> Dim (d::[Nat]) -> IO ()
   -- setStorageDim = C.setStorageDim
 
-  setStorageNd :: t -> HsStorage t -> Int64 -> Int32 -> [Int64] -> [Int64] -> IO ()
-  setStorageNd = C.setStorageNd
+  setStorageNd :: t -> HsStorage t -> Int64 -> Int32 -> [CLLong] -> [CLLong] -> IO ()
+  -- setStorageNd = C.setStorageNd
 
   size :: t -> Int32 -> IO Int64
   size = C.size
