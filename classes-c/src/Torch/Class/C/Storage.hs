@@ -1,7 +1,6 @@
 module Torch.Class.C.Storage where
 
-import Foreign
-import Foreign.C.Types
+import Foreign (Ptr, Int64, Int8, Int32)
 import THTypes
 import Torch.Class.C.Internal
 

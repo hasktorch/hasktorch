@@ -1,6 +1,5 @@
 signature TensorConv where
 
-import THTypes
 import Foreign
 import Foreign.C.Types
 import SigTypes

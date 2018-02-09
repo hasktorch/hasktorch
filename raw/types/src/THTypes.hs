@@ -3,10 +3,10 @@
 module THTypes where
 
 import Foreign
-import Foreign.C.String
+import Foreign.C.String ()
 import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.Storable
+import Foreign.Ptr ()
+import Foreign.Storable ()
 
 import TorchStructs
 

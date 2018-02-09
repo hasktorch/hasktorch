@@ -1,8 +1,7 @@
 module Torch.Class.C.Storage.Copy where
 
 import Torch.Class.C.Internal
-import Foreign
-import Foreign.C.Types
+import Foreign (Ptr)
 import THTypes
 
 class StorageCopy t where

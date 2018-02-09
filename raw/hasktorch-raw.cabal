@@ -20,7 +20,7 @@ source-repository head
   location: https://github.com/hasktorch/hasktorch
 
 library
-  ghc-options: -L/home/stites/git/hasktorch/vendor/build/ -lATen
+  ghc-options: -L/home/stites/git/hasktorch/vendor/build/ -lATen -Wno-unused-imports
   -- extra-lib-dirs: /home/stites/git/hasktorch/vendor/build/
   -- extra-libraries: ATen, EHX
   include-dirs:
