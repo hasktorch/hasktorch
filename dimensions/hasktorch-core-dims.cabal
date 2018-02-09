@@ -1,4 +1,4 @@
-name:           hasktorch-core-dims
+name:           hasktorch-dimensions
 version:        0.0.1.0
 synopsis:       Torch for tensors and neural networks in Haskell
 description:    core tensor abstractions wrapping raw TH bindings

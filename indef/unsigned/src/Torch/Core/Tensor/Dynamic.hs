@@ -3,6 +3,11 @@
 module Torch.Core.Tensor.Dynamic
   ( Tensor(..)
   , asTensor
+  , Class.IsTensor(..)
+  , Class.TensorCopy(..)
+  , Class.TensorConv(..)
+  , Class.TensorMath(..)
+  , Class.TensorRandom(..)
   ) where
 
 import Foreign (Ptr, withForeignPtr, newForeignPtr)
@@ -13,10 +18,17 @@ import THTypes
 import qualified Tensor as Sig
 import qualified Storage as StorageSig (c_size)
 import qualified Torch.Class.C.Tensor as Class
+import qualified Torch.Class.C.Tensor.Copy as Class
+import qualified Torch.Class.C.Tensor.Conv as Class
+import qualified Torch.Class.C.Tensor.Math as Class
+import qualified Torch.Class.C.Tensor.Random as Class
 
 import Torch.Core.Types
 import Torch.Core.Storage (asStorage)
 import Torch.Core.Tensor.Dynamic.Copy ()
+import Torch.Core.Tensor.Dynamic.Conv ()
+import Torch.Core.Tensor.Dynamic.Math ()
+import Torch.Core.Tensor.Dynamic.Random ()
 
 asTensor :: Ptr CTensor -> IO Tensor
 asTensor = fmap Tensor . newForeignPtr Sig.p_free
@@ -26,8 +38,7 @@ instance Class.IsTensor Tensor where
   tensordata = ptrArray2hs Sig.c_data arrayLen . tensor
    where
     arrayLen :: Ptr CTensor -> IO Int
-    arrayLen p = do
-      Sig.c_storage p >>= StorageSig.c_size >>= pure . fromIntegral
+    arrayLen p = Sig.c_storage p >>= StorageSig.c_size >>= pure . fromIntegral
 
   clearFlag :: Tensor -> Int8 -> IO ()
   clearFlag t cc = withForeignPtr (tensor t) $ \t' -> Sig.c_clearFlag t' (CChar cc)
