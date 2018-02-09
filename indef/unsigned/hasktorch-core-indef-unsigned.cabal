@@ -46,3 +46,33 @@ library
     , Torch.Core.Tensor.Dynamic.Math
     , Torch.Core.Tensor.Dynamic.Random
 
+executable isdefinite
+  hs-source-dirs: exe
+  main-is: Main.hs
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core-indef-unsigned
+    , hasktorch-raw
+    , hasktorch-raw-types
+  mixins:
+      hasktorch-core-indef-unsigned
+        (Torch.Core.Types
+        ,Torch.Core.Storage
+        ,Torch.Core.Storage.Copy
+        ,Torch.Core.Tensor.Dynamic
+        ,Torch.Core.Tensor.Dynamic.Copy
+        ,Torch.Core.Tensor.Dynamic.Conv
+        ,Torch.Core.Tensor.Dynamic.Random
+        ,Torch.Core.Tensor.Dynamic.Math
+        )
+        requires
+        (SigTypes         as THByteTypes
+        ,Storage          as THByteStorage
+        ,StorageCopy      as THByteStorageCopy
+        ,Tensor           as THByteTensor
+        ,TensorCopy       as THByteTensorCopy
+        ,TensorConv       as THByteTensorConv
+        ,TensorRandom     as THByteTensorRandom
+        ,TensorMath       as THByteTensorMath
+        )
