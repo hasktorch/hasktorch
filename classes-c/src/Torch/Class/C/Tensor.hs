@@ -10,7 +10,7 @@ class IsTensor t where
   tensordata :: t -> IO [HsReal t]
   desc :: t -> IO CTHDescBuff
   expand :: t -> t -> Ptr CTHLongStorage -> IO ()
-  expandNd :: Ptr t -> Ptr t -> Int32 -> IO ()
+  expandNd :: [t] -> [t] -> Int32 -> IO ()
   free :: t -> IO ()
   freeCopyTo :: t -> t -> IO ()
   get1d :: t -> Int64 -> IO (HsReal t)
@@ -53,7 +53,7 @@ class IsTensor t where
   resize4d :: t -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
   resize5d :: t -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
   resizeAs :: t -> t -> IO ()
-  resizeNd :: t -> Int32 -> Ptr CLLong -> Ptr CLLong -> IO ()
+  resizeNd :: t -> Int32 -> [Int64] -> [Int64] -> IO ()
   retain :: t -> IO ()
   select :: t -> t -> Int32 -> Int64 -> IO ()
   set :: t -> t -> IO ()
@@ -67,7 +67,7 @@ class IsTensor t where
   setStorage2d :: t -> HsStorage t -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
   setStorage3d :: t -> HsStorage t -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
   setStorage4d :: t -> HsStorage t -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-  setStorageNd :: t -> HsStorage t -> Int64 -> Int32 -> Ptr CLLong -> Ptr CLLong -> IO ()
+  setStorageNd :: t -> HsStorage t -> Int64 -> Int32 -> [Int64] -> [Int64] -> IO ()
   size :: t -> Int32 -> IO Int64
   sizeDesc :: t -> IO CTHDescBuff
   squeeze :: t -> t -> IO ()

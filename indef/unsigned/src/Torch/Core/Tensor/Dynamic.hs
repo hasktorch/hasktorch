@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
 module Torch.Core.Tensor.Dynamic
@@ -10,11 +11,14 @@ module Torch.Core.Tensor.Dynamic
   , Class.TensorRandom(..)
   ) where
 
-import Foreign (Ptr, withForeignPtr, newForeignPtr)
+import Data.Coerce (coerce)
+import Foreign (Ptr, withForeignPtr, newForeignPtr, Storable(peek))
 import Foreign.C.Types
 import GHC.ForeignPtr (ForeignPtr)
 import GHC.Int
 import THTypes
+
+import qualified Foreign.Marshal.Array as FM
 import qualified Tensor as Sig
 import qualified Storage as StorageSig (c_size)
 import qualified Torch.Class.C.Tensor as Class
@@ -52,8 +56,17 @@ instance Class.IsTensor Tensor where
       withForeignPtr (tensor t1) $ \t1' ->
         Sig.c_expand t0' t1' ls
 
-  -- expandNd :: Ptr Tensor -> Ptr Tensor -> CInt -> IO ()
-  -- expandNd = undefined
+  -- | https://github.com/torch/torch7/blob/2186e414ad8fc4dfc9f2ed090c0bf8a0e1946e62/lib/TH/generic/THTensor.c#L319
+  expandNd :: [Tensor] -> [Tensor] -> Int32 -> IO ()
+  expandNd rets' ops' count = do
+    rets <- ptrPtrTensors rets'
+    ops  <- ptrPtrTensors ops'
+    Sig.c_expandNd rets ops (CInt count)
+   where
+    ptrPtrTensors :: [Tensor] -> IO (Ptr (Ptr CTensor))
+    ptrPtrTensors ts
+      = mapM (`withForeignPtr` pure) (coerce ts :: [ForeignPtr CTensor])
+      >>= FM.newArray
 
   free :: Tensor -> IO ()
   free t = withForeignPtr (tensor t) Sig.c_free
@@ -233,8 +246,11 @@ instance Class.IsTensor Tensor where
       withForeignPtr (tensor t1) $ \t1' ->
         Sig.c_resizeAs t0' t1'
 
-  resizeNd :: Tensor -> Int32 -> Ptr CLLong -> Ptr CLLong -> IO ()
-  resizeNd t i l0 l1 = withForeignPtr (tensor t) (\t' -> Sig.c_resizeNd t' (CInt i) l0 l1)
+  resizeNd :: Tensor -> Int32 -> [Int64] -> [Int64] -> IO ()
+  resizeNd t i l0' l1' = do
+    l0 <- FM.newArray (coerce l0' :: [CLLong])
+    l1 <- FM.newArray (coerce l1' :: [CLLong])
+    withForeignPtr (tensor t) $ \t' -> Sig.c_resizeNd t' (CInt i) l0 l1
 
   retain :: Tensor -> IO ()
   retain t = withForeignPtr (tensor t) Sig.c_retain
@@ -308,8 +324,10 @@ instance Class.IsTensor Tensor where
           (CLLong d20) (CLLong d21)
           (CLLong d30) (CLLong d31)
 
-  setStorageNd :: Tensor -> Storage -> Int64 -> Int32 -> Ptr CLLong -> Ptr CLLong -> IO ()
-  setStorageNd t s a b c d =
+  setStorageNd :: Tensor -> Storage -> Int64 -> Int32 -> [Int64] -> [Int64] -> IO ()
+  setStorageNd t s a b hsc hsd = do
+    c <- FM.newArray (coerce hsc :: [CLLong])
+    d <- FM.newArray (coerce hsd :: [CLLong])
     withForeignPtr (tensor t) $ \t' ->
       withForeignPtr (storage s) $ \s' ->
         Sig.c_setStorageNd t' s' (CPtrdiff a) (CInt b) c d
