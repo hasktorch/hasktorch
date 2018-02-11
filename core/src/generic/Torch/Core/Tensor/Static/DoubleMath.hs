@@ -23,6 +23,7 @@ module Torch.Core.Tensor.Static.DoubleMath
 
   , tds_fill
   , tds_fill_
+  , tds_eye
 
   , tds_addConst
   , tds_subConst
@@ -230,6 +231,16 @@ tds_fill value tensor = unsafePerformIO $
 tds_fill_ :: Real a => a -> (TDS d) -> IO ()
 tds_fill_ value tensor =
   withForeignPtr (getForeign tensor) (inplaceFill realToFrac value)
+
+tds_eye :: forall n . (KnownNatDim n) => TDS '[n, n]
+tds_eye = unsafePerformIO $ do
+  _ <- withForeignPtr (getForeign nt) (\t -> c_THDoubleTensor_eye t n n)
+  pure nt
+  where
+    nt :: TDS '[n, n]
+    nt = tds_new
+    n = round ((realToFrac $ natVal (Proxy :: Proxy n)) :: Double)
+{-# NOINLINE tds_eye #-}
 
 tds_addConst :: (SingDimensions d, Real p) => TDS d -> p -> TDS d
 tds_addConst mtx val = apply1_ tAdd mtx val
