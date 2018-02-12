@@ -33,9 +33,6 @@ module Torch.Core.Tensor.Static
   , StaticConstraint
   , StaticConstraint2
 
-  -- reexport static typeclass
-  , IsStatic(..)
-
   -- experimental helper function (potentially delete)
   , withInplace
 
@@ -48,6 +45,9 @@ module Torch.Core.Tensor.Static
   , fromList1d
   , newTranspose2d
   , expand2d
+
+  -- reexports
+  , IsStatic(..)
   ) where
 
 import THTypes
@@ -112,12 +112,13 @@ instance Dynamic.TensorConv (LongTensor   (d::[Nat]))
 instance Dynamic.TensorConv (FloatTensor  (d::[Nat]))
 instance Dynamic.TensorConv (DoubleTensor (d::[Nat]))
 
-instance Dynamic.TensorRandom (ByteTensor   (d::[Nat]))
-instance Dynamic.TensorRandom (ShortTensor  (d::[Nat]))
-instance Dynamic.TensorRandom (IntTensor    (d::[Nat]))
-instance Dynamic.TensorRandom (LongTensor   (d::[Nat]))
-instance Dynamic.TensorRandom (FloatTensor  (d::[Nat]))
-instance Dynamic.TensorRandom (DoubleTensor (d::[Nat]))
+-- Some of these are dimension-specific. See 'Torch.Core.Tensor.Static.Random'
+-- instance Dynamic.TensorRandom (ByteTensor   (d::[Nat]))
+-- instance Dynamic.TensorRandom (ShortTensor  (d::[Nat]))
+-- instance Dynamic.TensorRandom (IntTensor    (d::[Nat]))
+-- instance Dynamic.TensorRandom (LongTensor   (d::[Nat]))
+-- instance Dynamic.TensorRandom (FloatTensor  (d::[Nat]))
+-- instance Dynamic.TensorRandom (DoubleTensor (d::[Nat]))
 
 -- ========================================================================= --
 

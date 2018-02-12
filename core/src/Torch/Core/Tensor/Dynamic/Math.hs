@@ -23,6 +23,7 @@ type ByteTensor = B.Tensor
 type LongTensor = L.Tensor
 type LongStorage = LS.Storage
 
+-- FIXME: all of these functions are assumed to be inplace. We should figure out the convention to properly split the dynamic inplace and pure versions.
 class CCall.TensorMath t => TensorMath t where
   fill :: t -> HsReal t -> IO ()
   fill = CCall.fill

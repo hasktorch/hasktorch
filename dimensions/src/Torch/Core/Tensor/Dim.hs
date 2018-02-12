@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Core.Tensor.Dim
   ( KnownNat2
   , KnownNat3
@@ -17,6 +18,7 @@ module Torch.Core.Tensor.Dim
   , SingDim2
   , SingDim3
   , SingDimensions
+  , DimVal(..)
   , someDimsM
   , unsafeSomeDims
   , showdim
@@ -42,6 +44,7 @@ import Data.Sequence (Seq, (|>))
 import GHC.TypeLits (KnownNat)
 import Numeric.Dimensions (Dim(..), SomeDims(..), Nat)
 import Numeric.Dimensions as Dim
+import GHC.Int (Int32)
 
 type KnownNat2 n0 n1    = (KnownNat n0, KnownNat n1)
 type KnownNat3 n0 n1 n2 = (KnownNat n0, KnownNat n1, KnownNat n2)
@@ -54,6 +57,9 @@ type SingDim2 n0 n1    = (SingDim n0, SingDim n1)
 type SingDim3 n0 n1 n2 = (SingDim n0, SingDim n1, SingDim n2)
 
 type SingDimensions d = (SingI d, Dimensions d)
+
+newtype DimVal = DimVal Int32
+  deriving (Bounded, Enum, Eq, Integral, Num, Ord, Read, Real, Show)
 
 someDimsM :: MonadThrow m => [Int] -> m SomeDims
 someDimsM d = case Dim.someDimsVal d of

@@ -83,8 +83,10 @@ library
     , Torch.Core.Tensor.Dynamic.Conv
     , Torch.Core.Tensor.Dynamic.Random
     , Torch.Core.Tensor.Dynamic.Math
+    -- Torch.Core.Tensor.Static includes derived Conv and Copy instances
     , Torch.Core.Tensor.Static
     , Torch.Core.Tensor.Static.Random
+    , Torch.Core.Tensor.Static.Math
     -- , Torch.Core.Tensor.Static.Lapack
 
   reexported-modules:
