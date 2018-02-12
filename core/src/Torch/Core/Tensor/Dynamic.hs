@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Torch.Core.Tensor.Dynamic
   ( ByteTensor
   , ShortTensor
@@ -11,13 +13,21 @@ module Torch.Core.Tensor.Dynamic
 
   , IsTensor(..)
   , module Classes
+  , constant
+  , resizeDim
+  , resizeDim'
+  , resizeDim'_
+  , resizeAs
   ) where
 
 import THTypes
-import Foreign
+import Foreign (withForeignPtr)
+import GHC.Int
 import Torch.Class.C.Internal
 import Torch.Core.Tensor.Dim
 import qualified Torch.Class.C.Tensor as C
+import Torch.Class.C.Storage (IsStorage)
+import qualified Torch.Class.C.Storage as Storage
 
 import Torch.Core.Tensor.Dynamic.Copy as Classes
 import Torch.Core.Tensor.Dynamic.Conv as Classes
@@ -69,6 +79,9 @@ class C.IsTensor t => IsTensor t where
 
   get :: t -> Dim (d :: [Nat]) -> IO (HsReal t)
   -- get t = -- C.get
+
+  get' :: t -> SomeDims -> IO (HsReal t)
+  get' t (SomeDims d) = get t d
 
   isContiguous :: t -> IO Bool
   isContiguous = C.isContiguous
@@ -130,8 +143,8 @@ class C.IsTensor t => IsTensor t where
       withForeignPtr l1 $ \l1' ->
         C.newWithSize l0' l1'
 
-  newWithSizeDim :: Dim (d::[Nat]) -> IO t
-  -- newWithSizeDim = C.newWithSizeDim
+  newWithDim :: Dim (d::[Nat]) -> IO t
+  -- newWitheDim = C.newWithSizeDim
 
   newWithStorage :: HsStorage t -> Int64 -> LongStorage -> LongStorage -> IO t
   newWithStorage s i (L.Storage l0) (L.Storage l1) =
@@ -142,6 +155,9 @@ class C.IsTensor t => IsTensor t where
   newWithStorageDim :: HsStorage t -> Dim (d::[Nat]) -> IO t
   -- newWithStorageDim = C.newWithStorageDim
 
+  newWithStorageDim' :: HsStorage t -> SomeDims -> IO t
+  newWithStorageDim' s (SomeDims d) = newWithStorageDim s d
+
   newWithTensor :: t -> IO t
   newWithTensor = C.newWithTensor
 
@@ -151,14 +167,18 @@ class C.IsTensor t => IsTensor t where
       withForeignPtr ls1 $ \l1' ->
         C.resize t l0' l1'
 
-  resizeDim :: t -> Dim (d::[Nat]) -> IO ()
-  -- resizeDim = C.resizeDim
+  resizeDim_ :: t -> Dim (d::[Nat]) -> IO ()
 
-  resizeAs :: t -> t -> IO ()
-  resizeAs = C.resizeAs
+  resizeAs_ :: t -> t -> IO ()
+  resizeAs_ = C.resizeAs
 
-  resizeNd :: t -> Int32 -> [Int64] -> [Int64] -> IO ()
-  resizeNd = C.resizeNd
+  resizeNd_
+    :: t {-tensor to mutate-}
+    -> Int32 {-n dimensions-}
+    -> [Int64] {-sizes-}
+    -> [Int64] {-strides-}
+    -> IO ()
+  resizeNd_ = C.resizeNd
 
   retain :: t -> IO ()
   retain = C.retain
@@ -171,6 +191,9 @@ class C.IsTensor t => IsTensor t where
 
   setDim :: t -> Dim (d::[Nat]) -> HsReal t -> IO ()
   -- setDim = C.setDim
+
+  setDim' :: t -> SomeDims -> HsReal t -> IO ()
+  setDim' t (SomeDims d) v =  setDim t d v
 
   setFlag :: t -> Int8 -> IO ()
   setFlag = C.setFlag
@@ -216,4 +239,26 @@ class C.IsTensor t => IsTensor t where
 
   unsqueeze1d :: t -> t -> Int32 -> IO ()
   unsqueeze1d = C.unsqueeze1d
+
+constant :: (IsTensor t, TensorMath t) => HsReal t -> IO t
+constant v = do
+  t <- new
+  fill t v
+  pure t
+
+resizeDim :: t -> Dim (d::[Nat]) -> IO t
+resizeDim = undefined
+
+resizeDim' :: IsTensor t => t -> SomeDims -> IO t
+resizeDim' t (SomeDims d) = resizeDim t d
+
+resizeDim'_ :: IsTensor t => t -> SomeDims -> IO ()
+resizeDim'_ t (SomeDims d) =  resizeDim_ t d
+
+resizeAs :: IsTensor t => t -> t -> IO t
+resizeAs src shape = do
+  res' <- newClone src
+  C.resizeAs res' shape
+  pure res'
+
 

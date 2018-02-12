@@ -10,6 +10,7 @@ import Foreign.C.Types
 import GHC.ForeignPtr (ForeignPtr)
 import GHC.Int
 import THTypes
+import Control.Monad.Managed
 
 import Torch.Core.Types
 import Torch.Core.Storage.Copy ()

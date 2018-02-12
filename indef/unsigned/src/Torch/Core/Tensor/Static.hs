@@ -32,6 +32,7 @@ import Foreign.ForeignPtr (ForeignPtr)
 
 import GHC.TypeLits (Nat)
 import Torch.Core.Types (Storage)
+import Torch.Class.C.Tensor.Static (IsStatic(..))
 import qualified Torch.Class.C.Internal as TypeFamilies
 import qualified Torch.Core.Tensor.Dynamic as Dynamic
 
@@ -52,4 +53,9 @@ tensor = coerce
 type instance TypeFamilies.HsReal    (Tensor (ds::[Nat])) = HsReal
 type instance TypeFamilies.HsAccReal (Tensor (ds::[Nat])) = HsAccReal
 type instance TypeFamilies.HsStorage (Tensor (ds::[Nat])) = Storage
+type instance TypeFamilies.AsDynamic (Tensor (ds::[Nat])) = Dynamic.Tensor
+
+instance IsStatic (Tensor ds) where
+  asDynamic = dynamic
+  asStatic = Tensor
 

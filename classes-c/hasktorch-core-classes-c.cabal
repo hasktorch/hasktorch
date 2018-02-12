@@ -36,4 +36,5 @@ library
     , Torch.Class.C.Tensor.Lapack
     , Torch.Class.C.Tensor.Math
     , Torch.Class.C.Tensor.Random
+    , Torch.Class.C.Tensor.Static
 

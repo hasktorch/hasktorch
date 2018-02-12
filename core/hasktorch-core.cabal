@@ -80,6 +80,10 @@ library
     , Torch.Core.Storage.Copy
     , Torch.Core.Tensor.Dynamic
     , Torch.Core.Tensor.Dynamic.Copy
+    , Torch.Core.Tensor.Dynamic.Conv
+    , Torch.Core.Tensor.Dynamic.Random
+    , Torch.Core.Tensor.Dynamic.Math
+    , Torch.Core.Tensor.Static
 
   reexported-modules:
       Torch.Core.Tensor.Dim
@@ -93,6 +97,7 @@ library
     , Torch.Core.ByteTensor.Dynamic.Conv
     , Torch.Core.ByteTensor.Dynamic.Math
     , Torch.Core.ByteTensor.Dynamic.Random
+    , Torch.Core.ByteTensor.Static
 
    -- export all signed types
     , Torch.Core.ShortTypes
@@ -104,6 +109,7 @@ library
     , Torch.Core.ShortTensor.Dynamic.Random
     , Torch.Core.ShortTensor.Dynamic.Math
 --    , Torch.Core.ShortTensor.Dynamic.Math.Signed
+    , Torch.Core.ShortTensor.Static
 
     , Torch.Core.IntTypes
     , Torch.Core.IntStorage
@@ -114,6 +120,7 @@ library
     , Torch.Core.IntTensor.Dynamic.Random
     , Torch.Core.IntTensor.Dynamic.Math
 --    , Torch.Core.IntTensor.Dynamic.Math.Signed
+    , Torch.Core.IntTensor.Static
 
     , Torch.Core.LongTypes
     , Torch.Core.LongStorage
@@ -124,6 +131,7 @@ library
     , Torch.Core.LongTensor.Dynamic.Random
     , Torch.Core.LongTensor.Dynamic.Math
 --    , Torch.Core.LongTensor.Dynamic.Math.Signed
+    , Torch.Core.LongTensor.Static
 
     -- export all floating types
     , Torch.Core.FloatTypes
@@ -138,6 +146,7 @@ library
 --    , Torch.Core.FloatTensor.Dynamic.Math.Signed
     , Torch.Core.FloatTensor.Dynamic.Random
 --    , Torch.Core.FloatTensor.Dynamic.Random.Floating
+    , Torch.Core.FloatTensor.Static
 
     , Torch.Core.DoubleTypes
     , Torch.Core.DoubleStorage
@@ -151,6 +160,7 @@ library
 --    , Torch.Core.DoubleTensor.Dynamic.Math.Signed
     , Torch.Core.DoubleTensor.Dynamic.Random
 --    , Torch.Core.DoubleTensor.Dynamic.Random.Floating
+    , Torch.Core.DoubleTensor.Static
 
   other-modules:
       Torch.Core.Internal
@@ -165,6 +175,7 @@ library
         ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.ByteTensor.Dynamic.Conv
         ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.ByteTensor.Dynamic.Random
         ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ByteTensor.Dynamic.Math
+        ,Torch.Core.Tensor.Static              as Torch.Core.ByteTensor.Static
         )
         requires
         (SigTypes         as THByteTypes
@@ -187,6 +198,7 @@ library
         ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.ShortTensor.Dynamic.Random
         ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ShortTensor.Dynamic.Math
 --        ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.ShortTensor.Dynamic.Math.Signed
+        ,Torch.Core.Tensor.Static              as Torch.Core.ShortTensor.Static
         )
         requires
         (SigTypes         as THShortTypes
@@ -210,6 +222,7 @@ library
        ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.IntTensor.Dynamic.Random
        ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.IntTensor.Dynamic.Math
 --        ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.IntTensor.Dynamic.Math.Signed
+       ,Torch.Core.Tensor.Static              as Torch.Core.IntTensor.Static
        )
        requires
        (SigTypes         as THIntTypes
@@ -233,6 +246,7 @@ library
       ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.LongTensor.Dynamic.Random
       ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.LongTensor.Dynamic.Math
 --        ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.LongTensor.Dynamic.Math.Signed
+      ,Torch.Core.Tensor.Static              as Torch.Core.LongTensor.Static
       )
       requires
       (SigTypes         as THLongTypes
@@ -259,6 +273,7 @@ library
 --        ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.FloatTensor.Dynamic.Math.Signed
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.FloatTensor.Dynamic.Random
 --        ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.FloatTensor.Dynamic.Random.Floating
+      ,Torch.Core.Tensor.Static                   as Torch.Core.FloatTensor.Static
       )
       requires
       (SigTypes             as THFloatTypes
@@ -288,6 +303,7 @@ library
 --         ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.DoubleTensor.Dynamic.Math.Signed
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.DoubleTensor.Dynamic.Random
 --         ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.DoubleTensor.Dynamic.Random.Floating
+      ,Torch.Core.Tensor.Static                   as Torch.Core.DoubleTensor.Static
       )
       requires
       (SigTypes             as THDoubleTypes
@@ -304,94 +320,3 @@ library
 --         ,TensorRandomFloating as THDoubleTensorRandom
       )
 
-
--- library byte-only
---   hs-source-dirs: byte-only
---   default-language: Haskell2010
---   ghc-options: -L/home/stites/git/hasktorch/vendor/build/ -lATen
---   include-dirs:
---       /home/stites/git/hasktorch/vendor/build/
---     , /home/stites/git/hasktorch/vendor/build/src/TH/
---     , /home/stites/git/hasktorch/vendor/build/src/THNN/
---     , /home/stites/git/hasktorch/vendor/build/src/ATen/
---     , /home/stites/git/hasktorch/vendor/build/src/THS/
---   c-sources:
---       /home/stites/git/hasktorch/vendor/TH/THAllocator.c
---     , /home/stites/git/hasktorch/vendor/TH/THAtomic.c
---     , /home/stites/git/hasktorch/vendor/TH/THBlas.c
---     , /home/stites/git/hasktorch/vendor/TH/THDiskFile.c
---     , /home/stites/git/hasktorch/vendor/TH/THFile.c
---     , /home/stites/git/hasktorch/vendor/TH/THGeneral.c
---     , /home/stites/git/hasktorch/vendor/TH/THHalf.c
---     , /home/stites/git/hasktorch/vendor/TH/THLapack.c
---     , /home/stites/git/hasktorch/vendor/TH/THLogAdd.c
---     , /home/stites/git/hasktorch/vendor/TH/THMemoryFile.c
---     , /home/stites/git/hasktorch/vendor/TH/THRandom.c
---     , /home/stites/git/hasktorch/vendor/TH/THSize.c
---     , /home/stites/git/hasktorch/vendor/TH/THStorage.c
---     , /home/stites/git/hasktorch/vendor/TH/THTensor.c
---     , /home/stites/git/hasktorch/vendor/TH/THVector.c
---   build-depends:
---       base >=4.7 && <5
---     , containers
---     , deepseq >=1.3.0.0
---     , dimensions >=0.3.2.0
---     , hasktorch-core-classes-c
---     , hasktorch-dimensions
---     , hasktorch-core-indef-unsigned
---     , hasktorch-raw
---     , hasktorch-raw-types
---     , managed >=1.0.0 && <1.1
---     , microlens >=0.4.8.1
---     , numeric-limits
---     , safe-exceptions >=0.1.0.0
---     , singletons >=2.2
---     , text >=1.2.2.2
---     , typelits-witnesses >=0.2.3.0
--- 
---   exposed-modules:
---       Torch.Core.Exceptions
---     -- , Torch.Core.Random
---     -- , Torch.Core.LogAdd
---     , Torch.Core.Storage
---     , Torch.Core.Storage.Copy
---     , Torch.Core.Tensor.Dynamic
---     , Torch.Core.Tensor.Dynamic.Copy
--- 
---   reexported-modules:
---       Torch.Core.Tensor.Dim
--- 
---     -- export all unsigned types
---     , Torch.Core.ByteTypes
---     , Torch.Core.ByteStorage
---     , Torch.Core.ByteStorage.Copy
---     , Torch.Core.ByteTensor.Dynamic
---     , Torch.Core.ByteTensor.Dynamic.Copy
---     , Torch.Core.ByteTensor.Dynamic.Conv
---     , Torch.Core.ByteTensor.Dynamic.Math
---     , Torch.Core.ByteTensor.Dynamic.Random
--- 
---   other-modules:
---       Torch.Core.Internal
--- 
---   mixins:
---       hasktorch-core-indef-unsigned
---         (Torch.Core.Types                      as Torch.Core.ByteTypes
---         ,Torch.Core.Storage                    as Torch.Core.ByteStorage
---         ,Torch.Core.Storage.Copy               as Torch.Core.ByteStorage.Copy
---         ,Torch.Core.Tensor.Dynamic             as Torch.Core.ByteTensor.Dynamic
---         ,Torch.Core.Tensor.Dynamic.Copy        as Torch.Core.ByteTensor.Dynamic.Copy
---         ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.ByteTensor.Dynamic.Conv
---         ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.ByteTensor.Dynamic.Random
---         ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ByteTensor.Dynamic.Math
---         )
---         requires
---         (SigTypes         as THByteTypes
---         ,Storage          as THByteStorage
---         ,StorageCopy      as THByteStorageCopy
---         ,Tensor           as THByteTensor
---         ,TensorCopy       as THByteTensorCopy
---         ,TensorConv       as THByteTensorConv
---         ,TensorRandom     as THByteTensorRandom
---         ,TensorMath       as THByteTensorMath
---         )

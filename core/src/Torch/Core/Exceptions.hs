@@ -3,6 +3,7 @@
 module Torch.Core.Exceptions
   ( TorchException(..)
   , module X
+  {-
   , c_testHasktorchLib
   , p_testHasktorchLib
   , c_errorHandler
@@ -10,6 +11,7 @@ module Torch.Core.Exceptions
   , c_argErrorHandler
   , p_argErrorHandler
   , c_THSetErrorHandler
+  -}
   ) where
 
 import Control.Exception.Safe as X
@@ -39,7 +41,7 @@ data TorchException
 instance Exception TorchException
 
 {- Hasktorch error handler -}
-
+{-
 foreign import ccall unsafe "error_handler.h testFunction"
   c_testHasktorchLib :: IO ()
 
@@ -64,7 +66,7 @@ foreign import ccall unsafe "error_handler.h &argErrorHandler"
 -- TH_API void THSetErrorHandler(THErrorHandlerFunction new_handler, void *data);
 foreign import ccall "THGeneral.h.in THSetErrorHandler"
   c_THSetErrorHandler :: FunPtr (CString -> IO ()) -> IO ()
-
+-}
 {-
 -- TH_API double THLog1p(const double x);
 foreign import ccall unsafe "THGeneral.h.in THLog1p"

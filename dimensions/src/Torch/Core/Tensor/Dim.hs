@@ -8,8 +8,14 @@
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE ConstraintKinds #-}
 module Torch.Core.Tensor.Dim
-  ( KnownNatDim
+  ( KnownNat2
+  , KnownNat3
+  , KnownNatDim
+  , KnownNatDim2
+  , KnownNatDim3
   , SingDim
+  , SingDim2
+  , SingDim3
   , SingDimensions
   , someDimsM
   , unsafeSomeDims
@@ -37,8 +43,16 @@ import GHC.TypeLits (KnownNat)
 import Numeric.Dimensions (Dim(..), SomeDims(..), Nat)
 import Numeric.Dimensions as Dim
 
-type KnownNatDim n = (KnownDim n, KnownNat n)
-type SingDim n = (SingI n, KnownDim n)
+type KnownNat2 n0 n1    = (KnownNat n0, KnownNat n1)
+type KnownNat3 n0 n1 n2 = (KnownNat n0, KnownNat n1, KnownNat n2)
+
+type KnownNatDim n         = (KnownDim n, KnownNat n)
+type KnownNatDim2 n0 n1    = (KnownNatDim n0, KnownNatDim n1)
+type KnownNatDim3 n0 n1 n2 = (KnownNatDim n0, KnownNatDim n1, KnownNatDim n2)
+type SingDim n         = (SingI n, KnownDim n)
+type SingDim2 n0 n1    = (SingDim n0, SingDim n1)
+type SingDim3 n0 n1 n2 = (SingDim n0, SingDim n1, SingDim n2)
+
 type SingDimensions d = (SingI d, Dimensions d)
 
 someDimsM :: MonadThrow m => [Int] -> m SomeDims
