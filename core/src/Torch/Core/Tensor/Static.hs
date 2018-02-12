@@ -29,11 +29,22 @@ module Torch.Core.Tensor.Static
   , LongTensor
   , FloatTensor
   , DoubleTensor
+  -- helper constraints
+  , StaticConstraint
+  , StaticConstraint2
 
+  -- reexport static typeclass
+  , IsStatic(..)
+
+  -- experimental helper function (potentially delete)
+  , withInplace
+
+  -- generalized static functions
   , fromList
   , resizeAs
   , isSameSizeAs
 
+  -- specialized static functions
   , fromList1d
   , newTranspose2d
   , expand2d
@@ -85,6 +96,7 @@ instance Class.IsTensor (LongTensor   (d::[Nat]))
 instance Class.IsTensor (FloatTensor  (d::[Nat]))
 instance Class.IsTensor (DoubleTensor (d::[Nat]))
 
+-- These instances can be derived
 instance Dynamic.TensorCopy (ByteTensor   (d::[Nat]))
 instance Dynamic.TensorCopy (ShortTensor  (d::[Nat]))
 instance Dynamic.TensorCopy (IntTensor    (d::[Nat]))
@@ -92,6 +104,7 @@ instance Dynamic.TensorCopy (LongTensor   (d::[Nat]))
 instance Dynamic.TensorCopy (FloatTensor  (d::[Nat]))
 instance Dynamic.TensorCopy (DoubleTensor (d::[Nat]))
 
+-- These might require changing
 instance Dynamic.TensorConv (ByteTensor   (d::[Nat]))
 instance Dynamic.TensorConv (ShortTensor  (d::[Nat]))
 instance Dynamic.TensorConv (IntTensor    (d::[Nat]))
@@ -115,6 +128,14 @@ type StaticConstraint t = (IsStatic t, HsReal t ~ HsReal (AsDynamic t), Dynamic.
 -- Constraints used on two static tensors. Essentially that both static tensors have
 -- the same internal tensor representations.
 type StaticConstraint2 t0 t1 = (StaticConstraint t0, StaticConstraint t1, AsDynamic t0 ~ AsDynamic t1)
+
+-------------------------------------------------------------------------------
+
+withInplace :: forall t d . (Dimensions d, StaticConstraint (t d)) => (AsDynamic (t d) -> IO ()) -> IO (t d)
+withInplace op = do
+  res <- Dynamic.newWithDim (dim :: Dim d)
+  op res
+  pure (asStatic res)
 
 -------------------------------------------------------------------------------
 
