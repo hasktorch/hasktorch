@@ -47,3 +47,102 @@ bernoulli_FloatTensor g a = withInplace $ \res -> Dynamic.bernoulli_FloatTensor 
 bernoulli_DoubleTensor :: RandomConstraint t d => Ptr CTHGenerator -> Dynamic.DoubleTensor -> IO (t d)
 bernoulli_DoubleTensor g a = withInplace $ \res -> Dynamic.bernoulli_DoubleTensor res g a
 
+{-
+-- | generate correlated multivariate normal samples by specifying eigendecomposition
+tds_mvn :: forall n p . (KnownNatDim n, KnownNatDim p) =>
+  RandGen -> TDS '[p] -> TDS '[p,p] -> TDS '[p] -> IO (TDS '[n, p])
+tds_mvn gen mu eigenvectors eigenvalues = do
+  let offset = tds_expand mu :: TDS '[n, p]
+  samps <- tds_normal gen 0.0 1.0 :: IO (TDS '[p, n])
+  let result = tds_trans ((tds_trans eigenvectors)
+                          !*! (tds_diag eigenvalues)
+                          !*! eigenvectors
+                          !*! samps) + offset
+  pure result
+
+test_mvn :: IO ()
+test_mvn = do
+  gen <- newRNG
+  let eigenvectors = tds_fromList [1, 1, 1, 1, 1, 1, 0, 0, 0] :: TDS '[3,3]
+  tds_p eigenvectors
+  let eigenvalues = tds_fromList [1, 1, 1] :: TDS '[3]
+  tds_p eigenvalues
+  let mu = tds_fromList [0.0, 0.0, 0.0] :: TDS '[3]
+  result <- tds_mvn gen mu eigenvectors eigenvalues :: IO (TDS '[10, 3])
+  tds_p result
+
+-- TODO: get rid of self parameter arguments since they are overwritten
+
+tds_random :: SingDimensions d => RandGen -> IO (TDS d)
+tds_random gen = do
+  let result = tds_new
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO $ c_THDoubleTensor_random s g
+  pure result
+
+
+tds_normal :: SingDimensions d => RandGen -> Double -> Double -> IO (TDS d)
+tds_normal gen mean stdv = do
+  let result = tds_new
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_normal s g meanC stdvC)
+  pure result
+  where meanC = realToFrac mean
+        stdvC = realToFrac stdv
+
+-- TH_API void THTensor_(normal_means)(THTensor *self, THGenerator *gen, THTensor *means, double stddev);
+-- TH_API void THTensor_(normal_stddevs)(THTensor *self, THGenerator *gen, double mean, THTensor *stddevs);
+-- TH_API void THTensor_(normal_means_stddevs)(THTensor *self, THGenerator *gen, THTensor *means, THTensor *stddevs);
+
+tds_exponential :: SingDimensions d => RandGen -> Double -> IO (TDS d)
+tds_exponential gen lambda = do
+  let result = tds_new
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_exponential s g lambdaC)
+  pure result
+  where lambdaC = realToFrac lambda
+
+tds_cauchy :: SingDimensions d => RandGen -> Double -> Double -> IO (TDS d)
+tds_cauchy gen median sigma = do
+  let result = tds_new
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_cauchy s g medianC sigmaC)
+  pure result
+  where medianC = realToFrac median
+        sigmaC = realToFrac sigma
+
+tds_logNormal :: SingDimensions d => RandGen -> Double -> Double -> IO (TDS d)
+tds_logNormal gen mean stdv = do
+  let result = tds_new
+  runManaged $ do
+    s <- managed (withForeignPtr (tdsTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    liftIO (c_THDoubleTensor_logNormal s g meanC stdvC)
+  pure result
+  where meanC = realToFrac mean
+        stdvC = realToFrac stdv
+
+tds_multinomial :: SingDimensions d => RandGen -> TDS d -> Int -> Bool -> SomeDims -> IO TensorLong
+tds_multinomial gen prob_dist n_sample with_replacement dim = do
+  let result = tl_new dim
+  runManaged $ do
+    s <- managed (withForeignPtr (tlTensor result))
+    g <- managed (withForeignPtr (rng gen))
+    p <- managed (withForeignPtr (tdsTensor prob_dist))
+    liftIO (c_THDoubleTensor_multinomial s g p n_sampleC with_replacementC)
+  pure result
+  where n_sampleC = fromIntegral n_sample
+        with_replacementC = if with_replacement then 1 else 0
+
+-- TH_API void THTensor_(multinomialAliasSetup)(THTensor *prob_dist, THLongTensor *J, THTensor *q);
+-- TH_API void THTensor_(multinomialAliasDraw)(THLongTensor *self, THGenerator *_generator, THLongTensor *J, THTensor *q);
+-- #endif
+-}

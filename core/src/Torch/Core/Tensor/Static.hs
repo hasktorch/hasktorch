@@ -214,5 +214,55 @@ expand2d t = do
     s1 = natVal (Proxy :: Proxy d1)
     s2 = natVal (Proxy :: Proxy d2)
 
+{-
+-- retrieves a single row
+tds_getRow :: forall n m . (KnownNatDim n, KnownNatDim m) => TDS '[n, m] -> Integer -> TDS '[1, m]
+tds_getRow t r =
+  if r >= 0 && r < ( round ((realToFrac $ natVal (Proxy :: Proxy n)) :: Double) :: Integer ) then
+    unsafePerformIO $ do
+    let res = tds_new
+        indices_ :: TLS '[1] = tls_fromList [ r ]
+    runManaged $ do
+        tPtr <- managed $ withForeignPtr (getForeign t)
+        resPtr <- managed $ withForeignPtr (getForeign res)
+        iPtr <- managed $ withForeignPtr (tlsTensor indices_)
+        liftIO $ c_THDoubleTensor_indexSelect resPtr tPtr 0 iPtr
+    pure res
+  else
+    error "Row out of bounds"
 
+tds_getColumn :: forall n m . (KnownNatDim n, KnownNatDim m) => TDS '[n, m] -> Integer -> TDS '[n, 1]
+tds_getColumn t r =
+  if r >= 0 && r < ( round ((realToFrac $ natVal (Proxy :: Proxy n)) :: Double) :: Integer ) then
+    unsafePerformIO $ do
+    let res = tds_new
+        indices_ :: TLS '[1] = tls_fromList [ r ]
+    runManaged $ do
+        tPtr <- managed $ withForeignPtr (getForeign t)
+        resPtr <- managed $ withForeignPtr (getForeign res)
+        iPtr <- managed $ withForeignPtr (tlsTensor indices_)
+        liftIO $ c_THDoubleTensor_indexSelect resPtr tPtr 1 iPtr
+    pure res
+  else
+    error "Column out of bounds"
 
+tds_getElem :: forall n m . (KnownNatDim n, KnownNatDim m) => TDS '[n, m] -> Int -> Int -> Double
+tds_getElem t r c =
+  if r >= 0 && r < ( round ((realToFrac $ natVal (Proxy :: Proxy n)) :: Double) :: Int ) &&
+     c >= 0 && c < ( round ((realToFrac $ natVal (Proxy :: Proxy m)) :: Double) :: Int ) then
+    unsafePerformIO $ do
+    e <- withForeignPtr (tdsTensor t) (\t_ ->
+                                              pure $
+                                                  c_THDoubleTensor_get2d
+                                                  t_
+                                                  (fromIntegral r)
+                                                  (fromIntegral c))
+    pure $ realToFrac e
+  else
+    error "Indices out of bounds"
+
+tds_setElem :: forall n m . (KnownNatDim n, KnownNatDim m) => TDS '[n, m] -> Int -> Int -> Double -> TDS '[n, m]
+tds_setElem t r c v = apply1__ tSet t
+  where tSet r_ = c_THDoubleTensor_set2d r_ (fromIntegral r) (fromIntegral c) (realToFrac v)
+
+-}
