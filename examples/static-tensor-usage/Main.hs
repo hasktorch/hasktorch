@@ -3,10 +3,10 @@
 
 module Main where
 
-import Torch.Core.Random (newRNG)
-import Torch.Core.Tensor.Static.Double
-import Torch.Core.Tensor.Static.DoubleMath
-import Torch.Core.Tensor.Static.DoubleRandom (tds_uniform)
+import qualified Torch.Core.Random as R (new)
+import Torch.Core.Tensor.Static
+import Torch.Core.Tensor.Static.Math
+import Torch.Core.Tensor.Static.Random (uniform)
 
 initialization :: IO ()
 initialization = do

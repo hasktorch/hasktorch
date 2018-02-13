@@ -47,6 +47,7 @@ library
     , Torch.Core.Tensor.Dynamic.Math
     , Torch.Core.Tensor.Dynamic.Random
     , Torch.Core.Tensor.Static
+    , Torch.Core.Tensor.Static.Random
 
 executable isdefinite
   hs-source-dirs: exe

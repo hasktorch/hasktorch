@@ -24,11 +24,8 @@ import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, newForeignPtr)
 import Data.Word
 
 import THTypes (CTHGenerator)
+import THRandomTypes
 import qualified THRandom as TH
-
-newtype Generator = Generator
-  { rng :: ForeignPtr CTHGenerator
-  } deriving (Eq, Show)
 
 -- ========================================================================= --
 -- helpers

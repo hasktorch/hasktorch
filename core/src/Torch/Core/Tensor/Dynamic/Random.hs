@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Core.Tensor.Dynamic.Random
-  ( TensorRandom(..)
+  ( CCall.TensorRandom(..)
   ) where
 
 import Torch.Class.C.Internal
@@ -17,32 +17,6 @@ import qualified Torch.Core.ShortTensor.Dynamic  as S
 import qualified Torch.Core.IntTensor.Dynamic    as I
 import qualified Torch.Core.DoubleTensor.Dynamic as D
 -- import qualified Torch.Core.HalfTensor.Dynamic   as H
-
-type FloatTensor = F.Tensor
-type DoubleTensor = D.Tensor
-
-class CCall.TensorRandom t => TensorRandom t where
-  random                 :: t -> Ptr CTHGenerator -> IO ()
-  random                 = CCall.random
-  clampedRandom          :: t -> Ptr CTHGenerator -> Int64 -> Int64 -> IO ()
-  clampedRandom          = CCall.clampedRandom
-  cappedRandom           :: t -> Ptr CTHGenerator -> Int64 -> IO ()
-  cappedRandom           = CCall.cappedRandom
-  geometric              :: t -> Ptr CTHGenerator -> Double -> IO ()
-  geometric              = CCall.geometric
-  bernoulli              :: t -> Ptr CTHGenerator -> Double -> IO ()
-  bernoulli              = CCall.bernoulli
-  bernoulli_FloatTensor  :: t -> Ptr CTHGenerator -> FloatTensor -> IO ()
-  bernoulli_FloatTensor t g f  = withForeignPtr (F.tensor f) $ \f' -> CCall.bernoulli_FloatTensor t g f'
-  bernoulli_DoubleTensor :: t -> Ptr CTHGenerator -> DoubleTensor -> IO ()
-  bernoulli_DoubleTensor t g d = withForeignPtr (D.tensor d) $ \d' -> CCall.bernoulli_DoubleTensor t g d'
-
-instance TensorRandom B.Tensor where
-instance TensorRandom S.Tensor where
-instance TensorRandom I.Tensor where
-instance TensorRandom L.Tensor where
-instance TensorRandom F.Tensor where
-instance TensorRandom D.Tensor where
 
 class TensorRandomFloating t where
   uniform                :: t -> Ptr CTHGenerator -> HsAccReal t -> HsAccReal t -> IO ()

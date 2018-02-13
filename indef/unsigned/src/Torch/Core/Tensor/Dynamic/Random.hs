@@ -8,29 +8,44 @@ import GHC.Int
 import qualified TensorRandom as Sig
 import qualified Torch.Class.C.Tensor.Random as Class
 import THTypes
+import THRandomTypes
+import qualified THDoubleTypes as D
+import qualified THFloatTypes  as F
 
 import Torch.Core.Types
 
+withTensorAndRNG :: Tensor -> Generator -> (Ptr CTensor -> Ptr CTHGenerator -> IO ()) -> IO ()
+withTensorAndRNG t g op =
+  _withTensor t $ \t' ->
+    withForeignPtr (rng g) $ \g' ->
+      op t' g'
+
 instance Class.TensorRandom Tensor where
-  random :: Tensor -> Ptr CTHGenerator -> IO ()
-  random t g = _withTensor t $ \ t' -> Sig.c_random t' g
+  random_ :: Tensor -> Generator -> IO ()
+  random_ t g = withTensorAndRNG t g Sig.c_random
 
-  clampedRandom :: Tensor -> Ptr CTHGenerator -> Int64 -> Int64 -> IO ()
-  clampedRandom t g l0 l1 = _withTensor t $ \ t' -> Sig.c_clampedRandom t' g (CLLong l0) (CLLong l1)
+  clampedRandom_ :: Tensor -> Generator -> Int64 -> Int64 -> IO ()
+  clampedRandom_ t g l0 l1 = withTensorAndRNG t g $ \ t' g' -> Sig.c_clampedRandom t' g' (CLLong l0) (CLLong l1)
 
-  cappedRandom :: Tensor -> Ptr CTHGenerator -> Int64 -> IO ()
-  cappedRandom t g l0 = _withTensor t $ \ t' -> Sig.c_cappedRandom t' g (CLLong l0)
+  cappedRandom_ :: Tensor -> Generator -> Int64 -> IO ()
+  cappedRandom_ t g l0 = withTensorAndRNG t g $ \ t' g' -> Sig.c_cappedRandom t' g' (CLLong l0)
 
-  geometric :: Tensor -> Ptr CTHGenerator -> Double -> IO ()
-  geometric t g ar = _withTensor t $ \ t' -> Sig.c_geometric t' g (realToFrac ar)
+  geometric_ :: Tensor -> Generator -> Double -> IO ()
+  geometric_ t g ar = withTensorAndRNG t g $ \ t' g' -> Sig.c_geometric t' g' (realToFrac ar)
 
-  bernoulli :: Tensor -> Ptr CTHGenerator -> Double -> IO ()
-  bernoulli t g d = _withTensor t $ \ t' -> Sig.c_bernoulli t' g (realToFrac d)
+  bernoulli_ :: Tensor -> Generator -> Double -> IO ()
+  bernoulli_ t g d = withTensorAndRNG t g $ \ t' g' -> Sig.c_bernoulli t' g' (realToFrac d)
 
-  bernoulli_FloatTensor :: Tensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
-  bernoulli_FloatTensor t g ft = _withTensor t $ \ t' -> Sig.c_bernoulli_FloatTensor t' g ft
+  bernoulli_FloatTensor_ :: Tensor -> Generator -> F.DynTensor -> IO ()
+  bernoulli_FloatTensor_ t g ft =
+    withTensorAndRNG t g $ \ t' g' ->
+      withForeignPtr (F.tensor ft) $ \ ft' ->
+        Sig.c_bernoulli_FloatTensor t' g' ft'
 
-  bernoulli_DoubleTensor :: Tensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
-  bernoulli_DoubleTensor t g dt = _withTensor t $ \ t' -> Sig.c_bernoulli_DoubleTensor t' g dt
+  bernoulli_DoubleTensor_ :: Tensor -> Generator -> D.DynTensor -> IO ()
+  bernoulli_DoubleTensor_ t g dt =
+    withTensorAndRNG t g $ \ t' g' ->
+      withForeignPtr (D.tensor dt) $ \ dt' ->
+        Sig.c_bernoulli_DoubleTensor t' g' dt'
 
 

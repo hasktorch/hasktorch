@@ -10,3 +10,4 @@ packages:
   , indef/unsigned/*cabal
   , indef/signed/*cabal
   , indef/floating/*cabal
+  , examples/*cabal

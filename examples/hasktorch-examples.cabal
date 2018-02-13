@@ -1,9 +1,3 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
---
--- see: https://github.com/sol/hpack
---
--- hash: a09417985d1dc0aa62fe4246d7c16c259ca2cabfa5c63ab811db1d73a1eb7c23
-
 name:                hasktorch-examples
 version:             0.0.1.0
 synopsis:            Torch for tensors and neural networks in Haskell
@@ -141,7 +135,7 @@ executable playground
   default-language: Haskell2010
 
 executable static-tensor-usage
-  main-is: StaticTensorUsage.hs
+  main-is: Main.hs
   hs-source-dirs:
       static-tensor-usage
   ghc-options: -Wall -fno-cse
