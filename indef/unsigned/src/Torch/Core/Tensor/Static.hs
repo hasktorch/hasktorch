@@ -24,7 +24,7 @@ module Torch.Core.Tensor.Static
   , Dynamic.TensorCopy(..)
   , Dynamic.TensorConv(..)
   , Dynamic.TensorMath(..)
-  , Dynamic.TensorRandom(..)
+  , module Random
   ) where
 
 import SigTypes hiding (tensor)
@@ -37,6 +37,8 @@ import Torch.Class.C.Tensor.Static (IsStatic(..))
 import qualified SigTypes as Sig
 import qualified Torch.Class.C.Internal as TypeFamilies
 import qualified Torch.Core.Tensor.Dynamic as Dynamic
+import Torch.Core.Tensor.Static.Random ()
+import Torch.Class.C.Tensor.Random as Random
 
 -- instance Dynamic.IsTensor (Tensor (ds :: [Nat]))
 -- instance Dynamic.TensorCopy (Tensor (ds :: [Nat]))
