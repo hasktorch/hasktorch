@@ -124,7 +124,7 @@ library
     , Torch.Core.IntTensor.Dynamic.Conv
     , Torch.Core.IntTensor.Dynamic.Random
     , Torch.Core.IntTensor.Dynamic.Math
---    , Torch.Core.IntTensor.Dynamic.Math.Signed
+    , Torch.Core.IntTensor.Dynamic.Math.Signed
     , Torch.Core.IntTensor.Static
 
     , Torch.Core.LongTypes
@@ -135,7 +135,7 @@ library
     , Torch.Core.LongTensor.Dynamic.Conv
     , Torch.Core.LongTensor.Dynamic.Random
     , Torch.Core.LongTensor.Dynamic.Math
---    , Torch.Core.LongTensor.Dynamic.Math.Signed
+    , Torch.Core.LongTensor.Dynamic.Math.Signed
     , Torch.Core.LongTensor.Static
 
     -- export all floating types
@@ -148,9 +148,9 @@ library
 --    , Torch.Core.FloatTensor.Dynamic.Lapack
     , Torch.Core.FloatTensor.Dynamic.Math
 --    , Torch.Core.FloatTensor.Dynamic.Math.Floating
---    , Torch.Core.FloatTensor.Dynamic.Math.Signed
+    , Torch.Core.FloatTensor.Dynamic.Math.Signed
     , Torch.Core.FloatTensor.Dynamic.Random
---    , Torch.Core.FloatTensor.Dynamic.Random.Floating
+    , Torch.Core.FloatTensor.Dynamic.Random.Floating
     , Torch.Core.FloatTensor.Static
 
     , Torch.Core.DoubleTypes
@@ -162,9 +162,9 @@ library
 --    , Torch.Core.DoubleTensor.Dynamic.Lapack
     , Torch.Core.DoubleTensor.Dynamic.Math
 --    , Torch.Core.DoubleTensor.Dynamic.Math.Floating
---    , Torch.Core.DoubleTensor.Dynamic.Math.Signed
+    , Torch.Core.DoubleTensor.Dynamic.Math.Signed
     , Torch.Core.DoubleTensor.Dynamic.Random
---    , Torch.Core.DoubleTensor.Dynamic.Random.Floating
+    , Torch.Core.DoubleTensor.Dynamic.Random.Floating
     , Torch.Core.DoubleTensor.Static
 
   other-modules:
@@ -181,6 +181,7 @@ library
         ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.ByteTensor.Dynamic.Random
         ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ByteTensor.Dynamic.Math
         ,Torch.Core.Tensor.Static              as Torch.Core.ByteTensor.Static
+        ,Torch.Core.Tensor.Static.Random       as Torch.Core.ByteTensor.Static.Random
         )
         requires
         (SigTypes         as THByteTypes
@@ -203,6 +204,8 @@ library
         ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ShortTensor.Dynamic.Math
         ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.ShortTensor.Dynamic.Math.Signed
         ,Torch.Core.Tensor.Static              as Torch.Core.ShortTensor.Static
+        ,Torch.Core.Tensor.Static.Random       as Torch.Core.ShortTensor.Static.Random
+        ,Torch.Core.Tensor.Static.Math.Signed as Torch.Core.ShortTensor.Static.Math.Signed
         )
         requires
         (SigTypes         as THShortTypes
@@ -226,6 +229,8 @@ library
        ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.IntTensor.Dynamic.Math
        ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.IntTensor.Dynamic.Math.Signed
        ,Torch.Core.Tensor.Static              as Torch.Core.IntTensor.Static
+       ,Torch.Core.Tensor.Static.Random       as Torch.Core.IntTensor.Static.Random
+       ,Torch.Core.Tensor.Static.Math.Signed as Torch.Core.IntTensor.Static.Math.Signed
        )
        requires
        (SigTypes         as THIntTypes
@@ -249,6 +254,8 @@ library
       ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.LongTensor.Dynamic.Math
       ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.LongTensor.Dynamic.Math.Signed
       ,Torch.Core.Tensor.Static              as Torch.Core.LongTensor.Static
+      ,Torch.Core.Tensor.Static.Random       as Torch.Core.LongTensor.Static.Random
+      ,Torch.Core.Tensor.Static.Math.Signed as Torch.Core.LongTensor.Static.Math.Signed
       )
       requires
       (SigTypes         as THLongTypes
@@ -275,7 +282,9 @@ library
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.FloatTensor.Dynamic.Random
       ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.FloatTensor.Dynamic.Random.Floating
       ,Torch.Core.Tensor.Static                   as Torch.Core.FloatTensor.Static
+      ,Torch.Core.Tensor.Static.Random            as Torch.Core.FloatTensor.Static.Random
       ,Torch.Core.Tensor.Static.Random.Floating   as Torch.Core.FloatTensor.Static.Random.Floating
+      ,Torch.Core.Tensor.Static.Math.Signed      as Torch.Core.FloatTensor.Static.Math.Signed
       )
       requires
       (SigTypes             as THFloatTypes
@@ -305,7 +314,9 @@ library
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.DoubleTensor.Dynamic.Random
       ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.DoubleTensor.Dynamic.Random.Floating
       ,Torch.Core.Tensor.Static                   as Torch.Core.DoubleTensor.Static
+      ,Torch.Core.Tensor.Static.Random            as Torch.Core.DoubleTensor.Static.Random
       ,Torch.Core.Tensor.Static.Random.Floating   as Torch.Core.DoubleTensor.Static.Random.Floating
+      ,Torch.Core.Tensor.Static.Math.Signed       as Torch.Core.DoubleTensor.Static.Math.Signed
       )
       requires
       (SigTypes             as THDoubleTypes

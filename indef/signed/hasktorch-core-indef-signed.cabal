@@ -36,6 +36,7 @@ library
     , typelits-witnesses >=0.2.3.0
   exposed-modules:
       Torch.Core.Tensor.Dynamic.Math.Signed
+    , Torch.Core.Tensor.Static.Math.Signed
 
   reexported-modules:
     -- classes implementations with indefinites

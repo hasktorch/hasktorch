@@ -43,6 +43,7 @@ library
     , Torch.Core.Tensor.Dynamic.Math.Signed
     , Torch.Core.Tensor.Dynamic.Random
     , Torch.Core.Tensor.Static
+    , Torch.Core.Tensor.Static.Math.Signed
     , Torch.Core.Tensor.Static.Random
 
 

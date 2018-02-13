@@ -3,8 +3,17 @@
   + [ ] THDiskFile.hs
   + [ ] THFile.hs
   + [x] THLogAdd.hs
-  + [x] THMemoryFile.hs
-  + [ ] THRandom.hs
+  + [ ] THMemoryFile.hs
+  + [x] THRandom.hs
   + [ ] THSize.hs
 
 TODO: fix codegen for non-generic types
+
+unsigned
+signed
+  Math
+floating
+  Math
+  Random
+  Lapack
+
