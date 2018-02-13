@@ -61,7 +61,7 @@ library
     , hasktorch-dimensions
     , hasktorch-core-indef-unsigned
     , hasktorch-core-indef-signed
-    -- , hasktorch-core-indef-floating
+    , hasktorch-core-indef-floating
     , hasktorch-raw
     , hasktorch-raw-types
     , managed >=1.0.0 && <1.1
@@ -261,8 +261,7 @@ library
       ,TensorMath       as THLongTensorMath
       ,TensorMathSigned as THLongTensorMath
       )
-   -- , hasktorch-core-indef-floating
-    , hasktorch-core-indef-signed
+   , hasktorch-core-indef-floating
       (Torch.Core.Types                           as Torch.Core.FloatTypes
       ,Torch.Core.Storage                         as Torch.Core.FloatStorage
       ,Torch.Core.Storage.Copy                    as Torch.Core.FloatStorage.Copy
@@ -274,8 +273,9 @@ library
 --        ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.FloatTensor.Dynamic.Math.Floating
       ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.FloatTensor.Dynamic.Math.Signed
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.FloatTensor.Dynamic.Random
---        ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.FloatTensor.Dynamic.Random.Floating
+      ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.FloatTensor.Dynamic.Random.Floating
       ,Torch.Core.Tensor.Static                   as Torch.Core.FloatTensor.Static
+      ,Torch.Core.Tensor.Static.Random.Floating   as Torch.Core.FloatTensor.Static.Random.Floating
       )
       requires
       (SigTypes             as THFloatTypes
@@ -284,15 +284,14 @@ library
       ,Tensor               as THFloatTensor
       ,TensorCopy           as THFloatTensorCopy
       ,TensorConv           as THFloatTensorConv
---        ,TensorLapack         as THFloatTensorLapack
+      ,TensorLapack         as THFloatTensorLapack
       ,TensorMath           as THFloatTensorMath
       ,TensorMathSigned     as THFloatTensorMath
---        ,TensorMathFloating   as THFloatTensorMath
+      ,TensorMathFloating   as THFloatTensorMath
       ,TensorRandom         as THFloatTensorRandom
---        ,TensorRandomFloating as THFloatTensorRandom
+      ,TensorRandomFloating as THFloatTensorRandom
       )
-   -- , hasktorch-core-indef-floating
-    , hasktorch-core-indef-signed
+   , hasktorch-core-indef-floating
       (Torch.Core.Types                           as Torch.Core.DoubleTypes
       ,Torch.Core.Storage                         as Torch.Core.DoubleStorage
       ,Torch.Core.Storage.Copy                    as Torch.Core.DoubleStorage.Copy
@@ -304,8 +303,9 @@ library
 --         ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.DoubleTensor.Dynamic.Math.Floating
       ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.DoubleTensor.Dynamic.Math.Signed
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.DoubleTensor.Dynamic.Random
---         ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.DoubleTensor.Dynamic.Random.Floating
+      ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.DoubleTensor.Dynamic.Random.Floating
       ,Torch.Core.Tensor.Static                   as Torch.Core.DoubleTensor.Static
+      ,Torch.Core.Tensor.Static.Random.Floating   as Torch.Core.DoubleTensor.Static.Random.Floating
       )
       requires
       (SigTypes             as THDoubleTypes
@@ -314,11 +314,11 @@ library
       ,Tensor               as THDoubleTensor
       ,TensorCopy           as THDoubleTensorCopy
       ,TensorConv           as THDoubleTensorConv
---         ,TensorLapack         as THDoubleTensorLapack
+      ,TensorLapack         as THDoubleTensorLapack
       ,TensorMath           as THDoubleTensorMath
---         ,TensorMathFloating   as THDoubleTensorMath
+      ,TensorMathFloating   as THDoubleTensorMath
       ,TensorMathSigned     as THDoubleTensorMath
       ,TensorRandom         as THDoubleTensorRandom
---         ,TensorRandomFloating as THDoubleTensorRandom
+      ,TensorRandomFloating as THDoubleTensorRandom
       )
 
