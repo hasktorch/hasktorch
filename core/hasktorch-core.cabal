@@ -75,7 +75,7 @@ library
   exposed-modules:
       Torch.Core.Exceptions
     , Torch.Core.Random
-    -- , Torch.Core.LogAdd
+    , Torch.Core.LogAdd
     , Torch.Core.Storage
     , Torch.Core.Storage.Copy
     , Torch.Core.Tensor.Dynamic
