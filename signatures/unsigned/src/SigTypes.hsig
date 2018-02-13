@@ -1,9 +1,25 @@
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
 signature SigTypes where
 
+import Foreign (ForeignPtr)
 import Foreign.Storable
+import GHC.TypeLits (Nat)
 
 data CTensor
 data CStorage
+
+data DynTensor
+asDyn :: ForeignPtr CTensor -> DynTensor
+tensor :: DynTensor -> ForeignPtr CTensor
+
+data Storage
+asStorage :: ForeignPtr CStorage -> Storage
+storage :: Storage -> ForeignPtr CStorage
+
+data Tensor (d::[Nat])
+asStatic :: DynTensor -> Tensor d
+dynamic :: Tensor d -> DynTensor
 
 data CReal
 instance Num  CReal

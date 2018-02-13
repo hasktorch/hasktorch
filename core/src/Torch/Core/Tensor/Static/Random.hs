@@ -71,17 +71,6 @@ test_mvn = do
   result <- tds_mvn gen mu eigenvectors eigenvalues :: IO (TDS '[10, 3])
   tds_p result
 
--- TODO: get rid of self parameter arguments since they are overwritten
-
-tds_random :: SingDimensions d => RandGen -> IO (TDS d)
-tds_random gen = do
-  let result = tds_new
-  runManaged $ do
-    s <- managed (withForeignPtr (tdsTensor result))
-    g <- managed (withForeignPtr (rng gen))
-    liftIO $ c_THDoubleTensor_random s g
-  pure result
-
 
 tds_normal :: SingDimensions d => RandGen -> Double -> Double -> IO (TDS d)
 tds_normal gen mean stdv = do

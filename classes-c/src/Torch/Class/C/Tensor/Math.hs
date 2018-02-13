@@ -1,10 +1,11 @@
 module Torch.Class.C.Tensor.Math where
 
 import THTypes
-import Foreign
+import Foreign hiding (new)
 import Foreign.C.Types
 import Torch.Class.C.Internal
 import GHC.Int
+import Torch.Class.C.IsTensor (IsTensor(new))
 
 class TensorMath t where
   fill         :: t -> HsReal t -> IO ()
@@ -123,8 +124,14 @@ class TensorMath t where
   eqTensorT    :: t -> t -> t -> IO ()
 
 class TensorMathSigned t where
-  neg          :: t -> t -> IO ()
-  abs          :: t -> t -> IO ()
+  neg_         :: t -> t -> IO ()
+  abs_         :: t -> t -> IO ()
+
+neg :: (IsTensor t, TensorMathSigned t) => t -> IO t
+neg t = new >>= \r -> neg_ r t >> pure r
+
+abs :: (IsTensor t, TensorMathSigned t) => t -> IO t
+abs t = new >>= \r -> abs_ r t >> pure r
 
 class TensorMathFloating t where
   cinv         :: t -> t -> IO ()

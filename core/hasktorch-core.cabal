@@ -60,7 +60,7 @@ library
     , hasktorch-core-classes-c
     , hasktorch-dimensions
     , hasktorch-core-indef-unsigned
-    -- , hasktorch-core-indef-signed
+    , hasktorch-core-indef-signed
     -- , hasktorch-core-indef-floating
     , hasktorch-raw
     , hasktorch-raw-types
@@ -83,6 +83,7 @@ library
     , Torch.Core.Tensor.Dynamic.Conv
     , Torch.Core.Tensor.Dynamic.Random
     , Torch.Core.Tensor.Dynamic.Math
+    , Torch.Core.Tensor.Dynamic.Math.Signed
     -- Torch.Core.Tensor.Static includes derived Conv and Copy instances
     , Torch.Core.Tensor.Static
     , Torch.Core.Tensor.Static.Random
@@ -112,7 +113,7 @@ library
     , Torch.Core.ShortTensor.Dynamic.Conv
     , Torch.Core.ShortTensor.Dynamic.Random
     , Torch.Core.ShortTensor.Dynamic.Math
---    , Torch.Core.ShortTensor.Dynamic.Math.Signed
+    , Torch.Core.ShortTensor.Dynamic.Math.Signed
     , Torch.Core.ShortTensor.Static
 
     , Torch.Core.IntTypes
@@ -191,8 +192,8 @@ library
         ,TensorRandom     as THByteTensorRandom
         ,TensorMath       as THByteTensorMath
         )
-    -- , hasktorch-core-indef-signed
-    , hasktorch-core-indef-unsigned
+    , hasktorch-core-indef-signed
+    --, hasktorch-core-indef-unsigned
         (Torch.Core.Types                      as Torch.Core.ShortTypes
         ,Torch.Core.Storage                    as Torch.Core.ShortStorage
         ,Torch.Core.Storage.Copy               as Torch.Core.ShortStorage.Copy
@@ -201,7 +202,7 @@ library
         ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.ShortTensor.Dynamic.Conv
         ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.ShortTensor.Dynamic.Random
         ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ShortTensor.Dynamic.Math
---        ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.ShortTensor.Dynamic.Math.Signed
+        ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.ShortTensor.Dynamic.Math.Signed
         ,Torch.Core.Tensor.Static              as Torch.Core.ShortTensor.Static
         )
         requires
@@ -213,7 +214,7 @@ library
         ,TensorConv       as THShortTensorConv
         ,TensorRandom     as THShortTensorRandom
         ,TensorMath       as THShortTensorMath
---        ,TensorMathSigned as THShortTensorMath
+        ,TensorMathSigned as THShortTensorMath
         )
    -- , hasktorch-core-indef-signed
     , hasktorch-core-indef-unsigned

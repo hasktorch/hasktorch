@@ -89,28 +89,28 @@ type LongStorage = L.Storage
 
 -- TODO: Slowly remove these generalized newtype instances as we get better static
 -- checks
-instance Class.IsTensor (ByteTensor   (d::[Nat]))
-instance Class.IsTensor (ShortTensor  (d::[Nat]))
-instance Class.IsTensor (IntTensor    (d::[Nat]))
-instance Class.IsTensor (LongTensor   (d::[Nat]))
-instance Class.IsTensor (FloatTensor  (d::[Nat]))
-instance Class.IsTensor (DoubleTensor (d::[Nat]))
-
--- These instances can be derived
-instance Dynamic.TensorCopy (ByteTensor   (d::[Nat]))
-instance Dynamic.TensorCopy (ShortTensor  (d::[Nat]))
-instance Dynamic.TensorCopy (IntTensor    (d::[Nat]))
-instance Dynamic.TensorCopy (LongTensor   (d::[Nat]))
-instance Dynamic.TensorCopy (FloatTensor  (d::[Nat]))
-instance Dynamic.TensorCopy (DoubleTensor (d::[Nat]))
-
--- These might require changing
-instance Dynamic.TensorConv (ByteTensor   (d::[Nat]))
-instance Dynamic.TensorConv (ShortTensor  (d::[Nat]))
-instance Dynamic.TensorConv (IntTensor    (d::[Nat]))
-instance Dynamic.TensorConv (LongTensor   (d::[Nat]))
-instance Dynamic.TensorConv (FloatTensor  (d::[Nat]))
-instance Dynamic.TensorConv (DoubleTensor (d::[Nat]))
+-- instance Class.IsTensor (ByteTensor   (d::[Nat]))
+-- instance Class.IsTensor (ShortTensor  (d::[Nat]))
+-- instance Class.IsTensor (IntTensor    (d::[Nat]))
+-- instance Class.IsTensor (LongTensor   (d::[Nat]))
+-- instance Class.IsTensor (FloatTensor  (d::[Nat]))
+-- instance Class.IsTensor (DoubleTensor (d::[Nat]))
+--
+-- -- These instances can be derived
+-- instance Dynamic.TensorCopy (ByteTensor   (d::[Nat]))
+-- instance Dynamic.TensorCopy (ShortTensor  (d::[Nat]))
+-- instance Dynamic.TensorCopy (IntTensor    (d::[Nat]))
+-- instance Dynamic.TensorCopy (LongTensor   (d::[Nat]))
+-- instance Dynamic.TensorCopy (FloatTensor  (d::[Nat]))
+-- instance Dynamic.TensorCopy (DoubleTensor (d::[Nat]))
+--
+-- -- These might require changing
+-- instance Dynamic.TensorConv (ByteTensor   (d::[Nat]))
+-- instance Dynamic.TensorConv (ShortTensor  (d::[Nat]))
+-- instance Dynamic.TensorConv (IntTensor    (d::[Nat]))
+-- instance Dynamic.TensorConv (LongTensor   (d::[Nat]))
+-- instance Dynamic.TensorConv (FloatTensor  (d::[Nat]))
+-- instance Dynamic.TensorConv (DoubleTensor (d::[Nat]))
 
 -- Some of these are dimension-specific. See 'Torch.Core.Tensor.Static.Random'
 -- instance Dynamic.TensorRandom (ByteTensor   (d::[Nat]))

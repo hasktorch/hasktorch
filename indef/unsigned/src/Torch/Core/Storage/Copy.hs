@@ -39,7 +39,7 @@ instance Class.StorageCopy Storage where
   copy t = do
     tar <- Sig.c_new
     withForeignPtr (storage t) (`Sig.c_copy` tar)
-    Storage <$> newForeignPtr Sig.p_free tar
+    Sig.asStorage <$> newForeignPtr Sig.p_free tar
 
   copyLong :: Storage -> IO (Ptr CTHLongStorage)
   copyLong = copyType L.c_new Sig.c_copyLong

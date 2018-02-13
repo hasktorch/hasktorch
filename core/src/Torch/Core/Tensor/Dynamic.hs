@@ -37,7 +37,7 @@ import Torch.Core.Tensor.Dynamic.Random as Classes
 import qualified Torch.Core.ByteTensor.Dynamic as B
 import qualified Torch.Core.ShortTensor.Dynamic as S
 import qualified Torch.Core.IntTensor.Dynamic as I
-import qualified Torch.Core.LongTensor.Dynamic as L
+import qualified Torch.Core.LongTensor.Dynamic as L hiding (storage)
 import qualified Torch.Core.FloatTensor.Dynamic as F
 import qualified Torch.Core.DoubleTensor.Dynamic as D
 
@@ -72,7 +72,7 @@ class C.IsTensor t => IsTensor t where
   desc = C.desc
 
   expand :: t -> t -> LongStorage -> IO ()
-  expand t0 t1 (L.Storage ls) = withForeignPtr ls (C.expand t0 t1)
+  expand t0 t1 ls = withForeignPtr (L.storage ls) (C.expand t0 t1)
 
   expandNd :: [t] -> [t] -> Int32 -> IO ()
   expandNd = C.expandNd
@@ -93,7 +93,7 @@ class C.IsTensor t => IsTensor t where
   isSetTo = C.isSetTo
 
   isSize :: t -> LongStorage -> IO Bool
-  isSize t (L.Storage ls) = withForeignPtr ls (C.isSize t)
+  isSize t ls = withForeignPtr (L.storage ls) (C.isSize t)
 
   nDimension :: t -> IO Int32
   nDimension = C.nDimension
@@ -114,7 +114,7 @@ class C.IsTensor t => IsTensor t where
   newContiguous = C.newContiguous
 
   newExpand :: t -> LongStorage -> IO t
-  newExpand t (L.Storage ls) = withForeignPtr ls (C.newExpand t)
+  newExpand t ls = withForeignPtr (L.storage ls) (C.newExpand t)
 
   newNarrow :: t -> Int32 -> Int64 -> Int64 -> IO t
   newNarrow = C.newNarrow
@@ -123,10 +123,10 @@ class C.IsTensor t => IsTensor t where
   newSelect = C.newSelect
 
   newSizeOf :: t -> IO LongStorage
-  newSizeOf t = C.newSizeOf t >>= L.asStorage
+  newSizeOf t = C.newSizeOf t >>= L.asStorageM
 
   newStrideOf :: t -> IO LongStorage
-  newStrideOf t = C.newStrideOf t >>= L.asStorage
+  newStrideOf t = C.newStrideOf t >>= L.asStorageM
 
   newTranspose :: t -> Int32 -> Int32 -> IO t
   newTranspose = C.newTranspose
@@ -135,21 +135,21 @@ class C.IsTensor t => IsTensor t where
   newUnfold = C.newUnfold
 
   newView :: t -> LongStorage -> IO t
-  newView t (L.Storage l) = withForeignPtr l (C.newView t)
+  newView t ls = withForeignPtr (L.storage ls) (C.newView t)
 
   newWithSize :: LongStorage -> LongStorage -> IO t
-  newWithSize (L.Storage l0) (L.Storage l1) =
-    withForeignPtr l0 $ \l0' ->
-      withForeignPtr l1 $ \l1' ->
+  newWithSize l0 l1 =
+    withForeignPtr (L.storage l0)  $ \l0' ->
+      withForeignPtr (L.storage l1) $ \l1' ->
         C.newWithSize l0' l1'
 
   newWithDim :: Dim (d::[Nat]) -> IO t
   -- newWitheDim = C.newWithSizeDim
 
   newWithStorage :: HsStorage t -> Int64 -> LongStorage -> LongStorage -> IO t
-  newWithStorage s i (L.Storage l0) (L.Storage l1) =
-    withForeignPtr l0 $ \l0' ->
-      withForeignPtr l1 $ \l1' ->
+  newWithStorage s i l0 l1 =
+    withForeignPtr (L.storage l0)  $ \l0' ->
+      withForeignPtr (L.storage l1) $ \l1' ->
         C.newWithStorage s i l0' l1'
 
   newWithStorageDim :: HsStorage t -> Dim (d::[Nat]) -> IO t
@@ -162,9 +162,9 @@ class C.IsTensor t => IsTensor t where
   newWithTensor = C.newWithTensor
 
   resize :: t -> LongStorage -> LongStorage -> IO ()
-  resize t (L.Storage ls0) (L.Storage ls1) =
-    withForeignPtr ls0 $ \l0' ->
-      withForeignPtr ls1 $ \l1' ->
+  resize t ls0 ls1 =
+    withForeignPtr (L.storage ls0)  $ \l0' ->
+      withForeignPtr (L.storage ls1) $ \l1' ->
         C.resize t l0' l1'
 
   resizeDim_ :: t -> Dim (d::[Nat]) -> IO ()
@@ -199,9 +199,9 @@ class C.IsTensor t => IsTensor t where
   setFlag = C.setFlag
 
   setStorage :: t -> HsStorage t -> Int64 -> LongStorage -> LongStorage -> IO ()
-  setStorage t s i (L.Storage l0) (L.Storage l1) =
-    withForeignPtr l0 $ \l0' ->
-      withForeignPtr l1 $ \l1' ->
+  setStorage t s i l0 l1 =
+    withForeignPtr (L.storage l0)  $ \l0' ->
+      withForeignPtr (L.storage l1) $ \l1' ->
         C.setStorage t s i l0' l1'
 
   setStorageDim :: t -> HsStorage t -> Dim (d::[Nat]) -> IO ()

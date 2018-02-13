@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 module THDoubleTypes
   ( CTensor
   , CStorage
@@ -9,9 +11,19 @@ module THDoubleTypes
   , hs2cAccReal
   , c2hsReal
   , c2hsAccReal
+  , Tensor(..)
+  , DynTensor(..)
+  , Storage(..)
+  , asStorage
+  , asDyn
+  , asStatic
+  , CTHDoubleTensor
+  , CTHDoubleStorage
   ) where
 
 import Foreign.C.Types
+import Foreign (ForeignPtr)
+import GHC.TypeLits (Nat)
 import THTypes
 
 type CTensor = CTHDoubleTensor
@@ -32,4 +44,18 @@ c2hsReal = realToFrac
 
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = realToFrac
+
+newtype Storage = Storage { storage :: ForeignPtr CStorage }
+  deriving (Eq, Show)
+
+newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
+  deriving (Show, Eq)
+
+newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
+  deriving (Show, Eq)
+
+asStorage = Storage
+asDyn = DynTensor
+asStatic = Tensor
+
 

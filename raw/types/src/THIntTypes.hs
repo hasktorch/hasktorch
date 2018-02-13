@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 module THIntTypes
   ( CTensor
   , CStorage
@@ -9,9 +11,17 @@ module THIntTypes
   , hs2cAccReal
   , c2hsReal
   , c2hsAccReal
+  , Tensor(..)
+  , DynTensor(..)
+  , Storage(..)
+  , asStorage
+  , asDyn
+  , asStatic
   ) where
 
 import Foreign.C.Types
+import Foreign (ForeignPtr)
+import GHC.TypeLits (Nat)
 import THTypes
 import GHC.Int
 
@@ -33,4 +43,18 @@ c2hsReal = fromIntegral
 
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
+
+newtype Storage = Storage { storage :: ForeignPtr CStorage }
+  deriving (Eq, Show)
+
+newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
+  deriving (Show, Eq)
+
+newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
+  deriving (Show, Eq)
+
+asStorage = Storage
+asDyn = DynTensor
+asStatic = Tensor
+
 

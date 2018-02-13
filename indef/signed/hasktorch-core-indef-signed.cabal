@@ -34,8 +34,8 @@ library
     , singletons >=2.2
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
---  exposed-modules:
---      Torch.Core.Tensor.Dynamic.Math.Signed
+  exposed-modules:
+      Torch.Core.Tensor.Dynamic.Math.Signed
 
   reexported-modules:
     -- classes implementations with indefinites
@@ -47,4 +47,5 @@ library
     , Torch.Core.Tensor.Dynamic.Conv
     , Torch.Core.Tensor.Dynamic.Math
     , Torch.Core.Tensor.Dynamic.Random
+    , Torch.Core.Tensor.Static
 

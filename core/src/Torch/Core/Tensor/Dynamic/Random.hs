@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Core.Tensor.Dynamic.Random
   ( TensorRandom(..)
   ) where

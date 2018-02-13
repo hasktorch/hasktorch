@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Core.Tensor.Dynamic.Conv where
 
 import Data.Coerce (coerce)

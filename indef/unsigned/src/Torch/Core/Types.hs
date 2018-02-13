@@ -1,7 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 module Torch.Core.Types
-  ( Storage(..)
-  , Tensor(..)
+  ( Tensor
 
   , ptrArray2hs
   , withTensor
@@ -22,14 +21,11 @@ import Foreign
 import GHC.ForeignPtr (ForeignPtr)
 import qualified Foreign.Marshal.Array as FM
 
-import SigTypes as Sig
+-- import SigTypes (CTensor, c2hsReal, tensor)
+import SigTypes as Sig hiding (Tensor)
 import qualified Torch.Class.C.Internal as TypeFamilies
 
-newtype Storage = Storage { storage :: ForeignPtr Sig.CStorage }
-  deriving (Eq, Show)
-
-newtype Tensor = Tensor { tensor :: ForeignPtr Sig.CTensor }
-  deriving (Show, Eq)
+type Tensor = Sig.DynTensor
 
 type instance TypeFamilies.HsReal    Tensor  = Sig.HsReal
 type instance TypeFamilies.HsReal    Storage = Sig.HsReal

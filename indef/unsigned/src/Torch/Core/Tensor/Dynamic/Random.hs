@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Core.Tensor.Dynamic.Random where
 
 import Foreign

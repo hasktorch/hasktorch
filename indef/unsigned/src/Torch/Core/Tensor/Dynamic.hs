@@ -1,8 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Core.Tensor.Dynamic
-  ( Tensor(..)
+  ( Tensor
+  , tensor
+  , DynTensor
   , asTensor
   , Class.IsTensor(..)
   , Class.TensorCopy(..)
@@ -28,14 +31,14 @@ import qualified Torch.Class.C.Tensor.Math as Class
 import qualified Torch.Class.C.Tensor.Random as Class
 
 import Torch.Core.Types
-import Torch.Core.Storage (asStorage)
+import Torch.Core.Storage (asStorageM)
 import Torch.Core.Tensor.Dynamic.Copy ()
 import Torch.Core.Tensor.Dynamic.Conv ()
 import Torch.Core.Tensor.Dynamic.Math ()
 import Torch.Core.Tensor.Dynamic.Random ()
 
 asTensor :: Ptr CTensor -> IO Tensor
-asTensor = fmap Tensor . newForeignPtr Sig.p_free
+asTensor = fmap asDyn . newForeignPtr Sig.p_free
 
 instance Class.IsTensor Tensor where
   tensordata :: Tensor -> IO [HsReal]
@@ -65,7 +68,7 @@ instance Class.IsTensor Tensor where
    where
     ptrPtrTensors :: [Tensor] -> IO (Ptr (Ptr CTensor))
     ptrPtrTensors ts
-      = mapM (`withForeignPtr` pure) (coerce ts :: [ForeignPtr CTensor])
+      = mapM (`withForeignPtr` pure) (fmap tensor ts)
       >>= FM.newArray
 
   free :: Tensor -> IO ()
@@ -352,7 +355,7 @@ instance Class.IsTensor Tensor where
         Sig.c_squeeze1d t0' t1' (CInt d)
 
   storage :: Tensor -> IO Storage
-  storage t = withForeignPtr (tensor t) Sig.c_storage >>= asStorage
+  storage t = withForeignPtr (tensor t) Sig.c_storage >>= asStorageM
 
   storageOffset :: Tensor -> IO Int64
   storageOffset t = withForeignPtr (tensor t) (fmap fromIntegral . Sig.c_storageOffset)

@@ -17,7 +17,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Core.Tensor.Static
-  ( Tensor(..)
+  ( Tensor
+  , Sig.dynamic
   , tensor
   , Dynamic.IsTensor(..)
   , Dynamic.TensorCopy(..)
@@ -26,29 +27,25 @@ module Torch.Core.Tensor.Static
   , Dynamic.TensorRandom(..)
   ) where
 
-import SigTypes
+import SigTypes hiding (tensor)
 import Data.Coerce (coerce)
 import Foreign.ForeignPtr (ForeignPtr)
 
 import GHC.TypeLits (Nat)
 import Torch.Core.Types (Storage)
 import Torch.Class.C.Tensor.Static (IsStatic(..))
+import qualified SigTypes as Sig
 import qualified Torch.Class.C.Internal as TypeFamilies
 import qualified Torch.Core.Tensor.Dynamic as Dynamic
 
-newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: Dynamic.Tensor }
-  deriving
-    ( Eq
-    , Show
-    , Dynamic.IsTensor
-    , Dynamic.TensorCopy
-    , Dynamic.TensorConv
-    , Dynamic.TensorMath
-    , Dynamic.TensorRandom
-    )
+-- instance Dynamic.IsTensor (Tensor (ds :: [Nat]))
+-- instance Dynamic.TensorCopy (Tensor (ds :: [Nat]))
+-- instance Dynamic.TensorConv (Tensor (ds :: [Nat]))
+-- instance Dynamic.TensorMath (Tensor (ds :: [Nat]))
+-- instance Dynamic.TensorRandom (Tensor (ds :: [Nat]))
 
 tensor :: Tensor (ds :: [Nat]) -> ForeignPtr CTensor
-tensor = coerce
+tensor = Sig.tensor . Sig.dynamic
 
 type instance TypeFamilies.HsReal    (Tensor (ds::[Nat])) = HsReal
 type instance TypeFamilies.HsAccReal (Tensor (ds::[Nat])) = HsAccReal
@@ -56,6 +53,6 @@ type instance TypeFamilies.HsStorage (Tensor (ds::[Nat])) = Storage
 type instance TypeFamilies.AsDynamic (Tensor (ds::[Nat])) = Dynamic.Tensor
 
 instance IsStatic (Tensor ds) where
-  asDynamic = dynamic
-  asStatic = Tensor
+  asDynamic = Sig.dynamic
+  asStatic = Sig.asStatic
 
