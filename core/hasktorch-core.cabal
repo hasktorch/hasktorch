@@ -176,12 +176,15 @@ library
         ,Torch.Core.Storage                    as Torch.Core.ByteStorage
         ,Torch.Core.Storage.Copy               as Torch.Core.ByteStorage.Copy
         ,Torch.Core.Tensor.Dynamic             as Torch.Core.ByteTensor.Dynamic
+        ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.ByteTensor.Dynamic.IsTensor
         ,Torch.Core.Tensor.Dynamic.Copy        as Torch.Core.ByteTensor.Dynamic.Copy
         ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.ByteTensor.Dynamic.Conv
         ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.ByteTensor.Dynamic.Random
         ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ByteTensor.Dynamic.Math
         ,Torch.Core.Tensor.Static              as Torch.Core.ByteTensor.Static
+        ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.ByteTensor.Static.IsTensor
         ,Torch.Core.Tensor.Static.Random       as Torch.Core.ByteTensor.Static.Random
+        ,Torch.Core.Tensor.Static.Copy       as Torch.Core.ByteTensor.Static.Copy
         )
         requires
         (SigTypes         as THByteTypes
@@ -198,14 +201,17 @@ library
         ,Torch.Core.Storage                    as Torch.Core.ShortStorage
         ,Torch.Core.Storage.Copy               as Torch.Core.ShortStorage.Copy
         ,Torch.Core.Tensor.Dynamic             as Torch.Core.ShortTensor.Dynamic
+        ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.ShortTensor.Dynamic.IsTensor
         ,Torch.Core.Tensor.Dynamic.Copy        as Torch.Core.ShortTensor.Dynamic.Copy
         ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.ShortTensor.Dynamic.Conv
         ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.ShortTensor.Dynamic.Random
         ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ShortTensor.Dynamic.Math
         ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.ShortTensor.Dynamic.Math.Signed
+        ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.ShortTensor.Static.IsTensor
         ,Torch.Core.Tensor.Static              as Torch.Core.ShortTensor.Static
         ,Torch.Core.Tensor.Static.Random       as Torch.Core.ShortTensor.Static.Random
         ,Torch.Core.Tensor.Static.Math.Signed as Torch.Core.ShortTensor.Static.Math.Signed
+        ,Torch.Core.Tensor.Static.Copy         as Torch.Core.ShortTensor.Static.Copy
         )
         requires
         (SigTypes         as THShortTypes
@@ -223,14 +229,17 @@ library
        ,Torch.Core.Storage                    as Torch.Core.IntStorage
        ,Torch.Core.Storage.Copy               as Torch.Core.IntStorage.Copy
        ,Torch.Core.Tensor.Dynamic             as Torch.Core.IntTensor.Dynamic
+       ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.IntTensor.Dynamic.IsTensor
        ,Torch.Core.Tensor.Dynamic.Copy        as Torch.Core.IntTensor.Dynamic.Copy
        ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.IntTensor.Dynamic.Conv
        ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.IntTensor.Dynamic.Random
        ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.IntTensor.Dynamic.Math
        ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.IntTensor.Dynamic.Math.Signed
+       ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.IntTensor.Static.IsTensor
        ,Torch.Core.Tensor.Static              as Torch.Core.IntTensor.Static
        ,Torch.Core.Tensor.Static.Random       as Torch.Core.IntTensor.Static.Random
        ,Torch.Core.Tensor.Static.Math.Signed as Torch.Core.IntTensor.Static.Math.Signed
+       ,Torch.Core.Tensor.Static.Copy              as Torch.Core.IntTensor.Static.Copy
        )
        requires
        (SigTypes         as THIntTypes
@@ -248,12 +257,15 @@ library
       ,Torch.Core.Storage                    as Torch.Core.LongStorage
       ,Torch.Core.Storage.Copy               as Torch.Core.LongStorage.Copy
       ,Torch.Core.Tensor.Dynamic             as Torch.Core.LongTensor.Dynamic
+      ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.LongTensor.Dynamic.IsTensor
       ,Torch.Core.Tensor.Dynamic.Copy        as Torch.Core.LongTensor.Dynamic.Copy
       ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.LongTensor.Dynamic.Conv
       ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.LongTensor.Dynamic.Random
       ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.LongTensor.Dynamic.Math
       ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.LongTensor.Dynamic.Math.Signed
+      ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.LongTensor.Static.IsTensor
       ,Torch.Core.Tensor.Static              as Torch.Core.LongTensor.Static
+      ,Torch.Core.Tensor.Static.Copy              as Torch.Core.LongTensor.Static.Copy
       ,Torch.Core.Tensor.Static.Random       as Torch.Core.LongTensor.Static.Random
       ,Torch.Core.Tensor.Static.Math.Signed as Torch.Core.LongTensor.Static.Math.Signed
       )
@@ -273,6 +285,7 @@ library
       ,Torch.Core.Storage                         as Torch.Core.FloatStorage
       ,Torch.Core.Storage.Copy                    as Torch.Core.FloatStorage.Copy
       ,Torch.Core.Tensor.Dynamic                  as Torch.Core.FloatTensor.Dynamic
+      ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.FloatTensor.Dynamic.IsTensor
       ,Torch.Core.Tensor.Dynamic.Copy             as Torch.Core.FloatTensor.Dynamic.Copy
       ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.FloatTensor.Dynamic.Conv
 --        ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.FloatTensor.Dynamic.Lapack
@@ -282,6 +295,8 @@ library
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.FloatTensor.Dynamic.Random
       ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.FloatTensor.Dynamic.Random.Floating
       ,Torch.Core.Tensor.Static                   as Torch.Core.FloatTensor.Static
+      ,Torch.Core.Tensor.Static.Copy                   as Torch.Core.FloatTensor.Static.Copy
+      ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.FloatTensor.Static.IsTensor
       ,Torch.Core.Tensor.Static.Random            as Torch.Core.FloatTensor.Static.Random
       ,Torch.Core.Tensor.Static.Random.Floating   as Torch.Core.FloatTensor.Static.Random.Floating
       ,Torch.Core.Tensor.Static.Math.Signed      as Torch.Core.FloatTensor.Static.Math.Signed
@@ -305,6 +320,7 @@ library
       ,Torch.Core.Storage                         as Torch.Core.DoubleStorage
       ,Torch.Core.Storage.Copy                    as Torch.Core.DoubleStorage.Copy
       ,Torch.Core.Tensor.Dynamic                  as Torch.Core.DoubleTensor.Dynamic
+      ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.DoubleTensor.Dynamic.IsTensor
       ,Torch.Core.Tensor.Dynamic.Copy             as Torch.Core.DoubleTensor.Dynamic.Copy
       ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.DoubleTensor.Dynamic.Conv
 --         ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.DoubleTensor.Dynamic.Lapack
@@ -314,6 +330,8 @@ library
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.DoubleTensor.Dynamic.Random
       ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.DoubleTensor.Dynamic.Random.Floating
       ,Torch.Core.Tensor.Static                   as Torch.Core.DoubleTensor.Static
+      ,Torch.Core.Tensor.Static.Copy                   as Torch.Core.DoubleTensor.Static.Copy
+      ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.DoubleTensor.Static.IsTensor
       ,Torch.Core.Tensor.Static.Random            as Torch.Core.DoubleTensor.Static.Random
       ,Torch.Core.Tensor.Static.Random.Floating   as Torch.Core.DoubleTensor.Static.Random.Floating
       ,Torch.Core.Tensor.Static.Math.Signed       as Torch.Core.DoubleTensor.Static.Math.Signed

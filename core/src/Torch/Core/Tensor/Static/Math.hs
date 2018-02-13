@@ -141,6 +141,7 @@ import qualified Torch.Core.Tensor.Dynamic as Dynamic
 import qualified Torch.Core.Storage as Storage
 import Torch.Core.Tensor.Static (IsStatic(..), StaticConstraint, StaticConstraint2, withInplace, ByteTensor, LongTensor)
 import THTypes
+import THRandomTypes
 
 (!*) :: (MathConstraint3 t '[r, c] '[c] '[r]) => t '[r, c] -> t '[c] -> IO (t '[r])
 (!*) = mv
@@ -227,82 +228,82 @@ type MathConstraint3 t d d' d'' =
 
 
 fill :: MathConstraint t d => HsReal (t d) -> IO (t d)
-fill v = withInplace (`Dynamic.fill` v)
+fill v = withInplace (`Dynamic.fill_` v)
 
 fill_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-fill_ t v = Dynamic.fill (asDynamic t) v >> pure t
+fill_ t v = Dynamic.fill_ (asDynamic t) v >> pure t
 
 zero :: MathConstraint t d => IO (t d)
-zero = withInplace Dynamic.zero
+zero = withInplace Dynamic.zero_
 
 zero_ :: MathConstraint t d => t d -> IO ()
-zero_ t = Dynamic.zero (asDynamic t)
+zero_ t = Dynamic.zero_ (asDynamic t)
 
 maskedFill :: MathConstraint t d => ByteTensor d -> HsReal (t d) -> IO (t d)
-maskedFill b v = withInplace (\res -> Dynamic.maskedFill res (asDynamic b) v)
+maskedFill b v = withInplace (\res -> Dynamic.maskedFill_ res (asDynamic b) v)
 
 maskedFill_ :: MathConstraint t d => t d -> ByteTensor d -> HsReal (t d) -> IO ()
-maskedFill_ t b v = Dynamic.maskedFill (asDynamic t) (asDynamic b) v
+maskedFill_ t b v = Dynamic.maskedFill_ (asDynamic t) (asDynamic b) v
 
 maskedCopy :: MathConstraint2 t d d' => ByteTensor d -> t d -> IO (t d')
-maskedCopy b t = withInplace (\res -> Dynamic.maskedCopy res (asDynamic b) (asDynamic t))
+maskedCopy b t = withInplace (\res -> Dynamic.maskedCopy_ res (asDynamic b) (asDynamic t))
 
 -- TODO: check out if we can use a linear-like type to invalidate the first parameter. Otherwise this impurely mutates the first variable
 dangerMaskedCopy_ :: MathConstraint2 t d d' => t d -> ByteTensor d -> t d' -> IO (t d')
 dangerMaskedCopy_ t b t' = do
   let res = asDynamic t
-  Dynamic.maskedCopy res (asDynamic b) (asDynamic t')
+  Dynamic.maskedCopy_ res (asDynamic b) (asDynamic t')
   pure (asStatic res)
 
 maskedSelect :: MathConstraint2 t d d' => t d -> ByteTensor d -> IO (t d')
-maskedSelect t b = withInplace (\res -> Dynamic.maskedSelect res (asDynamic t) (asDynamic b))
+maskedSelect t b = withInplace (\res -> Dynamic.maskedSelect_ res (asDynamic t) (asDynamic b))
 
 -- TODO: check out if we can use a linear-like type to invalidate the first parameter. Otherwise this impurely mutates the first variable
 dangerMaskedSelect_ :: MathConstraint2 t d d' => t d -> t d -> ByteTensor d -> IO (t d')
 dangerMaskedSelect_ t t' b = do
   let res = asDynamic t
-  Dynamic.maskedSelect res (asDynamic t') (asDynamic b)
+  Dynamic.maskedSelect_ res (asDynamic t') (asDynamic b)
   pure (asStatic res)
 
 nonzero :: (IsStatic (t d), Dynamic.TensorMath (AsDynamic (t d))) => t d -> IO Dynamic.LongTensor
 nonzero t = do
   l <- Dynamic.new
-  Dynamic.nonzero l (asDynamic t)
+  Dynamic.nonzero_ l (asDynamic t)
   pure l
 
 indexSelect_ :: MathConstraint t d => t d -> t d -> DimVal -> LongTensor '[n] -> IO ()
-indexSelect_ r t d ix = Dynamic.indexSelect (asDynamic r) (asDynamic t) (fromIntegral d) (asDynamic ix)
+indexSelect_ r t d ix = Dynamic.indexSelect_ (asDynamic r) (asDynamic t) (fromIntegral d) (asDynamic ix)
 
 indexSelect :: MathConstraint t d => t d -> DimVal -> LongTensor '[n] -> IO (t d)
-indexSelect t d ix = withInplace $ \r -> Dynamic.indexSelect r (asDynamic t) (fromIntegral d) (asDynamic ix)
+indexSelect t d ix = withInplace $ \r -> Dynamic.indexSelect_ r (asDynamic t) (fromIntegral d) (asDynamic ix)
 
 -- FIXME: Not sure if this is in-place or not
 indexCopy_ :: MathConstraint t d => t d -> DimVal -> LongTensor '[n] -> t d -> IO ()
-indexCopy_ r d ix t = Dynamic.indexCopy (asDynamic r) (fromIntegral d) (asDynamic ix) (asDynamic t)
+indexCopy_ r d ix t = Dynamic.indexCopy_ (asDynamic r) (fromIntegral d) (asDynamic ix) (asDynamic t)
 
 indexAdd_ :: MathConstraint t d => t d -> DimVal -> LongTensor '[n] -> t d -> IO ()
-indexAdd_ r d ix t = Dynamic.indexAdd (asDynamic r) (fromIntegral d) (asDynamic ix) (asDynamic t)
+indexAdd_ r d ix t = Dynamic.indexAdd_ (asDynamic r) (fromIntegral d) (asDynamic ix) (asDynamic t)
 
 indexFill_ :: MathConstraint t d => t d -> DimVal -> LongTensor '[n] -> HsReal (t d) -> IO ()
-indexFill_ r d ix v = Dynamic.indexFill (asDynamic r) (fromIntegral d) (asDynamic ix) v
+indexFill_ r d ix v = Dynamic.indexFill_ (asDynamic r) (fromIntegral d) (asDynamic ix) v
 
 take_ :: MathConstraint t d => t d -> t d -> LongTensor '[n] -> IO ()
-take_ r t ix = Dynamic.take (asDynamic r) (asDynamic t) (asDynamic ix)
+take_ r t ix = Dynamic.take_ (asDynamic r) (asDynamic t) (asDynamic ix)
 
 put_ :: MathConstraint t d => t d -> LongTensor '[n] -> t d -> DimVal -> IO ()
-put_ r ix t d = Dynamic.put (asDynamic r) (asDynamic ix) (asDynamic t) (fromIntegral d)
+put_ r ix t d = Dynamic.put_ (asDynamic r) (asDynamic ix) (asDynamic t) (fromIntegral d)
 
 gather_ :: MathConstraint t d => t d -> t d -> DimVal -> LongTensor '[n] -> IO ()
-gather_ r t d ix = Dynamic.gather (asDynamic r) (asDynamic t) (fromIntegral d) (asDynamic ix)
+gather_ r t d ix = Dynamic.gather_ (asDynamic r) (asDynamic t) (fromIntegral d) (asDynamic ix)
 
 scatter_ :: MathConstraint t d => t d -> DimVal -> LongTensor '[n] -> t d -> IO ()
-scatter_ r d ix t = Dynamic.scatter (asDynamic r) (fromIntegral d) (asDynamic ix) (asDynamic t)
+scatter_ r d ix t = Dynamic.scatter_ (asDynamic r) (fromIntegral d) (asDynamic ix) (asDynamic t)
 
 scatterAdd_ :: MathConstraint t d => t d -> DimVal -> LongTensor '[n] -> t d -> IO ()
-scatterAdd_ r d ix t = Dynamic.scatterAdd (asDynamic r) (fromIntegral d) (asDynamic ix) (asDynamic t)
+scatterAdd_ r d ix t = Dynamic.scatterAdd_ (asDynamic r) (fromIntegral d) (asDynamic ix) (asDynamic t)
 
 scatterFill_ :: MathConstraint t d => t d -> DimVal -> LongTensor '[n] -> HsReal (t d) -> IO ()
-scatterFill_ r d ix v = Dynamic.scatterFill (asDynamic r) (fromIntegral d) (asDynamic ix) v
+scatterFill_ r d ix v = Dynamic.scatterFill_ (asDynamic r) (fromIntegral d) (asDynamic ix) v
 
 dot :: MathConstraint2 t d d' => t d -> t d' -> IO (HsAccReal (t d'))
 dot a b = Dynamic.dot (asDynamic a) (asDynamic b)
@@ -389,145 +390,145 @@ ttOp_ op res v0 t v1 t' t'' = op (asDynamic res) v0 (asDynamic t) v1 (asDynamic 
 -- ========================================================================= --
 
 add_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-add_ = constOp_ Dynamic.add
+add_ = constOp_ Dynamic.add_
 
 add :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-add = constOp Dynamic.add
+add = constOp Dynamic.add_
 
 sub_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-sub_ = constOp_ Dynamic.sub
+sub_ = constOp_ Dynamic.sub_
 
 sub :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-sub = constOp Dynamic.sub
+sub = constOp Dynamic.sub_
 
 add_scaled_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> HsReal (t d) -> IO ()
-add_scaled_ = constOp2r_ Dynamic.add_scaled
+add_scaled_ = constOp2r_ Dynamic.add_scaled_
 
 add_scaled :: MathConstraint t d => t d -> HsReal (t d) -> HsReal (t d) -> IO (t d)
-add_scaled = constOp2r Dynamic.add_scaled
+add_scaled = constOp2r Dynamic.add_scaled_
 
 sub_scaled_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> HsReal (t d) -> IO ()
-sub_scaled_ = constOp2r_ Dynamic.sub_scaled
+sub_scaled_ = constOp2r_ Dynamic.sub_scaled_
 
 sub_scaled :: MathConstraint t d => t d -> HsReal (t d) -> HsReal (t d) -> IO (t d)
-sub_scaled = constOp2r Dynamic.sub_scaled
+sub_scaled = constOp2r Dynamic.sub_scaled_
 
 mul_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-mul_ = constOp_ Dynamic.mul
+mul_ = constOp_ Dynamic.mul_
 
 mul :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-mul = constOp Dynamic.mul
+mul = constOp Dynamic.mul_
 
 div_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-div_ = constOp_ Dynamic.div
+div_ = constOp_ Dynamic.div_
 
 div :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-div = constOp Dynamic.div
+div = constOp Dynamic.div_
 
 lshift_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-lshift_ = constOp_ Dynamic.lshift
+lshift_ = constOp_ Dynamic.lshift_
 
 lshift :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-lshift = constOp Dynamic.lshift
+lshift = constOp Dynamic.lshift_
 
 rshift_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-rshift_ = constOp_ Dynamic.rshift
+rshift_ = constOp_ Dynamic.rshift_
 
 rshift :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-rshift = constOp Dynamic.rshift
+rshift = constOp Dynamic.rshift_
 
 fmod_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-fmod_ = constOp_ Dynamic.fmod
+fmod_ = constOp_ Dynamic.fmod_
 
 fmod :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-fmod = constOp Dynamic.fmod
+fmod = constOp Dynamic.fmod_
 
 remainder_    :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-remainder_ = constOp_ Dynamic.remainder
+remainder_ = constOp_ Dynamic.remainder_
 
 remainder     :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-remainder = constOp Dynamic.remainder
+remainder = constOp Dynamic.remainder_
 
 clamp_  :: MathConstraint t d => t d -> t d -> HsReal (t d) -> HsReal (t d) -> IO ()
-clamp_  = constOp2r_ Dynamic.clamp
+clamp_  = constOp2r_ Dynamic.clamp_
 clamp   :: MathConstraint t d => t d -> HsReal (t d) -> HsReal (t d) -> IO (t d)
-clamp   = constOp2r Dynamic.clamp
+clamp   = constOp2r Dynamic.clamp_
 
 bitand_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-bitand_ = constOp_ Dynamic.bitand
+bitand_ = constOp_ Dynamic.bitand_
 bitand  :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-bitand  = constOp Dynamic.bitand
+bitand  = constOp Dynamic.bitand_
 bitor_  :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-bitor_  = constOp_ Dynamic.bitor
+bitor_  = constOp_ Dynamic.bitor_
 bitor   :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-bitor   = constOp Dynamic.bitor
+bitor   = constOp Dynamic.bitor_
 bitxor_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-bitxor_ = constOp_ Dynamic.bitxor
+bitxor_ = constOp_ Dynamic.bitxor_
 bitxor  :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-bitxor  = constOp Dynamic.bitxor
+bitxor  = constOp Dynamic.bitxor_
 
 cadd_   :: MathConstraint t d => t d -> t d -> HsReal (t d) -> t d -> IO ()
-cadd_   = cScaledOp_ Dynamic.cadd
+cadd_   = cScaledOp_ Dynamic.cadd_
 cadd    :: MathConstraint t d => t d -> HsReal (t d) -> t d -> IO (t d)
-cadd    = cScaledOp Dynamic.cadd
+cadd    = cScaledOp Dynamic.cadd_
 csub_   :: MathConstraint t d => t d -> t d -> HsReal (t d) -> t d -> IO ()
-csub_   = cScaledOp_ Dynamic.csub
+csub_   = cScaledOp_ Dynamic.csub_
 csub    :: MathConstraint t d => t d -> HsReal (t d) -> t d -> IO (t d)
-csub    = cScaledOp Dynamic.csub
+csub    = cScaledOp Dynamic.csub_
 
 
 cmul_       :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cmul_       = cOp_ Dynamic.cmul
+cmul_       = cOp_ Dynamic.cmul_
 cmul        :: MathConstraint t d => t d -> t d -> IO (t d)
-cmul        = cOp Dynamic.cmul
+cmul        = cOp Dynamic.cmul_
 cpow_       :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cpow_       = cOp_ Dynamic.cpow
+cpow_       = cOp_ Dynamic.cpow_
 cpow        :: MathConstraint t d => t d -> t d -> IO (t d)
-cpow        = cOp Dynamic.cpow
+cpow        = cOp Dynamic.cpow_
 cdiv_       :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cdiv_       = cOp_ Dynamic.cdiv
+cdiv_       = cOp_ Dynamic.cdiv_
 cdiv        :: MathConstraint t d => t d -> t d -> IO (t d)
-cdiv        = cOp Dynamic.cdiv
+cdiv        = cOp Dynamic.cdiv_
 clshift_    :: MathConstraint t d => t d -> t d -> t d -> IO ()
-clshift_    = cOp_ Dynamic.clshift
+clshift_    = cOp_ Dynamic.clshift_
 clshift     :: MathConstraint t d => t d -> t d -> IO (t d)
-clshift     = cOp Dynamic.clshift
+clshift     = cOp Dynamic.clshift_
 crshift_    :: MathConstraint t d => t d -> t d -> t d -> IO ()
-crshift_    = cOp_ Dynamic.crshift
+crshift_    = cOp_ Dynamic.crshift_
 crshift     :: MathConstraint t d => t d -> t d -> IO (t d)
-crshift     = cOp Dynamic.crshift
+crshift     = cOp Dynamic.crshift_
 cfmod_      :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cfmod_      = cOp_ Dynamic.cfmod
+cfmod_      = cOp_ Dynamic.cfmod_
 cfmod       :: MathConstraint t d => t d -> t d -> IO (t d)
-cfmod       = cOp Dynamic.cfmod
+cfmod       = cOp Dynamic.cfmod_
 cremainder_ :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cremainder_ = cOp_ Dynamic.cremainder
+cremainder_ = cOp_ Dynamic.cremainder_
 cremainder  :: MathConstraint t d => t d -> t d -> IO (t d)
-cremainder  = cOp Dynamic.cremainder
+cremainder  = cOp Dynamic.cremainder_
 cbitand_    :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cbitand_    = cOp_ Dynamic.cbitand
+cbitand_    = cOp_ Dynamic.cbitand_
 cbitand     :: MathConstraint t d => t d -> t d -> IO (t d)
-cbitand     = cOp Dynamic.cbitand
+cbitand     = cOp Dynamic.cbitand_
 cbitor_     :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cbitor_     = cOp_ Dynamic.cbitor
+cbitor_     = cOp_ Dynamic.cbitor_
 cbitor      :: MathConstraint t d => t d -> t d -> IO (t d)
-cbitor      = cOp Dynamic.cbitor
+cbitor      = cOp Dynamic.cbitor_
 cbitxor_    :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cbitxor_    = cOp_ Dynamic.cbitxor
+cbitxor_    = cOp_ Dynamic.cbitxor_
 cbitxor     :: MathConstraint t d => t d -> t d -> IO (t d)
-cbitxor     = cOp Dynamic.cbitxor
+cbitxor     = cOp Dynamic.cbitxor_
 
 addcmul_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> t d -> t d -> IO ()
-addcmul_ r t v t' t'' = Dynamic.addcmul (asDynamic r) (asDynamic t) v (asDynamic t') (asDynamic t'')
+addcmul_ r t v t' t'' = Dynamic.addcmul_ (asDynamic r) (asDynamic t) v (asDynamic t') (asDynamic t'')
 
 addcmul :: MathConstraint t d => t d -> HsReal (t d) -> t d -> t d -> IO (t d)
-addcmul t v t' t'' = withInplace $ \r -> Dynamic.addcmul r (asDynamic t) v (asDynamic t') (asDynamic t'')
+addcmul t v t' t'' = withInplace $ \r -> Dynamic.addcmul_ r (asDynamic t) v (asDynamic t') (asDynamic t'')
 
 addcdiv_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> t d -> t d -> IO ()
-addcdiv_ r t v t' t'' = Dynamic.addcdiv (asDynamic r) (asDynamic t) v (asDynamic t') (asDynamic t'')
+addcdiv_ r t v t' t'' = Dynamic.addcdiv_ (asDynamic r) (asDynamic t) v (asDynamic t') (asDynamic t'')
 
 addcdiv :: MathConstraint t d => t d -> HsReal (t d) -> t d -> t d -> IO (t d)
-addcdiv t v t' t'' = withInplace $ \r -> Dynamic.addcdiv r (asDynamic t) v (asDynamic t') (asDynamic t'')
+addcdiv t v t' t'' = withInplace $ \r -> Dynamic.addcdiv_ r (asDynamic t) v (asDynamic t') (asDynamic t'')
 
 -- | added simplified use of addmv: src1 #> src2
 mv :: (MathConstraint3 t '[r, c] '[c] '[r]) => t '[r, c] -> t '[c] -> IO (t '[r])
@@ -537,35 +538,35 @@ mv m v = Dynamic.new >>= \n -> addmv 0 (asStatic n) 1 m v
 addmv_
   :: (MathConstraint3 t '[r] '[r, c] '[c], MathConstraint t '[r])
   => t '[r] -> HsReal (t '[r]) -> t '[r] -> HsReal (t '[r]) -> t '[r, c] -> t '[c] -> IO ()
-addmv_ r a t b x y = Dynamic.addmv (asDynamic r) a (asDynamic t) b (asDynamic x) (asDynamic y)
+addmv_ r a t b x y = Dynamic.addmv_ (asDynamic r) a (asDynamic t) b (asDynamic x) (asDynamic y)
 
 addmv
   :: (MathConstraint3 t '[r] '[r, c] '[c], MathConstraint t '[r])
   => HsReal (t '[r]) -> t '[r] -> HsReal (t '[r]) -> t '[r, c] -> t '[c] -> IO (t '[r])
-addmv a t b x y = withInplace $ \r -> Dynamic.addmv r a (asDynamic t) b (asDynamic x) (asDynamic y)
+addmv a t b x y = withInplace $ \r -> Dynamic.addmv_ r a (asDynamic t) b (asDynamic x) (asDynamic y)
 
 addmm_        :: MathConstraint3 t d d' d'' => t d'' -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO ()
-addmm_ r a t b x y = Dynamic.addmm (asDynamic r) a (asDynamic t) b (asDynamic x) (asDynamic y)
+addmm_ r a t b x y = Dynamic.addmm_ (asDynamic r) a (asDynamic t) b (asDynamic x) (asDynamic y)
 addmm         :: MathConstraint3 t d d' d'' => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO (t d'')
-addmm a t b x y = withInplace $ \r -> Dynamic.addmm r a (asDynamic t) b (asDynamic x) (asDynamic y)
+addmm a t b x y = withInplace $ \r -> Dynamic.addmm_ r a (asDynamic t) b (asDynamic x) (asDynamic y)
 addr_         :: MathConstraint t d => t d -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO ()
-addr_         = ttOp_ Dynamic.addr
+addr_         = ttOp_ Dynamic.addr_
 addr          :: MathConstraint t d => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO (t d)
-addr          = ttOp  Dynamic.addr
+addr          = ttOp  Dynamic.addr_
 addbmm_       :: MathConstraint t d => t d -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO ()
-addbmm_       = ttOp_ Dynamic.addbmm
+addbmm_       = ttOp_ Dynamic.addbmm_
 addbmm        :: MathConstraint t d => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO (t d)
-addbmm        = ttOp  Dynamic.addbmm
+addbmm        = ttOp  Dynamic.addbmm_
 baddbmm_      :: MathConstraint t d => t d -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO ()
-baddbmm_      = ttOp_ Dynamic.baddbmm
+baddbmm_      = ttOp_ Dynamic.baddbmm_
 baddbmm       :: MathConstraint t d => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO (t d)
-baddbmm       = ttOp  Dynamic.baddbmm
+baddbmm       = ttOp  Dynamic.baddbmm_
 
 match_ :: MathConstraint t d => t d -> t d -> t d -> HsReal (t d) -> IO ()
-match_ r t t' v = Dynamic.match (asDynamic r) (asDynamic t) (asDynamic t') v
+match_ r t t' v = Dynamic.match_ (asDynamic r) (asDynamic t) (asDynamic t') v
 
 match  :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO (t d)
-match t t' v = withInplace $ \r -> Dynamic.match r (asDynamic t) (asDynamic t') v
+match t t' v = withInplace $ \r -> Dynamic.match_ r (asDynamic t) (asDynamic t') v
 
 numel :: MathConstraint t d => t d -> IO Int64
 numel t = Dynamic.numel (asDynamic t)
@@ -574,65 +575,65 @@ numel t = Dynamic.numel (asDynamic t)
 
 keepDimOps_
   :: MathConstraint t d
-  => (AsDynamic (t d) -> Dynamic.LongTensor -> AsDynamic (t d) -> Int32 -> Int32 -> IO ())
+  => ((AsDynamic (t d), Dynamic.LongTensor) -> AsDynamic (t d) -> Int32 -> Int32 -> IO ())
   -> (t d, Dynamic.LongTensor) -> t d -> DimVal -> Bool -> IO ()
-keepDimOps_ op (r, ix) t d keep = op (asDynamic r) ix (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum keep)
+keepDimOps_ op (r, ix) t d keep = op (asDynamic r, ix) (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum keep)
 
 -- FIXME: find out how to _not_ pass in the index, I think that would add a small performance bump.
 keepDimOps
   :: MathConstraint t d
-  => (AsDynamic (t d) -> Dynamic.LongTensor -> AsDynamic (t d) -> Int32 -> Int32 -> IO ())
+  => ((AsDynamic (t d), Dynamic.LongTensor) -> AsDynamic (t d) -> Int32 -> Int32 -> IO ())
   -> t d -> DimVal -> Bool -> IO (t d, Maybe Dynamic.LongTensor)
 keepDimOps op t d keep = do
   ix :: Dynamic.LongTensor <- Dynamic.new
-  res <- withInplace $ \r -> op r ix (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum keep)
+  res <- withInplace $ \r -> op (r, ix) (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum keep)
   pure (res, if keep then Just ix else Nothing)
 
 -------------------------------------------------------------------------------
 
 max_ :: MathConstraint t d => (t d, Dynamic.LongTensor) -> t d -> DimVal -> Bool -> IO ()
-max_ = keepDimOps_ Dynamic.max
+max_ = keepDimOps_ Dynamic.max_
 
 max :: MathConstraint t d => t d -> DimVal -> Bool -> IO (t d, Maybe Dynamic.LongTensor)
-max = keepDimOps Dynamic.max
+max = keepDimOps Dynamic.max_
 
 min_ :: MathConstraint t d => (t d, Dynamic.LongTensor) -> t d -> DimVal -> Bool -> IO ()
-min_ = keepDimOps_ Dynamic.min
+min_ = keepDimOps_ Dynamic.min_
 
 min :: MathConstraint t d => t d -> DimVal -> Bool -> IO (t d, Maybe Dynamic.LongTensor)
-min = keepDimOps Dynamic.min
+min = keepDimOps Dynamic.min_
 
 -- FIXME: unify with other 'keepDimOps_'
 kthvalue_ :: MathConstraint t d => (t d, Dynamic.LongTensor) -> t d -> Int64 -> DimVal -> Bool -> IO ()
-kthvalue_ (r, ix) t k d keep = Dynamic.kthvalue (asDynamic r) ix (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum keep)
+kthvalue_ (r, ix) t k d keep = Dynamic.kthvalue_ (asDynamic r, ix) (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum keep)
 
 -- FIXME: unify with other 'keepDimOps'
 kthvalue :: MathConstraint t d => t d -> Int64 -> DimVal -> Bool -> IO (t d, Maybe Dynamic.LongTensor)
 kthvalue t k d keep = do
   ix :: Dynamic.LongTensor <- Dynamic.new
-  res <- withInplace $ \r -> Dynamic.kthvalue r ix (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum keep)
+  res <- withInplace $ \r -> Dynamic.kthvalue_ (r, ix) (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum keep)
   pure (res, if keep then Just ix else Nothing)
 
 mode_ :: MathConstraint t d => (t d, Dynamic.LongTensor) -> t d -> DimVal -> Bool -> IO ()
-mode_ = keepDimOps_ Dynamic.mode
+mode_ = keepDimOps_ Dynamic.mode_
 
 mode :: MathConstraint t d => t d -> DimVal -> Bool -> IO (t d, Maybe Dynamic.LongTensor)
-mode = keepDimOps Dynamic.mode
+mode = keepDimOps Dynamic.mode_
 
 median_ :: MathConstraint t d => (t d, Dynamic.LongTensor) -> t d -> DimVal -> Bool -> IO ()
-median_ = keepDimOps_ Dynamic.median
+median_ = keepDimOps_ Dynamic.median_
 
 median :: MathConstraint t d => t d -> DimVal -> Bool -> IO (t d, Maybe Dynamic.LongTensor)
-median = keepDimOps Dynamic.median
+median = keepDimOps Dynamic.median_
 
 -- ========================================================================= --
 
 -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
 sum_ :: MathConstraint2 t d d' => t d' -> t d -> DimVal -> Bool -> IO ()
-sum_ r t d k = Dynamic.sum (asDynamic r) (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum k)
+sum_ r t d k = Dynamic.sum_ (asDynamic r) (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum k)
 
 sum :: MathConstraint2 t d d' => t d -> DimVal -> Bool -> IO (t d')
-sum t d k = withInplace $ \r -> Dynamic.sum r (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum k)
+sum t d k = withInplace $ \r -> Dynamic.sum_ r (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum k)
 
 rowsum :: MathConstraint2 t '[r, c] '[1, c] => t '[r, c] -> IO (t '[1, c])
 rowsum t = Torch.Core.Tensor.Static.Math.sum t 0 True
@@ -641,98 +642,98 @@ colsum :: MathConstraint2 t '[r, c] '[r, 1] => t '[r, c] -> IO (t '[r, 1])
 colsum t = Torch.Core.Tensor.Static.Math.sum t 1 True
 
 prod_ :: MathConstraint2 t d d' => t d' -> t d -> Int32 -> Bool -> IO ()
-prod_ r t d k = Dynamic.prod (asDynamic r) (asDynamic t) d (fromIntegral $ fromEnum k)
+prod_ r t d k = Dynamic.prod_ (asDynamic r) (asDynamic t) d (fromIntegral $ fromEnum k)
 
 prod :: MathConstraint2 t d d' => t d -> Int32 -> Bool -> IO (t d')
-prod t d k = withInplace $ \r -> Dynamic.prod r (asDynamic t) d (fromIntegral $ fromEnum k)
+prod t d k = withInplace $ \r -> Dynamic.prod_ r (asDynamic t) d (fromIntegral $ fromEnum k)
 
 cumsum_ :: MathConstraint2 t d d' => t d' -> t d -> Int32 -> IO ()
-cumsum_ r t d = Dynamic.cumsum (asDynamic r) (asDynamic t) d
+cumsum_ r t d = Dynamic.cumsum_ (asDynamic r) (asDynamic t) d
 
 cumsum :: MathConstraint2 t d d' => t d -> Int32 -> IO (t d')
-cumsum t d = withInplace $ \r -> Dynamic.cumsum r (asDynamic t) d
+cumsum t d = withInplace $ \r -> Dynamic.cumsum_ r (asDynamic t) d
 
 cumprod_ :: MathConstraint2 t d d' => t d' -> t d -> Int32 -> IO ()
-cumprod_ r t d = Dynamic.cumprod (asDynamic r) (asDynamic t) d
+cumprod_ r t d = Dynamic.cumprod_ (asDynamic r) (asDynamic t) d
 
 cumprod :: MathConstraint2 t d d' => t d -> Int32 -> IO (t d')
-cumprod t d = withInplace $ \r -> Dynamic.cumprod r (asDynamic t) d
+cumprod t d = withInplace $ \r -> Dynamic.cumprod_ r (asDynamic t) d
 
 sign_ :: MathConstraint t d => t d -> t d -> IO ()
-sign_ r t = Dynamic.sign (asDynamic r) (asDynamic t)
+sign_ r t = Dynamic.sign_ (asDynamic r) (asDynamic t)
 
 sign :: MathConstraint t d => t d -> IO (t d)
-sign t = withInplace $ \r -> Dynamic.sign r (asDynamic t)
+sign t = withInplace $ \r -> Dynamic.sign_ r (asDynamic t)
 
 trace :: MathConstraint t d => t d -> IO (HsAccReal (t d))
 trace = Dynamic.trace . asDynamic
 
 cross :: MathConstraint3 t d d' d'' => t d -> t d' -> DimVal -> IO (t d'')
-cross a b d = withInplace $ \res -> Dynamic.cross res (asDynamic a) (asDynamic b) (fromIntegral d)
+cross a b d = withInplace $ \res -> Dynamic.cross_ res (asDynamic a) (asDynamic b) (fromIntegral d)
 
 cross_ :: MathConstraint t d => t d -> t d -> t d -> DimVal -> IO ()
-cross_ r a b d = Dynamic.cross (asDynamic r) (asDynamic a) (asDynamic b) (fromIntegral d)
+cross_ r a b d = Dynamic.cross_ (asDynamic r) (asDynamic a) (asDynamic b) (fromIntegral d)
 
 cmax_ :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cmax_ = cOp_ Dynamic.cmax
+cmax_ = cOp_ Dynamic.cmax_
 cmax  :: MathConstraint t d => t d -> t d -> IO (t d)
-cmax  = cOp Dynamic.cmax
+cmax  = cOp Dynamic.cmax_
 cmin_ :: MathConstraint t d => t d -> t d -> t d -> IO ()
-cmin_ = cOp_ Dynamic.cmin
+cmin_ = cOp_ Dynamic.cmin_
 cmin  :: MathConstraint t d => t d -> t d -> IO (t d)
-cmin  = cOp Dynamic.cmin
+cmin  = cOp Dynamic.cmin_
 
 cmaxValue_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-cmaxValue_ r t v = Dynamic.cmaxValue (asDynamic r) (asDynamic t) v
+cmaxValue_ r t v = Dynamic.cmaxValue_ (asDynamic r) (asDynamic t) v
 
 cmaxValue :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-cmaxValue t v = withInplace $ \r -> Dynamic.cmaxValue r (asDynamic t) v
+cmaxValue t v = withInplace $ \r -> Dynamic.cmaxValue_ r (asDynamic t) v
 
 cminValue_ :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-cminValue_ r t v = Dynamic.cminValue (asDynamic r) (asDynamic t) v
+cminValue_ r t v = Dynamic.cminValue_ (asDynamic r) (asDynamic t) v
 
 cminValue :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-cminValue t v = withInplace $ \r -> Dynamic.cminValue r (asDynamic t) v
+cminValue t v = withInplace $ \r -> Dynamic.cminValue_ r (asDynamic t) v
 
 zeros_ :: MathConstraint t d => t d -> Storage.LongStorage -> IO ()
-zeros_ r ls = Dynamic.zeros (asDynamic r) ls
+zeros_ r ls = Dynamic.zeros_ (asDynamic r) ls
 
 zeros :: MathConstraint t d => Storage.LongStorage -> IO (t d)
-zeros ls = withInplace $ \r -> Dynamic.zeros r ls
+zeros ls = withInplace $ \r -> Dynamic.zeros_ r ls
 
 zerosLike :: MathConstraint t d => t d -> IO (t d)
-zerosLike t = withInplace $ \r -> Dynamic.zerosLike r (asDynamic t)
+zerosLike t = withInplace $ \r -> Dynamic.zerosLike_ r (asDynamic t)
 
 zerosLike_ :: MathConstraint t d => t d -> t d -> IO ()
-zerosLike_ r t = Dynamic.zerosLike (asDynamic r) (asDynamic t)
+zerosLike_ r t = Dynamic.zerosLike_ (asDynamic r) (asDynamic t)
 
 ones_ :: MathConstraint t d => t d -> Storage.LongStorage -> IO ()
-ones_ r ls = Dynamic.ones (asDynamic r) ls
+ones_ r ls = Dynamic.ones_ (asDynamic r) ls
 
 ones :: MathConstraint t d => Storage.LongStorage -> IO (t d)
-ones ls = withInplace $ \r -> Dynamic.ones r ls
+ones ls = withInplace $ \r -> Dynamic.ones_ r ls
 
 onesLike :: MathConstraint t d => t d -> IO (t d)
-onesLike t = withInplace $ \r -> Dynamic.onesLike r (asDynamic t)
+onesLike t = withInplace $ \r -> Dynamic.onesLike_ r (asDynamic t)
 
 onesLike_ :: MathConstraint t d => t d -> t d -> IO ()
-onesLike_ r t = Dynamic.onesLike (asDynamic r) (asDynamic t)
+onesLike_ r t = Dynamic.onesLike_ (asDynamic r) (asDynamic t)
 
 diag_ :: MathConstraint2 t d d' => t d' -> t d -> DimVal -> IO ()
-diag_ r t d = Dynamic.diag (asDynamic r) (asDynamic t) (fromIntegral d)
+diag_ r t d = Dynamic.diag_ (asDynamic r) (asDynamic t) (fromIntegral d)
 
 diag :: MathConstraint2 t d d' => t d -> DimVal -> IO (t d')
-diag t d = withInplace $ \r -> Dynamic.diag r (asDynamic t) (fromIntegral d)
+diag t d = withInplace $ \r -> Dynamic.diag_ r (asDynamic t) (fromIntegral d)
 
 -- | Create a diagonal matrix from a 1D vector
 diag1 :: (KnownNat n, MathConstraint2 t '[n] '[n,n]) => t '[n] -> IO (t '[n, n])
 diag1 v = diag v 0
 
 eye_ :: MathConstraint t d => t d -> Int64 -> Int64 -> IO ()
-eye_ r x y = Dynamic.eye (asDynamic r) x y
+eye_ r x y = Dynamic.eye_ (asDynamic r) x y
 
 eye :: MathConstraint t d => Int64 -> Int64 -> IO (t d)
-eye x y = withInplace $ \r -> Dynamic.eye r x y
+eye x y = withInplace $ \r -> Dynamic.eye_ r x y
 
 -- square matrix identity
 eye2 :: forall t n . (KnownNat n, MathConstraint t '[n, n]) => IO (t '[n, n])
@@ -742,29 +743,29 @@ eye2 = eye n n
    n = fromIntegral (natVal (Proxy :: Proxy n))
 
 arange_ :: MathConstraint t d => t d -> HsAccReal (t d) -> HsAccReal (t d) -> HsAccReal (t d) -> IO ()
-arange_ r s e step = Dynamic.arange (asDynamic r) s e step
+arange_ r s e step = Dynamic.arange_ (asDynamic r) s e step
 
 arange :: MathConstraint t d => HsAccReal (t d) -> HsAccReal (t d) -> HsAccReal (t d) -> IO (t d)
-arange s e step = withInplace $ \r -> Dynamic.arange r s e step
+arange s e step = withInplace $ \r -> Dynamic.arange_ r s e step
 
 range_ :: MathConstraint t d => t d -> HsAccReal (t d) -> HsAccReal (t d) -> HsAccReal (t d) -> IO ()
-range_ r s e step = Dynamic.range (asDynamic r) s e step
+range_ r s e step = Dynamic.range_ (asDynamic r) s e step
 
 range :: MathConstraint t d => HsAccReal (t d) -> HsAccReal (t d) -> HsAccReal (t d) -> IO (t d)
-range s e step = withInplace $ \r -> Dynamic.range r s e step
+range s e step = withInplace $ \r -> Dynamic.range_ r s e step
 
 -- FIXME: find out if @n@ _must be_ in the dimension
-randperm_ :: MathConstraint t d => t d -> Ptr CTHGenerator -> Int64 -> IO ()
-randperm_ r g n = Dynamic.randperm (asDynamic r) g n
+randperm_ :: MathConstraint t d => t d -> Generator -> Int64 -> IO ()
+randperm_ r g n = Dynamic.randperm_ (asDynamic r) g n
 
-randperm :: MathConstraint t d => Ptr CTHGenerator -> Int64 -> IO (t d)
-randperm g n = withInplace $ \r -> Dynamic.randperm r g n
+randperm :: MathConstraint t d => Generator -> Int64 -> IO (t d)
+randperm g n = withInplace $ \r -> Dynamic.randperm_ r g n
 
 reshape_ :: MathConstraint2 t d d' => t d' -> t d -> Storage.LongStorage -> IO ()
-reshape_ r t s = Dynamic.reshape (asDynamic r) (asDynamic t) s
+reshape_ r t s = Dynamic.reshape_ (asDynamic r) (asDynamic t) s
 
 reshape :: MathConstraint2 t d d' => t d -> Storage.LongStorage -> IO (t d')
-reshape t s = withInplace $ \r -> Dynamic.reshape r (asDynamic t) s
+reshape t s = withInplace $ \r -> Dynamic.reshape_ r (asDynamic t) s
 
 data DescendingOrder = Ascending | Descending
   deriving (Eq, Show, Ord, Enum, Bounded)
@@ -780,41 +781,41 @@ returnDimOps2 op t a b = do
   pure (res, ix)
 
 sort_ :: MathConstraint t d => (t d, Dynamic.LongTensor) -> t d -> DimVal -> DescendingOrder -> IO ()
-sort_ (r, ix) t d o = Dynamic.sort (asDynamic r) ix (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum o)
+sort_ (r, ix) t d o = Dynamic.sort_ (asDynamic r) ix (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum o)
 
 sort :: MathConstraint t d => t d -> DimVal -> DescendingOrder -> IO (t d, Dynamic.LongTensor)
-sort t d o = returnDimOps2 Dynamic.sort t d (fromEnum o)
+sort t d o = returnDimOps2 Dynamic.sort_ t d (fromEnum o)
 
 -- https://github.com/torch/torch7/blob/75a86469aa9e2f5f04e11895b269ec22eb0e4687/lib/TH/generic/THTensorMath.c#L2545
 data TopKOrder = KAscending | KNone | KDescending
   deriving (Eq, Show, Ord, Enum, Bounded)
 
 topk_ :: MathConstraint2 t d d' => (t d', Dynamic.LongTensor) -> t d -> Int64 -> DimVal -> TopKOrder -> Bool -> IO ()
-topk_ (r, ri) t k d o sorted = Dynamic.topk (asDynamic r) ri (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum o) (fromIntegral $ fromEnum sorted)
+topk_ (r, ri) t k d o sorted = Dynamic.topk_ (asDynamic r) ri (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum o) (fromIntegral $ fromEnum sorted)
 
 topk :: MathConstraint2 t d d' => t d -> Int64 -> DimVal -> TopKOrder -> Bool -> IO (t d', Dynamic.LongTensor)
 topk t k d o sorted = do
   ix :: Dynamic.LongTensor <- Dynamic.new
-  res <- withInplace $ \r -> Dynamic.topk r ix (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum o) (fromIntegral $ fromEnum sorted)
+  res <- withInplace $ \r -> Dynamic.topk_ r ix (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum o) (fromIntegral $ fromEnum sorted)
   pure (res, ix)
 
 tril_ :: MathConstraint t '[x, y] => t '[x, y] -> t '[x, y] -> Int64 -> IO ()
-tril_ r t k = Dynamic.tril (asDynamic r) (asDynamic t) k
+tril_ r t k = Dynamic.tril_ (asDynamic r) (asDynamic t) k
 
 tril :: MathConstraint t '[x, y] => t '[x, y] -> Int64 -> IO (t '[x, y])
-tril t k = withInplace $ \r -> Dynamic.tril r (asDynamic t) k
+tril t k = withInplace $ \r -> Dynamic.tril_ r (asDynamic t) k
 
 triu_ :: MathConstraint t '[x, y] => t '[x, y] -> t '[x, y] -> Int64 -> IO ()
-triu_ r t k = Dynamic.triu (asDynamic r) (asDynamic t) k
+triu_ r t k = Dynamic.triu_ (asDynamic r) (asDynamic t) k
 
 triu :: MathConstraint t '[x, y] => t '[x, y] -> Int64 -> IO (t '[x, y])
-triu t k = withInplace $ \r -> Dynamic.triu r (asDynamic t) k
+triu t k = withInplace $ \r -> Dynamic.triu_ r (asDynamic t) k
 
 cat_ :: forall t d d' d'' . (MathConstraint3 t d d' d'') => t d'' -> t d -> t d' -> DimVal -> IO ()
-cat_ r a b d = Dynamic.cat (asDynamic r) (asDynamic a) (asDynamic b) (fromIntegral d)
+cat_ r a b d = Dynamic.cat_ (asDynamic r) (asDynamic a) (asDynamic b) (fromIntegral d)
 
 cat :: forall t d d' d'' . (MathConstraint3 t d d' d'') => t d -> t d' -> DimVal -> IO (t d'')
-cat a b d = withInplace $ \r -> Dynamic.cat r (asDynamic a) (asDynamic b) (fromIntegral d)
+cat a b d = withInplace $ \r -> Dynamic.cat_ r (asDynamic a) (asDynamic b) (fromIntegral d)
 
 
 -- Specialized version of cat
@@ -828,113 +829,113 @@ cat1d a b = cat a b 0
 -- catArray_
 --   :: forall t d d' . (MathConstraint2 t d' d)
 --   => t d' -> (forall ds . Dimensions ds => [t ds]) -> Int32 -> DimVal -> IO ()
--- catArray_ r xs n_inputs dimension = Dynamic.catArray (asDynamic r) (asDynamic <$> xs) n_inputs (fromIntegral dimension)
+-- catArray_ r xs n_inputs dimension = Dynamic.catArray_ (asDynamic r) (asDynamic <$> xs) n_inputs (fromIntegral dimension)
 catArray_ :: MathConstraint t d => t d -> [AsDynamic (t d)] -> Int32 -> DimVal -> IO ()
-catArray_ r xs n_inputs dimension = Dynamic.catArray (asDynamic r) xs n_inputs (fromIntegral dimension)
+catArray_ r xs n_inputs dimension = Dynamic.catArray_ (asDynamic r) xs n_inputs (fromIntegral dimension)
 
 catArray :: MathConstraint t d => [AsDynamic (t d)] -> Int32 -> DimVal -> IO (t d)
-catArray xs n_inputs dimension = withInplace $ \r -> Dynamic.catArray r xs n_inputs (fromIntegral dimension)
+catArray xs n_inputs dimension = withInplace $ \r -> Dynamic.catArray_ r xs n_inputs (fromIntegral dimension)
 
 equal :: MathConstraint t d => t d -> t d -> IO Bool
 equal a b = (== 1) <$> Dynamic.equal (asDynamic a) (asDynamic b)
 
 ltValue :: MathConstraint t d => ByteTensor d -> t d -> HsReal (t d) -> IO ()
-ltValue b t v = Dynamic.ltValue (asDynamic b) (asDynamic t) v
+ltValue b t v = Dynamic.ltValue_ (asDynamic b) (asDynamic t) v
 ltValue_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (ByteTensor d)
-ltValue_ t v = withInplace $ \r -> Dynamic.ltValue r (asDynamic t) v
+ltValue_ t v = withInplace $ \r -> Dynamic.ltValue_ r (asDynamic t) v
 leValue :: MathConstraint t d => ByteTensor d -> t d -> HsReal (t d) -> IO ()
-leValue b t v = Dynamic.leValue (asDynamic b) (asDynamic t) v
+leValue b t v = Dynamic.leValue_ (asDynamic b) (asDynamic t) v
 leValue_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (ByteTensor d)
-leValue_ t v = withInplace $ \r -> Dynamic.leValue r (asDynamic t) v
+leValue_ t v = withInplace $ \r -> Dynamic.leValue_ r (asDynamic t) v
 gtValue :: MathConstraint t d => ByteTensor d -> t d -> HsReal (t d) -> IO ()
-gtValue b t v = Dynamic.gtValue (asDynamic b) (asDynamic t) v
+gtValue b t v = Dynamic.gtValue_ (asDynamic b) (asDynamic t) v
 gtValue_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (ByteTensor d)
-gtValue_ t v = withInplace $ \r -> Dynamic.gtValue r (asDynamic t) v
+gtValue_ t v = withInplace $ \r -> Dynamic.gtValue_ r (asDynamic t) v
 geValue :: MathConstraint t d => ByteTensor d -> t d -> HsReal (t d) -> IO ()
-geValue b t v = Dynamic.geValue (asDynamic b) (asDynamic t) v
+geValue b t v = Dynamic.geValue_ (asDynamic b) (asDynamic t) v
 geValue_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (ByteTensor d)
-geValue_ t v = withInplace $ \r -> Dynamic.geValue r (asDynamic t) v
+geValue_ t v = withInplace $ \r -> Dynamic.geValue_ r (asDynamic t) v
 neValue :: MathConstraint t d => ByteTensor d -> t d -> HsReal (t d) -> IO ()
-neValue b t v = Dynamic.neValue (asDynamic b) (asDynamic t) v
+neValue b t v = Dynamic.neValue_ (asDynamic b) (asDynamic t) v
 neValue_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (ByteTensor d)
-neValue_ t v = withInplace $ \r -> Dynamic.neValue r (asDynamic t) v
+neValue_ t v = withInplace $ \r -> Dynamic.neValue_ r (asDynamic t) v
 eqValue :: MathConstraint t d => ByteTensor d -> t d -> HsReal (t d) -> IO ()
-eqValue b t v = Dynamic.eqValue (asDynamic b) (asDynamic t) v
+eqValue b t v = Dynamic.eqValue_ (asDynamic b) (asDynamic t) v
 eqValue_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (ByteTensor d)
-eqValue_ t v = withInplace $ \r -> Dynamic.eqValue r (asDynamic t) v
+eqValue_ t v = withInplace $ \r -> Dynamic.eqValue_ r (asDynamic t) v
 
 ltValueT :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-ltValueT r a v = Dynamic.ltValueT (asDynamic r) (asDynamic a) v
+ltValueT r a v = Dynamic.ltValueT_ (asDynamic r) (asDynamic a) v
 ltValueT_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-ltValueT_ a v = withInplace $ \r -> Dynamic.ltValueT r (asDynamic a) v
+ltValueT_ a v = withInplace $ \r -> Dynamic.ltValueT_ r (asDynamic a) v
 leValueT :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-leValueT r a v = Dynamic.leValueT (asDynamic r) (asDynamic a) v
+leValueT r a v = Dynamic.leValueT_ (asDynamic r) (asDynamic a) v
 leValueT_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-leValueT_ a v = withInplace $ \r -> Dynamic.leValueT r (asDynamic a) v
+leValueT_ a v = withInplace $ \r -> Dynamic.leValueT_ r (asDynamic a) v
 gtValueT :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-gtValueT r a v = Dynamic.gtValueT (asDynamic r) (asDynamic a) v
+gtValueT r a v = Dynamic.gtValueT_ (asDynamic r) (asDynamic a) v
 gtValueT_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-gtValueT_ a v = withInplace $ \r -> Dynamic.gtValueT r (asDynamic a) v
+gtValueT_ a v = withInplace $ \r -> Dynamic.gtValueT_ r (asDynamic a) v
 geValueT :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-geValueT r a v = Dynamic.geValueT (asDynamic r) (asDynamic a) v
+geValueT r a v = Dynamic.geValueT_ (asDynamic r) (asDynamic a) v
 geValueT_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-geValueT_ a v = withInplace $ \r -> Dynamic.geValueT r (asDynamic a) v
+geValueT_ a v = withInplace $ \r -> Dynamic.geValueT_ r (asDynamic a) v
 neValueT :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-neValueT r a v = Dynamic.neValueT (asDynamic r) (asDynamic a) v
+neValueT r a v = Dynamic.neValueT_ (asDynamic r) (asDynamic a) v
 neValueT_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-neValueT_ a v = withInplace $ \r -> Dynamic.neValueT r (asDynamic a) v
+neValueT_ a v = withInplace $ \r -> Dynamic.neValueT_ r (asDynamic a) v
 eqValueT :: MathConstraint t d => t d -> t d -> HsReal (t d) -> IO ()
-eqValueT r a v = Dynamic.eqValueT (asDynamic r) (asDynamic a) v
+eqValueT r a v = Dynamic.eqValueT_ (asDynamic r) (asDynamic a) v
 eqValueT_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
-eqValueT_ a v = withInplace $ \r -> Dynamic.eqValueT r (asDynamic a) v
+eqValueT_ a v = withInplace $ \r -> Dynamic.eqValueT_ r (asDynamic a) v
 
 ltTensor :: MathConstraint t d => ByteTensor d -> t d -> t d -> IO ()
-ltTensor r a b = Dynamic.ltTensor (asDynamic r) (asDynamic a) (asDynamic b)
+ltTensor r a b = Dynamic.ltTensor_ (asDynamic r) (asDynamic a) (asDynamic b)
 ltTensor_ :: MathConstraint t d => t d -> t d -> IO (ByteTensor d)
-ltTensor_ a b = withInplace $ \r -> Dynamic.ltTensor r (asDynamic a) (asDynamic b)
+ltTensor_ a b = withInplace $ \r -> Dynamic.ltTensor_ r (asDynamic a) (asDynamic b)
 leTensor :: MathConstraint t d => ByteTensor d -> t d -> t d -> IO ()
-leTensor r a b = Dynamic.leTensor (asDynamic r) (asDynamic a) (asDynamic b)
+leTensor r a b = Dynamic.leTensor_ (asDynamic r) (asDynamic a) (asDynamic b)
 leTensor_ :: MathConstraint t d => t d -> t d -> IO (ByteTensor d)
-leTensor_ a b = withInplace $ \r -> Dynamic.leTensor r (asDynamic a) (asDynamic b)
+leTensor_ a b = withInplace $ \r -> Dynamic.leTensor_ r (asDynamic a) (asDynamic b)
 gtTensor :: MathConstraint t d => ByteTensor d -> t d -> t d -> IO ()
-gtTensor r a b = Dynamic.gtTensor (asDynamic r) (asDynamic a) (asDynamic b)
+gtTensor r a b = Dynamic.gtTensor_ (asDynamic r) (asDynamic a) (asDynamic b)
 gtTensor_ :: MathConstraint t d => t d -> t d -> IO (ByteTensor d)
-gtTensor_ a b = withInplace $ \r -> Dynamic.gtTensor r (asDynamic a) (asDynamic b)
+gtTensor_ a b = withInplace $ \r -> Dynamic.gtTensor_ r (asDynamic a) (asDynamic b)
 geTensor :: MathConstraint t d => ByteTensor d -> t d -> t d -> IO ()
-geTensor r a b = Dynamic.geTensor (asDynamic r) (asDynamic a) (asDynamic b)
+geTensor r a b = Dynamic.geTensor_ (asDynamic r) (asDynamic a) (asDynamic b)
 geTensor_ :: MathConstraint t d => t d -> t d -> IO (ByteTensor d)
-geTensor_ a b = withInplace $ \r -> Dynamic.geTensor r (asDynamic a) (asDynamic b)
+geTensor_ a b = withInplace $ \r -> Dynamic.geTensor_ r (asDynamic a) (asDynamic b)
 neTensor :: MathConstraint t d => ByteTensor d -> t d -> t d -> IO ()
-neTensor r a b = Dynamic.neTensor (asDynamic r) (asDynamic a) (asDynamic b)
+neTensor r a b = Dynamic.neTensor_ (asDynamic r) (asDynamic a) (asDynamic b)
 neTensor_ :: MathConstraint t d => t d -> t d -> IO (ByteTensor d)
-neTensor_ a b = withInplace $ \r -> Dynamic.neTensor r (asDynamic a) (asDynamic b)
+neTensor_ a b = withInplace $ \r -> Dynamic.neTensor_ r (asDynamic a) (asDynamic b)
 eqTensor :: MathConstraint t d => ByteTensor d -> t d -> t d -> IO ()
-eqTensor r a b = Dynamic.eqTensor (asDynamic r) (asDynamic a) (asDynamic b)
+eqTensor r a b = Dynamic.eqTensor_ (asDynamic r) (asDynamic a) (asDynamic b)
 eqTensor_ :: MathConstraint t d => t d -> t d -> IO (ByteTensor d)
-eqTensor_ a b = withInplace $ \r -> Dynamic.eqTensor r (asDynamic a) (asDynamic b)
+eqTensor_ a b = withInplace $ \r -> Dynamic.eqTensor_ r (asDynamic a) (asDynamic b)
 
 ltTensorT :: MathConstraint t d => t d -> t d -> t d -> IO ()
-ltTensorT r a b = Dynamic.ltTensorT (asDynamic r) (asDynamic a) (asDynamic b)
+ltTensorT r a b = Dynamic.ltTensorT_ (asDynamic r) (asDynamic a) (asDynamic b)
 ltTensorT_ :: MathConstraint t d => t d -> t d -> IO (t d)
-ltTensorT_ a b = withInplace $ \r -> Dynamic.ltTensorT r (asDynamic a) (asDynamic b)
+ltTensorT_ a b = withInplace $ \r -> Dynamic.ltTensorT_ r (asDynamic a) (asDynamic b)
 leTensorT :: MathConstraint t d => t d -> t d -> t d -> IO ()
-leTensorT r a b = Dynamic.leTensorT (asDynamic r) (asDynamic a) (asDynamic b)
+leTensorT r a b = Dynamic.leTensorT_ (asDynamic r) (asDynamic a) (asDynamic b)
 leTensorT_ :: MathConstraint t d => t d -> t d -> IO (t d)
-leTensorT_ a b = withInplace $ \r -> Dynamic.leTensorT r (asDynamic a) (asDynamic b)
+leTensorT_ a b = withInplace $ \r -> Dynamic.leTensorT_ r (asDynamic a) (asDynamic b)
 gtTensorT :: MathConstraint t d => t d -> t d -> t d -> IO ()
-gtTensorT r a b = Dynamic.gtTensorT (asDynamic r) (asDynamic a) (asDynamic b)
+gtTensorT r a b = Dynamic.gtTensorT_ (asDynamic r) (asDynamic a) (asDynamic b)
 gtTensorT_ :: MathConstraint t d => t d -> t d -> IO (t d)
-gtTensorT_ a b = withInplace $ \r -> Dynamic.gtTensorT r (asDynamic a) (asDynamic b)
+gtTensorT_ a b = withInplace $ \r -> Dynamic.gtTensorT_ r (asDynamic a) (asDynamic b)
 geTensorT :: MathConstraint t d => t d -> t d -> t d -> IO ()
-geTensorT r a b = Dynamic.geTensorT (asDynamic r) (asDynamic a) (asDynamic b)
+geTensorT r a b = Dynamic.geTensorT_ (asDynamic r) (asDynamic a) (asDynamic b)
 geTensorT_ :: MathConstraint t d => t d -> t d -> IO (t d)
-geTensorT_ a b = withInplace $ \r -> Dynamic.geTensorT r (asDynamic a) (asDynamic b)
+geTensorT_ a b = withInplace $ \r -> Dynamic.geTensorT_ r (asDynamic a) (asDynamic b)
 neTensorT :: MathConstraint t d => t d -> t d -> t d -> IO ()
-neTensorT r a b = Dynamic.neTensorT (asDynamic r) (asDynamic a) (asDynamic b)
+neTensorT r a b = Dynamic.neTensorT_ (asDynamic r) (asDynamic a) (asDynamic b)
 neTensorT_ :: MathConstraint t d => t d -> t d -> IO (t d)
-neTensorT_ a b = withInplace $ \r -> Dynamic.neTensorT r (asDynamic a) (asDynamic b)
+neTensorT_ a b = withInplace $ \r -> Dynamic.neTensorT_ r (asDynamic a) (asDynamic b)
 eqTensorT :: MathConstraint t d => t d -> t d -> t d -> IO ()
-eqTensorT r a b = Dynamic.eqTensorT (asDynamic r) (asDynamic a) (asDynamic b)
+eqTensorT r a b = Dynamic.eqTensorT_ (asDynamic r) (asDynamic a) (asDynamic b)
 eqTensorT_ :: MathConstraint t d => t d -> t d -> IO (t d)
-eqTensorT_ a b = withInplace $ \r -> Dynamic.eqTensorT r (asDynamic a) (asDynamic b)
+eqTensorT_ a b = withInplace $ \r -> Dynamic.eqTensorT_ r (asDynamic a) (asDynamic b)
 

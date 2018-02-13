@@ -11,13 +11,8 @@ module Torch.Core.Tensor.Dynamic
   , FloatTensor
   , DoubleTensor
 
-  , IsTensor(..)
+  , module X
   , module Classes
-  , constant
-  , resizeDim
-  , resizeDim'
-  , resizeDim'_
-  , resizeAs
   ) where
 
 import THTypes
@@ -37,11 +32,17 @@ import Torch.Core.Tensor.Dynamic.Random as Classes
 import qualified Torch.Core.ByteTensor.Dynamic as B
 import qualified Torch.Core.ShortTensor.Dynamic as S
 import qualified Torch.Core.IntTensor.Dynamic as I
-import qualified Torch.Core.LongTensor.Dynamic as L hiding (storage)
+import qualified Torch.Core.LongTensor.Dynamic as L
 import qualified Torch.Core.FloatTensor.Dynamic as F
 import qualified Torch.Core.DoubleTensor.Dynamic as D
 
-import qualified Torch.Core.LongStorage as L
+import Torch.Class.C.IsTensor as X
+import Torch.Core.ByteTensor.Dynamic.IsTensor ()
+import Torch.Core.ShortTensor.Dynamic.IsTensor ()
+import Torch.Core.IntTensor.Dynamic.IsTensor ()
+import Torch.Core.LongTensor.Dynamic.IsTensor ()
+import Torch.Core.FloatTensor.Dynamic.IsTensor ()
+import Torch.Core.DoubleTensor.Dynamic.IsTensor ()
 
 type ByteTensor = B.Tensor
 -- type CharTensor = C.Tensor
@@ -51,214 +52,5 @@ type LongTensor = L.Tensor
 -- type HalfTensor = H.Tensor
 type FloatTensor = F.Tensor
 type DoubleTensor = D.Tensor
-
-type LongStorage = L.Storage
-
-instance IsTensor ByteTensor
-instance IsTensor ShortTensor
-instance IsTensor IntTensor
-instance IsTensor LongTensor
-instance IsTensor FloatTensor
-instance IsTensor DoubleTensor
-
-class C.IsTensor t => IsTensor t where
-  clearFlag :: t -> Int8 -> IO ()
-  clearFlag = C.clearFlag
-
-  tensordata :: t -> IO [HsReal t]
-  tensordata = C.tensordata
-
-  desc :: t -> IO CTHDescBuff
-  desc = C.desc
-
-  expand :: t -> t -> LongStorage -> IO ()
-  expand t0 t1 ls = withForeignPtr (L.storage ls) (C.expand t0 t1)
-
-  expandNd :: [t] -> [t] -> Int32 -> IO ()
-  expandNd = C.expandNd
-
-  get :: t -> Dim (d :: [Nat]) -> IO (HsReal t)
-  -- get t = -- C.get
-
-  get' :: t -> SomeDims -> IO (HsReal t)
-  get' t (SomeDims d) = get t d
-
-  isContiguous :: t -> IO Bool
-  isContiguous = C.isContiguous
-
-  isSameSizeAs :: t -> t -> IO Bool
-  isSameSizeAs = C.isSameSizeAs
-
-  isSetTo :: t -> t -> IO Bool
-  isSetTo = C.isSetTo
-
-  isSize :: t -> LongStorage -> IO Bool
-  isSize t ls = withForeignPtr (L.storage ls) (C.isSize t)
-
-  nDimension :: t -> IO Int32
-  nDimension = C.nDimension
-
-  nElement :: t -> IO Int64
-  nElement = C.nElement
-
-  narrow :: t -> t -> Int32 -> Int64 -> Int64 -> IO ()
-  narrow = C.narrow
-
-  new :: IO t
-  new = C.new
-
-  newClone :: t -> IO t
-  newClone = C.newClone
-
-  newContiguous :: t -> IO t
-  newContiguous = C.newContiguous
-
-  newExpand :: t -> LongStorage -> IO t
-  newExpand t ls = withForeignPtr (L.storage ls) (C.newExpand t)
-
-  newNarrow :: t -> Int32 -> Int64 -> Int64 -> IO t
-  newNarrow = C.newNarrow
-
-  newSelect :: t -> Int32 -> Int64 -> IO t
-  newSelect = C.newSelect
-
-  newSizeOf :: t -> IO LongStorage
-  newSizeOf t = C.newSizeOf t >>= L.asStorageM
-
-  newStrideOf :: t -> IO LongStorage
-  newStrideOf t = C.newStrideOf t >>= L.asStorageM
-
-  newTranspose :: t -> Int32 -> Int32 -> IO t
-  newTranspose = C.newTranspose
-
-  newUnfold :: t -> Int32 -> Int64 -> Int64 -> IO t
-  newUnfold = C.newUnfold
-
-  newView :: t -> LongStorage -> IO t
-  newView t ls = withForeignPtr (L.storage ls) (C.newView t)
-
-  newWithSize :: LongStorage -> LongStorage -> IO t
-  newWithSize l0 l1 =
-    withForeignPtr (L.storage l0)  $ \l0' ->
-      withForeignPtr (L.storage l1) $ \l1' ->
-        C.newWithSize l0' l1'
-
-  newWithDim :: Dim (d::[Nat]) -> IO t
-  -- newWitheDim = C.newWithSizeDim
-
-  newWithStorage :: HsStorage t -> Int64 -> LongStorage -> LongStorage -> IO t
-  newWithStorage s i l0 l1 =
-    withForeignPtr (L.storage l0)  $ \l0' ->
-      withForeignPtr (L.storage l1) $ \l1' ->
-        C.newWithStorage s i l0' l1'
-
-  newWithStorageDim :: HsStorage t -> Dim (d::[Nat]) -> IO t
-  -- newWithStorageDim = C.newWithStorageDim
-
-  newWithStorageDim' :: HsStorage t -> SomeDims -> IO t
-  newWithStorageDim' s (SomeDims d) = newWithStorageDim s d
-
-  newWithTensor :: t -> IO t
-  newWithTensor = C.newWithTensor
-
-  resize :: t -> LongStorage -> LongStorage -> IO ()
-  resize t ls0 ls1 =
-    withForeignPtr (L.storage ls0)  $ \l0' ->
-      withForeignPtr (L.storage ls1) $ \l1' ->
-        C.resize t l0' l1'
-
-  resizeDim_ :: t -> Dim (d::[Nat]) -> IO ()
-
-  resizeAs_ :: t -> t -> IO ()
-  resizeAs_ = C.resizeAs
-
-  resizeNd_
-    :: t {-tensor to mutate-}
-    -> Int32 {-n dimensions-}
-    -> [Int64] {-sizes-}
-    -> [Int64] {-strides-}
-    -> IO ()
-  resizeNd_ = C.resizeNd
-
-  retain :: t -> IO ()
-  retain = C.retain
-
-  select :: t -> t -> Int32 -> Int64 -> IO ()
-  select = C.select
-
-  set :: t -> t -> IO ()
-  set = C.set
-
-  setDim :: t -> Dim (d::[Nat]) -> HsReal t -> IO ()
-  -- setDim = C.setDim
-
-  setDim' :: t -> SomeDims -> HsReal t -> IO ()
-  setDim' t (SomeDims d) v =  setDim t d v
-
-  setFlag :: t -> Int8 -> IO ()
-  setFlag = C.setFlag
-
-  setStorage :: t -> HsStorage t -> Int64 -> LongStorage -> LongStorage -> IO ()
-  setStorage t s i l0 l1 =
-    withForeignPtr (L.storage l0)  $ \l0' ->
-      withForeignPtr (L.storage l1) $ \l1' ->
-        C.setStorage t s i l0' l1'
-
-  setStorageDim :: t -> HsStorage t -> Dim (d::[Nat]) -> IO ()
-  -- setStorageDim = C.setStorageDim
-
-  setStorageNd :: t -> HsStorage t -> Int64 -> Int32 -> [Int64] -> [Int64] -> IO ()
-  setStorageNd = C.setStorageNd
-
-  size :: t -> Int32 -> IO Int64
-  size = C.size
-
-  sizeDesc :: t -> IO CTHDescBuff
-  sizeDesc = C.sizeDesc
-
-  squeeze :: t -> t -> IO ()
-  squeeze = C.squeeze
-
-  squeeze1d :: t -> t -> Int32 -> IO ()
-  squeeze1d = C.squeeze1d
-
-  storage :: t -> IO (HsStorage t)
-  storage = C.storage
-
-  storageOffset :: t -> IO Int64
-  storageOffset = C.storageOffset
-
-  stride :: t -> Int32 -> IO Int64
-  stride = C.stride
-
-  transpose :: t -> t -> Int32 -> Int32 -> IO ()
-  transpose = C.transpose
-
-  unfold :: t -> t -> Int32 -> Int64 -> Int64 -> IO ()
-  unfold = C.unfold
-
-  unsqueeze1d :: t -> t -> Int32 -> IO ()
-  unsqueeze1d = C.unsqueeze1d
-
-constant :: (IsTensor t, TensorMath t) => HsReal t -> IO t
-constant v = do
-  t <- new
-  fill t v
-  pure t
-
-resizeDim :: t -> Dim (d::[Nat]) -> IO t
-resizeDim = undefined
-
-resizeDim' :: IsTensor t => t -> SomeDims -> IO t
-resizeDim' t (SomeDims d) = resizeDim t d
-
-resizeDim'_ :: IsTensor t => t -> SomeDims -> IO ()
-resizeDim'_ t (SomeDims d) =  resizeDim_ t d
-
-resizeAs :: IsTensor t => t -> t -> IO t
-resizeAs src shape = do
-  res' <- newClone src
-  C.resizeAs res' shape
-  pure res'
 
 

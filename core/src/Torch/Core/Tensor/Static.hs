@@ -48,6 +48,7 @@ module Torch.Core.Tensor.Static
 
   -- reexports
   , IsStatic(..)
+  , module X
   ) where
 
 import THTypes
@@ -72,10 +73,63 @@ import qualified Torch.Core.LongTensor.Static as L
 import qualified Torch.Core.FloatTensor.Static as F
 import qualified Torch.Core.DoubleTensor.Static as D
 
+-- ========================================================================= --
+-- re-export all IsTensor functions --
+import Torch.Class.C.IsTensor as X hiding (resizeAs, isSameSizeAs) -- except for ones not specialized for static
+import Torch.Core.ByteTensor.Static.IsTensor ()
+import Torch.Core.ShortTensor.Static.IsTensor ()
+import Torch.Core.IntTensor.Static.IsTensor ()
+import Torch.Core.LongTensor.Static.IsTensor ()
+import Torch.Core.FloatTensor.Static.IsTensor ()
+import Torch.Core.DoubleTensor.Static.IsTensor ()
+
+-- ========================================================================= --
+-- re-export all Random functions --
+import Torch.Class.C.Tensor.Random as X
+
+import Torch.Core.ByteTensor.Static.Random   ()
+import Torch.Core.ShortTensor.Static.Random  ()
+import Torch.Core.IntTensor.Static.Random    ()
+import Torch.Core.LongTensor.Static.Random   ()
+import Torch.Core.FloatTensor.Static.Random  ()
+import Torch.Core.DoubleTensor.Static.Random ()
+
+import Torch.Core.FloatTensor.Static.Random.Floating  ()
+import Torch.Core.DoubleTensor.Static.Random.Floating ()
+
+-- ========================================================================= --
+-- re-export all TensorCopy functions (for dynamic copies)
+import Torch.Class.C.Tensor.Copy as X
+
+import Torch.Core.ByteTensor.Static.Copy   ()
+import Torch.Core.ShortTensor.Static.Copy  ()
+import Torch.Core.IntTensor.Static.Copy    ()
+import Torch.Core.LongTensor.Static.Copy   ()
+import Torch.Core.FloatTensor.Static.Copy  ()
+import Torch.Core.DoubleTensor.Static.Copy ()
+
+-------------------------------------------------------------------------------
+
+import qualified Torch.Core.Tensor.Dynamic as Dynamic
+
 import qualified Torch.Core.Storage as Storage
 import qualified Torch.Core.LongStorage as L
 
 import qualified Torch.Core.Tensor.Dynamic as Dynamic
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 type ByteTensor = B.Tensor
 -- type CharTensor = C.Tensor
@@ -87,15 +141,7 @@ type FloatTensor = F.Tensor
 type DoubleTensor = D.Tensor
 type LongStorage = L.Storage
 
--- TODO: Slowly remove these generalized newtype instances as we get better static
--- checks
--- instance Class.IsTensor (ByteTensor   (d::[Nat]))
--- instance Class.IsTensor (ShortTensor  (d::[Nat]))
--- instance Class.IsTensor (IntTensor    (d::[Nat]))
--- instance Class.IsTensor (LongTensor   (d::[Nat]))
--- instance Class.IsTensor (FloatTensor  (d::[Nat]))
--- instance Class.IsTensor (DoubleTensor (d::[Nat]))
---
+
 -- -- These instances can be derived
 -- instance Dynamic.TensorCopy (ByteTensor   (d::[Nat]))
 -- instance Dynamic.TensorCopy (ShortTensor  (d::[Nat]))
@@ -134,7 +180,7 @@ type StaticConstraint2 t0 t1 = (StaticConstraint t0, StaticConstraint t1, AsDyna
 
 withInplace :: forall t d . (Dimensions d, StaticConstraint (t d)) => (AsDynamic (t d) -> IO ()) -> IO (t d)
 withInplace op = do
-  res <- Dynamic.newWithDim (dim :: Dim d)
+  res <- Dynamic.newDim (dim :: Dim d)
   op res
   pure (asStatic res)
 
@@ -171,7 +217,7 @@ fromList1d l
     pure res
   where
     upd :: t '[n] -> (Int, HsReal (t '[n])) -> IO ()
-    upd t (idx, v) = someDimsM [idx] >>= \sd -> Dynamic.setDim' t sd v
+    upd t (idx, v) = someDimsM [idx] >>= \sd -> Dynamic.setDim'_ t sd v
 
 -- TODO: Potentially just use newWithData from Storage
 fromList
@@ -181,7 +227,7 @@ fromList l
   | product (dimVals d) /= length l =
     throwString "List length does not match tensor dimensions"
   | otherwise = do
-    res :: AsDynamic (t d) <- Dynamic.newWithDim d
+    res :: AsDynamic (t d) <- Dynamic.newDim d
     mapM_  (upd res) (zip [0..length l - 1] l)
     pure (asStatic res)
   where
@@ -189,7 +235,7 @@ fromList l
     d = dim
 
     upd :: AsDynamic (t d) -> (Int, HsReal (t d)) -> IO ()
-    upd t (idx, v) = someDimsM [idx] >>= \sd -> Dynamic.setDim' t sd v
+    upd t (idx, v) = someDimsM [idx] >>= \sd -> Dynamic.setDim'_ t sd v
 
 newTranspose2d
   :: forall t r c . (StaticConstraint2 (t '[r, c]) (t '[c, r]))
@@ -207,7 +253,7 @@ expand2d
 expand2d t = do
   res :: AsDynamic (t '[d2, d1]) <- Dynamic.constant 0
   s :: LongStorage <- Storage.newWithSize2 s2 s1
-  Dynamic.expand res (asDynamic t) s
+  Dynamic.expand_ res (asDynamic t) s
   pure (asStatic res)
   where
     s1, s2 :: Integer

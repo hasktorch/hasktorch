@@ -44,10 +44,13 @@ library
     , Torch.Core.Storage
     , Torch.Core.Storage.Copy
     , Torch.Core.Tensor.Dynamic
+    , Torch.Core.Tensor.Dynamic.IsTensor
     , Torch.Core.Tensor.Dynamic.Copy
     , Torch.Core.Tensor.Dynamic.Conv
     , Torch.Core.Tensor.Dynamic.Math
     , Torch.Core.Tensor.Dynamic.Random
     , Torch.Core.Tensor.Static
+    , Torch.Core.Tensor.Static.IsTensor
     , Torch.Core.Tensor.Static.Random
+    , Torch.Core.Tensor.Static.Copy
 

@@ -14,30 +14,30 @@ initialization = do
   putStrLn "--------------"
 
   putStrLn "\nZeros:"
-  let zeroMat = tds_new :: TDS '[3,2]
-  tds_p zeroMat
+  let zeroMat = new :: DoubleTensor '[3,2]
+  printTensor zeroMat
 
   putStrLn "\nConstant:"
-  let constVec = tds_init 2.0 :: TDS '[2]
-  tds_p constVec
+  let constVec = init 2.0 :: DoubleTensor '[2]
+  printTensor constVec
 
   putStrLn "\nInitialize 1D vector from list:"
-  let listVec = tds_fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: TDS '[6]
-  tds_p listVec
+  let listVec = fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: DoubleTensor '[6]
+  printTensor listVec
 
   putStrLn "\nResize 1D vector as 2D matrix:"
-  let asMat = tds_resize listVec :: TDS '[3, 2]
-  -- let asMat = tds_resize listVec :: TDS '[3, 3] -- won't type check
-  tds_p asMat
+  let asMat = resize listVec :: DoubleTensor '[3, 2]
+  -- let asMat = resize listVec :: DoubleTensor '[3, 3] -- won't type check
+  printTensor asMat
 
   putStrLn "\nInitialize arbitrary dimensions directly from list:"
-  let listVec2 = tds_fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: TDS '[3, 2]
-  tds_p listVec2
+  let listVec2 = fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: DoubleTensor '[3, 2]
+  printTensor listVec2
 
   putStrLn "\nRandom values:"
   gen <- newRNG
-  randMat :: TDS '[4, 4] <- tds_uniform gen (1.0) (3.0)
-  tds_p randMat
+  randMat :: DoubleTensor '[4, 4] <- uniform gen (1.0) (3.0)
+  printTensor randMat
 
 valueTransformations :: IO ()
 valueTransformations = do
@@ -46,23 +46,23 @@ valueTransformations = do
   gen <- newRNG
 
   putStrLn "\nRandom matrix:"
-  randMat :: TDS '[4, 4] <- tds_uniform gen (1.0) (3.0)
-  tds_p randMat
+  randMat :: DoubleTensor '[4, 4] <- uniform gen (1.0) (3.0)
+  printTensor randMat
 
   putStrLn "\nNegated:"
-  tds_p $ tds_neg randMat
+  printTensor $ neg randMat
 
   putStrLn "\nSigmoid:"
-  tds_p $ tds_sigmoid randMat
+  printTensor $ sigmoid randMat
 
   putStrLn "\nTanh:"
-  tds_p $ tds_tanh randMat
+  printTensor $ tanh randMat
 
   putStrLn "\nLog:"
-  tds_p $ tds_log randMat
+  printTensor $ log randMat
 
   putStrLn "\nRound:"
-  tds_p $ tds_round randMat
+  printTensor $ round randMat
 
 matrixVectorOps :: IO ()
 matrixVectorOps = do
@@ -71,24 +71,24 @@ matrixVectorOps = do
   gen <- newRNG
 
   putStrLn "\nRandom matrix:"
-  randMat :: TDS '[2, 2] <- tds_uniform gen (-1.0) (1.0)
-  tds_p randMat
+  randMat :: DoubleTensor '[2, 2] <- uniform gen (-1.0) (1.0)
+  printTensor randMat
 
   putStrLn "\nConstant vector:"
-  let constVec = tds_init 2.0 :: TDS '[2]
-  tds_p constVec
+  let constVec = init 2.0 :: DoubleTensor '[2]
+  printTensor constVec
 
   putStrLn "\nMatrix x vector:"
-  tds_p $ randMat !* constVec
+  printTensor $ randMat !* constVec
 
   putStrLn "\nVector outer product:"
-  tds_p $ constVec `tds_outer` constVec
+  printTensor $ constVec `outer` constVec
 
   putStrLn "\nVector dot product:"
   print $ constVec <.> constVec
 
   putStrLn "\nMatrix trace:"
-  print $ tds_trace randMat
+  print $ trace randMat
 
 main :: IO ()
 main = do
