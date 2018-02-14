@@ -46,7 +46,7 @@ initialization = void $ do
     pure randMat
 
 matrixVectorOps :: IO ()
-matrixVectorOps = do
+matrixVectorOps = void $ do
   h2 "Matrix/vector operations"
   gen <- RNG.new
 
@@ -64,15 +64,15 @@ matrixVectorOps = do
   section "Vector outer product" $
     constVec `outer` constVec
 
-  putStrLn "\nVector dot product:"
-  constVec <.> constVec >>= print
+  showSection "Vector dot product" $
+    constVec <.> constVec
 
-  putStrLn "\nMatrix trace:"
-  trace randMat >>= print
+  showSection "Matrix trace" $
+    trace randMat
 
 
 valueTransformations :: IO ()
-valueTransformations = do
+valueTransformations = void $ do
   h2 "Batch tensor value transformations"
 
   gen <- RNG.new
@@ -84,18 +84,18 @@ valueTransformations = do
   section "Negated" $
     neg randMat
 
-  putStrLn "\nSigmoid:"
-  -- sig :: DoubleTensor '[4, 4] <- Math.sigmoid randMat
-  -- printTensor sig
+  section "Sigmoid" $ do
+    sig :: DoubleTensor '[4, 4] <- Math.sigmoid randMat
+    pure sig
 
-  -- putStrLn "\nTanh:"
-  -- Math.tanh randMat >>= printTensor
+  section "Tanh" $
+    Math.tanh randMat
 
-  -- putStrLn "\nLog:"
-  -- Math.log randMat >>= printTensor
+  section "Log" $
+    Math.log randMat
 
-  -- putStrLn "\nRound:"
-  -- Math.round randMat >>= printTensor
+  section "Round" $
+    Math.round randMat
 
 -- ========================================================================= --
 -- helpers
@@ -113,13 +113,18 @@ header c h = do
   putStrLn h
   putStrLn $ replicate (length h) c
 
+section :: String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
+section = _section printTensor
 
+showSection :: Show x => String -> IO x -> IO x
+showSection = _section print
 
-section :: forall d . String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
-section title tensor = do
+_section :: (x -> IO ()) -> String -> IO x -> IO x
+_section printer title buildit = do
   putStrLn ("\n" ++ title ++ ":")
-  t <- tensor
-  printTensor t
+  t <- buildit
+  printer t
   pure t
+
 
 
