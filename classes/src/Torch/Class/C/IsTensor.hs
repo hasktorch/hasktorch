@@ -33,14 +33,14 @@ class IsTensor t where
   isSize :: t -> Long.Storage -> IO Bool
   nDimension :: t -> IO Int32
   nElement :: t -> IO Int64
-  narrow_ :: t -> t -> Int32 -> Int64 -> Int64 -> IO ()
+  narrow_ :: t -> t -> DimVal -> Int64 -> Size -> IO ()
   -- | renamed from TH's @new@ because this always returns an empty tensor
   empty :: IO t
   newClone :: t -> IO t
   newContiguous :: t -> IO t
   newExpand :: t -> Long.Storage -> IO t
   newNarrow :: t -> DimVal -> Int64 -> Size -> IO t
-  newSelect :: t -> Int32 -> Int64 -> IO t
+  newSelect :: t -> DimVal -> Int64 -> IO t
   newSizeOf :: t -> IO (Long.Storage)
   newStrideOf :: t -> IO (Long.Storage)
   newTranspose :: t -> DimVal -> DimVal -> IO t
@@ -66,7 +66,7 @@ class IsTensor t where
   resizeAs_ :: t -> t -> IO ()
   resizeNd_ :: t -> Int32 -> [Size] -> [Stride] -> IO ()
   retain :: t -> IO ()
-  select_ :: t -> t -> Int32 -> Int64 -> IO ()
+  select_ :: t -> t -> DimVal -> Int64 -> IO ()
   set_ :: t -> t -> IO ()
   set1d_ :: t -> Int64 -> HsReal t -> IO ()
   set2d_ :: t -> Int64 -> Int64 -> HsReal t -> IO ()

@@ -15,7 +15,7 @@ import GHC.Int
 import THTypes
 import Control.Monad.Managed
 import Torch.Core.Tensor.Dim
-
+import Torch.Class.C.Internal (Stride(..), Size(..), StorageOffset(..), Step(..), SizesStorage, StridesStorage)
 import qualified THLongTypes as Long
 import qualified THLongStorage as Long
 import qualified Foreign.Marshal.Array as FM
@@ -54,7 +54,7 @@ instance Class.IsTensor Tensor where
   expandNd_ rets' ops' count = do
     rets <- ptrPtrTensors rets'
     ops  <- ptrPtrTensors ops'
-    Sig.c_expandNd rets ops (CInt count)
+    Sig.c_expandNd rets ops (fromIntegral count)
    where
     ptrPtrTensors :: [Tensor] -> IO (Ptr (Ptr CTensor))
     ptrPtrTensors ts
@@ -71,16 +71,16 @@ instance Class.IsTensor Tensor where
         Sig.c_freeCopyTo t0' t1'
 
   get1d :: Tensor -> Int64 -> IO HsReal
-  get1d t d1 = withForeignPtr (tensor t) $ \t' -> c2hsReal <$> Sig.c_get1d t' (CLLong d1)
+  get1d t d1 = withForeignPtr (tensor t) $ \t' -> c2hsReal <$> Sig.c_get1d t' (fromIntegral d1)
 
   get2d :: Tensor -> Int64 -> Int64 -> IO HsReal
-  get2d t d1 d2 = withForeignPtr (tensor t) $ \t' -> c2hsReal <$> Sig.c_get2d t' (CLLong d1) (CLLong d2)
+  get2d t d1 d2 = withForeignPtr (tensor t) $ \t' -> c2hsReal <$> Sig.c_get2d t' (fromIntegral d1) (fromIntegral d2)
 
   get3d :: Tensor -> Int64 -> Int64 -> Int64 -> IO HsReal
-  get3d t d1 d2 d3 = withForeignPtr (tensor t) $ \t' -> c2hsReal <$> Sig.c_get3d t' (CLLong d1) (CLLong d2) (CLLong d3)
+  get3d t d1 d2 d3 = withForeignPtr (tensor t) $ \t' -> c2hsReal <$> Sig.c_get3d t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3)
 
   get4d :: Tensor -> Int64 -> Int64 -> Int64 -> Int64 -> IO HsReal
-  get4d t d1 d2 d3 d4 = withForeignPtr (tensor t) $ \t' -> c2hsReal <$> Sig.c_get4d t' (CLLong d1) (CLLong d2) (CLLong d3) (CLLong d4)
+  get4d t d1 d2 d3 d4 = withForeignPtr (tensor t) $ \t' -> c2hsReal <$> Sig.c_get4d t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3) (fromIntegral d4)
 
   isContiguous :: Tensor -> IO Bool
   isContiguous t =
@@ -111,11 +111,11 @@ instance Class.IsTensor Tensor where
   nElement :: Tensor -> IO Int64
   nElement t = withForeignPtr (tensor t) (fmap fromIntegral . Sig.c_nElement)
 
-  narrow_ :: Tensor -> Tensor -> Int32 -> Int64 -> Int64 -> IO ()
+  narrow_ :: Tensor -> Tensor -> DimVal -> Int64 -> Size -> IO ()
   narrow_ t0 t1 a b c =
     withForeignPtr (tensor t0) $ \t0' ->
       withForeignPtr (tensor t1) $ \t1' ->
-        Sig.c_narrow t0' t1' (CInt a) (CLLong b) (CLLong c)
+        Sig.c_narrow t0' t1' (fromIntegral a) (fromIntegral b) (fromIntegral c)
 
   empty :: IO Tensor
   empty = Sig.c_new >>= asTensor
@@ -133,13 +133,13 @@ instance Class.IsTensor Tensor where
       withForeignPtr (Long.storage ls) $ \ls' ->
         Sig.c_newExpand t' ls' >>= asTensor
 
-  newNarrow :: Tensor -> Int32 -> Int64 -> Int64 -> IO Tensor
+  newNarrow :: Tensor -> DimVal -> Int64 -> Size -> IO Tensor
   newNarrow t a b c =
-    withForeignPtr (tensor t) (\t' -> Sig.c_newNarrow t' (CInt a) (CLLong b) (CLLong c)) >>= asTensor
+    withForeignPtr (tensor t) (\t' -> Sig.c_newNarrow t' (fromIntegral a) (fromIntegral b) (fromIntegral c)) >>= asTensor
 
-  newSelect :: Tensor -> Int32 -> Int64 -> IO Tensor
+  newSelect :: Tensor -> DimVal -> Int64 -> IO Tensor
   newSelect t a b =
-    withForeignPtr (tensor t) (\t' -> Sig.c_newSelect t' (CInt a) (CLLong b)) >>= asTensor
+    withForeignPtr (tensor t) (\t' -> Sig.c_newSelect t' (fromIntegral a) (fromIntegral b)) >>= asTensor
 
   newSizeOf :: Tensor -> IO (Long.Storage)
   newSizeOf t = withForeignPtr (tensor t) Sig.c_newSizeOf >>= fmap Long.Storage . newForeignPtr Long.p_free
@@ -148,13 +148,13 @@ instance Class.IsTensor Tensor where
   newStrideOf :: Tensor -> IO (Long.Storage)
   newStrideOf t = withForeignPtr (tensor t) Sig.c_newStrideOf >>= fmap Long.Storage . newForeignPtr Long.p_free
 
-  newTranspose :: Tensor -> Int32 -> Int32 -> IO Tensor
+  newTranspose :: Tensor -> DimVal -> DimVal -> IO Tensor
   newTranspose t a b =
-    withForeignPtr (tensor t) (\t' -> Sig.c_newTranspose t' (CInt a) (CInt b)) >>= asTensor
+    withForeignPtr (tensor t) (\t' -> Sig.c_newTranspose t' (fromIntegral a) (fromIntegral b)) >>= asTensor
 
-  newUnfold :: Tensor -> Int32 -> Int64 -> Int64 -> IO Tensor
+  newUnfold :: Tensor -> DimVal -> Int64 -> Int64 -> IO Tensor
   newUnfold t a b c =
-    withForeignPtr (tensor t) (\t' -> Sig.c_newUnfold t' (CInt a) (CLLong b) (CLLong c)) >>= asTensor
+    withForeignPtr (tensor t) (\t' -> Sig.c_newUnfold t' (fromIntegral a) (fromIntegral b) (fromIntegral c)) >>= asTensor
 
   newView :: Tensor -> Long.Storage -> IO Tensor
   newView t ls =
@@ -168,56 +168,56 @@ instance Class.IsTensor Tensor where
       withForeignPtr (Long.storage l1) $ \l1' ->
         Sig.c_newWithSize l0' l1' >>= asTensor
 
-  newWithSize1d :: Int64 -> IO Tensor
-  newWithSize1d a0 = Sig.c_newWithSize1d (CLLong a0) >>= asTensor
+  newWithSize1d :: Size -> IO Tensor
+  newWithSize1d a0 = Sig.c_newWithSize1d (fromIntegral a0) >>= asTensor
 
-  newWithSize2d :: Int64 -> Int64 -> IO Tensor
-  newWithSize2d a0 a1 = Sig.c_newWithSize2d (CLLong a0) (CLLong a1) >>= asTensor
+  newWithSize2d :: Size -> Size -> IO Tensor
+  newWithSize2d a0 a1 = Sig.c_newWithSize2d (fromIntegral a0) (fromIntegral a1) >>= asTensor
 
-  newWithSize3d :: Int64 -> Int64 -> Int64 -> IO Tensor
-  newWithSize3d a0 a1 a2 = Sig.c_newWithSize3d (CLLong a0) (CLLong a1) (CLLong a2) >>= asTensor
+  newWithSize3d :: Size -> Size -> Size -> IO Tensor
+  newWithSize3d a0 a1 a2 = Sig.c_newWithSize3d (fromIntegral a0) (fromIntegral a1) (fromIntegral a2) >>= asTensor
 
-  newWithSize4d :: Int64 -> Int64 -> Int64 -> Int64 -> IO Tensor
-  newWithSize4d a0 a1 a2 a3 = Sig.c_newWithSize4d (CLLong a0) (CLLong a1) (CLLong a2) (CLLong a3) >>= asTensor
+  newWithSize4d :: Size -> Size -> Size -> Size -> IO Tensor
+  newWithSize4d a0 a1 a2 a3 = Sig.c_newWithSize4d (fromIntegral a0) (fromIntegral a1) (fromIntegral a2) (fromIntegral a3) >>= asTensor
 
-  newWithStorage :: Storage -> Int64 -> Long.Storage -> Long.Storage -> IO Tensor
+  newWithStorage :: Storage -> StorageOffset -> Long.Storage -> Long.Storage -> IO Tensor
   newWithStorage s pd l0 l1 =
     withForeignPtr (storage s) $ \s' ->
       withForeignPtr (Long.storage l0) $ \l0' ->
         withForeignPtr (Long.storage l1) $ \l1' ->
-          Sig.c_newWithStorage s' (CPtrdiff pd) l0' l1' >>= asTensor
+          Sig.c_newWithStorage s' (fromIntegral pd) l0' l1' >>= asTensor
 
-  newWithStorage1d :: Storage -> Int64 -> Int64 -> Int64 -> IO Tensor
-  newWithStorage1d s pd d00 d01 =
-    withForeignPtr (storage s) (\s' -> Sig.c_newWithStorage1d s' (CPtrdiff pd)
-      (CLLong d00) (CLLong d01)
+  newWithStorage1d :: Storage -> StorageOffset -> (Size, Stride) -> IO Tensor
+  newWithStorage1d s pd (d00,d01) =
+    withForeignPtr (storage s) (\s' -> Sig.c_newWithStorage1d s' (fromIntegral pd)
+      (fromIntegral d00) (fromIntegral d01)
     ) >>= asTensor
 
 
-  newWithStorage2d :: Storage -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Tensor
-  newWithStorage2d s pd d00 d01 d10 d11 =
-    withForeignPtr (storage s) (\s' -> Sig.c_newWithStorage2d s' (CPtrdiff pd)
-      (CLLong d00) (CLLong d01)
-      (CLLong d10) (CLLong d11)
+  newWithStorage2d :: Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO Tensor
+  newWithStorage2d s pd (d00,d01) (d10,d11) =
+    withForeignPtr (storage s) (\s' -> Sig.c_newWithStorage2d s' (fromIntegral pd)
+      (fromIntegral d00) (fromIntegral d01)
+      (fromIntegral d10) (fromIntegral d11)
     ) >>= asTensor
 
 
-  newWithStorage3d :: Storage -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Tensor
-  newWithStorage3d s pd d00 d01 d10 d11 d20 d21 =
-    withForeignPtr (storage s) (\s' -> Sig.c_newWithStorage3d s' (CPtrdiff pd)
-      (CLLong d00) (CLLong d01)
-      (CLLong d10) (CLLong d11)
-      (CLLong d20) (CLLong d21)
+  newWithStorage3d :: Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO Tensor
+  newWithStorage3d s pd (d00,d01) (d10,d11) (d20,d21) =
+    withForeignPtr (storage s) (\s' -> Sig.c_newWithStorage3d s' (fromIntegral pd)
+      (fromIntegral d00) (fromIntegral d01)
+      (fromIntegral d10) (fromIntegral d11)
+      (fromIntegral d20) (fromIntegral d21)
     ) >>= asTensor
 
 
-  newWithStorage4d :: Storage -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO Tensor
-  newWithStorage4d s pd d00 d01 d10 d11 d20 d21 d30 d31 =
-    withForeignPtr (storage s) (\s' -> Sig.c_newWithStorage4d s' (CPtrdiff pd)
-      (CLLong d00) (CLLong d01)
-      (CLLong d10) (CLLong d11)
-      (CLLong d20) (CLLong d21)
-      (CLLong d30) (CLLong d31)
+  newWithStorage4d :: Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO Tensor
+  newWithStorage4d s pd (d00,d01) (d10,d11) (d20,d21) (d30,d31) =
+    withForeignPtr (storage s) (\s' -> Sig.c_newWithStorage4d s' (fromIntegral pd)
+      (fromIntegral d00) (fromIntegral d01)
+      (fromIntegral d10) (fromIntegral d11)
+      (fromIntegral d20) (fromIntegral d21)
+      (fromIntegral d30) (fromIntegral d31)
     ) >>= asTensor
 
   newWithTensor :: Tensor -> IO Tensor
@@ -231,23 +231,23 @@ instance Class.IsTensor Tensor where
     liftIO $ Sig.c_resize t' l0' l1'
 
   resize1d_ :: Tensor -> Int64 -> IO ()
-  resize1d_ t l0 = withForeignPtr (tensor t) (\t' -> Sig.c_resize1d t' (CLLong l0))
+  resize1d_ t l0 = withForeignPtr (tensor t) (\t' -> Sig.c_resize1d t' (fromIntegral l0))
 
   resize2d_ :: Tensor -> Int64 -> Int64 -> IO ()
   resize2d_ t l0 l1 = withForeignPtr (tensor t) $ \t' -> Sig.c_resize2d t'
-      (CLLong l0) (CLLong l1)
+      (fromIntegral l0) (fromIntegral l1)
 
   resize3d_ :: Tensor -> Int64 -> Int64 -> Int64 -> IO ()
   resize3d_ t l0 l1 l2 = withForeignPtr (tensor t) $ \t' -> Sig.c_resize3d t'
-      (CLLong l0) (CLLong l1) (CLLong l2)
+      (fromIntegral l0) (fromIntegral l1) (fromIntegral l2)
 
   resize4d_ :: Tensor -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
   resize4d_ t l0 l1 l2 l3 = withForeignPtr (tensor t) $ \t' -> Sig.c_resize4d t'
-      (CLLong l0) (CLLong l1) (CLLong l2) (CLLong l3)
+      (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3)
 
   resize5d_ :: Tensor -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
   resize5d_ t l0 l1 l2 l3 l4 = withForeignPtr (tensor t) $ \t' -> Sig.c_resize5d t'
-      (CLLong l0) (CLLong l1) (CLLong l2) (CLLong l3) (CLLong l4)
+      (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3) (fromIntegral l4)
 
   resizeAs_ :: Tensor -> Tensor -> IO ()
   resizeAs_ t0 t1 =
@@ -255,20 +255,20 @@ instance Class.IsTensor Tensor where
       withForeignPtr (tensor t1) $ \t1' ->
         Sig.c_resizeAs t0' t1'
 
-  resizeNd_ :: Tensor -> Int32 -> [Int64] -> [Int64] -> IO ()
+  resizeNd_ :: Tensor -> Int32 -> [Size] -> [Stride] -> IO ()
   resizeNd_ t i l0' l1' = do
     l0 <- FM.newArray (coerce l0' :: [CLLong])
     l1 <- FM.newArray (coerce l1' :: [CLLong])
-    withForeignPtr (tensor t) $ \t' -> Sig.c_resizeNd t' (CInt i) l0 l1
+    withForeignPtr (tensor t) $ \t' -> Sig.c_resizeNd t' (fromIntegral i) l0 l1
 
   retain :: Tensor -> IO ()
   retain t = withForeignPtr (tensor t) Sig.c_retain
 
-  select_ :: Tensor -> Tensor -> Int32 -> Int64 -> IO ()
+  select_ :: Tensor -> Tensor -> DimVal -> Int64 -> IO ()
   select_ t0 t1 a b =
     withForeignPtr (tensor t0) $ \t0' ->
       withForeignPtr (tensor t1) $ \t1' ->
-        Sig.c_select t0' t1' (CInt a) (CLLong b)
+        Sig.c_select t0' t1' (fromIntegral a) (fromIntegral b)
 
   set_ :: Tensor -> Tensor -> IO ()
   set_ t0 t1 =
@@ -277,74 +277,74 @@ instance Class.IsTensor Tensor where
         Sig.c_set t0' t1'
 
   set1d_ :: Tensor -> Int64 -> HsReal -> IO ()
-  set1d_ t l0 v = withForeignPtr (tensor t) (\t' -> Sig.c_set1d t' (CLLong l0) (hs2cReal v))
+  set1d_ t l0 v = withForeignPtr (tensor t) (\t' -> Sig.c_set1d t' (fromIntegral l0) (hs2cReal v))
 
   set2d_ :: Tensor -> Int64 -> Int64 -> HsReal -> IO ()
-  set2d_ t l0 l1 v = withForeignPtr (tensor t) (\t' -> Sig.c_set2d t' (CLLong l0) (CLLong l1) (hs2cReal v))
+  set2d_ t l0 l1 v = withForeignPtr (tensor t) (\t' -> Sig.c_set2d t' (fromIntegral l0) (fromIntegral l1) (hs2cReal v))
 
   set3d_ :: Tensor -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
-  set3d_ t l0 l1 l2 v = withForeignPtr (tensor t) (\t' -> Sig.c_set3d t' (CLLong l0) (CLLong l1) (CLLong l2) (hs2cReal v))
+  set3d_ t l0 l1 l2 v = withForeignPtr (tensor t) (\t' -> Sig.c_set3d t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (hs2cReal v))
 
   set4d_ :: Tensor -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
-  set4d_ t l0 l1 l2 l3 v = withForeignPtr (tensor t) (\t' -> Sig.c_set4d t' (CLLong l0) (CLLong l1) (CLLong l2) (CLLong l3) (hs2cReal v))
+  set4d_ t l0 l1 l2 l3 v = withForeignPtr (tensor t) (\t' -> Sig.c_set4d t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3) (hs2cReal v))
 
   setFlag_ :: Tensor -> Int8 -> IO ()
   setFlag_ t l0 = withForeignPtr (tensor t) (\t' -> Sig.c_setFlag t' (CChar l0))
 
-  setStorage_ :: Tensor -> Storage -> Int64 -> Long.Storage -> Long.Storage -> IO ()
+  setStorage_ :: Tensor -> Storage -> StorageOffset -> Long.Storage -> Long.Storage -> IO ()
   setStorage_ t s a b c = runManaged $ do
     t' <- managed $ withForeignPtr (tensor t)
     s' <- managed $ withForeignPtr (storage s)
     b' <- managed $ withForeignPtr (Long.storage b)
     c' <- managed $ withForeignPtr (Long.storage c)
-    liftIO $ Sig.c_setStorage t' s' (CPtrdiff a) b' c'
+    liftIO $ Sig.c_setStorage t' s' (fromIntegral a) b' c'
 
 
-  setStorage1d_ :: Tensor -> Storage -> Int64 -> Int64 -> Int64 -> IO ()
-  setStorage1d_ t s pd d00 d01 =
+  setStorage1d_ :: Tensor -> Storage -> StorageOffset -> (Size, Stride) -> IO ()
+  setStorage1d_ t s pd (d00,d01) =
     withForeignPtr (tensor t) $ \t' ->
       withForeignPtr (storage s) $ \s' ->
-        Sig.c_setStorage1d t' s' (CPtrdiff pd)
-          (CLLong d00) (CLLong d01)
+        Sig.c_setStorage1d t' s' (fromIntegral pd)
+          (fromIntegral d00) (fromIntegral d01)
 
-  setStorage2d_ :: Tensor -> Storage -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-  setStorage2d_ t s pd d00 d01 d10 d11 =
+  setStorage2d_ :: Tensor -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO ()
+  setStorage2d_ t s pd (d00,d01) (d10,d11) =
     withForeignPtr (tensor t) $ \t' ->
       withForeignPtr (storage s) $ \s' ->
-        Sig.c_setStorage2d t' s' (CPtrdiff pd)
-          (CLLong d00) (CLLong d01)
-          (CLLong d10) (CLLong d11)
+        Sig.c_setStorage2d t' s' (fromIntegral pd)
+          (fromIntegral d00) (fromIntegral d01)
+          (fromIntegral d10) (fromIntegral d11)
 
 
-  setStorage3d_ :: Tensor -> Storage -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-  setStorage3d_ t s pd d00 d01 d10 d11 d20 d21 =
+  setStorage3d_ :: Tensor -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
+  setStorage3d_ t s pd (d00,d01) (d10,d11) (d20,d21) =
     withForeignPtr (tensor t) $ \t' ->
       withForeignPtr (storage s) $ \s' ->
-        Sig.c_setStorage3d t' s' (CPtrdiff pd)
-          (CLLong d00) (CLLong d01)
-          (CLLong d10) (CLLong d11)
-          (CLLong d20) (CLLong d21)
+        Sig.c_setStorage3d t' s' (fromIntegral pd)
+          (fromIntegral d00) (fromIntegral d01)
+          (fromIntegral d10) (fromIntegral d11)
+          (fromIntegral d20) (fromIntegral d21)
 
-  setStorage4d_ :: Tensor -> Storage -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-  setStorage4d_ t s pd d00 d01 d10 d11 d20 d21 d30 d31  =
+  setStorage4d_ :: Tensor -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
+  setStorage4d_ t s pd (d00,d01) (d10,d11) (d20,d21) (d30,d31) =
     withForeignPtr (tensor t) $ \t' ->
       withForeignPtr (storage s) $ \s' ->
-        Sig.c_setStorage4d t' s' (CPtrdiff pd)
-          (CLLong d00) (CLLong d01)
-          (CLLong d10) (CLLong d11)
-          (CLLong d20) (CLLong d21)
-          (CLLong d30) (CLLong d31)
+        Sig.c_setStorage4d t' s' (fromIntegral pd)
+          (fromIntegral d00) (fromIntegral d01)
+          (fromIntegral d10) (fromIntegral d11)
+          (fromIntegral d20) (fromIntegral d21)
+          (fromIntegral d30) (fromIntegral d31)
 
-  setStorageNd_ :: Tensor -> Storage -> Int64 -> Int32 -> [Int64] -> [Int64] -> IO ()
+  setStorageNd_ :: Tensor -> Storage -> StorageOffset -> DimVal -> [Size] -> [Stride] -> IO ()
   setStorageNd_ t s a b hsc hsd = do
     c <- FM.newArray (coerce hsc :: [CLLong])
     d <- FM.newArray (coerce hsd :: [CLLong])
     withForeignPtr (tensor t) $ \t' ->
       withForeignPtr (storage s) $ \s' ->
-        Sig.c_setStorageNd t' s' (CPtrdiff a) (CInt b) c d
+        Sig.c_setStorageNd t' s' (fromIntegral a) (fromIntegral b) c d
 
 
-  size :: Tensor -> DimVal -> IO Int64
+  size :: Tensor -> DimVal -> IO Size
   size t l0 = withForeignPtr (tensor t) $ \t' -> fromIntegral <$> Sig.c_size t' (fromIntegral l0)
 
   sizeDesc :: Tensor -> IO CTHDescBuff
@@ -356,36 +356,36 @@ instance Class.IsTensor Tensor where
       withForeignPtr (tensor t1) $ \t1' ->
         Sig.c_squeeze t0' t1'
 
-  squeeze1d_ :: Tensor -> Tensor -> Int32 -> IO ()
+  squeeze1d_ :: Tensor -> Tensor -> DimVal -> IO ()
   squeeze1d_ t0 t1 d =
     withForeignPtr (tensor t0) $ \t0' ->
       withForeignPtr (tensor t1) $ \t1' ->
-        Sig.c_squeeze1d t0' t1' (CInt d)
+        Sig.c_squeeze1d t0' t1' (fromIntegral d)
 
   storage :: Tensor -> IO Storage
   storage t = withForeignPtr (tensor t) Sig.c_storage >>= asStorageM
 
-  storageOffset :: Tensor -> IO Int64
+  storageOffset :: Tensor -> IO StorageOffset
   storageOffset t = withForeignPtr (tensor t) (fmap fromIntegral . Sig.c_storageOffset)
 
-  stride :: Tensor -> Int32 -> IO Int64
-  stride t a = withForeignPtr (tensor t) (\t' -> fmap fromIntegral $ Sig.c_stride t' (CInt a))
+  stride :: Tensor -> DimVal -> IO Stride
+  stride t a = withForeignPtr (tensor t) (\t' -> fmap fromIntegral $ Sig.c_stride t' (fromIntegral a))
 
-  transpose_ :: Tensor -> Tensor -> Int32 -> Int32 -> IO ()
+  transpose_ :: Tensor -> Tensor -> DimVal -> DimVal -> IO ()
   transpose_ t0 t1 a b =
     withForeignPtr (tensor t0) $ \t0' ->
       withForeignPtr (tensor t1) $ \t1' ->
-        Sig.c_transpose t0' t1' (CInt a) (CInt b)
+        Sig.c_transpose t0' t1' (fromIntegral a) (fromIntegral b)
 
-  unfold_ :: Tensor -> Tensor -> Int32 -> Int64 -> Int64 -> IO ()
+  unfold_ :: Tensor -> Tensor -> DimVal -> Size -> Step -> IO ()
   unfold_ t0 t1 a b c =
     withForeignPtr (tensor t0) $ \t0' ->
       withForeignPtr (tensor t1) $ \t1' ->
-        Sig.c_unfold t0' t1' (CInt a) (CLLong b) (CLLong c)
+        Sig.c_unfold t0' t1' (fromIntegral a) (fromIntegral b) (fromIntegral c)
 
-  unsqueeze1d_ :: Tensor -> Tensor -> Int32 -> IO ()
+  unsqueeze1d_ :: Tensor -> Tensor -> DimVal -> IO ()
   unsqueeze1d_ t0 t1 d =
     withForeignPtr (tensor t0) $ \t0' ->
       withForeignPtr (tensor t1) $ \t1' ->
-        Sig.c_unsqueeze1d t0' t1' (CInt d)
+        Sig.c_unsqueeze1d t0' t1' (fromIntegral d)
 
