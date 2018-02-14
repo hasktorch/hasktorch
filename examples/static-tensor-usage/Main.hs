@@ -14,24 +14,24 @@ initialization = do
   putStrLn "--------------"
 
   putStrLn "\nZeros:"
-  let zeroMat = new :: DoubleTensor '[3,2]
+  zeroMat :: DoubleTensor '[3,2] <- new
   printTensor zeroMat
 
   putStrLn "\nConstant:"
-  let constVec = init 2.0 :: DoubleTensor '[2]
+  constVec :: DoubleTensor '[2] <- constant 2
   printTensor constVec
 
   putStrLn "\nInitialize 1D vector from list:"
-  let listVec = fromList1d [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: DoubleTensor '[6]
+  listVec :: DoubleTensor '[6] <- fromList1d [1, 2, 3, 4, 5, 6]
   printTensor listVec
 
   putStrLn "\nResize 1D vector as 2D matrix:"
-  let asMat = resize listVec :: DoubleTensor '[3, 2]
+  asMat :: DoubleTensor '[3, 2] <- resizeAs listVec
   -- let asMat = resize listVec :: DoubleTensor '[3, 3] -- won't type check
   printTensor asMat
 
   putStrLn "\nInitialize arbitrary dimensions directly from list:"
-  let listVec2 = fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: DoubleTensor '[3, 2]
+  listVec2 :: DoubleTensor '[3, 2] <- fromList [1, 2, 3, 4, 5, 6]
   printTensor listVec2
 
   putStrLn "\nRandom values:"
@@ -53,7 +53,8 @@ valueTransformations = do
   printTensor $ neg randMat
 
   putStrLn "\nSigmoid:"
-  printTensor $ sigmoid randMat
+  sigmoid_ randMat randMat
+  printTensor $ randMat
 
   putStrLn "\nTanh:"
   printTensor $ tanh randMat
@@ -75,7 +76,7 @@ matrixVectorOps = do
   printTensor randMat
 
   putStrLn "\nConstant vector:"
-  let constVec = init 2.0 :: DoubleTensor '[2]
+  constVec :: DoubleTensor '[2] <- constant 2
   printTensor constVec
 
   putStrLn "\nMatrix x vector:"

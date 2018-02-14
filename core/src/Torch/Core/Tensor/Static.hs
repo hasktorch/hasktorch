@@ -63,15 +63,30 @@ import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List
 import Data.Singletons.Prelude.Num
 
+import qualified Torch.Core.Tensor.Dynamic as Dynamic
+
+import qualified Torch.Core.Storage as Storage
+import qualified Torch.Core.LongStorage as L
+
 import Torch.Class.C.Tensor.Static (IsStatic(..))
 import qualified Torch.Core.Tensor.Dynamic as Class (IsTensor)
 
-import qualified Torch.Core.ByteTensor.Static as B
-import qualified Torch.Core.ShortTensor.Static as S
-import qualified Torch.Core.IntTensor.Static as I
-import qualified Torch.Core.LongTensor.Static as L
-import qualified Torch.Core.FloatTensor.Static as F
-import qualified Torch.Core.DoubleTensor.Static as D
+-- import qualified Torch.Core.ByteTensor.Static as B
+-- import qualified Torch.Core.ShortTensor.Static as S
+-- import qualified Torch.Core.IntTensor.Static as I
+-- import qualified Torch.Core.LongTensor.Static as L
+-- import qualified Torch.Core.FloatTensor.Static as F
+-- import qualified Torch.Core.DoubleTensor.Static as D
+--
+-- ========================================================================= --
+-- re-export all SigTypes so that Aliases propogate
+import qualified THByteTypes   as B
+import qualified THShortTypes  as S
+import qualified THIntTypes    as I
+import qualified THLongTypes   as L
+import qualified THFloatTypes  as F
+import qualified THDoubleTypes as D
+
 
 -- ========================================================================= --
 -- re-export all IsTensor functions --
@@ -110,46 +125,15 @@ import Torch.Core.DoubleTensor.Static.Copy ()
 
 -------------------------------------------------------------------------------
 
-import qualified Torch.Core.Tensor.Dynamic as Dynamic
-
-import qualified Torch.Core.Storage as Storage
-import qualified Torch.Core.LongStorage as L
-
-import qualified Torch.Core.Tensor.Dynamic as Dynamic
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-type ByteTensor = B.Tensor
--- type CharTensor = C.Tensor
-type ShortTensor = S.Tensor
-type IntTensor = I.Tensor
-type LongTensor = L.Tensor
--- type HalfTensor = H.Tensor
-type FloatTensor = F.Tensor
+type ByteTensor   = B.Tensor
+type ShortTensor  = S.Tensor
+type IntTensor    = I.Tensor
+type LongTensor   = L.Tensor
+type FloatTensor  = F.Tensor
 type DoubleTensor = D.Tensor
-type LongStorage = L.Storage
+type LongStorage  = L.Storage
 
 
--- -- These instances can be derived
--- instance Dynamic.TensorCopy (ByteTensor   (d::[Nat]))
--- instance Dynamic.TensorCopy (ShortTensor  (d::[Nat]))
--- instance Dynamic.TensorCopy (IntTensor    (d::[Nat]))
--- instance Dynamic.TensorCopy (LongTensor   (d::[Nat]))
--- instance Dynamic.TensorCopy (FloatTensor  (d::[Nat]))
--- instance Dynamic.TensorCopy (DoubleTensor (d::[Nat]))
---
 -- -- These might require changing
 -- instance Dynamic.TensorConv (ByteTensor   (d::[Nat]))
 -- instance Dynamic.TensorConv (ShortTensor  (d::[Nat]))
@@ -157,14 +141,6 @@ type LongStorage = L.Storage
 -- instance Dynamic.TensorConv (LongTensor   (d::[Nat]))
 -- instance Dynamic.TensorConv (FloatTensor  (d::[Nat]))
 -- instance Dynamic.TensorConv (DoubleTensor (d::[Nat]))
-
--- Some of these are dimension-specific. See 'Torch.Core.Tensor.Static.Random'
--- instance Dynamic.TensorRandom (ByteTensor   (d::[Nat]))
--- instance Dynamic.TensorRandom (ShortTensor  (d::[Nat]))
--- instance Dynamic.TensorRandom (IntTensor    (d::[Nat]))
--- instance Dynamic.TensorRandom (LongTensor   (d::[Nat]))
--- instance Dynamic.TensorRandom (FloatTensor  (d::[Nat]))
--- instance Dynamic.TensorRandom (DoubleTensor (d::[Nat]))
 
 -- ========================================================================= --
 

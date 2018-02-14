@@ -8,7 +8,7 @@ module Torch.Core.Tensor.Static.Math
   ( MathConstraint
   , MathConstraint2
   , MathConstraint3
-  , fill, fill_
+  , constant, fill_
   , zero, zero_
   , maskedFill, maskedFill_
   , maskedCopy, dangerMaskedCopy_
@@ -74,7 +74,7 @@ module Torch.Core.Tensor.Static.Math
   , addcdiv_, addcdiv
   , addmv_, addmv, mv, (!*!), (!*)
   , addmm_, addmm
-  , addr_, addr
+  , addr_, addr, outer
   , addbmm_, addbmm
   , baddbmm_, baddbmm
   , match_, match
@@ -122,12 +122,10 @@ module Torch.Core.Tensor.Static.Math
   , ltValueT, ltValueT_, leValueT, leValueT_, gtValueT, gtValueT_, geValueT, geValueT_, neValueT, neValueT_, eqValueT, eqValueT_
   , ltTensor, ltTensor_, leTensor, leTensor_, gtTensor, gtTensor_, geTensor, geTensor_, neTensor, neTensor_, eqTensor, eqTensor_
   , ltTensorT, ltTensorT_, leTensorT, leTensorT_, gtTensorT, gtTensorT_, geTensorT, geTensorT_, neTensorT, neTensorT_, eqTensorT, eqTensorT_
-  ) where
 
---   , tds_setElem
---   , tds_getElem
---   , tds_getRow
---   , tds_getColumn
+  , module Classes
+  , module FloatingMath
+  ) where
 
 import Data.Singletons
 import Data.Singletons.Prelude.List
@@ -142,6 +140,17 @@ import qualified Torch.Core.Storage as Storage
 import Torch.Core.Tensor.Static (IsStatic(..), StaticConstraint, StaticConstraint2, withInplace, ByteTensor, LongTensor)
 import THTypes
 import THRandomTypes
+-- ========================================================================= --
+-- Reexports
+import Torch.Class.C.Tensor.Math as Classes (TensorMath, TensorMathFloating, TensorMathSigned, neg, abs)
+import Torch.Core.Tensor.Static.Math.Floating as FloatingMath
+import Torch.Core.ShortTensor.Static.Math.Signed ()
+import Torch.Core.IntTensor.Static.Math.Signed ()
+import Torch.Core.LongTensor.Static.Math.Signed ()
+import Torch.Core.FloatTensor.Static.Math.Signed ()
+import Torch.Core.DoubleTensor.Static.Math.Signed ()
+
+-- Signed operations
 
 
 (!*) :: (MathConstraint3 t '[r, c] '[c] '[r]) => t '[r, c] -> t '[c] -> IO (t '[r])
@@ -228,8 +237,8 @@ type MathConstraint3 t d d' d'' =
 --   )
 
 
-fill :: MathConstraint t d => HsReal (t d) -> IO (t d)
-fill v = withInplace (`Dynamic.fill_` v)
+constant :: MathConstraint t d => HsReal (t d) -> IO (t d)
+constant v = withInplace (`Dynamic.fill_` v)
 
 fill_ :: MathConstraint t d => t d -> HsReal (t d) -> IO (t d)
 fill_ t v = Dynamic.fill_ (asDynamic t) v >> pure t
@@ -550,10 +559,16 @@ addmm_        :: MathConstraint3 t d d' d'' => t d'' -> HsReal (t d) -> t d -> H
 addmm_ r a t b x y = Dynamic.addmm_ (asDynamic r) a (asDynamic t) b (asDynamic x) (asDynamic y)
 addmm         :: MathConstraint3 t d d' d'' => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO (t d'')
 addmm a t b x y = withInplace $ \r -> Dynamic.addmm_ r a (asDynamic t) b (asDynamic x) (asDynamic y)
-addr_         :: MathConstraint t d => t d -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO ()
-addr_         = ttOp_ Dynamic.addr_
-addr          :: MathConstraint t d => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO (t d)
-addr          = ttOp  Dynamic.addr_
+addr_        :: MathConstraint3 t d d' d'' => t d'' -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO ()
+addr_ r a t b x y = Dynamic.addr_ (asDynamic r) a (asDynamic t) b (asDynamic x) (asDynamic y)
+addr          :: MathConstraint3 t d d' d'' => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO (t d'')
+addr  a t b x y = withInplace $ \r -> Dynamic.addr_ r a (asDynamic t) b (asDynamic x) (asDynamic y)
+
+outer :: forall t r c . (MathConstraint3 t '[r] '[c] '[r, c]) => t '[r] -> t '[c] -> IO (t '[r, c])
+outer v1 v2 = do
+  t <- Dynamic.newDim (dim :: Dim '[r])
+  addr 0 (asStatic t) 1 v1 v2
+
 addbmm_       :: MathConstraint t d => t d -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO ()
 addbmm_       = ttOp_ Dynamic.addbmm_
 addbmm        :: MathConstraint t d => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO (t d)
