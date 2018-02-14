@@ -15,10 +15,12 @@ header h = do
   putStrLn h
   putStrLn "--------------"
 
-section :: forall d . String -> IO (DoubleTensor d) -> IO ()
+section :: forall d . String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
 section title tensor = do
   putStrLn ("\n" ++ title ++ ":")
-  tensor >>= printTensor
+  t <- tensor
+  printTensor t
+  pure t
 
 initialization :: IO ()
 initialization = do
@@ -32,15 +34,13 @@ initialization = do
     constVec :: DoubleTensor '[2] <- constant 2
     pure constVec
 
-  putStrLn ""
-  putStrLn "Initialize 1D vector from list:"
-  listVec :: DoubleTensor '[6] <- fromList1d [1, 2, 3, 4, 5, 6]
-  printTensor listVec
+  listVec :: DoubleTensor '[6] <-
+    section "Initialize 1D vector from list" $
+      fromList1d [1, 2, 3, 4, 5, 6]
 
-  putStrLn ""
-  putStrLn "Resize 1D vector as 2D matrix:"
-  asMat :: DoubleTensor '[3, 2] <- resizeAs listVec
-  printTensor asMat
+  section "Resize 1D vector as 2D matrix" $ do
+    asMat :: DoubleTensor '[3, 2] <- resizeAs listVec
+    pure asMat
 
   putStrLn "\nInitialize arbitrary dimensions directly from list:"
   listVec2 :: DoubleTensor '[3, 2] <- fromList [1, 2, 3, 4, 5, 6]

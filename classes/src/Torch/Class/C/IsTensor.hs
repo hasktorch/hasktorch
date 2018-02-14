@@ -134,6 +134,24 @@ resizeDim_ t d = case dimVals d of
   -- ds              -> resizeNd_ t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
+
+-- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
+fromList1d :: forall t . (IsTensor t) => [HsReal t] -> IO t
+fromList1d l = do
+  res :: t <- new' =<< someDimsM [length l]
+  mapM_  (upd res) (zip [0..length l - 1] l)
+  pure res
+ where
+  upd :: t -> (Int, HsReal t) -> IO ()
+  upd t (idx, v) = someDimsM [idx] >>= \sd -> setDim'_ t sd v
+
+
+resizeDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO t
+resizeDim src d = newClone src >>= \res -> resizeDim_ res d >> pure res
+
+resizeDim' :: IsTensor t => t -> SomeDims -> IO t
+resizeDim' t (SomeDims d) = resizeDim t d
+
 getDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO (HsReal t)
 getDim t d = case dimVals d of
   []           -> throwNE "can't lookup an empty dimension"

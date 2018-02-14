@@ -42,7 +42,7 @@ module Torch.Core.Tensor.Static
   , isSameSizeAs
 
   -- specialized static functions
-  , fromList1d
+  , Torch.Core.Tensor.Static.fromList1d
   , newTranspose2d
   , expand2d
   , new
@@ -57,6 +57,7 @@ import Foreign ()
 import Torch.Class.C.Internal
 import Torch.Core.Tensor.Dim
 import Data.Proxy
+import Data.List (genericLength)
 import Control.Exception.Safe
 import GHC.TypeLits
 import Data.Singletons
@@ -90,8 +91,9 @@ import qualified THDoubleTypes as D
 
 
 -- ========================================================================= --
--- re-export all IsTensor functions --
-import Torch.Class.C.IsTensor as X hiding (resizeAs, isSameSizeAs, new) -- except for ones not specialized for static
+-- re-export all IsTensor functions -- except for ones not specialized for static
+import Torch.Class.C.IsTensor as X hiding (resizeAs, isSameSizeAs, new, fromList1d)
+import qualified Torch.Class.C.IsTensor as IsTensor (fromList1d)
 import Torch.Core.ByteTensor.Static.IsTensor ()
 import Torch.Core.ShortTensor.Static.IsTensor ()
 import Torch.Core.IntTensor.Static.IsTensor ()
@@ -151,7 +153,7 @@ type StaticConstraint t = (IsStatic t, HsReal t ~ HsReal (AsDynamic t), Dynamic.
 
 -- Constraints used on two static tensors. Essentially that both static tensors have
 -- the same internal tensor representations.
-type StaticConstraint2 t0 t1 = (StaticConstraint t0, StaticConstraint t1, AsDynamic t0 ~ AsDynamic t1)
+type StaticConstraint2 t0 t1 = (StaticConstraint t0, StaticConstraint t1, AsDynamic t0 ~ AsDynamic t1, HsReal t0 ~ HsReal t1)
 
 -------------------------------------------------------------------------------
 
@@ -186,36 +188,30 @@ resizeAs src = do
 -- TODO: try to force strict evaluation to avoid potential FFI + IO + mutation bugs.
 -- however `go` never executes with deepseq: else unsafePerformIO $ pure (deepseq go result)
 fromList1d
-  :: forall t n . (KnownNatDim n, Dynamic.IsTensor (t '[n]))
+  :: forall t n . (KnownNatDim n, StaticConstraint (t '[n]))
   => [HsReal (t '[n])] -> IO (t '[n])
 fromList1d l
   | fromIntegral (natVal (Proxy :: Proxy n)) /= length l =
     throwString "List length does not match tensor dimensions"
   | otherwise = do
-    res :: t '[n] <- Dynamic.new (dim :: Dim '[n])
-    mapM_  (upd res) (zip [0..length l - 1] l)
-    pure res
-  where
-    upd :: t '[n] -> (Int, HsReal (t '[n])) -> IO ()
-    upd t (idx, v) = someDimsM [idx] >>= \sd -> Dynamic.setDim'_ t sd v
+    asStatic <$> IsTensor.fromList1d l
+    -- res :: t '[n] <- Dynamic.new (dim :: Dim '[n])
+    -- mapM_  (upd res) (zip [0..length l - 1] l)
+    -- pure res
+  -- where
+    -- upd :: t '[n] -> (Int, HsReal (t '[n])) -> IO ()
+    -- upd t (idx, v) = someDimsM [idx] >>= \sd -> Dynamic.setDim'_ t sd v
 
--- TODO: Potentially just use newWithData from Storage
+-- | Initialize a tensor of arbitrary dimension from a list
+-- FIXME: There might be a faster way to do this with newWithSize
 fromList
-  :: forall t d . (Dimensions d, StaticConstraint (t d))
+  :: forall t d
+   . (KnownNatDim (Product d), Dimensions d)
+  => (StaticConstraint2 (t d) (t '[Product d]))
   => [HsReal (t d)] -> IO (t d)
-fromList l
-  | product (dimVals d) /= length l =
-    throwString "List length does not match tensor dimensions"
-  | otherwise = do
-    res :: AsDynamic (t d) <- Dynamic.new d
-    mapM_  (upd res) (zip [0..length l - 1] l)
-    pure (asStatic res)
-  where
-    d :: Dim d
-    d = dim
-
-    upd :: AsDynamic (t d) -> (Int, HsReal (t d)) -> IO ()
-    upd t (idx, v) = someDimsM [idx] >>= \sd -> Dynamic.setDim'_ t sd v
+fromList l = do
+  oneD :: t '[Product d] <- fromList1d l
+  asStatic <$> resizeDim (asDynamic oneD) (dim :: Dim d)
 
 newTranspose2d
   :: forall t r c . (StaticConstraint2 (t '[r, c]) (t '[c, r]))
