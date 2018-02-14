@@ -1,40 +1,40 @@
 #!/usr/bin/env bash
-
-# execute this command if needed when building on OSX if there are linker errors.
-# dylib files in extra-lib-dirs  don't get forwarded to ghc
-# in some versions of OSX. See https://github.com/commercialhaskell/stack/issues/1826
-HASKTORCH_LIB_PATH="$(pwd)/vendor/build/"
-
-function add_vendor_lib_path {
-    case "$(uname)" in
-      "Darwin")
-        DYLD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$DYLD_LIBRARY_PATH
-        export DYLD_LIBRARY_PATH
-        ;;
-      "Linux"|"FreeBSD")
-        LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
-        export LD_LIBRARY_PATH
-        ;;
-      *)
-        echo "OS doesn't have known environment variable hacks to set"
-        ;;
-    esac
-}
-
-if ! type git &> /dev/null; then
-  echo "git is not installed, setenv cannot reliably perform checks to set your system's library path"
-  exit 1
-fi
-
-if [[ "$(basename "$(git rev-parse --show-toplevel)")" == "hasktorch" ]] && ls $HASKTORCH_LIB_PATH &> /dev/null; then
-  echo "updating library path..."
-  add_vendor_lib_path
-  echo "...done!"
-  exit 0
+if [[ "$0" != "$BASH_SOURCE" ]]; then
+  echo 'This script is not meant to be sourced. Please run `./setenv` instead, or `chmod u+x ./setenv && ./setenv`'
 else
-  echo "couldn't update library path. Please file an issue or adjust this script for your system and submit a pull request"
-  exit 1
+  # execute this command if needed when building on OSX if there are linker errors.
+  # dylib files in extra-lib-dirs  don't get forwarded to ghc
+  # in some versions of OSX. See https://github.com/commercialhaskell/stack/issues/1826
+  HASKTORCH_LIB_PATH="$(pwd)/vendor/build/"
+
+  function add_vendor_lib_path {
+      case "$(uname)" in
+        "Darwin")
+          DYLD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$DYLD_LIBRARY_PATH
+          export DYLD_LIBRARY_PATH
+          ;;
+        "Linux"|"FreeBSD")
+          LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+          export LD_LIBRARY_PATH
+          ;;
+        *)
+          echo "OS doesn't have known environment variable hacks to set"
+          ;;
+      esac
+  }
+
+  if ! type git &> /dev/null; then
+    echo "git is not installed, setenv cannot reliably perform checks to set your system's library path"
+    exit 1
+  fi
+
+  if [[ "$(basename "$(git rev-parse --show-toplevel)")" == "hasktorch" ]] && ls $HASKTORCH_LIB_PATH &> /dev/null; then
+    echo "updating library path..."
+    add_vendor_lib_path
+    echo "...done!"
+    exit 0
+  else
+    echo "couldn't update library path. Please file an issue or adjust this script for your system and submit a pull request"
+    exit 1
+  fi
 fi
-
-
-
