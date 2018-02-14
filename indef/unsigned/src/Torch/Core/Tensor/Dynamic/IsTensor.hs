@@ -14,6 +14,7 @@ import GHC.ForeignPtr (ForeignPtr)
 import GHC.Int
 import THTypes
 import Control.Monad.Managed
+import Torch.Core.Tensor.Dim
 
 import qualified THLongTypes as Long
 import qualified THLongStorage as Long

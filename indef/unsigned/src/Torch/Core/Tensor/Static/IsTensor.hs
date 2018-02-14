@@ -6,6 +6,7 @@ module Torch.Core.Tensor.Static.IsTensor
 import GHC.Int
 import THTypes (CTHDescBuff)
 
+import Torch.Core.Tensor.Dim (DimVal)
 import qualified THLongTypes as Long
 import qualified THLongStorage as Long
 import qualified Torch.Class.C.IsTensor as Class
@@ -142,7 +143,7 @@ instance Class.IsTensor (Tensor d) where
   setStorage4d_ t = Class.setStorage4d_ (dynamic t)
   setStorageNd_ :: Tensor d -> Storage -> Int64 -> Int32 -> [Int64] -> [Int64] -> IO ()
   setStorageNd_ t = Class.setStorageNd_ (dynamic t)
-  size :: Tensor d -> Int32 -> IO Int64
+  size :: Tensor d -> DimVal -> IO Int64
   size t = Class.size (dynamic t)
   sizeDesc :: Tensor d -> IO CTHDescBuff
   sizeDesc t = Class.sizeDesc (dynamic t)
