@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Torch.Class.C.IsTensor where
 
+import Control.Exception.Safe
 import Control.Monad ((>=>), forM_)
 import THTypes
 import GHC.Int
@@ -75,7 +76,7 @@ class IsTensor t where
   setStorage3d_ :: t -> HsStorage t -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
   setStorage4d_ :: t -> HsStorage t -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
   setStorageNd_ :: t -> HsStorage t -> Int64 -> Int32 -> [Int64] -> [Int64] -> IO ()
-  size :: t -> Int32 -> IO Int64
+  size :: t -> DimVal -> IO Int64
   sizeDesc :: t -> IO CTHDescBuff
   squeeze_ :: t -> t -> IO ()
   squeeze1d_ :: t -> t -> Int32 -> IO ()
@@ -99,7 +100,19 @@ resizeDim_ :: IsTensor t => t -> Dim (d::[Nat]) -> IO ()
 resizeDim_ = undefined
 
 getDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO (HsReal t)
-getDim = undefined
+getDim t d = case dimVals d of
+  [] -> throwString "can't lookup an empty dimension. FIXME: make this function only take a non-empty [Nat]"
+  [x] -> get1d t (fromIntegral x)
+  [x, y] -> get2d t (fromIntegral x) (fromIntegral y)
+  [x, y, z] -> get3d t (fromIntegral x) (fromIntegral y) (fromIntegral z)
+  [x, y, z, q] -> get4d t (fromIntegral x) (fromIntegral y) (fromIntegral z) (fromIntegral q)
+  _ -> throwString "FIXME: review how TH supports `get` operations on > rank-4 tensors"
+
+getDims :: IsTensor t => t -> IO SomeDims
+getDims t = do
+  nd <- nDimension t
+  ds <- mapM (size t . fromIntegral) [0 .. nd -1]
+  someDimsM ds
 
 new :: IsTensor t => Dim (d::[Nat]) -> IO t
 new d = do
@@ -116,7 +129,7 @@ setDim'_ t (SomeDims d) v = setDim_ t d v
 resizeDim'_ :: IsTensor t => t -> SomeDims -> IO ()
 resizeDim'_ t (SomeDims d) = resizeDim_ t d
 
-getDim' :: IsTensor t => t -> SomeDims-> IO (HsReal t)
+getDim' :: IsTensor t => t -> SomeDims -> IO (HsReal t)
 getDim' t (SomeDims d) = getDim t d
 
 new' :: IsTensor t => SomeDims -> IO t
@@ -130,7 +143,7 @@ resizeAs src shape = newClone src >>= \res -> resizeAs_ res shape >> pure res
 printTensor :: forall t . (IsTensor t, Show (HsReal t)) => t -> IO ()
 printTensor t = do
   numDims <- nDimension t
-  sizes <- mapM (fmap fromIntegral . size t) [0..numDims - 1]
+  sizes <- mapM (fmap fromIntegral . size t . fromIntegral) [0..numDims - 1]
   case sizes of
     []  -> putStrLn "Empty Tensor"
     sz@[x] -> do

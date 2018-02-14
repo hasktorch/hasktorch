@@ -21,6 +21,7 @@ library
       base >=4.7 && <5
     , hasktorch-types
     , hasktorch-dimensions
+    , safe-exceptions
   exposed-modules:
       Torch.Class.C.Internal
 

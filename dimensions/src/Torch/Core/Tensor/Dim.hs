@@ -61,8 +61,8 @@ type SingDimensions d = (SingI d, Dimensions d)
 newtype DimVal = DimVal Int32
   deriving (Bounded, Enum, Eq, Integral, Num, Ord, Read, Real, Show)
 
-someDimsM :: MonadThrow m => [Int] -> m SomeDims
-someDimsM d = case Dim.someDimsVal d of
+someDimsM :: (MonadThrow m, Integral i) => [i] -> m SomeDims
+someDimsM d = case Dim.someDimsVal (fmap fromIntegral d) of
   Nothing -> throwString "User Defined Error: included dimension of size 0, review tensor dimensionality."
   Just sd -> pure sd
 

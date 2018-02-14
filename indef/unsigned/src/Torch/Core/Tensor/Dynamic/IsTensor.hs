@@ -343,8 +343,8 @@ instance Class.IsTensor Tensor where
         Sig.c_setStorageNd t' s' (CPtrdiff a) (CInt b) c d
 
 
-  size :: Tensor -> Int32 -> IO Int64
-  size t l0 = withForeignPtr (tensor t) (\t' -> fromIntegral <$> Sig.c_size t' (CInt l0))
+  size :: Tensor -> DimVal -> IO Int64
+  size t l0 = withForeignPtr (tensor t) $ \t' -> fromIntegral <$> Sig.c_size t' (fromIntegral l0)
 
   sizeDesc :: Tensor -> IO CTHDescBuff
   sizeDesc t = withForeignPtr (tensor t) (Sig.c_sizeDesc)
