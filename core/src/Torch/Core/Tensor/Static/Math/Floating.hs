@@ -1,6 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
-{- LANGUAGE DataKinds #-}
-{- LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 module Torch.Core.Tensor.Static.Math.Floating where
@@ -28,13 +27,19 @@ type FloatingMathConstraint t d =
   , HsReal (t d) ~ HsReal (AsDynamic (t d))
   , HsAccReal (t d) ~ HsAccReal (AsDynamic (t d))
   , IsStatic (t d)
-  -- , Dimensions d
+  , Dynamic.IsTensor (AsDynamic (t d))
+  , Num (HsReal (t d))
+  , Dimensions d
   )
 
 cinv_         :: FloatingMathConstraint t d => t d -> t d -> IO ()
 cinv_ = Class.cinv_ `on` asDynamic
 sigmoid_      :: FloatingMathConstraint t d => t d -> t d -> IO ()
 sigmoid_ = Class.sigmoid_ `on` asDynamic
+
+sigmoid :: FloatingMathConstraint t d => t d -> IO (t d)
+sigmoid t = withInplace $ \r -> Class.sigmoid_ r (asDynamic t)
+
 log_          :: FloatingMathConstraint t d => t d -> t d -> IO ()
 log_ = Class.log_ `on` asDynamic
 lgamma_       :: FloatingMathConstraint t d => t d -> t d -> IO ()

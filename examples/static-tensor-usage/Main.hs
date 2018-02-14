@@ -53,8 +53,8 @@ valueTransformations = do
   printTensor $ neg randMat
 
   putStrLn "\nSigmoid:"
-  sigmoid_ randMat randMat
-  printTensor $ randMat
+  sig <- sigmoid randMat
+  printTensor $ sig
 
   putStrLn "\nTanh:"
   printTensor $ tanh randMat
