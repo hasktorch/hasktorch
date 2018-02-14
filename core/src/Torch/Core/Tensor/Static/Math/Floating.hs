@@ -32,37 +32,37 @@ type FloatingMathConstraint t d =
   , Dimensions d
   )
 
-cinv_         :: FloatingMathConstraint t d => t d -> t d -> IO ()
+cinv_ :: FloatingMathConstraint t d => t d -> t d -> IO ()
 cinv_ = Class.cinv_ `on` asDynamic
 cinv :: FloatingMathConstraint t d => t d -> IO (t d)
 cinv t = withInplace $ \r -> Class.cinv_ r (asDynamic t)
 
-sigmoid_      :: FloatingMathConstraint t d => t d -> t d -> IO ()
+sigmoid_ :: FloatingMathConstraint t d => t d -> t d -> IO ()
 sigmoid_ = Class.sigmoid_ `on` asDynamic
 sigmoid :: FloatingMathConstraint t d => t d -> IO (t d)
 sigmoid t = withInplace $ \r -> Class.sigmoid_ r (asDynamic t)
 
-log_          :: FloatingMathConstraint t d => t d -> t d -> IO ()
+log_ :: FloatingMathConstraint t d => t d -> t d -> IO ()
 log_ = Class.log_ `on` asDynamic
 log :: FloatingMathConstraint t d => t d -> IO (t d)
 log t = withInplace $ \r -> Class.log_ r (asDynamic t)
 
-lgamma_       :: FloatingMathConstraint t d => t d -> t d -> IO ()
+lgamma_ :: FloatingMathConstraint t d => t d -> t d -> IO ()
 lgamma_ = Class.lgamma_ `on` asDynamic
 lgamma :: FloatingMathConstraint t d => t d -> IO (t d)
 lgamma t = withInplace $ \r -> Class.lgamma_ r (asDynamic t)
 
-log1p_        :: FloatingMathConstraint t d => t d -> t d -> IO ()
+log1p_ :: FloatingMathConstraint t d => t d -> t d -> IO ()
 log1p_ = Class.log1p_ `on` asDynamic
 log1p :: FloatingMathConstraint t d => t d -> IO (t d)
 log1p t = withInplace $ \r -> Class.log1p_ r (asDynamic t)
 
-exp_          :: FloatingMathConstraint t d => t d -> t d -> IO ()
+exp_ :: FloatingMathConstraint t d => t d -> t d -> IO ()
 exp_ = Class.exp_ `on` asDynamic
 exp :: FloatingMathConstraint t d => t d -> IO (t d)
 exp t = withInplace $ \r -> Class.exp_ r (asDynamic t)
 
-cos_          :: FloatingMathConstraint t d => t d -> t d -> IO ()
+cos_ :: FloatingMathConstraint t d => t d -> t d -> IO ()
 cos_ = Class.cos_ `on` asDynamic
 cos :: FloatingMathConstraint t d => t d -> IO (t d)
 cos t = withInplace $ \r -> Class.cos_ r (asDynamic t)

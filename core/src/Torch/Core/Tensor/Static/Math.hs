@@ -125,6 +125,7 @@ module Torch.Core.Tensor.Static.Math
 
   , module Classes
   , module FloatingMath
+  , module SignedMath
   ) where
 
 import Data.Singletons
@@ -142,8 +143,9 @@ import THTypes
 import THRandomTypes
 -- ========================================================================= --
 -- Reexports
-import Torch.Class.C.Tensor.Math as Classes (TensorMath, TensorMathFloating, TensorMathSigned, neg, abs)
+import Torch.Class.C.Tensor.Math as Classes (TensorMath, TensorMathFloating, TensorMathSigned)
 import Torch.Core.Tensor.Static.Math.Floating as FloatingMath
+import Torch.Core.Tensor.Static.Math.Signed as SignedMath
 import Torch.Core.ShortTensor.Static.Math.Signed ()
 import Torch.Core.IntTensor.Static.Math.Signed ()
 import Torch.Core.LongTensor.Static.Math.Signed ()

@@ -42,14 +42,16 @@ initialization = do
     asMat :: DoubleTensor '[3, 2] <- resizeAs listVec
     pure asMat
 
-  putStrLn "\nInitialize arbitrary dimensions directly from list:"
-  listVec2 :: DoubleTensor '[3, 2] <- fromList [1, 2, 3, 4, 5, 6]
-  printTensor listVec2
+  section "Initialize arbitrary dimensions directly from list" $ do
+    listVec2 :: DoubleTensor '[3, 2] <- fromList [1, 2, 3, 4, 5, 6]
+    pure listVec2
 
-  putStrLn "\nRandom values:"
-  gen <- RNG.new
-  randMat :: DoubleTensor '[4, 4] <- uniform gen 1 2
-  printTensor randMat
+  section "Random values" $ do
+    gen <- RNG.new
+    randMat :: DoubleTensor '[4, 4] <- uniform gen 1 2
+    pure randMat
+
+  pure ()
 
 valueTransformations :: IO ()
 valueTransformations = do

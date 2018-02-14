@@ -103,17 +103,7 @@ import Torch.Core.DoubleTensor.Static.IsTensor ()
 
 -- ========================================================================= --
 -- re-export all Random functions --
-import Torch.Class.C.Tensor.Random as X
-
-import Torch.Core.ByteTensor.Static.Random   ()
-import Torch.Core.ShortTensor.Static.Random  ()
-import Torch.Core.IntTensor.Static.Random    ()
-import Torch.Core.LongTensor.Static.Random   ()
-import Torch.Core.FloatTensor.Static.Random  ()
-import Torch.Core.DoubleTensor.Static.Random ()
-
-import Torch.Core.FloatTensor.Static.Random.Floating  ()
-import Torch.Core.DoubleTensor.Static.Random.Floating ()
+import Torch.Core.Tensor.Static.Random as X
 
 -- ========================================================================= --
 -- re-export all TensorCopy functions (for dynamic copies)
@@ -227,7 +217,7 @@ expand2d
   => Dynamic.TensorMath (AsDynamic (t '[d1])) -- for 'Dynamic.constant' which uses 'Torch.Class.C.Tensor.Math.fill'
   => t '[d1] -> IO (t '[d2, d1])
 expand2d t = do
-  res :: AsDynamic (t '[d2, d1]) <- Dynamic.constant 0
+  res :: AsDynamic (t '[d2, d1]) <- Dynamic.constant (dim :: Dim '[d2, d1]) 0
   s :: LongStorage <- Storage.newWithSize2 s2 s1
   Dynamic.expand_ res (asDynamic t) s
   pure (asStatic res)

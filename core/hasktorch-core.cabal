@@ -64,7 +64,8 @@ library
     , Torch.Core.Tensor.Static.Math
 
   other-modules:
-      Torch.Core.Tensor.Static.Math.Floating
+      Torch.Core.Tensor.Static.Math.Signed
+    , Torch.Core.Tensor.Static.Math.Floating
 
   reexported-modules:
       Torch.Core.Tensor.Dim

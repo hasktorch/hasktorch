@@ -1,8 +1,12 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 module Torch.Class.C.Tensor.Math where
 
 import THTypes
-import Foreign hiding (new)
+import Foreign
 import Foreign.C.Types
+import GHC.TypeLits (Nat)
+import Torch.Core.Tensor.Dim
 import Torch.Class.C.Internal
 import GHC.Int
 import Torch.Class.C.IsTensor (IsTensor(empty), inplace)
@@ -10,8 +14,8 @@ import THRandomTypes (Generator)
 import qualified THByteTypes   as B
 import qualified THLongTypes   as L
 
-constant :: (IsTensor t, TensorMath t) => HsReal t -> IO t
-constant v = inplace (`fill_` v)
+constant :: (IsTensor t, TensorMath t) => Dim (d::[Nat]) -> HsReal t -> IO t
+constant d v = inplace (`fill_` v) d
 
 class TensorMath t where
   fill_        :: t -> HsReal t -> IO ()
@@ -129,11 +133,11 @@ class TensorMath t where
   neTensorT_   :: t -> t -> t -> IO ()
   eqTensorT_   :: t -> t -> t -> IO ()
 
-neg :: (IsTensor t, TensorMathSigned t) => t -> IO t
-neg t = inplace (`neg_` t)
+neg :: (IsTensor t, TensorMathSigned t) => Dim (d::[Nat]) -> t -> IO t
+neg d t = inplace (`neg_` t) d
 
-abs :: (IsTensor t, TensorMathSigned t) => t -> IO t
-abs t = inplace (`abs_` t)
+abs :: (IsTensor t, TensorMathSigned t) => Dim (d::[Nat]) -> t -> IO t
+abs d t = inplace (`abs_` t) d
 
 class TensorMathSigned t where
   neg_         :: t -> t -> IO ()

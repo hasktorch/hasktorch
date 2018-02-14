@@ -90,8 +90,8 @@ class IsTensor t where
   unfold_ :: t -> t -> DimVal -> Size -> Step -> IO ()
   unsqueeze1d_ :: t -> t -> DimVal -> IO ()
 
-inplace :: IsTensor t => (t -> IO ()) -> IO t
-inplace op = empty >>= \r -> op r >> pure r
+inplace :: IsTensor t => (t -> IO ()) -> Dim (d::[Nat]) -> IO t
+inplace op d = new d >>= \r -> op r >> pure r
 
 setStorageDim_ :: IsTensor t => t -> HsStorage t -> StorageOffset -> [(Size, Stride)] -> IO ()
 setStorageDim_ t s o = \case
