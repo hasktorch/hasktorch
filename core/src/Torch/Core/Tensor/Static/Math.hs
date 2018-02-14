@@ -143,6 +143,7 @@ import Torch.Core.Tensor.Static (IsStatic(..), StaticConstraint, StaticConstrain
 import THTypes
 import THRandomTypes
 
+
 (!*) :: (MathConstraint3 t '[r, c] '[c] '[r]) => t '[r, c] -> t '[c] -> IO (t '[r])
 (!*) = mv
 

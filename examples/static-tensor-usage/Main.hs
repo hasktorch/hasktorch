@@ -3,10 +3,10 @@
 
 module Main where
 
-import qualified Torch.Core.Random as R (new)
+import qualified Torch.Core.Random as RNG (new)
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math
-import Torch.Core.Tensor.Static.Random (uniform)
+import qualified Torch.Core.Tensor.Static.Random as R (uniform)
 
 initialization :: IO ()
 initialization = do
@@ -22,7 +22,7 @@ initialization = do
   printTensor constVec
 
   putStrLn "\nInitialize 1D vector from list:"
-  let listVec = fromList [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: DoubleTensor '[6]
+  let listVec = fromList1d [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] :: DoubleTensor '[6]
   printTensor listVec
 
   putStrLn "\nResize 1D vector as 2D matrix:"
@@ -35,7 +35,7 @@ initialization = do
   printTensor listVec2
 
   putStrLn "\nRandom values:"
-  gen <- newRNG
+  gen <- RNG.new
   randMat :: DoubleTensor '[4, 4] <- uniform gen (1.0) (3.0)
   printTensor randMat
 
@@ -43,7 +43,7 @@ valueTransformations :: IO ()
 valueTransformations = do
   putStrLn "\nBatch tensor value transformations"
   putStrLn "-----------------------------------"
-  gen <- newRNG
+  gen <- RNG.new
 
   putStrLn "\nRandom matrix:"
   randMat :: DoubleTensor '[4, 4] <- uniform gen (1.0) (3.0)
@@ -68,7 +68,7 @@ matrixVectorOps :: IO ()
 matrixVectorOps = do
   putStrLn "\nMatrix/vector operations"
   putStrLn "------------------------"
-  gen <- newRNG
+  gen <- RNG.new
 
   putStrLn "\nRandom matrix:"
   randMat :: DoubleTensor '[2, 2] <- uniform gen (-1.0) (1.0)

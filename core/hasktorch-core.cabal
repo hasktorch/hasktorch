@@ -290,7 +290,7 @@ library
       ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.FloatTensor.Dynamic.Conv
 --        ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.FloatTensor.Dynamic.Lapack
       ,Torch.Core.Tensor.Dynamic.Math             as Torch.Core.FloatTensor.Dynamic.Math
---        ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.FloatTensor.Dynamic.Math.Floating
+      ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.FloatTensor.Dynamic.Math.Floating
       ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.FloatTensor.Dynamic.Math.Signed
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.FloatTensor.Dynamic.Random
       ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.FloatTensor.Dynamic.Random.Floating
@@ -325,7 +325,7 @@ library
       ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.DoubleTensor.Dynamic.Conv
 --         ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.DoubleTensor.Dynamic.Lapack
       ,Torch.Core.Tensor.Dynamic.Math             as Torch.Core.DoubleTensor.Dynamic.Math
---         ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.DoubleTensor.Dynamic.Math.Floating
+      ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.DoubleTensor.Dynamic.Math.Floating
       ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.DoubleTensor.Dynamic.Math.Signed
       ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.DoubleTensor.Dynamic.Random
       ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.DoubleTensor.Dynamic.Random.Floating

@@ -28,8 +28,7 @@ library
   exposed-modules:
       Torch.Core.Tensor.Dynamic.Random.Floating
     , Torch.Core.Tensor.Static.Random.Floating
-      -- Torch.Core.Tensor.Dynamic.Math.Floating
-  --  , Torch.Core.Tensor.Dynamic.Random.Floating
+    , Torch.Core.Tensor.Dynamic.Math.Floating
   --  , Torch.Core.Tensor.Dynamic.Lapack
 
   reexported-modules:
