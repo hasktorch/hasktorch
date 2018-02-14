@@ -6,6 +6,7 @@ module Main where
 import qualified Torch.Core.Random as RNG (new)
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math
+import qualified Torch.Core.Tensor.Static.Math as Math
 import qualified Torch.Core.Tensor.Static.Random as R (uniform)
 
 initialization :: IO ()
@@ -50,20 +51,20 @@ valueTransformations = do
   printTensor randMat
 
   putStrLn "\nNegated:"
-  printTensor $ neg randMat
+  neg randMat >>= printTensor
 
   putStrLn "\nSigmoid:"
-  sig <- sigmoid randMat
-  printTensor $ sig
+  sig :: DoubleTensor '[4, 4] <- Math.sigmoid randMat
+  printTensor sig
 
   putStrLn "\nTanh:"
-  printTensor $ tanh randMat
+  Math.tanh randMat >>= printTensor
 
   putStrLn "\nLog:"
-  printTensor $ log randMat
+  Math.log randMat >>= printTensor
 
   putStrLn "\nRound:"
-  printTensor $ round randMat
+  Math.round randMat >>= printTensor
 
 matrixVectorOps :: IO ()
 matrixVectorOps = do
@@ -80,16 +81,16 @@ matrixVectorOps = do
   printTensor constVec
 
   putStrLn "\nMatrix x vector:"
-  printTensor $ randMat !* constVec
+  randMat !* constVec >>= printTensor
 
   putStrLn "\nVector outer product:"
-  printTensor $ constVec `outer` constVec
+  constVec `outer` constVec >>= printTensor
 
   putStrLn "\nVector dot product:"
-  print $ constVec <.> constVec
+  constVec <.> constVec >>= print
 
   putStrLn "\nMatrix trace:"
-  print $ trace randMat
+  trace randMat >>= print
 
 main :: IO ()
 main = do
