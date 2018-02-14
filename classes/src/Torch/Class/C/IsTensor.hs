@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -6,6 +7,7 @@ module Torch.Class.C.IsTensor where
 
 import Control.Exception.Safe
 import Control.Monad ((>=>), forM_)
+import Data.List (genericLength)
 import THTypes
 import GHC.Int
 import Torch.Class.C.Internal
@@ -96,17 +98,31 @@ setStorageDim_ = undefined
 setDim_ :: IsTensor t => t -> Dim (d::[Nat]) -> HsReal t -> IO ()
 setDim_ = undefined
 
+throwFIXME :: String -> String -> IO x
+throwFIXME fixme msg = throwString $ msg ++ " (FIXME: " ++ fixme ++ ")"
+
+throwNE :: String -> IO x
+throwNE = throwFIXME "make this function only take a non-empty [Nat]"
+
 resizeDim_ :: IsTensor t => t -> Dim (d::[Nat]) -> IO ()
-resizeDim_ = undefined
+resizeDim_ t d = case dimVals d of
+  []              -> throwNE "can't resize to an empty dimension."
+  [x]             -> resize1d_ t x
+  [x, y]          -> resize2d_ t x y
+  [x, y, z]       -> resize3d_ t x y z
+  [x, y, z, q]    -> resize4d_ t x y z q
+  [x, y, z, q, w] -> resize5d_ t x y z q q
+  ds              -> resizeNd_ t (genericLength ds) ds
+                            (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
 getDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO (HsReal t)
 getDim t d = case dimVals d of
-  [] -> throwString "can't lookup an empty dimension. FIXME: make this function only take a non-empty [Nat]"
-  [x] -> get1d t (fromIntegral x)
-  [x, y] -> get2d t (fromIntegral x) (fromIntegral y)
-  [x, y, z] -> get3d t (fromIntegral x) (fromIntegral y) (fromIntegral z)
-  [x, y, z, q] -> get4d t (fromIntegral x) (fromIntegral y) (fromIntegral z) (fromIntegral q)
-  _ -> throwString "FIXME: review how TH supports `get` operations on > rank-4 tensors"
+  []           -> throwNE "can't lookup an empty dimension"
+  [x]          -> get1d t x
+  [x, y]       -> get2d t x y
+  [x, y, z]    -> get3d t x y z
+  [x, y, z, q] -> get4d t x y z q
+  _            -> throwFIXME "review how TH supports `get` operations on > rank-4 tensors" "getDim with >4 rank"
 
 getDims :: IsTensor t => t -> IO SomeDims
 getDims t = do

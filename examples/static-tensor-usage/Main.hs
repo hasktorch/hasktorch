@@ -28,10 +28,9 @@ initialization = do
     zeroMat :: DoubleTensor '[3, 2] <- new
     pure zeroMat
 
-  putStrLn ""
-  putStrLn "Constant:"
-  constVec :: DoubleTensor '[2] <- constant 2
-  printTensor constVec
+  section "Constant" $ do
+    constVec :: DoubleTensor '[2] <- constant 2
+    pure constVec
 
   putStrLn ""
   putStrLn "Initialize 1D vector from list:"

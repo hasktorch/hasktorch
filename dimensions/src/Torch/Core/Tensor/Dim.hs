@@ -110,14 +110,14 @@ rankCheck dims n
     (length (dimVals' dims) == n)
     (throwString "Incorrect Dimensions")
 
--- Helper function to debug dimensions package
-dimVals :: Dim (ns::[k]) -> [Int]
+-- Helper function to debug dimensions package. We return @Integral i@ in case we need to cast directly to C-level types.
+dimVals :: Integral i => Dim (ns::[k]) -> [i]
 dimVals = go mempty
   where
-    go :: Seq Int -> Dim (ns::[k]) -> [Int]
+    go :: forall i ns . Integral i => Seq i -> Dim (ns::[k]) -> [i]
     go acc D         = toList   acc
-    go acc (d :* D)  = toList $ acc |> Dim.dimVal d
-    go acc (d :* ds) = go (acc |> Dim.dimVal d) ds
+    go acc (d :* D)  = toList $ acc |> fromIntegral (Dim.dimVal d)
+    go acc (d :* ds) = go (acc |> fromIntegral (Dim.dimVal d)) ds
 
 dimVals' :: SomeDims -> [Int]
 dimVals' (SomeDims ds) = dimVals ds
