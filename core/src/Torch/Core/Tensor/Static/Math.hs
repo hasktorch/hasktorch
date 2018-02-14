@@ -159,7 +159,7 @@ import Torch.Core.DoubleTensor.Static.Math.Signed ()
 (!*!)
   :: MathConstraint3 t '[a, b] '[b, c] '[a, c]
   => t '[a, b] -> t '[b, c] -> IO (t '[a, c])
-(!*!) a b = (asStatic <$> Dynamic.new) >>= \n -> addmm 1 n 1 a b
+(!*!) a b = (asStatic <$> Dynamic.empty) >>= \n -> addmm 1 n 1 a b
 
 (^+^) :: MathConstraint t d => t d -> t d -> IO (t d)
 (^+^) t1 t2 = cadd t1 1 {-scale-} t2
@@ -277,7 +277,7 @@ dangerMaskedSelect_ t t' b = do
 
 nonzero :: (IsStatic (t d), Dynamic.TensorMath (AsDynamic (t d))) => t d -> IO Dynamic.LongTensor
 nonzero t = do
-  l <- Dynamic.new
+  l <- Dynamic.empty
   Dynamic.nonzero_ l (asDynamic t)
   pure l
 
@@ -542,7 +542,7 @@ addcdiv t v t' t'' = withInplace $ \r -> Dynamic.addcdiv_ r (asDynamic t) v (asD
 
 -- | added simplified use of addmv: src1 #> src2
 mv :: (MathConstraint3 t '[r, c] '[c] '[r]) => t '[r, c] -> t '[c] -> IO (t '[r])
-mv m v = Dynamic.new >>= \n -> addmv 0 (asStatic n) 1 m v
+mv m v = Dynamic.empty >>= \n -> addmv 0 (asStatic n) 1 m v
 
 -- | beta * t + alpha * (src1 #> src2)
 addmv_
@@ -566,7 +566,7 @@ addr  a t b x y = withInplace $ \r -> Dynamic.addr_ r a (asDynamic t) b (asDynam
 
 outer :: forall t r c . (MathConstraint3 t '[r] '[c] '[r, c]) => t '[r] -> t '[c] -> IO (t '[r, c])
 outer v1 v2 = do
-  t <- Dynamic.newDim (dim :: Dim '[r])
+  t <- Dynamic.new (dim :: Dim '[r])
   addr 0 (asStatic t) 1 v1 v2
 
 addbmm_       :: MathConstraint t d => t d -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO ()
@@ -601,7 +601,7 @@ keepDimOps
   => ((AsDynamic (t d), Dynamic.LongTensor) -> AsDynamic (t d) -> Int32 -> Int32 -> IO ())
   -> t d -> DimVal -> Bool -> IO (t d, Maybe Dynamic.LongTensor)
 keepDimOps op t d keep = do
-  ix :: Dynamic.LongTensor <- Dynamic.new
+  ix :: Dynamic.LongTensor <- Dynamic.empty
   res <- withInplace $ \r -> op (r, ix) (asDynamic t) (fromIntegral d) (fromIntegral $ fromEnum keep)
   pure (res, if keep then Just ix else Nothing)
 
@@ -626,7 +626,7 @@ kthvalue_ (r, ix) t k d keep = Dynamic.kthvalue_ (asDynamic r, ix) (asDynamic t)
 -- FIXME: unify with other 'keepDimOps'
 kthvalue :: MathConstraint t d => t d -> Int64 -> DimVal -> Bool -> IO (t d, Maybe Dynamic.LongTensor)
 kthvalue t k d keep = do
-  ix :: Dynamic.LongTensor <- Dynamic.new
+  ix :: Dynamic.LongTensor <- Dynamic.empty
   res <- withInplace $ \r -> Dynamic.kthvalue_ (r, ix) (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum keep)
   pure (res, if keep then Just ix else Nothing)
 
@@ -792,7 +792,7 @@ returnDimOps2
   => (AsDynamic (t d) -> Dynamic.LongTensor -> AsDynamic (t d) -> Int32 -> Int32 -> IO ())
   -> t d -> a -> b -> IO (t d, Dynamic.LongTensor)
 returnDimOps2 op t a b = do
-  ix :: Dynamic.LongTensor <- Dynamic.new
+  ix :: Dynamic.LongTensor <- Dynamic.empty
   res <- withInplace $ \r -> op r ix (asDynamic t) (fromIntegral a) (fromIntegral b)
   pure (res, ix)
 
@@ -811,7 +811,7 @@ topk_ (r, ri) t k d o sorted = Dynamic.topk_ (asDynamic r) ri (asDynamic t) k (f
 
 topk :: MathConstraint2 t d d' => t d -> Int64 -> DimVal -> TopKOrder -> Bool -> IO (t d', Dynamic.LongTensor)
 topk t k d o sorted = do
-  ix :: Dynamic.LongTensor <- Dynamic.new
+  ix :: Dynamic.LongTensor <- Dynamic.empty
   res <- withInplace $ \r -> Dynamic.topk_ r ix (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum o) (fromIntegral $ fromEnum sorted)
   pure (res, ix)
 

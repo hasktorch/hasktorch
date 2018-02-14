@@ -6,8 +6,7 @@ module Torch.Class.C.IsTensor where
 
 import Control.Monad ((>=>), forM_)
 import THTypes
-import Foreign
-import Foreign.C.Types
+import GHC.Int
 import Torch.Class.C.Internal
 import Torch.Core.Tensor.Dim
 import qualified THLongTypes as Long
@@ -31,7 +30,8 @@ class IsTensor t where
   nDimension :: t -> IO Int32
   nElement :: t -> IO Int64
   narrow_ :: t -> t -> Int32 -> Int64 -> Int64 -> IO ()
-  new :: IO t
+  -- | renamed from TH's @new@ because this always returns an empty tensor
+  empty :: IO t
   newClone :: t -> IO t
   newContiguous :: t -> IO t
   newExpand :: t -> Long.Storage -> IO t
@@ -86,19 +86,26 @@ class IsTensor t where
   unfold_ :: t -> t -> Int32 -> Int64 -> Int64 -> IO ()
   unsqueeze1d_ :: t -> t -> Int32 -> IO ()
 
-newDim :: IsTensor t => Dim (d::[Nat]) -> IO t
-newDim = undefined
+inplace :: IsTensor t => (t -> IO ()) -> IO t
+inplace op = empty >>= \r -> op r >> pure r
+
 setStorageDim_ :: IsTensor t => t -> HsStorage t -> Dim (d::[Nat]) -> IO ()
 setStorageDim_ = undefined
+
 setDim_ :: IsTensor t => t -> Dim (d::[Nat]) -> HsReal t -> IO ()
 setDim_ = undefined
+
 resizeDim_ :: IsTensor t => t -> Dim (d::[Nat]) -> IO ()
 resizeDim_ = undefined
+
 getDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO (HsReal t)
 getDim = undefined
 
-newDim' :: IsTensor t => SomeDims -> IO t
-newDim' (SomeDims d) = newDim d
+new :: IsTensor t => Dim (d::[Nat]) -> IO t
+new d = do
+  t <- empty
+  resizeDim_ t d
+  pure t
 
 setStorageDim'_ :: IsTensor t => t -> HsStorage t -> SomeDims -> IO ()
 setStorageDim'_ t s (SomeDims d) = setStorageDim_ t s d
@@ -112,7 +119,10 @@ resizeDim'_ t (SomeDims d) = resizeDim_ t d
 getDim' :: IsTensor t => t -> SomeDims-> IO (HsReal t)
 getDim' t (SomeDims d) = getDim t d
 
--- Is this right?
+new' :: IsTensor t => SomeDims -> IO t
+new' (SomeDims d) = new d
+
+-- Is this right? why are there three tensors
 resizeAs :: IsTensor t => t -> t -> IO t
 resizeAs src shape = newClone src >>= \res -> resizeAs_ res shape >> pure res
 

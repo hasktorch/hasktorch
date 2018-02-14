@@ -24,7 +24,7 @@ library
     , safe-exceptions >=0.1.0.0
     , singletons >=2.2
     , typelits-witnesses >=0.2.3.0
-    , hasktorch-raw-types
+    , hasktorch-types
   exposed-modules:
       Torch.Core.Tensor.Dim
 

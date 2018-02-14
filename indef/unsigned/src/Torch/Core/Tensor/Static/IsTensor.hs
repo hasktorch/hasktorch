@@ -52,8 +52,8 @@ instance Class.IsTensor (Tensor d) where
   nElement t = Class.nElement (dynamic t)
   narrow_ :: Tensor d -> Tensor d -> Int32 -> Int64 -> Int64 -> IO ()
   narrow_ t0 t1 = Class.narrow_ (dynamic t0) (dynamic t1)
-  new :: IO (Tensor d)
-  new = asStatic <$> Class.new
+  empty :: IO (Tensor d)
+  empty = asStatic <$> Class.empty
   newClone :: Tensor d -> IO (Tensor d)
   newClone t = asStatic <$> Class.newClone (dynamic t)
   newContiguous :: Tensor d -> IO (Tensor d)

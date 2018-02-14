@@ -1,4 +1,4 @@
-name:           hasktorch-core-indef-floating
+name:           hasktorch-indef-floating
 version:        0.0.1.0
 synopsis:       Torch for tensors and neural networks in Haskell
 description:    core tensor abstractions wrapping raw TH bindings
@@ -19,11 +19,12 @@ library
   hs-source-dirs: src
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core-indef-signed
+    , hasktorch-indef-signed
+    -- I'm not actually sure we need this dependency...
     , hasktorch-raw
-    , hasktorch-raw-types
-    , hasktorch-raw-signatures-floating
-    , hasktorch-core-classes-c
+    , hasktorch-types
+    , hasktorch-signatures-floating
+    , hasktorch-classes
 
   exposed-modules:
       Torch.Core.Tensor.Dynamic.Random.Floating

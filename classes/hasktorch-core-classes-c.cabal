@@ -1,4 +1,4 @@
-name:           hasktorch-core-classes-c
+name:           hasktorch-classes
 version:        0.0.1.0
 synopsis:       Torch for tensors and neural networks in Haskell
 description:    core tensor abstractions wrapping raw TH bindings
@@ -19,7 +19,7 @@ library
   default-language: Haskell2010
   build-depends:
       base >=4.7 && <5
-    , hasktorch-raw-types
+    , hasktorch-types
     , hasktorch-dimensions
   exposed-modules:
       Torch.Class.C.Internal

@@ -1,13 +1,20 @@
 packages:
     raw/*.cabal
-  , raw/types/*.cabal
-  , signatures/unsigned/*cabal
-  , signatures/signed/*cabal
-  , signatures/floating/*cabal
-  , classes-c/*cabal
-  , dimensions/*cabal
-  , core/*cabal
-  , indef/unsigned/*cabal
-  , indef/signed/*cabal
-  , indef/floating/*cabal
-  , examples/*cabal
+    types/*.cabal
+    signatures/unsigned/*cabal
+    signatures/signed/*cabal
+    signatures/floating/*cabal
+    classes/*cabal
+    dimensions/*cabal
+    core/*cabal
+    indef/unsigned/*cabal
+    indef/signed/*cabal
+    indef/floating/*cabal
+    examples/*cabal
+
+
+package hasktorch-raw
+   ghc-options: -lATen -lEHX -L/home/stites/git/hasktorch/vendor/build/
+
+package hasktorch-core
+   ghc-options: -lATen -lEHX -L/home/stites/git/hasktorch/vendor/build/

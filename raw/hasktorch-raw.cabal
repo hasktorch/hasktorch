@@ -19,39 +19,23 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
+executable test
+  default-language: Haskell2010
+  main-is: Main.hs
+  hs-source-dirs: exe
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw
+    , hasktorch-types
+
+
 library
-  ghc-options: -L/home/stites/git/hasktorch/vendor/build/ -lATen -Wno-unused-imports
-  -- extra-lib-dirs: /home/stites/git/hasktorch/vendor/build/
-  -- extra-libraries: ATen, EHX
-  include-dirs:
-      /home/stites/git/hasktorch/vendor/build/
-    , /home/stites/git/hasktorch/vendor/build/src/TH/
-    , /home/stites/git/hasktorch/vendor/build/src/THNN/
-    , /home/stites/git/hasktorch/vendor/build/src/ATen/
-    , /home/stites/git/hasktorch/vendor/build/src/THS/
-  c-sources:
-    -- /home/stites/git/hasktorch/vendor/build/libATen.so
-      /home/stites/git/hasktorch/vendor/TH/THAllocator.c
-    , /home/stites/git/hasktorch/vendor/TH/THAtomic.c
-    , /home/stites/git/hasktorch/vendor/TH/THBlas.c
-    , /home/stites/git/hasktorch/vendor/TH/THDiskFile.c
-    , /home/stites/git/hasktorch/vendor/TH/THFile.c
-    , /home/stites/git/hasktorch/vendor/TH/THGeneral.c
-    , /home/stites/git/hasktorch/vendor/TH/THHalf.c
-    , /home/stites/git/hasktorch/vendor/TH/THLapack.c
-    , /home/stites/git/hasktorch/vendor/TH/THLogAdd.c
-    , /home/stites/git/hasktorch/vendor/TH/THMemoryFile.c
-    , /home/stites/git/hasktorch/vendor/TH/THRandom.c
-    , /home/stites/git/hasktorch/vendor/TH/THSize.c
-    , /home/stites/git/hasktorch/vendor/TH/THStorage.c
-    , /home/stites/git/hasktorch/vendor/TH/THTensor.c
-    , /home/stites/git/hasktorch/vendor/TH/THVector.c
   hs-source-dirs:
       src
       src/generic
   build-depends:
       base >=4.7 && <5
-    , hasktorch-raw-types
+    , hasktorch-types
     , inline-c >=0.5
     , text >=1.2.2.2
   build-tools: c2hs
@@ -77,7 +61,7 @@ library
       THByteTensor
       THByteTensorConv
       THByteTensorCopy
-      THByteTensorLapack
+      -- THByteTensorLapack
       THByteTensorMath
       THByteTensorRandom
 
@@ -90,7 +74,7 @@ library
       THDoubleTensor
       THDoubleTensorConv
       THDoubleTensorCopy
-      THDoubleTensorLapack
+      -- THDoubleTensorLapack
       THDoubleTensorMath
       THDoubleTensorRandom
 
@@ -103,7 +87,7 @@ library
       THFloatTensor
       THFloatTensorConv
       THFloatTensorCopy
-      THFloatTensorLapack
+      -- THFloatTensorLapack
       THFloatTensorMath
       THFloatTensorRandom
 
@@ -129,7 +113,7 @@ library
       THIntTensor
       THIntTensorConv
       THIntTensorCopy
-      THIntTensorLapack
+      -- THIntTensorLapack
       THIntTensorMath
       THIntTensorRandom
 
@@ -142,7 +126,7 @@ library
       THLongTensor
       THLongTensorConv
       THLongTensorCopy
-      THLongTensorLapack
+      -- THLongTensorLapack
       THLongTensorMath
       THLongTensorRandom
 
@@ -155,7 +139,7 @@ library
       THShortTensor
       THShortTensorConv
       THShortTensorCopy
-      THShortTensorLapack
+      -- THShortTensorLapack
       THShortTensorMath
       THShortTensorRandom
 

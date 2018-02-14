@@ -107,13 +107,15 @@ atan2_ r a b = Class.atan2_ (asDynamic r) (asDynamic a) (asDynamic b)
 atan2 :: FloatingMathConstraint t d => t d -> t d -> IO (t d)
 atan2 a b = withInplace $ \r -> Class.atan2_ r (asDynamic a) (asDynamic b)
 
-tanh_         :: FloatingMathConstraint t d => t d -> t d -> IO ()
-tanh_ = Class.tanh_ `on` asDynamic
+tanh_ :: FloatingMathConstraint t d => t d -> t d -> IO ()
+tanh_ r t = Class.tanh_ (asDynamic r) (asDynamic t)
+
 tanh :: FloatingMathConstraint t d => t d -> IO (t d)
 tanh t = withInplace $ \r -> Class.tanh_ r (asDynamic t)
 
-erf_          :: FloatingMathConstraint t d => t d -> t d -> IO ()
+erf_ :: FloatingMathConstraint t d => t d -> t d -> IO ()
 erf_  = Class.erf_ `on` asDynamic
+
 erf :: FloatingMathConstraint t d => t d -> IO (t d)
 erf t = withInplace $ \r -> Class.erf_ r (asDynamic t)
 

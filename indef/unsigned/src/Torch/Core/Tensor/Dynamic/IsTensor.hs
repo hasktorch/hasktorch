@@ -116,8 +116,8 @@ instance Class.IsTensor Tensor where
       withForeignPtr (tensor t1) $ \t1' ->
         Sig.c_narrow t0' t1' (CInt a) (CLLong b) (CLLong c)
 
-  new :: IO Tensor
-  new = Sig.c_new >>= asTensor
+  empty :: IO Tensor
+  empty = Sig.c_new >>= asTensor
 
   newClone :: Tensor -> IO Tensor
   newClone t = withForeignPtr (tensor t) Sig.c_newClone >>= asTensor

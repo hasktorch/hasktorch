@@ -5,13 +5,13 @@ import Foreign hiding (new)
 import Foreign.C.Types
 import Torch.Class.C.Internal
 import GHC.Int
-import Torch.Class.C.IsTensor (IsTensor(new))
+import Torch.Class.C.IsTensor (IsTensor(empty), inplace)
 import THRandomTypes (Generator)
 import qualified THByteTypes   as B
 import qualified THLongTypes   as L
 
 constant :: (IsTensor t, TensorMath t) => HsReal t -> IO t
-constant v = new >>= \t -> fill_ t v >> pure t
+constant v = inplace (`fill_` v)
 
 class TensorMath t where
   fill_        :: t -> HsReal t -> IO ()
@@ -129,15 +129,15 @@ class TensorMath t where
   neTensorT_   :: t -> t -> t -> IO ()
   eqTensorT_   :: t -> t -> t -> IO ()
 
+neg :: (IsTensor t, TensorMathSigned t) => t -> IO t
+neg t = inplace (`neg_` t)
+
+abs :: (IsTensor t, TensorMathSigned t) => t -> IO t
+abs t = inplace (`abs_` t)
+
 class TensorMathSigned t where
   neg_         :: t -> t -> IO ()
   abs_         :: t -> t -> IO ()
-
-neg :: (IsTensor t, TensorMathSigned t) => t -> IO t
-neg t = new >>= \r -> neg_ r t >> pure r
-
-abs :: (IsTensor t, TensorMathSigned t) => t -> IO t
-abs t = new >>= \r -> abs_ r t >> pure r
 
 class TensorMathFloating t where
   cinv_         :: t -> t -> IO ()

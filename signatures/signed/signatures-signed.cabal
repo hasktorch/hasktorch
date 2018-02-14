@@ -1,4 +1,4 @@
-name:          hasktorch-raw-signatures-signed
+name:          hasktorch-signatures-signed
 version:       0.1.0.0
 synopsis:      Backpack signature files to pair with hasktorch-raw and hasktorch-core
 description:   CFFI backpack signatures
@@ -6,7 +6,7 @@ homepage:      https://github.com/hasktorch/hasktorch#readme
 license:       BSD3
 author:        Sam Stites <sam@stites.io>
 build-type:    Simple
-cabal-version: >=1.10
+cabal-version: >=2.0
 
 library
   signatures:
@@ -16,6 +16,6 @@ library
   hs-source-dirs: src
   build-depends:
       base >= 4.7 && < 5
-    , hasktorch-raw-types
-    , hasktorch-raw-signatures-unsigned
+    , hasktorch-types
+    , hasktorch-signatures-unsigned
 

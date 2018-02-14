@@ -45,6 +45,7 @@ module Torch.Core.Tensor.Static
   , fromList1d
   , newTranspose2d
   , expand2d
+  , new
 
   -- reexports
   , IsStatic(..)
@@ -52,7 +53,7 @@ module Torch.Core.Tensor.Static
   ) where
 
 import THTypes
-import Foreign
+import Foreign ()
 import Torch.Class.C.Internal
 import Torch.Core.Tensor.Dim
 import Data.Proxy
@@ -90,7 +91,7 @@ import qualified THDoubleTypes as D
 
 -- ========================================================================= --
 -- re-export all IsTensor functions --
-import Torch.Class.C.IsTensor as X hiding (resizeAs, isSameSizeAs) -- except for ones not specialized for static
+import Torch.Class.C.IsTensor as X hiding (resizeAs, isSameSizeAs, new) -- except for ones not specialized for static
 import Torch.Core.ByteTensor.Static.IsTensor ()
 import Torch.Core.ShortTensor.Static.IsTensor ()
 import Torch.Core.IntTensor.Static.IsTensor ()
@@ -156,11 +157,14 @@ type StaticConstraint2 t0 t1 = (StaticConstraint t0, StaticConstraint t1, AsDyna
 
 withInplace :: forall t d . (Dimensions d, StaticConstraint (t d)) => (AsDynamic (t d) -> IO ()) -> IO (t d)
 withInplace op = do
-  res <- Dynamic.newDim (dim :: Dim d)
+  res <- Dynamic.new (dim :: Dim d)
   op res
   pure (asStatic res)
 
 -------------------------------------------------------------------------------
+
+new :: forall t d . (Dimensions d, StaticConstraint (t d)) => IO (t d)
+new = asStatic <$> Dynamic.new (dim :: Dim d)
 
 -- | 'Dynamic.isSameSizeAs' without calling down through the FFI since we have
 -- this information
@@ -175,20 +179,20 @@ resizeAs
   => (Dimensions d', Dimensions d)
   => t d -> IO (t d')
 resizeAs src = do
-  dummy :: AsDynamic (t d') <- Dynamic.new
+  dummy :: AsDynamic (t d') <- Dynamic.new (dim :: Dim d')
   asStatic <$> Dynamic.resizeAs (asDynamic src) dummy
 
 
 -- TODO: try to force strict evaluation to avoid potential FFI + IO + mutation bugs.
 -- however `go` never executes with deepseq: else unsafePerformIO $ pure (deepseq go result)
 fromList1d
-  :: forall t n . (KnownNat n, Dynamic.IsTensor (t '[n]))
+  :: forall t n . (KnownNatDim n, Dynamic.IsTensor (t '[n]))
   => [HsReal (t '[n])] -> IO (t '[n])
 fromList1d l
   | fromIntegral (natVal (Proxy :: Proxy n)) /= length l =
     throwString "List length does not match tensor dimensions"
   | otherwise = do
-    res :: t '[n] <- Dynamic.new
+    res :: t '[n] <- Dynamic.new (dim :: Dim '[n])
     mapM_  (upd res) (zip [0..length l - 1] l)
     pure res
   where
@@ -203,7 +207,7 @@ fromList l
   | product (dimVals d) /= length l =
     throwString "List length does not match tensor dimensions"
   | otherwise = do
-    res :: AsDynamic (t d) <- Dynamic.newDim d
+    res :: AsDynamic (t d) <- Dynamic.new d
     mapM_  (upd res) (zip [0..length l - 1] l)
     pure (asStatic res)
   where
