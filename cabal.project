@@ -12,9 +12,6 @@ packages:
     indef/floating/*cabal
     examples/*cabal
 
-
 package hasktorch-raw
    ghc-options: -lATen -lEHX -L/home/stites/git/hasktorch/vendor/build/
 
-package hasktorch-core
-   ghc-options: -lATen -lEHX -L/home/stites/git/hasktorch/vendor/build/
