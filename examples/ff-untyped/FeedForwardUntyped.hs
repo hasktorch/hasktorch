@@ -1,17 +1,16 @@
 {-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE BangPatterns #-}
-
 module Main where
 
 import Torch.Core.Tensor.Dim
-import Torch.Core.Tensor.Dynamic.Double
-import Torch.Core.Tensor.Dynamic.DoubleMath (td_sigmoid, td_addmv)
-import Torch.Core.Tensor.Dynamic.DoubleRandom
+import Torch.Core.Tensor.Dynamic
+import Torch.Core.Tensor.Dynamic.Math -- (sigmoid, addmv)
+import Torch.Core.Tensor.Dynamic.Random
 
 data Weights = W
-  { biases :: TensorDouble
-  , nodes :: TensorDouble
+  { biases :: DoubleTensor
+  , nodes :: DoubleTensor
   } deriving (Eq, Show)
 
 {- Simple FF neural network, dynamically typed version, based on JL's example -}
@@ -39,28 +38,28 @@ randomWeights i o = do
   gen <- newRNG
   d1 <- someDimsM [fromIntegral o]
   d2 <- someDimsM [fromIntegral o, fromIntegral i]
-  let w1 = W { biases = new d1, nodes = new d2 }
-  b <- td_uniform (biases w1) gen (-1.0) (1.0)
-  w <- td_uniform (nodes w1) gen (-1.0) (1.0)
+  w1 <- W <$> new' d1 <*> new' d2
+  b <- uniform (biases w1) gen (-1.0) (1.0)
+  w <- uniform (nodes w1) gen (-1.0) (1.0)
   pure W { biases = b, nodes = w }
 
-randomData :: Word -> IO TensorDouble
+randomData :: Word -> IO DoubleTensor
 randomData i = do
   gen <- newRNG
   someD1 <- someDimsM [fromIntegral i]
-  let dat = new someD1
-  td_uniform dat gen (-1.0) (1.0)
+  dat <- new' someD1
+  uniform dat gen (-1.0) (1.0)
 
 randomNet :: Word -> [Word] -> Word -> IO Network
 randomNet i [] o = O <$> randomWeights i o
 randomNet i (h:hs) o = (:~) <$> randomWeights i h <*> randomNet h hs o
 
-runLayer :: Weights -> TensorDouble -> TensorDouble
-runLayer (W wB wN) v = td_addmv 1.0 wB 1.0 wN v
+runLayer :: Weights -> DoubleTensor -> IO DoubleTensor
+runLayer (W wB wN) v = addmv 1.0 wB 1.0 wN v
 
-runNet :: Network -> TensorDouble -> TensorDouble
-runNet (O w) v = td_sigmoid (runLayer w v)
-runNet (w :~ n') v = let v' = td_sigmoid (runLayer w v) in runNet n' v'
+runNet :: Network -> DoubleTensor -> IO DoubleTensor
+runNet (O w) v     = (runLayer w v) >>= sigmoid
+runNet (w :~ n') v = (runLayer w v) >>= sigmoid >>= runNet n'
 
 
 main :: IO ()

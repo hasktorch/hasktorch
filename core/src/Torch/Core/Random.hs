@@ -1,5 +1,7 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Core.Random
   ( Generator
+  , Seed
   , new
   , copy
   , isValid
@@ -26,6 +28,9 @@ import Data.Word
 import THTypes (CTHGenerator)
 import THRandomTypes
 import qualified THRandom as TH
+
+newtype Seed = Seed { unSeed :: Word64 }
+  deriving (Bounded, Enum, Eq, Integral, Num, Ord, Read, Real, Show)
 
 -- ========================================================================= --
 -- helpers
@@ -57,19 +62,19 @@ copy g0 g1 = (with2RNGs TH.c_THGenerator_copy g0 g1) >>= asRNG
 isValid :: Generator -> IO Bool
 isValid = withRNG (\p -> pure $ TH.c_THGenerator_isValid p == 1)
 
-seed :: Generator -> IO Word64
+seed :: Generator -> IO Seed
 seed = withRNG (pure . fromIntegral . TH.c_THRandom_seed)
 
-manualSeed :: Generator -> Word64 -> IO ()
+manualSeed :: Generator -> Seed -> IO ()
 manualSeed g s = _withRNG g $ \p -> TH.c_THRandom_manualSeed p (fromIntegral s)
 
-initialSeed :: Generator -> IO Word64
+initialSeed :: Generator -> IO Seed
 initialSeed = withRNG (pure . fromIntegral . TH.c_THRandom_initialSeed)
 
-random :: Generator -> IO Word64
+random :: Generator -> IO Seed
 random = withRNG (pure . fromIntegral . TH.c_THRandom_random)
 
-random64 :: Generator -> IO Word64
+random64 :: Generator -> IO Seed
 random64 = withRNG (pure . fromIntegral . TH.c_THRandom_random64)
 
 uniform :: Generator -> Double -> Double -> IO Double

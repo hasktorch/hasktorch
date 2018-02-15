@@ -1,30 +1,53 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Core.Tensor.Dynamic.Math
-  ( module CCall
+  ( module Class
   ) where
 
 import Torch.Class.C.Internal
 import GHC.Int
-import Torch.Class.C.Tensor.Math as CCall
+import Torch.Class.C.Tensor.Math as Class
 
 import THTypes
 import Foreign
-import qualified Torch.Core.FloatTensor.Dynamic  as F
-import qualified Torch.Core.ByteTensor.Dynamic   as B
--- import qualified Torch.Core.CharTensor.Dynamic   as C
-import qualified Torch.Core.ShortTensor.Dynamic  as S
-import qualified Torch.Core.IntTensor.Dynamic    as I
-import qualified Torch.Core.DoubleTensor.Dynamic as D
--- import qualified Torch.Core.HalfTensor.Dynamic   as H
+
+-- import any type-specific orphans
+import Torch.Core.ByteTensor.Dynamic   ()
+-- import Torch.Core.CharTensor.Dynamic   ()
+import Torch.Core.ShortTensor.Dynamic  ()
+import Torch.Core.IntTensor.Dynamic    ()
+import Torch.Core.LongTensor.Dynamic    ()
+-- import Torch.Core.HalfTensor.Dynamic   ()
+import Torch.Core.FloatTensor.Dynamic  ()
+import Torch.Core.DoubleTensor.Dynamic ()
 
 
-import qualified Torch.Core.FloatTensor.Dynamic.Math  as F
-import qualified Torch.Core.ByteTensor.Dynamic.Math   as B
--- import qualified Torch.Core.CharTensor.Dynamic.Math   as C
-import qualified Torch.Core.ShortTensor.Dynamic.Math  as S
-import qualified Torch.Core.IntTensor.Dynamic.Math    as I
-import qualified Torch.Core.DoubleTensor.Dynamic.Math as D
--- import qualified Torch.Core.HalfTensor.Dynamic.Math   as H
+-------------------------------------------------------------------------------
+-- | Import any basic math orphans
 
+import Torch.Core.ByteTensor.Dynamic.Math      ()
+-- import Torch.Core.CharTensor.Dynamic.Math   ()
+import Torch.Core.ShortTensor.Dynamic.Math     ()
+import Torch.Core.IntTensor.Dynamic.Math       ()
+import Torch.Core.LongTensor.Dynamic.Math      ()
+-- import Torch.Core.HalfTensor.Dynamic.Math   ()
+import Torch.Core.FloatTensor.Dynamic.Math     ()
+import Torch.Core.DoubleTensor.Dynamic.Math    ()
+
+-------------------------------------------------------------------------------
+-- | Import any signed math orphans
+
+import Torch.Core.ShortTensor.Dynamic.Math.Signed     ()
+import Torch.Core.IntTensor.Dynamic.Math.Signed       ()
+import Torch.Core.LongTensor.Dynamic.Math.Signed      ()
+-- import Torch.Core.HalfTensor.Dynamic.Math.Signed   ()
+import Torch.Core.FloatTensor.Dynamic.Math.Signed     ()
+import Torch.Core.DoubleTensor.Dynamic.Math.Signed    ()
+
+-------------------------------------------------------------------------------
+-- | Import any floating math orphans
+
+-- import Torch.Core.HalfTensor.Dynamic.Math.Floating   ()
+import Torch.Core.FloatTensor.Dynamic.Math.Floating     ()
+import Torch.Core.DoubleTensor.Dynamic.Math.Floating    ()
 
 

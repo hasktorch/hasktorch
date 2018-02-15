@@ -93,6 +93,12 @@ class IsTensor t where
 inplace :: IsTensor t => (t -> IO ()) -> Dim (d::[Nat]) -> IO t
 inplace op d = new d >>= \r -> op r >> pure r
 
+inplace' :: IsTensor t => (t -> IO ()) -> SomeDims -> IO t
+inplace' op (SomeDims d) = inplace op d
+
+inplace1 :: IsTensor t => (t -> IO ()) -> t -> IO t
+inplace1 op t = getDims t >>= inplace' op
+
 setStorageDim_ :: IsTensor t => t -> HsStorage t -> StorageOffset -> [(Size, Stride)] -> IO ()
 setStorageDim_ t s o = \case
   []           -> throwNE "can't setStorage on an empty dimension."

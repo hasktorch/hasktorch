@@ -2,8 +2,8 @@
 
 module Main where
 
-import Torch.Core.Tensor.Static.Double
-import Torch.Core.Tensor.Static.DoubleRandom
+import Torch.Core.Tensor.Static
+import Torch.Core.Tensor.Static.Random
 
 test_mvn :: IO ()
 test_mvn = do

@@ -204,7 +204,7 @@ fromList l = do
   asStatic <$> resizeDim (asDynamic oneD) (dim :: Dim d)
 
 newTranspose2d
-  :: forall t r c . (StaticConstraint2 (t '[r, c]) (t '[c, r]))
+  :: forall t r c . (KnownNat2 r c, StaticConstraint2 (t '[r, c]) (t '[c, r]))
   => t '[r, c] -> IO (t '[c, r])
 newTranspose2d t =
   asStatic <$> Dynamic.newTranspose (asDynamic t) 1 0
