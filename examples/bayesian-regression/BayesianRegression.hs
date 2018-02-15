@@ -3,13 +3,14 @@
 
 module Main where
 
-import Data.Function ((&))
-import Torch.Core.Random (newRNG)
-import Torch.Core.Tensor.Static.Double
-import Torch.Core.Tensor.Static.DoubleMath
-import Torch.Core.Tensor.Static.DoubleRandom
+--import Data.Function ((&))
+import Torch.Core.Tensor.Static
+import Torch.Core.Tensor.Static.Math
+import Torch.Core.Tensor.Static.Random
+import qualified Torch.Core.Random as RNG
 
 {- Types -}
+type Tensor = DoubleTensor
 
 data Likelihood = Likelihood {
   l_mu :: Double,
@@ -17,12 +18,12 @@ data Likelihood = Likelihood {
   } deriving (Eq, Show)
 
 data Prior = Prior {
-  w_mu :: TDS '[P],
-  w_cov :: TDS '[P, P]
+  w_mu :: Tensor '[P],
+  w_cov :: Tensor '[P, P]
   } deriving (Eq, Show)
 
 data Samples = X {
-  xMat :: TDS '[N, P]
+  xMat :: Tensor '[N, P]
   } deriving (Eq, Show)
 
 type P = 2
@@ -30,52 +31,44 @@ type N = 10
 
 {- Helper functions -}
 
-seedVal :: Int
+seedVal :: RNG.Seed
 seedVal = 31415926535
 
-genData :: RandGen -> TDS '[1,3] -> IO (TDS '[3, N], TDS '[N])
+genData :: RNG.Generator -> Tensor '[1,3] -> IO (Tensor '[3, N], Tensor '[N])
 genData gen param = do
-  manualSeed gen seedVal
-  noise        :: TDS '[N] <- tds_normal gen 0.0 2.0
-  x1 :: TDS '[N] <- tds_normal gen 0.0 10.0
-  x2 :: TDS '[N] <- tds_normal gen 0.0 10.0
-  let x0 = tds_init 1.0 :: TDS '[N]
-  let x :: TDS '[3, N] =
-        x1
-        & tds_cat x2
-        & tds_cat x0
-        & tds_resize
-      y = (tds_trans (param !*! x))
-          & tds_resize
-          & (+) noise
+  RNG.manualSeed gen seedVal
+  noise :: Tensor '[N] <- normal gen 0.0 2.0
+  x1    :: Tensor '[N] <- normal gen 0.0 10.0
+  x2    :: Tensor '[N] <- normal gen 0.0 10.0
+  x0    :: Tensor '[N] <- constant 1
+  x     :: Tensor '[3, N] <- (cat1d x1 x2) >>= cat1d x0 >>= resizeAs
+  y     :: Tensor '[N] <- (^+^) noise <$> (newTranspose2d (param !*! x) >>= resizeAs)
   pure (x, y)
 
-genParam :: RandGen -> IO (TDS '[1, 3])
+genParam :: RNG.Generator -> IO (Tensor '[1, 3])
 genParam gen = do
-  let eigenvectors = tds_fromList [1, 0, 0, 0, 1, 1, 1, 0, 1] :: TDS '[3,3]
-  let eigenvalues = tds_fromList [1, 1, 1]
-  (predictorVal :: TDS '[1, 3]) <- tds_mvn gen
-    (tds_init 0.0)
-    eigenvectors
-    eigenvalues
+  eigenvectors :: Tensor '[3,3] <- fromList [1, 0, 0, 0, 1, 1, 1, 0, 1]
+  eigenvalues :: Tensor '[3] <- fromList1d [1, 1, 1]
+  mu :: Tensor '[3] <- constant 0
+  predictorVal :: Tensor '[1, 3] <- multivariate_normal gen mu eigenvectors eigenvalues
   putStrLn "Parameter values:"
-  tds_p predictorVal
+  printTensor predictorVal
   pure predictorVal
 
 {- Main -}
 
 main :: IO ()
 main = do
-  gen <- newRNG
+  gen <- RNG.new
   param <- genParam gen
   (x, y) <- genData gen param
   putStrLn "x:"
-  tds_p x
+  printTensor x
   putStrLn "x:"
-  tds_p x
+  printTensor x
   putStrLn "y:"
-  tds_p y
+  printTensor y
   putStrLn "y without noise:"
-  tds_p $ param !*! x -- should be similar to y w/o noise
+  printTensor $ param !*! x -- should be similar to y w/o noise
   putStrLn "Done"
   pure ()

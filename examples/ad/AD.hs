@@ -7,31 +7,33 @@
 module Main where
 
 import Torch.Core.Tensor.Dim
-import Torch.Core.Tensor.Dynamic.Double
-import Torch.Core.Tensor.Dynamic.DoubleMath hiding ((^+^), (*^), (^-^))
-import Torch.Core.Tensor.Static.Double
-import Torch.Core.Tensor.Static.DoubleMath
-import Torch.Core.Tensor.Static.DoubleRandom
+import Torch.Core.Tensor.Static
+import Torch.Core.Tensor.Static.Math
+import Torch.Core.Tensor.Static.Random
+import qualified Torch.Core.Random as RNG
+import System.IO.Unsafe (unsafePerformIO)
 
 import Data.Singletons
 import Data.Singletons.Prelude
 import Data.Singletons.TypeLits
+
+type Tensor = DoubleTensor
 
 -- Promoted layer types promoted
 data LayerType = LTrivial | LLinear | LAffine | LSigmoid | LRelu
 
 data Layer (l :: LayerType) (i :: Nat) (o :: Nat) where
   LayerTrivial :: Layer 'LTrivial i i
-  LayerLinear  :: (TDS '[o, i]) -> Layer 'LLinear i o
+  LayerLinear  :: (Tensor '[o, i]) -> Layer 'LLinear i o
   LayerAffine :: (AffineWeights i o) -> Layer 'LAffine i o
   LayerSigmoid :: Layer 'LSigmoid i i
   LayerRelu    :: Layer 'LRelu i i
 
 type Gradient l i o = Layer l i o
 
-type Sensitivity i = TDS '[i]
+type Sensitivity i = Tensor '[i]
 
-type Output o = TDS '[o]
+type Output o = Tensor '[o]
 
 -- Backprop sensitivity and parameter gradients
 data Table :: Nat -> [Nat] -> Nat -> * where
@@ -53,12 +55,12 @@ data Network :: Nat -> [Nat] -> Nat -> * where
           Layer l i h -> NW h hs o -> NW i (h ': hs) o
 
 data AffineWeights (i :: Nat) (o :: Nat) = AW {
-  biases :: TDS '[o],
-  weights :: TDS '[o, i]
+  biases :: Tensor '[o],
+  weights :: Tensor '[o, i]
   } deriving (Show)
 type AW = AffineWeights
 
-updateTensor :: SingDimensions d => TDS d -> TDS d -> Double -> TDS d
+updateTensor :: SingDimensions d => Tensor d -> Tensor d -> Double -> Tensor d
 updateTensor t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
 
 updateLayer :: (KnownNatDim i, KnownNatDim o) =>
@@ -72,20 +74,21 @@ updateLayer learningRate (LayerAffine w) (LayerAffine gradient) =
   LayerAffine $ AW (updateTensor (biases w) (biases gradient) learningRate)
                    (updateTensor (weights w) (weights gradient) learningRate)
 
-forwardProp :: forall l i o . (KnownNatDim i, KnownNatDim o) =>
-  TDS '[i] -> (Layer l i o) -> TDS '[o]
-forwardProp t LayerTrivial = t
-forwardProp t (LayerLinear w) =
-  tds_resize ( w !*! t')
-    where
-      t' = (tds_resize t :: TDS '[i, 1])
-forwardProp t LayerSigmoid = tds_sigmoid t
-forwardProp t LayerRelu = (tds_gtTensorT t (tds_new)) ^*^ t
-forwardProp t (LayerAffine (AW b w)) =
-  tds_resize ( w !*! t' + b')
-  where
-    t' = (tds_resize t :: TDS '[i, 1])
-    b' = tds_resize b
+forwardProp
+  :: forall l i o . (KnownNatDim i, KnownNatDim o)
+  => Tensor '[i] -> Layer l i o -> IO (Tensor '[o])
+forwardProp t = \case
+  LayerTrivial -> pure t
+  LayerLinear w -> do
+    t' :: Tensor '[i, 1] <- resizeAs t
+    resizeAs (w !*! t')
+
+  LayerSigmoid -> sigmoid t
+  LayerRelu    -> constant 0 >>= gtTensorT t >>= \active -> pure $ active ^*^ t
+  LayerAffine (AW b w) -> do
+    t' :: Tensor '[i, 1] <- resizeAs t
+    b' <- resizeAs b
+    resizeAs ( w !*! t' ^+^ b')
 
 -- TODO: write to Table
 backProp :: forall l i o . (KnownNatDim i, KnownNatDim o) =>
@@ -96,29 +99,35 @@ backProp dEds LayerRelu              = (LayerRelu, dEds ^*^ undefined)
 backProp dEds (LayerLinear w)        = (undefined , undefined)
 backProp dEds (LayerAffine (AW w b)) = (undefined , undefined)
 
-trivial' :: SingDimensions d => TDS d -> TDS d
-trivial' t = tds_init 1.0
+trivial' :: SingDimensions d => Tensor d -> IO (Tensor d)
+trivial' t = constant 1
 
-sigmoid' :: SingDimensions d => TDS d -> TDS d
-sigmoid' t = (tds_sigmoid t) ^*^ ((tds_init 1.0) ^-^ tds_sigmoid t)
+sigmoid' :: SingDimensions d => Tensor d -> IO (Tensor d)
+sigmoid' t = do
+  s <- sigmoid t
+  o <- constant 1
+  pure $ (s ^*^ o) ^-^ s
 
-relu' :: SingDimensions d => TDS d -> TDS d
-relu' t = (tds_gtTensorT t (tds_new))
+relu' :: SingDimensions d => Tensor d -> IO (Tensor d)
+relu' t = constant 0 >>= gtTensorT t
 
 -- forward prop, don't retain values
-forwardNetwork :: forall i h o . (KnownDim i, KnownDim o) => TDS '[i] -> NW i h o  -> TDS '[o]
-forwardNetwork t (O w) = forwardProp t w
-forwardNetwork t (hh :~ hr) = forwardNetwork (forwardProp t hh) hr
+forwardNetwork :: forall i h o . (KnownDim i, KnownDim o) => Tensor '[i] -> NW i h o  -> IO (Tensor '[o])
+forwardNetwork t = \case
+  O w      -> forwardProp t w
+  hh :~ hr -> forwardProp t hh >>= \p -> forwardNetwork p hr
 
 -- forward prop, retain values
-forwardNetwork' :: forall i h o . (KnownDim i, KnownDim o) => TDS '[i] -> NW i h o -> Values h o
-forwardNetwork' t (O olayer) = V (forwardProp t olayer)
-forwardNetwork' t (h :~ hs) = output :^~ (forwardNetwork' output hs)
-  where output = forwardProp t h
+forwardNetwork' :: forall i h o . (KnownDim i, KnownDim o) => Tensor '[i] -> NW i h o -> IO (Values h o)
+forwardNetwork' t = \case
+   O olayer -> V <$> forwardProp t olayer
+   h :~ hs  -> do
+     output <- forwardProp t h
+     adv <- forwardNetwork' output hs
+     pure (output :^~ adv)
 
-mkW :: (SingI i, KnownDim i, KnownDim o, SingI o) => AW i o
-mkW = AW b n
-  where (b, n) = (tds_new, tds_new)
+mkW :: (SingI i, KnownDim i, KnownDim o, SingI o) => IO (AW i o)
+mkW = AW <$> new <*> new
 
 type NW = Network
 
@@ -154,35 +163,39 @@ dispN (O w) = putStrLn "\nOutput Layer ::::" >> dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
 
 dispV :: KnownDim o => Values hs o -> IO ()
-dispV (V o)= putStrLn "\nOutput Layer ::::" >> tds_p o
-dispV (v :^~ n) = putStrLn "\nCurrent Layer ::::" >> tds_p v >> dispV n
+dispV (V o)= putStrLn "\nOutput Layer ::::" >> printTensor o
+dispV (v :^~ n) = putStrLn "\nCurrent Layer ::::" >> printTensor v >> dispV n
 
 li :: Layer 'LLinear 10 7
-li = LayerLinear tds_new
+li = unsafePerformIO $ LayerLinear <$> new
+{-# NOINLINE li #-}
 l2 :: Layer 'LSigmoid 7 7
 l2 = LayerSigmoid
 l3 :: Layer 'LLinear 7 4
-l3 = LayerLinear tds_new
+l3 = unsafePerformIO $ LayerLinear <$> new
+{-# NOINLINE l3 #-}
 l4 :: Layer 'LSigmoid 4 4
 l4 = LayerSigmoid
 lo :: Layer 'LLinear 4 2
-lo = LayerLinear tds_new
+lo = unsafePerformIO $ LayerLinear <$> new
+{-# NOINLINE lo #-}
 
 net = li :~ l2 :~ l3 :~ l4 :~ O lo
 
 main :: IO ()
 main = do
+  gen <- RNG.new
+  t :: Tensor '[10] <- normal gen 0 5
 
-  gen <- newRNG
-  t <- tds_normal gen 0.0 5.0 :: IO (TDS '[10])
   putStrLn "Input"
-  tds_p $ tds_gtTensorT t tds_new
+  constant 0 >>= gtTensorT t >>= printTensor
 
   putStrLn "Network"
   dispN net
 
   putStrLn "\nValues"
-  let v = forwardNetwork' (tds_init 5.0) net
+  k  <- constant 5
+  v <- forwardNetwork' k net
   dispV v
 
   putStrLn "Done"
