@@ -104,7 +104,7 @@ module Torch.Core.Tensor.Static.Math
   , zerosLike, zerosLike_
   , ones_, ones
   , onesLike, onesLike_
-  , diag_, diag, diag1
+  , diag_, diag, diag1d
   , eye_, eye, eye2
   , arange_, arange
   , range_, range
@@ -212,7 +212,7 @@ import Torch.Core.DoubleTensor.Static.Math.Signed ()
 type MathConstraint t d =
   ( Dynamic.TensorMath (AsDynamic (t d))
   , Dimensions d
-  , StaticConstraint (t d)
+  , StaticConstraint t d
   , HsAccReal (AsDynamic (t d)) ~ HsAccReal (t d)
   , HsReal (AsDynamic (t d)) ~ HsReal (t d)
   )
@@ -226,7 +226,7 @@ type MathConstraint2 t d d' =
   , HsAccReal (t d) ~ HsAccReal (AsDynamic (t d'))
   , HsReal (AsDynamic (t d)) ~ HsReal (AsDynamic (t d'))
   , HsReal (t d) ~ HsReal (AsDynamic (t d'))
-  , StaticConstraint2 (t d) (t d')
+  , StaticConstraint2 t d d'
   )
 
 -- FIXME: this is going to explode
@@ -754,8 +754,8 @@ diag :: MathConstraint2 t d d' => t d -> DimVal -> IO (t d')
 diag t d = withInplace $ \r -> Dynamic.diag_ r (asDynamic t) (fromIntegral d)
 
 -- | Create a diagonal matrix from a 1D vector
-diag1 :: (KnownNat n, MathConstraint2 t '[n] '[n,n]) => t '[n] -> IO (t '[n, n])
-diag1 v = diag v 0
+diag1d :: (KnownNat n, MathConstraint2 t '[n] '[n,n]) => t '[n] -> IO (t '[n, n])
+diag1d v = diag v 0
 
 eye_ :: MathConstraint t d => t d -> Int64 -> Int64 -> IO ()
 eye_ r x y = Dynamic.eye_ (asDynamic r) x y

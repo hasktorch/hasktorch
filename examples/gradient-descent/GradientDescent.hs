@@ -13,6 +13,7 @@ import Lens.Micro
 
 import Torch.Core.Tensor.Dim hiding (N)
 import Torch.Core.Tensor.Static
+import Torch.Core.Tensor.Static.Random
 import Torch.Core.Tensor.Static.Math as Math
 import qualified Torch.Core.Random as RNG
 
@@ -28,8 +29,8 @@ genData :: Tensor '[1,2] -> IO (Tensor '[2, N], Tensor '[N])
 genData param = do
   gen <- RNG.new
   RNG.manualSeed gen seedVal
-  noise        :: Tensor '[N] <- normal gen 0.0 2.0
-  predictorVal :: Tensor '[N] <- normal gen 0.0 10.0
+  noise        :: Tensor '[N] <- normal gen 0 2
+  predictorVal :: Tensor '[N] <- normal gen 0 10
   x :: Tensor '[2, N] <- (constant 1 >>= (\(o :: Tensor '[N]) -> predictorVal `cat1d` o) >>= resizeAs)
   y :: Tensor '[N]    <- (^+^ noise) <$> (newTranspose2d (param !*! x) >>= resizeAs)
   pure (x, y)

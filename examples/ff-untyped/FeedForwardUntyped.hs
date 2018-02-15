@@ -1,12 +1,10 @@
 {-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, TypeOperators #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE BangPatterns #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 module Main where
 
 import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Dynamic
-import Torch.Core.Tensor.Dynamic.Math -- (sigmoid, addmv)
-import Torch.Core.Tensor.Dynamic.Random
 import qualified Torch.Core.Random as RNG
 
 data Weights = W
@@ -36,20 +34,18 @@ dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
-  gen <- newRNG
+  gen <- RNG.new
   d1 <- someDimsM [fromIntegral o]
   d2 <- someDimsM [fromIntegral o, fromIntegral i]
-  w1 <- W <$> new' d1 <*> new' d2
-  b <- uniform (biases w1) gen (-1) 1
-  w <- uniform (nodes w1) gen (-1) 1
+  b <- uniform' d1 gen (-1) 1
+  w <- uniform' d2 gen (-1) 1
   pure W { biases = b, nodes = w }
 
 randomData :: Word -> IO DoubleTensor
 randomData i = do
-  gen <- newRNG
+  gen <- RNG.new
   someD1 <- someDimsM [fromIntegral i]
-  dat <- new' someD1
-  uniform dat gen (-1.0) (1.0)
+  uniform' someD1 gen (-1.0) (1.0)
 
 randomNet :: Word -> [Word] -> Word -> IO Network
 randomNet i [] o = O <$> randomWeights i o
@@ -71,7 +67,7 @@ main = do
   printTensor dat
   putStrLn "Network\n--------"
   dispN net
-  let result = runNet net dat
+  result <- runNet net dat
   putStrLn "Result\n--------"
   printTensor result
   putStrLn "Done"

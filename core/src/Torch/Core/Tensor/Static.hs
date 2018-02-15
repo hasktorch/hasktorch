@@ -32,6 +32,8 @@ module Torch.Core.Tensor.Static
   -- helper constraints
   , StaticConstraint
   , StaticConstraint2
+  , StaticConstraint3
+  , NumReals
 
   -- experimental helper function (potentially delete)
   , withInplace
@@ -102,8 +104,8 @@ import Torch.Core.FloatTensor.Static.IsTensor ()
 import Torch.Core.DoubleTensor.Static.IsTensor ()
 
 -- ========================================================================= --
--- re-export all Random functions --
-import Torch.Core.Tensor.Static.Random as X
+-- re-export all Random functions >> import cycle due to @multivariate_normal@
+-- import Torch.Core.Tensor.Static.Random as X
 
 -- ========================================================================= --
 -- re-export all TensorCopy functions (for dynamic copies)
@@ -139,15 +141,47 @@ type LongStorage  = L.Storage
 
 -- Constraints that will be garunteed for every static tensor. Only 'Dynamic.IsTensor'
 -- because we require downcasting for a lot of operations
-type StaticConstraint t = (IsStatic t, HsReal t ~ HsReal (AsDynamic t), Dynamic.IsTensor (AsDynamic t), Num (HsReal t))
+type NumReals t d =
+  ( HsReal (t d) ~ HsReal (AsDynamic (t d))
+  , HsAccReal (t d) ~ HsAccReal (AsDynamic (t d))
+  , Num (HsReal (t d))
+  , Num (HsAccReal (t d))
+  , Num (HsReal (AsDynamic (t d)))
+  , Num (HsAccReal (AsDynamic (t d)))
+  )
+
+type StaticConstraint t d =
+  ( IsStatic (t d)
+  , HsReal (t d) ~ HsReal (AsDynamic (t d))
+  , HsAccReal (t d) ~ HsAccReal (AsDynamic (t d))
+  , Dynamic.IsTensor (AsDynamic (t d))
+  , Num (HsReal (t d))
+  -- , Num (HsAccReal (t d))
+  -- , Num (HsReal (AsDynamic (t d)))
+  -- , Num (HsAccReal (AsDynamic (t d)))
+  , Dimensions d
+  )
 
 -- Constraints used on two static tensors. Essentially that both static tensors have
 -- the same internal tensor representations.
-type StaticConstraint2 t0 t1 = (StaticConstraint t0, StaticConstraint t1, AsDynamic t0 ~ AsDynamic t1, HsReal t0 ~ HsReal t1)
+type StaticConstraint2 t d d' =
+  ( StaticConstraint t d
+  , StaticConstraint t d'
+  , AsDynamic (t d) ~ AsDynamic (t d')
+  , HsReal (t d) ~ HsReal (t d')
+  , HsAccReal (AsDynamic (t d)) ~ HsAccReal (AsDynamic (t d'))
+  , HsReal (AsDynamic (t d)) ~ HsReal (AsDynamic (t d'))
+  )
+type StaticConstraint3 t d d' d'' =
+  ( StaticConstraint2 t d  d'
+  , StaticConstraint2 t d' d''
+  , StaticConstraint2 t d  d''
+  )
+
 
 -------------------------------------------------------------------------------
 
-withInplace :: forall t d . (Dimensions d, StaticConstraint (t d)) => (AsDynamic (t d) -> IO ()) -> IO (t d)
+withInplace :: forall t d . (StaticConstraint t d) => (AsDynamic (t d) -> IO ()) -> IO (t d)
 withInplace op = do
   res <- Dynamic.new (dim :: Dim d)
   op res
@@ -155,7 +189,7 @@ withInplace op = do
 
 -------------------------------------------------------------------------------
 
-new :: forall t d . (Dimensions d, StaticConstraint (t d)) => IO (t d)
+new :: forall t d . (StaticConstraint t d) => IO (t d)
 new = asStatic <$> Dynamic.new (dim :: Dim d)
 
 -- | 'Dynamic.isSameSizeAs' without calling down through the FFI since we have
@@ -167,7 +201,7 @@ isSameSizeAs _ _ = dimVals (dim :: Dim d) == dimVals (dim :: Dim d')
 
 -- | pure 'Dynamic.resizeAs'
 resizeAs
-  :: forall t d d' . StaticConstraint2 (t d) (t d')
+  :: forall t d d' . StaticConstraint2 t d d'
   => (Dimensions d', Dimensions d)
   => t d -> IO (t d')
 resizeAs src = do
@@ -178,7 +212,7 @@ resizeAs src = do
 -- TODO: try to force strict evaluation to avoid potential FFI + IO + mutation bugs.
 -- however `go` never executes with deepseq: else unsafePerformIO $ pure (deepseq go result)
 fromList1d
-  :: forall t n . (KnownNatDim n, StaticConstraint (t '[n]))
+  :: forall t n . (KnownNatDim n, StaticConstraint t '[n])
   => [HsReal (t '[n])] -> IO (t '[n])
 fromList1d l
   | fromIntegral (natVal (Proxy :: Proxy n)) /= length l =
@@ -197,14 +231,14 @@ fromList1d l
 fromList
   :: forall t d
    . (KnownNatDim (Product d), Dimensions d)
-  => (StaticConstraint2 (t d) (t '[Product d]))
+  => (StaticConstraint2 t d '[Product d])
   => [HsReal (t d)] -> IO (t d)
 fromList l = do
   oneD :: t '[Product d] <- fromList1d l
   asStatic <$> resizeDim (asDynamic oneD) (dim :: Dim d)
 
 newTranspose2d
-  :: forall t r c . (KnownNat2 r c, StaticConstraint2 (t '[r, c]) (t '[c, r]))
+  :: forall t r c . (KnownNat2 r c, StaticConstraint2 t '[r, c] '[c, r])
   => t '[r, c] -> IO (t '[c, r])
 newTranspose2d t =
   asStatic <$> Dynamic.newTranspose (asDynamic t) 1 0
@@ -213,7 +247,7 @@ newTranspose2d t =
 -- TODO - generalize this beyond the matrix case
 expand2d
   :: forall t d1 d2 . (KnownNatDim2 d1 d2)
-  => StaticConstraint2 (t '[d2, d1]) (t '[d1])
+  => StaticConstraint2 t '[d2, d1] '[d1]
   => Dynamic.TensorMath (AsDynamic (t '[d1])) -- for 'Dynamic.constant' which uses 'Torch.Class.C.Tensor.Math.fill'
   => t '[d1] -> IO (t '[d2, d1])
 expand2d t = do

@@ -60,9 +60,11 @@ class TensorRandomFloating t where
 
 uniform :: (IsTensor t, TensorRandomFloating t) => Dim (d::[Nat]) -> Generator -> HsAccReal t -> HsAccReal t -> IO t
 uniform d g a b = flip inplace d $ \t -> uniform_ t g a b
+uniform' (SomeDims d) = uniform d
 
 normal :: (IsTensor t, TensorRandomFloating t) => Dim (d::[Nat]) -> Generator -> HsAccReal t -> HsAccReal t -> IO t
 normal d g a b = flip inplace d $ \t -> normal_ t g a b
+normal' (SomeDims d) = normal d
 
 normal_means :: (IsTensor t, TensorRandomFloating t) => Dim (d::[Nat]) -> Generator -> t -> HsAccReal t -> IO t
 normal_means d g m b = flip inplace d $ \t -> normal_means_ t g m b
