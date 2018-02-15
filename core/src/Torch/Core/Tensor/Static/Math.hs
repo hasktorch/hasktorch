@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Core.Tensor.Static.Math
   ( MathConstraint
   , MathConstraint2
@@ -169,40 +170,51 @@ import Torch.Core.DoubleTensor.Static.Math.Signed ()
 
 (^+^) :: MathConstraint t d => t d -> t d -> t d
 (^+^) t1 t2 = unsafePerformIO $ cadd t1 1 {-scale-} t2
+{-# NOINLINE (^+^)  #-}
 
 (^-^) :: MathConstraint t d => t d -> t d -> t d
 (^-^) t1 t2 = unsafePerformIO $ csub t1 1 {-scale-} t2
+{-# NOINLINE (^-^)  #-}
 
 (^*^) :: MathConstraint t d => t d -> t d -> t d
 (^*^) a b = unsafePerformIO $ cmul a b
+{-# NOINLINE (^*^)  #-}
 
 (^/^) :: MathConstraint t d => t d -> t d -> t d
 (^/^) a b = unsafePerformIO $ cdiv a b
+{-# NOINLINE (^/^)  #-}
 
 (^+) :: MathConstraint t d => t d -> HsReal (t d) -> t d
 (^+) a b = unsafePerformIO $ add a b
+{-# NOINLINE (^+)  #-}
 
 (+^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
 (+^) a b = unsafePerformIO $ flip add a b
+{-# NOINLINE (+^)  #-}
 
 (^-) :: MathConstraint t d => t d -> HsReal (t d) -> t d
 (^-) a b = unsafePerformIO $ sub a b
+{-# NOINLINE (^-)  #-}
 
 (-^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
 (-^) a b = unsafePerformIO $ flip sub a b -- addConst (neg t) val a b
-
+{-# NOINLINE (-^)  #-}
 
 (^*) :: MathConstraint t d => t d -> HsReal (t d) -> t d
 (^*) a b = unsafePerformIO $ mul a b
+{-# NOINLINE (^*)  #-}
 
 (*^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
 (*^) a b = unsafePerformIO $ flip mul a b
+{-# NOINLINE (*^)  #-}
 
 (^/) :: MathConstraint t d => t d -> HsReal (t d) -> t d
 (^/) a b = unsafePerformIO $ Torch.Core.Tensor.Static.Math.div a b
+{-# NOINLINE (^/)  #-}
 
 (/^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
 (/^) a b = unsafePerformIO $ flip Torch.Core.Tensor.Static.Math.div a b
+{-# NOINLINE (/^)  #-}
 
 
 -- ========================================================================= --
