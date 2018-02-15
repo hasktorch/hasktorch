@@ -7,7 +7,6 @@ import Control.Monad (void)
 import qualified Torch.Core.Random as RNG (new)
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math as Math
-import qualified Torch.Core.Tensor.Static.Random as R (uniform)
 
 main :: IO ()
 main = do
@@ -29,7 +28,7 @@ initialization = void $ do
     pure constVec
 
   listVec :: DoubleTensor '[6] <-
-    section "Initialize 1D vector from list" $
+    section' "Initialize 1D vector from list" $
       fromList1d [1, 2, 3, 4, 5, 6]
 
   section "Resize 1D vector as 2D matrix" $ do
@@ -51,15 +50,15 @@ matrixVectorOps = void $ do
   gen <- RNG.new
 
   randMat :: DoubleTensor '[2, 2] <-
-    section "Random matrix" $
+    section' "Random matrix" $
       uniform gen (-1) 1
 
   constVec :: DoubleTensor '[2] <-
-    section "Constant vector" $
+    section' "Constant vector" $
       constant 2
 
   section "Matrix x vector" $
-    randMat !* constVec
+    pure $ randMat !* constVec
 
   section "Vector outer product" $
     constVec `outer` constVec
@@ -78,7 +77,7 @@ valueTransformations = void $ do
   gen <- RNG.new
 
   randMat :: DoubleTensor '[4, 4] <-
-    section "Random matrix" $ do
+    section' "Random matrix" $ do
       uniform gen (1.0) (3.0)
 
   section "Negated" $
@@ -113,11 +112,14 @@ header c h = do
   putStrLn h
   putStrLn $ replicate (length h) c
 
-section :: String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
-section = _section printTensor
+section :: String -> IO (DoubleTensor d) -> IO ()
+section a b = _section printTensor a b >> pure ()
 
-showSection :: Show x => String -> IO x -> IO x
-showSection = _section print
+section' :: String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
+section' = _section printTensor
+
+showSection :: Show x => String -> IO x -> IO ()
+showSection a b = _section print a b >> pure ()
 
 _section :: (x -> IO ()) -> String -> IO x -> IO x
 _section printer title buildit = do

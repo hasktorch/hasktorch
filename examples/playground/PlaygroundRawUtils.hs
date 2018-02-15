@@ -6,6 +6,7 @@ import Foreign
 import Foreign.C.Types
 import Foreign.ForeignPtr (ForeignPtr)
 import Numeric (showGFloat)
+import System.IO.Unsafe (unsafePerformIO)
 
 import THTypes
 import qualified THDoubleTensorMath as DM (c_fill)
@@ -55,10 +56,10 @@ sizeRaw t =
   fmap f [0..maxdim]
   where
     maxdim :: CInt
-    maxdim = (T.c_THDoubleTensor_nDimension t) - 1
+    maxdim = unsafePerformIO (DT.c_nDimension t) - 1
 
     f :: CInt -> Int
-    f x = fromIntegral (T.c_THDoubleTensor_size t x)
+    f x = fromIntegral (unsafePerformIO $ DT.c_size t x)
 
 -- |Dimensions of a raw tensor as a TensorDim value
 dimFromRaw :: TensorDoubleRaw -> TensorDim Word
@@ -131,8 +132,9 @@ dispRaw tensor
       let indexes = [ fromIntegral idx :: CLLong
                     | idx <- [0..(sz !! 0 - 1)] ]
       putStr "[ "
-      mapM_ (\idx -> putStr $
-                     (showLim $ T.c_THDoubleTensor_get1d tensor idx) ++ " ")
+      mapM_ (\idx -> do
+        x <- DT.c_get1d tensor idx
+        putStr (showLim x ++ " "))
         indexes
       putStrLn "]\n"
   | (length sz) == 2 = do
@@ -142,7 +144,7 @@ dispRaw tensor
                   | r <- [0..(sz !! 0 - 1)], c <- [0..(sz !! 1 - 1)] ]
       putStr ("[ " :: String)
       mapM_ (\(r, c) -> do
-                let val = T.c_THDoubleTensor_get2d tensor r c
+                val <- DT.c_get2d tensor r c
                 if c == fromIntegral (sz !! 1) - 1
                   then do
                   putStrLn (((showLim val) ++ " ]") :: String)
@@ -158,8 +160,8 @@ dispRaw tensor
     size t =
       fmap f [0..maxdim]
       where
-        maxdim = (T.c_THDoubleTensor_nDimension t) - 1
-        f x = fromIntegral (T.c_THDoubleTensor_size t x) :: Int
+        maxdim = unsafePerformIO (DT.c_nDimension t) - 1
+        f x = fromIntegral (unsafePerformIO $ DT.c_size t x) :: Int
 
     showLim :: RealFloat a => a -> String
     showLim x = showGFloat (Just 2) x ""

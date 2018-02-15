@@ -40,8 +40,8 @@ randomWeights i o = do
   d1 <- someDimsM [fromIntegral o]
   d2 <- someDimsM [fromIntegral o, fromIntegral i]
   w1 <- W <$> new' d1 <*> new' d2
-  b <- uniform (biases w1) gen (-1.0) (1.0)
-  w <- uniform (nodes w1) gen (-1.0) (1.0)
+  b <- uniform (biases w1) gen (-1) 1
+  w <- uniform (nodes w1) gen (-1) 1
   pure W { biases = b, nodes = w }
 
 randomData :: Word -> IO DoubleTensor
