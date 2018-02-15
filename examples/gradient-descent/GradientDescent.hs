@@ -5,16 +5,15 @@
 module Main where
 
 import Data.Monoid ((<>))
-import Data.Function ((&))
+-- import Data.Function ((&))
 import Data.Singletons
 import GHC.TypeLits
 import Lens.Micro
-import System.IO.Unsafe (unsafePerformIO)
+-- import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Dim hiding (N)
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math as Math
-import Torch.Core.Tensor.Static.Random
 import qualified Torch.Core.Random as RNG
 
 type N = 2000 -- sample size
@@ -31,14 +30,14 @@ genData param = do
   RNG.manualSeed gen seedVal
   noise        :: Tensor '[N] <- normal gen 0.0 2.0
   predictorVal :: Tensor '[N] <- normal gen 0.0 10.0
-  x :: Tensor '[2, N] <- (constant 1 >>= cat1d predictorVal >>= resizeAs)
+  x :: Tensor '[2, N] <- (constant 1 >>= (\(o :: Tensor '[N]) -> predictorVal `cat1d` o) >>= resizeAs)
   y :: Tensor '[N]    <- (^+^ noise) <$> (newTranspose2d (param !*! x) >>= resizeAs)
   pure (x, y)
 
 loss :: (Tensor '[2,N], Tensor '[N]) -> Tensor '[1, 2] -> IO Double
 loss (x, y) param = do
-  x <- (y ^-^) <$> resizeAs (param !*! x)
-  sumall =<< Math.square x
+  x' <- (y ^-^) <$> resizeAs (param !*! x)
+  sumall =<< Math.square x'
 
 gradient
   :: forall n . (KnownNatDim n)
@@ -55,8 +54,8 @@ gradient (x, y) param = do
     nsamp = (realToFrac $ natVal (Proxy :: Proxy n))
 
 
-gradientDescent ::
-  (Tensor '[2, N], Tensor '[N])
+gradientDescent
+  :: (Tensor '[2, N], Tensor '[N])
   -> Tensor '[1, 2]
   -> Double
   -> Double
@@ -68,7 +67,7 @@ gradientDescent (x, y) param rate eps = do
   then pure []
   else do
     j <- loss (x, y) param
-    nxt <- gradientDescent (x, y) (param - rate *^ g) rate eps
+    nxt <- gradientDescent (x, y) (param ^-^ (rate *^ g)) rate eps
     pure $ (param, j, g):nxt
 
 runN :: [(Tensor '[1, 2], Double, Tensor '[1, 2])] -> Int -> IO (Tensor '[1,2])

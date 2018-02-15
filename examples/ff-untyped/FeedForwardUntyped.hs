@@ -7,6 +7,7 @@ import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Dynamic
 import Torch.Core.Tensor.Dynamic.Math -- (sigmoid, addmv)
 import Torch.Core.Tensor.Dynamic.Random
+import qualified Torch.Core.Random as RNG
 
 data Weights = W
   { biases :: DoubleTensor

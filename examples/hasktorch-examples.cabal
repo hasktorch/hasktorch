@@ -122,6 +122,8 @@ executable playground
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
+    , hasktorch-raw
+    , hasktorch-types
     , singletons >=2.2
   other-modules:
       PlaygroundRawUtils

@@ -8,10 +8,10 @@ import Foreign.ForeignPtr (ForeignPtr)
 import Numeric (showGFloat)
 
 import THTypes
-import qualified THDoubleTensorMath as M (c_THDoubleTensor_fill)
-import qualified THLongTensorMath as M (c_THLongTensor_fill)
-import THDoubleTensor as T
-import qualified THLongTensor as T
+import qualified THDoubleTensorMath as DM (c_fill)
+import qualified THLongTensorMath as LM (c_fill)
+import THDoubleTensor as DT
+import qualified THLongTensor as LT
 
 type TensorDoubleRaw = Ptr CTHDoubleTensor
 type TensorLongRaw = Ptr CTHLongTensor
@@ -86,11 +86,11 @@ tensorLongRaw dims value = do
   where
     go :: TensorDim Word -> IO TensorLongRaw
     go = onDims w2cll
-      T.c_THLongTensor_new
-      T.c_THLongTensor_newWithSize1d
-      T.c_THLongTensor_newWithSize2d
-      T.c_THLongTensor_newWithSize3d
-      T.c_THLongTensor_newWithSize4d
+      LT.c_new
+      LT.c_newWithSize1d
+      LT.c_newWithSize2d
+      LT.c_newWithSize3d
+      LT.c_newWithSize4d
 
 -- |Create a new (double) tensor of specified dimensions and fill it with 0
 -- safe version
@@ -102,21 +102,21 @@ tensorRaw dims value = do
   where
     go :: TensorDim Word -> IO TensorDoubleRaw
     go = onDims w2cll
-      T.c_THDoubleTensor_new
-      T.c_THDoubleTensor_newWithSize1d
-      T.c_THDoubleTensor_newWithSize2d
-      T.c_THDoubleTensor_newWithSize3d
-      T.c_THDoubleTensor_newWithSize4d
+      DT.c_new
+      DT.c_newWithSize1d
+      DT.c_newWithSize2d
+      DT.c_newWithSize3d
+      DT.c_newWithSize4d
 
 -- |Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
 fillRaw :: Real a => a -> TensorDoubleRaw -> IO ()
-fillRaw value = (flip M.c_THDoubleTensor_fill) (realToFrac value)
+fillRaw value = (flip DM.c_fill) (realToFrac value)
 
 -- |Returns a function that accepts a tensor and fills it with specified value
 -- and returns the IO context with the mutated tensor
 fillLongRaw :: Int -> TensorLongRaw -> IO ()
-fillLongRaw value = (flip M.c_THLongTensor_fill) (fromIntegral value)
+fillLongRaw value = (flip LM.c_fill) (fromIntegral value)
 
 -- |Fill a raw Double tensor with 0.0
 fillRaw0 :: TensorDoubleRaw -> IO ()

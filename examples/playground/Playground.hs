@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Main where
 
 -- Minimal implementation
@@ -38,7 +40,7 @@ twoTensor = do
   let t2 = td_new dim
   putStrLn "Done"
 
--- -- | Iteration - allocate a tensor, print a value, allocate another tensor... etc.
+-- -- |Iteration - allocate a tensor, print a value, allocate another tensor... etc.
 -- memoryTest :: TensorDim Word -> Int -> IO ()
 -- memoryTest dim niter = do
 --   putStrLn $ show (memSizeGB dim) ++ " GB per allocation x " ++ show niter
