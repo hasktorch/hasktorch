@@ -36,6 +36,7 @@ module Torch.Core.Tensor.Static.DoubleMath
   , tds_getElem
   , tds_getRow
   , tds_getColumn
+  , tds_getIndicesTensor
 
   , tds_minAll
   , tds_maxAll
@@ -365,6 +366,32 @@ tds_getElem t r c =
     pure $ realToFrac e
   else
     error "Indices out of bounds"
+
+tds_getIndicesTensor
+  :: forall d n m . (SingDimensions d, KnownNatDim n, KnownNatDim m)
+  => TDS '[n, m]
+  -> [Integer]
+  -> Integer
+  -> TDS d
+tds_getIndicesTensor t indices axis =
+  if (axis == 0 && length indices > fromInteger rows ||
+      maximum indices > rows || minimum indices < 0) ||
+     (axis == 1 && length indices > fromInteger columns ||
+      maximum indices > columns || minimum indices < 0) then
+    error "Indices out of bounds"
+  else
+    unsafePerformIO $ do
+    let res = tds_new
+        indices_ :: TLS '[n] = tls_fromList indices
+        caxis = fromInteger axis
+    runManaged $ do
+        tPtr <- managed $ withForeignPtr (getForeign t)
+        resPtr <- managed $ withForeignPtr (getForeign res)
+        iPtr <- managed $ withForeignPtr (tlsTensor indices_)
+        liftIO $ c_THDoubleTensor_indexSelect resPtr tPtr caxis iPtr
+    pure res
+  where rows = (round ((realToFrac $ natVal (Proxy :: Proxy n)) :: Double) :: Integer)
+        columns = (round ((realToFrac $ natVal (Proxy :: Proxy m)) :: Double) :: Integer)
 
 tds_setElem :: forall n m . (KnownNatDim n, KnownNatDim m) => TDS '[n, m] -> Int -> Int -> Double -> TDS '[n, m]
 tds_setElem t r c v = apply1__ tSet t
