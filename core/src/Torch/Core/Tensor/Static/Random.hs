@@ -32,7 +32,8 @@ import Torch.Core.Tensor.Dim
 import THRandomTypes (Generator)
 import GHC.Int (Int64)
 import qualified Torch.Core.Tensor.Dynamic.Random as Random
-import Torch.Core.Tensor.Static.Math ((!*!), (^+^), diag1d, TensorMath)
+import Torch.Core.Tensor.Static.Math (diag1d, TensorMath)
+import Torch.Core.Tensor.Static.Math.Infix ((!*!), (^+^))
 import Torch.Core.Tensor.Static (newTranspose2d, expand2d, StaticConstraint, StaticConstraint2, StaticConstraint3)
 
 import qualified THFloatTypes as Float

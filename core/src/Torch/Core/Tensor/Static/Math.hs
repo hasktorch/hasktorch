@@ -6,7 +6,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Core.Tensor.Static.Math
   ( MathConstraint
   , MathConstraint2
@@ -27,7 +26,7 @@ module Torch.Core.Tensor.Static.Math
   , scatter_
   , scatterAdd_
   , scatterFill_
-  , dot, mdot, vdot, (<.>)
+  , dot, mdot, vdot
   , minall
   , maxall
   , medianall
@@ -47,12 +46,12 @@ module Torch.Core.Tensor.Static.Math
   -- , ttOp
   -- , ttOp_
 
-  , add_, add, (+^), (^+)
-  , sub_, sub, (-^), (^-)
+  , add_, add
+  , sub_, sub
   , add_scaled_, add_scaled
   , sub_scaled_, sub_scaled
-  , mul_, mul, (*^), (^*)
-  , div_, Torch.Core.Tensor.Static.Math.div, (/^), (^/)
+  , mul_, mul
+  , div_, Torch.Core.Tensor.Static.Math.div
   , lshift_, lshift
   , rshift_, rshift
   , fmod_, fmod
@@ -61,11 +60,11 @@ module Torch.Core.Tensor.Static.Math
   , bitand_, bitand
   , bitor_, bitor
   , bitxor_, bitxor
-  , cadd_, cadd, (^+^)
-  , csub_, csub, (^-^)
-  , cmul_, cmul, (^*^), square, square_
+  , cadd_, cadd
+  , csub_, csub
+  , cmul_, cmul, square, square_
   , cpow_, cpow
-  , cdiv_, cdiv, (^/^)
+  , cdiv_, cdiv
   , clshift_, clshift
   , crshift_, crshift
   , cfmod_, cfmod
@@ -75,7 +74,7 @@ module Torch.Core.Tensor.Static.Math
   , cbitxor_, cbitxor
   , addcmul_, addcmul
   , addcdiv_, addcdiv
-  , addmv_, addmv, mv, (!*!), (!*)
+  , addmv_, addmv, mv
   , addmm_, addmm
   , addr_, addr, outer
   , addbmm_, addbmm
@@ -144,7 +143,6 @@ import qualified Torch.Core.Storage as Storage
 import Torch.Core.Tensor.Static (IsStatic(..), StaticConstraint, StaticConstraint2, withInplace, ByteTensor, LongTensor)
 import THTypes
 import THRandomTypes
-import System.IO.Unsafe (unsafePerformIO)
 -- ========================================================================= --
 -- Reexports
 import Torch.Class.C.Tensor.Math as Classes (TensorMath, TensorMathFloating, TensorMathSigned)
@@ -155,67 +153,6 @@ import Torch.Core.IntTensor.Static.Math.Signed ()
 import Torch.Core.LongTensor.Static.Math.Signed ()
 import Torch.Core.FloatTensor.Static.Math.Signed ()
 import Torch.Core.DoubleTensor.Static.Math.Signed ()
-
--- unsafe convienence operations
-
-(!*) :: (MathConstraint3 t '[r, c] '[c] '[r]) => t '[r, c] -> t '[c] -> t '[r]
-(!*) a b = unsafePerformIO (mv a b)
-{-# NOINLINE (!*) #-}
-
-(!*!)
-  :: forall t a b c . MathConstraint3 t '[a, b] '[b, c] '[a, c]
-  => t '[a, b] -> t '[b, c] -> t '[a, c]
-(!*!) a b = unsafePerformIO $ (asStatic <$> Dynamic.new (dim :: Dim '[a, c])) >>= \n -> addmm 1 n 1 a b
-{-# NOINLINE (!*!) #-}
-
-(^+^) :: MathConstraint t d => t d -> t d -> t d
-(^+^) t1 t2 = unsafePerformIO $ cadd t1 1 {-scale-} t2
-{-# NOINLINE (^+^)  #-}
-
-(^-^) :: MathConstraint t d => t d -> t d -> t d
-(^-^) t1 t2 = unsafePerformIO $ csub t1 1 {-scale-} t2
-{-# NOINLINE (^-^)  #-}
-
-(^*^) :: MathConstraint t d => t d -> t d -> t d
-(^*^) a b = unsafePerformIO $ cmul a b
-{-# NOINLINE (^*^)  #-}
-
-(^/^) :: MathConstraint t d => t d -> t d -> t d
-(^/^) a b = unsafePerformIO $ cdiv a b
-{-# NOINLINE (^/^)  #-}
-
-(^+) :: MathConstraint t d => t d -> HsReal (t d) -> t d
-(^+) a b = unsafePerformIO $ add a b
-{-# NOINLINE (^+)  #-}
-
-(+^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
-(+^) a b = unsafePerformIO $ flip add a b
-{-# NOINLINE (+^)  #-}
-
-(^-) :: MathConstraint t d => t d -> HsReal (t d) -> t d
-(^-) a b = unsafePerformIO $ sub a b
-{-# NOINLINE (^-)  #-}
-
-(-^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
-(-^) a b = unsafePerformIO $ flip sub a b -- addConst (neg t) val a b
-{-# NOINLINE (-^)  #-}
-
-(^*) :: MathConstraint t d => t d -> HsReal (t d) -> t d
-(^*) a b = unsafePerformIO $ mul a b
-{-# NOINLINE (^*)  #-}
-
-(*^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
-(*^) a b = unsafePerformIO $ flip mul a b
-{-# NOINLINE (*^)  #-}
-
-(^/) :: MathConstraint t d => t d -> HsReal (t d) -> t d
-(^/) a b = unsafePerformIO $ Torch.Core.Tensor.Static.Math.div a b
-{-# NOINLINE (^/)  #-}
-
-(/^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
-(/^) a b = unsafePerformIO $ flip Torch.Core.Tensor.Static.Math.div a b
-{-# NOINLINE (/^)  #-}
-
 
 -- ========================================================================= --
 -- All static variants of the Torch.Class.C.Tensor.Math class
@@ -335,9 +272,6 @@ scatterFill_ r d ix v = Dynamic.scatterFill_ (asDynamic r) (fromIntegral d) (asD
 
 dot :: MathConstraint2 t d d' => t d -> t d' -> IO (HsAccReal (t d'))
 dot a b = Dynamic.dot (asDynamic a) (asDynamic b)
-
-(<.>) :: MathConstraint2 t d d' => t d -> t d' -> IO (HsAccReal (t d'))
-(<.>) = dot
 
 vdot :: MathConstraint t '[n] => t '[n] -> t '[n] -> IO (HsAccReal (t '[n]))
 vdot = dot
