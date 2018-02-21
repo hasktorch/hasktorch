@@ -8,6 +8,7 @@ import THTypes
 import qualified Tensor     as Sig
 import qualified TensorCopy as Sig
 import qualified Torch.Class.C.Tensor.Copy as Class
+import qualified Torch.Class.C.IsTensor as Class
 
 import qualified THByteTensor   as B
 import qualified THByteTypes    as B
@@ -27,6 +28,7 @@ import Torch.Core.Types
 copyType :: IO (Ptr a) -> FinalizerPtr a -> (Ptr CTensor -> Ptr a -> IO ()) -> Tensor -> IO (ForeignPtr a)
 copyType newPtr fin cfun t = do
   tar <- newPtr
+  withForeignPtr (tensor t) (tar `Sig.c_resizeAs`)
   withForeignPtr (tensor t) (`cfun` tar)
   newForeignPtr fin tar
 
@@ -34,6 +36,7 @@ instance Class.TensorCopy Tensor where
   copy :: Tensor -> IO Tensor
   copy t = do
     tar <- Sig.c_new
+    withForeignPtr (tensor t) (tar `Sig.c_resizeAs`)
     withForeignPtr (tensor t) (`Sig.c_copy` tar)
     asDyn <$> newForeignPtr Sig.p_free tar
 

@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Core.Tensor.Static.Math.Infix
@@ -25,10 +26,14 @@ import Torch.Class.C.Internal (HsReal, HsAccReal)
 import Torch.Class.C.Tensor.Static (asStatic)
 
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.Core.Tensor.Static
+import qualified Torch.Core.Tensor.Static as Static
 import qualified Torch.Core.Tensor.Dynamic as Dynamic
+import qualified Torch.Core.Tensor.Static.Math.Unsafe as Unsafe (abs, constant, sign)
 
-(<.>) :: MathConstraint2 t d d' => t d -> t d' -> IO (HsAccReal (t d'))
-(<.>) = dot
+(<.>) :: MathConstraint2 t d d' => t d -> t d' -> HsAccReal (t d')
+(<.>) a b = unsafePerformIO (dot a b)
+{-# NOINLINE (<.>) #-}
 
 (!*) :: (MathConstraint3 t '[r, c] '[c] '[r]) => t '[r, c] -> t '[c] -> t '[r]
 (!*) a b = unsafePerformIO (mv a b)
@@ -87,4 +92,89 @@ import qualified Torch.Core.Tensor.Dynamic as Dynamic
 (/^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
 (/^) a b = unsafePerformIO $ flip Torch.Core.Tensor.Static.Math.div a b
 {-# NOINLINE (/^)  #-}
+
+instance Dimensions d => Num (ByteTensor d) where
+  (+) = (^+^)
+  {-# NOINLINE (+) #-}
+  (-) = (^-^)
+  {-# NOINLINE (-) #-}
+  (*) = (^*^)
+  {-# NOINLINE (*) #-}
+  abs = id
+  signum = Unsafe.sign
+  {-# NOINLINE signum #-}
+  fromInteger = Unsafe.constant . fromIntegral
+  {-# NOINLINE fromInteger #-}
+
+instance Dimensions d => Num (ShortTensor d) where
+  (+) = (^+^)
+  {-# NOINLINE (+) #-}
+  (-) = (^-^)
+  {-# NOINLINE (-) #-}
+  (*) = (^*^)
+  {-# NOINLINE (*) #-}
+  abs = Unsafe.abs
+  {-# NOINLINE abs #-}
+  signum = Unsafe.sign
+  {-# NOINLINE signum #-}
+  fromInteger = Unsafe.constant . fromIntegral
+  {-# NOINLINE fromInteger #-}
+
+instance Dimensions d => Num (IntTensor d) where
+  (+) = (^+^)
+  {-# NOINLINE (+) #-}
+  (-) = (^-^)
+  {-# NOINLINE (-) #-}
+  (*) = (^*^)
+  {-# NOINLINE (*) #-}
+  abs = Unsafe.abs
+  {-# NOINLINE abs #-}
+  signum = Unsafe.sign
+  {-# NOINLINE signum #-}
+  fromInteger = Unsafe.constant . fromIntegral
+  {-# NOINLINE fromInteger #-}
+
+instance Dimensions d => Num (LongTensor d) where
+  (+) = (^+^)
+  {-# NOINLINE (+) #-}
+  (-) = (^-^)
+  {-# NOINLINE (-) #-}
+  (*) = (^*^)
+  {-# NOINLINE (*) #-}
+  abs = Unsafe.abs
+  {-# NOINLINE abs #-}
+  signum = Unsafe.sign
+  {-# NOINLINE signum #-}
+  fromInteger = Unsafe.constant . fromIntegral
+  {-# NOINLINE fromInteger #-}
+
+-- importing this module also unlocks the unsafe Num instance
+instance Dimensions d => Num (DoubleTensor d) where
+  (+) = (^+^)
+  {-# NOINLINE (+) #-}
+  (-) = (^-^)
+  {-# NOINLINE (-) #-}
+  (*) = (^*^)
+  {-# NOINLINE (*) #-}
+  abs = Unsafe.abs
+  {-# NOINLINE abs #-}
+  signum = Unsafe.sign
+  {-# NOINLINE signum #-}
+  fromInteger = Unsafe.constant . fromIntegral
+  {-# NOINLINE fromInteger #-}
+
+instance Dimensions d => Num (FloatTensor d) where
+  (+) = (^+^)
+  {-# NOINLINE (+) #-}
+  (-) = (^-^)
+  {-# NOINLINE (-) #-}
+  (*) = (^*^)
+  {-# NOINLINE (*) #-}
+  abs = Unsafe.abs
+  {-# NOINLINE abs #-}
+  signum = Unsafe.sign
+  {-# NOINLINE signum #-}
+  fromInteger = Unsafe.constant . fromIntegral
+  {-# NOINLINE fromInteger #-}
+
 

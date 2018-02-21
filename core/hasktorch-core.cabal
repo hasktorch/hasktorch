@@ -63,6 +63,7 @@ library
     , Torch.Core.Tensor.Static.Random
     , Torch.Core.Tensor.Static.Math
     , Torch.Core.Tensor.Static.Math.Infix
+    , Torch.Core.Tensor.Static.Math.Unsafe
 
   other-modules:
       Torch.Core.Tensor.Static.Math.Signed

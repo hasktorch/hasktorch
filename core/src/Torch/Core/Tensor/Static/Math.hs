@@ -820,7 +820,6 @@ cat_ r a b d = Dynamic.cat_ (asDynamic r) (asDynamic a) (asDynamic b) (fromInteg
 cat :: forall t d d' d'' . (MathConstraint3 t d d' d'') => t d -> t d' -> DimVal -> IO (t d'')
 cat a b d = withInplace $ \r -> Dynamic.cat_ r (asDynamic a) (asDynamic b) (fromIntegral d)
 
-
 -- Specialized version of cat
 cat1d
   :: forall t n1 n2 n . (SingI n1, SingI n2, SingI n, n ~ Sum [n1, n2])
