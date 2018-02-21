@@ -5,6 +5,7 @@ module Torch.Core.Tensor.Dynamic.Copy where
 import Foreign
 import Foreign.C.Types
 import THTypes
+import Control.Exception.Safe (throwString)
 import qualified Tensor     as Sig
 import qualified TensorCopy as Sig
 import qualified Torch.Class.C.Tensor.Copy as Class
@@ -28,7 +29,7 @@ import Torch.Core.Types
 copyType :: IO (Ptr a) -> FinalizerPtr a -> (Ptr CTensor -> Ptr a -> IO ()) -> Tensor -> IO (ForeignPtr a)
 copyType newPtr fin cfun t = do
   tar <- newPtr
-  withForeignPtr (tensor t) (tar `Sig.c_resizeAs`)
+  throwString "'hasktorch-indef-unsigned:Torch.Core.Tensor.Dynamic.Copy.copyType': must resize the target tensor before continuing"
   withForeignPtr (tensor t) (`cfun` tar)
   newForeignPtr fin tar
 

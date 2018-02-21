@@ -7,6 +7,7 @@ module Torch.Core.Tensor.Static.Math.Unsafe
   , square
   , constant
   , sign
+  , zerosLike
   ) where
 
 import Torch.Class.C.Internal (HsReal, HsAccReal, AsDynamic)
@@ -36,3 +37,7 @@ constant = unsafePerformIO . Safe.constant
 sign :: MathConstraint t d => t d -> t d
 sign = unsafePerformIO . Safe.sign
 {-# NOINLINE sign #-}
+
+zerosLike :: MathConstraint t d => t d
+zerosLike = unsafePerformIO Safe.zerosLike
+{-# NOINLINE zerosLike #-}

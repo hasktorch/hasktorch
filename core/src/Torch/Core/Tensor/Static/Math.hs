@@ -704,8 +704,10 @@ zeros_ r ls = Dynamic.zeros_ (asDynamic r) ls
 zeros :: MathConstraint t d => Storage.LongStorage -> IO (t d)
 zeros ls = withInplace $ \r -> Dynamic.zeros_ r ls
 
-zerosLike :: MathConstraint t d => t d -> IO (t d)
-zerosLike t = withInplace $ \r -> Dynamic.zerosLike_ r (asDynamic t)
+zerosLike :: forall t d . MathConstraint t d => IO (t d)
+zerosLike = withInplace $ \r -> do
+  shape <- Dynamic.new (dim :: Dim d)
+  Dynamic.zerosLike_ r shape
 
 zerosLike_ :: MathConstraint t d => t d -> t d -> IO ()
 zerosLike_ r t = Dynamic.zerosLike_ (asDynamic r) (asDynamic t)

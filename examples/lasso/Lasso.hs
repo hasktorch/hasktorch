@@ -59,7 +59,7 @@ prox_l1 w l = do
   pure (a * b)
  where
    max_plus :: Tensor '[M, 1] -> IO (Tensor '[M, 1])
-   max_plus t = T.new >>= T.cmax t
+   max_plus t = T.cmax t (TU.zerosLike)
 
 prox_l1_single :: AccPrecision -> AccPrecision -> Precision
 prox_l1_single w_i l = realToFrac (signum w_i * max (w_i - l) 0)
@@ -90,18 +90,15 @@ coordinate_descent (x, y) l = go 0 []
 
   go :: Int -> [(Tensor '[M, 1], Precision)] -> Integer -> Tensor '[M, 1] -> IO [(Tensor '[M, 1], Precision)]
   go ix res j w
-    | j > natVal (Proxy :: Proxy M) - 1 = pure res
+    | j > natVal (Proxy :: Proxy M) - 1 = pure ((w, loss (x, y) w):res)
     | otherwise = do
-      print ix
       let jIdx = fromIntegral j
       x_j <- T.getColumn x jIdx
       w_j <- T.getRow w jIdx
 
       let r_j     = (y ^-^ (x !*! w)) ^+^ (x_j !*! w_j)
       let w_j_upd = prox_l1_single ((1 / nSamples) * (x_j <.> r_j)) (realToFrac l)
-      T.printTensor w
       w_upd <- T.copy w
-      T.printTensor w
       T.setElem2d w_upd jIdx 0 w_j_upd
       let loss_obj = loss (x, y) w_upd
 
@@ -125,7 +122,7 @@ cyclic_coordinate_descent (x, y) l eps = go []
     let loss_w     = loss (x, y) w
     let loss_w_upd = loss (x, y) w_upd
     if abs (loss_w - loss_w_upd) < eps
-    then pure res
+    then pure $ (w, loss_w):res
     else go ([(w, loss_w)] <> iter_coord <> res) w_upd
 
 run_cd_synthetic :: Int -> Precision -> IO (Tensor '[M, 1])
@@ -135,13 +132,14 @@ run_cd_synthetic iters l = do
   dat       <- genData trueParam
 
   -- Setup CD
-  p :: Tensor '[M, 1] <- T.new
+  p :: Tensor '[M, 1] <- T.zerosLike
   lazy <- take iters <$> cyclic_coordinate_descent dat l 0.0001 p
+  print (fmap snd lazy)
 
   let final    = last lazy
       w        = (^. _1) final
       obj      = (^. _2) final
-      accuracy = abs $ (snd . last $ lazy) - (snd . head . tail . reverse $ lazy)
+      accuracy = abs $ (snd . last $ lazy) - (snd . last . init $ lazy)
 
   putStrLn $ "Loss " <> show obj <> " accuracy of " <> show accuracy
   pure w
@@ -151,8 +149,8 @@ run_fista_synthetic iters l = do
   gen       <- RNG.new
   trueParam <- T.normal gen 20.0 1.0
   dat       <- genData trueParam
-  w0 :: Tensor '[M, 1] <- T.new
-  z0 :: Tensor '[M, 1] <- T.new
+  w0 :: Tensor '[M, 1] <- T.zerosLike
+  z0 :: Tensor '[M, 1] <- T.zerosLike
   lazy <- fmap (take iters) $ fista dat l 1 0.0001 w0 z0 1
 
   -- Setup CD
@@ -227,8 +225,6 @@ gradient (x, y) w = do
 main :: IO ()
 main = do
   putStrLn "\nRun using the same random seed"
-  print "foo"
   _ <- run_cd_synthetic 100 1.0
-  print "bar"
   _ <- run_fista_synthetic 100 1.0
   pure ()
