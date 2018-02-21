@@ -10,6 +10,8 @@ module Torch.Core.Tensor.Static.Math
   ( MathConstraint
   , MathConstraint2
   , MathConstraint3
+  , getRow, getColumn
+
   , constant, fill_
   , zero, zero_
   , maskedFill, maskedFill_
@@ -130,11 +132,13 @@ module Torch.Core.Tensor.Static.Math
   , module SignedMath
   ) where
 
+import Control.Exception.Safe
 import Data.Singletons
 import Data.Singletons.Prelude.List
 import Data.Singletons.TypeLits
 import Foreign (Ptr)
 import GHC.Int
+import GHC.Natural
 
 import Torch.Class.C.Internal (HsReal, HsAccReal, AsDynamic)
 import Torch.Core.Tensor.Dim
@@ -185,12 +189,37 @@ type MathConstraint3 t d d' d'' =
   , MathConstraint2 t d' d''
   )
 
--- FIXME: this is going to explode
--- type MathConstraint4 t d d' d'' d''' =
---   ( MathConstraint3 t d d' d''
---   , MathConstraint2 t d d'''
---   )
+-- ========================================================================= --
+-- TODO: put these helpers somewhere better (maybe "Math.Matrix"?) also remove the code duplication here
+-- by writing a static indexSelect function
 
+-- retrieves a single row
+getRow
+  :: forall t n m . (KnownNat2 n m)
+  => (MathConstraint2 t '[n, m] '[1, m])
+  => t '[n, m] -> Natural -> IO (t '[1, m])
+getRow t r
+  | r > fromIntegral (natVal (Proxy :: Proxy n)) = throwString "Row out of bounds"
+  | otherwise = do
+      res <- Dynamic.new (dim :: Dim '[1, m])
+      ixs :: Dynamic.LongTensor <- Dynamic.fromList1d [ fromIntegral r ]
+      Dynamic.indexSelect_ res (asDynamic t) 0 ixs
+      pure (asStatic res)
+
+-- retrieves a single column
+getColumn
+  :: forall t n m . (KnownNat2 n m)
+  => (MathConstraint2 t '[n, m] '[n, 1])
+  => t '[n, m] -> Natural -> IO (t '[n, 1])
+getColumn t r
+  | r > fromIntegral (natVal (Proxy :: Proxy m)) = throwString "Column out of bounds"
+  | otherwise = do
+      res <- Dynamic.new (dim :: Dim '[n, 1])
+      ixs :: Dynamic.LongTensor <- Dynamic.fromList1d [ fromIntegral r ]
+      Dynamic.indexSelect_ res (asDynamic t) 1 ixs
+      pure (asStatic res)
+
+-- ========================================================================= --
 
 constant :: MathConstraint t d => HsReal (t d) -> IO (t d)
 constant v = withInplace (`Dynamic.fill_` v)
