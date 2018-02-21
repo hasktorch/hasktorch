@@ -14,6 +14,19 @@ source-repository head
   type: git
   location: https://github.com/austinvhuang/hasktorch
 
+executable lasso
+  main-is: Lasso.hs
+  hs-source-dirs: lasso
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , singletons >=2.2
+    , microlens
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
+
 executable ad
   main-is: AD.hs
   hs-source-dirs:
