@@ -1,27 +1,27 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 module Main where
 
 import Data.Monoid ((<>))
--- import Data.Function ((&))
+import Control.Monad
 import Data.Singletons
 import GHC.TypeLits
 import Lens.Micro
-import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Core.Tensor.Dim hiding (N)
-import qualified Torch.Core.Tensor.Dynamic as Dyn
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Random
-import Torch.Core.Tensor.Static.Math as Math
+import Torch.Core.Tensor.Static.Math (constant, cat1d)
+import Torch.Core.Tensor.Static.Math.Infix
+import qualified Torch.Core.Tensor.Static.Math as Math
 import qualified Torch.Core.Random as RNG
 
 type N = 2000 -- sample size
 type NumP = 2
 type P = '[1, 2]
 type Tensor = DoubleTensor
+type Precision = Double
 
 seedVal :: RNG.Seed
 seedVal = 3141592653579
@@ -33,49 +33,55 @@ genData param = do
   noise        :: Tensor '[N] <- normal gen 0 2
   predictorVal :: Tensor '[N] <- normal gen 0 10
   x :: Tensor '[2, N] <- (constant 1 >>= (\(o :: Tensor '[N]) -> predictorVal `cat1d` o) >>= resizeAs)
-  y :: Tensor '[N]    <- (^+^ noise) <$> (newTranspose2d (param !*! x) >>= resizeAs)
+  y :: Tensor '[N]    <- (newTranspose2d (param !*! x) >>= resizeAs >>= Math.cadd noise 1)
+
   pure (x, y)
 
-loss :: (Tensor '[2,N], Tensor '[N]) -> Tensor '[1, 2] -> IO Double
+loss :: (Tensor '[2,N], Tensor '[N]) -> Tensor '[1, 2] -> IO Precision
 loss (x, y) param = do
-  !x' <- (y ^-^) <$> resizeAs (param !*! x)
-  sumall =<< Math.square x'
+  x' <- (y -) <$> resizeAs (param !*! x)
+  fmap realToFrac . Math.sumall =<< Math.square x'
+
 
 gradient
   :: forall n . (KnownNatDim n)
   => (Tensor '[2, n], Tensor '[n]) -> Tensor '[1, 2] -> IO (Tensor '[1, 2])
 gradient (x, y) param = do
-  !(y' :: Tensor '[1, n]) <- resizeAs y
-  !(x' :: Tensor '[n, 2]) <- newTranspose2d x
-  pure $ ((-2) / nsamp) *^ (err y' !*! x')
+  y' :: Tensor '[1, n] <- resizeAs y
+  x' :: Tensor '[n, 2] <- newTranspose2d x
+  m  :: Tensor '[1, 2] <- resizeAs (err y' !*! x')
+  pure $ (-2 / nsamp) *^ m
+
   where
     err :: Tensor '[1, n] -> Tensor '[1, n]
-    err y' = y' ^-^ (param !*! x)
+    err y' = y' - (param !*! x)
 
-    nsamp :: Double
-    nsamp = (realToFrac $ natVal (Proxy :: Proxy n))
-
+    nsamp :: Precision
+    nsamp = realToFrac (natVal (Proxy :: Proxy n))
 
 gradientDescent
   :: (Tensor '[2, N], Tensor '[N])
+  -> Precision
+  -> Precision
   -> Tensor '[1, 2]
-  -> Double
-  -> Double
-  -> IO [(Tensor '[1, 2], Double, Tensor '[1, 2])]
-gradientDescent (x, y) !param !rate !eps = do
-  !g <- gradient (x, y) param
-  !d <- sumall =<< Math.abs g
-  if d < eps
-  then pure []
-  else do
-    !j <- loss (x, y) param
-    !nxt <- gradientDescent (x, y) (param ^-^ (rate *^ g)) rate eps
-    pure $ (param, j, g):nxt
+  -> IO [(Tensor '[1, 2], Precision, Tensor '[1, 2])]
+gradientDescent (x, y) rate eps = go 0 []
+ where
+  go :: Int -> [(Tensor '[1, 2], Precision, Tensor '[1, 2])] -> Tensor '[1, 2] -> IO [(Tensor '[1, 2], Precision, Tensor '[1, 2])]
+  go i res param = do
+    g <- gradient (x, y) param
+    diff <- fmap realToFrac . Math.sumall =<< Math.abs g
+    if diff < eps
+    then pure res
+    else do
+      j <- loss (x, y) param
+      let param' = param ^-^ (g ^* rate)
+      go (i+1) ((param, j, g):res) param'
 
-runN :: [(Tensor '[1, 2], Double, Tensor '[1, 2])] -> Int -> Tensor '[1,2]
-runN lazyIters nIter = unsafePerformIO $ do
+runN :: [(Tensor '[1, 2], Precision, Tensor '[1, 2])] -> Int -> IO (Tensor '[1,2])
+runN lazyIters nIter = do
   let final = last $ take nIter lazyIters
-  !g <- sumall =<< Math.abs (final ^. _3)
+  g <- Math.sumall =<< Math.abs (final ^. _3)
   let j = (^. _2) final
   let p = (^. _1) final
   putStrLn $ "Gradient magnitude after " <> show nIter <> " steps"
@@ -85,33 +91,33 @@ runN lazyIters nIter = unsafePerformIO $ do
   putStrLn $ "Parameter estimate after " <> show nIter <> " steps:"
   printTensor p
   pure p
-{-# NOINLINE runN #-}
 
-runExample :: Tensor '[1,2]
-runExample = unsafePerformIO $ do
+runExample :: IO (Tensor '[1,2])
+runExample = do
   -- Generate data w/ ground truth params
   putStrLn "True parameters"
-  !trueParam <- fromList [3.5, -4.4]
+  trueParam <- fromList [3.5, -4.4]
   printTensor trueParam
-  !dat <- genData trueParam
+
+  dat <- genData trueParam
 
   -- Setup GD
   p0 :: Tensor '[1, 2] <- fromList [0, 0]
-  !iters <- gradientDescent dat p0 0.05 0.01
-  print iters
+  iters <- gradientDescent dat 0.0005 0.0001 p0
 
   -- Results
-  pure $ runN iters 10
+  x <- runN iters (fromIntegral (natVal (Proxy :: Proxy N)))
+  pure x
+
 
   -- -- peek at value w/o dispRaw pretty-printing
   -- putStrLn "Peek at raw pointer value of 2nd parameter:"
   -- let testVal = unsafePerformIO $ do
   --       withForeignPtr (tdsTensor res) (\pPtr -> pure $ c_THTensor_get2d pPtr 0 1)
   -- print testVal
-{-# NOINLINE runExample #-}
 
 main :: IO ()
 main = do
   putStrLn "\nRun #1"
   putStrLn "\nRun #2 using the same random seed"
-  printTensor runExample
+  void runExample
