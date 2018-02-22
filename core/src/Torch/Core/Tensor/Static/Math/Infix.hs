@@ -42,7 +42,7 @@ import qualified Torch.Core.Tensor.Static.Math.Unsafe as Unsafe (abs, constant, 
 (!*!)
   :: forall t a b c . MathConstraint3 t '[a, b] '[b, c] '[a, c]
   => t '[a, b] -> t '[b, c] -> t '[a, c]
-(!*!) a b = unsafePerformIO $ (asStatic <$> Dynamic.new (dim :: Dim '[a, c])) >>= \n -> addmm 1 n 1 a b
+(!*!) a b = unsafePerformIO $ constant 0 >>= \noBias -> addmm 1 noBias 1 a b
 {-# NOINLINE (!*!) #-}
 
 (^+^) :: MathConstraint t d => t d -> t d -> t d

@@ -542,10 +542,19 @@ addmv
   => HsReal (t '[r]) -> t '[r] -> HsReal (t '[r]) -> t '[r, c] -> t '[c] -> IO (t '[r])
 addmv a t b x y = withInplace $ \r -> Dynamic.addmv_ r a (asDynamic t) b (asDynamic x) (asDynamic y)
 
-addmm_        :: MathConstraint3 t d d' d'' => t d'' -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO ()
+-- only matrix-matrix multiplication:
+-- https://github.com/torch/torch7/blob/aed31711c6b8846b8337a263a7f9f998697994e7/doc/maths.md#res-torchaddmmres-v1-m-v2-mat1-mat2
+addmm_
+  :: forall t a b c . MathConstraint3 t '[a, b] '[b, c] '[a, c]
+  => t '[a, c] -> HsReal (t '[a, c]) -> t '[a, c] -> HsReal (t '[a, c]) -> t '[a, b] -> t '[b, c] -> IO ()
 addmm_ r a t b x y = Dynamic.addmm_ (asDynamic r) a (asDynamic t) b (asDynamic x) (asDynamic y)
-addmm         :: MathConstraint3 t d d' d'' => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO (t d'')
-addmm a t b x y = withInplace $ \r -> Dynamic.addmm_ r a (asDynamic t) b (asDynamic x) (asDynamic y)
+
+-- res = (a * m) + (b * mat1 * mat2)
+addmm
+  :: forall t a b c . MathConstraint3 t '[a, b] '[b, c] '[a, c]
+  => HsReal (t '[a, c]) -> t '[a, c] -> HsReal (t '[a, c]) -> t '[a, b] -> t '[b, c] -> IO (t '[a, c])
+addmm a m b x y = withInplace $ \r -> Dynamic.addmm_ r a (asDynamic m) b (asDynamic x) (asDynamic y)
+
 addr_        :: MathConstraint3 t d d' d'' => t d'' -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO ()
 addr_ r a t b x y = Dynamic.addr_ (asDynamic r) a (asDynamic t) b (asDynamic x) (asDynamic y)
 addr          :: MathConstraint3 t d d' d'' => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO (t d'')

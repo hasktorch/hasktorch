@@ -6,24 +6,25 @@ module Main where
 --import Data.Function ((&))
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math
+import Torch.Core.Tensor.Static.Math.Infix
 import Torch.Core.Tensor.Static.Random
 import qualified Torch.Core.Random as RNG
 
 {- Types -}
 type Tensor = DoubleTensor
 
-data Likelihood = Likelihood {
-  l_mu :: Double,
-  l_sigma :: Double
+data Likelihood = Likelihood
+  { l_mu    :: Double
+  , l_sigma :: Double
   } deriving (Eq, Show)
 
-data Prior = Prior {
-  w_mu :: Tensor '[P],
-  w_cov :: Tensor '[P, P]
+data Prior = Prior
+  { w_mu  :: Tensor '[P]
+  , w_cov :: Tensor '[P, P]
   } deriving (Eq, Show)
 
-data Samples = X {
-  xMat :: Tensor '[N, P]
+newtype Samples = X
+  { xMat :: Tensor '[N, P]
   } deriving (Eq, Show)
 
 type P = 2
