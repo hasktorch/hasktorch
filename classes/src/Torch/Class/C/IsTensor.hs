@@ -156,7 +156,6 @@ fromList1d l = do
   upd :: t -> (Int, HsReal t) -> IO ()
   upd t (idx, v) = someDimsM [idx] >>= \sd -> setDim'_ t sd v
 
-
 resizeDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO t
 resizeDim src d = newClone src >>= \res -> resizeDim_ res d >> pure res
 

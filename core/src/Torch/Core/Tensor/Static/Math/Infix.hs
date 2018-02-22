@@ -42,15 +42,15 @@ import qualified Torch.Core.Tensor.Static.Math.Unsafe as Unsafe (abs, constant, 
 (!*!)
   :: forall t a b c . MathConstraint3 t '[a, b] '[b, c] '[a, c]
   => t '[a, b] -> t '[b, c] -> t '[a, c]
-(!*!) a b = unsafePerformIO $ constant 0 >>= \noBias -> addmm 1 noBias 1 a b
+(!*!) a b = unsafePerformIO $ mmult a b
 {-# NOINLINE (!*!) #-}
 
 (^+^) :: MathConstraint t d => t d -> t d -> t d
-(^+^) t1 t2 = unsafePerformIO $ cadd t1 1 {-scale-} t2
+(^+^) t1 t2 = unsafePerformIO $ cadd t1 1 t2
 {-# NOINLINE (^+^)  #-}
 
 (^-^) :: MathConstraint t d => t d -> t d -> t d
-(^-^) t1 t2 = unsafePerformIO $ csub t1 1 {-scale-} t2
+(^-^) t1 t2 = unsafePerformIO $ csub t1 1 t2
 {-# NOINLINE (^-^)  #-}
 
 (^*^) :: MathConstraint t d => t d -> t d -> t d
@@ -90,7 +90,7 @@ import qualified Torch.Core.Tensor.Static.Math.Unsafe as Unsafe (abs, constant, 
 {-# NOINLINE (^/)  #-}
 
 (/^) :: MathConstraint t d => HsReal (t d) -> t d -> t d
-(/^) a b = unsafePerformIO $ flip Torch.Core.Tensor.Static.Math.div a b
+(/^) a b = unsafePerformIO $ flip Torch.Core.Tensor.Static.Math.div a b -- div a (cinv a)
 {-# NOINLINE (/^)  #-}
 
 instance Dimensions d => Num (ByteTensor d) where

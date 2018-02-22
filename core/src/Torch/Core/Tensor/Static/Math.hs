@@ -77,7 +77,7 @@ module Torch.Core.Tensor.Static.Math
   , addcmul_, addcmul
   , addcdiv_, addcdiv
   , addmv_, addmv, mv
-  , addmm_, addmm
+  , addmm_, addmm, mmult
   , addr_, addr, outer
   , addbmm_, addbmm
   , baddbmm_, baddbmm
@@ -555,15 +555,25 @@ addmm
   => HsReal (t '[a, c]) -> t '[a, c] -> HsReal (t '[a, c]) -> t '[a, b] -> t '[b, c] -> IO (t '[a, c])
 addmm a m b x y = withInplace $ \r -> Dynamic.addmm_ r a (asDynamic m) b (asDynamic x) (asDynamic y)
 
-addr_        :: MathConstraint3 t d d' d'' => t d'' -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO ()
+mmult :: forall t a b c . (MathConstraint3 t '[a, b] '[b, c] '[a, c]) => t '[a, b] -> t '[b, c] -> IO (t '[a, c])
+mmult x y = constant 0 >>= \n -> addmm 1 n 1 x y
+
+-- outer product between a 1D tensor and a 1D tensor:
+-- https://github.com/torch/torch7/blob/aed31711c6b8846b8337a263a7f9f998697994e7/doc/maths.md#res-torchaddrres-v1-mat-v2-vec1-vec2
+
+-- res_ij = (v1 * mat_ij) + (v2 * vec1_i * vec2_j)
+addr_
+  :: (MathConstraint3 t '[r] '[c] '[r, c])
+  => t '[r, c] -> HsReal (t '[r,c]) -> t '[r,c] -> HsReal (t '[r,c]) -> t '[r] -> t '[c] -> IO ()
 addr_ r a t b x y = Dynamic.addr_ (asDynamic r) a (asDynamic t) b (asDynamic x) (asDynamic y)
-addr          :: MathConstraint3 t d d' d'' => HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d' -> IO (t d'')
+
+addr :: (MathConstraint3 t '[r] '[c] '[r, c]) => HsReal (t '[r,c]) -> t '[r,c] -> HsReal (t '[r,c]) -> t '[r] -> t '[c] -> IO (t '[r, c])
 addr  a t b x y = withInplace $ \r -> Dynamic.addr_ r a (asDynamic t) b (asDynamic x) (asDynamic y)
 
 outer :: forall t r c . (MathConstraint3 t '[r] '[c] '[r, c]) => t '[r] -> t '[c] -> IO (t '[r, c])
 outer v1 v2 = do
-  t <- Dynamic.new (dim :: Dim '[r, c])
-  addr 0 (asStatic t) 1 v1 v2
+  t :: t '[r, c] <- zerosLike
+  addr 0 t 1 v1 v2
 
 addbmm_       :: MathConstraint t d => t d -> HsReal (t d) -> t d -> HsReal (t d) -> t d -> t d -> IO ()
 addbmm_       = ttOp_ Dynamic.addbmm_
