@@ -90,6 +90,11 @@ class IsTensor t where
   unfold_ :: t -> t -> DimVal -> Size -> Step -> IO ()
   unsqueeze1d_ :: t -> t -> DimVal -> IO ()
 
+shape :: IsTensor t => t -> IO [Size]
+shape t = do
+  ds <- nDimension t
+  mapM (size t . fromIntegral) [0..ds-1]
+
 inplace :: IsTensor t => (t -> IO ()) -> Dim (d::[Nat]) -> IO t
 inplace op d = new d >>= \r -> op r >> pure r
 
