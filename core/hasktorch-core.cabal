@@ -124,7 +124,7 @@ library
     , Torch.Core.FloatTensor.Dynamic
     , Torch.Core.FloatTensor.Dynamic.Copy
     , Torch.Core.FloatTensor.Dynamic.Conv
---    , Torch.Core.FloatTensor.Dynamic.Lapack
+    , Torch.Core.FloatTensor.Dynamic.Lapack
     , Torch.Core.FloatTensor.Dynamic.Math
     , Torch.Core.FloatTensor.Dynamic.Math.Floating
     , Torch.Core.FloatTensor.Dynamic.Math.Signed
@@ -138,7 +138,7 @@ library
     , Torch.Core.DoubleTensor.Dynamic
     , Torch.Core.DoubleTensor.Dynamic.Copy
     , Torch.Core.DoubleTensor.Dynamic.Conv
---    , Torch.Core.DoubleTensor.Dynamic.Lapack
+    , Torch.Core.DoubleTensor.Dynamic.Lapack
     , Torch.Core.DoubleTensor.Dynamic.Math
     , Torch.Core.DoubleTensor.Dynamic.Math.Floating
     , Torch.Core.DoubleTensor.Dynamic.Math.Signed
@@ -267,7 +267,7 @@ library
       ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.FloatTensor.Dynamic.IsTensor
       ,Torch.Core.Tensor.Dynamic.Copy             as Torch.Core.FloatTensor.Dynamic.Copy
       ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.FloatTensor.Dynamic.Conv
---        ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.FloatTensor.Dynamic.Lapack
+      ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.FloatTensor.Dynamic.Lapack
       ,Torch.Core.Tensor.Dynamic.Math             as Torch.Core.FloatTensor.Dynamic.Math
       ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.FloatTensor.Dynamic.Math.Floating
       ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.FloatTensor.Dynamic.Math.Signed
@@ -288,7 +288,7 @@ library
       ,Tensor               as THFloatTensor
       ,TensorCopy           as THFloatTensorCopy
       ,TensorConv           as THFloatTensorConv
-      -- ,TensorLapack         as THFloatTensorLapack
+      ,TensorLapack         as THFloatTensorLapack
       ,TensorMath           as THFloatTensorMath
       ,TensorMathSigned     as THFloatTensorMath
       ,TensorMathFloating   as THFloatTensorMath
@@ -303,7 +303,7 @@ library
       ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.DoubleTensor.Dynamic.IsTensor
       ,Torch.Core.Tensor.Dynamic.Copy             as Torch.Core.DoubleTensor.Dynamic.Copy
       ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.DoubleTensor.Dynamic.Conv
---         ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.DoubleTensor.Dynamic.Lapack
+      ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.DoubleTensor.Dynamic.Lapack
       ,Torch.Core.Tensor.Dynamic.Math             as Torch.Core.DoubleTensor.Dynamic.Math
       ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.DoubleTensor.Dynamic.Math.Floating
       ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.DoubleTensor.Dynamic.Math.Signed
@@ -324,7 +324,7 @@ library
       ,Tensor               as THDoubleTensor
       ,TensorCopy           as THDoubleTensorCopy
       ,TensorConv           as THDoubleTensorConv
-      -- ,TensorLapack         as THDoubleTensorLapack
+      ,TensorLapack         as THDoubleTensorLapack
       ,TensorMath           as THDoubleTensorMath
       ,TensorMathFloating   as THDoubleTensorMath
       ,TensorMathSigned     as THDoubleTensorMath
