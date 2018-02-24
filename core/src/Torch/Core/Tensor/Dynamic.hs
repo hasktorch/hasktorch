@@ -13,6 +13,7 @@ module Torch.Core.Tensor.Dynamic
 
   , module X
   , module Classes
+  , LapackClass.TensorLapack(..)
   ) where
 
 import THTypes
@@ -23,6 +24,7 @@ import Torch.Core.Tensor.Dim
 import qualified Torch.Class.C.Tensor as C
 import Torch.Class.C.Storage (IsStorage)
 import qualified Torch.Class.C.Storage as Storage
+import qualified Torch.Class.C.Tensor.Lapack as LapackClass
 
 import Torch.Core.Tensor.Dynamic.Copy as Classes
 import Torch.Core.Tensor.Dynamic.Conv as Classes
@@ -43,6 +45,9 @@ import Torch.Core.IntTensor.Dynamic.IsTensor ()
 import Torch.Core.LongTensor.Dynamic.IsTensor ()
 import Torch.Core.FloatTensor.Dynamic.IsTensor ()
 import Torch.Core.DoubleTensor.Dynamic.IsTensor ()
+
+import Torch.Core.FloatTensor.Dynamic.Lapack ()
+import Torch.Core.DoubleTensor.Dynamic.Lapack ()
 
 type ByteTensor = B.Tensor
 -- type CharTensor = C.Tensor

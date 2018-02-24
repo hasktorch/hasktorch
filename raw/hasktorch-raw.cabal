@@ -76,7 +76,7 @@ library
       THDoubleTensor
       THDoubleTensorConv
       THDoubleTensorCopy
-      -- THDoubleTensorLapack
+      THDoubleTensorLapack
       THDoubleTensorMath
       THDoubleTensorRandom
 
@@ -89,7 +89,7 @@ library
       THFloatTensor
       THFloatTensorConv
       THFloatTensorCopy
-      -- THFloatTensorLapack
+      THFloatTensorLapack
       THFloatTensorMath
       THFloatTensorRandom
 
