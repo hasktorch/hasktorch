@@ -7,6 +7,7 @@ import Control.Monad (void)
 import qualified Torch.Core.Random as RNG (new)
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math as Math
+import Torch.Core.Tensor.Static.Math.Infix
 import Torch.Core.Tensor.Static.Random
 
 main :: IO ()
@@ -65,7 +66,7 @@ matrixVectorOps = void $ do
     constVec `outer` constVec
 
   showSection "Vector dot product" $
-    constVec <.> constVec
+    pure $ constVec <.> constVec
 
   showSection "Matrix trace" $
     trace randMat

@@ -110,4 +110,3 @@ section title tensor = do
   putStrLn ("\n" ++ title ++ ":")
   -- tensor >>= printTensor
 
-
