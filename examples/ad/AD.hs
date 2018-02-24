@@ -9,6 +9,7 @@ module Main where
 import Torch.Core.Tensor.Dim
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math
+import Torch.Core.Tensor.Static.Math.Infix
 import Torch.Core.Tensor.Static.Random
 import qualified Torch.Core.Random as RNG
 import System.IO.Unsafe (unsafePerformIO)

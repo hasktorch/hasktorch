@@ -9,10 +9,10 @@ init:
 	( cd vendor; ./build-aten-spec.sh )
 	( cd vendor; ./build-error-handler.sh )
 # ifeq ($(UNAME),Darwin)
-	ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
-	ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
+	sudo ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
+	sudo ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
 	@echo "\nCreated shared library symlinks for OSX:\n"
-	@ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
+	@sudo ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
 	@echo
 # endif
 #	stack build
