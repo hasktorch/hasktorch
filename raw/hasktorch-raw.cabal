@@ -30,7 +30,6 @@ executable test
 
 
 library
-  extra-lib-dirs: /home/stites/git/hasktorch/vendor/build/
   extra-libraries: ATen, EHX
   hs-source-dirs:
       src
