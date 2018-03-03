@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -eu
 
-rsync -arv ./raw/src/*.hs ../raw/src/
-rsync -arv ./raw/src/generic/*.hs ../raw/src/generic/
+rsync -arv ./raw/th/src/*.hs ../raw/th/src/
+rsync -arv ./raw/th/src/generic/*.hs ../raw/th/src/generic/

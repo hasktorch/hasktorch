@@ -1,0 +1,29 @@
+name: hasktorch-raw
+version: '0.0.1.0'
+synopsis: Torch for tensors and neural networks in Haskell
+description: core C bindings
+author: Austin Huang
+license: BSD3
+github: hasktorch/hasktorch
+
+dependencies:
+- base >=4.7 && <5
+- text >=1.2.2.2
+
+library:
+  source-dirs:
+  - src
+  - src/generic
+  build-tools: c2hs
+  dependencies:
+  - inline-c >=0.5
+  - hasktorch-raw-types
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs: tests
+    dependencies:
+    - QuickCheck
+    - hspec >=2.4.4
+    - hasktorch-raw

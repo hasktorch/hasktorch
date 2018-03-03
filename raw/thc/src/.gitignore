@@ -1,0 +1,10 @@
+# *
+# !.gitignore
+# !TH*Tensor.hs
+# !TH*TensorConv.hs
+# !TH*TensorMath.hs
+# !TH*TensorRandom.hs
+# !TH*Storage.hs
+# !TH*StorageCopy.hs
+# !TH*Blas.hs
+# !TH*Lapack.hs

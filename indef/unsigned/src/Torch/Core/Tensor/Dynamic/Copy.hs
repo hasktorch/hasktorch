@@ -41,7 +41,7 @@ instance Class.TensorCopy Tensor where
     withForeignPtr (tensor t) (`Sig.c_copy` tar)
     asDyn <$> newForeignPtr Sig.p_free tar
 
-  copyByte :: Tensor -> IO B.DynTensor
+  copyByte :: Tensor {-ForeignPtr CTHTensor -} -> IO B.DynTensor {-ForeignPtr B.CTHByteTensor -}
   copyByte t = B.asDyn <$> (copyType B.c_new B.p_free Sig.c_copyByte t)
 
   -- copyChar :: Tensor -> IO (Ptr CTHCharTensor)

@@ -1,15 +1,25 @@
 packages:
-    raw/*.cabal
+    codegen/*.cabal
+    raw/th/*.cabal
+    raw/thc/*.cabal
     types/*.cabal
+
     signatures/unsigned/*cabal
     signatures/signed/*cabal
     signatures/floating/*cabal
-    classes/*cabal
-    dimensions/*cabal
-    core/*cabal
+
     indef/unsigned/*cabal
     indef/signed/*cabal
     indef/floating/*cabal
+
+    dimensions/*cabal
+    classes/*cabal
+
+    core/*cabal
+
     examples/*cabal
 
-
+-- This absolute path would go in your ~/.cabal/config file.
+-- FIXME: figure out package-relative paths
+-- ghc-options:
+--     hasktorch-raw: -L/home/stites/git/hasktorch/vendor/build/
