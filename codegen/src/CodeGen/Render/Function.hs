@@ -26,8 +26,8 @@ renderCName :: Text -> Text -> Text
 renderCName prefix name = prefix <> "_" <> name
 
 -- | Render a single function signature.
-renderSig :: SigType -> Bool -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
-renderSig t isTemplate prefix headerFile modTypeTemplate (name, retType, args) =
+renderSig :: SigType -> IsTemplate -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderSig t (IsTemplate isTemplate) prefix headerFile modTypeTemplate (name, retType, args) =
   trace (if "THShortStorage" == prefix && "THStorage.h" == headerFile then show (name, thArgType <$> args, retArrow) else "") $
   T.intercalate "\n"
     [ comment, foreignCall t, haskellSig t ]
@@ -64,11 +64,11 @@ renderSig t isTemplate prefix headerFile modTypeTemplate (name, retType, args) =
 
 
 -- | Render a single function signature.
-renderFunSig :: Bool -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunSig :: IsTemplate -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunSig = renderSig IsFun
 
 -- | Render function pointer signature
-renderFunPtrSig :: Bool -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunPtrSig :: IsTemplate -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
 renderFunPtrSig = renderSig IsFunPtr
 
 

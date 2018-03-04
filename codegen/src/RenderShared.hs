@@ -1,8 +1,9 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module RenderShared
   ( makeModule
-  , makeTHModule
   , renderCHeaderFile
+
+  , IsTemplate(..)
 
   , parseFile
   , cleanList
@@ -18,12 +19,12 @@ import ConditionalCases (checkFunction, signatureAliases)
 import qualified CodeGen.Render.Haskell as Hs
 
 makeModule
-  :: Text
-  -> Text
-  -> Bool
+  :: LibType
+  -> TextPath
+  -> IsTemplate
   -> FilePath
-  -> Text
-  -> Text
+  -> ModuleSuffix
+  -> FileSuffix
   -> TemplateType
   -> [THFunction]
   -> HModule
@@ -42,8 +43,8 @@ makeModule a00 a0 a1 a2 a3 a4 a5 a6
   , modBindings = a6
   }
 
-makeTHModule :: Text -> Bool -> FilePath -> Text -> Text -> TemplateType -> [THFunction] -> HModule
-makeTHModule = makeModule "TH"
+-- makeTHModule :: TextPath -> IsTemplate -> FilePath -> ModuleSuffix -> FileSuffix -> TemplateType -> [THFunction] -> HModule
+-- makeTHModule = makeModule TH
 
 -- ----------------------------------------
 -- helper data and functions for templating
@@ -88,7 +89,7 @@ renderFunctions m validFunctions =
   renderFunPtrSig' = renderFunPtrSig (modIsTemplate m) ffiPrefix (modHeader m) (modTypeTemplate m)
 
   ffiPrefix :: Text
-  ffiPrefix = modPrefix m <> Hs.type2SpliceReal (modTypeTemplate m) <> modSuffix m
+  ffiPrefix = T.pack (show $ modPrefix m) <> Hs.type2SpliceReal (modTypeTemplate m) <> textSuffix (modSuffix m)
 
   triple :: [(Text, THType, [THArg])]
   triple = go <$> validFunctions
@@ -132,11 +133,11 @@ renderCHeaderFile templateType parsedBindings makeConfig = do
   filename = renderModuleName modSpec <> ".hs"
 
   outDir :: String
-  outDir = T.unpack (modOutDir modSpec)
+  outDir = T.unpack (textPath $ modOutDir modSpec)
 
 renderModuleName :: HModule -> Text
 renderModuleName HModule{modPrefix, modTypeTemplate, modFileSuffix}
-  = modPrefix <> (Hs.type2SpliceReal modTypeTemplate) <> modFileSuffix
+  = T.pack (show modPrefix) <> (Hs.type2SpliceReal modTypeTemplate) <> textFileSuffix modFileSuffix
 
 -- ----------------------------------------
 -- Execution

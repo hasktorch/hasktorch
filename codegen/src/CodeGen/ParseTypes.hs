@@ -6,6 +6,10 @@ module CodeGen.ParseTypes
   , TemplateType(..)
 
   , HModule(..)
+  , ModuleSuffix(..)
+  , FileSuffix(..)
+  , TextPath(..)
+  , IsTemplate(..)
   , TypeCategory(..)
 
   , THType(..)
@@ -15,26 +19,41 @@ module CodeGen.ParseTypes
   ) where
 
 import CodeGen.Prelude
+import CodeGen.CLITypes
 
 -- ----------------------------------------
 -- Types for rendering output
 -- ----------------------------------------
 
 data HModule = HModule
-  { modPrefix       :: Text
+  { modPrefix       :: LibType
   , modExtensions   :: [Text]
   , modImports      :: [Text]
   , modTypeDefs     :: [(Text, Text)]
   , modHeader       :: FilePath
   , modTypeTemplate :: TemplateType
-  , modSuffix       :: Text
-  , modFileSuffix   :: Text
+  , modSuffix       :: ModuleSuffix
+  , modFileSuffix   :: FileSuffix
   , modBindings     :: [THFunction]
-  , modOutDir       :: Text
-  , modIsTemplate   :: Bool
+  , modOutDir       :: TextPath
+  , modIsTemplate   :: IsTemplate
   } deriving Show
 
-data TypeCategory = ReturnValue | FunctionParam
+newtype ModuleSuffix = ModuleSuffix { textSuffix :: Text }
+  deriving Show
+
+newtype FileSuffix = FileSuffix { textFileSuffix :: Text }
+  deriving Show
+
+newtype TextPath = TextPath { textPath :: Text }
+  deriving Show
+
+newtype IsTemplate = IsTemplate Bool
+  deriving Show
+
+data TypeCategory
+  = ReturnValue
+  | FunctionParam
 
 -- ----------------------------------------
 -- Parsed types

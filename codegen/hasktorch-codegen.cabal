@@ -1,9 +1,3 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
---
--- see: https://github.com/sol/hpack
---
--- hash: 076a900449831fd2ac072ee234da3aa36a567717d3177c88bb0c1518feb2cc20
-
 name:                hasktorch-codegen
 version:             0.0.1.0
 synopsis:            Torch for tensors and neural networks in Haskell
@@ -32,6 +26,7 @@ library
     , text >=1.2.2.2
     , unordered-containers >=0.1.3.0
   exposed-modules:
+      CodeGen.CLITypes
       CodeGen.ParseTypes
       CodeGen.Prelude
       CodeGen.Render.C
