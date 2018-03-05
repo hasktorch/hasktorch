@@ -15,6 +15,9 @@ typeCatHelper tc s = case tc of
 renderHaskellType' :: TemplateType -> THType -> Text
 renderHaskellType' tt =
   \case
+    -- special pointer cases
+    APtr THAllocator -> "CTHAllocatorPtr"
+
     APtr x      -> "Ptr (" <> renderHaskellType' tt x <> ")"
     THVoid      -> "()"
     THDescBuff  -> "CTHDescBuff"
@@ -48,7 +51,6 @@ renderHaskellType' tt =
 
     {- Other -}
     THGenerator -> "CTHGenerator"  -- concrete type found in TensorMath
-    THAllocator -> "CTHAllocator"
     THDouble    -> "CDouble"           -- added from TensorRandom
     THPtrDiff   -> "CPtrdiff"          -- TODO: check if it's appropriate to splice here
     THLong      -> "CLong"

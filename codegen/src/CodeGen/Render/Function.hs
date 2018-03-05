@@ -47,7 +47,9 @@ haskellSig hsname st tt args retType = T.intercalate ""
   ]
  where
   typeSignature :: [Text]
-  typeSignature = mapMaybe (renderHaskellType FunctionParam tt . thArgType) args
+  typeSignature = case args of
+    [THArg THVoid _] -> []
+    args' -> mapMaybe (renderHaskellType FunctionParam tt . thArgType) args'
 
   retArrow :: Text
   retArrow = case renderHaskellType ReturnValue tt retType of

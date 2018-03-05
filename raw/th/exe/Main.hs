@@ -4,9 +4,9 @@ module Main where
 
 import Foreign
 import THTypes
-import qualified THRandom as TH
-import qualified THDoubleTensor as TH
-import qualified THDoubleTensorMath as TH
+import qualified Torch.FFI.TH.Random as TH
+import qualified Torch.FFI.TH.Double.Tensor as TH
+import qualified Torch.FFI.TH.Double.TensorMath as TH
 
 main :: IO ()
 main = do
