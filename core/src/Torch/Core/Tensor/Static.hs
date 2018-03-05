@@ -86,7 +86,7 @@ import qualified Torch.Core.Tensor.Dynamic as Class (IsTensor)
 -- import qualified Torch.Core.DoubleTensor.Static as D
 --
 -- ========================================================================= --
--- re-export all Torch.Signature.Types so that Aliases propogate
+-- re-export all Torch.Sig.Types so that Aliases propogate
 import qualified Torch.Types.TH.Byte   as B
 import qualified Torch.Types.TH.Short  as S
 import qualified Torch.Types.TH.Int    as I

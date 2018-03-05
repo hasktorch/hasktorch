@@ -27,73 +27,73 @@ import Data.Word
 import Data.Int
 
 -- | c_copy :  tensor src -> void
-foreign import ccall "THTensorCopy.h c_THTensorByte_copy"
+foreign import ccall "THTensorCopy.h THByteTensor_copy"
   c_copy :: Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
 
 -- | c_copyByte :  tensor src -> void
-foreign import ccall "THTensorCopy.h c_THTensorByte_copyByte"
+foreign import ccall "THTensorCopy.h THByteTensor_copyByte"
   c_copyByte :: Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
 
 -- | c_copyChar :  tensor src -> void
-foreign import ccall "THTensorCopy.h c_THTensorByte_copyChar"
+foreign import ccall "THTensorCopy.h THByteTensor_copyChar"
   c_copyChar :: Ptr (CTHByteTensor) -> Ptr (CTHCharTensor) -> IO (())
 
 -- | c_copyShort :  tensor src -> void
-foreign import ccall "THTensorCopy.h c_THTensorByte_copyShort"
+foreign import ccall "THTensorCopy.h THByteTensor_copyShort"
   c_copyShort :: Ptr (CTHByteTensor) -> Ptr (CTHShortTensor) -> IO (())
 
 -- | c_copyInt :  tensor src -> void
-foreign import ccall "THTensorCopy.h c_THTensorByte_copyInt"
+foreign import ccall "THTensorCopy.h THByteTensor_copyInt"
   c_copyInt :: Ptr (CTHByteTensor) -> Ptr (CTHIntTensor) -> IO (())
 
 -- | c_copyLong :  tensor src -> void
-foreign import ccall "THTensorCopy.h c_THTensorByte_copyLong"
+foreign import ccall "THTensorCopy.h THByteTensor_copyLong"
   c_copyLong :: Ptr (CTHByteTensor) -> Ptr (CTHLongTensor) -> IO (())
 
 -- | c_copyFloat :  tensor src -> void
-foreign import ccall "THTensorCopy.h c_THTensorByte_copyFloat"
+foreign import ccall "THTensorCopy.h THByteTensor_copyFloat"
   c_copyFloat :: Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> IO (())
 
 -- | c_copyDouble :  tensor src -> void
-foreign import ccall "THTensorCopy.h c_THTensorByte_copyDouble"
+foreign import ccall "THTensorCopy.h THByteTensor_copyDouble"
   c_copyDouble :: Ptr (CTHByteTensor) -> Ptr (CTHDoubleTensor) -> IO (())
 
 -- | c_copyHalf :  tensor src -> void
-foreign import ccall "THTensorCopy.h c_THTensorByte_copyHalf"
+foreign import ccall "THTensorCopy.h THByteTensor_copyHalf"
   c_copyHalf :: Ptr (CTHByteTensor) -> Ptr (CTHHalfTensor) -> IO (())
 
 -- | p_copy : Pointer to function : tensor src -> void
-foreign import ccall "THTensorCopy.h &p_THTensorByte_copy"
+foreign import ccall "THTensorCopy.h &THByteTensor_copy"
   p_copy :: FunPtr (Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
 
 -- | p_copyByte : Pointer to function : tensor src -> void
-foreign import ccall "THTensorCopy.h &p_THTensorByte_copyByte"
+foreign import ccall "THTensorCopy.h &THByteTensor_copyByte"
   p_copyByte :: FunPtr (Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
 
 -- | p_copyChar : Pointer to function : tensor src -> void
-foreign import ccall "THTensorCopy.h &p_THTensorByte_copyChar"
+foreign import ccall "THTensorCopy.h &THByteTensor_copyChar"
   p_copyChar :: FunPtr (Ptr (CTHByteTensor) -> Ptr (CTHCharTensor) -> IO (()))
 
 -- | p_copyShort : Pointer to function : tensor src -> void
-foreign import ccall "THTensorCopy.h &p_THTensorByte_copyShort"
+foreign import ccall "THTensorCopy.h &THByteTensor_copyShort"
   p_copyShort :: FunPtr (Ptr (CTHByteTensor) -> Ptr (CTHShortTensor) -> IO (()))
 
 -- | p_copyInt : Pointer to function : tensor src -> void
-foreign import ccall "THTensorCopy.h &p_THTensorByte_copyInt"
+foreign import ccall "THTensorCopy.h &THByteTensor_copyInt"
   p_copyInt :: FunPtr (Ptr (CTHByteTensor) -> Ptr (CTHIntTensor) -> IO (()))
 
 -- | p_copyLong : Pointer to function : tensor src -> void
-foreign import ccall "THTensorCopy.h &p_THTensorByte_copyLong"
+foreign import ccall "THTensorCopy.h &THByteTensor_copyLong"
   p_copyLong :: FunPtr (Ptr (CTHByteTensor) -> Ptr (CTHLongTensor) -> IO (()))
 
 -- | p_copyFloat : Pointer to function : tensor src -> void
-foreign import ccall "THTensorCopy.h &p_THTensorByte_copyFloat"
+foreign import ccall "THTensorCopy.h &THByteTensor_copyFloat"
   p_copyFloat :: FunPtr (Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> IO (()))
 
 -- | p_copyDouble : Pointer to function : tensor src -> void
-foreign import ccall "THTensorCopy.h &p_THTensorByte_copyDouble"
+foreign import ccall "THTensorCopy.h &THByteTensor_copyDouble"
   p_copyDouble :: FunPtr (Ptr (CTHByteTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
 
 -- | p_copyHalf : Pointer to function : tensor src -> void
-foreign import ccall "THTensorCopy.h &p_THTensorByte_copyHalf"
+foreign import ccall "THTensorCopy.h &THByteTensor_copyHalf"
   p_copyHalf :: FunPtr (Ptr (CTHByteTensor) -> Ptr (CTHHalfTensor) -> IO (()))

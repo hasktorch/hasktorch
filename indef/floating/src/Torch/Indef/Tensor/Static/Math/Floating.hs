@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Indef.Tensor.Static.Math.Floating where
 
-import Torch.Signature.Types (Tensor)
+import Torch.Sig.Types (Tensor)
 import Torch.Class.Tensor.Static
 import Torch.Indef.Tensor.Static
 import Torch.Indef.Tensor.Dynamic.Math.Floating ()

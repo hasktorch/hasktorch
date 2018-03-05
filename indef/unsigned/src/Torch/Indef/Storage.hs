@@ -16,7 +16,7 @@ import Control.Monad.Managed
 import Torch.Indef.Types
 import Torch.Indef.Storage.Copy ()
 import Torch.Class.Storage (Index(..), StorageSize(..), AllocatorContext(..))
-import qualified Torch.Signature.Storage as Sig
+import qualified Torch.Sig.Storage as Sig
 import qualified Torch.Class.Storage as Class
 import qualified Foreign.Marshal.Array as FM
 

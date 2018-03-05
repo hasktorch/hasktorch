@@ -12,7 +12,7 @@ import qualified Torch.FFI.TH.Long.Storage as Long
 import qualified Torch.Class.IsTensor as Class
 import Torch.Class.Internal (Stride, Size, StorageOffset, Step, SizesStorage, StridesStorage)
 
-import Torch.Signature.Types -- for the types
+import Torch.Sig.Types -- for the types
 import Torch.Indef.Tensor.Dynamic.IsTensor () -- for the downcasting
 import Torch.Indef.Tensor.Static (tensor) -- for the type families
 

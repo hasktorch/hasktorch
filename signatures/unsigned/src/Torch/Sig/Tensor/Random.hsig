@@ -1,9 +1,9 @@
-signature Torch.Signature.Tensor.Random where
+signature Torch.Sig.Tensor.Random where
 
 import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import Torch.Signature.Types
+import Torch.Sig.Types
 
 c_random                 :: Ptr CTensor -> Ptr CTHGenerator -> IO ()
 c_clampedRandom          :: Ptr CTensor -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ()

@@ -1,9 +1,9 @@
-signature Torch.Signature.IsTensor where
+signature Torch.Sig.IsTensor where
 
 import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import Torch.Signature.Types
+import Torch.Sig.Types
 
 c_clearFlag :: Ptr CTensor -> CChar -> IO ()
 c_data :: Ptr CTensor -> IO (Ptr CReal)

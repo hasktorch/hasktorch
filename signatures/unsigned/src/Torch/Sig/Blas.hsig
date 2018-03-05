@@ -1,9 +1,9 @@
-signature Torch.Signature.Blas where
+signature Torch.Sig.Blas where
 
 import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import Torch.Signature.Types
+import Torch.Sig.Types
 
 c_swap :: CLLong -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO ()
 c_scal :: CLLong -> CReal -> Ptr CReal -> CLLong -> IO ()

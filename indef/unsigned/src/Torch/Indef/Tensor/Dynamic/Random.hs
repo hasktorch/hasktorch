@@ -5,7 +5,7 @@ module Torch.Indef.Tensor.Dynamic.Random where
 import Foreign
 import Foreign.C.Types
 import GHC.Int
-import qualified Torch.Signature.Tensor.Random as Sig
+import qualified Torch.Sig.Tensor.Random as Sig
 import qualified Torch.Class.Tensor.Random as Class
 import Torch.Types.TH
 import Torch.Types.TH.Random

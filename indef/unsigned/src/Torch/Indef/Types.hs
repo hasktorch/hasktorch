@@ -21,8 +21,8 @@ import Foreign
 import GHC.ForeignPtr (ForeignPtr)
 import qualified Foreign.Marshal.Array as FM
 
--- import Torch.Signature.Types (CTensor, c2hsReal, tensor)
-import Torch.Signature.Types as Sig hiding (Tensor)
+-- import Torch.Sig.Types (CTensor, c2hsReal, tensor)
+import Torch.Sig.Types as Sig hiding (Tensor)
 import qualified Torch.Class.Internal as TypeFamilies
 
 type Tensor = Sig.DynTensor

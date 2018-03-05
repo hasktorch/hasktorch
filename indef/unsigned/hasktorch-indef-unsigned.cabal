@@ -72,12 +72,12 @@ executable isdefinite
         ,Torch.Indef.Tensor.Static
         )
         requires
-        (Torch.Signature.Types         as Torch.Types.TH.Byte
-        ,Torch.Signature.Storage       as Torch.FFI.TH.Byte.Storage
-        ,Torch.Signature.Storage.Copy  as Torch.FFI.TH.Byte.StorageCopy
-        ,Torch.Signature.IsTensor      as Torch.FFI.TH.Byte.Tensor
-        ,Torch.Signature.Tensor.Copy   as Torch.FFI.TH.Byte.TensorCopy
-        ,Torch.Signature.Tensor.Conv   as Torch.FFI.TH.Byte.TensorConv
-        ,Torch.Signature.Tensor.Random as Torch.FFI.TH.Byte.TensorRandom
-        ,Torch.Signature.Tensor.Math   as Torch.FFI.TH.Byte.TensorMath
+        (Torch.Sig.Types         as Torch.Types.TH.Byte
+        ,Torch.Sig.Storage       as Torch.FFI.TH.Byte.Storage
+        ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Byte.StorageCopy
+        ,Torch.Sig.IsTensor      as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.TH.Byte.TensorCopy
+        ,Torch.Sig.Tensor.Conv   as Torch.FFI.TH.Byte.TensorConv
+        ,Torch.Sig.Tensor.Random as Torch.FFI.TH.Byte.TensorRandom
+        ,Torch.Sig.Tensor.Math   as Torch.FFI.TH.Byte.TensorMath
         )

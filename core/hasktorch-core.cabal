@@ -166,14 +166,14 @@ library
         ,Torch.Indef.Tensor.Static.Copy         as Torch.Core.ByteTensor.Static.Copy
         )
         requires
-        (Torch.Signature.Types             as Torch.Types.TH.Byte
-        ,Torch.Signature.Storage           as Torch.FFI.TH.Byte.Storage
-        ,Torch.Signature.Storage.Copy      as Torch.FFI.TH.Byte.StorageCopy
-        ,Torch.Signature.IsTensor          as Torch.FFI.TH.Byte.Tensor
-        ,Torch.Signature.Tensor.Copy       as Torch.FFI.TH.Byte.TensorCopy
-        ,Torch.Signature.Tensor.Conv       as Torch.FFI.TH.Byte.TensorConv
-        ,Torch.Signature.Tensor.Random     as Torch.FFI.TH.Byte.TensorRandom
-        ,Torch.Signature.Tensor.Math       as Torch.FFI.TH.Byte.TensorMath
+        (Torch.Sig.Types             as Torch.Types.TH.Byte
+        ,Torch.Sig.Storage           as Torch.FFI.TH.Byte.Storage
+        ,Torch.Sig.Storage.Copy      as Torch.FFI.TH.Byte.StorageCopy
+        ,Torch.Sig.IsTensor          as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Tensor.Copy       as Torch.FFI.TH.Byte.TensorCopy
+        ,Torch.Sig.Tensor.Conv       as Torch.FFI.TH.Byte.TensorConv
+        ,Torch.Sig.Tensor.Random     as Torch.FFI.TH.Byte.TensorRandom
+        ,Torch.Sig.Tensor.Math       as Torch.FFI.TH.Byte.TensorMath
         )
     , hasktorch-indef-signed
         (Torch.Indef.Types                      as Torch.Core.ShortTypes
@@ -193,15 +193,15 @@ library
         ,Torch.Indef.Tensor.Static.Copy         as Torch.Core.ShortTensor.Static.Copy
         )
         requires
-        (Torch.Signature.Types         as Torch.Types.TH.Short
-        ,Torch.Signature.Storage          as Torch.FFI.TH.Short.Storage
-        ,Torch.Signature.Storage.Copy      as Torch.FFI.TH.Short.StorageCopy
-        ,Torch.Signature.IsTensor          as Torch.FFI.TH.Short.Tensor
-        ,Torch.Signature.Tensor.Copy       as Torch.FFI.TH.Short.TensorCopy
-        ,Torch.Signature.Tensor.Conv       as Torch.FFI.TH.Short.TensorConv
-        ,Torch.Signature.Tensor.Random     as Torch.FFI.TH.Short.TensorRandom
-        ,Torch.Signature.Tensor.Math       as Torch.FFI.TH.Short.TensorMath
-        ,Torch.Signature.Tensor.MathSigned as Torch.FFI.TH.Short.TensorMath
+        (Torch.Sig.Types         as Torch.Types.TH.Short
+        ,Torch.Sig.Storage          as Torch.FFI.TH.Short.Storage
+        ,Torch.Sig.Storage.Copy      as Torch.FFI.TH.Short.StorageCopy
+        ,Torch.Sig.IsTensor          as Torch.FFI.TH.Short.Tensor
+        ,Torch.Sig.Tensor.Copy       as Torch.FFI.TH.Short.TensorCopy
+        ,Torch.Sig.Tensor.Conv       as Torch.FFI.TH.Short.TensorConv
+        ,Torch.Sig.Tensor.Random     as Torch.FFI.TH.Short.TensorRandom
+        ,Torch.Sig.Tensor.Math       as Torch.FFI.TH.Short.TensorMath
+        ,Torch.Sig.Tensor.MathSigned as Torch.FFI.TH.Short.TensorMath
         )
    , hasktorch-indef-signed
        (Torch.Indef.Types                      as Torch.Core.IntTypes
@@ -221,15 +221,15 @@ library
        ,Torch.Indef.Tensor.Static.Copy              as Torch.Core.IntTensor.Static.Copy
        )
        requires
-       (Torch.Signature.Types         as Torch.Types.TH.Int
-       ,Torch.Signature.Storage          as Torch.FFI.TH.Int.Storage
-       ,Torch.Signature.Storage.Copy      as Torch.FFI.TH.Int.StorageCopy
-       ,Torch.Signature.IsTensor          as Torch.FFI.TH.Int.Tensor
-       ,Torch.Signature.Tensor.Copy       as Torch.FFI.TH.Int.TensorCopy
-       ,Torch.Signature.Tensor.Conv       as Torch.FFI.TH.Int.TensorConv
-       ,Torch.Signature.Tensor.Random     as Torch.FFI.TH.Int.TensorRandom
-       ,Torch.Signature.Tensor.Math       as Torch.FFI.TH.Int.TensorMath
-       ,Torch.Signature.Tensor.MathSigned as Torch.FFI.TH.Int.TensorMath
+       (Torch.Sig.Types         as Torch.Types.TH.Int
+       ,Torch.Sig.Storage          as Torch.FFI.TH.Int.Storage
+       ,Torch.Sig.Storage.Copy      as Torch.FFI.TH.Int.StorageCopy
+       ,Torch.Sig.IsTensor          as Torch.FFI.TH.Int.Tensor
+       ,Torch.Sig.Tensor.Copy       as Torch.FFI.TH.Int.TensorCopy
+       ,Torch.Sig.Tensor.Conv       as Torch.FFI.TH.Int.TensorConv
+       ,Torch.Sig.Tensor.Random     as Torch.FFI.TH.Int.TensorRandom
+       ,Torch.Sig.Tensor.Math       as Torch.FFI.TH.Int.TensorMath
+       ,Torch.Sig.Tensor.MathSigned as Torch.FFI.TH.Int.TensorMath
       )
    , hasktorch-indef-signed
       (Torch.Indef.Types                      as Torch.Core.LongTypes
@@ -249,15 +249,15 @@ library
       ,Torch.Indef.Tensor.Static.Math.Signed as Torch.Core.LongTensor.Static.Math.Signed
       )
       requires
-      (Torch.Signature.Types             as Torch.Types.TH.Long
-      ,Torch.Signature.Storage           as Torch.FFI.TH.Long.Storage
-      ,Torch.Signature.Storage.Copy      as Torch.FFI.TH.Long.StorageCopy
-      ,Torch.Signature.IsTensor          as Torch.FFI.TH.Long.Tensor
-      ,Torch.Signature.Tensor.Copy       as Torch.FFI.TH.Long.TensorCopy
-      ,Torch.Signature.Tensor.Conv       as Torch.FFI.TH.Long.TensorConv
-      ,Torch.Signature.Tensor.Random     as Torch.FFI.TH.Long.TensorRandom
-      ,Torch.Signature.Tensor.Math       as Torch.FFI.TH.Long.TensorMath
-      ,Torch.Signature.Tensor.MathSigned as Torch.FFI.TH.Long.TensorMath
+      (Torch.Sig.Types             as Torch.Types.TH.Long
+      ,Torch.Sig.Storage           as Torch.FFI.TH.Long.Storage
+      ,Torch.Sig.Storage.Copy      as Torch.FFI.TH.Long.StorageCopy
+      ,Torch.Sig.IsTensor          as Torch.FFI.TH.Long.Tensor
+      ,Torch.Sig.Tensor.Copy       as Torch.FFI.TH.Long.TensorCopy
+      ,Torch.Sig.Tensor.Conv       as Torch.FFI.TH.Long.TensorConv
+      ,Torch.Sig.Tensor.Random     as Torch.FFI.TH.Long.TensorRandom
+      ,Torch.Sig.Tensor.Math       as Torch.FFI.TH.Long.TensorMath
+      ,Torch.Sig.Tensor.MathSigned as Torch.FFI.TH.Long.TensorMath
       )
    , hasktorch-indef-floating
       (Torch.Indef.Types                           as Torch.Core.FloatTypes
@@ -282,18 +282,18 @@ library
       ,Torch.Indef.Tensor.Static.Math.Floating      as Torch.Core.FloatTensor.Static.Math.Floating
       )
       requires
-      (Torch.Signature.Types                 as Torch.Types.TH.Float
-      ,Torch.Signature.Storage               as Torch.FFI.TH.Float.Storage
-      ,Torch.Signature.Storage.Copy          as Torch.FFI.TH.Float.StorageCopy
-      ,Torch.Signature.IsTensor              as Torch.FFI.TH.Float.Tensor
-      ,Torch.Signature.Tensor.Copy           as Torch.FFI.TH.Float.TensorCopy
-      ,Torch.Signature.Tensor.Conv           as Torch.FFI.TH.Float.TensorConv
-      ,Torch.Signature.Tensor.Lapack         as Torch.FFI.TH.Float.TensorLapack
-      ,Torch.Signature.Tensor.Math           as Torch.FFI.TH.Float.TensorMath
-      ,Torch.Signature.Tensor.MathSigned     as Torch.FFI.TH.Float.TensorMath
-      ,Torch.Signature.Tensor.MathFloating   as Torch.FFI.TH.Float.TensorMath
-      ,Torch.Signature.Tensor.Random         as Torch.FFI.TH.Float.TensorRandom
-      ,Torch.Signature.Tensor.RandomFloating as Torch.FFI.TH.Float.TensorRandom
+      (Torch.Sig.Types                 as Torch.Types.TH.Float
+      ,Torch.Sig.Storage               as Torch.FFI.TH.Float.Storage
+      ,Torch.Sig.Storage.Copy          as Torch.FFI.TH.Float.StorageCopy
+      ,Torch.Sig.IsTensor              as Torch.FFI.TH.Float.Tensor
+      ,Torch.Sig.Tensor.Copy           as Torch.FFI.TH.Float.TensorCopy
+      ,Torch.Sig.Tensor.Conv           as Torch.FFI.TH.Float.TensorConv
+      ,Torch.Sig.Tensor.Lapack         as Torch.FFI.TH.Float.TensorLapack
+      ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Float.TensorMath
+      ,Torch.Sig.Tensor.MathSigned     as Torch.FFI.TH.Float.TensorMath
+      ,Torch.Sig.Tensor.MathFloating   as Torch.FFI.TH.Float.TensorMath
+      ,Torch.Sig.Tensor.Random         as Torch.FFI.TH.Float.TensorRandom
+      ,Torch.Sig.Tensor.RandomFloating as Torch.FFI.TH.Float.TensorRandom
       )
    , hasktorch-indef-floating
       (Torch.Indef.Types                           as Torch.Core.DoubleTypes
@@ -318,17 +318,17 @@ library
       ,Torch.Indef.Tensor.Static.Math.Floating     as Torch.Core.DoubleTensor.Static.Math.Floating
       )
       requires
-      (Torch.Signature.Types                 as Torch.Types.TH.Double
-      ,Torch.Signature.Storage               as Torch.FFI.TH.Double.Storage
-      ,Torch.Signature.Storage.Copy          as Torch.FFI.TH.Double.StorageCopy
-      ,Torch.Signature.IsTensor              as Torch.FFI.TH.Double.Tensor
-      ,Torch.Signature.Tensor.Copy           as Torch.FFI.TH.Double.TensorCopy
-      ,Torch.Signature.Tensor.Conv           as Torch.FFI.TH.Double.TensorConv
-      ,Torch.Signature.Tensor.Lapack         as Torch.FFI.TH.Double.TensorLapack
-      ,Torch.Signature.Tensor.Math           as Torch.FFI.TH.Double.TensorMath
-      ,Torch.Signature.Tensor.MathFloating   as Torch.FFI.TH.Double.TensorMath
-      ,Torch.Signature.Tensor.MathSigned     as Torch.FFI.TH.Double.TensorMath
-      ,Torch.Signature.Tensor.Random         as Torch.FFI.TH.Double.TensorRandom
-      ,Torch.Signature.Tensor.RandomFloating as Torch.FFI.TH.Double.TensorRandom
+      (Torch.Sig.Types                 as Torch.Types.TH.Double
+      ,Torch.Sig.Storage               as Torch.FFI.TH.Double.Storage
+      ,Torch.Sig.Storage.Copy          as Torch.FFI.TH.Double.StorageCopy
+      ,Torch.Sig.IsTensor              as Torch.FFI.TH.Double.Tensor
+      ,Torch.Sig.Tensor.Copy           as Torch.FFI.TH.Double.TensorCopy
+      ,Torch.Sig.Tensor.Conv           as Torch.FFI.TH.Double.TensorConv
+      ,Torch.Sig.Tensor.Lapack         as Torch.FFI.TH.Double.TensorLapack
+      ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Double.TensorMath
+      ,Torch.Sig.Tensor.MathFloating   as Torch.FFI.TH.Double.TensorMath
+      ,Torch.Sig.Tensor.MathSigned     as Torch.FFI.TH.Double.TensorMath
+      ,Torch.Sig.Tensor.Random         as Torch.FFI.TH.Double.TensorRandom
+      ,Torch.Sig.Tensor.RandomFloating as Torch.FFI.TH.Double.TensorRandom
       )
 

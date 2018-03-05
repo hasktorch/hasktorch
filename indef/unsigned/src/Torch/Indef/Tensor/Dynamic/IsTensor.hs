@@ -19,8 +19,8 @@ import Torch.Class.Internal (Stride(..), Size(..), StorageOffset(..), Step(..), 
 import qualified Torch.Types.TH.Long as Long
 import qualified Torch.FFI.TH.Long.Storage as Long
 import qualified Foreign.Marshal.Array as FM
-import qualified Torch.Signature.IsTensor as Sig
-import qualified Torch.Signature.Storage as StorageSig (c_size)
+import qualified Torch.Sig.IsTensor as Sig
+import qualified Torch.Sig.Storage as StorageSig (c_size)
 import qualified Torch.Class.IsTensor as Class
 
 import Torch.Indef.Types

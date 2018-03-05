@@ -6,7 +6,7 @@ import Foreign
 import Foreign.C.Types
 import Data.Coerce (coerce)
 import Torch.Types.TH
-import qualified Torch.Signature.Tensor.Lapack as Sig
+import qualified Torch.Sig.Tensor.Lapack as Sig
 import qualified Torch.Class.Tensor.Lapack as Class
 import qualified Torch.Types.TH.Int as Int
 import qualified Foreign.Marshal.Array as FM

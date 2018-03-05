@@ -23,57 +23,57 @@ import Data.Word
 import Data.Int
 
 -- | c_random :  self _generator -> void
-foreign import ccall "THTensorRandom.h c_THTensorHalf_random"
+foreign import ccall "THTensorRandom.h THHalfTensor_random"
   c_random :: Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> IO (())
 
 -- | c_clampedRandom :  self _generator min max -> void
-foreign import ccall "THTensorRandom.h c_THTensorHalf_clampedRandom"
+foreign import ccall "THTensorRandom.h THHalfTensor_clampedRandom"
   c_clampedRandom :: Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> CLLong -> CLLong -> IO (())
 
 -- | c_cappedRandom :  self _generator max -> void
-foreign import ccall "THTensorRandom.h c_THTensorHalf_cappedRandom"
+foreign import ccall "THTensorRandom.h THHalfTensor_cappedRandom"
   c_cappedRandom :: Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> CLLong -> IO (())
 
 -- | c_geometric :  self _generator p -> void
-foreign import ccall "THTensorRandom.h c_THTensorHalf_geometric"
+foreign import ccall "THTensorRandom.h THHalfTensor_geometric"
   c_geometric :: Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> CDouble -> IO (())
 
 -- | c_bernoulli :  self _generator p -> void
-foreign import ccall "THTensorRandom.h c_THTensorHalf_bernoulli"
+foreign import ccall "THTensorRandom.h THHalfTensor_bernoulli"
   c_bernoulli :: Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> CDouble -> IO (())
 
 -- | c_bernoulli_FloatTensor :  self _generator p -> void
-foreign import ccall "THTensorRandom.h c_THTensorHalf_bernoulli_FloatTensor"
+foreign import ccall "THTensorRandom.h THHalfTensor_bernoulli_FloatTensor"
   c_bernoulli_FloatTensor :: Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> Ptr (CTHFloatTensor) -> IO (())
 
 -- | c_bernoulli_DoubleTensor :  self _generator p -> void
-foreign import ccall "THTensorRandom.h c_THTensorHalf_bernoulli_DoubleTensor"
+foreign import ccall "THTensorRandom.h THHalfTensor_bernoulli_DoubleTensor"
   c_bernoulli_DoubleTensor :: Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> Ptr (CTHDoubleTensor) -> IO (())
 
 -- | p_random : Pointer to function : self _generator -> void
-foreign import ccall "THTensorRandom.h &p_THTensorHalf_random"
+foreign import ccall "THTensorRandom.h &THHalfTensor_random"
   p_random :: FunPtr (Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> IO (()))
 
 -- | p_clampedRandom : Pointer to function : self _generator min max -> void
-foreign import ccall "THTensorRandom.h &p_THTensorHalf_clampedRandom"
+foreign import ccall "THTensorRandom.h &THHalfTensor_clampedRandom"
   p_clampedRandom :: FunPtr (Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> CLLong -> CLLong -> IO (()))
 
 -- | p_cappedRandom : Pointer to function : self _generator max -> void
-foreign import ccall "THTensorRandom.h &p_THTensorHalf_cappedRandom"
+foreign import ccall "THTensorRandom.h &THHalfTensor_cappedRandom"
   p_cappedRandom :: FunPtr (Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> CLLong -> IO (()))
 
 -- | p_geometric : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &p_THTensorHalf_geometric"
+foreign import ccall "THTensorRandom.h &THHalfTensor_geometric"
   p_geometric :: FunPtr (Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> CDouble -> IO (()))
 
 -- | p_bernoulli : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &p_THTensorHalf_bernoulli"
+foreign import ccall "THTensorRandom.h &THHalfTensor_bernoulli"
   p_bernoulli :: FunPtr (Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> CDouble -> IO (()))
 
 -- | p_bernoulli_FloatTensor : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &p_THTensorHalf_bernoulli_FloatTensor"
+foreign import ccall "THTensorRandom.h &THHalfTensor_bernoulli_FloatTensor"
   p_bernoulli_FloatTensor :: FunPtr (Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> Ptr (CTHFloatTensor) -> IO (()))
 
 -- | p_bernoulli_DoubleTensor : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &p_THTensorHalf_bernoulli_DoubleTensor"
+foreign import ccall "THTensorRandom.h &THHalfTensor_bernoulli_DoubleTensor"
   p_bernoulli_DoubleTensor :: FunPtr (Ptr (CTHHalfTensor) -> Ptr (CTHGenerator) -> Ptr (CTHDoubleTensor) -> IO (()))

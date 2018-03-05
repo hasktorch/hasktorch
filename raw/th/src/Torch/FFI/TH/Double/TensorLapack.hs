@@ -45,145 +45,145 @@ import Data.Word
 import Data.Int
 
 -- | c_gesv :  rb_ ra_ b_ a_ -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_gesv"
+foreign import ccall "THTensorLapack.h THDoubleTensor_gesv"
   c_gesv :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (())
 
 -- | c_trtrs :  rb_ ra_ b_ a_ uplo trans diag -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_trtrs"
+foreign import ccall "THTensorLapack.h THDoubleTensor_trtrs"
   c_trtrs :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> Ptr (CChar) -> Ptr (CChar) -> IO (())
 
 -- | c_gels :  rb_ ra_ b_ a_ -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_gels"
+foreign import ccall "THTensorLapack.h THDoubleTensor_gels"
   c_gels :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (())
 
 -- | c_syev :  re_ rv_ a_ jobz uplo -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_syev"
+foreign import ccall "THTensorLapack.h THDoubleTensor_syev"
   c_syev :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> Ptr (CChar) -> IO (())
 
 -- | c_geev :  re_ rv_ a_ jobvr -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_geev"
+foreign import ccall "THTensorLapack.h THDoubleTensor_geev"
   c_geev :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (())
 
 -- | c_gesvd :  ru_ rs_ rv_ a jobu -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_gesvd"
+foreign import ccall "THTensorLapack.h THDoubleTensor_gesvd"
   c_gesvd :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (())
 
 -- | c_gesvd2 :  ru_ rs_ rv_ ra_ a jobu -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_gesvd2"
+foreign import ccall "THTensorLapack.h THDoubleTensor_gesvd2"
   c_gesvd2 :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (())
 
 -- | c_getri :  ra_ a -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_getri"
+foreign import ccall "THTensorLapack.h THDoubleTensor_getri"
   c_getri :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (())
 
 -- | c_potrf :  ra_ a uplo -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_potrf"
+foreign import ccall "THTensorLapack.h THDoubleTensor_potrf"
   c_potrf :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (())
 
 -- | c_potrs :  rb_ b_ a_ uplo -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_potrs"
+foreign import ccall "THTensorLapack.h THDoubleTensor_potrs"
   c_potrs :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (())
 
 -- | c_potri :  ra_ a uplo -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_potri"
+foreign import ccall "THTensorLapack.h THDoubleTensor_potri"
   c_potri :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (())
 
 -- | c_qr :  rq_ rr_ a -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_qr"
+foreign import ccall "THTensorLapack.h THDoubleTensor_qr"
   c_qr :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (())
 
 -- | c_geqrf :  ra_ rtau_ a -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_geqrf"
+foreign import ccall "THTensorLapack.h THDoubleTensor_geqrf"
   c_geqrf :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (())
 
 -- | c_orgqr :  ra_ a tau -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_orgqr"
+foreign import ccall "THTensorLapack.h THDoubleTensor_orgqr"
   c_orgqr :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (())
 
 -- | c_ormqr :  ra_ a tau c side trans -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_ormqr"
+foreign import ccall "THTensorLapack.h THDoubleTensor_ormqr"
   c_ormqr :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> Ptr (CChar) -> IO (())
 
 -- | c_pstrf :  ra_ rpiv_ a uplo tol -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_pstrf"
+foreign import ccall "THTensorLapack.h THDoubleTensor_pstrf"
   c_pstrf :: Ptr (CTHDoubleTensor) -> Ptr (CTHIntTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> CDouble -> IO (())
 
 -- | c_btrifact :  ra_ rpivots_ rinfo_ pivot a -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_btrifact"
+foreign import ccall "THTensorLapack.h THDoubleTensor_btrifact"
   c_btrifact :: Ptr (CTHDoubleTensor) -> Ptr (CTHIntTensor) -> Ptr (CTHIntTensor) -> CInt -> Ptr (CTHDoubleTensor) -> IO (())
 
 -- | c_btrisolve :  rb_ b atf pivots -> void
-foreign import ccall "THTensorLapack.h c_THTensorDouble_btrisolve"
+foreign import ccall "THTensorLapack.h THDoubleTensor_btrisolve"
   c_btrisolve :: Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHIntTensor) -> IO (())
 
 -- | p_gesv : Pointer to function : rb_ ra_ b_ a_ -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_gesv"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_gesv"
   p_gesv :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
 
 -- | p_trtrs : Pointer to function : rb_ ra_ b_ a_ uplo trans diag -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_trtrs"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_trtrs"
   p_trtrs :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> Ptr (CChar) -> Ptr (CChar) -> IO (()))
 
 -- | p_gels : Pointer to function : rb_ ra_ b_ a_ -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_gels"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_gels"
   p_gels :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
 
 -- | p_syev : Pointer to function : re_ rv_ a_ jobz uplo -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_syev"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_syev"
   p_syev :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> Ptr (CChar) -> IO (()))
 
 -- | p_geev : Pointer to function : re_ rv_ a_ jobvr -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_geev"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_geev"
   p_geev :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (()))
 
 -- | p_gesvd : Pointer to function : ru_ rs_ rv_ a jobu -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_gesvd"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_gesvd"
   p_gesvd :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (()))
 
 -- | p_gesvd2 : Pointer to function : ru_ rs_ rv_ ra_ a jobu -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_gesvd2"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_gesvd2"
   p_gesvd2 :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (()))
 
 -- | p_getri : Pointer to function : ra_ a -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_getri"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_getri"
   p_getri :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
 
 -- | p_potrf : Pointer to function : ra_ a uplo -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_potrf"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_potrf"
   p_potrf :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (()))
 
 -- | p_potrs : Pointer to function : rb_ b_ a_ uplo -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_potrs"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_potrs"
   p_potrs :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (()))
 
 -- | p_potri : Pointer to function : ra_ a uplo -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_potri"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_potri"
   p_potri :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> IO (()))
 
 -- | p_qr : Pointer to function : rq_ rr_ a -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_qr"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_qr"
   p_qr :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
 
 -- | p_geqrf : Pointer to function : ra_ rtau_ a -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_geqrf"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_geqrf"
   p_geqrf :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
 
 -- | p_orgqr : Pointer to function : ra_ a tau -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_orgqr"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_orgqr"
   p_orgqr :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
 
 -- | p_ormqr : Pointer to function : ra_ a tau c side trans -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_ormqr"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_ormqr"
   p_ormqr :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> Ptr (CChar) -> IO (()))
 
 -- | p_pstrf : Pointer to function : ra_ rpiv_ a uplo tol -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_pstrf"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_pstrf"
   p_pstrf :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHIntTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CChar) -> CDouble -> IO (()))
 
 -- | p_btrifact : Pointer to function : ra_ rpivots_ rinfo_ pivot a -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_btrifact"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_btrifact"
   p_btrifact :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHIntTensor) -> Ptr (CTHIntTensor) -> CInt -> Ptr (CTHDoubleTensor) -> IO (()))
 
 -- | p_btrisolve : Pointer to function : rb_ b atf pivots -> void
-foreign import ccall "THTensorLapack.h &p_THTensorDouble_btrisolve"
+foreign import ccall "THTensorLapack.h &THDoubleTensor_btrisolve"
   p_btrisolve :: FunPtr (Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHDoubleTensor) -> Ptr (CTHIntTensor) -> IO (()))

@@ -1,7 +1,7 @@
 module Torch.Indef.Tensor.Static.Random.Floating where
 
 import qualified Torch.Class.Tensor.Random as Class
-import Torch.Signature.Types (dynamic, Tensor)
+import Torch.Sig.Types (dynamic, Tensor)
 import Torch.Indef.Tensor.Dynamic.Random.Floating ()
 import Torch.Indef.Tensor.Static ()
 

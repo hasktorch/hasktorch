@@ -4,7 +4,7 @@ module Torch.Indef.Tensor.Dynamic.Random.Floating where
 import Foreign
 import Foreign.C.Types
 import GHC.Int
-import qualified Torch.Signature.Tensor.RandomFloating as Sig
+import qualified Torch.Sig.Tensor.RandomFloating as Sig
 import qualified Torch.Class.Tensor.Random as Class
 import Torch.Types.TH
 import Torch.Types.TH.Random

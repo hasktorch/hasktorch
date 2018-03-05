@@ -1,9 +1,9 @@
-signature Torch.Signature.Floating.Lapack where
+signature Torch.Sig.Floating.Lapack where
 
 import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import Torch.Signature.Types
+import Torch.Sig.Types
 
 c_gesv  :: CInt -> CInt -> Ptr CReal -> CInt -> CIntPtr -> Ptr CReal -> CInt -> CIntPtr -> IO ()
 c_trtrs :: CChar -> CChar -> CChar -> CInt -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> CIntPtr -> IO ()

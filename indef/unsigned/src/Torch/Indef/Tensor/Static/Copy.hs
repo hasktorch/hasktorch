@@ -1,6 +1,6 @@
 module Torch.Indef.Tensor.Static.Copy where
 
-import Torch.Signature.Types
+import Torch.Sig.Types
 import Torch.Indef.Tensor.Dynamic.Copy ()
 import qualified Torch.Class.Tensor.Copy as Class
 

@@ -6,8 +6,8 @@ import Foreign
 import Foreign.C.Types
 import Torch.Types.TH
 import Control.Exception.Safe (throwString)
-import qualified Torch.Signature.IsTensor as Sig
-import qualified Torch.Signature.Tensor.Copy as Sig
+import qualified Torch.Sig.IsTensor as Sig
+import qualified Torch.Sig.Tensor.Copy as Sig
 import qualified Torch.Class.Tensor.Copy as Class
 import qualified Torch.Class.IsTensor as Class
 

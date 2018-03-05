@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Indef.Tensor.Dynamic.Math.Signed where
 
-import qualified Torch.Signature.Tensor.MathSigned as Sig
+import qualified Torch.Sig.Tensor.MathSigned as Sig
 import qualified Torch.Class.Tensor.Math as Class
 
 import Torch.Indef.Types

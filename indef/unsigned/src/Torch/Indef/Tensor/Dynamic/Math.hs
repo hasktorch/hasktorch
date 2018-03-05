@@ -6,8 +6,8 @@ import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
 import GHC.Int
-import qualified Torch.Signature.IsTensor    as Sig
-import qualified Torch.Signature.Tensor.Math as Sig
+import qualified Torch.Sig.IsTensor    as Sig
+import qualified Torch.Sig.Tensor.Math as Sig
 import qualified Torch.Class.Tensor.Math as Class
 import qualified Torch.Types.TH.Byte   as B
 import qualified Torch.Types.TH.Long   as L

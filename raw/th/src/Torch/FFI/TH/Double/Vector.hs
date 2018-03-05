@@ -89,321 +89,321 @@ import Data.Word
 import Data.Int
 
 -- | c_fill :  x c n -> void
-foreign import ccall "THVector.h c_THVectorDouble_fill"
+foreign import ccall "THVector.h THDoubleVector_fill"
   c_fill :: Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (())
 
 -- | c_cadd :  z x y c n -> void
-foreign import ccall "THVector.h c_THVectorDouble_cadd"
+foreign import ccall "THVector.h THDoubleVector_cadd"
   c_cadd :: Ptr (CDouble) -> Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (())
 
 -- | c_adds :  y x c n -> void
-foreign import ccall "THVector.h c_THVectorDouble_adds"
+foreign import ccall "THVector.h THDoubleVector_adds"
   c_adds :: Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (())
 
 -- | c_cmul :  z x y n -> void
-foreign import ccall "THVector.h c_THVectorDouble_cmul"
+foreign import ccall "THVector.h THDoubleVector_cmul"
   c_cmul :: Ptr (CDouble) -> Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_muls :  y x c n -> void
-foreign import ccall "THVector.h c_THVectorDouble_muls"
+foreign import ccall "THVector.h THDoubleVector_muls"
   c_muls :: Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (())
 
 -- | c_cdiv :  z x y n -> void
-foreign import ccall "THVector.h c_THVectorDouble_cdiv"
+foreign import ccall "THVector.h THDoubleVector_cdiv"
   c_cdiv :: Ptr (CDouble) -> Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_divs :  y x c n -> void
-foreign import ccall "THVector.h c_THVectorDouble_divs"
+foreign import ccall "THVector.h THDoubleVector_divs"
   c_divs :: Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (())
 
 -- | c_copy :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_copy"
+foreign import ccall "THVector.h THDoubleVector_copy"
   c_copy :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_neg :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_neg"
+foreign import ccall "THVector.h THDoubleVector_neg"
   c_neg :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_normal_fill :  data size generator mean stddev -> void
-foreign import ccall "THVector.h c_THVectorDouble_normal_fill"
+foreign import ccall "THVector.h THDoubleVector_normal_fill"
   c_normal_fill :: Ptr (CDouble) -> CLLong -> Ptr (CTHGenerator) -> CDouble -> CDouble -> IO (())
 
 -- | c_abs :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_abs"
+foreign import ccall "THVector.h THDoubleVector_abs"
   c_abs :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_log :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_log"
+foreign import ccall "THVector.h THDoubleVector_log"
   c_log :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_lgamma :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_lgamma"
+foreign import ccall "THVector.h THDoubleVector_lgamma"
   c_lgamma :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_digamma :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_digamma"
+foreign import ccall "THVector.h THDoubleVector_digamma"
   c_digamma :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_trigamma :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_trigamma"
+foreign import ccall "THVector.h THDoubleVector_trigamma"
   c_trigamma :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_log1p :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_log1p"
+foreign import ccall "THVector.h THDoubleVector_log1p"
   c_log1p :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_sigmoid :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_sigmoid"
+foreign import ccall "THVector.h THDoubleVector_sigmoid"
   c_sigmoid :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_exp :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_exp"
+foreign import ccall "THVector.h THDoubleVector_exp"
   c_exp :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_expm1 :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_expm1"
+foreign import ccall "THVector.h THDoubleVector_expm1"
   c_expm1 :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_erf :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_erf"
+foreign import ccall "THVector.h THDoubleVector_erf"
   c_erf :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_erfinv :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_erfinv"
+foreign import ccall "THVector.h THDoubleVector_erfinv"
   c_erfinv :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_cos :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_cos"
+foreign import ccall "THVector.h THDoubleVector_cos"
   c_cos :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_acos :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_acos"
+foreign import ccall "THVector.h THDoubleVector_acos"
   c_acos :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_cosh :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_cosh"
+foreign import ccall "THVector.h THDoubleVector_cosh"
   c_cosh :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_sin :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_sin"
+foreign import ccall "THVector.h THDoubleVector_sin"
   c_sin :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_asin :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_asin"
+foreign import ccall "THVector.h THDoubleVector_asin"
   c_asin :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_sinh :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_sinh"
+foreign import ccall "THVector.h THDoubleVector_sinh"
   c_sinh :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_tan :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_tan"
+foreign import ccall "THVector.h THDoubleVector_tan"
   c_tan :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_atan :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_atan"
+foreign import ccall "THVector.h THDoubleVector_atan"
   c_atan :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_tanh :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_tanh"
+foreign import ccall "THVector.h THDoubleVector_tanh"
   c_tanh :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_pow :  y x c n -> void
-foreign import ccall "THVector.h c_THVectorDouble_pow"
+foreign import ccall "THVector.h THDoubleVector_pow"
   c_pow :: Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (())
 
 -- | c_sqrt :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_sqrt"
+foreign import ccall "THVector.h THDoubleVector_sqrt"
   c_sqrt :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_rsqrt :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_rsqrt"
+foreign import ccall "THVector.h THDoubleVector_rsqrt"
   c_rsqrt :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_ceil :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_ceil"
+foreign import ccall "THVector.h THDoubleVector_ceil"
   c_ceil :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_floor :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_floor"
+foreign import ccall "THVector.h THDoubleVector_floor"
   c_floor :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_round :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_round"
+foreign import ccall "THVector.h THDoubleVector_round"
   c_round :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_trunc :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_trunc"
+foreign import ccall "THVector.h THDoubleVector_trunc"
   c_trunc :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_frac :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_frac"
+foreign import ccall "THVector.h THDoubleVector_frac"
   c_frac :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_cinv :  y x n -> void
-foreign import ccall "THVector.h c_THVectorDouble_cinv"
+foreign import ccall "THVector.h THDoubleVector_cinv"
   c_cinv :: Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (())
 
 -- | c_vectorDispatchInit :   -> void
-foreign import ccall "THVector.h c_THVectorDouble_vectorDispatchInit"
+foreign import ccall "THVector.h THDoubleVector_vectorDispatchInit"
   c_vectorDispatchInit :: IO (())
 
 -- | p_fill : Pointer to function : x c n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_fill"
+foreign import ccall "THVector.h &THDoubleVector_fill"
   p_fill :: FunPtr (Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (()))
 
 -- | p_cadd : Pointer to function : z x y c n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_cadd"
+foreign import ccall "THVector.h &THDoubleVector_cadd"
   p_cadd :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (()))
 
 -- | p_adds : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_adds"
+foreign import ccall "THVector.h &THDoubleVector_adds"
   p_adds :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (()))
 
 -- | p_cmul : Pointer to function : z x y n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_cmul"
+foreign import ccall "THVector.h &THDoubleVector_cmul"
   p_cmul :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_muls : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_muls"
+foreign import ccall "THVector.h &THDoubleVector_muls"
   p_muls :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (()))
 
 -- | p_cdiv : Pointer to function : z x y n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_cdiv"
+foreign import ccall "THVector.h &THDoubleVector_cdiv"
   p_cdiv :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_divs : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_divs"
+foreign import ccall "THVector.h &THDoubleVector_divs"
   p_divs :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (()))
 
 -- | p_copy : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_copy"
+foreign import ccall "THVector.h &THDoubleVector_copy"
   p_copy :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_neg : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_neg"
+foreign import ccall "THVector.h &THDoubleVector_neg"
   p_neg :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_normal_fill : Pointer to function : data size generator mean stddev -> void
-foreign import ccall "THVector.h &p_THVectorDouble_normal_fill"
+foreign import ccall "THVector.h &THDoubleVector_normal_fill"
   p_normal_fill :: FunPtr (Ptr (CDouble) -> CLLong -> Ptr (CTHGenerator) -> CDouble -> CDouble -> IO (()))
 
 -- | p_abs : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_abs"
+foreign import ccall "THVector.h &THDoubleVector_abs"
   p_abs :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_log : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_log"
+foreign import ccall "THVector.h &THDoubleVector_log"
   p_log :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_lgamma : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_lgamma"
+foreign import ccall "THVector.h &THDoubleVector_lgamma"
   p_lgamma :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_digamma : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_digamma"
+foreign import ccall "THVector.h &THDoubleVector_digamma"
   p_digamma :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_trigamma : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_trigamma"
+foreign import ccall "THVector.h &THDoubleVector_trigamma"
   p_trigamma :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_log1p : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_log1p"
+foreign import ccall "THVector.h &THDoubleVector_log1p"
   p_log1p :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_sigmoid : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_sigmoid"
+foreign import ccall "THVector.h &THDoubleVector_sigmoid"
   p_sigmoid :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_exp : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_exp"
+foreign import ccall "THVector.h &THDoubleVector_exp"
   p_exp :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_expm1 : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_expm1"
+foreign import ccall "THVector.h &THDoubleVector_expm1"
   p_expm1 :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_erf : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_erf"
+foreign import ccall "THVector.h &THDoubleVector_erf"
   p_erf :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_erfinv : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_erfinv"
+foreign import ccall "THVector.h &THDoubleVector_erfinv"
   p_erfinv :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_cos : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_cos"
+foreign import ccall "THVector.h &THDoubleVector_cos"
   p_cos :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_acos : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_acos"
+foreign import ccall "THVector.h &THDoubleVector_acos"
   p_acos :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_cosh : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_cosh"
+foreign import ccall "THVector.h &THDoubleVector_cosh"
   p_cosh :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_sin : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_sin"
+foreign import ccall "THVector.h &THDoubleVector_sin"
   p_sin :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_asin : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_asin"
+foreign import ccall "THVector.h &THDoubleVector_asin"
   p_asin :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_sinh : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_sinh"
+foreign import ccall "THVector.h &THDoubleVector_sinh"
   p_sinh :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_tan : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_tan"
+foreign import ccall "THVector.h &THDoubleVector_tan"
   p_tan :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_atan : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_atan"
+foreign import ccall "THVector.h &THDoubleVector_atan"
   p_atan :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_tanh : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_tanh"
+foreign import ccall "THVector.h &THDoubleVector_tanh"
   p_tanh :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_pow : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_pow"
+foreign import ccall "THVector.h &THDoubleVector_pow"
   p_pow :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CDouble -> CPtrdiff -> IO (()))
 
 -- | p_sqrt : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_sqrt"
+foreign import ccall "THVector.h &THDoubleVector_sqrt"
   p_sqrt :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_rsqrt : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_rsqrt"
+foreign import ccall "THVector.h &THDoubleVector_rsqrt"
   p_rsqrt :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_ceil : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_ceil"
+foreign import ccall "THVector.h &THDoubleVector_ceil"
   p_ceil :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_floor : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_floor"
+foreign import ccall "THVector.h &THDoubleVector_floor"
   p_floor :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_round : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_round"
+foreign import ccall "THVector.h &THDoubleVector_round"
   p_round :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_trunc : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_trunc"
+foreign import ccall "THVector.h &THDoubleVector_trunc"
   p_trunc :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_frac : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_frac"
+foreign import ccall "THVector.h &THDoubleVector_frac"
   p_frac :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_cinv : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorDouble_cinv"
+foreign import ccall "THVector.h &THDoubleVector_cinv"
   p_cinv :: FunPtr (Ptr (CDouble) -> Ptr (CDouble) -> CPtrdiff -> IO (()))
 
 -- | p_vectorDispatchInit : Pointer to function :  -> void
-foreign import ccall "THVector.h &p_THVectorDouble_vectorDispatchInit"
+foreign import ccall "THVector.h &THDoubleVector_vectorDispatchInit"
   p_vectorDispatchInit :: FunPtr (IO (()))

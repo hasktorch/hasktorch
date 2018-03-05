@@ -27,14 +27,14 @@ module Torch.Indef.Tensor.Static
   , module Random
   ) where
 
-import Torch.Signature.Types hiding (tensor)
+import Torch.Sig.Types hiding (tensor)
 import Data.Coerce (coerce)
 import Foreign.ForeignPtr (ForeignPtr)
 
 import GHC.TypeLits (Nat)
 import Torch.Indef.Types (Storage)
 import Torch.Class.Tensor.Static (IsStatic(..))
-import qualified Torch.Signature.Types as Sig
+import qualified Torch.Sig.Types as Sig
 import qualified Torch.Class.Internal as TypeFamilies
 import qualified Torch.Indef.Tensor.Dynamic as Dynamic
 import Torch.Indef.Tensor.Static.Random ()

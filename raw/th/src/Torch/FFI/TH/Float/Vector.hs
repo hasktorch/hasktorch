@@ -89,321 +89,321 @@ import Data.Word
 import Data.Int
 
 -- | c_fill :  x c n -> void
-foreign import ccall "THVector.h c_THVectorFloat_fill"
+foreign import ccall "THVector.h THFloatVector_fill"
   c_fill :: Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (())
 
 -- | c_cadd :  z x y c n -> void
-foreign import ccall "THVector.h c_THVectorFloat_cadd"
+foreign import ccall "THVector.h THFloatVector_cadd"
   c_cadd :: Ptr (CFloat) -> Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (())
 
 -- | c_adds :  y x c n -> void
-foreign import ccall "THVector.h c_THVectorFloat_adds"
+foreign import ccall "THVector.h THFloatVector_adds"
   c_adds :: Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (())
 
 -- | c_cmul :  z x y n -> void
-foreign import ccall "THVector.h c_THVectorFloat_cmul"
+foreign import ccall "THVector.h THFloatVector_cmul"
   c_cmul :: Ptr (CFloat) -> Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_muls :  y x c n -> void
-foreign import ccall "THVector.h c_THVectorFloat_muls"
+foreign import ccall "THVector.h THFloatVector_muls"
   c_muls :: Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (())
 
 -- | c_cdiv :  z x y n -> void
-foreign import ccall "THVector.h c_THVectorFloat_cdiv"
+foreign import ccall "THVector.h THFloatVector_cdiv"
   c_cdiv :: Ptr (CFloat) -> Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_divs :  y x c n -> void
-foreign import ccall "THVector.h c_THVectorFloat_divs"
+foreign import ccall "THVector.h THFloatVector_divs"
   c_divs :: Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (())
 
 -- | c_copy :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_copy"
+foreign import ccall "THVector.h THFloatVector_copy"
   c_copy :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_neg :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_neg"
+foreign import ccall "THVector.h THFloatVector_neg"
   c_neg :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_normal_fill :  data size generator mean stddev -> void
-foreign import ccall "THVector.h c_THVectorFloat_normal_fill"
+foreign import ccall "THVector.h THFloatVector_normal_fill"
   c_normal_fill :: Ptr (CFloat) -> CLLong -> Ptr (CTHGenerator) -> CFloat -> CFloat -> IO (())
 
 -- | c_abs :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_abs"
+foreign import ccall "THVector.h THFloatVector_abs"
   c_abs :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_log :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_log"
+foreign import ccall "THVector.h THFloatVector_log"
   c_log :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_lgamma :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_lgamma"
+foreign import ccall "THVector.h THFloatVector_lgamma"
   c_lgamma :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_digamma :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_digamma"
+foreign import ccall "THVector.h THFloatVector_digamma"
   c_digamma :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_trigamma :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_trigamma"
+foreign import ccall "THVector.h THFloatVector_trigamma"
   c_trigamma :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_log1p :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_log1p"
+foreign import ccall "THVector.h THFloatVector_log1p"
   c_log1p :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_sigmoid :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_sigmoid"
+foreign import ccall "THVector.h THFloatVector_sigmoid"
   c_sigmoid :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_exp :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_exp"
+foreign import ccall "THVector.h THFloatVector_exp"
   c_exp :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_expm1 :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_expm1"
+foreign import ccall "THVector.h THFloatVector_expm1"
   c_expm1 :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_erf :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_erf"
+foreign import ccall "THVector.h THFloatVector_erf"
   c_erf :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_erfinv :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_erfinv"
+foreign import ccall "THVector.h THFloatVector_erfinv"
   c_erfinv :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_cos :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_cos"
+foreign import ccall "THVector.h THFloatVector_cos"
   c_cos :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_acos :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_acos"
+foreign import ccall "THVector.h THFloatVector_acos"
   c_acos :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_cosh :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_cosh"
+foreign import ccall "THVector.h THFloatVector_cosh"
   c_cosh :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_sin :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_sin"
+foreign import ccall "THVector.h THFloatVector_sin"
   c_sin :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_asin :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_asin"
+foreign import ccall "THVector.h THFloatVector_asin"
   c_asin :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_sinh :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_sinh"
+foreign import ccall "THVector.h THFloatVector_sinh"
   c_sinh :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_tan :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_tan"
+foreign import ccall "THVector.h THFloatVector_tan"
   c_tan :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_atan :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_atan"
+foreign import ccall "THVector.h THFloatVector_atan"
   c_atan :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_tanh :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_tanh"
+foreign import ccall "THVector.h THFloatVector_tanh"
   c_tanh :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_pow :  y x c n -> void
-foreign import ccall "THVector.h c_THVectorFloat_pow"
+foreign import ccall "THVector.h THFloatVector_pow"
   c_pow :: Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (())
 
 -- | c_sqrt :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_sqrt"
+foreign import ccall "THVector.h THFloatVector_sqrt"
   c_sqrt :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_rsqrt :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_rsqrt"
+foreign import ccall "THVector.h THFloatVector_rsqrt"
   c_rsqrt :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_ceil :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_ceil"
+foreign import ccall "THVector.h THFloatVector_ceil"
   c_ceil :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_floor :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_floor"
+foreign import ccall "THVector.h THFloatVector_floor"
   c_floor :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_round :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_round"
+foreign import ccall "THVector.h THFloatVector_round"
   c_round :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_trunc :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_trunc"
+foreign import ccall "THVector.h THFloatVector_trunc"
   c_trunc :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_frac :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_frac"
+foreign import ccall "THVector.h THFloatVector_frac"
   c_frac :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_cinv :  y x n -> void
-foreign import ccall "THVector.h c_THVectorFloat_cinv"
+foreign import ccall "THVector.h THFloatVector_cinv"
   c_cinv :: Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (())
 
 -- | c_vectorDispatchInit :   -> void
-foreign import ccall "THVector.h c_THVectorFloat_vectorDispatchInit"
+foreign import ccall "THVector.h THFloatVector_vectorDispatchInit"
   c_vectorDispatchInit :: IO (())
 
 -- | p_fill : Pointer to function : x c n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_fill"
+foreign import ccall "THVector.h &THFloatVector_fill"
   p_fill :: FunPtr (Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (()))
 
 -- | p_cadd : Pointer to function : z x y c n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_cadd"
+foreign import ccall "THVector.h &THFloatVector_cadd"
   p_cadd :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (()))
 
 -- | p_adds : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_adds"
+foreign import ccall "THVector.h &THFloatVector_adds"
   p_adds :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (()))
 
 -- | p_cmul : Pointer to function : z x y n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_cmul"
+foreign import ccall "THVector.h &THFloatVector_cmul"
   p_cmul :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_muls : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_muls"
+foreign import ccall "THVector.h &THFloatVector_muls"
   p_muls :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (()))
 
 -- | p_cdiv : Pointer to function : z x y n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_cdiv"
+foreign import ccall "THVector.h &THFloatVector_cdiv"
   p_cdiv :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_divs : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_divs"
+foreign import ccall "THVector.h &THFloatVector_divs"
   p_divs :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (()))
 
 -- | p_copy : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_copy"
+foreign import ccall "THVector.h &THFloatVector_copy"
   p_copy :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_neg : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_neg"
+foreign import ccall "THVector.h &THFloatVector_neg"
   p_neg :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_normal_fill : Pointer to function : data size generator mean stddev -> void
-foreign import ccall "THVector.h &p_THVectorFloat_normal_fill"
+foreign import ccall "THVector.h &THFloatVector_normal_fill"
   p_normal_fill :: FunPtr (Ptr (CFloat) -> CLLong -> Ptr (CTHGenerator) -> CFloat -> CFloat -> IO (()))
 
 -- | p_abs : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_abs"
+foreign import ccall "THVector.h &THFloatVector_abs"
   p_abs :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_log : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_log"
+foreign import ccall "THVector.h &THFloatVector_log"
   p_log :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_lgamma : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_lgamma"
+foreign import ccall "THVector.h &THFloatVector_lgamma"
   p_lgamma :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_digamma : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_digamma"
+foreign import ccall "THVector.h &THFloatVector_digamma"
   p_digamma :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_trigamma : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_trigamma"
+foreign import ccall "THVector.h &THFloatVector_trigamma"
   p_trigamma :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_log1p : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_log1p"
+foreign import ccall "THVector.h &THFloatVector_log1p"
   p_log1p :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_sigmoid : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_sigmoid"
+foreign import ccall "THVector.h &THFloatVector_sigmoid"
   p_sigmoid :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_exp : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_exp"
+foreign import ccall "THVector.h &THFloatVector_exp"
   p_exp :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_expm1 : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_expm1"
+foreign import ccall "THVector.h &THFloatVector_expm1"
   p_expm1 :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_erf : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_erf"
+foreign import ccall "THVector.h &THFloatVector_erf"
   p_erf :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_erfinv : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_erfinv"
+foreign import ccall "THVector.h &THFloatVector_erfinv"
   p_erfinv :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_cos : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_cos"
+foreign import ccall "THVector.h &THFloatVector_cos"
   p_cos :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_acos : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_acos"
+foreign import ccall "THVector.h &THFloatVector_acos"
   p_acos :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_cosh : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_cosh"
+foreign import ccall "THVector.h &THFloatVector_cosh"
   p_cosh :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_sin : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_sin"
+foreign import ccall "THVector.h &THFloatVector_sin"
   p_sin :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_asin : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_asin"
+foreign import ccall "THVector.h &THFloatVector_asin"
   p_asin :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_sinh : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_sinh"
+foreign import ccall "THVector.h &THFloatVector_sinh"
   p_sinh :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_tan : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_tan"
+foreign import ccall "THVector.h &THFloatVector_tan"
   p_tan :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_atan : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_atan"
+foreign import ccall "THVector.h &THFloatVector_atan"
   p_atan :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_tanh : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_tanh"
+foreign import ccall "THVector.h &THFloatVector_tanh"
   p_tanh :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_pow : Pointer to function : y x c n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_pow"
+foreign import ccall "THVector.h &THFloatVector_pow"
   p_pow :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CFloat -> CPtrdiff -> IO (()))
 
 -- | p_sqrt : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_sqrt"
+foreign import ccall "THVector.h &THFloatVector_sqrt"
   p_sqrt :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_rsqrt : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_rsqrt"
+foreign import ccall "THVector.h &THFloatVector_rsqrt"
   p_rsqrt :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_ceil : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_ceil"
+foreign import ccall "THVector.h &THFloatVector_ceil"
   p_ceil :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_floor : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_floor"
+foreign import ccall "THVector.h &THFloatVector_floor"
   p_floor :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_round : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_round"
+foreign import ccall "THVector.h &THFloatVector_round"
   p_round :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_trunc : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_trunc"
+foreign import ccall "THVector.h &THFloatVector_trunc"
   p_trunc :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_frac : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_frac"
+foreign import ccall "THVector.h &THFloatVector_frac"
   p_frac :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_cinv : Pointer to function : y x n -> void
-foreign import ccall "THVector.h &p_THVectorFloat_cinv"
+foreign import ccall "THVector.h &THFloatVector_cinv"
   p_cinv :: FunPtr (Ptr (CFloat) -> Ptr (CFloat) -> CPtrdiff -> IO (()))
 
 -- | p_vectorDispatchInit : Pointer to function :  -> void
-foreign import ccall "THVector.h &p_THVectorFloat_vectorDispatchInit"
+foreign import ccall "THVector.h &THFloatVector_vectorDispatchInit"
   p_vectorDispatchInit :: FunPtr (IO (()))

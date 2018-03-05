@@ -33,7 +33,7 @@ comment t hsname args retType = T.intercalate " "
 foreignCall :: Text -> FilePath -> SigType -> Text
 foreignCall cname headerFile st = T.intercalate "\""
   [ "foreign import ccall "
-  , T.pack headerFile <> (if isPtr st then " &" else " ") <> cname
+  , T.pack headerFile <> cname
   , ""
   ]
 
@@ -59,13 +59,13 @@ haskellSig hsname st tt args retType = T.intercalate ""
 
 mkCname :: SigType -> LibType -> ModuleSuffix -> TemplateType -> CodeGenType -> Text -> Text
 mkCname st lt ms tt cgt funname
-  = ffiPrefix st
+  = (if isPtr st then " &" else " ")
   <> identifier
   <> funname
  where
   identifier :: Text
   identifier = case cgt of
-    GenericFiles -> tshow lt <> textSuffix ms <> type2hsreal tt <> "_" 
+    GenericFiles -> tshow lt <> type2hsreal tt <> textSuffix ms <> "_"
     ConcreteFiles -> ""
 
 mkHsname :: SigType -> Text -> Text

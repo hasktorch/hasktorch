@@ -1,7 +1,7 @@
 module Torch.Indef.Tensor.Static.Random where
 
 import qualified Torch.Class.Tensor.Random as Class
-import Torch.Signature.Types (dynamic, Tensor)
+import Torch.Sig.Types (dynamic, Tensor)
 import Torch.Indef.Tensor.Dynamic.Random ()
 
 instance Class.TensorRandom (Tensor d) where

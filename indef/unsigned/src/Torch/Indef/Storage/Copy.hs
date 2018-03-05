@@ -5,9 +5,9 @@ import Foreign
 import Foreign.C.Types
 import Torch.Types.TH
 import qualified Foreign.Marshal.Array as FM
-import qualified Torch.Signature.Types        as Sig
-import qualified Torch.Signature.Storage      as Sig
-import qualified Torch.Signature.Storage.Copy as Sig
+import qualified Torch.Sig.Types        as Sig
+import qualified Torch.Sig.Storage      as Sig
+import qualified Torch.Sig.Storage.Copy as Sig
 import qualified Torch.Class.Storage.Copy as Class
 
 import qualified Torch.FFI.TH.Long.Storage   as L

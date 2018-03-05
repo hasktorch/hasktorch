@@ -5,7 +5,7 @@ module Torch.Indef.Tensor.Dynamic.Conv where
 import Data.Coerce (coerce)
 import Foreign
 import Foreign.C.Types
-import qualified Torch.Signature.Tensor.Conv as Sig
+import qualified Torch.Sig.Tensor.Conv as Sig
 import qualified Torch.Class.Tensor.Conv as Class
 import qualified Foreign.Marshal.Array as FM
 

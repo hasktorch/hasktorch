@@ -18,8 +18,8 @@ import GHC.Int
 import Torch.Types.TH
 
 import qualified Foreign.Marshal.Array as FM
-import qualified Torch.Signature.IsTensor as Sig
-import qualified Torch.Signature.Storage as StorageSig (c_size)
+import qualified Torch.Sig.IsTensor as Sig
+import qualified Torch.Sig.Storage as StorageSig (c_size)
 import qualified Torch.Class.Tensor as Class
 import qualified Torch.Class.IsTensor as Class
 import qualified Torch.Class.Tensor.Copy as Class
