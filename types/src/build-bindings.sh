@@ -11,6 +11,9 @@ case "$(uname -s)" in
     sed -i '' 's/^#synonym_t.*//g' TorchStructs.hsc
     hsc2hs TorchStructs.hsc -o TorchStructs.hs
     sed -i '' '/.*LINE.*/d' TorchStructs.hs
+    sed -i '' 's/TorchStructs/Torch.Types.Structs/' TorchStructs.hsc
+    mkdir -p Torch/Types
+    mv TorchStructs.hs Torch/Types/Structs.hs
     rm ./TorchStructs.hsc
     ;;
 
@@ -20,7 +23,10 @@ case "$(uname -s)" in
     sed -i 's/^#synonym_t.*//g' TorchStructs.hsc
     hsc2hs TorchStructs.hsc -o TorchStructs.hs
     sed -i '/.*LINE.*/d' TorchStructs.hs
-    rm ./TobchStructs.hsc
+    sed -i 's/TorchStructs/Torch.Types.Structs/' TorchStructs.hsc
+    mkdir -p Torch/Types
+    mv TorchStructs.hs Torch/Types/Structs.hs
+    rm ./TorchStructs.hsc
     ;;
 
   *)
