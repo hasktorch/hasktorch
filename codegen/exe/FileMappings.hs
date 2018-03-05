@@ -16,13 +16,13 @@ thFiles = \case
     [ mkTHGeneric' "Blas"
     , mkTHGeneric' "Lapack"
     , mkTHGeneric' "Storage"
-    , mkTHGeneric  (ModuleSuffix "Storage") (FileSuffix "StorageCopy")
+    , mkTHGeneric  (ModuleSuffix "Storage") "StorageCopy"
     , mkTHGeneric' "Tensor"
-    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorConv")
-    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorCopy")
-    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorLapack")
-    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorMath")
-    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorRandom")
+    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorConv"
+    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorCopy"
+    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorLapack"
+    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorMath"
+    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorRandom"
     , mkTHGeneric' "Vector"
     ]
   ConcreteFiles -> map ($ ConcreteFiles)
@@ -36,7 +36,6 @@ thFiles = \case
     , mkTHFile' "Storage"
     , mkTHFile' "MemoryFile"
     ]
-  ManagedFiles -> [] -- FIXME: check with austin that managed codegen is still a thing we want to do
 
  where
   out :: CodeGenType -> TextPath

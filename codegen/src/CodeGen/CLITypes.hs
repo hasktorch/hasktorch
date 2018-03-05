@@ -5,10 +5,7 @@
 module CodeGen.CLITypes where
 
 import Data.List (intercalate)
-import Data.Monoid ((<>))
 import Data.Char (toLower)
-import Data.Proxy (Proxy(..))
-import Text.Read (Read(..))
 import GHC.Generics (Generic)
 import Data.Hashable (Hashable)
 import qualified Data.HashSet as HS
@@ -76,22 +73,19 @@ srcDir lt cgt = intercalate ""
 
 -- | Type of code to generate
 data CodeGenType
-  = ManagedFiles   -- ^ managed tensor primatives(???)
-  | GenericFiles   -- ^ generic/ files which are used in C for type-generic code
+  = GenericFiles   -- ^ generic/ files which are used in C for type-generic code
   | ConcreteFiles  -- ^ concrete supporting files. These include utility
                    --   functions and random generators.
   deriving (Eq, Ord, Enum, Bounded)
 
 instance Read CodeGenType where
   readsPrec _ s = case s of
-    "managed"  -> [(ManagedFiles, "")]
     "generic"  -> [(GenericFiles, "")]
     "concrete" -> [(ConcreteFiles, "")]
     _          -> []
 
 instance Show CodeGenType where
   show = \case
-    ManagedFiles  -> "managed"
     GenericFiles  -> "generic"
     ConcreteFiles -> "concrete"
 
@@ -99,6 +93,6 @@ instance Show CodeGenType where
 -- | Whether or not we currently support generating this type of code (ie: I
 -- (\@stites) am not sure about the managed files).
 generatable :: CodeGenType -> Bool
-generatable = \case { ManagedFiles -> False; _ -> True; }
+generatable = const True
 
 
