@@ -9,6 +9,7 @@ module CodeGen.Render
 
 import CodeGen.Prelude
 import qualified Data.Text as T
+import System.Directory (createDirectoryIfMissing)
 
 import CodeGen.Types
 import CodeGen.Render.Function (renderFunPtrSig, renderFunSig)
@@ -102,6 +103,7 @@ writeHaskellModule
   -> IO ()
 writeHaskellModule parsedBindings makeConfig templateType = do
   tputStrLn $ "Writing " <> filename
+  createDirectoryIfMissing True outDir
   writeFile (outDir ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
  where
   modSpec :: HModule
