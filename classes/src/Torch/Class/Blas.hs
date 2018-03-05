@@ -1,6 +1,6 @@
-module Torch.Class.C.Blas where
+module Torch.Class.Blas where
 
-import THTypes
+import Torch.Types.TH
 
 class Blas real where
   swap :: Integer -> real -> Integer -> real -> Integer -> IO ()

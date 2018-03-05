@@ -1,9 +1,9 @@
-module Torch.Class.C.Tensor.Conv where
+module Torch.Class.Tensor.Conv where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import Torch.Class.C.Internal
+import Torch.Class.Internal
 import GHC.Int
 
 -- TODO: The first tensor passed in should be the return Tensor -- find out the size and return this instead of mutating it with IO ()

@@ -1,20 +1,20 @@
 -------------------------------------------------------------------------------
 -- |
--- Module    :  Torch.Class.C.Internal
+-- Module    :  Torch.Class.Internal
 -- Copyright :  (c) Sam Stites 2017
 -- License   :  MIT
 -- Maintainer:  sam@stites.io
 -- Stability :  experimental
 -- Portability: non-portable
 --
--- Should be "Torch.Class.C.Types"
+-- Should be "Torch.Class.Types"
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Torch.Class.C.Internal where
+module Torch.Class.Internal where
 
 import GHC.Int (Int64)
-import qualified THLongTypes as Long (Tensor, Storage)
+import qualified Torch.Types.TH.Long as Long (Tensor, Storage)
 
 type family HsReal t
 type family HsAccReal t

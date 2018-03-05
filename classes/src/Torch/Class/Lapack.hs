@@ -1,4 +1,4 @@
-module Torch.Class.C.Lapack where
+module Torch.Class.Lapack where
 
 import Foreign.C.Types (CIntPtr)
 

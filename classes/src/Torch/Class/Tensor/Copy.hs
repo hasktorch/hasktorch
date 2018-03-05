@@ -1,13 +1,13 @@
-module Torch.Class.C.Tensor.Copy where
+module Torch.Class.Tensor.Copy where
 
-import THTypes
+import Torch.Types.TH
 import Foreign (Ptr)
-import qualified THByteTypes    as B
-import qualified THShortTypes   as S
-import qualified THIntTypes     as I
-import qualified THLongTypes    as L
-import qualified THFloatTypes   as F
-import qualified THDoubleTypes  as D
+import qualified Torch.Types.TH.Byte    as B
+import qualified Torch.Types.TH.Short   as S
+import qualified Torch.Types.TH.Int     as I
+import qualified Torch.Types.TH.Long    as L
+import qualified Torch.Types.TH.Float   as F
+import qualified Torch.Types.TH.Double  as D
 
 
 class TensorCopy t where

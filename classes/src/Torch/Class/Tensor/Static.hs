@@ -1,9 +1,9 @@
-module Torch.Class.C.Tensor.Static
+module Torch.Class.Tensor.Static
   ( IsStatic(..)
   )
   where
 
-import Torch.Class.C.Internal
+import Torch.Class.Internal
 
 class IsStatic t where
   asDynamic :: t -> AsDynamic t

@@ -1,11 +1,11 @@
-module Torch.Class.C.Tensor.Lapack where
+module Torch.Class.Tensor.Lapack where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
 import GHC.Int
-import Torch.Class.C.Internal
-import qualified THIntTypes as Int
+import Torch.Class.Internal
+import qualified Torch.Types.TH.Int as Int
 
 class TensorLapack t where
   gesv_      :: t -> t -> t -> t -> IO ()

@@ -1,18 +1,18 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Class.C.Tensor.Math where
+module Torch.Class.Tensor.Math where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
 import GHC.TypeLits (Nat)
 import Torch.Core.Tensor.Dim
-import Torch.Class.C.Internal
+import Torch.Class.Internal
 import GHC.Int
-import Torch.Class.C.IsTensor (IsTensor(empty), inplace, inplace1)
-import THRandomTypes (Generator)
-import qualified THByteTypes   as B
-import qualified THLongTypes   as L
+import Torch.Class.IsTensor (IsTensor(empty), inplace, inplace1)
+import Torch.Types.TH.Random (Generator)
+import qualified Torch.Types.TH.Byte   as B
+import qualified Torch.Types.TH.Long   as L
 
 constant :: (IsTensor t, TensorMath t) => Dim (d::[Nat]) -> HsReal t -> IO t
 constant d v = inplace (`fill_` v) d

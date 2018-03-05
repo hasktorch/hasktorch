@@ -1,18 +1,18 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Class.C.Tensor.Random where
+module Torch.Class.Tensor.Random where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import GHC.Int
 import GHC.TypeLits (Nat)
 import Foreign.C.Types
-import Torch.Class.C.Internal
+import Torch.Class.Internal
 import Torch.Core.Tensor.Dim
-import Torch.Class.C.IsTensor
-import THRandomTypes (Generator)
-import qualified THFloatTypes as F
-import qualified THDoubleTypes as D
+import Torch.Class.IsTensor
+import Torch.Types.TH.Random (Generator)
+import qualified Torch.Types.TH.Float as F
+import qualified Torch.Types.TH.Double as D
 
 class TensorRandom t where
   random_                 :: t -> Generator -> IO ()

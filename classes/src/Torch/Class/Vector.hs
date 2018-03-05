@@ -1,9 +1,9 @@
-module Torch.Class.C.Vector where
+module Torch.Class.Vector where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import Torch.Class.C.Internal
+import Torch.Class.Internal
 
 class Vector v where
   -- fill    :: v -> CTensor -> CPtrdiff -> IO ()

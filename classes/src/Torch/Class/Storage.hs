@@ -1,9 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Torch.Class.C.Storage where
+module Torch.Class.Storage where
 
 import Foreign (Ptr, Int64, Int8, Int32)
-import THTypes
-import Torch.Class.C.Internal
+import Torch.Types.TH
+import Torch.Class.Internal
 
 -- should be CPtrdiff
 newtype StorageSize = StorageSize Int64

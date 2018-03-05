@@ -23,21 +23,22 @@ library
     , hasktorch-dimensions
     , safe-exceptions
   exposed-modules:
-      Torch.Class.C.Internal
+      Torch.Class.Internal
 
     -- not done
-    -- , Torch.Class.C.Blas
-    -- , Torch.Class.C.Lapack
-    -- , Torch.Class.C.Vector
+    -- , Torch.Class.Blas
+    -- , Torch.Class.Lapack
+    -- , Torch.Class.Vector
+
     -- done
-    , Torch.Class.C.Storage
-    , Torch.Class.C.Storage.Copy
-    , Torch.Class.C.Tensor
-    , Torch.Class.C.IsTensor
-    , Torch.Class.C.Tensor.Copy
-    , Torch.Class.C.Tensor.Conv
-    , Torch.Class.C.Tensor.Lapack
-    , Torch.Class.C.Tensor.Math
-    , Torch.Class.C.Tensor.Random
-    , Torch.Class.C.Tensor.Static
+    , Torch.Class.Storage
+    , Torch.Class.Storage.Copy
+    , Torch.Class.Tensor
+    , Torch.Class.IsTensor
+    , Torch.Class.Tensor.Copy
+    , Torch.Class.Tensor.Conv
+    , Torch.Class.Tensor.Lapack
+    , Torch.Class.Tensor.Math
+    , Torch.Class.Tensor.Random
+    , Torch.Class.Tensor.Static
 

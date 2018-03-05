@@ -1,8 +1,8 @@
-module Torch.Class.C.Storage.Copy where
+module Torch.Class.Storage.Copy where
 
-import Torch.Class.C.Internal
+import Torch.Class.Internal
 import Foreign (Ptr)
-import THTypes
+import Torch.Types.TH
 
 class StorageCopy t where
   rawCopy    :: t -> IO [HsReal t]

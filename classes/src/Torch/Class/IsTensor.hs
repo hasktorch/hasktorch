@@ -3,17 +3,17 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
-module Torch.Class.C.IsTensor where
+module Torch.Class.IsTensor where
 
 import Control.Arrow ((***))
 import Control.Exception.Safe
 import Control.Monad ((>=>), forM_)
 import Data.List (genericLength)
-import THTypes
+import Torch.Types.TH
 import GHC.Int
-import Torch.Class.C.Internal
+import Torch.Class.Internal
 import Torch.Core.Tensor.Dim
-import qualified THLongTypes as Long
+import qualified Torch.Types.TH.Long as Long
 
 class IsTensor t where
   clearFlag_ :: t -> Int8 -> IO ()
