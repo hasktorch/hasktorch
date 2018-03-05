@@ -16,31 +16,6 @@ import CodeGen.Parse (thParser)
 import CodeGen.Parse.Cases (checkFunction, signatureAliases)
 import qualified CodeGen.Render.Haskell as Hs
 
-makeModule
-  :: LibType
-  -> TextPath
-  -> CodeGenType
-  -> FilePath
-  -> ModuleSuffix
-  -> FileSuffix
-  -> TemplateType
-  -> [THFunction]
-  -> HModule
-makeModule a00 a0 a1 a2 a3 a4 a5 a6
-  = HModule
-  { prefix = a00
-  , extensions = ["ForeignFunctionInterface"]
-  , imports = ["Foreign", "Foreign.C.Types", "THTypes", "Data.Word", "Data.Int"]
-  , typeDefs = []
-  , modOutDir = a0
-  , isTemplate = a1
-  , header = a2
-  , suffix = a3
-  , fileSuffix = a4
-  , typeTemplate = a5
-  , bindings = a6
-  }
-
 
 -- ----------------------------------------
 -- helper data and functions for templating
