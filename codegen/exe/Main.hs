@@ -8,7 +8,7 @@ import Options.Applicative (ParserInfo, execParser, info, (<**>), helper, idm)
 
 import CodeGen.FileMappings
 import CodeGen.Types
-import RenderShared (renderCHeaderFile, parseFile)
+import CodeGen.Render (renderCHeaderFile, parseFile)
 
 import CLIOptions
 

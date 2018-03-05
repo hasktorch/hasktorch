@@ -5,8 +5,8 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import CodeGen.Types -- (HModule, TemplateType, genericTypes)
-import RenderShared (makeModule) -- , renderCHeaderFile, parseFile, IsTemplate(..))
+import CodeGen.Types
+import CodeGen.Render (makeModule)
 
 type HeaderFile = FilePath
 

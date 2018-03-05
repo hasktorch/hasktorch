@@ -25,19 +25,20 @@ library
     , text >=1.2.2.2
     , unordered-containers >=0.1.3.0
   exposed-modules:
+      CodeGen.FileMappings
+      CodeGen.Prelude
+      CodeGen.Render
+      CodeGen.Render.C
+      CodeGen.Render.Function
+      CodeGen.Render.Haskell
       CodeGen.Types
       CodeGen.Types.CLI
       CodeGen.Types.HsOutput
       CodeGen.Types.Parsed
 
-      CodeGen.Prelude
-      CodeGen.Render.C
-      CodeGen.Render.Function
-      CodeGen.Render.Haskell
-      CodeGen.FileMappings
+
       CodeGenParse
       ConditionalCases
-      RenderShared
   other-modules:
       Paths_hasktorch_codegen
   default-language: Haskell2010

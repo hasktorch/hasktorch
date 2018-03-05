@@ -1,5 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
-module RenderShared
+module CodeGen.Render
   ( makeModule
   , renderCHeaderFile
 
@@ -87,7 +87,10 @@ renderFunctions m validFunctions =
   renderFunPtrSig' = renderFunPtrSig (isTemplate m) ffiPrefix (header m) (typeTemplate m)
 
   ffiPrefix :: Text
-  ffiPrefix = T.pack (show $ prefix m) <> Hs.type2SpliceReal (typeTemplate m) <> textSuffix (suffix m)
+  ffiPrefix
+    = T.pack (show $ prefix m)
+    <> Hs.type2SpliceReal (typeTemplate m)
+    <> textSuffix (suffix m)
 
   triple :: [(Text, THType, [THArg])]
   triple = go <$> validFunctions
