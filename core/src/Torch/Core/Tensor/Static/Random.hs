@@ -25,19 +25,19 @@ module Torch.Core.Tensor.Static.Random
   , logNormal
   ) where
 
-import Torch.Class.C.Tensor.Random (TensorRandom, TensorRandomFloating)
-import Torch.Class.C.IsTensor (IsTensor)
-import Torch.Class.C.Internal (HsAccReal, HsReal, AsDynamic)
-import Torch.Core.Tensor.Dim
-import THRandomTypes (Generator)
+import Torch.Class.Tensor.Random (TensorRandom, TensorRandomFloating)
+import Torch.Class.IsTensor (IsTensor)
+import Torch.Class.Internal (HsAccReal, HsReal, AsDynamic)
+import Torch.Dimensions
+import Torch.Types.TH.Random (Generator)
 import GHC.Int (Int64)
 import qualified Torch.Core.Tensor.Dynamic.Random as Random
 import Torch.Core.Tensor.Static.Math (diag1d, TensorMath)
 import Torch.Core.Tensor.Static.Math.Infix ((!*!), (^+^))
 import Torch.Core.Tensor.Static (newTranspose2d, expand2d, StaticConstraint, StaticConstraint2, StaticConstraint3)
 
-import qualified THFloatTypes as Float
-import qualified THDoubleTypes as Double
+import qualified Torch.Types.TH.Float as Float
+import qualified Torch.Types.TH.Double as Double
 
 import Torch.Core.ByteTensor.Static.Random   ()
 import Torch.Core.ShortTensor.Static.Random  ()

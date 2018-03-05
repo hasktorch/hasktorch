@@ -1,0 +1,16 @@
+signature Torch.Signature.Tensor.Random where
+
+import Torch.Types.TH
+import Foreign
+import Foreign.C.Types
+import Torch.Signature.Types
+
+c_random                 :: Ptr CTensor -> Ptr CTHGenerator -> IO ()
+c_clampedRandom          :: Ptr CTensor -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ()
+c_cappedRandom           :: Ptr CTensor -> Ptr CTHGenerator -> CLLong -> IO ()
+c_geometric              :: Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ()
+c_bernoulli              :: Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ()
+c_bernoulli_FloatTensor  :: Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
+c_bernoulli_DoubleTensor :: Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
+-- c_bernoulli_Tensor       :: Ptr CTTensor -> Ptr CTHGenerator -> Ptr CTTensor -> IO ()
+

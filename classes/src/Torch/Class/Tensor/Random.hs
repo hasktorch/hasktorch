@@ -8,7 +8,7 @@ import GHC.Int
 import GHC.TypeLits (Nat)
 import Foreign.C.Types
 import Torch.Class.Internal
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import Torch.Class.IsTensor
 import Torch.Types.TH.Random (Generator)
 import qualified Torch.Types.TH.Float as F

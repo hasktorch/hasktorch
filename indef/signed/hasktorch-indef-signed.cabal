@@ -25,7 +25,7 @@ library
     , hasktorch-classes
     , hasktorch-indef-unsigned
     , hasktorch-signatures-signed
-    , hasktorch-raw
+    , hasktorch-raw-th
     , hasktorch-types
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
@@ -35,22 +35,22 @@ library
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
   exposed-modules:
-      Torch.Core.Tensor.Dynamic.Math.Signed
-    , Torch.Core.Tensor.Static.Math.Signed
+      Torch.Indef.Tensor.Dynamic.Math.Signed
+    , Torch.Indef.Tensor.Static.Math.Signed
 
   reexported-modules:
     -- classes implementations with indefinites
-      Torch.Core.Types
-    , Torch.Core.Storage
-    , Torch.Core.Storage.Copy
-    , Torch.Core.Tensor.Dynamic
-    , Torch.Core.Tensor.Dynamic.IsTensor
-    , Torch.Core.Tensor.Dynamic.Copy
-    , Torch.Core.Tensor.Dynamic.Conv
-    , Torch.Core.Tensor.Dynamic.Math
-    , Torch.Core.Tensor.Dynamic.Random
-    , Torch.Core.Tensor.Static
-    , Torch.Core.Tensor.Static.IsTensor
-    , Torch.Core.Tensor.Static.Random
-    , Torch.Core.Tensor.Static.Copy
+      Torch.Indef.Types
+    , Torch.Indef.Storage
+    , Torch.Indef.Storage.Copy
+    , Torch.Indef.Tensor.Dynamic
+    , Torch.Indef.Tensor.Dynamic.IsTensor
+    , Torch.Indef.Tensor.Dynamic.Copy
+    , Torch.Indef.Tensor.Dynamic.Conv
+    , Torch.Indef.Tensor.Dynamic.Math
+    , Torch.Indef.Tensor.Dynamic.Random
+    , Torch.Indef.Tensor.Static
+    , Torch.Indef.Tensor.Static.IsTensor
+    , Torch.Indef.Tensor.Static.Random
+    , Torch.Indef.Tensor.Static.Copy
 

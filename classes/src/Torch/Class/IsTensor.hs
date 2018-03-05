@@ -12,7 +12,7 @@ import Data.List (genericLength)
 import Torch.Types.TH
 import GHC.Int
 import Torch.Class.Internal
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import qualified Torch.Types.TH.Long as Long
 
 class IsTensor t where

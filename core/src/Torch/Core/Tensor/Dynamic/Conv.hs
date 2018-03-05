@@ -5,8 +5,8 @@ module Torch.Core.Tensor.Dynamic.Conv
   ) where
 
 import Control.Monad ((>=>))
-import Torch.Class.C.Internal
-import qualified Torch.Class.C.Tensor.Conv as CCall
+import Torch.Class.Internal
+import qualified Torch.Class.Tensor.Conv as CCall
 import GHC.Int
 
 import qualified Torch.Core.LongTensor.Dynamic   as L

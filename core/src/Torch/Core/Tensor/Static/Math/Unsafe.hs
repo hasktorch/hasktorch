@@ -10,9 +10,9 @@ module Torch.Core.Tensor.Static.Math.Unsafe
   , zerosLike
   ) where
 
-import Torch.Class.C.Internal (HsReal, HsAccReal, AsDynamic)
-import Torch.Class.C.IsTensor (IsTensor)
-import Torch.Core.Tensor.Dim
+import Torch.Class.Internal (HsReal, HsAccReal, AsDynamic)
+import Torch.Class.IsTensor (IsTensor)
+import Torch.Dimensions
 import Torch.Core.Tensor.Static.Math (MathConstraint, TensorMath, TensorMathSigned)
 import System.IO.Unsafe (unsafePerformIO)
 

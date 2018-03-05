@@ -6,7 +6,7 @@ import Control.Exception (bracket)
 import Control.Monad (forM_)
 import Torch.Core.Tensor.Dynamic.Double as Dynamic
 import Torch.Core.Tensor.Types
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 
 import Torch.Prelude.Extras
 import System.Mem ()

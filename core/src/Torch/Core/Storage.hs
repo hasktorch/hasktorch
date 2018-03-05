@@ -8,7 +8,7 @@ module Torch.Core.Storage
   , module X
   ) where
 
-import Torch.Class.C.Storage as X (IsStorage(..))
+import Torch.Class.Storage as X (IsStorage(..))
 import Torch.Core.Storage.Copy as X (UserStorageCopy(..))
 
 import qualified Torch.Core.ByteStorage as B

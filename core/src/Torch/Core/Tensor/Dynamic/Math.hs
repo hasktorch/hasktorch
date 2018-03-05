@@ -3,11 +3,11 @@ module Torch.Core.Tensor.Dynamic.Math
   ( module Class
   ) where
 
-import Torch.Class.C.Internal
+import Torch.Class.Internal
 import GHC.Int
-import Torch.Class.C.Tensor.Math as Class
+import Torch.Class.Tensor.Math as Class
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 
 -- import any type-specific orphans

@@ -140,16 +140,16 @@ import Foreign (Ptr)
 import GHC.Int
 import GHC.Natural
 
-import Torch.Class.C.Internal (HsReal, HsAccReal, AsDynamic)
-import Torch.Core.Tensor.Dim
+import Torch.Class.Internal (HsReal, HsAccReal, AsDynamic)
+import Torch.Dimensions
 import qualified Torch.Core.Tensor.Dynamic as Dynamic
 import qualified Torch.Core.Storage as Storage
 import Torch.Core.Tensor.Static (IsStatic(..), StaticConstraint, StaticConstraint2, withInplace, ByteTensor, LongTensor)
-import THTypes
-import THRandomTypes
+import Torch.Types.TH
+import Torch.Types.TH.Random
 -- ========================================================================= --
 -- Reexports
-import Torch.Class.C.Tensor.Math as Classes (TensorMath, TensorMathFloating, TensorMathSigned)
+import Torch.Class.Tensor.Math as Classes (TensorMath, TensorMathFloating, TensorMathSigned)
 import Torch.Core.Tensor.Static.Math.Floating as FloatingMath
 import Torch.Core.Tensor.Static.Math.Signed as SignedMath
 import Torch.Core.ShortTensor.Static.Math.Signed ()
@@ -159,7 +159,7 @@ import Torch.Core.FloatTensor.Static.Math.Signed ()
 import Torch.Core.DoubleTensor.Static.Math.Signed ()
 
 -- ========================================================================= --
--- All static variants of the Torch.Class.C.Tensor.Math class
+-- All static variants of the Torch.Class.Tensor.Math class
 -- ========================================================================= --
 
 type MathConstraint t d =

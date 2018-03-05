@@ -3,7 +3,7 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 module Main where
 
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import Torch.Core.Tensor.Dynamic
 import qualified Torch.Core.Random as RNG
 

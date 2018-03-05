@@ -24,7 +24,7 @@ library
     , dimensions >=0.3.2.0
     , hasktorch-classes
     , hasktorch-dimensions
-    , hasktorch-raw
+    , hasktorch-raw-th
     , hasktorch-signatures-unsigned
     , hasktorch-types
     , managed >=1.0.0 && <1.1
@@ -35,22 +35,20 @@ library
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
   exposed-modules:
-    --  Torch.Core.Tensor
-
     -- classes implementations with indefinites
-      Torch.Core.Types
-    , Torch.Core.Storage
-    , Torch.Core.Storage.Copy
-    , Torch.Core.Tensor.Dynamic
-    , Torch.Core.Tensor.Dynamic.IsTensor
-    , Torch.Core.Tensor.Dynamic.Copy
-    , Torch.Core.Tensor.Dynamic.Conv
-    , Torch.Core.Tensor.Dynamic.Math
-    , Torch.Core.Tensor.Dynamic.Random
-    , Torch.Core.Tensor.Static
-    , Torch.Core.Tensor.Static.IsTensor
-    , Torch.Core.Tensor.Static.Copy
-    , Torch.Core.Tensor.Static.Random
+      Torch.Indef.Types
+    , Torch.Indef.Storage
+    , Torch.Indef.Storage.Copy
+    , Torch.Indef.Tensor.Dynamic
+    , Torch.Indef.Tensor.Dynamic.IsTensor
+    , Torch.Indef.Tensor.Dynamic.Copy
+    , Torch.Indef.Tensor.Dynamic.Conv
+    , Torch.Indef.Tensor.Dynamic.Math
+    , Torch.Indef.Tensor.Dynamic.Random
+    , Torch.Indef.Tensor.Static
+    , Torch.Indef.Tensor.Static.IsTensor
+    , Torch.Indef.Tensor.Static.Copy
+    , Torch.Indef.Tensor.Static.Random
 
 executable isdefinite
   hs-source-dirs: exe
@@ -59,27 +57,27 @@ executable isdefinite
   build-depends:
       base >=4.7 && <5
     , hasktorch-indef-unsigned
-    , hasktorch-raw
+    , hasktorch-raw-th
     , hasktorch-types
   mixins:
       hasktorch-indef-unsigned
-        (Torch.Core.Types
-        ,Torch.Core.Storage
-        ,Torch.Core.Storage.Copy
-        ,Torch.Core.Tensor.Dynamic
-        ,Torch.Core.Tensor.Dynamic.Copy
-        ,Torch.Core.Tensor.Dynamic.Conv
-        ,Torch.Core.Tensor.Dynamic.Random
-        ,Torch.Core.Tensor.Dynamic.Math
-        ,Torch.Core.Tensor.Static
+        (Torch.Indef.Types
+        ,Torch.Indef.Storage
+        ,Torch.Indef.Storage.Copy
+        ,Torch.Indef.Tensor.Dynamic
+        ,Torch.Indef.Tensor.Dynamic.Copy
+        ,Torch.Indef.Tensor.Dynamic.Conv
+        ,Torch.Indef.Tensor.Dynamic.Random
+        ,Torch.Indef.Tensor.Dynamic.Math
+        ,Torch.Indef.Tensor.Static
         )
         requires
-        (SigTypes         as THByteTypes
-        ,Storage          as THByteStorage
-        ,StorageCopy      as THByteStorageCopy
-        ,Tensor           as THByteTensor
-        ,TensorCopy       as THByteTensorCopy
-        ,TensorConv       as THByteTensorConv
-        ,TensorRandom     as THByteTensorRandom
-        ,TensorMath       as THByteTensorMath
+        (Torch.Signature.Types         as Torch.Types.TH.Byte
+        ,Torch.Signature.Storage       as Torch.FFI.TH.Byte.Storage
+        ,Torch.Signature.Storage.Copy  as Torch.FFI.TH.Byte.StorageCopy
+        ,Torch.Signature.IsTensor      as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Signature.Tensor.Copy   as Torch.FFI.TH.Byte.TensorCopy
+        ,Torch.Signature.Tensor.Conv   as Torch.FFI.TH.Byte.TensorConv
+        ,Torch.Signature.Tensor.Random as Torch.FFI.TH.Byte.TensorRandom
+        ,Torch.Signature.Tensor.Math   as Torch.FFI.TH.Byte.TensorMath
         )

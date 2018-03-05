@@ -36,7 +36,7 @@ library
     , hasktorch-indef-unsigned
     , hasktorch-indef-signed
     , hasktorch-indef-floating
-    , hasktorch-raw
+    , hasktorch-raw-th
     , hasktorch-types
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
@@ -70,7 +70,7 @@ library
     , Torch.Core.Tensor.Static.Math.Floating
 
   reexported-modules:
-      Torch.Core.Tensor.Dim
+      Torch.Dimensions
 
     -- export all unsigned types
     , Torch.Core.ByteTypes
@@ -151,184 +151,184 @@ library
 
   mixins:
       hasktorch-indef-unsigned
-        (Torch.Core.Types                      as Torch.Core.ByteTypes
-        ,Torch.Core.Storage                    as Torch.Core.ByteStorage
-        ,Torch.Core.Storage.Copy               as Torch.Core.ByteStorage.Copy
-        ,Torch.Core.Tensor.Dynamic             as Torch.Core.ByteTensor.Dynamic
-        ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.ByteTensor.Dynamic.IsTensor
-        ,Torch.Core.Tensor.Dynamic.Copy        as Torch.Core.ByteTensor.Dynamic.Copy
-        ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.ByteTensor.Dynamic.Conv
-        ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.ByteTensor.Dynamic.Random
-        ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ByteTensor.Dynamic.Math
-        ,Torch.Core.Tensor.Static              as Torch.Core.ByteTensor.Static
-        ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.ByteTensor.Static.IsTensor
-        ,Torch.Core.Tensor.Static.Random       as Torch.Core.ByteTensor.Static.Random
-        ,Torch.Core.Tensor.Static.Copy       as Torch.Core.ByteTensor.Static.Copy
+        (Torch.Indef.Types                      as Torch.Core.ByteTypes
+        ,Torch.Indef.Storage                    as Torch.Core.ByteStorage
+        ,Torch.Indef.Storage.Copy               as Torch.Core.ByteStorage.Copy
+        ,Torch.Indef.Tensor.Dynamic             as Torch.Core.ByteTensor.Dynamic
+        ,Torch.Indef.Tensor.Dynamic.IsTensor    as Torch.Core.ByteTensor.Dynamic.IsTensor
+        ,Torch.Indef.Tensor.Dynamic.Copy        as Torch.Core.ByteTensor.Dynamic.Copy
+        ,Torch.Indef.Tensor.Dynamic.Conv        as Torch.Core.ByteTensor.Dynamic.Conv
+        ,Torch.Indef.Tensor.Dynamic.Random      as Torch.Core.ByteTensor.Dynamic.Random
+        ,Torch.Indef.Tensor.Dynamic.Math        as Torch.Core.ByteTensor.Dynamic.Math
+        ,Torch.Indef.Tensor.Static              as Torch.Core.ByteTensor.Static
+        ,Torch.Indef.Tensor.Static.IsTensor     as Torch.Core.ByteTensor.Static.IsTensor
+        ,Torch.Indef.Tensor.Static.Random       as Torch.Core.ByteTensor.Static.Random
+        ,Torch.Indef.Tensor.Static.Copy         as Torch.Core.ByteTensor.Static.Copy
         )
         requires
-        (SigTypes         as THByteTypes
-        ,Storage          as THByteStorage
-        ,StorageCopy      as THByteStorageCopy
-        ,Tensor           as THByteTensor
-        ,TensorCopy       as THByteTensorCopy
-        ,TensorConv       as THByteTensorConv
-        ,TensorRandom     as THByteTensorRandom
-        ,TensorMath       as THByteTensorMath
+        (Torch.Signature.Types             as Torch.Types.TH.Byte
+        ,Torch.Signature.Storage           as Torch.FFI.TH.Byte.Storage
+        ,Torch.Signature.Storage.Copy      as Torch.FFI.TH.Byte.StorageCopy
+        ,Torch.Signature.IsTensor          as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Signature.Tensor.Copy       as Torch.FFI.TH.Byte.TensorCopy
+        ,Torch.Signature.Tensor.Conv       as Torch.FFI.TH.Byte.TensorConv
+        ,Torch.Signature.Tensor.Random     as Torch.FFI.TH.Byte.TensorRandom
+        ,Torch.Signature.Tensor.Math       as Torch.FFI.TH.Byte.TensorMath
         )
     , hasktorch-indef-signed
-        (Torch.Core.Types                      as Torch.Core.ShortTypes
-        ,Torch.Core.Storage                    as Torch.Core.ShortStorage
-        ,Torch.Core.Storage.Copy               as Torch.Core.ShortStorage.Copy
-        ,Torch.Core.Tensor.Dynamic             as Torch.Core.ShortTensor.Dynamic
-        ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.ShortTensor.Dynamic.IsTensor
-        ,Torch.Core.Tensor.Dynamic.Copy        as Torch.Core.ShortTensor.Dynamic.Copy
-        ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.ShortTensor.Dynamic.Conv
-        ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.ShortTensor.Dynamic.Random
-        ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.ShortTensor.Dynamic.Math
-        ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.ShortTensor.Dynamic.Math.Signed
-        ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.ShortTensor.Static.IsTensor
-        ,Torch.Core.Tensor.Static              as Torch.Core.ShortTensor.Static
-        ,Torch.Core.Tensor.Static.Random       as Torch.Core.ShortTensor.Static.Random
-        ,Torch.Core.Tensor.Static.Math.Signed as Torch.Core.ShortTensor.Static.Math.Signed
-        ,Torch.Core.Tensor.Static.Copy         as Torch.Core.ShortTensor.Static.Copy
+        (Torch.Indef.Types                      as Torch.Core.ShortTypes
+        ,Torch.Indef.Storage                    as Torch.Core.ShortStorage
+        ,Torch.Indef.Storage.Copy               as Torch.Core.ShortStorage.Copy
+        ,Torch.Indef.Tensor.Dynamic             as Torch.Core.ShortTensor.Dynamic
+        ,Torch.Indef.Tensor.Dynamic.IsTensor    as Torch.Core.ShortTensor.Dynamic.IsTensor
+        ,Torch.Indef.Tensor.Dynamic.Copy        as Torch.Core.ShortTensor.Dynamic.Copy
+        ,Torch.Indef.Tensor.Dynamic.Conv        as Torch.Core.ShortTensor.Dynamic.Conv
+        ,Torch.Indef.Tensor.Dynamic.Random      as Torch.Core.ShortTensor.Dynamic.Random
+        ,Torch.Indef.Tensor.Dynamic.Math        as Torch.Core.ShortTensor.Dynamic.Math
+        ,Torch.Indef.Tensor.Dynamic.Math.Signed as Torch.Core.ShortTensor.Dynamic.Math.Signed
+        ,Torch.Indef.Tensor.Static.IsTensor    as Torch.Core.ShortTensor.Static.IsTensor
+        ,Torch.Indef.Tensor.Static              as Torch.Core.ShortTensor.Static
+        ,Torch.Indef.Tensor.Static.Random       as Torch.Core.ShortTensor.Static.Random
+        ,Torch.Indef.Tensor.Static.Math.Signed as Torch.Core.ShortTensor.Static.Math.Signed
+        ,Torch.Indef.Tensor.Static.Copy         as Torch.Core.ShortTensor.Static.Copy
         )
         requires
-        (SigTypes         as THShortTypes
-        ,Storage          as THShortStorage
-        ,StorageCopy      as THShortStorageCopy
-        ,Tensor           as THShortTensor
-        ,TensorCopy       as THShortTensorCopy
-        ,TensorConv       as THShortTensorConv
-        ,TensorRandom     as THShortTensorRandom
-        ,TensorMath       as THShortTensorMath
-        ,TensorMathSigned as THShortTensorMath
+        (Torch.Signature.Types         as Torch.Types.TH.Short
+        ,Torch.Signature.Storage          as Torch.FFI.TH.Short.Storage
+        ,Torch.Signature.Storage.Copy      as Torch.FFI.TH.Short.StorageCopy
+        ,Torch.Signature.IsTensor          as Torch.FFI.TH.Short.Tensor
+        ,Torch.Signature.Tensor.Copy       as Torch.FFI.TH.Short.TensorCopy
+        ,Torch.Signature.Tensor.Conv       as Torch.FFI.TH.Short.TensorConv
+        ,Torch.Signature.Tensor.Random     as Torch.FFI.TH.Short.TensorRandom
+        ,Torch.Signature.Tensor.Math       as Torch.FFI.TH.Short.TensorMath
+        ,Torch.Signature.Tensor.MathSigned as Torch.FFI.TH.Short.TensorMath
         )
    , hasktorch-indef-signed
-       (Torch.Core.Types                      as Torch.Core.IntTypes
-       ,Torch.Core.Storage                    as Torch.Core.IntStorage
-       ,Torch.Core.Storage.Copy               as Torch.Core.IntStorage.Copy
-       ,Torch.Core.Tensor.Dynamic             as Torch.Core.IntTensor.Dynamic
-       ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.IntTensor.Dynamic.IsTensor
-       ,Torch.Core.Tensor.Dynamic.Copy        as Torch.Core.IntTensor.Dynamic.Copy
-       ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.IntTensor.Dynamic.Conv
-       ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.IntTensor.Dynamic.Random
-       ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.IntTensor.Dynamic.Math
-       ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.IntTensor.Dynamic.Math.Signed
-       ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.IntTensor.Static.IsTensor
-       ,Torch.Core.Tensor.Static              as Torch.Core.IntTensor.Static
-       ,Torch.Core.Tensor.Static.Random       as Torch.Core.IntTensor.Static.Random
-       ,Torch.Core.Tensor.Static.Math.Signed as Torch.Core.IntTensor.Static.Math.Signed
-       ,Torch.Core.Tensor.Static.Copy              as Torch.Core.IntTensor.Static.Copy
+       (Torch.Indef.Types                      as Torch.Core.IntTypes
+       ,Torch.Indef.Storage                    as Torch.Core.IntStorage
+       ,Torch.Indef.Storage.Copy               as Torch.Core.IntStorage.Copy
+       ,Torch.Indef.Tensor.Dynamic             as Torch.Core.IntTensor.Dynamic
+       ,Torch.Indef.Tensor.Dynamic.IsTensor    as Torch.Core.IntTensor.Dynamic.IsTensor
+       ,Torch.Indef.Tensor.Dynamic.Copy        as Torch.Core.IntTensor.Dynamic.Copy
+       ,Torch.Indef.Tensor.Dynamic.Conv        as Torch.Core.IntTensor.Dynamic.Conv
+       ,Torch.Indef.Tensor.Dynamic.Random      as Torch.Core.IntTensor.Dynamic.Random
+       ,Torch.Indef.Tensor.Dynamic.Math        as Torch.Core.IntTensor.Dynamic.Math
+       ,Torch.Indef.Tensor.Dynamic.Math.Signed as Torch.Core.IntTensor.Dynamic.Math.Signed
+       ,Torch.Indef.Tensor.Static.IsTensor    as Torch.Core.IntTensor.Static.IsTensor
+       ,Torch.Indef.Tensor.Static              as Torch.Core.IntTensor.Static
+       ,Torch.Indef.Tensor.Static.Random       as Torch.Core.IntTensor.Static.Random
+       ,Torch.Indef.Tensor.Static.Math.Signed as Torch.Core.IntTensor.Static.Math.Signed
+       ,Torch.Indef.Tensor.Static.Copy              as Torch.Core.IntTensor.Static.Copy
        )
        requires
-       (SigTypes         as THIntTypes
-       ,Storage          as THIntStorage
-       ,StorageCopy      as THIntStorageCopy
-       ,Tensor           as THIntTensor
-       ,TensorCopy       as THIntTensorCopy
-       ,TensorConv       as THIntTensorConv
-       ,TensorRandom     as THIntTensorRandom
-       ,TensorMath       as THIntTensorMath
-       ,TensorMathSigned as THIntTensorMath
+       (Torch.Signature.Types         as Torch.Types.TH.Int
+       ,Torch.Signature.Storage          as Torch.FFI.TH.Int.Storage
+       ,Torch.Signature.Storage.Copy      as Torch.FFI.TH.Int.StorageCopy
+       ,Torch.Signature.IsTensor          as Torch.FFI.TH.Int.Tensor
+       ,Torch.Signature.Tensor.Copy       as Torch.FFI.TH.Int.TensorCopy
+       ,Torch.Signature.Tensor.Conv       as Torch.FFI.TH.Int.TensorConv
+       ,Torch.Signature.Tensor.Random     as Torch.FFI.TH.Int.TensorRandom
+       ,Torch.Signature.Tensor.Math       as Torch.FFI.TH.Int.TensorMath
+       ,Torch.Signature.Tensor.MathSigned as Torch.FFI.TH.Int.TensorMath
       )
    , hasktorch-indef-signed
-      (Torch.Core.Types                      as Torch.Core.LongTypes
-      ,Torch.Core.Storage                    as Torch.Core.LongStorage
-      ,Torch.Core.Storage.Copy               as Torch.Core.LongStorage.Copy
-      ,Torch.Core.Tensor.Dynamic             as Torch.Core.LongTensor.Dynamic
-      ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.LongTensor.Dynamic.IsTensor
-      ,Torch.Core.Tensor.Dynamic.Copy        as Torch.Core.LongTensor.Dynamic.Copy
-      ,Torch.Core.Tensor.Dynamic.Conv        as Torch.Core.LongTensor.Dynamic.Conv
-      ,Torch.Core.Tensor.Dynamic.Random      as Torch.Core.LongTensor.Dynamic.Random
-      ,Torch.Core.Tensor.Dynamic.Math        as Torch.Core.LongTensor.Dynamic.Math
-      ,Torch.Core.Tensor.Dynamic.Math.Signed as Torch.Core.LongTensor.Dynamic.Math.Signed
-      ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.LongTensor.Static.IsTensor
-      ,Torch.Core.Tensor.Static              as Torch.Core.LongTensor.Static
-      ,Torch.Core.Tensor.Static.Copy              as Torch.Core.LongTensor.Static.Copy
-      ,Torch.Core.Tensor.Static.Random       as Torch.Core.LongTensor.Static.Random
-      ,Torch.Core.Tensor.Static.Math.Signed as Torch.Core.LongTensor.Static.Math.Signed
+      (Torch.Indef.Types                      as Torch.Core.LongTypes
+      ,Torch.Indef.Storage                    as Torch.Core.LongStorage
+      ,Torch.Indef.Storage.Copy               as Torch.Core.LongStorage.Copy
+      ,Torch.Indef.Tensor.Dynamic             as Torch.Core.LongTensor.Dynamic
+      ,Torch.Indef.Tensor.Dynamic.IsTensor    as Torch.Core.LongTensor.Dynamic.IsTensor
+      ,Torch.Indef.Tensor.Dynamic.Copy        as Torch.Core.LongTensor.Dynamic.Copy
+      ,Torch.Indef.Tensor.Dynamic.Conv        as Torch.Core.LongTensor.Dynamic.Conv
+      ,Torch.Indef.Tensor.Dynamic.Random      as Torch.Core.LongTensor.Dynamic.Random
+      ,Torch.Indef.Tensor.Dynamic.Math        as Torch.Core.LongTensor.Dynamic.Math
+      ,Torch.Indef.Tensor.Dynamic.Math.Signed as Torch.Core.LongTensor.Dynamic.Math.Signed
+      ,Torch.Indef.Tensor.Static.IsTensor    as Torch.Core.LongTensor.Static.IsTensor
+      ,Torch.Indef.Tensor.Static              as Torch.Core.LongTensor.Static
+      ,Torch.Indef.Tensor.Static.Copy              as Torch.Core.LongTensor.Static.Copy
+      ,Torch.Indef.Tensor.Static.Random       as Torch.Core.LongTensor.Static.Random
+      ,Torch.Indef.Tensor.Static.Math.Signed as Torch.Core.LongTensor.Static.Math.Signed
       )
       requires
-      (SigTypes         as THLongTypes
-      ,Storage          as THLongStorage
-      ,StorageCopy      as THLongStorageCopy
-      ,Tensor           as THLongTensor
-      ,TensorCopy       as THLongTensorCopy
-      ,TensorConv       as THLongTensorConv
-      ,TensorRandom     as THLongTensorRandom
-      ,TensorMath       as THLongTensorMath
-      ,TensorMathSigned as THLongTensorMath
+      (Torch.Signature.Types             as Torch.Types.TH.Long
+      ,Torch.Signature.Storage           as Torch.FFI.TH.Long.Storage
+      ,Torch.Signature.Storage.Copy      as Torch.FFI.TH.Long.StorageCopy
+      ,Torch.Signature.IsTensor          as Torch.FFI.TH.Long.Tensor
+      ,Torch.Signature.Tensor.Copy       as Torch.FFI.TH.Long.TensorCopy
+      ,Torch.Signature.Tensor.Conv       as Torch.FFI.TH.Long.TensorConv
+      ,Torch.Signature.Tensor.Random     as Torch.FFI.TH.Long.TensorRandom
+      ,Torch.Signature.Tensor.Math       as Torch.FFI.TH.Long.TensorMath
+      ,Torch.Signature.Tensor.MathSigned as Torch.FFI.TH.Long.TensorMath
       )
    , hasktorch-indef-floating
-      (Torch.Core.Types                           as Torch.Core.FloatTypes
-      ,Torch.Core.Storage                         as Torch.Core.FloatStorage
-      ,Torch.Core.Storage.Copy                    as Torch.Core.FloatStorage.Copy
-      ,Torch.Core.Tensor.Dynamic                  as Torch.Core.FloatTensor.Dynamic
-      ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.FloatTensor.Dynamic.IsTensor
-      ,Torch.Core.Tensor.Dynamic.Copy             as Torch.Core.FloatTensor.Dynamic.Copy
-      ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.FloatTensor.Dynamic.Conv
-      ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.FloatTensor.Dynamic.Lapack
-      ,Torch.Core.Tensor.Dynamic.Math             as Torch.Core.FloatTensor.Dynamic.Math
-      ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.FloatTensor.Dynamic.Math.Floating
-      ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.FloatTensor.Dynamic.Math.Signed
-      ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.FloatTensor.Dynamic.Random
-      ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.FloatTensor.Dynamic.Random.Floating
-      ,Torch.Core.Tensor.Static                   as Torch.Core.FloatTensor.Static
-      ,Torch.Core.Tensor.Static.Copy                   as Torch.Core.FloatTensor.Static.Copy
-      ,Torch.Core.Tensor.Static.IsTensor    as Torch.Core.FloatTensor.Static.IsTensor
-      ,Torch.Core.Tensor.Static.Random            as Torch.Core.FloatTensor.Static.Random
-      ,Torch.Core.Tensor.Static.Random.Floating   as Torch.Core.FloatTensor.Static.Random.Floating
-      ,Torch.Core.Tensor.Static.Math.Signed      as Torch.Core.FloatTensor.Static.Math.Signed
-      ,Torch.Core.Tensor.Static.Math.Floating      as Torch.Core.FloatTensor.Static.Math.Floating
+      (Torch.Indef.Types                           as Torch.Core.FloatTypes
+      ,Torch.Indef.Storage                         as Torch.Core.FloatStorage
+      ,Torch.Indef.Storage.Copy                    as Torch.Core.FloatStorage.Copy
+      ,Torch.Indef.Tensor.Dynamic                  as Torch.Core.FloatTensor.Dynamic
+      ,Torch.Indef.Tensor.Dynamic.IsTensor    as Torch.Core.FloatTensor.Dynamic.IsTensor
+      ,Torch.Indef.Tensor.Dynamic.Copy             as Torch.Core.FloatTensor.Dynamic.Copy
+      ,Torch.Indef.Tensor.Dynamic.Conv             as Torch.Core.FloatTensor.Dynamic.Conv
+      ,Torch.Indef.Tensor.Dynamic.Lapack           as Torch.Core.FloatTensor.Dynamic.Lapack
+      ,Torch.Indef.Tensor.Dynamic.Math             as Torch.Core.FloatTensor.Dynamic.Math
+      ,Torch.Indef.Tensor.Dynamic.Math.Floating    as Torch.Core.FloatTensor.Dynamic.Math.Floating
+      ,Torch.Indef.Tensor.Dynamic.Math.Signed      as Torch.Core.FloatTensor.Dynamic.Math.Signed
+      ,Torch.Indef.Tensor.Dynamic.Random           as Torch.Core.FloatTensor.Dynamic.Random
+      ,Torch.Indef.Tensor.Dynamic.Random.Floating  as Torch.Core.FloatTensor.Dynamic.Random.Floating
+      ,Torch.Indef.Tensor.Static                   as Torch.Core.FloatTensor.Static
+      ,Torch.Indef.Tensor.Static.Copy                   as Torch.Core.FloatTensor.Static.Copy
+      ,Torch.Indef.Tensor.Static.IsTensor    as Torch.Core.FloatTensor.Static.IsTensor
+      ,Torch.Indef.Tensor.Static.Random            as Torch.Core.FloatTensor.Static.Random
+      ,Torch.Indef.Tensor.Static.Random.Floating   as Torch.Core.FloatTensor.Static.Random.Floating
+      ,Torch.Indef.Tensor.Static.Math.Signed      as Torch.Core.FloatTensor.Static.Math.Signed
+      ,Torch.Indef.Tensor.Static.Math.Floating      as Torch.Core.FloatTensor.Static.Math.Floating
       )
       requires
-      (SigTypes             as THFloatTypes
-      ,Storage              as THFloatStorage
-      ,StorageCopy          as THFloatStorageCopy
-      ,Tensor               as THFloatTensor
-      ,TensorCopy           as THFloatTensorCopy
-      ,TensorConv           as THFloatTensorConv
-      ,TensorLapack         as THFloatTensorLapack
-      ,TensorMath           as THFloatTensorMath
-      ,TensorMathSigned     as THFloatTensorMath
-      ,TensorMathFloating   as THFloatTensorMath
-      ,TensorRandom         as THFloatTensorRandom
-      ,TensorRandomFloating as THFloatTensorRandom
+      (Torch.Signature.Types                 as Torch.Types.TH.Float
+      ,Torch.Signature.Storage               as Torch.FFI.TH.Float.Storage
+      ,Torch.Signature.Storage.Copy          as Torch.FFI.TH.Float.StorageCopy
+      ,Torch.Signature.IsTensor              as Torch.FFI.TH.Float.Tensor
+      ,Torch.Signature.Tensor.Copy           as Torch.FFI.TH.Float.TensorCopy
+      ,Torch.Signature.Tensor.Conv           as Torch.FFI.TH.Float.TensorConv
+      ,Torch.Signature.Tensor.Lapack         as Torch.FFI.TH.Float.TensorLapack
+      ,Torch.Signature.Tensor.Math           as Torch.FFI.TH.Float.TensorMath
+      ,Torch.Signature.Tensor.MathSigned     as Torch.FFI.TH.Float.TensorMath
+      ,Torch.Signature.Tensor.MathFloating   as Torch.FFI.TH.Float.TensorMath
+      ,Torch.Signature.Tensor.Random         as Torch.FFI.TH.Float.TensorRandom
+      ,Torch.Signature.Tensor.RandomFloating as Torch.FFI.TH.Float.TensorRandom
       )
    , hasktorch-indef-floating
-      (Torch.Core.Types                           as Torch.Core.DoubleTypes
-      ,Torch.Core.Storage                         as Torch.Core.DoubleStorage
-      ,Torch.Core.Storage.Copy                    as Torch.Core.DoubleStorage.Copy
-      ,Torch.Core.Tensor.Dynamic                  as Torch.Core.DoubleTensor.Dynamic
-      ,Torch.Core.Tensor.Dynamic.IsTensor    as Torch.Core.DoubleTensor.Dynamic.IsTensor
-      ,Torch.Core.Tensor.Dynamic.Copy             as Torch.Core.DoubleTensor.Dynamic.Copy
-      ,Torch.Core.Tensor.Dynamic.Conv             as Torch.Core.DoubleTensor.Dynamic.Conv
-      ,Torch.Core.Tensor.Dynamic.Lapack           as Torch.Core.DoubleTensor.Dynamic.Lapack
-      ,Torch.Core.Tensor.Dynamic.Math             as Torch.Core.DoubleTensor.Dynamic.Math
-      ,Torch.Core.Tensor.Dynamic.Math.Floating    as Torch.Core.DoubleTensor.Dynamic.Math.Floating
-      ,Torch.Core.Tensor.Dynamic.Math.Signed      as Torch.Core.DoubleTensor.Dynamic.Math.Signed
-      ,Torch.Core.Tensor.Dynamic.Random           as Torch.Core.DoubleTensor.Dynamic.Random
-      ,Torch.Core.Tensor.Dynamic.Random.Floating  as Torch.Core.DoubleTensor.Dynamic.Random.Floating
-      ,Torch.Core.Tensor.Static                   as Torch.Core.DoubleTensor.Static
-      ,Torch.Core.Tensor.Static.Copy              as Torch.Core.DoubleTensor.Static.Copy
-      ,Torch.Core.Tensor.Static.IsTensor          as Torch.Core.DoubleTensor.Static.IsTensor
-      ,Torch.Core.Tensor.Static.Random            as Torch.Core.DoubleTensor.Static.Random
-      ,Torch.Core.Tensor.Static.Random.Floating   as Torch.Core.DoubleTensor.Static.Random.Floating
-      ,Torch.Core.Tensor.Static.Math.Signed       as Torch.Core.DoubleTensor.Static.Math.Signed
-      ,Torch.Core.Tensor.Static.Math.Floating     as Torch.Core.DoubleTensor.Static.Math.Floating
+      (Torch.Indef.Types                           as Torch.Core.DoubleTypes
+      ,Torch.Indef.Storage                         as Torch.Core.DoubleStorage
+      ,Torch.Indef.Storage.Copy                    as Torch.Core.DoubleStorage.Copy
+      ,Torch.Indef.Tensor.Dynamic                  as Torch.Core.DoubleTensor.Dynamic
+      ,Torch.Indef.Tensor.Dynamic.IsTensor         as Torch.Core.DoubleTensor.Dynamic.IsTensor
+      ,Torch.Indef.Tensor.Dynamic.Copy             as Torch.Core.DoubleTensor.Dynamic.Copy
+      ,Torch.Indef.Tensor.Dynamic.Conv             as Torch.Core.DoubleTensor.Dynamic.Conv
+      ,Torch.Indef.Tensor.Dynamic.Lapack           as Torch.Core.DoubleTensor.Dynamic.Lapack
+      ,Torch.Indef.Tensor.Dynamic.Math             as Torch.Core.DoubleTensor.Dynamic.Math
+      ,Torch.Indef.Tensor.Dynamic.Math.Floating    as Torch.Core.DoubleTensor.Dynamic.Math.Floating
+      ,Torch.Indef.Tensor.Dynamic.Math.Signed      as Torch.Core.DoubleTensor.Dynamic.Math.Signed
+      ,Torch.Indef.Tensor.Dynamic.Random           as Torch.Core.DoubleTensor.Dynamic.Random
+      ,Torch.Indef.Tensor.Dynamic.Random.Floating  as Torch.Core.DoubleTensor.Dynamic.Random.Floating
+      ,Torch.Indef.Tensor.Static                   as Torch.Core.DoubleTensor.Static
+      ,Torch.Indef.Tensor.Static.Copy              as Torch.Core.DoubleTensor.Static.Copy
+      ,Torch.Indef.Tensor.Static.IsTensor          as Torch.Core.DoubleTensor.Static.IsTensor
+      ,Torch.Indef.Tensor.Static.Random            as Torch.Core.DoubleTensor.Static.Random
+      ,Torch.Indef.Tensor.Static.Random.Floating   as Torch.Core.DoubleTensor.Static.Random.Floating
+      ,Torch.Indef.Tensor.Static.Math.Signed       as Torch.Core.DoubleTensor.Static.Math.Signed
+      ,Torch.Indef.Tensor.Static.Math.Floating     as Torch.Core.DoubleTensor.Static.Math.Floating
       )
       requires
-      (SigTypes             as THDoubleTypes
-      ,Storage              as THDoubleStorage
-      ,StorageCopy          as THDoubleStorageCopy
-      ,Tensor               as THDoubleTensor
-      ,TensorCopy           as THDoubleTensorCopy
-      ,TensorConv           as THDoubleTensorConv
-      ,TensorLapack         as THDoubleTensorLapack
-      ,TensorMath           as THDoubleTensorMath
-      ,TensorMathFloating   as THDoubleTensorMath
-      ,TensorMathSigned     as THDoubleTensorMath
-      ,TensorRandom         as THDoubleTensorRandom
-      ,TensorRandomFloating as THDoubleTensorRandom
+      (Torch.Signature.Types                 as Torch.Types.TH.Double
+      ,Torch.Signature.Storage               as Torch.FFI.TH.Double.Storage
+      ,Torch.Signature.Storage.Copy          as Torch.FFI.TH.Double.StorageCopy
+      ,Torch.Signature.IsTensor              as Torch.FFI.TH.Double.Tensor
+      ,Torch.Signature.Tensor.Copy           as Torch.FFI.TH.Double.TensorCopy
+      ,Torch.Signature.Tensor.Conv           as Torch.FFI.TH.Double.TensorConv
+      ,Torch.Signature.Tensor.Lapack         as Torch.FFI.TH.Double.TensorLapack
+      ,Torch.Signature.Tensor.Math           as Torch.FFI.TH.Double.TensorMath
+      ,Torch.Signature.Tensor.MathFloating   as Torch.FFI.TH.Double.TensorMath
+      ,Torch.Signature.Tensor.MathSigned     as Torch.FFI.TH.Double.TensorMath
+      ,Torch.Signature.Tensor.Random         as Torch.FFI.TH.Double.TensorRandom
+      ,Torch.Signature.Tensor.RandomFloating as Torch.FFI.TH.Double.TensorRandom
       )
 

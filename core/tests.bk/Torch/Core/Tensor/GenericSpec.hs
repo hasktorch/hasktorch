@@ -5,11 +5,11 @@ import Foreign (Ptr)
 import Foreign.C.Types (CInt)
 
 import THRandom (c_THGenerator_new)
-import THDoubleTensor (c_THDoubleTensor_free)
-import THDoubleTensorMath (c_THDoubleTensor_stdall, c_THDoubleTensor_meanall, c_THDoubleTensor_maxall)
-import THDoubleTensorRandom (c_THDoubleTensor_normal, c_THDoubleTensor_uniform)
+import Torch.FFI.TH.Double.Tensor (c_THDoubleTensor_free)
+import Torch.FFI.TH.Double.TensorMath (c_THDoubleTensor_stdall, c_THDoubleTensor_meanall, c_THDoubleTensor_maxall)
+import Torch.FFI.TH.Double.TensorRandom (c_THDoubleTensor_normal, c_THDoubleTensor_uniform)
 
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import Torch.Core.Tensor.Types (TensorDoubleRaw)
 import Torch.Raw.Tensor.Generic
 
@@ -129,24 +129,24 @@ testsRawRandomScenario = do
     describe "random vectors" $ do
       it "uniform random is < bound" $ do
         t <- constant' (evilDim [1000]) 0.0
-        c_THDoubleTensor_uniform t gen (-1.0) (1.0)
-        c_THDoubleTensor_maxall t `shouldSatisfy` (< 1.001)
-        c_THDoubleTensor_free t
+        c_Torch.FFI.TH.Double.Tensor_uniform t gen (-1.0) (1.0)
+        c_Torch.FFI.TH.Double.Tensor_maxall t `shouldSatisfy` (< 1.001)
+        c_Torch.FFI.TH.Double.Tensor_free t
       it "uniform random is > bound" $ do
         t <- constant' (evilDim [1000]) 0.0
-        c_THDoubleTensor_uniform t gen (-1.0) (1.0)
-        c_THDoubleTensor_maxall t `shouldSatisfy` (> (-1.001))
-        c_THDoubleTensor_free t
+        c_Torch.FFI.TH.Double.Tensor_uniform t gen (-1.0) (1.0)
+        c_Torch.FFI.TH.Double.Tensor_maxall t `shouldSatisfy` (> (-1.001))
+        c_Torch.FFI.TH.Double.Tensor_free t
       it "normal mean follows law of large numbers" $ do
         t <- constant' (evilDim [10000]) 0.0
-        c_THDoubleTensor_normal t gen 1.55 0.25
-        c_THDoubleTensor_meanall t `shouldSatisfy` (\x -> and [(x < 1.6), (x > 1.5)])
-        c_THDoubleTensor_free t
+        c_Torch.FFI.TH.Double.Tensor_normal t gen 1.55 0.25
+        c_Torch.FFI.TH.Double.Tensor_meanall t `shouldSatisfy` (\x -> and [(x < 1.6), (x > 1.5)])
+        c_Torch.FFI.TH.Double.Tensor_free t
       it "normal std follows law of large numbers" $ do
         t <- constant' (evilDim [10000]) 0.0
-        c_THDoubleTensor_normal t gen 1.55 0.25
-        c_THDoubleTensor_stdall t biased `shouldSatisfy` (\x -> and [(x < 0.3), (x > 0.2)])
-        c_THDoubleTensor_free t
+        c_Torch.FFI.TH.Double.Tensor_normal t gen 1.55 0.25
+        c_Torch.FFI.TH.Double.Tensor_stdall t biased `shouldSatisfy` (\x -> and [(x < 0.3), (x > 0.2)])
+        c_Torch.FFI.TH.Double.Tensor_free t
   where
     biased :: CInt
     biased = 0

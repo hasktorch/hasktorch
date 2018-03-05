@@ -8,7 +8,7 @@ import qualified Torch.Core.LongStorage as L
 import qualified Torch.Core.FloatStorage as F
 import qualified Torch.Core.DoubleStorage as D
 
-import qualified Torch.Class.C.Storage.Copy as C
+import qualified Torch.Class.Storage.Copy as C
 
 class C.StorageCopy t => UserStorageCopy t where
   copy :: t -> IO t

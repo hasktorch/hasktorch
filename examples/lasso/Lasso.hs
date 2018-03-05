@@ -11,7 +11,7 @@ import Data.Singletons
 import GHC.TypeLits
 import Lens.Micro
 
-import Torch.Core.Tensor.Dim hiding (N)
+import Torch.Dimensions hiding (N)
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math.Infix
 import qualified Torch.Core.Random as RNG

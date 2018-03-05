@@ -35,7 +35,6 @@ executable ad
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
@@ -50,7 +49,6 @@ executable bayesian-regression
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
@@ -135,7 +133,6 @@ executable playground
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , hasktorch-types
     , singletons >=2.2
   other-modules:

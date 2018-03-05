@@ -7,7 +7,7 @@ module Main where
 import Foreign.ForeignPtr(withForeignPtr, newForeignPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import THDoubleTensor as T
+import Torch.FFI.TH.Double.Tensor as T
 
 import PlaygroundRawUtils
 

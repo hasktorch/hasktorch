@@ -11,20 +11,20 @@ import Foreign (Ptr)
 import GHC.Int
 import Data.Function (on)
 
-import Torch.Class.C.Internal (HsReal, HsAccReal, AsDynamic)
-import Torch.Core.Tensor.Dim
+import Torch.Class.Internal (HsReal, HsAccReal, AsDynamic)
+import Torch.Dimensions
 import Torch.Core.Tensor.Static (IsStatic(..), StaticConstraint, StaticConstraint2, withInplace, ByteTensor, LongTensor)
-import THTypes
-import THRandomTypes
+import Torch.Types.TH
+import Torch.Types.TH.Random
 
-import Torch.Class.C.Tensor.Math (TensorMathFloating)
+import Torch.Class.Tensor.Math (TensorMathFloating)
 import Torch.Core.FloatTensor.Static.Math.Floating ()
 import Torch.Core.DoubleTensor.Static.Math.Floating ()
 
-import qualified Torch.Class.C.Tensor.Math as Class
+import qualified Torch.Class.Tensor.Math as Class
 import qualified Torch.Core.Tensor.Dynamic as Dynamic
 import qualified Torch.Core.Storage as Storage
-import qualified THLongTypes as Long
+import qualified Torch.Types.TH.Long as Long
 
 type FloatingMathConstraint t d =
   ( Class.TensorMathFloating (AsDynamic (t d))

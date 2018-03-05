@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 module Torch.Core.Tensor.Dynamic.DoubleMathSpec (spec) where
 
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import Torch.Core.Tensor.Types
 import Torch.Core.Tensor.Dynamic.Double as DynamicClass
 import Torch.Core.Tensor.Dynamic.DoubleMath

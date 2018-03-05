@@ -3,7 +3,7 @@ module Torch.Core.Tensor.Dynamic.Random
   ( module Random
   ) where
 
-import Torch.Class.C.Tensor.Random as Random
+import Torch.Class.Tensor.Random as Random
 
 import Torch.Core.ByteTensor.Dynamic.Random   ()
 -- import Torch.Core.CharTensor.Dynamic.Random   ()

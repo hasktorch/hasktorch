@@ -26,5 +26,5 @@ library
     , typelits-witnesses >=0.2.3.0
     , hasktorch-types
   exposed-modules:
-      Torch.Core.Tensor.Dim
+      Torch.Dimensions
 

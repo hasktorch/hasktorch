@@ -20,10 +20,10 @@ module Torch.Core.Tensor.Static.Math.Infix
   , (!*!), (!*)
   ) where
 
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import Torch.Core.Tensor.Static.Math
-import Torch.Class.C.Internal (HsReal, HsAccReal)
-import Torch.Class.C.Tensor.Static (asStatic)
+import Torch.Class.Internal (HsReal, HsAccReal)
+import Torch.Class.Tensor.Static (asStatic)
 
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.Core.Tensor.Static

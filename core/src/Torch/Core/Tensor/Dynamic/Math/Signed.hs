@@ -4,5 +4,5 @@ module Torch.Core.Tensor.Dynamic.Math.Signed
   , Class.TensorMathSigned(..)
   ) where
 
-import qualified Torch.Class.C.Tensor.Math as Class
+import qualified Torch.Class.Tensor.Math as Class
 

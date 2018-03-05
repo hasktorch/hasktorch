@@ -4,7 +4,7 @@ module Torch.Core.Tensor.Dynamic.GenericLapackSpec where
 import Torch.Core.Tensor.Dynamic.Double (td_new, td_init, printTensor)
 import Torch.Core.Tensor.Dynamic.DoubleRandom (td_uniform)
 import Torch.Core.Tensor.Dynamic.GenericLapack
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import Torch.Core.Random (newRNG)
 
 import Torch.Prelude.Extras

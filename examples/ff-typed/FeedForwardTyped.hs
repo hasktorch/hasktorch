@@ -6,7 +6,7 @@
 
 module Main where
 
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math
 import Torch.Core.Tensor.Static.Random (uniform)

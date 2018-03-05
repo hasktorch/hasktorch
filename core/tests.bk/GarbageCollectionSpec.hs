@@ -6,11 +6,11 @@ import Torch.Core.Tensor.Dynamic.DoubleMath
 import Torch.Core.Tensor.Dynamic.DoubleRandom
 import Torch.Core.Tensor.Dynamic.GenericLapack
 import Torch.Core.Tensor.Types
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 
 -- TODO : move raw tests elsewhere?
 import Torch.Raw.Tensor.Generic
-import THDoubleTensorMath
+import Torch.FFI.TH.Double.TensorMath
 
 import Lens.Micro ()
 import Torch.Prelude.Extras
@@ -60,7 +60,7 @@ rawTest = do
   dispRaw x
   -- cadd = z <- y + scalar * x, z value discarded
   print $ (2.0 * 4.4 + 3.0 :: Double)
-  c_THDoubleTensor_cadd z y 4.4 x
+  c_Torch.FFI.TH.Double.Tensor_cadd z y 4.4 x
   dispRaw z
 
 testCadd = do

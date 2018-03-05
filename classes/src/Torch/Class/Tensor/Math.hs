@@ -6,7 +6,7 @@ import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
 import GHC.TypeLits (Nat)
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import Torch.Class.Internal
 import GHC.Int
 import Torch.Class.IsTensor (IsTensor(empty), inplace, inplace1)

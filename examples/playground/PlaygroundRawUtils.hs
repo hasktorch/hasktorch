@@ -8,14 +8,14 @@ import Foreign.ForeignPtr (ForeignPtr)
 import Numeric (showGFloat)
 import System.IO.Unsafe (unsafePerformIO)
 
-import THTypes
-import qualified THDoubleTensorMath as DM (c_fill)
-import qualified THLongTensorMath as LM (c_fill)
-import THDoubleTensor as DT
-import qualified THLongTensor as LT
+import Torch.Types.TH
+import qualified Torch.FFI.TH.Double.TensorMath as DM (c_fill)
+import qualified Torch.FFI.TH.Long.TensorMath as LM (c_fill)
+import Torch.FFI.TH.Double.Tensor as DT
+import qualified Torch.FFI.TH.Long.Tensor as LT
 
-type TensorDoubleRaw = Ptr CTHDoubleTensor
-type TensorLongRaw = Ptr CTHLongTensor
+type TensorDoubleRaw = Ptr CTorch.FFI.TH.Double.Tensor
+type TensorLongRaw = Ptr CTorch.FFI.TH.Long.Tensor
 
 w2cll :: Word -> CLLong
 w2cll = fromIntegral
@@ -46,12 +46,12 @@ data TensorDim a =
   deriving (Eq, Show)
 
 data TensorDouble = TensorDouble {
-  tdTensor :: !(ForeignPtr CTHDoubleTensor),
+  tdTensor :: !(ForeignPtr CTorch.FFI.TH.Double.Tensor),
   tdDim :: !(TensorDim Word)
   } deriving (Eq, Show)
 
 -- |Dimensions of a raw tensor as a list
-sizeRaw :: Ptr CTHDoubleTensor -> [Int]
+sizeRaw :: Ptr CTorch.FFI.TH.Double.Tensor -> [Int]
 sizeRaw t =
   fmap f [0..maxdim]
   where
@@ -124,7 +124,7 @@ fillRaw0 :: TensorDoubleRaw -> IO ()
 fillRaw0 tensor = fillRaw (0.0 :: Double) tensor >> pure ()
 
 -- |displaying raw tensor values
-dispRaw :: Ptr CTHDoubleTensor -> IO ()
+dispRaw :: Ptr CTorch.FFI.TH.Double.Tensor -> IO ()
 dispRaw tensor
   | (length sz) == 0 = putStrLn "Empty Tensor"
   | (length sz) == 1 = do
@@ -156,7 +156,7 @@ dispRaw tensor
             ) pairs
   | otherwise = putStrLn "Can't print this yet."
   where
-    size :: Ptr CTHDoubleTensor -> [Int]
+    size :: Ptr CTorch.FFI.TH.Double.Tensor -> [Int]
     size t =
       fmap f [0..maxdim]
       where

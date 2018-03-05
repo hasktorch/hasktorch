@@ -56,10 +56,10 @@ module Torch.Core.Tensor.Static
   , module X
   ) where
 
-import THTypes
+import Torch.Types.TH
 import Foreign ()
-import Torch.Class.C.Internal
-import Torch.Core.Tensor.Dim
+import Torch.Class.Internal
+import Torch.Dimensions
 import Data.Proxy
 import Data.List (genericLength)
 import Control.Exception.Safe
@@ -75,7 +75,7 @@ import qualified Torch.Core.Tensor.Dynamic as Dynamic
 import qualified Torch.Core.Storage as Storage
 import qualified Torch.Core.LongStorage as L
 
-import Torch.Class.C.Tensor.Static (IsStatic(..))
+import Torch.Class.Tensor.Static (IsStatic(..))
 import qualified Torch.Core.Tensor.Dynamic as Class (IsTensor)
 
 -- import qualified Torch.Core.ByteTensor.Static as B
@@ -86,19 +86,19 @@ import qualified Torch.Core.Tensor.Dynamic as Class (IsTensor)
 -- import qualified Torch.Core.DoubleTensor.Static as D
 --
 -- ========================================================================= --
--- re-export all SigTypes so that Aliases propogate
-import qualified THByteTypes   as B
-import qualified THShortTypes  as S
-import qualified THIntTypes    as I
-import qualified THLongTypes   as L
-import qualified THFloatTypes  as F
-import qualified THDoubleTypes as D
+-- re-export all Torch.Signature.Types so that Aliases propogate
+import qualified Torch.Types.TH.Byte   as B
+import qualified Torch.Types.TH.Short  as S
+import qualified Torch.Types.TH.Int    as I
+import qualified Torch.Types.TH.Long   as L
+import qualified Torch.Types.TH.Float  as F
+import qualified Torch.Types.TH.Double as D
 
 
 -- ========================================================================= --
 -- re-export all IsTensor functions -- except for ones not specialized for static
-import Torch.Class.C.IsTensor as X hiding (resizeAs, isSameSizeAs, new, fromList1d)
-import qualified Torch.Class.C.IsTensor as IsTensor (fromList1d)
+import Torch.Class.IsTensor as X hiding (resizeAs, isSameSizeAs, new, fromList1d)
+import qualified Torch.Class.IsTensor as IsTensor (fromList1d)
 import Torch.Core.ByteTensor.Static.IsTensor ()
 import Torch.Core.ShortTensor.Static.IsTensor ()
 import Torch.Core.IntTensor.Static.IsTensor ()
@@ -112,7 +112,7 @@ import Torch.Core.DoubleTensor.Static.IsTensor ()
 
 -- ========================================================================= --
 -- re-export all TensorCopy functions (for dynamic copies)
-import Torch.Class.C.Tensor.Copy as X
+import Torch.Class.Tensor.Copy as X
 
 import Torch.Core.ByteTensor.Static.Copy   ()
 import Torch.Core.ShortTensor.Static.Copy  ()
@@ -251,7 +251,7 @@ newTranspose2d t =
 expand2d
   :: forall t d1 d2 . (KnownNatDim2 d1 d2)
   => StaticConstraint2 t '[d2, d1] '[d1]
-  => Dynamic.TensorMath (AsDynamic (t '[d1])) -- for 'Dynamic.constant' which uses 'Torch.Class.C.Tensor.Math.fill'
+  => Dynamic.TensorMath (AsDynamic (t '[d1])) -- for 'Dynamic.constant' which uses 'Torch.Class.Tensor.Math.fill'
   => t '[d1] -> IO (t '[d2, d1])
 expand2d t = do
   res :: AsDynamic (t '[d2, d1]) <- Dynamic.constant (dim :: Dim '[d2, d1]) 0

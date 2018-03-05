@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-imports -Wno-missing-signatures -Wno-unused-matches #-}
 module Main where
 
-import Torch.Core.Tensor.Dim
+import Torch.Dimensions
 import Torch.Core.Tensor.Static
 import Torch.Core.Tensor.Static.Math
 import Torch.Core.Tensor.Static.Math.Infix
