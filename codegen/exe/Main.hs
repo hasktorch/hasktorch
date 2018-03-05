@@ -8,7 +8,7 @@ import Options.Applicative (ParserInfo, execParser, info, (<**>), helper, idm)
 
 import CodeGen.FileMappings
 import CodeGen.Types
-import CodeGen.Render (renderCHeaderFile, parseFile)
+import CodeGen.Render (writeHaskellModule, parseFile)
 
 import CLIOptions
 
@@ -58,7 +58,7 @@ runTHPipeline os (headerPath, makeModuleConfig) = do
     putStrLn $ "First signature of " ++ show (length bindingsUniq)
     putStrLn $ ppShow (take 1 bindingsUniq)
 
-  mapM_ (renderCHeaderFile bindingsUniq makeModuleConfig) typeList
+  mapM_ (writeHaskellModule bindingsUniq makeModuleConfig) typeList
 
   when (verbose os) $
     putStrLn $ "Number of functions generated: "

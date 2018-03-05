@@ -6,7 +6,7 @@ module CodeGen.Render.C
 
 import CodeGen.Prelude
 import CodeGen.Types
-import ConditionalCases
+import CodeGen.Parse.Cases
 
 renderCType :: THType -> Text
 renderCType = \case

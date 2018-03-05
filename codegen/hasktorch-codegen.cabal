@@ -26,6 +26,8 @@ library
     , unordered-containers >=0.1.3.0
   exposed-modules:
       CodeGen.FileMappings
+      CodeGen.Parse
+      CodeGen.Parse.Cases
       CodeGen.Prelude
       CodeGen.Render
       CodeGen.Render.C
@@ -35,10 +37,6 @@ library
       CodeGen.Types.CLI
       CodeGen.Types.HsOutput
       CodeGen.Types.Parsed
-
-
-      CodeGenParse
-      ConditionalCases
   other-modules:
       Paths_hasktorch_codegen
   default-language: Haskell2010

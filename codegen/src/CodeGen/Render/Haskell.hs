@@ -7,7 +7,7 @@ module CodeGen.Render.Haskell
 
 import CodeGen.Prelude
 import CodeGen.Types
-import ConditionalCases
+import CodeGen.Parse.Cases
 
 typeCatHelper :: TypeCategory -> Text -> Maybe Text
 typeCatHelper tc s = case tc of

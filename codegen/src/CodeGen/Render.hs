@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module CodeGen.Render
   ( makeModule
-  , renderCHeaderFile
+  , writeHaskellModule
 
   , parseFile
   , cleanList
@@ -12,8 +12,8 @@ import qualified Data.Text as T
 
 import CodeGen.Types
 import CodeGen.Render.Function (renderFunPtrSig, renderFunSig)
-import CodeGenParse (thParser)
-import ConditionalCases (checkFunction, signatureAliases)
+import CodeGen.Parse (thParser)
+import CodeGen.Parse.Cases (checkFunction, signatureAliases)
 import qualified CodeGen.Render.Haskell as Hs
 
 makeModule
@@ -41,24 +41,22 @@ makeModule a00 a0 a1 a2 a3 a4 a5 a6
   , bindings = a6
   }
 
--- makeTHModule :: TextPath -> IsTemplate -> FilePath -> ModuleSuffix -> FileSuffix -> TemplateType -> [THFunction] -> HModule
--- makeTHModule = makeModule TH
 
 -- ----------------------------------------
 -- helper data and functions for templating
 -- ----------------------------------------
 
-makePrefix :: Text -> Text
-makePrefix templateType = "TH" <> templateType <> "Tensor"
-
-renderExtension :: Text -> Text
-renderExtension extension = "{-# LANGUAGE " <> extension <> " #-}"
+makePrefix :: LibType -> TemplateType -> Text
+makePrefix lt tt = tshow lt <> tshow tt
 
 renderExtensions :: [Text] -> Text
 renderExtensions extensions = T.intercalate "\n" (extensions' <> [""])
  where
   extensions' :: [Text]
   extensions' = renderExtension <$> extensions
+
+  renderExtension :: Text -> Text
+  renderExtension extension = "{-# LANGUAGE " <> extension <> " #-}"
 
 renderModule :: HModule -> Text
 renderModule moduleSpec = "module " <> renderModuleName moduleSpec
@@ -122,10 +120,13 @@ renderAll m
       =  fmap (fun2name "c") validFunctions
       <> fmap (fun2name "p") validFunctions
 
-renderCHeaderFile
-  :: [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> TemplateType -> IO ()
-renderCHeaderFile parsedBindings makeConfig templateType = do
-  putStrLn $ "Writing " <> T.unpack filename
+writeHaskellModule
+  :: [THFunction]
+  -> (TemplateType -> [THFunction] -> HModule)
+  -> TemplateType
+  -> IO ()
+writeHaskellModule parsedBindings makeConfig templateType = do
+  tputStrLn $ "Writing " <> filename
   writeFile (outDir ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
  where
   modSpec :: HModule
@@ -145,7 +146,7 @@ renderModuleName HModule{prefix, typeTemplate, fileSuffix}
 -- Execution
 -- ----------------------------------------
 
--- |Remove If list was returned, extract non-Nothing values, o/w empty list
+-- | Remove if list was returned, extract non-Nothing values, o/w empty list
 cleanList :: Either (ParseError Char Void) [Maybe THFunction] -> [THFunction]
 cleanList = either (const []) catMaybes
 

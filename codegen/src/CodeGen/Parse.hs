@@ -1,4 +1,4 @@
-module CodeGenParse
+module CodeGen.Parse
   ( Parser
   , thParser
   , THType(..)

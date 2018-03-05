@@ -1,6 +1,8 @@
 module CodeGen.Prelude
   ( module X
   , impossible
+  , tshow
+  , tputStrLn
   ) where
 
 import Prelude         as X
@@ -19,5 +21,13 @@ import GHC.Exts        as X (IsString(..))
 import Data.HashMap.Strict as X (HashMap)
 import Data.HashSet        as X (HashSet)
 
+import qualified Data.Text as T
+
 impossible :: Show msg => msg -> a
 impossible x = error (show x)
+
+tshow :: Show t => t -> Text
+tshow = T.pack . show
+
+tputStrLn :: Text -> IO ()
+tputStrLn = putStrLn . T.unpack

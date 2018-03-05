@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedLists #-}
-module ConditionalCases where
+module CodeGen.Parse.Cases where
 
 import CodeGen.Prelude
 import qualified Data.Text as T
