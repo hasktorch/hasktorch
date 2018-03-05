@@ -1,9 +1,9 @@
 signature TensorRandomFloating where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import SigTypes
+import Torch.Signature.Types
 
 c_uniform                :: Ptr CTensor -> Ptr CTHGenerator -> CAccReal -> CAccReal -> IO ()
 c_normal                 :: Ptr CTensor -> Ptr CTHGenerator -> CAccReal -> CAccReal -> IO ()

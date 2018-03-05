@@ -1,9 +1,9 @@
-signature TensorMath where
+signature Torch.Signature.Unsigned.Tensor.Math where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import SigTypes
+import Torch.Signature.Types
 
 c_fill         :: Ptr CTensor -> CReal -> IO ()
 c_zero         :: Ptr CTensor -> IO ()

@@ -1,8 +1,8 @@
-signature TensorConv where
+signature Torch.Signature.Unsigned.Tensor.Conv where
 
 import Foreign
 import Foreign.C.Types
-import SigTypes
+import Torch.Signature.Types
 
 c_validXCorr2Dptr    :: Ptr CReal -> CReal -> Ptr CReal -> CLLong -> CLLong -> Ptr CReal -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 c_validConv2Dptr     :: Ptr CReal -> CReal -> Ptr CReal -> CLLong -> CLLong -> Ptr CReal -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()

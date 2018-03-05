@@ -1,6 +1,6 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
-signature SigTypes where
+signature Torch.Signature.Types where
 
 import Foreign (ForeignPtr)
 import Foreign.Storable

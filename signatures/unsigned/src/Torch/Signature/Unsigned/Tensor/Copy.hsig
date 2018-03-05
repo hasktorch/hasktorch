@@ -1,8 +1,8 @@
-signature TensorCopy where
+signature Torch.Signature.Unsigned.Tensor.Copy where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
-import SigTypes
+import Torch.Signature.Types
 
 c_copy       :: Ptr CTensor -> Ptr CTensor -> IO ()
 c_copyByte   :: Ptr CTensor -> Ptr CTHByteTensor -> IO ()

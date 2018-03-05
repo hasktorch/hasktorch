@@ -1,9 +1,9 @@
-signature Vector where
+signature Torch.Signature.Unsigned.Vector where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import SigTypes
+import Torch.Signature.Types
 
 c_fill    :: Ptr CReal -> CReal -> CPtrdiff -> IO ()
 c_cadd    :: Ptr CReal -> Ptr CReal -> Ptr CReal -> CReal -> CPtrdiff -> IO ()

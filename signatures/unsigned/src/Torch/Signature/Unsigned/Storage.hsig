@@ -1,9 +1,9 @@
-signature Storage where
+signature Torch.Signature.Unsigned.Storage where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import SigTypes
+import Torch.Signature.Types
 
 c_data                    :: Ptr CStorage -> IO (Ptr CReal)
 c_size                    :: Ptr CStorage -> IO CPtrdiff

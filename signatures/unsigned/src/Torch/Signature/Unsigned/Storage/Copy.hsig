@@ -1,8 +1,8 @@
-signature StorageCopy where
+signature Torch.Signature.Unsigned.Storage.Copy where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
-import SigTypes
+import Torch.Signature.Types
 
 c_rawCopy    :: Ptr CStorage -> Ptr CReal -> IO ()
 c_copy       :: Ptr CStorage -> Ptr CStorage -> IO ()

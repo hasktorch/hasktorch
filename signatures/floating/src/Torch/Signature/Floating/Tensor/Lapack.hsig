@@ -1,9 +1,9 @@
-signature TensorLapack where
+signature Torch.Signature.Floating.Tensor.Lapack where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import SigTypes
+import Torch.Signature.Types
 
 c_gesv      :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_trtrs     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> Ptr CChar -> IO ()

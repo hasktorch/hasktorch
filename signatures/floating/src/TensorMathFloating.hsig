@@ -1,9 +1,9 @@
 signature TensorMathFloating where
 
-import THTypes
+import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
-import SigTypes
+import Torch.Signature.Types
 
 c_cinv         :: Ptr CTensor -> Ptr CTensor -> IO ()
 c_sigmoid      :: Ptr CTensor -> Ptr CTensor -> IO ()
