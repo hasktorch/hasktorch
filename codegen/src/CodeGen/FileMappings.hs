@@ -13,7 +13,7 @@ import CodeGen.Render (makeModule)
 
 type HeaderFile = FilePath
 
-files :: LibType -> CodeGenType -> [(String, TemplateType -> [THFunction] -> HModule)]
+files :: LibType -> CodeGenType -> [(String, TemplateType -> [Function] -> HModule)]
 files TH = \case
   GenericFiles -> map (\fn -> fn TH GenericFiles)
     [ mkModule' "Blas"
@@ -82,6 +82,7 @@ files THC = \case
     , mkModule' "TensorRandom"
     , mkModule' "ThreadLocal"
     ]
+files _ = \case {ConcreteFiles -> []; GenericFiles -> []}
 
 
 mkModule
@@ -89,9 +90,9 @@ mkModule
   -> FileSuffix
   -> LibType
   -> CodeGenType
-  -> (FilePath, TemplateType -> [THFunction] -> HModule)
+  -> (FilePath, TemplateType -> [Function] -> HModule)
 mkModule modsuff filesuff lt cgt
-  = (srcDir lt cgt <> hf, makeModule TH (TextPath . T.pack $ outDir lt cgt) cgt hf modsuff filesuff)
+  = (srcDir lt cgt <> hf, makeModule TH (TextPath . T.pack $ outDir lt) cgt hf modsuff filesuff)
  where
   hf :: FilePath
   hf = show lt <> T.unpack (textFileSuffix filesuff) <> ".h"
@@ -101,6 +102,6 @@ mkModule'
   :: Text
   -> LibType
   -> CodeGenType
-  -> (FilePath, TemplateType -> [THFunction] -> HModule)
+  -> (FilePath, TemplateType -> [Function] -> HModule)
 mkModule' suff = mkModule (ModuleSuffix suff) (FileSuffix suff)
 

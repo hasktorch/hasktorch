@@ -45,7 +45,7 @@ data HModule = HModule
   , typeTemplate :: TemplateType
   , suffix       :: ModuleSuffix
   , fileSuffix   :: FileSuffix
-  , bindings     :: [THFunction]
+  , bindings     :: [Function]
   , modOutDir    :: TextPath
   , isTemplate   :: CodeGenType
   } deriving Show
@@ -67,7 +67,7 @@ makeModule
   -> ModuleSuffix
   -> FileSuffix
   -> TemplateType
-  -> [THFunction]
+  -> [Function]
   -> HModule
 makeModule a00 a0 a1 a2 a3 a4 a5 a6
   = HModule

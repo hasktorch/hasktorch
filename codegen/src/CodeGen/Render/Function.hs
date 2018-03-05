@@ -6,8 +6,8 @@ module CodeGen.Render.Function
 import CodeGen.Prelude
 import CodeGen.Types
 import CodeGen.Parse.Cases (type2hsreal)
-import CodeGen.Render.C (renderCType)
-import CodeGen.Render.Haskell (renderHaskellType)
+import qualified CodeGen.Render.C as C (render)
+import qualified CodeGen.Render.Haskell as Hs (render)
 import qualified Data.Text as T
 
 data SigType
@@ -23,22 +23,22 @@ ffiPrefix = \case
 isPtr :: SigType -> Bool
 isPtr f = f == IsFunPtr
 
-comment :: SigType -> Text -> [THArg] -> THType -> Text
-comment t hsname args retType = T.intercalate " "
+comment :: LibType -> SigType -> Text -> [Arg] -> Parsable -> Text
+comment lt t hsname args retType = T.intercalate " "
   $  [ "-- |" , hsname , ":", if isPtr t then "Pointer to function :" else "" ]
-  <> map thArgName args
+  <> map argName args
   <> (if null args then [] else ["->"])
-  <> [renderCType retType]
+  <> [C.render lt retType]
 
-foreignCall :: Text -> FilePath -> SigType -> Text
-foreignCall cname headerFile st = T.intercalate "\""
+foreignCall :: Text -> FilePath -> Text
+foreignCall cname headerFile = T.intercalate "\""
   [ "foreign import ccall "
   , T.pack headerFile <> cname
   , ""
   ]
 
-haskellSig :: Text -> SigType -> TemplateType -> [THArg] -> THType -> Text
-haskellSig hsname st tt args retType = T.intercalate ""
+haskellSig :: LibType -> Text -> SigType -> TemplateType -> [Arg] -> Parsable -> Text
+haskellSig lt hsname st tt args retType = T.intercalate ""
   [ "  " <> hsname
   , " :: "
   , if isPtr st then "FunPtr (" else ""
@@ -48,11 +48,11 @@ haskellSig hsname st tt args retType = T.intercalate ""
  where
   typeSignature :: [Text]
   typeSignature = case args of
-    [THArg THVoid _] -> []
-    args' -> mapMaybe (renderHaskellType FunctionParam tt . thArgType) args'
+    [Arg (CType CVoid) _] -> []
+    args' -> mapMaybe (Hs.render lt FunctionParam tt . argType) args'
 
   retArrow :: Text
-  retArrow = case renderHaskellType ReturnValue tt retType of
+  retArrow = case Hs.render lt ReturnValue tt retType of
     Nothing  -> ""
     Just ret -> if null typeSignature then ret else (" -> " <> ret)
 
@@ -75,17 +75,18 @@ mkHsname st funname = ffiPrefix st <> funname
 -- | Render a single function signature.
 renderSig
   :: SigType
+  -> LibType
   -> CodeGenType
   -> FilePath
   -> TemplateType
   -> ModuleSuffix
-  -> (Text, THType, [THArg])
+  -> (Text, Parsable, [Arg])
   -> Text
-renderSig t cgt headerFile tt ms (name, retType, args) =
+renderSig t lt cgt headerFile tt ms (name, retType, args) =
     T.intercalate "\n"
-      [ comment t hsname args retType
-      , foreignCall cname headerFile t
-      , haskellSig hsname t tt args retType
+      [ comment lt t hsname args retType
+      , foreignCall cname headerFile
+      , haskellSig lt hsname t tt args retType
       ]
  where
   cname = mkCname t TH ms tt cgt name

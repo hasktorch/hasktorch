@@ -2,7 +2,6 @@
 module CodeGen.Parse.Cases where
 
 import CodeGen.Prelude
-import qualified Data.Text as T
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
 

@@ -6,6 +6,7 @@ module CodeGen.Types.CLI
   ( LibType(..)
   , describe
   , supported
+  , supportedLibraries
   , outDir
   , outModule
   , srcDir
@@ -49,10 +50,12 @@ describe = \case
 supported :: LibType -> Bool
 supported lt = lt `HS.member` HS.fromList [TH, THC]
 
+supportedLibraries :: [LibType]
+supportedLibraries = filter supported [minBound..maxBound]
 
 -- | Where generated code will be placed.
-outDir :: LibType -> CodeGenType -> FilePath
-outDir lt cgt = intercalate ""
+outDir :: LibType -> FilePath
+outDir lt = intercalate ""
   [ "output/raw/"
   , toLowers lt ++ "/"
   , "src/"

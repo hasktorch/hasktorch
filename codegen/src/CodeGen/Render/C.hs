@@ -1,71 +1,55 @@
 module CodeGen.Render.C
-  ( renderCType
-  , type2real
-  , type2accreal
+  ( render
+  , renderTenType
+  , renderCType
+  , renderNNType
   ) where
 
 import CodeGen.Prelude
 import CodeGen.Types
-import CodeGen.Parse.Cases
 
-renderCType :: THType -> Text
+render :: LibType -> Parsable -> Text
+render lt =
+  \case
+    -- special pointer cases
+    Ptr x -> render lt x <> " *"
+    TenType x -> renderTenType lt x
+    NNType x -> renderNNType lt x
+    CType x -> renderCType x
+
+
+renderTenType :: LibType -> TenType -> Text
+renderTenType lt = \case
+  Real    -> "real"
+  AccReal -> "accreal"
+  rest    -> tshow lt <> tshow rest
+
+
+renderCType :: CType -> Text
 renderCType = \case
-  APtr x     -> renderCType x <> " *"
-  THVoid     -> "void"
-  THBool     -> "bool"
-  THDescBuff -> "THDescBuff"
+  CUInt64  -> "uint64_t"
+  CUInt32  -> "uint32_t"
+  CUInt16  -> "uint16_t"
+  CUInt8   -> "uint8_t"
 
-  -- THNNState       -> "THNNState"
-  -- THIntegerTensor -> "THIntegerTensor"
-  -- THIndexTensor   -> "THIndexTensor"
+  CInt     -> "int"
+  CInt64   -> "int64_t"
+  CInt32   -> "int32_t"
+  CInt16   -> "int16_t"
+  CInt8    -> "int8_t"
 
-  -- TH
-  THTensor        -> "THTensor"
-  THTensor        -> "THTensor"
-  THByteTensor    -> "THByteTensor"
-  THLongTensor    -> "THLongTensor"
-  THDoubleTensor  -> "THDoubleTensor"
-  THFloatTensor   -> "THFloatTensor"
-  THGenerator     -> "THGenerator"
-  THStorage       -> "THStorage"
-  THCharStorage   -> "THCharStorage"
-  THLongStorage   -> "THLongStorage"
+  CSize    -> "size_t"
+  CLong    -> "long"
+  CChar    -> "char"
+  CShort   -> "short"
+  CFloat   -> "float"
+  CDouble  -> "double"
+  CPtrDiff -> "ptrdiff_t"
+  CVoid    -> "void"
+  CBool    -> "bool"
 
-  -- THC
-  THCTensor        -> "THTensor"
-  THCTensor        -> "THTensor"
-  THCByteTensor    -> "THByteTensor"
-  THCLongTensor    -> "THLongTensor"
-  THCDoubleTensor  -> "THDoubleTensor"
-  THCFloatTensor   -> "THFloatTensor"
-  THCGenerator     -> "THGenerator"
-  THCStorage       -> "THStorage"
-  THCCharStorage   -> "THCharStorage"
-  THCLongStorage   -> "THLongStorage"
 
-  THPtrDiff -> "ptrdiff_t"
-  THLong    -> "long"
-  THInt     -> "int"
-
-  THUInt64  -> "uint64_t"
-  THUInt32  -> "uint32_t"
-  THUInt16  -> "uint16_t"
-  THUInt8   -> "uint8_t"
-
-  THInt64   -> "int64_t"
-  THInt32   -> "int32_t"
-  THInt16   -> "int16_t"
-  THInt8    -> "int8_t"
-  THSize    -> "size_t"
-  THChar    -> "char"
-  THShort   -> "short"
-  THHalf    -> "THHalf"
-  THHalfPtr -> "THHalfPtr"
-  THFloat   -> "float"
-  THDouble  -> "double"
-  THReal    -> "real"
-  THAccReal -> "accreal"
-  THFile    -> "THFile"
-  s -> error (show s <> " is unaccounted for") -- TODO : make this total
-
+-- FIXME: get back to this when THC is finished
+renderNNType :: LibType -> NNType -> Text
+renderNNType lt nt = tshow lt <> tshow nt
 
