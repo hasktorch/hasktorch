@@ -21,7 +21,7 @@ data THType
   | THVoid
   | THDescBuff
 
-  -- Tensor
+  -- TH Tensors
   | THTensor
   | THByteTensor
   | THCharTensor
@@ -31,7 +31,19 @@ data THType
   | THFloatTensor
   | THDoubleTensor
   | THHalfTensor
-  -- Storage
+
+  -- THC Tensors
+  | THCTensor
+  | THCByteTensor
+  | THCCharTensor
+  | THCShortTensor
+  | THCIntTensor
+  | THCLongTensor
+  | THCFloatTensor
+  | THCDoubleTensor
+  | THCHalfTensor
+
+  -- TH Storage
   | THStorage
   | THByteStorage
   | THCharStorage
@@ -41,11 +53,27 @@ data THType
   | THFloatStorage
   | THDoubleStorage
   | THHalfStorage
+
+  -- THC Storage
+  | THCStorage
+  | THCByteStorage
+  | THCCharStorage
+  | THCShortStorage
+  | THCIntStorage
+  | THCLongStorage
+  | THCFloatStorage
+  | THCDoubleStorage
+  | THCHalfStorage
+
   -- Other
   | THGenerator
   | THAllocator
   | THPtrDiff
   | THFile
+
+  -- Other
+  | THCGenerator
+  | THCAllocator
 
   -- Primitive
   | THFloat

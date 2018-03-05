@@ -18,6 +18,8 @@ renderCType = \case
   -- THNNState       -> "THNNState"
   -- THIntegerTensor -> "THIntegerTensor"
   -- THIndexTensor   -> "THIndexTensor"
+
+  -- TH
   THTensor        -> "THTensor"
   THTensor        -> "THTensor"
   THByteTensor    -> "THByteTensor"
@@ -28,6 +30,18 @@ renderCType = \case
   THStorage       -> "THStorage"
   THCharStorage   -> "THCharStorage"
   THLongStorage   -> "THLongStorage"
+
+  -- THC
+  THCTensor        -> "THTensor"
+  THCTensor        -> "THTensor"
+  THCByteTensor    -> "THByteTensor"
+  THCLongTensor    -> "THLongTensor"
+  THCDoubleTensor  -> "THDoubleTensor"
+  THCFloatTensor   -> "THFloatTensor"
+  THCGenerator     -> "THGenerator"
+  THCStorage       -> "THStorage"
+  THCCharStorage   -> "THCharStorage"
+  THCLongStorage   -> "THLongStorage"
 
   THPtrDiff -> "ptrdiff_t"
   THLong    -> "long"

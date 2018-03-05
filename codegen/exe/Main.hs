@@ -32,7 +32,8 @@ run os = do
     ]
 
   case lib of
-    TH -> mapM_ (runTHPipeline os) (thFiles gentype)
+    TH -> mapM_ (runTHPipeline os) (files lib gentype)
+    THC -> mapM_ (runTHPipeline os) (files lib gentype)
     lib -> putStrLn $ "Code generation not enabled for " ++ show lib
 
   when (verbose os) $ putStrLn "Done"

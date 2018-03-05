@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module CodeGen.FileMappings where
+module CodeGen.FileMappings
+  ( files
+  , HeaderFile
+  ) where
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -10,64 +13,94 @@ import CodeGen.Render (makeModule)
 
 type HeaderFile = FilePath
 
-thFiles :: CodeGenType -> [(String, TemplateType -> [THFunction] -> HModule)]
-thFiles = \case
-  GenericFiles -> map ($ GenericFiles)
-    [ mkTHGeneric' "Blas"
-    , mkTHGeneric' "Lapack"
-    , mkTHGeneric' "Storage"
-    , mkTHGeneric  (ModuleSuffix "Storage") "StorageCopy"
-    , mkTHGeneric' "Tensor"
-    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorConv"
-    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorCopy"
-    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorLapack"
-    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorMath"
-    , mkTHGeneric  (ModuleSuffix "Tensor") "TensorRandom"
-    , mkTHGeneric' "Vector"
+files :: LibType -> CodeGenType -> [(String, TemplateType -> [THFunction] -> HModule)]
+files TH = \case
+  GenericFiles -> map (\fn -> fn TH GenericFiles)
+    [ mkModule' "Blas"
+    , mkModule' "Lapack"
+    , mkModule' "Storage"
+    , mkModule  (ModuleSuffix "Storage") "StorageCopy"
+    , mkModule' "Tensor"
+    , mkModule  (ModuleSuffix "Tensor") "TensorConv"
+    , mkModule  (ModuleSuffix "Tensor") "TensorCopy"
+    , mkModule  (ModuleSuffix "Tensor") "TensorLapack"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMath"
+    , mkModule  (ModuleSuffix "Tensor") "TensorRandom"
+    , mkModule' "Vector"
     ]
-  ConcreteFiles -> map ($ ConcreteFiles)
-    [ mkTHFile' "File"
-    , mkTHFile' "DiskFile"
-    , mkTHFile' "Atomic"
-    , mkTHFile' "Half"
-    , mkTHFile' "LogAdd"
-    , mkTHFile' "Random"
-    , mkTHFile' "Size"
-    , mkTHFile' "Storage"
-    , mkTHFile' "MemoryFile"
+  ConcreteFiles -> map (\fn -> fn TH ConcreteFiles)
+    [ mkModule' "File"
+    , mkModule' "DiskFile"
+    , mkModule' "Atomic"
+    , mkModule' "Half"
+    , mkModule' "LogAdd"
+    , mkModule' "Random"
+    , mkModule' "Size"
+    , mkModule' "Storage"
+    , mkModule' "MemoryFile"
     ]
 
+files THC = \case
+  GenericFiles -> map (\fn -> fn THC GenericFiles)
+    [ mkModule' "Storage"
+    , mkModule  (ModuleSuffix "Storage") "StorageCopy"
+    , mkModule' "Tensor"
+    , mkModule  (ModuleSuffix "Tensor") "TensorCopy"
+    , mkModule  (ModuleSuffix "Tensor") "TensorIndex"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMasked"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMath"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMathBlas"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMathCompare"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMathCompareT"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMathMagma"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMathPairwise"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMathReduce"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMathScan"
+    , mkModule  (ModuleSuffix "Tensor") "TensorMode"
+    , mkModule  (ModuleSuffix "Tensor") "TensorRandom"
+    , mkModule  (ModuleSuffix "Tensor") "TensorScatterGather"
+    , mkModule  (ModuleSuffix "Tensor") "TensorSort"
+    , mkModule  (ModuleSuffix "Tensor") "TensorTopK"
+    ]
+  -- does not account for any .cuh files
+  ConcreteFiles -> map (\fn -> fn THC ConcreteFiles)
+    [ mkModule' "Allocator"
+    , mkModule' "Blas"
+    , mkModule' "CachingAllocator"
+    , mkModule' "CachingHostAllocator"
+    -- , mkModule' "THCDeviceTensor" -- this is a .cuh
+    , mkModule' "Half"
+    -- , mkModule' "THCReduce" -- this is a .cuh
+    , mkModule' "Sleep"
+    , mkModule' "Storage"
+    , mkModule' "StorageCopy"
+    , mkModule' "Stream"
+    , mkModule' "Tensor"
+    , mkModule' "TensorConv"
+    , mkModule' "TensorCopy"
+    , mkModule' "TensorMath"
+    , mkModule' "TensorRandom"
+    , mkModule' "ThreadLocal"
+    ]
+
+
+mkModule
+  :: ModuleSuffix
+  -> FileSuffix
+  -> LibType
+  -> CodeGenType
+  -> (FilePath, TemplateType -> [THFunction] -> HModule)
+mkModule modsuff filesuff lt cgt
+  = (srcDir lt cgt <> hf, makeModule TH (TextPath . T.pack $ outDir lt cgt) cgt hf modsuff filesuff)
  where
-  out :: CodeGenType -> TextPath
-  out = TextPath . T.pack . outDir TH
+  hf :: FilePath
+  hf = show lt <> T.unpack (textFileSuffix filesuff) <> ".h"
 
-  src :: CodeGenType -> FilePath
-  src = srcDir TH
 
-  mkTuple
-    :: LibType
-    -> ModuleSuffix
-    -> FileSuffix
-    -> CodeGenType
-    -> (FilePath, TemplateType -> [THFunction] -> HModule)
-  mkTuple lt modsuff filesuff cgt
-    = (src cgt <> hf, makeModule TH (out cgt) cgt hf modsuff filesuff)
-   where
-    hf :: FilePath
-    hf = show lt <> T.unpack (textFileSuffix filesuff) <> ".h"
-
-  mkTHFile, mkTHGeneric
-    :: ModuleSuffix
-    -> FileSuffix
-    -> CodeGenType
-    -> (FilePath, TemplateType -> [THFunction] -> HModule)
-  mkTHFile = mkTuple TH
-  mkTHGeneric = mkTuple TH
-
-  mkTHFile', mkTHGeneric'
-    :: Text
-    -> CodeGenType
-    -> (FilePath, TemplateType -> [THFunction] -> HModule)
-  mkTHFile' suff = mkTHFile (ModuleSuffix suff) (FileSuffix suff)
-  mkTHGeneric' suff = mkTHGeneric (ModuleSuffix suff) (FileSuffix suff)
+mkModule'
+  :: Text
+  -> LibType
+  -> CodeGenType
+  -> (FilePath, TemplateType -> [THFunction] -> HModule)
+mkModule' suff = mkModule (ModuleSuffix suff) (FileSuffix suff)
 
