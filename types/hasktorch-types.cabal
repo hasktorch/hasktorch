@@ -22,20 +22,20 @@ library
   build-tools:
       c2hs
   exposed-modules:
-      -- THCharTypes
-      THByteTypes
+      -- Torch.Types.TH.Char
+      Torch.Types.TH.Byte
 
-      THShortTypes
-      THIntTypes
-      THLongTypes
+      Torch.Types.TH.Short
+      Torch.Types.TH.Int
+      Torch.Types.TH.Long
 
-      THFloatTypes
-      -- THHalfTypes
-      THDoubleTypes
+      Torch.Types.TH.Float
+      -- Torch.Types.TH.Half
+      Torch.Types.TH.Double
 
-      THTypes
-      THRandomTypes
-      TorchStructs
+      Torch.Types.TH
+      Torch.Types.TH.Random
+      Torch.Types.Structs
 
   other-modules:
       Paths_hasktorch_types

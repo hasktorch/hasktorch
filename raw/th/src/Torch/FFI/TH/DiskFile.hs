@@ -24,7 +24,7 @@ module Torch.FFI.TH.DiskFile
 
 import Foreign
 import Foreign.C.Types
-import THTypes
+import Torch.Types.TH
 import Data.Word
 import Data.Int
 

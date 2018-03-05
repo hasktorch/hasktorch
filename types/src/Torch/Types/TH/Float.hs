@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module THLongTypes
+module Torch.Types.TH.Float
   ( CTensor
   , CStorage
   , CReal
@@ -17,32 +17,31 @@ module THLongTypes
   , asStorage
   , asDyn
   , asStatic
-
   ) where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
-import THTypes
+import Torch.Types.TH
 
-type CTensor = CTHLongTensor
-type CStorage = CTHLongStorage
-type CReal = CLong
-type CAccReal = CLong
-type HsReal = Integer
-type HsAccReal = Integer
+type CTensor = CTHFloatTensor
+type CStorage = CTHFloatStorage
+type CReal = CFloat
+type CAccReal = CDouble
+type HsReal = Float
+type HsAccReal = Double
 
 hs2cReal :: HsReal -> CReal
-hs2cReal = fromIntegral
+hs2cReal = realToFrac
 
 hs2cAccReal :: HsAccReal -> CAccReal
-hs2cAccReal = fromIntegral
+hs2cAccReal = realToFrac
 
 c2hsReal :: CReal -> HsReal
-c2hsReal = fromIntegral
+c2hsReal = realToFrac
 
 c2hsAccReal :: CAccReal -> HsAccReal
-c2hsAccReal = fromIntegral
+c2hsAccReal = realToFrac
 
 newtype Storage = Storage { storage :: ForeignPtr CStorage }
   deriving (Eq, Show)

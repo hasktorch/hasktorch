@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
+module Torch.Types.Structs where
 
-
-module TorchStructs where
 import Foreign.Ptr
 import Foreign.Ptr (Ptr,FunPtr,plusPtr)
 import Foreign.Ptr (wordPtrToPtr,castPtrToFunPtr)

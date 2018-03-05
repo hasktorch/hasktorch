@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module THShortTypes
+module Torch.Types.TH.Int
   ( CTensor
   , CStorage
   , CReal
@@ -11,9 +11,9 @@ module THShortTypes
   , hs2cAccReal
   , c2hsReal
   , c2hsAccReal
-  , Storage(..)
-  , DynTensor(..)
   , Tensor(..)
+  , DynTensor(..)
+  , Storage(..)
   , asStorage
   , asDyn
   , asStatic
@@ -22,14 +22,15 @@ module THShortTypes
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
-import THTypes
 import GHC.Int
+import Torch.Types.TH
 
-type CTensor = CTHShortTensor
-type CStorage = CTHShortStorage
-type CReal = CShort
+
+type CTensor = CTHIntTensor
+type CStorage = CTHIntStorage
+type CReal = CInt
 type CAccReal = CLong
-type HsReal = Int16
+type HsReal = Int32
 type HsAccReal = Int64
 
 hs2cReal :: HsReal -> CReal
@@ -47,10 +48,8 @@ c2hsAccReal = fromIntegral
 newtype Storage = Storage { storage :: ForeignPtr CStorage }
   deriving (Eq, Show)
 
-
 newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
   deriving (Show, Eq)
-
 
 newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
   deriving (Show, Eq)

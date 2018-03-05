@@ -3,7 +3,7 @@
 module Main where
 
 import Foreign
-import THTypes
+import Torch.Types.TH
 import qualified Torch.FFI.TH.Random as TH
 import qualified Torch.FFI.TH.Double.Tensor as TH
 import qualified Torch.FFI.TH.Double.TensorMath as TH

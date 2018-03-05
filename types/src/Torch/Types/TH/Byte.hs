@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module THIntTypes
+module Torch.Types.TH.Byte
   ( CTensor
   , CStorage
   , CReal
@@ -17,20 +17,22 @@ module THIntTypes
   , asStorage
   , asDyn
   , asStatic
+  , CTHByteTensor
+  , CTHByteStorage
   ) where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
-import THTypes
-import GHC.Int
+import GHC.Word
+import Torch.Types.TH
 
-type CTensor = CTHIntTensor
-type CStorage = CTHIntStorage
-type CReal = CInt
+type CTensor = CTHByteTensor
+type CStorage = CTHByteStorage
+type CReal = CUChar
 type CAccReal = CLong
-type HsReal = Int32
-type HsAccReal = Int64
+type HsReal = Word8
+type HsAccReal = Word64
 
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
@@ -47,14 +49,15 @@ c2hsAccReal = fromIntegral
 newtype Storage = Storage { storage :: ForeignPtr CStorage }
   deriving (Eq, Show)
 
+asStorage = Storage
+
 newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
   deriving (Show, Eq)
+
+asDyn = DynTensor
 
 newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
   deriving (Show, Eq)
 
-asStorage = Storage
-asDyn = DynTensor
 asStatic = Tensor
-
 

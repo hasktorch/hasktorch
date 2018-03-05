@@ -73,7 +73,7 @@ makeModule a00 a0 a1 a2 a3 a4 a5 a6
   = HModule
   { prefix = a00
   , extensions = ["ForeignFunctionInterface"]
-  , imports = ["Foreign", "Foreign.C.Types", "THTypes", "Data.Word", "Data.Int"]
+  , imports = ["Foreign", "Foreign.C.Types", "Torch.Types.TH", "Data.Word", "Data.Int"]
   , typeDefs = []
   , modOutDir = a0
   , isTemplate = a1

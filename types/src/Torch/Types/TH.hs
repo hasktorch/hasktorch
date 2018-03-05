@@ -1,6 +1,4 @@
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TemplateHaskell #-}
-module THTypes where
+module Torch.Types.TH where
 
 import Foreign
 import Foreign.C.String ()
@@ -8,7 +6,7 @@ import Foreign.C.Types
 import Foreign.Ptr ()
 import Foreign.Storable ()
 
-import TorchStructs
+import Torch.Types.Structs
 
 type CTHDescBuff = Ptr ()
 type CTHAllocatorPtr = Ptr C'THAllocator

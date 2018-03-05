@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module THDoubleTypes
+module Torch.Types.TH.Double
   ( CTensor
   , CStorage
   , CReal
@@ -24,7 +24,7 @@ module THDoubleTypes
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
-import THTypes
+import Torch.Types.TH
 
 type CTensor = CTHDoubleTensor
 type CStorage = CTHDoubleStorage

@@ -84,7 +84,7 @@ module Torch.FFI.TH.Float.Vector
 
 import Foreign
 import Foreign.C.Types
-import THTypes
+import Torch.Types.TH
 import Data.Word
 import Data.Int
 

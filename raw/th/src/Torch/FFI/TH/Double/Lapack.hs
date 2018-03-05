@@ -22,7 +22,7 @@ module Torch.FFI.TH.Double.Lapack
 
 import Foreign
 import Foreign.C.Types
-import THTypes
+import Torch.Types.TH
 import Data.Word
 import Data.Int
 
