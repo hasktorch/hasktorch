@@ -28,8 +28,8 @@ build:
 	stack build
 
 refresh:
-	rsync -arv ./output/raw/src/*.hs ./raw/src/
-	rsync -arv ./output/raw/src/generic/*.hs ./raw/src/generic/
+	rsync -arv ./output/raw/th/src/*.hs ./raw/src/
+	rsync -arv ./output/raw/th/src/generic/*.hs ./raw/src/generic/
 
 build-aten:
 	cd vendor && ./build-aten.sh
@@ -38,17 +38,17 @@ build-spec:
 	cd vendor && ./build-aten-spec.sh
 
 codegen-generic: build
-	stack exec codegen-generic
+	cabal new-run hasktorch-codegen:ht-codegen -- --type generic --lib TH --verbose
 
 codegen-concrete: build
-	stack exec codegen-concrete
+	cabal new-run hasktorch-codegen:ht-codegen -- --type concrete --lib TH --verbose
 
-codegen-managed: build
-	stack exec codegen-managed
-
-codegen: codegen-managed codegen-concrete codegen-generic
+codegen: codegen-concrete codegen-generic
 
 dev:
-	sos -p '(raw-.*|core|examples)/[^.].*' -c "rm -rf dist-newstyle && cabal new-build all"
+	sos -p '(raw|core|examples)/[^.].*' -c "cabal new-build all"
+
+dev-nuke:
+	sos -p '(raw|core|examples)/[^.].*' -c "rm -rf dist-newstyle && cabal new-build all"
 
 .PHONY: clean build refresh codegen init dev

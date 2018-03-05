@@ -4,16 +4,16 @@ echo "Recommended to run this script using `source ./codegen-and-rebuild.sh` to 
 
 set -eu
 
-stack build hasktorch-codegen || {
-  echo "can't build torch-codegen, exiting early"
+cabal new-build hasktorch-codegen || {
+  echo "can't build hasktorch-codegen, exiting early"
   exit 1
 }
 
-stack exec codegen-concrete
-stack exec codegen-generic
+cabal new-build hasktorch-codegen:ht-codegen -- --lib TH --type concrete
+cabal new-build hasktorch-codegen:ht-codegen -- --lib TH --type generic
 
 # use a subshell here to jump back to project root (SC2103)
 ( cd output || exit 1; ./refresh.sh )
 
-stack clean
-stack build
+rm -rf dist-newbuild
+cabal new-build all
