@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module FileMappings where
+module CodeGen.FileMappings where
 
 import Data.Monoid ((<>))
 import Data.Text (Text)

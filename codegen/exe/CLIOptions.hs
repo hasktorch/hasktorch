@@ -1,20 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE FlexibleContexts #-}
 module CLIOptions where
 
 import Options.Applicative as OptParse
 import Data.List (intercalate)
 import Data.Monoid ((<>))
-import Data.Char (toLower)
 import Data.Proxy (Proxy(..))
-import Text.Read (Read(..))
-import GHC.Generics (Generic)
-import Data.Hashable (Hashable)
-import qualified Data.HashSet as HS
 
-import CodeGen.Types 
+import CodeGen.Types
 
 -- ========================================================================= --
 

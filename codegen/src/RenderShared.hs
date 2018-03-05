@@ -14,7 +14,7 @@ import qualified Data.Text as T
 
 import CodeGen.Types
 import CodeGen.Render.Function (renderFunPtrSig, renderFunSig)
-import CodeGenParse (thParseGeneric)
+import CodeGenParse (thParser)
 import ConditionalCases (checkFunction, signatureAliases)
 import qualified CodeGen.Render.Haskell as Hs
 
@@ -147,10 +147,10 @@ renderModuleName HModule{modPrefix, modTypeTemplate, modFileSuffix}
 cleanList :: Either (ParseError Char Void) [Maybe THFunction] -> [THFunction]
 cleanList = either (const []) catMaybes
 
-parseFile :: String -> IO [THFunction]
-parseFile file = do
+parseFile :: CodeGenType -> String -> IO [THFunction]
+parseFile cgt file = do
   putStrLn $ "\nParsing " ++ file ++ " ... "
-  res <- parseFromFile thParseGeneric file
+  res <- parseFromFile (thParser cgt) file
   pure $ cleanList res
  where
   parseFromFile

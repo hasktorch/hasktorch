@@ -3,8 +3,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module CodeGen.ParseTypes
-  ( genericTypes
-  , concreteTypes
+  ( generatedTypes
   , TemplateType(..)
 
   , HModule(..)
@@ -181,17 +180,16 @@ data TemplateType
   deriving (Eq, Ord, Bounded, Show, Generic, Hashable)
 
 -- List used to iterate through all template types
-genericTypes :: [TemplateType]
-genericTypes =
-  [ GenByte
-  , GenChar
-  , GenDouble
-  , GenFloat
-  , GenHalf
-  , GenInt
-  , GenLong
-  , GenShort
-  ]
-
-concreteTypes :: [TemplateType]
-concreteTypes = [GenNothing]
+generatedTypes :: CodeGenType -> [TemplateType]
+generatedTypes = \case
+  ConcreteFiles -> [GenNothing]
+  GenericFiles ->
+    [ GenByte
+    , GenChar
+    , GenDouble
+    , GenFloat
+    , GenHalf
+    , GenInt
+    , GenLong
+    , GenShort
+    ]

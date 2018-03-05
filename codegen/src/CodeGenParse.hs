@@ -1,7 +1,6 @@
 module CodeGenParse
   ( Parser
-  , thParseGeneric
-  , thParseConcrete
+  , thParser
   , THType(..)
   , THArg(..)
   , THFunction(..)
@@ -391,11 +390,17 @@ thConstant = do
   (some (alphaNumChar <|> char '_')) >> char ';'
   pure Nothing
 
-thItem :: Parser (Maybe THFunction)
-thItem = try thConstant <|> thFunctionTemplate <|> thSkip -- ordering is important
+-- thItem :: Parser (Maybe THFunction)
+-- thItem = try thConstant <|> thFunctionTemplate <|> thSkip
 
-thParseGeneric :: Parser [Maybe THFunction]
-thParseGeneric = some thItem
-
-thParseConcrete :: Parser [Maybe THFunction]
-thParseConcrete = some (try thConstant <|> (thAPI >> space >> thFunctionConcrete) <|> thSkip)
+-- NOTE: ordering is important for parsers
+thParser :: CodeGenType -> Parser [Maybe THFunction]
+thParser = \case
+  GenericFiles  -> some
+    $   try thConstant
+    <|> thFunctionTemplate
+    <|> thSkip
+  ConcreteFiles -> some
+    $   try thConstant
+    <|> (thAPI >> space >> thFunctionConcrete)
+    <|> thSkip
