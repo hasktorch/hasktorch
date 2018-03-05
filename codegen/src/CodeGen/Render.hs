@@ -12,7 +12,7 @@ import qualified Data.Text as T
 import System.Directory (createDirectoryIfMissing)
 
 import CodeGen.Types
-import CodeGen.Render.Function (renderFunPtrSig, renderFunSig)
+import CodeGen.Render.Function (renderSig, SigType(..))
 import CodeGen.Parse (thParser)
 import CodeGen.Parse.Cases (checkFunction, signatureAliases, type2hsreal, type2real)
 import qualified CodeGen.Render.Haskell as Hs
@@ -21,9 +21,6 @@ import qualified CodeGen.Render.Haskell as Hs
 -- ----------------------------------------
 -- helper data and functions for templating
 -- ----------------------------------------
-
-makePrefix :: LibType -> TemplateType -> Text
-makePrefix lt tt = tshow lt <> tshow tt
 
 renderExtensions :: [Text] -> Text
 renderExtensions extensions = T.intercalate "\n" (extensions' <> [""])
@@ -54,17 +51,10 @@ renderImports imports = T.intercalate "\n" (("import " <>) <$> imports) <> "\n\n
 renderFunctions :: HModule -> [THFunction] -> Text
 renderFunctions m validFunctions =
   T.intercalate "\n\n"
-    $  (renderFunSig'    <$> triple)
-    <> (renderFunPtrSig' <$> triple)
+    $  (renderSig' IsFun    <$> triple)
+    <> (renderSig' IsFunPtr <$> triple)
  where
-  renderFunSig'    = renderFunSig    (isTemplate m) ffiPrefix (header m) (typeTemplate m)
-  renderFunPtrSig' = renderFunPtrSig (isTemplate m) ffiPrefix (header m) (typeTemplate m)
-
-  ffiPrefix :: Text
-  ffiPrefix
-    = T.pack (show $ prefix m)
-    <> type2real (typeTemplate m)
-    <> textSuffix (suffix m)
+  renderSig' t = renderSig t (isTemplate m) (header m) (typeTemplate m) (suffix m)
 
   triple :: [(Text, THType, [THArg])]
   triple = go <$> validFunctions

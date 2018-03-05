@@ -1,10 +1,11 @@
 module CodeGen.Render.Function
-  ( renderFunSig
-  , renderFunPtrSig
+  ( renderSig
+  , SigType(..)
   ) where
 
 import CodeGen.Prelude
 import CodeGen.Types
+import CodeGen.Parse.Cases (type2hsreal)
 import CodeGen.Render.C (renderCType)
 import CodeGen.Render.Haskell (renderHaskellType)
 import qualified Data.Text as T
@@ -22,82 +23,70 @@ ffiPrefix = \case
 isPtr :: SigType -> Bool
 isPtr f = f == IsFunPtr
 
-renderCName :: Text -> Text -> Text
-renderCName prefix name = prefix <> "_" <> name
+comment :: SigType -> Text -> [THArg] -> THType -> Text
+comment t hsname args retType = T.intercalate " "
+  $  [ "-- |" , hsname , ":", if isPtr t then "Pointer to function :" else "" ]
+  <> map thArgName args
+  <> (if null args then [] else ["->"])
+  <> [renderCType retType]
 
-foreignCall :: CodeGenType -> (Text, Text) -> FilePath -> SigType -> Text
-foreignCall cgt (prefix, name) headerFile = \case
-  IsFun    -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " "  <> cName, "" ]
-  IsFunPtr -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " &" <> cName, "" ]
+foreignCall :: Text -> FilePath -> SigType -> Text
+foreignCall cname headerFile st = T.intercalate "\""
+  [ "foreign import ccall "
+  , T.pack headerFile <> (if isPtr st then " &" else " ") <> cname
+  , ""
+  ]
+
+haskellSig :: Text -> SigType -> TemplateType -> [THArg] -> THType -> Text
+haskellSig hsname st tt args retType = T.intercalate ""
+  [ "  " <> hsname
+  , " :: "
+  , if isPtr st then "FunPtr (" else ""
+  , T.intercalate " -> " typeSignature, retArrow
+  , if isPtr st then ")" else ""
+  ]
  where
-  cName :: Text
-  cName = case cgt of
-    GenericFiles -> renderCName prefix name
-    ConcreteFiles -> name
+  typeSignature :: [Text]
+  typeSignature = mapMaybe (renderHaskellType FunctionParam tt . thArgType) args
 
+  retArrow :: Text
+  retArrow = case renderHaskellType ReturnValue tt retType of
+    Nothing  -> ""
+    Just ret -> if null typeSignature then ret else (" -> " <> ret)
+
+
+mkCname :: SigType -> LibType -> ModuleSuffix -> TemplateType -> CodeGenType -> Text -> Text
+mkCname st lt ms tt cgt funname
+  = ffiPrefix st
+  <> identifier
+  <> funname
+ where
+  identifier :: Text
+  identifier = case cgt of
+    GenericFiles -> tshow lt <> textSuffix ms <> type2hsreal tt <> "_" 
+    ConcreteFiles -> ""
+
+mkHsname :: SigType -> Text -> Text
+mkHsname st funname = ffiPrefix st <> funname
 
 
 -- | Render a single function signature.
 renderSig
   :: SigType
   -> CodeGenType
-  -> Text
   -> FilePath
   -> TemplateType
+  -> ModuleSuffix
   -> (Text, THType, [THArg])
   -> Text
-renderSig
-  t
-  cgt
-  prefix
-  headerFile
-  modTypeTemplate
-  (name, retType, args) =
-    -- trace (if "THShortStorage" == prefix && "THStorage.h" == headerFile then show (name, thArgType <$> args, retArrow) else "") $
+renderSig t cgt headerFile tt ms (name, retType, args) =
     T.intercalate "\n"
-      [ comment, foreignCall cgt (prefix, name) headerFile t, haskellSig t ]
+      [ comment t hsname args retType
+      , foreignCall cname headerFile t
+      , haskellSig hsname t tt args retType
+      ]
  where
-  comment :: Text
-  comment = T.intercalate " "
-    $  [ "-- |" , ffiPrefix t <> name , ":", if isPtr t then "Pointer to function :" else "" ]
-    <> map thArgName args
-    <> (if null args then [] else ["->"])
-    <> [renderCType retType]
-
-  haskellSig :: SigType -> Text
-  haskellSig = \case
-    IsFun -> T.intercalate ""
-      [ "  c_" <> name <> " :: " <> T.intercalate " -> " typeSignature, retArrow ]
-    IsFunPtr -> T.intercalate ""
-      [ "  p_" <> name <> " :: FunPtr (" <> T.intercalate " -> " typeSignature, retArrow, ")" ]
-
-  typeSignature :: [Text]
-  typeSignature = mapMaybe (renderHaskellType FunctionParam modTypeTemplate . thArgType) args
-
-  retArrow :: Text
-  retArrow = case renderHaskellType ReturnValue modTypeTemplate retType of
-    Nothing  -> ""
-    Just ret -> if null typeSignature then ret else (" -> " <> ret)
-
-
--- | Render a single function signature.
-renderFunSig
-  :: CodeGenType
-  -> Text
-  -> FilePath
-  -> TemplateType
-  -> (Text, THType, [THArg])
-  -> Text
-renderFunSig = renderSig IsFun
-
--- | Render function pointer signature
-renderFunPtrSig
-  :: CodeGenType
-  -> Text
-  -> FilePath
-  -> TemplateType
-  -> (Text, THType, [THArg])
-  -> Text
-renderFunPtrSig = renderSig IsFunPtr
+  cname = mkCname t TH ms tt cgt name
+  hsname = mkHsname t name
 
 
