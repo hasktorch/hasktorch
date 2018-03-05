@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module CodeGen.ParseTypes
   ( genericTypes
   , concreteTypes
@@ -40,16 +42,16 @@ data HModule = HModule
   } deriving Show
 
 newtype ModuleSuffix = ModuleSuffix { textSuffix :: Text }
-  deriving Show
+  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
 
 newtype FileSuffix = FileSuffix { textFileSuffix :: Text }
-  deriving Show
+  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
 
 newtype TextPath = TextPath { textPath :: Text }
-  deriving Show
+  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
 
 newtype IsTemplate = IsTemplate Bool
-  deriving Show
+  deriving newtype (Bounded, Enum, Eq, Ord, Read, Show)
 
 data TypeCategory
   = ReturnValue
@@ -58,6 +60,9 @@ data TypeCategory
 -- ----------------------------------------
 -- Parsed types
 -- ----------------------------------------
+
+newtype APtr x = APtr x
+
 data THType
   = THVoidPtr
   | THBool

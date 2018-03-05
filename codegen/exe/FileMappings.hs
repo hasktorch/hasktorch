@@ -1,78 +1,79 @@
+{-# LANGUAGE OverloadedStrings #-}
 module FileMappings where
 
 import Data.Monoid ((<>))
-import Data.Text
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import CodeGenParse (THFunction, Parser, thParseGeneric)
-import CodeGen.Types (HModule, TemplateType, genericTypes)
-import RenderShared (makeTHModule, renderCHeaderFile, parseFile, IsTemplate(..))
+import CodeGen.Types -- (HModule, TemplateType, genericTypes)
+import RenderShared (makeModule, renderCHeaderFile, parseFile, IsTemplate(..))
 
 import CLIOptions
 
-thGenericFiles :: [(String, TemplateType -> [THFunction] -> HModule)]
-thGenericFiles =
-  [ (src <> "THBlas.h"         , (makeGenericModule "THBlas.h" "Blas" "Blas"))
-  , (src <> "THLapack.h"       , (makeGenericModule "THLapack.h" "Lapack" "Lapack"))
-  , (src <> "THStorage.h"      , (makeGenericModule "THStorage.h" "Storage" "Storage"))
-  , (src <> "THStorageCopy.h"  , (makeGenericModule "THStorageCopy.h" "Storage" "StorageCopy"))
-  , (src <> "THTensor.h"       , (makeGenericModule "THTensor.h" "Tensor" "Tensor"))
-  , (src <> "THTensorConv.h"   , (makeGenericModule "THTensorConv.h" "Tensor" "TensorConv"))
-  , (src <> "THTensorCopy.h"   , (makeGenericModule "THTensorCopy.h" "Tensor" "TensorCopy"))
-  , (src <> "THTensorLapack.h" , (makeGenericModule "THTensorLapack.h" "Tensor" "TensorLapack"))
-  , (src <> "THTensorMath.h"   , (makeGenericModule "THTensorMath.h" "Tensor" "TensorMath"))
-  , (src <> "THTensorRandom.h" , (makeGenericModule "THTensorRandom.h" "Tensor" "TensorRandom"))
-  , (src <> "THVector.h"       , (makeGenericModule "THVector.h" "Vector" "Vector"))
-  ]
- where
-  makeGenericModule :: FilePath -> Text -> Text -> (TemplateType -> [THFunction] -> HModule)
-  makeGenericModule = makeTHModule out True
-
-  out :: Text
-  out = T.pack $ outDir TH GenericFiles
-
-  src :: FilePath
-  src = srcDir TH GenericFiles
-
-type HeaderFile = Text
+type HeaderFile = FilePath
 
 thFiles :: CodeGenType -> [(String, TemplateType -> [THFunction] -> HModule)]
 thFiles = \case
-  GenericFiles ->
-    [ mkTTuple "THBlas.h" "Blas"
-    , (src GenericFiles <> "THLapack.h"       , (makeTHModule (out GenericFiles) True "THLapack.h" "Lapack" "Lapack"))
-    , (src GenericFiles <> "THStorage.h"      , (makeTHModule (out GenericFiles) True "THStorage.h" "Storage" "Storage"))
-    , (src GenericFiles <> "THStorageCopy.h"  , (makeTHModule (out GenericFiles) True "THStorageCopy.h" "Storage" "StorageCopy"))
-    , (src GenericFiles <> "THTensor.h"       , (makeTHModule (out GenericFiles) True "THTensor.h" "Tensor" "Tensor"))
-    , (src GenericFiles <> "THTensorConv.h"   , (makeTHModule (out GenericFiles) True "THTensorConv.h" "Tensor" "TensorConv"))
-    , (src GenericFiles <> "THTensorCopy.h"   , (makeTHModule (out GenericFiles) True "THTensorCopy.h" "Tensor" "TensorCopy"))
-    , (src GenericFiles <> "THTensorLapack.h" , (makeTHModule (out GenericFiles) True "THTensorLapack.h" "Tensor" "TensorLapack"))
-    , (src GenericFiles <> "THTensorMath.h"   , (makeTHModule (out GenericFiles) True "THTensorMath.h" "Tensor" "TensorMath"))
-    , (src GenericFiles <> "THTensorRandom.h" , (makeTHModule (out GenericFiles) True "THTensorRandom.h" "Tensor" "TensorRandom"))
-    , (src GenericFiles <> "THVector.h"       , (makeTHModule (out GenericFiles) True "THVector.h" "Vector" "Vector"))
+  GenericFiles -> map ($ GenericFiles)
+    [ mkTHGeneric' "Blas"
+    , mkTHGeneric' "Lapack"
+    , mkTHGeneric' "Storage"
+    , mkTHGeneric  (ModuleSuffix "Storage") (FileSuffix "StorageCopy")
+    , mkTHGeneric' "Tensor"
+    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorConv")
+    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorCopy")
+    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorLapack")
+    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorMath")
+    , mkTHGeneric  (ModuleSuffix "Tensor") (FileSuffix "TensorRandom")
+    , mkTHGeneric' "Vector"
     ]
 
   ConcreteFiles ->
-    [ (src ConcreteFiles <> "THFile.h"        , (makeTHModule (out ConcreteFiles) False "THFile.h" "File" "File"))
-    , (src ConcreteFiles <> "THDiskFile.h"    , (makeTHModule (out ConcreteFiles) False "THDiskFile.h" "DiskFile" "DiskFile"))
-    , (src ConcreteFiles <> "THAtomic.h"      , (makeTHModule (out ConcreteFiles) False "THDiskFile.h" "Atomic" "Atomic"))
-    , (src ConcreteFiles <> "THHalf.h"        , (makeTHModule (out ConcreteFiles) False "THHalf.h" "Half" "Half"))
-    , (src ConcreteFiles <> "THLogAdd.h"      , (makeTHModule (out ConcreteFiles) False "THLogAdd.h" "LogAdd" "LogAdd"))
-    , (src ConcreteFiles <> "THRandom.h"      , (makeTHModule (out ConcreteFiles) False "THRandom.h" "Random" "Random"))
-    , (src ConcreteFiles <> "THSize.h"        , (makeTHModule (out ConcreteFiles) False "THSize.h" "Size" "Size"))
-    , (src ConcreteFiles <> "THStorage.h"     , (makeTHModule (out ConcreteFiles) False "THStorage.h" "Storage" "Storage"))
-    , (src ConcreteFiles <> "THMemoryFile.h"  , (makeTHModule (out ConcreteFiles) False "THMemoryFile.h" "MemoryFile" "MemoryFile"))
+    [ (src ConcreteFiles <> "THFile.h"        , (makeModule TH (out ConcreteFiles) asfile "THFile.h" "File" "File"))
+    , (src ConcreteFiles <> "THDiskFile.h"    , (makeModule TH (out ConcreteFiles) asfile "THDiskFile.h" "DiskFile" "DiskFile"))
+    , (src ConcreteFiles <> "THAtomic.h"      , (makeModule TH (out ConcreteFiles) asfile "THDiskFile.h" "Atomic" "Atomic"))
+    , (src ConcreteFiles <> "THHalf.h"        , (makeModule TH (out ConcreteFiles) asfile "THHalf.h" "Half" "Half"))
+    , (src ConcreteFiles <> "THLogAdd.h"      , (makeModule TH (out ConcreteFiles) asfile "THLogAdd.h" "LogAdd" "LogAdd"))
+    , (src ConcreteFiles <> "THRandom.h"      , (makeModule TH (out ConcreteFiles) asfile "THRandom.h" "Random" "Random"))
+    , (src ConcreteFiles <> "THSize.h"        , (makeModule TH (out ConcreteFiles) asfile "THSize.h" "Size" "Size"))
+    , (src ConcreteFiles <> "THStorage.h"     , (makeModule TH (out ConcreteFiles) asfile "THStorage.h" "Storage" "Storage"))
+    , (src ConcreteFiles <> "THMemoryFile.h"  , (makeModule TH (out ConcreteFiles) asfile "THMemoryFile.h" "MemoryFile" "MemoryFile"))
     ]
  where
-  out :: CodeGenType -> Text
-  out = T.pack . outDir TH
+  out :: CodeGenType -> TextPath
+  out = TextPath . T.pack . outDir TH
 
   src :: CodeGenType -> FilePath
   src = srcDir TH
 
-  mkTuple :: IsTemplate -> HeaderFile -> Text -> Text -> CodeGenType -> (String, TemplateType -> [THFunction] -> HModule)
-  mkTuple b hf mod cgt = (src cgt <> hf, makeTHModule (out cgt) (isTemplate b) hf mod mod)
+  mkTuple
+    :: LibType
+    -> IsTemplate
+    -> ModuleSuffix
+    -> FileSuffix
+    -> CodeGenType
+    -> (FilePath, TemplateType -> [THFunction] -> HModule)
+  mkTuple lt b modsuff filesuff cgt
+    = (src cgt <> hf, makeModule TH (out cgt) b hf modsuff filesuff)
+   where
+    hf :: FilePath
+    hf = show lt <> T.unpack (textFileSuffix filesuff) <> ".h"
 
-  mkTTuple, mkFTuple :: HeaderFile -> Text -> Text -> CodeGenType -> (String, TemplateType -> [THFunction] -> HModule)
-  mkTTuple = mkTuple (IsTemplate True)
-  mkFTuple = mkTuple (IsTemplate False)
+  mkTHFile, mkTHGeneric
+    :: ModuleSuffix
+    -> FileSuffix
+    -> CodeGenType
+    -> (FilePath, TemplateType -> [THFunction] -> HModule)
+  mkTHFile = mkTuple TH asfile
+  mkTHGeneric = mkTuple TH astemplate
+
+  mkTHFile', mkTHGeneric'
+    :: Text
+    -> CodeGenType
+    -> (FilePath, TemplateType -> [THFunction] -> HModule)
+  mkTHFile' suff = mkTHFile (ModuleSuffix suff) (FileSuffix suff)
+  mkTHGeneric' suff = mkTHGeneric (ModuleSuffix suff) (FileSuffix suff)
+
+astemplate = IsTemplate True
+asfile = IsTemplate False
