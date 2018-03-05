@@ -8,6 +8,7 @@ module CodeGen.Render
   ) where
 
 import CodeGen.Prelude
+import Control.Monad (when)
 import qualified Data.Text as T
 import System.Directory (createDirectoryIfMissing)
 
@@ -100,10 +101,13 @@ writeHaskellModule
   -> (TemplateType -> [THFunction] -> HModule)
   -> TemplateType
   -> IO ()
-writeHaskellModule parsedBindings makeConfig templateType = do
-  tputStrLn $ "Writing " <> outDir <> filename
-  createDirectoryIfMissing True (T.unpack outDir)
-  writeFile (T.unpack $ outDir <> filename) (T.unpack . renderAll $ modSpec)
+writeHaskellModule parsedBindings makeConfig templateType
+  | numFunctions == 0 =
+    tputStrLn $ "No bindings found for " <> outDir <> filename
+  | otherwise = do
+    tputStrLn $ "Writing " <> outDir <> filename
+    createDirectoryIfMissing True (T.unpack outDir)
+    writeFile (T.unpack $ outDir <> filename) (T.unpack . renderAll $ modSpec)
  where
   modSpec :: HModule
   modSpec = makeConfig templateType parsedBindings
@@ -114,6 +118,9 @@ writeHaskellModule parsedBindings makeConfig templateType = do
   outDir :: Text
   outDir = textPath (modOutDir modSpec) <> "/" <> type2hsreal templateType <> "/"
 
+  numFunctions :: Int
+  numFunctions = length
+    $ checkList (bindings modSpec) (typeTemplate modSpec)
 
 -- ----------------------------------------
 -- Execution
