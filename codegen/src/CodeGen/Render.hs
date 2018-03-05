@@ -32,7 +32,16 @@ renderExtensions extensions = T.intercalate "\n" (extensions' <> [""])
   renderExtension extension = "{-# LANGUAGE " <> extension <> " #-}"
 
 renderModule :: HModule -> Text
-renderModule moduleSpec = "module " <> renderModuleName moduleSpec
+renderModule m
+  = "module "
+  <> outModule TH
+  <> generatedTypeModule
+  <> "." <> textFileSuffix (fileSuffix m)
+ where
+  generatedTypeModule :: Text
+  generatedTypeModule = case isTemplate m of
+    ConcreteFiles -> ""
+    GenericFiles -> "." <> type2hsreal (typeTemplate m)
 
 renderExports :: [Text] -> Text
 renderExports exports = T.intercalate "\n"
@@ -100,14 +109,11 @@ writeHaskellModule parsedBindings makeConfig templateType = do
   modSpec = makeConfig templateType parsedBindings
 
   filename :: Text
-  filename = renderModuleName modSpec <> ".hs"
+  filename = textFileSuffix (fileSuffix modSpec) <> ".hs"
 
   outDir :: Text
   outDir = textPath (modOutDir modSpec) <> "/" <> type2hsreal templateType <> "/"
 
-renderModuleName :: HModule -> Text
-renderModuleName HModule{prefix, typeTemplate, fileSuffix}
-  = T.pack (show prefix) <> type2real typeTemplate <> textFileSuffix fileSuffix
 
 -- ----------------------------------------
 -- Execution

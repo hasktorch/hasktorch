@@ -65,8 +65,8 @@ outDir lt cgt = intercalate ""
 
 
 -- | The prefix of the output module name
-outModule :: LibType -> String
-outModule lt = "Torch.FFI." ++ show lt
+outModule :: LibType -> Text
+outModule lt = "Torch.FFI." <> tshow lt
 
 
 -- | Where the source files are located, relative to the root of the hasktorch
