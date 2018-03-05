@@ -8,92 +8,69 @@ import CodeGen.Prelude
 -- Parsed types
 -- ----------------------------------------
 
-newtype APtr x = APtr x
+-- NN
+data THNNType
+  = THNNStatePtr
+  | THIndexTensorPtr
+  | THIntegerTensorPtr
 
 data THType
-  = THVoidPtr
+  = APtr THType
+
   | THBool
   | THVoid
   | THDescBuff
-  -- NN
-  | THNNStatePtr
-  | THIndexTensorPtr
-  | THIntegerTensorPtr
+
   -- Tensor
-  | THTensorPtrPtr
-  | THTensorPtr
-  | THByteTensorPtr
-  | THCharTensorPtr
-  | THShortTensorPtr
-  | THIntTensorPtr
-  | THLongTensorPtr
-  | THFloatTensorPtr
-  | THDoubleTensorPtr
-  | THHalfTensorPtr
+  | THTensor
+  | THByteTensor
+  | THCharTensor
+  | THShortTensor
+  | THIntTensor
+  | THLongTensor
+  | THFloatTensor
+  | THDoubleTensor
+  | THHalfTensor
   -- Storage
-  | THStoragePtr
-  | THByteStoragePtr
-  | THCharStoragePtr
-  | THShortStoragePtr
-  | THIntStoragePtr
-  | THLongStoragePtr
-  | THFloatStoragePtr
-  | THDoubleStoragePtr
-  | THHalfStoragePtr
+  | THStorage
+  | THByteStorage
+  | THCharStorage
+  | THShortStorage
+  | THIntStorage
+  | THLongStorage
+  | THFloatStorage
+  | THDoubleStorage
+  | THHalfStorage
   -- Other
-  | THGeneratorPtr
-  | THAllocatorPtr
+  | THGenerator
+  | THAllocator
   | THPtrDiff
+  | THFile
+
   -- Primitive
-  | THFloatPtr
   | THFloat
-  | THDoublePtr
   | THDouble
-  | THLongPtrPtr
-  | THLongPtr
   | THLong
-  | THIntPtr
   | THInt
 
   | THUInt64
-  | THUInt64Ptr
-  | THUInt64PtrPtr
   | THUInt32
-  | THUInt32Ptr
-  | THUInt32PtrPtr
   | THUInt16
-  | THUInt16Ptr
-  | THUInt16PtrPtr
   | THUInt8
-  | THUInt8Ptr
-  | THUInt8PtrPtr
 
   | THInt64
-  | THInt64Ptr
-  | THInt64PtrPtr
   | THInt32
-  | THInt32Ptr
-  | THInt32PtrPtr
   | THInt16
-  | THInt16Ptr
-  | THInt16PtrPtr
   | THInt8
-  | THInt8Ptr
-  | THInt8PtrPtr
 
   | THSize
-  | THCharPtrPtr
-  | THCharPtr
   | THChar
-  | THShortPtr
   | THShort
   | THHalfPtr
   | THHalf
-  | THFilePtr
+
   -- Templates
-  | THRealPtr
   | THReal
-  | THAccRealPtr
   | THAccReal
   deriving (Eq, Show, Generic, Hashable)
 

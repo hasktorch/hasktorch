@@ -31,48 +31,48 @@ thCPtr :: Parser Char
 thCPtr = char '*'
 
 thVoidPtr, thBool, thVoid :: Parser THType
-thVoidPtr = thPtr "void" THVoidPtr
+thVoidPtr = thPtr "void" (APtr THVoid)
 thBool    = string "bool" >> pure THBool
 thVoid    = string "void" >> pure THVoid
 
 thFloatPtr, thFloat, thDoublePtr, thDouble, thDescBuff :: Parser THType
-thFloatPtr  = thPtr "float" THFloatPtr
+thFloatPtr  = thPtr "float" (APtr THFloat)
 thFloat     = string "float" >> pure THFloat
-thDoublePtr = thPtr "double" THDoublePtr
+thDoublePtr = thPtr "double" (APtr THDouble)
 thDouble    = string "double" >> pure THDouble
 thDescBuff  = string "THDescBuff" >> pure THDescBuff
 
 {- NN types -}
 
-thNNStatePtr :: Parser THType
-thNNStatePtr = string "THNNState" >> space >> thCPtr >> pure THNNStatePtr
+-- thNNStatePtr :: Parser THType
+-- thNNStatePtr = string "THNNState" >> space >> thCPtr >> pure (APtr THNNState)
 
-thIndexTensorPtr :: Parser THType
-thIndexTensorPtr = string "THIndexTensor" >> space >> thCPtr >> pure THIndexTensorPtr
+-- thIndexTensorPtr :: Parser THType
+-- thIndexTensorPtr = string "THIndexTensor" >> space >> thCPtr >> pure (APtr THIndexTensor)
 
-thIntegerTensorPtr :: Parser THType
-thIntegerTensorPtr = string "THIntegerTensor" >> space >> thCPtr >> pure THIntegerTensorPtr
+-- thIntegerTensorPtr :: Parser THType
+-- thIntegerTensorPtr = string "THIntegerTensor" >> space >> thCPtr >> pure (APtr THIntegerTensor)
 
 {- Tensor types -}
 
 thTensorPtr :: Parser THType
-thTensorPtr = string "THTensor" >> space >> thCPtr >> pure THTensorPtr
+thTensorPtr = string "THTensor" >> space >> thCPtr >> pure (APtr THTensor)
 
 thTensorPtrPtr :: Parser THType
 -- thTensorPtrPtr = string "THTensor" >> space >> (count 2 thPtr) >> pure THTensorPtrPtr
-thTensorPtrPtr = string "THTensor **" >> pure THTensorPtrPtr
+thTensorPtrPtr = string "THTensor **" >> pure (APtr (APtr THTensor))
 -- TODO : clean up pointer matching
 
 thByteTensorPtr, thIntTensorPtr,    thLongTensorPtr, thHalfTensorPtr :: Parser THType
 thCharTensorPtr, thDoubleTensorPtr, thFloatTensorPtr                 :: Parser THType
-thByteTensorPtr   = thPtr "THByteTensor" THByteTensorPtr
-thShortTensorPtr  = thPtr "THShortTensor" THShortTensorPtr
-thIntTensorPtr    = thPtr "THIntTensor" THIntTensorPtr
-thLongTensorPtr   = thPtr "THLongTensor" THLongTensorPtr
-thHalfTensorPtr   = thPtr "THHalfTensor" THHalfTensorPtr
-thCharTensorPtr   = thPtr "THCharTensor" THCharTensorPtr
-thDoubleTensorPtr = thPtr "THDoubleTensor" THDoubleTensorPtr
-thFloatTensorPtr  = thPtr "THFloatTensor" THFloatTensorPtr
+thByteTensorPtr   = thPtr "THByteTensor" (APtr THByteTensor)
+thShortTensorPtr  = thPtr "THShortTensor" (APtr THShortTensor)
+thIntTensorPtr    = thPtr "THIntTensor" (APtr THIntTensor)
+thLongTensorPtr   = thPtr "THLongTensor" (APtr THLongTensor)
+thHalfTensorPtr   = thPtr "THHalfTensor" (APtr THHalfTensor)
+thCharTensorPtr   = thPtr "THCharTensor" (APtr THCharTensor)
+thDoubleTensorPtr = thPtr "THDoubleTensor" (APtr THDoubleTensor)
+thFloatTensorPtr  = thPtr "THFloatTensor" (APtr THFloatTensor)
 
 {- Storage -}
 
@@ -80,75 +80,75 @@ thStoragePtr,    thByteStoragePtr, thCharStoragePtr, thShortStoragePtr :: Parser
 thIntStoragePtr, thHalfStoragePtr, thLongStoragePtr, thFloatStoragePtr :: Parser THType
 thDoubleStoragePtr :: Parser THType
 
-thStoragePtr       = thPtr "THStorage" THStoragePtr
-thByteStoragePtr   = thPtr "THByteStorage" THByteStoragePtr
-thCharStoragePtr   = thPtr "THCharStorage" THCharStoragePtr
-thShortStoragePtr  = thPtr "THShortStorage" THShortStoragePtr
-thIntStoragePtr    = thPtr "THIntStorage" THIntStoragePtr
-thHalfStoragePtr   = thPtr "THHalfStorage" THHalfStoragePtr
-thLongStoragePtr   = thPtr "THLongStorage" THLongStoragePtr
-thFloatStoragePtr  = thPtr "THFloatStorage" THFloatStoragePtr
-thDoubleStoragePtr = thPtr "THDoubleStorage" THDoubleStoragePtr
+thStoragePtr       = thPtr "THStorage" (APtr THStorage)
+thByteStoragePtr   = thPtr "THByteStorage" (APtr THByteStorage)
+thCharStoragePtr   = thPtr "THCharStorage" (APtr THCharStorage)
+thShortStoragePtr  = thPtr "THShortStorage" (APtr THShortStorage)
+thIntStoragePtr    = thPtr "THIntStorage" (APtr THIntStorage)
+thHalfStoragePtr   = thPtr "THHalfStorage" (APtr THHalfStorage)
+thLongStoragePtr   = thPtr "THLongStorage" (APtr THLongStorage)
+thFloatStoragePtr  = thPtr "THFloatStorage" (APtr THFloatStorage)
+thDoubleStoragePtr = thPtr "THDoubleStorage" (APtr THDoubleStorage)
 
 {- Other -}
 
 thGeneratorPtr :: Parser THType
 -- thGeneratorPtr = string "THGenerator" >> space >> thCPtr  >> pure THGeneratorPtr
-thGeneratorPtr = (string "THGenerator * "  <|> string "THGenerator *" <|> string "THGenerator* ") >> pure THGeneratorPtr
+thGeneratorPtr = (string "THGenerator * "  <|> string "THGenerator *" <|> string "THGenerator* ") >> pure (APtr THGenerator)
 
 thLongAllocatorPtr :: Parser THType
-thLongAllocatorPtr = thPtr "THAllocator" THAllocatorPtr
+thLongAllocatorPtr = thPtr "THAllocator" (APtr THAllocator)
 
 thPtrDiff :: Parser THType
 thPtrDiff = string "ptrdiff_t" >> pure THPtrDiff
 
 thLongPtrPtr :: Parser THType
-thLongPtrPtr = string "long **" >> pure THLongPtrPtr
+thLongPtrPtr = string "long **" >> pure (APtr (APtr THLong))
 
 thLongPtr :: Parser THType
-thLongPtr = thPtr "long" THLongPtr
+thLongPtr = thPtr "long" (APtr THLong)
 -- TODO : clean up pointer matching
 
 thLong, thIntPtr, thInt, thUInt64, thUInt64Ptr, thUInt64PtrPtr, thUInt32 :: Parser THType
 thLong         = string "long" >> pure THLong
-thIntPtr       = thPtr "int" THIntPtr
+thIntPtr       = thPtr "int" (APtr THInt)
 thInt          = string "int" >> pure THInt
 thUInt64       = string "uint64_t" >> pure THUInt64
-thUInt64Ptr    = (string "uint64_t *" <|> string "uint64_t* ") >> pure THUInt64Ptr
-thUInt64PtrPtr = (string "uint64_t **" <|> string "uint64_t** ") >> pure THUInt64PtrPtr
+thUInt64Ptr    = (string "uint64_t *" <|> string "uint64_t* ") >> pure (APtr THUInt64)
+thUInt64PtrPtr = (string "uint64_t **" <|> string "uint64_t** ") >> pure (APtr (APtr THUInt64))
 thUInt32       = string "uint32_t" >> pure THInt32
 
 thUInt32Ptr, thUInt32PtrPtr, thUInt16, thUInt16Ptr, thUInt16PtrPtr :: Parser THType
-thUInt32Ptr    = (string "uint32_t *"  <|> string "uint32_t* ")  >> pure THInt32Ptr
-thUInt32PtrPtr = (string "uint32_t **" <|> string "uint32_t** ") >> pure THInt32PtrPtr
+thUInt32Ptr    = (string "uint32_t *"  <|> string "uint32_t* ")  >> pure (APtr THInt32)
+thUInt32PtrPtr = (string "uint32_t **" <|> string "uint32_t** ") >> pure (APtr (APtr THInt32))
 thUInt16       =  string "uint16_t"                              >> pure THInt16
-thUInt16Ptr    = (string "uint16_t *"  <|> string "uint16_t* ")  >> pure THInt16Ptr
-thUInt16PtrPtr = (string "uint16_t **" <|> string "uint16_t** ") >> pure THInt16PtrPtr
+thUInt16Ptr    = (string "uint16_t *"  <|> string "uint16_t* ")  >> pure (APtr THInt16)
+thUInt16PtrPtr = (string "uint16_t **" <|> string "uint16_t** ") >> pure (APtr (APtr THInt16))
 
 thUInt8, thUInt8Ptr, thUInt8PtrPtr :: Parser THType
 thUInt8       = string "uint8_t" >> pure THInt8
-thUInt8Ptr    = thPtr "uint8_t" THInt8Ptr
-thUInt8PtrPtr = (string "uint8_t **" <|> string "uint8_t** ") >> pure THInt8PtrPtr
+thUInt8Ptr    = thPtr "uint8_t" (APtr THInt8)
+thUInt8PtrPtr = (string "uint8_t **" <|> string "uint8_t** ") >> pure (APtr (APtr THInt8))
 
 thInt64, thInt64Ptr, thInt64PtrPtr :: Parser THType
 thInt64       =  string "int64_t" >> pure THInt64
-thInt64Ptr    = (string "int64_t *" <|> string "int64_t* ") >> pure THInt64Ptr
-thInt64PtrPtr = (string "int64_t **" <|> string "int64_t** ") >> pure THInt64PtrPtr
+thInt64Ptr    = (string "int64_t *" <|> string "int64_t* ") >> pure (APtr THInt64)
+thInt64PtrPtr = (string "int64_t **" <|> string "int64_t** ") >> pure (APtr (APtr THInt64))
 
 thInt32, thInt32Ptr, thInt32PtrPtr :: Parser THType
 thInt32       =  string "int32_t" >> pure THInt32
-thInt32Ptr    = (string "int32_t *" <|> string "int32_t* ") >> pure THInt32Ptr
-thInt32PtrPtr = (string "int32_t **" <|> string "int32_t** ") >> pure THInt32PtrPtr
+thInt32Ptr    = (string "int32_t *" <|> string "int32_t* ") >> pure (APtr THInt32)
+thInt32PtrPtr = (string "int32_t **" <|> string "int32_t** ") >> pure (APtr (APtr THInt32))
 
 thInt16, thInt16Ptr, thInt16PtrPtr :: Parser THType
 thInt16       =  string "int16_t" >> pure THInt16
-thInt16Ptr    = (string "int16_t *" <|> string "int16_t* ") >> pure THInt16Ptr
-thInt16PtrPtr = (string "int16_t **" <|> string "int16_t** ") >> pure THInt16PtrPtr
+thInt16Ptr    = (string "int16_t *" <|> string "int16_t* ") >> pure (APtr THInt16)
+thInt16PtrPtr = (string "int16_t **" <|> string "int16_t** ") >> pure (APtr (APtr THInt16))
 
 thInt8, thInt8Ptr, thInt8PtrPtr :: Parser THType
 thInt8       = string "int8_t" >> pure THInt8
-thInt8Ptr    = (string "int8_t *" <|> string "int8_t* ") >> pure THInt8Ptr
-thInt8PtrPtr = (string "int8_t **" <|> string "int8_t** ") >> pure THInt8PtrPtr
+thInt8Ptr    = (string "int8_t *" <|> string "int8_t* ") >> pure (APtr THInt8)
+thInt8PtrPtr = (string "int8_t **" <|> string "int8_t** ") >> pure (APtr (APtr THInt8))
 
 
 thSize :: Parser THType
@@ -156,12 +156,12 @@ thSize = string "size_t" >> pure THSize
 
 thChar, thCharPtr, thCharPtrPtr :: Parser THType
 thChar       =  string "char" >> pure THChar
-thCharPtr    = (string "char*" <|> string "char *") >> pure THCharPtr
-thCharPtrPtr = (string "char**" <|> string "char **") >> pure THCharPtrPtr
+thCharPtr    = (string "char*" <|> string "char *") >> pure (APtr THChar)
+thCharPtrPtr = (string "char**" <|> string "char **") >> pure (APtr (APtr THChar))
 
 thShort, thShortPtr :: Parser THType
 thShort    =  string "short" >> pure THShort
-thShortPtr = (string "short *" <|> string "short* ") >> pure (THShortPtr)
+thShortPtr = (string "short *" <|> string "short* ") >> pure (APtr THShort)
 
 thHalf, thHalfPtr :: Parser THType
 thHalf    =  string "THHalf" >> pure THHalf
@@ -169,16 +169,16 @@ thHalfPtr = (string "THHalf *" <|> string "THHalf* ") >> pure (THHalfPtr)
 
 thReal, thRealPtr :: Parser THType
 thReal    = string "real" >> pure THReal
-thRealPtr = (string "real *" <|> string "real* ") >> pure THRealPtr
+thRealPtr = (string "real *" <|> string "real* ") >> pure (APtr THReal)
 -- TODO : clean up pointer matching
 
 
 thAccReal, thAccRealPtr :: Parser THType
 thAccReal    = string "accreal" >> pure THAccReal
-thAccRealPtr = string "accreal *" >> pure THAccRealPtr
+thAccRealPtr = string "accreal *" >> pure (APtr THAccReal)
 
 thFilePtr :: Parser THType
-thFilePtr = (string "THFile *" <|> string "THFile*") >> pure THFilePtr
+thFilePtr = (string "THFile *" <|> string "THFile*") >> pure (APtr THFile)
 
 -- not meant to be a complete C spec, just enough for TH lib
 thType :: ParsecT Void String Identity THType
@@ -195,9 +195,9 @@ thType = do
 
     <|> thBool
 
-    <|> thNNStatePtr
-    <|> thIndexTensorPtr
-    <|> thIntegerTensorPtr
+    -- <|> thNNStatePtr
+    -- <|> thIndexTensorPtr
+    -- <|> thIntegerTensorPtr
 
     <|> thTensorPtrPtr
     <|> thTensorPtr

@@ -14,7 +14,7 @@ import System.Directory (createDirectoryIfMissing)
 import CodeGen.Types
 import CodeGen.Render.Function (renderFunPtrSig, renderFunSig)
 import CodeGen.Parse (thParser)
-import CodeGen.Parse.Cases (checkFunction, signatureAliases)
+import CodeGen.Parse.Cases (checkFunction, signatureAliases, type2hsreal, type2real)
 import qualified CodeGen.Render.Haskell as Hs
 
 
@@ -63,7 +63,7 @@ renderFunctions m validFunctions =
   ffiPrefix :: Text
   ffiPrefix
     = T.pack (show $ prefix m)
-    <> Hs.type2SpliceReal (typeTemplate m)
+    <> type2real (typeTemplate m)
     <> textSuffix (suffix m)
 
   triple :: [(Text, THType, [THArg])]
@@ -102,9 +102,9 @@ writeHaskellModule
   -> TemplateType
   -> IO ()
 writeHaskellModule parsedBindings makeConfig templateType = do
-  tputStrLn $ "Writing " <> filename
-  createDirectoryIfMissing True outDir
-  writeFile (outDir ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
+  tputStrLn $ "Writing " <> outDir <> filename
+  createDirectoryIfMissing True (T.unpack outDir)
+  writeFile (T.unpack $ outDir <> filename) (T.unpack . renderAll $ modSpec)
  where
   modSpec :: HModule
   modSpec = makeConfig templateType parsedBindings
@@ -112,12 +112,12 @@ writeHaskellModule parsedBindings makeConfig templateType = do
   filename :: Text
   filename = renderModuleName modSpec <> ".hs"
 
-  outDir :: String
-  outDir = T.unpack (textPath $ modOutDir modSpec)
+  outDir :: Text
+  outDir = textPath (modOutDir modSpec) <> "/" <> type2hsreal templateType <> "/"
 
 renderModuleName :: HModule -> Text
 renderModuleName HModule{prefix, typeTemplate, fileSuffix}
-  = T.pack (show prefix) <> Hs.type2SpliceReal typeTemplate <> textFileSuffix fileSuffix
+  = T.pack (show prefix) <> type2real typeTemplate <> textFileSuffix fileSuffix
 
 -- ----------------------------------------
 -- Execution

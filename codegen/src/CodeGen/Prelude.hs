@@ -7,19 +7,21 @@ module CodeGen.Prelude
 
 import Prelude         as X
 import Control.Monad   as X (guard)
-import Data.List       as X (nub)
-import Data.Maybe      as X (fromMaybe, mapMaybe, catMaybes, isJust, Maybe)
+
+import Data.Char       as X (toLower)
 import Data.Either     as X (either)
+import Data.Hashable   as X (Hashable)
+import Data.HashMap.Strict as X (HashMap)
+import Data.HashSet        as X (HashSet)
+import Data.List       as X (nub, intercalate)
+import Data.Maybe      as X (fromMaybe, mapMaybe, catMaybes, isJust, Maybe)
 import Data.Monoid     as X ((<>))
 import Data.Text       as X (Text)
 import Data.Void       as X (Void)
-import Text.Megaparsec as X (ParseError, runParser, Parsec)
 import Debug.Trace     as X
-import Data.Hashable   as X (Hashable)
-import GHC.Generics    as X (Generic)
+import Text.Megaparsec as X (ParseError, runParser, Parsec)
 import GHC.Exts        as X (IsString(..))
-import Data.HashMap.Strict as X (HashMap)
-import Data.HashSet        as X (HashSet)
+import GHC.Generics    as X (Generic)
 
 import qualified Data.Text as T
 

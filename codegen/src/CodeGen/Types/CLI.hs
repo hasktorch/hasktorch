@@ -15,10 +15,7 @@ module CodeGen.Types.CLI
   , generatedTypes
   ) where
 
-import Data.List (intercalate)
-import Data.Char (toLower)
-import GHC.Generics (Generic)
-import Data.Hashable (Hashable)
+import CodeGen.Prelude
 import qualified Data.HashSet as HS
 
 
@@ -59,7 +56,7 @@ outDir lt cgt = intercalate ""
   [ "output/raw/"
   , toLowers lt ++ "/"
   , "src/"
-  , if cgt == GenericFiles then "generic/" else ""
+  -- , if cgt == GenericFiles then "generic/" else ""
   , "Torch/FFI/" ++ show lt
   ]
  where

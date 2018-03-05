@@ -60,6 +60,32 @@ signatureAliases = \case
     )
   GenNothing -> Nothing
 
+
+type2real :: TemplateType -> Text
+type2real t = case signatureAliases t of
+  Just (_, CReal hs _, _, _) -> stripModule hs
+  Nothing -> "" -- impossible "TemplateType is concrete and should not have been called"
+
+-- | spliced text to use for function names
+type2hsreal :: TemplateType -> Text
+type2hsreal = \case
+  GenByte    -> "Byte"
+  GenChar    -> "Char"
+  GenDouble  -> "Double"
+  GenFloat   -> "Float"
+  GenHalf    -> "Half"
+  GenInt     -> "Int"
+  GenLong    -> "Long"
+  GenShort   -> "Short"
+  GenNothing -> ""
+
+
+type2accreal :: TemplateType -> Text
+type2accreal t = case signatureAliases t of
+  Just (_, _, CAccReal hs _, _) -> stripModule hs
+  Nothing -> "" -- impossible "TemplateType is concrete and should not have been called"
+
+
 tensorMathCases :: HashMap FunctionName (HashSet TemplateType)
 tensorMathCases =
   [ ("abs",     [GenShort, GenInt, GenLong, GenFloat, GenDouble])
