@@ -2,8 +2,15 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module CodeGen.RenderTypes
-  ( FunctionName(..)
+module CodeGen.Types.HsOutput
+  ( HModule(..)
+  , ModuleSuffix(..)
+  , FileSuffix(..)
+  , TextPath(..)
+  , IsTemplate(..)
+  , TypeCategory(..)
+
+  , FunctionName(..)
 
   , CRep(..)
   , HsRep(..)
@@ -18,7 +25,47 @@ module CodeGen.RenderTypes
   ) where
 
 import CodeGen.Prelude
+import CodeGen.Types.CLI
+import CodeGen.Types.Parsed
 import qualified Data.Text as T
+
+
+
+-- ----------------------------------------
+-- Types for rendering output
+-- ----------------------------------------
+
+data HModule = HModule
+  { modPrefix       :: LibType
+  , modExtensions   :: [Text]
+  , modImports      :: [Text]
+  , modTypeDefs     :: [(Text, Text)]
+  , modHeader       :: FilePath
+  , modTypeTemplate :: TemplateType
+  , modSuffix       :: ModuleSuffix
+  , modFileSuffix   :: FileSuffix
+  , modBindings     :: [THFunction]
+  , modOutDir       :: TextPath
+  , modIsTemplate   :: IsTemplate
+  } deriving Show
+
+newtype ModuleSuffix = ModuleSuffix { textSuffix :: Text }
+  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
+
+newtype FileSuffix = FileSuffix { textFileSuffix :: Text }
+  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
+
+newtype TextPath = TextPath { textPath :: Text }
+  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
+
+newtype IsTemplate = IsTemplate Bool
+  deriving newtype (Bounded, Enum, Eq, Ord, Read, Show)
+
+data TypeCategory
+  = ReturnValue
+  | FunctionParam
+
+-------------------------------------------------------------------------------
 
 -- | a concrete type for function names
 newtype FunctionName = FunctionName Text

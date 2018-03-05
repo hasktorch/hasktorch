@@ -2,7 +2,18 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE FlexibleContexts #-}
-module CodeGen.CLITypes where
+module CodeGen.Types.CLI
+  ( LibType(..)
+  , describe
+  , supported
+  , outDir
+  , outModule
+  , srcDir
+  , CodeGenType(..)
+  , generatable
+  , TemplateType(..)
+  , generatedTypes
+  ) where
 
 import Data.List (intercalate)
 import Data.Char (toLower)
@@ -95,4 +106,35 @@ instance Show CodeGenType where
 generatable :: CodeGenType -> Bool
 generatable = const True
 
+-- ----------------------------------------
+-- Types for representing templating
+-- ----------------------------------------
+
+data TemplateType
+  = GenByte
+  | GenChar
+  | GenDouble
+  | GenFloat
+  | GenHalf
+  | GenInt
+  | GenLong
+  | GenShort
+  | GenNothing
+  deriving (Eq, Ord, Bounded, Show, Generic, Hashable)
+
+
+-- List used to iterate through all template types
+generatedTypes :: CodeGenType -> [TemplateType]
+generatedTypes = \case
+  ConcreteFiles -> [GenNothing]
+  GenericFiles ->
+    [ GenByte
+    , GenChar
+    , GenDouble
+    , GenFloat
+    , GenHalf
+    , GenInt
+    , GenLong
+    , GenShort
+    ]
 

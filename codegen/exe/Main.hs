@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
+import Control.Monad (when)
 import Data.List (nub)
 import Text.Show.Pretty (ppShow)
 import Options.Applicative (ParserInfo, execParser, info, (<**>), helper, idm)
@@ -22,7 +23,7 @@ main = execParser opts >>= run
 
 run :: Options -> IO ()
 run os = do
-  putStrLn $ unwords
+  when (verbose os) $ putStrLn $ unwords
     [ "Running"
     , show gentype
     , "codegen for"
@@ -31,10 +32,11 @@ run os = do
     ]
 
   case lib of
-    TH -> mapM_ (runTHPipeline gentype) (thFiles gentype)
+    TH -> mapM_ (runTHPipeline os) (thFiles gentype)
     lib -> putStrLn $ "Code generation not enabled for " ++ show lib
 
-  putStrLn "Done"
+  when (verbose os) $ putStrLn "Done"
+
  where
   lib :: LibType
   lib = libraries os
@@ -44,24 +46,26 @@ run os = do
 
 
 runTHPipeline
-  :: CodeGenType
+  :: Options
   -> (String, TemplateType -> [THFunction] -> HModule)
   -> IO ()
-runTHPipeline cgt (headerPath, makeModuleConfig) = do
+runTHPipeline os (headerPath, makeModuleConfig) = do
   -- TODO: @nub@ is a hack until proper treatment of
   --       conditioned templates is implemented
-  bindingsUniq <- nub <$> parseFile cgt headerPath
+  bindingsUniq <- nub <$> parseFile (codegenType os) headerPath
+  
+  when (verbose os) $ do
+    putStrLn $ "First signature of " ++ show (length bindingsUniq)
+    putStrLn $ ppShow (take 1 bindingsUniq)
 
-  putStrLn $ "First signature of " ++ show (length bindingsUniq)
-  putStrLn $ ppShow (take 1 bindingsUniq)
+  mapM_ (renderCHeaderFile bindingsUniq makeModuleConfig) typeList
 
-  mapM_ (\x -> renderCHeaderFile x bindingsUniq makeModuleConfig) typeList
-
-  putStrLn $ "Number of functions generated: "
-    ++ show (length typeList * length bindingsUniq)
+  when (verbose os) $
+    putStrLn $ "Number of functions generated: "
+      ++ show (length typeList * length bindingsUniq)
  where
   typeList :: [TemplateType]
-  typeList = generatedTypes cgt
+  typeList = generatedTypes (codegenType os)
 
 
 {-

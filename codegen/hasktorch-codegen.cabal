@@ -25,14 +25,15 @@ library
     , text >=1.2.2.2
     , unordered-containers >=0.1.3.0
   exposed-modules:
-      CodeGen.CLITypes
-      CodeGen.ParseTypes
+      CodeGen.Types
+      CodeGen.Types.CLI
+      CodeGen.Types.HsOutput
+      CodeGen.Types.Parsed
+
       CodeGen.Prelude
       CodeGen.Render.C
       CodeGen.Render.Function
       CodeGen.Render.Haskell
-      CodeGen.RenderTypes
-      CodeGen.Types
       CodeGen.FileMappings
       CodeGenParse
       ConditionalCases
@@ -40,6 +41,24 @@ library
   other-modules:
       Paths_hasktorch_codegen
   default-language: Haskell2010
+
+executable ht-codegen
+  default-language: Haskell2010
+  hs-source-dirs: exe
+  default-extensions: LambdaCase OverloadedStrings
+  main-is: Main.hs
+  other-modules: CLIOptions
+  build-depends:
+      base >=4.7 && <5
+    , containers >=0.5.7
+    , hashable >=1.0.1.1
+    , hasktorch-codegen
+    , megaparsec >=5.3
+    , pretty-show >=1.6.13
+    , text >=1.2.2.2
+    , unordered-containers >=0.1.3.0
+    -- not sure which version yet:
+    , optparse-applicative
 
 executable aten-process-spec
   main-is: ProcessSpec.hs
@@ -62,23 +81,6 @@ executable aten-process-spec
   other-modules:
       Paths_hasktorch_codegen
   default-language: Haskell2010
-
-executable ht-codegen
-  default-language: Haskell2010
-  hs-source-dirs: exe
-  default-extensions: LambdaCase OverloadedStrings
-  main-is: Main.hs
-  build-depends:
-      base >=4.7 && <5
-    , containers >=0.5.7
-    , hashable >=1.0.1.1
-    , hasktorch-codegen
-    , megaparsec >=5.3
-    , pretty-show >=1.6.13
-    , text >=1.2.2.2
-    , unordered-containers >=0.1.3.0
-    -- not sure which version yet:
-    , optparse-applicative
 
 test-suite spec
   type: exitcode-stdio-1.0

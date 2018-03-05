@@ -121,8 +121,8 @@ renderAll m
       <> (fmap (fun2name "p") validFunctions)
 
 renderCHeaderFile
-  :: TemplateType -> [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> IO ()
-renderCHeaderFile templateType parsedBindings makeConfig = do
+  :: [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> TemplateType -> IO ()
+renderCHeaderFile parsedBindings makeConfig templateType = do
   putStrLn $ "Writing " <> T.unpack filename
   writeFile (outDir ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
  where

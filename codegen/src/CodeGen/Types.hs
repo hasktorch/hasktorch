@@ -1,10 +1,13 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 module CodeGen.Types
-  ( module CodeGen.RenderTypes
-  , module CodeGen.ParseTypes
-  , module CodeGen.CLITypes
+  ( module CodeGen.Types.HsOutput
+  , module CodeGen.Types.Parsed
+  , module CodeGen.Types.CLI
   ) where
 
-import CodeGen.RenderTypes
-import CodeGen.ParseTypes
-import CodeGen.CLITypes
+import CodeGen.Types.HsOutput
+import CodeGen.Types.Parsed
+import CodeGen.Types.CLI
+
 
