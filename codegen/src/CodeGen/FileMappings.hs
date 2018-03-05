@@ -46,33 +46,28 @@ thFiles = \case
 
   mkTuple
     :: LibType
-    -> IsTemplate
     -> ModuleSuffix
     -> FileSuffix
     -> CodeGenType
     -> (FilePath, TemplateType -> [THFunction] -> HModule)
-  mkTuple lt b modsuff filesuff cgt
-    = (src cgt <> hf, makeModule TH (out cgt) b hf modsuff filesuff)
+  mkTuple lt modsuff filesuff cgt
+    = (src cgt <> hf, makeModule TH (out cgt) cgt hf modsuff filesuff)
    where
     hf :: FilePath
     hf = show lt <> T.unpack (textFileSuffix filesuff) <> ".h"
 
-  mkTHFile, mkTHGeneric, mkTHManaged
+  mkTHFile, mkTHGeneric
     :: ModuleSuffix
     -> FileSuffix
     -> CodeGenType
     -> (FilePath, TemplateType -> [THFunction] -> HModule)
-  mkTHFile = mkTuple TH asfile
-  mkTHGeneric = mkTuple TH astemplate
-  mkTHManaged = mkTuple TH astemplate
+  mkTHFile = mkTuple TH
+  mkTHGeneric = mkTuple TH
 
-  mkTHFile', mkTHGeneric', mkTHManaged'
+  mkTHFile', mkTHGeneric'
     :: Text
     -> CodeGenType
     -> (FilePath, TemplateType -> [THFunction] -> HModule)
   mkTHFile' suff = mkTHFile (ModuleSuffix suff) (FileSuffix suff)
   mkTHGeneric' suff = mkTHGeneric (ModuleSuffix suff) (FileSuffix suff)
-  mkTHManaged' suff = mkTHManaged (ModuleSuffix suff) (FileSuffix suff)
 
-astemplate = IsTemplate True
-asfile = IsTemplate False

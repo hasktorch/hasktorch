@@ -3,8 +3,6 @@ module RenderShared
   ( makeModule
   , renderCHeaderFile
 
-  , IsTemplate(..)
-
   , parseFile
   , cleanList
   ) where
@@ -21,7 +19,7 @@ import qualified CodeGen.Render.Haskell as Hs
 makeModule
   :: LibType
   -> TextPath
-  -> IsTemplate
+  -> CodeGenType
   -> FilePath
   -> ModuleSuffix
   -> FileSuffix
@@ -30,17 +28,17 @@ makeModule
   -> HModule
 makeModule a00 a0 a1 a2 a3 a4 a5 a6
   = HModule
-  { modPrefix = a00
-  , modExtensions = ["ForeignFunctionInterface"]
-  , modImports = ["Foreign", "Foreign.C.Types", "THTypes", "Data.Word", "Data.Int"]
-  , modTypeDefs = []
+  { prefix = a00
+  , extensions = ["ForeignFunctionInterface"]
+  , imports = ["Foreign", "Foreign.C.Types", "THTypes", "Data.Word", "Data.Int"]
+  , typeDefs = []
   , modOutDir = a0
-  , modIsTemplate = a1
-  , modHeader = a2
-  , modSuffix = a3
-  , modFileSuffix = a4
-  , modTypeTemplate = a5
-  , modBindings = a6
+  , isTemplate = a1
+  , header = a2
+  , suffix = a3
+  , fileSuffix = a4
+  , typeTemplate = a5
+  , bindings = a6
   }
 
 -- makeTHModule :: TextPath -> IsTemplate -> FilePath -> ModuleSuffix -> FileSuffix -> TemplateType -> [THFunction] -> HModule
@@ -85,11 +83,11 @@ renderFunctions m validFunctions =
     $  (renderFunSig'    <$> triple)
     <> (renderFunPtrSig' <$> triple)
  where
-  renderFunSig'    = renderFunSig    (modIsTemplate m) ffiPrefix (modHeader m) (modTypeTemplate m)
-  renderFunPtrSig' = renderFunPtrSig (modIsTemplate m) ffiPrefix (modHeader m) (modTypeTemplate m)
+  renderFunSig'    = renderFunSig    (isTemplate m) ffiPrefix (header m) (typeTemplate m)
+  renderFunPtrSig' = renderFunPtrSig (isTemplate m) ffiPrefix (header m) (typeTemplate m)
 
   ffiPrefix :: Text
-  ffiPrefix = T.pack (show $ modPrefix m) <> Hs.type2SpliceReal (modTypeTemplate m) <> textSuffix (modSuffix m)
+  ffiPrefix = T.pack (show $ prefix m) <> Hs.type2SpliceReal (typeTemplate m) <> textSuffix (suffix m)
 
   triple :: [(Text, THType, [THArg])]
   triple = go <$> validFunctions
@@ -99,26 +97,27 @@ renderFunctions m validFunctions =
 
 -- | Check for conditional templating of functions and filter function list
 checkList :: [THFunction] -> TemplateType -> [THFunction]
-checkList fList templateType = filter ((checkFunction templateType) . FunctionName . funName) fList
+checkList fList templateType =
+  filter (checkFunction templateType . FunctionName . funName) fList
 
 renderAll :: HModule -> Text
 renderAll m
-  =  renderExtensions (modExtensions m)
+  =  renderExtensions (extensions m)
   <> renderModule m
   <> renderExports exportFunctions
-  <> renderImports (modImports m)
+  <> renderImports (imports m)
   <> renderFunctions m validFunctions
   where
     validFunctions :: [THFunction]
-    validFunctions = checkList (modBindings m) (modTypeTemplate m)
+    validFunctions = checkList (bindings m) (typeTemplate m)
 
     fun2name :: Text -> THFunction -> Text
     fun2name p = (\f -> p <> "_" <> f) . funName
 
     exportFunctions :: [Text]
     exportFunctions
-      =  (fmap (fun2name "c") validFunctions)
-      <> (fmap (fun2name "p") validFunctions)
+      =  fmap (fun2name "c") validFunctions
+      <> fmap (fun2name "p") validFunctions
 
 renderCHeaderFile
   :: [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> TemplateType -> IO ()
@@ -136,8 +135,8 @@ renderCHeaderFile parsedBindings makeConfig templateType = do
   outDir = T.unpack (textPath $ modOutDir modSpec)
 
 renderModuleName :: HModule -> Text
-renderModuleName HModule{modPrefix, modTypeTemplate, modFileSuffix}
-  = T.pack (show modPrefix) <> (Hs.type2SpliceReal modTypeTemplate) <> textFileSuffix modFileSuffix
+renderModuleName HModule{prefix, typeTemplate, fileSuffix}
+  = T.pack (show prefix) <> Hs.type2SpliceReal typeTemplate <> textFileSuffix fileSuffix
 
 -- ----------------------------------------
 -- Execution

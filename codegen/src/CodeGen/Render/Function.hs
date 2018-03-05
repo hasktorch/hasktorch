@@ -25,27 +25,44 @@ isPtr f = f == IsFunPtr
 renderCName :: Text -> Text -> Text
 renderCName prefix name = prefix <> "_" <> name
 
+foreignCall :: CodeGenType -> (Text, Text) -> FilePath -> SigType -> Text
+foreignCall cgt (prefix, name) headerFile = \case
+  IsFun    -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " "  <> cName, "" ]
+  IsFunPtr -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " &" <> cName, "" ]
+ where
+  cName :: Text
+  cName = case cgt of
+    GenericFiles -> renderCName prefix name
+    ConcreteFiles -> name
+
+
+
 -- | Render a single function signature.
-renderSig :: SigType -> IsTemplate -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
-renderSig t (IsTemplate isTemplate) prefix headerFile modTypeTemplate (name, retType, args) =
-  trace (if "THShortStorage" == prefix && "THStorage.h" == headerFile then show (name, thArgType <$> args, retArrow) else "") $
-  T.intercalate "\n"
-    [ comment, foreignCall t, haskellSig t ]
+renderSig
+  :: SigType
+  -> CodeGenType
+  -> Text
+  -> FilePath
+  -> TemplateType
+  -> (Text, THType, [THArg])
+  -> Text
+renderSig
+  t
+  cgt
+  prefix
+  headerFile
+  modTypeTemplate
+  (name, retType, args) =
+    -- trace (if "THShortStorage" == prefix && "THStorage.h" == headerFile then show (name, thArgType <$> args, retArrow) else "") $
+    T.intercalate "\n"
+      [ comment, foreignCall cgt (prefix, name) headerFile t, haskellSig t ]
  where
   comment :: Text
   comment = T.intercalate " "
     $  [ "-- |" , ffiPrefix t <> name , ":", if isPtr t then "Pointer to function :" else "" ]
-    <> (map thArgName args)
+    <> map thArgName args
     <> (if null args then [] else ["->"])
     <> [renderCType retType]
-
-  cName :: Text
-  cName = if isTemplate then renderCName prefix name else name
-
-  foreignCall :: SigType -> Text
-  foreignCall = \case
-    IsFun    -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " "  <> cName, "" ]
-    IsFunPtr -> T.intercalate "\"" [ "foreign import ccall ", T.pack headerFile <> " &" <> cName, "" ]
 
   haskellSig :: SigType -> Text
   haskellSig = \case
@@ -64,11 +81,23 @@ renderSig t (IsTemplate isTemplate) prefix headerFile modTypeTemplate (name, ret
 
 
 -- | Render a single function signature.
-renderFunSig :: IsTemplate -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunSig
+  :: CodeGenType
+  -> Text
+  -> FilePath
+  -> TemplateType
+  -> (Text, THType, [THArg])
+  -> Text
 renderFunSig = renderSig IsFun
 
 -- | Render function pointer signature
-renderFunPtrSig :: IsTemplate -> Text -> FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
+renderFunPtrSig
+  :: CodeGenType
+  -> Text
+  -> FilePath
+  -> TemplateType
+  -> (Text, THType, [THArg])
+  -> Text
 renderFunPtrSig = renderSig IsFunPtr
 
 

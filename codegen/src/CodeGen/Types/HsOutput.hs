@@ -7,7 +7,6 @@ module CodeGen.Types.HsOutput
   , ModuleSuffix(..)
   , FileSuffix(..)
   , TextPath(..)
-  , IsTemplate(..)
   , TypeCategory(..)
 
   , FunctionName(..)
@@ -36,17 +35,17 @@ import qualified Data.Text as T
 -- ----------------------------------------
 
 data HModule = HModule
-  { modPrefix       :: LibType
-  , modExtensions   :: [Text]
-  , modImports      :: [Text]
-  , modTypeDefs     :: [(Text, Text)]
-  , modHeader       :: FilePath
-  , modTypeTemplate :: TemplateType
-  , modSuffix       :: ModuleSuffix
-  , modFileSuffix   :: FileSuffix
-  , modBindings     :: [THFunction]
-  , modOutDir       :: TextPath
-  , modIsTemplate   :: IsTemplate
+  { prefix       :: LibType
+  , extensions   :: [Text]
+  , imports      :: [Text]
+  , typeDefs     :: [(Text, Text)]
+  , header       :: FilePath
+  , typeTemplate :: TemplateType
+  , suffix       :: ModuleSuffix
+  , fileSuffix   :: FileSuffix
+  , bindings     :: [THFunction]
+  , modOutDir    :: TextPath
+  , isTemplate   :: CodeGenType
   } deriving Show
 
 newtype ModuleSuffix = ModuleSuffix { textSuffix :: Text }
@@ -57,9 +56,6 @@ newtype FileSuffix = FileSuffix { textFileSuffix :: Text }
 
 newtype TextPath = TextPath { textPath :: Text }
   deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
-
-newtype IsTemplate = IsTemplate Bool
-  deriving newtype (Bounded, Enum, Eq, Ord, Read, Show)
 
 data TypeCategory
   = ReturnValue
