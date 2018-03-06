@@ -12,7 +12,7 @@ function build_structs {
       sed -i '' 's/^#synonym_t.*//g' ${FILENAME}.hsc
       hsc2hs ${FILENAME}.hsc -o ${FILENAME}.hs
       sed -i '' '/.*LINE.*/d' ${FILENAME}.hs
-      sed -i '' "s/${FILENAME}/Torch.Types.${LIB}.Structs/" ${FILENAME}.hsc
+      sed -i '' "s/${FILENAME}/Structs/" ${FILENAME}.hs
       mkdir -p Torch/Types/${LIB}
       mv ${FILENAME}.hs Torch/Types/${LIB}/Structs.hs
       rm ./${FILENAME}.hsc
@@ -24,7 +24,7 @@ function build_structs {
       sed -i 's/^#synonym_t.*//g' ${FILENAME}.hsc
       hsc2hs ${FILENAME}.hsc -o ${FILENAME}.hs
       sed -i '/.*LINE.*/d' ${FILENAME}.hs
-      sed -i "s/${FILENAME}/Torch.Types.${LIB}.Structs/" ${FILENAME}.hsc
+      sed -i -e "s/${FILENAME}/Structs/" ${FILENAME}.hs
       mkdir -p Torch/Types/${LIB}
       mv ${FILENAME}.hs Torch/Types/${LIB}/Structs.hs
       rm ./${FILENAME}.hsc
@@ -37,11 +37,13 @@ function build_structs {
 }
 
 # Build TorchStructs.hsc
-c2hsc th_structs.h
+c2hsc --gcc $(command -v gcc) --prefix Torch.Types.TH --verbose th_structs.h
 build_structs ThStructs TH
 
-# Build Cuda structs
-c2hsc thc_structs.h
-build_structs ThcStructs THC
+if command -v nvcc &> /dev/null; then
+  # Build Cuda structs
+  c2hsc --gcc $(command -v nvcc) --prefix Torch.Types.THC --verbose thc_structs.h
+  build_structs ThcStructs THC
+fi
 
 echo "Done"
