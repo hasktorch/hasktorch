@@ -1,5 +1,12 @@
 #include <stddef.h>
 
+// https://github.com/torch/torch7/blob/master/lib/TH/THGeneral.h.in#L46
+#define TH_DESC_BUFF_LEN 64
+typedef struct {
+      char str[TH_DESC_BUFF_LEN];
+} THDescBuff;
+
+
 /*
   Concrete types
 */
@@ -189,3 +196,4 @@ typedef struct THShortTensor
   int refcount;
   char flag;
 } THShortTensor;
+
