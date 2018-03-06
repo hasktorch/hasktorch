@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
-module Torch.Types.Structs where
 
+
+module ThStructs where
 import Foreign.Ptr
 import Foreign.Ptr (Ptr,FunPtr,plusPtr)
 import Foreign.Ptr (wordPtrToPtr,castPtrToFunPtr)
@@ -13,11 +14,34 @@ import Data.Int
 import Data.Word
 
 
+{- typedef struct {
+            char str[64];
+        } THDescBuff; -}
+
+
+data C'THDescBuff = C'THDescBuff{
+  c'THDescBuff'str :: [CChar]
+} deriving (Eq,Show)
+p'THDescBuff'str p = plusPtr p 0
+p'THDescBuff'str :: Ptr (C'THDescBuff) -> Ptr (CChar)
+instance Storable C'THDescBuff where
+  sizeOf _ = 64
+  alignment _ = 1
+  peek _p = do
+    v0 <- let s0 = div 64 $ sizeOf $ (undefined :: CChar) in peekArray s0 (plusPtr _p 0)
+    return $ C'THDescBuff v0
+  poke _p (C'THDescBuff v0) = do
+    let s0 = div 64 $ sizeOf $ (undefined :: CChar)
+    pokeArray (plusPtr _p 0) (take s0 v0)
+    return ()
+
 {- typedef struct THAllocator {
             void * (* malloc)(void *, ptrdiff_t);
             void * (* realloc)(void *, void *, ptrdiff_t);
             void (* free)(void *, void *);
         } THAllocator; -}
+
+
 
 
 data C'THAllocator = C'THAllocator{

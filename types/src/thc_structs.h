@@ -1,4 +1,6 @@
 #include <stddef.h>
+#include <cuda.h>
+/* #include <cuda_runtime_api.h> */
 
 
 // https://github.com/torch/cutorch/blob/e2051b652d5b1f5182a1bfce11da9f53c2f92bd8/lib/THC/THCTensorRandom.h
@@ -16,18 +18,20 @@ typedef struct THCRNGState {
   int num_devices;
 } THCRNGState;
 
-
-// https://github.com/torch/cutorch/blob/79e393bade08b0090df8016bff56173a4a7f4845/lib/THC/THCStream.h
-typedef struct THCStream
-{
-  cudaStream_t stream;
-  int device;
-  int refcount;
-};
-
+/* Put this one on ice for now
+ * // https://github.com/torch/cutorch/blob/79e393bade08b0090df8016bff56173a4a7f4845/lib/THC/THCStream.h
+ * typedef struct THCStream
+ * {
+ *   cudaStream_t stream;
+ *   int device;
+ *   int refcount;
+ * };
+ *
+ */
 
 // https://github.com/torch/cutorch/blob/ec93ff7b486274e248aa7156af7c8a1f16281e24/lib/THC/THCTensor.h
-typedef struct THC_CLASS THCDescBuff
+#define THC_DESC_BUFF_LEN 64
+typedef struct THCDescBuff
 {
   char str[THC_DESC_BUFF_LEN];
 } THCDescBuff;
