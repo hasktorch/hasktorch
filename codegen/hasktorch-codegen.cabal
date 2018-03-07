@@ -21,7 +21,7 @@ library
     , containers >=0.5.7
     , directory >= 1.0.0
     , hashable >=1.0.1.1
-    , megaparsec >=5.3
+    , megaparsec >=5.3 && < 7.0
     , pretty-show >=1.6.13
     , text >=1.2.2.2
     , unordered-containers >=0.1.3.0
@@ -50,56 +50,54 @@ executable ht-codegen
   other-modules: CLIOptions
   build-depends:
       base >=4.7 && <5
-    , containers >=0.5.7
-    , hashable >=1.0.1.1
+    -- , containers >=0.5.7
+    -- , hashable >=1.0.1.1
     , hasktorch-codegen
-    , megaparsec >=5.3
+    -- , megaparsec >=5.3
     , pretty-show >=1.6.13
-    , text >=1.2.2.2
-    , unordered-containers >=0.1.3.0
+    -- , text >=1.2.2.2
+    -- , unordered-containers >=0.1.3.0
     -- not sure which version yet:
     , optparse-applicative
 
-executable aten-process-spec
-  main-is: ProcessSpec.hs
-  hs-source-dirs:
-      exe/aten
-  default-extensions: LambdaCase OverloadedStrings
-  build-depends:
-      aeson >=1.1
-    , aeson-pretty >=0.8.5
-    , base >=4.7 && <5
-    , bytestring >=0.10.8
-    , containers >=0.5.7
-    , hashable >=1.0.1.1
-    , megaparsec >=5.3
-    , pretty-show >=1.6.13
-    , singletons >=2.2
-    , text >=1.2.2.2
-    , unordered-containers >=0.1.3.0
-    , yaml >=0.8.25
-  other-modules:
-      Paths_hasktorch_codegen
-  default-language: Haskell2010
+-- executable aten-process-spec
+--   main-is: ProcessSpec.hs
+--   hs-source-dirs:
+--       exe/aten
+--   default-extensions: LambdaCase OverloadedStrings
+--   build-depends:
+--       aeson >=1.1
+--     , aeson-pretty >=0.8.5
+--     , base >=4.7 && <5
+--     , bytestring >=0.10.8
+--     , containers >=0.5.7
+--     , hashable >=1.0.1.1
+--     , megaparsec >=5.3
+--     , pretty-show >=1.6.13
+--     , singletons >=2.2
+--     , text >=1.2.2.2
+--     , unordered-containers >=0.1.3.0
+--     , yaml >=0.8.25
+--   other-modules:
+--       Paths_hasktorch_codegen
+--   default-language: Haskell2010
 
 test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
-  hs-source-dirs:
-      tests
+  hs-source-dirs: tests
   default-extensions: LambdaCase OverloadedStrings
   build-depends:
       QuickCheck
     , base >=4.7 && <5
     , containers >=0.5.7
-    , hashable >=1.0.1.1
     , hasktorch-codegen
     , hspec
+    , hspec-discover
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
-    , unordered-containers >=0.1.3.0
   other-modules:
-      CodeGenParseSpec
+      CodeGen.ParseSpec
       Paths_hasktorch_codegen
   default-language: Haskell2010

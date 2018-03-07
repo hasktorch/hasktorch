@@ -7,7 +7,7 @@ module CodeGen.Prelude
 
 import Prelude         as X
 import Control.Monad   as X (guard, void)
-
+import Control.Monad.IO.Class as X (liftIO)
 import Data.Char       as X (toLower)
 import Data.Either     as X (either)
 import Data.Foldable   as X (asum)
@@ -21,7 +21,7 @@ import Data.Text       as X (Text)
 import Data.Void       as X (Void)
 import Debug.Trace     as X
 import Text.Megaparsec as X
-  (ParseError, runParser, Parsec, ParsecT, (<|>), lookAhead, try, some, optional)
+  (ParseError, runParser, Parsec, ParsecT, (<|>), choice, lookAhead, try, some, skipMany, optional, eof, many, atEnd)
 import Text.Megaparsec.Char as X
 import GHC.Exts        as X (IsString(..))
 import GHC.Generics    as X (Generic)

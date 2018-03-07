@@ -21,7 +21,6 @@ data CType
   | CFloat
   | CDouble
   | CLong
-  | CInt
 
   | CUInt64
   | CUInt32
@@ -32,6 +31,8 @@ data CType
   | CInt32
   | CInt16
   | CInt8
+
+  | CInt -- must come _after_ all the other int types
 
   | CSize
   | CChar

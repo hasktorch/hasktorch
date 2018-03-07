@@ -117,7 +117,7 @@ writeHaskellModule parsedBindings makeConfig templateType
   outDir = textPath (modOutDir modSpec) <> "/" <> type2hsreal templateType <> "/"
 
   numFunctions :: Int
-  numFunctions = length
+  numFunctions = trace (show $ length (bindings modSpec)) $ length
     $ checkList (bindings modSpec) (typeTemplate modSpec)
 
 -- ----------------------------------------
@@ -129,9 +129,10 @@ cleanList :: Either (ParseError Char Void) [Maybe Function] -> [Function]
 cleanList = either (const []) catMaybes
 
 parseFile :: LibType -> CodeGenType -> String -> IO [Function]
-parseFile lt cgt file = do
+parseFile _ _ file = do
   putStrLn $ "\nParsing " ++ file ++ " ... "
-  res <- parseFromFile (CG.parser lt cgt) file
+  readFile file >>= print
+  res <- parseFromFile CG.parser file
   pure $ cleanList res
  where
   parseFromFile

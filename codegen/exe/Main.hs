@@ -32,8 +32,8 @@ run os = do
     ]
 
   case lib of
-    TH -> mapM_ (runTHPipeline os) (files lib gentype)
-    THC -> mapM_ (runTHPipeline os) (files lib gentype)
+    TH -> mapM_ (runPipeline os) (take 1 $ files lib gentype)
+    THC -> mapM_ (runPipeline os) (files lib gentype)
     lib -> putStrLn $ "Code generation not enabled for " ++ show lib
 
   when (verbose os) $ putStrLn "Done"
@@ -46,15 +46,15 @@ run os = do
   gentype = codegenType os
 
 
-runTHPipeline
+runPipeline
   :: Options
-  -> (String, TemplateType -> [THFunction] -> HModule)
+  -> (String, TemplateType -> [Function] -> HModule)
   -> IO ()
-runTHPipeline os (headerPath, makeModuleConfig) = do
+runPipeline os (headerPath, makeModuleConfig) = do
   -- TODO: @nub@ is a hack until proper treatment of
   --       conditioned templates is implemented
-  bindingsUniq <- nub <$> parseFile (codegenType os) headerPath
-  
+  bindingsUniq <- nub <$> parseFile (libraries os) (codegenType os) headerPath
+
   when (verbose os) $ do
     putStrLn $ "First signature of " ++ show (length bindingsUniq)
     putStrLn $ ppShow (take 1 bindingsUniq)
@@ -69,21 +69,4 @@ runTHPipeline os (headerPath, makeModuleConfig) = do
   typeList = generatedTypes (codegenType os)
 
 
-{-
--- generic tests
-testString :: String -> Parser [Maybe THFunction] -> IO ()
-testString inp parser =
-  case parse parser "" inp of
-    Left err -> putStrLn (parseErrorPretty err)
-    Right val -> putStrLn (ppShow val)
 
-check :: IO ()
-check = testString exampleText thParseGeneric
-  where
-    exampleText :: String
-    exampleText = intercalate "\n"
-      [ "skip this garbage line line"
-      , "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
-      , "another garbage line ( )@#R @# 324 32"
-      ]
--}

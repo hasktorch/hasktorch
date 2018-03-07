@@ -1,10 +1,12 @@
-module CodeGen.Parse
-  ( Parser
-  , parser
-  , Parsable(..)
-  , Arg(..)
-  , Function(..)
-  ) where
+{-# LANGUAGE ScopedTypeVariables #-}
+module CodeGen.Parse where
+  -- ( Parser
+  -- , parser
+  -- , functionConcrete
+  -- , Parsable(..)
+  -- , Arg(..)
+  -- , Function(..)
+  -- ) where
 
 import CodeGen.Prelude
 import CodeGen.Types
@@ -22,98 +24,82 @@ ptr = void (space >> char '*')
 ptr2 :: Parser ()
 ptr2 = ptr >> ptr
 
--------------------------------------------------------------------------------
+nntypes :: Parser Parsable
+nntypes = forLibraries go
+ where
+  go :: LibType -> Parser Parsable
+  go = genericParsers NNType . C.renderNNType
 
-ctypePtrPtr :: Parser Parsable
-ctypePtrPtr = fmap (Ptr . Ptr . CType) ctypes <* ptr2
+tentypes :: Parser Parsable
+tentypes = forLibraries go
+ where
+  go :: LibType -> Parser Parsable
+  go = genericParsers TenType . C.renderTenType
 
-tentypePtrPtr, nntypePtrPtr :: LibType -> Parser Parsable
-tentypePtrPtr lt = fmap (Ptr . Ptr . TenType) (tentypes lt) <* ptr2
-nntypePtrPtr  lt = fmap (Ptr . Ptr . NNType)  (nntypes lt)  <* ptr2
+ctypes :: Parser Parsable
+ctypes = genericParsers CType C.renderCType
 
-ctypePtr :: Parser Parsable
-ctypePtr = fmap (Ptr . CType) ctypes <* ptr
+typeParser :: (x -> Text) -> x -> Parser x
+typeParser render t = string (T.unpack $ render t) >> pure t
 
-tentypePtr, nntypePtr :: LibType -> Parser Parsable
-tentypePtr lt = fmap (Ptr . Ptr . TenType) (tentypes lt) <* ptr
-nntypePtr  lt = fmap (Ptr . Ptr . NNType)  (nntypes lt)  <* ptr
+-- | build a parser that will try to find the double-pointer- or pointer- variant first.
+genericParsers :: forall x . (Enum x, Bounded x) => (x -> Parsable) -> (x -> Text) -> Parser Parsable
+genericParsers cons render = asum $ map goAll [minBound..maxBound :: x]
+ where
+  goAll :: x -> Parser Parsable
+  goAll x
+    -- search for any double pointer first
+    =   try ((Ptr . Ptr) <$> (go1 x <* ptr2))
 
-ctypes :: Parser CType
-ctypes
-  = asum
-  . flip map [minBound..maxBound::CType] $
-  (\ctype -> string (T.unpack $ C.renderCType ctype) >> pure ctype)
+    -- then any pointer
+    <|> try ((Ptr)       <$> (go1 x <* ptr))
 
-tentypes :: LibType -> Parser TenType
-tentypes lt
-  = asum
-  . flip map [minBound..maxBound::TenType] $
-  (\ctype -> string (T.unpack $ C.renderTenType lt ctype) >> pure ctype)
+    -- finally, all of our concrete types and wrap them in the Parsable format
+    <|> try (go1 x)
 
-nntypes :: LibType -> Parser NNType
-nntypes lt
-  = asum
-  . flip map [minBound..maxBound::NNType] $
-  (\ctype -> string (T.unpack $ C.renderNNType lt ctype) >> pure ctype)
+  go1 :: x -> Parser Parsable
+  go1 = fmap cons . typeParser render
+
+-- | parse a library-dependent parser across all of our supported libraries
+forLibraries :: (LibType -> Parser x) -> Parser x
+forLibraries go = asum (map go supportedLibraries)
 
 -------------------------------------------------------------------------------
 
 parsabletypes :: Parser Parsable
 parsabletypes
-  = typeModifier
-  >> asum (map (\lt ->
-    -- search for any double pointer first
-        nntypePtrPtr lt
-    <|> tentypePtrPtr lt
-    <|> ctypePtrPtr
-
-    -- then any pointer
-    <|> nntypePtr lt
-    <|> tentypePtr lt
-    <|> ctypePtr
-
-    -- finally, all of our concrete types and wrap them in the Parsable format
-    <|> fmap NNType  (nntypes lt)
-    <|> fmap TenType (tentypes lt)
-    <|> fmap CType ctypes
-  ) supportedLibraries )
-
+  = do
+  typeModifier
+  try tentypes <|> try nntypes <|> ctypes
  where
   typeModifier :: Parser ()
-  typeModifier
-    =   void (string "const ")
-    <|> void (string "unsigned ")
-    <|> void (string "struct ")
+  typeModifier =
+        void (try (string "const "))
+    <|> void (try (string "unsigned "))
+    <|> void (try (string "struct "))
     <|> space
 
 
 -------------------------------------------------------------------------------
 
 -- Landmarks
-
-api :: LibType -> Parser ()
-api lt = string (show lt <> "_API") >> space
+api :: Parser ()
+api = forLibraries go
+ where
+  go :: LibType -> Parser ()
+  go lt = void $ try (string (show lt <> "_API"))
 
 semicolon :: Parser ()
 semicolon = void (char ';')
 
--- Function signatures
-
--- functionArgVoid :: Parser Arg
--- functionArgVoid = do
---   string "void"
---   space
---   lookAhead (char ')')
---   pure (Arg (CType CVoid) "")
-
 functionArg :: Parser Arg
 functionArg = do
-  argType <- parsabletypes
   space
-  try (string "volatile" >> space)
+  optional $ try (string "volatile" <|> string "const") <* space1
+  argType <- parsabletypes <* space
   -- e.g. declaration sometimes has no variable name - eg Storage.h
-  argName <- some (alphaNumChar <|> char '_') <|> string ""
-  space >> try (char ',') >> space
+  argName <- some (alphaNumChar <|> char '_') <* space
+  (try (char ',') <|> lookAhead (char ')'))
   pure $ Arg argType (T.pack argName)
 
 -- functionArg :: Parser Arg
@@ -131,69 +117,50 @@ genericPrefixes = void $ asum (foldMap go supportedLibraries)
   go :: LibType -> [Parser String]
   go lt = map (prefix lt) ["Tensor", "Blas", "Lapack", "Storage", "Vector", ""]
 
-functionTemplate :: LibType -> Parser (Maybe Function)
-functionTemplate lt = do
-  api lt >> space
+function :: Parser (Maybe Function)
+function = do
+  optional (api >> space)
   funReturn' <- parsabletypes <* space
-
-  genericPrefixes
-  funName' <- some (alphaNumChar <|> char '_') <* space
-  string ")" >> space
-
-  funArgs' <- functionArgs <* semicolon
-  void $ optional (try comment)
+  funName' <- choice [ try genericName, concreteName ]
+  funArgs' <- functionArgs <* space <* semicolon
+  optional (try comment)
   pure . pure $ Function (T.pack funName') funArgs' funReturn'
+ where
+  genericName :: Parser String
+  genericName = genericPrefixes >> concreteName <* string ")" <* space
 
-{-
+  concreteName :: Parser String
+  concreteName = some (alphaNumChar <|> char '_') <* space
+
 inlineComment :: Parser ()
 inlineComment = do
-  some space
+  space
   string "//"
   some (alphaNumChar <|> char '_' <|> char ' ')
-  eol <|> (some (notChar '\n') >> eol)
-  pure ()
--}
+  void $ eol <|> (some (notChar '\n') >> eol)
 
-
+-- | skip over a _single-line_ of block comment -- something which seems standard in the libTH.
 comment :: Parser ()
-comment = space >>
-  void (string "/*" *> some (alphaNumChar <|> char '_' <|> char ' ') <* string "*/")
+comment = space >> void (string "/*" *> some (alphaNumChar <|> char '_' <|> char ' ') <* string "*/")
 
-functionConcrete :: Parser (Maybe Function)
-functionConcrete = do
-  funReturn' <- parsabletypes <* space
-  funName'   <- some (alphaNumChar <|> char '_') <* space
-  funArgs'   <- functionArgs <* semicolon
-  void (optional (try comment))
-  pure . Just $ Function (T.pack funName') funArgs' funReturn'
+-- | run a parser to find all possible functions, returning one maybe type per-line.
+parser :: Parser [Maybe Function]
+parser = some (try constant <|> try function <|> skip)
 
-
--- TODO - exclude TH_API prefix. Parse should crash if TH_API parse is invalid
-skip :: Parser (Maybe Function)
-skip =
-  (eol <|> (some (notChar '\n') >> eol))
-  >> pure Nothing
-
+-- | returns a Maybe Function because we actually don't care about constants when generating FFI code.
 constant :: Parser (Maybe Function)
 constant = do
   -- THLogAdd has constants, these are not surfaced
   string "const" >> space
-  parsabletypes  >> space
+  parsabletypes >> space
   some (alphaNumChar <|> char '_') >> semicolon
   pure Nothing
 
--- thItem :: Parser (Maybe Function)
--- thItem = try thConstant <|> thFunctionTemplate <|> thSkip
+-- | Skip a line because we have failed to find a function
+skip :: Parser (Maybe Function)
+skip = do
+  (not <$> atEnd) >>= guard
+  void $ many (notChar '\n') <* (void eol <|> eof)
+  pure Nothing
 
--- NOTE: ordering is important for parsers
-parser :: LibType -> CodeGenType -> Parser [Maybe Function]
-parser lt = \case
-  GenericFiles -> go (functionTemplate lt)
-  ConcreteFiles -> go functionConcrete
- where
-  go :: Parser (Maybe Function) -> Parser [Maybe Function]
-  go funpar = some
-    $   try (api lt >> pure Nothing)
-    <|> try constant
-    <|> funpar
-    <|> skip
+
