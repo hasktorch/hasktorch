@@ -204,9 +204,9 @@ foreign import ccall "THFile.h THFile_pedantic"
 foreign import ccall "THFile.h THFile_clearError"
   c_THFile_clearError :: Ptr (CTHFile) -> IO (())
 
--- | c_THFile_readByteScalar :  self -> int8_t
+-- | c_THFile_readByteScalar :  self -> uint8_t
 foreign import ccall "THFile.h THFile_readByteScalar"
-  c_THFile_readByteScalar :: Ptr (CTHFile) -> IO (CSChar)
+  c_THFile_readByteScalar :: Ptr (CTHFile) -> IO (CUChar)
 
 -- | c_THFile_readCharScalar :  self -> int8_t
 foreign import ccall "THFile.h THFile_readCharScalar"
@@ -218,7 +218,7 @@ foreign import ccall "THFile.h THFile_readShortScalar"
 
 -- | c_THFile_readIntScalar :  self -> int32_t
 foreign import ccall "THFile.h THFile_readIntScalar"
-  c_THFile_readIntScalar :: Ptr (CTHFile) -> IO (Int)
+  c_THFile_readIntScalar :: Ptr (CTHFile) -> IO (CInt)
 
 -- | c_THFile_readLongScalar :  self -> int64_t
 foreign import ccall "THFile.h THFile_readLongScalar"
@@ -234,7 +234,7 @@ foreign import ccall "THFile.h THFile_readDoubleScalar"
 
 -- | c_THFile_writeByteScalar :  self scalar -> void
 foreign import ccall "THFile.h THFile_writeByteScalar"
-  c_THFile_writeByteScalar :: Ptr (CTHFile) -> CSChar -> IO (())
+  c_THFile_writeByteScalar :: Ptr (CTHFile) -> CUChar -> IO (())
 
 -- | c_THFile_writeCharScalar :  self scalar -> void
 foreign import ccall "THFile.h THFile_writeCharScalar"
@@ -246,7 +246,7 @@ foreign import ccall "THFile.h THFile_writeShortScalar"
 
 -- | c_THFile_writeIntScalar :  self scalar -> void
 foreign import ccall "THFile.h THFile_writeIntScalar"
-  c_THFile_writeIntScalar :: Ptr (CTHFile) -> Int -> IO (())
+  c_THFile_writeIntScalar :: Ptr (CTHFile) -> CInt -> IO (())
 
 -- | c_THFile_writeLongScalar :  self scalar -> void
 foreign import ccall "THFile.h THFile_writeLongScalar"
@@ -318,7 +318,7 @@ foreign import ccall "THFile.h THFile_writeDouble"
 
 -- | c_THFile_readByteRaw :  self data n -> size_t
 foreign import ccall "THFile.h THFile_readByteRaw"
-  c_THFile_readByteRaw :: Ptr (CTHFile) -> Ptr (CSChar) -> CSize -> IO (CSize)
+  c_THFile_readByteRaw :: Ptr (CTHFile) -> Ptr (CUChar) -> CSize -> IO (CSize)
 
 -- | c_THFile_readCharRaw :  self data n -> size_t
 foreign import ccall "THFile.h THFile_readCharRaw"
@@ -330,7 +330,7 @@ foreign import ccall "THFile.h THFile_readShortRaw"
 
 -- | c_THFile_readIntRaw :  self data n -> size_t
 foreign import ccall "THFile.h THFile_readIntRaw"
-  c_THFile_readIntRaw :: Ptr (CTHFile) -> Ptr (Int) -> CSize -> IO (CSize)
+  c_THFile_readIntRaw :: Ptr (CTHFile) -> Ptr (CInt) -> CSize -> IO (CSize)
 
 -- | c_THFile_readLongRaw :  self data n -> size_t
 foreign import ccall "THFile.h THFile_readLongRaw"
@@ -350,7 +350,7 @@ foreign import ccall "THFile.h THFile_readStringRaw"
 
 -- | c_THFile_writeByteRaw :  self data n -> size_t
 foreign import ccall "THFile.h THFile_writeByteRaw"
-  c_THFile_writeByteRaw :: Ptr (CTHFile) -> Ptr (CSChar) -> CSize -> IO (CSize)
+  c_THFile_writeByteRaw :: Ptr (CTHFile) -> Ptr (CUChar) -> CSize -> IO (CSize)
 
 -- | c_THFile_writeCharRaw :  self data n -> size_t
 foreign import ccall "THFile.h THFile_writeCharRaw"
@@ -362,7 +362,7 @@ foreign import ccall "THFile.h THFile_writeShortRaw"
 
 -- | c_THFile_writeIntRaw :  self data n -> size_t
 foreign import ccall "THFile.h THFile_writeIntRaw"
-  c_THFile_writeIntRaw :: Ptr (CTHFile) -> Ptr (Int) -> CSize -> IO (CSize)
+  c_THFile_writeIntRaw :: Ptr (CTHFile) -> Ptr (CInt) -> CSize -> IO (CSize)
 
 -- | c_THFile_writeLongRaw :  self data n -> size_t
 foreign import ccall "THFile.h THFile_writeLongRaw"
@@ -398,11 +398,11 @@ foreign import ccall "THFile.h THFile_writeHalf"
 
 -- | c_THFile_readHalfRaw :  self data size -> size_t
 foreign import ccall "THFile.h THFile_readHalfRaw"
-  c_THFile_readHalfRaw :: Ptr (CTHFile) -> Ptr CTHHalf -> CSize -> IO (CSize)
+  c_THFile_readHalfRaw :: Ptr (CTHFile) -> Ptr (CTHHalf) -> CSize -> IO (CSize)
 
 -- | c_THFile_writeHalfRaw :  self data size -> size_t
 foreign import ccall "THFile.h THFile_writeHalfRaw"
-  c_THFile_writeHalfRaw :: Ptr (CTHFile) -> Ptr CTHHalf -> CSize -> IO (CSize)
+  c_THFile_writeHalfRaw :: Ptr (CTHFile) -> Ptr (CTHHalf) -> CSize -> IO (CSize)
 
 -- | c_THFile_synchronize :  self -> void
 foreign import ccall "THFile.h THFile_synchronize"
@@ -484,9 +484,9 @@ foreign import ccall "THFile.h &THFile_pedantic"
 foreign import ccall "THFile.h &THFile_clearError"
   p_THFile_clearError :: FunPtr (Ptr (CTHFile) -> IO (()))
 
--- | p_THFile_readByteScalar : Pointer to function : self -> int8_t
+-- | p_THFile_readByteScalar : Pointer to function : self -> uint8_t
 foreign import ccall "THFile.h &THFile_readByteScalar"
-  p_THFile_readByteScalar :: FunPtr (Ptr (CTHFile) -> IO (CSChar))
+  p_THFile_readByteScalar :: FunPtr (Ptr (CTHFile) -> IO (CUChar))
 
 -- | p_THFile_readCharScalar : Pointer to function : self -> int8_t
 foreign import ccall "THFile.h &THFile_readCharScalar"
@@ -498,7 +498,7 @@ foreign import ccall "THFile.h &THFile_readShortScalar"
 
 -- | p_THFile_readIntScalar : Pointer to function : self -> int32_t
 foreign import ccall "THFile.h &THFile_readIntScalar"
-  p_THFile_readIntScalar :: FunPtr (Ptr (CTHFile) -> IO (Int))
+  p_THFile_readIntScalar :: FunPtr (Ptr (CTHFile) -> IO (CInt))
 
 -- | p_THFile_readLongScalar : Pointer to function : self -> int64_t
 foreign import ccall "THFile.h &THFile_readLongScalar"
@@ -514,7 +514,7 @@ foreign import ccall "THFile.h &THFile_readDoubleScalar"
 
 -- | p_THFile_writeByteScalar : Pointer to function : self scalar -> void
 foreign import ccall "THFile.h &THFile_writeByteScalar"
-  p_THFile_writeByteScalar :: FunPtr (Ptr (CTHFile) -> CSChar -> IO (()))
+  p_THFile_writeByteScalar :: FunPtr (Ptr (CTHFile) -> CUChar -> IO (()))
 
 -- | p_THFile_writeCharScalar : Pointer to function : self scalar -> void
 foreign import ccall "THFile.h &THFile_writeCharScalar"
@@ -526,7 +526,7 @@ foreign import ccall "THFile.h &THFile_writeShortScalar"
 
 -- | p_THFile_writeIntScalar : Pointer to function : self scalar -> void
 foreign import ccall "THFile.h &THFile_writeIntScalar"
-  p_THFile_writeIntScalar :: FunPtr (Ptr (CTHFile) -> Int -> IO (()))
+  p_THFile_writeIntScalar :: FunPtr (Ptr (CTHFile) -> CInt -> IO (()))
 
 -- | p_THFile_writeLongScalar : Pointer to function : self scalar -> void
 foreign import ccall "THFile.h &THFile_writeLongScalar"
@@ -598,7 +598,7 @@ foreign import ccall "THFile.h &THFile_writeDouble"
 
 -- | p_THFile_readByteRaw : Pointer to function : self data n -> size_t
 foreign import ccall "THFile.h &THFile_readByteRaw"
-  p_THFile_readByteRaw :: FunPtr (Ptr (CTHFile) -> Ptr (CSChar) -> CSize -> IO (CSize))
+  p_THFile_readByteRaw :: FunPtr (Ptr (CTHFile) -> Ptr (CUChar) -> CSize -> IO (CSize))
 
 -- | p_THFile_readCharRaw : Pointer to function : self data n -> size_t
 foreign import ccall "THFile.h &THFile_readCharRaw"
@@ -610,7 +610,7 @@ foreign import ccall "THFile.h &THFile_readShortRaw"
 
 -- | p_THFile_readIntRaw : Pointer to function : self data n -> size_t
 foreign import ccall "THFile.h &THFile_readIntRaw"
-  p_THFile_readIntRaw :: FunPtr (Ptr (CTHFile) -> Ptr (Int) -> CSize -> IO (CSize))
+  p_THFile_readIntRaw :: FunPtr (Ptr (CTHFile) -> Ptr (CInt) -> CSize -> IO (CSize))
 
 -- | p_THFile_readLongRaw : Pointer to function : self data n -> size_t
 foreign import ccall "THFile.h &THFile_readLongRaw"
@@ -630,7 +630,7 @@ foreign import ccall "THFile.h &THFile_readStringRaw"
 
 -- | p_THFile_writeByteRaw : Pointer to function : self data n -> size_t
 foreign import ccall "THFile.h &THFile_writeByteRaw"
-  p_THFile_writeByteRaw :: FunPtr (Ptr (CTHFile) -> Ptr (CSChar) -> CSize -> IO (CSize))
+  p_THFile_writeByteRaw :: FunPtr (Ptr (CTHFile) -> Ptr (CUChar) -> CSize -> IO (CSize))
 
 -- | p_THFile_writeCharRaw : Pointer to function : self data n -> size_t
 foreign import ccall "THFile.h &THFile_writeCharRaw"
@@ -642,7 +642,7 @@ foreign import ccall "THFile.h &THFile_writeShortRaw"
 
 -- | p_THFile_writeIntRaw : Pointer to function : self data n -> size_t
 foreign import ccall "THFile.h &THFile_writeIntRaw"
-  p_THFile_writeIntRaw :: FunPtr (Ptr (CTHFile) -> Ptr (Int) -> CSize -> IO (CSize))
+  p_THFile_writeIntRaw :: FunPtr (Ptr (CTHFile) -> Ptr (CInt) -> CSize -> IO (CSize))
 
 -- | p_THFile_writeLongRaw : Pointer to function : self data n -> size_t
 foreign import ccall "THFile.h &THFile_writeLongRaw"
@@ -678,11 +678,11 @@ foreign import ccall "THFile.h &THFile_writeHalf"
 
 -- | p_THFile_readHalfRaw : Pointer to function : self data size -> size_t
 foreign import ccall "THFile.h &THFile_readHalfRaw"
-  p_THFile_readHalfRaw :: FunPtr (Ptr (CTHFile) -> Ptr CTHHalf -> CSize -> IO (CSize))
+  p_THFile_readHalfRaw :: FunPtr (Ptr (CTHFile) -> Ptr (CTHHalf) -> CSize -> IO (CSize))
 
 -- | p_THFile_writeHalfRaw : Pointer to function : self data size -> size_t
 foreign import ccall "THFile.h &THFile_writeHalfRaw"
-  p_THFile_writeHalfRaw :: FunPtr (Ptr (CTHFile) -> Ptr CTHHalf -> CSize -> IO (CSize))
+  p_THFile_writeHalfRaw :: FunPtr (Ptr (CTHFile) -> Ptr (CTHHalf) -> CSize -> IO (CSize))
 
 -- | p_THFile_synchronize : Pointer to function : self -> void
 foreign import ccall "THFile.h &THFile_synchronize"

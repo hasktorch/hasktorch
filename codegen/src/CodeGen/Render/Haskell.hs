@@ -50,7 +50,7 @@ renderCType = \case
   CUInt64 -> "CULong"
   CUInt32 -> "CUInt"
   CUInt16 -> "CUShort"
-  CUInt8  -> "CBool"
+  CUInt8  -> "CUChar"
   CInt64  -> "CLLong"
   CInt32  -> "CInt"
   CInt16  -> "CShort"
