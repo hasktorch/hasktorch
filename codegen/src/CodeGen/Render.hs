@@ -130,7 +130,6 @@ cleanList = either (const []) catMaybes
 parseFile :: LibType -> CodeGenType -> String -> IO [Function]
 parseFile _ _ file = do
   putStrLn $ "\nParsing " ++ file ++ " ... "
-  readFile file >>= print
   res <- parseFromFile CG.parser file
   pure $ cleanList res
  where

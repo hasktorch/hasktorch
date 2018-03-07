@@ -17,7 +17,7 @@ data Parsable
 data CType
   = CBool
   | CVoid
-  | CPtrDiff
+  | CPtrdiff
   | CFloat
   | CDouble
   | CLong

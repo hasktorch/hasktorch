@@ -44,7 +44,7 @@ renderCType = \case
   CShort   -> "short"
   CFloat   -> "float"
   CDouble  -> "double"
-  CPtrDiff -> "ptrdiff_t"
+  CPtrdiff -> "ptrdiff_t"
   CVoid    -> "void"
   CBool    -> "bool"
 
