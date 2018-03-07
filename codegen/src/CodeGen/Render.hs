@@ -117,8 +117,7 @@ writeHaskellModule parsedBindings makeConfig templateType
   outDir = textPath (modOutDir modSpec) <> "/" <> type2hsreal templateType <> "/"
 
   numFunctions :: Int
-  numFunctions = trace (show $ length (bindings modSpec)) $ length
-    $ checkList (bindings modSpec) (typeTemplate modSpec)
+  numFunctions = length $ checkList (bindings modSpec) (typeTemplate modSpec)
 
 -- ----------------------------------------
 -- Execution

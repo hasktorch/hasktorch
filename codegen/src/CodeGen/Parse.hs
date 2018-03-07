@@ -98,9 +98,9 @@ functionArg = do
   optional $ try (string "volatile" <|> string "const") <* space1
   argType <- parsabletypes <* space
   -- e.g. declaration sometimes has no variable name - eg Storage.h
-  argName <- some (alphaNumChar <|> char '_') <* space
+  argName <- optional $ some (alphaNumChar <|> char '_') <* space
   (try (char ',') <|> lookAhead (char ')'))
-  pure $ Arg argType (T.pack argName)
+  pure $ Arg argType (maybe "" T.pack argName)
 
 -- functionArg :: Parser Arg
 -- functionArg = thFunctionArgNamed -- <|> thFunctionArgVoid
@@ -130,7 +130,7 @@ function = do
   genericName = genericPrefixes >> concreteName <* string ")" <* space
 
   concreteName :: Parser String
-  concreteName = some (alphaNumChar <|> char '_') <* space
+  concreteName = (some (alphaNumChar <|> char '_') <|> string "") <* space
 
 inlineComment :: Parser ()
 inlineComment = do

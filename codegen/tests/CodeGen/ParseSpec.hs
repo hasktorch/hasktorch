@@ -21,6 +21,8 @@ spec = do
   describe "the ptr parser" ptrSpec
   describe "the ptr2 parser" ptr2Spec
   describe "the ctypes parser" ctypesSpec
+  describe "the args parser" argsSpec
+  describe "the function parser" functionSpec
   describe "running the full parser" $ do
     describe "in concrete mode" fullConcreteParser
     describe "in generic mode" fullGenericParser
@@ -52,13 +54,8 @@ fullConcreteParser = do
   it "should return valid THLogAdd functions" $
     testCGParser thLogAddFunction `shouldBe` (Right [Just thLogAddFunctionRendered])
 
-  it "should return all functions in THFile" $ do
-    let res = testCGParser thFileContents
-    res `shouldSatisfy` isRight
-    let Right contents = res
-    length contents `shouldSatisfy` (== 155)
-    length (catMaybes contents) `shouldSatisfy` (== 70)
-    length (nub $ catMaybes contents) `shouldSatisfy` (== 70)
+  it "should return all functions in THFile" $
+    thFileContents `fullFileTest` (155, 70, 70)
 
 
 fullGenericParser :: Spec
@@ -69,11 +66,21 @@ fullGenericParser = do
   it "should return valid types for the example string with junk" $
     testCGParser (withAllJunk exampleGeneric) `shouldBe` (Right [Nothing, Just exampleGeneric', Nothing, Nothing])
 
-  it "should return valid types for THTensorCopy" $
-    pendingWith "need to get THTensorCopy code here"
+  it "should return all functions for THStorage" $
+    thGenericStorageContents `fullFileTest` (86, 22, 22)
 
   it "should return valid types for THNN" $
     pendingWith "we don't currently support THNN"
+
+fullFileTest :: String -> (Int, Int, Int) -> Expectation
+fullFileTest contents (all, found, uniq) = do
+  let res = testCGParser contents
+  res `shouldSatisfy` isRight
+  let Right contents = res
+  length contents `shouldSatisfy` (== all)
+  length (catMaybes contents) `shouldSatisfy` (== found)
+  length (nub $ catMaybes contents) `shouldSatisfy` (== uniq)
+
 
 skipSpec :: Spec
 skipSpec = do
@@ -133,6 +140,18 @@ ctypesSpec = do
         , ("int64_t **", Ptr (Ptr (CType CInt64)))
         , ("void   *   * ", Ptr (Ptr (CType CVoid)))
         ]
+argsSpec :: Spec
+argsSpec = do
+  it "will find arguments with no name" $
+    runParser' (char '(' >> functionArg) "(void)" `shouldBe` (Right (Arg (CType CVoid) ""))
+
+functionSpec :: Spec
+functionSpec = do
+  it "will find functions where the arguments have no name" $
+    runParser' function storageElementSize `shouldBe` (Right (Just storageElementSize'))
+
+-- ========================================================================= --
+
 
 exampleGeneric :: String
 exampleGeneric = "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
@@ -218,4 +237,42 @@ thFileContents = intercalate ""
   , "id THFile_seek(THFile *self, size_t position);\nTH_API void THFile_seekEnd(THFile *self);\nTH_AP"
   , "I size_t THFile_position(THFile *self);\nTH_API void THFile_close(THFile *self);\nTH_API void TH"
   , "File_free(THFile *self);\n\n#endif\n"
+  ]
+
+storageElementSize :: String
+storageElementSize = "TH_API size_t THStorage_(elementSize)(void);"
+
+storageElementSize' :: Function
+storageElementSize' = Function "elementSize" [ Arg (CType CVoid) "" ] (CType CSize)
+
+thGenericStorageContents :: String
+thGenericStorageContents = intercalate ""
+  [ "#ifndef TH_GENERIC_FILE\n#define TH_GENERIC_FILE \"generic/THStorage.h\"\n#else\n\n/* on pourra"
+  , "it avoir un liste chainee\n   qui initialise math, lab structures (or more).\n   mouais -- comp"
+  , "lique.\n\n   Pb: THMapStorage is kind of a class\n   THLab_()... comment je m'en sors?\n\n   en"
+  , " template, faudrait que je les instancie toutes!!! oh boy!\n   Et comment je sais que c'est pou"
+  , "r Cuda? Le type float est le meme dans les <>\n\n   au bout du compte, ca serait sur des pointe"
+  , "urs float/double... etc... = facile.\n   primitives??\n */\n\n#define TH_STORAGE_REFCOUNTED 1\n"
+  , "#define TH_STORAGE_RESIZABLE  2\n#define TH_STORAGE_FREEMEM    4\n#define TH_STORAGE_VIEW      "
+  , " 8\n\ntypedef struct THStorage\n{\n    real *data;\n    ptrdiff_t size;\n    int refcount;\n   "
+  , " char flag;\n    THAllocator *allocator;\n    void *allocatorContext;\n    struct THStorage *vi"
+  , "ew;\n} THStorage;\n\nTH_API real* THStorage_(data)(const THStorage*);\nTH_API ptrdiff_t THStora"
+  , "ge_(size)(const THStorage*);\nTH_API size_t THStorage_(elementSize)(void);\n\n/* slow access --"
+  , " checks everything */\nTH_API void THStorage_(set)(THStorage*, ptrdiff_t, real);\nTH_API real T"
+  , "HStorage_(get)(const THStorage*, ptrdiff_t);\n\nTH_API THStorage* THStorage_(new)(void);\nTH_AP"
+  , "I THStorage* THStorage_(newWithSize)(ptrdiff_t size);\nTH_API THStorage* THStorage_(newWithSize"
+  , "1)(real);\nTH_API THStorage* THStorage_(newWithSize2)(real, real);\nTH_API THStorage* THStorage"
+  , "_(newWithSize3)(real, real, real);\nTH_API THStorage* THStorage_(newWithSize4)(real, real, real"
+  , ", real);\nTH_API THStorage* THStorage_(newWithMapping)(const char *filename, ptrdiff_t size, in"
+  , "t flags);\n\n/* takes ownership of data */\nTH_API THStorage* THStorage_(newWithData)(real *dat"
+  , "a, ptrdiff_t size);\n\nTH_API THStorage* THStorage_(newWithAllocator)(ptrdiff_t size,\n        "
+  , "                                       THAllocator* allocator,\n                               "
+  , "                void *allocatorContext);\nTH_API THStorage* THStorage_(newWithDataAndAllocator)"
+  , "(\n    real* data, ptrdiff_t size, THAllocator* allocator, void *allocatorContext);\n\n/* shoul"
+  , "d not differ with API */\nTH_API void THStorage_(setFlag)(THStorage *storage, const char flag);"
+  , "\nTH_API void THStorage_(clearFlag)(THStorage *storage, const char flag);\nTH_API void THStorag"
+  , "e_(retain)(THStorage *storage);\nTH_API void THStorage_(swap)(THStorage *storage1, THStorage *s"
+  , "torage2);\n\n/* might differ with other API (like CUDA) */\nTH_API void THStorage_(free)(THStor"
+  , "age *storage);\nTH_API void THStorage_(resize)(THStorage *storage, ptrdiff_t size);\nTH_API voi"
+  , "d THStorage_(fill)(THStorage *storage, real value);\n\n#endif\n"
   ]

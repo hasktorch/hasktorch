@@ -30,14 +30,13 @@ run os = do
     , show lib
     , "files"
     ]
-
-  case lib of
-    TH -> mapM_ (runPipeline os) (take 1 $ files lib gentype)
-    THC -> mapM_ (runPipeline os) (files lib gentype)
-    lib -> putStrLn $ "Code generation not enabled for " ++ show lib
-
-  when (verbose os) $ putStrLn "Done"
-
+  if supported lib
+  then do
+    mapM_ (runPipeline os)
+      ( files lib gentype)
+      -- (filter ((== "./vendor/pytorch/aten/src/TH/generic/THStorage.h") . fst) $ files lib gentype)
+    when (verbose os) $ putStrLn "Done"
+  else putStrLn ("Code generation not enabled for " ++ show lib)
  where
   lib :: LibType
   lib = libraries os
