@@ -1,67 +1,57 @@
 {-# LANGUAGE OverloadedLists #-}
-module CodeGen.Parse.Cases where
+module CodeGen.Parse.Cases
+  ( type2real
+  , type2hsreal
+  , type2accreal
+  , checkFunction
+  ) where
 
-import CodeGen.Prelude
+import CodeGen.Prelude hiding (char)
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
 
-import CodeGen.Types
+import CodeGen.Types hiding (prefix)
 
-signatureAliases :: TemplateType -> Maybe (CTensor, CReal, CAccReal, CStorage)
-signatureAliases = \case
-  GenByte -> Just
-    ( CTensor  "THTypes.CTHByteTensor"  "ByteTensor"
-    , CReal    "Foreign.C.Types.CUChar" "unsigned char"
-    , CAccReal "Foreign.C.Types.CLong"  "long"
-    , CStorage "THTypes.CTHByteStorage" "ByteStorage"
-    )
-  GenChar -> Just
-    ( CTensor  "THTypes.CTHCharTensor"  "CharTensor"
-    , CReal    "Foreign.C.Types.CChar"  "char"
-    , CAccReal "Foreign.C.Types.CLong"  "long"
-    , CStorage "THTypes.CTHCharStorage" "CharStorage"
-    )
-  GenDouble -> Just
-    ( CTensor  "THTypes.CTHDoubleTensor"  "DoubleTensor"
-    , CReal    "Foreign.C.Types.CDouble"  "double"
-    , CAccReal "Foreign.C.Types.CDouble"  "double"
-    , CStorage "THTypes.CTHDoubleStorage" "DoubleStorage"
-    )
-  GenFloat -> Just
-    ( CTensor  "THTypes.CTHFloatTensor"  "FloatTensor"
-    , CReal    "Foreign.C.Types.CFloat"  "float"
-    , CAccReal "Foreign.C.Types.CDouble" "double"
-    , CStorage "THTypes.CTHFloatStorage" "FloatStorage"
-    )
-  GenHalf -> Just
-    ( CTensor  "THTypes.CTHHalfTensor"  "HalfTensor"
-    , CReal    "THTypes.CTHHalf"        "THHalf"
-    , CAccReal "Foreign.C.Types.CFloat" "float"
-    , CStorage "THTypes.CTHHalfStorage" "HalfStorage"
-    )
-  GenInt -> Just
-    ( CTensor  "THTypes.CTHIntTensor"  "IntTensor"
-    , CReal    "Foreign.C.Types.CInt"  "int"
-    , CAccReal "Foreign.C.Types.CLong" "long"
-    , CStorage "THTypes.CTHIntStorage" "IntStorage"
-    )
-  GenLong -> Just
-    ( CTensor  "THTypes.CTHLongTensor"  "LongTensor"
-    , CReal    "Foreign.C.Types.CLong"  "long"
-    , CAccReal "Foreign.C.Types.CLong"  "long"
-    , CStorage "THTypes.CTHLongStorage" "LongStorage"
-    )
-  GenShort -> Just
-    ( CTensor  "THTypes.CTHShortTensor"  "ShortTensor"
-    , CReal    "Foreign.C.Types.CShort"  "short"
-    , CAccReal "Foreign.C.Types.CLong"   "long"
-    , CStorage "THTypes.CTHShortStorage" "ShortStorage"
-    )
+uchar, long, char :: (HsRep -> CRep -> x) -> x
+uchar  cons = cons "Foreign.C.Types.CUChar"  "unsigned char"
+long   cons = cons "Foreign.C.Types.CLong"   "long"
+char   cons = cons "Foreign.C.Types.CChar"   "char"
+double cons = cons "Foreign.C.Types.CDouble" "double"
+float  cons = cons "Foreign.C.Types.CFloat"  "float"
+int    cons = cons "Foreign.C.Types.CInt"    "int"
+short  cons = cons "Foreign.C.Types.CShort"  "short"
+half   cons = cons (HsRep $ prefix TH "Half") "THHalf"
+
+prefix :: LibType -> Text -> Text
+prefix lt t = "Torch.Types." <> tshow lt <> ".C"<> tshow lt <> t
+
+signatureAliases :: LibType -> TemplateType -> Maybe (CTensor, CReal, CAccReal, CStorage)
+signatureAliases lt = \case
+  GenByte   -> Just (mkTuple "Byte"   uchar  long)
+  GenChar   -> Just (mkTuple "Char"   char   long)
+  GenDouble -> Just (mkTuple "Double" double double)
+  GenFloat  -> Just (mkTuple "Float"  float  double)
+  GenHalf   -> Just (mkTuple "Half"   half   float)
+  GenInt    -> Just (mkTuple "Int"    int    long)
+  GenLong   -> Just (mkTuple "Long"   long   long)
+  GenShort  -> Just (mkTuple "Short"  short  long)
   GenNothing -> Nothing
+ where
+  mkRep :: (HsRep -> CRep -> x) -> Text -> Text -> x
+  mkRep cons suffix t = cons (HsRep . prefix lt $ t <> suffix) (CRep $ t <> suffix)
+
+  mkCTensor :: Text -> CTensor
+  mkCTensor = mkRep CTensor "Tensor"
+
+  mkCStorage :: Text -> CStorage
+  mkCStorage = mkRep CStorage "Storage"
+
+  mkTuple :: Text -> ((HsRep -> CRep -> CReal) -> CReal) -> ((HsRep -> CRep -> CAccReal) -> CAccReal) -> (CTensor, CReal, CAccReal, CStorage)
+  mkTuple t r ac = (mkCTensor t, r CReal, ac CAccReal, mkCStorage t)
 
 
-type2real :: TemplateType -> Text
-type2real t = case signatureAliases t of
+type2real :: LibType -> TemplateType -> Text
+type2real lt t = case signatureAliases lt t of
   Just (_, CReal hs _, _, _) -> stripModule hs
   Nothing -> "" -- impossible "TemplateType is concrete and should not have been called"
 
@@ -79,8 +69,8 @@ type2hsreal = \case
   GenNothing -> ""
 
 
-type2accreal :: TemplateType -> Text
-type2accreal t = case signatureAliases t of
+type2accreal :: LibType -> TemplateType -> Text
+type2accreal lt t = case signatureAliases lt t of
   Just (_, _, CAccReal hs _, _) -> stripModule hs
   Nothing -> "" -- impossible "TemplateType is concrete and should not have been called"
 

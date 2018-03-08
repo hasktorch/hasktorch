@@ -24,8 +24,6 @@ hsPrefix lt = "C" <> tshow lt
 renderParsable :: LibType -> TemplateType -> Parsable -> Text
 renderParsable lt tt =
   \case
-    -- special pointer cases
-    Ptr (TenType Allocator) -> "CTHAllocatorPtr"
     Ptr x -> "Ptr (" <> renderParsable lt tt x <> ")"
     TenType x -> renderTenType lt tt x
     NNType x -> renderNNType lt tt x
@@ -36,8 +34,8 @@ renderTenType :: LibType -> TemplateType -> TenType -> Text
 renderTenType lt tt = \case
   Tensor  -> hsPrefix lt <> type2hsreal tt <> "Tensor"
   Storage -> hsPrefix lt <> type2hsreal tt <> "Storage"
-  Real    -> type2real tt
-  AccReal -> type2accreal tt
+  Real    -> type2real lt tt
+  AccReal -> type2accreal lt tt
   rest    -> hsPrefix lt <> tshow rest
 
 
