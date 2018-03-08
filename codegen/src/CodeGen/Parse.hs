@@ -52,7 +52,7 @@ genericParsers cons render = asum $ map goAll [minBound..maxBound :: x]
     =   try ((Ptr . Ptr) <$> (go1 x <* ptr2))
 
     -- then any pointer
-    <|> try ((Ptr)       <$> (go1 x <* ptr))
+    <|> try ( Ptr        <$> (go1 x <* ptr))
 
     -- finally, all of our concrete types and wrap them in the Parsable format
     <|> try (go1 x)
@@ -99,7 +99,7 @@ functionArg = do
   argType <- parsabletypes <* space
   -- e.g. declaration sometimes has no variable name - eg Storage.h
   argName <- optional $ some (alphaNumChar <|> char '_') <* space
-  (try (char ',') <|> lookAhead (char ')'))
+  try (void (char ',' >> space >> eol)) <|> void (char ',') <|> lookAhead (void $ char ')')
   pure $ Arg argType (maybe "" T.pack argName)
 
 -- functionArg :: Parser Arg

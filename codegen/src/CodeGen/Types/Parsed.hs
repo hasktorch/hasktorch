@@ -3,6 +3,7 @@
 module CodeGen.Types.Parsed where
 
 import CodeGen.Prelude
+import qualified Data.HashSet as HS
 
 -- ----------------------------------------
 -- Parsed types
@@ -68,12 +69,32 @@ data TenType
   | Half
   | Real
   | AccReal
+  | State
+
+  -- FIXME: I don't think we need to enable THCThreadLocal, yet. But we would need to include a
+  -- wrapper of ThreadId from the pthread package: https://hackage.haskell.org/package/pthread-0.2.0
+
+  -- | ThreadLocal  -- THC-specific
+
+  -- FIXME: while we can add this to codegen now, we need access to cudaStream_t in cuda_runtime_api
+  | Stream  -- THC-specific
   deriving (Eq, Show, Generic, Hashable, Bounded, Enum)
+
+isCudaPrefixedTensor :: TenType -> Bool
+isCudaPrefixedTensor t = t `HS.member` HS.fromList
+  [ ByteTensor
+  , CharTensor
+  , ShortTensor
+  , IntTensor
+  , LongTensor
+  , FloatTensor
+  , DoubleTensor
+  , HalfTensor
+  ]
 
 
 data NNType
-  = NNState
-  | IndexTensor
+  = IndexTensor
   | IntegerTensor
   deriving (Eq, Show, Generic, Hashable, Bounded, Enum)
 

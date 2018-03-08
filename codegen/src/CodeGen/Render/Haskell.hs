@@ -61,7 +61,6 @@ renderCType = \case
 -- FIXME: get back to this when THC is finished
 renderNNType :: LibType -> TemplateType -> NNType -> Text
 renderNNType _ _ = \case
-  NNState       -> undefined
   IndexTensor   -> undefined
   IntegerTensor -> undefined
 

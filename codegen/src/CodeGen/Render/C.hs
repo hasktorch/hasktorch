@@ -22,7 +22,10 @@ renderTenType :: LibType -> TenType -> Text
 renderTenType lt = \case
   Real    -> "real"
   AccReal -> "accreal"
-  rest    -> tshow lt <> tshow rest
+  rest -> prefix rest <> tshow rest
+ where
+  prefix :: TenType -> Text
+  prefix t = if lt == THC && isCudaPrefixedTensor t then "THCuda" else tshow lt
 
 
 renderCType :: CType -> Text
@@ -32,11 +35,11 @@ renderCType = \case
   CUInt16  -> "uint16_t"
   CUInt8   -> "uint8_t"
 
-  CInt     -> "int"
   CInt64   -> "int64_t"
   CInt32   -> "int32_t"
   CInt16   -> "int16_t"
   CInt8    -> "int8_t"
+  CInt     -> "int"
 
   CSize    -> "size_t"
   CLong    -> "long"

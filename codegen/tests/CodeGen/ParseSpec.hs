@@ -2,7 +2,7 @@
 module CodeGen.ParseSpec where
 
 import Test.Hspec
-import Text.Megaparsec hiding (runParser')
+import Text.Megaparsec hiding (runParser', State)
 import CodeGen.Parse hiding (describe)
 import CodeGen.Types hiding (describe)
 import CodeGen.Prelude
