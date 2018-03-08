@@ -21,7 +21,8 @@ spec = do
   describe "the ptr parser" ptrSpec
   describe "the ptr2 parser" ptr2Spec
   describe "the ctypes parser" ctypesSpec
-  describe "the args parser" argsSpec
+  describe "the functionArg parser" functionArgSpec
+  describe "the functionArgs parser" functionArgsSpec
   describe "the function parser" functionSpec
   describe "running the full parser" $ do
     describe "in concrete mode" fullConcreteParser
@@ -32,7 +33,7 @@ runParser' p = runParser p "test"
 testCGParser = runParser parser "test"
 
 succeeds :: (Show x, Eq x) => Parser x -> (String, x) -> IO ()
-succeeds parser (str, res) = runParser' parser str `shouldBe` (Right res)
+succeeds parser (str, res) = runParser' parser str `shouldBe` Right res
 
 fails :: (Show x, Eq x) => Parser x -> String -> IO ()
 fails parser str = runParser' parser str `shouldSatisfy` isLeft
@@ -40,19 +41,19 @@ fails parser str = runParser' parser str `shouldSatisfy` isLeft
 fullConcreteParser :: Spec
 fullConcreteParser = do
   it "should error if the header is first(??)" $
-    testCGParser "TH_API \n" `shouldBe` (Right [Nothing])
+    testCGParser "TH_API \n" `shouldBe` Right [Nothing]
 
   it "should return Nothing if the API header" $
-    testCGParser "foob TH_API \n" `shouldBe` (Right [Nothing])
+    testCGParser "foob TH_API \n" `shouldBe` Right [Nothing]
 
-  it "should return a valid THFile function" $ do
-    testCGParser thFileFunction `shouldBe` (Right [Just thFileFunctionRendered])
+  it "should return a valid THFile function" $
+    testCGParser thFileFunction `shouldBe` Right [Just thFileFunctionRendered]
 
   it "should return Nothing for declarations" $
-    testCGParser "TH_API const double THLog2Pi;" `shouldBe` (Right [Nothing])
+    testCGParser "TH_API const double THLog2Pi;" `shouldBe` Right [Nothing]
 
   it "should return valid THLogAdd functions" $
-    testCGParser thLogAddFunction `shouldBe` (Right [Just thLogAddFunctionRendered])
+    testCGParser thLogAddFunction `shouldBe` Right [Just thLogAddFunctionRendered]
 
   it "should return all functions in THFile" $
     thFileContents `fullFileTest` (155, 70, 70)
@@ -61,13 +62,16 @@ fullConcreteParser = do
 fullGenericParser :: Spec
 fullGenericParser = do
   it "should return valid types for the example string" $
-    testCGParser exampleGeneric `shouldBe` (Right [Just exampleGeneric'])
+    testCGParser exampleGeneric `shouldBe` Right [Just exampleGeneric']
 
   it "should return valid types for the example string with junk" $
-    testCGParser (withAllJunk exampleGeneric) `shouldBe` (Right [Nothing, Just exampleGeneric', Nothing, Nothing])
+    testCGParser (withAllJunk exampleGeneric) `shouldBe` Right [Nothing, Just exampleGeneric', Nothing, Nothing]
 
   it "should return all functions for THStorage" $
     thGenericStorageContents `fullFileTest` (86, 22, 22)
+
+  it "should return all functions for THCTensorTopK" $
+    thcGenericTensorTopKContents `fullFileTest` (10, 1, 1)
 
   it "should return valid types for THNN" $
     pendingWith "we don't currently support THNN"
@@ -84,16 +88,16 @@ fullFileTest contents (all, found, uniq) = do
 
 skipSpec :: Spec
 skipSpec = do
-  it "finds the number of lines as \\n characters" $ do
-    runSomeSkipOn "\n\n" `shouldSatisfy` (foundNlines 2)
-  it "finds the number of lines in exampleGeneric" $ do
-    runSomeSkipOn exampleGeneric `shouldSatisfy` (foundNlines 1)
-  it "finds the number of lines in exampleGeneric withEndJunk" $ do
-    runSomeSkipOn (withEndJunk exampleGeneric) `shouldSatisfy` (foundNlines 2)
-  it "finds the number of lines in exampleGeneric withStartJunk" $ do
-    runSomeSkipOn (withStartJunk exampleGeneric) `shouldSatisfy` (foundNlines 2)
-  it "finds the number of lines in exampleGeneric withAllJunk" $ do
-    runSomeSkipOn (withAllJunk exampleGeneric) `shouldSatisfy` (foundNlines 3)
+  it "finds the number of lines as \\n characters" $
+    runSomeSkipOn "\n\n" `shouldSatisfy` foundNlines 2
+  it "finds the number of lines in exampleGeneric" $
+    runSomeSkipOn exampleGeneric `shouldSatisfy` foundNlines 1
+  it "finds the number of lines in exampleGeneric withEndJunk" $
+    runSomeSkipOn (withEndJunk exampleGeneric) `shouldSatisfy` foundNlines 2
+  it "finds the number of lines in exampleGeneric withStartJunk" $
+    runSomeSkipOn (withStartJunk exampleGeneric) `shouldSatisfy` foundNlines 2
+  it "finds the number of lines in exampleGeneric withAllJunk" $
+    runSomeSkipOn (withAllJunk exampleGeneric) `shouldSatisfy` foundNlines 3
  where
   foundNlines n = either (const False) ((== n) . length)
   runSomeSkipOn = runParser' (some skip)
@@ -114,7 +118,7 @@ ptr2Spec = do
 
 ctypesSpec :: Spec
 ctypesSpec = do
-  describe "direct types" $ do
+  describe "direct types" $
     it "renders happy path CTypes" $
       mapM_ (succeeds ctypes)
         [ ("uint64_t", CType CUInt64)
@@ -123,7 +127,7 @@ ctypesSpec = do
         , ("void", CType CVoid)
         ]
 
-  describe "pointer ctypes" $ do
+  describe "pointer ctypes" $
     it "renders happy path CType pointers" $
       mapM_ (succeeds ctypes)
         [ ("uint64_t *", Ptr (CType CUInt64))
@@ -132,7 +136,7 @@ ctypesSpec = do
         , ("void   *   ", Ptr (CType CVoid))
         ]
 
-  describe "double-pointer ctypes" $ do
+  describe "double-pointer ctypes" $
     it "renders happy path CType pointers of pointers" $
       mapM_ (succeeds ctypes)
         [ ("uint64_t * *", Ptr (Ptr (CType CUInt64)))
@@ -140,15 +144,40 @@ ctypesSpec = do
         , ("int64_t **", Ptr (Ptr (CType CInt64)))
         , ("void   *   * ", Ptr (Ptr (CType CVoid)))
         ]
-argsSpec :: Spec
-argsSpec = do
+
+functionArgSpec :: Spec
+functionArgSpec = do
   it "will find arguments with no name" $
-    runParser' (char '(' >> functionArg) "(void)" `shouldBe` (Right (Arg (CType CVoid) ""))
+    runParser' (char '(' >> functionArg) "(void)" `shouldBe` Right (Arg (CType CVoid) "")
+
+  it "will find arguments in newline-delineated lists" $
+    runParser' functionArg "         int k)" `shouldBe` Right (Arg (CType CInt) "k")
+
+functionArgsSpec :: Spec
+functionArgsSpec = do
+  it "will find arguments in newline-delineated lists" $
+    runParser' functionArgs "(void,\n         int foo)" `shouldBe` Right [Arg (CType CVoid) "", Arg (CType CInt) "foo"]
+
+  it "will find arguments in newline-delineated lists with spaces between command and newline" $
+    runParser' functionArgs "(void,    \n         int foo)" `shouldBe` Right [Arg (CType CVoid) "", Arg (CType CInt) "foo"]
+
+  it "will find arguments in newline-delineated lists from THCTensorTopK" $
+    runParser' functionArgs thctensortopkArgs `shouldBe` Right (funArgs thcGenericTensorTopKFunction')
+ where
+  thctensortopkArgs = "(THCState* state,\n   THCTensor* topK,\n   THCudaLongTensor* "
+    <> "indices,\n   THCTensor* input,\n  int64_t k, int dim, int dir, int sorted)"
 
 functionSpec :: Spec
 functionSpec = do
   it "will find functions where the arguments have no name" $
-    runParser' function storageElementSize `shouldBe` (Right (Just storageElementSize'))
+    runParser' function storageElementSize `shouldBe` Right (Just storageElementSize')
+
+  it "will find concrete THC functions in THCTensorRandom.h" $
+    runParser' function thcRandomFunction `shouldBe` Right (Just thcRandomFunction')
+
+  it "will find functions with arguments that span several lines (THCTensorTopK.h)" $
+    runParser' function thcGenericTensorTopKFunction `shouldBe` Right (Just thcGenericTensorTopKFunction')
+
 
 -- ========================================================================= --
 
@@ -187,6 +216,9 @@ thLogAddFunctionRendered = Function "THLogAdd"
 -- do this later
 thNNFunction = "TH_API void THNN_(Abs_updateOutput)(THNNState *state, THTensor *input, THTensor *output);"
 thNNFunctionRendered = undefined
+
+thcRandomFunction = "THC_API void THCRandom_init(struct THCState *state, int num_devices, int current_device);"
+thcRandomFunction' = Function "THCRandom_init" [Arg (Ptr (TenType State)) "state", Arg (CType CInt) "num_devices", Arg (CType CInt) "current_device" ] (CType CVoid)
 
 thFileContents = intercalate ""
   [ "#ifndef TH_FILE_INC\n#define TH_FILE_INC\n\n#include \"THStorage.h\"\n\ntypedef struct THFile__ "
@@ -276,3 +308,32 @@ thGenericStorageContents = intercalate ""
   , "age *storage);\nTH_API void THStorage_(resize)(THStorage *storage, ptrdiff_t size);\nTH_API voi"
   , "d THStorage_(fill)(THStorage *storage, real value);\n\n#endif\n"
   ]
+
+thcGenericTensorTopKContents :: String
+thcGenericTensorTopKContents = intercalate ""
+  [ "#ifndef THC_GENERIC_FILE\n#define THC_GENERIC_FILE \"generic/THCTensorTopK.h\"\n#else\n\n/* Ret"
+  , "urns the set of all kth smallest (or largest) elements, depending */\n/* on `dir` */\nTHC_API v"
+  , "oid THCTensor_(topk)(THCState* state,\n                               THCTensor* topK,\n       "
+  , "                        THCudaLongTensor* indices,\n                               THCTensor* i"
+  , "nput,\n                               int64_t k, int dim, int dir, int sorted);\n\n#endif // TH"
+  , "C_GENERIC_FILE\n"
+  ]
+
+thcGenericTensorTopKFunction :: String
+thcGenericTensorTopKFunction = intercalate ""
+  [ "THC_API void THCTensor_(topk)(THCState* state,\n                               THCTensor* topK,"
+  , "\n                               THCudaLongTensor* indices,\n                               THC"
+  , "Tensor* input,\n                               int64_t k, int dim, int dir, int sorted);"
+  ]
+
+thcGenericTensorTopKFunction' :: Function
+thcGenericTensorTopKFunction' = Function "topk"
+  [ Arg (Ptr (TenType State)) "state"
+  , Arg (Ptr (TenType Tensor)) "topK"
+  , Arg (Ptr (TenType LongTensor)) "indices"
+  , Arg (Ptr (TenType Tensor)) "input"
+  , Arg (CType CInt64) "k"
+  , Arg (CType CInt) "dim"
+  , Arg (CType CInt) "dir"
+  , Arg (CType CInt) "sorted"
+  ] (CType CVoid)
