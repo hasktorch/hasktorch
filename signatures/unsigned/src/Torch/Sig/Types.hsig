@@ -8,6 +8,7 @@ import GHC.TypeLits (Nat)
 
 data CTensor
 data CStorage
+data CState
 
 data DynTensor
 asDyn :: ForeignPtr CTensor -> DynTensor

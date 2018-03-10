@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH.Float
   ( CTensor
+  , CState
   , CStorage
   , CReal
   , CAccReal
@@ -25,6 +26,7 @@ import GHC.TypeLits (Nat)
 import Torch.Types.TH
 
 type CTensor = CTHFloatTensor
+type CState = ()
 type CStorage = CTHFloatStorage
 type CReal = CFloat
 type CAccReal = CDouble

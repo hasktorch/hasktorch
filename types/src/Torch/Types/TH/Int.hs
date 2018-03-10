@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH.Int
   ( CTensor
+  , CState
   , CStorage
   , CReal
   , CAccReal
@@ -26,6 +27,7 @@ import GHC.Int
 import Torch.Types.TH
 
 
+type CState = ()
 type CTensor = CTHIntTensor
 type CStorage = CTHIntStorage
 type CReal = CInt

@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH.Long
   ( CTensor
+  , CState
   , CStorage
   , CReal
   , CAccReal
@@ -27,6 +28,7 @@ import Torch.Types.TH
 
 
 type CTensor = CTHLongTensor
+type CState = ()
 type CStorage = CTHLongStorage
 type CReal = CLong
 type CAccReal = CLong

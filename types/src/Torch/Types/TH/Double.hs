@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH.Double
   ( CTensor
+  , CState
   , CStorage
   , CReal
   , CAccReal
@@ -28,6 +29,7 @@ import Torch.Types.TH
 
 type CTensor = CTHDoubleTensor
 type CStorage = CTHDoubleStorage
+type CState = ()
 type CReal = CDouble
 type CAccReal = CDouble
 type HsReal = Double

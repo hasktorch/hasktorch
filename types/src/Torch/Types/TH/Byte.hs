@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH.Byte
   ( CTensor
+  , CState
   , CStorage
   , CReal
   , CAccReal
@@ -27,6 +28,7 @@ import GHC.TypeLits (Nat)
 import GHC.Word
 import Torch.Types.TH
 
+type CState = ()
 type CTensor = CTHByteTensor
 type CStorage = CTHByteStorage
 type CReal = CUChar

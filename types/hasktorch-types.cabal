@@ -35,7 +35,7 @@ library
 
       Torch.Types.TH
       Torch.Types.TH.Random
-      Torch.Types.Structs
+      Torch.Types.TH.Structs
 
   other-modules:
       Paths_hasktorch_types

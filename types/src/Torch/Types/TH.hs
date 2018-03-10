@@ -6,10 +6,11 @@ import Foreign.C.Types
 import Foreign.Ptr ()
 import Foreign.Storable ()
 
-import Torch.Types.Structs
+import Torch.Types.TH.Structs
 
 type CTHDescBuff = Ptr ()
 type CTHAllocatorPtr = Ptr C'THAllocator
+type CTHAllocator = C'THAllocator
 type CTHGenerator = C'THGenerator
 type CTHFile = ()
 type CTHHalf = CUShort
