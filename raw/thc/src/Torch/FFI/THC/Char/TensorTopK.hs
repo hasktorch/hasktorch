@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Char.TensorTopK
+module Torch.FFI.THC.Char.TensorTopK
   ( c_topk
   , p_topk
   ) where
@@ -11,9 +11,9 @@ import Data.Word
 import Data.Int
 
 -- | c_topk :  state topK indices input k dim dir sorted -> void
-foreign import ccall "THCTensorTopK.h THCharTensor_topk"
-  c_topk :: Ptr (CTHState) -> Ptr (CTHCharTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHCharTensor) -> CLLong -> CInt -> CInt -> CInt -> IO (())
+foreign import ccall "THCTensorTopK.h THCCharTensor_topk"
+  c_topk :: Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaCharTensor -> CLLong -> CInt -> CInt -> CInt -> IO ()
 
 -- | p_topk : Pointer to function : state topK indices input k dim dir sorted -> void
-foreign import ccall "THCTensorTopK.h &THCharTensor_topk"
-  p_topk :: FunPtr (Ptr (CTHState) -> Ptr (CTHCharTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHCharTensor) -> CLLong -> CInt -> CInt -> CInt -> IO (()))
+foreign import ccall "THCTensorTopK.h &THCCharTensor_topk"
+  p_topk :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaCharTensor -> CLLong -> CInt -> CInt -> CInt -> IO ())

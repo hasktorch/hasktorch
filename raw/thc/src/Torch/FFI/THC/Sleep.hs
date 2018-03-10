@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Sleep
+module Torch.FFI.THC.Sleep
   ( c_THC_sleep
   , p_THC_sleep
   ) where
@@ -12,8 +12,8 @@ import Data.Int
 
 -- | c_THC_sleep :  state cycles -> void
 foreign import ccall "THCSleep.h THC_sleep"
-  c_THC_sleep :: Ptr (CTHState) -> CLLong -> IO (())
+  c_THC_sleep :: Ptr CTHCudaState -> CLLong -> IO ()
 
 -- | p_THC_sleep : Pointer to function : state cycles -> void
 foreign import ccall "THCSleep.h &THC_sleep"
-  p_THC_sleep :: FunPtr (Ptr (CTHState) -> CLLong -> IO (()))
+  p_THC_sleep :: FunPtr (Ptr CTHCudaState -> CLLong -> IO ())

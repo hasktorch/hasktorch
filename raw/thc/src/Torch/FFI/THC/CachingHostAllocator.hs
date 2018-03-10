@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.CachingHostAllocator
+module Torch.FFI.THC.CachingHostAllocator
   ( c_THCCachingHostAllocator_emptyCache
   , p_THCCachingHostAllocator_emptyCache
   ) where
@@ -12,8 +12,8 @@ import Data.Int
 
 -- | c_THCCachingHostAllocator_emptyCache :   -> void
 foreign import ccall "THCCachingHostAllocator.h THCCachingHostAllocator_emptyCache"
-  c_THCCachingHostAllocator_emptyCache :: IO (())
+  c_THCCachingHostAllocator_emptyCache :: IO ()
 
 -- | p_THCCachingHostAllocator_emptyCache : Pointer to function :  -> void
 foreign import ccall "THCCachingHostAllocator.h &THCCachingHostAllocator_emptyCache"
-  p_THCCachingHostAllocator_emptyCache :: FunPtr (IO (()))
+  p_THCCachingHostAllocator_emptyCache :: FunPtr (IO ())

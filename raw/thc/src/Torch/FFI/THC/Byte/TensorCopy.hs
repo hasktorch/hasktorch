@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Byte.TensorCopy
+module Torch.FFI.THC.Byte.TensorCopy
   ( c_copy
   , c_copyIgnoringOverlaps
   , c_copyByte
@@ -51,169 +51,169 @@ import Data.Word
 import Data.Int
 
 -- | c_copy :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copy"
-  c_copy :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copy"
+  c_copy :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_copyIgnoringOverlaps :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyIgnoringOverlaps"
-  c_copyIgnoringOverlaps :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyIgnoringOverlaps"
+  c_copyIgnoringOverlaps :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_copyByte :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyByte"
-  c_copyByte :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyByte"
+  c_copyByte :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_copyChar :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyChar"
-  c_copyChar :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHCharTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyChar"
+  c_copyChar :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaCharTensor -> IO ()
 
 -- | c_copyShort :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyShort"
-  c_copyShort :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHShortTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyShort"
+  c_copyShort :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaShortTensor -> IO ()
 
 -- | c_copyInt :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyInt"
-  c_copyInt :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHIntTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyInt"
+  c_copyInt :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaIntTensor -> IO ()
 
 -- | c_copyLong :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyLong"
-  c_copyLong :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHLongTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyLong"
+  c_copyLong :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaLongTensor -> IO ()
 
 -- | c_copyFloat :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyFloat"
-  c_copyFloat :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyFloat"
+  c_copyFloat :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_copyDouble :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyDouble"
-  c_copyDouble :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHDoubleTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyDouble"
+  c_copyDouble :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaDoubleTensor -> IO ()
 
 -- | c_copyHalf :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyHalf"
-  c_copyHalf :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHHalfTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyHalf"
+  c_copyHalf :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaHalfTensor -> IO ()
 
 -- | c_copyCudaByte :  state dst src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyCudaByte"
-  c_copyCudaByte :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyCudaByte"
+  c_copyCudaByte :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_copyCudaChar :  state dst src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyCudaChar"
-  c_copyCudaChar :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHCharTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyCudaChar"
+  c_copyCudaChar :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaCharTensor -> IO ()
 
 -- | c_copyCudaShort :  state dst src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyCudaShort"
-  c_copyCudaShort :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHShortTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyCudaShort"
+  c_copyCudaShort :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaShortTensor -> IO ()
 
 -- | c_copyCudaInt :  state dst src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyCudaInt"
-  c_copyCudaInt :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHIntTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyCudaInt"
+  c_copyCudaInt :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaIntTensor -> IO ()
 
 -- | c_copyCudaLong :  state dst src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyCudaLong"
-  c_copyCudaLong :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHLongTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyCudaLong"
+  c_copyCudaLong :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaLongTensor -> IO ()
 
 -- | c_copyCudaDouble :  state dst src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyCudaDouble"
-  c_copyCudaDouble :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHDoubleTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyCudaDouble"
+  c_copyCudaDouble :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaDoubleTensor -> IO ()
 
 -- | c_copyCudaHalf :  state dst src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyCudaHalf"
-  c_copyCudaHalf :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHHalfTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyCudaHalf"
+  c_copyCudaHalf :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaHalfTensor -> IO ()
 
 -- | c_copyCuda :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyCuda"
-  c_copyCuda :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyCuda"
+  c_copyCuda :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_copyCPU :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyCPU"
-  c_copyCPU :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyCPU"
+  c_copyCPU :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_copyAsyncCPU :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyAsyncCPU"
-  c_copyAsyncCPU :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyAsyncCPU"
+  c_copyAsyncCPU :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_copyAsyncCuda :  state self src -> void
-foreign import ccall "THCTensorCopy.h THByteTensor_copyAsyncCuda"
-  c_copyAsyncCuda :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorCopy.h THCByteTensor_copyAsyncCuda"
+  c_copyAsyncCuda :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | p_copy : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copy"
-  p_copy :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copy"
+  p_copy :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_copyIgnoringOverlaps : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyIgnoringOverlaps"
-  p_copyIgnoringOverlaps :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyIgnoringOverlaps"
+  p_copyIgnoringOverlaps :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_copyByte : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyByte"
-  p_copyByte :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyByte"
+  p_copyByte :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_copyChar : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyChar"
-  p_copyChar :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHCharTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyChar"
+  p_copyChar :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaCharTensor -> IO ())
 
 -- | p_copyShort : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyShort"
-  p_copyShort :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHShortTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyShort"
+  p_copyShort :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaShortTensor -> IO ())
 
 -- | p_copyInt : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyInt"
-  p_copyInt :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHIntTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyInt"
+  p_copyInt :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaIntTensor -> IO ())
 
 -- | p_copyLong : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyLong"
-  p_copyLong :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHLongTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyLong"
+  p_copyLong :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaLongTensor -> IO ())
 
 -- | p_copyFloat : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyFloat"
-  p_copyFloat :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyFloat"
+  p_copyFloat :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_copyDouble : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyDouble"
-  p_copyDouble :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyDouble"
+  p_copyDouble :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaDoubleTensor -> IO ())
 
 -- | p_copyHalf : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyHalf"
-  p_copyHalf :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHHalfTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyHalf"
+  p_copyHalf :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaHalfTensor -> IO ())
 
 -- | p_copyCudaByte : Pointer to function : state dst src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyCudaByte"
-  p_copyCudaByte :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyCudaByte"
+  p_copyCudaByte :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_copyCudaChar : Pointer to function : state dst src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyCudaChar"
-  p_copyCudaChar :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHCharTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyCudaChar"
+  p_copyCudaChar :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaCharTensor -> IO ())
 
 -- | p_copyCudaShort : Pointer to function : state dst src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyCudaShort"
-  p_copyCudaShort :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHShortTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyCudaShort"
+  p_copyCudaShort :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaShortTensor -> IO ())
 
 -- | p_copyCudaInt : Pointer to function : state dst src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyCudaInt"
-  p_copyCudaInt :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHIntTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyCudaInt"
+  p_copyCudaInt :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaIntTensor -> IO ())
 
 -- | p_copyCudaLong : Pointer to function : state dst src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyCudaLong"
-  p_copyCudaLong :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHLongTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyCudaLong"
+  p_copyCudaLong :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaLongTensor -> IO ())
 
 -- | p_copyCudaDouble : Pointer to function : state dst src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyCudaDouble"
-  p_copyCudaDouble :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyCudaDouble"
+  p_copyCudaDouble :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaDoubleTensor -> IO ())
 
 -- | p_copyCudaHalf : Pointer to function : state dst src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyCudaHalf"
-  p_copyCudaHalf :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHHalfTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyCudaHalf"
+  p_copyCudaHalf :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaHalfTensor -> IO ())
 
 -- | p_copyCuda : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyCuda"
-  p_copyCuda :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyCuda"
+  p_copyCuda :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_copyCPU : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyCPU"
-  p_copyCPU :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyCPU"
+  p_copyCPU :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_copyAsyncCPU : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyAsyncCPU"
-  p_copyAsyncCPU :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyAsyncCPU"
+  p_copyAsyncCPU :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_copyAsyncCuda : Pointer to function : state self src -> void
-foreign import ccall "THCTensorCopy.h &THByteTensor_copyAsyncCuda"
-  p_copyAsyncCuda :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorCopy.h &THCByteTensor_copyAsyncCuda"
+  p_copyAsyncCuda :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())

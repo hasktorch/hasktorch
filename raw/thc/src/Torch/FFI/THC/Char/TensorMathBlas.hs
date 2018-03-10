@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Char.TensorMathBlas
+module Torch.FFI.THC.Char.TensorMathBlas
   ( c_dot
   , c_addmv
   , c_addmm
@@ -21,49 +21,49 @@ import Data.Word
 import Data.Int
 
 -- | c_dot :  state self src -> accreal
-foreign import ccall "THCTensorMathBlas.h THCharTensor_dot"
-  c_dot :: Ptr (CTHState) -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (CLong)
+foreign import ccall "THCTensorMathBlas.h THCCharTensor_dot"
+  c_dot :: Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO CLong
 
 -- | c_addmv :  state self beta t alpha mat vec -> void
-foreign import ccall "THCTensorMathBlas.h THCharTensor_addmv"
-  c_addmv :: Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCCharTensor_addmv"
+  c_addmv :: Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ()
 
 -- | c_addmm :  state self beta t alpha mat1 mat2 -> void
-foreign import ccall "THCTensorMathBlas.h THCharTensor_addmm"
-  c_addmm :: Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCCharTensor_addmm"
+  c_addmm :: Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ()
 
 -- | c_addr :  state self beta t alpha vec1 vec2 -> void
-foreign import ccall "THCTensorMathBlas.h THCharTensor_addr"
-  c_addr :: Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCCharTensor_addr"
+  c_addr :: Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ()
 
 -- | c_addbmm :  state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h THCharTensor_addbmm"
-  c_addbmm :: Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCCharTensor_addbmm"
+  c_addbmm :: Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ()
 
 -- | c_baddbmm :  state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h THCharTensor_baddbmm"
-  c_baddbmm :: Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCCharTensor_baddbmm"
+  c_baddbmm :: Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ()
 
 -- | p_dot : Pointer to function : state self src -> accreal
-foreign import ccall "THCTensorMathBlas.h &THCharTensor_dot"
-  p_dot :: FunPtr (Ptr (CTHState) -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (CLong))
+foreign import ccall "THCTensorMathBlas.h &THCCharTensor_dot"
+  p_dot :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO CLong)
 
 -- | p_addmv : Pointer to function : state self beta t alpha mat vec -> void
-foreign import ccall "THCTensorMathBlas.h &THCharTensor_addmv"
-  p_addmv :: FunPtr (Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCCharTensor_addmv"
+  p_addmv :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ())
 
 -- | p_addmm : Pointer to function : state self beta t alpha mat1 mat2 -> void
-foreign import ccall "THCTensorMathBlas.h &THCharTensor_addmm"
-  p_addmm :: FunPtr (Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCCharTensor_addmm"
+  p_addmm :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ())
 
 -- | p_addr : Pointer to function : state self beta t alpha vec1 vec2 -> void
-foreign import ccall "THCTensorMathBlas.h &THCharTensor_addr"
-  p_addr :: FunPtr (Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCCharTensor_addr"
+  p_addr :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ())
 
 -- | p_addbmm : Pointer to function : state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h &THCharTensor_addbmm"
-  p_addbmm :: FunPtr (Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCCharTensor_addbmm"
+  p_addbmm :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ())
 
 -- | p_baddbmm : Pointer to function : state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h &THCharTensor_baddbmm"
-  p_baddbmm :: FunPtr (Ptr (CTHState) -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> CChar -> Ptr (CTHCharTensor) -> Ptr (CTHCharTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCCharTensor_baddbmm"
+  p_baddbmm :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> CChar -> Ptr CTHCudaCharTensor -> Ptr CTHCudaCharTensor -> IO ())

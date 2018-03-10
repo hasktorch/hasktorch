@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Float.TensorSort
+module Torch.FFI.THC.Float.TensorSort
   ( c_sortKeyValueInplace
   , c_sort
   , p_sortKeyValueInplace
@@ -13,17 +13,17 @@ import Data.Word
 import Data.Int
 
 -- | c_sortKeyValueInplace :  state keys values dim order -> void
-foreign import ccall "THCTensorSort.h THFloatTensor_sortKeyValueInplace"
-  c_sortKeyValueInplace :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHLongTensor) -> CInt -> CInt -> IO (())
+foreign import ccall "THCTensorSort.h THCFloatTensor_sortKeyValueInplace"
+  c_sortKeyValueInplace :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaLongTensor -> CInt -> CInt -> IO ()
 
 -- | c_sort :  state sorted indices input dim order -> void
-foreign import ccall "THCTensorSort.h THFloatTensor_sort"
-  c_sort :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHFloatTensor) -> CInt -> CInt -> IO (())
+foreign import ccall "THCTensorSort.h THCFloatTensor_sort"
+  c_sort :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaFloatTensor -> CInt -> CInt -> IO ()
 
 -- | p_sortKeyValueInplace : Pointer to function : state keys values dim order -> void
-foreign import ccall "THCTensorSort.h &THFloatTensor_sortKeyValueInplace"
-  p_sortKeyValueInplace :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHLongTensor) -> CInt -> CInt -> IO (()))
+foreign import ccall "THCTensorSort.h &THCFloatTensor_sortKeyValueInplace"
+  p_sortKeyValueInplace :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaLongTensor -> CInt -> CInt -> IO ())
 
 -- | p_sort : Pointer to function : state sorted indices input dim order -> void
-foreign import ccall "THCTensorSort.h &THFloatTensor_sort"
-  p_sort :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHFloatTensor) -> CInt -> CInt -> IO (()))
+foreign import ccall "THCTensorSort.h &THCFloatTensor_sort"
+  p_sort :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaFloatTensor -> CInt -> CInt -> IO ())

@@ -89,7 +89,7 @@ renderSig t lt cgt headerFile tt ms (name, retType, args) =
       , haskellSig lt hsname t tt args retType
       ]
  where
-  cname = mkCname t TH ms tt cgt name
+  cname = mkCname t lt ms tt cgt name
   hsname = mkHsname t name
 
 

@@ -92,7 +92,7 @@ mkModule
   -> CodeGenType
   -> (FilePath, TemplateType -> [Function] -> HModule)
 mkModule modsuff filesuff lt cgt
-  = (srcDir lt cgt <> hf, makeModule TH (TextPath . T.pack $ outDir lt) cgt hf modsuff filesuff)
+  = (srcDir lt cgt <> hf, makeModule lt (TextPath . T.pack $ outDir lt) cgt hf modsuff filesuff)
  where
   hf :: FilePath
   hf = show lt <> T.unpack (textFileSuffix filesuff) <> ".h"

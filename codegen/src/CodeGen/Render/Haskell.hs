@@ -5,6 +5,7 @@ module CodeGen.Render.Haskell
 import CodeGen.Prelude
 import CodeGen.Types
 import CodeGen.Parse.Cases
+import qualified Data.Text as T
 
 
 render :: LibType -> TypeCategory -> TemplateType -> Parsable -> Maybe Text
@@ -13,18 +14,24 @@ render lt tc tt = typeCatHelper tc . renderParsable lt tt
 
 typeCatHelper :: TypeCategory -> Text -> Maybe Text
 typeCatHelper tc s = case tc of
-  ReturnValue   -> Just $ "IO (" <> s <> ")"
   FunctionParam -> Just s
-
+  ReturnValue   ->
+    case T.take 3 s of
+     "()"  -> Just   "IO ()"
+     "Ptr" -> Just $ "IO (" <> s <> ")"
+     _     -> Just $ "IO " <> s <> ""
 
 hsPrefix :: LibType -> Text
-hsPrefix lt = "C" <> tshow lt
+hsPrefix = \case
+  THC -> "CTHCuda"
+  lt -> "C" <> tshow lt
 
 
 renderParsable :: LibType -> TemplateType -> Parsable -> Text
 renderParsable lt tt =
   \case
-    Ptr x -> "Ptr (" <> renderParsable lt tt x <> ")"
+    Ptr (Ptr x) -> "Ptr (Ptr " <> renderParsable lt tt x <> ")"
+    Ptr x -> "Ptr " <> renderParsable lt tt x
     TenType x -> renderTenType lt tt x
     NNType x -> renderNNType lt tt x
     CType x -> renderCType x

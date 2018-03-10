@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Short.TensorScatterGather
+module Torch.FFI.THC.Short.TensorScatterGather
   ( c_gather
   , c_scatter
   , c_scatterAdd
@@ -17,33 +17,33 @@ import Data.Word
 import Data.Int
 
 -- | c_gather :  state tensor src dim index -> void
-foreign import ccall "THCTensorScatterGather.h THShortTensor_gather"
-  c_gather :: Ptr (CTHState) -> Ptr (CTHShortTensor) -> Ptr (CTHShortTensor) -> CInt -> Ptr (CTHLongTensor) -> IO (())
+foreign import ccall "THCTensorScatterGather.h THCShortTensor_gather"
+  c_gather :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CInt -> Ptr CTHCudaLongTensor -> IO ()
 
 -- | c_scatter :  state tensor dim index src -> void
-foreign import ccall "THCTensorScatterGather.h THShortTensor_scatter"
-  c_scatter :: Ptr (CTHState) -> Ptr (CTHShortTensor) -> CInt -> Ptr (CTHLongTensor) -> Ptr (CTHShortTensor) -> IO (())
+foreign import ccall "THCTensorScatterGather.h THCShortTensor_scatter"
+  c_scatter :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CInt -> Ptr CTHCudaLongTensor -> Ptr CTHCudaShortTensor -> IO ()
 
 -- | c_scatterAdd :  state tensor dim index src -> void
-foreign import ccall "THCTensorScatterGather.h THShortTensor_scatterAdd"
-  c_scatterAdd :: Ptr (CTHState) -> Ptr (CTHShortTensor) -> CInt -> Ptr (CTHLongTensor) -> Ptr (CTHShortTensor) -> IO (())
+foreign import ccall "THCTensorScatterGather.h THCShortTensor_scatterAdd"
+  c_scatterAdd :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CInt -> Ptr CTHCudaLongTensor -> Ptr CTHCudaShortTensor -> IO ()
 
 -- | c_scatterFill :  state tensor dim index value -> void
-foreign import ccall "THCTensorScatterGather.h THShortTensor_scatterFill"
-  c_scatterFill :: Ptr (CTHState) -> Ptr (CTHShortTensor) -> CInt -> Ptr (CTHLongTensor) -> CShort -> IO (())
+foreign import ccall "THCTensorScatterGather.h THCShortTensor_scatterFill"
+  c_scatterFill :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CInt -> Ptr CTHCudaLongTensor -> CShort -> IO ()
 
 -- | p_gather : Pointer to function : state tensor src dim index -> void
-foreign import ccall "THCTensorScatterGather.h &THShortTensor_gather"
-  p_gather :: FunPtr (Ptr (CTHState) -> Ptr (CTHShortTensor) -> Ptr (CTHShortTensor) -> CInt -> Ptr (CTHLongTensor) -> IO (()))
+foreign import ccall "THCTensorScatterGather.h &THCShortTensor_gather"
+  p_gather :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CInt -> Ptr CTHCudaLongTensor -> IO ())
 
 -- | p_scatter : Pointer to function : state tensor dim index src -> void
-foreign import ccall "THCTensorScatterGather.h &THShortTensor_scatter"
-  p_scatter :: FunPtr (Ptr (CTHState) -> Ptr (CTHShortTensor) -> CInt -> Ptr (CTHLongTensor) -> Ptr (CTHShortTensor) -> IO (()))
+foreign import ccall "THCTensorScatterGather.h &THCShortTensor_scatter"
+  p_scatter :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CInt -> Ptr CTHCudaLongTensor -> Ptr CTHCudaShortTensor -> IO ())
 
 -- | p_scatterAdd : Pointer to function : state tensor dim index src -> void
-foreign import ccall "THCTensorScatterGather.h &THShortTensor_scatterAdd"
-  p_scatterAdd :: FunPtr (Ptr (CTHState) -> Ptr (CTHShortTensor) -> CInt -> Ptr (CTHLongTensor) -> Ptr (CTHShortTensor) -> IO (()))
+foreign import ccall "THCTensorScatterGather.h &THCShortTensor_scatterAdd"
+  p_scatterAdd :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CInt -> Ptr CTHCudaLongTensor -> Ptr CTHCudaShortTensor -> IO ())
 
 -- | p_scatterFill : Pointer to function : state tensor dim index value -> void
-foreign import ccall "THCTensorScatterGather.h &THShortTensor_scatterFill"
-  p_scatterFill :: FunPtr (Ptr (CTHState) -> Ptr (CTHShortTensor) -> CInt -> Ptr (CTHLongTensor) -> CShort -> IO (()))
+foreign import ccall "THCTensorScatterGather.h &THCShortTensor_scatterFill"
+  p_scatterFill :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CInt -> Ptr CTHCudaLongTensor -> CShort -> IO ())

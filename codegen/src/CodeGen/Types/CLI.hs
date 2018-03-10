@@ -21,15 +21,15 @@ import qualified Data.HashSet as HS
 
 
 -- | All possible libraries that we intend to support (these are all src
--- libraries in ATen)
+-- libraries in ATen). Note that this ordering is used in codegen and must not be changed.
 data LibType
   = ATen
-  | TH
-  | THC
-  | THCS
   | THCUNN
+  | THCS
+  | THC
   | THNN
   | THS
+  | TH
   deriving (Eq, Ord, Show, Enum, Bounded, Read, Generic, Hashable)
 
 

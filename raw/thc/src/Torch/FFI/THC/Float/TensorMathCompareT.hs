@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Float.TensorMathCompareT
+module Torch.FFI.THC.Float.TensorMathCompareT
   ( c_ltTensor
   , c_gtTensor
   , c_leTensor
@@ -33,97 +33,97 @@ import Data.Word
 import Data.Int
 
 -- | c_ltTensor :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_ltTensor"
-  c_ltTensor :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_ltTensor"
+  c_ltTensor :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_gtTensor :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_gtTensor"
-  c_gtTensor :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_gtTensor"
+  c_gtTensor :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_leTensor :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_leTensor"
-  c_leTensor :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_leTensor"
+  c_leTensor :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_geTensor :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_geTensor"
-  c_geTensor :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_geTensor"
+  c_geTensor :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_eqTensor :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_eqTensor"
-  c_eqTensor :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_eqTensor"
+  c_eqTensor :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_neTensor :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_neTensor"
-  c_neTensor :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_neTensor"
+  c_neTensor :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_ltTensorT :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_ltTensorT"
-  c_ltTensorT :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_ltTensorT"
+  c_ltTensorT :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_gtTensorT :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_gtTensorT"
-  c_gtTensorT :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_gtTensorT"
+  c_gtTensorT :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_leTensorT :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_leTensorT"
-  c_leTensorT :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_leTensorT"
+  c_leTensorT :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_geTensorT :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_geTensorT"
-  c_geTensorT :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_geTensorT"
+  c_geTensorT :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_eqTensorT :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_eqTensorT"
-  c_eqTensorT :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_eqTensorT"
+  c_eqTensorT :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_neTensorT :  state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h THFloatTensor_neTensorT"
-  c_neTensorT :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathCompareT.h THCFloatTensor_neTensorT"
+  c_neTensorT :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | p_ltTensor : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_ltTensor"
-  p_ltTensor :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_ltTensor"
+  p_ltTensor :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_gtTensor : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_gtTensor"
-  p_gtTensor :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_gtTensor"
+  p_gtTensor :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_leTensor : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_leTensor"
-  p_leTensor :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_leTensor"
+  p_leTensor :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_geTensor : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_geTensor"
-  p_geTensor :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_geTensor"
+  p_geTensor :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_eqTensor : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_eqTensor"
-  p_eqTensor :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_eqTensor"
+  p_eqTensor :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_neTensor : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_neTensor"
-  p_neTensor :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_neTensor"
+  p_neTensor :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_ltTensorT : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_ltTensorT"
-  p_ltTensorT :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_ltTensorT"
+  p_ltTensorT :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_gtTensorT : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_gtTensorT"
-  p_gtTensorT :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_gtTensorT"
+  p_gtTensorT :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_leTensorT : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_leTensorT"
-  p_leTensorT :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_leTensorT"
+  p_leTensorT :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_geTensorT : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_geTensorT"
-  p_geTensorT :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_geTensorT"
+  p_geTensorT :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_eqTensorT : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_eqTensorT"
-  p_eqTensorT :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_eqTensorT"
+  p_eqTensorT :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_neTensorT : Pointer to function : state self_ src1 src2 -> void
-foreign import ccall "THCTensorMathCompareT.h &THFloatTensor_neTensorT"
-  p_neTensorT :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathCompareT.h &THCFloatTensor_neTensorT"
+  p_neTensorT :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())

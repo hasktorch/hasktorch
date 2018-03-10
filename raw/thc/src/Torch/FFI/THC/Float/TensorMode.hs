@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Float.TensorMode
+module Torch.FFI.THC.Float.TensorMode
   ( c_mode
   , p_mode
   ) where
@@ -11,9 +11,9 @@ import Data.Word
 import Data.Int
 
 -- | c_mode :  state values indices input dimension keepdim -> void
-foreign import ccall "THCTensorMode.h THFloatTensor_mode"
-  c_mode :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHFloatTensor) -> CInt -> CInt -> IO (())
+foreign import ccall "THCTensorMode.h THCFloatTensor_mode"
+  c_mode :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaFloatTensor -> CInt -> CInt -> IO ()
 
 -- | p_mode : Pointer to function : state values indices input dimension keepdim -> void
-foreign import ccall "THCTensorMode.h &THFloatTensor_mode"
-  p_mode :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHFloatTensor) -> CInt -> CInt -> IO (()))
+foreign import ccall "THCTensorMode.h &THCFloatTensor_mode"
+  p_mode :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaFloatTensor -> CInt -> CInt -> IO ())

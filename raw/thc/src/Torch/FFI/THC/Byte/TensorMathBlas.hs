@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Byte.TensorMathBlas
+module Torch.FFI.THC.Byte.TensorMathBlas
   ( c_dot
   , c_addmv
   , c_addmm
@@ -21,49 +21,49 @@ import Data.Word
 import Data.Int
 
 -- | c_dot :  state self src -> accreal
-foreign import ccall "THCTensorMathBlas.h THByteTensor_dot"
-  c_dot :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (CLong)
+foreign import ccall "THCTensorMathBlas.h THCByteTensor_dot"
+  c_dot :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO CLong
 
 -- | c_addmv :  state self beta t alpha mat vec -> void
-foreign import ccall "THCTensorMathBlas.h THByteTensor_addmv"
-  c_addmv :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCByteTensor_addmv"
+  c_addmv :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_addmm :  state self beta t alpha mat1 mat2 -> void
-foreign import ccall "THCTensorMathBlas.h THByteTensor_addmm"
-  c_addmm :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCByteTensor_addmm"
+  c_addmm :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_addr :  state self beta t alpha vec1 vec2 -> void
-foreign import ccall "THCTensorMathBlas.h THByteTensor_addr"
-  c_addr :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCByteTensor_addr"
+  c_addr :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_addbmm :  state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h THByteTensor_addbmm"
-  c_addbmm :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCByteTensor_addbmm"
+  c_addbmm :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | c_baddbmm :  state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h THByteTensor_baddbmm"
-  c_baddbmm :: Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCByteTensor_baddbmm"
+  c_baddbmm :: Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ()
 
 -- | p_dot : Pointer to function : state self src -> accreal
-foreign import ccall "THCTensorMathBlas.h &THByteTensor_dot"
-  p_dot :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (CLong))
+foreign import ccall "THCTensorMathBlas.h &THCByteTensor_dot"
+  p_dot :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO CLong)
 
 -- | p_addmv : Pointer to function : state self beta t alpha mat vec -> void
-foreign import ccall "THCTensorMathBlas.h &THByteTensor_addmv"
-  p_addmv :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCByteTensor_addmv"
+  p_addmv :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_addmm : Pointer to function : state self beta t alpha mat1 mat2 -> void
-foreign import ccall "THCTensorMathBlas.h &THByteTensor_addmm"
-  p_addmm :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCByteTensor_addmm"
+  p_addmm :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_addr : Pointer to function : state self beta t alpha vec1 vec2 -> void
-foreign import ccall "THCTensorMathBlas.h &THByteTensor_addr"
-  p_addr :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCByteTensor_addr"
+  p_addr :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_addbmm : Pointer to function : state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h &THByteTensor_addbmm"
-  p_addbmm :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCByteTensor_addbmm"
+  p_addbmm :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())
 
 -- | p_baddbmm : Pointer to function : state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h &THByteTensor_baddbmm"
-  p_baddbmm :: FunPtr (Ptr (CTHState) -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> CUChar -> Ptr (CTHByteTensor) -> Ptr (CTHByteTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCByteTensor_baddbmm"
+  p_baddbmm :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> CUChar -> Ptr CTHCudaByteTensor -> Ptr CTHCudaByteTensor -> IO ())

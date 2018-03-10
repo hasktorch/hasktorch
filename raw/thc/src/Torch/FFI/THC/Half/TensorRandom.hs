@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Half.TensorRandom
+module Torch.FFI.THC.Half.TensorRandom
   ( c_random
   , c_clampedRandom
   , c_cappedRandom
@@ -21,49 +21,49 @@ import Data.Word
 import Data.Int
 
 -- | c_random :  state self -> void
-foreign import ccall "THCTensorRandom.h THHalfTensor_random"
-  c_random :: Ptr (CTHState) -> Ptr (CTHHalfTensor) -> IO (())
+foreign import ccall "THCTensorRandom.h THCHalfTensor_random"
+  c_random :: Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> IO ()
 
 -- | c_clampedRandom :  state self min max -> void
-foreign import ccall "THCTensorRandom.h THHalfTensor_clampedRandom"
-  c_clampedRandom :: Ptr (CTHState) -> Ptr (CTHHalfTensor) -> CLLong -> CLLong -> IO (())
+foreign import ccall "THCTensorRandom.h THCHalfTensor_clampedRandom"
+  c_clampedRandom :: Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> CLLong -> CLLong -> IO ()
 
 -- | c_cappedRandom :  state self max -> void
-foreign import ccall "THCTensorRandom.h THHalfTensor_cappedRandom"
-  c_cappedRandom :: Ptr (CTHState) -> Ptr (CTHHalfTensor) -> CLLong -> IO (())
+foreign import ccall "THCTensorRandom.h THCHalfTensor_cappedRandom"
+  c_cappedRandom :: Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> CLLong -> IO ()
 
 -- | c_bernoulli :  state self p -> void
-foreign import ccall "THCTensorRandom.h THHalfTensor_bernoulli"
-  c_bernoulli :: Ptr (CTHState) -> Ptr (CTHHalfTensor) -> CDouble -> IO (())
+foreign import ccall "THCTensorRandom.h THCHalfTensor_bernoulli"
+  c_bernoulli :: Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> CDouble -> IO ()
 
 -- | c_bernoulli_DoubleTensor :  state self p -> void
-foreign import ccall "THCTensorRandom.h THHalfTensor_bernoulli_DoubleTensor"
-  c_bernoulli_DoubleTensor :: Ptr (CTHState) -> Ptr (CTHHalfTensor) -> Ptr (CTHDoubleTensor) -> IO (())
+foreign import ccall "THCTensorRandom.h THCHalfTensor_bernoulli_DoubleTensor"
+  c_bernoulli_DoubleTensor :: Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> Ptr CTHCudaDoubleTensor -> IO ()
 
 -- | c_geometric :  state self p -> void
-foreign import ccall "THCTensorRandom.h THHalfTensor_geometric"
-  c_geometric :: Ptr (CTHState) -> Ptr (CTHHalfTensor) -> CDouble -> IO (())
+foreign import ccall "THCTensorRandom.h THCHalfTensor_geometric"
+  c_geometric :: Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> CDouble -> IO ()
 
 -- | p_random : Pointer to function : state self -> void
-foreign import ccall "THCTensorRandom.h &THHalfTensor_random"
-  p_random :: FunPtr (Ptr (CTHState) -> Ptr (CTHHalfTensor) -> IO (()))
+foreign import ccall "THCTensorRandom.h &THCHalfTensor_random"
+  p_random :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> IO ())
 
 -- | p_clampedRandom : Pointer to function : state self min max -> void
-foreign import ccall "THCTensorRandom.h &THHalfTensor_clampedRandom"
-  p_clampedRandom :: FunPtr (Ptr (CTHState) -> Ptr (CTHHalfTensor) -> CLLong -> CLLong -> IO (()))
+foreign import ccall "THCTensorRandom.h &THCHalfTensor_clampedRandom"
+  p_clampedRandom :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> CLLong -> CLLong -> IO ())
 
 -- | p_cappedRandom : Pointer to function : state self max -> void
-foreign import ccall "THCTensorRandom.h &THHalfTensor_cappedRandom"
-  p_cappedRandom :: FunPtr (Ptr (CTHState) -> Ptr (CTHHalfTensor) -> CLLong -> IO (()))
+foreign import ccall "THCTensorRandom.h &THCHalfTensor_cappedRandom"
+  p_cappedRandom :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> CLLong -> IO ())
 
 -- | p_bernoulli : Pointer to function : state self p -> void
-foreign import ccall "THCTensorRandom.h &THHalfTensor_bernoulli"
-  p_bernoulli :: FunPtr (Ptr (CTHState) -> Ptr (CTHHalfTensor) -> CDouble -> IO (()))
+foreign import ccall "THCTensorRandom.h &THCHalfTensor_bernoulli"
+  p_bernoulli :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> CDouble -> IO ())
 
 -- | p_bernoulli_DoubleTensor : Pointer to function : state self p -> void
-foreign import ccall "THCTensorRandom.h &THHalfTensor_bernoulli_DoubleTensor"
-  p_bernoulli_DoubleTensor :: FunPtr (Ptr (CTHState) -> Ptr (CTHHalfTensor) -> Ptr (CTHDoubleTensor) -> IO (()))
+foreign import ccall "THCTensorRandom.h &THCHalfTensor_bernoulli_DoubleTensor"
+  p_bernoulli_DoubleTensor :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> Ptr CTHCudaDoubleTensor -> IO ())
 
 -- | p_geometric : Pointer to function : state self p -> void
-foreign import ccall "THCTensorRandom.h &THHalfTensor_geometric"
-  p_geometric :: FunPtr (Ptr (CTHState) -> Ptr (CTHHalfTensor) -> CDouble -> IO (()))
+foreign import ccall "THCTensorRandom.h &THCHalfTensor_geometric"
+  p_geometric :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> CDouble -> IO ())

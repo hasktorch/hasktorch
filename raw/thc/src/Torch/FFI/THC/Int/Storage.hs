@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Int.Storage
+module Torch.FFI.THC.Int.Storage
   ( c_data
   , c_size
   , c_set
@@ -47,153 +47,153 @@ import Data.Word
 import Data.Int
 
 -- | c_data :  state  -> real *
-foreign import ccall "THCStorage.h THIntStorage_data"
-  c_data :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (Ptr (CInt))
+foreign import ccall "THCStorage.h THCIntStorage_data"
+  c_data :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO (Ptr CInt)
 
 -- | c_size :  state  -> ptrdiff_t
-foreign import ccall "THCStorage.h THIntStorage_size"
-  c_size :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (CPtrdiff)
+foreign import ccall "THCStorage.h THCIntStorage_size"
+  c_size :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO CPtrdiff
 
 -- | c_set :  state    -> void
-foreign import ccall "THCStorage.h THIntStorage_set"
-  c_set :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> CPtrdiff -> CInt -> IO (())
+foreign import ccall "THCStorage.h THCIntStorage_set"
+  c_set :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CPtrdiff -> CInt -> IO ()
 
 -- | c_get :  state   -> real
-foreign import ccall "THCStorage.h THIntStorage_get"
-  c_get :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> CPtrdiff -> IO (CInt)
+foreign import ccall "THCStorage.h THCIntStorage_get"
+  c_get :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CPtrdiff -> IO CInt
 
--- | c_new :  state -> THStorage *
-foreign import ccall "THCStorage.h THIntStorage_new"
-  c_new :: Ptr (CTHState) -> IO (Ptr (CTHIntStorage))
+-- | c_new :  state -> THCStorage *
+foreign import ccall "THCStorage.h THCIntStorage_new"
+  c_new :: Ptr CTHCudaState -> IO (Ptr CTHCudaIntStorage)
 
--- | c_newWithSize :  state size -> THStorage *
-foreign import ccall "THCStorage.h THIntStorage_newWithSize"
-  c_newWithSize :: Ptr (CTHState) -> CPtrdiff -> IO (Ptr (CTHIntStorage))
+-- | c_newWithSize :  state size -> THCStorage *
+foreign import ccall "THCStorage.h THCIntStorage_newWithSize"
+  c_newWithSize :: Ptr CTHCudaState -> CPtrdiff -> IO (Ptr CTHCudaIntStorage)
 
--- | c_newWithSize1 :  state  -> THStorage *
-foreign import ccall "THCStorage.h THIntStorage_newWithSize1"
-  c_newWithSize1 :: Ptr (CTHState) -> CInt -> IO (Ptr (CTHIntStorage))
+-- | c_newWithSize1 :  state  -> THCStorage *
+foreign import ccall "THCStorage.h THCIntStorage_newWithSize1"
+  c_newWithSize1 :: Ptr CTHCudaState -> CInt -> IO (Ptr CTHCudaIntStorage)
 
--- | c_newWithSize2 :  state   -> THStorage *
-foreign import ccall "THCStorage.h THIntStorage_newWithSize2"
-  c_newWithSize2 :: Ptr (CTHState) -> CInt -> CInt -> IO (Ptr (CTHIntStorage))
+-- | c_newWithSize2 :  state   -> THCStorage *
+foreign import ccall "THCStorage.h THCIntStorage_newWithSize2"
+  c_newWithSize2 :: Ptr CTHCudaState -> CInt -> CInt -> IO (Ptr CTHCudaIntStorage)
 
--- | c_newWithSize3 :  state    -> THStorage *
-foreign import ccall "THCStorage.h THIntStorage_newWithSize3"
-  c_newWithSize3 :: Ptr (CTHState) -> CInt -> CInt -> CInt -> IO (Ptr (CTHIntStorage))
+-- | c_newWithSize3 :  state    -> THCStorage *
+foreign import ccall "THCStorage.h THCIntStorage_newWithSize3"
+  c_newWithSize3 :: Ptr CTHCudaState -> CInt -> CInt -> CInt -> IO (Ptr CTHCudaIntStorage)
 
--- | c_newWithSize4 :  state     -> THStorage *
-foreign import ccall "THCStorage.h THIntStorage_newWithSize4"
-  c_newWithSize4 :: Ptr (CTHState) -> CInt -> CInt -> CInt -> CInt -> IO (Ptr (CTHIntStorage))
+-- | c_newWithSize4 :  state     -> THCStorage *
+foreign import ccall "THCStorage.h THCIntStorage_newWithSize4"
+  c_newWithSize4 :: Ptr CTHCudaState -> CInt -> CInt -> CInt -> CInt -> IO (Ptr CTHCudaIntStorage)
 
--- | c_newWithMapping :  state filename size shared -> THStorage *
-foreign import ccall "THCStorage.h THIntStorage_newWithMapping"
-  c_newWithMapping :: Ptr (CTHState) -> Ptr (CChar) -> CPtrdiff -> CInt -> IO (Ptr (CTHIntStorage))
+-- | c_newWithMapping :  state filename size shared -> THCStorage *
+foreign import ccall "THCStorage.h THCIntStorage_newWithMapping"
+  c_newWithMapping :: Ptr CTHCudaState -> Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHCudaIntStorage)
 
--- | c_newWithData :  state data size -> THStorage *
-foreign import ccall "THCStorage.h THIntStorage_newWithData"
-  c_newWithData :: Ptr (CTHState) -> Ptr (CInt) -> CPtrdiff -> IO (Ptr (CTHIntStorage))
+-- | c_newWithData :  state data size -> THCStorage *
+foreign import ccall "THCStorage.h THCIntStorage_newWithData"
+  c_newWithData :: Ptr CTHCudaState -> Ptr CInt -> CPtrdiff -> IO (Ptr CTHCudaIntStorage)
 
 -- | c_setFlag :  state storage flag -> void
-foreign import ccall "THCStorage.h THIntStorage_setFlag"
-  c_setFlag :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> CChar -> IO (())
+foreign import ccall "THCStorage.h THCIntStorage_setFlag"
+  c_setFlag :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CChar -> IO ()
 
 -- | c_clearFlag :  state storage flag -> void
-foreign import ccall "THCStorage.h THIntStorage_clearFlag"
-  c_clearFlag :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> CChar -> IO (())
+foreign import ccall "THCStorage.h THCIntStorage_clearFlag"
+  c_clearFlag :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CChar -> IO ()
 
 -- | c_retain :  state storage -> void
-foreign import ccall "THCStorage.h THIntStorage_retain"
-  c_retain :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (())
+foreign import ccall "THCStorage.h THCIntStorage_retain"
+  c_retain :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO ()
 
 -- | c_free :  state storage -> void
-foreign import ccall "THCStorage.h THIntStorage_free"
-  c_free :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (())
+foreign import ccall "THCStorage.h THCIntStorage_free"
+  c_free :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO ()
 
 -- | c_resize :  state storage size -> void
-foreign import ccall "THCStorage.h THIntStorage_resize"
-  c_resize :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> CPtrdiff -> IO (())
+foreign import ccall "THCStorage.h THCIntStorage_resize"
+  c_resize :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CPtrdiff -> IO ()
 
 -- | c_fill :  state storage value -> void
-foreign import ccall "THCStorage.h THIntStorage_fill"
-  c_fill :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> CInt -> IO (())
+foreign import ccall "THCStorage.h THCIntStorage_fill"
+  c_fill :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CInt -> IO ()
 
 -- | c_getDevice :  state storage -> int
-foreign import ccall "THCStorage.h THIntStorage_getDevice"
-  c_getDevice :: Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (CInt)
+foreign import ccall "THCStorage.h THCIntStorage_getDevice"
+  c_getDevice :: Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO CInt
 
 -- | p_data : Pointer to function : state  -> real *
-foreign import ccall "THCStorage.h &THIntStorage_data"
-  p_data :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (Ptr (CInt)))
+foreign import ccall "THCStorage.h &THCIntStorage_data"
+  p_data :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO (Ptr CInt))
 
 -- | p_size : Pointer to function : state  -> ptrdiff_t
-foreign import ccall "THCStorage.h &THIntStorage_size"
-  p_size :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (CPtrdiff))
+foreign import ccall "THCStorage.h &THCIntStorage_size"
+  p_size :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO CPtrdiff)
 
 -- | p_set : Pointer to function : state    -> void
-foreign import ccall "THCStorage.h &THIntStorage_set"
-  p_set :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> CPtrdiff -> CInt -> IO (()))
+foreign import ccall "THCStorage.h &THCIntStorage_set"
+  p_set :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CPtrdiff -> CInt -> IO ())
 
 -- | p_get : Pointer to function : state   -> real
-foreign import ccall "THCStorage.h &THIntStorage_get"
-  p_get :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> CPtrdiff -> IO (CInt))
+foreign import ccall "THCStorage.h &THCIntStorage_get"
+  p_get :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CPtrdiff -> IO CInt)
 
--- | p_new : Pointer to function : state -> THStorage *
-foreign import ccall "THCStorage.h &THIntStorage_new"
-  p_new :: FunPtr (Ptr (CTHState) -> IO (Ptr (CTHIntStorage)))
+-- | p_new : Pointer to function : state -> THCStorage *
+foreign import ccall "THCStorage.h &THCIntStorage_new"
+  p_new :: FunPtr (Ptr CTHCudaState -> IO (Ptr CTHCudaIntStorage))
 
--- | p_newWithSize : Pointer to function : state size -> THStorage *
-foreign import ccall "THCStorage.h &THIntStorage_newWithSize"
-  p_newWithSize :: FunPtr (Ptr (CTHState) -> CPtrdiff -> IO (Ptr (CTHIntStorage)))
+-- | p_newWithSize : Pointer to function : state size -> THCStorage *
+foreign import ccall "THCStorage.h &THCIntStorage_newWithSize"
+  p_newWithSize :: FunPtr (Ptr CTHCudaState -> CPtrdiff -> IO (Ptr CTHCudaIntStorage))
 
--- | p_newWithSize1 : Pointer to function : state  -> THStorage *
-foreign import ccall "THCStorage.h &THIntStorage_newWithSize1"
-  p_newWithSize1 :: FunPtr (Ptr (CTHState) -> CInt -> IO (Ptr (CTHIntStorage)))
+-- | p_newWithSize1 : Pointer to function : state  -> THCStorage *
+foreign import ccall "THCStorage.h &THCIntStorage_newWithSize1"
+  p_newWithSize1 :: FunPtr (Ptr CTHCudaState -> CInt -> IO (Ptr CTHCudaIntStorage))
 
--- | p_newWithSize2 : Pointer to function : state   -> THStorage *
-foreign import ccall "THCStorage.h &THIntStorage_newWithSize2"
-  p_newWithSize2 :: FunPtr (Ptr (CTHState) -> CInt -> CInt -> IO (Ptr (CTHIntStorage)))
+-- | p_newWithSize2 : Pointer to function : state   -> THCStorage *
+foreign import ccall "THCStorage.h &THCIntStorage_newWithSize2"
+  p_newWithSize2 :: FunPtr (Ptr CTHCudaState -> CInt -> CInt -> IO (Ptr CTHCudaIntStorage))
 
--- | p_newWithSize3 : Pointer to function : state    -> THStorage *
-foreign import ccall "THCStorage.h &THIntStorage_newWithSize3"
-  p_newWithSize3 :: FunPtr (Ptr (CTHState) -> CInt -> CInt -> CInt -> IO (Ptr (CTHIntStorage)))
+-- | p_newWithSize3 : Pointer to function : state    -> THCStorage *
+foreign import ccall "THCStorage.h &THCIntStorage_newWithSize3"
+  p_newWithSize3 :: FunPtr (Ptr CTHCudaState -> CInt -> CInt -> CInt -> IO (Ptr CTHCudaIntStorage))
 
--- | p_newWithSize4 : Pointer to function : state     -> THStorage *
-foreign import ccall "THCStorage.h &THIntStorage_newWithSize4"
-  p_newWithSize4 :: FunPtr (Ptr (CTHState) -> CInt -> CInt -> CInt -> CInt -> IO (Ptr (CTHIntStorage)))
+-- | p_newWithSize4 : Pointer to function : state     -> THCStorage *
+foreign import ccall "THCStorage.h &THCIntStorage_newWithSize4"
+  p_newWithSize4 :: FunPtr (Ptr CTHCudaState -> CInt -> CInt -> CInt -> CInt -> IO (Ptr CTHCudaIntStorage))
 
--- | p_newWithMapping : Pointer to function : state filename size shared -> THStorage *
-foreign import ccall "THCStorage.h &THIntStorage_newWithMapping"
-  p_newWithMapping :: FunPtr (Ptr (CTHState) -> Ptr (CChar) -> CPtrdiff -> CInt -> IO (Ptr (CTHIntStorage)))
+-- | p_newWithMapping : Pointer to function : state filename size shared -> THCStorage *
+foreign import ccall "THCStorage.h &THCIntStorage_newWithMapping"
+  p_newWithMapping :: FunPtr (Ptr CTHCudaState -> Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CTHCudaIntStorage))
 
--- | p_newWithData : Pointer to function : state data size -> THStorage *
-foreign import ccall "THCStorage.h &THIntStorage_newWithData"
-  p_newWithData :: FunPtr (Ptr (CTHState) -> Ptr (CInt) -> CPtrdiff -> IO (Ptr (CTHIntStorage)))
+-- | p_newWithData : Pointer to function : state data size -> THCStorage *
+foreign import ccall "THCStorage.h &THCIntStorage_newWithData"
+  p_newWithData :: FunPtr (Ptr CTHCudaState -> Ptr CInt -> CPtrdiff -> IO (Ptr CTHCudaIntStorage))
 
 -- | p_setFlag : Pointer to function : state storage flag -> void
-foreign import ccall "THCStorage.h &THIntStorage_setFlag"
-  p_setFlag :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> CChar -> IO (()))
+foreign import ccall "THCStorage.h &THCIntStorage_setFlag"
+  p_setFlag :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CChar -> IO ())
 
 -- | p_clearFlag : Pointer to function : state storage flag -> void
-foreign import ccall "THCStorage.h &THIntStorage_clearFlag"
-  p_clearFlag :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> CChar -> IO (()))
+foreign import ccall "THCStorage.h &THCIntStorage_clearFlag"
+  p_clearFlag :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CChar -> IO ())
 
 -- | p_retain : Pointer to function : state storage -> void
-foreign import ccall "THCStorage.h &THIntStorage_retain"
-  p_retain :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (()))
+foreign import ccall "THCStorage.h &THCIntStorage_retain"
+  p_retain :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO ())
 
 -- | p_free : Pointer to function : state storage -> void
-foreign import ccall "THCStorage.h &THIntStorage_free"
-  p_free :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (()))
+foreign import ccall "THCStorage.h &THCIntStorage_free"
+  p_free :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO ())
 
 -- | p_resize : Pointer to function : state storage size -> void
-foreign import ccall "THCStorage.h &THIntStorage_resize"
-  p_resize :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> CPtrdiff -> IO (()))
+foreign import ccall "THCStorage.h &THCIntStorage_resize"
+  p_resize :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CPtrdiff -> IO ())
 
 -- | p_fill : Pointer to function : state storage value -> void
-foreign import ccall "THCStorage.h &THIntStorage_fill"
-  p_fill :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> CInt -> IO (()))
+foreign import ccall "THCStorage.h &THCIntStorage_fill"
+  p_fill :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> CInt -> IO ())
 
 -- | p_getDevice : Pointer to function : state storage -> int
-foreign import ccall "THCStorage.h &THIntStorage_getDevice"
-  p_getDevice :: FunPtr (Ptr (CTHState) -> Ptr (CTHIntStorage) -> IO (CInt))
+foreign import ccall "THCStorage.h &THCIntStorage_getDevice"
+  p_getDevice :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaIntStorage -> IO CInt)

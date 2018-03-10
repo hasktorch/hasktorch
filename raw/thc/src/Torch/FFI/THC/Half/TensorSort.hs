@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Half.TensorSort
+module Torch.FFI.THC.Half.TensorSort
   ( c_sortKeyValueInplace
   , c_sort
   , p_sortKeyValueInplace
@@ -13,17 +13,17 @@ import Data.Word
 import Data.Int
 
 -- | c_sortKeyValueInplace :  state keys values dim order -> void
-foreign import ccall "THCTensorSort.h THHalfTensor_sortKeyValueInplace"
-  c_sortKeyValueInplace :: Ptr (CTHState) -> Ptr (CTHHalfTensor) -> Ptr (CTHLongTensor) -> CInt -> CInt -> IO (())
+foreign import ccall "THCTensorSort.h THCHalfTensor_sortKeyValueInplace"
+  c_sortKeyValueInplace :: Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> Ptr CTHCudaLongTensor -> CInt -> CInt -> IO ()
 
 -- | c_sort :  state sorted indices input dim order -> void
-foreign import ccall "THCTensorSort.h THHalfTensor_sort"
-  c_sort :: Ptr (CTHState) -> Ptr (CTHHalfTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHHalfTensor) -> CInt -> CInt -> IO (())
+foreign import ccall "THCTensorSort.h THCHalfTensor_sort"
+  c_sort :: Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaHalfTensor -> CInt -> CInt -> IO ()
 
 -- | p_sortKeyValueInplace : Pointer to function : state keys values dim order -> void
-foreign import ccall "THCTensorSort.h &THHalfTensor_sortKeyValueInplace"
-  p_sortKeyValueInplace :: FunPtr (Ptr (CTHState) -> Ptr (CTHHalfTensor) -> Ptr (CTHLongTensor) -> CInt -> CInt -> IO (()))
+foreign import ccall "THCTensorSort.h &THCHalfTensor_sortKeyValueInplace"
+  p_sortKeyValueInplace :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> Ptr CTHCudaLongTensor -> CInt -> CInt -> IO ())
 
 -- | p_sort : Pointer to function : state sorted indices input dim order -> void
-foreign import ccall "THCTensorSort.h &THHalfTensor_sort"
-  p_sort :: FunPtr (Ptr (CTHState) -> Ptr (CTHHalfTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHHalfTensor) -> CInt -> CInt -> IO (()))
+foreign import ccall "THCTensorSort.h &THCHalfTensor_sort"
+  p_sort :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaHalfTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaHalfTensor -> CInt -> CInt -> IO ())

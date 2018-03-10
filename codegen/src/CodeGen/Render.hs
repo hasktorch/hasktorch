@@ -33,7 +33,7 @@ renderExtensions extensions = T.intercalate "\n" (extensions' <> [""])
 renderModule :: HModule -> Text
 renderModule m
   = "module "
-  <> outModule TH
+  <> outModule (prefix m)
   <> generatedTypeModule
   <> "." <> textFileSuffix (fileSuffix m)
  where

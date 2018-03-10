@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Char.TensorSort
+module Torch.FFI.THC.Char.TensorSort
   ( c_sortKeyValueInplace
   , c_sort
   , p_sortKeyValueInplace
@@ -13,17 +13,17 @@ import Data.Word
 import Data.Int
 
 -- | c_sortKeyValueInplace :  state keys values dim order -> void
-foreign import ccall "THCTensorSort.h THCharTensor_sortKeyValueInplace"
-  c_sortKeyValueInplace :: Ptr (CTHState) -> Ptr (CTHCharTensor) -> Ptr (CTHLongTensor) -> CInt -> CInt -> IO (())
+foreign import ccall "THCTensorSort.h THCCharTensor_sortKeyValueInplace"
+  c_sortKeyValueInplace :: Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> Ptr CTHCudaLongTensor -> CInt -> CInt -> IO ()
 
 -- | c_sort :  state sorted indices input dim order -> void
-foreign import ccall "THCTensorSort.h THCharTensor_sort"
-  c_sort :: Ptr (CTHState) -> Ptr (CTHCharTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHCharTensor) -> CInt -> CInt -> IO (())
+foreign import ccall "THCTensorSort.h THCCharTensor_sort"
+  c_sort :: Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaCharTensor -> CInt -> CInt -> IO ()
 
 -- | p_sortKeyValueInplace : Pointer to function : state keys values dim order -> void
-foreign import ccall "THCTensorSort.h &THCharTensor_sortKeyValueInplace"
-  p_sortKeyValueInplace :: FunPtr (Ptr (CTHState) -> Ptr (CTHCharTensor) -> Ptr (CTHLongTensor) -> CInt -> CInt -> IO (()))
+foreign import ccall "THCTensorSort.h &THCCharTensor_sortKeyValueInplace"
+  p_sortKeyValueInplace :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> Ptr CTHCudaLongTensor -> CInt -> CInt -> IO ())
 
 -- | p_sort : Pointer to function : state sorted indices input dim order -> void
-foreign import ccall "THCTensorSort.h &THCharTensor_sort"
-  p_sort :: FunPtr (Ptr (CTHState) -> Ptr (CTHCharTensor) -> Ptr (CTHLongTensor) -> Ptr (CTHCharTensor) -> CInt -> CInt -> IO (()))
+foreign import ccall "THCTensorSort.h &THCCharTensor_sort"
+  p_sort :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaCharTensor -> Ptr CTHCudaLongTensor -> Ptr CTHCudaCharTensor -> CInt -> CInt -> IO ())

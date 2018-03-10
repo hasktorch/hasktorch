@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Float.TensorMathBlas
+module Torch.FFI.THC.Float.TensorMathBlas
   ( c_dot
   , c_addmv
   , c_addmm
@@ -25,65 +25,65 @@ import Data.Word
 import Data.Int
 
 -- | c_dot :  state self src -> accreal
-foreign import ccall "THCTensorMathBlas.h THFloatTensor_dot"
-  c_dot :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (CDouble)
+foreign import ccall "THCTensorMathBlas.h THCFloatTensor_dot"
+  c_dot :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO CDouble
 
 -- | c_addmv :  state self beta t alpha mat vec -> void
-foreign import ccall "THCTensorMathBlas.h THFloatTensor_addmv"
-  c_addmv :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCFloatTensor_addmv"
+  c_addmv :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_addmm :  state self beta t alpha mat1 mat2 -> void
-foreign import ccall "THCTensorMathBlas.h THFloatTensor_addmm"
-  c_addmm :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCFloatTensor_addmm"
+  c_addmm :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_addr :  state self beta t alpha vec1 vec2 -> void
-foreign import ccall "THCTensorMathBlas.h THFloatTensor_addr"
-  c_addr :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCFloatTensor_addr"
+  c_addr :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_addbmm :  state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h THFloatTensor_addbmm"
-  c_addbmm :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCFloatTensor_addbmm"
+  c_addbmm :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_baddbmm :  state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h THFloatTensor_baddbmm"
-  c_baddbmm :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCFloatTensor_baddbmm"
+  c_baddbmm :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_btrifact :  state ra_ rpivots_ rinfo_ pivot a -> void
-foreign import ccall "THCTensorMathBlas.h THFloatTensor_btrifact"
-  c_btrifact :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHIntTensor) -> Ptr (CTHIntTensor) -> CInt -> Ptr (CTHFloatTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCFloatTensor_btrifact"
+  c_btrifact :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaIntTensor -> Ptr CTHCudaIntTensor -> CInt -> Ptr CTHCudaFloatTensor -> IO ()
 
 -- | c_btrisolve :  state rb_ b atf pivots -> void
-foreign import ccall "THCTensorMathBlas.h THFloatTensor_btrisolve"
-  c_btrisolve :: Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHIntTensor) -> IO (())
+foreign import ccall "THCTensorMathBlas.h THCFloatTensor_btrisolve"
+  c_btrisolve :: Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaIntTensor -> IO ()
 
 -- | p_dot : Pointer to function : state self src -> accreal
-foreign import ccall "THCTensorMathBlas.h &THFloatTensor_dot"
-  p_dot :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (CDouble))
+foreign import ccall "THCTensorMathBlas.h &THCFloatTensor_dot"
+  p_dot :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO CDouble)
 
 -- | p_addmv : Pointer to function : state self beta t alpha mat vec -> void
-foreign import ccall "THCTensorMathBlas.h &THFloatTensor_addmv"
-  p_addmv :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCFloatTensor_addmv"
+  p_addmv :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_addmm : Pointer to function : state self beta t alpha mat1 mat2 -> void
-foreign import ccall "THCTensorMathBlas.h &THFloatTensor_addmm"
-  p_addmm :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCFloatTensor_addmm"
+  p_addmm :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_addr : Pointer to function : state self beta t alpha vec1 vec2 -> void
-foreign import ccall "THCTensorMathBlas.h &THFloatTensor_addr"
-  p_addr :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCFloatTensor_addr"
+  p_addr :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_addbmm : Pointer to function : state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h &THFloatTensor_addbmm"
-  p_addbmm :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCFloatTensor_addbmm"
+  p_addbmm :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_baddbmm : Pointer to function : state result beta t alpha batch1 batch2 -> void
-foreign import ccall "THCTensorMathBlas.h &THFloatTensor_baddbmm"
-  p_baddbmm :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> CFloat -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCFloatTensor_baddbmm"
+  p_baddbmm :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> CFloat -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_btrifact : Pointer to function : state ra_ rpivots_ rinfo_ pivot a -> void
-foreign import ccall "THCTensorMathBlas.h &THFloatTensor_btrifact"
-  p_btrifact :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHIntTensor) -> Ptr (CTHIntTensor) -> CInt -> Ptr (CTHFloatTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCFloatTensor_btrifact"
+  p_btrifact :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaIntTensor -> Ptr CTHCudaIntTensor -> CInt -> Ptr CTHCudaFloatTensor -> IO ())
 
 -- | p_btrisolve : Pointer to function : state rb_ b atf pivots -> void
-foreign import ccall "THCTensorMathBlas.h &THFloatTensor_btrisolve"
-  p_btrisolve :: FunPtr (Ptr (CTHState) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHFloatTensor) -> Ptr (CTHIntTensor) -> IO (()))
+foreign import ccall "THCTensorMathBlas.h &THCFloatTensor_btrisolve"
+  p_btrisolve :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaFloatTensor -> Ptr CTHCudaIntTensor -> IO ())

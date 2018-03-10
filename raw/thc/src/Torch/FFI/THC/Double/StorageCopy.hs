@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Double.StorageCopy
+module Torch.FFI.THC.Double.StorageCopy
   ( c_rawCopy
   , c_copy
   , c_copyByte
@@ -33,97 +33,97 @@ import Data.Word
 import Data.Int
 
 -- | c_rawCopy :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_rawCopy"
-  c_rawCopy :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CDouble) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_rawCopy"
+  c_rawCopy :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CDouble -> IO ()
 
 -- | c_copy :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copy"
-  c_copy :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHDoubleStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copy"
+  c_copy :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaDoubleStorage -> IO ()
 
 -- | c_copyByte :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyByte"
-  c_copyByte :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHByteStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyByte"
+  c_copyByte :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaByteStorage -> IO ()
 
 -- | c_copyChar :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyChar"
-  c_copyChar :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHCharStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyChar"
+  c_copyChar :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaCharStorage -> IO ()
 
 -- | c_copyShort :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyShort"
-  c_copyShort :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHShortStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyShort"
+  c_copyShort :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaShortStorage -> IO ()
 
 -- | c_copyInt :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyInt"
-  c_copyInt :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHIntStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyInt"
+  c_copyInt :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaIntStorage -> IO ()
 
 -- | c_copyLong :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyLong"
-  c_copyLong :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHLongStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyLong"
+  c_copyLong :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaLongStorage -> IO ()
 
 -- | c_copyFloat :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyFloat"
-  c_copyFloat :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHFloatStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyFloat"
+  c_copyFloat :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaFloatStorage -> IO ()
 
 -- | c_copyDouble :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyDouble"
-  c_copyDouble :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHDoubleStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyDouble"
+  c_copyDouble :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaDoubleStorage -> IO ()
 
 -- | c_copyHalf :  state storage src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyHalf"
-  c_copyHalf :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHHalfStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyHalf"
+  c_copyHalf :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaHalfStorage -> IO ()
 
 -- | c_copyCuda :  state self src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyCuda"
-  c_copyCuda :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHDoubleStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyCuda"
+  c_copyCuda :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaDoubleStorage -> IO ()
 
 -- | c_copyCPU :  state self src -> void
-foreign import ccall "THCStorageCopy.h THDoubleStorage_copyCPU"
-  c_copyCPU :: Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHDoubleStorage) -> IO (())
+foreign import ccall "THCStorageCopy.h THCDoubleStorage_copyCPU"
+  c_copyCPU :: Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaDoubleStorage -> IO ()
 
 -- | p_rawCopy : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_rawCopy"
-  p_rawCopy :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CDouble) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_rawCopy"
+  p_rawCopy :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CDouble -> IO ())
 
 -- | p_copy : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copy"
-  p_copy :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHDoubleStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copy"
+  p_copy :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaDoubleStorage -> IO ())
 
 -- | p_copyByte : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyByte"
-  p_copyByte :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHByteStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyByte"
+  p_copyByte :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaByteStorage -> IO ())
 
 -- | p_copyChar : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyChar"
-  p_copyChar :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHCharStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyChar"
+  p_copyChar :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaCharStorage -> IO ())
 
 -- | p_copyShort : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyShort"
-  p_copyShort :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHShortStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyShort"
+  p_copyShort :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaShortStorage -> IO ())
 
 -- | p_copyInt : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyInt"
-  p_copyInt :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHIntStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyInt"
+  p_copyInt :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaIntStorage -> IO ())
 
 -- | p_copyLong : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyLong"
-  p_copyLong :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHLongStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyLong"
+  p_copyLong :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaLongStorage -> IO ())
 
 -- | p_copyFloat : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyFloat"
-  p_copyFloat :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHFloatStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyFloat"
+  p_copyFloat :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaFloatStorage -> IO ())
 
 -- | p_copyDouble : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyDouble"
-  p_copyDouble :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHDoubleStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyDouble"
+  p_copyDouble :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaDoubleStorage -> IO ())
 
 -- | p_copyHalf : Pointer to function : state storage src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyHalf"
-  p_copyHalf :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHHalfStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyHalf"
+  p_copyHalf :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaHalfStorage -> IO ())
 
 -- | p_copyCuda : Pointer to function : state self src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyCuda"
-  p_copyCuda :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHDoubleStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyCuda"
+  p_copyCuda :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaDoubleStorage -> IO ())
 
 -- | p_copyCPU : Pointer to function : state self src -> void
-foreign import ccall "THCStorageCopy.h &THDoubleStorage_copyCPU"
-  p_copyCPU :: FunPtr (Ptr (CTHState) -> Ptr (CTHDoubleStorage) -> Ptr (CTHDoubleStorage) -> IO (()))
+foreign import ccall "THCStorageCopy.h &THCDoubleStorage_copyCPU"
+  p_copyCPU :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaDoubleStorage -> Ptr CTHCudaDoubleStorage -> IO ())
