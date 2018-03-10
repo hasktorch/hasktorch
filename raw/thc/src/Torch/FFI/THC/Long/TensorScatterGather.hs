@@ -1,14 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Long.TensorScatterGather
-  ( c_gather
-  , c_scatter
-  , c_scatterAdd
-  , c_scatterFill
-  , p_gather
-  , p_scatter
-  , p_scatterAdd
-  , p_scatterFill
-  ) where
+module Torch.FFI.THC.Long.TensorScatterGather where
 
 import Foreign
 import Foreign.C.Types

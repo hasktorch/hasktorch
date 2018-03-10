@@ -1,8 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Sleep
-  ( c_THC_sleep
-  , p_THC_sleep
-  ) where
+module Torch.FFI.THC.Sleep where
 
 import Foreign
 import Foreign.C.Types

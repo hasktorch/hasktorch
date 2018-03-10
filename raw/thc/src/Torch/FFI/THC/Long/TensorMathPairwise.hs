@@ -1,34 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Long.TensorMathPairwise
-  ( c_add
-  , c_sub
-  , c_add_scaled
-  , c_sub_scaled
-  , c_mul
-  , c_div
-  , c_lshift
-  , c_rshift
-  , c_fmod
-  , c_remainder
-  , c_bitand
-  , c_bitor
-  , c_bitxor
-  , c_equal
-  , p_add
-  , p_sub
-  , p_add_scaled
-  , p_sub_scaled
-  , p_mul
-  , p_div
-  , p_lshift
-  , p_rshift
-  , p_fmod
-  , p_remainder
-  , p_bitand
-  , p_bitor
-  , p_bitxor
-  , p_equal
-  ) where
+module Torch.FFI.THC.Long.TensorMathPairwise where
 
 import Foreign
 import Foreign.C.Types

@@ -1,16 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Storage
-  ( c_THLongStorage_sizeDesc
-  , c_THLongStorage_newInferSize
-  , c_THLongStorage_inferSize2
-  , c_THLongStorage_inferSizeN
-  , c_THLongStorage_inferExpandGeometry
-  , p_THLongStorage_sizeDesc
-  , p_THLongStorage_newInferSize
-  , p_THLongStorage_inferSize2
-  , p_THLongStorage_inferSizeN
-  , p_THLongStorage_inferExpandGeometry
-  ) where
+module Torch.FFI.TH.Storage where
 
 import Foreign
 import Foreign.C.Types

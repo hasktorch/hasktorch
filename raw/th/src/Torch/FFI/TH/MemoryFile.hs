@@ -1,14 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.MemoryFile
-  ( c_THMemoryFile_newWithStorage
-  , c_THMemoryFile_new
-  , c_THMemoryFile_storage
-  , c_THMemoryFile_longSize
-  , p_THMemoryFile_newWithStorage
-  , p_THMemoryFile_new
-  , p_THMemoryFile_storage
-  , p_THMemoryFile_longSize
-  ) where
+module Torch.FFI.TH.MemoryFile where
 
 import Foreign
 import Foreign.C.Types

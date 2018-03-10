@@ -1,28 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Double.TensorIndex
-  ( c_indexCopy
-  , c_indexAdd
-  , c_indexFill
-  , c_indexSelect
-  , c_take
-  , c_put
-  , c_indexCopy_long
-  , c_indexAdd_long
-  , c_indexFill_long
-  , c_indexSelect_long
-  , c_calculateAdvancedIndexingOffsets
-  , p_indexCopy
-  , p_indexAdd
-  , p_indexFill
-  , p_indexSelect
-  , p_take
-  , p_put
-  , p_indexCopy_long
-  , p_indexAdd_long
-  , p_indexFill_long
-  , p_indexSelect_long
-  , p_calculateAdvancedIndexingOffsets
-  ) where
+module Torch.FFI.THC.Double.TensorIndex where
 
 import Foreign
 import Foreign.C.Types

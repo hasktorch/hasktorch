@@ -1,24 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.TensorRandom
-  ( c_THCRandom_init
-  , c_THCRandom_shutdown
-  , c_THCRandom_seed
-  , c_THCRandom_seedAll
-  , c_THCRandom_manualSeed
-  , c_THCRandom_manualSeedAll
-  , c_THCRandom_initialSeed
-  , c_THCRandom_getRNGState
-  , c_THCRandom_setRNGState
-  , p_THCRandom_init
-  , p_THCRandom_shutdown
-  , p_THCRandom_seed
-  , p_THCRandom_seedAll
-  , p_THCRandom_manualSeed
-  , p_THCRandom_manualSeedAll
-  , p_THCRandom_initialSeed
-  , p_THCRandom_getRNGState
-  , p_THCRandom_setRNGState
-  ) where
+module Torch.FFI.THC.TensorRandom where
 
 import Foreign
 import Foreign.C.Types

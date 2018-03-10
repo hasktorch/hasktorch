@@ -1,10 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Size
-  ( c_THSize_isSameSizeAs
-  , c_THSize_nElement
-  , p_THSize_isSameSizeAs
-  , p_THSize_nElement
-  ) where
+module Torch.FFI.TH.Size where
 
 import Foreign
 import Foreign.C.Types

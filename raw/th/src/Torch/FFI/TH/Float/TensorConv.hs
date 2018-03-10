@@ -1,50 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Float.TensorConv
-  ( c_validXCorr2Dptr
-  , c_validConv2Dptr
-  , c_fullXCorr2Dptr
-  , c_fullConv2Dptr
-  , c_validXCorr2DRevptr
-  , c_conv2DRevger
-  , c_conv2DRevgerm
-  , c_conv2Dger
-  , c_conv2Dmv
-  , c_conv2Dmm
-  , c_conv2Dmul
-  , c_conv2Dcmul
-  , c_validXCorr3Dptr
-  , c_validConv3Dptr
-  , c_fullXCorr3Dptr
-  , c_fullConv3Dptr
-  , c_validXCorr3DRevptr
-  , c_conv3DRevger
-  , c_conv3Dger
-  , c_conv3Dmv
-  , c_conv3Dmul
-  , c_conv3Dcmul
-  , p_validXCorr2Dptr
-  , p_validConv2Dptr
-  , p_fullXCorr2Dptr
-  , p_fullConv2Dptr
-  , p_validXCorr2DRevptr
-  , p_conv2DRevger
-  , p_conv2DRevgerm
-  , p_conv2Dger
-  , p_conv2Dmv
-  , p_conv2Dmm
-  , p_conv2Dmul
-  , p_conv2Dcmul
-  , p_validXCorr3Dptr
-  , p_validConv3Dptr
-  , p_fullXCorr3Dptr
-  , p_fullConv3Dptr
-  , p_validXCorr3DRevptr
-  , p_conv3DRevger
-  , p_conv3Dger
-  , p_conv3Dmv
-  , p_conv3Dmul
-  , p_conv3Dcmul
-  ) where
+module Torch.FFI.TH.Float.TensorConv where
 
 import Foreign
 import Foreign.C.Types

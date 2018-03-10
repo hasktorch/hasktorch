@@ -1,26 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.DiskFile
-  ( c_THDiskFile_new
-  , c_THPipeFile_new
-  , c_THDiskFile_name
-  , c_THDiskFile_isLittleEndianCPU
-  , c_THDiskFile_isBigEndianCPU
-  , c_THDiskFile_nativeEndianEncoding
-  , c_THDiskFile_littleEndianEncoding
-  , c_THDiskFile_bigEndianEncoding
-  , c_THDiskFile_longSize
-  , c_THDiskFile_noBuffer
-  , p_THDiskFile_new
-  , p_THPipeFile_new
-  , p_THDiskFile_name
-  , p_THDiskFile_isLittleEndianCPU
-  , p_THDiskFile_isBigEndianCPU
-  , p_THDiskFile_nativeEndianEncoding
-  , p_THDiskFile_littleEndianEncoding
-  , p_THDiskFile_bigEndianEncoding
-  , p_THDiskFile_longSize
-  , p_THDiskFile_noBuffer
-  ) where
+module Torch.FFI.TH.DiskFile where
 
 import Foreign
 import Foreign.C.Types

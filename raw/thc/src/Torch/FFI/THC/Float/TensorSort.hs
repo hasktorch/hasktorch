@@ -1,10 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Float.TensorSort
-  ( c_sortKeyValueInplace
-  , c_sort
-  , p_sortKeyValueInplace
-  , p_sort
-  ) where
+module Torch.FFI.THC.Float.TensorSort where
 
 import Foreign
 import Foreign.C.Types

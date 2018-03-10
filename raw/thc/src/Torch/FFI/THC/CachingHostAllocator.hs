@@ -1,8 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.CachingHostAllocator
-  ( c_THCCachingHostAllocator_emptyCache
-  , p_THCCachingHostAllocator_emptyCache
-  ) where
+module Torch.FFI.THC.CachingHostAllocator where
 
 import Foreign
 import Foreign.C.Types

@@ -1,18 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Short.TensorMasked
-  ( c_maskedFill
-  , c_maskedFillByte
-  , c_maskedCopy
-  , c_maskedCopyByte
-  , c_maskedSelect
-  , c_maskedSelectByte
-  , p_maskedFill
-  , p_maskedFillByte
-  , p_maskedCopy
-  , p_maskedCopyByte
-  , p_maskedSelect
-  , p_maskedSelectByte
-  ) where
+module Torch.FFI.THC.Short.TensorMasked where
 
 import Foreign
 import Foreign.C.Types

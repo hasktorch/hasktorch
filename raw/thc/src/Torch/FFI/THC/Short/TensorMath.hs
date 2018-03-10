@@ -1,42 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Short.TensorMath
-  ( c_fill
-  , c_zero
-  , c_zeros
-  , c_zerosLike
-  , c_ones
-  , c_onesLike
-  , c_reshape
-  , c_numel
-  , c_cat
-  , c_catArray
-  , c_nonzero
-  , c_tril
-  , c_triu
-  , c_diag
-  , c_eye
-  , c_trace
-  , c_range
-  , c_arange
-  , p_fill
-  , p_zero
-  , p_zeros
-  , p_zerosLike
-  , p_ones
-  , p_onesLike
-  , p_reshape
-  , p_numel
-  , p_cat
-  , p_catArray
-  , p_nonzero
-  , p_tril
-  , p_triu
-  , p_diag
-  , p_eye
-  , p_trace
-  , p_range
-  , p_arange
-  ) where
+module Torch.FFI.THC.Short.TensorMath where
 
 import Foreign
 import Foreign.C.Types

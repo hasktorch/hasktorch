@@ -43,13 +43,7 @@ renderModule m
     GenericFiles -> "." <> type2hsreal (typeTemplate m)
 
 renderExports :: [Text] -> Text
-renderExports exports = T.intercalate "\n"
-  [ ""
-  , "  ( " <> T.intercalate "\n  , " exports
-  , "  ) where"
-  , ""
-  , ""
-  ]
+renderExports _ = " where\n\n"
 
 renderImports :: [Text] -> Text
 renderImports imports = T.intercalate "\n" (("import " <>) <$> imports) <> "\n\n"

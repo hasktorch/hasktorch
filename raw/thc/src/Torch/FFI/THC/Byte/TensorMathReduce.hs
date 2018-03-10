@@ -1,26 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Byte.TensorMathReduce
-  ( c_sum
-  , c_prod
-  , c_sumall
-  , c_prodall
-  , c_min
-  , c_max
-  , c_minall
-  , c_maxall
-  , c_medianall
-  , c_median
-  , p_sum
-  , p_prod
-  , p_sumall
-  , p_prodall
-  , p_min
-  , p_max
-  , p_minall
-  , p_maxall
-  , p_medianall
-  , p_median
-  ) where
+module Torch.FFI.THC.Byte.TensorMathReduce where
 
 import Foreign
 import Foreign.C.Types

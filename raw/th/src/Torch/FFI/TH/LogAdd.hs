@@ -1,12 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.LogAdd
-  ( c_THLogAdd
-  , c_THLogSub
-  , c_THExpMinusApprox
-  , p_THLogAdd
-  , p_THLogSub
-  , p_THExpMinusApprox
-  ) where
+module Torch.FFI.TH.LogAdd where
 
 import Foreign
 import Foreign.C.Types

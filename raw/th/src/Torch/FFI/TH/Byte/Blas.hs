@@ -1,22 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Byte.Blas
-  ( c_swap
-  , c_scal
-  , c_copy
-  , c_axpy
-  , c_dot
-  , c_gemv
-  , c_ger
-  , c_gemm
-  , p_swap
-  , p_scal
-  , p_copy
-  , p_axpy
-  , p_dot
-  , p_gemv
-  , p_ger
-  , p_gemm
-  ) where
+module Torch.FFI.TH.Byte.Blas where
 
 import Foreign
 import Foreign.C.Types

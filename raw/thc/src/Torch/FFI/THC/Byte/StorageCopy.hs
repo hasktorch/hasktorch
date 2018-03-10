@@ -1,30 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Byte.StorageCopy
-  ( c_rawCopy
-  , c_copy
-  , c_copyByte
-  , c_copyChar
-  , c_copyShort
-  , c_copyInt
-  , c_copyLong
-  , c_copyFloat
-  , c_copyDouble
-  , c_copyHalf
-  , c_copyCuda
-  , c_copyCPU
-  , p_rawCopy
-  , p_copy
-  , p_copyByte
-  , p_copyChar
-  , p_copyShort
-  , p_copyInt
-  , p_copyLong
-  , p_copyFloat
-  , p_copyDouble
-  , p_copyHalf
-  , p_copyCuda
-  , p_copyCPU
-  ) where
+module Torch.FFI.THC.Byte.StorageCopy where
 
 import Foreign
 import Foreign.C.Types

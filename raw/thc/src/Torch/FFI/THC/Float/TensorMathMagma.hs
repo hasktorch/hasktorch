@@ -1,30 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Float.TensorMathMagma
-  ( c_gesv
-  , c_gels
-  , c_syev
-  , c_geev
-  , c_gesvd
-  , c_gesvd2
-  , c_getri
-  , c_potri
-  , c_potrf
-  , c_potrs
-  , c_geqrf
-  , c_qr
-  , p_gesv
-  , p_gels
-  , p_syev
-  , p_geev
-  , p_gesvd
-  , p_gesvd2
-  , p_getri
-  , p_potri
-  , p_potrf
-  , p_potrs
-  , p_geqrf
-  , p_qr
-  ) where
+module Torch.FFI.THC.Float.TensorMathMagma where
 
 import Foreign
 import Foreign.C.Types

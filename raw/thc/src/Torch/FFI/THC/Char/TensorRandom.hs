@@ -1,18 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Char.TensorRandom
-  ( c_random
-  , c_clampedRandom
-  , c_cappedRandom
-  , c_bernoulli
-  , c_bernoulli_DoubleTensor
-  , c_geometric
-  , p_random
-  , p_clampedRandom
-  , p_cappedRandom
-  , p_bernoulli
-  , p_bernoulli_DoubleTensor
-  , p_geometric
-  ) where
+module Torch.FFI.THC.Char.TensorRandom where
 
 import Foreign
 import Foreign.C.Types

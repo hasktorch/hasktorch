@@ -1,48 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Long.TensorCopy
-  ( c_copy
-  , c_copyIgnoringOverlaps
-  , c_copyByte
-  , c_copyChar
-  , c_copyShort
-  , c_copyInt
-  , c_copyLong
-  , c_copyFloat
-  , c_copyDouble
-  , c_copyHalf
-  , c_copyCudaByte
-  , c_copyCudaChar
-  , c_copyCudaShort
-  , c_copyCudaInt
-  , c_copyCudaLong
-  , c_copyCudaDouble
-  , c_copyCudaHalf
-  , c_copyCuda
-  , c_copyCPU
-  , c_copyAsyncCPU
-  , c_copyAsyncCuda
-  , p_copy
-  , p_copyIgnoringOverlaps
-  , p_copyByte
-  , p_copyChar
-  , p_copyShort
-  , p_copyInt
-  , p_copyLong
-  , p_copyFloat
-  , p_copyDouble
-  , p_copyHalf
-  , p_copyCudaByte
-  , p_copyCudaChar
-  , p_copyCudaShort
-  , p_copyCudaInt
-  , p_copyCudaLong
-  , p_copyCudaDouble
-  , p_copyCudaHalf
-  , p_copyCuda
-  , p_copyCPU
-  , p_copyAsyncCPU
-  , p_copyAsyncCuda
-  ) where
+module Torch.FFI.THC.Long.TensorCopy where
 
 import Foreign
 import Foreign.C.Types

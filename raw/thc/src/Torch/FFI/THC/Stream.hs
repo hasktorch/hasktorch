@@ -1,16 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Stream
-  ( c_THCStream_new
-  , c_THCStream_defaultStream
-  , c_THCStream_newWithPriority
-  , c_THCStream_free
-  , c_THCStream_retain
-  , p_THCStream_new
-  , p_THCStream_defaultStream
-  , p_THCStream_newWithPriority
-  , p_THCStream_free
-  , p_THCStream_retain
-  ) where
+module Torch.FFI.THC.Stream where
 
 import Foreign
 import Foreign.C.Types

@@ -1,44 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Float.Storage
-  ( c_data
-  , c_size
-  , c_set
-  , c_get
-  , c_new
-  , c_newWithSize
-  , c_newWithSize1
-  , c_newWithSize2
-  , c_newWithSize3
-  , c_newWithSize4
-  , c_newWithMapping
-  , c_newWithData
-  , c_setFlag
-  , c_clearFlag
-  , c_retain
-  , c_free
-  , c_resize
-  , c_fill
-  , c_getDevice
-  , p_data
-  , p_size
-  , p_set
-  , p_get
-  , p_new
-  , p_newWithSize
-  , p_newWithSize1
-  , p_newWithSize2
-  , p_newWithSize3
-  , p_newWithSize4
-  , p_newWithMapping
-  , p_newWithData
-  , p_setFlag
-  , p_clearFlag
-  , p_retain
-  , p_free
-  , p_resize
-  , p_fill
-  , p_getDevice
-  ) where
+module Torch.FFI.THC.Float.Storage where
 
 import Foreign
 import Foreign.C.Types

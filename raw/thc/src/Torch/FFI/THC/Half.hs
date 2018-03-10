@@ -1,10 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Half
-  ( c_THC_nativeHalfInstructions
-  , c_THC_fastHalfInstructions
-  , p_THC_nativeHalfInstructions
-  , p_THC_fastHalfInstructions
-  ) where
+module Torch.FFI.THC.Half where
 
 import Foreign
 import Foreign.C.Types

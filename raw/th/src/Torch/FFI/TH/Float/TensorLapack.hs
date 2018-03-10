@@ -1,42 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Float.TensorLapack
-  ( c_gesv
-  , c_trtrs
-  , c_gels
-  , c_syev
-  , c_geev
-  , c_gesvd
-  , c_gesvd2
-  , c_getri
-  , c_potrf
-  , c_potrs
-  , c_potri
-  , c_qr
-  , c_geqrf
-  , c_orgqr
-  , c_ormqr
-  , c_pstrf
-  , c_btrifact
-  , c_btrisolve
-  , p_gesv
-  , p_trtrs
-  , p_gels
-  , p_syev
-  , p_geev
-  , p_gesvd
-  , p_gesvd2
-  , p_getri
-  , p_potrf
-  , p_potrs
-  , p_potri
-  , p_qr
-  , p_geqrf
-  , p_orgqr
-  , p_ormqr
-  , p_pstrf
-  , p_btrifact
-  , p_btrisolve
-  ) where
+module Torch.FFI.TH.Float.TensorLapack where
 
 import Foreign
 import Foreign.C.Types

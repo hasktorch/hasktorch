@@ -1,26 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Byte.Vector
-  ( c_fill
-  , c_cadd
-  , c_adds
-  , c_cmul
-  , c_muls
-  , c_cdiv
-  , c_divs
-  , c_copy
-  , c_normal_fill
-  , c_vectorDispatchInit
-  , p_fill
-  , p_cadd
-  , p_adds
-  , p_cmul
-  , p_muls
-  , p_cdiv
-  , p_divs
-  , p_copy
-  , p_normal_fill
-  , p_vectorDispatchInit
-  ) where
+module Torch.FFI.TH.Byte.Vector where
 
 import Foreign
 import Foreign.C.Types

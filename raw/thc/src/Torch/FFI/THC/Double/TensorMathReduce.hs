@@ -1,46 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Double.TensorMathReduce
-  ( c_renorm
-  , c_std
-  , c_norm
-  , c_var
-  , c_stdall
-  , c_normall
-  , c_varall
-  , c_sum
-  , c_prod
-  , c_mean
-  , c_sumall
-  , c_prodall
-  , c_meanall
-  , c_min
-  , c_max
-  , c_minall
-  , c_maxall
-  , c_medianall
-  , c_median
-  , c_dist
-  , p_renorm
-  , p_std
-  , p_norm
-  , p_var
-  , p_stdall
-  , p_normall
-  , p_varall
-  , p_sum
-  , p_prod
-  , p_mean
-  , p_sumall
-  , p_prodall
-  , p_meanall
-  , p_min
-  , p_max
-  , p_minall
-  , p_maxall
-  , p_medianall
-  , p_median
-  , p_dist
-  ) where
+module Torch.FFI.THC.Double.TensorMathReduce where
 
 import Foreign
 import Foreign.C.Types

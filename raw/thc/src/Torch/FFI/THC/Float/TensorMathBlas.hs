@@ -1,22 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Float.TensorMathBlas
-  ( c_dot
-  , c_addmv
-  , c_addmm
-  , c_addr
-  , c_addbmm
-  , c_baddbmm
-  , c_btrifact
-  , c_btrisolve
-  , p_dot
-  , p_addmv
-  , p_addmm
-  , p_addr
-  , p_addbmm
-  , p_baddbmm
-  , p_btrifact
-  , p_btrisolve
-  ) where
+module Torch.FFI.THC.Float.TensorMathBlas where
 
 import Foreign
 import Foreign.C.Types

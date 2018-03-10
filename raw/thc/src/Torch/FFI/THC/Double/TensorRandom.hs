@@ -1,44 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Double.TensorRandom
-  ( c_uniform
-  , c_rand
-  , c_randn
-  , c_normal
-  , c_normal_means
-  , c_normal_stddevs
-  , c_normal_means_stddevs
-  , c_logNormal
-  , c_exponential
-  , c_cauchy
-  , c_multinomial
-  , c_multinomialAliasSetup
-  , c_multinomialAliasDraw
-  , c_random
-  , c_clampedRandom
-  , c_cappedRandom
-  , c_bernoulli
-  , c_bernoulli_DoubleTensor
-  , c_geometric
-  , p_uniform
-  , p_rand
-  , p_randn
-  , p_normal
-  , p_normal_means
-  , p_normal_stddevs
-  , p_normal_means_stddevs
-  , p_logNormal
-  , p_exponential
-  , p_cauchy
-  , p_multinomial
-  , p_multinomialAliasSetup
-  , p_multinomialAliasDraw
-  , p_random
-  , p_clampedRandom
-  , p_cappedRandom
-  , p_bernoulli
-  , p_bernoulli_DoubleTensor
-  , p_geometric
-  ) where
+module Torch.FFI.THC.Double.TensorRandom where
 
 import Foreign
 import Foreign.C.Types

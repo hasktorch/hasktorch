@@ -1,30 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Short.Vector
-  ( c_fill
-  , c_cadd
-  , c_adds
-  , c_cmul
-  , c_muls
-  , c_cdiv
-  , c_divs
-  , c_copy
-  , c_neg
-  , c_normal_fill
-  , c_abs
-  , c_vectorDispatchInit
-  , p_fill
-  , p_cadd
-  , p_adds
-  , p_cmul
-  , p_muls
-  , p_cdiv
-  , p_divs
-  , p_copy
-  , p_neg
-  , p_normal_fill
-  , p_abs
-  , p_vectorDispatchInit
-  ) where
+module Torch.FFI.TH.Short.Vector where
 
 import Foreign
 import Foreign.C.Types

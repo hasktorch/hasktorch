@@ -1,10 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Float.TensorMathScan
-  ( c_cumsum
-  , c_cumprod
-  , p_cumsum
-  , p_cumprod
-  ) where
+module Torch.FFI.THC.Float.TensorMathScan where
 
 import Foreign
 import Foreign.C.Types

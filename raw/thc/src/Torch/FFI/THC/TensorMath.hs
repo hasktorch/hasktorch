@@ -1,10 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.TensorMath
-  ( c_THCudaByteTensor_logicalall
-  , c_THCudaByteTensor_logicalany
-  , p_THCudaByteTensor_logicalall
-  , p_THCudaByteTensor_logicalany
-  ) where
+module Torch.FFI.THC.TensorMath where
 
 import Foreign
 import Foreign.C.Types

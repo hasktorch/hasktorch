@@ -1,30 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Char.TensorMathCompareT
-  ( c_ltTensor
-  , c_gtTensor
-  , c_leTensor
-  , c_geTensor
-  , c_eqTensor
-  , c_neTensor
-  , c_ltTensorT
-  , c_gtTensorT
-  , c_leTensorT
-  , c_geTensorT
-  , c_eqTensorT
-  , c_neTensorT
-  , p_ltTensor
-  , p_gtTensor
-  , p_leTensor
-  , p_geTensor
-  , p_eqTensor
-  , p_neTensor
-  , p_ltTensorT
-  , p_gtTensorT
-  , p_leTensorT
-  , p_geTensorT
-  , p_eqTensorT
-  , p_neTensorT
-  ) where
+module Torch.FFI.THC.Char.TensorMathCompareT where
 
 import Foreign
 import Foreign.C.Types

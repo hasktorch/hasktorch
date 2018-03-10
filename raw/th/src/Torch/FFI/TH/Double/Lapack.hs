@@ -1,38 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Double.Lapack
-  ( c_gesv
-  , c_trtrs
-  , c_gels
-  , c_syev
-  , c_geev
-  , c_gesvd
-  , c_getrf
-  , c_getrs
-  , c_getri
-  , c_potrf
-  , c_potri
-  , c_potrs
-  , c_pstrf
-  , c_geqrf
-  , c_orgqr
-  , c_ormqr
-  , p_gesv
-  , p_trtrs
-  , p_gels
-  , p_syev
-  , p_geev
-  , p_gesvd
-  , p_getrf
-  , p_getrs
-  , p_getri
-  , p_potrf
-  , p_potri
-  , p_potrs
-  , p_pstrf
-  , p_geqrf
-  , p_orgqr
-  , p_ormqr
-  ) where
+module Torch.FFI.TH.Double.Lapack where
 
 import Foreign
 import Foreign.C.Types

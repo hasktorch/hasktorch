@@ -1,8 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Byte.TensorTopK
-  ( c_topk
-  , p_topk
-  ) where
+module Torch.FFI.THC.Byte.TensorTopK where
 
 import Foreign
 import Foreign.C.Types

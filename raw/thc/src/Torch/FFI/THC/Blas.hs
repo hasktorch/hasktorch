@@ -1,38 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Blas
-  ( c_THCudaBlas_Sdot
-  , c_THCudaBlas_Ddot
-  , c_THCudaBlas_Sgemv
-  , c_THCudaBlas_Dgemv
-  , c_THCudaBlas_Sger
-  , c_THCudaBlas_Dger
-  , c_THCudaBlas_Sgemm
-  , c_THCudaBlas_Dgemm
-  , c_THCudaBlas_SgemmStridedBatched
-  , c_THCudaBlas_DgemmStridedBatched
-  , c_THCudaBlas_Sgetrf
-  , c_THCudaBlas_Dgetrf
-  , c_THCudaBlas_Sgetrs
-  , c_THCudaBlas_Dgetrs
-  , c_THCudaBlas_Sgetri
-  , c_THCudaBlas_Dgetri
-  , p_THCudaBlas_Sdot
-  , p_THCudaBlas_Ddot
-  , p_THCudaBlas_Sgemv
-  , p_THCudaBlas_Dgemv
-  , p_THCudaBlas_Sger
-  , p_THCudaBlas_Dger
-  , p_THCudaBlas_Sgemm
-  , p_THCudaBlas_Dgemm
-  , p_THCudaBlas_SgemmStridedBatched
-  , p_THCudaBlas_DgemmStridedBatched
-  , p_THCudaBlas_Sgetrf
-  , p_THCudaBlas_Dgetrf
-  , p_THCudaBlas_Sgetrs
-  , p_THCudaBlas_Dgetrs
-  , p_THCudaBlas_Sgetri
-  , p_THCudaBlas_Dgetri
-  ) where
+module Torch.FFI.THC.Blas where
 
 import Foreign
 import Foreign.C.Types

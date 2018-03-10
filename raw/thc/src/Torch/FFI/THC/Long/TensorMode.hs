@@ -1,8 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.Long.TensorMode
-  ( c_mode
-  , p_mode
-  ) where
+module Torch.FFI.THC.Long.TensorMode where
 
 import Foreign
 import Foreign.C.Types

@@ -1,14 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Half
-  ( c_TH_float2halfbits
-  , c_TH_halfbits2float
-  , c_TH_float2half
-  , c_TH_half2float
-  , p_TH_float2halfbits
-  , p_TH_halfbits2float
-  , p_TH_float2half
-  , p_TH_half2float
-  ) where
+module Torch.FFI.TH.Half where
 
 import Foreign
 import Foreign.C.Types

@@ -1,42 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.TH.Random
-  ( c_THGenerator_new
-  , c_THGenerator_copy
-  , c_THGenerator_free
-  , c_THGenerator_isValid
-  , c_THRandom_seed
-  , c_THRandom_manualSeed
-  , c_THRandom_initialSeed
-  , c_THRandom_random
-  , c_THRandom_random64
-  , c_THRandom_uniform
-  , c_THRandom_uniformFloat
-  , c_THRandom_normal
-  , c_THRandom_exponential
-  , c_THRandom_standard_gamma
-  , c_THRandom_cauchy
-  , c_THRandom_logNormal
-  , c_THRandom_geometric
-  , c_THRandom_bernoulli
-  , p_THGenerator_new
-  , p_THGenerator_copy
-  , p_THGenerator_free
-  , p_THGenerator_isValid
-  , p_THRandom_seed
-  , p_THRandom_manualSeed
-  , p_THRandom_initialSeed
-  , p_THRandom_random
-  , p_THRandom_random64
-  , p_THRandom_uniform
-  , p_THRandom_uniformFloat
-  , p_THRandom_normal
-  , p_THRandom_exponential
-  , p_THRandom_standard_gamma
-  , p_THRandom_cauchy
-  , p_THRandom_logNormal
-  , p_THRandom_geometric
-  , p_THRandom_bernoulli
-  ) where
+module Torch.FFI.TH.Random where
 
 import Foreign
 import Foreign.C.Types

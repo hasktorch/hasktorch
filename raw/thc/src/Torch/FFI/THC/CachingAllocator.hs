@@ -1,18 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THC.CachingAllocator
-  ( c_THCCachingAllocator_getBaseAllocation
-  , c_THCCachingAllocator_recordStream
-  , c_THCCachingAllocator_currentMemoryAllocated
-  , c_THCCachingAllocator_maxMemoryAllocated
-  , c_THCCachingAllocator_currentMemoryCached
-  , c_THCCachingAllocator_maxMemoryCached
-  , p_THCCachingAllocator_getBaseAllocation
-  , p_THCCachingAllocator_recordStream
-  , p_THCCachingAllocator_currentMemoryAllocated
-  , p_THCCachingAllocator_maxMemoryAllocated
-  , p_THCCachingAllocator_currentMemoryCached
-  , p_THCCachingAllocator_maxMemoryCached
-  ) where
+module Torch.FFI.THC.CachingAllocator where
 
 import Foreign
 import Foreign.C.Types
