@@ -26,7 +26,7 @@ library
     , hasktorch-dimensions
     , hasktorch-raw-th
     , hasktorch-signatures-unsigned
-    , hasktorch-types
+    , hasktorch-types-th
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
     , numeric-limits
@@ -58,7 +58,7 @@ executable isdefinite
       base >=4.7 && <5
     , hasktorch-indef-unsigned
     , hasktorch-raw-th
-    , hasktorch-types
+    , hasktorch-types-th
   mixins:
       hasktorch-indef-unsigned
         (Torch.Indef.Types

@@ -18,6 +18,6 @@ library
   hs-source-dirs: src
   build-depends:
       base >= 4.7 && < 5
-    , hasktorch-types
+    , hasktorch-types-th
     , hasktorch-signatures-unsigned
 

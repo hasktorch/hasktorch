@@ -24,7 +24,7 @@ executable isdefinite
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-types
+    , hasktorch-types-th
   default-language: Haskell2010
 
 library
@@ -44,7 +44,7 @@ library
     , hasktorch-indef-signed
     , hasktorch-indef-floating
     , hasktorch-raw-th
-    , hasktorch-types
+    , hasktorch-types-th
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
     , numeric-limits

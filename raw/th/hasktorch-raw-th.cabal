@@ -17,22 +17,13 @@ flag half
   Description: build with half support
   Default: False
 
-executable test
-  default-language: Haskell2010
-  main-is: Main.hs
-  hs-source-dirs: exe
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-raw-th
-    , hasktorch-types
-
 library
   extra-libraries: ATen, EHX
   hs-source-dirs:
       src
   build-depends:
       base >=4.7 && <5
-    , hasktorch-types
+    , hasktorch-types-th
     , inline-c >=0.5
     , text >=1.2.2.2
   build-tools: c2hs

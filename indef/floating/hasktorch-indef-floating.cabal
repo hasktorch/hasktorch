@@ -22,7 +22,7 @@ library
     , hasktorch-indef-signed
     -- I'm not actually sure we need this dependency...
     , hasktorch-raw-th
-    , hasktorch-types
+    , hasktorch-types-th
     , hasktorch-signatures-floating
     , hasktorch-classes
 

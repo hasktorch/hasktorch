@@ -26,7 +26,7 @@ library
     , hasktorch-indef-unsigned
     , hasktorch-signatures-signed
     , hasktorch-raw-th
-    , hasktorch-types
+    , hasktorch-types-th
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
     , numeric-limits
