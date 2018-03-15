@@ -9,72 +9,126 @@ import Data.Int
 
 -- | c_copy :  tensor src -> void
 foreign import ccall "THTensorCopy.h THLongTensor_copy"
-  c_copy :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ()
+  c_copy_ :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ()
+
+-- | alias of c_copy_ with unused argument (for CTHState) to unify backpack signatures.
+c_copy = const c_copy_
 
 -- | c_copyByte :  tensor src -> void
 foreign import ccall "THTensorCopy.h THLongTensor_copyByte"
-  c_copyByte :: Ptr CTHLongTensor -> Ptr CTHByteTensor -> IO ()
+  c_copyByte_ :: Ptr CTHLongTensor -> Ptr CTHByteTensor -> IO ()
+
+-- | alias of c_copyByte_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyByte = const c_copyByte_
 
 -- | c_copyChar :  tensor src -> void
 foreign import ccall "THTensorCopy.h THLongTensor_copyChar"
-  c_copyChar :: Ptr CTHLongTensor -> Ptr CTHCharTensor -> IO ()
+  c_copyChar_ :: Ptr CTHLongTensor -> Ptr CTHCharTensor -> IO ()
+
+-- | alias of c_copyChar_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyChar = const c_copyChar_
 
 -- | c_copyShort :  tensor src -> void
 foreign import ccall "THTensorCopy.h THLongTensor_copyShort"
-  c_copyShort :: Ptr CTHLongTensor -> Ptr CTHShortTensor -> IO ()
+  c_copyShort_ :: Ptr CTHLongTensor -> Ptr CTHShortTensor -> IO ()
+
+-- | alias of c_copyShort_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyShort = const c_copyShort_
 
 -- | c_copyInt :  tensor src -> void
 foreign import ccall "THTensorCopy.h THLongTensor_copyInt"
-  c_copyInt :: Ptr CTHLongTensor -> Ptr CTHIntTensor -> IO ()
+  c_copyInt_ :: Ptr CTHLongTensor -> Ptr CTHIntTensor -> IO ()
+
+-- | alias of c_copyInt_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyInt = const c_copyInt_
 
 -- | c_copyLong :  tensor src -> void
 foreign import ccall "THTensorCopy.h THLongTensor_copyLong"
-  c_copyLong :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ()
+  c_copyLong_ :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ()
+
+-- | alias of c_copyLong_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyLong = const c_copyLong_
 
 -- | c_copyFloat :  tensor src -> void
 foreign import ccall "THTensorCopy.h THLongTensor_copyFloat"
-  c_copyFloat :: Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ()
+  c_copyFloat_ :: Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ()
+
+-- | alias of c_copyFloat_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyFloat = const c_copyFloat_
 
 -- | c_copyDouble :  tensor src -> void
 foreign import ccall "THTensorCopy.h THLongTensor_copyDouble"
-  c_copyDouble :: Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> IO ()
+  c_copyDouble_ :: Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> IO ()
+
+-- | alias of c_copyDouble_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyDouble = const c_copyDouble_
 
 -- | c_copyHalf :  tensor src -> void
 foreign import ccall "THTensorCopy.h THLongTensor_copyHalf"
-  c_copyHalf :: Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ()
+  c_copyHalf_ :: Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ()
+
+-- | alias of c_copyHalf_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyHalf = const c_copyHalf_
 
 -- | p_copy : Pointer to function : tensor src -> void
 foreign import ccall "THTensorCopy.h &THLongTensor_copy"
-  p_copy :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ())
+  p_copy_ :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ())
+
+-- | alias of p_copy_ with unused argument (for CTHState) to unify backpack signatures.
+p_copy = const p_copy_
 
 -- | p_copyByte : Pointer to function : tensor src -> void
 foreign import ccall "THTensorCopy.h &THLongTensor_copyByte"
-  p_copyByte :: FunPtr (Ptr CTHLongTensor -> Ptr CTHByteTensor -> IO ())
+  p_copyByte_ :: FunPtr (Ptr CTHLongTensor -> Ptr CTHByteTensor -> IO ())
+
+-- | alias of p_copyByte_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyByte = const p_copyByte_
 
 -- | p_copyChar : Pointer to function : tensor src -> void
 foreign import ccall "THTensorCopy.h &THLongTensor_copyChar"
-  p_copyChar :: FunPtr (Ptr CTHLongTensor -> Ptr CTHCharTensor -> IO ())
+  p_copyChar_ :: FunPtr (Ptr CTHLongTensor -> Ptr CTHCharTensor -> IO ())
+
+-- | alias of p_copyChar_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyChar = const p_copyChar_
 
 -- | p_copyShort : Pointer to function : tensor src -> void
 foreign import ccall "THTensorCopy.h &THLongTensor_copyShort"
-  p_copyShort :: FunPtr (Ptr CTHLongTensor -> Ptr CTHShortTensor -> IO ())
+  p_copyShort_ :: FunPtr (Ptr CTHLongTensor -> Ptr CTHShortTensor -> IO ())
+
+-- | alias of p_copyShort_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyShort = const p_copyShort_
 
 -- | p_copyInt : Pointer to function : tensor src -> void
 foreign import ccall "THTensorCopy.h &THLongTensor_copyInt"
-  p_copyInt :: FunPtr (Ptr CTHLongTensor -> Ptr CTHIntTensor -> IO ())
+  p_copyInt_ :: FunPtr (Ptr CTHLongTensor -> Ptr CTHIntTensor -> IO ())
+
+-- | alias of p_copyInt_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyInt = const p_copyInt_
 
 -- | p_copyLong : Pointer to function : tensor src -> void
 foreign import ccall "THTensorCopy.h &THLongTensor_copyLong"
-  p_copyLong :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ())
+  p_copyLong_ :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ())
+
+-- | alias of p_copyLong_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyLong = const p_copyLong_
 
 -- | p_copyFloat : Pointer to function : tensor src -> void
 foreign import ccall "THTensorCopy.h &THLongTensor_copyFloat"
-  p_copyFloat :: FunPtr (Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ())
+  p_copyFloat_ :: FunPtr (Ptr CTHLongTensor -> Ptr CTHFloatTensor -> IO ())
+
+-- | alias of p_copyFloat_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyFloat = const p_copyFloat_
 
 -- | p_copyDouble : Pointer to function : tensor src -> void
 foreign import ccall "THTensorCopy.h &THLongTensor_copyDouble"
-  p_copyDouble :: FunPtr (Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> IO ())
+  p_copyDouble_ :: FunPtr (Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> IO ())
+
+-- | alias of p_copyDouble_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyDouble = const p_copyDouble_
 
 -- | p_copyHalf : Pointer to function : tensor src -> void
 foreign import ccall "THTensorCopy.h &THLongTensor_copyHalf"
-  p_copyHalf :: FunPtr (Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ())
+  p_copyHalf_ :: FunPtr (Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ())
+
+-- | alias of p_copyHalf_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyHalf = const p_copyHalf_

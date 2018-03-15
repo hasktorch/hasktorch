@@ -9,80 +9,140 @@ import Data.Int
 
 -- | c_rawCopy :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_rawCopy"
-  c_rawCopy :: Ptr CTHDoubleStorage -> Ptr CDouble -> IO ()
+  c_rawCopy_ :: Ptr CTHDoubleStorage -> Ptr CDouble -> IO ()
+
+-- | alias of c_rawCopy_ with unused argument (for CTHState) to unify backpack signatures.
+c_rawCopy = const c_rawCopy_
 
 -- | c_copy :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_copy"
-  c_copy :: Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ()
+  c_copy_ :: Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ()
+
+-- | alias of c_copy_ with unused argument (for CTHState) to unify backpack signatures.
+c_copy = const c_copy_
 
 -- | c_copyByte :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_copyByte"
-  c_copyByte :: Ptr CTHDoubleStorage -> Ptr CTHByteStorage -> IO ()
+  c_copyByte_ :: Ptr CTHDoubleStorage -> Ptr CTHByteStorage -> IO ()
+
+-- | alias of c_copyByte_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyByte = const c_copyByte_
 
 -- | c_copyChar :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_copyChar"
-  c_copyChar :: Ptr CTHDoubleStorage -> Ptr CTHCharStorage -> IO ()
+  c_copyChar_ :: Ptr CTHDoubleStorage -> Ptr CTHCharStorage -> IO ()
+
+-- | alias of c_copyChar_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyChar = const c_copyChar_
 
 -- | c_copyShort :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_copyShort"
-  c_copyShort :: Ptr CTHDoubleStorage -> Ptr CTHShortStorage -> IO ()
+  c_copyShort_ :: Ptr CTHDoubleStorage -> Ptr CTHShortStorage -> IO ()
+
+-- | alias of c_copyShort_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyShort = const c_copyShort_
 
 -- | c_copyInt :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_copyInt"
-  c_copyInt :: Ptr CTHDoubleStorage -> Ptr CTHIntStorage -> IO ()
+  c_copyInt_ :: Ptr CTHDoubleStorage -> Ptr CTHIntStorage -> IO ()
+
+-- | alias of c_copyInt_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyInt = const c_copyInt_
 
 -- | c_copyLong :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_copyLong"
-  c_copyLong :: Ptr CTHDoubleStorage -> Ptr CTHLongStorage -> IO ()
+  c_copyLong_ :: Ptr CTHDoubleStorage -> Ptr CTHLongStorage -> IO ()
+
+-- | alias of c_copyLong_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyLong = const c_copyLong_
 
 -- | c_copyFloat :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_copyFloat"
-  c_copyFloat :: Ptr CTHDoubleStorage -> Ptr CTHFloatStorage -> IO ()
+  c_copyFloat_ :: Ptr CTHDoubleStorage -> Ptr CTHFloatStorage -> IO ()
+
+-- | alias of c_copyFloat_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyFloat = const c_copyFloat_
 
 -- | c_copyDouble :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_copyDouble"
-  c_copyDouble :: Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ()
+  c_copyDouble_ :: Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ()
+
+-- | alias of c_copyDouble_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyDouble = const c_copyDouble_
 
 -- | c_copyHalf :  storage src -> void
 foreign import ccall "THStorageCopy.h THDoubleStorage_copyHalf"
-  c_copyHalf :: Ptr CTHDoubleStorage -> Ptr CTHHalfStorage -> IO ()
+  c_copyHalf_ :: Ptr CTHDoubleStorage -> Ptr CTHHalfStorage -> IO ()
+
+-- | alias of c_copyHalf_ with unused argument (for CTHState) to unify backpack signatures.
+c_copyHalf = const c_copyHalf_
 
 -- | p_rawCopy : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_rawCopy"
-  p_rawCopy :: FunPtr (Ptr CTHDoubleStorage -> Ptr CDouble -> IO ())
+  p_rawCopy_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CDouble -> IO ())
+
+-- | alias of p_rawCopy_ with unused argument (for CTHState) to unify backpack signatures.
+p_rawCopy = const p_rawCopy_
 
 -- | p_copy : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_copy"
-  p_copy :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ())
+  p_copy_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ())
+
+-- | alias of p_copy_ with unused argument (for CTHState) to unify backpack signatures.
+p_copy = const p_copy_
 
 -- | p_copyByte : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_copyByte"
-  p_copyByte :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHByteStorage -> IO ())
+  p_copyByte_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHByteStorage -> IO ())
+
+-- | alias of p_copyByte_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyByte = const p_copyByte_
 
 -- | p_copyChar : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_copyChar"
-  p_copyChar :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHCharStorage -> IO ())
+  p_copyChar_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHCharStorage -> IO ())
+
+-- | alias of p_copyChar_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyChar = const p_copyChar_
 
 -- | p_copyShort : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_copyShort"
-  p_copyShort :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHShortStorage -> IO ())
+  p_copyShort_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHShortStorage -> IO ())
+
+-- | alias of p_copyShort_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyShort = const p_copyShort_
 
 -- | p_copyInt : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_copyInt"
-  p_copyInt :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHIntStorage -> IO ())
+  p_copyInt_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHIntStorage -> IO ())
+
+-- | alias of p_copyInt_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyInt = const p_copyInt_
 
 -- | p_copyLong : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_copyLong"
-  p_copyLong :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHLongStorage -> IO ())
+  p_copyLong_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHLongStorage -> IO ())
+
+-- | alias of p_copyLong_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyLong = const p_copyLong_
 
 -- | p_copyFloat : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_copyFloat"
-  p_copyFloat :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHFloatStorage -> IO ())
+  p_copyFloat_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHFloatStorage -> IO ())
+
+-- | alias of p_copyFloat_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyFloat = const p_copyFloat_
 
 -- | p_copyDouble : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_copyDouble"
-  p_copyDouble :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ())
+  p_copyDouble_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHDoubleStorage -> IO ())
+
+-- | alias of p_copyDouble_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyDouble = const p_copyDouble_
 
 -- | p_copyHalf : Pointer to function : storage src -> void
 foreign import ccall "THStorageCopy.h &THDoubleStorage_copyHalf"
-  p_copyHalf :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHHalfStorage -> IO ())
+  p_copyHalf_ :: FunPtr (Ptr CTHDoubleStorage -> Ptr CTHHalfStorage -> IO ())
+
+-- | alias of p_copyHalf_ with unused argument (for CTHState) to unify backpack signatures.
+p_copyHalf = const p_copyHalf_
