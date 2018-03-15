@@ -3,10 +3,11 @@
 module Main where
 
 import Foreign
-import Torch.Types.TH
+import Torch.Types.TH.Double
 import qualified Torch.FFI.TH.Random as TH
 import qualified Torch.FFI.TH.Double.Tensor as TH
 import qualified Torch.FFI.TH.Double.TensorMath as TH
+import qualified Foreign.Marshal.Array as FM
 
 main :: IO ()
 main = do
@@ -20,14 +21,14 @@ initialization :: IO ()
 initialization = do
   header "Initialization"
 
-  section "Zeros" $ do
-    ptr <- TH.c_new
-    pure ptr
+  section "New tensors" $ TH.c_new ()
+  -- section "Zeros" $ do
+  --   ptr <- TH.c_new ()
+--   constVec :: DoubleTensor '[2] <- constant 2
+--   printTensor constVec
 
 --   putStrLn ""
 --   putStrLn "Constant:"
---   constVec :: DoubleTensor '[2] <- constant 2
---   printTensor constVec
 --
 --   putStrLn ""
 --   putStrLn "Initialize 1D vector from list:"
@@ -109,4 +110,11 @@ section :: forall d . String -> IO (Ptr CTHDoubleTensor) -> IO ()
 section title tensor = do
   putStrLn ("\n" ++ title ++ ":")
   -- tensor >>= printTensor
+
+ptrArray2hs :: (Ptr a -> IO (Ptr CReal)) -> (Ptr a -> IO Int) -> ForeignPtr a -> IO [HsReal]
+ptrArray2hs updPtrArray toSize fp = do
+  sz <- withForeignPtr fp toSize
+  creals <- withForeignPtr fp updPtrArray
+  (fmap.fmap) c2hsReal (FM.peekArray sz creals)
+
 

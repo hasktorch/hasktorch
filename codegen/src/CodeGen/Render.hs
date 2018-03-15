@@ -69,6 +69,7 @@ checkList :: [Function] -> TemplateType -> [Function]
 checkList fList templateType =
   filter (checkFunction templateType . FunctionName . funName) fList
 
+
 renderAll :: HModule -> Text
 renderAll m
   =  renderExtensions (extensions m)

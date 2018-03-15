@@ -13,6 +13,10 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
+flag half
+  Description: build with half support
+  Default: False
+
 executable test
   default-language: Haskell2010
   main-is: Main.hs
@@ -21,7 +25,6 @@ executable test
       base >=4.7 && <5
     , hasktorch-raw-th
     , hasktorch-types
-
 
 library
   extra-libraries: ATen, EHX
@@ -34,6 +37,8 @@ library
     , text >=1.2.2.2
   build-tools: c2hs
   default-language: Haskell2010
+  if flag(half)
+    cc-options: -DHALF
   exposed-modules:
       Torch.FFI.TH.DiskFile
     , Torch.FFI.TH.File
@@ -82,15 +87,6 @@ library
     , Torch.FFI.TH.Float.TensorMath
     , Torch.FFI.TH.Float.TensorRandom
     , Torch.FFI.TH.Float.Vector
-    , Torch.FFI.TH.Half.Blas
-    , Torch.FFI.TH.Half.Storage
-    , Torch.FFI.TH.Half.StorageCopy
-    , Torch.FFI.TH.Half.Tensor
-    , Torch.FFI.TH.Half.TensorConv
-    , Torch.FFI.TH.Half.TensorCopy
-    , Torch.FFI.TH.Half.TensorMath
-    , Torch.FFI.TH.Half.TensorRandom
-    , Torch.FFI.TH.Half.Vector
     , Torch.FFI.TH.Int.Blas
     , Torch.FFI.TH.Int.Storage
     , Torch.FFI.TH.Int.StorageCopy
@@ -118,14 +114,25 @@ library
     , Torch.FFI.TH.Short.TensorMath
     , Torch.FFI.TH.Short.TensorRandom
     , Torch.FFI.TH.Short.Vector
+  if flag(half)
+    exposed-modules:
+        Torch.FFI.TH.Half.Blas
+      , Torch.FFI.TH.Half.Storage
+      , Torch.FFI.TH.Half.StorageCopy
+      , Torch.FFI.TH.Half.Tensor
+      , Torch.FFI.TH.Half.TensorConv
+      , Torch.FFI.TH.Half.TensorCopy
+      , Torch.FFI.TH.Half.TensorMath
+      , Torch.FFI.TH.Half.TensorRandom
+      , Torch.FFI.TH.Half.Vector
   other-modules:
       Paths_hasktorch_raw_th
 
 test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
-  hs-source-dirs:
-      tests
+  default-language: Haskell2010
+  hs-source-dirs: tests
   build-depends:
       QuickCheck
     , base >=4.7 && <5
@@ -134,7 +141,4 @@ test-suite spec
     , text >=1.2.2.2
   other-modules:
       MathSpec
-      NNSpec
-      TensorSpec
-      Paths_hasktorch_raw
-  default-language: Haskell2010
+    , TensorSpec

@@ -4,728 +4,732 @@ import Foreign.C.Types
 
 import Test.Hspec
 
-import THByteTensor as TR
-import THByteTensorMath as TR
-import THFloatTensor as TR
-import THFloatTensorMath as TR
-import THDoubleTensor as TR
-import THDoubleTensorMath as TR
-import THIntTensor as TR
-import THIntTensorMath as TR
-import THShortTensor as TR
-import THShortTensorMath as TR
-import THLongTensor as TR
-import THLongTensorMath as TR
+import qualified Torch.FFI.TH.Byte.Tensor as B
+import qualified Torch.FFI.TH.Byte.TensorMath as B
+
+import qualified Torch.FFI.TH.Float.Tensor as F
+import qualified Torch.FFI.TH.Float.TensorMath as F
+
+import qualified Torch.FFI.TH.Double.Tensor as D
+import qualified Torch.FFI.TH.Double.TensorMath as D
+
+import qualified Torch.FFI.TH.Int.Tensor as I
+import qualified Torch.FFI.TH.Int.TensorMath as I
+
+import qualified Torch.FFI.TH.Short.Tensor as S
+import qualified Torch.FFI.TH.Short.TensorMath as S
+
+import qualified Torch.FFI.TH.Long.Tensor as L
+import qualified Torch.FFI.TH.Long.TensorMath as L
 
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "testsFloat" testsFloat
-  describe "testsFloat" testsFloat
-  describe "testsDouble" testsDouble
-  describe "testsByte" testsByte
-  describe "testsShort" testsShort
-  describe "testsInt" testsInt
-  describe "testsLong" testsLong
+  describe "test floats"  testsFloat
+  describe "test doubles" testsDouble
+  describe "test bytes"   testsByte
+  describe "test shorts"  testsShort
+  describe "test ints"    testsInt
+  describe "test longs"   testsLong
 
 testsFloat :: Spec
 testsFloat =
   describe "Float Tensor creation and access methods" $ do
     it "initializes empty tensor with 0 dimension" $ do
-      t <- c_THFloatTensor_new
-      TR.c_THFloatTensor_nDimension t `shouldBe` 0
-      c_THFloatTensor_free t
+      t <- F.c_new ()
+      F.c_nDimension () t >>= (`shouldBe` 0)
+      F.c_free () t
     it "1D tensor has correct dimensions and sizes" $ do
-      t <- TR.c_THFloatTensor_newWithSize1d 10
-      TR.c_THFloatTensor_nDimension t `shouldBe` 1
-      TR.c_THFloatTensor_size t 0 `shouldBe` 10
-      c_THFloatTensor_free t
+      t <- F.c_newWithSize1d () 10
+      F.c_nDimension () t >>= (`shouldBe` 1)
+      F.c_size () t 0 >>= (`shouldBe` 10)
+      F.c_free () t
     it "2D tensor has correct dimensions and sizes" $ do
-      t <- c_THFloatTensor_newWithSize2d 10 25
-      TR.c_THFloatTensor_nDimension t `shouldBe` 2
-      TR.c_THFloatTensor_size t 0 `shouldBe` 10
-      TR.c_THFloatTensor_size t 1 `shouldBe` 25
-      c_THFloatTensor_free t
+      t <- F.c_newWithSize2d () 10 25
+      F.c_nDimension () t >>= (`shouldBe` 2)
+      F.c_size () t 0 >>= (`shouldBe` 10)
+      F.c_size () t 1 >>= (`shouldBe` 25)
+      F.c_free () t
     it "3D tensor has correct dimensions and sizes" $ do
-      t <- c_THFloatTensor_newWithSize3d 10 25 5
-      TR.c_THFloatTensor_nDimension t `shouldBe` 3
-      TR.c_THFloatTensor_size t 0 `shouldBe` 10
-      TR.c_THFloatTensor_size t 1 `shouldBe` 25
-      TR.c_THFloatTensor_size t 2 `shouldBe` 5
-      c_THFloatTensor_free t
+      t <- F.c_newWithSize3d () 10 25 5
+      F.c_nDimension () t >>= (`shouldBe` 3)
+      F.c_size () t 0 >>= (`shouldBe` 10)
+      F.c_size () t 1 >>= (`shouldBe` 25)
+      F.c_size () t 2 >>= (`shouldBe` 5)
+      F.c_free () t
     it "4D tensor has correct dimensions and sizes" $ do
-      t <- c_THFloatTensor_newWithSize4d 10 25 5 62
-      TR.c_THFloatTensor_nDimension t `shouldBe` 4
-      TR.c_THFloatTensor_size t 0 `shouldBe` 10
-      TR.c_THFloatTensor_size t 1 `shouldBe` 25
-      TR.c_THFloatTensor_size t 2 `shouldBe` 5
-      TR.c_THFloatTensor_size t 3 `shouldBe` 62
-      c_THFloatTensor_free t
+      t <- F.c_newWithSize4d () 10 25 5 62
+      F.c_nDimension () t >>= (`shouldBe` 4)
+      F.c_size () t 0 >>= (`shouldBe` 10)
+      F.c_size () t 1 >>= (`shouldBe` 25)
+      F.c_size () t 2 >>= (`shouldBe` 5)
+      F.c_size () t 3 >>= (`shouldBe` 62)
+      F.c_free () t
     it "Can assign and retrieve correct 1D vector values" $ do
-      t <- TR.c_THFloatTensor_newWithSize1d 10
-      c_THFloatTensor_set1d t 0 (CFloat 20.5)
-      c_THFloatTensor_set1d t 1 (CFloat 1.4)
-      c_THFloatTensor_set1d t 9 (CFloat 3.14)
-      c_THFloatTensor_get1d t 0 `shouldBe` (20.5 :: CFloat)
-      c_THFloatTensor_get1d t 1 `shouldBe` (1.4 :: CFloat)
-      c_THFloatTensor_get1d t 9 `shouldBe` (3.14 :: CFloat)
-      c_THFloatTensor_free t
+      t <- F.c_newWithSize1d () 10
+      F.c_set1d () t 0 (CFloat 20.5)
+      F.c_set1d () t 1 (CFloat 1.4)
+      F.c_set1d () t 9 (CFloat 3.14)
+      F.c_get1d () t 0 >>= (`shouldBe` (20.5 :: CFloat))
+      F.c_get1d () t 1 >>= (`shouldBe` (1.4 :: CFloat))
+      F.c_get1d () t 9 >>= (`shouldBe` (3.14 :: CFloat))
+      F.c_free () t
     it "Can assign and retrieve correct 2D vector values" $ do
-      t <- TR.c_THFloatTensor_newWithSize2d 10 15
-      c_THFloatTensor_set2d t 0 0 (CFloat 20.5)
-      c_THFloatTensor_set2d t 1 5 (CFloat 1.4)
-      c_THFloatTensor_set2d t 9 9 (CFloat 3.14)
-      c_THFloatTensor_get2d t 0 0 `shouldBe` (20.5 :: CFloat)
-      c_THFloatTensor_get2d t 1 5 `shouldBe` (1.4 :: CFloat)
-      c_THFloatTensor_get2d t 9 9 `shouldBe` (3.14 :: CFloat)
-      c_THFloatTensor_free t
+      t <- F.c_newWithSize2d () 10 15
+      F.c_set2d () t 0 0 (CFloat 20.5)
+      F.c_set2d () t 1 5 (CFloat 1.4)
+      F.c_set2d () t 9 9 (CFloat 3.14)
+      F.c_get2d () t 0 0 >>= (`shouldBe` (20.5 :: CFloat))
+      F.c_get2d () t 1 5 >>= (`shouldBe` (1.4 :: CFloat))
+      F.c_get2d () t 9 9 >>= (`shouldBe` (3.14 :: CFloat))
+      F.c_free () t
     it "Can assign and retrieve correct 3D vector values" $ do
-      t <- TR.c_THFloatTensor_newWithSize3d 10 15 10
-      c_THFloatTensor_set3d t 0 0 0 (CFloat 20.5)
-      c_THFloatTensor_set3d t 1 5 3 (CFloat 1.4)
-      c_THFloatTensor_set3d t 9 9 9 (CFloat 3.14)
-      c_THFloatTensor_get3d t 0 0 0 `shouldBe` (20.5 :: CFloat)
-      c_THFloatTensor_get3d t 1 5 3 `shouldBe` (1.4 :: CFloat)
-      c_THFloatTensor_get3d t 9 9 9 `shouldBe` (3.14 :: CFloat)
-      c_THFloatTensor_free t
+      t <- F.c_newWithSize3d () 10 15 10
+      F.c_set3d () t 0 0 0 (CFloat 20.5)
+      F.c_set3d () t 1 5 3 (CFloat 1.4)
+      F.c_set3d () t 9 9 9 (CFloat 3.14)
+      F.c_get3d () t 0 0 0 >>= (`shouldBe` (20.5 :: CFloat))
+      F.c_get3d () t 1 5 3 >>= (`shouldBe` (1.4 :: CFloat))
+      F.c_get3d () t 9 9 9 >>= (`shouldBe` (3.14 :: CFloat))
+      F.c_free () t
     it "Can assign and retrieve correct 4D vector values" $ do
-      t <- TR.c_THFloatTensor_newWithSize4d 10 15 10 20
-      c_THFloatTensor_set4d t 0 0 0 0 (CFloat 20.5)
-      c_THFloatTensor_set4d t 1 5 3 2 (CFloat 1.4)
-      c_THFloatTensor_set4d t 9 9 9 9 (CFloat 3.14)
-      c_THFloatTensor_get4d t 0 0 0 0 `shouldBe` (20.5 :: CFloat)
-      c_THFloatTensor_get4d t 1 5 3 2 `shouldBe` (1.4 :: CFloat)
-      c_THFloatTensor_get4d t 9 9 9 9 `shouldBe` (3.14 :: CFloat)
-      c_THFloatTensor_free t
+      t <- F.c_newWithSize4d () 10 15 10 20
+      F.c_set4d () t 0 0 0 0 (CFloat 20.5)
+      F.c_set4d () t 1 5 3 2 (CFloat 1.4)
+      F.c_set4d () t 9 9 9 9 (CFloat 3.14)
+      F.c_get4d () t 0 0 0 0 >>= (`shouldBe` (20.5 :: CFloat))
+      F.c_get4d () t 1 5 3 2 >>= (`shouldBe` (1.4 :: CFloat))
+      F.c_get4d () t 9 9 9 9 >>= (`shouldBe` (3.14 :: CFloat))
+      F.c_free () t
     it "Can can initialize values with the fill method" $ do
-      t1 <- c_THFloatTensor_newWithSize2d 2 2
-      c_THFloatTensor_fill t1 3.1
-      c_THFloatTensor_get2d t1 0 0 `shouldBe` (3.1 :: CFloat)
-      c_THFloatTensor_free t1
+      t1 <- F.c_newWithSize2d () 2 2
+      F.c_fill () t1 3.1
+      F.c_get2d () t1 0 0 >>= (`shouldBe` (3.1 :: CFloat))
+      F.c_free () t1
     it "Can compute correct dot product between 1D vectors" $ do
-      t1 <- c_THFloatTensor_newWithSize1d 3
-      t2 <- c_THFloatTensor_newWithSize1d 3
-      c_THFloatTensor_fill t1 3.0
-      c_THFloatTensor_fill t2 4.0
-      let value = c_THFloatTensor_dot t1 t2
-      value `shouldBe` 36.0
-      c_THFloatTensor_free t1
-      c_THFloatTensor_free t2
+      t1 <- F.c_newWithSize1d () 3
+      t2 <- F.c_newWithSize1d () 3
+      F.c_fill () t1 3.0
+      F.c_fill () t2 4.0
+      let value = F.c_dot () t1 t2
+      value >>= (`shouldBe` 36.0)
+      F.c_free () t1
+      F.c_free () t2
     it "Can compute correct dot product between 2D tensors" $ do
-      t1 <- c_THFloatTensor_newWithSize2d 2 2
-      t2 <- c_THFloatTensor_newWithSize2d 2 2
-      c_THFloatTensor_fill t1 3.0
-      c_THFloatTensor_fill t2 4.0
-      let value = c_THFloatTensor_dot t1 t2
-      value `shouldBe` 48.0
-      c_THFloatTensor_free t1
-      c_THFloatTensor_free t2
+      t1 <- F.c_newWithSize2d () 2 2
+      t2 <- F.c_newWithSize2d () 2 2
+      F.c_fill () t1 3.0
+      F.c_fill () t2 4.0
+      let value = F.c_dot () t1 t2
+      value >>= (`shouldBe` 48.0)
+      F.c_free () t1
+      F.c_free () t2
     it "Can compute correct dot product between 3D tensors" $ do
-      t1 <- c_THFloatTensor_newWithSize3d 2 2 4
-      t2 <- c_THFloatTensor_newWithSize3d 2 2 4
-      c_THFloatTensor_fill t1 3.0
-      c_THFloatTensor_fill t2 4.0
-      let value = c_THFloatTensor_dot t1 t2
-      value `shouldBe` 192.0
-      c_THFloatTensor_free t1
-      c_THFloatTensor_free t2
+      t1 <- F.c_newWithSize3d () 2 2 4
+      t2 <- F.c_newWithSize3d () 2 2 4
+      F.c_fill () t1 3.0
+      F.c_fill () t2 4.0
+      let value = F.c_dot () t1 t2
+      value >>= (`shouldBe` 192.0)
+      F.c_free () t1
+      F.c_free () t2
     it "Can compute correct dot product between 4D tensors" $ do
-      t1 <- c_THFloatTensor_newWithSize4d 2 2 4 3
-      t2 <- c_THFloatTensor_newWithSize4d 2 2 4 3
-      c_THFloatTensor_fill t1 3.0
-      c_THFloatTensor_fill t2 4.0
-      let value = c_THFloatTensor_dot t1 t2
-      value `shouldBe` 576.0
-      c_THFloatTensor_free t1
-      c_THFloatTensor_free t2
+      t1 <- F.c_newWithSize4d () 2 2 4 3
+      t2 <- F.c_newWithSize4d () 2 2 4 3
+      F.c_fill () t1 3.0
+      F.c_fill () t2 4.0
+      let value = F.c_dot () t1 t2
+      value >>= (`shouldBe` 576.0)
+      F.c_free () t1
+      F.c_free () t2
     it "Can zero out values" $ do
-      t1 <- c_THFloatTensor_newWithSize4d 2 2 4 3
-      c_THFloatTensor_fill t1 3.0
-      let value = c_THFloatTensor_dot t1 t1
+      t1 <- F.c_newWithSize4d () 2 2 4 3
+      F.c_fill () t1 3.0
+      let value = F.c_dot () t1 t1
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- value `shouldBe` (432.0)
-      c_THFloatTensor_zero t1
-      let value = c_THFloatTensor_dot t1 t1
-      value `shouldBe` 0.0
-      c_THFloatTensor_free t1
+      -- value >>= (`shouldBe` (432.0))
+      F.c_zero () t1
+      let value = F.c_dot () t1 t1
+      value >>= (`shouldBe` 0.0)
+      F.c_free () t1
 
     it "Can compute sum of all values" $ do
-      t1 <- c_THFloatTensor_newWithSize3d 2 2 4
-      c_THFloatTensor_fill t1 2.5
-      c_THFloatTensor_sumall t1 `shouldBe` 40.0
-      c_THFloatTensor_free t1
+      t1 <- F.c_newWithSize3d () 2 2 4
+      F.c_fill () t1 2.5
+      F.c_sumall () t1 >>= (`shouldBe` 40.0)
+      F.c_free () t1
     it "Can compute product of all values" $ do
-      t1 <- c_THFloatTensor_newWithSize2d 2 2
-      c_THFloatTensor_fill t1 1.5
-      c_THFloatTensor_prodall t1 `shouldBe` 5.0625
-      c_THFloatTensor_free t1
+      t1 <- F.c_newWithSize2d () 2 2
+      F.c_fill () t1 1.5
+      F.c_prodall () t1 >>= (`shouldBe` 5.0625)
+      F.c_free () t1
     it "Can take abs of tensor values" $ do
-      t1 <- c_THFloatTensor_newWithSize2d 2 2
-      c_THFloatTensor_fill t1 (-1.5)
+      t1 <- F.c_newWithSize2d () 2 2
+      F.c_fill () t1 (-1.5)
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- c_THFloatTensor_sumall t1 `shouldBe` (-6.0)
-      c_THFloatTensor_abs t1 t1
-      c_THFloatTensor_sumall t1 `shouldBe` 6.0
-      c_THFloatTensor_free t1
+      -- F.c_sumall () t1 >>= (`shouldBe` (-6.0))
+      F.c_abs () t1 t1
+      F.c_sumall () t1 >>= (`shouldBe` 6.0)
+      F.c_free () t1
 
 testsDouble :: Spec
 testsDouble =
   describe "Double Tensor creation and access methods" $ do
     it "initializes empty tensor with 0 dimension" $ do
-      t <- c_THDoubleTensor_new
-      TR.c_THDoubleTensor_nDimension t `shouldBe` 0
-      c_THDoubleTensor_free t
+      t <- D.c_new ()
+      D.c_nDimension () t >>= (`shouldBe` 0)
+      D.c_free () t
     it "1D tensor has correct dimensions and sizes" $ do
-      t <- TR.c_THDoubleTensor_newWithSize1d 10
-      TR.c_THDoubleTensor_nDimension t `shouldBe` 1
-      TR.c_THDoubleTensor_size t 0 `shouldBe` 10
-      c_THDoubleTensor_free t
+      t <- D.c_newWithSize1d () 10
+      D.c_nDimension () t >>= (`shouldBe` 1)
+      D.c_size () t 0 >>= (`shouldBe` 10)
+      D.c_free () t
     it "2D tensor has correct dimensions and sizes" $ do
-      t <- c_THDoubleTensor_newWithSize2d 10 25
-      TR.c_THDoubleTensor_nDimension t `shouldBe` 2
-      TR.c_THDoubleTensor_size t 0 `shouldBe` 10
-      TR.c_THDoubleTensor_size t 1 `shouldBe` 25
-      c_THDoubleTensor_free t
+      t <- D.c_newWithSize2d () 10 25
+      D.c_nDimension () t >>= (`shouldBe` 2)
+      D.c_size () t 0 >>= (`shouldBe` 10)
+      D.c_size () t 1 >>= (`shouldBe` 25)
+      D.c_free () t
     it "3D tensor has correct dimensions and sizes" $ do
-      t <- c_THDoubleTensor_newWithSize3d 10 25 5
-      TR.c_THDoubleTensor_nDimension t `shouldBe` 3
-      TR.c_THDoubleTensor_size t 0 `shouldBe` 10
-      TR.c_THDoubleTensor_size t 1 `shouldBe` 25
-      TR.c_THDoubleTensor_size t 2 `shouldBe` 5
-      c_THDoubleTensor_free t
+      t <- D.c_newWithSize3d () 10 25 5
+      D.c_nDimension () t >>= (`shouldBe` 3)
+      D.c_size () t 0 >>= (`shouldBe` 10)
+      D.c_size () t 1 >>= (`shouldBe` 25)
+      D.c_size () t 2 >>= (`shouldBe` 5)
+      D.c_free () t
     it "4D tensor has correct dimensions and sizes" $ do
-      t <- c_THDoubleTensor_newWithSize4d 10 25 5 62
-      TR.c_THDoubleTensor_nDimension t `shouldBe` 4
-      TR.c_THDoubleTensor_size t 0 `shouldBe` 10
-      TR.c_THDoubleTensor_size t 1 `shouldBe` 25
-      TR.c_THDoubleTensor_size t 2 `shouldBe` 5
-      TR.c_THDoubleTensor_size t 3 `shouldBe` 62
-      c_THDoubleTensor_free t
+      t <- D.c_newWithSize4d () 10 25 5 62
+      D.c_nDimension () t >>= (`shouldBe` 4)
+      D.c_size () t 0 >>= (`shouldBe` 10)
+      D.c_size () t 1 >>= (`shouldBe` 25)
+      D.c_size () t 2 >>= (`shouldBe` 5)
+      D.c_size () t 3 >>= (`shouldBe` 62)
+      D.c_free () t
     it "Can assign and retrieve correct 1D vector values" $ do
-      t <- TR.c_THDoubleTensor_newWithSize1d 10
-      c_THDoubleTensor_set1d t 0 (CDouble 20.5)
-      c_THDoubleTensor_set1d t 1 (CDouble 1.4)
-      c_THDoubleTensor_set1d t 9 (CDouble 3.14)
-      c_THDoubleTensor_get1d t 0 `shouldBe` (20.5 :: CDouble)
-      c_THDoubleTensor_get1d t 1 `shouldBe` (1.4 :: CDouble)
-      c_THDoubleTensor_get1d t 9 `shouldBe` (3.14 :: CDouble)
-      c_THDoubleTensor_free t
+      t <- D.c_newWithSize1d () 10
+      D.c_set1d () t 0 (CDouble 20.5)
+      D.c_set1d () t 1 (CDouble 1.4)
+      D.c_set1d () t 9 (CDouble 3.14)
+      D.c_get1d () t 0 >>= (`shouldBe` (20.5 :: CDouble))
+      D.c_get1d () t 1 >>= (`shouldBe` (1.4 :: CDouble))
+      D.c_get1d () t 9 >>= (`shouldBe` (3.14 :: CDouble))
+      D.c_free () t
     it "Can assign and retrieve correct 2D vector values" $ do
-      t <- TR.c_THDoubleTensor_newWithSize2d 10 15
-      c_THDoubleTensor_set2d t 0 0 (CDouble 20.5)
-      c_THDoubleTensor_set2d t 1 5 (CDouble 1.4)
-      c_THDoubleTensor_set2d t 9 9 (CDouble 3.14)
-      c_THDoubleTensor_get2d t 0 0 `shouldBe` (20.5 :: CDouble)
-      c_THDoubleTensor_get2d t 1 5 `shouldBe` (1.4 :: CDouble)
-      c_THDoubleTensor_get2d t 9 9 `shouldBe` (3.14 :: CDouble)
-      c_THDoubleTensor_free t
+      t <- D.c_newWithSize2d () 10 15
+      D.c_set2d () t 0 0 (CDouble 20.5)
+      D.c_set2d () t 1 5 (CDouble 1.4)
+      D.c_set2d () t 9 9 (CDouble 3.14)
+      D.c_get2d () t 0 0 >>= (`shouldBe` (20.5 :: CDouble))
+      D.c_get2d () t 1 5 >>= (`shouldBe` (1.4 :: CDouble))
+      D.c_get2d () t 9 9 >>= (`shouldBe` (3.14 :: CDouble))
+      D.c_free () t
     it "Can assign and retrieve correct 3D vector values" $ do
-      t <- TR.c_THDoubleTensor_newWithSize3d 10 15 10
-      c_THDoubleTensor_set3d t 0 0 0 (CDouble 20.5)
-      c_THDoubleTensor_set3d t 1 5 3 (CDouble 1.4)
-      c_THDoubleTensor_set3d t 9 9 9 (CDouble 3.14)
-      c_THDoubleTensor_get3d t 0 0 0 `shouldBe` (20.5 :: CDouble)
-      c_THDoubleTensor_get3d t 1 5 3 `shouldBe` (1.4 :: CDouble)
-      c_THDoubleTensor_get3d t 9 9 9 `shouldBe` (3.14 :: CDouble)
-      c_THDoubleTensor_free t
+      t <- D.c_newWithSize3d () 10 15 10
+      D.c_set3d () t 0 0 0 (CDouble 20.5)
+      D.c_set3d () t 1 5 3 (CDouble 1.4)
+      D.c_set3d () t 9 9 9 (CDouble 3.14)
+      D.c_get3d () t 0 0 0 >>= (`shouldBe` (20.5 :: CDouble))
+      D.c_get3d () t 1 5 3 >>= (`shouldBe` (1.4 :: CDouble))
+      D.c_get3d () t 9 9 9 >>= (`shouldBe` (3.14 :: CDouble))
+      D.c_free () t
     it "Can assign and retrieve correct 4D vector values" $ do
-      t <- TR.c_THDoubleTensor_newWithSize4d 10 15 10 20
-      c_THDoubleTensor_set4d t 0 0 0 0 (CDouble 20.5)
-      c_THDoubleTensor_set4d t 1 5 3 2 (CDouble 1.4)
-      c_THDoubleTensor_set4d t 9 9 9 9 (CDouble 3.14)
-      c_THDoubleTensor_get4d t 0 0 0 0 `shouldBe` (20.5 :: CDouble)
-      c_THDoubleTensor_get4d t 1 5 3 2 `shouldBe` (1.4 :: CDouble)
-      c_THDoubleTensor_get4d t 9 9 9 9 `shouldBe` (3.14 :: CDouble)
-      c_THDoubleTensor_free t
+      t <- D.c_newWithSize4d () 10 15 10 20
+      D.c_set4d () t 0 0 0 0 (CDouble 20.5)
+      D.c_set4d () t 1 5 3 2 (CDouble 1.4)
+      D.c_set4d () t 9 9 9 9 (CDouble 3.14)
+      D.c_get4d () t 0 0 0 0 >>= (`shouldBe` (20.5 :: CDouble))
+      D.c_get4d () t 1 5 3 2 >>= (`shouldBe` (1.4 :: CDouble))
+      D.c_get4d () t 9 9 9 9 >>= (`shouldBe` (3.14 :: CDouble))
+      D.c_free () t
     it "Can initialize values with the fill method" $ do
-      t1 <- c_THDoubleTensor_newWithSize2d 2 2
-      c_THDoubleTensor_fill t1 3.1
-      c_THDoubleTensor_get2d t1 0 0 `shouldBe` (3.1 :: CDouble)
-      c_THDoubleTensor_free t1
+      t1 <- D.c_newWithSize2d () 2 2
+      D.c_fill () t1 3.1
+      D.c_get2d () t1 0 0 >>= (`shouldBe` (3.1 :: CDouble))
+      D.c_free () t1
     it "Can compute correct dot product between 1D vectors" $ do
-      t1 <- c_THDoubleTensor_newWithSize1d 3
-      t2 <- c_THDoubleTensor_newWithSize1d 3
-      c_THDoubleTensor_fill t1 3.0
-      c_THDoubleTensor_fill t2 4.0
-      let value = c_THDoubleTensor_dot t1 t2
-      value `shouldBe` (36.0 :: CDouble)
-      c_THDoubleTensor_free t1
-      c_THDoubleTensor_free t2
+      t1 <- D.c_newWithSize1d () 3
+      t2 <- D.c_newWithSize1d () 3
+      D.c_fill () t1 3.0
+      D.c_fill () t2 4.0
+      let value = D.c_dot () t1 t2
+      value >>= (`shouldBe` (36.0 :: CDouble))
+      D.c_free () t1
+      D.c_free () t2
     it "Can compute correct dot product between 2D tensors" $ do
-      t1 <- c_THDoubleTensor_newWithSize2d 2 2
-      t2 <- c_THDoubleTensor_newWithSize2d 2 2
-      c_THDoubleTensor_fill t1 3.0
-      c_THDoubleTensor_fill t2 4.0
-      let value = c_THDoubleTensor_dot t1 t2
-      value `shouldBe` (48.0 :: CDouble)
-      c_THDoubleTensor_free t1
-      c_THDoubleTensor_free t2
+      t1 <- D.c_newWithSize2d () 2 2
+      t2 <- D.c_newWithSize2d () 2 2
+      D.c_fill () t1 3.0
+      D.c_fill () t2 4.0
+      let value = D.c_dot () t1 t2
+      value >>= (`shouldBe` (48.0 :: CDouble))
+      D.c_free () t1
+      D.c_free () t2
     it "Can compute correct dot product between 3D tensors" $ do
-      t1 <- c_THDoubleTensor_newWithSize3d 2 2 4
-      t2 <- c_THDoubleTensor_newWithSize3d 2 2 4
-      c_THDoubleTensor_fill t1 3.0
-      c_THDoubleTensor_fill t2 4.0
-      let value = c_THDoubleTensor_dot t1 t2
-      value `shouldBe` (192.0 :: CDouble)
-      c_THDoubleTensor_free t1
-      c_THDoubleTensor_free t2
+      t1 <- D.c_newWithSize3d () 2 2 4
+      t2 <- D.c_newWithSize3d () 2 2 4
+      D.c_fill () t1 3.0
+      D.c_fill () t2 4.0
+      let value = D.c_dot () t1 t2
+      value >>= (`shouldBe` (192.0 :: CDouble))
+      D.c_free () t1
+      D.c_free () t2
     it "Can compute correct dot product between 4D tensors" $ do
-      t1 <- c_THDoubleTensor_newWithSize4d 2 2 4 3
-      t2 <- c_THDoubleTensor_newWithSize4d 2 2 4 3
-      c_THDoubleTensor_fill t1 3.0
-      c_THDoubleTensor_fill t2 4.0
-      let value = c_THDoubleTensor_dot t1 t2
-      value `shouldBe` (576.0 :: CDouble)
-      c_THDoubleTensor_free t1
-      c_THDoubleTensor_free t2
+      t1 <- D.c_newWithSize4d () 2 2 4 3
+      t2 <- D.c_newWithSize4d () 2 2 4 3
+      D.c_fill () t1 3.0
+      D.c_fill () t2 4.0
+      let value = D.c_dot () t1 t2
+      value >>= (`shouldBe` (576.0 :: CDouble))
+      D.c_free () t1
+      D.c_free () t2
     it "Can zero out values" $ do
-      t1 <- c_THDoubleTensor_newWithSize4d 2 2 4 3
-      c_THDoubleTensor_fill t1 3.0
-      let value = c_THDoubleTensor_dot t1 t1
+      t1 <- D.c_newWithSize4d () 2 2 4 3
+      D.c_fill () t1 3.0
+      let value = D.c_dot () t1 t1
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- value `shouldBe` (432.0 :: CDouble)
-      c_THDoubleTensor_zero t1
-      let value = c_THDoubleTensor_dot t1 t1
-      value `shouldBe` (0.0 :: CDouble)
-      c_THDoubleTensor_free t1
+      -- value >>= (`shouldBe` (432.0 :: CDouble))
+      D.c_zero () t1
+      let value = D.c_dot () t1 t1
+      value >>= (`shouldBe` (0.0 :: CDouble))
+      D.c_free () t1
     it "Can compute sum of all values" $ do
-      t1 <- c_THDoubleTensor_newWithSize3d 2 2 4
-      c_THDoubleTensor_fill t1 2.5
-      c_THDoubleTensor_sumall t1 `shouldBe` 40.0
-      c_THDoubleTensor_free t1
+      t1 <- D.c_newWithSize3d () 2 2 4
+      D.c_fill () t1 2.5
+      D.c_sumall () t1 >>= (`shouldBe` 40.0)
+      D.c_free () t1
     it "Can compute product of all values" $ do
-      t1 <- c_THDoubleTensor_newWithSize2d 2 2
-      c_THDoubleTensor_fill t1 1.5
-      c_THDoubleTensor_prodall t1 `shouldBe` 5.0625
-      c_THDoubleTensor_free t1
+      t1 <- D.c_newWithSize2d () 2 2
+      D.c_fill () t1 1.5
+      D.c_prodall () t1 >>= (`shouldBe` 5.0625)
+      D.c_free () t1
     it "Can take abs of tensor values" $ do
-      t1 <- c_THDoubleTensor_newWithSize2d 2 2
-      c_THDoubleTensor_fill t1 (-1.5)
+      t1 <- D.c_newWithSize2d () 2 2
+      D.c_fill () t1 (-1.5)
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- c_THDoubleTensor_sumall t1 `shouldBe` (-6.0)
-      c_THDoubleTensor_abs t1 t1
-      c_THDoubleTensor_sumall t1 `shouldBe` (6.0)
-      c_THDoubleTensor_free t1
+      -- D.c_sumall () t1 >>= (`shouldBe` (-6.0))
+      D.c_abs () t1 t1
+      D.c_sumall () t1 >>= (`shouldBe` (6.0))
+      D.c_free () t1
 
 testsInt :: Spec
 testsInt =
   describe "Int Tensor creation and access methods" $ do
     it "initializes empty tensor with 0 dimension" $ do
-      t <- c_THIntTensor_new
-      TR.c_THIntTensor_nDimension t `shouldBe` 0
-      c_THIntTensor_free t
+      t <- I.c_new ()
+      I.c_nDimension () t >>= (`shouldBe` 0)
+      I.c_free () t
     it "1D tensor has correct dimensions and sizes" $ do
-      t <- TR.c_THIntTensor_newWithSize1d 10
-      TR.c_THIntTensor_nDimension t `shouldBe` 1
-      TR.c_THIntTensor_size t 0 `shouldBe` 10
-      c_THIntTensor_free t
+      t <- I.c_newWithSize1d () 10
+      I.c_nDimension () t >>= (`shouldBe` 1)
+      I.c_size () t 0 >>= (`shouldBe` 10)
+      I.c_free () t
     it "2D tensor has correct dimensions and sizes" $ do
-      t <- c_THIntTensor_newWithSize2d 10 25
-      TR.c_THIntTensor_nDimension t `shouldBe` 2
-      TR.c_THIntTensor_size t 0 `shouldBe` 10
-      TR.c_THIntTensor_size t 1 `shouldBe` 25
-      c_THIntTensor_free t
+      t <- I.c_newWithSize2d () 10 25
+      I.c_nDimension () t >>= (`shouldBe` 2)
+      I.c_size () t 0 >>= (`shouldBe` 10)
+      I.c_size () t 1 >>= (`shouldBe` 25)
+      I.c_free () t
     it "3D tensor has correct dimensions and sizes" $ do
-      t <- c_THIntTensor_newWithSize3d 10 25 5
-      TR.c_THIntTensor_nDimension t `shouldBe` 3
-      TR.c_THIntTensor_size t 0 `shouldBe` 10
-      TR.c_THIntTensor_size t 1 `shouldBe` 25
-      TR.c_THIntTensor_size t 2 `shouldBe` 5
-      c_THIntTensor_free t
+      t <- I.c_newWithSize3d () 10 25 5
+      I.c_nDimension () t >>= (`shouldBe` 3)
+      I.c_size () t 0 >>= (`shouldBe` 10)
+      I.c_size () t 1 >>= (`shouldBe` 25)
+      I.c_size () t 2 >>= (`shouldBe` 5)
+      I.c_free () t
     it "4D tensor has correct dimensions and sizes" $ do
-      t <- c_THIntTensor_newWithSize4d 10 25 5 62
-      TR.c_THIntTensor_nDimension t `shouldBe` 4
-      TR.c_THIntTensor_size t 0 `shouldBe` 10
-      TR.c_THIntTensor_size t 1 `shouldBe` 25
-      TR.c_THIntTensor_size t 2 `shouldBe` 5
-      TR.c_THIntTensor_size t 3 `shouldBe` 62
-      c_THIntTensor_free t
+      t <- I.c_newWithSize4d () 10 25 5 62
+      I.c_nDimension () t >>= (`shouldBe` 4)
+      I.c_size () t 0 >>= (`shouldBe` 10)
+      I.c_size () t 1 >>= (`shouldBe` 25)
+      I.c_size () t 2 >>= (`shouldBe` 5)
+      I.c_size () t 3 >>= (`shouldBe` 62)
+      I.c_free () t
     it "Can assign and retrieve correct 1D vector values" $ do
-      t <- TR.c_THIntTensor_newWithSize1d 10
-      c_THIntTensor_set1d t 0 (20)
-      c_THIntTensor_set1d t 1 (1)
-      c_THIntTensor_set1d t 9 (3)
-      c_THIntTensor_get1d t 0 `shouldBe` (20)
-      c_THIntTensor_get1d t 1 `shouldBe` (1)
-      c_THIntTensor_get1d t 9 `shouldBe` (3)
-      c_THIntTensor_free t
+      t <- I.c_newWithSize1d () 10
+      I.c_set1d () t 0 (20)
+      I.c_set1d () t 1 (1)
+      I.c_set1d () t 9 (3)
+      I.c_get1d () t 0 >>= (`shouldBe` (20))
+      I.c_get1d () t 1 >>= (`shouldBe` (1))
+      I.c_get1d () t 9 >>= (`shouldBe` (3))
+      I.c_free () t
     it "Can assign and retrieve correct 2D vector values" $ do
-      t <- TR.c_THIntTensor_newWithSize2d 10 15
-      c_THIntTensor_set2d t 0 0 (20)
-      c_THIntTensor_set2d t 1 5 (1)
-      c_THIntTensor_set2d t 9 9 (3)
-      c_THIntTensor_get2d t 0 0 `shouldBe` (20)
-      c_THIntTensor_get2d t 1 5 `shouldBe` (1)
-      c_THIntTensor_get2d t 9 9 `shouldBe` (3)
-      c_THIntTensor_free t
+      t <- I.c_newWithSize2d () 10 15
+      I.c_set2d () t 0 0 (20)
+      I.c_set2d () t 1 5 (1)
+      I.c_set2d () t 9 9 (3)
+      I.c_get2d () t 0 0 >>= (`shouldBe` (20))
+      I.c_get2d () t 1 5 >>= (`shouldBe` (1))
+      I.c_get2d () t 9 9 >>= (`shouldBe` (3))
+      I.c_free () t
     it "Can assign and retrieve correct 3D vector values" $ do
-      t <- TR.c_THIntTensor_newWithSize3d 10 15 10
-      c_THIntTensor_set3d t 0 0 0 (20)
-      c_THIntTensor_set3d t 1 5 3 (1)
-      c_THIntTensor_set3d t 9 9 9 (3)
-      c_THIntTensor_get3d t 0 0 0 `shouldBe` (20)
-      c_THIntTensor_get3d t 1 5 3 `shouldBe` (1)
-      c_THIntTensor_get3d t 9 9 9 `shouldBe` (3)
-      c_THIntTensor_free t
+      t <- I.c_newWithSize3d () 10 15 10
+      I.c_set3d () t 0 0 0 (20)
+      I.c_set3d () t 1 5 3 (1)
+      I.c_set3d () t 9 9 9 (3)
+      I.c_get3d () t 0 0 0 >>= (`shouldBe` (20))
+      I.c_get3d () t 1 5 3 >>= (`shouldBe` (1))
+      I.c_get3d () t 9 9 9 >>= (`shouldBe` (3))
+      I.c_free () t
     it "Can assign and retrieve correct 4D vector values" $ do
-      t <- TR.c_THIntTensor_newWithSize4d 10 15 10 20
-      c_THIntTensor_set4d t 0 0 0 0 (20)
-      c_THIntTensor_set4d t 1 5 3 2 (1)
-      c_THIntTensor_set4d t 9 9 9 9 (3)
-      c_THIntTensor_get4d t 0 0 0 0 `shouldBe` (20)
-      c_THIntTensor_get4d t 1 5 3 2 `shouldBe` (1)
-      c_THIntTensor_get4d t 9 9 9 9 `shouldBe` (3)
-      c_THIntTensor_free t
+      t <- I.c_newWithSize4d () 10 15 10 20
+      I.c_set4d () t 0 0 0 0 (20)
+      I.c_set4d () t 1 5 3 2 (1)
+      I.c_set4d () t 9 9 9 9 (3)
+      I.c_get4d () t 0 0 0 0 >>= (`shouldBe` (20))
+      I.c_get4d () t 1 5 3 2 >>= (`shouldBe` (1))
+      I.c_get4d () t 9 9 9 9 >>= (`shouldBe` (3))
+      I.c_free () t
     it "Can can initialize values with the fill method" $ do
-      t1 <- c_THIntTensor_newWithSize2d 2 2
-      c_THIntTensor_fill t1 3
-      c_THIntTensor_get2d t1 0 0 `shouldBe` (3)
-      c_THIntTensor_free t1
+      t1 <- I.c_newWithSize2d () 2 2
+      I.c_fill () t1 3
+      I.c_get2d () t1 0 0 >>= (`shouldBe` (3))
+      I.c_free () t1
     it "Can compute correct dot product between 1D vectors" $ do
-      t1 <- c_THIntTensor_newWithSize1d 3
-      t2 <- c_THIntTensor_newWithSize1d 3
-      c_THIntTensor_fill t1 3
-      c_THIntTensor_fill t2 4
-      let value = c_THIntTensor_dot t1 t2
-      value `shouldBe` 36
-      c_THIntTensor_free t1
-      c_THIntTensor_free t2
+      t1 <- I.c_newWithSize1d () 3
+      t2 <- I.c_newWithSize1d () 3
+      I.c_fill () t1 3
+      I.c_fill () t2 4
+      let value = I.c_dot () t1 t2
+      value >>= (`shouldBe` 36)
+      I.c_free () t1
+      I.c_free () t2
     it "Can compute correct dot product between 2D tensors" $ do
-      t1 <- c_THIntTensor_newWithSize2d 2 2
-      t2 <- c_THIntTensor_newWithSize2d 2 2
-      c_THIntTensor_fill t1 3
-      c_THIntTensor_fill t2 4
-      let value = c_THIntTensor_dot t1 t2
-      value `shouldBe` 48
-      c_THIntTensor_free t1
-      c_THIntTensor_free t2
+      t1 <- I.c_newWithSize2d () 2 2
+      t2 <- I.c_newWithSize2d () 2 2
+      I.c_fill () t1 3
+      I.c_fill () t2 4
+      let value = I.c_dot () t1 t2
+      value >>= (`shouldBe` 48)
+      I.c_free () t1
+      I.c_free () t2
     it "Can compute correct dot product between 3D tensors" $ do
-      t1 <- c_THIntTensor_newWithSize3d 2 2 4
-      t2 <- c_THIntTensor_newWithSize3d 2 2 4
-      c_THIntTensor_fill t1 3
-      c_THIntTensor_fill t2 4
-      let value = c_THIntTensor_dot t1 t2
-      value `shouldBe` 192
-      c_THIntTensor_free t1
-      c_THIntTensor_free t2
+      t1 <- I.c_newWithSize3d () 2 2 4
+      t2 <- I.c_newWithSize3d () 2 2 4
+      I.c_fill () t1 3
+      I.c_fill () t2 4
+      let value = I.c_dot () t1 t2
+      value >>= (`shouldBe` 192)
+      I.c_free () t1
+      I.c_free () t2
     it "Can compute correct dot product between 4D tensors" $ do
-      t1 <- c_THIntTensor_newWithSize4d 2 2 4 3
-      t2 <- c_THIntTensor_newWithSize4d 2 2 4 3
-      c_THIntTensor_fill t1 3
-      c_THIntTensor_fill t2 4
-      let value = c_THIntTensor_dot t1 t2
-      value `shouldBe` 576
-      c_THIntTensor_free t1
-      c_THIntTensor_free t2
+      t1 <- I.c_newWithSize4d () 2 2 4 3
+      t2 <- I.c_newWithSize4d () 2 2 4 3
+      I.c_fill () t1 3
+      I.c_fill () t2 4
+      let value = I.c_dot () t1 t2
+      value >>= (`shouldBe` 576)
+      I.c_free () t1
+      I.c_free () t2
     it "Can zero out values" $ do
-      t1 <- c_THIntTensor_newWithSize4d 2 2 4 3
-      c_THIntTensor_fill t1 3
-      let value = c_THIntTensor_dot t1 t1
+      t1 <- I.c_newWithSize4d () 2 2 4 3
+      I.c_fill () t1 3
+      let value = I.c_dot () t1 t1
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- value `shouldBe` (432.0)
-      c_THIntTensor_zero t1
-      let value = c_THIntTensor_dot t1 t1
-      value `shouldBe` 0
-      c_THIntTensor_free t1
+      -- value >>= (`shouldBe` (432.0))
+      I.c_zero () t1
+      let value = I.c_dot () t1 t1
+      value >>= (`shouldBe` 0)
+      I.c_free () t1
     it "Can compute sum of all values" $ do
-      t1 <- c_THIntTensor_newWithSize3d 2 2 4
-      c_THIntTensor_fill t1 2
-      c_THIntTensor_sumall t1 `shouldBe` 32
-      c_THIntTensor_free t1
+      t1 <- I.c_newWithSize3d () 2 2 4
+      I.c_fill () t1 2
+      I.c_sumall () t1 >>= (`shouldBe` 32)
+      I.c_free () t1
     it "Can compute product of all values" $ do
-      t1 <- c_THIntTensor_newWithSize2d 2 2
-      c_THIntTensor_fill t1 2
-      c_THIntTensor_prodall t1 `shouldBe` 16
-      c_THIntTensor_free t1
+      t1 <- I.c_newWithSize2d () 2 2
+      I.c_fill () t1 2
+      I.c_prodall () t1 >>= (`shouldBe` 16)
+      I.c_free () t1
     it "Can take abs of tensor values" $ do
-      t1 <- c_THIntTensor_newWithSize2d 2 2
-      c_THIntTensor_fill t1 (-2)
+      t1 <- I.c_newWithSize2d () 2 2
+      I.c_fill () t1 (-2)
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- c_THIntTensor_sumall t1 `shouldBe` (-6.0)
-      c_THIntTensor_abs t1 t1
-      c_THIntTensor_sumall t1 `shouldBe` (8)
-      c_THIntTensor_free t1
+      -- I.c_sumall () t1 >>= (`shouldBe` (-6.0))
+      I.c_abs () t1 t1
+      I.c_sumall () t1 >>= (`shouldBe` (8))
+      I.c_free () t1
 
 testsByte :: Spec
 testsByte = do
   describe "Byte Tensor creation and access methods" $ do
     it "initializes empty tensor with 0 dimension" $ do
-      t <- c_THByteTensor_new
-      TR.c_THByteTensor_nDimension t `shouldBe` 0
-      c_THByteTensor_free t
+      t <- B.c_new ()
+      B.c_nDimension () t >>= (`shouldBe` 0)
+      B.c_free () t
     it "1D tensor has correct dimensions and sizes" $ do
-      t <- TR.c_THByteTensor_newWithSize1d 10
-      TR.c_THByteTensor_nDimension t `shouldBe` 1
-      TR.c_THByteTensor_size t 0 `shouldBe` 10
-      c_THByteTensor_free t
+      t <- B.c_newWithSize1d () 10
+      B.c_nDimension () t >>= (`shouldBe` 1)
+      B.c_size () t 0 >>= (`shouldBe` 10)
+      B.c_free () t
     it "2D tensor has correct dimensions and sizes" $ do
-      t <- c_THByteTensor_newWithSize2d 10 25
-      TR.c_THByteTensor_nDimension t `shouldBe` 2
-      TR.c_THByteTensor_size t 0 `shouldBe` 10
-      TR.c_THByteTensor_size t 1 `shouldBe` 25
-      c_THByteTensor_free t
+      t <- B.c_newWithSize2d () 10 25
+      B.c_nDimension () t >>= (`shouldBe` 2)
+      B.c_size () t 0 >>= (`shouldBe` 10)
+      B.c_size () t 1 >>= (`shouldBe` 25)
+      B.c_free () t
     it "3D tensor has correct dimensions and sizes" $ do
-      t <- c_THByteTensor_newWithSize3d 10 25 5
-      TR.c_THByteTensor_nDimension t `shouldBe` 3
-      TR.c_THByteTensor_size t 0 `shouldBe` 10
-      TR.c_THByteTensor_size t 1 `shouldBe` 25
-      TR.c_THByteTensor_size t 2 `shouldBe` 5
-      c_THByteTensor_free t
+      t <- B.c_newWithSize3d () 10 25 5
+      B.c_nDimension () t >>= (`shouldBe` 3)
+      B.c_size () t 0 >>= (`shouldBe` 10)
+      B.c_size () t 1 >>= (`shouldBe` 25)
+      B.c_size () t 2 >>= (`shouldBe` 5)
+      B.c_free () t
     it "4D tensor has correct dimensions and sizes" $ do
-      t <- c_THByteTensor_newWithSize4d 10 25 5 62
-      TR.c_THByteTensor_nDimension t `shouldBe` 4
-      TR.c_THByteTensor_size t 0 `shouldBe` 10
-      TR.c_THByteTensor_size t 1 `shouldBe` 25
-      TR.c_THByteTensor_size t 2 `shouldBe` 5
-      TR.c_THByteTensor_size t 3 `shouldBe` 62
-      c_THByteTensor_free t
+      t <- B.c_newWithSize4d () 10 25 5 62
+      B.c_nDimension () t >>= (`shouldBe` 4)
+      B.c_size () t 0 >>= (`shouldBe` 10)
+      B.c_size () t 1 >>= (`shouldBe` 25)
+      B.c_size () t 2 >>= (`shouldBe` 5)
+      B.c_size () t 3 >>= (`shouldBe` 62)
+      B.c_free () t
     it "Can assign and retrieve correct 1D vector values" $ do
-      t <- TR.c_THByteTensor_newWithSize1d 10
-      c_THByteTensor_set1d t 0 (20)
-      c_THByteTensor_set1d t 1 (1)
-      c_THByteTensor_set1d t 9 (3)
-      c_THByteTensor_get1d t 0 `shouldBe` (20)
-      c_THByteTensor_get1d t 1 `shouldBe` (1)
-      c_THByteTensor_get1d t 9 `shouldBe` (3)
-      c_THByteTensor_free t
+      t <- B.c_newWithSize1d () 10
+      B.c_set1d () t 0 (20)
+      B.c_set1d () t 1 (1)
+      B.c_set1d () t 9 (3)
+      B.c_get1d () t 0 >>= (`shouldBe` (20))
+      B.c_get1d () t 1 >>= (`shouldBe` (1))
+      B.c_get1d () t 9 >>= (`shouldBe` (3))
+      B.c_free () t
     it "Can assign and retrieve correct 2D vector values" $ do
-      t <- TR.c_THByteTensor_newWithSize2d 10 15
-      c_THByteTensor_set2d t 0 0 (20)
-      c_THByteTensor_set2d t 1 5 (1)
-      c_THByteTensor_set2d t 9 9 (3)
-      c_THByteTensor_get2d t 0 0 `shouldBe` (20)
-      c_THByteTensor_get2d t 1 5 `shouldBe` (1)
-      c_THByteTensor_get2d t 9 9 `shouldBe` (3)
-      c_THByteTensor_free t
+      t <- B.c_newWithSize2d () 10 15
+      B.c_set2d () t 0 0 (20)
+      B.c_set2d () t 1 5 (1)
+      B.c_set2d () t 9 9 (3)
+      B.c_get2d () t 0 0 >>= (`shouldBe` (20))
+      B.c_get2d () t 1 5 >>= (`shouldBe` (1))
+      B.c_get2d () t 9 9 >>= (`shouldBe` (3))
+      B.c_free () t
     it "Can assign and retrieve correct 3D vector values" $ do
-      t <- TR.c_THByteTensor_newWithSize3d 10 15 10
-      c_THByteTensor_set3d t 0 0 0 (20)
-      c_THByteTensor_set3d t 1 5 3 (1)
-      c_THByteTensor_set3d t 9 9 9 (3)
-      c_THByteTensor_get3d t 0 0 0 `shouldBe` (20)
-      c_THByteTensor_get3d t 1 5 3 `shouldBe` (1)
-      c_THByteTensor_get3d t 9 9 9 `shouldBe` (3)
-      c_THByteTensor_free t
+      t <- B.c_newWithSize3d () 10 15 10
+      B.c_set3d () t 0 0 0 (20)
+      B.c_set3d () t 1 5 3 (1)
+      B.c_set3d () t 9 9 9 (3)
+      B.c_get3d () t 0 0 0 >>= (`shouldBe` (20))
+      B.c_get3d () t 1 5 3 >>= (`shouldBe` (1))
+      B.c_get3d () t 9 9 9 >>= (`shouldBe` (3))
+      B.c_free () t
     it "Can assign and retrieve correct 4D vector values" $ do
-      t <- TR.c_THByteTensor_newWithSize4d 10 15 10 20
-      c_THByteTensor_set4d t 0 0 0 0 (20)
-      c_THByteTensor_set4d t 1 5 3 2 (1)
-      c_THByteTensor_set4d t 9 9 9 9 (3)
-      c_THByteTensor_get4d t 0 0 0 0 `shouldBe` (20)
-      c_THByteTensor_get4d t 1 5 3 2 `shouldBe` (1)
-      c_THByteTensor_get4d t 9 9 9 9 `shouldBe` (3)
-      c_THByteTensor_free t
+      t <- B.c_newWithSize4d () 10 15 10 20
+      B.c_set4d () t 0 0 0 0 (20)
+      B.c_set4d () t 1 5 3 2 (1)
+      B.c_set4d () t 9 9 9 9 (3)
+      B.c_get4d () t 0 0 0 0 >>= (`shouldBe` (20))
+      B.c_get4d () t 1 5 3 2 >>= (`shouldBe` (1))
+      B.c_get4d () t 9 9 9 9 >>= (`shouldBe` (3))
+      B.c_free () t
     it "Can can initialize values with the fill method" $ do
-      t1 <- c_THByteTensor_newWithSize2d 2 2
-      c_THByteTensor_fill t1 3
-      c_THByteTensor_get2d t1 0 0 `shouldBe` (3)
-      c_THByteTensor_free t1
+      t1 <- B.c_newWithSize2d () 2 2
+      B.c_fill () t1 3
+      B.c_get2d () t1 0 0 >>= (`shouldBe` (3))
+      B.c_free () t1
     it "Can compute correct dot product between 1D vectors" $ do
-      t1 <- c_THByteTensor_newWithSize1d 3
-      t2 <- c_THByteTensor_newWithSize1d 3
-      c_THByteTensor_fill t1 3
-      c_THByteTensor_fill t2 4
-      let value = c_THByteTensor_dot t1 t2
-      value `shouldBe` 36
-      c_THByteTensor_free t1
-      c_THByteTensor_free t2
+      t1 <- B.c_newWithSize1d () 3
+      t2 <- B.c_newWithSize1d () 3
+      B.c_fill () t1 3
+      B.c_fill () t2 4
+      let value = B.c_dot () t1 t2
+      value >>= (`shouldBe` 36)
+      B.c_free () t1
+      B.c_free () t2
     it "Can compute correct dot product between 2D tensors" $ do
-      t1 <- c_THByteTensor_newWithSize2d 2 2
-      t2 <- c_THByteTensor_newWithSize2d 2 2
-      c_THByteTensor_fill t1 3
-      c_THByteTensor_fill t2 4
-      let value = c_THByteTensor_dot t1 t2
-      value `shouldBe` 48
-      c_THByteTensor_free t1
-      c_THByteTensor_free t2
+      t1 <- B.c_newWithSize2d () 2 2
+      t2 <- B.c_newWithSize2d () 2 2
+      B.c_fill () t1 3
+      B.c_fill () t2 4
+      let value = B.c_dot () t1 t2
+      value >>= (`shouldBe` 48)
+      B.c_free () t1
+      B.c_free () t2
     it "Can compute correct dot product between 3D tensors" $ do
-      t1 <- c_THByteTensor_newWithSize3d 2 2 4
-      t2 <- c_THByteTensor_newWithSize3d 2 2 4
-      c_THByteTensor_fill t1 3
-      c_THByteTensor_fill t2 4
-      let value = c_THByteTensor_dot t1 t2
-      value `shouldBe` 192
-      c_THByteTensor_free t1
-      c_THByteTensor_free t2
+      t1 <- B.c_newWithSize3d () 2 2 4
+      t2 <- B.c_newWithSize3d () 2 2 4
+      B.c_fill () t1 3
+      B.c_fill () t2 4
+      let value = B.c_dot () t1 t2
+      value >>= (`shouldBe` 192)
+      B.c_free () t1
+      B.c_free () t2
     it "Can compute correct dot product between 4D tensors" $ do
-      t1 <- c_THByteTensor_newWithSize4d 2 2 2 1
-      t2 <- c_THByteTensor_newWithSize4d 2 2 2 1
-      c_THByteTensor_fill t1 3
-      c_THByteTensor_fill t2 4
-      let value = c_THByteTensor_dot t1 t2
-      value `shouldBe` 96
-      c_THByteTensor_free t1
-      c_THByteTensor_free t2
+      t1 <- B.c_newWithSize4d () 2 2 2 1
+      t2 <- B.c_newWithSize4d () 2 2 2 1
+      B.c_fill () t1 3
+      B.c_fill () t2 4
+      let value = B.c_dot () t1 t2
+      value >>= (`shouldBe` 96)
+      B.c_free () t1
+      B.c_free () t2
     it "Can zero out values" $ do
-      t1 <- c_THByteTensor_newWithSize4d 2 2 4 3
-      c_THByteTensor_fill t1 3
-      let value = c_THByteTensor_dot t1 t1
+      t1 <- B.c_newWithSize4d () 2 2 4 3
+      B.c_fill () t1 3
+      let value = B.c_dot () t1 t1
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- value `shouldBe` (432.0)
-      c_THByteTensor_zero t1
-      let value = c_THByteTensor_dot t1 t1
-      value `shouldBe` 0
-      c_THByteTensor_free t1
+      -- value >>= (`shouldBe` (432.0))
+      B.c_zero () t1
+      let value = B.c_dot () t1 t1
+      value >>= (`shouldBe` 0)
+      B.c_free () t1
     it "Can compute sum of all values" $ do
-      t1 <- c_THByteTensor_newWithSize3d 2 2 4
-      c_THByteTensor_fill t1 2
-      c_THByteTensor_sumall t1 `shouldBe` 32
-      c_THByteTensor_free t1
+      t1 <- B.c_newWithSize3d () 2 2 4
+      B.c_fill () t1 2
+      B.c_sumall () t1 >>= (`shouldBe` 32)
+      B.c_free () t1
     it "Can compute product of all values" $ do
-      t1 <- c_THByteTensor_newWithSize2d 2 2
-      c_THByteTensor_fill t1 2
-      c_THByteTensor_prodall t1 `shouldBe` 16
-      c_THByteTensor_free t1
+      t1 <- B.c_newWithSize2d () 2 2
+      B.c_fill () t1 2
+      B.c_prodall () t1 >>= (`shouldBe` 16)
+      B.c_free () t1
 
 testsShort :: Spec
 testsShort = do
   describe "Short Tensor creation and access methods" $ do
     it "initializes empty tensor with 0 dimension" $ do
-      t <- c_THShortTensor_new
-      TR.c_THShortTensor_nDimension t `shouldBe` 0
-      c_THShortTensor_free t
+      t <- S.c_new ()
+      S.c_nDimension () t >>= (`shouldBe` 0)
+      S.c_free () t
     it "1D tensor has correct dimensions and sizes" $ do
-      t <- TR.c_THShortTensor_newWithSize1d 10
-      TR.c_THShortTensor_nDimension t `shouldBe` 1
-      TR.c_THShortTensor_size t 0 `shouldBe` 10
-      c_THShortTensor_free t
+      t <- S.c_newWithSize1d () 10
+      S.c_nDimension () t >>= (`shouldBe` 1)
+      S.c_size () t 0 >>= (`shouldBe` 10)
+      S.c_free () t
     it "2D tensor has correct dimensions and sizes" $ do
-      t <- c_THShortTensor_newWithSize2d 10 25
-      TR.c_THShortTensor_nDimension t `shouldBe` 2
-      TR.c_THShortTensor_size t 0 `shouldBe` 10
-      TR.c_THShortTensor_size t 1 `shouldBe` 25
-      c_THShortTensor_free t
+      t <- S.c_newWithSize2d () 10 25
+      S.c_nDimension () t >>= (`shouldBe` 2)
+      S.c_size () t 0 >>= (`shouldBe` 10)
+      S.c_size () t 1 >>= (`shouldBe` 25)
+      S.c_free () t
     it "3D tensor has correct dimensions and sizes" $ do
-      t <- c_THShortTensor_newWithSize3d 10 25 5
-      TR.c_THShortTensor_nDimension t `shouldBe` 3
-      TR.c_THShortTensor_size t 0 `shouldBe` 10
-      TR.c_THShortTensor_size t 1 `shouldBe` 25
-      TR.c_THShortTensor_size t 2 `shouldBe` 5
-      c_THShortTensor_free t
+      t <- S.c_newWithSize3d () 10 25 5
+      S.c_nDimension () t >>= (`shouldBe` 3)
+      S.c_size () t 0 >>= (`shouldBe` 10)
+      S.c_size () t 1 >>= (`shouldBe` 25)
+      S.c_size () t 2 >>= (`shouldBe` 5)
+      S.c_free () t
     it "4D tensor has correct dimensions and sizes" $ do
-      t <- c_THShortTensor_newWithSize4d 10 25 5 62
-      TR.c_THShortTensor_nDimension t `shouldBe` 4
-      TR.c_THShortTensor_size t 0 `shouldBe` 10
-      TR.c_THShortTensor_size t 1 `shouldBe` 25
-      TR.c_THShortTensor_size t 2 `shouldBe` 5
-      TR.c_THShortTensor_size t 3 `shouldBe` 62
-      c_THShortTensor_free t
+      t <- S.c_newWithSize4d () 10 25 5 62
+      S.c_nDimension () t >>= (`shouldBe` 4)
+      S.c_size () t 0 >>= (`shouldBe` 10)
+      S.c_size () t 1 >>= (`shouldBe` 25)
+      S.c_size () t 2 >>= (`shouldBe` 5)
+      S.c_size () t 3 >>= (`shouldBe` 62)
+      S.c_free () t
     it "Can assign and retrieve correct 1D vector values" $ do
-      t <- TR.c_THShortTensor_newWithSize1d 10
-      c_THShortTensor_set1d t 0 (20)
-      c_THShortTensor_set1d t 1 (1)
-      c_THShortTensor_set1d t 9 (3)
-      c_THShortTensor_get1d t 0 `shouldBe` (20)
-      c_THShortTensor_get1d t 1 `shouldBe` (1)
-      c_THShortTensor_get1d t 9 `shouldBe` (3)
-      c_THShortTensor_free t
+      t <- S.c_newWithSize1d () 10
+      S.c_set1d () t 0 (20)
+      S.c_set1d () t 1 (1)
+      S.c_set1d () t 9 (3)
+      S.c_get1d () t 0 >>= (`shouldBe` (20))
+      S.c_get1d () t 1 >>= (`shouldBe` (1))
+      S.c_get1d () t 9 >>= (`shouldBe` (3))
+      S.c_free () t
     it "Can assign and retrieve correct 2D vector values" $ do
-      t <- TR.c_THShortTensor_newWithSize2d 10 15
-      c_THShortTensor_set2d t 0 0 (20)
-      c_THShortTensor_set2d t 1 5 (1)
-      c_THShortTensor_set2d t 9 9 (3)
-      c_THShortTensor_get2d t 0 0 `shouldBe` (20)
-      c_THShortTensor_get2d t 1 5 `shouldBe` (1)
-      c_THShortTensor_get2d t 9 9 `shouldBe` (3)
-      c_THShortTensor_free t
+      t <- S.c_newWithSize2d () 10 15
+      S.c_set2d () t 0 0 (20)
+      S.c_set2d () t 1 5 (1)
+      S.c_set2d () t 9 9 (3)
+      S.c_get2d () t 0 0 >>= (`shouldBe` (20))
+      S.c_get2d () t 1 5 >>= (`shouldBe` (1))
+      S.c_get2d () t 9 9 >>= (`shouldBe` (3))
+      S.c_free () t
     it "Can assign and retrieve correct 3D vector values" $ do
-      t <- TR.c_THShortTensor_newWithSize3d 10 15 10
-      c_THShortTensor_set3d t 0 0 0 (20)
-      c_THShortTensor_set3d t 1 5 3 (1)
-      c_THShortTensor_set3d t 9 9 9 (3)
-      c_THShortTensor_get3d t 0 0 0 `shouldBe` (20)
-      c_THShortTensor_get3d t 1 5 3 `shouldBe` (1)
-      c_THShortTensor_get3d t 9 9 9 `shouldBe` (3)
-      c_THShortTensor_free t
+      t <- S.c_newWithSize3d () 10 15 10
+      S.c_set3d () t 0 0 0 (20)
+      S.c_set3d () t 1 5 3 (1)
+      S.c_set3d () t 9 9 9 (3)
+      S.c_get3d () t 0 0 0 >>= (`shouldBe` (20))
+      S.c_get3d () t 1 5 3 >>= (`shouldBe` (1))
+      S.c_get3d () t 9 9 9 >>= (`shouldBe` (3))
+      S.c_free () t
     it "Can assign and retrieve correct 4D vector values" $ do
-      t <- TR.c_THShortTensor_newWithSize4d 10 15 10 20
-      c_THShortTensor_set4d t 0 0 0 0 (20)
-      c_THShortTensor_set4d t 1 5 3 2 (1)
-      c_THShortTensor_set4d t 9 9 9 9 (3)
-      c_THShortTensor_get4d t 0 0 0 0 `shouldBe` (20)
-      c_THShortTensor_get4d t 1 5 3 2 `shouldBe` (1)
-      c_THShortTensor_get4d t 9 9 9 9 `shouldBe` (3)
-      c_THShortTensor_free t
+      t <- S.c_newWithSize4d () 10 15 10 20
+      S.c_set4d () t 0 0 0 0 (20)
+      S.c_set4d () t 1 5 3 2 (1)
+      S.c_set4d () t 9 9 9 9 (3)
+      S.c_get4d () t 0 0 0 0 >>= (`shouldBe` (20))
+      S.c_get4d () t 1 5 3 2 >>= (`shouldBe` (1))
+      S.c_get4d () t 9 9 9 9 >>= (`shouldBe` (3))
+      S.c_free () t
     it "Can can initialize values with the fill method" $ do
-      t1 <- c_THShortTensor_newWithSize2d 2 2
-      c_THShortTensor_fill t1 3
-      c_THShortTensor_get2d t1 0 0 `shouldBe` (3)
-      c_THShortTensor_free t1
+      t1 <- S.c_newWithSize2d () 2 2
+      S.c_fill () t1 3
+      S.c_get2d () t1 0 0 >>= (`shouldBe` (3))
+      S.c_free () t1
     it "Can compute correct dot product between 1D vectors" $ do
-      t1 <- c_THShortTensor_newWithSize1d 3
-      t2 <- c_THShortTensor_newWithSize1d 3
-      c_THShortTensor_fill t1 3
-      c_THShortTensor_fill t2 4
-      let value = c_THShortTensor_dot t1 t2
-      value `shouldBe` 36
-      c_THShortTensor_free t1
-      c_THShortTensor_free t2
+      t1 <- S.c_newWithSize1d () 3
+      t2 <- S.c_newWithSize1d () 3
+      S.c_fill () t1 3
+      S.c_fill () t2 4
+      let value = S.c_dot () t1 t2
+      value >>= (`shouldBe` 36)
+      S.c_free () t1
+      S.c_free () t2
     it "Can compute correct dot product between 2D tensors" $ do
-      t1 <- c_THShortTensor_newWithSize2d 2 2
-      t2 <- c_THShortTensor_newWithSize2d 2 2
-      c_THShortTensor_fill t1 3
-      c_THShortTensor_fill t2 4
-      let value = c_THShortTensor_dot t1 t2
-      value `shouldBe` 48
-      c_THShortTensor_free t1
-      c_THShortTensor_free t2
+      t1 <- S.c_newWithSize2d () 2 2
+      t2 <- S.c_newWithSize2d () 2 2
+      S.c_fill () t1 3
+      S.c_fill () t2 4
+      let value = S.c_dot () t1 t2
+      value >>= (`shouldBe` 48)
+      S.c_free () t1
+      S.c_free () t2
     it "Can compute correct dot product between 3D tensors" $ do
-      t1 <- c_THShortTensor_newWithSize3d 2 2 4
-      t2 <- c_THShortTensor_newWithSize3d 2 2 4
-      c_THShortTensor_fill t1 3
-      c_THShortTensor_fill t2 4
-      let value = c_THShortTensor_dot t1 t2
-      value `shouldBe` 192
-      c_THShortTensor_free t1
-      c_THShortTensor_free t2
+      t1 <- S.c_newWithSize3d () 2 2 4
+      t2 <- S.c_newWithSize3d () 2 2 4
+      S.c_fill () t1 3
+      S.c_fill () t2 4
+      let value = S.c_dot () t1 t2
+      value >>= (`shouldBe` 192)
+      S.c_free () t1
+      S.c_free () t2
     it "Can compute correct dot product between 4D tensors" $ do
-      t1 <- c_THShortTensor_newWithSize4d 2 2 2 1
-      t2 <- c_THShortTensor_newWithSize4d 2 2 2 1
-      c_THShortTensor_fill t1 3
-      c_THShortTensor_fill t2 4
-      let value = c_THShortTensor_dot t1 t2
-      value `shouldBe` 96
-      c_THShortTensor_free t1
-      c_THShortTensor_free t2
+      t1 <- S.c_newWithSize4d () 2 2 2 1
+      t2 <- S.c_newWithSize4d () 2 2 2 1
+      S.c_fill () t1 3
+      S.c_fill () t2 4
+      let value = S.c_dot () t1 t2
+      value >>= (`shouldBe` 96)
+      S.c_free () t1
+      S.c_free () t2
     it "Can zero out values" $ do
-      t1 <- c_THShortTensor_newWithSize4d 2 2 4 3
-      c_THShortTensor_fill t1 3
-      let value = c_THShortTensor_dot t1 t1
+      t1 <- S.c_newWithSize4d () 2 2 4 3
+      S.c_fill () t1 3
+      let value = S.c_dot () t1 t1
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- value `shouldBe` (432.0)
-      c_THShortTensor_zero t1
-      let value = c_THShortTensor_dot t1 t1
-      value `shouldBe` 0
-      c_THShortTensor_free t1
+      -- value >>= (`shouldBe` (432.0))
+      S.c_zero () t1
+      let value = S.c_dot () t1 t1
+      value >>= (`shouldBe` 0)
+      S.c_free () t1
     it "Can compute sum of all values" $ do
-      t1 <- c_THShortTensor_newWithSize3d 2 2 4
-      c_THShortTensor_fill t1 2
-      c_THShortTensor_sumall t1 `shouldBe` 32
-      c_THShortTensor_free t1
+      t1 <- S.c_newWithSize3d () 2 2 4
+      S.c_fill () t1 2
+      S.c_sumall () t1 >>= (`shouldBe` 32)
+      S.c_free () t1
     it "Can compute product of all values" $ do
-      t1 <- c_THShortTensor_newWithSize2d 2 2
-      c_THShortTensor_fill t1 2
-      c_THShortTensor_prodall t1 `shouldBe` 16
-      c_THShortTensor_free t1
+      t1 <- S.c_newWithSize2d () 2 2
+      S.c_fill () t1 2
+      S.c_prodall () t1 >>= (`shouldBe` 16)
+      S.c_free () t1
     it "Can take abs of tensor values" $ do
-      t1 <- c_THShortTensor_newWithSize2d 2 2
-      c_THShortTensor_fill t1 (-2)
+      t1 <- S.c_newWithSize2d () 2 2
+      S.c_fill () t1 (-2)
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- c_THShortTensor_sumall t1 `shouldBe` (-6.0)
-      c_THShortTensor_abs t1 t1
-      c_THShortTensor_sumall t1 `shouldBe` (8)
-      c_THShortTensor_free t1
+      -- S.c_sumall () t1 >>= (`shouldBe` (-6.0))
+      S.c_abs () t1 t1
+      S.c_sumall () t1 >>= (`shouldBe` (8))
+      S.c_free () t1
 
 
 
@@ -734,140 +738,140 @@ testsLong :: Spec
 testsLong = do
   describe "Long Tensor creation and access methods" $ do
     it "initializes empty tensor with 0 dimension" $ do
-      t <- c_THLongTensor_new
-      TR.c_THLongTensor_nDimension t `shouldBe` 0
-      c_THLongTensor_free t
+      t <- L.c_new ()
+      L.c_nDimension () t >>= (`shouldBe` 0)
+      L.c_free () t
     it "1D tensor has correct dimensions and sizes" $ do
-      t <- TR.c_THLongTensor_newWithSize1d 10
-      TR.c_THLongTensor_nDimension t `shouldBe` 1
-      TR.c_THLongTensor_size t 0 `shouldBe` 10
-      c_THLongTensor_free t
+      t <- L.c_newWithSize1d () 10
+      L.c_nDimension () t >>= (`shouldBe` 1)
+      L.c_size () t 0 >>= (`shouldBe` 10)
+      L.c_free () t
     it "2D tensor has correct dimensions and sizes" $ do
-      t <- c_THLongTensor_newWithSize2d 10 25
-      TR.c_THLongTensor_nDimension t `shouldBe` 2
-      TR.c_THLongTensor_size t 0 `shouldBe` 10
-      TR.c_THLongTensor_size t 1 `shouldBe` 25
-      c_THLongTensor_free t
+      t <- L.c_newWithSize2d () 10 25
+      L.c_nDimension () t >>= (`shouldBe` 2)
+      L.c_size () t 0 >>= (`shouldBe` 10)
+      L.c_size () t 1 >>= (`shouldBe` 25)
+      L.c_free () t
     it "3D tensor has correct dimensions and sizes" $ do
-      t <- c_THLongTensor_newWithSize3d 10 25 5
-      TR.c_THLongTensor_nDimension t `shouldBe` 3
-      TR.c_THLongTensor_size t 0 `shouldBe` 10
-      TR.c_THLongTensor_size t 1 `shouldBe` 25
-      TR.c_THLongTensor_size t 2 `shouldBe` 5
-      c_THLongTensor_free t
+      t <- L.c_newWithSize3d () 10 25 5
+      L.c_nDimension () t >>= (`shouldBe` 3)
+      L.c_size () t 0 >>= (`shouldBe` 10)
+      L.c_size () t 1 >>= (`shouldBe` 25)
+      L.c_size () t 2 >>= (`shouldBe` 5)
+      L.c_free () t
     it "4D tensor has correct dimensions and sizes" $ do
-      t <- c_THLongTensor_newWithSize4d 10 25 5 62
-      TR.c_THLongTensor_nDimension t `shouldBe` 4
-      TR.c_THLongTensor_size t 0 `shouldBe` 10
-      TR.c_THLongTensor_size t 1 `shouldBe` 25
-      TR.c_THLongTensor_size t 2 `shouldBe` 5
-      TR.c_THLongTensor_size t 3 `shouldBe` 62
-      c_THLongTensor_free t
+      t <- L.c_newWithSize4d () 10 25 5 62
+      L.c_nDimension () t >>= (`shouldBe` 4)
+      L.c_size () t 0 >>= (`shouldBe` 10)
+      L.c_size () t 1 >>= (`shouldBe` 25)
+      L.c_size () t 2 >>= (`shouldBe` 5)
+      L.c_size () t 3 >>= (`shouldBe` 62)
+      L.c_free () t
     it "Can assign and retrieve correct 1D vector values" $ do
-      t <- TR.c_THLongTensor_newWithSize1d 10
-      c_THLongTensor_set1d t 0 (20)
-      c_THLongTensor_set1d t 1 (1)
-      c_THLongTensor_set1d t 9 (3)
-      c_THLongTensor_get1d t 0 `shouldBe` (20)
-      c_THLongTensor_get1d t 1 `shouldBe` (1)
-      c_THLongTensor_get1d t 9 `shouldBe` (3)
-      c_THLongTensor_free t
+      t <- L.c_newWithSize1d () 10
+      L.c_set1d () t 0 (20)
+      L.c_set1d () t 1 (1)
+      L.c_set1d () t 9 (3)
+      L.c_get1d () t 0 >>= (`shouldBe` (20))
+      L.c_get1d () t 1 >>= (`shouldBe` (1))
+      L.c_get1d () t 9 >>= (`shouldBe` (3))
+      L.c_free () t
     it "Can assign and retrieve correct 2D vector values" $ do
-      t <- TR.c_THLongTensor_newWithSize2d 10 15
-      c_THLongTensor_set2d t 0 0 (20)
-      c_THLongTensor_set2d t 1 5 (1)
-      c_THLongTensor_set2d t 9 9 (3)
-      c_THLongTensor_get2d t 0 0 `shouldBe` (20)
-      c_THLongTensor_get2d t 1 5 `shouldBe` (1)
-      c_THLongTensor_get2d t 9 9 `shouldBe` (3)
-      c_THLongTensor_free t
+      t <- L.c_newWithSize2d () 10 15
+      L.c_set2d () t 0 0 (20)
+      L.c_set2d () t 1 5 (1)
+      L.c_set2d () t 9 9 (3)
+      L.c_get2d () t 0 0 >>= (`shouldBe` (20))
+      L.c_get2d () t 1 5 >>= (`shouldBe` (1))
+      L.c_get2d () t 9 9 >>= (`shouldBe` (3))
+      L.c_free () t
     it "Can assign and retrieve correct 3D vector values" $ do
-      t <- TR.c_THLongTensor_newWithSize3d 10 15 10
-      c_THLongTensor_set3d t 0 0 0 (20)
-      c_THLongTensor_set3d t 1 5 3 (1)
-      c_THLongTensor_set3d t 9 9 9 (3)
-      c_THLongTensor_get3d t 0 0 0 `shouldBe` (20)
-      c_THLongTensor_get3d t 1 5 3 `shouldBe` (1)
-      c_THLongTensor_get3d t 9 9 9 `shouldBe` (3)
-      c_THLongTensor_free t
+      t <- L.c_newWithSize3d () 10 15 10
+      L.c_set3d () t 0 0 0 (20)
+      L.c_set3d () t 1 5 3 (1)
+      L.c_set3d () t 9 9 9 (3)
+      L.c_get3d () t 0 0 0 >>= (`shouldBe` (20))
+      L.c_get3d () t 1 5 3 >>= (`shouldBe` (1))
+      L.c_get3d () t 9 9 9 >>= (`shouldBe` (3))
+      L.c_free () t
     it "Can assign and retrieve correct 4D vector values" $ do
-      t <- TR.c_THLongTensor_newWithSize4d 10 15 10 20
-      c_THLongTensor_set4d t 0 0 0 0 (20)
-      c_THLongTensor_set4d t 1 5 3 2 (1)
-      c_THLongTensor_set4d t 9 9 9 9 (3)
-      c_THLongTensor_get4d t 0 0 0 0 `shouldBe` (20)
-      c_THLongTensor_get4d t 1 5 3 2 `shouldBe` (1)
-      c_THLongTensor_get4d t 9 9 9 9 `shouldBe` (3)
-      c_THLongTensor_free t
+      t <- L.c_newWithSize4d () 10 15 10 20
+      L.c_set4d () t 0 0 0 0 (20)
+      L.c_set4d () t 1 5 3 2 (1)
+      L.c_set4d () t 9 9 9 9 (3)
+      L.c_get4d () t 0 0 0 0 >>= (`shouldBe` (20))
+      L.c_get4d () t 1 5 3 2 >>= (`shouldBe` (1))
+      L.c_get4d () t 9 9 9 9 >>= (`shouldBe` (3))
+      L.c_free () t
     it "Can can initialize values with the fill method" $ do
-      t1 <- c_THLongTensor_newWithSize2d 2 2
-      c_THLongTensor_fill t1 3
-      c_THLongTensor_get2d t1 0 0 `shouldBe` (3)
-      c_THLongTensor_free t1
+      t1 <- L.c_newWithSize2d () 2 2
+      L.c_fill () t1 3
+      L.c_get2d () t1 0 0 >>= (`shouldBe` (3))
+      L.c_free () t1
     it "Can compute correct dot product between 1D vectors" $ do
-      t1 <- c_THLongTensor_newWithSize1d 3
-      t2 <- c_THLongTensor_newWithSize1d 3
-      c_THLongTensor_fill t1 3
-      c_THLongTensor_fill t2 4
-      let value = c_THLongTensor_dot t1 t2
-      value `shouldBe` 36
-      c_THLongTensor_free t1
-      c_THLongTensor_free t2
+      t1 <- L.c_newWithSize1d () 3
+      t2 <- L.c_newWithSize1d () 3
+      L.c_fill () t1 3
+      L.c_fill () t2 4
+      let value = L.c_dot () t1 t2
+      value >>= (`shouldBe` 36)
+      L.c_free () t1
+      L.c_free () t2
     it "Can compute correct dot product between 2D tensors" $ do
-      t1 <- c_THLongTensor_newWithSize2d 2 2
-      t2 <- c_THLongTensor_newWithSize2d 2 2
-      c_THLongTensor_fill t1 3
-      c_THLongTensor_fill t2 4
-      let value = c_THLongTensor_dot t1 t2
-      value `shouldBe` 48
-      c_THLongTensor_free t1
-      c_THLongTensor_free t2
+      t1 <- L.c_newWithSize2d () 2 2
+      t2 <- L.c_newWithSize2d () 2 2
+      L.c_fill () t1 3
+      L.c_fill () t2 4
+      let value = L.c_dot () t1 t2
+      value >>= (`shouldBe` 48)
+      L.c_free () t1
+      L.c_free () t2
     it "Can compute correct dot product between 3D tensors" $ do
-      t1 <- c_THLongTensor_newWithSize3d 2 2 4
-      t2 <- c_THLongTensor_newWithSize3d 2 2 4
-      c_THLongTensor_fill t1 3
-      c_THLongTensor_fill t2 4
-      let value = c_THLongTensor_dot t1 t2
-      value `shouldBe` 192
-      c_THLongTensor_free t1
-      c_THLongTensor_free t2
+      t1 <- L.c_newWithSize3d () 2 2 4
+      t2 <- L.c_newWithSize3d () 2 2 4
+      L.c_fill () t1 3
+      L.c_fill () t2 4
+      let value = L.c_dot () t1 t2
+      value >>= (`shouldBe` 192)
+      L.c_free () t1
+      L.c_free () t2
     it "Can compute correct dot product between 4D tensors" $ do
-      t1 <- c_THLongTensor_newWithSize4d 2 2 2 1
-      t2 <- c_THLongTensor_newWithSize4d 2 2 2 1
-      c_THLongTensor_fill t1 3
-      c_THLongTensor_fill t2 4
-      let value = c_THLongTensor_dot t1 t2
-      value `shouldBe` 96
-      c_THLongTensor_free t1
-      c_THLongTensor_free t2
+      t1 <- L.c_newWithSize4d () 2 2 2 1
+      t2 <- L.c_newWithSize4d () 2 2 2 1
+      L.c_fill () t1 3
+      L.c_fill () t2 4
+      let value = L.c_dot () t1 t2
+      value >>= (`shouldBe` 96)
+      L.c_free () t1
+      L.c_free () t2
     it "Can zero out values" $ do
-      t1 <- c_THLongTensor_newWithSize4d 2 2 4 3
-      c_THLongTensor_fill t1 3
-      let value = c_THLongTensor_dot t1 t1
+      t1 <- L.c_newWithSize4d () 2 2 4 3
+      L.c_fill () t1 3
+      let value = L.c_dot () t1 t1
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- value `shouldBe` (432.0)
-      c_THLongTensor_zero t1
-      let value = c_THLongTensor_dot t1 t1
-      value `shouldBe` 0
-      c_THLongTensor_free t1
+      -- value >>= (`shouldBe` (432.0))
+      L.c_zero () t1
+      let value = L.c_dot () t1 t1
+      value >>= (`shouldBe` 0)
+      L.c_free () t1
     it "Can compute sum of all values" $ do
-      t1 <- c_THLongTensor_newWithSize3d 2 2 4
-      c_THLongTensor_fill t1 2
-      c_THLongTensor_sumall t1 `shouldBe` 32
-      c_THLongTensor_free t1
+      t1 <- L.c_newWithSize3d () 2 2 4
+      L.c_fill () t1 2
+      L.c_sumall () t1 >>= (`shouldBe` 32)
+      L.c_free () t1
     it "Can compute product of all values" $ do
-      t1 <- c_THLongTensor_newWithSize2d 2 2
-      c_THLongTensor_fill t1 2
-      c_THLongTensor_prodall t1 `shouldBe` 16
-      c_THLongTensor_free t1
+      t1 <- L.c_newWithSize2d () 2 2
+      L.c_fill () t1 2
+      L.c_prodall () t1 >>= (`shouldBe` 16)
+      L.c_free () t1
     it "Can take abs of tensor values" $ do
-      t1 <- c_THLongTensor_newWithSize2d 2 2
-      c_THLongTensor_fill t1 (-2)
+      t1 <- L.c_newWithSize2d () 2 2
+      L.c_fill () t1 (-2)
       -- sequencing does not work if there is more than one shouldBe test in
       -- an "it" monad
-      -- c_THLongTensor_sumall t1 `shouldBe` (-6.0)
-      c_THLongTensor_abs t1 t1
-      c_THLongTensor_sumall t1 `shouldBe` (8)
-      c_THLongTensor_free t1
+      -- L.c_sumall () t1 >>= (`shouldBe` (-6.0))
+      L.c_abs () t1 t1
+      L.c_sumall () t1 >>= (`shouldBe` 8)
+      L.c_free () t1
 
