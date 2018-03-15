@@ -49,20 +49,20 @@ renderImports :: [Text] -> Text
 renderImports imports = T.intercalate "\n" (("import " <>) <$> imports) <> "\n\n"
 
 
--- TODO clean up redundancy of valid functions vs. functions in moduleSpec
 renderFunctions :: HModule -> [Function] -> Text
 renderFunctions m validFunctions =
   T.intercalate "\n\n"
-    $  (renderSig' IsFun    <$> triple)
+    $  (renderSig'    IsFun <$> triple)
     <> (renderSig' IsFunPtr <$> triple)
  where
-  renderSig' t = renderSig t (prefix m) (isTemplate m) (header m) (typeTemplate m) (suffix m)
+  renderSig' t = renderSig t (prefix m) (isTemplate m) (header m) (typeTemplate m) (suffix m) (fileSuffix m)
 
   triple :: [(Text, Parsable, [Arg])]
   triple = go <$> validFunctions
     where
       go :: Function -> (Text, Parsable, [Arg])
       go f = (funName f, funReturn f, funArgs f)
+
 
 -- | Check for conditional templating of functions and filter function list
 checkList :: [Function] -> TemplateType -> [Function]
@@ -96,6 +96,7 @@ writeHaskellModule
 writeHaskellModule parsedBindings makeConfig templateType
   | numFunctions == 0 =
     tputStrLn $ "No bindings found for " <> outDir <> filename
+
   | otherwise = do
     tputStrLn $ "Writing " <> outDir <> filename
     createDirectoryIfMissing True (T.unpack outDir)

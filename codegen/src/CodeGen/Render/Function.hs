@@ -39,7 +39,7 @@ foreignCall cname headerFile = T.intercalate "\""
 
 haskellSig :: LibType -> Text -> SigType -> TemplateType -> [Arg] -> Parsable -> Text
 haskellSig lt hsname st tt args retType = T.intercalate ""
-  [ "  " <> hsname
+  [ hsname
   , " :: "
   , if isPtr st then "FunPtr (" else ""
   , T.intercalate " -> " typeSignature, retArrow
@@ -68,8 +68,10 @@ mkCname st lt ms tt cgt funname
     GenericFiles -> tshow lt <> type2hsreal tt <> textSuffix ms <> "_"
     ConcreteFiles -> ""
 
-mkHsname :: SigType -> Text -> Text
-mkHsname st funname = ffiPrefix st <> funname
+-- | render a haskell function name.
+mkHsname :: LibType -> CodeGenType -> SigType -> Text -> Text
+mkHsname lt cgt st funname =
+  ffiPrefix st <> funname
 
 
 -- | Render a single function signature.
@@ -80,16 +82,48 @@ renderSig
   -> FilePath
   -> TemplateType
   -> ModuleSuffix
+  -> FileSuffix
   -> (Text, Parsable, [Arg])
   -> Text
-renderSig t lt cgt headerFile tt ms (name, retType, args) =
-    T.intercalate "\n"
-      [ comment lt t hsname args retType
-      , foreignCall cname headerFile
-      , haskellSig lt hsname t tt args retType
-      ]
+renderSig t lt cgt headerFile tt ms fs (name, retType, args) =
+  T.intercalate "\n"
+    [ comment lt t hsname args retType
+    , foreignCall cname headerFile
+    , implementation
+    ]
  where
+  cname, hsname :: Text
   cname = mkCname t lt ms tt cgt name
-  hsname = mkHsname t name
+  hsname = mkHsname lt cgt t name
+
+  implementation :: Text
+  implementation =
+    case (lt, cgt, fs) of
+      -- NOTE: TH and THC functions differ in the THC State. TH does have a concept of THState, which
+      -- is unused. Here we render some function aliases which will allow us to maintain unified
+      -- backpack signatures.
+      --
+      -- NOTE2: In the event that we render generic functions from the TH
+      -- library which _does not include THTensorRandom_, we want to post-fix these names with a @_@
+      -- and use the alias to match the backpack signatures.
+      (TH, GenericFiles, "TensorRandom") -> "  " <> (haskellSig lt hsname t tt args retType)
+      (TH, GenericFiles, _) ->
+        T.intercalate "\n"
+          [ "  " <> (haskellSig lt (mkAliasRefName hsname) t tt args retType)
+          , ""
+          , "-- | alias of " <> mkAliasRefName hsname <> " with unused argument (for CTHState) to unify backpack signatures."
+          -- , haskellSig TH hsname t tt ((Arg (TenType State) "cstate"):args) retType
+          , hsname <> " = const " <> mkAliasRefName hsname
+          ]
+        where
+          -- | TH only (and even then only generic TH files).
+          --
+          -- 'reference' implying "original haskell function" and alias implying
+          -- "backpack-compatible function" as well as "c-native function"
+          mkAliasRefName :: Text -> Text
+          mkAliasRefName = (<> "_")
+
+
+      _ -> "  " <> (haskellSig lt hsname t tt args retType)
 
 
