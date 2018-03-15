@@ -8,7 +8,7 @@ import Foreign.Storable ()
 
 import Torch.Types.TH.Structs
 
-type CTHDescBuff = Ptr ()
+type CTHDescBuff = Ptr C'THDescBuff
 type CTHAllocatorPtr = Ptr C'THAllocator
 type CTHAllocator = C'THAllocator
 type CTHGenerator = C'THGenerator
