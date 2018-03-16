@@ -1,6 +1,33 @@
 #include <stddef.h>
-#include <cuda.h>
-/* #include <cuda_runtime_api.h> */
+// #include <cuda_runtime_api.h>
+
+// See https://github.com/torch/cutorch/blob/master/FFI.lua
+typedef struct cudaStream_t {} cudaStream_t;
+/* struct cublasContext; */
+typedef struct cublasHandle_t cublasHandle_t;
+typedef struct cudaError_t {} cudaError_t;
+// from /usr/local/cuda/cusparse.h
+/* Opaque structure holding CUSPARSE library context */
+struct cusparseContext;
+typedef struct cusparseContext *cusparseHandle_t;
+
+
+typedef struct THAllocator {
+  void* (*malloc)(void*, ptrdiff_t);
+  void* (*realloc)(void*, void*, ptrdiff_t);
+  void (*free)(void*, void*);
+} THAllocator;
+
+// EVERYTHING ABOVE THIS SHOULD BE DELETED POST-C2HSC
+
+// https://github.com/torch/cutorch/blob/79e393bade08b0090df8016bff56173a4a7f4845/lib/THC/THCStream.h
+typedef struct THCStream {
+  cudaStream_t stream;
+  int device;
+  int refcount;
+} THCStream;
+
+
 
 
 // https://github.com/torch/cutorch/blob/e2051b652d5b1f5182a1bfce11da9f53c2f92bd8/lib/THC/THCTensorRandom.h
@@ -18,16 +45,6 @@ typedef struct THCRNGState {
   int num_devices;
 } THCRNGState;
 
-/* Put this one on ice for now
- * // https://github.com/torch/cutorch/blob/79e393bade08b0090df8016bff56173a4a7f4845/lib/THC/THCStream.h
- * typedef struct THCStream
- * {
- *   cudaStream_t stream;
- *   int device;
- *   int refcount;
- * };
- *
- */
 
 // https://github.com/torch/cutorch/blob/ec93ff7b486274e248aa7156af7c8a1f16281e24/lib/THC/THCTensor.h
 #define THC_DESC_BUFF_LEN 64
@@ -89,12 +106,13 @@ typedef struct THCState {
 
  /* Index of the current selected BLAS handle. The actual BLAS handle used
   * depends on the current device. */
-  THCThreadLocal/*<int>*/ currentPerDeviceBlasHandle;
+  // THCThreadLocal/*<int>*/ currentPerDeviceBlasHandle;                            // <================
  /* Index of the current selected sparse handle. The actual sparse handle used
   * depends on the current device. */
-  THCThreadLocal/*<int>*/ currentPerDeviceSparseHandle;
+ // THCThreadLocal/*<int>*/ currentPerDeviceSparseHandle;                            // <================
   /* Array of thread locals containing the current stream for each device */
-  THCThreadLocal* currentStreams;
+ // THCThreadLocal* currentStreams;                                                   // <================
+
 
  /* Table of enabled peer-to-peer access between directed pairs of GPUs.
   * If i accessing allocs on j is enabled, p2pAccess[i][j] is 1; 0 otherwise. */
@@ -115,20 +133,22 @@ typedef struct THCState {
   void *cutorchGCData;
   ptrdiff_t heapSoftmax;
   ptrdiff_t heapDelta;
-};
+} THCState;
 
 // https://github.com/torch/cutorch/blob/17300d9cc0c462dfde81eb81f89ba0a15e095844/lib/THC/generic/THCStorage.h
-typedef struct THCStorage
-{
-  real *data;
-  ptrdiff_t size;
-  int refcount;
-  char flag;
-  THCDeviceAllocator *allocator;
-  void *allocatorContext;
-  struct THCStorage *view;
-  int device;
-} THCStorage;
+/*
+ * typedef struct THCStorage
+ * {
+ *   real *data;
+ *   ptrdiff_t size;
+ *   int refcount;
+ *   char flag;
+ *   THCDeviceAllocator *allocator;
+ *   void *allocatorContext;
+ *   struct THCStorage *view;
+ *   int device;
+ * } THCStorage;
+ */
 
 // duplicated for each type:
 typedef struct THCByteStorage
@@ -179,17 +199,19 @@ typedef struct THCFloatStorage
   int device;
 } THCFloatStorage;
 
-typedef struct THCHalfStorage
-{
-  half *data;
-  ptrdiff_t size;
-  int refcount;
-  char flag;
-  THCDeviceAllocator *allocator;
-  void *allocatorContext;
-  struct THCHalfStorage *view;
-  int device;
-} THCHalfStorage;
+/*
+ * typedef struct THCHalfStorage
+ * {
+ *   half *data;
+ *   ptrdiff_t size;
+ *   int refcount;
+ *   char flag;
+ *   THCDeviceAllocator *allocator;
+ *   void *allocatorContext;
+ *   struct THCHalfStorage *view;
+ *   int device;
+ * } THCHalfStorage;
+ */
 
 
 typedef struct THCIntStorage
@@ -230,21 +252,23 @@ typedef struct THCLongStorage
 
 
 // https://github.com/torch/cutorch/blob/9db5057877c6ffa7df59727cbada13318d7e3eaf/lib/THC/generic/THCTensor.h
-typedef struct THCTensor
-{
-  long *size;
-  long *stride;
-  int nDimension;
-
-  THCStorage *storage;
-  ptrdiff_t storageOffset;
-  int refcount;
-
-  char flag;
-} THCTensor;
+/*
+ * typedef struct THCTensor
+ * {
+ *   long *size;
+ *   long *stride;
+ *   int nDimension;
+ *
+ *   THCStorage *storage;
+ *   ptrdiff_t storageOffset;
+ *   int refcount;
+ *
+ *   char flag;
+ *} THCTensor;
+ */
 
 // duplicated for each type:
-typedef struct THCByteTensor
+typedef struct THCudaByteTensor
 {
   long *size;
   long *stride;
@@ -255,9 +279,9 @@ typedef struct THCByteTensor
   int refcount;
 
   char flag;
-} THCByteTensor;
+} THCudaByteTensor;
 
-typedef struct THCCharTensor
+typedef struct THCudaCharTensor
 {
   long *size;
   long *stride;
@@ -268,9 +292,9 @@ typedef struct THCCharTensor
   int refcount;
 
   char flag;
-} THCCharTensor;
+} THCudaCharTensor;
 
-typedef struct THCDoubleTensor
+typedef struct THCudaDoubleTensor
 {
   long *size;
   long *stride;
@@ -281,9 +305,9 @@ typedef struct THCDoubleTensor
   int refcount;
 
   char flag;
-} THCDoubleTensor;
+} THCudaDoubleTensor;
 
-typedef struct THCFloatTensor
+typedef struct THCudaFloatTensor
 {
   long *size;
   long *stride;
@@ -294,22 +318,24 @@ typedef struct THCFloatTensor
   int refcount;
 
   char flag;
-} THCFloatTensor;
+} THCudaFloatTensor;
 
-typedef struct THCHalfTensor
-{
-  long *size;
-  long *stride;
-  int nDimension;
+/*
+ * typedef struct THCudaHalfTensor
+ * {
+ *   long *size;
+ *   long *stride;
+ *   int nDimension;
+ *
+ *   THCudaHalfStorage *storage;
+ *   ptrdiff_t storageOffset;
+ *   int refcount;
+ *
+ *   char flag;
+ * } THCudaHalfTensor;
+ */
 
-  THCHalfStorage *storage;
-  ptrdiff_t storageOffset;
-  int refcount;
-
-  char flag;
-} THCHalfTensor;
-
-typedef struct THCIntTensor
+typedef struct THCudaIntTensor
 {
   long *size;
   long *stride;
@@ -320,9 +346,9 @@ typedef struct THCIntTensor
   int refcount;
 
   char flag;
-} THCIntTensor;
+} THCudaIntTensor;
 
-typedef struct THCShortTensor
+typedef struct THCudaShortTensor
 {
   long *size;
   long *stride;
@@ -333,9 +359,9 @@ typedef struct THCShortTensor
   int refcount;
 
   char flag;
-} THCShortTensor;
+} THCudaShortTensor;
 
-typedef struct THCLongTensor
+typedef struct THCudaLongTensor
 {
   long *size;
   long *stride;
@@ -346,5 +372,5 @@ typedef struct THCLongTensor
   int refcount;
 
   char flag;
-} THCLongTensor;
+} THCudaLongTensor;
 

@@ -188,24 +188,22 @@ pokeMatrix pps mat = zipPtrs mempty pps mat >>= mapM_ go
       zipPtrs (acc |> (rp, r)) (advancePtr pIx 1) rs
 
 
--- 
--- 
 -- /*
 --  * kernel I/O
 --  * This structure must be initialized before first use.
 --  */
--- 
+--
 -- /* MTGP (Mersenne Twister) RNG */
 -- /* This generator uses the Mersenne Twister algorithm of
 --  * http://arxiv.org/abs/1005.4973v2
 --  * Has period 2^11213.
 -- */
--- 
+--
 -- /**
---  * CURAND MTGP32 state 
+--  * CURAND MTGP32 state
 --  */
 -- struct curandStateMtgp32;
--- 
+--
 -- struct curandStateMtgp32 {
 --     unsigned int s[MTGP32_STATE_SIZE];
 --     int offset;
@@ -213,12 +211,71 @@ pokeMatrix pps mat = zipPtrs mempty pps mat >>= mapM_ go
 --     mtgp32_kernel_params_t * k;
 --     int precise_double_flag;
 -- };
--- 
+--
 -- /*
---  * CURAND MTGP32 state 
+--  * CURAND MTGP32 state
 --  */
 -- /** \cond UNHIDE_TYPEDEFS */
 -- typedef struct curandStateMtgp32 curandStateMtgp32_t;
 -- /** \endcond */
+type CCurandStateMtgp32 = C'CurandStateMtgp32
 
+data C'CurandStateMtgp32 = C'CurandStateMtgp32
+  { c'CurandStateMtgp32's      :: [CUInt]
+  , c'CurandStateMtgp32'offset :: CInt
+  , c'CurandStateMtgp32'pIdx   :: CInt
+  , c'CurandStateMtgp32'k      :: Ptr C'Mtgp32_kernel_params
+  , c'CurandStateMtgp32'precise_double_flag :: CInt
+  } deriving (Eq,Show)
+
+sizeOfCInt = sizeOf (undefined :: CInt)
+
+size'CurandStateMtgp32's                   = sizeOfCUInt * mtgp32_state_size
+size'CurandStateMtgp32'offset              = sizeOfCInt
+size'CurandStateMtgp32'pIdx                = sizeOfCInt
+size'CurandStateMtgp32'k                   = sizeOf (undefined :: Ptr C'Mtgp32_kernel_params)
+size'CurandStateMtgp32'precise_double_flag = sizeOfCInt
+size'CurandStateMtgp32 = sum
+  [ size'CurandStateMtgp32's
+  , size'CurandStateMtgp32'offset
+  , size'CurandStateMtgp32'pIdx
+  , size'CurandStateMtgp32'k
+  , size'CurandStateMtgp32'precise_double_flag
+  ]
+
+-- addr for "address of". Each is dependent on the initial position and size of the prior record-field
+addr'CurandStateMtgp32's                   = 0
+addr'CurandStateMtgp32'offset              = addr'CurandStateMtgp32's      + size'CurandStateMtgp32's
+addr'CurandStateMtgp32'pIdx                = addr'CurandStateMtgp32'offset + size'CurandStateMtgp32'offset
+addr'CurandStateMtgp32'k                   = addr'CurandStateMtgp32'pIdx   + size'CurandStateMtgp32'pIdx
+addr'CurandStateMtgp32'precise_double_flag = addr'CurandStateMtgp32'k      + size'CurandStateMtgp32'k
+
+-- access pointers to each storable item
+p'CurandStateMtgp32's                   :: Ptr C'CurandStateMtgp32 -> Ptr CUInt
+p'CurandStateMtgp32'offset              :: Ptr C'CurandStateMtgp32 -> Ptr CInt
+p'CurandStateMtgp32'pIdx                :: Ptr C'CurandStateMtgp32 -> Ptr CInt
+p'CurandStateMtgp32'k                   :: Ptr C'CurandStateMtgp32 -> Ptr C'Mtgp32_kernel_params
+p'CurandStateMtgp32'precise_double_flag :: Ptr C'CurandStateMtgp32 -> Ptr CInt
+p'CurandStateMtgp32's                   p = plusPtr p addr'CurandStateMtgp32's
+p'CurandStateMtgp32'offset              p = plusPtr p addr'CurandStateMtgp32'offset
+p'CurandStateMtgp32'pIdx                p = plusPtr p addr'CurandStateMtgp32'pIdx
+p'CurandStateMtgp32'k                   p = plusPtr p addr'CurandStateMtgp32'k
+p'CurandStateMtgp32'precise_double_flag p = plusPtr p addr'CurandStateMtgp32'precise_double_flag
+
+instance Storable C'CurandStateMtgp32 where
+  sizeOf    _ = size'Mtgp32_kernel_params
+  alignment _ = sizeOfCUInt -- see Storable haddocks: "An alignment constraint x is fulfilled by any address divisible by x."
+  peek _p = C'CurandStateMtgp32
+    <$> peekArray mtgp32_state_size (p'CurandStateMtgp32's _p)
+    <*> peekByteOff _p addr'CurandStateMtgp32'offset
+    <*> peekByteOff _p addr'CurandStateMtgp32'pIdx
+    <*> peekByteOff _p addr'CurandStateMtgp32'k
+    <*> peekByteOff _p addr'CurandStateMtgp32'precise_double_flag
+
+  poke _p (C'CurandStateMtgp32 v0 v1 v2 v3 v4) = do
+    pokeArray (p'CurandStateMtgp32's _p) v0
+    pokeByteOff _p addr'CurandStateMtgp32'offset v1
+    pokeByteOff _p addr'CurandStateMtgp32'pIdx   v2
+    pokeByteOff _p addr'CurandStateMtgp32'k      v3
+    pokeByteOff _p addr'CurandStateMtgp32'precise_double_flag v4
 
