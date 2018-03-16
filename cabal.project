@@ -1,7 +1,9 @@
 packages:
     codegen/*.cabal
     raw/th/*.cabal
-    types/*.cabal
+    raw/thc/*.cabal
+    raw/tests/*.cabal
+    types/th/*.cabal
 
     signatures/unsigned/*cabal
     signatures/signed/*cabal

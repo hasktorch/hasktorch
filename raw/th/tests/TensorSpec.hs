@@ -1,11 +1,11 @@
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
 module TensorSpec (spec) where
 
 import Foreign
 import Foreign.C.Types
 
 import Test.Hspec
+
+import Torch.FFI.Tests
 
 import qualified Torch.Types.TH.Byte as B
 import qualified Torch.FFI.TH.Byte.Tensor as B
@@ -36,37 +36,12 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "Float Tensor creation and access methods"  $ signedSuite floatBook
-  describe "Double Tensor creation and access methods" $ signedSuite doubleBook
-  describe "Byte Tensor creation and access methods"   $ signedSuite byteBook
-  describe "Int Tensor creation and access methods"    $ signedSuite intBook
-  describe "Long Tensor creation and access methods"   $ signedSuite longBook
-  describe "Short Tensor creation and access methods"  $ signedSuite shortBook
-
-data TestFunctions state tensor real accreal = TestFunctions
-  { _new :: state -> IO tensor
-  , _newWithSize1d :: state -> CLLong -> IO tensor
-  , _newWithSize2d :: state -> CLLong -> CLLong -> IO tensor
-  , _newWithSize3d :: state -> CLLong -> CLLong -> CLLong -> IO tensor
-  , _newWithSize4d :: state -> CLLong -> CLLong -> CLLong -> CLLong -> IO tensor
-  , _nDimension :: state -> tensor -> IO CInt
-  , _set1d :: state -> tensor -> CLLong -> real -> IO ()
-  , _get1d :: state -> tensor -> CLLong -> IO real
-  , _set2d :: state -> tensor -> CLLong -> CLLong -> real -> IO ()
-  , _get2d :: state -> tensor -> CLLong -> CLLong -> IO real
-  , _set3d :: state -> tensor -> CLLong -> CLLong -> CLLong -> real -> IO ()
-  , _get3d :: state -> tensor -> CLLong -> CLLong -> CLLong -> IO real
-  , _set4d :: state -> tensor -> CLLong -> CLLong -> CLLong -> CLLong -> real -> IO ()
-  , _get4d :: state -> tensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO real
-  , _size :: state -> tensor -> CInt -> IO CLLong
-  , _fill :: state -> tensor -> real -> IO ()
-  , _free :: state -> tensor -> IO ()
-  , _sumall :: state -> tensor -> IO accreal
-  , _prodall :: state -> tensor -> IO accreal
-  , _zero :: state -> tensor -> IO ()
-  , _dot :: state -> tensor -> tensor -> IO accreal
-  , _abs :: Maybe (state -> tensor -> tensor -> IO ())
-  }
+  describe "Float Tensor creation and access methods"  $ signedSuite () floatBook
+  describe "Double Tensor creation and access methods" $ signedSuite () doubleBook
+  describe "Byte Tensor creation and access methods"   $ signedSuite () byteBook
+  describe "Int Tensor creation and access methods"    $ signedSuite () intBook
+  describe "Long Tensor creation and access methods"   $ signedSuite () longBook
+  describe "Short Tensor creation and access methods"  $ signedSuite () shortBook
 
 longBook :: TestFunctions () (Ptr L.CTensor) L.CReal L.CAccReal
 longBook = TestFunctions
@@ -223,173 +198,4 @@ intBook = TestFunctions
   , _dot = I.c_dot
   , _abs = Just I.c_abs
   }
-
-type RealConstr n = (Num n, Show n, Eq n)
-
-signedSuite :: (RealConstr real, RealConstr accreal) => TestFunctions () tensor real accreal -> Spec
-signedSuite fs = do
-  it "initializes empty tensor with 0 dimension" $ do
-    t <- new ()
-    nDimension () t >>= (`shouldBe` 0)
-    free () t
-  it "1D tensor has correct dimensions and sizes" $ do
-    t <- newWithSize1d () 10
-    nDimension () t >>= (`shouldBe` 1)
-    size () t 0 >>= (`shouldBe` 10)
-    free () t
-  it "2D tensor has correct dimensions and sizes" $ do
-    t <- newWithSize2d () 10 25
-    nDimension () t >>= (`shouldBe` 2)
-    size () t 0 >>= (`shouldBe` 10)
-    size () t 1 >>= (`shouldBe` 25)
-    free () t
-  it "3D tensor has correct dimensions and sizes" $ do
-    t <- newWithSize3d () 10 25 5
-    nDimension () t >>= (`shouldBe` 3)
-    size () t 0 >>= (`shouldBe` 10)
-    size () t 1 >>= (`shouldBe` 25)
-    size () t 2 >>= (`shouldBe` 5)
-    free () t
-  it "4D tensor has correct dimensions and sizes" $ do
-    t <- newWithSize4d () 10 25 5 62
-    nDimension () t >>= (`shouldBe` 4)
-    size () t 0 >>= (`shouldBe` 10)
-    size () t 1 >>= (`shouldBe` 25)
-    size () t 2 >>= (`shouldBe` 5)
-    size () t 3 >>= (`shouldBe` 62)
-    free () t
-
-  it "Can assign and retrieve correct 1D vector values" $ do
-    t <- newWithSize1d () 10
-    set1d () t 0 (20)
-    set1d () t 1 (1)
-    set1d () t 9 (3)
-    get1d () t 0 >>= (`shouldBe` (20))
-    get1d () t 1 >>= (`shouldBe` (1))
-    get1d () t 9 >>= (`shouldBe` (3))
-    free () t
-  it "Can assign and retrieve correct 2D vector values" $ do
-    t <- newWithSize2d () 10 15
-    set2d () t 0 0 (20)
-    set2d () t 1 5 (1)
-    set2d () t 9 9 (3)
-    get2d () t 0 0 >>= (`shouldBe` (20))
-    get2d () t 1 5 >>= (`shouldBe` (1))
-    get2d () t 9 9 >>= (`shouldBe` (3))
-    free () t
-  it "Can assign and retrieve correct 3D vector values" $ do
-    t <- newWithSize3d () 10 15 10
-    set3d () t 0 0 0 (20)
-    set3d () t 1 5 3 (1)
-    set3d () t 9 9 9 (3)
-    get3d () t 0 0 0 >>= (`shouldBe` (20))
-    get3d () t 1 5 3 >>= (`shouldBe` (1))
-    get3d () t 9 9 9 >>= (`shouldBe` (3))
-    free () t
-  it "Can assign and retrieve correct 4D vector values" $ do
-    t <- newWithSize4d () 10 15 10 20
-    set4d () t 0 0 0 0 (20)
-    set4d () t 1 5 3 2 (1)
-    set4d () t 9 9 9 9 (3)
-    get4d () t 0 0 0 0 >>= (`shouldBe` (20))
-    get4d () t 1 5 3 2 >>= (`shouldBe` (1))
-    get4d () t 9 9 9 9 >>= (`shouldBe` (3))
-    free () t
-  it "Can can initialize values with the fill method" $ do
-    t1 <- newWithSize2d () 2 2
-    fill () t1 3
-    get2d () t1 0 0 >>= (`shouldBe` (3))
-    free () t1
-  it "Can compute correct dot product between 1D vectors" $ do
-    t1 <- newWithSize1d () 3
-    t2 <- newWithSize1d () 3
-    fill () t1 3
-    fill () t2 4
-    let value = dot () t1 t2
-    value >>= (`shouldBe` 36)
-    free () t1
-    free () t2
-  it "Can compute correct dot product between 2D tensors" $ do
-    t1 <- newWithSize2d () 2 2
-    t2 <- newWithSize2d () 2 2
-    fill () t1 3
-    fill () t2 4
-    let value = dot () t1 t2
-    value >>= (`shouldBe` 48)
-    free () t1
-    free () t2
-  it "Can compute correct dot product between 3D tensors" $ do
-    t1 <- newWithSize3d () 2 2 4
-    t2 <- newWithSize3d () 2 2 4
-    fill () t1 3
-    fill () t2 4
-    let value = dot () t1 t2
-    value >>= (`shouldBe` 192)
-    free () t1
-    free () t2
-  it "Can compute correct dot product between 4D tensors" $ do
-    t1 <- newWithSize4d () 2 2 2 1
-    t2 <- newWithSize4d () 2 2 2 1
-    fill () t1 3
-    fill () t2 4
-    let value = dot () t1 t2
-    value >>= (`shouldBe` 96)
-    free () t1
-    free () t2
-  it "Can zero out values" $ do
-    t1 <- newWithSize4d () 2 2 4 3
-    fill () t1 3
-    -- let value = dot () t1 t1
-    -- sequencing does not work if there is more than one shouldBe test in
-    -- an "it" monad
-    -- value >>= (`shouldBe` (432.0))
-    zero () t1
-    dot () t1 t1 >>= (`shouldBe` 0)
-    free () t1
-  it "Can compute sum of all values" $ do
-    t1 <- newWithSize3d () 2 2 4
-    fill () t1 2
-    sumall () t1 >>= (`shouldBe` 32)
-    free () t1
-  it "Can compute product of all values" $ do
-    t1 <- newWithSize2d () 2 2
-    fill () t1 2
-    prodall () t1 >>= (`shouldBe` 16)
-    free () t1
-  case mabs of
-    Nothing  -> pure ()
-    Just abs ->
-      it "Can take abs of tensor values" $ do
-        t1 <- newWithSize2d () 2 2
-        fill () t1 (-2)
-        -- sequencing does not work if there is more than one shouldBe test in
-        -- an "it" monad
-        -- sumall () t1 >>= (`shouldBe` (-6.0))
-        abs () t1 t1
-        sumall () t1 >>= (`shouldBe` 8)
-        free () t1
- where
-  new = _new fs
-  newWithSize1d = _newWithSize1d fs
-  newWithSize2d = _newWithSize2d fs
-  newWithSize3d = _newWithSize3d fs
-  newWithSize4d = _newWithSize4d fs
-  nDimension = _nDimension fs
-  set1d = _set1d fs
-  get1d = _get1d fs
-  set2d = _set2d fs
-  get2d = _get2d fs
-  set3d = _set3d fs
-  get3d = _get3d fs
-  set4d = _set4d fs
-  get4d = _get4d fs
-  size = _size fs
-  fill = _fill fs
-  free = _free fs
-  sumall = _sumall fs
-  mabs = _abs fs
-  prodall = _prodall fs
-  dot = _dot fs
-  zero = _zero fs
-
 

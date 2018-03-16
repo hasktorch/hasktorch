@@ -128,6 +128,8 @@ test-suite spec
       QuickCheck
     , base >=4.7 && <5
     , hasktorch-raw-th
+    , hasktorch-types-th
+    , hasktorch-raw-tests
     , hspec >=2.4.4
     , text >=1.2.2.2
   other-modules:
