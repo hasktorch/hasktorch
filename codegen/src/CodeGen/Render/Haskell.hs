@@ -21,17 +21,14 @@ typeCatHelper tc s = case tc of
      "Ptr" -> Just $ "IO (" <> s <> ")"
      _     -> Just $ "IO " <> s <> ""
 
-hsPrefix :: LibType -> Text
-hsPrefix = \case
-  THC -> "CTHCuda"
-  lt -> "C" <> tshow lt
-
 
 renderParsable :: LibType -> TemplateType -> Parsable -> Text
 renderParsable lt tt =
   \case
     Ptr (Ptr x) -> "Ptr (Ptr " <> renderParsable lt tt x <> ")"
     Ptr x -> "Ptr " <> renderParsable lt tt x
+    -- Raw DescBuffs need to be wrapped in a pointer for marshalling
+    TenType DescBuff -> "Ptr " <> renderTenType lt tt DescBuff
     TenType x -> renderTenType lt tt x
     -- NNType x -> renderNNType lt tt x
     CType x -> renderCType x
