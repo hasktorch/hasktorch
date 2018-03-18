@@ -69,11 +69,11 @@ makeModule
   -> TemplateType
   -> [Function]
   -> HModule
-makeModule a00 a0 a1 a2 a3 a4 a5 a6
+makeModule lt a0 a1 a2 a3 a4 a5 a6
   = HModule
-  { prefix = a00
+  { prefix = lt
   , extensions = ["ForeignFunctionInterface"]
-  , imports = ["Foreign", "Foreign.C.Types", "Torch.Types.TH", "Data.Word", "Data.Int"]
+  , imports = ["Foreign", "Foreign.C.Types", "Torch.Types." <> tshow lt, "Data.Word", "Data.Int"]
   , typeDefs = []
   , modOutDir = a0
   , isTemplate = a1

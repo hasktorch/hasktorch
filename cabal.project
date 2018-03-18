@@ -4,6 +4,7 @@ packages:
     raw/thc/*.cabal
     raw/tests/*.cabal
     types/th/*.cabal
+    types/thc/*.cabal
 
     signatures/unsigned/*cabal
     signatures/signed/*cabal
