@@ -2,7 +2,7 @@
 module Torch.Types.THC
   ( module X
   , CTHCDescBuff
-  -- , CTHCAllocator
+  , CTHCAllocator, C'THCAllocator
   , CTHCGenerator
   , CTHCFile
   , CTHCHalf, C'THCHalf
@@ -34,15 +34,19 @@ module Torch.Types.THC
   , CTHCShortStorageCopy
   ) where
 
-import Torch.Types.THC.Types as X
+import Torch.Types.THC.Structs as X
 
 import Foreign
 
 type CTHCDescBuff = Ptr C'THCDescBuff
 type CTHCGenerator = C'_Generator
 type CTHCStream = C'THCStream
-type CTHCFile = ()
 type CTHCState = C'THCState
+
+-- Types we haven't figured out what to do with, yet
+type CTHCFile = ()
+type CTHCAllocator = ()
+type C'THCAllocator = CTHCAllocator 
 
 type C'THCHalf = ()
 type CTHCHalf = ()

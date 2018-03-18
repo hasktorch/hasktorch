@@ -23,28 +23,24 @@ library
     , cuda >= 0.9
     , hasktorch-types-th
   exposed-modules:
-      -- Torch.Types.THC.Char
-      -- Torch.Types.THC.Byte
-
-      -- Torch.Types.THC.Short
-      -- Torch.Types.THC.Int
-      -- Torch.Types.THC.Long
-
-      -- Torch.Types.THC.Float
-      -- Torch.Types.THC.Half
-      -- Torch.Types.THC.Double
-
-      -- Torch.Types.CuRAND.Structs
-      -- Torch.Types.THC
-      -- Torch.Types.THC.Random
-
       Torch.Types.THC
-    , Torch.Types.THC.Types
     , Torch.Types.THC.Structs
     , Torch.Types.Cuda.Structs
     , Torch.Types.CuRand.Structs
+
+    -- , Torch.Types.THC.Char
+    , Torch.Types.THC.Byte
+
+    , Torch.Types.THC.Short
+    , Torch.Types.THC.Int
+    , Torch.Types.THC.Long
+
+    , Torch.Types.THC.Float
+    -- , Torch.Types.THC.Half
+    , Torch.Types.THC.Double
+
+    , Torch.Types.THC.Random
   other-modules:
       Paths_hasktorch_types_thc
-      Torch.Types.THC.Internal
       Torch.Types.THC.Internal
 

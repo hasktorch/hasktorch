@@ -9,6 +9,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import CodeGen.Types
+import CodeGen.Prelude
 import CodeGen.Render (makeModule)
 
 type HeaderFile = FilePath
@@ -86,8 +87,22 @@ files THC = \case
     , mkModule' "TensorMath"
     , mkModule' "TensorRandom"
     , mkModule' "ThreadLocal"
+
+    , mkGeneralFile
     ]
 files _ = \case {ConcreteFiles -> []; GenericFiles -> []}
+
+
+mkGeneralFile
+  :: LibType
+  -> CodeGenType
+  -> (FilePath, TemplateType -> [Function] -> HModule)
+mkGeneralFile lt cgt
+  = ( srcDir lt cgt <> show lt <> "General.h.in"
+    , makeModule lt (TextPath . T.pack $ outDir lt) cgt (show lt <> "General.h") modsuff filesuff)
+ where
+  modsuff = "General"
+  filesuff = "General"
 
 
 mkModule

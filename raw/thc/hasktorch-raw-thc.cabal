@@ -34,6 +34,7 @@ library
     , Torch.FFI.THC.Sleep
     , Torch.FFI.THC.TensorMath
     , Torch.FFI.THC.TensorRandom
+    , Torch.FFI.THC.General
 
     , Torch.FFI.THC.Short.TensorMode
     , Torch.FFI.THC.Short.TensorSort
@@ -210,6 +211,7 @@ test-suite spec
     , base >=4.7 && <5
     , hasktorch-raw-thc
     , hasktorch-raw-tests
+    , hasktorch-types-thc
     , hspec >=2.4.4
     , text >=1.2.2.2
   other-modules:
