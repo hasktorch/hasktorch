@@ -80,8 +80,9 @@ data TenType
   | Stream  -- THC-specific
   deriving (Eq, Show, Generic, Hashable, Bounded, Enum)
 
-isCudaPrefixedTensor :: TenType -> Bool
-isCudaPrefixedTensor t = t `HS.member` HS.fromList
+
+isConcreteCudaPrefixed :: TenType -> Bool
+isConcreteCudaPrefixed t = t `HS.member` HS.fromList
   [ ByteTensor
   , CharTensor
   , ShortTensor

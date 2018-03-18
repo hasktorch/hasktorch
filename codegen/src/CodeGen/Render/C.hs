@@ -25,7 +25,7 @@ renderTenType lt = \case
   rest -> prefix rest <> tshow rest
  where
   prefix :: TenType -> Text
-  prefix t = if lt == THC && isCudaPrefixedTensor t then "THCuda" else tshow lt
+  prefix t = if lt == THC && isConcreteCudaPrefixed t then "THCuda" else tshow lt
 
 
 renderCType :: CType -> Text

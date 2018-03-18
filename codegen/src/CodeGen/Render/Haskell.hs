@@ -39,11 +39,18 @@ renderParsable lt tt =
 
 renderTenType :: LibType -> TemplateType -> TenType -> Text
 renderTenType lt tt = \case
-  Tensor  -> hsPrefix lt <> type2hsreal tt <> "Tensor"
-  Storage -> hsPrefix lt <> type2hsreal tt <> "Storage"
+  Tensor  -> c <> libPrefix True <> type2hsreal tt <> "Tensor"
+  Storage -> c <> tshow lt       <> type2hsreal tt <> "Storage"
   Real    -> type2real lt tt
   AccReal -> type2accreal lt tt
-  rest    -> hsPrefix lt <> tshow rest
+  rest    -> c <> libPrefix (isConcreteCudaPrefixed rest) <> tshow rest
+ where
+  c = "C'"
+  libPrefix :: Bool -> Text
+  libPrefix long =
+    case lt of
+      THC -> if long then "THCuda" else "THC"
+      _   -> tshow lt
 
 
 renderCType :: CType -> Text

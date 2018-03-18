@@ -161,6 +161,17 @@ functionArgSpec = do
   it "will find arguments in newline-delineated lists" $
     runParser' functionArg "         int k)" `shouldBe` Right (Arg (CType CInt) "k")
 
+  describe "capturing arguments from THC's TensorTopK function" $ do
+    it "captures `THCState* state,`" $
+      runParser' functionArg "THCState* state," `shouldBe` Right (Arg (Ptr (TenType State)) "state")
+    it "captures `THCTensor* topK,`" $
+      runParser' functionArg "THCTensor* topK," `shouldBe` Right (Arg (Ptr (TenType Tensor)) "topK")
+    it "captures `THCudaLongTensor*indices,`" $
+      runParser' functionArg "THCudaLongTensor*indices," `shouldBe` Right (Arg (Ptr (TenType LongTensor)) "indices")
+    it "captures `THCTensor* input,`" $
+      runParser' functionArg "THCTensor* input," `shouldBe` Right (Arg (Ptr (TenType Tensor)) "input")
+
+
 functionArgsSpec :: Spec
 functionArgsSpec = do
   it "will find arguments in newline-delineated lists" $
