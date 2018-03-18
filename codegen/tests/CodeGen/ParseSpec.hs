@@ -171,7 +171,6 @@ functionArgSpec = do
     it "captures `THCTensor* input,`" $
       runParser' functionArg "THCTensor* input," `shouldBe` Right (Arg (Ptr (TenType Tensor)) "input")
 
-
 functionArgsSpec :: Spec
 functionArgsSpec = do
   it "will find arguments in newline-delineated lists" $

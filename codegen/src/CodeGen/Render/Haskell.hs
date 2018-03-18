@@ -25,10 +25,12 @@ typeCatHelper tc s = case tc of
 renderParsable :: LibType -> TemplateType -> Parsable -> Text
 renderParsable lt tt =
   \case
+    -- special cases
+    TenType DescBuff -> "Ptr " <> renderTenType lt tt DescBuff
+
     Ptr (Ptr x) -> "Ptr (Ptr " <> renderParsable lt tt x <> ")"
     Ptr x -> "Ptr " <> renderParsable lt tt x
     -- Raw DescBuffs need to be wrapped in a pointer for marshalling
-    TenType DescBuff -> "Ptr " <> renderTenType lt tt DescBuff
     TenType x -> renderTenType lt tt x
     -- NNType x -> renderNNType lt tt x
     CType x -> renderCType x

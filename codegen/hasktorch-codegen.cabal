@@ -99,5 +99,6 @@ test-suite spec
     , text >=1.2.2.2
   other-modules:
       CodeGen.ParseSpec
+      CodeGen.Render.FunctionSpec
       Paths_hasktorch_codegen
   default-language: Haskell2010

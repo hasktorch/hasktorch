@@ -1,5 +1,6 @@
 module CodeGen.Render.Function
   ( renderSig
+  , haskellSig
   , SigType(..)
   ) where
 
