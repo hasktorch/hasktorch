@@ -17,11 +17,11 @@ foreign import ccall "THHalf.h TH_halfbits2float"
 
 -- | c_TH_float2half :   -> THHalf
 foreign import ccall "THHalf.h TH_float2half"
-  c_TH_float2half :: CFloat -> IO CTHHalf
+  c_TH_float2half :: CFloat -> IO C'THHalf
 
 -- | c_TH_half2float :   -> float
 foreign import ccall "THHalf.h TH_half2float"
-  c_TH_half2float :: CTHHalf -> IO CFloat
+  c_TH_half2float :: C'THHalf -> IO CFloat
 
 -- | p_TH_float2halfbits : Pointer to function :   -> void
 foreign import ccall "THHalf.h &TH_float2halfbits"
@@ -33,8 +33,8 @@ foreign import ccall "THHalf.h &TH_halfbits2float"
 
 -- | p_TH_float2half : Pointer to function :  -> THHalf
 foreign import ccall "THHalf.h &TH_float2half"
-  p_TH_float2half :: FunPtr (CFloat -> IO CTHHalf)
+  p_TH_float2half :: FunPtr (CFloat -> IO C'THHalf)
 
 -- | p_TH_half2float : Pointer to function :  -> float
 foreign import ccall "THHalf.h &TH_half2float"
-  p_TH_half2float :: FunPtr (CTHHalf -> IO CFloat)
+  p_TH_half2float :: FunPtr (C'THHalf -> IO CFloat)

@@ -44,49 +44,49 @@ c_validXCorr2DRevptr = const c_validXCorr2DRevptr_
 
 -- | c_conv2DRevger :  r_ beta alpha t_ k_ srow scol -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv2DRevger"
-  c_conv2DRevger_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> IO ()
+  c_conv2DRevger_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> IO ()
 
 -- | alias of c_conv2DRevger_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv2DRevger = const c_conv2DRevger_
 
 -- | c_conv2DRevgerm :  r_ beta alpha t_ k_ srow scol -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv2DRevgerm"
-  c_conv2DRevgerm_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> IO ()
+  c_conv2DRevgerm_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> IO ()
 
 -- | alias of c_conv2DRevgerm_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv2DRevgerm = const c_conv2DRevgerm_
 
 -- | c_conv2Dger :  r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv2Dger"
-  c_conv2Dger_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
+  c_conv2Dger_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- | alias of c_conv2Dger_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv2Dger = const c_conv2Dger_
 
 -- | c_conv2Dmv :  r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv2Dmv"
-  c_conv2Dmv_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
+  c_conv2Dmv_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- | alias of c_conv2Dmv_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv2Dmv = const c_conv2Dmv_
 
 -- | c_conv2Dmm :  r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv2Dmm"
-  c_conv2Dmm_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
+  c_conv2Dmm_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- | alias of c_conv2Dmm_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv2Dmm = const c_conv2Dmm_
 
 -- | c_conv2Dmul :  r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv2Dmul"
-  c_conv2Dmul_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
+  c_conv2Dmul_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- | alias of c_conv2Dmul_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv2Dmul = const c_conv2Dmul_
 
 -- | c_conv2Dcmul :  r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv2Dcmul"
-  c_conv2Dcmul_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
+  c_conv2Dcmul_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- | alias of c_conv2Dcmul_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv2Dcmul = const c_conv2Dcmul_
@@ -128,35 +128,35 @@ c_validXCorr3DRevptr = const c_validXCorr3DRevptr_
 
 -- | c_conv3DRevger :  r_ beta alpha t_ k_ sdepth srow scol -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv3DRevger"
-  c_conv3DRevger_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> IO ()
+  c_conv3DRevger_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> IO ()
 
 -- | alias of c_conv3DRevger_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv3DRevger = const c_conv3DRevger_
 
 -- | c_conv3Dger :  r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv3Dger"
-  c_conv3Dger_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
+  c_conv3Dger_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- | alias of c_conv3Dger_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv3Dger = const c_conv3Dger_
 
 -- | c_conv3Dmv :  r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv3Dmv"
-  c_conv3Dmv_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
+  c_conv3Dmv_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- | alias of c_conv3Dmv_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv3Dmv = const c_conv3Dmv_
 
 -- | c_conv3Dmul :  r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv3Dmul"
-  c_conv3Dmul_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
+  c_conv3Dmul_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- | alias of c_conv3Dmul_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv3Dmul = const c_conv3Dmul_
 
 -- | c_conv3Dcmul :  r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h THIntTensor_conv3Dcmul"
-  c_conv3Dcmul_ :: Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
+  c_conv3Dcmul_ :: Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ()
 
 -- | alias of c_conv3Dcmul_ with unused argument (for CTHState) to unify backpack signatures.
 c_conv3Dcmul = const c_conv3Dcmul_
@@ -198,49 +198,49 @@ p_validXCorr2DRevptr = const p_validXCorr2DRevptr_
 
 -- | p_conv2DRevger : Pointer to function : r_ beta alpha t_ k_ srow scol -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv2DRevger"
-  p_conv2DRevger_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> IO ())
+  p_conv2DRevger_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> IO ())
 
 -- | alias of p_conv2DRevger_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv2DRevger = const p_conv2DRevger_
 
 -- | p_conv2DRevgerm : Pointer to function : r_ beta alpha t_ k_ srow scol -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv2DRevgerm"
-  p_conv2DRevgerm_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> IO ())
+  p_conv2DRevgerm_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> IO ())
 
 -- | alias of p_conv2DRevgerm_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv2DRevgerm = const p_conv2DRevgerm_
 
 -- | p_conv2Dger : Pointer to function : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv2Dger"
-  p_conv2Dger_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
+  p_conv2Dger_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
 
 -- | alias of p_conv2Dger_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv2Dger = const p_conv2Dger_
 
 -- | p_conv2Dmv : Pointer to function : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv2Dmv"
-  p_conv2Dmv_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
+  p_conv2Dmv_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
 
 -- | alias of p_conv2Dmv_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv2Dmv = const p_conv2Dmv_
 
 -- | p_conv2Dmm : Pointer to function : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv2Dmm"
-  p_conv2Dmm_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
+  p_conv2Dmm_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
 
 -- | alias of p_conv2Dmm_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv2Dmm = const p_conv2Dmm_
 
 -- | p_conv2Dmul : Pointer to function : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv2Dmul"
-  p_conv2Dmul_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
+  p_conv2Dmul_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
 
 -- | alias of p_conv2Dmul_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv2Dmul = const p_conv2Dmul_
 
 -- | p_conv2Dcmul : Pointer to function : r_ beta alpha t_ k_ srow scol vf xc -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv2Dcmul"
-  p_conv2Dcmul_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
+  p_conv2Dcmul_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
 
 -- | alias of p_conv2Dcmul_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv2Dcmul = const p_conv2Dcmul_
@@ -282,35 +282,35 @@ p_validXCorr3DRevptr = const p_validXCorr3DRevptr_
 
 -- | p_conv3DRevger : Pointer to function : r_ beta alpha t_ k_ sdepth srow scol -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv3DRevger"
-  p_conv3DRevger_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> IO ())
+  p_conv3DRevger_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> IO ())
 
 -- | alias of p_conv3DRevger_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv3DRevger = const p_conv3DRevger_
 
 -- | p_conv3Dger : Pointer to function : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv3Dger"
-  p_conv3Dger_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
+  p_conv3Dger_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
 
 -- | alias of p_conv3Dger_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv3Dger = const p_conv3Dger_
 
 -- | p_conv3Dmv : Pointer to function : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv3Dmv"
-  p_conv3Dmv_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
+  p_conv3Dmv_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
 
 -- | alias of p_conv3Dmv_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv3Dmv = const p_conv3Dmv_
 
 -- | p_conv3Dmul : Pointer to function : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv3Dmul"
-  p_conv3Dmul_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
+  p_conv3Dmul_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
 
 -- | alias of p_conv3Dmul_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv3Dmul = const p_conv3Dmul_
 
 -- | p_conv3Dcmul : Pointer to function : r_ beta alpha t_ k_ sdepth srow scol vf xc -> void
 foreign import ccall "THTensorConv.h &THIntTensor_conv3Dcmul"
-  p_conv3Dcmul_ :: FunPtr (Ptr CTHIntTensor -> CInt -> CInt -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
+  p_conv3Dcmul_ :: FunPtr (Ptr C'THIntTensor -> CInt -> CInt -> Ptr C'THIntTensor -> Ptr C'THIntTensor -> CLLong -> CLLong -> CLLong -> Ptr CChar -> Ptr CChar -> IO ())
 
 -- | alias of p_conv3Dcmul_ with unused argument (for CTHState) to unify backpack signatures.
 p_conv3Dcmul = const p_conv3Dcmul_

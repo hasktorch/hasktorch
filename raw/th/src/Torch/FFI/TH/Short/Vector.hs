@@ -72,7 +72,7 @@ c_neg = const c_neg_
 
 -- | c_normal_fill :  data size generator mean stddev -> void
 foreign import ccall "THVector.h THShortVector_normal_fill"
-  c_normal_fill_ :: Ptr CShort -> CLLong -> Ptr CTHGenerator -> CShort -> CShort -> IO ()
+  c_normal_fill_ :: Ptr CShort -> CLLong -> Ptr C'THGenerator -> CShort -> CShort -> IO ()
 
 -- | alias of c_normal_fill_ with unused argument (for CTHState) to unify backpack signatures.
 c_normal_fill = const c_normal_fill_
@@ -156,7 +156,7 @@ p_neg = const p_neg_
 
 -- | p_normal_fill : Pointer to function : data size generator mean stddev -> void
 foreign import ccall "THVector.h &THShortVector_normal_fill"
-  p_normal_fill_ :: FunPtr (Ptr CShort -> CLLong -> Ptr CTHGenerator -> CShort -> CShort -> IO ())
+  p_normal_fill_ :: FunPtr (Ptr CShort -> CLLong -> Ptr C'THGenerator -> CShort -> CShort -> IO ())
 
 -- | alias of p_normal_fill_ with unused argument (for CTHState) to unify backpack signatures.
 p_normal_fill = const p_normal_fill_

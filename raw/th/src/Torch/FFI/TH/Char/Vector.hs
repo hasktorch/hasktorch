@@ -65,7 +65,7 @@ c_copy = const c_copy_
 
 -- | c_normal_fill :  data size generator mean stddev -> void
 foreign import ccall "THVector.h THCharVector_normal_fill"
-  c_normal_fill_ :: Ptr CChar -> CLLong -> Ptr CTHGenerator -> CChar -> CChar -> IO ()
+  c_normal_fill_ :: Ptr CChar -> CLLong -> Ptr C'THGenerator -> CChar -> CChar -> IO ()
 
 -- | alias of c_normal_fill_ with unused argument (for CTHState) to unify backpack signatures.
 c_normal_fill = const c_normal_fill_
@@ -135,7 +135,7 @@ p_copy = const p_copy_
 
 -- | p_normal_fill : Pointer to function : data size generator mean stddev -> void
 foreign import ccall "THVector.h &THCharVector_normal_fill"
-  p_normal_fill_ :: FunPtr (Ptr CChar -> CLLong -> Ptr CTHGenerator -> CChar -> CChar -> IO ())
+  p_normal_fill_ :: FunPtr (Ptr CChar -> CLLong -> Ptr C'THGenerator -> CChar -> CChar -> IO ())
 
 -- | alias of p_normal_fill_ with unused argument (for CTHState) to unify backpack signatures.
 p_normal_fill = const p_normal_fill_
