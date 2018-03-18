@@ -5,8 +5,9 @@ module Torch.Types.THC
   -- , CTHCAllocator
   , CTHCGenerator
   , CTHCFile
-  , CTHCHalf
+  , CTHCHalf, C'THCHalf
   , CTHCState
+  , CTHCStream
   , CTHCudaByteTensor
   , CTHCByteStorage
   , CTHCByteStorageCopy
@@ -19,9 +20,9 @@ module Torch.Types.THC
   , CTHCudaFloatTensor
   , CTHCFloatStorage
   , CTHCFloatStorageCopy
-  , CTHCudaHalfTensor
-  , CTHCHalfStorage
-  , CTHCHalfStorageCopy
+  , CTHCudaHalfTensor, C'THCudaHalfTensor
+  , CTHCHalfStorage, C'THCHalfStorage
+  , CTHCHalfStorageCopy, C'THCHalfStorageCopy
   , CTHCudaIntTensor
   , CTHCIntStorage
   , CTHCIntStorageCopy
@@ -39,10 +40,12 @@ import Foreign
 
 type CTHCDescBuff = Ptr C'THCDescBuff
 type CTHCGenerator = C'_Generator
+type CTHCStream = C'THCStream
 type CTHCFile = ()
-type CTHCHalf = ()
 type CTHCState = C'THCState
 
+type C'THCHalf = ()
+type CTHCHalf = ()
 -- ----------------------------------------
 -- Templated types
 -- ----------------------------------------
@@ -77,6 +80,11 @@ type CTHCFloatStorageCopy = CTHCFloatStorage
 type CTHCudaHalfTensor = ()
 type CTHCHalfStorage = ()
 type CTHCHalfStorageCopy = ()
+
+type C'THCudaHalfTensor = ()
+type C'THCHalfStorage = ()
+type C'THCHalfStorageCopy = ()
+
 
 {- Int -}
 
