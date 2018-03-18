@@ -3,7 +3,7 @@ module Torch.FFI.THC.CachingAllocator where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
+import Torch.Types.THC
 import Data.Word
 import Data.Int
 
@@ -13,7 +13,7 @@ foreign import ccall "THCCachingAllocator.h THCCachingAllocator_getBaseAllocatio
 
 -- | c_THCCachingAllocator_recordStream :  ptr stream -> void
 foreign import ccall "THCCachingAllocator.h THCCachingAllocator_recordStream"
-  c_THCCachingAllocator_recordStream :: Ptr () -> Ptr CTHCudaStream -> IO ()
+  c_THCCachingAllocator_recordStream :: Ptr () -> Ptr C'THCStream -> IO ()
 
 -- | c_THCCachingAllocator_currentMemoryAllocated :  device -> uint64_t
 foreign import ccall "THCCachingAllocator.h THCCachingAllocator_currentMemoryAllocated"
@@ -37,7 +37,7 @@ foreign import ccall "THCCachingAllocator.h &THCCachingAllocator_getBaseAllocati
 
 -- | p_THCCachingAllocator_recordStream : Pointer to function : ptr stream -> void
 foreign import ccall "THCCachingAllocator.h &THCCachingAllocator_recordStream"
-  p_THCCachingAllocator_recordStream :: FunPtr (Ptr () -> Ptr CTHCudaStream -> IO ())
+  p_THCCachingAllocator_recordStream :: FunPtr (Ptr () -> Ptr C'THCStream -> IO ())
 
 -- | p_THCCachingAllocator_currentMemoryAllocated : Pointer to function : device -> uint64_t
 foreign import ccall "THCCachingAllocator.h &THCCachingAllocator_currentMemoryAllocated"

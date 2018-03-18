@@ -3,150 +3,150 @@ module Torch.FFI.THC.Short.TensorMath where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
+import Torch.Types.THC
 import Data.Word
 import Data.Int
 
 -- | c_fill :  state self value -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_fill"
-  c_fill :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CShort -> IO ()
+  c_fill :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> CShort -> IO ()
 
 -- | c_zero :  state self -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_zero"
-  c_zero :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> IO ()
+  c_zero :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> IO ()
 
 -- | c_zeros :  state r_ size -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_zeros"
-  c_zeros :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaLongStorage -> IO ()
+  c_zeros :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCLongStorage -> IO ()
 
 -- | c_zerosLike :  state r_ input -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_zerosLike"
-  c_zerosLike :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> IO ()
+  c_zerosLike :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> IO ()
 
 -- | c_ones :  state r_ size -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_ones"
-  c_ones :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaLongStorage -> IO ()
+  c_ones :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCLongStorage -> IO ()
 
 -- | c_onesLike :  state r_ input -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_onesLike"
-  c_onesLike :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> IO ()
+  c_onesLike :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> IO ()
 
 -- | c_reshape :  state r_ t size -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_reshape"
-  c_reshape :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> Ptr CTHCudaLongStorage -> IO ()
+  c_reshape :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> Ptr C'THCLongStorage -> IO ()
 
 -- | c_numel :  state t -> ptrdiff_t
 foreign import ccall "THCTensorMath.h THCShortTensor_numel"
-  c_numel :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> IO CPtrdiff
+  c_numel :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> IO CPtrdiff
 
 -- | c_cat :  state result ta tb dimension -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_cat"
-  c_cat :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CInt -> IO ()
+  c_cat :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> CInt -> IO ()
 
 -- | c_catArray :  state result inputs numInputs dimension -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_catArray"
-  c_catArray :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr (Ptr CTHCudaShortTensor) -> CInt -> CInt -> IO ()
+  c_catArray :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr (Ptr C'THCudaShortTensor) -> CInt -> CInt -> IO ()
 
 -- | c_nonzero :  state tensor self -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_nonzero"
-  c_nonzero :: Ptr CTHCudaState -> Ptr CTHCudaLongTensor -> Ptr CTHCudaShortTensor -> IO ()
+  c_nonzero :: Ptr C'THCState -> Ptr C'THCudaLongTensor -> Ptr C'THCudaShortTensor -> IO ()
 
 -- | c_tril :  state self src k -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_tril"
-  c_tril :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CLLong -> IO ()
+  c_tril :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> CLLong -> IO ()
 
 -- | c_triu :  state self src k -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_triu"
-  c_triu :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CLLong -> IO ()
+  c_triu :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> CLLong -> IO ()
 
 -- | c_diag :  state self src k -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_diag"
-  c_diag :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CLLong -> IO ()
+  c_diag :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> CLLong -> IO ()
 
 -- | c_eye :  state self n k -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_eye"
-  c_eye :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CLLong -> CLLong -> IO ()
+  c_eye :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> CLLong -> CLLong -> IO ()
 
 -- | c_trace :  state self -> accreal
 foreign import ccall "THCTensorMath.h THCShortTensor_trace"
-  c_trace :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> IO CLong
+  c_trace :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> IO CLong
 
 -- | c_range :  state r_ xmin xmax step -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_range"
-  c_range :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CLong -> CLong -> CLong -> IO ()
+  c_range :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> CLong -> CLong -> CLong -> IO ()
 
 -- | c_arange :  state r_ xmin xmax step -> void
 foreign import ccall "THCTensorMath.h THCShortTensor_arange"
-  c_arange :: Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CLong -> CLong -> CLong -> IO ()
+  c_arange :: Ptr C'THCState -> Ptr C'THCudaShortTensor -> CLong -> CLong -> CLong -> IO ()
 
 -- | p_fill : Pointer to function : state self value -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_fill"
-  p_fill :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CShort -> IO ())
+  p_fill :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> CShort -> IO ())
 
 -- | p_zero : Pointer to function : state self -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_zero"
-  p_zero :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> IO ())
+  p_zero :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> IO ())
 
 -- | p_zeros : Pointer to function : state r_ size -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_zeros"
-  p_zeros :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaLongStorage -> IO ())
+  p_zeros :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCLongStorage -> IO ())
 
 -- | p_zerosLike : Pointer to function : state r_ input -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_zerosLike"
-  p_zerosLike :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> IO ())
+  p_zerosLike :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> IO ())
 
 -- | p_ones : Pointer to function : state r_ size -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_ones"
-  p_ones :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaLongStorage -> IO ())
+  p_ones :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCLongStorage -> IO ())
 
 -- | p_onesLike : Pointer to function : state r_ input -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_onesLike"
-  p_onesLike :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> IO ())
+  p_onesLike :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> IO ())
 
 -- | p_reshape : Pointer to function : state r_ t size -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_reshape"
-  p_reshape :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> Ptr CTHCudaLongStorage -> IO ())
+  p_reshape :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> Ptr C'THCLongStorage -> IO ())
 
 -- | p_numel : Pointer to function : state t -> ptrdiff_t
 foreign import ccall "THCTensorMath.h &THCShortTensor_numel"
-  p_numel :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> IO CPtrdiff)
+  p_numel :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> IO CPtrdiff)
 
 -- | p_cat : Pointer to function : state result ta tb dimension -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_cat"
-  p_cat :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CInt -> IO ())
+  p_cat :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> CInt -> IO ())
 
 -- | p_catArray : Pointer to function : state result inputs numInputs dimension -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_catArray"
-  p_catArray :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr (Ptr CTHCudaShortTensor) -> CInt -> CInt -> IO ())
+  p_catArray :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr (Ptr C'THCudaShortTensor) -> CInt -> CInt -> IO ())
 
 -- | p_nonzero : Pointer to function : state tensor self -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_nonzero"
-  p_nonzero :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaLongTensor -> Ptr CTHCudaShortTensor -> IO ())
+  p_nonzero :: FunPtr (Ptr C'THCState -> Ptr C'THCudaLongTensor -> Ptr C'THCudaShortTensor -> IO ())
 
 -- | p_tril : Pointer to function : state self src k -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_tril"
-  p_tril :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CLLong -> IO ())
+  p_tril :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> CLLong -> IO ())
 
 -- | p_triu : Pointer to function : state self src k -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_triu"
-  p_triu :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CLLong -> IO ())
+  p_triu :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> CLLong -> IO ())
 
 -- | p_diag : Pointer to function : state self src k -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_diag"
-  p_diag :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> Ptr CTHCudaShortTensor -> CLLong -> IO ())
+  p_diag :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> Ptr C'THCudaShortTensor -> CLLong -> IO ())
 
 -- | p_eye : Pointer to function : state self n k -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_eye"
-  p_eye :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CLLong -> CLLong -> IO ())
+  p_eye :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> CLLong -> CLLong -> IO ())
 
 -- | p_trace : Pointer to function : state self -> accreal
 foreign import ccall "THCTensorMath.h &THCShortTensor_trace"
-  p_trace :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> IO CLong)
+  p_trace :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> IO CLong)
 
 -- | p_range : Pointer to function : state r_ xmin xmax step -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_range"
-  p_range :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CLong -> CLong -> CLong -> IO ())
+  p_range :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> CLong -> CLong -> CLong -> IO ())
 
 -- | p_arange : Pointer to function : state r_ xmin xmax step -> void
 foreign import ccall "THCTensorMath.h &THCShortTensor_arange"
-  p_arange :: FunPtr (Ptr CTHCudaState -> Ptr CTHCudaShortTensor -> CLong -> CLong -> CLong -> IO ())
+  p_arange :: FunPtr (Ptr C'THCState -> Ptr C'THCudaShortTensor -> CLong -> CLong -> CLong -> IO ())

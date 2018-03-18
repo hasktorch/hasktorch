@@ -3,7 +3,7 @@ module Torch.FFI.THC.CachingHostAllocator where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
+import Torch.Types.THC
 import Data.Word
 import Data.Int
 
