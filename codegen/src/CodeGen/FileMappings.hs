@@ -13,9 +13,12 @@ import CodeGen.Render (makeModule)
 
 type HeaderFile = FilePath
 
+($:) :: LibType -> CodeGenType -> (LibType -> CodeGenType -> x) -> x
+($:) a b fn = fn a b
+
 files :: LibType -> CodeGenType -> [(String, TemplateType -> [Function] -> HModule)]
 files TH = \case
-  GenericFiles -> map (\fn -> fn TH GenericFiles)
+  GenericFiles -> map (($:) TH GenericFiles)
     [ mkModule' "Blas"
     , mkModule' "Lapack"
     , mkModule' "Storage"
@@ -28,7 +31,7 @@ files TH = \case
     , mkModule  (ModuleSuffix "Tensor") "TensorRandom"
     , mkModule' "Vector"
     ]
-  ConcreteFiles -> map (\fn -> fn TH ConcreteFiles)
+  ConcreteFiles -> map (($:) TH ConcreteFiles)
     [ mkModule' "File"
     , mkModule' "DiskFile"
     , mkModule' "Atomic"
@@ -41,7 +44,7 @@ files TH = \case
     ]
 
 files THC = \case
-  GenericFiles -> map (\fn -> fn THC GenericFiles)
+  GenericFiles -> map (($:) THC GenericFiles)
     [ mkModule' "Storage"
     , mkModule  (ModuleSuffix "Storage") "StorageCopy"
     , mkModule' "Tensor"
@@ -63,7 +66,7 @@ files THC = \case
     , mkModule  (ModuleSuffix "Tensor") "TensorTopK"
     ]
   -- does not account for any .cuh files
-  ConcreteFiles -> map (\fn -> fn THC ConcreteFiles)
+  ConcreteFiles -> map (($:) THC ConcreteFiles)
     [ mkModule' "Allocator"
     , mkModule' "Blas"
     , mkModule' "CachingAllocator"
@@ -78,6 +81,7 @@ files THC = \case
     , mkModule' "Tensor"
     , mkModule' "TensorConv"
     , mkModule' "TensorCopy"
+    , mkModule' "TensorMath"
     , mkModule' "TensorMath"
     , mkModule' "TensorRandom"
     , mkModule' "ThreadLocal"

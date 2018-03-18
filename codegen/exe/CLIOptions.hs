@@ -25,17 +25,17 @@ data Options = Options
 cliOptions :: OptParse.Parser Options
 cliOptions = Options
   <$> option auto
-      ( long "type"
+     ( long "type"
     <> short 't'
     <> help "which type of codegen to run"
     <> metavar (enumVar (Proxy :: Proxy CodeGenType) generatable))
   <*> option auto
-      ( long "lib"
+     ( long "lib"
     <> short 'l'
     <> help "which library to run against"
     <> metavar (enumVar (Proxy :: Proxy LibType) supported))
-  <*> flag' False
-      ( long "verbose"
+  <*> switch
+     ( long "verbose"
     <> short 'v'
     <> help "whether or not to print debugging informations")
  where
