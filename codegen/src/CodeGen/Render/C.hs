@@ -14,7 +14,7 @@ render lt =
     -- special pointer cases
     Ptr x -> render lt x <> " *"
     TenType x -> renderTenType lt x
-    NNType x -> renderNNType lt x
+    -- NNType x -> renderNNType lt x
     CType x -> renderCType x
 
 

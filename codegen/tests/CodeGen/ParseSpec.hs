@@ -32,11 +32,14 @@ runParser' p = runParser p "test"
 
 testCGParser = runParser parser "test"
 
+
 succeeds :: (Show x, Eq x) => Parser x -> (String, x) -> IO ()
 succeeds parser (str, res) = runParser' parser str `shouldBe` Right res
 
+
 fails :: (Show x, Eq x) => Parser x -> String -> IO ()
 fails parser str = runParser' parser str `shouldSatisfy` isLeft
+
 
 fullConcreteParser :: Spec
 fullConcreteParser = do
@@ -76,6 +79,7 @@ fullGenericParser = do
   it "should return valid types for THNN" $
     pendingWith "we don't currently support THNN"
 
+
 fullFileTest :: String -> (Int, Int, Int) -> Expectation
 fullFileTest contents (all, found, uniq) = do
   let res = testCGParser contents
@@ -102,10 +106,12 @@ skipSpec = do
   foundNlines n = either (const False) ((== n) . length)
   runSomeSkipOn = runParser' (some skip)
 
+
 ptrSpec :: Spec
 ptrSpec = do
   it "will parse pointers correctly"         $ mapM_ (succeeds ptr . (,())) [" * ", " *", "* ", "*"]
   it "will parse invalid pointers correctly" $ mapM_ (fails ptr)    [" ", ";*", "_* ", ""]
+
 
 ptr2Spec :: Spec
 ptr2Spec = do
@@ -115,6 +121,7 @@ ptr2Spec = do
     [ " ** " , " **" , "** " , "**" , " * * " , " * *" , "* * " , "* *"
     , " * * " , " * *" , "* * " , "* *", "**      ", "     ** ", "  *   * "
     ]
+
 
 ctypesSpec :: Spec
 ctypesSpec = do
@@ -145,6 +152,7 @@ ctypesSpec = do
         , ("void   *   * ", Ptr (Ptr (CType CVoid)))
         ]
 
+
 functionArgSpec :: Spec
 functionArgSpec = do
   it "will find arguments with no name" $
@@ -166,6 +174,7 @@ functionArgsSpec = do
  where
   thctensortopkArgs = "(THCState* state,\n   THCTensor* topK,\n   THCudaLongTensor* "
     <> "indices,\n   THCTensor* input,\n  int64_t k, int dim, int dir, int sorted)"
+
 
 functionSpec :: Spec
 functionSpec = do

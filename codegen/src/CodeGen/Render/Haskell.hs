@@ -33,7 +33,7 @@ renderParsable lt tt =
     Ptr (Ptr x) -> "Ptr (Ptr " <> renderParsable lt tt x <> ")"
     Ptr x -> "Ptr " <> renderParsable lt tt x
     TenType x -> renderTenType lt tt x
-    NNType x -> renderNNType lt tt x
+    -- NNType x -> renderNNType lt tt x
     CType x -> renderCType x
 
 
@@ -62,11 +62,11 @@ renderCType = \case
   CInt8   -> "CSChar"
   rest    -> tshow rest
 
-
+{-
 -- FIXME: get back to this when THC is finished
 renderNNType :: LibType -> TemplateType -> NNType -> Text
 renderNNType _ _ = \case
   IndexTensor   -> undefined
   IntegerTensor -> undefined
-
+-}
 

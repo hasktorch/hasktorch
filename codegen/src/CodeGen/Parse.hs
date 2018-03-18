@@ -24,11 +24,13 @@ ptr = void (space >> char '*')
 ptr2 :: Parser ()
 ptr2 = ptr >> ptr
 
+{-
 nntypes :: Parser Parsable
 nntypes = forLibraries go
  where
   go :: LibType -> Parser Parsable
   go = genericParsers NNType . C.renderNNType
+-}
 
 tentypes :: Parser Parsable
 tentypes = forLibraries go
@@ -70,7 +72,7 @@ parsabletypes :: Parser Parsable
 parsabletypes
   = do
   typeModifier
-  try tentypes <|> try nntypes <|> ctypes
+  try tentypes {- <|> try nntypes -} <|> ctypes
  where
   typeModifier :: Parser ()
   typeModifier =
@@ -101,9 +103,6 @@ functionArg = do
   argName <- optional $ some (alphaNumChar <|> char '_') <* space
   try (void (char ',' >> space >> eol)) <|> void (char ',') <|> lookAhead (void $ char ')')
   pure $ Arg argType (maybe "" T.pack argName)
-
--- functionArg :: Parser Arg
--- functionArg = thFunctionArgNamed -- <|> thFunctionArgVoid
 
 functionArgs :: Parser [Arg]
 functionArgs = char '(' *> some functionArg <* char ')'

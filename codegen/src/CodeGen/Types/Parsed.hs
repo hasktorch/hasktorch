@@ -11,7 +11,7 @@ import qualified Data.HashSet as HS
 data Parsable
   = Ptr Parsable
   | TenType TenType
-  | NNType NNType
+  -- | NNType NNType
   | CType CType
   deriving (Eq, Show, Generic, Hashable)
 
