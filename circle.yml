@@ -55,8 +55,9 @@ test:
     - stack exec gradient-descent
     - stack exec static-tensor-usage
     ### code generation
-    - stack exec codegen-generic
-    - stack exec codegen-concrete
-    - stack exec codegen-managed
+    - stack exec cabal -- new-run ht-codegen --verbose --type concrete --lib TH
+    - stack exec cabal -- new-run ht-codegen --verbose --type concrete --lib THC
+    - stack exec cabal -- new-run ht-codegen --verbose --type generic  --lib TH
+    - stack exec cabal -- new-run ht-codegen --verbose --type generic  --lib THC
     ### end-to-end build
     - make init
