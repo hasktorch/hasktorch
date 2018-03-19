@@ -18,6 +18,10 @@ module Torch.Types.TH.Float
   , asStorage
   , asDyn
   , asStatic
+  , CTHFloatTensor
+  , CTHFloatStorage
+  , C'THFloatTensor
+  , C'THFloatStorage
   ) where
 
 import Foreign.C.Types

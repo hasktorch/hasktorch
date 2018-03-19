@@ -20,6 +20,8 @@ module Torch.Types.TH.Byte
   , asStatic
   , CTHByteTensor
   , CTHByteStorage
+  , C'THByteTensor
+  , C'THByteStorage
   ) where
 
 import Foreign.C.Types

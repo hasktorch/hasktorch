@@ -56,7 +56,8 @@ files THC = \case
     , mkModule  (ModuleSuffix "Tensor") "TensorMathBlas"
     , mkModule  (ModuleSuffix "Tensor") "TensorMathCompare"
     , mkModule  (ModuleSuffix "Tensor") "TensorMathCompareT"
-    , mkModule  (ModuleSuffix "Tensor") "TensorMathMagma"     --  NOTE: CUDA implementation of LAPACK functions
+    --  NOTE: CUDA implementation of LAPACK functions
+    , mkModule  (ModuleSuffix "Tensor") "TensorMathMagma"
     , mkModule  (ModuleSuffix "Tensor") "TensorMathPairwise"
     , mkModule  (ModuleSuffix "Tensor") "TensorMathPointwise"
     , mkModule  (ModuleSuffix "Tensor") "TensorMathReduce"

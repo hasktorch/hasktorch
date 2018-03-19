@@ -20,6 +20,8 @@ module Torch.Types.TH.Double
   , asStatic
   , CTHDoubleTensor
   , CTHDoubleStorage
+  , C'THDoubleTensor
+  , C'THDoubleStorage
   ) where
 
 import Foreign.C.Types

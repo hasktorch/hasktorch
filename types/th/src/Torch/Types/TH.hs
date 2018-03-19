@@ -1,4 +1,67 @@
-module Torch.Types.TH where
+module Torch.Types.TH
+  ( CTHDescBuff
+  , CTHAllocatorPtr
+  , CTHAllocator
+  , CTHGenerator
+  , CTHFile
+  , C'THFile
+  , CTHHalf
+  , C'THHalf
+  , THLongBlas
+  , THShortBlas
+  , THIntBlas
+  , THByteBlas
+  , THHalfBlas
+  , THFloatBlas
+  , THDoubleBlas
+  , THLongLapack
+  , THShortLapack
+  , THIntLapack
+  , THByteLapack
+  , THHalfLapack
+  , THFloatLapack
+  , THDoubleLapack
+  , CTHLongVector
+  , CTHShortVector
+  , CTHIntVector
+  , CTHByteVector
+  , CTHHalfVector
+  , CTHFloatVector
+  , CTHDoubleVector
+  , CTHDoubleNNState
+  , CTHFloatNNState
+  , CTHIndexTensor
+  , CTHIntegerTensor
+  , CTHByteTensor
+  , CTHByteStorage
+  , CTHByteStorageCopy
+  , CTHCharTensor
+  , CTHCharStorage
+  , CTHCharStorageCopy
+  , CTHDoubleTensor
+  , CTHDoubleStorage
+  , CTHDoubleStorageCopy
+  , CTHFloatTensor
+  , CTHFloatStorage
+  , CTHFloatStorageCopy
+  , C'THHalfTensor
+  , C'THHalfStorage
+  , C'THHalfStorageCopy
+  , CTHHalfTensor
+  , CTHHalfStorage
+  , CTHHalfStorageCopy
+  , CTHIntTensor
+  , CTHIntStorage
+  , CTHIntStorageCopy
+  , CTHLongTensor
+  , CTHLongStorage
+  , CTHLongStorageCopy
+  , CTHShortTensor
+  , CTHShortStorage
+  , CTHShortStorageCopy
+
+  , module Torch.Types.TH.Structs
+  ) where
 
 import Foreign
 import Foreign.C.String ()
@@ -13,7 +76,9 @@ type CTHAllocatorPtr = Ptr C'THAllocator
 type CTHAllocator = C'THAllocator
 type CTHGenerator = C'THGenerator
 type CTHFile = ()
-type CTHHalf = CUShort
+type C'THFile = ()
+type CTHHalf = Ptr ()
+type C'THHalf = Ptr ()
 
 type THLongBlas = CLong
 type THShortBlas = CShort
@@ -80,6 +145,9 @@ type CTHFloatStorageCopy = CTHFloatStorage
 
 {- Half -}
 
+type C'THHalfTensor = ()
+type C'THHalfStorage = ()
+type C'THHalfStorageCopy = ()
 type CTHHalfTensor = ()
 type CTHHalfStorage = ()
 type CTHHalfStorageCopy = ()
