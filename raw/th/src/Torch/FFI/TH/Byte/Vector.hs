@@ -70,13 +70,6 @@ foreign import ccall "THVector.h THByteVector_normal_fill"
 -- | alias of c_normal_fill_ with unused argument (for CTHState) to unify backpack signatures.
 c_normal_fill = const c_normal_fill_
 
--- | c_vectorDispatchInit :   -> void
-foreign import ccall "THVector.h THByteVector_vectorDispatchInit"
-  c_vectorDispatchInit_ :: IO ()
-
--- | alias of c_vectorDispatchInit_ with unused argument (for CTHState) to unify backpack signatures.
-c_vectorDispatchInit = const c_vectorDispatchInit_
-
 -- | p_fill : Pointer to function : x c n -> void
 foreign import ccall "THVector.h &THByteVector_fill"
   p_fill_ :: FunPtr (Ptr CUChar -> CUChar -> CPtrdiff -> IO ())
@@ -139,10 +132,3 @@ foreign import ccall "THVector.h &THByteVector_normal_fill"
 
 -- | alias of p_normal_fill_ with unused argument (for CTHState) to unify backpack signatures.
 p_normal_fill = const p_normal_fill_
-
--- | p_vectorDispatchInit : Pointer to function :  -> void
-foreign import ccall "THVector.h &THByteVector_vectorDispatchInit"
-  p_vectorDispatchInit_ :: FunPtr (IO ())
-
--- | alias of p_vectorDispatchInit_ with unused argument (for CTHState) to unify backpack signatures.
-p_vectorDispatchInit = const p_vectorDispatchInit_

@@ -7,6 +7,10 @@ import Torch.Types.THC
 import Data.Word
 import Data.Int
 
+-- | c_cpow :  state self src1 src2 -> void
+foreign import ccall "THCTensorMathPointwise.h THCIntTensor_cpow"
+  c_cpow :: Ptr C'THCState -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> IO ()
+
 -- | c_neg :  state self src -> void
 foreign import ccall "THCTensorMathPointwise.h THCIntTensor_neg"
   c_neg :: Ptr C'THCState -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> IO ()
@@ -38,10 +42,6 @@ foreign import ccall "THCTensorMathPointwise.h THCIntTensor_csub"
 -- | c_cmul :  state self src1 src2 -> void
 foreign import ccall "THCTensorMathPointwise.h THCIntTensor_cmul"
   c_cmul :: Ptr C'THCState -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> IO ()
-
--- | c_cpow :  state self src1 src2 -> void
-foreign import ccall "THCTensorMathPointwise.h THCIntTensor_cpow"
-  c_cpow :: Ptr C'THCState -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> IO ()
 
 -- | c_cdiv :  state self src1 src2 -> void
 foreign import ccall "THCTensorMathPointwise.h THCIntTensor_cdiv"
@@ -99,6 +99,10 @@ foreign import ccall "THCTensorMathPointwise.h THCIntTensor_addcmul"
 foreign import ccall "THCTensorMathPointwise.h THCIntTensor_addcdiv"
   c_addcdiv :: Ptr C'THCState -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> CInt -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> IO ()
 
+-- | p_cpow : Pointer to function : state self src1 src2 -> void
+foreign import ccall "THCTensorMathPointwise.h &THCIntTensor_cpow"
+  p_cpow :: FunPtr (Ptr C'THCState -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> IO ())
+
 -- | p_neg : Pointer to function : state self src -> void
 foreign import ccall "THCTensorMathPointwise.h &THCIntTensor_neg"
   p_neg :: FunPtr (Ptr C'THCState -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> IO ())
@@ -130,10 +134,6 @@ foreign import ccall "THCTensorMathPointwise.h &THCIntTensor_csub"
 -- | p_cmul : Pointer to function : state self src1 src2 -> void
 foreign import ccall "THCTensorMathPointwise.h &THCIntTensor_cmul"
   p_cmul :: FunPtr (Ptr C'THCState -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> IO ())
-
--- | p_cpow : Pointer to function : state self src1 src2 -> void
-foreign import ccall "THCTensorMathPointwise.h &THCIntTensor_cpow"
-  p_cpow :: FunPtr (Ptr C'THCState -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> Ptr C'THCudaIntTensor -> IO ())
 
 -- | p_cdiv : Pointer to function : state self src1 src2 -> void
 foreign import ccall "THCTensorMathPointwise.h &THCIntTensor_cdiv"

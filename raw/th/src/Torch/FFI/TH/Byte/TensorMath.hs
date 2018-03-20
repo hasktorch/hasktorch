@@ -406,6 +406,13 @@ foreign import ccall "THTensorMath.h THByteTensor_numel"
 -- | alias of c_numel_ with unused argument (for CTHState) to unify backpack signatures.
 c_numel = const c_numel_
 
+-- | c_preserveReduceDimSemantics :  r_ in_dims reduce_dimension keepdim -> void
+foreign import ccall "THTensorMath.h THByteTensor_preserveReduceDimSemantics"
+  c_preserveReduceDimSemantics_ :: Ptr C'THByteTensor -> CInt -> CInt -> CInt -> IO ()
+
+-- | alias of c_preserveReduceDimSemantics_ with unused argument (for CTHState) to unify backpack signatures.
+c_preserveReduceDimSemantics = const c_preserveReduceDimSemantics_
+
 -- | c_max :  values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THByteTensor_max"
   c_max_ :: Ptr C'THByteTensor -> Ptr C'THLongTensor -> Ptr C'THByteTensor -> CInt -> CInt -> IO ()
@@ -1217,6 +1224,13 @@ foreign import ccall "THTensorMath.h &THByteTensor_numel"
 
 -- | alias of p_numel_ with unused argument (for CTHState) to unify backpack signatures.
 p_numel = const p_numel_
+
+-- | p_preserveReduceDimSemantics : Pointer to function : r_ in_dims reduce_dimension keepdim -> void
+foreign import ccall "THTensorMath.h &THByteTensor_preserveReduceDimSemantics"
+  p_preserveReduceDimSemantics_ :: FunPtr (Ptr C'THByteTensor -> CInt -> CInt -> CInt -> IO ())
+
+-- | alias of p_preserveReduceDimSemantics_ with unused argument (for CTHState) to unify backpack signatures.
+p_preserveReduceDimSemantics = const p_preserveReduceDimSemantics_
 
 -- | p_max : Pointer to function : values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h &THByteTensor_max"

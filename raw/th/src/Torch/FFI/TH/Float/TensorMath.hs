@@ -420,6 +420,13 @@ foreign import ccall "THTensorMath.h THFloatTensor_numel"
 -- | alias of c_numel_ with unused argument (for CTHState) to unify backpack signatures.
 c_numel = const c_numel_
 
+-- | c_preserveReduceDimSemantics :  r_ in_dims reduce_dimension keepdim -> void
+foreign import ccall "THTensorMath.h THFloatTensor_preserveReduceDimSemantics"
+  c_preserveReduceDimSemantics_ :: Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> IO ()
+
+-- | alias of c_preserveReduceDimSemantics_ with unused argument (for CTHState) to unify backpack signatures.
+c_preserveReduceDimSemantics = const c_preserveReduceDimSemantics_
+
 -- | c_max :  values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THFloatTensor_max"
   c_max_ :: Ptr C'THFloatTensor -> Ptr C'THLongTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> IO ()
@@ -819,6 +826,20 @@ foreign import ccall "THTensorMath.h THFloatTensor_eqTensorT"
 -- | alias of c_eqTensorT_ with unused argument (for CTHState) to unify backpack signatures.
 c_eqTensorT = const c_eqTensorT_
 
+-- | c_pow :  r_ t value -> void
+foreign import ccall "THTensorMath.h THFloatTensor_pow"
+  c_pow_ :: Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ()
+
+-- | alias of c_pow_ with unused argument (for CTHState) to unify backpack signatures.
+c_pow = const c_pow_
+
+-- | c_tpow :  r_ value t -> void
+foreign import ccall "THTensorMath.h THFloatTensor_tpow"
+  c_tpow_ :: Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ()
+
+-- | alias of c_tpow_ with unused argument (for CTHState) to unify backpack signatures.
+c_tpow = const c_tpow_
+
 -- | c_abs :  r_ t -> void
 foreign import ccall "THTensorMath.h THFloatTensor_abs"
   c_abs_ :: Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ()
@@ -972,20 +993,6 @@ foreign import ccall "THTensorMath.h THFloatTensor_erfinv"
 
 -- | alias of c_erfinv_ with unused argument (for CTHState) to unify backpack signatures.
 c_erfinv = const c_erfinv_
-
--- | c_pow :  r_ t value -> void
-foreign import ccall "THTensorMath.h THFloatTensor_pow"
-  c_pow_ :: Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ()
-
--- | alias of c_pow_ with unused argument (for CTHState) to unify backpack signatures.
-c_pow = const c_pow_
-
--- | c_tpow :  r_ value t -> void
-foreign import ccall "THTensorMath.h THFloatTensor_tpow"
-  c_tpow_ :: Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ()
-
--- | alias of c_tpow_ with unused argument (for CTHState) to unify backpack signatures.
-c_tpow = const c_tpow_
 
 -- | c_sqrt :  r_ t -> void
 foreign import ccall "THTensorMath.h THFloatTensor_sqrt"
@@ -1575,6 +1582,13 @@ foreign import ccall "THTensorMath.h &THFloatTensor_numel"
 -- | alias of p_numel_ with unused argument (for CTHState) to unify backpack signatures.
 p_numel = const p_numel_
 
+-- | p_preserveReduceDimSemantics : Pointer to function : r_ in_dims reduce_dimension keepdim -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_preserveReduceDimSemantics"
+  p_preserveReduceDimSemantics_ :: FunPtr (Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> IO ())
+
+-- | alias of p_preserveReduceDimSemantics_ with unused argument (for CTHState) to unify backpack signatures.
+p_preserveReduceDimSemantics = const p_preserveReduceDimSemantics_
+
 -- | p_max : Pointer to function : values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_max"
   p_max_ :: FunPtr (Ptr C'THFloatTensor -> Ptr C'THLongTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> IO ())
@@ -1974,6 +1988,20 @@ foreign import ccall "THTensorMath.h &THFloatTensor_eqTensorT"
 -- | alias of p_eqTensorT_ with unused argument (for CTHState) to unify backpack signatures.
 p_eqTensorT = const p_eqTensorT_
 
+-- | p_pow : Pointer to function : r_ t value -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_pow"
+  p_pow_ :: FunPtr (Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ())
+
+-- | alias of p_pow_ with unused argument (for CTHState) to unify backpack signatures.
+p_pow = const p_pow_
+
+-- | p_tpow : Pointer to function : r_ value t -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_tpow"
+  p_tpow_ :: FunPtr (Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ())
+
+-- | alias of p_tpow_ with unused argument (for CTHState) to unify backpack signatures.
+p_tpow = const p_tpow_
+
 -- | p_abs : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_abs"
   p_abs_ :: FunPtr (Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ())
@@ -2127,20 +2155,6 @@ foreign import ccall "THTensorMath.h &THFloatTensor_erfinv"
 
 -- | alias of p_erfinv_ with unused argument (for CTHState) to unify backpack signatures.
 p_erfinv = const p_erfinv_
-
--- | p_pow : Pointer to function : r_ t value -> void
-foreign import ccall "THTensorMath.h &THFloatTensor_pow"
-  p_pow_ :: FunPtr (Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ())
-
--- | alias of p_pow_ with unused argument (for CTHState) to unify backpack signatures.
-p_pow = const p_pow_
-
--- | p_tpow : Pointer to function : r_ value t -> void
-foreign import ccall "THTensorMath.h &THFloatTensor_tpow"
-  p_tpow_ :: FunPtr (Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ())
-
--- | alias of p_tpow_ with unused argument (for CTHState) to unify backpack signatures.
-p_tpow = const p_tpow_
 
 -- | p_sqrt : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_sqrt"
