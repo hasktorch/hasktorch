@@ -20,7 +20,7 @@ library
   build-depends:
       base >=4.7 && <5
     , inline-c >=0.5
-    , cuda >= 0.9
+    -- , cuda >= 0.9
     , hasktorch-types-th
   exposed-modules:
       Torch.Types.THC

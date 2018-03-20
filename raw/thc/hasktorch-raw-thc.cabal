@@ -22,7 +22,7 @@ library
     , hasktorch-types-thc
     , inline-c >= 0.5
     , text >= 1.2.2.2
-    , cuda >= 0.9
+    -- , cuda >= 0.9
   build-tools: c2hs
   default-language: Haskell2010
   exposed-modules:
