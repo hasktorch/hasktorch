@@ -10,6 +10,8 @@ module CodeGen.Render
   , renderFunctions
   ) where
 
+import Control.Monad (join)
+import Control.Arrow ((&&&))
 import CodeGen.Prelude
 import Data.List
 import System.Directory (createDirectoryIfMissing)
@@ -18,7 +20,7 @@ import qualified Data.HashSet as HS
 import qualified Data.Text as T
 
 import CodeGen.Types
-import CodeGen.Render.Function (renderSig, SigType(..))
+import CodeGen.Render.Function (renderSig, SigType(..), mkHsname)
 import CodeGen.Parse.Cases (checkFunction, type2hsreal)
 import qualified CodeGen.Parse as CG (parser)
 
@@ -55,33 +57,40 @@ renderImports :: [Text] -> Text
 renderImports imports = T.intercalate "\n" (("import " <>) <$> imports) <> "\n\n"
 
 
-renderFunctions :: HModule -> [(Int, Function)] -> Text
+renderFunctions :: HModule -> [(Maybe (LibType, Text), Function)] -> Text
 renderFunctions m validFunctions =
   T.intercalate "\n\n"
-    $  (renderSig'    IsFun <$> triple)
-    <> (renderSig' IsFunPtr <$> triple)
+    $  (renderSig'    IsFun <$> remainder)
+    <> (renderSig' IsFunPtr <$> remainder)
  where
   renderSig' t = renderSig t (lib m) (isTemplate m) (header m) (typeTemplate m) (suffix m) (fileSuffix m)
 
-  triple :: [(Text, Parsable, [Arg])]
-  triple = go <$> validFunctions
+  remainder :: [(Maybe (LibType, Text), Text, Parsable, [Arg])]
+  remainder = go <$> validFunctions
     where
-      go :: (Int, Function) -> (Text, Parsable, [Arg])
-      go = withFunctionCounts
-        (\f    -> (funName f, funReturn f, funArgs f))
-        (\mp f -> (fromMaybe "" mp <> funName f, funReturn f, funArgs f))
+      go :: (Maybe (LibType, Text), Function) -> (Maybe (LibType, Text), Text, Parsable, [Arg])
+      go (mp, f) = (mp, funName f, funReturn f, funArgs f)
 
 
-validFunctions :: [Function] -> TemplateType -> [(Int, Function)]
-validFunctions fs tt
-  -- return the number of duplicates function names alongside the function
-  = concatMap (\hs -> let es = HS.toList hs; l = length es in (l,) <$> es) $ HM.elems
-  -- fold functions into a hashmap grouped by function name
-  $ foldr (\f -> HM.insertWith HS.union (funName f) (HS.singleton f)) mempty
+validFunctions :: LibType -> [Function] -> TemplateType -> [(Maybe (LibType, Text), Function)]
+validFunctions lt fs tt
+  -- ensure that everything is unique (while maintaining the rendered order)
+  = nub
+
+  -- use a prefix if the function prefix/namespace doesn't line up with the current module
+  $ map ((join . fmap checkLibs . funPrefix) &&& id)
+
   -- filter any functions which don't belong
   $ filter (checkFunction tt . FunctionName . funName) fs
 
-withFunctionCounts :: (Function -> x) -> (Maybe Text -> Function -> x) -> (Int, Function) -> x
+ where
+  checkLibs :: (LibType, Text) -> Maybe (LibType, Text)
+  checkLibs pref = do
+    guard (lt /= fst pref)
+    pure pref
+
+
+withFunctionCounts :: (Function -> x) -> (Maybe (LibType, Text) -> Function -> x) -> (Int, Function) -> x
 withFunctionCounts fnEQ fnGT (c, f) = case compare c 1 of
   LT -> impossible "counts must be > 0 since we are counting empirical occurences"
   EQ -> fnEQ f
@@ -95,18 +104,16 @@ renderAll m
   <> renderImports (imports m)
   <> renderFunctions m validFunctions'
   where
-    validFunctions' :: [(Int, Function)]
-    validFunctions' = validFunctions (bindings m) (typeTemplate m)
+    validFunctions' :: [(Maybe (LibType, Text), Function)]
+    validFunctions' = validFunctions (lib m) (bindings m) (typeTemplate m)
 
-    fun2name :: Text -> (Int, Function) -> Text
-    fun2name p = withFunctionCounts
-      (\f    -> p <> "_" <> funName f)
-      (\mp f -> p <> "_" <> fromMaybe "" mp <> funName f)
+    fun2name :: SigType -> (Maybe (LibType, Text), Function) -> Text
+    fun2name st (mp, fn) = mkHsname (lib m) st mp (funName fn)
 
     exportFunctions :: [Text]
     exportFunctions
-      =  fmap (fun2name "c") validFunctions'
-      <> fmap (fun2name "p") validFunctions'
+      =  fmap (fun2name IsFun)    validFunctions'
+      <> fmap (fun2name IsFunPtr) validFunctions'
 
 writeHaskellModule
   :: [Function]
@@ -132,7 +139,7 @@ writeHaskellModule parsedBindings makeConfig templateType
   outDir = textPath (modOutDir modSpec) <> "/" <> type2hsreal templateType <> "/"
 
   numFunctions :: Int
-  numFunctions = sum $ map fst $ validFunctions (bindings modSpec) (typeTemplate modSpec)
+  numFunctions = length $ validFunctions (lib modSpec) (bindings modSpec) (typeTemplate modSpec)
 
 -- ----------------------------------------
 -- Execution

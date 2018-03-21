@@ -1,14 +1,17 @@
 module CodeGen.Render.Function
   ( renderSig
   , haskellSig
+  , mkHsname
   , SigType(..)
   ) where
 
 import CodeGen.Prelude
 import CodeGen.Types
 import CodeGen.Parse.Cases (type2hsreal)
+import Control.Arrow ((&&&))
 import qualified CodeGen.Render.C as C (render)
 import qualified CodeGen.Render.Haskell as Hs (render)
+import qualified Data.Char as Ch (toUpper)
 import qualified Data.Text as T
 
 data SigType
@@ -58,19 +61,23 @@ haskellSig lt hsname st tt args retType = T.intercalate ""
     Just ret -> if null typeSignature then ret else (" -> " <> ret)
 
 
-mkCname :: SigType -> LibType -> ModuleSuffix -> TemplateType -> CodeGenType -> Text -> Text
-mkCname st lt ms tt cgt funname
+mkCname
+  :: SigType -> LibType -> ModuleSuffix -> TemplateType -> CodeGenType -> Maybe (LibType, Text) -> Text -> Text
+mkCname st lt ms tt cgt mpref funname
   = (if isPtr st then " &" else " ")
   <> identifier
   <> funname
  where
   identifier :: Text
   identifier = case cgt of
-    GenericFiles -> prefix lt isTHCTensor <> type2hsreal tt <> textSuffix ms <> "_"
     ConcreteFiles -> ""
+    GenericFiles ->
+      case mpref of
+        Nothing -> prefix lt (isTHCTensor lt) <> type2hsreal tt <> textSuffix ms <> "_"
+        Just (lt', t) -> prefix lt' (isTHCTensor lt') <> type2hsreal tt <> t <> "_"
 
-  isTHCTensor :: Bool
-  isTHCTensor
+  isTHCTensor :: LibType -> Bool
+  isTHCTensor lt
     = lt == THC &&
       ( textSuffix ms == "Tensor"
       || textSuffix ms == "Storage"
@@ -78,9 +85,14 @@ mkCname st lt ms tt cgt funname
       )
 
 -- | render a haskell function name.
-mkHsname :: LibType -> CodeGenType -> SigType -> Text -> Text
-mkHsname lt cgt st funname =
-  ffiPrefix st <> funname
+mkHsname :: LibType -> SigType -> Maybe (LibType, Text) -> Text -> Text
+mkHsname lt st mpref funname =
+  case mpref of
+    Nothing       -> ffiPrefix st <> funname
+    Just (lt', _) -> ffiPrefix st <> (if lt' == lt then funname else newName lt')
+ where
+   newName :: LibType -> Text
+   newName lt' = (T.toLower (tshow lt') <>) $ uncurry T.cons $ ((Ch.toUpper . T.head) &&& T.tail) funname
 
 
 -- | Render a single function signature.
@@ -92,9 +104,9 @@ renderSig
   -> TemplateType
   -> ModuleSuffix
   -> FileSuffix
-  -> (Text, Parsable, [Arg])
+  -> (Maybe (LibType, Text), Text, Parsable, [Arg])
   -> Text
-renderSig t lt cgt headerFile tt ms fs (name, retType, args) =
+renderSig t lt cgt headerFile tt ms fs (mpref, name, retType, args) =
   T.intercalate "\n"
     [ comment lt t hsname args retType
     , foreignCall cname headerFile
@@ -102,8 +114,8 @@ renderSig t lt cgt headerFile tt ms fs (name, retType, args) =
     ]
  where
   cname, hsname :: Text
-  cname = mkCname t lt ms tt cgt name
-  hsname = mkHsname lt cgt t name
+  cname = mkCname t lt ms tt cgt mpref name
+  hsname = mkHsname lt t mpref name
 
   implementation :: Text
   implementation =

@@ -119,7 +119,7 @@ data Arg = Arg
 
 
 data Function = Function
-  { funPrefix :: Maybe Text
+  { funPrefix :: Maybe (LibType, Text)
   , funName   :: Text
   , funArgs   :: [Arg]
   , funReturn :: Parsable

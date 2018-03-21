@@ -197,13 +197,34 @@ functionSpec = do
   it "will find functions with arguments that span several lines (THCTensorTopK.h)" $
     runParser' function thcGenericTensorTopKFunction `shouldBe` Right (Just thcGenericTensorTopKFunction')
 
+  describe "finding TH primatives in the generic/THCTensorCopy.h header" $ do
+    it "finds thcCopyAsyncCPU" $
+      runParser' function thcCopyAsyncCPU `shouldBe` Right (Just thcCopyAsyncCPURendered)
+
+    it "finds thcCopyAsyncCuda" $
+      runParser' function thcCopyAsyncCuda `shouldBe` Right (Just thcCopyAsyncCudaRendered)
+
+thcCopyAsyncCPU  = "THC_API void THCTensor_(copyAsyncCPU)(THCState *state, THCTensor *self, THTensor *src);"
+thcCopyAsyncCPURendered = Function (Just (THC, "Tensor")) "copyAsyncCPU"
+  [ Arg (Ptr (TenType (Pair (State, THC)))) "state"
+  , Arg (Ptr (TenType (Pair (Tensor, THC)))) "self"
+  , Arg (Ptr (TenType (Pair (Tensor, TH)))) "src"
+  ] (CType CVoid)
+
+thcCopyAsyncCuda = "THC_API void THTensor_(copyAsyncCuda)(THCState *state, THTensor *self, THCTensor *src);"
+thcCopyAsyncCudaRendered = Function (Just (TH, "Tensor")) "copyAsyncCuda"
+  [ Arg (Ptr (TenType (Pair (State, THC)))) "state"
+  , Arg (Ptr (TenType (Pair (Tensor, TH)))) "self"
+  , Arg (Ptr (TenType (Pair (Tensor, THC)))) "src"
+  ] (CType CVoid)
+
 
 -- ========================================================================= --
 
 
 exampleGeneric :: String
 exampleGeneric = "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
-exampleGeneric' = Function (Just "THTensor_") "setFlag" [ Arg (Ptr (TenType (Pair (Tensor, TH)))) "self", Arg (CType CChar) "flag"] (CType CVoid)
+exampleGeneric' = Function (Just (TH, "Tensor")) "setFlag" [ Arg (Ptr (TenType (Pair (Tensor, TH)))) "self", Arg (CType CChar) "flag"] (CType CVoid)
 
 withStartJunk :: String -> String
 withStartJunk x = "skip this garbage line line\n" <> x
@@ -294,7 +315,7 @@ storageElementSize :: String
 storageElementSize = "TH_API size_t THStorage_(elementSize)(void);"
 
 storageElementSize' :: Function
-storageElementSize' = Function (Just "THStorage_") "elementSize" [ Arg (CType CVoid) "" ] (CType CSize)
+storageElementSize' = Function (Just (TH, "Storage")) "elementSize" [ Arg (CType CVoid) "" ] (CType CSize)
 
 thGenericStorageContents :: String
 thGenericStorageContents = intercalate ""
@@ -346,7 +367,7 @@ thcGenericTensorTopKFunction = intercalate ""
   ]
 
 thcGenericTensorTopKFunction' :: Function
-thcGenericTensorTopKFunction' = Function (Just "THCTensor_") "topk"
+thcGenericTensorTopKFunction' = Function (Just (THC, "Tensor")) "topk"
   [ Arg (Ptr (TenType (Pair (State, THC)))) "state"
   , Arg (Ptr (TenType (Pair (Tensor, THC)))) "topK"
   , Arg (Ptr (TenType (Pair (LongTensor, THC)))) "indices"

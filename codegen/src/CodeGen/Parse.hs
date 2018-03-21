@@ -11,6 +11,7 @@ module CodeGen.Parse where
 
 import CodeGen.Prelude
 import CodeGen.Types
+import Control.Arrow (second)
 
 import qualified Data.Text as T
 import qualified CodeGen.Render.C as C
@@ -116,14 +117,15 @@ functionArg = do
 functionArgs :: Parser [Arg]
 functionArgs = char '(' *> some functionArg <* char ')'
 
-genericPrefixes :: Parser Text
-genericPrefixes = T.pack <$> asum (foldMap go supportedLibraries)
+genericPrefixes :: Parser (LibType, Text)
+genericPrefixes = second T.pack <$> asum (foldMap go supportedLibraries)
  where
-  prefix :: LibType -> String -> Parser String
-  prefix lt x = try ((string (show lt <> x <> "_")) <* char '(')
+  prefix :: LibType -> String -> Parser (LibType, String)
+  prefix lt x = try (((,) <$> typeParser tshow lt <*> string x) <* string "_(")
 
-  go :: LibType -> [Parser String]
+  go :: LibType -> [Parser (LibType, String)]
   go lt = map (prefix lt) ["Tensor", "Blas", "Lapack", "Storage", "Vector", ""]
+
 
 function :: Parser (Maybe Function)
 function = do
@@ -134,11 +136,11 @@ function = do
   optional (try comment)
   pure . pure $ Function funPrefix' funName' funArgs' funReturn'
  where
-  genericName :: Parser (Maybe Text, Text)
+  genericName :: Parser (Maybe (LibType, Text), Text)
   genericName = do
-    mpref <- genericPrefixes
+    pref <- genericPrefixes
     name <- concreteName <* string ")" <* space
-    pure (Just mpref, name)
+    pure (Just pref, name)
 
   concreteName :: Parser Text
   concreteName = T.pack <$> (some (alphaNumChar <|> char '_') <|> string "") <* space
