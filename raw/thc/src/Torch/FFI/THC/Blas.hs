@@ -3,9 +3,10 @@ module Torch.FFI.THC.Blas where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.THC
 import Data.Word
 import Data.Int
+import Torch.Types.TH
+import Torch.Types.THC
 
 -- | c_THCudaBlas_Sdot :  state n x incx y incy -> float
 foreign import ccall "THCBlas.h THCudaBlas_Sdot"

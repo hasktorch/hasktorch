@@ -98,7 +98,11 @@ test-suite spec
     , pretty-show >=1.6.13
     , text >=1.2.2.2
   other-modules:
+      CodeGen.Instances
       CodeGen.ParseSpec
+      CodeGen.RenderSpec
+      CodeGen.Render.CSpec
       CodeGen.Render.FunctionSpec
+
       Paths_hasktorch_codegen
   default-language: Haskell2010

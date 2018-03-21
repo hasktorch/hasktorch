@@ -3,9 +3,10 @@ module Torch.FFI.THC.Stream where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.THC
 import Data.Word
 import Data.Int
+import Torch.Types.TH
+import Torch.Types.THC
 
 -- | c_THCStream_new :  flags -> THCStream *
 foreign import ccall "THCStream.h THCStream_new"

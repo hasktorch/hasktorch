@@ -3,9 +3,10 @@ module Torch.FFI.THC.General where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.THC
 import Data.Word
 import Data.Int
+import Torch.Types.TH
+import Torch.Types.THC
 
 -- | c_THCState_alloc :   -> THCState *
 foreign import ccall "THCGeneral.h THCState_alloc"
@@ -39,13 +40,13 @@ foreign import ccall "THCGeneral.h THCState_getKernelPeerToPeerAccessEnabled"
 foreign import ccall "THCGeneral.h THCState_setKernelPeerToPeerAccessEnabled"
   c_THCState_setKernelPeerToPeerAccessEnabled :: Ptr C'THCState -> CInt -> IO ()
 
--- | c_THCState_getCudaHostAllocator :  state -> THCAllocator *
+-- | c_THCState_getCudaHostAllocator :  state -> THAllocator *
 foreign import ccall "THCGeneral.h THCState_getCudaHostAllocator"
-  c_THCState_getCudaHostAllocator :: Ptr C'THCState -> IO (Ptr C'THCAllocator)
+  c_THCState_getCudaHostAllocator :: Ptr C'THCState -> IO (Ptr C'THAllocator)
 
--- | c_THCState_getCudaUVAAllocator :  state -> THCAllocator *
+-- | c_THCState_getCudaUVAAllocator :  state -> THAllocator *
 foreign import ccall "THCGeneral.h THCState_getCudaUVAAllocator"
-  c_THCState_getCudaUVAAllocator :: Ptr C'THCState -> IO (Ptr C'THCAllocator)
+  c_THCState_getCudaUVAAllocator :: Ptr C'THCState -> IO (Ptr C'THAllocator)
 
 -- | c_THCState_isCachingAllocatorEnabled :  state -> int
 foreign import ccall "THCGeneral.h THCState_isCachingAllocatorEnabled"
@@ -175,13 +176,13 @@ foreign import ccall "THCGeneral.h &THCState_getKernelPeerToPeerAccessEnabled"
 foreign import ccall "THCGeneral.h &THCState_setKernelPeerToPeerAccessEnabled"
   p_THCState_setKernelPeerToPeerAccessEnabled :: FunPtr (Ptr C'THCState -> CInt -> IO ())
 
--- | p_THCState_getCudaHostAllocator : Pointer to function : state -> THCAllocator *
+-- | p_THCState_getCudaHostAllocator : Pointer to function : state -> THAllocator *
 foreign import ccall "THCGeneral.h &THCState_getCudaHostAllocator"
-  p_THCState_getCudaHostAllocator :: FunPtr (Ptr C'THCState -> IO (Ptr C'THCAllocator))
+  p_THCState_getCudaHostAllocator :: FunPtr (Ptr C'THCState -> IO (Ptr C'THAllocator))
 
--- | p_THCState_getCudaUVAAllocator : Pointer to function : state -> THCAllocator *
+-- | p_THCState_getCudaUVAAllocator : Pointer to function : state -> THAllocator *
 foreign import ccall "THCGeneral.h &THCState_getCudaUVAAllocator"
-  p_THCState_getCudaUVAAllocator :: FunPtr (Ptr C'THCState -> IO (Ptr C'THCAllocator))
+  p_THCState_getCudaUVAAllocator :: FunPtr (Ptr C'THCState -> IO (Ptr C'THAllocator))
 
 -- | p_THCState_isCachingAllocatorEnabled : Pointer to function : state -> int
 foreign import ccall "THCGeneral.h &THCState_isCachingAllocatorEnabled"

@@ -3,9 +3,10 @@ module Torch.FFI.THC.TensorMath where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.THC
 import Data.Word
 import Data.Int
+import Torch.Types.TH
+import Torch.Types.THC
 
 -- | c_THCudaByteTensor_logicalall :  state self -> int
 foreign import ccall "THCTensorMath.h THCudaByteTensor_logicalall"

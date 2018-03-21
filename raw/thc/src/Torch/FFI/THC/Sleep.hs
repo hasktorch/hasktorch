@@ -3,9 +3,10 @@ module Torch.FFI.THC.Sleep where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.THC
 import Data.Word
 import Data.Int
+import Torch.Types.TH
+import Torch.Types.THC
 
 -- | c_THC_sleep :  state cycles -> void
 foreign import ccall "THCSleep.h THC_sleep"

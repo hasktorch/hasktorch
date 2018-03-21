@@ -3,9 +3,10 @@ module Torch.FFI.THC.Half where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.THC
 import Data.Word
 import Data.Int
+import Torch.Types.TH
+import Torch.Types.THC
 
 -- | c_THC_nativeHalfInstructions :  state -> int
 foreign import ccall "THCHalf.h THC_nativeHalfInstructions"
