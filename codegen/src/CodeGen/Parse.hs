@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module CodeGen.Parse where
   -- ( Parser
@@ -36,31 +37,39 @@ tentypes :: Parser Parsable
 tentypes = forLibraries go
  where
   go :: LibType -> Parser Parsable
-  go = genericParsers TenType . C.renderTenType
+  go lt = genericParsers allTenTypes TenType C.renderTenType
+
 
 ctypes :: Parser Parsable
-ctypes = genericParsers CType C.renderCType
+ctypes = genericParsers [minBound..maxBound :: CType] CType C.renderCType
 
-typeParser :: (x -> Text) -> x -> Parser x
-typeParser render t = string (T.unpack $ render t) >> pure t
 
 -- | build a parser that will try to find the double-pointer- or pointer- variant first.
-genericParsers :: forall x . (Enum x, Bounded x) => (x -> Parsable) -> (x -> Text) -> Parser Parsable
-genericParsers cons render = asum $ map goAll [minBound..maxBound :: x]
+genericParsers
+  :: forall x . [x]
+  -> (x -> Parsable)
+  -> (x -> Text)
+  -> Parser Parsable
+genericParsers xs cons render = asum $ map goAll xs
  where
   goAll :: x -> Parser Parsable
   goAll x
     -- search for any double pointer first
-    =   try ((Ptr . Ptr) <$> (go1 x <* ptr2))
+    =   try (Ptr . Ptr <$> (go1 x <* ptr2))
 
     -- then any pointer
-    <|> try ( Ptr        <$> (go1 x <* ptr))
+    <|> try (Ptr       <$> (go1 x <* ptr))
 
     -- finally, all of our concrete types and wrap them in the Parsable format
     <|> try (go1 x)
 
   go1 :: x -> Parser Parsable
   go1 = fmap cons . typeParser render
+
+
+typeParser :: (x -> Text) -> x -> Parser x
+typeParser render t = string (T.unpack $ render t) >> pure t
+
 
 -- | parse a library-dependent parser across all of our supported libraries
 forLibraries :: (LibType -> Parser x) -> Parser x
@@ -107,11 +116,11 @@ functionArg = do
 functionArgs :: Parser [Arg]
 functionArgs = char '(' *> some functionArg <* char ')'
 
-genericPrefixes :: Parser ()
-genericPrefixes = void $ asum (foldMap go supportedLibraries)
+genericPrefixes :: Parser Text
+genericPrefixes = T.pack <$> asum (foldMap go supportedLibraries)
  where
   prefix :: LibType -> String -> Parser String
-  prefix lt x = string (show lt <> x <> "_(")
+  prefix lt x = try ((string (show lt <> x <> "_")) <* char '(')
 
   go :: LibType -> [Parser String]
   go lt = map (prefix lt) ["Tensor", "Blas", "Lapack", "Storage", "Vector", ""]
@@ -120,16 +129,19 @@ function :: Parser (Maybe Function)
 function = do
   optional (api >> space)
   funReturn' <- parsabletypes <* space
-  funName' <- choice [ try genericName, concreteName ]
+  (funPrefix', funName') <- choice [ try genericName, (Nothing,) <$> concreteName ]
   funArgs' <- functionArgs <* space <* semicolon
   optional (try comment)
-  pure . pure $ Function (T.pack funName') funArgs' funReturn'
+  pure . pure $ Function funPrefix' funName' funArgs' funReturn'
  where
-  genericName :: Parser String
-  genericName = genericPrefixes >> concreteName <* string ")" <* space
+  genericName :: Parser (Maybe Text, Text)
+  genericName = do
+    mpref <- genericPrefixes
+    name <- concreteName <* string ")" <* space
+    pure (Just mpref, name)
 
-  concreteName :: Parser String
-  concreteName = (some (alphaNumChar <|> char '_') <|> string "") <* space
+  concreteName :: Parser Text
+  concreteName = T.pack <$> (some (alphaNumChar <|> char '_') <|> string "") <* space
 
 inlineComment :: Parser ()
 inlineComment = do

@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 module CodeGen.Types
   ( module CodeGen.Types.HsOutput
   , module CodeGen.Types.Parsed

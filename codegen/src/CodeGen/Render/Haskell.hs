@@ -8,8 +8,8 @@ import CodeGen.Parse.Cases
 import qualified Data.Text as T
 
 
-render :: LibType -> TypeCategory -> TemplateType -> Parsable -> Maybe Text
-render lt tc tt = typeCatHelper tc . renderParsable lt tt
+render :: TypeCategory -> TemplateType -> Parsable -> Maybe Text
+render tc tt = typeCatHelper tc . renderParsable tt
 
 
 typeCatHelper :: TypeCategory -> Text -> Maybe Text
@@ -22,34 +22,29 @@ typeCatHelper tc s = case tc of
      _     -> Just $ "IO " <> s <> ""
 
 
-renderParsable :: LibType -> TemplateType -> Parsable -> Text
-renderParsable lt tt =
+renderParsable :: TemplateType -> Parsable -> Text
+renderParsable tt =
   \case
     -- special cases
-    TenType DescBuff -> "Ptr " <> renderTenType lt tt DescBuff
+    TenType desc@(Pair (DescBuff, _)) -> "Ptr " <> renderTenType tt desc
 
-    Ptr (Ptr x) -> "Ptr (Ptr " <> renderParsable lt tt x <> ")"
-    Ptr x -> "Ptr " <> renderParsable lt tt x
+    Ptr (Ptr x) -> "Ptr (Ptr " <> renderParsable tt x <> ")"
+    Ptr x -> "Ptr " <> renderParsable tt x
     -- Raw DescBuffs need to be wrapped in a pointer for marshalling
-    TenType x -> renderTenType lt tt x
+    TenType x -> renderTenType tt x
     -- NNType x -> renderNNType lt tt x
     CType x -> renderCType x
 
 
-renderTenType :: LibType -> TemplateType -> TenType -> Text
-renderTenType lt tt = \case
-  Tensor  -> c <> libPrefix True <> type2hsreal tt <> "Tensor"
-  Storage -> c <> tshow lt       <> type2hsreal tt <> "Storage"
-  Real    -> type2real lt tt
-  AccReal -> type2accreal lt tt
-  rest    -> c <> libPrefix (isConcreteCudaPrefixed rest) <> tshow rest
+renderTenType :: TemplateType -> TenType -> Text
+renderTenType tt = \case
+  Pair (Tensor,  lt) -> c <> prefix lt True <> type2hsreal tt <> "Tensor"
+  Pair (Storage, lt) -> c <> tshow lt       <> type2hsreal tt <> "Storage"
+  Pair (Real,    lt) -> type2real lt tt
+  Pair (AccReal, lt) -> type2accreal lt tt
+  r@(Pair (rtt, lt)) -> c <> prefix lt (isConcreteCudaPrefixed r) <> tshow rtt
  where
   c = "C'"
-  libPrefix :: Bool -> Text
-  libPrefix long =
-    case lt of
-      THC -> if long then "THCuda" else "THC"
-      _   -> tshow lt
 
 
 renderCType :: CType -> Text

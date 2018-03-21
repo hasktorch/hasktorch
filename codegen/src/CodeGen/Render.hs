@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module CodeGen.Render
   ( makeModule
@@ -5,11 +6,16 @@ module CodeGen.Render
 
   , parseFile
   , cleanList
+
+  , renderFunctions
   ) where
 
 import CodeGen.Prelude
-import qualified Data.Text as T
+import Data.List
 import System.Directory (createDirectoryIfMissing)
+import qualified Data.HashMap.Strict as HM
+import qualified Data.HashSet as HS
+import qualified Data.Text as T
 
 import CodeGen.Types
 import CodeGen.Render.Function (renderSig, SigType(..))
@@ -33,7 +39,7 @@ renderExtensions extensions = T.intercalate "\n" (extensions' <> [""])
 renderModule :: HModule -> Text
 renderModule m
   = "module "
-  <> outModule (prefix m)
+  <> outModule (lib m)
   <> generatedTypeModule
   <> "." <> textFileSuffix (fileSuffix m)
  where
@@ -49,26 +55,37 @@ renderImports :: [Text] -> Text
 renderImports imports = T.intercalate "\n" (("import " <>) <$> imports) <> "\n\n"
 
 
-renderFunctions :: HModule -> [Function] -> Text
+renderFunctions :: HModule -> [(Int, Function)] -> Text
 renderFunctions m validFunctions =
   T.intercalate "\n\n"
     $  (renderSig'    IsFun <$> triple)
     <> (renderSig' IsFunPtr <$> triple)
  where
-  renderSig' t = renderSig t (prefix m) (isTemplate m) (header m) (typeTemplate m) (suffix m) (fileSuffix m)
+  renderSig' t = renderSig t (lib m) (isTemplate m) (header m) (typeTemplate m) (suffix m) (fileSuffix m)
 
   triple :: [(Text, Parsable, [Arg])]
   triple = go <$> validFunctions
     where
-      go :: Function -> (Text, Parsable, [Arg])
-      go f = (funName f, funReturn f, funArgs f)
+      go :: (Int, Function) -> (Text, Parsable, [Arg])
+      go = withFunctionCounts
+        (\f    -> (funName f, funReturn f, funArgs f))
+        (\mp f -> (fromMaybe "" mp <> funName f, funReturn f, funArgs f))
 
 
--- | Check for conditional templating of functions and filter function list
-checkList :: [Function] -> TemplateType -> [Function]
-checkList fList templateType =
-  filter (checkFunction templateType . FunctionName . funName) fList
+validFunctions :: [Function] -> TemplateType -> [(Int, Function)]
+validFunctions fs tt
+  -- return the number of duplicates function names alongside the function
+  = concatMap (\hs -> let es = HS.toList hs; l = length es in (l,) <$> es) $ HM.elems
+  -- fold functions into a hashmap grouped by function name
+  $ foldr (\f -> HM.insertWith HS.union (funName f) (HS.singleton f)) mempty
+  -- filter any functions which don't belong
+  $ filter (checkFunction tt . FunctionName . funName) fs
 
+withFunctionCounts :: (Function -> x) -> (Maybe Text -> Function -> x) -> (Int, Function) -> x
+withFunctionCounts fnEQ fnGT (c, f) = case compare c 1 of
+  LT -> impossible "counts must be > 0 since we are counting empirical occurences"
+  EQ -> fnEQ f
+  GT -> fnGT (funPrefix f) f
 
 renderAll :: HModule -> Text
 renderAll m
@@ -76,18 +93,20 @@ renderAll m
   <> renderModule m
   <> renderExports exportFunctions
   <> renderImports (imports m)
-  <> renderFunctions m validFunctions
+  <> renderFunctions m validFunctions'
   where
-    validFunctions :: [Function]
-    validFunctions = checkList (bindings m) (typeTemplate m)
+    validFunctions' :: [(Int, Function)]
+    validFunctions' = validFunctions (bindings m) (typeTemplate m)
 
-    fun2name :: Text -> Function -> Text
-    fun2name p = (\f -> p <> "_" <> f) . funName
+    fun2name :: Text -> (Int, Function) -> Text
+    fun2name p = withFunctionCounts
+      (\f    -> p <> "_" <> funName f)
+      (\mp f -> p <> "_" <> fromMaybe "" mp <> funName f)
 
     exportFunctions :: [Text]
     exportFunctions
-      =  fmap (fun2name "c") validFunctions
-      <> fmap (fun2name "p") validFunctions
+      =  fmap (fun2name "c") validFunctions'
+      <> fmap (fun2name "p") validFunctions'
 
 writeHaskellModule
   :: [Function]
@@ -113,7 +132,7 @@ writeHaskellModule parsedBindings makeConfig templateType
   outDir = textPath (modOutDir modSpec) <> "/" <> type2hsreal templateType <> "/"
 
   numFunctions :: Int
-  numFunctions = length $ checkList (bindings modSpec) (typeTemplate modSpec)
+  numFunctions = sum $ map fst $ validFunctions (bindings modSpec) (typeTemplate modSpec)
 
 -- ----------------------------------------
 -- Execution

@@ -1,9 +1,16 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 module CodeGen.Types.Parsed where
 
 import CodeGen.Prelude
+import CodeGen.Types.CLI
+import Control.Monad
+import Data.Data
+import Data.Typeable
 import qualified Data.HashSet as HS
+
 
 -- ----------------------------------------
 -- Parsed types
@@ -40,7 +47,10 @@ data CType
   | CShort
   deriving (Eq, Show, Generic, Hashable, Bounded, Enum)
 
-data TenType
+newtype TenType = Pair { unTenType :: (RawTenType, LibType) }
+  deriving (Eq, Show, Generic, Hashable)
+
+data RawTenType
   = Tensor
   | ByteTensor
   | CharTensor
@@ -61,19 +71,19 @@ data TenType
   | DoubleStorage
   | HalfStorage
 
-  -- Other
   | DescBuff
   | Generator
   | Allocator
   | File
   | Half
+  | State
+
+  -- real and accreal are parameterized occasionally differ by library, but I don't think this exists to date.
   | Real
   | AccReal
-  | State
 
   -- FIXME: I don't think we need to enable THCThreadLocal, yet. But we would need to include a
   -- wrapper of ThreadId from the pthread package: https://hackage.haskell.org/package/pthread-0.2.0
-
   -- | ThreadLocal  -- THC-specific
 
   -- FIXME: while we can add this to codegen now, we need access to cudaStream_t in cuda_runtime_api
@@ -82,7 +92,7 @@ data TenType
 
 
 isConcreteCudaPrefixed :: TenType -> Bool
-isConcreteCudaPrefixed t = t `HS.member` HS.fromList
+isConcreteCudaPrefixed (Pair (t, lib)) = lib == THC && t `HS.member` HS.fromList
   [ ByteTensor
   , CharTensor
   , ShortTensor
@@ -93,6 +103,8 @@ isConcreteCudaPrefixed t = t `HS.member` HS.fromList
   , HalfTensor
   ]
 
+allTenTypes :: [TenType]
+allTenTypes = Pair <$> ((,) <$> [minBound..maxBound] <*> [minBound..maxBound])
 
 data NNType
   = IndexTensor
@@ -105,9 +117,11 @@ data Arg = Arg
   , argName :: Text
   } deriving (Eq, Show, Generic, Hashable)
 
+
 data Function = Function
-  { funName :: Text
-  , funArgs :: [Arg]
+  { funPrefix :: Maybe Text
+  , funName   :: Text
+  , funArgs   :: [Arg]
   , funReturn :: Parsable
   } deriving (Eq, Show, Generic, Hashable)
 

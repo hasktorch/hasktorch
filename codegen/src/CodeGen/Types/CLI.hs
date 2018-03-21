@@ -2,9 +2,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 module CodeGen.Types.CLI
   ( LibType(..)
-  , describe
+  , prefix
+  , describe'
   , supported
   , supportedLibraries
   , outDir
@@ -16,6 +18,8 @@ module CodeGen.Types.CLI
   , generatedTypes
   ) where
 
+import Data.Data
+import Data.Typeable
 import CodeGen.Prelude
 import qualified Data.HashSet as HS
 
@@ -30,12 +34,19 @@ data LibType
   | THNN
   | THS
   | TH
-  deriving (Eq, Ord, Show, Enum, Bounded, Read, Generic, Hashable)
+  deriving (Eq, Ord, Show, Enum, Bounded, Read, Generic, Hashable, Data, Typeable)
+
+
+prefix :: LibType -> Bool -> Text
+prefix lt long =
+  case lt of
+    THC -> if long then "THCuda" else "THC"
+    _   -> tshow lt
 
 
 -- | Short descriptions of each library we intend to support.
-describe :: LibType -> String
-describe = \case
+describe' :: LibType -> String
+describe' = \case
   ATen -> "A simple TENsor library thats exposes the Tensor operations in Torch"
        ++ "and PyTorch directly in C++11."
   TH -> "Torch7"

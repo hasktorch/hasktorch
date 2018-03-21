@@ -18,17 +18,17 @@ spec = do
     let sizeDescSig = "sizeDesc :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> IO (Ptr C'THCDescBuff)"
     it "works as expected in haskellSig" $ do
       haskellSig THC "sizeDesc" IsFun GenFloat
-        [ Arg (Ptr (TenType State)) "state"
-        , Arg (Ptr (TenType Tensor)) "tensor"
-        ] (TenType DescBuff)
+        [ Arg (Ptr (TenType (Pair (State, THC)))) "state"
+        , Arg (Ptr (TenType (Pair (Tensor, THC)))) "tensor"
+        ] (TenType (Pair (DescBuff, THC)))
         `shouldBe` sizeDescSig
 
     it "works as expected in renderSig" $ do
       renderSig IsFun THC GenericFiles "test" GenFloat "Tensor" "Tensor"
-        ("sizeDesc", TenType DescBuff,
-          [ Arg (Ptr (TenType State)) "state"
-          , Arg (Ptr (TenType Tensor)) "tensor"])
+        ("sizeDesc", TenType (Pair (DescBuff, THC)),
+          [ Arg (Ptr (TenType (Pair (State,  THC)))) "state"
+          , Arg (Ptr (TenType (Pair (Tensor, THC)))) "tensor"])
         `shouldBe` ("-- | c_sizeDesc :  state tensor -> THCDescBuff\n"
-          <> "foreign import ccall \"test THCFloatTensor_sizeDesc\""
+          <> "foreign import ccall \"test THCudaFloatTensor_sizeDesc\""
           <> "\n  c_" <> sizeDescSig)
 

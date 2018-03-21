@@ -163,13 +163,13 @@ functionArgSpec = do
 
   describe "capturing arguments from THC's TensorTopK function" $ do
     it "captures `THCState* state,`" $
-      runParser' functionArg "THCState* state," `shouldBe` Right (Arg (Ptr (TenType State)) "state")
+      runParser' functionArg "THCState* state," `shouldBe` Right (Arg (Ptr (TenType (Pair (State, THC)))) "state")
     it "captures `THCTensor* topK,`" $
-      runParser' functionArg "THCTensor* topK," `shouldBe` Right (Arg (Ptr (TenType Tensor)) "topK")
+      runParser' functionArg "THCTensor* topK," `shouldBe` Right (Arg (Ptr (TenType (Pair (Tensor, THC)))) "topK")
     it "captures `THCudaLongTensor*indices,`" $
-      runParser' functionArg "THCudaLongTensor*indices," `shouldBe` Right (Arg (Ptr (TenType LongTensor)) "indices")
+      runParser' functionArg "THCudaLongTensor*indices," `shouldBe` Right (Arg (Ptr (TenType (Pair (LongTensor, THC)))) "indices")
     it "captures `THCTensor* input,`" $
-      runParser' functionArg "THCTensor* input," `shouldBe` Right (Arg (Ptr (TenType Tensor)) "input")
+      runParser' functionArg "THCTensor* input," `shouldBe` Right (Arg (Ptr (TenType (Pair (Tensor, THC)))) "input")
 
 functionArgsSpec :: Spec
 functionArgsSpec = do
@@ -203,7 +203,7 @@ functionSpec = do
 
 exampleGeneric :: String
 exampleGeneric = "TH_API void THTensor_(setFlag)(THTensor *self,const char flag);"
-exampleGeneric' = Function "setFlag" [ Arg (Ptr (TenType Tensor)) "self", Arg (CType CChar) "flag"] (CType CVoid)
+exampleGeneric' = Function (Just "THTensor_") "setFlag" [ Arg (Ptr (TenType (Pair (Tensor, TH)))) "self", Arg (CType CChar) "flag"] (CType CVoid)
 
 withStartJunk :: String -> String
 withStartJunk x = "skip this garbage line line\n" <> x
@@ -219,15 +219,15 @@ thFileFunction = intercalate ""
   , "deallocate str_ */"
   ]
 
-thFileFunctionRendered = Function "THFile_readStringRaw"
-  [ Arg      (Ptr (TenType File)) "self"
+thFileFunctionRendered = Function Nothing "THFile_readStringRaw"
+  [ Arg      (Ptr (TenType (Pair (File, TH)))) "self"
   , Arg      (Ptr (CType CChar)) "format"
   , Arg (Ptr (Ptr (CType CChar))) "str_"
   ] (CType CSize)
 
 thLogAddFunction :: String
 thLogAddFunction = "TH_API double THLogAdd(double log_a, double log_b);"
-thLogAddFunctionRendered = Function "THLogAdd"
+thLogAddFunctionRendered = Function Nothing "THLogAdd"
   [ Arg (CType CDouble) "log_a"
   , Arg (CType CDouble) "log_b"
   ] (CType CDouble)
@@ -237,7 +237,7 @@ thNNFunction = "TH_API void THNN_(Abs_updateOutput)(THNNState *state, THTensor *
 thNNFunctionRendered = undefined
 
 thcRandomFunction = "THC_API void THCRandom_init(struct THCState *state, int num_devices, int current_device);"
-thcRandomFunction' = Function "THCRandom_init" [Arg (Ptr (TenType State)) "state", Arg (CType CInt) "num_devices", Arg (CType CInt) "current_device" ] (CType CVoid)
+thcRandomFunction' = Function Nothing "THCRandom_init" [Arg (Ptr (TenType (Pair (State, THC)))) "state", Arg (CType CInt) "num_devices", Arg (CType CInt) "current_device" ] (CType CVoid)
 
 thFileContents = intercalate ""
   [ "#ifndef TH_FILE_INC\n#define TH_FILE_INC\n\n#include \"THStorage.h\"\n\ntypedef struct THFile__ "
@@ -294,7 +294,7 @@ storageElementSize :: String
 storageElementSize = "TH_API size_t THStorage_(elementSize)(void);"
 
 storageElementSize' :: Function
-storageElementSize' = Function "elementSize" [ Arg (CType CVoid) "" ] (CType CSize)
+storageElementSize' = Function (Just "THStorage_") "elementSize" [ Arg (CType CVoid) "" ] (CType CSize)
 
 thGenericStorageContents :: String
 thGenericStorageContents = intercalate ""
@@ -346,11 +346,11 @@ thcGenericTensorTopKFunction = intercalate ""
   ]
 
 thcGenericTensorTopKFunction' :: Function
-thcGenericTensorTopKFunction' = Function "topk"
-  [ Arg (Ptr (TenType State)) "state"
-  , Arg (Ptr (TenType Tensor)) "topK"
-  , Arg (Ptr (TenType LongTensor)) "indices"
-  , Arg (Ptr (TenType Tensor)) "input"
+thcGenericTensorTopKFunction' = Function (Just "THCTensor_") "topk"
+  [ Arg (Ptr (TenType (Pair (State, THC)))) "state"
+  , Arg (Ptr (TenType (Pair (Tensor, THC)))) "topK"
+  , Arg (Ptr (TenType (Pair (LongTensor, THC)))) "indices"
+  , Arg (Ptr (TenType (Pair (Tensor, THC)))) "input"
   , Arg (CType CInt64) "k"
   , Arg (CType CInt) "dim"
   , Arg (CType CInt) "dir"

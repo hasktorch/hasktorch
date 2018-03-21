@@ -8,24 +8,21 @@ module CodeGen.Render.C
 import CodeGen.Prelude
 import CodeGen.Types
 
-render :: LibType -> Parsable -> Text
-render lt =
+render :: Parsable -> Text
+render =
   \case
     -- special pointer cases
-    Ptr x -> render lt x <> " *"
-    TenType x -> renderTenType lt x
+    Ptr x -> render x <> " *"
+    TenType x -> renderTenType x
     -- NNType x -> renderNNType lt x
     CType x -> renderCType x
 
 
-renderTenType :: LibType -> TenType -> Text
-renderTenType lt = \case
-  Real    -> "real"
-  AccReal -> "accreal"
-  rest -> prefix rest <> tshow rest
- where
-  prefix :: TenType -> Text
-  prefix t = if lt == THC && isConcreteCudaPrefixed t then "THCuda" else tshow lt
+renderTenType :: TenType -> Text
+renderTenType = \case
+  Pair (Real, _)    -> "real"
+  Pair (AccReal, _) -> "accreal"
+  p@(Pair (rtt, lib)) -> (if isConcreteCudaPrefixed p then "THCuda" else tshow lib) <> tshow rtt
 
 
 renderCType :: CType -> Text

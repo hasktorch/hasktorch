@@ -37,7 +37,7 @@ import qualified Data.Text as T
 -- ----------------------------------------
 
 data HModule = HModule
-  { prefix       :: LibType
+  { lib          :: LibType
   , extensions   :: [Text]
   , imports      :: [Text]
   , typeDefs     :: [(Text, Text)]
@@ -71,9 +71,9 @@ makeModule
   -> HModule
 makeModule lt a0 a1 a2 a3 a4 a5 a6
   = HModule
-  { prefix = lt
+  { lib = lt
   , extensions = ["ForeignFunctionInterface"]
-  , imports = ["Foreign", "Foreign.C.Types", "Torch.Types." <> tshow lt, "Data.Word", "Data.Int"]
+  , imports = ["Foreign", "Foreign.C.Types", "Data.Word", "Data.Int"] <> torchtypes
   , typeDefs = []
   , modOutDir = a0
   , isTemplate = a1
@@ -83,6 +83,11 @@ makeModule lt a0 a1 a2 a3 a4 a5 a6
   , typeTemplate = a5
   , bindings = a6
   }
+ where
+  torchtypes :: [Text]
+  torchtypes = case lt of
+    THC -> (("Torch.Types." <>) . tshow) <$> [TH, THC]
+    rest -> ["Torch.Types." <> tshow rest]
 
 data TypeCategory
   = ReturnValue

@@ -194,6 +194,12 @@ storageCases =
   [ ("elementSize", [])
   ]
 
+storageCopyCases :: HashMap FunctionName (HashSet TemplateType)
+storageCopyCases =
+  [ ("copyCudaHalf", [GenHalf])
+  ]
+
+
 checkMath :: TemplateType -> FunctionName -> Bool
 checkMath = checkMap tensorMathCases
 
@@ -205,6 +211,9 @@ checkLapack = checkMap tensorLapackCases
 
 checkStorage :: TemplateType -> FunctionName -> Bool
 checkStorage = checkMap storageCases
+
+checkStorageCopy :: TemplateType -> FunctionName -> Bool
+checkStorageCopy = checkMap storageCopyCases
 
 checkMap
   :: HashMap FunctionName (HashSet TemplateType)
@@ -225,6 +234,7 @@ checkFunction tt fn
   && checkRandom tt fn
   && checkLapack tt fn
   && checkStorage tt fn
+  && checkStorageCopy tt fn
 
 test :: IO ()
 test = do

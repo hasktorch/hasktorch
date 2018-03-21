@@ -29,7 +29,7 @@ comment lt t hsname args retType = T.intercalate " "
   $  [ "-- |" , hsname , ":", if isPtr t then "Pointer to function :" else "" ]
   <> map argName args
   <> (if null args then [] else ["->"])
-  <> [C.render lt retType]
+  <> [C.render retType]
 
 foreignCall :: Text -> FilePath -> Text
 foreignCall cname headerFile = T.intercalate "\""
@@ -50,10 +50,10 @@ haskellSig lt hsname st tt args retType = T.intercalate ""
   typeSignature :: [Text]
   typeSignature = case args of
     [Arg (CType CVoid) _] -> []
-    args' -> mapMaybe (Hs.render lt FunctionParam tt . argType) args'
+    args' -> mapMaybe (Hs.render FunctionParam tt . argType) args'
 
   retArrow :: Text
-  retArrow = case Hs.render lt ReturnValue tt retType of
+  retArrow = case Hs.render ReturnValue tt retType of
     Nothing  -> ""
     Just ret -> if null typeSignature then ret else (" -> " <> ret)
 
@@ -66,8 +66,16 @@ mkCname st lt ms tt cgt funname
  where
   identifier :: Text
   identifier = case cgt of
-    GenericFiles -> tshow lt <> type2hsreal tt <> textSuffix ms <> "_"
+    GenericFiles -> prefix lt isTHCTensor <> type2hsreal tt <> textSuffix ms <> "_"
     ConcreteFiles -> ""
+
+  isTHCTensor :: Bool
+  isTHCTensor
+    = lt == THC &&
+      ( textSuffix ms == "Tensor"
+      || textSuffix ms == "Storage"
+      || textSuffix ms == "TensorMath"
+      )
 
 -- | render a haskell function name.
 mkHsname :: LibType -> CodeGenType -> SigType -> Text -> Text
