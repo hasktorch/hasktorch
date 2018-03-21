@@ -3,9 +3,9 @@ module Torch.FFI.TH.Float.TensorLapack where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_gesv :  rb_ ra_ b_ a_ -> void
 foreign import ccall "THTensorLapack.h THFloatTensor_gesv"

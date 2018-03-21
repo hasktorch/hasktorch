@@ -3,9 +3,9 @@ module Torch.FFI.TH.Byte.Blas where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_swap :  n x incx y incy -> void
 foreign import ccall "THBlas.h THByteBlas_swap"

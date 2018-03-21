@@ -3,9 +3,9 @@ module Torch.FFI.TH.Random where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_THGenerator_new :   -> THGenerator *
 foreign import ccall "THRandom.h THGenerator_new"
@@ -18,10 +18,6 @@ foreign import ccall "THRandom.h THGenerator_copy"
 -- | c_THGenerator_free :  gen -> void
 foreign import ccall "THRandom.h THGenerator_free"
   c_THGenerator_free :: Ptr C'THGenerator -> IO ()
-
--- | c_THGenerator_isValid :  _generator -> int
-foreign import ccall "THRandom.h THGenerator_isValid"
-  c_THGenerator_isValid :: Ptr C'THGenerator -> IO CInt
 
 -- | c_THRandom_seed :  _generator -> uint64_t
 foreign import ccall "THRandom.h THRandom_seed"
@@ -42,6 +38,10 @@ foreign import ccall "THRandom.h THRandom_random"
 -- | c_THRandom_random64 :  _generator -> uint64_t
 foreign import ccall "THRandom.h THRandom_random64"
   c_THRandom_random64 :: Ptr C'THGenerator -> IO CULong
+
+-- | c_THRandom_standard_uniform :  _generator -> double
+foreign import ccall "THRandom.h THRandom_standard_uniform"
+  c_THRandom_standard_uniform :: Ptr C'THGenerator -> IO CDouble
 
 -- | c_THRandom_uniform :  _generator a b -> double
 foreign import ccall "THRandom.h THRandom_uniform"
@@ -91,10 +91,6 @@ foreign import ccall "THRandom.h &THGenerator_copy"
 foreign import ccall "THRandom.h &THGenerator_free"
   p_THGenerator_free :: FunPtr (Ptr C'THGenerator -> IO ())
 
--- | p_THGenerator_isValid : Pointer to function : _generator -> int
-foreign import ccall "THRandom.h &THGenerator_isValid"
-  p_THGenerator_isValid :: FunPtr (Ptr C'THGenerator -> IO CInt)
-
 -- | p_THRandom_seed : Pointer to function : _generator -> uint64_t
 foreign import ccall "THRandom.h &THRandom_seed"
   p_THRandom_seed :: FunPtr (Ptr C'THGenerator -> IO CULong)
@@ -114,6 +110,10 @@ foreign import ccall "THRandom.h &THRandom_random"
 -- | p_THRandom_random64 : Pointer to function : _generator -> uint64_t
 foreign import ccall "THRandom.h &THRandom_random64"
   p_THRandom_random64 :: FunPtr (Ptr C'THGenerator -> IO CULong)
+
+-- | p_THRandom_standard_uniform : Pointer to function : _generator -> double
+foreign import ccall "THRandom.h &THRandom_standard_uniform"
+  p_THRandom_standard_uniform :: FunPtr (Ptr C'THGenerator -> IO CDouble)
 
 -- | p_THRandom_uniform : Pointer to function : _generator a b -> double
 foreign import ccall "THRandom.h &THRandom_uniform"

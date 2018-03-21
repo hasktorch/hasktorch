@@ -3,9 +3,9 @@ module Torch.FFI.TH.Half where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_TH_float2halfbits :    -> void
 foreign import ccall "THHalf.h TH_float2halfbits"

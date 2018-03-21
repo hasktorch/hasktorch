@@ -3,9 +3,9 @@ module Torch.FFI.TH.LogAdd where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_THLogAdd :  log_a log_b -> double
 foreign import ccall "THLogAdd.h THLogAdd"

@@ -3,9 +3,9 @@ module Torch.FFI.TH.Double.Vector where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_fill :  x c n -> void
 foreign import ccall "THVector.h THDoubleVector_fill"

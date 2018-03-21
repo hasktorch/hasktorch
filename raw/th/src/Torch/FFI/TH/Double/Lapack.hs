@@ -3,9 +3,9 @@ module Torch.FFI.TH.Double.Lapack where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_gesv :  n nrhs a lda ipiv b ldb info -> void
 foreign import ccall "THLapack.h THDoubleLapack_gesv"

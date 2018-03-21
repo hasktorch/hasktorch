@@ -3,9 +3,9 @@ module Torch.FFI.TH.Float.Tensor where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_storage :  self -> THStorage *
 foreign import ccall "THTensor.h THFloatTensor_storage"

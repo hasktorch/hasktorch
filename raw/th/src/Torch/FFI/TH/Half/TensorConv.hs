@@ -3,9 +3,9 @@ module Torch.FFI.TH.Half.TensorConv where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_validXCorr2Dptr :  r_ alpha t_ ir ic k_ kr kc sr sc -> void
 foreign import ccall "THTensorConv.h THHalfTensor_validXCorr2Dptr"

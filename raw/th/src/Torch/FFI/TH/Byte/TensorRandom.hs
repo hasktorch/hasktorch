@@ -3,9 +3,9 @@ module Torch.FFI.TH.Byte.TensorRandom where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_random :  self _generator -> void
 foreign import ccall "THTensorRandom.h THByteTensor_random"

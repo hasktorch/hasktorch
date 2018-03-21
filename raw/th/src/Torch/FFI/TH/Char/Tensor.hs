@@ -3,9 +3,9 @@ module Torch.FFI.TH.Char.Tensor where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_storage :  self -> THStorage *
 foreign import ccall "THTensor.h THCharTensor_storage"

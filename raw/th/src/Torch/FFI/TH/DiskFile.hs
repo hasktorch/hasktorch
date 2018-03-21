@@ -3,9 +3,9 @@ module Torch.FFI.TH.DiskFile where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_THDiskFile_new :  name mode isQuiet -> THFile *
 foreign import ccall "THDiskFile.h THDiskFile_new"

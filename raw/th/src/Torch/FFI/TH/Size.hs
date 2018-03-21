@@ -3,9 +3,9 @@ module Torch.FFI.TH.Size where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_THSize_isSameSizeAs :  sizeA dimsA sizeB dimsB -> int
 foreign import ccall "THSize.h THSize_isSameSizeAs"

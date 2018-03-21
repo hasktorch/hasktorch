@@ -3,9 +3,9 @@ module Torch.FFI.TH.Byte.TensorMath where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_fill :  r_ value -> void
 foreign import ccall "THTensorMath.h THByteTensor_fill"

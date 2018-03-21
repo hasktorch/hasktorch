@@ -3,9 +3,9 @@ module Torch.FFI.TH.Half.Storage where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_data :   -> real *
 foreign import ccall "THStorage.h THHalfStorage_data"

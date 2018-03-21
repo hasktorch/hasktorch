@@ -3,9 +3,9 @@ module Torch.FFI.TH.Half.TensorCopy where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_copy :  tensor src -> void
 foreign import ccall "THTensorCopy.h THHalfTensor_copy"

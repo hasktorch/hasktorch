@@ -3,9 +3,9 @@ module Torch.FFI.TH.Storage where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_THLongStorage_sizeDesc :  size -> THDescBuff
 foreign import ccall "THStorage.h THLongStorage_sizeDesc"

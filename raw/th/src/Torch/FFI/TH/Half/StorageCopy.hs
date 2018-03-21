@@ -3,9 +3,9 @@ module Torch.FFI.TH.Half.StorageCopy where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
 import Data.Word
 import Data.Int
+import Torch.Types.TH
 
 -- | c_rawCopy :  storage src -> void
 foreign import ccall "THStorageCopy.h THHalfStorage_rawCopy"
