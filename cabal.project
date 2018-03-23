@@ -2,6 +2,7 @@ packages:
     codegen/*.cabal
     raw/th/*.cabal
     raw/thc/*.cabal
+    raw/thnn/*.cabal
     raw/tests/*.cabal
     types/th/*.cabal
     types/thc/*.cabal
@@ -24,4 +25,5 @@ packages:
 -- This absolute path would go in your ~/.cabal/config file.
 -- FIXME: figure out package-relative paths
 -- ghc-options:
---     hasktorch-raw: -L/home/stites/git/hasktorch/vendor/build/
+--     hasktorch-raw-th: -L/home/stites/git/hasktorch/vendor/build/
+--     hasktorch-raw-thc: -L/home/stites/git/hasktorch/vendor/build/
