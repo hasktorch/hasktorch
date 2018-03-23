@@ -3,10 +3,8 @@ module Torch.Types.TH
   , CTHAllocatorPtr
   , CTHAllocator
   , CTHGenerator
-  , CTHFile
-  , C'THFile
-  , CTHHalf
-  , C'THHalf
+  , CTHFile, C'THFile
+  , CTHHalf, C'THHalf
   , THLongBlas
   , THShortBlas
   , THIntBlas
@@ -28,10 +26,9 @@ module Torch.Types.TH
   , CTHHalfVector
   , CTHFloatVector
   , CTHDoubleVector
-  , CTHDoubleNNState
-  , CTHFloatNNState
-  , CTHIndexTensor
-  , CTHIntegerTensor
+  , CTHNNState, C'THNNState
+  , CTHIndexTensor, C'THIndexTensor
+  , CTHIntegerTensor, C'THIntegerTensor
   , CTHByteTensor
   , CTHByteStorage
   , CTHByteStorageCopy
@@ -106,14 +103,15 @@ type CTHDoubleVector = CDouble
 
 -- in THNN.h
 -- typedef void THNNState
-type CTHDoubleNNState = ()
-type CTHFloatNNState = ()
+type CTHNNState = Ptr ()
+type C'THNNState = CTHNNState
 
 -- typedef int64_t THIndex_t;
 -- typedef int32_t THInteger_t;
 type CTHIndexTensor = CLong
 type CTHIntegerTensor = CInt
-
+type C'THIndexTensor = CLong
+type C'THIntegerTensor = CInt
 -- ----------------------------------------
 -- Templated types
 -- ----------------------------------------

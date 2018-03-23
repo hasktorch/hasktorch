@@ -36,6 +36,7 @@ test-suite spec
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , hasktorch-raw-tests
     , hasktorch-raw-th
     , hasktorch-raw-thnn
     , hasktorch-types-th
