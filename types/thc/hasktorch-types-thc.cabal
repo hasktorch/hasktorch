@@ -24,6 +24,7 @@ library
     , hasktorch-types-th
   exposed-modules:
       Torch.Types.THC
+    , Torch.Types.THCUNN
     , Torch.Types.THC.Structs
     , Torch.Types.Cuda.Structs
     , Torch.Types.CuRand.Structs

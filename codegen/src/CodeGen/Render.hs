@@ -94,12 +94,6 @@ validFunctions lt fs tt
     pure pref
 
 
-withFunctionCounts :: (Function -> x) -> (Maybe (LibType, Text) -> Function -> x) -> (Int, Function) -> x
-withFunctionCounts fnEQ fnGT (c, f) = case compare c 1 of
-  LT -> impossible "counts must be > 0 since we are counting empirical occurences"
-  EQ -> fnEQ f
-  GT -> fnGT (funPrefix f) f
-
 renderAll :: HModule -> Text
 renderAll m
   =  renderExtensions (extensions m)

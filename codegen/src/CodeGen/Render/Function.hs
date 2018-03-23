@@ -90,9 +90,11 @@ mkCname st lt ms tt cgt mpref funname
 -- | render a haskell function name.
 mkHsname :: LibType -> SigType -> Maybe (LibType, Text) -> Text -> Text
 mkHsname lt st mpref funname =
-  case mpref of
-    Nothing       -> ffiPrefix st <> funname
-    Just (lt', _) -> ffiPrefix st <> (if lt' == lt then funname else newName lt')
+  case lt of
+    THCUNN -> ffiPrefix st <> funname
+    _ -> case mpref of
+      Nothing       -> ffiPrefix st <> funname
+      Just (lt', _) -> ffiPrefix st <> (if lt' == lt then funname else newName lt')
  where
    newName :: LibType -> Text
    newName lt' = (T.toLower (tshow lt') <>) $ uncurry T.cons $ ((Ch.toUpper . T.head) &&& T.tail) funname

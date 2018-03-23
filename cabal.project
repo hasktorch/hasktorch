@@ -3,24 +3,25 @@ packages:
     raw/th/*.cabal
     raw/thc/*.cabal
     raw/thnn/*.cabal
+    raw/thcunn/*.cabal
     raw/tests/*.cabal
     types/th/*.cabal
     types/thc/*.cabal
 
-    signatures/unsigned/*cabal
-    signatures/signed/*cabal
-    signatures/floating/*cabal
+    -- signatures/unsigned/*cabal
+    -- signatures/signed/*cabal
+    -- signatures/floating/*cabal
 
-    indef/unsigned/*cabal
-    indef/signed/*cabal
-    indef/floating/*cabal
+    -- indef/unsigned/*cabal
+    -- indef/signed/*cabal
+    -- indef/floating/*cabal
 
-    dimensions/*cabal
-    classes/*cabal
+    -- dimensions/*cabal
+    -- classes/*cabal
 
-    core/*cabal
+    -- core/*cabal
 
-    examples/*cabal
+    -- examples/*cabal
 
 -- This absolute path would go in your ~/.cabal/config file.
 -- FIXME: figure out package-relative paths
