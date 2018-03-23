@@ -59,7 +59,7 @@ describe' = \case
 
 -- | Whether or not we currently support code generation for the library
 supported :: LibType -> Bool
-supported lt = lt `HS.member` HS.fromList [TH, THC]
+supported lt = lt `HS.member` HS.fromList [TH, THC, THNN, THCUNN]
 
 supportedLibraries :: [LibType]
 supportedLibraries = filter supported [minBound..maxBound]

@@ -91,8 +91,9 @@ files THC = \case
 
     , mkGeneralFile
     ]
-files _ = \case {ConcreteFiles -> []; GenericFiles -> []}
-
+files THNN   = \case { GenericFiles -> map (($:) THNN   GenericFiles) [ mkModule' "" ]; ConcreteFiles -> [] }
+files THCUNN = \case { GenericFiles -> map (($:) THCUNN GenericFiles) [ mkModule' "" ]; ConcreteFiles -> [] }
+files _      = \case { GenericFiles -> []; ConcreteFiles -> [] }
 
 mkGeneralFile
   :: LibType

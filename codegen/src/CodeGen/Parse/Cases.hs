@@ -75,8 +75,8 @@ type2accreal lt t = case signatureAliases lt t of
   Nothing -> "" -- impossible "TemplateType is concrete and should not have been called"
 
 
-tensorMathCases :: HashMap FunctionName (HashSet TemplateType)
-tensorMathCases =
+tensorMathCases :: LibType -> HashMap FunctionName (HashSet TemplateType)
+tensorMathCases _ =
   [ ("abs",     [GenShort, GenInt, GenLong, GenFloat, GenDouble])
   , ("sigmoid", [GenFloat, GenDouble])
   , ("log",     [GenFloat, GenDouble])
@@ -130,8 +130,8 @@ tensorMathCases =
   , ("neg",  [GenFloat, GenDouble, GenLong, GenShort, GenInt])
   ]
 
-tensorRandomCases :: HashMap FunctionName (HashSet TemplateType)
-tensorRandomCases =
+tensorRandomCases :: LibType -> HashMap FunctionName (HashSet TemplateType)
+tensorRandomCases _ =
   [ ("uniform",        [GenFloat, GenDouble])
   , ("normal",         [GenFloat, GenDouble])
   , ("normal_means",   [GenFloat, GenDouble])
@@ -161,8 +161,8 @@ tensorRandomCases =
 
 -- TODO: check lapack bindings - not obvious from source, but there are
 -- problems loading shared library with these functions for Byte
-tensorLapackCases :: HashMap FunctionName (HashSet TemplateType)
-tensorLapackCases =
+tensorLapackCases :: LibType -> HashMap FunctionName (HashSet TemplateType)
+tensorLapackCases _ =
   [ ("gesv",   [GenFloat, GenDouble])
   , ("trtrs",  [GenFloat, GenDouble])
   , ("gels",   [GenFloat, GenDouble])
@@ -189,38 +189,55 @@ tensorLapackCases =
   -- , ("gesvd", [GenFloat, GenDouble])
   ]
 
-storageCases :: HashMap FunctionName (HashSet TemplateType)
-storageCases =
+storageCases :: LibType -> HashMap FunctionName (HashSet TemplateType)
+storageCases _ =
   [ ("elementSize", [])
   ]
 
-storageCopyCases :: HashMap FunctionName (HashSet TemplateType)
-storageCopyCases =
+storageCopyCases :: LibType -> HashMap FunctionName (HashSet TemplateType)
+storageCopyCases THC =
   [ ("copyCudaHalf", [GenHalf])
   ]
+storageCopyCases _ = mempty
+
+tensorBlasCases :: LibType -> HashMap FunctionName (HashSet TemplateType)
+tensorBlasCases THC =
+  [ ("dot", [GenFloat, GenDouble])
+  , ("addmv", [GenFloat, GenDouble])
+  , ("addmm", [GenFloat, GenDouble])
+  , ("addr", [GenFloat, GenDouble])
+  , ("addbmm", [GenFloat, GenDouble])
+  , ("baddbmm", [GenFloat, GenDouble])
+  ]
+tensorBlasCases _ = mempty
 
 
-checkMath :: TemplateType -> FunctionName -> Bool
+
+checkMath :: LibType -> TemplateType -> FunctionName -> Bool
 checkMath = checkMap tensorMathCases
 
-checkRandom :: TemplateType -> FunctionName -> Bool
+checkRandom :: LibType -> TemplateType -> FunctionName -> Bool
 checkRandom = checkMap tensorRandomCases
 
-checkLapack :: TemplateType -> FunctionName -> Bool
+checkLapack :: LibType -> TemplateType -> FunctionName -> Bool
 checkLapack = checkMap tensorLapackCases
 
-checkStorage :: TemplateType -> FunctionName -> Bool
+checkStorage :: LibType -> TemplateType -> FunctionName -> Bool
 checkStorage = checkMap storageCases
 
-checkStorageCopy :: TemplateType -> FunctionName -> Bool
+checkStorageCopy :: LibType -> TemplateType -> FunctionName -> Bool
 checkStorageCopy = checkMap storageCopyCases
 
+checkTensorBlasCases :: LibType -> TemplateType -> FunctionName -> Bool
+checkTensorBlasCases = checkMap tensorBlasCases
+
 checkMap
-  :: HashMap FunctionName (HashSet TemplateType)
+  :: (LibType -> HashMap FunctionName (HashSet TemplateType))
+  -> LibType
   -> TemplateType
   -> FunctionName
   -> Bool
-checkMap map tt n = maybe True (tt `S.member`) (M.lookup n map)
+checkMap map lt tt n = maybe True (tt `S.member`) (M.lookup n (map lt))
 
 
 -- | Warning a function that doesn't exist will return True by default
@@ -228,17 +245,18 @@ checkMap map tt n = maybe True (tt `S.member`) (M.lookup n map)
 -- TODO: make this safer.
 -- (stites): to make this safer I think we need to invert these maps so that we
 --           are given function names instead of doing membership checks.
-checkFunction :: TemplateType -> FunctionName -> Bool
-checkFunction tt fn
-  =  checkMath   tt fn
-  && checkRandom tt fn
-  && checkLapack tt fn
-  && checkStorage tt fn
-  && checkStorageCopy tt fn
+checkFunction :: LibType -> TemplateType -> FunctionName -> Bool
+checkFunction lt tt fn
+  =  checkMath   lt tt fn
+  && checkRandom lt tt fn
+  && checkLapack lt tt fn
+  && checkStorage lt tt fn
+  && checkStorageCopy lt tt fn
+  && checkTensorBlasCases lt tt fn
 
 test :: IO ()
 test = do
-  print $ checkFunction GenByte  "logicalany"
-  print $ checkFunction GenFloat "logicalany"
-  print $ checkFunction GenByte  "multinomial"
-  print $ checkFunction GenFloat "multinomial"
+  print $ checkFunction TH GenByte  "logicalany"
+  print $ checkFunction TH GenFloat "logicalany"
+  print $ checkFunction TH GenByte  "multinomial"
+  print $ checkFunction TH GenFloat "multinomial"

@@ -81,7 +81,7 @@ validFunctions lt fs tt
   $ map ((join . fmap checkLibs . funPrefix) &&& id)
 
   -- filter any functions which don't belong
-  $ filter (checkFunction tt . FunctionName . funName) fs
+  $ filter (checkFunction lt tt . FunctionName . funName) fs
 
  where
   checkLibs :: (LibType, Text) -> Maybe (LibType, Text)
@@ -132,11 +132,19 @@ writeHaskellModule parsedBindings makeConfig templateType
   modSpec :: HModule
   modSpec = makeConfig templateType parsedBindings
 
+  basename :: Text
+  basename = textFileSuffix (fileSuffix modSpec)
+
   filename :: Text
-  filename = textFileSuffix (fileSuffix modSpec) <> ".hs"
+  filename = case basename of
+    "" -> type2hsreal templateType <> ".hs"
+    bn -> bn <> ".hs"
 
   outDir :: Text
-  outDir = textPath (modOutDir modSpec) <> "/" <> type2hsreal templateType <> "/"
+  outDir =
+    case basename of
+     "" -> textPath (modOutDir modSpec) <> "/"
+     _  -> textPath (modOutDir modSpec) <> "/" <> type2hsreal templateType <> "/"
 
   numFunctions :: Int
   numFunctions = length $ validFunctions (lib modSpec) (bindings modSpec) (typeTemplate modSpec)
