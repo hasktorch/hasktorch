@@ -32,9 +32,7 @@ run os = do
     ]
   if supported lib
   then do
-    mapM_ (runPipeline os)
-      ( files lib gentype)
-      -- (filter ((== "./vendor/pytorch/aten/src/TH/generic/THStorage.h") . fst) $ files lib gentype)
+    mapM_ (runPipeline os) (files lib gentype)
     when (verbose os) $ putStrLn "Done"
   else putStrLn ("Code generation not enabled for " ++ show lib)
  where
@@ -65,7 +63,7 @@ runPipeline os (headerPath, makeModuleConfig) = do
       ++ show (length typeList * length bindingsUniq)
  where
   typeList :: [TemplateType]
-  typeList = generatedTypes (codegenType os)
+  typeList = generatedTypes (libraries os) (codegenType os)
 
 
 

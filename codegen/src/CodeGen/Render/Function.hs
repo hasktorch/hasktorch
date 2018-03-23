@@ -72,17 +72,20 @@ mkCname st lt ms tt cgt mpref funname
   identifier = case cgt of
     ConcreteFiles -> ""
     GenericFiles ->
-      case mpref of
-        Nothing -> prefix lt (isTHCTensor lt) <> type2hsreal tt <> textSuffix ms <> "_"
-        Just (lt', t) -> prefix lt' (isTHCTensor lt') <> type2hsreal tt <> t <> "_"
-
-  isTHCTensor :: LibType -> Bool
-  isTHCTensor lt
-    = lt == THC &&
-      ( textSuffix ms == "Tensor"
-      || textSuffix ms == "Storage"
-      || textSuffix ms == "TensorMath"
-      )
+      case lt of
+        TH     -> "TH"        <> type2hsreal tt <> textSuffix ms <> "_"
+        THNN   -> "THNN_"     <> type2hsreal tt
+        THCUNN -> "THNN_Cuda" <> type2hsreal tt
+        THC -> case mpref of
+          -- THC is the only library that has this
+          Nothing       -> prefix lt  (isTHCTensor lt ) <> type2hsreal tt <> textSuffix ms <> "_"
+          Just (lt', t) -> prefix lt' (isTHCTensor lt') <> type2hsreal tt <> t <> "_"
+         where
+          isTHCTensor :: LibType -> Bool
+          isTHCTensor lt =
+            (  textSuffix ms == "Tensor"
+            || textSuffix ms == "Storage"
+            || textSuffix ms == "TensorMath")
 
 -- | render a haskell function name.
 mkHsname :: LibType -> SigType -> Maybe (LibType, Text) -> Text -> Text

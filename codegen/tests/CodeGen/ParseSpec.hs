@@ -17,16 +17,16 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "the skip parser" skipSpec
-  describe "the ptr parser" ptrSpec
-  describe "the ptr2 parser" ptr2Spec
-  describe "the ctypes parser" ctypesSpec
+  -- describe "the skip parser" skipSpec
+  -- describe "the ptr parser" ptrSpec
+  -- describe "the ptr2 parser" ptr2Spec
+  -- describe "the ctypes parser" ctypesSpec
   describe "the functionArg parser" functionArgSpec
   describe "the functionArgs parser" functionArgsSpec
   describe "the function parser" functionSpec
-  describe "running the full parser" $ do
-    describe "in concrete mode" fullConcreteParser
-    describe "in generic mode" fullGenericParser
+  -- describe "running the full parser" $ do
+  --   describe "in concrete mode" fullConcreteParser
+    -- describe "in generic mode" fullGenericParser
 
 runParser' p = runParser p "test"
 
@@ -155,11 +155,15 @@ ctypesSpec = do
 
 functionArgSpec :: Spec
 functionArgSpec = do
+  let result = Right (Arg (CType CInt) "k")
   it "will find arguments with no name" $
     runParser' (char '(' >> functionArg) "(void)" `shouldBe` Right (Arg (CType CVoid) "")
 
-  it "will find arguments in newline-delineated lists" $
-    runParser' functionArg "         int k)" `shouldBe` Right (Arg (CType CInt) "k")
+  it "will find arguments with prefixed whitespaces" $
+    runParser' functionArg "         int k)" `shouldBe` result
+
+  it "will find arguments with comments" $
+    runParser' functionArg "  int k, // foobar" `shouldBe` result
 
   describe "capturing arguments from THC's TensorTopK function" $ do
     it "captures `THCState* state,`" $
@@ -173,11 +177,27 @@ functionArgSpec = do
 
 functionArgsSpec :: Spec
 functionArgsSpec = do
+  let result = Right [Arg (CType CVoid) "", Arg (CType CInt) "foo"]
   it "will find arguments in newline-delineated lists" $
-    runParser' functionArgs "(void,\n         int foo)" `shouldBe` Right [Arg (CType CVoid) "", Arg (CType CInt) "foo"]
+    runParser' functionArgs "(void,\n         int foo)" `shouldBe` result
 
   it "will find arguments in newline-delineated lists with spaces between command and newline" $
-    runParser' functionArgs "(void,    \n         int foo)" `shouldBe` Right [Arg (CType CVoid) "", Arg (CType CInt) "foo"]
+    runParser' functionArgs "(void,    \n         int foo)" `shouldBe` result
+
+  it "will find arguments in newline-delineated lists with comments, v1" $
+    runParser' functionArgs "(void,\n int foo //foobar\n)" `shouldBe` result
+
+  it "will find arguments in newline-delineated lists with comments, v2" $
+    runParser' functionArgs "(void,\n int foo //foobar\n    )" `shouldBe` result
+
+  it "will find arguments in newline-delineated lists with comments, v3" $
+    runParser' functionArgs "(void, //foobar \n int foo \n)" `shouldBe` result
+
+  it "will find arguments in newline-delineated lists with comments, v4" $
+    runParser' functionArgs "(void,//foobar\n int foo\n)" `shouldBe` result
+
+  it "will find arguments in newline-delineated lists with comments which start with a newline" $
+    runParser' functionArgs "(\nvoid,\n int foo //foobar\n)" `shouldBe` result
 
   it "will find arguments in newline-delineated lists from THCTensorTopK" $
     runParser' functionArgs thctensortopkArgs `shouldBe` Right (funArgs thcGenericTensorTopKFunction')
@@ -203,6 +223,10 @@ functionSpec = do
 
     it "finds thcCopyAsyncCuda" $
       runParser' function thcCopyAsyncCuda `shouldBe` Right (Just thcCopyAsyncCudaRendered)
+
+  it "will find functions with comments between arguments, like in THNN.h" $
+    runParser' function thNNFunction `shouldBe` Right (Just thNNFunctionRendered)
+
 
 thcCopyAsyncCPU  = "THC_API void THCTensor_(copyAsyncCPU)(THCState *state, THCTensor *self, THTensor *src);"
 thcCopyAsyncCPURendered = Function (Just (THC, "Tensor")) "copyAsyncCPU"
@@ -253,9 +277,19 @@ thLogAddFunctionRendered = Function Nothing "THLogAdd"
   , Arg (CType CDouble) "log_b"
   ] (CType CDouble)
 
--- do this later
-thNNFunction = "TH_API void THNN_(Abs_updateOutput)(THNNState *state, THTensor *input, THTensor *output);"
-thNNFunctionRendered = undefined
+thNNFunction = intercalate "\n"
+  [ "TH_API void THNN_(L1Cost_updateOutput)("
+  , "         THNNState *state,            // library's state"
+  , "         THTensor *input,             // input tensor"
+  , "         THTensor *output);           // [OUT] output tensor"
+  ]
+thNNFunctionRendered = Function (Just (THNN, "")) "L1Cost_updateOutput"
+  [ Arg (Ptr (TenType (Pair (State, THNN)))) "state"
+  , Arg (Ptr (TenType (Pair (Tensor, TH)))) "input"
+  , Arg (Ptr (TenType (Pair (Tensor, TH)))) "output"
+  ] (CType CVoid)
+
+
 
 thcRandomFunction = "THC_API void THCRandom_init(struct THCState *state, int num_devices, int current_device);"
 thcRandomFunction' = Function Nothing "THCRandom_init" [Arg (Ptr (TenType (Pair (State, THC)))) "state", Arg (CType CInt) "num_devices", Arg (CType CInt) "current_device" ] (CType CVoid)

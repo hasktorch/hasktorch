@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module CodeGen.Render
   ( makeModule
@@ -43,8 +42,13 @@ renderModule m
   = "module "
   <> outModule (lib m)
   <> generatedTypeModule
-  <> "." <> textFileSuffix (fileSuffix m)
+  <> (case basename of
+         "" -> ""
+         _  -> "." <> basename)
  where
+  basename :: Text
+  basename = textFileSuffix (fileSuffix m)
+
   generatedTypeModule :: Text
   generatedTypeModule = case isTemplate m of
     ConcreteFiles -> ""

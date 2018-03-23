@@ -135,8 +135,10 @@ data TemplateType
 
 
 -- List used to iterate through all template types
-generatedTypes :: CodeGenType -> [TemplateType]
-generatedTypes = \case
+generatedTypes :: LibType -> CodeGenType -> [TemplateType]
+generatedTypes THNN   = \case { ConcreteFiles -> [GenNothing]; GenericFiles -> [GenDouble, GenFloat] }
+generatedTypes THCUNN = \case { ConcreteFiles -> [GenNothing]; GenericFiles -> [GenDouble, GenFloat] }
+generatedTypes _ = \case
   ConcreteFiles -> [GenNothing]
   GenericFiles ->
     [ GenByte

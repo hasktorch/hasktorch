@@ -111,11 +111,28 @@ functionArg = do
   argType <- parsabletypes <* space
   -- e.g. declaration sometimes has no variable name - eg Storage.h
   argName <- optional $ some (alphaNumChar <|> char '_') <* space
-  try (void (char ',' >> space >> eol)) <|> void (char ',') <|> lookAhead (void $ char ')')
+  endsInComma <|> endsInParen
+    -- <|> lookAhead (void $ char ')')
   pure $ Arg argType (maybe "" T.pack argName)
+ where
+
+  endsInComma :: Parser ()
+  endsInComma
+    =   try (void (char ',' >> space >> eol))
+    <|> try (void (char ',' >> space >> string "//" >> some (notChar '\n') >> eol))
+    <|> void (char ',')
+
+  endsInParen :: Parser ()
+  endsInParen
+    =   try (space >> string "//" >> some (notChar '\n') >> eol >> space >> lookAhead (void $ char ')'))
+    <|> lookAhead (void $ char ')')
 
 functionArgs :: Parser [Arg]
-functionArgs = char '(' *> some functionArg <* char ')'
+functionArgs = do
+  try (char '(' >> space >> void eol) <|> void (char '(')
+  args <- some functionArg
+  char ')'
+  pure args
 
 genericPrefixes :: Parser (LibType, Text)
 genericPrefixes = second T.pack <$> asum (foldMap go supportedLibraries)
