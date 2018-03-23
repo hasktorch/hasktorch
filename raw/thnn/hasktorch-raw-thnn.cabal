@@ -38,6 +38,7 @@ test-suite spec
     , base >=4.7 && <5
     , hasktorch-raw-th
     , hasktorch-raw-thnn
+    , hasktorch-raw-tests
     , hasktorch-types-th
     , hspec >=2.4.4
     , text >=1.2.2.2
