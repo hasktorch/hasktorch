@@ -29,7 +29,7 @@ data TestFunctions state tensor real accreal = TestFunctions
   , _sumall :: state -> tensor -> IO accreal
   , _prodall :: state -> tensor -> IO accreal
   , _zero :: state -> tensor -> IO ()
-  , _dot :: state -> tensor -> tensor -> IO accreal
+  , _dot :: Maybe (state -> tensor -> tensor -> IO accreal)
   , _abs :: Maybe (state -> tensor -> tensor -> IO ())
   }
 
@@ -109,52 +109,6 @@ signedSuite s fs = do
     fill s t1 3
     get2d s t1 0 0 >>= (`shouldBe` (3))
     free s t1
-  it "Can compute correct dot product between 1D vectors" $ do
-    t1 <- newWithSize1d s 3
-    t2 <- newWithSize1d s 3
-    fill s t1 3
-    fill s t2 4
-    let value = dot s t1 t2
-    value >>= (`shouldBe` 36)
-    free s t1
-    free s t2
-  it "Can compute correct dot product between 2D tensors" $ do
-    t1 <- newWithSize2d s 2 2
-    t2 <- newWithSize2d s 2 2
-    fill s t1 3
-    fill s t2 4
-    let value = dot s t1 t2
-    value >>= (`shouldBe` 48)
-    free s t1
-    free s t2
-  it "Can compute correct dot product between 3D tensors" $ do
-    t1 <- newWithSize3d s 2 2 4
-    t2 <- newWithSize3d s 2 2 4
-    fill s t1 3
-    fill s t2 4
-    let value = dot s t1 t2
-    value >>= (`shouldBe` 192)
-    free s t1
-    free s t2
-  it "Can compute correct dot product between 4D tensors" $ do
-    t1 <- newWithSize4d s 2 2 2 1
-    t2 <- newWithSize4d s 2 2 2 1
-    fill s t1 3
-    fill s t2 4
-    let value = dot s t1 t2
-    value >>= (`shouldBe` 96)
-    free s t1
-    free s t2
-  it "Can zero out values" $ do
-    t1 <- newWithSize4d s 2 2 4 3
-    fill s t1 3
-    -- let value = dot s t1 t1
-    -- sequencing does not work if there is more than one shouldBe test in
-    -- an "it" monad
-    -- value >>= (`shouldBe` (432.0))
-    zero s t1
-    dot s t1 t1 >>= (`shouldBe` 0)
-    free s t1
   it "Can compute sum of all values" $ do
     t1 <- newWithSize3d s 2 2 4
     fill s t1 2
@@ -165,6 +119,9 @@ signedSuite s fs = do
     fill s t1 2
     prodall s t1 >>= (`shouldBe` 16)
     free s t1
+  case mdot of
+    Nothing -> pure ()
+    Just dot -> describe "tests that rely on dot products" $ dotSpec s fs dot
   case mabs of
     Nothing  -> pure ()
     Just abs ->
@@ -198,7 +155,79 @@ signedSuite s fs = do
   sumall = _sumall fs
   mabs = _abs fs
   prodall = _prodall fs
-  dot = _dot fs
+  mdot = _dot fs
+  zero = _zero fs
+
+dotSpec s fs dot = do
+  it "Can compute correct dot product between 1D vectors" $ do
+    t1 <- newWithSize1d s 3
+    t2 <- newWithSize1d s 3
+    fill s t1 3
+    fill s t2 4
+    let value = dot s t1 t2
+    value >>= (`shouldBe` 36)
+    free s t1
+    free s t2
+  it "Can compute correct dot product between 2D tensors" $ do
+    t1 <- newWithSize2d s 2 2
+    t2 <- newWithSize2d s 2 2
+    fill s t1 3
+    fill s t2 4
+    let value = dot s t1 t2
+    value >>= (`shouldBe` 48)
+    free s t1
+    free s t2
+  it "Can zero out values" $ do
+    t1 <- newWithSize4d s 2 2 4 3
+    fill s t1 3
+    -- let value = dot s t1 t1
+    -- sequencing does not work if there is more than one shouldBe test in
+    -- an "it" monad
+    -- value >>= (`shouldBe` (432.0))
+    zero s t1
+    dot s t1 t1 >>= (`shouldBe` 0)
+    free s t1
+  it "Can compute correct dot product between 3D tensors" $ do
+    t1 <- newWithSize3d s 2 2 4
+    t2 <- newWithSize3d s 2 2 4
+    fill s t1 3
+    fill s t2 4
+    let value = dot s t1 t2
+    value >>= (`shouldBe` 192)
+    free s t1
+    free s t2
+  it "Can compute correct dot product between 4D tensors" $ do
+    t1 <- newWithSize4d s 2 2 2 1
+    t2 <- newWithSize4d s 2 2 2 1
+    fill s t1 3
+    fill s t2 4
+    let value = dot s t1 t2
+    value >>= (`shouldBe` 96)
+    free s t1
+    free s t2
+
+ where
+  new = _new fs
+  newWithSize1d = _newWithSize1d fs
+  newWithSize2d = _newWithSize2d fs
+  newWithSize3d = _newWithSize3d fs
+  newWithSize4d = _newWithSize4d fs
+  nDimension = _nDimension fs
+  set1d = _set1d fs
+  get1d = _get1d fs
+  set2d = _set2d fs
+  get2d = _get2d fs
+  set3d = _set3d fs
+  get3d = _get3d fs
+  set4d = _set4d fs
+  get4d = _get4d fs
+  size = _size fs
+  fill = _fill fs
+  free = _free fs
+  sumall = _sumall fs
+  mabs = _abs fs
+  prodall = _prodall fs
+  mdot = _dot fs
   zero = _zero fs
 
 

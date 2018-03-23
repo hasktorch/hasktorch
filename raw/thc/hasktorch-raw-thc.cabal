@@ -192,7 +192,6 @@ library
     , Torch.FFI.THC.Int.TensorMath
     , Torch.FFI.THC.Int.TensorRandom
     , Torch.FFI.THC.Int.TensorIndex
-    , Torch.FFI.THC.Int.TensorMathBlas
     , Torch.FFI.THC.Int.StorageCopy
 
   other-modules:

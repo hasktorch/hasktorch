@@ -65,7 +65,7 @@ longBook = TestFunctions
   , _sumall = L.c_sumall
   , _prodall = L.c_prodall
   , _zero = L.c_zero
-  , _dot = L.c_dot
+  , _dot = Just L.c_dot
   , _abs = Just L.c_abs
   }
 
@@ -91,7 +91,7 @@ shortBook = TestFunctions
   , _sumall = S.c_sumall
   , _prodall = S.c_prodall
   , _zero = S.c_zero
-  , _dot = S.c_dot
+  , _dot = Just S.c_dot
   , _abs = Just S.c_abs
   }
 
@@ -117,7 +117,7 @@ floatBook = TestFunctions
   , _sumall = F.c_sumall
   , _prodall = F.c_prodall
   , _zero = F.c_zero
-  , _dot = F.c_dot
+  , _dot = Just F.c_dot
   , _abs = Just F.c_abs
   }
 
@@ -143,7 +143,7 @@ doubleBook = TestFunctions
   , _sumall = D.c_sumall
   , _prodall = D.c_prodall
   , _zero = D.c_zero
-  , _dot = D.c_dot
+  , _dot = Just D.c_dot
   , _abs = Just D.c_abs
   }
 
@@ -169,7 +169,7 @@ byteBook = TestFunctions
   , _sumall = B.c_sumall
   , _prodall = B.c_prodall
   , _zero = B.c_zero
-  , _dot = B.c_dot
+  , _dot = Just B.c_dot
   , _abs = Nothing
   }
 
@@ -195,7 +195,7 @@ intBook = TestFunctions
   , _sumall = I.c_sumall
   , _prodall = I.c_prodall
   , _zero = I.c_zero
-  , _dot = I.c_dot
+  , _dot = Just I.c_dot
   , _abs = Just I.c_abs
   }
 

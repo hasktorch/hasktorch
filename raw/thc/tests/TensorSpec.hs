@@ -14,7 +14,6 @@ import qualified Torch.Types.THC.Byte as B
 import qualified Torch.FFI.THC.Byte.Tensor as B
 import qualified Torch.FFI.THC.Byte.TensorIndex as B
 import qualified Torch.FFI.THC.Byte.TensorMasked as B
-import qualified Torch.FFI.THC.Byte.TensorMathBlas as B
 import qualified Torch.FFI.THC.Byte.TensorMathCompare as B
 import qualified Torch.FFI.THC.Byte.TensorMathCompareT as B
 import qualified Torch.FFI.THC.Byte.TensorMath as B
@@ -68,7 +67,6 @@ import qualified Torch.Types.THC.Int as I
 import qualified Torch.FFI.THC.Int.Tensor as I
 import qualified Torch.FFI.THC.Int.TensorIndex as I
 import qualified Torch.FFI.THC.Int.TensorMasked as I
-import qualified Torch.FFI.THC.Int.TensorMathBlas as I
 import qualified Torch.FFI.THC.Int.TensorMathCompare as I
 import qualified Torch.FFI.THC.Int.TensorMathCompareT as I
 import qualified Torch.FFI.THC.Int.TensorMath as I
@@ -86,7 +84,6 @@ import qualified Torch.Types.THC.Short as S
 import qualified Torch.FFI.THC.Short.Tensor as S
 import qualified Torch.FFI.THC.Short.TensorIndex as S
 import qualified Torch.FFI.THC.Short.TensorMasked as S
-import qualified Torch.FFI.THC.Short.TensorMathBlas as S
 import qualified Torch.FFI.THC.Short.TensorMathCompare as S
 import qualified Torch.FFI.THC.Short.TensorMathCompareT as S
 import qualified Torch.FFI.THC.Short.TensorMath as S
@@ -104,7 +101,6 @@ import qualified Torch.Types.THC.Long as L
 import qualified Torch.FFI.THC.Long.Tensor as L
 import qualified Torch.FFI.THC.Long.TensorIndex as L
 import qualified Torch.FFI.THC.Long.TensorMasked as L
-import qualified Torch.FFI.THC.Long.TensorMathBlas as L
 import qualified Torch.FFI.THC.Long.TensorMathCompare as L
 import qualified Torch.FFI.THC.Long.TensorMathCompareT as L
 import qualified Torch.FFI.THC.Long.TensorMath as L
@@ -156,7 +152,7 @@ longBook = TestFunctions
   , _sumall = L.c_sumall
   , _prodall = L.c_prodall
   , _zero = L.c_zero
-  , _dot = L.c_dot
+  , _dot = Nothing
   , _abs = Just L.c_abs
   }
 
@@ -182,7 +178,7 @@ shortBook = TestFunctions
   , _sumall = S.c_sumall
   , _prodall = S.c_prodall
   , _zero = S.c_zero
-  , _dot = S.c_dot
+  , _dot = Nothing
   , _abs = Just S.c_abs
   }
 
@@ -236,7 +232,7 @@ doubleBook = TestFunctions
   , _sumall = D.c_sumall
   , _prodall = D.c_prodall
   , _zero = D.c_zero
-  , _dot = D.c_dot
+  , _dot = Just D.c_dot
   , _abs = Just D.c_abs
   }
 
@@ -262,7 +258,7 @@ byteBook = TestFunctions
   , _sumall = B.c_sumall
   , _prodall = B.c_prodall
   , _zero = B.c_zero
-  , _dot = B.c_dot
+  , _dot = Nothing
   , _abs = Nothing
   }
 
@@ -288,7 +284,7 @@ intBook = TestFunctions
   , _sumall = I.c_sumall
   , _prodall = I.c_prodall
   , _zero = I.c_zero
-  , _dot = I.c_dot
+  , _dot = Nothing
   , _abs = Just I.c_abs
   }
 
