@@ -14,7 +14,7 @@ source-repository head
   location: https://github.com/hasktorch/hasktorch
 
 library
-  extra-libraries: ATen, EHX
+  extra-libraries: EHX, ATen
   hs-source-dirs:
       src
   build-depends:
@@ -54,7 +54,6 @@ library
     , Torch.FFI.THC.Short.TensorMath
     , Torch.FFI.THC.Short.TensorRandom
     , Torch.FFI.THC.Short.TensorIndex
-    , Torch.FFI.THC.Short.TensorMathBlas
     , Torch.FFI.THC.Short.StorageCopy
 
     , Torch.FFI.THC.Byte.TensorMode
@@ -74,7 +73,6 @@ library
     , Torch.FFI.THC.Byte.TensorMath
     , Torch.FFI.THC.Byte.TensorRandom
     , Torch.FFI.THC.Byte.TensorIndex
-    , Torch.FFI.THC.Byte.TensorMathBlas
     , Torch.FFI.THC.Byte.StorageCopy
 
     , Torch.FFI.THC.Char.TensorMode
@@ -94,7 +92,6 @@ library
     , Torch.FFI.THC.Char.TensorMath
     , Torch.FFI.THC.Char.TensorRandom
     , Torch.FFI.THC.Char.TensorIndex
-    , Torch.FFI.THC.Char.TensorMathBlas
     , Torch.FFI.THC.Char.StorageCopy
 
     -- , Torch.FFI.THC.Float.TensorMode
@@ -135,7 +132,6 @@ library
     , Torch.FFI.THC.Long.TensorMath
     , Torch.FFI.THC.Long.TensorRandom
     , Torch.FFI.THC.Long.TensorIndex
-    , Torch.FFI.THC.Long.TensorMathBlas
     , Torch.FFI.THC.Long.StorageCopy
 
     -- , Torch.FFI.THC.Half.TensorMode
