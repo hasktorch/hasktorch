@@ -122,12 +122,15 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  -- describe "Float Tensor creation and access methods"  $ withCudaState (`signedSuite` floatBook)
-  describe "Double Tensor creation and access methods" $ withCudaState (`signedSuite` doubleBook)
-  describe "Byte Tensor creation and access methods"   $ withCudaState (`signedSuite` byteBook)
-  describe "Int Tensor creation and access methods"    $ withCudaState (`signedSuite` intBook)
-  describe "Long Tensor creation and access methods"   $ withCudaState (`signedSuite` longBook)
-  describe "Short Tensor creation and access methods"  $ withCudaState (`signedSuite` shortBook)
+  s <- runIO cudaState
+  afterAll_ (stopCuda s) $ do
+    -- describe "Float Tensor creation and access methods"  $ signedSuite s floatBook
+    describe "Double Tensor creation and access methods" $ signedSuite s doubleBook
+    describe "Byte Tensor creation and access methods"   $ signedSuite s byteBook
+    describe "Int Tensor creation and access methods"    $ signedSuite s intBook
+    describe "Long Tensor creation and access methods"   $ signedSuite s longBook
+    describe "Short Tensor creation and access methods"  $ signedSuite s shortBook
+    describe "Double Tensor creation and access methods" $ signedSuite s doubleBook
 
 
 longBook :: TestFunctions (Ptr C'THCState) (Ptr L.CTensor) L.CReal L.CAccReal
