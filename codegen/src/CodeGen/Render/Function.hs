@@ -111,20 +111,20 @@ renderSig
   -> FileSuffix
   -> (Maybe (LibType, Text), Text, Parsable, [Arg])
   -> Text
-renderSig t lt cgt headerFile tt ms fs (mpref, name, retType, args) =
+renderSig st lt cgt headerFile tt ms fs (mpref, name, retType, args) =
   T.intercalate "\n"
-    [ comment lt t hsname args retType
+    [ comment lt st hsname args retType
     , foreignCall cname headerFile
     , implementation
     ]
  where
   cname, hsname :: Text
-  cname = mkCname t lt ms tt cgt mpref name
-  hsname = mkHsname lt t mpref name
+  cname = mkCname st lt ms tt cgt mpref name
+  hsname = mkHsname lt st mpref name
 
   implementation :: Text
   implementation =
-    case (lt, cgt, fs) of
+    case (lt, cgt, fs, st) of
       -- NOTE: TH and THC functions differ in the THC State. TH does have a concept of THState, which
       -- is unused. Here we render some function aliases which will allow us to maintain unified
       -- backpack signatures.
@@ -132,13 +132,13 @@ renderSig t lt cgt headerFile tt ms fs (mpref, name, retType, args) =
       -- NOTE2: In the event that we render generic functions from the TH
       -- library which _does not include THTensorRandom_, we want to post-fix these names with a @_@
       -- and use the alias to match the backpack signatures.
-      (TH, GenericFiles, "TensorRandom") -> "  " <> (haskellSig lt hsname t tt args retType)
-      (TH, GenericFiles, _) ->
+      (TH, GenericFiles, "TensorRandom", _) -> "  " <> (haskellSig lt hsname st tt args retType)
+      (TH, GenericFiles, _, IsFun) ->
         T.intercalate "\n"
-          [ "  " <> (haskellSig lt (mkAliasRefName hsname) t tt args retType)
+          [ "  " <> (haskellSig lt (mkAliasRefName hsname) st tt args retType)
           , ""
           , "-- | alias of " <> mkAliasRefName hsname <> " with unused argument (for CTHState) to unify backpack signatures."
-          -- , haskellSig TH hsname t tt ((Arg (TenType State) "cstate"):args) retType
+          , haskellSig lt hsname st tt thArgs retType
           , hsname <> " = const " <> mkAliasRefName hsname
           ]
         where
@@ -149,7 +149,15 @@ renderSig t lt cgt headerFile tt ms fs (mpref, name, retType, args) =
           mkAliasRefName :: Text -> Text
           mkAliasRefName = (<> "_")
 
+          thArgs :: [Arg]
+          thArgs =
+            if length args == 1 && argType (head args) == (CType CVoid)
+            then [statePtr]
+            else statePtr:args
 
-      _ -> "  " <> (haskellSig lt hsname t tt args retType)
+          statePtr :: Arg
+          statePtr = Arg (Ptr (TenType (Pair (State, TH)))) "state"
+
+      _ -> "  " <> (haskellSig lt hsname st tt args retType)
 
 
