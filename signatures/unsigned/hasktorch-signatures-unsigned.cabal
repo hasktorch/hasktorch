@@ -28,6 +28,8 @@ library
     , Torch.Sig.Tensor.MathScan
     , Torch.Sig.Tensor.Mode
     , Torch.Sig.Tensor.ScatterGather
+    , Torch.Sig.Tensor.Sort
+    , Torch.Sig.Tensor.TopK
 
     -- , Torch.Sig.Tensor.Math
     -- , Torch.Sig.Tensor.Random
@@ -71,6 +73,8 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.MathScan      as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Mode          as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.ScatterGather as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Sort          as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.TopK          as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Conv   as Torch.FFI.TH.Byte.TensorConv
         -- ,Torch.Sig.Tensor.Random as Torch.FFI.TH.Byte.TensorRandom
         -- ,Torch.Sig.Tensor.Math   as Torch.FFI.TH.Byte.TensorMath
@@ -105,6 +109,8 @@ executable isdefinite-thc
         ,Torch.Sig.Tensor.MathScan      as Torch.FFI.THC.Byte.TensorMathScan
         ,Torch.Sig.Tensor.Mode          as Torch.FFI.THC.Byte.TensorMode
         ,Torch.Sig.Tensor.ScatterGather as Torch.FFI.THC.Byte.TensorScatterGather
+        ,Torch.Sig.Tensor.Sort          as Torch.FFI.THC.Byte.TensorSort
+        ,Torch.Sig.Tensor.TopK          as Torch.FFI.THC.Byte.TensorTopK
 --         -- -- ,Torch.Sig.Tensor.Conv   as Torch.FFI.THC.Byte.TensorConv
 --         -- ,Torch.Sig.Tensor.Random as Torch.FFI.THC.Byte.TensorRandom
 --         -- ,Torch.Sig.Tensor.Math   as Torch.FFI.THC.Byte.TensorMath
