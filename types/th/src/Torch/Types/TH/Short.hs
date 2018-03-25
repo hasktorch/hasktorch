@@ -3,6 +3,7 @@
 module Torch.Types.TH.Short
   ( CTensor
   , CState
+  , CAllocator
   , CStorage
   , CReal
   , CAccReal
@@ -26,8 +27,10 @@ import GHC.TypeLits (Nat)
 import GHC.Int
 import Torch.Types.TH
 
+type CAllocator = CTHAllocator
+type CState = C'THState
+type CDescBuff = C'THDescBuff
 type CTensor = CTHShortTensor
-type CState = ()
 type CStorage = CTHShortStorage
 type CReal = CShort
 type CAccReal = CLong

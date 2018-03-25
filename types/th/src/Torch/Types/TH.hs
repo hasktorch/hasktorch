@@ -1,6 +1,23 @@
 module Torch.Types.TH
-  ( CTHDescBuff
-  , CTHAllocatorPtr
+  ( ByteStorage
+  , CharStorage
+  , IntStorage
+  , ShortStorage
+  , LongStorage
+  , FloatStorage
+  , DoubleStorage
+  , HalfStorage
+
+  , ByteTensor
+  , CharTensor
+  , IntTensor
+  , ShortTensor
+  , LongTensor
+  , FloatTensor
+  , DoubleTensor
+  , HalfTensor
+
+  , C'THState, CTHDescBuff
   , CTHAllocator
   , CTHGenerator
   , CTHFile, C'THFile
@@ -68,8 +85,30 @@ import Foreign.Storable ()
 
 import Torch.Types.TH.Structs
 
-type CTHDescBuff = Ptr C'THDescBuff
-type CTHAllocatorPtr = Ptr C'THAllocator
+type ByteStorage = C'THByteStorage
+type CharStorage = C'THCharStorage
+type IntStorage = C'THIntStorage
+type ShortStorage = C'THShortStorage
+type LongStorage = C'THLongStorage
+type FloatStorage = C'THFloatStorage
+type DoubleStorage = C'THDoubleStorage
+type HalfStorage = C'THHalfStorage
+
+type ByteTensor = C'THByteTensor
+type CharTensor = C'THCharTensor
+type IntTensor = C'THIntTensor
+type ShortTensor = C'THShortTensor
+type LongTensor = C'THLongTensor
+type FloatTensor = C'THFloatTensor
+type DoubleTensor = C'THDoubleTensor
+type HalfTensor = C'THHalfTensor
+
+type C'THState = Ptr ()
+type CState = C'THState
+type CAllocator = CTHAllocator
+
+type CTHDescBuff = C'THDescBuff
+-- type CTHAllocatorPtr = Ptr C'THAllocator
 type CTHAllocator = C'THAllocator
 type CTHGenerator = C'THGenerator
 type CTHFile = ()

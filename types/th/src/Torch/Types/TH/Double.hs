@@ -1,37 +1,17 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Types.TH.Double
-  ( CTensor
-  , CState
-  , CStorage
-  , CReal
-  , CAccReal
-  , HsAccReal
-  , HsReal
-  , hs2cReal
-  , hs2cAccReal
-  , c2hsReal
-  , c2hsAccReal
-  , Tensor(..)
-  , DynTensor(..)
-  , Storage(..)
-  , asStorage
-  , asDyn
-  , asStatic
-  , CTHDoubleTensor
-  , CTHDoubleStorage
-  , C'THDoubleTensor
-  , C'THDoubleStorage
-  ) where
+module Torch.Types.TH.Double where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
 import Torch.Types.TH
 
+type CAllocator = CTHAllocator
+type CState = C'THState
+type CDescBuff = C'THDescBuff
 type CTensor = CTHDoubleTensor
 type CStorage = CTHDoubleStorage
-type CState = ()
 type CReal = CDouble
 type CAccReal = CDouble
 type HsReal = Double

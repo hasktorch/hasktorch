@@ -1,36 +1,16 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Types.TH.Float
-  ( CTensor
-  , CState
-  , CStorage
-  , CReal
-  , CAccReal
-  , HsAccReal
-  , HsReal
-  , hs2cReal
-  , hs2cAccReal
-  , c2hsReal
-  , c2hsAccReal
-  , Tensor(..)
-  , DynTensor(..)
-  , Storage(..)
-  , asStorage
-  , asDyn
-  , asStatic
-  , CTHFloatTensor
-  , CTHFloatStorage
-  , C'THFloatTensor
-  , C'THFloatStorage
-  ) where
+module Torch.Types.TH.Float where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
 import Torch.Types.TH
 
+type CAllocator = CTHAllocator
+type CState = C'THState
+type CDescBuff = C'THDescBuff
 type CTensor = CTHFloatTensor
-type CState = ()
 type CStorage = CTHFloatStorage
 type CReal = CFloat
 type CAccReal = CDouble

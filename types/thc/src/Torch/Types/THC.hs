@@ -38,7 +38,7 @@ import Torch.Types.THC.Structs as X
 
 import Foreign
 
-type CTHCDescBuff = Ptr C'THCDescBuff
+type CTHCDescBuff = C'THCDescBuff
 type CTHCGenerator = C'_Generator
 type CTHCStream = C'THCStream
 type CTHCState = C'THCState

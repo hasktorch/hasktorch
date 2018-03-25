@@ -1,0 +1,33 @@
+signature Torch.Sig.Tensor.MathReduce where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Data.Word
+import Data.Int
+import Torch.Types.TH
+
+c_sum :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
+c_prod :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
+c_min :: Ptr CState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
+c_max :: Ptr CState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
+c_minall :: Ptr CState -> Ptr CTensor -> IO CReal
+c_maxall :: Ptr CState -> Ptr CTensor -> IO CReal
+c_medianall :: Ptr CState -> Ptr CTensor -> IO CReal
+c_median :: Ptr CState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
+c_sumall :: Ptr CState -> Ptr CTensor -> IO CAccReal
+c_prodall :: Ptr CState -> Ptr CTensor -> IO CAccReal
+
+-- * not in THC.BYte
+-- c_renorm :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> CInt -> CReal -> IO ()
+-- c_std :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> IO ()
+-- c_stdall :: Ptr CState -> Ptr CTensor -> CInt -> IO CReal
+-- c_var :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> IO ()
+-- c_varall :: Ptr CState -> Ptr CTensor -> CInt -> IO CReal
+-- c_dist :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO CReal
+
+-- * not in TH.Byte
+-- c_norm :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> CInt -> CInt -> IO ()
+-- c_normall :: Ptr CState -> Ptr CTensor -> CReal -> IO CReal
+-- c_mean :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
+-- c_meanall :: Ptr CState -> Ptr CTensor -> IO CReal

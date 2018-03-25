@@ -6,10 +6,27 @@ import Foreign (ForeignPtr)
 import Foreign.Storable
 import GHC.TypeLits (Nat)
 
+-- all C-types
 data CTensor
 data CStorage
 data CState
+data CAllocator
+data CDescBuff
+data CIndexTensor
+data CIndexStorage
+data CMaskTensor
 
+data CInt'
+-- data CByteTensor
+-- data CCharTensor
+-- data CShortTensor
+-- data CIntTensor
+-- data CLongTensor
+-- data CFloatTensor
+-- data CDoubleTensor
+-- data CHalfTensor
+
+-- all haskell, memory-managed types
 data DynTensor
 asDyn :: ForeignPtr CTensor -> DynTensor
 tensor :: DynTensor -> ForeignPtr CTensor

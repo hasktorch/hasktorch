@@ -4,24 +4,20 @@ import Torch.Types.TH
 import Foreign
 import Torch.Sig.Types
 
-c_rawCopy    :: Ptr CStorage -> Ptr CReal -> IO ()
-c_copy       :: Ptr CStorage -> Ptr CStorage -> IO ()
-c_copyByte   :: Ptr CStorage -> Ptr CTHByteStorage -> IO ()
-c_copyChar   :: Ptr CStorage -> Ptr CTHCharStorage -> IO ()
-c_copyShort  :: Ptr CStorage -> Ptr CTHShortStorage -> IO ()
-c_copyInt    :: Ptr CStorage -> Ptr CTHIntStorage -> IO ()
-c_copyLong   :: Ptr CStorage -> Ptr CTHLongStorage -> IO ()
-c_copyFloat  :: Ptr CStorage -> Ptr CTHFloatStorage -> IO ()
-c_copyDouble :: Ptr CStorage -> Ptr CTHDoubleStorage -> IO ()
-c_copyHalf   :: Ptr CStorage -> Ptr CTHHalfStorage -> IO ()
+c_rawCopy    :: Ptr CState -> Ptr CStorage -> Ptr CReal -> IO ()
+c_copy       :: Ptr CState -> Ptr CStorage -> Ptr CStorage -> IO ()
+c_copyByte   :: Ptr CState -> Ptr CStorage -> Ptr C'THByteStorage -> IO ()
+c_copyChar   :: Ptr CState -> Ptr CStorage -> Ptr C'THCharStorage -> IO ()
+c_copyShort  :: Ptr CState -> Ptr CStorage -> Ptr C'THShortStorage -> IO ()
+c_copyInt    :: Ptr CState -> Ptr CStorage -> Ptr C'THIntStorage -> IO ()
+c_copyLong   :: Ptr CState -> Ptr CStorage -> Ptr C'THLongStorage -> IO ()
+c_copyFloat  :: Ptr CState -> Ptr CStorage -> Ptr C'THFloatStorage -> IO ()
+c_copyDouble :: Ptr CState -> Ptr CStorage -> Ptr C'THDoubleStorage -> IO ()
+c_copyHalf   :: Ptr CState -> Ptr CStorage -> Ptr C'THHalfStorage -> IO ()
 
-p_rawCopy    :: FunPtr (Ptr CStorage -> Ptr CReal -> IO ())
-p_copy       :: FunPtr (Ptr CStorage -> Ptr CStorage -> IO ())
-p_copyByte   :: FunPtr (Ptr CStorage -> Ptr CTHByteStorage -> IO ())
-p_copyChar   :: FunPtr (Ptr CStorage -> Ptr CTHCharStorage -> IO ())
-p_copyShort  :: FunPtr (Ptr CStorage -> Ptr CTHShortStorage -> IO ())
-p_copyInt    :: FunPtr (Ptr CStorage -> Ptr CTHIntStorage -> IO ())
-p_copyLong   :: FunPtr (Ptr CStorage -> Ptr CTHLongStorage -> IO ())
-p_copyFloat  :: FunPtr (Ptr CStorage -> Ptr CTHFloatStorage -> IO ())
-p_copyDouble :: FunPtr (Ptr CStorage -> Ptr CTHDoubleStorage -> IO ())
-p_copyHalf   :: FunPtr (Ptr CStorage -> Ptr CTHHalfStorage -> IO ())
+-- * THC
+-- c_thCopyCuda :: Ptr C'THCState -> Ptr C'THByteStorage -> Ptr C'THCByteStorage -> IO ()
+-- c_copyCuda :: Ptr C'THCState -> Ptr C'THCByteStorage -> Ptr C'THCByteStorage -> IO ()
+-- c_copyCPU :: Ptr C'THCState -> Ptr C'THCByteStorage -> Ptr C'THByteStorage -> IO ()
+
+

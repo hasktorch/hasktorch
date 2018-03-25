@@ -11,17 +11,101 @@ cabal-version: >=2.0
 library
   signatures:
       Torch.Sig.Types
-    -- , Blas
-    -- , Vector
+
     , Torch.Sig.Storage
     , Torch.Sig.Storage.Copy
-    , Torch.Sig.IsTensor
+
+    , Torch.Sig.Tensor
     , Torch.Sig.Tensor.Copy
-    , Torch.Sig.Tensor.Conv
+    , Torch.Sig.Tensor.Index
+    , Torch.Sig.Tensor.Masked
+    , Torch.Sig.Tensor.MathCompare
+    , Torch.Sig.Tensor.MathCompareT
     , Torch.Sig.Tensor.Math
-    , Torch.Sig.Tensor.Random
+    , Torch.Sig.Tensor.MathPairwise
+    , Torch.Sig.Tensor.MathPointwise
+    , Torch.Sig.Tensor.MathReduce
+    , Torch.Sig.Tensor.MathScan
+    , Torch.Sig.Tensor.Mode
+    , Torch.Sig.Tensor.ScatterGather
+
+    -- , Torch.Sig.Tensor.Math
+    -- , Torch.Sig.Tensor.Random
+
+    -- * THC-SPECIFIC
+    -- , Torch.Sig.TH.Vector
+    -- , Torch.Sig.TH.Blas
+    -- , Torch.Sig.TH.Tensor.Conv
 
   default-language: Haskell2010
   hs-source-dirs: src
-  build-depends: base >= 4.7 && < 5, hasktorch-types-th
+  build-depends:
+      base >= 4.7 && < 5
+    , hasktorch-types-th
 
+executable isdefinite-th
+  hs-source-dirs: exe
+  main-is: Main.hs
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw-th
+    , hasktorch-types-th
+    , hasktorch-signatures-unsigned
+  mixins:
+      hasktorch-signatures-unsigned
+        requires
+        (Torch.Sig.Types         as Torch.Types.TH.Byte
+        ,Torch.Sig.Storage       as Torch.FFI.TH.Byte.Storage
+        ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Byte.StorageCopy
+        ,Torch.Sig.Tensor        as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.TH.Byte.TensorCopy
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.MathCompare   as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.MathCompareT  as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math          as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.MathPairwise  as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.MathPointwise as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.MathReduce    as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.MathScan      as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Mode          as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.ScatterGather as Torch.FFI.TH.Byte.TensorMath
+        -- ,Torch.Sig.Tensor.Conv   as Torch.FFI.TH.Byte.TensorConv
+        -- ,Torch.Sig.Tensor.Random as Torch.FFI.TH.Byte.TensorRandom
+        -- ,Torch.Sig.Tensor.Math   as Torch.FFI.TH.Byte.TensorMath
+        )
+
+
+executable isdefinite-thc
+  hs-source-dirs: exe
+  main-is: Main.hs
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw-thc
+    , hasktorch-types-thc
+    , hasktorch-signatures-unsigned
+  mixins:
+      hasktorch-signatures-unsigned
+        requires
+        (Torch.Sig.Types         as Torch.Types.THC.Byte
+        ,Torch.Sig.Storage       as Torch.FFI.THC.Byte.Storage
+        ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Byte.StorageCopy
+        ,Torch.Sig.Tensor        as Torch.FFI.THC.Byte.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Byte.TensorCopy
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
+        ,Torch.Sig.Tensor.MathCompare   as Torch.FFI.THC.Byte.TensorMathCompare
+        ,Torch.Sig.Tensor.MathCompareT  as Torch.FFI.THC.Byte.TensorMathCompareT
+        ,Torch.Sig.Tensor.Math          as Torch.FFI.THC.Byte.TensorMath
+        ,Torch.Sig.Tensor.MathPairwise  as Torch.FFI.THC.Byte.TensorMathPairwise
+        ,Torch.Sig.Tensor.MathPointwise as Torch.FFI.THC.Byte.TensorMathPointwise
+        ,Torch.Sig.Tensor.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
+        ,Torch.Sig.Tensor.MathScan      as Torch.FFI.THC.Byte.TensorMathScan
+        ,Torch.Sig.Tensor.Mode          as Torch.FFI.THC.Byte.TensorMode
+        ,Torch.Sig.Tensor.ScatterGather as Torch.FFI.THC.Byte.TensorScatterGather
+--         -- -- ,Torch.Sig.Tensor.Conv   as Torch.FFI.THC.Byte.TensorConv
+--         -- ,Torch.Sig.Tensor.Random as Torch.FFI.THC.Byte.TensorRandom
+--         -- ,Torch.Sig.Tensor.Math   as Torch.FFI.THC.Byte.TensorMath
+        )

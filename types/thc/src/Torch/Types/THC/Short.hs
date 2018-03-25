@@ -1,24 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Types.THC.Short
-  ( CTensor
-  , CState
-  , CStorage
-  , CReal
-  , CAccReal
-  , HsAccReal
-  , HsReal
-  , hs2cReal
-  , hs2cAccReal
-  , c2hsReal
-  , c2hsAccReal
-  , Storage(..)
-  , DynTensor(..)
-  , Tensor(..)
-  , asStorage
-  , asDyn
-  , asStatic
-  ) where
+module Torch.Types.THC.Short where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)

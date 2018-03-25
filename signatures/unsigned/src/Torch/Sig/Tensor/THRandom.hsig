@@ -12,5 +12,12 @@ c_geometric              :: Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ()
 c_bernoulli              :: Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ()
 c_bernoulli_FloatTensor  :: Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
 c_bernoulli_DoubleTensor :: Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
--- c_bernoulli_Tensor       :: Ptr CTTensor -> Ptr CTHGenerator -> Ptr CTTensor -> IO ()
+
+p_random                 :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> IO ())
+p_clampedRandom          :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ())
+p_cappedRandom           :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> CLLong -> IO ())
+p_geometric              :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ())
+p_bernoulli              :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ())
+p_bernoulli_FloatTensor  :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ())
+p_bernoulli_DoubleTensor :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
 

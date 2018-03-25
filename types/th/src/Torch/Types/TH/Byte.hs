@@ -1,28 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Types.TH.Byte
-  ( CTensor
-  , CState
-  , CStorage
-  , CReal
-  , CAccReal
-  , HsAccReal
-  , HsReal
-  , hs2cReal
-  , hs2cAccReal
-  , c2hsReal
-  , c2hsAccReal
-  , Tensor(..)
-  , DynTensor(..)
-  , Storage(..)
-  , asStorage
-  , asDyn
-  , asStatic
-  , CTHByteTensor
-  , CTHByteStorage
-  , C'THByteTensor
-  , C'THByteStorage
-  ) where
+module Torch.Types.TH.Byte where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)
@@ -30,13 +8,29 @@ import GHC.TypeLits (Nat)
 import GHC.Word
 import Torch.Types.TH
 
-type CState = ()
+type CAllocator = CTHAllocator
+type CState = C'THState
+type CDescBuff = C'THDescBuff
 type CTensor = CTHByteTensor
 type CStorage = CTHByteStorage
+type CIndexTensor = CTHLongTensor
+type CIndexStorage = CTHLongStorage
 type CReal = CUChar
 type CAccReal = CLong
 type HsReal = Word8
 type HsAccReal = Word64
+
+type CMaskTensor = C'THByteTensor
+type CInt' = CInt
+
+-- type CByteTensor = C'THByteTensor
+-- type CCharTensor = C'THCharTensor
+-- type CShortTensor = C'THShortTensor
+-- type CIntTensor = C'THIntTensor
+-- type CLongTensor = C'THLongTensor
+-- type CFloatTensor = C'THFloatTensor
+-- type CDoubleTensor = C'THDoubleTensor
+-- type CHalfTensor = C'THHalfTensor
 
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral

@@ -1,0 +1,78 @@
+signature Torch.Sig.Tensor where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Torch.Types.TH
+
+c_clearFlag :: Ptr CState -> Ptr CTensor -> CChar -> IO ()
+c_data :: Ptr CState -> Ptr CTensor -> IO (Ptr CReal)
+c_free :: Ptr CState -> Ptr CTensor -> IO ()
+c_freeCopyTo :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_get1d :: Ptr CState -> Ptr CTensor -> CLLong -> IO CReal
+c_get2d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> IO CReal
+c_get3d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> CLLong -> IO CReal
+c_get4d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO CReal
+c_isContiguous :: Ptr CState -> Ptr CTensor -> IO CInt
+c_isSameSizeAs :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO CInt
+c_isSetTo :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO CInt
+c_isSize :: Ptr CState -> Ptr CTensor -> Ptr C'THLongStorage -> IO CInt
+c_nDimension :: Ptr CState -> Ptr CTensor -> IO CInt
+c_nElement :: Ptr CState -> Ptr CTensor -> IO CPtrdiff
+c_narrow :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CLLong -> CLLong -> IO ()
+c_new :: Ptr CState -> IO (Ptr CTensor)
+c_newClone :: Ptr CState -> Ptr CTensor -> IO (Ptr CTensor)
+c_newContiguous :: Ptr CState -> Ptr CTensor -> IO (Ptr CTensor)
+c_newNarrow :: Ptr CState -> Ptr CTensor -> CInt -> CLLong -> CLLong -> IO (Ptr CTensor)
+c_newSelect :: Ptr CState -> Ptr CTensor -> CInt -> CLLong -> IO (Ptr CTensor)
+c_newSizeOf :: Ptr CState -> Ptr CTensor -> IO (Ptr C'THLongStorage)
+c_newStrideOf :: Ptr CState -> Ptr CTensor -> IO (Ptr C'THLongStorage)
+c_newTranspose :: Ptr CState -> Ptr CTensor -> CInt -> CInt -> IO (Ptr CTensor)
+c_newUnfold :: Ptr CState -> Ptr CTensor -> CInt -> CLLong -> CLLong -> IO (Ptr CTensor)
+c_newView :: Ptr CState -> Ptr CTensor -> Ptr C'THLongStorage -> IO (Ptr CTensor)
+c_newWithSize :: Ptr CState -> Ptr C'THLongStorage -> Ptr C'THLongStorage -> IO (Ptr CTensor)
+c_newWithSize1d :: Ptr CState -> CLLong -> IO (Ptr CTensor)
+c_newWithSize2d :: Ptr CState -> CLLong -> CLLong -> IO (Ptr CTensor)
+c_newWithSize3d :: Ptr CState -> CLLong -> CLLong -> CLLong -> IO (Ptr CTensor)
+c_newWithSize4d :: Ptr CState -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTensor)
+c_newWithStorage :: Ptr CState -> Ptr CStorage -> CPtrdiff -> Ptr C'THLongStorage -> Ptr C'THLongStorage -> IO (Ptr CTensor)
+c_newWithStorage1d :: Ptr CState -> Ptr CStorage -> CPtrdiff -> CLLong -> CLLong -> IO (Ptr CTensor)
+c_newWithStorage2d :: Ptr CState -> Ptr CStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTensor)
+c_newWithStorage3d :: Ptr CState -> Ptr CStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTensor)
+c_newWithStorage4d :: Ptr CState -> Ptr CStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTensor)
+c_newWithTensor :: Ptr CState -> Ptr CTensor -> IO (Ptr CTensor)
+c_resize :: Ptr CState -> Ptr CTensor -> Ptr C'THLongStorage -> Ptr C'THLongStorage -> IO ()
+c_resize1d :: Ptr CState -> Ptr CTensor -> CLLong -> IO ()
+c_resize2d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> IO ()
+c_resize3d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> CLLong -> IO ()
+c_resize4d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+c_resize5d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+c_resizeAs :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_resizeNd :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ()
+c_retain :: Ptr CState -> Ptr CTensor -> IO ()
+c_select :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CLLong -> IO ()
+c_set :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_set1d :: Ptr CState -> Ptr CTensor -> CLLong -> CReal -> IO ()
+c_set2d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> CReal -> IO ()
+c_set3d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> CLLong -> CReal -> IO ()
+c_set4d :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CReal -> IO ()
+c_setFlag :: Ptr CState -> Ptr CTensor -> CChar -> IO ()
+c_setStorage :: Ptr CState -> Ptr CTensor -> Ptr CStorage -> CPtrdiff -> Ptr C'THLongStorage -> Ptr C'THLongStorage -> IO ()
+c_setStorage1d :: Ptr CState -> Ptr CTensor -> Ptr CStorage -> CPtrdiff -> CLLong -> CLLong -> IO ()
+c_setStorage2d :: Ptr CState -> Ptr CTensor -> Ptr CStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+c_setStorage3d :: Ptr CState -> Ptr CTensor -> Ptr CStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+c_setStorage4d :: Ptr CState -> Ptr CTensor -> Ptr CStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+c_setStorageNd :: Ptr CState -> Ptr CTensor -> Ptr CStorage -> CPtrdiff -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ()
+c_size :: Ptr CState -> Ptr CTensor -> CInt -> IO CLLong
+c_sizeDesc :: Ptr CState -> Ptr CTensor -> IO (Ptr CDescBuff)
+c_squeeze :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_squeeze1d :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> IO ()
+c_storage :: Ptr CState -> Ptr CTensor -> IO (Ptr CStorage)
+c_storageOffset :: Ptr CState -> Ptr CTensor -> IO CPtrdiff
+c_stride :: Ptr CState -> Ptr CTensor -> CInt -> IO CLLong
+c_transpose :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
+c_unfold :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CLLong -> CLLong -> IO ()
+c_unsqueeze1d :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> IO ()
+
+-- * TH only
+-- c_desc :: Ptr CState -> Ptr CTensor -> IO CDescBuff

@@ -1,0 +1,10 @@
+signature Torch.Sig.Tensor.MathScan where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Data.Word
+import Data.Int
+
+c_cumsum :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> IO ()
+c_cumprod :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> IO ()

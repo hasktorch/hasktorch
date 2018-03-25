@@ -1,0 +1,18 @@
+signature Torch.Sig.Tensor.MathCompare where
+
+import Foreign
+import Torch.Sig.Types
+
+c_ltValue :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> CReal -> IO ()
+c_gtValue :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> CReal -> IO ()
+c_leValue :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> CReal -> IO ()
+c_geValue :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> CReal -> IO ()
+c_eqValue :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> CReal -> IO ()
+c_neValue :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> CReal -> IO ()
+
+c_ltValueT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_gtValueT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_leValueT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_geValueT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_eqValueT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_neValueT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
