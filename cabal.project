@@ -1,12 +1,19 @@
 packages:
     codegen/*.cabal
+
     raw/th/*.cabal
     raw/thc/*.cabal
     raw/thnn/*.cabal
     raw/thcunn/*.cabal
     raw/tests/*.cabal
+
     types/th/*.cabal
     types/thc/*.cabal
+
+    -- dimensions/*cabal
+    -- classes/*cabal
+
+    signatures/unsigned/*cabal
 
     -- signatures/unsigned/*cabal
     -- signatures/signed/*cabal
@@ -15,9 +22,6 @@ packages:
     -- indef/unsigned/*cabal
     -- indef/signed/*cabal
     -- indef/floating/*cabal
-
-    -- dimensions/*cabal
-    -- classes/*cabal
 
     -- core/*cabal
 
