@@ -12,7 +12,6 @@ import Torch.Types.THC
 type CState = C'THCState
 type CDescBuff = C'THCDescBuff
 type CAllocator = C'THCAllocator
-type CGenerator = C'THCGenerator
 type CTensor = CTHCudaByteTensor
 type CStorage = CTHCByteStorage
 type CIndexTensor = C'THCudaLongTensor
@@ -21,6 +20,9 @@ type CReal = CUChar
 type CAccReal = CLong
 type HsReal = Word8
 type HsAccReal = Word64
+
+type CDoubleTensor = C'THCudaDoubleTensor
+type CGenerator = C'THCGenerator
 
 type CMaskTensor = C'THCudaByteTensor
 type CInt' = CLLong

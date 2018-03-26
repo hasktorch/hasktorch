@@ -14,7 +14,6 @@ type CState = C'THState
 type CDescBuff = C'THDescBuff
 type CTensor = CTHCharTensor
 type CStorage = CTHCharStorage
-type CGenerator = C'THGenerator
 type CIndexTensor = CTHLongTensor
 type CIndexStorage = CTHLongStorage
 type CReal = CChar
@@ -23,6 +22,10 @@ type CAccReal = CLong
 type HsReal = Int8
 type HsUReal = Word8
 type HsAccReal = Int64
+
+-- for RNG
+type CGenerator = C'THGenerator
+type CDoubleTensor = CTHDoubleTensor
 
 type CMaskTensor = C'THByteTensor
 type CInt' = CInt

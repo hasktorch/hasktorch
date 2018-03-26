@@ -2,7 +2,6 @@ signature Torch.Sig.Tensor.Math.Random where
 
 import Torch.Types.TH
 import Foreign
-import Foreign.C.Types
 import Torch.Sig.Types
 
 

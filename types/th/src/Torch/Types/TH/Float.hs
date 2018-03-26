@@ -22,6 +22,9 @@ type CIndexStorage = C'THLongStorage
 -- FOR TENSOR-LAPACK SPECIFICALLY
 type CIntTensor = CTHIntTensor
 
+-- FOR TENSOR-Math floating SPECIFICALLY
+-- type CDoubleTensor = C'THDoubleTensor
+
 type CReal = CFloat
 type CAccReal = CDouble
 type HsReal = Float
