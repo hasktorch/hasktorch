@@ -14,6 +14,14 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
+flag cuda
+  Description: build with THC support
+  Default: True
+
+flag with_nn
+  Description: build with nn support
+  Default: True
+
 library
   hs-source-dirs: src
   default-language: Haskell2010
@@ -22,23 +30,45 @@ library
     , hasktorch-types-th
     , hasktorch-dimensions
     , safe-exceptions
-  exposed-modules:
-      Torch.Class.Internal
+    , transformers >= 0.5
 
-    -- not done
+  if flag(cuda)
+    build-depends:
+      hasktorch-types-thc
+    cpp-options: -DCUDA
+
+  exposed-modules:
+    -- FIXME: not sure where to go with commented-out classes, they are TH-only but there are some THC-only things as well
     -- , Torch.Class.Blas
     -- , Torch.Class.Lapack
+    -- , Torch.Class.Tensor.Conv
     -- , Torch.Class.Vector
 
-    -- done
+      Torch.Class.Types
+
     , Torch.Class.Storage
     , Torch.Class.Storage.Copy
+
+    , Torch.Class.NN
+
     , Torch.Class.Tensor
-    , Torch.Class.IsTensor
     , Torch.Class.Tensor.Copy
-    , Torch.Class.Tensor.Conv
-    , Torch.Class.Tensor.Lapack
+    , Torch.Class.Tensor.Index
+    , Torch.Class.Tensor.Masked
     , Torch.Class.Tensor.Math
+    , Torch.Class.Tensor.Math.Blas
+    , Torch.Class.Tensor.Math.Compare
+    , Torch.Class.Tensor.Math.CompareT
+    , Torch.Class.Tensor.Math.Pairwise
+    , Torch.Class.Tensor.Math.Lapack
+    , Torch.Class.Tensor.Math.Pointwise
+    , Torch.Class.Tensor.Math.Random
+    , Torch.Class.Tensor.Math.Reduce
+    , Torch.Class.Tensor.Math.Scan
+    , Torch.Class.Tensor.Mode
+    , Torch.Class.Tensor.ScatterGather
+    , Torch.Class.Tensor.Sort
+    , Torch.Class.Tensor.TopK
+
     , Torch.Class.Tensor.Random
-    , Torch.Class.Tensor.Static
 

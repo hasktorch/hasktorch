@@ -8,12 +8,13 @@ packages:
     types/th/*.cabal
     types/thc/*.cabal
 
-    dimensions/*cabal
-    -- classes/*cabal
 
     signatures/unsigned/*cabal
     signatures/signed/*cabal
     signatures/floating/*cabal
+
+    dimensions/*cabal
+    classes/*cabal
 
     -- indef/unsigned/*cabal
     -- indef/signed/*cabal

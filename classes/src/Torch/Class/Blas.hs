@@ -1,12 +1,11 @@
 module Torch.Class.Blas where
 
-import Torch.Types.TH
+class Blas rs r where
+  swap :: Integer -> rs -> Integer -> rs -> Integer -> IO ()
+  scal :: Integer -> r -> rs -> Integer -> IO ()
+  copy :: Integer -> rs -> Integer -> rs -> Integer -> IO ()
+  axpy :: Integer -> r -> rs -> Integer -> rs -> Integer -> IO ()
+  dot  :: Integer -> rs -> Integer -> rs -> Integer -> r
+  gemv :: Int -> Integer -> Integer -> r -> rs -> Integer -> rs -> Integer -> r -> rs -> Integer -> IO ()
+  ger  :: Integer -> Integer -> r -> rs -> Integer -> rs -> Integer -> rs -> Integer -> IO ()
 
-class Blas real where
-  swap :: Integer -> real -> Integer -> real -> Integer -> IO ()
-  scal :: Integer -> real -> real -> Integer -> IO ()
-  copy :: Integer -> real -> Integer -> real -> Integer -> IO ()
-  axpy :: Integer -> real -> real -> Integer -> real -> Integer -> IO ()
-  dot  :: Integer -> real -> Integer -> real -> Integer -> t
-  gemv :: Word -> Integer -> Integer -> real -> real -> Integer -> real -> Integer -> real -> real -> Integer -> IO ()
-  ger  :: Integer -> Integer -> real -> real -> Integer -> real -> Integer -> t-> Integer -> IO ()
