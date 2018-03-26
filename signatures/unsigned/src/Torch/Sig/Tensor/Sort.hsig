@@ -4,7 +4,7 @@ import Foreign
 import Foreign.C.Types
 import Torch.Sig.Types
 
-c_sort :: Ptr CState -> Ptr CMaskTensor -> Ptr CIndexTensor -> Ptr CMaskTensor -> CInt -> CInt -> IO ()
+c_sort :: Ptr CState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
 
 -- * THC only
 -- c_sortKeyValueInplace :: Ptr CState -> Ptr CMaskTensor -> Ptr CIndexTensor -> CInt -> CInt -> IO ()

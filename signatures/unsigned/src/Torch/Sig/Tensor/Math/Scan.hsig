@@ -1,4 +1,4 @@
-signature Torch.Sig.Tensor.MathScan where
+signature Torch.Sig.Tensor.Math.Scan where
 
 import Foreign
 import Foreign.C.Types

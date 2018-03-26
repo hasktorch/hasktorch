@@ -1,26 +1,30 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Types.TH.Long where
+module Torch.Types.TH.Char where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
+import GHC.Word
+import GHC.Int
 import Torch.Types.TH
 
-
 type CAllocator = CTHAllocator
-type CIndexTensor = C'THLongTensor
-type CIndexStorage = C'THLongStorage
-type CMaskTensor = C'THByteTensor
 type CState = C'THState
 type CDescBuff = C'THDescBuff
-type CTensor = CTHLongTensor
-type CStorage = CTHLongStorage
-type CReal = CLong
+type CTensor = CTHCharTensor
+type CStorage = CTHCharStorage
+type CIndexTensor = CTHLongTensor
+type CIndexStorage = CTHLongStorage
+type CReal = CChar
+type CUReal = CUChar
 type CAccReal = CLong
+type HsReal = Int8
+type HsUReal = Word8
+type HsAccReal = Int64
+
+type CMaskTensor = C'THByteTensor
 type CInt' = CInt
-type HsReal = Integer
-type HsAccReal = Integer
 
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
@@ -37,14 +41,15 @@ c2hsAccReal = fromIntegral
 newtype Storage = Storage { storage :: ForeignPtr CStorage }
   deriving (Eq, Show)
 
+asStorage = Storage
+
 newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
   deriving (Show, Eq)
+
+asDyn = DynTensor
 
 newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
   deriving (Show, Eq)
 
-asStorage = Storage
-asDyn = DynTensor
 asStatic = Tensor
-
 

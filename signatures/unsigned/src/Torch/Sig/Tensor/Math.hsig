@@ -28,22 +28,20 @@ c_cumsum c_cumprod
 c_mode
 
 -- ScatterGather
-c_gather       c_scatter      c_scatterAdd   c_scatterFill  
+c_gather       c_scatter      c_scatterAdd   c_scatterFill
 
+-- FLOATING - Blas
+c_dot  c_addmv  c_addmm   c_addr     c_addbmm    c_baddbmm
 
-c_dot          :: Ptr CTensor -> Ptr CTensor -> IO CAccReal
-
-c_addmv        :: Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
-c_addmm        :: Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
-c_addr         :: Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
-c_addbmm       :: Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
-c_baddbmm      :: Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_match        :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
 c_kthvalue     :: Ptr CTensor -> Ptr CTHLongTensor -> Ptr CTensor -> CLLong -> CInt -> CInt -> IO ()
 c_randperm     :: Ptr CTensor -> Ptr CTHGenerator -> CLLong -> IO ()
-c_sort         :: Ptr CTensor -> Ptr CTHLongTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
 
-c_topk         :: Ptr CTensor -> Ptr CTHLongTensor -> Ptr CTensor -> CLLong -> CInt -> CInt -> CInt -> IO ()
+-- SORT
+c_sort
+
+-- TOPK
+c_topk 
 
 -- COMPARE AND COMPARET
 c_ltValue      c_leValue      c_gtValue      c_geValue      c_neValue      c_eqValue      c_ltValueT     c_leValueT     c_gtValueT     c_geValueT     c_neValueT     c_eqValueT     c_ltTensor     c_leTensor     c_gtTensor     c_geTensor     c_neTensor     c_eqTensor     c_ltTensorT    c_leTensorT    c_gtTensorT    c_geTensorT    c_neTensorT    c_eqTensorT

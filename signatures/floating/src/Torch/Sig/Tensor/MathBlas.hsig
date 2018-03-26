@@ -1,0 +1,17 @@
+signature Torch.Sig.Tensor.MathBlas where
+
+import Foreign
+import Torch.Sig.Types
+
+c_dot     :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO CAccReal
+c_addmv   :: Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_addmm   :: Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_addr    :: Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_addbmm  :: Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_baddbmm :: Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
+
+-- * THC Float Blas
+-- c_btrifact :: Ptr CState -> Ptr CTensor -> Ptr CIntTensor -> Ptr CIntTensor -> CInt -> Ptr CTensor -> IO ()
+-- c_btrisolve :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIntTensor -> IO ()
+
+

@@ -10,7 +10,7 @@ cabal-version: >=2.0
 
 library
   signatures:
-      Torch.Sig.Tensor.MathSigned
+      Torch.Sig.Tensor.Math.Pointwise.Signed
 
   default-language: Haskell2010
   hs-source-dirs: src
@@ -18,4 +18,75 @@ library
       base >= 4.7 && < 5
     , hasktorch-types-th
     , hasktorch-signatures-unsigned
+
+
+executable isdefinite-th
+  hs-source-dirs: exe
+  main-is: Main.hs
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw-th
+    , hasktorch-types-th
+    , hasktorch-signatures-signed
+  mixins:
+      hasktorch-signatures-signed
+        requires
+        (Torch.Sig.Types         as Torch.Types.TH.Long
+        ,Torch.Sig.Storage       as Torch.FFI.TH.Long.Storage
+        ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Long.StorageCopy
+        ,Torch.Sig.Tensor        as Torch.FFI.TH.Long.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.TH.Long.TensorCopy
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Long.TensorMath
+
+        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Long.TensorMath
+        )
+
+
+executable isdefinite-thc
+  hs-source-dirs: exe
+  main-is: Main.hs
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw-thc
+    , hasktorch-types-thc
+    , hasktorch-signatures-signed
+  mixins:
+      hasktorch-signatures-signed
+        requires
+        (Torch.Sig.Types         as Torch.Types.THC.Long
+        ,Torch.Sig.Storage       as Torch.FFI.THC.Long.Storage
+        ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Long.StorageCopy
+        ,Torch.Sig.Tensor        as Torch.FFI.THC.Long.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Long.TensorCopy
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Long.TensorIndex
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Long.TensorMasked
+        ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Long.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Long.TensorMathCompare
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Long.TensorMathCompareT
+        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Long.TensorMathPairwise
+        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Long.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Long.TensorMathReduce
+        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Long.TensorMathScan
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Long.TensorMode
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Long.TensorScatterGather
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Long.TensorSort
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Long.TensorTopK
+
+        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Long.TensorMathPointwise
+        )
+
 

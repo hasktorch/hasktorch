@@ -21,6 +21,10 @@ flag half
   Description: Build with half support.
   Default: False
 
+flag short
+  Description: Build with short support - this should be removed before a final merge.
+  Default: False
+
 library
   extra-libraries: EHX, ATen
   hs-source-dirs:
@@ -44,25 +48,6 @@ library
     , Torch.FFI.THC.TensorMath
     , Torch.FFI.THC.TensorRandom
     , Torch.FFI.THC.General
-
-    , Torch.FFI.THC.Short.TensorMode
-    , Torch.FFI.THC.Short.TensorSort
-    , Torch.FFI.THC.Short.TensorMathCompareT
-    , Torch.FFI.THC.Short.TensorMathScan
-    , Torch.FFI.THC.Short.TensorMathPairwise
-    , Torch.FFI.THC.Short.TensorMathPointwise
-    , Torch.FFI.THC.Short.TensorMathReduce
-    , Torch.FFI.THC.Short.TensorScatterGather
-    , Torch.FFI.THC.Short.Tensor
-    , Torch.FFI.THC.Short.Storage
-    , Torch.FFI.THC.Short.TensorMasked
-    , Torch.FFI.THC.Short.TensorMathCompare
-    , Torch.FFI.THC.Short.TensorTopK
-    , Torch.FFI.THC.Short.TensorCopy
-    , Torch.FFI.THC.Short.TensorMath
-    , Torch.FFI.THC.Short.TensorRandom
-    , Torch.FFI.THC.Short.TensorIndex
-    , Torch.FFI.THC.Short.StorageCopy
 
     , Torch.FFI.THC.Byte.TensorMode
     , Torch.FFI.THC.Byte.TensorSort
@@ -160,6 +145,27 @@ library
     , Torch.FFI.THC.Int.TensorRandom
     , Torch.FFI.THC.Int.TensorIndex
     , Torch.FFI.THC.Int.StorageCopy
+
+  if flag(short)
+    exposed-modules:
+        Torch.FFI.THC.Short.TensorMode
+      , Torch.FFI.THC.Short.TensorSort
+      , Torch.FFI.THC.Short.TensorMathCompareT
+      , Torch.FFI.THC.Short.TensorMathScan
+      , Torch.FFI.THC.Short.TensorMathPairwise
+      , Torch.FFI.THC.Short.TensorMathPointwise
+      , Torch.FFI.THC.Short.TensorMathReduce
+      , Torch.FFI.THC.Short.TensorScatterGather
+      , Torch.FFI.THC.Short.Tensor
+      , Torch.FFI.THC.Short.Storage
+      , Torch.FFI.THC.Short.TensorMasked
+      , Torch.FFI.THC.Short.TensorMathCompare
+      , Torch.FFI.THC.Short.TensorTopK
+      , Torch.FFI.THC.Short.TensorCopy
+      , Torch.FFI.THC.Short.TensorMath
+      , Torch.FFI.THC.Short.TensorRandom
+      , Torch.FFI.THC.Short.TensorIndex
+      , Torch.FFI.THC.Short.StorageCopy
 
   if flag(float)
     exposed-modules:

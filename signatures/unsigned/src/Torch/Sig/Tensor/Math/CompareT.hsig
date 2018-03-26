@@ -1,4 +1,4 @@
-signature Torch.Sig.Tensor.MathCompareT where
+signature Torch.Sig.Tensor.Math.CompareT where
 
 import Foreign
 import Torch.Sig.Types

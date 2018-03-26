@@ -1,4 +1,4 @@
-signature Torch.Sig.Tensor.MathReduce where
+signature Torch.Sig.Tensor.Math.Reduce where
 
 import Foreign
 import Foreign.C.Types

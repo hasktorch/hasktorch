@@ -29,7 +29,7 @@ library
     , Torch.Types.Cuda.Structs
     , Torch.Types.CuRand.Structs
 
-    -- , Torch.Types.THC.Char
+    , Torch.Types.THC.Char
     , Torch.Types.THC.Byte
 
     , Torch.Types.THC.Short

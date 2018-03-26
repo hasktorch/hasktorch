@@ -5,9 +5,9 @@ import Foreign.C.Types
 import Torch.Sig.Types
 import Torch.Types.TH (C'THByteTensor)
 
-c_maskedFill       :: Ptr CState -> Ptr CTensor -> Ptr CMaskTensor -> CReal -> IO ()
-c_maskedCopy       :: Ptr CState -> Ptr CTensor -> Ptr CMaskTensor -> Ptr CTensor -> IO ()
-c_maskedSelect     :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CMaskTensor -> IO ()
+c_maskedFill   :: Ptr CState -> Ptr CTensor -> Ptr CMaskTensor -> CReal -> IO ()
+c_maskedCopy   :: Ptr CState -> Ptr CTensor -> Ptr CMaskTensor -> Ptr CTensor -> IO ()
+c_maskedSelect :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CMaskTensor -> IO ()
 
 -- * THC
 -- c_maskedFillByte   :: Ptr CState -> Ptr CTensor -> Ptr C'THByteTensor -> CReal -> IO ()

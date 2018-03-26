@@ -1,4 +1,4 @@
-signature Torch.Sig.Tensor.MathPairwise where
+signature Torch.Sig.Tensor.Math.Pairwise where
 
 import Foreign
 import Foreign.C.Types

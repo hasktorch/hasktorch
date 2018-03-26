@@ -30,3 +30,4 @@ c_fill                    :: Ptr CState -> Ptr CStorage -> CReal -> IO ()
 
 -- * THC
 -- c_getDevice :: Ptr CState -> Ptr CStorage -> IO CInt
+

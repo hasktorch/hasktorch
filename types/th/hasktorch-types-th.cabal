@@ -20,8 +20,8 @@ library
       base >=4.7 && <5
     , inline-c >=0.5
   exposed-modules:
-      -- Torch.Types.TH.Char
       Torch.Types.TH.Byte
+      Torch.Types.TH.Char
 
       Torch.Types.TH.Short
       Torch.Types.TH.Int
