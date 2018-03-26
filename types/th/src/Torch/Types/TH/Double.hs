@@ -22,6 +22,11 @@ type CIndexStorage = C'THLongStorage
 -- FOR TENSOR-LAPACK SPECIFICALLY
 type CIntTensor = CTHIntTensor
 
+-- for nn-package
+type CNNState = C'THNNState
+type CDim = CLLong
+type CNNGenerator = C'THGenerator
+
 type CReal = CDouble
 type CAccReal = CDouble
 type HsReal = Double

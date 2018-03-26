@@ -1,0 +1,5 @@
+signature Torch.Sig.Types.NN where
+
+data CNNState
+data CDim
+data CNNGenerator

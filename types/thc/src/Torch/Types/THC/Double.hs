@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.THC.Double where
 
+import Foreign
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
@@ -21,6 +22,11 @@ type CIndexStorage = C'THCLongStorage
 
 -- TENSOR-LAPACK ONLY
 -- type CIntTensor = C'THCudaIntTensor
+
+-- nn-package
+type CNNState = C'THCState
+type CDim = CInt
+type CNNGenerator = ()
 
 type CReal = CDouble
 type CAccReal = CDouble

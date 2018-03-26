@@ -3,8 +3,6 @@ packages:
 
     raw/th/*.cabal
     raw/thc/*.cabal
-    raw/thnn/*.cabal
-    raw/thcunn/*.cabal
     raw/tests/*.cabal
 
     types/th/*.cabal

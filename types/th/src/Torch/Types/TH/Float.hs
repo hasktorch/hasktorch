@@ -25,6 +25,11 @@ type CIntTensor = CTHIntTensor
 -- FOR TENSOR-Math floating SPECIFICALLY
 -- type CDoubleTensor = C'THDoubleTensor
 
+-- for nn-package
+type CNNState = C'THNNState
+type CDim = CLLong
+type CNNGenerator = C'THGenerator
+
 type CReal = CFloat
 type CAccReal = CDouble
 type HsReal = Float

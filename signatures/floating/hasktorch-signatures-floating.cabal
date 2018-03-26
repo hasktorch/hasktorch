@@ -8,6 +8,10 @@ author:        Sam Stites <sam@stites.io>
 build-type:    Simple
 cabal-version: >=2.0
 
+flag with_nn
+  Description: build with nn support
+  Default: True
+
 library
   signatures:
       Torch.Sig.Tensor.Math.Blas
@@ -19,6 +23,10 @@ library
     -- FIXME: THC and THC differ in that one has a function parameter of a generator
     -- , Torch.Sig.Tensor.RandomFloating
     -- , Torch.Sig.Tensor.Math.Random
+  if flag(with_nn)
+    signatures:
+        Torch.Sig.NN
+      , Torch.Sig.Types.NN
 
   default-language: Haskell2010
   hs-source-dirs: src
@@ -58,14 +66,17 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Float.TensorMath
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Float.TensorMath
 
-        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Float.TensorMath
-
-        ,Torch.Sig.Tensor.Math.Blas   as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.Lapack as Torch.FFI.TH.Float.TensorLapack
-        ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise.Signed   as Torch.FFI.TH.Float.TensorMath
         ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.TH.Float.TensorMath
+
+        ,Torch.Sig.Tensor.Math.Blas     as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Lapack   as Torch.FFI.TH.Float.TensorLapack
+        ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.TH.Float.TensorMath
         ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Float.TensorMath
         -- ,Torch.Sig.Tensor.Math.Random    as Torch.FFI.TH.Float.TensorMath
+
+        ,Torch.Sig.NN       as Torch.FFI.TH.NN.Float
+        ,Torch.Sig.Types.NN as Torch.Types.TH.Float
         )
     , hasktorch-signatures-floating
         requires
@@ -88,13 +99,16 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Double.TensorMath
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Double.TensorMath
 
-        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise.Signed   as Torch.FFI.TH.Double.TensorMath
 
-        ,Torch.Sig.Tensor.Math.Blas   as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Lapack as Torch.FFI.TH.Double.TensorLapack
-        ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Blas               as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Lapack             as Torch.FFI.TH.Double.TensorLapack
+        ,Torch.Sig.Tensor.Math.Floating           as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Reduce.Floating    as Torch.FFI.TH.Double.TensorMath
         ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Double.TensorMath
+
+        ,Torch.Sig.NN       as Torch.FFI.TH.NN.Double
+        ,Torch.Sig.Types.NN as Torch.Types.TH.Double
         )
 
 executable isdefinite-thc
@@ -130,10 +144,13 @@ executable isdefinite-thc
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Double.TensorMathPointwise
 
-        ,Torch.Sig.Tensor.Math.Blas      as Torch.FFI.THC.Double.TensorMathBlas
-        ,Torch.Sig.Tensor.Math.Lapack    as Torch.FFI.THC.Double.TensorMathMagma
-        ,Torch.Sig.Tensor.Math.Floating  as Torch.FFI.THC.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Blas               as Torch.FFI.THC.Double.TensorMathBlas
+        ,Torch.Sig.Tensor.Math.Lapack             as Torch.FFI.THC.Double.TensorMathMagma
+        ,Torch.Sig.Tensor.Math.Floating           as Torch.FFI.THC.Double.TensorMath
         ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.THC.Double.TensorMathPointwise
-        ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.THC.Double.TensorMathReduce
+        ,Torch.Sig.Tensor.Math.Reduce.Floating    as Torch.FFI.THC.Double.TensorMathReduce
         -- ,Torch.Sig.Tensor.Math.Random    as Torch.FFI.THC.Double.TensorRandom
+
+        ,Torch.Sig.NN       as Torch.FFI.THC.NN.Double
+        ,Torch.Sig.Types.NN as Torch.Types.THC.Double
         )
