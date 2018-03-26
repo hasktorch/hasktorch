@@ -7,11 +7,17 @@ import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
 import Torch.Types.TH
 
-type CAllocator = CTHAllocator
-type CState = C'THState
-type CDescBuff = C'THDescBuff
 type CTensor = CTHFloatTensor
 type CStorage = CTHFloatStorage
+
+type CInt' = CInt
+type CState = C'THState
+type CDescBuff = C'THDescBuff
+type CAllocator = C'THAllocator
+type CMaskTensor = C'THByteTensor
+type CIndexTensor = C'THLongTensor
+type CIndexStorage = C'THLongStorage
+
 type CReal = CFloat
 type CAccReal = CDouble
 type HsReal = Float

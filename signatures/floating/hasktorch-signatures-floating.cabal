@@ -21,41 +21,70 @@ library
     , hasktorch-types-th
     , hasktorch-signatures-signed
 
--- executable isdefinite-th
---   hs-source-dirs: exe
---   main-is: Main.hs
---   default-language: Haskell2010
---   build-depends:
---       base >=4.7 && <5
---     , hasktorch-raw-th
---     , hasktorch-types-th
---     , hasktorch-signatures-floating
---   mixins:
---       hasktorch-signatures-floating
---         requires
---         (Torch.Sig.Types         as Torch.Types.TH.Byte
---         ,Torch.Sig.Storage       as Torch.FFI.TH.Byte.Storage
---         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Byte.StorageCopy
---         ,Torch.Sig.Tensor        as Torch.FFI.TH.Byte.Tensor
---         ,Torch.Sig.Tensor.Copy   as Torch.FFI.TH.Byte.TensorCopy
---         ,Torch.Sig.Tensor.Index  as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Masked as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Byte.TensorMath
---         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Byte.TensorMath
---         -- ,Torch.Sig.Tensor.Conv   as Torch.FFI.TH.Byte.TensorConv
---         -- ,Torch.Sig.Tensor.Random as Torch.FFI.TH.Byte.TensorRandom
---         -- ,Torch.Sig.Tensor.Math   as Torch.FFI.TH.Byte.TensorMath
---         )
+executable isdefinite-th
+  hs-source-dirs: exe
+  main-is: Main.hs
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw-th
+    , hasktorch-types-th
+    , hasktorch-signatures-floating
+  mixins:
+      hasktorch-signatures-floating
+        requires
+        (Torch.Sig.Types         as Torch.Types.TH.Float
+        ,Torch.Sig.Storage       as Torch.FFI.TH.Float.Storage
+        ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Float.StorageCopy
+        ,Torch.Sig.Tensor        as Torch.FFI.TH.Float.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.TH.Float.TensorCopy
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Float.TensorMath
+
+        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Float.TensorMath
+
+        ,Torch.Sig.Tensor.MathFloating   as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.RandomFloating as Torch.FFI.TH.Float.TensorRandom
+        ,Torch.Sig.Tensor.Lapack         as Torch.FFI.TH.Float.TensorLapack
+        )
+    , hasktorch-signatures-floating
+        requires
+        (Torch.Sig.Types         as Torch.Types.TH.Double
+        ,Torch.Sig.Storage       as Torch.FFI.TH.Double.Storage
+        ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Double.StorageCopy
+        ,Torch.Sig.Tensor        as Torch.FFI.TH.Double.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.TH.Double.TensorCopy
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Double.TensorMath
+
+        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Double.TensorMath
+
+        ,Torch.Sig.Tensor.MathFloating   as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.RandomFloating as Torch.FFI.TH.Double.TensorRandom
+        ,Torch.Sig.Tensor.Lapack         as Torch.FFI.TH.Double.TensorLapack
+        )
 
 
 -- executable isdefinite-thc
@@ -66,29 +95,32 @@ library
 --       base >=4.7 && <5
 --     , hasktorch-raw-thc
 --     , hasktorch-types-thc
---     , hasktorch-signatures-unsigned
+--     , hasktorch-signatures-floating
 --   mixins:
---       hasktorch-signatures-unsigned
+--       hasktorch-signatures-floating
 --         requires
---         (Torch.Sig.Types         as Torch.Types.THC.Byte
---         ,Torch.Sig.Storage       as Torch.FFI.THC.Byte.Storage
---         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Byte.StorageCopy
---         ,Torch.Sig.Tensor        as Torch.FFI.THC.Byte.Tensor
---         ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Byte.TensorCopy
---         ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
---         ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
---         ,Torch.Sig.Tensor.MathCompare   as Torch.FFI.THC.Byte.TensorMathCompare
---         ,Torch.Sig.Tensor.MathCompareT  as Torch.FFI.THC.Byte.TensorMathCompareT
---         ,Torch.Sig.Tensor.Math          as Torch.FFI.THC.Byte.TensorMath
---         ,Torch.Sig.Tensor.MathPairwise  as Torch.FFI.THC.Byte.TensorMathPairwise
---         ,Torch.Sig.Tensor.MathPointwise as Torch.FFI.THC.Byte.TensorMathPointwise
---         ,Torch.Sig.Tensor.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
---         ,Torch.Sig.Tensor.MathScan      as Torch.FFI.THC.Byte.TensorMathScan
---         ,Torch.Sig.Tensor.Mode          as Torch.FFI.THC.Byte.TensorMode
---         ,Torch.Sig.Tensor.ScatterGather as Torch.FFI.THC.Byte.TensorScatterGather
---         ,Torch.Sig.Tensor.Sort          as Torch.FFI.THC.Byte.TensorSort
---         ,Torch.Sig.Tensor.TopK          as Torch.FFI.THC.Byte.TensorTopK
--- --         -- -- ,Torch.Sig.Tensor.Conv   as Torch.FFI.THC.Byte.TensorConv
--- --         -- ,Torch.Sig.Tensor.Random as Torch.FFI.THC.Byte.TensorRandom
--- --         -- ,Torch.Sig.Tensor.Math   as Torch.FFI.THC.Byte.TensorMath
+--         (Torch.Sig.Types         as Torch.Types.THC.Float
+--         ,Torch.Sig.Storage       as Torch.FFI.THC.Float.Storage
+--         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Float.StorageCopy
+--         ,Torch.Sig.Tensor        as Torch.FFI.THC.Float.Tensor
+--         ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Float.TensorCopy
+--         ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Float.TensorIndex
+--         ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Float.TensorMasked
+--         ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Float.TensorMath
+--         ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Float.TensorMathCompare
+--         ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Float.TensorMathCompareT
+--         ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Float.TensorMathPairwise
+--         ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Float.TensorMathPointwise
+--         ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Float.TensorMathReduce
+--         ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Float.TensorMathScan
+--         ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Float.TensorMode
+--         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Float.TensorScatterGather
+--         ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Float.TensorSort
+--         ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Float.TensorTopK
+-- 
+--         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Float.TensorMathPointwise
+-- 
+--         ,Torch.Sig.Tensor.MathFloating   as Torch.FFI.THC.Float.TensorMath
+--         ,Torch.Sig.Tensor.RandomFloating as Torch.FFI.THC.Float.TensorMath
+--         ,Torch.Sig.Tensor.Lapack         as Torch.FFI.THC.Float.TensorMathMagma
 --         )
