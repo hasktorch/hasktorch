@@ -10,8 +10,11 @@ cabal-version: >=2.0
 
 library
   signatures:
-      Torch.Sig.Tensor.MathFloating
-    , Torch.Sig.Tensor.MathLapack
+      Torch.Sig.Tensor.Math.Blas
+    , Torch.Sig.Tensor.Math.Lapack
+    , Torch.Sig.Tensor.Math.Floating
+    , Torch.Sig.Tensor.Math.Reduce.Floating
+    , Torch.Sig.Tensor.Math.Pointwise.Floating
 
     -- FIXME: THC and THC differ in that one has a function parameter of a generator
     -- , Torch.Sig.Tensor.RandomFloating
@@ -57,9 +60,12 @@ executable isdefinite-th
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Float.TensorMath
 
-        ,Torch.Sig.Tensor.MathFloating   as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Blas   as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Lapack as Torch.FFI.TH.Float.TensorLapack
+        ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Float.TensorMath
         -- ,Torch.Sig.Tensor.Math.Random    as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.MathLapack     as Torch.FFI.TH.Float.TensorLapack
         )
     , hasktorch-signatures-floating
         requires
@@ -84,11 +90,12 @@ executable isdefinite-th
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Double.TensorMath
 
-        ,Torch.Sig.Tensor.MathFloating   as Torch.FFI.TH.Double.TensorMath
-        -- ,Torch.Sig.Tensor.Math.Random    as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.MathLapack     as Torch.FFI.TH.Double.TensorLapack
+        ,Torch.Sig.Tensor.Math.Blas   as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Lapack as Torch.FFI.TH.Double.TensorLapack
+        ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Double.TensorMath
         )
-
 
 executable isdefinite-thc
   hs-source-dirs: exe
@@ -123,7 +130,10 @@ executable isdefinite-thc
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Double.TensorMathPointwise
 
-        ,Torch.Sig.Tensor.MathFloating   as Torch.FFI.THC.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Blas      as Torch.FFI.THC.Double.TensorMathBlas
+        ,Torch.Sig.Tensor.Math.Lapack    as Torch.FFI.THC.Double.TensorMathMagma
+        ,Torch.Sig.Tensor.Math.Floating  as Torch.FFI.THC.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.THC.Double.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.THC.Double.TensorMathReduce
         -- ,Torch.Sig.Tensor.Math.Random    as Torch.FFI.THC.Double.TensorRandom
-        ,Torch.Sig.Tensor.MathLapack     as Torch.FFI.THC.Double.TensorMathMagma
         )

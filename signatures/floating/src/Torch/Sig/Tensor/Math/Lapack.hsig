@@ -1,4 +1,4 @@
-signature Torch.Sig.Tensor.MathLapack where
+signature Torch.Sig.Tensor.Math.Lapack where
 
 import Foreign
 import Foreign.C.Types

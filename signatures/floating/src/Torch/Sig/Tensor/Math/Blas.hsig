@@ -1,4 +1,4 @@
-signature Torch.Sig.Tensor.MathBlas where
+signature Torch.Sig.Tensor.Math.Blas where
 
 import Foreign
 import Torch.Sig.Types

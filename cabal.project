@@ -15,7 +15,7 @@ packages:
 
     signatures/unsigned/*cabal
     signatures/signed/*cabal
-    -- signatures/floating/*cabal
+    signatures/floating/*cabal
 
     -- indef/unsigned/*cabal
     -- indef/signed/*cabal
