@@ -14,6 +14,11 @@ type CState = C'THState
 type CDescBuff = C'THDescBuff
 type CTensor = CTHIntTensor
 type CStorage = CTHIntStorage
+type CMaskTensor = CTHByteTensor
+type CIndexTensor = CTHLongTensor
+type CIndexStorage = CTHLongStorage
+
+type CInt' = CInt
 type CReal = CInt
 type CAccReal = CLong
 type HsReal = Int32

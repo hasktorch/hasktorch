@@ -8,13 +8,22 @@ import GHC.TypeLits (Nat)
 import GHC.Int
 import Torch.Types.THC
 
-type CTensor = CTHCudaShortTensor
-type CState = ()
-type CStorage = CTHCShortStorage
+type CTensor = C'THCudaShortTensor
+type CStorage = C'THCShortStorage
+
+type CInt' = CLLong
+type CState = C'THCState
+type CDescBuff = C'THCDescBuff
+type CAllocator = C'THCAllocator
+type CMaskTensor = C'THCudaByteTensor
+type CIndexTensor = C'THCudaLongTensor
+type CIndexStorage = C'THCLongStorage
+
 type CReal = CShort
 type CAccReal = CLong
 type HsReal = Int16
 type HsAccReal = Int64
+
 
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral

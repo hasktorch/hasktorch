@@ -1,25 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Types.TH.Short
-  ( CTensor
-  , CState
-  , CAllocator
-  , CStorage
-  , CReal
-  , CAccReal
-  , HsAccReal
-  , HsReal
-  , hs2cReal
-  , hs2cAccReal
-  , c2hsReal
-  , c2hsAccReal
-  , Storage(..)
-  , DynTensor(..)
-  , Tensor(..)
-  , asStorage
-  , asDyn
-  , asStatic
-  ) where
+module Torch.Types.TH.Short where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)
@@ -27,15 +8,22 @@ import GHC.TypeLits (Nat)
 import GHC.Int
 import Torch.Types.TH
 
-type CAllocator = CTHAllocator
-type CState = C'THState
-type CDescBuff = C'THDescBuff
 type CTensor = CTHShortTensor
 type CStorage = CTHShortStorage
+
+type CInt' = CInt
+type CState = C'THState
+type CDescBuff = C'THDescBuff
+type CAllocator = C'THAllocator
+type CMaskTensor = C'THByteTensor
+type CIndexTensor = C'THLongTensor
+type CIndexStorage = C'THLongStorage
+
 type CReal = CShort
 type CAccReal = CLong
 type HsReal = Int16
 type HsAccReal = Int64
+
 
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral

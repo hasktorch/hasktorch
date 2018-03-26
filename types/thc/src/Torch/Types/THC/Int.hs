@@ -1,24 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Types.THC.Int
-  ( CTensor
-  , CState
-  , CStorage
-  , CReal
-  , CAccReal
-  , HsAccReal
-  , HsReal
-  , hs2cReal
-  , hs2cAccReal
-  , c2hsReal
-  , c2hsAccReal
-  , Tensor(..)
-  , DynTensor(..)
-  , Storage(..)
-  , asStorage
-  , asDyn
-  , asStatic
-  ) where
+module Torch.Types.THC.Int where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)
@@ -27,9 +9,17 @@ import GHC.Int
 import Torch.Types.THC
 
 
-type CState = ()
-type CTensor = CTHCudaIntTensor
-type CStorage = CTHCIntStorage
+type CState = C'THCState
+type CTensor = C'THCudaIntTensor
+type CStorage = C'THCIntStorage
+
+type CDescBuff = C'THCDescBuff
+type CAllocator = C'THCAllocator
+type CMaskTensor = C'THCudaByteTensor
+type CIndexTensor = C'THCudaLongTensor
+type CIndexStorage = C'THCLongStorage
+
+type CInt' = CLLong
 type CReal = CInt
 type CAccReal = CLong
 type HsReal = Int32
