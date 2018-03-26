@@ -32,6 +32,8 @@ dependencies:
     - stack upgrade
     - stack update
     - stack install cabal-install --resolver lts-11.2
+    - which cabal
+    - cabal --version
     - git submodule update --init --recursive
     - alias cmake=~/cmake-3.10.0-Linux-x86_64/bin/cmake
     - sudo pip install pyyaml
