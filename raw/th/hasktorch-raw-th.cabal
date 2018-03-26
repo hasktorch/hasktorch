@@ -17,10 +17,15 @@ flag half
   Description: build with half support
   Default: False
 
+flag with_nn
+  Description: build with nn support
+  Default: True
+
 library
-  extra-libraries: ATen, EHX
+  extra-libraries: ATen
   hs-source-dirs:
       src
+    , nn
   build-depends:
       base >=4.7 && <5
     , hasktorch-types-th
@@ -105,6 +110,7 @@ library
     , Torch.FFI.TH.Short.TensorMath
     , Torch.FFI.TH.Short.TensorRandom
     , Torch.FFI.TH.Short.Vector
+
   if flag(half)
     exposed-modules:
         Torch.FFI.TH.Half.Blas
@@ -116,6 +122,12 @@ library
       , Torch.FFI.TH.Half.TensorMath
       , Torch.FFI.TH.Half.TensorRandom
       , Torch.FFI.TH.Half.Vector
+
+  if flag(with_nn)
+    exposed-modules:
+        Torch.FFI.TH.NN.Double
+      , Torch.FFI.TH.NN.Float
+
   other-modules:
       Paths_hasktorch_raw_th
 
@@ -135,3 +147,7 @@ test-suite spec
   other-modules:
       MathSpec
     , TensorSpec
+
+  if flag(with_nn)
+    other-modules:
+       NNSpec

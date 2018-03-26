@@ -86,8 +86,14 @@ makeModule lt a0 a1 a2 a3 a4 a5 a6
  where
   torchtypes :: [Text]
   torchtypes = case lt of
-    THC -> (("Torch.Types." <>) . tshow) <$> [TH, THC]
-    rest -> ["Torch.Types." <> tshow rest]
+    THC    -> go [TH, THC]
+    THCUNN -> go [TH, THC]
+    THNN   -> go [TH]
+    rest   -> go [rest]
+    where
+      go :: [LibType] -> [Text]
+      go ls = (("Torch.Types." <>) . tshow) <$> ls
+
 
 data TypeCategory
   = ReturnValue

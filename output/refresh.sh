@@ -1,20 +1,40 @@
 #!/usr/bin/env bash
 set -eu
 
-function nuke {
-  lib=$(echo "$1" | tr '[:upper:]' '[:lower:]')
-  rm -rf ./raw/${lib}/src/
+function __nuke {
+  lib=$1
+  src=$2
+  out=$3
+  rm -rf $src
   (
     cd ..
-    cabal new-run hasktorch-codegen:ht-codegen -- --lib $1 --type concrete
-    cabal new-run hasktorch-codegen:ht-codegen -- --lib $1 --type generic
+    cabal new-run hasktorch-codegen:ht-codegen -- --lib $lib --type concrete
+    cabal new-run hasktorch-codegen:ht-codegen -- --lib $lib --type generic
   )
-  rm -rf ../raw/${lib}/src/
-  rsync -arv {.,..}/raw/${lib}/src/
+  rm -rf $out
+  rsync -arv $src $out
 }
+
+function nuke {
+  lib=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+  __nuke $1 {.,..}/raw/${lib}/src/
+}
+
+function nuke_nn {
+  libnn=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+  case $libnn in
+    "thnn") lib="th" ;;
+    "thcunn") lib="thc" ;;
+    *) echo "$libnn is not a valid nn library"; exit 1 ;;
+  esac
+
+  __nuke $1 ./raw/${libnn}/src/ ../raw/${lib}/nn/
+}
+
 
 nuke TH
 nuke THC
-nuke THNN
-nuke THCUNN
+
+nuke_nn THNN
+nuke_nn THCUNN
 

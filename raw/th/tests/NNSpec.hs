@@ -8,12 +8,12 @@ import Test.Hspec
 
 import Torch.Types.TH
 
-import Torch.FFI.THNN.Double as D
+import Torch.FFI.TH.NN.Double as D
 import Torch.FFI.TH.Double.Tensor as D
 import Torch.FFI.TH.Double.TensorMath as D
 import Torch.FFI.TH.Double.TensorRandom as D
 
-import Torch.FFI.THNN.Float as F
+import Torch.FFI.TH.NN.Float as F
 import Torch.FFI.TH.Float.Tensor as F
 import Torch.FFI.TH.Float.TensorMath as F
 import Torch.FFI.TH.Float.TensorRandom as F
@@ -35,7 +35,7 @@ doubleBook = NNTestSuite
   { _newWithSize1d = D.c_newWithSize1d
   , _newWithSize2d = D.c_newWithSize2d
   , _newGen = R.c_THGenerator_new
-  , _normal = Just D.c_normal
+  , _normal = Left D.c_normal
   , _fill = D.c_fill
   , _sumall = D.c_sumall
   , _free = D.c_free
@@ -51,7 +51,7 @@ floatBook = NNTestSuite
   { _newWithSize1d = F.c_newWithSize1d
   , _newWithSize2d = F.c_newWithSize2d
   , _newGen = R.c_THGenerator_new
-  , _normal = Just F.c_normal
+  , _normal = Left F.c_normal
   , _fill = F.c_fill
   , _sumall = F.c_sumall
   , _free = F.c_free

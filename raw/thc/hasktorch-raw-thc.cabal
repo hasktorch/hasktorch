@@ -1,6 +1,6 @@
 name:           hasktorch-raw-thc
 version:        0.0.1.0
-synopsis:       CuTorch for tensors and neural networks in Haskell
+synopsis:       CuTorch (and THCuNN) for tensors and neural networks in Haskell
 description:    core cuda bindings
 homepage:       https://github.com/hasktorch/hasktorch#readme
 bug-reports:    https://github.com/hasktorch/hasktorch/issues
@@ -21,14 +21,15 @@ flag half
   Description: Build with half support.
   Default: False
 
--- flag short
---   Description: Build with short support - this should be removed before a final merge.
---   Default: False
+flag with_nn
+  Description: build with nn support
+  Default: True
 
 library
-  extra-libraries: EHX, ATen
+  extra-libraries: ATen
   hs-source-dirs:
       src
+    , nn
   build-depends:
       base >=4.7 && <5
     , hasktorch-types-th
@@ -212,6 +213,11 @@ library
       , Torch.FFI.THC.Half.TensorMathBlas
       , Torch.FFI.THC.Half.StorageCopy
 
+  if flag(with_nn)
+    exposed-modules:
+        Torch.FFI.THC.NN.Double
+      , Torch.FFI.THC.NN.Float
+
   other-modules:
       Paths_hasktorch_raw_thc
 
@@ -223,6 +229,7 @@ test-suite spec
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , hasktorch-raw-th
     , hasktorch-raw-thc
     , hasktorch-raw-tests
     , hasktorch-types-th
@@ -233,3 +240,7 @@ test-suite spec
       MathSpec
     , TensorSpec
     , Internal
+
+  if flag(with_nn)
+    other-modules:
+       NNSpec

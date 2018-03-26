@@ -1,11 +1,12 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-module Torch.FFI.THCUNN.Float where
+module Torch.FFI.THC.NN.Float where
 
 import Foreign
 import Foreign.C.Types
 import Data.Word
 import Data.Int
-import Torch.Types.THCUNN
+import Torch.Types.TH
+import Torch.Types.THC
 
 -- | c_Abs_updateOutput :  state input output -> void
 foreign import ccall "THCUNN.h THNN_CudaFloatAbs_updateOutput"

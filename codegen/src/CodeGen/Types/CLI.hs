@@ -21,6 +21,7 @@ module CodeGen.Types.CLI
 import Data.Data
 import Data.Typeable
 import CodeGen.Prelude
+import qualified Data.Text as T
 import qualified Data.HashSet as HS
 
 
@@ -70,17 +71,24 @@ outDir lt = intercalate ""
   [ "output/raw/"
   , toLowers lt ++ "/"
   , "src/"
-  -- , if cgt == GenericFiles then "generic/" else ""
-  , "Torch/FFI/" ++ show lt
+  , T.unpack (out "/" lt)
   ]
- where
-  toLowers :: Show a => a -> String
-  toLowers = map toLower . show
 
+toLowers :: Show a => a -> String
+toLowers = map toLower . show
 
 -- | The prefix of the output module name
 outModule :: LibType -> Text
-outModule lt = "Torch.FFI." <> tshow lt
+outModule = out "."
+
+out :: Text -> LibType -> Text
+out x = \case
+  THCUNN -> go2 THC
+  THNN   -> go2 TH
+  rest   -> go1 rest
+ where
+  go1 lt = T.intercalate x ["Torch","FFI", tshow lt]
+  go2 lt = T.intercalate x ["Torch","FFI", tshow lt, "NN"]
 
 
 -- | Where the source files are located, relative to the root of the hasktorch

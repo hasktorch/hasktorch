@@ -7,6 +7,7 @@ import Test.Hspec
 
 import Torch.FFI.Tests
 
+import Torch.Types.TH (C'THState)
 import qualified Torch.Types.TH.Byte as B
 import qualified Torch.FFI.TH.Byte.Tensor as B
 import qualified Torch.FFI.TH.Byte.TensorMath as B
@@ -36,14 +37,16 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "Float Tensor creation and access methods"  $ signedSuite () floatBook
-  describe "Double Tensor creation and access methods" $ signedSuite () doubleBook
-  describe "Byte Tensor creation and access methods"   $ signedSuite () byteBook
-  describe "Int Tensor creation and access methods"    $ signedSuite () intBook
-  describe "Long Tensor creation and access methods"   $ signedSuite () longBook
-  describe "Short Tensor creation and access methods"  $ signedSuite () shortBook
+  describe "Float Tensor creation and access methods"  $ signedSuite nullPtr floatBook
+  describe "Double Tensor creation and access methods" $ signedSuite nullPtr doubleBook
+  describe "Byte Tensor creation and access methods"   $ signedSuite nullPtr byteBook
+  describe "Int Tensor creation and access methods"    $ signedSuite nullPtr intBook
+  describe "Long Tensor creation and access methods"   $ signedSuite nullPtr longBook
+  describe "Short Tensor creation and access methods"  $ signedSuite nullPtr shortBook
 
-longBook :: TestFunctions () (Ptr L.CTensor) L.CReal L.CAccReal
+type CState = Ptr C'THState
+
+longBook :: TestFunctions CState (Ptr L.CTensor) L.CReal L.CAccReal
 longBook = TestFunctions
   { _new = L.c_new
   , _newWithSize1d = L.c_newWithSize1d
@@ -69,7 +72,7 @@ longBook = TestFunctions
   , _abs = Just L.c_abs
   }
 
-shortBook :: TestFunctions () (Ptr S.CTensor) S.CReal S.CAccReal
+shortBook :: TestFunctions CState (Ptr S.CTensor) S.CReal S.CAccReal
 shortBook = TestFunctions
   { _new = S.c_new
   , _newWithSize1d = S.c_newWithSize1d
@@ -95,7 +98,7 @@ shortBook = TestFunctions
   , _abs = Just S.c_abs
   }
 
-floatBook :: TestFunctions () (Ptr F.CTensor) F.CReal F.CAccReal
+floatBook :: TestFunctions CState (Ptr F.CTensor) F.CReal F.CAccReal
 floatBook = TestFunctions
   { _new = F.c_new
   , _newWithSize1d = F.c_newWithSize1d
@@ -121,7 +124,7 @@ floatBook = TestFunctions
   , _abs = Just F.c_abs
   }
 
-doubleBook :: TestFunctions () (Ptr D.CTensor) D.CReal D.CAccReal
+doubleBook :: TestFunctions CState (Ptr D.CTensor) D.CReal D.CAccReal
 doubleBook = TestFunctions
   { _new = D.c_new
   , _newWithSize1d = D.c_newWithSize1d
@@ -147,7 +150,7 @@ doubleBook = TestFunctions
   , _abs = Just D.c_abs
   }
 
-byteBook :: TestFunctions () (Ptr B.CTensor) B.CReal B.CAccReal
+byteBook :: TestFunctions CState (Ptr B.CTensor) B.CReal B.CAccReal
 byteBook = TestFunctions
   { _new = B.c_new
   , _newWithSize1d = B.c_newWithSize1d
@@ -173,7 +176,7 @@ byteBook = TestFunctions
   , _abs = Nothing
   }
 
-intBook :: TestFunctions () (Ptr I.CTensor) I.CReal I.CAccReal
+intBook :: TestFunctions CState (Ptr I.CTensor) I.CReal I.CAccReal
 intBook = TestFunctions
   { _new = I.c_new
   , _newWithSize1d = I.c_newWithSize1d
