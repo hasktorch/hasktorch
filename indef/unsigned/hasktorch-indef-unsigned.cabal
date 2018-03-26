@@ -14,6 +14,10 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
+flag cuda
+  Description: build with THC support
+  Default: True
+
 library
   hs-source-dirs: src
   default-language: Haskell2010
@@ -34,50 +38,72 @@ library
     , singletons >=2.2
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
+
+  if flag(cuda)
+    build-depends:
+      hasktorch-types-thc
+    cpp-options: -DCUDA
+
   exposed-modules:
     -- classes implementations with indefinites
-      Torch.Indef.Types
-    , Torch.Indef.Storage
-    , Torch.Indef.Storage.Copy
-    , Torch.Indef.Tensor.Dynamic
-    , Torch.Indef.Tensor.Dynamic.IsTensor
-    , Torch.Indef.Tensor.Dynamic.Copy
-    , Torch.Indef.Tensor.Dynamic.Conv
-    , Torch.Indef.Tensor.Dynamic.Math
-    , Torch.Indef.Tensor.Dynamic.Random
-    , Torch.Indef.Tensor.Static
-    , Torch.Indef.Tensor.Static.IsTensor
-    , Torch.Indef.Tensor.Static.Copy
-    , Torch.Indef.Tensor.Static.Random
 
-executable isdefinite
-  hs-source-dirs: exe
-  main-is: Main.hs
-  default-language: Haskell2010
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-indef-unsigned
-    , hasktorch-raw-th
-    , hasktorch-types-th
-  mixins:
-      hasktorch-indef-unsigned
-        (Torch.Indef.Types
-        ,Torch.Indef.Storage
-        ,Torch.Indef.Storage.Copy
-        ,Torch.Indef.Tensor.Dynamic
-        ,Torch.Indef.Tensor.Dynamic.Copy
-        ,Torch.Indef.Tensor.Dynamic.Conv
-        ,Torch.Indef.Tensor.Dynamic.Random
-        ,Torch.Indef.Tensor.Dynamic.Math
-        ,Torch.Indef.Tensor.Static
-        )
-        requires
-        (Torch.Sig.Types         as Torch.Types.TH.Byte
-        ,Torch.Sig.Storage       as Torch.FFI.TH.Byte.Storage
-        ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Byte.StorageCopy
-        ,Torch.Sig.IsTensor      as Torch.FFI.TH.Byte.Tensor
-        ,Torch.Sig.Tensor.Copy   as Torch.FFI.TH.Byte.TensorCopy
-        ,Torch.Sig.Tensor.Conv   as Torch.FFI.TH.Byte.TensorConv
-        ,Torch.Sig.Tensor.Random as Torch.FFI.TH.Byte.TensorRandom
-        ,Torch.Sig.Tensor.Math   as Torch.FFI.TH.Byte.TensorMath
-        )
+    -- FIXME: not sure where to go with commented-out classes, they are TH-only but there are some THC-only things as well
+    -- , Torch.Class.Blas
+    -- , Torch.Class.Lapack
+    -- , Torch.Class.Tensor.Conv
+    -- , Torch.Class.Vector
+
+      Torch.Indef.Storage
+    , Torch.Indef.Storage.Copy
+
+    -- For use with signed
+    -- , Torch.Indef.Dynamic.Tensor.Pointwise
+    -- , Torch.Indef.Static.Tensor.Pointwise
+
+    -- For use with floating
+    -- , Torch.Indef.Dynamic.NN
+    -- , Torch.Indef.Static.NN
+    , Torch.Indef.Dynamic.Types
+    , Torch.Indef.Dynamic.Tensor
+    , Torch.Indef.Dynamic.Tensor.Copy
+    , Torch.Indef.Dynamic.Tensor.Index
+    , Torch.Indef.Dynamic.Tensor.Masked
+    , Torch.Indef.Dynamic.Tensor.Math
+    , Torch.Indef.Dynamic.Tensor.Math.Blas
+    , Torch.Indef.Dynamic.Tensor.Math.Compare
+    , Torch.Indef.Dynamic.Tensor.Math.CompareT
+    , Torch.Indef.Dynamic.Tensor.Math.Pairwise
+    , Torch.Indef.Dynamic.Tensor.Math.Lapack
+    , Torch.Indef.Dynamic.Tensor.Math.Pointwise
+    , Torch.Indef.Dynamic.Tensor.Math.Random
+    , Torch.Indef.Dynamic.Tensor.Math.Reduce
+    , Torch.Indef.Dynamic.Tensor.Math.Scan
+    , Torch.Indef.Dynamic.Tensor.Mode
+    , Torch.Indef.Dynamic.Tensor.ScatterGather
+    , Torch.Indef.Dynamic.Tensor.Sort
+    , Torch.Indef.Dynamic.Tensor.TopK
+    , Torch.Indef.Dynamic.Tensor.Random
+
+    , Torch.Indef.Static.Types
+    , Torch.Indef.Static.Tensor
+    , Torch.Indef.Static.Tensor.Copy
+    , Torch.Indef.Static.Tensor.Index
+    , Torch.Indef.Static.Tensor.Masked
+    , Torch.Indef.Static.Tensor.Math
+    , Torch.Indef.Static.Tensor.Math.Blas
+    , Torch.Indef.Static.Tensor.Math.Compare
+    , Torch.Indef.Static.Tensor.Math.CompareT
+    , Torch.Indef.Static.Tensor.Math.Pairwise
+    , Torch.Indef.Static.Tensor.Math.Lapack
+    , Torch.Indef.Static.Tensor.Math.Pointwise
+    , Torch.Indef.Static.Tensor.Math.Random
+    , Torch.Indef.Static.Tensor.Math.Reduce
+    , Torch.Indef.Static.Tensor.Math.Scan
+    , Torch.Indef.Static.Tensor.Mode
+    , Torch.Indef.Static.Tensor.ScatterGather
+    , Torch.Indef.Static.Tensor.Sort
+    , Torch.Indef.Static.Tensor.TopK
+    , Torch.Indef.Static.Tensor.Random
+
+  other-modules:
+      Torch.Indef.Internal
