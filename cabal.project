@@ -16,7 +16,7 @@ packages:
     dimensions/*cabal
     classes/*cabal
 
-    indef/unsigned/*cabal
+    -- indef/unsigned/*cabal
     -- indef/signed/*cabal
     -- indef/floating/*cabal
 

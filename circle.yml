@@ -31,6 +31,7 @@ dependencies:
     - /usr/bin/curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - stack upgrade
     - stack update
+    - stack install cabal-install --resolver lts-11.2
     - git submodule update --init --recursive
     - alias cmake=~/cmake-3.10.0-Linux-x86_64/bin/cmake
     - sudo pip install pyyaml
@@ -39,25 +40,29 @@ dependencies:
     - cd ./vendor; ./build-error-handler.sh
 
   override:
-    - stack setup
-    - stack build
+    - cabal new-build all
 
 test:
-
   override:
     ### tests
-    - stack test hasktorch-raw
-    - stack test hasktorch-core
+    - cabal new-test all
+
     ### examples
-    - stack exec static-tensor-usage
-    - stack exec ff-typed
-    - stack exec ff-untyped
-    - stack exec gradient-descent
-    - stack exec static-tensor-usage
+    # - cabal new-run hasktorch-examples:static-tensor-usage
+    # - cabal new-run hasktorch-examples:ff-typed
+    # - cabal new-run hasktorch-examples:ff-untyped
+    # - cabal new-run hasktorch-examples:gradient-descent
+    # - cabal new-run hasktorch-examples:static-tensor-usage
+
     ### code generation
-    - stack exec cabal -- new-run ht-codegen --verbose --type concrete --lib TH
-    - stack exec cabal -- new-run ht-codegen --verbose --type concrete --lib THC
-    - stack exec cabal -- new-run ht-codegen --verbose --type generic  --lib TH
-    - stack exec cabal -- new-run ht-codegen --verbose --type generic  --lib THC
+    - cabal new-run ht-codegen -- --verbose --type concrete --lib TH
+    - cabal new-run ht-codegen -- --verbose --type concrete --lib THC
+    - cabal new-run ht-codegen -- --verbose --type generic  --lib TH
+    - cabal new-run ht-codegen -- --verbose --type generic  --lib THC
+    - cabal new-run ht-codegen -- --verbose --type generic  --lib THNN
+    - cabal new-run ht-codegen -- --verbose --type generic  --lib THCUNN
+
     ### end-to-end build
-    - make init
+
+    # FIXME: make sure these are updated
+    # - make init
