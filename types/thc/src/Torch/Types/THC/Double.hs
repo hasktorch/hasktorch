@@ -1,26 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Types.THC.Double
-  ( CTensor
-  , CState
-  , CStorage
-  , CReal
-  , CAccReal
-  , HsAccReal
-  , HsReal
-  , hs2cReal
-  , hs2cAccReal
-  , c2hsReal
-  , c2hsAccReal
-  , Tensor(..)
-  , DynTensor(..)
-  , Storage(..)
-  , asStorage
-  , asDyn
-  , asStatic
-  , CTHCudaDoubleTensor
-  , CTHCDoubleStorage
-  ) where
+module Torch.Types.THC.Double where
 
 import Foreign.C.Types
 import Foreign (ForeignPtr)
@@ -29,7 +9,19 @@ import Torch.Types.THC
 
 type CTensor = CTHCudaDoubleTensor
 type CStorage = CTHCDoubleStorage
-type CState = ()
+
+type CInt' = CLLong
+type CState = C'THCState
+type CDescBuff = C'THCDescBuff
+type CGenerator = C'THCGenerator
+type CAllocator = C'THCAllocator
+type CMaskTensor = C'THCudaByteTensor
+type CIndexTensor = C'THCudaLongTensor
+type CIndexStorage = C'THCLongStorage
+
+-- TENSOR-LAPACK ONLY
+-- type CIntTensor = C'THCudaIntTensor
+
 type CReal = CDouble
 type CAccReal = CDouble
 type HsReal = Double

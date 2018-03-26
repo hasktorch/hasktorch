@@ -1,0 +1,13 @@
+signature Torch.Sig.Tensor.Math.Random where
+
+import Torch.Types.TH
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+
+
+-- In THTensorMath and THCTensorRandom
+c_rand :: Ptr CState -> Ptr CDoubleTensor -> Ptr C'THLongStorage -> IO ()
+c_randn :: Ptr CState -> Ptr CDoubleTensor -> Ptr C'THLongStorage -> IO ()
+
+

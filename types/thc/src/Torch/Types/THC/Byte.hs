@@ -11,7 +11,8 @@ import Torch.Types.THC
 
 type CState = C'THCState
 type CDescBuff = C'THCDescBuff
-type CAllocator = C'THCState
+type CAllocator = C'THCAllocator
+type CGenerator = C'THCGenerator
 type CTensor = CTHCudaByteTensor
 type CStorage = CTHCByteStorage
 type CIndexTensor = C'THCudaLongTensor

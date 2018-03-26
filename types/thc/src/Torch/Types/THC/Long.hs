@@ -12,6 +12,7 @@ type CTensor = CTHCudaLongTensor
 type CState = C'THCState
 type CDescBuff = C'THCDescBuff
 type CAllocator = C'THCAllocator
+type CGenerator = C'THCGenerator
 
 type CIndexTensor = C'THCudaLongTensor
 type CMaskTensor = C'THCudaByteTensor

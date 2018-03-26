@@ -20,6 +20,10 @@ type CAccReal = CLong
 type HsReal = Word8
 type HsAccReal = Word64
 
+-- for RNG
+type CGenerator = C'THGenerator
+type CDoubleTensor = CTHDoubleTensor
+
 type CMaskTensor = C'THByteTensor
 type CInt' = CInt
 

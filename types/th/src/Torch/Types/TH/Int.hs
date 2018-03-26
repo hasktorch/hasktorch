@@ -10,6 +10,7 @@ import Torch.Types.TH
 
 
 type CAllocator = CTHAllocator
+type CGenerator = CTHGenerator
 type CState = C'THState
 type CDescBuff = C'THDescBuff
 type CTensor = CTHIntTensor

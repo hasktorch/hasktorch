@@ -10,13 +10,11 @@ packages:
     types/th/*.cabal
     types/thc/*.cabal
 
-    -- dimensions/*cabal
+    dimensions/*cabal
     -- classes/*cabal
 
     signatures/unsigned/*cabal
-
-    -- signatures/unsigned/*cabal
-    -- signatures/signed/*cabal
+    signatures/signed/*cabal
     -- signatures/floating/*cabal
 
     -- indef/unsigned/*cabal

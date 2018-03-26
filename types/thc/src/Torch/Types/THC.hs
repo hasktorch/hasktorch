@@ -3,7 +3,7 @@ module Torch.Types.THC
   ( module X
   , CTHCDescBuff
   , CTHCAllocator, C'THCAllocator
-  , CTHCGenerator
+  , CTHCGenerator, C'THCGenerator
   , CTHCFile
   , CTHCHalf, C'THCHalf
   , CTHCState
@@ -40,6 +40,7 @@ import Foreign
 
 type CTHCDescBuff = C'THCDescBuff
 type CTHCGenerator = C'_Generator
+type C'THCGenerator = CTHCGenerator
 type CTHCStream = C'THCStream
 type CTHCState = C'THCState
 

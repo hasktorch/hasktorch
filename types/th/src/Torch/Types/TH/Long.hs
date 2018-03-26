@@ -9,6 +9,7 @@ import Torch.Types.TH
 
 
 type CAllocator = CTHAllocator
+type CGenerator = C'THGenerator
 type CIndexTensor = C'THLongTensor
 type CIndexStorage = C'THLongStorage
 type CMaskTensor = C'THByteTensor

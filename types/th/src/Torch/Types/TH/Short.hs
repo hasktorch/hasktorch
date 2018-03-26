@@ -15,6 +15,7 @@ type CInt' = CInt
 type CState = C'THState
 type CDescBuff = C'THDescBuff
 type CAllocator = C'THAllocator
+type CGenerator = C'THGenerator
 type CMaskTensor = C'THByteTensor
 type CIndexTensor = C'THLongTensor
 type CIndexStorage = C'THLongStorage

@@ -13,10 +13,14 @@ type CStorage = CTHDoubleStorage
 type CInt' = CInt
 type CState = C'THState
 type CDescBuff = C'THDescBuff
+type CGenerator = CTHGenerator
 type CAllocator = C'THAllocator
 type CMaskTensor = C'THByteTensor
 type CIndexTensor = C'THLongTensor
 type CIndexStorage = C'THLongStorage
+
+-- FOR TENSOR-LAPACK SPECIFICALLY
+type CIntTensor = CTHIntTensor
 
 type CReal = CDouble
 type CAccReal = CDouble

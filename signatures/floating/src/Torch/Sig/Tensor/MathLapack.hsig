@@ -17,11 +17,10 @@ c_potrs :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar 
 c_geqrf :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_qr :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 
--- * THC
+-- * TH
 -- c_trtrs     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> Ptr CChar -> IO ()
 -- c_orgqr     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 -- c_ormqr     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> IO ()
 -- c_pstrf     :: Ptr CTensor -> Ptr CTHIntTensor -> Ptr CTensor -> Ptr CChar -> CReal -> IO ()
 -- c_btrifact  :: Ptr CTensor -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CInt -> Ptr CTensor -> IO ()
 -- c_btrisolve :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTHIntTensor -> IO ()
-

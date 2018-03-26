@@ -30,8 +30,7 @@ library
     , Torch.Sig.Tensor.ScatterGather
     , Torch.Sig.Tensor.Sort
     , Torch.Sig.Tensor.TopK
-
-    -- , Torch.Sig.Tensor.Math
+    -- FIXME: TH and THC differ in that one uses a Generator
     -- , Torch.Sig.Tensor.Random
 
     -- * THC-SPECIFIC
@@ -75,11 +74,10 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.ScatterGather as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Sort          as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.TopK          as Torch.FFI.TH.Byte.TensorMath
+        -- ,Torch.Sig.Tensor.Random        as Torch.FFI.TH.Byte.TensorRandom
 
         -- * Used to be available in TH
         -- ,Torch.Sig.Tensor.Conv   as Torch.FFI.TH.Byte.TensorConv
-        -- ,Torch.Sig.Tensor.Random as Torch.FFI.TH.Byte.TensorRandom
-        -- ,Torch.Sig.Tensor.Math   as Torch.FFI.TH.Byte.TensorMath
         )
     , hasktorch-signatures-unsigned
         requires

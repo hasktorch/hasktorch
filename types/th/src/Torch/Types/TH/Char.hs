@@ -14,6 +14,7 @@ type CState = C'THState
 type CDescBuff = C'THDescBuff
 type CTensor = CTHCharTensor
 type CStorage = CTHCharStorage
+type CGenerator = C'THGenerator
 type CIndexTensor = CTHLongTensor
 type CIndexStorage = CTHLongStorage
 type CReal = CChar

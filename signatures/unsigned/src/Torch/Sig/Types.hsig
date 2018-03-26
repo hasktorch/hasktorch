@@ -16,6 +16,10 @@ data CIndexTensor
 data CIndexStorage
 data CMaskTensor
 
+-- for RNG
+data CGenerator
+-- data CDoubleTensor
+
 data CInt'
 -- data CByteTensor
 -- data CCharTensor

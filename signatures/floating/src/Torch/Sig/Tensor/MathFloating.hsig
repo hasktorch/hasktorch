@@ -1,10 +1,10 @@
 signature Torch.Sig.Tensor.MathFloating where
 
-import Torch.Types.TH
 import Foreign
 import Foreign.C.Types
 import Torch.Sig.Types
 
+{-
 c_cinv         :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_sigmoid      :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_log          :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
@@ -47,6 +47,6 @@ c_stdall       :: Ptr CState -> Ptr CTensor -> CInt -> IO CAccReal
 c_normall      :: Ptr CState -> Ptr CTensor -> CReal -> IO CAccReal
 c_linspace     :: Ptr CState -> Ptr CTensor -> CReal -> CReal -> CLLong -> IO ()
 c_logspace     :: Ptr CState -> Ptr CTensor -> CReal -> CReal -> CLLong -> IO ()
-c_rand         :: Ptr CState -> Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
-c_randn        :: Ptr CState -> Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHLongStorage -> IO ()
-
+c_rand         :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr CIndexStorage -> IO ()
+c_randn        :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr CIndexStorage -> IO ()
+-}

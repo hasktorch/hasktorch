@@ -1,0 +1,19 @@
+signature Torch.Sig.Tensor.Random where
+
+import Torch.Types.TH
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+
+c_random        :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> IO ()
+c_clampedRandom :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CLLong -> CLLong -> IO ()
+c_cappedRandom  :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CLLong -> IO ()
+c_geometric     :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CDouble -> IO ()
+c_bernoulli     :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CDouble -> IO ()
+c_bernoulli_DoubleTensor :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr CDoubleTensor -> IO ()
+
+-- FIXME: TH-ONLY BECAUSE OF SOME ISSUES GENERATING FLOATS
+-- c_bernoulli_FloatTensor  :: Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
+
+
+

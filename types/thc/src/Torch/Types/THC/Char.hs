@@ -24,6 +24,9 @@ type HsReal = Int8
 type HsUReal = Word8
 type HsAccReal = Int64
 
+type CGenerator = CTHCGenerator
+type CDoubleTensor = C'THCudaDoubleTensor
+
 type CMaskTensor = C'THCudaByteTensor
 type CInt' = CLLong
 
