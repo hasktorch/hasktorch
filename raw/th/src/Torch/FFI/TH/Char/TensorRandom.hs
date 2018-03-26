@@ -9,31 +9,59 @@ import Torch.Types.TH
 
 -- | c_random :  self _generator -> void
 foreign import ccall "THTensorRandom.h THCharTensor_random"
-  c_random :: Ptr C'THCharTensor -> Ptr C'THGenerator -> IO ()
+  c_random_ :: Ptr C'THCharTensor -> Ptr C'THGenerator -> IO ()
+
+-- | alias of c_random_ with unused argument (for CTHState) to unify backpack signatures.
+c_random :: Ptr C'THState -> Ptr C'THCharTensor -> Ptr C'THGenerator -> IO ()
+c_random = const c_random_
 
 -- | c_clampedRandom :  self _generator min max -> void
 foreign import ccall "THTensorRandom.h THCharTensor_clampedRandom"
-  c_clampedRandom :: Ptr C'THCharTensor -> Ptr C'THGenerator -> CLLong -> CLLong -> IO ()
+  c_clampedRandom_ :: Ptr C'THCharTensor -> Ptr C'THGenerator -> CLLong -> CLLong -> IO ()
+
+-- | alias of c_clampedRandom_ with unused argument (for CTHState) to unify backpack signatures.
+c_clampedRandom :: Ptr C'THState -> Ptr C'THCharTensor -> Ptr C'THGenerator -> CLLong -> CLLong -> IO ()
+c_clampedRandom = const c_clampedRandom_
 
 -- | c_cappedRandom :  self _generator max -> void
 foreign import ccall "THTensorRandom.h THCharTensor_cappedRandom"
-  c_cappedRandom :: Ptr C'THCharTensor -> Ptr C'THGenerator -> CLLong -> IO ()
+  c_cappedRandom_ :: Ptr C'THCharTensor -> Ptr C'THGenerator -> CLLong -> IO ()
+
+-- | alias of c_cappedRandom_ with unused argument (for CTHState) to unify backpack signatures.
+c_cappedRandom :: Ptr C'THState -> Ptr C'THCharTensor -> Ptr C'THGenerator -> CLLong -> IO ()
+c_cappedRandom = const c_cappedRandom_
 
 -- | c_geometric :  self _generator p -> void
 foreign import ccall "THTensorRandom.h THCharTensor_geometric"
-  c_geometric :: Ptr C'THCharTensor -> Ptr C'THGenerator -> CDouble -> IO ()
+  c_geometric_ :: Ptr C'THCharTensor -> Ptr C'THGenerator -> CDouble -> IO ()
+
+-- | alias of c_geometric_ with unused argument (for CTHState) to unify backpack signatures.
+c_geometric :: Ptr C'THState -> Ptr C'THCharTensor -> Ptr C'THGenerator -> CDouble -> IO ()
+c_geometric = const c_geometric_
 
 -- | c_bernoulli :  self _generator p -> void
 foreign import ccall "THTensorRandom.h THCharTensor_bernoulli"
-  c_bernoulli :: Ptr C'THCharTensor -> Ptr C'THGenerator -> CDouble -> IO ()
+  c_bernoulli_ :: Ptr C'THCharTensor -> Ptr C'THGenerator -> CDouble -> IO ()
+
+-- | alias of c_bernoulli_ with unused argument (for CTHState) to unify backpack signatures.
+c_bernoulli :: Ptr C'THState -> Ptr C'THCharTensor -> Ptr C'THGenerator -> CDouble -> IO ()
+c_bernoulli = const c_bernoulli_
 
 -- | c_bernoulli_FloatTensor :  self _generator p -> void
 foreign import ccall "THTensorRandom.h THCharTensor_bernoulli_FloatTensor"
-  c_bernoulli_FloatTensor :: Ptr C'THCharTensor -> Ptr C'THGenerator -> Ptr C'THFloatTensor -> IO ()
+  c_bernoulli_FloatTensor_ :: Ptr C'THCharTensor -> Ptr C'THGenerator -> Ptr C'THFloatTensor -> IO ()
+
+-- | alias of c_bernoulli_FloatTensor_ with unused argument (for CTHState) to unify backpack signatures.
+c_bernoulli_FloatTensor :: Ptr C'THState -> Ptr C'THCharTensor -> Ptr C'THGenerator -> Ptr C'THFloatTensor -> IO ()
+c_bernoulli_FloatTensor = const c_bernoulli_FloatTensor_
 
 -- | c_bernoulli_DoubleTensor :  self _generator p -> void
 foreign import ccall "THTensorRandom.h THCharTensor_bernoulli_DoubleTensor"
-  c_bernoulli_DoubleTensor :: Ptr C'THCharTensor -> Ptr C'THGenerator -> Ptr C'THDoubleTensor -> IO ()
+  c_bernoulli_DoubleTensor_ :: Ptr C'THCharTensor -> Ptr C'THGenerator -> Ptr C'THDoubleTensor -> IO ()
+
+-- | alias of c_bernoulli_DoubleTensor_ with unused argument (for CTHState) to unify backpack signatures.
+c_bernoulli_DoubleTensor :: Ptr C'THState -> Ptr C'THCharTensor -> Ptr C'THGenerator -> Ptr C'THDoubleTensor -> IO ()
+c_bernoulli_DoubleTensor = const c_bernoulli_DoubleTensor_
 
 -- | p_random : Pointer to function : self _generator -> void
 foreign import ccall "THTensorRandom.h &THCharTensor_random"

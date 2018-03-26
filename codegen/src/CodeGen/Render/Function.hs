@@ -132,7 +132,6 @@ renderSig st lt cgt headerFile tt ms fs (mpref, name, retType, args) =
       -- NOTE2: In the event that we render generic functions from the TH
       -- library which _does not include THTensorRandom_, we want to post-fix these names with a @_@
       -- and use the alias to match the backpack signatures.
-      (TH, GenericFiles, "TensorRandom", _) -> "  " <> (haskellSig lt hsname st tt args retType)
       (TH, GenericFiles, _, IsFun) ->
         T.intercalate "\n"
           [ "  " <> (haskellSig lt (mkAliasRefName hsname) st tt args retType)
