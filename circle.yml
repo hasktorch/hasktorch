@@ -1,7 +1,7 @@
 machine:
 
   environment:
-    PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:$PATH
+    PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:~/.cabal/bin/:/opt/ghc/8.2.2/bin/:$PATH
     LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:/usr/lib/x86_64-linux-gnu/$LD_LIBRARY_PATH
     LLVM_CONFIG: /usr/lib/llvm-3.8/bin/llvm-config
 
@@ -9,12 +9,14 @@ dependencies:
 
   cache_directories:
     - "/home/ubuntu/.stack"
+    - "/home/ubuntu/.cabal"
     - "/home/ubuntu/cmake-3.10.0-Linux-x86_64"
     - "/usr/lib/llvm-4.0"
     - "/home/ubuntu/hasktorch/.stack-work"
     - "/home/ubuntu/hasktorch/vendor/build/"
 
   pre:
+    # get llvm, cmake
     - wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
     - sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main"
     - sudo apt-get update --fix-missing
@@ -26,17 +28,34 @@ dependencies:
       else
         echo "Cached CMake found"
       fi
+
+    # Install stack
+    # =============
     - mkdir -p ~/.local/bin
     # full path to curl circumvents errors with /usr/local/bin/curl incompatabilities with libcurl
     - /usr/bin/curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
     - stack upgrade
     - stack update
-    - stack install cabal-install --resolver lts-11.2
+
+    # Install cabal
+    # =============
+    - mkdir -p ~/.cabal/bin
+    - sudo add-apt-repository -y ppa:hvr/ghc
+    - sudo apt-get update -y
+    - sudo apt-get install ghc-8.2.2 -y
+    - sudo apt-get install cabal-install-head -y
     - which cabal
     - cabal --version
+    - cabal update
+    - git clone git@github.com:haskell/cabal.git ~/cabal --recursive
+    - (cd ~/cabal/Cabal;         cabal install)
+    - (cd ~/cabal/cabal-install; cabal install)
+    - which cabal
+    - cabal --version
+
     - git submodule update --init --recursive
     - alias cmake=~/cmake-3.10.0-Linux-x86_64/bin/cmake
-    - sudo pip install pyyaml
+    - sudo pip install pyyaml typing
     - cd ./vendor; ./build-aten.sh
     - cd ./vendor; ./build-aten-spec.sh
     - cd ./vendor; ./build-error-handler.sh

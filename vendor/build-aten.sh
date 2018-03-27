@@ -50,7 +50,7 @@ function build {
 
   mkdir -p ./aten/build
   cd ./aten/build
-  cmake .. -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC -Wno-dev
+  cmake .. -DNO_CUDA=true -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC -Wno-dev
   make install
 }
 
