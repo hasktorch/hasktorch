@@ -23,15 +23,20 @@ flag with_nn
 
 library
   extra-libraries: ATen
+  extra-lib-dirs: /home/stites/git/hasktorch/vendor/build/
   hs-source-dirs:
       src
     , nn
+    , finalizers
   build-depends:
       base >=4.7 && <5
     , hasktorch-types-th
     , inline-c >=0.5
     , text >=1.2.2.2
   build-tools: c2hs
+  c-sources:
+      cbits/finalizers.c
+
   default-language: Haskell2010
   if flag(half)
     cc-options: -DHALF
@@ -43,6 +48,7 @@ library
     , Torch.FFI.TH.Random
     , Torch.FFI.TH.Size
     , Torch.FFI.TH.Storage
+
     , Torch.FFI.TH.Byte.Blas
     , Torch.FFI.TH.Byte.Storage
     , Torch.FFI.TH.Byte.StorageCopy
@@ -52,6 +58,9 @@ library
     , Torch.FFI.TH.Byte.TensorMath
     , Torch.FFI.TH.Byte.TensorRandom
     , Torch.FFI.TH.Byte.Vector
+    , Torch.FFI.TH.Byte.FreeTensor
+    , Torch.FFI.TH.Byte.FreeStorage
+
     , Torch.FFI.TH.Char.Blas
     , Torch.FFI.TH.Char.Storage
     , Torch.FFI.TH.Char.StorageCopy
@@ -61,6 +70,9 @@ library
     , Torch.FFI.TH.Char.TensorMath
     , Torch.FFI.TH.Char.TensorRandom
     , Torch.FFI.TH.Char.Vector
+    , Torch.FFI.TH.Char.FreeTensor
+    , Torch.FFI.TH.Char.FreeStorage
+
     , Torch.FFI.TH.Double.Blas
     , Torch.FFI.TH.Double.Lapack
     , Torch.FFI.TH.Double.Storage
@@ -72,6 +84,9 @@ library
     , Torch.FFI.TH.Double.TensorMath
     , Torch.FFI.TH.Double.TensorRandom
     , Torch.FFI.TH.Double.Vector
+    , Torch.FFI.TH.Double.FreeTensor
+    , Torch.FFI.TH.Double.FreeStorage
+
     , Torch.FFI.TH.Float.Blas
     , Torch.FFI.TH.Float.Lapack
     , Torch.FFI.TH.Float.Storage
@@ -83,6 +98,9 @@ library
     , Torch.FFI.TH.Float.TensorMath
     , Torch.FFI.TH.Float.TensorRandom
     , Torch.FFI.TH.Float.Vector
+    , Torch.FFI.TH.Float.FreeTensor
+    , Torch.FFI.TH.Float.FreeStorage
+
     , Torch.FFI.TH.Int.Blas
     , Torch.FFI.TH.Int.Storage
     , Torch.FFI.TH.Int.StorageCopy
@@ -92,6 +110,9 @@ library
     , Torch.FFI.TH.Int.TensorMath
     , Torch.FFI.TH.Int.TensorRandom
     , Torch.FFI.TH.Int.Vector
+    , Torch.FFI.TH.Int.FreeTensor
+    , Torch.FFI.TH.Int.FreeStorage
+
     , Torch.FFI.TH.Long.Blas
     , Torch.FFI.TH.Long.Storage
     , Torch.FFI.TH.Long.StorageCopy
@@ -101,6 +122,9 @@ library
     , Torch.FFI.TH.Long.TensorMath
     , Torch.FFI.TH.Long.TensorRandom
     , Torch.FFI.TH.Long.Vector
+    , Torch.FFI.TH.Long.FreeTensor
+    , Torch.FFI.TH.Long.FreeStorage
+
     , Torch.FFI.TH.Short.Blas
     , Torch.FFI.TH.Short.Storage
     , Torch.FFI.TH.Short.StorageCopy
@@ -110,6 +134,8 @@ library
     , Torch.FFI.TH.Short.TensorMath
     , Torch.FFI.TH.Short.TensorRandom
     , Torch.FFI.TH.Short.Vector
+    , Torch.FFI.TH.Short.FreeTensor
+    , Torch.FFI.TH.Short.FreeStorage
 
   if flag(half)
     exposed-modules:
