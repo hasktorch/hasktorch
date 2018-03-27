@@ -47,7 +47,8 @@ executable isdefinite-th
   mixins:
       hasktorch-signatures-floating
         requires
-        (Torch.Sig.Types         as Torch.Types.TH.Float
+        (Torch.Sig.State         as Torch.Types.TH
+        ,Torch.Sig.Types         as Torch.Types.TH.Float
         ,Torch.Sig.Storage       as Torch.FFI.TH.Float.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Float.StorageCopy
         ,Torch.Sig.Tensor        as Torch.FFI.TH.Float.Tensor
@@ -65,6 +66,8 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Float.TensorMath
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Float.TensorMath
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Float.TensorMath
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.TH.Float.FreeTensor
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.TH.Float.FreeStorage
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed   as Torch.FFI.TH.Float.TensorMath
         ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.TH.Float.TensorMath
@@ -80,7 +83,8 @@ executable isdefinite-th
         )
     , hasktorch-signatures-floating
         requires
-        (Torch.Sig.Types         as Torch.Types.TH.Double
+        (Torch.Sig.State         as Torch.Types.TH
+        ,Torch.Sig.Types         as Torch.Types.TH.Double
         ,Torch.Sig.Storage       as Torch.FFI.TH.Double.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Double.StorageCopy
         ,Torch.Sig.Tensor        as Torch.FFI.TH.Double.Tensor
@@ -98,6 +102,8 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Double.TensorMath
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Double.TensorMath
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Double.TensorMath
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.TH.Double.FreeTensor
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.TH.Double.FreeStorage
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed   as Torch.FFI.TH.Double.TensorMath
 
@@ -123,7 +129,8 @@ executable isdefinite-thc
   mixins:
       hasktorch-signatures-floating
         requires
-        (Torch.Sig.Types         as Torch.Types.THC.Double
+        (Torch.Sig.State         as Torch.Types.THC
+        ,Torch.Sig.Types         as Torch.Types.THC.Double
         ,Torch.Sig.Storage       as Torch.FFI.THC.Double.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Double.StorageCopy
         ,Torch.Sig.Tensor        as Torch.FFI.THC.Double.Tensor
@@ -141,6 +148,8 @@ executable isdefinite-thc
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Double.TensorScatterGather
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Double.TensorSort
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Double.TensorTopK
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.THC.Double.Tensor
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.THC.Double.Storage
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Double.TensorMathPointwise
 

@@ -2,7 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 signature Torch.Sig.Types where
 
-import Foreign (ForeignPtr)
+import Foreign
 import Foreign.Storable
 import GHC.TypeLits (Nat)
 
@@ -16,19 +16,23 @@ data CIndexTensor
 data CIndexStorage
 data CMaskTensor
 
+-- all Haskell variants
+data HsAllocator
+data HsDescBuff
+data HsIndexTensor
+data HsIndexStorage
+data HsMaskTensor
+
 -- for RNG
 data CGenerator
+data HsGenerator
 -- data CDoubleTensor
 
 data CInt'
--- data CByteTensor
--- data CCharTensor
--- data CShortTensor
--- data CIntTensor
--- data CLongTensor
--- data CFloatTensor
--- data CDoubleTensor
--- data CHalfTensor
+data HsInt'
+
+-- freeStorage :: Ptr CState -> Ptr CStorage -> IO ()
+-- freeTensor  :: Ptr CState -> Ptr CTensor -> IO ()
 
 -- all haskell, memory-managed types
 data DynTensor

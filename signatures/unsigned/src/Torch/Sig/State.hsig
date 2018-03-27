@@ -1,0 +1,10 @@
+signature Torch.Sig.State where
+
+import Foreign
+import Torch.Sig.Types
+
+data State
+asState :: ForeignPtr CState -> State
+asForeign :: State -> ForeignPtr CState
+
+

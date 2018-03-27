@@ -32,7 +32,8 @@ executable isdefinite-th
   mixins:
       hasktorch-signatures-signed
         requires
-        (Torch.Sig.Types         as Torch.Types.TH.Int
+        (Torch.Sig.State         as Torch.Types.TH
+        ,Torch.Sig.Types         as Torch.Types.TH.Int
         ,Torch.Sig.Storage       as Torch.FFI.TH.Int.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Int.StorageCopy
         ,Torch.Sig.Tensor        as Torch.FFI.TH.Int.Tensor
@@ -50,12 +51,15 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Int.TensorMath
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Int.TensorMath
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Int.TensorMath
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.TH.Int.FreeTensor
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.TH.Int.FreeStorage
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Int.TensorMath
         )
     , hasktorch-signatures-signed
         requires
-        (Torch.Sig.Types         as Torch.Types.TH.Short
+        (Torch.Sig.State         as Torch.Types.TH
+        ,Torch.Sig.Types         as Torch.Types.TH.Short
         ,Torch.Sig.Storage       as Torch.FFI.TH.Short.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Short.StorageCopy
         ,Torch.Sig.Tensor        as Torch.FFI.TH.Short.Tensor
@@ -73,12 +77,15 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Short.TensorMath
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Short.TensorMath
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Short.TensorMath
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.TH.Short.FreeTensor
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.TH.Short.FreeStorage
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Short.TensorMath
         )
    , hasktorch-signatures-signed
         requires
-        (Torch.Sig.Types         as Torch.Types.TH.Long
+        (Torch.Sig.State         as Torch.Types.TH
+        ,Torch.Sig.Types         as Torch.Types.TH.Long
         ,Torch.Sig.Storage       as Torch.FFI.TH.Long.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Long.StorageCopy
         ,Torch.Sig.Tensor        as Torch.FFI.TH.Long.Tensor
@@ -96,6 +103,8 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Long.TensorMath
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Long.TensorMath
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Long.TensorMath
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.TH.Long.FreeTensor
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.TH.Long.FreeStorage
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Long.TensorMath
         )
@@ -113,7 +122,8 @@ executable isdefinite-thc
   mixins:
       hasktorch-signatures-signed
         requires
-        (Torch.Sig.Types         as Torch.Types.THC.Int
+        (Torch.Sig.State         as Torch.Types.THC
+        ,Torch.Sig.Types         as Torch.Types.THC.Int
         ,Torch.Sig.Storage       as Torch.FFI.THC.Int.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Int.StorageCopy
         ,Torch.Sig.Tensor        as Torch.FFI.THC.Int.Tensor
@@ -131,12 +141,15 @@ executable isdefinite-thc
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Int.TensorScatterGather
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Int.TensorSort
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Int.TensorTopK
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.THC.Int.Tensor
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.THC.Int.Storage
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Int.TensorMathPointwise
         )
     , hasktorch-signatures-signed
         requires
-        (Torch.Sig.Types         as Torch.Types.THC.Short
+        (Torch.Sig.State         as Torch.Types.THC
+        ,Torch.Sig.Types         as Torch.Types.THC.Short
         ,Torch.Sig.Storage       as Torch.FFI.THC.Short.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Short.StorageCopy
         ,Torch.Sig.Tensor        as Torch.FFI.THC.Short.Tensor
@@ -154,12 +167,15 @@ executable isdefinite-thc
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Short.TensorScatterGather
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Short.TensorSort
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Short.TensorTopK
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.THC.Short.Tensor
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.THC.Short.Storage
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Short.TensorMathPointwise
         )
     , hasktorch-signatures-signed
         requires
-        (Torch.Sig.Types         as Torch.Types.THC.Long
+        (Torch.Sig.State         as Torch.Types.THC
+        ,Torch.Sig.Types         as Torch.Types.THC.Long
         ,Torch.Sig.Storage       as Torch.FFI.THC.Long.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Long.StorageCopy
         ,Torch.Sig.Tensor        as Torch.FFI.THC.Long.Tensor
@@ -177,6 +193,8 @@ executable isdefinite-thc
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Long.TensorScatterGather
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Long.TensorSort
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Long.TensorTopK
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.THC.Long.Tensor
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.THC.Long.Storage
 
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Long.TensorMathPointwise
         )
