@@ -5,6 +5,7 @@ module Torch.Class.Storage.Copy where
 import Torch.Class.Types
 import Foreign (Ptr)
 import Torch.Types.TH
+import Control.Monad.IO.Class
 
 import Torch.Types.TH.Byte   as B hiding (HsReal)
 import Torch.Types.TH.Char   as C hiding (HsReal)
@@ -16,20 +17,20 @@ import Torch.Types.TH.Double as D hiding (HsReal)
 -- FIXME: reintroduce half
 -- import Torch.Types.TH.Half   as H
 
-class StorageCopy t where
+class MonadIO io => StorageCopyRaw io t where
   rawCopy    :: t -> io [HsReal t]
   copy       :: t -> io t
-  copyByte   :: t -> io B.Storage
-  copyChar   :: t -> io C.Storage
-  copyShort  :: t -> io S.Storage
-  copyInt    :: t -> io I.Storage
-  copyLong   :: t -> io L.Storage
-  copyFloat  :: t -> io F.Storage
-  copyDouble :: t -> io D.Storage
+  copyByte   :: t -> io (Ptr B.CStorage)
+  copyChar   :: t -> io (Ptr C.CStorage)
+  copyShort  :: t -> io (Ptr S.CStorage)
+  copyInt    :: t -> io (Ptr I.CStorage)
+  copyLong   :: t -> io (Ptr L.CStorage)
+  copyFloat  :: t -> io (Ptr F.CStorage)
+  copyDouble :: t -> io (Ptr D.CStorage)
   -- FIXME: reintroduce half
   -- copyHalf   :: t -> io H.Storage
 
-class GPUStorageCopy gpu cpu | gpu -> cpu where
+class MonadIO io => GPUStorageCopy io gpu cpu | gpu -> io cpu where
   thCopyCuda :: cpu -> io gpu
   copyCuda   :: gpu -> io gpu
   copyCPU    :: gpu -> io cpu

@@ -9,11 +9,16 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
-module Torch.Indef.Types (Torch) where
+module Torch.Indef.Types
+  ( Torch
+  , module X
+  ) where
 
 import Torch.Class.Types
 import qualified Torch.Sig.Types as Sig
 import qualified Torch.Sig.State as Sig
+
+import Torch.Indef.Internal as X
 
 type Torch = Torch' Sig.State
 

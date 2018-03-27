@@ -21,6 +21,12 @@ flag cuda
 library
   hs-source-dirs: src
   default-language: Haskell2010
+  default-extensions:
+      MultiParamTypeClasses
+    , FunctionalDependencies
+    , InstanceSigs
+    , TypeSynonymInstances
+    , FlexibleInstances
   build-depends:
       base >=4.7 && <5
     , containers
@@ -57,7 +63,7 @@ library
 
       Torch.Indef.Types
     , Torch.Indef.Storage
-    -- , Torch.Indef.Storage.Copy
+    , Torch.Indef.Storage.Copy
 
     -- For use with signed
     -- , Torch.Indef.Dynamic.Tensor.Pointwise

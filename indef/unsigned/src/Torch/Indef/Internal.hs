@@ -11,14 +11,13 @@ module Torch.Indef.Internal
   , _with3DynTensors
   , _with4DynTensors
   , _with5DynTensors
-  , module Sig
   ) where
 
 import Foreign
 import GHC.ForeignPtr (ForeignPtr)
 import qualified Foreign.Marshal.Array as FM
 
-import Torch.Sig.Types as Sig
+import Torch.Sig.Types
 import qualified Torch.Class.Types as TypeFams
 
 

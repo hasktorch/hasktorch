@@ -21,6 +21,7 @@ import Control.Monad.IO.Class
 
 import Torch.Indef.Internal
 import Torch.Indef.Types
+import Torch.Sig.Types
 import Torch.Class.Storage (Index(..), StorageSize(..), AllocatorContext(..))
 
 import qualified Torch.Class.Storage      as Class
