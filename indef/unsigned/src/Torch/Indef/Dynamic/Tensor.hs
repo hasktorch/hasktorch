@@ -2,7 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Indef.Tensor.Dynamic.IsTensor
+module Torch.Indef.Dynamic.Tensor
   ( asTensor
   , Class.IsTensor(..)
   ) where

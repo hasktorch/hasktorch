@@ -1,6 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Indef.Tensor.Dynamic.Random where
+module Torch.Indef.Dynamic.Tensor.Random where
 
 import Foreign
 import Foreign.C.Types

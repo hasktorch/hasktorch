@@ -216,7 +216,7 @@ library
   if flag(with_nn)
     exposed-modules:
         Torch.FFI.THC.NN.Double
-      , Torch.FFI.THC.NN.Float
+      -- , Torch.FFI.THC.NN.Float
 
   other-modules:
       Paths_hasktorch_raw_thc

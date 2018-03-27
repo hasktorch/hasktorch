@@ -14,6 +14,8 @@ module Torch.Class.Types where
 
 import GHC.Int (Int64)
 import Control.Monad.Trans.Reader (ReaderT)
+import Control.Monad.Reader.Class (MonadReader)
+import Control.Monad.IO.Class (MonadIO)
 
 type family HsReal t
 type family HsAccReal t
@@ -31,6 +33,7 @@ type SizesStorage t = IndexStorage t
 type StridesStorage t = IndexStorage t
 
 newtype Torch' s x = Torch { getState :: ReaderT s IO x }
+  deriving (Functor, Applicative, Monad, MonadReader s, MonadIO)
 
 -- Maybe better served as a newtype of Foreign.C.Types.CLLong
 newtype Stride = Stride Int64

@@ -54,4 +54,7 @@ type instance TypeFamilies.HsAccReal (Tensor (ds::[Nat])) = HsAccReal
 type instance TypeFamilies.HsStorage (Tensor (ds::[Nat])) = Storage
 type instance TypeFamilies.AsDynamic (Tensor (ds::[Nat])) = Dynamic.Tensor
 
+instance IsStatic (Tensor ds) where
+  asDynamic = Sig.dynamic
+  asStatic = Sig.asStatic
 

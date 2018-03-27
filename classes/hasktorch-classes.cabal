@@ -27,6 +27,7 @@ library
     , hasktorch-dimensions
     , safe-exceptions
     , transformers >= 0.5
+    , mtl
 
   if flag(cuda)
     build-depends:

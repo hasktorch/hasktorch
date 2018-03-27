@@ -1,4 +1,4 @@
-module Torch.Indef.Tensor.Static.Copy where
+module Torch.Indef.Static.Tensor.Copy where
 
 import Torch.Sig.Types
 import Torch.Indef.Tensor.Dynamic.Copy ()

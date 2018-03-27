@@ -1,4 +1,4 @@
-module Torch.Indef.Tensor.Static.Random where
+module Torch.Indef.Static.Tensor.Random where
 
 import qualified Torch.Class.Tensor.Random as Class
 import Torch.Sig.Types (dynamic, Tensor)

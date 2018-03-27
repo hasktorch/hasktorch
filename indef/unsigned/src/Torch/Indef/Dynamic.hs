@@ -1,9 +1,10 @@
-module Torch.Indef.Tensor.Dynamic
+module Torch.Indef.Dynamic where
+{-
   ( Tensor
   , tensor
   , DynTensor
   , asTensor
-  , Class.IsTensor(..)
+  , Class.Tensor(..)
   , Class.TensorCopy(..)
   , Class.TensorConv(..)
   , Class.TensorMath(..)
@@ -35,4 +36,4 @@ import Torch.Indef.Tensor.Dynamic.Conv as X
 import Torch.Indef.Tensor.Dynamic.Math as X
 import Torch.Indef.Tensor.Dynamic.Random as X
 
-
+-}

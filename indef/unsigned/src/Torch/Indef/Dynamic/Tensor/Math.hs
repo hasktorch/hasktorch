@@ -1,6 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Indef.Tensor.Dynamic.Math where
+module Torch.Indef.Dynamic.Tensor.Math where
 
 import Torch.Types.TH
 import Foreign

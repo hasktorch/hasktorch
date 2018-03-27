@@ -1,6 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
-module Torch.Indef.Tensor.Static.IsTensor
-  ( Class.IsTensor(..)
+module Torch.Indef.Static.Tensor
+  ( Class.Tensor(..)
   ) where
 
 import GHC.Int

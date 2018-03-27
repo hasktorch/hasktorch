@@ -3,7 +3,8 @@ module Torch.Indef.Storage.Copy where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
+import Torch.Indef.Types
+
 import qualified Foreign.Marshal.Array as FM
 import qualified Torch.Sig.Types        as Sig
 import qualified Torch.Sig.Storage      as Sig
