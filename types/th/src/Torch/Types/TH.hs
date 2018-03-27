@@ -1,21 +1,15 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH
-  ( ByteStorage
-  , CharStorage
-  , IntStorage
-  , ShortStorage
-  , LongStorage
-  , FloatStorage
-  , DoubleStorage
-  , HalfStorage
+  ( ByteStorage(..)
+  , ByteDynTensor(..)
+  , ByteTensor(..)
 
-  , ByteTensor
-  , CharTensor
-  , IntTensor
-  , ShortTensor
-  , LongTensor
-  , FloatTensor
-  , DoubleTensor
-  , HalfTensor
+  , LongStorage(..)
+  , LongDynTensor(..)
+  , LongTensor(..)
+
+  , State(..), asState
 
   , C'THState, CTHDescBuff
   , CTHAllocator
@@ -82,26 +76,35 @@ import Foreign.C.String ()
 import Foreign.C.Types
 import Foreign.Ptr ()
 import Foreign.Storable ()
+import GHC.TypeLits
 
 import Torch.Types.TH.Structs
 
-type ByteStorage = C'THByteStorage
-type CharStorage = C'THCharStorage
-type IntStorage = C'THIntStorage
-type ShortStorage = C'THShortStorage
-type LongStorage = C'THLongStorage
-type FloatStorage = C'THFloatStorage
-type DoubleStorage = C'THDoubleStorage
-type HalfStorage = C'THHalfStorage
+-- * Memory-managed mask and index types for TH to break the dependency cycle
 
-type ByteTensor = C'THByteTensor
-type CharTensor = C'THCharTensor
-type IntTensor = C'THIntTensor
-type ShortTensor = C'THShortTensor
-type LongTensor = C'THLongTensor
-type FloatTensor = C'THFloatTensor
-type DoubleTensor = C'THDoubleTensor
-type HalfTensor = C'THHalfTensor
+newtype LongStorage = LongStorage { longStorage :: ForeignPtr C'THLongStorage }
+  deriving (Eq, Show)
+
+newtype LongDynTensor = LongDynTensor { longTensor :: ForeignPtr C'THLongTensor }
+  deriving (Show, Eq)
+
+newtype LongTensor (ds :: [Nat]) = LongTensor { longDynamic :: LongDynTensor }
+  deriving (Show, Eq)
+
+newtype ByteStorage = ByteStorage { byteStorage :: ForeignPtr C'THByteStorage }
+  deriving (Eq, Show)
+
+newtype ByteDynTensor = ByteDynTensor { byteTensor :: ForeignPtr C'THByteTensor }
+  deriving (Show, Eq)
+
+newtype ByteTensor (ds :: [Nat]) = ByteTensor { byteDynamic :: ByteDynTensor }
+  deriving (Show, Eq)
+
+newtype State = State { asForeign :: ForeignPtr C'THState }
+  deriving (Eq, Show)
+asState = State
+
+-- * Type alias'
 
 type C'THState = Ptr ()
 type CState = C'THState

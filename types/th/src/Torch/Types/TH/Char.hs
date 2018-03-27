@@ -2,12 +2,16 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH.Char where
 
+import Foreign
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
 import GHC.Word
 import GHC.Int
 import Torch.Types.TH
+import qualified Torch.Types.TH.Long as Long
+import qualified Torch.Types.TH.Byte as Byte
+import qualified Torch.Types.TH.Random as Rand
 
 type CAllocator = CTHAllocator
 type CState = C'THState
@@ -22,6 +26,16 @@ type CAccReal = CLong
 type HsReal = Int8
 type HsUReal = Word8
 type HsAccReal = Int64
+
+type HsStorage = Storage
+type HsState = Ptr ()
+type HsAllocator = Ptr ()
+type HsDescBuff = String
+type HsIndexTensor  = Long.DynTensor
+type HsIndexStorage = Long.Storage
+type HsMaskTensor   = Byte.DynTensor
+type HsGenerator    = Rand.Generator
+type HsInt' = Int
 
 -- for RNG
 type CGenerator = C'THGenerator

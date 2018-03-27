@@ -2,11 +2,12 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH.Byte where
 
+import Foreign
 import Foreign.C.Types
-import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
 import GHC.Word
 import Torch.Types.TH
+import qualified Torch.Types.TH.Random as Rand
 
 type CAllocator = CTHAllocator
 type CState = C'THState
@@ -27,14 +28,14 @@ type CDoubleTensor = CTHDoubleTensor
 type CMaskTensor = C'THByteTensor
 type CInt' = CInt
 
--- type CByteTensor = C'THByteTensor
--- type CCharTensor = C'THCharTensor
--- type CShortTensor = C'THShortTensor
--- type CIntTensor = C'THIntTensor
--- type CLongTensor = C'THLongTensor
--- type CFloatTensor = C'THFloatTensor
--- type CDoubleTensor = C'THDoubleTensor
--- type CHalfTensor = C'THHalfTensor
+type HsState = Ptr ()
+type HsAllocator = Ptr ()
+type HsDescBuff = String
+type HsIndexTensor  = LongDynTensor
+type HsIndexStorage = LongStorage
+type HsMaskTensor   =      DynTensor
+type HsGenerator    = Rand.Generator
+type HsInt'         = Int
 
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
@@ -48,18 +49,16 @@ c2hsReal = fromIntegral
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
-newtype Storage = Storage { storage :: ForeignPtr CStorage }
-  deriving (Eq, Show)
+-- use the imports from Torch.Types.TH to break the dependency cycle
+type Storage = ByteStorage
+storage = byteStorage
+asStorage = ByteStorage
 
-asStorage = Storage
+type DynTensor = ByteDynTensor
+tensor = byteTensor
+asDyn = ByteDynTensor
 
-newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
-  deriving (Show, Eq)
-
-asDyn = DynTensor
-
-newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
-  deriving (Show, Eq)
-
-asStatic = Tensor
+type Tensor = ByteTensor
+dynamic = byteDynamic
+asStatic = ByteTensor
 

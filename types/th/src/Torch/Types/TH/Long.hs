@@ -2,11 +2,20 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH.Long where
 
+import Foreign
 import Foreign.C.Types
-import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
 import Torch.Types.TH
+import qualified Torch.Types.TH.Random as Rand
 
+type HsState        = Ptr ()
+type HsAllocator    = Ptr ()
+type HsDescBuff     = String
+type HsIndexTensor  = LongDynTensor
+type HsIndexStorage = LongStorage
+type HsMaskTensor   = ByteDynTensor
+type HsGenerator    = Rand.Generator
+type HsInt'         = Int
 
 type CAllocator = CTHAllocator
 type CGenerator = C'THGenerator
@@ -35,17 +44,16 @@ c2hsReal = fromIntegral
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
-newtype Storage = Storage { storage :: ForeignPtr CStorage }
-  deriving (Eq, Show)
+type Storage = LongStorage
+storage = longStorage
+asStorage = LongStorage
 
-newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
-  deriving (Show, Eq)
+type DynTensor = LongDynTensor
+tensor = longTensor
+asDyn = LongDynTensor
 
-newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
-  deriving (Show, Eq)
-
-asStorage = Storage
-asDyn = DynTensor
-asStatic = Tensor
+type Tensor = LongTensor
+dynamic = longDynamic
+asStatic = LongTensor
 
 

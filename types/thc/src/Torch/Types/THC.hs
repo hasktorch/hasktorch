@@ -1,6 +1,19 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 module Torch.Types.THC
   ( module X
+  , CudaState, CudaGenerator
+  , State(..), asState
+
+  , ByteStorage(..)
+  , ByteDynTensor(..)
+  , ByteTensor(..)
+
+  , LongStorage(..)
+  , LongDynTensor(..)
+  , LongTensor(..)
+
   , CTHCDescBuff
   , CTHCAllocator, C'THCAllocator
   , CTHCGenerator, C'THCGenerator
@@ -37,6 +50,7 @@ module Torch.Types.THC
 import Torch.Types.THC.Structs as X
 
 import Foreign
+import GHC.TypeLits
 
 type CTHCDescBuff = C'THCDescBuff
 type CTHCGenerator = C'_Generator
@@ -44,10 +58,40 @@ type C'THCGenerator = CTHCGenerator
 type CTHCStream = C'THCStream
 type CTHCState = C'THCState
 
+type CudaState = State
+
+newtype State = State { asForeign :: ForeignPtr C'THCState }
+  deriving (Show, Eq)
+
+asState = State
+
+newtype CudaGenerator = CudaGenerator { unCudaGenerator :: ForeignPtr C'THCGenerator }
+  deriving (Show, Eq)
+
+-- * Memory-managed mask and index types for TH to break the dependency cycle
+
+newtype LongStorage = LongStorage { longStorage :: ForeignPtr C'THCLongStorage }
+  deriving (Eq, Show)
+
+newtype LongDynTensor = LongDynTensor { longTensor :: ForeignPtr C'THCudaLongTensor }
+  deriving (Show, Eq)
+
+newtype LongTensor (ds :: [Nat]) = LongTensor { longDynamic :: LongDynTensor }
+  deriving (Show, Eq)
+
+newtype ByteStorage = ByteStorage { byteStorage :: ForeignPtr C'THCByteStorage }
+  deriving (Eq, Show)
+
+newtype ByteDynTensor = ByteDynTensor { byteTensor :: ForeignPtr C'THCudaByteTensor }
+  deriving (Show, Eq)
+
+newtype ByteTensor (ds :: [Nat]) = ByteTensor { byteDynamic :: ByteDynTensor }
+  deriving (Show, Eq)
+
 -- Types we haven't figured out what to do with, yet
 type CTHCFile = ()
 type CTHCAllocator = ()
-type C'THCAllocator = CTHCAllocator 
+type C'THCAllocator = CTHCAllocator
 
 type C'THCHalf = ()
 type CTHCHalf = ()

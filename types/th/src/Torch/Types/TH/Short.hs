@@ -2,11 +2,21 @@
 {-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH.Short where
 
+import Foreign
 import Foreign.C.Types
-import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
 import GHC.Int
 import Torch.Types.TH
+import qualified Torch.Types.TH.Random as Rand
+
+type HsState        = Ptr ()
+type HsAllocator    = Ptr ()
+type HsDescBuff     = String
+type HsIndexTensor  = LongDynTensor
+type HsIndexStorage = LongStorage
+type HsMaskTensor   = ByteDynTensor
+type HsGenerator    = Rand.Generator
+type HsInt'         = Int
 
 type CTensor = CTHShortTensor
 type CStorage = CTHShortStorage

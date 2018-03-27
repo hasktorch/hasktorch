@@ -3,9 +3,12 @@
 module Torch.Types.TH.Float where
 
 import Foreign.C.Types
-import Foreign (ForeignPtr)
+import Foreign
 import GHC.TypeLits (Nat)
 import Torch.Types.TH
+import qualified Torch.Types.TH.Long as Long
+import qualified Torch.Types.TH.Byte as Byte
+import qualified Torch.Types.TH.Random as Rand
 
 type CTensor = CTHFloatTensor
 type CStorage = CTHFloatStorage
@@ -21,6 +24,15 @@ type CIndexStorage = C'THLongStorage
 
 -- FOR TENSOR-LAPACK SPECIFICALLY
 type CIntTensor = CTHIntTensor
+
+type HsState        = Ptr ()
+type HsAllocator    = Ptr ()
+type HsDescBuff     = String
+type HsIndexTensor  = Long.DynTensor
+type HsIndexStorage = Long.Storage
+type HsMaskTensor   = Byte.DynTensor
+type HsGenerator    = Rand.Generator
+type HsInt'         = Int
 
 -- FOR TENSOR-Math floating SPECIFICALLY
 -- type CDoubleTensor = C'THDoubleTensor

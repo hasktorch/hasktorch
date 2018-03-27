@@ -3,10 +3,22 @@
 module Torch.Types.TH.Int where
 
 import Foreign.C.Types
-import Foreign (ForeignPtr)
+import Foreign
 import GHC.TypeLits (Nat)
 import GHC.Int
 import Torch.Types.TH
+import qualified Torch.Types.TH.Long as Long
+import qualified Torch.Types.TH.Byte as Byte
+import qualified Torch.Types.TH.Random as Rand
+
+type HsState        = Ptr ()
+type HsAllocator    = Ptr ()
+type HsDescBuff     = String
+type HsIndexTensor  = Long.DynTensor
+type HsIndexStorage = Long.Storage
+type HsMaskTensor   = Byte.DynTensor
+type HsGenerator    = Rand.Generator
+type HsInt'         = Int
 
 
 type CAllocator = CTHAllocator

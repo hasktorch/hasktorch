@@ -3,10 +3,19 @@
 module Torch.Types.THC.Short where
 
 import Foreign.C.Types
-import Foreign (ForeignPtr)
+import Foreign
 import GHC.TypeLits (Nat)
 import GHC.Int
 import Torch.Types.THC
+
+type HsState        = CudaState
+type HsGenerator    = CudaGenerator
+type HsAllocator    = Ptr ()
+type HsDescBuff     = String
+type HsIndexTensor  = LongDynTensor
+type HsIndexStorage = LongStorage
+type HsMaskTensor   = ByteDynTensor
+type HsInt'         = Int
 
 type CTensor = C'THCudaShortTensor
 type CStorage = C'THCShortStorage

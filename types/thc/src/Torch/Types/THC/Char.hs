@@ -3,12 +3,14 @@
 module Torch.Types.THC.Char where
 
 import Foreign.C.Types
-import Foreign (ForeignPtr)
+import Foreign
 import GHC.TypeLits (Nat)
 import GHC.Word
 import GHC.Int
 import Torch.Types.TH (C'THLongStorage, C'THLongTensor)
 import Torch.Types.THC
+import qualified Torch.Types.THC.Byte as Byte
+import qualified Torch.Types.THC.Long as Long
 
 type CState = C'THCState
 type CDescBuff = C'THCDescBuff
@@ -30,14 +32,14 @@ type CDoubleTensor = C'THCudaDoubleTensor
 type CMaskTensor = C'THCudaByteTensor
 type CInt' = CLLong
 
--- type CByteTensor = C'THCudaByteTensor
--- type CCharTensor = C'THCudaCharTensor
--- type CShortTensor = C'THCudaShortTensor
--- type CIntTensor = C'THCudaIntTensor
--- type CLongTensor = C'THCudaLongTensor
--- type CFloatTensor = C'THCudaFloatTensor
--- type CDoubleTensor = C'THCudaDoubleTensor
--- type CHalfTensor = C'THCudaHalfTensor
+type HsState        = CudaState
+type HsGenerator    = CudaGenerator
+type HsAllocator    = Ptr ()
+type HsDescBuff     = String
+type HsIndexTensor  = Long.DynTensor
+type HsIndexStorage = Long.Storage
+type HsMaskTensor   = Byte.DynTensor
+type HsInt'         = Int
 
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
