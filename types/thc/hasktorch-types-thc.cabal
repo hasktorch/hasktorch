@@ -40,7 +40,6 @@ library
     -- , Torch.Types.THC.Half
     , Torch.Types.THC.Double
 
-    , Torch.Types.THC.Random
   other-modules:
       Paths_hasktorch_types_thc
       Torch.Types.THC.Internal

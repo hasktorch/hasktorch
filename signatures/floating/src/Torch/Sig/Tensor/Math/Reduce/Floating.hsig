@@ -3,6 +3,7 @@ signature Torch.Sig.Tensor.Math.Reduce.Floating where
 import Foreign
 import Foreign.C.Types
 import Torch.Sig.Types
+import Torch.Sig.Types.Global
 
 c_dist :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO CAccReal
 c_var :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> IO ()

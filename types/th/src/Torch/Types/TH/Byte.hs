@@ -7,35 +7,14 @@ import Foreign.C.Types
 import GHC.TypeLits (Nat)
 import GHC.Word
 import Torch.Types.TH
-import qualified Torch.Types.TH.Random as Rand
 
-type CAllocator = CTHAllocator
-type CState = C'THState
-type CDescBuff = C'THDescBuff
-type CTensor = CTHByteTensor
-type CStorage = CTHByteStorage
-type CIndexTensor = CTHLongTensor
-type CIndexStorage = CTHLongStorage
+type CStorage = CByteStorage
+type CTensor = CByteTensor
+
 type CReal = CUChar
 type CAccReal = CLong
 type HsReal = Word8
 type HsAccReal = Word64
-
--- for RNG
-type CGenerator = C'THGenerator
-type CDoubleTensor = CTHDoubleTensor
-
-type CMaskTensor = C'THByteTensor
-type CInt' = CInt
-
-type HsState = Ptr ()
-type HsAllocator = Ptr ()
-type HsDescBuff = String
-type HsIndexTensor  = LongDynTensor
-type HsIndexStorage = LongStorage
-type HsMaskTensor   =      DynTensor
-type HsGenerator    = Rand.Generator
-type HsInt'         = Int
 
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
@@ -49,16 +28,17 @@ c2hsReal = fromIntegral
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
--- use the imports from Torch.Types.TH to break the dependency cycle
 type Storage = ByteStorage
-storage = byteStorage
+storage = byteCStorage
 asStorage = ByteStorage
 
 type DynTensor = ByteDynTensor
-tensor = byteTensor
+tensor = byteCTensor
 asDyn = ByteDynTensor
 
-type Tensor = ByteTensor
-dynamic = byteDynamic
-asStatic = ByteTensor
+newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
+  deriving (Show, Eq)
+
+asStatic = Tensor
+
 

@@ -2,8 +2,9 @@ signature Torch.Sig.Tensor.Math.Pointwise where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
+
 import Torch.Sig.Types
+import Torch.Sig.Types.Global
 
 c_cpow :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_sign :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()

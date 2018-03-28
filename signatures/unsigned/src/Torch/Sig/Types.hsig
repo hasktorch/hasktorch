@@ -5,31 +5,11 @@ signature Torch.Sig.Types where
 import Foreign
 import Foreign.Storable
 import GHC.TypeLits (Nat)
+import Torch.Sig.Types.Global as X
 
 -- all C-types
 data CTensor
 data CStorage
-data CState
-data CAllocator
-data CDescBuff
-data CIndexTensor
-data CIndexStorage
-data CMaskTensor
-
--- all Haskell variants
-data HsAllocator
-data HsDescBuff
-data HsIndexTensor
-data HsIndexStorage
-data HsMaskTensor
-
--- for RNG
-data CGenerator
-data HsGenerator
--- data CDoubleTensor
-
-data CInt'
-data HsInt'
 
 -- freeStorage :: Ptr CState -> Ptr CStorage -> IO ()
 -- freeTensor  :: Ptr CState -> Ptr CTensor -> IO ()

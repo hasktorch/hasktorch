@@ -2,6 +2,7 @@ signature Torch.Sig.Tensor.Math.Compare where
 
 import Foreign
 import Torch.Sig.Types
+import Torch.Sig.Types.Global
 
 c_ltValue :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> CReal -> IO ()
 c_gtValue :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> CReal -> IO ()

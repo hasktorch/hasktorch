@@ -13,10 +13,10 @@ packages:
     signatures/signed/*cabal
     signatures/floating/*cabal
 
-    dimensions/*cabal
-    classes/*cabal
+    -- dimensions/*cabal
+    -- classes/*cabal
 
-    indef/unsigned/*cabal
+    -- indef/unsigned/*cabal
     -- indef/signed/*cabal
     -- indef/floating/*cabal
 

@@ -2,10 +2,11 @@ signature Torch.Sig.Tensor.Math.Reduce where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Sig.Types
 import Data.Word
 import Data.Int
-import Torch.Types.TH
+
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
 
 c_sum :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
 c_prod :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()

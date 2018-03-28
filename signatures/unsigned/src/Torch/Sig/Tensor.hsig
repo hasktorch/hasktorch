@@ -3,7 +3,8 @@ signature Torch.Sig.Tensor where
 import Foreign
 import Foreign.C.Types
 import Torch.Sig.Types
-import Torch.Types.TH
+import Torch.Types.TH.Structs
+import Torch.Sig.Types.Global
 
 c_clearFlag :: Ptr CState -> Ptr CTensor -> CChar -> IO ()
 c_data :: Ptr CState -> Ptr CTensor -> IO (Ptr CReal)

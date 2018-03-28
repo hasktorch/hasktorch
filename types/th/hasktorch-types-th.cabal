@@ -15,6 +15,7 @@ source-repository head
 
 library
   hs-source-dirs: src
+  default-extensions: KindSignatures, DataKinds
   build-tools: c2hs
   build-depends:
       base >=4.7 && <5
@@ -32,8 +33,6 @@ library
       Torch.Types.TH.Double
 
       Torch.Types.TH
-      Torch.Types.THNN
-      Torch.Types.TH.Random
       Torch.Types.TH.Structs
 
   other-modules:

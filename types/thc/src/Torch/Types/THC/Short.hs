@@ -8,26 +8,8 @@ import GHC.TypeLits (Nat)
 import GHC.Int
 import Torch.Types.THC
 
-type HsState        = CudaState
-type HsGenerator    = CudaGenerator
-type HsAllocator    = Ptr ()
-type HsDescBuff     = String
-type HsIndexTensor  = LongDynTensor
-type HsIndexStorage = LongStorage
-type HsMaskTensor   = ByteDynTensor
-type HsInt'         = Int
-
 type CTensor = C'THCudaShortTensor
 type CStorage = C'THCShortStorage
-
-type CInt' = CLLong
-type CState = C'THCState
-type CDescBuff = C'THCDescBuff
-type CAllocator = C'THCAllocator
-type CGenerator = C'THCGenerator
-type CMaskTensor = C'THCudaByteTensor
-type CIndexTensor = C'THCudaLongTensor
-type CIndexStorage = C'THCLongStorage
 
 type CReal = CShort
 type CAccReal = CLong

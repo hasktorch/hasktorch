@@ -3,6 +3,7 @@ signature Torch.Sig.Storage where
 import Foreign
 import Foreign.C.Types
 import Torch.Sig.Types
+import Torch.Sig.Types.Global
 
 c_data                    :: Ptr CState -> Ptr CStorage -> IO (Ptr CReal)
 c_size                    :: Ptr CState -> Ptr CStorage -> IO CPtrdiff

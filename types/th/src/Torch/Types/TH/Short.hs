@@ -7,34 +7,14 @@ import Foreign.C.Types
 import GHC.TypeLits (Nat)
 import GHC.Int
 import Torch.Types.TH
-import qualified Torch.Types.TH.Random as Rand
 
-type HsState        = Ptr ()
-type HsAllocator    = Ptr ()
-type HsDescBuff     = String
-type HsIndexTensor  = LongDynTensor
-type HsIndexStorage = LongStorage
-type HsMaskTensor   = ByteDynTensor
-type HsGenerator    = Rand.Generator
-type HsInt'         = Int
-
-type CTensor = CTHShortTensor
-type CStorage = CTHShortStorage
-
-type CInt' = CInt
-type CState = C'THState
-type CDescBuff = C'THDescBuff
-type CAllocator = C'THAllocator
-type CGenerator = C'THGenerator
-type CMaskTensor = C'THByteTensor
-type CIndexTensor = C'THLongTensor
-type CIndexStorage = C'THLongStorage
+type CTensor = CShortTensor
+type CStorage = CShortStorage
 
 type CReal = CShort
 type CAccReal = CLong
 type HsReal = Int16
 type HsAccReal = Int64
-
 
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
@@ -48,19 +28,17 @@ c2hsReal = fromIntegral
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
-newtype Storage = Storage { storage :: ForeignPtr CStorage }
-  deriving (Eq, Show)
+type Storage = ShortStorage
+storage = shortCStorage
+asStorage = ShortStorage
 
-
-newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
-  deriving (Show, Eq)
-
+type DynTensor = ShortDynTensor
+tensor = shortCTensor
+asDyn = ShortDynTensor
 
 newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
   deriving (Show, Eq)
 
-asStorage = Storage
-asDyn = DynTensor
 asStatic = Tensor
 
 

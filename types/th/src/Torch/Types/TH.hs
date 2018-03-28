@@ -1,211 +1,164 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
 module Torch.Types.TH
-  ( ByteStorage(..)
-  , ByteDynTensor(..)
-  , ByteTensor(..)
+  ( module Torch.Types.TH.Structs
 
-  , LongStorage(..)
-  , LongDynTensor(..)
-  , LongTensor(..)
+  , C'THState, C'THNNState, CState, State(..), asState
+  , CAllocator
+  , CDescBuff
+  , CGenerator, Generator(..)
+  , CInt', Int'
+  , CMaskTensor, CIndexTensor, CIndexStorage
 
-  , State(..), asState
+  , CByteTensor, byteDynTensor, ByteDynTensor(..)
+  , CByteStorage, byteStorage, ByteStorage(..)
 
-  , C'THState, CTHDescBuff
-  , CTHAllocator
-  , CTHGenerator
-  , CTHFile, C'THFile
-  , CTHHalf, C'THHalf
-  , THLongBlas
-  , THShortBlas
-  , THIntBlas
-  , THByteBlas
-  , THHalfBlas
-  , THFloatBlas
-  , THDoubleBlas
-  , THLongLapack
-  , THShortLapack
-  , THIntLapack
-  , THByteLapack
-  , THHalfLapack
-  , THFloatLapack
-  , THDoubleLapack
-  , CTHLongVector
-  , CTHShortVector
-  , CTHIntVector
-  , CTHByteVector
-  , CTHHalfVector
-  , CTHFloatVector
-  , CTHDoubleVector
-  , CTHNNState, C'THNNState
-  , CTHIndexTensor, C'THIndexTensor
-  , CTHIntegerTensor, C'THIntegerTensor
-  , CTHByteTensor
-  , CTHByteStorage
-  , CTHByteStorageCopy
-  , CTHCharTensor
-  , CTHCharStorage
-  , CTHCharStorageCopy
-  , CTHDoubleTensor
-  , CTHDoubleStorage
-  , CTHDoubleStorageCopy
-  , CTHFloatTensor
-  , CTHFloatStorage
-  , CTHFloatStorageCopy
-  , C'THHalfTensor
-  , C'THHalfStorage
-  , C'THHalfStorageCopy
-  , CTHHalfTensor
-  , CTHHalfStorage
-  , CTHHalfStorageCopy
-  , CTHIntTensor
-  , CTHIntStorage
-  , CTHIntStorageCopy
-  , CTHLongTensor
-  , CTHLongStorage
-  , CTHLongStorageCopy
-  , CTHShortTensor
-  , CTHShortStorage
-  , CTHShortStorageCopy
+  , CCharTensor, charDynTensor, CharDynTensor(..)
+  , CCharStorage, charStorage, CharStorage(..)
 
-  , module Torch.Types.TH.Structs
+  , CLongTensor, longDynTensor, LongDynTensor(..)
+  , CLongStorage, longStorage, LongStorage(..)
+
+  , CShortTensor, shortDynTensor, ShortDynTensor(..)
+  , CShortStorage, shortStorage, ShortStorage(..)
+
+  , CIntTensor, intDynTensor, IntDynTensor(..)
+  , CIntStorage, intStorage, IntStorage(..)
+
+  , CFloatTensor, floatDynTensor, FloatDynTensor(..)
+  , CFloatStorage, floatStorage, FloatStorage(..)
+
+  , CDoubleTensor, doubleDynTensor, DoubleDynTensor(..)
+  , CDoubleStorage, doubleStorage, DoubleStorage(..)
+
+  , C'THHalfStorage, C'THHalfTensor, C'THFile, C'THHalf
   ) where
 
 import Foreign
-import Foreign.C.String ()
 import Foreign.C.Types
-import Foreign.Ptr ()
-import Foreign.Storable ()
 import GHC.TypeLits
 
 import Torch.Types.TH.Structs
 
--- * Memory-managed mask and index types for TH to break the dependency cycle
-
-newtype LongStorage = LongStorage { longStorage :: ForeignPtr C'THLongStorage }
-  deriving (Eq, Show)
-
-newtype LongDynTensor = LongDynTensor { longTensor :: ForeignPtr C'THLongTensor }
-  deriving (Show, Eq)
-
-newtype LongTensor (ds :: [Nat]) = LongTensor { longDynamic :: LongDynTensor }
-  deriving (Show, Eq)
-
-newtype ByteStorage = ByteStorage { byteStorage :: ForeignPtr C'THByteStorage }
-  deriving (Eq, Show)
-
-newtype ByteDynTensor = ByteDynTensor { byteTensor :: ForeignPtr C'THByteTensor }
-  deriving (Show, Eq)
-
-newtype ByteTensor (ds :: [Nat]) = ByteTensor { byteDynamic :: ByteDynTensor }
-  deriving (Show, Eq)
+type C'THState = ()
+type C'THNNState = C'THState
+type CState = C'THState
 
 newtype State = State { asForeign :: ForeignPtr C'THState }
   deriving (Eq, Show)
 asState = State
 
--- * Type alias'
+type CAllocator   = C'THAllocator
+type CDescBuff    = C'THDescBuff
+type CGenerator   = C'THGenerator
+newtype Generator = Generator { rng :: ForeignPtr CGenerator }
+  deriving (Eq, Show)
 
-type C'THState = Ptr ()
-type CState = C'THState
-type CAllocator = CTHAllocator
+-- data CDoubleTensor
+type CInt' = CInt
+type Int' = Int
 
-type CTHDescBuff = C'THDescBuff
--- type CTHAllocatorPtr = Ptr C'THAllocator
-type CTHAllocator = C'THAllocator
-type CTHGenerator = C'THGenerator
-type CTHFile = ()
+-- Some type alias'
+type CMaskTensor   = CByteTensor
+type CIndexTensor  = CLongTensor
+type CIndexStorage = CLongStorage
+
+-- unsigned types
+
+type CByteTensor      = C'THByteTensor
+byteDynTensor         = ByteDynTensor
+newtype ByteDynTensor = ByteDynTensor { byteCTensor :: ForeignPtr CByteTensor }
+  deriving (Show, Eq)
+
+type CByteStorage   = C'THByteStorage
+byteStorage         = ByteStorage
+newtype ByteStorage = ByteStorage { byteCStorage :: ForeignPtr CByteStorage }
+  deriving (Show, Eq)
+
+
+type CCharTensor      = C'THCharTensor
+charDynTensor         = CharDynTensor
+newtype CharDynTensor = CharDynTensor { charCTensor :: ForeignPtr CCharTensor }
+  deriving (Show, Eq)
+
+type CCharStorage   = C'THCharStorage
+charStorage         = CharStorage
+newtype CharStorage = CharStorage { charCStorage :: ForeignPtr CCharStorage }
+  deriving (Show, Eq)
+
+
+-- Signed types
+
+type CLongTensor      = C'THLongTensor
+longDynTensor         = LongDynTensor
+newtype LongDynTensor = LongDynTensor { longCTensor :: ForeignPtr CLongTensor }
+  deriving (Show, Eq)
+
+type CLongStorage   = C'THLongStorage
+longStorage         = LongStorage
+newtype LongStorage = LongStorage { longCStorage :: ForeignPtr CLongStorage }
+  deriving (Show, Eq)
+
+
+type CShortTensor      = C'THShortTensor
+shortDynTensor         = ShortDynTensor
+newtype ShortDynTensor = ShortDynTensor { shortCTensor :: ForeignPtr CShortTensor }
+  deriving (Show, Eq)
+
+type CShortStorage   = C'THShortStorage
+shortStorage         = ShortStorage
+newtype ShortStorage = ShortStorage { shortCStorage :: ForeignPtr CShortStorage }
+  deriving (Show, Eq)
+
+
+type CIntTensor      = C'THIntTensor
+intDynTensor         = IntDynTensor
+newtype IntDynTensor = IntDynTensor { intCTensor :: ForeignPtr CIntTensor }
+  deriving (Show, Eq)
+
+type CIntStorage   = C'THIntStorage
+intStorage         = IntStorage
+newtype IntStorage = IntStorage { intCStorage :: ForeignPtr CIntStorage }
+  deriving (Show, Eq)
+
+
+-- Floating types
+
+type CFloatTensor      = C'THFloatTensor
+floatDynTensor         = FloatDynTensor
+newtype FloatDynTensor = FloatDynTensor { floatCTensor :: ForeignPtr CFloatTensor }
+  deriving (Show, Eq)
+
+type CFloatStorage   = C'THFloatStorage
+floatStorage         = FloatStorage
+newtype FloatStorage = FloatStorage { floatCStorage :: ForeignPtr CFloatStorage }
+  deriving (Show, Eq)
+
+
+type CDoubleTensor      = C'THDoubleTensor
+doubleDynTensor         = DoubleDynTensor
+newtype DoubleDynTensor = DoubleDynTensor { doubleCTensor :: ForeignPtr CDoubleTensor }
+  deriving (Show, Eq)
+
+type CDoubleStorage   = C'THDoubleStorage
+doubleStorage         = DoubleStorage
+newtype DoubleStorage = DoubleStorage { doubleCStorage :: ForeignPtr CDoubleStorage }
+  deriving (Show, Eq)
+
+
+{-
+data CHalfTensor
+data HalfDynTensor
+halfCTensor   :: HalfDynTensor -> ForeignPtr CHalfTensor
+halfDynTensor :: ForeignPtr CHalfTensor -> HalfDynTensor
+
+data CHalfStorage
+data HalfStorage
+halfCStorage :: HalfStorage -> ForeignPtr CHalfStorage
+halfStorage  :: ForeignPtr CHalfStorage -> HalfStorage
+-}
+
+type C'THHalfStorage = ()
+type C'THHalfTensor  = ()
 type C'THFile = ()
-type CTHHalf = Ptr ()
 type C'THHalf = Ptr ()
 
-type THLongBlas = CLong
-type THShortBlas = CShort
-type THIntBlas = CInt
-type THByteBlas = CChar
-type THHalfBlas = CShort
-type THFloatBlas = CFloat
-type THDoubleBlas = CDouble
 
-type THLongLapack = CLong
-type THShortLapack = CShort
-type THIntLapack = CInt
-type THByteLapack = CChar
-type THHalfLapack = CShort
-type THFloatLapack = CFloat
-type THDoubleLapack = CDouble
-
-type CTHLongVector = CLong
-type CTHShortVector = CShort
-type CTHIntVector = CInt
-type CTHByteVector = CChar
-type CTHHalfVector = CShort
-type CTHFloatVector = CFloat
-type CTHDoubleVector = CDouble
-
--- in THNN.h
--- typedef void THNNState
-type CTHNNState = Ptr ()
-type C'THNNState = CTHNNState
-
--- typedef int64_t THIndex_t;
--- typedef int32_t THInteger_t;
-type CTHIndexTensor = CLong
-type CTHIntegerTensor = CInt
-type C'THIndexTensor = CLong
-type C'THIntegerTensor = CInt
--- ----------------------------------------
--- Templated types
--- ----------------------------------------
-
-{- Byte -}
-
-type CTHByteTensor = C'THByteTensor
-type CTHByteStorage = C'THByteStorage
-type CTHByteStorageCopy = CTHByteStorage
-
-
-{- Char -}
-
-type CTHCharTensor = C'THCharTensor
-type CTHCharStorage = C'THCharStorage
-type CTHCharStorageCopy = CTHCharStorage
-
-{- Double -}
-
-type CTHDoubleTensor = C'THDoubleTensor
-type CTHDoubleStorage = C'THDoubleStorage
-type CTHDoubleStorageCopy = CTHDoubleStorage
-
-{- Float -}
-
-type CTHFloatTensor = C'THFloatTensor
-type CTHFloatStorage = C'THFloatStorage
-type CTHFloatStorageCopy = CTHFloatStorage
-
-{- Half -}
-
-type C'THHalfTensor = ()
-type C'THHalfStorage = ()
-type C'THHalfStorageCopy = ()
-type CTHHalfTensor = ()
-type CTHHalfStorage = ()
-type CTHHalfStorageCopy = ()
-
-{- Int -}
-
-type CTHIntTensor = C'THIntTensor
-type CTHIntStorage = C'THIntStorage
-type CTHIntStorageCopy = CTHIntStorage
-
-{- Long -}
-
-type CTHLongTensor = C'THLongTensor
-type CTHLongStorage = C'THLongStorage
-type CTHLongStorageCopy = CTHLongStorage
-
-{- Short -}
-
-type CTHShortTensor = C'THShortTensor
-type CTHShortStorage = C'THShortStorage
-type CTHShortStorageCopy = CTHShortStorage

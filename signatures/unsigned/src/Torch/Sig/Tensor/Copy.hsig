@@ -2,7 +2,8 @@ signature Torch.Sig.Tensor.Copy where
 
 import Foreign
 import Torch.Sig.Types
-import Torch.Types.TH
+import Torch.Types.TH hiding (CState)
+import Torch.Sig.Types.Global
 
 c_copy       :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_copyByte   :: Ptr CState -> Ptr CTensor -> Ptr C'THByteTensor -> IO ()

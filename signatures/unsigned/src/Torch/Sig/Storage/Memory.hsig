@@ -2,5 +2,6 @@ signature Torch.Sig.Storage.Memory where
 
 import Foreign
 import Torch.Sig.Types
+import Torch.Sig.Types.Global
 
 p_free :: FunPtr (Ptr CState -> Ptr CStorage -> IO ())

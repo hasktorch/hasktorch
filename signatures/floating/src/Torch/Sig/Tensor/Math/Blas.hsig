@@ -2,6 +2,7 @@ signature Torch.Sig.Tensor.Math.Blas where
 
 import Foreign
 import Torch.Sig.Types
+import Torch.Sig.Types.Global
 
 c_dot     :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO CAccReal
 c_addmv   :: Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()

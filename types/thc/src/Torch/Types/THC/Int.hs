@@ -8,27 +8,9 @@ import GHC.TypeLits (Nat)
 import GHC.Int
 import Torch.Types.THC
 
-type HsState        = CudaState
-type HsGenerator    = CudaGenerator
-type HsAllocator    = Ptr ()
-type HsDescBuff     = String
-type HsIndexTensor  = LongDynTensor
-type HsIndexStorage = LongStorage
-type HsMaskTensor   = ByteDynTensor
-type HsInt'         = Int
+type CTensor = CIntTensor
+type CStorage = CIntStorage
 
-type CState = C'THCState
-type CTensor = C'THCudaIntTensor
-type CStorage = C'THCIntStorage
-
-type CDescBuff = C'THCDescBuff
-type CAllocator = C'THCAllocator
-type CGenerator = C'THCGenerator
-type CMaskTensor = C'THCudaByteTensor
-type CIndexTensor = C'THCudaLongTensor
-type CIndexStorage = C'THCLongStorage
-
-type CInt' = CLLong
 type CReal = CInt
 type CAccReal = CLong
 type HsReal = Int32
@@ -46,17 +28,17 @@ c2hsReal = fromIntegral
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
-newtype Storage = Storage { storage :: ForeignPtr CStorage }
-  deriving (Eq, Show)
+type Storage = IntStorage
+storage = intCStorage
+asStorage = IntStorage
 
-newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
-  deriving (Show, Eq)
+type DynTensor = IntDynTensor
+tensor = intCTensor
+asDyn = IntDynTensor
 
 newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
   deriving (Show, Eq)
 
-asStorage = Storage
-asDyn = DynTensor
 asStatic = Tensor
 
 

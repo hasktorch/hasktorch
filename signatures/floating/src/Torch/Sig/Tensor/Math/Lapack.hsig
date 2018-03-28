@@ -3,6 +3,7 @@ signature Torch.Sig.Tensor.Math.Lapack where
 import Foreign
 import Foreign.C.Types
 import Torch.Sig.Types
+import Torch.Sig.Types.Global
 
 c_gesv :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_gels :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()

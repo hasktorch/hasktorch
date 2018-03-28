@@ -3,7 +3,7 @@ signature Torch.Sig.Tensor.Masked where
 import Foreign
 import Foreign.C.Types
 import Torch.Sig.Types
-import Torch.Types.TH (C'THByteTensor)
+import Torch.Sig.Types.Global
 
 c_maskedFill   :: Ptr CState -> Ptr CTensor -> Ptr CMaskTensor -> CReal -> IO ()
 c_maskedCopy   :: Ptr CState -> Ptr CTensor -> Ptr CMaskTensor -> Ptr CTensor -> IO ()

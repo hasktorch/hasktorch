@@ -1,0 +1,112 @@
+signature Torch.Sig.Types.Global where
+
+import Foreign
+
+data CState
+data State
+asState :: ForeignPtr CState -> State
+asForeign :: State -> ForeignPtr CState
+
+-- all Haskell variants
+data CAllocator
+data CDescBuff
+
+type CMaskTensor = CByteTensor
+type CIndexTensor = CLongTensor
+type CIndexStorage = CLongStorage
+
+-- unsigned types
+data CByteTensor
+data ByteDynTensor
+byteCTensor    :: ByteDynTensor -> ForeignPtr CByteTensor
+byteDynTensor  :: ForeignPtr CByteTensor -> ByteDynTensor
+
+data CByteStorage
+data ByteStorage
+byteCStorage :: ByteStorage -> ForeignPtr CByteStorage
+byteStorage  :: ForeignPtr CByteStorage -> ByteStorage
+
+data CCharTensor
+data CharDynTensor
+charCTensor    :: CharDynTensor -> ForeignPtr CCharTensor
+charDynTensor  :: ForeignPtr CCharTensor -> CharDynTensor
+
+data CCharStorage
+data CharStorage
+charCStorage :: CharStorage -> ForeignPtr CCharStorage
+charStorage  :: ForeignPtr CCharStorage -> CharStorage
+
+-- Signed types
+data CLongTensor
+data LongDynTensor
+longCTensor   :: LongDynTensor -> ForeignPtr CLongTensor
+longDynTensor :: ForeignPtr CLongTensor -> LongDynTensor
+
+data CLongStorage
+data LongStorage
+longCStorage :: LongStorage -> ForeignPtr CLongStorage
+longStorage  :: ForeignPtr CLongStorage -> LongStorage
+
+data CShortTensor
+data ShortDynTensor
+shortCTensor   :: ShortDynTensor -> ForeignPtr CShortTensor
+shortDynTensor :: ForeignPtr CShortTensor -> ShortDynTensor
+
+data CShortStorage
+data ShortStorage
+shortCStorage :: ShortStorage -> ForeignPtr CShortStorage
+shortStorage  :: ForeignPtr CShortStorage -> ShortStorage
+
+data CIntTensor
+data IntDynTensor
+intCTensor   :: IntDynTensor -> ForeignPtr CIntTensor
+intDynTensor :: ForeignPtr CIntTensor -> IntDynTensor
+
+data CIntStorage
+data IntStorage
+intCStorage :: IntStorage -> ForeignPtr CIntStorage
+intStorage  :: ForeignPtr CIntStorage -> IntStorage
+
+-- Floating types
+data CFloatTensor
+data FloatDynTensor
+floatCTensor   :: FloatDynTensor -> ForeignPtr CFloatTensor
+floatDynTensor :: ForeignPtr CFloatTensor -> FloatDynTensor
+
+data CFloatStorage
+data FloatStorage
+floatCStorage :: FloatStorage -> ForeignPtr CFloatStorage
+floatStorage  :: ForeignPtr CFloatStorage -> FloatStorage
+
+data CDoubleTensor
+data DoubleDynTensor
+doubleCTensor   :: DoubleDynTensor -> ForeignPtr CDoubleTensor
+doubleDynTensor :: ForeignPtr CDoubleTensor -> DoubleDynTensor
+
+data CDoubleStorage
+data DoubleStorage
+doubleCStorage :: DoubleStorage -> ForeignPtr CDoubleStorage
+doubleStorage  :: ForeignPtr CDoubleStorage -> DoubleStorage
+
+{-
+data CHalfTensor
+data HalfDynTensor
+halfCTensor   :: HalfDynTensor -> ForeignPtr CHalfTensor
+halfDynTensor :: ForeignPtr CHalfTensor -> HalfDynTensor
+
+data CHalfStorage
+data HalfStorage
+halfCStorage :: HalfStorage -> ForeignPtr CHalfStorage
+halfStorage  :: ForeignPtr CHalfStorage -> HalfStorage
+-}
+
+-- for RNG
+data CGenerator
+data Generator
+
+-- data CDoubleTensor
+data CInt'
+data Int'
+
+
+

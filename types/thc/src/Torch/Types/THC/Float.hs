@@ -1,33 +1,15 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Torch.Types.THC.Float
-  ( CTensor
-  , CState
-  , CStorage
-  , CReal
-  , CAccReal
-  , HsAccReal
-  , HsReal
-  , hs2cReal
-  , hs2cAccReal
-  , c2hsReal
-  , c2hsAccReal
-  , Tensor(..)
-  , DynTensor(..)
-  , Storage(..)
-  , asStorage
-  , asDyn
-  , asStatic
-  ) where
+module Torch.Types.THC.Float where
 
 import Foreign.C.Types
-import Foreign (ForeignPtr)
+import Foreign
 import GHC.TypeLits (Nat)
 import Torch.Types.THC
 
-type CTensor = CTHCudaFloatTensor
-type CState = ()
-type CStorage = CTHCFloatStorage
+type CTensor = CFloatTensor
+type CStorage = CFloatStorage
+
 type CReal = CFloat
 type CAccReal = CDouble
 type HsReal = Float
@@ -45,17 +27,17 @@ c2hsReal = realToFrac
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = realToFrac
 
-newtype Storage = Storage { storage :: ForeignPtr CStorage }
-  deriving (Eq, Show)
+type Storage = FloatStorage
+storage = floatCStorage
+asStorage = FloatStorage
 
-newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
-  deriving (Show, Eq)
+type DynTensor = FloatDynTensor
+tensor = floatCTensor
+asDyn = FloatDynTensor
 
 newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
   deriving (Show, Eq)
 
-asStorage = Storage
-asDyn = DynTensor
 asStatic = Tensor
 
 

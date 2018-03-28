@@ -10,8 +10,8 @@ cabal-version: >=2.0
 
 library
   signatures:
-      Torch.Sig.State
-    , Torch.Sig.Types
+      Torch.Sig.Types
+    , Torch.Sig.Types.Global
 
     , Torch.Sig.Storage
     , Torch.Sig.Storage.Copy
@@ -59,7 +59,7 @@ executable isdefinite-th
   mixins:
       hasktorch-signatures-unsigned
         requires
-        (Torch.Sig.State          as Torch.Types.TH
+        (Torch.Sig.Types.Global   as Torch.Types.TH
         ,Torch.Sig.Types          as Torch.Types.TH.Byte
         ,Torch.Sig.Storage        as Torch.FFI.TH.Byte.Storage
         ,Torch.Sig.Storage.Copy   as Torch.FFI.TH.Byte.StorageCopy
@@ -87,7 +87,7 @@ executable isdefinite-th
         )
     , hasktorch-signatures-unsigned
         requires
-        (Torch.Sig.State         as Torch.Types.TH
+        (Torch.Sig.Types.Global  as Torch.Types.TH
         ,Torch.Sig.Types         as Torch.Types.TH.Char
         ,Torch.Sig.Storage       as Torch.FFI.TH.Char.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Char.StorageCopy
@@ -124,7 +124,7 @@ executable isdefinite-thc
   mixins:
       hasktorch-signatures-unsigned
         requires
-        (Torch.Sig.State         as Torch.Types.THC
+        (Torch.Sig.Types.Global         as Torch.Types.THC
         ,Torch.Sig.Types         as Torch.Types.THC.Byte
         ,Torch.Sig.Storage       as Torch.FFI.THC.Byte.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Byte.StorageCopy
@@ -148,7 +148,7 @@ executable isdefinite-thc
         )
    ,  hasktorch-signatures-unsigned
         requires
-        (Torch.Sig.State         as Torch.Types.THC
+        (Torch.Sig.Types.Global         as Torch.Types.THC
         ,Torch.Sig.Types         as Torch.Types.THC.Char
         ,Torch.Sig.Storage       as Torch.FFI.THC.Char.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Char.StorageCopy

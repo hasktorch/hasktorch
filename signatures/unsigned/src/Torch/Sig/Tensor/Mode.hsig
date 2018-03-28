@@ -4,6 +4,6 @@ import Foreign
 import Foreign.C.Types
 
 import Torch.Sig.Types
-import Torch.Types.TH
+import Torch.Sig.Types.Global
 
 c_mode :: Ptr CState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CInt -> CInt -> IO ()

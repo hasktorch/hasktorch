@@ -32,7 +32,7 @@ executable isdefinite-th
   mixins:
       hasktorch-signatures-signed
         requires
-        (Torch.Sig.State         as Torch.Types.TH
+        (Torch.Sig.Types.Global         as Torch.Types.TH
         ,Torch.Sig.Types         as Torch.Types.TH.Int
         ,Torch.Sig.Storage       as Torch.FFI.TH.Int.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Int.StorageCopy
@@ -58,7 +58,7 @@ executable isdefinite-th
         )
     , hasktorch-signatures-signed
         requires
-        (Torch.Sig.State         as Torch.Types.TH
+        (Torch.Sig.Types.Global  as Torch.Types.TH
         ,Torch.Sig.Types         as Torch.Types.TH.Short
         ,Torch.Sig.Storage       as Torch.FFI.TH.Short.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Short.StorageCopy
@@ -84,7 +84,7 @@ executable isdefinite-th
         )
    , hasktorch-signatures-signed
         requires
-        (Torch.Sig.State         as Torch.Types.TH
+        (Torch.Sig.Types.Global  as Torch.Types.TH
         ,Torch.Sig.Types         as Torch.Types.TH.Long
         ,Torch.Sig.Storage       as Torch.FFI.TH.Long.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.TH.Long.StorageCopy
@@ -122,7 +122,7 @@ executable isdefinite-thc
   mixins:
       hasktorch-signatures-signed
         requires
-        (Torch.Sig.State         as Torch.Types.THC
+        (Torch.Sig.Types.Global  as Torch.Types.THC
         ,Torch.Sig.Types         as Torch.Types.THC.Int
         ,Torch.Sig.Storage       as Torch.FFI.THC.Int.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Int.StorageCopy
@@ -148,7 +148,7 @@ executable isdefinite-thc
         )
     , hasktorch-signatures-signed
         requires
-        (Torch.Sig.State         as Torch.Types.THC
+        (Torch.Sig.Types.Global  as Torch.Types.THC
         ,Torch.Sig.Types         as Torch.Types.THC.Short
         ,Torch.Sig.Storage       as Torch.FFI.THC.Short.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Short.StorageCopy
@@ -174,7 +174,7 @@ executable isdefinite-thc
         )
     , hasktorch-signatures-signed
         requires
-        (Torch.Sig.State         as Torch.Types.THC
+        (Torch.Sig.Types.Global  as Torch.Types.THC
         ,Torch.Sig.Types         as Torch.Types.THC.Long
         ,Torch.Sig.Storage       as Torch.FFI.THC.Long.Storage
         ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Long.StorageCopy

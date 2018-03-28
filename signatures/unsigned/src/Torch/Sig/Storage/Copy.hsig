@@ -1,8 +1,9 @@
 signature Torch.Sig.Storage.Copy where
 
-import Torch.Types.TH
+import Torch.Types.TH hiding (CState)
 import Foreign
 import Torch.Sig.Types
+import Torch.Sig.Types.Global
 
 c_rawCopy    :: Ptr CState -> Ptr CStorage -> Ptr CReal -> IO ()
 c_copy       :: Ptr CState -> Ptr CStorage -> Ptr CStorage -> IO ()
