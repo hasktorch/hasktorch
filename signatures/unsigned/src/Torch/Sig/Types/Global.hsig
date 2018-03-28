@@ -7,106 +7,112 @@ data State
 asState :: ForeignPtr CState -> State
 asForeign :: State -> ForeignPtr CState
 
--- all Haskell variants
+-- all Globals variants
 data CAllocator
+data Allocator
+
 data CDescBuff
-
-type CMaskTensor = CByteTensor
-type CIndexTensor = CLongTensor
-type CIndexStorage = CLongStorage
-
--- unsigned types
-data CByteTensor
-data ByteDynTensor
-byteCTensor    :: ByteDynTensor -> ForeignPtr CByteTensor
-byteDynTensor  :: ForeignPtr CByteTensor -> ByteDynTensor
-
-data CByteStorage
-data ByteStorage
-byteCStorage :: ByteStorage -> ForeignPtr CByteStorage
-byteStorage  :: ForeignPtr CByteStorage -> ByteStorage
-
-data CCharTensor
-data CharDynTensor
-charCTensor    :: CharDynTensor -> ForeignPtr CCharTensor
-charDynTensor  :: ForeignPtr CCharTensor -> CharDynTensor
-
-data CCharStorage
-data CharStorage
-charCStorage :: CharStorage -> ForeignPtr CCharStorage
-charStorage  :: ForeignPtr CCharStorage -> CharStorage
-
--- Signed types
-data CLongTensor
-data LongDynTensor
-longCTensor   :: LongDynTensor -> ForeignPtr CLongTensor
-longDynTensor :: ForeignPtr CLongTensor -> LongDynTensor
-
-data CLongStorage
-data LongStorage
-longCStorage :: LongStorage -> ForeignPtr CLongStorage
-longStorage  :: ForeignPtr CLongStorage -> LongStorage
-
-data CShortTensor
-data ShortDynTensor
-shortCTensor   :: ShortDynTensor -> ForeignPtr CShortTensor
-shortDynTensor :: ForeignPtr CShortTensor -> ShortDynTensor
-
-data CShortStorage
-data ShortStorage
-shortCStorage :: ShortStorage -> ForeignPtr CShortStorage
-shortStorage  :: ForeignPtr CShortStorage -> ShortStorage
-
-data CIntTensor
-data IntDynTensor
-intCTensor   :: IntDynTensor -> ForeignPtr CIntTensor
-intDynTensor :: ForeignPtr CIntTensor -> IntDynTensor
-
-data CIntStorage
-data IntStorage
-intCStorage :: IntStorage -> ForeignPtr CIntStorage
-intStorage  :: ForeignPtr CIntStorage -> IntStorage
-
--- Floating types
-data CFloatTensor
-data FloatDynTensor
-floatCTensor   :: FloatDynTensor -> ForeignPtr CFloatTensor
-floatDynTensor :: ForeignPtr CFloatTensor -> FloatDynTensor
-
-data CFloatStorage
-data FloatStorage
-floatCStorage :: FloatStorage -> ForeignPtr CFloatStorage
-floatStorage  :: ForeignPtr CFloatStorage -> FloatStorage
-
-data CDoubleTensor
-data DoubleDynTensor
-doubleCTensor   :: DoubleDynTensor -> ForeignPtr CDoubleTensor
-doubleDynTensor :: ForeignPtr CDoubleTensor -> DoubleDynTensor
-
-data CDoubleStorage
-data DoubleStorage
-doubleCStorage :: DoubleStorage -> ForeignPtr CDoubleStorage
-doubleStorage  :: ForeignPtr CDoubleStorage -> DoubleStorage
-
-{-
-data CHalfTensor
-data HalfDynTensor
-halfCTensor   :: HalfDynTensor -> ForeignPtr CHalfTensor
-halfDynTensor :: ForeignPtr CHalfTensor -> HalfDynTensor
-
-data CHalfStorage
-data HalfStorage
-halfCStorage :: HalfStorage -> ForeignPtr CHalfStorage
-halfStorage  :: ForeignPtr CHalfStorage -> HalfStorage
--}
+data DescBuff
 
 -- for RNG
 data CGenerator
 data Generator
 
--- data CDoubleTensor
+-- any quirky splits between TH and THC
 data CInt'
-data Int'
 
+-- aliases
+type CMaskTensor = CByteTensor
+type CIndexTensor = CLongTensor
+type CIndexStorage = CLongStorage
+
+type MaskTensor = ByteDynamic
+type IndexTensor = LongDynamic
+type IndexStorage = LongStorage
+
+-- unsigned types
+data CByteTensor
+data ByteDynamic
+byteDynamicState    :: ByteDynamic -> (ForeignPtr CState, ForeignPtr CByteTensor)
+byteDynamic  :: ForeignPtr CState -> ForeignPtr CByteTensor -> ByteDynamic
+
+data CByteStorage
+data ByteStorage
+byteStorageState :: ByteStorage -> (ForeignPtr CState, ForeignPtr CByteStorage)
+byteStorage  :: ForeignPtr CState -> ForeignPtr CByteStorage -> ByteStorage
+
+data CCharTensor
+data CharDynamic
+charDynamicState    :: CharDynamic -> (ForeignPtr CState, ForeignPtr CCharTensor)
+charDynamic  :: ForeignPtr CState -> ForeignPtr CCharTensor -> CharDynamic
+
+data CCharStorage
+data CharStorage
+charStorageState :: CharStorage -> (ForeignPtr CState, ForeignPtr CCharStorage)
+charStorage  :: ForeignPtr CState -> ForeignPtr CCharStorage -> CharStorage
+
+-- Signed types
+data CLongTensor
+data LongDynamic
+longDynamicState   :: LongDynamic -> (ForeignPtr CState, ForeignPtr CLongTensor)
+longDynamic :: ForeignPtr CState -> ForeignPtr CLongTensor -> LongDynamic
+
+data CLongStorage
+data LongStorage
+longStorageState :: LongStorage -> (ForeignPtr CState, ForeignPtr CLongStorage)
+longStorage  :: ForeignPtr CState -> ForeignPtr CLongStorage -> LongStorage
+
+data CShortTensor
+data ShortDynamic
+shortDynamicState  :: ShortDynamic -> (ForeignPtr CState, ForeignPtr CShortTensor)
+shortDynamic       :: ForeignPtr CState -> ForeignPtr CShortTensor -> ShortDynamic
+
+data CShortStorage
+data ShortStorage
+shortStorageState  :: ShortStorage -> (ForeignPtr CState, ForeignPtr CShortStorage)
+shortStorage       :: ForeignPtr CState -> ForeignPtr CShortStorage -> ShortStorage
+
+data CIntTensor
+data IntDynamic
+intDynamicState   :: IntDynamic -> (ForeignPtr CState, ForeignPtr CIntTensor)
+intDynamic :: ForeignPtr CState -> ForeignPtr CIntTensor -> IntDynamic
+
+data CIntStorage
+data IntStorage
+intStorageState :: IntStorage -> (ForeignPtr CState, ForeignPtr CIntStorage)
+intStorage  :: ForeignPtr CState -> ForeignPtr CIntStorage -> IntStorage
+
+-- Floating types
+data CFloatTensor
+data FloatDynamic
+floatDynamicState   :: FloatDynamic -> (ForeignPtr CState, ForeignPtr CFloatTensor)
+floatDynamic :: ForeignPtr CState -> ForeignPtr CFloatTensor -> FloatDynamic
+
+data CFloatStorage
+data FloatStorage
+floatStorageState :: FloatStorage -> (ForeignPtr CState, ForeignPtr CFloatStorage)
+floatStorage  :: ForeignPtr CState -> ForeignPtr CFloatStorage -> FloatStorage
+
+data CDoubleTensor
+data DoubleDynamic
+doubleDynamicState   :: DoubleDynamic -> (ForeignPtr CState, ForeignPtr CDoubleTensor)
+doubleDynamic :: ForeignPtr CState -> ForeignPtr CDoubleTensor -> DoubleDynamic
+
+data CDoubleStorage
+data DoubleStorage
+doubleStorageState :: DoubleStorage -> (ForeignPtr CState, ForeignPtr CDoubleStorage)
+doubleStorage  :: ForeignPtr CState -> ForeignPtr CDoubleStorage -> DoubleStorage
+
+{-
+data CHalfTensor
+data HalfDynamic
+halfCTensor   :: HalfDynamic -> ForeignPtr CHalfTensor
+halfDynamic :: ForeignPtr CHalfTensor -> HalfDynamic
+
+data CHalfStorage
+data HalfStorage
+halfCStorage :: HalfStorage -> (ForeignPtr CHalfStorage, ForeignPtr CState)
+halfStorage  :: ForeignPtr CHalfStorage -> HalfStorage
+-}
 
 

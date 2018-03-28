@@ -15,17 +15,21 @@ data CStorage
 -- freeTensor  :: Ptr CState -> Ptr CTensor -> IO ()
 
 -- all haskell, memory-managed types
-data DynTensor
-asDyn :: ForeignPtr CTensor -> DynTensor
-tensor :: DynTensor -> ForeignPtr CTensor
+data Dynamic
+ctensor         :: Dynamic -> ForeignPtr CTensor
+dynamic         :: ForeignPtr CState -> ForeignPtr CTensor -> Dynamic
+dynamicState    :: Dynamic -> (ForeignPtr CState, ForeignPtr CTensor)
+dynamicStateRef :: Dynamic -> ForeignPtr CState
 
 data Storage
-asStorage :: ForeignPtr CStorage -> Storage
-storage :: Storage -> ForeignPtr CStorage
+cstorage        :: Storage -> ForeignPtr CStorage
+storage         :: ForeignPtr CState -> ForeignPtr CStorage -> Storage
+storageState    :: Storage -> (ForeignPtr CState, ForeignPtr CStorage)
+storageStateRef :: Storage -> ForeignPtr CState
 
 data Tensor (d::[Nat])
-asStatic :: DynTensor -> Tensor d
-dynamic :: Tensor d -> DynTensor
+asStatic  :: Dynamic -> Tensor d
+asDynamic :: Tensor d -> Dynamic
 
 data CReal
 instance Num  CReal
