@@ -30,14 +30,18 @@ c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
 type Storage = IntStorage
-storage = intCStorage
-asStorage = IntStorage
+cstorage        = fst . intStorageState
+storage s t     = IntStorage (s, t)
+storageState    = intStorageState
+storageStateRef = snd . intStorageState
 
-type DynTensor = IntDynTensor
-tensor = intCTensor
-asDyn = IntDynTensor
+type Dynamic    = IntDynamic
+ctensor         = fst . intDynamicState
+dynamic s t     = IntDynamic (s, t)
+dynamicState    = intDynamicState
+dynamicStateRef = snd . intDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
+newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
   deriving (Show, Eq)
 
 asStatic = Tensor

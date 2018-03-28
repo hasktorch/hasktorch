@@ -2,32 +2,33 @@ module Torch.Types.THC
   ( module Torch.Types.THC.Structs
 
   , CState, State(..), asState
-  , CAllocator
-  , CDescBuff
+  , CAllocator, Allocator(..)
+  , CDescBuff, DescBuff
   , CGenerator, Generator(..)
-  , CInt', Int'
+  , CInt'
   , CMaskTensor, CIndexTensor, CIndexStorage
+  ,  MaskTensor,  IndexTensor,  IndexStorage
 
-  , CByteTensor, byteDynTensor, ByteDynTensor(..)
-  , CByteStorage, byteStorage, ByteStorage(..)
+  , CByteTensor, ByteDynamic(..), byteDynamic
+  , CByteStorage, ByteStorage(..), byteStorage
 
-  , CCharTensor, charDynTensor, CharDynTensor(..)
-  , CCharStorage, charStorage, CharStorage(..)
+  , CCharTensor, CharDynamic(..), charDynamic
+  , CCharStorage, CharStorage(..), charStorage
 
-  , CLongTensor, longDynTensor, LongDynTensor(..)
-  , CLongStorage, longStorage, LongStorage(..)
+  , CLongTensor, LongDynamic(..), longDynamic
+  , CLongStorage, LongStorage(..), longStorage
 
-  , CShortTensor, shortDynTensor, ShortDynTensor(..)
-  , CShortStorage, shortStorage, ShortStorage(..)
+  , CShortTensor, ShortDynamic(..), shortDynamic
+  , CShortStorage, ShortStorage(..), shortStorage
 
-  , CIntTensor, intDynTensor, IntDynTensor(..)
-  , CIntStorage, intStorage, IntStorage(..)
+  , CIntTensor, IntDynamic(..), intDynamic
+  , CIntStorage, IntStorage(..), intStorage
 
-  , CFloatTensor, floatDynTensor, FloatDynTensor(..)
-  , CFloatStorage, floatStorage, FloatStorage(..)
+  , CFloatTensor, FloatDynamic(..), floatDynamic
+  , CFloatStorage, FloatStorage(..), floatStorage
 
-  , CDoubleTensor, doubleDynTensor, DoubleDynTensor(..)
-  , CDoubleStorage, doubleStorage, DoubleStorage(..)
+  , CDoubleTensor, DoubleDynamic(..), doubleDynamic
+  , CDoubleStorage, DoubleStorage(..), doubleStorage
 
   , C'THCHalfStorage, C'THCudaHalfTensor, C'THCFile, C'THCHalf
   ) where
@@ -39,7 +40,10 @@ import GHC.TypeLits
 import Torch.Types.THC.Structs
 
 type CAllocator = ()
+type  Allocator = ()
+
 type CDescBuff = C'THCDescBuff
+type  DescBuff = String
 
 type CState = C'THCState
 newtype State = State { asForeign :: ForeignPtr CState }
@@ -58,87 +62,85 @@ type CMaskTensor   = CByteTensor
 type CIndexTensor  = CLongTensor
 type CIndexStorage = CLongStorage
 
+type  MaskTensor   = ByteDynamic
+type  IndexTensor  = LongDynamic
+type  IndexStorage = LongStorage
+
 -- unsigned types
 
 type CByteTensor      = C'THCudaByteTensor
-byteDynTensor         = ByteDynTensor
-newtype ByteDynTensor = ByteDynTensor { byteCTensor :: ForeignPtr CByteTensor }
+newtype ByteDynamic   = ByteDynamic { byteDynamicState :: (ForeignPtr CState, ForeignPtr CByteTensor) }
   deriving (Show, Eq)
+byteDynamic = curry ByteDynamic
 
 type CByteStorage   = C'THCByteStorage
-byteStorage         = ByteStorage
-newtype ByteStorage = ByteStorage { byteCStorage :: ForeignPtr CByteStorage }
+newtype ByteStorage = ByteStorage { byteStorageState :: (ForeignPtr CState, ForeignPtr CByteStorage) }
   deriving (Show, Eq)
-
+byteStorage = curry ByteStorage
 
 type CCharTensor      = C'THCudaCharTensor
-charDynTensor         = CharDynTensor
-newtype CharDynTensor = CharDynTensor { charCTensor :: ForeignPtr CCharTensor }
+newtype CharDynamic = CharDynamic { charDynamicState :: (ForeignPtr CState, ForeignPtr CCharTensor) }
   deriving (Show, Eq)
+charDynamic = curry CharDynamic
 
 type CCharStorage   = C'THCCharStorage
-charStorage         = CharStorage
-newtype CharStorage = CharStorage { charCStorage :: ForeignPtr CCharStorage }
+newtype CharStorage = CharStorage { charStorageState :: (ForeignPtr CState, ForeignPtr CCharStorage) }
   deriving (Show, Eq)
-
+charStorage = curry CharStorage
 
 -- Signed types
 
 type CLongTensor      = C'THCudaLongTensor
-longDynTensor         = LongDynTensor
-newtype LongDynTensor = LongDynTensor { longCTensor :: ForeignPtr CLongTensor }
+newtype LongDynamic = LongDynamic { longDynamicState :: (ForeignPtr CState, ForeignPtr CLongTensor) }
   deriving (Show, Eq)
+longDynamic = curry LongDynamic
 
 type CLongStorage   = C'THCLongStorage
-longStorage         = LongStorage
-newtype LongStorage = LongStorage { longCStorage :: ForeignPtr CLongStorage }
+newtype LongStorage = LongStorage { longStorageState :: (ForeignPtr CState, ForeignPtr CLongStorage) }
   deriving (Show, Eq)
-
+longStorage = curry LongStorage
 
 type CShortTensor      = C'THCudaShortTensor
-shortDynTensor         = ShortDynTensor
-newtype ShortDynTensor = ShortDynTensor { shortCTensor :: ForeignPtr CShortTensor }
+newtype ShortDynamic = ShortDynamic { shortDynamicState :: (ForeignPtr CState, ForeignPtr CShortTensor) }
   deriving (Show, Eq)
+shortDynamic = curry ShortDynamic
 
 type CShortStorage   = C'THCShortStorage
-shortStorage         = ShortStorage
-newtype ShortStorage = ShortStorage { shortCStorage :: ForeignPtr CShortStorage }
+newtype ShortStorage = ShortStorage { shortStorageState :: (ForeignPtr CState, ForeignPtr CShortStorage) }
   deriving (Show, Eq)
-
+shortStorage = curry ShortStorage
 
 type CIntTensor      = C'THCudaIntTensor
-intDynTensor         = IntDynTensor
-newtype IntDynTensor = IntDynTensor { intCTensor :: ForeignPtr CIntTensor }
+newtype IntDynamic = IntDynamic { intDynamicState :: (ForeignPtr CState, ForeignPtr CIntTensor) }
   deriving (Show, Eq)
+intDynamic = curry IntDynamic
 
 type CIntStorage   = C'THCIntStorage
-intStorage         = IntStorage
-newtype IntStorage = IntStorage { intCStorage :: ForeignPtr CIntStorage }
+newtype IntStorage = IntStorage { intStorageState :: (ForeignPtr CState, ForeignPtr CIntStorage) }
   deriving (Show, Eq)
-
+intStorage = curry IntStorage
 
 -- Floating types
 
 type CFloatTensor      = C'THCudaFloatTensor
-floatDynTensor         = FloatDynTensor
-newtype FloatDynTensor = FloatDynTensor { floatCTensor :: ForeignPtr CFloatTensor }
+newtype FloatDynamic = FloatDynamic { floatDynamicState :: (ForeignPtr CState, ForeignPtr CFloatTensor) }
   deriving (Show, Eq)
+floatDynamic = curry FloatDynamic
 
 type CFloatStorage   = C'THCFloatStorage
-floatStorage         = FloatStorage
-newtype FloatStorage = FloatStorage { floatCStorage :: ForeignPtr CFloatStorage }
+newtype FloatStorage = FloatStorage { floatStorageState :: (ForeignPtr CState, ForeignPtr CFloatStorage) }
   deriving (Show, Eq)
-
+floatStorage = curry FloatStorage
 
 type CDoubleTensor      = C'THCudaDoubleTensor
-doubleDynTensor         = DoubleDynTensor
-newtype DoubleDynTensor = DoubleDynTensor { doubleCTensor :: ForeignPtr CDoubleTensor }
+newtype DoubleDynamic = DoubleDynamic { doubleDynamicState :: (ForeignPtr CState, ForeignPtr CDoubleTensor) }
   deriving (Show, Eq)
+doubleDynamic = curry DoubleDynamic
 
 type CDoubleStorage   = C'THCDoubleStorage
-doubleStorage         = DoubleStorage
-newtype DoubleStorage = DoubleStorage { doubleCStorage :: ForeignPtr CDoubleStorage }
+newtype DoubleStorage = DoubleStorage { doubleStorageState :: (ForeignPtr CState, ForeignPtr CDoubleStorage) }
   deriving (Show, Eq)
+doubleStorage = curry DoubleStorage
 
 
 {-

@@ -29,14 +29,18 @@ c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
 type Storage = ByteStorage
-storage = byteCStorage
-asStorage = ByteStorage
+cstorage        = snd . byteStorageState
+storage         = byteStorage
+storageState    = byteStorageState
+storageStateRef = fst . byteStorageState
 
-type DynTensor = ByteDynTensor
-tensor = byteCTensor
-asDyn = ByteDynTensor
+type Dynamic    = ByteDynamic
+ctensor         = snd . byteDynamicState
+dynamic         = byteDynamic
+dynamicState    = byteDynamicState
+dynamicStateRef = fst . byteDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
+newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
   deriving (Show, Eq)
 
 asStatic = Tensor

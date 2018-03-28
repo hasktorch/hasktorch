@@ -18,8 +18,6 @@ type CAccReal = CLong
 type HsReal = Word8
 type HsAccReal = Word64
 
--- type CDoubleTensor = C'THCudaDoubleTensor
-
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
 
@@ -33,14 +31,18 @@ c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
 type Storage = ByteStorage
-storage = byteCStorage
-asStorage = ByteStorage
+cstorage        = snd . byteStorageState
+storage         = byteStorage
+storageState    = byteStorageState
+storageStateRef = fst . byteStorageState
 
-type DynTensor = ByteDynTensor
-tensor = byteCTensor
-asDyn = ByteDynTensor
+type Dynamic    = ByteDynamic
+ctensor         = snd . byteDynamicState
+dynamic         = byteDynamic
+dynamicState    = byteDynamicState
+dynamicStateRef = fst . byteDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
+newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
   deriving (Show, Eq)
 
 asStatic = Tensor

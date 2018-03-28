@@ -28,14 +28,18 @@ c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
 type Storage = LongStorage
-storage = longCStorage
-asStorage = LongStorage
+cstorage        = fst . longStorageState
+storage s t     = LongStorage (s, t)
+storageState    = longStorageState
+storageStateRef = snd . longStorageState
 
-type DynTensor = LongDynTensor
-tensor = longCTensor
-asDyn = LongDynTensor
+type Dynamic    = LongDynamic
+ctensor         = fst . longDynamicState
+dynamic s t     = LongDynamic (s, t)
+dynamicState    = longDynamicState
+dynamicStateRef = snd . longDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
+newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
   deriving (Show, Eq)
 
 asStatic = Tensor

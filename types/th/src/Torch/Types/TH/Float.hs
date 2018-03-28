@@ -33,14 +33,18 @@ c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = realToFrac
 
 type Storage = FloatStorage
-storage = floatCStorage
-asStorage = FloatStorage
+cstorage        = fst . floatStorageState
+storage s t     = FloatStorage (s, t)
+storageState    = floatStorageState
+storageStateRef = snd . floatStorageState
 
-type DynTensor = FloatDynTensor
-tensor = floatCTensor
-asDyn = FloatDynTensor
+type Dynamic    = FloatDynamic
+ctensor         = fst . floatDynamicState
+dynamic s t     = FloatDynamic (s, t)
+dynamicState    = floatDynamicState
+dynamicStateRef = snd . floatDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
+newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
   deriving (Show, Eq)
 
 asStatic = Tensor

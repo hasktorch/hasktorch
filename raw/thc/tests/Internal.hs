@@ -15,9 +15,9 @@ cudaState = do
 
 stopCuda :: Ptr C'THCState -> IO ()
 stopCuda s = void $ do
+  -- FIXME: This throws a segfault..?
+  General.c_THCudaShutdown s
   General.c_THCState_free s
 
-  -- FIXME: This throws a segfault...
-  -- General.c_THCudaShutdown s
 
 
