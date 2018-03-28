@@ -81,21 +81,21 @@ instance Class.TensorLapack Tensor where
     cs1' <- FM.newArray (coerce cs1 :: [CChar])
     Sig.c_ormqr t0' t1' t2' t3' cs0' cs1'
 
-  pstrf_ :: Tensor -> Int.DynTensor -> Tensor -> [Int8] -> HsReal -> IO ()
+  pstrf_ :: Tensor -> Int.Dynamic -> Tensor -> [Int8] -> HsReal -> IO ()
   pstrf_ res it t cs0 v =
     _with2Tensors res t $ \res' t' ->
       withForeignPtr (Int.tensor it) $ \it' -> do
         cs0' <- FM.newArray (coerce cs0 :: [CChar])
         Sig.c_pstrf res' it' t' cs0' (hs2cReal v)
 
-  btrifact_  :: Tensor -> Int.DynTensor -> Int.DynTensor -> Int32 -> Tensor -> IO ()
+  btrifact_  :: Tensor -> Int.Dynamic -> Int.Dynamic -> Int32 -> Tensor -> IO ()
   btrifact_ res it0 it1 i t =
     _with2Tensors res t $ \res' t' ->
       withForeignPtr (Int.tensor it0) $ \it0' ->
         withForeignPtr (Int.tensor it1) $ \it1' ->
           Sig.c_btrifact res' it0' it1' (CInt i) t'
 
-  btrisolve_ :: Tensor -> Tensor -> Tensor -> Int.DynTensor -> IO ()
+  btrisolve_ :: Tensor -> Tensor -> Tensor -> Int.Dynamic -> IO ()
   btrisolve_ t0 t1 t2 it =
     _with3Tensors t0 t1 t2 $ \t0' t1' t2' ->
       withForeignPtr (Int.tensor it) $ \it' ->

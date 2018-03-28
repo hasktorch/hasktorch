@@ -10,12 +10,16 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Class.Types where
 
+import Foreign
+import Torch.Types.TH (C'THState, State)
 import GHC.Int (Int64)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Reader.Class (MonadReader)
 import Control.Monad.IO.Class (MonadIO)
+import Control.Exception.Safe (MonadThrow)
 
 type family HsReal t
 type family HsAccReal t
@@ -32,8 +36,19 @@ type family DimReal t
 type SizesStorage t = IndexStorage t
 type StridesStorage t = IndexStorage t
 
-newtype Torch' s x = Torch { getState :: ReaderT s IO x }
-  deriving (Functor, Applicative, Monad, MonadReader s, MonadIO)
+class MonadIO (m s) => HasState m s where
+  getTHState :: m s s
+
+-- come up with an escape hatch for the statefulness
+-- instance MonadIO (ReaderT C'THState IO) => HasState (ReaderT C'THState IO) C'THState where
+--   getTHState = pure ()
+-- 
+-- liftIO :: IO x -> (ReaderT C'THState IO x)
+
+-- instance HasState ReadIO State where
+--   getTHState = pure (impossible "a TH state will never be evaluated")
+
+impossible = error
 
 -- Maybe better served as a newtype of Foreign.C.Types.CLLong
 newtype Stride = Stride Int64

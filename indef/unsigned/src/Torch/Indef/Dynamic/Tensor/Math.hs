@@ -15,8 +15,8 @@ import Torch.Types.TH.Random (Generator(..))
 
 import Torch.Indef.Types
 
-type ByteTensor = B.DynTensor
-type LongTensor = L.DynTensor
+type ByteTensor = B.Dynamic
+type LongTensor = L.Dynamic
 type LongStorage = L.Storage
 
 twoTensorsAndReal :: (Ptr CTensor -> Ptr CTensor -> CReal -> IO ()) -> Tensor -> Tensor -> HsReal -> IO ()

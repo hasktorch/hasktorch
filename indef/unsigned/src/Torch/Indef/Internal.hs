@@ -1,16 +1,16 @@
 {-# LANGUAGE TypeFamilies #-}
 module Torch.Indef.Internal
   ( ptrArray2hs
-  , withDynTensor
-  , with2DynTensors
-  , with3DynTensors
-  , with4DynTensors
-  , with5DynTensors
-  , _withDynTensor
-  , _with2DynTensors
-  , _with3DynTensors
-  , _with4DynTensors
-  , _with5DynTensors
+  , withDynamic
+  , with2Dynamics
+  , with3Dynamics
+  , with4Dynamics
+  , with5Dynamics
+  , _withDynamic
+  , _with2Dynamics
+  , _with3Dynamics
+  , _with4Dynamics
+  , _with5Dynamics
   ) where
 
 import Foreign
@@ -29,54 +29,54 @@ ptrArray2hs updPtrArray toSize fp = do
 
 -- ========================================================================= --
 
-_withDynTensor :: DynTensor -> (Ptr CTensor -> IO x) -> IO x
-_withDynTensor t0 fn = withForeignPtr (tensor t0) fn
+_withDynamic :: Dynamic -> (Ptr CTensor -> IO x) -> IO x
+_withDynamic t0 fn = withForeignPtr (ctensor t0) fn
 
-withDynTensor = flip _withDynTensor
+withDynamic = flip _withDynamic
 
-_with2DynTensors
-  :: DynTensor -> DynTensor
+_with2Dynamics
+  :: Dynamic -> Dynamic
   -> (Ptr CTensor -> Ptr CTensor -> IO x)
   -> IO x
-_with2DynTensors t0 t1 fn =
-  _withDynTensor t0 $ \t0' ->
-    _withDynTensor t1 $ \t1' ->
+_with2Dynamics t0 t1 fn =
+  _withDynamic t0 $ \t0' ->
+    _withDynamic t1 $ \t1' ->
       fn t0' t1'
 
-with2DynTensors fn t0 t1 = _with2DynTensors t0 t1 fn
+with2Dynamics fn t0 t1 = _with2Dynamics t0 t1 fn
 
-_with3DynTensors
-  :: DynTensor -> DynTensor -> DynTensor
+_with3Dynamics
+  :: Dynamic -> Dynamic -> Dynamic
   -> (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO x)
   -> IO x
-_with3DynTensors t0 t1 t2 fn =
-  _with2DynTensors t0 t1 $ \t0' t1' ->
-    _withDynTensor t2 $ \t2' ->
+_with3Dynamics t0 t1 t2 fn =
+  _with2Dynamics t0 t1 $ \t0' t1' ->
+    _withDynamic t2 $ \t2' ->
       fn t0' t1' t2'
 
-with3DynTensors fn t0 t1 t2 = _with3DynTensors t0 t1 t2 fn
+with3Dynamics fn t0 t1 t2 = _with3Dynamics t0 t1 t2 fn
 
-_with4DynTensors
-  :: DynTensor -> DynTensor -> DynTensor -> DynTensor
+_with4Dynamics
+  :: Dynamic -> Dynamic -> Dynamic -> Dynamic
   -> (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO x)
   -> IO x
-_with4DynTensors t0 t1 t2 t3 fn =
-  _with3DynTensors t0 t1 t2 $ \t0' t1' t2' ->
-    _withDynTensor t3 $ \t3' ->
+_with4Dynamics t0 t1 t2 t3 fn =
+  _with3Dynamics t0 t1 t2 $ \t0' t1' t2' ->
+    _withDynamic t3 $ \t3' ->
       fn t0' t1' t2' t3'
 
-with4DynTensors fn t0 t1 t2 t3 = _with4DynTensors t0 t1 t2 t3 fn
+with4Dynamics fn t0 t1 t2 t3 = _with4Dynamics t0 t1 t2 t3 fn
 
-_with5DynTensors
-  :: DynTensor -> DynTensor -> DynTensor -> DynTensor -> DynTensor
+_with5Dynamics
+  :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic
   -> (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO x)
   -> IO x
-_with5DynTensors t0 t1 t2 t3 t4 fn =
-  _with4DynTensors t0 t1 t2 t3 $ \t0' t1' t2' t3' ->
-    _withDynTensor t4 $ \t4' ->
+_with5Dynamics t0 t1 t2 t3 t4 fn =
+  _with4Dynamics t0 t1 t2 t3 $ \t0' t1' t2' t3' ->
+    _withDynamic t4 $ \t4' ->
       fn t0' t1' t2' t3' t4'
 
-with5DynTensors fn t0 t1 t2 t3 t4 = _with5DynTensors t0 t1 t2 t3 t4 fn
+with5Dynamics fn t0 t1 t2 t3 t4 = _with5Dynamics t0 t1 t2 t3 t4 fn
 
 -- ========================================================================= --
 -- TODO: bring back the managed versions of the above

@@ -27,6 +27,7 @@ library
     , InstanceSigs
     , TypeSynonymInstances
     , FlexibleInstances
+    , FlexibleContexts
   build-depends:
       base >=4.7 && <5
     , containers
@@ -34,9 +35,9 @@ library
     , dimensions >=0.3.2.0
     , hasktorch-classes
     , hasktorch-dimensions
-    , hasktorch-raw-th
     , hasktorch-signatures-unsigned
     , hasktorch-types-th
+    , hasktorch-raw-th
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
     , mtl
@@ -51,6 +52,9 @@ library
     build-depends:
       hasktorch-types-thc
     cpp-options: -DCUDA
+
+  other-modules:
+      Torch.Indef.Internal
 
   exposed-modules:
     -- classes implementations with indefinites
@@ -74,9 +78,14 @@ library
     -- , Torch.Indef.Static.NN
 
     -- final exports will be last
-    -- , Torch.Indef.Dynamic
-    -- , Torch.Indef.Dynamic.Tensor
-    -- , Torch.Indef.Dynamic.Tensor.Copy
+    , Torch.Indef.Dynamic
+    , Torch.Indef.Dynamic.Tensor
+    , Torch.Indef.Dynamic.Tensor.Copy
+
+    -- , Torch.Indef.Static
+    -- , Torch.Indef.Static.Tensor
+    -- , Torch.Indef.Static.Tensor.Copy
+
     -- , Torch.Indef.Dynamic.Tensor.Index
     -- , Torch.Indef.Dynamic.Tensor.Masked
     -- , Torch.Indef.Dynamic.Tensor.Math
@@ -116,5 +125,3 @@ library
     -- , Torch.Indef.Static.Tensor.TopK
     -- , Torch.Indef.Static.Tensor.Random
 
-  other-modules:
-      Torch.Indef.Internal

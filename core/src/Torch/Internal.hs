@@ -1,4 +1,4 @@
-module Torch.Core.Internal
+module Torch.Internal
   ( showLim
   , impossible
   ) where

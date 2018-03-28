@@ -3,7 +3,7 @@ module Torch.Indef.Dynamic.Tensor.Index where
 import Torch.Indef.Internal
 import Torch.Class.Dynamic.Tensor.Index
 
-instance TensorIndex DynTensor where
+instance TensorIndex Dynamic where
   indexCopy_ :: t -> Int -> IndexTensor t -> t -> IO ()
   indexAdd_ :: t -> Int -> IndexTensor t -> t -> IO ()
   indexFill_ :: t -> Int -> IndexTensor t -> HsReal t -> IO ()

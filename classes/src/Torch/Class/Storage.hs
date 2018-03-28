@@ -1,6 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
 module Torch.Class.Storage where
 
 import Foreign (Ptr, Int64, Int8, Int32)
@@ -17,30 +16,29 @@ newtype AllocatorContext = AllocatorContext (Ptr ())
 newtype Index = Index Int64
   deriving (Bounded, Enum, Eq, Integral, Num, Ord, Read, Real, Show)
 
-class MonadIO io => Storage io t where
-  tensordata     :: t -> io [HsReal t]
-  size           :: t -> io StorageSize
-  set            :: t -> Index -> HsReal t -> io ()
-  get            :: t -> Index -> io (HsReal t)
-  empty          :: io t
-  newWithSize    :: StorageSize -> io t
-  newWithSize1   :: HsReal t -> io t
-  newWithSize2   :: HsReal t -> HsReal t -> io t
-  newWithSize3   :: HsReal t -> HsReal t -> HsReal t -> io t
-  newWithSize4   :: HsReal t -> HsReal t -> HsReal t -> HsReal t -> io t
-  newWithMapping :: [Int8] -> StorageSize -> Int32 -> io t
-  newWithData    :: [HsReal t] -> StorageSize -> io t
-  setFlag        :: t -> Int8 -> io ()
-  clearFlag      :: t -> Int8 -> io ()
-  retain         :: t -> io ()
-  resize         :: t -> StorageSize -> io ()
-  fill           :: t -> HsReal t -> io ()
+class Storage t where
+  tensordata     :: t -> IO [HsReal t]
+  size           :: t -> IO StorageSize
+  set            :: t -> Index -> HsReal t -> IO ()
+  get            :: t -> Index -> IO (HsReal t)
+  empty          :: IO t
+  newWithSize    :: StorageSize -> IO t
+  newWithSize1   :: HsReal t -> IO t
+  newWithSize2   :: HsReal t -> HsReal t -> IO t
+  newWithSize3   :: HsReal t -> HsReal t -> HsReal t -> IO t
+  newWithSize4   :: HsReal t -> HsReal t -> HsReal t -> HsReal t -> IO t
+  newWithMapping :: [Int8] -> StorageSize -> Int32 -> IO t
+  newWithData    :: [HsReal t] -> StorageSize -> IO t
+  setFlag        :: t -> Int8 -> IO ()
+  clearFlag      :: t -> Int8 -> IO ()
+  retain         :: t -> IO ()
+  resize         :: t -> StorageSize -> IO ()
+  fill           :: t -> HsReal t -> IO ()
 
 class CPUStorage t where
-  newWithAllocator :: StorageSize -> (Allocator t, AllocatorContext) -> io t
-  newWithDataAndAllocator :: [HsReal t] -> StorageSize -> (Allocator t, AllocatorContext) -> io t
-  swap :: t -> t -> io ()
+  newWithAllocator :: StorageSize -> (Allocator t, AllocatorContext) -> IO t
+  newWithDataAndAllocator :: [HsReal t] -> StorageSize -> (Allocator t, AllocatorContext) -> IO t
+  swap :: t -> t -> IO ()
 
 class GPUStorage t where
-  c_getDevice :: t -> io Int
-
+  c_getDevice :: t -> IO Int

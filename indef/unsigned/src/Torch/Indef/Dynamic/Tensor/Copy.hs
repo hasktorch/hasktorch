@@ -4,65 +4,59 @@ module Torch.Indef.Dynamic.Tensor.Copy where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH
+import Torch.Types.TH hiding (CState)
+import Data.List (intercalate)
 import Control.Exception.Safe (throwString)
-import qualified Torch.Sig.IsTensor as Sig
+import qualified Torch.Types.TH as TH
+import qualified Torch.Sig.Tensor as Sig
 import qualified Torch.Sig.Tensor.Copy as Sig
 import qualified Torch.Class.Tensor.Copy as Class
-import qualified Torch.Class.IsTensor as Class
+import qualified Torch.Class.Tensor as Class
 
 import qualified Torch.FFI.TH.Byte.Tensor   as B
-import qualified Torch.Types.TH.Byte    as B
 import qualified Torch.FFI.TH.Short.Tensor  as S
-import qualified Torch.Types.TH.Short   as S
 import qualified Torch.FFI.TH.Int.Tensor    as I
-import qualified Torch.Types.TH.Int     as I
 import qualified Torch.FFI.TH.Long.Tensor   as L
-import qualified Torch.Types.TH.Long    as L
+import qualified Torch.FFI.TH.Char.Tensor   as C
 import qualified Torch.FFI.TH.Float.Tensor  as F
-import qualified Torch.Types.TH.Float   as F
 import qualified Torch.FFI.TH.Double.Tensor as D
-import qualified Torch.Types.TH.Double  as D
 
 import Torch.Indef.Types
 
-copyType :: IO (Ptr a) -> FinalizerPtr a -> (Ptr CTensor -> Ptr a -> IO ()) -> Tensor -> IO (ForeignPtr a)
-copyType newPtr fin cfun t = do
-  tar <- newPtr
-  throwString "'hasktorch-indef-unsigned:Torch.Indef.Tensor.Dynamic.Copy.copyType': must resize the target tensor before continuing"
-  withForeignPtr (tensor t) (`cfun` tar)
-  newForeignPtr fin tar
+copyType
+  :: IO (Ptr a)
+  -> FinalizerPtr a
+  -> (ForeignPtr C'THState -> ForeignPtr a -> b)
+  -> (Ptr CState -> Ptr CTensor -> Ptr a -> IO ())
+  -> Dynamic -> IO b
+copyType newPtr fin builder cfun t = withDynamicState t $ \s' t' -> do
+  target <- newPtr
+  throwString $ intercalate ""
+    [ "'hasktorch-indef-unsigned:Torch.Indef.Tensor.Dynamic.Copy.copyType':"
+    , "must resize the target tensor before continuing"
+    ]
+  -- Sig.c_resizeAs s' target t'       -- << THIS NEEDS TO BE REMAPPED TO TENSORLONG SIZES
+  cfun s' t' target
 
-instance Class.TensorCopy Tensor where
-  copy :: Tensor -> IO Tensor
-  copy t = do
-    tar <- Sig.c_new
-    withForeignPtr (tensor t) (tar `Sig.c_resizeAs`)
-    withForeignPtr (tensor t) (`Sig.c_copy` tar)
-    asDyn <$> newForeignPtr Sig.p_free tar
+  builder
+    <$> (TH.newCState >>= TH.manageState)
+    <*> newForeignPtr fin target
 
-  copyByte :: Tensor {-ForeignPtr CTHTensor -} -> IO B.DynTensor {-ForeignPtr B.CTorch.FFI.TH.Byte.Tensor -}
-  copyByte t = B.asDyn <$> (copyType B.c_new B.p_free Sig.c_copyByte t)
 
-  -- copyChar :: Tensor -> IO (Ptr CTHCharTensor)
-  -- copyChar = copyType C.c_new Sig.c_copyChar
+instance Class.TensorCopy Dynamic where
+  copy :: Dynamic -> IO Dynamic
+  copy t = withDynamicState t $ \s' t' -> do
+    target <- Sig.c_new s'
+    Sig.c_resizeAs s' target t'
+    Sig.c_copy s' t' target
+    mkDynamic s' target
 
-  copyShort :: Tensor -> IO S.DynTensor
-  copyShort t = S.asDyn <$> (copyType S.c_new S.p_free Sig.c_copyShort t)
-
-  copyInt :: Tensor -> IO I.DynTensor
-  copyInt t = I.asDyn <$> (copyType I.c_new I.p_free Sig.c_copyInt t)
-
-  copyLong :: Tensor -> IO L.DynTensor
-  copyLong t = L.asDyn <$> (copyType L.c_new L.p_free Sig.c_copyLong t)
-
-  -- copyHalf   :: Tensor -> IO (Ptr CTHHalfTensor)
-  -- copyHalf = copyType H.c_new Sig.c_copyHalf
-
-  copyFloat :: Tensor -> IO F.DynTensor
-  copyFloat t = F.asDyn <$> (copyType F.c_new F.p_free Sig.c_copyFloat t)
-
-  copyDouble :: Tensor -> IO D.DynTensor
-  copyDouble t = D.asDyn <$> (copyType D.c_new D.p_free Sig.c_copyDouble t)
+  copyByte   = copyType B.c_new_ B.p_free   byteDynamic Sig.c_copyByte
+  copyChar   = copyType C.c_new_ C.p_free   charDynamic Sig.c_copyChar
+  copyShort  = copyType S.c_new_ S.p_free  shortDynamic Sig.c_copyShort
+  copyInt    = copyType I.c_new_ I.p_free    intDynamic Sig.c_copyInt
+  copyLong   = copyType L.c_new_ L.p_free   longDynamic Sig.c_copyLong
+  copyFloat  = copyType F.c_new_ F.p_free  floatDynamic Sig.c_copyFloat
+  copyDouble = copyType D.c_new_ D.p_free doubleDynamic Sig.c_copyDouble
 
 

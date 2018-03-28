@@ -21,7 +21,13 @@ flag cuda
 library
   hs-source-dirs: src
   default-language: Haskell2010
-  default-extensions: MultiParamTypeClasses, FunctionalDependencies
+  default-extensions:
+      MultiParamTypeClasses
+    , FunctionalDependencies
+    , AllowAmbiguousTypes
+    , LambdaCase
+    , DataKinds
+    , KindSignatures
   build-depends:
       base >=4.7 && <5
     , hasktorch-types-th
@@ -47,26 +53,26 @@ library
     , Torch.Class.Storage
     , Torch.Class.Storage.Copy
 
-    , Torch.Class.NN
+    -- , Torch.Class.NN
 
     , Torch.Class.Tensor
     , Torch.Class.Tensor.Copy
-    , Torch.Class.Tensor.Index
-    , Torch.Class.Tensor.Masked
-    , Torch.Class.Tensor.Math
-    , Torch.Class.Tensor.Math.Blas
-    , Torch.Class.Tensor.Math.Compare
-    , Torch.Class.Tensor.Math.CompareT
-    , Torch.Class.Tensor.Math.Pairwise
-    , Torch.Class.Tensor.Math.Lapack
-    , Torch.Class.Tensor.Math.Pointwise
-    , Torch.Class.Tensor.Math.Random
-    , Torch.Class.Tensor.Math.Reduce
-    , Torch.Class.Tensor.Math.Scan
-    , Torch.Class.Tensor.Mode
-    , Torch.Class.Tensor.ScatterGather
-    , Torch.Class.Tensor.Sort
-    , Torch.Class.Tensor.TopK
+    -- , Torch.Class.Tensor.Index
+    -- , Torch.Class.Tensor.Masked
+    -- , Torch.Class.Tensor.Math
+    -- , Torch.Class.Tensor.Math.Blas
+    -- , Torch.Class.Tensor.Math.Compare
+    -- , Torch.Class.Tensor.Math.CompareT
+    -- , Torch.Class.Tensor.Math.Pairwise
+    -- , Torch.Class.Tensor.Math.Lapack
+    -- , Torch.Class.Tensor.Math.Pointwise
+    -- , Torch.Class.Tensor.Math.Random
+    -- , Torch.Class.Tensor.Math.Reduce
+    -- , Torch.Class.Tensor.Math.Scan
+    -- , Torch.Class.Tensor.Mode
+    -- , Torch.Class.Tensor.ScatterGather
+    -- , Torch.Class.Tensor.Sort
+    -- , Torch.Class.Tensor.TopK
 
-    , Torch.Class.Tensor.Random
+    -- , Torch.Class.Tensor.Random
 
