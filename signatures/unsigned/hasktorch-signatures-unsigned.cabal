@@ -21,8 +21,8 @@ library
     , Torch.Sig.Tensor
     , Torch.Sig.Tensor.Copy
     , Torch.Sig.Tensor.Memory
-    -- , Torch.Sig.Tensor.Index
-    -- , Torch.Sig.Tensor.Masked
+    , Torch.Sig.Tensor.Index
+    , Torch.Sig.Tensor.Masked
     -- , Torch.Sig.Tensor.Math
     -- , Torch.Sig.Tensor.Math.Compare
     -- , Torch.Sig.Tensor.Math.CompareT
@@ -69,8 +69,8 @@ executable isdefinite-th
         ,Torch.Sig.Tensor         as Torch.FFI.TH.Byte.Tensor
         ,Torch.Sig.Tensor.Copy    as Torch.FFI.TH.Byte.TensorCopy
         ,Torch.Sig.Tensor.Memory  as Torch.FFI.TH.Byte.FreeTensor
-        -- ,Torch.Sig.Tensor.Index   as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Masked  as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Index   as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Masked  as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Byte.TensorMath
@@ -126,19 +126,19 @@ executable isdefinite-thc
   mixins:
       hasktorch-signatures-unsigned
         requires
-        (Torch.Sig.Types.Global  as Torch.Types.THC
-        ,Torch.Sig.Types         as Torch.Types.THC.Byte
-        ,Torch.Sig.State         as Torch.FFI.THC.State
-        ,Torch.Sig.Storage       as Torch.FFI.THC.Byte.Storage
-        ,Torch.Sig.Storage.Copy  as Torch.FFI.THC.Byte.StorageCopy
-        ,Torch.Sig.Storage.Memory        as Torch.FFI.THC.Byte.Storage
+        (Torch.Sig.Types.Global   as Torch.Types.THC
+        ,Torch.Sig.Types          as Torch.Types.THC.Byte
+        ,Torch.Sig.State          as Torch.FFI.THC.State
+        ,Torch.Sig.Storage        as Torch.FFI.THC.Byte.Storage
+        ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Byte.StorageCopy
+        ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Byte.Storage
 
         ,Torch.Sig.Tensor        as Torch.FFI.THC.Byte.Tensor
         ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Byte.TensorCopy
-        ,Torch.Sig.Tensor.Memory         as Torch.FFI.THC.Byte.Tensor
+        ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Byte.Tensor
 
-        -- ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
-        -- ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
         -- ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Byte.TensorMathCompare
         -- ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Byte.TensorMathCompareT

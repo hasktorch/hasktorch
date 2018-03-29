@@ -3,12 +3,12 @@ module Torch.Class.Tensor.Masked where
 import Torch.Class.Types
 
 class TensorMasked t where
-  maskedFill   :: t -> MaskTensor t -> HsReal t -> IO ()
-  maskedCopy   :: t -> MaskTensor t -> t -> IO ()
-  maskedSelect :: t -> t -> MaskTensor t -> IO ()
+  maskedFill_   :: t -> MaskTensor t -> HsReal t -> IO ()
+  maskedCopy_   :: t -> MaskTensor t -> t -> IO ()
+  maskedSelect_ :: t -> t -> MaskTensor t -> IO ()
 
 class GPUTensorMasked t where
-  maskedFillByte   :: t -> MaskTensor t -> HsReal t -> io ()
-  maskedCopyByte   :: t -> MaskTensor t -> t -> io ()
-  maskedSelectByte :: t -> t -> MaskTensor t -> io ()
+  maskedFillByte_   :: t -> MaskTensor t -> HsReal t -> io ()
+  maskedCopyByte_   :: t -> MaskTensor t -> t -> io ()
+  maskedSelectByte_ :: t -> t -> MaskTensor t -> io ()
 

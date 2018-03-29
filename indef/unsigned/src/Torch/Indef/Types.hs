@@ -11,15 +11,18 @@
 {-# LANGUAGE InstanceSigs #-}
 module Torch.Indef.Types
   ( module X
+  , ptrArray2hs
+
   , withState
   , withDynamicState, withStorageState
+  , with2DynamicState
   , mkDynamic, mkStorage
   , mkDynamicIO, mkStorageIO
 
   , Sig.State
   , Sig.CState
 
-  , Sig.CTensor, Sig.Tensor, Sig.Dynamic
+  , Sig.CTensor, Sig.Tensor, Sig.Dynamic, Sig.MaskTensor, Sig.IndexTensor, Sig.CIndexTensor, Sig.longDynamicState
   , Sig.Storage, Sig.CStorage, Sig.HsReal, Sig.dynamicState, Sig.storageState
   , Sig.hs2cReal, Sig.c2hsReal
 
@@ -29,6 +32,8 @@ module Torch.Indef.Types
 
 import Foreign
 import Torch.Class.Types
+import qualified Foreign.Marshal.Array as FM
+
 import qualified Torch.Sig.State as Sig
 import qualified Torch.Sig.Types as Sig
 import qualified Torch.Sig.Types.Global as Sig
@@ -38,8 +43,15 @@ import qualified Torch.Sig.Storage.Memory as SigStore
 
 import Control.Monad.IO.Class as X
 import Control.Monad.Reader.Class as X
-import Torch.Indef.Internal as X
 
+-- helper function to work with pointer arrays
+ptrArray2hs :: (Ptr a -> IO (Ptr Sig.CReal)) -> (Ptr a -> IO Int) -> ForeignPtr a -> IO [Sig.HsReal]
+ptrArray2hs updPtrArray toSize fp = do
+  sz <- withForeignPtr fp toSize
+  creals <- withForeignPtr fp updPtrArray
+  (fmap.fmap) Sig.c2hsReal (FM.peekArray sz creals)
+
+-- working with dynamic and storage types:
 withState :: Sig.State -> (Ptr Sig.CState ->IO x) -> IO x
 withState s = withForeignPtr (Sig.asForeign s)
 
@@ -48,6 +60,16 @@ withDynamicState t fn = do
   withForeignPtr (Sig.dynamicStateRef t) $ \sref ->
     withForeignPtr (Sig.ctensor t) $ \tref ->
       fn sref tref
+
+with2DynamicState
+  :: Sig.Dynamic
+  -> Sig.Dynamic
+  -> (Ptr Sig.CState -> Ptr Sig.CTensor -> Ptr Sig.CTensor -> IO x)
+  -> IO x
+with2DynamicState t0 t1 fn = do
+  withDynamicState t0 $ \s' t0' ->
+    withForeignPtr (Sig.ctensor t1) $ \t1' ->
+      fn s' t0' t1'
 
 mkDynamic :: Ptr Sig.CState -> Ptr Sig.CTensor -> IO Sig.Dynamic
 mkDynamic s t = Sig.dynamic

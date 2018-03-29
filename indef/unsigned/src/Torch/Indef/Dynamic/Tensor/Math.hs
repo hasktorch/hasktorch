@@ -45,24 +45,6 @@ instance Class.TensorMath Tensor where
   nonzero_ :: LongTensor -> Tensor -> IO ()
   nonzero_ l t = _withTensor t $ \t' -> withForeignPtr (L.tensor l) $ \l' -> Sig.c_nonzero l' t'
 
-  indexSelect_  :: Tensor -> Tensor -> Int32 -> LongTensor -> IO ()
-  indexSelect_ t0 t1 i l = _with2Tensors t0 t1 $ \t0' t1' -> withForeignPtr (L.tensor l) $ \l' -> Sig.c_indexSelect t0' t1' (CInt i) l'
-
-  indexCopy_ :: Tensor -> Int32 -> LongTensor -> Tensor -> IO ()
-  indexCopy_ t0 i l t1 = _with2Tensors t0 t1 $ \t0' t1' -> withForeignPtr (L.tensor l) $ \l' -> Sig.c_indexCopy t0' (CInt i) l' t1'
-
-  indexAdd_ :: Tensor -> Int32 -> LongTensor -> Tensor -> IO ()
-  indexAdd_ t0 i l t1 = _with2Tensors t0 t1 $ \t0' t1' -> withForeignPtr (L.tensor l) $ \l' -> Sig.c_indexAdd t0' (CInt i) l' t1'
-
-  indexFill_    :: Tensor -> Int32 -> LongTensor -> HsReal -> IO ()
-  indexFill_ t0 i ls v = _withTensor t0 $ \t0' -> withForeignPtr (L.tensor ls) $ \l' -> Sig.c_indexFill t0' (CInt i) l' (hs2cReal v)
-
-  take_ :: Tensor -> Tensor -> LongTensor -> IO ()
-  take_ t0 t1 ls = _with2Tensors t0 t1 $ \t0' t1' -> withForeignPtr (L.tensor ls) $ \ls' -> Sig.c_take t0' t1' ls'
-
-  put_ :: Tensor -> LongTensor -> Tensor -> Int32 -> IO ()
-  put_ t0 ls t1 i = _with2Tensors t0 t1 $ \t0' t1' -> withForeignPtr (L.tensor ls) $ \ls' -> Sig.c_put t0' ls' t1' (CInt i)
-
   gather_ :: Tensor -> Tensor -> Int32 -> LongTensor -> IO ()
   gather_ t0 t1 i ls = _with2Tensors t0 t1 $ \t0' t1' -> withForeignPtr (L.tensor ls) $ \ls' -> Sig.c_gather t0' t1' (CInt i) ls'
 

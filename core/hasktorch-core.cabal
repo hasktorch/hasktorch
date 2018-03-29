@@ -175,6 +175,10 @@ library
         ,Torch.Sig.Tensor            as Torch.FFI.TH.Byte.Tensor
         ,Torch.Sig.Tensor.Copy       as Torch.FFI.TH.Byte.TensorCopy
         ,Torch.Sig.Tensor.Memory     as Torch.FFI.TH.Byte.FreeTensor
+
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.TH.Byte.TensorMath
+
         )
 
     , hasktorch-indef-unsigned
@@ -192,6 +196,9 @@ library
         ,Torch.Sig.Tensor            as Torch.FFI.THC.Byte.Tensor
         ,Torch.Sig.Tensor.Copy       as Torch.FFI.THC.Byte.TensorCopy
         ,Torch.Sig.Tensor.Memory     as Torch.FFI.THC.Byte.Tensor
+
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
         )
 
 --    , hasktorch-indef-signed

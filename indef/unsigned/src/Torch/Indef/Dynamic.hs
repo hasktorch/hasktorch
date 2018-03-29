@@ -6,3 +6,8 @@ import Torch.Indef.Dynamic.Tensor as X
 import Torch.Class.Tensor.Copy as X
 import Torch.Indef.Dynamic.Tensor.Copy as X
 
+import Torch.Class.Tensor.Index as X
+import Torch.Indef.Dynamic.Tensor.Index as X
+
+import Torch.Class.Tensor.Masked as X
+import Torch.Indef.Dynamic.Tensor.Masked as X

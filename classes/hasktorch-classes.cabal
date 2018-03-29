@@ -57,8 +57,8 @@ library
 
     , Torch.Class.Tensor
     , Torch.Class.Tensor.Copy
-    -- , Torch.Class.Tensor.Index
-    -- , Torch.Class.Tensor.Masked
+    , Torch.Class.Tensor.Index
+    , Torch.Class.Tensor.Masked
     -- , Torch.Class.Tensor.Math
     -- , Torch.Class.Tensor.Math.Blas
     -- , Torch.Class.Tensor.Math.Compare
