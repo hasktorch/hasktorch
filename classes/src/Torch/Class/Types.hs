@@ -33,20 +33,8 @@ type family MaskTensor t
 type family DescBuff t
 type family DimReal t
 
-type SizesStorage t = IndexStorage t
-type StridesStorage t = IndexStorage t
-
-class MonadIO (m s) => HasState m s where
-  getTHState :: m s s
-
--- come up with an escape hatch for the statefulness
--- instance MonadIO (ReaderT C'THState IO) => HasState (ReaderT C'THState IO) C'THState where
---   getTHState = pure ()
--- 
--- liftIO :: IO x -> (ReaderT C'THState IO x)
-
--- instance HasState ReadIO State where
---   getTHState = pure (impossible "a TH state will never be evaluated")
+type family SizesStorage t
+type family StridesStorage t
 
 impossible = error
 

@@ -12,12 +12,11 @@ import Data.List (genericLength)
 import GHC.Int
 import Torch.Class.Types
 import Torch.Dimensions
+import qualified Torch.Types.TH as TH
 
 class Tensor t where
   clearFlag_ :: t -> Int8 -> IO ()
   tensordata :: t -> IO [HsReal t]
-  expand_ :: t -> t -> SizesStorage t -> IO ()
-  expandNd_ :: [t] -> [t] -> Int32 -> IO ()
   free_ :: t -> IO ()
   freeCopyTo_ :: t -> t -> IO ()
   get1d :: t -> Int64 -> IO (HsReal t)
@@ -27,7 +26,7 @@ class Tensor t where
   isContiguous :: t -> IO Bool
   isSameSizeAs :: t -> t -> IO Bool
   isSetTo :: t -> t -> IO Bool
-  isSize :: t -> IndexStorage t -> IO Bool
+  isSize :: t -> TH.IndexStorage -> IO Bool
   nDimension :: t -> IO Int32
   nElement :: t -> IO Int64
   narrow_ :: t -> t -> DimVal -> Int64 -> Size -> IO ()
@@ -37,11 +36,10 @@ class Tensor t where
 
   newClone :: t -> IO t
   newContiguous :: t -> IO t
-  newExpand :: t -> IndexStorage t -> IO t
   newNarrow :: t -> DimVal -> Int64 -> Size -> IO t
   newSelect :: t -> DimVal -> Int64 -> IO t
-  newSizeOf :: t -> IO (IndexStorage t)
-  newStrideOf :: t -> IO (IndexStorage t)
+  newSizeOf :: t -> IO (TH.IndexStorage)
+  newStrideOf :: t -> IO (TH.IndexStorage)
   newTranspose :: t -> DimVal -> DimVal -> IO t
   newUnfold :: t -> DimVal -> Int64 -> Int64 -> IO t
   newView :: t -> SizesStorage t -> IO t

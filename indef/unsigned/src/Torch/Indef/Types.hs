@@ -11,38 +11,73 @@
 {-# LANGUAGE InstanceSigs #-}
 module Torch.Indef.Types
   ( module X
+  , module Sig
+
+  , (.:), shuffle2, shuffle3
+
+  , mkCPUIx
+  , mkCPUIxStorage
+  , withCPUIxStorage
+
   , ptrArray2hs
 
   , withState
-  , withDynamicState, withStorageState
+  , withDynamicState, withStorageState, withDynamicStateAndStorage
   , with2DynamicState
   , mkDynamic, mkStorage
   , mkDynamicIO, mkStorageIO
-
-  , Sig.State
-  , Sig.CState
-
-  , Sig.CTensor, Sig.Tensor, Sig.Dynamic, Sig.MaskTensor, Sig.IndexTensor, Sig.CIndexTensor, Sig.longDynamicState
-  , Sig.Storage, Sig.CStorage, Sig.HsReal, Sig.dynamicState, Sig.storageState
-  , Sig.hs2cReal, Sig.c2hsReal
 
   , newForeignPtrEnv, withForeignPtr
   , Ptr, ForeignPtr
   ) where
 
-import Foreign
-import Torch.Class.Types
+import Foreign as X
+import Foreign.Ptr as X
 import qualified Foreign.Marshal.Array as FM
-
-import qualified Torch.Sig.State as Sig
-import qualified Torch.Sig.Types as Sig
-import qualified Torch.Sig.Types.Global as Sig
-
-import qualified Torch.Sig.Tensor.Memory as SigTen
-import qualified Torch.Sig.Storage.Memory as SigStore
 
 import Control.Monad.IO.Class as X
 import Control.Monad.Reader.Class as X
+import Torch.Types.TH as X (C'THState)
+
+import Torch.Sig.State as Sig
+import Torch.Sig.Types as Sig
+import Torch.Sig.Types.Global as Sig
+
+import qualified Torch.Types.TH as TH
+import qualified Torch.FFI.TH.Long.Storage as LongStorage
+import qualified Torch.FFI.TH.Long.Tensor as LongTensor
+import qualified Torch.Class.Types as Class
+import qualified Torch.Sig.Tensor.Memory as SigTen
+import qualified Torch.Sig.Storage.Memory as SigStore
+
+type CPUIndex = TH.LongDynamic
+type CPUIndexStorage = TH.LongStorage
+
+-- (stites): This happens often enough that I'm pulling in the blackbird
+(.:) :: (b -> c) -> (a0 -> a1 -> b) -> a0 -> a1 -> c
+(.:) = (.) . (.)
+infixl 5 .:
+
+shuffle2 :: (a -> b -> c -> d) -> c -> a -> b -> d
+shuffle2 fn c a b = fn a b c
+
+shuffle3 :: (a -> b -> c -> d -> e) -> d -> a -> b -> c -> e
+shuffle3 fn d a b c = fn a b c d
+
+mkCPUIx :: Ptr TH.C'THLongTensor -> IO CPUIndex
+mkCPUIx p = fmap TH.LongDynamic
+  $ (,)
+  <$> (TH.newCState >>= TH.manageState)
+  <*> newForeignPtr LongTensor.p_free p
+
+withCPUIxStorage :: CPUIndexStorage -> (Ptr TH.C'THLongStorage -> IO x) -> IO x
+withCPUIxStorage ix fn = withForeignPtr (snd $ TH.longStorageState ix) fn
+
+mkCPUIxStorage :: Ptr TH.C'THLongStorage -> IO CPUIndexStorage
+mkCPUIxStorage p = fmap TH.LongStorage
+  $ (,)
+  <$> (TH.newCState >>= TH.manageState)
+  <*> newForeignPtr LongStorage.p_free p
 
 -- helper function to work with pointer arrays
 ptrArray2hs :: (Ptr a -> IO (Ptr Sig.CReal)) -> (Ptr a -> IO Int) -> ForeignPtr a -> IO [Sig.HsReal]
@@ -95,51 +130,60 @@ mkStorageIO :: (Ptr Sig.CState -> IO (Ptr Sig.CStorage)) -> IO Sig.Storage
 mkStorageIO builder = Sig.newCState >>= \s ->
   builder s >>= mkStorage s
 
+withDynamicStateAndStorage :: Sig.Dynamic -> Sig.Storage -> (Ptr Sig.CState -> Ptr Sig.CTensor -> Ptr Sig.CStorage -> IO x) -> IO x
+withDynamicStateAndStorage t s fn =
+  withDynamicState t $ \state' t' ->
+    withForeignPtr (Sig.cstorage s) (fn state' t')
+
 -------------------------------------------------------------------------------
 -- Storage type family instances
 
-type instance Allocator    Sig.Storage = Sig.Allocator
-type instance Generator    Sig.Storage = Sig.Generator
-type instance DescBuff     Sig.Storage = Sig.DescBuff
+type instance Class.Allocator    Sig.Storage = Sig.Allocator
+type instance Class.Generator    Sig.Storage = Sig.Generator
+type instance Class.DescBuff     Sig.Storage = Sig.DescBuff
 
-type instance HsReal       Sig.Storage = Sig.HsReal
-type instance HsAccReal    Sig.Storage = Sig.HsAccReal
+type instance Class.HsReal       Sig.Storage = Sig.HsReal
+type instance Class.HsAccReal    Sig.Storage = Sig.HsAccReal
 
 -------------------------------------------------------------------------------
 -- Dynamic type family instances
 
-type instance AsDynamic    Sig.Dynamic = Sig.Dynamic
-type instance HsStorage    Sig.Dynamic = Sig.Storage
-type instance IndexTensor  Sig.Dynamic = Sig.IndexTensor
-type instance IndexStorage Sig.Dynamic = Sig.IndexStorage
-type instance MaskTensor   Sig.Dynamic = Sig.MaskTensor
+type instance Class.AsDynamic    Sig.Dynamic = Sig.Dynamic
+type instance Class.HsStorage    Sig.Dynamic = Sig.Storage
+type instance Class.IndexTensor  Sig.Dynamic = Sig.IndexTensor
+type instance Class.IndexStorage Sig.Dynamic = Sig.IndexStorage
+type instance Class.MaskTensor   Sig.Dynamic = Sig.MaskTensor
+type instance Class.StridesStorage Sig.Dynamic = TH.IndexStorage
+type instance Class.SizesStorage   Sig.Dynamic = TH.IndexStorage
 
-type instance Allocator    Sig.Dynamic = Sig.Allocator
-type instance Generator    Sig.Dynamic = Sig.Generator
-type instance DescBuff     Sig.Dynamic = Sig.DescBuff
+type instance Class.Allocator    Sig.Dynamic = Sig.Allocator
+type instance Class.Generator    Sig.Dynamic = Sig.Generator
+type instance Class.DescBuff     Sig.Dynamic = Sig.DescBuff
 
-type instance HsReal       Sig.Dynamic = Sig.HsReal
-type instance HsAccReal    Sig.Dynamic = Sig.HsAccReal
+type instance Class.HsReal       Sig.Dynamic = Sig.HsReal
+type instance Class.HsAccReal    Sig.Dynamic = Sig.HsAccReal
 
 
 -------------------------------------------------------------------------------
 -- Static type family instances
 
-type instance AsDynamic    (Sig.Tensor d) = Sig.Dynamic
-type instance HsStorage    (Sig.Tensor d) = Sig.Storage
+type instance Class.AsDynamic    (Sig.Tensor d) = Sig.Dynamic
+type instance Class.HsStorage    (Sig.Tensor d) = Sig.Storage
 
-type instance IndexTensor  (Sig.Tensor d) = Sig.IndexTensor
-type instance IndexStorage (Sig.Tensor d) = Sig.IndexStorage
-type instance MaskTensor   (Sig.Tensor d) = Sig.MaskTensor
+type instance Class.IndexTensor  (Sig.Tensor d) = Sig.IndexTensor
+type instance Class.IndexStorage (Sig.Tensor d) = Sig.IndexStorage
+type instance Class.MaskTensor   (Sig.Tensor d) = Sig.MaskTensor
+type instance Class.StridesStorage (Sig.Tensor d) = TH.IndexStorage
+type instance Class.SizesStorage   (Sig.Tensor d) = TH.IndexStorage
 
-type instance Allocator    (Sig.Tensor d) = Sig.Allocator
-type instance Generator    (Sig.Tensor d) = Sig.Generator
-type instance DescBuff     (Sig.Tensor d) = Sig.DescBuff
+type instance Class.Allocator    (Sig.Tensor d) = Sig.Allocator
+type instance Class.Generator    (Sig.Tensor d) = Sig.Generator
+type instance Class.DescBuff     (Sig.Tensor d) = Sig.DescBuff
 
-type instance HsReal       (Sig.Tensor d) = Sig.HsReal
-type instance HsAccReal    (Sig.Tensor d) = Sig.HsAccReal
+type instance Class.HsReal       (Sig.Tensor d) = Sig.HsReal
+type instance Class.HsAccReal    (Sig.Tensor d) = Sig.HsAccReal
 
-instance IsStatic (Sig.Tensor d) where
+instance Class.IsStatic (Sig.Tensor d) where
   asDynamic = Sig.asDynamic
   asStatic = Sig.asStatic
 

@@ -2,13 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Torch.Indef.Storage.Copy where
 
-import Foreign
-import Foreign.C.Types
-
-import Torch.Types.TH hiding (CState)
-import Torch.Sig.Types
-import Control.Monad.IO.Class
-import Control.Monad.Reader.Class
 import qualified Torch.Types.TH           as TH
 import qualified Foreign.Marshal.Array    as FM
 import qualified Torch.Sig.Types          as Sig
@@ -25,8 +18,6 @@ import qualified Torch.FFI.TH.Char.Storage   as C
 import qualified Torch.FFI.TH.Short.Storage  as S
 import qualified Torch.FFI.TH.Int.Storage    as I
 import qualified Torch.FFI.TH.Double.Storage as D
-
--- import qualified THHalfStorage   as H
 
 import Torch.Indef.Types
 
@@ -64,12 +55,12 @@ instance Class.StorageCopy Sig.Storage where
     Sig.c_copy s' t' store
     mkStorage s' store
 
-  copyLong   = copyType L.c_new_ L.p_free longStorage   Sig.c_copyLong
-  copyFloat  = copyType F.c_new_ F.p_free floatStorage  Sig.c_copyFloat
-  copyByte   = copyType B.c_new_ B.p_free byteStorage   Sig.c_copyByte
-  copyChar   = copyType C.c_new_ C.p_free charStorage   Sig.c_copyChar
-  copyShort  = copyType S.c_new_ S.p_free shortStorage  Sig.c_copyShort
-  copyInt    = copyType I.c_new_ I.p_free intStorage    Sig.c_copyInt
-  copyDouble = copyType D.c_new_ D.p_free doubleStorage Sig.c_copyDouble
+  copyLong   = copyType L.c_new_ L.p_free TH.longStorage   Sig.c_copyLong
+  copyFloat  = copyType F.c_new_ F.p_free TH.floatStorage  Sig.c_copyFloat
+  copyByte   = copyType B.c_new_ B.p_free TH.byteStorage   Sig.c_copyByte
+  copyChar   = copyType C.c_new_ C.p_free TH.charStorage   Sig.c_copyChar
+  copyShort  = copyType S.c_new_ S.p_free TH.shortStorage  Sig.c_copyShort
+  copyInt    = copyType I.c_new_ I.p_free TH.intStorage    Sig.c_copyInt
+  copyDouble = copyType D.c_new_ D.p_free TH.doubleStorage Sig.c_copyDouble
 
 

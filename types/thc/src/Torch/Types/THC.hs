@@ -3,7 +3,7 @@ module Torch.Types.THC
 
   , CState, State(..), asState
   , CAllocator, Allocator(..)
-  , CDescBuff, DescBuff
+  , CDescBuff, DescBuff, descBuff
   , CGenerator, Generator(..)
   , CInt'
   , CMaskTensor, CIndexTensor, CIndexStorage
@@ -36,6 +36,7 @@ module Torch.Types.THC
 import Foreign
 import Foreign.C.Types
 import GHC.TypeLits
+import Data.Char (chr)
 
 import Torch.Types.THC.Structs
 
@@ -44,6 +45,8 @@ type  Allocator = ()
 
 type CDescBuff = C'THCDescBuff
 type  DescBuff = String
+descBuff :: Ptr CDescBuff -> IO DescBuff
+descBuff p = (map (chr . fromIntegral) . c'THCDescBuff'str) <$> peek p
 
 type CState = C'THCState
 newtype State = State { asForeign :: ForeignPtr CState }

@@ -4,7 +4,6 @@ module Torch.Indef.Dynamic.Tensor.Copy where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.TH hiding (CState)
 import Data.List (intercalate)
 import Control.Exception.Safe (throwString)
 import qualified Torch.Types.TH as TH
@@ -51,12 +50,12 @@ instance Class.TensorCopy Dynamic where
     Sig.c_copy s' t' target
     mkDynamic s' target
 
-  copyByte   = copyType B.c_new_ B.p_free   byteDynamic Sig.c_copyByte
-  copyChar   = copyType C.c_new_ C.p_free   charDynamic Sig.c_copyChar
-  copyShort  = copyType S.c_new_ S.p_free  shortDynamic Sig.c_copyShort
-  copyInt    = copyType I.c_new_ I.p_free    intDynamic Sig.c_copyInt
-  copyLong   = copyType L.c_new_ L.p_free   longDynamic Sig.c_copyLong
-  copyFloat  = copyType F.c_new_ F.p_free  floatDynamic Sig.c_copyFloat
-  copyDouble = copyType D.c_new_ D.p_free doubleDynamic Sig.c_copyDouble
+  copyByte   = copyType B.c_new_ B.p_free   TH.byteDynamic Sig.c_copyByte
+  copyChar   = copyType C.c_new_ C.p_free   TH.charDynamic Sig.c_copyChar
+  copyShort  = copyType S.c_new_ S.p_free  TH.shortDynamic Sig.c_copyShort
+  copyInt    = copyType I.c_new_ I.p_free    TH.intDynamic Sig.c_copyInt
+  copyLong   = copyType L.c_new_ L.p_free   TH.longDynamic Sig.c_copyLong
+  copyFloat  = copyType F.c_new_ F.p_free  TH.floatDynamic Sig.c_copyFloat
+  copyDouble = copyType D.c_new_ D.p_free TH.doubleDynamic Sig.c_copyDouble
 
 

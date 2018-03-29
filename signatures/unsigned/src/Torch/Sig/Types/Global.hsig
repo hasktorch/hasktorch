@@ -13,6 +13,7 @@ data Allocator
 
 data CDescBuff
 data DescBuff
+descBuff :: Ptr CDescBuff -> IO DescBuff
 
 -- for RNG
 data CGenerator
