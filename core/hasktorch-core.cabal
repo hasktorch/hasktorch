@@ -75,9 +75,11 @@ library
   reexported-modules:
       Torch.Dimensions
 
+    , Torch.Byte.Types
     , Torch.Byte.Storage
     , Torch.Byte.Dynamic
 
+    , Torch.Cuda.Byte.Types
     , Torch.Cuda.Byte.Storage
     , Torch.Cuda.Byte.Dynamic
 
@@ -166,22 +168,34 @@ library
         ,Torch.Indef.Dynamic              as Torch.Byte.Dynamic
         )
         requires
-        (Torch.Sig.Types.Global      as Torch.Types.TH
-        ,Torch.Sig.Types             as Torch.Types.TH.Byte
-        ,Torch.Sig.State             as Torch.Types.TH
-        ,Torch.Sig.Storage           as Torch.FFI.TH.Byte.Storage
-        ,Torch.Sig.Storage.Copy      as Torch.FFI.TH.Byte.StorageCopy
-        ,Torch.Sig.Storage.Memory    as Torch.FFI.TH.Byte.FreeStorage
-        ,Torch.Sig.Tensor            as Torch.FFI.TH.Byte.Tensor
-        ,Torch.Sig.Tensor.Copy       as Torch.FFI.TH.Byte.TensorCopy
-        ,Torch.Sig.Tensor.Memory     as Torch.FFI.TH.Byte.FreeTensor
+        (Torch.Sig.State          as Torch.Types.TH
+        ,Torch.Sig.Types.Global   as Torch.Types.TH
+        ,Torch.Sig.Types          as Torch.Types.TH.Byte
+        ,Torch.Sig.Storage        as Torch.FFI.TH.Byte.Storage
+        ,Torch.Sig.Storage.Copy   as Torch.FFI.TH.Byte.StorageCopy
+        ,Torch.Sig.Storage.Memory as Torch.FFI.TH.Byte.FreeStorage
+        ,Torch.Sig.Tensor         as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Tensor.Copy    as Torch.FFI.TH.Byte.TensorCopy
+        ,Torch.Sig.Tensor.Memory  as Torch.FFI.TH.Byte.FreeTensor
+        ,Torch.Sig.Tensor.Index   as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Masked  as Torch.FFI.TH.Byte.TensorMath
+        -- ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Byte.TensorMath
+        -- ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Byte.TensorMath
+        -- ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Byte.TensorMath
+        -- ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Byte.TensorMath
+        -- ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Byte.TensorMath
+        -- ,Torch.Sig.Tensor.Random        as Torch.FFI.TH.Byte.TensorRandom
 
-        ,Torch.Sig.Tensor.Index  as Torch.FFI.TH.Byte.TensorMath
-        ,Torch.Sig.Tensor.Masked as Torch.FFI.TH.Byte.TensorMath
-
+        -- * Used to be available in TH
+        -- ,Torch.Sig.Tensor.Conv   as Torch.FFI.TH.Byte.TensorConv
         )
-
-    , hasktorch-indef-unsigned
+     , hasktorch-indef-unsigned
         (Torch.Indef.Types                as Torch.Cuda.Byte.Types
         ,Torch.Indef.Storage              as Torch.Cuda.Byte.Storage
         ,Torch.Indef.Dynamic              as Torch.Cuda.Byte.Dynamic
@@ -199,6 +213,17 @@ library
 
         ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
         ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
+        -- ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Byte.TensorMathCompare
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Byte.TensorMathCompareT
+        -- ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Byte.TensorMathPairwise
+        -- ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Byte.TensorMathPointwise
+        -- ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Byte.TensorMathReduce
+        -- ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Byte.TensorMathScan
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Byte.TensorMode
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Byte.TensorScatterGather
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Byte.TensorSort
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Byte.TensorTopK
         )
 
 --    , hasktorch-indef-signed

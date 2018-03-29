@@ -24,16 +24,16 @@ library
     , Torch.Sig.Tensor.Index
     , Torch.Sig.Tensor.Masked
     -- , Torch.Sig.Tensor.Math
-    -- , Torch.Sig.Tensor.Math.Compare
-    -- , Torch.Sig.Tensor.Math.CompareT
+    , Torch.Sig.Tensor.Math.Compare
+    , Torch.Sig.Tensor.Math.CompareT
     -- , Torch.Sig.Tensor.Math.Pairwise
     -- , Torch.Sig.Tensor.Math.Pointwise
     -- , Torch.Sig.Tensor.Math.Reduce
     -- , Torch.Sig.Tensor.Math.Scan
-    -- , Torch.Sig.Tensor.Mode
-    -- , Torch.Sig.Tensor.ScatterGather
-    -- , Torch.Sig.Tensor.Sort
-    -- , Torch.Sig.Tensor.TopK
+    , Torch.Sig.Tensor.Mode
+    , Torch.Sig.Tensor.ScatterGather
+    , Torch.Sig.Tensor.Sort
+    , Torch.Sig.Tensor.TopK
     -- FIXME: TH and THC differ in that one uses a Generator
     -- , Torch.Sig.Tensor.Random
 
@@ -72,16 +72,16 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.Index   as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Masked  as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Byte.TensorMath
         -- ,Torch.Sig.Tensor.Random        as Torch.FFI.TH.Byte.TensorRandom
 
         -- * Used to be available in TH
@@ -140,16 +140,16 @@ executable isdefinite-thc
         ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
         ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
         -- ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Byte.TensorMathCompare
-        -- ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Byte.TensorMathCompareT
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Byte.TensorMathCompare
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Byte.TensorMathCompareT
         -- ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Byte.TensorMathPairwise
         -- ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Byte.TensorMathPointwise
         -- ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Byte.TensorMathReduce
         -- ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Byte.TensorMathScan
-        -- ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Byte.TensorMode
-        -- ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Byte.TensorScatterGather
-        -- ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Byte.TensorSort
-        -- ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Byte.TensorTopK
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Byte.TensorMode
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Byte.TensorScatterGather
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Byte.TensorSort
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Byte.TensorTopK
         )
 --    ,  hasktorch-signatures-unsigned
 --         requires

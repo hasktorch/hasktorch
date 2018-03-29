@@ -90,18 +90,18 @@ library
     , Torch.Indef.Dynamic.Tensor.Masked
     -- , Torch.Indef.Dynamic.Tensor.Math
     -- , Torch.Indef.Dynamic.Tensor.Math.Blas
-    -- , Torch.Indef.Dynamic.Tensor.Math.Compare
-    -- , Torch.Indef.Dynamic.Tensor.Math.CompareT
+    , Torch.Indef.Dynamic.Tensor.Math.Compare
+    , Torch.Indef.Dynamic.Tensor.Math.CompareT
     -- , Torch.Indef.Dynamic.Tensor.Math.Pairwise
     -- , Torch.Indef.Dynamic.Tensor.Math.Lapack
     -- , Torch.Indef.Dynamic.Tensor.Math.Pointwise
     -- , Torch.Indef.Dynamic.Tensor.Math.Random
     -- , Torch.Indef.Dynamic.Tensor.Math.Reduce
     -- , Torch.Indef.Dynamic.Tensor.Math.Scan
-    -- , Torch.Indef.Dynamic.Tensor.Mode
-    -- , Torch.Indef.Dynamic.Tensor.ScatterGather
-    -- , Torch.Indef.Dynamic.Tensor.Sort
-    -- , Torch.Indef.Dynamic.Tensor.TopK
+    , Torch.Indef.Dynamic.Tensor.Mode
+    , Torch.Indef.Dynamic.Tensor.ScatterGather
+    , Torch.Indef.Dynamic.Tensor.Sort
+    , Torch.Indef.Dynamic.Tensor.TopK
     -- , Torch.Indef.Dynamic.Tensor.Random
 
     -- , Torch.Indef.Static

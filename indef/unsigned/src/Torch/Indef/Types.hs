@@ -15,6 +15,7 @@ module Torch.Indef.Types
 
   , (.:), shuffle2, shuffle3
 
+  , withIx, withMask
   , mkCPUIx
   , mkCPUIxStorage
   , withCPUIxStorage
@@ -24,6 +25,7 @@ module Torch.Indef.Types
   , withState
   , withDynamicState, withStorageState, withDynamicStateAndStorage
   , with2DynamicState
+  , with3DynamicState
   , mkDynamic, mkStorage
   , mkDynamicIO, mkStorageIO
 
@@ -63,6 +65,12 @@ shuffle2 fn c a b = fn a b c
 
 shuffle3 :: (a -> b -> c -> d -> e) -> d -> a -> b -> c -> e
 shuffle3 fn d a b c = fn a b c d
+
+withIx :: Sig.IndexTensor -> (Ptr CIndexTensor -> IO x) -> IO x
+withIx ix fn = withForeignPtr (snd $ Sig.longDynamicState ix) fn
+
+withMask :: Sig.MaskTensor -> (Ptr CMaskTensor -> IO x) -> IO x
+withMask ix fn = withForeignPtr (snd $ Sig.byteDynamicState ix) fn
 
 mkCPUIx :: Ptr TH.C'THLongTensor -> IO CPUIndex
 mkCPUIx p = fmap TH.LongDynamic
@@ -105,6 +113,17 @@ with2DynamicState t0 t1 fn = do
   withDynamicState t0 $ \s' t0' ->
     withForeignPtr (Sig.ctensor t1) $ \t1' ->
       fn s' t0' t1'
+
+with3DynamicState
+  :: Sig.Dynamic
+  -> Sig.Dynamic
+  -> Sig.Dynamic
+  -> (Ptr Sig.CState -> Ptr Sig.CTensor -> Ptr Sig.CTensor -> Ptr Sig.CTensor -> IO x)
+  -> IO x
+with3DynamicState t0 t1 t2 fn = do
+  with2DynamicState t0 t1 $ \s' t0' t1' ->
+    withForeignPtr (Sig.ctensor t2) $ \t2' ->
+      fn s' t0' t1' t2'
 
 mkDynamic :: Ptr Sig.CState -> Ptr Sig.CTensor -> IO Sig.Dynamic
 mkDynamic s t = Sig.dynamic

@@ -3,19 +3,19 @@ module Torch.Class.Tensor.Math.CompareT where
 import Torch.Class.Types
 
 class TensorMathCompareT t where
-  ltTensor_    :: MaskTensor t -> t -> t -> io ()
-  leTensor_    :: MaskTensor t -> t -> t -> io ()
-  gtTensor_    :: MaskTensor t -> t -> t -> io ()
-  geTensor_    :: MaskTensor t -> t -> t -> io ()
-  neTensor_    :: MaskTensor t -> t -> t -> io ()
-  eqTensor_    :: MaskTensor t -> t -> t -> io ()
+  ltTensor_    :: MaskTensor t -> t -> t -> IO ()
+  leTensor_    :: MaskTensor t -> t -> t -> IO ()
+  gtTensor_    :: MaskTensor t -> t -> t -> IO ()
+  geTensor_    :: MaskTensor t -> t -> t -> IO ()
+  neTensor_    :: MaskTensor t -> t -> t -> IO ()
+  eqTensor_    :: MaskTensor t -> t -> t -> IO ()
 
 
-  ltTensorT_   :: t -> t -> t -> io ()
-  leTensorT_   :: t -> t -> t -> io ()
-  gtTensorT_   :: t -> t -> t -> io ()
-  geTensorT_   :: t -> t -> t -> io ()
-  neTensorT_   :: t -> t -> t -> io ()
-  eqTensorT_   :: t -> t -> t -> io ()
+  ltTensorT_   :: t -> t -> t -> IO ()
+  leTensorT_   :: t -> t -> t -> IO ()
+  gtTensorT_   :: t -> t -> t -> IO ()
+  geTensorT_   :: t -> t -> t -> IO ()
+  neTensorT_   :: t -> t -> t -> IO ()
+  eqTensorT_   :: t -> t -> t -> IO ()
 
 
