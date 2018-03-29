@@ -12,6 +12,7 @@
 module Torch.Indef.Types
   ( module X
   , module Sig
+  -- , Class.IsStatic(..)
 
   , (.:), (..:), shuffle2, shuffle3, shuffle3'2
 
@@ -28,10 +29,9 @@ module Torch.Indef.Types
   , with3DynamicState
   , mkDynamic, mkStorage
   , mkDynamicIO, mkStorageIO
-
   ) where
 
-import Foreign as X
+import Foreign as X (ForeignPtr, newForeignPtrEnv, withForeignPtr, newForeignPtr, FinalizerPtr)
 import Foreign.Ptr as X
 import qualified Foreign.Marshal.Array as FM
 

@@ -121,6 +121,6 @@ library
     -- , Torch.Indef.Static.Tensor.Mode
     -- , Torch.Indef.Static.Tensor.ScatterGather
     -- , Torch.Indef.Static.Tensor.Sort
-    -- , Torch.Indef.Static.Tensor.TopK
+    , Torch.Indef.Static.Tensor.TopK
     -- , Torch.Indef.Static.Tensor.Random
 
