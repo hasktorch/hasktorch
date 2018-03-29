@@ -13,7 +13,7 @@ module Torch.Indef.Types
   ( module X
   , module Sig
 
-  , (.:), shuffle2, shuffle3
+  , (.:), (..:), shuffle2, shuffle3, shuffle3'2
 
   , withIx, withMask
   , mkCPUIx
@@ -60,11 +60,18 @@ type CPUIndexStorage = TH.LongStorage
 (.:) = (.) . (.)
 infixl 5 .:
 
+(..:) :: (b -> c) -> (a0 -> a1 -> a2 -> b) -> a0 -> a1 -> a2 -> c
+(..:) = (.) . (.) . (.)
+infixl 5 ..:
+
 shuffle2 :: (a -> b -> c -> d) -> c -> a -> b -> d
 shuffle2 fn c a b = fn a b c
 
 shuffle3 :: (a -> b -> c -> d -> e) -> d -> a -> b -> c -> e
 shuffle3 fn d a b c = fn a b c d
+
+shuffle3'2 :: (a -> b -> c -> d -> e -> f) -> d -> e -> a -> b -> c -> f
+shuffle3'2 fn d e a b c = fn a b c d e
 
 withIx :: Sig.IndexTensor -> (Ptr CIndexTensor -> IO x) -> IO x
 withIx ix fn = withForeignPtr (snd $ Sig.longDynamicState ix) fn

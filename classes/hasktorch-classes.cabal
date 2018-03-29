@@ -63,12 +63,12 @@ library
     -- , Torch.Class.Tensor.Math.Blas
     , Torch.Class.Tensor.Math.Compare
     , Torch.Class.Tensor.Math.CompareT
-    -- , Torch.Class.Tensor.Math.Pairwise
+    , Torch.Class.Tensor.Math.Pairwise
     -- , Torch.Class.Tensor.Math.Lapack
-    -- , Torch.Class.Tensor.Math.Pointwise
+    , Torch.Class.Tensor.Math.Pointwise
     -- , Torch.Class.Tensor.Math.Random
-    -- , Torch.Class.Tensor.Math.Reduce
-    -- , Torch.Class.Tensor.Math.Scan
+    , Torch.Class.Tensor.Math.Reduce
+    , Torch.Class.Tensor.Math.Scan
     , Torch.Class.Tensor.Mode
     , Torch.Class.Tensor.ScatterGather
     , Torch.Class.Tensor.Sort

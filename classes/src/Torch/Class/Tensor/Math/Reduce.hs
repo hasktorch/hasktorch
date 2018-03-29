@@ -5,20 +5,21 @@ import Foreign.C.Types
 import Torch.Class.Types
 import Data.Word
 import Data.Int
-import Torch.Types.TH
+import Torch.Types.TH hiding (IndexTensor)
 
 class TensorMathReduce t where
-  minall       :: t -> io (HsReal t)
-  maxall       :: t -> io (HsReal t)
-  medianall    :: t -> io (HsReal t)
-  sumall       :: t -> io (HsAccReal t)
-  prodall      :: t -> io (HsAccReal t)
-  max_         :: (t, IndexTensor t) -> t -> Int32 -> Int32 -> io ()
-  min_         :: (t, IndexTensor t) -> t -> Int32 -> Int32 -> io ()
-  median_      :: (t, IndexTensor t) -> t -> Int32 -> Int32 -> io ()
-  sum_         :: t -> t -> Int32 -> Int32 -> io ()
-  prod_        :: t -> t -> Int32 -> Int32 -> io ()
+  minall       :: t -> IO (HsReal t)
+  maxall       :: t -> IO (HsReal t)
+  medianall    :: t -> IO (HsReal t)
+  sumall       :: t -> IO (HsAccReal t)
+  prodall      :: t -> IO (HsAccReal t)
+  max_         :: (t, IndexTensor t) -> t -> Int -> Int -> IO ()
+  min_         :: (t, IndexTensor t) -> t -> Int -> Int -> IO ()
+  median_      :: (t, IndexTensor t) -> t -> Int -> Int -> IO ()
+  sum_         :: t -> t -> Int -> Int -> IO ()
+  prod_        :: t -> t -> Int -> Int -> IO ()
 
+{-
 class TensorMathReduceFloating t where
   dist    :: t -> t -> HsReal t -> IO (HsAccReal t)
   var     :: t -> t -> CInt -> CInt -> CInt -> IO ()
@@ -30,7 +31,7 @@ class TensorMathReduceFloating t where
   normall :: t -> HsReal t -> IO (HsAccReal t)
   mean    :: t -> t -> CInt -> CInt -> IO ()
   meanall :: t -> IO (HsAccReal t)
-
+-}
 
 -- * not in THC.BYte
 -- c_renorm :: Ptr CState -> t -> t -> HsReal t -> CInt -> HsReal t -> IO ()

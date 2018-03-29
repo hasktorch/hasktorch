@@ -24,23 +24,20 @@ import Torch.Indef.Dynamic.Tensor.Math.Compare as X
 import Torch.Class.Tensor.Math.CompareT as X
 import Torch.Indef.Dynamic.Tensor.Math.CompareT as X
 
--- import Torch.Class.Tensor.Math.Pairwise as X
--- import Torch.Indef.Dynamic.Tensor.Math.Pairwise as X
--- 
--- import Torch.Class.Tensor.Math.Pointwise as X
--- import Torch.Indef.Dynamic.Tensor.Math.Pointwise as X
--- 
--- import Torch.Class.Tensor.Math.Lapack as X
--- import Torch.Indef.Dynamic.Tensor.Math.Lapack as X
--- 
+import Torch.Class.Tensor.Math.Pairwise as X
+import Torch.Indef.Dynamic.Tensor.Math.Pairwise as X
+
+import Torch.Class.Tensor.Math.Pointwise as X
+import Torch.Indef.Dynamic.Tensor.Math.Pointwise as X
+
 -- import Torch.Class.Tensor.Math.Random as X
 -- import Torch.Indef.Dynamic.Tensor.Math.Random as X
--- 
--- import Torch.Class.Tensor.Math.Reduce as X
--- import Torch.Indef.Dynamic.Tensor.Math.Reduce as X
--- 
--- import Torch.Class.Tensor.Math.Scan as X
--- import Torch.Indef.Dynamic.Tensor.Math.Scan as X
+
+import Torch.Class.Tensor.Math.Reduce as X
+import Torch.Indef.Dynamic.Tensor.Math.Reduce as X
+
+import Torch.Class.Tensor.Math.Scan as X
+import Torch.Indef.Dynamic.Tensor.Math.Scan as X
 
 import Torch.Class.Tensor.Mode as X
 import Torch.Indef.Dynamic.Tensor.Mode as X

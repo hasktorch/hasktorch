@@ -182,10 +182,10 @@ library
         -- ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Byte.TensorMath
-        -- ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Byte.TensorMath
@@ -211,15 +211,15 @@ library
         ,Torch.Sig.Tensor.Copy       as Torch.FFI.THC.Byte.TensorCopy
         ,Torch.Sig.Tensor.Memory     as Torch.FFI.THC.Byte.Tensor
 
-        ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
-        ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
+        ,Torch.Sig.Tensor.Index          as Torch.FFI.THC.Byte.TensorIndex
+        ,Torch.Sig.Tensor.Masked         as Torch.FFI.THC.Byte.TensorMasked
         -- ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Byte.TensorMath
         ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Byte.TensorMathCompare
         ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Byte.TensorMathCompareT
-        -- ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Byte.TensorMathPairwise
-        -- ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Byte.TensorMathPointwise
-        -- ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Byte.TensorMathReduce
-        -- ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Byte.TensorMathScan
+        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Byte.TensorMathPairwise
+        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Byte.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Byte.TensorMathReduce
+        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Byte.TensorMathScan
         ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Byte.TensorMode
         ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Byte.TensorScatterGather
         ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Byte.TensorSort
