@@ -2,14 +2,14 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 49d48503c6f24557aa949ae7e403cf7a825ffa635d7c258cef5394aa9070a516
+-- hash: 076a900449831fd2ac072ee234da3aa36a567717d3177c88bb0c1518feb2cc20
 
 name:                hasktorch-codegen
-version:             0.1.0.0
+version:             0.0.1.0
 synopsis:            Torch for tensors and neural networks in Haskell
 description:         Code generation tools
-homepage:            https://github.com/austinvhuang/hasktorch#readme
-bug-reports:         https://github.com/austinvhuang/hasktorch/issues
+homepage:            https://github.com/hasktorch/hasktorch#readme
+bug-reports:         https://github.com/hasktorch/hasktorch/issues
 license:             BSD3
 author:              Austin Huang
 build-type:          Simple
@@ -17,20 +17,29 @@ cabal-version:       >= 1.10
 
 source-repository head
   type: git
-  location: https://github.com/austinvhuang/hasktorch
+  location: https://github.com/hasktorch/hasktorch
 
 library
   hs-source-dirs:
       src
+  default-extensions: LambdaCase OverloadedStrings
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
+    , hashable >=1.0.1.1
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
+    , unordered-containers >=0.1.3.0
   exposed-modules:
+      CodeGen.ParseTypes
+      CodeGen.Prelude
+      CodeGen.Render.C
+      CodeGen.Render.Function
+      CodeGen.Render.Haskell
+      CodeGen.RenderTypes
+      CodeGen.Types
       CodeGenParse
-      CodeGenTypes
       ConditionalCases
       RenderShared
   other-modules:
@@ -41,16 +50,19 @@ executable aten-process-spec
   main-is: ProcessSpec.hs
   hs-source-dirs:
       exe/aten
+  default-extensions: LambdaCase OverloadedStrings
   build-depends:
       aeson >=1.1
     , aeson-pretty >=0.8.5
     , base >=4.7 && <5
     , bytestring >=0.10.8
     , containers >=0.5.7
+    , hashable >=1.0.1.1
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , singletons >=2.2
     , text >=1.2.2.2
+    , unordered-containers >=0.1.3.0
     , yaml >=0.8.25
   other-modules:
       Paths_hasktorch_codegen
@@ -60,14 +72,17 @@ executable codegen-concrete
   default-language: Haskell2010
   hs-source-dirs:
       exe/concrete
+  default-extensions: LambdaCase OverloadedStrings
   main-is: RenderConcrete.hs
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
+    , hashable >=1.0.1.1
     , hasktorch-codegen
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
+    , unordered-containers >=0.1.3.0
   other-modules:
       Paths_hasktorch_codegen
 
@@ -75,14 +90,17 @@ executable codegen-generic
   default-language: Haskell2010
   hs-source-dirs:
       exe/generic
+  default-extensions: LambdaCase OverloadedStrings
   main-is: RenderGeneric.hs
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
+    , hashable >=1.0.1.1
     , hasktorch-codegen
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
+    , unordered-containers >=0.1.3.0
   other-modules:
       Paths_hasktorch_codegen
 
@@ -90,15 +108,18 @@ executable codegen-managed
   default-language: Haskell2010
   hs-source-dirs:
       exe/managed
+  default-extensions: LambdaCase OverloadedStrings
   main-is: RenderManaged.hs
   build-depends:
       base >=4.7 && <5
     , containers >=0.5.7
+    , hashable >=1.0.1.1
     , hasktorch-codegen
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , raw-strings-qq >=1.1
     , text >=1.2.2.2
+    , unordered-containers >=0.1.3.0
   other-modules:
       Paths_hasktorch_codegen
 
@@ -107,15 +128,18 @@ test-suite spec
   main-is: Spec.hs
   hs-source-dirs:
       tests
+  default-extensions: LambdaCase OverloadedStrings
   build-depends:
       QuickCheck
     , base >=4.7 && <5
     , containers >=0.5.7
+    , hashable >=1.0.1.1
     , hasktorch-codegen
     , hspec
     , megaparsec >=5.3
     , pretty-show >=1.6.13
     , text >=1.2.2.2
+    , unordered-containers >=0.1.3.0
   other-modules:
       CodeGenParseSpec
       Paths_hasktorch_codegen

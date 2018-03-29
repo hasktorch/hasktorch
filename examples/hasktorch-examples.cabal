@@ -1,11 +1,5 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
---
--- see: https://github.com/sol/hpack
---
--- hash: d05415e210f9217e1bd3904e8c5066a0fa36d5a0a09260dc0c0155888b33382c
-
 name:                hasktorch-examples
-version:             0.1.0.0
+version:             0.0.1.0
 synopsis:            Torch for tensors and neural networks in Haskell
 description:         Example usage
 homepage:            https://github.com/austinvhuang/hasktorch#readme
@@ -19,6 +13,19 @@ cabal-version:       >= 1.10
 source-repository head
   type: git
   location: https://github.com/austinvhuang/hasktorch
+
+executable lasso
+  main-is: Lasso.hs
+  hs-source-dirs: lasso
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , singletons >=2.2
+    , microlens
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
 
 executable ad
   main-is: AD.hs
@@ -61,7 +68,6 @@ executable download-mnist
     , directory
     , filepath
     , hasktorch-core
-    , hasktorch-raw
     , network-uri
     , singletons >=2.2
   other-modules:
@@ -76,7 +82,6 @@ executable ff-typed
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
@@ -90,7 +95,6 @@ executable ff-untyped
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
@@ -104,7 +108,6 @@ executable gradient-descent
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , microlens >=0.4.8.1
     , singletons >=2.2
   other-modules:
@@ -119,7 +122,6 @@ executable multivariate-normal
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
@@ -134,6 +136,7 @@ executable playground
       base >=4.7 && <5
     , hasktorch-core
     , hasktorch-raw
+    , hasktorch-types
     , singletons >=2.2
   other-modules:
       PlaygroundRawUtils
@@ -141,14 +144,13 @@ executable playground
   default-language: Haskell2010
 
 executable static-tensor-usage
-  main-is: StaticTensorUsage.hs
+  main-is: Main.hs
   hs-source-dirs:
       static-tensor-usage
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples

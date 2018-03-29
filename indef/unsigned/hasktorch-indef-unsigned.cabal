@@ -1,0 +1,85 @@
+name:           hasktorch-indef-unsigned
+version:        0.0.1.0
+synopsis:       Torch for tensors and neural networks in Haskell
+description:    core tensor abstractions wrapping raw TH bindings
+category:       Tensors, Machine Learning
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         Austin Huang
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 2.0
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+library
+  hs-source-dirs: src
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , deepseq >=1.3.0.0
+    , dimensions >=0.3.2.0
+    , hasktorch-classes
+    , hasktorch-dimensions
+    , hasktorch-raw
+    , hasktorch-signatures-unsigned
+    , hasktorch-types
+    , managed >=1.0.0 && <1.1
+    , microlens >=0.4.8.1
+    , numeric-limits
+    , safe-exceptions >=0.1.0.0
+    , singletons >=2.2
+    , text >=1.2.2.2
+    , typelits-witnesses >=0.2.3.0
+  exposed-modules:
+    --  Torch.Core.Tensor
+
+    -- classes implementations with indefinites
+      Torch.Core.Types
+    , Torch.Core.Storage
+    , Torch.Core.Storage.Copy
+    , Torch.Core.Tensor.Dynamic
+    , Torch.Core.Tensor.Dynamic.IsTensor
+    , Torch.Core.Tensor.Dynamic.Copy
+    , Torch.Core.Tensor.Dynamic.Conv
+    , Torch.Core.Tensor.Dynamic.Math
+    , Torch.Core.Tensor.Dynamic.Random
+    , Torch.Core.Tensor.Static
+    , Torch.Core.Tensor.Static.IsTensor
+    , Torch.Core.Tensor.Static.Copy
+    , Torch.Core.Tensor.Static.Random
+
+executable isdefinite
+  hs-source-dirs: exe
+  main-is: Main.hs
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-indef-unsigned
+    , hasktorch-raw
+    , hasktorch-types
+  mixins:
+      hasktorch-indef-unsigned
+        (Torch.Core.Types
+        ,Torch.Core.Storage
+        ,Torch.Core.Storage.Copy
+        ,Torch.Core.Tensor.Dynamic
+        ,Torch.Core.Tensor.Dynamic.Copy
+        ,Torch.Core.Tensor.Dynamic.Conv
+        ,Torch.Core.Tensor.Dynamic.Random
+        ,Torch.Core.Tensor.Dynamic.Math
+        ,Torch.Core.Tensor.Static
+        )
+        requires
+        (SigTypes         as THByteTypes
+        ,Storage          as THByteStorage
+        ,StorageCopy      as THByteStorageCopy
+        ,Tensor           as THByteTensor
+        ,TensorCopy       as THByteTensorCopy
+        ,TensorConv       as THByteTensorConv
+        ,TensorRandom     as THByteTensorRandom
+        ,TensorMath       as THByteTensorMath
+        )

@@ -2,9 +2,16 @@ resolver: lts-10.2
 
 packages:
 - 'codegen'
-- 'core'
-- 'examples'
-- 'raw'
+#- 'core'
+## - 'examples'
+#- 'core-indef-unsigned'
+#- 'core-indef-signed'
+#- 'core-indef-floating'
+# - 'raw'
+# - 'raw-types'
+# - 'raw-signatures-unsigned'
+# - 'raw-signatures-signed'
+# - 'raw-signatures-floating'
 - location:
     git: https://github.com/austinvhuang/c2hsc.git
     commit: e31a2cb894faf4c0cf4a3af3058152149f2b2ee3
@@ -20,13 +27,14 @@ extra-package-dbs: []
 
 extra-include-dirs: []
 
-extra-lib-dirs: 
+extra-lib-dirs:
 - ./vendor/build
 
 ghc-options:
   "hasktorch-codegen": -lATen -lEHX
-  "hasktorch-core": -lATen -lEHX
-  "hasktorch-examples": -lATen -lEHX
-  "hasktorch-raw": -lATen -lEHX
+  # "hasktorch-core": -lATen -lEHX
+  # "hasktorch-examples": -lATen -lEHX
+  #"hasktorch-raw": -lATen -lEHX
+  #"hasktorch-raw-types": -lATen -lEHX
 
 # ghci-options for inline-c should include -fobject-code -O0

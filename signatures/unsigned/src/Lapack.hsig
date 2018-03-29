@@ -1,0 +1,26 @@
+signature Lapack where
+
+import THTypes
+import Foreign
+import Foreign.C.Types
+import SigTypes
+
+c_gesv  :: CInt -> CInt -> Ptr CReal -> CInt -> CIntPtr -> Ptr CReal -> CInt -> CIntPtr -> IO ()
+c_trtrs :: CChar -> CChar -> CChar -> CInt -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> CIntPtr -> IO ()
+c_gels  :: CChar -> CInt -> CInt -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> CIntPtr -> IO ()
+c_syev  :: CChar -> CChar -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> Ptr CReal -> CInt -> CIntPtr -> IO ()
+c_geev  :: CChar -> CChar -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> Ptr CReal -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> CIntPtr -> IO ()
+c_gesvd :: CChar -> CChar -> CInt -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> CIntPtr -> IO ()
+c_getrf :: CInt -> CInt -> Ptr CReal -> CInt -> CIntPtr -> CIntPtr -> IO ()
+c_getrs :: CChar -> CInt -> CInt -> Ptr CReal -> CInt -> CIntPtr -> Ptr CReal -> CInt -> CIntPtr -> IO ()
+c_getri :: CInt -> Ptr CReal -> CInt -> CIntPtr -> Ptr CReal -> CInt -> CIntPtr -> IO ()
+
+p_gesv  :: FunPtr (CInt -> CInt -> Ptr CReal -> CInt -> CIntPtr -> Ptr CReal -> CInt -> CIntPtr -> IO ())
+p_trtrs :: FunPtr (CChar -> CChar -> CChar -> CInt -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> CIntPtr -> IO ())
+p_gels  :: FunPtr (CChar -> CInt -> CInt -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> CIntPtr -> IO ())
+p_syev  :: FunPtr (CChar -> CChar -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> Ptr CReal -> CInt -> CIntPtr -> IO ())
+p_geev  :: FunPtr (CChar -> CChar -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> Ptr CReal -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> CIntPtr -> IO ())
+p_gesvd :: FunPtr (CChar -> CChar -> CInt -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> Ptr CReal -> CInt -> CIntPtr -> IO ())
+p_getrf :: FunPtr (CInt -> CInt -> Ptr CReal -> CInt -> CIntPtr -> CIntPtr -> IO ())
+p_getrs :: FunPtr (CChar -> CInt -> CInt -> Ptr CReal -> CInt -> CIntPtr -> Ptr CReal -> CInt -> CIntPtr -> IO ())
+p_getri :: FunPtr (CInt -> Ptr CReal -> CInt -> CIntPtr -> Ptr CReal -> CInt -> CIntPtr -> IO ())

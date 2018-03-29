@@ -1,46 +1,44 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
-module THDoubleTensorRandom (
-    c_THDoubleTensor_random,
-    c_THDoubleTensor_clampedRandom,
-    c_THDoubleTensor_cappedRandom,
-    c_THDoubleTensor_geometric,
-    c_THDoubleTensor_bernoulli,
-    c_THDoubleTensor_bernoulli_FloatTensor,
-    c_THDoubleTensor_bernoulli_DoubleTensor,
-    c_THDoubleTensor_bernoulli_Tensor,
-    c_THDoubleTensor_uniform,
-    c_THDoubleTensor_normal,
-    c_THDoubleTensor_normal_means,
-    c_THDoubleTensor_normal_stddevs,
-    c_THDoubleTensor_normal_means_stddevs,
-    c_THDoubleTensor_exponential,
-    c_THDoubleTensor_standard_gamma,
-    c_THDoubleTensor_cauchy,
-    c_THDoubleTensor_logNormal,
-    c_THDoubleTensor_multinomial,
-    c_THDoubleTensor_multinomialAliasSetup,
-    c_THDoubleTensor_multinomialAliasDraw,
-    p_THDoubleTensor_random,
-    p_THDoubleTensor_clampedRandom,
-    p_THDoubleTensor_cappedRandom,
-    p_THDoubleTensor_geometric,
-    p_THDoubleTensor_bernoulli,
-    p_THDoubleTensor_bernoulli_FloatTensor,
-    p_THDoubleTensor_bernoulli_DoubleTensor,
-    p_THDoubleTensor_bernoulli_Tensor,
-    p_THDoubleTensor_uniform,
-    p_THDoubleTensor_normal,
-    p_THDoubleTensor_normal_means,
-    p_THDoubleTensor_normal_stddevs,
-    p_THDoubleTensor_normal_means_stddevs,
-    p_THDoubleTensor_exponential,
-    p_THDoubleTensor_standard_gamma,
-    p_THDoubleTensor_cauchy,
-    p_THDoubleTensor_logNormal,
-    p_THDoubleTensor_multinomial,
-    p_THDoubleTensor_multinomialAliasSetup,
-    p_THDoubleTensor_multinomialAliasDraw) where
+module THDoubleTensorRandom
+  ( c_random
+  , c_clampedRandom
+  , c_cappedRandom
+  , c_geometric
+  , c_bernoulli
+  , c_bernoulli_FloatTensor
+  , c_bernoulli_DoubleTensor
+  , c_uniform
+  , c_normal
+  , c_normal_means
+  , c_normal_stddevs
+  , c_normal_means_stddevs
+  , c_exponential
+  , c_standard_gamma
+  , c_cauchy
+  , c_logNormal
+  , c_multinomial
+  , c_multinomialAliasSetup
+  , c_multinomialAliasDraw
+  , p_random
+  , p_clampedRandom
+  , p_cappedRandom
+  , p_geometric
+  , p_bernoulli
+  , p_bernoulli_FloatTensor
+  , p_bernoulli_DoubleTensor
+  , p_uniform
+  , p_normal
+  , p_normal_means
+  , p_normal_stddevs
+  , p_normal_means_stddevs
+  , p_exponential
+  , p_standard_gamma
+  , p_cauchy
+  , p_logNormal
+  , p_multinomial
+  , p_multinomialAliasSetup
+  , p_multinomialAliasDraw
+  ) where
 
 import Foreign
 import Foreign.C.Types
@@ -48,162 +46,154 @@ import THTypes
 import Data.Word
 import Data.Int
 
--- |c_THDoubleTensor_random : self _generator -> void
+-- | c_random :  self _generator -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_random"
-  c_THDoubleTensor_random :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> IO ()
+  c_random :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> IO ()
 
--- |c_THDoubleTensor_clampedRandom : self _generator min max -> void
+-- | c_clampedRandom :  self _generator min max -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_clampedRandom"
-  c_THDoubleTensor_clampedRandom :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ()
+  c_clampedRandom :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ()
 
--- |c_THDoubleTensor_cappedRandom : self _generator max -> void
+-- | c_cappedRandom :  self _generator max -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_cappedRandom"
-  c_THDoubleTensor_cappedRandom :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CLLong -> IO ()
+  c_cappedRandom :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CLLong -> IO ()
 
--- |c_THDoubleTensor_geometric : self _generator p -> void
+-- | c_geometric :  self _generator p -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_geometric"
-  c_THDoubleTensor_geometric :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> IO ()
+  c_geometric :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> IO ()
 
--- |c_THDoubleTensor_bernoulli : self _generator p -> void
+-- | c_bernoulli :  self _generator p -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_bernoulli"
-  c_THDoubleTensor_bernoulli :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> IO ()
+  c_bernoulli :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> IO ()
 
--- |c_THDoubleTensor_bernoulli_FloatTensor : self _generator p -> void
+-- | c_bernoulli_FloatTensor :  self _generator p -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_bernoulli_FloatTensor"
-  c_THDoubleTensor_bernoulli_FloatTensor :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
+  c_bernoulli_FloatTensor :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
 
--- |c_THDoubleTensor_bernoulli_DoubleTensor : self _generator p -> void
+-- | c_bernoulli_DoubleTensor :  self _generator p -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_bernoulli_DoubleTensor"
-  c_THDoubleTensor_bernoulli_DoubleTensor :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
+  c_bernoulli_DoubleTensor :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
 
--- |c_THDoubleTensor_bernoulli_Tensor : self _generator p -> void
-foreign import ccall "THTensorRandom.h THDoubleTensor_bernoulli_Tensor"
-  c_THDoubleTensor_bernoulli_Tensor :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> IO ()
-
--- |c_THDoubleTensor_uniform : self _generator a b -> void
+-- | c_uniform :  self _generator a b -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_uniform"
-  c_THDoubleTensor_uniform :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
+  c_uniform :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
 
--- |c_THDoubleTensor_normal : self _generator mean stdv -> void
+-- | c_normal :  self _generator mean stdv -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_normal"
-  c_THDoubleTensor_normal :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
+  c_normal :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
 
--- |c_THDoubleTensor_normal_means : self gen means stddev -> void
+-- | c_normal_means :  self gen means stddev -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_normal_means"
-  c_THDoubleTensor_normal_means :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> CDouble -> IO ()
+  c_normal_means :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> CDouble -> IO ()
 
--- |c_THDoubleTensor_normal_stddevs : self gen mean stddevs -> void
+-- | c_normal_stddevs :  self gen mean stddevs -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_normal_stddevs"
-  c_THDoubleTensor_normal_stddevs :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> (Ptr CTHDoubleTensor) -> IO ()
+  c_normal_stddevs :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> Ptr CTHDoubleTensor -> IO ()
 
--- |c_THDoubleTensor_normal_means_stddevs : self gen means stddevs -> void
+-- | c_normal_means_stddevs :  self gen means stddevs -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_normal_means_stddevs"
-  c_THDoubleTensor_normal_means_stddevs :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ()
+  c_normal_means_stddevs :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ()
 
--- |c_THDoubleTensor_exponential : self _generator lambda -> void
+-- | c_exponential :  self _generator lambda -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_exponential"
-  c_THDoubleTensor_exponential :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> IO ()
+  c_exponential :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> IO ()
 
--- |c_THDoubleTensor_standard_gamma : self _generator alpha -> void
+-- | c_standard_gamma :  self _generator alpha -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_standard_gamma"
-  c_THDoubleTensor_standard_gamma :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> IO ()
+  c_standard_gamma :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
 
--- |c_THDoubleTensor_cauchy : self _generator median sigma -> void
+-- | c_cauchy :  self _generator median sigma -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_cauchy"
-  c_THDoubleTensor_cauchy :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
+  c_cauchy :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
 
--- |c_THDoubleTensor_logNormal : self _generator mean stdv -> void
+-- | c_logNormal :  self _generator mean stdv -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_logNormal"
-  c_THDoubleTensor_logNormal :: (Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
+  c_logNormal :: Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ()
 
--- |c_THDoubleTensor_multinomial : self _generator prob_dist n_sample with_replacement -> void
+-- | c_multinomial :  self _generator prob_dist n_sample with_replacement -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_multinomial"
-  c_THDoubleTensor_multinomial :: Ptr CTHLongTensor -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ()
+  c_multinomial :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> CInt -> CInt -> IO ()
 
--- |c_THDoubleTensor_multinomialAliasSetup : prob_dist J q -> void
+-- | c_multinomialAliasSetup :  prob_dist J q -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_multinomialAliasSetup"
-  c_THDoubleTensor_multinomialAliasSetup :: (Ptr CTHDoubleTensor) -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ()
+  c_multinomialAliasSetup :: Ptr CTHDoubleTensor -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> IO ()
 
--- |c_THDoubleTensor_multinomialAliasDraw : self _generator J q -> void
+-- | c_multinomialAliasDraw :  self _generator J q -> void
 foreign import ccall "THTensorRandom.h THDoubleTensor_multinomialAliasDraw"
-  c_THDoubleTensor_multinomialAliasDraw :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ()
+  c_multinomialAliasDraw :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> IO ()
 
--- |p_THDoubleTensor_random : Pointer to function : self _generator -> void
+-- | p_random : Pointer to function : self _generator -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_random"
-  p_THDoubleTensor_random :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> IO ())
+  p_random :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> IO ())
 
--- |p_THDoubleTensor_clampedRandom : Pointer to function : self _generator min max -> void
+-- | p_clampedRandom : Pointer to function : self _generator min max -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_clampedRandom"
-  p_THDoubleTensor_clampedRandom :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ())
+  p_clampedRandom :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ())
 
--- |p_THDoubleTensor_cappedRandom : Pointer to function : self _generator max -> void
+-- | p_cappedRandom : Pointer to function : self _generator max -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_cappedRandom"
-  p_THDoubleTensor_cappedRandom :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CLLong -> IO ())
+  p_cappedRandom :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CLLong -> IO ())
 
--- |p_THDoubleTensor_geometric : Pointer to function : self _generator p -> void
+-- | p_geometric : Pointer to function : self _generator p -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_geometric"
-  p_THDoubleTensor_geometric :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
+  p_geometric :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_THDoubleTensor_bernoulli : Pointer to function : self _generator p -> void
+-- | p_bernoulli : Pointer to function : self _generator p -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_bernoulli"
-  p_THDoubleTensor_bernoulli :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
+  p_bernoulli :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_THDoubleTensor_bernoulli_FloatTensor : Pointer to function : self _generator p -> void
+-- | p_bernoulli_FloatTensor : Pointer to function : self _generator p -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_bernoulli_FloatTensor"
-  p_THDoubleTensor_bernoulli_FloatTensor :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ())
+  p_bernoulli_FloatTensor :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ())
 
--- |p_THDoubleTensor_bernoulli_DoubleTensor : Pointer to function : self _generator p -> void
+-- | p_bernoulli_DoubleTensor : Pointer to function : self _generator p -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_bernoulli_DoubleTensor"
-  p_THDoubleTensor_bernoulli_DoubleTensor :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
+  p_bernoulli_DoubleTensor :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
 
--- |p_THDoubleTensor_bernoulli_Tensor : Pointer to function : self _generator p -> void
-foreign import ccall "THTensorRandom.h &THDoubleTensor_bernoulli_Tensor"
-  p_THDoubleTensor_bernoulli_Tensor :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> IO ())
-
--- |p_THDoubleTensor_uniform : Pointer to function : self _generator a b -> void
+-- | p_uniform : Pointer to function : self _generator a b -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_uniform"
-  p_THDoubleTensor_uniform :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
+  p_uniform :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
 
--- |p_THDoubleTensor_normal : Pointer to function : self _generator mean stdv -> void
+-- | p_normal : Pointer to function : self _generator mean stdv -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_normal"
-  p_THDoubleTensor_normal :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
+  p_normal :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
 
--- |p_THDoubleTensor_normal_means : Pointer to function : self gen means stddev -> void
+-- | p_normal_means : Pointer to function : self gen means stddev -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_normal_means"
-  p_THDoubleTensor_normal_means :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> CDouble -> IO ())
+  p_normal_means :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> CDouble -> IO ())
 
--- |p_THDoubleTensor_normal_stddevs : Pointer to function : self gen mean stddevs -> void
+-- | p_normal_stddevs : Pointer to function : self gen mean stddevs -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_normal_stddevs"
-  p_THDoubleTensor_normal_stddevs :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> (Ptr CTHDoubleTensor) -> IO ())
+  p_normal_stddevs :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> Ptr CTHDoubleTensor -> IO ())
 
--- |p_THDoubleTensor_normal_means_stddevs : Pointer to function : self gen means stddevs -> void
+-- | p_normal_means_stddevs : Pointer to function : self gen means stddevs -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_normal_means_stddevs"
-  p_THDoubleTensor_normal_means_stddevs :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ())
+  p_normal_means_stddevs :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> Ptr CTHDoubleTensor -> IO ())
 
--- |p_THDoubleTensor_exponential : Pointer to function : self _generator lambda -> void
+-- | p_exponential : Pointer to function : self _generator lambda -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_exponential"
-  p_THDoubleTensor_exponential :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> IO ())
+  p_exponential :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> IO ())
 
--- |p_THDoubleTensor_standard_gamma : Pointer to function : self _generator alpha -> void
+-- | p_standard_gamma : Pointer to function : self _generator alpha -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_standard_gamma"
-  p_THDoubleTensor_standard_gamma :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> IO ())
+  p_standard_gamma :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
 
--- |p_THDoubleTensor_cauchy : Pointer to function : self _generator median sigma -> void
+-- | p_cauchy : Pointer to function : self _generator median sigma -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_cauchy"
-  p_THDoubleTensor_cauchy :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
+  p_cauchy :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
 
--- |p_THDoubleTensor_logNormal : Pointer to function : self _generator mean stdv -> void
+-- | p_logNormal : Pointer to function : self _generator mean stdv -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_logNormal"
-  p_THDoubleTensor_logNormal :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
+  p_logNormal :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHGenerator -> CDouble -> CDouble -> IO ())
 
--- |p_THDoubleTensor_multinomial : Pointer to function : self _generator prob_dist n_sample with_replacement -> void
+-- | p_multinomial : Pointer to function : self _generator prob_dist n_sample with_replacement -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_multinomial"
-  p_THDoubleTensor_multinomial :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> (Ptr CTHDoubleTensor) -> CInt -> CInt -> IO ())
+  p_multinomial :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> CInt -> CInt -> IO ())
 
--- |p_THDoubleTensor_multinomialAliasSetup : Pointer to function : prob_dist J q -> void
+-- | p_multinomialAliasSetup : Pointer to function : prob_dist J q -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_multinomialAliasSetup"
-  p_THDoubleTensor_multinomialAliasSetup :: FunPtr ((Ptr CTHDoubleTensor) -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ())
+  p_multinomialAliasSetup :: FunPtr (Ptr CTHDoubleTensor -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> IO ())
 
--- |p_THDoubleTensor_multinomialAliasDraw : Pointer to function : self _generator J q -> void
+-- | p_multinomialAliasDraw : Pointer to function : self _generator J q -> void
 foreign import ccall "THTensorRandom.h &THDoubleTensor_multinomialAliasDraw"
-  p_THDoubleTensor_multinomialAliasDraw :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> (Ptr CTHDoubleTensor) -> IO ())
+  p_multinomialAliasDraw :: FunPtr (Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> Ptr CTHDoubleTensor -> IO ())

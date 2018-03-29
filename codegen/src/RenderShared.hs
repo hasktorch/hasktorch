@@ -1,577 +1,142 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NamedFieldPuns #-}
+module RenderShared
+  ( makeModule
+  , makeTHModule
+  , renderCHeaderFile
 
-module RenderShared (
-  makeModule,
-  renderCType,
-  type2SpliceReal,
-  type2real,
-  type2accreal,
-  realtype2Haskell,
-  accrealtype2Haskell,
-
-  renderCHeaderFile,
-  parseFile,
-  cleanList
+  , parseFile
+  , cleanList
   ) where
 
-import Data.List (nub)
-import Data.Maybe (fromJust, catMaybes)
-import Data.Monoid ((<>))
-import Prelude as P
-import Data.Text
-import Data.Text as T
-import Data.Void
-import Text.Megaparsec
-import Text.Show.Pretty
+import CodeGen.Prelude
+import qualified Data.Text as T
 
-import CodeGenTypes
-import CodeGenParse
-import ConditionalCases
+import CodeGen.Types
+import CodeGen.Render.Function (renderFunPtrSig, renderFunSig)
+import CodeGenParse (thParseGeneric)
+import ConditionalCases (checkFunction, signatureAliases)
+import qualified CodeGen.Render.Haskell as Hs
 
-makeModule ::
-  Text -> Bool -> FilePath -> Text -> Text -> TemplateType -> [THFunction] -> HModule
-makeModule outDir isTemplate modHeader modSuffix modFileSuffix typeTemplate bindings =
-   HModule {
-        modHeader = modHeader,
-        modPrefix = "TH",
-        modTypeTemplate = typeTemplate,
-        modSuffix = modSuffix,
-        modFileSuffix = modFileSuffix,
-        modExtensions = ["ForeignFunctionInterface"],
-        modImports = ["Foreign", "Foreign.C.Types", "THTypes", "Data.Word", "Data.Int"],
-        modTypeDefs = [],
-        modBindings = bindings,
-        modOutDir = outDir,
-        modIsTemplate = isTemplate
+makeModule
+  :: Text
+  -> Text
+  -> Bool
+  -> FilePath
+  -> Text
+  -> Text
+  -> TemplateType
+  -> [THFunction]
+  -> HModule
+makeModule a00 a0 a1 a2 a3 a4 a5 a6
+  = HModule
+  { modPrefix = a00
+  , modExtensions = ["ForeignFunctionInterface"]
+  , modImports = ["Foreign", "Foreign.C.Types", "THTypes", "Data.Word", "Data.Int"]
+  , modTypeDefs = []
+  , modOutDir = a0
+  , modIsTemplate = a1
+  , modHeader = a2
+  , modSuffix = a3
+  , modFileSuffix = a4
+  , modTypeTemplate = a5
+  , modBindings = a6
   }
 
--- TODO : make this total
-renderCType :: THType -> Text
-renderCType THVoid            = "void"
-renderCType THBool            = "bool"
-renderCType THDescBuff        = "THDescBuff"
-renderCType THNNStatePtr      = "THNNState *"
-renderCType THTensorPtr       = "THTensor *"
-renderCType THIntegerTensorPtr= "THIntegerTensor *"
-renderCType THIndexTensorPtr  = "THIndexTensor *"
-renderCType THTensorPtrPtr    = "THTensor **"
-renderCType THByteTensorPtr   = "THByteTensor *"
-renderCType THLongTensorPtr   = "THLongTensor *"
-renderCType THDoubleTensorPtr = "THDoubleTensor *"
-renderCType THFloatTensorPtr  = "THFloatTensor *"
-renderCType THGeneratorPtr    = "THGenerator *"
-renderCType THStoragePtr      = "THStorage *"
-renderCType THCharStoragePtr  = "THCharStorage *"
-renderCType THLongStoragePtr  = "THLongStorage *"
-renderCType THPtrDiff         = "ptrdiff_t"
-renderCType THLongPtrPtr      = "long **"
-renderCType THLongPtr         = "long *"
-renderCType THLong            = "long"
-renderCType THIntPtr          = "int *"
-renderCType THInt             = "int"
-
-renderCType THUInt64          = "uint64_t"
-renderCType THUInt64Ptr       = "uint64_t *"
-renderCType THUInt64PtrPtr    = "uint64_t **"
-renderCType THUInt32           = "uint32_t"
-renderCType THUInt32Ptr        = "uint32_t *"
-renderCType THUInt32PtrPtr     = "uint32_t **"
-renderCType THUInt16           = "uint16_t"
-renderCType THUInt16Ptr        = "uint16_t *"
-renderCType THUInt16PtrPtr     = "uint16_t **"
-renderCType THUInt8            = "uint8_t"
-renderCType THUInt8Ptr         = "uint8_t *"
-renderCType THUInt8PtrPtr      = "uint8_t **"
-
-
-renderCType THInt64           = "int64_t"
-renderCType THInt64Ptr        = "int64_t *"
-renderCType THInt64PtrPtr     = "int64_t **"
-renderCType THInt32           = "int32_t"
-renderCType THInt32Ptr        = "int32_t *"
-renderCType THInt32PtrPtr     = "int32_t **"
-renderCType THInt16           = "int16_t"
-renderCType THInt16Ptr        = "int16_t *"
-renderCType THInt16PtrPtr     = "int16_t **"
-renderCType THInt8            = "int8_t"
-renderCType THInt8Ptr         = "int8_t *"
-renderCType THInt8PtrPtr      = "int8_t **"
-renderCType THSize            = "size_t"
-renderCType THCharPtr         = "char *"
-renderCType THChar            = "char"
-renderCType THShort           = "short"
-renderCType THHalf            = "THHalf"
-renderCType THHalfPtr         = "THHalfPtr"
-renderCType THFloat           = "float"
-renderCType THDouble          = "double"
-renderCType THRealPtr         = "real *"
-renderCType THReal            = "real"
-renderCType THAccRealPtr      = "accreal *"
-renderCType THAccReal         = "accreal"
-renderCType THFilePtr         = "THFile *"
+makeTHModule :: Text -> Bool -> FilePath -> Text -> Text -> TemplateType -> [THFunction] -> HModule
+makeTHModule = makeModule "TH"
 
 -- ----------------------------------------
 -- helper data and functions for templating
 -- ----------------------------------------
 
--- #define Real [X]
--- spliced text to use for function names
-type2SpliceReal :: TemplateType -> Text
-type2SpliceReal GenByte   = "Byte"
-type2SpliceReal GenChar   = "Byte"
-type2SpliceReal GenDouble = "Double"
-type2SpliceReal GenFloat  = "Float"
-type2SpliceReal GenHalf   = "Half"
-type2SpliceReal GenInt    = "Int"
-type2SpliceReal GenLong   = "Long"
-type2SpliceReal GenShort  = "Short"
-type2SpliceReal GenNothing = ""
-
--- See header files "#define real [X]"
-type2real :: TemplateType -> Text
-type2real GenByte   = "unsigned char"
-type2real GenChar   = "char"
-type2real GenDouble = "double"
-type2real GenFloat  = "float"
-type2real GenHalf   = "THHalf"
-type2real GenInt    = "int"
-type2real GenLong   = "long"
-type2real GenShort  = "short"
-
--- See header files "#define accreal [X]"
-type2accreal :: TemplateType -> Text
-type2accreal GenByte   = "long"
-type2accreal GenChar   = "long"
-type2accreal GenDouble = "double"
-type2accreal GenFloat  = "double"
-type2accreal GenHalf   = "float"
-type2accreal GenInt    = "long"
-type2accreal GenLong   = "long"
-type2accreal GenShort  = "long"
-
-realtype2Haskell :: TemplateType -> Text
-realtype2Haskell GenByte   = "CUChar"
-realtype2Haskell GenChar   = "CChar"
-realtype2Haskell GenDouble = "CDouble"
-realtype2Haskell GenFloat  = "CFloat"
-realtype2Haskell GenHalf   = "THHalf"
-realtype2Haskell GenInt    = "CInt"
-realtype2Haskell GenLong   = "CLong"
-realtype2Haskell GenShort  = "CShort"
-
-accrealtype2Haskell :: TemplateType -> Text
-accrealtype2Haskell GenByte   = "CLong"
-accrealtype2Haskell GenChar   = "CLong"
-accrealtype2Haskell GenDouble = "CDouble"
-accrealtype2Haskell GenFloat  = "CDouble"
-accrealtype2Haskell GenHalf   = "CFloat"
-accrealtype2Haskell GenInt    = "CLong"
-accrealtype2Haskell GenLong   = "CLong"
-accrealtype2Haskell GenShort  = "CLong"
-
 makePrefix :: Text -> Text
 makePrefix templateType = "TH" <> templateType <> "Tensor"
-
-renderHaskellType :: TypeCategory -> TemplateType -> THType -> Maybe Text
-
-renderHaskellType _ templateType THVoidPtr = Just "Ptr ()"
-
-renderHaskellType typeCat templateType THVoid =
-  case typeCat of
-    ReturnValue -> Just "IO ()"
-    FunctionParam -> Nothing
-
-renderHaskellType _ _ THDescBuff = Just "CTHDescBuff"
-
-{- NN -}
-
-renderHaskellType typeCat templateType THNNStatePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "NNState)"
-  FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "NNState)"
-
-renderHaskellType typeCat templateType THIndexTensorPtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHIndexTensor)"
-  FunctionParam -> Just $ "(Ptr CTHIndexTensor)"
-
-renderHaskellType typeCat templateType THIntegerTensorPtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHIntegerTensor)"
-  FunctionParam -> Just $ "(Ptr CTHIntegerTensor)"
-
-{- Tensor -}
-
-renderHaskellType typeCat templateType THTensorPtrPtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor))"
-  FunctionParam -> Just $ "Ptr (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
-
-renderHaskellType typeCat templateType THTensorPtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
-  FunctionParam -> Just $ "(Ptr CTH" <> type2SpliceReal templateType <> "Tensor)"
-
-renderHaskellType typeCat _ THByteTensorPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHByteTensor)"
-  FunctionParam -> Just "Ptr CTHByteTensor"
-
-renderHaskellType typeCat _ THCharTensorPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHCharTensor)"
-  FunctionParam -> Just "Ptr CTHCharTensor"
-
-renderHaskellType typeCat _ THShortTensorPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHShortTensor)"
-  FunctionParam -> Just "Ptr CTHShortTensor"
-
-renderHaskellType typeCat _ THHalfTensorPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHHalfTensor)"
-  FunctionParam -> Just "Ptr CTHHalfTensor"
-
-renderHaskellType typeCat _ THIntTensorPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHIntTensor)"
-  FunctionParam -> Just "Ptr CTHIntTensor"
-
-renderHaskellType typeCat _ THLongTensorPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHLongTensor)"
-  FunctionParam -> Just "Ptr CTHLongTensor"
-
-renderHaskellType typeCat _ THFloatTensorPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHFloatTensor)"
-  FunctionParam -> Just "Ptr CTHFloatTensor"
-
-renderHaskellType typeCat _ THDoubleTensorPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHDoubleTensor)"
-  FunctionParam -> Just "Ptr CTHDoubleTensor"
-
-{- Storage -}
-
-renderHaskellType typeCat templateType THStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTH" <> type2SpliceReal templateType <> "Storage)"
-  FunctionParam -> Just $ "Ptr CTH" <> type2SpliceReal templateType <> "Storage"
-
-renderHaskellType typeCat _ THByteStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHByteStorage)"
-  FunctionParam -> Just $ "Ptr CTHByteStorage"
-
-renderHaskellType typeCat _ THShortStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHShortStorage)"
-  FunctionParam -> Just $ "Ptr CTHShortStorage"
-
-renderHaskellType typeCat _ THIntStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHIntStorage)"
-  FunctionParam -> Just $ "Ptr CTHIntStorage"
-
-renderHaskellType typeCat _ THLongStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHLongStorage)"
-  FunctionParam -> Just $ "Ptr CTHLongStorage"
-
-renderHaskellType typeCat _ THHalfStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHHalfStorage)"
-  FunctionParam -> Just $ "Ptr CTHHalfStorage"
-
-renderHaskellType typeCat _ THCharStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHCharStorage)"
-  FunctionParam -> Just $ "Ptr CTHCharStorage"
-
-renderHaskellType typeCat _ THFloatStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHFloatStorage)"
-  FunctionParam -> Just $ "Ptr CTHFloatStorage"
-
-renderHaskellType typeCat _ THDoubleStoragePtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr CTHDoubleStorage)"
-  FunctionParam -> Just $ "Ptr CTHDoubleStorage"
-
-{- Other -}
-
-renderHaskellType typeCat _ THGeneratorPtr = case typeCat of
-  ReturnValue -> Just ("IO (Ptr CTHGenerator)") -- concrete type found in TensorMat)h
-  FunctionParam -> Just ("Ptr CTHGenerator") -- concrete type found in TensorMath
-
-renderHaskellType typeCat _ THAllocatorPtr = case typeCat of
-  ReturnValue -> Just $ "IO (CTHAllocatorPtr)"
-  FunctionParam -> Just $ "CTHAllocatorPtr"
-
-renderHaskellType typeCat _ THDoublePtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CDouble)"
-  FunctionParam -> Just "Ptr CDouble"
-
-renderHaskellType _ _ THDouble =
-  Just "CDouble" -- added from TensorRandom
-
-renderHaskellType typeCat _ THPtrDiff = case typeCat of
-  ReturnValue -> Just $ "CPtrdiff"
-  FunctionParam -> Just $ "CPtrdiff"
-  -- TODO check if it's appropriate to splice here
-
-renderHaskellType typeCat _ THLongPtrPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr (Ptr CLong))"
-  FunctionParam -> Just "Ptr (Ptr CLong)"
-
-renderHaskellType typeCat _ THLongPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CLong)"
-  FunctionParam -> Just "Ptr CLong"
-
-renderHaskellType typeCat _ THFloatPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CFloat)"
-  FunctionParam -> Just "Ptr CFloat"
-
-renderHaskellType _ _ THFloat =
-  Just "CFloat"
-
-renderHaskellType _ _ THLong =
-  Just "CLong"
-
-renderHaskellType _ _ THBool =
-  Just "CBool"
-
-renderHaskellType typeCat _ THIntPtr = case typeCat of
-  ReturnValue -> Just "IO (CIntPtr)"
-  FunctionParam -> Just "CIntPtr"
-
-renderHaskellType _ _ THInt =
-  Just "CInt"
-
--- int/uint conversions, see
--- https://www.haskell.org/onlinereport/haskell2010/haskellch8.html
--- https://hackage.haskell.org/package/base-4.10.0.0/docs/Foreign-C-Types.html
-
-renderHaskellType _ _ THUInt64 =
-  Just "CULong"
-
-renderHaskellType _ _ THUInt64Ptr =
-  Just "Ptr CULong"
-
-renderHaskellType _ _ THUInt64PtrPtr =
-  Just "Ptr (Ptr CULong)"
-
-renderHaskellType _ _ THUInt32 =
-  Just "CUInt"
-
-renderHaskellType _ _ THUInt32Ptr =
-  Just "Ptr CUInt"
-
-renderHaskellType _ _ THUInt32PtrPtr =
-  Just "Ptr (Ptr CUInt)"
-
-renderHaskellType _ _ THUInt16 =
-  Just "CUShort"
-
-renderHaskellType _ _ THUInt16Ptr =
-  Just "Ptr CUShort"
-
-renderHaskellType _ _ THUInt16PtrPtr =
-  Just "Ptr (Ptr CUShort)"
-
-renderHaskellType _ _ THUInt8 =
-  Just "CBool"
-
-renderHaskellType _ _ THUInt8Ptr =
-  Just "Ptr CBool"
-
-renderHaskellType _ _ THUInt8PtrPtr =
-  Just "Ptr (Ptr CBool)"
-
-renderHaskellType _ _ THInt64 =
-  Just "CLLong"
-
-renderHaskellType _ _ THInt64Ptr =
-  Just "Ptr CLLong"
-
-renderHaskellType _ _ THInt64PtrPtr =
-  Just "Ptr (Ptr CLLong)"
-
-renderHaskellType _ _ THInt32 =
-  Just "Int"
-
-renderHaskellType _ _ THInt32Ptr =
-  Just "Ptr Int"
-
-renderHaskellType _ _ THInt32PtrPtr =
-  Just "Ptr (Ptr Int)"
-
-renderHaskellType _ _ THInt16 =
-  Just "CShort"
-
-renderHaskellType _ _ THInt16Ptr =
-  Just "Ptr CShort"
-
-renderHaskellType _ _ THInt16PtrPtr =
-  Just "Ptr (Ptr CShort)"
-
-renderHaskellType _ _ THInt8 =
-  Just "CSChar"
-
-renderHaskellType _ _ THInt8Ptr =
-  Just "Ptr CSChar"
-
-renderHaskellType _ _ THInt8PtrPtr =
-  Just "Ptr (Ptr CSChar)"
-
-renderHaskellType _ _ THSize =
-  Just "CSize"
-
-renderHaskellType typeCat _ THCharPtrPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr (Ptr CChar))"
-  FunctionParam -> Just "Ptr (Ptr CChar)"
-
-renderHaskellType typeCat _ THCharPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CChar)"
-  FunctionParam -> Just "Ptr CChar"
-
-renderHaskellType _ _ THChar =
-  Just "CChar"
-
-renderHaskellType typeCat _ THShortPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CShort)"
-  FunctionParam -> Just "Ptr CShort"
-
-renderHaskellType _ _ THShort =
-  Just "CShort"
-
-renderHaskellType typeCat _ THHalfPtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHHalf)"
-  FunctionParam -> Just "Ptr CTHHalf"
-
-renderHaskellType _ _ THHalf =
-  Just "CTHHalf"
-
-renderHaskellType typeCat templateType THRealPtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr " <> realtype2Haskell templateType <> ")"
-  FunctionParam -> Just $ "Ptr " <> realtype2Haskell templateType
-
-renderHaskellType _ templateType THReal =
-  Just $ realtype2Haskell templateType
-
-renderHaskellType typeCat templateType THAccRealPtr = case typeCat of
-  ReturnValue -> Just $ "IO (Ptr " <> accrealtype2Haskell templateType <> ")"
-  FunctionParam -> Just $ "Ptr " <> accrealtype2Haskell templateType
-
-renderHaskellType _ templateType THAccReal =
-  Just $ accrealtype2Haskell templateType
-
-renderHaskellType typeCat _ THFilePtr = case typeCat of
-  ReturnValue -> Just "IO (Ptr CTHFile)"
-  FunctionParam -> Just "Ptr CTHFile"
 
 renderExtension :: Text -> Text
 renderExtension extension = "{-# LANGUAGE " <> extension <> " #-}"
 
 renderExtensions :: [Text] -> Text
-renderExtensions extensions =
-  (T.intercalate "\n" (renderExtension <$> extensions)) <> "\n\n"
+renderExtensions extensions = T.intercalate "\n" (extensions' <> [""])
+ where
+  extensions' :: [Text]
+  extensions' = renderExtension <$> extensions
 
 renderModule :: HModule -> Text
-renderModule moduleSpec =
-  "module " <> (renderModuleName moduleSpec)
+renderModule moduleSpec = "module " <> renderModuleName moduleSpec
 
 renderExports :: [Text] -> Text
-renderExports exports = (" (\n    "
-                         <> (T.intercalate ",\n    " exports)
-                         <> ") where\n\n")
+renderExports exports = T.intercalate "\n"
+  [ ""
+  , "  ( " <> T.intercalate "\n  , " exports
+  , "  ) where"
+  , ""
+  , ""
+  ]
 
 renderImports :: [Text] -> Text
-renderImports imports = (T.intercalate "\n" (singleimport <$> imports)) <> "\n\n"
-  where singleimport x = "import " <> x
+renderImports imports = T.intercalate "\n" (("import " <>) <$> imports) <> "\n\n"
 
-renderFunName :: Text -> Text -> Text
-renderFunName prefix name = prefix <> "_" <> name
-
-
--- |Render a single function signature.
-renderFunSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
-renderFunSig headerFile modTypeTemplate (name, retType, args) =
-  (
-   "-- |c_" <> name <> " : "
-   <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType) <> "\n"
-   --   <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " " <> name <> "\"\n"
-   <> "foreign import ccall \"" <> T.pack headerFile <> " " <> name <> "\"\n"
-   <> "  c_" <> name <> " :: "
-   <> (T.intercalate " -> " typeSignatureClean)
-    -- TODO : fromJust shouldn't fail but still clean this up so it's not unsafe
-   <> retArrow <> fromJust (renderHaskellType ReturnValue modTypeTemplate retType)
-  )
-  where
-    typeVals = thArgType <$> args
-    typeSignature = renderHaskellType FunctionParam modTypeTemplate <$> typeVals
-    typeSignatureClean = catMaybes typeSignature
-    numArgs = P.length typeSignatureClean
-    retArrow = if numArgs == 0 then "" else " -> "
-    nameSignature = thArgName <$> args
-
--- |Render function pointer signature
-renderFunPtrSig :: FilePath -> TemplateType -> (Text, THType, [THArg]) -> Text
-renderFunPtrSig headerFile modTypeTemplate (name, retType, args) =
-  (
-   "-- |p_" <> name <> " : Pointer to function : "
-   <> (T.intercalate " " nameSignature) <> " -> " <> (renderCType retType) <> "\n"
-   -- <> "foreign import ccall unsafe \"" <> T.pack headerFile <> " &" <> name <> "\"\n"
-   <> "foreign import ccall \"" <> T.pack headerFile <> " &" <> name <> "\"\n"
-   <> "  p_" <> name <> " :: FunPtr ("
-   <> (T.intercalate " -> " typeSignatureClean)
-    -- TODO : fromJust shouldn't fail but still clean this up so it's not unsafe
-   <> retArrow <> fromJust (renderHaskellType ReturnValue modTypeTemplate retType)
-   <> ")"
-  )
-  where
-    typeVals = thArgType <$> args
-    typeSignature = renderHaskellType FunctionParam modTypeTemplate <$> typeVals
-    typeSignatureClean = catMaybes typeSignature
-    numArgs = P.length typeSignatureClean
-    retArrow = if numArgs == 0 then "" else " -> "
-    nameSignature = thArgName <$> args
 
 -- TODO clean up redundancy of valid functions vs. functions in moduleSpec
 renderFunctions :: HModule -> [THFunction] -> Text
-renderFunctions moduleSpec@HModule{..} validFunctions =
-  -- iteration over all functions
-  intercalate "\n\n" (((renderFunSig modHeader typeTemplate)
-                       <$> (P.zip3 funNames retTypes args))
-                      <> ((renderFunPtrSig modHeader typeTemplate)
-                          <$> (P.zip3 funNames retTypes args))
-                     )
-  where
-    modulePrefix = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix <> "_"
-    funNames = if modIsTemplate then
-                 (mappend modulePrefix) <$> funName <$> validFunctions
-               else
-                 funName <$> validFunctions
-    retTypes = funReturn <$> validFunctions
-    args = funArgs <$> validFunctions
-    typeTemplate = modTypeTemplate
+renderFunctions m validFunctions =
+  T.intercalate "\n\n"
+    $  (renderFunSig'    <$> triple)
+    <> (renderFunPtrSig' <$> triple)
+ where
+  renderFunSig'    = renderFunSig    (modIsTemplate m) ffiPrefix (modHeader m) (modTypeTemplate m)
+  renderFunPtrSig' = renderFunPtrSig (modIsTemplate m) ffiPrefix (modHeader m) (modTypeTemplate m)
 
--- |Check for conditional templating of functions and filter function list
+  ffiPrefix :: Text
+  ffiPrefix = modPrefix m <> Hs.type2SpliceReal (modTypeTemplate m) <> modSuffix m
+
+  triple :: [(Text, THType, [THArg])]
+  triple = go <$> validFunctions
+    where
+      go :: THFunction -> (Text, THType, [THArg])
+      go f = (funName f, funReturn f, funArgs f)
+
+-- | Check for conditional templating of functions and filter function list
 checkList :: [THFunction] -> TemplateType -> [THFunction]
-checkList fList templateType =
-  P.filter ((checkFunction templateType) . funName) fList
+checkList fList templateType = filter ((checkFunction templateType) . FunctionName . funName) fList
 
 renderAll :: HModule -> Text
-renderAll spec@HModule{..} =
-  (renderExtensions modExtensions
-   <> renderModule spec
-   <> renderExports exportFunctions
-   <> renderImports modImports
-   <> renderFunctions spec validFunctions)
+renderAll m
+  =  renderExtensions (modExtensions m)
+  <> renderModule m
+  <> renderExports exportFunctions
+  <> renderImports (modImports m)
+  <> renderFunctions m validFunctions
   where
-    prefix = makePrefix . type2SpliceReal $ modTypeTemplate
-    splice = modPrefix <> (type2SpliceReal modTypeTemplate) <> modSuffix
-    validFunctions = checkList modBindings modTypeTemplate
-    exportFunctions =
-      if modIsTemplate then
-        ((renderFunName ("c_" <> splice) <$> (fmap funName (validFunctions)))
-         <> (renderFunName ("p_" <> splice) <$> (fmap funName (validFunctions))))
-      else
-        ((renderFunName "c" <$> (fmap funName (validFunctions)))
-         <> (renderFunName "p" <$> (fmap funName (validFunctions))))
+    validFunctions :: [THFunction]
+    validFunctions = checkList (modBindings m) (modTypeTemplate m)
 
-renderCHeaderFile ::
-  TemplateType -> [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> IO ()
+    fun2name :: Text -> THFunction -> Text
+    fun2name p = (\f -> p <> "_" <> f) . funName
+
+    exportFunctions :: [Text]
+    exportFunctions
+      =  (fmap (fun2name "c") validFunctions)
+      <> (fmap (fun2name "p") validFunctions)
+
+renderCHeaderFile
+  :: TemplateType -> [THFunction] -> (TemplateType -> [THFunction] -> HModule) -> IO ()
 renderCHeaderFile templateType parsedBindings makeConfig = do
   putStrLn $ "Writing " <> T.unpack filename
   writeFile (outDir ++ T.unpack filename) (T.unpack . renderAll $ modSpec)
-  where modSpec = makeConfig templateType parsedBindings
-        filename = (renderModuleName modSpec) <> ".hs"
-        outDir = T.unpack (modOutDir modSpec)
+ where
+  modSpec :: HModule
+  modSpec = makeConfig templateType parsedBindings
+
+  filename :: Text
+  filename = renderModuleName modSpec <> ".hs"
+
+  outDir :: String
+  outDir = T.unpack (modOutDir modSpec)
 
 renderModuleName :: HModule -> Text
-renderModuleName HModule{..} =
-  modPrefix <> (type2SpliceReal modTypeTemplate) <> modFileSuffix
+renderModuleName HModule{modPrefix, modTypeTemplate, modFileSuffix}
+  = modPrefix <> (Hs.type2SpliceReal modTypeTemplate) <> modFileSuffix
 
 -- ----------------------------------------
 -- Execution
@@ -579,16 +144,17 @@ renderModuleName HModule{..} =
 
 -- |Remove If list was returned, extract non-Nothing values, o/w empty list
 cleanList :: Either (ParseError Char Void) [Maybe THFunction] -> [THFunction]
-cleanList (Left _) = []
-cleanList (Right lst) = fromJust <$> (P.filter f lst)
-  where
-    f Nothing = False
-    f (Just _) = True
+cleanList = either (const []) catMaybes
 
-parseFile :: [Char] -> IO [THFunction]
+parseFile :: String -> IO [THFunction]
 parseFile file = do
   putStrLn $ "\nParsing " ++ file ++ " ... "
   res <- parseFromFile thParseGeneric file
   pure $ cleanList res
-  where
-    parseFromFile p file = runParser p file <$> readFile file
+ where
+  parseFromFile
+    :: Parser [Maybe THFunction]
+    -> String
+    -> IO (Either (ParseError Char Void) [Maybe THFunction])
+  parseFromFile p file = runParser p file <$> readFile file
+

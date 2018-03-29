@@ -1,150 +1,150 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
-module THLongTensor (
-    c_THLongTensor_storage,
-    c_THLongTensor_storageOffset,
-    c_THLongTensor_nDimension,
-    c_THLongTensor_size,
-    c_THLongTensor_stride,
-    c_THLongTensor_newSizeOf,
-    c_THLongTensor_newStrideOf,
-    c_THLongTensor_data,
-    c_THLongTensor_setFlag,
-    c_THLongTensor_clearFlag,
-    c_THLongTensor_new,
-    c_THLongTensor_newWithTensor,
-    c_THLongTensor_newWithStorage,
-    c_THLongTensor_newWithStorage1d,
-    c_THLongTensor_newWithStorage2d,
-    c_THLongTensor_newWithStorage3d,
-    c_THLongTensor_newWithStorage4d,
-    c_THLongTensor_newWithSize,
-    c_THLongTensor_newWithSize1d,
-    c_THLongTensor_newWithSize2d,
-    c_THLongTensor_newWithSize3d,
-    c_THLongTensor_newWithSize4d,
-    c_THLongTensor_newClone,
-    c_THLongTensor_newContiguous,
-    c_THLongTensor_newSelect,
-    c_THLongTensor_newNarrow,
-    c_THLongTensor_newTranspose,
-    c_THLongTensor_newUnfold,
-    c_THLongTensor_newView,
-    c_THLongTensor_newExpand,
-    c_THLongTensor_expand,
-    c_THLongTensor_expandNd,
-    c_THLongTensor_resize,
-    c_THLongTensor_resizeAs,
-    c_THLongTensor_resizeNd,
-    c_THLongTensor_resize1d,
-    c_THLongTensor_resize2d,
-    c_THLongTensor_resize3d,
-    c_THLongTensor_resize4d,
-    c_THLongTensor_resize5d,
-    c_THLongTensor_set,
-    c_THLongTensor_setStorage,
-    c_THLongTensor_setStorageNd,
-    c_THLongTensor_setStorage1d,
-    c_THLongTensor_setStorage2d,
-    c_THLongTensor_setStorage3d,
-    c_THLongTensor_setStorage4d,
-    c_THLongTensor_narrow,
-    c_THLongTensor_select,
-    c_THLongTensor_transpose,
-    c_THLongTensor_unfold,
-    c_THLongTensor_squeeze,
-    c_THLongTensor_squeeze1d,
-    c_THLongTensor_unsqueeze1d,
-    c_THLongTensor_isContiguous,
-    c_THLongTensor_isSameSizeAs,
-    c_THLongTensor_isSetTo,
-    c_THLongTensor_isSize,
-    c_THLongTensor_nElement,
-    c_THLongTensor_retain,
-    c_THLongTensor_free,
-    c_THLongTensor_freeCopyTo,
-    c_THLongTensor_set1d,
-    c_THLongTensor_set2d,
-    c_THLongTensor_set3d,
-    c_THLongTensor_set4d,
-    c_THLongTensor_get1d,
-    c_THLongTensor_get2d,
-    c_THLongTensor_get3d,
-    c_THLongTensor_get4d,
-    c_THLongTensor_desc,
-    c_THLongTensor_sizeDesc,
-    p_THLongTensor_storage,
-    p_THLongTensor_storageOffset,
-    p_THLongTensor_nDimension,
-    p_THLongTensor_size,
-    p_THLongTensor_stride,
-    p_THLongTensor_newSizeOf,
-    p_THLongTensor_newStrideOf,
-    p_THLongTensor_data,
-    p_THLongTensor_setFlag,
-    p_THLongTensor_clearFlag,
-    p_THLongTensor_new,
-    p_THLongTensor_newWithTensor,
-    p_THLongTensor_newWithStorage,
-    p_THLongTensor_newWithStorage1d,
-    p_THLongTensor_newWithStorage2d,
-    p_THLongTensor_newWithStorage3d,
-    p_THLongTensor_newWithStorage4d,
-    p_THLongTensor_newWithSize,
-    p_THLongTensor_newWithSize1d,
-    p_THLongTensor_newWithSize2d,
-    p_THLongTensor_newWithSize3d,
-    p_THLongTensor_newWithSize4d,
-    p_THLongTensor_newClone,
-    p_THLongTensor_newContiguous,
-    p_THLongTensor_newSelect,
-    p_THLongTensor_newNarrow,
-    p_THLongTensor_newTranspose,
-    p_THLongTensor_newUnfold,
-    p_THLongTensor_newView,
-    p_THLongTensor_newExpand,
-    p_THLongTensor_expand,
-    p_THLongTensor_expandNd,
-    p_THLongTensor_resize,
-    p_THLongTensor_resizeAs,
-    p_THLongTensor_resizeNd,
-    p_THLongTensor_resize1d,
-    p_THLongTensor_resize2d,
-    p_THLongTensor_resize3d,
-    p_THLongTensor_resize4d,
-    p_THLongTensor_resize5d,
-    p_THLongTensor_set,
-    p_THLongTensor_setStorage,
-    p_THLongTensor_setStorageNd,
-    p_THLongTensor_setStorage1d,
-    p_THLongTensor_setStorage2d,
-    p_THLongTensor_setStorage3d,
-    p_THLongTensor_setStorage4d,
-    p_THLongTensor_narrow,
-    p_THLongTensor_select,
-    p_THLongTensor_transpose,
-    p_THLongTensor_unfold,
-    p_THLongTensor_squeeze,
-    p_THLongTensor_squeeze1d,
-    p_THLongTensor_unsqueeze1d,
-    p_THLongTensor_isContiguous,
-    p_THLongTensor_isSameSizeAs,
-    p_THLongTensor_isSetTo,
-    p_THLongTensor_isSize,
-    p_THLongTensor_nElement,
-    p_THLongTensor_retain,
-    p_THLongTensor_free,
-    p_THLongTensor_freeCopyTo,
-    p_THLongTensor_set1d,
-    p_THLongTensor_set2d,
-    p_THLongTensor_set3d,
-    p_THLongTensor_set4d,
-    p_THLongTensor_get1d,
-    p_THLongTensor_get2d,
-    p_THLongTensor_get3d,
-    p_THLongTensor_get4d,
-    p_THLongTensor_desc,
-    p_THLongTensor_sizeDesc) where
+module THLongTensor
+  ( c_storage
+  , c_storageOffset
+  , c_nDimension
+  , c_size
+  , c_stride
+  , c_newSizeOf
+  , c_newStrideOf
+  , c_data
+  , c_setFlag
+  , c_clearFlag
+  , c_new
+  , c_newWithTensor
+  , c_newWithStorage
+  , c_newWithStorage1d
+  , c_newWithStorage2d
+  , c_newWithStorage3d
+  , c_newWithStorage4d
+  , c_newWithSize
+  , c_newWithSize1d
+  , c_newWithSize2d
+  , c_newWithSize3d
+  , c_newWithSize4d
+  , c_newClone
+  , c_newContiguous
+  , c_newSelect
+  , c_newNarrow
+  , c_newTranspose
+  , c_newUnfold
+  , c_newView
+  , c_newExpand
+  , c_expand
+  , c_expandNd
+  , c_resize
+  , c_resizeAs
+  , c_resizeNd
+  , c_resize1d
+  , c_resize2d
+  , c_resize3d
+  , c_resize4d
+  , c_resize5d
+  , c_set
+  , c_setStorage
+  , c_setStorageNd
+  , c_setStorage1d
+  , c_setStorage2d
+  , c_setStorage3d
+  , c_setStorage4d
+  , c_narrow
+  , c_select
+  , c_transpose
+  , c_unfold
+  , c_squeeze
+  , c_squeeze1d
+  , c_unsqueeze1d
+  , c_isContiguous
+  , c_isSameSizeAs
+  , c_isSetTo
+  , c_isSize
+  , c_nElement
+  , c_retain
+  , c_free
+  , c_freeCopyTo
+  , c_set1d
+  , c_set2d
+  , c_set3d
+  , c_set4d
+  , c_get1d
+  , c_get2d
+  , c_get3d
+  , c_get4d
+  , c_desc
+  , c_sizeDesc
+  , p_storage
+  , p_storageOffset
+  , p_nDimension
+  , p_size
+  , p_stride
+  , p_newSizeOf
+  , p_newStrideOf
+  , p_data
+  , p_setFlag
+  , p_clearFlag
+  , p_new
+  , p_newWithTensor
+  , p_newWithStorage
+  , p_newWithStorage1d
+  , p_newWithStorage2d
+  , p_newWithStorage3d
+  , p_newWithStorage4d
+  , p_newWithSize
+  , p_newWithSize1d
+  , p_newWithSize2d
+  , p_newWithSize3d
+  , p_newWithSize4d
+  , p_newClone
+  , p_newContiguous
+  , p_newSelect
+  , p_newNarrow
+  , p_newTranspose
+  , p_newUnfold
+  , p_newView
+  , p_newExpand
+  , p_expand
+  , p_expandNd
+  , p_resize
+  , p_resizeAs
+  , p_resizeNd
+  , p_resize1d
+  , p_resize2d
+  , p_resize3d
+  , p_resize4d
+  , p_resize5d
+  , p_set
+  , p_setStorage
+  , p_setStorageNd
+  , p_setStorage1d
+  , p_setStorage2d
+  , p_setStorage3d
+  , p_setStorage4d
+  , p_narrow
+  , p_select
+  , p_transpose
+  , p_unfold
+  , p_squeeze
+  , p_squeeze1d
+  , p_unsqueeze1d
+  , p_isContiguous
+  , p_isSameSizeAs
+  , p_isSetTo
+  , p_isSize
+  , p_nElement
+  , p_retain
+  , p_free
+  , p_freeCopyTo
+  , p_set1d
+  , p_set2d
+  , p_set3d
+  , p_set4d
+  , p_get1d
+  , p_get2d
+  , p_get3d
+  , p_get4d
+  , p_desc
+  , p_sizeDesc
+  ) where
 
 import Foreign
 import Foreign.C.Types
@@ -152,578 +152,578 @@ import THTypes
 import Data.Word
 import Data.Int
 
--- |c_THLongTensor_storage : self -> THStorage *
+-- | c_storage :  self -> THStorage *
 foreign import ccall "THTensor.h THLongTensor_storage"
-  c_THLongTensor_storage :: (Ptr CTHLongTensor) -> IO (Ptr CTHLongStorage)
+  c_storage :: Ptr CTHLongTensor -> IO (Ptr CTHLongStorage)
 
--- |c_THLongTensor_storageOffset : self -> ptrdiff_t
+-- | c_storageOffset :  self -> ptrdiff_t
 foreign import ccall "THTensor.h THLongTensor_storageOffset"
-  c_THLongTensor_storageOffset :: (Ptr CTHLongTensor) -> CPtrdiff
+  c_storageOffset :: Ptr CTHLongTensor -> IO (CPtrdiff)
 
--- |c_THLongTensor_nDimension : self -> int
+-- | c_nDimension :  self -> int
 foreign import ccall "THTensor.h THLongTensor_nDimension"
-  c_THLongTensor_nDimension :: (Ptr CTHLongTensor) -> CInt
+  c_nDimension :: Ptr CTHLongTensor -> IO (CInt)
 
--- |c_THLongTensor_size : self dim -> int64_t
+-- | c_size :  self dim -> int64_t
 foreign import ccall "THTensor.h THLongTensor_size"
-  c_THLongTensor_size :: (Ptr CTHLongTensor) -> CInt -> CLLong
+  c_size :: Ptr CTHLongTensor -> CInt -> IO (CLLong)
 
--- |c_THLongTensor_stride : self dim -> int64_t
+-- | c_stride :  self dim -> int64_t
 foreign import ccall "THTensor.h THLongTensor_stride"
-  c_THLongTensor_stride :: (Ptr CTHLongTensor) -> CInt -> CLLong
+  c_stride :: Ptr CTHLongTensor -> CInt -> IO (CLLong)
 
--- |c_THLongTensor_newSizeOf : self -> THLongStorage *
+-- | c_newSizeOf :  self -> THLongStorage *
 foreign import ccall "THTensor.h THLongTensor_newSizeOf"
-  c_THLongTensor_newSizeOf :: (Ptr CTHLongTensor) -> IO (Ptr CTHLongStorage)
+  c_newSizeOf :: Ptr CTHLongTensor -> IO (Ptr CTHLongStorage)
 
--- |c_THLongTensor_newStrideOf : self -> THLongStorage *
+-- | c_newStrideOf :  self -> THLongStorage *
 foreign import ccall "THTensor.h THLongTensor_newStrideOf"
-  c_THLongTensor_newStrideOf :: (Ptr CTHLongTensor) -> IO (Ptr CTHLongStorage)
+  c_newStrideOf :: Ptr CTHLongTensor -> IO (Ptr CTHLongStorage)
 
--- |c_THLongTensor_data : self -> real *
+-- | c_data :  self -> real *
 foreign import ccall "THTensor.h THLongTensor_data"
-  c_THLongTensor_data :: (Ptr CTHLongTensor) -> IO (Ptr CLong)
+  c_data :: Ptr CTHLongTensor -> IO (Ptr CLong)
 
--- |c_THLongTensor_setFlag : self flag -> void
+-- | c_setFlag :  self flag -> void
 foreign import ccall "THTensor.h THLongTensor_setFlag"
-  c_THLongTensor_setFlag :: (Ptr CTHLongTensor) -> CChar -> IO ()
+  c_setFlag :: Ptr CTHLongTensor -> CChar -> IO ()
 
--- |c_THLongTensor_clearFlag : self flag -> void
+-- | c_clearFlag :  self flag -> void
 foreign import ccall "THTensor.h THLongTensor_clearFlag"
-  c_THLongTensor_clearFlag :: (Ptr CTHLongTensor) -> CChar -> IO ()
+  c_clearFlag :: Ptr CTHLongTensor -> CChar -> IO ()
 
--- |c_THLongTensor_new :  -> THTensor *
+-- | c_new :   -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_new"
-  c_THLongTensor_new :: IO (Ptr CTHLongTensor)
+  c_new :: IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithTensor : tensor -> THTensor *
+-- | c_newWithTensor :  tensor -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithTensor"
-  c_THLongTensor_newWithTensor :: (Ptr CTHLongTensor) -> IO (Ptr CTHLongTensor)
+  c_newWithTensor :: Ptr CTHLongTensor -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithStorage : storage_ storageOffset_ size_ stride_ -> THTensor *
+-- | c_newWithStorage :  storage_ storageOffset_ size_ stride_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithStorage"
-  c_THLongTensor_newWithStorage :: Ptr CTHLongStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor)
+  c_newWithStorage :: Ptr CTHLongStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithStorage1d : storage_ storageOffset_ size0_ stride0_ -> THTensor *
+-- | c_newWithStorage1d :  storage_ storageOffset_ size0_ stride0_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithStorage1d"
-  c_THLongTensor_newWithStorage1d :: Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newWithStorage1d :: Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithStorage2d : storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> THTensor *
+-- | c_newWithStorage2d :  storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithStorage2d"
-  c_THLongTensor_newWithStorage2d :: Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newWithStorage2d :: Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithStorage3d : storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> THTensor *
+-- | c_newWithStorage3d :  storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithStorage3d"
-  c_THLongTensor_newWithStorage3d :: Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newWithStorage3d :: Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithStorage4d : storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> THTensor *
+-- | c_newWithStorage4d :  storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithStorage4d"
-  c_THLongTensor_newWithStorage4d :: Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newWithStorage4d :: Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithSize : size_ stride_ -> THTensor *
+-- | c_newWithSize :  size_ stride_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithSize"
-  c_THLongTensor_newWithSize :: Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor)
+  c_newWithSize :: Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithSize1d : size0_ -> THTensor *
+-- | c_newWithSize1d :  size0_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithSize1d"
-  c_THLongTensor_newWithSize1d :: CLLong -> IO (Ptr CTHLongTensor)
+  c_newWithSize1d :: CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithSize2d : size0_ size1_ -> THTensor *
+-- | c_newWithSize2d :  size0_ size1_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithSize2d"
-  c_THLongTensor_newWithSize2d :: CLLong -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newWithSize2d :: CLLong -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithSize3d : size0_ size1_ size2_ -> THTensor *
+-- | c_newWithSize3d :  size0_ size1_ size2_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithSize3d"
-  c_THLongTensor_newWithSize3d :: CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newWithSize3d :: CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newWithSize4d : size0_ size1_ size2_ size3_ -> THTensor *
+-- | c_newWithSize4d :  size0_ size1_ size2_ size3_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newWithSize4d"
-  c_THLongTensor_newWithSize4d :: CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newWithSize4d :: CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newClone : self -> THTensor *
+-- | c_newClone :  self -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newClone"
-  c_THLongTensor_newClone :: (Ptr CTHLongTensor) -> IO (Ptr CTHLongTensor)
+  c_newClone :: Ptr CTHLongTensor -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newContiguous : tensor -> THTensor *
+-- | c_newContiguous :  tensor -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newContiguous"
-  c_THLongTensor_newContiguous :: (Ptr CTHLongTensor) -> IO (Ptr CTHLongTensor)
+  c_newContiguous :: Ptr CTHLongTensor -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newSelect : tensor dimension_ sliceIndex_ -> THTensor *
+-- | c_newSelect :  tensor dimension_ sliceIndex_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newSelect"
-  c_THLongTensor_newSelect :: (Ptr CTHLongTensor) -> CInt -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newSelect :: Ptr CTHLongTensor -> CInt -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newNarrow : tensor dimension_ firstIndex_ size_ -> THTensor *
+-- | c_newNarrow :  tensor dimension_ firstIndex_ size_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newNarrow"
-  c_THLongTensor_newNarrow :: (Ptr CTHLongTensor) -> CInt -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newNarrow :: Ptr CTHLongTensor -> CInt -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newTranspose : tensor dimension1_ dimension2_ -> THTensor *
+-- | c_newTranspose :  tensor dimension1_ dimension2_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newTranspose"
-  c_THLongTensor_newTranspose :: (Ptr CTHLongTensor) -> CInt -> CInt -> IO (Ptr CTHLongTensor)
+  c_newTranspose :: Ptr CTHLongTensor -> CInt -> CInt -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newUnfold : tensor dimension_ size_ step_ -> THTensor *
+-- | c_newUnfold :  tensor dimension_ size_ step_ -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newUnfold"
-  c_THLongTensor_newUnfold :: (Ptr CTHLongTensor) -> CInt -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
+  c_newUnfold :: Ptr CTHLongTensor -> CInt -> CLLong -> CLLong -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newView : tensor size -> THTensor *
+-- | c_newView :  tensor size -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newView"
-  c_THLongTensor_newView :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor)
+  c_newView :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_newExpand : tensor size -> THTensor *
+-- | c_newExpand :  tensor size -> THTensor *
 foreign import ccall "THTensor.h THLongTensor_newExpand"
-  c_THLongTensor_newExpand :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor)
+  c_newExpand :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor)
 
--- |c_THLongTensor_expand : r tensor size -> void
+-- | c_expand :  r tensor size -> void
 foreign import ccall "THTensor.h THLongTensor_expand"
-  c_THLongTensor_expand :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> IO ()
+  c_expand :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> Ptr CTHLongStorage -> IO ()
 
--- |c_THLongTensor_expandNd : rets ops count -> void
+-- | c_expandNd :  rets ops count -> void
 foreign import ccall "THTensor.h THLongTensor_expandNd"
-  c_THLongTensor_expandNd :: Ptr (Ptr CTHLongTensor) -> Ptr (Ptr CTHLongTensor) -> CInt -> IO ()
+  c_expandNd :: Ptr (Ptr CTHLongTensor) -> Ptr (Ptr CTHLongTensor) -> CInt -> IO ()
 
--- |c_THLongTensor_resize : tensor size stride -> void
+-- | c_resize :  tensor size stride -> void
 foreign import ccall "THTensor.h THLongTensor_resize"
-  c_THLongTensor_resize :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
+  c_resize :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
 
--- |c_THLongTensor_resizeAs : tensor src -> void
+-- | c_resizeAs :  tensor src -> void
 foreign import ccall "THTensor.h THLongTensor_resizeAs"
-  c_THLongTensor_resizeAs :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
+  c_resizeAs :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ()
 
--- |c_THLongTensor_resizeNd : tensor nDimension size stride -> void
+-- | c_resizeNd :  tensor nDimension size stride -> void
 foreign import ccall "THTensor.h THLongTensor_resizeNd"
-  c_THLongTensor_resizeNd :: (Ptr CTHLongTensor) -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ()
+  c_resizeNd :: Ptr CTHLongTensor -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ()
 
--- |c_THLongTensor_resize1d : tensor size0_ -> void
+-- | c_resize1d :  tensor size0_ -> void
 foreign import ccall "THTensor.h THLongTensor_resize1d"
-  c_THLongTensor_resize1d :: (Ptr CTHLongTensor) -> CLLong -> IO ()
+  c_resize1d :: Ptr CTHLongTensor -> CLLong -> IO ()
 
--- |c_THLongTensor_resize2d : tensor size0_ size1_ -> void
+-- | c_resize2d :  tensor size0_ size1_ -> void
 foreign import ccall "THTensor.h THLongTensor_resize2d"
-  c_THLongTensor_resize2d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> IO ()
+  c_resize2d :: Ptr CTHLongTensor -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_resize3d : tensor size0_ size1_ size2_ -> void
+-- | c_resize3d :  tensor size0_ size1_ size2_ -> void
 foreign import ccall "THTensor.h THLongTensor_resize3d"
-  c_THLongTensor_resize3d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> IO ()
+  c_resize3d :: Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_resize4d : tensor size0_ size1_ size2_ size3_ -> void
+-- | c_resize4d :  tensor size0_ size1_ size2_ size3_ -> void
 foreign import ccall "THTensor.h THLongTensor_resize4d"
-  c_THLongTensor_resize4d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+  c_resize4d :: Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_resize5d : tensor size0_ size1_ size2_ size3_ size4_ -> void
+-- | c_resize5d :  tensor size0_ size1_ size2_ size3_ size4_ -> void
 foreign import ccall "THTensor.h THLongTensor_resize5d"
-  c_THLongTensor_resize5d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+  c_resize5d :: Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_set : self src -> void
+-- | c_set :  self src -> void
 foreign import ccall "THTensor.h THLongTensor_set"
-  c_THLongTensor_set :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
+  c_set :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ()
 
--- |c_THLongTensor_setStorage : self storage_ storageOffset_ size_ stride_ -> void
+-- | c_setStorage :  self storage_ storageOffset_ size_ stride_ -> void
 foreign import ccall "THTensor.h THLongTensor_setStorage"
-  c_THLongTensor_setStorage :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
+  c_setStorage :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ()
 
--- |c_THLongTensor_setStorageNd : self storage_ storageOffset_ nDimension size stride -> void
+-- | c_setStorageNd :  self storage_ storageOffset_ nDimension size stride -> void
 foreign import ccall "THTensor.h THLongTensor_setStorageNd"
-  c_THLongTensor_setStorageNd :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ()
+  c_setStorageNd :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ()
 
--- |c_THLongTensor_setStorage1d : self storage_ storageOffset_ size0_ stride0_ -> void
+-- | c_setStorage1d :  self storage_ storageOffset_ size0_ stride0_ -> void
 foreign import ccall "THTensor.h THLongTensor_setStorage1d"
-  c_THLongTensor_setStorage1d :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> IO ()
+  c_setStorage1d :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_setStorage2d : self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> void
+-- | c_setStorage2d :  self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> void
 foreign import ccall "THTensor.h THLongTensor_setStorage2d"
-  c_THLongTensor_setStorage2d :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+  c_setStorage2d :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_setStorage3d : self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> void
+-- | c_setStorage3d :  self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> void
 foreign import ccall "THTensor.h THLongTensor_setStorage3d"
-  c_THLongTensor_setStorage3d :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+  c_setStorage3d :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_setStorage4d : self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> void
+-- | c_setStorage4d :  self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> void
 foreign import ccall "THTensor.h THLongTensor_setStorage4d"
-  c_THLongTensor_setStorage4d :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+  c_setStorage4d :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_narrow : self src dimension_ firstIndex_ size_ -> void
+-- | c_narrow :  self src dimension_ firstIndex_ size_ -> void
 foreign import ccall "THTensor.h THLongTensor_narrow"
-  c_THLongTensor_narrow :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CLLong -> CLLong -> IO ()
+  c_narrow :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_select : self src dimension_ sliceIndex_ -> void
+-- | c_select :  self src dimension_ sliceIndex_ -> void
 foreign import ccall "THTensor.h THLongTensor_select"
-  c_THLongTensor_select :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CLLong -> IO ()
+  c_select :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> CLLong -> IO ()
 
--- |c_THLongTensor_transpose : self src dimension1_ dimension2_ -> void
+-- | c_transpose :  self src dimension1_ dimension2_ -> void
 foreign import ccall "THTensor.h THLongTensor_transpose"
-  c_THLongTensor_transpose :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CInt -> IO ()
+  c_transpose :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> CInt -> IO ()
 
--- |c_THLongTensor_unfold : self src dimension_ size_ step_ -> void
+-- | c_unfold :  self src dimension_ size_ step_ -> void
 foreign import ccall "THTensor.h THLongTensor_unfold"
-  c_THLongTensor_unfold :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CLLong -> CLLong -> IO ()
+  c_unfold :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> CLLong -> CLLong -> IO ()
 
--- |c_THLongTensor_squeeze : self src -> void
+-- | c_squeeze :  self src -> void
 foreign import ccall "THTensor.h THLongTensor_squeeze"
-  c_THLongTensor_squeeze :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
+  c_squeeze :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ()
 
--- |c_THLongTensor_squeeze1d : self src dimension_ -> void
+-- | c_squeeze1d :  self src dimension_ -> void
 foreign import ccall "THTensor.h THLongTensor_squeeze1d"
-  c_THLongTensor_squeeze1d :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> IO ()
+  c_squeeze1d :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> IO ()
 
--- |c_THLongTensor_unsqueeze1d : self src dimension_ -> void
+-- | c_unsqueeze1d :  self src dimension_ -> void
 foreign import ccall "THTensor.h THLongTensor_unsqueeze1d"
-  c_THLongTensor_unsqueeze1d :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> IO ()
+  c_unsqueeze1d :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> IO ()
 
--- |c_THLongTensor_isContiguous : self -> int
+-- | c_isContiguous :  self -> int
 foreign import ccall "THTensor.h THLongTensor_isContiguous"
-  c_THLongTensor_isContiguous :: (Ptr CTHLongTensor) -> CInt
+  c_isContiguous :: Ptr CTHLongTensor -> IO (CInt)
 
--- |c_THLongTensor_isSameSizeAs : self src -> int
+-- | c_isSameSizeAs :  self src -> int
 foreign import ccall "THTensor.h THLongTensor_isSameSizeAs"
-  c_THLongTensor_isSameSizeAs :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt
+  c_isSameSizeAs :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO (CInt)
 
--- |c_THLongTensor_isSetTo : self src -> int
+-- | c_isSetTo :  self src -> int
 foreign import ccall "THTensor.h THLongTensor_isSetTo"
-  c_THLongTensor_isSetTo :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt
+  c_isSetTo :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO (CInt)
 
--- |c_THLongTensor_isSize : self dims -> int
+-- | c_isSize :  self dims -> int
 foreign import ccall "THTensor.h THLongTensor_isSize"
-  c_THLongTensor_isSize :: (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CInt
+  c_isSize :: Ptr CTHLongTensor -> Ptr CTHLongStorage -> IO (CInt)
 
--- |c_THLongTensor_nElement : self -> ptrdiff_t
+-- | c_nElement :  self -> ptrdiff_t
 foreign import ccall "THTensor.h THLongTensor_nElement"
-  c_THLongTensor_nElement :: (Ptr CTHLongTensor) -> CPtrdiff
+  c_nElement :: Ptr CTHLongTensor -> IO (CPtrdiff)
 
--- |c_THLongTensor_retain : self -> void
+-- | c_retain :  self -> void
 foreign import ccall "THTensor.h THLongTensor_retain"
-  c_THLongTensor_retain :: (Ptr CTHLongTensor) -> IO ()
+  c_retain :: Ptr CTHLongTensor -> IO ()
 
--- |c_THLongTensor_free : self -> void
+-- | c_free :  self -> void
 foreign import ccall "THTensor.h THLongTensor_free"
-  c_THLongTensor_free :: (Ptr CTHLongTensor) -> IO ()
+  c_free :: Ptr CTHLongTensor -> IO ()
 
--- |c_THLongTensor_freeCopyTo : self dst -> void
+-- | c_freeCopyTo :  self dst -> void
 foreign import ccall "THTensor.h THLongTensor_freeCopyTo"
-  c_THLongTensor_freeCopyTo :: (Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ()
+  c_freeCopyTo :: Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ()
 
--- |c_THLongTensor_set1d : tensor x0 value -> void
+-- | c_set1d :  tensor x0 value -> void
 foreign import ccall "THTensor.h THLongTensor_set1d"
-  c_THLongTensor_set1d :: (Ptr CTHLongTensor) -> CLLong -> CLong -> IO ()
+  c_set1d :: Ptr CTHLongTensor -> CLLong -> CLong -> IO ()
 
--- |c_THLongTensor_set2d : tensor x0 x1 value -> void
+-- | c_set2d :  tensor x0 x1 value -> void
 foreign import ccall "THTensor.h THLongTensor_set2d"
-  c_THLongTensor_set2d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> CLong -> IO ()
+  c_set2d :: Ptr CTHLongTensor -> CLLong -> CLLong -> CLong -> IO ()
 
--- |c_THLongTensor_set3d : tensor x0 x1 x2 value -> void
+-- | c_set3d :  tensor x0 x1 x2 value -> void
 foreign import ccall "THTensor.h THLongTensor_set3d"
-  c_THLongTensor_set3d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLong -> IO ()
+  c_set3d :: Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLong -> IO ()
 
--- |c_THLongTensor_set4d : tensor x0 x1 x2 x3 value -> void
+-- | c_set4d :  tensor x0 x1 x2 x3 value -> void
 foreign import ccall "THTensor.h THLongTensor_set4d"
-  c_THLongTensor_set4d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLLong -> CLong -> IO ()
+  c_set4d :: Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CLong -> IO ()
 
--- |c_THLongTensor_get1d : tensor x0 -> real
+-- | c_get1d :  tensor x0 -> real
 foreign import ccall "THTensor.h THLongTensor_get1d"
-  c_THLongTensor_get1d :: (Ptr CTHLongTensor) -> CLLong -> CLong
+  c_get1d :: Ptr CTHLongTensor -> CLLong -> IO (CLong)
 
--- |c_THLongTensor_get2d : tensor x0 x1 -> real
+-- | c_get2d :  tensor x0 x1 -> real
 foreign import ccall "THTensor.h THLongTensor_get2d"
-  c_THLongTensor_get2d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> CLong
+  c_get2d :: Ptr CTHLongTensor -> CLLong -> CLLong -> IO (CLong)
 
--- |c_THLongTensor_get3d : tensor x0 x1 x2 -> real
+-- | c_get3d :  tensor x0 x1 x2 -> real
 foreign import ccall "THTensor.h THLongTensor_get3d"
-  c_THLongTensor_get3d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLong
+  c_get3d :: Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> IO (CLong)
 
--- |c_THLongTensor_get4d : tensor x0 x1 x2 x3 -> real
+-- | c_get4d :  tensor x0 x1 x2 x3 -> real
 foreign import ccall "THTensor.h THLongTensor_get4d"
-  c_THLongTensor_get4d :: (Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLLong -> CLong
+  c_get4d :: Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO (CLong)
 
--- |c_THLongTensor_desc : tensor -> THDescBuff
+-- | c_desc :  tensor -> THDescBuff
 foreign import ccall "THTensor.h THLongTensor_desc"
-  c_THLongTensor_desc :: (Ptr CTHLongTensor) -> CTHDescBuff
+  c_desc :: Ptr CTHLongTensor -> IO (CTHDescBuff)
 
--- |c_THLongTensor_sizeDesc : tensor -> THDescBuff
+-- | c_sizeDesc :  tensor -> THDescBuff
 foreign import ccall "THTensor.h THLongTensor_sizeDesc"
-  c_THLongTensor_sizeDesc :: (Ptr CTHLongTensor) -> CTHDescBuff
+  c_sizeDesc :: Ptr CTHLongTensor -> IO (CTHDescBuff)
 
--- |p_THLongTensor_storage : Pointer to function : self -> THStorage *
+-- | p_storage : Pointer to function : self -> THStorage *
 foreign import ccall "THTensor.h &THLongTensor_storage"
-  p_THLongTensor_storage :: FunPtr ((Ptr CTHLongTensor) -> IO (Ptr CTHLongStorage))
+  p_storage :: FunPtr (Ptr CTHLongTensor -> IO (Ptr CTHLongStorage))
 
--- |p_THLongTensor_storageOffset : Pointer to function : self -> ptrdiff_t
+-- | p_storageOffset : Pointer to function : self -> ptrdiff_t
 foreign import ccall "THTensor.h &THLongTensor_storageOffset"
-  p_THLongTensor_storageOffset :: FunPtr ((Ptr CTHLongTensor) -> CPtrdiff)
+  p_storageOffset :: FunPtr (Ptr CTHLongTensor -> IO (CPtrdiff))
 
--- |p_THLongTensor_nDimension : Pointer to function : self -> int
+-- | p_nDimension : Pointer to function : self -> int
 foreign import ccall "THTensor.h &THLongTensor_nDimension"
-  p_THLongTensor_nDimension :: FunPtr ((Ptr CTHLongTensor) -> CInt)
+  p_nDimension :: FunPtr (Ptr CTHLongTensor -> IO (CInt))
 
--- |p_THLongTensor_size : Pointer to function : self dim -> int64_t
+-- | p_size : Pointer to function : self dim -> int64_t
 foreign import ccall "THTensor.h &THLongTensor_size"
-  p_THLongTensor_size :: FunPtr ((Ptr CTHLongTensor) -> CInt -> CLLong)
+  p_size :: FunPtr (Ptr CTHLongTensor -> CInt -> IO (CLLong))
 
--- |p_THLongTensor_stride : Pointer to function : self dim -> int64_t
+-- | p_stride : Pointer to function : self dim -> int64_t
 foreign import ccall "THTensor.h &THLongTensor_stride"
-  p_THLongTensor_stride :: FunPtr ((Ptr CTHLongTensor) -> CInt -> CLLong)
+  p_stride :: FunPtr (Ptr CTHLongTensor -> CInt -> IO (CLLong))
 
--- |p_THLongTensor_newSizeOf : Pointer to function : self -> THLongStorage *
+-- | p_newSizeOf : Pointer to function : self -> THLongStorage *
 foreign import ccall "THTensor.h &THLongTensor_newSizeOf"
-  p_THLongTensor_newSizeOf :: FunPtr ((Ptr CTHLongTensor) -> IO (Ptr CTHLongStorage))
+  p_newSizeOf :: FunPtr (Ptr CTHLongTensor -> IO (Ptr CTHLongStorage))
 
--- |p_THLongTensor_newStrideOf : Pointer to function : self -> THLongStorage *
+-- | p_newStrideOf : Pointer to function : self -> THLongStorage *
 foreign import ccall "THTensor.h &THLongTensor_newStrideOf"
-  p_THLongTensor_newStrideOf :: FunPtr ((Ptr CTHLongTensor) -> IO (Ptr CTHLongStorage))
+  p_newStrideOf :: FunPtr (Ptr CTHLongTensor -> IO (Ptr CTHLongStorage))
 
--- |p_THLongTensor_data : Pointer to function : self -> real *
+-- | p_data : Pointer to function : self -> real *
 foreign import ccall "THTensor.h &THLongTensor_data"
-  p_THLongTensor_data :: FunPtr ((Ptr CTHLongTensor) -> IO (Ptr CLong))
+  p_data :: FunPtr (Ptr CTHLongTensor -> IO (Ptr CLong))
 
--- |p_THLongTensor_setFlag : Pointer to function : self flag -> void
+-- | p_setFlag : Pointer to function : self flag -> void
 foreign import ccall "THTensor.h &THLongTensor_setFlag"
-  p_THLongTensor_setFlag :: FunPtr ((Ptr CTHLongTensor) -> CChar -> IO ())
+  p_setFlag :: FunPtr (Ptr CTHLongTensor -> CChar -> IO ())
 
--- |p_THLongTensor_clearFlag : Pointer to function : self flag -> void
+-- | p_clearFlag : Pointer to function : self flag -> void
 foreign import ccall "THTensor.h &THLongTensor_clearFlag"
-  p_THLongTensor_clearFlag :: FunPtr ((Ptr CTHLongTensor) -> CChar -> IO ())
+  p_clearFlag :: FunPtr (Ptr CTHLongTensor -> CChar -> IO ())
 
--- |p_THLongTensor_new : Pointer to function :  -> THTensor *
+-- | p_new : Pointer to function :  -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_new"
-  p_THLongTensor_new :: FunPtr (IO (Ptr CTHLongTensor))
+  p_new :: FunPtr (IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithTensor : Pointer to function : tensor -> THTensor *
+-- | p_newWithTensor : Pointer to function : tensor -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithTensor"
-  p_THLongTensor_newWithTensor :: FunPtr ((Ptr CTHLongTensor) -> IO (Ptr CTHLongTensor))
+  p_newWithTensor :: FunPtr (Ptr CTHLongTensor -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithStorage : Pointer to function : storage_ storageOffset_ size_ stride_ -> THTensor *
+-- | p_newWithStorage : Pointer to function : storage_ storageOffset_ size_ stride_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithStorage"
-  p_THLongTensor_newWithStorage :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor))
+  p_newWithStorage :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithStorage1d : Pointer to function : storage_ storageOffset_ size0_ stride0_ -> THTensor *
+-- | p_newWithStorage1d : Pointer to function : storage_ storageOffset_ size0_ stride0_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithStorage1d"
-  p_THLongTensor_newWithStorage1d :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newWithStorage1d :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithStorage2d : Pointer to function : storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> THTensor *
+-- | p_newWithStorage2d : Pointer to function : storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithStorage2d"
-  p_THLongTensor_newWithStorage2d :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newWithStorage2d :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithStorage3d : Pointer to function : storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> THTensor *
+-- | p_newWithStorage3d : Pointer to function : storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithStorage3d"
-  p_THLongTensor_newWithStorage3d :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newWithStorage3d :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithStorage4d : Pointer to function : storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> THTensor *
+-- | p_newWithStorage4d : Pointer to function : storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithStorage4d"
-  p_THLongTensor_newWithStorage4d :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newWithStorage4d :: FunPtr (Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithSize : Pointer to function : size_ stride_ -> THTensor *
+-- | p_newWithSize : Pointer to function : size_ stride_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithSize"
-  p_THLongTensor_newWithSize :: FunPtr (Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor))
+  p_newWithSize :: FunPtr (Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithSize1d : Pointer to function : size0_ -> THTensor *
+-- | p_newWithSize1d : Pointer to function : size0_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithSize1d"
-  p_THLongTensor_newWithSize1d :: FunPtr (CLLong -> IO (Ptr CTHLongTensor))
+  p_newWithSize1d :: FunPtr (CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithSize2d : Pointer to function : size0_ size1_ -> THTensor *
+-- | p_newWithSize2d : Pointer to function : size0_ size1_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithSize2d"
-  p_THLongTensor_newWithSize2d :: FunPtr (CLLong -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newWithSize2d :: FunPtr (CLLong -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithSize3d : Pointer to function : size0_ size1_ size2_ -> THTensor *
+-- | p_newWithSize3d : Pointer to function : size0_ size1_ size2_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithSize3d"
-  p_THLongTensor_newWithSize3d :: FunPtr (CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newWithSize3d :: FunPtr (CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newWithSize4d : Pointer to function : size0_ size1_ size2_ size3_ -> THTensor *
+-- | p_newWithSize4d : Pointer to function : size0_ size1_ size2_ size3_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newWithSize4d"
-  p_THLongTensor_newWithSize4d :: FunPtr (CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newWithSize4d :: FunPtr (CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newClone : Pointer to function : self -> THTensor *
+-- | p_newClone : Pointer to function : self -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newClone"
-  p_THLongTensor_newClone :: FunPtr ((Ptr CTHLongTensor) -> IO (Ptr CTHLongTensor))
+  p_newClone :: FunPtr (Ptr CTHLongTensor -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newContiguous : Pointer to function : tensor -> THTensor *
+-- | p_newContiguous : Pointer to function : tensor -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newContiguous"
-  p_THLongTensor_newContiguous :: FunPtr ((Ptr CTHLongTensor) -> IO (Ptr CTHLongTensor))
+  p_newContiguous :: FunPtr (Ptr CTHLongTensor -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newSelect : Pointer to function : tensor dimension_ sliceIndex_ -> THTensor *
+-- | p_newSelect : Pointer to function : tensor dimension_ sliceIndex_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newSelect"
-  p_THLongTensor_newSelect :: FunPtr ((Ptr CTHLongTensor) -> CInt -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newSelect :: FunPtr (Ptr CTHLongTensor -> CInt -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newNarrow : Pointer to function : tensor dimension_ firstIndex_ size_ -> THTensor *
+-- | p_newNarrow : Pointer to function : tensor dimension_ firstIndex_ size_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newNarrow"
-  p_THLongTensor_newNarrow :: FunPtr ((Ptr CTHLongTensor) -> CInt -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newNarrow :: FunPtr (Ptr CTHLongTensor -> CInt -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newTranspose : Pointer to function : tensor dimension1_ dimension2_ -> THTensor *
+-- | p_newTranspose : Pointer to function : tensor dimension1_ dimension2_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newTranspose"
-  p_THLongTensor_newTranspose :: FunPtr ((Ptr CTHLongTensor) -> CInt -> CInt -> IO (Ptr CTHLongTensor))
+  p_newTranspose :: FunPtr (Ptr CTHLongTensor -> CInt -> CInt -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newUnfold : Pointer to function : tensor dimension_ size_ step_ -> THTensor *
+-- | p_newUnfold : Pointer to function : tensor dimension_ size_ step_ -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newUnfold"
-  p_THLongTensor_newUnfold :: FunPtr ((Ptr CTHLongTensor) -> CInt -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
+  p_newUnfold :: FunPtr (Ptr CTHLongTensor -> CInt -> CLLong -> CLLong -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newView : Pointer to function : tensor size -> THTensor *
+-- | p_newView : Pointer to function : tensor size -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newView"
-  p_THLongTensor_newView :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor))
+  p_newView :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_newExpand : Pointer to function : tensor size -> THTensor *
+-- | p_newExpand : Pointer to function : tensor size -> THTensor *
 foreign import ccall "THTensor.h &THLongTensor_newExpand"
-  p_THLongTensor_newExpand :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor))
+  p_newExpand :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> IO (Ptr CTHLongTensor))
 
--- |p_THLongTensor_expand : Pointer to function : r tensor size -> void
+-- | p_expand : Pointer to function : r tensor size -> void
 foreign import ccall "THTensor.h &THLongTensor_expand"
-  p_THLongTensor_expand :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> Ptr CTHLongStorage -> IO ())
+  p_expand :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> Ptr CTHLongStorage -> IO ())
 
--- |p_THLongTensor_expandNd : Pointer to function : rets ops count -> void
+-- | p_expandNd : Pointer to function : rets ops count -> void
 foreign import ccall "THTensor.h &THLongTensor_expandNd"
-  p_THLongTensor_expandNd :: FunPtr (Ptr (Ptr CTHLongTensor) -> Ptr (Ptr CTHLongTensor) -> CInt -> IO ())
+  p_expandNd :: FunPtr (Ptr (Ptr CTHLongTensor) -> Ptr (Ptr CTHLongTensor) -> CInt -> IO ())
 
--- |p_THLongTensor_resize : Pointer to function : tensor size stride -> void
+-- | p_resize : Pointer to function : tensor size stride -> void
 foreign import ccall "THTensor.h &THLongTensor_resize"
-  p_THLongTensor_resize :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ())
+  p_resize :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ())
 
--- |p_THLongTensor_resizeAs : Pointer to function : tensor src -> void
+-- | p_resizeAs : Pointer to function : tensor src -> void
 foreign import ccall "THTensor.h &THLongTensor_resizeAs"
-  p_THLongTensor_resizeAs :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
+  p_resizeAs :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ())
 
--- |p_THLongTensor_resizeNd : Pointer to function : tensor nDimension size stride -> void
+-- | p_resizeNd : Pointer to function : tensor nDimension size stride -> void
 foreign import ccall "THTensor.h &THLongTensor_resizeNd"
-  p_THLongTensor_resizeNd :: FunPtr ((Ptr CTHLongTensor) -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ())
+  p_resizeNd :: FunPtr (Ptr CTHLongTensor -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ())
 
--- |p_THLongTensor_resize1d : Pointer to function : tensor size0_ -> void
+-- | p_resize1d : Pointer to function : tensor size0_ -> void
 foreign import ccall "THTensor.h &THLongTensor_resize1d"
-  p_THLongTensor_resize1d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> IO ())
+  p_resize1d :: FunPtr (Ptr CTHLongTensor -> CLLong -> IO ())
 
--- |p_THLongTensor_resize2d : Pointer to function : tensor size0_ size1_ -> void
+-- | p_resize2d : Pointer to function : tensor size0_ size1_ -> void
 foreign import ccall "THTensor.h &THLongTensor_resize2d"
-  p_THLongTensor_resize2d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> IO ())
+  p_resize2d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_resize3d : Pointer to function : tensor size0_ size1_ size2_ -> void
+-- | p_resize3d : Pointer to function : tensor size0_ size1_ size2_ -> void
 foreign import ccall "THTensor.h &THLongTensor_resize3d"
-  p_THLongTensor_resize3d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> IO ())
+  p_resize3d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_resize4d : Pointer to function : tensor size0_ size1_ size2_ size3_ -> void
+-- | p_resize4d : Pointer to function : tensor size0_ size1_ size2_ size3_ -> void
 foreign import ccall "THTensor.h &THLongTensor_resize4d"
-  p_THLongTensor_resize4d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
+  p_resize4d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_resize5d : Pointer to function : tensor size0_ size1_ size2_ size3_ size4_ -> void
+-- | p_resize5d : Pointer to function : tensor size0_ size1_ size2_ size3_ size4_ -> void
 foreign import ccall "THTensor.h &THLongTensor_resize5d"
-  p_THLongTensor_resize5d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
+  p_resize5d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_set : Pointer to function : self src -> void
+-- | p_set : Pointer to function : self src -> void
 foreign import ccall "THTensor.h &THLongTensor_set"
-  p_THLongTensor_set :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
+  p_set :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ())
 
--- |p_THLongTensor_setStorage : Pointer to function : self storage_ storageOffset_ size_ stride_ -> void
+-- | p_setStorage : Pointer to function : self storage_ storageOffset_ size_ stride_ -> void
 foreign import ccall "THTensor.h &THLongTensor_setStorage"
-  p_THLongTensor_setStorage :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ())
+  p_setStorage :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> Ptr CTHLongStorage -> Ptr CTHLongStorage -> IO ())
 
--- |p_THLongTensor_setStorageNd : Pointer to function : self storage_ storageOffset_ nDimension size stride -> void
+-- | p_setStorageNd : Pointer to function : self storage_ storageOffset_ nDimension size stride -> void
 foreign import ccall "THTensor.h &THLongTensor_setStorageNd"
-  p_THLongTensor_setStorageNd :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ())
+  p_setStorageNd :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CInt -> Ptr CLLong -> Ptr CLLong -> IO ())
 
--- |p_THLongTensor_setStorage1d : Pointer to function : self storage_ storageOffset_ size0_ stride0_ -> void
+-- | p_setStorage1d : Pointer to function : self storage_ storageOffset_ size0_ stride0_ -> void
 foreign import ccall "THTensor.h &THLongTensor_setStorage1d"
-  p_THLongTensor_setStorage1d :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> IO ())
+  p_setStorage1d :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_setStorage2d : Pointer to function : self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> void
+-- | p_setStorage2d : Pointer to function : self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ -> void
 foreign import ccall "THTensor.h &THLongTensor_setStorage2d"
-  p_THLongTensor_setStorage2d :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
+  p_setStorage2d :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_setStorage3d : Pointer to function : self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> void
+-- | p_setStorage3d : Pointer to function : self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ -> void
 foreign import ccall "THTensor.h &THLongTensor_setStorage3d"
-  p_THLongTensor_setStorage3d :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
+  p_setStorage3d :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_setStorage4d : Pointer to function : self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> void
+-- | p_setStorage4d : Pointer to function : self storage_ storageOffset_ size0_ stride0_ size1_ stride1_ size2_ stride2_ size3_ stride3_ -> void
 foreign import ccall "THTensor.h &THLongTensor_setStorage4d"
-  p_THLongTensor_setStorage4d :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
+  p_setStorage4d :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> CPtrdiff -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_narrow : Pointer to function : self src dimension_ firstIndex_ size_ -> void
+-- | p_narrow : Pointer to function : self src dimension_ firstIndex_ size_ -> void
 foreign import ccall "THTensor.h &THLongTensor_narrow"
-  p_THLongTensor_narrow :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CLLong -> CLLong -> IO ())
+  p_narrow :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_select : Pointer to function : self src dimension_ sliceIndex_ -> void
+-- | p_select : Pointer to function : self src dimension_ sliceIndex_ -> void
 foreign import ccall "THTensor.h &THLongTensor_select"
-  p_THLongTensor_select :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CLLong -> IO ())
+  p_select :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> CLLong -> IO ())
 
--- |p_THLongTensor_transpose : Pointer to function : self src dimension1_ dimension2_ -> void
+-- | p_transpose : Pointer to function : self src dimension1_ dimension2_ -> void
 foreign import ccall "THTensor.h &THLongTensor_transpose"
-  p_THLongTensor_transpose :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CInt -> IO ())
+  p_transpose :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> CInt -> IO ())
 
--- |p_THLongTensor_unfold : Pointer to function : self src dimension_ size_ step_ -> void
+-- | p_unfold : Pointer to function : self src dimension_ size_ step_ -> void
 foreign import ccall "THTensor.h &THLongTensor_unfold"
-  p_THLongTensor_unfold :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> CLLong -> CLLong -> IO ())
+  p_unfold :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> CLLong -> CLLong -> IO ())
 
--- |p_THLongTensor_squeeze : Pointer to function : self src -> void
+-- | p_squeeze : Pointer to function : self src -> void
 foreign import ccall "THTensor.h &THLongTensor_squeeze"
-  p_THLongTensor_squeeze :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
+  p_squeeze :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ())
 
--- |p_THLongTensor_squeeze1d : Pointer to function : self src dimension_ -> void
+-- | p_squeeze1d : Pointer to function : self src dimension_ -> void
 foreign import ccall "THTensor.h &THLongTensor_squeeze1d"
-  p_THLongTensor_squeeze1d :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> IO ())
+  p_squeeze1d :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> IO ())
 
--- |p_THLongTensor_unsqueeze1d : Pointer to function : self src dimension_ -> void
+-- | p_unsqueeze1d : Pointer to function : self src dimension_ -> void
 foreign import ccall "THTensor.h &THLongTensor_unsqueeze1d"
-  p_THLongTensor_unsqueeze1d :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt -> IO ())
+  p_unsqueeze1d :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> CInt -> IO ())
 
--- |p_THLongTensor_isContiguous : Pointer to function : self -> int
+-- | p_isContiguous : Pointer to function : self -> int
 foreign import ccall "THTensor.h &THLongTensor_isContiguous"
-  p_THLongTensor_isContiguous :: FunPtr ((Ptr CTHLongTensor) -> CInt)
+  p_isContiguous :: FunPtr (Ptr CTHLongTensor -> IO (CInt))
 
--- |p_THLongTensor_isSameSizeAs : Pointer to function : self src -> int
+-- | p_isSameSizeAs : Pointer to function : self src -> int
 foreign import ccall "THTensor.h &THLongTensor_isSameSizeAs"
-  p_THLongTensor_isSameSizeAs :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt)
+  p_isSameSizeAs :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO (CInt))
 
--- |p_THLongTensor_isSetTo : Pointer to function : self src -> int
+-- | p_isSetTo : Pointer to function : self src -> int
 foreign import ccall "THTensor.h &THLongTensor_isSetTo"
-  p_THLongTensor_isSetTo :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> CInt)
+  p_isSetTo :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO (CInt))
 
--- |p_THLongTensor_isSize : Pointer to function : self dims -> int
+-- | p_isSize : Pointer to function : self dims -> int
 foreign import ccall "THTensor.h &THLongTensor_isSize"
-  p_THLongTensor_isSize :: FunPtr ((Ptr CTHLongTensor) -> Ptr CTHLongStorage -> CInt)
+  p_isSize :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongStorage -> IO (CInt))
 
--- |p_THLongTensor_nElement : Pointer to function : self -> ptrdiff_t
+-- | p_nElement : Pointer to function : self -> ptrdiff_t
 foreign import ccall "THTensor.h &THLongTensor_nElement"
-  p_THLongTensor_nElement :: FunPtr ((Ptr CTHLongTensor) -> CPtrdiff)
+  p_nElement :: FunPtr (Ptr CTHLongTensor -> IO (CPtrdiff))
 
--- |p_THLongTensor_retain : Pointer to function : self -> void
+-- | p_retain : Pointer to function : self -> void
 foreign import ccall "THTensor.h &THLongTensor_retain"
-  p_THLongTensor_retain :: FunPtr ((Ptr CTHLongTensor) -> IO ())
+  p_retain :: FunPtr (Ptr CTHLongTensor -> IO ())
 
--- |p_THLongTensor_free : Pointer to function : self -> void
+-- | p_free : Pointer to function : self -> void
 foreign import ccall "THTensor.h &THLongTensor_free"
-  p_THLongTensor_free :: FunPtr ((Ptr CTHLongTensor) -> IO ())
+  p_free :: FunPtr (Ptr CTHLongTensor -> IO ())
 
--- |p_THLongTensor_freeCopyTo : Pointer to function : self dst -> void
+-- | p_freeCopyTo : Pointer to function : self dst -> void
 foreign import ccall "THTensor.h &THLongTensor_freeCopyTo"
-  p_THLongTensor_freeCopyTo :: FunPtr ((Ptr CTHLongTensor) -> (Ptr CTHLongTensor) -> IO ())
+  p_freeCopyTo :: FunPtr (Ptr CTHLongTensor -> Ptr CTHLongTensor -> IO ())
 
--- |p_THLongTensor_set1d : Pointer to function : tensor x0 value -> void
+-- | p_set1d : Pointer to function : tensor x0 value -> void
 foreign import ccall "THTensor.h &THLongTensor_set1d"
-  p_THLongTensor_set1d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLong -> IO ())
+  p_set1d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLong -> IO ())
 
--- |p_THLongTensor_set2d : Pointer to function : tensor x0 x1 value -> void
+-- | p_set2d : Pointer to function : tensor x0 x1 value -> void
 foreign import ccall "THTensor.h &THLongTensor_set2d"
-  p_THLongTensor_set2d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> CLong -> IO ())
+  p_set2d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> CLong -> IO ())
 
--- |p_THLongTensor_set3d : Pointer to function : tensor x0 x1 x2 value -> void
+-- | p_set3d : Pointer to function : tensor x0 x1 x2 value -> void
 foreign import ccall "THTensor.h &THLongTensor_set3d"
-  p_THLongTensor_set3d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLong -> IO ())
+  p_set3d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLong -> IO ())
 
--- |p_THLongTensor_set4d : Pointer to function : tensor x0 x1 x2 x3 value -> void
+-- | p_set4d : Pointer to function : tensor x0 x1 x2 x3 value -> void
 foreign import ccall "THTensor.h &THLongTensor_set4d"
-  p_THLongTensor_set4d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLLong -> CLong -> IO ())
+  p_set4d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CLong -> IO ())
 
--- |p_THLongTensor_get1d : Pointer to function : tensor x0 -> real
+-- | p_get1d : Pointer to function : tensor x0 -> real
 foreign import ccall "THTensor.h &THLongTensor_get1d"
-  p_THLongTensor_get1d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLong)
+  p_get1d :: FunPtr (Ptr CTHLongTensor -> CLLong -> IO (CLong))
 
--- |p_THLongTensor_get2d : Pointer to function : tensor x0 x1 -> real
+-- | p_get2d : Pointer to function : tensor x0 x1 -> real
 foreign import ccall "THTensor.h &THLongTensor_get2d"
-  p_THLongTensor_get2d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> CLong)
+  p_get2d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> IO (CLong))
 
--- |p_THLongTensor_get3d : Pointer to function : tensor x0 x1 x2 -> real
+-- | p_get3d : Pointer to function : tensor x0 x1 x2 -> real
 foreign import ccall "THTensor.h &THLongTensor_get3d"
-  p_THLongTensor_get3d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLong)
+  p_get3d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> IO (CLong))
 
--- |p_THLongTensor_get4d : Pointer to function : tensor x0 x1 x2 x3 -> real
+-- | p_get4d : Pointer to function : tensor x0 x1 x2 x3 -> real
 foreign import ccall "THTensor.h &THLongTensor_get4d"
-  p_THLongTensor_get4d :: FunPtr ((Ptr CTHLongTensor) -> CLLong -> CLLong -> CLLong -> CLLong -> CLong)
+  p_get4d :: FunPtr (Ptr CTHLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO (CLong))
 
--- |p_THLongTensor_desc : Pointer to function : tensor -> THDescBuff
+-- | p_desc : Pointer to function : tensor -> THDescBuff
 foreign import ccall "THTensor.h &THLongTensor_desc"
-  p_THLongTensor_desc :: FunPtr ((Ptr CTHLongTensor) -> CTHDescBuff)
+  p_desc :: FunPtr (Ptr CTHLongTensor -> IO (CTHDescBuff))
 
--- |p_THLongTensor_sizeDesc : Pointer to function : tensor -> THDescBuff
+-- | p_sizeDesc : Pointer to function : tensor -> THDescBuff
 foreign import ccall "THTensor.h &THLongTensor_sizeDesc"
-  p_THLongTensor_sizeDesc :: FunPtr ((Ptr CTHLongTensor) -> CTHDescBuff)
+  p_sizeDesc :: FunPtr (Ptr CTHLongTensor -> IO (CTHDescBuff))

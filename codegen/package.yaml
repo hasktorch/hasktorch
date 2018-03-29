@@ -1,17 +1,23 @@
-name:                hasktorch-codegen
-version:             0.1.0.0
-synopsis:            Torch for tensors and neural networks in Haskell
-description:         Code generation tools
-license:             BSD3
-author:              Austin Huang
-github: austinvhuang/hasktorch
+name:        hasktorch-codegen
+version:     0.0.1.0
+synopsis:    Torch for tensors and neural networks in Haskell
+description: Code generation tools
+license:     BSD3
+author:      Austin Huang
+github:      hasktorch/hasktorch
+
+default-extensions:
+  - LambdaCase
+  - OverloadedStrings
 
 dependencies:
-- base >=4.7 && <5
-- containers >= 0.5.7
-- megaparsec >= 5.3
-- pretty-show >= 1.6.13
-- text >= 1.2.2.2
+  - base >=4.7 && <5
+  - containers >= 0.5.7
+  - unordered-containers >= 0.1.3.0
+  - hashable >= 1.0.1.1
+  - megaparsec >= 5.3
+  - pretty-show >= 1.6.13
+  - text >= 1.2.2.2
 
 library:
   source-dirs:

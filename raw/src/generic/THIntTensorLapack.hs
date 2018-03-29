@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
-module THIntTensorLapack (
-    ) where
+module THIntTensorLapack
+  ( 
+  ) where
 
 import Foreign
 import Foreign.C.Types

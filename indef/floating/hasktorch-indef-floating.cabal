@@ -1,0 +1,54 @@
+name:           hasktorch-indef-floating
+version:        0.0.1.0
+synopsis:       Torch for tensors and neural networks in Haskell
+description:    core tensor abstractions wrapping raw TH bindings
+category:       Tensors, Machine Learning
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         Austin Huang
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.24
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+library
+  default-language: Haskell2010
+  hs-source-dirs: src
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-indef-signed
+    -- I'm not actually sure we need this dependency...
+    , hasktorch-raw
+    , hasktorch-types
+    , hasktorch-signatures-floating
+    , hasktorch-classes
+
+  exposed-modules:
+      Torch.Core.Tensor.Dynamic.Random.Floating
+    , Torch.Core.Tensor.Static.Random.Floating
+    , Torch.Core.Tensor.Dynamic.Math.Floating
+    , Torch.Core.Tensor.Static.Math.Floating
+    , Torch.Core.Tensor.Dynamic.Lapack
+    -- , Torch.Core.Tensor.Static.Lapack
+
+  reexported-modules:
+      Torch.Core.Types
+    , Torch.Core.Storage
+    , Torch.Core.Storage.Copy
+    , Torch.Core.Tensor.Dynamic
+    , Torch.Core.Tensor.Dynamic.IsTensor
+    , Torch.Core.Tensor.Dynamic.Copy
+    , Torch.Core.Tensor.Dynamic.Conv
+    , Torch.Core.Tensor.Dynamic.Math
+    , Torch.Core.Tensor.Dynamic.Math.Signed
+    , Torch.Core.Tensor.Dynamic.Random
+    , Torch.Core.Tensor.Static
+    , Torch.Core.Tensor.Static.IsTensor
+    , Torch.Core.Tensor.Static.Math.Signed
+    , Torch.Core.Tensor.Static.Random
+    , Torch.Core.Tensor.Static.Copy
+
+

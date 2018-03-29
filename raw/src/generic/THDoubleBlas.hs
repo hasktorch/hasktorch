@@ -1,22 +1,22 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
-module THDoubleBlas (
-    c_THDoubleBlas_swap,
-    c_THDoubleBlas_scal,
-    c_THDoubleBlas_copy,
-    c_THDoubleBlas_axpy,
-    c_THDoubleBlas_dot,
-    c_THDoubleBlas_gemv,
-    c_THDoubleBlas_ger,
-    c_THDoubleBlas_gemm,
-    p_THDoubleBlas_swap,
-    p_THDoubleBlas_scal,
-    p_THDoubleBlas_copy,
-    p_THDoubleBlas_axpy,
-    p_THDoubleBlas_dot,
-    p_THDoubleBlas_gemv,
-    p_THDoubleBlas_ger,
-    p_THDoubleBlas_gemm) where
+module THDoubleBlas
+  ( c_swap
+  , c_scal
+  , c_copy
+  , c_axpy
+  , c_dot
+  , c_gemv
+  , c_ger
+  , c_gemm
+  , p_swap
+  , p_scal
+  , p_copy
+  , p_axpy
+  , p_dot
+  , p_gemv
+  , p_ger
+  , p_gemm
+  ) where
 
 import Foreign
 import Foreign.C.Types
@@ -24,66 +24,66 @@ import THTypes
 import Data.Word
 import Data.Int
 
--- |c_THDoubleBlas_swap : n x incx y incy -> void
+-- | c_swap :  n x incx y incy -> void
 foreign import ccall "THBlas.h THDoubleBlas_swap"
-  c_THDoubleBlas_swap :: CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ()
+  c_swap :: CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ()
 
--- |c_THDoubleBlas_scal : n a x incx -> void
+-- | c_scal :  n a x incx -> void
 foreign import ccall "THBlas.h THDoubleBlas_scal"
-  c_THDoubleBlas_scal :: CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ()
+  c_scal :: CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ()
 
--- |c_THDoubleBlas_copy : n x incx y incy -> void
+-- | c_copy :  n x incx y incy -> void
 foreign import ccall "THBlas.h THDoubleBlas_copy"
-  c_THDoubleBlas_copy :: CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ()
+  c_copy :: CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ()
 
--- |c_THDoubleBlas_axpy : n a x incx y incy -> void
+-- | c_axpy :  n a x incx y incy -> void
 foreign import ccall "THBlas.h THDoubleBlas_axpy"
-  c_THDoubleBlas_axpy :: CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ()
+  c_axpy :: CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ()
 
--- |c_THDoubleBlas_dot : n x incx y incy -> real
+-- | c_dot :  n x incx y incy -> real
 foreign import ccall "THBlas.h THDoubleBlas_dot"
-  c_THDoubleBlas_dot :: CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble
+  c_dot :: CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO (CDouble)
 
--- |c_THDoubleBlas_gemv : trans m n alpha a lda x incx beta y incy -> void
+-- | c_gemv :  trans m n alpha a lda x incx beta y incy -> void
 foreign import ccall "THBlas.h THDoubleBlas_gemv"
-  c_THDoubleBlas_gemv :: CChar -> CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ()
+  c_gemv :: CChar -> CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ()
 
--- |c_THDoubleBlas_ger : m n alpha x incx y incy a lda -> void
+-- | c_ger :  m n alpha x incx y incy a lda -> void
 foreign import ccall "THBlas.h THDoubleBlas_ger"
-  c_THDoubleBlas_ger :: CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ()
+  c_ger :: CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ()
 
--- |c_THDoubleBlas_gemm : transa transb m n k alpha a lda b ldb beta c ldc -> void
+-- | c_gemm :  transa transb m n k alpha a lda b ldb beta c ldc -> void
 foreign import ccall "THBlas.h THDoubleBlas_gemm"
-  c_THDoubleBlas_gemm :: CChar -> CChar -> CLLong -> CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ()
+  c_gemm :: CChar -> CChar -> CLLong -> CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ()
 
--- |p_THDoubleBlas_swap : Pointer to function : n x incx y incy -> void
+-- | p_swap : Pointer to function : n x incx y incy -> void
 foreign import ccall "THBlas.h &THDoubleBlas_swap"
-  p_THDoubleBlas_swap :: FunPtr (CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ())
+  p_swap :: FunPtr (CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ())
 
--- |p_THDoubleBlas_scal : Pointer to function : n a x incx -> void
+-- | p_scal : Pointer to function : n a x incx -> void
 foreign import ccall "THBlas.h &THDoubleBlas_scal"
-  p_THDoubleBlas_scal :: FunPtr (CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ())
+  p_scal :: FunPtr (CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ())
 
--- |p_THDoubleBlas_copy : Pointer to function : n x incx y incy -> void
+-- | p_copy : Pointer to function : n x incx y incy -> void
 foreign import ccall "THBlas.h &THDoubleBlas_copy"
-  p_THDoubleBlas_copy :: FunPtr (CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ())
+  p_copy :: FunPtr (CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ())
 
--- |p_THDoubleBlas_axpy : Pointer to function : n a x incx y incy -> void
+-- | p_axpy : Pointer to function : n a x incx y incy -> void
 foreign import ccall "THBlas.h &THDoubleBlas_axpy"
-  p_THDoubleBlas_axpy :: FunPtr (CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ())
+  p_axpy :: FunPtr (CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ())
 
--- |p_THDoubleBlas_dot : Pointer to function : n x incx y incy -> real
+-- | p_dot : Pointer to function : n x incx y incy -> real
 foreign import ccall "THBlas.h &THDoubleBlas_dot"
-  p_THDoubleBlas_dot :: FunPtr (CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble)
+  p_dot :: FunPtr (CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO (CDouble))
 
--- |p_THDoubleBlas_gemv : Pointer to function : trans m n alpha a lda x incx beta y incy -> void
+-- | p_gemv : Pointer to function : trans m n alpha a lda x incx beta y incy -> void
 foreign import ccall "THBlas.h &THDoubleBlas_gemv"
-  p_THDoubleBlas_gemv :: FunPtr (CChar -> CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ())
+  p_gemv :: FunPtr (CChar -> CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ())
 
--- |p_THDoubleBlas_ger : Pointer to function : m n alpha x incx y incy a lda -> void
+-- | p_ger : Pointer to function : m n alpha x incx y incy a lda -> void
 foreign import ccall "THBlas.h &THDoubleBlas_ger"
-  p_THDoubleBlas_ger :: FunPtr (CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ())
+  p_ger :: FunPtr (CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> IO ())
 
--- |p_THDoubleBlas_gemm : Pointer to function : transa transb m n k alpha a lda b ldb beta c ldc -> void
+-- | p_gemm : Pointer to function : transa transb m n k alpha a lda b ldb beta c ldc -> void
 foreign import ccall "THBlas.h &THDoubleBlas_gemm"
-  p_THDoubleBlas_gemm :: FunPtr (CChar -> CChar -> CLLong -> CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ())
+  p_gemm :: FunPtr (CChar -> CChar -> CLLong -> CLLong -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> Ptr CDouble -> CLLong -> CDouble -> Ptr CDouble -> CLLong -> IO ())

@@ -1,0 +1,44 @@
+signature TensorLapack where
+
+import THTypes
+import Foreign
+import Foreign.C.Types
+import SigTypes
+
+c_gesv      :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_trtrs     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> Ptr CChar -> IO ()
+c_gels      :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_syev      :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> IO ()
+c_geev      :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ()
+c_gesvd     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ()
+c_gesvd2    :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ()
+c_getri     :: Ptr CTensor -> Ptr CTensor -> IO ()
+c_potrf     :: Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ()
+c_potrs     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ()
+c_potri     :: Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ()
+c_qr        :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_geqrf     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_orgqr     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_ormqr     :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> IO ()
+c_pstrf     :: Ptr CTensor -> Ptr CTHIntTensor -> Ptr CTensor -> Ptr CChar -> CReal -> IO ()
+c_btrifact  :: Ptr CTensor -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CInt -> Ptr CTensor -> IO ()
+c_btrisolve :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTHIntTensor -> IO ()
+
+p_gesv      :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
+p_trtrs     :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> Ptr CChar -> IO ())
+p_gels      :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
+p_syev      :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> IO ())
+p_geev      :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ())
+p_gesvd     :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ())
+p_gesvd2    :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ())
+p_getri     :: FunPtr (Ptr CTensor -> Ptr CTensor -> IO ())
+p_potrf     :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ())
+p_potrs     :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ())
+p_potri     :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CChar -> IO ())
+p_qr        :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
+p_geqrf     :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
+p_orgqr     :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
+p_ormqr     :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CChar -> Ptr CChar -> IO ())
+p_pstrf     :: FunPtr (Ptr CTensor -> Ptr CTHIntTensor -> Ptr CTensor -> Ptr CChar -> CReal -> IO ())
+p_btrifact  :: FunPtr (Ptr CTensor -> Ptr CTHIntTensor -> Ptr CTHIntTensor -> CInt -> Ptr CTensor -> IO ())
+p_btrisolve :: FunPtr (Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTHIntTensor -> IO ())

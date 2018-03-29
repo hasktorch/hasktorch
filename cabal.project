@@ -1,0 +1,15 @@
+packages:
+    raw/*.cabal
+    types/*.cabal
+    signatures/unsigned/*cabal
+    signatures/signed/*cabal
+    signatures/floating/*cabal
+    classes/*cabal
+    dimensions/*cabal
+    core/*cabal
+    indef/unsigned/*cabal
+    indef/signed/*cabal
+    indef/floating/*cabal
+    examples/*cabal
+
+

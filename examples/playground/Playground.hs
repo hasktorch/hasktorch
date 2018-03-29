@@ -4,8 +4,7 @@ module Main where
 
 -- Minimal implementation
 
-import Foreign.ForeignPtr( withForeignPtr,
-                           newForeignPtr )
+import Foreign.ForeignPtr(withForeignPtr, newForeignPtr)
 import System.IO.Unsafe (unsafePerformIO)
 
 import THDoubleTensor as T
@@ -14,8 +13,8 @@ import PlaygroundRawUtils
 
 td_newWithTensor :: TensorDouble -> TensorDouble
 td_newWithTensor t = unsafePerformIO $ do
-  newPtr <- withForeignPtr (tdTensor t) (\tPtr -> c_THDoubleTensor_newWithTensor tPtr)
-  newFPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  newPtr <- withForeignPtr (tdTensor t) (\tPtr -> T.c_newWithTensor tPtr)
+  newFPtr <- newForeignPtr T.p_free newPtr
   pure $ TensorDouble newFPtr (dimFromRaw newPtr)
 {-# NOINLINE td_newWithTensor #-}
 
@@ -23,7 +22,7 @@ td_newWithTensor t = unsafePerformIO $ do
 td_new :: TensorDim Word -> TensorDouble
 td_new dims = unsafePerformIO $ do
   newPtr <- tensorRaw dims 0.0
-  fPtr <- newForeignPtr p_THDoubleTensor_free newPtr
+  fPtr <- newForeignPtr T.p_free newPtr
   withForeignPtr fPtr fillRaw0
   pure $ TensorDouble fPtr dims
 {-# NOINLINE td_new #-}

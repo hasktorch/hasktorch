@@ -1,0 +1,47 @@
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
+signature SigTypes where
+
+import Foreign (ForeignPtr)
+import Foreign.Storable
+import GHC.TypeLits (Nat)
+
+data CTensor
+data CStorage
+
+data DynTensor
+asDyn :: ForeignPtr CTensor -> DynTensor
+tensor :: DynTensor -> ForeignPtr CTensor
+
+data Storage
+asStorage :: ForeignPtr CStorage -> Storage
+storage :: Storage -> ForeignPtr CStorage
+
+data Tensor (d::[Nat])
+asStatic :: DynTensor -> Tensor d
+dynamic :: Tensor d -> DynTensor
+
+data CReal
+instance Num  CReal
+instance Show CReal
+instance Storable CReal
+
+data CAccReal
+instance Num  CAccReal
+instance Show CAccReal
+instance Storable CAccReal
+
+data HsReal
+instance Num  HsReal
+instance Show HsReal
+
+data HsAccReal
+instance Num  HsAccReal
+instance Show HsAccReal
+
+hs2cReal :: HsReal -> CReal
+hs2cAccReal :: HsAccReal -> CAccReal
+
+c2hsReal :: CReal -> HsReal
+c2hsAccReal :: CAccReal -> HsAccReal
+

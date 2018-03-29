@@ -1,234 +1,234 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
-module THHalfTensorMath (
-    c_THHalfTensor_fill,
-    c_THHalfTensor_zero,
-    c_THHalfTensor_maskedFill,
-    c_THHalfTensor_maskedCopy,
-    c_THHalfTensor_maskedSelect,
-    c_THHalfTensor_nonzero,
-    c_THHalfTensor_indexSelect,
-    c_THHalfTensor_indexCopy,
-    c_THHalfTensor_indexAdd,
-    c_THHalfTensor_indexFill,
-    c_THHalfTensor_take,
-    c_THHalfTensor_put,
-    c_THHalfTensor_gather,
-    c_THHalfTensor_scatter,
-    c_THHalfTensor_scatterAdd,
-    c_THHalfTensor_scatterFill,
-    c_THHalfTensor_dot,
-    c_THHalfTensor_minall,
-    c_THHalfTensor_maxall,
-    c_THHalfTensor_medianall,
-    c_THHalfTensor_sumall,
-    c_THHalfTensor_prodall,
-    c_THHalfTensor_add,
-    c_THHalfTensor_sub,
-    c_THHalfTensor_add_scaled,
-    c_THHalfTensor_sub_scaled,
-    c_THHalfTensor_mul,
-    c_THHalfTensor_div,
-    c_THHalfTensor_lshift,
-    c_THHalfTensor_rshift,
-    c_THHalfTensor_fmod,
-    c_THHalfTensor_remainder,
-    c_THHalfTensor_clamp,
-    c_THHalfTensor_bitand,
-    c_THHalfTensor_bitor,
-    c_THHalfTensor_bitxor,
-    c_THHalfTensor_cadd,
-    c_THHalfTensor_csub,
-    c_THHalfTensor_cmul,
-    c_THHalfTensor_cpow,
-    c_THHalfTensor_cdiv,
-    c_THHalfTensor_clshift,
-    c_THHalfTensor_crshift,
-    c_THHalfTensor_cfmod,
-    c_THHalfTensor_cremainder,
-    c_THHalfTensor_cbitand,
-    c_THHalfTensor_cbitor,
-    c_THHalfTensor_cbitxor,
-    c_THHalfTensor_addcmul,
-    c_THHalfTensor_addcdiv,
-    c_THHalfTensor_addmv,
-    c_THHalfTensor_addmm,
-    c_THHalfTensor_addr,
-    c_THHalfTensor_addbmm,
-    c_THHalfTensor_baddbmm,
-    c_THHalfTensor_match,
-    c_THHalfTensor_numel,
-    c_THHalfTensor_max,
-    c_THHalfTensor_min,
-    c_THHalfTensor_kthvalue,
-    c_THHalfTensor_mode,
-    c_THHalfTensor_median,
-    c_THHalfTensor_sum,
-    c_THHalfTensor_prod,
-    c_THHalfTensor_cumsum,
-    c_THHalfTensor_cumprod,
-    c_THHalfTensor_sign,
-    c_THHalfTensor_trace,
-    c_THHalfTensor_cross,
-    c_THHalfTensor_cmax,
-    c_THHalfTensor_cmin,
-    c_THHalfTensor_cmaxValue,
-    c_THHalfTensor_cminValue,
-    c_THHalfTensor_zeros,
-    c_THHalfTensor_zerosLike,
-    c_THHalfTensor_ones,
-    c_THHalfTensor_onesLike,
-    c_THHalfTensor_diag,
-    c_THHalfTensor_eye,
-    c_THHalfTensor_arange,
-    c_THHalfTensor_range,
-    c_THHalfTensor_randperm,
-    c_THHalfTensor_reshape,
-    c_THHalfTensor_sort,
-    c_THHalfTensor_topk,
-    c_THHalfTensor_tril,
-    c_THHalfTensor_triu,
-    c_THHalfTensor_cat,
-    c_THHalfTensor_catArray,
-    c_THHalfTensor_equal,
-    c_THHalfTensor_ltValue,
-    c_THHalfTensor_leValue,
-    c_THHalfTensor_gtValue,
-    c_THHalfTensor_geValue,
-    c_THHalfTensor_neValue,
-    c_THHalfTensor_eqValue,
-    c_THHalfTensor_ltValueT,
-    c_THHalfTensor_leValueT,
-    c_THHalfTensor_gtValueT,
-    c_THHalfTensor_geValueT,
-    c_THHalfTensor_neValueT,
-    c_THHalfTensor_eqValueT,
-    c_THHalfTensor_ltTensor,
-    c_THHalfTensor_leTensor,
-    c_THHalfTensor_gtTensor,
-    c_THHalfTensor_geTensor,
-    c_THHalfTensor_neTensor,
-    c_THHalfTensor_eqTensor,
-    c_THHalfTensor_ltTensorT,
-    c_THHalfTensor_leTensorT,
-    c_THHalfTensor_gtTensorT,
-    c_THHalfTensor_geTensorT,
-    c_THHalfTensor_neTensorT,
-    c_THHalfTensor_eqTensorT,
-    p_THHalfTensor_fill,
-    p_THHalfTensor_zero,
-    p_THHalfTensor_maskedFill,
-    p_THHalfTensor_maskedCopy,
-    p_THHalfTensor_maskedSelect,
-    p_THHalfTensor_nonzero,
-    p_THHalfTensor_indexSelect,
-    p_THHalfTensor_indexCopy,
-    p_THHalfTensor_indexAdd,
-    p_THHalfTensor_indexFill,
-    p_THHalfTensor_take,
-    p_THHalfTensor_put,
-    p_THHalfTensor_gather,
-    p_THHalfTensor_scatter,
-    p_THHalfTensor_scatterAdd,
-    p_THHalfTensor_scatterFill,
-    p_THHalfTensor_dot,
-    p_THHalfTensor_minall,
-    p_THHalfTensor_maxall,
-    p_THHalfTensor_medianall,
-    p_THHalfTensor_sumall,
-    p_THHalfTensor_prodall,
-    p_THHalfTensor_add,
-    p_THHalfTensor_sub,
-    p_THHalfTensor_add_scaled,
-    p_THHalfTensor_sub_scaled,
-    p_THHalfTensor_mul,
-    p_THHalfTensor_div,
-    p_THHalfTensor_lshift,
-    p_THHalfTensor_rshift,
-    p_THHalfTensor_fmod,
-    p_THHalfTensor_remainder,
-    p_THHalfTensor_clamp,
-    p_THHalfTensor_bitand,
-    p_THHalfTensor_bitor,
-    p_THHalfTensor_bitxor,
-    p_THHalfTensor_cadd,
-    p_THHalfTensor_csub,
-    p_THHalfTensor_cmul,
-    p_THHalfTensor_cpow,
-    p_THHalfTensor_cdiv,
-    p_THHalfTensor_clshift,
-    p_THHalfTensor_crshift,
-    p_THHalfTensor_cfmod,
-    p_THHalfTensor_cremainder,
-    p_THHalfTensor_cbitand,
-    p_THHalfTensor_cbitor,
-    p_THHalfTensor_cbitxor,
-    p_THHalfTensor_addcmul,
-    p_THHalfTensor_addcdiv,
-    p_THHalfTensor_addmv,
-    p_THHalfTensor_addmm,
-    p_THHalfTensor_addr,
-    p_THHalfTensor_addbmm,
-    p_THHalfTensor_baddbmm,
-    p_THHalfTensor_match,
-    p_THHalfTensor_numel,
-    p_THHalfTensor_max,
-    p_THHalfTensor_min,
-    p_THHalfTensor_kthvalue,
-    p_THHalfTensor_mode,
-    p_THHalfTensor_median,
-    p_THHalfTensor_sum,
-    p_THHalfTensor_prod,
-    p_THHalfTensor_cumsum,
-    p_THHalfTensor_cumprod,
-    p_THHalfTensor_sign,
-    p_THHalfTensor_trace,
-    p_THHalfTensor_cross,
-    p_THHalfTensor_cmax,
-    p_THHalfTensor_cmin,
-    p_THHalfTensor_cmaxValue,
-    p_THHalfTensor_cminValue,
-    p_THHalfTensor_zeros,
-    p_THHalfTensor_zerosLike,
-    p_THHalfTensor_ones,
-    p_THHalfTensor_onesLike,
-    p_THHalfTensor_diag,
-    p_THHalfTensor_eye,
-    p_THHalfTensor_arange,
-    p_THHalfTensor_range,
-    p_THHalfTensor_randperm,
-    p_THHalfTensor_reshape,
-    p_THHalfTensor_sort,
-    p_THHalfTensor_topk,
-    p_THHalfTensor_tril,
-    p_THHalfTensor_triu,
-    p_THHalfTensor_cat,
-    p_THHalfTensor_catArray,
-    p_THHalfTensor_equal,
-    p_THHalfTensor_ltValue,
-    p_THHalfTensor_leValue,
-    p_THHalfTensor_gtValue,
-    p_THHalfTensor_geValue,
-    p_THHalfTensor_neValue,
-    p_THHalfTensor_eqValue,
-    p_THHalfTensor_ltValueT,
-    p_THHalfTensor_leValueT,
-    p_THHalfTensor_gtValueT,
-    p_THHalfTensor_geValueT,
-    p_THHalfTensor_neValueT,
-    p_THHalfTensor_eqValueT,
-    p_THHalfTensor_ltTensor,
-    p_THHalfTensor_leTensor,
-    p_THHalfTensor_gtTensor,
-    p_THHalfTensor_geTensor,
-    p_THHalfTensor_neTensor,
-    p_THHalfTensor_eqTensor,
-    p_THHalfTensor_ltTensorT,
-    p_THHalfTensor_leTensorT,
-    p_THHalfTensor_gtTensorT,
-    p_THHalfTensor_geTensorT,
-    p_THHalfTensor_neTensorT,
-    p_THHalfTensor_eqTensorT) where
+module THHalfTensorMath
+  ( c_fill
+  , c_zero
+  , c_maskedFill
+  , c_maskedCopy
+  , c_maskedSelect
+  , c_nonzero
+  , c_indexSelect
+  , c_indexCopy
+  , c_indexAdd
+  , c_indexFill
+  , c_take
+  , c_put
+  , c_gather
+  , c_scatter
+  , c_scatterAdd
+  , c_scatterFill
+  , c_dot
+  , c_minall
+  , c_maxall
+  , c_medianall
+  , c_sumall
+  , c_prodall
+  , c_add
+  , c_sub
+  , c_add_scaled
+  , c_sub_scaled
+  , c_mul
+  , c_div
+  , c_lshift
+  , c_rshift
+  , c_fmod
+  , c_remainder
+  , c_clamp
+  , c_bitand
+  , c_bitor
+  , c_bitxor
+  , c_cadd
+  , c_csub
+  , c_cmul
+  , c_cpow
+  , c_cdiv
+  , c_clshift
+  , c_crshift
+  , c_cfmod
+  , c_cremainder
+  , c_cbitand
+  , c_cbitor
+  , c_cbitxor
+  , c_addcmul
+  , c_addcdiv
+  , c_addmv
+  , c_addmm
+  , c_addr
+  , c_addbmm
+  , c_baddbmm
+  , c_match
+  , c_numel
+  , c_max
+  , c_min
+  , c_kthvalue
+  , c_mode
+  , c_median
+  , c_sum
+  , c_prod
+  , c_cumsum
+  , c_cumprod
+  , c_sign
+  , c_trace
+  , c_cross
+  , c_cmax
+  , c_cmin
+  , c_cmaxValue
+  , c_cminValue
+  , c_zeros
+  , c_zerosLike
+  , c_ones
+  , c_onesLike
+  , c_diag
+  , c_eye
+  , c_arange
+  , c_range
+  , c_randperm
+  , c_reshape
+  , c_sort
+  , c_topk
+  , c_tril
+  , c_triu
+  , c_cat
+  , c_catArray
+  , c_equal
+  , c_ltValue
+  , c_leValue
+  , c_gtValue
+  , c_geValue
+  , c_neValue
+  , c_eqValue
+  , c_ltValueT
+  , c_leValueT
+  , c_gtValueT
+  , c_geValueT
+  , c_neValueT
+  , c_eqValueT
+  , c_ltTensor
+  , c_leTensor
+  , c_gtTensor
+  , c_geTensor
+  , c_neTensor
+  , c_eqTensor
+  , c_ltTensorT
+  , c_leTensorT
+  , c_gtTensorT
+  , c_geTensorT
+  , c_neTensorT
+  , c_eqTensorT
+  , p_fill
+  , p_zero
+  , p_maskedFill
+  , p_maskedCopy
+  , p_maskedSelect
+  , p_nonzero
+  , p_indexSelect
+  , p_indexCopy
+  , p_indexAdd
+  , p_indexFill
+  , p_take
+  , p_put
+  , p_gather
+  , p_scatter
+  , p_scatterAdd
+  , p_scatterFill
+  , p_dot
+  , p_minall
+  , p_maxall
+  , p_medianall
+  , p_sumall
+  , p_prodall
+  , p_add
+  , p_sub
+  , p_add_scaled
+  , p_sub_scaled
+  , p_mul
+  , p_div
+  , p_lshift
+  , p_rshift
+  , p_fmod
+  , p_remainder
+  , p_clamp
+  , p_bitand
+  , p_bitor
+  , p_bitxor
+  , p_cadd
+  , p_csub
+  , p_cmul
+  , p_cpow
+  , p_cdiv
+  , p_clshift
+  , p_crshift
+  , p_cfmod
+  , p_cremainder
+  , p_cbitand
+  , p_cbitor
+  , p_cbitxor
+  , p_addcmul
+  , p_addcdiv
+  , p_addmv
+  , p_addmm
+  , p_addr
+  , p_addbmm
+  , p_baddbmm
+  , p_match
+  , p_numel
+  , p_max
+  , p_min
+  , p_kthvalue
+  , p_mode
+  , p_median
+  , p_sum
+  , p_prod
+  , p_cumsum
+  , p_cumprod
+  , p_sign
+  , p_trace
+  , p_cross
+  , p_cmax
+  , p_cmin
+  , p_cmaxValue
+  , p_cminValue
+  , p_zeros
+  , p_zerosLike
+  , p_ones
+  , p_onesLike
+  , p_diag
+  , p_eye
+  , p_arange
+  , p_range
+  , p_randperm
+  , p_reshape
+  , p_sort
+  , p_topk
+  , p_tril
+  , p_triu
+  , p_cat
+  , p_catArray
+  , p_equal
+  , p_ltValue
+  , p_leValue
+  , p_gtValue
+  , p_geValue
+  , p_neValue
+  , p_eqValue
+  , p_ltValueT
+  , p_leValueT
+  , p_gtValueT
+  , p_geValueT
+  , p_neValueT
+  , p_eqValueT
+  , p_ltTensor
+  , p_leTensor
+  , p_gtTensor
+  , p_geTensor
+  , p_neTensor
+  , p_eqTensor
+  , p_ltTensorT
+  , p_leTensorT
+  , p_gtTensorT
+  , p_geTensorT
+  , p_neTensorT
+  , p_eqTensorT
+  ) where
 
 import Foreign
 import Foreign.C.Types
@@ -236,914 +236,914 @@ import THTypes
 import Data.Word
 import Data.Int
 
--- |c_THHalfTensor_fill : r_ value -> void
+-- | c_fill :  r_ value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_fill"
-  c_THHalfTensor_fill :: (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_fill :: Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_zero : r_ -> void
+-- | c_zero :  r_ -> void
 foreign import ccall "THTensorMath.h THHalfTensor_zero"
-  c_THHalfTensor_zero :: (Ptr CTHHalfTensor) -> IO ()
+  c_zero :: Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_maskedFill : tensor mask value -> void
+-- | c_maskedFill :  tensor mask value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_maskedFill"
-  c_THHalfTensor_maskedFill :: (Ptr CTHHalfTensor) -> Ptr CTHByteTensor -> THHalf -> IO ()
+  c_maskedFill :: Ptr CTHHalfTensor -> Ptr CTHByteTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_maskedCopy : tensor mask src -> void
+-- | c_maskedCopy :  tensor mask src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_maskedCopy"
-  c_THHalfTensor_maskedCopy :: (Ptr CTHHalfTensor) -> Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> IO ()
+  c_maskedCopy :: Ptr CTHHalfTensor -> Ptr CTHByteTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_maskedSelect : tensor src mask -> void
+-- | c_maskedSelect :  tensor src mask -> void
 foreign import ccall "THTensorMath.h THHalfTensor_maskedSelect"
-  c_THHalfTensor_maskedSelect :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> Ptr CTHByteTensor -> IO ()
+  c_maskedSelect :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHByteTensor -> IO ()
 
--- |c_THHalfTensor_nonzero : subscript tensor -> void
+-- | c_nonzero :  subscript tensor -> void
 foreign import ccall "THTensorMath.h THHalfTensor_nonzero"
-  c_THHalfTensor_nonzero :: Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ()
+  c_nonzero :: Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_indexSelect : tensor src dim index -> void
+-- | c_indexSelect :  tensor src dim index -> void
 foreign import ccall "THTensorMath.h THHalfTensor_indexSelect"
-  c_THHalfTensor_indexSelect :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> IO ()
+  c_indexSelect :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> IO ()
 
--- |c_THHalfTensor_indexCopy : tensor dim index src -> void
+-- | c_indexCopy :  tensor dim index src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_indexCopy"
-  c_THHalfTensor_indexCopy :: (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ()
+  c_indexCopy :: Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_indexAdd : tensor dim index src -> void
+-- | c_indexAdd :  tensor dim index src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_indexAdd"
-  c_THHalfTensor_indexAdd :: (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ()
+  c_indexAdd :: Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_indexFill : tensor dim index val -> void
+-- | c_indexFill :  tensor dim index val -> void
 foreign import ccall "THTensorMath.h THHalfTensor_indexFill"
-  c_THHalfTensor_indexFill :: (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> THHalf -> IO ()
+  c_indexFill :: Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_take : tensor src index -> void
+-- | c_take :  tensor src index -> void
 foreign import ccall "THTensorMath.h THHalfTensor_take"
-  c_THHalfTensor_take :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> IO ()
+  c_take :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHLongTensor -> IO ()
 
--- |c_THHalfTensor_put : tensor index src accumulate -> void
+-- | c_put :  tensor index src accumulate -> void
 foreign import ccall "THTensorMath.h THHalfTensor_put"
-  c_THHalfTensor_put :: (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> IO ()
+  c_put :: Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> IO ()
 
--- |c_THHalfTensor_gather : tensor src dim index -> void
+-- | c_gather :  tensor src dim index -> void
 foreign import ccall "THTensorMath.h THHalfTensor_gather"
-  c_THHalfTensor_gather :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> IO ()
+  c_gather :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> IO ()
 
--- |c_THHalfTensor_scatter : tensor dim index src -> void
+-- | c_scatter :  tensor dim index src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_scatter"
-  c_THHalfTensor_scatter :: (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ()
+  c_scatter :: Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_scatterAdd : tensor dim index src -> void
+-- | c_scatterAdd :  tensor dim index src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_scatterAdd"
-  c_THHalfTensor_scatterAdd :: (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ()
+  c_scatterAdd :: Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_scatterFill : tensor dim index val -> void
+-- | c_scatterFill :  tensor dim index val -> void
 foreign import ccall "THTensorMath.h THHalfTensor_scatterFill"
-  c_THHalfTensor_scatterFill :: (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> THHalf -> IO ()
+  c_scatterFill :: Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_dot : t src -> accreal
+-- | c_dot :  t src -> accreal
 foreign import ccall "THTensorMath.h THHalfTensor_dot"
-  c_THHalfTensor_dot :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CFloat
+  c_dot :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO (CFloat)
 
--- |c_THHalfTensor_minall : t -> real
+-- | c_minall :  t -> real
 foreign import ccall "THTensorMath.h THHalfTensor_minall"
-  c_THHalfTensor_minall :: (Ptr CTHHalfTensor) -> THHalf
+  c_minall :: Ptr CTHHalfTensor -> IO (CTHHalf)
 
--- |c_THHalfTensor_maxall : t -> real
+-- | c_maxall :  t -> real
 foreign import ccall "THTensorMath.h THHalfTensor_maxall"
-  c_THHalfTensor_maxall :: (Ptr CTHHalfTensor) -> THHalf
+  c_maxall :: Ptr CTHHalfTensor -> IO (CTHHalf)
 
--- |c_THHalfTensor_medianall : t -> real
+-- | c_medianall :  t -> real
 foreign import ccall "THTensorMath.h THHalfTensor_medianall"
-  c_THHalfTensor_medianall :: (Ptr CTHHalfTensor) -> THHalf
+  c_medianall :: Ptr CTHHalfTensor -> IO (CTHHalf)
 
--- |c_THHalfTensor_sumall : t -> accreal
+-- | c_sumall :  t -> accreal
 foreign import ccall "THTensorMath.h THHalfTensor_sumall"
-  c_THHalfTensor_sumall :: (Ptr CTHHalfTensor) -> CFloat
+  c_sumall :: Ptr CTHHalfTensor -> IO (CFloat)
 
--- |c_THHalfTensor_prodall : t -> accreal
+-- | c_prodall :  t -> accreal
 foreign import ccall "THTensorMath.h THHalfTensor_prodall"
-  c_THHalfTensor_prodall :: (Ptr CTHHalfTensor) -> CFloat
+  c_prodall :: Ptr CTHHalfTensor -> IO (CFloat)
 
--- |c_THHalfTensor_add : r_ t value -> void
+-- | c_add :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_add"
-  c_THHalfTensor_add :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_add :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_sub : r_ t value -> void
+-- | c_sub :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_sub"
-  c_THHalfTensor_sub :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_sub :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_add_scaled : r_ t value alpha -> void
+-- | c_add_scaled :  r_ t value alpha -> void
 foreign import ccall "THTensorMath.h THHalfTensor_add_scaled"
-  c_THHalfTensor_add_scaled :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> THHalf -> IO ()
+  c_add_scaled :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_sub_scaled : r_ t value alpha -> void
+-- | c_sub_scaled :  r_ t value alpha -> void
 foreign import ccall "THTensorMath.h THHalfTensor_sub_scaled"
-  c_THHalfTensor_sub_scaled :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> THHalf -> IO ()
+  c_sub_scaled :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_mul : r_ t value -> void
+-- | c_mul :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_mul"
-  c_THHalfTensor_mul :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_mul :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_div : r_ t value -> void
+-- | c_div :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_div"
-  c_THHalfTensor_div :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_div :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_lshift : r_ t value -> void
+-- | c_lshift :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_lshift"
-  c_THHalfTensor_lshift :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_lshift :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_rshift : r_ t value -> void
+-- | c_rshift :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_rshift"
-  c_THHalfTensor_rshift :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_rshift :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_fmod : r_ t value -> void
+-- | c_fmod :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_fmod"
-  c_THHalfTensor_fmod :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_fmod :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_remainder : r_ t value -> void
+-- | c_remainder :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_remainder"
-  c_THHalfTensor_remainder :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_remainder :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_clamp : r_ t min_value max_value -> void
+-- | c_clamp :  r_ t min_value max_value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_clamp"
-  c_THHalfTensor_clamp :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> THHalf -> IO ()
+  c_clamp :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_bitand : r_ t value -> void
+-- | c_bitand :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_bitand"
-  c_THHalfTensor_bitand :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_bitand :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_bitor : r_ t value -> void
+-- | c_bitor :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_bitor"
-  c_THHalfTensor_bitor :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_bitor :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_bitxor : r_ t value -> void
+-- | c_bitxor :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_bitxor"
-  c_THHalfTensor_bitxor :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_bitxor :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_cadd : r_ t value src -> void
+-- | c_cadd :  r_ t value src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cadd"
-  c_THHalfTensor_cadd :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> IO ()
+  c_cadd :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_csub : self src1 value src2 -> void
+-- | c_csub :  self src1 value src2 -> void
 foreign import ccall "THTensorMath.h THHalfTensor_csub"
-  c_THHalfTensor_csub :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> IO ()
+  c_csub :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cmul : r_ t src -> void
+-- | c_cmul :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cmul"
-  c_THHalfTensor_cmul :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cmul :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cpow : r_ t src -> void
+-- | c_cpow :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cpow"
-  c_THHalfTensor_cpow :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cpow :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cdiv : r_ t src -> void
+-- | c_cdiv :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cdiv"
-  c_THHalfTensor_cdiv :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cdiv :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_clshift : r_ t src -> void
+-- | c_clshift :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_clshift"
-  c_THHalfTensor_clshift :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_clshift :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_crshift : r_ t src -> void
+-- | c_crshift :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_crshift"
-  c_THHalfTensor_crshift :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_crshift :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cfmod : r_ t src -> void
+-- | c_cfmod :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cfmod"
-  c_THHalfTensor_cfmod :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cfmod :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cremainder : r_ t src -> void
+-- | c_cremainder :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cremainder"
-  c_THHalfTensor_cremainder :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cremainder :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cbitand : r_ t src -> void
+-- | c_cbitand :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cbitand"
-  c_THHalfTensor_cbitand :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cbitand :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cbitor : r_ t src -> void
+-- | c_cbitor :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cbitor"
-  c_THHalfTensor_cbitor :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cbitor :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cbitxor : r_ t src -> void
+-- | c_cbitxor :  r_ t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cbitxor"
-  c_THHalfTensor_cbitxor :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cbitxor :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_addcmul : r_ t value src1 src2 -> void
+-- | c_addcmul :  r_ t value src1 src2 -> void
 foreign import ccall "THTensorMath.h THHalfTensor_addcmul"
-  c_THHalfTensor_addcmul :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_addcmul :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_addcdiv : r_ t value src1 src2 -> void
+-- | c_addcdiv :  r_ t value src1 src2 -> void
 foreign import ccall "THTensorMath.h THHalfTensor_addcdiv"
-  c_THHalfTensor_addcdiv :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_addcdiv :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_addmv : r_ beta t alpha mat vec -> void
+-- | c_addmv :  r_ beta t alpha mat vec -> void
 foreign import ccall "THTensorMath.h THHalfTensor_addmv"
-  c_THHalfTensor_addmv :: (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_addmv :: Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_addmm : r_ beta t alpha mat1 mat2 -> void
+-- | c_addmm :  r_ beta t alpha mat1 mat2 -> void
 foreign import ccall "THTensorMath.h THHalfTensor_addmm"
-  c_THHalfTensor_addmm :: (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_addmm :: Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_addr : r_ beta t alpha vec1 vec2 -> void
+-- | c_addr :  r_ beta t alpha vec1 vec2 -> void
 foreign import ccall "THTensorMath.h THHalfTensor_addr"
-  c_THHalfTensor_addr :: (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_addr :: Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_addbmm : r_ beta t alpha batch1 batch2 -> void
+-- | c_addbmm :  r_ beta t alpha batch1 batch2 -> void
 foreign import ccall "THTensorMath.h THHalfTensor_addbmm"
-  c_THHalfTensor_addbmm :: (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_addbmm :: Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_baddbmm : r_ beta t alpha batch1 batch2 -> void
+-- | c_baddbmm :  r_ beta t alpha batch1 batch2 -> void
 foreign import ccall "THTensorMath.h THHalfTensor_baddbmm"
-  c_THHalfTensor_baddbmm :: (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_baddbmm :: Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_match : r_ m1 m2 gain -> void
+-- | c_match :  r_ m1 m2 gain -> void
 foreign import ccall "THTensorMath.h THHalfTensor_match"
-  c_THHalfTensor_match :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_match :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_numel : t -> ptrdiff_t
+-- | c_numel :  t -> ptrdiff_t
 foreign import ccall "THTensorMath.h THHalfTensor_numel"
-  c_THHalfTensor_numel :: (Ptr CTHHalfTensor) -> CPtrdiff
+  c_numel :: Ptr CTHHalfTensor -> IO (CPtrdiff)
 
--- |c_THHalfTensor_max : values_ indices_ t dimension keepdim -> void
+-- | c_max :  values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THHalfTensor_max"
-  c_THHalfTensor_max :: (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ()
+  c_max :: Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_min : values_ indices_ t dimension keepdim -> void
+-- | c_min :  values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THHalfTensor_min"
-  c_THHalfTensor_min :: (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ()
+  c_min :: Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_kthvalue : values_ indices_ t k dimension keepdim -> void
+-- | c_kthvalue :  values_ indices_ t k dimension keepdim -> void
 foreign import ccall "THTensorMath.h THHalfTensor_kthvalue"
-  c_THHalfTensor_kthvalue :: (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CLLong -> CInt -> CInt -> IO ()
+  c_kthvalue :: Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CLLong -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_mode : values_ indices_ t dimension keepdim -> void
+-- | c_mode :  values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THHalfTensor_mode"
-  c_THHalfTensor_mode :: (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ()
+  c_mode :: Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_median : values_ indices_ t dimension keepdim -> void
+-- | c_median :  values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THHalfTensor_median"
-  c_THHalfTensor_median :: (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ()
+  c_median :: Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_sum : r_ t dimension keepdim -> void
+-- | c_sum :  r_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THHalfTensor_sum"
-  c_THHalfTensor_sum :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ()
+  c_sum :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_prod : r_ t dimension keepdim -> void
+-- | c_prod :  r_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h THHalfTensor_prod"
-  c_THHalfTensor_prod :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ()
+  c_prod :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_cumsum : r_ t dimension -> void
+-- | c_cumsum :  r_ t dimension -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cumsum"
-  c_THHalfTensor_cumsum :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ()
+  c_cumsum :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ()
 
--- |c_THHalfTensor_cumprod : r_ t dimension -> void
+-- | c_cumprod :  r_ t dimension -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cumprod"
-  c_THHalfTensor_cumprod :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ()
+  c_cumprod :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ()
 
--- |c_THHalfTensor_sign : r_ t -> void
+-- | c_sign :  r_ t -> void
 foreign import ccall "THTensorMath.h THHalfTensor_sign"
-  c_THHalfTensor_sign :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_sign :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_trace : t -> accreal
+-- | c_trace :  t -> accreal
 foreign import ccall "THTensorMath.h THHalfTensor_trace"
-  c_THHalfTensor_trace :: (Ptr CTHHalfTensor) -> CFloat
+  c_trace :: Ptr CTHHalfTensor -> IO (CFloat)
 
--- |c_THHalfTensor_cross : r_ a b dimension -> void
+-- | c_cross :  r_ a b dimension -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cross"
-  c_THHalfTensor_cross :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ()
+  c_cross :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ()
 
--- |c_THHalfTensor_cmax : r t src -> void
+-- | c_cmax :  r t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cmax"
-  c_THHalfTensor_cmax :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cmax :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cmin : r t src -> void
+-- | c_cmin :  r t src -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cmin"
-  c_THHalfTensor_cmin :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_cmin :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_cmaxValue : r t value -> void
+-- | c_cmaxValue :  r t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cmaxValue"
-  c_THHalfTensor_cmaxValue :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_cmaxValue :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_cminValue : r t value -> void
+-- | c_cminValue :  r t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cminValue"
-  c_THHalfTensor_cminValue :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_cminValue :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_zeros : r_ size -> void
+-- | c_zeros :  r_ size -> void
 foreign import ccall "THTensorMath.h THHalfTensor_zeros"
-  c_THHalfTensor_zeros :: (Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> IO ()
+  c_zeros :: Ptr CTHHalfTensor -> Ptr CTHLongStorage -> IO ()
 
--- |c_THHalfTensor_zerosLike : r_ input -> void
+-- | c_zerosLike :  r_ input -> void
 foreign import ccall "THTensorMath.h THHalfTensor_zerosLike"
-  c_THHalfTensor_zerosLike :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_zerosLike :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_ones : r_ size -> void
+-- | c_ones :  r_ size -> void
 foreign import ccall "THTensorMath.h THHalfTensor_ones"
-  c_THHalfTensor_ones :: (Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> IO ()
+  c_ones :: Ptr CTHHalfTensor -> Ptr CTHLongStorage -> IO ()
 
--- |c_THHalfTensor_onesLike : r_ input -> void
+-- | c_onesLike :  r_ input -> void
 foreign import ccall "THTensorMath.h THHalfTensor_onesLike"
-  c_THHalfTensor_onesLike :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_onesLike :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_diag : r_ t k -> void
+-- | c_diag :  r_ t k -> void
 foreign import ccall "THTensorMath.h THHalfTensor_diag"
-  c_THHalfTensor_diag :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ()
+  c_diag :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ()
 
--- |c_THHalfTensor_eye : r_ n m -> void
+-- | c_eye :  r_ n m -> void
 foreign import ccall "THTensorMath.h THHalfTensor_eye"
-  c_THHalfTensor_eye :: (Ptr CTHHalfTensor) -> CLLong -> CLLong -> IO ()
+  c_eye :: Ptr CTHHalfTensor -> CLLong -> CLLong -> IO ()
 
--- |c_THHalfTensor_arange : r_ xmin xmax step -> void
+-- | c_arange :  r_ xmin xmax step -> void
 foreign import ccall "THTensorMath.h THHalfTensor_arange"
-  c_THHalfTensor_arange :: (Ptr CTHHalfTensor) -> CFloat -> CFloat -> CFloat -> IO ()
+  c_arange :: Ptr CTHHalfTensor -> CFloat -> CFloat -> CFloat -> IO ()
 
--- |c_THHalfTensor_range : r_ xmin xmax step -> void
+-- | c_range :  r_ xmin xmax step -> void
 foreign import ccall "THTensorMath.h THHalfTensor_range"
-  c_THHalfTensor_range :: (Ptr CTHHalfTensor) -> CFloat -> CFloat -> CFloat -> IO ()
+  c_range :: Ptr CTHHalfTensor -> CFloat -> CFloat -> CFloat -> IO ()
 
--- |c_THHalfTensor_randperm : r_ _generator n -> void
+-- | c_randperm :  r_ _generator n -> void
 foreign import ccall "THTensorMath.h THHalfTensor_randperm"
-  c_THHalfTensor_randperm :: (Ptr CTHHalfTensor) -> Ptr CTHGenerator -> CLLong -> IO ()
+  c_randperm :: Ptr CTHHalfTensor -> Ptr CTHGenerator -> CLLong -> IO ()
 
--- |c_THHalfTensor_reshape : r_ t size -> void
+-- | c_reshape :  r_ t size -> void
 foreign import ccall "THTensorMath.h THHalfTensor_reshape"
-  c_THHalfTensor_reshape :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> IO ()
+  c_reshape :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHLongStorage -> IO ()
 
--- |c_THHalfTensor_sort : rt_ ri_ t dimension descendingOrder -> void
+-- | c_sort :  rt_ ri_ t dimension descendingOrder -> void
 foreign import ccall "THTensorMath.h THHalfTensor_sort"
-  c_THHalfTensor_sort :: (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ()
+  c_sort :: Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_topk : rt_ ri_ t k dim dir sorted -> void
+-- | c_topk :  rt_ ri_ t k dim dir sorted -> void
 foreign import ccall "THTensorMath.h THHalfTensor_topk"
-  c_THHalfTensor_topk :: (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CLLong -> CInt -> CInt -> CInt -> IO ()
+  c_topk :: Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CLLong -> CInt -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_tril : r_ t k -> void
+-- | c_tril :  r_ t k -> void
 foreign import ccall "THTensorMath.h THHalfTensor_tril"
-  c_THHalfTensor_tril :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLLong -> IO ()
+  c_tril :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CLLong -> IO ()
 
--- |c_THHalfTensor_triu : r_ t k -> void
+-- | c_triu :  r_ t k -> void
 foreign import ccall "THTensorMath.h THHalfTensor_triu"
-  c_THHalfTensor_triu :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLLong -> IO ()
+  c_triu :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CLLong -> IO ()
 
--- |c_THHalfTensor_cat : r_ ta tb dimension -> void
+-- | c_cat :  r_ ta tb dimension -> void
 foreign import ccall "THTensorMath.h THHalfTensor_cat"
-  c_THHalfTensor_cat :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ()
+  c_cat :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ()
 
--- |c_THHalfTensor_catArray : result inputs numInputs dimension -> void
+-- | c_catArray :  result inputs numInputs dimension -> void
 foreign import ccall "THTensorMath.h THHalfTensor_catArray"
-  c_THHalfTensor_catArray :: (Ptr CTHHalfTensor) -> Ptr (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ()
+  c_catArray :: Ptr CTHHalfTensor -> Ptr (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ()
 
--- |c_THHalfTensor_equal : ta tb -> int
+-- | c_equal :  ta tb -> int
 foreign import ccall "THTensorMath.h THHalfTensor_equal"
-  c_THHalfTensor_equal :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt
+  c_equal :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO (CInt)
 
--- |c_THHalfTensor_ltValue : r_ t value -> void
+-- | c_ltValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_ltValue"
-  c_THHalfTensor_ltValue :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_ltValue :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_leValue : r_ t value -> void
+-- | c_leValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_leValue"
-  c_THHalfTensor_leValue :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_leValue :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_gtValue : r_ t value -> void
+-- | c_gtValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_gtValue"
-  c_THHalfTensor_gtValue :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_gtValue :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_geValue : r_ t value -> void
+-- | c_geValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_geValue"
-  c_THHalfTensor_geValue :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_geValue :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_neValue : r_ t value -> void
+-- | c_neValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_neValue"
-  c_THHalfTensor_neValue :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_neValue :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_eqValue : r_ t value -> void
+-- | c_eqValue :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_eqValue"
-  c_THHalfTensor_eqValue :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_eqValue :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_ltValueT : r_ t value -> void
+-- | c_ltValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_ltValueT"
-  c_THHalfTensor_ltValueT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_ltValueT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_leValueT : r_ t value -> void
+-- | c_leValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_leValueT"
-  c_THHalfTensor_leValueT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_leValueT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_gtValueT : r_ t value -> void
+-- | c_gtValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_gtValueT"
-  c_THHalfTensor_gtValueT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_gtValueT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_geValueT : r_ t value -> void
+-- | c_geValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_geValueT"
-  c_THHalfTensor_geValueT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_geValueT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_neValueT : r_ t value -> void
+-- | c_neValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_neValueT"
-  c_THHalfTensor_neValueT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_neValueT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_eqValueT : r_ t value -> void
+-- | c_eqValueT :  r_ t value -> void
 foreign import ccall "THTensorMath.h THHalfTensor_eqValueT"
-  c_THHalfTensor_eqValueT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ()
+  c_eqValueT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ()
 
--- |c_THHalfTensor_ltTensor : r_ ta tb -> void
+-- | c_ltTensor :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_ltTensor"
-  c_THHalfTensor_ltTensor :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_ltTensor :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_leTensor : r_ ta tb -> void
+-- | c_leTensor :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_leTensor"
-  c_THHalfTensor_leTensor :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_leTensor :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_gtTensor : r_ ta tb -> void
+-- | c_gtTensor :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_gtTensor"
-  c_THHalfTensor_gtTensor :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_gtTensor :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_geTensor : r_ ta tb -> void
+-- | c_geTensor :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_geTensor"
-  c_THHalfTensor_geTensor :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_geTensor :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_neTensor : r_ ta tb -> void
+-- | c_neTensor :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_neTensor"
-  c_THHalfTensor_neTensor :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_neTensor :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_eqTensor : r_ ta tb -> void
+-- | c_eqTensor :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_eqTensor"
-  c_THHalfTensor_eqTensor :: Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_eqTensor :: Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_ltTensorT : r_ ta tb -> void
+-- | c_ltTensorT :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_ltTensorT"
-  c_THHalfTensor_ltTensorT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_ltTensorT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_leTensorT : r_ ta tb -> void
+-- | c_leTensorT :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_leTensorT"
-  c_THHalfTensor_leTensorT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_leTensorT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_gtTensorT : r_ ta tb -> void
+-- | c_gtTensorT :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_gtTensorT"
-  c_THHalfTensor_gtTensorT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_gtTensorT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_geTensorT : r_ ta tb -> void
+-- | c_geTensorT :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_geTensorT"
-  c_THHalfTensor_geTensorT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_geTensorT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_neTensorT : r_ ta tb -> void
+-- | c_neTensorT :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_neTensorT"
-  c_THHalfTensor_neTensorT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_neTensorT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |c_THHalfTensor_eqTensorT : r_ ta tb -> void
+-- | c_eqTensorT :  r_ ta tb -> void
 foreign import ccall "THTensorMath.h THHalfTensor_eqTensorT"
-  c_THHalfTensor_eqTensorT :: (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ()
+  c_eqTensorT :: Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ()
 
--- |p_THHalfTensor_fill : Pointer to function : r_ value -> void
+-- | p_fill : Pointer to function : r_ value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_fill"
-  p_THHalfTensor_fill :: FunPtr ((Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_fill :: FunPtr (Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_zero : Pointer to function : r_ -> void
+-- | p_zero : Pointer to function : r_ -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_zero"
-  p_THHalfTensor_zero :: FunPtr ((Ptr CTHHalfTensor) -> IO ())
+  p_zero :: FunPtr (Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_maskedFill : Pointer to function : tensor mask value -> void
+-- | p_maskedFill : Pointer to function : tensor mask value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_maskedFill"
-  p_THHalfTensor_maskedFill :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHByteTensor -> THHalf -> IO ())
+  p_maskedFill :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHByteTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_maskedCopy : Pointer to function : tensor mask src -> void
+-- | p_maskedCopy : Pointer to function : tensor mask src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_maskedCopy"
-  p_THHalfTensor_maskedCopy :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> IO ())
+  p_maskedCopy :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHByteTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_maskedSelect : Pointer to function : tensor src mask -> void
+-- | p_maskedSelect : Pointer to function : tensor src mask -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_maskedSelect"
-  p_THHalfTensor_maskedSelect :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> Ptr CTHByteTensor -> IO ())
+  p_maskedSelect :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHByteTensor -> IO ())
 
--- |p_THHalfTensor_nonzero : Pointer to function : subscript tensor -> void
+-- | p_nonzero : Pointer to function : subscript tensor -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_nonzero"
-  p_THHalfTensor_nonzero :: FunPtr (Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ())
+  p_nonzero :: FunPtr (Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_indexSelect : Pointer to function : tensor src dim index -> void
+-- | p_indexSelect : Pointer to function : tensor src dim index -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_indexSelect"
-  p_THHalfTensor_indexSelect :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> IO ())
+  p_indexSelect :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> IO ())
 
--- |p_THHalfTensor_indexCopy : Pointer to function : tensor dim index src -> void
+-- | p_indexCopy : Pointer to function : tensor dim index src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_indexCopy"
-  p_THHalfTensor_indexCopy :: FunPtr ((Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ())
+  p_indexCopy :: FunPtr (Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_indexAdd : Pointer to function : tensor dim index src -> void
+-- | p_indexAdd : Pointer to function : tensor dim index src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_indexAdd"
-  p_THHalfTensor_indexAdd :: FunPtr ((Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ())
+  p_indexAdd :: FunPtr (Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_indexFill : Pointer to function : tensor dim index val -> void
+-- | p_indexFill : Pointer to function : tensor dim index val -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_indexFill"
-  p_THHalfTensor_indexFill :: FunPtr ((Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> THHalf -> IO ())
+  p_indexFill :: FunPtr (Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_take : Pointer to function : tensor src index -> void
+-- | p_take : Pointer to function : tensor src index -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_take"
-  p_THHalfTensor_take :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> IO ())
+  p_take :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHLongTensor -> IO ())
 
--- |p_THHalfTensor_put : Pointer to function : tensor index src accumulate -> void
+-- | p_put : Pointer to function : tensor index src accumulate -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_put"
-  p_THHalfTensor_put :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> IO ())
+  p_put :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> IO ())
 
--- |p_THHalfTensor_gather : Pointer to function : tensor src dim index -> void
+-- | p_gather : Pointer to function : tensor src dim index -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_gather"
-  p_THHalfTensor_gather :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> IO ())
+  p_gather :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> IO ())
 
--- |p_THHalfTensor_scatter : Pointer to function : tensor dim index src -> void
+-- | p_scatter : Pointer to function : tensor dim index src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_scatter"
-  p_THHalfTensor_scatter :: FunPtr ((Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ())
+  p_scatter :: FunPtr (Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_scatterAdd : Pointer to function : tensor dim index src -> void
+-- | p_scatterAdd : Pointer to function : tensor dim index src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_scatterAdd"
-  p_THHalfTensor_scatterAdd :: FunPtr ((Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> IO ())
+  p_scatterAdd :: FunPtr (Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_scatterFill : Pointer to function : tensor dim index val -> void
+-- | p_scatterFill : Pointer to function : tensor dim index val -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_scatterFill"
-  p_THHalfTensor_scatterFill :: FunPtr ((Ptr CTHHalfTensor) -> CInt -> Ptr CTHLongTensor -> THHalf -> IO ())
+  p_scatterFill :: FunPtr (Ptr CTHHalfTensor -> CInt -> Ptr CTHLongTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_dot : Pointer to function : t src -> accreal
+-- | p_dot : Pointer to function : t src -> accreal
 foreign import ccall "THTensorMath.h &THHalfTensor_dot"
-  p_THHalfTensor_dot :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CFloat)
+  p_dot :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO (CFloat))
 
--- |p_THHalfTensor_minall : Pointer to function : t -> real
+-- | p_minall : Pointer to function : t -> real
 foreign import ccall "THTensorMath.h &THHalfTensor_minall"
-  p_THHalfTensor_minall :: FunPtr ((Ptr CTHHalfTensor) -> THHalf)
+  p_minall :: FunPtr (Ptr CTHHalfTensor -> IO (CTHHalf))
 
--- |p_THHalfTensor_maxall : Pointer to function : t -> real
+-- | p_maxall : Pointer to function : t -> real
 foreign import ccall "THTensorMath.h &THHalfTensor_maxall"
-  p_THHalfTensor_maxall :: FunPtr ((Ptr CTHHalfTensor) -> THHalf)
+  p_maxall :: FunPtr (Ptr CTHHalfTensor -> IO (CTHHalf))
 
--- |p_THHalfTensor_medianall : Pointer to function : t -> real
+-- | p_medianall : Pointer to function : t -> real
 foreign import ccall "THTensorMath.h &THHalfTensor_medianall"
-  p_THHalfTensor_medianall :: FunPtr ((Ptr CTHHalfTensor) -> THHalf)
+  p_medianall :: FunPtr (Ptr CTHHalfTensor -> IO (CTHHalf))
 
--- |p_THHalfTensor_sumall : Pointer to function : t -> accreal
+-- | p_sumall : Pointer to function : t -> accreal
 foreign import ccall "THTensorMath.h &THHalfTensor_sumall"
-  p_THHalfTensor_sumall :: FunPtr ((Ptr CTHHalfTensor) -> CFloat)
+  p_sumall :: FunPtr (Ptr CTHHalfTensor -> IO (CFloat))
 
--- |p_THHalfTensor_prodall : Pointer to function : t -> accreal
+-- | p_prodall : Pointer to function : t -> accreal
 foreign import ccall "THTensorMath.h &THHalfTensor_prodall"
-  p_THHalfTensor_prodall :: FunPtr ((Ptr CTHHalfTensor) -> CFloat)
+  p_prodall :: FunPtr (Ptr CTHHalfTensor -> IO (CFloat))
 
--- |p_THHalfTensor_add : Pointer to function : r_ t value -> void
+-- | p_add : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_add"
-  p_THHalfTensor_add :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_add :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_sub : Pointer to function : r_ t value -> void
+-- | p_sub : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_sub"
-  p_THHalfTensor_sub :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_sub :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_add_scaled : Pointer to function : r_ t value alpha -> void
+-- | p_add_scaled : Pointer to function : r_ t value alpha -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_add_scaled"
-  p_THHalfTensor_add_scaled :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> THHalf -> IO ())
+  p_add_scaled :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_sub_scaled : Pointer to function : r_ t value alpha -> void
+-- | p_sub_scaled : Pointer to function : r_ t value alpha -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_sub_scaled"
-  p_THHalfTensor_sub_scaled :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> THHalf -> IO ())
+  p_sub_scaled :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_mul : Pointer to function : r_ t value -> void
+-- | p_mul : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_mul"
-  p_THHalfTensor_mul :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_mul :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_div : Pointer to function : r_ t value -> void
+-- | p_div : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_div"
-  p_THHalfTensor_div :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_div :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_lshift : Pointer to function : r_ t value -> void
+-- | p_lshift : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_lshift"
-  p_THHalfTensor_lshift :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_lshift :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_rshift : Pointer to function : r_ t value -> void
+-- | p_rshift : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_rshift"
-  p_THHalfTensor_rshift :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_rshift :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_fmod : Pointer to function : r_ t value -> void
+-- | p_fmod : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_fmod"
-  p_THHalfTensor_fmod :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_fmod :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_remainder : Pointer to function : r_ t value -> void
+-- | p_remainder : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_remainder"
-  p_THHalfTensor_remainder :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_remainder :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_clamp : Pointer to function : r_ t min_value max_value -> void
+-- | p_clamp : Pointer to function : r_ t min_value max_value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_clamp"
-  p_THHalfTensor_clamp :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> THHalf -> IO ())
+  p_clamp :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_bitand : Pointer to function : r_ t value -> void
+-- | p_bitand : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_bitand"
-  p_THHalfTensor_bitand :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_bitand :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_bitor : Pointer to function : r_ t value -> void
+-- | p_bitor : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_bitor"
-  p_THHalfTensor_bitor :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_bitor :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_bitxor : Pointer to function : r_ t value -> void
+-- | p_bitxor : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_bitxor"
-  p_THHalfTensor_bitxor :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_bitxor :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_cadd : Pointer to function : r_ t value src -> void
+-- | p_cadd : Pointer to function : r_ t value src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cadd"
-  p_THHalfTensor_cadd :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> IO ())
+  p_cadd :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_csub : Pointer to function : self src1 value src2 -> void
+-- | p_csub : Pointer to function : self src1 value src2 -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_csub"
-  p_THHalfTensor_csub :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> IO ())
+  p_csub :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cmul : Pointer to function : r_ t src -> void
+-- | p_cmul : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cmul"
-  p_THHalfTensor_cmul :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cmul :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cpow : Pointer to function : r_ t src -> void
+-- | p_cpow : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cpow"
-  p_THHalfTensor_cpow :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cpow :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cdiv : Pointer to function : r_ t src -> void
+-- | p_cdiv : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cdiv"
-  p_THHalfTensor_cdiv :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cdiv :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_clshift : Pointer to function : r_ t src -> void
+-- | p_clshift : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_clshift"
-  p_THHalfTensor_clshift :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_clshift :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_crshift : Pointer to function : r_ t src -> void
+-- | p_crshift : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_crshift"
-  p_THHalfTensor_crshift :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_crshift :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cfmod : Pointer to function : r_ t src -> void
+-- | p_cfmod : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cfmod"
-  p_THHalfTensor_cfmod :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cfmod :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cremainder : Pointer to function : r_ t src -> void
+-- | p_cremainder : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cremainder"
-  p_THHalfTensor_cremainder :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cremainder :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cbitand : Pointer to function : r_ t src -> void
+-- | p_cbitand : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cbitand"
-  p_THHalfTensor_cbitand :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cbitand :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cbitor : Pointer to function : r_ t src -> void
+-- | p_cbitor : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cbitor"
-  p_THHalfTensor_cbitor :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cbitor :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cbitxor : Pointer to function : r_ t src -> void
+-- | p_cbitxor : Pointer to function : r_ t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cbitxor"
-  p_THHalfTensor_cbitxor :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cbitxor :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_addcmul : Pointer to function : r_ t value src1 src2 -> void
+-- | p_addcmul : Pointer to function : r_ t value src1 src2 -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_addcmul"
-  p_THHalfTensor_addcmul :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_addcmul :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_addcdiv : Pointer to function : r_ t value src1 src2 -> void
+-- | p_addcdiv : Pointer to function : r_ t value src1 src2 -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_addcdiv"
-  p_THHalfTensor_addcdiv :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_addcdiv :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_addmv : Pointer to function : r_ beta t alpha mat vec -> void
+-- | p_addmv : Pointer to function : r_ beta t alpha mat vec -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_addmv"
-  p_THHalfTensor_addmv :: FunPtr ((Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_addmv :: FunPtr (Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_addmm : Pointer to function : r_ beta t alpha mat1 mat2 -> void
+-- | p_addmm : Pointer to function : r_ beta t alpha mat1 mat2 -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_addmm"
-  p_THHalfTensor_addmm :: FunPtr ((Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_addmm :: FunPtr (Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_addr : Pointer to function : r_ beta t alpha vec1 vec2 -> void
+-- | p_addr : Pointer to function : r_ beta t alpha vec1 vec2 -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_addr"
-  p_THHalfTensor_addr :: FunPtr ((Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_addr :: FunPtr (Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_addbmm : Pointer to function : r_ beta t alpha batch1 batch2 -> void
+-- | p_addbmm : Pointer to function : r_ beta t alpha batch1 batch2 -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_addbmm"
-  p_THHalfTensor_addbmm :: FunPtr ((Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_addbmm :: FunPtr (Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_baddbmm : Pointer to function : r_ beta t alpha batch1 batch2 -> void
+-- | p_baddbmm : Pointer to function : r_ beta t alpha batch1 batch2 -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_baddbmm"
-  p_THHalfTensor_baddbmm :: FunPtr ((Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> THHalf -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_baddbmm :: FunPtr (Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> CTHHalf -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_match : Pointer to function : r_ m1 m2 gain -> void
+-- | p_match : Pointer to function : r_ m1 m2 gain -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_match"
-  p_THHalfTensor_match :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_match :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_numel : Pointer to function : t -> ptrdiff_t
+-- | p_numel : Pointer to function : t -> ptrdiff_t
 foreign import ccall "THTensorMath.h &THHalfTensor_numel"
-  p_THHalfTensor_numel :: FunPtr ((Ptr CTHHalfTensor) -> CPtrdiff)
+  p_numel :: FunPtr (Ptr CTHHalfTensor -> IO (CPtrdiff))
 
--- |p_THHalfTensor_max : Pointer to function : values_ indices_ t dimension keepdim -> void
+-- | p_max : Pointer to function : values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_max"
-  p_THHalfTensor_max :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ())
+  p_max :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_min : Pointer to function : values_ indices_ t dimension keepdim -> void
+-- | p_min : Pointer to function : values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_min"
-  p_THHalfTensor_min :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ())
+  p_min :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_kthvalue : Pointer to function : values_ indices_ t k dimension keepdim -> void
+-- | p_kthvalue : Pointer to function : values_ indices_ t k dimension keepdim -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_kthvalue"
-  p_THHalfTensor_kthvalue :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CLLong -> CInt -> CInt -> IO ())
+  p_kthvalue :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CLLong -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_mode : Pointer to function : values_ indices_ t dimension keepdim -> void
+-- | p_mode : Pointer to function : values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_mode"
-  p_THHalfTensor_mode :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ())
+  p_mode :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_median : Pointer to function : values_ indices_ t dimension keepdim -> void
+-- | p_median : Pointer to function : values_ indices_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_median"
-  p_THHalfTensor_median :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ())
+  p_median :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_sum : Pointer to function : r_ t dimension keepdim -> void
+-- | p_sum : Pointer to function : r_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_sum"
-  p_THHalfTensor_sum :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ())
+  p_sum :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_prod : Pointer to function : r_ t dimension keepdim -> void
+-- | p_prod : Pointer to function : r_ t dimension keepdim -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_prod"
-  p_THHalfTensor_prod :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ())
+  p_prod :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_cumsum : Pointer to function : r_ t dimension -> void
+-- | p_cumsum : Pointer to function : r_ t dimension -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cumsum"
-  p_THHalfTensor_cumsum :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ())
+  p_cumsum :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ())
 
--- |p_THHalfTensor_cumprod : Pointer to function : r_ t dimension -> void
+-- | p_cumprod : Pointer to function : r_ t dimension -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cumprod"
-  p_THHalfTensor_cumprod :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ())
+  p_cumprod :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ())
 
--- |p_THHalfTensor_sign : Pointer to function : r_ t -> void
+-- | p_sign : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_sign"
-  p_THHalfTensor_sign :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_sign :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_trace : Pointer to function : t -> accreal
+-- | p_trace : Pointer to function : t -> accreal
 foreign import ccall "THTensorMath.h &THHalfTensor_trace"
-  p_THHalfTensor_trace :: FunPtr ((Ptr CTHHalfTensor) -> CFloat)
+  p_trace :: FunPtr (Ptr CTHHalfTensor -> IO (CFloat))
 
--- |p_THHalfTensor_cross : Pointer to function : r_ a b dimension -> void
+-- | p_cross : Pointer to function : r_ a b dimension -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cross"
-  p_THHalfTensor_cross :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ())
+  p_cross :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ())
 
--- |p_THHalfTensor_cmax : Pointer to function : r t src -> void
+-- | p_cmax : Pointer to function : r t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cmax"
-  p_THHalfTensor_cmax :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cmax :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cmin : Pointer to function : r t src -> void
+-- | p_cmin : Pointer to function : r t src -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cmin"
-  p_THHalfTensor_cmin :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_cmin :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_cmaxValue : Pointer to function : r t value -> void
+-- | p_cmaxValue : Pointer to function : r t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cmaxValue"
-  p_THHalfTensor_cmaxValue :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_cmaxValue :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_cminValue : Pointer to function : r t value -> void
+-- | p_cminValue : Pointer to function : r t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cminValue"
-  p_THHalfTensor_cminValue :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_cminValue :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_zeros : Pointer to function : r_ size -> void
+-- | p_zeros : Pointer to function : r_ size -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_zeros"
-  p_THHalfTensor_zeros :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> IO ())
+  p_zeros :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongStorage -> IO ())
 
--- |p_THHalfTensor_zerosLike : Pointer to function : r_ input -> void
+-- | p_zerosLike : Pointer to function : r_ input -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_zerosLike"
-  p_THHalfTensor_zerosLike :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_zerosLike :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_ones : Pointer to function : r_ size -> void
+-- | p_ones : Pointer to function : r_ size -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_ones"
-  p_THHalfTensor_ones :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> IO ())
+  p_ones :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongStorage -> IO ())
 
--- |p_THHalfTensor_onesLike : Pointer to function : r_ input -> void
+-- | p_onesLike : Pointer to function : r_ input -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_onesLike"
-  p_THHalfTensor_onesLike :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_onesLike :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_diag : Pointer to function : r_ t k -> void
+-- | p_diag : Pointer to function : r_ t k -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_diag"
-  p_THHalfTensor_diag :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ())
+  p_diag :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ())
 
--- |p_THHalfTensor_eye : Pointer to function : r_ n m -> void
+-- | p_eye : Pointer to function : r_ n m -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_eye"
-  p_THHalfTensor_eye :: FunPtr ((Ptr CTHHalfTensor) -> CLLong -> CLLong -> IO ())
+  p_eye :: FunPtr (Ptr CTHHalfTensor -> CLLong -> CLLong -> IO ())
 
--- |p_THHalfTensor_arange : Pointer to function : r_ xmin xmax step -> void
+-- | p_arange : Pointer to function : r_ xmin xmax step -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_arange"
-  p_THHalfTensor_arange :: FunPtr ((Ptr CTHHalfTensor) -> CFloat -> CFloat -> CFloat -> IO ())
+  p_arange :: FunPtr (Ptr CTHHalfTensor -> CFloat -> CFloat -> CFloat -> IO ())
 
--- |p_THHalfTensor_range : Pointer to function : r_ xmin xmax step -> void
+-- | p_range : Pointer to function : r_ xmin xmax step -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_range"
-  p_THHalfTensor_range :: FunPtr ((Ptr CTHHalfTensor) -> CFloat -> CFloat -> CFloat -> IO ())
+  p_range :: FunPtr (Ptr CTHHalfTensor -> CFloat -> CFloat -> CFloat -> IO ())
 
--- |p_THHalfTensor_randperm : Pointer to function : r_ _generator n -> void
+-- | p_randperm : Pointer to function : r_ _generator n -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_randperm"
-  p_THHalfTensor_randperm :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHGenerator -> CLLong -> IO ())
+  p_randperm :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHGenerator -> CLLong -> IO ())
 
--- |p_THHalfTensor_reshape : Pointer to function : r_ t size -> void
+-- | p_reshape : Pointer to function : r_ t size -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_reshape"
-  p_THHalfTensor_reshape :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> Ptr CTHLongStorage -> IO ())
+  p_reshape :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHLongStorage -> IO ())
 
--- |p_THHalfTensor_sort : Pointer to function : rt_ ri_ t dimension descendingOrder -> void
+-- | p_sort : Pointer to function : rt_ ri_ t dimension descendingOrder -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_sort"
-  p_THHalfTensor_sort :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ())
+  p_sort :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_topk : Pointer to function : rt_ ri_ t k dim dir sorted -> void
+-- | p_topk : Pointer to function : rt_ ri_ t k dim dir sorted -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_topk"
-  p_THHalfTensor_topk :: FunPtr ((Ptr CTHHalfTensor) -> Ptr CTHLongTensor -> (Ptr CTHHalfTensor) -> CLLong -> CInt -> CInt -> CInt -> IO ())
+  p_topk :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHLongTensor -> Ptr CTHHalfTensor -> CLLong -> CInt -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_tril : Pointer to function : r_ t k -> void
+-- | p_tril : Pointer to function : r_ t k -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_tril"
-  p_THHalfTensor_tril :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLLong -> IO ())
+  p_tril :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CLLong -> IO ())
 
--- |p_THHalfTensor_triu : Pointer to function : r_ t k -> void
+-- | p_triu : Pointer to function : r_ t k -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_triu"
-  p_THHalfTensor_triu :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CLLong -> IO ())
+  p_triu :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CLLong -> IO ())
 
--- |p_THHalfTensor_cat : Pointer to function : r_ ta tb dimension -> void
+-- | p_cat : Pointer to function : r_ ta tb dimension -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_cat"
-  p_THHalfTensor_cat :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt -> IO ())
+  p_cat :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CInt -> IO ())
 
--- |p_THHalfTensor_catArray : Pointer to function : result inputs numInputs dimension -> void
+-- | p_catArray : Pointer to function : result inputs numInputs dimension -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_catArray"
-  p_THHalfTensor_catArray :: FunPtr ((Ptr CTHHalfTensor) -> Ptr (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ())
+  p_catArray :: FunPtr (Ptr CTHHalfTensor -> Ptr (Ptr CTHHalfTensor) -> CInt -> CInt -> IO ())
 
--- |p_THHalfTensor_equal : Pointer to function : ta tb -> int
+-- | p_equal : Pointer to function : ta tb -> int
 foreign import ccall "THTensorMath.h &THHalfTensor_equal"
-  p_THHalfTensor_equal :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> CInt)
+  p_equal :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO (CInt))
 
--- |p_THHalfTensor_ltValue : Pointer to function : r_ t value -> void
+-- | p_ltValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_ltValue"
-  p_THHalfTensor_ltValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_ltValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_leValue : Pointer to function : r_ t value -> void
+-- | p_leValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_leValue"
-  p_THHalfTensor_leValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_leValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_gtValue : Pointer to function : r_ t value -> void
+-- | p_gtValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_gtValue"
-  p_THHalfTensor_gtValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_gtValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_geValue : Pointer to function : r_ t value -> void
+-- | p_geValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_geValue"
-  p_THHalfTensor_geValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_geValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_neValue : Pointer to function : r_ t value -> void
+-- | p_neValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_neValue"
-  p_THHalfTensor_neValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_neValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_eqValue : Pointer to function : r_ t value -> void
+-- | p_eqValue : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_eqValue"
-  p_THHalfTensor_eqValue :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_eqValue :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_ltValueT : Pointer to function : r_ t value -> void
+-- | p_ltValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_ltValueT"
-  p_THHalfTensor_ltValueT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_ltValueT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_leValueT : Pointer to function : r_ t value -> void
+-- | p_leValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_leValueT"
-  p_THHalfTensor_leValueT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_leValueT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_gtValueT : Pointer to function : r_ t value -> void
+-- | p_gtValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_gtValueT"
-  p_THHalfTensor_gtValueT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_gtValueT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_geValueT : Pointer to function : r_ t value -> void
+-- | p_geValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_geValueT"
-  p_THHalfTensor_geValueT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_geValueT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_neValueT : Pointer to function : r_ t value -> void
+-- | p_neValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_neValueT"
-  p_THHalfTensor_neValueT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_neValueT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_eqValueT : Pointer to function : r_ t value -> void
+-- | p_eqValueT : Pointer to function : r_ t value -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_eqValueT"
-  p_THHalfTensor_eqValueT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> THHalf -> IO ())
+  p_eqValueT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> CTHHalf -> IO ())
 
--- |p_THHalfTensor_ltTensor : Pointer to function : r_ ta tb -> void
+-- | p_ltTensor : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_ltTensor"
-  p_THHalfTensor_ltTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_ltTensor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_leTensor : Pointer to function : r_ ta tb -> void
+-- | p_leTensor : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_leTensor"
-  p_THHalfTensor_leTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_leTensor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_gtTensor : Pointer to function : r_ ta tb -> void
+-- | p_gtTensor : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_gtTensor"
-  p_THHalfTensor_gtTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_gtTensor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_geTensor : Pointer to function : r_ ta tb -> void
+-- | p_geTensor : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_geTensor"
-  p_THHalfTensor_geTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_geTensor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_neTensor : Pointer to function : r_ ta tb -> void
+-- | p_neTensor : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_neTensor"
-  p_THHalfTensor_neTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_neTensor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_eqTensor : Pointer to function : r_ ta tb -> void
+-- | p_eqTensor : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_eqTensor"
-  p_THHalfTensor_eqTensor :: FunPtr (Ptr CTHByteTensor -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_eqTensor :: FunPtr (Ptr CTHByteTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_ltTensorT : Pointer to function : r_ ta tb -> void
+-- | p_ltTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_ltTensorT"
-  p_THHalfTensor_ltTensorT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_ltTensorT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_leTensorT : Pointer to function : r_ ta tb -> void
+-- | p_leTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_leTensorT"
-  p_THHalfTensor_leTensorT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_leTensorT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_gtTensorT : Pointer to function : r_ ta tb -> void
+-- | p_gtTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_gtTensorT"
-  p_THHalfTensor_gtTensorT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_gtTensorT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_geTensorT : Pointer to function : r_ ta tb -> void
+-- | p_geTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_geTensorT"
-  p_THHalfTensor_geTensorT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_geTensorT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_neTensorT : Pointer to function : r_ ta tb -> void
+-- | p_neTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_neTensorT"
-  p_THHalfTensor_neTensorT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_neTensorT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())
 
--- |p_THHalfTensor_eqTensorT : Pointer to function : r_ ta tb -> void
+-- | p_eqTensorT : Pointer to function : r_ ta tb -> void
 foreign import ccall "THTensorMath.h &THHalfTensor_eqTensorT"
-  p_THHalfTensor_eqTensorT :: FunPtr ((Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> (Ptr CTHHalfTensor) -> IO ())
+  p_eqTensorT :: FunPtr (Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> Ptr CTHHalfTensor -> IO ())

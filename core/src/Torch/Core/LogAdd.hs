@@ -6,30 +6,20 @@ module Torch.Core.LogAdd
   , expMinusApprox
   ) where
 
-import Foreign.C.Types (CDouble)
-import THLogAdd
-import System.IO.Unsafe (unsafePerformIO)
 import Torch.Core.Exceptions
-import Torch.Core.Internal (genOp1, genOp2)
+import qualified THLogAdd as TH
 
 -- | Add two log values, calling out to TH
-logAdd :: (Real a, Fractional b) => a -> a -> b
-logAdd log_a log_b = genOp2 c_THLogAdd log_a log_b
-
-
--- | Subtract two log values, calling out to TH
-logSub :: (MonadThrow m, Real a, Fractional b) => a -> a -> m b
-logSub log_a log_b =
-  if log_a < log_b
-  then throw (MathException "log_a must be greater than log_b")
-  else pure (genOp2 c_THLogSub log_a log_a)
-
+logAdd :: Double -> Double -> IO Double
+logAdd a b = pure . realToFrac $ TH.c_THLogAdd (realToFrac a) (realToFrac b)
 
 -- | Subtract two log values, calling out to TH
-unsafeLogSub :: forall a b . (Real a, Fractional b) => a -> a -> b
-unsafeLogSub a b = unsafePerformIO (logSub a b :: IO b)
+logSub :: Double -> Double -> IO Double
+logSub log_a log_b
+  | log_a < log_b = throw $ MathException "log_a must be greater than log_b"
+  | otherwise     = pure . realToFrac $ TH.c_THLogSub (realToFrac log_a) (realToFrac log_b)
 
+expMinusApprox :: Double -> IO Double
+expMinusApprox a = pure . realToFrac $ TH.c_THExpMinusApprox (realToFrac a)
 
-expMinusApprox :: (Real a, Fractional b) => a -> b
-expMinusApprox = genOp1 c_THExpMinusApprox
 

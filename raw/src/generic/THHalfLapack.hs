@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
-module THHalfLapack (
-    ) where
+module THHalfLapack
+  ( 
+  ) where
 
 import Foreign
 import Foreign.C.Types

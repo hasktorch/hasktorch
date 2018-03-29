@@ -1,17 +1,15 @@
 {-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, TypeOperators #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE BangPatterns #-}
-
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 module Main where
 
 import Torch.Core.Tensor.Dim
-import Torch.Core.Tensor.Dynamic.Double
-import Torch.Core.Tensor.Dynamic.DoubleMath (td_sigmoid, td_addmv)
-import Torch.Core.Tensor.Dynamic.DoubleRandom
+import Torch.Core.Tensor.Dynamic
+import qualified Torch.Core.Random as RNG
 
 data Weights = W
-  { biases :: TensorDouble
-  , nodes :: TensorDouble
+  { biases :: DoubleTensor
+  , nodes :: DoubleTensor
   } deriving (Eq, Show)
 
 {- Simple FF neural network, dynamically typed version, based on JL's example -}
@@ -36,31 +34,29 @@ dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
-  gen <- newRNG
+  gen <- RNG.new
   d1 <- someDimsM [fromIntegral o]
   d2 <- someDimsM [fromIntegral o, fromIntegral i]
-  let w1 = W { biases = new d1, nodes = new d2 }
-  b <- td_uniform (biases w1) gen (-1.0) (1.0)
-  w <- td_uniform (nodes w1) gen (-1.0) (1.0)
+  b <- uniform' d1 gen (-1) 1
+  w <- uniform' d2 gen (-1) 1
   pure W { biases = b, nodes = w }
 
-randomData :: Word -> IO TensorDouble
+randomData :: Word -> IO DoubleTensor
 randomData i = do
-  gen <- newRNG
+  gen <- RNG.new
   someD1 <- someDimsM [fromIntegral i]
-  let dat = new someD1
-  td_uniform dat gen (-1.0) (1.0)
+  uniform' someD1 gen (-1.0) (1.0)
 
 randomNet :: Word -> [Word] -> Word -> IO Network
 randomNet i [] o = O <$> randomWeights i o
 randomNet i (h:hs) o = (:~) <$> randomWeights i h <*> randomNet h hs o
 
-runLayer :: Weights -> TensorDouble -> TensorDouble
-runLayer (W wB wN) v = td_addmv 1.0 wB 1.0 wN v
+runLayer :: Weights -> DoubleTensor -> IO DoubleTensor
+runLayer (W wB wN) v = addmv 1.0 wB 1.0 wN v
 
-runNet :: Network -> TensorDouble -> TensorDouble
-runNet (O w) v = td_sigmoid (runLayer w v)
-runNet (w :~ n') v = let v' = td_sigmoid (runLayer w v) in runNet n' v'
+runNet :: Network -> DoubleTensor -> IO DoubleTensor
+runNet (O w) v     = (runLayer w v) >>= sigmoid
+runNet (w :~ n') v = (runLayer w v) >>= sigmoid >>= runNet n'
 
 
 main :: IO ()
@@ -71,7 +67,7 @@ main = do
   printTensor dat
   putStrLn "Network\n--------"
   dispN net
-  let result = runNet net dat
+  result <- runNet net dat
   putStrLn "Result\n--------"
   printTensor result
   putStrLn "Done"

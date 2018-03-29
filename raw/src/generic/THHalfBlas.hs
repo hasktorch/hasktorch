@@ -1,22 +1,22 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-
-module THHalfBlas (
-    c_THHalfBlas_swap,
-    c_THHalfBlas_scal,
-    c_THHalfBlas_copy,
-    c_THHalfBlas_axpy,
-    c_THHalfBlas_dot,
-    c_THHalfBlas_gemv,
-    c_THHalfBlas_ger,
-    c_THHalfBlas_gemm,
-    p_THHalfBlas_swap,
-    p_THHalfBlas_scal,
-    p_THHalfBlas_copy,
-    p_THHalfBlas_axpy,
-    p_THHalfBlas_dot,
-    p_THHalfBlas_gemv,
-    p_THHalfBlas_ger,
-    p_THHalfBlas_gemm) where
+module THHalfBlas
+  ( c_swap
+  , c_scal
+  , c_copy
+  , c_axpy
+  , c_dot
+  , c_gemv
+  , c_ger
+  , c_gemm
+  , p_swap
+  , p_scal
+  , p_copy
+  , p_axpy
+  , p_dot
+  , p_gemv
+  , p_ger
+  , p_gemm
+  ) where
 
 import Foreign
 import Foreign.C.Types
@@ -24,66 +24,66 @@ import THTypes
 import Data.Word
 import Data.Int
 
--- |c_THHalfBlas_swap : n x incx y incy -> void
+-- | c_swap :  n x incx y incy -> void
 foreign import ccall "THBlas.h THHalfBlas_swap"
-  c_THHalfBlas_swap :: CLLong -> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> IO ()
+  c_swap :: CLLong -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO ()
 
--- |c_THHalfBlas_scal : n a x incx -> void
+-- | c_scal :  n a x incx -> void
 foreign import ccall "THBlas.h THHalfBlas_scal"
-  c_THHalfBlas_scal :: CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> IO ()
+  c_scal :: CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> IO ()
 
--- |c_THHalfBlas_copy : n x incx y incy -> void
+-- | c_copy :  n x incx y incy -> void
 foreign import ccall "THBlas.h THHalfBlas_copy"
-  c_THHalfBlas_copy :: CLLong -> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> IO ()
+  c_copy :: CLLong -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO ()
 
--- |c_THHalfBlas_axpy : n a x incx y incy -> void
+-- | c_axpy :  n a x incx y incy -> void
 foreign import ccall "THBlas.h THHalfBlas_axpy"
-  c_THHalfBlas_axpy :: CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> IO ()
+  c_axpy :: CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO ()
 
--- |c_THHalfBlas_dot : n x incx y incy -> real
+-- | c_dot :  n x incx y incy -> real
 foreign import ccall "THBlas.h THHalfBlas_dot"
-  c_THHalfBlas_dot :: CLLong -> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> CTHHalf
+  c_dot :: CLLong -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO (CTHHalf)
 
--- |c_THHalfBlas_gemv : trans m n alpha a lda x incx beta y incy -> void
+-- | c_gemv :  trans m n alpha a lda x incx beta y incy -> void
 foreign import ccall "THBlas.h THHalfBlas_gemv"
-  c_THHalfBlas_gemv :: CChar -> CLLong -> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> IO ()
+  c_gemv :: CChar -> CLLong -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> IO ()
 
--- |c_THHalfBlas_ger : m n alpha x incx y incy a lda -> void
+-- | c_ger :  m n alpha x incx y incy a lda -> void
 foreign import ccall "THBlas.h THHalfBlas_ger"
-  c_THHalfBlas_ger :: CLLong -> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> IO ()
+  c_ger :: CLLong -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO ()
 
--- |c_THHalfBlas_gemm : transa transb m n k alpha a lda b ldb beta c ldc -> void
+-- | c_gemm :  transa transb m n k alpha a lda b ldb beta c ldc -> void
 foreign import ccall "THBlas.h THHalfBlas_gemm"
-  c_THHalfBlas_gemm :: CChar -> CChar -> CLLong -> CLLong -> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> IO ()
+  c_gemm :: CChar -> CChar -> CLLong -> CLLong -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> IO ()
 
--- |p_THHalfBlas_swap : Pointer to function : n x incx y incy -> void
+-- | p_swap : Pointer to function : n x incx y incy -> void
 foreign import ccall "THBlas.h &THHalfBlas_swap"
-  p_THHalfBlas_swap :: FunPtr (CLLong -> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> IO ())
+  p_swap :: FunPtr (CLLong -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO ())
 
--- |p_THHalfBlas_scal : Pointer to function : n a x incx -> void
+-- | p_scal : Pointer to function : n a x incx -> void
 foreign import ccall "THBlas.h &THHalfBlas_scal"
-  p_THHalfBlas_scal :: FunPtr (CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> IO ())
+  p_scal :: FunPtr (CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> IO ())
 
--- |p_THHalfBlas_copy : Pointer to function : n x incx y incy -> void
+-- | p_copy : Pointer to function : n x incx y incy -> void
 foreign import ccall "THBlas.h &THHalfBlas_copy"
-  p_THHalfBlas_copy :: FunPtr (CLLong -> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> IO ())
+  p_copy :: FunPtr (CLLong -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO ())
 
--- |p_THHalfBlas_axpy : Pointer to function : n a x incx y incy -> void
+-- | p_axpy : Pointer to function : n a x incx y incy -> void
 foreign import ccall "THBlas.h &THHalfBlas_axpy"
-  p_THHalfBlas_axpy :: FunPtr (CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> IO ())
+  p_axpy :: FunPtr (CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO ())
 
--- |p_THHalfBlas_dot : Pointer to function : n x incx y incy -> real
+-- | p_dot : Pointer to function : n x incx y incy -> real
 foreign import ccall "THBlas.h &THHalfBlas_dot"
-  p_THHalfBlas_dot :: FunPtr (CLLong -> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> CTHHalf)
+  p_dot :: FunPtr (CLLong -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO (CTHHalf))
 
--- |p_THHalfBlas_gemv : Pointer to function : trans m n alpha a lda x incx beta y incy -> void
+-- | p_gemv : Pointer to function : trans m n alpha a lda x incx beta y incy -> void
 foreign import ccall "THBlas.h &THHalfBlas_gemv"
-  p_THHalfBlas_gemv :: FunPtr (CChar -> CLLong -> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> IO ())
+  p_gemv :: FunPtr (CChar -> CLLong -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> IO ())
 
--- |p_THHalfBlas_ger : Pointer to function : m n alpha x incx y incy a lda -> void
+-- | p_ger : Pointer to function : m n alpha x incx y incy a lda -> void
 foreign import ccall "THBlas.h &THHalfBlas_ger"
-  p_THHalfBlas_ger :: FunPtr (CLLong -> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> IO ())
+  p_ger :: FunPtr (CLLong -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> IO ())
 
--- |p_THHalfBlas_gemm : Pointer to function : transa transb m n k alpha a lda b ldb beta c ldc -> void
+-- | p_gemm : Pointer to function : transa transb m n k alpha a lda b ldb beta c ldc -> void
 foreign import ccall "THBlas.h &THHalfBlas_gemm"
-  p_THHalfBlas_gemm :: FunPtr (CChar -> CChar -> CLLong -> CLLong -> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> Ptr CTHHalf-> CLLong -> CTHHalf-> Ptr CTHHalf-> CLLong -> IO ())
+  p_gemm :: FunPtr (CChar -> CChar -> CLLong -> CLLong -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> Ptr CTHHalf -> CLLong -> CTHHalf -> Ptr CTHHalf -> CLLong -> IO ())

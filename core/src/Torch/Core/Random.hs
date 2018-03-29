@@ -1,120 +1,107 @@
-module Torch.Core.Random (
-  RandGen(..),
-  newRNG,
-  seed,
-  manualSeed,
-  initialSeed,
-  random,
-  uniform,
-  normal,
-  exponential,
-  cauchy,
-  logNormal,
-  geometric,
-  bernoulli
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+module Torch.Core.Random
+  ( Generator
+  , Seed
+  , new
+  , copy
+  , isValid
+  , seed
+  , manualSeed
+  , initialSeed
+  , random
+  , random64
+  , uniform
+  , uniformFloat
+  , normal
+  , exponential
+  , standard_gamma
+  , cauchy
+  , logNormal
+  , geometric
+  , bernoulli
   ) where
 
-import Control.Monad (replicateM)
-import Foreign
-import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.ForeignPtr (ForeignPtr, withForeignPtr)
-import GHC.Ptr (FunPtr)
-import System.IO.Unsafe (unsafePerformIO)
+import Foreign (Ptr)
+import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, newForeignPtr)
+import Data.Word
 
-import Torch.Core.Internal
-import Torch.Core.Tensor.Types
-import THTypes
-import THRandom
-import THDoubleTensor
-import THDoubleTensorMath
+import THTypes (CTHGenerator)
+import THRandomTypes
+import qualified THRandom as TH
 
-data RandGen = RandGen {
-  rng :: !(ForeignPtr CTHGenerator)
-  } deriving (Eq, Show)
+newtype Seed = Seed { unSeed :: Word64 }
+  deriving (Bounded, Enum, Eq, Integral, Num, Ord, Read, Real, Show)
 
-applyGen :: (Ptr CTHGenerator -> a) -> RandGen -> IO (a)
-applyGen operation gen = do
-  withForeignPtr (rng gen) (\g -> pure $ operation g)
+-- ========================================================================= --
+-- helpers
+-- ========================================================================= --
 
-newRNG :: IO RandGen
-newRNG = do
-  newPtr <- c_THGenerator_new
-  fPtr <- newForeignPtr p_THGenerator_free newPtr
-  pure $ RandGen fPtr
+asRNG :: Ptr CTHGenerator -> IO Generator
+asRNG = fmap Generator . newForeignPtr TH.p_THGenerator_free
 
-seed :: RandGen -> IO Int
-seed gen = do
-  value <- applyGen c_THRandom_seed gen
-  pure (fromIntegral value)
+with2RNGs :: (Ptr CTHGenerator -> Ptr CTHGenerator -> IO x) -> Generator -> Generator -> IO x
+with2RNGs fn g0 g1 = _with2RNGs g0 g1 fn
 
--- |TODO - this doesn't seem to set the seed as intended based on output from
--- seed/initialSeed
-manualSeed :: RandGen -> Int -> IO ()
-manualSeed gen seedVal = do
-  newContext <- applyGen ((flip c_THRandom_manualSeed) valC) gen
-  newContext
-  where
-    valC = (fromIntegral seedVal) :: CULong
+_with2RNGs :: Generator -> Generator -> (Ptr CTHGenerator -> Ptr CTHGenerator -> IO x) -> IO x
+_with2RNGs g0 g1 fn = _withRNG g0 (\g0' -> _withRNG g1 (\g1' -> fn g0' g1'))
 
-initialSeed :: RandGen -> Int
-initialSeed gen = unsafePerformIO $ do
-  initial <- applyGen c_THRandom_initialSeed gen
-  pure (fromIntegral initial)
+withRNG :: (Ptr CTHGenerator -> IO x) -> Generator -> IO x
+withRNG fn g = withForeignPtr (rng g) fn
 
-type Arg2DoubleFun = Ptr CTHGenerator -> CDouble -> CDouble -> CDouble
-type Arg1DoubleFun = Ptr CTHGenerator -> CDouble -> CDouble
-type Arg1IntFun = Ptr CTHGenerator -> CDouble -> CInt
+_withRNG :: Generator -> (Ptr CTHGenerator -> IO x) -> IO x
+_withRNG = flip withRNG
 
-apply2Double :: RandGen -> Double -> Double -> Arg2DoubleFun
-             -> IO Double
-apply2Double gen arg1 arg2 cFun = do
-  value <- applyGen fun gen
-  pure (realToFrac value)
-  where
-    arg1C = realToFrac arg1
-    arg2C = realToFrac arg2
-    fun = (flip . flip cFun) arg1C arg2C
+-- ========================================================================= --
+-- Memory managed versions of THRandom
+new :: IO Generator
+new = TH.c_THGenerator_new >>= asRNG
 
-apply1Double :: RandGen -> Double -> Arg1DoubleFun
-             -> IO Double
-apply1Double gen arg1 cFun = do
-  value <- applyGen fun gen
-  pure (realToFrac value)
-  where
-    arg1C = realToFrac arg1
-    fun = (flip cFun) arg1C
+copy :: Generator -> Generator -> IO Generator
+copy g0 g1 = (with2RNGs TH.c_THGenerator_copy g0 g1) >>= asRNG
 
-apply1Int :: RandGen -> Double -> Arg1IntFun -> IO Int
-apply1Int gen arg1 cFun = do
-  value <- applyGen fun gen
-  pure (fromIntegral value)
-  where
-    arg1C = realToFrac arg1
-    fun = (flip cFun) arg1C
+isValid :: Generator -> IO Bool
+isValid = withRNG (\p -> pure $ TH.c_THGenerator_isValid p == 1)
 
-random :: RandGen -> IO Int
-random gen = fromIntegral <$> applyGen c_THRandom_random gen
+seed :: Generator -> IO Seed
+seed = withRNG (pure . fromIntegral . TH.c_THRandom_seed)
 
-uniform :: RandGen -> Double -> Double -> IO Double
-uniform gen lower upper = apply2Double gen lower upper c_THRandom_uniform
+manualSeed :: Generator -> Seed -> IO ()
+manualSeed g s = _withRNG g $ \p -> TH.c_THRandom_manualSeed p (fromIntegral s)
 
-normal :: RandGen -> Double -> Positive Double -> IO Double
-normal gen mean stdev = apply2Double gen mean (fromPositive stdev) c_THRandom_normal
+initialSeed :: Generator -> IO Seed
+initialSeed = withRNG (pure . fromIntegral . TH.c_THRandom_initialSeed)
 
-exponential :: RandGen -> Double -> IO Double
-exponential gen lambda = apply1Double gen lambda c_THRandom_exponential
+random :: Generator -> IO Seed
+random = withRNG (pure . fromIntegral . TH.c_THRandom_random)
 
-cauchy :: RandGen -> Double -> Double -> IO Double
-cauchy gen med sigma = apply2Double gen med sigma c_THRandom_cauchy
+random64 :: Generator -> IO Seed
+random64 = withRNG (pure . fromIntegral . TH.c_THRandom_random64)
 
-logNormal :: RandGen -> Double -> Double -> IO Double
-logNormal gen mean stdev = apply2Double gen mean stdev c_THRandom_logNormal
+uniform :: Generator -> Double -> Double -> IO Double
+uniform g a b = _withRNG g $ \p -> pure . realToFrac $ TH.c_THRandom_uniform p (realToFrac a) (realToFrac b)
 
-geometric :: RandGen -> Double -> IO Int
-geometric gen p = apply1Int gen p c_THRandom_geometric
+uniformFloat :: Generator -> Float -> Float -> IO Float
+uniformFloat g a b = _withRNG g $ \p -> pure . realToFrac $ TH.c_THRandom_uniformFloat p (realToFrac a) (realToFrac b)
 
-bernoulli :: RandGen -> Double -> IO Int
-bernoulli gen p = apply1Int gen p c_THRandom_bernoulli
+normal :: Generator -> Double -> Double -> IO Double
+normal g a b = _withRNG g $ \p -> pure . realToFrac $ TH.c_THRandom_normal p (realToFrac a) (realToFrac b)
+
+exponential :: Generator -> Double -> IO Double
+exponential g a = _withRNG g $ \p -> pure . realToFrac $ TH.c_THRandom_exponential p (realToFrac a)
+
+standard_gamma :: Generator -> Double -> IO Double
+standard_gamma g a = _withRNG g $ \p -> pure . realToFrac $ TH.c_THRandom_standard_gamma p (realToFrac a)
+
+cauchy :: Generator -> Double -> Double -> IO Double
+cauchy g a b = _withRNG g $ \p -> pure . realToFrac $ TH.c_THRandom_cauchy p (realToFrac a) (realToFrac b)
+
+logNormal :: Generator -> Double -> Double -> IO Double
+logNormal g a b = _withRNG g $ \p -> pure . realToFrac $ TH.c_THRandom_logNormal p (realToFrac a) (realToFrac b)
+
+geometric :: Generator -> Double -> IO Int
+geometric g a = _withRNG g $ \p -> pure . fromIntegral $ TH.c_THRandom_geometric p (realToFrac a)
+
+bernoulli :: Generator -> Double -> IO Int
+bernoulli g a = _withRNG g $ \p -> pure . fromIntegral $ TH.c_THRandom_bernoulli p (realToFrac a)
 
 

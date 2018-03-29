@@ -1,151 +1,219 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLists #-}
 module ConditionalCases where
 
-import Data.List as L
-import Data.Map as M
-import Data.Set as S
-import Data.Text
+import CodeGen.Prelude
+import qualified Data.Text as T
+import qualified Data.HashMap.Strict as M
+import qualified Data.HashSet as S
 
-import CodeGenTypes
+import CodeGen.Types
 
-makeSet = S.fromList
+signatureAliases :: TemplateType -> Maybe (CTensor, CReal, CAccReal, CStorage)
+signatureAliases = \case
+  GenByte -> Just
+    ( CTensor  "THTypes.CTHByteTensor"  "ByteTensor"
+    , CReal    "Foreign.C.Types.CUChar" "unsigned char"
+    , CAccReal "Foreign.C.Types.CLong"  "long"
+    , CStorage "THTypes.CTHByteStorage" "ByteStorage"
+    )
+  GenChar -> Just
+    ( CTensor  "THTypes.CTHCharTensor"  "CharTensor"
+    , CReal    "Foreign.C.Types.CChar"  "char"
+    , CAccReal "Foreign.C.Types.CLong"  "long"
+    , CStorage "THTypes.CTHCharStorage" "CharStorage"
+    )
+  GenDouble -> Just
+    ( CTensor  "THTypes.CTHDoubleTensor"  "DoubleTensor"
+    , CReal    "Foreign.C.Types.CDouble"  "double"
+    , CAccReal "Foreign.C.Types.CDouble"  "double"
+    , CStorage "THTypes.CTHDoubleStorage" "DoubleStorage"
+    )
+  GenFloat -> Just
+    ( CTensor  "THTypes.CTHFloatTensor"  "FloatTensor"
+    , CReal    "Foreign.C.Types.CFloat"  "float"
+    , CAccReal "Foreign.C.Types.CDouble" "double"
+    , CStorage "THTypes.CTHFloatStorage" "FloatStorage"
+    )
+  GenHalf -> Just
+    ( CTensor  "THTypes.CTHHalfTensor"  "HalfTensor"
+    , CReal    "THTypes.CTHHalf"        "THHalf"
+    , CAccReal "Foreign.C.Types.CFloat" "float"
+    , CStorage "THTypes.CTHHalfStorage" "HalfStorage"
+    )
+  GenInt -> Just
+    ( CTensor  "THTypes.CTHIntTensor"  "IntTensor"
+    , CReal    "Foreign.C.Types.CInt"  "int"
+    , CAccReal "Foreign.C.Types.CLong" "long"
+    , CStorage "THTypes.CTHIntStorage" "IntStorage"
+    )
+  GenLong -> Just
+    ( CTensor  "THTypes.CTHLongTensor"  "LongTensor"
+    , CReal    "Foreign.C.Types.CLong"  "long"
+    , CAccReal "Foreign.C.Types.CLong"  "long"
+    , CStorage "THTypes.CTHLongStorage" "LongStorage"
+    )
+  GenShort -> Just
+    ( CTensor  "THTypes.CTHShortTensor"  "ShortTensor"
+    , CReal    "Foreign.C.Types.CShort"  "short"
+    , CAccReal "Foreign.C.Types.CLong"   "long"
+    , CStorage "THTypes.CTHShortStorage" "ShortStorage"
+    )
+  GenNothing -> Nothing
 
-tensorMathCases :: Map Text (Set TemplateType)
-tensorMathCases = M.fromList [
-  ("abs", makeSet [GenShort, GenInt, GenLong, GenFloat, GenDouble]),
-
-  ("sigmoid", makeSet [GenFloat, GenDouble]),
-  ("log", makeSet [GenFloat, GenDouble]),
-  ("lgamma", makeSet [GenFloat, GenDouble]),
-  ("log1p", makeSet [GenFloat, GenDouble]),
-  ("exp", makeSet [GenFloat, GenDouble]),
-  ("erf", makeSet [GenFloat, GenDouble]),
-  ("erfinv", makeSet [GenFloat, GenDouble]),
-  ("cos", makeSet [GenFloat, GenDouble]),
-  ("acos", makeSet [GenFloat, GenDouble]),
-  ("cosh", makeSet [GenFloat, GenDouble]),
-  ("sin", makeSet [GenFloat, GenDouble]),
-  ("asin", makeSet [GenFloat, GenDouble]),
-  ("sinh", makeSet [GenFloat, GenDouble]),
-  ("tan", makeSet [GenFloat, GenDouble]),
-  ("atan", makeSet [GenFloat, GenDouble]),
-  ("atan2", makeSet [GenFloat, GenDouble]),
-  ("tanh", makeSet [GenFloat, GenDouble]),
-  ("pow", makeSet [GenFloat, GenDouble]),
-  ("tpow", makeSet [GenFloat, GenDouble]),
-  ("sqrt", makeSet [GenFloat, GenDouble]),
-  ("rsqrt", makeSet [GenFloat, GenDouble]),
-  ("ceil", makeSet [GenFloat, GenDouble]),
-  ("floor", makeSet [GenFloat, GenDouble]),
-  ("round", makeSet [GenFloat, GenDouble]),
-  -- ("abs", makeSet [GenFloat, GenDouble]), -- covered above
-  ("trunc", makeSet [GenFloat, GenDouble]),
-  ("frac", makeSet [GenFloat, GenDouble]),
-  ("lerp", makeSet [GenFloat, GenDouble]),
-  ("mean", makeSet [GenFloat, GenDouble]),
-  ("std", makeSet [GenFloat, GenDouble]),
-  ("var", makeSet [GenFloat, GenDouble]),
-  ("norm", makeSet [GenFloat, GenDouble]),
-  ("renorm", makeSet [GenFloat, GenDouble]),
-  ("dist", makeSet [GenFloat, GenDouble]),
-  ("histc", makeSet [GenFloat, GenDouble]),
-  ("bhistc", makeSet [GenFloat, GenDouble]),
-  ("meanall", makeSet [GenFloat, GenDouble]),
-  ("varall", makeSet [GenFloat, GenDouble]),
-  ("stdall", makeSet [GenFloat, GenDouble]),
-  ("normall", makeSet [GenFloat, GenDouble]),
-  ("linspace", makeSet [GenFloat, GenDouble]),
-  ("logspace", makeSet [GenFloat, GenDouble]),
-  ("rand", makeSet [GenFloat, GenDouble]),
-  ("randn", makeSet [GenFloat, GenDouble]),
-
-  ("logicalall", makeSet [GenByte]),
-  ("logicalany", makeSet [GenByte]),
+tensorMathCases :: HashMap FunctionName (HashSet TemplateType)
+tensorMathCases =
+  [ ("abs",     [GenShort, GenInt, GenLong, GenFloat, GenDouble])
+  , ("sigmoid", [GenFloat, GenDouble])
+  , ("log",     [GenFloat, GenDouble])
+  , ("lgamma",  [GenFloat, GenDouble])
+  , ("log1p",   [GenFloat, GenDouble])
+  , ("exp",     [GenFloat, GenDouble])
+  , ("erf",     [GenFloat, GenDouble])
+  , ("erfinv",  [GenFloat, GenDouble])
+  , ("cos",     [GenFloat, GenDouble])
+  , ("acos",    [GenFloat, GenDouble])
+  , ("cosh",    [GenFloat, GenDouble])
+  , ("sin",     [GenFloat, GenDouble])
+  , ("asin",    [GenFloat, GenDouble])
+  , ("sinh",    [GenFloat, GenDouble])
+  , ("tan",     [GenFloat, GenDouble])
+  , ("atan",    [GenFloat, GenDouble])
+  , ("atan2",   [GenFloat, GenDouble])
+  , ("tanh",    [GenFloat, GenDouble])
+  , ("pow",     [GenFloat, GenDouble])
+  , ("tpow",    [GenFloat, GenDouble])
+  , ("sqrt",    [GenFloat, GenDouble])
+  , ("rsqrt",   [GenFloat, GenDouble])
+  , ("ceil",    [GenFloat, GenDouble])
+  , ("floor",   [GenFloat, GenDouble])
+  , ("round",   [GenFloat, GenDouble])
+  , ("trunc",   [GenFloat, GenDouble])
+  , ("frac",    [GenFloat, GenDouble])
+  , ("lerp",    [GenFloat, GenDouble])
+  , ("mean",    [GenFloat, GenDouble])
+  , ("std",     [GenFloat, GenDouble])
+  , ("var",     [GenFloat, GenDouble])
+  , ("norm",    [GenFloat, GenDouble])
+  , ("renorm",  [GenFloat, GenDouble])
+  , ("dist",    [GenFloat, GenDouble])
+  , ("histc",   [GenFloat, GenDouble])
+  , ("bhistc",  [GenFloat, GenDouble])
+  , ("meanall", [GenFloat, GenDouble])
+  , ("varall",  [GenFloat, GenDouble])
+  , ("stdall",  [GenFloat, GenDouble])
+  , ("normall", [GenFloat, GenDouble])
+  , ("linspace",[GenFloat, GenDouble])
+  , ("logspace",[GenFloat, GenDouble])
+  , ("rand",    [GenFloat, GenDouble])
+  , ("randn",   [GenFloat, GenDouble])
+  , ("logicalall", [GenByte])
+  , ("logicalany", [GenByte])
 
   -- cinv doesn't seem to be excluded by the preprocessor, yet is not
   -- implemented for Int. TODO - file issue report?
-  ("cinv", makeSet [GenFloat, GenDouble]),
-  ("neg", makeSet [GenFloat, GenDouble, GenLong, GenShort, GenInt])
+  , ("cinv", [GenFloat, GenDouble])
+  , ("neg",  [GenFloat, GenDouble, GenLong, GenShort, GenInt])
   ]
 
-tensorRandomCases :: Map Text (Set TemplateType)
-tensorRandomCases = M.fromList [
-  ("uniform", makeSet [GenFloat, GenDouble]),
-  ("normal", makeSet [GenFloat, GenDouble]),
-  ("normal_means", makeSet [GenFloat, GenDouble]),
-  ("normal_stddevs", makeSet [GenFloat, GenDouble]),
-  ("normal_means_stddevs", makeSet [GenFloat, GenDouble]),
-  ("exponential", makeSet [GenFloat, GenDouble]),
-  ("standard_gamma", makeSet [GenFloat, GenDouble]),
-  ("digamma", makeSet [GenFloat, GenDouble]),
-  ("trigamma", makeSet [GenFloat, GenDouble]),
-  ("polygamma", makeSet [GenFloat, GenDouble]),
-  ("expm1", makeSet [GenFloat, GenDouble]),
-  ("dirichlet_grad", makeSet [GenFloat, GenDouble]),
-  ("cauchy", makeSet [GenFloat, GenDouble]),
-  ("logNormal", makeSet [GenFloat, GenDouble]),
-  ("multinomial", makeSet [GenFloat, GenDouble]),
-  ("multinomialAliasSetup", makeSet [GenFloat, GenDouble]),
-  ("multinomialAliasDraw", makeSet [GenFloat, GenDouble]),
-  ("getRNGState", makeSet [GenByte]),
-  ("setRNGState", makeSet [GenByte])
+tensorRandomCases :: HashMap FunctionName (HashSet TemplateType)
+tensorRandomCases =
+  [ ("uniform",        [GenFloat, GenDouble])
+  , ("normal",         [GenFloat, GenDouble])
+  , ("normal_means",   [GenFloat, GenDouble])
+  , ("normal_stddevs", [GenFloat, GenDouble])
+  , ("normal_means_stddevs", [GenFloat, GenDouble])
+  , ("exponential",    [GenFloat, GenDouble])
+  , ("standard_gamma", [GenFloat, GenDouble])
+
+  , ("digamma",        [GenFloat, GenDouble])
+  , ("trigamma",       [GenFloat, GenDouble])
+  , ("polygamma",      [GenFloat, GenDouble])
+  , ("expm1",          [GenFloat, GenDouble])
+  , ("dirichlet_grad", [GenFloat, GenDouble])
+  , ("cauchy",         [GenFloat, GenDouble])
+  , ("logNormal",      [GenFloat, GenDouble])
+  , ("multinomial",    [GenFloat, GenDouble])
+  , ("multinomialAliasSetup", [GenFloat, GenDouble])
+  , ("multinomialAliasDraw",  [GenFloat, GenDouble])
+
+  , ("getRNGState", [GenByte])
+  , ("setRNGState", [GenByte])
+
+  -- This keeps appearing but isn't in TH. TODO: find out what is happening
+  , ("bernoulli_Tensor", [])
   ]
 
 
 -- TODO: check lapack bindings - not obvious from source, but there are
 -- problems loading shared library with these functions for Byte
-tensorLapackCases = M.fromList [
-  ("gesv", makeSet [GenFloat, GenDouble]),
-  ("trtrs", makeSet [GenFloat, GenDouble]),
-  ("gels", makeSet [GenFloat, GenDouble]),
-  ("syev", makeSet [GenFloat, GenDouble]),
-  ("geev", makeSet [GenFloat, GenDouble]),
-  ("gesvd", makeSet [GenFloat, GenDouble]),
-  ("gesvd2", makeSet [GenFloat, GenDouble]),
-  ("getrf", makeSet [GenFloat, GenDouble]),
-  ("getrs", makeSet [GenFloat, GenDouble]),
-  ("getri", makeSet [GenFloat, GenDouble]),
-  ("potrf", makeSet [GenFloat, GenDouble]),
-  ("potrs", makeSet [GenFloat, GenDouble]),
-  ("potri", makeSet [GenFloat, GenDouble]),
-  ("qr", makeSet [GenFloat, GenDouble]),
-  ("geqrf", makeSet [GenFloat, GenDouble]),
-  ("orgqr", makeSet [GenFloat, GenDouble]),
-  ("ormqr", makeSet [GenFloat, GenDouble]),
-  ("pstrf", makeSet [GenFloat, GenDouble]),
-  ("btrifact", makeSet [GenFloat, GenDouble]),
-  ("btrisolve", makeSet [GenFloat, GenDouble])]
-  -- ("geev", makeSet [GenFloat, GenDouble]),
-  -- ("gels", makeSet [GenFloat, GenDouble]),
-  -- ("gesv", makeSet [GenFloat, GenDouble]),
-  -- ("gesvd", makeSet [GenFloat, GenDouble])
+tensorLapackCases :: HashMap FunctionName (HashSet TemplateType)
+tensorLapackCases =
+  [ ("gesv",   [GenFloat, GenDouble])
+  , ("trtrs",  [GenFloat, GenDouble])
+  , ("gels",   [GenFloat, GenDouble])
+  , ("syev",   [GenFloat, GenDouble])
+  , ("geev",   [GenFloat, GenDouble])
+  , ("gesvd",  [GenFloat, GenDouble])
+  , ("gesvd2", [GenFloat, GenDouble])
+  , ("getrf",  [GenFloat, GenDouble])
+  , ("getrs",  [GenFloat, GenDouble])
+  , ("getri",  [GenFloat, GenDouble])
+  , ("potrf",  [GenFloat, GenDouble])
+  , ("potrs",  [GenFloat, GenDouble])
+  , ("potri",  [GenFloat, GenDouble])
+  , ("qr",     [GenFloat, GenDouble])
+  , ("geqrf",  [GenFloat, GenDouble])
+  , ("orgqr",  [GenFloat, GenDouble])
+  , ("ormqr",  [GenFloat, GenDouble])
+  , ("pstrf",  [GenFloat, GenDouble])
+  , ("btrifact",  [GenFloat, GenDouble])
+  , ("btrisolve", [GenFloat, GenDouble])
+  -- , ("geev", [GenFloat, GenDouble])
+  -- , ("gels", [GenFloat, GenDouble])
+  -- , ("gesv", [GenFloat, GenDouble])
+  -- , ("gesvd", [GenFloat, GenDouble])
+  ]
 
-checkMath :: TemplateType -> Text -> Bool
-checkMath templateType funName = case M.lookup funName tensorMathCases of
-  Just inclusion -> S.member templateType inclusion
-  Nothing -> True
+storageCases :: HashMap FunctionName (HashSet TemplateType)
+storageCases =
+  [ ("elementSize", [])
+  ]
 
-checkRandom :: TemplateType -> Text -> Bool
-checkRandom templateType funName = case M.lookup funName tensorRandomCases of
-  Just inclusion -> S.member templateType inclusion
-  Nothing -> True
+checkMath :: TemplateType -> FunctionName -> Bool
+checkMath = checkMap tensorMathCases
 
-checkLapack :: TemplateType -> Text -> Bool
-checkLapack templateType funName = case M.lookup funName tensorLapackCases of
-  Just inclusion -> S.member templateType inclusion
-  Nothing -> True
+checkRandom :: TemplateType -> FunctionName -> Bool
+checkRandom = checkMap tensorRandomCases
 
--- |Warning a function that doesn't exist will return True by default (TODO - make this safer)
+checkLapack :: TemplateType -> FunctionName -> Bool
+checkLapack = checkMap tensorLapackCases
 
-checkFunction :: TemplateType -> Text -> Bool
-checkFunction templateType funName =
-  and [(checkMath templateType funName),
-       (checkRandom templateType funName),
-       (checkLapack templateType funName)
-       ]
+checkStorage :: TemplateType -> FunctionName -> Bool
+checkStorage = checkMap storageCases
 
+checkMap
+  :: HashMap FunctionName (HashSet TemplateType)
+  -> TemplateType
+  -> FunctionName
+  -> Bool
+checkMap map tt n = maybe True (tt `S.member`) (M.lookup n map)
+
+
+-- | Warning a function that doesn't exist will return True by default
+--
+-- TODO: make this safer.
+-- (stites): to make this safer I think we need to invert these maps so that we
+--           are given function names instead of doing membership checks.
+checkFunction :: TemplateType -> FunctionName -> Bool
+checkFunction tt fn
+  =  checkMath   tt fn
+  && checkRandom tt fn
+  && checkLapack tt fn
+  && checkStorage tt fn
+
+test :: IO ()
 test = do
-  print $ checkFunction GenByte "logicalany"
+  print $ checkFunction GenByte  "logicalany"
   print $ checkFunction GenFloat "logicalany"
-  print $ checkFunction GenByte "multinomial"
+  print $ checkFunction GenByte  "multinomial"
   print $ checkFunction GenFloat "multinomial"

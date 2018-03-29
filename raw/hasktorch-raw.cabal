@@ -1,128 +1,151 @@
-name:                hasktorch-raw
-version:             0.1.0.0
-synopsis:            Torch for tensors and neural networks in Haskell
-description:         core C bindings
-homepage:            https://github.com/austinvhuang/hasktorch#readme
-license:             BSD3
-author:              Austin Huang
-maintainer:          
-copyright:           
-category:            
-build-type:          Simple
-cabal-version:       >=1.10
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 561fd10e6ec0776e909a8113959cae3323012875ff678e44af896b96dd78bb60
+
+name:           hasktorch-raw
+version:        0.0.1.0
+synopsis:       Torch for tensors and neural networks in Haskell
+description:    core C bindings
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         Austin Huang
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+executable test
+  default-language: Haskell2010
+  main-is: Main.hs
+  hs-source-dirs: exe
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw
+    , hasktorch-types
+
 
 library
-  default-language:    Haskell2010
-  exposed-modules:     
-                       THByteTensor
-                     , THDoubleTensor
-                     , THFloatTensor
-                     -- , THHalfTensor
-                     , THIntTensor
-                     , THLongTensor
-                     , THShortTensor
+  extra-libraries: ATen, EHX
+  hs-source-dirs:
+      src
+      src/generic
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-types
+    , inline-c >=0.5
+    , text >=1.2.2.2
+  build-tools: c2hs
+  default-language: Haskell2010
+  exposed-modules:
+      THAtomic
+      THDiskFile
+      THFile
+      THHalf
+      THLogAdd
+      THMemoryFile
+      THNN
+      THRandom
+      THSize
+      THStorage
 
-                     , THFloatNN
-                     , THDoubleNN
+      -- THByteBlas
+      -- THByteLapack
+      -- THByteVector
+      THByteNN
+      THByteStorage
+      THByteStorageCopy
+      THByteTensor
+      THByteTensorConv
+      THByteTensorCopy
+      -- THByteTensorLapack
+      THByteTensorMath
+      THByteTensorRandom
 
-                     , THByteStorage
-                     , THDoubleStorage
-                     , THFloatStorage
-                     , THHalfStorage
-                     , THIntStorage
-                     , THLongStorage
-                     , THShortStorage
+      -- THDoubleBlas
+      -- THDoubleLapack
+      -- THDoubleVector
+      THDoubleNN
+      THDoubleStorage
+      THDoubleStorageCopy
+      THDoubleTensor
+      THDoubleTensorConv
+      THDoubleTensorCopy
+      THDoubleTensorLapack
+      THDoubleTensorMath
+      THDoubleTensorRandom
 
-                     , THByteStorageCopy
-                     , THDoubleStorageCopy
-                     , THFloatStorageCopy
-                     , THHalfStorageCopy
-                     , THIntStorageCopy
-                     , THLongStorageCopy
-                     , THShortStorageCopy
+      -- THFloatBlas
+      -- THFloatLapack
+      -- THFloatVector
+      THFloatNN
+      THFloatStorage
+      THFloatStorageCopy
+      THFloatTensor
+      THFloatTensorConv
+      THFloatTensorCopy
+      THFloatTensorLapack
+      THFloatTensorMath
+      THFloatTensorRandom
 
-                     , THByteTensorMath
-                     , THDoubleTensorMath
-                     , THFloatTensorMath
-                     -- , THHalfTensorMath
-                     , THIntTensorMath
-                     , THLongTensorMath
-                     , THShortTensorMath
+      -- -- THHalfBlas
+      -- -- THHalfLapack
+      -- -- THHalfVector
+      -- THHalfNN
+      -- THHalfStorage
+      -- THHalfStorageCopy
+      -- THHalfTensor
+      -- THHalfTensorConv
+      -- THHalfTensorCopy
+      -- THHalfTensorLapack
+      -- THHalfTensorMath
+      -- THHalfTensorRandom
 
-                     , THByteTensorRandom
-                     , THDoubleTensorRandom
-                     , THFloatTensorRandom
-                     -- , THHalfTensorRandom
-                     , THIntTensorRandom
-                     , THLongTensorRandom
-                     , THShortTensorRandom
+      -- THIntBlas
+      -- THIntLapack
+      -- THIntVector
+      THIntNN
+      THIntStorage
+      THIntStorageCopy
+      THIntTensor
+      THIntTensorConv
+      THIntTensorCopy
+      -- THIntTensorLapack
+      THIntTensorMath
+      THIntTensorRandom
 
-                     , THByteBlas
-                     , THDoubleBlas
-                     , THFloatBlas
-                     , THHalfBlas
-                     , THIntBlas
-                     , THLongBlas
-                     , THShortBlas
+      -- THLongBlas
+      -- THLongLapack
+      -- THLongVector
+      THLongNN
+      THLongStorage
+      THLongStorageCopy
+      THLongTensor
+      THLongTensorConv
+      THLongTensorCopy
+      -- THLongTensorLapack
+      THLongTensorMath
+      THLongTensorRandom
 
-                     -- TODO: why are pos def functions not included in TH_API
-                     , THByteLapack
-                     , THDoubleLapack
-                     , THFloatLapack
-                     -- , THHalfLapack
-                     , THIntLapack
-                     , THLongLapack
-                     , THShortLapack
+      -- THShortBlas
+      -- THShortLapack
+      -- THShortVector
+      THShortNN
+      THShortStorage
+      THShortStorageCopy
+      THShortTensor
+      THShortTensorConv
+      THShortTensorCopy
+      -- THShortTensorLapack
+      THShortTensorMath
+      THShortTensorRandom
 
-                     , THByteTensorLapack
-                     , THDoubleTensorLapack
-                     , THFloatTensorLapack
-                     -- , THHalfTensorLapack
-                     , THIntTensorLapack
-                     , THLongTensorLapack
-                     , THShortTensorLapack
-
-                     , THByteTensorConv
-                     , THDoubleTensorConv
-                     , THFloatTensorConv
-                     -- , THHalfTensorConv
-                     , THIntTensorConv
-                     , THLongTensorConv
-                     , THShortTensorConv
-
-                     , THByteTensorCopy
-                     , THDoubleTensorCopy
-                     , THFloatTensorCopy
-                     -- , THHalfTensorCopy
-                     , THIntTensorCopy
-                     , THLongTensorCopy
-                     , THShortTensorCopy
-
-                     , THByteVector
-                     , THDoubleVector
-                     , THFloatVector
-                     -- , THHalfVector
-                     , THIntVector
-                     , THLongVector
-                     , THShortVector
-
-                     , THFile
-                     , THDiskFile
-                     , THLogAdd
-                     , THMemoryFile
-                     , THStorage
-                     , THRandom
-                     , THSize
-
-                     , THTypes
-                     , TorchStructs
-
-  hs-source-dirs:      src, src/generic, src/types
-  build-depends:       base >= 4.7 && < 5
-                     , inline-c >= 0.5
-                     , text >= 1.2.2.2
-  Build-tools:         c2hs
-  default-language:    Haskell2010
+  other-modules:
+      Paths_hasktorch_raw
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -130,19 +153,14 @@ test-suite spec
   hs-source-dirs:
       tests
   build-depends:
-      base >=4.7 && <5
-    , text >=1.2.2.2
-    , QuickCheck
-    , hspec >= 2.4.4
+      QuickCheck
+    , base >=4.7 && <5
     , hasktorch-raw
+    , hspec >=2.4.4
+    , text >=1.2.2.2
   other-modules:
       MathSpec
-      TensorSpec
       NNSpec
+      TensorSpec
+      Paths_hasktorch_raw
   default-language: Haskell2010
-
-source-repository head
-  type:     git
-  location: https://github.com/austinvhuang/hasktorch
-
-  

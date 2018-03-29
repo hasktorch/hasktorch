@@ -8,23 +8,23 @@ init:
 	( cd vendor; ./build-aten.sh )
 	( cd vendor; ./build-aten-spec.sh )
 	( cd vendor; ./build-error-handler.sh )
-ifeq ($(UNAME),Darwin)
-	ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
-	ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
+# ifeq ($(UNAME),Darwin)
+	sudo ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
+	sudo ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
 	@echo "\nCreated shared library symlinks for OSX:\n"
-	@ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
+	@sudo ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
 	@echo
-endif
-	stack build
+# endif
+#	stack build
 
 clean:
 	stack clean
 
-purge: clean
+purge: # clean
 	rm -rf vendor
 	git checkout -- vendor
 
-build: clean
+build:
 	stack build
 
 refresh:
@@ -48,4 +48,7 @@ codegen-managed: build
 
 codegen: codegen-managed codegen-concrete codegen-generic
 
-.PHONY: clean build refresh codegen init
+dev:
+	sos -p '(raw-.*|core|examples)/[^.].*' -c "rm -rf dist-newstyle && cabal new-build all"
+
+.PHONY: clean build refresh codegen init dev
