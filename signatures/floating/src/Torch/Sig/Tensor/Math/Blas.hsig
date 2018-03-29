@@ -11,7 +11,7 @@ c_addr    :: Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr C
 c_addbmm  :: Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_baddbmm :: Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ()
 
--- * THC Float Blas
+-- * THC Float Blas, TH Float Lapack
 -- c_btrifact :: Ptr CState -> Ptr CTensor -> Ptr CIntTensor -> Ptr CIntTensor -> CInt -> Ptr CTensor -> IO ()
 -- c_btrisolve :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIntTensor -> IO ()
 

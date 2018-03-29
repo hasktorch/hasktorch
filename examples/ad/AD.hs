@@ -55,9 +55,9 @@ data Network :: Nat -> [Nat] -> Nat -> * where
   (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
           Layer l i h -> NW h hs o -> NW i (h ': hs) o
 
-data AffineWeights (i :: Nat) (o :: Nat) = AW {
-  biases :: Tensor '[o],
-  weights :: Tensor '[o, i]
+data AffineWeights (i :: Nat) (o :: Nat) = AW
+  { biases :: Tensor '[o]
+  , weights :: Tensor '[o, i]
   } deriving (Show)
 type AW = AffineWeights
 

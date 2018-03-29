@@ -810,19 +810,6 @@ sort_ (r, ix) t d o = Dynamic.sort_ (asDynamic r) ix (asDynamic t) (fromIntegral
 sort :: MathConstraint t d => t d -> DimVal -> DescendingOrder -> IO (t d, Dynamic.LongTensor)
 sort t d o = returnDimOps2 Dynamic.sort_ t d (fromEnum o)
 
--- https://github.com/torch/torch7/blob/75a86469aa9e2f5f04e11895b269ec22eb0e4687/lib/TH/generic/THTensorMath.c#L2545
-data TopKOrder = KAscending | KNone | KDescending
-  deriving (Eq, Show, Ord, Enum, Bounded)
-
-topk_ :: MathConstraint2 t d d' => (t d', Dynamic.LongTensor) -> t d -> Int64 -> DimVal -> TopKOrder -> Bool -> IO ()
-topk_ (r, ri) t k d o sorted = Dynamic.topk_ (asDynamic r) ri (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum o) (fromIntegral $ fromEnum sorted)
-
-topk :: forall t d d' . MathConstraint2 t d d' => t d -> Int64 -> DimVal -> TopKOrder -> Bool -> IO (t d', Dynamic.LongTensor)
-topk t k d o sorted = do
-  ix :: Dynamic.LongTensor <- Dynamic.new (dim :: Dim d')
-  res <- withInplace $ \r -> Dynamic.topk_ r ix (asDynamic t) k (fromIntegral d) (fromIntegral $ fromEnum o) (fromIntegral $ fromEnum sorted)
-  pure (res, ix)
-
 tril_ :: MathConstraint t '[x, y] => t '[x, y] -> t '[x, y] -> Int64 -> IO ()
 tril_ r t k = Dynamic.tril_ (asDynamic r) (asDynamic t) k
 
