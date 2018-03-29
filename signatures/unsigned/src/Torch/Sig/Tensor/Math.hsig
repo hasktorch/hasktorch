@@ -6,49 +6,6 @@ import Foreign.C.Types
 import Torch.Sig.Types
 import Torch.Sig.Types.Global
 
-{-
--- Tensor.Mask
-c_maskedFill   c_maskedCopy   c_maskedSelect 
-
--- Tensor.Index
-c_indexSelect  c_indexCopy    c_indexAdd     c_indexFill    c_take         c_put
-
--- Tensor Pairwise
-c_add          c_sub          c_add_scaled   c_sub_scaled   c_mul          c_div          c_lshift       c_rshift       c_fmod         c_remainder    c_bitand       c_bitor        c_bitxor       c_equal
-
--- Tensor.MathPointwise
-c_cpow    c_sign    c_clamp   c_cross   c_cadd    c_csub    c_cmul    c_cdiv    c_clshift c_crshift c_cmax c_cmin c_cfmod c_cremainder c_cmaxValue c_cminValue c_cbitand c_cbitor c_cbitxor c_addcmul c_addcdiv
-
--- Sig.TensorMathReduce
-c_sum    c_prod    c_min c_max  c_minall c_maxall c_medianall c_median c_sumall  c_prodall
-
--- Sig.TensorMathScan
-c_cumsum c_cumprod 
-
--- TensorMode
-c_mode
-
--- ScatterGather
-c_gather       c_scatter      c_scatterAdd   c_scatterFill
-
--- FLOATING - Blas
-c_dot  c_addmv  c_addmm   c_addr     c_addbmm    c_baddbmm
-
-c_match        :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
-c_kthvalue     :: Ptr CTensor -> Ptr C'THLongTensor -> Ptr CTensor -> CLLong -> CInt -> CInt -> IO ()
-c_randperm     :: Ptr CTensor -> Ptr C'THGenerator -> CLLong -> IO ()
-
--- SORT
-c_sort
-
--- TOPK
-c_topk 
-
--- COMPARE AND COMPARET
-c_ltValue      c_leValue      c_gtValue      c_geValue      c_neValue      c_eqValue      c_ltValueT     c_leValueT     c_gtValueT     c_geValueT     c_neValueT     c_eqValueT     c_ltTensor     c_leTensor     c_gtTensor     c_geTensor     c_neTensor     c_eqTensor     c_ltTensorT    c_leTensorT    c_gtTensorT    c_geTensorT    c_neTensorT    c_eqTensorT
--}
-
-
 c_fill :: Ptr CState -> Ptr CTensor -> CReal -> IO ()
 c_zero :: Ptr CState -> Ptr CTensor -> IO ()
 c_zeros :: Ptr CState -> Ptr CTensor -> Ptr C'THLongStorage -> IO ()
@@ -67,4 +24,11 @@ c_eye :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> IO ()
 c_trace :: Ptr CState -> Ptr CTensor -> IO CAccReal
 c_range :: Ptr CState -> Ptr CTensor -> CAccReal -> CAccReal -> CAccReal -> IO ()
 c_arange :: Ptr CState -> Ptr CTensor -> CAccReal -> CAccReal -> CAccReal -> IO ()
+
+-- TH only, unaccounted for:
+-- c_match        :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+-- c_kthvalue     :: Ptr CTensor -> Ptr C'THLongTensor -> Ptr CTensor -> CLLong -> CInt -> CInt -> IO ()
+-- c_randperm     :: Ptr CTensor -> Ptr C'THGenerator -> CLLong -> IO ()
+
+
 

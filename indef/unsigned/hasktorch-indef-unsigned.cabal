@@ -88,7 +88,7 @@ library
 
     , Torch.Indef.Dynamic.Tensor.Index
     , Torch.Indef.Dynamic.Tensor.Masked
-    -- , Torch.Indef.Dynamic.Tensor.Math
+    , Torch.Indef.Dynamic.Tensor.Math
     -- , Torch.Indef.Dynamic.Tensor.Math.Blas
     , Torch.Indef.Dynamic.Tensor.Math.Compare
     , Torch.Indef.Dynamic.Tensor.Math.CompareT

@@ -33,16 +33,16 @@ c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
 type Storage = CharStorage
-cstorage        = fst . charStorageState
-storage s t     = CharStorage (s, t)
+cstorage        = snd . charStorageState
+storage         = curry CharStorage
 storageState    = charStorageState
-storageStateRef = snd . charStorageState
+storageStateRef = fst . charStorageState
 
 type Dynamic    = CharDynamic
-ctensor         = fst . charDynamicState
-dynamic s t     = CharDynamic (s, t)
+ctensor         = snd . charDynamicState
+dynamic         = curry CharDynamic
 dynamicState    = charDynamicState
-dynamicStateRef = snd . charDynamicState
+dynamicStateRef = fst . charDynamicState
 
 newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
   deriving (Show, Eq)

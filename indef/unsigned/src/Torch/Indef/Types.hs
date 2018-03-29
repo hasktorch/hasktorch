@@ -29,8 +29,6 @@ module Torch.Indef.Types
   , mkDynamic, mkStorage
   , mkDynamicIO, mkStorageIO
 
-  , newForeignPtrEnv, withForeignPtr
-  , Ptr, ForeignPtr
   ) where
 
 import Foreign as X

@@ -12,8 +12,8 @@ import Torch.Indef.Dynamic.Tensor.Index as X
 import Torch.Class.Tensor.Masked as X
 import Torch.Indef.Dynamic.Tensor.Masked as X
 
--- import Torch.Class.Tensor.Math as X
--- import Torch.Indef.Dynamic.Tensor.Math as X
+import Torch.Class.Tensor.Math as X
+import Torch.Indef.Dynamic.Tensor.Math as X
 
 -- import Torch.Class.Tensor.Math.Blas as X
 -- import Torch.Indef.Dynamic.Tensor.Math.Blas as X

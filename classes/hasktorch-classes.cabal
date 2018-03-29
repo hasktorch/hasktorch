@@ -5,7 +5,7 @@ description:    core tensor abstractions wrapping raw TH bindings
 category:       Tensors, Machine Learning
 homepage:       https://github.com/hasktorch/hasktorch#readme
 bug-reports:    https://github.com/hasktorch/hasktorch/issues
-author:         Austin Huang
+author:         Hasktorch dev team <Austin Huang, Sam Stites>
 license:        BSD3
 build-type:     Simple
 cabal-version:  >= 1.24
@@ -59,7 +59,7 @@ library
     , Torch.Class.Tensor.Copy
     , Torch.Class.Tensor.Index
     , Torch.Class.Tensor.Masked
-    -- , Torch.Class.Tensor.Math
+    , Torch.Class.Tensor.Math
     -- , Torch.Class.Tensor.Math.Blas
     , Torch.Class.Tensor.Math.Compare
     , Torch.Class.Tensor.Math.CompareT
@@ -73,6 +73,4 @@ library
     , Torch.Class.Tensor.ScatterGather
     , Torch.Class.Tensor.Sort
     , Torch.Class.Tensor.TopK
-
-    -- , Torch.Class.Tensor.Random
 

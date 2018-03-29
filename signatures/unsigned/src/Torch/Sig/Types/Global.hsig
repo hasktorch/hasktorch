@@ -19,8 +19,13 @@ descBuff :: Ptr CDescBuff -> IO DescBuff
 data CGenerator
 data Generator
 
--- any quirky splits between TH and THC
+-- any quirky splits between TH (CInt) and THC (CLLong)
 data CInt'
+instance Integral CInt'
+instance Num CInt'
+instance Ord CInt'
+instance Enum CInt'
+instance Bounded CInt'
 
 -- aliases
 type CMaskTensor = CByteTensor
