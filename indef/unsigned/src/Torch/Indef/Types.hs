@@ -71,10 +71,10 @@ shuffle3 fn d a b c = fn a b c d
 shuffle3'2 :: (a -> b -> c -> d -> e -> f) -> d -> e -> a -> b -> c -> f
 shuffle3'2 fn d e a b c = fn a b c d e
 
-withIx :: Sig.IndexTensor -> (Ptr CIndexTensor -> IO x) -> IO x
+withIx :: Sig.IndexDynamic -> (Ptr CIndexTensor -> IO x) -> IO x
 withIx ix fn = withForeignPtr (snd $ Sig.longDynamicState ix) fn
 
-withMask :: Sig.MaskTensor -> (Ptr CMaskTensor -> IO x) -> IO x
+withMask :: Sig.MaskDynamic -> (Ptr CMaskTensor -> IO x) -> IO x
 withMask ix fn = withForeignPtr (snd $ Sig.byteDynamicState ix) fn
 
 mkCPUIx :: Ptr TH.C'THLongTensor -> IO CPUIndex
@@ -174,9 +174,9 @@ type instance Class.HsAccReal    Sig.Storage = Sig.HsAccReal
 
 type instance Class.AsDynamic    Sig.Dynamic = Sig.Dynamic
 type instance Class.HsStorage    Sig.Dynamic = Sig.Storage
-type instance Class.IndexTensor  Sig.Dynamic = Sig.IndexTensor
+type instance Class.IndexTensor  Sig.Dynamic = Sig.IndexDynamic
 type instance Class.IndexStorage Sig.Dynamic = Sig.IndexStorage
-type instance Class.MaskTensor   Sig.Dynamic = Sig.MaskTensor
+type instance Class.MaskTensor   Sig.Dynamic = Sig.MaskDynamic
 type instance Class.StridesStorage Sig.Dynamic = TH.IndexStorage
 type instance Class.SizesStorage   Sig.Dynamic = TH.IndexStorage
 
@@ -194,9 +194,9 @@ type instance Class.HsAccReal    Sig.Dynamic = Sig.HsAccReal
 type instance Class.AsDynamic    (Sig.Tensor d) = Sig.Dynamic
 type instance Class.HsStorage    (Sig.Tensor d) = Sig.Storage
 
-type instance Class.IndexTensor  (Sig.Tensor d) = Sig.IndexTensor
+type instance Class.IndexTensor  (Sig.Tensor d) = Sig.IndexDynamic
 type instance Class.IndexStorage (Sig.Tensor d) = Sig.IndexStorage
-type instance Class.MaskTensor   (Sig.Tensor d) = Sig.MaskTensor
+type instance Class.MaskTensor   (Sig.Tensor d) = Sig.MaskDynamic
 type instance Class.StridesStorage (Sig.Tensor d) = TH.IndexStorage
 type instance Class.SizesStorage   (Sig.Tensor d) = TH.IndexStorage
 

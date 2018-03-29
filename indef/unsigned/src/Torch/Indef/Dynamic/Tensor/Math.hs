@@ -49,7 +49,7 @@ instance Class.TensorMath Dynamic where
     with2DynamicState t1 t2 $ \_ t1' t2' ->
       Sig.c_cat s' t0' t1' t2' (fromIntegral i)
 
-  nonzero_ :: IndexTensor -> Dynamic -> IO ()
+  nonzero_ :: IndexDynamic -> Dynamic -> IO ()
   nonzero_ ix t = withDynamicState t $ \s' t' -> withIx ix $ \ix' -> Sig.c_nonzero s' ix' t'
 
   trace :: Dynamic -> IO HsAccReal

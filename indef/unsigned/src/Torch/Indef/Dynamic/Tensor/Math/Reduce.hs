@@ -21,17 +21,17 @@ instance TensorMathReduce Dynamic where
   prodall :: Dynamic -> IO HsAccReal
   prodall = flip withDynamicState (fmap c2hsAccReal .: Sig.c_prodall)
 
-  max_ :: (Dynamic, IndexTensor) -> Dynamic -> Int -> Int -> IO ()
+  max_ :: (Dynamic, IndexDynamic) -> Dynamic -> Int -> Int -> IO ()
   max_ (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
     withIx ix $ \ix' ->
       Sig.c_max s' t0' ix' t1' (fromIntegral i0) (fromIntegral i1)
 
-  min_ :: (Dynamic, IndexTensor) -> Dynamic -> Int -> Int -> IO ()
+  min_ :: (Dynamic, IndexDynamic) -> Dynamic -> Int -> Int -> IO ()
   min_ (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
     withIx ix $ \ix' ->
       Sig.c_min s' t0' ix' t1' (fromIntegral i0) (fromIntegral i1)
 
-  median_ :: (Dynamic, IndexTensor) -> Dynamic -> Int -> Int -> IO ()
+  median_ :: (Dynamic, IndexDynamic) -> Dynamic -> Int -> Int -> IO ()
   median_ (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
     withIx ix $ \ix' ->
       Sig.c_median s' t0' ix' t1' (fromIntegral i0) (fromIntegral i1)

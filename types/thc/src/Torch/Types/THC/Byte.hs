@@ -42,9 +42,8 @@ dynamic         = byteDynamic
 dynamicState    = byteDynamicState
 dynamicStateRef = fst . byteDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
-  deriving (Show, Eq)
-
-asStatic = Tensor
+type Tensor = ByteTensor
+asDynamic = byteAsDynamic
+asStatic = byteAsStatic
 
 

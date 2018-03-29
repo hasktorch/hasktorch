@@ -1,6 +1,10 @@
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
+
 signature Torch.Sig.Types.Global where
 
 import Foreign
+import GHC.TypeLits
 
 data CState
 data State
@@ -32,12 +36,17 @@ type CMaskTensor = CByteTensor
 type CIndexTensor = CLongTensor
 type CIndexStorage = CLongStorage
 
-type MaskTensor = ByteDynamic
-type IndexTensor = LongDynamic
+type MaskTensor d = ByteTensor d
+type MaskDynamic = ByteDynamic
+type IndexTensor d = LongTensor d
+type IndexDynamic = LongDynamic
 type IndexStorage = LongStorage
 
 -- unsigned types
 data CByteTensor
+data ByteTensor (d::[Nat])
+byteAsDynamic :: ByteTensor (d::[Nat]) -> ByteDynamic
+byteAsStatic  :: ByteDynamic -> ByteTensor (d::[Nat])
 data ByteDynamic
 byteDynamicState    :: ByteDynamic -> (ForeignPtr CState, ForeignPtr CByteTensor)
 byteDynamic  :: ForeignPtr CState -> ForeignPtr CByteTensor -> ByteDynamic
@@ -59,6 +68,9 @@ charStorage  :: ForeignPtr CState -> ForeignPtr CCharStorage -> CharStorage
 
 -- Signed types
 data CLongTensor
+data LongTensor (d::[Nat])
+longAsDynamic :: LongTensor (d::[Nat]) -> LongDynamic
+longAsStatic  :: LongDynamic -> LongTensor (d::[Nat])
 data LongDynamic
 longDynamicState   :: LongDynamic -> (ForeignPtr CState, ForeignPtr CLongTensor)
 longDynamic :: ForeignPtr CState -> ForeignPtr CLongTensor -> LongDynamic

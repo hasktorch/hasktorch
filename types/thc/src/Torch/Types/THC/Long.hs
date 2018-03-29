@@ -39,9 +39,8 @@ dynamic s t     = LongDynamic (s, t)
 dynamicState    = longDynamicState
 dynamicStateRef = snd . longDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
-  deriving (Show, Eq)
-
-asStatic = Tensor
+type Tensor = ByteTensor
+asDynamic = byteAsDynamic
+asStatic = byteAsStatic
 
 

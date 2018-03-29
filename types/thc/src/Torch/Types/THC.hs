@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 module Torch.Types.THC
   ( module Torch.Types.THC.Structs
 
@@ -7,15 +9,15 @@ module Torch.Types.THC
   , CGenerator, Generator(..)
   , CInt'
   , CMaskTensor, CIndexTensor, CIndexStorage
-  ,  MaskTensor,  IndexTensor,  IndexStorage
+  ,  MaskDynamic,  IndexDynamic, MaskTensor, IndexTensor, IndexStorage
 
-  , CByteTensor, ByteDynamic(..), byteDynamic
+  , CByteTensor, ByteDynamic(..), byteDynamic, ByteTensor(..), byteAsStatic
   , CByteStorage, ByteStorage(..), byteStorage
 
   , CCharTensor, CharDynamic(..), charDynamic
   , CCharStorage, CharStorage(..), charStorage
 
-  , CLongTensor, LongDynamic(..), longDynamic
+  , CLongTensor, LongDynamic(..), longDynamic, LongTensor(..), longAsStatic
   , CLongStorage, LongStorage(..), longStorage
 
   , CShortTensor, ShortDynamic(..), shortDynamic
@@ -65,8 +67,10 @@ type CMaskTensor   = CByteTensor
 type CIndexTensor  = CLongTensor
 type CIndexStorage = CLongStorage
 
-type  MaskTensor   = ByteDynamic
-type  IndexTensor  = LongDynamic
+type  MaskDynamic   = ByteDynamic
+type  MaskTensor d  =  ByteTensor d
+type  IndexDynamic  =  LongDynamic
+type  IndexTensor d =  LongTensor d
 type  IndexStorage = LongStorage
 
 -- unsigned types
@@ -75,6 +79,10 @@ type CByteTensor      = C'THCudaByteTensor
 newtype ByteDynamic   = ByteDynamic { byteDynamicState :: (ForeignPtr CState, ForeignPtr CByteTensor) }
   deriving (Show, Eq)
 byteDynamic = curry ByteDynamic
+
+newtype ByteTensor (ds :: [Nat]) = ByteTensor { byteAsDynamic :: ByteDynamic }
+  deriving (Show, Eq)
+byteAsStatic = ByteTensor
 
 type CByteStorage   = C'THCByteStorage
 newtype ByteStorage = ByteStorage { byteStorageState :: (ForeignPtr CState, ForeignPtr CByteStorage) }
@@ -97,6 +105,10 @@ type CLongTensor      = C'THCudaLongTensor
 newtype LongDynamic = LongDynamic { longDynamicState :: (ForeignPtr CState, ForeignPtr CLongTensor) }
   deriving (Show, Eq)
 longDynamic = curry LongDynamic
+
+newtype LongTensor (ds :: [Nat]) = LongTensor { longAsDynamic :: LongDynamic }
+  deriving (Show, Eq)
+longAsStatic = LongTensor
 
 type CLongStorage   = C'THCLongStorage
 newtype LongStorage = LongStorage { longStorageState :: (ForeignPtr CState, ForeignPtr CLongStorage) }
