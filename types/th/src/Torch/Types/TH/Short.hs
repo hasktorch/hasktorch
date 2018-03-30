@@ -40,9 +40,7 @@ dynamic s t     = ShortDynamic (s, t)
 dynamicState    = shortDynamicState
 dynamicStateRef = snd . shortDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
-  deriving (Show, Eq)
-
-asStatic = Tensor
-
+type Tensor = ShortTensor
+asDynamic = shortAsDynamic
+asStatic = shortAsStatic
 

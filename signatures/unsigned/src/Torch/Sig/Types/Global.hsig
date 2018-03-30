@@ -57,6 +57,9 @@ byteStorageState :: ByteStorage -> (ForeignPtr CState, ForeignPtr CByteStorage)
 byteStorage  :: ForeignPtr CState -> ForeignPtr CByteStorage -> ByteStorage
 
 data CCharTensor
+data CharTensor (d::[Nat])
+charAsDynamic :: CharTensor (d::[Nat]) -> CharDynamic
+charAsStatic  :: CharDynamic -> CharTensor (d::[Nat])
 data CharDynamic
 charDynamicState    :: CharDynamic -> (ForeignPtr CState, ForeignPtr CCharTensor)
 charDynamic  :: ForeignPtr CState -> ForeignPtr CCharTensor -> CharDynamic
@@ -81,6 +84,9 @@ longStorageState :: LongStorage -> (ForeignPtr CState, ForeignPtr CLongStorage)
 longStorage  :: ForeignPtr CState -> ForeignPtr CLongStorage -> LongStorage
 
 data CShortTensor
+data ShortTensor (d::[Nat])
+shortAsDynamic :: ShortTensor (d::[Nat]) -> ShortDynamic
+shortAsStatic  :: ShortDynamic -> ShortTensor (d::[Nat])
 data ShortDynamic
 shortDynamicState  :: ShortDynamic -> (ForeignPtr CState, ForeignPtr CShortTensor)
 shortDynamic       :: ForeignPtr CState -> ForeignPtr CShortTensor -> ShortDynamic
@@ -91,6 +97,9 @@ shortStorageState  :: ShortStorage -> (ForeignPtr CState, ForeignPtr CShortStora
 shortStorage       :: ForeignPtr CState -> ForeignPtr CShortStorage -> ShortStorage
 
 data CIntTensor
+data IntTensor (d::[Nat])
+intAsDynamic :: IntTensor (d::[Nat]) -> IntDynamic
+intAsStatic  :: IntDynamic -> IntTensor (d::[Nat])
 data IntDynamic
 intDynamicState   :: IntDynamic -> (ForeignPtr CState, ForeignPtr CIntTensor)
 intDynamic :: ForeignPtr CState -> ForeignPtr CIntTensor -> IntDynamic
@@ -102,6 +111,9 @@ intStorage  :: ForeignPtr CState -> ForeignPtr CIntStorage -> IntStorage
 
 -- Floating types
 data CFloatTensor
+data FloatTensor (d::[Nat])
+floatAsDynamic :: FloatTensor (d::[Nat]) -> FloatDynamic
+floatAsStatic  :: FloatDynamic -> FloatTensor (d::[Nat])
 data FloatDynamic
 floatDynamicState   :: FloatDynamic -> (ForeignPtr CState, ForeignPtr CFloatTensor)
 floatDynamic :: ForeignPtr CState -> ForeignPtr CFloatTensor -> FloatDynamic
@@ -112,6 +124,9 @@ floatStorageState :: FloatStorage -> (ForeignPtr CState, ForeignPtr CFloatStorag
 floatStorage  :: ForeignPtr CState -> ForeignPtr CFloatStorage -> FloatStorage
 
 data CDoubleTensor
+data DoubleTensor (d::[Nat])
+doubleAsDynamic :: DoubleTensor (d::[Nat]) -> DoubleDynamic
+doubleAsStatic  :: DoubleDynamic -> DoubleTensor (d::[Nat])
 data DoubleDynamic
 doubleDynamicState   :: DoubleDynamic -> (ForeignPtr CState, ForeignPtr CDoubleTensor)
 doubleDynamic :: ForeignPtr CState -> ForeignPtr CDoubleTensor -> DoubleDynamic

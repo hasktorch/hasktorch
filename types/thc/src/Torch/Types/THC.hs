@@ -7,29 +7,30 @@ module Torch.Types.THC
   , CAllocator, Allocator(..)
   , CDescBuff, DescBuff, descBuff
   , CGenerator, Generator(..)
+
   , CInt'
   , CMaskTensor, CIndexTensor, CIndexStorage
-  ,  MaskDynamic,  IndexDynamic, MaskTensor, IndexTensor, IndexStorage
+  ,  MaskDynamic,  IndexDynamic,  MaskTensor, IndexTensor, IndexStorage
 
   , CByteTensor, ByteDynamic(..), byteDynamic, ByteTensor(..), byteAsStatic
   , CByteStorage, ByteStorage(..), byteStorage
 
-  , CCharTensor, CharDynamic(..), charDynamic
+  , CCharTensor, CharDynamic(..), charDynamic, CharTensor(..), charAsStatic
   , CCharStorage, CharStorage(..), charStorage
 
   , CLongTensor, LongDynamic(..), longDynamic, LongTensor(..), longAsStatic
   , CLongStorage, LongStorage(..), longStorage
 
-  , CShortTensor, ShortDynamic(..), shortDynamic
+  , CShortTensor, ShortDynamic(..), shortDynamic, ShortTensor(..), shortAsStatic
   , CShortStorage, ShortStorage(..), shortStorage
 
-  , CIntTensor, IntDynamic(..), intDynamic
+  , CIntTensor, IntDynamic(..), intDynamic, IntTensor(..), intAsStatic
   , CIntStorage, IntStorage(..), intStorage
 
-  , CFloatTensor, FloatDynamic(..), floatDynamic
+  , CFloatTensor, FloatDynamic(..), floatDynamic, FloatTensor(..), floatAsStatic
   , CFloatStorage, FloatStorage(..), floatStorage
 
-  , CDoubleTensor, DoubleDynamic(..), doubleDynamic
+  , CDoubleTensor, DoubleDynamic(..), doubleDynamic, DoubleTensor(..), doubleAsStatic
   , CDoubleStorage, DoubleStorage(..), doubleStorage
 
   , C'THCHalfStorage, C'THCudaHalfTensor, C'THCFile, C'THCHalf
@@ -94,6 +95,10 @@ newtype CharDynamic = CharDynamic { charDynamicState :: (ForeignPtr CState, Fore
   deriving (Show, Eq)
 charDynamic = curry CharDynamic
 
+newtype CharTensor (ds :: [Nat]) = CharTensor { charAsDynamic :: CharDynamic }
+  deriving (Show, Eq)
+charAsStatic = CharTensor
+
 type CCharStorage   = C'THCCharStorage
 newtype CharStorage = CharStorage { charStorageState :: (ForeignPtr CState, ForeignPtr CCharStorage) }
   deriving (Show, Eq)
@@ -120,6 +125,10 @@ newtype ShortDynamic = ShortDynamic { shortDynamicState :: (ForeignPtr CState, F
   deriving (Show, Eq)
 shortDynamic = curry ShortDynamic
 
+newtype ShortTensor (ds :: [Nat]) = ShortTensor { shortAsDynamic :: ShortDynamic }
+  deriving (Show, Eq)
+shortAsStatic = ShortTensor
+
 type CShortStorage   = C'THCShortStorage
 newtype ShortStorage = ShortStorage { shortStorageState :: (ForeignPtr CState, ForeignPtr CShortStorage) }
   deriving (Show, Eq)
@@ -129,6 +138,10 @@ type CIntTensor      = C'THCudaIntTensor
 newtype IntDynamic = IntDynamic { intDynamicState :: (ForeignPtr CState, ForeignPtr CIntTensor) }
   deriving (Show, Eq)
 intDynamic = curry IntDynamic
+
+newtype IntTensor (ds :: [Nat]) = IntTensor { intAsDynamic :: IntDynamic }
+  deriving (Show, Eq)
+intAsStatic = IntTensor
 
 type CIntStorage   = C'THCIntStorage
 newtype IntStorage = IntStorage { intStorageState :: (ForeignPtr CState, ForeignPtr CIntStorage) }
@@ -142,6 +155,10 @@ newtype FloatDynamic = FloatDynamic { floatDynamicState :: (ForeignPtr CState, F
   deriving (Show, Eq)
 floatDynamic = curry FloatDynamic
 
+newtype FloatTensor (ds :: [Nat]) = FloatTensor { floatAsDynamic :: FloatDynamic }
+  deriving (Show, Eq)
+floatAsStatic = FloatTensor
+
 type CFloatStorage   = C'THCFloatStorage
 newtype FloatStorage = FloatStorage { floatStorageState :: (ForeignPtr CState, ForeignPtr CFloatStorage) }
   deriving (Show, Eq)
@@ -152,11 +169,14 @@ newtype DoubleDynamic = DoubleDynamic { doubleDynamicState :: (ForeignPtr CState
   deriving (Show, Eq)
 doubleDynamic = curry DoubleDynamic
 
+newtype DoubleTensor (ds :: [Nat]) = DoubleTensor { doubleAsDynamic :: DoubleDynamic }
+  deriving (Show, Eq)
+doubleAsStatic = DoubleTensor
+
 type CDoubleStorage   = C'THCDoubleStorage
 newtype DoubleStorage = DoubleStorage { doubleStorageState :: (ForeignPtr CState, ForeignPtr CDoubleStorage) }
   deriving (Show, Eq)
 doubleStorage = curry DoubleStorage
-
 
 {-
 data CHalfTensor
