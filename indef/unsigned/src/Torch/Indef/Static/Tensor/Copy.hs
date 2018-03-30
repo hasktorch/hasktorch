@@ -1,16 +1,19 @@
 module Torch.Indef.Static.Tensor.Copy where
 
-import Torch.Sig.Types
-import Torch.Indef.Tensor.Dynamic.Copy ()
-import qualified Torch.Class.Tensor.Copy as Class
+import Torch.Types.TH
+import Torch.Indef.Types (Tensor, asDynamic, asStatic)
+import Torch.Indef.Dynamic.Tensor.Copy ()
+import Torch.Dimensions
+import qualified Torch.Class.Tensor.Copy.Static as Class
+import qualified Torch.Class.Tensor.Copy as Dynamic
 
-instance Class.TensorCopy (Tensor d) where
-  copy t = asStatic <$> Class.copy (dynamic t)
-  copyByte t = Class.copyByte (dynamic t)
-  copyShort t = Class.copyShort (dynamic t)
-  copyInt t = Class.copyInt (dynamic t)
-  copyLong t = Class.copyLong (dynamic t)
-  copyFloat t = Class.copyFloat (dynamic t)
-  copyDouble t = Class.copyDouble (dynamic t)
+instance Dimensions d => Class.TensorCopy Tensor d where
+  copy t = asStatic <$> Dynamic.copy (asDynamic t)
+  copyByte t = byteAsStatic <$> Dynamic.copyByte (asDynamic t)
+  copyShort t = shortAsStatic <$> Dynamic.copyShort (asDynamic t)
+  copyInt t = intAsStatic <$> Dynamic.copyInt (asDynamic t)
+  copyLong t = longAsStatic <$> Dynamic.copyLong (asDynamic t)
+  copyFloat t = floatAsStatic <$> Dynamic.copyFloat (asDynamic t)
+  copyDouble t = doubleAsStatic <$> Dynamic.copyDouble (asDynamic t)
 
 

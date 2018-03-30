@@ -77,14 +77,12 @@ library
     -- , Torch.Indef.Dynamic.NN
     -- , Torch.Indef.Static.NN
 
-    -- final exports will be last
+    , Torch.Indef.Static
+    , Torch.Indef.Static.Tensor
+
     , Torch.Indef.Dynamic
     , Torch.Indef.Dynamic.Tensor
     , Torch.Indef.Dynamic.Tensor.Copy
-
-    -- , Torch.Indef.Static
-    -- , Torch.Indef.Static.Tensor
-    -- , Torch.Indef.Static.Tensor.Copy
 
     , Torch.Indef.Dynamic.Tensor.Index
     , Torch.Indef.Dynamic.Tensor.Masked

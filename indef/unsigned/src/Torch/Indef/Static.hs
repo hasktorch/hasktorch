@@ -1,60 +1,56 @@
--------------------------------------------------------------------------------
--- |
--- Module    :  Torch.Indef.Tensor.Static
--- Copyright :  (c) Sam Stites 2017
--- License   :  BSD3
--- Maintainer:  sam@stites.io
--- Stability :  experimental
--- Portability: non-portable
---
--- Tensors with dimensional phantom types.
---
--- Be aware of https://ghc.haskell.org/trac/ghc/wiki/Roles but since Dynamic
--- and static tensors are the same (minus the dimension operators in the
--- phantom type), I (@stites) don't think we need to be too concerned.
--------------------------------------------------------------------------------
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Torch.Indef.Tensor.Static
-  ( Tensor
-  , Sig.dynamic
-  , tensor
-  , Dynamic.IsTensor(..)
-  , Dynamic.TensorCopy(..)
-  , Dynamic.TensorConv(..)
-  , Dynamic.TensorMath(..)
-  , module Random
-  ) where
+module Torch.Indef.Static (module X) where
 
-import Torch.Sig.Types hiding (tensor)
-import Data.Coerce (coerce)
-import Foreign.ForeignPtr (ForeignPtr)
+import Torch.Class.Tensor as X
+import Torch.Indef.Static.Tensor as X
 
-import GHC.TypeLits (Nat)
-import Torch.Indef.Types (Storage)
-import Torch.Class.Tensor.Static (IsStatic(..))
-import qualified Torch.Sig.Types as Sig
-import qualified Torch.Class.Internal as TypeFamilies
-import qualified Torch.Indef.Tensor.Dynamic as Dynamic
-import Torch.Indef.Tensor.Static.Random ()
-import Torch.Class.Tensor.Random as Random
+import Torch.Class.Tensor.Copy as X
+import Torch.Indef.Static.Tensor.Copy as X
 
--- instance Dynamic.IsTensor (Tensor (ds :: [Nat]))
--- instance Dynamic.TensorCopy (Tensor (ds :: [Nat]))
--- instance Dynamic.TensorConv (Tensor (ds :: [Nat]))
--- instance Dynamic.TensorMath (Tensor (ds :: [Nat]))
--- instance Dynamic.TensorRandom (Tensor (ds :: [Nat]))
-
-tensor :: Tensor (ds :: [Nat]) -> ForeignPtr CTensor
-tensor = Sig.tensor . Sig.dynamic
-
-type instance TypeFamilies.HsReal    (Tensor (ds::[Nat])) = HsReal
-type instance TypeFamilies.HsAccReal (Tensor (ds::[Nat])) = HsAccReal
-type instance TypeFamilies.HsStorage (Tensor (ds::[Nat])) = Storage
-type instance TypeFamilies.AsDynamic (Tensor (ds::[Nat])) = Dynamic.Tensor
-
-instance IsStatic (Tensor ds) where
-  dynamicamic = Sig.dynamic
-  asStatic = Sig.asStatic
+-- import Torch.Class.Tensor.Index as X
+-- import Torch.Indef.Static.Tensor.Index as X
+-- 
+-- import Torch.Class.Tensor.Masked as X
+-- import Torch.Indef.Static.Tensor.Masked as X
+-- 
+-- import Torch.Class.Tensor.Math as X
+-- import Torch.Indef.Static.Tensor.Math as X
+-- 
+-- -- import Torch.Class.Tensor.Math.Blas as X
+-- -- import Torch.Indef.Static.Tensor.Math.Blas as X
+-- 
+-- import Torch.Class.Tensor.Math.Compare as X
+-- import Torch.Indef.Static.Tensor.Math.Compare as X
+-- 
+-- import Torch.Class.Tensor.Math.CompareT as X
+-- import Torch.Indef.Static.Tensor.Math.CompareT as X
+-- 
+-- import Torch.Class.Tensor.Math.Pairwise as X
+-- import Torch.Indef.Static.Tensor.Math.Pairwise as X
+-- 
+-- import Torch.Class.Tensor.Math.Pointwise as X
+-- import Torch.Indef.Static.Tensor.Math.Pointwise as X
+-- 
+-- -- import Torch.Class.Tensor.Math.Random as X
+-- -- import Torch.Indef.Static.Tensor.Math.Random as X
+-- 
+-- import Torch.Class.Tensor.Math.Reduce as X
+-- import Torch.Indef.Static.Tensor.Math.Reduce as X
+-- 
+-- import Torch.Class.Tensor.Math.Scan as X
+-- import Torch.Indef.Static.Tensor.Math.Scan as X
+-- 
+-- import Torch.Class.Tensor.Mode as X
+-- import Torch.Indef.Static.Tensor.Mode as X
+-- 
+-- import Torch.Class.Tensor.ScatterGather as X
+-- import Torch.Indef.Static.Tensor.ScatterGather as X
+-- 
+-- import Torch.Class.Tensor.Sort as X
+-- import Torch.Indef.Static.Tensor.Sort as X
+-- 
+-- import Torch.Class.Tensor.TopK as X
+-- import Torch.Indef.Static.Tensor.TopK as X
+-- 
+-- -- import Torch.Class.Tensor.Random as X
+-- -- import Torch.Indef.Static.Tensor.Random as X
 

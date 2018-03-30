@@ -56,7 +56,10 @@ library
     -- , Torch.Class.NN
 
     , Torch.Class.Tensor
+    , Torch.Class.Tensor.Static
+
     , Torch.Class.Tensor.Copy
+    , Torch.Class.Tensor.Copy.Static
     , Torch.Class.Tensor.Index
     , Torch.Class.Tensor.Masked
     , Torch.Class.Tensor.Math
