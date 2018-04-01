@@ -1,20 +1,12 @@
-module Torch.Storage
-  ( ByteStorage
-  , ShortStorage
-  , IntStorage
-  , LongStorage
-  , FloatStorage
-  , DoubleStorage
-  , module X
-  ) where
+module Torch.Storage ( module X ) where
 
-import Torch.Types.TH
+import Torch.Types.TH as X
 
-import qualified Torch.Byte.Storage as X
-import qualified Torch.Char.Storage as X
--- import qualified Torch.Core.ShortStorage as S
--- import qualified Torch.Core.IntStorage as I
--- import qualified Torch.Core.LongStorage as L
--- import qualified Torch.Core.FloatStorage as F
--- import qualified Torch.Core.DoubleStorage as D
+import Torch.Byte.Storage as X
+import Torch.Char.Storage as X
+
+import Torch.Short.Storage as X
+import Torch.Int.Storage as X
+import Torch.Long.Storage as X
+
 

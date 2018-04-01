@@ -37,14 +37,15 @@ class TensorMathPointwise t where
 sign :: forall t d .  (TensorMathPointwise t, Dimensions d, Tensor t) => t d -> IO (t d)
 sign t = withInplace (`sign_` t)
 
+class TensorMathPointwiseSigned t where
+  neg_ :: Dimensions d => t d -> t d -> IO ()
+  abs_ :: Dimensions d => t d -> t d -> IO ()
 
--- withInplace :: Tensor t => (t -> IO ()) -> Dim (d::[Nat]) -> IO t
+neg, abs :: forall t d . (TensorMathPointwiseSigned t, Dimensions d, Tensor t) => t d -> IO (t d)
+neg t = withInplace (`neg_` t)
+abs t = withInplace (`abs_` t)
 
 {-
-class TensorMathPointwiseSigned t d where
-  neg_ :: t d -> t d -> IO ()
-  abs_ :: t d -> t d -> IO ()
-
 class TensorMathPointwiseFloating t d where
   cinv_         :: t d -> t d -> IO ()
   sigmoid_      :: t d -> t d -> IO ()

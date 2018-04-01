@@ -17,7 +17,7 @@ packages:
     classes/*cabal
 
     indef/unsigned/*cabal
-    -- indef/signed/*cabal
+    indef/signed/*cabal
     -- indef/floating/*cabal
 
     core/*cabal

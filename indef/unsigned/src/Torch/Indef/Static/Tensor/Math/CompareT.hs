@@ -7,23 +7,23 @@ import qualified Torch.Class.Tensor.Math.CompareT as Dynamic
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Math.CompareT ()
 
-instance Class.TensorMathCompareT Tensor d d where
-  ltTensor_ :: ByteTensor d -> Tensor d -> Tensor d -> IO ()
+instance Class.TensorMathCompareT Tensor where
+  ltTensor_ :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
   ltTensor_ m t t2 = Dynamic.ltTensor_ (byteAsDynamic m) (asDynamic t) (asDynamic t2)
 
-  leTensor_ :: ByteTensor d -> Tensor d -> Tensor d -> IO ()
+  leTensor_ :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
   leTensor_ m t t2 = Dynamic.leTensor_ (byteAsDynamic m) (asDynamic t) (asDynamic t2)
 
-  gtTensor_ :: ByteTensor d -> Tensor d -> Tensor d -> IO ()
+  gtTensor_ :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
   gtTensor_ m t t2 = Dynamic.gtTensor_ (byteAsDynamic m) (asDynamic t) (asDynamic t2)
 
-  geTensor_ :: ByteTensor d -> Tensor d -> Tensor d -> IO ()
+  geTensor_ :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
   geTensor_ m t t2 = Dynamic.geTensor_ (byteAsDynamic m) (asDynamic t) (asDynamic t2)
 
-  neTensor_ :: ByteTensor d -> Tensor d -> Tensor d -> IO ()
+  neTensor_ :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
   neTensor_ m t t2 = Dynamic.neTensor_ (byteAsDynamic m) (asDynamic t) (asDynamic t2)
 
-  eqTensor_ :: ByteTensor d -> Tensor d -> Tensor d -> IO ()
+  eqTensor_ :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
   eqTensor_ m t t2 = Dynamic.eqTensor_ (byteAsDynamic m) (asDynamic t) (asDynamic t2)
 
   ltTensorT_ :: Tensor d -> Tensor d -> Tensor d -> IO ()
