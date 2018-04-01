@@ -1,8 +1,5 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
 module Torch.Types.THC.Double where
 
-import Foreign
 import Foreign.C.Types
 import Foreign (ForeignPtr)
 import GHC.TypeLits (Nat)
@@ -37,20 +34,19 @@ c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = realToFrac
 
 type Storage = DoubleStorage
-cstorage        = fst . doubleStorageState
-storage s t     = DoubleStorage (s, t)
+cstorage        = snd . doubleStorageState
+storage         = doubleStorage
 storageState    = doubleStorageState
-storageStateRef = snd . doubleStorageState
+storageStateRef = fst . doubleStorageState
 
 type Dynamic    = DoubleDynamic
-ctensor         = fst . doubleDynamicState
-dynamic s t     = DoubleDynamic (s, t)
+ctensor         = snd . doubleDynamicState
+dynamic         = doubleDynamic
 dynamicState    = doubleDynamicState
-dynamicStateRef = snd . doubleDynamicState
+dynamicStateRef = fst . doubleDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
-  deriving (Show, Eq)
-
-asStatic = Tensor
+type Tensor = DoubleTensor
+asDynamic = doubleAsDynamic
+asStatic = doubleAsStatic
 
 
