@@ -5,7 +5,9 @@ module Torch.Indef.Dynamic.Tensor.Math where
 import qualified Torch.Sig.Tensor.Math   as Sig
 import qualified Torch.Class.Tensor.Math as Class
 import qualified Torch.Types.TH as TH (IndexStorage)
+import qualified Foreign.Marshal as FM
 
+import Torch.Dimensions
 import Torch.Indef.Types
 
 instance Class.TensorMath Dynamic where
@@ -35,8 +37,10 @@ instance Class.TensorMath Dynamic where
   reshape_ t0 t1 ix = with2DynamicState t0 t1 $ \s' t0' t1' -> withCPUIxStorage ix $ \ix' ->
     Sig.c_reshape s' t0' t1' ix'
 
-  catArray_ :: Dynamic -> [Dynamic] -> Int -> Int -> IO ()
-  catArray_ res ds x y = undefined
+  catArray_ :: Dynamic -> [Dynamic] -> Int -> DimVal -> IO ()
+  catArray_ res ds x y = withDynamicState res $ \s' r' -> do
+    ds' <- FM.newArray =<< mapM (\d -> withForeignPtr (ctensor d) pure) ds
+    Sig.c_catArray s' r' ds' (fromIntegral x) (fromIntegral y)
 
   tril_ :: Dynamic -> Dynamic -> Integer -> IO ()
   tril_ t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_tril (fromInteger i0)
@@ -44,8 +48,8 @@ instance Class.TensorMath Dynamic where
   triu_ :: Dynamic -> Dynamic -> Integer -> IO ()
   triu_ t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_triu (fromInteger i0)
 
-  cat_ :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
-  cat_ t0 t1 t2 i = withDynamicState t0 $ \s' t0' -> 
+  cat_ :: Dynamic -> Dynamic -> Dynamic -> DimVal -> IO ()
+  cat_ t0 t1 t2 i = withDynamicState t0 $ \s' t0' ->
     with2DynamicState t1 t2 $ \_ t1' t2' ->
       Sig.c_cat s' t0' t1' t2' (fromIntegral i)
 

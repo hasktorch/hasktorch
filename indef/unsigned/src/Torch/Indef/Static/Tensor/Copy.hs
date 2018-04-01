@@ -7,7 +7,7 @@ import Torch.Dimensions
 import qualified Torch.Class.Tensor.Copy.Static as Class
 import qualified Torch.Class.Tensor.Copy as Dynamic
 
-instance Dimensions d => Class.TensorCopy Tensor d where
+instance Class.TensorCopy Tensor where
   copy t = asStatic <$> Dynamic.copy (asDynamic t)
   copyByte t = byteAsStatic <$> Dynamic.copyByte (asDynamic t)
   copyShort t = shortAsStatic <$> Dynamic.copyShort (asDynamic t)

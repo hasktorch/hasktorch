@@ -35,6 +35,7 @@ library
     , safe-exceptions
     , transformers >= 0.5
     , mtl
+    , singletons >=2.2
 
   if flag(cuda)
     build-depends:
@@ -57,23 +58,38 @@ library
 
     , Torch.Class.Tensor
     , Torch.Class.Tensor.Static
-
     , Torch.Class.Tensor.Copy
     , Torch.Class.Tensor.Copy.Static
     , Torch.Class.Tensor.Index
+    , Torch.Class.Tensor.Index.Static
     , Torch.Class.Tensor.Masked
+    , Torch.Class.Tensor.Masked.Static
+
     , Torch.Class.Tensor.Math
+    , Torch.Class.Tensor.Math.Static
     -- , Torch.Class.Tensor.Math.Blas
+
     , Torch.Class.Tensor.Math.Compare
+    , Torch.Class.Tensor.Math.Compare.Static
     , Torch.Class.Tensor.Math.CompareT
+    , Torch.Class.Tensor.Math.CompareT.Static
+
     , Torch.Class.Tensor.Math.Pairwise
+    , Torch.Class.Tensor.Math.Pairwise.Static
     -- , Torch.Class.Tensor.Math.Lapack
     , Torch.Class.Tensor.Math.Pointwise
+    , Torch.Class.Tensor.Math.Pointwise.Static
     -- , Torch.Class.Tensor.Math.Random
     , Torch.Class.Tensor.Math.Reduce
+    , Torch.Class.Tensor.Math.Reduce.Static
     , Torch.Class.Tensor.Math.Scan
+    , Torch.Class.Tensor.Math.Scan.Static
     , Torch.Class.Tensor.Mode
+    , Torch.Class.Tensor.Mode.Static
     , Torch.Class.Tensor.ScatterGather
+    , Torch.Class.Tensor.ScatterGather.Static
     , Torch.Class.Tensor.Sort
+    , Torch.Class.Tensor.Sort.Static
     , Torch.Class.Tensor.TopK
+    , Torch.Class.Tensor.TopK.Static
 

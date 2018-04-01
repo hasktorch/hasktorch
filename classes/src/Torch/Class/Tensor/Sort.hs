@@ -1,9 +1,10 @@
 module Torch.Class.Tensor.Sort where
 
 import Torch.Class.Types
+import Torch.Dimensions
 
 class TensorSort t where
-  sort_ :: t -> IndexTensor t -> t -> Int -> Int -> IO ()
+  sort_ :: (t, IndexDynamic t) -> t -> DimVal -> SortOrder -> IO ()
 
 class GPUTensorSort t where
-  sortKeyValueInplace :: t -> IndexTensor t -> Int -> Int -> IO ()
+  sortKeyValueInplace :: t -> IndexDynamic t -> Int -> Int -> IO ()

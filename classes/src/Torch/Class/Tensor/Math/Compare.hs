@@ -3,12 +3,12 @@ module Torch.Class.Tensor.Math.Compare where
 import Torch.Class.Types
 
 class TensorMathCompare t where
-  ltValue_ :: MaskTensor t -> t -> HsReal t -> IO ()
-  leValue_ :: MaskTensor t -> t -> HsReal t -> IO ()
-  gtValue_ :: MaskTensor t -> t -> HsReal t -> IO ()
-  geValue_ :: MaskTensor t -> t -> HsReal t -> IO ()
-  neValue_ :: MaskTensor t -> t -> HsReal t -> IO ()
-  eqValue_ :: MaskTensor t -> t -> HsReal t -> IO ()
+  ltValue_ :: MaskDynamic t -> t -> HsReal t -> IO ()
+  leValue_ :: MaskDynamic t -> t -> HsReal t -> IO ()
+  gtValue_ :: MaskDynamic t -> t -> HsReal t -> IO ()
+  geValue_ :: MaskDynamic t -> t -> HsReal t -> IO ()
+  neValue_ :: MaskDynamic t -> t -> HsReal t -> IO ()
+  eqValue_ :: MaskDynamic t -> t -> HsReal t -> IO ()
 
   ltValueT_ :: t -> t -> HsReal t -> IO ()
   leValueT_ :: t -> t -> HsReal t -> IO ()

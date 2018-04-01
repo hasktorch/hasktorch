@@ -2,7 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Indef.Dynamic.Tensor where
+module Torch.Indef.Dynamic.Tensor () where
 
 import Data.Coerce (coerce)
 import Foreign.C.Types

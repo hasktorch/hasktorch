@@ -7,7 +7,7 @@ import GHC.TypeLits (Nat)
 import Torch.Dimensions
 import Torch.Class.Types
 import GHC.Int
-import Torch.Class.Tensor (Tensor(empty), inplace, inplace1)
+import Torch.Class.Tensor (Tensor(empty)) -- , inplace, inplace1)
 import qualified Torch.Types.TH as TH
 
 class TensorMath t where
@@ -19,9 +19,9 @@ class TensorMath t where
   onesLike_    :: t -> t -> IO ()
   numel        :: t -> IO Integer
   reshape_     :: t -> t -> TH.IndexStorage -> IO ()
-  cat_         :: t -> t -> t -> Int -> IO ()
-  catArray_    :: t -> [t] -> Int -> Int -> IO ()
-  nonzero_     :: IndexTensor t -> t -> IO ()
+  cat_         :: t -> t -> t -> DimVal -> IO ()
+  catArray_    :: t -> [t] -> Int -> DimVal -> IO ()
+  nonzero_     :: IndexDynamic t -> t -> IO ()
   tril_        :: t -> t -> Integer -> IO ()
   triu_        :: t -> t -> Integer -> IO ()
   diag_        :: t -> t -> Int -> IO ()
@@ -32,7 +32,7 @@ class TensorMath t where
 
 class CPUTensorMath t where
   match    :: t -> t -> t -> IO (HsReal t)
-  kthvalue :: t -> IndexTensor t -> t -> Integer -> Int -> IO Int
+  kthvalue :: t -> IndexDynamic t -> t -> Integer -> Int -> IO Int
   randperm :: t -> Generator t -> Integer -> IO ()
 
 class TensorMathFloating t where

@@ -2,21 +2,22 @@ module Torch.Indef.Dynamic.Tensor.ScatterGather where
 
 import Torch.Class.Tensor.ScatterGather
 import Torch.Indef.Types
+import Torch.Dimensions
 import qualified Torch.Sig.Tensor.ScatterGather as Sig
 
-instance TensorGatherScatter Dynamic where
-  gather_ :: Dynamic -> Dynamic -> Int -> IndexDynamic -> IO ()
-  gather_ t0 t1 i ix = with2DynamicState t0 t1 $ \s' t0' t1' -> withIx ix $ \ix' ->
-    Sig.c_gather s' t0' t1' (fromIntegral i) ix'
+instance TensorScatterGather Dynamic where
+  gather_ :: Dynamic -> Dynamic -> DimVal -> IndexDynamic -> IO ()
+  gather_ r src d ix = with2DynamicState r src $ \s' r' src' -> withIx ix $ \ix' ->
+    Sig.c_gather s' r' src' (fromIntegral d) ix'
 
-  scatter_ :: Dynamic -> Int -> IndexDynamic -> Dynamic -> IO ()
-  scatter_ t0 i ix t1 = with2DynamicState t0 t1 $ \s' t0' t1' -> withIx ix $ \ix' ->
-    Sig.c_scatter s' t0' (fromIntegral i) ix' t1'
+  scatter_ :: Dynamic -> DimVal -> IndexDynamic -> Dynamic -> IO ()
+  scatter_ r d ix src = with2DynamicState r src $ \s' r' src' -> withIx ix $ \ix' ->
+    Sig.c_scatter s' r' (fromIntegral d) ix' src'
 
-  scatterAdd_   :: Dynamic -> Int -> IndexDynamic -> Dynamic -> IO ()
-  scatterAdd_ t0 i ix t1 = with2DynamicState t0 t1 $ \s' t0' t1' -> withIx ix $ \ix' ->
-    Sig.c_scatterAdd s' t0' (fromIntegral i) ix' t1'
+  scatterAdd_   :: Dynamic -> DimVal -> IndexDynamic -> Dynamic -> IO ()
+  scatterAdd_ r d ix src = with2DynamicState r src $ \s' r' src' -> withIx ix $ \ix' ->
+    Sig.c_scatterAdd s' r' (fromIntegral d) ix' src'
 
-  scatterFill_  :: Dynamic -> Int -> IndexDynamic -> HsReal -> IO ()
-  scatterFill_ t0 i ix v = withDynamicState t0 $ \s' t0' -> withIx ix $ \ix' ->
-    Sig.c_scatterFill s' t0' (fromIntegral i) ix' (hs2cReal v)
+  scatterFill_  :: Dynamic -> DimVal -> IndexDynamic -> HsReal -> IO ()
+  scatterFill_ r d ix v = withDynamicState r $ \s' r' -> withIx ix $ \ix' ->
+    Sig.c_scatterFill s' r' (fromIntegral d) ix' (hs2cReal v)

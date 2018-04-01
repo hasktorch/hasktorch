@@ -2,6 +2,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Pointwise where
 
 import Torch.Class.Tensor.Math.Pointwise
 import Torch.Indef.Types
+import Torch.Dimensions
 
 import qualified Torch.Sig.Tensor.Math.Pointwise as Sig
 
@@ -9,7 +10,7 @@ instance TensorMathPointwise Dynamic where
   sign_ :: Dynamic -> Dynamic -> IO ()
   sign_ r t = with2DynamicState r t Sig.c_sign
 
-  cross_ :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
+  cross_ :: Dynamic -> Dynamic -> Dynamic -> DimVal -> IO ()
   cross_ t0 t1 t2 i0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' -> Sig.c_cross s' t0' t1' t2' (fromIntegral i0)
 
   clamp_ :: Dynamic -> Dynamic -> HsReal -> HsReal -> IO ()

@@ -28,6 +28,8 @@ library
     , TypeSynonymInstances
     , FlexibleInstances
     , FlexibleContexts
+    , KindSignatures
+    , DataKinds
   build-depends:
       base >=4.7 && <5
     , containers
@@ -77,9 +79,9 @@ library
     -- , Torch.Indef.Dynamic.NN
     -- , Torch.Indef.Static.NN
 
-    , Torch.Indef.Static
-    , Torch.Indef.Static.Tensor
-
+    -- ==================================================== --
+    -- Dynamic Tensor modules
+    -- ==================================================== --
     , Torch.Indef.Dynamic
     , Torch.Indef.Dynamic.Tensor
     , Torch.Indef.Dynamic.Tensor.Copy
@@ -101,24 +103,24 @@ library
     , Torch.Indef.Dynamic.Tensor.TopK
     -- , Torch.Indef.Dynamic.Tensor.Math.Random
 
-    -- , Torch.Indef.Static
-    -- , Torch.Indef.Static.Tensor
-    -- , Torch.Indef.Static.Tensor.Copy
-    -- , Torch.Indef.Static.Tensor.Index
-    -- , Torch.Indef.Static.Tensor.Masked
-    -- , Torch.Indef.Static.Tensor.Math
-    -- , Torch.Indef.Static.Tensor.Math.Blas
-    -- , Torch.Indef.Static.Tensor.Math.Compare
-    -- , Torch.Indef.Static.Tensor.Math.CompareT
-    -- , Torch.Indef.Static.Tensor.Math.Pairwise
-    -- , Torch.Indef.Static.Tensor.Math.Lapack
-    -- , Torch.Indef.Static.Tensor.Math.Pointwise
-    -- , Torch.Indef.Static.Tensor.Math.Random
-    -- , Torch.Indef.Static.Tensor.Math.Reduce
-    -- , Torch.Indef.Static.Tensor.Math.Scan
-    -- , Torch.Indef.Static.Tensor.Mode
-    -- , Torch.Indef.Static.Tensor.ScatterGather
-    -- , Torch.Indef.Static.Tensor.Sort
+    -- ==================================================== --
+    -- Static Tensor modules
+    -- ==================================================== --
+    , Torch.Indef.Static
+    , Torch.Indef.Static.Tensor
+    , Torch.Indef.Static.Tensor.Copy
+    , Torch.Indef.Static.Tensor.Index
+    , Torch.Indef.Static.Tensor.Masked
+    , Torch.Indef.Static.Tensor.Math
+    , Torch.Indef.Static.Tensor.Math.Compare
+    , Torch.Indef.Static.Tensor.Math.CompareT
+    , Torch.Indef.Static.Tensor.Math.Pairwise
+    , Torch.Indef.Static.Tensor.Math.Pointwise
+    , Torch.Indef.Static.Tensor.Math.Reduce
+    , Torch.Indef.Static.Tensor.Math.Scan
+    , Torch.Indef.Static.Tensor.Mode
+    , Torch.Indef.Static.Tensor.ScatterGather
+    , Torch.Indef.Static.Tensor.Sort
     , Torch.Indef.Static.Tensor.TopK
-    -- , Torch.Indef.Static.Tensor.Random
+
 

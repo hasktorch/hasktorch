@@ -21,7 +21,7 @@ flag cuda
 library
   hs-source-dirs: src
   default-language: Haskell2010
-  default-extensions: LambdaCase
+  default-extensions: LambdaCase, DataKinds, TypeFamilies
   build-depends:
       base >=4.7 && <5
     , containers
@@ -49,24 +49,21 @@ library
 
 
   exposed-modules:
+    -- support modules
+
       Torch.Core.Exceptions
     -- , Torch.Core.Random
     -- , Torch.Core.LogAdd
+
+    -- CPU modules
+    , Torch
     , Torch.Storage
+    , Torch.Dynamic
 
-    -- , Torch.Core.Tensor.Dynamic
-    -- , Torch.Core.Tensor.Dynamic.Copy
-    -- , Torch.Core.Tensor.Dynamic.Conv
-    -- , Torch.Core.Tensor.Dynamic.Random
-    -- , Torch.Core.Tensor.Dynamic.Math
-    -- , Torch.Core.Tensor.Dynamic.Math.Signed
-
-    -- -- Torch.Core.Tensor.Static includes derived Conv and Copy instances
-    -- , Torch.Core.Tensor.Static
-    -- , Torch.Core.Tensor.Static.Random
-    -- , Torch.Core.Tensor.Static.Math
-    -- , Torch.Core.Tensor.Static.Math.Infix
-    -- , Torch.Core.Tensor.Static.Math.Unsafe
+    -- CPU modules
+    , Torch.Cuda
+    , Torch.Cuda.Storage
+    , Torch.Cuda.Dynamic
 
   other-modules:
       Torch.Internal
@@ -76,17 +73,25 @@ library
 
     , Torch.Byte.Storage
     , Torch.Byte.Dynamic
+    , Torch.Byte.Static
 
     , Torch.Char.Storage
     , Torch.Char.Dynamic
+    , Torch.Char.Static
 
     , Torch.Cuda.Byte.Storage
     , Torch.Cuda.Byte.Dynamic
+    , Torch.Cuda.Byte.Static
+
+    , Torch.Cuda.Char.Storage
+    , Torch.Cuda.Char.Dynamic
+    , Torch.Cuda.Char.Static
 
   mixins:
       hasktorch-indef-unsigned
         (Torch.Indef.Storage              as Torch.Byte.Storage
         ,Torch.Indef.Dynamic              as Torch.Byte.Dynamic
+        ,Torch.Indef.Static               as Torch.Byte.Static
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -119,6 +124,7 @@ library
     , hasktorch-indef-unsigned
         (Torch.Indef.Storage              as Torch.Char.Storage
         ,Torch.Indef.Dynamic              as Torch.Char.Dynamic
+        ,Torch.Indef.Static               as Torch.Char.Static
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -151,6 +157,7 @@ library
        hasktorch-indef-unsigned
         (Torch.Indef.Storage              as Torch.Cuda.Byte.Storage
         ,Torch.Indef.Dynamic              as Torch.Cuda.Byte.Dynamic
+        ,Torch.Indef.Static               as Torch.Cuda.Byte.Static
         )
         requires
         (Torch.Sig.Types.Global      as Torch.Types.THC
@@ -181,6 +188,7 @@ library
      , hasktorch-indef-unsigned
         (Torch.Indef.Storage              as Torch.Cuda.Char.Storage
         ,Torch.Indef.Dynamic              as Torch.Cuda.Char.Dynamic
+        ,Torch.Indef.Static               as Torch.Cuda.Char.Static
         )
         requires
         (Torch.Sig.Types.Global      as Torch.Types.THC

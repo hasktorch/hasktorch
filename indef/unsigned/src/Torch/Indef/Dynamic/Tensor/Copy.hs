@@ -1,6 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Torch.Indef.Dynamic.Tensor.Copy where
+module Torch.Indef.Dynamic.Tensor.Copy () where
 
 import Foreign
 import Foreign.C.Types

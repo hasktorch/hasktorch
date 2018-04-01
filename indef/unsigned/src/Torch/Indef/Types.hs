@@ -9,6 +9,8 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RankNTypes #-}
 module Torch.Indef.Types
   ( module X
   , module Sig
@@ -38,11 +40,13 @@ import qualified Foreign.Marshal.Array as FM
 import Control.Monad.IO.Class as X
 import Control.Monad.Reader.Class as X
 import Torch.Types.TH as X (C'THState)
+import GHC.TypeLits
 
 import Torch.Sig.State as Sig
 import Torch.Sig.Types as Sig
 import Torch.Sig.Types.Global as Sig
 
+import Torch.Class.Types as X (Step(..), Stride(..), StorageOffset(..), Size(..), KeepDim(..), fromKeepDim, SortOrder(..))
 import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as LongStorage
 import qualified Torch.FFI.TH.Long.Tensor as LongTensor
@@ -174,9 +178,9 @@ type instance Class.HsAccReal    Sig.Storage = Sig.HsAccReal
 
 type instance Class.AsDynamic    Sig.Dynamic = Sig.Dynamic
 type instance Class.HsStorage    Sig.Dynamic = Sig.Storage
-type instance Class.IndexTensor  Sig.Dynamic = Sig.IndexDynamic
+type instance Class.MaskDynamic Sig.Dynamic = Sig.MaskDynamic
+type instance Class.IndexDynamic Sig.Dynamic = Sig.IndexDynamic
 type instance Class.IndexStorage Sig.Dynamic = Sig.IndexStorage
-type instance Class.MaskTensor   Sig.Dynamic = Sig.MaskDynamic
 type instance Class.StridesStorage Sig.Dynamic = TH.IndexStorage
 type instance Class.SizesStorage   Sig.Dynamic = TH.IndexStorage
 
@@ -194,9 +198,10 @@ type instance Class.HsAccReal    Sig.Dynamic = Sig.HsAccReal
 type instance Class.AsDynamic    (Sig.Tensor d) = Sig.Dynamic
 type instance Class.HsStorage    (Sig.Tensor d) = Sig.Storage
 
-type instance Class.IndexTensor  (Sig.Tensor d) = Sig.IndexDynamic
-type instance Class.IndexStorage (Sig.Tensor d) = Sig.IndexStorage
-type instance Class.MaskTensor   (Sig.Tensor d) = Sig.MaskDynamic
+type instance Class.IndexTensor  (Sig.Tensor d) n = Sig.IndexTensor n
+type instance Class.IndexStorage (Sig.Tensor d)   = Sig.IndexStorage
+type instance Class.MaskTensor   (Sig.Tensor d) n = Sig.MaskTensor n
+
 type instance Class.StridesStorage (Sig.Tensor d) = TH.IndexStorage
 type instance Class.SizesStorage   (Sig.Tensor d) = TH.IndexStorage
 

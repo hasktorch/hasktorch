@@ -1,40 +1,46 @@
 module Torch.Indef.Static.Tensor.Math.Compare where
 
-class TensorMathCompare t where
-  ltValue_ :: ByteTensor -> Tensor -> HsReal -> IO ()
-  ltValue_ bt t0 v = _withTensor t0 $ \t0' ->withForeignPtr (B.tensor bt) $ \bt' ->  Sig.c_ltValue bt' t0' (hs2cReal v)
+import Torch.Dimensions
+import qualified Torch.Class.Tensor.Math.Compare.Static as Class
+import qualified Torch.Class.Tensor.Math.Compare as Dynamic
 
-  leValue_ :: ByteTensor -> Tensor -> HsReal -> IO ()
-  leValue_ bt t0 v = _withTensor t0 $ \t0' ->withForeignPtr (B.tensor bt) $ \bt' ->  Sig.c_leValue bt' t0' (hs2cReal v)
+import Torch.Indef.Types
+import Torch.Indef.Dynamic.Tensor.Math.Compare ()
 
-  gtValue_ :: ByteTensor -> Tensor -> HsReal -> IO ()
-  gtValue_ bt t0 v = _withTensor t0 $ \t0' ->withForeignPtr (B.tensor bt) $ \bt' ->  Sig.c_gtValue bt' t0' (hs2cReal v)
+instance Class.TensorMathCompare Tensor d d where
+  ltValue_ :: ByteTensor d -> Tensor d -> HsReal -> IO ()
+  ltValue_ m t v = Dynamic.ltValue_ (byteAsDynamic m) (asDynamic t) v
 
-  geValue_ :: ByteTensor -> Tensor -> HsReal -> IO ()
-  geValue_ bt t0 v = _withTensor t0 $ \t0' ->withForeignPtr (B.tensor bt) $ \bt' ->  Sig.c_geValue bt' t0' (hs2cReal v)
+  leValue_ :: ByteTensor d -> Tensor d -> HsReal -> IO ()
+  leValue_ m t v = Dynamic.leValue_ (byteAsDynamic m) (asDynamic t) v
 
-  neValue_ :: ByteTensor -> Tensor -> HsReal -> IO ()
-  neValue_ bt t0 v = _withTensor t0 $ \t0' ->withForeignPtr (B.tensor bt) $ \bt' ->  Sig.c_neValue bt' t0' (hs2cReal v)
+  gtValue_ :: ByteTensor d -> Tensor d -> HsReal -> IO ()
+  gtValue_ m t v = Dynamic.gtValue_ (byteAsDynamic m) (asDynamic t) v
 
-  eqValue_ :: ByteTensor -> Tensor -> HsReal -> IO ()
-  eqValue_ bt t0 v = _withTensor t0 $ \t0' ->withForeignPtr (B.tensor bt) $ \bt' ->  Sig.c_eqValue bt' t0' (hs2cReal v)
+  geValue_ :: ByteTensor d -> Tensor d -> HsReal -> IO ()
+  geValue_ m t v = Dynamic.geValue_ (byteAsDynamic m) (asDynamic t) v
 
-  ltValueT_ :: Tensor -> Tensor -> HsReal -> IO ()
-  ltValueT_ = twoTensorsAndReal Sig.c_ltValueT
+  neValue_ :: ByteTensor d -> Tensor d -> HsReal -> IO ()
+  neValue_ m t v = Dynamic.neValue_ (byteAsDynamic m) (asDynamic t) v
 
-  leValueT_ :: Tensor -> Tensor -> HsReal -> IO ()
-  leValueT_ = twoTensorsAndReal Sig.c_leValueT
+  eqValue_ :: ByteTensor d -> Tensor d -> HsReal -> IO ()
+  eqValue_ m t v = Dynamic.eqValue_ (byteAsDynamic m) (asDynamic t) v
 
-  gtValueT_ :: Tensor -> Tensor -> HsReal -> IO ()
-  gtValueT_ = twoTensorsAndReal Sig.c_gtValueT
+  ltValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
+  ltValueT_ r t v = Dynamic.ltValueT_ (asDynamic r) (asDynamic t) v
 
-  geValueT_ :: Tensor -> Tensor -> HsReal -> IO ()
-  geValueT_ = twoTensorsAndReal Sig.c_geValueT
+  leValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
+  leValueT_ r t v = Dynamic.leValueT_ (asDynamic r) (asDynamic t) v
 
-  neValueT_ :: Tensor -> Tensor -> HsReal -> IO ()
-  neValueT_ = twoTensorsAndReal Sig.c_neValueT
+  gtValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
+  gtValueT_ r t v = Dynamic.gtValueT_ (asDynamic r) (asDynamic t) v
 
-  eqValueT_ :: Tensor -> Tensor -> HsReal -> IO ()
-  eqValueT_ = twoTensorsAndReal Sig.c_eqValueT
+  geValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
+  geValueT_ r t v = Dynamic.geValueT_ (asDynamic r) (asDynamic t) v
 
+  neValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
+  neValueT_ r t v = Dynamic.neValueT_ (asDynamic r) (asDynamic t) v
+
+  eqValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
+  eqValueT_ r t v = Dynamic.eqValueT_ (asDynamic r) (asDynamic t) v
 

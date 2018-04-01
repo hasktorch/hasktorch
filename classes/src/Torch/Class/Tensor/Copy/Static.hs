@@ -10,15 +10,15 @@ import Torch.Dimensions
 import qualified Torch.Types.THC as Cuda
 #endif
 
-class Dimensions d => TensorCopy t d where
-  copy       :: t d -> IO (t d)
-  copyByte   :: t d -> IO (ByteTensor d)
-  copyChar   :: t d -> IO (CharTensor d)
-  copyShort  :: t d -> IO (ShortTensor d)
-  copyInt    :: t d -> IO (IntTensor d)
-  copyLong   :: t d -> IO (LongTensor d)
-  copyDouble :: t d -> IO (DoubleTensor d)
-  copyFloat  :: t d -> IO (FloatTensor d)
+class TensorCopy t where
+  copy       :: Dimensions d => t d -> IO (t d)
+  copyByte   :: Dimensions d => t d -> IO (ByteTensor d)
+  copyChar   :: Dimensions d => t d -> IO (CharTensor d)
+  copyShort  :: Dimensions d => t d -> IO (ShortTensor d)
+  copyInt    :: Dimensions d => t d -> IO (IntTensor d)
+  copyLong   :: Dimensions d => t d -> IO (LongTensor d)
+  copyDouble :: Dimensions d => t d -> IO (DoubleTensor d)
+  copyFloat  :: Dimensions d => t d -> IO (FloatTensor d)
   -- FIXME: reintroduce Half
   -- copyHalf   :: t -> io H.Dynamic
 

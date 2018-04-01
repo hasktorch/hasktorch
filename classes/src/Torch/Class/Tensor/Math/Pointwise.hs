@@ -4,10 +4,11 @@ import Foreign
 import Foreign.C.Types
 import Torch.Types.TH
 import Torch.Class.Types
+import Torch.Dimensions
 
 class TensorMathPointwise t where
   sign_        :: t -> t -> IO ()
-  cross_       :: t -> t -> t -> Int -> IO ()
+  cross_       :: t -> t -> t -> DimVal -> IO ()
   clamp_       :: t -> t -> HsReal t -> HsReal t -> IO ()
   cadd_        :: t -> t -> HsReal t -> t -> IO ()
   csub_        :: t -> t -> HsReal t -> t -> IO ()

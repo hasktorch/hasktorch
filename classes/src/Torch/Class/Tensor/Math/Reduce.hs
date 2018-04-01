@@ -1,11 +1,13 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Class.Tensor.Math.Reduce where
 
-import Foreign
-import Foreign.C.Types
 import Torch.Class.Types
+import Torch.Class.Tensor
 import Data.Word
 import Data.Int
-import Torch.Types.TH hiding (IndexTensor)
+import Torch.Dimensions
+-- import Torch.Types.TH hiding (IndexDynamic)
 
 class TensorMathReduce t where
   minall       :: t -> IO (HsReal t)
@@ -13,11 +15,30 @@ class TensorMathReduce t where
   medianall    :: t -> IO (HsReal t)
   sumall       :: t -> IO (HsAccReal t)
   prodall      :: t -> IO (HsAccReal t)
-  max_         :: (t, IndexTensor t) -> t -> Int -> Int -> IO ()
-  min_         :: (t, IndexTensor t) -> t -> Int -> Int -> IO ()
-  median_      :: (t, IndexTensor t) -> t -> Int -> Int -> IO ()
-  sum_         :: t -> t -> Int -> Int -> IO ()
-  prod_        :: t -> t -> Int -> Int -> IO ()
+  max_         :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
+  min_         :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
+  median_      :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
+  sum_         :: t -> t -> DimVal -> Maybe KeepDim -> IO ()
+  prod_        :: t -> t -> DimVal -> Maybe KeepDim -> IO ()
+
+
+withKeepDim
+  :: (TensorMathReduce t, Tensor t, Tensor (IndexDynamic t))
+  => ((t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ())
+  -> t -> DimVal -> Maybe KeepDim -> IO (t, Maybe (IndexDynamic t))
+withKeepDim fn_ t d k = do
+  tdim <- getDims t
+  ret :: t              <- new' tdim
+  ix  :: IndexDynamic t <- new' tdim
+  fn_ (ret, ix) t d k
+  pure (ret, maybe (Just ix) (pure Nothing) k)
+
+max, min, median
+  :: (TensorMathReduce t, Tensor t, Tensor (IndexDynamic t))
+  => t -> DimVal -> Maybe KeepDim -> IO (t, Maybe (IndexDynamic t))
+max = withKeepDim max_
+min = withKeepDim min_
+median = withKeepDim median_
 
 {-
 class TensorMathReduceFloating t where

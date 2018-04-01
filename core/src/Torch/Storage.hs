@@ -11,6 +11,7 @@ module Torch.Storage
 import Torch.Types.TH
 
 import qualified Torch.Byte.Storage as X
+import qualified Torch.Char.Storage as X
 -- import qualified Torch.Core.ShortStorage as S
 -- import qualified Torch.Core.IntStorage as I
 -- import qualified Torch.Core.LongStorage as L

@@ -98,14 +98,14 @@ shape t = do
   ds <- nDimension t
   mapM (size t . fromIntegral) [0..ds-1]
 
-inplace :: Tensor t => (t -> IO ()) -> Dim (d::[Nat]) -> IO t
-inplace op d = new d >>= \r -> op r >> pure r
+withInplace :: Tensor t => (t -> IO ()) -> Dim (d::[Nat]) -> IO t
+withInplace op d = new d >>= \r -> op r >> pure r
 
-inplace' :: Tensor t => (t -> IO ()) -> SomeDims -> IO t
-inplace' op (SomeDims d) = inplace op d
+withInplace' :: Tensor t => (t -> IO ()) -> SomeDims -> IO t
+withInplace' op (SomeDims d) = withInplace op d
 
-inplace1 :: Tensor t => (t -> IO ()) -> t -> IO t
-inplace1 op t = getDims t >>= inplace' op
+withInplace1 :: Tensor t => (t -> IO ()) -> t -> IO t
+withInplace1 op t = getDims t >>= withInplace' op
 
 setStorageDim_ :: Tensor t => t -> HsStorage t -> StorageOffset -> [(Size, Stride)] -> IO ()
 setStorageDim_ t s o = \case
@@ -174,7 +174,7 @@ getDim t d = case dimVals d of
   [x, y, z, q] -> get4d t x y z q
   _            -> throwGT4 "get"
 
-getDims :: (Tensor t) => t -> IO SomeDims
+getDims :: Tensor t => t -> IO SomeDims
 getDims t = do
   nd <- nDimension t
   ds <- mapM (size t . fromIntegral) [0 .. nd -1]

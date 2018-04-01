@@ -1,4 +1,4 @@
-module Torch.Indef.Dynamic.Tensor.Index where
+module Torch.Indef.Dynamic.Tensor.Index () where
 
 import Torch.Sig.Types
 import qualified Torch.Sig.Types          as Sig
