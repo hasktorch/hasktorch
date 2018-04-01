@@ -4,7 +4,7 @@ import GHC.Int
 import Torch.Class.Types
 import qualified Torch.Types.TH.Int as Int
 
-class TensorLapack t where
+class TensorMathLapack t where
   gesv_      :: t -> t -> t -> t -> IO ()
   gels_      :: t -> t -> t -> t -> IO ()
   syev_      :: t -> t -> t -> [Int8] -> [Int8] -> IO ()
@@ -18,6 +18,7 @@ class TensorLapack t where
   geqrf_     :: t -> t -> t -> IO ()
   qr_        :: t -> t -> t -> IO ()
 
+{-
 class CPUTensorMathLapack t where
   trtrs_     :: t -> t -> t -> t -> [Int8] -> [Int8] -> [Int8] -> IO ()
   orgqr_     :: t -> t -> t -> IO ()
@@ -25,3 +26,4 @@ class CPUTensorMathLapack t where
   pstrf_     :: t -> Int.DynTensor -> t -> [Int8] -> HsReal t -> IO ()
   btrifact_  :: t -> Int.DynTensor -> Int.DynTensor -> Int32 -> t -> IO ()
   btrisolve_ :: t -> t -> t -> Int.DynTensor -> IO ()
+-}

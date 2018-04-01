@@ -17,41 +17,77 @@ source-repository head
 library
   default-language: Haskell2010
   hs-source-dirs: src
+  default-extensions:
+      InstanceSigs
+      TypeSynonymInstances
   build-depends:
       base >=4.7 && <5
     , hasktorch-indef-signed
-    -- I'm not actually sure we need this dependency...
-    , hasktorch-raw-th
-    , hasktorch-types-th
     , hasktorch-signatures-floating
     , hasktorch-classes
-
+    , hasktorch-dimensions
+    -- I'm not actually sure we need this dependency...
+    , hasktorch-types-th
   exposed-modules:
-      Torch.Indef.Tensor.Dynamic.Random.Floating
-    , Torch.Indef.Tensor.Dynamic.Math.Floating
-    , Torch.Indef.Tensor.Dynamic.Lapack
-    , Torch.Indef.Tensor.Static.Random.Floating
-    , Torch.Indef.Tensor.Static.Math.Floating
-    -- , Torch.Indef.Tensor.Static.Lapack
+      Torch.Indef.Dynamic
+
+    , Torch.Indef.Dynamic.Tensor.Math.Blas
+    , Torch.Indef.Dynamic.Tensor.Math.Lapack
+    , Torch.Indef.Dynamic.Tensor.Math.Floating
+    , Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating
+    , Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating
+
+    , Torch.Indef.Static
+
+    , Torch.Indef.Static.Tensor.Math.Blas
+    , Torch.Indef.Static.Tensor.Math.Lapack
+    , Torch.Indef.Static.Tensor.Math.Floating
+    , Torch.Indef.Static.Tensor.Math.Reduce.Floating
+    , Torch.Indef.Static.Tensor.Math.Pointwise.Floating
 
   reexported-modules:
       Torch.Indef.Types
-
     , Torch.Indef.Storage
     , Torch.Indef.Storage.Copy
 
-    , Torch.Indef.Tensor.Dynamic
-    , Torch.Indef.Tensor.Dynamic.IsTensor
-    , Torch.Indef.Tensor.Dynamic.Copy
-    , Torch.Indef.Tensor.Dynamic.Conv
-    , Torch.Indef.Tensor.Dynamic.Math
-    , Torch.Indef.Tensor.Dynamic.Math.Signed
-    , Torch.Indef.Tensor.Dynamic.Random
+    -- ==================================================== --
+    -- Dynamic Tensor modules
+    -- ==================================================== --
+    , Torch.Indef.Dynamic.Tensor
+    , Torch.Indef.Dynamic.Tensor.Copy
+    , Torch.Indef.Dynamic.Tensor.Index
+    , Torch.Indef.Dynamic.Tensor.Masked
+    , Torch.Indef.Dynamic.Tensor.Math
+    , Torch.Indef.Dynamic.Tensor.Math.Compare
+    , Torch.Indef.Dynamic.Tensor.Math.CompareT
+    , Torch.Indef.Dynamic.Tensor.Math.Pairwise
+    , Torch.Indef.Dynamic.Tensor.Math.Pointwise
+    , Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed
+    , Torch.Indef.Dynamic.Tensor.Math.Reduce
+    , Torch.Indef.Dynamic.Tensor.Math.Scan
+    , Torch.Indef.Dynamic.Tensor.Mode
+    , Torch.Indef.Dynamic.Tensor.ScatterGather
+    , Torch.Indef.Dynamic.Tensor.Sort
+    , Torch.Indef.Dynamic.Tensor.TopK
 
-    , Torch.Indef.Tensor.Static
-    , Torch.Indef.Tensor.Static.IsTensor
-    , Torch.Indef.Tensor.Static.Math.Signed
-    , Torch.Indef.Tensor.Static.Random
-    , Torch.Indef.Tensor.Static.Copy
+    -- ==================================================== --
+    -- Static Tensor modules
+    -- ==================================================== --
+    , Torch.Indef.Static.Tensor
+    , Torch.Indef.Static.Tensor.Copy
+    , Torch.Indef.Static.Tensor.Index
+    , Torch.Indef.Static.Tensor.Masked
+    , Torch.Indef.Static.Tensor.Math
+    , Torch.Indef.Static.Tensor.Math.Compare
+    , Torch.Indef.Static.Tensor.Math.CompareT
+    , Torch.Indef.Static.Tensor.Math.Pairwise
+    , Torch.Indef.Static.Tensor.Math.Pointwise
+    , Torch.Indef.Static.Tensor.Math.Pointwise.Signed
+    , Torch.Indef.Static.Tensor.Math.Reduce
+    , Torch.Indef.Static.Tensor.Math.Scan
+    , Torch.Indef.Static.Tensor.Mode
+    , Torch.Indef.Static.Tensor.ScatterGather
+    , Torch.Indef.Static.Tensor.Sort
+    , Torch.Indef.Static.Tensor.TopK
 
 

@@ -1,5 +1,6 @@
 module Torch.Class.Tensor.Math.Static where
 
+import GHC.Int
 import Torch.Dimensions
 import Torch.Class.Types
 import qualified Torch.Types.TH as TH (IndexStorage)
@@ -24,4 +25,7 @@ class TensorMath t where
   arange_      :: t d -> HsAccReal (t d) -> HsAccReal (t d) -> HsAccReal (t d) -> IO ()
   range_       :: t d -> HsAccReal (t d) -> HsAccReal (t d) -> HsAccReal (t d) -> IO ()
 
+class TensorMathFloating t where
+  linspace_ :: Dimensions d => t d -> HsReal (t d) -> HsReal (t d) -> Int64 -> IO ()
+  logspace_ :: Dimensions d => t d -> HsReal (t d) -> HsReal (t d) -> Int64 -> IO ()
 

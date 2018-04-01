@@ -53,19 +53,18 @@ colsum
   => t '[r, c] -> IO (t '[r, 1])
 colsum t = Torch.Class.Tensor.Math.Reduce.Static.sum t 0 (Just keep)
 
-{-
 class TensorMathReduceFloating t where
-  dist    :: t -> t -> HsReal t -> IO (HsAccReal t)
-  var     :: t -> t -> CInt -> CInt -> CInt -> IO ()
-  varall  :: t -> CInt -> IO (HsAccReal t)
-  std     :: t -> t -> CInt -> CInt -> CInt -> IO ()
-  stdall  :: t -> CInt -> IO (HsAccReal t)
-  renorm  :: t -> t -> HsReal t -> CInt -> HsReal t -> IO ()
-  norm    :: t -> t -> HsReal t -> CInt -> CInt -> IO ()
-  normall :: t -> HsReal t -> IO (HsAccReal t)
-  mean    :: t -> t -> CInt -> CInt -> IO ()
-  meanall :: t -> IO (HsAccReal t)
--}
+  var_    :: (Dimensions d, Dimensions d') => t d -> t d' -> Int -> Int -> Int -> IO ()
+  std_    :: (Dimensions d, Dimensions d') => t d -> t d' -> Int -> Int -> Int -> IO ()
+  renorm_ :: (Dimensions d, Dimensions d') => t d -> t d' -> HsReal (t d') -> Int -> HsReal (t d') -> IO ()
+  norm_   :: (Dimensions d, Dimensions d') => t d -> t d' -> HsReal (t d') -> Int -> Int -> IO ()
+  mean_   :: (Dimensions d, Dimensions d') => t d -> t d' -> Int -> Int -> IO ()
+
+  dist    :: (Dimensions d, Dimensions d') => t d -> t d' -> HsReal (t d') -> IO (HsAccReal (t d'))
+  varall  :: t d -> Int -> IO (HsAccReal (t d))
+  stdall  :: t d -> Int -> IO (HsAccReal (t d'))
+  normall :: t d -> HsReal (t d) -> IO (HsAccReal (t d))
+  meanall :: t d -> IO (HsAccReal (t d'))
 
 -- * not in THC.BYte
 -- c_renorm :: Ptr CState -> t -> t -> HsReal t -> CInt -> HsReal t -> IO ()

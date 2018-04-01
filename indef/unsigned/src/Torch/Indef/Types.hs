@@ -46,7 +46,7 @@ import Torch.Sig.State as Sig
 import Torch.Sig.Types as Sig
 import Torch.Sig.Types.Global as Sig
 
-import Torch.Class.Types as X (Step(..), Stride(..), StorageOffset(..), Size(..), KeepDim(..), fromKeepDim, SortOrder(..))
+import Torch.Class.Types as X (Dimensions4, Dimensions2, Step(..), Stride(..), StorageOffset(..), Size(..), KeepDim(..), fromKeepDim, SortOrder(..))
 import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as LongStorage
 import qualified Torch.FFI.TH.Long.Tensor as LongTensor

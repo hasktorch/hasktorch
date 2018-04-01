@@ -63,17 +63,6 @@ class TensorMathPointwiseFloating t where
   frac_         :: t -> t -> IO ()
   lerp_         :: t -> t -> t -> HsReal t -> IO ()
 
-  mean_         :: t -> t -> Int -> Int -> IO ()
-  std_          :: t -> t -> Int -> Int -> Int -> IO ()
-  var_          :: t -> t -> Int -> Int -> Int -> IO ()
-  norm_         :: t -> t -> HsReal t -> Int -> Int -> IO ()
-  renorm_       :: t -> t -> HsReal t -> Int -> HsReal t -> IO ()
-  dist          :: t -> t -> HsReal t -> IO (HsAccReal t)
-  meanall       :: t -> IO (HsAccReal t)
-  varall        :: t -> Int -> IO (HsAccReal t)
-  stdall        :: t -> Int -> IO (HsAccReal t)
-  normall       :: t -> HsReal t -> IO (HsAccReal t)
-
 class CPUTensorMathPointwiseFloating t where
   histc_        :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()
   bhistc_       :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()

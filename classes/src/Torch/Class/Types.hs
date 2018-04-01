@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Torch.Class.Types where
 
 import Foreign
@@ -21,6 +22,7 @@ import Control.Monad.Reader.Class (MonadReader)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Safe (MonadThrow)
 import GHC.TypeLits
+import Torch.Dimensions
 
 type family HsReal t
 type family HsAccReal t
@@ -40,6 +42,9 @@ type family SizesStorage t
 type family StridesStorage t
 
 impossible = error
+
+type (Dimensions2 d d') = (Dimensions d, Dimensions d')
+type (Dimensions4 d d' d'' d''') = (Dimensions2 d d', Dimensions2 d'' d''')
 
 -- Maybe better served as a newtype of Foreign.C.Types.CLLong
 newtype Stride = Stride Int64

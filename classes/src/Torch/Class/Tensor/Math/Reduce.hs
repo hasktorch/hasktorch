@@ -40,19 +40,18 @@ max = withKeepDim max_
 min = withKeepDim min_
 median = withKeepDim median_
 
-{-
 class TensorMathReduceFloating t where
-  dist    :: t -> t -> HsReal t -> IO (HsAccReal t)
-  var     :: t -> t -> CInt -> CInt -> CInt -> IO ()
-  varall  :: t -> CInt -> IO (HsAccReal t)
-  std     :: t -> t -> CInt -> CInt -> CInt -> IO ()
-  stdall  :: t -> CInt -> IO (HsAccReal t)
-  renorm  :: t -> t -> HsReal t -> CInt -> HsReal t -> IO ()
-  norm    :: t -> t -> HsReal t -> CInt -> CInt -> IO ()
-  normall :: t -> HsReal t -> IO (HsAccReal t)
-  mean    :: t -> t -> CInt -> CInt -> IO ()
-  meanall :: t -> IO (HsAccReal t)
--}
+  mean_         :: t -> t -> Int -> Int -> IO ()
+  std_          :: t -> t -> Int -> Int -> Int -> IO ()
+  var_          :: t -> t -> Int -> Int -> Int -> IO ()
+  norm_         :: t -> t -> HsReal t -> Int -> Int -> IO ()
+  renorm_       :: t -> t -> HsReal t -> Int -> HsReal t -> IO ()
+  dist          :: t -> t -> HsReal t -> IO (HsAccReal t)
+  meanall       :: t -> IO (HsAccReal t)
+  varall        :: t -> Int -> IO (HsAccReal t)
+  stdall        :: t -> Int -> IO (HsAccReal t)
+  normall       :: t -> HsReal t -> IO (HsAccReal t)
+
 
 -- * not in THC.BYte
 -- c_renorm :: Ptr CState -> t -> t -> HsReal t -> CInt -> HsReal t -> IO ()
