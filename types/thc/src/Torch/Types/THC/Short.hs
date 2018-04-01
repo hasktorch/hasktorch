@@ -29,19 +29,20 @@ c2hsReal = fromIntegral
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
-newtype Storage = Storage { storage :: ForeignPtr CStorage }
-  deriving (Eq, Show)
+type Storage = ShortStorage
+cstorage        = snd . shortStorageState
+storage         = shortStorage
+storageState    = shortStorageState
+storageStateRef = fst . shortStorageState
 
+type Dynamic    = ShortDynamic
+ctensor         = snd . shortDynamicState
+dynamic         = shortDynamic
+dynamicState    = shortDynamicState
+dynamicStateRef = fst . shortDynamicState
 
-newtype DynTensor = DynTensor { tensor :: ForeignPtr CTensor }
-  deriving (Show, Eq)
-
-
-newtype Tensor (ds :: [Nat]) = Tensor { dynamic :: DynTensor }
-  deriving (Show, Eq)
-
-asStorage = Storage
-asDyn = DynTensor
-asStatic = Tensor
+type Tensor = ShortTensor
+asDynamic = shortAsDynamic
+asStatic = shortAsStatic
 
 

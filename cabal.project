@@ -10,7 +10,7 @@ packages:
 
 
     signatures/unsigned/*cabal
-    -- signatures/signed/*cabal
+    signatures/signed/*cabal
     -- signatures/floating/*cabal
 
     dimensions/*cabal

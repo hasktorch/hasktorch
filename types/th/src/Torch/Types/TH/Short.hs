@@ -29,18 +29,19 @@ c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
 type Storage = ShortStorage
-cstorage        = fst . shortStorageState
-storage s t     = ShortStorage (s, t)
+cstorage        = snd . shortStorageState
+storage         = shortStorage
 storageState    = shortStorageState
-storageStateRef = snd . shortStorageState
+storageStateRef = fst . shortStorageState
 
 type Dynamic    = ShortDynamic
-ctensor         = fst . shortDynamicState
-dynamic s t     = ShortDynamic (s, t)
+ctensor         = snd . shortDynamicState
+dynamic         = shortDynamic
 dynamicState    = shortDynamicState
-dynamicStateRef = snd . shortDynamicState
+dynamicStateRef = fst . shortDynamicState
 
 type Tensor = ShortTensor
 asDynamic = shortAsDynamic
 asStatic = shortAsStatic
+
 

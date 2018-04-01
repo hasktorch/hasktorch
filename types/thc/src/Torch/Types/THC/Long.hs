@@ -28,19 +28,19 @@ c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
 type Storage = LongStorage
-cstorage        = fst . longStorageState
-storage s t     = LongStorage (s, t)
+cstorage        = snd . longStorageState
+storage         = longStorage
 storageState    = longStorageState
-storageStateRef = snd . longStorageState
+storageStateRef = fst . longStorageState
 
 type Dynamic    = LongDynamic
-ctensor         = fst . longDynamicState
-dynamic s t     = LongDynamic (s, t)
+ctensor         = snd . longDynamicState
+dynamic         = longDynamic
 dynamicState    = longDynamicState
-dynamicStateRef = snd . longDynamicState
+dynamicStateRef = fst . longDynamicState
 
-type Tensor = ByteTensor
-asDynamic = byteAsDynamic
-asStatic = byteAsStatic
+type Tensor = LongTensor
+asDynamic = longAsDynamic
+asStatic = longAsStatic
 
 
