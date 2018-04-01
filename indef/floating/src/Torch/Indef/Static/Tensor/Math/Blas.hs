@@ -1,4 +1,4 @@
-module Torch.Indef.Static.Tensor.Math.Blas where
+module Torch.Indef.Static.Tensor.Math.Blas () where
 
 import Torch.Dimensions
 import qualified Torch.Class.Tensor.Math.Blas as Dynamic

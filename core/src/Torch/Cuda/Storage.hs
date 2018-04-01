@@ -9,3 +9,4 @@ import qualified Torch.Cuda.Short.Storage as X
 import qualified Torch.Cuda.Int.Storage as X
 import qualified Torch.Cuda.Long.Storage as X
 
+import qualified Torch.Cuda.Double.Storage as X

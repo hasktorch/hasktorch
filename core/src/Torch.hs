@@ -10,4 +10,7 @@ import Torch.Short.Static as X
 import Torch.Int.Static   as X
 import Torch.Long.Static  as X
 
+import Torch.Float.Static  as X
+import Torch.Double.Static as X
+
 

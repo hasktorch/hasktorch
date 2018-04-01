@@ -10,4 +10,5 @@ import Torch.Cuda.Short.Static as X
 import Torch.Cuda.Int.Static   as X
 import Torch.Cuda.Long.Static  as X
 
+import Torch.Cuda.Double.Static as X
 

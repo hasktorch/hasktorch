@@ -7,4 +7,5 @@ import Torch.Cuda.Short.Dynamic as X
 import Torch.Cuda.Int.Dynamic   as X
 import Torch.Cuda.Long.Dynamic  as X
 
+import Torch.Cuda.Double.Dynamic  as X
 

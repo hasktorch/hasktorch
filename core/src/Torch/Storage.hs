@@ -9,4 +9,6 @@ import Torch.Short.Storage as X
 import Torch.Int.Storage as X
 import Torch.Long.Storage as X
 
+import Torch.Float.Storage as X
+import Torch.Double.Storage as X
 

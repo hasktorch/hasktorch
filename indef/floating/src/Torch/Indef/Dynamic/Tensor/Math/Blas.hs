@@ -1,4 +1,4 @@
-module Torch.Indef.Dynamic.Tensor.Math.Blas where
+module Torch.Indef.Dynamic.Tensor.Math.Blas () where
 
 import Foreign
 import GHC.Int
