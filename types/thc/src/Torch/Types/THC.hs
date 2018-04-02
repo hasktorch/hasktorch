@@ -8,6 +8,11 @@ module Torch.Types.THC
   , CDescBuff, DescBuff, descBuff
   , CGenerator, Generator(..)
 
+  -- for nn-packages
+  , CNNState
+  , CDim
+  , CNNGenerator
+
   , CInt'
   , CMaskTensor, CIndexTensor, CIndexStorage
   ,  MaskDynamic,  IndexDynamic,  MaskTensor, IndexTensor, IndexStorage
@@ -42,6 +47,11 @@ import GHC.TypeLits
 import Data.Char (chr)
 
 import Torch.Types.THC.Structs
+
+-- nn-package
+type CNNState = C'THCState
+type CDim = CInt
+type CNNGenerator = ()
 
 type CAllocator = ()
 type  Allocator = ()

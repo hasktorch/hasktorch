@@ -11,11 +11,6 @@ type CStorage = C'THCDoubleStorage
 -- TENSOR-LAPACK ONLY
 -- type CIntTensor = C'THCudaIntTensor
 
--- nn-package
-type CNNState = C'THCState
-type CDim = CInt
-type CNNGenerator = ()
-
 type CReal = CDouble
 type CAccReal = CDouble
 type HsReal = Double

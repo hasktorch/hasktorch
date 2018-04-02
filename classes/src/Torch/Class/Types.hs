@@ -44,7 +44,9 @@ type family StridesStorage t
 impossible = error
 
 type (Dimensions2 d d') = (Dimensions d, Dimensions d')
+type (Dimensions3 d d' d'' ) = (Dimensions2 d d', Dimensions d'')
 type (Dimensions4 d d' d'' d''') = (Dimensions2 d d', Dimensions2 d'' d''')
+type (Dimensions5 d d' d'' d''' d'''') = (Dimensions4 d d' d'' d''', Dimensions d'''')
 
 -- Maybe better served as a newtype of Foreign.C.Types.CLLong
 newtype Stride = Stride Int64

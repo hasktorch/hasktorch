@@ -7,5 +7,6 @@ import Torch.Indef.Static.Tensor.Math.Lapack as X
 import Torch.Indef.Static.Tensor.Math.Floating as X
 import Torch.Indef.Static.Tensor.Math.Reduce.Floating as X
 import Torch.Indef.Static.Tensor.Math.Pointwise.Floating as X
+import Torch.Indef.Static.NN as X
 
 

@@ -31,6 +31,7 @@ library
   exposed-modules:
       Torch.Indef.Dynamic
 
+    , Torch.Indef.Dynamic.NN
     , Torch.Indef.Dynamic.Tensor.Math.Blas
     , Torch.Indef.Dynamic.Tensor.Math.Lapack
     , Torch.Indef.Dynamic.Tensor.Math.Floating
@@ -39,6 +40,7 @@ library
 
     , Torch.Indef.Static
 
+    , Torch.Indef.Static.NN
     , Torch.Indef.Static.Tensor.Math.Blas
     , Torch.Indef.Static.Tensor.Math.Lapack
     , Torch.Indef.Static.Tensor.Math.Floating

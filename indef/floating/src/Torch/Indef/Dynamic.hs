@@ -7,5 +7,6 @@ import Torch.Indef.Dynamic.Tensor.Math.Lapack as X
 import Torch.Indef.Dynamic.Tensor.Math.Floating as X
 import Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating as X
 import Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating as X
+import Torch.Indef.Dynamic.NN as X
 
 

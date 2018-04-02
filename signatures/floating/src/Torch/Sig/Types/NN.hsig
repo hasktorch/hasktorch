@@ -1,5 +1,10 @@
 signature Torch.Sig.Types.NN where
 
-data CNNState
-data CDim
+import Torch.Sig.Types.Global
+
+type CNNState = CState
 data CNNGenerator
+
+data CDim
+instance Integral CDim
+instance Num CDim

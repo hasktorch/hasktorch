@@ -80,8 +80,8 @@ library
     , Torch.Class.Tensor.TopK.Static
 
     -- * Floating-only classes
-    -- , Torch.Class.NN
-
+    , Torch.Class.NN
+    , Torch.Class.NN.Static
     , Torch.Class.Tensor.Math.Blas
     , Torch.Class.Tensor.Math.Blas.Static
     , Torch.Class.Tensor.Math.Lapack

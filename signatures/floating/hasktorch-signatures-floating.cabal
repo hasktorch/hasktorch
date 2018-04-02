@@ -79,7 +79,7 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Float.TensorMath
 
         ,Torch.Sig.NN       as Torch.FFI.TH.NN.Float
-        ,Torch.Sig.Types.NN as Torch.Types.TH.Float
+        ,Torch.Sig.Types.NN as Torch.Types.TH
         )
     , hasktorch-signatures-floating
         requires
@@ -115,7 +115,7 @@ executable isdefinite-th
         ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Double.TensorMath
 
         ,Torch.Sig.NN       as Torch.FFI.TH.NN.Double
-        ,Torch.Sig.Types.NN as Torch.Types.TH.Double
+        ,Torch.Sig.Types.NN as Torch.Types.TH
         )
 
 executable isdefinite-thc
@@ -163,5 +163,5 @@ executable isdefinite-thc
         ,Torch.Sig.Tensor.Math.Reduce.Floating    as Torch.FFI.THC.Double.TensorMathReduce
 
         ,Torch.Sig.NN       as Torch.FFI.THC.NN.Double
-        ,Torch.Sig.Types.NN as Torch.Types.THC.Double
+        ,Torch.Sig.Types.NN as Torch.Types.THC
         )

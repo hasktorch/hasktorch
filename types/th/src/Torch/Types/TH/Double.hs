@@ -8,11 +8,6 @@ import Torch.Types.TH
 type CTensor = CDoubleTensor
 type CStorage = CDoubleStorage
 
--- for nn-package
-type CNNState = CState
-type CDim = CLLong
-type CNNGenerator = CGenerator
-
 type CReal = CDouble
 type CAccReal = CDouble
 type HsReal = Double

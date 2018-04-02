@@ -6,6 +6,11 @@ module Torch.Types.TH
   , CGenerator, Generator(..)
   , CDescBuff, DescBuff, descBuff
 
+  -- for nn-packages
+  , CNNState
+  , CDim
+  , CNNGenerator
+
   , CInt'
   , CMaskTensor, CIndexTensor, CIndexStorage
   ,  MaskDynamic,  IndexDynamic,  MaskTensor, IndexTensor, IndexStorage
@@ -67,6 +72,11 @@ newtype Allocator = Allocator { callocator :: ForeignPtr CAllocator }
 type CGenerator   = C'THGenerator
 newtype Generator = Generator { rng :: ForeignPtr CGenerator }
   deriving (Eq, Show)
+
+-- for nn-package
+type CNNState = CState
+type CDim = CLLong
+type CNNGenerator = CGenerator
 
 -- data CDoubleTensor
 type CInt' = CInt
