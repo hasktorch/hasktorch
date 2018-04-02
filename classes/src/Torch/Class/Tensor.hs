@@ -212,27 +212,27 @@ resizeAs src shape = do
   pure res
 
 -- | displaying raw tensor values
--- printTensor :: forall IO t . (Tensor io t, Show (HsReal t)) => t -> io ()
--- printTensor t = do
---   numDims <- nDimension t
---   sizes <- mapM (fmap fromIntegral . size t . fromIntegral) [0..numDims - 1]
---   liftIO $ case sizes of
---     []  -> putStrLn "Empty Tensor"
---     sz@[x] -> do
---       putStrLn ""
---       putStr "[ "
---       mapM_ (get1d t >=> putWithSpace) [ fromIntegral idx | idx <- [0..head sz - 1] ]
---       putStrLn "]\n"
---     sz@[x,y] -> do
---       putStrLn ""
---       let pairs = [ (fromIntegral r, fromIntegral c) | r <- [0..sz !! 0 - 1], c <- [0..sz !! 1 - 1] ]
---       putStr "[ "
---       forM_ pairs $ \(r, c) -> do
---         val <- get2d t r c
---         if c == fromIntegral (sz !! 1) - 1
---         then putStrLn (show val ++ " ]") >> putStr (if fromIntegral r < (sz !! 0) - 1 then "[ " else "")
---         else putWithSpace val
---     _ -> putStrLn "Can't print this yet."
---  where
---   putWithSpace :: (MonadIO io, Show a) => a -> io ()
---   putWithSpace v = liftIO $ putStr (show v ++ " ")
+printTensor :: forall io t . (Tensor t, Show (HsReal t)) => t -> IO ()
+printTensor t = do
+  numDims <- nDimension t
+  sizes <- mapM (fmap fromIntegral . size t . fromIntegral) [0..numDims - 1]
+  liftIO $ case sizes of
+    []  -> putStrLn "Empty Tensor"
+    sz@[x] -> do
+      putStrLn ""
+      putStr "[ "
+      mapM_ (get1d t >=> putWithSpace) [ fromIntegral idx | idx <- [0..head sz - 1] ]
+      putStrLn "]\n"
+    sz@[x,y] -> do
+      putStrLn ""
+      let pairs = [ (fromIntegral r, fromIntegral c) | r <- [0..sz !! 0 - 1], c <- [0..sz !! 1 - 1] ]
+      putStr "[ "
+      forM_ pairs $ \(r, c) -> do
+        val <- get2d t r c
+        if c == fromIntegral (sz !! 1) - 1
+        then putStrLn (show val ++ " ]") >> putStr (if fromIntegral r < (sz !! 0) - 1 then "[ " else "")
+        else putWithSpace val
+    _ -> putStrLn "Can't print this yet."
+ where
+  putWithSpace :: (Show a) => a -> IO ()
+  putWithSpace v = liftIO $ putStr (show v ++ " ")

@@ -4,18 +4,19 @@ module Main where
 
 import Control.Monad (void)
 
-import qualified Torch.Core.Random as RNG (new)
-import Torch.Core.Tensor.Static
-import Torch.Core.Tensor.Static.Math as Math
-import Torch.Core.Tensor.Static.Math.Infix
-import Torch.Core.Tensor.Static.Random
+-- import qualified Torch.Core.Random as RNG (new)
+import Torch
+import qualified Torch as Math
+-- import Torch.Core.Tensor.Static.Math as Math
+-- import Torch.Core.Tensor.Static.Math.Infix
+-- import Torch.Core.Tensor.Static.Random
 
 main :: IO ()
 main = do
   h1 "Example Usage of Typed Tensors"
   initialization
-  matrixVectorOps
-  valueTransformations
+  -- matrixVectorOps
+  -- valueTransformations
 
 initialization :: IO ()
 initialization = void $ do
@@ -41,62 +42,62 @@ initialization = void $ do
     listVec2 :: DoubleTensor '[3, 2] <- fromList [1, 2, 3, 4, 5, 6]
     pure listVec2
 
-  section "Random values" $ do
-    gen <- RNG.new
-    randMat :: DoubleTensor '[4, 4] <- uniform gen 1 2
-    pure randMat
+  -- section "Random values" $ do
+    -- gen <- RNG.new
+    -- randMat :: DoubleTensor '[4, 4] <- uniform gen 1 2
+    -- pure randMat
 
 matrixVectorOps :: IO ()
 matrixVectorOps = void $ do
   h2 "Matrix/vector operations"
-  gen <- RNG.new
+--   gen <- RNG.new
 
-  randMat :: DoubleTensor '[2, 2] <-
-    section' "Random matrix" $
-      uniform gen (-1) 1
+--   randMat :: DoubleTensor '[2, 2] <-
+--     section' "Random matrix" $
+--       uniform gen (-1) 1
 
   constVec :: DoubleTensor '[2] <-
     section' "Constant vector" $
       constant 2
 
-  section "Matrix x vector" $
-    pure $ randMat !* constVec
+--   section "Matrix x vector" $
+--     pure $ randMat !* constVec
 
   section "Vector outer product" $
     constVec `outer` constVec
 
-  showSection "Vector dot product" $
-    pure $ constVec <.> constVec
+--   showSection "Vector dot product" $
+--     pure $ constVec <.> constVec
 
-  showSection "Matrix trace" $
-    trace randMat
+--   showSection "Matrix trace" $
+--     trace randMat
 
 
-valueTransformations :: IO ()
-valueTransformations = void $ do
-  h2 "Batch tensor value transformations"
+-- valueTransformations :: IO ()
+-- valueTransformations = void $ do
+--   h2 "Batch tensor value transformations"
 
-  gen <- RNG.new
+--   gen <- RNG.new
 
-  randMat :: DoubleTensor '[4, 4] <-
-    section' "Random matrix" $ do
-      uniform gen (1.0) (3.0)
+--   randMat :: DoubleTensor '[4, 4] <-
+--     section' "Random matrix" $ do
+--       uniform gen (1.0) (3.0)
 
-  section "Negated" $
-    neg randMat
+--   section "Negated" $
+--     neg randMat
 
-  section "Sigmoid" $ do
-    sig :: DoubleTensor '[4, 4] <- Math.sigmoid randMat
-    pure sig
+--   section "Sigmoid" $ do
+--     sig :: DoubleTensor '[4, 4] <- Math.sigmoid randMat
+--     pure sig
 
-  section "Tanh" $
-    Math.tanh randMat
+--   section "Tanh" $
+--     Math.tanh randMat
 
-  section "Log" $
-    Math.log randMat
+--   section "Log" $
+--     Math.log randMat
 
-  section "Round" $
-    Math.round randMat
+--   section "Round" $
+--     Math.round randMat
 
 -- ========================================================================= --
 -- helpers
@@ -114,10 +115,10 @@ header c h = do
   putStrLn h
   putStrLn $ replicate (length h) c
 
-section :: String -> IO (DoubleTensor d) -> IO ()
+section :: Dimensions d => String -> IO (DoubleTensor d) -> IO ()
 section a b = _section printTensor a b >> pure ()
 
-section' :: String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
+section' :: Dimensions d => String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
 section' = _section printTensor
 
 showSection :: Show x => String -> IO x -> IO ()

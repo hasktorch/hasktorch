@@ -17,7 +17,7 @@ blasOp fn r a x b y z = fn (asDynamic r) a (asDynamic x) b (asDynamic y) (asDyna
 instance Class.TensorMathBlas Tensor where
   addmv_  = blasOp Dynamic.addmv_
   addmm_  = blasOp Dynamic.addmm_
-  addr_   = blasOp Dynamic.addr_
+  addr_ r a x b y z = Dynamic.addr_ (asDynamic r) a (asDynamic x) b (asDynamic y) (asDynamic z)
   addbmm_ = blasOp Dynamic.addbmm_
   baddbmm_ = blasOp Dynamic.baddbmm_
   dot a b = Dynamic.dot (asDynamic a) (asDynamic b)

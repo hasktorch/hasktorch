@@ -1,13 +1,13 @@
 {-# LANGUAGE DataKinds #-}
 module Torch.Class.Tensor.Math where
 
-import Foreign
+import Foreign hiding (new)
 import Foreign.C.Types
 import GHC.TypeLits (Nat)
 import Torch.Dimensions
 import Torch.Class.Types
 import GHC.Int
-import Torch.Class.Tensor (Tensor(empty)) -- , inplace, inplace1)
+import Torch.Class.Tensor (Tensor(empty), withInplace1, new) -- , inplace, inplace1)
 import qualified Torch.Types.TH as TH
 
 class TensorMath t where
@@ -38,6 +38,10 @@ class CPUTensorMath t where
 class TensorMathFloating t where
   linspace_     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
   logspace_     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
+
+constant :: (TensorMath t, Tensor t) => HsReal t -> Dim (d :: [Nat]) -> IO t
+constant v d = new d >>= withInplace1 (`fill_` v)
+
 
 {-
 constant :: (IsTensor t, TensorMath t) => Dim (d::[Nat]) -> HsReal t -> IO t

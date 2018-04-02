@@ -13,6 +13,7 @@ import Data.Singletons
 import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List
 import Data.Singletons.Prelude.Num
+import Control.Monad
 
 import Torch.Dimensions
 
@@ -196,10 +197,10 @@ resizeDim_ t = case dimVals d of
   -- ds              -> resizeNd_ t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
--- Is this right? why are there three tensors
-resizeAs :: forall t d d' . (Dimensions d, Dimensions d', Tensor t) => t d -> t d' -> IO (t d')
-resizeAs src shape = do
+resizeAs :: forall t d d' . (Dimensions d, Dimensions d', Tensor t) => t d -> IO (t d')
+resizeAs src = do
   res <- newClone src
+  shape <- new
   resizeAs_ res shape
 
 newIx :: forall t d d'
@@ -273,3 +274,27 @@ setElem2d t r c v
       = throwString "Indices out of bounds"
   | otherwise = set2d_ t (fromIntegral r) (fromIntegral c) v
 
+
+-- | displaying raw tensor values
+printTensor :: forall t d . (Dimensions d, Tensor t, Show (HsReal (t d))) => t d -> IO ()
+printTensor t = do
+  case dimVals (dim :: Dim d) of
+    []  -> putStrLn "Empty Tensor"
+    sz@[x] -> do
+      putStrLn ""
+      putStr "[ "
+      mapM_ (get1d t >=> putWithSpace) [ fromIntegral idx | idx <- [0..head sz - 1] ]
+      putStrLn "]\n"
+    sz@[x,y] -> do
+      putStrLn ""
+      let pairs = [ (fromIntegral r, fromIntegral c) | r <- [0..sz !! 0 - 1], c <- [0..sz !! 1 - 1] ]
+      putStr "[ "
+      forM_ pairs $ \(r, c) -> do
+        val <- get2d t r c
+        if c == fromIntegral (sz !! 1) - 1
+        then putStrLn (show val ++ " ]") >> putStr (if fromIntegral r < (sz !! 0) - 1 then "[ " else "")
+        else putWithSpace val
+    _ -> putStrLn "Can't print this yet."
+ where
+  putWithSpace :: (Show a) => a -> IO ()
+  putWithSpace v = putStr (show v ++ " ")

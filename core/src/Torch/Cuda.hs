@@ -1,5 +1,6 @@
 module Torch.Cuda (module X) where
 
+import Torch.Dimensions as X
 import Torch.Types.THC as X
 import Torch.Cuda.Storage as X
 
