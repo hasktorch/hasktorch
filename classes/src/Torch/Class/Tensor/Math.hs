@@ -7,7 +7,7 @@ import GHC.TypeLits (Nat)
 import Torch.Dimensions
 import Torch.Class.Types
 import GHC.Int
-import Torch.Class.Tensor (Tensor(empty), withInplace1, new) -- , inplace, inplace1)
+import Torch.Class.Tensor (Tensor(empty), withInplace1, new) -- , withInplace, inplace1)
 import qualified Torch.Types.TH as TH
 
 class TensorMath t where
@@ -39,103 +39,113 @@ class TensorMathFloating t where
   linspace_     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
   logspace_     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
 
-constant :: (TensorMath t, Tensor t) => HsReal t -> Dim (d :: [Nat]) -> IO t
-constant v d = new d >>= withInplace1 (`fill_` v)
+constant :: (TensorMath t, Tensor t) => Dim (d :: [Nat]) -> HsReal t -> IO t
+constant d v = new d >>= withInplace1 (`fill_` v)
+
+_tenLike
+  :: (Tensor t, TensorMath t)
+  => (t -> t -> IO ())
+  -> Dim (d::[Nat]) -> IO t
+_tenLike fn_ d = do
+  src <- new d
+  shape <- new d
+  fn_ src shape
+  pure src
+
+onesLike, zerosLike
+  :: (Tensor t, TensorMath t)
+  => Dim (d::[Nat]) -> IO t
+onesLike = _tenLike onesLike_
+zerosLike = _tenLike zerosLike_
 
 
 {-
-constant :: (IsTensor t, TensorMath t) => Dim (d::[Nat]) -> HsReal t -> IO t
-constant d v = inplace (`fill_` v) d
+add :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+add t x = flip withInplace1 t $ \r -> add_ r t x
 
-zero :: (IsTensor t, TensorMath t) => Dim (d::[Nat]) -> IO t
-zero d = inplace zero_ d
+sub :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+sub t x = flip withInplace1 t $ \r -> sub_ r t x
 
-add :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-add t x = flip inplace1 t $ \r -> add_ r t x
+add_scaled  :: (Tensor t, TensorMath t) => t -> HsReal t -> HsReal t -> IO t
+add_scaled t x y = flip withInplace1 t $ \r -> add_scaled_ r t x y
 
-sub :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-sub t x = flip inplace1 t $ \r -> sub_ r t x
+sub_scaled  :: (Tensor t, TensorMath t) => t -> HsReal t -> HsReal t -> IO t
+sub_scaled t x y = flip withInplace1 t $ \r -> sub_scaled_ r t x y
 
-add_scaled  :: (IsTensor t, TensorMath t) => t -> HsReal t -> HsReal t -> IO t
-add_scaled t x y = flip inplace1 t $ \r -> add_scaled_ r t x y
+mul :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+mul t x = flip withInplace1 t $ \r -> mul_ r t x
 
-sub_scaled  :: (IsTensor t, TensorMath t) => t -> HsReal t -> HsReal t -> IO t
-sub_scaled t x y = flip inplace1 t $ \r -> sub_scaled_ r t x y
+div :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+div t x = flip withInplace1 t $ \r -> div_ r t x
 
-mul :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-mul t x = flip inplace1 t $ \r -> mul_ r t x
+lshift :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+lshift t x = flip withInplace1 t $ \r -> lshift_ r t x
 
-div :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-div t x = flip inplace1 t $ \r -> div_ r t x
+rshift :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+rshift t x = flip withInplace1 t $ \r -> rshift_ r t x
 
-lshift :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-lshift t x = flip inplace1 t $ \r -> lshift_ r t x
+fmod :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+fmod t x = flip withInplace1 t $ \r -> fmod_ r t x
 
-rshift :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-rshift t x = flip inplace1 t $ \r -> rshift_ r t x
+remainder :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+remainder t x = flip withInplace1 t $ \r -> remainder_ r t x
 
-fmod :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-fmod t x = flip inplace1 t $ \r -> fmod_ r t x
+clamp :: (Tensor t, TensorMath t) => t -> HsReal t -> HsReal t -> IO t
+clamp t x y = flip withInplace1 t $ \r -> clamp_ r t x y
 
-remainder :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-remainder t x = flip inplace1 t $ \r -> remainder_ r t x
+bitand :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+bitand t x = flip withInplace1 t $ \r -> bitand_ r t x
 
-clamp :: (IsTensor t, TensorMath t) => t -> HsReal t -> HsReal t -> IO t
-clamp t x y = flip inplace1 t $ \r -> clamp_ r t x y
+bitor :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+bitor t x = flip withInplace1 t $ \r -> bitor_ r t x
 
-bitand :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-bitand t x = flip inplace1 t $ \r -> bitand_ r t x
+bitxor :: (Tensor t, TensorMath t) => t -> HsReal t -> IO t
+bitxor t x = flip withInplace1 t $ \r -> bitxor_ r t x
 
-bitor :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-bitor t x = flip inplace1 t $ \r -> bitor_ r t x
+cadd :: (Tensor t, TensorMath t) => t -> HsReal t -> t -> IO t
+cadd t v x = flip withInplace1 t $ \r -> cadd_ r t v x
 
-bitxor :: (IsTensor t, TensorMath t) => t -> HsReal t -> IO t
-bitxor t x = flip inplace1 t $ \r -> bitxor_ r t x
+csub :: (Tensor t, TensorMath t) => t -> HsReal t -> t -> IO t
+csub t v x = flip withInplace1 t $ \r -> csub_ r t v x
 
-cadd :: (IsTensor t, TensorMath t) => t -> HsReal t -> t -> IO t
-cadd t v x = flip inplace1 t $ \r -> cadd_ r t v x
+cmul :: (Tensor t, TensorMath t) => t -> t -> IO t
+cmul t x = flip withInplace1 t $ \r -> cmul_ r t x
 
-csub :: (IsTensor t, TensorMath t) => t -> HsReal t -> t -> IO t
-csub t v x = flip inplace1 t $ \r -> csub_ r t v x
+cpow :: (Tensor t, TensorMath t) => t -> t -> IO t
+cpow t x = flip withInplace1 t $ \r -> cpow_ r t x
 
-cmul :: (IsTensor t, TensorMath t) => t -> t -> IO t
-cmul t x = flip inplace1 t $ \r -> cmul_ r t x
+cdiv :: (Tensor t, TensorMath t) => t -> t -> IO t
+cdiv t x = flip withInplace1 t $ \r -> cdiv_ r t x
 
-cpow :: (IsTensor t, TensorMath t) => t -> t -> IO t
-cpow t x = flip inplace1 t $ \r -> cpow_ r t x
+clshift :: (Tensor t, TensorMath t) => t -> t -> IO t
+clshift t x = flip withInplace1 t $ \r -> clshift_ r t x
 
-cdiv :: (IsTensor t, TensorMath t) => t -> t -> IO t
-cdiv t x = flip inplace1 t $ \r -> cdiv_ r t x
+crshift :: (Tensor t, TensorMath t) => t -> t -> IO t
+crshift t x = flip withInplace1 t $ \r -> crshift_ r t x
 
-clshift :: (IsTensor t, TensorMath t) => t -> t -> IO t
-clshift t x = flip inplace1 t $ \r -> clshift_ r t x
+cfmod :: (Tensor t, TensorMath t) => t -> t -> IO t
+cfmod t x = flip withInplace1 t $ \r -> cfmod_ r t x
 
-crshift :: (IsTensor t, TensorMath t) => t -> t -> IO t
-crshift t x = flip inplace1 t $ \r -> crshift_ r t x
+cremainder :: (Tensor t, TensorMath t) => t -> t -> IO t
+cremainder t x = flip withInplace1 t $ \r -> cremainder_ r t x
 
-cfmod :: (IsTensor t, TensorMath t) => t -> t -> IO t
-cfmod t x = flip inplace1 t $ \r -> cfmod_ r t x
+cbitand :: (Tensor t, TensorMath t) => t -> t -> IO t
+cbitand t x = flip withInplace1 t $ \r -> cbitand_ r t x
 
-cremainder :: (IsTensor t, TensorMath t) => t -> t -> IO t
-cremainder t x = flip inplace1 t $ \r -> cremainder_ r t x
+cbitor :: (Tensor t, TensorMath t) => t -> t -> IO t
+cbitor t x = flip withInplace1 t $ \r -> cbitor_ r t x
 
-cbitand :: (IsTensor t, TensorMath t) => t -> t -> IO t
-cbitand t x = flip inplace1 t $ \r -> cbitand_ r t x
-
-cbitor :: (IsTensor t, TensorMath t) => t -> t -> IO t
-cbitor t x = flip inplace1 t $ \r -> cbitor_ r t x
-
-cbitxor :: (IsTensor t, TensorMath t) => t -> t -> IO t
-cbitxor t x = flip inplace1 t $ \r -> cbitxor_ r t x
+cbitxor :: (Tensor t, TensorMath t) => t -> t -> IO t
+cbitxor t x = flip withInplace1 t $ \r -> cbitxor_ r t x
 
 -- addcmul_     :: t -> t -> HsReal t -> t -> t -> IO ()
 -- addcdiv_     :: t -> t -> HsReal t -> t -> t -> IO ()
 
-addmv :: (IsTensor t, TensorMath t) => HsReal t -> t -> HsReal t -> t -> t -> IO t
-addmv m0 m v0 v x = flip inplace1 x $ \r -> addmv_ r m0 m v0 v x
+addmv :: (Tensor t, TensorMath t) => HsReal t -> t -> HsReal t -> t -> t -> IO t
+addmv m0 m v0 v x = flip withInplace1 x $ \r -> addmv_ r m0 m v0 v x
 
-addmm :: (IsTensor t, TensorMath t) => HsReal t -> t -> HsReal t -> t -> t -> IO t
-addmm m0 m v0 v x = flip inplace1 x $ \r -> addmv_ r m0 m v0 v x
+addmm :: (Tensor t, TensorMath t) => HsReal t -> t -> HsReal t -> t -> t -> IO t
+addmm m0 m v0 v x = flip withInplace1 x $ \r -> addmv_ r m0 m v0 v x
 
 --  addr_        :: t -> HsReal t -> t -> HsReal t -> t -> t -> IO ()
 --  addbmm_      :: t -> HsReal t -> t -> HsReal t -> t -> t -> IO ()
@@ -194,127 +204,127 @@ addmm m0 m v0 v x = flip inplace1 x $ \r -> addmv_ r m0 m v0 v x
 -- neTensor_   :: t -> t -> IO MaskTensor t
 -- eqTensor_   :: t -> t -> IO MaskTensor t
 
-ltTensorT :: (IsTensor t, TensorMath t) => t -> t -> IO t
-ltTensorT t x = flip inplace1 t $ \r -> ltTensorT_ r t x
-leTensorT :: (IsTensor t, TensorMath t) => t -> t -> IO t
-leTensorT t x = flip inplace1 t $ \r -> leTensorT_ r t x
-gtTensorT :: (IsTensor t, TensorMath t) => t -> t -> IO t
-gtTensorT t x = flip inplace1 t $ \r -> gtTensorT_ r t x
-geTensorT :: (IsTensor t, TensorMath t) => t -> t -> IO t
-geTensorT t x = flip inplace1 t $ \r -> geTensorT_ r t x
-neTensorT :: (IsTensor t, TensorMath t) => t -> t -> IO t
-neTensorT t x = flip inplace1 t $ \r -> neTensorT_ r t x
-eqTensorT :: (IsTensor t, TensorMath t) => t -> t -> IO t
-eqTensorT t x = flip inplace1 t $ \r -> eqTensorT_ r t x
+ltTensorT :: (Tensor t, TensorMath t) => t -> t -> IO t
+ltTensorT t x = flip withInplace1 t $ \r -> ltTensorT_ r t x
+leTensorT :: (Tensor t, TensorMath t) => t -> t -> IO t
+leTensorT t x = flip withInplace1 t $ \r -> leTensorT_ r t x
+gtTensorT :: (Tensor t, TensorMath t) => t -> t -> IO t
+gtTensorT t x = flip withInplace1 t $ \r -> gtTensorT_ r t x
+geTensorT :: (Tensor t, TensorMath t) => t -> t -> IO t
+geTensorT t x = flip withInplace1 t $ \r -> geTensorT_ r t x
+neTensorT :: (Tensor t, TensorMath t) => t -> t -> IO t
+neTensorT t x = flip withInplace1 t $ \r -> neTensorT_ r t x
+eqTensorT :: (Tensor t, TensorMath t) => t -> t -> IO t
+eqTensorT t x = flip withInplace1 t $ \r -> eqTensorT_ r t x
 
-neg :: (IsTensor t, TensorMathSigned t) => t -> IO t
-neg t = inplace1 (`neg_` t) t
+neg :: (Tensor t, TensorMathSigned t) => t -> IO t
+neg t = withInplace1 (`neg_` t) t
 
-abs :: (IsTensor t, TensorMathSigned t) => t -> IO t
-abs t = inplace1 (`abs_` t) t
+abs :: (Tensor t, TensorMathSigned t) => t -> IO t
+abs t = withInplace1 (`abs_` t) t
 
 class TensorMathSigned t where
   neg_         :: t -> t -> IO ()
   abs_         :: t -> t -> IO ()
 
-cinv :: (TensorMathFloating t, IsTensor t) => t -> IO t
-cinv t = flip inplace1 t $ \r -> cinv_ r t
+cinv :: (TensorMathFloating t, Tensor t) => t -> IO t
+cinv t = flip withInplace1 t $ \r -> cinv_ r t
 
-sigmoid :: (TensorMathFloating t, IsTensor t) => t -> IO t
-sigmoid t = flip inplace1 t $ \r -> sigmoid_ r t
+sigmoid :: (TensorMathFloating t, Tensor t) => t -> IO t
+sigmoid t = flip withInplace1 t $ \r -> sigmoid_ r t
 
-log :: (TensorMathFloating t, IsTensor t) => t -> IO t
-log t = flip inplace1 t $ \r -> log_ r t
+log :: (TensorMathFloating t, Tensor t) => t -> IO t
+log t = flip withInplace1 t $ \r -> log_ r t
 
-lgamma :: (TensorMathFloating t, IsTensor t) => t -> IO t
-lgamma t = flip inplace1 t $ \r -> lgamma_ r t
+lgamma :: (TensorMathFloating t, Tensor t) => t -> IO t
+lgamma t = flip withInplace1 t $ \r -> lgamma_ r t
 
-log1p :: (TensorMathFloating t, IsTensor t) => t -> IO t
-log1p t = flip inplace1 t $ \r -> log1p_ r t
+log1p :: (TensorMathFloating t, Tensor t) => t -> IO t
+log1p t = flip withInplace1 t $ \r -> log1p_ r t
 
-exp :: (TensorMathFloating t, IsTensor t) => t -> IO t
-exp t = flip inplace1 t $ \r -> exp_ r t
+exp :: (TensorMathFloating t, Tensor t) => t -> IO t
+exp t = flip withInplace1 t $ \r -> exp_ r t
 
-cos :: (TensorMathFloating t, IsTensor t) => t -> IO t
-cos t = flip inplace1 t $ \r -> cos_ r t
+cos :: (TensorMathFloating t, Tensor t) => t -> IO t
+cos t = flip withInplace1 t $ \r -> cos_ r t
 
-acos :: (TensorMathFloating t, IsTensor t) => t -> IO t
-acos t = flip inplace1 t $ \r -> acos_ r t
+acos :: (TensorMathFloating t, Tensor t) => t -> IO t
+acos t = flip withInplace1 t $ \r -> acos_ r t
 
-cosh :: (TensorMathFloating t, IsTensor t) => t -> IO t
-cosh t = flip inplace1 t $ \r -> cosh_ r t
+cosh :: (TensorMathFloating t, Tensor t) => t -> IO t
+cosh t = flip withInplace1 t $ \r -> cosh_ r t
 
-sin :: (TensorMathFloating t, IsTensor t) => t -> IO t
-sin t = flip inplace1 t $ \r -> sin_ r t
+sin :: (TensorMathFloating t, Tensor t) => t -> IO t
+sin t = flip withInplace1 t $ \r -> sin_ r t
 
-asin :: (TensorMathFloating t, IsTensor t) => t -> IO t
-asin t = flip inplace1 t $ \r -> asin_ r t
+asin :: (TensorMathFloating t, Tensor t) => t -> IO t
+asin t = flip withInplace1 t $ \r -> asin_ r t
 
-sinh :: (TensorMathFloating t, IsTensor t) => t -> IO t
-sinh t = flip inplace1 t $ \r -> sinh_ r t
+sinh :: (TensorMathFloating t, Tensor t) => t -> IO t
+sinh t = flip withInplace1 t $ \r -> sinh_ r t
 
-tan :: (TensorMathFloating t, IsTensor t) => t -> IO t
-tan t = flip inplace1 t $ \r -> tan_ r t
+tan :: (TensorMathFloating t, Tensor t) => t -> IO t
+tan t = flip withInplace1 t $ \r -> tan_ r t
 
-atan :: (TensorMathFloating t, IsTensor t) => t -> IO t
-atan t = flip inplace1 t $ \r -> atan_ r t
+atan :: (TensorMathFloating t, Tensor t) => t -> IO t
+atan t = flip withInplace1 t $ \r -> atan_ r t
 
 -- FIXME: not sure which dimensions to use as final dimensions
-_atan2 :: (TensorMathFloating t, IsTensor t) => Dim (d::[Nat]) -> t -> t -> IO t
-_atan2 d t0 t1 = flip inplace d $ \r -> atan2_ r t0 t1
+_atan2 :: (TensorMathFloating t, Tensor t) => Dim (d::[Nat]) -> t -> t -> IO t
+_atan2 d t0 t1 = flip withInplace d $ \r -> atan2_ r t0 t1
 
-tanh :: (TensorMathFloating t, IsTensor t) => t -> IO t
-tanh t = flip inplace1 t $ \r -> tanh_ r t
+tanh :: (TensorMathFloating t, Tensor t) => t -> IO t
+tanh t = flip withInplace1 t $ \r -> tanh_ r t
 
-erf :: (TensorMathFloating t, IsTensor t) => t -> IO t
-erf t = flip inplace1 t $ \r -> erf_ r t
+erf :: (TensorMathFloating t, Tensor t) => t -> IO t
+erf t = flip withInplace1 t $ \r -> erf_ r t
 
-erfinv :: (TensorMathFloating t, IsTensor t) => t -> IO t
-erfinv t = flip inplace1 t $ \r -> erfinv_ r t
+erfinv :: (TensorMathFloating t, Tensor t) => t -> IO t
+erfinv t = flip withInplace1 t $ \r -> erfinv_ r t
 
-pow :: (TensorMathFloating t, IsTensor t) => t -> HsReal t -> IO t
-pow t v = flip inplace1 t $ \r -> pow_ r t v
+pow :: (TensorMathFloating t, Tensor t) => t -> HsReal t -> IO t
+pow t v = flip withInplace1 t $ \r -> pow_ r t v
 
-_tpow :: (TensorMathFloating t, IsTensor t) => HsReal t -> t -> IO t
-_tpow v t = flip inplace1 t $ \r -> tpow_ r v t
+_tpow :: (TensorMathFloating t, Tensor t) => HsReal t -> t -> IO t
+_tpow v t = flip withInplace1 t $ \r -> tpow_ r v t
 
-sqrt :: (TensorMathFloating t, IsTensor t) => t -> IO t
-sqrt t = flip inplace1 t $ \r -> sqrt_ r t
+sqrt :: (TensorMathFloating t, Tensor t) => t -> IO t
+sqrt t = flip withInplace1 t $ \r -> sqrt_ r t
 
-rsqrt :: (TensorMathFloating t, IsTensor t) => t -> IO t
-rsqrt t = flip inplace1 t $ \r -> rsqrt_ r t
+rsqrt :: (TensorMathFloating t, Tensor t) => t -> IO t
+rsqrt t = flip withInplace1 t $ \r -> rsqrt_ r t
 
-ceil :: (TensorMathFloating t, IsTensor t) => t -> IO t
-ceil t = flip inplace1 t $ \r -> ceil_ r t
+ceil :: (TensorMathFloating t, Tensor t) => t -> IO t
+ceil t = flip withInplace1 t $ \r -> ceil_ r t
 
-floor :: (TensorMathFloating t, IsTensor t) => t -> IO t
-floor t = flip inplace1 t $ \r -> floor_ r t
+floor :: (TensorMathFloating t, Tensor t) => t -> IO t
+floor t = flip withInplace1 t $ \r -> floor_ r t
 
-round :: (TensorMathFloating t, IsTensor t) => t -> IO t
-round t = flip inplace1 t $ \r -> round_ r t
+round :: (TensorMathFloating t, Tensor t) => t -> IO t
+round t = flip withInplace1 t $ \r -> round_ r t
 
-trunc :: (TensorMathFloating t, IsTensor t) => t -> IO t
-trunc t = flip inplace1 t $ \r -> trunc_ r t
+trunc :: (TensorMathFloating t, Tensor t) => t -> IO t
+trunc t = flip withInplace1 t $ \r -> trunc_ r t
 
-frac :: (TensorMathFloating t, IsTensor t) => t -> IO t
-frac t = flip inplace1 t $ \r -> frac_ r t
+frac :: (TensorMathFloating t, Tensor t) => t -> IO t
+frac t = flip withInplace1 t $ \r -> frac_ r t
 
-_lerp :: (TensorMathFloating t, IsTensor t) => t -> t -> HsReal t -> IO t
-_lerp t0 t1 v = flip inplace1 t0 $ \r -> lerp_ r t0 t1 v
+_lerp :: (TensorMathFloating t, Tensor t) => t -> t -> HsReal t -> IO t
+_lerp t0 t1 v = flip withInplace1 t0 $ \r -> lerp_ r t0 t1 v
 
-mean :: (TensorMathFloating t, IsTensor t) => t -> Int32 -> Int32 -> IO t
-mean t v0 v1 = flip inplace1 t $ \r -> mean_ r t v0 v1
+mean :: (TensorMathFloating t, Tensor t) => t -> Int32 -> Int32 -> IO t
+mean t v0 v1 = flip withInplace1 t $ \r -> mean_ r t v0 v1
 
-std :: (TensorMathFloating t, IsTensor t) => t -> Int32 -> Int32 -> Int32 -> IO t
-std t v0 v1 v2 = flip inplace1 t $ \r -> std_ r t v0 v1 v2
+std :: (TensorMathFloating t, Tensor t) => t -> Int32 -> Int32 -> Int32 -> IO t
+std t v0 v1 v2 = flip withInplace1 t $ \r -> std_ r t v0 v1 v2
 
-var :: (TensorMathFloating t, IsTensor t) => t -> Int32 -> Int32 -> Int32 -> IO t
-var t v0 v1 v2 = flip inplace1 t $ \r -> var_ r t v0 v1 v2
+var :: (TensorMathFloating t, Tensor t) => t -> Int32 -> Int32 -> Int32 -> IO t
+var t v0 v1 v2 = flip withInplace1 t $ \r -> var_ r t v0 v1 v2
 
-norm :: (TensorMathFloating t, IsTensor t) => t -> HsReal t -> Int32 -> Int32 -> IO t
-norm t v0 v1 v2 = flip inplace1 t $ \r -> norm_ r t v0 v1 v2
+norm :: (TensorMathFloating t, Tensor t) => t -> HsReal t -> Int32 -> Int32 -> IO t
+norm t v0 v1 v2 = flip withInplace1 t $ \r -> norm_ r t v0 v1 v2
 
-renorm :: (TensorMathFloating t, IsTensor t) => t -> HsReal t -> Int32 -> HsReal t -> IO t
-renorm t v0 v1 v2 = flip inplace1 t $ \r -> renorm_ r t v0 v1 v2
+renorm :: (TensorMathFloating t, Tensor t) => t -> HsReal t -> Int32 -> HsReal t -> IO t
+renorm t v0 v1 v2 = flip withInplace1 t $ \r -> renorm_ r t v0 v1 v2
 -}
 

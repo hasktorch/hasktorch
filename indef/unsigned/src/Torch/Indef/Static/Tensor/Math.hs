@@ -6,6 +6,7 @@ import qualified Torch.Class.Tensor.Math as Dynamic
 import qualified Torch.Types.TH as TH
 
 import Torch.Indef.Types
+import Torch.Indef.Static.Tensor ()
 import Torch.Indef.Dynamic.Tensor.Math ()
 
 instance Class.TensorMath Tensor where

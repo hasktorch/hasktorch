@@ -5,6 +5,7 @@ import qualified Torch.Class.Tensor.Math.Blas as Dynamic
 import qualified Torch.Class.Tensor.Math.Blas.Static as Class
 
 import Torch.Indef.Types
+import Torch.Indef.Static.Tensor.Math ()
 import Torch.Indef.Dynamic.Tensor.Math.Blas ()
 
 blasOp

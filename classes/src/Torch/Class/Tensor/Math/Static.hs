@@ -6,7 +6,7 @@ import Torch.Class.Types
 import Torch.Class.Tensor.Static
 import qualified Torch.Types.TH as TH (IndexStorage)
 
-class TensorMath t where
+class Tensor t => TensorMath t where
   fill_        :: t d -> HsReal (t d) -> IO ()
   zero_        :: t d -> IO ()
   zeros_       :: t d -> IndexStorage (t d) -> IO ()
@@ -35,6 +35,20 @@ constant v = do
   t <- new
   fill_ t v
   pure t
+
+_tenLike
+  :: (Dimensions d, TensorMath t)
+  => (t d -> t d -> IO ())
+  -> IO (t d)
+_tenLike fn_ = do
+  src <- new
+  shape <- new
+  fn_ src shape
+  pure src
+
+onesLike, zerosLike :: (Dimensions d, Tensor t, TensorMath t) => IO (t d)
+onesLike = _tenLike onesLike_
+zerosLike = _tenLike zerosLike_
 
 
 

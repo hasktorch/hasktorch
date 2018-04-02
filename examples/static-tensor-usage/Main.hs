@@ -15,7 +15,7 @@ main :: IO ()
 main = do
   h1 "Example Usage of Typed Tensors"
   initialization
-  -- matrixVectorOps
+  matrixVectorOps
   -- valueTransformations
 
 initialization :: IO ()
@@ -64,7 +64,7 @@ matrixVectorOps = void $ do
 --     pure $ randMat !* constVec
 
   section "Vector outer product" $
-    constVec `outer` constVec
+    outer constVec constVec
 
 --   showSection "Vector dot product" $
 --     pure $ constVec <.> constVec
