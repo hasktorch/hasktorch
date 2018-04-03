@@ -38,6 +38,9 @@ executable isdefinite-th
 
         ,Torch.Sig.TH.Tensor.Random      as Torch.FFI.TH.Float.TensorRandom
         ,Torch.Sig.TH.Tensor.Math.Random as Torch.FFI.TH.Float.TensorMath
+
+        ,Torch.Sig.Storage.Memory as Torch.FFI.TH.Float.FreeStorage
+        ,Torch.Sig.Tensor.Memory  as Torch.FFI.TH.Float.FreeTensor
         )
     , hasktorch-signatures-random-th
         requires
@@ -47,6 +50,9 @@ executable isdefinite-th
 
         ,Torch.Sig.TH.Tensor.Random      as Torch.FFI.TH.Double.TensorRandom
         ,Torch.Sig.TH.Tensor.Math.Random as Torch.FFI.TH.Double.TensorMath
+
+        ,Torch.Sig.Storage.Memory as Torch.FFI.TH.Double.FreeStorage
+        ,Torch.Sig.Tensor.Memory  as Torch.FFI.TH.Double.FreeTensor
         )
 
 

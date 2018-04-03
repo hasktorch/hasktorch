@@ -36,4 +36,6 @@ executable isdefinite-thc
         ,Torch.Sig.State          as Torch.FFI.THC.State
 
         ,Torch.Sig.THC.Tensor.Random as Torch.FFI.THC.Double.TensorRandom
+        ,Torch.Sig.Tensor.Memory     as Torch.FFI.THC.Double.Tensor
+        ,Torch.Sig.Storage.Memory    as Torch.FFI.THC.Double.Storage
         )

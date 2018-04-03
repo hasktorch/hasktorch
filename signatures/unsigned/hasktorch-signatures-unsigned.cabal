@@ -12,11 +12,9 @@ library
   signatures:
       Torch.Sig.Storage
     , Torch.Sig.Storage.Copy
-    , Torch.Sig.Storage.Memory
 
     , Torch.Sig.Tensor
     , Torch.Sig.Tensor.Copy
-    , Torch.Sig.Tensor.Memory
     , Torch.Sig.Tensor.Index
     , Torch.Sig.Tensor.Masked
     , Torch.Sig.Tensor.Math
