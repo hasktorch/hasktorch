@@ -12,6 +12,8 @@ packages:
     signatures/unsigned/*cabal
     signatures/signed/*cabal
     signatures/floating/*cabal
+    signatures/random-th/*cabal
+    signatures/random-thc/*cabal
 
     dimensions/*cabal
     classes/*cabal
@@ -19,6 +21,8 @@ packages:
     indef/unsigned/*cabal
     indef/signed/*cabal
     indef/floating/*cabal
+    -- indef/random-th/*cabal
+    -- indef/random-thc/*cabal
 
     core/*cabal
 

@@ -1,0 +1,70 @@
+name:          hasktorch-signatures-random-thc
+version:       0.1.0.0
+synopsis:      Backpack signature files to pair with THC specific random code
+description:   C-FFI backpack signatures
+homepage:      https://github.com/hasktorch/hasktorch#readme
+license:       BSD3
+author:        Sam Stites <sam@stites.io>
+build-type:    Simple
+cabal-version: >=2.0
+
+library
+  signatures:
+      Torch.Sig.THC.Tensor.Random
+
+  default-language: Haskell2010
+  hs-source-dirs: src
+  build-depends:
+      base >= 4.7 && < 5
+    , hasktorch-types-th
+    , hasktorch-signatures-floating
+
+executable isdefinite-thc
+  hs-source-dirs: exe
+  main-is: Main.hs
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-raw-thc
+    , hasktorch-types-thc
+    , hasktorch-signatures-random-thc
+  mixins:
+      hasktorch-signatures-random-thc
+        requires
+        (Torch.Sig.Types.Global   as Torch.Types.THC
+        ,Torch.Sig.Types          as Torch.Types.THC.Double
+        ,Torch.Sig.State          as Torch.FFI.THC.State
+        ,Torch.Sig.Storage        as Torch.FFI.THC.Double.Storage
+        ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Double.StorageCopy
+        ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Double.Storage
+
+        ,Torch.Sig.Tensor        as Torch.FFI.THC.Double.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Double.TensorCopy
+        ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Double.Tensor
+
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Double.TensorIndex
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Double.TensorMasked
+        ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Double.TensorMathCompare
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Double.TensorMathCompareT
+        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Double.TensorMathPairwise
+        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Double.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Double.TensorMathReduce
+        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Double.TensorMathScan
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Double.TensorMode
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Double.TensorScatterGather
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Double.TensorSort
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Double.TensorTopK
+        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Double.TensorMathPointwise
+
+        ,Torch.Sig.Tensor.Math.Blas               as Torch.FFI.THC.Double.TensorMathBlas
+        ,Torch.Sig.Tensor.Math.Lapack             as Torch.FFI.THC.Double.TensorMathMagma
+        ,Torch.Sig.Tensor.Math.Floating           as Torch.FFI.THC.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.THC.Double.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Reduce.Floating    as Torch.FFI.THC.Double.TensorMathReduce
+
+        ,Torch.Sig.NN       as Torch.FFI.THC.NN.Double
+        ,Torch.Sig.Types.NN as Torch.Types.THC
+
+        ,Torch.Sig.THC.Tensor.Random as Torch.FFI.THC.Double.TensorRandom
+        )
