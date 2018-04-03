@@ -9,6 +9,7 @@ packages:
     types/thc/*.cabal
 
 
+    signatures/types/*cabal
     signatures/unsigned/*cabal
     signatures/signed/*cabal
     signatures/floating/*cabal

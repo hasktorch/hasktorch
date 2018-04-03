@@ -10,11 +10,7 @@ cabal-version: >=2.0
 
 library
   signatures:
-      Torch.Sig.State
-    , Torch.Sig.Types
-    , Torch.Sig.Types.Global
-
-    , Torch.Sig.Storage
+      Torch.Sig.Storage
     , Torch.Sig.Storage.Copy
     , Torch.Sig.Storage.Memory
 
@@ -34,8 +30,6 @@ library
     , Torch.Sig.Tensor.ScatterGather
     , Torch.Sig.Tensor.Sort
     , Torch.Sig.Tensor.TopK
-    -- FIXME: TH and THC differ in that one uses a Generator
-    -- , Torch.Sig.Tensor.Random
 
     -- * THC-SPECIFIC
     -- , Torch.Sig.TH.Vector
@@ -47,6 +41,7 @@ library
   build-depends:
       base >= 4.7 && < 5
     , hasktorch-types-th
+    , hasktorch-signatures-types
 
 executable isdefinite-th
   hs-source-dirs: exe

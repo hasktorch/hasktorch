@@ -18,7 +18,7 @@ library
   build-depends:
       base >= 4.7 && < 5
     , hasktorch-types-th
-    , hasktorch-signatures-floating
+    , hasktorch-signatures-types
 
 executable isdefinite-th
   hs-source-dirs: exe
@@ -35,36 +35,6 @@ executable isdefinite-th
         (Torch.Sig.State          as Torch.Types.TH
         ,Torch.Sig.Types.Global   as Torch.Types.TH
         ,Torch.Sig.Types          as Torch.Types.TH.Float
-        ,Torch.Sig.Storage        as Torch.FFI.TH.Float.Storage
-        ,Torch.Sig.Storage.Copy   as Torch.FFI.TH.Float.StorageCopy
-        ,Torch.Sig.Storage.Memory as Torch.FFI.TH.Float.FreeStorage
-        ,Torch.Sig.Tensor         as Torch.FFI.TH.Float.Tensor
-        ,Torch.Sig.Tensor.Copy    as Torch.FFI.TH.Float.TensorCopy
-        ,Torch.Sig.Tensor.Memory  as Torch.FFI.TH.Float.FreeTensor
-        ,Torch.Sig.Tensor.Index   as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Masked  as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Float.TensorMath
-
-        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.TH.Float.TensorMath
-
-        ,Torch.Sig.Tensor.Math.Blas     as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.Lapack   as Torch.FFI.TH.Float.TensorLapack
-        ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.TH.Float.TensorMath
-        ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Float.TensorMath
-
-        ,Torch.Sig.NN       as Torch.FFI.TH.NN.Float
-        ,Torch.Sig.Types.NN as Torch.Types.TH
 
         ,Torch.Sig.TH.Tensor.Random      as Torch.FFI.TH.Float.TensorRandom
         ,Torch.Sig.TH.Tensor.Math.Random as Torch.FFI.TH.Float.TensorMath
@@ -74,36 +44,6 @@ executable isdefinite-th
         (Torch.Sig.State          as Torch.Types.TH
         ,Torch.Sig.Types.Global   as Torch.Types.TH
         ,Torch.Sig.Types          as Torch.Types.TH.Double
-        ,Torch.Sig.Storage        as Torch.FFI.TH.Double.Storage
-        ,Torch.Sig.Storage.Copy   as Torch.FFI.TH.Double.StorageCopy
-        ,Torch.Sig.Storage.Memory as Torch.FFI.TH.Double.FreeStorage
-        ,Torch.Sig.Tensor         as Torch.FFI.TH.Double.Tensor
-        ,Torch.Sig.Tensor.Copy    as Torch.FFI.TH.Double.TensorCopy
-        ,Torch.Sig.Tensor.Memory  as Torch.FFI.TH.Double.FreeTensor
-        ,Torch.Sig.Tensor.Index   as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Masked  as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Mode           as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Sort           as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Double.TensorMath
-
-        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.TH.Double.TensorMath
-
-        ,Torch.Sig.Tensor.Math.Blas     as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Lapack   as Torch.FFI.TH.Double.TensorLapack
-        ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.TH.Double.TensorMath
-        ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Double.TensorMath
-
-        ,Torch.Sig.NN       as Torch.FFI.TH.NN.Double
-        ,Torch.Sig.Types.NN as Torch.Types.TH
 
         ,Torch.Sig.TH.Tensor.Random      as Torch.FFI.TH.Double.TensorRandom
         ,Torch.Sig.TH.Tensor.Math.Random as Torch.FFI.TH.Double.TensorMath
