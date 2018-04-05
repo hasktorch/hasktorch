@@ -3,7 +3,7 @@ module Torch.Types.TH
 
   , C'THState, C'THNNState, CState, State(..), asState, newCState, manageState
   , CAllocator, Allocator
-  , CGenerator, Generator(..)
+  , CGenerator, Generator(..), generatorToRng
   , CDescBuff, DescBuff, descBuff
 
   -- for nn-packages
@@ -72,6 +72,9 @@ newtype Allocator = Allocator { callocator :: ForeignPtr CAllocator }
 type CGenerator   = C'THGenerator
 newtype Generator = Generator { rng :: ForeignPtr CGenerator }
   deriving (Eq, Show)
+
+generatorToRng :: ForeignPtr CGenerator -> Generator
+generatorToRng = Generator
 
 -- for nn-package
 type CNNState = CState

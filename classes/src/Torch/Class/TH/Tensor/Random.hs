@@ -1,27 +1,34 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
-module Torch.Class.Tensor.Random where
+module Torch.Class.TH.Tensor.Random where
 
-import Torch.Types.TH
-import Foreign
-import GHC.Int
-import GHC.TypeLits (Nat)
-import Foreign.C.Types
 import Torch.Class.Types
 import Torch.Dimensions
-import Torch.Class.Tensor
-import qualified Torch.Types.TH.Float as F
-import qualified Torch.Types.TH.Double as D
+import qualified Torch.Types.TH as TH
 
-class TensorRandom t where
-  random_                 :: t -> Generator t -> io ()
-  clampedRandom_          :: t -> Generator t -> Int64 -> Int64 -> io ()
-  cappedRandom_           :: t -> Generator t -> Int64 -> io ()
-  geometric_              :: t -> Generator t -> Double -> io ()
-  bernoulli_              :: t -> Generator t -> Double -> io ()
-  bernoulli_FloatTensor_  :: t -> Generator t -> F.DynTensor -> io ()
-  bernoulli_DoubleTensor_ :: t -> Generator t -> D.DynTensor -> io ()
+class THTensorRandom t where
+  random                     :: t -> Generator t -> IO ()
+  clampedRandom              :: t -> Generator t -> Integer -> Integer -> IO ()
+  cappedRandom               :: t -> Generator t -> Integer -> IO ()
+  geometric                  :: t -> Generator t -> HsAccReal t -> IO ()
+  bernoulli                  :: t -> Generator t -> HsAccReal t -> IO ()
+  bernoulli_FloatTensor      :: t -> Generator t -> TH.FloatDynamic -> IO ()
+  bernoulli_DoubleTensor     :: t -> Generator t -> TH.DoubleDynamic -> IO ()
 
+  uniform                    :: t -> Generator t -> HsAccReal t -> HsAccReal t -> IO ()
+  normal                     :: t -> Generator t -> HsAccReal t -> HsAccReal t -> IO ()
+  normal_means               :: t -> Generator t -> t -> HsAccReal t -> IO ()
+  normal_stddevs             :: t -> Generator t -> HsAccReal t -> t -> IO ()
+  normal_means_stddevs       :: t -> Generator t -> t -> t -> IO ()
+  exponential                :: t -> Generator t -> HsAccReal t -> IO ()
+  standard_gamma             :: t -> Generator t -> t -> IO ()
+  cauchy                     :: t -> Generator t -> HsAccReal t -> HsAccReal t -> IO ()
+  logNormal                  :: t -> Generator t -> HsAccReal t -> HsAccReal t -> IO ()
+
+-- c_multinomialAliasSetup :: Ptr CState -> Ptr CTensor -> Ptr CLongTensor -> Ptr CTensor -> IO ()
+-- c_multinomialAliasDraw  :: Ptr CState -> Ptr CLongTensor -> Ptr CGenerator -> Ptr CLongTensor -> Ptr CTensor -> IO ()
+  multinomial                :: IndexDynamic t -> Generator t -> t -> Int -> Int -> IO ()
+  multinomialAliasSetup      :: t -> IndexDynamic t -> t -> IO ()
+  multinomialAliasDraw       :: IndexDynamic t -> Generator t -> IndexDynamic t -> t -> IO ()
+{-
 random :: (Tensor io t, TensorRandom t) => Dim (d::[Nat]) -> Generator t -> io t
 random d g = inplace (`random_` g) d
 
@@ -53,9 +60,9 @@ class TensorRandomFloating t where
   standard_gamma_        :: t -> Generator t -> t -> io ()
   cauchy_                :: t -> Generator t -> HsAccReal t -> HsAccReal t -> io ()
   logNormal_             :: t -> Generator t -> HsAccReal t -> HsAccReal t -> io ()
---  multinomial            :: Ptr CTHLongTensor -> Ptr CTHGenerator -> t -> Int32 -> Int32 -> io ()
---  multinomialAliasSetup  :: t -> Ptr CTHLongTensor -> t -> io ()
---  multinomialAliasDraw   :: Ptr CTHLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> t -> io ()
+--  multinomial            :: THLongTensor -> THGenerator -> t -> Int32 -> Int32 -> io ()
+--  multinomialAliasSetup  :: t -> THLongTensor -> t -> io ()
+--  multinomialAliasDraw   :: THLongTensor -> Ptr CTHGenerator -> Ptr CTHLongTensor -> t -> io ()
 
 uniform :: (Tensor io t, TensorRandomFloating t) => Dim (d::[Nat]) -> Generator t -> HsAccReal t -> HsAccReal t -> io t
 uniform d g a b = flip inplace d $ \t -> uniform_ t g a b
@@ -86,4 +93,4 @@ cauchy d g a b = flip inplace d $ \t -> cauchy_ t g a b
 logNormal :: (Tensor io t, TensorRandomFloating t) => Dim (d::[Nat]) -> Generator t -> HsAccReal t -> HsAccReal t -> io t
 logNormal d g a b = flip inplace d $ \t -> logNormal_ t g a b
 
-
+-}

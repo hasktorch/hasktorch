@@ -19,10 +19,11 @@ packages:
     dimensions/*cabal
     classes/*cabal
 
+    indef/types/*cabal
     indef/unsigned/*cabal
     indef/signed/*cabal
     indef/floating/*cabal
-    -- indef/random-th/*cabal
+    indef/random-th/*cabal
     -- indef/random-thc/*cabal
 
     core/*cabal

@@ -6,7 +6,7 @@ module Torch.Types.THC
   , CState, State(..), asState
   , CAllocator, Allocator(..)
   , CDescBuff, DescBuff, descBuff
-  , CGenerator, Generator(..)
+  , CGenerator, Generator(..), generatorToRng
 
   -- for nn-packages
   , CNNState
@@ -69,6 +69,9 @@ asState = State
 type CGenerator = C'_Generator
 newtype Generator = Generator { rng :: ForeignPtr CGenerator }
   deriving (Eq, Show)
+
+generatorToRng :: ForeignPtr CGenerator -> Generator
+generatorToRng = Generator
 
 type CInt' = CLLong
 type Int' = Integer

@@ -22,6 +22,8 @@ descBuff :: Ptr CDescBuff -> IO DescBuff
 -- for RNG
 data CGenerator
 data Generator
+rng :: Generator -> ForeignPtr CGenerator
+generatorToRng :: ForeignPtr CGenerator -> Generator
 
 -- any quirky splits between TH (CInt) and THC (CLLong)
 data CInt'
@@ -115,7 +117,7 @@ data FloatTensor (d::[Nat])
 floatAsDynamic :: FloatTensor (d::[Nat]) -> FloatDynamic
 floatAsStatic  :: FloatDynamic -> FloatTensor (d::[Nat])
 data FloatDynamic
-floatDynamicState   :: FloatDynamic -> (ForeignPtr CState, ForeignPtr CFloatTensor)
+floatDynamicState :: FloatDynamic -> (ForeignPtr CState, ForeignPtr CFloatTensor)
 floatDynamic :: ForeignPtr CState -> ForeignPtr CFloatTensor -> FloatDynamic
 
 data CFloatStorage

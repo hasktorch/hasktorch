@@ -87,8 +87,10 @@ library
     , Torch.Class.Tensor.Math.Lapack
     , Torch.Class.Tensor.Math.Lapack.Static
 
-    -- * Random class (which is special)
-    -- , Torch.Class.Tensor.Math.Random
+    -- * Random classes (which are library-dependent)
+    , Torch.Class.TH.Tensor.Random
+    , Torch.Class.THC.Tensor.Random
+    , Torch.Class.TH.Tensor.Math.Random
 
     -- * Vector classes
     -- FIXME: not sure where to go with commented-out classes, they are TH-only but there are some THC-only things as well

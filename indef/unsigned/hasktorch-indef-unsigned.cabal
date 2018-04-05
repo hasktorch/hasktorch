@@ -37,6 +37,7 @@ library
     , hasktorch-dimensions
     , hasktorch-signatures-unsigned
     , hasktorch-types-th
+    , hasktorch-indef-types
     , hasktorch-raw-th
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
@@ -56,6 +57,9 @@ library
   other-modules:
       Torch.Indef.Internal
 
+  reexported-modules:
+      Torch.Indef.Types
+
   exposed-modules:
     -- classes implementations with indefinites
 
@@ -65,17 +69,8 @@ library
     -- , Torch.Class.Tensor.Conv
     -- , Torch.Class.Vector
 
-      Torch.Indef.Types
-    , Torch.Indef.Storage
+      Torch.Indef.Storage
     , Torch.Indef.Storage.Copy
-
-    -- For use with signed
-    -- , Torch.Indef.Dynamic.Tensor.Pointwise
-    -- , Torch.Indef.Static.Tensor.Pointwise
-
-    -- For use with floating
-    -- , Torch.Indef.Dynamic.NN
-    -- , Torch.Indef.Static.NN
 
     -- ==================================================== --
     -- Dynamic Tensor modules
@@ -83,23 +78,19 @@ library
     , Torch.Indef.Dynamic
     , Torch.Indef.Dynamic.Tensor
     , Torch.Indef.Dynamic.Tensor.Copy
-
     , Torch.Indef.Dynamic.Tensor.Index
     , Torch.Indef.Dynamic.Tensor.Masked
     , Torch.Indef.Dynamic.Tensor.Math
-    -- , Torch.Indef.Dynamic.Tensor.Math.Blas
     , Torch.Indef.Dynamic.Tensor.Math.Compare
     , Torch.Indef.Dynamic.Tensor.Math.CompareT
     , Torch.Indef.Dynamic.Tensor.Math.Pairwise
     , Torch.Indef.Dynamic.Tensor.Math.Pointwise
-    -- -- , Torch.Indef.Dynamic.Tensor.Math.Lapack -- This is floating
     , Torch.Indef.Dynamic.Tensor.Math.Reduce
     , Torch.Indef.Dynamic.Tensor.Math.Scan
     , Torch.Indef.Dynamic.Tensor.Mode
     , Torch.Indef.Dynamic.Tensor.ScatterGather
     , Torch.Indef.Dynamic.Tensor.Sort
     , Torch.Indef.Dynamic.Tensor.TopK
-    -- , Torch.Indef.Dynamic.Tensor.Math.Random
 
     -- ==================================================== --
     -- Static Tensor modules

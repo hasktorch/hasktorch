@@ -11,17 +11,19 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Indef.Types
   ( module X
   , module Sig
-  -- , Class.IsStatic(..)
+  , manage', joinIO
 
-  , (.:), (..:), shuffle2, shuffle3, shuffle3'2
+  , (.:), (..:), shuffle2, shuffle2'2, shuffle3, shuffle3'2
 
-  , withIx, withMask
+  , withIx, withIxStorage, withMask
   , mkCPUIx
   , mkCPUIxStorage
   , withCPUIxStorage
+  , withGen
 
   , ptrArray2hs
 
@@ -35,8 +37,11 @@ module Torch.Indef.Types
 
 import Foreign as X (ForeignPtr, newForeignPtrEnv, withForeignPtr, newForeignPtr, FinalizerPtr)
 import Foreign.Ptr as X
+import Control.Monad.Managed as X
 import qualified Foreign.Marshal.Array as FM
 
+import Control.Arrow
+import Control.Monad
 import Control.Monad.IO.Class as X
 import Control.Monad.Reader.Class as X
 import Torch.Types.TH as X (C'THState)
@@ -57,6 +62,14 @@ import qualified Torch.Sig.Storage.Memory as SigStore
 type CPUIndex = TH.LongDynamic
 type CPUIndexStorage = TH.LongStorage
 
+-- Try to replace a lot of the below with these functions:
+manage' :: (c -> ForeignPtr a) -> c -> Managed (Ptr a)
+manage' fn c = managed (withForeignPtr (fn c))
+
+joinIO :: MonadIO m => m (IO x) -> m x
+joinIO c = join (liftIO <$> c)
+
+
 -- (stites): This happens often enough that I'm pulling in the blackbird
 (.:) :: (b -> c) -> (a0 -> a1 -> b) -> a0 -> a1 -> c
 (.:) = (.) . (.)
@@ -69,14 +82,23 @@ infixl 5 ..:
 shuffle2 :: (a -> b -> c -> d) -> c -> a -> b -> d
 shuffle2 fn c a b = fn a b c
 
+shuffle2'2 :: (a -> b -> c -> d -> e) -> c -> d -> a -> b -> e
+shuffle2'2 fn c d a b = fn a b c d
+
 shuffle3 :: (a -> b -> c -> d -> e) -> d -> a -> b -> c -> e
 shuffle3 fn d a b c = fn a b c d
 
 shuffle3'2 :: (a -> b -> c -> d -> e -> f) -> d -> e -> a -> b -> c -> f
 shuffle3'2 fn d e a b c = fn a b c d e
 
+withGen :: Sig.Generator -> (Ptr CGenerator -> IO x) -> IO x
+withGen g fn = withForeignPtr (Sig.rng g) fn
+
 withIx :: Sig.IndexDynamic -> (Ptr CIndexTensor -> IO x) -> IO x
 withIx ix fn = withForeignPtr (snd $ Sig.longDynamicState ix) fn
+
+withIxStorage :: Sig.IndexStorage -> (Ptr CLongStorage -> IO x) -> IO x
+withIxStorage ix fn = withForeignPtr (snd $ Sig.longStorageState ix) fn
 
 withMask :: Sig.MaskDynamic -> (Ptr CMaskTensor -> IO x) -> IO x
 withMask ix fn = withForeignPtr (snd $ Sig.byteDynamicState ix) fn
@@ -97,11 +119,15 @@ mkCPUIxStorage p = fmap TH.LongStorage
   <*> newForeignPtr LongStorage.p_free p
 
 -- helper function to work with pointer arrays
-ptrArray2hs :: (Ptr a -> IO (Ptr Sig.CReal)) -> (Ptr a -> IO Int) -> ForeignPtr a -> IO [Sig.HsReal]
-ptrArray2hs updPtrArray toSize fp = do
-  sz <- withForeignPtr fp toSize
-  creals <- withForeignPtr fp updPtrArray
-  (fmap.fmap) Sig.c2hsReal (FM.peekArray sz creals)
+ptrArray2hs
+  :: (Ptr a -> IO (Ptr Sig.CReal))
+  -> (Ptr a -> IO Int)
+  -> ForeignPtr a
+  -> IO [Sig.HsReal]
+ptrArray2hs updPtrArray toSize fp = flip with (pure . fmap Sig.c2hsReal) $ do
+  sz     <- liftIO . toSize      =<< manage' id fp
+  creals <- liftIO . updPtrArray =<< manage' id fp
+  liftIO $ FM.peekArray sz creals
 
 -- working with dynamic and storage types:
 withState :: Sig.State -> (Ptr Sig.CState ->IO x) -> IO x
