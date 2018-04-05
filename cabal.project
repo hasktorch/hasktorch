@@ -24,7 +24,7 @@ packages:
     indef/signed/*cabal
     indef/floating/*cabal
     indef/random-th/*cabal
-    -- indef/random-thc/*cabal
+    indef/random-thc/*cabal
 
     core/*cabal
 

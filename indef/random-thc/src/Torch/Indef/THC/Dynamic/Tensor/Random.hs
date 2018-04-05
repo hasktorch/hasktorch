@@ -1,9 +1,10 @@
 module Torch.Indef.THC.Dynamic.Tensor.Random where
 
-import Torch.Sig.Types
-import Torch.Sig.Types.Global
+import Torch.Indef.Types
 import qualified Torch.Class.THC.Tensor.Random as Class
 import qualified Torch.Sig.THC.Tensor.Random as Sig
+import qualified Torch.Sig.Types as Sig
+import qualified Torch.Sig.Types.Global as Sig
 import qualified Torch.Types.TH as TH
 
 instance Class.THCTensorRandom Dynamic where
@@ -38,7 +39,7 @@ instance Class.THCTensorRandom Dynamic where
   normal_stddevs t a b = with2DynamicState t b $ \s' t' b' -> Sig.c_normal_stddevs s' t' (hs2cAccReal a) b'
 
   normal_means_stddevs :: Dynamic -> Dynamic -> Dynamic -> IO ()
-  normal_means_stddevs t t0 t1 = with2DynamicState t t0 t1 Sig.c_normal_means_stddevs
+  normal_means_stddevs t t0 t1 = with3DynamicState t t0 t1 Sig.c_normal_means_stddevs
 
   logNormal :: Dynamic -> HsAccReal -> HsAccReal -> IO ()
   logNormal t a b = withDynamicState t (shuffle2'2 Sig.c_logNormal (hs2cAccReal a) (hs2cAccReal b))
@@ -47,14 +48,40 @@ instance Class.THCTensorRandom Dynamic where
   exponential t v = withDynamicState t (shuffle2 Sig.c_exponential (hs2cAccReal v))
 
   cauchy :: Dynamic -> HsAccReal -> HsAccReal -> IO ()
-  cauchy t a b = withDynamicState t (shuffle2'2 Sig.c_cauchy (hs2cAccReal a) (hs2cAccReal b))  rand :: Dynamic -> TH.LongStorage -> IO ()
+  cauchy t a b = withDynamicState t (shuffle2'2 Sig.c_cauchy (hs2cAccReal a) (hs2cAccReal b))
 
-  -- multinomial :: IndexDynamic -> Dynamic -> Int -> Int -> IO ()
-  -- multinomialAliasSetup :: Dynamic -> IndexDynamic -> Dynamic -> IO ()
-  -- multinomialAliasDraw :: IndexDynamic -> IndexDynamic -> Dynamic -> IO ()
+  multinomial :: IndexDynamic -> Dynamic -> Int -> Int -> IO ()
+  multinomial r t a b = runManaged . joinIO $ Sig.c_multinomial
+    <$> manage' (fst . Sig.longDynamicState) r
+    <*> manage' (snd . Sig.longDynamicState) r
+    <*> manage' Sig.ctensor t
+    <*> pure (fromIntegral a)
+    <*> pure (fromIntegral b)
 
-  -- randn :: Dynamic -> TH.LongStorage -> IO ()
-  -- randn = withDy
+  multinomialAliasSetup :: Dynamic -> LongDynamic -> Dynamic -> IO ()
+  multinomialAliasSetup r l t = runManaged . joinIO $ Sig.c_multinomialAliasSetup
+    <$> manage' (Sig.dynamicStateRef) r
+    <*> manage' (Sig.ctensor) r
+    <*> manage' (snd . Sig.longDynamicState) l
+    <*> manage' (Sig.ctensor) t
 
-  -- rand :: Dynamic -> TH.LongStorage -> IO ()
-  -- rand = withDy
+  multinomialAliasDraw  :: LongDynamic -> LongDynamic -> Dynamic -> IO ()
+  multinomialAliasDraw r l t = runManaged . joinIO $ Sig.c_multinomialAliasDraw
+    <$> manage' (fst . Sig.longDynamicState) r
+    <*> manage' (snd . Sig.longDynamicState) r
+    <*> manage' (snd . Sig.longDynamicState) l
+    <*> manage' (Sig.ctensor) t
+
+  rand  :: Dynamic -> TH.LongStorage -> IO ()
+  rand r l = runManaged . joinIO $ Sig.c_rand
+    <$> manage' (Sig.dynamicStateRef) r
+    <*> manage' (Sig.ctensor) r
+    <*> manage' (snd . TH.longStorageState) l
+
+  randn  :: Dynamic -> TH.LongStorage -> IO ()
+  randn r l = runManaged . joinIO $ Sig.c_randn
+    <$> manage' (Sig.dynamicStateRef) r
+    <*> manage' (Sig.ctensor) r
+    <*> manage' (snd . TH.longStorageState) l
+
+
