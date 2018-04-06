@@ -95,11 +95,16 @@ library
 
     , Torch.Float.Storage
     , Torch.Float.Dynamic
+    , Torch.Float.DynamicRandom
     , Torch.Float.Static
+    , Torch.Float.StaticRandom
 
     , Torch.Double.Storage
     , Torch.Double.Dynamic
+    , Torch.Double.DynamicRandom
     , Torch.Double.Static
+    , Torch.Double.StaticRandom
+
 
     , Torch.Cuda.Byte.Storage
     , Torch.Cuda.Byte.Dynamic
@@ -128,7 +133,9 @@ library
 
     , Torch.Cuda.Double.Storage
     , Torch.Cuda.Double.Dynamic
+    , Torch.Cuda.Double.DynamicRandom
     , Torch.Cuda.Double.Static
+    , Torch.Cuda.Double.StaticRandom
 
 
   mixins:
@@ -369,10 +376,8 @@ library
         ,Torch.Sig.Types.NN as Torch.Types.TH
         )
     , hasktorch-indef-random-th
-        (Torch.Indef.TH.Dynamic.Tensor.Random as Torch.Float.TH.Dynamic.Tensor.Random
-        ,Torch.Indef.TH.Dynamic.Tensor.Math.Random as Torch.Float.TH.Dynamic.Tensor.Math.Random
-        ,Torch.Indef.TH.Static.Tensor.Random as Torch.Float.TH.Static.Tensor.Random
-        ,Torch.Indef.TH.Static.Tensor.Math.Random as Torch.Float.TH.Static.Tensor.Math.Random
+        (Torch.Indef.TH.DynamicRandom as Torch.Float.DynamicRandom
+        ,Torch.Indef.TH.StaticRandom as Torch.Float.StaticRandom
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -384,10 +389,8 @@ library
         ,Torch.Sig.TH.Tensor.Math.Random as Torch.FFI.TH.Float.TensorMath
         )
     , hasktorch-indef-random-th
-        (Torch.Indef.TH.Dynamic.Tensor.Random as Torch.Double.TH.Dynamic.Tensor.Random
-        ,Torch.Indef.TH.Dynamic.Tensor.Math.Random as Torch.Double.TH.Dynamic.Tensor.Math.Random
-        ,Torch.Indef.TH.Static.Tensor.Random as Torch.Double.TH.Static.Tensor.Random
-        ,Torch.Indef.TH.Static.Tensor.Math.Random as Torch.Double.TH.Static.Tensor.Math.Random
+        (Torch.Indef.TH.DynamicRandom as Torch.Double.DynamicRandom
+        ,Torch.Indef.TH.StaticRandom as Torch.Double.StaticRandom
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -601,8 +604,8 @@ library
           ,Torch.Sig.Types.NN as Torch.Types.THC
           )
       , hasktorch-indef-random-thc
-          (Torch.Indef.THC.Dynamic.Tensor.Random as Torch.Cuda.Double.THC.Dynamic.Tensor.Random
-          ,Torch.Indef.THC.Static.Tensor.Random as Torch.Cuda.Double.THC.Static.Tensor.Random
+          (Torch.Indef.THC.DynamicRandom as Torch.Cuda.Double.DynamicRandom
+          ,Torch.Indef.THC.StaticRandom as Torch.Cuda.Double.StaticRandom
           )
           requires
           (Torch.Sig.State          as Torch.FFI.THC.State

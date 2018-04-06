@@ -8,11 +8,7 @@ import Torch.Int.Dynamic   as X
 import Torch.Long.Dynamic  as X
 
 import Torch.Float.Dynamic  as X
+import Torch.Float.DynamicRandom  as X
 import Torch.Double.Dynamic as X
-
-import Torch.Float.TH.Dynamic.Tensor.Random  as X
-import Torch.Float.TH.Dynamic.Tensor.Math.Random  as X
-import Torch.Double.TH.Dynamic.Tensor.Random  as X
-import Torch.Double.TH.Dynamic.Tensor.Math.Random  as X
-
+import Torch.Double.DynamicRandom as X
 

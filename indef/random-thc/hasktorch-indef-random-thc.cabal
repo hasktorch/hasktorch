@@ -29,6 +29,9 @@ library
     , hasktorch-types-thc
     , hasktorch-indef-types
   exposed-modules:
-      Torch.Indef.THC.Dynamic.Tensor.Random
+      Torch.Indef.THC.DynamicRandom
+    , Torch.Indef.THC.Dynamic.Tensor.Random
+
+    , Torch.Indef.THC.StaticRandom
     , Torch.Indef.THC.Static.Tensor.Random
 

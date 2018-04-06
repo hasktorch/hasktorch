@@ -7,6 +7,6 @@ import Torch.Cuda.Short.Dynamic as X
 import Torch.Cuda.Int.Dynamic   as X
 import Torch.Cuda.Long.Dynamic  as X
 
-import Torch.Cuda.Double.Dynamic  as X
-import Torch.Cuda.Double.THC.Dynamic.Tensor.Random as X
+import Torch.Cuda.Double.Dynamic       as X
+import Torch.Cuda.Double.DynamicRandom as X
 

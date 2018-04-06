@@ -28,8 +28,11 @@ library
     , hasktorch-signatures-random-th
     , hasktorch-types-th
   exposed-modules:
-      Torch.Indef.TH.Dynamic.Tensor.Random
+      Torch.Indef.TH.DynamicRandom
+    , Torch.Indef.TH.Dynamic.Tensor.Random
     , Torch.Indef.TH.Dynamic.Tensor.Math.Random
+
+    , Torch.Indef.TH.StaticRandom
     , Torch.Indef.TH.Static.Tensor.Random
     , Torch.Indef.TH.Static.Tensor.Math.Random
 
