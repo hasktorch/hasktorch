@@ -54,8 +54,8 @@ library
     -- support modules
 
       Torch.Core.Exceptions
-    -- , Torch.Core.Random
-    -- , Torch.Core.LogAdd
+    , Torch.Core.Random
+    , Torch.Core.LogAdd
 
     -- CPU modules
     , Torch

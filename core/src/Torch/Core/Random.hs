@@ -4,7 +4,6 @@ module Torch.Core.Random
   , Seed
   , new
   , copy
-  , isValid
   , seed
   , manualSeed
   , initialSeed
@@ -25,8 +24,7 @@ import Foreign (Ptr)
 import Foreign.ForeignPtr (ForeignPtr, withForeignPtr, newForeignPtr)
 import Data.Word
 
-import Torch.Types.TH (CTHGenerator)
-import Torch.Types.TH.Random
+import Torch.Types.TH
 import qualified Torch.FFI.TH.Random as TH
 
 newtype Seed = Seed { unSeed :: Word64 }
@@ -36,19 +34,19 @@ newtype Seed = Seed { unSeed :: Word64 }
 -- helpers
 -- ========================================================================= --
 
-asRNG :: Ptr CTHGenerator -> IO Generator
+asRNG :: Ptr C'THGenerator -> IO Generator
 asRNG = fmap Generator . newForeignPtr TH.p_THGenerator_free
 
-with2RNGs :: (Ptr CTHGenerator -> Ptr CTHGenerator -> IO x) -> Generator -> Generator -> IO x
+with2RNGs :: (Ptr C'THGenerator -> Ptr C'THGenerator -> IO x) -> Generator -> Generator -> IO x
 with2RNGs fn g0 g1 = _with2RNGs g0 g1 fn
 
-_with2RNGs :: Generator -> Generator -> (Ptr CTHGenerator -> Ptr CTHGenerator -> IO x) -> IO x
+_with2RNGs :: Generator -> Generator -> (Ptr C'THGenerator -> Ptr C'THGenerator -> IO x) -> IO x
 _with2RNGs g0 g1 fn = _withRNG g0 (\g0' -> _withRNG g1 (\g1' -> fn g0' g1'))
 
-withRNG :: (Ptr CTHGenerator -> IO x) -> Generator -> IO x
+withRNG :: (Ptr C'THGenerator -> IO x) -> Generator -> IO x
 withRNG fn g = withForeignPtr (rng g) fn
 
-_withRNG :: Generator -> (Ptr CTHGenerator -> IO x) -> IO x
+_withRNG :: Generator -> (Ptr C'THGenerator -> IO x) -> IO x
 _withRNG = flip withRNG
 
 -- ========================================================================= --
@@ -58,9 +56,6 @@ new = TH.c_THGenerator_new >>= asRNG
 
 copy :: Generator -> Generator -> IO Generator
 copy g0 g1 = (with2RNGs TH.c_THGenerator_copy g0 g1) >>= asRNG
-
-isValid :: Generator -> IO Bool
-isValid = withRNG (fmap (== 1) . TH.c_THGenerator_isValid)
 
 seed :: Generator -> IO Seed
 seed = withRNG (fmap fromIntegral . TH.c_THRandom_seed)
