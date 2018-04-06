@@ -30,6 +30,6 @@ library
   exposed-modules:
       Torch.Indef.TH.Dynamic.Tensor.Random
     , Torch.Indef.TH.Dynamic.Tensor.Math.Random
-    -- , Torch.Indef.TH.Static.Tensor.Random
-    -- , Torch.Indef.TH.Static.Tensor.Math.Random
+    , Torch.Indef.TH.Static.Tensor.Random
+    , Torch.Indef.TH.Static.Tensor.Math.Random
 

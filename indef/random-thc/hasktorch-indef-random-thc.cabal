@@ -30,5 +30,5 @@ library
     , hasktorch-indef-types
   exposed-modules:
       Torch.Indef.THC.Dynamic.Tensor.Random
-    -- , Torch.Indef.THC.Static.Tensor.Random
+    , Torch.Indef.THC.Static.Tensor.Random
 

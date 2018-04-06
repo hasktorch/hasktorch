@@ -24,9 +24,6 @@ library
   default-extensions:
       InstanceSigs
     , TypeSynonymInstances
-    -- , FlexibleInstances
-    -- , FlexibleContexts
-    -- , KindSignatures
     , DataKinds
   build-depends:
       base >=4.7 && <5
@@ -35,9 +32,9 @@ library
     , dimensions >=0.3.2.0
     , hasktorch-classes
     , hasktorch-dimensions
+    , hasktorch-indef-types
     , hasktorch-signatures-unsigned
     , hasktorch-types-th
-    , hasktorch-indef-types
     , hasktorch-raw-th
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1

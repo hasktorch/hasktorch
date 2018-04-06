@@ -69,7 +69,6 @@ manage' fn c = managed (withForeignPtr (fn c))
 joinIO :: MonadIO m => m (IO x) -> m x
 joinIO c = join (liftIO <$> c)
 
-
 -- (stites): This happens often enough that I'm pulling in the blackbird
 (.:) :: (b -> c) -> (a0 -> a1 -> b) -> a0 -> a1 -> c
 (.:) = (.) . (.)

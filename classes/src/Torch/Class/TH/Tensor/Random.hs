@@ -23,8 +23,6 @@ class THTensorRandom t where
   cauchy                     :: t -> Generator t -> HsAccReal t -> HsAccReal t -> IO ()
   logNormal                  :: t -> Generator t -> HsAccReal t -> HsAccReal t -> IO ()
 
--- c_multinomialAliasSetup :: Ptr CState -> Ptr CTensor -> Ptr CLongTensor -> Ptr CTensor -> IO ()
--- c_multinomialAliasDraw  :: Ptr CState -> Ptr CLongTensor -> Ptr CGenerator -> Ptr CLongTensor -> Ptr CTensor -> IO ()
   multinomial                :: IndexDynamic t -> Generator t -> t -> Int -> Int -> IO ()
   multinomialAliasSetup      :: t -> IndexDynamic t -> t -> IO ()
   multinomialAliasDraw       :: IndexDynamic t -> Generator t -> IndexDynamic t -> t -> IO ()
