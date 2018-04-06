@@ -32,6 +32,8 @@ library
     , hasktorch-indef-unsigned
     , hasktorch-indef-signed
     , hasktorch-indef-floating
+    , hasktorch-indef-random-th
+    , hasktorch-indef-random-thc
     , hasktorch-raw-th
     , hasktorch-types-th
     , managed >=1.0.0 && <1.1
@@ -366,6 +368,37 @@ library
         ,Torch.Sig.NN       as Torch.FFI.TH.NN.Double
         ,Torch.Sig.Types.NN as Torch.Types.TH
         )
+    , hasktorch-indef-random-th
+        (Torch.Indef.TH.Dynamic.Tensor.Random as Torch.Float.TH.Dynamic.Tensor.Random
+        ,Torch.Indef.TH.Dynamic.Tensor.Math.Random as Torch.Float.TH.Dynamic.Tensor.Math.Random
+        ,Torch.Indef.TH.Static.Tensor.Random as Torch.Float.TH.Static.Tensor.Random
+        ,Torch.Indef.TH.Static.Tensor.Math.Random as Torch.Float.TH.Static.Tensor.Math.Random
+        )
+        requires
+        (Torch.Sig.State          as Torch.Types.TH
+        ,Torch.Sig.Types.Global   as Torch.Types.TH
+        ,Torch.Sig.Types          as Torch.Types.TH.Float
+        ,Torch.Sig.Storage.Memory as Torch.FFI.TH.Float.FreeStorage
+        ,Torch.Sig.Tensor.Memory  as Torch.FFI.TH.Float.FreeTensor
+        ,Torch.Sig.TH.Tensor.Random as Torch.FFI.TH.Float.TensorRandom
+        ,Torch.Sig.TH.Tensor.Math.Random as Torch.FFI.TH.Float.TensorMath
+        )
+    , hasktorch-indef-random-th
+        (Torch.Indef.TH.Dynamic.Tensor.Random as Torch.Double.TH.Dynamic.Tensor.Random
+        ,Torch.Indef.TH.Dynamic.Tensor.Math.Random as Torch.Double.TH.Dynamic.Tensor.Math.Random
+        ,Torch.Indef.TH.Static.Tensor.Random as Torch.Double.TH.Static.Tensor.Random
+        ,Torch.Indef.TH.Static.Tensor.Math.Random as Torch.Double.TH.Static.Tensor.Math.Random
+        )
+        requires
+        (Torch.Sig.State          as Torch.Types.TH
+        ,Torch.Sig.Types.Global   as Torch.Types.TH
+        ,Torch.Sig.Types          as Torch.Types.TH.Double
+        ,Torch.Sig.Storage.Memory as Torch.FFI.TH.Double.FreeStorage
+        ,Torch.Sig.Tensor.Memory  as Torch.FFI.TH.Double.FreeTensor
+        ,Torch.Sig.TH.Tensor.Random as Torch.FFI.TH.Double.TensorRandom
+        ,Torch.Sig.TH.Tensor.Math.Random as Torch.FFI.TH.Double.TensorMath
+        )
+
 
   if flag(cuda)
     mixins:
@@ -567,3 +600,17 @@ library
           ,Torch.Sig.NN       as Torch.FFI.THC.NN.Double
           ,Torch.Sig.Types.NN as Torch.Types.THC
           )
+      , hasktorch-indef-random-thc
+          (Torch.Indef.THC.Dynamic.Tensor.Random as Torch.Cuda.Double.THC.Dynamic.Tensor.Random
+          ,Torch.Indef.THC.Static.Tensor.Random as Torch.Cuda.Double.THC.Static.Tensor.Random
+          )
+          requires
+          (Torch.Sig.State          as Torch.FFI.THC.State
+          ,Torch.Sig.Types.Global   as Torch.Types.THC
+          ,Torch.Sig.Types          as Torch.Types.THC.Double
+          ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Double.Storage
+          ,Torch.Sig.Tensor.Memory  as Torch.FFI.THC.Double.Tensor
+          ,Torch.Sig.THC.Tensor.Random  as Torch.FFI.THC.Double.TensorRandom
+          )
+
+

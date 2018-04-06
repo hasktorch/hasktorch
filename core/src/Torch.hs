@@ -14,4 +14,9 @@ import Torch.Long.Static  as X
 import Torch.Float.Static  as X
 import Torch.Double.Static as X
 
+import Torch.Float.TH.Static.Tensor.Random  as X
+import Torch.Float.TH.Static.Tensor.Math.Random  as X
+import Torch.Double.TH.Static.Tensor.Random  as X
+import Torch.Double.TH.Static.Tensor.Math.Random  as X
+
 

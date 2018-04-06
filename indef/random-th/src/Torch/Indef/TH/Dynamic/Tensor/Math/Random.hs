@@ -1,4 +1,4 @@
-module Torch.Indef.TH.Dynamic.Tensor.Math.Random where
+module Torch.Indef.TH.Dynamic.Tensor.Math.Random () where
 
 import Torch.Indef.Types
 import qualified Torch.Types.TH as TH

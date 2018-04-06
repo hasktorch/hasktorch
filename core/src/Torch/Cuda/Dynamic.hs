@@ -8,4 +8,5 @@ import Torch.Cuda.Int.Dynamic   as X
 import Torch.Cuda.Long.Dynamic  as X
 
 import Torch.Cuda.Double.Dynamic  as X
+import Torch.Cuda.Double.THC.Dynamic.Tensor.Random as X
 

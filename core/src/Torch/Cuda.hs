@@ -12,4 +12,5 @@ import Torch.Cuda.Int.Static   as X
 import Torch.Cuda.Long.Static  as X
 
 import Torch.Cuda.Double.Static as X
+import Torch.Cuda.Double.THC.Static.Tensor.Random as X
 
