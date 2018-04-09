@@ -5,66 +5,114 @@ import Foreign.C.Types
 import Torch.Types.TH
 import Torch.Class.Types
 import Torch.Dimensions
+import Torch.Class.Tensor
 
-class TensorMathPointwise t where
-  sign_        :: t -> t -> IO ()
-  cross_       :: t -> t -> t -> DimVal -> IO ()
-  clamp_       :: t -> t -> HsReal t -> HsReal t -> IO ()
-  cadd_        :: t -> t -> HsReal t -> t -> IO ()
-  csub_        :: t -> t -> HsReal t -> t -> IO ()
-  cmul_        :: t -> t -> t -> IO ()
-  cpow_        :: t -> t -> t -> IO ()
-  cdiv_        :: t -> t -> t -> IO ()
-  clshift_     :: t -> t -> t -> IO ()
-  crshift_     :: t -> t -> t -> IO ()
-  cfmod_       :: t -> t -> t -> IO ()
-  cremainder_  :: t -> t -> t -> IO ()
-  cmax_        :: t -> t -> t -> IO ()
-  cmin_        :: t -> t -> t -> IO ()
-  cmaxValue_   :: t -> t -> HsReal t -> IO ()
-  cminValue_   :: t -> t -> HsReal t -> IO ()
-  cbitand_     :: t -> t -> t -> IO ()
-  cbitor_      :: t -> t -> t -> IO ()
-  cbitxor_     :: t -> t -> t -> IO ()
-  addcmul_     :: t -> t -> HsReal t -> t -> t -> IO ()
-  addcdiv_     :: t -> t -> HsReal t -> t -> t -> IO ()
+class Tensor t => TensorMathPointwise t where
+  _sign        :: t -> t -> IO ()
+  _cross       :: t -> t -> t -> DimVal -> IO ()
+  _clamp       :: t -> t -> HsReal t -> HsReal t -> IO ()
+  _cadd        :: t -> t -> HsReal t -> t -> IO ()
+  _csub        :: t -> t -> HsReal t -> t -> IO ()
+  _cmul        :: t -> t -> t -> IO ()
+  _cpow        :: t -> t -> t -> IO ()
+  _cdiv        :: t -> t -> t -> IO ()
+  _clshift     :: t -> t -> t -> IO ()
+  _crshift     :: t -> t -> t -> IO ()
+  _cfmod       :: t -> t -> t -> IO ()
+  _cremainder  :: t -> t -> t -> IO ()
+  _cmax        :: t -> t -> t -> IO ()
+  _cmin        :: t -> t -> t -> IO ()
+  _cmaxValue   :: t -> t -> HsReal t -> IO ()
+  _cminValue   :: t -> t -> HsReal t -> IO ()
+  _cbitand     :: t -> t -> t -> IO ()
+  _cbitor      :: t -> t -> t -> IO ()
+  _cbitxor     :: t -> t -> t -> IO ()
+  _addcmul     :: t -> t -> HsReal t -> t -> t -> IO ()
+  _addcdiv     :: t -> t -> HsReal t -> t -> t -> IO ()
 
 class TensorMathPointwiseSigned t where
-  neg_ :: t -> t -> IO ()
-  abs_ :: t -> t -> IO ()
+  _neg :: t -> t -> IO ()
+  _abs :: t -> t -> IO ()
 
 class TensorMathPointwiseFloating t where
-  cinv_         :: t -> t -> IO ()
-  sigmoid_      :: t -> t -> IO ()
-  log_          :: t -> t -> IO ()
-  lgamma_       :: t -> t -> IO ()
-  log1p_        :: t -> t -> IO ()
-  exp_          :: t -> t -> IO ()
-  cos_          :: t -> t -> IO ()
-  acos_         :: t -> t -> IO ()
-  cosh_         :: t -> t -> IO ()
-  sin_          :: t -> t -> IO ()
-  asin_         :: t -> t -> IO ()
-  sinh_         :: t -> t -> IO ()
-  tan_          :: t -> t -> IO ()
-  atan_         :: t -> t -> IO ()
-  atan2_        :: t -> t -> t -> IO ()
-  tanh_         :: t -> t -> IO ()
-  erf_          :: t -> t -> IO ()
-  erfinv_       :: t -> t -> IO ()
-  pow_          :: t -> t -> HsReal t -> IO ()
-  tpow_         :: t -> HsReal t -> t -> IO ()
-  sqrt_         :: t -> t -> IO ()
-  rsqrt_        :: t -> t -> IO ()
-  ceil_         :: t -> t -> IO ()
-  floor_        :: t -> t -> IO ()
-  round_        :: t -> t -> IO ()
-  trunc_        :: t -> t -> IO ()
-  frac_         :: t -> t -> IO ()
-  lerp_         :: t -> t -> t -> HsReal t -> IO ()
+  _cinv         :: t -> t -> IO ()
+  _sigmoid      :: t -> t -> IO ()
+  _log          :: t -> t -> IO ()
+  _lgamma       :: t -> t -> IO ()
+  _log1p        :: t -> t -> IO ()
+  _exp          :: t -> t -> IO ()
+  _cos          :: t -> t -> IO ()
+  _acos         :: t -> t -> IO ()
+  _cosh         :: t -> t -> IO ()
+  _sin          :: t -> t -> IO ()
+  _asin         :: t -> t -> IO ()
+  _sinh         :: t -> t -> IO ()
+  _tan          :: t -> t -> IO ()
+  _atan         :: t -> t -> IO ()
+  _atan2        :: t -> t -> t -> IO ()
+  _tanh         :: t -> t -> IO ()
+  _erf          :: t -> t -> IO ()
+  _erfinv       :: t -> t -> IO ()
+  _pow          :: t -> t -> HsReal t -> IO ()
+  _tpow         :: t -> HsReal t -> t -> IO ()
+  _sqrt         :: t -> t -> IO ()
+  _rsqrt        :: t -> t -> IO ()
+  _ceil         :: t -> t -> IO ()
+  _floor        :: t -> t -> IO ()
+  _round        :: t -> t -> IO ()
+  _trunc        :: t -> t -> IO ()
+  _frac         :: t -> t -> IO ()
+  _lerp         :: t -> t -> t -> HsReal t -> IO ()
 
 class CPUTensorMathPointwiseFloating t where
   histc_        :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()
   bhistc_       :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()
 
+
+sign_, sign :: TensorMathPointwise t => t -> IO t
+sign_  = (`twice` _sign)
+sign t = withEmpty $ \r -> _sign r t
+
+cross :: TensorMathPointwise t => t -> t -> DimVal -> IO t
+cross a b di = withEmpty $ \r -> _cross r a b di
+
+clamp_, clamp :: TensorMathPointwise t => t -> HsReal t -> HsReal t -> IO t
+clamp_ t a b = t `twice` (\r' t' -> _clamp r' t' a b)
+clamp  t a b = withEmpty $ \r -> _clamp r t a b
+
+cadd_, cadd :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
+cadd_ t v b = t `twice` (\r' t' -> _cadd r' t' v b)
+cadd  t v b = withEmpty $ \r -> _cadd r t v b
+
+csub_, csub :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
+csub_ t v b = t `twice` (\r' t' -> _csub r' t' v b)
+csub  t v b = withEmpty $ \r -> _csub r t v b
+
+cmul_, cmul :: TensorMathPointwise t => t -> t -> IO t
+cmul_ t1 t2 = t1 `twice` (\r' t1' -> _cmul r' t1' t2)
+cmul  t1 t2 = withEmpty $ \r -> _cmul r t1 t2
+
+cpow_, cpow  :: TensorMathPointwise t => t -> t -> IO t
+cpow_ t1 t2 = t1 `twice` (\r' t1' -> _cpow r' t1' t2)
+cpow  t1 t2 = withEmpty $ \r -> _cpow r t1 t2
+
+cdiv_, cdiv :: TensorMathPointwise t => t -> t -> IO t
+cdiv_ t1 t2 = t1 `twice` (\r' t1' -> _cdiv r' t1' t2)
+cdiv  t1 t2 = withEmpty $ \r -> _cdiv r t1 t2
+
+-- clshift_     :: TensorMathPointwise t => t -> t -> IO t
+-- crshift_     :: TensorMathPointwise t => t -> t -> IO t
+-- cfmod_       :: TensorMathPointwise t => t -> t -> IO t
+-- cremainder_  :: TensorMathPointwise t => t -> t -> IO t
+-- cmax_        :: TensorMathPointwise t => t -> t -> IO t
+-- cmin_        :: TensorMathPointwise t => t -> t -> IO t
+-- cmaxValue_   :: TensorMathPointwise t => t -> HsReal t -> IO t
+-- cminValue_   :: TensorMathPointwise t => t -> HsReal t -> IO t
+-- cbitand_     :: TensorMathPointwise t => t -> t -> IO t
+-- cbitor_      :: TensorMathPointwise t => t -> t -> IO t
+-- cbitxor_     :: TensorMathPointwise t => t -> t -> IO t
+-- addcmul_     :: TensorMathPointwise t => t -> HsReal t -> t -> t -> IO t
+
+-- addcdiv_ :: TensorMathPointwise t => t -> HsReal t -> t -> t -> IO t
+-- addcdiv_ t x a b c =
 

@@ -98,14 +98,21 @@ shape t = do
   ds <- nDimension t
   mapM (size t . fromIntegral) [0..ds-1]
 
+-- not actually "inplace" this is actually "with return and static dimensions"
 withInplace :: Tensor t => (t -> IO ()) -> Dim (d::[Nat]) -> IO t
 withInplace op d = new d >>= \r -> op r >> pure r
 
+-- not actually "inplace" this is actually "with return and runtime dimensions"
 withInplace' :: Tensor t => (t -> IO ()) -> SomeDims -> IO t
 withInplace' op (SomeDims d) = withInplace op d
 
-withInplace1 :: Tensor t => (t -> IO ()) -> t -> IO t
-withInplace1 op t = getDims t >>= withInplace' op
+-- This is actually 'inplace'
+twice :: Tensor t => t -> (t -> t -> IO ()) -> IO t
+twice t op = op t t >> pure t
+
+-- I think we can get away with this for most creations. Torch does the resizing in C.
+withEmpty :: Tensor t => (t -> IO ()) -> IO t
+withEmpty op = empty >>= \r -> op r >> pure r
 
 setStorageDim_ :: Tensor t => t -> HsStorage t -> StorageOffset -> [(Size, Stride)] -> IO ()
 setStorageDim_ t s o = \case

@@ -1,7 +1,9 @@
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Class.Tensor.Math.Blas where
 
 import Data.Void
 import Torch.Class.Types
+import System.IO.Unsafe
 
 class TensorMathBlas t where
   addmv_       :: t -> HsReal t -> t -> HsReal t -> t -> t -> IO ()
@@ -21,4 +23,8 @@ class TensorMathBlas t where
 --   btrifact :: t -> IntTensor -> IntTensor -> Int -> t -> io ()
 --   btrisolve :: t -> t -> t -> IntTensor -> io ()
 
+
+(<.>) :: TensorMathBlas t => t -> t -> HsAccReal t
+(<.>) a b = unsafePerformIO $ dot a b
+{-# NOINLINE (<.>) #-}
 

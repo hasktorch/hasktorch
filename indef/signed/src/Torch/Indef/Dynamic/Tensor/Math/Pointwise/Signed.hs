@@ -5,6 +5,6 @@ import qualified Torch.Sig.Tensor.Math.Pointwise.Signed as Sig
 import qualified Torch.Class.Tensor.Math.Pointwise as Class
 
 instance Class.TensorMathPointwiseSigned Dynamic where
-  abs_ r t = with2DynamicState r t Sig.c_abs
-  neg_ r t = with2DynamicState r t Sig.c_neg
+  _abs r t = with2DynamicState r t Sig.c_abs
+  _neg r t = with2DynamicState r t Sig.c_neg
 

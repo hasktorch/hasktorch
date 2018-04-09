@@ -7,11 +7,11 @@ import qualified Torch.Class.Tensor.Math.Pointwise.Static as Class
 import Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed ()
 
 instance Class.TensorMathPointwiseSigned Tensor where
-  abs_ :: Tensor d -> Tensor d -> IO ()
-  abs_ r t = Dynamic.abs_ (asDynamic r) (asDynamic t)
+  _abs :: Tensor d -> Tensor d -> IO ()
+  _abs r t = Dynamic._abs (asDynamic r) (asDynamic t)
 
-  neg_ :: Tensor d -> Tensor d -> IO ()
-  neg_ r t = Dynamic.neg_ (asDynamic r) (asDynamic t)
+  _neg :: Tensor d -> Tensor d -> IO ()
+  _neg r t = Dynamic._neg (asDynamic r) (asDynamic t)
 
 
 

@@ -16,6 +16,7 @@ import Data.Singletons.Prelude.Num
 import Control.Monad
 
 import Torch.Dimensions
+import Data.Coerce
 
 import Torch.Class.Types
 -- import Torch.Class.Tensor as X hiding (new, fromList1d, resizeDim)
@@ -118,8 +119,30 @@ shape t = do
   ds <- nDimension t
   mapM (size t . fromIntegral) [0..ds-1]
 
-withInplace :: forall t d . (Dimensions d, Tensor t) => (t d -> IO ()) -> IO (t d)
-withInplace op = new >>= \r -> op r >> pure r
+withNew :: forall t d . (Dimensions d, Tensor t) => (t d -> IO ()) -> IO (t d)
+withNew op = new >>= \r -> op r >> pure r
+
+-- I think we can get away with this for most creations. Torch does the resizing in C.
+withEmpty :: Dimensions d => Tensor t => (t d -> IO ()) -> IO (t d)
+withEmpty op = empty >>= \r -> op r >> pure r
+
+type CoerceDims t d d' = (Dimensions2 d d', IsStatic (t d), AsDynamic (t d) ~ AsDynamic (t d'), IsStatic (t d'))
+
+useSudo :: (CoerceDims t d d') => t d -> t d'
+useSudo = asStatic . asDynamic
+
+-- This is actually 'inplace'. Dimensions may change from original tensor given Torch resizing.
+withInplace :: (Tensor t, Dimensions d) => t d -> (t d -> t d -> IO ()) -> IO (t d)
+withInplace t op = op t t >> pure t
+
+-- This is actually 'inplace'. Dimensions may change from original tensor given Torch resizing.
+sudoInplace
+  :: forall t d d' . (Tensor t, CoerceDims t d d')
+  => t d -> (t d' -> t d -> IO ()) -> IO (t d')
+sudoInplace t op = op ret t >> pure ret
+  where
+    ret :: t d'
+    ret = useSudo t
 
 throwFIXME :: MonadThrow io => String -> String -> io x
 throwFIXME fixme msg = throwString $ msg ++ " (FIXME: " ++ fixme ++ ")"
