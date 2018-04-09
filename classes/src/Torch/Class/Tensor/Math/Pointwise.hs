@@ -10,7 +10,7 @@ import Torch.Dimensions
 import Torch.Class.Tensor
 import System.IO.Unsafe
 
-class (Num (HsReal t), Tensor t) => TensorMathPointwise t where
+class Tensor t => TensorMathPointwise t where
   _sign        :: t -> t -> IO ()
   _cross       :: t -> t -> t -> DimVal -> IO ()
   _clamp       :: t -> t -> HsReal t -> HsReal t -> IO ()
@@ -33,9 +33,61 @@ class (Num (HsReal t), Tensor t) => TensorMathPointwise t where
   _addcmul     :: t -> t -> HsReal t -> t -> t -> IO ()
   _addcdiv     :: t -> t -> HsReal t -> t -> t -> IO ()
 
-class TensorMathPointwiseSigned t where
+sign_, sign :: TensorMathPointwise t => t -> IO t
+sign_  = (`twice` _sign)
+sign t = withEmpty $ \r -> _sign r t
+
+cross :: TensorMathPointwise t => t -> t -> DimVal -> IO t
+cross a b di = withEmpty $ \r -> _cross r a b di
+
+clamp_, clamp :: TensorMathPointwise t => t -> HsReal t -> HsReal t -> IO t
+clamp_ t a b = t `twice` (\r' t' -> _clamp r' t' a b)
+clamp  t a b = withEmpty $ \r -> _clamp r t a b
+
+cadd_, cadd :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
+cadd_ t v b = t `twice` (\r' t' -> _cadd r' t' v b)
+cadd  t v b = withEmpty $ \r -> _cadd r t v b
+(^+^) :: (Num (HsReal t), TensorMathPointwise t) => t -> t -> t
+(^+^) a b = unsafePerformIO $ cadd a 1 b
+{-# NOINLINE (^+^) #-}
+
+csub_, csub :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
+csub_ t v b = t `twice` (\r' t' -> _csub r' t' v b)
+csub  t v b = withEmpty $ \r -> _csub r t v b
+(^-^) :: (Num (HsReal t), TensorMathPointwise t) => t -> t -> t
+(^-^) a b = unsafePerformIO $ csub a 1 b
+{-# NOINLINE (^-^) #-}
+
+cmul_, cmul :: TensorMathPointwise t => t -> t -> IO t
+cmul_ t1 t2 = t1 `twice` (\r' t1' -> _cmul r' t1' t2)
+cmul  t1 t2 = withEmpty $ \r -> _cmul r t1 t2
+(^*^) :: TensorMathPointwise t => t -> t -> t
+(^*^) a b = unsafePerformIO $ cmul a b
+{-# NOINLINE (^*^) #-}
+
+cdiv_, cdiv :: TensorMathPointwise t => t -> t -> IO t
+cdiv_ t1 t2 = t1 `twice` (\r' t1' -> _cdiv r' t1' t2)
+cdiv  t1 t2 = withEmpty $ \r -> _cdiv r t1 t2
+(^/^) :: TensorMathPointwise t => t -> t -> t
+(^/^) a b = unsafePerformIO $ cdiv a b
+{-# NOINLINE (^/^) #-}
+
+cpow_, cpow  :: TensorMathPointwise t => t -> t -> IO t
+cpow_ t1 t2 = t1 `twice` (\r' t1' -> _cpow r' t1' t2)
+cpow  t1 t2 = withEmpty $ \r -> _cpow r t1 t2
+
+
+class Tensor t => TensorMathPointwiseSigned t where
   _neg :: t -> t -> IO ()
   _abs :: t -> t -> IO ()
+
+neg_, neg  :: TensorMathPointwiseSigned t => t -> IO t
+neg_ t = t `twice` (\r' t' -> _neg r' t')
+neg  t = withEmpty $ \r -> _neg r t
+
+abs_, abs  :: TensorMathPointwiseSigned t => t -> IO t
+abs_ t = t `twice` (\r' t' -> _abs r' t')
+abs  t = withEmpty $ \r -> _abs r t
 
 class TensorMathPointwiseFloating t where
   _cinv         :: t -> t -> IO ()
@@ -70,51 +122,6 @@ class TensorMathPointwiseFloating t where
 class CPUTensorMathPointwiseFloating t where
   histc_        :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()
   bhistc_       :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()
-
-
-sign_, sign :: TensorMathPointwise t => t -> IO t
-sign_  = (`twice` _sign)
-sign t = withEmpty $ \r -> _sign r t
-
-cross :: TensorMathPointwise t => t -> t -> DimVal -> IO t
-cross a b di = withEmpty $ \r -> _cross r a b di
-
-clamp_, clamp :: TensorMathPointwise t => t -> HsReal t -> HsReal t -> IO t
-clamp_ t a b = t `twice` (\r' t' -> _clamp r' t' a b)
-clamp  t a b = withEmpty $ \r -> _clamp r t a b
-
-cadd_, cadd :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
-cadd_ t v b = t `twice` (\r' t' -> _cadd r' t' v b)
-cadd  t v b = withEmpty $ \r -> _cadd r t v b
-(^+^) :: TensorMathPointwise t => t -> t -> t
-(^+^) a b = unsafePerformIO $ cadd a 1 b
-{-# NOINLINE (^+^) #-}
-
-csub_, csub :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
-csub_ t v b = t `twice` (\r' t' -> _csub r' t' v b)
-csub  t v b = withEmpty $ \r -> _csub r t v b
-(^-^) :: TensorMathPointwise t => t -> t -> t
-(^-^) a b = unsafePerformIO $ csub a 1 b
-{-# NOINLINE (^-^) #-}
-
-cmul_, cmul :: TensorMathPointwise t => t -> t -> IO t
-cmul_ t1 t2 = t1 `twice` (\r' t1' -> _cmul r' t1' t2)
-cmul  t1 t2 = withEmpty $ \r -> _cmul r t1 t2
-(^*^) :: TensorMathPointwise t => t -> t -> t
-(^*^) a b = unsafePerformIO $ cmul a b
-{-# NOINLINE (^*^) #-}
-
-cdiv_, cdiv :: TensorMathPointwise t => t -> t -> IO t
-cdiv_ t1 t2 = t1 `twice` (\r' t1' -> _cdiv r' t1' t2)
-cdiv  t1 t2 = withEmpty $ \r -> _cdiv r t1 t2
-(^/^) :: TensorMathPointwise t => t -> t -> t
-(^/^) a b = unsafePerformIO $ cdiv a b
-{-# NOINLINE (^/^) #-}
-
-
-cpow_, cpow  :: TensorMathPointwise t => t -> t -> IO t
-cpow_ t1 t2 = t1 `twice` (\r' t1' -> _cpow r' t1' t2)
-cpow  t1 t2 = withEmpty $ \r -> _cpow r t1 t2
 
 
 -- clshift_     :: TensorMathPointwise t => t -> t -> IO t

@@ -1,6 +1,7 @@
 module Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed where
 
 import Torch.Indef.Types
+import Torch.Indef.Dynamic.Tensor ()
 import qualified Torch.Sig.Tensor.Math.Pointwise.Signed as Sig
 import qualified Torch.Class.Tensor.Math.Pointwise as Class
 
