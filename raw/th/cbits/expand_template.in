@@ -1,0 +1,84 @@
+void TH<<TYPE>>Tensor_expand(TH<<TYPE>>Tensor *r, TH<<TYPE>>Tensor *tensor, THLongStorage *sizes) {
+  THArgCheck(TH<<TYPE>>Tensor_nDimension(tensor) > 0, 0, "can't expand an empty tensor");
+  THArgCheck(THLongStorage_size(sizes) >= TH<<TYPE>>Tensor_nDimension(tensor), 1,
+             "the number of sizes provided must be greater or equal to the "
+             "number of dimensions in the tensor");
+
+  long *expandedSizes;
+  long *expandedStrides;
+  char error_buffer[1024];
+  int ret =
+      THLongStorage_inferExpandGeometry(tensor->size, tensor->stride, TH<<TYPE>>Tensor_nDimension(tensor),
+                                        sizes, &expandedSizes, &expandedStrides, error_buffer, 1024);
+
+  if (ret != 0) {
+    THError(error_buffer);
+    return;
+  }
+
+  TH<<TYPE>>Tensor_setStorageNd(r, TH<<TYPE>>Tensor_storage(tensor), TH<<TYPE>>Tensor_storageOffset(tensor),
+                          THLongStorage_size(sizes), expandedSizes, expandedStrides);
+  THFree(expandedSizes);
+  THFree(expandedStrides);
+}
+
+void TH<<TYPE>>Tensor_expand(TH<<TYPE>>Tensor *r, TH<<TYPE>>Tensor *tensor, THLongStorage *sizes) {
+  THArgCheck(TH<<TYPE>>Tensor_nDimension(tensor) > 0, 0, "can't expand an empty tensor");
+  THArgCheck(THLongStorage_size(sizes) >= TH<<TYPE>>Tensor_nDimension(tensor), 1,
+             "the number of sizes provided must be greater or equal to the "
+             "number of dimensions in the tensor");
+
+  long *expandedSizes;
+  long *expandedStrides;
+  char error_buffer[1024];
+  int ret =
+      THLongStorage_inferExpandGeometry(tensor->size, tensor->stride, TH<<TYPE>>Tensor_nDimension(tensor),
+                                        sizes, &expandedSizes, &expandedStrides, error_buffer, 1024);
+
+  if (ret != 0) {
+    THError(error_buffer);
+    return;
+  }
+
+  TH<<TYPE>>Tensor_setStorageNd(r, TH<<TYPE>>Tensor_storage(tensor), TH<<TYPE>>Tensor_storageOffset(tensor),
+                          THLongStorage_size(sizes), expandedSizes, expandedStrides);
+  THFree(expandedSizes);
+  THFree(expandedStrides);
+}
+
+
+void TH<<TYPE>>Tensor_expandNd(TH<<TYPE>>Tensor **rets, TH<<TYPE>>Tensor **ops, int count) {
+  for (int i = 0; i < count; ++i) {
+    THArgCheck(TH<<TYPE>>Tensor_nDimension(ops[i]) > 0, i, "can't expand empty tensor %d", i);
+  }
+
+  long *op_sizes[count];
+  long op_dims[count];
+
+  for (int i = 0; i < count; ++i) {
+    op_sizes[i] = ops[i]->size;
+    op_dims[i] = ops[i]->nDimension;
+  }
+
+  THLongStorage *sizes = THLongStorage_new();
+  char error_buffer[1024];
+  int ret = THLongStorage_inferSizeN(sizes,
+                                     count,
+                                     op_sizes,
+                                     op_dims,
+                                     error_buffer,
+                                     1024);
+
+  if(ret != 0) {
+    THLongStorage_free(sizes);
+    THError(error_buffer);
+    return;
+  }
+
+  for (int i = 0; i < count; ++i) {
+    TH<<TYPE>>Tensor_expand(rets[i], ops[i], sizes);
+  }
+
+  THLongStorage_free(sizes);
+}
+
