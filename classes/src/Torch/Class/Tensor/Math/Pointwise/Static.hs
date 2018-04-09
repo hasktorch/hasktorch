@@ -1,10 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Class.Tensor.Math.Pointwise.Static where
 
 import GHC.Int
+import System.IO.Unsafe
 import Torch.Dimensions
 
 import Torch.Class.Types
@@ -12,18 +13,20 @@ import Torch.Class.Tensor.Static
 import Torch.Class.Tensor.Math.Static (TensorMath)
 import qualified Torch.Class.Tensor.Math.Pointwise as Dynamic
 
-class TensorMath t => TensorMathPointwise t where
-  _sign        :: Dimensions2 d d' => t d -> t d' -> IO ()
-  _clamp       :: Dimensions2 d d' => t d -> t d' -> HsReal (t d) -> HsReal (t d) -> IO ()
-  _cmaxValue   :: Dimensions2 d d' => t d -> t d' -> HsReal (t d) -> IO ()
-  _cminValue   :: Dimensions2 d d' => t d -> t d' -> HsReal (t d) -> IO ()
+class (TensorMath t) => TensorMathPointwise t where
+  _sign        :: Dimensions d => t d -> t d -> IO ()
+  _clamp       :: Dimensions d => t d -> t d -> HsReal (t d) -> HsReal (t d) -> IO ()
+  _cmaxValue   :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
+  _cminValue   :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
 
   _cross       :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> DimVal -> IO ()
-  _cadd        :: Dimensions3 d d' d'' => t d -> t d' -> HsReal (t d) -> t d'' -> IO ()
-  _csub        :: Dimensions3 d d' d'' => t d -> t d' -> HsReal (t d) -> t d'' -> IO ()
-  _cmul        :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _cpow        :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _cdiv        :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
+
+  _cadd        :: (Num (HsReal (t d)), Dimensions d) => t d -> t d' -> HsReal (t d) -> t d'' -> IO ()
+  _csub        :: (Num (HsReal (t d)), Dimensions d) => t d -> t d' -> HsReal (t d) -> t d'' -> IO ()
+  _cmul        :: Dimensions d => t d -> t d' -> t d'' -> IO ()
+  _cpow        :: Dimensions d => t d -> t d' -> t d'' -> IO ()
+  _cdiv        :: Dimensions d => t d -> t d' -> t d'' -> IO ()
+
   _clshift     :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
   _crshift     :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
   _cfmod       :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
@@ -37,8 +40,46 @@ class TensorMath t => TensorMathPointwise t where
   _addcmul     :: Dimensions2 d d' => t d' -> t d -> HsReal (t d) -> t d -> t d -> IO ()
   _addcdiv     :: Dimensions2 d d' => t d' -> t d -> HsReal (t d) -> t d -> t d -> IO ()
 
-sign :: forall t d .  (TensorMathPointwise t, Dimensions d, Tensor t) => t d -> IO (t d)
-sign t = withEmpty (`_sign` t)
+sign_, sign :: (TensorMathPointwise t, Dimensions d) => t d -> IO (t d)
+sign_ t = withInplace t _sign
+sign  t = withEmpty $ \r -> _sign r t
+
+clamp_, clamp :: (TensorMathPointwise t, Dimensions d) => t d -> HsReal (t d) -> HsReal (t d) -> IO (t d)
+clamp_ t a b = withInplace t $ \r' t' -> _clamp r' t' a b
+clamp  t a b = withEmpty $ \r -> _clamp r t a b
+
+cadd_, cadd :: (Num (HsReal (t d)), TensorMathPointwise t, Dimensions d) => t d -> HsReal (t d) -> t d -> IO (t d)
+cadd_ t v b = withInplace t $ \r' t' -> _cadd r' t' v b
+cadd  t v b = withEmpty $ \r -> _cadd r t v b
+(^+^) :: (Num (HsReal (t d)), TensorMathPointwise t, Dimensions d) => t d -> t d -> t d
+(^+^) a b = unsafePerformIO $ cadd a 1 b
+{-# NOINLINE (^+^) #-}
+
+csub_, csub :: (Num (HsReal (t d)), TensorMathPointwise t, Dimensions d) => t d -> HsReal (t d) -> t d -> IO (t d)
+csub_ t v b = withInplace t $ \r' t' -> _csub r' t' v b
+csub  t v b = withEmpty $ \r -> _csub r t v b
+(^-^) :: (Num (HsReal (t d)), TensorMathPointwise t, Dimensions d) => t d -> t d -> t d
+(^-^) a b = unsafePerformIO $ csub a 1 b
+{-# NOINLINE (^-^) #-}
+
+cmul_, cmul :: (TensorMathPointwise t, Dimensions d) => t d -> t d -> IO (t d)
+cmul_ t1 t2 = withInplace t1 $ \r' t1' -> _cmul r' t1' t2
+cmul  t1 t2 = withEmpty $ \r -> _cmul r t1 t2
+(^*^) :: (TensorMathPointwise t, Dimensions d) => t d -> t d -> t d
+(^*^) a b = unsafePerformIO $ cmul a b
+{-# NOINLINE (^*^) #-}
+
+cdiv_, cdiv :: TensorMathPointwise t => Dimensions d => t d -> t d -> IO (t d)
+cdiv_ t1 t2 = withInplace t1 $ \r' t1' -> _cdiv r' t1' t2
+cdiv  t1 t2 = withEmpty $ \r -> _cdiv r t1 t2
+(^/^) :: (TensorMathPointwise t, Dimensions d) => t d -> t d -> t d
+(^/^) a b = unsafePerformIO $ cdiv a b
+{-# NOINLINE (^/^) #-}
+
+cpow_, cpow  :: (Dimensions d, TensorMathPointwise t) => t d -> t d -> IO (t d)
+cpow_ t1 t2 = withInplace t1 $ \r' t1' -> _cpow r' t1' t2
+cpow  t1 t2 = withEmpty $ \r -> _cpow r t1 t2
+
 
 class TensorMathPointwiseSigned t where
   _neg :: Dimensions d => t d -> t d -> IO ()

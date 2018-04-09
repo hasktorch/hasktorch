@@ -17,11 +17,11 @@ blasOp fn r a x b y z =
 
 
 instance Class.TensorMathBlas Dynamic where
-  addmv_   = blasOp Sig.c_addmv
-  addmm_   = blasOp Sig.c_addmm
-  addr_    = blasOp Sig.c_addr
-  addbmm_  = blasOp Sig.c_addbmm
-  baddbmm_ = blasOp Sig.c_baddbmm
+  _addmv   = blasOp Sig.c_addmv
+  _addmm   = blasOp Sig.c_addmm
+  _addr    = blasOp Sig.c_addr
+  _addbmm  = blasOp Sig.c_addbmm
+  _baddbmm = blasOp Sig.c_baddbmm
 
   dot :: Dynamic -> Dynamic -> IO HsAccReal
   dot a b = with2DynamicState a b $ fmap c2hsAccReal ..: Sig.c_dot

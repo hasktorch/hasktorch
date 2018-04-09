@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Class.Tensor.Math.Pointwise where
 
 import Foreign
@@ -6,8 +8,9 @@ import Torch.Types.TH
 import Torch.Class.Types
 import Torch.Dimensions
 import Torch.Class.Tensor
+import System.IO.Unsafe
 
-class Tensor t => TensorMathPointwise t where
+class (Num (HsReal t), Tensor t) => TensorMathPointwise t where
   _sign        :: t -> t -> IO ()
   _cross       :: t -> t -> t -> DimVal -> IO ()
   _clamp       :: t -> t -> HsReal t -> HsReal t -> IO ()
@@ -83,22 +86,36 @@ clamp  t a b = withEmpty $ \r -> _clamp r t a b
 cadd_, cadd :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
 cadd_ t v b = t `twice` (\r' t' -> _cadd r' t' v b)
 cadd  t v b = withEmpty $ \r -> _cadd r t v b
+(^+^) :: TensorMathPointwise t => t -> t -> t
+(^+^) a b = unsafePerformIO $ cadd a 1 b
+{-# NOINLINE (^+^) #-}
 
 csub_, csub :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
 csub_ t v b = t `twice` (\r' t' -> _csub r' t' v b)
 csub  t v b = withEmpty $ \r -> _csub r t v b
+(^-^) :: TensorMathPointwise t => t -> t -> t
+(^-^) a b = unsafePerformIO $ csub a 1 b
+{-# NOINLINE (^-^) #-}
 
 cmul_, cmul :: TensorMathPointwise t => t -> t -> IO t
 cmul_ t1 t2 = t1 `twice` (\r' t1' -> _cmul r' t1' t2)
 cmul  t1 t2 = withEmpty $ \r -> _cmul r t1 t2
+(^*^) :: TensorMathPointwise t => t -> t -> t
+(^*^) a b = unsafePerformIO $ cmul a b
+{-# NOINLINE (^*^) #-}
+
+cdiv_, cdiv :: TensorMathPointwise t => t -> t -> IO t
+cdiv_ t1 t2 = t1 `twice` (\r' t1' -> _cdiv r' t1' t2)
+cdiv  t1 t2 = withEmpty $ \r -> _cdiv r t1 t2
+(^/^) :: TensorMathPointwise t => t -> t -> t
+(^/^) a b = unsafePerformIO $ cdiv a b
+{-# NOINLINE (^/^) #-}
+
 
 cpow_, cpow  :: TensorMathPointwise t => t -> t -> IO t
 cpow_ t1 t2 = t1 `twice` (\r' t1' -> _cpow r' t1' t2)
 cpow  t1 t2 = withEmpty $ \r -> _cpow r t1 t2
 
-cdiv_, cdiv :: TensorMathPointwise t => t -> t -> IO t
-cdiv_ t1 t2 = t1 `twice` (\r' t1' -> _cdiv r' t1' t2)
-cdiv  t1 t2 = withEmpty $ \r -> _cdiv r t1 t2
 
 -- clshift_     :: TensorMathPointwise t => t -> t -> IO t
 -- crshift_     :: TensorMathPointwise t => t -> t -> IO t
