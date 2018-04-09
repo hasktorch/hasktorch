@@ -52,7 +52,6 @@ library
 
   exposed-modules:
     -- support modules
-
       Torch.Core.Exceptions
     , Torch.Core.Random
     , Torch.Core.LogAdd

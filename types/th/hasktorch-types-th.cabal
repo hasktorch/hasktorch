@@ -15,6 +15,7 @@ source-repository head
 
 library
   hs-source-dirs: src
+  c-sources: cbits/state_free.c
   default-extensions: KindSignatures, DataKinds
   build-tools: c2hs
   build-depends:

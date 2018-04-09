@@ -1,3 +1,4 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
 module Torch.Types.TH
   ( module Torch.Types.TH.Structs
 
@@ -62,8 +63,10 @@ newtype State = State { asForeign :: ForeignPtr C'THState }
   deriving (Eq, Show)
 asState = State
 
+foreign import ccall "&free_CTHState" state_free :: FunPtr (Ptr C'THState -> IO ())
+
 manageState :: Ptr C'THState -> IO (ForeignPtr C'THState)
-manageState = newForeignPtr nullFunPtr
+manageState = newForeignPtr state_free
 
 type CAllocator   = C'THAllocator
 newtype Allocator = Allocator { callocator :: ForeignPtr CAllocator }
