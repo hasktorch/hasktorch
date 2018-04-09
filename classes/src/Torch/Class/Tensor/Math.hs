@@ -7,28 +7,28 @@ import GHC.TypeLits (Nat)
 import Torch.Dimensions
 import Torch.Class.Types
 import GHC.Int
-import Torch.Class.Tensor (IsTensor(empty), withInplace, new)
+import Torch.Class.Tensor (IsTensor(empty), withInplace, withEmpty, new)
 import qualified Torch.Types.TH as TH
 
 class IsTensor t => TensorMath t where
-  fill_        :: t -> HsReal t -> IO ()
-  zero_        :: t -> IO ()
-  zeros_       :: t -> IndexStorage t -> IO ()
-  zerosLike_   :: t -> t -> IO ()
-  ones_        :: t -> TH.IndexStorage -> IO ()
-  onesLike_    :: t -> t -> IO ()
+  _fill        :: t -> HsReal t -> IO ()
+  _zero        :: t -> IO ()
+  _zeros       :: t -> IndexStorage t -> IO ()
+  _zerosLike   :: t -> t -> IO ()
+  _ones        :: t -> TH.IndexStorage -> IO ()
+  _onesLike    :: t -> t -> IO ()
   numel        :: t -> IO Integer
-  reshape_     :: t -> t -> TH.IndexStorage -> IO ()
-  cat_         :: t -> t -> t -> DimVal -> IO ()
-  catArray_    :: t -> [t] -> Int -> DimVal -> IO ()
-  nonzero_     :: IndexDynamic t -> t -> IO ()
-  tril_        :: t -> t -> Integer -> IO ()
-  triu_        :: t -> t -> Integer -> IO ()
-  diag_        :: t -> t -> Int -> IO ()
-  eye_         :: t -> Integer -> Integer -> IO ()
+  _reshape     :: t -> t -> TH.IndexStorage -> IO ()
+  _cat         :: t -> t -> t -> DimVal -> IO ()
+  _catArray    :: t -> [t] -> Int -> DimVal -> IO ()
+  _nonzero     :: IndexDynamic t -> t -> IO ()
+  _tril        :: t -> t -> Integer -> IO ()
+  _triu        :: t -> t -> Integer -> IO ()
+  _diag        :: t -> t -> Int -> IO ()
+  _eye         :: t -> Integer -> Integer -> IO ()
   trace        :: t -> IO (HsAccReal t)
-  arange_      :: t -> HsAccReal t -> HsAccReal t -> HsAccReal t -> IO ()
-  range_       :: t -> HsAccReal t -> HsAccReal t -> HsAccReal t -> IO ()
+  _arange      :: t -> HsAccReal t -> HsAccReal t -> HsAccReal t -> IO ()
+  _range       :: t -> HsAccReal t -> HsAccReal t -> HsAccReal t -> IO ()
 
 class CPUTensorMath t where
   match    :: t -> t -> t -> IO (HsReal t)
@@ -36,27 +36,34 @@ class CPUTensorMath t where
   randperm :: t -> Generator t -> Integer -> IO ()
 
 class TensorMathFloating t where
-  linspace_     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
-  logspace_     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
+  _linspace     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
+  _logspace     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
 
 constant :: (TensorMath t) => Dim (d :: [Nat]) -> HsReal t -> IO t
-constant d v = new d >>= \r -> fill_ r v >> pure r
+constant d v = new d >>= \r -> _fill r v >> pure r
+
+diag_, diag :: TensorMath t => t -> Int -> IO t
+diag_ t d = _diag t t d >> pure t
+diag  t d = withEmpty $ \r -> _diag r t d
+
+diag1d :: TensorMath t => t -> IO t
+diag1d t = diag t 1
 
 _tenLike
   :: (TensorMath t)
   => (t -> t -> IO ())
   -> Dim (d::[Nat]) -> IO t
-_tenLike fn_ d = do
+_tenLike _fn d = do
   src <- new d
   shape <- new d
-  fn_ src shape
+  _fn src shape
   pure src
 
 onesLike, zerosLike
   :: (TensorMath t)
   => Dim (d::[Nat]) -> IO t
-onesLike = _tenLike onesLike_
-zerosLike = _tenLike zerosLike_
+onesLike = _tenLike _onesLike
+zerosLike = _tenLike _zerosLike
 
 range
   :: (TensorMath t)
@@ -65,7 +72,7 @@ range
   -> HsAccReal t
   -> HsAccReal t
   -> IO t
-range d a b c = withInplace (\r -> range_ r a b c) d
+range d a b c = withInplace (\r -> _range r a b c) d
 
 
 

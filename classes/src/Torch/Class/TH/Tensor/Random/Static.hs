@@ -1,9 +1,37 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Class.TH.Tensor.Random.Static where
 
+import Control.Monad
 import Torch.Class.Types
 import Torch.Dimensions
 import Torch.Class.Tensor.Static
+import Torch.Class.Tensor.Math.Static
+import Torch.Class.Tensor.Math.Pointwise.Static
+import Torch.Class.Tensor.Math.Blas.Static
 import qualified Torch.Types.TH as TH
+
+-- ========================================================================= --
+-- Custom functions
+-- ========================================================================= --
+multivariate_normal
+  :: forall t n p . (KnownNatDim2 n p)
+  => (IsTensor t, THTensorRandom t)
+  => Generator (t '[p, n]) -> t '[p] -> t '[p, p] -> t '[p] -> IO (t '[n, p])
+multivariate_normal g mu eigvec eigval = join $ go
+  <$> newTranspose2d eigvec
+  <*> diag1d eigval
+  <*> expand2d mu
+  <*> normal g 0 1
+ where
+  go :: t '[p, p] -> t '[p, p] -> t '[n, p] -> t '[p, n] -> IO (t '[n, p])
+  go evec' eval' offset samps = (^+^ offset) <$> newTranspose2d (y !*! samps)
+    where
+      x = evec' !*! eval'
+      y = x !*! eigvec
+
+-- ========================================================================= --
+-- Typeclass definition
+-- ========================================================================= --
 
 class THTensorRandom t where
   random_                     :: Dimensions d => t d -> Generator (t d) -> IO ()

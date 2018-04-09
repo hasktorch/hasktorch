@@ -78,3 +78,4 @@ cauchy d g a b = flip withInplace d $ \t -> cauchy_ t g a b
 logNormal :: (IsTensor t, THTensorRandom t) => Dim (d::[Nat]) -> Generator t -> HsAccReal t -> HsAccReal t -> IO t
 logNormal d g a b = flip withInplace d $ \t -> logNormal_ t g a b
 
+
