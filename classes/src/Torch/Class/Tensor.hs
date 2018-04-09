@@ -17,7 +17,7 @@ import Torch.Class.Types
 import Torch.Dimensions
 import qualified Torch.Types.TH as TH
 
-class Tensor t where
+class IsTensor t where
   clearFlag_ :: t -> Int8 -> IO ()
   tensordata :: t -> IO [HsReal t]
   free_ :: t -> IO ()
@@ -93,28 +93,28 @@ class Tensor t where
 class CPUTensor t where
   desc :: t -> IO (DescBuff t)
 
-shape :: Tensor t => t -> IO [Size]
+shape :: IsTensor t => t -> IO [Size]
 shape t = do
   ds <- nDimension t
   mapM (size t . fromIntegral) [0..ds-1]
 
 -- not actually "inplace" this is actually "with return and static dimensions"
-withInplace :: Tensor t => (t -> IO ()) -> Dim (d::[Nat]) -> IO t
+withInplace :: IsTensor t => (t -> IO ()) -> Dim (d::[Nat]) -> IO t
 withInplace op d = new d >>= \r -> op r >> pure r
 
 -- not actually "inplace" this is actually "with return and runtime dimensions"
-withInplace' :: Tensor t => (t -> IO ()) -> SomeDims -> IO t
+withInplace' :: IsTensor t => (t -> IO ()) -> SomeDims -> IO t
 withInplace' op (SomeDims d) = withInplace op d
 
 -- This is actually 'inplace'
-twice :: Tensor t => t -> (t -> t -> IO ()) -> IO t
+twice :: IsTensor t => t -> (t -> t -> IO ()) -> IO t
 twice t op = op t t >> pure t
 
 -- I think we can get away with this for most creations. Torch does the resizing in C.
-withEmpty :: Tensor t => (t -> IO ()) -> IO t
+withEmpty :: IsTensor t => (t -> IO ()) -> IO t
 withEmpty op = empty >>= \r -> op r >> pure r
 
-setStorageDim_ :: Tensor t => t -> HsStorage t -> StorageOffset -> [(Size, Stride)] -> IO ()
+setStorageDim_ :: IsTensor t => t -> HsStorage t -> StorageOffset -> [(Size, Stride)] -> IO ()
 setStorageDim_ t s o = \case
   []           -> throwNE "can't setStorage on an empty dimension."
   [x]          -> setStorage1d_ t s o x
@@ -123,7 +123,7 @@ setStorageDim_ t s o = \case
   [x, y, z, q] -> setStorage4d_ t s o x y z q
   _            -> throwGT4 "setStorage"
 
-setDim_ :: Tensor t => t -> Dim (d::[Nat]) -> HsReal t -> IO ()
+setDim_ :: IsTensor t => t -> Dim (d::[Nat]) -> HsReal t -> IO ()
 setDim_ t d v = case dimVals d of
   []           -> throwNE "can't set on an empty dimension."
   [x]          -> set1d_ t x       v
@@ -143,7 +143,7 @@ throwGT4 fnname = throwFIXME
   ("review how TH supports `" ++ fnname ++ "` operations on > rank-4 tensors")
   (fnname ++ " with >4 rank")
 
-resizeDim_ :: Tensor t => t -> Dim (d::[Nat]) -> IO ()
+resizeDim_ :: IsTensor t => t -> Dim (d::[Nat]) -> IO ()
 resizeDim_ t d = case dimVals d of
   []              -> throwNE "can't resize to an empty dimension."
   [x]             -> resize1d_ t x
@@ -157,7 +157,7 @@ resizeDim_ t d = case dimVals d of
 
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
-fromList1d :: forall t . (Tensor t) => [HsReal t] -> IO t
+fromList1d :: forall t . (IsTensor t) => [HsReal t] -> IO t
 fromList1d l = do
   res :: t <- new' =<< someDimsM [length l]
   mapM_  (upd res) (zip [0..length l - 1] l)
@@ -166,13 +166,13 @@ fromList1d l = do
   upd :: t -> (Int, HsReal t) -> IO ()
   upd t (idx, v) = someDimsM [idx] >>= \sd -> setDim'_ t sd v
 
-resizeDim :: Tensor t => t -> Dim (d::[Nat]) -> IO t
+resizeDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO t
 resizeDim src d = newClone src >>= \res -> resizeDim_ res d >> pure res
 
-resizeDim' :: Tensor t => t -> SomeDims -> IO t
+resizeDim' :: IsTensor t => t -> SomeDims -> IO t
 resizeDim' t (SomeDims d) = resizeDim t d
 
-getDim :: Tensor t => t -> Dim (d::[Nat]) -> IO (HsReal t)
+getDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO (HsReal t)
 getDim t d = case dimVals d of
   []           -> throwNE "can't lookup an empty dimension"
   [x]          -> get1d t x
@@ -181,13 +181,13 @@ getDim t d = case dimVals d of
   [x, y, z, q] -> get4d t x y z q
   _            -> throwGT4 "get"
 
-getDims :: Tensor t => t -> IO SomeDims
+getDims :: IsTensor t => t -> IO SomeDims
 getDims t = do
   nd <- nDimension t
   ds <- mapM (size t . fromIntegral) [0 .. nd -1]
   someDimsM ds
 
-new :: Tensor t => Dim (d::[Nat]) -> IO t
+new :: IsTensor t => Dim (d::[Nat]) -> IO t
 new d = case dimVals d of
   []           -> empty
   [x]          -> newWithSize1d x
@@ -199,27 +199,27 @@ new d = case dimVals d of
     resizeDim_ t d
     pure t
 
-setDim'_ :: Tensor t => t -> SomeDims-> HsReal t -> IO ()
+setDim'_ :: IsTensor t => t -> SomeDims-> HsReal t -> IO ()
 setDim'_ t (SomeDims d) v = setDim_ t d v
 
-resizeDim'_ :: Tensor t => t -> SomeDims -> IO ()
+resizeDim'_ :: IsTensor t => t -> SomeDims -> IO ()
 resizeDim'_ t (SomeDims d) = resizeDim_ t d
 
-getDim' :: Tensor t => t -> SomeDims -> IO (HsReal t)
+getDim' :: IsTensor t => t -> SomeDims -> IO (HsReal t)
 getDim' t (SomeDims d) = getDim t d
 
-new' :: Tensor t => SomeDims -> IO t
+new' :: IsTensor t => SomeDims -> IO t
 new' (SomeDims d) = new d
 
 -- Is this right? why are there three tensors
-resizeAs :: forall t . (Tensor t) => t -> t -> IO t
+resizeAs :: forall t . (IsTensor t) => t -> t -> IO t
 resizeAs src shape = do
   res <- newClone src
   resizeAs_ res shape
   pure res
 
 -- | displaying raw tensor values
-printTensor :: forall io t . (Tensor t, Show (HsReal t)) => t -> IO ()
+printTensor :: forall io t . (IsTensor t, Show (HsReal t)) => t -> IO ()
 printTensor t = do
   numDims <- nDimension t
   sizes <- mapM (fmap fromIntegral . size t . fromIntegral) [0..numDims - 1]

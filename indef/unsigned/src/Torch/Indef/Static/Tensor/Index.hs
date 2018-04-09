@@ -6,6 +6,7 @@ import qualified Torch.Class.Tensor.Index as Dynamic
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Index ()
+import Torch.Indef.Static.Tensor ()
 
 instance Class.TensorIndex Tensor where
   indexCopy_ :: Tensor d -> Int -> IndexTensor '[n] -> Tensor d' -> IO ()

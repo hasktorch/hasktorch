@@ -81,11 +81,11 @@ cpow_ t1 t2 = withInplace t1 $ \r' t1' -> _cpow r' t1' t2
 cpow  t1 t2 = withEmpty $ \r -> _cpow r t1 t2
 
 
-class TensorMathPointwiseSigned t where
+class IsTensor t => TensorMathPointwiseSigned t where
   _neg :: Dimensions d => t d -> t d -> IO ()
   _abs :: Dimensions d => t d -> t d -> IO ()
 
-neg, abs :: forall t d . (TensorMathPointwiseSigned t, Dimensions d, Tensor t) => t d -> IO (t d)
+neg, abs :: forall t d . (TensorMathPointwiseSigned t, Dimensions d) => t d -> IO (t d)
 neg t = withEmpty (`_neg` t)
 abs t = withEmpty (`_abs` t)
 

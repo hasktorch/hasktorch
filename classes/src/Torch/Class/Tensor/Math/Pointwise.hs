@@ -10,7 +10,7 @@ import Torch.Dimensions
 import Torch.Class.Tensor
 import System.IO.Unsafe
 
-class Tensor t => TensorMathPointwise t where
+class IsTensor t => TensorMathPointwise t where
   _sign        :: t -> t -> IO ()
   _cross       :: t -> t -> t -> DimVal -> IO ()
   _clamp       :: t -> t -> HsReal t -> HsReal t -> IO ()
@@ -77,16 +77,16 @@ cpow_ t1 t2 = t1 `twice` (\r' t1' -> _cpow r' t1' t2)
 cpow  t1 t2 = withEmpty $ \r -> _cpow r t1 t2
 
 
-class Tensor t => TensorMathPointwiseSigned t where
+class IsTensor t => TensorMathPointwiseSigned t where
   _neg :: t -> t -> IO ()
   _abs :: t -> t -> IO ()
 
 neg_, neg  :: TensorMathPointwiseSigned t => t -> IO t
-neg_ t = t `twice` (\r' t' -> _neg r' t')
+neg_ t = t `twice` _neg
 neg  t = withEmpty $ \r -> _neg r t
 
 abs_, abs  :: TensorMathPointwiseSigned t => t -> IO t
-abs_ t = t `twice` (\r' t' -> _abs r' t')
+abs_ t = t `twice` _abs
 abs  t = withEmpty $ \r -> _abs r t
 
 class TensorMathPointwiseFloating t where

@@ -2,9 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
-import Torch.Core.Tensor.Static
-import Torch.Core.Tensor.Static.Math
-import Torch.Core.Tensor.Static.Random
+import Torch
 import qualified Torch.Core.Random as RNG
 
 type Tensor = DoubleTensor

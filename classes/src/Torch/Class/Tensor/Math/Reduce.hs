@@ -23,7 +23,7 @@ class TensorMathReduce t where
 
 
 withKeepDim
-  :: (TensorMathReduce t, Tensor t, Tensor (IndexDynamic t))
+  :: (TensorMathReduce t, IsTensor t, IsTensor (IndexDynamic t))
   => ((t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ())
   -> t -> DimVal -> Maybe KeepDim -> IO (t, Maybe (IndexDynamic t))
 withKeepDim fn_ t d k = do
@@ -34,7 +34,7 @@ withKeepDim fn_ t d k = do
   pure (ret, maybe (Just ix) (pure Nothing) k)
 
 max, min, median
-  :: (TensorMathReduce t, Tensor t, Tensor (IndexDynamic t))
+  :: (TensorMathReduce t, IsTensor t, IsTensor (IndexDynamic t))
   => t -> DimVal -> Maybe KeepDim -> IO (t, Maybe (IndexDynamic t))
 max = withKeepDim max_
 min = withKeepDim min_

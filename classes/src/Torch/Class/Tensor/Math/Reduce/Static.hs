@@ -1,12 +1,15 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Torch.Class.Tensor.Math.Reduce.Static where
 
 import Torch.Class.Types
-import Torch.Class.Tensor
+import Torch.Class.Tensor.Static
 import Torch.Dimensions
+import qualified Torch.Class.Tensor as Dynamic
 
-class TensorMathReduce t where
+class IsTensor t => TensorMathReduce t where
   minall       :: t d -> IO (HsReal (t d))
   maxall       :: t d -> IO (HsReal (t d))
   medianall    :: t d -> IO (HsReal (t d))
@@ -19,37 +22,40 @@ class TensorMathReduce t where
   sum_         :: t d -> t d' -> DimVal -> Maybe KeepDim -> IO ()
   prod_        :: Dimensions d => t d -> t d -> DimVal -> Maybe KeepDim -> IO ()
 
+type WithCoercableIndex t d =
+  ( Dynamic.IsTensor (AsDynamic (IndexTensor (t d) d))
+  , IsStatic (IndexTensor (t d) d)
+  )
+
 withKeepDim
-  :: forall d t . (TensorMathReduce t, Tensor (t d), Tensor (IndexTensor (t d) d), Dimensions d)
+  :: forall d t . (TensorMathReduce t, Dimensions d, WithCoercableIndex t d)
   => ((t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ())
   -> t d -> DimVal -> Maybe KeepDim -> IO (t d, Maybe (IndexTensor (t d) d))
 withKeepDim fn_ t d k = do
-  ret :: t d                 <- new (dim :: Dim d)
-  ix  :: IndexTensor (t d) d <- new (dim :: Dim d)
-  fn_ (ret, ix) t d k
-  pure (ret, maybe (Just ix) (pure Nothing) k)
+  ret :: t d <- new
+  ix  :: AsDynamic (IndexTensor (t d) d) <- Dynamic.new (dim :: Dim d)
+  fn_ (ret, asStatic ix) t d k
+  pure (ret, maybe (Just $ asStatic ix) (pure Nothing) k)
 
 max, min, median
-  :: (TensorMathReduce t, Tensor (t d), Tensor (IndexTensor (t d) d), Dimensions d)
+  :: (TensorMathReduce t, Dimensions d, WithCoercableIndex t d)
   => t d -> DimVal -> Maybe KeepDim -> IO (t d, Maybe (IndexTensor (t d) d))
 max = withKeepDim max_
 min = withKeepDim min_
 median = withKeepDim median_
 
 sum
-  :: forall t d d' . (Tensor (t d'), Dimensions d', TensorMathReduce t)
+  :: forall t d d' . (TensorMathReduce t, CoerceDims t d d')
   => t d -> DimVal -> Maybe KeepDim -> IO (t d')
-sum t d k = flip withInplace (dim :: Dim d') $ \r -> sum_ r t d k
+sum t d k = sudoInplace t $ \r t' -> sum_ r t' d k
 
 rowsum
-  :: (KnownNatDim2 r c, TensorMathReduce t)
-  => (Tensor (t '[1, c]))
+  :: (KnownNatDim2 r c, TensorMathReduce t, CoerceDims t '[1, c] '[r, c])
   => t '[r, c] -> IO (t '[1, c])
 rowsum t = Torch.Class.Tensor.Math.Reduce.Static.sum t 0 (Just keep)
 
 colsum
-  :: (KnownNatDim2 r c, TensorMathReduce t)
-  => (Tensor (t '[r, 1]))
+  :: (KnownNatDim2 r c, TensorMathReduce t, CoerceDims t '[r, 1] '[r, c])
   => t '[r, c] -> IO (t '[r, 1])
 colsum t = Torch.Class.Tensor.Math.Reduce.Static.sum t 0 (Just keep)
 

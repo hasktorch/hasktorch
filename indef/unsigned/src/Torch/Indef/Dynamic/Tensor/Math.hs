@@ -9,6 +9,7 @@ import qualified Foreign.Marshal as FM
 
 import Torch.Dimensions
 import Torch.Indef.Types
+import Torch.Indef.Dynamic.Tensor ()
 
 instance Class.TensorMath Dynamic where
   fill_ :: Dynamic -> HsReal -> IO ()

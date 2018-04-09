@@ -7,10 +7,10 @@ import GHC.TypeLits (Nat)
 import Torch.Dimensions
 import Torch.Class.Types
 import GHC.Int
-import Torch.Class.Tensor (Tensor(empty), withInplace, new)
+import Torch.Class.Tensor (IsTensor(empty), withInplace, new)
 import qualified Torch.Types.TH as TH
 
-class TensorMath t where
+class IsTensor t => TensorMath t where
   fill_        :: t -> HsReal t -> IO ()
   zero_        :: t -> IO ()
   zeros_       :: t -> IndexStorage t -> IO ()
@@ -39,11 +39,11 @@ class TensorMathFloating t where
   linspace_     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
   logspace_     :: t -> HsReal t -> HsReal t -> Int64 -> IO ()
 
-constant :: (TensorMath t, Tensor t) => Dim (d :: [Nat]) -> HsReal t -> IO t
+constant :: (TensorMath t) => Dim (d :: [Nat]) -> HsReal t -> IO t
 constant d v = new d >>= \r -> fill_ r v >> pure r
 
 _tenLike
-  :: (Tensor t, TensorMath t)
+  :: (TensorMath t)
   => (t -> t -> IO ())
   -> Dim (d::[Nat]) -> IO t
 _tenLike fn_ d = do
@@ -53,13 +53,13 @@ _tenLike fn_ d = do
   pure src
 
 onesLike, zerosLike
-  :: (Tensor t, TensorMath t)
+  :: (TensorMath t)
   => Dim (d::[Nat]) -> IO t
 onesLike = _tenLike onesLike_
 zerosLike = _tenLike zerosLike_
 
 range
-  :: (Tensor t, TensorMath t)
+  :: (TensorMath t)
   => Dim (d::[Nat])
   -> HsAccReal t
   -> HsAccReal t

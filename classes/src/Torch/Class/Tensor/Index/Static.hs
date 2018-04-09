@@ -14,7 +14,7 @@ import Torch.Dimensions
 import Control.Exception.Safe
 
 
-class TensorIndex t where
+class IsTensor t => TensorIndex t where
   indexCopy_   :: (Dimensions d, Dimensions d') => t d -> Int -> IndexTensor (t d) '[(n::Nat)] -> t d -> IO ()
   indexAdd_    :: (Dimensions d, Dimensions d') => t d -> Int -> IndexTensor (t d) '[(n::Nat)] -> t d -> IO ()
   indexFill_   :: (Dimensions d, Dimensions d') => t d -> Int -> IndexTensor (t d) '[(n::Nat)] -> HsReal (t d) -> IO ()
@@ -27,7 +27,7 @@ class TensorIndex t where
 getRow
   :: forall t n m . (KnownNatDim2 n m)
   => (Dynamic.TensorIndex (AsDynamic (t '[1, m])))
-  => Dynamic.Tensor (IndexDynamic (AsDynamic (t '[1, m])))
+  => Dynamic.IsTensor (IndexDynamic (AsDynamic (t '[1, m])))
   => (Static2 t '[1, m] '[n, m])
   => t '[n, m] -> Natural -> IO (t '[1, m])
 getRow t r

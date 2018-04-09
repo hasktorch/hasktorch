@@ -6,6 +6,8 @@ import qualified Torch.Class.Tensor.Math.Reduce.Static as Class
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Math.Reduce ()
+import Torch.Indef.Dynamic.Tensor ()
+import Torch.Indef.Static.Tensor ()
 
 instance Class.TensorMathReduce Tensor where
   minall :: Tensor d -> IO HsReal

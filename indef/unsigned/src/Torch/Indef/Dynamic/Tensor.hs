@@ -28,7 +28,7 @@ import Torch.Indef.Types
 longCStorage = snd . longStorageState
 longCStorageTH = snd . TH.longStorageState
 
-instance Class.Tensor Dynamic where
+instance Class.IsTensor Dynamic where
   clearFlag_ :: Dynamic -> Int8 -> IO ()
   clearFlag_ t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
 

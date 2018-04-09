@@ -23,7 +23,7 @@ import Torch.Class.Types
 import qualified Torch.Class.Tensor as Dynamic
 import qualified Torch.Types.TH as TH (IndexStorage)
 
-class Tensor t where
+class IsTensor t where
   clearFlag_ :: Dimensions d => t d -> Int8 -> IO ()
   tensordata :: Dimensions d => t d -> IO [HsReal (t d)]
   free_ :: Dimensions d => t d -> IO ()
@@ -102,10 +102,10 @@ class Tensor t where
   isSameSizeAs :: (Dimensions d, Dimensions d') => t d -> t d' -> Bool
 
 type Static t d =
-  ( Tensor t
+  ( IsTensor t
   , IsStatic (t d)
   , Num (HsReal (IndexDynamic (AsDynamic (t d))))
-  , Dynamic.Tensor (AsDynamic (t d))
+  , Dynamic.IsTensor (AsDynamic (t d))
   )
 type Static2 t d d' = 
   ( Static t d
@@ -114,16 +114,16 @@ type Static2 t d d' =
   , IndexDynamic (AsDynamic (t d)) ~ IndexDynamic (AsDynamic (t d'))
   )
 
-shape :: Tensor t => t d -> IO [Size]
+shape :: IsTensor t => t d -> IO [Size]
 shape t = do
   ds <- nDimension t
   mapM (size t . fromIntegral) [0..ds-1]
 
-withNew :: forall t d . (Dimensions d, Tensor t) => (t d -> IO ()) -> IO (t d)
+withNew :: forall t d . (Dimensions d, IsTensor t) => (t d -> IO ()) -> IO (t d)
 withNew op = new >>= \r -> op r >> pure r
 
 -- I think we can get away with this for most creations. Torch does the resizing in C.
-withEmpty :: Dimensions d => Tensor t => (t d -> IO ()) -> IO (t d)
+withEmpty :: Dimensions d => IsTensor t => (t d -> IO ()) -> IO (t d)
 withEmpty op = empty >>= \r -> op r >> pure r
 
 type CoerceDims t d d' = (Dimensions2 d d', IsStatic (t d), AsDynamic (t d) ~ AsDynamic (t d'), IsStatic (t d'))
@@ -132,12 +132,12 @@ useSudo :: (CoerceDims t d d') => t d -> t d'
 useSudo = asStatic . asDynamic
 
 -- This is actually 'inplace'. Dimensions may change from original tensor given Torch resizing.
-withInplace :: (Tensor t, Dimensions d) => t d -> (t d -> t d -> IO ()) -> IO (t d)
+withInplace :: (IsTensor t, Dimensions d) => t d -> (t d -> t d -> IO ()) -> IO (t d)
 withInplace t op = op t t >> pure t
 
 -- This is actually 'inplace'. Dimensions may change from original tensor given Torch resizing.
 sudoInplace
-  :: forall t d d' . (Tensor t, CoerceDims t d d')
+  :: forall t d d' . (IsTensor t, CoerceDims t d d')
   => t d -> (t d' -> t d -> IO ()) -> IO (t d')
 sudoInplace t op = op ret t >> pure ret
   where
@@ -156,7 +156,7 @@ throwGT4 fnname = throwFIXME
   (fnname ++ " with >4 rank")
 
 
-setStorageDim_ :: Tensor t => t d -> HsStorage (t d) -> StorageOffset -> [(Size, Stride)] -> IO ()
+setStorageDim_ :: IsTensor t => t d -> HsStorage (t d) -> StorageOffset -> [(Size, Stride)] -> IO ()
 setStorageDim_ t s o = \case
   []           -> throwNE "can't setStorage on an empty dimension."
   [x]          -> setStorage1d_ t s o x
@@ -165,7 +165,7 @@ setStorageDim_ t s o = \case
   [x, y, z, q] -> setStorage4d_ t s o x y z q
   _            -> throwGT4 "setStorage"
 
-setDim_ :: forall t d d' . (Dimensions d', Tensor t) => t d -> Dim d' -> HsReal (t d) -> IO ()
+setDim_ :: forall t d d' . (Dimensions d', IsTensor t) => t d -> Dim d' -> HsReal (t d) -> IO ()
 setDim_ t d v = case dimVals d of
   []           -> throwNE "can't set on an empty dimension."
   [x]          -> set1d_ t x       v
@@ -174,10 +174,10 @@ setDim_ t d v = case dimVals d of
   [x, y, z, q] -> set4d_ t x y z q v
   _            -> throwGT4 "set"
 
--- setDim'_ :: (Dimensions d, Tensor t) => t d -> SomeDims -> HsReal (t d) -> IO ()
+-- setDim'_ :: (Dimensions d, IsTensor t) => t d -> SomeDims -> HsReal (t d) -> IO ()
 -- setDim'_ t (SomeDims d) v = setDim_ t d v
 
-getDim :: (Dimensions d', Tensor t) => t d -> Dim (d'::[Nat]) -> IO (HsReal (t d))
+getDim :: (Dimensions d', IsTensor t) => t d -> Dim (d'::[Nat]) -> IO (HsReal (t d))
 getDim t d = case dimVals d of
   []           -> throwNE "can't lookup an empty dimension"
   [x]          -> get1d t x
@@ -186,13 +186,13 @@ getDim t d = case dimVals d of
   [x, y, z, q] -> get4d t x y z q
   _            -> throwGT4 "get"
 
-getDims :: Tensor t => t d -> IO SomeDims
+getDims :: IsTensor t => t d -> IO SomeDims
 getDims t = do
   nd <- nDimension t
   ds <- mapM (size t . fromIntegral) [0 .. nd -1]
   someDimsM ds
 
-new :: forall t d . (Dimensions d, Tensor t) => IO (t d)
+new :: forall t d . (Dimensions d, IsTensor t) => IO (t d)
 new = case dimVals d of
   []           -> empty
   [x]          -> newWithSize1d x
@@ -205,7 +205,7 @@ new = case dimVals d of
   d = dim
 
 -- NOTE: This is copied from the dynamic version to keep the constraints clean and is _unsafe_
-resizeDim_ :: forall t d d' . (Tensor t, Dimensions d') => t d -> IO (t d')
+resizeDim_ :: forall t d d' . (IsTensor t, Dimensions d') => t d -> IO (t d')
 resizeDim_ t = case dimVals d of
   []              -> throwNE "can't resize to an empty dimension."
   [x]             -> resize1d_ t x
@@ -220,7 +220,7 @@ resizeDim_ t = case dimVals d of
   -- ds              -> resizeNd_ t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
-resizeAs :: forall t d d' . (Dimensions d, Dimensions d', Tensor t) => t d -> IO (t d')
+resizeAs :: forall t d d' . (Dimensions d, Dimensions d', IsTensor t) => t d -> IO (t d')
 resizeAs src = do
   res <- newClone src
   shape <- new
@@ -228,7 +228,7 @@ resizeAs src = do
 
 newIx :: forall t d d'
   . (Dimensions d')
-  => Dynamic.Tensor (AsDynamic (IndexTensor (t d) d'))
+  => Dynamic.IsTensor (AsDynamic (IndexTensor (t d) d'))
   => IsStatic (IndexTensor (t d) d')
   => IO (IndexTensor (t d) d')
 newIx = asStatic <$> Dynamic.new (dim :: Dim d')
@@ -238,7 +238,7 @@ newIx = asStatic <$> Dynamic.new (dim :: Dim d')
 fromListIx
   :: forall t d n . (KnownNatDim n, Dimensions '[n], IsStatic (IndexTensor (t d) '[n]))
   => Num (HsReal (AsDynamic (IndexTensor (t d) '[n])))
-  => Dynamic.Tensor (AsDynamic (IndexTensor (t d) '[n]))
+  => Dynamic.IsTensor (AsDynamic (IndexTensor (t d) '[n]))
   => Dimensions d
   => Proxy (t d) -> Dim '[n] -> [HsReal (AsDynamic (IndexTensor (t d) '[n]))] -> IO (IndexTensor (t d) '[n])
 fromListIx _ _ l = asStatic <$> (Dynamic.fromList1d l)
@@ -248,14 +248,14 @@ fromListIx _ _ l = asStatic <$> (Dynamic.fromList1d l)
 -- FIXME: There might be a faster way to do this with newWithSize
 fromList
   :: forall t d
-  .  (KnownNatDim (Product d), Dimensions d, Tensor t)
+  .  (KnownNatDim (Product d), Dimensions d, IsTensor t)
   => [HsReal (t '[Product d])] -> IO (t d)
 fromList l = do
   oneD :: t '[Product d] <- fromList1d l
   resizeDim_ oneD
 
 newTranspose2d
-  :: forall t r c . (KnownNat2 r c, Tensor t, Dimensions '[r, c], Dimensions '[c, r])
+  :: forall t r c . (KnownNat2 r c, IsTensor t, Dimensions '[r, c], Dimensions '[c, r])
   => t '[r, c] -> IO (t '[c, r])
 newTranspose2d t = newTranspose t 1 0
 
@@ -264,7 +264,7 @@ newTranspose2d t = newTranspose t 1 0
 -- expand2d
 --   :: forall t d1 d2 . (KnownNatDim2 d1 d2)
 --   => StaticConstraint2 t '[d2, d1] '[d1]
---   => Dynamic.TensorMath (AsDynamic (t '[d1])) -- for 'Dynamic.constant' which uses 'Torch.Class.Tensor.Math.fill'
+--   => Dynamic.IsTensorMath (AsDynamic (t '[d1])) -- for 'Dynamic.constant' which uses 'Torch.Class.IsTensor.Math.fill'
 --   => t '[d1] -> IO (t '[d2, d1])
 -- expand2d t = do
 --   res :: AsDynamic (t '[d2, d1]) <- Dynamic.constant (dim :: Dim '[d2, d1]) 0
@@ -278,7 +278,7 @@ newTranspose2d t = newTranspose t 1 0
 
 getElem2d
   :: forall t n m . (KnownNatDim2 n m)
-  => Tensor t => Dimensions '[n, m]
+  => IsTensor t => Dimensions '[n, m]
   => t '[n, m] -> Natural -> Natural -> IO (HsReal (t '[n, m]))
 getElem2d t r c
   | r > fromIntegral (natVal (Proxy :: Proxy n)) ||
@@ -288,7 +288,7 @@ getElem2d t r c
 
 setElem2d
   :: forall t n m ns . (KnownNatDim2 n m)
-  => Tensor t => Dimensions '[n, m]
+  => IsTensor t => Dimensions '[n, m]
   => Dimensions ns
   => t '[n, m] -> Natural -> Natural -> HsReal (t '[n, m]) -> IO ()
 setElem2d t r c v
@@ -299,10 +299,10 @@ setElem2d t r c v
 
 
 -- | displaying raw tensor values
-printTensor :: forall t d . (Dimensions d, Tensor t, Show (HsReal (t d))) => t d -> IO ()
+printTensor :: forall t d . (Dimensions d, IsTensor t, Show (HsReal (t d))) => t d -> IO ()
 printTensor t = do
   case dimVals (dim :: Dim d) of
-    []  -> putStrLn "Empty Tensor"
+    []  -> putStrLn "Empty IsTensor"
     sz@[x] -> do
       putStrLn ""
       putStr "[ "

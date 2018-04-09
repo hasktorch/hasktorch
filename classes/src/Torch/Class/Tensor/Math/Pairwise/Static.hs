@@ -7,7 +7,7 @@ import Torch.Class.Tensor.Static
 import Torch.Class.Types
 import Torch.Dimensions
 
-class Tensor t => TensorMathPairwise t where
+class IsTensor t => TensorMathPairwise t where
   _add :: t d -> t d -> HsReal (t d) -> IO ()
   _sub :: t d -> t d -> HsReal (t d) -> IO ()
   _add_scaled :: t d -> t d -> HsReal (t d) -> HsReal (t d) -> IO ()

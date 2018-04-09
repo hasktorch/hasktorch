@@ -5,6 +5,7 @@ import qualified Torch.Class.Tensor.Math.Pointwise as Dynamic
 import qualified Torch.Class.Tensor.Math.Pointwise.Static as Class
 
 import Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed ()
+import Torch.Indef.Static.Tensor ()
 
 instance Class.TensorMathPointwiseSigned Tensor where
   _abs :: Tensor d -> Tensor d -> IO ()

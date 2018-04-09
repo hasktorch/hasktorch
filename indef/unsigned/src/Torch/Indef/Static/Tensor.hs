@@ -17,7 +17,7 @@ import Torch.Indef.Dynamic.Tensor ()
 sudo :: Tensor d -> Tensor d'
 sudo t = Sig.asStatic ((Sig.asDynamic t) :: Dynamic)
 
-instance Class.Tensor Tensor where
+instance Class.IsTensor Tensor where
   free_ :: Dimensions d => Tensor d -> IO ()
   freeCopyTo_ :: (Dimensions d, Dimensions d') => Tensor d -> Tensor d' -> IO ()
   get1d :: Tensor d -> Int64 -> IO (HsReal)

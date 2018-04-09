@@ -3,7 +3,7 @@ module Torch.Class.Tensor.Math.Pairwise where
 import Torch.Class.Tensor
 import Torch.Class.Types
 
-class Tensor t => TensorMathPairwise t where
+class IsTensor t => TensorMathPairwise t where
   _add :: t -> t -> HsReal t -> IO ()
   _sub :: t -> t -> HsReal t -> IO ()
   _add_scaled :: t -> t -> HsReal t -> HsReal t -> IO ()
