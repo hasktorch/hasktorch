@@ -23,6 +23,7 @@ clean:
 purge: # clean
 	rm -rf vendor
 	git checkout -- vendor
+	git submodule update --init --recursive
 
 build:
 	stack build

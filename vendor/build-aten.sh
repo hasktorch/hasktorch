@@ -50,7 +50,12 @@ function build {
 
   mkdir -p ./aten/build
   cd ./aten/build
-  cmake .. -DNO_CUDA=true -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC -Wno-dev
+  if nvcc --version &> /dev/null; then
+    with_cuda=true
+  else
+    with_cuda=false
+  fi
+  cmake .. -DNO_CUDA=$with_cuda -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC -Wno-dev
   make install
 }
 
