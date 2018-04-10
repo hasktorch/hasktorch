@@ -61,6 +61,8 @@ csub  t v b = withEmpty $ \r -> _csub r t v b
 cmul_, cmul :: TensorMathPointwise t => t -> t -> IO t
 cmul_ t1 t2 = t1 `twice` (\r' t1' -> _cmul r' t1' t2)
 cmul  t1 t2 = withEmpty $ \r -> _cmul r t1 t2
+square :: TensorMathPointwise t => t -> IO t
+square t = cmul t t
 (^*^) :: TensorMathPointwise t => t -> t -> t
 (^*^) a b = unsafePerformIO $ cmul a b
 {-# NOINLINE (^*^) #-}

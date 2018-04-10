@@ -9,7 +9,8 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Dimensions
-  ( KnownNat
+  ( module X
+  , KnownNat
   , KnownNat2
   , KnownNat3
   , KnownNatDim
@@ -34,7 +35,10 @@ module Torch.Dimensions
   , module Dim
   ) where
 
-import Data.Singletons
+import Data.Singletons as X
+import Data.Singletons.Prelude.List as X
+  hiding (Take, Tail, Reverse, Last, Init, Head, Length, Drop, Concat)
+
 import Data.Proxy (Proxy(..))
 import Control.Monad (unless)
 import Control.Exception.Safe (throwString, MonadThrow)
@@ -53,7 +57,7 @@ type KnownNat3 n0 n1 n2 = (KnownNat n0, KnownNat n1, KnownNat n2)
 type KnownNatDim n         = (KnownDim n, KnownNat n)
 type KnownNatDim2 n0 n1    = (KnownNatDim n0, KnownNatDim n1)
 type KnownNatDim3 n0 n1 n2 = (KnownNatDim n0, KnownNatDim n1, KnownNatDim n2)
-type SingDim n         = (SingI n, KnownDim n)
+type SingDim n         = (SingI n, KnownNatDim n)
 type SingDim2 n0 n1    = (SingDim n0, SingDim n1)
 type SingDim3 n0 n1 n2 = (SingDim n0, SingDim n1, SingDim n2)
 
