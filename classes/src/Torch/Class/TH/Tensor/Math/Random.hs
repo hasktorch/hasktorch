@@ -4,8 +4,8 @@ import Torch.Class.Types
 import qualified Torch.Types.TH as TH
 
 class THTensorMathRandom t where
-  rand_ :: t -> Generator t -> TH.LongStorage -> IO ()
-  randn_ :: t -> Generator t -> TH.LongStorage -> IO ()
-  randperm_ :: t -> Generator t -> Integer -> IO ()
+  _rand :: t -> Generator t -> TH.LongStorage -> IO ()
+  _randn :: t -> Generator t -> TH.LongStorage -> IO ()
+  _randperm :: t -> Generator t -> Integer -> IO ()
 
 

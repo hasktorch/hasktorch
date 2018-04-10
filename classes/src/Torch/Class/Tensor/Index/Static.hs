@@ -15,12 +15,12 @@ import Control.Exception.Safe
 
 
 class IsTensor t => TensorIndex t where
-  indexCopy_   :: (Dimensions d, Dimensions d') => t d -> Int -> IndexTensor (t d) '[(n::Nat)] -> t d -> IO ()
-  indexAdd_    :: (Dimensions d, Dimensions d') => t d -> Int -> IndexTensor (t d) '[(n::Nat)] -> t d -> IO ()
-  indexFill_   :: (Dimensions d, Dimensions d') => t d -> Int -> IndexTensor (t d) '[(n::Nat)] -> HsReal (t d) -> IO ()
-  indexSelect_ :: (Dimensions d, Dimensions d', KnownNatDim n) => t d -> t d' -> Int -> IndexTensor (t d) '[n] -> IO ()
-  take_        :: (Dimensions d, Dimensions d') => t d -> t d' -> IndexTensor (t d) '[(n::Nat)] -> IO ()
-  put_         :: (Dimensions d, Dimensions d') => t d -> IndexTensor (t d) '[(n::Nat)] -> t d -> Int -> IO ()
+  _indexCopy   :: (Dimensions d, Dimensions d') => t d -> Int -> IndexTensor (t d) '[(n::Nat)] -> t d -> IO ()
+  _indexAdd    :: (Dimensions d, Dimensions d') => t d -> Int -> IndexTensor (t d) '[(n::Nat)] -> t d -> IO ()
+  _indexFill   :: (Dimensions d, Dimensions d') => t d -> Int -> IndexTensor (t d) '[(n::Nat)] -> HsReal (t d) -> IO ()
+  _indexSelect :: (Dimensions d, Dimensions d', KnownNatDim n) => t d -> t d' -> Int -> IndexTensor (t d) '[n] -> IO ()
+  _take        :: (Dimensions d, Dimensions d') => t d -> t d' -> IndexTensor (t d) '[(n::Nat)] -> IO ()
+  _put         :: (Dimensions d, Dimensions d') => t d -> IndexTensor (t d) '[(n::Nat)] -> t d -> Int -> IO ()
 
 
 -- retrieves a single row
@@ -35,7 +35,7 @@ getRow t r
   | otherwise = do
       res <- Dynamic.new (dim :: Dim '[1, m])
       ixs <- Dynamic.fromList1d [ fromIntegral r ]
-      Dynamic.indexSelect_ res (asDynamic t) 0 ixs
+      Dynamic._indexSelect res (asDynamic t) 0 ixs
       pure (asStatic res)
 
 -- -- retrieves a single column
@@ -48,7 +48,7 @@ getRow t r
 --   | otherwise = do
 --       res <- Dynamic.new (dim :: Dim '[n, 1])
 --       ixs :: Dynamic.LongTensor <- Dynamic.fromList1d [ fromIntegral r ]
---       Dynamic.indexSelect_ res (asDynamic t) 1 ixs
+--       Dynamic._indexSelect res (asDynamic t) 1 ixs
       -- pure (asStatic res)
 
 

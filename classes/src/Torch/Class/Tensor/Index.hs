@@ -4,16 +4,16 @@ import Data.Word
 import Torch.Class.Types
 
 class TensorIndex t where
-  indexCopy_ :: t -> Int -> IndexDynamic t -> t -> IO ()
-  indexAdd_ :: t -> Int -> IndexDynamic t -> t -> IO ()
-  indexFill_ :: t -> Int -> IndexDynamic t -> HsReal t -> IO ()
-  indexSelect_ :: t -> t -> Int -> IndexDynamic t -> IO ()
-  take_ :: t -> t -> IndexDynamic t -> IO ()
-  put_ :: t -> IndexDynamic t -> t -> Int -> IO ()
+  _indexCopy :: t -> Int -> IndexDynamic t -> t -> IO ()
+  _indexAdd :: t -> Int -> IndexDynamic t -> t -> IO ()
+  _indexFill :: t -> Int -> IndexDynamic t -> HsReal t -> IO ()
+  _indexSelect :: t -> t -> Int -> IndexDynamic t -> IO ()
+  _take :: t -> t -> IndexDynamic t -> IO ()
+  _put :: t -> IndexDynamic t -> t -> Int -> IO ()
 
 class GPUTensorIndex t where
-  indexCopy_long_ :: t -> Int -> IndexDynamic t -> t -> IO ()
-  indexAdd_long_ :: t -> Int -> IndexDynamic t -> t -> IO ()
-  indexFill_long_ :: t -> Int -> IndexDynamic t -> Word -> IO ()
-  indexSelect_long_ :: t -> t -> Int -> IndexDynamic t -> IO ()
-  calculateAdvancedIndexingOffsets_ :: IndexDynamic t -> t -> Integer -> [IndexDynamic t] -> IO ()
+  _indexCopy_long :: t -> Int -> IndexDynamic t -> t -> IO ()
+  _indexAdd_long :: t -> Int -> IndexDynamic t -> t -> IO ()
+  _indexFill_long :: t -> Int -> IndexDynamic t -> Word -> IO ()
+  _indexSelect_long :: t -> t -> Int -> IndexDynamic t -> IO ()
+  _calculateAdvancedIndexingOffsets :: IndexDynamic t -> t -> Integer -> [IndexDynamic t] -> IO ()

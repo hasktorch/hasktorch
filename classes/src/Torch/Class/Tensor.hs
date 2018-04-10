@@ -19,10 +19,10 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Torch.Types.TH as TH
 
 class IsTensor t where
-  clearFlag_ :: t -> Int8 -> IO ()
+  _clearFlag :: t -> Int8 -> IO ()
   tensordata :: t -> IO [HsReal t]
-  free_ :: t -> IO ()
-  freeCopyTo_ :: t -> t -> IO ()
+  _free :: t -> IO ()
+  _freeCopyTo :: t -> t -> IO ()
   get1d :: t -> Int64 -> IO (HsReal t)
   get2d :: t -> Int64 -> Int64 -> IO (HsReal t)
   get3d :: t -> Int64 -> Int64 -> Int64 -> IO (HsReal t)
@@ -33,7 +33,7 @@ class IsTensor t where
   isSize :: t -> TH.IndexStorage -> IO Bool
   nDimension :: t -> IO Int32
   nElement :: t -> IO Int64
-  narrow_ :: t -> t -> DimVal -> Int64 -> Size -> IO ()
+  _narrow :: t -> t -> DimVal -> Int64 -> Size -> IO ()
 
   -- | renamed from TH's @new@ because this always returns an empty tensor
   empty :: IO t
@@ -62,38 +62,38 @@ class IsTensor t where
   newWithStorage3d :: HsStorage t -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO t
   newWithStorage4d :: HsStorage t -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO t
   newWithTensor :: t -> IO t
-  resize_ :: t -> SizesStorage t -> StridesStorage t -> IO ()
-  resize1d_ :: t -> Int64 -> IO ()
-  resize2d_ :: t -> Int64 -> Int64 -> IO ()
-  resize3d_ :: t -> Int64 -> Int64 -> Int64 -> IO ()
-  resize4d_ :: t -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-  resize5d_ :: t -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-  resizeAs_ :: t -> t -> IO ()
-  resizeNd_ :: t -> Int32 -> [Size] -> [Stride] -> IO ()
+  _resize :: t -> SizesStorage t -> StridesStorage t -> IO ()
+  _resize1d :: t -> Int64 -> IO ()
+  _resize2d :: t -> Int64 -> Int64 -> IO ()
+  _resize3d :: t -> Int64 -> Int64 -> Int64 -> IO ()
+  _resize4d :: t -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
+  _resize5d :: t -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
+  _resizeAs :: t -> t -> IO ()
+  _resizeNd :: t -> Int32 -> [Size] -> [Stride] -> IO ()
   retain :: t -> IO ()
-  select_ :: t -> t -> DimVal -> Int64 -> IO ()
-  set_ :: t -> t -> IO ()
-  set1d_ :: t -> Int64 -> HsReal t -> IO ()
-  set2d_ :: t -> Int64 -> Int64 -> HsReal t -> IO ()
-  set3d_ :: t -> Int64 -> Int64 -> Int64 -> HsReal t -> IO ()
-  set4d_ :: t -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal t -> IO ()
-  setFlag_ :: t -> Int8 -> IO ()
-  setStorage_ :: t -> HsStorage t -> StorageOffset -> SizesStorage t -> StridesStorage t -> IO ()
-  setStorage1d_ :: t -> HsStorage t -> StorageOffset -> (Size, Stride) -> IO ()
-  setStorage2d_ :: t -> HsStorage t -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorage3d_ :: t -> HsStorage t -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorage4d_ :: t -> HsStorage t -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorageNd_ :: t -> HsStorage t -> StorageOffset -> DimVal -> [Size] -> [Stride] -> IO ()
+  _select :: t -> t -> DimVal -> Int64 -> IO ()
+  _set :: t -> t -> IO ()
+  _set1d :: t -> Int64 -> HsReal t -> IO ()
+  _set2d :: t -> Int64 -> Int64 -> HsReal t -> IO ()
+  _set3d :: t -> Int64 -> Int64 -> Int64 -> HsReal t -> IO ()
+  _set4d :: t -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal t -> IO ()
+  _setFlag :: t -> Int8 -> IO ()
+  _setStorage :: t -> HsStorage t -> StorageOffset -> SizesStorage t -> StridesStorage t -> IO ()
+  _setStorage1d :: t -> HsStorage t -> StorageOffset -> (Size, Stride) -> IO ()
+  _setStorage2d :: t -> HsStorage t -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO ()
+  _setStorage3d :: t -> HsStorage t -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
+  _setStorage4d :: t -> HsStorage t -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
+  _setStorageNd :: t -> HsStorage t -> StorageOffset -> DimVal -> [Size] -> [Stride] -> IO ()
   size :: t -> DimVal -> IO Size
   sizeDesc :: t -> IO (DescBuff t)
-  squeeze_ :: t -> t -> IO ()
-  squeeze1d_ :: t -> t -> DimVal -> IO ()
+  _squeeze :: t -> t -> IO ()
+  _squeeze1d :: t -> t -> DimVal -> IO ()
   storage :: t -> IO (HsStorage t)
   storageOffset :: t -> IO StorageOffset
   stride :: t -> DimVal -> IO Stride
-  transpose_ :: t -> t -> DimVal -> DimVal -> IO ()
-  unfold_ :: t -> t -> DimVal -> Size -> Step -> IO ()
-  unsqueeze1d_ :: t -> t -> DimVal -> IO ()
+  _transpose :: t -> t -> DimVal -> DimVal -> IO ()
+  _unfold :: t -> t -> DimVal -> Size -> Step -> IO ()
+  _unsqueeze1d :: t -> t -> DimVal -> IO ()
 
 class CPUTensor t where
   desc :: t -> IO (DescBuff t)
@@ -119,22 +119,22 @@ twice t op = op t t >> pure t
 withEmpty :: IsTensor t => (t -> IO ()) -> IO t
 withEmpty op = empty >>= \r -> op r >> pure r
 
-setStorageDim_ :: IsTensor t => t -> HsStorage t -> StorageOffset -> [(Size, Stride)] -> IO ()
-setStorageDim_ t s o = \case
+_setStorageDim :: IsTensor t => t -> HsStorage t -> StorageOffset -> [(Size, Stride)] -> IO ()
+_setStorageDim t s o = \case
   []           -> throwNE "can't setStorage on an empty dimension."
-  [x]          -> setStorage1d_ t s o x
-  [x, y]       -> setStorage2d_ t s o x y
-  [x, y, z]    -> setStorage3d_ t s o x y z
-  [x, y, z, q] -> setStorage4d_ t s o x y z q
+  [x]          -> _setStorage1d t s o x
+  [x, y]       -> _setStorage2d t s o x y
+  [x, y, z]    -> _setStorage3d t s o x y z
+  [x, y, z, q] -> _setStorage4d t s o x y z q
   _            -> throwGT4 "setStorage"
 
-setDim_ :: IsTensor t => t -> Dim (d::[Nat]) -> HsReal t -> IO ()
-setDim_ t d v = case dimVals d of
+_setDim :: IsTensor t => t -> Dim (d::[Nat]) -> HsReal t -> IO ()
+_setDim t d v = case dimVals d of
   []           -> throwNE "can't set on an empty dimension."
-  [x]          -> set1d_ t x       v
-  [x, y]       -> set2d_ t x y     v
-  [x, y, z]    -> set3d_ t x y z   v
-  [x, y, z, q] -> set4d_ t x y z q v
+  [x]          -> _set1d t x       v
+  [x, y]       -> _set2d t x y     v
+  [x, y, z]    -> _set3d t x y z   v
+  [x, y, z, q] -> _set4d t x y z q v
   _            -> throwGT4 "set"
 
 throwFIXME :: MonadThrow io => String -> String -> io x
@@ -148,16 +148,16 @@ throwGT4 fnname = throwFIXME
   ("review how TH supports `" ++ fnname ++ "` operations on > rank-4 tensors")
   (fnname ++ " with >4 rank")
 
-resizeDim_ :: IsTensor t => t -> Dim (d::[Nat]) -> IO ()
-resizeDim_ t d = case dimVals d of
+_resizeDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO ()
+_resizeDim t d = case dimVals d of
   []              -> throwNE "can't resize to an empty dimension."
-  [x]             -> resize1d_ t x
-  [x, y]          -> resize2d_ t x y
-  [x, y, z]       -> resize3d_ t x y z
-  [x, y, z, q]    -> resize4d_ t x y z q
-  [x, y, z, q, w] -> resize5d_ t x y z q w
+  [x]             -> _resize1d t x
+  [x, y]          -> _resize2d t x y
+  [x, y, z]       -> _resize3d t x y z
+  [x, y, z, q]    -> _resize4d t x y z q
+  [x, y, z, q, w] -> _resize5d t x y z q w
   _ -> throwFIXME "this should be doable with resizeNd" "resizeDim"
-  -- ds              -> resizeNd_ t (genericLength ds) ds
+  -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
 
@@ -172,7 +172,7 @@ fromList1d l = do
   upd t (idx, v) = someDimsM [idx] >>= \sd -> setDim'_ t sd v
 
 resizeDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO t
-resizeDim src d = newClone src >>= \res -> resizeDim_ res d >> pure res
+resizeDim src d = newClone src >>= \res -> _resizeDim res d >> pure res
 
 resizeDim' :: IsTensor t => t -> SomeDims -> IO t
 resizeDim' t (SomeDims d) = resizeDim t d
@@ -201,14 +201,14 @@ new d = case dimVals d of
   [x, y, z, q] -> newWithSize4d x y z q
   _ -> do
     t <- empty
-    resizeDim_ t d
+    _resizeDim t d
     pure t
 
 setDim'_ :: IsTensor t => t -> SomeDims-> HsReal t -> IO ()
-setDim'_ t (SomeDims d) v = setDim_ t d v
+setDim'_ t (SomeDims d) v = _setDim t d v
 
 resizeDim'_ :: IsTensor t => t -> SomeDims -> IO ()
-resizeDim'_ t (SomeDims d) = resizeDim_ t d
+resizeDim'_ t (SomeDims d) = _resizeDim t d
 
 getDim' :: IsTensor t => t -> SomeDims -> IO (HsReal t)
 getDim' t (SomeDims d) = getDim t d
@@ -220,7 +220,7 @@ new' (SomeDims d) = new d
 resizeAs :: forall t . (IsTensor t) => t -> t -> IO t
 resizeAs src shape = do
   res <- newClone src
-  resizeAs_ res shape
+  _resizeAs res shape
   pure res
 
 -- | displaying raw tensor values

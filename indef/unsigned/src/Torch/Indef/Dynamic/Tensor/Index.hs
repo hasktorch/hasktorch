@@ -20,35 +20,35 @@ forIxFn ret t1 ix fn =
       fn s' ret' t1' ix'
 
 instance Class.TensorIndex Dynamic where
-  indexCopy_ :: Dynamic -> Int -> IndexDynamic -> Dynamic -> IO ()
-  indexCopy_ ret i ix t = forIxFn ret t ix $ \s' ret' t' ix' ->
+  _indexCopy :: Dynamic -> Int -> IndexDynamic -> Dynamic -> IO ()
+  _indexCopy ret i ix t = forIxFn ret t ix $ \s' ret' t' ix' ->
     Sig.c_indexCopy s' ret' (fromIntegral i) ix' t'
 
-  indexAdd_ :: Dynamic -> Int -> IndexDynamic -> Dynamic -> IO ()
-  indexAdd_ r i ix t = forIxFn r t ix $ \s' r' t' ix' ->
+  _indexAdd :: Dynamic -> Int -> IndexDynamic -> Dynamic -> IO ()
+  _indexAdd r i ix t = forIxFn r t ix $ \s' r' t' ix' ->
     Sig.c_indexAdd s' r' (fromIntegral i) ix' t'
 
-  indexFill_ :: Dynamic -> Int -> IndexDynamic -> HsReal -> IO ()
-  indexFill_ ret i ix v =
+  _indexFill :: Dynamic -> Int -> IndexDynamic -> HsReal -> IO ()
+  _indexFill ret i ix v =
     withDynamicState ret $ \s' ret' ->
       withForeignPtr (snd $ Sig.longDynamicState ix) $ \ix' ->
         Sig.c_indexFill s' ret' (fromIntegral i) ix' (Sig.hs2cReal v)
 
-  indexSelect_ :: Dynamic -> Dynamic -> Int -> IndexDynamic -> IO ()
-  indexSelect_ ret t i ix = forIxFn ret t ix $ \s' ret' t' ix' ->
+  _indexSelect :: Dynamic -> Dynamic -> Int -> IndexDynamic -> IO ()
+  _indexSelect ret t i ix = forIxFn ret t ix $ \s' ret' t' ix' ->
     Sig.c_indexSelect s' ret' t' (fromIntegral i) ix'
 
-  take_ :: Dynamic -> Dynamic -> IndexDynamic -> IO ()
-  take_ ret t ix = forIxFn ret t ix $ \s' ret' t' ix' ->
+  _take :: Dynamic -> Dynamic -> IndexDynamic -> IO ()
+  _take ret t ix = forIxFn ret t ix $ \s' ret' t' ix' ->
     Sig.c_take s' ret' t' ix'
 
-  put_ :: Dynamic -> IndexDynamic -> Dynamic -> Int -> IO ()
-  put_ ret ix t i = forIxFn ret t ix $ \s' ret' t' ix' ->
+  _put :: Dynamic -> IndexDynamic -> Dynamic -> Int -> IO ()
+  _put ret ix t i = forIxFn ret t ix $ \s' ret' t' ix' ->
     Sig.c_put s' ret' ix' t' (fromIntegral i)
 
 -- class GPUTensorIndex Dynamic where
---   indexCopy_long_ :: t -> Int -> IndexDynamic t -> t -> IO ()
---   indexAdd_long_ :: t -> Int -> IndexDynamic t -> t -> IO ()
---   indexFill_long_ :: t -> Int -> IndexDynamic t -> Word -> IO ()
---   indexSelect_long_ :: t -> t -> Int -> IndexDynamic t -> IO ()
---   calculateAdvancedIndexingOffsets_ :: IndexDynamic t -> t -> Integer -> [IndexTensor t] -> IO ()
+--   _indexCopy_long :: t -> Int -> IndexDynamic t -> t -> IO ()
+--   _indexAdd_long :: t -> Int -> IndexDynamic t -> t -> IO ()
+--   _indexFill_long :: t -> Int -> IndexDynamic t -> Word -> IO ()
+--   _indexSelect_long :: t -> t -> Int -> IndexDynamic t -> IO ()
+--   _calculateAdvancedIndexingOffsets :: IndexDynamic t -> t -> Integer -> [IndexTensor t] -> IO ()

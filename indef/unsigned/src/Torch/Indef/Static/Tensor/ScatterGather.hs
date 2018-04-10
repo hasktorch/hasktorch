@@ -8,14 +8,14 @@ import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.ScatterGather ()
 
 instance Class.TensorScatterGather Tensor where
-  gather_ :: Tensor d -> Tensor d -> DimVal -> IndexTensor '[n] -> IO ()
-  gather_ r src d ix = Dynamic.gather_ (asDynamic r) (asDynamic src) d (longAsDynamic ix)
+  _gather :: Tensor d -> Tensor d -> DimVal -> IndexTensor '[n] -> IO ()
+  _gather r src d ix = Dynamic._gather (asDynamic r) (asDynamic src) d (longAsDynamic ix)
 
-  scatter_ :: Tensor d -> DimVal -> IndexTensor '[n] -> Tensor d -> IO ()
-  scatter_ r d ix src = Dynamic.scatter_ (asDynamic r) d (longAsDynamic ix) (asDynamic src)
+  _scatter :: Tensor d -> DimVal -> IndexTensor '[n] -> Tensor d -> IO ()
+  _scatter r d ix src = Dynamic._scatter (asDynamic r) d (longAsDynamic ix) (asDynamic src)
 
-  scatterAdd_   :: Tensor d -> DimVal -> IndexTensor '[n] -> Tensor d -> IO ()
-  scatterAdd_ r d ix src = Dynamic.scatterAdd_ (asDynamic r) d (longAsDynamic ix) (asDynamic src)
+  _scatterAdd   :: Tensor d -> DimVal -> IndexTensor '[n] -> Tensor d -> IO ()
+  _scatterAdd r d ix src = Dynamic._scatterAdd (asDynamic r) d (longAsDynamic ix) (asDynamic src)
 
-  scatterFill_  :: Tensor d -> DimVal -> IndexTensor '[n] -> HsReal -> IO ()
-  scatterFill_ r d ix = Dynamic.scatterFill_ (asDynamic r) d (longAsDynamic ix)
+  _scatterFill  :: Tensor d -> DimVal -> IndexTensor '[n] -> HsReal -> IO ()
+  _scatterFill r d ix = Dynamic._scatterFill (asDynamic r) d (longAsDynamic ix)

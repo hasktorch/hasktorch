@@ -8,13 +8,13 @@ import qualified Torch.Class.TH.Tensor.Math.Random.Static as Class
 import qualified Torch.Types.TH as TH
 
 instance Class.THTensorMathRandom Tensor where
-  rand_ :: Dimensions d => Tensor d -> Generator -> TH.LongStorage -> IO ()
-  rand_ t = Dynamic.rand_ (asDynamic t)
+  _rand :: Dimensions d => Tensor d -> Generator -> TH.LongStorage -> IO ()
+  _rand t = Dynamic._rand (asDynamic t)
 
-  randn_ :: Dimensions d => Tensor d -> Generator -> TH.LongStorage -> IO ()
-  randn_ t = Dynamic.randn_ (asDynamic t)
+  _randn :: Dimensions d => Tensor d -> Generator -> TH.LongStorage -> IO ()
+  _randn t = Dynamic._randn (asDynamic t)
 
-  randperm_ :: Dimensions d => Tensor d -> Generator -> Integer -> IO ()
-  randperm_ t = Dynamic.randperm_ (asDynamic t)
+  _randperm :: Dimensions d => Tensor d -> Generator -> Integer -> IO ()
+  _randperm t = Dynamic._randperm (asDynamic t)
 
 

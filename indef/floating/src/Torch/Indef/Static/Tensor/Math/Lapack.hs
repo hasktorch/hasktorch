@@ -9,39 +9,39 @@ import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Math.Lapack ()
 
 instance Class.TensorMathLapack Tensor where
-  getri_ :: Tensor d -> Tensor d' -> IO ()
-  getri_ a b = Dynamic.getri_ (asDynamic a) (asDynamic b)
+  _getri :: Tensor d -> Tensor d' -> IO ()
+  _getri a b = Dynamic._getri (asDynamic a) (asDynamic b)
 
-  potri_ :: Tensor d -> Tensor d' -> [Int8] -> IO ()
-  potri_ a b = Dynamic.potri_ (asDynamic a) (asDynamic b)
+  _potri :: Tensor d -> Tensor d' -> [Int8] -> IO ()
+  _potri a b = Dynamic._potri (asDynamic a) (asDynamic b)
 
-  potrf_ :: Tensor d -> Tensor d' -> [Int8] -> IO ()
-  potrf_ a b = Dynamic.potrf_ (asDynamic a) (asDynamic b)
+  _potrf :: Tensor d -> Tensor d' -> [Int8] -> IO ()
+  _potrf a b = Dynamic._potrf (asDynamic a) (asDynamic b)
 
-  geqrf_ :: Tensor d -> Tensor d' -> Tensor d'' -> IO ()
-  geqrf_ a b c = Dynamic.geqrf_ (asDynamic a) (asDynamic b) (asDynamic c)
+  _geqrf :: Tensor d -> Tensor d' -> Tensor d'' -> IO ()
+  _geqrf a b c = Dynamic._geqrf (asDynamic a) (asDynamic b) (asDynamic c)
 
-  qr_ :: Tensor d -> Tensor d' -> Tensor d'' -> IO ()
-  qr_ a b c = Dynamic.qr_ (asDynamic a) (asDynamic b) (asDynamic c)
+  _qr :: Tensor d -> Tensor d' -> Tensor d'' -> IO ()
+  _qr a b c = Dynamic._qr (asDynamic a) (asDynamic b) (asDynamic c)
 
-  geev_ :: Tensor d -> Tensor d' -> Tensor d'' -> [Int8] -> IO ()
-  geev_ a b c = Dynamic.geev_ (asDynamic a) (asDynamic b) (asDynamic c)
+  _geev :: Tensor d -> Tensor d' -> Tensor d'' -> [Int8] -> IO ()
+  _geev a b c = Dynamic._geev (asDynamic a) (asDynamic b) (asDynamic c)
 
-  potrs_ :: Tensor d -> Tensor d' -> Tensor d'' -> [Int8] -> IO ()
-  potrs_ a b c = Dynamic.potrs_ (asDynamic a) (asDynamic b) (asDynamic c)
+  _potrs :: Tensor d -> Tensor d' -> Tensor d'' -> [Int8] -> IO ()
+  _potrs a b c = Dynamic._potrs (asDynamic a) (asDynamic b) (asDynamic c)
 
-  syev_ :: Tensor d -> Tensor d' -> Tensor d'' -> [Int8] -> [Int8] -> IO ()
-  syev_ a b c = Dynamic.syev_ (asDynamic a) (asDynamic b) (asDynamic c)
+  _syev :: Tensor d -> Tensor d' -> Tensor d'' -> [Int8] -> [Int8] -> IO ()
+  _syev a b c = Dynamic._syev (asDynamic a) (asDynamic b) (asDynamic c)
 
-  gesv_ :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> IO ()
-  gesv_ a b c d = Dynamic.gesv_ (asDynamic a) (asDynamic b) (asDynamic c) (asDynamic d)
+  _gesv :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> IO ()
+  _gesv a b c d = Dynamic._gesv (asDynamic a) (asDynamic b) (asDynamic c) (asDynamic d)
 
-  gels_ :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> IO ()
-  gels_ a b c d = Dynamic.gels_ (asDynamic a) (asDynamic b) (asDynamic c) (asDynamic d)
+  _gels :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> IO ()
+  _gels a b c d = Dynamic._gels (asDynamic a) (asDynamic b) (asDynamic c) (asDynamic d)
 
-  gesvd_ :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> [Int8] -> IO ()
-  gesvd_ a b c d = Dynamic.gesvd_ (asDynamic a) (asDynamic b) (asDynamic c) (asDynamic d)
+  _gesvd :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> [Int8] -> IO ()
+  _gesvd a b c d = Dynamic._gesvd (asDynamic a) (asDynamic b) (asDynamic c) (asDynamic d)
 
-  gesvd2_ :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d'''' -> [Int8] -> IO ()
-  gesvd2_ a b c d e = Dynamic.gesvd2_ (asDynamic a) (asDynamic b) (asDynamic c) (asDynamic d) (asDynamic e)
+  _gesvd2 :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d'''' -> [Int8] -> IO ()
+  _gesvd2 a b c d e = Dynamic._gesvd2 (asDynamic a) (asDynamic b) (asDynamic c) (asDynamic d) (asDynamic e)
 

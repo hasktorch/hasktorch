@@ -10,5 +10,5 @@ data TopKOrder = KAscending | KNone | KDescending
   deriving (Eq, Show, Ord, Enum, Bounded)
 
 class TensorTopK t where
-  topk_ :: (t, IndexDynamic t) -> t -> Integer -> DimVal -> TopKOrder -> Maybe KeepDim -> IO ()
+  _topk :: (t, IndexDynamic t) -> t -> Integer -> DimVal -> TopKOrder -> Maybe KeepDim -> IO ()
 

@@ -7,9 +7,9 @@ import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Math.Scan ()
 
 instance TensorMathScan (Tensor d) where
-  cumsum_ :: Tensor d -> Tensor d -> DimVal -> IO ()
-  cumsum_ r t = cumsum_ (asDynamic r) (asDynamic t)
+  _cumsum :: Tensor d -> Tensor d -> DimVal -> IO ()
+  _cumsum r t = _cumsum (asDynamic r) (asDynamic t)
 
-  cumprod_ :: Tensor d -> Tensor d -> DimVal -> IO ()
-  cumprod_ r t = cumprod_ (asDynamic r) (asDynamic t)
+  _cumprod :: Tensor d -> Tensor d -> DimVal -> IO ()
+  _cumprod r t = _cumprod (asDynamic r) (asDynamic t)
 

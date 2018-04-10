@@ -9,21 +9,21 @@ import Torch.Indef.Dynamic.Tensor.Index ()
 import Torch.Indef.Static.Tensor ()
 
 instance Class.TensorIndex Tensor where
-  indexCopy_ :: Tensor d -> Int -> IndexTensor '[n] -> Tensor d' -> IO ()
-  indexCopy_ r x ix t = Dynamic.indexCopy_ (asDynamic r) x (longAsDynamic ix) (asDynamic t)
+  _indexCopy :: Tensor d -> Int -> IndexTensor '[n] -> Tensor d' -> IO ()
+  _indexCopy r x ix t = Dynamic._indexCopy (asDynamic r) x (longAsDynamic ix) (asDynamic t)
 
-  indexAdd_ :: Tensor d -> Int -> IndexTensor '[n] -> Tensor d' -> IO ()
-  indexAdd_ r x ix t = Dynamic.indexAdd_ (asDynamic r) x (longAsDynamic ix) (asDynamic t)
+  _indexAdd :: Tensor d -> Int -> IndexTensor '[n] -> Tensor d' -> IO ()
+  _indexAdd r x ix t = Dynamic._indexAdd (asDynamic r) x (longAsDynamic ix) (asDynamic t)
 
-  indexFill_ :: Tensor d -> Int -> IndexTensor '[n] -> HsReal -> IO ()
-  indexFill_ r x ix v = Dynamic.indexFill_ (asDynamic r) x (longAsDynamic ix) v
+  _indexFill :: Tensor d -> Int -> IndexTensor '[n] -> HsReal -> IO ()
+  _indexFill r x ix v = Dynamic._indexFill (asDynamic r) x (longAsDynamic ix) v
 
-  indexSelect_ :: Tensor d -> Tensor d' -> Int -> IndexTensor '[n] -> IO ()
-  indexSelect_ r t d ix = Dynamic.indexSelect_ (asDynamic r) (asDynamic t) d (longAsDynamic ix)
+  _indexSelect :: Tensor d -> Tensor d' -> Int -> IndexTensor '[n] -> IO ()
+  _indexSelect r t d ix = Dynamic._indexSelect (asDynamic r) (asDynamic t) d (longAsDynamic ix)
 
-  take_ :: Tensor d -> Tensor d' -> IndexTensor '[n] -> IO ()
-  take_ r t ix = Dynamic.take_ (asDynamic r) (asDynamic t) (longAsDynamic ix)
+  _take :: Tensor d -> Tensor d' -> IndexTensor '[n] -> IO ()
+  _take r t ix = Dynamic._take (asDynamic r) (asDynamic t) (longAsDynamic ix)
 
-  put_ :: Tensor d -> IndexTensor '[n] -> Tensor d' -> Int -> IO ()
-  put_ r ix t d = Dynamic.put_ (asDynamic r) (longAsDynamic ix) (asDynamic t) d
+  _put :: Tensor d -> IndexTensor '[n] -> Tensor d' -> Int -> IO ()
+  _put r ix t d = Dynamic._put (asDynamic r) (longAsDynamic ix) (asDynamic t) d
 

@@ -8,9 +8,9 @@ import Torch.Dimensions
 import qualified Torch.Sig.Tensor.Math.Scan as Sig
 
 instance TensorMathScan Dynamic where
-  cumsum_ :: Dynamic -> Dynamic -> DimVal -> IO ()
-  cumsum_ t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_cumsum (fromIntegral i0)
+  _cumsum :: Dynamic -> Dynamic -> DimVal -> IO ()
+  _cumsum t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_cumsum (fromIntegral i0)
 
-  cumprod_ :: Dynamic -> Dynamic -> DimVal -> IO ()
-  cumprod_ t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_cumprod (fromIntegral i0)
+  _cumprod :: Dynamic -> Dynamic -> DimVal -> IO ()
+  _cumprod t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_cumprod (fromIntegral i0)
 

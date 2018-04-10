@@ -8,6 +8,6 @@ import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Mode ()
 
 instance Class.TensorMode Tensor where
-  mode_ :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
-  mode_ (r, ix) t = Dynamic.mode_ (asDynamic r, longAsDynamic ix) (asDynamic t)
+  _mode :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
+  _mode (r, ix) t = Dynamic._mode (asDynamic r, longAsDynamic ix) (asDynamic t)
 

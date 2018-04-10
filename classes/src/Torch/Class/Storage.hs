@@ -41,4 +41,4 @@ class CPUStorage t where
   swap :: t -> t -> IO ()
 
 class GPUStorage t where
-  c_getDevice :: t -> IO Int
+  getDevice :: t -> IO Int

@@ -8,8 +8,8 @@ import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Masked ()
 
 instance Class.TensorMasked Tensor where
-  maskedFill_ t m v = Dynamic.maskedFill_ (asDynamic t) (byteAsDynamic m) v
-  maskedCopy_ r m t = Dynamic.maskedCopy_ (asDynamic r) (byteAsDynamic m) (asDynamic t)
-  maskedSelect_ r s m = Dynamic.maskedSelect_ (asDynamic r) (asDynamic s) (byteAsDynamic m)
+  _maskedFill t m v = Dynamic._maskedFill (asDynamic t) (byteAsDynamic m) v
+  _maskedCopy r m t = Dynamic._maskedCopy (asDynamic r) (byteAsDynamic m) (asDynamic t)
+  _maskedSelect r s m = Dynamic._maskedSelect (asDynamic r) (asDynamic s) (byteAsDynamic m)
 
 

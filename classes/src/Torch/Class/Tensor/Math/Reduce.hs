@@ -15,37 +15,37 @@ class TensorMathReduce t where
   medianall    :: t -> IO (HsReal t)
   sumall       :: t -> IO (HsAccReal t)
   prodall      :: t -> IO (HsAccReal t)
-  max_         :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
-  min_         :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
-  median_      :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
-  sum_         :: t -> t -> DimVal -> Maybe KeepDim -> IO ()
-  prod_        :: t -> t -> DimVal -> Maybe KeepDim -> IO ()
+  _max         :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
+  _min         :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
+  _median      :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
+  _sum         :: t -> t -> DimVal -> Maybe KeepDim -> IO ()
+  _prod        :: t -> t -> DimVal -> Maybe KeepDim -> IO ()
 
 
 withKeepDim
   :: (TensorMathReduce t, IsTensor t, IsTensor (IndexDynamic t))
   => ((t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ())
   -> t -> DimVal -> Maybe KeepDim -> IO (t, Maybe (IndexDynamic t))
-withKeepDim fn_ t d k = do
+withKeepDim _fn t d k = do
   tdim <- getDims t
   ret :: t              <- new' tdim
   ix  :: IndexDynamic t <- new' tdim
-  fn_ (ret, ix) t d k
+  _fn (ret, ix) t d k
   pure (ret, maybe (Just ix) (pure Nothing) k)
 
 max, min, median
   :: (TensorMathReduce t, IsTensor t, IsTensor (IndexDynamic t))
   => t -> DimVal -> Maybe KeepDim -> IO (t, Maybe (IndexDynamic t))
-max = withKeepDim max_
-min = withKeepDim min_
-median = withKeepDim median_
+max = withKeepDim _max
+min = withKeepDim _min
+median = withKeepDim _median
 
 class TensorMathReduceFloating t where
-  mean_         :: t -> t -> Int -> Int -> IO ()
-  std_          :: t -> t -> Int -> Int -> Int -> IO ()
-  var_          :: t -> t -> Int -> Int -> Int -> IO ()
-  norm_         :: t -> t -> HsReal t -> Int -> Int -> IO ()
-  renorm_       :: t -> t -> HsReal t -> Int -> HsReal t -> IO ()
+  _mean         :: t -> t -> Int -> Int -> IO ()
+  _std          :: t -> t -> Int -> Int -> Int -> IO ()
+  _var          :: t -> t -> Int -> Int -> Int -> IO ()
+  _norm         :: t -> t -> HsReal t -> Int -> Int -> IO ()
+  _renorm       :: t -> t -> HsReal t -> Int -> HsReal t -> IO ()
   dist          :: t -> t -> HsReal t -> IO (HsAccReal t)
   meanall       :: t -> IO (HsAccReal t)
   varall        :: t -> Int -> IO (HsAccReal t)

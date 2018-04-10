@@ -5,8 +5,8 @@ import Torch.Dimensions
 import qualified Torch.Types.TH as TH
 
 class THTensorMathRandom t where
-  rand_     :: Dimensions d => t d -> Generator (t d) -> TH.LongStorage -> IO ()
-  randn_    :: Dimensions d => t d -> Generator (t d) -> TH.LongStorage -> IO ()
-  randperm_ :: Dimensions d => t d -> Generator (t d) -> Integer -> IO ()
+  _rand     :: Dimensions d => t d -> Generator (t d) -> TH.LongStorage -> IO ()
+  _randn    :: Dimensions d => t d -> Generator (t d) -> TH.LongStorage -> IO ()
+  _randperm :: Dimensions d => t d -> Generator (t d) -> Integer -> IO ()
 
 

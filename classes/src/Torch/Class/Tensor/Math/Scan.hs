@@ -5,5 +5,5 @@ import Data.Int
 import Torch.Dimensions
 
 class TensorMathScan t where
-  cumsum_  :: t -> t -> DimVal -> IO ()
-  cumprod_ :: t -> t -> DimVal -> IO ()
+  _cumsum  :: t -> t -> DimVal -> IO ()
+  _cumprod :: t -> t -> DimVal -> IO ()

@@ -10,6 +10,6 @@ import Torch.Indef.Dynamic.Tensor.TopK ()
 import Torch.Indef.Static.Tensor ()
 
 instance Class.TensorTopK Tensor where
-  topk_ :: (Tensor d', IndexTensor d') -> Tensor d -> Integer -> DimVal -> TopKOrder -> Maybe KeepDim -> IO ()
-  topk_ (r, ix) t = Dynamic.topk_ (asDynamic r, longAsDynamic ix) (asDynamic t)
+  _topk :: (Tensor d', IndexTensor d') -> Tensor d -> Integer -> DimVal -> TopKOrder -> Maybe KeepDim -> IO ()
+  _topk (r, ix) t = Dynamic._topk (asDynamic r, longAsDynamic ix) (asDynamic t)
 

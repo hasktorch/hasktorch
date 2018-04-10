@@ -11,60 +11,60 @@ import qualified Torch.Sig.Types as Sig
 import qualified Torch.Sig.Types.Global as Sig
 
 instance Class.THTensorRandom Tensor where
-  random_ :: Dimensions d => Tensor d -> Generator -> IO ()
-  random_ r = Dynamic.random_ (asDynamic r)
+  _random :: Dimensions d => Tensor d -> Generator -> IO ()
+  _random r = Dynamic._random (asDynamic r)
 
-  clampedRandom_ :: Dimensions d => Tensor d -> Generator -> Integer -> Integer -> IO ()
-  clampedRandom_ r = Dynamic.clampedRandom_ (asDynamic r)
+  _clampedRandom :: Dimensions d => Tensor d -> Generator -> Integer -> Integer -> IO ()
+  _clampedRandom r = Dynamic._clampedRandom (asDynamic r)
 
-  cappedRandom_ :: Dimensions d => Tensor d -> Generator -> Integer -> IO ()
-  cappedRandom_ r = Dynamic.cappedRandom_ (asDynamic r)
+  _cappedRandom :: Dimensions d => Tensor d -> Generator -> Integer -> IO ()
+  _cappedRandom r = Dynamic._cappedRandom (asDynamic r)
 
-  geometric_ :: Dimensions d => Tensor d -> Generator -> HsAccReal -> IO ()
-  geometric_ r = Dynamic.geometric_ (asDynamic r)
+  _geometric :: Dimensions d => Tensor d -> Generator -> HsAccReal -> IO ()
+  _geometric r = Dynamic._geometric (asDynamic r)
 
-  bernoulli_ :: Dimensions d => Tensor d -> Generator -> HsAccReal -> IO ()
-  bernoulli_ r = Dynamic.bernoulli_ (asDynamic r)
+  _bernoulli :: Dimensions d => Tensor d -> Generator -> HsAccReal -> IO ()
+  _bernoulli r = Dynamic._bernoulli (asDynamic r)
 
-  bernoulli_FloatTensor_ :: Dimensions d => Tensor d -> Generator -> TH.FloatTensor d -> IO ()
-  bernoulli_FloatTensor_ r g f = Dynamic.bernoulli_FloatTensor_ (asDynamic r) g (TH.floatAsDynamic f)
+  _bernoulli_FloatTensor :: Dimensions d => Tensor d -> Generator -> TH.FloatTensor d -> IO ()
+  _bernoulli_FloatTensor r g f = Dynamic._bernoulli_FloatTensor (asDynamic r) g (TH.floatAsDynamic f)
 
-  bernoulli_DoubleTensor_ :: Dimensions d => Tensor d -> Generator -> TH.DoubleTensor d -> IO ()
-  bernoulli_DoubleTensor_ r g d = Dynamic.bernoulli_DoubleTensor_ (asDynamic r) g (TH.doubleAsDynamic d)
+  _bernoulli_DoubleTensor :: Dimensions d => Tensor d -> Generator -> TH.DoubleTensor d -> IO ()
+  _bernoulli_DoubleTensor r g d = Dynamic._bernoulli_DoubleTensor (asDynamic r) g (TH.doubleAsDynamic d)
 
-  uniform_ :: Dimensions d => Tensor d -> Generator -> HsAccReal -> HsAccReal -> IO ()
-  uniform_ r = Dynamic.uniform_ (asDynamic r)
+  _uniform :: Dimensions d => Tensor d -> Generator -> HsAccReal -> HsAccReal -> IO ()
+  _uniform r = Dynamic._uniform (asDynamic r)
 
-  normal_ :: Dimensions d => Tensor d -> Generator -> HsAccReal -> HsAccReal -> IO ()
-  normal_ r = Dynamic.normal_ (asDynamic r)
+  _normal :: Dimensions d => Tensor d -> Generator -> HsAccReal -> HsAccReal -> IO ()
+  _normal r = Dynamic._normal (asDynamic r)
 
-  normal_means_ :: Dimensions d => Tensor d -> Generator -> Tensor d -> HsAccReal -> IO ()
-  normal_means_ r g a = Dynamic.normal_means_ (asDynamic r) g (asDynamic a)
+  _normal_means :: Dimensions d => Tensor d -> Generator -> Tensor d -> HsAccReal -> IO ()
+  _normal_means r g a = Dynamic._normal_means (asDynamic r) g (asDynamic a)
 
-  normal_stddevs_ :: Dimensions d => Tensor d -> Generator -> HsAccReal -> Tensor d -> IO ()
-  normal_stddevs_ r g v a = Dynamic.normal_stddevs_ (asDynamic r) g v (asDynamic a)
+  _normal_stddevs :: Dimensions d => Tensor d -> Generator -> HsAccReal -> Tensor d -> IO ()
+  _normal_stddevs r g v a = Dynamic._normal_stddevs (asDynamic r) g v (asDynamic a)
 
-  normal_means_stddevs_ :: Dimensions d => Tensor d -> Generator -> Tensor d -> Tensor d -> IO ()
-  normal_means_stddevs_ r g a b = Dynamic.normal_means_stddevs_ (asDynamic r) g (asDynamic a) (asDynamic b)
+  _normal_means_stddevs :: Dimensions d => Tensor d -> Generator -> Tensor d -> Tensor d -> IO ()
+  _normal_means_stddevs r g a b = Dynamic._normal_means_stddevs (asDynamic r) g (asDynamic a) (asDynamic b)
 
-  exponential_ :: Dimensions d => Tensor d -> Generator -> HsAccReal -> IO ()
-  exponential_ r = Dynamic.exponential_ (asDynamic r)
+  _exponential :: Dimensions d => Tensor d -> Generator -> HsAccReal -> IO ()
+  _exponential r = Dynamic._exponential (asDynamic r)
 
-  standard_gamma_ :: Dimensions d => Tensor d -> Generator -> Tensor d -> IO ()
-  standard_gamma_ r g t = Dynamic.standard_gamma_ (asDynamic r) g (asDynamic t)
+  _standard_gamma :: Dimensions d => Tensor d -> Generator -> Tensor d -> IO ()
+  _standard_gamma r g t = Dynamic._standard_gamma (asDynamic r) g (asDynamic t)
 
-  cauchy_ :: Dimensions d => Tensor d -> Generator -> HsAccReal -> HsAccReal -> IO ()
-  cauchy_ r = Dynamic.cauchy_ (asDynamic r)
+  _cauchy :: Dimensions d => Tensor d -> Generator -> HsAccReal -> HsAccReal -> IO ()
+  _cauchy r = Dynamic._cauchy (asDynamic r)
 
-  logNormal_ :: Dimensions d => Tensor d -> Generator -> HsAccReal -> HsAccReal -> IO ()
-  logNormal_ r = Dynamic.logNormal_ (asDynamic r)
+  _logNormal :: Dimensions d => Tensor d -> Generator -> HsAccReal -> HsAccReal -> IO ()
+  _logNormal r = Dynamic._logNormal (asDynamic r)
 
-  multinomial_ :: Dimensions d => IndexTensor d -> Generator -> Tensor d -> Int -> Int -> IO ()
-  multinomial_ r g t = Dynamic.multinomial_ (longAsDynamic r) g (asDynamic t)
+  _multinomial :: Dimensions d => IndexTensor d -> Generator -> Tensor d -> Int -> Int -> IO ()
+  _multinomial r g t = Dynamic._multinomial (longAsDynamic r) g (asDynamic t)
 
-  multinomialAliasSetup_ :: Dimensions d => Tensor d -> IndexTensor d -> Tensor d -> IO ()
-  multinomialAliasSetup_ r g t = Dynamic.multinomialAliasSetup_ (asDynamic r) (longAsDynamic g) (asDynamic t)
+  _multinomialAliasSetup :: Dimensions d => Tensor d -> IndexTensor d -> Tensor d -> IO ()
+  _multinomialAliasSetup r g t = Dynamic._multinomialAliasSetup (asDynamic r) (longAsDynamic g) (asDynamic t)
 
-  multinomialAliasDraw_ :: Dimensions d => IndexTensor d -> Generator -> IndexTensor d -> Tensor d -> IO ()
-  multinomialAliasDraw_ r g a b = Dynamic.multinomialAliasDraw_ (longAsDynamic r) g (longAsDynamic a) (asDynamic b)
+  _multinomialAliasDraw :: Dimensions d => IndexTensor d -> Generator -> IndexTensor d -> Tensor d -> IO ()
+  _multinomialAliasDraw r g a b = Dynamic._multinomialAliasDraw (longAsDynamic r) g (longAsDynamic a) (asDynamic b)
 

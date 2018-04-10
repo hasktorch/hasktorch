@@ -20,14 +20,14 @@ go fn d g i = runManaged . joinIO $ fn
   <*> manage' (snd . TH.longStorageState) i
 
 instance Class.THTensorMathRandom Dynamic where
-  rand_  :: Dynamic -> Generator -> TH.IndexStorage -> IO ()
-  rand_ = go Sig.c_rand
+  _rand  :: Dynamic -> Generator -> TH.IndexStorage -> IO ()
+  _rand = go Sig.c_rand
 
-  randn_  :: Dynamic -> Generator -> TH.IndexStorage -> IO ()
-  randn_ = go Sig.c_randn
+  _randn  :: Dynamic -> Generator -> TH.IndexStorage -> IO ()
+  _randn = go Sig.c_randn
 
-  randperm_ :: Dynamic -> Generator -> Integer -> IO ()
-  randperm_ t g i = runManaged . joinIO $ Sig.c_randperm
+  _randperm :: Dynamic -> Generator -> Integer -> IO ()
+  _randperm t g i = runManaged . joinIO $ Sig.c_randperm
     <$> manage' Sig.dynamicStateRef t
     <*> manage' Sig.ctensor t
     <*> manage' Sig.rng g

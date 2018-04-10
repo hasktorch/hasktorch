@@ -25,18 +25,18 @@ instance Class.TensorMathReduce Tensor where
   prodall :: Tensor d -> IO HsAccReal
   prodall t = Dynamic.prodall (asDynamic t)
 
-  max_ :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
-  max_ (r, ix) t1 = Dynamic.max_ (asDynamic r, longAsDynamic ix) (asDynamic t1)
+  _max :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
+  _max (r, ix) t1 = Dynamic._max (asDynamic r, longAsDynamic ix) (asDynamic t1)
 
-  min_ :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
-  min_ (r, ix) t1 = Dynamic.min_ (asDynamic r, longAsDynamic ix) (asDynamic t1)
+  _min :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
+  _min (r, ix) t1 = Dynamic._min (asDynamic r, longAsDynamic ix) (asDynamic t1)
 
-  median_ :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
-  median_ (r, ix) t1 = Dynamic.median_ (asDynamic r, longAsDynamic ix) (asDynamic t1)
+  _median :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
+  _median (r, ix) t1 = Dynamic._median (asDynamic r, longAsDynamic ix) (asDynamic t1)
 
-  sum_ r t = Dynamic.sum_ (asDynamic r) (asDynamic t)
+  _sum r t = Dynamic._sum (asDynamic r) (asDynamic t)
 
-  prod_ :: Tensor d -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
-  prod_ r t = Dynamic.prod_ (asDynamic r) (asDynamic t)
+  _prod :: Tensor d -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
+  _prod r t = Dynamic._prod (asDynamic r) (asDynamic t)
 
 

@@ -14,7 +14,7 @@ import Torch.Class.Tensor.TopK (TopKOrder(..))
 import qualified Torch.Class.Tensor as Dynamic
 
 class IsTensor t => TensorTopK t where
-  topk_
+  _topk
     :: (Dimensions d, Dimensions d')
     => (t d', IndexTensor (t d') d')
     -> t d
@@ -33,7 +33,7 @@ topk
 topk t k d o sorted = do
   ix :: IndexTensor (t d') d' <- Dynamic.new (dim :: Dim d')
   r  :: t d' <- new
-  topk_ (r, ix) t k d o sorted
+  _topk (r, ix) t k d o sorted
   pure (r, ix)
 
 

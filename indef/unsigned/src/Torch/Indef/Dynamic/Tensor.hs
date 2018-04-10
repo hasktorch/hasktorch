@@ -30,8 +30,8 @@ longCStorage = snd . longStorageState
 longCStorageTH = snd . TH.longStorageState
 
 instance Class.IsTensor Dynamic where
-  clearFlag_ :: Dynamic -> Int8 -> IO ()
-  clearFlag_ t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
+  _clearFlag :: Dynamic -> Int8 -> IO ()
+  _clearFlag t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
 
   tensordata :: Dynamic -> IO [HsReal]
   tensordata t = withDynamicState t $ \s' t' ->
@@ -40,11 +40,11 @@ instance Class.IsTensor Dynamic where
     arrayLen :: Ptr CState -> Ptr CTensor -> IO Int
     arrayLen s' p = Sig.c_storage s' p >>= fmap fromIntegral . StorageSig.c_size s'
 
-  free_ :: Dynamic -> IO ()
-  free_ t = withDynamicState t Sig.c_free
+  _free :: Dynamic -> IO ()
+  _free t = withDynamicState t Sig.c_free
 
-  freeCopyTo_ :: Dynamic -> Dynamic -> IO ()
-  freeCopyTo_ t0 t1 = with2DynamicState t0 t1 $ \s t0' t1' ->
+  _freeCopyTo :: Dynamic -> Dynamic -> IO ()
+  _freeCopyTo t0 t1 = with2DynamicState t0 t1 $ \s t0' t1' ->
       Sig.c_freeCopyTo s t0' t1'
 
   get1d :: Dynamic -> Int64 -> IO HsReal
@@ -81,8 +81,8 @@ instance Class.IsTensor Dynamic where
   nElement :: Dynamic -> IO Int64
   nElement t = withDynamicState t (\s t' -> fmap fromIntegral $ Sig.c_nElement s t')
 
-  narrow_ :: Dynamic -> Dynamic -> DimVal -> Int64 -> Size -> IO ()
-  narrow_ t0 t1 a b c = withDynamicState t0 $ \s t0' ->
+  _narrow :: Dynamic -> Dynamic -> DimVal -> Int64 -> Size -> IO ()
+  _narrow t0 t1 a b c = withDynamicState t0 $ \s t0' ->
     withForeignPtr (ctensor t1) $ \t1' ->
       Sig.c_narrow s t0' t1' (fromIntegral a) (fromIntegral b) (fromIntegral c)
 
@@ -215,36 +215,36 @@ instance Class.IsTensor Dynamic where
   newWithTensor :: Dynamic -> IO Dynamic
   newWithTensor t = withDynamicState t $ \s' t' -> Sig.c_newWithTensor s' t' >>= mkDynamic s'
 
-  resize_ :: Dynamic -> TH.IndexStorage -> TH.IndexStorage -> IO ()
-  resize_ t l0 l1 = withDynamicState t $ \s' t' -> runManaged $ do
+  _resize :: Dynamic -> TH.IndexStorage -> TH.IndexStorage -> IO ()
+  _resize t l0 l1 = withDynamicState t $ \s' t' -> runManaged $ do
     l0' <- managed $ withCPUIxStorage l0
     l1' <- managed $ withCPUIxStorage l1
     liftIO $ Sig.c_resize s' t' l0' l1'
 
-  resize1d_ :: Dynamic -> Int64 -> IO ()
-  resize1d_ t l0 = withDynamicState t (\s' t' -> Sig.c_resize1d s' t' (fromIntegral l0))
+  _resize1d :: Dynamic -> Int64 -> IO ()
+  _resize1d t l0 = withDynamicState t (\s' t' -> Sig.c_resize1d s' t' (fromIntegral l0))
 
-  resize2d_ :: Dynamic -> Int64 -> Int64 -> IO ()
-  resize2d_ t l0 l1 = withDynamicState t $ \s' t' -> Sig.c_resize2d s' t'
+  _resize2d :: Dynamic -> Int64 -> Int64 -> IO ()
+  _resize2d t l0 l1 = withDynamicState t $ \s' t' -> Sig.c_resize2d s' t'
       (fromIntegral l0) (fromIntegral l1)
 
-  resize3d_ :: Dynamic -> Int64 -> Int64 -> Int64 -> IO ()
-  resize3d_ t l0 l1 l2 = withDynamicState t $ \s' t' -> Sig.c_resize3d s' t'
+  _resize3d :: Dynamic -> Int64 -> Int64 -> Int64 -> IO ()
+  _resize3d t l0 l1 l2 = withDynamicState t $ \s' t' -> Sig.c_resize3d s' t'
       (fromIntegral l0) (fromIntegral l1) (fromIntegral l2)
 
-  resize4d_ :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-  resize4d_ t l0 l1 l2 l3 = withDynamicState t $ \s' t' -> Sig.c_resize4d s' t'
+  _resize4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
+  _resize4d t l0 l1 l2 l3 = withDynamicState t $ \s' t' -> Sig.c_resize4d s' t'
       (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3)
 
-  resize5d_ :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-  resize5d_ t l0 l1 l2 l3 l4 = withDynamicState t $ \s' t' -> Sig.c_resize5d s' t'
+  _resize5d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
+  _resize5d t l0 l1 l2 l3 l4 = withDynamicState t $ \s' t' -> Sig.c_resize5d s' t'
       (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3) (fromIntegral l4)
 
-  resizeAs_ :: Dynamic -> Dynamic -> IO ()
-  resizeAs_ t0 t1 = with2DynamicState t0 t1 Sig.c_resizeAs
+  _resizeAs :: Dynamic -> Dynamic -> IO ()
+  _resizeAs t0 t1 = with2DynamicState t0 t1 Sig.c_resizeAs
 
-  resizeNd_ :: Dynamic -> Int32 -> [Size] -> [Stride] -> IO ()
-  resizeNd_ t i l0' l1' = do
+  _resizeNd :: Dynamic -> Int32 -> [Size] -> [Stride] -> IO ()
+  _resizeNd t i l0' l1' = do
     l0 <- FM.newArray (coerce l0' :: [CLLong])
     l1 <- FM.newArray (coerce l1' :: [CLLong])
     withDynamicState t $ \s' t' -> Sig.c_resizeNd s' t' (fromIntegral i) l0 l1
@@ -252,59 +252,59 @@ instance Class.IsTensor Dynamic where
   retain :: Dynamic -> IO ()
   retain t = withDynamicState t Sig.c_retain
 
-  select_ :: Dynamic -> Dynamic -> DimVal -> Int64 -> IO ()
-  select_ t0 t1 a b = with2DynamicState t0 t1 $ \s' t0' t1' ->
+  _select :: Dynamic -> Dynamic -> DimVal -> Int64 -> IO ()
+  _select t0 t1 a b = with2DynamicState t0 t1 $ \s' t0' t1' ->
     Sig.c_select s' t0' t1' (fromIntegral a) (fromIntegral b)
 
-  set_ :: Dynamic -> Dynamic -> IO ()
-  set_ t0 t1 = with2DynamicState t0 t1 Sig.c_set
+  _set :: Dynamic -> Dynamic -> IO ()
+  _set t0 t1 = with2DynamicState t0 t1 Sig.c_set
 
-  set1d_ :: Dynamic -> Int64 -> HsReal -> IO ()
-  set1d_ t l0 v = withDynamicState t $ \s' t' -> Sig.c_set1d s' t' (fromIntegral l0) (hs2cReal v)
+  _set1d :: Dynamic -> Int64 -> HsReal -> IO ()
+  _set1d t l0 v = withDynamicState t $ \s' t' -> Sig.c_set1d s' t' (fromIntegral l0) (hs2cReal v)
 
-  set2d_ :: Dynamic -> Int64 -> Int64 -> HsReal -> IO ()
-  set2d_ t l0 l1 v = withDynamicState t $ \s' t' -> Sig.c_set2d s' t' (fromIntegral l0) (fromIntegral l1) (hs2cReal v)
+  _set2d :: Dynamic -> Int64 -> Int64 -> HsReal -> IO ()
+  _set2d t l0 l1 v = withDynamicState t $ \s' t' -> Sig.c_set2d s' t' (fromIntegral l0) (fromIntegral l1) (hs2cReal v)
 
-  set3d_ :: Dynamic -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
-  set3d_ t l0 l1 l2 v = withDynamicState t $ \s' t' -> Sig.c_set3d s' t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (hs2cReal v)
+  _set3d :: Dynamic -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
+  _set3d t l0 l1 l2 v = withDynamicState t $ \s' t' -> Sig.c_set3d s' t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (hs2cReal v)
 
-  set4d_ :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
-  set4d_ t l0 l1 l2 l3 v = withDynamicState t $ \s' t' -> Sig.c_set4d s' t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3) (hs2cReal v)
+  _set4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
+  _set4d t l0 l1 l2 l3 v = withDynamicState t $ \s' t' -> Sig.c_set4d s' t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3) (hs2cReal v)
 
-  setFlag_ :: Dynamic -> Int8 -> IO ()
-  setFlag_ t l0 = withDynamicState t $ shuffle2 Sig.c_setFlag (CChar l0)
+  _setFlag :: Dynamic -> Int8 -> IO ()
+  _setFlag t l0 = withDynamicState t $ shuffle2 Sig.c_setFlag (CChar l0)
 
-  setStorage_ :: Dynamic -> Storage -> StorageOffset -> TH.IndexStorage -> TH.IndexStorage -> IO ()
-  setStorage_ t s a b c = withDynamicStateAndStorage t s $ \st' t' s' ->
+  _setStorage :: Dynamic -> Storage -> StorageOffset -> TH.IndexStorage -> TH.IndexStorage -> IO ()
+  _setStorage t s a b c = withDynamicStateAndStorage t s $ \st' t' s' ->
     runManaged $ do
       b' <- managed $ withCPUIxStorage b
       c' <- managed $ withCPUIxStorage c
       liftIO $ Sig.c_setStorage st' t' s' (fromIntegral a) b' c'
 
-  setStorage1d_ :: Dynamic -> Storage -> StorageOffset -> (Size, Stride) -> IO ()
-  setStorage1d_ t s pd (d00,d01) =
+  _setStorage1d :: Dynamic -> Storage -> StorageOffset -> (Size, Stride) -> IO ()
+  _setStorage1d t s pd (d00,d01) =
     withDynamicStateAndStorage t s $ \st' t' s' ->
       Sig.c_setStorage1d st' t' s' (fromIntegral pd)
         (fromIntegral d00) (fromIntegral d01)
 
-  setStorage2d_ :: Dynamic -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorage2d_ t s pd (d00,d01) (d10,d11) =
+  _setStorage2d :: Dynamic -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO ()
+  _setStorage2d t s pd (d00,d01) (d10,d11) =
     withDynamicStateAndStorage t s $ \st' t' s' ->
       Sig.c_setStorage2d st' t' s' (fromIntegral pd)
         (fromIntegral d00) (fromIntegral d01)
         (fromIntegral d10) (fromIntegral d11)
 
 
-  setStorage3d_ :: Dynamic -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorage3d_ t s pd (d00,d01) (d10,d11) (d20,d21) =
+  _setStorage3d :: Dynamic -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
+  _setStorage3d t s pd (d00,d01) (d10,d11) (d20,d21) =
     withDynamicStateAndStorage t s $ \st' t' s' ->
       Sig.c_setStorage3d st' t' s' (fromIntegral pd)
         (fromIntegral d00) (fromIntegral d01)
         (fromIntegral d10) (fromIntegral d11)
         (fromIntegral d20) (fromIntegral d21)
 
-  setStorage4d_ :: Dynamic -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorage4d_ t s pd (d00,d01) (d10,d11) (d20,d21) (d30,d31) =
+  _setStorage4d :: Dynamic -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
+  _setStorage4d t s pd (d00,d01) (d10,d11) (d20,d21) (d30,d31) =
     withDynamicStateAndStorage t s $ \st' t' s' ->
       Sig.c_setStorage4d st' t' s' (fromIntegral pd)
         (fromIntegral d00) (fromIntegral d01)
@@ -312,8 +312,8 @@ instance Class.IsTensor Dynamic where
         (fromIntegral d20) (fromIntegral d21)
         (fromIntegral d30) (fromIntegral d31)
 
-  setStorageNd_ :: Dynamic -> Storage -> StorageOffset -> DimVal -> [Size] -> [Stride] -> IO ()
-  setStorageNd_ t s a b hsc hsd = do
+  _setStorageNd :: Dynamic -> Storage -> StorageOffset -> DimVal -> [Size] -> [Stride] -> IO ()
+  _setStorageNd t s a b hsc hsd = do
     c <- FM.newArray (coerce hsc :: [CLLong])
     d <- FM.newArray (coerce hsd :: [CLLong])
     withDynamicStateAndStorage t s $ \st' t' s' ->
@@ -325,11 +325,11 @@ instance Class.IsTensor Dynamic where
   sizeDesc :: Dynamic -> IO DescBuff
   sizeDesc t = withDynamicState t $ \s' t' -> Sig.c_sizeDesc s' t' >>= Sig.descBuff
 
-  squeeze_ :: Dynamic -> Dynamic -> IO ()
-  squeeze_ t0 t1 = with2DynamicState t0 t1 Sig.c_squeeze
+  _squeeze :: Dynamic -> Dynamic -> IO ()
+  _squeeze t0 t1 = with2DynamicState t0 t1 Sig.c_squeeze
 
-  squeeze1d_ :: Dynamic -> Dynamic -> DimVal -> IO ()
-  squeeze1d_ t0 t1 d = with2DynamicState t0 t1 (shuffle3 Sig.c_squeeze1d (fromIntegral d))
+  _squeeze1d :: Dynamic -> Dynamic -> DimVal -> IO ()
+  _squeeze1d t0 t1 d = with2DynamicState t0 t1 (shuffle3 Sig.c_squeeze1d (fromIntegral d))
 
   storage :: Dynamic -> IO Storage
   storage t = withDynamicState t $ \s' t' -> Sig.c_storage s' t' >>= mkStorage s'
@@ -340,14 +340,14 @@ instance Class.IsTensor Dynamic where
   stride :: Dynamic -> DimVal -> IO Stride
   stride t a = withDynamicState t (fmap fromIntegral .: shuffle2 Sig.c_stride (fromIntegral a))
 
-  transpose_ :: Dynamic -> Dynamic -> DimVal -> DimVal -> IO ()
-  transpose_ t0 t1 a b = with2DynamicState t0 t1 $ \s' t0' t1' ->
+  _transpose :: Dynamic -> Dynamic -> DimVal -> DimVal -> IO ()
+  _transpose t0 t1 a b = with2DynamicState t0 t1 $ \s' t0' t1' ->
     Sig.c_transpose s' t0' t1' (fromIntegral a) (fromIntegral b)
 
-  unfold_ :: Dynamic -> Dynamic -> DimVal -> Size -> Step -> IO ()
-  unfold_ t0 t1 a b c = with2DynamicState t0 t1 $ \s' t0' t1' ->
+  _unfold :: Dynamic -> Dynamic -> DimVal -> Size -> Step -> IO ()
+  _unfold t0 t1 a b c = with2DynamicState t0 t1 $ \s' t0' t1' ->
     Sig.c_unfold s' t0' t1' (fromIntegral a) (fromIntegral b) (fromIntegral c)
 
-  unsqueeze1d_ :: Dynamic -> Dynamic -> DimVal -> IO ()
-  unsqueeze1d_ t0 t1 d = with2DynamicState t0 t1 $
+  _unsqueeze1d :: Dynamic -> Dynamic -> DimVal -> IO ()
+  _unsqueeze1d t0 t1 d = with2DynamicState t0 t1 $
     shuffle3 Sig.c_unsqueeze1d (fromIntegral d)

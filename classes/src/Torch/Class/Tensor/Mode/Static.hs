@@ -4,5 +4,5 @@ import Torch.Class.Types
 import Torch.Dimensions
 
 class TensorMode t where
-  mode_ :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
+  _mode :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
 

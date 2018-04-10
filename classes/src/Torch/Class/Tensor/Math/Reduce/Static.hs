@@ -15,12 +15,12 @@ class IsTensor t => TensorMathReduce t where
   medianall    :: t d -> IO (HsReal (t d))
   sumall       :: t d -> IO (HsAccReal (t d))
   prodall      :: t d -> IO (HsAccReal (t d))
-  max_         :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
-  min_         :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
-  median_      :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
+  _max         :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
+  _min         :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
+  _median      :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
   -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
-  sum_         :: t d -> t d' -> DimVal -> Maybe KeepDim -> IO ()
-  prod_        :: Dimensions d => t d -> t d -> DimVal -> Maybe KeepDim -> IO ()
+  _sum         :: t d -> t d' -> DimVal -> Maybe KeepDim -> IO ()
+  _prod        :: Dimensions d => t d -> t d -> DimVal -> Maybe KeepDim -> IO ()
 
 type WithCoercableIndex t d =
   ( Dynamic.IsTensor (AsDynamic (IndexTensor (t d) d))
@@ -31,23 +31,23 @@ withKeepDim
   :: forall d t . (TensorMathReduce t, Dimensions d, WithCoercableIndex t d)
   => ((t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ())
   -> t d -> DimVal -> Maybe KeepDim -> IO (t d, Maybe (IndexTensor (t d) d))
-withKeepDim fn_ t d k = do
+withKeepDim _fn t d k = do
   ret :: t d <- new
   ix  :: AsDynamic (IndexTensor (t d) d) <- Dynamic.new (dim :: Dim d)
-  fn_ (ret, asStatic ix) t d k
+  _fn (ret, asStatic ix) t d k
   pure (ret, maybe (Just $ asStatic ix) (pure Nothing) k)
 
 max, min, median
   :: (TensorMathReduce t, Dimensions d, WithCoercableIndex t d)
   => t d -> DimVal -> Maybe KeepDim -> IO (t d, Maybe (IndexTensor (t d) d))
-max = withKeepDim max_
-min = withKeepDim min_
-median = withKeepDim median_
+max = withKeepDim _max
+min = withKeepDim _min
+median = withKeepDim _median
 
 sum
   :: forall t d d' . (TensorMathReduce t, CoerceDims t d d')
   => t d -> DimVal -> Maybe KeepDim -> IO (t d')
-sum t d k = sudoInplace t $ \r t' -> sum_ r t' d k
+sum t d k = sudoInplace t $ \r t' -> _sum r t' d k
 
 rowsum
   :: (KnownNatDim2 r c, TensorMathReduce t, CoerceDims t '[1, c] '[r, c])
@@ -60,11 +60,11 @@ colsum
 colsum t = Torch.Class.Tensor.Math.Reduce.Static.sum t 0 (Just keep)
 
 class TensorMathReduceFloating t where
-  var_    :: (Dimensions d, Dimensions d') => t d -> t d' -> Int -> Int -> Int -> IO ()
-  std_    :: (Dimensions d, Dimensions d') => t d -> t d' -> Int -> Int -> Int -> IO ()
-  renorm_ :: (Dimensions d, Dimensions d') => t d -> t d' -> HsReal (t d') -> Int -> HsReal (t d') -> IO ()
-  norm_   :: (Dimensions d, Dimensions d') => t d -> t d' -> HsReal (t d') -> Int -> Int -> IO ()
-  mean_   :: (Dimensions d, Dimensions d') => t d -> t d' -> Int -> Int -> IO ()
+  _var    :: (Dimensions d, Dimensions d') => t d -> t d' -> Int -> Int -> Int -> IO ()
+  _std    :: (Dimensions d, Dimensions d') => t d -> t d' -> Int -> Int -> Int -> IO ()
+  _renorm :: (Dimensions d, Dimensions d') => t d -> t d' -> HsReal (t d') -> Int -> HsReal (t d') -> IO ()
+  _norm   :: (Dimensions d, Dimensions d') => t d -> t d' -> HsReal (t d') -> Int -> Int -> IO ()
+  _mean   :: (Dimensions d, Dimensions d') => t d -> t d' -> Int -> Int -> IO ()
 
   dist    :: (Dimensions d, Dimensions d') => t d -> t d' -> HsReal (t d') -> IO (HsAccReal (t d'))
   varall  :: t d -> Int -> IO (HsAccReal (t d))

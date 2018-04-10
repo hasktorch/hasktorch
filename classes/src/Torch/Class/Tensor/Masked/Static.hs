@@ -5,12 +5,12 @@ import GHC.TypeLits
 import Torch.Dimensions
 
 class TensorMasked t where
-  maskedFill_   :: Dimensions d => t d -> MaskTensor (t d) '[(n::Nat)] -> HsReal (t d) -> IO ()
-  maskedCopy_   :: Dimensions d => t d -> MaskTensor (t d) '[(n::Nat)] -> t d -> IO ()
-  maskedSelect_ :: Dimensions d => t d -> t d -> MaskTensor (t d) '[(n::Nat)] -> IO ()
+  _maskedFill   :: Dimensions d => t d -> MaskTensor (t d) '[(n::Nat)] -> HsReal (t d) -> IO ()
+  _maskedCopy   :: Dimensions d => t d -> MaskTensor (t d) '[(n::Nat)] -> t d -> IO ()
+  _maskedSelect :: Dimensions d => t d -> t d -> MaskTensor (t d) '[(n::Nat)] -> IO ()
 
 -- class GPUTensorMasked t where
---   maskedFillByte_   :: t -> MaskDynamic t -> HsReal t -> io ()
---   maskedCopyByte_   :: t -> MaskDynamic t -> t -> io ()
---   maskedSelectByte_ :: t -> t -> MaskDynamic t -> io ()
+--   _maskedFillByte   :: t -> MaskDynamic t -> HsReal t -> io ()
+--   _maskedCopyByte   :: t -> MaskDynamic t -> t -> io ()
+--   _maskedSelectByte :: t -> t -> MaskDynamic t -> io ()
 

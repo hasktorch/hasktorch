@@ -24,10 +24,10 @@ import qualified Torch.Class.Tensor as Dynamic
 import qualified Torch.Types.TH as TH (IndexStorage)
 
 class IsTensor t where
-  clearFlag_ :: Dimensions d => t d -> Int8 -> IO ()
+  _clearFlag :: Dimensions d => t d -> Int8 -> IO ()
   tensordata :: Dimensions d => t d -> IO [HsReal (t d)]
-  free_ :: Dimensions d => t d -> IO ()
-  freeCopyTo_ :: Dimensions2 d d' => t d -> t d' -> IO ()
+  _free :: Dimensions d => t d -> IO ()
+  _freeCopyTo :: Dimensions2 d d' => t d -> t d' -> IO ()
   get1d :: t d -> Int64 -> IO (HsReal (t d))
   get2d :: t d -> Int64 -> Int64 -> IO (HsReal (t d))
   get3d :: t d -> Int64 -> Int64 -> Int64 -> IO (HsReal (t d))
@@ -37,10 +37,10 @@ class IsTensor t where
   isSize :: t d -> TH.IndexStorage -> IO Bool
   nDimension :: t d -> IO Int32
   nElement :: t d -> IO Int64
-  narrow_ :: t d -> t d' -> DimVal -> Int64 -> Size -> IO ()
+  _narrow :: t d -> t d' -> DimVal -> Int64 -> Size -> IO ()
 
   -- | renamed from TH's @new@ because this always returns an empty tensor
-  -- FIXME: this _technically_ should be @IO (t '[])@, but if you leave it as-is
+  -- FIXME: this __technically should be @IO (t '[])@, but if you leave it as-is
   -- the types line-up nicely (and we currently don't use rank-0 tensors).
   empty :: IO (t d)
   newExpand :: Dimensions2 d d' => t d -> TH.IndexStorage -> IO (t d')
@@ -66,38 +66,38 @@ class IsTensor t where
   newWithStorage3d :: HsStorage (t d) -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO (t d)
   newWithStorage4d :: HsStorage (t d) -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO (t d)
   newWithTensor :: t d -> IO (t d)
-  resize_ :: t d -> SizesStorage (t d) -> StridesStorage (t d) -> IO (t d')
-  resize1d_ :: t d -> Int64 -> IO (t d')
-  resize2d_ :: t d -> Int64 -> Int64 -> IO (t d')
-  resize3d_ :: t d -> Int64 -> Int64 -> Int64 -> IO (t d')
-  resize4d_ :: t d -> Int64 -> Int64 -> Int64 -> Int64 -> IO (t d')
-  resize5d_ :: t d -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO (t d')
-  resizeAs_ :: t d -> t d' -> IO (t d')
-  resizeNd_ :: t d -> Int32 -> [Size] -> [Stride] -> IO (t d')
+  _resize :: t d -> SizesStorage (t d) -> StridesStorage (t d) -> IO (t d')
+  _resize1d :: t d -> Int64 -> IO (t d')
+  _resize2d :: t d -> Int64 -> Int64 -> IO (t d')
+  _resize3d :: t d -> Int64 -> Int64 -> Int64 -> IO (t d')
+  _resize4d :: t d -> Int64 -> Int64 -> Int64 -> Int64 -> IO (t d')
+  _resize5d :: t d -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO (t d')
+  _resizeAs :: t d -> t d' -> IO (t d')
+  _resizeNd :: t d -> Int32 -> [Size] -> [Stride] -> IO (t d')
   retain :: t d -> IO ()
-  select_ :: t d -> t d' -> DimVal -> Int64 -> IO ()
-  set_ :: t d -> t d -> IO ()
-  set1d_ :: t d -> Int64 -> HsReal (t d) -> IO ()
-  set2d_ :: t d -> Int64 -> Int64 -> HsReal (t d) -> IO ()
-  set3d_ :: t d -> Int64 -> Int64 -> Int64 -> HsReal (t d) -> IO ()
-  set4d_ :: t d -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal (t d) -> IO ()
-  setFlag_ :: t d -> Int8 -> IO ()
-  setStorage_   :: t d -> HsStorage (t d) -> StorageOffset -> SizesStorage (t d) -> StridesStorage (t d) -> IO ()
-  setStorage1d_ :: t d -> HsStorage (t d) -> StorageOffset -> (Size, Stride) -> IO ()
-  setStorage2d_ :: t d -> HsStorage (t d) -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorage3d_ :: t d -> HsStorage (t d) -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorage4d_ :: t d -> HsStorage (t d) -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorageNd_ :: t d -> HsStorage (t d) -> StorageOffset -> DimVal -> [Size] -> [Stride] -> IO ()
+  _select :: t d -> t d' -> DimVal -> Int64 -> IO ()
+  _set :: t d -> t d -> IO ()
+  _set1d :: t d -> Int64 -> HsReal (t d) -> IO ()
+  _set2d :: t d -> Int64 -> Int64 -> HsReal (t d) -> IO ()
+  _set3d :: t d -> Int64 -> Int64 -> Int64 -> HsReal (t d) -> IO ()
+  _set4d :: t d -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal (t d) -> IO ()
+  _setFlag :: t d -> Int8 -> IO ()
+  _setStorage   :: t d -> HsStorage (t d) -> StorageOffset -> SizesStorage (t d) -> StridesStorage (t d) -> IO ()
+  _setStorage1d :: t d -> HsStorage (t d) -> StorageOffset -> (Size, Stride) -> IO ()
+  _setStorage2d :: t d -> HsStorage (t d) -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO ()
+  _setStorage3d :: t d -> HsStorage (t d) -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
+  _setStorage4d :: t d -> HsStorage (t d) -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
+  _setStorageNd :: t d -> HsStorage (t d) -> StorageOffset -> DimVal -> [Size] -> [Stride] -> IO ()
   size :: t d -> DimVal -> IO Size
   sizeDesc :: t d -> IO (DescBuff (t d))
-  squeeze_ :: t d -> t d' -> IO ()
-  squeeze1d_ :: t d -> t d' -> DimVal -> IO ()
+  _squeeze :: t d -> t d' -> IO ()
+  _squeeze1d :: t d -> t d' -> DimVal -> IO ()
   storage :: t d -> IO (HsStorage (t d))
   storageOffset :: t d -> IO StorageOffset
   stride :: t d -> DimVal -> IO Stride
-  transpose_ :: t d -> t d' -> DimVal -> DimVal -> IO ()
-  unfold_ :: t d -> t d' -> DimVal -> Size -> Step -> IO ()
-  unsqueeze1d_ :: t d -> t d' -> DimVal -> IO ()
+  _transpose :: t d -> t d' -> DimVal -> DimVal -> IO ()
+  _unfold :: t d -> t d' -> DimVal -> Size -> Step -> IO ()
+  _unsqueeze1d :: t d -> t d' -> DimVal -> IO ()
 
   -- New for static tensors
   fromList1d :: [HsReal (t '[n])] -> IO (t '[n])
@@ -160,26 +160,26 @@ throwGT4 fnname = throwFIXME
   (fnname ++ " with >4 rank")
 
 
-setStorageDim_ :: IsTensor t => t d -> HsStorage (t d) -> StorageOffset -> [(Size, Stride)] -> IO ()
-setStorageDim_ t s o = \case
+_setStorageDim :: IsTensor t => t d -> HsStorage (t d) -> StorageOffset -> [(Size, Stride)] -> IO ()
+_setStorageDim t s o = \case
   []           -> throwNE "can't setStorage on an empty dimension."
-  [x]          -> setStorage1d_ t s o x
-  [x, y]       -> setStorage2d_ t s o x y
-  [x, y, z]    -> setStorage3d_ t s o x y z
-  [x, y, z, q] -> setStorage4d_ t s o x y z q
+  [x]          -> _setStorage1d t s o x
+  [x, y]       -> _setStorage2d t s o x y
+  [x, y, z]    -> _setStorage3d t s o x y z
+  [x, y, z, q] -> _setStorage4d t s o x y z q
   _            -> throwGT4 "setStorage"
 
-setDim_ :: forall t d d' . (Dimensions d', IsTensor t) => t d -> Dim d' -> HsReal (t d) -> IO ()
-setDim_ t d v = case dimVals d of
+_setDim :: forall t d d' . (Dimensions d', IsTensor t) => t d -> Dim d' -> HsReal (t d) -> IO ()
+_setDim t d v = case dimVals d of
   []           -> throwNE "can't set on an empty dimension."
-  [x]          -> set1d_ t x       v
-  [x, y]       -> set2d_ t x y     v
-  [x, y, z]    -> set3d_ t x y z   v
-  [x, y, z, q] -> set4d_ t x y z q v
+  [x]          -> _set1d t x       v
+  [x, y]       -> _set2d t x y     v
+  [x, y, z]    -> _set3d t x y z   v
+  [x, y, z, q] -> _set4d t x y z q v
   _            -> throwGT4 "set"
 
 -- setDim'_ :: (Dimensions d, IsTensor t) => t d -> SomeDims -> HsReal (t d) -> IO ()
--- setDim'_ t (SomeDims d) v = setDim_ t d v
+-- setDim'_ t (SomeDims d) v = _setDim t d v
 
 getDim :: (Dimensions d', IsTensor t) => t d -> Dim (d'::[Nat]) -> IO (HsReal (t d))
 getDim t d = case dimVals d of
@@ -203,32 +203,32 @@ new = case dimVals d of
   [x, y]       -> newWithSize2d x y
   [x, y, z]    -> newWithSize3d x y z
   [x, y, z, q] -> newWithSize4d x y z q
-  _ -> empty >>= resizeDim_
+  _ -> empty >>= _resizeDim
  where
   d :: Dim d
   d = dim
 
 -- NOTE: This is copied from the dynamic version to keep the constraints clean and is _unsafe_
-resizeDim_ :: forall t d d' . (IsTensor t, Dimensions d') => t d -> IO (t d')
-resizeDim_ t = case dimVals d of
+_resizeDim :: forall t d d' . (IsTensor t, Dimensions d') => t d -> IO (t d')
+_resizeDim t = case dimVals d of
   []              -> throwNE "can't resize to an empty dimension."
-  [x]             -> resize1d_ t x
-  [x, y]          -> resize2d_ t x y
-  [x, y, z]       -> resize3d_ t x y z
-  [x, y, z, q]    -> resize4d_ t x y z q
-  [x, y, z, q, w] -> resize5d_ t x y z q w
+  [x]             -> _resize1d t x
+  [x, y]          -> _resize2d t x y
+  [x, y, z]       -> _resize3d t x y z
+  [x, y, z, q]    -> _resize4d t x y z q
+  [x, y, z, q, w] -> _resize5d t x y z q w
   _ -> throwFIXME "this should be doable with resizeNd" "resizeDim"
  where
   d :: Dim d'
   d = dim
-  -- ds              -> resizeNd_ t (genericLength ds) ds
+  -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
 resizeAs :: forall t d d' . (Dimensions d, Dimensions d', IsTensor t) => t d -> IO (t d')
 resizeAs src = do
   res <- newClone src
   shape <- new
-  resizeAs_ res shape
+  _resizeAs res shape
 
 newIx :: forall t d d'
   . (Dimensions d')
@@ -256,7 +256,7 @@ fromList
   => [HsReal (t '[Product d])] -> IO (t d)
 fromList l = do
   oneD :: t '[Product d] <- fromList1d l
-  resizeDim_ oneD
+  _resizeDim oneD
 
 newTranspose2d
   :: forall t r c . (KnownNat2 r c, IsTensor t, Dimensions '[r, c], Dimensions '[c, r])
@@ -273,7 +273,7 @@ newTranspose2d t = newTranspose t 1 0
 -- expand2d t = do
 --   res :: AsDynamic (t '[d2, d1]) <- Dynamic.constant (dim :: Dim '[d2, d1]) 0
 --   s :: LongStorage <- Storage.newWithSize2 s2 s1
---   Dynamic.expand_ res (asDynamic t) s
+--   Dynamic._expand res (asDynamic t) s
 --   pure (asStatic res)
 --   where
 --     s1, s2 :: Integer
@@ -299,7 +299,7 @@ setElem2d t r c v
   | r > fromIntegral (natVal (Proxy :: Proxy n)) ||
     c > fromIntegral (natVal (Proxy :: Proxy m))
       = throwString "Indices out of bounds"
-  | otherwise = set2d_ t (fromIntegral r) (fromIntegral c) v
+  | otherwise = _set2d t (fromIntegral r) (fromIntegral c) v
 
 
 -- | displaying raw tensor values

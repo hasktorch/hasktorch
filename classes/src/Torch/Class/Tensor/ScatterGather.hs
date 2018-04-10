@@ -4,8 +4,8 @@ import Torch.Class.Types
 import Torch.Dimensions
 
 class TensorScatterGather t where
-  gather_      :: t -> t -> DimVal -> IndexDynamic t -> IO ()
-  scatter_     :: t -> DimVal -> IndexDynamic t -> t -> IO ()
-  scatterAdd_  :: t -> DimVal -> IndexDynamic t -> t -> IO ()
-  scatterFill_ :: t -> DimVal -> IndexDynamic t -> HsReal t -> IO ()
+  _gather      :: t -> t -> DimVal -> IndexDynamic t -> IO ()
+  _scatter     :: t -> DimVal -> IndexDynamic t -> t -> IO ()
+  _scatterAdd  :: t -> DimVal -> IndexDynamic t -> t -> IO ()
+  _scatterFill :: t -> DimVal -> IndexDynamic t -> HsReal t -> IO ()
 

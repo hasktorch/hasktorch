@@ -8,39 +8,39 @@ import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Math.Compare ()
 
 instance Class.TensorMathCompare Tensor where
-  ltValue_ :: ByteTensor n -> Tensor d -> HsReal -> IO ()
-  ltValue_ m t v = Dynamic.ltValue_ (byteAsDynamic m) (asDynamic t) v
+  _ltValue :: ByteTensor n -> Tensor d -> HsReal -> IO ()
+  _ltValue m t v = Dynamic._ltValue (byteAsDynamic m) (asDynamic t) v
 
-  leValue_ :: ByteTensor n -> Tensor d -> HsReal -> IO ()
-  leValue_ m t v = Dynamic.leValue_ (byteAsDynamic m) (asDynamic t) v
+  _leValue :: ByteTensor n -> Tensor d -> HsReal -> IO ()
+  _leValue m t v = Dynamic._leValue (byteAsDynamic m) (asDynamic t) v
 
-  gtValue_ :: ByteTensor n -> Tensor d -> HsReal -> IO ()
-  gtValue_ m t v = Dynamic.gtValue_ (byteAsDynamic m) (asDynamic t) v
+  _gtValue :: ByteTensor n -> Tensor d -> HsReal -> IO ()
+  _gtValue m t v = Dynamic._gtValue (byteAsDynamic m) (asDynamic t) v
 
-  geValue_ :: ByteTensor n -> Tensor d -> HsReal -> IO ()
-  geValue_ m t v = Dynamic.geValue_ (byteAsDynamic m) (asDynamic t) v
+  _geValue :: ByteTensor n -> Tensor d -> HsReal -> IO ()
+  _geValue m t v = Dynamic._geValue (byteAsDynamic m) (asDynamic t) v
 
-  neValue_ :: ByteTensor n -> Tensor d -> HsReal -> IO ()
-  neValue_ m t v = Dynamic.neValue_ (byteAsDynamic m) (asDynamic t) v
+  _neValue :: ByteTensor n -> Tensor d -> HsReal -> IO ()
+  _neValue m t v = Dynamic._neValue (byteAsDynamic m) (asDynamic t) v
 
-  eqValue_ :: ByteTensor n -> Tensor d -> HsReal -> IO ()
-  eqValue_ m t v = Dynamic.eqValue_ (byteAsDynamic m) (asDynamic t) v
+  _eqValue :: ByteTensor n -> Tensor d -> HsReal -> IO ()
+  _eqValue m t v = Dynamic._eqValue (byteAsDynamic m) (asDynamic t) v
 
-  ltValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
-  ltValueT_ r t v = Dynamic.ltValueT_ (asDynamic r) (asDynamic t) v
+  _ltValueT :: Tensor d -> Tensor d -> HsReal -> IO ()
+  _ltValueT r t v = Dynamic._ltValueT (asDynamic r) (asDynamic t) v
 
-  leValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
-  leValueT_ r t v = Dynamic.leValueT_ (asDynamic r) (asDynamic t) v
+  _leValueT :: Tensor d -> Tensor d -> HsReal -> IO ()
+  _leValueT r t v = Dynamic._leValueT (asDynamic r) (asDynamic t) v
 
-  gtValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
-  gtValueT_ r t v = Dynamic.gtValueT_ (asDynamic r) (asDynamic t) v
+  _gtValueT :: Tensor d -> Tensor d -> HsReal -> IO ()
+  _gtValueT r t v = Dynamic._gtValueT (asDynamic r) (asDynamic t) v
 
-  geValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
-  geValueT_ r t v = Dynamic.geValueT_ (asDynamic r) (asDynamic t) v
+  _geValueT :: Tensor d -> Tensor d -> HsReal -> IO ()
+  _geValueT r t v = Dynamic._geValueT (asDynamic r) (asDynamic t) v
 
-  neValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
-  neValueT_ r t v = Dynamic.neValueT_ (asDynamic r) (asDynamic t) v
+  _neValueT :: Tensor d -> Tensor d -> HsReal -> IO ()
+  _neValueT r t v = Dynamic._neValueT (asDynamic r) (asDynamic t) v
 
-  eqValueT_ :: Tensor d -> Tensor d -> HsReal -> IO ()
-  eqValueT_ r t v = Dynamic.eqValueT_ (asDynamic r) (asDynamic t) v
+  _eqValueT :: Tensor d -> Tensor d -> HsReal -> IO ()
+  _eqValueT r t v = Dynamic._eqValueT (asDynamic r) (asDynamic t) v
 

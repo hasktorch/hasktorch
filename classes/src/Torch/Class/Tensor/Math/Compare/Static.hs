@@ -4,18 +4,18 @@ import Torch.Class.Types
 import Torch.Dimensions
 
 class TensorMathCompare t where
-  ltValue_ :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
-  leValue_ :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
-  gtValue_ :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
-  geValue_ :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
-  neValue_ :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
-  eqValue_ :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
+  _ltValue :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
+  _leValue :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
+  _gtValue :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
+  _geValue :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
+  _neValue :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
+  _eqValue :: (Dimensions d, Dimensions n) => MaskTensor (t d) n -> t d -> HsReal (t d) -> IO ()
 
-  ltValueT_ :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
-  leValueT_ :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
-  gtValueT_ :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
-  geValueT_ :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
-  neValueT_ :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
-  eqValueT_ :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
+  _ltValueT :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
+  _leValueT :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
+  _gtValueT :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
+  _geValueT :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
+  _neValueT :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
+  _eqValueT :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
 
 
