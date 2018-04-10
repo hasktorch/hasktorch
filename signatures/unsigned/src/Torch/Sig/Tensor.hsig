@@ -18,6 +18,9 @@ c_isContiguous :: Ptr CState -> Ptr CTensor -> IO CInt
 c_isSameSizeAs :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO CInt
 c_isSetTo :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO CInt
 c_isSize :: Ptr CState -> Ptr CTensor -> Ptr C'THLongStorage -> IO CInt
+c_newExpand :: Ptr CState -> Ptr CTensor -> Ptr C'THLongStorage -> IO (Ptr CTensor)
+c_expand :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr C'THLongStorage -> IO ()
+c_expandNd :: Ptr CState -> Ptr (Ptr CTensor) -> Ptr (Ptr CTensor) -> CInt -> IO ()
 c_nDimension :: Ptr CState -> Ptr CTensor -> IO CInt
 c_nElement :: Ptr CState -> Ptr CTensor -> IO CPtrdiff
 c_narrow :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CLLong -> CLLong -> IO ()

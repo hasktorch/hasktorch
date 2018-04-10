@@ -10,6 +10,7 @@ import GHC.ForeignPtr (ForeignPtr)
 import GHC.Int
 import Control.Monad ((>=>))
 import Control.Monad.Managed
+import Data.List.NonEmpty (NonEmpty(..), toList)
 import Torch.Dimensions
 import Torch.Class.Types (Stride(..), Size(..), StorageOffset(..), Step(..), SizesStorage, StridesStorage)
 
@@ -87,6 +88,37 @@ instance Class.IsTensor Dynamic where
 
   empty :: IO Dynamic
   empty = Sig.newCState >>= \s -> Sig.c_new s >>= mkDynamic s
+
+  newExpand :: Dynamic -> TH.IndexStorage -> IO Dynamic
+  newExpand r ix = flip with pure $ do
+    s <- manage' Sig.dynamicStateRef r
+    r' <- manage' Sig.ctensor r
+    ix' <- manage' (snd . TH.longStorageState) ix
+    liftIO $ Sig.c_newExpand s r' ix' >>= mkDynamic s
+
+  expand :: Dynamic -> Dynamic -> TH.IndexStorage -> IO ()
+  expand r t ix = runManaged . joinIO $ Sig.c_expand
+    <$> manage' Sig.dynamicStateRef r
+    <*> manage' Sig.ctensor r
+    <*> manage' Sig.ctensor t
+    <*> manage' (snd . TH.longStorageState) ix
+
+  expandNd  :: NonEmpty Dynamic -> NonEmpty Dynamic -> Int -> IO ()
+  expandNd (rets@(s:|_)) ops i = runManaged $ do
+    st    <- manage' Sig.dynamicStateRef s
+    rets' <- mngNonEmpty rets
+    ops'  <- mngNonEmpty ops
+    liftIO $ Sig.c_expandNd st rets' ops' (fromIntegral i)
+   where
+    mngNonEmpty :: NonEmpty Dynamic -> Managed (Ptr (Ptr CTensor))
+    mngNonEmpty = mapM toMPtr . toList >=> mWithArray
+
+    mWithArray :: [Ptr a] -> Managed (Ptr (Ptr a))
+    mWithArray as = managed (FM.withArray as)
+
+    toMPtr :: Dynamic -> Managed (Ptr CTensor)
+    toMPtr d = managed (withForeignPtr (Sig.ctensor d))
+
 
   newClone :: Dynamic -> IO Dynamic
   newClone t = withDynamicState t $ \s' t' -> Sig.c_newClone s' t' >>= mkDynamic s'

@@ -18,97 +18,26 @@ sudo :: Tensor d -> Tensor d'
 sudo t = Sig.asStatic ((Sig.asDynamic t) :: Dynamic)
 
 instance Class.IsTensor Tensor where
-  free_ :: Dimensions d => Tensor d -> IO ()
-  freeCopyTo_ :: (Dimensions d, Dimensions d') => Tensor d -> Tensor d' -> IO ()
-  get1d :: Tensor d -> Int64 -> IO (HsReal)
-  get2d :: Tensor d -> Int64 -> Int64 -> IO (HsReal)
-  get3d :: Tensor d -> Int64 -> Int64 -> Int64 -> IO (HsReal)
-  get4d :: Tensor d -> Int64 -> Int64 -> Int64 -> Int64 -> IO (HsReal)
-  isContiguous :: Tensor d -> IO Bool
-
   isSameSizeAs :: forall t d d' . (Dimensions d', Dimensions d) => t d -> t d' -> Bool
   isSameSizeAs _ _ = dimVals (dim :: Dim d) == dimVals (dim :: Dim d')
 
-  isSetTo :: Tensor d -> Tensor d' -> IO Bool
-  isSize :: Tensor d -> TH.IndexStorage -> IO Bool
-  nDimension :: Tensor d -> IO Int32
-  nElement :: Tensor d -> IO Int64
-  narrow_ :: Tensor d -> Tensor d' -> DimVal -> Int64 -> Size -> IO ()
-  empty :: IO (Tensor d)
-  newClone :: (Tensor d) -> IO (Tensor d)
-  newContiguous :: Tensor d -> IO (Tensor d')
-  newNarrow :: Tensor d -> DimVal -> Int64 -> Size -> IO (Tensor d')
-  newSelect :: Tensor d -> DimVal -> Int64 -> IO (Tensor d')
-  newSizeOf :: Tensor d -> IO TH.IndexStorage
-  newStrideOf :: Tensor d -> IO TH.IndexStorage
-  newTranspose :: Tensor d -> DimVal -> DimVal -> IO (Tensor d')
-  newUnfold :: Tensor d -> DimVal -> Int64 -> Int64 -> IO (Tensor d')
-  newView :: Tensor d -> TH.LongStorage -> IO (Tensor d')
-  newWithSize :: TH.LongStorage -> TH.LongStorage -> IO (Tensor d)
-  newWithSize1d :: Size -> IO (Tensor d)
-  newWithSize2d :: Size -> Size -> IO (Tensor d)
-  newWithSize3d :: Size -> Size -> Size -> IO (Tensor d)
-  newWithSize4d :: Size -> Size -> Size -> Size -> IO (Tensor d)
-  newWithStorage :: Storage -> StorageOffset -> TH.LongStorage -> TH.LongStorage -> IO (Tensor d)
-  newWithStorage1d :: Storage -> StorageOffset -> (Size, Stride) -> IO (Tensor d)
-  newWithStorage2d :: Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO (Tensor d)
-  newWithStorage3d :: Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO (Tensor d)
-  newWithStorage4d :: Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO (Tensor d)
-  newWithTensor :: Tensor d -> IO (Tensor d)
+  fromList1d :: [HsReal] -> IO (Tensor '[n])
+  fromList1d l = asStatic <$> (Dynamic.fromList1d l)
 
-  resize_ :: Tensor d -> TH.LongStorage -> TH.LongStorage -> IO (Tensor d')
+  newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
+  expand r t = Dynamic.expand (asDynamic r) (asDynamic t)
+  expandNd rs os = Dynamic.expandNd (fmap asDynamic rs) (fmap asDynamic os)
+
   resize_ t a b = Dynamic.resize_ (asDynamic t) a b >> pure (sudo t)
-
-  resize1d_ :: Tensor d -> Int64 -> IO (Tensor d')
   resize1d_ t a = Dynamic.resize1d_ (asDynamic t) a >> pure (sudo t)
-
-  resize2d_ :: Tensor d -> Int64 -> Int64 -> IO (Tensor d')
   resize2d_ t a b = Dynamic.resize2d_ (asDynamic t) a b >> pure (sudo t)
-
-  resize3d_ :: Tensor d -> Int64 -> Int64 -> Int64 -> IO (Tensor d')
   resize3d_ t a b c = Dynamic.resize3d_ (asDynamic t) a b c >> pure (sudo t)
-
-  resize4d_ :: Tensor d -> Int64 -> Int64 -> Int64 -> Int64 -> IO (Tensor d')
   resize4d_ t a b c d = Dynamic.resize4d_ (asDynamic t) a b c d >> pure (sudo t)
-
-  resize5d_ :: Tensor d -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO (Tensor d')
   resize5d_ t a b c d e = Dynamic.resize5d_ (asDynamic t) a b c d e >> pure (sudo t)
-
-  resizeAs_ :: Tensor d -> Tensor d' -> IO (Tensor d')
   resizeAs_ src tar = Dynamic.resizeAs_ (asDynamic src) (asDynamic tar) >> pure (sudo src)
-
-  resizeNd_ :: Tensor d -> Int32 -> [Size] -> [Stride] -> IO (Tensor d')
   resizeNd_ src a b c = Dynamic.resizeNd_ (asDynamic src) a b c >> pure (sudo src)
-
-  retain :: Tensor d -> IO ()
   retain t = Dynamic.retain (asDynamic t)
-
-  select_ :: Tensor d -> Tensor d' -> DimVal -> Int64 -> IO ()
-  set_ :: Tensor d -> Tensor d -> IO ()
-  set1d_ :: Tensor d -> Int64 -> HsReal -> IO ()
-  set2d_ :: Tensor d -> Int64 -> Int64 -> HsReal -> IO ()
-  set3d_ :: Tensor d -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
-  set4d_ :: Tensor d -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
-  setFlag_ :: Tensor d -> Int8 -> IO ()
-  setStorage_   :: Tensor d -> Storage -> StorageOffset -> TH.LongStorage -> TH.LongStorage -> IO ()
-  setStorage1d_ :: Tensor d -> Storage -> StorageOffset -> (Size, Stride) -> IO ()
-  setStorage2d_ :: Tensor d -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorage3d_ :: Tensor d -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorage4d_ :: Tensor d -> Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO ()
-  setStorageNd_ :: Tensor d -> Storage -> StorageOffset -> DimVal -> [Size] -> [Stride] -> IO ()
-  size :: Tensor d -> DimVal -> IO Size
-  sizeDesc :: Tensor d -> IO DescBuff
-  squeeze_ :: Tensor d -> Tensor d' -> IO ()
-  squeeze1d_ :: Tensor d -> Tensor d' -> DimVal -> IO ()
-  storage :: Tensor d -> IO (Storage)
-  storageOffset :: Tensor d -> IO StorageOffset
-  stride :: Tensor d -> DimVal -> IO Stride
-  transpose_ :: Tensor d -> Tensor d' -> DimVal -> DimVal -> IO ()
-  unfold_ :: Tensor d -> Tensor d' -> DimVal -> Size -> Step -> IO ()
-  unsqueeze1d_ :: Tensor d -> Tensor d' -> DimVal -> IO ()
-  clearFlag_ :: Dimensions d => Tensor d -> Int8 -> IO ()
   clearFlag_ t = Dynamic.clearFlag_ (asDynamic t)
-  tensordata :: Dimensions d => Tensor d -> IO [HsReal]
   tensordata t = Dynamic.tensordata (asDynamic t)
   free_ t = Dynamic.free_ (asDynamic t)
   freeCopyTo_ t0 t1 = Dynamic.freeCopyTo_ (asDynamic t0) (asDynamic t1)
@@ -168,7 +97,5 @@ instance Class.IsTensor Tensor where
   unfold_ t0 t1 = Dynamic.unfold_ (asDynamic t0) (asDynamic t1)
   unsqueeze1d_ t0 t1 = Dynamic.unsqueeze1d_ (asDynamic t0) (asDynamic t1)
 
-  fromList1d :: [HsReal] -> IO (Tensor '[n])
-  fromList1d l = asStatic <$> (Dynamic.fromList1d l)
 
 

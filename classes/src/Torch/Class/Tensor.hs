@@ -15,6 +15,7 @@ import Data.List (genericLength)
 import GHC.Int
 import Torch.Class.Types
 import Torch.Dimensions
+import Data.List.NonEmpty (NonEmpty)
 import qualified Torch.Types.TH as TH
 
 class IsTensor t where
@@ -36,6 +37,10 @@ class IsTensor t where
 
   -- | renamed from TH's @new@ because this always returns an empty tensor
   empty :: IO t
+
+  newExpand :: t -> TH.IndexStorage -> IO t
+  expand :: t -> t -> TH.IndexStorage -> IO ()
+  expandNd :: NonEmpty t -> NonEmpty t -> Int -> IO ()
 
   newClone :: t -> IO t
   newContiguous :: t -> IO t

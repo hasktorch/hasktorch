@@ -16,7 +16,7 @@ import Data.Singletons.Prelude.Num
 import Control.Monad
 
 import Torch.Dimensions
-import Data.Coerce
+import Data.List.NonEmpty (NonEmpty)
 
 import Torch.Class.Types
 -- import Torch.Class.Tensor as X hiding (new, fromList1d, resizeDim)
@@ -27,7 +27,7 @@ class IsTensor t where
   clearFlag_ :: Dimensions d => t d -> Int8 -> IO ()
   tensordata :: Dimensions d => t d -> IO [HsReal (t d)]
   free_ :: Dimensions d => t d -> IO ()
-  freeCopyTo_ :: (Dimensions d, Dimensions d') => t d -> t d' -> IO ()
+  freeCopyTo_ :: Dimensions2 d d' => t d -> t d' -> IO ()
   get1d :: t d -> Int64 -> IO (HsReal (t d))
   get2d :: t d -> Int64 -> Int64 -> IO (HsReal (t d))
   get3d :: t d -> Int64 -> Int64 -> Int64 -> IO (HsReal (t d))
@@ -40,8 +40,12 @@ class IsTensor t where
   narrow_ :: t d -> t d' -> DimVal -> Int64 -> Size -> IO ()
 
   -- | renamed from TH's @new@ because this always returns an empty tensor
+  -- FIXME: this _technically_ should be @IO (t '[])@, but if you leave it as-is
+  -- the types line-up nicely (and we currently don't use rank-0 tensors).
   empty :: IO (t d)
-
+  newExpand :: Dimensions2 d d' => t d -> TH.IndexStorage -> IO (t d')
+  expand    :: Dimensions2 d d' => t d' -> t d -> TH.IndexStorage -> IO ()
+  expandNd  :: Dimensions d => NonEmpty (t d) -> NonEmpty (t d) -> Int -> IO ()
   newClone :: (t d) -> IO (t d)
   newContiguous :: t d -> IO (t d')
   newNarrow :: t d -> DimVal -> Int64 -> Size -> IO (t d')
