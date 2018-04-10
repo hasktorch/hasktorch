@@ -128,6 +128,18 @@ foreign import ccall "THCTensor.h THCudaHalfTensor_newView"
 foreign import ccall "THCTensor.h THCudaHalfTensor_newFoldBatchDim"
   c_newFoldBatchDim :: Ptr C'THCState -> Ptr C'THCudaHalfTensor -> IO (Ptr C'THCudaHalfTensor)
 
+-- | c_newExpand :  state tensor size -> THCTensor *
+foreign import ccall "THCTensor.h THCudaHalfTensor_newExpand"
+  c_newExpand :: Ptr C'THCState -> Ptr C'THCudaHalfTensor -> Ptr C'THLongStorage -> IO (Ptr C'THCudaHalfTensor)
+
+-- | c_expand :  state r tensor sizes -> void
+foreign import ccall "THCTensor.h THCudaHalfTensor_expand"
+  c_expand :: Ptr C'THCState -> Ptr C'THCudaHalfTensor -> Ptr C'THCudaHalfTensor -> Ptr C'THLongStorage -> IO ()
+
+-- | c_expandNd :  state rets ops count -> void
+foreign import ccall "THCTensor.h THCudaHalfTensor_expandNd"
+  c_expandNd :: Ptr C'THCState -> Ptr (Ptr C'THCudaHalfTensor) -> Ptr (Ptr C'THCudaHalfTensor) -> CInt -> IO ()
+
 -- | c_resize :  state tensor size stride -> void
 foreign import ccall "THCTensor.h THCudaHalfTensor_resize"
   c_resize :: Ptr C'THCState -> Ptr C'THCudaHalfTensor -> Ptr C'THLongStorage -> Ptr C'THLongStorage -> IO ()
@@ -407,6 +419,18 @@ foreign import ccall "THCTensor.h &THCudaHalfTensor_newView"
 -- | p_newFoldBatchDim : Pointer to function : state input -> THCTensor *
 foreign import ccall "THCTensor.h &THCudaHalfTensor_newFoldBatchDim"
   p_newFoldBatchDim :: FunPtr (Ptr C'THCState -> Ptr C'THCudaHalfTensor -> IO (Ptr C'THCudaHalfTensor))
+
+-- | p_newExpand : Pointer to function : state tensor size -> THCTensor *
+foreign import ccall "THCTensor.h &THCudaHalfTensor_newExpand"
+  p_newExpand :: FunPtr (Ptr C'THCState -> Ptr C'THCudaHalfTensor -> Ptr C'THLongStorage -> IO (Ptr C'THCudaHalfTensor))
+
+-- | p_expand : Pointer to function : state r tensor sizes -> void
+foreign import ccall "THCTensor.h &THCudaHalfTensor_expand"
+  p_expand :: FunPtr (Ptr C'THCState -> Ptr C'THCudaHalfTensor -> Ptr C'THCudaHalfTensor -> Ptr C'THLongStorage -> IO ())
+
+-- | p_expandNd : Pointer to function : state rets ops count -> void
+foreign import ccall "THCTensor.h &THCudaHalfTensor_expandNd"
+  p_expandNd :: FunPtr (Ptr C'THCState -> Ptr (Ptr C'THCudaHalfTensor) -> Ptr (Ptr C'THCudaHalfTensor) -> CInt -> IO ())
 
 -- | p_resize : Pointer to function : state tensor size stride -> void
 foreign import ccall "THCTensor.h &THCudaHalfTensor_resize"

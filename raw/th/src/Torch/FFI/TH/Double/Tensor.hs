@@ -239,6 +239,30 @@ foreign import ccall "THTensor.h THDoubleTensor_newView"
 c_newView :: Ptr C'THState -> Ptr C'THDoubleTensor -> Ptr C'THLongStorage -> IO (Ptr C'THDoubleTensor)
 c_newView = const c_newView_
 
+-- | c_newExpand :  tensor size -> THTensor *
+foreign import ccall "THTensor.h THDoubleTensor_newExpand"
+  c_newExpand_ :: Ptr C'THDoubleTensor -> Ptr C'THLongStorage -> IO (Ptr C'THDoubleTensor)
+
+-- | alias of c_newExpand_ with unused argument (for CTHState) to unify backpack signatures.
+c_newExpand :: Ptr C'THState -> Ptr C'THDoubleTensor -> Ptr C'THLongStorage -> IO (Ptr C'THDoubleTensor)
+c_newExpand = const c_newExpand_
+
+-- | c_expand :  r tensor size -> void
+foreign import ccall "THTensor.h THDoubleTensor_expand"
+  c_expand_ :: Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THLongStorage -> IO ()
+
+-- | alias of c_expand_ with unused argument (for CTHState) to unify backpack signatures.
+c_expand :: Ptr C'THState -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THLongStorage -> IO ()
+c_expand = const c_expand_
+
+-- | c_expandNd :  rets ops count -> void
+foreign import ccall "THTensor.h THDoubleTensor_expandNd"
+  c_expandNd_ :: Ptr (Ptr C'THDoubleTensor) -> Ptr (Ptr C'THDoubleTensor) -> CInt -> IO ()
+
+-- | alias of c_expandNd_ with unused argument (for CTHState) to unify backpack signatures.
+c_expandNd :: Ptr C'THState -> Ptr (Ptr C'THDoubleTensor) -> Ptr (Ptr C'THDoubleTensor) -> CInt -> IO ()
+c_expandNd = const c_expandNd_
+
 -- | c_resize :  tensor size stride -> void
 foreign import ccall "THTensor.h THDoubleTensor_resize"
   c_resize_ :: Ptr C'THDoubleTensor -> Ptr C'THLongStorage -> Ptr C'THLongStorage -> IO ()
@@ -674,6 +698,18 @@ foreign import ccall "THTensor.h &THDoubleTensor_newUnfold"
 -- | p_newView : Pointer to function : tensor size -> THTensor *
 foreign import ccall "THTensor.h &THDoubleTensor_newView"
   p_newView :: FunPtr (Ptr C'THDoubleTensor -> Ptr C'THLongStorage -> IO (Ptr C'THDoubleTensor))
+
+-- | p_newExpand : Pointer to function : tensor size -> THTensor *
+foreign import ccall "THTensor.h &THDoubleTensor_newExpand"
+  p_newExpand :: FunPtr (Ptr C'THDoubleTensor -> Ptr C'THLongStorage -> IO (Ptr C'THDoubleTensor))
+
+-- | p_expand : Pointer to function : r tensor size -> void
+foreign import ccall "THTensor.h &THDoubleTensor_expand"
+  p_expand :: FunPtr (Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THLongStorage -> IO ())
+
+-- | p_expandNd : Pointer to function : rets ops count -> void
+foreign import ccall "THTensor.h &THDoubleTensor_expandNd"
+  p_expandNd :: FunPtr (Ptr (Ptr C'THDoubleTensor) -> Ptr (Ptr C'THDoubleTensor) -> CInt -> IO ())
 
 -- | p_resize : Pointer to function : tensor size stride -> void
 foreign import ccall "THTensor.h &THDoubleTensor_resize"

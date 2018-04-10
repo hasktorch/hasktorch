@@ -943,22 +943,6 @@ foreign import ccall "THTensorMath.h THFloatTensor_eqTensorT"
 c_eqTensorT :: Ptr C'THState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ()
 c_eqTensorT = const c_eqTensorT_
 
--- | c_pow :  r_ t value -> void
-foreign import ccall "THTensorMath.h THFloatTensor_pow"
-  c_pow_ :: Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ()
-
--- | alias of c_pow_ with unused argument (for CTHState) to unify backpack signatures.
-c_pow :: Ptr C'THState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ()
-c_pow = const c_pow_
-
--- | c_tpow :  r_ value t -> void
-foreign import ccall "THTensorMath.h THFloatTensor_tpow"
-  c_tpow_ :: Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ()
-
--- | alias of c_tpow_ with unused argument (for CTHState) to unify backpack signatures.
-c_tpow :: Ptr C'THState -> Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ()
-c_tpow = const c_tpow_
-
 -- | c_abs :  r_ t -> void
 foreign import ccall "THTensorMath.h THFloatTensor_abs"
   c_abs_ :: Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ()
@@ -1134,6 +1118,22 @@ foreign import ccall "THTensorMath.h THFloatTensor_erfinv"
 -- | alias of c_erfinv_ with unused argument (for CTHState) to unify backpack signatures.
 c_erfinv :: Ptr C'THState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ()
 c_erfinv = const c_erfinv_
+
+-- | c_pow :  r_ t value -> void
+foreign import ccall "THTensorMath.h THFloatTensor_pow"
+  c_pow_ :: Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ()
+
+-- | alias of c_pow_ with unused argument (for CTHState) to unify backpack signatures.
+c_pow :: Ptr C'THState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ()
+c_pow = const c_pow_
+
+-- | c_tpow :  r_ value t -> void
+foreign import ccall "THTensorMath.h THFloatTensor_tpow"
+  c_tpow_ :: Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ()
+
+-- | alias of c_tpow_ with unused argument (for CTHState) to unify backpack signatures.
+c_tpow :: Ptr C'THState -> Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ()
+c_tpow = const c_tpow_
 
 -- | c_sqrt :  r_ t -> void
 foreign import ccall "THTensorMath.h THFloatTensor_sqrt"
@@ -1803,14 +1803,6 @@ foreign import ccall "THTensorMath.h &THFloatTensor_neTensorT"
 foreign import ccall "THTensorMath.h &THFloatTensor_eqTensorT"
   p_eqTensorT :: FunPtr (Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ())
 
--- | p_pow : Pointer to function : r_ t value -> void
-foreign import ccall "THTensorMath.h &THFloatTensor_pow"
-  p_pow :: FunPtr (Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ())
-
--- | p_tpow : Pointer to function : r_ value t -> void
-foreign import ccall "THTensorMath.h &THFloatTensor_tpow"
-  p_tpow :: FunPtr (Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ())
-
 -- | p_abs : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_abs"
   p_abs :: FunPtr (Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ())
@@ -1898,6 +1890,14 @@ foreign import ccall "THTensorMath.h &THFloatTensor_erf"
 -- | p_erfinv : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_erfinv"
   p_erfinv :: FunPtr (Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ())
+
+-- | p_pow : Pointer to function : r_ t value -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_pow"
+  p_pow :: FunPtr (Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CFloat -> IO ())
+
+-- | p_tpow : Pointer to function : r_ value t -> void
+foreign import ccall "THTensorMath.h &THFloatTensor_tpow"
+  p_tpow :: FunPtr (Ptr C'THFloatTensor -> CFloat -> Ptr C'THFloatTensor -> IO ())
 
 -- | p_sqrt : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THFloatTensor_sqrt"

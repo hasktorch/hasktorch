@@ -943,22 +943,6 @@ foreign import ccall "THTensorMath.h THDoubleTensor_eqTensorT"
 c_eqTensorT :: Ptr C'THState -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> IO ()
 c_eqTensorT = const c_eqTensorT_
 
--- | c_pow :  r_ t value -> void
-foreign import ccall "THTensorMath.h THDoubleTensor_pow"
-  c_pow_ :: Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> CDouble -> IO ()
-
--- | alias of c_pow_ with unused argument (for CTHState) to unify backpack signatures.
-c_pow :: Ptr C'THState -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> CDouble -> IO ()
-c_pow = const c_pow_
-
--- | c_tpow :  r_ value t -> void
-foreign import ccall "THTensorMath.h THDoubleTensor_tpow"
-  c_tpow_ :: Ptr C'THDoubleTensor -> CDouble -> Ptr C'THDoubleTensor -> IO ()
-
--- | alias of c_tpow_ with unused argument (for CTHState) to unify backpack signatures.
-c_tpow :: Ptr C'THState -> Ptr C'THDoubleTensor -> CDouble -> Ptr C'THDoubleTensor -> IO ()
-c_tpow = const c_tpow_
-
 -- | c_abs :  r_ t -> void
 foreign import ccall "THTensorMath.h THDoubleTensor_abs"
   c_abs_ :: Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> IO ()
@@ -1134,6 +1118,22 @@ foreign import ccall "THTensorMath.h THDoubleTensor_erfinv"
 -- | alias of c_erfinv_ with unused argument (for CTHState) to unify backpack signatures.
 c_erfinv :: Ptr C'THState -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> IO ()
 c_erfinv = const c_erfinv_
+
+-- | c_pow :  r_ t value -> void
+foreign import ccall "THTensorMath.h THDoubleTensor_pow"
+  c_pow_ :: Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> CDouble -> IO ()
+
+-- | alias of c_pow_ with unused argument (for CTHState) to unify backpack signatures.
+c_pow :: Ptr C'THState -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> CDouble -> IO ()
+c_pow = const c_pow_
+
+-- | c_tpow :  r_ value t -> void
+foreign import ccall "THTensorMath.h THDoubleTensor_tpow"
+  c_tpow_ :: Ptr C'THDoubleTensor -> CDouble -> Ptr C'THDoubleTensor -> IO ()
+
+-- | alias of c_tpow_ with unused argument (for CTHState) to unify backpack signatures.
+c_tpow :: Ptr C'THState -> Ptr C'THDoubleTensor -> CDouble -> Ptr C'THDoubleTensor -> IO ()
+c_tpow = const c_tpow_
 
 -- | c_sqrt :  r_ t -> void
 foreign import ccall "THTensorMath.h THDoubleTensor_sqrt"
@@ -1803,14 +1803,6 @@ foreign import ccall "THTensorMath.h &THDoubleTensor_neTensorT"
 foreign import ccall "THTensorMath.h &THDoubleTensor_eqTensorT"
   p_eqTensorT :: FunPtr (Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> IO ())
 
--- | p_pow : Pointer to function : r_ t value -> void
-foreign import ccall "THTensorMath.h &THDoubleTensor_pow"
-  p_pow :: FunPtr (Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> CDouble -> IO ())
-
--- | p_tpow : Pointer to function : r_ value t -> void
-foreign import ccall "THTensorMath.h &THDoubleTensor_tpow"
-  p_tpow :: FunPtr (Ptr C'THDoubleTensor -> CDouble -> Ptr C'THDoubleTensor -> IO ())
-
 -- | p_abs : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THDoubleTensor_abs"
   p_abs :: FunPtr (Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> IO ())
@@ -1898,6 +1890,14 @@ foreign import ccall "THTensorMath.h &THDoubleTensor_erf"
 -- | p_erfinv : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THDoubleTensor_erfinv"
   p_erfinv :: FunPtr (Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> IO ())
+
+-- | p_pow : Pointer to function : r_ t value -> void
+foreign import ccall "THTensorMath.h &THDoubleTensor_pow"
+  p_pow :: FunPtr (Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> CDouble -> IO ())
+
+-- | p_tpow : Pointer to function : r_ value t -> void
+foreign import ccall "THTensorMath.h &THDoubleTensor_tpow"
+  p_tpow :: FunPtr (Ptr C'THDoubleTensor -> CDouble -> Ptr C'THDoubleTensor -> IO ())
 
 -- | p_sqrt : Pointer to function : r_ t -> void
 foreign import ccall "THTensorMath.h &THDoubleTensor_sqrt"

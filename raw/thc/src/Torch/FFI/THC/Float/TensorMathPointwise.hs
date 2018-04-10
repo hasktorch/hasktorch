@@ -8,18 +8,6 @@ import Data.Int
 import Torch.Types.TH
 import Torch.Types.THC
 
--- | c_pow :  state self src value -> void
-foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_pow"
-  c_pow :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> CFloat -> IO ()
-
--- | c_tpow :  state self value src -> void
-foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_tpow"
-  c_tpow :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> CFloat -> Ptr C'THCudaFloatTensor -> IO ()
-
--- | c_cpow :  state self src1 src2 -> void
-foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_cpow"
-  c_cpow :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ()
-
 -- | c_sigmoid :  state self src -> void
 foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_sigmoid"
   c_sigmoid :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ()
@@ -100,6 +88,14 @@ foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_erf"
 foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_erfinv"
   c_erfinv :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ()
 
+-- | c_pow :  state self src value -> void
+foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_pow"
+  c_pow :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> CFloat -> IO ()
+
+-- | c_tpow :  state self value src -> void
+foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_tpow"
+  c_tpow :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> CFloat -> Ptr C'THCudaFloatTensor -> IO ()
+
 -- | c_sqrt :  state self src -> void
 foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_sqrt"
   c_sqrt :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ()
@@ -168,6 +164,10 @@ foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_csub"
 foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_cmul"
   c_cmul :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ()
 
+-- | c_cpow :  state self src1 src2 -> void
+foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_cpow"
+  c_cpow :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ()
+
 -- | c_cdiv :  state self src1 src2 -> void
 foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_cdiv"
   c_cdiv :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ()
@@ -223,18 +223,6 @@ foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_addcmul"
 -- | c_addcdiv :  state self t value src1 src2 -> void
 foreign import ccall "THCTensorMathPointwise.h THCudaFloatTensor_addcdiv"
   c_addcdiv :: Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> CFloat -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ()
-
--- | p_pow : Pointer to function : state self src value -> void
-foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_pow"
-  p_pow :: FunPtr (Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> CFloat -> IO ())
-
--- | p_tpow : Pointer to function : state self value src -> void
-foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_tpow"
-  p_tpow :: FunPtr (Ptr C'THCState -> Ptr C'THCudaFloatTensor -> CFloat -> Ptr C'THCudaFloatTensor -> IO ())
-
--- | p_cpow : Pointer to function : state self src1 src2 -> void
-foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_cpow"
-  p_cpow :: FunPtr (Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ())
 
 -- | p_sigmoid : Pointer to function : state self src -> void
 foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_sigmoid"
@@ -316,6 +304,14 @@ foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_erf"
 foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_erfinv"
   p_erfinv :: FunPtr (Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ())
 
+-- | p_pow : Pointer to function : state self src value -> void
+foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_pow"
+  p_pow :: FunPtr (Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> CFloat -> IO ())
+
+-- | p_tpow : Pointer to function : state self value src -> void
+foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_tpow"
+  p_tpow :: FunPtr (Ptr C'THCState -> Ptr C'THCudaFloatTensor -> CFloat -> Ptr C'THCudaFloatTensor -> IO ())
+
 -- | p_sqrt : Pointer to function : state self src -> void
 foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_sqrt"
   p_sqrt :: FunPtr (Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ())
@@ -383,6 +379,10 @@ foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_csub"
 -- | p_cmul : Pointer to function : state self src1 src2 -> void
 foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_cmul"
   p_cmul :: FunPtr (Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ())
+
+-- | p_cpow : Pointer to function : state self src1 src2 -> void
+foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_cpow"
+  p_cpow :: FunPtr (Ptr C'THCState -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> Ptr C'THCudaFloatTensor -> IO ())
 
 -- | p_cdiv : Pointer to function : state self src1 src2 -> void
 foreign import ccall "THCTensorMathPointwise.h &THCudaFloatTensor_cdiv"
