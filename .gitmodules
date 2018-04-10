@@ -1,4 +1,0 @@
-[submodule "vendor/aten"]
-	path = vendor/aten
-	url = https://github.com/hasktorch/ATen.git
-
