@@ -2,8 +2,8 @@
 
 for type in Int Byte Char Short Long Half Float Double; do
   for ctype in Tensor Storage; do
-    mkdir -p ./finalizers/Torch/FFI/TH/${type}/
-    FILE="./finalizers/Torch/FFI/TH/${type}/Free${ctype}.hs"
+    mkdir -p ./polyfill/Torch/FFI/TH/${type}/
+    FILE="./polyfill/Torch/FFI/TH/${type}/Free${ctype}.hs"
     rm -rf $FILE
     touch $FILE
 

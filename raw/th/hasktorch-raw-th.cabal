@@ -27,7 +27,7 @@ library
   hs-source-dirs:
       src
     , nn
-    , finalizers
+    , polyfill
   build-depends:
       base >=4.7 && <5
     , hasktorch-types-th
@@ -36,6 +36,7 @@ library
   build-tools: c2hs
   c-sources:
       cbits/finalizers.c
+      cbits/expand_polyfill.c
 
   default-language: Haskell2010
   if flag(half)
