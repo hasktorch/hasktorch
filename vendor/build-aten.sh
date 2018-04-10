@@ -68,7 +68,13 @@ function install {
 
 case "$1" in
   ""|"all")
+    echo "Building aten"
+    echo "============================="
     build
+
+    echo ""
+    echo "Copying libATen.so to ./build"
+    echo "============================="
     install
     ;;
   "build")
