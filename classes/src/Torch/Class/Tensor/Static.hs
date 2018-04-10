@@ -8,6 +8,7 @@ import Data.Proxy
 import GHC.TypeLits
 import GHC.Int
 import GHC.Natural
+import Foreign hiding (new)
 import Control.Exception.Safe
 import Data.Singletons
 import Data.Singletons.TypeLits
@@ -21,7 +22,8 @@ import Data.List.NonEmpty (NonEmpty)
 import Torch.Class.Types
 -- import Torch.Class.Tensor as X hiding (new, fromList1d, resizeDim)
 import qualified Torch.Class.Tensor as Dynamic
-import qualified Torch.Types.TH as TH (IndexStorage)
+import qualified Torch.Types.TH as TH
+import qualified Torch.FFI.TH.Long.Storage as TH
 
 class IsTensor t where
   _clearFlag :: Dimensions d => t d -> Int8 -> IO ()
@@ -44,8 +46,8 @@ class IsTensor t where
   -- the types line-up nicely (and we currently don't use rank-0 tensors).
   empty :: IO (t d)
   newExpand :: Dimensions2 d d' => t d -> TH.IndexStorage -> IO (t d')
-  expand    :: Dimensions2 d d' => t d' -> t d -> TH.IndexStorage -> IO ()
-  expandNd  :: Dimensions d => NonEmpty (t d) -> NonEmpty (t d) -> Int -> IO ()
+  _expand    :: Dimensions2 d d' => t d' -> t d -> TH.IndexStorage -> IO ()
+  _expandNd  :: Dimensions d => NonEmpty (t d) -> NonEmpty (t d) -> Int -> IO ()
   newClone :: (t d) -> IO (t d)
   newContiguous :: t d -> IO (t d')
   newNarrow :: t d -> DimVal -> Int64 -> Size -> IO (t d')
@@ -263,22 +265,20 @@ newTranspose2d
   => t '[r, c] -> IO (t '[c, r])
 newTranspose2d t = newTranspose t 1 0
 
--- -- | Expand a vector by copying into a matrix by set dimensions
--- -- TODO - generalize this beyond the matrix case
--- expand2d
---   :: forall t d1 d2 . (KnownNatDim2 d1 d2)
---   => StaticConstraint2 t '[d2, d1] '[d1]
---   => Dynamic.IsTensorMath (AsDynamic (t '[d1])) -- for 'Dynamic.constant' which uses 'Torch.Class.IsTensor.Math.fill'
---   => t '[d1] -> IO (t '[d2, d1])
--- expand2d t = do
---   res :: AsDynamic (t '[d2, d1]) <- Dynamic.constant (dim :: Dim '[d2, d1]) 0
---   s :: LongStorage <- Storage.newWithSize2 s2 s1
---   Dynamic._expand res (asDynamic t) s
---   pure (asStatic res)
---   where
---     s1, s2 :: Integer
---     s1 = natVal (Proxy :: Proxy d1)
---     s2 = natVal (Proxy :: Proxy d2)
+-- | Expand a vector by copying into a matrix by set dimensions
+-- TODO - generalize this beyond the matrix case
+expand2d
+  :: forall t x y . (KnownNatDim2 x y)
+  => IsTensor t
+  => t '[x] -> IO (t '[y, x])
+expand2d t = do
+  res :: t '[y, x] <- new
+  s <- mkLongStorage =<< TH.c_newWithSize2_ s2 s1
+  _expand res t s
+  pure res
+  where
+    s1 = fromIntegral $ natVal (Proxy :: Proxy x)
+    s2 = fromIntegral $ natVal (Proxy :: Proxy y)
 
 getElem2d
   :: forall t n m . (KnownNatDim2 n m)

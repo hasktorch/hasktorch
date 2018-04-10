@@ -96,15 +96,15 @@ instance Class.IsTensor Dynamic where
     ix' <- manage' (snd . TH.longStorageState) ix
     liftIO $ Sig.c_newExpand s r' ix' >>= mkDynamic s
 
-  expand :: Dynamic -> Dynamic -> TH.IndexStorage -> IO ()
-  expand r t ix = runManaged . joinIO $ Sig.c_expand
+  _expand :: Dynamic -> Dynamic -> TH.IndexStorage -> IO ()
+  _expand r t ix = runManaged . joinIO $ Sig.c_expand
     <$> manage' Sig.dynamicStateRef r
     <*> manage' Sig.ctensor r
     <*> manage' Sig.ctensor t
     <*> manage' (snd . TH.longStorageState) ix
 
-  expandNd  :: NonEmpty Dynamic -> NonEmpty Dynamic -> Int -> IO ()
-  expandNd (rets@(s:|_)) ops i = runManaged $ do
+  _expandNd  :: NonEmpty Dynamic -> NonEmpty Dynamic -> Int -> IO ()
+  _expandNd (rets@(s:|_)) ops i = runManaged $ do
     st    <- manage' Sig.dynamicStateRef s
     rets' <- mngNonEmpty rets
     ops'  <- mngNonEmpty ops

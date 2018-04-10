@@ -30,6 +30,8 @@ library
     , KindSignatures
   build-depends:
       base >=4.7 && <5
+    -- primarily for working with LongStorage functions in expand2d
+    , hasktorch-raw-th
     , hasktorch-types-th
     , hasktorch-dimensions
     , safe-exceptions

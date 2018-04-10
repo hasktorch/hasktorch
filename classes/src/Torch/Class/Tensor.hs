@@ -39,8 +39,8 @@ class IsTensor t where
   empty :: IO t
 
   newExpand :: t -> TH.IndexStorage -> IO t
-  expand :: t -> t -> TH.IndexStorage -> IO ()
-  expandNd :: NonEmpty t -> NonEmpty t -> Int -> IO ()
+  _expand :: t -> t -> TH.IndexStorage -> IO ()
+  _expandNd :: NonEmpty t -> NonEmpty t -> Int -> IO ()
 
   newClone :: t -> IO t
   newContiguous :: t -> IO t

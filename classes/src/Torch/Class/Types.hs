@@ -23,6 +23,9 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Safe (MonadThrow)
 import GHC.TypeLits
 import Torch.Dimensions
+import qualified Torch.Types.TH as TH
+import qualified Torch.FFI.TH.Long.Storage as TH
+-- import qualified Torch.FFI.TH.Long.FreeStorage as TH
 
 type family HsReal t
 type family HsAccReal t
@@ -42,6 +45,12 @@ type family SizesStorage t
 type family StridesStorage t
 
 impossible = error
+
+mkLongStorage :: Ptr TH.CLongStorage -> IO TH.LongStorage
+mkLongStorage p = do
+  fpState <- TH.newCState >>= TH.manageState
+  fp <- newForeignPtr TH.p_free p
+  pure $ TH.LongStorage (fpState, fp)
 
 type (Dimensions2 d d') = (Dimensions d, Dimensions d')
 type (Dimensions3 d d' d'' ) = (Dimensions2 d d', Dimensions d'')

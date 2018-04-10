@@ -25,8 +25,8 @@ instance Class.IsTensor Tensor where
   fromList1d l = asStatic <$> (Dynamic.fromList1d l)
 
   newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
-  expand r t = Dynamic.expand (asDynamic r) (asDynamic t)
-  expandNd rs os = Dynamic.expandNd (fmap asDynamic rs) (fmap asDynamic os)
+  _expand r t = Dynamic._expand (asDynamic r) (asDynamic t)
+  _expandNd rs os = Dynamic._expandNd (fmap asDynamic rs) (fmap asDynamic os)
 
   _resize t a b = Dynamic._resize (asDynamic t) a b >> pure (sudo t)
   _resize1d t a = Dynamic._resize1d (asDynamic t) a >> pure (sudo t)
