@@ -9,7 +9,8 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Dimensions
-  ( KnownNat2
+  ( KnownNat
+  , KnownNat2
   , KnownNat3
   , KnownNatDim
   , KnownNatDim2

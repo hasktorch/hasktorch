@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Torch.Class.TH.Tensor.Random.Static where
 
 import Control.Monad
@@ -13,21 +14,26 @@ import qualified Torch.Types.TH as TH
 -- ========================================================================= --
 -- Custom functions
 -- ========================================================================= --
--- multivariate_normal
---   :: forall t n p . (KnownNatDim2 n p)
---   => (IsTensor t, THTensorRandom t)
---   => Generator (t '[p, n]) -> t '[p] -> t '[p, p] -> t '[p] -> IO (t '[n, p])
--- multivariate_normal g mu eigvec eigval = join $ go
---   <$> newTranspose2d eigvec
---   <*> diag1d eigval
---   <*> expand2d mu
---   <*> normal g 0 1
---  where
---   go :: t '[p, p] -> t '[p, p] -> t '[n, p] -> t '[p, n] -> IO (t '[n, p])
---   go evec' eval' offset samps = (^+^ offset) <$> newTranspose2d (y !*! samps)
---     where
---       x = evec' !*! eval'
---       y = x !*! eigvec
+multivariate_normal
+  :: forall t n p . (KnownNatDim2 n p)
+  => (Num (HsReal (t '[p, p])))
+  => (Num (HsReal (t '[p, n])))
+  => (Num (HsReal (t '[n, p])))
+  => (Num (HsAccReal (t '[p, n])))
+  => TensorMathPointwise t
+  => (IsTensor t, THTensorRandom t, TensorMathBlas t)
+  => Generator (t '[p, n]) -> t '[p] -> t '[p, p] -> t '[p] -> IO (t '[n, p])
+multivariate_normal g mu eigvec eigval = join $ go
+  <$> newTranspose2d eigvec
+  <*> diag1d eigval
+  <*> expand2d mu
+  <*> normal g 0 1
+ where
+  go :: t '[p, p] -> t '[p, p] -> t '[n, p] -> t '[p, n] -> IO (t '[n, p])
+  go evec' eval' offset samps = (^+^ offset) <$> newTranspose2d (y !*! samps)
+    where
+      x = evec' !*! eval'
+      y = x !*! eigvec
 
 -- ========================================================================= --
 -- Typeclass definition
