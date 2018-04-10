@@ -18,38 +18,29 @@ init:
 #	stack build
 
 clean:
-	stack clean
+	rm -rf dist{,-newbuild)
 
-purge: # clean
+purge:
 	rm -rf vendor
 	git checkout -- vendor
 	git submodule update --init --recursive
 
 build:
-	stack build
+	cabal new-build all
 
 refresh:
-	rsync -arv ./output/raw/th/src/*.hs ./raw/src/
-	rsync -arv ./output/raw/th/src/generic/*.hs ./raw/src/generic/
+	cd output && ./refresh.sh
 
-build-aten:
-	cd vendor && ./build-aten.sh
+codegen-th:
+	for l in TH THNN; do for t in generic concrete; do cabal new-run hasktorch-codegen:ht-codegen -- --type $$t --lib $$l --verbose; done; done
 
-build-spec:
-	cd vendor && ./build-aten-spec.sh
+codegen-thc:
+	for l in THC THCUNN; do for t in generic concrete; do cabal new-run hasktorch-codegen:ht-codegen -- --type $$t --lib $$l --verbose; done; done
 
-codegen-generic: build
-	cabal new-run hasktorch-codegen:ht-codegen -- --type generic --lib TH --verbose
-
-codegen-concrete: build
-	cabal new-run hasktorch-codegen:ht-codegen -- --type concrete --lib TH --verbose
-
-codegen: codegen-concrete codegen-generic
+codegen: codegen-th codegen-thc
+codegen-refresh: codegen refresh
 
 dev:
-	sos -p '(raw|core|examples)/[^.].*' -c "cabal new-build all"
-
-dev-nuke:
-	sos -p '(raw|core|examples)/[^.].*' -c "rm -rf dist-newstyle && cabal new-build all"
+	sos -e 'dist' -p '.*hsig$$' -p '.*hs$$' -p '.*cabal$$' -p 'cabal.project$$' -c 'cabal new-build all'
 
 .PHONY: clean build refresh codegen init dev
