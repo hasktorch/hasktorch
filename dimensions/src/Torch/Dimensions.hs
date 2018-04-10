@@ -13,12 +13,15 @@ module Torch.Dimensions
   , KnownNat
   , KnownNat2
   , KnownNat3
+  , KnownNat4
   , KnownNatDim
   , KnownNatDim2
   , KnownNatDim3
+  , KnownNatDim4
   , SingDim
   , SingDim2
   , SingDim3
+  , SingDim4
   , SingDimensions
   , DimVal(..)
   , someDimsM
@@ -38,6 +41,8 @@ module Torch.Dimensions
 import Data.Singletons as X
 import Data.Singletons.Prelude.List as X
   hiding (Take, Tail, Reverse, Last, Init, Head, Length, Drop, Concat)
+import Data.Singletons.TypeLits as X
+  hiding (KnownNat)
 
 import Data.Proxy (Proxy(..))
 import Control.Monad (unless)
@@ -51,15 +56,19 @@ import Numeric.Dimensions (Dim(..), SomeDims(..), Nat)
 import Numeric.Dimensions as Dim
 import GHC.Int (Int32)
 
-type KnownNat2 n0 n1    = (KnownNat n0, KnownNat n1)
-type KnownNat3 n0 n1 n2 = (KnownNat n0, KnownNat n1, KnownNat n2)
+type KnownNat2 n0 n1       = (KnownNat  n0,       KnownNat n1)
+type KnownNat3 n0 n1 n2    = (KnownNat2 n0 n1,    KnownNat n2)
+type KnownNat4 n0 n1 n2 n3 = (KnownNat3 n0 n1 n2, KnownNat n3)
 
-type KnownNatDim n         = (KnownDim n, KnownNat n)
-type KnownNatDim2 n0 n1    = (KnownNatDim n0, KnownNatDim n1)
-type KnownNatDim3 n0 n1 n2 = (KnownNatDim n0, KnownNatDim n1, KnownNatDim n2)
-type SingDim n         = (SingI n, KnownNatDim n)
-type SingDim2 n0 n1    = (SingDim n0, SingDim n1)
-type SingDim3 n0 n1 n2 = (SingDim n0, SingDim n1, SingDim n2)
+type KnownNatDim n            = (KnownDim n, KnownNat n)
+type KnownNatDim2 n0 n1       = (KnownNatDim  n0,       KnownNatDim n1)
+type KnownNatDim3 n0 n1 n2    = (KnownNatDim2 n0 n1,    KnownNatDim n2)
+type KnownNatDim4 n0 n1 n2 n3 = (KnownNatDim3 n0 n1 n2, KnownNatDim n3)
+
+type SingDim n            = (SingI n, KnownNatDim n)
+type SingDim2 n0 n1       = (SingDim n0,        SingDim n1)
+type SingDim3 n0 n1 n2    = (SingDim2 n0 n1,    SingDim n2)
+type SingDim4 n0 n1 n2 n3 = (SingDim3 n0 n1 n2, SingDim n3)
 
 type SingDimensions d = (SingI d, Dimensions d)
 

@@ -3,9 +3,10 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 module Main where
 
-import Torch.Dimensions
-import Torch.Core.Tensor.Dynamic
+import Torch.Dynamic
 import qualified Torch.Core.Random as RNG
+
+type DoubleTensor = DoubleDynamic
 
 data Weights = W
   { biases :: DoubleTensor

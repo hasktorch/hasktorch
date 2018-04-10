@@ -21,11 +21,46 @@ class (TensorMath t) => TensorMathBlas t where
   -- https://github.com/torch/torch7/blob/aed31711c6b8846b8337a263a7f9f998697994e7/doc/maths.md#res-torchaddrres-v1-mat-v2-vec1-vec2
   --
   -- res_ij = (v1 * mat_ij) + (v2 * vec1_i * vec2_j)
-  _addr :: t '[r, c] -> HsReal (t '[r,c]) -> t '[r,c] -> HsReal (t '[r,c]) -> t '[r] -> t '[c] -> IO ()
+  _addr
+    :: KnownNatDim2 r c
+    => t '[r, c]
+    -> HsReal (t '[r,c]) -> t '[r,c] -> HsReal (t '[r,c])
+    -> t '[r] -> t '[c] -> IO ()
 
-  _addbmm  :: Dimensions4 d d' d'' d''' => t d -> HsReal (t d) -> t d' -> HsReal (t d) -> t d'' -> t d''' -> IO ()
-  _baddbmm :: Dimensions4 d d' d'' d''' => t d -> HsReal (t d) -> t d' -> HsReal (t d) -> t d'' -> t d''' -> IO ()
-  dot      :: Dimensions2 d d' => t d -> t d' -> IO (HsAccReal (t d))
+  -- | Batch matrix matrix product of matrices stored in batch1 and batch2, with a reduced add step
+  -- (all matrix multiplications get accumulated in a single place).
+  --
+  -- batch1 and batch2 must be 3D Tensors each containing the same number of matrices. If batch1
+  -- is a b × n × m Tensor, batch2 a b × m × p Tensor, res will be a n × p Tensor.
+  --
+  -- In other words,
+  --
+  --     res = (v1 * M) + (v2 * sum(batch1_i * batch2_i, i = 1, b))
+  --
+  _addbmm
+    :: KnownNatDim4 n p b m
+    => t '[n, p]
+    -> HsReal (t '[n, p]) -> t '[n, p] -> HsReal (t '[n, p])
+    -> t '[b, n, m] -> t '[b, m, p] -> IO ()
+
+  -- | Batch matrix matrix product of matrices stored in batch1 and batch2, with batch add.
+  --
+  -- batch1 and batch2 must be 3D Tensors each containing the same number of matrices. If batch1
+  -- is a b × n × m Tensor, batch2 a b × m × p Tensor, res will be a b × n × p Tensor.
+  --
+  -- In other words,
+  --
+  --     res_i = (v1 * M_i) + (v2 * batch1_i * batch2_i)
+  --
+  _baddbmm
+    :: KnownNatDim4 n p b m
+    => t '[b, n, p]
+    -> HsReal (t '[b, n, p]) -> t '[b, n, p] -> HsReal (t '[b, n, p])
+    -> t '[b, n, m] -> t '[b, m, p] -> IO ()
+
+  -- Performs the dot product between tensor1 and tensor2. The number of elements must match: both 
+  -- Tensors are seen as a 1D vector.
+  dot :: Dimensions2 d d' => t d -> t d' -> IO (HsAccReal (t d))
 
 -- | inplace addmv
 addmv
