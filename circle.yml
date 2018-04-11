@@ -1,7 +1,7 @@
 machine:
 
   environment:
-    PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:~/.cabal/bin/:/opt/ghc/8.2.2/bin/:$PATH
+    PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:~/.cabal/bin/:/usr/local/bin:$PATH
     LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:/usr/lib/x86_64-linux-gnu/$LD_LIBRARY_PATH
     LLVM_CONFIG: /usr/lib/llvm-3.8/bin/llvm-config
 
@@ -10,8 +10,11 @@ dependencies:
   cache_directories:
     - "/home/ubuntu/.stack"
     - "/home/ubuntu/.cabal"
+    - "/home/ubuntu/cabal"
+    - "/home/ubuntu/ghc-8.2.2"
     - "/home/ubuntu/cmake-3.10.0-Linux-x86_64"
     - "/usr/lib/llvm-4.0"
+    - "/usr/local/bin/"
     - "/home/ubuntu/hasktorch/.stack-work"
     - "/home/ubuntu/hasktorch/vendor/build/"
 
@@ -28,22 +31,37 @@ dependencies:
       else
         echo "Cached CMake found"
       fi
+    - cmake --version
 
-    # Install stack
+    # # Install stack
+    # # =============
+    # - mkdir -p ~/.local/bin
+    # # full path to curl circumvents errors with /usr/local/bin/curl incompatabilities with libcurl
+    # - /usr/bin/curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+    # - stack upgrade
+    # - stack update
+
+    # Install GHC-8.2 on this build of Ubuntu (12.04)
     # =============
-    - mkdir -p ~/.local/bin
-    # full path to curl circumvents errors with /usr/local/bin/curl incompatabilities with libcurl
-    - /usr/bin/curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-    - stack upgrade
-    - stack update
+    - >
+      cd ~ ;
+      curl -O https://downloads.haskell.org/~ghc/8.2.2/ghc-8.2.2-x86_64-deb8-linux.tar.xz ;
+      tar xvf ghc-8.2.2-x86_64-deb8-linux.tar.xz ;
+      cd ghc-8.2.2 ;
+      ./configure ;
+      sudo make install ;
 
-    # Install cabal
+    # could `sudo update-alternatives` instead
+    - sudo ln -fs /usr/local/bin/ghc-8.2.2         /usr/local/bin/ghc
+    - sudo ln -fs /usr/local/bin/ghci-8.2.2        /usr/local/bin/ghci
+    - sudo ln -fs /usr/local/bin/ghc-pkg-8.2.2     /usr/local/bin/ghc-pkg
+    - sudo ln -fs /usr/local/bin/haddock-ghc-8.2.2 /usr/local/bin/haddock-ghc
+    - sudo ln -fs /usr/local/bin/runghc-8.2.2      /usr/local/bin/runghc
+
+    # Get cabal-install head
     # =============
     - mkdir -p ~/.cabal/bin
-    - sudo add-apt-repository -y ppa:hvr/ghc
-    - sudo apt-get update -y
-    - sudo apt-get install ghc-8.2.2 -y
-    - sudo apt-get install cabal-install-head -y
+    - sudo apt-get install cabal-install -y
     - which cabal
     - cabal --version
     - cabal update
@@ -53,37 +71,20 @@ dependencies:
     - which cabal
     - cabal --version
 
+    # Build ATen dependencies
+    # =============
     - git submodule update --init --recursive
-    - alias cmake=~/cmake-3.10.0-Linux-x86_64/bin/cmake
     - sudo pip install pyyaml typing
-    - cd ./vendor; ./build-aten.sh
-    - cd ./vendor; ./build-aten-spec.sh
-    - cd ./vendor; ./build-error-handler.sh
+    - cd ./vendor; sudo ./build-aten.sh
+    # - cd ./vendor; ./build-aten-spec.sh
+    # - cd ./vendor; ./build-error-handler.sh
 
   override:
     - cabal new-build all
 
 test:
   override:
-    ### tests
     - cabal new-test all
+    - make codegen
+    - make run-examples
 
-    ### examples
-    # - cabal new-run hasktorch-examples:static-tensor-usage
-    # - cabal new-run hasktorch-examples:ff-typed
-    # - cabal new-run hasktorch-examples:ff-untyped
-    # - cabal new-run hasktorch-examples:gradient-descent
-    # - cabal new-run hasktorch-examples:static-tensor-usage
-
-    ### code generation
-    - cabal new-run ht-codegen -- --verbose --type concrete --lib TH
-    - cabal new-run ht-codegen -- --verbose --type concrete --lib THC
-    - cabal new-run ht-codegen -- --verbose --type generic  --lib TH
-    - cabal new-run ht-codegen -- --verbose --type generic  --lib THC
-    - cabal new-run ht-codegen -- --verbose --type generic  --lib THNN
-    - cabal new-run ht-codegen -- --verbose --type generic  --lib THCUNN
-
-    ### end-to-end build
-
-    # FIXME: make sure these are updated
-    # - make init
