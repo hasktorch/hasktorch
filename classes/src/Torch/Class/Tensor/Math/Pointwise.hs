@@ -35,32 +35,32 @@ class IsTensor t => TensorMathPointwise t where
 
 sign_, sign :: TensorMathPointwise t => t -> IO t
 sign_  = (`twice` _sign)
-sign t = withEmpty $ \r -> _sign r t
+sign t = withEmpty t $ \r -> _sign r t
 
 cross :: TensorMathPointwise t => t -> t -> DimVal -> IO t
-cross a b di = withEmpty $ \r -> _cross r a b di
+cross a b di = withEmpty a $ \r -> _cross r a b di
 
 clamp_, clamp :: TensorMathPointwise t => t -> HsReal t -> HsReal t -> IO t
 clamp_ t a b = t `twice` (\r' t' -> _clamp r' t' a b)
-clamp  t a b = withEmpty $ \r -> _clamp r t a b
+clamp  t a b = withEmpty t $ \r -> _clamp r t a b
 
 cadd_, cadd :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
 cadd_ t v b = t `twice` (\r' t' -> _cadd r' t' v b)
-cadd  t v b = withEmpty $ \r -> _cadd r t v b
+cadd  t v b = withEmpty t $ \r -> _cadd r t v b
 (^+^) :: (Num (HsReal t), TensorMathPointwise t) => t -> t -> t
 (^+^) a b = unsafePerformIO $ cadd a 1 b
 {-# NOINLINE (^+^) #-}
 
 csub_, csub :: TensorMathPointwise t => t -> HsReal t -> t -> IO t
 csub_ t v b = t `twice` (\r' t' -> _csub r' t' v b)
-csub  t v b = withEmpty $ \r -> _csub r t v b
+csub  t v b = withEmpty t $ \r -> _csub r t v b
 (^-^) :: (Num (HsReal t), TensorMathPointwise t) => t -> t -> t
 (^-^) a b = unsafePerformIO $ csub a 1 b
 {-# NOINLINE (^-^) #-}
 
 cmul_, cmul :: TensorMathPointwise t => t -> t -> IO t
 cmul_ t1 t2 = t1 `twice` (\r' t1' -> _cmul r' t1' t2)
-cmul  t1 t2 = withEmpty $ \r -> _cmul r t1 t2
+cmul  t1 t2 = withEmpty t1 $ \r -> _cmul r t1 t2
 square :: TensorMathPointwise t => t -> IO t
 square t = cmul t t
 (^*^) :: TensorMathPointwise t => t -> t -> t
@@ -69,7 +69,7 @@ square t = cmul t t
 
 cdiv_, cdiv :: TensorMathPointwise t => t -> t -> IO t
 cdiv_ t1 t2 = t1 `twice` (\r' t1' -> _cdiv r' t1' t2)
-cdiv  t1 t2 = withEmpty $ \r -> _cdiv r t1 t2
+cdiv  t1 t2 = withEmpty t1 $ \r -> _cdiv r t1 t2
 (^/^) :: TensorMathPointwise t => t -> t -> t
 (^/^) a b = unsafePerformIO $ cdiv a b
 {-# NOINLINE (^/^) #-}
@@ -77,7 +77,7 @@ cdiv  t1 t2 = withEmpty $ \r -> _cdiv r t1 t2
 _mkNewFunction, _mkInplaceFunction
   :: TensorMathPointwise t => (t -> t -> t -> IO ()) -> t -> t -> IO t
 _mkNewFunction     op t1 t2 = t1 `twice` (\r' t1' -> op r' t1' t2)
-_mkInplaceFunction op t1 t2 = withEmpty $ \r -> op r t1 t2
+_mkInplaceFunction op t1 t2 = withEmpty t1 $ \r -> op r t1 t2
 
 
 cpow_, cpow, clshift_, clshift, crshift_, crshift
@@ -102,11 +102,11 @@ cmin  = _mkInplaceFunction _cmin
 
 cmaxValue_, cmaxValue :: TensorMathPointwise t => t -> HsReal t -> IO t
 cmaxValue_ t v = t `twice` (\r' t' -> _cmaxValue r' t' v)
-cmaxValue  t v = withEmpty $ \r -> _cmaxValue r t v
+cmaxValue  t v = withEmpty t $ \r -> _cmaxValue r t v
 
 cminValue_, cminValue :: TensorMathPointwise t => t -> HsReal t -> IO t
 cminValue_ t v = t `twice` (\r' t' -> _cminValue r' t' v)
-cminValue  t v = withEmpty $ \r -> _cminValue r t v
+cminValue  t v = withEmpty t $ \r -> _cminValue r t v
 
 cbitand_, cbitand, cbitor_, cbitor, cbitxor_, cbitxor 
   :: TensorMathPointwise t => t -> t -> IO t
@@ -120,11 +120,11 @@ cbitxor  = _mkInplaceFunction _cbitxor
 
 addcmul_, addcmul :: TensorMathPointwise t => t -> HsReal t -> t -> t -> IO t
 addcmul_ a v b c = a `twice` (\r' a' -> _addcmul r' a' v b c)
-addcmul  a v b c = withEmpty $ \r -> _addcmul r a v b c
+addcmul  a v b c = withEmpty a $ \r -> _addcmul r a v b c
 
 addcdiv_, addcdiv :: TensorMathPointwise t => t -> HsReal t -> t -> t -> IO t
 addcdiv_ a v b c = a `twice` (\r' a' -> _addcdiv r' a' v b c)
-addcdiv  a v b c = withEmpty $ \r -> _addcdiv r a v b c
+addcdiv  a v b c = withEmpty a $ \r -> _addcdiv r a v b c
 
 class IsTensor t => TensorMathPointwiseSigned t where
   _neg :: t -> t -> IO ()
@@ -132,11 +132,11 @@ class IsTensor t => TensorMathPointwiseSigned t where
 
 neg_, neg  :: TensorMathPointwiseSigned t => t -> IO t
 neg_ t = t `twice` _neg
-neg  t = withEmpty $ \r -> _neg r t
+neg  t = withEmpty t $ \r -> _neg r t
 
 abs_, abs  :: TensorMathPointwiseSigned t => t -> IO t
 abs_ t = t `twice` _abs
-abs  t = withEmpty $ \r -> _abs r t
+abs  t = withEmpty t $ \r -> _abs r t
 
 class IsTensor t => TensorMathPointwiseFloating t where
   _cinv         :: t -> t -> IO ()
@@ -170,115 +170,115 @@ class IsTensor t => TensorMathPointwiseFloating t where
 
 cinv_, cinv :: TensorMathPointwiseFloating t => t -> IO t
 cinv_ t = twice t _cinv
-cinv  t = withEmpty $ \r -> _cinv r t
+cinv  t = withEmpty t $ \r -> _cinv r t
 
 sigmoid_, sigmoid :: TensorMathPointwiseFloating t => t -> IO t
 sigmoid_ t = twice t _sigmoid
-sigmoid  t = withEmpty $ \r -> _sigmoid r t
+sigmoid  t = withEmpty t $ \r -> _sigmoid r t
 
 log_, log :: TensorMathPointwiseFloating t => t -> IO t
 log_ t = twice t _log
-log  t = withEmpty $ \r -> _log r t
+log  t = withEmpty t $ \r -> _log r t
 
 lgamma_, lgamma :: TensorMathPointwiseFloating t => t -> IO t
 lgamma_ t = twice t _lgamma
-lgamma  t = withEmpty $ \r -> _lgamma r t
+lgamma  t = withEmpty t $ \r -> _lgamma r t
 
 log1p_, log1p :: TensorMathPointwiseFloating t => t -> IO t
 log1p_ t = twice t _log1p
-log1p  t = withEmpty $ \r -> _log1p r t
+log1p  t = withEmpty t $ \r -> _log1p r t
 
 exp_, exp :: TensorMathPointwiseFloating t => t -> IO t
 exp_ t = twice t _exp
-exp  t = withEmpty $ \r -> _exp r t
+exp  t = withEmpty t $ \r -> _exp r t
 
 cos_, cos :: TensorMathPointwiseFloating t => t -> IO t
 cos_ t = twice t _cos
-cos  t = withEmpty $ \r -> _cos r t
+cos  t = withEmpty t $ \r -> _cos r t
 
 acos_, acos :: TensorMathPointwiseFloating t => t -> IO t
 acos_ t = twice t _acos
-acos  t = withEmpty $ \r -> _acos r t
+acos  t = withEmpty t $ \r -> _acos r t
 
 cosh_, cosh :: TensorMathPointwiseFloating t => t -> IO t
 cosh_ t = twice t _cosh
-cosh  t = withEmpty $ \r -> _cosh r t
+cosh  t = withEmpty t $ \r -> _cosh r t
 
 sin_, sin :: TensorMathPointwiseFloating t => t -> IO t
 sin_ t = twice t _sin
-sin  t = withEmpty $ \r -> _sin r t
+sin  t = withEmpty t $ \r -> _sin r t
 
 asin_, asin :: TensorMathPointwiseFloating t => t -> IO t
 asin_ t = twice t _asin
-asin  t = withEmpty $ \r -> _asin r t
+asin  t = withEmpty t $ \r -> _asin r t
 
 sinh_, sinh :: TensorMathPointwiseFloating t => t -> IO t
 sinh_ t = twice t _sinh
-sinh  t = withEmpty $ \r -> _sinh r t
+sinh  t = withEmpty t $ \r -> _sinh r t
 
 tan_, tan :: TensorMathPointwiseFloating t => t -> IO t
 tan_ t = twice t _tan
-tan  t = withEmpty $ \r -> _tan r t
+tan  t = withEmpty t $ \r -> _tan r t
 
 atan_, atan :: TensorMathPointwiseFloating t => t -> IO t
 atan_ t = twice t _atan
-atan  t = withEmpty $ \r -> _atan r t
+atan  t = withEmpty t $ \r -> _atan r t
 
 tanh_, tanh :: TensorMathPointwiseFloating t => t -> IO t
 tanh_ t = twice t _tanh
-tanh  t = withEmpty $ \r -> _tanh r t
+tanh  t = withEmpty t $ \r -> _tanh r t
 
 erf_, erf :: TensorMathPointwiseFloating t => t -> IO t
 erf_ t = twice t _erf
-erf  t = withEmpty $ \r -> _erf r t
+erf  t = withEmpty t $ \r -> _erf r t
 
 erfinv_, erfinv :: TensorMathPointwiseFloating t => t -> IO t
 erfinv_ t = twice t _erfinv
-erfinv  t = withEmpty $ \r -> _erfinv r t
+erfinv  t = withEmpty t $ \r -> _erfinv r t
 
 pow_, pow :: TensorMathPointwiseFloating t => t -> HsReal t -> IO t
 pow_ t v = twice t  $ \r t' -> _pow r t' v
-pow  t v = withEmpty $ \r -> _pow r t v
+pow  t v = withEmpty t $ \r -> _pow r t v
 
 tpow_, tpow :: TensorMathPointwiseFloating t => HsReal t -> t -> IO t
 tpow_ v t = twice t $ \r t' -> _tpow r v t'
-tpow  v t = withEmpty $ \r -> _tpow r v t
+tpow  v t = withEmpty t $ \r -> _tpow r v t
 
 sqrt_, sqrt :: TensorMathPointwiseFloating t => t -> IO t
 sqrt_ t = twice t _sqrt
-sqrt  t = withEmpty $ \r -> _sqrt r t
+sqrt  t = withEmpty t $ \r -> _sqrt r t
 
 rsqrt_, rsqrt :: TensorMathPointwiseFloating t => t -> IO t
 rsqrt_ t = twice t _rsqrt
-rsqrt  t = withEmpty $ \r -> _rsqrt r t
+rsqrt  t = withEmpty t $ \r -> _rsqrt r t
 
 ceil_, ceil :: TensorMathPointwiseFloating t => t -> IO t
 ceil_ t = twice t _ceil
-ceil  t = withEmpty $ \r -> _ceil r t
+ceil  t = withEmpty t $ \r -> _ceil r t
 
 floor_, floor :: TensorMathPointwiseFloating t => t -> IO t
 floor_ t = twice t _floor
-floor  t = withEmpty $ \r -> _floor r t
+floor  t = withEmpty t $ \r -> _floor r t
 
 round_, round :: TensorMathPointwiseFloating t => t -> IO t
 round_ t = twice t _round
-round  t = withEmpty $ \r -> _round r t
+round  t = withEmpty t $ \r -> _round r t
 
 trunc_, trunc :: TensorMathPointwiseFloating t => t -> IO t
 trunc_ t = twice t _trunc
-trunc  t = withEmpty $ \r -> _trunc r t
+trunc  t = withEmpty t $ \r -> _trunc r t
 
 frac_, frac :: TensorMathPointwiseFloating t => t -> IO t
 frac_ t = twice t _frac
-frac  t = withEmpty $ \r -> _frac r t
+frac  t = withEmpty t $ \r -> _frac r t
 
 lerp_, lerp :: TensorMathPointwiseFloating t => t -> t -> HsReal t -> IO t
 lerp_ a b v = twice a $ \r a' -> _lerp r a' b v
-lerp  a b v = withEmpty $ \r -> _lerp r a b v
+lerp  a b v = withEmpty a $ \r -> _lerp r a b v
 
 atan2_, atan2 :: TensorMathPointwiseFloating t => t -> t -> IO t
 atan2_ a b = twice a $ \r a' -> _atan2 r a' b
-atan2  a b = withEmpty $ \r -> _atan2 r a b
+atan2  a b = withEmpty a $ \r -> _atan2 r a b
 
 
 

@@ -43,4 +43,9 @@ codegen-refresh: codegen refresh
 dev:
 	sos -e 'dist' -p '.*hsig$$' -p '.*hs$$' -p '.*cabal$$' -p 'cabal.project$$' -c 'cabal new-build all'
 
-.PHONY: clean build refresh codegen init dev
+# lasso is broken
+run-examples:
+	for ex in ad bayesian-regression download-mnist ff-typed ff-untyped gradient-descent multivariate-normal static-tensor-usage; do echo "running $$ex" && sleep 1 && cabal new-run hasktorch-examples:$$ex && sleep 1 ; done
+	echo "finished running examples"
+
+.PHONY: clean build refresh codegen init dev run-examples

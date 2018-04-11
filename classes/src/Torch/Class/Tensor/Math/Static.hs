@@ -45,7 +45,7 @@ diag t d = withEmpty $ \r -> _diag r t d
 
 -- | Create a diagonal matrix from a 1D vector
 diag1d :: (KnownNatDim n, TensorMath t) => t '[n] -> IO (t '[n, n])
-diag1d t = diag t 1
+diag1d t = diag t 0
 
 cat_
   :: (IsStatic t)

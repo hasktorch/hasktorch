@@ -18,6 +18,16 @@ import Torch.Dimensions
 import Data.List.NonEmpty (NonEmpty)
 import qualified Torch.Types.TH as TH
 
+-- TODO: remove this
+import Debug.Trace
+-- TODO: move all pretty-printing to a separate codebase
+import Data.Typeable
+import Control.Monad (when)
+import Control.Applicative ((<|>))
+import Data.Maybe (fromMaybe)
+import Data.List (intercalate)
+
+
 class IsTensor t where
   _clearFlag :: t -> Int8 -> IO ()
   tensordata :: t -> IO [HsReal t]
@@ -115,9 +125,15 @@ withInplace' op (SomeDims d) = withInplace op d
 twice :: IsTensor t => t -> (t -> t -> IO ()) -> IO t
 twice t op = op t t >> pure t
 
--- I think we can get away with this for most creations. Torch does the resizing in C.
-withEmpty :: IsTensor t => (t -> IO ()) -> IO t
-withEmpty op = empty >>= \r -> op r >> pure r
+-- Should be renamed to @newFromSize@
+withEmpty :: IsTensor t => t -> (t -> IO ()) -> IO t
+withEmpty t op = getDims t >>= new' >>= \r -> op r >> pure r
+
+-- We can get away with this some of the time, when Torch does the resizing in C, but you need to look at
+-- the c implementation
+withEmpty' :: IsTensor t => (t -> IO ()) -> IO t
+withEmpty' op = empty >>= \r -> op r >> pure r
+
 
 _setStorageDim :: IsTensor t => t -> HsStorage t -> StorageOffset -> [(Size, Stride)] -> IO ()
 _setStorageDim t s o = \case
@@ -187,10 +203,12 @@ getDim t d = case dimVals d of
   _            -> throwGT4 "get"
 
 getDims :: IsTensor t => t -> IO SomeDims
-getDims t = do
+getDims = getDimList >=> someDimsM
+
+getDimList :: IsTensor t => t -> IO [Size]
+getDimList t = do
   nd <- nDimension t
-  ds <- mapM (size t . fromIntegral) [0 .. nd -1]
-  someDimsM ds
+  mapM (size t . fromIntegral) [0 .. nd -1]
 
 new :: IsTensor t => Dim (d::[Nat]) -> IO t
 new d = case dimVals d of
@@ -224,27 +242,40 @@ resizeAs src shape = do
   pure res
 
 -- | displaying raw tensor values
-printTensor :: forall io t . (IsTensor t, Show (HsReal t)) => t -> IO ()
+printTensor :: forall t . (IsTensor t, Typeable (HsReal t), Ord (HsReal t), Num (HsReal t), Show (HsReal t)) => t -> IO ()
 printTensor t = do
-  numDims <- nDimension t
-  sizes <- mapM (fmap fromIntegral . size t . fromIntegral) [0..numDims - 1]
-  liftIO $ case sizes of
+  ds <- getDimList t
+  putStrLn ("Dimensions: (" ++ intercalate " x " (fmap (\(Size d)-> show d) ds) ++ ")")
+  case ds of
     []  -> putStrLn "Empty Tensor"
-    sz@[x] -> do
-      putStrLn ""
-      putStr "[ "
-      mapM_ (get1d t >=> putWithSpace) [ fromIntegral idx | idx <- [0..head sz - 1] ]
-      putStrLn "]\n"
-    sz@[x,y] -> do
-      putStrLn ""
-      let pairs = [ (fromIntegral r, fromIntegral c) | r <- [0..sz !! 0 - 1], c <- [0..sz !! 1 - 1] ]
-      putStr "[ "
+    [x] -> do
+      putStr "["
+      mapM_ (get1d t >=> putWithSpace) [ fromIntegral idx | idx <- [0..x - 1] ]
+      putStrLn " ]\n"
+    [x,y] -> do
+      let pairs = [ (fromIntegral r, fromIntegral c) | r <- [0..x - 1], c <- [0..y - 1] ]
+      putStr "["
       forM_ pairs $ \(r, c) -> do
         val <- get2d t r c
-        if c == fromIntegral (sz !! 1) - 1
-        then putStrLn (show val ++ " ]") >> putStr (if fromIntegral r < (sz !! 0) - 1 then "[ " else "")
-        else putWithSpace val
+        putWithSpace val
+        when (c == fromIntegral y - 1) $ do
+          putStr "]\n"
+          putStr (if fromIntegral r < x - 1 then "[" else "")
+
     _ -> putStrLn "Can't print this yet."
  where
-  putWithSpace :: (Show a) => a -> IO ()
-  putWithSpace v = liftIO $ putStr (show v ++ " ")
+  putWithSpace :: (Typeable a, Ord a, Num a, Show a) => a -> IO ()
+  putWithSpace v = putStr (spacing ++ value ++ " ")
+   where
+     truncTo :: (RealFrac x, Fractional x) => Int -> x -> x
+     truncTo n f = fromInteger (round $ f * (10^n)) / (10.0^^n)
+
+     value :: String
+     value = fromMaybe (show v) $
+           (show . truncTo 6 <$> (cast v :: Maybe Double))
+       <|> (show . truncTo 6 <$> (cast v :: Maybe Float))
+
+     spacing = case compare (signum v) 0 of
+        LT -> " "
+        _  -> "  "
+

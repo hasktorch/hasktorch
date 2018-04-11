@@ -1,5 +1,15 @@
 module Torch.Indef.Static (module X) where
 
+import Torch.Class.Types as X
+  ( IsStatic(..)
+  , Stride(..)
+  , Size(..)
+  , StorageOffset(..)
+  , Step(..)
+  , KeepDim(..), fromKeepDim, keep, ignore
+  , SortOrder(..)
+  )
+
 import Torch.Class.Tensor.Static as X
 import Torch.Indef.Static.Tensor as X
 

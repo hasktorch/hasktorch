@@ -33,8 +33,8 @@ mkInplaceFunction, mkNewFunction
   :: TensorMathBlas t
   => (t -> HsReal t -> t -> HsReal t -> t -> t -> IO ())
   -> HsReal t -> t -> HsReal t -> t -> t -> IO t
-mkInplaceFunction op a m b x y = withEmpty $ \r -> op r a m b x y
-mkNewFunction     op a m b x y = op x a m b x y >> pure x
+mkInplaceFunction op a m b x y = op x a m b x y >> pure x
+mkNewFunction     op a m b x y = withEmpty x $ \r -> op r a m b x y
 
 addmv, addmv_ :: TensorMathBlas t => HsReal t -> t -> HsReal t -> t -> t -> IO t
 addmv  = mkNewFunction     _addmv

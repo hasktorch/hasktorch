@@ -21,21 +21,21 @@ class IsTensor t => TensorMathCompare t where
 
 ltValue, leValue, gtValue, geValue, neValue, eqValue
   :: IsTensor (MaskDynamic t) => TensorMathCompare t => t -> HsReal t -> IO (MaskDynamic t)
-ltValue  a b = withEmpty $ \r -> _ltValue r a b
-leValue  a b = withEmpty $ \r -> _leValue r a b
-gtValue  a b = withEmpty $ \r -> _gtValue r a b
-geValue  a b = withEmpty $ \r -> _geValue r a b
-neValue  a b = withEmpty $ \r -> _neValue r a b
-eqValue  a b = withEmpty $ \r -> _eqValue r a b
+ltValue a b = getDims a >>= new' >>= \r -> _ltValue r a b >> pure r
+leValue a b = getDims a >>= new' >>= \r -> _leValue r a b >> pure r
+gtValue a b = getDims a >>= new' >>= \r -> _gtValue r a b >> pure r
+geValue a b = getDims a >>= new' >>= \r -> _geValue r a b >> pure r
+neValue a b = getDims a >>= new' >>= \r -> _neValue r a b >> pure r
+eqValue a b = getDims a >>= new' >>= \r -> _eqValue r a b >> pure r
 
 ltValueT, leValueT, gtValueT, geValueT, neValueT, eqValueT
   :: TensorMathCompare t => t -> HsReal t -> IO t
-ltValueT  a b = withEmpty $ \r -> _ltValueT r a b
-leValueT  a b = withEmpty $ \r -> _leValueT r a b
-gtValueT  a b = withEmpty $ \r -> _gtValueT r a b
-geValueT  a b = withEmpty $ \r -> _geValueT r a b
-neValueT  a b = withEmpty $ \r -> _neValueT r a b
-eqValueT  a b = withEmpty $ \r -> _eqValueT r a b
+ltValueT  a b = withEmpty a $ \r -> _ltValueT r a b
+leValueT  a b = withEmpty a $ \r -> _leValueT r a b
+gtValueT  a b = withEmpty a $ \r -> _gtValueT r a b
+geValueT  a b = withEmpty a $ \r -> _geValueT r a b
+neValueT  a b = withEmpty a $ \r -> _neValueT r a b
+eqValueT  a b = withEmpty a $ \r -> _eqValueT r a b
 
 ltValueT_, leValueT_, gtValueT_, geValueT_, neValueT_, eqValueT_
   :: TensorMathCompare t => t -> HsReal t -> IO t

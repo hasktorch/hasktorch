@@ -2,7 +2,7 @@
 module Torch.Class.Tensor.Math.Compare.Static where
 
 import Torch.Class.Types
-import Torch.Class.Tensor
+import Torch.Class.Tensor.Static
 import Torch.Dimensions
 
 class TensorMathCompare t where
@@ -21,7 +21,7 @@ class TensorMathCompare t where
   _eqValueT :: Dimensions d => t d -> t d -> HsReal (t d) -> IO ()
 
 ltValue, leValue, gtValue, geValue, neValue, eqValue
-  :: (Dimensions d, IsTensor (MaskTensor t d), TensorMathCompare t)
+  :: (Dimensions d, IsTensor (MaskTensor t), TensorMathCompare t)
   => t d -> HsReal (t d) -> IO (MaskTensor t d)
 ltValue a b = withEmpty $ \r -> _ltValue r a b
 leValue a b = withEmpty $ \r -> _leValue r a b
@@ -31,7 +31,7 @@ neValue a b = withEmpty $ \r -> _neValue r a b
 eqValue a b = withEmpty $ \r -> _eqValue r a b
 
 ltValueT, leValueT, gtValueT, geValueT, neValueT, eqValueT
-  :: (IsTensor (t d), Dimensions d, TensorMathCompare t)
+  :: (IsTensor t, Dimensions d, TensorMathCompare t)
   => t d -> HsReal (t d) -> IO (t d)
 ltValueT a b = withEmpty $ \r -> _ltValueT r a b
 leValueT a b = withEmpty $ \r -> _leValueT r a b
