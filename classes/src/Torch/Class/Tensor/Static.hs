@@ -293,7 +293,6 @@ getElem2d t r c
 setElem2d
   :: forall t n m ns . (KnownNatDim2 n m)
   => IsTensor t => Dimensions '[n, m]
-  => Dimensions ns
   => t '[n, m] -> Natural -> Natural -> HsReal (t '[n, m]) -> IO ()
 setElem2d t r c v
   | r > fromIntegral (natVal (Proxy :: Proxy n)) ||

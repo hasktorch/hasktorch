@@ -23,19 +23,19 @@ class (TensorMath t) => TensorMathPointwise t where
 
   _cadd        :: (Num (HsReal (t d)), Dimensions d) => t d -> t d' -> HsReal (t d) -> t d'' -> IO ()
   _csub        :: (Num (HsReal (t d)), Dimensions d) => t d -> t d' -> HsReal (t d) -> t d'' -> IO ()
-  _cmul        :: Dimensions d => t d -> t d' -> t d'' -> IO ()
-  _cpow        :: Dimensions d => t d -> t d' -> t d'' -> IO ()
-  _cdiv        :: Dimensions d => t d -> t d' -> t d'' -> IO ()
+  _cmul        :: Dimensions d => t d -> t d -> t d -> IO ()
+  _cpow        :: Dimensions d => t d -> t d -> t d -> IO ()
+  _cdiv        :: Dimensions d => t d -> t d -> t d -> IO ()
 
-  _clshift     :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _crshift     :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _cfmod       :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _cremainder  :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _cmax        :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _cmin        :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _cbitand     :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _cbitor      :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  _cbitxor     :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
+  _clshift     :: Dimensions d => t d -> t d -> t d -> IO ()
+  _crshift     :: Dimensions d => t d -> t d -> t d -> IO ()
+  _cfmod       :: Dimensions d => t d -> t d -> t d -> IO ()
+  _cremainder  :: Dimensions d => t d -> t d -> t d -> IO ()
+  _cmax        :: Dimensions d => t d -> t d -> t d -> IO ()
+  _cmin        :: Dimensions d => t d -> t d -> t d -> IO ()
+  _cbitand     :: Dimensions d => t d -> t d -> t d -> IO ()
+  _cbitor      :: Dimensions d => t d -> t d -> t d -> IO ()
+  _cbitxor     :: Dimensions d => t d -> t d -> t d -> IO ()
 
   _addcmul     :: Dimensions2 d d' => t d' -> t d -> HsReal (t d) -> t d -> t d -> IO ()
   _addcdiv     :: Dimensions2 d d' => t d' -> t d -> HsReal (t d) -> t d -> t d -> IO ()
@@ -83,7 +83,7 @@ cpow_ t1 t2 = withInplace t1 $ \r' t1' -> _cpow r' t1' t2
 cpow  t1 t2 = withEmpty $ \r -> _cpow r t1 t2
 
 clshift_, clshift, crshift_, crshift, cfmod, cfmod_, cremainder, cremainder_
-  :: (Dimensions3 d d' d'', TensorMathPointwiseFloating t) => t d -> t d -> IO (t d'')
+  :: (Dimensions d, TensorMathPointwiseFloating t) => t d -> t d -> IO (t d)
 clshift_ a b = _clshift a a b >> pure (asStatic (asDynamic a))
 clshift  a b = withEmpty $ \r -> _clshift r a b
 crshift_ a b = _crshift a a b >> pure (asStatic (asDynamic a))
@@ -94,7 +94,7 @@ cremainder_ a b = _cremainder a a b >> pure (asStatic (asDynamic a))
 cremainder  a b = withEmpty $ \r -> _cremainder r a b
 
 cmax, cmax_, cmin, cmin_, cbitand, cbitand_, cbitor, cbitor_, cbitxor, cbitxor_
-  :: (Dimensions3 d d' d'', TensorMathPointwiseFloating t) => t d -> t d -> IO (t d'')
+  :: (Dimensions d, TensorMathPointwiseFloating t) => t d -> t d -> IO (t d)
 cmax_ a b = _cmax a a b >> pure (asStatic (asDynamic a))
 cmax  a b = withEmpty $ \r -> _cmax r a b
 cmin_ a b = _cmin a a b >> pure (asStatic (asDynamic a))
@@ -107,7 +107,7 @@ cbitxor_ a b = _cbitxor a a b >> pure (asStatic (asDynamic a))
 cbitxor  a b = withEmpty $ \r -> _cbitxor r a b
 
 addcmul, addcmul_, addcdiv, addcdiv_
-  :: (Dimensions2 d d', TensorMathPointwiseFloating t) => t d -> HsReal (t d) -> t d -> t d -> IO (t d')
+  :: (Dimensions d, TensorMathPointwiseFloating t) => t d -> HsReal (t d) -> t d -> t d -> IO (t d)
 addcmul  a v b c = withEmpty $ \r -> _addcmul r a v b c
 addcmul_ a v b c = _addcmul a a v b c >> pure (asStatic (asDynamic a))
 addcdiv  a v b c = withEmpty $ \r -> _addcdiv r a v b c

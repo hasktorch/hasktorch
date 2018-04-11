@@ -2,13 +2,13 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-local-binds -fno-cse #-}
 module Main where
 
-import Control.Monad
-import Data.Function
 import Data.Monoid
 import GHC.TypeLits
-import Lens.Micro
+import Lens.Micro ((^.), _2, _1)
+import System.IO.Unsafe
 
 import Torch hiding (N, abs, sqrt, round, max)
 import qualified Torch.Core.Random as RNG
@@ -39,13 +39,16 @@ genData w = do
 loss :: (Tensor '[N, M], Tensor '[N, 1]) -> Tensor '[M, 1] -> Precision
 loss (x, y) w = squaredSum (y ^-^ (x !*! w)) + l1 w
  where
-  squaredSum = realToFrac . TU.sumall . TU.square
+  squaredSum :: Tensor '[N, 1] -> Precision
+  squaredSum t = unsafePerformIO $ fmap realToFrac . TU.sumall =<< TU.square t
 
 l1 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
-l1 = realToFrac . TU.sumall . TU.abs
+l1 t = unsafePerformIO $ fmap realToFrac . TU.sumall =<< TU.abs t
+{-# NOINLINE l1 #-}
 
 l2 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
-l2 = realToFrac . sqrt . TU.sumall . TU.square
+l2 t = unsafePerformIO $ fmap (realToFrac . sqrt) . T.sumall =<< T.square t
+{-# NOINLINE l2 #-}
 
 prox_l1 :: Tensor '[M, 1] -> Precision -> IO (Tensor '[M, 1])
 prox_l1 w l = do
@@ -54,7 +57,7 @@ prox_l1 w l = do
   pure (a * b)
  where
    max_plus :: Tensor '[M, 1] -> IO (Tensor '[M, 1])
-   max_plus t = T.cmax t (TU.zerosLike)
+   max_plus t = T.zerosLike >>= \z -> T.cmax t z
 
 prox_l1_single :: AccPrecision -> AccPrecision -> Precision
 prox_l1_single w_i l = realToFrac (signum w_i * max (w_i - l) 0)
@@ -128,13 +131,13 @@ run_cd_synthetic iters l = do
 
   -- Setup CD
   p :: Tensor '[M, 1] <- T.zerosLike
-  lazy <- take iters <$> cyclic_coordinate_descent dat l 0.0001 p
-  print (fmap snd lazy)
+  lzy <- take iters <$> cyclic_coordinate_descent dat l 0.0001 p
+  print (fmap snd lzy)
 
-  let final    = last lazy
+  let final    = last lzy
       w        = (^. _1) final
       obj      = (^. _2) final
-      accuracy = abs $ (snd . last $ lazy) - (snd . last . init $ lazy)
+      accuracy = abs $ (snd . last $ lzy) - (snd . last . init $ lzy)
 
   putStrLn $ "Loss " <> show obj <> " accuracy of " <> show accuracy
   pure w
@@ -146,13 +149,13 @@ run_fista_synthetic iters l = do
   dat       <- genData trueParam
   w0 :: Tensor '[M, 1] <- T.zerosLike
   z0 :: Tensor '[M, 1] <- T.zerosLike
-  lazy <- fmap (take iters) $ fista dat l 1 0.0001 w0 z0 1
+  lzy <- fmap (take iters) $ fista dat l 1 0.0001 w0 z0 1
 
   -- Setup CD
-  let final    = last lazy
+  let final    = last lzy
       w        = (^. _1) final
       obj      = (^. _2) final
-      accuracy = abs $ (snd . last $ lazy) - (snd . head . tail . reverse $ lazy)
+      accuracy = abs $ (snd . last $ lzy) - (snd . head . tail . reverse $ lzy)
   putStrLn $ "Loss " <> show obj <> " accuracy of " <> show accuracy
   pure w
 
@@ -170,9 +173,9 @@ backtracking (x, y) w z g l est_L = do
   then backtracking (x, y) w_next z g l (est_L * eta)
   else pure est_L
  where
-  dist     = w ^-^ z
+  dst      = w ^-^ z
   fz       = loss (x, y) z - l1 z
-  q        = fz + realToFrac (dist <.> g) + (est_L / 2) * realToFrac (dist <.> dist) + l * l1 w
+  q        = fz + realToFrac (dst  <.> g) + (est_L / 2) * realToFrac (dst  <.> dst ) + l * l1 w
   nSamples = getDim2d x D1
   rate     = 1.0 / est_L
   eta      = 1.5
