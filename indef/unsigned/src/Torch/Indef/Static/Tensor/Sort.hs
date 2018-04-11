@@ -8,7 +8,7 @@ import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Sort ()
 
 instance Class.TensorSort Tensor where
-  _sort :: (Tensor d', IndexTensor d') -> Tensor d -> DimVal -> SortOrder -> IO ()
+  _sort :: (Tensor d', IndexTensor '[n]) -> Tensor d -> DimVal -> SortOrder -> IO ()
   _sort (r, ix) t = Dynamic._sort (asDynamic r, longAsDynamic ix) (asDynamic t)
 
 

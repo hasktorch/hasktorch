@@ -7,18 +7,13 @@ module Main where
 import Control.Monad
 import Data.Function
 import Data.Monoid
-import Data.Singletons
 import GHC.TypeLits
 import Lens.Micro
 
-import Torch.Dimensions hiding (N)
-import Torch.Core.Tensor.Static
-import Torch.Core.Tensor.Static.Math.Infix
+import Torch hiding (N, abs, sqrt, round, max)
 import qualified Torch.Core.Random as RNG
-import qualified Torch.Core.Tensor.Static.Math as T
-import qualified Torch.Core.Tensor.Static.Math.Unsafe as TU
-import qualified Torch.Core.Tensor.Static as T
-import qualified Torch.Core.Tensor.Static.Random as T
+import qualified Torch as T
+import qualified Torch as TU
 
 type N = 20 -- sample size
 type M = 2

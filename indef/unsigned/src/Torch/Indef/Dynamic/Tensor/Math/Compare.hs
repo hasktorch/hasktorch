@@ -1,6 +1,7 @@
 module Torch.Indef.Dynamic.Tensor.Math.Compare where
 
 import Torch.Class.Tensor.Math.Compare
+import Torch.Indef.Dynamic.Tensor ()
 import qualified Torch.Sig.Tensor.Math.Compare as Sig
 
 import Torch.Indef.Types

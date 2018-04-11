@@ -25,7 +25,7 @@ import qualified Torch.Class.Tensor as Dynamic
 import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
 
-class IsTensor t where
+class IsStatic t => IsTensor t where
   _clearFlag :: Dimensions d => t d -> Int8 -> IO ()
   tensordata :: Dimensions d => t d -> IO [HsReal (t d)]
   _free :: Dimensions d => t d -> IO ()
@@ -107,18 +107,18 @@ class IsTensor t where
   -- Modified for static tensors
   isSameSizeAs :: (Dimensions d, Dimensions d') => t d -> t d' -> Bool
 
-type Static t d =
-  ( IsTensor t
-  , IsStatic (t d)
-  , Num (HsReal (IndexDynamic (AsDynamic (t d))))
-  , Dynamic.IsTensor (AsDynamic (t d))
-  )
-type Static2 t d d' = 
-  ( Static t d
-  , Static t d'
-  , AsDynamic (t d) ~ AsDynamic (t d')
-  , IndexDynamic (AsDynamic (t d)) ~ IndexDynamic (AsDynamic (t d'))
-  )
+-- type Static t d =
+--   ( IsTensor t
+--   , IsStatic t
+--   , Num (HsReal (IndexDynamic (AsDynamic (t d))))
+--   , Dynamic.IsTensor (AsDynamic (t d))
+--   )
+-- type Static2 t d d' = 
+--   ( Static t d
+--   , Static t d'
+--   , AsDynamic (t d) ~ AsDynamic (t d')
+--   , IndexDynamic (AsDynamic (t d)) ~ IndexDynamic (AsDynamic (t d'))
+--   )
 
 shape :: IsTensor t => t d -> IO [Size]
 shape t = do
@@ -132,7 +132,7 @@ withNew op = new >>= \r -> op r >> pure r
 withEmpty :: Dimensions d => IsTensor t => (t d -> IO ()) -> IO (t d)
 withEmpty op = empty >>= \r -> op r >> pure r
 
-type CoerceDims t d d' = (Dimensions2 d d', IsStatic (t d), AsDynamic (t d) ~ AsDynamic (t d'), IsStatic (t d'))
+type CoerceDims t d d' = (Dimensions2 d d', IsStatic t)
 
 useSudo :: (CoerceDims t d d') => t d -> t d'
 useSudo = asStatic . asDynamic
@@ -234,19 +234,19 @@ resizeAs src = do
 
 newIx :: forall t d d'
   . (Dimensions d')
-  => Dynamic.IsTensor (AsDynamic (IndexTensor (t d) d'))
-  => IsStatic (IndexTensor (t d) d')
-  => IO (IndexTensor (t d) d')
+  => Dynamic.IsTensor (AsDynamic (IndexTensor t))
+  => IsStatic (IndexTensor t)
+  => IO (IndexTensor t d')
 newIx = asStatic <$> Dynamic.new (dim :: Dim d')
 
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
 fromListIx
-  :: forall t d n . (KnownNatDim n, Dimensions '[n], IsStatic (IndexTensor (t d) '[n]))
-  => Num (HsReal (AsDynamic (IndexTensor (t d) '[n])))
-  => Dynamic.IsTensor (AsDynamic (IndexTensor (t d) '[n]))
+  :: forall t d n . (KnownNatDim n, Dimensions '[n], IsStatic (IndexTensor t))
+  => Num (HsReal (AsDynamic (IndexTensor t)))
+  => Dynamic.IsTensor (AsDynamic (IndexTensor t))
   => Dimensions d
-  => Proxy (t d) -> Dim '[n] -> [HsReal (AsDynamic (IndexTensor (t d) '[n]))] -> IO (IndexTensor (t d) '[n])
+  => Proxy (t d) -> Dim '[n] -> [HsReal (AsDynamic (IndexTensor t))] -> IO (IndexTensor t '[n])
 fromListIx _ _ l = asStatic <$> (Dynamic.fromList1d l)
 
 

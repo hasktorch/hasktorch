@@ -6,6 +6,7 @@ import qualified Torch.Class.Tensor.Math.Compare as Dynamic
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Math.Compare ()
+import Torch.Indef.Static.Tensor ()
 
 instance Class.TensorMathCompare Tensor where
   _ltValue :: ByteTensor n -> Tensor d -> HsReal -> IO ()

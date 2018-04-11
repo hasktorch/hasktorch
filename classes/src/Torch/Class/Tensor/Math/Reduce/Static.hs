@@ -15,31 +15,31 @@ class IsTensor t => TensorMathReduce t where
   medianall    :: t d -> IO (HsReal (t d))
   sumall       :: t d -> IO (HsAccReal (t d))
   prodall      :: t d -> IO (HsAccReal (t d))
-  _max         :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
-  _min         :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
-  _median      :: (t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
+  _max         :: (t d, IndexTensor t d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
+  _min         :: (t d, IndexTensor t d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
+  _median      :: (t d, IndexTensor t d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
   -- TH_API void THTensor_(sum)(THTensor *r_, THTensor *t, int dimension, int keepdim);
   _sum         :: t d -> t d' -> DimVal -> Maybe KeepDim -> IO ()
   _prod        :: Dimensions d => t d -> t d -> DimVal -> Maybe KeepDim -> IO ()
 
-type WithCoercableIndex t d =
-  ( Dynamic.IsTensor (AsDynamic (IndexTensor (t d) d))
-  , IsStatic (IndexTensor (t d) d)
+type WithCoercableIndex (t::[Nat] -> *) =
+  ( Dynamic.IsTensor (AsDynamic (IndexTensor t))
+  , IsStatic (IndexTensor t)
   )
 
 withKeepDim
-  :: forall d t . (TensorMathReduce t, Dimensions d, WithCoercableIndex t d)
-  => ((t d, IndexTensor (t d) d) -> t d -> DimVal -> Maybe KeepDim -> IO ())
-  -> t d -> DimVal -> Maybe KeepDim -> IO (t d, Maybe (IndexTensor (t d) d))
+  :: forall d t . (TensorMathReduce t, Dimensions d, WithCoercableIndex t)
+  => ((t d, IndexTensor t d) -> t d -> DimVal -> Maybe KeepDim -> IO ())
+  -> t d -> DimVal -> Maybe KeepDim -> IO (t d, Maybe (IndexTensor t d))
 withKeepDim _fn t d k = do
   ret :: t d <- new
-  ix  :: AsDynamic (IndexTensor (t d) d) <- Dynamic.new (dim :: Dim d)
+  ix  :: AsDynamic (IndexTensor t) <- Dynamic.new (dim :: Dim d)
   _fn (ret, asStatic ix) t d k
   pure (ret, maybe (Just $ asStatic ix) (pure Nothing) k)
 
 max, min, median
-  :: (TensorMathReduce t, Dimensions d, WithCoercableIndex t d)
-  => t d -> DimVal -> Maybe KeepDim -> IO (t d, Maybe (IndexTensor (t d) d))
+  :: (TensorMathReduce t, Dimensions d, WithCoercableIndex t)
+  => t d -> DimVal -> Maybe KeepDim -> IO (t d, Maybe (IndexTensor t d))
 max = withKeepDim _max
 min = withKeepDim _min
 median = withKeepDim _median

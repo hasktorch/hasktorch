@@ -2,6 +2,7 @@ module Torch.Indef.Dynamic.Tensor.Math.CompareT where
 
 import Torch.Class.Tensor.Math.CompareT
 import qualified Torch.Sig.Tensor.Math.CompareT as Sig
+import Torch.Indef.Dynamic.Tensor ()
 
 import Torch.Indef.Types
 

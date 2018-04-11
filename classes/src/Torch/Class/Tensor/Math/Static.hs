@@ -17,8 +17,8 @@ class IsTensor t => TensorMath t where
   numel        :: Dimensions  d    => t d  -> IO Integer
   _reshape     :: Dimensions2 d d' => t d' -> t d -> TH.IndexStorage -> IO ()
   _cat         :: Dimensions3 d d' d'' => t d'' -> t d -> t d' -> DimVal -> IO ()
-  _catArray    :: Dimensions  d    => t d  -> [AsDynamic (t d)] -> Int -> DimVal -> IO ()
-  _nonzero     :: Dimensions  d    => IndexTensor (t d) d -> t d -> IO ()
+  _catArray    :: Dimensions  d    => t d  -> [AsDynamic t] -> Int -> DimVal -> IO ()
+  _nonzero     :: Dimensions  d    => IndexTensor t d -> t d -> IO ()
   _tril        :: Dimensions2 d d' => t d' -> t d -> Integer -> IO ()
   _triu        :: Dimensions2 d d' => t d' -> t d -> Integer -> IO ()
   _diag        :: Dimensions2 d d' => t d' -> t d -> Int -> IO ()
@@ -48,7 +48,7 @@ diag1d :: (KnownNatDim n, TensorMath t) => t '[n] -> IO (t '[n, n])
 diag1d t = diag t 1
 
 cat_
-  :: (AsDynamic (t d'') ~ AsDynamic (t d'), IsStatic (t d''))
+  :: (IsStatic t)
   => (CoerceDims t d d', Dimensions3 d d' d'')
   => (TensorMath t)
   => t d -> t d' -> DimVal -> IO (t d'')

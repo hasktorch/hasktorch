@@ -17,8 +17,8 @@ class IsTensor t => TensorMathPointwise t where
   _cadd        :: t -> t -> HsReal t -> t -> IO ()
   _csub        :: t -> t -> HsReal t -> t -> IO ()
   _cmul        :: t -> t -> t -> IO ()
-  _cpow        :: t -> t -> t -> IO ()
   _cdiv        :: t -> t -> t -> IO ()
+  _cpow        :: t -> t -> t -> IO ()
   _clshift     :: t -> t -> t -> IO ()
   _crshift     :: t -> t -> t -> IO ()
   _cfmod       :: t -> t -> t -> IO ()
@@ -74,10 +74,57 @@ cdiv  t1 t2 = withEmpty $ \r -> _cdiv r t1 t2
 (^/^) a b = unsafePerformIO $ cdiv a b
 {-# NOINLINE (^/^) #-}
 
-cpow_, cpow  :: TensorMathPointwise t => t -> t -> IO t
-cpow_ t1 t2 = t1 `twice` (\r' t1' -> _cpow r' t1' t2)
-cpow  t1 t2 = withEmpty $ \r -> _cpow r t1 t2
+_mkNewFunction, _mkInplaceFunction
+  :: TensorMathPointwise t => (t -> t -> t -> IO ()) -> t -> t -> IO t
+_mkNewFunction     op t1 t2 = t1 `twice` (\r' t1' -> op r' t1' t2)
+_mkInplaceFunction op t1 t2 = withEmpty $ \r -> op r t1 t2
 
+
+cpow_, cpow, clshift_, clshift, crshift_, crshift
+  :: TensorMathPointwise t => t -> t -> IO t
+cpow_ = _mkNewFunction     _cpow
+cpow  = _mkInplaceFunction _cpow
+clshift_ = _mkNewFunction     _clshift
+clshift  = _mkInplaceFunction _clshift
+crshift_ = _mkNewFunction     _crshift
+crshift  = _mkInplaceFunction _crshift
+
+cfmod_, cfmod, cremainder_, cremainder, cmax_, cmax, cmin_, cmin
+  :: TensorMathPointwise t => t -> t -> IO t
+cfmod_ = _mkNewFunction     _cfmod
+cfmod  = _mkInplaceFunction _cfmod
+cremainder_ = _mkNewFunction     _cremainder
+cremainder  = _mkInplaceFunction _cremainder
+cmax_ = _mkNewFunction     _cmax
+cmax  = _mkInplaceFunction _cmax
+cmin_ = _mkNewFunction     _cmin
+cmin  = _mkInplaceFunction _cmin
+
+cmaxValue_, cmaxValue :: TensorMathPointwise t => t -> HsReal t -> IO t
+cmaxValue_ t v = t `twice` (\r' t' -> _cmaxValue r' t' v)
+cmaxValue  t v = withEmpty $ \r -> _cmaxValue r t v
+
+cminValue_, cminValue :: TensorMathPointwise t => t -> HsReal t -> IO t
+cminValue_ t v = t `twice` (\r' t' -> _cminValue r' t' v)
+cminValue  t v = withEmpty $ \r -> _cminValue r t v
+
+cbitand_, cbitand, cbitor_, cbitor, cbitxor_, cbitxor 
+  :: TensorMathPointwise t => t -> t -> IO t
+cbitand_ = _mkNewFunction     _cbitand
+cbitand  = _mkInplaceFunction _cbitand
+cbitor_  = _mkNewFunction     _cbitor
+cbitor   = _mkInplaceFunction _cbitor
+cbitxor_ = _mkNewFunction     _cbitxor
+cbitxor  = _mkInplaceFunction _cbitxor
+
+
+addcmul_, addcmul :: TensorMathPointwise t => t -> HsReal t -> t -> t -> IO t
+addcmul_ a v b c = a `twice` (\r' a' -> _addcmul r' a' v b c)
+addcmul  a v b c = withEmpty $ \r -> _addcmul r a v b c
+
+addcdiv_, addcdiv :: TensorMathPointwise t => t -> HsReal t -> t -> t -> IO t
+addcdiv_ a v b c = a `twice` (\r' a' -> _addcdiv r' a' v b c)
+addcdiv  a v b c = withEmpty $ \r -> _addcdiv r a v b c
 
 class IsTensor t => TensorMathPointwiseSigned t where
   _neg :: t -> t -> IO ()
@@ -225,25 +272,19 @@ frac_, frac :: TensorMathPointwiseFloating t => t -> IO t
 frac_ t = twice t _frac
 frac  t = withEmpty $ \r -> _frac r t
 
+lerp_, lerp :: TensorMathPointwiseFloating t => t -> t -> HsReal t -> IO t
+lerp_ a b v = twice a $ \r a' -> _lerp r a' b v
+lerp  a b v = withEmpty $ \r -> _lerp r a b v
+
+atan2_, atan2 :: TensorMathPointwiseFloating t => t -> t -> IO t
+atan2_ a b = twice a $ \r a' -> _atan2 r a' b
+atan2  a b = withEmpty $ \r -> _atan2 r a b
+
+
+
 
 class CPUTensorMathPointwiseFloating t where
   histc_        :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()
   bhistc_       :: t -> t -> Int64 -> HsReal t -> HsReal t -> IO ()
 
-
--- clshift_     :: TensorMathPointwise t => t -> t -> IO t
--- crshift_     :: TensorMathPointwise t => t -> t -> IO t
--- cfmod_       :: TensorMathPointwise t => t -> t -> IO t
--- cremainder_  :: TensorMathPointwise t => t -> t -> IO t
--- cmax_        :: TensorMathPointwise t => t -> t -> IO t
--- cmin_        :: TensorMathPointwise t => t -> t -> IO t
--- cmaxValue_   :: TensorMathPointwise t => t -> HsReal t -> IO t
--- cminValue_   :: TensorMathPointwise t => t -> HsReal t -> IO t
--- cbitand_     :: TensorMathPointwise t => t -> t -> IO t
--- cbitor_      :: TensorMathPointwise t => t -> t -> IO t
--- cbitxor_     :: TensorMathPointwise t => t -> t -> IO t
--- addcmul_     :: TensorMathPointwise t => t -> HsReal t -> t -> t -> IO t
-
--- addcdiv_ :: TensorMathPointwise t => t -> HsReal t -> t -> t -> IO t
--- addcdiv_ t x a b c =
 

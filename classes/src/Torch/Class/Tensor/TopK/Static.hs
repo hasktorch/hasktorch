@@ -15,8 +15,8 @@ import qualified Torch.Class.Tensor as Dynamic
 
 class IsTensor t => TensorTopK t where
   _topk
-    :: (Dimensions d, Dimensions d')
-    => (t d', IndexTensor (t d') d')
+    :: (Dimensions2 d d')
+    => (t d', IndexTensor t d')
     -> t d
     -> Integer
     -> DimVal
@@ -27,11 +27,11 @@ class IsTensor t => TensorTopK t where
 topk
   :: forall t d' d
   .  (TensorTopK t)
-  => (Dimensions d, Dimensions d')
-  => (Dynamic.IsTensor (IndexTensor (t d') d'))
-  => t d -> Integer -> DimVal -> TopKOrder -> Maybe KeepDim -> IO (t d', IndexTensor (t d') d')
+  => (Dimensions2 d d')
+  => (Dynamic.IsTensor (IndexTensor t d'))
+  => t d -> Integer -> DimVal -> TopKOrder -> Maybe KeepDim -> IO (t d', IndexTensor t d')
 topk t k d o sorted = do
-  ix :: IndexTensor (t d') d' <- Dynamic.new (dim :: Dim d')
+  ix :: IndexTensor t d' <- Dynamic.new (dim :: Dim d')
   r  :: t d' <- new
   _topk (r, ix) t k d o sorted
   pure (r, ix)

@@ -58,9 +58,9 @@ class THTensorRandom t where
   _cauchy                     :: Dimensions d => t d -> Generator (t d) -> HsAccReal (t d) -> HsAccReal (t d) -> IO ()
   _logNormal                  :: Dimensions d => t d -> Generator (t d) -> HsAccReal (t d) -> HsAccReal (t d) -> IO ()
 
-  _multinomial                :: Dimensions d => IndexTensor (t d) d -> Generator (t d) -> t d -> Int -> Int -> IO ()
-  _multinomialAliasSetup      :: Dimensions d => t d -> IndexTensor (t d) d -> t d -> IO ()
-  _multinomialAliasDraw       :: Dimensions d => IndexTensor (t d) d -> Generator (t d) -> IndexTensor (t d) d -> t d -> IO ()
+  _multinomial                :: Dimensions d => IndexTensor t d -> Generator (t d) -> t d -> Int -> Int -> IO ()
+  _multinomialAliasSetup      :: Dimensions d => t d -> IndexTensor t d -> t d -> IO ()
+  _multinomialAliasDraw       :: Dimensions d => IndexTensor t d -> Generator (t d) -> IndexTensor t d -> t d -> IO ()
 
 random :: (IsTensor t, THTensorRandom t, Dimensions d) => Generator (t d) -> IO (t d)
 random g = withEmpty (`_random` g)

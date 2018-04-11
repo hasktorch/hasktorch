@@ -38,9 +38,9 @@ type CMaskTensor = CByteTensor
 type CIndexTensor = CLongTensor
 type CIndexStorage = CLongStorage
 
-type MaskTensor d = ByteTensor d
+type MaskTensor = (ByteTensor :: [Nat] -> *)
 type MaskDynamic = ByteDynamic
-type IndexTensor d = LongTensor d
+type IndexTensor = (LongTensor :: [Nat] -> *)
 type IndexDynamic = LongDynamic
 type IndexStorage = LongStorage
 

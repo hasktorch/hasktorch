@@ -21,9 +21,9 @@ class THCTensorRandom t where
   _exponential            :: Dimensions d => t d -> HsAccReal (t d) -> IO ()
   _cauchy                 :: Dimensions d => t d -> HsAccReal (t d) -> HsAccReal (t d) -> IO ()
 
-  _multinomial            :: Dimensions d => IndexTensor (t d) d -> t d -> Int -> Int -> IO ()
-  _multinomialAliasSetup  :: Dimensions d => t d -> IndexTensor (t d) d -> t d -> IO ()
-  _multinomialAliasDraw   :: Dimensions d => IndexTensor (t d) d -> IndexTensor (t d) d -> t d -> IO ()
+  _multinomial            :: Dimensions d => IndexTensor t d -> t d -> Int -> Int -> IO ()
+  _multinomialAliasSetup  :: Dimensions d => t d -> IndexTensor t d -> t d -> IO ()
+  _multinomialAliasDraw   :: Dimensions d => IndexTensor t d -> IndexTensor t d -> t d -> IO ()
 
   _rand                   :: Dimensions d => t d -> TH.LongStorage -> IO ()
   _randn                  :: Dimensions d => t d -> TH.LongStorage -> IO ()
