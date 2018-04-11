@@ -307,25 +307,8 @@ setElem2d t r c v
 
 
 -- | displaying raw tensor values
-printTensor :: forall t d . (Dimensions d, IsTensor t, Show (HsReal (t d))) => t d -> IO ()
-printTensor t = do
-  case dimVals (dim :: Dim d) of
-    []  -> putStrLn "Empty IsTensor"
-    sz@[x] -> do
-      putStrLn ""
-      putStr "[ "
-      mapM_ (get1d t >=> putWithSpace) [ fromIntegral idx | idx <- [0..x - 1] ]
-      putStrLn "]\n"
-    sz@[x,y] -> do
-      putStrLn ""
-      let pairs = [ (fromIntegral r, fromIntegral c) | r <- [0..x - 1], c <- [0..y - 1] ]
-      putStr "[ "
-      forM_ pairs $ \(r, c) -> do
-        val <- get2d t r c
-        if c == fromIntegral y - 1
-        then putStrLn (show val ++ " ]") >> putStr (if fromIntegral r < x - 1 then "[ " else "")
-        else putWithSpace val
-    _ -> putStrLn "Can't print this yet."
- where
-  putWithSpace :: (Show a) => a -> IO ()
-  putWithSpace v = putStr (show v ++ " ")
+printTensor
+  :: (IsTensor t, Typeable (HsReal (t d)), Ord (HsReal (t d)), Num (HsReal (t d)), Show (HsReal (t d)))
+  => t d -> IO ()
+printTensor t = getDims t >>= \(SomeDims ds) -> Dynamic._printTensor (get1d t) (get2d t) (dimVals ds)
+

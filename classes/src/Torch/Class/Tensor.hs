@@ -242,21 +242,29 @@ resizeAs src shape = do
   pure res
 
 -- | displaying raw tensor values
-printTensor :: forall t . (IsTensor t, Typeable (HsReal t), Ord (HsReal t), Num (HsReal t), Show (HsReal t)) => t -> IO ()
-printTensor t = do
-  ds <- getDimList t
-  putStrLn ("Dimensions: (" ++ intercalate " x " (fmap (\(Size d)-> show d) ds) ++ ")")
+printTensor
+  :: (IsTensor t, Typeable (HsReal t), Ord (HsReal t), Num (HsReal t), Show (HsReal t))
+  => t -> IO ()
+printTensor t = (fmap.fmap) fromIntegral (getDimList t) >>= _printTensor (get1d t) (get2d t)
+
+_printTensor
+  :: (Typeable a, Ord a, Num a, Show a)
+  => (Int64 -> IO a)
+  -> (Int64 -> Int64 -> IO a)
+  -> [Int] -> IO ()
+_printTensor get'1d get'2d ds = do
+  putStrLn ("Dimensions: (" ++ intercalate " x " (fmap show ds) ++ ")")
   case ds of
     []  -> putStrLn "Empty Tensor"
     [x] -> do
       putStr "["
-      mapM_ (get1d t >=> putWithSpace) [ fromIntegral idx | idx <- [0..x - 1] ]
+      mapM_ (get'1d >=> putWithSpace) [ fromIntegral idx | idx <- [0..x - 1] ]
       putStrLn " ]\n"
     [x,y] -> do
       let pairs = [ (fromIntegral r, fromIntegral c) | r <- [0..x - 1], c <- [0..y - 1] ]
       putStr "["
       forM_ pairs $ \(r, c) -> do
-        val <- get2d t r c
+        val <- get'2d r c
         putWithSpace val
         when (c == fromIntegral y - 1) $ do
           putStr "]\n"
