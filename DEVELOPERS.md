@@ -32,13 +32,13 @@ If successful, this builds the TH shared library and places it in the
 `vendor/build/` directory. Then build the project using stack:
 
 ```
-stack build
+cabal new-build all
 ```
 
 If everything built, you should be able to run tests successfully:
 
 ```
-stack test
+cabal new-test all
 ```
 
 ## References
