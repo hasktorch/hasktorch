@@ -58,11 +58,11 @@ function build {
   echo "exclude cuda? $sans_cuda"
   sleep 1
   cmake .. -DNO_CUDA=$sans_cuda -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CC_COMPILER=$CC -DCXX=$CXX -DCC=$CC -Wno-dev
-  make install
+  sudo make install
 }
 
 function install {
-  mkdir build
+  mkdir -p build
   cp ./aten/build/src/ATen/libATen.* ./build/
 }
 
@@ -72,10 +72,10 @@ case "$1" in
     echo "============================="
     build
 
-    echo ""
-    echo "Copying libATen.so to ./build"
-    echo "============================="
-    install
+    # echo ""
+    # echo "Copying libATen.so to ./build"
+    # echo "============================="
+    # install
     ;;
   "build")
     build

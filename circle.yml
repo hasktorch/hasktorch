@@ -79,6 +79,7 @@ dependencies:
       fi
     - which cabal
     - cabal --version
+    - cabal update
 
     # Build ATen dependencies
     # =============
@@ -88,7 +89,7 @@ dependencies:
         git submodule update --init --recursive ;
         sudo pip install pyyaml typing ;
         cd ./vendor ;
-        sudo ./build-aten.sh ;
+        ./build-aten.sh ;
         # ./build-aten-spec.sh ;
         # ./build-error-handler.sh ;
       else
