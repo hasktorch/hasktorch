@@ -22,5 +22,5 @@ Experimental prototyping and work-in-progress:
   (forward prop only)
 - *playground* - stripped down implementation of untyped tensors for debugging.
 
-See also [`core/tests/`](../core/tests/) and [`raw/tests/`](../raw/tests/) for
+See also [`core/tests/`](../core/tests/) and [`raw/th/tests/`](../raw/th/tests/) for
 additional examples of API usage.
