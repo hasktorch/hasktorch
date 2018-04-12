@@ -1,0 +1,13 @@
+From PyTorch:
+
+Copyright (c) 2017-     Austin Huang
+Copyright (c) 2017-     Sam Stites
+
+
+=======================================================================
+Software under third_party
+=======================================================================
+Software libraries under third_party are provided as github submodule
+links, and their content is not part of the hasktorch codebase. Their
+licences can be found under the respective software repositories.
+
