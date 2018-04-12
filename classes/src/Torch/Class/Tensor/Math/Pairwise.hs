@@ -19,11 +19,14 @@ class IsTensor t => TensorMathPairwise t where
   _bitxor :: t -> t -> HsReal t -> IO ()
   equal :: t -> t -> IO Bool
 
-add_ :: TensorMathPairwise t => t -> HsReal t -> IO t
+add_, add :: TensorMathPairwise t => t -> HsReal t -> IO t
 add_ t v = twice t $ \r t' -> _add r t' v
+add  t v = withEmpty t $ \r -> _add r t v
 
-sub_ :: TensorMathPairwise t => t -> HsReal t -> IO t
+sub_, sub :: TensorMathPairwise t => t -> HsReal t -> IO t
 sub_ t v = twice t $ \r t' -> _sub r t' v
+sub  t v = withEmpty t $ \r -> _sub r t v
+
 
 add_scaled_ :: TensorMathPairwise t => t -> HsReal t -> HsReal t -> IO t
 add_scaled_ t v0 v1 = twice t $ \r t' -> _add_scaled r t' v0 v1
@@ -31,11 +34,13 @@ add_scaled_ t v0 v1 = twice t $ \r t' -> _add_scaled r t' v0 v1
 sub_scaled_ :: TensorMathPairwise t => t -> HsReal t -> HsReal t -> IO t
 sub_scaled_ t v0 v1 = twice t $ \r t' -> _sub_scaled r t' v0 v1
 
-mul_ :: TensorMathPairwise t => t -> HsReal t -> IO t
+mul_, mul :: TensorMathPairwise t => t -> HsReal t -> IO t
 mul_ t v = twice t $ \r t' -> _mul r t' v
+mul  t v = withEmpty t $ \r -> _mul r t v
 
-div_ :: TensorMathPairwise t => t -> HsReal t -> IO t
+div_, div :: TensorMathPairwise t => t -> HsReal t -> IO t
 div_ t v = twice t $ \r t' -> _div r t' v
+div  t v = withEmpty t $ \r -> _div r t v
 
 lshift_ :: TensorMathPairwise t => t -> HsReal t -> IO t
 lshift_ t v = twice t $ \r t' -> _lshift r t' v

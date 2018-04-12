@@ -4,7 +4,6 @@ module Torch.Core.LogAddSpec (spec) where
 import Torch.Core.LogAdd
 import Torch.Prelude.Extras
 
-
 main :: IO ()
 main = hspec spec
 
@@ -18,13 +17,13 @@ spec = do
 
 logAddSpec :: Spec
 logAddSpec = do
-  it "returns a value" . property $ \((a, b)::(Float, Float)) ->
-    a `logAdd` b `shouldSatisfy` doesn'tCrash
+  it "returns a value" . property $ \((a, b)::(Double, Double)) ->
+    a `logAdd` b >>= (`shouldSatisfy` doesn'tCrash)
 
 
 logSubSpec :: Spec
 logSubSpec =
-  it "returns a value" . property $ \((a, b)::(Float, Float)) ->
+  it "returns a value" . property $ \((a, b)::(Double, Double)) ->
     if a < b
     then a `logSub` b `shouldThrow` anyException
     else a `logSub` b >>= (`shouldSatisfy` doesn'tCrash)
@@ -32,7 +31,7 @@ logSubSpec =
 
 expMinusApproxSpec :: Spec
 expMinusApproxSpec =
-  it "returns a value" . property $ \(a::Float) ->
-    expMinusApprox a `shouldSatisfy` doesn'tCrash
+  it "returns a value" . property $ \(a::Double) ->
+    expMinusApprox a >>= (`shouldSatisfy` doesn'tCrash)
 
 
