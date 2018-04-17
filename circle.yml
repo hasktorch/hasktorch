@@ -2,7 +2,8 @@ machine:
 
   environment:
     PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:~/.cabal/bin/:/usr/local/bin:$PATH
-    LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:/usr/lib/x86_64-linux-gnu/$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:/usr/local/lib/:/usr/lib/x86_64-linux-gnu/
+    C_INCLUDE_PATH: /usr/local/include
     LLVM_CONFIG: /usr/lib/llvm-3.8/bin/llvm-config
 
 dependencies:
@@ -82,6 +83,10 @@ dependencies:
     - cabal update
     - . setenv
 
+    # Get haskell dependencies with our new cabal
+    # =============
+    - cabal install hspec-discover
+
     # Build ATen dependencies
     # =============
     - >
@@ -91,18 +96,32 @@ dependencies:
         sudo pip install pyyaml typing ;
         cd ./vendor ;
         ./build-aten.sh ;
-        # ./build-aten-spec.sh ;
-        # ./build-error-handler.sh ;
+        sudo rm /usr/local/lib/libATen.so ;
+        sudo cp /usr/local/lib/libATen.so{.1,} ;
+        sed -i -e 's/\S*-- \(extra-lib-dirs:\)/\1 \/usr\/local\/lib/'         ~/.cabal/config
+        sed -i -e 's/\S*-- \(extra-include-dirs:\)/\1 \/usr\/local\/include/' ~/.cabal/config
       else
         echo "Cached ${PWD}/vendor/build/libATen.so found"
       fi
 
   override:
-    - cabal new-build all --extra-include-dirs=/usr/local/include/ --extra-lib-dirs=/usr/local/lib/
+    - cabal new-build all
+    # --extra-include-dirs=/usr/local/include/ --extra-lib-dirs=/usr/local/lib/
 
 test:
   override:
-    - cabal new-test all --extra-include-dirs=/usr/local/include/ --extra-lib-dirs=/usr/local/lib/
-    - make codegen
-    - make run-examples
+    - cabal new-test hasktorch-raw-th
+    - cabal new-test hasktorch-core
+    - cabal new-test hasktorch-codegen
+    - >
+      for l in TH THNN THC THCUNN; do
+        for t in generic concrete; do
+          cabal new-run hasktorch-codegen:ht-codegen -- --type ${t} --lib ${l} --verbose;
+        done;
+      done
+    - >
+      for example in ad bayesian-regression download-mnist ff-typed ff-untyped gradient-descent multivariate-normal static-tensor-usage; do
+        echo "running ${example}" && cabal new-run hasktorch-examples:${example} ; #  --extra-include-dirs=/usr/local/include/ --extra-lib-dirs=/usr/local/lib/
+      done ;
+      echo "finished running examples"
 

@@ -82,9 +82,9 @@ type CIndexTensor  = CLongTensor
 type CIndexStorage = CLongStorage
 
 type  MaskDynamic   = ByteDynamic
-type  MaskTensor d  =  ByteTensor d
+type  MaskTensor    =  ByteTensor
 type  IndexDynamic  =  LongDynamic
-type  IndexTensor d =  LongTensor d
+type  IndexTensor   =  LongTensor
 type  IndexStorage = LongStorage
 
 -- unsigned types
