@@ -80,6 +80,7 @@ dependencies:
     - which cabal
     - cabal --version
     - cabal update
+    - . setenv
 
     # Build ATen dependencies
     # =============
@@ -97,11 +98,11 @@ dependencies:
       fi
 
   override:
-    - cabal new-build all
+    - cabal new-build all --extra-include-dirs=/usr/local/include/ --extra-lib-dirs=/usr/local/lib/
 
 test:
   override:
-    - cabal new-test all
+    - cabal new-test all --extra-include-dirs=/usr/local/include/ --extra-lib-dirs=/usr/local/lib/
     - make codegen
     - make run-examples
 
