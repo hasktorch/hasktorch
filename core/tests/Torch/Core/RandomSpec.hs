@@ -6,9 +6,8 @@ module Torch.Core.RandomSpec (spec) where
 import Control.Monad (replicateM)
 import Foreign (Ptr)
 
-import qualified THRandom as R (c_THGenerator_new)
 import qualified Control.Exception as E
-import Torch.Core.Random
+import Torch.Core.Random as R
 import Torch.Prelude.Extras
 
 main :: IO ()
@@ -33,7 +32,7 @@ spec = do
 
 newRNGSpec :: Spec
 newRNGSpec = do
-  rngs <- runIO (replicateM 10 newRNG)
+  rngs <- runIO (replicateM 10 R.new)
   it "always creates a new random number" $
     zipWith (==) (tail rngs) (init rngs) `shouldNotContain` [True]
 
@@ -41,7 +40,7 @@ seedSpec :: Spec
 seedSpec = do
   beforeAll
     (do
-        rngs <- (replicateM 10 newRNG)
+        rngs <- (replicateM 10 R.new)
         rng1 <- mapM seed rngs
         rng2 <- mapM seed rngs
         pure (rngs, rng1, rng2)
@@ -54,7 +53,7 @@ seedSpec = do
 
 manualSeedSpec :: Spec
 manualSeedSpec = do
-  rngs <- runIO (replicateM 10 newRNG)
+  rngs <- runIO (replicateM 10 R.new)
   rng1 <- runIO $ mapM (`manualSeed` 1) rngs
   rng2 <- runIO $ mapM (`manualSeed` 1) rngs
 
@@ -68,14 +67,14 @@ initialSeedSpec = do
 
 randomSpec :: Spec
 randomSpec = do
-  rngs <- runIO (replicateM 10 newRNG)
+  rngs <- runIO (replicateM 10 R.new)
   rs <- runIO $ mapM random rngs
   it "generates numbers and doesn't crash" $
     rs `shouldSatisfy` doesn'tCrash
 
 uniformSpec :: Spec
 uniformSpec = do
-  rng <- runIO newRNG
+  rng <- runIO R.new
   distributed2BoundsCheck rng uniform $ \a b x ->
     case compare a b of
       LT -> x <= b && x >= a
@@ -83,38 +82,38 @@ uniformSpec = do
 
 normalSpec :: Spec
 normalSpec = do
-  rng <- runIO newRNG
+  rng <- runIO R.new
   distributed2BoundsCheck rng normal (\a b x -> doesn'tCrash ())
 
 exponentialSpec :: Spec
 exponentialSpec = do
-  rng <- runIO newRNG
+  rng <- runIO R.new
   distributed1BoundsCheck rng exponential (\a x -> doesn'tCrash ())
 
 cauchySpec :: Spec
 cauchySpec = do
-  rng <- runIO newRNG
+  rng <- runIO R.new
   distributed2BoundsCheck rng cauchy (\a b x -> doesn'tCrash ())
 
 logNormalSpec :: Spec
 logNormalSpec = do
-  rng <- runIO newRNG
+  rng <- runIO R.new
   distributed2BoundsCheck rng logNormal (\a b x -> doesn'tCrash ())
 
 geometricSpec :: Spec
 geometricSpec = do
-  rng <- runIO newRNG
+  rng <- runIO R.new
   distributed1BoundsCheck rng geometric (\a x -> doesn'tCrash ())
 
 bernoulliSpec :: Spec
 bernoulliSpec = do
-  rng <- runIO newRNG
+  rng <- runIO R.new
   distributed1BoundsCheck rng bernoulli (\a x -> doesn'tCrash ())
 
 -- |Check that seeds work as intended
 testScenario :: IO ()
 testScenario = do
-  rng <- newRNG
+  rng <- R.new
   manualSeed rng 332323401
   val1 <- normal rng 0.0 1000
   val2 <- normal rng 0.0 1000
@@ -127,14 +126,14 @@ testScenario = do
 
 -- ========================================================================= --
 
-distributed2BoundsCheck :: (Show a, Show b, Arbitrary a, Arbitrary b) => RandGen -> (RandGen -> a -> b -> IO Double) -> (a -> b -> Double -> Bool) -> Spec
+distributed2BoundsCheck :: (Show a, Show b, Arbitrary a, Arbitrary b) => Generator -> (Generator -> a -> b -> IO Double) -> (a -> b -> Double -> Bool) -> Spec
 distributed2BoundsCheck g fun check = do
   it "should generate random numbers in the correct bounds" . property $ \(a, b) ->
     monadicIO $ do
       x <- run (fun g a b)
       assert (check a b x)
 
-distributed1BoundsCheck :: (Show a, Arbitrary a) => RandGen -> (RandGen -> a -> IO b) -> (a -> b -> Bool) -> Spec
+distributed1BoundsCheck :: (Show a, Arbitrary a) => Generator -> (Generator -> a -> IO b) -> (a -> b -> Bool) -> Spec
 distributed1BoundsCheck g fun check = do
   it "should generate random numbers in the correct bounds" . property $ \a -> monadicIO $ do
     x <- run (fun g a)

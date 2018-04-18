@@ -4,7 +4,7 @@ module Orphans where
 import Test.QuickCheck hiding (Positive)
 
 -- import Torch.Core.Tensor.Types (TensorDim(..))
-import Torch.Core.Internal (Positive, mkPositive)
+-- import Torch.Core.Internal (Positive, mkPositive)
 
 -- instance (Ord a, Num a, Arbitrary a) => Arbitrary (TensorDim a) where
 --   arbitrary = do
@@ -22,11 +22,11 @@ import Torch.Core.Internal (Positive, mkPositive)
 --     predicate = (< 7)
 
 
-instance (Ord a, Num a, Arbitrary a) => Arbitrary (Positive a) where
-  arbitrary = do
-    mp <- mkPositive <$> suchThat arbitrary (>= 0)
-    case mp of
-      Nothing -> error "impossible: check arbitrary instance condition"
-      Just p -> pure p
+-- instance (Ord a, Num a, Arbitrary a) => Arbitrary (Positive a) where
+--   arbitrary = do
+--     mp <- mkPositive <$> suchThat arbitrary (>= 0)
+--     case mp of
+--       Nothing -> error "impossible: check arbitrary instance condition"
+      -- Just p -> pure p
 
 

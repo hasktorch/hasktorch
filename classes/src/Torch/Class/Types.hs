@@ -30,13 +30,13 @@ import qualified Torch.FFI.TH.Long.Storage as TH
 type family HsReal t
 type family HsAccReal t
 type family HsStorage t
-type family AsDynamic t
+type family AsDynamic (t :: [Nat] -> *)
 type family Allocator t
 type family Generator t
-type family IndexTensor t (d :: [Nat])
+type family IndexTensor (t :: [Nat] -> *) :: [Nat] -> *
 type family IndexDynamic t
 type family IndexStorage t
-type family MaskTensor t (d :: [Nat])
+type family MaskTensor (t :: [Nat] -> *) :: [Nat] -> *
 type family MaskDynamic t
 type family DescBuff t
 type family DimReal t
@@ -90,6 +90,6 @@ data SortOrder = Ascending | Descending
 
 -- for working with a unified conversion of static and dynamic types
 class IsStatic t where
-  asDynamic :: t -> AsDynamic t
-  asStatic :: AsDynamic t -> t
+  asDynamic :: Dimensions d => t d -> AsDynamic t
+  asStatic :: Dimensions d => AsDynamic t -> t d
 

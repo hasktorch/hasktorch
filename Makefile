@@ -6,14 +6,14 @@ PWD:=$(shell pwd)
 init:
 	git submodule update --init --recursive
 	( cd vendor; ./build-aten.sh )
-	( cd vendor; ./build-aten-spec.sh )
-	( cd vendor; ./build-error-handler.sh )
+#	( cd vendor; ./build-aten-spec.sh )
+#	( cd vendor; ./build-error-handler.sh )
 # ifeq ($(UNAME),Darwin)
-	sudo ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
-	sudo ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
-	@echo "\nCreated shared library symlinks for OSX:\n"
-	@sudo ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
-	@echo
+#	sudo ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
+#	sudo ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
+#	@echo "\nCreated shared library symlinks for OSX:\n"
+#	@sudo ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
+#	@echo
 # endif
 #	stack build
 
@@ -43,4 +43,9 @@ codegen-refresh: codegen refresh
 dev:
 	sos -e 'dist' -p '.*hsig$$' -p '.*hs$$' -p '.*cabal$$' -p 'cabal.project$$' -c 'cabal new-build all'
 
-.PHONY: clean build refresh codegen init dev
+# lasso is broken
+run-examples:
+	for ex in ad bayesian-regression download-mnist ff-typed ff-untyped gradient-descent multivariate-normal static-tensor-usage; do echo "running $$ex" && sleep 1 && cabal new-run hasktorch-examples:$$ex && sleep 1 ; done
+	echo "finished running examples"
+
+.PHONY: clean build refresh codegen init dev run-examples

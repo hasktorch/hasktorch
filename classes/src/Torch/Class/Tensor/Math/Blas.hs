@@ -3,9 +3,10 @@ module Torch.Class.Tensor.Math.Blas where
 
 import Data.Void
 import Torch.Class.Types
+import Torch.Class.Tensor
 import System.IO.Unsafe
 
-class TensorMathBlas t where
+class IsTensor t => TensorMathBlas t where
   _addmv       :: t -> HsReal t -> t -> HsReal t -> t -> t -> IO ()
   _addmm       :: t -> HsReal t -> t -> HsReal t -> t -> t -> IO ()
   _addr        :: t -> HsReal t -> t -> HsReal t -> t -> t -> IO ()
@@ -27,4 +28,31 @@ class TensorMathBlas t where
 (<.>) :: TensorMathBlas t => t -> t -> HsAccReal t
 (<.>) a b = unsafePerformIO $ dot a b
 {-# NOINLINE (<.>) #-}
+
+mkInplaceFunction, mkNewFunction
+  :: TensorMathBlas t
+  => (t -> HsReal t -> t -> HsReal t -> t -> t -> IO ())
+  -> HsReal t -> t -> HsReal t -> t -> t -> IO t
+mkInplaceFunction op a m b x y = op x a m b x y >> pure x
+mkNewFunction     op a m b x y = withEmpty x $ \r -> op r a m b x y
+
+addmv, addmv_ :: TensorMathBlas t => HsReal t -> t -> HsReal t -> t -> t -> IO t
+addmv  = mkNewFunction     _addmv
+addmv_ = mkInplaceFunction _addmv
+
+addmm, addmm_ :: TensorMathBlas t => HsReal t -> t -> HsReal t -> t -> t -> IO t
+addmm  = mkNewFunction     _addmm
+addmm_ = mkInplaceFunction _addmm
+
+addr, addr_ :: TensorMathBlas t => HsReal t -> t -> HsReal t -> t -> t -> IO t
+addr  = mkNewFunction     _addr
+addr_ = mkInplaceFunction _addr
+
+addbmm, addbmm_ :: TensorMathBlas t => HsReal t -> t -> HsReal t -> t -> t -> IO t
+addbmm  = mkNewFunction     _addbmm
+addbmm_ = mkInplaceFunction _addbmm
+
+baddbmm, baddbmm_ :: TensorMathBlas t => HsReal t -> t -> HsReal t -> t -> t -> IO t
+baddbmm  = mkNewFunction     _baddbmm
+baddbmm_ = mkInplaceFunction _baddbmm
 

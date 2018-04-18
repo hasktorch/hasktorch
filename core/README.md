@@ -1,15 +1,30 @@
 # hasktorch-core
 
-`hasktorch-core` includes higher-level interface to basic tensor creation and
+`hasktorch-core` includes reexports of the high-level interface to basic tensor creation and
 math operations and manages allocation/deallocation via foreign pointers.
-
-Currently implementations focus on double tensors, additional types (float,
-integral) are forthcoming.
 
 ## Package Structure
 
-[TODO]
+From hasktorch-core.cabal:
 
+    exposed-modules:
+      -- support modules
+        Torch.Core.Exceptions
+      , Torch.Core.Random
+      , Torch.Core.LogAdd
+
+      -- CPU modules
+      , Torch
+      , Torch.Storage
+      , Torch.Dynamic
+
+      -- CPU modules
+      , Torch.Cuda
+      , Torch.Cuda.Storage
+      , Torch.Cuda.Dynamic
+
+
+<!--
 ## Basic Implementation Concepts: Foreign Pointer Abstractions
 
 Raw tensors used in `raw/` are used as `Ptr a` where the type of the target of
@@ -53,6 +68,8 @@ finalizer used by `newForeignPtr`. The `raw/` modules provide C pointers
 functions to functions as via functions having a `p_` prefix. So for example
 `p_THDoubleTensor_free` is used as the finalizer for Double tensors.
 
+-->
+
 ## Basic Implementation Concepts: Preserving Immutability in non-IO FFI
 
 In the C API and in `raw`, operations mutate memory storage pointed to by raw C
@@ -63,27 +80,32 @@ tensor:
 ```
 -- |c_THDoubleTensor_sigmoid : r_ t -> void
 foreign import ccall "THTensorMath.h THDoubleTensor_sigmoid"
-  c_THDoubleTensor_sigmoid :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> IO ()
+  c_THDoubleTensor_sigmoid :: Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> IO ()
 
 ```
 
-A common pattern in the TH API is for the first argument to be a tensor pointer
-storing the result (`r_`), which is modified as a post-condition to the
-procedure.
+Hasktorch experimentally adopts and extends the pytorch naming convention with the
+following:
+- As in pytorch: a function suffixed with `_` will mutate the first tensor, inplace,
+  _and return that tensor as its output_. This means that `sigmoid_ :: t -> IO t` will
+  mutate its input.
 
-While it is possible to work with an API in this manner, it quickly becomes
-cumbersome, as many mathematical operations are conceptually pure, but due to
-the underlying representation and FFI API such operations must be accomplished
-monadically.
+- A function (usually found in typeclasses) that is prefixed with `_` is a direct
+  call into C and up to two of the first arguments may be mutated. This means that
+  `_sigmoid` is simply the direct call to C.
 
-Thus, unsafe operations are used to provide a functional API if and only if the
+- As in pytorch: a function not prefixed or suffixed with `_` is a pure function and
+  calling it will construct a new tensor as an output. In essence `sigmoid :: t -> IO t`
+  is what you would expect in a happy haskell file.
+
+Unsafe operations are used to provide a functional API if and only if the
 operation is functional module allocation / deallocation. Just as native types
-do not treat memory allocation as IO, operations in core that do not perform
+do not treat memory allocation as IO, operations that do not perform
 mutation but do perform allocation are presented as pure functions. In many of
 these cases, if the return value is a tensor, it is allocated within the
 function and returned with populated values.
 
-In the future, in-place mutation equivalents will be provided which _do_ use
-monadic computations will be surfaced, folowing the pytorch convention of adding
-an underscore `_` suffix to the function name to distinguish it from the
-immutable equivalent.
+While pure functions are desireable in haskell-land, pragmatic deep learning research
+often promotes the mutation of tensors for performance reasons. Hasktorch currently
+doesn't handle the correct usage of this (with `ST`), and future contributions here would
+be welcome.

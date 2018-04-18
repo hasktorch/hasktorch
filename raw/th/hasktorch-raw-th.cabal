@@ -23,7 +23,6 @@ flag with_nn
 
 library
   extra-libraries: ATen
-  extra-lib-dirs: /home/stites/git/hasktorch/vendor/build/
   hs-source-dirs:
       src
     , nn

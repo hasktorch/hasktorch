@@ -201,11 +201,10 @@ type instance Class.HsAccReal    Sig.Storage = Sig.HsAccReal
 -------------------------------------------------------------------------------
 -- Dynamic type family instances
 
-type instance Class.AsDynamic    Sig.Dynamic = Sig.Dynamic
-type instance Class.HsStorage    Sig.Dynamic = Sig.Storage
-type instance Class.MaskDynamic Sig.Dynamic = Sig.MaskDynamic
-type instance Class.IndexDynamic Sig.Dynamic = Sig.IndexDynamic
-type instance Class.IndexStorage Sig.Dynamic = Sig.IndexStorage
+type instance Class.HsStorage      Sig.Dynamic = Sig.Storage
+type instance Class.MaskDynamic    Sig.Dynamic = Sig.MaskDynamic
+type instance Class.IndexDynamic   Sig.Dynamic = Sig.IndexDynamic
+type instance Class.IndexStorage   Sig.Dynamic = Sig.IndexStorage
 type instance Class.StridesStorage Sig.Dynamic = TH.IndexStorage
 type instance Class.SizesStorage   Sig.Dynamic = TH.IndexStorage
 
@@ -220,12 +219,12 @@ type instance Class.HsAccReal    Sig.Dynamic = Sig.HsAccReal
 -------------------------------------------------------------------------------
 -- Static type family instances
 
-type instance Class.AsDynamic    (Sig.Tensor d) = Sig.Dynamic
+type instance Class.AsDynamic     Sig.Tensor    = Sig.Dynamic
 type instance Class.HsStorage    (Sig.Tensor d) = Sig.Storage
 
-type instance Class.IndexTensor  (Sig.Tensor d) n = Sig.IndexTensor n
-type instance Class.IndexStorage (Sig.Tensor d)   = Sig.IndexStorage
-type instance Class.MaskTensor   (Sig.Tensor d) n = Sig.MaskTensor n
+type instance Class.IndexTensor   Sig.Tensor    = Sig.LongTensor
+type instance Class.IndexStorage (Sig.Tensor d) = Sig.IndexStorage
+type instance Class.MaskTensor    Sig.Tensor    = Sig.ByteTensor
 
 type instance Class.StridesStorage (Sig.Tensor d) = TH.IndexStorage
 type instance Class.SizesStorage   (Sig.Tensor d) = TH.IndexStorage
@@ -237,7 +236,7 @@ type instance Class.DescBuff     (Sig.Tensor d) = Sig.DescBuff
 type instance Class.HsReal       (Sig.Tensor d) = Sig.HsReal
 type instance Class.HsAccReal    (Sig.Tensor d) = Sig.HsAccReal
 
-instance Class.IsStatic (Sig.Tensor d) where
+instance Class.IsStatic Sig.Tensor where
   asDynamic = Sig.asDynamic
   asStatic = Sig.asStatic
 

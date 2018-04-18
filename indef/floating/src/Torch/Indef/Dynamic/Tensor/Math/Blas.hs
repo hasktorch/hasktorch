@@ -4,6 +4,8 @@ import Foreign
 import GHC.Int
 import qualified Torch.Class.Tensor.Math.Blas as Class
 import qualified Torch.Sig.Tensor.Math.Blas as Sig
+import Torch.Indef.Dynamic.Tensor ()
+
 
 import Torch.Indef.Types
 

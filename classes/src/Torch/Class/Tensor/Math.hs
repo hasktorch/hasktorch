@@ -44,7 +44,7 @@ constant d v = new d >>= \r -> _fill r v >> pure r
 
 diag_, diag :: TensorMath t => t -> Int -> IO t
 diag_ t d = _diag t t d >> pure t
-diag  t d = withEmpty $ \r -> _diag r t d
+diag  t d = withEmpty t $ \r -> _diag r t d
 
 diag1d :: TensorMath t => t -> IO t
 diag1d t = diag t 1

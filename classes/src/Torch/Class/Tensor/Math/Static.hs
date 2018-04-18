@@ -16,9 +16,9 @@ class IsTensor t => TensorMath t where
   _onesLike    :: Dimensions2 d d' => t d' -> t d -> IO ()
   numel        :: Dimensions  d    => t d  -> IO Integer
   _reshape     :: Dimensions2 d d' => t d' -> t d -> TH.IndexStorage -> IO ()
-  _cat         :: Dimensions2 d d' => t d' -> t d -> t d -> DimVal -> IO ()
-  _catArray    :: Dimensions  d    => t d  -> [AsDynamic (t d)] -> Int -> DimVal -> IO ()
-  _nonzero     :: Dimensions  d    => IndexTensor (t d) d -> t d -> IO ()
+  _cat         :: Dimensions3 d d' d'' => t d'' -> t d -> t d' -> DimVal -> IO ()
+  _catArray    :: Dimensions  d    => t d  -> [AsDynamic t] -> Int -> DimVal -> IO ()
+  _nonzero     :: Dimensions  d    => IndexTensor t d -> t d -> IO ()
   _tril        :: Dimensions2 d d' => t d' -> t d -> Integer -> IO ()
   _triu        :: Dimensions2 d d' => t d' -> t d -> Integer -> IO ()
   _diag        :: Dimensions2 d d' => t d' -> t d -> Int -> IO ()
@@ -45,7 +45,20 @@ diag t d = withEmpty $ \r -> _diag r t d
 
 -- | Create a diagonal matrix from a 1D vector
 diag1d :: (KnownNatDim n, TensorMath t) => t '[n] -> IO (t '[n, n])
-diag1d t = diag t 1
+diag1d t = diag t 0
+
+cat_
+  :: (IsStatic t)
+  => (CoerceDims t d d', Dimensions3 d d' d'')
+  => (TensorMath t)
+  => t d -> t d' -> DimVal -> IO (t d'')
+cat_ a b d = _cat a a b d >> pure (asStatic (asDynamic a))
+
+cat :: (TensorMath t, Dimensions3 d d' d'') => t d -> t d' -> DimVal -> IO (t d'')
+cat a b d = withEmpty $ \r -> _cat r a b d
+
+cat1d :: (TensorMath t, SingDim3 n1 n2 n, n ~ Sum [n1, n2]) => t '[n1] -> t '[n2] -> IO (t '[n])
+cat1d a b = cat a b 0
 
 _tenLike
   :: (Dimensions d, TensorMath t)

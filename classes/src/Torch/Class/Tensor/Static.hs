@@ -25,7 +25,7 @@ import qualified Torch.Class.Tensor as Dynamic
 import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
 
-class IsTensor t where
+class IsStatic t => IsTensor t where
   _clearFlag :: Dimensions d => t d -> Int8 -> IO ()
   tensordata :: Dimensions d => t d -> IO [HsReal (t d)]
   _free :: Dimensions d => t d -> IO ()
@@ -107,18 +107,18 @@ class IsTensor t where
   -- Modified for static tensors
   isSameSizeAs :: (Dimensions d, Dimensions d') => t d -> t d' -> Bool
 
-type Static t d =
-  ( IsTensor t
-  , IsStatic (t d)
-  , Num (HsReal (IndexDynamic (AsDynamic (t d))))
-  , Dynamic.IsTensor (AsDynamic (t d))
-  )
-type Static2 t d d' = 
-  ( Static t d
-  , Static t d'
-  , AsDynamic (t d) ~ AsDynamic (t d')
-  , IndexDynamic (AsDynamic (t d)) ~ IndexDynamic (AsDynamic (t d'))
-  )
+-- type Static t d =
+--   ( IsTensor t
+--   , IsStatic t
+--   , Num (HsReal (IndexDynamic (AsDynamic (t d))))
+--   , Dynamic.IsTensor (AsDynamic (t d))
+--   )
+-- type Static2 t d d' = 
+--   ( Static t d
+--   , Static t d'
+--   , AsDynamic (t d) ~ AsDynamic (t d')
+--   , IndexDynamic (AsDynamic (t d)) ~ IndexDynamic (AsDynamic (t d'))
+--   )
 
 shape :: IsTensor t => t d -> IO [Size]
 shape t = do
@@ -128,11 +128,16 @@ shape t = do
 withNew :: forall t d . (Dimensions d, IsTensor t) => (t d -> IO ()) -> IO (t d)
 withNew op = new >>= \r -> op r >> pure r
 
--- I think we can get away with this for most creations. Torch does the resizing in C.
-withEmpty :: Dimensions d => IsTensor t => (t d -> IO ()) -> IO (t d)
-withEmpty op = empty >>= \r -> op r >> pure r
+-- Should be renamed to @newFromSize@
+withEmpty :: forall t d . (Dimensions d, IsTensor t) => (t d -> IO ()) -> IO (t d)
+withEmpty op = new >>= \r -> op r >> pure r
 
-type CoerceDims t d d' = (Dimensions2 d d', IsStatic (t d), AsDynamic (t d) ~ AsDynamic (t d'), IsStatic (t d'))
+-- We can get away with this some of the time, when Torch does the resizing in C, but you need to look at
+-- the c implementation
+withEmpty' :: (Dimensions d, IsTensor t) => (t d -> IO ()) -> IO (t d)
+withEmpty' op = empty >>= \r -> op r >> pure r
+
+type CoerceDims t d d' = (Dimensions2 d d', IsStatic t)
 
 useSudo :: (CoerceDims t d d') => t d -> t d'
 useSudo = asStatic . asDynamic
@@ -234,19 +239,19 @@ resizeAs src = do
 
 newIx :: forall t d d'
   . (Dimensions d')
-  => Dynamic.IsTensor (AsDynamic (IndexTensor (t d) d'))
-  => IsStatic (IndexTensor (t d) d')
-  => IO (IndexTensor (t d) d')
+  => Dynamic.IsTensor (AsDynamic (IndexTensor t))
+  => IsStatic (IndexTensor t)
+  => IO (IndexTensor t d')
 newIx = asStatic <$> Dynamic.new (dim :: Dim d')
 
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
 fromListIx
-  :: forall t d n . (KnownNatDim n, Dimensions '[n], IsStatic (IndexTensor (t d) '[n]))
-  => Num (HsReal (AsDynamic (IndexTensor (t d) '[n])))
-  => Dynamic.IsTensor (AsDynamic (IndexTensor (t d) '[n]))
+  :: forall t d n . (KnownNatDim n, Dimensions '[n], IsStatic (IndexTensor t))
+  => Num (HsReal (AsDynamic (IndexTensor t)))
+  => Dynamic.IsTensor (AsDynamic (IndexTensor t))
   => Dimensions d
-  => Proxy (t d) -> Dim '[n] -> [HsReal (AsDynamic (IndexTensor (t d) '[n]))] -> IO (IndexTensor (t d) '[n])
+  => Proxy (t d) -> Dim '[n] -> [HsReal (AsDynamic (IndexTensor t))] -> IO (IndexTensor t '[n])
 fromListIx _ _ l = asStatic <$> (Dynamic.fromList1d l)
 
 
@@ -293,7 +298,6 @@ getElem2d t r c
 setElem2d
   :: forall t n m ns . (KnownNatDim2 n m)
   => IsTensor t => Dimensions '[n, m]
-  => Dimensions ns
   => t '[n, m] -> Natural -> Natural -> HsReal (t '[n, m]) -> IO ()
 setElem2d t r c v
   | r > fromIntegral (natVal (Proxy :: Proxy n)) ||
@@ -303,25 +307,8 @@ setElem2d t r c v
 
 
 -- | displaying raw tensor values
-printTensor :: forall t d . (Dimensions d, IsTensor t, Show (HsReal (t d))) => t d -> IO ()
-printTensor t = do
-  case dimVals (dim :: Dim d) of
-    []  -> putStrLn "Empty IsTensor"
-    sz@[x] -> do
-      putStrLn ""
-      putStr "[ "
-      mapM_ (get1d t >=> putWithSpace) [ fromIntegral idx | idx <- [0..head sz - 1] ]
-      putStrLn "]\n"
-    sz@[x,y] -> do
-      putStrLn ""
-      let pairs = [ (fromIntegral r, fromIntegral c) | r <- [0..sz !! 0 - 1], c <- [0..sz !! 1 - 1] ]
-      putStr "[ "
-      forM_ pairs $ \(r, c) -> do
-        val <- get2d t r c
-        if c == fromIntegral (sz !! 1) - 1
-        then putStrLn (show val ++ " ]") >> putStr (if fromIntegral r < (sz !! 0) - 1 then "[ " else "")
-        else putWithSpace val
-    _ -> putStrLn "Can't print this yet."
- where
-  putWithSpace :: (Show a) => a -> IO ()
-  putWithSpace v = putStr (show v ++ " ")
+printTensor
+  :: (IsTensor t, Typeable (HsReal (t d)), Ord (HsReal (t d)), Num (HsReal (t d)), Show (HsReal (t d)))
+  => t d -> IO ()
+printTensor t = getDims t >>= \(SomeDims ds) -> Dynamic._printTensor (get1d t) (get2d t) (dimVals ds)
+

@@ -3,6 +3,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating where
 import GHC.Int
 import qualified Torch.Class.Tensor.Math.Pointwise as Class
 import qualified Torch.Sig.Tensor.Math.Pointwise.Floating as Sig
+import Torch.Indef.Dynamic.Tensor ()
 
 import Torch.Indef.Types
 

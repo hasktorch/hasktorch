@@ -6,17 +6,9 @@
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-imports -Wno-missing-signatures -Wno-unused-matches #-}
 module Main where
 
-import Torch.Dimensions
-import Torch.Core.Tensor.Static
-import Torch.Core.Tensor.Static.Math
-import Torch.Core.Tensor.Static.Math.Infix
-import Torch.Core.Tensor.Static.Random
+import Torch
 import qualified Torch.Core.Random as RNG
 import System.IO.Unsafe (unsafePerformIO)
-
-import Data.Singletons
-import Data.Singletons.Prelude
-import Data.Singletons.TypeLits
 
 type Tensor = DoubleTensor
 
