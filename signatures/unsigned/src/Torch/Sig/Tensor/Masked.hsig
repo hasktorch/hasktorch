@@ -1,0 +1,16 @@
+signature Torch.Sig.Tensor.Masked where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+
+c_maskedFill   :: Ptr CState -> Ptr CTensor -> Ptr CMaskTensor -> CReal -> IO ()
+c_maskedCopy   :: Ptr CState -> Ptr CTensor -> Ptr CMaskTensor -> Ptr CTensor -> IO ()
+c_maskedSelect :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CMaskTensor -> IO ()
+
+-- * THC
+-- c_maskedFillByte   :: Ptr CState -> Ptr CTensor -> Ptr C'THByteTensor -> CReal -> IO ()
+-- c_maskedCopyByte   :: Ptr CState -> Ptr CTensor -> Ptr C'THByteTensor -> Ptr CTensor -> IO ()
+-- c_maskedSelectByte :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr C'THByteTensor -> IO ()
+

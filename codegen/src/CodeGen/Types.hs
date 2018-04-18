@@ -1,8 +1,11 @@
 module CodeGen.Types
-  ( module CodeGen.RenderTypes
-  , module CodeGen.ParseTypes
+  ( module CodeGen.Types.HsOutput
+  , module CodeGen.Types.Parsed
+  , module CodeGen.Types.CLI
   ) where
 
-import CodeGen.RenderTypes
-import CodeGen.ParseTypes
+import CodeGen.Types.HsOutput
+import CodeGen.Types.Parsed
+import CodeGen.Types.CLI
+
 

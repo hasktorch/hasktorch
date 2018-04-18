@@ -1,0 +1,9 @@
+signature Torch.Sig.Tensor.TopK where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+
+c_topk :: Ptr CState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CLLong -> CInt -> CInt -> CInt -> IO ()
+

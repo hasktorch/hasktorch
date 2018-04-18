@@ -1,0 +1,249 @@
+name:           hasktorch-raw-thc
+version:        0.0.1.0
+synopsis:       CuTorch (and THCuNN) for tensors and neural networks in Haskell
+description:    core cuda bindings
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         hasktorch devs (Austin Huang, Sam Stites)
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+flag float
+  Description: Build with float support. THC doesn't seem to build uniform Float types by default.
+  Default: False
+
+flag half
+  Description: Build with half support.
+  Default: False
+
+flag with_nn
+  Description: build with nn support
+  Default: True
+
+library
+  extra-libraries: ATen
+  hs-source-dirs:
+      src
+    , nn
+    , state
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-types-th
+    , hasktorch-types-thc
+    , inline-c >= 0.5
+    , text >= 1.2.2.2
+    -- , cuda >= 0.9
+  build-tools: c2hs
+  default-language: Haskell2010
+  exposed-modules:
+      Torch.FFI.THC.State
+
+    , Torch.FFI.THC.Stream
+    , Torch.FFI.THC.Blas
+    , Torch.FFI.THC.Half
+    , Torch.FFI.THC.CachingHostAllocator
+    , Torch.FFI.THC.CachingAllocator
+    , Torch.FFI.THC.Sleep
+    , Torch.FFI.THC.TensorMath
+    , Torch.FFI.THC.TensorRandom
+    , Torch.FFI.THC.General
+
+    , Torch.FFI.THC.Byte.TensorMode
+    , Torch.FFI.THC.Byte.TensorSort
+    , Torch.FFI.THC.Byte.TensorMathCompareT
+    , Torch.FFI.THC.Byte.TensorMathScan
+    , Torch.FFI.THC.Byte.TensorMathPairwise
+    , Torch.FFI.THC.Byte.TensorMathPointwise
+    , Torch.FFI.THC.Byte.TensorMathReduce
+    , Torch.FFI.THC.Byte.TensorScatterGather
+    , Torch.FFI.THC.Byte.Tensor
+    , Torch.FFI.THC.Byte.Storage
+    , Torch.FFI.THC.Byte.TensorMasked
+    , Torch.FFI.THC.Byte.TensorMathCompare
+    , Torch.FFI.THC.Byte.TensorTopK
+    , Torch.FFI.THC.Byte.TensorCopy
+    , Torch.FFI.THC.Byte.TensorMath
+    , Torch.FFI.THC.Byte.TensorRandom
+    , Torch.FFI.THC.Byte.TensorIndex
+    , Torch.FFI.THC.Byte.StorageCopy
+
+    , Torch.FFI.THC.Char.TensorMode
+    , Torch.FFI.THC.Char.TensorSort
+    , Torch.FFI.THC.Char.TensorMathCompareT
+    , Torch.FFI.THC.Char.TensorMathScan
+    , Torch.FFI.THC.Char.TensorMathPairwise
+    , Torch.FFI.THC.Char.TensorMathPointwise
+    , Torch.FFI.THC.Char.TensorMathReduce
+    , Torch.FFI.THC.Char.TensorScatterGather
+    , Torch.FFI.THC.Char.Tensor
+    , Torch.FFI.THC.Char.Storage
+    , Torch.FFI.THC.Char.TensorMasked
+    , Torch.FFI.THC.Char.TensorMathCompare
+    , Torch.FFI.THC.Char.TensorTopK
+    , Torch.FFI.THC.Char.TensorCopy
+    , Torch.FFI.THC.Char.TensorMath
+    , Torch.FFI.THC.Char.TensorRandom
+    , Torch.FFI.THC.Char.TensorIndex
+    , Torch.FFI.THC.Char.StorageCopy
+
+    , Torch.FFI.THC.Long.TensorMode
+    , Torch.FFI.THC.Long.TensorSort
+    , Torch.FFI.THC.Long.TensorMathCompareT
+    , Torch.FFI.THC.Long.TensorMathScan
+    , Torch.FFI.THC.Long.TensorMathPairwise
+    , Torch.FFI.THC.Long.TensorMathPointwise
+    , Torch.FFI.THC.Long.TensorMathReduce
+    , Torch.FFI.THC.Long.TensorScatterGather
+    , Torch.FFI.THC.Long.Tensor
+    , Torch.FFI.THC.Long.Storage
+    , Torch.FFI.THC.Long.TensorMasked
+    , Torch.FFI.THC.Long.TensorMathCompare
+    , Torch.FFI.THC.Long.TensorTopK
+    , Torch.FFI.THC.Long.TensorCopy
+    , Torch.FFI.THC.Long.TensorMath
+    , Torch.FFI.THC.Long.TensorRandom
+    , Torch.FFI.THC.Long.TensorIndex
+    , Torch.FFI.THC.Long.StorageCopy
+
+    , Torch.FFI.THC.Double.TensorMode
+    , Torch.FFI.THC.Double.TensorSort
+    , Torch.FFI.THC.Double.TensorMathCompareT
+    , Torch.FFI.THC.Double.TensorMathScan
+    , Torch.FFI.THC.Double.TensorMathPairwise
+    , Torch.FFI.THC.Double.TensorMathPointwise
+    , Torch.FFI.THC.Double.TensorMathReduce
+    , Torch.FFI.THC.Double.TensorScatterGather
+    , Torch.FFI.THC.Double.Tensor
+    , Torch.FFI.THC.Double.Storage
+    , Torch.FFI.THC.Double.TensorMasked
+    , Torch.FFI.THC.Double.TensorMathCompare
+    , Torch.FFI.THC.Double.TensorTopK
+    , Torch.FFI.THC.Double.TensorCopy
+    , Torch.FFI.THC.Double.TensorMathMagma
+    , Torch.FFI.THC.Double.TensorMath
+    , Torch.FFI.THC.Double.TensorRandom
+    , Torch.FFI.THC.Double.TensorIndex
+    , Torch.FFI.THC.Double.TensorMathBlas
+    , Torch.FFI.THC.Double.StorageCopy
+
+    , Torch.FFI.THC.Int.TensorMode
+    , Torch.FFI.THC.Int.TensorSort
+    , Torch.FFI.THC.Int.TensorMathCompareT
+    , Torch.FFI.THC.Int.TensorMathScan
+    , Torch.FFI.THC.Int.TensorMathPairwise
+    , Torch.FFI.THC.Int.TensorMathPointwise
+    , Torch.FFI.THC.Int.TensorMathReduce
+    , Torch.FFI.THC.Int.TensorScatterGather
+    , Torch.FFI.THC.Int.Tensor
+    , Torch.FFI.THC.Int.Storage
+    , Torch.FFI.THC.Int.TensorMasked
+    , Torch.FFI.THC.Int.TensorMathCompare
+    , Torch.FFI.THC.Int.TensorTopK
+    , Torch.FFI.THC.Int.TensorCopy
+    , Torch.FFI.THC.Int.TensorMath
+    , Torch.FFI.THC.Int.TensorRandom
+    , Torch.FFI.THC.Int.TensorIndex
+    , Torch.FFI.THC.Int.StorageCopy
+
+  -- if flag(short)
+  --   exposed-modules:
+    , Torch.FFI.THC.Short.TensorMode
+    , Torch.FFI.THC.Short.TensorSort
+    , Torch.FFI.THC.Short.TensorMathCompareT
+    , Torch.FFI.THC.Short.TensorMathScan
+    , Torch.FFI.THC.Short.TensorMathPairwise
+    , Torch.FFI.THC.Short.TensorMathPointwise
+    , Torch.FFI.THC.Short.TensorMathReduce
+    , Torch.FFI.THC.Short.TensorScatterGather
+    , Torch.FFI.THC.Short.Tensor
+    , Torch.FFI.THC.Short.Storage
+    , Torch.FFI.THC.Short.TensorMasked
+    , Torch.FFI.THC.Short.TensorMathCompare
+    , Torch.FFI.THC.Short.TensorTopK
+    , Torch.FFI.THC.Short.TensorCopy
+    , Torch.FFI.THC.Short.TensorMath
+    , Torch.FFI.THC.Short.TensorRandom
+    , Torch.FFI.THC.Short.TensorIndex
+    , Torch.FFI.THC.Short.StorageCopy
+
+  if flag(float)
+    exposed-modules:
+        Torch.FFI.THC.Float.TensorMode
+      , Torch.FFI.THC.Float.TensorSort
+      , Torch.FFI.THC.Float.TensorMathCompareT
+      , Torch.FFI.THC.Float.TensorMathScan
+      , Torch.FFI.THC.Float.TensorMathPairwise
+      , Torch.FFI.THC.Float.TensorMathPointwise
+      , Torch.FFI.THC.Float.TensorMathReduce
+      , Torch.FFI.THC.Float.TensorScatterGather
+      , Torch.FFI.THC.Float.Tensor
+      , Torch.FFI.THC.Float.Storage
+      , Torch.FFI.THC.Float.TensorMasked
+      , Torch.FFI.THC.Float.TensorMathCompare
+      , Torch.FFI.THC.Float.TensorTopK
+      , Torch.FFI.THC.Float.TensorCopy
+      , Torch.FFI.THC.Float.TensorMathMagma
+      , Torch.FFI.THC.Float.TensorMath
+      , Torch.FFI.THC.Float.TensorRandom
+      , Torch.FFI.THC.Float.TensorIndex
+      , Torch.FFI.THC.Float.TensorMathBlas
+      , Torch.FFI.THC.Float.StorageCopy
+
+  if flag(half)
+    exposed-modules:
+        Torch.FFI.THC.Half.TensorMode
+      , Torch.FFI.THC.Half.TensorSort
+      , Torch.FFI.THC.Half.TensorMathCompareT
+      , Torch.FFI.THC.Half.TensorMathScan
+      , Torch.FFI.THC.Half.TensorMathPairwise
+      , Torch.FFI.THC.Half.TensorMathPointwise
+      , Torch.FFI.THC.Half.TensorMathReduce
+      , Torch.FFI.THC.Half.TensorScatterGather
+      , Torch.FFI.THC.Half.Tensor
+      , Torch.FFI.THC.Half.Storage
+      , Torch.FFI.THC.Half.TensorMasked
+      , Torch.FFI.THC.Half.TensorMathCompare
+      , Torch.FFI.THC.Half.TensorTopK
+      , Torch.FFI.THC.Half.TensorCopy
+      , Torch.FFI.THC.Half.TensorMath
+      , Torch.FFI.THC.Half.TensorRandom
+      , Torch.FFI.THC.Half.TensorIndex
+      , Torch.FFI.THC.Half.TensorMathBlas
+      , Torch.FFI.THC.Half.StorageCopy
+
+  if flag(with_nn)
+    exposed-modules:
+        Torch.FFI.THC.NN.Double
+      -- , Torch.FFI.THC.NN.Float
+
+  other-modules:
+      Paths_hasktorch_raw_thc
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  default-language: Haskell2010
+  hs-source-dirs: tests
+  build-depends:
+      QuickCheck
+    , base >=4.7 && <5
+    , hasktorch-raw-th
+    , hasktorch-raw-thc
+    , hasktorch-raw-tests
+    , hasktorch-types-th
+    , hasktorch-types-thc
+    , hspec >=2.4.4
+    , text >=1.2.2.2
+  other-modules:
+      MathSpec
+    , TensorSpec
+    , Internal
+
+  if flag(with_nn)
+    other-modules:
+       NNSpec

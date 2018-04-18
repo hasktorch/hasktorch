@@ -4,11 +4,11 @@ module Main where
 
 import Control.Monad (void)
 
+import Torch
 import qualified Torch.Core.Random as RNG (new)
-import Torch.Core.Tensor.Static
-import Torch.Core.Tensor.Static.Math as Math
-import Torch.Core.Tensor.Static.Math.Infix
-import Torch.Core.Tensor.Static.Random
+import qualified Torch as Math
+-- import Torch.Core.Tensor.Static.Math as Math
+-- import Torch.Core.Tensor.Static.Math.Infix
 
 main :: IO ()
 main = do
@@ -42,7 +42,7 @@ initialization = void $ do
     pure listVec2
 
   section "Random values" $ do
-    gen <- RNG.new
+    gen :: Generator <- RNG.new
     randMat :: DoubleTensor '[4, 4] <- uniform gen 1 2
     pure randMat
 
@@ -63,7 +63,7 @@ matrixVectorOps = void $ do
     pure $ randMat !* constVec
 
   section "Vector outer product" $
-    constVec `outer` constVec
+    outer constVec constVec
 
   showSection "Vector dot product" $
     pure $ constVec <.> constVec
@@ -89,14 +89,11 @@ valueTransformations = void $ do
     sig :: DoubleTensor '[4, 4] <- Math.sigmoid randMat
     pure sig
 
-  section "Tanh" $
-    Math.tanh randMat
+  section "Tanh" $ Math.tanh randMat
 
-  section "Log" $
-    Math.log randMat
+  section "Log" $ Math.log randMat
 
-  section "Round" $
-    Math.round randMat
+  section "Round" $ Math.round randMat
 
 -- ========================================================================= --
 -- helpers
@@ -114,10 +111,10 @@ header c h = do
   putStrLn h
   putStrLn $ replicate (length h) c
 
-section :: String -> IO (DoubleTensor d) -> IO ()
+section :: Dimensions d => String -> IO (DoubleTensor d) -> IO ()
 section a b = _section printTensor a b >> pure ()
 
-section' :: String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
+section' :: Dimensions d => String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
 section' = _section printTensor
 
 showSection :: Show x => String -> IO x -> IO ()

@@ -1,0 +1,31 @@
+signature Torch.Sig.Tensor.Copy where
+
+import Foreign
+import Torch.Sig.Types
+import Torch.Types.TH hiding (CState)
+import Torch.Sig.Types.Global
+
+c_copy       :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_copyByte   :: Ptr CState -> Ptr CTensor -> Ptr C'THByteTensor -> IO ()
+c_copyChar   :: Ptr CState -> Ptr CTensor -> Ptr C'THCharTensor -> IO ()
+c_copyShort  :: Ptr CState -> Ptr CTensor -> Ptr C'THShortTensor -> IO ()
+c_copyInt    :: Ptr CState -> Ptr CTensor -> Ptr C'THIntTensor -> IO ()
+c_copyLong   :: Ptr CState -> Ptr CTensor -> Ptr C'THLongTensor -> IO ()
+c_copyFloat  :: Ptr CState -> Ptr CTensor -> Ptr C'THFloatTensor -> IO ()
+c_copyDouble :: Ptr CState -> Ptr CTensor -> Ptr C'THDoubleTensor -> IO ()
+c_copyHalf   :: Ptr CState -> Ptr CTensor -> Ptr C'THHalfTensor -> IO ()
+
+-- * THC
+-- c_copyIgnoringOverlaps :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THCudaByteTensor -> IO ()
+-- c_copyCudaByte :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THCudaByteTensor -> IO ()
+-- c_copyCudaChar :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THCudaCharTensor -> IO ()
+-- c_copyCudaShort :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THCudaShortTensor -> IO ()
+-- c_copyCudaInt :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THCudaIntTensor -> IO ()
+-- c_copyCudaLong :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THCudaLongTensor -> IO ()
+-- c_copyCudaDouble :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THCudaDoubleTensor -> IO ()
+-- c_copyCuda :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THCudaByteTensor -> IO ()
+-- c_thCopyCuda :: Ptr C'THCState -> Ptr C'THByteTensor -> Ptr C'THCudaByteTensor -> IO ()
+-- c_copyCPU :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THByteTensor -> IO ()
+-- c_copyAsyncCPU :: Ptr C'THCState -> Ptr C'THCudaByteTensor -> Ptr C'THByteTensor -> IO ()
+-- c_thCopyAsyncCuda :: Ptr C'THCState -> Ptr C'THByteTensor -> Ptr C'THCudaByteTensor -> IO ()
+

@@ -6,49 +6,46 @@ PWD:=$(shell pwd)
 init:
 	git submodule update --init --recursive
 	( cd vendor; ./build-aten.sh )
-	( cd vendor; ./build-aten-spec.sh )
-	( cd vendor; ./build-error-handler.sh )
+#	( cd vendor; ./build-aten-spec.sh )
+#	( cd vendor; ./build-error-handler.sh )
 # ifeq ($(UNAME),Darwin)
-	sudo ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
-	sudo ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
-	@echo "\nCreated shared library symlinks for OSX:\n"
-	@sudo ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
-	@echo
+#	sudo ln -sf $(PWD)/vendor/build/libATen.dylib /usr/local/lib/libATen.dylib
+#	sudo ln -sf $(PWD)/vendor/build/libEHX.dylib /usr/local/lib/libEHX.dylib
+#	@echo "\nCreated shared library symlinks for OSX:\n"
+#	@sudo ls -l /usr/local/lib/libATen.dylib /usr/local/lib/libEHX.dylib
+#	@echo
 # endif
 #	stack build
 
 clean:
-	stack clean
+	rm -rf dist{,-newbuild)
 
-purge: # clean
+purge:
 	rm -rf vendor
 	git checkout -- vendor
+	git submodule update --init --recursive
 
 build:
-	stack build
+	cabal new-build all
 
 refresh:
-	rsync -arv ./output/raw/src/*.hs ./raw/src/
-	rsync -arv ./output/raw/src/generic/*.hs ./raw/src/generic/
+	cd output && ./refresh.sh
 
-build-aten:
-	cd vendor && ./build-aten.sh
+codegen-th:
+	for l in TH THNN; do for t in generic concrete; do cabal new-run hasktorch-codegen:ht-codegen -- --type $$t --lib $$l --verbose; done; done
 
-build-spec:
-	cd vendor && ./build-aten-spec.sh
+codegen-thc:
+	for l in THC THCUNN; do for t in generic concrete; do cabal new-run hasktorch-codegen:ht-codegen -- --type $$t --lib $$l --verbose; done; done
 
-codegen-generic: build
-	stack exec codegen-generic
-
-codegen-concrete: build
-	stack exec codegen-concrete
-
-codegen-managed: build
-	stack exec codegen-managed
-
-codegen: codegen-managed codegen-concrete codegen-generic
+codegen: codegen-th codegen-thc
+codegen-refresh: codegen refresh
 
 dev:
-	sos -p '(raw-.*|core|examples)/[^.].*' -c "rm -rf dist-newstyle && cabal new-build all"
+	sos -e 'dist' -p '.*hsig$$' -p '.*hs$$' -p '.*cabal$$' -p 'cabal.project$$' -c 'cabal new-build all'
 
-.PHONY: clean build refresh codegen init dev
+# lasso is broken
+run-examples:
+	for ex in ad bayesian-regression download-mnist ff-typed ff-untyped gradient-descent multivariate-normal static-tensor-usage; do echo "running $$ex" && sleep 1 && cabal new-run hasktorch-examples:$$ex && sleep 1 ; done
+	echo "finished running examples"
+
+.PHONY: clean build refresh codegen init dev run-examples

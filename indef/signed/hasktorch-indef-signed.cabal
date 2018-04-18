@@ -5,7 +5,7 @@ description:    core tensor abstractions wrapping raw TH bindings
 category:       Tensors, Machine Learning
 homepage:       https://github.com/hasktorch/hasktorch#readme
 bug-reports:    https://github.com/hasktorch/hasktorch/issues
-author:         Austin Huang
+author:         Hasktorch dev team <Austin Huang, Sam Stites>
 license:        BSD3
 build-type:     Simple
 cabal-version:  >= 1.24
@@ -17,40 +17,65 @@ source-repository head
 library
   hs-source-dirs: src
   default-language: Haskell2010
+  default-extensions:
+      InstanceSigs
+    , TypeSynonymInstances
   build-depends:
       base >=4.7 && <5
-    , containers
-    , deepseq >=1.3.0.0
-    , dimensions >=0.3.2.0
     , hasktorch-classes
     , hasktorch-indef-unsigned
     , hasktorch-signatures-signed
-    , hasktorch-raw
-    , hasktorch-types
-    , managed >=1.0.0 && <1.1
-    , microlens >=0.4.8.1
-    , numeric-limits
-    , safe-exceptions >=0.1.0.0
-    , singletons >=2.2
-    , text >=1.2.2.2
-    , typelits-witnesses >=0.2.3.0
+    , hasktorch-raw-th
+    , hasktorch-types-th
+    , hasktorch-dimensions
   exposed-modules:
-      Torch.Core.Tensor.Dynamic.Math.Signed
-    , Torch.Core.Tensor.Static.Math.Signed
+      Torch.Indef.Dynamic
+    , Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed
+
+    , Torch.Indef.Static
+    , Torch.Indef.Static.Tensor.Math.Pointwise.Signed
 
   reexported-modules:
-    -- classes implementations with indefinites
-      Torch.Core.Types
-    , Torch.Core.Storage
-    , Torch.Core.Storage.Copy
-    , Torch.Core.Tensor.Dynamic
-    , Torch.Core.Tensor.Dynamic.IsTensor
-    , Torch.Core.Tensor.Dynamic.Copy
-    , Torch.Core.Tensor.Dynamic.Conv
-    , Torch.Core.Tensor.Dynamic.Math
-    , Torch.Core.Tensor.Dynamic.Random
-    , Torch.Core.Tensor.Static
-    , Torch.Core.Tensor.Static.IsTensor
-    , Torch.Core.Tensor.Static.Random
-    , Torch.Core.Tensor.Static.Copy
+      Torch.Indef.Types
+    , Torch.Indef.Storage
+    , Torch.Indef.Storage.Copy
+
+    -- ==================================================== --
+    -- Dynamic Tensor modules
+    -- ==================================================== --
+    , Torch.Indef.Dynamic.Tensor
+    , Torch.Indef.Dynamic.Tensor.Copy
+    , Torch.Indef.Dynamic.Tensor.Index
+    , Torch.Indef.Dynamic.Tensor.Masked
+    , Torch.Indef.Dynamic.Tensor.Math
+    , Torch.Indef.Dynamic.Tensor.Math.Compare
+    , Torch.Indef.Dynamic.Tensor.Math.CompareT
+    , Torch.Indef.Dynamic.Tensor.Math.Pairwise
+    , Torch.Indef.Dynamic.Tensor.Math.Pointwise
+    , Torch.Indef.Dynamic.Tensor.Math.Reduce
+    , Torch.Indef.Dynamic.Tensor.Math.Scan
+    , Torch.Indef.Dynamic.Tensor.Mode
+    , Torch.Indef.Dynamic.Tensor.ScatterGather
+    , Torch.Indef.Dynamic.Tensor.Sort
+    , Torch.Indef.Dynamic.Tensor.TopK
+
+    -- ==================================================== --
+    -- Static Tensor modules
+    -- ==================================================== --
+    , Torch.Indef.Static.Tensor
+    , Torch.Indef.Static.Tensor.Copy
+    , Torch.Indef.Static.Tensor.Index
+    , Torch.Indef.Static.Tensor.Masked
+    , Torch.Indef.Static.Tensor.Math
+    , Torch.Indef.Static.Tensor.Math.Compare
+    , Torch.Indef.Static.Tensor.Math.CompareT
+    , Torch.Indef.Static.Tensor.Math.Pairwise
+    , Torch.Indef.Static.Tensor.Math.Pointwise
+    , Torch.Indef.Static.Tensor.Math.Reduce
+    , Torch.Indef.Static.Tensor.Math.Scan
+    , Torch.Indef.Static.Tensor.Mode
+    , Torch.Indef.Static.Tensor.ScatterGather
+    , Torch.Indef.Static.Tensor.Sort
+    , Torch.Indef.Static.Tensor.TopK
+
 

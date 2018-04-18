@@ -1,0 +1,34 @@
+signature Torch.Sig.Storage where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+
+c_data                    :: Ptr CState -> Ptr CStorage -> IO (Ptr CReal)
+c_size                    :: Ptr CState -> Ptr CStorage -> IO CPtrdiff
+c_set                     :: Ptr CState -> Ptr CStorage -> CPtrdiff -> CReal -> IO ()
+c_get                     :: Ptr CState -> Ptr CStorage -> CPtrdiff -> IO CReal
+c_new                     :: Ptr CState -> IO (Ptr CStorage)
+c_newWithSize             :: Ptr CState -> CPtrdiff -> IO (Ptr CStorage)
+c_newWithSize1            :: Ptr CState -> CReal -> IO (Ptr CStorage)
+c_newWithSize2            :: Ptr CState -> CReal -> CReal -> IO (Ptr CStorage)
+c_newWithSize3            :: Ptr CState -> CReal -> CReal -> CReal -> IO (Ptr CStorage)
+c_newWithSize4            :: Ptr CState -> CReal -> CReal -> CReal -> CReal -> IO (Ptr CStorage)
+c_newWithMapping          :: Ptr CState -> Ptr CChar -> CPtrdiff -> CInt -> IO (Ptr CStorage)
+c_newWithData             :: Ptr CState -> Ptr CReal -> CPtrdiff -> IO (Ptr CStorage)
+c_setFlag                 :: Ptr CState -> Ptr CStorage -> CChar -> IO ()
+c_clearFlag               :: Ptr CState -> Ptr CStorage -> CChar -> IO ()
+c_retain                  :: Ptr CState -> Ptr CStorage -> IO ()
+c_free                    :: Ptr CState -> Ptr CStorage -> IO ()
+c_resize                  :: Ptr CState -> Ptr CStorage -> CPtrdiff -> IO ()
+c_fill                    :: Ptr CState -> Ptr CStorage -> CReal -> IO ()
+
+-- * TH
+-- c_swap                    :: Ptr CState -> Ptr CStorage -> Ptr CStorage -> IO ()
+-- c_newWithAllocator        :: Ptr CState -> CPtrdiff -> Ptr CAllocator -> Ptr () -> IO (Ptr CStorage)
+-- c_newWithDataAndAllocator :: Ptr CState -> Ptr CReal -> CPtrdiff -> Ptr CAllocator -> Ptr () -> IO (Ptr CStorage)
+
+-- * THC
+-- c_getDevice :: Ptr CState -> Ptr CStorage -> IO CInt
+

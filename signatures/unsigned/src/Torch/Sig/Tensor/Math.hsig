@@ -1,0 +1,34 @@
+signature Torch.Sig.Tensor.Math where
+
+import Torch.Types.TH.Structs
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+
+c_fill :: Ptr CState -> Ptr CTensor -> CReal -> IO ()
+c_zero :: Ptr CState -> Ptr CTensor -> IO ()
+c_zeros :: Ptr CState -> Ptr CTensor -> Ptr C'THLongStorage -> IO ()
+c_zerosLike :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_ones :: Ptr CState -> Ptr CTensor -> Ptr C'THLongStorage -> IO ()
+c_onesLike :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_reshape :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr C'THLongStorage -> IO ()
+c_numel :: Ptr CState -> Ptr CTensor -> IO CPtrdiff
+c_cat :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CInt -> IO ()
+c_catArray :: Ptr CState -> Ptr CTensor -> Ptr (Ptr CTensor) -> CInt -> CInt -> IO ()
+c_nonzero :: Ptr CState -> Ptr CIndexTensor -> Ptr CTensor -> IO ()
+c_tril :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CLLong -> IO ()
+c_triu :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CLLong -> IO ()
+c_diag :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt' -> IO ()
+c_eye :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> IO ()
+c_trace :: Ptr CState -> Ptr CTensor -> IO CAccReal
+c_range :: Ptr CState -> Ptr CTensor -> CAccReal -> CAccReal -> CAccReal -> IO ()
+c_arange :: Ptr CState -> Ptr CTensor -> CAccReal -> CAccReal -> CAccReal -> IO ()
+
+-- TH only, unaccounted for:
+-- c_match        :: Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+-- c_kthvalue     :: Ptr CTensor -> Ptr C'THLongTensor -> Ptr CTensor -> CLLong -> CInt -> CInt -> IO ()
+-- c_randperm     :: Ptr CTensor -> Ptr C'THGenerator -> CLLong -> IO ()
+
+
+

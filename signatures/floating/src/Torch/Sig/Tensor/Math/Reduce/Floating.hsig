@@ -1,0 +1,19 @@
+signature Torch.Sig.Tensor.Math.Reduce.Floating where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+
+c_dist :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO CAccReal
+c_var :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> IO ()
+c_varall :: Ptr CState -> Ptr CTensor -> CInt -> IO CAccReal
+c_std :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> IO ()
+c_stdall :: Ptr CState -> Ptr CTensor -> CInt -> IO CAccReal
+c_renorm :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> CInt -> CReal -> IO ()
+c_norm :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> CInt -> CInt -> IO ()
+c_normall :: Ptr CState -> Ptr CTensor -> CReal -> IO CAccReal
+c_mean  :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
+c_meanall :: Ptr CState -> Ptr CTensor -> IO CAccReal
+
+

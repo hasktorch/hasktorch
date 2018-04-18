@@ -1,88 +1,55 @@
 module CodeGen.Render.C
-  ( renderCType
-  , type2real
-  , type2accreal
+  ( render
+  , renderTenType
+  , renderCType
+  , renderNNType
   ) where
 
 import CodeGen.Prelude
 import CodeGen.Types
-import ConditionalCases
 
-renderCType :: THType -> Text
+render :: Parsable -> Text
+render =
+  \case
+    -- special pointer cases
+    Ptr x -> render x <> " *"
+    TenType x -> renderTenType x
+    -- NNType x -> renderNNType lt x
+    CType x -> renderCType x
+
+
+renderTenType :: TenType -> Text
+renderTenType = \case
+  Pair (Real, _)    -> "real"
+  Pair (AccReal, _) -> "accreal"
+  p@(Pair (rtt, lib)) -> (if isConcreteCudaPrefixed p then "THCuda" else tshow lib) <> tshow rtt
+
+
+renderCType :: CType -> Text
 renderCType = \case
-  THVoid             -> "void"
-  THBool             -> "bool"
-  THDescBuff         -> "THDescBuff"
-  THNNStatePtr       -> "THNNState *"
-  THTensorPtr        -> "THTensor *"
-  THIntegerTensorPtr -> "THIntegerTensor *"
-  THIndexTensorPtr   -> "THIndexTensor *"
-  THTensorPtrPtr     -> "THTensor **"
-  THByteTensorPtr    -> "THByteTensor *"
-  THLongTensorPtr    -> "THLongTensor *"
-  THDoubleTensorPtr  -> "THDoubleTensor *"
-  THFloatTensorPtr   -> "THFloatTensor *"
-  THGeneratorPtr     -> "THGenerator *"
-  THStoragePtr       -> "THStorage *"
-  THCharStoragePtr   -> "THCharStorage *"
-  THLongStoragePtr   -> "THLongStorage *"
-  THPtrDiff          -> "ptrdiff_t"
-  THLongPtrPtr       -> "long **"
-  THLongPtr          -> "long *"
-  THLong             -> "long"
-  THIntPtr           -> "int *"
-  THInt              -> "int"
+  CUInt64  -> "uint64_t"
+  CUInt32  -> "uint32_t"
+  CUInt16  -> "uint16_t"
+  CUInt8   -> "uint8_t"
 
-  THUInt64           -> "uint64_t"
-  THUInt64Ptr        -> "uint64_t *"
-  THUInt64PtrPtr     -> "uint64_t **"
-  THUInt32           -> "uint32_t"
-  THUInt32Ptr        -> "uint32_t *"
-  THUInt32PtrPtr     -> "uint32_t **"
-  THUInt16           -> "uint16_t"
-  THUInt16Ptr        -> "uint16_t *"
-  THUInt16PtrPtr     -> "uint16_t **"
-  THUInt8            -> "uint8_t"
-  THUInt8Ptr         -> "uint8_t *"
-  THUInt8PtrPtr      -> "uint8_t **"
+  CInt64   -> "int64_t"
+  CInt32   -> "int32_t"
+  CInt16   -> "int16_t"
+  CInt8    -> "int8_t"
+  CInt     -> "int"
 
-  THInt64            -> "int64_t"
-  THInt64Ptr         -> "int64_t *"
-  THInt64PtrPtr      -> "int64_t **"
-  THInt32            -> "int32_t"
-  THInt32Ptr         -> "int32_t *"
-  THInt32PtrPtr      -> "int32_t **"
-  THInt16            -> "int16_t"
-  THInt16Ptr         -> "int16_t *"
-  THInt16PtrPtr      -> "int16_t **"
-  THInt8             -> "int8_t"
-  THInt8Ptr          -> "int8_t *"
-  THInt8PtrPtr       -> "int8_t **"
-  THSize             -> "size_t"
-  THCharPtr          -> "char *"
-  THChar             -> "char"
-  THShort            -> "short"
-  THHalf             -> "THHalf"
-  THHalfPtr          -> "THHalfPtr"
-  THFloat            -> "float"
-  THDouble           -> "double"
-  THRealPtr          -> "real *"
-  THReal             -> "real"
-  THAccRealPtr       -> "accreal *"
-  THAccReal          -> "accreal"
-  THFilePtr          -> "THFile *"
-  s -> error (show s <> " is unaccounted for") -- TODO : make this total
+  CSize    -> "size_t"
+  CLong    -> "long"
+  CChar    -> "char"
+  CShort   -> "short"
+  CFloat   -> "float"
+  CDouble  -> "double"
+  CPtrdiff -> "ptrdiff_t"
+  CVoid    -> "void"
+  CBool    -> "bool"
 
--- See header files "#define real [X]"
-type2real :: TemplateType -> Text
-type2real t = case signatureAliases t of
-  Just (_, CReal _ (CRep t), _, _) -> t
-  Nothing -> impossible "TemplateType is concrete and should not have been called"
 
--- See header files "#define accreal [X]"
-type2accreal :: TemplateType -> Text
-type2accreal t = case signatureAliases t of
-  Just (_, _, CAccReal _ (CRep t), _) -> t
-  Nothing -> impossible "TemplateType is concrete and should not have been called"
-
+-- FIXME: get back to this when THC is finished
+renderNNType :: LibType -> NNType -> Text
+renderNNType lt nt = tshow lt <> tshow nt
 

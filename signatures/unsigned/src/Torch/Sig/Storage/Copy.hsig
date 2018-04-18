@@ -1,0 +1,24 @@
+signature Torch.Sig.Storage.Copy where
+
+import Torch.Types.TH hiding (CState)
+import Foreign
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+
+c_rawCopy    :: Ptr CState -> Ptr CStorage -> Ptr CReal -> IO ()
+c_copy       :: Ptr CState -> Ptr CStorage -> Ptr CStorage -> IO ()
+c_copyByte   :: Ptr CState -> Ptr CStorage -> Ptr C'THByteStorage -> IO ()
+c_copyChar   :: Ptr CState -> Ptr CStorage -> Ptr C'THCharStorage -> IO ()
+c_copyShort  :: Ptr CState -> Ptr CStorage -> Ptr C'THShortStorage -> IO ()
+c_copyInt    :: Ptr CState -> Ptr CStorage -> Ptr C'THIntStorage -> IO ()
+c_copyLong   :: Ptr CState -> Ptr CStorage -> Ptr C'THLongStorage -> IO ()
+c_copyFloat  :: Ptr CState -> Ptr CStorage -> Ptr C'THFloatStorage -> IO ()
+c_copyDouble :: Ptr CState -> Ptr CStorage -> Ptr C'THDoubleStorage -> IO ()
+c_copyHalf   :: Ptr CState -> Ptr CStorage -> Ptr C'THHalfStorage -> IO ()
+
+-- * THC
+-- c_thCopyCuda :: Ptr C'THCState -> Ptr C'THByteStorage -> Ptr C'THCByteStorage -> IO ()
+-- c_copyCuda :: Ptr C'THCState -> Ptr C'THCByteStorage -> Ptr C'THCByteStorage -> IO ()
+-- c_copyCPU :: Ptr C'THCState -> Ptr C'THCByteStorage -> Ptr C'THByteStorage -> IO ()
+
+

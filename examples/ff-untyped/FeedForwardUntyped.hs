@@ -3,9 +3,10 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 module Main where
 
-import Torch.Core.Tensor.Dim
-import Torch.Core.Tensor.Dynamic
+import Torch.Dynamic
 import qualified Torch.Core.Random as RNG
+
+type DoubleTensor = DoubleDynamic
 
 data Weights = W
   { biases :: DoubleTensor
@@ -52,22 +53,46 @@ randomNet i [] o = O <$> randomWeights i o
 randomNet i (h:hs) o = (:~) <$> randomWeights i h <*> randomNet h hs o
 
 runLayer :: Weights -> DoubleTensor -> IO DoubleTensor
-runLayer (W wB wN) v = addmv 1.0 wB 1.0 wN v
+runLayer (W wB wN) v = do
+  putStrLn "++++++"
+  putStrLn "x"
+  printTensor wB
+  putStrLn ""
+  printTensor wN
+  putStrLn ""
+  printTensor v
+  putStrLn ""
+  -- printTensor (wN !* v)
+  putStrLn "========"
+  dt <- addmv 1 wB 1 wN v
+  putStrLn "y"
+  printTensor dt
+  pure dt
 
 runNet :: Network -> DoubleTensor -> IO DoubleTensor
-runNet (O w) v     = (runLayer w v) >>= sigmoid
-runNet (w :~ n') v = (runLayer w v) >>= sigmoid >>= runNet n'
+runNet (O w) v     = runLayer w v >>= sigmoid
+runNet (w :~ n') v = runLayer w v >>= sigmoid >>= runNet n'
 
 
 main :: IO ()
 main = do
   net <- randomNet 5 [3, 2, 4, 2, 3] 2
   dat <- randomData 5
-  putStrLn "Data\n--------"
+  putStrLn "Data"
+  putStrLn "--------"
   printTensor dat
-  putStrLn "Network\n--------"
+
+  putStrLn "Network"
+  putStrLn "--------"
   dispN net
+
+  putStrLn "=============================="
+  putStrLn "Running the network"
+  putStrLn "=============================="
   result <- runNet net dat
-  putStrLn "Result\n--------"
+
+  putStrLn "Result"
+  putStrLn "--------"
   printTensor result
+
   putStrLn "Done"

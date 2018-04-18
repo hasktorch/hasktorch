@@ -14,9 +14,17 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
+flag cuda
+  Description: build with THC support
+  Default: True
+
 library
   hs-source-dirs: src
   default-language: Haskell2010
+  default-extensions:
+      InstanceSigs
+    , TypeSynonymInstances
+    , DataKinds
   build-depends:
       base >=4.7 && <5
     , containers
@@ -24,62 +32,81 @@ library
     , dimensions >=0.3.2.0
     , hasktorch-classes
     , hasktorch-dimensions
-    , hasktorch-raw
+    , hasktorch-indef-types
     , hasktorch-signatures-unsigned
-    , hasktorch-types
+    , hasktorch-types-th
+    , hasktorch-raw-th
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
+    , mtl
     , numeric-limits
     , safe-exceptions >=0.1.0.0
     , singletons >=2.2
+    , transformers
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
+
+  if flag(cuda)
+    build-depends:
+      hasktorch-types-thc
+    cpp-options: -DCUDA
+
+  other-modules:
+      Torch.Indef.Internal
+
+  reexported-modules:
+      Torch.Indef.Types
+
   exposed-modules:
-    --  Torch.Core.Tensor
-
     -- classes implementations with indefinites
-      Torch.Core.Types
-    , Torch.Core.Storage
-    , Torch.Core.Storage.Copy
-    , Torch.Core.Tensor.Dynamic
-    , Torch.Core.Tensor.Dynamic.IsTensor
-    , Torch.Core.Tensor.Dynamic.Copy
-    , Torch.Core.Tensor.Dynamic.Conv
-    , Torch.Core.Tensor.Dynamic.Math
-    , Torch.Core.Tensor.Dynamic.Random
-    , Torch.Core.Tensor.Static
-    , Torch.Core.Tensor.Static.IsTensor
-    , Torch.Core.Tensor.Static.Copy
-    , Torch.Core.Tensor.Static.Random
 
-executable isdefinite
-  hs-source-dirs: exe
-  main-is: Main.hs
-  default-language: Haskell2010
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-indef-unsigned
-    , hasktorch-raw
-    , hasktorch-types
-  mixins:
-      hasktorch-indef-unsigned
-        (Torch.Core.Types
-        ,Torch.Core.Storage
-        ,Torch.Core.Storage.Copy
-        ,Torch.Core.Tensor.Dynamic
-        ,Torch.Core.Tensor.Dynamic.Copy
-        ,Torch.Core.Tensor.Dynamic.Conv
-        ,Torch.Core.Tensor.Dynamic.Random
-        ,Torch.Core.Tensor.Dynamic.Math
-        ,Torch.Core.Tensor.Static
-        )
-        requires
-        (SigTypes         as THByteTypes
-        ,Storage          as THByteStorage
-        ,StorageCopy      as THByteStorageCopy
-        ,Tensor           as THByteTensor
-        ,TensorCopy       as THByteTensorCopy
-        ,TensorConv       as THByteTensorConv
-        ,TensorRandom     as THByteTensorRandom
-        ,TensorMath       as THByteTensorMath
-        )
+    -- FIXME: not sure where to go with commented-out classes, they are TH-only but there are some THC-only things as well
+    -- , Torch.Class.Blas
+    -- , Torch.Class.Lapack
+    -- , Torch.Class.Tensor.Conv
+    -- , Torch.Class.Vector
+
+      Torch.Indef.Storage
+    , Torch.Indef.Storage.Copy
+
+    -- ==================================================== --
+    -- Dynamic Tensor modules
+    -- ==================================================== --
+    , Torch.Indef.Dynamic
+    , Torch.Indef.Dynamic.Tensor
+    , Torch.Indef.Dynamic.Tensor.Copy
+    , Torch.Indef.Dynamic.Tensor.Index
+    , Torch.Indef.Dynamic.Tensor.Masked
+    , Torch.Indef.Dynamic.Tensor.Math
+    , Torch.Indef.Dynamic.Tensor.Math.Compare
+    , Torch.Indef.Dynamic.Tensor.Math.CompareT
+    , Torch.Indef.Dynamic.Tensor.Math.Pairwise
+    , Torch.Indef.Dynamic.Tensor.Math.Pointwise
+    , Torch.Indef.Dynamic.Tensor.Math.Reduce
+    , Torch.Indef.Dynamic.Tensor.Math.Scan
+    , Torch.Indef.Dynamic.Tensor.Mode
+    , Torch.Indef.Dynamic.Tensor.ScatterGather
+    , Torch.Indef.Dynamic.Tensor.Sort
+    , Torch.Indef.Dynamic.Tensor.TopK
+
+    -- ==================================================== --
+    -- Static Tensor modules
+    -- ==================================================== --
+    , Torch.Indef.Static
+    , Torch.Indef.Static.Tensor
+    , Torch.Indef.Static.Tensor.Copy
+    , Torch.Indef.Static.Tensor.Index
+    , Torch.Indef.Static.Tensor.Masked
+    , Torch.Indef.Static.Tensor.Math
+    , Torch.Indef.Static.Tensor.Math.Compare
+    , Torch.Indef.Static.Tensor.Math.CompareT
+    , Torch.Indef.Static.Tensor.Math.Pairwise
+    , Torch.Indef.Static.Tensor.Math.Pointwise
+    , Torch.Indef.Static.Tensor.Math.Reduce
+    , Torch.Indef.Static.Tensor.Math.Scan
+    , Torch.Indef.Static.Tensor.Mode
+    , Torch.Indef.Static.Tensor.ScatterGather
+    , Torch.Indef.Static.Tensor.Sort
+    , Torch.Indef.Static.Tensor.TopK
+
+

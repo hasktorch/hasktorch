@@ -1,0 +1,39 @@
+name:           hasktorch-indef-types
+version:        0.0.1.0
+synopsis:       Torch for tensors and neural networks in Haskell
+description:    core tensor abstractions wrapping raw TH bindings
+category:       Tensors, Machine Learning
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         Austin Huang
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 2.0
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+library
+  hs-source-dirs: src
+  default-language: Haskell2010
+  default-extensions:
+      DataKinds
+    , TypeSynonymInstances
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-classes
+    , hasktorch-dimensions
+    , hasktorch-raw-th
+    , hasktorch-signatures-types
+    , hasktorch-types-th
+    , managed >=1.0.0 && <1.1
+    , mtl
+    , transformers
+
+  -- other-modules:
+  --     Torch.Indef.Internal
+
+  exposed-modules:
+      Torch.Indef.Types
+

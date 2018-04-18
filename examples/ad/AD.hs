@@ -6,17 +6,9 @@
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-imports -Wno-missing-signatures -Wno-unused-matches #-}
 module Main where
 
-import Torch.Core.Tensor.Dim
-import Torch.Core.Tensor.Static
-import Torch.Core.Tensor.Static.Math
-import Torch.Core.Tensor.Static.Math.Infix
-import Torch.Core.Tensor.Static.Random
+import Torch
 import qualified Torch.Core.Random as RNG
 import System.IO.Unsafe (unsafePerformIO)
-
-import Data.Singletons
-import Data.Singletons.Prelude
-import Data.Singletons.TypeLits
 
 type Tensor = DoubleTensor
 
@@ -55,9 +47,9 @@ data Network :: Nat -> [Nat] -> Nat -> * where
   (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
           Layer l i h -> NW h hs o -> NW i (h ': hs) o
 
-data AffineWeights (i :: Nat) (o :: Nat) = AW {
-  biases :: Tensor '[o],
-  weights :: Tensor '[o, i]
+data AffineWeights (i :: Nat) (o :: Nat) = AW
+  { biases :: Tensor '[o]
+  , weights :: Tensor '[o, i]
   } deriving (Show)
 type AW = AffineWeights
 

@@ -1,0 +1,20 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Sig.State
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Signatures which relate to creating State and is _not_ involving in a
+-- state's definition.
+-------------------------------------------------------------------------------
+signature Torch.Sig.State where
+
+import Foreign
+import Torch.Sig.Types.Global
+
+newCState :: IO (Ptr CState)
+manageState :: Ptr CState -> IO (ForeignPtr CState)
+

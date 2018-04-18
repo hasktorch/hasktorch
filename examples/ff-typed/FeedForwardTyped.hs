@@ -2,20 +2,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE BangPatterns #-}
-
 module Main where
 
-import Torch.Core.Tensor.Dim
-import Torch.Core.Tensor.Static
-import Torch.Core.Tensor.Static.Math
-import Torch.Core.Tensor.Static.Random (uniform)
+import Torch
 import qualified Torch.Core.Random as RNG
 import System.IO.Unsafe (unsafePerformIO)
-
-import Data.Singletons
-import Data.Singletons.Prelude
-import Data.Singletons.TypeLits
 
 {- Simple FF neural network, statically typed version, based on JL's example -}
 

@@ -1,0 +1,20 @@
+signature Torch.Sig.Tensor.Math.CompareT where
+
+import Foreign
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+
+c_ltTensor :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_gtTensor :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_leTensor :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_geTensor :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_eqTensor :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_neTensor :: Ptr CState -> Ptr CMaskTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+
+c_ltTensorT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_gtTensorT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_leTensorT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_geTensorT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_eqTensorT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_neTensorT :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+

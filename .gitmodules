@@ -1,3 +1,4 @@
-[submodule "vendor/pytorch"]
-	path = vendor/pytorch
-	url = https://github.com/pytorch/pytorch.git
+[submodule "vendor/aten"]
+	path = vendor/aten
+	url = https://github.com/hasktorch/ATen.git
+  branch = hasktorch-expand

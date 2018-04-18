@@ -1,0 +1,18 @@
+signature Torch.Sig.Tensor.Index where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+
+c_indexCopy :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> Ptr CTensor -> IO (())
+c_indexAdd :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> Ptr CTensor -> IO (())
+c_indexFill :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> CReal -> IO (())
+c_indexSelect :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> IO (())
+c_take :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> IO (())
+c_put :: Ptr CState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CInt -> IO (())
+-- c_indexCopy_long :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> Ptr CTensor -> IO (())
+-- c_indexAdd_long :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> Ptr CTensor -> IO (())
+-- c_indexFill_long :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> CUChar -> IO (())
+-- c_indexSelect_long :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> IO (())
+-- c_calculateAdvancedIndexingOffsets :: Ptr CState -> Ptr CIndexTensor -> Ptr CTensor -> CPtrdiff -> Ptr (Ptr CIndexTensor) -> IO (())

@@ -1,0 +1,31 @@
+signature Torch.Sig.TH.Tensor.Random where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+import qualified Torch.Types.TH as TH
+
+
+c_random                :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> IO ()
+c_clampedRandom         :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CLLong -> CLLong -> IO ()
+c_cappedRandom          :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CLLong -> IO ()
+c_geometric             :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> IO ()
+c_bernoulli             :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> IO ()
+c_bernoulli_FloatTensor :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr TH.CFloatTensor -> IO ()
+c_bernoulli_DoubleTensor      :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr TH.CDoubleTensor -> IO ()
+
+c_uniform              :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> CAccReal -> IO ()
+c_normal               :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> CAccReal -> IO ()
+c_normal_means         :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr CTensor -> CAccReal -> IO ()
+c_normal_stddevs       :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> Ptr CTensor -> IO ()
+c_normal_means_stddevs :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_exponential          :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> IO ()
+c_standard_gamma       :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr CTensor -> IO ()
+c_cauchy               :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> CAccReal -> IO ()
+c_logNormal            :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> CAccReal -> IO ()
+
+c_multinomial           :: Ptr CState -> Ptr CLongTensor -> Ptr CGenerator -> Ptr CTensor -> CInt -> CInt -> IO ()
+c_multinomialAliasSetup :: Ptr CState -> Ptr CTensor -> Ptr CLongTensor -> Ptr CTensor -> IO ()
+c_multinomialAliasDraw  :: Ptr CState -> Ptr CLongTensor -> Ptr CGenerator -> Ptr CLongTensor -> Ptr CTensor -> IO ()
+

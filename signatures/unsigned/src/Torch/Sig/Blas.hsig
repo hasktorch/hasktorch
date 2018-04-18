@@ -1,0 +1,23 @@
+signature Torch.Sig.Blas where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+
+c_swap :: CLLong -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO ()
+c_scal :: CLLong -> CReal -> Ptr CReal -> CLLong -> IO ()
+c_copy :: CLLong -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO ()
+c_axpy :: CLLong -> CReal -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO ()
+c_dot  :: CLLong -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO CReal
+c_gemv :: CChar -> CLLong -> CLLong -> CReal -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> CReal -> Ptr CReal -> CLLong -> IO ()
+c_ger  :: CLLong -> CLLong -> CReal -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> Ptr CReal-> CLLong -> IO ()
+
+p_swap :: FunPtr (CLLong -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO ())
+p_scal :: FunPtr (CLLong -> CReal -> Ptr CReal -> CLLong -> IO ())
+p_copy :: FunPtr (CLLong -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO ())
+p_axpy :: FunPtr (CLLong -> CReal -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO ())
+p_dot  :: FunPtr (CLLong -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO CReal)
+p_gemv :: FunPtr (CChar -> CLLong -> CLLong -> CReal -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> CReal -> Ptr CReal -> CLLong -> IO ())
+p_ger  :: FunPtr (CLLong -> CLLong -> CReal -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> IO ())
+p_gemm :: FunPtr (CChar -> CChar -> CLLong -> CLLong -> CLLong -> CReal -> Ptr CReal -> CLLong -> Ptr CReal -> CLLong -> CReal -> Ptr CReal -> CLLong -> IO ())
+

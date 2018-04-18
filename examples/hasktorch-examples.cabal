@@ -35,7 +35,6 @@ executable ad
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
@@ -50,7 +49,6 @@ executable bayesian-regression
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , hasktorch-raw
     , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
@@ -124,22 +122,6 @@ executable multivariate-normal
     , hasktorch-core
     , singletons >=2.2
   other-modules:
-      Paths_hasktorch_examples
-  default-language: Haskell2010
-
-executable playground
-  main-is: Playground.hs
-  hs-source-dirs:
-      playground
-  ghc-options: -Wall -fno-cse
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core
-    , hasktorch-raw
-    , hasktorch-types
-    , singletons >=2.2
-  other-modules:
-      PlaygroundRawUtils
       Paths_hasktorch_examples
   default-language: Haskell2010
 

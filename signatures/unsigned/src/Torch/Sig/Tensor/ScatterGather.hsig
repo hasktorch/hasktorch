@@ -1,0 +1,13 @@
+signature Torch.Sig.Tensor.ScatterGather where
+
+import Foreign
+import Foreign.C.Types
+
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+import Torch.Types.TH hiding (CState, CIndexTensor)
+
+c_gather :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> IO ()
+c_scatter :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> Ptr CTensor -> IO ()
+c_scatterAdd :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> Ptr CTensor -> IO ()
+c_scatterFill :: Ptr CState -> Ptr CTensor -> CInt -> Ptr CIndexTensor -> CReal -> IO ()

@@ -1,0 +1,23 @@
+signature Torch.Sig.Tensor.Math.Pairwise where
+
+import Foreign
+import Foreign.C.Types
+
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+
+c_add :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_sub :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_add_scaled :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> CReal -> IO ()
+c_sub_scaled :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> CReal -> IO ()
+c_mul :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_div :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_lshift :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_rshift :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_fmod :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_remainder :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_bitand :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_bitor :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_bitxor :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ()
+c_equal :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO CInt
+

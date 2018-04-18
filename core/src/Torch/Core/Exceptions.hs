@@ -22,16 +22,16 @@ import Data.Text (Text)
 import Foreign
 import Foreign.C.String
 -- import Foreign.C.Types
--- import THTypes
+-- import Torch.Types.TH
 
--- import THDoubleTensor
--- import THDoubleTensorLapack
--- import THDoubleTensorMath
--- import THDoubleTensorRandom
+-- import Torch.FFI.TH.Double.Tensor
+-- import Torch.FFI.TH.Double.TensorLapack
+-- import Torch.FFI.TH.Double.TensorMath
+-- import Torch.FFI.TH.Double.TensorRandom
 
 -- import Torch.Core.Tensor.Types
 -- import Torch.Raw.Tensor.Generic
--- import qualified Torch.Core.Tensor.Dim as Dim
+-- import qualified Torch.Dimensions as Dim
 -- import qualified Torch.Raw.Tensor.Generic as Gen
 
 data TorchException
@@ -73,9 +73,9 @@ foreign import ccall unsafe "THGeneral.h.in THLog1p"
   c_THLog1p :: CDouble -> CDouble
 
 -- safe version of potrf
--- |c_THDoubleTensor_potrf : ra_ a uplo -> void
-foreign import ccall "THTensorLapack.h THDoubleTensor_potrf"
-  c_safe_THDoubleTensor_potrf :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> Ptr CChar -> IO ()
+-- |c_Torch.FFI.TH.Double.Tensor_potrf : ra_ a uplo -> void
+foreign import ccall "THTensorLapack.h Torch.FFI.TH.Double.Tensor_potrf"
+  c_safe_Torch.FFI.TH.Double.Tensor_potrf :: (Ptr CTHDoubleTensor) -> (Ptr CTHDoubleTensor) -> Ptr CChar -> IO ()
 
 lapackTest :: IO ()
 lapackTest = do
@@ -92,11 +92,11 @@ lapackTest = do
   Gen.c_set2d a 1 0 0.0
   resA <- constant' dims 5.0
   dispRaw a
-  c_safe_THDoubleTensor_potrf resA a opt
+  c_safe_Torch.FFI.TH.Double.Tensor_potrf resA a opt
   dispRaw a
   -- dispRaw resA -- TODO: what should happen when potrf has an error
-  c_THDoubleTensor_free a
-  c_THDoubleTensor_free resA
+  c_Torch.FFI.TH.Double.Tensor_free a
+  c_Torch.FFI.TH.Double.Tensor_free resA
   pure ()
 
 test = do

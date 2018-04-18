@@ -1,0 +1,41 @@
+name:           hasktorch-types-th
+version:        0.0.1.0
+synopsis:       Raw C-types from torch.
+description:    core C types
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         Austin Huang
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+library
+  hs-source-dirs: src
+  c-sources: cbits/state_free.c
+  default-extensions: KindSignatures, DataKinds
+  build-tools: c2hs
+  build-depends:
+      base >=4.7 && <5
+    , inline-c >=0.5
+  exposed-modules:
+      Torch.Types.TH.Byte
+      Torch.Types.TH.Char
+
+      Torch.Types.TH.Short
+      Torch.Types.TH.Int
+      Torch.Types.TH.Long
+
+      Torch.Types.TH.Float
+      -- Torch.Types.TH.Half
+      Torch.Types.TH.Double
+
+      Torch.Types.TH
+      Torch.Types.TH.Structs
+
+  other-modules:
+      Paths_hasktorch_types_th
+  default-language: Haskell2010

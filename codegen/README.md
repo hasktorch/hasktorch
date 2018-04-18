@@ -16,8 +16,8 @@ However, if you are contributing to hasktorch itself, you may want to
 modify/re-generate the code generation processes. Currently there are three main
 operations:
 
-- `stack exec codegen-generic` - Builds generic modules (one version per tensor type).
-- `stack exec codegen-concrete` - Builds non-generic modules.
+- `cabal new-run hasktorch-codegen:ht-codegen -- --lib TH --type generic` - Builds generic modules (one version per tensor type).
+- `cabal new-run hasktorch-codegen:ht-codegen -- --lib TH --type concrete` - Builds non-generic modules.
 
 All of these programs write `.hs` files into the [`output/`][output] directory
 as a staging area (rather than overwriting [`raw/`][raw] directly).

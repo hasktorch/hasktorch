@@ -1,0 +1,179 @@
+name:           hasktorch-raw-th
+version:        0.0.1.0
+synopsis:       Torch for tensors and neural networks in Haskell
+description:    core C bindings
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         Austin Huang
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+flag half
+  Description: build with half support
+  Default: False
+
+flag with_nn
+  Description: build with nn support
+  Default: True
+
+library
+  extra-libraries: ATen
+  hs-source-dirs:
+      src
+    , nn
+    , polyfill
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-types-th
+    , inline-c >=0.5
+    , text >=1.2.2.2
+  build-tools: c2hs
+  c-sources:
+      cbits/finalizers.c
+      cbits/expand_polyfill.c
+
+  default-language: Haskell2010
+  if flag(half)
+    cc-options: -DHALF
+  exposed-modules:
+      Torch.FFI.TH.DiskFile
+    , Torch.FFI.TH.File
+    , Torch.FFI.TH.LogAdd
+    , Torch.FFI.TH.MemoryFile
+    , Torch.FFI.TH.Random
+    , Torch.FFI.TH.Size
+    , Torch.FFI.TH.Storage
+
+    , Torch.FFI.TH.Byte.Blas
+    , Torch.FFI.TH.Byte.Storage
+    , Torch.FFI.TH.Byte.StorageCopy
+    , Torch.FFI.TH.Byte.Tensor
+    , Torch.FFI.TH.Byte.TensorConv
+    , Torch.FFI.TH.Byte.TensorCopy
+    , Torch.FFI.TH.Byte.TensorMath
+    , Torch.FFI.TH.Byte.TensorRandom
+    , Torch.FFI.TH.Byte.Vector
+    , Torch.FFI.TH.Byte.FreeTensor
+    , Torch.FFI.TH.Byte.FreeStorage
+
+    , Torch.FFI.TH.Char.Blas
+    , Torch.FFI.TH.Char.Storage
+    , Torch.FFI.TH.Char.StorageCopy
+    , Torch.FFI.TH.Char.Tensor
+    , Torch.FFI.TH.Char.TensorConv
+    , Torch.FFI.TH.Char.TensorCopy
+    , Torch.FFI.TH.Char.TensorMath
+    , Torch.FFI.TH.Char.TensorRandom
+    , Torch.FFI.TH.Char.Vector
+    , Torch.FFI.TH.Char.FreeTensor
+    , Torch.FFI.TH.Char.FreeStorage
+
+    , Torch.FFI.TH.Double.Blas
+    , Torch.FFI.TH.Double.Lapack
+    , Torch.FFI.TH.Double.Storage
+    , Torch.FFI.TH.Double.StorageCopy
+    , Torch.FFI.TH.Double.Tensor
+    , Torch.FFI.TH.Double.TensorConv
+    , Torch.FFI.TH.Double.TensorCopy
+    , Torch.FFI.TH.Double.TensorLapack
+    , Torch.FFI.TH.Double.TensorMath
+    , Torch.FFI.TH.Double.TensorRandom
+    , Torch.FFI.TH.Double.Vector
+    , Torch.FFI.TH.Double.FreeTensor
+    , Torch.FFI.TH.Double.FreeStorage
+
+    , Torch.FFI.TH.Float.Blas
+    , Torch.FFI.TH.Float.Lapack
+    , Torch.FFI.TH.Float.Storage
+    , Torch.FFI.TH.Float.StorageCopy
+    , Torch.FFI.TH.Float.Tensor
+    , Torch.FFI.TH.Float.TensorConv
+    , Torch.FFI.TH.Float.TensorCopy
+    , Torch.FFI.TH.Float.TensorLapack
+    , Torch.FFI.TH.Float.TensorMath
+    , Torch.FFI.TH.Float.TensorRandom
+    , Torch.FFI.TH.Float.Vector
+    , Torch.FFI.TH.Float.FreeTensor
+    , Torch.FFI.TH.Float.FreeStorage
+
+    , Torch.FFI.TH.Int.Blas
+    , Torch.FFI.TH.Int.Storage
+    , Torch.FFI.TH.Int.StorageCopy
+    , Torch.FFI.TH.Int.Tensor
+    , Torch.FFI.TH.Int.TensorConv
+    , Torch.FFI.TH.Int.TensorCopy
+    , Torch.FFI.TH.Int.TensorMath
+    , Torch.FFI.TH.Int.TensorRandom
+    , Torch.FFI.TH.Int.Vector
+    , Torch.FFI.TH.Int.FreeTensor
+    , Torch.FFI.TH.Int.FreeStorage
+
+    , Torch.FFI.TH.Long.Blas
+    , Torch.FFI.TH.Long.Storage
+    , Torch.FFI.TH.Long.StorageCopy
+    , Torch.FFI.TH.Long.Tensor
+    , Torch.FFI.TH.Long.TensorConv
+    , Torch.FFI.TH.Long.TensorCopy
+    , Torch.FFI.TH.Long.TensorMath
+    , Torch.FFI.TH.Long.TensorRandom
+    , Torch.FFI.TH.Long.Vector
+    , Torch.FFI.TH.Long.FreeTensor
+    , Torch.FFI.TH.Long.FreeStorage
+
+    , Torch.FFI.TH.Short.Blas
+    , Torch.FFI.TH.Short.Storage
+    , Torch.FFI.TH.Short.StorageCopy
+    , Torch.FFI.TH.Short.Tensor
+    , Torch.FFI.TH.Short.TensorConv
+    , Torch.FFI.TH.Short.TensorCopy
+    , Torch.FFI.TH.Short.TensorMath
+    , Torch.FFI.TH.Short.TensorRandom
+    , Torch.FFI.TH.Short.Vector
+    , Torch.FFI.TH.Short.FreeTensor
+    , Torch.FFI.TH.Short.FreeStorage
+
+  if flag(half)
+    exposed-modules:
+        Torch.FFI.TH.Half.Blas
+      , Torch.FFI.TH.Half.Storage
+      , Torch.FFI.TH.Half.StorageCopy
+      , Torch.FFI.TH.Half.Tensor
+      , Torch.FFI.TH.Half.TensorConv
+      , Torch.FFI.TH.Half.TensorCopy
+      , Torch.FFI.TH.Half.TensorMath
+      , Torch.FFI.TH.Half.TensorRandom
+      , Torch.FFI.TH.Half.Vector
+
+  if flag(with_nn)
+    exposed-modules:
+        Torch.FFI.TH.NN.Double
+      , Torch.FFI.TH.NN.Float
+
+  other-modules:
+      Paths_hasktorch_raw_th
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  default-language: Haskell2010
+  hs-source-dirs: tests
+  build-depends:
+      QuickCheck
+    , base >=4.7 && <5
+    , hasktorch-raw-th
+    , hasktorch-types-th
+    , hasktorch-raw-tests
+    , hspec >=2.4.4
+    , text >=1.2.2.2
+  other-modules:
+      MathSpec
+    , TensorSpec
+
+  if flag(with_nn)
+    other-modules:
+       NNSpec

@@ -2,23 +2,19 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-local-binds -fno-cse #-}
 module Main where
 
-import Control.Monad
-import Data.Function
 import Data.Monoid
-import Data.Singletons
+import Control.Monad (void)
 import GHC.TypeLits
-import Lens.Micro
+import Lens.Micro ((^.), _2, _1)
+import System.IO.Unsafe
 
-import Torch.Core.Tensor.Dim hiding (N)
-import Torch.Core.Tensor.Static
-import Torch.Core.Tensor.Static.Math.Infix
+import Torch hiding (N, abs, sqrt, round, max)
 import qualified Torch.Core.Random as RNG
-import qualified Torch.Core.Tensor.Static.Math as T
-import qualified Torch.Core.Tensor.Static.Math.Unsafe as TU
-import qualified Torch.Core.Tensor.Static as T
-import qualified Torch.Core.Tensor.Static.Random as T
+import qualified Torch as T
+import qualified Torch as TU
 
 type N = 20 -- sample size
 type M = 2
@@ -30,6 +26,25 @@ type Epsilon = Precision
 seedVal :: RNG.Seed
 seedVal = 3141592653579
 
+-- ========================================================================= --
+-- Run examples
+
+main :: IO ()
+main = do
+  putStrLn "Run using the same random seed"
+  p :: Tensor '[M, 1] <- T.zerosLike
+  let
+    runCoord xs ys l = cyclic_coordinate_descent (xs, ys) l 0.0001 p
+  void $ runSynthetic runCoord 100 1
+
+  w0 :: Tensor '[M, 1] <- T.zerosLike
+  z0 :: Tensor '[M, 1] <- T.zerosLike
+  let
+    runFista xs ys l = fista (xs, ys) l 1 0.0001 w0 z0 1
+  void $ runSynthetic runFista 100 1
+
+-- ========================================================================= --
+-- Make sample data
 genData :: Tensor '[M, 1] -> IO (Tensor '[N, M], Tensor '[N, 1])
 genData w = do
   gen <- RNG.new
@@ -39,71 +54,37 @@ genData w = do
   ones         :: Tensor '[N] <- T.constant 1
   x :: Tensor '[N, M] <- (predictorVal `T.cat1d` ones) >>= T.resizeAs
   y :: Tensor '[N, 1] <- T.resizeAs ((x !*! w) ^+^ noise)
+  printTensor x
+  printTensor y
   pure (x, y)
 
-loss :: (Tensor '[N, M], Tensor '[N, 1]) -> Tensor '[M, 1] -> Precision
-loss (x, y) w = squaredSum (y ^-^ (x !*! w)) + l1 w
- where
-  squaredSum = realToFrac . TU.sumall . TU.square
+-- ========================================================================= --
+-- Run one of our algorithms
+type History = [(FloatTensor '[M, 1], Precision)]
 
-l1 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
-l1 = realToFrac . TU.sumall . TU.abs
-
-l2 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
-l2 = realToFrac . sqrt . TU.sumall . TU.square
-
-prox_l1 :: Tensor '[M, 1] -> Precision -> IO (Tensor '[M, 1])
-prox_l1 w l = do
-  a <- T.sign w
-  b <- max_plus (w ^- l)
-  pure (a * b)
- where
-   max_plus :: Tensor '[M, 1] -> IO (Tensor '[M, 1])
-   max_plus t = T.cmax t (TU.zerosLike)
-
-prox_l1_single :: AccPrecision -> AccPrecision -> Precision
-prox_l1_single w_i l = realToFrac (signum w_i * max (w_i - l) 0)
-
-data LassoDim = D1 | D2
-  deriving (Enum, Ord, Show, Eq)
-
--- TODO: move Int-based version into hasktorch-dimensions
-getDim2d
-  :: (Fractional precision, Real precision)
-  => Tensor '[N, M] -> LassoDim -> precision
-getDim2d _ = \case
-  D1 -> realToFrac (natVal (Proxy :: Proxy N))
-  D2 -> realToFrac (natVal (Proxy :: Proxy M))
-
-coordinate_descent
-  :: (Tensor '[N, M], Tensor '[N, 1])
+runSynthetic
+  :: (Tensor '[N, M] -> Tensor '[N, 1] -> Precision -> IO History)
+  -> Int
   -> Precision
-  -> Integer
-  -> Tensor '[M, 1]
-  -> IO [(Tensor '[M, 1], Precision)]
-coordinate_descent (x, y) l = go 0 []
- where
-  nSamples = getDim2d x D1
+  -> IO (Tensor '[M, 1])
+runSynthetic fn iters l = do
+  gen       <- RNG.new
+  trueParam <- T.normal gen 20 1
+  (xs, ys)  <- genData trueParam
 
-  nParams :: Int
-  nParams = round ( getDim2d x D2 )
+  lzy <- take iters <$> fn xs ys l
+  print (fmap snd lzy)
 
-  go :: Int -> [(Tensor '[M, 1], Precision)] -> Integer -> Tensor '[M, 1] -> IO [(Tensor '[M, 1], Precision)]
-  go ix res j w
-    | j > natVal (Proxy :: Proxy M) - 1 = pure ((w, loss (x, y) w):res)
-    | otherwise = do
-      let jIdx = fromIntegral j
-      x_j <- T.getColumn x jIdx
-      w_j <- T.getRow w jIdx
+  let final    = last lzy
+      w        = (^. _1) final
+      obj      = (^. _2) final
+      accuracy = abs $ (snd . last $ lzy) - (snd . last . init $ lzy)
 
-      let r_j     = (y ^-^ (x !*! w)) ^+^ (x_j !*! w_j)
-      let w_j_upd = prox_l1_single ((1 / nSamples) * (x_j <.> r_j)) (realToFrac l)
-      w_upd <- T.copy w
-      T.setElem2d w_upd jIdx 0 w_j_upd
-      let loss_obj = loss (x, y) w_upd
+  putStrLn $ "Loss " <> show obj <> " accuracy of " <> show accuracy
+  pure w
 
-      go (ix+1) ((w_upd, loss_obj):res) (j + 1) w_upd
-
+-- ========================================================================= --
+-- Cyclic Coordinate Descent
 cyclic_coordinate_descent
   :: (Tensor '[N, M], Tensor '[N, 1])
   -> Precision
@@ -125,64 +106,38 @@ cyclic_coordinate_descent (x, y) l eps = go []
     then pure $ (w, loss_w):res
     else go ([(w, loss_w)] <> iter_coord <> res) w_upd
 
-run_cd_synthetic :: Int -> Precision -> IO (Tensor '[M, 1])
-run_cd_synthetic iters l = do
-  gen       <- RNG.new
-  trueParam <- T.normal gen 20 1
-  dat       <- genData trueParam
+  coordinate_descent
+    :: (Tensor '[N, M], Tensor '[N, 1])
+    -> Precision
+    -> Integer
+    -> Tensor '[M, 1]
+    -> IO [(Tensor '[M, 1], Precision)]
+  coordinate_descent (x, y) l = go 0 []
+   where
+    nSamples = getDim2d x D1
 
-  -- Setup CD
-  p :: Tensor '[M, 1] <- T.zerosLike
-  lazy <- take iters <$> cyclic_coordinate_descent dat l 0.0001 p
-  print (fmap snd lazy)
+    nParams :: Int
+    nParams = round ( getDim2d x D2 )
 
-  let final    = last lazy
-      w        = (^. _1) final
-      obj      = (^. _2) final
-      accuracy = abs $ (snd . last $ lazy) - (snd . last . init $ lazy)
+    go :: Int -> [(Tensor '[M, 1], Precision)] -> Integer -> Tensor '[M, 1] -> IO [(Tensor '[M, 1], Precision)]
+    go ix res j w
+      | j > natVal (Proxy :: Proxy M) - 1 = pure ((w, loss (x, y) w):res)
+      | otherwise = do
+        let jIdx = fromIntegral j
+        x_j <- T.getColumn x jIdx
+        w_j <- T.getRow w jIdx
 
-  putStrLn $ "Loss " <> show obj <> " accuracy of " <> show accuracy
-  pure w
+        let r_j     = (y ^-^ (x !*! w)) ^+^ (x_j !*! w_j)
+        let w_j_upd = prox_l1_single ((1 / nSamples) * (x_j <.> r_j)) (realToFrac l)
+        w_upd <- T.copy w
+        T.setElem2d w_upd jIdx 0 w_j_upd
+        let loss_obj = loss (x, y) w_upd
 
-run_fista_synthetic :: Int -> Precision -> IO (Tensor '[M, 1])
-run_fista_synthetic iters l = do
-  gen       <- RNG.new
-  trueParam <- T.normal gen 20.0 1.0
-  dat       <- genData trueParam
-  w0 :: Tensor '[M, 1] <- T.zerosLike
-  z0 :: Tensor '[M, 1] <- T.zerosLike
-  lazy <- fmap (take iters) $ fista dat l 1 0.0001 w0 z0 1
-
-  -- Setup CD
-  let final    = last lazy
-      w        = (^. _1) final
-      obj      = (^. _2) final
-      accuracy = abs $ (snd . last $ lazy) - (snd . head . tail . reverse $ lazy)
-  putStrLn $ "Loss " <> show obj <> " accuracy of " <> show accuracy
-  pure w
-
-backtracking
-  :: (Tensor '[N, M], Tensor '[N, 1])
-  -> Tensor '[M, 1]
-  -> Tensor '[M, 1]
-  -> Tensor '[M, 1]
-  -> Precision
-  -> Precision
-  -> IO Precision
-backtracking (x, y) w z g l est_L = do
-  w_next <- prox_l1 (z ^-^ (rate *^ g)) (rate * l)
-  if loss (x, y) w > q
-  then backtracking (x, y) w_next z g l (est_L * eta)
-  else pure est_L
- where
-  dist     = w ^-^ z
-  fz       = loss (x, y) z - l1 z
-  q        = fz + realToFrac (dist <.> g) + (est_L / 2) * realToFrac (dist <.> dist) + l * l1 w
-  nSamples = getDim2d x D1
-  rate     = 1.0 / est_L
-  eta      = 1.5
+        go (ix+1) ((w_upd, loss_obj):res) (j + 1) w_upd
 
 
+-- ========================================================================= --
+-- Fista Lasso
 fista
   :: (Tensor '[N, M], Tensor '[N, 1])
   -> Precision
@@ -193,8 +148,13 @@ fista
   -> Precision
   -> IO [(Tensor '[M, 1], Precision)]
 fista (x, y) l est_L eps = go []
+
  where
-  go :: [(Tensor '[M, 1], Precision)] -> Tensor '[M, 1] -> Tensor '[M, 1] -> Precision -> IO [(Tensor '[M, 1], Precision)]
+  go :: [(Tensor '[M, 1], Precision)]
+    -> Tensor '[M, 1]
+    -> Tensor '[M, 1]
+    -> Precision
+    -> IO [(Tensor '[M, 1], Precision)]
   go res w z t = do
     let rate_k = 1.0 / est_L                                  -- initial estimation
     g         <- gradient (x, y) z                            -- current gradient
@@ -212,19 +172,77 @@ fista (x, y) l est_L eps = go []
     then pure res
     else go ((w_next, loss_w_next):res) w_next z_next t_next
 
-gradient
-  :: (Tensor '[N, M], Tensor '[N, 1])
-  -> Tensor '[M, 1]
-  -> IO (Tensor '[M, 1])
-gradient (x, y) w = do
-  xT <- T.newTranspose2d x
-  pure $ (1.0 / nSamples) *^ xT !*! (x !*! w - y)
- where
-  nSamples = getDim2d x D1
+  gradient
+    :: (Tensor '[N, M], Tensor '[N, 1])
+    -> Tensor '[M, 1]
+    -> IO (Tensor '[M, 1])
+  gradient (x, y) w = do
+    xT <- T.newTranspose2d x
+    pure $ (1.0 / nSamples) *^ xT !*! (x !*! w - y)
+   where
+    nSamples = getDim2d x D1
 
-main :: IO ()
-main = do
-  putStrLn "\nRun using the same random seed"
-  _ <- run_cd_synthetic 100 1.0
-  _ <- run_fista_synthetic 100 1.0
-  pure ()
+  backtracking
+    :: (Tensor '[N, M], Tensor '[N, 1])
+    -> Tensor '[M, 1]
+    -> Tensor '[M, 1]
+    -> Tensor '[M, 1]
+    -> Precision
+    -> Precision
+    -> IO Precision
+  backtracking (x, y) w z g l est_L = do
+    w_next <- prox_l1 (z ^-^ (rate *^ g)) (rate * l)
+    if loss (x, y) w > q
+    then backtracking (x, y) w_next z g l (est_L * eta)
+    else pure est_L
+   where
+    dst      = w ^-^ z
+    fz       = loss (x, y) z - l1 z
+    q        = fz + realToFrac (dst  <.> g) + (est_L / 2) * realToFrac (dst  <.> dst ) + l * l1 w
+    nSamples = getDim2d x D1
+    rate     = 1.0 / est_L
+    eta      = 1.5
+
+-- ========================================================================= --
+-- Helper functions
+
+loss :: (Tensor '[N, M], Tensor '[N, 1]) -> Tensor '[M, 1] -> Precision
+loss (x, y) w = squaredSum (y ^-^ (x !*! w)) + l1 w
+ where
+  squaredSum :: Tensor '[N, 1] -> Precision
+  squaredSum t = unsafePerformIO $ fmap realToFrac . TU.sumall =<< TU.square t
+
+l1 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
+l1 t = unsafePerformIO $ fmap realToFrac . TU.sumall =<< TU.abs t
+{-# NOINLINE l1 #-}
+
+l2 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
+l2 t = unsafePerformIO $ fmap (realToFrac . sqrt) . T.sumall =<< T.square t
+{-# NOINLINE l2 #-}
+
+prox_l1 :: Tensor '[M, 1] -> Precision -> IO (Tensor '[M, 1])
+prox_l1 w l = do
+  a <- T.sign w
+  b <- max_plus (w ^- l)
+  pure (a * b)
+ where
+   max_plus :: Tensor '[M, 1] -> IO (Tensor '[M, 1])
+   max_plus t = T.zerosLike >>= \z -> T.cmax t z
+
+prox_l1_single :: AccPrecision -> AccPrecision -> Precision
+prox_l1_single w_i l = realToFrac (signum w_i * max (w_i - l) 0)
+
+data LassoDim = D1 | D2
+  deriving (Enum, Ord, Show, Eq)
+
+
+-- TODO: move Int-based version into hasktorch-dimensions
+getDim2d
+  :: (Fractional precision, Real precision)
+  => Tensor '[N, M] -> LassoDim -> precision
+getDim2d _ = \case
+  D1 -> realToFrac (natVal (Proxy :: Proxy N))
+  D2 -> realToFrac (natVal (Proxy :: Proxy M))
+
+
+

@@ -1,0 +1,57 @@
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
+signature Torch.Sig.Types where
+
+import Foreign
+import Foreign.Storable
+import GHC.TypeLits (Nat)
+import Torch.Sig.Types.Global as X
+
+-- all C-types
+data CTensor
+data CStorage
+
+-- freeStorage :: Ptr CState -> Ptr CStorage -> IO ()
+-- freeTensor  :: Ptr CState -> Ptr CTensor -> IO ()
+
+-- all haskell, memory-managed types
+data Dynamic
+ctensor         :: Dynamic -> ForeignPtr CTensor
+dynamic         :: ForeignPtr CState -> ForeignPtr CTensor -> Dynamic
+dynamicState    :: Dynamic -> (ForeignPtr CState, ForeignPtr CTensor)
+dynamicStateRef :: Dynamic -> ForeignPtr CState
+
+data Storage
+cstorage        :: Storage -> ForeignPtr CStorage
+storage         :: ForeignPtr CState -> ForeignPtr CStorage -> Storage
+storageState    :: Storage -> (ForeignPtr CState, ForeignPtr CStorage)
+storageStateRef :: Storage -> ForeignPtr CState
+
+data Tensor (d::[Nat])
+asStatic  :: Dynamic -> Tensor d
+asDynamic :: Tensor d -> Dynamic
+
+data CReal
+instance Num  CReal
+instance Show CReal
+instance Storable CReal
+
+data CAccReal
+instance Num  CAccReal
+instance Show CAccReal
+instance Storable CAccReal
+
+data HsReal
+instance Num  HsReal
+instance Show HsReal
+
+data HsAccReal
+instance Num  HsAccReal
+instance Show HsAccReal
+
+hs2cReal :: HsReal -> CReal
+hs2cAccReal :: HsAccReal -> CAccReal
+
+c2hsReal :: CReal -> HsReal
+c2hsAccReal :: CAccReal -> HsAccReal
+

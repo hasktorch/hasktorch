@@ -1,0 +1,76 @@
+signature Torch.Sig.Tensor.RandomFloating where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+
+c_uniform              :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> CAccReal -> IO ()
+c_normal               :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> CAccReal -> IO ()
+c_normal_means         :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr CTensor -> CAccReal -> IO ()
+c_normal_stddevs       :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> Ptr CTensor -> IO ()
+c_normal_means_stddevs :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_exponential          :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> IO ()
+c_standard_gamma       :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr CTensor -> IO ()
+c_cauchy               :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> CAccReal -> IO ()
+c_logNormal            :: Ptr CState -> Ptr CTensor -> Ptr CGenerator -> CAccReal -> CAccReal -> IO ()
+-- c_multinomial            :: Ptr CIndexTensor -> Ptr CGenerator -> Ptr CTensor -> CInt -> CInt -> IO ()
+-- c_multinomialAliasSetup  :: Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> IO ()
+-- c_multinomialAliasDraw   :: Ptr CIndexTensor -> Ptr CGenerator -> Ptr CIndexTensor -> Ptr CTensor -> IO ()
+
+
+-- c_random                 :: Ptr CTensor -> Ptr CTHGenerator -> IO ()
+-- c_clampedRandom          :: Ptr CTensor -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ()
+-- c_cappedRandom           :: Ptr CTensor -> Ptr CTHGenerator -> CLLong -> IO ()
+-- c_geometric              :: Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ()
+-- c_bernoulli              :: Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ()
+-- c_bernoulli_FloatTensor  :: Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ()
+-- c_bernoulli_DoubleTensor :: Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ()
+-- 
+-- p_random                 :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> IO ())
+-- p_clampedRandom          :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> CLLong -> CLLong -> IO ())
+-- p_cappedRandom           :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> CLLong -> IO ())
+-- p_geometric              :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ())
+-- p_bernoulli              :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> CDouble -> IO ())
+-- p_bernoulli_FloatTensor  :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHFloatTensor -> IO ())
+-- p_bernoulli_DoubleTensor :: FunPtr (Ptr CTensor -> Ptr CTHGenerator -> Ptr CTHDoubleTensor -> IO ())
+
+{-
+
+c_uniform :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CDouble -> CDouble -> IO ()
+c_rand :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> Ptr C'THLongStorage -> IO ()
+
+  c_randn :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> Ptr C'THLongStorage -> IO ()
+
+  c_normal :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CDouble -> CDouble -> IO ()
+
+  c_normal_means :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> CDouble -> IO ()
+
+  c_normal_stddevs :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CDouble -> Ptr C'THCudaDoubleTensor -> IO ()
+
+  c_normal_means_stddevs :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> IO ()
+
+  c_logNormal :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CDouble -> CDouble -> IO ()
+
+  c_exponential :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CDouble -> IO ()
+
+  c_cauchy :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CDouble -> CDouble -> IO ()
+
+  c_multinomial :: Ptr C'THCState -> Ptr C'THCudaLongTensor -> Ptr C'THCudaDoubleTensor -> CInt -> CInt -> IO ()
+
+  c_multinomialAliasSetup :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaLongTensor -> Ptr C'THCudaDoubleTensor -> IO ()
+
+  c_multinomialAliasDraw :: Ptr C'THCState -> Ptr C'THCudaLongTensor -> Ptr C'THCudaLongTensor -> Ptr C'THCudaDoubleTensor -> IO ()
+
+  c_random :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> IO ()
+
+  c_clampedRandom :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CLLong -> CLLong -> IO ()
+
+  c_cappedRandom :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CLLong -> IO ()
+
+  c_bernoulli :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CDouble -> IO ()
+
+  c_bernoulli_DoubleTensor :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> IO ()
+
+  c_geometric :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> CDouble -> IO ()
+
+-}
