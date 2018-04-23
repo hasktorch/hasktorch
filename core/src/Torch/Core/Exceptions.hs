@@ -1,5 +1,18 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Core.Exceptions
+-- Copyright :  (c) Hasktorch devs 2017
+-- License   :  BSD3
+-- Maintainer:  Sam Stites <sam@stites.io>
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Package to start off hasktorch exception handling.
+--
+-- TODO: Move this into a seperate package so that this can be used by
+-- 'hasktorch-classes'
+-------------------------------------------------------------------------------
 {-# LANGUAGE ForeignFunctionInterface #-}
-
 module Torch.Core.Exceptions
   ( TorchException(..)
   , module X
@@ -21,19 +34,8 @@ import Data.Text (Text)
 
 import Foreign
 import Foreign.C.String
--- import Foreign.C.Types
--- import Torch.Types.TH
 
--- import Torch.FFI.TH.Double.Tensor
--- import Torch.FFI.TH.Double.TensorLapack
--- import Torch.FFI.TH.Double.TensorMath
--- import Torch.FFI.TH.Double.TensorRandom
-
--- import Torch.Core.Tensor.Types
--- import Torch.Raw.Tensor.Generic
--- import qualified Torch.Dimensions as Dim
--- import qualified Torch.Raw.Tensor.Generic as Gen
-
+-- | The base Torch exception class
 data TorchException
   = MathException Text
   deriving (Show, Typeable)

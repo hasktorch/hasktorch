@@ -1,3 +1,14 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Storage
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Re-exports of all CPU-based storage code
+-------------------------------------------------------------------------------
 module Torch.Storage ( module X ) where
 
 import Torch.Types.TH as X
