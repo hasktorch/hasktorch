@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
@@ -248,12 +249,22 @@ printTensor
 printTensor t = (fmap.fmap) fromIntegral (getDimList t) >>= _printTensor (get1d t) (get2d t)
 
 _printTensor
-  :: (Typeable a, Ord a, Num a, Show a)
+  :: forall a . (Typeable a, Ord a, Num a, Show a)
   => (Int64 -> IO a)
   -> (Int64 -> Int64 -> IO a)
   -> [Int] -> IO ()
 _printTensor get'1d get'2d ds = do
-  putStrLn ("Dimensions: (" ++ intercalate " x " (fmap show ds) ++ ")")
+  (vs, desc) <- _printTensor' get'1d get'2d (fromIntegral <$> ds)
+  putStrLn vs
+  putStrLn desc
+
+_printTensor''
+  :: forall a . (Typeable a, Ord a, Num a, Show a)
+  => (Int64 -> IO a)
+  -> (Int64 -> Int64 -> IO a)
+  -> [Int] -> IO ()
+_printTensor'' get'1d get'2d ds = do
+  putStrLn ("[" ++ show (typeRep (Proxy :: Proxy a)) ++ " tensor with shape: " ++ intercalate "x" (fmap show ds) ++ "]")
   case ds of
     []  -> putStrLn "Empty Tensor"
     [x] -> do
@@ -287,3 +298,133 @@ _printTensor get'1d get'2d ds = do
         LT -> " "
         _  -> "  "
 
+_printTensor'
+  :: forall a . (Typeable a, Ord a, Num a, Show a)
+  => (Int64 -> IO a)
+  -> (Int64 -> Int64 -> IO a)
+  -> [Int64] -> IO (String, String)
+_printTensor' get'1d get'2d ds =
+  case ds of
+    []  -> pure ("", desc)
+    [x] -> do
+      vals <- mapM (fmap valWithSpace . get'1d) (mkIx x)
+      pure (brackets $ intercalate "" vals, desc)
+    [x,y] -> do
+      vals <- matGo y "" <$> mapM (fmap valWithSpace . uncurry get'2d) (mkXY x y)
+      pure (vals, desc)
+
+    _ -> pure ("Can't print this yet", desc)
+ where
+  matGo :: Int64 -> String -> [String] -> String
+  matGo y acc []  = acc
+  matGo y acc rcs =
+    let (row, rest) = splitAt (fromIntegral y) rcs
+        fullrow = brackets (intercalate "" row)
+        acc' = if null acc then fullrow else acc ++ "\n" ++ fullrow
+    in matGo y acc' rest
+
+  mkIx :: Int64 -> [Int64]
+  mkIx x = [0..x - 1]
+
+  mkXY :: Int64 -> Int64 -> [(Int64, Int64)]
+  mkXY x y = [ (r, c) | r <- mkIx x, c <- mkIx y ]
+
+  brackets :: String -> String
+  brackets s = "[" ++ s ++ "]"
+
+  valWithSpace :: (Typeable a, Ord a, Num a, Show a) => a -> String
+  valWithSpace v = spacing ++ value ++ " "
+   where
+     truncTo :: (RealFrac x, Fractional x) => Int -> x -> x
+     truncTo n f = fromInteger (round $ f * (10^n)) / (10.0^^n)
+
+     value :: String
+     value = fromMaybe (show v) $
+           (show . truncTo 6 <$> (cast v :: Maybe Double))
+       <|> (show . truncTo 6 <$> (cast v :: Maybe Float))
+
+     spacing = case compare (signum v) 0 of
+        LT -> " "
+        _  -> "  "
+
+  descType :: String
+  descType = show (typeRep (Proxy :: Proxy a)) ++ " tensor with "
+
+  descShape :: String
+  descShape = "shape: " ++ intercalate "x" (fmap show ds)
+  desc = brackets $ descType ++ descShape
+
+_print'Tensor
+  :: forall a . (Typeable a, Ord a, Num a, Show a)
+  => (Int64 -> IO a)
+  -> (Int64 -> Int64 -> IO a)
+  -> (Int64 -> Int64 -> Int64 -> IO a)
+  -> [Int] -> IO ()
+_print'Tensor get'1d get'2d get'3d ds = do
+  (vs, desc) <- _print'Tensor' get'1d get'2d get'3d (fromIntegral <$> ds)
+  putStrLn vs
+  putStrLn desc
+
+_print'Tensor'
+  :: forall a . (Typeable a, Ord a, Num a, Show a)
+  => (Int64 -> IO a)
+  -> (Int64 -> Int64 -> IO a)
+  -> (Int64 -> Int64 -> Int64 -> IO a)
+  -> [Int64] -> IO (String, String)
+_print'Tensor' get'1d get'2d get'3d ds =
+  case ds of
+    []  -> pure ("", desc)
+    [x] -> do
+      vals <- mapM (fmap valWithSpace . get'1d) (mkIx x)
+      pure (brackets $ intercalate "" vals, desc)
+    [x,y] -> do
+      vals <- go "" get'2d x y
+      pure (vals, desc)
+
+    [x,y,z] -> do
+      vals <- mapM (\x' -> go "  " (get'3d x') y z >>= \mat -> pure $ "\n(" ++ show x' ++ ",.,.):\n" ++ mat) (mkIx x)
+      pure (intercalate "" vals, desc)
+
+    _ -> pure ("Can't print this yet", desc)
+ where
+  go :: String -> (Int64 -> Int64 -> IO a) -> Int64 -> Int64 -> IO String
+  go fill getter x y = matGo fill y "" <$> mapM (fmap valWithSpace . uncurry getter) (mkXY x y)
+
+  matGo :: String -> Int64 -> String -> [String] -> String
+  matGo _ _ acc []  = acc
+  matGo fill y acc rcs =
+    let (row, rest) = splitAt (fromIntegral y) rcs
+        fullrow = fill ++ brackets (intercalate "" row)
+        acc' = if null acc then fullrow else acc ++ "\n" ++ fullrow
+    in matGo fill y acc' rest
+
+  mkIx :: Int64 -> [Int64]
+  mkIx x = [0..x - 1]
+
+  mkXY :: Int64 -> Int64 -> [(Int64, Int64)]
+  mkXY x y = [ (r, c) | r <- mkIx x, c <- mkIx y ]
+
+  brackets :: String -> String
+  brackets s = "[" ++ s ++ "]"
+
+  valWithSpace :: (Typeable a, Ord a, Num a, Show a) => a -> String
+  valWithSpace v = spacing ++ value ++ " "
+   where
+     truncTo :: (RealFrac x, Fractional x) => Int -> x -> x
+     truncTo n f = fromInteger (round $ f * (10^n)) / (10.0^^n)
+
+     value :: String
+     value = fromMaybe (show v) $
+           (show . truncTo 6 <$> (cast v :: Maybe Double))
+       <|> (show . truncTo 6 <$> (cast v :: Maybe Float))
+
+     spacing = case compare (signum v) 0 of
+        LT -> " "
+        _  -> "  "
+
+  descType :: String
+  descType = show (typeRep (Proxy :: Proxy a)) ++ " tensor with "
+
+  descShape :: String
+  descShape = "shape: " ++ intercalate "x" (fmap show ds)
+  desc = brackets $ descType ++ descShape

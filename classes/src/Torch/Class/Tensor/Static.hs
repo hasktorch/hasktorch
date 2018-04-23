@@ -312,3 +312,9 @@ printTensor
   => t d -> IO ()
 printTensor t = getDims t >>= \(SomeDims ds) -> Dynamic._printTensor (get1d t) (get2d t) (dimVals ds)
 
+printTensor_
+  :: (IsTensor t, Typeable (HsReal (t d)), Ord (HsReal (t d)), Num (HsReal (t d)), Show (HsReal (t d)))
+  => t d -> IO ()
+printTensor_ t = getDims t >>= \(SomeDims ds) -> Dynamic._print'Tensor (get1d t) (get2d t) (get3d t) (dimVals ds)
+
+
