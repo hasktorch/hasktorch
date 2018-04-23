@@ -9,8 +9,6 @@
 --
 -- Re-exports of all dynamic cuda-based tensors
 -------------------------------------------------------------------------------
-
-
 module Torch.Cuda.Dynamic (module X) where
 
 import Torch.Cuda.Byte.Dynamic as X

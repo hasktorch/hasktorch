@@ -10,7 +10,7 @@ module Torch.Class.Tensor where
 
 import Control.Arrow ((***))
 import Control.Exception.Safe
-import Control.Monad ((>=>), forM_)
+import Control.Monad ((>=>), forM, forM_)
 import Control.Monad.IO.Class
 import Data.List (genericLength)
 import GHC.Int
@@ -246,157 +246,52 @@ resizeAs src shape = do
 printTensor
   :: (IsTensor t, Typeable (HsReal t), Ord (HsReal t), Num (HsReal t), Show (HsReal t))
   => t -> IO ()
-printTensor t = (fmap.fmap) fromIntegral (getDimList t) >>= _printTensor (get1d t) (get2d t)
+printTensor t = (fmap.fmap) fromIntegral (getDimList t)
+  >>= _printTensor (get1d t) (get2d t) (get3d t) (get4d t)
+  >>= \(vs, desc) -> putStrLn vs >> putStrLn desc
 
 _printTensor
   :: forall a . (Typeable a, Ord a, Num a, Show a)
   => (Int64 -> IO a)
   -> (Int64 -> Int64 -> IO a)
-  -> [Int] -> IO ()
-_printTensor get'1d get'2d ds = do
-  (vs, desc) <- _printTensor' get'1d get'2d (fromIntegral <$> ds)
-  putStrLn vs
-  putStrLn desc
-
-_printTensor''
-  :: forall a . (Typeable a, Ord a, Num a, Show a)
-  => (Int64 -> IO a)
-  -> (Int64 -> Int64 -> IO a)
-  -> [Int] -> IO ()
-_printTensor'' get'1d get'2d ds = do
-  putStrLn ("[" ++ show (typeRep (Proxy :: Proxy a)) ++ " tensor with shape: " ++ intercalate "x" (fmap show ds) ++ "]")
-  case ds of
-    []  -> putStrLn "Empty Tensor"
-    [x] -> do
-      putStr "["
-      mapM_ (get'1d >=> putWithSpace) [ fromIntegral idx | idx <- [0..x - 1] ]
-      putStrLn " ]\n"
-    [x,y] -> do
-      let pairs = [ (fromIntegral r, fromIntegral c) | r <- [0..x - 1], c <- [0..y - 1] ]
-      putStr "["
-      forM_ pairs $ \(r, c) -> do
-        val <- get'2d r c
-        putWithSpace val
-        when (c == fromIntegral y - 1) $ do
-          putStr "]\n"
-          putStr (if fromIntegral r < x - 1 then "[" else "")
-
-    _ -> putStrLn "Can't print this yet."
- where
-  putWithSpace :: (Typeable a, Ord a, Num a, Show a) => a -> IO ()
-  putWithSpace v = putStr (spacing ++ value ++ " ")
-   where
-     truncTo :: (RealFrac x, Fractional x) => Int -> x -> x
-     truncTo n f = fromInteger (round $ f * (10^n)) / (10.0^^n)
-
-     value :: String
-     value = fromMaybe (show v) $
-           (show . truncTo 6 <$> (cast v :: Maybe Double))
-       <|> (show . truncTo 6 <$> (cast v :: Maybe Float))
-
-     spacing = case compare (signum v) 0 of
-        LT -> " "
-        _  -> "  "
-
-_printTensor'
-  :: forall a . (Typeable a, Ord a, Num a, Show a)
-  => (Int64 -> IO a)
-  -> (Int64 -> Int64 -> IO a)
-  -> [Int64] -> IO (String, String)
-_printTensor' get'1d get'2d ds =
-  case ds of
-    []  -> pure ("", desc)
-    [x] -> do
-      vals <- mapM (fmap valWithSpace . get'1d) (mkIx x)
-      pure (brackets $ intercalate "" vals, desc)
-    [x,y] -> do
-      vals <- matGo y "" <$> mapM (fmap valWithSpace . uncurry get'2d) (mkXY x y)
-      pure (vals, desc)
-
-    _ -> pure ("Can't print this yet", desc)
- where
-  matGo :: Int64 -> String -> [String] -> String
-  matGo y acc []  = acc
-  matGo y acc rcs =
-    let (row, rest) = splitAt (fromIntegral y) rcs
-        fullrow = brackets (intercalate "" row)
-        acc' = if null acc then fullrow else acc ++ "\n" ++ fullrow
-    in matGo y acc' rest
-
-  mkIx :: Int64 -> [Int64]
-  mkIx x = [0..x - 1]
-
-  mkXY :: Int64 -> Int64 -> [(Int64, Int64)]
-  mkXY x y = [ (r, c) | r <- mkIx x, c <- mkIx y ]
-
-  brackets :: String -> String
-  brackets s = "[" ++ s ++ "]"
-
-  valWithSpace :: (Typeable a, Ord a, Num a, Show a) => a -> String
-  valWithSpace v = spacing ++ value ++ " "
-   where
-     truncTo :: (RealFrac x, Fractional x) => Int -> x -> x
-     truncTo n f = fromInteger (round $ f * (10^n)) / (10.0^^n)
-
-     value :: String
-     value = fromMaybe (show v) $
-           (show . truncTo 6 <$> (cast v :: Maybe Double))
-       <|> (show . truncTo 6 <$> (cast v :: Maybe Float))
-
-     spacing = case compare (signum v) 0 of
-        LT -> " "
-        _  -> "  "
-
-  descType :: String
-  descType = show (typeRep (Proxy :: Proxy a)) ++ " tensor with "
-
-  descShape :: String
-  descShape = "shape: " ++ intercalate "x" (fmap show ds)
-  desc = brackets $ descType ++ descShape
-
-_print'Tensor
-  :: forall a . (Typeable a, Ord a, Num a, Show a)
-  => (Int64 -> IO a)
-  -> (Int64 -> Int64 -> IO a)
   -> (Int64 -> Int64 -> Int64 -> IO a)
-  -> [Int] -> IO ()
-_print'Tensor get'1d get'2d get'3d ds = do
-  (vs, desc) <- _print'Tensor' get'1d get'2d get'3d (fromIntegral <$> ds)
-  putStrLn vs
-  putStrLn desc
-
-_print'Tensor'
-  :: forall a . (Typeable a, Ord a, Num a, Show a)
-  => (Int64 -> IO a)
-  -> (Int64 -> Int64 -> IO a)
-  -> (Int64 -> Int64 -> Int64 -> IO a)
-  -> [Int64] -> IO (String, String)
-_print'Tensor' get'1d get'2d get'3d ds =
-  case ds of
-    []  -> pure ("", desc)
-    [x] -> do
-      vals <- mapM (fmap valWithSpace . get'1d) (mkIx x)
-      pure (brackets $ intercalate "" vals, desc)
-    [x,y] -> do
-      vals <- go "" get'2d x y
-      pure (vals, desc)
-
-    [x,y,z] -> do
-      vals <- mapM (\x' -> go "  " (get'3d x') y z >>= \mat -> pure $ "\n(" ++ show x' ++ ",.,.):\n" ++ mat) (mkIx x)
-      pure (intercalate "" vals, desc)
-
-    _ -> pure ("Can't print this yet", desc)
+  -> (Int64 -> Int64 -> Int64 -> Int64 -> IO a)
+  -> [Int64]
+  -> IO (String, String)
+_printTensor get'1d get'2d get'3d get'4d ds =
+  (,desc) <$> case ds of
+    []  -> pure ""
+    [x] -> brackets . intercalate "" <$> mapM (fmap valWithSpace . get'1d) (mkIx x)
+    [x,y] -> go "" get'2d x y
+    [x,y,z] -> mat3dGo x y z
+    [x,y,z,q] -> mat4dGo x y z q
+    _ -> pure "Can't print this yet"
  where
   go :: String -> (Int64 -> Int64 -> IO a) -> Int64 -> Int64 -> IO String
-  go fill getter x y = matGo fill y "" <$> mapM (fmap valWithSpace . uncurry getter) (mkXY x y)
+  go fill getter x y = do
+    vs <- mapM (fmap valWithSpace . uncurry getter) (mkXY x y)
+    pure (mat2dGo fill y "" vs)
 
-  matGo :: String -> Int64 -> String -> [String] -> String
-  matGo _ _ acc []  = acc
-  matGo fill y acc rcs =
-    let (row, rest) = splitAt (fromIntegral y) rcs
-        fullrow = fill ++ brackets (intercalate "" row)
-        acc' = if null acc then fullrow else acc ++ "\n" ++ fullrow
-    in matGo fill y acc' rest
+  mat2dGo :: String -> Int64 -> String -> [String] -> String
+  mat2dGo    _ _ acc []  = acc
+  mat2dGo fill y acc rcs = mat2dGo fill y acc' rest
+    where
+      (row, rest) = splitAt (fromIntegral y) rcs
+      fullrow = fill ++ brackets (intercalate "" row)
+      acc' = if null acc then fullrow else acc ++ "\n" ++ fullrow
+
+  mat3dGo :: Int64 -> Int64 -> Int64 -> IO String
+  mat3dGo x y z = fmap (intercalate "") $ forM (mkIx x) $ \x' -> do
+    mat <- go "  " (get'3d x') y z
+    pure $ gt2IxHeader [x'] ++ mat
+
+  mat4dGo :: Int64 -> Int64 -> Int64 -> Int64 -> IO String
+  mat4dGo w q x y = fmap (intercalate "") $ forM (mkXY w q) $ \(w', q') -> do
+    mat <- go "  " (get'4d w' q') x y
+    pure $ gt2IxHeader [w', q'] ++ mat
+
+  gt2IxHeader :: [Int64] -> String
+  gt2IxHeader is = "\n(" ++ intercalate "," (fmap show is) ++",.,.):\n"
 
   mkIx :: Int64 -> [Int64]
   mkIx x = [0..x - 1]
