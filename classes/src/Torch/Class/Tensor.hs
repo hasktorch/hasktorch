@@ -242,15 +242,7 @@ resizeAs src shape = do
   _resizeAs res shape
   pure res
 
--- | displaying raw tensor values
-printTensor
-  :: (IsTensor t, Typeable (HsReal t), Ord (HsReal t), Num (HsReal t), Show (HsReal t))
-  => t -> IO ()
-printTensor t = (fmap.fmap) fromIntegral (getDimList t)
-  >>= _printTensor (get1d t) (get2d t) (get3d t) (get4d t)
-  >>= \(vs, desc) -> putStrLn vs >> putStrLn desc
-
-_printTensor
+showTensor
   :: forall a . (Typeable a, Ord a, Num a, Show a)
   => (Int64 -> IO a)
   -> (Int64 -> Int64 -> IO a)
@@ -258,7 +250,7 @@ _printTensor
   -> (Int64 -> Int64 -> Int64 -> Int64 -> IO a)
   -> [Int64]
   -> IO (String, String)
-_printTensor get'1d get'2d get'3d get'4d ds =
+showTensor get'1d get'2d get'3d get'4d ds =
   (,desc) <$> case ds of
     []  -> pure ""
     [x] -> brackets . intercalate "" <$> mapM (fmap valWithSpace . get'1d) (mkIx x)

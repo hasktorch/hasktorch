@@ -306,15 +306,3 @@ setElem2d t r c v
   | otherwise = _set2d t (fromIntegral r) (fromIntegral c) v
 
 
--- | displaying raw tensor values
-printTensor
-  :: (IsTensor t, Typeable (HsReal (t d)), Ord (HsReal (t d)), Num (HsReal (t d)), Show (HsReal (t d)))
-  => t d -> IO ()
-printTensor t = do
-  SomeDims ds <- getDims t
-  (vs, desc)  <-
-    Dynamic._printTensor (get1d t) (get2d t) (get3d t) (get4d t) (dimVals ds)
-  putStrLn vs
-  putStrLn desc
-
-

@@ -1,4 +1,11 @@
+{-# OPTIONS_GHC -fno-cse  #-}
 module Torch.Indef.Dynamic (module X) where
+
+import System.IO.Unsafe (unsafePerformIO)
+import Torch.Dimensions
+import Torch.Indef.Types
+
+-------------------------------------------------------------------------------
 
 import Torch.Class.Types as X
   ( Stride(..)
@@ -53,4 +60,11 @@ import Torch.Indef.Dynamic.Tensor.Sort as X
 
 import Torch.Class.Tensor.TopK as X
 import Torch.Indef.Dynamic.Tensor.TopK as X
+
+instance Show Dynamic where
+  show t = unsafePerformIO $ do
+    ds <- (fmap.fmap) fromIntegral (getDimList t)
+    (vs, desc) <- showTensor (get1d t) (get2d t) (get3d t) (get4d t) ds
+    pure (vs ++ "\n" ++ desc)
+  {-# NOINLINE show #-}
 

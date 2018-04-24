@@ -139,11 +139,11 @@ executable static-tensor-usage
   default-language: Haskell2010
 
 executable nlp
-  main-is: Main.hs
+  main-is: Main.lhs
   hs-source-dirs: nlp
   default-language: Haskell2010
   default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
-  ghc-options: -Wall -fno-cse
+  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
   build-depends:
       base >=4.7 && <5
     , hasktorch-core

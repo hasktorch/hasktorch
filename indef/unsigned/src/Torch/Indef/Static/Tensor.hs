@@ -97,5 +97,3 @@ instance Class.IsTensor Tensor where
   _unfold t0 t1 = Dynamic._unfold (asDynamic t0) (asDynamic t1)
   _unsqueeze1d t0 t1 = Dynamic._unsqueeze1d (asDynamic t0) (asDynamic t1)
 
-
-

@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
 module Torch.Types.THC.Char where
 
 import Foreign.C.Types
@@ -44,9 +42,8 @@ dynamic         = curry CharDynamic
 dynamicState    = charDynamicState
 dynamicStateRef = fst . charDynamicState
 
-newtype Tensor (ds :: [Nat]) = Tensor { asDynamic :: Dynamic }
-  deriving (Show, Eq)
-
-asStatic = Tensor
+type Tensor = CharTensor
+asDynamic = charAsDynamic
+asStatic = charAsStatic
 
 
