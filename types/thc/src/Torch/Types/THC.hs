@@ -63,7 +63,7 @@ descBuff p = (map (chr . fromIntegral) . c'THCDescBuff'str) <$> peek p
 
 type CState = C'THCState
 newtype State = State { asForeign :: ForeignPtr CState }
-  deriving (Eq, Show)
+  deriving (Eq)
 asState = State
 
 type CGenerator = C'_Generator
