@@ -1,3 +1,14 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Cuda.Storage
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Re-exports of all CUDA-based storage code
+-------------------------------------------------------------------------------
 module Torch.Cuda.Storage ( module X ) where
 
 import Torch.Types.THC

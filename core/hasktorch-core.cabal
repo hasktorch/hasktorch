@@ -86,9 +86,6 @@ library
     , Torch.Cuda.Storage
     , Torch.Cuda.Dynamic
 
-  other-modules:
-      Torch.Internal
-
   reexported-modules:
       Torch.Dimensions
 

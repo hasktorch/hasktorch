@@ -1,10 +1,11 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Types.TH
   ( module Torch.Types.TH.Structs
 
   , C'THState, C'THNNState, CState, State(..), asState, newCState, manageState
   , CAllocator, Allocator
-  , CGenerator, Generator(..), generatorToRng
+  , CGenerator, Generator(..), generatorToRng, Seed(..)
   , CDescBuff, DescBuff, descBuff
 
   -- for nn-packages
@@ -16,12 +17,15 @@ module Torch.Types.TH
   , CMaskTensor, CIndexTensor, CIndexStorage
   ,  MaskDynamic,  IndexDynamic,  MaskTensor, IndexTensor, IndexStorage
 
+
+  -- * Unsigned types
   , CByteTensor, ByteDynamic(..), byteDynamic, ByteTensor(..), byteAsStatic
   , CByteStorage, ByteStorage(..), byteStorage
 
   , CCharTensor, CharDynamic(..), charDynamic, CharTensor(..), charAsStatic
   , CCharStorage, CharStorage(..), charStorage
 
+  -- * Signed types
   , CLongTensor, LongDynamic(..), longDynamic, LongTensor(..), longAsStatic
   , CLongStorage, LongStorage(..), longStorage
 
@@ -31,6 +35,7 @@ module Torch.Types.TH
   , CIntTensor, IntDynamic(..), intDynamic, IntTensor(..), intAsStatic
   , CIntStorage, IntStorage(..), intStorage
 
+  -- * Floating types
   , CFloatTensor, FloatDynamic(..), floatDynamic, FloatTensor(..), floatAsStatic
   , CFloatStorage, FloatStorage(..), floatStorage
 
@@ -71,13 +76,17 @@ manageState = newForeignPtr state_free
 type CAllocator   = C'THAllocator
 newtype Allocator = Allocator { callocator :: ForeignPtr CAllocator }
   deriving (Eq, Show)
-
-type CGenerator   = C'THGenerator
+type CGenerator   = C'THGenerator -- ^ Backpack type alias for TH's CPU generator
 newtype Generator = Generator { rng :: ForeignPtr CGenerator }
   deriving (Eq, Show)
+-- ^ Representation of a CPU-bound random number generator
 
 generatorToRng :: ForeignPtr CGenerator -> Generator
 generatorToRng = Generator
+
+-- | Representation of a CPU-bound random seed
+newtype Seed = Seed { unSeed :: Word64 }
+  deriving (Bounded, Enum, Eq, Integral, Num, Ord, Read, Real, Show)
 
 -- for nn-package
 type CNNState = CState
@@ -98,15 +107,19 @@ type  IndexDynamic  =  LongDynamic
 type  IndexTensor   =  LongTensor
 type  IndexStorage  =  LongStorage
 
--- unsigned types
-
+-- | A C-level representation of the Byte Tensor type. These need to be wrapped in 'Ptr'
 type CByteTensor      = C'THByteTensor
+
+-- | A memory-managed representation of TH's Byte Tensor type. These carry a reference to the 'CState'
 newtype ByteDynamic   = ByteDynamic { byteDynamicState :: (ForeignPtr CState, ForeignPtr CByteTensor) }
   deriving (Show, Eq)
+-- | smart constructor for 'ByteDynamic'.
 byteDynamic = curry ByteDynamic
 
+-- | A newtype wrapper around 'ByteDynamic' which imbues a 'ByteDynamic' with static tensor dimensions.
 newtype ByteTensor (ds :: [Nat]) = ByteTensor { byteAsDynamic :: ByteDynamic }
   deriving (Show, Eq)
+-- | smart constructor for 'ByteTensor'.
 byteAsStatic = ByteTensor
 
 type CByteStorage   = C'THByteStorage
