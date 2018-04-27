@@ -15,12 +15,17 @@ import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.List
 import Data.Singletons.Prelude.Num
 import Control.Monad
+import Data.Maybe
+import Control.Monad.Trans
+import Control.Monad.Trans.Maybe
+import System.IO.Unsafe
 
 import Torch.Dimensions
 import Data.List.NonEmpty (NonEmpty)
 
 import Torch.Class.Types
--- import Torch.Class.Tensor as X hiding (new, fromList1d, resizeDim)
+import Torch.Class.Tensor.Copy.Static
+
 import qualified Torch.Class.Tensor as Dynamic
 import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
@@ -202,6 +207,36 @@ getDims t = do
   nd <- nDimension t
   ds <- mapM (size t . fromIntegral) [0 .. nd -1]
   someDimsM ds
+
+-- | select a dimension of a tensor. If a vector is passed in, return a singleton tensor
+-- with the index value of the vector.
+(!!)
+  :: forall t (d::[Nat]) (d'::[Nat])
+  .  (TensorCopy t, HsReal (t d) ~ HsReal (t d'), Dimensions2 d d', IsTensor t)
+  => t d -> DimVal -> t d'
+t !! i = unsafePerformIO $
+  nDimension t >>= \case
+    0 -> empty
+    1 -> runMaybeT selectVal >>= maybe empty pure
+    _ -> selectRank
+
+  where
+    selectVal :: MaybeT IO (t d')
+    selectVal = do
+      sizeI <- fromIntegral <$> lift (size t i)
+      guard (i < sizeI)
+      v <- lift $ get1d t (fromIntegral i)
+      r <- lift $ newWithSize1d 1
+      lift $ _set1d r 0 v
+      pure r
+
+    selectRank :: IO (t d')
+    selectRank = do
+      sz <- fmap fromIntegral (size t i)
+      r' <- copy t
+      r <- newSelect r' i 0
+      pure (r :: t d')
+
 
 new :: forall t d . (Dimensions d, IsTensor t) => IO (t d)
 new = case dimVals d of
