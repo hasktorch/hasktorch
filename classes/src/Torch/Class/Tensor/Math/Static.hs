@@ -1,4 +1,8 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE RankNTypes #-}
 module Torch.Class.Tensor.Math.Static where
 
 import GHC.Int
@@ -59,6 +63,15 @@ cat a b d = withEmpty $ \r -> _cat r a b d
 
 cat1d :: (TensorMath t, SingDim3 n1 n2 n, n ~ Sum [n1, n2]) => t '[n1] -> t '[n2] -> IO (t '[n])
 cat1d a b = cat a b 0
+
+cat2d1 :: (TensorMath t, SingDim4 n m m0 m1, m ~ Sum [m0, m1]) => t '[n, m0] -> t '[n, m1] -> IO (t '[n, m])
+cat2d1 a b = cat a b 1
+
+cat2d0 :: (TensorMath t, SingDim4 n m n0 n1, n ~ Sum [n0, n1]) => t '[n0, m] -> t '[n1, m] -> IO (t '[n, m])
+cat2d0 a b = cat a b 0
+
+catArray :: (TensorMath t, Dimensions d) => [AsDynamic t] -> DimVal -> IO (t d)
+catArray ts dv = empty >>= \r -> _catArray r ts (length ts) dv >> pure r
 
 _tenLike
   :: (Dimensions d, TensorMath t)

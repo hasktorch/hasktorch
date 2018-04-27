@@ -265,11 +265,16 @@ _resizeDim t = case dimVals d of
   -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
-resizeAs :: forall t d d' . (Dimensions d, Dimensions d', IsTensor t) => t d -> IO (t d')
-resizeAs src = do
+view :: forall t d d' . (Dimensions2 d d', IsTensor t, Product d ~ Product d') => t d -> IO (t d')
+view src = do
   res <- newClone src
   shape <- new
   _resizeAs res shape
+
+resizeAs :: forall t d d' . (Dimensions2 d d', IsTensor t, Product d ~ Product d') => t d -> IO (t d')
+resizeAs src = do
+  shape <- new
+  _resizeAs src shape
 
 newIx :: forall t d d'
   . (Dimensions d')
