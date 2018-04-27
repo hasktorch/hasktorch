@@ -138,6 +138,17 @@ executable static-tensor-usage
       Paths_hasktorch_examples
   default-language: Haskell2010
 
+executable ppl
+  main-is: Main.hs
+  hs-source-dirs: ppl
+  default-language: Haskell2010
+  default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
+  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , singletons >=2.2
+
 executable nlp
   main-is: Main.lhs
   hs-source-dirs: nlp
@@ -148,3 +159,4 @@ executable nlp
       base >=4.7 && <5
     , hasktorch-core
     , singletons >=2.2
+

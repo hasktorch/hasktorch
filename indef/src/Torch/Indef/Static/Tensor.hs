@@ -222,7 +222,6 @@ t !! i = unsafePerformIO $
     selectRank :: IO (t d')
     selectRank = do
       sz <- fmap fromIntegral (size t i)
-      r' <- copy t
       r <- newSelect r' i 0
       pure (r :: t d')
 
