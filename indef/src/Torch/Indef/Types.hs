@@ -259,3 +259,19 @@ withDynamicStateAndStorage t s fn =
 --   asDynamic = Sig.asDynamic
 --   asStatic = Sig.asStatic
 -- 
+
+instance Class.THDebug Sig.Storage where
+  printRefs t = do
+    let (s, c) = Sig.storageState t
+    putStrLn $ "State reference   : " ++ show s
+    putStrLn $ "CStorage reference: " ++ show s
+
+instance Class.THDebug Sig.Dynamic where
+  printRefs t = do
+    let (s, c) = Sig.dynamicState t
+    putStrLn $ "State reference  : " ++ show s
+    putStrLn $ "CTensor reference: " ++ show s
+
+instance Class.THDebug (Sig.Tensor d) where
+  printRefs = Class.printRefs . Sig.asDynamic
+
