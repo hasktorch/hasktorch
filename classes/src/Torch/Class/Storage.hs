@@ -35,6 +35,9 @@ class Storage t where
   resize         :: t -> StorageSize -> IO ()
   fill           :: t -> HsReal t -> IO ()
 
+fromList :: Storage t => [HsReal t] -> IO t
+fromList pr = newWithData pr (fromIntegral $ length pr)
+
 class CPUStorage t where
   newWithAllocator :: StorageSize -> (Allocator t, AllocatorContext) -> IO t
   newWithDataAndAllocator :: [HsReal t] -> StorageSize -> (Allocator t, AllocatorContext) -> IO t

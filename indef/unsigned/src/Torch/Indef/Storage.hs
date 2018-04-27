@@ -24,7 +24,6 @@ import qualified Torch.Sig.Storage        as Sig
 import qualified Torch.Sig.Storage.Memory as Sig
 import qualified Foreign.Marshal.Array    as FM
 
-
 instance Class.Storage Sig.Storage where
   tensordata :: Storage -> IO [HsReal]
   tensordata s = withStorageState s $ \st s' ->

@@ -12,6 +12,7 @@
 module Torch.Storage ( module X ) where
 
 import Torch.Types.TH as X
+import Torch.Class.Storage as X
 
 import Torch.Byte.Storage as X
 import Torch.Char.Storage as X

@@ -13,7 +13,6 @@ module Torch ( module X ) where
 
 import Torch.Dimensions as X
 import Torch.Types.TH as X
-import Torch.Storage as X
 
 import Torch.Byte.Static as X
 import Torch.Char.Static as X
