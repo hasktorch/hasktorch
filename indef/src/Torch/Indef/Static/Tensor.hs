@@ -5,18 +5,22 @@
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.Tensor where
 
-import GHC.Natural
 import Control.Exception.Safe
+import Control.Monad.Trans
+import Control.Monad.Trans.Maybe
+import Data.Coerce
+import Data.Maybe
+import GHC.Natural
+import System.IO.Unsafe
+
 import Torch.Dimensions
+import Torch.Indef.Types
+import Torch.Indef.Index
+import Torch.Indef.Static.Tensor.Copy
+import qualified Torch.Indef.Dynamic.Tensor as Dynamic
 import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
 import qualified Torch.Sig.Types as Sig
-import Data.Coerce
-import System.IO.Unsafe
-
-import Torch.Indef.Types
-import Torch.Indef.Index
-import qualified Torch.Indef.Dynamic.Tensor as Dynamic
 
 instance Show (Tensor (d::[Nat])) where
   show t = unsafePerformIO $ do
@@ -193,6 +197,37 @@ getDims t = do
   nd <- nDimension t
   ds <- mapM (size t . fromIntegral) [0 .. nd -1]
   someDimsM ds
+
+
+-- | select a dimension of a tensor. If a vector is passed in, return a singleton tensor
+-- with the index value of the vector.
+(!!)
+  :: forall t (d::[Nat]) (d'::[Nat])
+  .  (TensorCopy t, HsReal (t d) ~ HsReal (t d'), Dimensions2 d d', IsTensor t)
+  => t d -> DimVal -> t d'
+t !! i = unsafePerformIO $
+  nDimension t >>= \case
+    0 -> empty
+    1 -> runMaybeT selectVal >>= maybe empty pure
+    _ -> selectRank
+
+  where
+    selectVal :: MaybeT IO (t d')
+    selectVal = do
+      sizeI <- fromIntegral <$> lift (size t i)
+      guard (i < sizeI)
+      v <- lift $ get1d t (fromIntegral i)
+      r <- lift $ newWithSize1d 1
+      lift $ _set1d r 0 v
+      pure r
+
+    selectRank :: IO (t d')
+    selectRank = do
+      sz <- fmap fromIntegral (size t i)
+      r' <- copy t
+      r <- newSelect r' i 0
+      pure (r :: t d')
+
 
 new :: forall d . Dimensions d => IO (Tensor d)
 new = case dimVals d of
