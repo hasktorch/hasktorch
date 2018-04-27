@@ -32,8 +32,8 @@ import Data.List (intercalate)
 class IsTensor t where
   _clearFlag :: t -> Int8 -> IO ()
   tensordata :: t -> IO [HsReal t]
-  _free :: t -> IO ()
-  _freeCopyTo :: t -> t -> IO ()
+  -- _free :: t -> IO ()
+  -- _freeCopyTo :: t -> t -> IO ()
   get1d :: t -> Int64 -> IO (HsReal t)
   get2d :: t -> Int64 -> Int64 -> IO (HsReal t)
   get3d :: t -> Int64 -> Int64 -> Int64 -> IO (HsReal t)
