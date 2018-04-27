@@ -254,21 +254,16 @@ _resizeDim t = case dimVals d of
   -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
-resizeAs :: forall d d' . (Dimensions d, Dimensions d') => Tensor d -> IO (Tensor d')
-resizeAs src = do
+view :: forall d d' . (Dimensions d, Dimensions d') => Tensor d -> IO (Tensor d')
+view src = do
   res <- newClone src
   shape :: Tensor d' <- new
   _resizeAs res shape
 
--- newIx :: forall d d' . Dimensions d' => IO (IndexTensor d')
--- newIx = asStatic <$> Dynamic.new (dim :: Dim d')
--- 
--- -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
--- fromListIx
---   :: forall d n . (KnownNatDim n, Dimensions '[n])
---   => Dim '[n] -> [HsReal] -> IO (IndexTensor '[n])
--- fromListIx _ l = asStatic <$> (Dynamic.fromList1d l)
-
+resizeAs :: forall t d d' . (Dimensions2 d d', IsTensor t, Product d ~ Product d') => t d -> IO (t d')
+resizeAs src = do
+  shape <- new
+  _resizeAs src shape
 
 -- | Initialize a tensor of arbitrary dimension from a list
 -- FIXME: There might be a faster way to do this with newWithSize

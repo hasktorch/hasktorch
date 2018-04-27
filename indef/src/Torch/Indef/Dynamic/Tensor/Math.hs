@@ -37,6 +37,9 @@ _reshape :: Dynamic -> Dynamic -> TH.IndexStorage -> IO ()
 _reshape t0 t1 ix = with2DynamicState t0 t1 $ \s' t0' t1' -> withCPUIxStorage ix $ \ix' ->
   Sig.c_reshape s' t0' t1' ix'
 
+catArray :: TensorMath t => [t] -> DimVal -> IO t
+catArray ts dv = empty >>= \r -> _catArray r ts (length ts) dv >> pure r
+
 _catArray :: Dynamic -> [Dynamic] -> Int -> DimVal -> IO ()
 _catArray res ds x y = withDynamicState res $ \s' r' -> do
   ds' <- FM.newArray =<< mapM (\d -> withForeignPtr (ctensor d) pure) ds
@@ -47,6 +50,9 @@ _tril t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_tril (fromInteger i0)
 
 _triu :: Dynamic -> Dynamic -> Integer -> IO ()
 _triu t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_triu (fromInteger i0)
+
+cat :: TensorMath t => t -> t -> DimVal -> IO t
+cat t0 t1 dv = empty >>= \r -> _cat r t0 t1 dv >> pure r
 
 _cat :: Dynamic -> Dynamic -> Dynamic -> DimVal -> IO ()
 _cat t0 t1 t2 i = withDynamicState t0 $ \s' t0' ->
