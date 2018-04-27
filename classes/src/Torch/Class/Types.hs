@@ -93,3 +93,5 @@ class IsStatic t where
   asDynamic :: Dimensions d => t d -> AsDynamic t
   asStatic :: Dimensions d => AsDynamic t -> t d
 
+class THDebug t where
+  printRefs :: t -> IO ()

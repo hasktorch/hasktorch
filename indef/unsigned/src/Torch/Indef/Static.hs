@@ -17,6 +17,8 @@ import Torch.Class.Types as X
   , Step(..)
   , KeepDim(..), fromKeepDim, keep, ignore
   , SortOrder(..)
+  , THDebug(..)
+  , IsStatic(..)
   )
 
 import Torch.Class.Tensor.Static as X
