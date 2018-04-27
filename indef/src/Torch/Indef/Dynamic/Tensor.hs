@@ -54,13 +54,6 @@ tensordata t = withDynamicState t $ \s' t' ->
   arrayLen :: Ptr CState -> Ptr CTensor -> IO Int
   arrayLen s' p = Sig.c_storage s' p >>= fmap fromIntegral . StorageSig.c_size s'
 
--- _free :: Dynamic -> IO ()
--- _free t = withDynamicState t Sig.c_free
-
--- _freeCopyTo :: Dynamic -> Dynamic -> IO ()
--- _freeCopyTo t0 t1 = with2DynamicState t0 t1 $ \s t0' t1' ->
---     Sig.c_freeCopyTo s t0' t1'
-
 get1d :: Dynamic -> Int64 -> IO HsReal
 get1d t d1 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get1d s t' (fromIntegral d1)
 
