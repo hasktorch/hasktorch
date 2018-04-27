@@ -1,12 +1,6 @@
 {-# OPTIONS_GHC -fno-cse  #-}
 module Torch.Indef.Dynamic (module X) where
 
-import System.IO.Unsafe (unsafePerformIO)
-import Torch.Dimensions
-import Torch.Indef.Types
-
--------------------------------------------------------------------------------
-
 import Torch.Class.Types as X
   ( Stride(..)
   , Size(..)
@@ -62,6 +56,13 @@ import Torch.Indef.Dynamic.Tensor.Sort as X
 
 import Torch.Class.Tensor.TopK as X
 import Torch.Indef.Dynamic.Tensor.TopK as X
+
+-------------------------------------------------------------------------------
+
+import System.IO.Unsafe (unsafePerformIO)
+import Torch.Dimensions
+import Torch.Indef.Types
+import Lens.Micro
 
 instance Show Dynamic where
   show t = unsafePerformIO $ do
