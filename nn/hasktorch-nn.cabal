@@ -1,0 +1,44 @@
+name:           hasktorch-nn
+version:        0.0.1.0
+synopsis:       Torch classes and operands for neural networks
+description:    Torch classes and operands for neural networks
+category:       Tensors, Neural Networks, Machine Learning
+homepage:       https://github.com/hasktorch/hasktorch#readme
+bug-reports:    https://github.com/hasktorch/hasktorch/issues
+author:         Hasktorch dev team <Austin Huang, Sam Stites>
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.24
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+library
+  hs-source-dirs: src
+  default-language: Haskell2010
+  default-extensions:
+      MultiParamTypeClasses
+    , FunctionalDependencies
+    , AllowAmbiguousTypes
+    , LambdaCase
+    , DataKinds
+    , KindSignatures
+    , TypeFamilies
+  build-depends:
+      base >=4.7 && <5
+    , backprop
+    , hasktorch-classes
+    , hasktorch-dimensions
+    , safe-exceptions
+    , transformers >= 0.5
+    , mtl
+    , singletons >=2.2 && < 2.4
+
+  exposed-modules:
+      Torch.NN.Backprop
+
+    , Torch.Class.NN
+    , Torch.Class.NN.Static
+    , Torch.Class.NN.Static.Abs
+

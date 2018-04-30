@@ -25,6 +25,8 @@ hardTanh_updateGradInput     :: Dynamic -> Dynamic -> Dynamic -> Double -> Doubl
 im2Col_updateOutput          :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 im2Col_updateGradInput       :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 col2Im_updateOutput          :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+col2Im_updateGradInput       :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+
 l1Cost_updateOutput          :: Dynamic -> Dynamic -> IO ()
 l1Cost_updateGradInput       :: Dynamic -> Dynamic -> Dynamic -> IO ()
 leakyReLU_updateOutput       :: Dynamic -> Dynamic -> Double -> Bool -> IO ()

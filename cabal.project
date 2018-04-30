@@ -14,6 +14,7 @@ packages:
 
     dimensions/*cabal
     indef/*cabal
+    nn/*cabal
 
     core/*cabal
     examples/*cabal
