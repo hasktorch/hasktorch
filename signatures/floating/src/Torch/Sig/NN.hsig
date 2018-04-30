@@ -22,6 +22,7 @@ c_HardTanh_updateGradInput     :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> 
 c_Im2Col_updateOutput          :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
 c_Im2Col_updateGradInput       :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
 c_Col2Im_updateOutput          :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+c_Col2Im_updateGradInput       :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
 c_L1Cost_updateOutput          :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_L1Cost_updateGradInput       :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_LeakyReLU_updateOutput       :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CDouble -> CBool -> IO ()
