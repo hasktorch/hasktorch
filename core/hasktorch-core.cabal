@@ -37,6 +37,7 @@ test-suite spec
     , Torch.Prelude.Extras
     , Torch.Core.LogAddSpec
     , Torch.Core.RandomSpec
+    , Torch.NN.Static.AbsSpec
 
 library
   hs-source-dirs: src, utils
