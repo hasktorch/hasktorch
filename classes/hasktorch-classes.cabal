@@ -82,8 +82,6 @@ library
     , Torch.Class.Tensor.TopK.Static
 
     -- * Floating-only classes
-    , Torch.Class.NN
-    , Torch.Class.NN.Static
     , Torch.Class.Tensor.Math.Blas
     , Torch.Class.Tensor.Math.Blas.Static
     , Torch.Class.Tensor.Math.Lapack
@@ -102,7 +100,8 @@ library
     -- , Torch.Class.TH.Tensor.Conv
     -- , Torch.Class.TH.Vector
 
-    -- ** THC Only
-    , Torch.Class.THC.Tensor.Random
-    , Torch.Class.THC.Tensor.Random.Static
+  if flag(cuda)
+    exposed-modules:
+        Torch.Class.THC.Tensor.Random
+      , Torch.Class.THC.Tensor.Random.Static
 

@@ -9,7 +9,6 @@ import Foreign.C.Types
 import GHC.ForeignPtr (ForeignPtr)
 import GHC.Int
 import Control.Monad ((>=>))
-import Control.Monad.Managed
 import Data.List.NonEmpty (NonEmpty(..), toList)
 import Torch.Dimensions
 import Torch.Class.Types (Stride(..), Size(..), StorageOffset(..), Step(..), SizesStorage, StridesStorage)
