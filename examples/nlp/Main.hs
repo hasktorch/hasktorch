@@ -1,34 +1,29 @@
-\usepackage{hyperref}
-
-This tutorial is intended to familiarize a new user of haskell and deep learning
-with the current state of haskell bindings to torch, a deep learning library.
-
-While this literate haskell file is an introduction to NLP, most of the content
-is taken from Robert Guthrie's
-\href{https://github.com/rguthrie3/DeepLearningForNLPInPytorch}{DeepLearningForNLPInPytorch}.
-
-We start with our language extensions:
-
-\begin{code}
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Main
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- 
+-- This tutorial is intended to familiarize a new user of haskell and deep learning
+-- with the current state of haskell bindings to torch, a deep learning library.
+-------------------------------------------------------------------------------
 {-# LANGUAGE DataKinds, ScopedTypeVariables #-}
-\end{code}
+module Main where
 
-And our imports:
-\begin{code}
 import Torch.Cuda as THC
 import qualified Torch.Core.Random as Random
 import qualified Torch.Storage as S
-\end{code}
 
-At present, the hasktorch library doesn't export a default tensor type, so
-it can be helpful to indicate what level of precision we want here.
-\begin{code}
+-- At present, the hasktorch library doesn't export a default tensor type, so
+-- it can be helpful to indicate what level of precision we want here.
 type Tensor = DoubleTensor
-\end{code}
 
-You can make tensors from lists:
+-- You can make tensors from lists:
 
-\begin{code}
 tensorIntro = do
   v :: Tensor '[2]    <- fromList [1..2]
   print v
@@ -39,19 +34,17 @@ tensorIntro = do
   r'4 :: Tensor '[2, 3, 2, 3] <- fromList [1..2*3*2*3]
   print r'4
 
+-- but keep in mind that `fromList` isn't perfect:
 tensorEdgecases = do
-  putStrLn "keep in mind:"
   m :: Tensor '[2, 3] <- fromList []
   print m
   v :: Tensor '[2] <- fromList [1..5]
   print v
-\end{code}
 
-\section{Indexing}
+-- * Indexing
 
-And you can index them like so:
+-- You can index them like so:
 
-\begin{code}
 tensorIndexing = do
   v :: Tensor '[2]    <- fromList [1..2]
   print v
@@ -67,11 +60,9 @@ tensorIndexing = do
   print (r'4 THC.!! 1  :: Tensor '[2,2,3])
   print (r'4 THC.!! 2  :: Tensor '[2,3,3])
   print (r'4 THC.!! 3  :: Tensor '[2,3,2])
-\end{code}
 
-Also, we can make tensors with random inputs
+-- Also, we can make tensors with random inputs
 
-\begin{code}
 tensorRandom = do
   t :: Tensor '[3,5] <- random
   print t
@@ -79,9 +70,8 @@ tensorRandom = do
   print c
   n :: Tensor '[3,5] <- normal 5 1
   print n
-\end{code}
 
-\begin{code}
+-- You can do normal operations on them:
 tensorOps = do
   a :: Tensor '[3] <- fromList [1,2,3]
   b :: Tensor '[3] <- fromList [4,5,6]
@@ -97,29 +87,27 @@ tensorOps = do
   catArray ([asDynamic a', asDynamic b', asDynamic a'']) (-1) >>= \(r :: Tensor '[5,2]) -> print r
   catArray ([asDynamic a'', asDynamic b'', asDynamic b']) 0 >>= \(r :: Tensor '[3,7]) -> print r
 
-  -- but this will fail:
+-- but this will fail:
   -- catArray (asDynamic <$> [a', b']) (-2) >>= \(r :: Tensor '[6,2]) -> print r
-\end{code}
 
-\begin{code}
+
+-- reshaping is what you would expect
 tensorReshape = do
   x :: Tensor '[2,3,4] <- uniform 0 10
   print x
   r :: Tensor '[2,12] <- view x
   print r
-\end{code}
 
-\begin{code}
+
+-- Autodiff is...
+--   ... currently offloaded onto backprop!
 tensorAutoDiff = do
   putStrLn "TODO"
-\end{code}
 
 
-\begin{code}
+-- running everything in a main loop:
 main :: IO ()
 main = do
-  g <- Random.new
-  Random.manualSeed g 1
   section "Intro" tensorIntro
   section "Edgecases" tensorEdgecases
   section "Indexing" tensorIndexing
@@ -135,4 +123,4 @@ main = do
     putStrLn "================"
     action
     putStrLn ""
-\end{code}
+
