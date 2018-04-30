@@ -12,7 +12,6 @@ import Foreign hiding (new)
 import Control.Exception.Safe
 import Data.Singletons
 import Data.Singletons.TypeLits
-import Data.Singletons.Prelude.List
 import Data.Singletons.Prelude.Num
 import Control.Monad
 import Data.Maybe
@@ -31,8 +30,8 @@ import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
 
 class IsStatic t => IsTensor t where
-  _clearFlag :: Dimensions d => t d -> Int8 -> IO ()
-  tensordata :: Dimensions d => t d -> IO [HsReal (t d)]
+  _clearFlag :: t d -> Int8 -> IO ()
+  tensordata :: t d -> IO [HsReal (t d)]
   -- _free :: Dimensions d => t d -> IO ()
   -- _freeCopyTo :: Dimensions2 d d' => t d -> t d' -> IO ()
   get1d :: t d -> Int64 -> IO (HsReal (t d))
