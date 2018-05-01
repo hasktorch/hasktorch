@@ -1,6 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Indef.Dynamic.Tensor.Math.Reduce where
 
+import System.IO.Unsafe
+
 import Torch.Indef.Types
 import Torch.Dimensions
 
@@ -8,20 +10,20 @@ import Torch.Indef.Dynamic.Tensor
 import Torch.Indef.Index
 import qualified Torch.Sig.Tensor.Math.Reduce as Sig
 
-minall :: Dynamic -> IO HsReal
-minall = flip withDynamicState (fmap c2hsReal .: Sig.c_minall)
+minall :: Dynamic -> HsReal
+minall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsReal .: Sig.c_minall)
 
-maxall :: Dynamic -> IO HsReal
-maxall = flip withDynamicState (fmap c2hsReal .: Sig.c_maxall)
+maxall :: Dynamic -> HsReal
+maxall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsReal .: Sig.c_maxall)
 
-medianall :: Dynamic -> IO HsReal
-medianall = flip withDynamicState (fmap c2hsReal .: Sig.c_medianall)
+medianall :: Dynamic -> HsReal
+medianall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsReal .: Sig.c_medianall)
 
-sumall :: Dynamic -> IO HsAccReal
-sumall = flip withDynamicState (fmap c2hsAccReal .: Sig.c_sumall)
+sumall :: Dynamic -> HsAccReal
+sumall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_sumall)
 
-prodall :: Dynamic -> IO HsAccReal
-prodall = flip withDynamicState (fmap c2hsAccReal .: Sig.c_prodall)
+prodall :: Dynamic -> HsAccReal
+prodall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_prodall)
 
 _max :: (Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
 _max (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
@@ -65,13 +67,13 @@ median = withKeepDim _median
 -- * not in THC.BYte
 -- c_renorm :: Ptr CState -> t -> t -> HsReal t -> CInt -> HsReal t -> IO ()
 -- c_std :: Ptr CState -> t -> Ptr CTensor -> CInt -> CInt -> CInt -> IO ()
--- c_stdall :: Ptr CState -> Ptr CTensor -> CInt -> IO HsReal t
+-- c_stdall :: Ptr CState -> Ptr CTensor -> CInt -> HsReal t
 -- c_var :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> IO ()
--- c_varall :: Ptr CState -> Ptr CTensor -> CInt -> IO HsReal t
--- c_dist :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> HsReal t -> IO HsReal t
+-- c_varall :: Ptr CState -> Ptr CTensor -> CInt -> HsReal t
+-- c_dist :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> HsReal t -> HsReal t
 
 -- * not in TH.Byte
 -- c_norm :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> HsReal t -> CInt -> CInt -> IO ()
--- c_normall :: Ptr CState -> Ptr CTensor -> HsReal t -> IO HsReal t
+-- c_normall :: Ptr CState -> Ptr CTensor -> HsReal t -> HsReal t
 -- c_mean :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
--- c_meanall :: Ptr CState -> Ptr CTensor -> IO HsReal t
+-- c_meanall :: Ptr CState -> Ptr CTensor -> HsReal t
