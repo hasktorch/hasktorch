@@ -421,8 +421,8 @@ _resizeDim t d = case dimVals d of
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
-fromList1d :: [HsReal] -> IO Dynamic
-fromList1d l = do
+vector :: [HsReal] -> IO Dynamic
+vector l = unsafePerformDupableIO $ do
   res <- new' =<< someDimsM [length l]
   mapM_  (upd res) (zip [0..length l - 1] l)
   pure res

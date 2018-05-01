@@ -37,8 +37,10 @@ sudo t = Sig.asStatic ((Sig.asDynamic t) :: Dynamic)
 isSameSizeAs :: forall d d' . (Dimensions d', Dimensions d) => Tensor d -> Tensor d' -> Bool
 isSameSizeAs _ _ = dimVals (dim :: Dim d) == dimVals (dim :: Dim d')
 
-fromList1d :: [HsReal] -> IO (Tensor '[n])
-fromList1d l = asStatic <$> (Dynamic.fromList1d l)
+vector :: forall n . KnownNat n => [HsReal] -> Maybe (Tensor '[n])
+vector rs
+  | genericLength rs == natVal (Proxy :: Proxy n) = Just . asStatic . Dynamic.vector $ rs
+  | otherwise = Nothing
 
 newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
 _expand r t = Dynamic._expand (asDynamic r) (asDynamic t)
@@ -269,10 +271,27 @@ resizeAs src = do
 -- FIXME: There might be a faster way to do this with newWithSize
 fromList
   :: forall d .  Dimensions d
-  => [HsReal] -> IO (Tensor d)
-fromList l = do
-  oneD :: Tensor '[Product d] <- fromList1d l
-  _resizeDim oneD
+  => [HsReal] -> Maybe (Tensor d)
+fromList l = unsafePerformIO . runMaybeT $ do
+  vec :: Tensor '[Product d] <- MaybeT (pure (vector l))
+  guard (genericLength l == natVal (Proxy :: Proxy (Product d)))
+  lift $ _resizeDim vec
+{-# NOINLINE fromList #-}
+
+matrix
+  :: forall n m
+  .  (KnownNatDim3 n m (n*m))
+  => [[HsReal]] -> Either String (Tensor '[n, m])
+matrix ls
+  | length ls == 0 = Left "no support for empty lists"
+  | genericLength ls /= (natVal (Proxy :: Proxy n)) = Left "length of outer list must match type-level columns"
+  | any (/= length (head ls)) (fmap length ls) = Left "can't build a matrix from jagged lists"
+  | genericLength (head ls) /= (natVal (Proxy :: Proxy n)) = Left "inner list length must match type-level rows"
+  | otherwise =
+    case fromList (concat ls) of
+      Nothing -> Left "impossible: number of elements doesn't match the dimensions"
+      Just m -> Right m
+
 
 newTranspose2d :: (KnownNat2 r c) => Tensor '[r, c] -> IO (Tensor '[c, r])
 newTranspose2d t = newTranspose t 1 0

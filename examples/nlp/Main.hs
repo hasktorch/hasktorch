@@ -17,6 +17,7 @@ module Main where
 import Torch.Cuda as THC
 import qualified Torch.Core.Random as Random
 import qualified Torch.Storage as S
+import Numeric.Backprop
 
 -- At present, the hasktorch library doesn't export a default tensor type, so
 -- it can be helpful to indicate what level of precision we want here.
@@ -25,37 +26,35 @@ type Tensor = DoubleTensor
 -- You can make tensors from lists:
 
 tensorIntro = do
-  v :: Tensor '[2]    <- fromList [1..2]
+  let Just (v :: Tensor '[2]) = fromList [1..2]
   print v
-  m :: Tensor '[2, 3] <- fromList [1..2*3]
+  let Just (m :: Tensor '[2, 3]) = fromList [1..2*3]
   print m
-  t :: Tensor '[2, 3, 2]    <- fromList [1..2*3*2]
+  let Just (t :: Tensor '[2, 3, 2]) = fromList [1..2*3*2]
   print t
-  r'4 :: Tensor '[2, 3, 2, 3] <- fromList [1..2*3*2*3]
+  let Just (r'4:: Tensor '[2, 3, 2, 3]) = fromList [1..2*3*2*3]
   print r'4
 
--- but keep in mind that `fromList` isn't perfect:
+-- keep in mind that `fromList` will check element size
 tensorEdgecases = do
-  m :: Tensor '[2, 3] <- fromList []
-  print m
-  v :: Tensor '[2] <- fromList [1..5]
-  print v
+  print (fromList []     :: Maybe (Tensor '[2, 3]))
+  print (fromList [1..5] :: Maybe (Tensor '[2   ]))
 
 -- * Indexing
 
 -- You can index them like so:
 
 tensorIndexing = do
-  v :: Tensor '[2]    <- fromList [1..2]
+  let Just (v :: Tensor '[2]) = fromList [1..2]
   print v
   print (v THC.!! 0 :: Tensor '[1])
-  m :: Tensor '[2, 3] <- fromList [1..2*3]
+  let Just (m :: Tensor '[2, 3]) = fromList [1..2*3]
   print m
   print (m THC.!! 1 :: Tensor '[3])
-  t :: Tensor '[2, 3, 2]    <- fromList [1..2*3*2]
+  let Just (t :: Tensor '[2, 3, 2]) = fromList [1..2*3*2]
   print t
   print (t THC.!! 2  :: Tensor '[2,3])
-  r'4 :: Tensor '[2, 3, 2, 3] <- fromList [1..2*3*2*3]
+  let Just (r'4 :: Tensor '[2, 3, 2, 3]) = fromList [1..2*3*2*3]
   print (r'4 THC.!! 0  :: Tensor '[3,2,3])
   print (r'4 THC.!! 1  :: Tensor '[2,2,3])
   print (r'4 THC.!! 2  :: Tensor '[2,3,3])
@@ -73,19 +72,27 @@ tensorRandom = do
 
 -- You can do normal operations on them:
 tensorOps = do
-  a :: Tensor '[3] <- fromList [1,2,3]
-  b :: Tensor '[3] <- fromList [4,5,6]
+  let Just (a :: Tensor '[3]) = fromList [1,2,3]
+  let Just (b :: Tensor '[3]) = fromList [4,5,6]
   print (a + b)
   cat1d a b >>= print
-  catArray (asDynamic <$> [a, b]) 0 >>= \(r :: Tensor '[6]) -> print r
-  a' :: Tensor '[3,3] <- fromList [0..6]
-  b' :: Tensor '[3,2] <- fromList [6..12]
+
+  r :: Tensor '[6] <- catArray (asDynamic <$> [a, b]) 0
+  print r
+
+  let Just (a':: Tensor '[3,3])  = fromList [1..9]
+  let Just (b':: Tensor '[3,2])  = fromList [10..15]
   cat2d1 a' b' >>= print
-  a'' :: Tensor '[3,2] <- fromList [0..6]
-  b'' :: Tensor '[2,2] <- fromList [6..12]
+
+  let Just (a'' :: Tensor '[3,2]) = fromList [1..6]
+  let Just (b'' :: Tensor '[2,2]) = fromList [7..10]
   cat2d0 a'' b'' >>= print
-  catArray ([asDynamic a', asDynamic b', asDynamic a'']) (-1) >>= \(r :: Tensor '[5,2]) -> print r
-  catArray ([asDynamic a'', asDynamic b'', asDynamic b']) 0 >>= \(r :: Tensor '[3,7]) -> print r
+
+  r :: Tensor '[5,2] <- catArray ([asDynamic a', asDynamic b', asDynamic a'']) (-1)
+  print r
+
+  r :: Tensor '[3,7] <- catArray ([asDynamic a'', asDynamic b'', asDynamic b']) 0
+  print r
 
 -- but this will fail:
   -- catArray (asDynamic <$> [a', b']) (-2) >>= \(r :: Tensor '[6,2]) -> print r

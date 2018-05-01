@@ -29,22 +29,28 @@ type CPUIndex = TH.LongDynamic
 type CPUIndexStorage = TH.LongStorage
 
 -- FIXME: This can abstracted away with backpack, but I'm not sure if it can do it atm.
-newIx :: forall n . KnownNat n => IO (IndexTensor '[n])
-newIx = longAsStatic <$> newIxDyn (natVal (Proxy :: Proxy n))
+newIx :: forall n . KnownNat n => IndexTensor '[n]
+newIx = longAsStatic $ newIxDyn (natVal (Proxy :: Proxy n))
 
-newIxDyn :: Integral i => i -> IO IndexDynamic
-newIxDyn x = mkDynamicIO $ \s -> IxSig.c_newWithSize1d s (fromIntegral x)
+newIxDyn :: Integral i => i -> IndexDynamic
+newIxDyn x = unsafePerformDupableIO . mkDynamicIO $ \s ->
+  IxSig.c_newWithSize1d s (fromIntegral x)
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
-fromListIx :: [Integer] -> IO IndexDynamic
-fromListIx l = do
-  res <- newIxDyn (length l)
+indexDyn :: [Integer] -> IndexDynamic
+indexDyn l = unsafePerformDupableIO $ do
+  let res = newIxDyn (length l)
   mapM_  (upd res) (zip [0..length l - 1] l)
   pure res
 
   where
     upd :: IndexDynamic -> (Int, Integer) -> IO ()
     upd t (idx, v) = withDynamicState t $ \s' t' -> IxSig.c_set1d s' t' (fromIntegral idx) (fromIntegral v)
+
+index :: [Integer] -> Maybe (IndexTensor '[n])
+index l
+  | genericLength l == natVal (Proxy :: Proxy n) = Just . asStatic . indexDyn $ l
+  | otherwise = Nothing
 
 _resizeDim :: IndexDynamic -> Integer -> IO ()
 _resizeDim t x = withDynamicState t $ \s' t' -> IxSig.c_resize1d s' t' (fromIntegral x)
