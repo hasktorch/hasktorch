@@ -9,6 +9,9 @@ import qualified Torch.Class.Tensor.Static as Class
 import qualified Torch.Types.TH as TH
 import qualified Torch.Sig.Types as Sig
 import Data.Coerce
+import GHC.TypeLits (natVal)
+import Data.Proxy (Proxy(..))
+import Data.List
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor ()
@@ -21,8 +24,10 @@ instance Class.IsTensor Tensor where
   isSameSizeAs :: forall t d d' . (Dimensions d', Dimensions d) => t d -> t d' -> Bool
   isSameSizeAs _ _ = dimVals (dim :: Dim d) == dimVals (dim :: Dim d')
 
-  fromList1d :: [HsReal] -> IO (Tensor '[n])
-  fromList1d l = asStatic <$> (Dynamic.fromList1d l)
+  vector :: forall n . KnownNat n => [HsReal] -> Maybe (Tensor '[n])
+  vector rs
+    | genericLength rs == natVal (Proxy :: Proxy n) = Just . asStatic . Dynamic.vector $ rs
+    | otherwise = Nothing
 
   newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
   _expand r t = Dynamic._expand (asDynamic r) (asDynamic t)

@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeOperators #-}
 module Torch.Class.Tensor.Static where
 
 import Data.Proxy
@@ -10,6 +11,7 @@ import GHC.Int
 import GHC.Natural
 import Foreign hiding (new)
 import Control.Exception.Safe
+import Data.List
 import Data.Singletons
 import Data.Singletons.TypeLits
 import Data.Singletons.Prelude.Num
@@ -106,23 +108,10 @@ class IsStatic t => IsTensor t where
   _unsqueeze1d :: t d -> t d' -> DimVal -> IO ()
 
   -- New for static tensors
-  fromList1d :: [HsReal (t '[n])] -> IO (t '[n])
+  vector :: KnownNat n => [HsReal (t '[n])] -> Maybe (t '[n])
 
   -- Modified for static tensors
   isSameSizeAs :: (Dimensions d, Dimensions d') => t d -> t d' -> Bool
-
--- type Static t d =
---   ( IsTensor t
---   , IsStatic t
---   , Num (HsReal (IndexDynamic (AsDynamic (t d))))
---   , Dynamic.IsTensor (AsDynamic (t d))
---   )
--- type Static2 t d d' = 
---   ( Static t d
---   , Static t d'
---   , AsDynamic (t d) ~ AsDynamic (t d')
---   , IndexDynamic (AsDynamic (t d)) ~ IndexDynamic (AsDynamic (t d'))
---   )
 
 shape :: IsTensor t => t d -> IO [Size]
 shape t = do
@@ -284,13 +273,13 @@ newIx = asStatic <$> Dynamic.new (dim :: Dim d')
 
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
-fromListIx
+index
   :: forall t d n . (KnownNatDim n, Dimensions '[n], IsStatic (IndexTensor t))
   => Num (HsReal (AsDynamic (IndexTensor t)))
   => Dynamic.IsTensor (AsDynamic (IndexTensor t))
   => Dimensions d
-  => Proxy (t d) -> Dim '[n] -> [HsReal (AsDynamic (IndexTensor t))] -> IO (IndexTensor t '[n])
-fromListIx _ _ l = asStatic <$> (Dynamic.fromList1d l)
+  => Proxy (t d) -> Dim '[n] -> [HsReal (AsDynamic (IndexTensor t))] -> IndexTensor t '[n]
+index _ _ = asStatic . Dynamic.vector
 
 
 -- | Initialize a tensor of arbitrary dimension from a list
@@ -298,10 +287,27 @@ fromListIx _ _ l = asStatic <$> (Dynamic.fromList1d l)
 fromList
   :: forall t d
   .  (KnownNatDim (Product d), Dimensions d, IsTensor t)
-  => [HsReal (t '[Product d])] -> IO (t d)
-fromList l = do
-  oneD :: t '[Product d] <- fromList1d l
-  _resizeDim oneD
+  => [HsReal (t '[Product d])] -> Maybe (t d)
+fromList l = unsafePerformIO . runMaybeT $ do
+  vec :: t '[Product d] <- MaybeT (pure (vector l))
+  guard (genericLength l == natVal (Proxy :: Proxy (Product d)))
+  lift $ _resizeDim vec
+{-# NOINLINE fromList #-}
+
+
+matrix
+  :: forall t n m
+  .  (KnownNatDim3 n m (n*m), IsTensor t)
+  => [[HsReal (t '[n * m])]] -> Either String (t '[n, m])
+matrix ls
+  | length ls == 0 = Left "no support for empty lists"
+  | genericLength ls /= (natVal (Proxy :: Proxy n)) = Left "length of outer list must match type-level columns"
+  | any (/= length (head ls)) (fmap length ls) = Left "can't build a matrix from jagged lists"
+  | genericLength (head ls) /= (natVal (Proxy :: Proxy n)) = Left "inner list length must match type-level rows"
+  | otherwise =
+    case fromList (concat ls) of
+      Nothing -> Left "impossible: number of elements doesn't match the dimensions"
+      Just m -> Right m
 
 newTranspose2d
   :: forall t r c . (KnownNat2 r c, IsTensor t, Dimensions '[r, c], Dimensions '[c, r])

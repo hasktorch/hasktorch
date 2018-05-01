@@ -6,27 +6,27 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Class.Tensor where
 
 import Control.Arrow ((***))
 import Control.Exception.Safe
-import Control.Monad ((>=>), forM, forM_)
+import Control.Monad ((>=>), forM, forM_, when)
 import Control.Monad.IO.Class
-import Data.List (genericLength)
+import Data.List (genericLength, intercalate)
 import GHC.Int
 import Torch.Class.Types
 import Torch.Dimensions
 import Data.List.NonEmpty (NonEmpty)
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Torch.Types.TH as TH
 
 -- TODO: remove this
 import Debug.Trace
 -- TODO: move all pretty-printing to a separate codebase
 import Data.Typeable
-import Control.Monad (when)
 import Control.Applicative ((<|>))
 import Data.Maybe (fromMaybe)
-import Data.List (intercalate)
 
 
 class IsTensor t where
@@ -179,14 +179,15 @@ _resizeDim t d = case dimVals d of
 
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
-fromList1d :: forall t . (IsTensor t) => [HsReal t] -> IO t
-fromList1d l = do
+vector :: forall t . IsTensor t => [HsReal t] -> t
+vector l = unsafePerformIO $ do
   res :: t <- new' =<< someDimsM [length l]
   mapM_  (upd res) (zip [0..length l - 1] l)
   pure res
  where
   upd :: t -> (Int, HsReal t) -> IO ()
   upd t (idx, v) = someDimsM [idx] >>= \sd -> setDim'_ t sd v
+{-# NOINLINE vector #-}
 
 resizeDim :: IsTensor t => t -> Dim (d::[Nat]) -> IO t
 resizeDim src d = newClone src >>= \res -> _resizeDim res d >> pure res
