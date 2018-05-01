@@ -10,19 +10,19 @@ import Torch.Indef.Dynamic.Tensor ()
 import Torch.Indef.Static.Tensor ()
 
 instance Class.TensorMathReduce Tensor where
-  minall :: Tensor d -> IO HsReal
+  minall :: Tensor d -> HsReal
   minall t = Dynamic.minall (asDynamic t)
 
-  maxall :: Tensor d -> IO HsReal
+  maxall :: Tensor d -> HsReal
   maxall t = Dynamic.maxall (asDynamic t)
 
-  medianall :: Tensor d -> IO HsReal
+  medianall :: Tensor d -> HsReal
   medianall t = Dynamic.medianall (asDynamic t)
 
-  sumall :: Tensor d -> IO HsAccReal
+  sumall :: Tensor d -> HsAccReal
   sumall t = Dynamic.sumall (asDynamic t)
 
-  prodall :: Tensor d -> IO HsAccReal
+  prodall :: Tensor d -> HsAccReal
   prodall t = Dynamic.prodall (asDynamic t)
 
   _max :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()

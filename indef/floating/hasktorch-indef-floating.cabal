@@ -43,6 +43,7 @@ library
     , Torch.Indef.Static
 
     , Torch.Indef.Static.NN
+    , Torch.Indef.Static.NN.Abs
     , Torch.Indef.Static.Tensor.Math.Blas
     , Torch.Indef.Static.Tensor.Math.Lapack
     , Torch.Indef.Static.Tensor.Math.Floating

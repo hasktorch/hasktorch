@@ -28,7 +28,6 @@ import Data.Typeable
 import Control.Applicative ((<|>))
 import Data.Maybe (fromMaybe)
 
-
 class IsTensor t where
   _clearFlag :: t -> Int8 -> IO ()
   tensordata :: t -> IO [HsReal t]
