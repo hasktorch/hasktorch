@@ -11,13 +11,18 @@
 -- This tutorial is intended to familiarize a new user of haskell and deep learning
 -- with the current state of haskell bindings to torch, a deep learning library.
 -------------------------------------------------------------------------------
-{-# LANGUAGE DataKinds, ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds, ScopedTypeVariables, GADTs #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Main where
 
-import Torch.Cuda as THC
-import qualified Torch.Core.Random as Random
-import qualified Torch.Storage as S
+import Torch.Cuda
 import Numeric.Backprop
+import System.IO.Unsafe
+import Prelude hiding ((!!))
 
 -- At present, the hasktorch library doesn't export a default tensor type, so
 -- it can be helpful to indicate what level of precision we want here.
@@ -47,18 +52,18 @@ tensorEdgecases = do
 tensorIndexing = do
   let Just (v :: Tensor '[2]) = fromList [1..2]
   print v
-  print (v THC.!! 0 :: Tensor '[1])
+  print (v !! 0 :: Tensor '[1])
   let Just (m :: Tensor '[2, 3]) = fromList [1..2*3]
   print m
-  print (m THC.!! 1 :: Tensor '[3])
+  print (m !! 1 :: Tensor '[3])
   let Just (t :: Tensor '[2, 3, 2]) = fromList [1..2*3*2]
   print t
-  print (t THC.!! 2  :: Tensor '[2,3])
+  print (t !! 2  :: Tensor '[2,3])
   let Just (r'4 :: Tensor '[2, 3, 2, 3]) = fromList [1..2*3*2*3]
-  print (r'4 THC.!! 0  :: Tensor '[3,2,3])
-  print (r'4 THC.!! 1  :: Tensor '[2,2,3])
-  print (r'4 THC.!! 2  :: Tensor '[2,3,3])
-  print (r'4 THC.!! 3  :: Tensor '[2,3,2])
+  print (r'4 !! 0  :: Tensor '[3,2,3])
+  print (r'4 !! 1  :: Tensor '[2,2,3])
+  print (r'4 !! 2  :: Tensor '[2,3,3])
+  print (r'4 !! 3  :: Tensor '[2,3,2])
 
 -- Also, we can make tensors with random inputs
 
@@ -106,11 +111,56 @@ tensorReshape = do
   print r
 
 
--- Autodiff is...
---   ... currently offloaded onto backprop!
+---- Autodiff is...
+----   ...currently offloaded onto backprop!
 tensorAutoDiff = do
-  putStrLn "TODO"
+  -- There is no notion of a 'Variable' from pytorch < 0.4
+  -- instead we rely on backprop's `BVar`
+  --
+  -- Here we take an input, pass it into the backprop'd identity function
+  -- and evaluate it for its output value (itself)
+  print (evalBP id x)
 
+  -- Alternatively, we can do the same thing but only inspect it's gradient:
+  print $ gradBP id x
+
+  -- Both the output and gradient can be extracted at the same time with
+  -- 'backprop'
+  let (o, g) = backprop id x
+  print o
+  print g
+
+  -- We can perform math using the `Num`, `Floating`, and `Fractional`
+  -- instances of tensors:
+  let (out, (gx, gy)) = backprop2 (+) x y
+  print out
+  print gx
+  print gy
+
+  -- We can also write our own backprop-able functions.
+  let (out, (gx, gy)) = backprop2 sse x y
+  print out
+  print gx
+  print gy
+
+ where
+  x, y :: Tensor '[3]
+  Just x = vector [1,2,3]
+  Just y = vector [4,5,6]
+
+  -- backprop will handle management of all backward passes if
+  -- given @BVar@s
+  sse
+    :: Reifies s W
+    => BVar s (Tensor '[3]) -> BVar s (Tensor '[3]) -> BVar s Double
+  sse x y = sumallBP ((y - x) ** 2)
+
+  -- However, here we have a library-specific function, @sumall@,
+  -- where we must specify how to compute the derivative.
+  sumallBP :: Reifies s W => BVar s (Tensor '[3]) -> BVar s Double
+  sumallBP = liftOp1 . op1 $ \t ->
+    (sumall t, unsafePerformIO . constant)
+  {-# NOINLINE sumallBP #-}
 
 -- running everything in a main loop:
 main :: IO ()
