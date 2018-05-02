@@ -23,6 +23,7 @@ library
       TypeSynonymInstances
   build-depends:
       base >=4.7 && <5
+    , backprop >= 0.2 && < 0.3
     , hasktorch-indef-signed
     , hasktorch-signatures-floating
     , hasktorch-classes

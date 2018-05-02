@@ -21,4 +21,14 @@ import Torch.Indef.Static.NN as X
 import Torch.Class.NN.Static.Abs as X
 import Torch.Indef.Static.NN.Abs as X
 
+-- ========================================================================= --
+
+import Torch.Sig.Types (Tensor)
+import Torch.Dimensions (Dimensions)
+import Numeric.Backprop.Class
+
+instance Dimensions d => Backprop (Tensor d) where
+  zero = zeroNum
+  add = addNum
+  one = oneNum
 
