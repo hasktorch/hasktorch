@@ -10,6 +10,7 @@ vendor/aten-spec/*.yaml
 dist-newstyle
 *.hsc
 *ubyte.gz
+.git
 
 # Created by https://www.gitignore.io/api/c,vim,c++,linux,macos,emacs,haskell
 
