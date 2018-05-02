@@ -27,6 +27,8 @@ flag with_nn
 
 library
   extra-libraries: ATen
+  c-sources:
+      cbits/state_stuff.c
   hs-source-dirs:
       src
     , nn

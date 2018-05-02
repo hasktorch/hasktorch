@@ -9,6 +9,9 @@ import qualified Torch.Class.Tensor.Static as Class
 import qualified Torch.Types.TH as TH
 import qualified Torch.Sig.Types as Sig
 import Data.Coerce
+import GHC.TypeLits (natVal)
+import Data.Proxy (Proxy(..))
+import Data.List
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor ()
@@ -21,8 +24,10 @@ instance Class.IsTensor Tensor where
   isSameSizeAs :: forall t d d' . (Dimensions d', Dimensions d) => t d -> t d' -> Bool
   isSameSizeAs _ _ = dimVals (dim :: Dim d) == dimVals (dim :: Dim d')
 
-  fromList1d :: [HsReal] -> IO (Tensor '[n])
-  fromList1d l = asStatic <$> (Dynamic.fromList1d l)
+  vector :: forall n . KnownNat n => [HsReal] -> Maybe (Tensor '[n])
+  vector rs
+    | genericLength rs == natVal (Proxy :: Proxy n) = Just . asStatic . Dynamic.vector $ rs
+    | otherwise = Nothing
 
   newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
   _expand r t = Dynamic._expand (asDynamic r) (asDynamic t)
@@ -39,8 +44,6 @@ instance Class.IsTensor Tensor where
   retain t = Dynamic.retain (asDynamic t)
   _clearFlag t = Dynamic._clearFlag (asDynamic t)
   tensordata t = Dynamic.tensordata (asDynamic t)
-  _free t = Dynamic._free (asDynamic t)
-  _freeCopyTo t0 t1 = Dynamic._freeCopyTo (asDynamic t0) (asDynamic t1)
   get1d t = Dynamic.get1d (asDynamic t)
   get2d t = Dynamic.get2d (asDynamic t)
   get3d t = Dynamic.get3d (asDynamic t)
@@ -96,6 +99,4 @@ instance Class.IsTensor Tensor where
   _transpose t0 t1 = Dynamic._transpose (asDynamic t0) (asDynamic t1)
   _unfold t0 t1 = Dynamic._unfold (asDynamic t0) (asDynamic t1)
   _unsqueeze1d t0 t1 = Dynamic._unsqueeze1d (asDynamic t0) (asDynamic t1)
-
-
 

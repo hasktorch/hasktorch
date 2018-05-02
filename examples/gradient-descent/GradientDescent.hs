@@ -85,7 +85,7 @@ runN lazyIters nIter = do
   putStrLn $ "Loss after " <> show nIter <> " steps"
   print j
   putStrLn $ "Parameter estimate after " <> show nIter <> " steps:"
-  printTensor p
+  print p
   pure p
 
 runExample :: IO (Tensor '[1,2])
@@ -93,7 +93,7 @@ runExample = do
   -- Generate data w/ ground truth params
   putStrLn "True parameters"
   trueParam <- fromList [3.5, -4.4]
-  printTensor trueParam
+  print trueParam
 
   dat <- genData trueParam
 

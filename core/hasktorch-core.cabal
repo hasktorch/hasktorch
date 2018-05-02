@@ -37,6 +37,7 @@ test-suite spec
     , Torch.Prelude.Extras
     -- , Torch.Core.LogAddSpec
     -- , Torch.Core.RandomSpec
+    , Torch.NN.Static.AbsSpec
 
 library
   hs-source-dirs: src
@@ -55,6 +56,7 @@ library
     , hasktorch-indef-random-th
     , hasktorch-raw-th
     , hasktorch-types-th
+    , hasktorch-nn
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
     , numeric-limits

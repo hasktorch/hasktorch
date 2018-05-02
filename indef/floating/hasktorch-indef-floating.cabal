@@ -17,14 +17,17 @@ source-repository head
 library
   default-language: Haskell2010
   hs-source-dirs: src
+  ghc-options: -Wno-orphans
   default-extensions:
       InstanceSigs
       TypeSynonymInstances
   build-depends:
       base >=4.7 && <5
+    , backprop >= 0.2 && < 0.3
     , hasktorch-indef-signed
     , hasktorch-signatures-floating
     , hasktorch-classes
+    , hasktorch-nn
     , hasktorch-dimensions
     -- I'm not actually sure we need this dependency...
     , hasktorch-types-th
@@ -41,6 +44,7 @@ library
     , Torch.Indef.Static
 
     , Torch.Indef.Static.NN
+    , Torch.Indef.Static.NN.Abs
     , Torch.Indef.Static.Tensor.Math.Blas
     , Torch.Indef.Static.Tensor.Math.Lapack
     , Torch.Indef.Static.Tensor.Math.Floating

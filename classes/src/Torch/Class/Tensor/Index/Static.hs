@@ -35,7 +35,7 @@ getRow t r
   | r > fromIntegral (natVal (Proxy :: Proxy n)) = throwString "Row out of bounds"
   | otherwise = do
       res <- Dynamic.new (dim :: Dim '[1, m])
-      ixs <- Dynamic.fromList1d [ fromIntegral r ]
+      let ixs = Dynamic.vector [ fromIntegral r ]
       Dynamic._indexSelect res (asDynamic t) 0 ixs
       pure (asStatic res)
 
@@ -53,7 +53,7 @@ getColumn t r
   | r > fromIntegral (natVal (Proxy :: Proxy m)) = throwString "Column out of bounds"
   | otherwise = do
       res <- new
-      ixs :: AsDynamic (IndexTensor t) <- Dynamic.fromList1d [ fromIntegral r ]
+      let ixs = Dynamic.vector [ fromIntegral r ] --  :: AsDynamic (IndexTensor t)
       _indexSelect res t 1 (asStatic ixs :: IndexTensor t '[n])
       pure res
 

@@ -43,10 +43,12 @@ instance Storable CAccReal
 
 data HsReal
 instance Num  HsReal
+instance Ord  HsReal
 instance Show HsReal
 
 data HsAccReal
 instance Num  HsAccReal
+instance Ord  HsAccReal
 instance Show HsAccReal
 
 hs2cReal :: HsReal -> CReal

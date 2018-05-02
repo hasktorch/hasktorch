@@ -1,4 +1,13 @@
+{-# LANGUAGE KindSignatures  #-}
+{-# OPTIONS_GHC -fno-cse  #-}
 module Torch.Indef.Static (module X) where
+
+import System.IO.Unsafe (unsafePerformIO)
+import Torch.Dimensions
+import Torch.Indef.Types
+import Torch.Class.Tensor (showTensor)
+
+-------------------------------------------------------------------------------
 
 import Torch.Class.Types as X
   ( IsStatic(..)
@@ -8,6 +17,8 @@ import Torch.Class.Types as X
   , Step(..)
   , KeepDim(..), fromKeepDim, keep, ignore
   , SortOrder(..)
+  , THDebug(..)
+  , IsStatic(..)
   )
 
 import Torch.Class.Tensor.Static as X
@@ -61,6 +72,10 @@ import Torch.Indef.Static.Tensor.Sort as X
 import Torch.Class.Tensor.TopK.Static as X
 import Torch.Indef.Static.Tensor.TopK as X
 
--- import Torch.Class.Tensor.Random as X
--- import Torch.Indef.Static.Tensor.Random as X
+instance Show (Tensor (d::[Nat])) where
+  show t = unsafePerformIO $ do
+    SomeDims ds <- getDims t
+    (vs, desc) <- showTensor (get1d t) (get2d t) (get3d t) (get4d t) (dimVals ds)
+    pure (vs ++ "\n" ++ desc)
+  {-# NOINLINE show #-}
 

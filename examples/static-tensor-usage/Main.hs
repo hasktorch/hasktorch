@@ -112,10 +112,10 @@ header c h = do
   putStrLn $ replicate (length h) c
 
 section :: Dimensions d => String -> IO (DoubleTensor d) -> IO ()
-section a b = _section printTensor a b >> pure ()
+section a b = _section print a b >> pure ()
 
 section' :: Dimensions d => String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
-section' = _section printTensor
+section' = _section print
 
 showSection :: Show x => String -> IO x -> IO ()
 showSection a b = _section print a b >> pure ()

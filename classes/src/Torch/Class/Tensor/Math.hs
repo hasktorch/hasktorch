@@ -49,6 +49,13 @@ diag  t d = withEmpty t $ \r -> _diag r t d
 diag1d :: TensorMath t => t -> IO t
 diag1d t = diag t 1
 
+
+cat :: TensorMath t => t -> t -> DimVal -> IO t
+cat t0 t1 dv = empty >>= \r -> _cat r t0 t1 dv >> pure r
+
+catArray :: TensorMath t => [t] -> DimVal -> IO t
+catArray ts dv = empty >>= \r -> _catArray r ts (length ts) dv >> pure r
+
 _tenLike
   :: (TensorMath t)
   => (t -> t -> IO ())

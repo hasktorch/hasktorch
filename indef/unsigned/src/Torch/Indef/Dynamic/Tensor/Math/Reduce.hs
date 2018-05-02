@@ -3,24 +3,25 @@ module Torch.Indef.Dynamic.Tensor.Math.Reduce where
 import Torch.Class.Tensor.Math.Reduce
 import Torch.Indef.Types
 import Torch.Dimensions
+import System.IO.Unsafe
 
 import qualified Torch.Sig.Tensor.Math.Reduce as Sig
 
 instance TensorMathReduce Dynamic where
-  minall :: Dynamic -> IO HsReal
-  minall = flip withDynamicState (fmap c2hsReal .: Sig.c_minall)
+  minall :: Dynamic -> HsReal
+  minall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_minall)
 
-  maxall :: Dynamic -> IO HsReal
-  maxall = flip withDynamicState (fmap c2hsReal .: Sig.c_maxall)
+  maxall :: Dynamic -> HsReal
+  maxall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_maxall)
 
-  medianall :: Dynamic -> IO HsReal
-  medianall = flip withDynamicState (fmap c2hsReal .: Sig.c_medianall)
+  medianall :: Dynamic -> HsReal
+  medianall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_medianall)
 
-  sumall :: Dynamic -> IO HsAccReal
-  sumall = flip withDynamicState (fmap c2hsAccReal .: Sig.c_sumall)
+  sumall :: Dynamic -> HsAccReal
+  sumall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_sumall)
 
-  prodall :: Dynamic -> IO HsAccReal
-  prodall = flip withDynamicState (fmap c2hsAccReal .: Sig.c_prodall)
+  prodall :: Dynamic -> HsAccReal
+  prodall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_prodall)
 
   _max :: (Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
   _max (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->

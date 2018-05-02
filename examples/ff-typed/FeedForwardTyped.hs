@@ -32,9 +32,9 @@ infixr 5 :~
 dispW :: (KnownNatDim o, KnownNatDim i) => StaticWeights i o -> IO ()
 dispW w = do
   putStrLn "\nBiases:"
-  printTensor (biases w)
+  print (biases w)
   putStrLn "\nWeights:"
-  printTensor (nodes w)
+  print (nodes w)
 
 dispN :: SN h hs c -> IO ()
 dispN (O w) = dispW w
@@ -95,13 +95,13 @@ main = do
   dispN n1
 
   putStrLn "\nNETWORK 1 Forward prop result:"
-  (constant 1 :: IO (DoubleTensor '[4])) >>= runNet n1 >>= printTensor
+  (constant 1 :: IO (DoubleTensor '[4])) >>= runNet n1 >>= print
 
   putStrLn "\n=========\nNETWORK 2\n========="
   n2  <- randomNet :: IO (SN 4 '[3, 2] 2)
   dispN n2
 
   putStrLn "\nNETWORK 2 Forward prop result:"
-  (constant 1 :: IO (DoubleTensor '[4])) >>= runNet n2 >>= printTensor
+  (constant 1 :: IO (DoubleTensor '[4])) >>= runNet n2 >>= print
 
   putStrLn "Done"

@@ -81,6 +81,7 @@ instance Class.NN Dynamic where
   im2Col_updateOutput = ten2int8 Sig.c_Im2Col_updateOutput
   im2Col_updateGradInput = ten2int10 Sig.c_Im2Col_updateGradInput
   col2Im_updateOutput = ten2int10 Sig.c_Col2Im_updateOutput
+  col2Im_updateGradInput = ten2int8 Sig.c_Col2Im_updateGradInput
   gRUFused_updateGradInput = ten5 Sig.c_GRUFused_updateGradInput
   pReLU_updateGradInput = ten4 Sig.c_PReLU_updateGradInput
   spatialAdaptiveAveragePooling_updateGradInput = ten3 Sig.c_SpatialAdaptiveAveragePooling_updateGradInput

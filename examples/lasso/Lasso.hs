@@ -54,8 +54,8 @@ genData w = do
   ones         :: Tensor '[N] <- T.constant 1
   x :: Tensor '[N, M] <- (predictorVal `T.cat1d` ones) >>= T.resizeAs
   y :: Tensor '[N, 1] <- T.resizeAs ((x !*! w) ^+^ noise)
-  printTensor x
-  printTensor y
+  print x
+  print y
   pure (x, y)
 
 -- ========================================================================= --

@@ -8,7 +8,6 @@ packages:
     types/th/*.cabal
     types/thc/*.cabal
 
-
     signatures/types/*cabal
     signatures/unsigned/*cabal
     signatures/signed/*cabal
@@ -18,6 +17,7 @@ packages:
 
     dimensions/*cabal
     classes/*cabal
+    nn/*cabal
 
     indef/types/*cabal
     indef/unsigned/*cabal

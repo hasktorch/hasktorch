@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeOperators #-}
 module Torch.Class.Tensor.Static where
 
 import Data.Proxy
@@ -10,26 +11,29 @@ import GHC.Int
 import GHC.Natural
 import Foreign hiding (new)
 import Control.Exception.Safe
+import Data.List
 import Data.Singletons
 import Data.Singletons.TypeLits
-import Data.Singletons.Prelude.List
 import Data.Singletons.Prelude.Num
 import Control.Monad
+import Data.Maybe
+import Control.Monad.Trans
+import Control.Monad.Trans.Maybe
+import System.IO.Unsafe
 
 import Torch.Dimensions
 import Data.List.NonEmpty (NonEmpty)
 
 import Torch.Class.Types
--- import Torch.Class.Tensor as X hiding (new, fromList1d, resizeDim)
+import Torch.Class.Tensor.Copy.Static
+
 import qualified Torch.Class.Tensor as Dynamic
 import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
 
 class IsStatic t => IsTensor t where
-  _clearFlag :: Dimensions d => t d -> Int8 -> IO ()
-  tensordata :: Dimensions d => t d -> IO [HsReal (t d)]
-  _free :: Dimensions d => t d -> IO ()
-  _freeCopyTo :: Dimensions2 d d' => t d -> t d' -> IO ()
+  _clearFlag :: t d -> Int8 -> IO ()
+  tensordata :: t d -> IO [HsReal (t d)]
   get1d :: t d -> Int64 -> IO (HsReal (t d))
   get2d :: t d -> Int64 -> Int64 -> IO (HsReal (t d))
   get3d :: t d -> Int64 -> Int64 -> Int64 -> IO (HsReal (t d))
@@ -102,23 +106,10 @@ class IsStatic t => IsTensor t where
   _unsqueeze1d :: t d -> t d' -> DimVal -> IO ()
 
   -- New for static tensors
-  fromList1d :: [HsReal (t '[n])] -> IO (t '[n])
+  vector :: KnownNat n => [HsReal (t '[n])] -> Maybe (t '[n])
 
   -- Modified for static tensors
   isSameSizeAs :: (Dimensions d, Dimensions d') => t d -> t d' -> Bool
-
--- type Static t d =
---   ( IsTensor t
---   , IsStatic t
---   , Num (HsReal (IndexDynamic (AsDynamic (t d))))
---   , Dynamic.IsTensor (AsDynamic (t d))
---   )
--- type Static2 t d d' = 
---   ( Static t d
---   , Static t d'
---   , AsDynamic (t d) ~ AsDynamic (t d')
---   , IndexDynamic (AsDynamic (t d)) ~ IndexDynamic (AsDynamic (t d'))
---   )
 
 shape :: IsTensor t => t d -> IO [Size]
 shape t = do
@@ -203,6 +194,35 @@ getDims t = do
   ds <- mapM (size t . fromIntegral) [0 .. nd -1]
   someDimsM ds
 
+-- | select a dimension of a tensor. If a vector is passed in, return a singleton tensor
+-- with the index value of the vector.
+(!!)
+  :: forall t (d::[Nat]) (d'::[Nat])
+  .  (TensorCopy t, HsReal (t d) ~ HsReal (t d'), Dimensions2 d d', IsTensor t)
+  => t d -> DimVal -> t d'
+t !! i = unsafePerformIO $
+  nDimension t >>= \case
+    0 -> empty
+    1 -> runMaybeT selectVal >>= maybe empty pure
+    _ -> selectRank
+
+  where
+    selectVal :: MaybeT IO (t d')
+    selectVal = do
+      sizeI <- fromIntegral <$> lift (size t i)
+      guard (i < sizeI)
+      v <- lift $ get1d t (fromIntegral i)
+      r <- lift $ newWithSize1d 1
+      lift $ _set1d r 0 v
+      pure r
+
+    selectRank :: IO (t d')
+    selectRank = do
+      sz <- fmap fromIntegral (size t i)
+      r <- newSelect t i 0
+      pure (r :: t d')
+
+
 new :: forall t d . (Dimensions d, IsTensor t) => IO (t d)
 new = case dimVals d of
   []           -> empty
@@ -231,11 +251,16 @@ _resizeDim t = case dimVals d of
   -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
-resizeAs :: forall t d d' . (Dimensions d, Dimensions d', IsTensor t) => t d -> IO (t d')
-resizeAs src = do
+view :: forall t d d' . (Dimensions2 d d', IsTensor t, Product d ~ Product d') => t d -> IO (t d')
+view src = do
   res <- newClone src
   shape <- new
   _resizeAs res shape
+
+resizeAs :: forall t d d' . (Dimensions2 d d', IsTensor t, Product d ~ Product d') => t d -> IO (t d')
+resizeAs src = do
+  shape <- new
+  _resizeAs src shape
 
 newIx :: forall t d d'
   . (Dimensions d')
@@ -246,13 +271,13 @@ newIx = asStatic <$> Dynamic.new (dim :: Dim d')
 
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
-fromListIx
+index
   :: forall t d n . (KnownNatDim n, Dimensions '[n], IsStatic (IndexTensor t))
   => Num (HsReal (AsDynamic (IndexTensor t)))
   => Dynamic.IsTensor (AsDynamic (IndexTensor t))
   => Dimensions d
-  => Proxy (t d) -> Dim '[n] -> [HsReal (AsDynamic (IndexTensor t))] -> IO (IndexTensor t '[n])
-fromListIx _ _ l = asStatic <$> (Dynamic.fromList1d l)
+  => Proxy (t d) -> Dim '[n] -> [HsReal (AsDynamic (IndexTensor t))] -> IndexTensor t '[n]
+index _ _ = asStatic . Dynamic.vector
 
 
 -- | Initialize a tensor of arbitrary dimension from a list
@@ -260,10 +285,27 @@ fromListIx _ _ l = asStatic <$> (Dynamic.fromList1d l)
 fromList
   :: forall t d
   .  (KnownNatDim (Product d), Dimensions d, IsTensor t)
-  => [HsReal (t '[Product d])] -> IO (t d)
-fromList l = do
-  oneD :: t '[Product d] <- fromList1d l
-  _resizeDim oneD
+  => [HsReal (t '[Product d])] -> Maybe (t d)
+fromList l = unsafePerformIO . runMaybeT $ do
+  vec :: t '[Product d] <- MaybeT (pure (vector l))
+  guard (genericLength l == natVal (Proxy :: Proxy (Product d)))
+  lift $ _resizeDim vec
+{-# NOINLINE fromList #-}
+
+
+matrix
+  :: forall t n m
+  .  (KnownNatDim3 n m (n*m), IsTensor t)
+  => [[HsReal (t '[n * m])]] -> Either String (t '[n, m])
+matrix ls
+  | length ls == 0 = Left "no support for empty lists"
+  | genericLength ls /= (natVal (Proxy :: Proxy n)) = Left "length of outer list must match type-level columns"
+  | any (/= length (head ls)) (fmap length ls) = Left "can't build a matrix from jagged lists"
+  | genericLength (head ls) /= (natVal (Proxy :: Proxy n)) = Left "inner list length must match type-level rows"
+  | otherwise =
+    case fromList (concat ls) of
+      Nothing -> Left "impossible: number of elements doesn't match the dimensions"
+      Just m -> Right m
 
 newTranspose2d
   :: forall t r c . (KnownNat2 r c, IsTensor t, Dimensions '[r, c], Dimensions '[c, r])
@@ -305,10 +347,4 @@ setElem2d t r c v
       = throwString "Indices out of bounds"
   | otherwise = _set2d t (fromIntegral r) (fromIntegral c) v
 
-
--- | displaying raw tensor values
-printTensor
-  :: (IsTensor t, Typeable (HsReal (t d)), Ord (HsReal (t d)), Num (HsReal (t d)), Show (HsReal (t d)))
-  => t d -> IO ()
-printTensor t = getDims t >>= \(SomeDims ds) -> Dynamic._printTensor (get1d t) (get2d t) (dimVals ds)
 

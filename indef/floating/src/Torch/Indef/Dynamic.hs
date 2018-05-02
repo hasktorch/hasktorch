@@ -18,4 +18,13 @@ import Torch.Indef.Dynamic.Tensor.Math.Lapack as X
 import Torch.Class.NN as X
 import Torch.Indef.Dynamic.NN as X
 
+-- ========================================================================= --
+
+import Torch.Sig.Types (Dynamic)
+import Numeric.Backprop.Class
+
+instance Backprop Dynamic where
+  zero = zeroNum
+  add = addNum
+  one = oneNum
 

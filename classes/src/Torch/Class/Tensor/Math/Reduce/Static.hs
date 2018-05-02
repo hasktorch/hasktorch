@@ -10,11 +10,12 @@ import Torch.Dimensions
 import qualified Torch.Class.Tensor as Dynamic
 
 class IsTensor t => TensorMathReduce t where
-  minall       :: t d -> IO (HsReal (t d))
-  maxall       :: t d -> IO (HsReal (t d))
-  medianall    :: t d -> IO (HsReal (t d))
-  sumall       :: t d -> IO (HsAccReal (t d))
-  prodall      :: t d -> IO (HsAccReal (t d))
+  minall       :: t d -> HsReal (t d)
+  maxall       :: t d -> HsReal (t d)
+  medianall    :: t d -> HsReal (t d)
+  sumall       :: t d -> HsAccReal (t d)
+  prodall      :: t d -> HsAccReal (t d)
+
   _max         :: (t d, IndexTensor t d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
   _min         :: (t d, IndexTensor t d) -> t d -> DimVal -> Maybe KeepDim -> IO ()
   _median      :: (t d, IndexTensor t d) -> t d -> DimVal -> Maybe KeepDim -> IO ()

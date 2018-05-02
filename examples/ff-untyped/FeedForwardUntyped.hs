@@ -25,9 +25,9 @@ infixr 5 :~
 dispW :: Weights -> IO ()
 dispW w = do
   putStrLn "Biases:"
-  printTensor (biases w)
+  print (biases w)
   putStrLn "Weights:"
-  printTensor (nodes w)
+  print (nodes w)
 
 dispN :: Network -> IO ()
 dispN (O w) = dispW w
@@ -56,17 +56,17 @@ runLayer :: Weights -> DoubleTensor -> IO DoubleTensor
 runLayer (W wB wN) v = do
   putStrLn "++++++"
   putStrLn "x"
-  printTensor wB
+  print wB
   putStrLn ""
-  printTensor wN
+  print wN
   putStrLn ""
-  printTensor v
+  print v
   putStrLn ""
-  -- printTensor (wN !* v)
+  -- print (wN !* v)
   putStrLn "========"
   dt <- addmv 1 wB 1 wN v
   putStrLn "y"
-  printTensor dt
+  print dt
   pure dt
 
 runNet :: Network -> DoubleTensor -> IO DoubleTensor
@@ -80,7 +80,7 @@ main = do
   dat <- randomData 5
   putStrLn "Data"
   putStrLn "--------"
-  printTensor dat
+  print dat
 
   putStrLn "Network"
   putStrLn "--------"
@@ -93,6 +93,6 @@ main = do
 
   putStrLn "Result"
   putStrLn "--------"
-  printTensor result
+  print result
 
   putStrLn "Done"

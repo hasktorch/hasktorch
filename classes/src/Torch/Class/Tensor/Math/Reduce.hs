@@ -10,11 +10,11 @@ import Torch.Dimensions
 -- import Torch.Types.TH hiding (IndexDynamic)
 
 class TensorMathReduce t where
-  minall       :: t -> IO (HsReal t)
-  maxall       :: t -> IO (HsReal t)
-  medianall    :: t -> IO (HsReal t)
-  sumall       :: t -> IO (HsAccReal t)
-  prodall      :: t -> IO (HsAccReal t)
+  minall       :: t -> HsReal t
+  maxall       :: t -> HsReal t
+  medianall    :: t -> HsReal t
+  sumall       :: t -> HsAccReal t
+  prodall      :: t -> HsAccReal t
   _max         :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
   _min         :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
   _median      :: (t, IndexDynamic t) -> t -> DimVal -> Maybe KeepDim -> IO ()
