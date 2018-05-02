@@ -150,3 +150,16 @@ executable nlp
     , backprop >= 0.2
     , singletons >=2.2
 
+executable lenet
+  main-is: Main.hs
+  hs-source-dirs: lenet
+  default-language: Haskell2010
+  default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
+  ghc-options: -Wall
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , backprop >= 0.2
+    , singletons >=2.2
+
+
