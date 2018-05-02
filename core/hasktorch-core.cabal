@@ -51,6 +51,7 @@ library
     , hasktorch-dimensions
     , hasktorch-raw-th
     , hasktorch-types-th
+    , hasktorch-nn
     , managed >=1.0.0 && <1.1
     , microlens >=0.4.8.1
     , numeric-limits

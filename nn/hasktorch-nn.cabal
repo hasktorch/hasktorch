@@ -27,7 +27,7 @@ library
     , TypeFamilies
   build-depends:
       base >=4.7 && <5
-    , backprop
+    , backprop >= 0.2.0.0 && < 0.3.0.0
     , hasktorch-classes
     , hasktorch-dimensions
     , safe-exceptions
@@ -36,9 +36,7 @@ library
     , singletons >=2.2 && < 2.4
 
   exposed-modules:
-      Torch.NN.Backprop
-
-    , Torch.Class.NN
+      Torch.Class.NN
     , Torch.Class.NN.Static
     , Torch.Class.NN.Static.Abs
 

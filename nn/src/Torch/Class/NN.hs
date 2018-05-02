@@ -3,6 +3,19 @@ module Torch.Class.NN where
 import Foreign.C.Types
 import Torch.Class.Types
 
+import Torch.Sig.Types (Dynamic)
+import Numeric.Backprop.Class
+
+instance Backprop Dynamic where
+  zero = zeroNum
+  add = addNum
+  one = oneNum
+
+instance Backprop (Tensor d) where
+  zero = zeroNum
+  add = addNum
+  one = oneNum
+
 class NN t where
   abs_updateOutput             :: t -> t -> IO ()
   abs_updateGradInput          :: t -> t -> t -> IO ()

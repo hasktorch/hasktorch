@@ -147,6 +147,6 @@ executable nlp
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , backprop
+    , backprop >= 0.2
     , singletons >=2.2
 
