@@ -7,7 +7,7 @@
 -- Stability :  experimental
 -- Portability: non-portable
 --
--- 
+--
 -- This tutorial is intended to familiarize a new user of haskell and deep learning
 -- with the current state of haskell bindings to torch, a deep learning library.
 -------------------------------------------------------------------------------
@@ -155,12 +155,14 @@ tensorAutoDiff = do
     => BVar s (Tensor '[3]) -> BVar s (Tensor '[3]) -> BVar s Double
   sse x y = sumallBP ((y - x) ** 2)
 
+
   -- However, here we have a library-specific function, @sumall@,
   -- where we must specify how to compute the derivative.
   sumallBP :: Reifies s W => BVar s (Tensor '[3]) -> BVar s Double
   sumallBP = liftOp1 . op1 $ \t ->
     (sumall t, unsafePerformIO . constant)
   {-# NOINLINE sumallBP #-}
+
 
 -- running everything in a main loop:
 main :: IO ()
