@@ -53,7 +53,6 @@ library
     , hasktorch-indef-signed
     , hasktorch-indef-floating
     , hasktorch-indef-random-th
-    , hasktorch-indef-random-thc
     , hasktorch-raw-th
     , hasktorch-types-th
     , managed >=1.0.0 && <1.1
@@ -65,7 +64,8 @@ library
     , typelits-witnesses >=0.2.3.0
   if flag(cuda)
     build-depends:
-        hasktorch-types-thc
+        hasktorch-indef-random-thc
+      , hasktorch-types-thc
       , hasktorch-raw-thc
     cpp-options: -DCUDA
 
@@ -81,10 +81,11 @@ library
     , Torch.Storage
     , Torch.Dynamic
 
-    -- CPU modules
-    , Torch.Cuda
-    , Torch.Cuda.Storage
-    , Torch.Cuda.Dynamic
+  if flag(cuda)
+    exposed-modules:
+        Torch.Cuda
+      , Torch.Cuda.Storage
+      , Torch.Cuda.Dynamic
 
   reexported-modules:
       Torch.Dimensions
@@ -121,38 +122,38 @@ library
     , Torch.Double.Static
     , Torch.Double.StaticRandom
 
+  if flag(cuda)
+    reexported-modules:
+        Torch.Cuda.Byte.Storage
+      , Torch.Cuda.Byte.Dynamic
+      , Torch.Cuda.Byte.Static
 
-    , Torch.Cuda.Byte.Storage
-    , Torch.Cuda.Byte.Dynamic
-    , Torch.Cuda.Byte.Static
+      , Torch.Cuda.Char.Storage
+      , Torch.Cuda.Char.Dynamic
+      , Torch.Cuda.Char.Static
 
-    , Torch.Cuda.Char.Storage
-    , Torch.Cuda.Char.Dynamic
-    , Torch.Cuda.Char.Static
+      , Torch.Cuda.Short.Storage
+      , Torch.Cuda.Short.Dynamic
+      , Torch.Cuda.Short.Static
 
-    , Torch.Cuda.Short.Storage
-    , Torch.Cuda.Short.Dynamic
-    , Torch.Cuda.Short.Static
+      , Torch.Cuda.Int.Storage
+      , Torch.Cuda.Int.Dynamic
+      , Torch.Cuda.Int.Static
 
-    , Torch.Cuda.Int.Storage
-    , Torch.Cuda.Int.Dynamic
-    , Torch.Cuda.Int.Static
+      , Torch.Cuda.Long.Storage
+      , Torch.Cuda.Long.Dynamic
+      , Torch.Cuda.Long.Static
 
-    , Torch.Cuda.Long.Storage
-    , Torch.Cuda.Long.Dynamic
-    , Torch.Cuda.Long.Static
+      -- FIXME: ATen doesn't build these.
+      -- , Torch.Cuda.Float.Storage
+      -- , Torch.Cuda.Float.Dynamic
+      -- , Torch.Cuda.Float.Static
 
-    -- FIXME: ATen doesn't build these.
-    -- , Torch.Cuda.Float.Storage
-    -- , Torch.Cuda.Float.Dynamic
-    -- , Torch.Cuda.Float.Static
-
-    , Torch.Cuda.Double.Storage
-    , Torch.Cuda.Double.Dynamic
-    , Torch.Cuda.Double.DynamicRandom
-    , Torch.Cuda.Double.Static
-    , Torch.Cuda.Double.StaticRandom
-
+      , Torch.Cuda.Double.Storage
+      , Torch.Cuda.Double.Dynamic
+      , Torch.Cuda.Double.DynamicRandom
+      , Torch.Cuda.Double.Static
+      , Torch.Cuda.Double.StaticRandom
 
   mixins:
       hasktorch-indef-unsigned
@@ -161,17 +162,17 @@ library
         ,Torch.Indef.Static               as Torch.Byte.Static
         )
         requires
-        (Torch.Sig.State          as Torch.Types.TH
-        ,Torch.Sig.Types.Global   as Torch.Types.TH
-        ,Torch.Sig.Types          as Torch.Types.TH.Byte
-        ,Torch.Sig.Storage        as Torch.FFI.TH.Byte.Storage
-        ,Torch.Sig.Storage.Copy   as Torch.FFI.TH.Byte.StorageCopy
-        ,Torch.Sig.Storage.Memory as Torch.FFI.TH.Byte.FreeStorage
-        ,Torch.Sig.Tensor         as Torch.FFI.TH.Byte.Tensor
-        ,Torch.Sig.Tensor.Copy    as Torch.FFI.TH.Byte.TensorCopy
-        ,Torch.Sig.Tensor.Memory  as Torch.FFI.TH.Byte.FreeTensor
-        ,Torch.Sig.Tensor.Index   as Torch.FFI.TH.Byte.TensorMath
-        ,Torch.Sig.Tensor.Masked  as Torch.FFI.TH.Byte.TensorMath
+        (Torch.Sig.State                 as Torch.Types.TH
+        ,Torch.Sig.Types.Global          as Torch.Types.TH
+        ,Torch.Sig.Types                 as Torch.Types.TH.Byte
+        ,Torch.Sig.Storage               as Torch.FFI.TH.Byte.Storage
+        ,Torch.Sig.Storage.Copy          as Torch.FFI.TH.Byte.StorageCopy
+        ,Torch.Sig.Storage.Memory        as Torch.FFI.TH.Byte.FreeStorage
+        ,Torch.Sig.Tensor                as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Tensor.Copy           as Torch.FFI.TH.Byte.TensorCopy
+        ,Torch.Sig.Tensor.Memory         as Torch.FFI.TH.Byte.FreeTensor
+        ,Torch.Sig.Tensor.Index          as Torch.FFI.TH.Byte.TensorMath
+        ,Torch.Sig.Tensor.Masked         as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Math           as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.TH.Byte.TensorMath
         ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.TH.Byte.TensorMath
@@ -631,5 +632,3 @@ library
           ,Torch.Sig.Tensor.Memory  as Torch.FFI.THC.Double.Tensor
           ,Torch.Sig.THC.Tensor.Random  as Torch.FFI.THC.Double.TensorRandom
           )
-
-
