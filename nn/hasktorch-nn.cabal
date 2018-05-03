@@ -38,5 +38,12 @@ library
   exposed-modules:
       Torch.Class.NN
     , Torch.Class.NN.Static
-    , Torch.Class.NN.Static.Abs
+    , Torch.Class.NN.Static.Math
+    , Torch.Class.NN.Static.Sampling
+    , Torch.Class.NN.Static.Pooling
+    , Torch.Class.NN.Static.Padding
+    , Torch.Class.NN.Static.Criterion
+    , Torch.Class.NN.Static.Activation
+    , Torch.Class.NN.Static.Layers
+    , Torch.Class.NN.Static.Conv
 
