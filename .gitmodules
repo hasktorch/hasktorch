@@ -3,5 +3,6 @@
 	url = https://github.com/hasktorch/ATen.git
   branch = hasktorch-expand
 [submodule "type-combinators"]
+	url = https://github.com/mstksg/type-combinators.git
+	branch = ghc-8.4
 	path = type-combinators
-	url = ./type-combinators
