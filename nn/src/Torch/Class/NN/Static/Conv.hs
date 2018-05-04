@@ -86,17 +86,45 @@ _conv1d_forward inp weight bias _ = do
   pure out
 
 
+conv1d_backward
+  :: forall t s f kW dW o b
+  .  KnownNat5 s f o kW dW
+  => TemporalConvC t s f kW dW o
+  => t '[s, f]                         -- ^ input: s for 'sequence dimension', f for 'feature dimension'
+  -> t '[s, o]                         -- ^ grad output
+  -> t '[o, f*kW]                      -- ^ weight
+  -> Proxy '(kW, dW)                   -- ^ kW: The kernel width of the convolution
+                                       --   dW: The step of the convolution. Default is 1 in C.
+  -> IO (t '[s, f])                    -- ^ output
+conv1d_backward = _conv1d_backwardBatch
 
--- temporalConvolution_forwardBatch
---   :: TemporalConvC  t s f kW dW
---   => t '[b,s,f]          -- ^ input
---   -> t d                 -- ^ weight
---   -> t d                 -- ^ bias
---   -> StrictPositive Int  -- ^ kW
---   -> StrictPositive Int  -- ^ dW
---   -> Int                 -- ^ inputFrameSize
---   -> Int                 -- ^ outputFrameSize
---   -> IO (t d)            -- ^ output
+conv1d_backwardBatch
+  :: forall t s f kW dW o b
+  .  KnownNat5 s f o kW dW
+  => TemporalConvC t s f kW dW o
+  => t '[b, s, f]                      -- ^ input: s for 'sequence dimension', f for 'feature dimension'
+  -> t '[b, s, o]                      -- ^ grad output
+  -> t '[o, f*kW]                      -- ^ weight
+  -> Proxy '(kW, dW)                   -- ^ kW: The kernel width of the convolution
+                                       --   dW: The step of the convolution. Default is 1 in C.
+  -> IO (t '[b, s, f])                 -- ^ output
+conv1d_backwardBatch = _conv1d_backwardBatch
+
+_conv1d_backwardBatch
+  :: forall t f o kW dW d d'
+  .  KnownNat4 f o kW dW
+  => TemporalConvolutions t
+  => t d
+  -> t d'
+  -> t '[o, f*kW]
+  -> Proxy '(kW, dW)
+  -> IO (t d)
+_conv1d_backwardBatch input gradOut weight _ = do
+  gradIn <- empty
+  _temporalConvolution_updateGradInput input gradOut gradIn weight
+    (fromIntegral $ natVal (Proxy :: Proxy kW))
+    (fromIntegral $ natVal (Proxy :: Proxy dW))
+  pure gradIn
 
 
 
