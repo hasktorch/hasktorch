@@ -14,14 +14,17 @@ module Torch.Dimensions
   , KnownNat2
   , KnownNat3
   , KnownNat4
+  , KnownNat5
   , KnownNatDim
   , KnownNatDim2
   , KnownNatDim3
   , KnownNatDim4
+  , KnownNatDim5
   , SingDim
   , SingDim2
   , SingDim3
   , SingDim4
+  , SingDim5
   , SingDimensions
   , Dimensions2
   , Dimensions3
@@ -65,16 +68,19 @@ import GHC.Int (Int32)
 type KnownNat2 n0 n1       = (KnownNat  n0,       KnownNat n1)
 type KnownNat3 n0 n1 n2    = (KnownNat2 n0 n1,    KnownNat n2)
 type KnownNat4 n0 n1 n2 n3 = (KnownNat3 n0 n1 n2, KnownNat n3)
+type KnownNat5 n0 n1 n2 n3 n4 = (KnownNat4 n0 n1 n2 n3, KnownNat n4)
 
 type KnownNatDim n            = (KnownDim n, KnownNat n)
 type KnownNatDim2 n0 n1       = (KnownNatDim  n0,       KnownNatDim n1)
 type KnownNatDim3 n0 n1 n2    = (KnownNatDim2 n0 n1,    KnownNatDim n2)
 type KnownNatDim4 n0 n1 n2 n3 = (KnownNatDim3 n0 n1 n2, KnownNatDim n3)
+type KnownNatDim5 n0 n1 n2 n3 n4 = (KnownNatDim4 n0 n1 n2 n3, KnownNatDim n4)
 
 type SingDim n            = (SingI n, KnownNatDim n)
 type SingDim2 n0 n1       = (SingDim n0,        SingDim n1)
 type SingDim3 n0 n1 n2    = (SingDim2 n0 n1,    SingDim n2)
 type SingDim4 n0 n1 n2 n3 = (SingDim3 n0 n1 n2, SingDim n3)
+type SingDim5 n0 n1 n2 n3 n4 = (SingDim4 n0 n1 n2 n3, SingDim n4)
 
 type SingDimensions d = (SingI d, Dimensions d)
 
