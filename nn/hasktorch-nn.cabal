@@ -33,7 +33,7 @@ library
     , safe-exceptions
     , transformers >= 0.5
     , mtl
-    , singletons >=2.2 && < 2.4
+    , singletons >=2.4
 
   exposed-modules:
       Torch.Class.NN

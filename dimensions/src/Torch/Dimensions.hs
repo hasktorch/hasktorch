@@ -43,12 +43,14 @@ module Torch.Dimensions
   ) where
 
 import Data.Singletons as X
+import Data.Singletons.Prelude.Num as X
+import Data.Singletons.Prelude.Ord as X
 import Data.Singletons.Prelude.List as X
   hiding (Take, Tail, Reverse, Last, Init, Head, Length, Drop, Concat, type (++))
 import Data.Singletons.TypeLits as X
   hiding (KnownNat)
 
-import Data.Proxy (Proxy(..))
+import Data.Proxy as X (Proxy(..))
 import Control.Monad (unless)
 import Control.Exception.Safe (throwString, MonadThrow)
 import Data.Foldable (toList)

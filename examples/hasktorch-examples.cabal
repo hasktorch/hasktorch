@@ -120,7 +120,7 @@ executable multivariate-normal
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , singletons >=2.2
+    , singletons >=2.4
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -133,7 +133,7 @@ executable static-tensor-usage
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , singletons >=2.2
+    , singletons >=2.4
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -148,7 +148,7 @@ executable nlp
       base >=4.7 && <5
     , hasktorch-core
     , backprop >= 0.2
-    , singletons >=2.2
+    , singletons >=2.4
 
 executable lenet
   main-is: Main.hs
@@ -159,7 +159,9 @@ executable lenet
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
+    , mtl
+    , transformers
     , backprop >= 0.2
-    , singletons >=2.2
+    , singletons >=2.4
 
 

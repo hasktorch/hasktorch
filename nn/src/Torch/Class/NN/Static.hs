@@ -1,19 +1,25 @@
-module Torch.Class.NN.Static where
+module Torch.Class.NN.Static
+  ( module X
+  , BatchNormalization(..)
+  , Col2Im(..)
+  , NN(..)
+  , CPUNN(..)
+  ) where
 
-import Foreign.C.Types
-import Torch.Class.Types
-import Torch.Class.Tensor.Static
-import Torch.Dimensions
 import Control.Monad.Trans.Class
 import Control.Monad.IO.Class
-import Torch.Class.NN.Static.Math
-import Torch.Class.NN.Static.Criterion
-import Torch.Class.NN.Static.Pooling
-import Torch.Class.NN.Static.Padding
-import Torch.Class.NN.Static.Activation
-import Torch.Class.NN.Static.Layers
-import Torch.Class.NN.Static.Conv
-import Debug.Trace
+
+import Torch.Dimensions
+import Torch.Class.Types
+import Torch.Class.Tensor.Static
+
+import Torch.Class.NN.Static.Math       as X
+import Torch.Class.NN.Static.Criterion  as X
+import Torch.Class.NN.Static.Pooling    as X
+import Torch.Class.NN.Static.Padding    as X
+import Torch.Class.NN.Static.Activation as X
+import Torch.Class.NN.Static.Layers     as X
+import Torch.Class.NN.Static.Conv       as X
 
 class BatchNormalization (t :: [Nat] -> *) where
   _batchNormalization_updateOutput 

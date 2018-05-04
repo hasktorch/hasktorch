@@ -18,6 +18,7 @@ packages:
 
     core/*cabal
     examples/*cabal
+    type-combinators/*cabal
 
 -- This absolute path would go in your ~/.cabal/config file.
 -- FIXME: figure out package-relative paths

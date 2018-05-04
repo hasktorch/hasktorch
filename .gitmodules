@@ -2,3 +2,6 @@
 	path = vendor/aten
 	url = https://github.com/hasktorch/ATen.git
   branch = hasktorch-expand
+[submodule "type-combinators"]
+	path = type-combinators
+	url = ./type-combinators

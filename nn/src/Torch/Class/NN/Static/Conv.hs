@@ -1,46 +1,88 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeInType #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Torch.Class.NN.Static.Conv where
 
 import Torch.Class.Types
 import Torch.Class.Tensor.Static
 import Torch.Dimensions
 -- import Numeric.Backprop hiding ((:>))
-import Data.Singletons.Prelude.Num
-import Data.Singletons.Prelude.Ord
-import Data.Kind
+import qualified Data.Kind as K
 
 class
   ( IsTensor t
   , TemporalConvolutions t
   , SpatialConvolutions t
   , VolumetricConvolutions t
-  ) => Convolutions (t :: [Nat] -> *) where
+  ) => Convolutions (t :: [Nat] -> K.*) where
 
 -- | Temporal (1D) Convolutions
-class IsTensor t => TemporalConvolutions (t :: [Nat] -> *) where
-  _temporalConvolution_updateOutput         :: t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> IO ()
-  _temporalConvolution_updateGradInput      :: t d -> t d -> t d -> t d -> Int -> Int -> IO ()
-  _temporalConvolution_accGradParameters    :: t d -> t d -> t d -> t d -> Int -> Int -> Double -> IO ()
+class IsTensor t => TemporalConvolutions (t :: [Nat] -> K.*) where
+  -- Applies a 1D convolution over an input sequence composed of nInputFrame frames. The input tensor in forward(input) is expected to be a 2D tensor (nInputFrame x inputFrameSize) or a 3D tensor (nBatchFrame x nInputFrame x inputFrameSize).
+  _temporalConvolution_updateOutput         :: t d -> t d' -> t d'' -> t d''' -> Int -> Int -> Int -> Int -> IO ()
+  _temporalConvolution_updateGradInput      :: t d -> t d' -> t d'' -> t d''' -> Int -> Int -> IO ()
+  _temporalConvolution_accGradParameters    :: t d -> t d' -> t d'' -> t d''' -> Int -> Int -> Double -> IO ()
 
-  _temporalRowConvolution_updateOutput      :: t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Bool -> IO ()
-  _temporalRowConvolution_updateGradInput   :: t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Bool -> IO ()
-  _temporalRowConvolution_accGradParameters :: t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Bool -> Double -> IO ()
+  _temporalRowConvolution_updateOutput      :: t d -> t d' -> t d'' -> t d''' -> t d -> t d -> Int -> Int -> Int -> Bool -> IO ()
+  _temporalRowConvolution_updateGradInput   :: t d -> t d' -> t d'' -> t d''' -> t d -> t d -> Int -> Int -> Int -> Bool -> IO ()
+  _temporalRowConvolution_accGradParameters :: t d -> t d' -> t d'' -> t d''' -> t d -> t d -> Int -> Int -> Int -> Bool -> Double -> IO ()
 
-type TemporalConvC t s f kW dW = (TemporalConvolutions t, (s :> kW) ~ 'True, (kW :> 0) ~ 'True, (dW :> 0) ~ 'True)
+type TemporalConvC t s f kW dW o =
+  ( TemporalConvolutions t
+  , (s > kW) ~ 'True
+  , (kW > 0) ~ 'True
+  , (dW > 0) ~ 'True
+  -- , o ~ ((Div (s - kW) dW) + 1)
+  )
 
-temporalConvolution_forward
-  :: TemporalConvC  t s f kW dW
-  => t '[s,f]  -- ^ input: s for 'sequence dimension', f for 'feature dimension'
-  -> t d       -- ^ weight
-  -> t d       -- ^ bias
-  -> Proxy kW        -- ^ kW
-  -> Proxy dW        -- ^ dW
-  -> Int       -- ^ inputFrameSize
-  -> Int       -- ^ outputFrameSize
-  -> IO (t d)  -- ^ output
-temporalConvolution_forward = undefined
+-- If the input sequence is a 2D tensor of dimension (nInputFrame x inputFrameSize), the
+-- output sequence will be (nOutputFrame x outputFrameSize) where
+--
+--    nOutputFrame = (nInputFrame - kW) / dW + 1
+--
+conv1d_forward
+  :: forall t s f kW dW o b
+  .  KnownNat3 s f o
+  => KnownNat3 kW dW (s*kW)
+  => TemporalConvC t s f kW dW o
+  => t '[s, f]                         -- ^ input: s for 'sequence dimension', f for 'feature dimension'
+  -> t '[o, f*kW]                      -- ^ weight
+  -> t '[o]                            -- ^ bias
+  -> Proxy '(kW, dW)                   -- ^ kW: The kernel width of the convolution
+                                       --   dW: The step of the convolution. Default is 1 in C.
+  -> IO (t '[s, o])                    -- ^ output
+conv1d_forward inp weight bias _ = do
+  out <- empty
+  _temporalConvolution_updateOutput inp out weight bias
+    (fromIntegral $ natVal (Proxy :: Proxy kW))
+    (fromIntegral $ natVal (Proxy :: Proxy dW))
+    (fromIntegral $ natVal (Proxy :: Proxy f))
+    (fromIntegral $ natVal (Proxy :: Proxy o))
+  pure out
+
+conv1d_forwardBatch
+  :: forall t s f kW dW o b
+  .  KnownNat3 s f o
+  => KnownNat3 kW dW (s*kW)
+  => TemporalConvC t s f kW dW o
+  => t '[b,s,f]                        -- ^ input: s for 'sequence dimension', f for 'feature dimension'
+  -> t '[o, f*kW]                      -- ^ weight
+  -> t '[o]                            -- ^ bias
+  -> Proxy '(kW, dW)                   -- ^ kW: The kernel width of the convolution
+                                       --   dW: The step of the convolution. Default is 1 in C.
+  -> IO (t '[b,s,o])                   -- ^ output
+conv1d_forwardBatch inp weight bias _ = do
+  out <- empty
+  _temporalConvolution_updateOutput inp out weight bias
+    (fromIntegral $ natVal (Proxy :: Proxy kW))
+    (fromIntegral $ natVal (Proxy :: Proxy dW))
+    (fromIntegral $ natVal (Proxy :: Proxy f))
+    (fromIntegral $ natVal (Proxy :: Proxy o))
+  pure out
+
+
 
 -- temporalConvolution_forwardBatch
 --   :: TemporalConvC  t s f kW dW
@@ -56,7 +98,7 @@ temporalConvolution_forward = undefined
 
 
 -- | Spatial (2D) Convolutions
-class IsTensor t => SpatialConvolutions (t :: [Nat] -> *) where
+class IsTensor t => SpatialConvolutions (t :: [Nat] -> K.*) where
   _spatialConvolutionMM_updateOutput      :: t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
   _spatialConvolutionMM_updateGradInput   :: t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
   _spatialConvolutionMM_accGradParameters :: t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
@@ -79,7 +121,7 @@ class IsTensor t => SpatialConvolutions (t :: [Nat] -> *) where
 
 
 -- | Volumetric (3D) Convolutions
-class IsTensor t => VolumetricConvolutions (t :: [Nat] -> *) where
+class IsTensor t => VolumetricConvolutions (t :: [Nat] -> K.*) where
   _volumetricConvolution_updateOutput      :: t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
   _volumetricConvolution_updateGradInput   :: t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
   _volumetricConvolution_accGradParameters :: t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
