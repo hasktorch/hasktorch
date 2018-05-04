@@ -9,8 +9,7 @@ import Data.Singletons.Prelude.Num
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 
-import Torch
-import qualified Torch.Core.Random as RNG
+import Torch.Cuda as Torch
 
 type Tensor = DoubleTensor
 type Batch = 2
@@ -26,23 +25,29 @@ params = Proxy
 
 main :: IO ()
 main = do
-  ((weights, bias), _) <- initConv1d params
+  conv <- initConv1d params
 
   Just (input :: Tensor '[Sequence2, Input]) <- runMaybeT getCosVec
-  o1 <- conv1d_forward input weights bias (Proxy :: Proxy '(KW, DW))
-  print o1
+  o1 <- conv1d_forward input conv
+  shape o1 >>= print
+
   gw :: Tensor '[Sequence2, Output] <- constant 1
-  o1' <- conv1d_backward input gw weights (Proxy :: Proxy '(KW, DW))
-  print (asDynamic o1')
-  print gw
+  shape gw >>= print
+
+  o1' :: Tensor '[13, 5] <-
+    conv1d_backward input gw (weights conv) (Proxy :: Proxy '(KW, DW))
+  shape o1' >>= print
 
   Just (binput :: Tensor '[Batch,Sequence1, Input]) <- runMaybeT getCosVec
-  o2 <- conv1d_forwardBatch binput weights bias (Proxy :: Proxy '(KW, DW))
-  print o2
+  o2 <- conv1d_forwardBatch binput conv
+  shape o2 >>= print
+
   gw :: Tensor '[Batch, Sequence1, Output] <- constant 1
-  o2' <- conv1d_backwardBatch binput gw weights (Proxy :: Proxy '(KW, DW))
-  print (asDynamic o2')
-  print gw
+  shape gw >>= print
+
+  o2' :: Tensor '[2,7,5] <-
+    conv1d_backwardBatch binput gw (weights conv) (Proxy :: Proxy '(KW, DW))
+  shape o2' >>= print
 
  where
   getCosVec :: forall d . Dimensions d => KnownNatDim (Product d) => MaybeT IO (Tensor d)
@@ -52,18 +57,13 @@ main = do
 
   -- Perhaps these should be moved into the nn package...
   initConv1d
-    :: forall s o kW dW
-    .  KnownNatDim3 s o (s * kW)
+    :: KnownNatDim3 s o (s * kW)
     => Proxy '[s,o,kW,dW]
-    -> IO ((Tensor '[o, s*kW], Tensor '[o]), (Tensor '[o, s*kW], Tensor '[o]))
-  initConv1d _ = do
-    g <- RNG.new
-    weights :: Tensor '[o, s * kW] <- Torch.uniform g (-10::Double) 10
-    bias    :: Tensor '[o]    <- Torch.constant 1
-
-    gWeights :: Tensor '[o, s * kW] <- Torch.constant 1
-    gBias    :: Tensor '[o]    <- Torch.constant 1
-    pure ((weights, bias), (gWeights, gBias))
+    -> IO (Conv1d Tensor s o kW dW)
+  initConv1d _ =
+    fmap Conv1d $ (,)
+      <$> Torch.uniform (-10::Double) 10
+      <*> Torch.constant 1
 
 -- conv1d_backward
 --   :: forall t s f kW dW o b

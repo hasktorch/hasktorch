@@ -47,4 +47,5 @@ library
     , Torch.Class.NN.Static.Activation
     , Torch.Class.NN.Static.Layers
     , Torch.Class.NN.Static.Conv
+    , Torch.Class.NN.Static.Conv1d
 
