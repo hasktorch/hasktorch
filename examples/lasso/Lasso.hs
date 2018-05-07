@@ -6,15 +6,16 @@
 module Main where
 
 import Data.Monoid
+import Data.Proxy
 import Control.Monad (void)
 import GHC.TypeLits
 import Lens.Micro ((^.), _2, _1)
 import System.IO.Unsafe
 
-import Torch hiding (N, abs, sqrt, round, max)
+import Torch.Float hiding (N, abs, sqrt, round, max)
 import qualified Torch.Core.Random as RNG
-import qualified Torch as T
-import qualified Torch as TU
+import qualified Torch.Float as T
+import qualified Torch.Float as TU
 
 type N = 20 -- sample size
 type M = 2

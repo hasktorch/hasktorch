@@ -1,0 +1,31 @@
+signature Torch.Sig.Tensor.Random.THC where
+
+import Foreign
+import Foreign.C.Types
+import Torch.Sig.Types
+import Torch.Sig.Types.Global
+import qualified Torch.Types.TH as TH (CLongStorage)
+
+c_random :: Ptr CState -> Ptr CTensor -> IO ()
+c_clampedRandom :: Ptr CState -> Ptr CTensor -> CLLong -> CLLong -> IO ()
+c_cappedRandom :: Ptr CState -> Ptr CTensor -> CLLong -> IO ()
+c_bernoulli :: Ptr CState -> Ptr CTensor -> CAccReal -> IO ()
+c_bernoulli_DoubleTensor :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_geometric :: Ptr CState -> Ptr CTensor -> CAccReal -> IO ()
+
+c_uniform :: Ptr CState -> Ptr CTensor -> CAccReal -> CAccReal -> IO ()
+c_normal :: Ptr CState -> Ptr CTensor -> CAccReal -> CAccReal -> IO ()
+c_normal_means :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> CAccReal -> IO ()
+c_normal_stddevs :: Ptr CState -> Ptr CTensor -> CAccReal -> Ptr CTensor -> IO ()
+c_normal_means_stddevs :: Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
+c_logNormal :: Ptr CState -> Ptr CTensor -> CAccReal -> CAccReal -> IO ()
+c_exponential :: Ptr CState -> Ptr CTensor -> CAccReal -> IO ()
+c_cauchy :: Ptr CState -> Ptr CTensor -> CAccReal -> CAccReal -> IO ()
+
+c_multinomial :: Ptr CState -> Ptr CIndexTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
+c_multinomialAliasSetup :: Ptr CState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> IO ()
+c_multinomialAliasDraw :: Ptr CState -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CTensor -> IO ()
+
+c_rand :: Ptr CState -> Ptr CTensor -> Ptr TH.CLongStorage -> IO ()
+c_randn :: Ptr CState -> Ptr CTensor -> Ptr TH.CLongStorage -> IO ()
+
