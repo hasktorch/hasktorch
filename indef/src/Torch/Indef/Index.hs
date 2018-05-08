@@ -4,7 +4,8 @@ module Torch.Indef.Index
   , CPUIndexStorage
   , newIx
   , newIxDyn
-  , fromListIx
+  , index
+  , indexDyn
   , mkCPUIx
   , withCPUIxStorage
   , mkCPUIxStorage
@@ -14,6 +15,9 @@ module Torch.Indef.Index
 import Foreign
 import Foreign.Ptr
 import Data.Proxy
+import Data.List
+import System.IO.Unsafe
+
 import Torch.Dimensions
 import Torch.Sig.State as Sig
 import Torch.Sig.Types.Global as Sig
@@ -33,12 +37,12 @@ newIx :: forall n . KnownNat n => IndexTensor '[n]
 newIx = longAsStatic $ newIxDyn (natVal (Proxy :: Proxy n))
 
 newIxDyn :: Integral i => i -> IndexDynamic
-newIxDyn x = unsafePerformDupableIO . mkDynamicIO $ \s ->
+newIxDyn x = unsafeDupablePerformIO . mkDynamicIO $ \s ->
   IxSig.c_newWithSize1d s (fromIntegral x)
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
 indexDyn :: [Integer] -> IndexDynamic
-indexDyn l = unsafePerformDupableIO $ do
+indexDyn l = unsafeDupablePerformIO $ do
   let res = newIxDyn (length l)
   mapM_  (upd res) (zip [0..length l - 1] l)
   pure res
@@ -47,9 +51,9 @@ indexDyn l = unsafePerformDupableIO $ do
     upd :: IndexDynamic -> (Int, Integer) -> IO ()
     upd t (idx, v) = withDynamicState t $ \s' t' -> IxSig.c_set1d s' t' (fromIntegral idx) (fromIntegral v)
 
-index :: [Integer] -> Maybe (IndexTensor '[n])
+index :: forall n . KnownNat n => [Integer] -> Maybe (IndexTensor '[n])
 index l
-  | genericLength l == natVal (Proxy :: Proxy n) = Just . asStatic . indexDyn $ l
+  | genericLength l == natVal (Proxy :: Proxy n) = Just . longAsStatic . indexDyn $ l
   | otherwise = Nothing
 
 _resizeDim :: IndexDynamic -> Integer -> IO ()

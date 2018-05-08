@@ -11,19 +11,19 @@ import Torch.Indef.Index
 import qualified Torch.Sig.Tensor.Math.Reduce as Sig
 
 minall :: Dynamic -> HsReal
-minall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsReal .: Sig.c_minall)
+minall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_minall)
 
 maxall :: Dynamic -> HsReal
-maxall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsReal .: Sig.c_maxall)
+maxall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_maxall)
 
 medianall :: Dynamic -> HsReal
-medianall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsReal .: Sig.c_medianall)
+medianall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_medianall)
 
 sumall :: Dynamic -> HsAccReal
-sumall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_sumall)
+sumall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_sumall)
 
 prodall :: Dynamic -> HsAccReal
-prodall = unsafePerformDupableIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_prodall)
+prodall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_prodall)
 
 _max :: (Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
 _max (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
@@ -53,7 +53,7 @@ withKeepDim _fn t d k = do
   tdim <- getDims t
   let (i:_) = dimVals' tdim
   ret :: Dynamic      <- new' tdim
-  ix  :: IndexDynamic <- newIxDyn i
+  let ix = newIxDyn i
   _fn (ret, ix) t d k
   pure (ret, maybe (Just ix) (pure Nothing) k)
 

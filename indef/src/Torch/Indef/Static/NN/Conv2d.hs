@@ -1,10 +1,8 @@
-module Torch.Class.NN.Static.Conv
+module Torch.Indef.Static.NN.Conv
   ( module X
   , Convolutions(..)
   ) where
 
-import Torch.Class.Types
-import Torch.Class.Tensor.Static
 import Torch.Dimensions
 import Torch.Class.NN.Static.Conv1d as X
 import Data.Kind (Type)

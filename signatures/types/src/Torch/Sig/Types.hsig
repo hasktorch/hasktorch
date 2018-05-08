@@ -43,13 +43,11 @@ instance Storable CAccReal
 
 data HsReal
 instance Num  HsReal
-instance Ord  HsReal
 instance Show HsReal
 instance Ord HsReal
 
 data HsAccReal
 instance Num  HsAccReal
-instance Ord  HsAccReal
 instance Show HsAccReal
 instance Ord HsAccReal
 

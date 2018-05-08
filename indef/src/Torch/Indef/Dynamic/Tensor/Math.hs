@@ -37,7 +37,7 @@ _reshape :: Dynamic -> Dynamic -> TH.IndexStorage -> IO ()
 _reshape t0 t1 ix = with2DynamicState t0 t1 $ \s' t0' t1' -> withCPUIxStorage ix $ \ix' ->
   Sig.c_reshape s' t0' t1' ix'
 
-catArray :: TensorMath t => [t] -> DimVal -> IO t
+catArray :: [Dynamic] -> DimVal -> IO Dynamic
 catArray ts dv = empty >>= \r -> _catArray r ts (length ts) dv >> pure r
 
 _catArray :: Dynamic -> [Dynamic] -> Int -> DimVal -> IO ()
@@ -51,7 +51,7 @@ _tril t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_tril (fromInteger i0)
 _triu :: Dynamic -> Dynamic -> Integer -> IO ()
 _triu t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_triu (fromInteger i0)
 
-cat :: TensorMath t => t -> t -> DimVal -> IO t
+cat :: Dynamic -> Dynamic -> DimVal -> IO Dynamic
 cat t0 t1 dv = empty >>= \r -> _cat r t0 t1 dv >> pure r
 
 _cat :: Dynamic -> Dynamic -> Dynamic -> DimVal -> IO ()

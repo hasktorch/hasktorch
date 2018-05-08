@@ -159,7 +159,6 @@ c_TemporalReplicationPadding_updateGradInput         :: Ptr CNNState -> Ptr CTen
 -- c_SpatialFullConvolutionMap_accGradParameters :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CDouble -> IO ()
 -- c_HardShrink_updateOutput      :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CDouble -> IO ()
 -- c_HardShrink_updateGradInput   :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CDouble -> IO ()
--- c_Col2Im_updateGradInput       :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
 -- c_Linear_updateOutput      :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 -- c_Linear_updateGradInput   :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
 -- c_Linear_accGradParameters :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CDouble -> IO ()

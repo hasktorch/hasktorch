@@ -1,27 +1,25 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Indef.Static.Tensor.Math.Reduce where
 
-import System.IO.Unsafe
-
 import Torch.Dimensions
 import qualified Torch.Indef.Dynamic.Tensor.Math.Reduce as Dynamic
 
 import Torch.Indef.Types
 
 minall :: Tensor d -> HsReal
-minall t = unsafePerformDupableIO $ Dynamic.minall (asDynamic t)
+minall t = Dynamic.minall (asDynamic t)
 
 maxall :: Tensor d -> HsReal
-maxall t = unsafePerformDupableIO $ Dynamic.maxall (asDynamic t)
+maxall t = Dynamic.maxall (asDynamic t)
 
 medianall :: Tensor d -> HsReal
-medianall t = unsafePerformDupableIO $ Dynamic.medianall (asDynamic t)
+medianall t = Dynamic.medianall (asDynamic t)
 
 sumall :: Tensor d -> HsAccReal
-sumall t = unsafePerformDupableIO $ Dynamic.sumall (asDynamic t)
+sumall t = Dynamic.sumall (asDynamic t)
 
 prodall :: Tensor d -> HsAccReal
-prodall t = unsafePerformDupableIO $ Dynamic.prodall (asDynamic t)
+prodall t = Dynamic.prodall (asDynamic t)
 
 _max :: (Tensor d, IndexTensor d) -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
 _max (r, ix) t1 = Dynamic._max (asDynamic r, longAsDynamic ix) (asDynamic t1)

@@ -1,15 +1,19 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
-{-# OPTIONS_GHC -fno-cse #-}
+{-# OPTIONS_GHC -fno-cse #-} -- -fplugin GHC.TypeLits.Normalise #-}
 module Torch.Indef.Static.Tensor where
 
 import Control.Exception.Safe
+import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Data.Coerce
 import Data.Maybe
+import Data.List
 import GHC.Natural
 import System.IO.Unsafe
 
@@ -201,10 +205,7 @@ getDims t = do
 
 -- | select a dimension of a tensor. If a vector is passed in, return a singleton tensor
 -- with the index value of the vector.
-(!!)
-  :: forall t (d::[Nat]) (d'::[Nat])
-  .  (TensorCopy t, HsReal (t d) ~ HsReal (t d'), Dimensions2 d d', IsTensor t)
-  => t d -> DimVal -> t d'
+(!!) :: forall (d::[Nat]) (d'::[Nat]) .  (Dimensions2 d d') => Tensor d -> DimVal -> Tensor d'
 t !! i = unsafePerformIO $
   nDimension t >>= \case
     0 -> empty
@@ -212,7 +213,7 @@ t !! i = unsafePerformIO $
     _ -> selectRank
 
   where
-    selectVal :: MaybeT IO (t d')
+    selectVal :: MaybeT IO (Tensor d')
     selectVal = do
       sizeI <- fromIntegral <$> lift (size t i)
       guard (i < sizeI)
@@ -221,11 +222,11 @@ t !! i = unsafePerformIO $
       lift $ _set1d r 0 v
       pure r
 
-    selectRank :: IO (t d')
+    selectRank :: IO (Tensor d')
     selectRank = do
       sz <- fmap fromIntegral (size t i)
-      r <- newSelect r' i 0
-      pure (r :: t d')
+      r <- newSelect t i 0
+      pure r
 
 
 new :: forall d . Dimensions d => IO (Tensor d)
@@ -262,15 +263,16 @@ view src = do
   shape :: Tensor d' <- new
   _resizeAs res shape
 
-resizeAs :: forall t d d' . (Dimensions2 d d', IsTensor t, Product d ~ Product d') => t d -> IO (t d')
+resizeAs :: forall d d' . (Dimensions2 d d', Product d ~ Product d') => Tensor d -> IO (Tensor d')
 resizeAs src = do
-  shape <- new
+  shape :: Tensor d' <- new
   _resizeAs src shape
 
 -- | Initialize a tensor of arbitrary dimension from a list
 -- FIXME: There might be a faster way to do this with newWithSize
 fromList
   :: forall d .  Dimensions d
+  => KnownNat (Product d)
   => [HsReal] -> Maybe (Tensor d)
 fromList l = unsafePerformIO . runMaybeT $ do
   vec :: Tensor '[Product d] <- MaybeT (pure (vector l))

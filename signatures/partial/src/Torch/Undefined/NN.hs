@@ -39,6 +39,8 @@ c_Im2Col_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -
 c_Im2Col_updateGradInput = undefined
 c_Col2Im_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
 c_Col2Im_updateOutput = undefined
+c_Col2Im_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+c_Col2Im_updateGradInput = undefined
 c_L1Cost_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_L1Cost_updateOutput = undefined
 c_L1Cost_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
