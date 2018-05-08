@@ -121,7 +121,7 @@ cyclic_coordinate_descent (x, y) l eps = go []
 
     go :: Int -> [(Tensor '[M, 1], Precision)] -> Natural -> Tensor '[M, 1] -> IO [(Tensor '[M, 1], Precision)]
     go ix res j w
-      | j > natVal (Proxy :: Proxy M) - 1 = pure ((w, loss (x, y) w):res)
+      | j > fromIntegral (natVal (Proxy :: Proxy M)) - 1 = pure ((w, loss (x, y) w):res)
       | otherwise = do
         let jIdx = fromIntegral j
         x_j <- T.getColumn x jIdx

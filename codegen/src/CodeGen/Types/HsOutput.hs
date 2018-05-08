@@ -28,6 +28,7 @@ module CodeGen.Types.HsOutput
 import CodeGen.Prelude
 import CodeGen.Types.CLI
 import CodeGen.Types.Parsed
+import Data.Semigroup hiding ((<>))
 import qualified Data.Text as T
 
 
