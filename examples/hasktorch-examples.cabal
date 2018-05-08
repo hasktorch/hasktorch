@@ -158,10 +158,11 @@ executable convolutions
   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
   build-depends:
       base >=4.7 && <5
+    , backprop >= 0.2
+    , ghc-typelits-natnormalise
     , hasktorch-core
     , mtl
-    , transformers
-    , backprop >= 0.2
     , singletons >=2.4
+    , transformers
 
 

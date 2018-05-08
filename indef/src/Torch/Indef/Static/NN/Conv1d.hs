@@ -18,10 +18,20 @@
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 module Torch.Indef.Static.NN.Conv1d where
 
+import Numeric.Backprop
 import Data.Kind (Type)
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
+import System.IO.Unsafe
+import Torch.Indef.Static.Tensor.Math (constant)
+import Torch.Indef.Static.Tensor.Math.Pointwise.Signed ()
+
 import qualified Torch.Indef.Dynamic.NN as Dynamic
+
+instance Dimensions d => Backprop (Tensor d) where
+  add = (+)
+  zero = const $ unsafePerformIO $ constant 0
+  one = const $ unsafePerformIO $ constant 1
 
 newtype Conv1d f o kW dW
   = Conv1d { getTensors :: (Tensor '[o, f*kW], Tensor '[o]) }
@@ -50,12 +60,33 @@ stepSize _ = fromIntegral (natVal (Proxy :: Proxy dW))
 
 -- | Type constraints required for temporal convolution
 type TemporalConvC s f kW dW o =
-  ( KnownNat5 s f kW dW o
+  ( KnownNatDim5 s f kW dW o
   , (s > kW) ~ 'True
   , (kW > 0) ~ 'True
   , (dW > 0) ~ 'True
   -- , o ~ ((Div (s - kW) dW) + 1)
   )
+
+-- | Backprop convolution function
+conv1d
+  :: Reifies s W
+  => TemporalConvC seq f kW dW o
+  => Conv1d f o kW dW
+  -> BVar s (Tensor '[seq, f])
+  -> BVar s (Tensor '[seq, o])
+conv1d c = liftOp1 . op1 $ \inp ->
+  (unsafePerformIO $ conv1d_forward inp c, \out -> unsafePerformIO $ conv1d_backward inp out c)
+
+-- | Backprop convolution function with batching
+conv1dBatch
+  :: Reifies s W
+  => TemporalConvC seq f kW dW o
+  => KnownDim b
+  => Conv1d f o kW dW
+  -> BVar s (Tensor '[b, seq, f])
+  -> BVar s (Tensor '[b, seq, o])
+conv1dBatch c = liftOp1 . op1 $ \inp ->
+  (unsafePerformIO $ conv1d_forwardBatch inp c, \out -> unsafePerformIO $ conv1d_backwardBatch inp out c)
 
 -------------------------------------------------------------------------------
 
@@ -65,7 +96,6 @@ type TemporalConvC s f kW dW o =
 --    nOutputFrame = (nInputFrame - kW) / dW + 1
 conv1d_forward :: TemporalConvC s f kW dW o => Tensor '[s, f] -> Conv1d f o kW dW -> IO (Tensor '[s, o])
 conv1d_forward = _conv1d_forward
-
 
 conv1d_forwardBatch :: TemporalConvC s f kW dW o => Tensor '[b,s,f] -> Conv1d f o kW dW -> IO (Tensor '[b,s,o])
 conv1d_forwardBatch = _conv1d_forward
@@ -81,24 +111,19 @@ _conv1d_forward inp conv = do
     (featureSize conv) (outputSize conv)
   pure out
 
-
 conv1d_backward
-  :: TemporalConvC s f kW dW o
-  => Tensor '[s, f]                         -- ^ input: s for 'sequence dimension', f for 'feature dimension'
-  -> Tensor '[s, o]                         -- ^ grad output
-  -> Tensor '[o, f*kW]                      -- ^ weight
-  -> Proxy '(kW, dW)                   -- ^ kW: The kernel width of the convolution
-                                       --   dW: The step of the convolution. Default is 1 in C.
-  -> IO (Tensor '[s, f])                    -- ^ output
+  :: TemporalConvC seq f kW dW o
+  => Tensor '[seq, f]                         -- ^ input: s for 'sequence dimension', f for 'feature dimension'
+  -> Tensor '[seq, o]                         -- ^ grad output
+  -> Conv1d f o kW dW                         -- ^ conv1d state
+  -> IO (Tensor '[seq, f])                    -- ^ grad input
 conv1d_backward = _conv1d_backwardBatch
 
 conv1d_backwardBatch
   :: TemporalConvC s f kW dW o
   => Tensor '[b, s, f]                      -- ^ input: s for 'sequence dimension', f for 'feature dimension'
   -> Tensor '[b, s, o]                      -- ^ grad output
-  -> Tensor '[o, f*kW]                      -- ^ weight
-  -> Proxy '(kW, dW)                        -- ^ kW: The kernel width of the convolution
-                                            --   dW: The step of the convolution. Default is 1 in C.
+  -> Conv1d f o kW dW                       -- ^ conv1d state
   -> IO (Tensor '[b, s, f])                 -- ^ output
 conv1d_backwardBatch = _conv1d_backwardBatch
 
@@ -107,15 +132,13 @@ _conv1d_backwardBatch
   . (KnownNat4 f o kW dW)
   => Tensor d
   -> Tensor d'
-  -> Tensor '[o, f*kW]
-  -> Proxy '(kW, dW)
+  -> Conv1d f o kW dW
   -> IO (Tensor d)
-_conv1d_backwardBatch input gradOut w _ = do
+_conv1d_backwardBatch input gradOut conv = do
   gradIn <- empty
   Dynamic._temporalConvolution_updateGradInput
-    (asDynamic input) (asDynamic gradOut) (asDynamic gradIn) (asDynamic w)
-    (fromIntegral $ natVal (Proxy :: Proxy kW))
-    (fromIntegral $ natVal (Proxy :: Proxy dW))
+    (asDynamic input) (asDynamic gradOut) (asDynamic gradIn) (asDynamic (weights conv))
+    (kernelWidth conv) (stepSize conv)
   pure gradIn
 
 -- | TODO
