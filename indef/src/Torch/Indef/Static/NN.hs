@@ -1,4 +1,12 @@
-module Torch.Indef.Static.NN where
+module Torch.Indef.Static.NN
+  ( module X
+  , _batchNormalization_updateOutput
+  , _batchNormalization_backward
+  , _col2Im_updateOutput
+  , _col2Im_updateGradInput
+  , _im2Col_updateOutput
+  , _im2Col_updateGradInput
+  ) where
 
 import Torch.Dimensions
 
@@ -6,7 +14,17 @@ import Torch.Indef.Types
 
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 import Torch.Indef.Static.Tensor
-import Torch.Indef.Static.NN.Activation
+
+import Torch.Indef.Static.NN.Activation as X
+import Torch.Indef.Static.NN.Conv1d as X
+import Torch.Indef.Static.NN.Conv2d as X
+-- import Torch.Indef.Static.NN.Conv3d as X
+import Torch.Indef.Static.NN.Criterion as X
+import Torch.Indef.Static.NN.Layers as X
+import Torch.Indef.Static.NN.Math as X
+import Torch.Indef.Static.NN.Padding as X
+import Torch.Indef.Static.NN.Pooling as X
+import Torch.Indef.Static.NN.Sampling as X
 
 _batchNormalization_updateOutput 
   :: Tensor d    -- ^ input

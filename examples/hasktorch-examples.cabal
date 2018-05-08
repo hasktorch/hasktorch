@@ -155,7 +155,7 @@ executable convolutions
   hs-source-dirs: convolutions
   default-language: Haskell2010
   default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
-  ghc-options: -Wall
+  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
   build-depends:
       base >=4.7 && <5
     , hasktorch-core

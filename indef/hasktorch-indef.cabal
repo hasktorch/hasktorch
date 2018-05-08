@@ -128,7 +128,7 @@ library
     , Torch.Indef.Static.NN
     , Torch.Indef.Static.NN.Activation
     , Torch.Indef.Static.NN.Conv1d
-    -- , Torch.Indef.Static.NN.Conv2d
+    , Torch.Indef.Static.NN.Conv2d
     -- , Torch.Indef.Static.NN.Conv3d
     , Torch.Indef.Static.NN.Criterion
     , Torch.Indef.Static.NN.Layers

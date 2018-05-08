@@ -5,13 +5,11 @@ module Main where
 
 -- import Numeric.Backprop
 import Data.Singletons.Prelude.Num
--- import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 
-import Torch.Cuda as Torch
+import Torch.Cuda.Double as Torch
 
-type Tensor = DoubleTensor
 type Batch = 2
 type KW = 2
 type DW = 2
@@ -59,20 +57,10 @@ main = do
   initConv1d
     :: KnownNatDim3 s o (s * kW)
     => Proxy '[s,o,kW,dW]
-    -> IO (Conv1d Tensor s o kW dW)
+    -> IO (Conv1d s o kW dW)
   initConv1d _ =
     fmap Conv1d $ (,)
       <$> Torch.uniform (-10::Double) 10
       <*> Torch.constant 1
 
--- conv1d_backward
---   :: forall t s f kW dW o b
---   .  KnownNat5 s f o kW dW
---   => TemporalConvC t s f kW dW o
---   => t '[s, f]                         -- ^ input: s for 'sequence dimension', f for 'feature dimension'
---   -> t '[s, o]                         -- ^ grad output
---   -> t '[o, f*kW]                      -- ^ weight
---   -> Proxy '(kW, dW)                   -- ^ kW: The kernel width of the convolution
---                                        --   dW: The step of the convolution. Default is 1 in C.
---   -> IO (t '[s, f])                    -- ^ output
 

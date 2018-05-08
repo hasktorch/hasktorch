@@ -58,7 +58,8 @@ type TemporalConvC s f kW dW o =
   )
 
 -------------------------------------------------------------------------------
--- If the input sequence is a 2D tensor of dimension (nInputFrame x inputFrameSize), the
+
+-- | If the input sequence is a 2D tensor of dimension (nInputFrame x inputFrameSize), the
 -- output sequence will be (nOutputFrame x outputFrameSize) where
 --
 --    nOutputFrame = (nInputFrame - kW) / dW + 1
@@ -117,15 +118,21 @@ _conv1d_backwardBatch input gradOut w _ = do
     (fromIntegral $ natVal (Proxy :: Proxy dW))
   pure gradIn
 
+-- | TODO
 _temporalConvolution_accGradParameters :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Int -> Int -> Double -> IO ()
 _temporalConvolution_accGradParameters t0 t1 t2 t3 = Dynamic._temporalConvolution_accGradParameters (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3)
 
 -- ========================================================================= --
 
+-- | TODO
 _temporalRowConvolution_updateOutput :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d -> Tensor d -> Int -> Int -> Int -> Bool -> IO ()
 _temporalRowConvolution_updateOutput t0 t1 t2 t3 t4 t5 = Dynamic._temporalRowConvolution_updateOutput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4) (asDynamic t5)
+
+-- | TODO
 _temporalRowConvolution_updateGradInput :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d -> Tensor d -> Int -> Int -> Int -> Bool -> IO ()
 _temporalRowConvolution_updateGradInput t0 t1 t2 t3 t4 t5 = Dynamic._temporalRowConvolution_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4) (asDynamic t5)
+
+-- | TODO
 _temporalRowConvolution_accGradParameters :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d -> Tensor d -> Int -> Int -> Int -> Bool -> Double -> IO ()
 _temporalRowConvolution_accGradParameters t0 t1 t2 t3 t4 t5 = Dynamic._temporalRowConvolution_accGradParameters (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4) (asDynamic t5)
 

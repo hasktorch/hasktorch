@@ -1,6 +1,9 @@
 module Torch.Cuda.Double (module X) where
 
-import Torch.Cuda.Double.Index as X
+import Torch.Types.THC as X
+import Torch.Indef.Cuda.Double.Types as X hiding (storage)
+import Torch.Indef.Cuda.Double.Index as X
+
 import Torch.Indef.Cuda.Double.Tensor as X
 import Torch.Indef.Cuda.Double.Tensor.Copy as X
 import Torch.Indef.Cuda.Double.Tensor.Index as X
@@ -25,5 +28,52 @@ import Torch.Indef.Cuda.Double.Tensor.Math.Floating as X
 import Torch.Indef.Cuda.Double.Tensor.Math.Lapack as X
 import Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Floating as X
 import Torch.Indef.Cuda.Double.Tensor.Math.Reduce.Floating as X
+
+import Torch.Indef.Cuda.Double.Tensor.Random.THC as X
+
+-------------------------------------------------------------------------------
+
+import System.IO.Unsafe
+
+instance Dimensions d => Fractional (Tensor d) where
+  fromRational = unsafePerformIO . constant . fromRational
+  {-# NOINLINE fromRational #-}
+
+  (/) = (^/^)
+  {-# NOINLINE (/) #-}
+
+instance Dimensions d => Floating (Tensor d) where
+  pi = unsafePerformIO $ X.constant pi
+  {-# NOINLINE pi #-}
+
+  exp = unsafePerformIO . X.exp
+  {-# NOINLINE exp #-}
+
+  log = unsafePerformIO . X.log
+  {-# NOINLINE log #-}
+
+  sqrt = unsafePerformIO . X.sqrt
+  {-# NOINLINE sqrt #-}
+
+  sin = unsafePerformIO . X.sin
+  {-# NOINLINE sin #-}
+
+  cos = unsafePerformIO . X.cos
+  {-# NOINLINE cos #-}
+
+  asin = unsafePerformIO . X.asin
+  {-# NOINLINE asin #-}
+
+  acos = unsafePerformIO . X.acos
+  {-# NOINLINE acos #-}
+
+  atan = unsafePerformIO . X.atan
+  {-# NOINLINE atan #-}
+
+  sinh = unsafePerformIO . X.sinh
+  {-# NOINLINE sinh #-}
+
+  cosh = unsafePerformIO . X.cosh
+  {-# NOINLINE cosh #-}
 
 
