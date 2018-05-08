@@ -1,6 +1,4 @@
 ### Temporary ignorables (for scoping with vim) ###
-raw
-vendor
 ### Custom ignorables ###
 .ghc.environment*
 .vscode/

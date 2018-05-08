@@ -51,13 +51,13 @@ data HModule = HModule
   } deriving Show
 
 newtype ModuleSuffix = ModuleSuffix { textSuffix :: Text }
-  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
+  deriving newtype (IsString, Semigroup, Monoid, Ord, Read, Eq, Show)
 
 newtype FileSuffix = FileSuffix { textFileSuffix :: Text }
-  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
+  deriving newtype (IsString, Semigroup, Monoid, Ord, Read, Eq, Show)
 
 newtype TextPath = TextPath { textPath :: Text }
-  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
+  deriving newtype (IsString, Semigroup, Monoid, Ord, Read, Eq, Show)
 
 makeModule
   :: LibType

@@ -1,5 +1,9 @@
 module Torch.Double.Dynamic (module X) where
 
+import Torch.Types.TH as X
+import Torch.Indef.Double.Types as X hiding (storage)
+import Torch.Indef.Double.Index as X
+
 import Torch.Indef.Double.Dynamic.Tensor as X
 import Torch.Indef.Double.Dynamic.Tensor.Copy as X
 import Torch.Indef.Double.Dynamic.Tensor.Index as X
@@ -25,4 +29,6 @@ import Torch.Indef.Double.Dynamic.Tensor.Math.Lapack as X
 import Torch.Indef.Double.Dynamic.Tensor.Math.Pointwise.Floating as X
 import Torch.Indef.Double.Dynamic.Tensor.Math.Reduce.Floating as X
 
-
+import Torch.Indef.Double.Dynamic.Tensor.Math.Random.TH as X
+import Torch.Indef.Double.Dynamic.Tensor.Random.TH as X
+import Torch.Core.Random as X (newRNG, seed, manualSeed, initialSeed)

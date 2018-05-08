@@ -12,7 +12,7 @@
 module Torch.Core.Random
   ( Generator
   , Seed
-  , new
+  , newRNG
   , copy
   , seed
   , manualSeed
@@ -59,8 +59,8 @@ _withRNG = flip withRNG
 -- ========================================================================= --
 
 -- | Construct a new 'Generator'
-new :: IO Generator
-new = TH.c_THGenerator_new >>= asRNG
+newRNG :: IO Generator
+newRNG = TH.c_THGenerator_new >>= asRNG
 
 -- | Copy a 'Generator' state to a new generator
 copy :: Generator -> Generator -> IO Generator

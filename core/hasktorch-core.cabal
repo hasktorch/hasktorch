@@ -31,12 +31,12 @@ test-suite spec
     , text >=1.2.2.2
   other-modules:
       Orphans
-    -- , MemorySpec
+    , MemorySpec
     , RawLapackSVDSpec
-    -- , GarbageCollectionSpec
+    , GarbageCollectionSpec
     , Torch.Prelude.Extras
-    -- , Torch.Core.LogAddSpec
-    -- , Torch.Core.RandomSpec
+    , Torch.Core.LogAddSpec
+    , Torch.Core.RandomSpec
 
 library
   hs-source-dirs: src, utils
@@ -500,7 +500,14 @@ library
         ,Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating     as Torch.Indef.Float.Dynamic.Tensor.Math.Reduce.Floating
 
         ,Torch.Undefined.Tensor.Random.THC as Torch.Undefined.Float.Tensor.Random.THC
-        ,Torch.Indef.Index as Torch.Float.Index
+
+        ,Torch.Indef.Static.Tensor.Random.TH       as Torch.Indef.Float.Tensor.Random.TH
+        ,Torch.Indef.Static.Tensor.Math.Random.TH  as Torch.Indef.Float.Tensor.Math.Random.TH
+        ,Torch.Indef.Dynamic.Tensor.Random.TH      as Torch.Indef.Float.Dynamic.Tensor.Random.TH
+        ,Torch.Indef.Dynamic.Tensor.Math.Random.TH as Torch.Indef.Float.Dynamic.Tensor.Math.Random.TH
+
+        ,Torch.Indef.Index as Torch.Indef.Float.Index
+        ,Torch.Indef.Types as Torch.Indef.Float.Types
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -603,7 +610,14 @@ library
         ,Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating     as Torch.Indef.Double.Dynamic.Tensor.Math.Reduce.Floating
 
         ,Torch.Undefined.Tensor.Random.THC as Torch.Undefined.Double.Tensor.Random.THC
-        ,Torch.Indef.Index as Torch.Double.Index
+
+        ,Torch.Indef.Static.Tensor.Random.TH       as Torch.Indef.Double.Tensor.Random.TH
+        ,Torch.Indef.Static.Tensor.Math.Random.TH  as Torch.Indef.Double.Tensor.Math.Random.TH
+        ,Torch.Indef.Dynamic.Tensor.Random.TH      as Torch.Indef.Double.Dynamic.Tensor.Random.TH
+        ,Torch.Indef.Dynamic.Tensor.Math.Random.TH as Torch.Indef.Double.Dynamic.Tensor.Math.Random.TH
+
+        ,Torch.Indef.Index as Torch.Indef.Double.Index
+        ,Torch.Indef.Types as Torch.Indef.Double.Types
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -1150,6 +1164,7 @@ library hasktorch-indef-unsigned
     , hasktorch-indef
   reexported-modules:
       Torch.Indef.Index
+    , Torch.Indef.Types
     , Torch.Indef.Storage
     , Torch.Indef.Storage.Copy
 
@@ -1209,6 +1224,8 @@ library hasktorch-indef-signed
     , hasktorch-indef
   reexported-modules:
       Torch.Indef.Index
+    , Torch.Indef.Types
+
     , Torch.Indef.Storage
     , Torch.Indef.Storage.Copy
 
@@ -1269,6 +1286,8 @@ library hasktorch-indef-floating
     , hasktorch-indef
   reexported-modules:
       Torch.Indef.Index
+    , Torch.Indef.Types
+
     , Torch.Indef.Storage
     , Torch.Indef.Storage.Copy
 
@@ -1320,6 +1339,14 @@ library hasktorch-indef-floating
     , Torch.Indef.Static.Tensor.Math.Lapack
     , Torch.Indef.Static.Tensor.Math.Pointwise.Floating
     , Torch.Indef.Static.Tensor.Math.Reduce.Floating
+
+    , Torch.Indef.Static.Tensor.Random.TH
+    , Torch.Indef.Static.Tensor.Random.THC
+    , Torch.Indef.Static.Tensor.Math.Random.TH
+    , Torch.Indef.Dynamic.Tensor.Random.TH
+    , Torch.Indef.Dynamic.Tensor.Random.THC
+    , Torch.Indef.Dynamic.Tensor.Math.Random.TH
+
 
     , Torch.Undefined.Tensor.Math.Random.TH
     , Torch.Undefined.Tensor.Random.TH

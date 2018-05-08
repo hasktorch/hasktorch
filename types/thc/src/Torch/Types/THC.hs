@@ -91,104 +91,104 @@ type  IndexStorage = LongStorage
 
 type CByteTensor      = C'THCudaByteTensor
 newtype ByteDynamic   = ByteDynamic { byteDynamicState :: (ForeignPtr CState, ForeignPtr CByteTensor) }
-  deriving (Show, Eq)
+  deriving (Eq)
 byteDynamic = curry ByteDynamic
 
 newtype ByteTensor (ds :: [Nat]) = ByteTensor { byteAsDynamic :: ByteDynamic }
-  deriving (Show, Eq)
+  deriving (Eq)
 byteAsStatic = ByteTensor
 
 type CByteStorage   = C'THCByteStorage
 newtype ByteStorage = ByteStorage { byteStorageState :: (ForeignPtr CState, ForeignPtr CByteStorage) }
-  deriving (Show, Eq)
+  deriving (Eq)
 byteStorage = curry ByteStorage
 
 type CCharTensor      = C'THCudaCharTensor
 newtype CharDynamic = CharDynamic { charDynamicState :: (ForeignPtr CState, ForeignPtr CCharTensor) }
-  deriving (Show, Eq)
+  deriving (Eq)
 charDynamic = curry CharDynamic
 
 newtype CharTensor (ds :: [Nat]) = CharTensor { charAsDynamic :: CharDynamic }
-  deriving (Show, Eq)
+  deriving (Eq)
 charAsStatic = CharTensor
 
 type CCharStorage   = C'THCCharStorage
 newtype CharStorage = CharStorage { charStorageState :: (ForeignPtr CState, ForeignPtr CCharStorage) }
-  deriving (Show, Eq)
+  deriving (Eq)
 charStorage = curry CharStorage
 
 -- Signed types
 
 type CLongTensor      = C'THCudaLongTensor
 newtype LongDynamic = LongDynamic { longDynamicState :: (ForeignPtr CState, ForeignPtr CLongTensor) }
-  deriving (Show, Eq)
+  deriving (Eq)
 longDynamic = curry LongDynamic
 
 newtype LongTensor (ds :: [Nat]) = LongTensor { longAsDynamic :: LongDynamic }
-  deriving (Show, Eq)
+  deriving (Eq)
 longAsStatic = LongTensor
 
 type CLongStorage   = C'THCLongStorage
 newtype LongStorage = LongStorage { longStorageState :: (ForeignPtr CState, ForeignPtr CLongStorage) }
-  deriving (Show, Eq)
+  deriving (Eq)
 longStorage = curry LongStorage
 
 type CShortTensor      = C'THCudaShortTensor
 newtype ShortDynamic = ShortDynamic { shortDynamicState :: (ForeignPtr CState, ForeignPtr CShortTensor) }
-  deriving (Show, Eq)
+  deriving (Eq)
 shortDynamic = curry ShortDynamic
 
 newtype ShortTensor (ds :: [Nat]) = ShortTensor { shortAsDynamic :: ShortDynamic }
-  deriving (Show, Eq)
+  deriving (Eq)
 shortAsStatic = ShortTensor
 
 type CShortStorage   = C'THCShortStorage
 newtype ShortStorage = ShortStorage { shortStorageState :: (ForeignPtr CState, ForeignPtr CShortStorage) }
-  deriving (Show, Eq)
+  deriving (Eq)
 shortStorage = curry ShortStorage
 
 type CIntTensor      = C'THCudaIntTensor
 newtype IntDynamic = IntDynamic { intDynamicState :: (ForeignPtr CState, ForeignPtr CIntTensor) }
-  deriving (Show, Eq)
+  deriving (Eq)
 intDynamic = curry IntDynamic
 
 newtype IntTensor (ds :: [Nat]) = IntTensor { intAsDynamic :: IntDynamic }
-  deriving (Show, Eq)
+  deriving (Eq)
 intAsStatic = IntTensor
 
 type CIntStorage   = C'THCIntStorage
 newtype IntStorage = IntStorage { intStorageState :: (ForeignPtr CState, ForeignPtr CIntStorage) }
-  deriving (Show, Eq)
+  deriving (Eq)
 intStorage = curry IntStorage
 
 -- Floating types
 
 type CFloatTensor      = C'THCudaFloatTensor
 newtype FloatDynamic = FloatDynamic { floatDynamicState :: (ForeignPtr CState, ForeignPtr CFloatTensor) }
-  deriving (Show, Eq)
+  deriving (Eq)
 floatDynamic = curry FloatDynamic
 
 newtype FloatTensor (ds :: [Nat]) = FloatTensor { floatAsDynamic :: FloatDynamic }
-  deriving (Show, Eq)
+  deriving (Eq)
 floatAsStatic = FloatTensor
 
 type CFloatStorage   = C'THCFloatStorage
 newtype FloatStorage = FloatStorage { floatStorageState :: (ForeignPtr CState, ForeignPtr CFloatStorage) }
-  deriving (Show, Eq)
+  deriving (Eq)
 floatStorage = curry FloatStorage
 
 type CDoubleTensor      = C'THCudaDoubleTensor
 newtype DoubleDynamic = DoubleDynamic { doubleDynamicState :: (ForeignPtr CState, ForeignPtr CDoubleTensor) }
-  deriving (Show, Eq)
+  deriving (Eq)
 doubleDynamic = curry DoubleDynamic
 
 newtype DoubleTensor (ds :: [Nat]) = DoubleTensor { doubleAsDynamic :: DoubleDynamic }
-  deriving (Show, Eq)
+  deriving (Eq)
 doubleAsStatic = DoubleTensor
 
 type CDoubleStorage   = C'THCDoubleStorage
 newtype DoubleStorage = DoubleStorage { doubleStorageState :: (ForeignPtr CState, ForeignPtr CDoubleStorage) }
-  deriving (Show, Eq)
+  deriving (Eq)
 doubleStorage = curry DoubleStorage
 
 {-

@@ -7,6 +7,7 @@ import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
 
+
 _add r t v = Dynamic._add (asDynamic r) (asDynamic t) v
 _sub r t v = Dynamic._sub (asDynamic r) (asDynamic t) v
 _add_scaled r t v0 v1 = Dynamic._add_scaled (asDynamic r) (asDynamic t) v0 v1

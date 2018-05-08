@@ -12,10 +12,18 @@ import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
 import qualified Torch.Sig.Types as Sig
 import Data.Coerce
+import System.IO.Unsafe
 
 import Torch.Indef.Types
 import Torch.Indef.Index
 import qualified Torch.Indef.Dynamic.Tensor as Dynamic
+
+instance Show (Tensor (d::[Nat])) where
+  show t = unsafePerformIO $ do
+    SomeDims ds <- getDims t
+    (vs, desc) <- Dynamic.showTensor (get1d t) (get2d t) (get3d t) (get4d t) (dimVals ds)
+    pure (vs ++ "\n" ++ desc)
+  {-# NOINLINE show #-}
 
 -- FIXME: Definitely don't export this. Make sure these gory details never see the day of light.
 sudo :: Tensor d -> Tensor d'
@@ -274,8 +282,4 @@ setElem2d t r c v
       = throwString "Indices out of bounds"
   | otherwise = _set2d t (fromIntegral r) (fromIntegral c) v
 
-
--- | displaying raw tensor values
-printTensor :: Tensor d -> IO ()
-printTensor t = getDims t >>= \(SomeDims ds) -> Dynamic._printTensor (get1d t) (get2d t) (dimVals ds)
 

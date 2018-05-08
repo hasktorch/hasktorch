@@ -4,11 +4,10 @@
 module Main where
 
 --import Data.Function ((&))
-import Torch hiding (N)
+import Torch.Double hiding (N)
 import qualified Torch.Core.Random as RNG
 
 {- Types -}
-type Tensor = DoubleTensor
 
 data Likelihood = Likelihood
   { l_mu    :: Double
@@ -50,23 +49,23 @@ genParam gen = do
   mu :: Tensor '[3] <- constant 0
   predictorVal :: Tensor '[1, 3] <- multivariate_normal gen mu eigenvectors eigenvalues
   putStrLn "Parameter values:"
-  printTensor predictorVal
+  print predictorVal
   pure predictorVal
 
 {- Main -}
 
 main :: IO ()
 main = do
-  gen <- RNG.new
+  gen <- RNG.newRNG
   param <- genParam gen
   (x, y) <- genData gen param
   putStrLn "x:"
-  printTensor x
+  print x
   putStrLn "x:"
-  printTensor x
+  print x
   putStrLn "y:"
-  printTensor y
+  print y
   putStrLn "y without noise:"
-  printTensor $ param !*! x -- should be similar to y w/o noise
+  print $ param !*! x -- should be similar to y w/o noise
   putStrLn "Done"
   pure ()

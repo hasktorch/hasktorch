@@ -6,17 +6,15 @@ module Main where
 import Data.Monoid ((<>))
 import Control.Monad
 import Data.Singletons
-import GHC.TypeLits
 import Lens.Micro
 
-import Torch hiding (N)
-import qualified Torch as Math
+import Torch.Double hiding (N)
+import qualified Torch.Double as Math
 import qualified Torch.Core.Random as RNG
 
 type N = 2000 -- sample size
 type NumP = 2
 type P = '[1, 2]
-type Tensor = DoubleTensor
 type Precision = Double
 
 seedVal :: RNG.Seed
@@ -24,7 +22,7 @@ seedVal = 3141592653579
 
 genData :: Tensor '[1,2] -> IO (Tensor '[2, N], Tensor '[N])
 genData param = do
-  gen <- RNG.new
+  gen <- newRNG
   RNG.manualSeed gen seedVal
   noise        :: Tensor '[N] <- normal gen 0 2
   predictorVal :: Tensor '[N] <- normal gen 0 10
@@ -85,7 +83,7 @@ runN lazyIters nIter = do
   putStrLn $ "Loss after " <> show nIter <> " steps"
   print j
   putStrLn $ "Parameter estimate after " <> show nIter <> " steps:"
-  printTensor p
+  print p
   pure p
 
 runExample :: IO (Tensor '[1,2])
@@ -93,7 +91,7 @@ runExample = do
   -- Generate data w/ ground truth params
   putStrLn "True parameters"
   trueParam <- fromList [3.5, -4.4]
-  printTensor trueParam
+  print trueParam
 
   dat <- genData trueParam
 
