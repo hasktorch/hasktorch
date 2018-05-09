@@ -16,8 +16,8 @@ import qualified Torch.Indef.Dynamic.NN as Dynamic
 import Torch.Indef.Static.Tensor
 
 import Torch.Indef.Static.NN.Activation as X
-import Torch.Indef.Static.NN.Conv1d as X hiding (weights)
-import Torch.Indef.Static.NN.Conv2d as X
+import Torch.Indef.Static.NN.Conv1d as X hiding (getTensors, weights, bias, featureSize, kernelWidth)
+import Torch.Indef.Static.NN.Conv2d as X hiding (getTensors, weights, bias, featureSize, kernelWidth, kernelHeight)
 -- import Torch.Indef.Static.NN.Conv3d as X
 import Torch.Indef.Static.NN.Criterion as X
 import Torch.Indef.Static.NN.Layers as X
