@@ -16,22 +16,37 @@
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
-module Torch.Indef.Static.NN.Conv1d where
+module Torch.Indef.Static.NN.Conv1d
+  ( Conv1d(..)
+  , weights
+  , bias
+  , featureSize
+  , kernelWidth
+  , stepSize
+
+  , conv1d
+  , conv1d_forward
+  , conv1d_backward
+
+  , conv1dBatch
+  , conv1d_forwardBatch
+  , conv1d_backwardBatch
+
+  -- still need work:
+  , _temporalConvolution_accGradParameters
+  , _temporalRowConvolution_updateOutput
+  , _temporalRowConvolution_updateGradInput
+  , _temporalRowConvolution_accGradParameters
+  ) where
 
 import Numeric.Backprop
 import Data.Kind (Type)
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import System.IO.Unsafe
-import Torch.Indef.Static.Tensor.Math (constant)
-import Torch.Indef.Static.Tensor.Math.Pointwise.Signed ()
+import Torch.Indef.Static.NN.Backprop ()
 
 import qualified Torch.Indef.Dynamic.NN as Dynamic
-
-instance Dimensions d => Backprop (Tensor d) where
-  add = (+)
-  zero = const $ unsafePerformIO $ constant 0
-  one = const $ unsafePerformIO $ constant 1
 
 newtype Conv1d f o kW dW
   = Conv1d { getTensors :: (Tensor '[o, f*kW], Tensor '[o]) }
@@ -97,10 +112,10 @@ conv1dBatch c = liftOp1 . op1 $ \inp ->
 conv1d_forward :: TemporalConvC s f kW dW o => Tensor '[s, f] -> Conv1d f o kW dW -> IO (Tensor '[s, o])
 conv1d_forward = _conv1d_forward
 
+-- | Applies a 1D convolution over an input sequence composed of nInputFrame frames. The input tensor in forward(input) is expected to be a 2D tensor (nInputFrame x inputFrameSize) or a 3D tensor (nBatchFrame x nInputFrame x inputFrameSize).
 conv1d_forwardBatch :: TemporalConvC s f kW dW o => Tensor '[b,s,f] -> Conv1d f o kW dW -> IO (Tensor '[b,s,o])
 conv1d_forwardBatch = _conv1d_forward
 
--- | Applies a 1D convolution over an input sequence composed of nInputFrame frames. The input tensor in forward(input) is expected to be a 2D tensor (nInputFrame x inputFrameSize) or a 3D tensor (nBatchFrame x nInputFrame x inputFrameSize).
 _conv1d_forward :: (KnownNat4 f o kW dW) => Tensor d -> Conv1d f o kW dW -> IO (Tensor d')
 _conv1d_forward inp conv = do
   out <- empty

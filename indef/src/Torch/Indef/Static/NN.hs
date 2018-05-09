@@ -25,6 +25,7 @@ import Torch.Indef.Static.NN.Math as X
 import Torch.Indef.Static.NN.Padding as X
 import Torch.Indef.Static.NN.Pooling as X
 import Torch.Indef.Static.NN.Sampling as X
+import Torch.Indef.Static.NN.Backprop as X
 
 _batchNormalization_updateOutput 
   :: Tensor d    -- ^ input
