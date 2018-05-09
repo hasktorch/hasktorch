@@ -210,14 +210,14 @@ loss :: (Tensor '[N, M], Tensor '[N, 1]) -> Tensor '[M, 1] -> Precision
 loss (x, y) w = squaredSum (y ^-^ (x !*! w)) + l1 w
  where
   squaredSum :: Tensor '[N, 1] -> Precision
-  squaredSum t = unsafePerformIO $ fmap realToFrac . TU.sumall =<< TU.square t
+  squaredSum t = unsafePerformIO $ pure . realToFrac . TU.sumall =<< TU.square t
 
 l1 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
-l1 t = unsafePerformIO $ fmap realToFrac . TU.sumall =<< TU.abs t
+l1 t = unsafePerformIO $ pure . realToFrac . TU.sumall =<< TU.abs t
 {-# NOINLINE l1 #-}
 
 l2 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
-l2 t = unsafePerformIO $ fmap (realToFrac . sqrt) . T.sumall =<< T.square t
+l2 t = unsafePerformIO $ pure . realToFrac . sqrt . T.sumall =<< T.square t
 {-# NOINLINE l2 #-}
 
 prox_l1 :: Tensor '[M, 1] -> Precision -> IO (Tensor '[M, 1])

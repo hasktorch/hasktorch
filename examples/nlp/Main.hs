@@ -19,17 +19,12 @@
 {-# OPTIONS_GHC -fno-cse #-}
 module Main where
 
-import Torch.Cuda
+import Torch.Cuda.Double
 import Numeric.Backprop
 import System.IO.Unsafe
 import Prelude hiding ((!!))
 
--- At present, the hasktorch library doesn't export a default tensor type, so
--- it can be helpful to indicate what level of precision we want here.
-type Tensor = DoubleTensor
-
 -- You can make tensors from lists:
-
 tensorIntro = do
   let Just (v :: Tensor '[2]) = fromList [1..2]
   print v

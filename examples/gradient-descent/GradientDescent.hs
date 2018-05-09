@@ -5,7 +5,6 @@ module Main where
 
 import Data.Monoid ((<>))
 import Control.Monad
-import Data.Singletons
 import Lens.Micro
 
 import Torch.Double hiding (N)
@@ -34,7 +33,7 @@ genData param = do
 loss :: (Tensor '[2,N], Tensor '[N]) -> Tensor '[1, 2] -> IO Precision
 loss (x, y) param = do
   x' <- (y -) <$> resizeAs (param !*! x)
-  fmap realToFrac . Math.sumall =<< Math.square x'
+  (realToFrac . Math.sumall) <$> Math.square x'
 
 
 gradient
@@ -64,7 +63,7 @@ gradientDescent (x, y) rate eps = go 0 []
   go :: Int -> [(Tensor '[1, 2], Precision, Tensor '[1, 2])] -> Tensor '[1, 2] -> IO [(Tensor '[1, 2], Precision, Tensor '[1, 2])]
   go i res param = do
     g <- gradient (x, y) param
-    diff <- fmap realToFrac . Math.sumall =<< Math.abs g
+    diff <- (realToFrac . Math.sumall) <$> Math.abs g
     if diff < eps
     then pure res
     else do
@@ -75,7 +74,7 @@ gradientDescent (x, y) rate eps = go 0 []
 runN :: [(Tensor '[1, 2], Precision, Tensor '[1, 2])] -> Int -> IO (Tensor '[1,2])
 runN lazyIters nIter = do
   let final = last $ take nIter lazyIters
-  g <- Math.sumall =<< Math.abs (final ^. _3)
+  g <- Math.sumall <$> Math.abs (final ^. _3)
   let j = (^. _2) final
   let p = (^. _1) final
   putStrLn $ "Gradient magnitude after " <> show nIter <> " steps"
@@ -90,13 +89,13 @@ runExample :: IO (Tensor '[1,2])
 runExample = do
   -- Generate data w/ ground truth params
   putStrLn "True parameters"
-  trueParam <- fromList [3.5, -4.4]
+  let Just trueParam = fromList [3.5, -4.4]
   print trueParam
 
   dat <- genData trueParam
 
   -- Setup GD
-  p0 :: Tensor '[1, 2] <- fromList [0, 0]
+  let Just (p0 :: Tensor '[1, 2]) = fromList [0, 0]
   iters <- gradientDescent dat 0.0005 0.0001 p0
 
   -- Results

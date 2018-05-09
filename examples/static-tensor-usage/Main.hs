@@ -30,15 +30,16 @@ initialization = void $ do
     pure constVec
 
   listVec :: DoubleTensor '[6] <-
-    section' "Initialize 1D vector from list" $
-      fromList1d [1, 2, 3, 4, 5, 6]
+    section' "Initialize 1D vector from list" $ do
+      let Just v = vector [1, 2, 3, 4, 5, 6]
+      pure v
 
   section "Resize 1D vector as 2D matrix" $ do
     asMat :: DoubleTensor '[3, 2] <- resizeAs listVec
     pure asMat
 
   section "Initialize arbitrary dimensions directly from list" $ do
-    listVec2 :: DoubleTensor '[3, 2] <- fromList [1, 2, 3, 4, 5, 6]
+    let Just (listVec2 :: DoubleTensor '[3, 2]) = fromList [1, 2, 3, 4, 5, 6]
     pure listVec2
 
   section "Random values" $ do

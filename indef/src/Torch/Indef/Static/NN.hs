@@ -16,7 +16,7 @@ import qualified Torch.Indef.Dynamic.NN as Dynamic
 import Torch.Indef.Static.Tensor
 
 import Torch.Indef.Static.NN.Activation as X
-import Torch.Indef.Static.NN.Conv1d as X
+import Torch.Indef.Static.NN.Conv1d as X hiding (weights)
 import Torch.Indef.Static.NN.Conv2d as X
 -- import Torch.Indef.Static.NN.Conv3d as X
 import Torch.Indef.Static.NN.Criterion as X

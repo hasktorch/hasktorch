@@ -9,22 +9,28 @@ test_mvn :: IO ()
 test_mvn = do
   gen <- newRNG
 
-  void . join $
+  void $
     runMultivariate gen
-      <$> (fromList [1, 0, 0.5, 1] :: IO (Tensor '[2, 2]))
-      <*> (fromList [10, 30]       :: IO (Tensor '[2]))
+      (fromList [1, 0, 0.5, 1] :: Maybe (Tensor '[2, 2]))
+      (fromList [10, 30]       :: Maybe (Tensor '[2]))
 
-  void . join $
+  void $
     runMultivariate gen
-      <$> (fromList [1, 1, 1, 1, 1, 1, 0, 0, 0] :: IO (Tensor '[3, 3]))
-      <*> (fromList [1, 1, 1]                   :: IO (Tensor '[3]))
+      (fromList [1, 1, 1, 1, 1, 1, 0, 0, 0] :: Maybe (Tensor '[3, 3]))
+      (fromList [1, 1, 1]                   :: Maybe (Tensor '[3]))
 
  where
-  runMultivariate :: KnownNatDim n => Generator -> Tensor '[n, n] -> Tensor '[n] -> IO ()
-  runMultivariate gen eigenvector eigenvalue = do
+  runMultivariate
+    :: KnownNatDim n
+    => Generator
+    -> Maybe (Tensor '[n, n])
+    -> Maybe (Tensor '[n])
+    -> IO ()
+  runMultivariate gen (Just eigenvector) (Just eigenvalue) = do
     mu     :: Tensor '[n]     <- constant 0
     result :: Tensor '[10, n] <- multivariate_normal gen mu eigenvector eigenvalue
     print result
+  runMultivariate _ _ _ = pure ()
 
 main :: IO ()
 main = do
