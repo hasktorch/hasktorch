@@ -5,7 +5,6 @@
 module Main where
 
 import Numeric.Backprop
-import Data.Singletons.Prelude.Num
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 
