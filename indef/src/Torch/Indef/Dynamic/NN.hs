@@ -118,7 +118,26 @@ _temporalUpSamplingLinear_updateOutput              :: Dynamic -> Dynamic -> Int
 _temporalUpSamplingLinear_updateGradInput           :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
 _batchNormalization_updateOutput                    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> Double -> IO ()
 _batchNormalization_backward                        :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> Double -> IO ()
-_spatialConvolutionMM_updateOutput                  :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+
+_spatialConvolutionMM_updateOutput
+  :: Dynamic    -- ^ input
+  -> Dynamic    -- ^ output
+  -> Dynamic    -- ^ 3D weight tensor (connTable:size(1) x kH x kW) 
+  -> Dynamic    -- ^ 1D bias tensor (nOutputPlane) 
+  -> Dynamic    -- ^ finput
+  -> Dynamic    -- ^ fgradInput
+  -> (Int, Int) -- ^ (kW, kH) kernel height and width
+  -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
+  -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
+  -> IO ()
+_spatialConvolutionMM_updateOutput t0 t1 t2 t3 t4 t5 (kW, kH) (dW, dH) (pW, pH) =
+  with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+   with3DynamicState t3 t4 t5 $ \_ t3' t4' t5' ->
+    Sig.c_SpatialConvolutionMM_updateOutput s' t0' t1' t2' t3' t4' t5'
+      (fromIntegral kW) (fromIntegral kH)
+      (fromIntegral dW) (fromIntegral dH)
+      (fromIntegral pW) (fromIntegral pH)
+
 _spatialConvolutionMM_updateGradInput               :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _spatialConvolutionMM_accGradParameters             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
 _spatialConvolutionLocal_updateOutput               :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
@@ -265,7 +284,6 @@ _spatialFullDilatedConvolution_updateGradInput = ten5int10 Sig.c_SpatialFullDila
 _temporalRowConvolution_updateOutput = ten6int3bool1 Sig.c_TemporalRowConvolution_updateOutput
 _temporalRowConvolution_updateGradInput = ten6int3bool1 Sig.c_TemporalRowConvolution_updateGradInput
 _temporalRowConvolution_accGradParameters = ten6int3bool1double1 Sig.c_TemporalRowConvolution_accGradParameters
-_spatialConvolutionMM_updateOutput = ten6int6 Sig.c_SpatialConvolutionMM_updateOutput
 _sparseLinear_legacyAccGradParameters = ten6double2 Sig.c_SparseLinear_legacyAccGradParameters
 _sparseLinear_accGradParameters = ten6double2 Sig.c_SparseLinear_accGradParameters
 _spatialConvolutionMM_updateGradInput = ten6int6 Sig.c_SpatialConvolutionMM_updateGradInput

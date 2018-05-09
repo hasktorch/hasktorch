@@ -20,33 +20,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
-
+{-# LANGUAGE FlexibleContexts #-}
+{- LANGUAGE AllowAmbiguousTypes #-}
 module Torch.Indef.Static.NN.Conv2d where
 
 import Torch.Indef.Types
+import Control.Arrow
 import Data.Kind (Type)
 import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Math
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
-
--- | Applies a 2D convolution over an input image composed of several input planes. The input tensor in forward(input) is expected to be a 3D tensor (nInputPlane x height x width).
-_spatialConvolutionMM_updateOutput
-  :: Tensor d  -- ^ input
-  -> Tensor d  -- ^ output
-  -> Tensor d  -- ^ 3D weight tensor (connTable:size(1) x kH x kW) 
-  -> Tensor d  -- ^ 1D bias tensor (nOutputPlane) 
-  -> Tensor d  -- ^ finput
-  -> Tensor d  -- ^ fgradInput
-  -> (Int, Int) -- ^ (kW, kH) kernel height and width
-  -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
-  -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
-  -> IO ()
-_spatialConvolutionMM_updateOutput t0 t1 t2 t3 t4 t5 (kW, kH) (dW, dH) (pW, pH) =
-  Dynamic._spatialConvolutionMM_updateOutput
-    (asDynamic t0) (asDynamic t1)
-    (asDynamic t2) (asDynamic t3)
-    (asDynamic t4) (asDynamic t5)
-    kW kH dW dH pW pH
 
 -- ========================================================================= --
 
@@ -73,6 +57,9 @@ kernelWidth _ = fromIntegral (natVal (Proxy :: Proxy kW))
 kernelHeight :: forall i f o kW kH . (Integral i, KnownNat kH) => Conv2d f o kW kH -> i
 kernelHeight _ = fromIntegral (natVal (Proxy :: Proxy kH))
 
+kernel2d :: (Integral i, KnownNat kH, KnownNat kW) => Conv2d f o kW kH -> (i, i)
+kernel2d = kernelWidth &&& kernelHeight
+
 -- ========================================================================= --
 
 data Param2d (w::Nat) (h::Nat) = Param2d
@@ -83,41 +70,70 @@ paramW _ = fromIntegral $ natVal (Proxy :: Proxy w)
 paramH :: forall w h i . (KnownNat h, Integral i) => Param2d w h -> i
 paramH _ = fromIntegral $ natVal (Proxy :: Proxy h)
 
+param2d :: (KnownNat h, KnownNat w, Integral i) => Param2d w h -> (i, i)
+param2d = paramW &&& paramH
+
 -- ========================================================================= --
 type SpatialConvolutionC h w kW kH dW dH pW pH =
-  ( KnownNat2 kW kH, KnownNat2 dW dH, KnownNat2 pW pH
-  , KnownNat2 h w
+  ( KnownNatDim2 kW kH, KnownNatDim2 dW dH, KnownNatDim2 pW pH
+  , KnownNatDim2 h w
   , (kW > 0) ~ 'True
   , (dW > 0) ~ 'True
   , (kH > 0) ~ 'True
   , (dH > 0) ~ 'True
-  , ((Div (h + 2*pH - kH) dH) + 1) > 0 ~ 'True
-  , ((Div (w + 2*pW - kW) dW) + 1) > 0 ~ 'True
+  , ((Div (h + (2*pH) - kH) dH) + 1) > 0 ~ 'True
+  , ((Div (w + (2*pW) - kW) dW) + 1) > 0 ~ 'True
   )
 
+-- | Applies a 2D convolution over an input image composed of several input planes. The input tensor in forward(input) is expected to be a 3D tensor (nInputPlane x height x width).
 conv2dMM_forward
   :: SpatialConvolutionC h w kW kH dW dH pW pH
-  => oh ~ ((Div (h + 2*pH - kH) dH) + 1)
-  => ow ~ ((Div (w + 2*pW - kW) dW) + 1)
+  => oh ~ ((Div (h + (2*pH) - kH) dH) + 1)
+  => ow ~ ((Div (w + (2*pW) - kW) dW) + 1)
   => Tensor '[f,h,w]     -- ^ input: f stands for "features" or "input plane"
   -> Conv2d f o kW kH    -- ^ conv2d state
-  -> Tensor d            -- ^ finput
-  -> Tensor d            -- ^ fgradInput
-  -> Param2d dW dH -- ^ step of the convolution in width and height dimensions. C-default is 1 for both.
-  -> Param2d pW pH -- ^ zero padding to the input plane for width and height. (kW-1)/2 is often used.
-                   -- C-default is 0 for both.
-  -> IO (Tensor '[o, oh, ow])
-conv2dMM_forward inp conv t3 t4 step pad = do
-  out <- empty
+  -> Param2d dW dH       -- ^ step of the convolution in width and height dimensions.
+                         --   C-default is 1 for both.
+  -> Param2d pW pH       -- ^ zero padding to the input plane for width and height.
+                         --   (kW-1)/2 is often used. C-default is 0 for both.
+  -> IO (Tensor '[o, oh, ow], Tensor '[kW*kH*f, oh * ow], Tensor '[oh, ow])
+conv2dMM_forward = _conv2dMM_forward
+
+-- | 'conv2dMM_forward' with a batch dimension
+conv2dMM_forwardBatch
+  :: SpatialConvolutionC h w kW kH dW dH pW pH
+  => oh ~ ((Div (h + (2*pH) - kH) dH) + 1)
+  => ow ~ ((Div (w + (2*pW) - kW) dW) + 1)
+  => Tensor '[b,f,h,w]     -- ^ input: f stands for "features" or "input plane"
+  -> Conv2d f o kW kH      -- ^ conv2d state
+  -> Param2d dW dH         -- ^ step of the convolution in width and height dimensions.
+                           --   C-default is 1 for both.
+  -> Param2d pW pH         -- ^ zero padding to the input plane for width and height.
+                           --   (kW-1)/2 is often used. C-default is 0 for both.
+  -> IO (Tensor '[b,o, oh, ow], Tensor '[kW*kH*f, oh * ow], Tensor '[oh, ow])
+conv2dMM_forwardBatch = _conv2dMM_forward
+
+-- | helper of forward functions with unspecified dimensions
+_conv2dMM_forward
+  :: (KnownNatDim2 kW kH, KnownNatDim2 dW dH, KnownNatDim2 pW pH)
+  => Tensor din
+  -> Conv2d f o kW kH
+  -> Param2d dW dH
+  -> Param2d pW pH
+  -> IO (Tensor dout, Tensor dout', Tensor dout'')
+_conv2dMM_forward inp conv step pad = do
+
+  -- FIXME: we have tucked away the fgradInput which might be a useful
+  -- optimization we are not taking advantage of.
+  (out, finput, fgradInput) <- (,,) <$> empty <*> empty <*> empty
   Dynamic._spatialConvolutionMM_updateOutput
     (asDynamic inp) (asDynamic out)
     (asDynamic (weights conv)) (asDynamic (bias conv))
-    (asDynamic t3) (asDynamic t4)
-    (kernelWidth conv) (kernelHeight conv)
-    (paramW step) (paramH step)
-    (paramW pad) (paramH pad)
-  pure out
-
+    (asDynamic finput) (asDynamic fgradInput)
+    (kernel2d conv)
+    (param2d step)
+    (param2d pad)
+  pure (out, finput, fgradInput)
 
 _spatialConvolutionMM_updateGradInput
   :: Tensor d   -- ^ input

@@ -26,6 +26,8 @@ main = do
   directFunctionCalls1d
   usingBackpack1d
 
+  directFunctionCalls2d
+
 usingBackpack1d :: IO ()
 usingBackpack1d = do
   conv <- initConv1d params
@@ -83,16 +85,25 @@ directFunctionCalls1d = do
 
 directFunctionCalls2d :: IO ()
 directFunctionCalls2d = do
-  conv :: Conv2d 1 10 3 3 <- initConv2d
+  conv :: Conv2d 2 3 3 3 <- initConv2d
 
   -- do a forward pass
-  Just (input      :: Tensor '[1, 2, 3]) <- runMaybeT getCosVec
-  Just (finput     :: Tensor '[4, 5, 6]) <- runMaybeT getCosVec
-  Just (fgradInput :: Tensor '[4, 5, 6]) <- runMaybeT getCosVec
+  Just (input :: Tensor '[2, 7, 13]) <- runMaybeT getCosVec
 
-  o1 :: Tensor '[3, 3, 2] <-
-    conv2dMM_forward input conv finput fgradInput (Param2d :: Param2d 1 1) (Param2d :: Param2d 1 1)
-  shape o1 >>= print
+  (o1, finput1, fgradInput1) <-
+    conv2dMM_forward input conv (Param2d :: Param2d 1 1) (Param2d :: Param2d 2 2)
+  (,,) <$> shape o1 <*> shape finput1 <*> shape fgradInput1 >>= print
+  print (finput1 Torch.!! 1 :: Tensor '[])
+
+  -- do a forward pass with a batch dimension
+  Just (binput :: Tensor '[5, 2, 7, 13]) <- runMaybeT getCosVec
+
+  (o2, finput2, fgradInput2) <-
+    conv2dMM_forwardBatch binput conv (Param2d :: Param2d 1 1) (Param2d :: Param2d 2 2)
+  (,,) <$> shape o2 <*> shape finput2 <*> shape fgradInput2 >>= print
+  print (finput2 Torch.!! 1 :: Tensor '[])
+  print fgradInput2
+
 
   -- -- initialize a gradient input
   -- gw :: Tensor '[Sequence2, Output] <- constant 1

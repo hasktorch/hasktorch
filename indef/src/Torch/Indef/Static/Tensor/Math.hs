@@ -27,7 +27,7 @@ trace r = Dynamic.trace (asDynamic r)
 _arange r = Dynamic._arange (asDynamic r)
 _range r = Dynamic._range (asDynamic r)
 
-constant :: (Dimensions d) => HsReal -> IO (Tensor d)
+constant :: Dimensions d => HsReal -> IO (Tensor d)
 constant v = do
   t <- new
   _fill t v
