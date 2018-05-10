@@ -80,7 +80,7 @@ directFunctionCalls1d = Utils.section "Directly calling functions" $ do
   print o1'
 
   -- do a backward pass for grad weights
-  conv' <- conv1d_backwardGradParams conv input gout 0.5
+  conv' <- conv1d_updGradParams conv input gout 0.5
   print conv'
   print (NN1.weights conv')
   print (NN1.bias conv')
@@ -103,7 +103,7 @@ directFunctionCalls1d = Utils.section "Directly calling functions" $ do
   shape o2' >>= print
 
   -- do a backward pass for grad weights
-  conv'' <- conv1d_backwardGradParamsBatch conv binput bgout 0.5
+  conv'' <- conv1d_updGradParamsBatch conv binput bgout 0.5
 
   Utils.printFullConv1d "ensure that the last weight update is pure" conv''
 

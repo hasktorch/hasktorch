@@ -26,6 +26,7 @@ import Torch.Dimensions
 
 import Foreign.C.Types
 import Torch.Sig.Types.NN
+import Torch.Indef.Dynamic.Tensor (empty)
 import qualified Torch.Sig.NN as Sig
 
 import Torch.Indef.Types
@@ -187,46 +188,79 @@ _temporalUpSamplingLinear_updateGradInput           :: Dynamic -> Dynamic -> Int
 _batchNormalization_updateOutput                    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> Double -> IO ()
 _batchNormalization_backward                        :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> Double -> IO ()
 
-_spatialConvolutionMM_updateOutput
+-- | dynamic spatial convolution
+spatialConvolutionMM_updateOutput
   :: Dynamic    -- ^ input
-  -> Dynamic    -- ^ output
   -> Dynamic    -- ^ 3D weight tensor (connTable:size(1) x kH x kW) 
-  -> Dynamic    -- ^ 1D bias tensor (nOutputPlane) 
-  -> Dynamic    -- ^ finput
-  -> Dynamic    -- ^ fgradInput
+  -> Dynamic    -- ^ 1D bias tensor (nOutputPlane)
   -> (Int, Int) -- ^ (kW, kH) kernel height and width
   -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
   -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
-  -> IO ()
-_spatialConvolutionMM_updateOutput t0 t1 t2 t3 t4 t5 (kW, kH) (dW, dH) (pW, pH) =
-  with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-   with3DynamicState t3 t4 t5 $ \_ t3' t4' t5' ->
-    Sig.c_SpatialConvolutionMM_updateOutput s' t0' t1' t2' t3' t4' t5'
+  -> IO Dynamic -- ^ output
+spatialConvolutionMM_updateOutput inp weight bias (kW, kH) (dW, dH) (pW, pH) = do
+  -- these are temporary placeholders and do not require dimensions as internal torch code will resize and fill them. See:
+  -- https://github.com/zdevito/ATen/blob/682cb389db5a318539ff03f031bf896a43a71b13/aten/src/THCUNN/generic/SpatialConvolutionMM.cu#L141
+  --
+  -- TODO: someone needs to verify that this is all above-board and we aren't missing out on some optimization tricks.
+  columns <- empty   -- ^ temporary columns
+  ones    <- empty   -- ^ buffer of ones for bias accumulation
+
+  -- This one as well:
+  out     <- empty   -- ^ output
+  with3DynamicState inp out weight $ \s' inp' out' weight' ->
+   with3DynamicState bias columns ones $ \_ bias' columns' ones' ->
+    Sig.c_SpatialConvolutionMM_updateOutput s' inp' out' weight' bias' columns' ones'
       (fromIntegral kW) (fromIntegral kH)
       (fromIntegral dW) (fromIntegral dH)
       (fromIntegral pW) (fromIntegral pH)
+  pure out
 
-_spatialConvolutionMM_updateGradInput
+spatialConvolutionMM_updateGradInput
   :: Dynamic    -- ^ input
   -> Dynamic    -- ^ gradOutput
-  -> Dynamic    -- ^ gradInput
+  -- -> Dynamic    -- ^ gradInput
   -> Dynamic    -- ^ weight
-  -> Dynamic    -- ^ finput
-  -> Dynamic    -- ^ fgradInput
+  -- -> Dynamic    -- ^ columns
+  -- -> Dynamic    -- ^ ones
   -> (Int, Int) -- ^ (kW, kH) kernel height and width
   -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions
   -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
-  -> IO ()
-_spatialConvolutionMM_updateGradInput t0 t1 t2 t3 t4 t5 (kW, kH) (dW, dH) (pW, pH) =
-  with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-   with3DynamicState t3 t4 t5 $ \_ t3' t4' t5' ->
-    Sig.c_SpatialConvolutionMM_updateOutput s' t0' t1' t2' t3' t4' t5'
+  -> IO Dynamic
+spatialConvolutionMM_updateGradInput inp gout w (kW, kH) (dW, dH) (pW, pH) = do
+  -- columns and ones are reshaped (and I'm not even sure ones is used):
+  -- https://github.com/zdevito/ATen/blob/682cb389db5a318539ff03f031bf896a43a71b13/aten/src/THCUNN/generic/SpatialConvolutionMM.cu#L294
+  (gin, columns, ones) <- (,,) <$> empty <*> empty <*> empty
+  with3DynamicState inp gout gin $ \s' inp' gout' gin' ->
+   with3DynamicState w columns ones $ \_ w' columns' ones' ->
+    Sig.c_SpatialConvolutionMM_updateOutput s' inp' gout' gin' w' columns' ones'
       (fromIntegral kW) (fromIntegral kH)
       (fromIntegral dW) (fromIntegral dH)
       (fromIntegral pW) (fromIntegral pH)
+  pure gin
+
+_spatialConvolutionMM_accGradParameters
+  :: Dynamic    -- ^ input
+  -> Dynamic    -- ^ gradOutput
+  -> Dynamic    -- ^ gradWeight
+  -> Dynamic    -- ^ gradBias
+  -- -> Dynamic    -- ^ columns
+  -- -> Dynamic    -- ^ ones
+  -> (Int, Int) -- ^ (kW, kH) kernel height and width
+  -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions
+  -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
+  -> Double
+  -> IO ()
+_spatialConvolutionMM_accGradParameters inp gout gweight gbias (kW, kH) (dW, dH) (pW, pH) scale = do
+  (columns, ones) <- (,) <$> empty <*> empty
+  with3DynamicState inp gout gweight $ \s' inp' gout' gweight' ->
+   with3DynamicState gbias columns ones $ \_ gbias' columns' ones' ->
+    Sig.c_SpatialConvolutionMM_accGradParameters s' inp' gout' gweight' gbias' columns' ones'
+      (fromIntegral kW) (fromIntegral kH)
+      (fromIntegral dW) (fromIntegral dH)
+      (fromIntegral pW) (fromIntegral pH)
+      (realToFrac scale)
 
 
-_spatialConvolutionMM_accGradParameters             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
 _spatialConvolutionLocal_updateOutput               :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 _spatialConvolutionLocal_updateGradInput            :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 _spatialConvolutionLocal_accGradParameters          :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> Double -> IO ()
@@ -370,7 +404,6 @@ _temporalRowConvolution_updateGradInput = ten6int3bool1 Sig.c_TemporalRowConvolu
 _temporalRowConvolution_accGradParameters = ten6int3bool1double1 Sig.c_TemporalRowConvolution_accGradParameters
 _sparseLinear_legacyAccGradParameters = ten6double2 Sig.c_SparseLinear_legacyAccGradParameters
 _sparseLinear_accGradParameters = ten6double2 Sig.c_SparseLinear_accGradParameters
-_spatialConvolutionMM_accGradParameters = ten6int6double1 Sig.c_SpatialConvolutionMM_accGradParameters
 _spatialConvolutionLocal_updateOutput = ten6int6long4 Sig.c_SpatialConvolutionLocal_updateOutput
 _spatialConvolutionLocal_updateGradInput = ten6int6long4 Sig.c_SpatialConvolutionLocal_updateGradInput
 _spatialConvolutionLocal_accGradParameters = ten6int6long4double1 Sig.c_SpatialConvolutionLocal_accGradParameters

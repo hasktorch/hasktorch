@@ -29,17 +29,17 @@ module Torch.Indef.Static.NN.Conv1d
   , conv1d
   , conv1d_forward
   , conv1d_backwardGradInput
-  , conv1d_backwardGradParams
+  , conv1d_updGradParams
 
   , conv1dBatch
   , conv1d_forwardBatch
   , conv1d_backwardGradInputBatch
-  , conv1d_backwardGradParamsBatch
+  , conv1d_updGradParamsBatch
 
   -- still need work:
   , _temporalRowConvolution_updateOutput
   , _temporalRowConvolution_updateGradInput
-  , _temporalRowConvolution_accGradParameters
+  , _temporalRowConvolution_updGradParameters
   ) where
 
 import Numeric.Backprop
@@ -128,7 +128,7 @@ conv1d lr = liftOp2 . op2 $ \c inp ->
       -> Tensor '[seq, o]
       -> IO (Conv1d f o kW dW, Tensor '[seq, f])
     runBack conv inp gout = (,)
-      <$> conv1d_backwardGradParams conv inp gout lr
+      <$> conv1d_updGradParams conv inp gout lr
       <*> conv1d_backwardGradInput conv inp gout
 
 -- | Backprop convolution function with batching
@@ -151,7 +151,7 @@ conv1dBatch lr = liftOp2 . op2 $ \c inp ->
       -> Tensor '[b, seq, o]
       -> IO (Conv1d f o kW dW, Tensor '[b, seq, f])
     runBack conv inp gout = (,)
-      <$> conv1d_backwardGradParamsBatch conv inp gout lr
+      <$> conv1d_updGradParamsBatch conv inp gout lr
       <*> conv1d_backwardGradInputBatch conv inp gout
 
 
@@ -185,14 +185,14 @@ conv1d_backwardGradInput = _conv1d_backwardGradInput
 -- WARNING: this is _pure_ which may be slow for large tensors.
 -- Speeding this up will be in active development as the need arises
 -- (see issue hasktorch/hasktorch#85)
-conv1d_backwardGradParams
+conv1d_updGradParams
   :: TemporalConvC s f kW dW o
   => Conv1d f o kW dW       -- ^ input state of conv1d (which includes weights and bias)
   -> Tensor '[s, f]         -- ^ input tensor
   -> Tensor '[s, o]         -- ^ output gradient
   -> Double                 -- ^ scale
   -> IO (Conv1d f o kW dW)  -- ^ gradient of (weights, bias)
-conv1d_backwardGradParams = _conv1d_backwardGradParams
+conv1d_updGradParams = _conv1d_updGradParams
 
 -------------------------------------------------------------------------------
 -- * Functions for temporal convolution with a batch dimension
@@ -218,8 +218,8 @@ conv1d_backwardGradInputBatch
   -> IO (Tensor '[b, s, f])       -- ^ output
 conv1d_backwardGradInputBatch = _conv1d_backwardGradInput
 
--- 'conv1d_backwardGradParams' with a batch dimension
-conv1d_backwardGradParamsBatch
+-- 'conv1d_updGradParams' with a batch dimension
+conv1d_updGradParamsBatch
   :: TemporalConvC s f kW dW o
   => KnownDim b
   => Conv1d f o kW dW             -- ^ conv1d state
@@ -227,7 +227,7 @@ conv1d_backwardGradParamsBatch
   -> Tensor '[b, s, o]            -- ^ grad output
   -> Double                       -- ^ scale
   -> IO (Conv1d f o kW dW)        -- ^ output
-conv1d_backwardGradParamsBatch = _conv1d_backwardGradParams
+conv1d_updGradParamsBatch = _conv1d_updGradParams
 
 
 
@@ -263,7 +263,7 @@ _conv1d_backwardGradInput conv input gradOut = do
   pure gradIn
 
 -- | backward pass, computing the weight updates, without locking down the tensor dimensions
-_conv1d_backwardGradParams
+_conv1d_updGradParams
   :: forall f o kW dW inputDim gOutDim
   . (KnownNat4 f o kW dW, Dimensions2 inputDim gOutDim)
   => Conv1d f o kW dW       -- ^ input state of conv1d (which includes weights and bias)
@@ -271,7 +271,7 @@ _conv1d_backwardGradParams
   -> Tensor gOutDim         -- ^ output gradient
   -> Double                 -- ^ scale
   -> IO (Conv1d f o kW dW)  -- ^ gradient of (weights, bias)
-_conv1d_backwardGradParams c@(Conv1d (w, b)) input gout scale = do
+_conv1d_updGradParams c@(Conv1d (w, b)) input gout scale = do
   -- FIXME: this is _not going to scale well_ and coming up with a mutable version of Conv layers will be nessecary
   w' <- copy w
   b' <- copy b
@@ -291,7 +291,7 @@ _temporalRowConvolution_updateGradInput :: Tensor d -> Tensor d' -> Tensor d'' -
 _temporalRowConvolution_updateGradInput t0 t1 t2 t3 t4 t5 = Dynamic._temporalRowConvolution_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4) (asDynamic t5)
 
 -- | TODO
-_temporalRowConvolution_accGradParameters :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d -> Tensor d -> Int -> Int -> Int -> Bool -> Double -> IO ()
-_temporalRowConvolution_accGradParameters t0 t1 t2 t3 t4 t5 = Dynamic._temporalRowConvolution_accGradParameters (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4) (asDynamic t5)
+_temporalRowConvolution_updGradParameters :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d -> Tensor d -> Int -> Int -> Int -> Bool -> Double -> IO ()
+_temporalRowConvolution_updGradParameters t0 t1 t2 t3 t4 t5 = Dynamic._temporalRowConvolution_accGradParameters (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4) (asDynamic t5)
 
 
