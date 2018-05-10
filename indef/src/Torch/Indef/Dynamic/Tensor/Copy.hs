@@ -52,7 +52,7 @@ copy :: Dynamic -> IO Dynamic
 copy t = withDynamicState t $ \s' t' -> do
   target <- Sig.c_new s'
   Sig.c_resizeAs s' target t'
-  Sig.c_copy s' t' target
+  Sig.c_copy s' target t'
   mkDynamic s' target
 
 copyByte   = copyType B.c_new_ B.p_free   TH.byteDynamic Sig.c_copyByte

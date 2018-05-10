@@ -10,6 +10,7 @@
 -- Temporal (1D) Convolutions
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
@@ -27,14 +28,15 @@ module Torch.Indef.Static.NN.Conv1d
 
   , conv1d
   , conv1d_forward
-  , conv1d_backward
+  , conv1d_backwardGradInput
+  , conv1d_backwardGradParams
 
   , conv1dBatch
   , conv1d_forwardBatch
-  , conv1d_backwardBatch
+  , conv1d_backwardGradInputBatch
+  , conv1d_backwardGradParamsBatch
 
   -- still need work:
-  , _temporalConvolution_accGradParameters
   , _temporalRowConvolution_updateOutput
   , _temporalRowConvolution_updateGradInput
   , _temporalRowConvolution_accGradParameters
@@ -42,16 +44,34 @@ module Torch.Indef.Static.NN.Conv1d
 
 import Numeric.Backprop
 import Data.Kind (Type)
+import Data.List (intercalate)
 import System.IO.Unsafe
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Copy
 import Torch.Indef.Static.Tensor.Math
+import Torch.Indef.Static.Tensor.Math.CompareT
 import Torch.Indef.Static.NN.Backprop ()
 
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
 newtype Conv1d f o kW dW
   = Conv1d { getTensors :: (Tensor '[o, f*kW], Tensor '[o]) }
+
+instance
+  ( KnownNat f
+  , KnownNat o
+  , KnownNat kW
+  , KnownNat dW
+  ) => Show (Conv1d f o kW dW) where
+  show c = intercalate ","
+    [ "Conv1d ("
+    ++ "features: " ++ show (featureSize c)
+    , " output: "   ++ show (outputSize c)
+    , " kernel: "   ++ show (kernelWidth c)
+    , " step: "     ++ show (stepSize c)
+    ++ ")"
+    ]
 
 instance (KnownDim (f*kW), KnownNatDim o) => Backprop (Conv1d f o kW dW) where
   zero = const . Conv1d . unsafePerformIO $ (,) <$> constant 0 <*> constant 0
@@ -95,43 +115,128 @@ conv1d
   .  Reifies s W
   => KnownDim (f*kW)
   => TemporalConvC seq f kW dW o
-  => BVar s (Conv1d f o kW dW)
+  => Double
+  -> BVar s (Conv1d f o kW dW)
   -> BVar s (Tensor '[seq, f])
   -> BVar s (Tensor '[seq, o])
-conv1d = liftOp2 . op2 $ \c inp ->
-  (unsafePerformIO $ conv1d_forward inp c, \o -> unsafePerformIO $ runBack c inp o)
+conv1d lr = liftOp2 . op2 $ \c inp ->
+  (unsafePerformIO $ conv1d_forward c inp, unsafePerformIO . runBack c inp)
   where
-    runBack :: Conv1d f o kW dW -> Tensor '[seq, f] -> Tensor '[seq, o] -> IO (Conv1d f o kW dW, Tensor '[seq, f])
-    runBack conv inp gout = do
-      gin :: Tensor '[seq, f] <- conv1d_backward inp gout conv
-      pure (conv, gin)
+    runBack
+      :: Conv1d f o kW dW
+      -> Tensor '[seq, f]
+      -> Tensor '[seq, o]
+      -> IO (Conv1d f o kW dW, Tensor '[seq, f])
+    runBack conv inp gout = (,)
+      <$> conv1d_backwardGradParams conv inp gout lr
+      <*> conv1d_backwardGradInput conv inp gout
 
 -- | Backprop convolution function with batching
 conv1dBatch
-  :: Reifies s W
-  => TemporalConvC seq f kW dW o
+  :: forall s seq f kW dW o b
+  .  Reifies s W
   => KnownDim b
-  => Conv1d f o kW dW
+  => KnownDim (f*kW)
+  => TemporalConvC seq f kW dW o
+  => Double
+  -> BVar s (Conv1d f o kW dW)
   -> BVar s (Tensor '[b, seq, f])
   -> BVar s (Tensor '[b, seq, o])
-conv1dBatch c = liftOp1 . op1 $ \inp ->
-  (unsafePerformIO $ conv1d_forwardBatch inp c, \out -> unsafePerformIO $ conv1d_backwardBatch inp out c)
+conv1dBatch lr = liftOp2 . op2 $ \c inp ->
+  (unsafePerformIO $ conv1d_forwardBatch c inp, \o -> unsafePerformIO $ runBack c inp o)
+  where
+    runBack
+      :: Conv1d f o kW dW
+      -> Tensor '[b, seq, f]
+      -> Tensor '[b, seq, o]
+      -> IO (Conv1d f o kW dW, Tensor '[b, seq, f])
+    runBack conv inp gout = (,)
+      <$> conv1d_backwardGradParamsBatch conv inp gout lr
+      <*> conv1d_backwardGradInputBatch conv inp gout
+
 
 -------------------------------------------------------------------------------
+-- * Functions for temporal convolution
 
--- | If the input sequence is a 2D tensor of dimension (nInputFrame x inputFrameSize), the
--- output sequence will be (nOutputFrame x outputFrameSize) where
+-- | If the input sequence is a 2D tensor of dimension
+-- (nInputFrame x inputFrameSize), the output sequence will be
+-- (nOutputFrame x outputFrameSize) where
 --
 --    nOutputFrame = (nInputFrame - kW) / dW + 1
-conv1d_forward :: TemporalConvC s f kW dW o => Tensor '[s, f] -> Conv1d f o kW dW -> IO (Tensor '[s, o])
+--
+conv1d_forward
+  :: TemporalConvC s f kW dW o
+  => Conv1d f o kW dW
+  -> Tensor '[s, f]
+  -> IO (Tensor '[s, o])
 conv1d_forward = _conv1d_forward
 
--- | Applies a 1D convolution over an input sequence composed of nInputFrame frames. The input tensor in forward(input) is expected to be a 2D tensor (nInputFrame x inputFrameSize) or a 3D tensor (nBatchFrame x nInputFrame x inputFrameSize).
-conv1d_forwardBatch :: TemporalConvC s f kW dW o => Tensor '[b,s,f] -> Conv1d f o kW dW -> IO (Tensor '[b,s,o])
+-- | backward pass, computing the gradient input
+conv1d_backwardGradInput
+  :: TemporalConvC seq f kW dW o
+  => Conv1d f o kW dW             -- ^ conv1d state
+  -> Tensor '[seq, f]             -- ^ input: s for 'sequence dimension', f for 'feature dimension'
+  -> Tensor '[seq, o]             -- ^ grad output
+  -> IO (Tensor '[seq, f])        -- ^ grad input
+conv1d_backwardGradInput = _conv1d_backwardGradInput
+
+-- | backward pass, computing the weight and bias parameters
+--
+-- WARNING: this is _pure_ which may be slow for large tensors.
+-- Speeding this up will be in active development as the need arises
+-- (see issue hasktorch/hasktorch#85)
+conv1d_backwardGradParams
+  :: TemporalConvC s f kW dW o
+  => Conv1d f o kW dW       -- ^ input state of conv1d (which includes weights and bias)
+  -> Tensor '[s, f]         -- ^ input tensor
+  -> Tensor '[s, o]         -- ^ output gradient
+  -> Double                 -- ^ scale
+  -> IO (Conv1d f o kW dW)  -- ^ gradient of (weights, bias)
+conv1d_backwardGradParams = _conv1d_backwardGradParams
+
+-------------------------------------------------------------------------------
+-- * Functions for temporal convolution with a batch dimension
+
+-- | Applies a 1D convolution over an input sequence composed of nInputFrame
+-- frames. The input tensor in forward(input) is expected to be a 2D tensor
+-- (nInputFrame x inputFrameSize) or a 3D tensor
+-- (nBatchFrame x nInputFrame x inputFrameSize).
+conv1d_forwardBatch
+  :: TemporalConvC s f kW dW o
+  => Conv1d f o kW dW
+  -> Tensor '[b,s,f]
+  -> IO (Tensor '[b,s,o])
 conv1d_forwardBatch = _conv1d_forward
 
-_conv1d_forward :: (KnownNat4 f o kW dW) => Tensor d -> Conv1d f o kW dW -> IO (Tensor d')
-_conv1d_forward inp conv = do
+-- 'conv1d_backwardGradInput' with a batch dimension
+conv1d_backwardGradInputBatch
+  :: TemporalConvC s f kW dW o
+  => KnownDim b
+  => Conv1d f o kW dW             -- ^ conv1d state
+  -> Tensor '[b, s, f]            -- ^ input: s for 'sequence dimension', f for 'feature dimension'
+  -> Tensor '[b, s, o]            -- ^ grad output
+  -> IO (Tensor '[b, s, f])       -- ^ output
+conv1d_backwardGradInputBatch = _conv1d_backwardGradInput
+
+-- 'conv1d_backwardGradParams' with a batch dimension
+conv1d_backwardGradParamsBatch
+  :: TemporalConvC s f kW dW o
+  => KnownDim b
+  => Conv1d f o kW dW             -- ^ conv1d state
+  -> Tensor '[b, s, f]            -- ^ input: s for 'sequence dimension', f for 'feature dimension'
+  -> Tensor '[b, s, o]            -- ^ grad output
+  -> Double                       -- ^ scale
+  -> IO (Conv1d f o kW dW)        -- ^ output
+conv1d_backwardGradParamsBatch = _conv1d_backwardGradParams
+
+
+
+-------------------------------------------------------------------------------
+-- * helper functions
+
+-- | forward pass without locking down the tensor dimensions
+_conv1d_forward :: (KnownNat4 f o kW dW) => Conv1d f o kW dW -> Tensor d -> IO (Tensor d')
+_conv1d_forward conv inp = do
   out <- empty
   Dynamic._temporalConvolution_updateOutput
     (asDynamic inp) (asDynamic out)
@@ -140,39 +245,40 @@ _conv1d_forward inp conv = do
     (featureSize conv) (outputSize conv)
   pure out
 
-conv1d_backward
-  :: TemporalConvC seq f kW dW o
-  => Tensor '[seq, f]                         -- ^ input: s for 'sequence dimension', f for 'feature dimension'
-  -> Tensor '[seq, o]                         -- ^ grad output
-  -> Conv1d f o kW dW                         -- ^ conv1d state
-  -> IO (Tensor '[seq, f])                    -- ^ grad input
-conv1d_backward = _conv1d_backwardBatch
-
-conv1d_backwardBatch
-  :: TemporalConvC s f kW dW o
-  => Tensor '[b, s, f]                      -- ^ input: s for 'sequence dimension', f for 'feature dimension'
-  -> Tensor '[b, s, o]                      -- ^ grad output
-  -> Conv1d f o kW dW                       -- ^ conv1d state
-  -> IO (Tensor '[b, s, f])                 -- ^ output
-conv1d_backwardBatch = _conv1d_backwardBatch
-
-_conv1d_backwardBatch
-  :: forall f o kW dW d d'
+-- | backward pass, computing the gradient input, without locking down the tensor dimensions
+_conv1d_backwardGradInput
+  :: forall f o kW dW inputDim goutDim
   . (KnownNat4 f o kW dW)
-  => Tensor d
-  -> Tensor d'
-  -> Conv1d f o kW dW
-  -> IO (Tensor d)
-_conv1d_backwardBatch input gradOut conv = do
+  => Dimensions2 inputDim goutDim
+  => Conv1d f o kW dW
+  -> Tensor inputDim
+  -> Tensor goutDim
+  -> IO (Tensor inputDim)
+_conv1d_backwardGradInput conv input gradOut = do
   gradIn <- empty
   Dynamic._temporalConvolution_updateGradInput
-    (asDynamic input) (asDynamic gradOut) (asDynamic gradIn) (asDynamic (weights conv))
+    (asDynamic input)  (asDynamic gradOut)
+    (asDynamic gradIn) (asDynamic (weights conv))
     (kernelWidth conv) (stepSize conv)
   pure gradIn
 
--- | TODO
-_temporalConvolution_accGradParameters :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Int -> Int -> Double -> IO ()
-_temporalConvolution_accGradParameters t0 t1 t2 t3 = Dynamic._temporalConvolution_accGradParameters (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3)
+-- | backward pass, computing the weight updates, without locking down the tensor dimensions
+_conv1d_backwardGradParams
+  :: forall f o kW dW inputDim gOutDim
+  . (KnownNat4 f o kW dW, Dimensions2 inputDim gOutDim)
+  => Conv1d f o kW dW       -- ^ input state of conv1d (which includes weights and bias)
+  -> Tensor inputDim        -- ^ input tensor
+  -> Tensor gOutDim         -- ^ output gradient
+  -> Double                 -- ^ scale
+  -> IO (Conv1d f o kW dW)  -- ^ gradient of (weights, bias)
+_conv1d_backwardGradParams c@(Conv1d (w, b)) input gout scale = do
+  -- FIXME: this is _not going to scale well_ and coming up with a mutable version of Conv layers will be nessecary
+  w' <- copy w
+  b' <- copy b
+  Dynamic._temporalConvolution_accGradParameters
+    (asDynamic input) (asDynamic gout) (asDynamic w') (asDynamic b')
+    (kernelWidth c) (stepSize c) scale
+  pure $ Conv1d (w', b')
 
 -- ========================================================================= --
 

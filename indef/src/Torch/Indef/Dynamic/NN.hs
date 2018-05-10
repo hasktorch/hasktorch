@@ -1,3 +1,25 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Dynamic.NN
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- NN backpack API which is _not recommended to be used directly_. This package
+-- is just a wrapper around the backpack signatures of Torch's C-based NN
+-- library.
+--
+-- Instead, use 'Torch.Indef.Static.NN' which includes an AD abstraction,
+-- simple forward- and backward- functions, and staticly-typed dimension-level
+-- checking.
+--
+-- This library will, over time, iterate into type-safe code -- but for the
+-- moment we hoist the safety into the dependent types, which is faster to
+-- iterate with and is semantically clearer for development (the errors take a
+-- bit of getting used to).
+-------------------------------------------------------------------------------
 module Torch.Indef.Dynamic.NN where
 
 import Torch.Dimensions
@@ -106,9 +128,55 @@ _tanh_updateOutput         :: Dynamic -> Dynamic -> IO ()
 _tanh_updateGradInput      :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _threshold_updateOutput    :: Dynamic -> Dynamic -> Double -> Double -> Bool -> IO ()
 _threshold_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Double -> Double -> Bool -> IO ()
-_temporalConvolution_updateOutput                   :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
-_temporalConvolution_updateGradInput                :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> IO ()
-_temporalConvolution_accGradParameters              :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Double -> IO ()
+
+_temporalConvolution_updateOutput
+  :: Dynamic     -- ^ input
+  -> Dynamic     -- ^ output -- this is the mutated return value
+  -> Dynamic     -- ^ 2d weight tensor
+  -> Dynamic     -- ^ 1d bias tensor
+  -> Int         -- ^ kernel width
+  -> Int         -- ^ step size
+  -> Int         -- ^ feature size
+  -> Int         -- ^ output size
+  -> IO ()
+_temporalConvolution_updateOutput t0 t1 t2 t3 i0 i1 i2 i3 = 
+  with2DynamicState t0 t1 $ \s' t0' t1' ->
+    with2DynamicState t2 t3 $ \_  t2' t3' ->
+      Sig.c_TemporalConvolution_updateOutput s' t0' t1' t2' t3'
+        (fromIntegral i0) (fromIntegral i1)
+        (fromIntegral i2) (fromIntegral i3)
+
+_temporalConvolution_updateGradInput
+  :: Dynamic     -- ^ input
+  -> Dynamic     -- ^ grad output
+  -> Dynamic     -- ^ grad input -- this is the mutated return value
+  -> Dynamic     -- ^ weights
+  -> Int         -- ^ kernel width
+  -> Int         -- ^ step size
+  -> IO ()
+_temporalConvolution_updateGradInput t0 t1 t2 t3 i0 i1 =
+  with2DynamicState t0 t1 $ \s' t0' t1' ->
+    with2DynamicState t2 t3 $ \_  t2' t3' ->
+      Sig.c_TemporalConvolution_updateGradInput s' t0' t1' t2' t3'
+        (fromIntegral i0) (fromIntegral i1)
+
+
+_temporalConvolution_accGradParameters
+  :: Dynamic   -- ^ input
+  -> Dynamic   -- ^ grad output
+  -> Dynamic   -- ^ grad weight -- this is a mutated argument and torch will accumulate this gradient
+  -> Dynamic   -- ^ grad bias -- this is a mutated argument and torch will accumulate this gradient
+  -> Int       -- ^ kernel width
+  -> Int       -- ^ step size
+  -> Double    -- ^ scale
+  -> IO ()
+_temporalConvolution_accGradParameters t0 t1 t2 t3 i0 i1 scale =
+  with2DynamicState t0 t1 $ \s' t0' t1' ->
+    with2DynamicState t2 t3 $ \_  t2' t3' ->
+      Sig.c_TemporalConvolution_accGradParameters s' t0' t1' t2' t3'
+        (fromIntegral i0) (fromIntegral i1)
+        (realToFrac scale)
+
 _temporalRowConvolution_updateOutput                :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Bool -> IO ()
 _temporalRowConvolution_updateGradInput             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Bool -> IO ()
 _temporalRowConvolution_accGradParameters           :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Bool -> Double -> IO ()
@@ -138,7 +206,26 @@ _spatialConvolutionMM_updateOutput t0 t1 t2 t3 t4 t5 (kW, kH) (dW, dH) (pW, pH) 
       (fromIntegral dW) (fromIntegral dH)
       (fromIntegral pW) (fromIntegral pH)
 
-_spatialConvolutionMM_updateGradInput               :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+_spatialConvolutionMM_updateGradInput
+  :: Dynamic    -- ^ input
+  -> Dynamic    -- ^ gradOutput
+  -> Dynamic    -- ^ gradInput
+  -> Dynamic    -- ^ weight
+  -> Dynamic    -- ^ finput
+  -> Dynamic    -- ^ fgradInput
+  -> (Int, Int) -- ^ (kW, kH) kernel height and width
+  -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions
+  -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
+  -> IO ()
+_spatialConvolutionMM_updateGradInput t0 t1 t2 t3 t4 t5 (kW, kH) (dW, dH) (pW, pH) =
+  with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+   with3DynamicState t3 t4 t5 $ \_ t3' t4' t5' ->
+    Sig.c_SpatialConvolutionMM_updateOutput s' t0' t1' t2' t3' t4' t5'
+      (fromIntegral kW) (fromIntegral kH)
+      (fromIntegral dW) (fromIntegral dH)
+      (fromIntegral pW) (fromIntegral pH)
+
+
 _spatialConvolutionMM_accGradParameters             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
 _spatialConvolutionLocal_updateOutput               :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 _spatialConvolutionLocal_updateGradInput            :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
@@ -250,7 +337,6 @@ _rReLU_updateGradInput = ten4double2bool2 Sig.c_RReLU_updateGradInput
 _threshold_updateGradInput = ten3double2bool1 Sig.c_Threshold_updateGradInput
 _logSoftMax_updateGradInput = ten4dim1 Sig.c_LogSoftMax_updateGradInput
 _softMax_updateGradInput = ten4dim1 Sig.c_SoftMax_updateGradInput
-_temporalConvolution_accGradParameters = ten4int2double1 Sig.c_TemporalConvolution_accGradParameters
 _spatialSubSampling_updateOutput = ten4int4 Sig.c_SpatialSubSampling_updateOutput
 _spatialSubSampling_updateGradInput = ten4int4 Sig.c_SpatialSubSampling_updateGradInput
 _spatialSubSampling_accGradParameters = ten4int4double1 Sig.c_SpatialSubSampling_accGradParameters
@@ -269,7 +355,6 @@ _gatedLinear_updateOutput = ten2int1 Sig.c_GatedLinear_updateOutput
 _spatialUpSamplingNearest_updateOutput = ten2int1 Sig.c_SpatialUpSamplingNearest_updateOutput
 _spatialUpSamplingBilinear_updateOutput = ten2int2 Sig.c_SpatialUpSamplingBilinear_updateOutput
 _spatialAdaptiveAveragePooling_updateOutput = ten2int2 Sig.c_SpatialAdaptiveAveragePooling_updateOutput
-_temporalConvolution_updateGradInput = ten4int2 Sig.c_TemporalConvolution_updateGradInput
 _temporalUpSamplingLinear_updateGradInput = ten2int4 Sig.c_TemporalUpSamplingLinear_updateGradInput
 _spatialUpSamplingBilinear_updateGradInput = ten2int6 Sig.c_SpatialUpSamplingBilinear_updateGradInput
 _volumetricConvolution_updateGradInput = ten5int6 Sig.c_VolumetricConvolution_updateGradInput
@@ -277,7 +362,6 @@ _spatialAveragePooling_updateOutput = ten2int6bool2 Sig.c_SpatialAveragePooling_
 _volumetricAveragePooling_updateOutput = ten2int9bool2 Sig.c_VolumetricAveragePooling_updateOutput
 _spatialAveragePooling_updateGradInput = ten3int6bool2 Sig.c_SpatialAveragePooling_updateGradInput
 _volumetricAveragePooling_updateGradInput = ten3int9bool2 Sig.c_VolumetricAveragePooling_updateGradInput
-_temporalConvolution_updateOutput = ten4int4 Sig.c_TemporalConvolution_updateOutput
 _spatialDilatedConvolution_updateGradInput = ten5int8 Sig.c_SpatialDilatedConvolution_updateGradInput
 _spatialFullConvolution_updateGradInput = ten5int8 Sig.c_SpatialFullConvolution_updateGradInput
 _spatialFullDilatedConvolution_updateGradInput = ten5int10 Sig.c_SpatialFullDilatedConvolution_updateGradInput
@@ -286,7 +370,6 @@ _temporalRowConvolution_updateGradInput = ten6int3bool1 Sig.c_TemporalRowConvolu
 _temporalRowConvolution_accGradParameters = ten6int3bool1double1 Sig.c_TemporalRowConvolution_accGradParameters
 _sparseLinear_legacyAccGradParameters = ten6double2 Sig.c_SparseLinear_legacyAccGradParameters
 _sparseLinear_accGradParameters = ten6double2 Sig.c_SparseLinear_accGradParameters
-_spatialConvolutionMM_updateGradInput = ten6int6 Sig.c_SpatialConvolutionMM_updateGradInput
 _spatialConvolutionMM_accGradParameters = ten6int6double1 Sig.c_SpatialConvolutionMM_accGradParameters
 _spatialConvolutionLocal_updateOutput = ten6int6long4 Sig.c_SpatialConvolutionLocal_updateOutput
 _spatialConvolutionLocal_updateGradInput = ten6int6long4 Sig.c_SpatialConvolutionLocal_updateGradInput

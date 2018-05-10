@@ -146,6 +146,10 @@ executable convolutions
   default-language: Haskell2010
   default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+  other-modules:
+      Utils
+    , Conv1d
+    -- , Conv2d
   build-depends:
       base >=4.7 && <5
     , backprop >= 0.2
