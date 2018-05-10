@@ -3,6 +3,8 @@
 module Torch.Double (module X) where
 
 import Torch.Types.TH as X
+import Torch.Double.NN as X
+
 import Torch.Indef.Double.Types as X hiding (storage)
 import Torch.Indef.Double.Index as X
 

@@ -1,6 +1,8 @@
 module Torch.Cuda.Double (module X) where
 
 import Torch.Types.THC as X
+import Torch.Cuda.Double.NN as X
+
 import Torch.Indef.Cuda.Double.Types as X hiding (storage)
 import Torch.Indef.Cuda.Double.Index as X
 
@@ -22,7 +24,6 @@ import Torch.Indef.Cuda.Double.Tensor.TopK as X
 
 import Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Signed as X
 
-import Torch.Indef.Cuda.Double.NN as X
 import Torch.Indef.Cuda.Double.Tensor.Math.Blas as X
 import Torch.Indef.Cuda.Double.Tensor.Math.Floating as X
 import Torch.Indef.Cuda.Double.Tensor.Math.Lapack as X

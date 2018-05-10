@@ -557,6 +557,20 @@ library
     , Torch.Double.Dynamic
     , Torch.Double.Storage
 
+  reexported-modules:
+       Torch.Double.NN
+     , Torch.Double.NN.Activation
+     , Torch.Double.NN.Backprop
+     , Torch.Double.NN.Conv1d
+     , Torch.Double.NN.Conv2d
+     , Torch.Double.NN.Criterion
+     , Torch.Double.NN.Layers
+     , Torch.Double.NN.Math
+     , Torch.Double.NN.Padding
+     , Torch.Double.NN.Pooling
+     , Torch.Double.NN.Sampling
+
+
   mixins:
       hasktorch-indef-floating
         (Torch.Indef.Storage                      as Torch.Indef.Double.Storage
@@ -619,6 +633,18 @@ library
 
         ,Torch.Indef.Index as Torch.Indef.Double.Index
         ,Torch.Indef.Types as Torch.Indef.Double.Types
+
+        ,Torch.Indef.Static.NN               as Torch.Double.NN
+        ,Torch.Indef.Static.NN.Activation    as Torch.Double.NN.Activation
+        ,Torch.Indef.Static.NN.Backprop      as Torch.Double.NN.Backprop
+        ,Torch.Indef.Static.NN.Conv1d        as Torch.Double.NN.Conv1d
+        ,Torch.Indef.Static.NN.Conv2d        as Torch.Double.NN.Conv2d
+        ,Torch.Indef.Static.NN.Criterion     as Torch.Double.NN.Criterion
+        ,Torch.Indef.Static.NN.Layers        as Torch.Double.NN.Layers
+        ,Torch.Indef.Static.NN.Math          as Torch.Double.NN.Math
+        ,Torch.Indef.Static.NN.Padding       as Torch.Double.NN.Padding
+        ,Torch.Indef.Static.NN.Pooling       as Torch.Double.NN.Pooling
+        ,Torch.Indef.Static.NN.Sampling      as Torch.Double.NN.Sampling
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -1053,6 +1079,19 @@ library
        , Torch.Cuda.Double.Dynamic
        , Torch.Cuda.Double.Storage
 
+    reexported-modules:
+         Torch.Cuda.Double.NN
+       , Torch.Cuda.Double.NN.Activation
+       , Torch.Cuda.Double.NN.Backprop
+       , Torch.Cuda.Double.NN.Conv1d
+       , Torch.Cuda.Double.NN.Conv2d
+       , Torch.Cuda.Double.NN.Criterion
+       , Torch.Cuda.Double.NN.Layers
+       , Torch.Cuda.Double.NN.Math
+       , Torch.Cuda.Double.NN.Padding
+       , Torch.Cuda.Double.NN.Pooling
+       , Torch.Cuda.Double.NN.Sampling
+
     mixins:
         hasktorch-indef-floating
           (Torch.Indef.Storage                      as Torch.Indef.Cuda.Double.Storage
@@ -1075,7 +1114,6 @@ library
           ,Torch.Indef.Static.Tensor.TopK           as Torch.Indef.Cuda.Double.Tensor.TopK
   
           ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Signed
-          ,Torch.Indef.Static.NN                              as Torch.Indef.Cuda.Double.NN
           ,Torch.Indef.Static.Tensor.Math.Blas                as Torch.Indef.Cuda.Double.Tensor.Math.Blas
           ,Torch.Indef.Static.Tensor.Math.Floating            as Torch.Indef.Cuda.Double.Tensor.Math.Floating
           ,Torch.Indef.Static.Tensor.Math.Lapack              as Torch.Indef.Cuda.Double.Tensor.Math.Lapack
@@ -1113,6 +1151,18 @@ library
           ,Torch.Indef.Dynamic.Tensor.Random.THC as Torch.Indef.Cuda.Dynamic.Double.Tensor.Random.THC
           ,Torch.Indef.Index as Torch.Indef.Cuda.Double.Index
           ,Torch.Indef.Types as Torch.Indef.Cuda.Double.Types
+
+          ,Torch.Indef.Static.NN               as Torch.Cuda.Double.NN
+          ,Torch.Indef.Static.NN.Activation    as Torch.Cuda.Double.NN.Activation
+          ,Torch.Indef.Static.NN.Backprop      as Torch.Cuda.Double.NN.Backprop
+          ,Torch.Indef.Static.NN.Conv1d        as Torch.Cuda.Double.NN.Conv1d
+          ,Torch.Indef.Static.NN.Conv2d        as Torch.Cuda.Double.NN.Conv2d
+          ,Torch.Indef.Static.NN.Criterion     as Torch.Cuda.Double.NN.Criterion
+          ,Torch.Indef.Static.NN.Layers        as Torch.Cuda.Double.NN.Layers
+          ,Torch.Indef.Static.NN.Math          as Torch.Cuda.Double.NN.Math
+          ,Torch.Indef.Static.NN.Padding       as Torch.Cuda.Double.NN.Padding
+          ,Torch.Indef.Static.NN.Pooling       as Torch.Cuda.Double.NN.Pooling
+          ,Torch.Indef.Static.NN.Sampling      as Torch.Cuda.Double.NN.Sampling
           )
           requires
           (Torch.Sig.Types.Global   as Torch.Types.THC
@@ -1341,6 +1391,17 @@ library hasktorch-indef-floating
     , Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating
 
     , Torch.Indef.Static.NN
+    , Torch.Indef.Static.NN.Activation
+    , Torch.Indef.Static.NN.Backprop
+    , Torch.Indef.Static.NN.Conv1d
+    , Torch.Indef.Static.NN.Conv2d
+    , Torch.Indef.Static.NN.Criterion
+    , Torch.Indef.Static.NN.Layers
+    , Torch.Indef.Static.NN.Math
+    , Torch.Indef.Static.NN.Padding
+    , Torch.Indef.Static.NN.Pooling
+    , Torch.Indef.Static.NN.Sampling
+
     , Torch.Indef.Static.Tensor.Math.Blas
     , Torch.Indef.Static.Tensor.Math.Floating
     , Torch.Indef.Static.Tensor.Math.Lapack

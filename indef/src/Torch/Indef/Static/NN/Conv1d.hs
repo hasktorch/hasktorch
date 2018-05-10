@@ -10,6 +10,7 @@
 -- Temporal (1D) Convolutions
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -41,15 +42,21 @@ module Torch.Indef.Static.NN.Conv1d
 
 import Numeric.Backprop
 import Data.Kind (Type)
+import System.IO.Unsafe
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
-import System.IO.Unsafe
+import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.NN.Backprop ()
 
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
 newtype Conv1d f o kW dW
   = Conv1d { getTensors :: (Tensor '[o, f*kW], Tensor '[o]) }
+
+instance (KnownDim (f*kW), KnownNatDim o) => Backprop (Conv1d f o kW dW) where
+  zero = const . Conv1d . unsafePerformIO $ (,) <$> constant 0 <*> constant 0
+  one  = const . Conv1d . unsafePerformIO $ (,) <$> constant 1 <*> constant 1
+  add c0 c1 = Conv1d (weights c0 + weights c1, bias c0 + bias c1)
 
 weights :: Conv1d f o kW dW -> Tensor '[o, f*kW]
 weights (Conv1d (w, _)) = w
@@ -84,13 +91,20 @@ type TemporalConvC s f kW dW o =
 
 -- | Backprop convolution function
 conv1d
-  :: Reifies s W
+  :: forall s seq f kW dW o
+  .  Reifies s W
+  => KnownDim (f*kW)
   => TemporalConvC seq f kW dW o
-  => Conv1d f o kW dW
+  => BVar s (Conv1d f o kW dW)
   -> BVar s (Tensor '[seq, f])
   -> BVar s (Tensor '[seq, o])
-conv1d c = liftOp1 . op1 $ \inp ->
-  (unsafePerformIO $ conv1d_forward inp c, \out -> unsafePerformIO $ conv1d_backward inp out c)
+conv1d = liftOp2 . op2 $ \c inp ->
+  (unsafePerformIO $ conv1d_forward inp c, \o -> unsafePerformIO $ runBack c inp o)
+  where
+    runBack :: Conv1d f o kW dW -> Tensor '[seq, f] -> Tensor '[seq, o] -> IO (Conv1d f o kW dW, Tensor '[seq, f])
+    runBack conv inp gout = do
+      gin :: Tensor '[seq, f] <- conv1d_backward inp gout conv
+      pure (conv, gin)
 
 -- | Backprop convolution function with batching
 conv1dBatch
