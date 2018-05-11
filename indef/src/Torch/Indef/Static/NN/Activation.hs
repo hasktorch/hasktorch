@@ -1,10 +1,15 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Torch.Indef.Static.NN.Activation where
 
-import Torch.Dimensions
+import Numeric.Backprop
 import Control.Monad
-import Torch.Indef.Types
+import System.IO.Unsafe
 
-import qualified Torch.Indef.Dynamic.NN as Dynamic
+import Torch.Indef.Types
+import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.NN.Backprop ()
+
+import qualified Torch.Indef.Dynamic.NN.Activation as Dynamic
 
 _pReLU_updateOutput :: Tensor d -> Tensor d -> Tensor d -> IO ()
 _pReLU_updateOutput a0 a1 a2 = Dynamic._pReLU_updateOutput (asDynamic a0) (asDynamic a1) (asDynamic a2)
@@ -52,23 +57,54 @@ _leakyReLU_updateOutput t0 t1 d0 b0 =
     (d0) (b0)
 
 
-_leakyReLU_updateGradInput:: Tensor d -> Tensor d -> Tensor d -> Double -> Bool -> IO ()
+_leakyReLU_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Double -> Bool -> IO ()
 _leakyReLU_updateGradInput t0 t1 t2 d0 b0 =
   Dynamic._leakyReLU_updateGradInput
     (asDynamic t0) (asDynamic t1) (asDynamic t2)
     (d0) (b0)
 
+-- | run a threshold function againts two BVar variables
+threshold
+  :: Reifies s W
+  => Dimensions d
+  => Double               -- ^ threshold
+  -> Double               -- ^ replacement value
+  -> BVar s (Tensor d)    -- ^ input
+  -> BVar s (Tensor d)    -- ^ output
+threshold thr value = liftOp1 . op1 $ \inp ->
+  (unsafePerformIO (_threshold_updateOutput thr value False inp), \gout ->
+    unsafePerformIO (_threshold_updateGradInput thr value False inp gout))
 
-_threshold_updateOutput :: Tensor d -> Tensor d -> Double -> Double -> Bool -> IO ()
-_threshold_updateOutput t0 t1 d0 d1 b0 =
+-- | ReLU activation function
+relu :: Reifies s W => Dimensions d => BVar s (Tensor d) -> BVar s (Tensor d)
+relu = threshold 0 0
+
+_threshold_updateOutput
+  :: Double              -- ^ threshold
+  -> Double              -- ^ replacement value
+  -> Bool                -- ^ inplace
+  -> Tensor d            -- ^ input
+  -> IO (Tensor d)       -- ^ output
+_threshold_updateOutput thr val inplace input = do
+  out <- empty
   Dynamic._threshold_updateOutput
-    (asDynamic t0) (asDynamic t1)
-    (d0) (d1)
-    (b0)
+    (asDynamic input) (asDynamic out)
+    thr val
+    inplace
+  pure out
 
-_threshold_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Double -> Double -> Bool -> IO ()
-_threshold_updateGradInput t0 t1 t2 d0 d1 b0 =
+_threshold_updateGradInput
+  :: Double        -- ^ threshold
+  -> Double        -- ^ replacement value
+  -> Bool          -- ^ inplace
+  -> Tensor d      -- ^ input
+  -> Tensor d      -- ^ gradient output
+  -> IO (Tensor d) -- ^ gradient input
+_threshold_updateGradInput thr val inplace input gout = do
+  gin <- empty
   Dynamic._threshold_updateGradInput
-    (asDynamic t0) (asDynamic t1) (asDynamic t2)
-    (d0) (d1)
-    (b0)
+    (asDynamic input) (asDynamic gout) (asDynamic gin)
+    thr val
+    inplace
+  pure gin
+

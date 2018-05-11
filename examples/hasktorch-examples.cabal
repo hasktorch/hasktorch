@@ -150,6 +150,7 @@ executable convolutions
       Utils
     , Conv1d
     , Conv2d
+    , ReLU
   build-depends:
       base >=4.7 && <5
     , backprop >= 0.2
