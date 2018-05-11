@@ -20,13 +20,144 @@
 -- iterate with and is semantically clearer for development (the errors take a
 -- bit of getting used to).
 -------------------------------------------------------------------------------
-module Torch.Indef.Dynamic.NN where
+module Torch.Indef.Dynamic.NN
+  ( module X
+  , _abs_updateOutput
+  , _abs_updateGradInput
+  , _absCriterion_updateOutput
+  , _absCriterion_updateGradInput
+  , _bCECriterion_updateOutput
+  , _bCECriterion_updateGradInput
+  , _distKLDivCriterion_updateOutput
+  , _distKLDivCriterion_updateGradInput
+  , _gatedLinear_updateOutput
+  , _gatedLinear_updateGradInput
+  , _hardTanh_updateOutput
+  , _hardTanh_updateGradInput
+  , _im2Col_updateOutput
+  , _im2Col_updateGradInput
+  , _col2Im_updateOutput
+  , _col2Im_updateGradInput
+  , _l1Cost_updateOutput
+  , _l1Cost_updateGradInput
+  , _gRUFused_updateOutput
+  , _gRUFused_updateGradInput
+  , _lSTMFused_updateOutput
+  , _lSTMFused_updateGradInput
+  , _logSigmoid_updateOutput
+  , _logSigmoid_updateGradInput
+  , _logSoftMax_updateOutput
+  , _logSoftMax_updateGradInput
+  , _marginCriterion_updateOutput
+  , _marginCriterion_updateGradInput
+  , _softMarginCriterion_updateOutput
+  , _softMarginCriterion_updateGradInput
+  , _mSECriterion_updateOutput
+  , _mSECriterion_updateGradInput
+  , _sigmoid_updateOutput
+  , _sigmoid_updateGradInput
+  , _smoothL1Criterion_updateOutput
+  , _smoothL1Criterion_updateGradInput
+  , _softMax_updateOutput
+  , _softMax_updateGradInput
+  , _softPlus_updateOutput
+  , _softPlus_updateGradInput
+  , _softShrink_updateOutput
+  , _softShrink_updateGradInput
+  , _sparseLinear_updateOutput
+  , _sparseLinear_accGradParameters
+  , _sparseLinear_zeroGradParameters
+  , _sparseLinear_updateParameters
+  , _sparseLinear_legacyUpdateOutput
+  , _sparseLinear_legacyAccGradParameters
+  , _sqrt_updateOutput
+  , _sqrt_updateGradInput
+  , _square_updateOutput
+  , _square_updateGradInput
+  , _tanh_updateOutput
+  , _tanh_updateGradInput
+  , _temporalConvolution_updateOutput
+  , _temporalConvolution_updateGradInput
+  , _temporalConvolution_accGradParameters
+  , _temporalRowConvolution_updateOutput
+  , _temporalRowConvolution_updateGradInput
+  , _temporalRowConvolution_accGradParameters
+  , _temporalUpSamplingNearest_updateOutput
+  , _temporalUpSamplingNearest_updateGradInput
+  , _temporalUpSamplingLinear_updateOutput
+  , _temporalUpSamplingLinear_updateGradInput
+  , _batchNormalization_updateOutput
+  , _batchNormalization_backward
+  , spatialConvolutionMM_updateOutput
+  , _spatialConvolutionMM_updateGradInput
+  , _spatialConvolutionMM_accGradParameters
+  , _spatialConvolutionLocal_updateOutput
+  , _spatialConvolutionLocal_updateGradInput
+  , _spatialConvolutionLocal_accGradParameters
+  , _spatialAdaptiveAveragePooling_updateOutput
+  , _spatialAdaptiveAveragePooling_updateGradInput
+  , _spatialAveragePooling_updateOutput
+  , _spatialAveragePooling_updateGradInput
+  , _spatialFullConvolution_updateOutput
+  , _spatialFullConvolution_updateGradInput
+  , _spatialFullConvolution_accGradParameters
+  , _spatialDilatedConvolution_updateOutput
+  , _spatialDilatedConvolution_updateGradInput
+  , _spatialDilatedConvolution_accGradParameters
+  , _spatialFullDilatedConvolution_updateOutput
+  , _spatialFullDilatedConvolution_updateGradInput
+  , _spatialFullDilatedConvolution_accGradParameters
+  , _spatialSubSampling_updateOutput
+  , _spatialSubSampling_updateGradInput
+  , _spatialSubSampling_accGradParameters
+  , _spatialUpSamplingNearest_updateOutput
+  , _spatialUpSamplingNearest_updateGradInput
+  , _spatialUpSamplingBilinear_updateOutput
+  , _spatialUpSamplingBilinear_updateGradInput
+  , _spatialGridSamplerBilinear_updateOutput
+  , _spatialGridSamplerBilinear_updateGradInput
+  , _volumetricGridSamplerBilinear_updateOutput
+  , _volumetricGridSamplerBilinear_updateGradInput
+  , _volumetricAveragePooling_updateOutput
+  , _volumetricAveragePooling_updateGradInput
+  , _volumetricConvolution_updateOutput
+  , _volumetricConvolution_updateGradInput
+  , _volumetricConvolution_accGradParameters
+  , _volumetricFullConvolution_updateOutput
+  , _volumetricFullConvolution_updateGradInput
+  , _volumetricFullConvolution_accGradParameters
+  , _volumetricDilatedConvolution_updateOutput
+  , _volumetricDilatedConvolution_updateGradInput
+  , _volumetricDilatedConvolution_accGradParameters
+  , _volumetricFullDilatedConvolution_updateOutput
+  , _volumetricFullDilatedConvolution_updateGradInput
+  , _volumetricFullDilatedConvolution_accGradParameters
+  , _volumetricAdaptiveAveragePooling_updateOutput
+  , _volumetricAdaptiveAveragePooling_updateGradInput
+  , _spatialReflectionPadding_updateOutput
+  , _spatialReflectionPadding_updateGradInput
+  , _spatialReplicationPadding_updateOutput
+  , _spatialReplicationPadding_updateGradInput
+  , _featureLPPooling_updateOutput
+  , _featureLPPooling_updateGradInput
+  , _volumetricReplicationPadding_updateOutput
+  , _volumetricReplicationPadding_updateGradInput
+  , _volumetricUpSamplingNearest_updateOutput
+  , _volumetricUpSamplingNearest_updateGradInput
+  , _volumetricUpSamplingTrilinear_updateOutput
+  , _volumetricUpSamplingTrilinear_updateGradInput
+  , _temporalReflectionPadding_updateOutput
+  , _temporalReflectionPadding_updateGradInput
+  , _temporalReplicationPadding_updateOutput
+  , _temporalReplicationPadding_updateGradInput
+  ) where
 
 import Torch.Dimensions
 
 import Foreign.C.Types
 import Torch.Sig.Types.NN
 import Torch.Indef.Dynamic.Tensor -- (empty, new)
+import Torch.Indef.Dynamic.NN.Activation as X
 import qualified Torch.Sig.NN as Sig
 
 import Torch.Indef.Types
@@ -40,8 +171,6 @@ _absCriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -
 _absCriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
 _bCECriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Dynamic -> Bool -> IO ()
 _bCECriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Dynamic -> Bool -> IO ()
-_eLU_updateOutput             :: Dynamic -> Dynamic -> Double -> Double -> Bool -> IO ()
-_eLU_updateGradInput          :: Dynamic -> Dynamic -> Dynamic -> Double -> Double -> IO ()
 _distKLDivCriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
 _distKLDivCriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
 _gatedLinear_updateOutput     :: Dynamic -> Dynamic -> Int -> IO ()
@@ -84,8 +213,6 @@ _col2Im_updateGradInput t0 t1 a0 a1 a2 a3 a4 a5 a6 a7 =
 
 _l1Cost_updateOutput          :: Dynamic -> Dynamic -> IO ()
 _l1Cost_updateGradInput       :: Dynamic -> Dynamic -> Dynamic -> IO ()
-_leakyReLU_updateOutput       :: Dynamic -> Dynamic -> Double -> Bool -> IO ()
-_leakyReLU_updateGradInput    :: Dynamic -> Dynamic -> Dynamic -> Double -> Bool -> IO ()
 _gRUFused_updateOutput        :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
 _gRUFused_updateGradInput     :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
 _lSTMFused_updateOutput       :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
@@ -100,11 +227,6 @@ _softMarginCriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool ->
 _softMarginCriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
 _mSECriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
 _mSECriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
-_pReLU_updateOutput       :: Dynamic -> Dynamic -> Dynamic -> IO ()
-_pReLU_updateGradInput    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
-_pReLU_accGradParameters  :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Double -> IO ()
-_rReLU_updateOutput       :: Dynamic -> Dynamic -> Dynamic -> Double -> Double -> Bool -> Bool -> Generator -> IO ()
-_rReLU_updateGradInput    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Double -> Double -> Bool -> Bool -> IO ()
 _sigmoid_updateOutput     :: Dynamic -> Dynamic -> IO ()
 _sigmoid_updateGradInput  :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _smoothL1Criterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
@@ -127,8 +249,6 @@ _square_updateOutput       :: Dynamic -> Dynamic -> IO ()
 _square_updateGradInput    :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _tanh_updateOutput         :: Dynamic -> Dynamic -> IO ()
 _tanh_updateGradInput      :: Dynamic -> Dynamic -> Dynamic -> IO ()
-_threshold_updateOutput    :: Dynamic -> Dynamic -> Double -> Double -> Bool -> IO ()
-_threshold_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Double -> Double -> Bool -> IO ()
 
 _temporalConvolution_updateOutput
   :: Dynamic     -- ^ input
@@ -341,15 +461,12 @@ _logSigmoid_updateOutput = ten3 Sig.c_LogSigmoid_updateOutput
 _logSigmoid_updateGradInput = ten4 Sig.c_LogSigmoid_updateGradInput
 _sigmoid_updateOutput = ten2 Sig.c_Sigmoid_updateOutput
 _sigmoid_updateGradInput = ten3 Sig.c_Sigmoid_updateGradInput
-_eLU_updateOutput = ten2double2bool1 Sig.c_ELU_updateOutput
 _logSoftMax_updateOutput = ten2dim1 Sig.c_LogSoftMax_updateOutput
 _im2Col_updateOutput = ten2int8 Sig.c_Im2Col_updateOutput
 _im2Col_updateGradInput = ten2int10 Sig.c_Im2Col_updateGradInput
 _gRUFused_updateGradInput = ten5 Sig.c_GRUFused_updateGradInput
-_pReLU_updateGradInput = ten4 Sig.c_PReLU_updateGradInput
 _spatialAdaptiveAveragePooling_updateGradInput = ten3 Sig.c_SpatialAdaptiveAveragePooling_updateGradInput
 _softMax_updateOutput = ten2dim1 Sig.c_SoftMax_updateOutput
-_pReLU_updateOutput = ten3 Sig.c_PReLU_updateOutput
 _distKLDivCriterion_updateOutput = ten3bool2 Sig.c_DistKLDivCriterion_updateOutput
 _bCECriterion_updateOutput = ten3bool1ten1bool1 Sig.c_BCECriterion_updateOutput
 _marginCriterion_updateGradInput = ten3bool1double1 Sig.c_MarginCriterion_updateGradInput
@@ -362,27 +479,19 @@ _bCECriterion_updateGradInput = ten4bool1ten1bool1 Sig.c_BCECriterion_updateGrad
 _smoothL1Criterion_updateOutput = ten3bool2 Sig.c_SmoothL1Criterion_updateOutput
 _softMarginCriterion_updateOutput = ten3bool2 Sig.c_SoftMarginCriterion_updateOutput
 _mSECriterion_updateOutput = ten3bool2 Sig.c_MSECriterion_updateOutput
-_leakyReLU_updateOutput = ten2double1bool1 Sig.c_LeakyReLU_updateOutput
 _sqrt_updateOutput = ten2double1 Sig.c_Sqrt_updateOutput
 _softShrink_updateOutput = ten2double1 Sig.c_SoftShrink_updateOutput
 _softPlus_updateOutput = ten2double2 Sig.c_SoftPlus_updateOutput
-_threshold_updateOutput = ten2double2bool1 Sig.c_Threshold_updateOutput
 _hardTanh_updateOutput = ten2double2bool1 Sig.c_HardTanh_updateOutput
-_eLU_updateGradInput = ten3double2 Sig.c_ELU_updateGradInput
 _hardTanh_updateGradInput = ten3double2bool1 Sig.c_HardTanh_updateGradInput
-_leakyReLU_updateGradInput = ten3double1bool1 Sig.c_LeakyReLU_updateGradInput
 _softShrink_updateGradInput = ten3double1 Sig.c_SoftShrink_updateGradInput
 _softPlus_updateGradInput = ten4double2 Sig.c_SoftPlus_updateGradInput
-_rReLU_updateOutput = ten3double2bool2gen1 Sig.c_RReLU_updateOutput
-_rReLU_updateGradInput = ten4double2bool2 Sig.c_RReLU_updateGradInput
-_threshold_updateGradInput = ten3double2bool1 Sig.c_Threshold_updateGradInput
 _logSoftMax_updateGradInput = ten4dim1 Sig.c_LogSoftMax_updateGradInput
 _softMax_updateGradInput = ten4dim1 Sig.c_SoftMax_updateGradInput
 _spatialSubSampling_updateOutput = ten4int4 Sig.c_SpatialSubSampling_updateOutput
 _spatialSubSampling_updateGradInput = ten4int4 Sig.c_SpatialSubSampling_updateGradInput
 _spatialSubSampling_accGradParameters = ten4int4double1 Sig.c_SpatialSubSampling_accGradParameters
 _spatialGridSamplerBilinear_updateGradInput = ten5int1 Sig.c_SpatialGridSamplerBilinear_updateGradInput
-_pReLU_accGradParameters = ten5double1 Sig.c_PReLU_accGradParameters
 _sparseLinear_updateParameters = ten5double1 Sig.c_SparseLinear_updateParameters
 _volumetricGridSamplerBilinear_updateGradInput = ten5int1 Sig.c_VolumetricGridSamplerBilinear_updateGradInput
 _spatialGridSamplerBilinear_updateOutput = ten3int1 Sig.c_SpatialGridSamplerBilinear_updateOutput
@@ -883,17 +992,6 @@ ten4bool1ten1bool1 fn t0 t1 t2 t3 b0 t4 b1 =
   with2DynamicState t0 t1 $ \s' t0' t1' ->
   with3DynamicState t2 t3 t4 $ \ _ t2' t3' t4' ->
     fn s' t0' t1' t2' t3' (toEnum $ fromEnum b0) t4' (toEnum $ fromEnum b1)
-
--- wtf...
-ten3double2bool2gen1 fn t0 t1 t2 d0 d1 b0 b1 g = undefined
---   with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-
---     fn s' t0' t1' t2'
---       (realToFrac d0)
---       (realToFrac d1)
---       (toEnum $ fromEnum b0)
---       (toEnum $ fromEnum b1)
---       g
 
 ten2double1 fn t0 t1 d0 =
   with2DynamicState t0 t1 $ \s' t0' t1' ->
