@@ -24,6 +24,17 @@ printFullConv1d title c = do
   print (NN1.bias c)
   putStrLn "---------------------------------------"
 
+printFullConv2d :: KnownNat4 a b c d => String -> Conv2d a b c d -> IO ()
+printFullConv2d title c = do
+  putStrLn ""
+  putStrLn "---------------------------------------"
+  putStrLn title
+  print c
+  print (NN2.weights c)
+  print (NN2.bias c)
+  putStrLn "---------------------------------------"
+
+
 section :: String -> IO () -> IO ()
 section header rest = do
   putStrLn ""

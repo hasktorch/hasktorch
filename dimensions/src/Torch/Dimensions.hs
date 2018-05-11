@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP #-}
 module Torch.Dimensions
   ( module X
   , KnownNat
@@ -46,8 +47,17 @@ module Torch.Dimensions
   ) where
 
 import Data.Singletons as X
+
 import Data.Singletons.Prelude.Num as X
+#if MIN_VERSION_singletons(2,1,0)
+  hiding (type (:+), type (:<))
+#endif
+
 import Data.Singletons.Prelude.Ord as X
+#if MIN_VERSION_singletons(2,1,0)
+  hiding (type (:+), type (:<))
+#endif
+
 import Data.Singletons.Prelude.List as X
   hiding (Take, Tail, Reverse, Last, Init, Head, Length, Drop, Concat, type (++))
 import Data.Singletons.TypeLits as X

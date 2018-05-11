@@ -1,10 +1,13 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math where
 
 import qualified Torch.Sig.Tensor.Math   as Sig
 import qualified Torch.Types.TH as TH (IndexStorage)
 import qualified Foreign.Marshal as FM
+import System.IO.Unsafe
+
 
 import Torch.Indef.Dynamic.Tensor
 import Torch.Dimensions
@@ -82,8 +85,13 @@ _range t0 a0 a1 a2 = withDynamicState t0 $ \s' t0' -> Sig.c_range s' t0' (hs2cAc
 --   kthvalue :: t -> IndexDynamic t -> t -> Integer -> Int -> IO Int
 --   randperm :: t -> Generator t -> Integer -> IO ()
 
-constant :: Dim (d :: [Nat]) -> HsReal -> IO Dynamic
-constant d v = new d >>= \r -> _fill r v >> pure r
+-- | create a 'Dynamic' tensor with a given dimension and value
+--
+-- We can get away 'unsafeDupablePerformIO' this as constant is pure and thread-safe
+constant :: Dim (d :: [Nat]) -> HsReal -> Dynamic
+constant d v = unsafeDupablePerformIO $ new d >>= \r -> _fill r v >> pure r
+{-# NOINLINE constant #-}
+
 
 diag_, diag :: Dynamic -> Int -> IO Dynamic
 diag_ t d = _diag t t d >> pure t

@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
@@ -73,7 +74,7 @@ directFunctionCalls1d = Utils.section "Directly calling functions" $ do
   shape o1 >>= print
 
   -- initialize a gradient output
-  gout :: Tensor '[Sequence2, Output] <- constant 1
+  let gout :: Tensor '[Sequence2, Output] = constant 1
 
   -- do a backward pass for grad input
   o1' :: Tensor '[13, 5] <- conv1d_backwardGradInput conv input gout
@@ -95,7 +96,7 @@ directFunctionCalls1d = Utils.section "Directly calling functions" $ do
   shape o2 >>= print
 
   -- initialize a gradient input
-  bgout :: Tensor '[Batch, Sequence1, Output] <- constant 1
+  let bgout :: Tensor '[Batch, Sequence1, Output] = constant 1
   shape bgout >>= print
 
   -- do a backwards pass with batch data
@@ -116,8 +117,7 @@ initConv1d
   => Generator -> Proxy '[s,o,kW,dW]
   -> IO (Conv1d s o kW dW)
 initConv1d g _ =
-  fmap Conv1d $ (,)
+  (Conv1d . (,Torch.constant 1))
     <$> Torch.uniform g (-10::Double) 10
-    <*> Torch.constant 1
 
 

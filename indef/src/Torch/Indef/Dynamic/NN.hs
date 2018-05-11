@@ -26,7 +26,7 @@ import Torch.Dimensions
 
 import Foreign.C.Types
 import Torch.Sig.Types.NN
-import Torch.Indef.Dynamic.Tensor (empty)
+import Torch.Indef.Dynamic.Tensor -- (empty, new)
 import qualified Torch.Sig.NN as Sig
 
 import Torch.Indef.Types
@@ -215,46 +215,53 @@ spatialConvolutionMM_updateOutput inp weight bias (kW, kH) (dW, dH) (pW, pH) = d
       (fromIntegral pW) (fromIntegral pH)
   pure out
 
-spatialConvolutionMM_updateGradInput
+_spatialConvolutionMM_updateGradInput
   :: Dynamic    -- ^ input
   -> Dynamic    -- ^ gradOutput
-  -- -> Dynamic    -- ^ gradInput
+  -> Dynamic    -- ^ gradInput
   -> Dynamic    -- ^ weight
-  -- -> Dynamic    -- ^ columns
-  -- -> Dynamic    -- ^ ones
+  -> Dynamic    -- ^ columns
+  -> Dynamic    -- ^ ones
   -> (Int, Int) -- ^ (kW, kH) kernel height and width
   -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions
   -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
-  -> IO Dynamic
-spatialConvolutionMM_updateGradInput inp gout w (kW, kH) (dW, dH) (pW, pH) = do
+  -> IO ()
+_spatialConvolutionMM_updateGradInput inp gout gin w columns ones (kW, kH) (dW, dH) (pW, pH) = do
   -- columns and ones are reshaped (and I'm not even sure ones is used):
   -- https://github.com/zdevito/ATen/blob/682cb389db5a318539ff03f031bf896a43a71b13/aten/src/THCUNN/generic/SpatialConvolutionMM.cu#L294
-  (gin, columns, ones) <- (,,) <$> empty <*> empty <*> empty
+  -- shape inp >>= print
+  -- (gin, columns, ones) <- (,,) <$> new (dim :: Dim '[2,2]) <*> newWithTensor inp <*> new (dim :: Dim '[1,1])
   with3DynamicState inp gout gin $ \s' inp' gout' gin' ->
    with3DynamicState w columns ones $ \_ w' columns' ones' ->
-    Sig.c_SpatialConvolutionMM_updateOutput s' inp' gout' gin' w' columns' ones'
+    Sig.c_SpatialConvolutionMM_updateGradInput s' inp' gout' gin' w' columns' ones'
       (fromIntegral kW) (fromIntegral kH)
       (fromIntegral dW) (fromIntegral dH)
       (fromIntegral pW) (fromIntegral pH)
-  pure gin
+  -- pure gin
+  -- asStatic <$> Dynamic.spatialConvolutionMM_updateGradInput
+  --   (asDynamic inp) (asDynamic gout)
+  --   (asDynamic (weights conv))
+  --   (kernel2d conv)
+  --   (param2d step)
+  --   (param2d pad)
+
 
 _spatialConvolutionMM_accGradParameters
   :: Dynamic    -- ^ input
   -> Dynamic    -- ^ gradOutput
   -> Dynamic    -- ^ gradWeight
   -> Dynamic    -- ^ gradBias
-  -- -> Dynamic    -- ^ columns
-  -- -> Dynamic    -- ^ ones
+  -> Dynamic    -- ^ finput/columns <<- required. This can be NULL in C if gradWeight is NULL.
+  -> Dynamic    -- ^ ones
   -> (Int, Int) -- ^ (kW, kH) kernel height and width
   -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions
   -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
   -> Double
   -> IO ()
-_spatialConvolutionMM_accGradParameters inp gout gweight gbias (kW, kH) (dW, dH) (pW, pH) scale = do
-  (columns, ones) <- (,) <$> empty <*> empty
+_spatialConvolutionMM_accGradParameters inp gout gweight gbias finput fgradInput (kW, kH) (dW, dH) (pW, pH) scale = do
   with3DynamicState inp gout gweight $ \s' inp' gout' gweight' ->
-   with3DynamicState gbias columns ones $ \_ gbias' columns' ones' ->
-    Sig.c_SpatialConvolutionMM_accGradParameters s' inp' gout' gweight' gbias' columns' ones'
+   with3DynamicState gbias finput fgradInput $ \_ gbias' finput' fgradInput' ->
+    Sig.c_SpatialConvolutionMM_accGradParameters s' inp' gout' gweight' gbias' finput' fgradInput'
       (fromIntegral kW) (fromIntegral kH)
       (fromIntegral dW) (fromIntegral dH)
       (fromIntegral pW) (fromIntegral pH)

@@ -58,12 +58,7 @@ import qualified Torch.Indef.Dynamic.NN as Dynamic
 newtype Conv1d f o kW dW
   = Conv1d { getTensors :: (Tensor '[o, f*kW], Tensor '[o]) }
 
-instance
-  ( KnownNat f
-  , KnownNat o
-  , KnownNat kW
-  , KnownNat dW
-  ) => Show (Conv1d f o kW dW) where
+instance KnownNat4 f o kW dW => Show (Conv1d f o kW dW) where
   show c = intercalate ","
     [ "Conv1d ("
     ++ "features: " ++ show (featureSize c)
@@ -74,8 +69,8 @@ instance
     ]
 
 instance (KnownDim (f*kW), KnownNatDim o) => Backprop (Conv1d f o kW dW) where
-  zero = const . Conv1d . unsafePerformIO $ (,) <$> constant 0 <*> constant 0
-  one  = const . Conv1d . unsafePerformIO $ (,) <$> constant 1 <*> constant 1
+  zero = const . Conv1d $ (constant 0, constant 0)
+  one  = const . Conv1d $ (constant 1, constant 1)
   add c0 c1 = Conv1d (weights c0 + weights c1, bias c0 + bias c1)
 
 weights :: Conv1d f o kW dW -> Tensor '[o, f*kW]

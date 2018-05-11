@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TupleSections #-}
 module Conv2d where
 
 import Numeric.Backprop
@@ -9,40 +10,56 @@ import Torch.Double as Torch
 import qualified Utils
 import qualified Torch.Double.NN.Conv2d as NN
 
-type InputDims = '[2, 7, 13]
+type Ch = 3
+type H = 8
+type Wid = 15
+
+type D = 1
+type Pad = 1
+type KW = 3
+type KH = 4
+type F = 3
+type O = 2
+type InputDims = '[Ch, H, Wid]
 type BatchSize = 3
+
+type OH = ((Div (H   + (2*Pad) - KH) D) + 1)
+type OW = ((Div (Wid + (2*Pad) - KW) D) + 1)
+
+steps = Step2d    :: Step2d D D
+pad   = Padding2d :: Padding2d Pad Pad
 
 main :: IO ()
 main = do
-  -- usingBackpack2d
+  usingBackpack2d
   directFunctionCalls2d
 
--- usingBackpack2d :: IO ()
--- usingBackpack2d = Utils.section "Using Backpack" $ do
---   g <- newRNG
---   manualSeed g 1
---   c <- initConv2d g params
---   Utils.printFullConv1d "initial conv1d state" c
--- 
---   -- do a forward pass
---   Just (input :: Tensor InputDims) <- runMaybeT Utils.mkCosineTensor
--- 
---   -- backprop manages our forward and backward passes
---   let (o1, (c1', g1)) = backprop2 (conv1d 0.5) c input
---   shape o1 >>= print
---   shape g1 >>= print
---   Utils.printFullConv1d "Unbatched convolution layer after backprop" c1'
--- 
---   putStrLn "======================================="
--- 
---   Utils.printFullConv1d "Ensure that the last weight update is pure" c
--- 
---   -- do a backprop pass with batch data
---   Just (binput :: Tensor (BatchSize+:InputDims)) <- runMaybeT Utils.mkCosineTensor
---   let (o2, (c2', g2)) = backprop2 (conv1dBatch 0.5) c binput
---   shape o2 >>= print
---   shape g2 >>= print
---   Utils.printFullConv1d "Batched convolution layer update" c2'
+usingBackpack2d :: IO ()
+usingBackpack2d = Utils.section "Using Backpack" $ do
+  g <- newRNG
+  manualSeed g 1
+  c :: Conv2d F O KW KH <- initConv2d g
+  Utils.printFullConv2d "initial conv1d state" c
+
+  -- do a forward pass
+  Just (input :: Tensor InputDims) <- runMaybeT Utils.mkCosineTensor
+
+  -- backprop manages our forward and backward passes
+  let (o1, (c1', g1)) = backprop2 (NN.conv2dMM steps pad 0.5) c input
+  shape o1 >>= print
+  shape g1 >>= print
+  Utils.printFullConv2d "Unbatched convolution layer after backprop" c1'
+
+  putStrLn "======================================="
+
+  Utils.printFullConv2d "Ensure that the last weight update is pure" c
+
+  -- do a backprop pass with batch data
+  Just (binput :: Tensor (BatchSize:+InputDims)) <- runMaybeT Utils.mkCosineTensor
+  let (o2, (c2', g2)) = backprop2 (conv2dMMBatch steps pad 0.5) c binput
+  shape o2 >>= print
+  shape g2 >>= print
+  Utils.printFullConv2d "Batched convolution layer update" c2'
 
 
 -- ========================================================================= --
@@ -52,48 +69,40 @@ directFunctionCalls2d :: IO ()
 directFunctionCalls2d = do
   g <- newRNG
   manualSeed g 1
-  conv :: Conv2d 2 3 3 3 <- initConv2d g
-  let steps = Param2d :: Param2d 1 1
-      pad   = Param2d :: Param2d 2 2
+  conv :: Conv2d F O KW KH <- initConv2d g
 
   -- do a forward pass
-  Just (input :: Tensor '[2, 7, 13]) <- runMaybeT Utils.mkCosineTensor
+  Just (input :: Tensor InputDims) <- runMaybeT Utils.mkCosineTensor
 
-  o1 <- conv2dMM_forward input conv steps pad
+  let o1 = conv2dMM_forward steps pad conv input :: Tensor '[O,OH,OW]
+
   shape o1 >>= print
 
-  gout <- constant 10
+  let gout = constant 10
   -- do a backward pass
-  o1' <- conv2dMM_backwardGradInput input gout conv steps pad
+  let o1' = conv2dMM_updGradInput steps pad conv input gout
   shape o1' >>= print
 
-  show <$> shape (NN.weights conv) >>= putStrLn . ("weights: " ++)
-  show <$> shape (NN.bias conv)    >>= putStrLn . ("bias   : " ++)
--- 
---   -- do a forward pass with a batch dimension
---   Just (binput :: Tensor '[5, 2, 7, 13]) <- runMaybeT getCosVec
--- 
---   (o2, finput2, fgradInput2) <-
---     conv2dMM_forwardBatch binput conv (Param2d :: Param2d 1 1) (Param2d :: Param2d 2 2)
---   (,,) <$> shape o2 <*> shape finput2 <*> shape fgradInput2 >>= print
---   print (finput2 Torch.!! 1 :: Tensor '[])
---   print fgradInput2
--- 
--- -- conv2dMM_backward
--- --   :: (KnownNatDim2 kW kH, KnownNatDim2 dW dH, KnownNatDim2 pW pH)
--- --   => Tensor inp        -- ^ input
--- --   -> Tensor gout       -- ^ gradOutput
--- --   -> Conv2d f o kW kH  -- ^ conv2d state
--- --   -> Param2d dW dH     -- ^ (dW, dH) step of the convolution in width and height dimensions
--- --   -> Param2d pW pH     -- ^ (pW, pH) zero padding to the input plane for width and height.
--- --   -> IO (Tensor d, Tensor d')
--- -- conv2dMM_backward = _conv2dMM_backward
+  let conv' = conv2dMM_updGradParameters steps pad 0.5 conv input gout
 
+  Utils.printFullConv2d "Ensure that the last weight update is pure" conv'
+
+  -- do a forward pass with a batch dimension
+  Just (binput :: Tensor (BatchSize:+InputDims)) <- runMaybeT Utils.mkCosineTensor
+
+  let o2 = conv2dMM_forwardBatch (Step2d :: Step2d 1 1) (Padding2d :: Padding2d 2 2) conv binput
+  putStrLn "============="
+  shape o2 >>= print
+
+  let gout = constant 10
+  -- do a backward pass
+  putStrLn "============="
+  let o1' = conv2dMM_updGradInputBatch steps pad conv binput gout
+  shape o1' >>= print
+  putStrLn "============="
 
 initConv2d :: KnownNatDim4 f o kW kH => Generator -> IO (Conv2d f o kW kH)
 initConv2d g =
-  fmap Conv2d $ (,)
+  (Conv2d . (,Torch.constant 1))
     <$> Torch.uniform g (-10::Double) 10
-    <*> Torch.constant 1
-
 

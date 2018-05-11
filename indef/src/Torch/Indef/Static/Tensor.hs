@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-cse #-} -- -fplugin GHC.TypeLits.Normalise #-}
 module Torch.Indef.Static.Tensor where
 
@@ -282,10 +283,15 @@ fromList l = unsafePerformIO . runMaybeT $ do
 
 matrix
   :: forall n m
-  .  (KnownNatDim3 n m (n*m))
+  .  (KnownNatDim2 n m)
+#if MIN_VERSION_singletons(2,4,0)
+  => KnownNatDim (n*m)
+#else
+  => KnownNatDim (n*:m)
+#endif
   => [[HsReal]] -> Either String (Tensor '[n, m])
 matrix ls
-  | length ls == 0 = Left "no support for empty lists"
+  | null ls = Left "no support for empty lists"
   | genericLength ls /= (natVal (Proxy :: Proxy n)) = Left "length of outer list must match type-level columns"
   | any (/= length (head ls)) (fmap length ls) = Left "can't build a matrix from jagged lists"
   | genericLength (head ls) /= (natVal (Proxy :: Proxy n)) = Left "inner list length must match type-level rows"

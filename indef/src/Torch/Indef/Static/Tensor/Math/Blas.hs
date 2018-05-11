@@ -37,7 +37,7 @@ addmv a b c d e = withEmpty $ \r -> _addmv r a b c d e
 mv
   :: (KnownNatDim2 r c)
   => Tensor '[r, c] -> Tensor '[c] -> IO (Tensor '[r])
-mv m v = constant 0 >>= \n -> addmv 0 n 1 m v
+mv m v = addmv 0 (constant 0) 1 m v
 
 -- | inline, pure version of 'mv'
 (!*) :: (KnownNatDim2 r c) => Tensor '[r, c] -> Tensor '[c] -> Tensor '[r]
@@ -68,7 +68,7 @@ addmm a m b x y = withEmpty $ \r -> _addmm r a m b x y
 mmult
   :: KnownNatDim3 a b c
   => Tensor '[a, b] -> Tensor '[b, c] -> IO (Tensor '[a, c])
-mmult x y = constant 0 >>= \n -> addmm 1 n 1 x y
+mmult x y = addmm 1 (constant 0) 1 x y
 
 (!*!) :: (KnownNatDim3 a b c) => Tensor '[a, b] -> Tensor '[b, c] -> Tensor '[a, c]
 (!*!) a b = unsafePerformIO $ mmult a b

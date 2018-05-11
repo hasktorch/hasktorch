@@ -27,11 +27,8 @@ trace r = Dynamic.trace (asDynamic r)
 _arange r = Dynamic._arange (asDynamic r)
 _range r = Dynamic._range (asDynamic r)
 
-constant :: Dimensions d => HsReal -> IO (Tensor d)
-constant v = do
-  t <- new
-  _fill t v
-  pure t
+constant :: forall d . Dimensions d => HsReal -> Tensor d
+constant = asStatic . Dynamic.constant (dim :: Dim d)
 
 diag_ :: (Dimensions2 d d') => Tensor d -> Int -> IO (Tensor d')
 diag_ t d = sudoInplace t $ \r t' -> _diag r t d

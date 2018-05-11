@@ -37,15 +37,13 @@ import Torch.Indef.Cuda.Double.Tensor.Random.THC as X
 import System.IO.Unsafe
 
 instance Dimensions d => Fractional (Tensor d) where
-  fromRational = unsafePerformIO . constant . fromRational
-  {-# NOINLINE fromRational #-}
+  fromRational = constant . fromRational
 
   (/) = (^/^)
   {-# NOINLINE (/) #-}
 
 instance Dimensions d => Floating (Tensor d) where
-  pi = unsafePerformIO $ X.constant pi
-  {-# NOINLINE pi #-}
+  pi = X.constant pi
 
   exp = unsafePerformIO . X.exp
   {-# NOINLINE exp #-}

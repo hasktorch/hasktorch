@@ -40,7 +40,7 @@ library
     , mtl
     , numeric-limits
     , safe-exceptions >=0.1.0.0
-    , singletons >=2.4
+    , singletons >=2.2
     , ghc-typelits-natnormalise
     , transformers >= 0.5
     , text >=1.2.2.2
