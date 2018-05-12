@@ -3,9 +3,10 @@ module Torch.FFI.THC.Double.TensorMathBlas where
 
 import Foreign
 import Foreign.C.Types
-import Torch.Types.THC
 import Data.Word
 import Data.Int
+import Torch.Types.TH
+import Torch.Types.THC
 
 -- | c_dot :  state self src -> accreal
 foreign import ccall "THCTensorMathBlas.h THCudaDoubleTensor_dot"

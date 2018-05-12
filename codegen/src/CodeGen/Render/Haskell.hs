@@ -4,7 +4,7 @@ module CodeGen.Render.Haskell
 
 import CodeGen.Prelude
 import CodeGen.Types
-import CodeGen.Parse.Cases
+import CodeGen.Parse.Cases (type2hsreal, type2real, type2accreal)
 import qualified Data.Text as T
 
 

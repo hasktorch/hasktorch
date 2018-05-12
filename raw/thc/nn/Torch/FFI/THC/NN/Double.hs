@@ -92,10 +92,6 @@ foreign import ccall "THCUNN.h THNN_CudaDoubleIm2Col_updateGradInput"
 foreign import ccall "THCUNN.h THNN_CudaDoubleCol2Im_updateOutput"
   c_Col2Im_updateOutput :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
 
--- | c_Col2Im_updateOutput :  state gradInput gradOutput kH kW dH dW padH padW sH sW -> void
-foreign import ccall "THCUNN.h THNN_CudaDoubleCol2Im_updateGradInput"
-  c_Col2Im_updateGradInput :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
-
 -- | c_LeakyReLU_updateOutput :  state input output negval inplace -> void
 foreign import ccall "THCUNN.h THNN_CudaDoubleLeakyReLU_updateOutput"
   c_LeakyReLU_updateOutput :: Ptr C'THCState -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> CDouble -> CBool -> IO ()

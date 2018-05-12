@@ -61,6 +61,8 @@ data RawTenType
   | DoubleTensor
   | HalfTensor
 
+  | IndexTensor
+
   | Storage
   | ByteStorage
   | CharStorage
@@ -92,7 +94,7 @@ data RawTenType
 
 
 isConcreteCudaPrefixed :: TenType -> Bool
-isConcreteCudaPrefixed (Pair (t, lib)) = lib == THC && t `HS.member` HS.fromList
+isConcreteCudaPrefixed (Pair (t, lib)) = (lib == THC || lib == THCUNN) && t `HS.member` HS.fromList
   [ ByteTensor
   , CharTensor
   , ShortTensor
@@ -101,15 +103,17 @@ isConcreteCudaPrefixed (Pair (t, lib)) = lib == THC && t `HS.member` HS.fromList
   , FloatTensor
   , DoubleTensor
   , HalfTensor
+
+  , IndexTensor
   ]
 
 allTenTypes :: [TenType]
 allTenTypes = Pair <$> ((,) <$> [minBound..maxBound] <*> [minBound..maxBound])
 
-data NNType
-  = IndexTensor
-  | IntegerTensor
-  deriving (Eq, Show, Generic, Hashable, Bounded, Enum)
+-- data NNType
+--   = IndexTensor
+--   | IntegerTensor
+--   deriving (Eq, Show, Generic, Hashable, Bounded, Enum)
 
 
 data Arg = Arg

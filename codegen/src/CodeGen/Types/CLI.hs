@@ -41,7 +41,8 @@ data LibType
 prefix :: LibType -> Bool -> Text
 prefix lt long =
   case lt of
-    THC -> if long then "THCuda" else "THC"
+    THC    -> if long then "THCuda" else "THC"
+    THCUNN -> if long then "THCuda" else "THC"
     _   -> tshow lt
 
 
