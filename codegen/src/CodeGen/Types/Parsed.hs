@@ -103,8 +103,7 @@ isConcreteCudaPrefixed (Pair (t, lib)) = (lib == THC || lib == THCUNN) && t `HS.
   , FloatTensor
   , DoubleTensor
   , HalfTensor
-
-  , IndexTensor
+  -- , IndexTensor
   ]
 
 allTenTypes :: [TenType]

@@ -14,7 +14,7 @@ module Torch.Types.THC
   , CNNGenerator
 
   , CInt'
-  , CMaskTensor, CIndexTensor, CIndexStorage, C'THCudaIndexTensor
+  , CMaskTensor, CIndexTensor, CIndexStorage, C'THCIndexTensor
   ,  MaskDynamic,  IndexDynamic,  MaskTensor, IndexTensor, IndexStorage
 
   , CByteTensor, ByteDynamic(..), byteDynamic, ByteTensor(..), byteAsStatic
@@ -77,7 +77,7 @@ type CInt' = CLLong
 type Int' = Integer
 
 -- Some type alias'
-type C'THCudaIndexTensor = CLongTensor
+type C'THCIndexTensor = CLongTensor
 type CMaskTensor   = CByteTensor
 type CIndexTensor  = CLongTensor
 type CIndexStorage = CLongStorage

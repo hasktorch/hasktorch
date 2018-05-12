@@ -196,6 +196,16 @@ c_VolumetricMaxUnpooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr C
 c_VolumetricAdaptiveMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> IO ()
 c_VolumetricAdaptiveMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> IO ()
 
+{- THCUNN parsed:
+c_LookupTable_accGradParameters :: Ptr C'THCState -> Ptr C'THCIndexTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> CBool -> CInt -> CDouble -> IO ()
+c_LookupTable_renorm :: Ptr C'THCState -> Ptr C'THCIndexTensor -> Ptr C'THCudaDoubleTensor -> CDouble -> CDouble -> IO ()
+
+c_LookupTableBag_updateOutput :: Ptr C'THCState -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCIndexTensor -> CInt -> Ptr C'THCIndexTensor -> IO ()
+
+c_LookupTableBag_accGradParameters :: Ptr C'THCState -> Ptr C'THCIndexTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> CBool -> CInt -> Ptr C'THCIndexTensor -> CDouble -> IO ()
+-}
+
+
 -- * THNN only
 -- c_unfolded_acc  :: Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
 -- c_unfolded_copy :: Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()

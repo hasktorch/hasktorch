@@ -146,6 +146,7 @@ genericPrefixes = second T.pack <$> asum (foldMap go supportedLibraries)
 
 function :: Parser (Maybe Function)
 function = do
+  optional space -- this is for poorly formatted functions in THCUNN
   optional (api >> space)
   funReturn' <- parsabletypes <* space
   (funPrefix', funName') <- choice [ try genericName, (Nothing,) <$> concreteName ]
