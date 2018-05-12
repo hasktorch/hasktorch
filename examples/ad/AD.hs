@@ -6,11 +6,8 @@
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-imports -Wno-missing-signatures -Wno-unused-matches #-}
 module Main where
 
-import Torch
-import qualified Torch.Core.Random as RNG
+import Torch.Double
 import System.IO.Unsafe (unsafePerformIO)
-
-type Tensor = DoubleTensor
 
 -- Promoted layer types promoted
 data LayerType = LTrivial | LLinear | LAffine | LSigmoid | LRelu
@@ -156,8 +153,8 @@ dispN (O w) = putStrLn "\nOutput Layer ::::" >> dispL w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispL w >> dispN n'
 
 dispV :: KnownDim o => Values hs o -> IO ()
-dispV (V o)= putStrLn "\nOutput Layer ::::" >> printTensor o
-dispV (v :^~ n) = putStrLn "\nCurrent Layer ::::" >> printTensor v >> dispV n
+dispV (V o)= putStrLn "\nOutput Layer ::::" >> print o
+dispV (v :^~ n) = putStrLn "\nCurrent Layer ::::" >> print v >> dispV n
 
 li :: Layer 'LLinear 10 7
 li = unsafePerformIO $ LayerLinear <$> new
@@ -177,11 +174,11 @@ net = li :~ l2 :~ l3 :~ l4 :~ O lo
 
 main :: IO ()
 main = do
-  gen <- RNG.new
+  gen <- newRNG
   t :: Tensor '[10] <- normal gen 0 5
 
   putStrLn "Input"
-  constant 0 >>= gtTensorT t >>= printTensor
+  constant 0 >>= gtTensorT t >>= print
 
   putStrLn "Network"
   dispN net

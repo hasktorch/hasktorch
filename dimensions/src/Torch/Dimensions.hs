@@ -23,6 +23,10 @@ module Torch.Dimensions
   , SingDim3
   , SingDim4
   , SingDimensions
+  , Dimensions2
+  , Dimensions3
+  , Dimensions4
+  , Dimensions5
   , DimVal(..)
   , someDimsM
   , unsafeSomeDims
@@ -40,7 +44,7 @@ module Torch.Dimensions
 
 import Data.Singletons as X
 import Data.Singletons.Prelude.List as X
-  hiding (Take, Tail, Reverse, Last, Init, Head, Length, Drop, Concat)
+  hiding (Take, Tail, Reverse, Last, Init, Head, Length, Drop, Concat, type (++))
 import Data.Singletons.TypeLits as X
   hiding (KnownNat)
 
@@ -71,6 +75,12 @@ type SingDim3 n0 n1 n2    = (SingDim2 n0 n1,    SingDim n2)
 type SingDim4 n0 n1 n2 n3 = (SingDim3 n0 n1 n2, SingDim n3)
 
 type SingDimensions d = (SingI d, Dimensions d)
+
+type (Dimensions2 d d') = (Dimensions d, Dimensions d')
+type (Dimensions3 d d' d'' ) = (Dimensions2 d d', Dimensions d'')
+type (Dimensions4 d d' d'' d''') = (Dimensions2 d d', Dimensions2 d'' d''')
+type (Dimensions5 d d' d'' d''' d'''') = (Dimensions4 d d' d'' d''', Dimensions d'''')
+
 
 newtype DimVal = DimVal Int32
   deriving (Bounded, Enum, Eq, Integral, Num, Ord, Read, Real, Show)

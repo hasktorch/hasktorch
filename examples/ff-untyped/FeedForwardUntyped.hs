@@ -3,8 +3,7 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 module Main where
 
-import Torch.Dynamic
-import qualified Torch.Core.Random as RNG
+import Torch.Double.Dynamic hiding (DoubleTensor)
 
 type DoubleTensor = DoubleDynamic
 
@@ -25,9 +24,9 @@ infixr 5 :~
 dispW :: Weights -> IO ()
 dispW w = do
   putStrLn "Biases:"
-  printTensor (biases w)
+  print (biases w)
   putStrLn "Weights:"
-  printTensor (nodes w)
+  print (nodes w)
 
 dispN :: Network -> IO ()
 dispN (O w) = dispW w
@@ -35,7 +34,7 @@ dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
-  gen <- RNG.new
+  gen <- newRNG
   d1 <- someDimsM [fromIntegral o]
   d2 <- someDimsM [fromIntegral o, fromIntegral i]
   b <- uniform' d1 gen (-1) 1
@@ -44,7 +43,7 @@ randomWeights i o = do
 
 randomData :: Word -> IO DoubleTensor
 randomData i = do
-  gen <- RNG.new
+  gen <- newRNG
   someD1 <- someDimsM [fromIntegral i]
   uniform' someD1 gen (-1.0) (1.0)
 
@@ -56,17 +55,17 @@ runLayer :: Weights -> DoubleTensor -> IO DoubleTensor
 runLayer (W wB wN) v = do
   putStrLn "++++++"
   putStrLn "x"
-  printTensor wB
+  print wB
   putStrLn ""
-  printTensor wN
+  print wN
   putStrLn ""
-  printTensor v
+  print v
   putStrLn ""
-  -- printTensor (wN !* v)
+  -- print (wN !* v)
   putStrLn "========"
   dt <- addmv 1 wB 1 wN v
   putStrLn "y"
-  printTensor dt
+  print dt
   pure dt
 
 runNet :: Network -> DoubleTensor -> IO DoubleTensor
@@ -80,7 +79,7 @@ main = do
   dat <- randomData 5
   putStrLn "Data"
   putStrLn "--------"
-  printTensor dat
+  print dat
 
   putStrLn "Network"
   putStrLn "--------"
@@ -93,6 +92,6 @@ main = do
 
   putStrLn "Result"
   putStrLn "--------"
-  printTensor result
+  print result
 
   putStrLn "Done"

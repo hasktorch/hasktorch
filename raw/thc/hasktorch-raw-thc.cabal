@@ -53,6 +53,8 @@ library
     , Torch.FFI.THC.TensorRandom
     , Torch.FFI.THC.General
 
+    , Torch.FFI.THC.Byte.Storage
+    , Torch.FFI.THC.Byte.StorageCopy
     , Torch.FFI.THC.Byte.TensorMode
     , Torch.FFI.THC.Byte.TensorSort
     , Torch.FFI.THC.Byte.TensorMathCompareT
@@ -62,7 +64,6 @@ library
     , Torch.FFI.THC.Byte.TensorMathReduce
     , Torch.FFI.THC.Byte.TensorScatterGather
     , Torch.FFI.THC.Byte.Tensor
-    , Torch.FFI.THC.Byte.Storage
     , Torch.FFI.THC.Byte.TensorMasked
     , Torch.FFI.THC.Byte.TensorMathCompare
     , Torch.FFI.THC.Byte.TensorTopK
@@ -70,7 +71,6 @@ library
     , Torch.FFI.THC.Byte.TensorMath
     , Torch.FFI.THC.Byte.TensorRandom
     , Torch.FFI.THC.Byte.TensorIndex
-    , Torch.FFI.THC.Byte.StorageCopy
 
     , Torch.FFI.THC.Char.TensorMode
     , Torch.FFI.THC.Char.TensorSort
@@ -150,8 +150,6 @@ library
     , Torch.FFI.THC.Int.TensorIndex
     , Torch.FFI.THC.Int.StorageCopy
 
-  -- if flag(short)
-  --   exposed-modules:
     , Torch.FFI.THC.Short.TensorMode
     , Torch.FFI.THC.Short.TensorSort
     , Torch.FFI.THC.Short.TensorMathCompareT

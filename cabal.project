@@ -8,26 +8,14 @@ packages:
     types/th/*.cabal
     types/thc/*.cabal
 
-
     signatures/types/*cabal
-    signatures/unsigned/*cabal
-    signatures/signed/*cabal
-    signatures/floating/*cabal
-    signatures/random-th/*cabal
-    signatures/random-thc/*cabal
+    signatures/partial/*cabal
+    signatures/*cabal
 
     dimensions/*cabal
-    classes/*cabal
-
-    indef/types/*cabal
-    indef/unsigned/*cabal
-    indef/signed/*cabal
-    indef/floating/*cabal
-    indef/random-th/*cabal
-    indef/random-thc/*cabal
+    indef/*cabal
 
     core/*cabal
-
     examples/*cabal
 
 -- This absolute path would go in your ~/.cabal/config file.

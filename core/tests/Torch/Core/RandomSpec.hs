@@ -32,7 +32,7 @@ spec = do
 
 newRNGSpec :: Spec
 newRNGSpec = do
-  rngs <- runIO (replicateM 10 R.new)
+  rngs <- runIO (replicateM 10 R.newRNG)
   it "always creates a new random number" $
     zipWith (==) (tail rngs) (init rngs) `shouldNotContain` [True]
 
@@ -40,7 +40,7 @@ seedSpec :: Spec
 seedSpec = do
   beforeAll
     (do
-        rngs <- (replicateM 10 R.new)
+        rngs <- (replicateM 10 R.newRNG)
         rng1 <- mapM seed rngs
         rng2 <- mapM seed rngs
         pure (rngs, rng1, rng2)
@@ -53,7 +53,7 @@ seedSpec = do
 
 manualSeedSpec :: Spec
 manualSeedSpec = do
-  rngs <- runIO (replicateM 10 R.new)
+  rngs <- runIO (replicateM 10 R.newRNG)
   rng1 <- runIO $ mapM (`manualSeed` 1) rngs
   rng2 <- runIO $ mapM (`manualSeed` 1) rngs
 
@@ -67,14 +67,14 @@ initialSeedSpec = do
 
 randomSpec :: Spec
 randomSpec = do
-  rngs <- runIO (replicateM 10 R.new)
+  rngs <- runIO (replicateM 10 R.newRNG)
   rs <- runIO $ mapM random rngs
   it "generates numbers and doesn't crash" $
     rs `shouldSatisfy` doesn'tCrash
 
 uniformSpec :: Spec
 uniformSpec = do
-  rng <- runIO R.new
+  rng <- runIO R.newRNG
   distributed2BoundsCheck rng uniform $ \a b x ->
     case compare a b of
       LT -> x <= b && x >= a
@@ -82,38 +82,38 @@ uniformSpec = do
 
 normalSpec :: Spec
 normalSpec = do
-  rng <- runIO R.new
+  rng <- runIO R.newRNG
   distributed2BoundsCheck rng normal (\a b x -> doesn'tCrash ())
 
 exponentialSpec :: Spec
 exponentialSpec = do
-  rng <- runIO R.new
+  rng <- runIO R.newRNG
   distributed1BoundsCheck rng exponential (\a x -> doesn'tCrash ())
 
 cauchySpec :: Spec
 cauchySpec = do
-  rng <- runIO R.new
+  rng <- runIO R.newRNG
   distributed2BoundsCheck rng cauchy (\a b x -> doesn'tCrash ())
 
 logNormalSpec :: Spec
 logNormalSpec = do
-  rng <- runIO R.new
+  rng <- runIO R.newRNG
   distributed2BoundsCheck rng logNormal (\a b x -> doesn'tCrash ())
 
 geometricSpec :: Spec
 geometricSpec = do
-  rng <- runIO R.new
+  rng <- runIO R.newRNG
   distributed1BoundsCheck rng geometric (\a x -> doesn'tCrash ())
 
 bernoulliSpec :: Spec
 bernoulliSpec = do
-  rng <- runIO R.new
+  rng <- runIO R.newRNG
   distributed1BoundsCheck rng bernoulli (\a x -> doesn'tCrash ())
 
 -- |Check that seeds work as intended
 testScenario :: IO ()
 testScenario = do
-  rng <- R.new
+  rng <- R.newRNG
   manualSeed rng 332323401
   val1 <- normal rng 0.0 1000
   val2 <- normal rng 0.0 1000

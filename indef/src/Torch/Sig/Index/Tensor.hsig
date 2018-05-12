@@ -1,0 +1,10 @@
+signature Torch.Sig.Index.Tensor where
+
+import Foreign.Ptr
+import Foreign.C.Types
+import Torch.Sig.Types.Global
+import Torch.Types.TH (C'THLongStorage)
+
+c_newWithSize1d :: Ptr CState -> CLLong -> IO (Ptr CLongTensor)
+c_set1d :: Ptr CState -> Ptr CLongTensor -> CLLong -> CLong -> IO ()
+c_resize1d :: Ptr CState -> Ptr CLongTensor -> CLLong -> IO ()

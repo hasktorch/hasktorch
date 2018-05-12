@@ -137,6 +137,8 @@ library
     , Torch.FFI.TH.Short.FreeTensor
     , Torch.FFI.TH.Short.FreeStorage
 
+    , Torch.FFI.TH.NN.Double
+    , Torch.FFI.TH.NN.Float
   if flag(half)
     exposed-modules:
         Torch.FFI.TH.Half.Blas
@@ -149,10 +151,6 @@ library
       , Torch.FFI.TH.Half.TensorRandom
       , Torch.FFI.TH.Half.Vector
 
-  if flag(with_nn)
-    exposed-modules:
-        Torch.FFI.TH.NN.Double
-      , Torch.FFI.TH.NN.Float
 
   other-modules:
       Paths_hasktorch_raw_th
