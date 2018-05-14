@@ -151,6 +151,10 @@ foreign import ccall "THNN.h THNN_DoubleLogSoftMax_updateOutput"
 foreign import ccall "THNN.h THNN_DoubleLogSoftMax_updateGradInput"
   c_LogSoftMax_updateGradInput :: Ptr C'THNNState -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> CLLong -> IO ()
 
+-- | c_LookupTable_accGradParameters :  state input gradOutput gradWeight count sorted indices scaleGradByFreq paddingValue scale -> void
+foreign import ccall "THNN.h THNN_DoubleLookupTable_accGradParameters"
+  c_LookupTable_accGradParameters :: Ptr C'THNNState -> Ptr C'THIndexTensor -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THIntegerTensor -> Ptr C'THDoubleTensor -> Ptr C'THIndexTensor -> CBool -> CInt -> CDouble -> IO ()
+
 -- | c_LookupTable_renorm :  state idx weight maxNorm normType -> void
 foreign import ccall "THNN.h THNN_DoubleLookupTable_renorm"
   c_LookupTable_renorm :: Ptr C'THNNState -> Ptr C'THIndexTensor -> Ptr C'THDoubleTensor -> CDouble -> CDouble -> IO ()
@@ -930,6 +934,10 @@ foreign import ccall "THNN.h &THNN_DoubleLogSoftMax_updateOutput"
 -- | p_LogSoftMax_updateGradInput : Pointer to function : state input gradOutput gradInput output dim -> void
 foreign import ccall "THNN.h &THNN_DoubleLogSoftMax_updateGradInput"
   p_LogSoftMax_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> CLLong -> IO ())
+
+-- | p_LookupTable_accGradParameters : Pointer to function : state input gradOutput gradWeight count sorted indices scaleGradByFreq paddingValue scale -> void
+foreign import ccall "THNN.h &THNN_DoubleLookupTable_accGradParameters"
+  p_LookupTable_accGradParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THIndexTensor -> Ptr C'THDoubleTensor -> Ptr C'THDoubleTensor -> Ptr C'THIntegerTensor -> Ptr C'THDoubleTensor -> Ptr C'THIndexTensor -> CBool -> CInt -> CDouble -> IO ())
 
 -- | p_LookupTable_renorm : Pointer to function : state idx weight maxNorm normType -> void
 foreign import ccall "THNN.h &THNN_DoubleLookupTable_renorm"

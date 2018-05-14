@@ -61,8 +61,6 @@ data RawTenType
   | DoubleTensor
   | HalfTensor
 
-  | IndexTensor
-
   | Storage
   | ByteStorage
   | CharStorage
@@ -79,6 +77,10 @@ data RawTenType
   | File
   | Half
   | State
+
+  -- NN types
+  | IndexTensor
+  | IntegerTensor
 
   -- real and accreal are parameterized occasionally differ by library, but I don't think this exists to date.
   | Real
