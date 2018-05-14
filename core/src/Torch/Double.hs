@@ -6,7 +6,7 @@ import Torch.Types.TH as X
 import Torch.Double.NN as X
 
 import Torch.Indef.Double.Types as X hiding (storage)
-import Torch.Indef.Double.Index as X
+import Torch.Indef.Double.Index as X hiding (withDynamicState)
 
 import Torch.Indef.Double.Tensor as X
 import Torch.Indef.Double.Tensor.Copy as X

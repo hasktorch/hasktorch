@@ -12,7 +12,7 @@ import System.IO.Unsafe
 import Torch.Indef.Dynamic.Tensor
 import Torch.Dimensions
 import Torch.Indef.Types
-import Torch.Indef.Index
+import Torch.Indef.Index hiding (withDynamicState)
 
 _fill :: Dynamic -> HsReal -> IO ()
 _fill t v = withDynamicState t $ shuffle2 Sig.c_fill (hs2cReal v)

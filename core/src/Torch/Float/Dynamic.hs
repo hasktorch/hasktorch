@@ -2,7 +2,7 @@ module Torch.Float.Dynamic (module X) where
 
 import Torch.Types.TH as X
 import Torch.Indef.Float.Types as X hiding (storage)
-import Torch.Indef.Float.Index as X
+import Torch.Indef.Float.Index as X hiding (withDynamicState)
 
 import Torch.Indef.Float.Dynamic.Tensor as X
 import Torch.Indef.Float.Dynamic.Tensor.Copy as X

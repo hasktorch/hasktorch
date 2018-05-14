@@ -3,6 +3,7 @@ module Torch.Cuda.Double.Dynamic (module X) where
 import Torch.Indef.Cuda.Double.Dynamic.Tensor as X
 import Torch.Indef.Cuda.Double.Dynamic.Tensor.Copy as X
 import Torch.Indef.Cuda.Double.Dynamic.Tensor.Index as X
+
 import Torch.Indef.Cuda.Double.Dynamic.Tensor.Masked as X
 import Torch.Indef.Cuda.Double.Dynamic.Tensor.Math as X
 import Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Compare as X

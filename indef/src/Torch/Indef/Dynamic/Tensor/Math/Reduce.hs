@@ -7,7 +7,7 @@ import Torch.Indef.Types
 import Torch.Dimensions
 
 import Torch.Indef.Dynamic.Tensor
-import Torch.Indef.Index
+import Torch.Indef.Index hiding (withDynamicState)
 import qualified Torch.Sig.Tensor.Math.Reduce as Sig
 
 minall :: Dynamic -> HsReal

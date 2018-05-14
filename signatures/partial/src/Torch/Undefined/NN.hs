@@ -292,8 +292,6 @@ c_SpatialClassNLLCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CI
 c_SpatialClassNLLCriterion_updateOutput = undefined
 c_SpatialClassNLLCriterion_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()
 c_SpatialClassNLLCriterion_updateGradInput = undefined
-c_LookupTable_renorm :: Ptr CNNState -> Ptr CIndexTensor -> Ptr CTensor -> CDouble -> CDouble -> IO ()
-c_LookupTable_renorm = undefined
 c_MultiLabelMarginCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> CBool -> IO ()
 c_MultiLabelMarginCriterion_updateOutput = undefined
 c_MultiLabelMarginCriterion_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> CBool -> IO ()
@@ -369,4 +367,10 @@ c_VolumetricAdaptiveMaxPooling_updateOutput = undefined
 c_VolumetricAdaptiveMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> IO ()
 c_VolumetricAdaptiveMaxPooling_updateGradInput = undefined
 
+
+c_LookupTable_accGradParameters :: Ptr CNNState -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> CBool -> CInt -> CDouble -> IO ()
+c_LookupTable_accGradParameters = undefined
+
+c_LookupTable_renorm :: Ptr CNNState -> Ptr CIndexTensor -> Ptr CTensor -> CDouble -> CDouble -> IO ()
+c_LookupTable_renorm = undefined
 

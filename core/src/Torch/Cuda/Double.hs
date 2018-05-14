@@ -4,7 +4,7 @@ import Torch.Types.THC as X
 import Torch.Cuda.Double.NN as X
 
 import Torch.Indef.Cuda.Double.Types as X hiding (storage)
-import Torch.Indef.Cuda.Double.Index as X
+import Torch.Indef.Cuda.Double.Index as X hiding (withDynamicState)
 
 import Torch.Indef.Cuda.Double.Tensor as X
 import Torch.Indef.Cuda.Double.Tensor.Copy as X

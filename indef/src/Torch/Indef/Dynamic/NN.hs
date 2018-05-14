@@ -94,10 +94,6 @@ module Torch.Indef.Dynamic.NN
   , _spatialConvolutionLocal_updateOutput
   , _spatialConvolutionLocal_updateGradInput
   , _spatialConvolutionLocal_accGradParameters
-  , _spatialAdaptiveAveragePooling_updateOutput
-  , _spatialAdaptiveAveragePooling_updateGradInput
-  , _spatialAveragePooling_updateOutput
-  , _spatialAveragePooling_updateGradInput
   , _spatialFullConvolution_updateOutput
   , _spatialFullConvolution_updateGradInput
   , _spatialFullConvolution_accGradParameters
@@ -118,8 +114,6 @@ module Torch.Indef.Dynamic.NN
   , _spatialGridSamplerBilinear_updateGradInput
   , _volumetricGridSamplerBilinear_updateOutput
   , _volumetricGridSamplerBilinear_updateGradInput
-  , _volumetricAveragePooling_updateOutput
-  , _volumetricAveragePooling_updateGradInput
   , _volumetricConvolution_updateOutput
   , _volumetricConvolution_updateGradInput
   , _volumetricConvolution_accGradParameters
@@ -132,14 +126,10 @@ module Torch.Indef.Dynamic.NN
   , _volumetricFullDilatedConvolution_updateOutput
   , _volumetricFullDilatedConvolution_updateGradInput
   , _volumetricFullDilatedConvolution_accGradParameters
-  , _volumetricAdaptiveAveragePooling_updateOutput
-  , _volumetricAdaptiveAveragePooling_updateGradInput
   , _spatialReflectionPadding_updateOutput
   , _spatialReflectionPadding_updateGradInput
   , _spatialReplicationPadding_updateOutput
   , _spatialReplicationPadding_updateGradInput
-  , _featureLPPooling_updateOutput
-  , _featureLPPooling_updateGradInput
   , _volumetricReplicationPadding_updateOutput
   , _volumetricReplicationPadding_updateGradInput
   , _volumetricUpSamplingNearest_updateOutput
@@ -158,9 +148,34 @@ import Foreign.C.Types
 import Torch.Sig.Types.NN
 import Torch.Indef.Dynamic.Tensor -- (empty, new)
 import Torch.Indef.Dynamic.NN.Activation as X
+import Torch.Indef.Dynamic.NN.Pooling as X
 import qualified Torch.Sig.NN as Sig
 
 import Torch.Indef.Types
+
+-- FIXME: reintroduce these
+_indexLinear_updateOutput
+  :: IndexDynamic
+  -> Integer
+  -> Dynamic
+  -> IndexDynamic
+  -> IndexDynamic
+  -> Dynamic
+  -> Dynamic
+  -> Dynamic
+  -> Dynamic
+  -> Int
+  -> IO ()
+_indexLinear_updateOutput i0 l t0 i1 i2 t1 t2 t3 t4 i = undefined
+  -- Sig.c_IndexLinear_updateOutput
+
+-- c_IndexLinear_accGradParameters :: IndexDynamic -> CLLong -> Dynamic -> IndexDynamic -> IndexDynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> CDouble -> CDouble -> IO ()
+-- c_IndexLinear_accUpdateGradParameters :: IndexDynamic -> CLLong -> Dynamic -> IndexDynamic -> IndexDynamic -> Dynamic -> Dynamic -> Dynamic -> CDouble -> CDouble -> IO ()
+-- c_IndexLinear_updateParameters :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> IndexDynamic -> IndexDynamic -> CLLong -> CDouble -> CDouble -> IO ()
+
+-- c_LookupTable_accGradParameters :: Ptr CIndexTensor -> Ptr CDoubleTensor -> Ptr CDoubleTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> CBool -> CInt -> CDouble -> IO ()
+-- c_LookupTable_renorm :: Ptr CIndexTensor -> Ptr CDoubleTensor -> CDouble -> CDouble -> IO ()
+
 
 _abs_updateOutput :: Dynamic -> Dynamic -> IO ()
 _abs_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> IO ()
@@ -391,10 +406,6 @@ _spatialConvolutionMM_accGradParameters inp gout gweight gbias finput fgradInput
 _spatialConvolutionLocal_updateOutput               :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 _spatialConvolutionLocal_updateGradInput            :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
 _spatialConvolutionLocal_accGradParameters          :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> Double -> IO ()
-_spatialAdaptiveAveragePooling_updateOutput         :: Dynamic -> Dynamic -> Int -> Int -> IO ()
-_spatialAdaptiveAveragePooling_updateGradInput      :: Dynamic -> Dynamic -> Dynamic -> IO ()
-_spatialAveragePooling_updateOutput                 :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
-_spatialAveragePooling_updateGradInput              :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
 _spatialFullConvolution_updateOutput                :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _spatialFullConvolution_updateGradInput             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _spatialFullConvolution_accGradParameters           :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
@@ -415,8 +426,6 @@ _spatialGridSamplerBilinear_updateOutput            :: Dynamic -> Dynamic -> Dyn
 _spatialGridSamplerBilinear_updateGradInput         :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
 _volumetricGridSamplerBilinear_updateOutput         :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
 _volumetricGridSamplerBilinear_updateGradInput      :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
-_volumetricAveragePooling_updateOutput              :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
-_volumetricAveragePooling_updateGradInput           :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
 _volumetricConvolution_updateOutput                 :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _volumetricConvolution_updateGradInput              :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _volumetricConvolution_accGradParameters            :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
@@ -429,14 +438,10 @@ _volumetricDilatedConvolution_accGradParameters     :: Dynamic -> Dynamic -> Dyn
 _volumetricFullDilatedConvolution_updateOutput      :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _volumetricFullDilatedConvolution_updateGradInput   :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _volumetricFullDilatedConvolution_accGradParameters :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-_volumetricAdaptiveAveragePooling_updateOutput      :: Dynamic -> Dynamic -> Int -> Int -> Int -> IO ()
-_volumetricAdaptiveAveragePooling_updateGradInput   :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _spatialReflectionPadding_updateOutput              :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
 _spatialReflectionPadding_updateGradInput           :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
 _spatialReplicationPadding_updateOutput             :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
 _spatialReplicationPadding_updateGradInput          :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
-_featureLPPooling_updateOutput                      :: Dynamic -> Dynamic -> Double -> Int -> Int -> Bool -> IO ()
-_featureLPPooling_updateGradInput                   :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Double -> Int -> Int -> Bool -> IO ()
 _volumetricReplicationPadding_updateOutput          :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _volumetricReplicationPadding_updateGradInput       :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _volumetricUpSamplingNearest_updateOutput           :: Dynamic -> Dynamic -> Int -> IO ()
@@ -465,7 +470,6 @@ _logSoftMax_updateOutput = ten2dim1 Sig.c_LogSoftMax_updateOutput
 _im2Col_updateOutput = ten2int8 Sig.c_Im2Col_updateOutput
 _im2Col_updateGradInput = ten2int10 Sig.c_Im2Col_updateGradInput
 _gRUFused_updateGradInput = ten5 Sig.c_GRUFused_updateGradInput
-_spatialAdaptiveAveragePooling_updateGradInput = ten3 Sig.c_SpatialAdaptiveAveragePooling_updateGradInput
 _softMax_updateOutput = ten2dim1 Sig.c_SoftMax_updateOutput
 _distKLDivCriterion_updateOutput = ten3bool2 Sig.c_DistKLDivCriterion_updateOutput
 _bCECriterion_updateOutput = ten3bool1ten1bool1 Sig.c_BCECriterion_updateOutput
@@ -504,14 +508,9 @@ _temporalUpSamplingLinear_updateOutput = ten2int1 Sig.c_TemporalUpSamplingLinear
 _gatedLinear_updateOutput = ten2int1 Sig.c_GatedLinear_updateOutput
 _spatialUpSamplingNearest_updateOutput = ten2int1 Sig.c_SpatialUpSamplingNearest_updateOutput
 _spatialUpSamplingBilinear_updateOutput = ten2int2 Sig.c_SpatialUpSamplingBilinear_updateOutput
-_spatialAdaptiveAveragePooling_updateOutput = ten2int2 Sig.c_SpatialAdaptiveAveragePooling_updateOutput
 _temporalUpSamplingLinear_updateGradInput = ten2int4 Sig.c_TemporalUpSamplingLinear_updateGradInput
 _spatialUpSamplingBilinear_updateGradInput = ten2int6 Sig.c_SpatialUpSamplingBilinear_updateGradInput
 _volumetricConvolution_updateGradInput = ten5int6 Sig.c_VolumetricConvolution_updateGradInput
-_spatialAveragePooling_updateOutput = ten2int6bool2 Sig.c_SpatialAveragePooling_updateOutput
-_volumetricAveragePooling_updateOutput = ten2int9bool2 Sig.c_VolumetricAveragePooling_updateOutput
-_spatialAveragePooling_updateGradInput = ten3int6bool2 Sig.c_SpatialAveragePooling_updateGradInput
-_volumetricAveragePooling_updateGradInput = ten3int9bool2 Sig.c_VolumetricAveragePooling_updateGradInput
 _spatialDilatedConvolution_updateGradInput = ten5int8 Sig.c_SpatialDilatedConvolution_updateGradInput
 _spatialFullConvolution_updateGradInput = ten5int8 Sig.c_SpatialFullConvolution_updateGradInput
 _spatialFullDilatedConvolution_updateGradInput = ten5int10 Sig.c_SpatialFullDilatedConvolution_updateGradInput
@@ -550,23 +549,13 @@ _volumetricFullDilatedConvolution_updateOutput = ten6int15 Sig.c_VolumetricFullD
 _volumetricFullDilatedConvolution_updateGradInput = ten6int15 Sig.c_VolumetricFullDilatedConvolution_updateGradInput
 _volumetricFullDilatedConvolution_accGradParameters = ten6int15double1 Sig.c_VolumetricFullDilatedConvolution_accGradParameters
 
-_volumetricAdaptiveAveragePooling_updateOutput = ten2int3 Sig.c_VolumetricAdaptiveAveragePooling_updateOutput
-_volumetricAdaptiveAveragePooling_updateGradInput = ten3 Sig.c_VolumetricAdaptiveAveragePooling_updateGradInput
 
 _spatialReflectionPadding_updateOutput     = ten2int4 Sig.c_SpatialReflectionPadding_updateOutput
 _spatialReflectionPadding_updateGradInput  = ten3int4 Sig.c_SpatialReflectionPadding_updateGradInput
 _spatialReplicationPadding_updateOutput    = ten2int4 Sig.c_SpatialReplicationPadding_updateOutput
 _spatialReplicationPadding_updateGradInput = ten3int4 Sig.c_SpatialReplicationPadding_updateGradInput
 
-_featureLPPooling_updateOutput r t0 v0 v1 v2 b =
-  with2DynamicState r t0 $ \s' r' t0' ->
-    Sig.c_FeatureLPPooling_updateOutput s' r' t0' (realToFrac v0) (fromIntegral v1) (fromIntegral v2) (toEnum $ fromEnum b)
 
-_featureLPPooling_updateGradInput t0 t1 t2 t3 v0 v1 v2 b =
-  with2DynamicState t0 t1 $ \s' t0' t1' ->
-    with2DynamicState t2 t3 $ \_ t2' t3' ->
-      Sig.c_FeatureLPPooling_updateGradInput s' t0' t1' t2' t3'
-        (realToFrac v0) (fromIntegral v1) (fromIntegral v2) (toEnum $ fromEnum b)
 
 _volumetricReplicationPadding_updateOutput =
   ten2int6 Sig.c_VolumetricReplicationPadding_updateOutput
@@ -1121,6 +1110,7 @@ ten2int8 fn t0 t1 i0 i1 i2 i3 i4 i5 i6 i7 =
       (fromIntegral i6) (fromIntegral i7)
 
 -- ========================================================================= --
+
 
 -- CPU TENSORS ONLY
 -- unfolded_acc  :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()

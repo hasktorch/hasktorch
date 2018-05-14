@@ -31,7 +31,7 @@ import qualified Torch.Sig.Storage         as StorageSig (c_size)
 import Torch.Dimensions
 import Torch.Indef.Types
 import Torch.Indef.Internal
-import Torch.Indef.Index
+import Torch.Indef.Index hiding (withDynamicState)
 
 instance Show Dynamic where
   show t = unsafePerformIO $ do

@@ -4,7 +4,6 @@ import Torch.Sig.Types.Global
 
 type CNNState = CState
 data CNNGenerator
-type CIndexTensor = CLongTensor
 
 data CDim
 instance Integral CDim

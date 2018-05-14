@@ -4,6 +4,7 @@ import Foreign
 import Foreign.C.Types
 import Torch.Sig.Types
 import Torch.Sig.Types.NN
+import Torch.Sig.Types.Global
 
 c_Abs_updateOutput             :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_Abs_updateGradInput          :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
@@ -150,7 +151,6 @@ c_ClassNLLCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTen
 c_ClassNLLCriterion_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()
 c_SpatialClassNLLCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()
 c_SpatialClassNLLCriterion_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()
-c_LookupTable_renorm :: Ptr CNNState -> Ptr CIndexTensor -> Ptr CTensor -> CDouble -> CDouble -> IO ()
 c_MultiLabelMarginCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> CBool -> IO ()
 c_MultiLabelMarginCriterion_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> CBool -> IO ()
 c_MultiMarginCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CBool -> CInt -> Ptr CTensor -> CDouble -> CBool -> IO ()
@@ -196,13 +196,24 @@ c_VolumetricMaxUnpooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr C
 c_VolumetricAdaptiveMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> IO ()
 c_VolumetricAdaptiveMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> IO ()
 
+-- c_LookupTable_accGradParameters
+--   :: Ptr CNNState
+--   -> Ptr CIndexTensor
+--   -> Ptr CTensor
+--   -> Ptr CTensor
+--   -> Ptr CIndexTensor
+--   -> Ptr CIndexTensor   <<<< this is CTensor in THNN
+--   -> Ptr CIndexTensor
+--   -> CBool
+--   -> CInt
+--   -> CDouble
+--   -> IO ()
+c_LookupTable_renorm :: Ptr CNNState -> Ptr CIndexTensor -> Ptr CTensor -> CDouble -> CDouble -> IO ()
+
 {- THCUNN parsed:
-c_LookupTable_accGradParameters :: Ptr C'THCState -> Ptr C'THCIndexTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> CBool -> CInt -> CDouble -> IO ()
-c_LookupTable_renorm :: Ptr C'THCState -> Ptr C'THCIndexTensor -> Ptr C'THCudaDoubleTensor -> CDouble -> CDouble -> IO ()
+c_LookupTableBag_updateOutput :: Ptr CState -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CDoubleTensor -> Ptr CDoubleTensor -> Ptr CIndexTensor -> CInt -> Ptr CIndexTensor -> IO ()
 
-c_LookupTableBag_updateOutput :: Ptr C'THCState -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCIndexTensor -> CInt -> Ptr C'THCIndexTensor -> IO ()
-
-c_LookupTableBag_accGradParameters :: Ptr C'THCState -> Ptr C'THCIndexTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCudaDoubleTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> Ptr C'THCIndexTensor -> CBool -> CInt -> Ptr C'THCIndexTensor -> CDouble -> IO ()
+c_LookupTableBag_accGradParameters :: Ptr CState -> Ptr CIndexTensor -> Ptr CDoubleTensor -> Ptr CDoubleTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> CBool -> CInt -> Ptr CIndexTensor -> CDouble -> IO ()
 -}
 
 

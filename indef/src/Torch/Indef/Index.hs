@@ -8,6 +8,7 @@ module Torch.Indef.Index
   , indexDyn
   , mkCPUIx
   , withCPUIxStorage
+  , withDynamicState
   , mkCPUIxStorage
   , mkLongStorage
   ) where
