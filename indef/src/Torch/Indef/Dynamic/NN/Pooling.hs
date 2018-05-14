@@ -114,24 +114,51 @@ _spatialFractionalMaxPooling_updateGradInput t0 t1 t2 a0 a1 a2 a3 ix0 =
         (fromIntegral a0) (fromIntegral a1) (fromIntegral a2) (fromIntegral a3) ix0'
 
 
-_spatialMaxPooling_updateOutput :: Dynamic -> Dynamic -> IndexDynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> IO ()
-_spatialMaxPooling_updateOutput t0 t1 ix0 i0 i1 i2 i3 i4 i5 b0 =
+_spatialMaxPooling_updateOutput
+  :: Dynamic         -- ^ input
+  -> Dynamic         -- ^ output
+  -> IndexDynamic    -- ^ indices
+  -> (Int, Int)      -- ^ kernel size
+  -> (Int, Int)      -- ^ step size
+  -> (Int, Int)      -- ^ padding size
+  -> Bool            -- ^ ceil mode
+  -> IO ()
+_spatialMaxPooling_updateOutput t0 t1 ix0 (i0,i1) (i2,i3) (i4,i5) b0 =
   with2DynamicState t0 t1 $ \s' t0' t1' ->
     Ix.withDynamicState ix0 $ \_ ix0' ->
       Sig.c_SpatialMaxPooling_updateOutput s' t0' t1' ix0'
         (fromIntegral i0) (fromIntegral i1) (fromIntegral i2) (fromIntegral i3)
         (fromIntegral i4) (fromIntegral i5) (toEnum $ fromEnum b0)
 
-_spatialMaxPooling_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> IndexDynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> IO ()
-_spatialMaxPooling_updateGradInput t0 t1 t2 ix0 i0 i1 i2 i3 i4 i5 b0 =
+
+_spatialMaxPooling_updateGradInput
+  :: Dynamic         -- ^ input
+  -> Dynamic         -- ^ grad output
+  -> Dynamic         -- ^ grad input
+  -> IndexDynamic    -- ^ indices
+  -> (Int, Int)      -- ^ kernel size
+  -> (Int, Int)      -- ^ step size
+  -> (Int, Int)      -- ^ padding size
+  -> Bool            -- ^ ceil mode
+  -> IO ()
+_spatialMaxPooling_updateGradInput t0 t1 t2 ix0 (i0,i1) (i2,i3) (i4,i5) b0 =
   with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
     Ix.withDynamicState ix0 $ \_ ix0' ->
       Sig.c_SpatialMaxPooling_updateGradInput s' t0' t1' t2' ix0'
         (fromIntegral i0) (fromIntegral i1) (fromIntegral i2) (fromIntegral i3)
         (fromIntegral i4) (fromIntegral i5) (toEnum $ fromEnum b0)
 
-_spatialDilatedMaxPooling_updateOutput :: Dynamic -> Dynamic -> IndexDynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> IO ()
-_spatialDilatedMaxPooling_updateOutput t0 t1 ix0 i0 i1 i2 i3 i4 i5 i6 i7 b0 =
+_spatialDilatedMaxPooling_updateOutput
+  :: Dynamic         -- ^ input
+  -> Dynamic         -- ^ output
+  -> IndexDynamic    -- ^ indices
+  -> (Int, Int)      -- ^ kernel size
+  -> (Int, Int)      -- ^ step size
+  -> (Int, Int)      -- ^ padding size
+  -> (Int, Int)      -- ^ dilation size
+  -> Bool            -- ^ ceil mode
+  -> IO ()
+_spatialDilatedMaxPooling_updateOutput t0 t1 ix0 (i0,i1) (i2,i3) (i4,i5) (i6,i7) b0 =
   with2DynamicState t0 t1 $ \s' t0' t1' ->
     Ix.withDynamicState ix0 $ \_ ix0' ->
       Sig.c_SpatialDilatedMaxPooling_updateOutput s' t0' t1' ix0'
@@ -139,8 +166,18 @@ _spatialDilatedMaxPooling_updateOutput t0 t1 ix0 i0 i1 i2 i3 i4 i5 i6 i7 b0 =
         (fromIntegral i4) (fromIntegral i5) (fromIntegral i6) (fromIntegral i7)
         (toEnum $ fromEnum b0)
 
-_spatialDilatedMaxPooling_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> IndexDynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> IO ()
-_spatialDilatedMaxPooling_updateGradInput t0 t1 t2 ix0 i0 i1 i2 i3 i4 i5 i6 i7 b0 =
+_spatialDilatedMaxPooling_updateGradInput
+  :: Dynamic         -- ^ input
+  -> Dynamic         -- ^ grad output
+  -> Dynamic         -- ^ grad input
+  -> IndexDynamic    -- ^ indices
+  -> (Int, Int)      -- ^ kernel size
+  -> (Int, Int)      -- ^ step size
+  -> (Int, Int)      -- ^ padding size
+  -> (Int, Int)      -- ^ dilation size
+  -> Bool            -- ^ ceil mode
+  -> IO ()
+_spatialDilatedMaxPooling_updateGradInput t0 t1 t2 ix0 (i0,i1) (i2,i3) (i4,i5) (i6,i7) b0 =
   with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
     Ix.withDynamicState ix0 $ \_ ix0' ->
       Sig.c_SpatialDilatedMaxPooling_updateGradInput s' t0' t1' t2' ix0'

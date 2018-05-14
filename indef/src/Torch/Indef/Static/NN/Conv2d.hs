@@ -85,6 +85,7 @@ kernel2d = kernelWidth &&& kernelHeight
 
 -------------------------------------------------------------------------------
 
+-- FIXME: this can be replaced with simple functions.
 class Param2d p where
   paramW :: forall w h i . (KnownNat w, Integral i) => p w h -> i
   paramW _ = fromIntegral $ natVal (Proxy :: Proxy w)
@@ -95,11 +96,15 @@ class Param2d p where
   param2d :: (KnownNat h, KnownNat w, Integral i) => p w h -> (i, i)
   param2d = paramW &&& paramH
 
-data Step2d    (w::Nat) (h::Nat) = Step2d
-data Padding2d (w::Nat) (h::Nat) = Padding2d
+data Step2d     (w::Nat) (h::Nat) = Step2d
+data Padding2d  (w::Nat) (h::Nat) = Padding2d
+data Kernel2d   (w::Nat) (h::Nat) = Kernel2d
+data Dilation2d (w::Nat) (h::Nat) = Dilation2d
 
 instance Param2d Step2d
 instance Param2d Padding2d
+instance Param2d Kernel2d
+instance Param2d Dilation2d
 instance Param2d (Conv2d f o) where
 
 -- ========================================================================= --

@@ -1,10 +1,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Torch.Indef.Index
   ( CPUIndex
   , CPUIndexStorage
   , newIx
   , newIxDyn
+  , zeroIxNd
   , index
+  , index1d
+  , indexNd
   , indexDyn
   , mkCPUIx
   , withCPUIxStorage
@@ -37,6 +41,9 @@ type CPUIndexStorage = TH.LongStorage
 newIx :: forall n . KnownNat n => IndexTensor '[n]
 newIx = longAsStatic $ newIxDyn (natVal (Proxy :: Proxy n))
 
+zeroIxNd :: Dimensions d => IndexTensor d
+zeroIxNd = longAsStatic $ newIxDyn 0
+
 newIxDyn :: Integral i => i -> IndexDynamic
 newIxDyn x = unsafeDupablePerformIO . mkDynamicIO $ \s ->
   IxSig.c_newWithSize1d s (fromIntegral x)
@@ -56,6 +63,15 @@ index :: forall n . KnownNat n => [Integer] -> Maybe (IndexTensor '[n])
 index l
   | genericLength l == natVal (Proxy :: Proxy n) = Just . longAsStatic . indexDyn $ l
   | otherwise = Nothing
+
+index1d :: KnownNat n => [Integer] -> Maybe (IndexTensor '[n])
+index1d = index
+
+indexNd :: forall d . KnownNat (Product d) => Dimensions d => [Integer] -> Maybe (IndexTensor d)
+indexNd l
+  | genericLength l == natVal (Proxy :: Proxy (Product d)) = Just . longAsStatic . indexDyn $ l
+  | otherwise = Nothing
+
 
 _resizeDim :: IndexDynamic -> Integer -> IO ()
 _resizeDim t x = withDynamicState t $ \s' t' -> IxSig.c_resize1d s' t' (fromIntegral x)
