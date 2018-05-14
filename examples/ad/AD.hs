@@ -74,7 +74,7 @@ forwardProp t = \case
     resizeAs (w !*! t')
 
   LayerSigmoid -> sigmoid t
-  LayerRelu    -> constant 0 >>= gtTensorT t >>= \active -> pure $ active ^*^ t
+  LayerRelu    -> gtTensorT t (constant 0) >>= \active -> pure $ active ^*^ t
   LayerAffine (AW b w) -> do
     t' :: Tensor '[i, 1] <- resizeAs t
     b' <- resizeAs b
@@ -89,17 +89,17 @@ backProp dEds LayerRelu              = (LayerRelu, dEds ^*^ undefined)
 backProp dEds (LayerLinear w)        = (undefined , undefined)
 backProp dEds (LayerAffine (AW w b)) = (undefined , undefined)
 
-trivial' :: SingDimensions d => Tensor d -> IO (Tensor d)
+trivial' :: SingDimensions d => Tensor d -> Tensor d
 trivial' t = constant 1
 
 sigmoid' :: SingDimensions d => Tensor d -> IO (Tensor d)
 sigmoid' t = do
   s <- sigmoid t
-  o <- constant 1
+  let o = constant 1
   pure $ (s ^*^ o) ^-^ s
 
 relu' :: SingDimensions d => Tensor d -> IO (Tensor d)
-relu' t = constant 0 >>= gtTensorT t
+relu' t = gtTensorT t (constant 0)
 
 -- forward prop, don't retain values
 forwardNetwork :: forall i h o . (KnownDim i, KnownDim o) => Tensor '[i] -> NW i h o  -> IO (Tensor '[o])
@@ -178,13 +178,13 @@ main = do
   t :: Tensor '[10] <- normal gen 0 5
 
   putStrLn "Input"
-  constant 0 >>= gtTensorT t >>= print
+  gtTensorT t (constant 0) >>= print
 
   putStrLn "Network"
   dispN net
 
   putStrLn "\nValues"
-  k  <- constant 5
+  let k = constant 5
   v <- forwardNetwork' k net
   dispV v
 

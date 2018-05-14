@@ -25,7 +25,7 @@ genData param = do
   RNG.manualSeed gen seedVal
   noise        :: Tensor '[N] <- normal gen 0 2
   predictorVal :: Tensor '[N] <- normal gen 0 10
-  x :: Tensor '[2, N] <- (constant 1 >>= (\(o :: Tensor '[N]) -> predictorVal `cat1d` o) >>= resizeAs)
+  x :: Tensor '[2, N] <- (predictorVal `cat1d` (constant 1)) >>= resizeAs
   y :: Tensor '[N]    <- (newTranspose2d (param !*! x) >>= resizeAs >>= Math.cadd noise 1)
 
   pure (x, y)

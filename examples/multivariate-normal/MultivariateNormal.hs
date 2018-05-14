@@ -21,13 +21,14 @@ test_mvn = do
 
  where
   runMultivariate
-    :: KnownNatDim n
+    :: forall n
+    .  KnownNatDim n
     => Generator
     -> Maybe (Tensor '[n, n])
     -> Maybe (Tensor '[n])
     -> IO ()
   runMultivariate gen (Just eigenvector) (Just eigenvalue) = do
-    mu     :: Tensor '[n]     <- constant 0
+    let mu :: Tensor '[n]     = constant 0
     result :: Tensor '[10, n] <- multivariate_normal gen mu eigenvector eigenvalue
     print result
   runMultivariate _ _ _ = pure ()

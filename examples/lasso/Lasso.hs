@@ -51,7 +51,7 @@ genData w = do
   RNG.manualSeed gen seedVal
   noise        :: Tensor '[N, 1] <- T.normal gen 0 0.10
   predictorVal :: Tensor '[N]    <- T.normal gen 0 1.0
-  ones         :: Tensor '[N] <- T.constant 1
+  let ones     :: Tensor '[N] = T.constant 1
   x :: Tensor '[N, M] <- (predictorVal `T.cat1d` ones) >>= T.resizeAs
   y :: Tensor '[N, 1] <- T.resizeAs ((x !*! w) ^+^ noise)
   print x

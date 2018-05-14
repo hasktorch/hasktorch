@@ -155,7 +155,7 @@ tensorAutoDiff = do
   -- where we must specify how to compute the derivative.
   sumallBP :: Reifies s W => BVar s (Tensor '[3]) -> BVar s Double
   sumallBP = liftOp1 . op1 $ \t ->
-    (sumall t, unsafePerformIO . constant)
+    (sumall t, constant)
   {-# NOINLINE sumallBP #-}
 
 

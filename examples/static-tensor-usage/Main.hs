@@ -26,7 +26,7 @@ initialization = void $ do
     pure zeroMat
 
   section "Constant" $ do
-    constVec :: DoubleTensor '[2] <- constant 2
+    let constVec :: DoubleTensor '[2] = constant 2
     pure constVec
 
   listVec :: DoubleTensor '[6] <-
@@ -58,7 +58,7 @@ matrixVectorOps = void $ do
 
   constVec :: DoubleTensor '[2] <-
     section' "Constant vector" $
-      constant 2
+      pure (constant 2)
 
   section "Matrix x vector" $
     pure $ randMat !* constVec
