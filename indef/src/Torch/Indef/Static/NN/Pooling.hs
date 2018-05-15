@@ -1,8 +1,10 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 module Torch.Indef.Static.NN.Pooling where
 
 import Numeric.Backprop
@@ -61,52 +63,53 @@ type SpatialDilationCheckC kW kH pW pH dW dH dilW dilH =
 
 -- POSSIBLY THIS:
 type CeilModeOutputDims i dil k p d o ceilMode =
-  ( If (ceilMode && Rem (((dil * (k - 1)) + 1) + (2 * p)) d > 0)
-      ((i - 1 + Div (((dil * (k - 1)) + 1) + (2 * p)) d) + 1 ~ o)
-      ((i -     Div (((dil * (k - 1)) + 1) + (2 * p)) d) + 1 ~ o)
+  ( If (ceilMode && (Rem (i - (dil * (k - 1) + 1) + (2 * p)) d > 0))
+      ((2 + (Div (i - (dil * (k - 1) + 1) + (2 * p)) d)) ~ o)
+      ((1 + (Div (i - (dil * (k - 1) + 1) + (2 * p)) d)) ~ o)
   )
 
-type SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH dilW dilH =
-  ( SpatialDilationCheckC kW kH pW pH dW dH dilW dilH
-  , (iH - Div (((dilH * (kH - 1)) + 1) + (2 * pH)) dH) + 1 ~ oH
-  , (iW - Div (((dilW * (kW - 1)) + 1) + (2 * pW)) dW) + 1 ~ oW
-  )
+ -- (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1    1, ceilMode ~ 'False)
+type SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH dilW dilH ceilMode =
+   ( SpatialDilationCheckC kW kH pW pH dW dH dilW dilH
+   , CeilModeOutputDims iH dilH kH pH dH oH ceilMode
+   , CeilModeOutputDims iW dilW kW pW dW oW ceilMode
+   )
 
-dilatedMaxPooling2d
-  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH dilW dilH, ceilMode ~ 'False)
-  => Reifies s W => KnownNatDim3 inPlane iW iH => KnownNatDim2 oW oH
-
-  -- Parameters
-  => Kernel2d kW kH         -- ^ kernel size
-  -> Step2d dW dH           -- ^ step size
-  -> Padding2d pW pH        -- ^ padding size
-  -> Dilation2d dilW dilH   -- ^ dilation size
-  -> Proxy ceilMode         -- ^ ceil mode
-
-  -- function arguments
-  -> BVar s (Tensor      '[inPlane, iW, iH])                                  -- ^ input
-  -> BVar s (IndexTensor '[inPlane, oW, oH], Tensor '[inPlane, oW, oH])       -- ^ output
-dilatedMaxPooling2d ker step pad dil ceil = liftOp1 . op1 $ \inp ->
-  (unsafePerformIO (_spatialDilatedMaxPooling_updateOutput inp ker step pad dil ceil), \(ix, gout) ->
-   unsafePerformIO (_spatialDilatedMaxPooling_updateGradInput inp gout ix ker step pad dil ceil))
-
-dilatedMaxPooling2dBatch
-  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH dilW dilH, ceilMode ~ 'False)
-  => Reifies s W => KnownNatDim3 inPlane iW iH => KnownNatDim3 b oW oH
-
-  -- Parameters
-  => Kernel2d kW kH         -- ^ kernel size
-  -> Step2d dW dH           -- ^ step size
-  -> Padding2d pW pH        -- ^ padding size
-  -> Dilation2d dilW dilH   -- ^ dilation size
-  -> Proxy ceilMode         -- ^ ceil mode
-
-  -- function arguments
-  -> BVar s (Tensor      '[b, inPlane, iW, iH])                                     -- ^ input
-  -> BVar s (IndexTensor '[b, inPlane, oW, oH], Tensor '[b, inPlane, oW, oH])       -- ^ output
-dilatedMaxPooling2dBatch ker step pad dil ceil = liftOp1 . op1 $ \inp ->
-  (unsafePerformIO (_spatialDilatedMaxPooling_updateOutput inp ker step pad dil ceil), \(ix, gout) ->
-   unsafePerformIO (_spatialDilatedMaxPooling_updateGradInput inp gout ix ker step pad dil ceil))
+-- dilatedMaxPooling2d
+--   :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH dilW dilH, ceilMode ~ 'False)
+--   => Reifies s W => KnownNatDim3 inPlane iW iH => KnownNatDim2 oW oH
+-- 
+--   -- Parameters
+--   => Kernel2d kW kH         -- ^ kernel size
+--   -> Step2d dW dH           -- ^ step size
+--   -> Padding2d pW pH        -- ^ padding size
+--   -> Dilation2d dilW dilH   -- ^ dilation size
+--   -> Proxy ceilMode         -- ^ ceil mode
+-- 
+--   -- function arguments
+--   -> BVar s (Tensor      '[inPlane, iW, iH])                                  -- ^ input
+--   -> BVar s (IndexTensor '[inPlane, oW, oH], Tensor '[inPlane, oW, oH])       -- ^ output
+-- dilatedMaxPooling2d ker step pad dil ceil = liftOp1 . op1 $ \inp ->
+--   (unsafePerformIO (_spatialDilatedMaxPooling_updateOutput inp ker step pad dil ceil), \(ix, gout) ->
+--    unsafePerformIO (_spatialDilatedMaxPooling_updateGradInput inp gout ix ker step pad dil ceil))
+-- 
+-- dilatedMaxPooling2dBatch
+--   :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH dilW dilH, ceilMode ~ 'False)
+--   => Reifies s W => KnownNatDim3 inPlane iW iH => KnownNatDim3 b oW oH
+-- 
+--   -- Parameters
+--   => Kernel2d kW kH         -- ^ kernel size
+--   -> Step2d dW dH           -- ^ step size
+--   -> Padding2d pW pH        -- ^ padding size
+--   -> Dilation2d dilW dilH   -- ^ dilation size
+--   -> Proxy ceilMode         -- ^ ceil mode
+-- 
+--   -- function arguments
+--   -> BVar s (Tensor      '[b, inPlane, iW, iH])                                     -- ^ input
+--   -> BVar s (IndexTensor '[b, inPlane, oW, oH], Tensor '[b, inPlane, oW, oH])       -- ^ output
+-- dilatedMaxPooling2dBatch ker step pad dil ceil = liftOp1 . op1 $ \inp ->
+--   (unsafePerformIO (_spatialDilatedMaxPooling_updateOutput inp ker step pad dil ceil), \(ix, gout) ->
+--    unsafePerformIO (_spatialDilatedMaxPooling_updateGradInput inp gout ix ker step pad dil ceil))
 
 
 _spatialDilatedMaxPooling_updateOutput
@@ -148,83 +151,86 @@ _spatialDilatedMaxPooling_updateGradInput inp gout ix ker step pad dil _ = do
 -- * 2d max pooling helpers
 
 spatialMaxPooling_updateOutput
-  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1, ceilMode ~ 'False)
-  => KnownNat inPlane
-  => Tensor      '[inPlane, iW, iH]       -- ^ input
-  -> IndexTensor '[inPlane, iW, iH]       -- ^ indices
+  :: forall iW iH oW oH kW kH pW pH dW dH ceilMode inPlane
+  .  (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1 ceilMode)
+  => Tensor      '[inPlane, iH, iW]       -- ^ input
+  -> IndexTensor '[inPlane, iH, iW]       -- ^ indices
   -> Kernel2d kW kH                       -- ^ kernel size
   -> Step2d dW dH                         -- ^ step size
   -> Padding2d pW pH                      -- ^ padding size
-  -> Proxy ceilMode                       -- ^ ceil mode
-  -> IO (Tensor '[inPlane, oW, oH])      -- ^ output
+  -> SBool ceilMode                       -- ^ ceil mode
+  -> IO (Tensor '[inPlane, oH, oW])      -- ^ output
 spatialMaxPooling_updateOutput = _spatialMaxPooling_updateOutput
 
 spatialMaxPooling_updateOutputBatch
-  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1, ceilMode ~ 'False)
+  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1 ceilMode)
   => KnownNat2 batch inPlane
-  => Tensor      '[batch, inPlane, iW, iH]       -- ^ input
-  -> IndexTensor '[batch, inPlane, iW, iH]       -- ^ indices
+  => Tensor      '[batch, inPlane, iH, iW]       -- ^ input
+  -> IndexTensor '[batch, inPlane, iH, iW]       -- ^ indices
   -> Kernel2d kW kH                              -- ^ kernel size
   -> Step2d dW dH                                -- ^ step size
   -> Padding2d pW pH                             -- ^ padding size
-  -> Proxy ceilMode                              -- ^ ceil mode
-  -> IO (Tensor '[batch, inPlane, oW, oH])      -- ^ output
+  -- -> Proxy ceilMode                         -- ^ ceil mode
+  -> SBool ceilMode                         -- ^ ceil mode
+  -> IO (Tensor '[batch, inPlane, oH, oW])      -- ^ output
 spatialMaxPooling_updateOutputBatch = _spatialMaxPooling_updateOutput
 
 _spatialMaxPooling_updateOutput
-  :: (KnownNat4 kW kH pW pH, KnownNat2 dW dH, ceilMode ~ 'False)
+  :: (KnownNat4 kW kH pW pH, KnownNat2 dW dH)
   => Tensor d              -- ^ input
   -> IndexTensor d         -- ^ indices
   -> Kernel2d kW kH        -- ^ kernel size
   -> Step2d dW dH          -- ^ step size
   -> Padding2d pW pH       -- ^ padding size
-  -> Proxy ceilMode        -- ^ ceil mode
+  -- -> Proxy ceilMode        -- ^ ceil mode
+  -> SBool ceilMode                         -- ^ ceil mode
   -> IO (Tensor d')        -- ^ output
-_spatialMaxPooling_updateOutput inp ix ker step pad _ = do
+_spatialMaxPooling_updateOutput inp ix ker step pad ceilMode = do
   out <- empty
   Dynamic._spatialMaxPooling_updateOutput (asDynamic inp) (asDynamic out) (longAsDynamic ix)
-    (param2d ker) (param2d step) (param2d pad) False
+    (param2d ker) (param2d step) (param2d pad) (fromSing ceilMode)
   pure out
 
 spatialMaxPooling_updateGradInput
-  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1, ceilMode ~ 'False)
-  => Tensor      '[inPlane, iW, iH]         -- ^ input
-  -> Tensor      '[inPlane, oW, oH]         -- ^ gradOutput
-  -> IndexTensor '[inPlane, iW, iH]         -- ^ indices
+  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1 ceilMode)
+  => Tensor      '[inPlane, iH, iW]         -- ^ input
+  -> Tensor      '[inPlane, oH, oW]         -- ^ gradOutput
+  -> IndexTensor '[inPlane, iH, iW]         -- ^ indices
   -> Kernel2d kW kH                         -- ^ kernel size
   -> Step2d dW dH                           -- ^ step size
   -> Padding2d pW pH                        -- ^ padding size
-  -> Proxy ceilMode                         -- ^ ceil mode
-  -> IO (Tensor '[inPlane, iW, iH])         -- ^ gradInput
+  -- -> Proxy ceilMode                         -- ^ ceil mode
+  -> SBool ceilMode                         -- ^ ceil mode
+  -> IO (Tensor '[inPlane, iH, iW])         -- ^ gradInput
 spatialMaxPooling_updateGradInput = _spatialMaxPooling_updateGradInput
 
 spatialMaxPooling_updateGradInputBatch
-  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1, ceilMode ~ 'False)
-  => Tensor      '[b, inPlane, iW, iH]      -- ^ input
-  -> Tensor      '[b, inPlane, oW, oH]      -- ^ gradOutput
-  -> IndexTensor '[b, inPlane, iW, iH]      -- ^ indices
+  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1 ceilMode)
+  => Tensor      '[b, inPlane, iH, iW]      -- ^ input
+  -> Tensor      '[b, inPlane, oH, oW]      -- ^ gradOutput
+  -> IndexTensor '[b, inPlane, iH, iW]      -- ^ indices
   -> Kernel2d kW kH                         -- ^ kernel size
   -> Step2d dW dH                           -- ^ step size
   -> Padding2d pW pH                        -- ^ padding size
-  -> Proxy ceilMode                         -- ^ ceil mode
-  -> IO (Tensor '[b, inPlane, iW, iH])      -- ^ gradInput
+  -> SBool ceilMode                         -- ^ ceil mode
+  -> IO (Tensor '[b, inPlane, iH, iW])      -- ^ gradInput
 spatialMaxPooling_updateGradInputBatch = _spatialMaxPooling_updateGradInput
 
 _spatialMaxPooling_updateGradInput
-  :: (KnownNat4 kW kH pW pH, KnownNat2 dW dH, ceilMode ~ 'False)
+  :: (KnownNat4 kW kH pW pH, KnownNat2 dW dH)
   => Tensor d              -- ^ input
   -> Tensor d'             -- ^ gradOutput
   -> IndexTensor d         -- ^ indices
   -> Kernel2d kW kH        -- ^ kernel size
   -> Step2d dW dH          -- ^ step size
   -> Padding2d pW pH       -- ^ padding size
-  -> Proxy ceilMode        -- ^ ceil mode
+  -> SBool ceilMode        -- ^ ceil mode
   -> IO (Tensor d)         -- ^ gradInput
-_spatialMaxPooling_updateGradInput inp gout ix ker step pad _ = do
+_spatialMaxPooling_updateGradInput inp gout ix ker step pad ceilMode = do
   gin <- empty
   Dynamic._spatialMaxPooling_updateGradInput
     (asDynamic inp) (asDynamic gout) (asDynamic gin) (longAsDynamic ix)
-    (param2d ker) (param2d step) (param2d pad) False
+    (param2d ker) (param2d step) (param2d pad) (fromSing ceilMode)
   pure gin
 
 -- -- | run a threshold function againts two BVar variables

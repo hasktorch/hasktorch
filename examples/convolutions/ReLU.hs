@@ -14,7 +14,7 @@ import qualified Torch.Double.NN.Conv2d     as NN
 import qualified Torch.Double.NN.Activation as NN
 
 
-startLeNetLayer
+reluLayer
   :: Reifies s W
   => Step2d D D
   -> Padding2d Pad Pad
@@ -22,7 +22,7 @@ startLeNetLayer
   -> BVar s (Conv2d F O KW KH)
   -> BVar s (Tensor '[F, H, Wid])
   -> BVar s (Tensor '[O, 7, 15])
-startLeNetLayer steps pad lr conv inp = relu (NN.conv2dMM steps pad lr conv inp)
+reluLayer steps pad lr conv inp = relu (NN.conv2dMM steps pad lr conv inp)
 
 main :: IO ()
 main = Utils.section "Using Backpack" $ do
@@ -35,7 +35,7 @@ main = Utils.section "Using Backpack" $ do
   Just (input :: Tensor InputDims) <- runMaybeT Utils.mkCosineTensor
 
   -- backprop manages our forward and backward passes
-  let (o1, (c1', g1)) = backprop2 (startLeNetLayer steps pad 0.5) c input
+  let (o1, (c1', g1)) = backprop2 (reluLayer steps pad 0.5) c input
   shape o1 >>= print
   shape g1 >>= print
   Utils.printFullConv2d "Unbatched convolution layer after backprop" c1'

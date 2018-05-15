@@ -48,6 +48,7 @@ module Torch.Dimensions
 
 import Data.Singletons as X
 
+import Data.Singletons.Prelude.Bool as X
 import Data.Singletons.Prelude.Num as X
 #if MIN_VERSION_singletons(2,1,0)
   hiding (type (:+), type (:<))
