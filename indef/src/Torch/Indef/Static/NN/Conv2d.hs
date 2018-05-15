@@ -128,7 +128,8 @@ type SpatialConvolutionC f h w kW kH dW dH pW pH oW oH =
 
 -- | Backprop convolution function
 conv2dMM
-  :: Reifies s W
+  :: forall f h w kW kH dW dH pW pH oW oH s o
+  .  Reifies s W
   => SpatialConvolutionC f h w kW kH dW dH pW pH oW oH
   => KnownNatDim2 f o
   => KnownNatDim2 oH oW
@@ -142,15 +143,12 @@ conv2dMM
   -> BVar s (Conv2d f o kW kH)   -- ^ conv2d state
   -> BVar s (Tensor '[f,h,w])    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor '[o,oH,oW])
-conv2dMM s p lr = liftOp2 . op2 $ \c inp ->
-  (conv2dMM_forward s p c inp, \gout ->
-    ( conv2dMM_updGradParameters s p lr c inp gout
-    , conv2dMM_updGradInput s p c inp gout
-    ))
+conv2dMM = _conv2dMM (new :: IO (Tensor '[f * kH * kW, oH * oW]))
 
 -- | Backprop convolution function with batching
 conv2dMMBatch
-  :: Reifies s W
+  :: forall f h w kW kH dW dH pW pH oW oH s o b
+  .  Reifies s W
   => SpatialConvolutionC f h w kW kH dW dH pW pH oW oH
   => KnownNatDim3 f o b
   => Step2d dW dH                -- ^ step of the convolution in width and height dimensions.
@@ -163,12 +161,29 @@ conv2dMMBatch
   -> BVar s (Conv2d f o kW kH)   -- ^ conv2d state
   -> BVar s (Tensor '[b,f,h,w])    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor '[b,o,oH,oW])
-conv2dMMBatch s p lr = liftOp2 . op2 $ \c inp ->
-  (conv2dMM_forwardBatch s p c inp, \gout ->
-    ( conv2dMM_updGradParametersBatch s p lr c inp gout
-    , conv2dMM_updGradInputBatch s p c inp gout
-    ))
+conv2dMMBatch = _conv2dMM (new :: IO (Tensor '[b, f * kH * kW, oH * oW]))
 
+-- | Backprop convolution function
+_conv2dMM
+  :: Reifies s W
+  => Dimensions3 din dout fgin
+  => (KnownNatDim2 f o, KnownNatDim2 kW kH, KnownNatDim2 dW dH, KnownNatDim2 pW pH)
+  => IO (Tensor fgin)            -- ^ make grad input buffer
+  -> Step2d dW dH                -- ^ step of the convolution in width and height dimensions.
+                                 --   C-default is 1 for both.
+                                 --
+  -> Padding2d pW pH             -- ^ zero padding to the input plane for width and height.
+                                 --   (kW-1)/2 is often used. C-default is 0 for both.
+                                 --
+  -> Double                      -- ^ learning rate
+  -> BVar s (Conv2d f o kW kH)   -- ^ conv2d state
+  -> BVar s (Tensor din)    -- ^ input: f stands for "features" or "input plane")
+  -> BVar s (Tensor dout)
+_conv2dMM mkGradIBuffer s p lr = liftOp2 . op2 $ \c inp ->
+  (_conv2dMM_forward s p c inp, \gout ->
+    ( _conv2dMM_updGradParameters mkGradIBuffer s p lr c inp gout
+    , _conv2dMM_updGradInput mkGradIBuffer s p c inp gout
+    ))
 
 -- ========================================================================= --
 

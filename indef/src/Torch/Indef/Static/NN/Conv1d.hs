@@ -114,17 +114,7 @@ conv1d
   -> BVar s (Conv1d f o kW dW)
   -> BVar s (Tensor '[seq, f])
   -> BVar s (Tensor '[seq, o])
-conv1d lr = liftOp2 . op2 $ \c inp ->
-  (unsafePerformIO $ conv1d_forward c inp, unsafePerformIO . runBack c inp)
-  where
-    runBack
-      :: Conv1d f o kW dW
-      -> Tensor '[seq, f]
-      -> Tensor '[seq, o]
-      -> IO (Conv1d f o kW dW, Tensor '[seq, f])
-    runBack conv inp gout = (,)
-      <$> conv1d_updGradParams conv inp gout lr
-      <*> conv1d_backwardGradInput conv inp gout
+conv1d = _conv1d
 
 -- | Backprop convolution function with batching
 conv1dBatch
@@ -137,18 +127,24 @@ conv1dBatch
   -> BVar s (Conv1d f o kW dW)
   -> BVar s (Tensor '[b, seq, f])
   -> BVar s (Tensor '[b, seq, o])
-conv1dBatch lr = liftOp2 . op2 $ \c inp ->
-  (unsafePerformIO $ conv1d_forwardBatch c inp, \o -> unsafePerformIO $ runBack c inp o)
-  where
-    runBack
-      :: Conv1d f o kW dW
-      -> Tensor '[b, seq, f]
-      -> Tensor '[b, seq, o]
-      -> IO (Conv1d f o kW dW, Tensor '[b, seq, f])
-    runBack conv inp gout = (,)
-      <$> conv1d_updGradParamsBatch conv inp gout lr
-      <*> conv1d_backwardGradInputBatch conv inp gout
+conv1dBatch = _conv1d
 
+-- | Backprop convolution function without specifying constraints or dimensions
+_conv1d
+  -- :: forall s seq f kW dW o d d'
+  :: Reifies s W
+  => KnownDim (f*kW)
+  => KnownNatDim4 f o kW dW
+  => Dimensions2 d d'
+  => Double
+  -> BVar s (Conv1d f o kW dW)
+  -> BVar s (Tensor d)
+  -> BVar s (Tensor d')
+_conv1d lr = liftOp2 . op2 $ \c inp ->
+  (unsafePerformIO $ _conv1d_forward c inp, \gout ->
+      ( unsafePerformIO $ _conv1d_updGradParams c inp gout lr
+      , unsafePerformIO $ _conv1d_backwardGradInput c inp gout
+      ) )
 
 -------------------------------------------------------------------------------
 -- * Functions for temporal convolution

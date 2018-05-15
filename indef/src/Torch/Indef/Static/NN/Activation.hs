@@ -63,6 +63,10 @@ _leakyReLU_updateGradInput t0 t1 t2 d0 b0 =
     (asDynamic t0) (asDynamic t1) (asDynamic t2)
     (d0) (b0)
 
+-- | ReLU activation function
+relu :: Reifies s W => Dimensions d => BVar s (Tensor d) -> BVar s (Tensor d)
+relu = threshold 0 0
+
 -- | run a threshold function againts two BVar variables
 threshold
   :: Reifies s W
@@ -74,37 +78,33 @@ threshold
 threshold thr value = liftOp1 . op1 $ \inp ->
   (unsafePerformIO (_threshold_updateOutput thr value False inp), \gout ->
     unsafePerformIO (_threshold_updateGradInput thr value False inp gout))
-
--- | ReLU activation function
-relu :: Reifies s W => Dimensions d => BVar s (Tensor d) -> BVar s (Tensor d)
-relu = threshold 0 0
-
-_threshold_updateOutput
-  :: Double              -- ^ threshold
-  -> Double              -- ^ replacement value
-  -> Bool                -- ^ inplace
-  -> Tensor d            -- ^ input
-  -> IO (Tensor d)       -- ^ output
-_threshold_updateOutput thr val inplace input = do
-  out <- empty
-  Dynamic._threshold_updateOutput
-    (asDynamic input) (asDynamic out)
-    thr val
-    inplace
-  pure out
-
-_threshold_updateGradInput
-  :: Double        -- ^ threshold
-  -> Double        -- ^ replacement value
-  -> Bool          -- ^ inplace
-  -> Tensor d      -- ^ input
-  -> Tensor d      -- ^ gradient output
-  -> IO (Tensor d) -- ^ gradient input
-_threshold_updateGradInput thr val inplace input gout = do
-  gin <- empty
-  Dynamic._threshold_updateGradInput
-    (asDynamic input) (asDynamic gout) (asDynamic gin)
-    thr val
-    inplace
-  pure gin
+  where
+    _threshold_updateOutput
+      :: Double              -- ^ threshold
+      -> Double              -- ^ replacement value
+      -> Bool                -- ^ inplace
+      -> Tensor d            -- ^ input
+      -> IO (Tensor d)       -- ^ output
+    _threshold_updateOutput thr val inplace input = do
+      out <- empty
+      Dynamic._threshold_updateOutput
+        (asDynamic input) (asDynamic out)
+        thr val
+        inplace
+      pure out
+    
+    _threshold_updateGradInput
+      :: Double        -- ^ threshold
+      -> Double        -- ^ replacement value
+      -> Bool          -- ^ inplace
+      -> Tensor d      -- ^ input
+      -> Tensor d      -- ^ gradient output
+      -> IO (Tensor d) -- ^ gradient input
+    _threshold_updateGradInput thr val inplace input gout = do
+      gin <- empty
+      Dynamic._threshold_updateGradInput
+        (asDynamic input) (asDynamic gout) (asDynamic gin)
+        thr val
+        inplace
+      pure gin
 
