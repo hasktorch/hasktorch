@@ -12,9 +12,4 @@ instance Dimensions d => Backprop (Tensor d) where
   zero = (const . constant) 0
   one = (const . constant) 1
 
--- FIXME: find out what to do with this
-instance Dimensions d => Backprop (IndexTensor d) where
-  add a b = b
-  zero = const Ix.zeroIxNd
-  one = const (longAsStatic (Ix.newIxDyn 1))
 

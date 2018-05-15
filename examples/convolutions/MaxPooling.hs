@@ -9,6 +9,7 @@ import Control.Monad.Trans.Maybe
 
 import Torch.Double as Torch
 import Conv2d
+import qualified ReLU
 import qualified Torch.Long as Ix
 import qualified Utils
 import qualified Torch.Double.NN.Conv2d     as NN
@@ -16,14 +17,23 @@ import qualified Torch.Double.NN.Activation as NN
 
 
 lenetLayer
-  :: Reifies s W
-  => Step2d D D
-  -> Padding2d Pad Pad
-  -> Double
+  :: forall s . Reifies s W
+  => Double
   -> BVar s (Conv2d F O KW KH)
   -> BVar s (Tensor '[F, H, Wid])
-  -> BVar s (Tensor '[2, 7, 15])
-lenetLayer steps pad lr conv inp = relu (NN.conv2dMM steps pad lr conv inp)
+  -> BVar s (Tensor '[O, 6, 14])
+lenetLayer lr conv
+  = maxPooling2d
+      (Kernel2d :: Kernel2d 2 2)
+      (Step2d :: Step2d 1 1)
+      (Padding2d :: Padding2d 0 0)
+      (sing :: SBool 'True)
+  . relu
+  . NN.conv2dMM
+      (Step2d :: Step2d D D)
+      (Padding2d :: Padding2d Pad Pad)
+      lr conv
+
 
 main :: IO ()
 main = Utils.section "Using Backpack" $ do
@@ -36,46 +46,22 @@ main = Utils.section "Using Backpack" $ do
   Just (input :: Tensor InputDims) <- runMaybeT Utils.mkCosineTensor
 
   -- backprop manages our forward and backward passes
-  let (o1, (c1', g1)) = backprop2 (lenetLayer steps pad 0.5) c input
+  let (o1, (c1', g1)) = backprop2 (ReLU.reluLayer steps pad 0.5) c input
   shape o1 >>= print
-  -- shape g1 >>= print
-  let ixs = longAsStatic (newIxDyn 0)
-  (Ix.shape ixs) >>= print
-  print "FOOOOOO"
-  -- CEIL  Tensor '[2, 3, 5]
-  -- FLOOR Tensor '[2, 3, 7]
-  o1'                      <- spatialMaxPooling_updateOutput o1 ixs
-            (Kernel2d :: Kernel2d 4 4) (Step2d :: Step2d 2 2)
-            (Padding2d :: Padding2d 1 1) (sing :: SBool 'True)
-  print "FOOOOOO"
+  let o1' = evalBP myMaxPool o1
   shape o1' >>= print
-  (Ix.shape ixs) >>= print
-  print o1'
-  -- Utils.printFullConv2d "Unbatched convolution layer after backprop" c1'
 
+  let gin = gradBP myMaxPool o1
+  shape gin >>= print
+  print gin
+  where
+    myMaxPool
+      :: Reifies s W
+      => BVar s (Tensor '[2, 7, 15])
+      -> BVar s (Tensor '[2, 4, 8])
+    myMaxPool = maxPooling2d
+      (Kernel2d :: Kernel2d 4 4) (Step2d :: Step2d 2 2)
+      (Padding2d :: Padding2d 1 1) (sing :: SBool 'True)
 
---spatialMaxPooling_updateOutput
---  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1, ceilMode ~ 'False)
---  => KnownNat inPlane
---  => Tensor      '[inPlane, iW, iH]       -- ^ input
---  -> IndexTensor '[inPlane, iW, iH]       -- ^ indices
---  -> Kernel2d kW kH                       -- ^ kernel size
---  -> Step2d dW dH                         -- ^ step size
---  -> Padding2d pW pH                      -- ^ padding size
---  -> Proxy ceilMode                       -- ^ ceil mode
---  -> IO (Tensor '[inPlane, oW, oH])      -- ^ output
---spatialMaxPooling_updateOutput = _spatialMaxPooling_updateOutput
---
---spatialMaxPooling_updateGradInput
---  :: (SpatialDilationFloorCheckC iW iH oW oH kW kH pW pH dW dH 1 1, ceilMode ~ 'False)
---  => Tensor      '[inPlane, iW, iH]         -- ^ input
---  -> Tensor      '[inPlane, oW, oH]         -- ^ gradOutput
---  -> IndexTensor '[inPlane, iW, iH]         -- ^ indices
---  -> Kernel2d kW kH                         -- ^ kernel size
---  -> Step2d dW dH                           -- ^ step size
---  -> Padding2d pW pH                        -- ^ padding size
---  -> Proxy ceilMode                         -- ^ ceil mode
---  -> IO (Tensor '[inPlane, iW, iH])         -- ^ gradInput
---spatialMaxPooling_updateGradInput = _spatialMaxPooling_updateGradInput
 
 
