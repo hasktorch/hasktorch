@@ -38,7 +38,7 @@ usingBackpack2d :: IO ()
 usingBackpack2d = Utils.section "Using Backpack" $ do
   g <- newRNG
   manualSeed g 1
-  c :: Conv2d F O KW KH <- initConv2d g
+  c :: Conv2d F O KH KW <- initConv2d g
   Utils.printFullConv2d "initial conv1d state" c
 
   -- do a forward pass
@@ -69,7 +69,7 @@ directFunctionCalls2d :: IO ()
 directFunctionCalls2d = do
   g <- newRNG
   manualSeed g 1
-  conv :: Conv2d F O KW KH <- initConv2d g
+  conv :: Conv2d F O KH KW <- initConv2d g
 
   -- do a forward pass
   Just (input :: Tensor InputDims) <- runMaybeT Utils.mkCosineTensor

@@ -258,16 +258,30 @@ _resizeDim t = case dimVals d of
   -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
-view :: forall d d' . (Dimensions d, Dimensions d') => Tensor d -> IO (Tensor d')
-view src = do
+-- view :: forall d d' . (Dimensions d, Dimensions d') => Tensor d -> IO (Tensor d')
+-- view src = do
+--   res <- newClone src
+--   shape :: Tensor d' <- new
+--   _resizeAs res shape
+
+-- | Resize the input with the output shape. impure and mutates the tensor inplace.
+-- 
+-- FIXME: replace @d@ with a linear type?
+resizeAs_ :: forall d d' . (Dimensions2 d d', Product d ~ Product d') => Tensor d -> IO (Tensor d')
+resizeAs_ src = do
+  shape :: Tensor d' <- new
+  _resizeAs src shape
+
+-- | Pure version of 'resizeAs_' which clones the input tensor (pure, dupable?)
+resizeAs :: forall d d' . (Dimensions2 d d', Product d ~ Product d') => Tensor d -> Tensor d'
+resizeAs src = unsafeDupablePerformIO $ do
   res <- newClone src
   shape :: Tensor d' <- new
   _resizeAs res shape
 
-resizeAs :: forall d d' . (Dimensions2 d d', Product d ~ Product d') => Tensor d -> IO (Tensor d')
-resizeAs src = do
-  shape :: Tensor d' <- new
-  _resizeAs src shape
+-- | flatten a tensor (pure, dupable)
+flatten :: (Dimensions d, KnownDim (Product d)) => Tensor d -> Tensor '[Product d]
+flatten = resizeAs
 
 -- | Initialize a tensor of arbitrary dimension from a list
 -- FIXME: There might be a faster way to do this with newWithSize
@@ -300,9 +314,9 @@ matrix ls
       Nothing -> Left "impossible: number of elements doesn't match the dimensions"
       Just m -> Right m
 
-
-newTranspose2d :: (KnownNat2 r c) => Tensor '[r, c] -> IO (Tensor '[c, r])
-newTranspose2d t = newTranspose t 1 0
+-- | transpose a matrix (pure, dupable)
+transpose2d :: (KnownNat2 r c) => Tensor '[r, c] -> Tensor '[c, r]
+transpose2d t = unsafeDupablePerformIO $ newTranspose t 1 0
 
 -- | Expand a vector by copying into a matrix by set dimensions
 -- TODO - generalize this beyond the matrix case

@@ -19,7 +19,7 @@ reluLayer
   => Step2d D D
   -> Padding2d Pad Pad
   -> Double
-  -> BVar s (Conv2d F O KW KH)
+  -> BVar s (Conv2d F O KH KW)
   -> BVar s (Tensor '[F, H, Wid])
   -> BVar s (Tensor '[O, 7, 15])
 reluLayer steps pad lr conv inp = relu (NN.conv2dMM steps pad lr conv inp)
@@ -28,7 +28,7 @@ main :: IO ()
 main = Utils.section "Using Backpack" $ do
   g <- newRNG
   manualSeed g 1
-  c :: Conv2d F O KW KH <- initConv2d g
+  c :: Conv2d F O KH KW <- initConv2d g
   Utils.printFullConv2d "initial conv1d state" c
 
   -- do a forward pass

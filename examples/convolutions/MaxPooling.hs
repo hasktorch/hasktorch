@@ -19,7 +19,7 @@ import qualified Torch.Double.NN.Activation as NN
 lenetLayer
   :: forall s . Reifies s W
   => Double
-  -> BVar s (Conv2d F O KW KH)
+  -> BVar s (Conv2d F O KH KW)
   -> BVar s (Tensor '[F, H, Wid])
   -> BVar s (Tensor '[O, 6, 14])
 lenetLayer lr conv
@@ -39,7 +39,7 @@ main :: IO ()
 main = Utils.section "Using Backpack" $ do
   g <- newRNG
   manualSeed g 1
-  c :: Conv2d F O KW KH <- initConv2d g
+  c :: Conv2d F O KH KW <- initConv2d g
   Utils.printFullConv2d "initial conv1d state" c
 
   -- do a forward pass

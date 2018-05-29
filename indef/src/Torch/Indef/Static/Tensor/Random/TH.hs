@@ -77,14 +77,13 @@ _multinomialAliasDraw r g a b = Dynamic._multinomialAliasDraw (longAsDynamic r) 
 multivariate_normal
   :: forall n p . (KnownNatDim2 n p)
   => Generator -> Tensor '[p] -> Tensor '[p, p] -> Tensor '[p] -> IO (Tensor '[n, p])
-multivariate_normal g mu eigvec eigval = join $ go
-  <$> newTranspose2d eigvec
-  <*> diag1d eigval
+multivariate_normal g mu eigvec eigval = go (transpose2d eigvec)
+  <$> diag1d eigval
   <*> expand2d mu
   <*> normal g 0 1
  where
-  go :: Tensor '[p, p] -> Tensor '[p, p] -> Tensor '[n, p] -> Tensor '[p, n] -> IO (Tensor '[n, p])
-  go evec' eval' offset samps = (^+^ offset) <$> newTranspose2d (y !*! samps)
+  go :: Tensor '[p, p] -> Tensor '[p, p] -> Tensor '[n, p] -> Tensor '[p, n] -> Tensor '[n, p]
+  go evec' eval' offset samps = transpose2d (y !*! samps) ^+^ offset
     where
       x = evec' !*! eval'
       y = x !*! eigvec

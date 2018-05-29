@@ -25,24 +25,24 @@ _addmv
   -> Tensor '[c] -> IO ()
 _addmv  = blasOp Dynamic._addmv
 
--- | inplace 'addmv'
+-- | inplace 'addmv' (pure, dupable)
 addmv
   :: (KnownNatDim2 r c)
   => HsReal -> Tensor '[r]
   -> HsReal -> Tensor '[r, c]
-  -> Tensor '[c] -> IO (Tensor '[r])
-addmv a b c d e = withEmpty $ \r -> _addmv r a b c d e
+  -> Tensor '[c] -> Tensor '[r]
+addmv a b c d e = unsafeDupablePerformIO $ withEmpty $ \r -> _addmv r a b c d e
+{-# NOINLINE addmv #-}
 
 -- | added simplified use of addmv: src1 #> src2
 mv
   :: (KnownNatDim2 r c)
-  => Tensor '[r, c] -> Tensor '[c] -> IO (Tensor '[r])
+  => Tensor '[r, c] -> Tensor '[c] -> Tensor '[r]
 mv m v = addmv 0 (constant 0) 1 m v
 
--- | inline, pure version of 'mv'
+-- | inline version of 'mv'
 (!*) :: (KnownNatDim2 r c) => Tensor '[r, c] -> Tensor '[c] -> Tensor '[r]
-(!*) a b = unsafePerformIO $ mv a b
-{-# NOINLINE (!*) #-}
+(!*) a b = mv a b
 
 -- | only matrix-matrix multiplication:
 -- https://github.com/torch/torch7/blob/aed31711c6b8846b8337a263a7f9f998697994e7/doc/maths.md#res-torchaddmmres-v1-m-v2-mat1-mat2
@@ -54,6 +54,7 @@ _addmm
   -> Tensor '[b, c] -> IO ()
 _addmm  = blasOp Dynamic._addmm
 
+-- | pure version of '_addmm', matrix-matrix multiplication, adding a constant matrix
 addmm
   :: KnownNatDim3 a b c
   => HsReal
@@ -61,18 +62,22 @@ addmm
   -> HsReal
   -> Tensor '[a, b]
   -> Tensor '[b, c]
-  -> IO (Tensor '[a, c])
-addmm a m b x y = withEmpty $ \r -> _addmm r a m b x y
+  -> Tensor '[a, c]
+addmm a m b x y = unsafePerformIO . withEmpty $ \r -> _addmm r a m b x y
+{-# NOINLINE addmm #-}
 
 -- | simplified wrapper of 'addmm'
+--
+-- FIXME: see if we can pass a null pointer in as the constant value (which might eliminate a noop linear pass).
 mmult
   :: KnownNatDim3 a b c
-  => Tensor '[a, b] -> Tensor '[b, c] -> IO (Tensor '[a, c])
+  => Tensor '[a, b]
+  -> Tensor '[b, c]
+  -> Tensor '[a, c]
 mmult x y = addmm 1 (constant 0) 1 x y
 
 (!*!) :: (KnownNatDim3 a b c) => Tensor '[a, b] -> Tensor '[b, c] -> Tensor '[a, c]
-(!*!) a b = unsafePerformIO $ mmult a b
-{-# NOINLINE (!*!) #-}
+(!*!) = mmult
 
 
 -- outer product between a 1D tensor and a 1D tensor:
@@ -96,10 +101,12 @@ addr a t b x y = withEmpty $ \r -> _addr r a t b x y
 -- 'addr' with the parameters for an outer product filled in.
 outer
   :: forall t r c . (KnownNatDim2 r c)
-  => Tensor '[r] -> Tensor '[c] -> IO (Tensor '[r, c])
-outer v1 v2 = do
+  => Tensor '[r] -> Tensor '[c] -> Tensor '[r, c]
+outer v1 v2 = unsafePerformIO $ do
   t :: Tensor '[r, c] <- zerosLike
   addr 0 t 1 v1 v2
+{-# NOINLINE outer #-}
+
 
 
 -- | Batch matrix matrix product of matrices stored in batch1 and batch2, with a reduced add step

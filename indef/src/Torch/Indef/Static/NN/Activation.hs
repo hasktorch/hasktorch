@@ -92,7 +92,7 @@ threshold thr value = liftOp1 . op1 $ \inp ->
         thr val
         inplace
       pure out
-    
+
     _threshold_updateGradInput
       :: Double        -- ^ threshold
       -> Double        -- ^ replacement value
