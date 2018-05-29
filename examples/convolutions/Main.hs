@@ -4,6 +4,7 @@ import qualified Conv1d
 import qualified Conv2d
 import qualified ReLU
 import qualified MaxPooling
+import qualified LeNet
 
 main :: IO ()
 main = do
@@ -11,4 +12,5 @@ main = do
   Conv2d.main
   ReLU.main
   MaxPooling.main
+  LeNet.main
 

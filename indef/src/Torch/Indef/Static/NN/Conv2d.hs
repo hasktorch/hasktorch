@@ -42,6 +42,8 @@ import qualified Torch.Indef.Dynamic.NN as Dynamic
 
 -- ========================================================================= --
 
+-- FIXME: this is a bit of a hiccup: can we remove the kernel dimensions or
+-- move pad/stride into the phantoms?
 newtype Conv2d f o kW kH
   = Conv2d { getTensors :: (Tensor '[o, f, kH, kW], Tensor '[o]) }
 

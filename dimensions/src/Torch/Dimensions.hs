@@ -11,26 +11,12 @@
 {-# LANGUAGE CPP #-}
 module Torch.Dimensions
   ( module X
-  , KnownNat
-  , KnownNat2
-  , KnownNat3
-  , KnownNat4
-  , KnownNat5
-  , KnownNatDim
-  , KnownNatDim2
-  , KnownNatDim3
-  , KnownNatDim4
-  , KnownNatDim5
-  , SingDim
-  , SingDim2
-  , SingDim3
-  , SingDim4
-  , SingDim5
+  , KnownNat , KnownNatDim , SingDim
+  , KnownNat2, KnownNatDim2, SingDim2, Dimensions2
+  , KnownNat3, KnownNatDim3, SingDim3, Dimensions3
+  , KnownNat4, KnownNatDim4, SingDim4, Dimensions4
+  , KnownNat5, KnownNatDim5, SingDim5, Dimensions5
   , SingDimensions
-  , Dimensions2
-  , Dimensions3
-  , Dimensions4
-  , Dimensions5
   , DimVal(..)
   , someDimsM
   , unsafeSomeDims
@@ -86,6 +72,11 @@ type KnownNatDim2 n0 n1       = (KnownNatDim  n0,       KnownNatDim n1)
 type KnownNatDim3 n0 n1 n2    = (KnownNatDim2 n0 n1,    KnownNatDim n2)
 type KnownNatDim4 n0 n1 n2 n3 = (KnownNatDim3 n0 n1 n2, KnownNatDim n3)
 type KnownNatDim5 n0 n1 n2 n3 n4 = (KnownNatDim4 n0 n1 n2 n3, KnownNatDim n4)
+
+type KnownDim2 n0 n1       = (KnownDim  n0,       KnownDim n1)
+type KnownDim3 n0 n1 n2    = (KnownDim2 n0 n1,    KnownDim n2)
+type KnownDim4 n0 n1 n2 n3 = (KnownDim3 n0 n1 n2, KnownDim n3)
+type KnownDim5 n0 n1 n2 n3 n4 = (KnownDim4 n0 n1 n2 n3, KnownDim n4)
 
 type SingDim n            = (SingI n, KnownNatDim n)
 type SingDim2 n0 n1       = (SingDim n0,        SingDim n1)
