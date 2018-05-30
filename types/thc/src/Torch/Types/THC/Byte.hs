@@ -30,6 +30,9 @@ c2hsReal = fromIntegral
 c2hsAccReal :: CAccReal -> HsAccReal
 c2hsAccReal = fromIntegral
 
+i2hsReal :: Integral i => i -> HsReal
+i2hsReal = fromIntegral
+
 type Storage = ByteStorage
 cstorage        = snd . byteStorageState
 storage         = byteStorage

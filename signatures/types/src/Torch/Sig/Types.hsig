@@ -57,3 +57,5 @@ hs2cAccReal :: HsAccReal -> CAccReal
 c2hsReal :: CReal -> HsReal
 c2hsAccReal :: CAccReal -> HsAccReal
 
+-- i2hsReal :: Integral i => i -> HsReal
+

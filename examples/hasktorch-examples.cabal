@@ -158,6 +158,7 @@ executable convolutions
     , backprop >= 0.2
     , ghc-typelits-natnormalise
     , hasktorch-core
+    , microlens-th
     , mtl
     , transformers
 
