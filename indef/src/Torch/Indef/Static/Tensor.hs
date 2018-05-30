@@ -176,8 +176,8 @@ _setStorageDim t s o = \case
   [x, y, z, q] -> _setStorage4d t s o x y z q
   _            -> throwGT4 "setStorage"
 
-_setDim :: forall d d' . (Dimensions d') => Tensor d -> Dim d' -> HsReal -> IO ()
-_setDim t d v = case dimVals d of
+setDim_ :: forall d (d'::[Nat]) . Tensor d -> Dim d' -> HsReal -> IO ()
+setDim_ t d v = case dimVals d of
   []           -> throwNE "can't set on an empty dimension."
   [x]          -> _set1d t x       v
   [x, y]       -> _set2d t x y     v
@@ -185,8 +185,8 @@ _setDim t d v = case dimVals d of
   [x, y, z, q] -> _set4d t x y z q v
   _            -> throwGT4 "set"
 
--- setDim'_ :: (Dimensions d) => Tensor d -> SomeDims -> HsReal (Tensor d) -> IO ()
--- setDim'_ t (SomeDims d) v = _setDim t d v
+setDim'_ :: Tensor d -> SomeDims -> HsReal -> IO ()
+setDim'_ t (SomeDims d) = setDim_ t d
 
 getDim :: Dimensions d' => Tensor d -> Dim (d'::[Nat]) -> IO (HsReal)
 getDim t d = case dimVals d of

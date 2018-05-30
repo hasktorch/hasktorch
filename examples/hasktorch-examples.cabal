@@ -150,16 +150,21 @@ executable convolutions
       Utils
     , Conv1d
     , Conv2d
-    , ReLU
-    , MaxPooling
+    , DataLoader
     , LeNet
+    , MaxPooling
+    , ReLU
   build-depends:
       base >=4.7 && <5
     , backprop >= 0.2
+    , directory
+    , filepath
     , ghc-typelits-natnormalise
     , hasktorch-core
+    , list-t
     , microlens-th
     , mtl
     , transformers
+    , JuicyPixels
 
 

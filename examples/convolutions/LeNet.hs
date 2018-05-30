@@ -21,7 +21,7 @@ import qualified Torch.Double.NN.Activation as NN
 import Lens.Micro.TH
 
 data LeNet = LeNet
-  { _conv1 :: Conv2d 1  6 5 5
+  { _conv1 :: Conv2d 3  6 5 5
   , _conv2 :: Conv2d 6 16 5 5
   , _fc1   :: Linear  (16*5*5) 120
   , _fc2   :: Linear       120  84
@@ -50,7 +50,7 @@ lenet
   .  Reifies s W
   => Double
   -> BVar s  LeNet                   -- ^ lenet architecture
-  -> BVar s (Tensor '[1,32,32])      -- ^ input
+  -> BVar s (Tensor '[3,32,32])      -- ^ input
   -> BVar s (Tensor '[10])           -- ^ output
 lenet lr arch inp
   = lenetLayer lr (arch ^^. conv1) inp
