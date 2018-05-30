@@ -123,17 +123,24 @@ lenetLayer2 = lenetLayer
 -------------------------------------------------------------------------------
 -- Helper functions which might end up migrating to the -indef codebase:
 
+-- | default step size for Conv2d
 type DStep = 1
+
+-- | default padding size for all code
 type DPad  = 0
 
--- layer initialization:
+-- Layer initialization: These depend on random functions which are not unified and, thus,
+-- it's a little trickier to fold these back into their respective NN modules.
 
+-- | initialize a new linear layer
 newLinear :: forall o i . KnownNatDim2 i o => IO (Linear i o)
 newLinear = Linear <$> newLayerWithBias (natVal (Proxy @i))
 
+-- | initialize a new conv2d layer
 newConv2d :: forall o i kH kW . KnownNatDim4 i o kH kW => IO (Conv2d i o kH kW)
 newConv2d = Conv2d <$> newLayerWithBias (natVal (Proxy @i) * natVal (Proxy @kH) * natVal (Proxy @kW))
 
+-- | uniform random initialization
 newLayerWithBias :: Dimensions2 d d' => Natural -> IO (Tensor d, Tensor d')
 newLayerWithBias n = do
   g <- newRNG
