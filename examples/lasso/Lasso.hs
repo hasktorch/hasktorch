@@ -6,19 +6,19 @@
 module Main where
 
 import Data.Monoid
+import Data.Proxy
+import GHC.Natural
 import Control.Monad (void)
-import GHC.TypeLits
 import Lens.Micro ((^.), _2, _1)
 import System.IO.Unsafe
 
-import Torch hiding (N, abs, sqrt, round, max)
+import Torch.Float hiding (N, abs, sqrt, round, max)
 import qualified Torch.Core.Random as RNG
-import qualified Torch as T
-import qualified Torch as TU
+import qualified Torch.Float as T
+import qualified Torch.Float as TU
 
 type N = 20 -- sample size
 type M = 2
-type Tensor = FloatTensor
 type Precision = Float
 type AccPrecision = Double
 type Epsilon = Precision
@@ -47,15 +47,15 @@ main = do
 -- Make sample data
 genData :: Tensor '[M, 1] -> IO (Tensor '[N, M], Tensor '[N, 1])
 genData w = do
-  gen <- RNG.new
+  gen <- RNG.newRNG
   RNG.manualSeed gen seedVal
   noise        :: Tensor '[N, 1] <- T.normal gen 0 0.10
   predictorVal :: Tensor '[N]    <- T.normal gen 0 1.0
   ones         :: Tensor '[N] <- T.constant 1
   x :: Tensor '[N, M] <- (predictorVal `T.cat1d` ones) >>= T.resizeAs
   y :: Tensor '[N, 1] <- T.resizeAs ((x !*! w) ^+^ noise)
-  printTensor x
-  printTensor y
+  print x
+  print y
   pure (x, y)
 
 -- ========================================================================= --
@@ -68,7 +68,7 @@ runSynthetic
   -> Precision
   -> IO (Tensor '[M, 1])
 runSynthetic fn iters l = do
-  gen       <- RNG.new
+  gen       <- RNG.newRNG
   trueParam <- T.normal gen 20 1
   (xs, ys)  <- genData trueParam
 
@@ -109,7 +109,7 @@ cyclic_coordinate_descent (x, y) l eps = go []
   coordinate_descent
     :: (Tensor '[N, M], Tensor '[N, 1])
     -> Precision
-    -> Integer
+    -> Natural
     -> Tensor '[M, 1]
     -> IO [(Tensor '[M, 1], Precision)]
   coordinate_descent (x, y) l = go 0 []
@@ -119,9 +119,9 @@ cyclic_coordinate_descent (x, y) l eps = go []
     nParams :: Int
     nParams = round ( getDim2d x D2 )
 
-    go :: Int -> [(Tensor '[M, 1], Precision)] -> Integer -> Tensor '[M, 1] -> IO [(Tensor '[M, 1], Precision)]
+    go :: Int -> [(Tensor '[M, 1], Precision)] -> Natural -> Tensor '[M, 1] -> IO [(Tensor '[M, 1], Precision)]
     go ix res j w
-      | j > natVal (Proxy :: Proxy M) - 1 = pure ((w, loss (x, y) w):res)
+      | j > fromIntegral (natVal (Proxy :: Proxy M)) - 1 = pure ((w, loss (x, y) w):res)
       | otherwise = do
         let jIdx = fromIntegral j
         x_j <- T.getColumn x jIdx

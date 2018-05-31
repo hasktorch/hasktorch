@@ -4,9 +4,9 @@ module Main where
 
 import Control.Monad (void)
 
-import Torch
-import qualified Torch.Core.Random as RNG (new)
-import qualified Torch as Math
+import Torch.Double
+import qualified Torch.Core.Random as RNG (newRNG)
+import qualified Torch.Double as Math
 -- import Torch.Core.Tensor.Static.Math as Math
 -- import Torch.Core.Tensor.Static.Math.Infix
 
@@ -42,14 +42,14 @@ initialization = void $ do
     pure listVec2
 
   section "Random values" $ do
-    gen :: Generator <- RNG.new
+    gen :: Generator <- RNG.newRNG
     randMat :: DoubleTensor '[4, 4] <- uniform gen 1 2
     pure randMat
 
 matrixVectorOps :: IO ()
 matrixVectorOps = void $ do
   h2 "Matrix/vector operations"
-  gen <- RNG.new
+  gen <- RNG.newRNG
 
   randMat :: DoubleTensor '[2, 2] <-
     section' "Random matrix" $
@@ -76,7 +76,7 @@ valueTransformations :: IO ()
 valueTransformations = void $ do
   h2 "Batch tensor value transformations"
 
-  gen <- RNG.new
+  gen <- RNG.newRNG
 
   randMat :: DoubleTensor '[4, 4] <-
     section' "Random matrix" $ do
@@ -112,10 +112,10 @@ header c h = do
   putStrLn $ replicate (length h) c
 
 section :: Dimensions d => String -> IO (DoubleTensor d) -> IO ()
-section a b = _section printTensor a b >> pure ()
+section a b = _section print a b >> pure ()
 
 section' :: Dimensions d => String -> IO (DoubleTensor d) -> IO (DoubleTensor d)
-section' = _section printTensor
+section' = _section print
 
 showSection :: Show x => String -> IO x -> IO ()
 showSection a b = _section print a b >> pure ()

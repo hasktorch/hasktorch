@@ -6,7 +6,7 @@ module MemorySpec (spec) where
 import Test.Hspec
 import Control.Exception (bracket)
 import Control.Monad (forM_)
-import Torch.Dynamic as Dynamic
+import Torch.Double.Dynamic as Dynamic
 
 import System.Mem ()
 

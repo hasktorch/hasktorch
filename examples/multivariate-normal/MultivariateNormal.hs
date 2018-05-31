@@ -3,15 +3,11 @@
 module Main where
 
 import Control.Monad
-import Torch
-import qualified Torch.Dynamic as Dynamic
-import qualified Torch.Core.Random as RNG
-
-type Tensor = DoubleTensor
+import Torch.Double
 
 test_mvn :: IO ()
 test_mvn = do
-  gen <- RNG.new
+  gen <- newRNG
 
   void . join $
     runMultivariate gen
@@ -28,7 +24,7 @@ test_mvn = do
   runMultivariate gen eigenvector eigenvalue = do
     mu     :: Tensor '[n]     <- constant 0
     result :: Tensor '[10, n] <- multivariate_normal gen mu eigenvector eigenvalue
-    printTensor result
+    print result
 
 main :: IO ()
 main = do

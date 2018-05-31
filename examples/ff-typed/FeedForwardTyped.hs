@@ -4,8 +4,7 @@
 {-# LANGUAGE LambdaCase          #-}
 module Main where
 
-import Torch
-import qualified Torch.Core.Random as RNG
+import Torch.Double
 import System.IO.Unsafe (unsafePerformIO)
 
 {- Simple FF neural network, statically typed version, based on JL's example -}
@@ -32,9 +31,9 @@ infixr 5 :~
 dispW :: (KnownNatDim o, KnownNatDim i) => StaticWeights i o -> IO ()
 dispW w = do
   putStrLn "\nBiases:"
-  printTensor (biases w)
+  print (biases w)
   putStrLn "\nWeights:"
-  printTensor (nodes w)
+  print (nodes w)
 
 dispN :: SN h hs c -> IO ()
 dispN (O w) = dispW w
@@ -42,7 +41,7 @@ dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispW w >> dispN n'
 
 randomWeights :: (KnownNatDim i, KnownNatDim o) => IO (SW i o)
 randomWeights = do
-  gen <- RNG.new
+  gen <- newRNG
   b <- uniform gen (-1.0) (1.0)
   w <- uniform gen (-1.0) (1.0)
   pure SW { biases = b, nodes = w }
@@ -95,13 +94,13 @@ main = do
   dispN n1
 
   putStrLn "\nNETWORK 1 Forward prop result:"
-  (constant 1 :: IO (DoubleTensor '[4])) >>= runNet n1 >>= printTensor
+  (constant 1 :: IO (DoubleTensor '[4])) >>= runNet n1 >>= print
 
   putStrLn "\n=========\nNETWORK 2\n========="
   n2  <- randomNet :: IO (SN 4 '[3, 2] 2)
   dispN n2
 
   putStrLn "\nNETWORK 2 Forward prop result:"
-  (constant 1 :: IO (DoubleTensor '[4])) >>= runNet n2 >>= printTensor
+  (constant 1 :: IO (DoubleTensor '[4])) >>= runNet n2 >>= print
 
   putStrLn "Done"

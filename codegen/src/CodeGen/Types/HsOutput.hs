@@ -28,6 +28,7 @@ module CodeGen.Types.HsOutput
 import CodeGen.Prelude
 import CodeGen.Types.CLI
 import CodeGen.Types.Parsed
+import Data.Semigroup hiding ((<>))
 import qualified Data.Text as T
 
 
@@ -51,13 +52,13 @@ data HModule = HModule
   } deriving Show
 
 newtype ModuleSuffix = ModuleSuffix { textSuffix :: Text }
-  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
+  deriving newtype (IsString, Semigroup, Monoid, Ord, Read, Eq, Show)
 
 newtype FileSuffix = FileSuffix { textFileSuffix :: Text }
-  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
+  deriving newtype (IsString, Semigroup, Monoid, Ord, Read, Eq, Show)
 
 newtype TextPath = TextPath { textPath :: Text }
-  deriving newtype (IsString, Monoid, Ord, Read, Eq, Show)
+  deriving newtype (IsString, Semigroup, Monoid, Ord, Read, Eq, Show)
 
 makeModule
   :: LibType

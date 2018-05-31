@@ -1,0 +1,7 @@
+signature Torch.Sig.Index.TensorFree where
+
+import Foreign.Ptr
+import Foreign.C.Types
+import Torch.Sig.Types.Global
+
+p_free :: FunPtr (Ptr CState -> Ptr CLongTensor -> IO ())
