@@ -28,7 +28,7 @@ _arange r = Dynamic._arange (asDynamic r)
 _range r = Dynamic._range (asDynamic r)
 
 constant :: forall d . Dimensions d => HsReal -> Tensor d
-constant = asStatic . Dynamic.constant (dim :: Dim d)
+constant = asStatic . Dynamic.constant (dims :: Dims d)
 
 diag_ :: (Dimensions2 d d') => Tensor d -> Int -> IO (Tensor d')
 diag_ t d = sudoInplace t $ \r t' -> _diag r t d
@@ -37,7 +37,7 @@ diag :: (Dimensions2 d d') => Tensor d -> Int -> IO (Tensor d')
 diag t d = withEmpty $ \r -> _diag r t d
 
 -- | Create a diagonal matrix from a 1D vector
-diag1d :: (KnownNatDim n) => Tensor '[n] -> IO (Tensor '[n, n])
+diag1d :: (KnownDim n) => Tensor '[n] -> IO (Tensor '[n, n])
 diag1d t = diag t 0
 
 cat_
@@ -48,14 +48,35 @@ cat_ a b d = _cat a a b d >> pure (asStatic (asDynamic a))
 cat :: (Dimensions3 d d' d'') => Tensor d -> Tensor d' -> DimVal -> IO (Tensor d'')
 cat a b d = withEmpty $ \r -> _cat r a b d
 
-cat1d :: (SingDim3 n1 n2 n, n ~ Sum [n1, n2]) => Tensor '[n1] -> Tensor '[n2] -> IO (Tensor '[n])
+cat1d :: (KnownDim3 n1 n2 n, n ~ Sum [n1, n2]) => Tensor '[n1] -> Tensor '[n2] -> IO (Tensor '[n])
 cat1d a b = cat a b 0
 
-cat2d1 :: (SingDim4 n m m0 m1, m ~ Sum [m0, m1]) => Tensor '[n, m0] -> Tensor '[n, m1] -> IO (Tensor '[n, m])
+cat2d1 :: (KnownDim4 n m m0 m1, m ~ Sum [m0, m1]) => Tensor '[n, m0] -> Tensor '[n, m1] -> IO (Tensor '[n, m])
 cat2d1 a b = cat a b 1
 
-cat2d0 :: (SingDim4 n m n0 n1, n ~ Sum [n0, n1]) => Tensor '[n0, m] -> Tensor '[n1, m] -> IO (Tensor '[n, m])
+cat2d0 :: (KnownDim4 n m n0 n1, n ~ Sum [n0, n1]) => Tensor '[n0, m] -> Tensor '[n1, m] -> IO (Tensor '[n, m])
 cat2d0 a b = cat a b 0
+
+cat3d0
+  :: (KnownDim5 x y x0 x1 z, x ~ Sum [x0, x1])
+  => Tensor '[x0, y, z]
+  -> Tensor '[x1, y, z]
+  -> IO (Tensor '[x, y, z])
+cat3d0 a b = cat a b 0
+
+cat3d1
+  :: (KnownDim5 x y y0 y1 z, y ~ Sum [y0, y1])
+  => Tensor '[x, y0, z]
+  -> Tensor '[x, y1, z]
+  -> IO (Tensor '[x, y, z])
+cat3d1 a b = cat a b 1
+
+cat3d2
+  :: (KnownDim5 x y z0 z1 z, z ~ Sum [z0, z1])
+  => Tensor '[x, y, z0]
+  -> Tensor '[x, y, z1]
+  -> IO (Tensor '[x, y, z])
+cat3d2 a b = cat a b 2
 
 catArray :: (Dimensions d) => [Dynamic] -> DimVal -> IO (Tensor d)
 catArray ts dv = empty >>= \r -> _catArray r ts (length ts) dv >> pure r

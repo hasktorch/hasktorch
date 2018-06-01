@@ -52,7 +52,7 @@ import qualified Torch.Indef.Dynamic.NN as Dynamic
 newtype Conv2d i o kH kW
   = Conv2d { getTensors :: (Tensor '[o, i, kH, kW], Tensor '[o]) }
 
-instance KnownNat4 i o kH kW => Show (Conv2d i o kH kW) where
+instance KnownDim4 i o kH kW => Show (Conv2d i o kH kW) where
   show c = intercalate ","
     [ "Conv2d ("
     ++ "features: " ++ show (featureSize c)
@@ -62,7 +62,7 @@ instance KnownNat4 i o kH kW => Show (Conv2d i o kH kW) where
     ++ ")"
     ]
 
-instance KnownNat4 i o kH kW => Backprop (Conv2d i o kH kW) where
+instance KnownDim4 i o kH kW => Backprop (Conv2d i o kH kW) where
   one  = const $ Conv2d (constant 1, constant 1)
   zero = const $ Conv2d (constant 0, constant 0)
   add c0 c1 = Conv2d (weights c0 + weights c1, bias c0 + bias c1)
@@ -73,34 +73,34 @@ weights (Conv2d (w, _)) = w
 bias :: Conv2d i o kH kW -> Tensor '[o]
 bias (Conv2d (_, b)) = b
 
-featureSize :: forall i o kH kW . KnownNat i => Conv2d i o kH kW -> Int
-featureSize _ = fromIntegral (natVal (Proxy :: Proxy i))
+featureSize :: forall i o kH kW . KnownDim i => Conv2d i o kH kW -> Int
+featureSize _ = fromIntegral (dimVal (dim :: Dim i))
 
-outputSize :: forall f o kH kW . KnownNat o => Conv2d f o kH kW -> Int
-outputSize _ = fromIntegral (natVal (Proxy :: Proxy o))
+outputSize :: forall f o kH kW . KnownDim o => Conv2d f o kH kW -> Int
+outputSize _ = fromIntegral (dimVal (dim :: Dim o))
 
 -- | The kernel width of the convolution
-kernelWidth :: forall i f o kH kW . (Integral i, KnownNat kW) => Conv2d f o kH kW -> i
-kernelWidth _ = fromIntegral (natVal (Proxy :: Proxy kW))
+kernelWidth :: forall i f o kH kW . (Integral i, KnownDim kW) => Conv2d f o kH kW -> i
+kernelWidth _ = fromIntegral (dimVal (dim :: Dim kW))
 
 -- | The kernel height of the convolution
-kernelHeight :: forall i f o kH kW . (Integral i, KnownNat kH) => Conv2d f o kH kW -> i
-kernelHeight _ = fromIntegral (natVal (Proxy :: Proxy kH))
+kernelHeight :: forall i f o kH kW . (Integral i, KnownDim kH) => Conv2d f o kH kW -> i
+kernelHeight _ = fromIntegral (dimVal (dim :: Dim kH))
 
-kernel2d :: (Integral i, KnownNat kH, KnownNat kW) => Conv2d f o kH kW -> (i, i)
+kernel2d :: (Integral i, KnownDim kH, KnownDim kW) => Conv2d f o kH kW -> (i, i)
 kernel2d = kernelWidth &&& kernelHeight
 
 -------------------------------------------------------------------------------
 
 -- FIXME: this can be replaced with simple functions.
-class Param2d p where
-  paramW :: forall w h i . (KnownNat w, Integral i) => p h w -> i
-  paramW _ = fromIntegral $ natVal (Proxy :: Proxy w)
+class Param2d (p :: Nat -> Nat -> Type) where
+  paramW :: forall w h i . (KnownDim w, Integral i) => p h w -> i
+  paramW _ = fromIntegral $ dimVal (dim :: Dim w)
 
-  paramH :: forall w h i . (KnownNat h, Integral i) => p h w -> i
-  paramH _ = fromIntegral $ natVal (Proxy :: Proxy h)
+  paramH :: forall w h i . (KnownDim h, Integral i) => p h w -> i
+  paramH _ = fromIntegral $ dimVal (dim :: Dim h)
 
-  param2d :: (KnownNat h, KnownNat w, Integral i) => p h w -> (i, i)
+  param2d :: (KnownDim h, KnownDim w, Integral i) => p h w -> (i, i)
   param2d = paramW &&& paramH
 
 data Step2d     (h::Nat) (w::Nat) = Step2d
@@ -117,7 +117,7 @@ instance Param2d (Conv2d f o) where
 -- ========================================================================= --
 
 type SpatialConvolutionC f h w kH kW dH dW pH pW oH oW =
-  ( KnownNatDim2 (f * kH * kW) (oH * oW)
+  ( KnownDim2 (f * kH * kW) (oH * oW)
 
   , SideCheck h kH dH pH oH
   , SideCheck w kW dW pW oW
@@ -125,7 +125,7 @@ type SpatialConvolutionC f h w kH kW dH dW pH pW oH oW =
 
 type SideCheck h k d p o =
   -- all of these are nats and 'dimensions' knows about them
-  ( KnownNatDim5 h k d p o
+  ( KnownDim5 h k d p o
   -- kernel and step size must be > 0
   , k > 0 ~ 'True
   , d > 0 ~ 'True
@@ -145,7 +145,7 @@ conv2dMM
   :: forall f h w kH kW dH dW pH pW oW oH s o
   .  Reifies s W
   => SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => KnownNatDim2 f o
+  => KnownDim2 f o
   => Step2d dH dW                -- ^ step of the convolution in width and height dimensions.
                                  --   C-default is 1 for both.
                                  --
@@ -163,7 +163,7 @@ conv2dMMBatch
   :: forall f h w kH kW dH dW pH pW oW oH s o b
   .  Reifies s W
   => SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => KnownNatDim3 f o b
+  => KnownDim3 f o b
   => Step2d dH dW                -- ^ step of the convolution in width and height dimensions.
                                  --   C-default is 1 for both.
                                  --
@@ -180,7 +180,7 @@ conv2dMMBatch = _conv2dMM (new :: IO (Tensor '[b, f * kH * kW, oH * oW]))
 _conv2dMM
   :: Reifies s W
   => Dimensions3 din dout fgin
-  => (KnownNatDim2 f o, KnownNatDim2 kH kW, KnownNatDim2 dH dW, KnownNatDim2 pH pW)
+  => (KnownDim2 f o, KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
   => IO (Tensor fgin)            -- ^ make grad input buffer
   -> Step2d dH dW                -- ^ step of the convolution in width and height dimensions.
                                  --   C-default is 1 for both.
@@ -294,7 +294,7 @@ conv2dMM_updGradParametersBatch =
 
 -- | helper of forward functions with unspecified dimensions
 _conv2dMM_forward
-  :: (KnownNatDim2 kH kW, KnownNatDim2 dH dW, KnownNatDim2 pH pW)
+  :: (KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
   => Step2d dH dW
   -> Padding2d pH pW
   -> Conv2d f o kH kW
@@ -310,7 +310,7 @@ _conv2dMM_forward step pad conv inp = unsafePerformIO $
 -- | helper of backward update to compute gradient input with unspecified dimensions
 _conv2dMM_updGradInput
   :: forall f o oH oW kH kW dH dW pH pW inp gout fgin
-  . (KnownNatDim2 kH kW, KnownNatDim2 dH dW, KnownNatDim2 pH pW)
+  . (KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
   => IO (Tensor fgin)
   -> Step2d dH dW
   -> Padding2d pH pW
@@ -332,7 +332,7 @@ _conv2dMM_updGradInput mkGradIBuffer step pad conv inp gout = unsafePerformIO $ 
 
 _conv2dMM_accGradParameters
   :: forall f o oH oW kH kW dH dW pH pW inp gout finput
-  .  (KnownNat2 kH kW, KnownNat2 dH dW, KnownNat2 pH pW)
+  .  (KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
   => Dimensions finput
   => IO (Tensor finput)
   -> Step2d dH dW    -- ^ (dH, dW) step of the convolution in width and height dimensions
@@ -357,7 +357,7 @@ _conv2dMM_accGradParameters mkGradIBuffer step pad lr conv inp gout = do
 
 _conv2dMM_updGradParameters
   :: forall f o oH oW kH kW dH dW pH pW inp gout finput
-  .  (KnownNat2 kH kW, KnownNat2 dH dW, KnownNat2 pH pW)
+  .  (KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
   => Dimensions finput
   => IO (Tensor finput)
   -> Step2d dH dW     -- ^ (dH, dW) step of the convolution in width and height dimensions

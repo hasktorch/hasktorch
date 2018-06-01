@@ -101,7 +101,7 @@ directFunctionCalls2d = do
   shape o1' >>= print
   putStrLn "============="
 
-initConv2d :: KnownNatDim4 f o kW kH => Generator -> IO (Conv2d f o kW kH)
+initConv2d :: KnownDim4 f o kW kH => Generator -> IO (Conv2d f o kW kH)
 initConv2d g =
   (Conv2d . (,Torch.constant 1))
     <$> Torch.uniform g (-10::Double) 10

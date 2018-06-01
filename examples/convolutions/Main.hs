@@ -6,6 +6,7 @@ import qualified ReLU
 import qualified MaxPooling
 import qualified LeNet
 import qualified DataLoader
+import qualified Train
 
 main :: IO ()
 main = do
@@ -14,5 +15,7 @@ main = do
   ReLU.main
   MaxPooling.main
   LeNet.main
-  DataLoader.main
+  -- This can take a while:
+  -- DataLoader.main
+  Train.main
 

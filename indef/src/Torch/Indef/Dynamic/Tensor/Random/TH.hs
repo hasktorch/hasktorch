@@ -114,54 +114,54 @@ _multinomialAliasDraw r g l t = runManaged . joinIO $ Sig.c_multinomialAliasDraw
   <*> manage' (snd . Sig.longDynamicState) l
   <*> manage' (Sig.ctensor) t
 
-random :: Dim (d::[Nat]) -> Generator -> IO Dynamic
+random :: Dims (d::[Nat]) -> Generator -> IO Dynamic
 random d g = withInplace (`_random` g) d
 
-clampedRandom :: Dim (d::[Nat]) -> Generator -> Integer -> Integer -> IO Dynamic
+clampedRandom :: Dims (d::[Nat]) -> Generator -> Integer -> Integer -> IO Dynamic
 clampedRandom d g a b = flip withInplace d $ \t -> _clampedRandom t g a b
 
-cappedRandom :: Dim (d::[Nat]) -> Generator -> Integer -> IO Dynamic
+cappedRandom :: Dims (d::[Nat]) -> Generator -> Integer -> IO Dynamic
 cappedRandom d g a = flip withInplace d $ \t -> _cappedRandom t g a
 
-geometric :: Dim (d::[Nat]) -> Generator -> HsAccReal -> IO Dynamic
+geometric :: Dims (d::[Nat]) -> Generator -> HsAccReal -> IO Dynamic
 geometric d g a = flip withInplace d $ \t -> _geometric t g a
 
-bernoulli :: Dim (d::[Nat]) -> Generator -> HsAccReal -> IO Dynamic
+bernoulli :: Dims (d::[Nat]) -> Generator -> HsAccReal -> IO Dynamic
 bernoulli d g a = flip withInplace d $ \t -> _bernoulli t g a
 
-bernoulli_FloatTensor :: Dim (d::[Nat]) -> Generator -> TH.FloatDynamic -> IO Dynamic
+bernoulli_FloatTensor :: Dims (d::[Nat]) -> Generator -> TH.FloatDynamic -> IO Dynamic
 bernoulli_FloatTensor d g a = flip withInplace d $ \t -> _bernoulli_FloatTensor t g a
 
-bernoulli_DoubleTensor :: Dim (d::[Nat]) -> Generator -> TH.DoubleDynamic -> IO Dynamic
+bernoulli_DoubleTensor :: Dims (d::[Nat]) -> Generator -> TH.DoubleDynamic -> IO Dynamic
 bernoulli_DoubleTensor d g a = flip withInplace d $ \t -> _bernoulli_DoubleTensor t g a
 
-uniform :: Dim (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
+uniform :: Dims (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
 uniform d g a b = flip withInplace d $ \t -> _uniform t g a b
 uniform' (SomeDims d) = uniform d
 
--- normal :: Dim (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
+-- normal :: Dims (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
 -- normal d g a b = flip withInplace d $ \t -> _normal g a b
 -- normal' (SomeDims d) = normal d
 
-normal_means :: Dim (d::[Nat]) -> Generator -> Dynamic -> HsAccReal -> IO Dynamic
+normal_means :: Dims (d::[Nat]) -> Generator -> Dynamic -> HsAccReal -> IO Dynamic
 normal_means d g m b = flip withInplace d $ \t -> _normal_means t g m b
 
-normal_stddevs :: Dim (d::[Nat]) -> Generator -> HsAccReal -> Dynamic -> IO Dynamic
+normal_stddevs :: Dims (d::[Nat]) -> Generator -> HsAccReal -> Dynamic -> IO Dynamic
 normal_stddevs d g a s = flip withInplace d $ \t -> _normal_stddevs t g a s
 
-normal_means_stddevs :: Dim (d::[Nat]) -> Generator -> Dynamic -> Dynamic -> IO Dynamic
+normal_means_stddevs :: Dims (d::[Nat]) -> Generator -> Dynamic -> Dynamic -> IO Dynamic
 normal_means_stddevs d g m s = flip withInplace d $ \t -> _normal_means_stddevs t g m s
 
--- exponential :: Dim (d::[Nat]) -> Generator -> HsAccReal -> IO Dynamic
+-- exponential :: Dims (d::[Nat]) -> Generator -> HsAccReal -> IO Dynamic
 -- exponential d g a = flip withInplace d $ \t -> _exponential g a
 
-standard_gamma :: Dim (d::[Nat]) -> Generator -> Dynamic -> IO Dynamic
+standard_gamma :: Dims (d::[Nat]) -> Generator -> Dynamic -> IO Dynamic
 standard_gamma d g a = flip withInplace d $ \t -> _standard_gamma t g a
 
-cauchy :: Dim (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
+cauchy :: Dims (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
 cauchy d g a b = flip withInplace d $ \t -> _cauchy t g a b
 
-logNormal :: Dim (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
+logNormal :: Dims (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
 logNormal d g a b = flip withInplace d $ \t -> _logNormal t g a b
 
 

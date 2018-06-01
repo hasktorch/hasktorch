@@ -22,8 +22,8 @@ type Output = 2
 type Sequence1 = 7
 type Sequence2 = 13
 
-params :: Proxy '[Input, Output, KW, DW]
-params = Proxy 
+params :: Dims '[Input, Output, KW, DW]
+params = dims
 
 main :: IO ()
 main = do
@@ -58,8 +58,8 @@ usingBackpack1d = Utils.section "Using Backpack" $ do
   Utils.printFullConv1d "Batched convolution layer update" c2'
 
 
--- ========================================================================= --
--- Example directly using functions
+-- -- ========================================================================= --
+-- -- Example directly using functions
 
 directFunctionCalls1d :: IO ()
 directFunctionCalls1d = Utils.section "Directly calling functions" $ do
@@ -113,8 +113,8 @@ directFunctionCalls1d = Utils.section "Directly calling functions" $ do
 
 -- simple initilizer
 initConv1d
-  :: KnownNatDim3 s o (s * kW)
-  => Generator -> Proxy '[s,o,kW,dW]
+  :: KnownDim3 s o (s * kW)
+  => Generator -> Dims '[s,o,kW,dW]
   -> IO (Conv1d s o kW dW)
 initConv1d g _ =
   (Conv1d . (,Torch.constant 1))

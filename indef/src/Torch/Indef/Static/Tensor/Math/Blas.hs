@@ -18,7 +18,7 @@ blasOp fn r a x b y z = fn (asDynamic r) a (asDynamic x) b (asDynamic y) (asDyna
 
 -- | beta * t + alpha * (src1 #> src2)
 _addmv
-  :: KnownNatDim2 r c
+  :: KnownDim2 r c
   => Tensor '[r] -> HsReal
   -> Tensor '[r] -> HsReal
   -> Tensor '[r, c]
@@ -27,7 +27,7 @@ _addmv  = blasOp Dynamic._addmv
 
 -- | inplace 'addmv' (pure, dupable)
 addmv
-  :: (KnownNatDim2 r c)
+  :: (KnownDim2 r c)
   => HsReal -> Tensor '[r]
   -> HsReal -> Tensor '[r, c]
   -> Tensor '[c] -> Tensor '[r]
@@ -36,18 +36,18 @@ addmv a b c d e = unsafeDupablePerformIO $ withEmpty $ \r -> _addmv r a b c d e
 
 -- | added simplified use of addmv: src1 #> src2
 mv
-  :: (KnownNatDim2 r c)
+  :: (KnownDim2 r c)
   => Tensor '[r, c] -> Tensor '[c] -> Tensor '[r]
 mv m v = addmv 0 (constant 0) 1 m v
 
 -- | inline version of 'mv'
-(!*) :: (KnownNatDim2 r c) => Tensor '[r, c] -> Tensor '[c] -> Tensor '[r]
+(!*) :: (KnownDim2 r c) => Tensor '[r, c] -> Tensor '[c] -> Tensor '[r]
 (!*) a b = mv a b
 
 -- | only matrix-matrix multiplication:
 -- https://github.com/torch/torch7/blob/aed31711c6b8846b8337a263a7f9f998697994e7/doc/maths.md#res-torchaddmmres-v1-m-v2-mat1-mat2
 _addmm
-  :: KnownNatDim3 a b c
+  :: KnownDim3 a b c
   => Tensor '[a, c] -> HsReal
   -> Tensor '[a, c] -> HsReal
   -> Tensor '[a, b]
@@ -56,7 +56,7 @@ _addmm  = blasOp Dynamic._addmm
 
 -- | pure version of '_addmm', matrix-matrix multiplication, adding a constant matrix
 addmm
-  :: KnownNatDim3 a b c
+  :: KnownDim3 a b c
   => HsReal
   -> Tensor '[a, c]
   -> HsReal
@@ -70,13 +70,13 @@ addmm a m b x y = unsafePerformIO . withEmpty $ \r -> _addmm r a m b x y
 --
 -- FIXME: see if we can pass a null pointer in as the constant value (which might eliminate a noop linear pass).
 mmult
-  :: KnownNatDim3 a b c
+  :: KnownDim3 a b c
   => Tensor '[a, b]
   -> Tensor '[b, c]
   -> Tensor '[a, c]
 mmult x y = addmm 1 (constant 0) 1 x y
 
-(!*!) :: (KnownNatDim3 a b c) => Tensor '[a, b] -> Tensor '[b, c] -> Tensor '[a, c]
+(!*!) :: (KnownDim3 a b c) => Tensor '[a, b] -> Tensor '[b, c] -> Tensor '[a, c]
 (!*!) = mmult
 
 
@@ -85,7 +85,7 @@ mmult x y = addmm 1 (constant 0) 1 x y
 --
 -- res_ij = (v1 * mat_ij) + (v2 * vec1_i * vec2_j)
 _addr
-  :: KnownNatDim2 r c
+  :: KnownDim2 r c
   => Tensor '[r, c] -> HsReal
   -> Tensor '[r,c] -> HsReal
   -> Tensor '[r]
@@ -94,13 +94,13 @@ _addr r a x b y z = Dynamic._addr (asDynamic r) a (asDynamic x) b (asDynamic y) 
 
 -- pure version of 'addr'
 addr
-  :: (KnownNatDim2 r c)
+  :: (KnownDim2 r c)
   => HsReal -> Tensor '[r,c] -> HsReal -> Tensor '[r] -> Tensor '[c] -> IO (Tensor '[r, c])
 addr a t b x y = withEmpty $ \r -> _addr r a t b x y
 
 -- 'addr' with the parameters for an outer product filled in.
 outer
-  :: forall t r c . (KnownNatDim2 r c)
+  :: forall t r c . (KnownDim2 r c)
   => Tensor '[r] -> Tensor '[c] -> Tensor '[r, c]
 outer v1 v2 = unsafePerformIO $ do
   t :: Tensor '[r, c] <- zerosLike
@@ -120,7 +120,7 @@ outer v1 v2 = unsafePerformIO $ do
 --     res = (v1 * M) + (v2 * sum(batch1_i * batch2_i, i = 1, b))
 --
 _addbmm
-  :: KnownNatDim4 n p b m
+  :: KnownDim4 n p b m
   => Tensor '[n, p] -> HsReal
   -> Tensor '[n, p] -> HsReal
   -> Tensor '[b, n, m] -> Tensor '[b, m, p] -> IO ()
@@ -136,7 +136,7 @@ _addbmm = blasOp Dynamic._addbmm
 --     res_i = (v1 * M_i) + (v2 * batch1_i * batch2_i)
 --
 _baddbmm
-  :: KnownNatDim4 n p b m
+  :: KnownDim4 n p b m
   => Tensor '[b, n, p] -> HsReal
   -> Tensor '[b, n, p] -> HsReal
   -> Tensor '[b, n, m] -> Tensor '[b, m, p] -> IO ()

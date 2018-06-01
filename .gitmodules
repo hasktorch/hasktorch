@@ -2,7 +2,10 @@
 	path = vendor/aten
 	url = https://github.com/hasktorch/ATen.git
   branch = hasktorch-expand
-[submodule "type-combinators"]
+[submodule "vendor/type-combinators"]
 	url = https://github.com/mstksg/type-combinators.git
 	branch = ghc-8.4
 	path = type-combinators
+[submodule "vendor/opto"]
+	path = vendor/opto
+	url = https://github.com/mstksg/opto.git

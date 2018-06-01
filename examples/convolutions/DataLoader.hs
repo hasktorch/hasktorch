@@ -1,15 +1,18 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
 module DataLoader where
 
 import Codec.Picture
 import Control.Monad
 import Data.Char
+import Data.Maybe
 import Data.List
 import System.Directory
 import System.FilePath
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Class
 import ListT
+import Data.Singletons
 
 import Torch.Double
 
@@ -19,6 +22,12 @@ cifar_path = "/mnt/lake/datasets/cifar-10"
 
 data Mode = Test | Train
   deriving (Eq, Enum, Ord, Show, Bounded)
+
+testLength  :: Proxy 'Test -> Proxy 1000
+testLength _ = undefined
+
+trainLength :: Proxy 'Train -> Proxy 5000
+trainLength _ = undefined
 
 data Categories
   = Airplane
@@ -54,7 +63,7 @@ im2torch fp = do
   lift $ forM_ [(h, w) | h <- [0..31], w <- [0..31]] $ \(h, w) -> do
     let PixelRGB8 r g b = pixelAt im h w
     forM_ (zip [0..] [r, g, b]) $ \(c, px) ->
-      someDimsM [c, h, w] >>= \d -> setDim'_ t d (fromIntegral px)
+      setDim'_ t (someDimsVal $ fromIntegral <$> [c, h, w]) (fromIntegral px)
   pure t
 
 cat2torch :: FilePath -> ListT IO (Tensor '[3, 32, 32])
@@ -67,10 +76,16 @@ cat2torch fp = do
     Left _ -> mempty
     Right t -> pure t
 
-cifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Int)
-cifar10set m = do
-  c <- fromFoldable [minBound..maxBound :: Categories]
-  t <- cat2torch (category_path m c)
-  pure (t, fromEnum c)
+oneHot :: KnownDim n => Int -> IO (Tensor '[n])
+oneHot i = do
+  let c = constant 0
+  _set1d c (fromIntegral i) 1
+  pure c
 
+cifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Tensor '[10])
+cifar10set m = do
+  c' <- fromFoldable [minBound..maxBound :: Categories]
+  t <- cat2torch (category_path m c')
+  c <- lift $ oneHot (fromEnum c')
+  pure (t, c)
 

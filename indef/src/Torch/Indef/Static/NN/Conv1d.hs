@@ -58,7 +58,7 @@ import qualified Torch.Indef.Dynamic.NN as Dynamic
 newtype Conv1d f o kW dW
   = Conv1d { getTensors :: (Tensor '[o, f*kW], Tensor '[o]) }
 
-instance KnownNat4 f o kW dW => Show (Conv1d f o kW dW) where
+instance KnownDim4 f o kW dW => Show (Conv1d f o kW dW) where
   show c = intercalate ","
     [ "Conv1d ("
     ++ "features: " ++ show (featureSize c)
@@ -68,7 +68,7 @@ instance KnownNat4 f o kW dW => Show (Conv1d f o kW dW) where
     ++ ")"
     ]
 
-instance (KnownDim (f*kW), KnownNatDim o) => Backprop (Conv1d f o kW dW) where
+instance (KnownDim (f*kW), KnownDim o) => Backprop (Conv1d f o kW dW) where
   zero = const . Conv1d $ (constant 0, constant 0)
   one  = const . Conv1d $ (constant 1, constant 1)
   add c0 c1 = Conv1d (weights c0 + weights c1, bias c0 + bias c1)
@@ -79,25 +79,25 @@ weights (Conv1d (w, _)) = w
 bias :: Conv1d f o kW dW -> Tensor '[o]
 bias (Conv1d (_, b)) = b
 
-featureSize :: forall f o kW dW . KnownNat f => Conv1d f o kW dW -> Int
-featureSize _ = fromIntegral (natVal (Proxy :: Proxy f))
+featureSize :: forall f o kW dW . KnownDim f => Conv1d f o kW dW -> Int
+featureSize _ = fromIntegral (dimVal (dim :: Dim f))
 
-outputSize :: forall f o kW dW . KnownNat o => Conv1d f o kW dW -> Int
-outputSize _ = fromIntegral (natVal (Proxy :: Proxy o))
+outputSize :: forall f o kW dW . KnownDim o => Conv1d f o kW dW -> Int
+outputSize _ = fromIntegral (dimVal (dim :: Dim o))
 
 -- | kW: The kernel width of the convolution
-kernelWidth :: forall f o kW dW . KnownNat kW => Conv1d f o kW dW -> Int
-kernelWidth _ = fromIntegral (natVal (Proxy :: Proxy kW))
+kernelWidth :: forall f o kW dW . KnownDim kW => Conv1d f o kW dW -> Int
+kernelWidth _ = fromIntegral (dimVal (dim :: Dim kW))
 
 -- | dW: The step of the convolution. Default is 1 in C.
-stepSize :: forall f o kW dW . KnownNat dW => Conv1d f o kW dW -> Int
-stepSize _ = fromIntegral (natVal (Proxy :: Proxy dW))
+stepSize :: forall f o kW dW . KnownDim dW => Conv1d f o kW dW -> Int
+stepSize _ = fromIntegral (dimVal (dim :: Dim dW))
 
 -- ========================================================================= --
 
 -- | Type constraints required for temporal convolution
 type TemporalConvC s f kW dW o =
-  ( KnownNatDim5 s f kW dW o
+  ( KnownDim5 s f kW dW o
   , (s > kW) ~ 'True
   , (kW > 0) ~ 'True
   , (dW > 0) ~ 'True
@@ -134,7 +134,7 @@ _conv1d
   -- :: forall s seq f kW dW o d d'
   :: Reifies s W
   => KnownDim (f*kW)
-  => KnownNatDim4 f o kW dW
+  => KnownDim4 f o kW dW
   => Dimensions2 d d'
   => Double
   -> BVar s (Conv1d f o kW dW)
@@ -226,7 +226,7 @@ conv1d_updGradParamsBatch = _conv1d_updGradParams
 -- * helper functions
 
 -- | forward pass without locking down the tensor dimensions
-_conv1d_forward :: (KnownNat4 f o kW dW) => Conv1d f o kW dW -> Tensor d -> IO (Tensor d')
+_conv1d_forward :: (KnownDim4 f o kW dW) => Conv1d f o kW dW -> Tensor d -> IO (Tensor d')
 _conv1d_forward conv inp = do
   out <- empty
   Dynamic._temporalConvolution_updateOutput
@@ -239,7 +239,7 @@ _conv1d_forward conv inp = do
 -- | backward pass, computing the gradient input, without locking down the tensor dimensions
 _conv1d_backwardGradInput
   :: forall f o kW dW inputDim goutDim
-  . (KnownNat4 f o kW dW)
+  . (KnownDim4 f o kW dW)
   => Dimensions2 inputDim goutDim
   => Conv1d f o kW dW
   -> Tensor inputDim
@@ -256,7 +256,7 @@ _conv1d_backwardGradInput conv input gradOut = do
 -- | backward pass, computing the weight updates, without locking down the tensor dimensions
 _conv1d_updGradParams
   :: forall f o kW dW inputDim gOutDim
-  . (KnownNat4 f o kW dW, Dimensions2 inputDim gOutDim)
+  . (KnownDim4 f o kW dW, Dimensions2 inputDim gOutDim)
   => Conv1d f o kW dW       -- ^ input state of conv1d (which includes weights and bias)
   -> Tensor inputDim        -- ^ input tensor
   -> Tensor gOutDim         -- ^ output gradient

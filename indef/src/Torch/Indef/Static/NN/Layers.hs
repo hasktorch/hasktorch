@@ -17,7 +17,7 @@ import qualified Torch.Indef.Dynamic.NN as Dynamic
 newtype Linear i o
   = Linear { getTensors :: (Tensor '[i, o], Tensor '[o]) }
 
-instance KnownNat2 i o => Show (Linear i o) where
+instance KnownDim2 i o => Show (Linear i o) where
   show c = intercalate ","
     [ "Linear ("
     ++ "input: "  ++ show (inputSize c)
@@ -25,7 +25,7 @@ instance KnownNat2 i o => Show (Linear i o) where
     ++ ")"
     ]
 
-instance (KnownNatDim2 i o) => Backprop (Linear i o) where
+instance (KnownDim2 i o) => Backprop (Linear i o) where
   zero = const . Linear $ (constant 0, constant 0)
   one  = const . Linear $ (constant 1, constant 1)
   add c0 c1 = Linear (weights c0 + weights c1, bias c0 + bias c1)
@@ -39,12 +39,12 @@ bias :: Linear i o -> Tensor '[o]
 bias (Linear (_, b)) = b
 
 -- | The input size of a linear layer
-inputSize :: forall i o . KnownNat i => Linear i o -> Int
-inputSize _ = fromIntegral (natVal (Proxy :: Proxy i))
+inputSize :: forall i o . KnownDim i => Linear i o -> Int
+inputSize _ = fromIntegral (dimVal (dim :: Dim i))
 
 -- | The output size of a linear layer
-outputSize :: forall i o kW dW . KnownNat o => Linear i o -> Int
-outputSize _ = fromIntegral (natVal (Proxy :: Proxy o))
+outputSize :: forall i o kW dW . KnownDim o => Linear i o -> Int
+outputSize _ = fromIntegral (dimVal (dim :: Dim o))
 
 -- ========================================================================= --
 
@@ -52,7 +52,7 @@ outputSize _ = fromIntegral (natVal (Proxy :: Proxy o))
 linear
   :: forall s i o
   .  Reifies s W
-  => KnownNatDim2 i o
+  => KnownDim2 i o
   => BVar s (Linear i o)
   -> BVar s (Tensor '[i])
   -> BVar s (Tensor '[o])
@@ -70,7 +70,7 @@ flattenBP = liftOp1 . op1 $ \t -> (flatten t, resizeAs)
 
 -- mmultBP
 --   :: forall a b c s
---   .  (KnownNatDim3 a b c, Reifies s W)
+--   .  (KnownDim3 a b c, Reifies s W)
 -- 
 --   => BVar s (Tensor '[a, b])
 --   -> BVar s (Tensor '[b, c])

@@ -88,7 +88,7 @@ _range t0 a0 a1 a2 = withDynamicState t0 $ \s' t0' -> Sig.c_range s' t0' (hs2cAc
 -- | create a 'Dynamic' tensor with a given dimension and value
 --
 -- We can get away 'unsafeDupablePerformIO' this as constant is pure and thread-safe
-constant :: Dim (d :: [Nat]) -> HsReal -> Dynamic
+constant :: Dims (d :: [Nat]) -> HsReal -> Dynamic
 constant d v = unsafeDupablePerformIO $ new d >>= \r -> _fill r v >> pure r
 {-# NOINLINE constant #-}
 
@@ -102,19 +102,19 @@ diag1d t = diag t 1
 
 _tenLike
   :: (Dynamic -> Dynamic -> IO ())
-  -> Dim (d::[Nat]) -> IO Dynamic
+  -> Dims (d::[Nat]) -> IO Dynamic
 _tenLike _fn d = do
   src <- new d
   shape <- new d
   _fn src shape
   pure src
 
-onesLike, zerosLike :: Dim (d::[Nat]) -> IO Dynamic
+onesLike, zerosLike :: Dims (d::[Nat]) -> IO Dynamic
 onesLike = _tenLike _onesLike
 zerosLike = _tenLike _zerosLike
 
 range
-  :: Dim (d::[Nat])
+  :: Dims (d::[Nat])
   -> HsAccReal
   -> HsAccReal
   -> HsAccReal

@@ -75,7 +75,7 @@ lenetLayer
 
   -- leave input, output and square kernel size variable so that we
   -- can reuse the layer...
-  => KnownNatDim3 inp out ker
+  => KnownDim3 inp out ker
 
   -- ...this means we need the constraints for conv2dMM and maxPooling2d
   -- Note that oh and ow are then used as input to the maxPooling2d constraint.
@@ -88,17 +88,17 @@ lenetLayer
   -> BVar s (Tensor '[inp,   h,   w])  -- ^ input
   -> BVar s (Tensor '[out, moh, mow])  -- ^ output
 -}
-lenetLayer lr conv
-  = maxPooling2d
+lenetLayer lr conv inp
+  = NN.conv2dMM
+      (Step2d    :: Step2d 1 1)
+      (Padding2d :: Padding2d 0 0)
+      lr conv inp
+  & relu
+  & maxPooling2d
       (Kernel2d  :: Kernel2d 2 2)
       (Step2d    :: Step2d 2 2)
       (Padding2d :: Padding2d 0 0)
       (sing      :: SBool 'True)
-  . relu
-  . NN.conv2dMM
-      (Step2d    :: Step2d 1 1)
-      (Padding2d :: Padding2d 0 0)
-      lr conv
 
 {- Here is what each layer's intermediate type would like (unused)
 
@@ -133,15 +133,16 @@ type DPad  = 0
 -- it's a little trickier to fold these back into their respective NN modules.
 
 -- | initialize a new linear layer
-newLinear :: forall o i . KnownNatDim2 i o => IO (Linear i o)
-newLinear = Linear <$> newLayerWithBias (natVal (Proxy @i))
+newLinear :: forall o i . KnownDim2 i o => IO (Linear i o)
+newLinear = fmap Linear . newLayerWithBias $ dimVal (dim :: Dim i)
 
 -- | initialize a new conv2d layer
-newConv2d :: forall o i kH kW . KnownNatDim4 i o kH kW => IO (Conv2d i o kH kW)
-newConv2d = Conv2d <$> newLayerWithBias (natVal (Proxy @i) * natVal (Proxy @kH) * natVal (Proxy @kW))
+newConv2d :: forall o i kH kW . KnownDim4 i o kH kW => IO (Conv2d i o kH kW)
+newConv2d = fmap Conv2d . newLayerWithBias $
+  dimVal (dim :: Dim i) * dimVal (dim :: Dim kH) * dimVal (dim :: Dim kW)
 
 -- | uniform random initialization
-newLayerWithBias :: Dimensions2 d d' => Natural -> IO (Tensor d, Tensor d')
+newLayerWithBias :: Dimensions2 d d' => Word -> IO (Tensor d, Tensor d')
 newLayerWithBias n = do
   g <- newRNG
   (,) <$> uniform g (-stdv) stdv

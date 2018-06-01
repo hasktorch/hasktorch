@@ -40,10 +40,10 @@ _temporalMaxPooling_updateGradInput t0 t1 t2 ix0 = Dynamic._temporalMaxPooling_u
 -- * 2d pooling functions
 
 type SpatialDilationCheckC kH kW dH dW pH pW dilH dilW =
-  ( KnownNatDim2 kH kW
-  , KnownNatDim2 pH pW
-  , KnownNatDim2 dH dW
-  , KnownNatDim2 dilH dilW
+  ( KnownDim2 kH kW
+  , KnownDim2 pH pW
+  , KnownDim2 dH dW
+  , KnownDim2 dilH dilW
   , kW > 0 ~ 'True
   , kH > 0 ~ 'True
   , dW > 0 ~ 'True
@@ -72,8 +72,8 @@ type SpatialDilationC iH iW kH kW dH dW pH pW oW oH dilH dilW ceilMode =
    ( SpatialDilationCheckC kH kW dH dW pH pW dilH dilW
    , CeilModeOutputDims iH kH dH pH oH dilH ceilMode
    , CeilModeOutputDims iW kW dW pW oW dilW ceilMode
-   , KnownNatDim2 oH oW
-   , KnownNatDim2 iH iW
+   , KnownDim2 oH oW
+   , KnownDim2 iH iW
    )
 
 
@@ -115,7 +115,7 @@ dilatedMaxPooling2dBatch = _dilatedMaxPooling2d
 
 _dilatedMaxPooling2d
   :: forall s d d' kH kW dH dW pH pW dilH dilW ceilMode
-  . (KnownNat4 kH kW pH pW, KnownNat4 dH dW dilH dilW)
+  . (KnownDim4 kH kW pH pW, KnownDim4 dH dW dilH dilW)
   => Dimensions2 d' d
   => Reifies s W
 
@@ -170,7 +170,7 @@ _dilatedMaxPooling2d ker step pad dil ceil = liftOp1 . op1 $ \inp -> unsafePerfo
 
 _maxPooling2d
   :: forall s d d' kH kW dH dW pH pW ceilMode
-  . (KnownNat4 kH kW pH pW, KnownNat2 dH dW)
+  . (KnownDim4 kH kW pH pW, KnownDim2 dH dW)
   => Dimensions2 d' d
   => Reifies s W
 

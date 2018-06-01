@@ -154,6 +154,7 @@ executable convolutions
     , LeNet
     , MaxPooling
     , ReLU
+    , Train
   build-depends:
       base >=4.7 && <5
     , backprop >= 0.2
@@ -161,10 +162,12 @@ executable convolutions
     , filepath
     , ghc-typelits-natnormalise
     , hasktorch-core
+    , JuicyPixels
     , list-t
     , microlens-th
     , mtl
+    -- , opto
+    , singletons
     , transformers
-    , JuicyPixels
 
 

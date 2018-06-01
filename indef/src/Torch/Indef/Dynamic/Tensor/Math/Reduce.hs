@@ -50,8 +50,8 @@ withKeepDim
   :: ((Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ())
   -> Dynamic -> DimVal -> Maybe KeepDim -> IO (Dynamic, Maybe (IndexDynamic))
 withKeepDim _fn t d k = do
-  tdim <- getDims t
-  let (i:_) = dimVals' tdim
+  tdim@(SomeDims d')<- getDims t
+  let (i:_) = listDims d'
   ret :: Dynamic      <- new' tdim
   let ix = newIxDyn i
   _fn (ret, ix) t d k

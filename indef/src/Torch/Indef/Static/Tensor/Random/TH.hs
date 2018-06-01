@@ -75,7 +75,7 @@ _multinomialAliasDraw r g a b = Dynamic._multinomialAliasDraw (longAsDynamic r) 
 -- Custom functions
 -- ========================================================================= --
 multivariate_normal
-  :: forall n p . (KnownNatDim2 n p)
+  :: forall n p . (KnownDim2 n p)
   => Generator -> Tensor '[p] -> Tensor '[p, p] -> Tensor '[p] -> IO (Tensor '[n, p])
 multivariate_normal g mu eigvec eigval = go (transpose2d eigvec)
   <$> diag1d eigval
