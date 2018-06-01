@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
@@ -8,6 +9,7 @@
 module LeNet where
 
 import Data.Function ((&))
+import GHC.Generics
 import GHC.Natural
 import Numeric.Backprop
 import Prelude as P
@@ -26,9 +28,11 @@ data LeNet = LeNet
   , _fc1   :: Linear  (16*5*5) 120
   , _fc2   :: Linear       120  84
   , _fc3   :: Linear        84  10
-  } deriving Show
+  } deriving (Show, Generic)
 
 makeLenses ''LeNet
+instance Backprop LeNet
+
 
 -------------------------------------------------------------------------------
 
@@ -145,6 +149,7 @@ newConv2d = fmap Conv2d . newLayerWithBias $
 newLayerWithBias :: Dimensions2 d d' => Word -> IO (Tensor d, Tensor d')
 newLayerWithBias n = do
   g <- newRNG
+  manualSeed g 10
   (,) <$> uniform g (-stdv) stdv
       <*> uniform g (-stdv) stdv
   where

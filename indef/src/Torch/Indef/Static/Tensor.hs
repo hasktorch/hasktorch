@@ -31,7 +31,9 @@ instance Dimensions d => Show (Tensor d) where
   show t = unsafePerformIO $ do
     SomeDims ds <- getDims t
     (vs, desc) <-
-      Dynamic.showTensor (get1d t) (get2d t) (get3d t) (get4d t) (fromIntegral <$> listDims (dims :: Dims d))
+      Dynamic.showTensor -- (pure . get1d t) (get2d t) (get3d t) (get4d t) (fromIntegral <$> listDims (dims :: Dims d))
+        (pure . get1d t) (pure .: get2d t) (\a b c -> pure $ get3d t a b c) (\a b c d -> pure $ get4d t a b c d)
+        (fromIntegral <$> listDims (dims :: Dims d))
     pure (vs ++ "\n" ++ desc)
   {-# NOINLINE show #-}
 
@@ -214,10 +216,10 @@ setDim'_ t (SomeDims d) = setDim_ t d -- (d :: Dims d')
 getDim :: forall d d' . Dimensions2 d d' => Tensor (d::[Nat]) -> Dims (d'::[Nat]) -> IO (HsReal)
 getDim t d = case fromIntegral <$> listDims (dims :: Dims d) of
   []           -> throwNE "can't lookup an empty dimension"
-  [x]          -> get1d t x
-  [x, y]       -> get2d t x y
-  [x, y, z]    -> get3d t x y z
-  [x, y, z, q] -> get4d t x y z q
+  [x]          -> pure $ get1d t x
+  [x, y]       -> pure $ get2d t x y
+  [x, y, z]    -> pure $ get3d t x y z
+  [x, y, z, q] -> pure $ get4d t x y z q
   _            -> throwGT4 "get"
 
 getDims :: Tensor d -> IO SomeDims
@@ -241,9 +243,8 @@ t !! i = unsafePerformIO $
     selectVal = do
       sizeI <- fromIntegral <$> lift (size t i)
       guard (i < sizeI)
-      v <- lift $ get1d t (fromIntegral i)
       r <- lift $ newWithSize1d 1
-      lift $ _set1d r 0 v
+      lift $ _set1d r 0 (get1d t (fromIntegral i))
       pure r
 
     selectRank :: IO (Tensor d')
@@ -357,7 +358,7 @@ getElem2d t r c
   | r > fromIntegral (dimVal (dim :: Dim n)) ||
     c > fromIntegral (dimVal (dim :: Dim m))
       = throwString "Indices out of bounds"
-  | otherwise = get2d t (fromIntegral r) (fromIntegral c)
+  | otherwise = pure $ get2d t (fromIntegral r) (fromIntegral c)
 
 setElem2d
   :: forall n m ns . (KnownDim2 n m)

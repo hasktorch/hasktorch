@@ -8,3 +8,12 @@ import Torch.Types.TH (C'THLongStorage)
 c_newWithSize1d :: Ptr CState -> CLLong -> IO (Ptr CLongTensor)
 c_set1d :: Ptr CState -> Ptr CLongTensor -> CLLong -> CLong -> IO ()
 c_resize1d :: Ptr CState -> Ptr CLongTensor -> CLLong -> IO ()
+
+c_nDimension :: Ptr CState -> Ptr CLongTensor -> IO CInt
+c_size :: Ptr CState -> Ptr CLongTensor -> CInt -> IO CLLong
+c_get1d :: Ptr CState -> Ptr CLongTensor -> CLLong -> IO CLong
+c_get2d :: Ptr CState -> Ptr CLongTensor -> CLLong -> CLLong -> IO CLong
+c_get3d :: Ptr CState -> Ptr CLongTensor -> CLLong -> CLLong -> CLLong -> IO CLong
+c_get4d :: Ptr CState -> Ptr CLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO CLong
+
+

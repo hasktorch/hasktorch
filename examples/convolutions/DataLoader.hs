@@ -15,6 +15,7 @@ import ListT
 import Data.Singletons
 
 import Torch.Double
+import qualified Torch.Long as Long
 
 -- This should be replaced with a download-aware cache.
 cifar_path :: FilePath
@@ -76,16 +77,15 @@ cat2torch fp = do
     Left _ -> mempty
     Right t -> pure t
 
-oneHot :: KnownDim n => Int -> IO (Tensor '[n])
+oneHot :: KnownDim n => Int -> IO (LongTensor '[n])
 oneHot i = do
-  let c = constant 0
-  _set1d c (fromIntegral i) 1
+  let c = Long.constant 0
+  Long._set1d c (fromIntegral i) 1
   pure c
 
-cifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Tensor '[10])
+cifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Integer)
 cifar10set m = do
-  c' <- fromFoldable [minBound..maxBound :: Categories]
-  t <- cat2torch (category_path m c')
-  c <- lift $ oneHot (fromEnum c')
-  pure (t, c)
+  c <- fromFoldable [minBound..maxBound :: Categories]
+  t <- cat2torch (category_path m c)
+  pure (t, fromIntegral (fromEnum c))
 

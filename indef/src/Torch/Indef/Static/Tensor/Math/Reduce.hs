@@ -5,10 +5,15 @@ module Torch.Indef.Static.Tensor.Math.Reduce
   , medianall
   , sumall
   , prodall
+
   , Torch.Indef.Static.Tensor.Math.Reduce.min
   , Torch.Indef.Static.Tensor.Math.Reduce.max
-  , maxIndex
   , median
+
+  , min1d, minIndex1d
+  , max1d, maxIndex1d
+  , median1d, medianIndex1d
+
   , Torch.Indef.Static.Tensor.Math.Reduce.sum, rowsum, colsum
   , _prod
 
@@ -17,6 +22,7 @@ module Torch.Indef.Static.Tensor.Math.Reduce
 import Data.Coerce
 import System.IO.Unsafe
 
+import Data.Maybe (fromJust)
 import Torch.Dimensions
 import Torch.Indef.Index
 import Torch.Indef.Static.Tensor
@@ -45,12 +51,15 @@ max    = withKeepDim Dynamic._max
 min    = withKeepDim Dynamic._min
 median = withKeepDim Dynamic._median
 
+max1d, min1d, median1d
+  :: (KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
+max1d    t = Torch.Indef.Static.Tensor.Math.Reduce.max t (Idx 0)
+min1d    t = Torch.Indef.Static.Tensor.Math.Reduce.min t (Idx 0)
+median1d t = median t (Idx 0)
 
-maxIndex :: (Dimensions d, KnownDim n) => Tensor d -> Idx dimval -> IndexTensor '[n]
-maxIndex t i = case Torch.Indef.Static.Tensor.Math.Reduce.max t i keep of
-  (t, Just ix) -> ix
-  _ -> error "impossible"
-
+maxIndex1d t    = fromJust . snd $ max1d t keep
+minIndex1d t    = fromJust . snd $ min1d t keep
+medianIndex1d t = fromJust . snd $ median1d t keep
 
 _prod :: Tensor d -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
 _prod r t = Dynamic._prod (asDynamic r) (asDynamic t)

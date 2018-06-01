@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections #-}
 module Torch.Indef.Index
   ( CPUIndex
   , CPUIndexStorage
@@ -15,12 +16,20 @@ module Torch.Indef.Index
   , withDynamicState
   , mkCPUIxStorage
   , mkLongStorage
+  , ixShape
+  , ixGet1d
+  , showIx
   ) where
+
 
 import Foreign
 import Foreign.Ptr
 import Data.Proxy
 import Data.List
+import Data.Typeable
+import Control.Monad
+import Control.Applicative
+import Data.Maybe
 import System.IO.Unsafe
 
 import Torch.Dimensions
@@ -112,5 +121,103 @@ mkDynamicIO :: (Ptr Sig.CState -> IO (Ptr Sig.CLongTensor)) -> IO IndexDynamic
 mkDynamicIO builder = Sig.newCState >>= \s ->
   builder s >>= mkDynamic s
 
+ixShape :: IndexTensor d -> IO [Word]
+ixShape t = withDynamicState (longAsDynamic t) $ \s' t' -> do
+  ds <- IxSig.c_nDimension s' t'
+  mapM (fmap fromIntegral . IxSig.c_size s' t' . fromIntegral) [0..ds-1]
+
+getDims :: IndexTensor d -> IO SomeDims
+getDims = fmap someDimsVal . ixShape
+
+ixGet1d :: IndexTensor d -> Int64 -> IO Integer
+ixGet1d it i = fmap fromIntegral . withDynamicState (longAsDynamic it) $ \s' it' -> IxSig.c_get1d s' it'
+  (fromIntegral i)
+ixGet2d :: IndexTensor d -> Int64 -> Int64 -> IO Integer
+ixGet2d it i i1 = fmap fromIntegral . withDynamicState (longAsDynamic it) $ \s' it' -> IxSig.c_get2d s' it'
+  (fromIntegral i) (fromIntegral i1)
+ixGet3d :: IndexTensor d -> Int64 -> Int64 -> Int64 -> IO Integer
+ixGet3d it i i1 i2 = fmap fromIntegral . withDynamicState (longAsDynamic it) $ \s' it' -> IxSig.c_get3d s' it'
+  (fromIntegral i) (fromIntegral i1) (fromIntegral i2)
+ixGet4d :: IndexTensor d -> Int64 -> Int64 -> Int64 -> Int64 -> IO Integer
+ixGet4d it i i1 i2 i3 = fmap fromIntegral . withDynamicState (longAsDynamic it) $ \s' it' -> IxSig.c_get4d s' it'
+  (fromIntegral i) (fromIntegral i1) (fromIntegral i2) (fromIntegral i3)
+
+{-# NOINLINE showIx #-}
+showIx t = unsafePerformIO $ do
+  SomeDims ds <- getDims t
+  (vs, desc) <- go (ixGet1d t) (ixGet2d t) (ixGet3d t) (ixGet4d t) (fromIntegral <$> listDims ds)
+  pure (vs ++ "\n" ++ desc)
+ where
+  go
+    :: forall a . (Typeable a, Ord a, Num a, Show a)
+    => (Int64 -> IO a)
+    -> (Int64 -> Int64 -> IO a)
+    -> (Int64 -> Int64 -> Int64 -> IO a)
+    -> (Int64 -> Int64 -> Int64 -> Int64 -> IO a)
+    -> [Int64]
+    -> IO (String, String)
+  go get'1d get'2d get'3d get'4d ds =
+    (,desc) <$> case ds of
+      []  -> pure ""
+      [x] -> brackets . intercalate "" <$> mapM (fmap valWithSpace . get'1d) (mkIx x)
+      [x,y] -> go "" get'2d x y
+      [x,y,z] -> mat3dGo x y z
+      [x,y,z,q] -> mat4dGo x y z q
+      _ -> pure "Can't print this yet"
+   where
+    go :: String -> (Int64 -> Int64 -> IO a) -> Int64 -> Int64 -> IO String
+    go fill getter x y = do
+      vs <- mapM (fmap valWithSpace . uncurry getter) (mkXY x y)
+      pure (mat2dGo fill y "" vs)
+  
+    mat2dGo :: String -> Int64 -> String -> [String] -> String
+    mat2dGo    _ _ acc []  = acc
+    mat2dGo fill y acc rcs = mat2dGo fill y acc' rest
+      where
+        (row, rest) = splitAt (fromIntegral y) rcs
+        fullrow = fill ++ brackets (intercalate "" row)
+        acc' = if null acc then fullrow else acc ++ "\n" ++ fullrow
+  
+    mat3dGo :: Int64 -> Int64 -> Int64 -> IO String
+    mat3dGo x y z = fmap (intercalate "") $ forM (mkIx x) $ \x' -> do
+      mat <- go "  " (get'3d x') y z
+      pure $ gt2IxHeader [x'] ++ mat
+  
+    mat4dGo :: Int64 -> Int64 -> Int64 -> Int64 -> IO String
+    mat4dGo w q x y = fmap (intercalate "") $ forM (mkXY w q) $ \(w', q') -> do
+      mat <- go "  " (get'4d w' q') x y
+      pure $ gt2IxHeader [w', q'] ++ mat
+  
+    gt2IxHeader :: [Int64] -> String
+    gt2IxHeader is = "\n(" ++ intercalate "," (fmap show is) ++",.,.):\n"
+  
+    mkIx :: Int64 -> [Int64]
+    mkIx x = [0..x - 1]
+  
+    mkXY :: Int64 -> Int64 -> [(Int64, Int64)]
+    mkXY x y = [ (r, c) | r <- mkIx x, c <- mkIx y ]
+  
+    brackets :: String -> String
+    brackets s = "[" ++ s ++ "]"
+  
+    valWithSpace :: (Typeable a, Ord a, Num a, Show a) => a -> String
+    valWithSpace v = spacing ++ value ++ " "
+     where
+       truncTo :: (RealFrac x, Fractional x) => Int -> x -> x
+       truncTo n f = fromInteger (round $ f * (10^n)) / (10.0^^n)
+  
+       value :: String
+       value = fromMaybe (show v) $
+             (show . truncTo 6 <$> (cast v :: Maybe Double))
+         <|> (show . truncTo 6 <$> (cast v :: Maybe Float))
+  
+       spacing = case compare (signum v) 0 of
+          LT -> " "
+          _  -> "  "
+  
+    descType, descShape, desc :: String
+    descType = show (typeRep (Proxy :: Proxy a)) ++ " tensor with "
+    descShape = "shape: " ++ intercalate "x" (fmap show ds)
+    desc = brackets $ descType ++ descShape
 
 

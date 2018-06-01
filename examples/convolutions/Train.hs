@@ -1,11 +1,21 @@
 {-# LANGUAGE TypeApplications #-}
 module Train where
 
-import Text.Printf
+import Data.List
+import Control.Monad
+import Data.Monoid
+import Data.Time
 import Control.Monad.IO.Class
-
-import Torch.Double as Math
 import Prelude as P
+import Text.Printf
+import ListT (ListT)
+import qualified ListT
+import Numeric.Backprop
+import System.IO.Unsafe
+
+
+import Torch.Double as Math hiding (Sum)
+import qualified Torch.Long as Long
 
 import LeNet
 import DataLoader

@@ -36,7 +36,9 @@ import Torch.Indef.Index hiding (withDynamicState)
 instance Show Dynamic where
   show t = unsafePerformIO $ do
     SomeDims ds <- getDims t
-    (vs, desc) <- showTensor (get1d t) (get2d t) (get3d t) (get4d t) (fromIntegral <$> listDims ds)
+    (vs, desc) <- showTensor
+      (pure . get1d t) (pure .: get2d t) (\a b c -> pure $ get3d t a b c) (\a b c d -> pure $ get4d t a b c d)
+      (fromIntegral <$> listDims ds)
     pure (vs ++ "\n" ++ desc)
   {-# NOINLINE show #-}
 
@@ -54,17 +56,17 @@ tensordata t = withDynamicState t $ \s' t' ->
   arrayLen :: Ptr CState -> Ptr CTensor -> IO Int
   arrayLen s' p = Sig.c_storage s' p >>= fmap fromIntegral . StorageSig.c_size s'
 
-get1d :: Dynamic -> Int64 -> IO HsReal
-get1d t d1 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get1d s t' (fromIntegral d1)
+get1d :: Dynamic -> Int64 -> HsReal
+get1d t d1 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get1d s t' (fromIntegral d1)
 
-get2d :: Dynamic -> Int64 -> Int64 -> IO HsReal
-get2d t d1 d2 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get2d s t' (fromIntegral d1) (fromIntegral d2)
+get2d :: Dynamic -> Int64 -> Int64 -> HsReal
+get2d t d1 d2 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get2d s t' (fromIntegral d1) (fromIntegral d2)
 
-get3d :: Dynamic -> Int64 -> Int64 -> Int64 -> IO HsReal
-get3d t d1 d2 d3 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get3d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3)
+get3d :: Dynamic -> Int64 -> Int64 -> Int64 -> HsReal
+get3d t d1 d2 d3 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get3d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3)
 
-get4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> IO HsReal
-get4d t d1 d2 d3 d4 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get4d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3) (fromIntegral d4)
+get4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal
+get4d t d1 d2 d3 d4 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get4d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3) (fromIntegral d4)
 
 isContiguous :: Dynamic -> IO Bool
 isContiguous t = withDynamicState t $ \s t' ->
@@ -439,10 +441,10 @@ resizeDim' t (SomeDims d) = resizeDim t d
 getDim :: Dynamic -> Dims (d::[Nat]) -> IO HsReal
 getDim t d = case fromIntegral <$> listDims d of
   []           -> throwNE "can't lookup an empty dimension"
-  [x]          -> get1d t x
-  [x, y]       -> get2d t x y
-  [x, y, z]    -> get3d t x y z
-  [x, y, z, q] -> get4d t x y z q
+  [x]          -> pure $ get1d t x
+  [x, y]       -> pure $ get2d t x y
+  [x, y, z]    -> pure $ get3d t x y z
+  [x, y, z, q] -> pure $ get4d t x y z q
   _            -> throwGT4 "get"
 
 getDims :: Dynamic -> IO SomeDims

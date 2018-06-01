@@ -168,6 +168,7 @@ executable convolutions
     , mtl
     -- , opto
     , singletons
+    , time
     , transformers
 
 
