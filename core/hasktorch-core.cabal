@@ -115,6 +115,7 @@ library
         ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Byte.Dynamic.Tensor.Sort
         ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Byte.Dynamic.Tensor.TopK
         ,Torch.Indef.Index as Torch.Byte.Index
+        ,Torch.Indef.Mask  as Torch.Byte.Mask
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -142,6 +143,9 @@ library
 
         ,Torch.Sig.Index.Tensor       as Torch.FFI.TH.Long.Tensor
         ,Torch.Sig.Index.TensorFree   as Torch.FFI.TH.Long.FreeTensor
+        ,Torch.Sig.Mask.Tensor        as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Mask.TensorFree    as Torch.FFI.TH.Byte.FreeTensor
+        ,Torch.Sig.Mask.MathReduce    as Torch.FFI.TH.Byte.TensorMath
         )
 
   exposed-modules:
@@ -186,6 +190,7 @@ library
         ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Char.Dynamic.Tensor.Sort
         ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Char.Dynamic.Tensor.TopK
         ,Torch.Indef.Index as Torch.Char.Index
+        ,Torch.Indef.Mask  as Torch.Char.Mask
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -212,6 +217,9 @@ library
         ,Torch.Sig.Tensor.TopK           as Torch.FFI.TH.Char.TensorMath
         ,Torch.Sig.Index.Tensor       as Torch.FFI.TH.Long.Tensor
         ,Torch.Sig.Index.TensorFree   as Torch.FFI.TH.Long.FreeTensor
+        ,Torch.Sig.Mask.Tensor        as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Mask.TensorFree    as Torch.FFI.TH.Byte.FreeTensor
+        ,Torch.Sig.Mask.MathReduce    as Torch.FFI.TH.Byte.TensorMath
         )
 
   exposed-modules:
@@ -260,6 +268,7 @@ library
 
         ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Short.Dynamic.Tensor.Math.Pointwise.Signed
         ,Torch.Indef.Index as Torch.Short.Index
+        ,Torch.Indef.Mask  as Torch.Short.Mask
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -288,6 +297,9 @@ library
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Short.TensorMath
         ,Torch.Sig.Index.Tensor       as Torch.FFI.TH.Long.Tensor
         ,Torch.Sig.Index.TensorFree   as Torch.FFI.TH.Long.FreeTensor
+        ,Torch.Sig.Mask.Tensor        as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Mask.TensorFree    as Torch.FFI.TH.Byte.FreeTensor
+        ,Torch.Sig.Mask.MathReduce    as Torch.FFI.TH.Byte.TensorMath
         )
 
   exposed-modules:
@@ -336,6 +348,7 @@ library
 
         ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Int.Dynamic.Tensor.Math.Pointwise.Signed
         ,Torch.Indef.Index as Torch.Int.Index
+        ,Torch.Indef.Mask  as Torch.Int.Mask
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -364,6 +377,9 @@ library
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Int.TensorMath
         ,Torch.Sig.Index.Tensor       as Torch.FFI.TH.Long.Tensor
         ,Torch.Sig.Index.TensorFree   as Torch.FFI.TH.Long.FreeTensor
+        ,Torch.Sig.Mask.Tensor        as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Mask.TensorFree    as Torch.FFI.TH.Byte.FreeTensor
+        ,Torch.Sig.Mask.MathReduce    as Torch.FFI.TH.Byte.TensorMath
         )
 
   exposed-modules:
@@ -412,6 +428,7 @@ library
 
         ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Long.Dynamic.Tensor.Math.Pointwise.Signed
         ,Torch.Indef.Index as Torch.Long.Index
+        ,Torch.Indef.Mask  as Torch.Long.Mask
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -440,6 +457,9 @@ library
         ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Long.TensorMath
         ,Torch.Sig.Index.Tensor       as Torch.FFI.TH.Long.Tensor
         ,Torch.Sig.Index.TensorFree   as Torch.FFI.TH.Long.FreeTensor
+        ,Torch.Sig.Mask.Tensor        as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Mask.TensorFree    as Torch.FFI.TH.Byte.FreeTensor
+        ,Torch.Sig.Mask.MathReduce    as Torch.FFI.TH.Byte.TensorMath
         )
 
   exposed-modules:
@@ -507,8 +527,9 @@ library
         ,Torch.Indef.Dynamic.Tensor.Random.TH      as Torch.Indef.Float.Dynamic.Tensor.Random.TH
         ,Torch.Indef.Dynamic.Tensor.Math.Random.TH as Torch.Indef.Float.Dynamic.Tensor.Math.Random.TH
 
-        ,Torch.Indef.Index as Torch.Indef.Float.Index
-        ,Torch.Indef.Types as Torch.Indef.Float.Types
+        ,Torch.Indef.Types as Torch.Float.Types
+        ,Torch.Indef.Index as Torch.Float.Index
+        ,Torch.Indef.Mask  as Torch.Float.Mask
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -550,6 +571,9 @@ library
         ,Torch.Sig.Types.NN as Torch.Types.TH
         ,Torch.Sig.Index.Tensor       as Torch.FFI.TH.Long.Tensor
         ,Torch.Sig.Index.TensorFree   as Torch.FFI.TH.Long.FreeTensor
+        ,Torch.Sig.Mask.Tensor        as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Mask.TensorFree    as Torch.FFI.TH.Byte.FreeTensor
+        ,Torch.Sig.Mask.MathReduce    as Torch.FFI.TH.Byte.TensorMath
         )
 
   exposed-modules:
@@ -631,8 +655,9 @@ library
         ,Torch.Indef.Dynamic.Tensor.Random.TH      as Torch.Indef.Double.Dynamic.Tensor.Random.TH
         ,Torch.Indef.Dynamic.Tensor.Math.Random.TH as Torch.Indef.Double.Dynamic.Tensor.Math.Random.TH
 
-        ,Torch.Indef.Index as Torch.Indef.Double.Index
-        ,Torch.Indef.Types as Torch.Indef.Double.Types
+        ,Torch.Indef.Index as Torch.Double.Index
+        ,Torch.Indef.Types as Torch.Double.Types
+        ,Torch.Indef.Mask  as Torch.Double.Mask
 
         ,Torch.Indef.Static.NN               as Torch.Double.NN
         ,Torch.Indef.Static.NN.Activation    as Torch.Double.NN.Activation
@@ -686,6 +711,9 @@ library
         ,Torch.Sig.Types.NN as Torch.Types.TH
         ,Torch.Sig.Index.Tensor       as Torch.FFI.TH.Long.Tensor
         ,Torch.Sig.Index.TensorFree   as Torch.FFI.TH.Long.FreeTensor
+        ,Torch.Sig.Mask.Tensor        as Torch.FFI.TH.Byte.Tensor
+        ,Torch.Sig.Mask.TensorFree    as Torch.FFI.TH.Byte.FreeTensor
+        ,Torch.Sig.Mask.MathReduce    as Torch.FFI.TH.Byte.TensorMath
         )
 
 
@@ -738,6 +766,7 @@ library
           ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Sort
           ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.TopK
           ,Torch.Indef.Index as Torch.Cuda.Byte.Index
+          ,Torch.Indef.Mask as Torch.Cuda.Byte.Mask
           )
           requires
           (Torch.Sig.Types.Global   as Torch.Types.THC
@@ -767,7 +796,9 @@ library
 
           ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
-
+          ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
           )
 
     exposed-modules:
@@ -812,6 +843,7 @@ library
           ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Char.Dynamic.Tensor.Sort
           ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Char.Dynamic.Tensor.TopK
           ,Torch.Indef.Index as Torch.Cuda.Char.Index
+          ,Torch.Indef.Mask as Torch.Cuda.Char.Mask
           )
           requires
           (Torch.Sig.Types.Global   as Torch.Types.THC
@@ -840,6 +872,9 @@ library
           ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Char.TensorTopK
           ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
           )
 
     exposed-modules:
@@ -886,6 +921,7 @@ library
           ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Short.Dynamic.Tensor.TopK
           ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Pointwise.Signed
           ,Torch.Indef.Index as Torch.Cuda.Short.Index
+          ,Torch.Indef.Mask as Torch.Cuda.Short.Mask
           )
           requires
           (Torch.Sig.Types.Global   as Torch.Types.THC
@@ -915,6 +951,9 @@ library
           ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Short.TensorMathPointwise
           ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
           )
 
     exposed-modules:
@@ -961,6 +1000,7 @@ library
           ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Int.Dynamic.Tensor.Sort
           ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Int.Dynamic.Tensor.TopK
           ,Torch.Indef.Index as Torch.Cuda.Int.Index
+          ,Torch.Indef.Mask as Torch.Cuda.Int.Mask
           )
           requires
           (Torch.Sig.Types.Global   as Torch.Types.THC
@@ -991,6 +1031,9 @@ library
           ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Int.TensorMathPointwise
           ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
           )
 
     exposed-modules:
@@ -1037,6 +1080,7 @@ library
           ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Sort
           ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Long.Dynamic.Tensor.TopK
           ,Torch.Indef.Index as Torch.Cuda.Long.Index
+          ,Torch.Indef.Mask as Torch.Cuda.Long.Mask
           )
           requires
           (Torch.Sig.Types.Global   as Torch.Types.THC
@@ -1066,6 +1110,9 @@ library
           ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Long.TensorTopK
           ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
           )
 
 
@@ -1149,8 +1196,9 @@ library
 
           ,Torch.Indef.Static.Tensor.Random.THC as Torch.Indef.Cuda.Double.Tensor.Random.THC
           ,Torch.Indef.Dynamic.Tensor.Random.THC as Torch.Indef.Cuda.Dynamic.Double.Tensor.Random.THC
-          ,Torch.Indef.Index as Torch.Indef.Cuda.Double.Index
-          ,Torch.Indef.Types as Torch.Indef.Cuda.Double.Types
+          ,Torch.Indef.Index as Torch.Cuda.Double.Index
+          ,Torch.Indef.Types as Torch.Cuda.Double.Types
+          ,Torch.Indef.Mask as Torch.Cuda.Double.Mask
 
           ,Torch.Indef.Static.NN               as Torch.Cuda.Double.NN
           ,Torch.Indef.Static.NN.Activation    as Torch.Cuda.Double.NN.Activation
@@ -1206,6 +1254,9 @@ library
           ,Torch.Sig.Types.NN as Torch.Types.THC
           ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
           )
 
 
@@ -1221,6 +1272,7 @@ library hasktorch-indef-unsigned
     , hasktorch-indef
   reexported-modules:
       Torch.Indef.Index
+    , Torch.Indef.Mask
     , Torch.Indef.Types
     , Torch.Indef.Storage
     , Torch.Indef.Storage.Copy
@@ -1281,6 +1333,7 @@ library hasktorch-indef-signed
     , hasktorch-indef
   reexported-modules:
       Torch.Indef.Index
+    , Torch.Indef.Mask
     , Torch.Indef.Types
 
     , Torch.Indef.Storage
@@ -1343,6 +1396,7 @@ library hasktorch-indef-floating
     , hasktorch-indef
   reexported-modules:
       Torch.Indef.Index
+    , Torch.Indef.Mask
     , Torch.Indef.Types
 
     , Torch.Indef.Storage
@@ -1414,7 +1468,6 @@ library hasktorch-indef-floating
     , Torch.Indef.Dynamic.Tensor.Random.TH
     , Torch.Indef.Dynamic.Tensor.Random.THC
     , Torch.Indef.Dynamic.Tensor.Math.Random.TH
-
 
     , Torch.Undefined.Tensor.Math.Random.TH
     , Torch.Undefined.Tensor.Random.TH

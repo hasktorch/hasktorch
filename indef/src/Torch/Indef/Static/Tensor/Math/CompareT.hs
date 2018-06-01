@@ -1,5 +1,6 @@
 module Torch.Indef.Static.Tensor.Math.CompareT where
 
+import System.IO.Unsafe
 import Torch.Dimensions
 
 import Torch.Indef.Types
@@ -62,16 +63,16 @@ _eqTensorT r t t2 = Dynamic._eqTensorT (asDynamic r) (asDynamic t) (asDynamic t2
 -- eqTensor = compareTensors _eqTensor
 
 ltTensorT, leTensorT, gtTensorT, geTensorT, neTensorT, eqTensorT
-  :: Dimensions d => Tensor d -> Tensor d -> IO (Tensor d)
-ltTensorT a b = withEmpty $ \r -> _ltTensorT r a b
-leTensorT a b = withEmpty $ \r -> _leTensorT r a b
-gtTensorT a b = withEmpty $ \r -> _gtTensorT r a b
-geTensorT a b = withEmpty $ \r -> _geTensorT r a b
-neTensorT a b = withEmpty $ \r -> _neTensorT r a b
-eqTensorT a b = withEmpty $ \r -> _eqTensorT r a b
+  :: Dimensions d => Tensor d -> Tensor d -> Tensor d
+ltTensorT a b = unsafeDupablePerformIO . withEmpty $ \r -> _ltTensorT r a b
+leTensorT a b = unsafeDupablePerformIO . withEmpty $ \r -> _leTensorT r a b
+gtTensorT a b = unsafeDupablePerformIO . withEmpty $ \r -> _gtTensorT r a b
+geTensorT a b = unsafeDupablePerformIO . withEmpty $ \r -> _geTensorT r a b
+neTensorT a b = unsafeDupablePerformIO . withEmpty $ \r -> _neTensorT r a b
+eqTensorT a b = unsafeDupablePerformIO . withEmpty $ \r -> _eqTensorT r a b
 
 ltTensorT_, leTensorT_, gtTensorT_, geTensorT_, neTensorT_, eqTensorT_
-  :: (Dimensions d) => Tensor d -> Tensor d -> IO (Tensor d)
+  :: Tensor d -> Tensor d -> IO (Tensor d)
 ltTensorT_ a b = _ltTensorT a a b >> pure a
 leTensorT_ a b = _leTensorT a a b >> pure a
 gtTensorT_ a b = _gtTensorT a a b >> pure a

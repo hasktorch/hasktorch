@@ -3,8 +3,10 @@
 module Torch.Float (module X) where
 
 import Torch.Types.TH as X
-import Torch.Indef.Float.Types as X hiding (storage)
-import Torch.Indef.Float.Index as X hiding (withDynamicState)
+
+import Torch.Float.Types as X hiding (storage)
+import Torch.Float.Index as X hiding (withDynamicState)
+import Torch.Float.Mask  as X
 
 import Torch.Indef.Float.Tensor as X
 import Torch.Indef.Float.Tensor.Copy as X

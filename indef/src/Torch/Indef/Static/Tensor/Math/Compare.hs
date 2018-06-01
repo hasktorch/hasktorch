@@ -1,9 +1,18 @@
-module Torch.Indef.Static.Tensor.Math.Compare where
+{-# LANGUAGE ScopedTypeVariables #-}
+module Torch.Indef.Static.Tensor.Math.Compare
+  ( ltValue, ltValueT, ltValueT_
+  , leValue, leValueT, leValueT_
+  , gtValue, gtValueT, gtValueT_
+  , geValue, geValueT, geValueT_
+  , neValue, neValueT, neValueT_
+  , eqValue, eqValueT, eqValueT_
+  ) where
 
 import Torch.Dimensions
 
-import Torch.Indef.Types
+import Torch.Indef.Mask
 import Torch.Indef.Static.Tensor
+import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Math.Compare as Dynamic
 
 _ltValue :: ByteTensor n -> Tensor d -> HsReal -> IO ()
@@ -42,15 +51,15 @@ _neValueT r t v = Dynamic._neValueT (asDynamic r) (asDynamic t) v
 _eqValueT :: Tensor d -> Tensor d -> HsReal -> IO ()
 _eqValueT r t v = Dynamic._eqValueT (asDynamic r) (asDynamic t) v
 
--- ltValue, leValue, gtValue, geValue, neValue, eqValue
---   :: (Dimensions d)
---   => Tensor d -> HsReal -> IO (MaskTensor Tensor d)
--- ltValue a b = withEmpty $ \r -> _ltValue r a b
--- leValue a b = withEmpty $ \r -> _leValue r a b
--- gtValue a b = withEmpty $ \r -> _gtValue r a b
--- geValue a b = withEmpty $ \r -> _geValue r a b
--- neValue a b = withEmpty $ \r -> _neValue r a b
--- eqValue a b = withEmpty $ \r -> _eqValue r a b
+ltValue, leValue, gtValue, geValue, neValue, eqValue
+  :: Dimensions d
+  => Tensor d -> HsReal -> IO (MaskTensor d)
+ltValue a b = let r = newMask in _ltValue r a b >> pure r
+leValue a b = let r = newMask in _leValue r a b >> pure r
+gtValue a b = let r = newMask in _gtValue r a b >> pure r
+geValue a b = let r = newMask in _geValue r a b >> pure r
+neValue a b = let r = newMask in _neValue r a b >> pure r
+eqValue a b = let r = newMask in _eqValue r a b >> pure r
 
 ltValueT, leValueT, gtValueT, geValueT, neValueT, eqValueT
   :: (Dimensions d)

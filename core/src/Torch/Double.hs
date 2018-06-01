@@ -5,8 +5,9 @@ module Torch.Double (module X) where
 import Torch.Types.TH as X
 import Torch.Double.NN as X
 
-import Torch.Indef.Double.Types as X hiding (storage)
-import Torch.Indef.Double.Index as X hiding (withDynamicState)
+import Torch.Double.Types as X hiding (storage)
+import Torch.Double.Index as X hiding (withDynamicState)
+import Torch.Double.Mask as X
 
 import Torch.Indef.Double.Tensor as X
 import Torch.Indef.Double.Tensor.Copy as X

@@ -7,6 +7,7 @@ module Torch.Indef.Static.Tensor.Math.Reduce
   , prodall
   , Torch.Indef.Static.Tensor.Math.Reduce.min
   , Torch.Indef.Static.Tensor.Math.Reduce.max
+  , maxIndex
   , median
   , Torch.Indef.Static.Tensor.Math.Reduce.sum, rowsum, colsum
   , _prod
@@ -43,6 +44,13 @@ max, min, median
 max    = withKeepDim Dynamic._max
 min    = withKeepDim Dynamic._min
 median = withKeepDim Dynamic._median
+
+
+maxIndex :: (Dimensions d, KnownDim n) => Tensor d -> Idx dimval -> IndexTensor '[n]
+maxIndex t i = case Torch.Indef.Static.Tensor.Math.Reduce.max t i keep of
+  (t, Just ix) -> ix
+  _ -> error "impossible"
+
 
 _prod :: Tensor d -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
 _prod r t = Dynamic._prod (asDynamic r) (asDynamic t)

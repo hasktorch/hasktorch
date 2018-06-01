@@ -22,6 +22,9 @@ library
   signatures:
       Torch.Sig.Index.Tensor
     , Torch.Sig.Index.TensorFree
+    , Torch.Sig.Mask.Tensor
+    , Torch.Sig.Mask.TensorFree
+    , Torch.Sig.Mask.MathReduce
   hs-source-dirs: src
   default-language: Haskell2010
   default-extensions: DataKinds, KindSignatures, TypeSynonymInstances
@@ -67,6 +70,7 @@ library
     , Torch.Indef.Storage.Copy
     , Torch.Indef.Types
     , Torch.Indef.Index
+    , Torch.Indef.Mask
 
     -- ==================================================== --
     -- Dynamic Tensor modules
