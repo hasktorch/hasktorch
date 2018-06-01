@@ -264,8 +264,8 @@ _conv1d_updGradParams
   -> IO (Conv1d f o kW dW)  -- ^ gradient of (weights, bias)
 _conv1d_updGradParams c@(Conv1d (w, b)) input gout scale = do
   -- FIXME: this is _not going to scale well_ and coming up with a mutable version of Conv layers will be nessecary
-  w' <- copy w
-  b' <- copy b
+  let w' = copy w
+  let b' = copy b
   Dynamic._temporalConvolution_accGradParameters
     (asDynamic input) (asDynamic gout) (asDynamic w') (asDynamic b')
     (kernelWidth c) (stepSize c) scale

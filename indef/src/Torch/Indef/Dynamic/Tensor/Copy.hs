@@ -1,3 +1,15 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Dynamic.Tensor.Copy
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Functions to copy (and cast) tensors into different types.
+-- This is a pure module.
+-------------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Indef.Dynamic.Tensor.Copy
@@ -15,6 +27,7 @@ import Foreign
 import Foreign.C.Types
 import Data.List (intercalate)
 import Control.Exception.Safe (throwString)
+import System.IO.Unsafe
 import qualified Torch.Types.TH as TH
 import qualified Torch.Sig.Tensor as Sig
 import qualified Torch.Sig.Tensor.Copy as Sig
@@ -34,8 +47,8 @@ copyType
   -> FinalizerPtr a
   -> (ForeignPtr C'THState -> ForeignPtr a -> b)
   -> (Ptr CState -> Ptr CTensor -> Ptr a -> IO ())
-  -> Dynamic -> IO b
-copyType newPtr fin builder cfun t = withDynamicState t $ \s' t' -> do
+  -> Dynamic -> b
+copyType newPtr fin builder cfun t = unsafePerformIO . withDynamicState t $ \s' t' -> do
   target <- newPtr
   throwString $ intercalate ""
     [ "'hasktorch-indef-unsigned:Torch.Indef.Tensor.Dynamic.Copy.copyType':"
@@ -47,20 +60,30 @@ copyType newPtr fin builder cfun t = withDynamicState t $ \s' t' -> do
   builder
     <$> (TH.newCState >>= TH.manageState)
     <*> newForeignPtr fin target
+{-# NOINLINE copyType #-}
 
-copy :: Dynamic -> IO Dynamic
-copy t = withDynamicState t $ \s' t' -> do
+-- | Copy a tensor.
+copy :: Dynamic -> Dynamic
+copy t = unsafePerformIO . withDynamicState t $ \s' t' -> do
   target <- Sig.c_new s'
   Sig.c_resizeAs s' target t'
   Sig.c_copy s' target t'
   mkDynamic s' target
+{-# NOINLINE copy #-}
 
+-- | copy a tensor to a byte tensor. *Use at your own discresion*
 copyByte   = copyType B.c_new_ B.p_free   TH.byteDynamic Sig.c_copyByte
+-- | copy a tensor to a char tensor. *Use at your own discresion*
 copyChar   = copyType C.c_new_ C.p_free   TH.charDynamic Sig.c_copyChar
+-- | copy a tensor to a short tensor. *Use at your own discresion*
 copyShort  = copyType S.c_new_ S.p_free  TH.shortDynamic Sig.c_copyShort
+-- | copy a tensor to a int tensor. *Use at your own discresion*
 copyInt    = copyType I.c_new_ I.p_free    TH.intDynamic Sig.c_copyInt
+-- | copy a tensor to a long tensor. *Use at your own discresion*
 copyLong   = copyType L.c_new_ L.p_free   TH.longDynamic Sig.c_copyLong
+-- | copy a tensor to a float tensor. *Use at your own discresion*
 copyFloat  = copyType F.c_new_ F.p_free  TH.floatDynamic Sig.c_copyFloat
+-- | copy a tensor to a double tensor. *Use at your own discresion*
 copyDouble = copyType D.c_new_ D.p_free TH.doubleDynamic Sig.c_copyDouble
 
 -- FIXME: reintroduce Half

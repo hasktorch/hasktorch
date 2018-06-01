@@ -16,6 +16,7 @@ module Torch.Dimensions
   , KnownNat3, KnownDim3, Dimensions3
   , KnownNat4, KnownDim4, Dimensions4
   , KnownNat5, KnownDim5, Dimensions5
+  , KnownDim6, KnownDim7, KnownDim8
   , SingDimensions
   , DimVal(..)
   , module Dim
@@ -61,6 +62,9 @@ type KnownDim2 n0 n1       = (KnownDim  n0,       KnownDim n1)
 type KnownDim3 n0 n1 n2    = (KnownDim2 n0 n1,    KnownDim n2)
 type KnownDim4 n0 n1 n2 n3 = (KnownDim3 n0 n1 n2, KnownDim n3)
 type KnownDim5 n0 n1 n2 n3 n4 = (KnownDim4 n0 n1 n2 n3, KnownDim n4)
+type KnownDim6 n0 n1 n2 n3 n4 n5 = (KnownDim5 n0 n1 n2 n3 n4, KnownDim n5)
+type KnownDim7 n0 n1 n2 n3 n4 n5 n6 = (KnownDim6 n0 n1 n2 n3 n4 n5, KnownDim n6)
+type KnownDim8 n0 n1 n2 n3 n4 n5 n6 n7 = (KnownDim7 n0 n1 n2 n3 n4 n5 n6, KnownDim n7)
 
 type SingDim n            = (SingI n, KnownDim n)
 type SingDim2 n0 n1       = (SingDim n0,        SingDim n1)

@@ -5,6 +5,7 @@ import Text.Printf
 import Control.Monad.IO.Class
 
 import Torch.Double as Math
+import Prelude as P
 
 import LeNet
 import DataLoader

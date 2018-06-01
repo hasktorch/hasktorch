@@ -120,9 +120,9 @@ sizeDesc t = Dynamic.sizeDesc (asDynamic t)
 _squeeze t0 t1 = Dynamic._squeeze (asDynamic t0) (asDynamic t1)
 
 -- | Squeeze a dimension of size 1 out of the tensor
-squeeze1d :: Dim n -> Tensor d -> Tensor d'
+squeeze1d :: Dimensions d => Dim n -> Tensor d -> Tensor d'
 squeeze1d n t = unsafeDupablePerformIO $ do
-  t' <- copy t
+  let t' = sudo (copy t)
   Dynamic._squeeze1d (asDynamic t) (asDynamic t') (fromIntegral (dimVal n))
   pure t'
 
@@ -135,7 +135,7 @@ _unfold t0 t1 = Dynamic._unfold (asDynamic t0) (asDynamic t1)
 -- | Unsqueeze a dimension of size 1 into the tensor (pure, dupable)
 unsqueeze1d :: Dimensions2 d d' => Idx n -> Tensor d -> Tensor d'
 unsqueeze1d n t = unsafeDupablePerformIO $ do
-  t' <- copy t
+  let t' = sudo (copy t)
   Dynamic._unsqueeze1d (asDynamic t) (asDynamic t') (fromIntegral (idxToWord n))
   pure t'
 

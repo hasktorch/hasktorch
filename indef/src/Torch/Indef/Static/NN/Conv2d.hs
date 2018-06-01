@@ -117,7 +117,7 @@ instance Param2d (Conv2d f o) where
 -- ========================================================================= --
 
 type SpatialConvolutionC f h w kH kW dH dW pH pW oH oW =
-  ( KnownDim2 (f * kH * kW) (oH * oW)
+  ( KnownDim3 (f * kH * kW) (oH * oW) f
 
   , SideCheck h kH dH pH oH
   , SideCheck w kW dW pW oW
@@ -206,6 +206,7 @@ _conv2dMM mkGradIBuffer s p lr = liftOp2 . op2 $ \c inp ->
 --
 conv2dMM_forward
   :: SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
+  => KnownDim o
   => Step2d dH dW        -- ^ step of the convolution in width and height dimensions.
                          --   C-default is 1 for both.
   -> Padding2d pH pW     -- ^ zero padding to the input plane for width and height.
@@ -218,6 +219,7 @@ conv2dMM_forward = _conv2dMM_forward
 conv2dMM_updGradInput
   :: forall f h w kH kW dH dW pH pW oW oH o
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
+  => KnownDim o
   => Step2d dH dW         -- ^ (dH, dW) step of the convolution in width and height dimensions
   -> Padding2d pH pW      -- ^ (pH, pW) zero padding to the input plane for width and height. (kW-1)/2 is often used.
   -> Conv2d f o kH kW     -- ^ conv2d state
@@ -232,6 +234,7 @@ conv2dMM_updGradInput =
 conv2dMM_updGradParameters
   :: forall f h w kH kW dH dW pH pW oW oH o
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
+  => KnownDim o
   => Step2d dH dW     -- ^ (dH, dW) step of the convolution in width and height dimensions
   -> Padding2d pH pW  -- ^ (pH, pW) zero padding to the input plane for width and height. (kW-1)/2 is often used.
   -> Double           -- ^ scale / learning rate
@@ -250,6 +253,7 @@ conv2dMM_updGradParameters =
 conv2dMM_forwardBatch
   :: forall f h w kH kW dH dW pH pW oW oH b o
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
+  => KnownDim2 b o
   => Step2d dH dW          -- ^ step of the convolution in width and height dimensions.
                            --   C-default is 1 for both.
   -> Padding2d pH pW       -- ^ zero padding to the input plane for width and height.
@@ -263,7 +267,7 @@ conv2dMM_forwardBatch = _conv2dMM_forward
 conv2dMM_updGradInputBatch
   :: forall f h w kH kW dH dW pH pW oW oH o b
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => KnownDim b
+  => KnownDim3 b o (f*kW)
   => Step2d dH dW         -- ^ (dH, dW) step of the convolution in width and height dimensions
   -> Padding2d pH pW      -- ^ (pH, pW) zero padding to the input plane for width and height.
   -> Conv2d f o kH kW     -- ^ conv2d state
@@ -277,7 +281,7 @@ conv2dMM_updGradInputBatch =
 conv2dMM_updGradParametersBatch
   :: forall f h w kH kW dH dW pH pW oW oH o b
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => KnownDim b
+  => KnownDim2 b o
   => Step2d dH dW     -- ^ (dH, dW) step of the convolution in width and height dimensions
   -> Padding2d pH pW  -- ^ (pH, pW) zero padding to the input plane for width and height. (kW-1)/2 is often used.
   -> Double           -- ^ scale / learning rate
@@ -294,7 +298,7 @@ conv2dMM_updGradParametersBatch =
 
 -- | helper of forward functions with unspecified dimensions
 _conv2dMM_forward
-  :: (KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
+  :: KnownDim8 kH kW dH dW pH pW f o
   => Step2d dH dW
   -> Padding2d pH pW
   -> Conv2d f o kH kW
@@ -310,7 +314,7 @@ _conv2dMM_forward step pad conv inp = unsafePerformIO $
 -- | helper of backward update to compute gradient input with unspecified dimensions
 _conv2dMM_updGradInput
   :: forall f o oH oW kH kW dH dW pH pW inp gout fgin
-  . (KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
+  .  KnownDim8 kH kW dH dW pH pW f o
   => IO (Tensor fgin)
   -> Step2d dH dW
   -> Padding2d pH pW
@@ -332,7 +336,7 @@ _conv2dMM_updGradInput mkGradIBuffer step pad conv inp gout = unsafePerformIO $ 
 
 _conv2dMM_accGradParameters
   :: forall f o oH oW kH kW dH dW pH pW inp gout finput
-  .  (KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
+  .  KnownDim8 kH kW dH dW pH pW f o
   => Dimensions finput
   => IO (Tensor finput)
   -> Step2d dH dW    -- ^ (dH, dW) step of the convolution in width and height dimensions
@@ -357,7 +361,7 @@ _conv2dMM_accGradParameters mkGradIBuffer step pad lr conv inp gout = do
 
 _conv2dMM_updGradParameters
   :: forall f o oH oW kH kW dH dW pH pW inp gout finput
-  .  (KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
+  .  KnownDim8 kH kW dH dW pH pW f o
   => Dimensions finput
   => IO (Tensor finput)
   -> Step2d dH dW     -- ^ (dH, dW) step of the convolution in width and height dimensions
@@ -369,7 +373,7 @@ _conv2dMM_updGradParameters
   -> Tensor gout           -- ^ gradOutput
   -> Conv2d f o kH kW
 _conv2dMM_updGradParameters mkGradIBuffer step pad lr conv inp gout = unsafePerformIO $ do
-  conv' <- Conv2d <$> ((,) <$> copy (weights conv) <*> copy (bias conv))
+  let conv' = Conv2d (copy (weights conv), copy (bias conv))
   _conv2dMM_accGradParameters mkGradIBuffer step pad lr conv' inp gout
   pure conv'
 
