@@ -1,27 +1,18 @@
-module Torch.Indef.Dynamic.Tensor.Math.CompareT where
+module Torch.Indef.Dynamic.Tensor.Math.CompareT
+  ( ltTensor, ltTensorT, ltTensorT_
+  , leTensor, leTensorT, leTensorT_
+  , gtTensor, gtTensorT, gtTensorT_
+  , geTensor, geTensorT, geTensorT_
+  , neTensor, neTensorT, neTensorT_
+  , eqTensor, eqTensorT, eqTensorT_
+  ) where
 
+import System.IO.Unsafe
 import qualified Torch.Sig.Tensor.Math.CompareT as Sig
 
+import Torch.Indef.Mask
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor
-
-_ltTensor :: MaskDynamic -> Dynamic -> Dynamic -> IO ()
-_ltTensor bt t0 t1 = with2DynamicState t0 t1 $ \s' t0' t1' -> withMask bt $ \bt' -> Sig.c_ltTensor s' bt' t0' t1'
-
-_leTensor :: MaskDynamic -> Dynamic -> Dynamic -> IO ()
-_leTensor bt t0 t1 = with2DynamicState t0 t1 $ \s' t0' t1' -> withMask bt $ \bt' -> Sig.c_leTensor s' bt' t0' t1'
-
-_gtTensor :: MaskDynamic -> Dynamic -> Dynamic -> IO ()
-_gtTensor bt t0 t1 = with2DynamicState t0 t1 $ \s' t0' t1' -> withMask bt $ \bt' -> Sig.c_gtTensor s' bt' t0' t1'
-
-_geTensor :: MaskDynamic -> Dynamic -> Dynamic -> IO ()
-_geTensor bt t0 t1 = with2DynamicState t0 t1 $ \s' t0' t1' -> withMask bt $ \bt' -> Sig.c_geTensor s' bt' t0' t1'
-
-_neTensor :: MaskDynamic -> Dynamic -> Dynamic -> IO ()
-_neTensor bt t0 t1 = with2DynamicState t0 t1 $ \s' t0' t1' -> withMask bt $ \bt' -> Sig.c_neTensor s' bt' t0' t1'
-
-_eqTensor :: MaskDynamic -> Dynamic -> Dynamic -> IO ()
-_eqTensor bt t0 t1 = with2DynamicState t0 t1 $ \s' t0' t1' -> withMask bt $ \bt' -> Sig.c_eqTensor s' bt' t0' t1'
 
 _ltTensorT :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _ltTensorT = shuffle3 with3DynamicState Sig.c_ltTensorT
@@ -41,23 +32,32 @@ _neTensorT = shuffle3 with3DynamicState Sig.c_neTensorT
 _eqTensorT :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _eqTensorT = shuffle3 with3DynamicState Sig.c_eqTensorT
 
--- ltTensor, leTensor, gtTensor, geTensor, neTensor, eqTensor
---   :: Dynamic -> Dynamic -> IO MaskDynamic
--- ltTensor  a b = getDims a >>= new' >>= \r -> _ltTensor r a b >> pure r
--- leTensor  a b = getDims a >>= new' >>= \r -> _leTensor r a b >> pure r
--- gtTensor  a b = getDims a >>= new' >>= \r -> _gtTensor r a b >> pure r
--- geTensor  a b = getDims a >>= new' >>= \r -> _geTensor r a b >> pure r
--- neTensor  a b = getDims a >>= new' >>= \r -> _neTensor r a b >> pure r
--- eqTensor  a b = getDims a >>= new' >>= \r -> _eqTensor r a b >> pure r
+compareTensorOp
+  :: (Ptr CState -> Ptr CByteTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
+  -> Dynamic -> Dynamic -> MaskDynamic
+compareTensorOp op t0 t1 = unsafeDupablePerformIO $ do
+  SomeDims d <- getDims t0
+  let bt = newMaskDyn d
+  with2DynamicState t0 t1 $ \s' t0' t1' -> withMask bt $ \bt' -> op s' bt' t0' t1'
+  pure bt
+
+ltTensor, leTensor, gtTensor, geTensor, neTensor, eqTensor
+  :: Dynamic -> Dynamic -> MaskDynamic
+ltTensor = compareTensorOp Sig.c_ltTensor
+leTensor = compareTensorOp Sig.c_leTensor
+gtTensor = compareTensorOp Sig.c_gtTensor
+geTensor = compareTensorOp Sig.c_geTensor
+neTensor = compareTensorOp Sig.c_neTensor
+eqTensor = compareTensorOp Sig.c_eqTensor
 
 ltTensorT, leTensorT, gtTensorT, geTensorT, neTensorT, eqTensorT
-  :: Dynamic -> Dynamic -> IO Dynamic
-ltTensorT  a b = withEmpty a $ \r -> _ltTensorT r a b
-leTensorT  a b = withEmpty a $ \r -> _leTensorT r a b
-gtTensorT  a b = withEmpty a $ \r -> _gtTensorT r a b
-geTensorT  a b = withEmpty a $ \r -> _geTensorT r a b
-neTensorT  a b = withEmpty a $ \r -> _neTensorT r a b
-eqTensorT  a b = withEmpty a $ \r -> _eqTensorT r a b
+  :: Dynamic -> Dynamic -> Dynamic
+ltTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _ltTensorT r a b
+leTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _leTensorT r a b
+gtTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _gtTensorT r a b
+geTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _geTensorT r a b
+neTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _neTensorT r a b
+eqTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _eqTensorT r a b
 
 ltTensorT_, leTensorT_, gtTensorT_, geTensorT_, neTensorT_, eqTensorT_
   :: Dynamic -> Dynamic -> IO Dynamic
