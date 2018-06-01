@@ -10,7 +10,7 @@ import Torch.Indef.Index
 
 topk
   :: forall d' d n
-  .  (Dimensions2 d d', KnownNat n)
+  .  (Dimensions2 d d', KnownDim n)
   => Tensor d -> Integer -> DimVal -> TopKOrder -> Maybe KeepDim -> IO (Tensor d', IndexTensor '[n])
 topk t k d o sorted = do
   let ix :: IndexTensor '[n] = newIx

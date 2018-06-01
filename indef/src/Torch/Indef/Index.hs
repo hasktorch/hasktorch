@@ -38,8 +38,8 @@ type CPUIndex = TH.LongDynamic
 type CPUIndexStorage = TH.LongStorage
 
 -- FIXME: This can abstracted away with backpack, but I'm not sure if it can do it atm.
-newIx :: forall n . KnownNat n => IndexTensor '[n]
-newIx = longAsStatic $ newIxDyn (natVal (Proxy :: Proxy n))
+newIx :: forall n . KnownDim n => IndexTensor '[n]
+newIx = longAsStatic $ newIxDyn (dimVal (dim :: Dim n))
 
 zeroIxNd :: Dimensions d => IndexTensor d
 zeroIxNd = longAsStatic $ newIxDyn 0
@@ -59,17 +59,17 @@ indexDyn l = unsafeDupablePerformIO $ do
     upd :: IndexDynamic -> (Int, Integer) -> IO ()
     upd t (idx, v) = withDynamicState t $ \s' t' -> IxSig.c_set1d s' t' (fromIntegral idx) (fromIntegral v)
 
-index :: forall n . KnownNat n => [Integer] -> Maybe (IndexTensor '[n])
+index :: forall n . KnownDim n => [Integer] -> Maybe (IndexTensor '[n])
 index l
-  | genericLength l == natVal (Proxy :: Proxy n) = Just . longAsStatic . indexDyn $ l
+  | genericLength l == dimVal (dim :: Dim n) = Just . longAsStatic . indexDyn $ l
   | otherwise = Nothing
 
-index1d :: KnownNat n => [Integer] -> Maybe (IndexTensor '[n])
+index1d :: KnownDim n => [Integer] -> Maybe (IndexTensor '[n])
 index1d = index
 
-indexNd :: forall d . KnownNat (Product d) => Dimensions d => [Integer] -> Maybe (IndexTensor d)
+indexNd :: forall d . KnownDim (Product d) => Dimensions d => [Integer] -> Maybe (IndexTensor d)
 indexNd l
-  | genericLength l == natVal (Proxy :: Proxy (Product d)) = Just . longAsStatic . indexDyn $ l
+  | genericLength l == dimVal (dim :: Dim (Product d)) = Just . longAsStatic . indexDyn $ l
   | otherwise = Nothing
 
 
