@@ -166,6 +166,7 @@ executable convolutions
     , list-t
     , microlens-th
     , mtl
+    , monad-loops
     -- , opto
     , singletons
     , time
