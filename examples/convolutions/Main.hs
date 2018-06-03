@@ -10,11 +10,11 @@ import qualified Train
 
 main :: IO ()
 main = do
-  Conv1d.main
-  Conv2d.main
-  ReLU.main
-  MaxPooling.main
-  LeNet.main
+  -- Conv1d.main
+  -- Conv2d.main
+  -- ReLU.main
+  -- MaxPooling.main
+  -- LeNet.main
   -- This can take a while:
   -- DataLoader.main
   Train.main

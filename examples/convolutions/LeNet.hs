@@ -23,11 +23,11 @@ import qualified Torch.Double.NN.Activation as NN
 import Lens.Micro.TH
 
 data LeNet = LeNet
-  { _conv1 :: Conv2d 3  6 5 5
-  , _conv2 :: Conv2d 6 16 5 5
-  , _fc1   :: Linear  (16*5*5) 120
-  , _fc2   :: Linear       120  84
-  , _fc3   :: Linear        84  10
+  { _conv1 :: !(Conv2d 3  6 5 5)
+  , _conv2 :: !(Conv2d 6 16 5 5)
+  , _fc1   :: !(Linear  (16*5*5) 120)
+  , _fc2   :: !(Linear       120  84)
+  , _fc3   :: !(Linear        84  10)
   } deriving (Show, Generic)
 
 makeLenses ''LeNet
@@ -145,6 +145,14 @@ newConv2d :: forall o i kH kW . KnownDim4 i o kH kW => IO (Conv2d i o kH kW)
 newConv2d = fmap Conv2d . newLayerWithBias $
   dimVal (dim :: Dim i) * dimVal (dim :: Dim kH) * dimVal (dim :: Dim kW)
 
+newLayerWithBias :: Dimensions2 d d' => Word -> IO (Tensor d, Tensor d')
+newLayerWithBias n = do
+  (,) <$> uniform (-stdv) stdv
+      <*> uniform (-stdv) stdv
+  where
+    stdv :: Double
+    stdv = 1 / P.sqrt (fromIntegral n)
+{-
 -- | uniform random initialization
 newLayerWithBias :: Dimensions2 d d' => Word -> IO (Tensor d, Tensor d')
 newLayerWithBias n = do
@@ -156,4 +164,6 @@ newLayerWithBias n = do
     stdv :: Double
     stdv = 1 / P.sqrt (fromIntegral n)
 
+-- | uniform random initialization
+-}
 
