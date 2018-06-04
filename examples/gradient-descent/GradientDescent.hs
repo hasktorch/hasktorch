@@ -25,24 +25,24 @@ genData param = do
   RNG.manualSeed gen seedVal
   noise        :: Tensor '[N] <- normal gen 0 2
   predictorVal :: Tensor '[N] <- normal gen 0 10
-  x :: Tensor '[2, N] <- (predictorVal `cat1d` (constant 1)) >>= resizeAs
-  y :: Tensor '[N]    <- (newTranspose2d (param !*! x) >>= resizeAs >>= Math.cadd noise 1)
+  x :: Tensor '[2, N] <- resizeAs <$> (predictorVal `cat1d` (constant 1))
+  y :: Tensor '[N]    <- Math.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
 
   pure (x, y)
 
 loss :: (Tensor '[2,N], Tensor '[N]) -> Tensor '[1, 2] -> IO Precision
 loss (x, y) param = do
-  x' <- (y -) <$> resizeAs (param !*! x)
+  let x' = y - resizeAs (param !*! x)
   (realToFrac . Math.sumall) <$> Math.square x'
 
 
 gradient
-  :: forall n . (KnownNatDim n)
+  :: forall n . (KnownDim n)
   => (Tensor '[2, n], Tensor '[n]) -> Tensor '[1, 2] -> IO (Tensor '[1, 2])
 gradient (x, y) param = do
-  y' :: Tensor '[1, n] <- resizeAs y
-  x' :: Tensor '[n, 2] <- newTranspose2d x
-  m  :: Tensor '[1, 2] <- resizeAs (err y' !*! x')
+  let y' :: Tensor '[1, n] = resizeAs y
+  let x' :: Tensor '[n, 2] = transpose2d x
+  let m  :: Tensor '[1, 2] = resizeAs (err y' !*! x')
   pure $ (-2 / nsamp) *^ m
 
   where
@@ -50,7 +50,7 @@ gradient (x, y) param = do
     err y' = y' - (param !*! x)
 
     nsamp :: Precision
-    nsamp = realToFrac (natVal (Proxy :: Proxy n))
+    nsamp = realToFrac (dimVal (dim :: Dim n))
 
 gradientDescent
   :: (Tensor '[2, N], Tensor '[N])

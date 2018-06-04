@@ -91,7 +91,13 @@ newSizeOf t = Dynamic.newSizeOf (asDynamic t)
 newStrideOf t = Dynamic.newStrideOf (asDynamic t)
 newTranspose t a b = asStatic <$> Dynamic.newTranspose (asDynamic t) a b
 newUnfold t a b c = asStatic <$> Dynamic.newUnfold (asDynamic t) a b c
-newView t a = asStatic <$> Dynamic.newView (asDynamic t) a
+
+view :: forall d d' . (Dimensions d, Dimensions d') => Tensor d -> IO (Tensor d')
+view src = do
+  longs <- ixCPUStorage $ fromIntegral <$> listDims (dims :: Dims d)
+  asStatic <$> Dynamic.newView (asDynamic src) longs
+
+
 newWithSize a0 a1 = asStatic <$> Dynamic.newWithSize a0 a1
 newWithSize1d a0 = asStatic <$> Dynamic.newWithSize1d a0
 newWithSize2d a0 a1 = asStatic <$> Dynamic.newWithSize2d a0 a1
@@ -275,12 +281,6 @@ _resizeDim t = case fromIntegral <$> listDims (dims :: Dims d') of
   _ -> throwFIXME "this should be doable with resizeNd" "resizeDim"
   -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
-
--- view :: forall d d' . (Dimensions d, Dimensions d') => Tensor d -> IO (Tensor d')
--- view src = do
---   res <- newClone src
---   shape :: Tensor d' <- new
---   _resizeAs res shape
 
 -- | Resize the input with the output shape. impure and mutates the tensor inplace.
 -- 

@@ -18,6 +18,7 @@ module Torch.Indef.Index
   , mkLongStorage
   , ixShape
   , ixGet1d
+  , ixCPUStorage
   , showIx
   ) where
 
@@ -38,10 +39,14 @@ import Torch.Sig.Types.Global as Sig
 import Torch.Indef.Types hiding (withDynamicState, mkDynamic, mkDynamicIO)
 import Torch.Indef.Internal
 import qualified Torch.Types.TH as TH
+import qualified Torch.Types.TH.Long as THLong
 import qualified Torch.Sig.Index.Tensor as IxSig
 import qualified Torch.Sig.Index.TensorFree as IxSig
 import qualified Torch.FFI.TH.Long.Storage as LongStorage
+import qualified Torch.FFI.TH.Long.Storage as LongStorage
 import qualified Torch.FFI.TH.Long.Tensor as LongTensor
+import qualified Foreign as FM
+import qualified Foreign.Marshal.Array as FM
 
 type CPUIndex = TH.LongDynamic
 type CPUIndexStorage = TH.LongStorage
@@ -81,6 +86,15 @@ indexNd l
   | genericLength l == dimVal (dim :: Dim (Product d)) = Just . longAsStatic . indexDyn $ l
   | otherwise = Nothing
 
+-- | Convenience method for 'newWithData' specific to longs.
+ixCPUStorage :: [Integer] -> IO TH.LongStorage
+ixCPUStorage pr = do
+  st  <- TH.newCState
+  pr' <- FM.withArray (THLong.hs2cReal <$> pr) pure
+  thl <- LongStorage.c_newWithData st pr' (fromIntegral $ length pr)
+  TH.LongStorage <$> ((,)
+    <$> TH.manageState st
+    <*> FM.newForeignPtr LongStorage.p_free thl)
 
 _resizeDim :: IndexDynamic -> Integer -> IO ()
 _resizeDim t x = withDynamicState t $ \s' t' -> IxSig.c_resize1d s' t' (fromIntegral x)

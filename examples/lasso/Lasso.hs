@@ -52,8 +52,8 @@ genData w = do
   noise        :: Tensor '[N, 1] <- T.normal gen 0 0.10
   predictorVal :: Tensor '[N]    <- T.normal gen 0 1.0
   let ones     :: Tensor '[N] = T.constant 1
-  x :: Tensor '[N, M] <- (predictorVal `T.cat1d` ones) >>= T.resizeAs
-  y :: Tensor '[N, 1] <- T.resizeAs ((x !*! w) ^+^ noise)
+  x :: Tensor '[N, M] <- T.resizeAs <$> (predictorVal `T.cat1d` ones)
+  let y :: Tensor '[N, 1] = T.resizeAs ((x !*! w) ^+^ noise)
   print x
   print y
   pure (x, y)
@@ -129,7 +129,7 @@ cyclic_coordinate_descent (x, y) l eps = go []
 
         let r_j     = (y ^-^ (x !*! w)) ^+^ (x_j !*! w_j)
         let w_j_upd = prox_l1_single ((1 / nSamples) * (x_j <.> r_j)) (realToFrac l)
-        w_upd <- T.copy w
+        let w_upd = T.copy w
         T.setElem2d w_upd jIdx 0 w_j_upd
         let loss_obj = loss (x, y) w_upd
 
@@ -177,7 +177,7 @@ fista (x, y) l est_L eps = go []
     -> Tensor '[M, 1]
     -> IO (Tensor '[M, 1])
   gradient (x, y) w = do
-    xT <- T.newTranspose2d x
+    let xT = T.transpose2d x
     pure $ (1.0 / nSamples) *^ xT !*! (x !*! w - y)
    where
     nSamples = getDim2d x D1

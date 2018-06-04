@@ -35,7 +35,7 @@ initialization = void $ do
       pure v
 
   section "Resize 1D vector as 2D matrix" $ do
-    asMat :: DoubleTensor '[3, 2] <- resizeAs listVec
+    let asMat :: Tensor '[3, 2] = resizeAs listVec
     pure asMat
 
   section "Initialize arbitrary dimensions directly from list" $ do
@@ -64,7 +64,7 @@ matrixVectorOps = void $ do
     pure $ randMat !* constVec
 
   section "Vector outer product" $
-    outer constVec constVec
+    pure $ outer constVec constVec
 
   showSection "Vector dot product" $
     pure $ constVec <.> constVec

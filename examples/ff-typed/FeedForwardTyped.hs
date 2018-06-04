@@ -17,18 +17,18 @@ data StaticWeights (i :: Nat) (o :: Nat) = SW
   , nodes :: DoubleTensor '[o, i]
   } deriving (Show)
 
-mkW :: (KnownNatDim i, KnownNatDim o) => IO (SW i o)
+mkW :: (KnownDim i, KnownDim o) => IO (SW i o)
 mkW = SW <$> new <*> new
 
 data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
-  O :: (KnownNatDim i, KnownNatDim o) =>
+  O :: (KnownDim i, KnownDim o) =>
        SW i o -> SN i '[] o
-  (:~) :: (KnownNatDim h, KnownNatDim i, KnownNatDim o) =>
+  (:~) :: (KnownDim h, KnownDim i, KnownDim o) =>
           SW i h -> SN h hs o -> SN i (h ': hs) o
 
 infixr 5 :~
 
-dispW :: (KnownNatDim o, KnownNatDim i) => StaticWeights i o -> IO ()
+dispW :: (KnownDim o, KnownDim i) => StaticWeights i o -> IO ()
 dispW w = do
   putStrLn "\nBiases:"
   print (biases w)
@@ -39,27 +39,27 @@ dispN :: SN h hs c -> IO ()
 dispN (O w) = dispW w
 dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispW w >> dispN n'
 
-randomWeights :: (KnownNatDim i, KnownNatDim o) => IO (SW i o)
+randomWeights :: (KnownDim i, KnownDim o) => IO (SW i o)
 randomWeights = do
   gen <- newRNG
   b <- uniform gen (-1.0) (1.0)
   w <- uniform gen (-1.0) (1.0)
   pure SW { biases = b, nodes = w }
 
-randomNet :: forall i hs o. (KnownNatDim i, SingI hs, KnownNatDim o) => IO (SN i hs o)
+randomNet :: forall i hs o. (KnownDim i, SingI hs, KnownDim o) => IO (SN i hs o)
 randomNet = go (sing :: Sing hs)
   where
-    go :: forall h hs'. KnownNatDim h => Sing hs' -> IO (SN h hs' o)
+    go :: forall h hs'. KnownDim h => Sing hs' -> IO (SN h hs' o)
     go = \case
       SNil            ->    O <$> randomWeights
       SNat `SCons` ss -> (:~) <$> randomWeights <*> go ss
 
-runLayer :: (KnownNatDim i, KnownNatDim o) => SW i o -> DoubleTensor '[i] -> IO (DoubleTensor '[o])
-runLayer sw v = addmv 1.0 wB 1.0 wN v -- v are the inputs
+runLayer :: (KnownDim i, KnownDim o) => SW i o -> DoubleTensor '[i] -> IO (DoubleTensor '[o])
+runLayer sw v = pure $ addmv 1.0 wB 1.0 wN v -- v are the inputs
   where wB = biases sw
         wN = nodes sw
 
-runNet :: (KnownNatDim i, KnownNatDim o) => SN i hs o -> DoubleTensor '[i] -> IO (DoubleTensor '[o])
+runNet :: (KnownDim i, KnownDim o) => SN i hs o -> DoubleTensor '[i] -> IO (DoubleTensor '[o])
 runNet (O w) v = do
   l <- runLayer w v
   sigmoid l

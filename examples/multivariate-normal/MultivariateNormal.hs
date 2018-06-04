@@ -22,7 +22,7 @@ test_mvn = do
  where
   runMultivariate
     :: forall n
-    .  KnownNatDim n
+    .  KnownDim n
     => Generator
     -> Maybe (Tensor '[n, n])
     -> Maybe (Tensor '[n])

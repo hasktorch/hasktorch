@@ -38,8 +38,8 @@ genData gen param = do
   x1    :: Tensor '[N] <- normal gen 0.0 10.0
   x2    :: Tensor '[N] <- normal gen 0.0 10.0
   let x0 :: Tensor '[N] = constant 1
-  x     :: Tensor '[3, N] <- (cat1d x1 x2) >>= cat1d x0 >>= resizeAs
-  y     :: Tensor '[N] <- (^+^) noise <$> (newTranspose2d (param !*! x) >>= resizeAs)
+  x     :: Tensor '[3, N] <- resizeAs <$> (cat1d x1 x2 >>= cat1d x0)
+  let y :: Tensor '[N] = noise ^+^ resizeAs (transpose2d (param !*! x))
   pure (x, y)
 
 genParam :: RNG.Generator -> IO (Tensor '[1, 3])
