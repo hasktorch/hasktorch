@@ -1,3 +1,10 @@
+#ifdef CUDA
 #include "THC/THCGeneral.h"
-
-void free_CTHState(THCState* s) { return; }
+#endif
+void free_CTHState(
+#ifdef CUDA
+  THCState* s
+#else
+  int* s
+#endif
+  ) { return; }
