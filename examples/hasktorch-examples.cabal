@@ -129,17 +129,6 @@ executable static-tensor-usage
       Paths_hasktorch_examples
   default-language: Haskell2010
 
-executable nlp
-  main-is: Main.hs
-  hs-source-dirs: nlp
-  default-language: Haskell2010
-  default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
-  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core
-    , backprop >= 0.2
-
 executable convolutions
   main-is: Main.hs
   hs-source-dirs: convolutions
@@ -171,5 +160,18 @@ executable convolutions
     , singletons
     , time
     , transformers
+
+-- Build only with cuda flags:
+--
+-- executable nlp
+--   main-is: Main.hs
+--   hs-source-dirs: nlp
+--   default-language: Haskell2010
+--   default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
+--   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+--   build-depends:
+--       base >=4.7 && <5
+--     , hasktorch-core
+--     , backprop >= 0.2
 
 

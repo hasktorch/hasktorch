@@ -145,6 +145,7 @@ newConv2d :: forall o i kH kW . KnownDim4 i o kH kW => IO (Conv2d i o kH kW)
 newConv2d = fmap Conv2d . newLayerWithBias $
   dimVal (dim :: Dim i) * dimVal (dim :: Dim kH) * dimVal (dim :: Dim kW)
 
+{- For GPU
 newLayerWithBias :: Dimensions2 d d' => Word -> IO (Tensor d, Tensor d')
 newLayerWithBias n = do
   (,) <$> uniform (-stdv) stdv
@@ -152,7 +153,8 @@ newLayerWithBias n = do
   where
     stdv :: Double
     stdv = 1 / P.sqrt (fromIntegral n)
-{-
+-}
+
 -- | uniform random initialization
 newLayerWithBias :: Dimensions2 d d' => Word -> IO (Tensor d, Tensor d')
 newLayerWithBias n = do
@@ -163,7 +165,4 @@ newLayerWithBias n = do
   where
     stdv :: Double
     stdv = 1 / P.sqrt (fromIntegral n)
-
--- | uniform random initialization
--}
 
