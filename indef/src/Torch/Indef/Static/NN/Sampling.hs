@@ -1,6 +1,5 @@
 module Torch.Indef.Static.NN.Sampling where
 
-import Torch.Dimensions
 import Control.Monad
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.NN as Dynamic

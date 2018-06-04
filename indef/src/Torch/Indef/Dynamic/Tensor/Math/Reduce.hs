@@ -4,10 +4,9 @@ module Torch.Indef.Dynamic.Tensor.Math.Reduce where
 import System.IO.Unsafe
 
 import Torch.Indef.Types
-import Torch.Dimensions
 
 import Torch.Indef.Dynamic.Tensor
-import Torch.Indef.Index hiding (withDynamicState)
+import qualified Torch.Indef.Index as Ix
 import qualified Torch.Sig.Tensor.Math.Reduce as Sig
 
 minall :: Dynamic -> HsReal
@@ -27,17 +26,17 @@ prodall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsAccReal .: Si
 
 _max :: (Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
 _max (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
-  withIx ix $ \ix' ->
+  Ix.withDynamicState ix $ \_ ix' ->
     Sig.c_max s' t0' ix' t1' (fromIntegral i0) (fromKeepDim i1)
 
 _min :: (Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
 _min (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
-  withIx ix $ \ix' ->
+  Ix.withDynamicState ix $ \_ ix' ->
     Sig.c_min s' t0' ix' t1' (fromIntegral i0) (fromKeepDim i1)
 
 _median :: (Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
 _median (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
-  withIx ix $ \ix' ->
+  Ix.withDynamicState ix $ \_ ix' ->
     Sig.c_median s' t0' ix' t1' (fromIntegral i0) (fromKeepDim i1)
 
 _sum :: Dynamic -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
@@ -53,7 +52,7 @@ withKeepDim _fn t d k = do
   tdim@(SomeDims d')<- getDims t
   let (i:_) = listDims d'
   ret :: Dynamic      <- new' tdim
-  let ix = newIxDyn i
+  let ix = Ix.newIxDyn i
   _fn (ret, ix) t d k
   pure (ret, maybe (Just ix) (pure Nothing) k)
 

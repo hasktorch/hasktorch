@@ -2,9 +2,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Indef.Static.Tensor.Math where
 
-import Torch.Dimensions
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
+import Data.Singletons.Prelude.List
 import qualified Torch.Types.TH as TH
 import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
 

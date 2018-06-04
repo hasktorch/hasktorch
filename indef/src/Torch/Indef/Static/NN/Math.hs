@@ -3,6 +3,7 @@ module Torch.Indef.Static.NN.Math where
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
+import Data.Singletons.Prelude.List
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
 abs_updateOutput :: Tensor d -> IO (Tensor d)

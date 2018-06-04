@@ -8,7 +8,6 @@ module Torch.Indef.Static.Tensor.Math.Compare
   , eqValue, eqValueT, eqValueT_
   ) where
 
-import Torch.Dimensions
 
 import Torch.Indef.Mask
 import Torch.Indef.Static.Tensor

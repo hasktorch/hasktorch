@@ -3,6 +3,7 @@
 module Torch.Indef.Static.NN.Layers where
 
 import Data.List
+import Data.Singletons.Prelude.List
 import Numeric.Backprop
 
 import Torch.Indef.Types

@@ -6,7 +6,6 @@ import System.IO.Unsafe
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
-import Torch.Dimensions
 
 import qualified Torch.Indef.Dynamic.Tensor.Math.Blas as Dynamic
 

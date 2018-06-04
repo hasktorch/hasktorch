@@ -15,10 +15,11 @@ import Control.Monad.Trans.Maybe
 import Data.Coerce
 import Data.Maybe
 import Data.List
+import Data.Singletons.Prelude.List
+import Data.Proxy
 import GHC.Natural
 import System.IO.Unsafe
 
-import Torch.Dimensions
 import Torch.Indef.Types
 import Torch.Indef.Index
 import Torch.Indef.Static.Tensor.Copy
@@ -48,7 +49,7 @@ sudo t = Sig.asStatic ((Sig.asDynamic t) :: Dynamic)
 
 vector :: forall n . KnownDim n => KnownNat n => [HsReal] -> Maybe (Tensor '[n])
 vector rs
-  | genericLength rs == natVal (Proxy :: Proxy n) = Just . asStatic . Dynamic.vector $ rs
+  | genericLength rs == dimVal (dim :: Dim n) = Just . asStatic . Dynamic.vector $ rs
   | otherwise = Nothing
 
 newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
@@ -325,9 +326,9 @@ matrix
   => [[HsReal]] -> Either String (Tensor '[n, m])
 matrix ls
   | null ls = Left "no support for empty lists"
-  | genericLength ls /= (natVal (Proxy :: Proxy n)) = Left "length of outer list must match type-level columns"
+  | genericLength ls /= (dimVal (dim :: Dim n)) = Left "length of outer list must match type-level columns"
   | any (/= length (head ls)) (fmap length ls) = Left "can't build a matrix from jagged lists"
-  | genericLength (head ls) /= (natVal (Proxy :: Proxy n)) = Left "inner list length must match type-level rows"
+  | genericLength (head ls) /= (dimVal (dim :: Dim n)) = Left "inner list length must match type-level rows"
   | otherwise =
     case fromList (concat ls) of
       Nothing -> Left "impossible: number of elements doesn't match the dimensions"
@@ -344,7 +345,7 @@ expand2d
   => Tensor '[x] -> IO (Tensor '[y, x])
 expand2d t = do
   res :: Tensor '[y, x] <- new
-  s <- mkLongStorage =<< TH.c_newWithSize2_ s2 s1
+  s <- mkCPUIxStorage =<< TH.c_newWithSize2_ s2 s1
   _expand res t s
   pure res
   where
@@ -352,7 +353,7 @@ expand2d t = do
     s2 = fromIntegral $ dimVal (dim :: Dim  y)
 
 getElem2d
-  :: forall n m . (KnownDim2 n m)
+  :: forall (n::Nat) (m::Nat) . (KnownDim2 n m)
   => Tensor '[n, m] -> Natural -> Natural -> IO (HsReal)
 getElem2d t r c
   | r > fromIntegral (dimVal (dim :: Dim n)) ||
@@ -361,7 +362,7 @@ getElem2d t r c
   | otherwise = pure $ get2d t (fromIntegral r) (fromIntegral c)
 
 setElem2d
-  :: forall n m ns . (KnownDim2 n m)
+  :: forall (n::Nat) (m::Nat) ns . (KnownDim2 n m)
   => Tensor '[n, m] -> Natural -> Natural -> HsReal -> IO ()
 setElem2d t r c v
   | r > fromIntegral (dimVal (dim :: Dim n)) ||

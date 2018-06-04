@@ -3,7 +3,6 @@ module Torch.Indef.Static.Tensor.Index where
 
 import GHC.Natural
 import Control.Exception.Safe
-import Torch.Dimensions
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Index as Ix

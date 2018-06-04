@@ -1,7 +1,19 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Sig.Index.TensorFree
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Tensor GC functionality for Index tensors.
+-------------------------------------------------------------------------------
 signature Torch.Sig.Index.TensorFree where
 
 import Foreign.Ptr
 import Foreign.C.Types
 import Torch.Sig.Types.Global
 
+-- | finalizer for a long tensor
 p_free :: FunPtr (Ptr CState -> Ptr CLongTensor -> IO ())

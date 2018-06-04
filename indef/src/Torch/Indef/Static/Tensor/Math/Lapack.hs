@@ -1,7 +1,6 @@
 module Torch.Indef.Static.Tensor.Math.Lapack where
 
 import GHC.Int
-import Torch.Dimensions
 
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Math.Lapack as Dynamic

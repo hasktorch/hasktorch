@@ -1,9 +1,21 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Sig.Mask.MathReduce
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Basic Tensor MathReduce functionality signature for Mask tensors.
+-------------------------------------------------------------------------------
 signature Torch.Sig.Mask.MathReduce where
 
 import Foreign.Ptr
 import Foreign.C.Types
 import Torch.Sig.Types.Global
 
+-- | ffi to c-level sumall function.
 c_sumall :: Ptr CState -> Ptr CByteTensor -> IO CLong
 
 

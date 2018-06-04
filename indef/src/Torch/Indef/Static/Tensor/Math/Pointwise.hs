@@ -2,7 +2,6 @@
 module Torch.Indef.Static.Tensor.Math.Pointwise where
 
 import System.IO.Unsafe
-import Torch.Dimensions
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic

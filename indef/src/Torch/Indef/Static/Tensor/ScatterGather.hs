@@ -1,6 +1,5 @@
 module Torch.Indef.Static.Tensor.ScatterGather where
 
-import Torch.Dimensions
 
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.ScatterGather as Dynamic

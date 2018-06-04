@@ -29,6 +29,7 @@ import Foreign.C.Types
 import Data.List (intercalate)
 import Control.Exception.Safe (throwString)
 import System.IO.Unsafe
+import Torch.Types.TH (C'THState)
 import qualified Torch.Types.TH as TH
 import qualified Torch.Sig.Tensor as Sig
 import qualified Torch.Sig.Tensor.Copy as Sig

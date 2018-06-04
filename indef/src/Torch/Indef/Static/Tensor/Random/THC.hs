@@ -1,7 +1,6 @@
 module Torch.Indef.Static.Tensor.Random.THC where
 
 import Torch.Indef.Types
-import Torch.Dimensions
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Dynamic.Tensor.Random.THC as Dynamic
 import qualified Torch.Types.TH as TH

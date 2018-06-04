@@ -1,6 +1,5 @@
 module Torch.Indef.Static.Tensor.Mode where
 
-import Torch.Dimensions
 
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Mode as Dynamic

@@ -4,7 +4,6 @@ module Torch.Indef.Dynamic.Tensor.Math.Pointwise where
 import System.IO.Unsafe
 
 import Torch.Indef.Types
-import Torch.Dimensions
 import Torch.Indef.Dynamic.Tensor
 
 import qualified Torch.Sig.Tensor.Math.Pointwise as Sig

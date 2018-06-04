@@ -1,6 +1,5 @@
 module Torch.Indef.Static.Tensor.Masked where
 
-import Torch.Dimensions
 
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Masked as Dynamic

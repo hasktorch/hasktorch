@@ -1,7 +1,6 @@
 module Torch.Indef.Dynamic.Tensor.Math.Scan where
 
 import Torch.Indef.Types
-import Torch.Dimensions
 
 import qualified Torch.Sig.Tensor.Math.Scan as Sig
 

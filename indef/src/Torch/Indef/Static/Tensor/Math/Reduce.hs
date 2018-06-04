@@ -23,7 +23,6 @@ import Data.Coerce
 import System.IO.Unsafe
 
 import Data.Maybe (fromJust)
-import Torch.Dimensions
 import Torch.Indef.Index
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Types

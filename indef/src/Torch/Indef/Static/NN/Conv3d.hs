@@ -13,7 +13,6 @@
 
 module Torch.Indef.Static.NN.Conv3d where
 
-import Torch.Dimensions
 import Data.Kind (Type)
 
 _volumetricConvolution_updateOutput      :: t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()

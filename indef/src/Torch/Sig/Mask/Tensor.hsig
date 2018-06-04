@@ -1,22 +1,48 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Sig.Mask.Tensor
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Basic Tensor functionality signature file for Mask tensors.
+-------------------------------------------------------------------------------
 signature Torch.Sig.Mask.Tensor where
 
 import Foreign.Ptr
 import Foreign.C.Types
 import Torch.Sig.Types.Global
 
+-- | ffi to c-level newWithSize1d
 c_newWithSize1d :: Ptr CState -> CLLong -> IO (Ptr CByteTensor)
+-- | ffi to c-level newWithSize2d
 c_newWithSize2d :: Ptr CState -> CLLong -> CLLong -> IO (Ptr CByteTensor)
+-- | ffi to c-level newWithSize3d
 c_newWithSize3d :: Ptr CState -> CLLong -> CLLong -> CLLong -> IO (Ptr CByteTensor)
+-- | ffi to c-level newWithSize4d
 c_newWithSize4d :: Ptr CState -> CLLong -> CLLong -> CLLong -> CLLong -> IO (Ptr CByteTensor)
+-- | ffi to c-level set1d
 c_set1d :: Ptr CState -> Ptr CByteTensor -> CLLong -> CUChar -> IO ()
+-- | ffi to c-level set2d
 c_set2d :: Ptr CState -> Ptr CByteTensor -> CLLong -> CLLong -> CUChar -> IO ()
+-- | ffi to c-level set3d
 c_set3d :: Ptr CState -> Ptr CByteTensor -> CLLong -> CLLong -> CLLong -> CUChar -> IO ()
+-- | ffi to c-level set4d
 c_set4d :: Ptr CState -> Ptr CByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CUChar -> IO ()
+-- | ffi to c-level resize1d
 c_resize1d :: Ptr CState -> Ptr CByteTensor -> CLLong -> IO ()
+-- | ffi to c-level resize2d
 c_resize2d :: Ptr CState -> Ptr CByteTensor -> CLLong -> CLLong -> IO ()
+-- | ffi to c-level resize3d
 c_resize3d :: Ptr CState -> Ptr CByteTensor -> CLLong -> CLLong -> CLLong -> IO ()
+-- | ffi to c-level resize4d
 c_resize4d :: Ptr CState -> Ptr CByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+-- | ffi to c-level resize5d
 c_resize5d :: Ptr CState -> Ptr CByteTensor -> CLLong -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+-- | ffi to c-level nDimension
 c_nDimension :: Ptr CState -> Ptr CByteTensor -> IO CInt
+-- | ffi to c-level size
 c_size :: Ptr CState -> Ptr CByteTensor -> CInt -> IO CLLong
 

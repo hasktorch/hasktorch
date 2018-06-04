@@ -8,7 +8,6 @@ module Torch.Indef.Static.Tensor.Math.CompareT
   ) where
 
 import System.IO.Unsafe
-import Torch.Dimensions
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor

@@ -3,7 +3,6 @@ module Torch.Indef.Static.Tensor.Random.TH where
 
 import Control.Monad
 import Torch.Indef.Types
-import Torch.Dimensions
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Pointwise

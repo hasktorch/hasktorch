@@ -6,13 +6,13 @@ module Torch.Indef.Dynamic.Tensor.Math where
 import qualified Torch.Sig.Tensor.Math   as Sig
 import qualified Torch.Types.TH as TH (IndexStorage)
 import qualified Foreign.Marshal as FM
+import Numeric.Dimensions
 import System.IO.Unsafe
 
 
 import Torch.Indef.Dynamic.Tensor
-import Torch.Dimensions
 import Torch.Indef.Types
-import Torch.Indef.Index hiding (withDynamicState)
+import qualified Torch.Indef.Index as Ix
 
 _fill :: Dynamic -> HsReal -> IO ()
 _fill t v = withDynamicState t $ shuffle2 Sig.c_fill (hs2cReal v)
@@ -27,7 +27,7 @@ _zerosLike :: Dynamic -> Dynamic -> IO ()
 _zerosLike t0 t1 = with2DynamicState t0 t1 Sig.c_zerosLike
 
 _ones :: Dynamic -> TH.IndexStorage -> IO ()
-_ones t0 ix = withDynamicState t0 $ \s' t0' -> withCPUIxStorage ix $ \ix' ->
+_ones t0 ix = withDynamicState t0 $ \s' t0' -> Ix.withCPUIxStorage ix $ \ix' ->
   Sig.c_ones s' t0' ix'
 
 _onesLike :: Dynamic -> Dynamic -> IO ()
@@ -37,7 +37,7 @@ numel :: Dynamic -> IO Integer
 numel t = withDynamicState t (fmap fromIntegral .: Sig.c_numel)
 
 _reshape :: Dynamic -> Dynamic -> TH.IndexStorage -> IO ()
-_reshape t0 t1 ix = with2DynamicState t0 t1 $ \s' t0' t1' -> withCPUIxStorage ix $ \ix' ->
+_reshape t0 t1 ix = with2DynamicState t0 t1 $ \s' t0' t1' -> Ix.withCPUIxStorage ix $ \ix' ->
   Sig.c_reshape s' t0' t1' ix'
 
 catArray :: [Dynamic] -> DimVal -> IO Dynamic
@@ -63,7 +63,7 @@ _cat t0 t1 t2 i = withDynamicState t0 $ \s' t0' ->
     Sig.c_cat s' t0' t1' t2' (fromIntegral i)
 
 _nonzero :: IndexDynamic -> Dynamic -> IO ()
-_nonzero ix t = withDynamicState t $ \s' t' -> withIx ix $ \ix' -> Sig.c_nonzero s' ix' t'
+_nonzero ix t = withDynamicState t $ \s' t' -> Ix.withDynamicState ix $ \_ ix' -> Sig.c_nonzero s' ix' t'
 
 trace :: Dynamic -> IO HsAccReal
 trace t = withDynamicState t (fmap c2hsAccReal .: Sig.c_trace)

@@ -2,7 +2,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Core.Tensor.Static.ByteSpec (spec) where
 
-import Torch.Dimensions
 import Torch.Core.Tensor.Static.Byte
 
 import Torch.Prelude.Extras

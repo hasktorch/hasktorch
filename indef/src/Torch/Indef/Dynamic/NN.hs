@@ -142,7 +142,6 @@ module Torch.Indef.Dynamic.NN
   , _temporalReplicationPadding_updateGradInput
   ) where
 
-import Torch.Dimensions
 
 import Foreign.C.Types
 import Torch.Sig.Types.NN
@@ -337,11 +336,11 @@ spatialConvolutionMM_updateOutput inp weight bias (kW, kH) (dW, dH) (pW, pH) = d
   -- https://github.com/zdevito/ATen/blob/682cb389db5a318539ff03f031bf896a43a71b13/aten/src/THCUNN/generic/SpatialConvolutionMM.cu#L141
   --
   -- TODO: someone needs to verify that this is all above-board and we aren't missing out on some optimization tricks.
-  columns <- empty   -- ^ temporary columns
-  ones    <- empty   -- ^ buffer of ones for bias accumulation
+  columns <- empty   -- temporary columns
+  ones    <- empty   -- buffer of ones for bias accumulation
 
   -- This one as well:
-  out     <- empty   -- ^ output
+  out     <- empty   -- output
   with3DynamicState inp out weight $ \s' inp' out' weight' ->
    with3DynamicState bias columns ones $ \_ bias' columns' ones' ->
     Sig.c_SpatialConvolutionMM_updateOutput s' inp' out' weight' bias' columns' ones'

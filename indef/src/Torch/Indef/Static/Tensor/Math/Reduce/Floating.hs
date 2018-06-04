@@ -1,6 +1,5 @@
 module Torch.Indef.Static.Tensor.Math.Reduce.Floating where
 
-import Torch.Dimensions
 
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating as Dynamic

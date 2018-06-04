@@ -29,6 +29,8 @@ import Data.Kind (Type)
 import Data.List (intercalate)
 import Numeric.Backprop
 import System.IO.Unsafe
+import Data.Singletons.Prelude (type (>), type (<))
+import GHC.TypeLits (type Div)
 
 
 import Torch.Indef.Static.Tensor
@@ -130,7 +132,7 @@ type SideCheck h k d p o =
   , k > 0 ~ 'True
   , d > 0 ~ 'True
   -- kernel size can't be greater than actual input size
-  , h + (2*p) < k ~ 'False
+  , (h + (2*p)) < k ~ 'False
 
   -- output size must be greater than 0
   , o > 0 ~ 'True

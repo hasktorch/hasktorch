@@ -3,6 +3,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Compare where
 import qualified Torch.Sig.Tensor.Math.Compare as Sig
 
 import Torch.Indef.Types
+import Torch.Indef.Mask
 import Torch.Indef.Dynamic.Tensor
 
 _ltValue :: MaskDynamic -> Dynamic -> HsReal -> IO ()

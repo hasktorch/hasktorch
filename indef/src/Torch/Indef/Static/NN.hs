@@ -8,7 +8,6 @@ module Torch.Indef.Static.NN
   , _im2Col_updateGradInput
   ) where
 
-import Torch.Dimensions
 
 import Torch.Indef.Types
 
@@ -27,7 +26,7 @@ import Torch.Indef.Static.NN.Pooling as X
 import Torch.Indef.Static.NN.Sampling as X
 import Torch.Indef.Static.NN.Backprop as X
 
-_batchNormalization_updateOutput 
+_batchNormalization_updateOutput
   :: Tensor d    -- ^ input
   -> Tensor d    -- ^ output
   -> Tensor d    -- ^ weight

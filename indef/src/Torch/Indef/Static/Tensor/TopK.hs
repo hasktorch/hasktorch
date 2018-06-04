@@ -2,7 +2,6 @@
 module Torch.Indef.Static.Tensor.TopK where
 
 import Data.Proxy
-import Torch.Dimensions
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Dynamic.Tensor.TopK as Dynamic

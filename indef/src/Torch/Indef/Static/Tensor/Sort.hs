@@ -1,6 +1,5 @@
 module Torch.Indef.Static.Tensor.Sort where
 
-import Torch.Dimensions
 
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Sort as Dynamic
