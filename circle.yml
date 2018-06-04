@@ -12,7 +12,7 @@ dependencies:
     - "/home/ubuntu/.stack"
     - "/home/ubuntu/.cabal"
     - "/home/ubuntu/cabal"
-    - "/home/ubuntu/ghc-8.2.2"
+    - "/home/ubuntu/ghc-8.4.2"
     - "/home/ubuntu/cmake-3.10.0-Linux-x86_64"
     - "/usr/lib/llvm-4.0"
     - "/usr/local/bin/"
@@ -43,23 +43,23 @@ dependencies:
     # - stack upgrade
     # - stack update
 
-    # Install GHC-8.2 on this build of Ubuntu (12.04)
+    # Install GHC-8.4 on this build of Ubuntu (12.04)
     # =============
     - >
-      if [ ! -d ~/ghc-8.2.2 ]; then
-        echo "No cache - building GHC-8.2.2" ;
-        cd ~ && wget --no-check-certificate --quiet https://downloads.haskell.org/~ghc/8.2.2/ghc-8.2.2-x86_64-deb8-linux.tar.xz && tar xf ghc-8.2.2-x86_64-deb8-linux.tar.xz ;
-        cd ghc-8.2.2 ;
+      if [ ! -d ~/ghc-8.4.2 ]; then
+        echo "No cache - building GHC-8.4.2" ;
+        cd ~ && wget --no-check-certificate --quiet https://downloads.haskell.org/~ghc/8.4.2/ghc-8.4.2-x86_64-deb8-linux.tar.xz && tar xf ghc-8.4.2-x86_64-deb8-linux.tar.xz ;
+        cd ghc-8.4.2 ;
         ./configure ;
         sudo make install ;
         # could `sudo update-alternatives` instead
-        sudo ln -fs /usr/local/bin/ghc-8.2.2         /usr/local/bin/ghc ;
-        sudo ln -fs /usr/local/bin/ghci-8.2.2        /usr/local/bin/ghci ;
-        sudo ln -fs /usr/local/bin/ghc-pkg-8.2.2     /usr/local/bin/ghc-pkg ;
-        sudo ln -fs /usr/local/bin/haddock-ghc-8.2.2 /usr/local/bin/haddock-ghc ;
-        sudo ln -fs /usr/local/bin/runghc-8.2.2      /usr/local/bin/runghc ;
+        sudo ln -fs /usr/local/bin/ghc-8.4.2         /usr/local/bin/ghc ;
+        sudo ln -fs /usr/local/bin/ghci-8.4.2        /usr/local/bin/ghci ;
+        sudo ln -fs /usr/local/bin/ghc-pkg-8.4.2     /usr/local/bin/ghc-pkg ;
+        sudo ln -fs /usr/local/bin/haddock-ghc-8.4.2 /usr/local/bin/haddock-ghc ;
+        sudo ln -fs /usr/local/bin/runghc-8.4.2      /usr/local/bin/runghc ;
       else
-        echo "Cached ~/ghc-8.2.2 directory found" ;
+        echo "Cached ~/ghc-8.4.2 directory found" ;
       fi
     - which ghc
     - ghc --version
