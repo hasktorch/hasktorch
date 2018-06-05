@@ -1,151 +1,105 @@
-module Torch.Indef.Static.NN where
+module Torch.Indef.Static.NN
+  ( module X
+  , _batchNormalization_updateOutput
+  , _batchNormalization_backward
+  , _col2Im_updateOutput
+  , _col2Im_updateGradInput
+  , _im2Col_updateOutput
+  , _im2Col_updateGradInput
+  ) where
 
 import Torch.Dimensions
 
 import Torch.Indef.Types
 
+import qualified Torch.Indef.Dynamic.NN as Dynamic
+import Torch.Indef.Static.Tensor
+
+import Torch.Indef.Static.NN.Activation as X
+import Torch.Indef.Static.NN.Conv1d as X hiding (getTensors, weights, bias, featureSize, outputSize, kernelWidth)
+import Torch.Indef.Static.NN.Conv2d as X hiding (getTensors, weights, bias, featureSize, outputSize, kernelWidth, kernelHeight)
+-- import Torch.Indef.Static.NN.Conv3d as X
+import Torch.Indef.Static.NN.Criterion as X
+import Torch.Indef.Static.NN.Layers as X hiding (getTensors, weights, bias, outputSize, inputSize)
+import Torch.Indef.Static.NN.Math as X
+import Torch.Indef.Static.NN.Padding as X
+import Torch.Indef.Static.NN.Pooling as X
+import Torch.Indef.Static.NN.Sampling as X
+import Torch.Indef.Static.NN.Backprop as X
+
+_batchNormalization_updateOutput 
+  :: Tensor d    -- ^ input
+  -> Tensor d    -- ^ output
+  -> Tensor d    -- ^ weight
+  -> Tensor d    -- ^ bias
+  -> Tensor d    -- ^ running mean
+  -> Tensor d    -- ^ running var
+  -> Tensor d    -- ^ save mean
+  -> Tensor d    -- ^ save std
+  -> Bool   -- ^ train
+  -> Double -- ^ momentum
+  -> Double -- ^ eps
+  -> IO ()
+_batchNormalization_updateOutput t0 t1 t2 t3 t4 t5 t6 t7 = Dynamic._batchNormalization_updateOutput
+  (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4)
+  (asDynamic t5) (asDynamic t6) (asDynamic t7)
+
+_batchNormalization_backward
+  :: Tensor d      -- ^ input
+  -> Tensor d      -- ^ grad output
+  -> Tensor d      -- ^ grad input
+  -> Tensor d      -- ^ grad weight
+  -> Tensor d      -- ^ grad bias
+  -> Tensor d      -- ^ weight
+  -> Tensor d      -- ^ running mean
+  -> Tensor d      -- ^ running var
+  -> Tensor d      -- ^ save mean
+  -> Tensor d      -- ^ save std
+  -> Bool     -- ^ train
+  -> Double   -- ^ momentum
+  -> Double   -- ^ eps
+  -> IO ()
+_batchNormalization_backward t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 = Dynamic._batchNormalization_backward
+  (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4)
+  (asDynamic t5) (asDynamic t6) (asDynamic t7) (asDynamic t8) (asDynamic t9)
+
+_col2Im_updateOutput
+  :: Tensor d -- ^ input
+  -> Tensor d -- ^ output
+  -> Int -- ^ output Height
+  -> Int -- ^ output Width
+  -> Int -- ^ kH
+  -> Int -- ^ kW
+  -> Int -- ^ dH
+  -> Int -- ^ dW
+  -> Int -- ^ padH
+  -> Int -- ^ padW
+  -> Int -- ^ sH
+  -> Int -- ^ sW
+  -> IO ()
+_col2Im_updateOutput t0 t1 = Dynamic._col2Im_updateOutput (asDynamic t0) (asDynamic t1)
+
+_col2Im_updateGradInput
+  :: Tensor d -- ^ grad output
+  -> Tensor d -- ^ grad input
+  -> Int -- ^ kH
+  -> Int -- ^ kW
+  -> Int -- ^ dH
+  -> Int -- ^ dW
+  -> Int -- ^ padH
+  -> Int -- ^ padW
+  -> Int -- ^ sH
+  -> Int -- ^ sW
+  -> IO ()
+_col2Im_updateGradInput g0 g1 = Dynamic._col2Im_updateGradInput (asDynamic g0) (asDynamic g1)
+
+_im2Col_updateOutput :: Tensor d -> Tensor d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+_im2Col_updateOutput g0 g1 = Dynamic._im2Col_updateOutput (asDynamic g0) (asDynamic g1)
+
+_im2Col_updateGradInput :: Tensor d -> Tensor d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+_im2Col_updateGradInput g0 g1 = Dynamic._im2Col_updateGradInput (asDynamic g0) (asDynamic g1)
+
 {-
-class NN t where
-  abs_updateOutput             :: Dimensions2 d d' => t d -> t d' -> IO ()
-  abs_updateGradInput          :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> IO ()
-  absCriterion_updateOutput    :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> Bool -> Bool -> IO ()
-  absCriterion_updateGradInput :: Dimensions4 d d' d'' d''' => t d -> t d' -> t d'' -> t d''' -> Bool -> Bool -> IO ()
-  bCECriterion_updateOutput    :: Dimensions4 d d' d'' d''' => t d -> t d' -> t d'' -> Bool -> t d''' -> Bool -> IO ()
-  bCECriterion_updateGradInput :: Dimensions5 d d' d'' d''' d'''' => t d -> t d' -> t d'' -> t d''' -> Bool -> t d'''' -> Bool -> IO ()
-  eLU_updateOutput             :: Dimensions2 d d' => t d -> t d -> Double -> Double -> Bool -> IO ()
-  eLU_updateGradInput          :: Dimensions3 d d' d'' => t d -> t d' -> t d'' -> Double -> Double -> IO ()
-
-  distKLDivCriterion_updateOutput    :: Dimensions d => t d -> t d -> t d -> Bool -> Bool -> IO ()
-  distKLDivCriterion_updateGradInput :: Dimensions d => t d -> t d -> t d -> t d -> Bool -> Bool -> IO ()
-  gatedLinear_updateOutput     :: Dimensions d => t d -> t d -> Int -> IO ()
-  gatedLinear_updateGradInput  :: Dimensions d => t d -> t d -> t d -> Int -> IO ()
-  hardTanh_updateOutput        :: Dimensions d => t d -> t d -> Double -> Double -> Bool -> IO ()
-  hardTanh_updateGradInput     :: Dimensions d => t d -> t d -> t d -> Double -> Double -> Bool -> IO ()
-  im2Col_updateOutput          :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  im2Col_updateGradInput       :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  col2Im_updateOutput          :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  l1Cost_updateOutput          :: Dimensions d => t d -> t d -> IO ()
-  l1Cost_updateGradInput       :: Dimensions d => t d -> t d -> t d -> IO ()
-  leakyReLU_updateOutput       :: Dimensions d => t d -> t d -> Double -> Bool -> IO ()
-  leakyReLU_updateGradInput    :: Dimensions d => t d -> t d -> t d -> Double -> Bool -> IO ()
-  gRUFused_updateOutput        :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> t d -> IO ()
-  gRUFused_updateGradInput     :: Dimensions d => t d -> t d -> t d -> t d -> t d -> IO ()
-  lSTMFused_updateOutput       :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> t d -> IO ()
-  lSTMFused_updateGradInput    :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> t d -> IO ()
-  logSigmoid_updateOutput      :: Dimensions d => t d -> t d -> t d -> IO ()
-  logSigmoid_updateGradInput   :: Dimensions d => t d -> t d -> t d -> t d -> IO ()
-  logSoftMax_updateOutput      :: Dimensions d => t d -> t d -> DimReal (t d) -> IO ()
-  logSoftMax_updateGradInput   :: Dimensions d => t d -> t d -> t d -> t d -> DimReal (t d) -> IO ()
-  marginCriterion_updateOutput                       :: Dimensions d => t d -> t d -> t d -> Bool -> Double -> IO ()
-  marginCriterion_updateGradInput                    :: Dimensions d => t d -> t d -> t d -> Bool -> Double -> IO ()
-  softMarginCriterion_updateOutput                   :: Dimensions d => t d -> t d -> t d -> Bool -> Bool -> IO ()
-  softMarginCriterion_updateGradInput                :: Dimensions d => t d -> t d -> t d -> t d -> Bool -> Bool -> IO ()
-  mSECriterion_updateOutput                          :: Dimensions d => t d -> t d -> t d -> Bool -> Bool -> IO ()
-  mSECriterion_updateGradInput                       :: Dimensions d => t d -> t d -> t d -> t d -> Bool -> Bool -> IO ()
-  pReLU_updateOutput                                 :: Dimensions d => t d -> t d -> t d -> IO ()
-  pReLU_updateGradInput                              :: Dimensions d => t d -> t d -> t d -> t d -> IO ()
-  pReLU_accGradParameters                            :: Dimensions d => t d -> t d -> t d -> t d -> t d -> Double -> IO ()
-  rReLU_updateOutput                                 :: Dimensions d => t d -> t d -> t d -> Double -> Double -> Bool -> Bool -> Generator (t d) -> IO ()
-  rReLU_updateGradInput                              :: Dimensions d => t d -> t d -> t d -> t d -> Double -> Double -> Bool -> Bool -> IO ()
-  sigmoid_updateOutput                               :: Dimensions d => t d -> t d -> IO ()
-  sigmoid_updateGradInput                            :: Dimensions d => t d -> t d -> t d -> IO ()
-  smoothL1Criterion_updateOutput                     :: Dimensions d => t d -> t d -> t d -> Bool -> Bool -> IO ()
-  smoothL1Criterion_updateGradInput                  :: Dimensions d => t d -> t d -> t d -> t d -> Bool -> Bool -> IO ()
-  softMax_updateOutput                               :: Dimensions d => t d -> t d -> DimReal (t d) -> IO ()
-  softMax_updateGradInput                            :: Dimensions d => t d -> t d -> t d -> t d -> DimReal (t d) -> IO ()
-  softPlus_updateOutput                              :: Dimensions d => t d -> t d -> Double -> Double -> IO ()
-  softPlus_updateGradInput                           :: Dimensions d => t d -> t d -> t d -> t d -> Double -> Double -> IO ()
-  softShrink_updateOutput                            :: Dimensions d => t d -> t d -> Double -> IO ()
-  softShrink_updateGradInput                         :: Dimensions d => t d -> t d -> t d -> Double -> IO ()
-  sparseLinear_updateOutput                          :: Dimensions d => t d -> t d -> t d -> t d -> IO ()
-  sparseLinear_accGradParameters                     :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Double -> Double -> IO ()
-  sparseLinear_zeroGradParameters                    :: Dimensions d => t d -> t d -> t d -> IO ()
-  sparseLinear_updateParameters                      :: Dimensions d => t d -> t d -> t d -> t d -> t d -> Double -> IO ()
-  sparseLinear_legacyUpdateOutput                    :: Dimensions d => t d -> t d -> t d -> t d -> IO ()
-  sparseLinear_legacyAccGradParameters               :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Double -> Double -> IO ()
-  sqrt_updateOutput                                  :: Dimensions d => t d -> t d -> Double -> IO ()
-  sqrt_updateGradInput                               :: Dimensions d => t d -> t d -> t d -> t d -> IO ()
-  square_updateOutput                                :: Dimensions d => t d -> t d -> IO ()
-  square_updateGradInput                             :: Dimensions d => t d -> t d -> t d -> IO ()
-  tanh_updateOutput                                  :: Dimensions d => t d -> t d -> IO ()
-  tanh_updateGradInput                               :: Dimensions d => t d -> t d -> t d -> IO ()
-  threshold_updateOutput                             :: Dimensions d => t d -> t d -> Double -> Double -> Bool -> IO ()
-  threshold_updateGradInput                          :: Dimensions d => t d -> t d -> t d -> Double -> Double -> Bool -> IO ()
-  temporalConvolution_updateOutput                   :: Dimensions d => t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> IO ()
-  temporalConvolution_updateGradInput                :: Dimensions d => t d -> t d -> t d -> t d -> Int -> Int -> IO ()
-  temporalConvolution_accGradParameters              :: Dimensions d => t d -> t d -> t d -> t d -> Int -> Int -> Double -> IO ()
-  temporalRowConvolution_updateOutput                :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Bool -> IO ()
-  temporalRowConvolution_updateGradInput             :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Bool -> IO ()
-  temporalRowConvolution_accGradParameters           :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Bool -> Double -> IO ()
-  temporalUpSamplingNearest_updateOutput             :: Dimensions d => t d -> t d -> Int -> IO ()
-  temporalUpSamplingNearest_updateGradInput          :: Dimensions d => t d -> t d -> t d -> Int -> IO ()
-  temporalUpSamplingLinear_updateOutput              :: Dimensions d => t d -> t d -> Int -> IO ()
-  temporalUpSamplingLinear_updateGradInput           :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> IO ()
-  batchNormalization_updateOutput                    :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> t d -> t d -> Bool -> Double -> Double -> IO ()
-  batchNormalization_backward                        :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> t d -> t d -> t d -> t d -> Bool -> Double -> Double -> IO ()
-  spatialConvolutionMM_updateOutput                  :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  spatialConvolutionMM_updateGradInput               :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  spatialConvolutionMM_accGradParameters             :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-  spatialConvolutionLocal_updateOutput               :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
-  spatialConvolutionLocal_updateGradInput            :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
-  spatialConvolutionLocal_accGradParameters          :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> Double -> IO ()
-  spatialAdaptiveAveragePooling_updateOutput         :: Dimensions d => t d -> t d -> Int -> Int -> IO ()
-  spatialAdaptiveAveragePooling_updateGradInput      :: Dimensions d => t d -> t d -> t d -> IO ()
-  spatialAveragePooling_updateOutput                 :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
-  spatialAveragePooling_updateGradInput              :: Dimensions d => t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
-  spatialFullConvolution_updateOutput                :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  spatialFullConvolution_updateGradInput             :: Dimensions d => t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  spatialFullConvolution_accGradParameters           :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-  spatialDilatedConvolution_updateOutput             :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  spatialDilatedConvolution_updateGradInput          :: Dimensions d => t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  spatialDilatedConvolution_accGradParameters        :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-  spatialFullDilatedConvolution_updateOutput         :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  spatialFullDilatedConvolution_updateGradInput      :: Dimensions d => t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  spatialFullDilatedConvolution_accGradParameters    :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-  spatialSubSampling_updateOutput                    :: Dimensions d => t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> IO ()
-  spatialSubSampling_updateGradInput                 :: Dimensions d => t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> IO ()
-  spatialSubSampling_accGradParameters               :: Dimensions d => t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Double -> IO ()
-  spatialUpSamplingNearest_updateOutput              :: Dimensions d => t d -> t d -> Int -> IO ()
-  spatialUpSamplingNearest_updateGradInput           :: Dimensions d => t d -> t d -> t d -> Int -> IO ()
-  spatialUpSamplingBilinear_updateOutput             :: Dimensions d => t d -> t d -> Int -> Int -> IO ()
-  spatialUpSamplingBilinear_updateGradInput          :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  spatialGridSamplerBilinear_updateOutput            :: Dimensions d => t d -> t d -> t d -> Int -> IO ()
-  spatialGridSamplerBilinear_updateGradInput         :: Dimensions d => t d -> t d -> t d -> t d -> t d -> Int -> IO ()
-  volumetricGridSamplerBilinear_updateOutput         :: Dimensions d => t d -> t d -> t d -> Int -> IO ()
-  volumetricGridSamplerBilinear_updateGradInput      :: Dimensions d => t d -> t d -> t d -> t d -> t d -> Int -> IO ()
-  volumetricAveragePooling_updateOutput              :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
-  volumetricAveragePooling_updateGradInput           :: Dimensions d => t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
-  volumetricConvolution_updateOutput                 :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricConvolution_updateGradInput              :: Dimensions d => t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricConvolution_accGradParameters            :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-  volumetricFullConvolution_updateOutput             :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricFullConvolution_updateGradInput          :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricFullConvolution_accGradParameters        :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-  volumetricDilatedConvolution_updateOutput          :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricDilatedConvolution_updateGradInput       :: Dimensions d => t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricDilatedConvolution_accGradParameters     :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-  volumetricFullDilatedConvolution_updateOutput      :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricFullDilatedConvolution_updateGradInput   :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricFullDilatedConvolution_accGradParameters :: Dimensions d => t d -> t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
-  volumetricAdaptiveAveragePooling_updateOutput      :: Dimensions d => t d -> t d -> Int -> Int -> Int -> IO ()
-  volumetricAdaptiveAveragePooling_updateGradInput   :: Dimensions d => t d -> t d -> t d -> IO ()
-  spatialReflectionPadding_updateOutput              :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> IO ()
-  spatialReflectionPadding_updateGradInput           :: Dimensions d => t d -> t d -> t d -> Int -> Int -> Int -> Int -> IO ()
-  spatialReplicationPadding_updateOutput             :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> IO ()
-  spatialReplicationPadding_updateGradInput          :: Dimensions d => t d -> t d -> t d -> Int -> Int -> Int -> Int -> IO ()
-  featureLPPooling_updateOutput                      :: Dimensions d => t d -> t d -> Double -> Int -> Int -> Bool -> IO ()
-  featureLPPooling_updateGradInput                   :: Dimensions d => t d -> t d -> t d -> t d -> Double -> Int -> Int -> Bool -> IO ()
-  volumetricReplicationPadding_updateOutput          :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricReplicationPadding_updateGradInput       :: Dimensions d => t d -> t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  volumetricUpSamplingNearest_updateOutput           :: Dimensions d => t d -> t d -> Int -> IO ()
-  volumetricUpSamplingNearest_updateGradInput        :: Dimensions d => t d -> t d -> t d -> Int -> IO ()
-  volumetricUpSamplingTrilinear_updateOutput         :: Dimensions d => t d -> t d -> Int -> Int -> Int -> IO ()
-  volumetricUpSamplingTrilinear_updateGradInput      :: Dimensions d => t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
-  temporalReflectionPadding_updateOutput             :: Dimensions d => t d -> t d -> Int -> Int -> IO ()
-  temporalReflectionPadding_updateGradInput          :: Dimensions d => t d -> t d -> t d -> Int -> Int -> IO ()
-  temporalReplicationPadding_updateOutput            :: Dimensions d => t d -> t d -> Int -> Int -> IO ()
-  temporalReplicationPadding_updateGradInput         :: Dimensions d => t d -> t d -> t d -> Int -> Int -> IO ()
-
 class CPUNN t d where
   unfolded_acc  :: t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
   unfolded_copy :: t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
@@ -160,10 +114,9 @@ class CPUNN t d where
   spatialFullConvolutionMap_accGradParameters :: t d -> t d -> t d -> t d -> t d -> Int -> Int -> Int -> Int -> Double -> IO ()
   hardShrink_updateOutput      :: t d -> t d -> Double -> IO ()
   hardShrink_updateGradInput   :: t d -> t d -> t d -> Double -> IO ()
-  col2Im_updateGradInput       :: t d -> t d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
   linear_updateOutput      :: t d -> t d -> t d -> t d -> t d -> IO ()
   linear_updateGradInput   :: t d -> t d -> t d -> t d -> IO ()
   linear_accGradParameters :: t d -> t d -> t d -> t d -> t d -> t d -> t d -> t d -> Double -> IO ()
   sparseLinear_legacyZeroGradParameters :: t d -> t d -> t d -> IO ()
   sparseLinear_legacyUpdateParameters   :: t d -> t d -> t d -> t d -> t d -> Double -> IO ()
-  -}
+-}

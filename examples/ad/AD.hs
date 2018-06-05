@@ -27,21 +27,21 @@ type Output o = Tensor '[o]
 
 -- Backprop sensitivity and parameter gradients
 data Table :: Nat -> [Nat] -> Nat -> * where
-  T :: (KnownNat i, KnownNat o) => (Gradient l i o, Sensitivity i) -> Table i '[] o
-  (:&~) :: (KnownNat h, KnownNat i, KnownNat o) =>
+  T :: (KnownDim i, KnownDim o) => (Gradient l i o, Sensitivity i) -> Table i '[] o
+  (:&~) :: (KnownDim h, KnownDim i, KnownDim o) =>
           (Gradient l i o, Sensitivity i) -> Table h hs o -> Table i (h ': hs) o
 
 -- Forwardprop values
 data Values :: [Nat] -> Nat -> * where
-  V :: (KnownNat o) => Output o -> Values '[] o
-  (:^~) :: (KnownNat h, KnownNat o) =>
+  V :: (KnownDim o) => Output o -> Values '[] o
+  (:^~) :: (KnownDim h, KnownDim o) =>
            Output h -> Values hs o -> Values (h ': hs) o
 
 -- Network architecture
 data Network :: Nat -> [Nat] -> Nat -> * where
-  O :: (KnownNat i, KnownNat o) =>
+  O :: (KnownDim i, KnownDim o) =>
        Layer l i o -> NW i '[] o
-  (:~) :: (KnownNat h, KnownNat i, KnownNat o) =>
+  (:~) :: (KnownDim h, KnownDim i, KnownDim o) =>
           Layer l i h -> NW h hs o -> NW i (h ': hs) o
 
 data AffineWeights (i :: Nat) (o :: Nat) = AW
@@ -50,10 +50,10 @@ data AffineWeights (i :: Nat) (o :: Nat) = AW
   } deriving (Show)
 type AW = AffineWeights
 
-updateTensor :: SingDimensions d => Tensor d -> Tensor d -> Double -> Tensor d
+updateTensor :: Dimensions d => Tensor d -> Tensor d -> Double -> Tensor d
 updateTensor t dEdt learningRate = t ^+^ (learningRate *^ dEdt)
 
-updateLayer :: (KnownNatDim i, KnownNatDim o) =>
+updateLayer :: (KnownDim i, KnownDim o) =>
   Double -> Layer l i o -> Gradient l i o -> Layer l i o
 updateLayer _ LayerTrivial _ = LayerTrivial
 updateLayer _ LayerSigmoid _ = LayerSigmoid
@@ -65,23 +65,25 @@ updateLayer learningRate (LayerAffine w) (LayerAffine gradient) =
                    (updateTensor (weights w) (weights gradient) learningRate)
 
 forwardProp
-  :: forall l i o . (KnownNatDim i, KnownNatDim o)
+  :: forall l i o . (KnownDim i, KnownDim o)
   => Tensor '[i] -> Layer l i o -> IO (Tensor '[o])
 forwardProp t = \case
   LayerTrivial -> pure t
   LayerLinear w -> do
-    t' :: Tensor '[i, 1] <- resizeAs t
-    resizeAs (w !*! t')
+    let t' :: Tensor '[i, 1] = resizeAs t
+    pure $ resizeAs (w !*! t')
 
   LayerSigmoid -> sigmoid t
-  LayerRelu    -> constant 0 >>= gtTensorT t >>= \active -> pure $ active ^*^ t
+  LayerRelu    -> do
+    let active = gtTensorT t (constant 0)
+    pure $ active ^*^ t
   LayerAffine (AW b w) -> do
-    t' :: Tensor '[i, 1] <- resizeAs t
-    b' <- resizeAs b
-    resizeAs ( w !*! t' ^+^ b')
+    let t' :: Tensor '[i, 1] = resizeAs t
+    let b' = resizeAs b
+    pure $ resizeAs ( w !*! t' ^+^ b')
 
 -- TODO: write to Table
-backProp :: forall l i o . (KnownNatDim i, KnownNatDim o) =>
+backProp :: forall l i o . (KnownDim i, KnownDim o) =>
     Sensitivity o -> (Layer l i o) -> (Gradient l i o, Sensitivity i)
 backProp dEds LayerTrivial           = (LayerTrivial, dEds)
 backProp dEds LayerSigmoid           = (LayerSigmoid, dEds ^*^ undefined)
@@ -89,17 +91,17 @@ backProp dEds LayerRelu              = (LayerRelu, dEds ^*^ undefined)
 backProp dEds (LayerLinear w)        = (undefined , undefined)
 backProp dEds (LayerAffine (AW w b)) = (undefined , undefined)
 
-trivial' :: SingDimensions d => Tensor d -> IO (Tensor d)
+trivial' :: SingDimensions d => Tensor d -> Tensor d
 trivial' t = constant 1
 
 sigmoid' :: SingDimensions d => Tensor d -> IO (Tensor d)
 sigmoid' t = do
   s <- sigmoid t
-  o <- constant 1
+  let o = constant 1
   pure $ (s ^*^ o) ^-^ s
 
-relu' :: SingDimensions d => Tensor d -> IO (Tensor d)
-relu' t = constant 0 >>= gtTensorT t
+relu' :: SingDimensions d => Tensor d -> Tensor d
+relu' t = gtTensorT t (constant 0)
 
 -- forward prop, don't retain values
 forwardNetwork :: forall i h o . (KnownDim i, KnownDim o) => Tensor '[i] -> NW i h o  -> IO (Tensor '[o])
@@ -123,28 +125,28 @@ type NW = Network
 
 infixr 5 :~
 
-instance (KnownNat i, KnownNat o) => Show (Layer l i o) where
+instance (KnownDim i, KnownDim o) => Show (Layer l i o) where
   show (LayerTrivial) = "LayerTrivial "
-                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
-                         ++ (show (natVal (Proxy :: Proxy o)))
+                         ++ (show (dimVal (dim :: Dim i))) ++ " "
+                         ++ (show (dimVal (dim :: Dim o)))
   show (LayerLinear x) = "LayerLinear "
-                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
-                         ++ (show (natVal (Proxy :: Proxy o)))
+                         ++ (show (dimVal (dim :: Dim i))) ++ " "
+                         ++ (show (dimVal (dim :: Dim o)))
 
   show (LayerAffine x) = "LayerAffine "
-                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
-                         ++ (show (natVal (Proxy :: Proxy o)))
+                         ++ (show (dimVal (dim :: Dim i))) ++ " "
+                         ++ (show (dimVal (dim :: Dim o)))
   show (LayerSigmoid) = "LayerSigmoid "
-                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
-                         ++ (show (natVal (Proxy :: Proxy o)))
+                         ++ (show (dimVal (dim :: Dim i))) ++ " "
+                         ++ (show (dimVal (dim :: Dim o)))
   show (LayerRelu) = "LayerRelu "
-                         ++ (show (natVal (Proxy :: Proxy i))) ++ " "
-                         ++ (show (natVal (Proxy :: Proxy o)))
+                         ++ (show (dimVal (dim :: Dim i))) ++ " "
+                         ++ (show (dimVal (dim :: Dim o)))
 
-dispL :: forall o i l . (KnownNat o, KnownNat i) => Layer l i o -> IO ()
+dispL :: forall o i l . (KnownDim o, KnownDim i) => Layer l i o -> IO ()
 dispL layer = do
-    let inVal = natVal (Proxy :: Proxy i)
-    let outVal = natVal (Proxy :: Proxy o)
+    let inVal = dimVal (dim :: Dim i)
+    let outVal = dimVal (dim :: Dim o)
     print layer
     print $ "inputs: " ++ (show inVal) ++ "    outputs: " ++ show (outVal)
 
@@ -178,13 +180,13 @@ main = do
   t :: Tensor '[10] <- normal gen 0 5
 
   putStrLn "Input"
-  constant 0 >>= gtTensorT t >>= print
+  print $ gtTensorT t (constant 0)
 
   putStrLn "Network"
   dispN net
 
   putStrLn "\nValues"
-  k  <- constant 5
+  let k = constant 5
   v <- forwardNetwork' k net
   dispV v
 

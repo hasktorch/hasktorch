@@ -8,7 +8,7 @@ module Torch.Indef.Dynamic.Tensor where
 import Data.Coerce (coerce)
 import Data.Typeable
 import Data.Maybe (fromMaybe)
-import Data.List (intercalate)
+import Data.List (intercalate, genericLength)
 import Data.List.NonEmpty (NonEmpty(..), toList)
 import Control.Applicative ((<|>))
 import Control.Monad
@@ -31,12 +31,14 @@ import qualified Torch.Sig.Storage         as StorageSig (c_size)
 import Torch.Dimensions
 import Torch.Indef.Types
 import Torch.Indef.Internal
-import Torch.Indef.Index
+import Torch.Indef.Index hiding (withDynamicState)
 
 instance Show Dynamic where
   show t = unsafePerformIO $ do
     SomeDims ds <- getDims t
-    (vs, desc) <- showTensor (get1d t) (get2d t) (get3d t) (get4d t) (dimVals ds)
+    (vs, desc) <- showTensor
+      (pure . get1d t) (pure .: get2d t) (\a b c -> pure $ get3d t a b c) (\a b c d -> pure $ get4d t a b c d)
+      (fromIntegral <$> listDims ds)
     pure (vs ++ "\n" ++ desc)
   {-# NOINLINE show #-}
 
@@ -54,24 +56,17 @@ tensordata t = withDynamicState t $ \s' t' ->
   arrayLen :: Ptr CState -> Ptr CTensor -> IO Int
   arrayLen s' p = Sig.c_storage s' p >>= fmap fromIntegral . StorageSig.c_size s'
 
--- _free :: Dynamic -> IO ()
--- _free t = withDynamicState t Sig.c_free
+get1d :: Dynamic -> Int64 -> HsReal
+get1d t d1 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get1d s t' (fromIntegral d1)
 
--- _freeCopyTo :: Dynamic -> Dynamic -> IO ()
--- _freeCopyTo t0 t1 = with2DynamicState t0 t1 $ \s t0' t1' ->
---     Sig.c_freeCopyTo s t0' t1'
+get2d :: Dynamic -> Int64 -> Int64 -> HsReal
+get2d t d1 d2 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get2d s t' (fromIntegral d1) (fromIntegral d2)
 
-get1d :: Dynamic -> Int64 -> IO HsReal
-get1d t d1 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get1d s t' (fromIntegral d1)
+get3d :: Dynamic -> Int64 -> Int64 -> Int64 -> HsReal
+get3d t d1 d2 d3 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get3d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3)
 
-get2d :: Dynamic -> Int64 -> Int64 -> IO HsReal
-get2d t d1 d2 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get2d s t' (fromIntegral d1) (fromIntegral d2)
-
-get3d :: Dynamic -> Int64 -> Int64 -> Int64 -> IO HsReal
-get3d t d1 d2 d3 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get3d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3)
-
-get4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> IO HsReal
-get4d t d1 d2 d3 d4 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get4d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3) (fromIntegral d4)
+get4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal
+get4d t d1 d2 d3 d4 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get4d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3) (fromIntegral d4)
 
 isContiguous :: Dynamic -> IO Bool
 isContiguous t = withDynamicState t $ \s t' ->
@@ -376,7 +371,7 @@ shape t = do
   mapM (size t . fromIntegral) [0..ds-1]
 
 -- not actually "inplace" this is actually "with return and static dimensions"
-withInplace :: (Dynamic -> IO ()) -> Dim (d::[Nat]) -> IO Dynamic
+withInplace :: (Dynamic -> IO ()) -> Dims (d::[Nat]) -> IO Dynamic
 withInplace op d = new d >>= \r -> op r >> pure r
 
 -- not actually "inplace" this is actually "with return and runtime dimensions"
@@ -406,8 +401,8 @@ _setStorageDim t s o = \case
   [x, y, z, q] -> _setStorage4d t s o x y z q
   _            -> throwGT4 "setStorage"
 
-_setDim :: Dynamic -> Dim (d::[Nat]) -> HsReal -> IO ()
-_setDim t d v = case dimVals d of
+_setDim :: Dynamic -> Dims (d::[Nat]) -> HsReal -> IO ()
+_setDim t d v = case fromIntegral <$> listDims d of
   []           -> throwNE "can't set on an empty dimension."
   [x]          -> _set1d t x       v
   [x, y]       -> _set2d t x y     v
@@ -415,8 +410,8 @@ _setDim t d v = case dimVals d of
   [x, y, z, q] -> _set4d t x y z q v
   _            -> throwGT4 "set"
 
-_resizeDim :: Dynamic -> Dim (d::[Nat]) -> IO ()
-_resizeDim t d = case dimVals d of
+_resizeDim :: Dynamic -> Dims (d::[Nat]) -> IO ()
+_resizeDim t d = case fromIntegral <$> listDims d of
   []              -> throwNE "can't resize to an empty dimension."
   [x]             -> _resize1d t x
   [x, y]          -> _resize2d t x y
@@ -428,40 +423,40 @@ _resizeDim t d = case dimVals d of
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
-fromList1d :: [HsReal] -> IO Dynamic
-fromList1d l = do
-  res <- new' =<< someDimsM [length l]
-  mapM_  (upd res) (zip [0..length l - 1] l)
+vector :: [HsReal] -> Dynamic
+vector l = unsafeDupablePerformIO $ do
+  res <- new' (someDimsVal [genericLength l])
+  mapM_  (upd res) (zip [0..genericLength l - 1] l)
   pure res
  where
-  upd :: Dynamic -> (Int, HsReal) -> IO ()
-  upd t (idx, v) = someDimsM [idx] >>= \sd -> setDim'_ t sd v
+  upd :: Dynamic -> (Word, HsReal) -> IO ()
+  upd t (idx, v) = setDim'_ t (someDimsVal [idx]) v
 
-resizeDim :: Dynamic -> Dim (d::[Nat]) -> IO Dynamic
+resizeDim :: Dynamic -> Dims (d::[Nat]) -> IO Dynamic
 resizeDim src d = newClone src >>= \res -> _resizeDim res d >> pure res
 
 resizeDim' :: Dynamic -> SomeDims -> IO Dynamic
 resizeDim' t (SomeDims d) = resizeDim t d
 
-getDim :: Dynamic -> Dim (d::[Nat]) -> IO HsReal
-getDim t d = case dimVals d of
+getDim :: Dynamic -> Dims (d::[Nat]) -> IO HsReal
+getDim t d = case fromIntegral <$> listDims d of
   []           -> throwNE "can't lookup an empty dimension"
-  [x]          -> get1d t x
-  [x, y]       -> get2d t x y
-  [x, y, z]    -> get3d t x y z
-  [x, y, z, q] -> get4d t x y z q
+  [x]          -> pure $ get1d t x
+  [x, y]       -> pure $ get2d t x y
+  [x, y, z]    -> pure $ get3d t x y z
+  [x, y, z, q] -> pure $ get4d t x y z q
   _            -> throwGT4 "get"
 
 getDims :: Dynamic -> IO SomeDims
-getDims = getDimList >=> someDimsM
+getDims = fmap someDimsVal . getDimList
 
-getDimList :: Dynamic -> IO [Size]
+getDimList :: Integral i => Dynamic -> IO [i]
 getDimList t = do
   nd <- nDimension t
-  mapM (size t . fromIntegral) [0 .. nd -1]
+  mapM (fmap fromIntegral . size t . fromIntegral) [0 .. nd -1]
 
-new :: Dim (d::[Nat]) -> IO Dynamic
-new d = case dimVals d of
+new :: forall (d::[Nat]) . Dims d -> IO Dynamic
+new d = case fromIntegral <$> listDims d of
   []           -> empty
   [x]          -> newWithSize1d x
   [x, y]       -> newWithSize2d x y

@@ -31,6 +31,22 @@ foreign import ccall "THNN.h THNN_FloatBCECriterion_updateOutput"
 foreign import ccall "THNN.h THNN_FloatBCECriterion_updateGradInput"
   c_BCECriterion_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> CBool -> IO ()
 
+-- | c_ClassNLLCriterion_updateOutput :  state input target output sizeAverage weights total_weight ignore_index reduce -> void
+foreign import ccall "THNN.h THNN_FloatClassNLLCriterion_updateOutput"
+  c_ClassNLLCriterion_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> CBool -> IO ()
+
+-- | c_ClassNLLCriterion_updateGradInput :  state input target gradOutput gradInput sizeAverage weights total_weight ignore_index reduce -> void
+foreign import ccall "THNN.h THNN_FloatClassNLLCriterion_updateGradInput"
+  c_ClassNLLCriterion_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> CBool -> IO ()
+
+-- | c_SpatialClassNLLCriterion_updateOutput :  state input target output sizeAverage weights total_weight ignore_index reduce -> void
+foreign import ccall "THNN.h THNN_FloatSpatialClassNLLCriterion_updateOutput"
+  c_SpatialClassNLLCriterion_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> CBool -> IO ()
+
+-- | c_SpatialClassNLLCriterion_updateGradInput :  state input target gradOutput gradInput sizeAverage weights total_weight ignore_index reduce -> void
+foreign import ccall "THNN.h THNN_FloatSpatialClassNLLCriterion_updateGradInput"
+  c_SpatialClassNLLCriterion_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> CBool -> IO ()
+
 -- | c_ELU_updateOutput :  state input output alpha scale inplace -> void
 foreign import ccall "THNN.h THNN_FloatELU_updateOutput"
   c_ELU_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CDouble -> CDouble -> CBool -> IO ()
@@ -135,6 +151,14 @@ foreign import ccall "THNN.h THNN_FloatLogSoftMax_updateOutput"
 foreign import ccall "THNN.h THNN_FloatLogSoftMax_updateGradInput"
   c_LogSoftMax_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> IO ()
 
+-- | c_LookupTable_accGradParameters :  state input gradOutput gradWeight count sorted indices scaleGradByFreq paddingValue scale -> void
+foreign import ccall "THNN.h THNN_FloatLookupTable_accGradParameters"
+  c_LookupTable_accGradParameters :: Ptr C'THNNState -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIntegerTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CBool -> CInt -> CDouble -> IO ()
+
+-- | c_LookupTable_renorm :  state idx weight maxNorm normType -> void
+foreign import ccall "THNN.h THNN_FloatLookupTable_renorm"
+  c_LookupTable_renorm :: Ptr C'THNNState -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> CDouble -> CDouble -> IO ()
+
 -- | c_MarginCriterion_updateOutput :  state input target output sizeAverage margin -> void
 foreign import ccall "THNN.h THNN_FloatMarginCriterion_updateOutput"
   c_MarginCriterion_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CDouble -> IO ()
@@ -158,6 +182,22 @@ foreign import ccall "THNN.h THNN_FloatMSECriterion_updateOutput"
 -- | c_MSECriterion_updateGradInput :  state input target gradOutput gradInput sizeAverage reduce -> void
 foreign import ccall "THNN.h THNN_FloatMSECriterion_updateGradInput"
   c_MSECriterion_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CBool -> IO ()
+
+-- | c_MultiLabelMarginCriterion_updateOutput :  state input target output isTarget sizeAverage reduce -> void
+foreign import ccall "THNN.h THNN_FloatMultiLabelMarginCriterion_updateOutput"
+  c_MultiLabelMarginCriterion_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CBool -> IO ()
+
+-- | c_MultiLabelMarginCriterion_updateGradInput :  state input target gradOutput gradInput isTarget sizeAverage reduce -> void
+foreign import ccall "THNN.h THNN_FloatMultiLabelMarginCriterion_updateGradInput"
+  c_MultiLabelMarginCriterion_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CBool -> IO ()
+
+-- | c_MultiMarginCriterion_updateOutput :  state input target output sizeAverage p weights margin reduce -> void
+foreign import ccall "THNN.h THNN_FloatMultiMarginCriterion_updateOutput"
+  c_MultiMarginCriterion_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> CBool -> CInt -> Ptr C'THFloatTensor -> CDouble -> CBool -> IO ()
+
+-- | c_MultiMarginCriterion_updateGradInput :  state input target gradOutput gradInput sizeAverage p weights margin reduce -> void
+foreign import ccall "THNN.h THNN_FloatMultiMarginCriterion_updateGradInput"
+  c_MultiMarginCriterion_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CInt -> Ptr C'THFloatTensor -> CDouble -> CBool -> IO ()
 
 -- | c_PReLU_updateOutput :  state input output weight -> void
 foreign import ccall "THNN.h THNN_FloatPReLU_updateOutput"
@@ -230,6 +270,22 @@ foreign import ccall "THNN.h THNN_FloatSoftShrink_updateOutput"
 -- | c_SoftShrink_updateGradInput :  state input gradOutput gradInput lambda -> void
 foreign import ccall "THNN.h THNN_FloatSoftShrink_updateGradInput"
   c_SoftShrink_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CDouble -> IO ()
+
+-- | c_IndexLinear_updateOutput :  state keys keysOffset values sizes cumSumSizes output weight bias normalizedValues train -> void
+foreign import ccall "THNN.h THNN_FloatIndexLinear_updateOutput"
+  c_IndexLinear_updateOutput :: Ptr C'THNNState -> Ptr C'THIndexTensor -> CLLong -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> IO ()
+
+-- | c_IndexLinear_accGradParameters :  state keys keysOffset values sizes cumSumSizes gradOutput gradWeight gradBias weight bias valuesBuffer weightDecay scale -> void
+foreign import ccall "THNN.h THNN_FloatIndexLinear_accGradParameters"
+  c_IndexLinear_accGradParameters :: Ptr C'THNNState -> Ptr C'THIndexTensor -> CLLong -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CDouble -> CDouble -> IO ()
+
+-- | c_IndexLinear_accUpdateGradParameters :  state keys keysOffset values sizes cumSumSizes gradOutput weight bias weightDecay scale -> void
+foreign import ccall "THNN.h THNN_FloatIndexLinear_accUpdateGradParameters"
+  c_IndexLinear_accUpdateGradParameters :: Ptr C'THNNState -> Ptr C'THIndexTensor -> CLLong -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CDouble -> CDouble -> IO ()
+
+-- | c_IndexLinear_updateParameters :  state gradWeight gradBias weight bias runningKeys cumSumSizes keysOffset weightDecay learningRate -> void
+foreign import ccall "THNN.h THNN_FloatIndexLinear_updateParameters"
+  c_IndexLinear_updateParameters :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THIndexTensor -> CLLong -> CDouble -> CDouble -> IO ()
 
 -- | c_SparseLinear_updateOutput :  state input output weight bias -> void
 foreign import ccall "THNN.h THNN_FloatSparseLinear_updateOutput"
@@ -306,6 +362,14 @@ foreign import ccall "THNN.h THNN_FloatTemporalConvolution_updateGradInput"
 -- | c_TemporalConvolution_accGradParameters :  state input gradOutput gradWeight gradBias kW dW scale -> void
 foreign import ccall "THNN.h THNN_FloatTemporalConvolution_accGradParameters"
   c_TemporalConvolution_accGradParameters :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CDouble -> IO ()
+
+-- | c_TemporalMaxPooling_updateOutput :  state input output indices kW dW -> void
+foreign import ccall "THNN.h THNN_FloatTemporalMaxPooling_updateOutput"
+  c_TemporalMaxPooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ()
+
+-- | c_TemporalMaxPooling_updateGradInput :  state input gradOutput gradInput indices kW dW -> void
+foreign import ccall "THNN.h THNN_FloatTemporalMaxPooling_updateGradInput"
+  c_TemporalMaxPooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ()
 
 -- | c_TemporalSubSampling_updateOutput :  state input output weight bias kW dW inputFrameSize -> void
 foreign import ccall "THNN.h THNN_FloatTemporalSubSampling_updateOutput"
@@ -391,6 +455,14 @@ foreign import ccall "THNN.h THNN_FloatSpatialConvolutionLocal_updateGradInput"
 foreign import ccall "THNN.h THNN_FloatSpatialConvolutionLocal_accGradParameters"
   c_SpatialConvolutionLocal_accGradParameters :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CLLong -> CLLong -> CLLong -> CLLong -> CDouble -> IO ()
 
+-- | c_SpatialAdaptiveMaxPooling_updateOutput :  state input output indices osizeW osizeH -> void
+foreign import ccall "THNN.h THNN_FloatSpatialAdaptiveMaxPooling_updateOutput"
+  c_SpatialAdaptiveMaxPooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ()
+
+-- | c_SpatialAdaptiveMaxPooling_updateGradInput :  state input gradOutput gradInput indices -> void
+foreign import ccall "THNN.h THNN_FloatSpatialAdaptiveMaxPooling_updateGradInput"
+  c_SpatialAdaptiveMaxPooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> IO ()
+
 -- | c_SpatialAdaptiveAveragePooling_updateOutput :  state input output osizeW osizeH -> void
 foreign import ccall "THNN.h THNN_FloatSpatialAdaptiveAveragePooling_updateOutput"
   c_SpatialAdaptiveAveragePooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> IO ()
@@ -406,6 +478,14 @@ foreign import ccall "THNN.h THNN_FloatSpatialAveragePooling_updateOutput"
 -- | c_SpatialAveragePooling_updateGradInput :  state input gradOutput gradInput kW kH dW dH padW padH ceil_mode count_include_pad -> void
 foreign import ccall "THNN.h THNN_FloatSpatialAveragePooling_updateGradInput"
   c_SpatialAveragePooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> CBool -> IO ()
+
+-- | c_SpatialFractionalMaxPooling_updateOutput :  state input output outputW outputH kW kH indices randomSamples -> void
+foreign import ccall "THNN.h THNN_FloatSpatialFractionalMaxPooling_updateOutput"
+  c_SpatialFractionalMaxPooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> IO ()
+
+-- | c_SpatialFractionalMaxPooling_updateGradInput :  state input gradOutput gradInput outputW outputH kW kH indices -> void
+foreign import ccall "THNN.h THNN_FloatSpatialFractionalMaxPooling_updateGradInput"
+  c_SpatialFractionalMaxPooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> Ptr C'THIndexTensor -> IO ()
 
 -- | c_SpatialFullConvolution_updateOutput :  state input output weight bias columns ones kW kH dW dH padW padH adjW adjH -> void
 foreign import ccall "THNN.h THNN_FloatSpatialFullConvolution_updateOutput"
@@ -454,6 +534,30 @@ foreign import ccall "THNN.h THNN_FloatSpatialFullDilatedConvolution_updateGradI
 -- | c_SpatialFullDilatedConvolution_accGradParameters :  state input gradOutput gradWeight gradBias columns ones kW kH dW dH padW padH dilationW dilationH adjW adjH scale -> void
 foreign import ccall "THNN.h THNN_FloatSpatialFullDilatedConvolution_accGradParameters"
   c_SpatialFullDilatedConvolution_accGradParameters :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CDouble -> IO ()
+
+-- | c_SpatialMaxPooling_updateOutput :  state input output indices kW kH dW dH padW padH ceil_mode -> void
+foreign import ccall "THNN.h THNN_FloatSpatialMaxPooling_updateOutput"
+  c_SpatialMaxPooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+
+-- | c_SpatialMaxPooling_updateGradInput :  state input gradOutput gradInput indices kW kH dW dH padW padH ceil_mode -> void
+foreign import ccall "THNN.h THNN_FloatSpatialMaxPooling_updateGradInput"
+  c_SpatialMaxPooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+
+-- | c_SpatialDilatedMaxPooling_updateOutput :  state input output indices kW kH dW dH padW padH dilationW dilationH ceil_mode -> void
+foreign import ccall "THNN.h THNN_FloatSpatialDilatedMaxPooling_updateOutput"
+  c_SpatialDilatedMaxPooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+
+-- | c_SpatialDilatedMaxPooling_updateGradInput :  state input gradOutput gradInput indices kW kH dW dH padW padH dilationW dilationH ceil_mode -> void
+foreign import ccall "THNN.h THNN_FloatSpatialDilatedMaxPooling_updateGradInput"
+  c_SpatialDilatedMaxPooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+
+-- | c_SpatialMaxUnpooling_updateOutput :  state input output indices owidth oheight -> void
+foreign import ccall "THNN.h THNN_FloatSpatialMaxUnpooling_updateOutput"
+  c_SpatialMaxUnpooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ()
+
+-- | c_SpatialMaxUnpooling_updateGradInput :  state input gradOutput gradInput indices owidth oheight -> void
+foreign import ccall "THNN.h THNN_FloatSpatialMaxUnpooling_updateGradInput"
+  c_SpatialMaxUnpooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ()
 
 -- | c_SpatialSubSampling_updateOutput :  state input output weight bias kW kH dW dH -> void
 foreign import ccall "THNN.h THNN_FloatSpatialSubSampling_updateOutput"
@@ -539,6 +643,14 @@ foreign import ccall "THNN.h THNN_FloatVolumetricConvolutionMM_updateGradInput"
 foreign import ccall "THNN.h THNN_FloatVolumetricConvolutionMM_accGradParameters"
   c_VolumetricConvolutionMM_accGradParameters :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CDouble -> IO ()
 
+-- | c_VolumetricFractionalMaxPooling_updateOutput :  state input output outputT outputW outputH poolSizeT poolSizeW poolSizeH indices randomSamples -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricFractionalMaxPooling_updateOutput"
+  c_VolumetricFractionalMaxPooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> IO ()
+
+-- | c_VolumetricFractionalMaxPooling_updateGradInput :  state input gradOutput gradInput outputT outputW outputH poolSizeT poolSizeW poolSizeH indices -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricFractionalMaxPooling_updateGradInput"
+  c_VolumetricFractionalMaxPooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> Ptr C'THIndexTensor -> IO ()
+
 -- | c_VolumetricFullConvolution_updateOutput :  state input output weight bias finput fgradInput kT kW kH dT dW dH pT pW pH aT aW aH -> void
 foreign import ccall "THNN.h THNN_FloatVolumetricFullConvolution_updateOutput"
   c_VolumetricFullConvolution_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
@@ -575,6 +687,30 @@ foreign import ccall "THNN.h THNN_FloatVolumetricFullDilatedConvolution_updateGr
 foreign import ccall "THNN.h THNN_FloatVolumetricFullDilatedConvolution_accGradParameters"
   c_VolumetricFullDilatedConvolution_accGradParameters :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CDouble -> IO ()
 
+-- | c_VolumetricMaxPooling_updateOutput :  state input output indices kT kW kH dT dW dH pT pW pH ceilMode -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricMaxPooling_updateOutput"
+  c_VolumetricMaxPooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+
+-- | c_VolumetricMaxPooling_updateGradInput :  state input gradOutput gradInput indices kT kW kH dT dW dH pT pW pH ceilMode -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricMaxPooling_updateGradInput"
+  c_VolumetricMaxPooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+
+-- | c_VolumetricDilatedMaxPooling_updateOutput :  state input output indices kT kW kH dT dW dH pT pW pH dilationT dilationW dilationH ceilMode -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricDilatedMaxPooling_updateOutput"
+  c_VolumetricDilatedMaxPooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+
+-- | c_VolumetricDilatedMaxPooling_updateGradInput :  state input gradOutput gradInput indices kT kW kH dT dW dH pT pW pH dilationT dilationW dilationH ceilMode -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricDilatedMaxPooling_updateGradInput"
+  c_VolumetricDilatedMaxPooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+
+-- | c_VolumetricMaxUnpooling_updateOutput :  state input output indices oT oW oH dT dW dH pT pW pH -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricMaxUnpooling_updateOutput"
+  c_VolumetricMaxUnpooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+
+-- | c_VolumetricMaxUnpooling_updateGradInput :  state input gradOutput gradInput indices oT oW oH dT dW dH pT pW pH -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricMaxUnpooling_updateGradInput"
+  c_VolumetricMaxUnpooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+
 -- | c_VolumetricAdaptiveAveragePooling_updateOutput :  state input output osizeT osizeW osizeH -> void
 foreign import ccall "THNN.h THNN_FloatVolumetricAdaptiveAveragePooling_updateOutput"
   c_VolumetricAdaptiveAveragePooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> IO ()
@@ -582,6 +718,14 @@ foreign import ccall "THNN.h THNN_FloatVolumetricAdaptiveAveragePooling_updateOu
 -- | c_VolumetricAdaptiveAveragePooling_updateGradInput :  state input gradOutput gradInput -> void
 foreign import ccall "THNN.h THNN_FloatVolumetricAdaptiveAveragePooling_updateGradInput"
   c_VolumetricAdaptiveAveragePooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ()
+
+-- | c_VolumetricAdaptiveMaxPooling_updateOutput :  state input output indices osizeT osizeW osizeH -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricAdaptiveMaxPooling_updateOutput"
+  c_VolumetricAdaptiveMaxPooling_updateOutput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> IO ()
+
+-- | c_VolumetricAdaptiveMaxPooling_updateGradInput :  state input gradOutput gradInput indices -> void
+foreign import ccall "THNN.h THNN_FloatVolumetricAdaptiveMaxPooling_updateGradInput"
+  c_VolumetricAdaptiveMaxPooling_updateGradInput :: Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> IO ()
 
 -- | c_SpatialReflectionPadding_updateOutput :  state input output pad_left pad_right pad_top pad_bottom -> void
 foreign import ccall "THNN.h THNN_FloatSpatialReflectionPadding_updateOutput"
@@ -670,6 +814,22 @@ foreign import ccall "THNN.h &THNN_FloatBCECriterion_updateOutput"
 -- | p_BCECriterion_updateGradInput : Pointer to function : state input target gradOutput gradInput sizeAverage weights reduce -> void
 foreign import ccall "THNN.h &THNN_FloatBCECriterion_updateGradInput"
   p_BCECriterion_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> CBool -> IO ())
+
+-- | p_ClassNLLCriterion_updateOutput : Pointer to function : state input target output sizeAverage weights total_weight ignore_index reduce -> void
+foreign import ccall "THNN.h &THNN_FloatClassNLLCriterion_updateOutput"
+  p_ClassNLLCriterion_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> CBool -> IO ())
+
+-- | p_ClassNLLCriterion_updateGradInput : Pointer to function : state input target gradOutput gradInput sizeAverage weights total_weight ignore_index reduce -> void
+foreign import ccall "THNN.h &THNN_FloatClassNLLCriterion_updateGradInput"
+  p_ClassNLLCriterion_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> CBool -> IO ())
+
+-- | p_SpatialClassNLLCriterion_updateOutput : Pointer to function : state input target output sizeAverage weights total_weight ignore_index reduce -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialClassNLLCriterion_updateOutput"
+  p_SpatialClassNLLCriterion_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> CBool -> IO ())
+
+-- | p_SpatialClassNLLCriterion_updateGradInput : Pointer to function : state input target gradOutput gradInput sizeAverage weights total_weight ignore_index reduce -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialClassNLLCriterion_updateGradInput"
+  p_SpatialClassNLLCriterion_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> CBool -> IO ())
 
 -- | p_ELU_updateOutput : Pointer to function : state input output alpha scale inplace -> void
 foreign import ccall "THNN.h &THNN_FloatELU_updateOutput"
@@ -775,6 +935,14 @@ foreign import ccall "THNN.h &THNN_FloatLogSoftMax_updateOutput"
 foreign import ccall "THNN.h &THNN_FloatLogSoftMax_updateGradInput"
   p_LogSoftMax_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CLLong -> IO ())
 
+-- | p_LookupTable_accGradParameters : Pointer to function : state input gradOutput gradWeight count sorted indices scaleGradByFreq paddingValue scale -> void
+foreign import ccall "THNN.h &THNN_FloatLookupTable_accGradParameters"
+  p_LookupTable_accGradParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIntegerTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CBool -> CInt -> CDouble -> IO ())
+
+-- | p_LookupTable_renorm : Pointer to function : state idx weight maxNorm normType -> void
+foreign import ccall "THNN.h &THNN_FloatLookupTable_renorm"
+  p_LookupTable_renorm :: FunPtr (Ptr C'THNNState -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> CDouble -> CDouble -> IO ())
+
 -- | p_MarginCriterion_updateOutput : Pointer to function : state input target output sizeAverage margin -> void
 foreign import ccall "THNN.h &THNN_FloatMarginCriterion_updateOutput"
   p_MarginCriterion_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CDouble -> IO ())
@@ -798,6 +966,22 @@ foreign import ccall "THNN.h &THNN_FloatMSECriterion_updateOutput"
 -- | p_MSECriterion_updateGradInput : Pointer to function : state input target gradOutput gradInput sizeAverage reduce -> void
 foreign import ccall "THNN.h &THNN_FloatMSECriterion_updateGradInput"
   p_MSECriterion_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CBool -> IO ())
+
+-- | p_MultiLabelMarginCriterion_updateOutput : Pointer to function : state input target output isTarget sizeAverage reduce -> void
+foreign import ccall "THNN.h &THNN_FloatMultiLabelMarginCriterion_updateOutput"
+  p_MultiLabelMarginCriterion_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CBool -> IO ())
+
+-- | p_MultiLabelMarginCriterion_updateGradInput : Pointer to function : state input target gradOutput gradInput isTarget sizeAverage reduce -> void
+foreign import ccall "THNN.h &THNN_FloatMultiLabelMarginCriterion_updateGradInput"
+  p_MultiLabelMarginCriterion_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CBool -> IO ())
+
+-- | p_MultiMarginCriterion_updateOutput : Pointer to function : state input target output sizeAverage p weights margin reduce -> void
+foreign import ccall "THNN.h &THNN_FloatMultiMarginCriterion_updateOutput"
+  p_MultiMarginCriterion_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> CBool -> CInt -> Ptr C'THFloatTensor -> CDouble -> CBool -> IO ())
+
+-- | p_MultiMarginCriterion_updateGradInput : Pointer to function : state input target gradOutput gradInput sizeAverage p weights margin reduce -> void
+foreign import ccall "THNN.h &THNN_FloatMultiMarginCriterion_updateGradInput"
+  p_MultiMarginCriterion_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CBool -> CInt -> Ptr C'THFloatTensor -> CDouble -> CBool -> IO ())
 
 -- | p_PReLU_updateOutput : Pointer to function : state input output weight -> void
 foreign import ccall "THNN.h &THNN_FloatPReLU_updateOutput"
@@ -870,6 +1054,22 @@ foreign import ccall "THNN.h &THNN_FloatSoftShrink_updateOutput"
 -- | p_SoftShrink_updateGradInput : Pointer to function : state input gradOutput gradInput lambda -> void
 foreign import ccall "THNN.h &THNN_FloatSoftShrink_updateGradInput"
   p_SoftShrink_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CDouble -> IO ())
+
+-- | p_IndexLinear_updateOutput : Pointer to function : state keys keysOffset values sizes cumSumSizes output weight bias normalizedValues train -> void
+foreign import ccall "THNN.h &THNN_FloatIndexLinear_updateOutput"
+  p_IndexLinear_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THIndexTensor -> CLLong -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> IO ())
+
+-- | p_IndexLinear_accGradParameters : Pointer to function : state keys keysOffset values sizes cumSumSizes gradOutput gradWeight gradBias weight bias valuesBuffer weightDecay scale -> void
+foreign import ccall "THNN.h &THNN_FloatIndexLinear_accGradParameters"
+  p_IndexLinear_accGradParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THIndexTensor -> CLLong -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CDouble -> CDouble -> IO ())
+
+-- | p_IndexLinear_accUpdateGradParameters : Pointer to function : state keys keysOffset values sizes cumSumSizes gradOutput weight bias weightDecay scale -> void
+foreign import ccall "THNN.h &THNN_FloatIndexLinear_accUpdateGradParameters"
+  p_IndexLinear_accUpdateGradParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THIndexTensor -> CLLong -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CDouble -> CDouble -> IO ())
+
+-- | p_IndexLinear_updateParameters : Pointer to function : state gradWeight gradBias weight bias runningKeys cumSumSizes keysOffset weightDecay learningRate -> void
+foreign import ccall "THNN.h &THNN_FloatIndexLinear_updateParameters"
+  p_IndexLinear_updateParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> Ptr C'THIndexTensor -> CLLong -> CDouble -> CDouble -> IO ())
 
 -- | p_SparseLinear_updateOutput : Pointer to function : state input output weight bias -> void
 foreign import ccall "THNN.h &THNN_FloatSparseLinear_updateOutput"
@@ -946,6 +1146,14 @@ foreign import ccall "THNN.h &THNN_FloatTemporalConvolution_updateGradInput"
 -- | p_TemporalConvolution_accGradParameters : Pointer to function : state input gradOutput gradWeight gradBias kW dW scale -> void
 foreign import ccall "THNN.h &THNN_FloatTemporalConvolution_accGradParameters"
   p_TemporalConvolution_accGradParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CDouble -> IO ())
+
+-- | p_TemporalMaxPooling_updateOutput : Pointer to function : state input output indices kW dW -> void
+foreign import ccall "THNN.h &THNN_FloatTemporalMaxPooling_updateOutput"
+  p_TemporalMaxPooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ())
+
+-- | p_TemporalMaxPooling_updateGradInput : Pointer to function : state input gradOutput gradInput indices kW dW -> void
+foreign import ccall "THNN.h &THNN_FloatTemporalMaxPooling_updateGradInput"
+  p_TemporalMaxPooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ())
 
 -- | p_TemporalSubSampling_updateOutput : Pointer to function : state input output weight bias kW dW inputFrameSize -> void
 foreign import ccall "THNN.h &THNN_FloatTemporalSubSampling_updateOutput"
@@ -1031,6 +1239,14 @@ foreign import ccall "THNN.h &THNN_FloatSpatialConvolutionLocal_updateGradInput"
 foreign import ccall "THNN.h &THNN_FloatSpatialConvolutionLocal_accGradParameters"
   p_SpatialConvolutionLocal_accGradParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CLLong -> CLLong -> CLLong -> CLLong -> CDouble -> IO ())
 
+-- | p_SpatialAdaptiveMaxPooling_updateOutput : Pointer to function : state input output indices osizeW osizeH -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialAdaptiveMaxPooling_updateOutput"
+  p_SpatialAdaptiveMaxPooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ())
+
+-- | p_SpatialAdaptiveMaxPooling_updateGradInput : Pointer to function : state input gradOutput gradInput indices -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialAdaptiveMaxPooling_updateGradInput"
+  p_SpatialAdaptiveMaxPooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> IO ())
+
 -- | p_SpatialAdaptiveAveragePooling_updateOutput : Pointer to function : state input output osizeW osizeH -> void
 foreign import ccall "THNN.h &THNN_FloatSpatialAdaptiveAveragePooling_updateOutput"
   p_SpatialAdaptiveAveragePooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> IO ())
@@ -1046,6 +1262,14 @@ foreign import ccall "THNN.h &THNN_FloatSpatialAveragePooling_updateOutput"
 -- | p_SpatialAveragePooling_updateGradInput : Pointer to function : state input gradOutput gradInput kW kH dW dH padW padH ceil_mode count_include_pad -> void
 foreign import ccall "THNN.h &THNN_FloatSpatialAveragePooling_updateGradInput"
   p_SpatialAveragePooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> CBool -> IO ())
+
+-- | p_SpatialFractionalMaxPooling_updateOutput : Pointer to function : state input output outputW outputH kW kH indices randomSamples -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialFractionalMaxPooling_updateOutput"
+  p_SpatialFractionalMaxPooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> IO ())
+
+-- | p_SpatialFractionalMaxPooling_updateGradInput : Pointer to function : state input gradOutput gradInput outputW outputH kW kH indices -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialFractionalMaxPooling_updateGradInput"
+  p_SpatialFractionalMaxPooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> Ptr C'THIndexTensor -> IO ())
 
 -- | p_SpatialFullConvolution_updateOutput : Pointer to function : state input output weight bias columns ones kW kH dW dH padW padH adjW adjH -> void
 foreign import ccall "THNN.h &THNN_FloatSpatialFullConvolution_updateOutput"
@@ -1094,6 +1318,30 @@ foreign import ccall "THNN.h &THNN_FloatSpatialFullDilatedConvolution_updateGrad
 -- | p_SpatialFullDilatedConvolution_accGradParameters : Pointer to function : state input gradOutput gradWeight gradBias columns ones kW kH dW dH padW padH dilationW dilationH adjW adjH scale -> void
 foreign import ccall "THNN.h &THNN_FloatSpatialFullDilatedConvolution_accGradParameters"
   p_SpatialFullDilatedConvolution_accGradParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CDouble -> IO ())
+
+-- | p_SpatialMaxPooling_updateOutput : Pointer to function : state input output indices kW kH dW dH padW padH ceil_mode -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialMaxPooling_updateOutput"
+  p_SpatialMaxPooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ())
+
+-- | p_SpatialMaxPooling_updateGradInput : Pointer to function : state input gradOutput gradInput indices kW kH dW dH padW padH ceil_mode -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialMaxPooling_updateGradInput"
+  p_SpatialMaxPooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ())
+
+-- | p_SpatialDilatedMaxPooling_updateOutput : Pointer to function : state input output indices kW kH dW dH padW padH dilationW dilationH ceil_mode -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialDilatedMaxPooling_updateOutput"
+  p_SpatialDilatedMaxPooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ())
+
+-- | p_SpatialDilatedMaxPooling_updateGradInput : Pointer to function : state input gradOutput gradInput indices kW kH dW dH padW padH dilationW dilationH ceil_mode -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialDilatedMaxPooling_updateGradInput"
+  p_SpatialDilatedMaxPooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ())
+
+-- | p_SpatialMaxUnpooling_updateOutput : Pointer to function : state input output indices owidth oheight -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialMaxUnpooling_updateOutput"
+  p_SpatialMaxUnpooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ())
+
+-- | p_SpatialMaxUnpooling_updateGradInput : Pointer to function : state input gradOutput gradInput indices owidth oheight -> void
+foreign import ccall "THNN.h &THNN_FloatSpatialMaxUnpooling_updateGradInput"
+  p_SpatialMaxUnpooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> IO ())
 
 -- | p_SpatialSubSampling_updateOutput : Pointer to function : state input output weight bias kW kH dW dH -> void
 foreign import ccall "THNN.h &THNN_FloatSpatialSubSampling_updateOutput"
@@ -1179,6 +1427,14 @@ foreign import ccall "THNN.h &THNN_FloatVolumetricConvolutionMM_updateGradInput"
 foreign import ccall "THNN.h &THNN_FloatVolumetricConvolutionMM_accGradParameters"
   p_VolumetricConvolutionMM_accGradParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CDouble -> IO ())
 
+-- | p_VolumetricFractionalMaxPooling_updateOutput : Pointer to function : state input output outputT outputW outputH poolSizeT poolSizeW poolSizeH indices randomSamples -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricFractionalMaxPooling_updateOutput"
+  p_VolumetricFractionalMaxPooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> Ptr C'THIndexTensor -> Ptr C'THFloatTensor -> IO ())
+
+-- | p_VolumetricFractionalMaxPooling_updateGradInput : Pointer to function : state input gradOutput gradInput outputT outputW outputH poolSizeT poolSizeW poolSizeH indices -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricFractionalMaxPooling_updateGradInput"
+  p_VolumetricFractionalMaxPooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> Ptr C'THIndexTensor -> IO ())
+
 -- | p_VolumetricFullConvolution_updateOutput : Pointer to function : state input output weight bias finput fgradInput kT kW kH dT dW dH pT pW pH aT aW aH -> void
 foreign import ccall "THNN.h &THNN_FloatVolumetricFullConvolution_updateOutput"
   p_VolumetricFullConvolution_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ())
@@ -1215,6 +1471,30 @@ foreign import ccall "THNN.h &THNN_FloatVolumetricFullDilatedConvolution_updateG
 foreign import ccall "THNN.h &THNN_FloatVolumetricFullDilatedConvolution_accGradParameters"
   p_VolumetricFullDilatedConvolution_accGradParameters :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CDouble -> IO ())
 
+-- | p_VolumetricMaxPooling_updateOutput : Pointer to function : state input output indices kT kW kH dT dW dH pT pW pH ceilMode -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricMaxPooling_updateOutput"
+  p_VolumetricMaxPooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ())
+
+-- | p_VolumetricMaxPooling_updateGradInput : Pointer to function : state input gradOutput gradInput indices kT kW kH dT dW dH pT pW pH ceilMode -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricMaxPooling_updateGradInput"
+  p_VolumetricMaxPooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ())
+
+-- | p_VolumetricDilatedMaxPooling_updateOutput : Pointer to function : state input output indices kT kW kH dT dW dH pT pW pH dilationT dilationW dilationH ceilMode -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricDilatedMaxPooling_updateOutput"
+  p_VolumetricDilatedMaxPooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ())
+
+-- | p_VolumetricDilatedMaxPooling_updateGradInput : Pointer to function : state input gradOutput gradInput indices kT kW kH dT dW dH pT pW pH dilationT dilationW dilationH ceilMode -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricDilatedMaxPooling_updateGradInput"
+  p_VolumetricDilatedMaxPooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ())
+
+-- | p_VolumetricMaxUnpooling_updateOutput : Pointer to function : state input output indices oT oW oH dT dW dH pT pW pH -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricMaxUnpooling_updateOutput"
+  p_VolumetricMaxUnpooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ())
+
+-- | p_VolumetricMaxUnpooling_updateGradInput : Pointer to function : state input gradOutput gradInput indices oT oW oH dT dW dH pT pW pH -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricMaxUnpooling_updateGradInput"
+  p_VolumetricMaxUnpooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ())
+
 -- | p_VolumetricAdaptiveAveragePooling_updateOutput : Pointer to function : state input output osizeT osizeW osizeH -> void
 foreign import ccall "THNN.h &THNN_FloatVolumetricAdaptiveAveragePooling_updateOutput"
   p_VolumetricAdaptiveAveragePooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> CInt -> CInt -> CInt -> IO ())
@@ -1222,6 +1502,14 @@ foreign import ccall "THNN.h &THNN_FloatVolumetricAdaptiveAveragePooling_updateO
 -- | p_VolumetricAdaptiveAveragePooling_updateGradInput : Pointer to function : state input gradOutput gradInput -> void
 foreign import ccall "THNN.h &THNN_FloatVolumetricAdaptiveAveragePooling_updateGradInput"
   p_VolumetricAdaptiveAveragePooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> IO ())
+
+-- | p_VolumetricAdaptiveMaxPooling_updateOutput : Pointer to function : state input output indices osizeT osizeW osizeH -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricAdaptiveMaxPooling_updateOutput"
+  p_VolumetricAdaptiveMaxPooling_updateOutput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> CInt -> CInt -> CInt -> IO ())
+
+-- | p_VolumetricAdaptiveMaxPooling_updateGradInput : Pointer to function : state input gradOutput gradInput indices -> void
+foreign import ccall "THNN.h &THNN_FloatVolumetricAdaptiveMaxPooling_updateGradInput"
+  p_VolumetricAdaptiveMaxPooling_updateGradInput :: FunPtr (Ptr C'THNNState -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THFloatTensor -> Ptr C'THIndexTensor -> IO ())
 
 -- | p_SpatialReflectionPadding_updateOutput : Pointer to function : state input output pad_left pad_right pad_top pad_bottom -> void
 foreign import ccall "THNN.h &THNN_FloatSpatialReflectionPadding_updateOutput"

@@ -23,6 +23,3 @@ import Torch.Indef.Dynamic.Tensor.ScatterGather as X
 import Torch.Indef.Dynamic.Tensor.Sort as X
 import Torch.Indef.Dynamic.Tensor.TopK as X
 
--- import Torch.Indef.Dynamic.Tensor.Math.Random.TH as X
--- import Torch.Indef.Dynamic.Tensor.Random.TH as X
--- import Torch.Indef.Dynamic.Tensor.Random.THC as X

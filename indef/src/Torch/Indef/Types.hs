@@ -15,6 +15,7 @@
 module Torch.Indef.Types
   ( module X
   , module Sig
+  , THDebug(..)
 
   , Step(..), Stride(..), StorageOffset(..), Size(..), KeepDim(..), fromKeepDim, keep, ignore, SortOrder(..), TopKOrder(..)
   , StorageSize(..), AllocatorContext(..), Index(..)
@@ -208,54 +209,22 @@ withDynamicStateAndStorage t s fn =
     withForeignPtr (Sig.cstorage s) (fn state' t')
 
 -- -------------------------------------------------------------------------------
--- -- Storage type family instances
--- 
--- type instance Class.Allocator    Sig.Storage = Sig.Allocator
--- type instance Class.Generator    Sig.Storage = Sig.Generator
--- type instance Class.DescBuff     Sig.Storage = Sig.DescBuff
--- 
--- type instance Class.HsReal       Sig.Storage = Sig.HsReal
--- type instance Class.HsAccReal    Sig.Storage = Sig.HsAccReal
--- 
--- -------------------------------------------------------------------------------
--- -- Dynamic type family instances
--- 
--- type instance Class.HsStorage      Sig.Dynamic = Sig.Storage
--- type instance Class.MaskDynamic    Sig.Dynamic = Sig.MaskDynamic
--- type instance Class.IndexDynamic   Sig.Dynamic = Sig.IndexDynamic
--- type instance Class.IndexStorage   Sig.Dynamic = Sig.IndexStorage
--- type instance Class.StridesStorage Sig.Dynamic = TH.IndexStorage
--- type instance Class.SizesStorage   Sig.Dynamic = TH.IndexStorage
--- 
--- type instance Class.Allocator    Sig.Dynamic = Sig.Allocator
--- type instance Class.Generator    Sig.Dynamic = Sig.Generator
--- type instance Class.DescBuff     Sig.Dynamic = Sig.DescBuff
--- 
--- type instance Class.HsReal       Sig.Dynamic = Sig.HsReal
--- type instance Class.HsAccReal    Sig.Dynamic = Sig.HsAccReal
--- 
--- 
--- -------------------------------------------------------------------------------
--- -- Static type family instances
--- 
--- type instance Class.AsDynamic     Sig.Tensor    = Sig.Dynamic
--- type instance Class.HsStorage    (Sig.Tensor d) = Sig.Storage
--- 
--- type instance Class.IndexTensor   Sig.Tensor    = Sig.LongTensor
--- type instance Class.IndexStorage (Sig.Tensor d) = Sig.IndexStorage
--- type instance Class.MaskTensor    Sig.Tensor    = Sig.ByteTensor
--- 
--- type instance Class.StridesStorage (Sig.Tensor d) = TH.IndexStorage
--- type instance Class.SizesStorage   (Sig.Tensor d) = TH.IndexStorage
--- 
--- type instance Class.Allocator    (Sig.Tensor d) = Sig.Allocator
--- type instance Class.Generator    (Sig.Tensor d) = Sig.Generator
--- type instance Class.DescBuff     (Sig.Tensor d) = Sig.DescBuff
--- 
--- type instance Class.HsReal       (Sig.Tensor d) = Sig.HsReal
--- type instance Class.HsAccReal    (Sig.Tensor d) = Sig.HsAccReal
--- 
--- instance Class.IsStatic Sig.Tensor where
---   asDynamic = Sig.asDynamic
---   asStatic = Sig.asStatic
--- 
+
+class THDebug t where
+  printRefs :: t -> IO ()
+
+instance THDebug Sig.Storage where
+  printRefs t = do
+    let (s, c) = Sig.storageState t
+    putStrLn $ "State reference   : " ++ show s
+    putStrLn $ "CStorage reference: " ++ show s
+
+instance THDebug Sig.Dynamic where
+  printRefs t = do
+    let (s, c) = Sig.dynamicState t
+    putStrLn $ "State reference  : " ++ show s
+    putStrLn $ "CTensor reference: " ++ show s
+
+instance THDebug (Sig.Tensor d) where
+  printRefs = printRefs . Sig.asDynamic
+

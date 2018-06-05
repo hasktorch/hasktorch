@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
 module Torch.Types.THC.Char where
 
 import Foreign.C.Types

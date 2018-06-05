@@ -86,6 +86,10 @@ newWithData pr pd = mkStorageIO $ \st -> do
   pr' <- FM.withArray (hs2cReal <$> pr) pure
   Sig.c_newWithData st pr' (fromIntegral pd)
 
+-- | Convenience method for 'newWithData'
+fromList :: [HsReal] -> IO Storage
+fromList pr = newWithData pr (fromIntegral $ length pr)
+
 setFlag :: Storage -> Int8 -> IO ()
 setFlag s cc = withStorageState s $ \st s' -> Sig.c_setFlag st s' (fromIntegral cc)
 
@@ -100,6 +104,7 @@ resize s pd = withStorageState s $ \st s' -> Sig.c_resize st s' (fromIntegral pd
 
 fill :: Storage -> Sig.HsReal -> IO ()
 fill s v = withStorageState s $ \st s' -> Sig.c_fill st s' (hs2cReal v)
+
 
 {-
 -- FIXME: find out where signatures should go to fill in these indefinites

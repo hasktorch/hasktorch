@@ -21,7 +21,6 @@ executable lasso
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , singletons >=2.2
     , microlens
   other-modules:
       Paths_hasktorch_examples
@@ -35,7 +34,6 @@ executable ad
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -49,7 +47,6 @@ executable bayesian-regression
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
 
@@ -67,7 +64,6 @@ executable download-mnist
     , filepath
     , hasktorch-core
     , network-uri
-    , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -80,7 +76,6 @@ executable ff-typed
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -93,7 +88,6 @@ executable ff-untyped
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -107,7 +101,6 @@ executable gradient-descent
       base >=4.7 && <5
     , hasktorch-core
     , microlens >=0.4.8.1
-    , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -120,7 +113,6 @@ executable multivariate-normal
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -133,7 +125,53 @@ executable static-tensor-usage
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
-    , singletons >=2.2
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
+
+executable convolutions
+  main-is: Main.hs
+  hs-source-dirs: convolutions
+  default-language: Haskell2010
+  default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
+  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+  other-modules:
+      Utils
+    , Conv1d
+    , Conv2d
+    , DataLoader
+    , LeNet
+    , MaxPooling
+    , ReLU
+    , Train
+  build-depends:
+      base >=4.7 && <5
+    , backprop >= 0.2
+    , directory
+    , filepath
+    , ghc-typelits-natnormalise
+    , hasktorch-core
+    , JuicyPixels
+    , list-t
+    , microlens-th
+    , mtl
+    , monad-loops
+    -- , opto
+    , singletons
+    , time
+    , transformers
+
+-- Build only with cuda flags:
+--
+-- executable nlp
+--   main-is: Main.hs
+--   hs-source-dirs: nlp
+--   default-language: Haskell2010
+--   default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
+--   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+--   build-depends:
+--       base >=4.7 && <5
+--     , hasktorch-core
+--     , backprop >= 0.2
+
+

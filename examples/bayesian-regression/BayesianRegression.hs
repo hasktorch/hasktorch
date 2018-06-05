@@ -37,16 +37,16 @@ genData gen param = do
   noise :: Tensor '[N] <- normal gen 0.0 2.0
   x1    :: Tensor '[N] <- normal gen 0.0 10.0
   x2    :: Tensor '[N] <- normal gen 0.0 10.0
-  x0    :: Tensor '[N] <- constant 1
-  x     :: Tensor '[3, N] <- (cat1d x1 x2) >>= cat1d x0 >>= resizeAs
-  y     :: Tensor '[N] <- (^+^) noise <$> (newTranspose2d (param !*! x) >>= resizeAs)
+  let x0 :: Tensor '[N] = constant 1
+  x     :: Tensor '[3, N] <- resizeAs <$> (cat1d x1 x2 >>= cat1d x0)
+  let y :: Tensor '[N] = noise ^+^ resizeAs (transpose2d (param !*! x))
   pure (x, y)
 
 genParam :: RNG.Generator -> IO (Tensor '[1, 3])
 genParam gen = do
-  eigenvectors :: Tensor '[3,3] <- fromList [1, 0, 0, 0, 1, 1, 1, 0, 1]
-  eigenvalues :: Tensor '[3] <- fromList1d [1, 1, 1]
-  mu :: Tensor '[3] <- constant 0
+  let Just (eigenvectors :: Tensor '[3,3]) = fromList [1, 0, 0, 0, 1, 1, 1, 0, 1]
+  let Just (eigenvalues :: Tensor '[3]) = vector [1, 1, 1]
+  let mu :: Tensor '[3] = constant 0
   predictorVal :: Tensor '[1, 3] <- multivariate_normal gen mu eigenvectors eigenvalues
   putStrLn "Parameter values:"
   print predictorVal

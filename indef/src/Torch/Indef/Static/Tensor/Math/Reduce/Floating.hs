@@ -26,13 +26,13 @@ _renorm r t = Dynamic._renorm (asDynamic r) (asDynamic t)
 _norm    :: Tensor d -> Tensor d' -> HsReal -> Int -> Int -> IO ()
 _norm r t = Dynamic._norm (asDynamic r) (asDynamic t)
 
-normall :: Tensor d -> HsReal -> IO (HsAccReal)
+normall :: Tensor d -> HsReal -> IO HsAccReal
 normall t = Dynamic.normall (asDynamic t)
 
 _mean    :: Tensor d -> Tensor d' -> Int -> Int -> IO ()
 _mean r t = Dynamic._mean (asDynamic r) (asDynamic t)
 
-meanall :: Tensor d -> IO (HsAccReal)
+meanall :: Tensor d -> IO HsAccReal
 meanall t = Dynamic.meanall (asDynamic t)
 
 

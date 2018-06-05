@@ -2,7 +2,7 @@ module CodeGen.Render.C
   ( render
   , renderTenType
   , renderCType
-  , renderNNType
+  -- , renderNNType
   ) where
 
 import CodeGen.Prelude
@@ -49,7 +49,7 @@ renderCType = \case
   CBool    -> "bool"
 
 
--- FIXME: get back to this when THC is finished
-renderNNType :: LibType -> NNType -> Text
-renderNNType lt nt = tshow lt <> tshow nt
+-- -- FIXME: get back to this when THC is finished
+-- renderNNType :: LibType -> NNType -> Text
+-- renderNNType lt nt = tshow lt <> tshow nt
 

@@ -1,27 +1,39 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
-{-# OPTIONS_GHC -fno-cse #-}
+{-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -fno-cse #-} -- -fplugin GHC.TypeLits.Normalise #-}
 module Torch.Indef.Static.Tensor where
 
-import GHC.Natural
 import Control.Exception.Safe
+import Control.Monad
+import Control.Monad.Trans
+import Control.Monad.Trans.Maybe
+import Data.Coerce
+import Data.Maybe
+import Data.List
+import GHC.Natural
+import System.IO.Unsafe
+
 import Torch.Dimensions
+import Torch.Indef.Types
+import Torch.Indef.Index
+import Torch.Indef.Static.Tensor.Copy
+import qualified Torch.Indef.Dynamic.Tensor as Dynamic
 import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
 import qualified Torch.Sig.Types as Sig
-import Data.Coerce
-import System.IO.Unsafe
 
-import Torch.Indef.Types
-import Torch.Indef.Index
-import qualified Torch.Indef.Dynamic.Tensor as Dynamic
-
-instance Show (Tensor (d::[Nat])) where
+instance Dimensions d => Show (Tensor d) where
   show t = unsafePerformIO $ do
     SomeDims ds <- getDims t
-    (vs, desc) <- Dynamic.showTensor (get1d t) (get2d t) (get3d t) (get4d t) (dimVals ds)
+    (vs, desc) <-
+      Dynamic.showTensor -- (pure . get1d t) (get2d t) (get3d t) (get4d t) (fromIntegral <$> listDims (dims :: Dims d))
+        (pure . get1d t) (pure .: get2d t) (\a b c -> pure $ get3d t a b c) (\a b c d -> pure $ get4d t a b c d)
+        (fromIntegral <$> listDims (dims :: Dims d))
     pure (vs ++ "\n" ++ desc)
   {-# NOINLINE show #-}
 
@@ -29,12 +41,15 @@ instance Show (Tensor (d::[Nat])) where
 sudo :: Tensor d -> Tensor d'
 sudo t = Sig.asStatic ((Sig.asDynamic t) :: Dynamic)
 
--- | same as 'Dynamic.isSameSizeAs' but only uses type-level dimensions to compute.
-isSameSizeAs :: forall d d' . (Dimensions d', Dimensions d) => Tensor d -> Tensor d' -> Bool
-isSameSizeAs _ _ = dimVals (dim :: Dim d) == dimVals (dim :: Dim d')
+-- unnessecary
+-- -- | same as 'Dynamic.isSameSizeAs' but only uses type-level dimensions to compute.
+-- isSameSizeAs :: forall d d' . (Dimensions2 d d') => Tensor d -> Tensor d' -> Bool
+-- isSameSizeAs _ _ = (fromIntegral <$> listDims (dim :: Dim d)) == (fromIntegral <$> listDims (dim :: Dim d'))
 
-fromList1d :: [HsReal] -> IO (Tensor '[n])
-fromList1d l = asStatic <$> (Dynamic.fromList1d l)
+vector :: forall n . KnownDim n => KnownNat n => [HsReal] -> Maybe (Tensor '[n])
+vector rs
+  | genericLength rs == natVal (Proxy :: Proxy n) = Just . asStatic . Dynamic.vector $ rs
+  | otherwise = Nothing
 
 newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
 _expand r t = Dynamic._expand (asDynamic r) (asDynamic t)
@@ -51,8 +66,6 @@ _resizeNd src a b c = Dynamic._resizeNd (asDynamic src) a b c >> pure (sudo src)
 retain t = Dynamic.retain (asDynamic t)
 _clearFlag t = Dynamic._clearFlag (asDynamic t)
 tensordata t = Dynamic.tensordata (asDynamic t)
--- _free t = Dynamic._free (asDynamic t)
--- _freeCopyTo t0 t1 = Dynamic._freeCopyTo (asDynamic t0) (asDynamic t1)
 get1d t = Dynamic.get1d (asDynamic t)
 get2d t = Dynamic.get2d (asDynamic t)
 get3d t = Dynamic.get3d (asDynamic t)
@@ -78,7 +91,13 @@ newSizeOf t = Dynamic.newSizeOf (asDynamic t)
 newStrideOf t = Dynamic.newStrideOf (asDynamic t)
 newTranspose t a b = asStatic <$> Dynamic.newTranspose (asDynamic t) a b
 newUnfold t a b c = asStatic <$> Dynamic.newUnfold (asDynamic t) a b c
-newView t a = asStatic <$> Dynamic.newView (asDynamic t) a
+
+view :: forall d d' . (Dimensions d, Dimensions d') => Tensor d -> IO (Tensor d')
+view src = do
+  longs <- ixCPUStorage $ fromIntegral <$> listDims (dims :: Dims d)
+  asStatic <$> Dynamic.newView (asDynamic src) longs
+
+
 newWithSize a0 a1 = asStatic <$> Dynamic.newWithSize a0 a1
 newWithSize1d a0 = asStatic <$> Dynamic.newWithSize1d a0
 newWithSize2d a0 a1 = asStatic <$> Dynamic.newWithSize2d a0 a1
@@ -105,14 +124,35 @@ _setStorage4d t = Dynamic._setStorage4d (asDynamic t)
 _setStorageNd t = Dynamic._setStorageNd (asDynamic t)
 size t = Dynamic.size (asDynamic t)
 sizeDesc t = Dynamic.sizeDesc (asDynamic t)
+
 _squeeze t0 t1 = Dynamic._squeeze (asDynamic t0) (asDynamic t1)
-_squeeze1d t0 t1 = Dynamic._squeeze1d (asDynamic t0) (asDynamic t1)
+
+-- | Squeeze a dimension of size 1 out of the tensor
+squeeze1d :: Dimensions d => Dim n -> Tensor d -> Tensor d'
+squeeze1d n t = unsafeDupablePerformIO $ do
+  let t' = sudo (copy t)
+  Dynamic._squeeze1d (asDynamic t) (asDynamic t') (fromIntegral (dimVal n))
+  pure t'
+
 storage t = Dynamic.storage (asDynamic t)
 storageOffset t = Dynamic.storageOffset (asDynamic t)
 stride t = Dynamic.stride (asDynamic t)
 _transpose t0 t1 = Dynamic._transpose (asDynamic t0) (asDynamic t1)
 _unfold t0 t1 = Dynamic._unfold (asDynamic t0) (asDynamic t1)
-_unsqueeze1d t0 t1 = Dynamic._unsqueeze1d (asDynamic t0) (asDynamic t1)
+
+-- | Unsqueeze a dimension of size 1 into the tensor (pure, dupable)
+unsqueeze1d :: Dimensions2 d d' => Idx n -> Tensor d -> Tensor d'
+unsqueeze1d n t = unsafeDupablePerformIO $ do
+  let t' = sudo (copy t)
+  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t') (fromIntegral (idxToWord n))
+  pure t'
+
+-- | *Not safe:*  unsqueeze a dimension of size 1 into the tensor.
+unsqueeze1d_ :: Dimensions2 d d' => Idx n -> Tensor d -> IO (Tensor d')
+unsqueeze1d_ n t = do
+  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t) (fromIntegral (idxToWord n))
+  pure (asStatic (asDynamic t))
+
 
 -- ========================================================================= --
 
@@ -167,8 +207,8 @@ _setStorageDim t s o = \case
   [x, y, z, q] -> _setStorage4d t s o x y z q
   _            -> throwGT4 "setStorage"
 
-_setDim :: forall d d' . (Dimensions d') => Tensor d -> Dim d' -> HsReal -> IO ()
-_setDim t d v = case dimVals d of
+setDim_ :: Tensor d -> Dims (d'::[Nat]) -> HsReal -> IO ()
+setDim_ t d v = case fromIntegral <$> listDims d of
   []           -> throwNE "can't set on an empty dimension."
   [x]          -> _set1d t x       v
   [x, y]       -> _set2d t x y     v
@@ -176,39 +216,62 @@ _setDim t d v = case dimVals d of
   [x, y, z, q] -> _set4d t x y z q v
   _            -> throwGT4 "set"
 
--- setDim'_ :: (Dimensions d) => Tensor d -> SomeDims -> HsReal (Tensor d) -> IO ()
--- setDim'_ t (SomeDims d) v = _setDim t d v
+setDim'_ :: Tensor d -> SomeDims -> HsReal -> IO ()
+setDim'_ t (SomeDims d) = setDim_ t d -- (d :: Dims d')
 
-getDim :: Dimensions d' => Tensor d -> Dim (d'::[Nat]) -> IO (HsReal)
-getDim t d = case dimVals d of
+getDim :: forall d d' . Dimensions2 d d' => Tensor (d::[Nat]) -> Dims (d'::[Nat]) -> IO (HsReal)
+getDim t d = case fromIntegral <$> listDims (dims :: Dims d) of
   []           -> throwNE "can't lookup an empty dimension"
-  [x]          -> get1d t x
-  [x, y]       -> get2d t x y
-  [x, y, z]    -> get3d t x y z
-  [x, y, z, q] -> get4d t x y z q
+  [x]          -> pure $ get1d t x
+  [x, y]       -> pure $ get2d t x y
+  [x, y, z]    -> pure $ get3d t x y z
+  [x, y, z, q] -> pure $ get4d t x y z q
   _            -> throwGT4 "get"
 
 getDims :: Tensor d -> IO SomeDims
 getDims t = do
   nd <- nDimension t
-  ds <- mapM (size t . fromIntegral) [0 .. nd -1]
-  someDimsM ds
+  ds <- mapM (fmap fromIntegral . size t . fromIntegral) [0 .. nd -1]
+  pure (someDimsVal ds)
+
+
+-- | select a dimension of a tensor. If a vector is passed in, return a singleton tensor
+-- with the index value of the vector.
+(!!) :: forall (d::[Nat]) (d'::[Nat]) .  (Dimensions2 d d') => Tensor d -> DimVal -> Tensor d'
+t !! i = unsafePerformIO $
+  nDimension t >>= \case
+    0 -> empty
+    1 -> runMaybeT selectVal >>= maybe empty pure
+    _ -> selectRank
+
+  where
+    selectVal :: MaybeT IO (Tensor d')
+    selectVal = do
+      sizeI <- fromIntegral <$> lift (size t i)
+      guard (i < sizeI)
+      r <- lift $ newWithSize1d 1
+      lift $ _set1d r 0 (get1d t (fromIntegral i))
+      pure r
+
+    selectRank :: IO (Tensor d')
+    selectRank = do
+      sz <- fmap fromIntegral (size t i)
+      r <- newSelect t i 0
+      pure r
+
 
 new :: forall d . Dimensions d => IO (Tensor d)
-new = case dimVals d of
+new = case fromIntegral <$> listDims (dims :: Dims d) of
   []           -> empty
   [x]          -> newWithSize1d x
   [x, y]       -> newWithSize2d x y
   [x, y, z]    -> newWithSize3d x y z
   [x, y, z, q] -> newWithSize4d x y z q
   _ -> empty >>= _resizeDim
- where
-  d :: Dim d
-  d = dim
 
 -- NOTE: This is copied from the dynamic version to keep the constraints clean and is _unsafe_
 _resizeDim :: forall d d' . (Dimensions d') => Tensor d -> IO (Tensor d')
-_resizeDim t = case dimVals d of
+_resizeDim t = case fromIntegral <$> listDims (dims :: Dims d') of
   []              -> throwNE "can't resize to an empty dimension."
   [x]             -> _resize1d t x
   [x, y]          -> _resize2d t x y
@@ -216,44 +279,68 @@ _resizeDim t = case dimVals d of
   [x, y, z, q]    -> _resize4d t x y z q
   [x, y, z, q, w] -> _resize5d t x y z q w
   _ -> throwFIXME "this should be doable with resizeNd" "resizeDim"
- where
-  d :: Dim d'
-  d = dim
   -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
-resizeAs :: forall d d' . (Dimensions d, Dimensions d') => Tensor d -> IO (Tensor d')
-resizeAs src = do
+-- | Resize the input with the output shape. impure and mutates the tensor inplace.
+-- 
+-- FIXME: replace @d@ with a linear type?
+resizeAs_ :: forall d d' . (Dimensions2 d d', Product d ~ Product d') => Tensor d -> IO (Tensor d')
+resizeAs_ src = do
+  shape :: Tensor d' <- new
+  _resizeAs src shape
+
+-- | Pure version of 'resizeAs_' which clones the input tensor (pure, dupable?)
+resizeAs :: forall d d' . (Dimensions2 d d', Product d ~ Product d') => Tensor d -> Tensor d'
+resizeAs src = unsafeDupablePerformIO $ do
   res <- newClone src
   shape :: Tensor d' <- new
   _resizeAs res shape
 
--- newIx :: forall d d' . Dimensions d' => IO (IndexTensor d')
--- newIx = asStatic <$> Dynamic.new (dim :: Dim d')
--- 
--- -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
--- fromListIx
---   :: forall d n . (KnownNatDim n, Dimensions '[n])
---   => Dim '[n] -> [HsReal] -> IO (IndexTensor '[n])
--- fromListIx _ l = asStatic <$> (Dynamic.fromList1d l)
-
+-- | flatten a tensor (pure, dupable)
+flatten :: (Dimensions d, KnownDim (Product d)) => Tensor d -> Tensor '[Product d]
+flatten = resizeAs
 
 -- | Initialize a tensor of arbitrary dimension from a list
 -- FIXME: There might be a faster way to do this with newWithSize
 fromList
   :: forall d .  Dimensions d
-  => [HsReal] -> IO (Tensor d)
-fromList l = do
-  oneD :: Tensor '[Product d] <- fromList1d l
-  _resizeDim oneD
+  => KnownNat (Product d)
+  => KnownDim (Product d)
+  => [HsReal] -> Maybe (Tensor d)
+fromList l = unsafePerformIO . runMaybeT $ do
+  vec :: Tensor '[Product d] <- MaybeT (pure (vector l))
+  guard (genericLength l == dimVal (dim :: Dim (Product d)))
+  lift $ _resizeDim vec
+{-# NOINLINE fromList #-}
 
-newTranspose2d :: (KnownNat2 r c) => Tensor '[r, c] -> IO (Tensor '[c, r])
-newTranspose2d t = newTranspose t 1 0
+matrix
+  :: forall n m
+  .  (KnownDim2 n m) => KnownNat n => KnownNat m
+#if MIN_VERSION_singletons(2,4,0)
+  => KnownDim (n*m) => KnownNat (n*m)
+#else
+  => KnownDim (n*:m) => KnownNat (n*:m)
+#endif
+  => [[HsReal]] -> Either String (Tensor '[n, m])
+matrix ls
+  | null ls = Left "no support for empty lists"
+  | genericLength ls /= (natVal (Proxy :: Proxy n)) = Left "length of outer list must match type-level columns"
+  | any (/= length (head ls)) (fmap length ls) = Left "can't build a matrix from jagged lists"
+  | genericLength (head ls) /= (natVal (Proxy :: Proxy n)) = Left "inner list length must match type-level rows"
+  | otherwise =
+    case fromList (concat ls) of
+      Nothing -> Left "impossible: number of elements doesn't match the dimensions"
+      Just m -> Right m
+
+-- | transpose a matrix (pure, dupable)
+transpose2d :: (KnownDim2 r c) => Tensor '[r, c] -> Tensor '[c, r]
+transpose2d t = unsafeDupablePerformIO $ newTranspose t 1 0
 
 -- | Expand a vector by copying into a matrix by set dimensions
 -- TODO - generalize this beyond the matrix case
 expand2d
-  :: forall x y . (KnownNatDim2 x y)
+  :: forall x y . (KnownDim2 x y)
   => Tensor '[x] -> IO (Tensor '[y, x])
 expand2d t = do
   res :: Tensor '[y, x] <- new
@@ -261,24 +348,24 @@ expand2d t = do
   _expand res t s
   pure res
   where
-    s1 = fromIntegral $ natVal (Proxy :: Proxy x)
-    s2 = fromIntegral $ natVal (Proxy :: Proxy y)
+    s1 = fromIntegral $ dimVal (dim :: Dim  x)
+    s2 = fromIntegral $ dimVal (dim :: Dim  y)
 
 getElem2d
-  :: forall n m . (KnownNatDim2 n m)
+  :: forall n m . (KnownDim2 n m)
   => Tensor '[n, m] -> Natural -> Natural -> IO (HsReal)
 getElem2d t r c
-  | r > fromIntegral (natVal (Proxy :: Proxy n)) ||
-    c > fromIntegral (natVal (Proxy :: Proxy m))
+  | r > fromIntegral (dimVal (dim :: Dim n)) ||
+    c > fromIntegral (dimVal (dim :: Dim m))
       = throwString "Indices out of bounds"
-  | otherwise = get2d t (fromIntegral r) (fromIntegral c)
+  | otherwise = pure $ get2d t (fromIntegral r) (fromIntegral c)
 
 setElem2d
-  :: forall n m ns . (KnownNatDim2 n m)
+  :: forall n m ns . (KnownDim2 n m)
   => Tensor '[n, m] -> Natural -> Natural -> HsReal -> IO ()
 setElem2d t r c v
-  | r > fromIntegral (natVal (Proxy :: Proxy n)) ||
-    c > fromIntegral (natVal (Proxy :: Proxy m))
+  | r > fromIntegral (dimVal (dim :: Dim n)) ||
+    c > fromIntegral (dimVal (dim :: Dim m))
       = throwString "Indices out of bounds"
   | otherwise = _set2d t (fromIntegral r) (fromIntegral c) v
 

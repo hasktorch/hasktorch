@@ -1,15 +1,18 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math where
 
 import qualified Torch.Sig.Tensor.Math   as Sig
 import qualified Torch.Types.TH as TH (IndexStorage)
 import qualified Foreign.Marshal as FM
+import System.IO.Unsafe
+
 
 import Torch.Indef.Dynamic.Tensor
 import Torch.Dimensions
 import Torch.Indef.Types
-import Torch.Indef.Index
+import Torch.Indef.Index hiding (withDynamicState)
 
 _fill :: Dynamic -> HsReal -> IO ()
 _fill t v = withDynamicState t $ shuffle2 Sig.c_fill (hs2cReal v)
@@ -37,6 +40,9 @@ _reshape :: Dynamic -> Dynamic -> TH.IndexStorage -> IO ()
 _reshape t0 t1 ix = with2DynamicState t0 t1 $ \s' t0' t1' -> withCPUIxStorage ix $ \ix' ->
   Sig.c_reshape s' t0' t1' ix'
 
+catArray :: [Dynamic] -> DimVal -> IO Dynamic
+catArray ts dv = empty >>= \r -> _catArray r ts (length ts) dv >> pure r
+
 _catArray :: Dynamic -> [Dynamic] -> Int -> DimVal -> IO ()
 _catArray res ds x y = withDynamicState res $ \s' r' -> do
   ds' <- FM.newArray =<< mapM (\d -> withForeignPtr (ctensor d) pure) ds
@@ -47,6 +53,9 @@ _tril t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_tril (fromInteger i0)
 
 _triu :: Dynamic -> Dynamic -> Integer -> IO ()
 _triu t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_triu (fromInteger i0)
+
+cat :: Dynamic -> Dynamic -> DimVal -> IO Dynamic
+cat t0 t1 dv = empty >>= \r -> _cat r t0 t1 dv >> pure r
 
 _cat :: Dynamic -> Dynamic -> Dynamic -> DimVal -> IO ()
 _cat t0 t1 t2 i = withDynamicState t0 $ \s' t0' ->
@@ -76,8 +85,13 @@ _range t0 a0 a1 a2 = withDynamicState t0 $ \s' t0' -> Sig.c_range s' t0' (hs2cAc
 --   kthvalue :: t -> IndexDynamic t -> t -> Integer -> Int -> IO Int
 --   randperm :: t -> Generator t -> Integer -> IO ()
 
-constant :: Dim (d :: [Nat]) -> HsReal -> IO Dynamic
-constant d v = new d >>= \r -> _fill r v >> pure r
+-- | create a 'Dynamic' tensor with a given dimension and value
+--
+-- We can get away 'unsafeDupablePerformIO' this as constant is pure and thread-safe
+constant :: Dims (d :: [Nat]) -> HsReal -> Dynamic
+constant d v = unsafeDupablePerformIO $ new d >>= \r -> _fill r v >> pure r
+{-# NOINLINE constant #-}
+
 
 diag_, diag :: Dynamic -> Int -> IO Dynamic
 diag_ t d = _diag t t d >> pure t
@@ -88,19 +102,19 @@ diag1d t = diag t 1
 
 _tenLike
   :: (Dynamic -> Dynamic -> IO ())
-  -> Dim (d::[Nat]) -> IO Dynamic
+  -> Dims (d::[Nat]) -> IO Dynamic
 _tenLike _fn d = do
   src <- new d
   shape <- new d
   _fn src shape
   pure src
 
-onesLike, zerosLike :: Dim (d::[Nat]) -> IO Dynamic
+onesLike, zerosLike :: Dims (d::[Nat]) -> IO Dynamic
 onesLike = _tenLike _onesLike
 zerosLike = _tenLike _zerosLike
 
 range
-  :: Dim (d::[Nat])
+  :: Dims (d::[Nat])
   -> HsAccReal
   -> HsAccReal
   -> HsAccReal

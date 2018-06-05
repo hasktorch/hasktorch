@@ -1,81 +1,44 @@
-module Torch.Indef.Static.Tensor.Math.CompareT where
+module Torch.Indef.Static.Tensor.Math.CompareT
+  ( ltTensor, ltTensorT, ltTensorT_
+  , leTensor, leTensorT, leTensorT_
+  , gtTensor, gtTensorT, gtTensorT_
+  , geTensor, geTensorT, geTensorT_
+  , neTensor, neTensorT, neTensorT_
+  , eqTensor, eqTensorT, eqTensorT_
+  ) where
 
+import System.IO.Unsafe
 import Torch.Dimensions
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Dynamic.Tensor.Math.CompareT as Dynamic
 
-_ltTensor :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
-_ltTensor m t t2 = Dynamic._ltTensor (byteAsDynamic m) (asDynamic t) (asDynamic t2)
-
-_leTensor :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
-_leTensor m t t2 = Dynamic._leTensor (byteAsDynamic m) (asDynamic t) (asDynamic t2)
-
-_gtTensor :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
-_gtTensor m t t2 = Dynamic._gtTensor (byteAsDynamic m) (asDynamic t) (asDynamic t2)
-
-_geTensor :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
-_geTensor m t t2 = Dynamic._geTensor (byteAsDynamic m) (asDynamic t) (asDynamic t2)
-
-_neTensor :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
-_neTensor m t t2 = Dynamic._neTensor (byteAsDynamic m) (asDynamic t) (asDynamic t2)
-
-_eqTensor :: ByteTensor n -> Tensor d -> Tensor d -> IO ()
-_eqTensor m t t2 = Dynamic._eqTensor (byteAsDynamic m) (asDynamic t) (asDynamic t2)
-
-_ltTensorT :: Tensor d -> Tensor d -> Tensor d -> IO ()
-_ltTensorT r t t2 = Dynamic._ltTensorT (asDynamic r) (asDynamic t) (asDynamic t2)
-
-_leTensorT :: Tensor d -> Tensor d -> Tensor d -> IO ()
-_leTensorT r t t2 = Dynamic._leTensorT (asDynamic r) (asDynamic t) (asDynamic t2)
-
-_gtTensorT :: Tensor d -> Tensor d -> Tensor d -> IO ()
-_gtTensorT r t t2 = Dynamic._gtTensorT (asDynamic r) (asDynamic t) (asDynamic t2)
-
-_geTensorT :: Tensor d -> Tensor d -> Tensor d -> IO ()
-_geTensorT r t t2 = Dynamic._geTensorT (asDynamic r) (asDynamic t) (asDynamic t2)
-
-_neTensorT :: Tensor d -> Tensor d -> Tensor d -> IO ()
-_neTensorT r t t2 = Dynamic._neTensorT (asDynamic r) (asDynamic t) (asDynamic t2)
-
-_eqTensorT :: Tensor d -> Tensor d -> Tensor d -> IO ()
-_eqTensorT r t t2 = Dynamic._eqTensorT (asDynamic r) (asDynamic t) (asDynamic t2)
-
--- compareTensors
---   :: (Dimensions d)
---   => (MaskTensor t d -> t d -> t d -> IO ())
---   -> t d -> t d -> IO (MaskTensor t d)
--- compareTensors op a b = do
---   r <- Dynamic.empty
---   op (asStatic r) a b
---   pure (asStatic r)
--- 
--- ltTensor, leTensor, gtTensor, geTensor, neTensor, eqTensor
---   :: (Dimensions d)
---   => Tensor d -> Tensor d -> IO (MaskTensor d)
--- ltTensor = compareTensors _ltTensor
--- leTensor = compareTensors _leTensor
--- gtTensor = compareTensors _gtTensor
--- geTensor = compareTensors _geTensor
--- neTensor = compareTensors _neTensor
--- eqTensor = compareTensors _eqTensor
+ltTensor, leTensor, gtTensor, geTensor, neTensor, eqTensor
+  :: (Dimensions d)
+  => Tensor d -> Tensor d -> MaskTensor d
+ltTensor a b = byteAsStatic $ Dynamic.ltTensor (asDynamic a) (asDynamic b)
+leTensor a b = byteAsStatic $ Dynamic.leTensor (asDynamic a) (asDynamic b)
+gtTensor a b = byteAsStatic $ Dynamic.gtTensor (asDynamic a) (asDynamic b)
+geTensor a b = byteAsStatic $ Dynamic.geTensor (asDynamic a) (asDynamic b)
+neTensor a b = byteAsStatic $ Dynamic.neTensor (asDynamic a) (asDynamic b)
+eqTensor a b = byteAsStatic $ Dynamic.eqTensor (asDynamic a) (asDynamic b)
 
 ltTensorT, leTensorT, gtTensorT, geTensorT, neTensorT, eqTensorT
-  :: Dimensions d => Tensor d -> Tensor d -> IO (Tensor d)
-ltTensorT a b = withEmpty $ \r -> _ltTensorT r a b
-leTensorT a b = withEmpty $ \r -> _leTensorT r a b
-gtTensorT a b = withEmpty $ \r -> _gtTensorT r a b
-geTensorT a b = withEmpty $ \r -> _geTensorT r a b
-neTensorT a b = withEmpty $ \r -> _neTensorT r a b
-eqTensorT a b = withEmpty $ \r -> _eqTensorT r a b
+  :: Dimensions d => Tensor d -> Tensor d -> Tensor d
+ltTensorT a b = asStatic $ Dynamic.ltTensorT (asDynamic a) (asDynamic b)
+leTensorT a b = asStatic $ Dynamic.leTensorT (asDynamic a) (asDynamic b)
+gtTensorT a b = asStatic $ Dynamic.gtTensorT (asDynamic a) (asDynamic b)
+geTensorT a b = asStatic $ Dynamic.geTensorT (asDynamic a) (asDynamic b)
+neTensorT a b = asStatic $ Dynamic.neTensorT (asDynamic a) (asDynamic b)
+eqTensorT a b = asStatic $ Dynamic.eqTensorT (asDynamic a) (asDynamic b)
 
 ltTensorT_, leTensorT_, gtTensorT_, geTensorT_, neTensorT_, eqTensorT_
-  :: (Dimensions d) => Tensor d -> Tensor d -> IO (Tensor d)
-ltTensorT_ a b = _ltTensorT a a b >> pure a
-leTensorT_ a b = _leTensorT a a b >> pure a
-gtTensorT_ a b = _gtTensorT a a b >> pure a
-geTensorT_ a b = _geTensorT a a b >> pure a
-neTensorT_ a b = _neTensorT a a b >> pure a
-eqTensorT_ a b = _eqTensorT a a b >> pure a
+  :: Tensor d -> Tensor d -> IO (Tensor d)
+ltTensorT_ a b = asStatic <$> Dynamic.ltTensorT_ (asDynamic a) (asDynamic b)
+leTensorT_ a b = asStatic <$> Dynamic.leTensorT_ (asDynamic a) (asDynamic b)
+gtTensorT_ a b = asStatic <$> Dynamic.gtTensorT_ (asDynamic a) (asDynamic b)
+geTensorT_ a b = asStatic <$> Dynamic.geTensorT_ (asDynamic a) (asDynamic b)
+neTensorT_ a b = asStatic <$> Dynamic.neTensorT_ (asDynamic a) (asDynamic b)
+eqTensorT_ a b = asStatic <$> Dynamic.eqTensorT_ (asDynamic a) (asDynamic b)
 

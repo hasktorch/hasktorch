@@ -1,0 +1,10 @@
+signature Torch.Sig.Mask.MathReduce where
+
+import Foreign.Ptr
+import Foreign.C.Types
+import Torch.Sig.Types.Global
+
+c_sumall :: Ptr CState -> Ptr CByteTensor -> IO CLong
+
+
+

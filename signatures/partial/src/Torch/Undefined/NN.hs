@@ -39,6 +39,8 @@ c_Im2Col_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -
 c_Im2Col_updateGradInput = undefined
 c_Col2Im_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
 c_Col2Im_updateOutput = undefined
+c_Col2Im_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+c_Col2Im_updateGradInput = undefined
 c_L1Cost_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> IO ()
 c_L1Cost_updateOutput = undefined
 c_L1Cost_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ()
@@ -281,3 +283,94 @@ c_TemporalReplicationPadding_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr 
 c_TemporalReplicationPadding_updateOutput = undefined
 c_TemporalReplicationPadding_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> IO ()
 c_TemporalReplicationPadding_updateGradInput = undefined
+
+c_ClassNLLCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()
+c_ClassNLLCriterion_updateOutput = undefined
+c_ClassNLLCriterion_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()
+c_ClassNLLCriterion_updateGradInput = undefined
+c_SpatialClassNLLCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()
+c_SpatialClassNLLCriterion_updateOutput = undefined
+c_SpatialClassNLLCriterion_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()
+c_SpatialClassNLLCriterion_updateGradInput = undefined
+c_MultiLabelMarginCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> CBool -> IO ()
+c_MultiLabelMarginCriterion_updateOutput = undefined
+c_MultiLabelMarginCriterion_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> CBool -> IO ()
+c_MultiLabelMarginCriterion_updateGradInput = undefined
+c_MultiMarginCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CBool -> CInt -> Ptr CTensor -> CDouble -> CBool -> IO ()
+c_MultiMarginCriterion_updateOutput = undefined
+c_MultiMarginCriterion_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> CBool -> CInt -> Ptr CTensor -> CDouble -> CBool -> IO ()
+c_MultiMarginCriterion_updateGradInput = undefined
+
+c_IndexLinear_updateOutput :: Ptr CNNState -> Ptr CIndexTensor -> CLLong -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CInt -> IO ()
+c_IndexLinear_updateOutput = undefined
+c_IndexLinear_accGradParameters :: Ptr CNNState -> Ptr CIndexTensor -> CLLong -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CDouble -> CDouble -> IO ()
+c_IndexLinear_accGradParameters = undefined
+c_IndexLinear_accUpdateGradParameters :: Ptr CNNState -> Ptr CIndexTensor -> CLLong -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CDouble -> CDouble -> IO ()
+c_IndexLinear_accUpdateGradParameters = undefined
+c_IndexLinear_updateParameters :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> CLLong -> CDouble -> CDouble -> IO ()
+c_IndexLinear_updateParameters = undefined
+
+c_TemporalMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> IO ()
+c_TemporalMaxPooling_updateOutput = undefined
+c_TemporalMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> IO ()
+c_TemporalMaxPooling_updateGradInput = undefined
+
+
+c_SpatialAdaptiveMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> IO ()
+c_SpatialAdaptiveMaxPooling_updateOutput = undefined
+c_SpatialAdaptiveMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> IO ()
+c_SpatialAdaptiveMaxPooling_updateGradInput = undefined
+
+c_SpatialFractionalMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> Ptr CIndexTensor -> Ptr CTensor -> IO ()
+c_SpatialFractionalMaxPooling_updateOutput = undefined
+c_SpatialFractionalMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> Ptr CIndexTensor -> IO ()
+c_SpatialFractionalMaxPooling_updateGradInput = undefined
+
+
+c_SpatialMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+c_SpatialMaxPooling_updateOutput = undefined
+c_SpatialMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+c_SpatialMaxPooling_updateGradInput = undefined
+
+c_SpatialDilatedMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+c_SpatialDilatedMaxPooling_updateOutput = undefined
+c_SpatialDilatedMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+c_SpatialDilatedMaxPooling_updateGradInput = undefined
+
+c_SpatialMaxUnpooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> IO ()
+c_SpatialMaxUnpooling_updateOutput = undefined
+c_SpatialMaxUnpooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> IO ()
+c_SpatialMaxUnpooling_updateGradInput = undefined
+
+c_VolumetricFractionalMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> Ptr CIndexTensor -> Ptr CTensor -> IO ()
+c_VolumetricFractionalMaxPooling_updateOutput = undefined
+c_VolumetricFractionalMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> Ptr CIndexTensor -> IO ()
+c_VolumetricFractionalMaxPooling_updateGradInput = undefined
+
+c_VolumetricMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+c_VolumetricMaxPooling_updateOutput = undefined
+c_VolumetricMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+c_VolumetricMaxPooling_updateGradInput = undefined
+
+c_VolumetricDilatedMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+c_VolumetricDilatedMaxPooling_updateOutput = undefined
+c_VolumetricDilatedMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CBool -> IO ()
+c_VolumetricDilatedMaxPooling_updateGradInput = undefined
+
+c_VolumetricMaxUnpooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+c_VolumetricMaxUnpooling_updateOutput = undefined
+c_VolumetricMaxUnpooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+c_VolumetricMaxUnpooling_updateGradInput = undefined
+
+c_VolumetricAdaptiveMaxPooling_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> CInt -> CInt -> CInt -> IO ()
+c_VolumetricAdaptiveMaxPooling_updateOutput = undefined
+c_VolumetricAdaptiveMaxPooling_updateGradInput :: Ptr CNNState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> IO ()
+c_VolumetricAdaptiveMaxPooling_updateGradInput = undefined
+
+
+c_LookupTable_accGradParameters :: Ptr CNNState -> Ptr CIndexTensor -> Ptr CTensor -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> CBool -> CInt -> CDouble -> IO ()
+c_LookupTable_accGradParameters = undefined
+
+c_LookupTable_renorm :: Ptr CNNState -> Ptr CIndexTensor -> Ptr CTensor -> CDouble -> CDouble -> IO ()
+c_LookupTable_renorm = undefined
+

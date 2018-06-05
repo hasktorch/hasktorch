@@ -31,25 +31,25 @@ _put r ix t d = Dynamic._put (asDynamic r) (longAsDynamic ix) (asDynamic t) d
 
 -- retrieves a single row
 getRow
-  :: forall t n m . (KnownNatDim2 n m)
+  :: forall t n m . (KnownDim2 n m, KnownNat m)
   => Tensor '[n, m] -> Natural -> IO (Tensor '[1, m])
 getRow t r
-  | r > fromIntegral (natVal (Proxy :: Proxy n)) = throwString "Row out of bounds"
+  | r > fromIntegral (dimVal (dim :: Dim n)) = throwString "Row out of bounds"
   | otherwise = do
-      res <- Dynamic.new (dim :: Dim '[1, m])
-      ixs <- Ix.fromListIx [ fromIntegral r ]
+      res <- Dynamic.new (dims :: Dims '[1, m])
+      let ixs = Ix.indexDyn [ fromIntegral r ]
       Dynamic._indexSelect res (asDynamic t) 0 ixs
       pure (asStatic res)
 
 -- retrieves a single column
 getColumn
-  :: forall t n m . (KnownNatDim2 n m)
+  :: forall t n m . (KnownDim2 n m, KnownNat n)
   => Tensor '[n, m] -> Natural -> IO (Tensor '[n, 1])
 getColumn t r
-  | r > fromIntegral (natVal (Proxy :: Proxy m)) = throwString "Column out of bounds"
+  | r > fromIntegral (dimVal (dim :: Dim m)) = throwString "Column out of bounds"
   | otherwise = do
       res <- new
-      ixs :: IndexDynamic <- Ix.fromListIx [ fromIntegral r ]
+      let ixs = Ix.indexDyn [ fromIntegral r ]
       _indexSelect res t 1 (longAsStatic ixs :: IndexTensor '[n])
       pure res
 

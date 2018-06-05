@@ -35,8 +35,8 @@ dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
   gen <- newRNG
-  d1 <- someDimsM [fromIntegral o]
-  d2 <- someDimsM [fromIntegral o, fromIntegral i]
+  let d1 = someDimsVal [fromIntegral o]
+  let d2 = someDimsVal [fromIntegral o, fromIntegral i]
   b <- uniform' d1 gen (-1) 1
   w <- uniform' d2 gen (-1) 1
   pure W { biases = b, nodes = w }
@@ -44,7 +44,7 @@ randomWeights i o = do
 randomData :: Word -> IO DoubleTensor
 randomData i = do
   gen <- newRNG
-  someD1 <- someDimsM [fromIntegral i]
+  let someD1 = someDimsVal [fromIntegral i]
   uniform' someD1 gen (-1.0) (1.0)
 
 randomNet :: Word -> [Word] -> Word -> IO Network

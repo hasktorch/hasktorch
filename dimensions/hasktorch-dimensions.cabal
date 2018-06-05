@@ -20,11 +20,10 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
-    , dimensions >=0.3.2.0
+    , dimensions >= 1.0
     , safe-exceptions >=0.1.0.0
     , singletons >=2.2
     , typelits-witnesses >=0.2.3.0
-    , hasktorch-types-th
   exposed-modules:
       Torch.Dimensions
 

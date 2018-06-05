@@ -35,5 +35,4 @@ instance Dimensions d => Num (Tensor d) where
   signum = unsafePerformIO . sign
   {-# NOINLINE signum #-}
 
-  fromInteger = unsafePerformIO . constant . fromIntegral
-  {-# NOINLINE fromInteger #-}
+  fromInteger = constant . fromIntegral

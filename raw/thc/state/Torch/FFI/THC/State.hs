@@ -20,8 +20,14 @@ stopState s = void $ do
   General.c_THCState_free s
 
 -- FIXME
+-- manageState :: Ptr C'THCState -> IO (ForeignPtr C'THCState)
+-- manageState = newForeignPtr (const $ pure ()) --  General.p_THCState_free
+
+foreign import ccall "&free_CTHState" state_free :: FunPtr (Ptr C'THCState -> IO ())
+
 manageState :: Ptr C'THCState -> IO (ForeignPtr C'THCState)
-manageState = newForeignPtr General.p_THCState_free
+manageState = newForeignPtr state_free
+
 
 shutdown :: ForeignPtr C'THCState -> IO ()
 shutdown fp = withForeignPtr fp General.c_THCudaShutdown

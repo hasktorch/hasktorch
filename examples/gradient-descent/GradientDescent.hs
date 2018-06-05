@@ -5,7 +5,6 @@ module Main where
 
 import Data.Monoid ((<>))
 import Control.Monad
-import Data.Singletons
 import Lens.Micro
 
 import Torch.Double hiding (N)
@@ -26,24 +25,24 @@ genData param = do
   RNG.manualSeed gen seedVal
   noise        :: Tensor '[N] <- normal gen 0 2
   predictorVal :: Tensor '[N] <- normal gen 0 10
-  x :: Tensor '[2, N] <- (constant 1 >>= (\(o :: Tensor '[N]) -> predictorVal `cat1d` o) >>= resizeAs)
-  y :: Tensor '[N]    <- (newTranspose2d (param !*! x) >>= resizeAs >>= Math.cadd noise 1)
+  x :: Tensor '[2, N] <- resizeAs <$> (predictorVal `cat1d` (constant 1))
+  y :: Tensor '[N]    <- Math.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
 
   pure (x, y)
 
 loss :: (Tensor '[2,N], Tensor '[N]) -> Tensor '[1, 2] -> IO Precision
 loss (x, y) param = do
-  x' <- (y -) <$> resizeAs (param !*! x)
-  fmap realToFrac . Math.sumall =<< Math.square x'
+  let x' = y - resizeAs (param !*! x)
+  (realToFrac . Math.sumall) <$> Math.square x'
 
 
 gradient
-  :: forall n . (KnownNatDim n)
+  :: forall n . (KnownDim n)
   => (Tensor '[2, n], Tensor '[n]) -> Tensor '[1, 2] -> IO (Tensor '[1, 2])
 gradient (x, y) param = do
-  y' :: Tensor '[1, n] <- resizeAs y
-  x' :: Tensor '[n, 2] <- newTranspose2d x
-  m  :: Tensor '[1, 2] <- resizeAs (err y' !*! x')
+  let y' :: Tensor '[1, n] = resizeAs y
+  let x' :: Tensor '[n, 2] = transpose2d x
+  let m  :: Tensor '[1, 2] = resizeAs (err y' !*! x')
   pure $ (-2 / nsamp) *^ m
 
   where
@@ -51,7 +50,7 @@ gradient (x, y) param = do
     err y' = y' - (param !*! x)
 
     nsamp :: Precision
-    nsamp = realToFrac (natVal (Proxy :: Proxy n))
+    nsamp = realToFrac (dimVal (dim :: Dim n))
 
 gradientDescent
   :: (Tensor '[2, N], Tensor '[N])
@@ -64,7 +63,7 @@ gradientDescent (x, y) rate eps = go 0 []
   go :: Int -> [(Tensor '[1, 2], Precision, Tensor '[1, 2])] -> Tensor '[1, 2] -> IO [(Tensor '[1, 2], Precision, Tensor '[1, 2])]
   go i res param = do
     g <- gradient (x, y) param
-    diff <- fmap realToFrac . Math.sumall =<< Math.abs g
+    diff <- (realToFrac . Math.sumall) <$> Math.abs g
     if diff < eps
     then pure res
     else do
@@ -75,7 +74,7 @@ gradientDescent (x, y) rate eps = go 0 []
 runN :: [(Tensor '[1, 2], Precision, Tensor '[1, 2])] -> Int -> IO (Tensor '[1,2])
 runN lazyIters nIter = do
   let final = last $ take nIter lazyIters
-  g <- Math.sumall =<< Math.abs (final ^. _3)
+  g <- Math.sumall <$> Math.abs (final ^. _3)
   let j = (^. _2) final
   let p = (^. _1) final
   putStrLn $ "Gradient magnitude after " <> show nIter <> " steps"
@@ -90,13 +89,13 @@ runExample :: IO (Tensor '[1,2])
 runExample = do
   -- Generate data w/ ground truth params
   putStrLn "True parameters"
-  trueParam <- fromList [3.5, -4.4]
+  let Just trueParam = fromList [3.5, -4.4]
   print trueParam
 
   dat <- genData trueParam
 
   -- Setup GD
-  p0 :: Tensor '[1, 2] <- fromList [0, 0]
+  let Just (p0 :: Tensor '[1, 2]) = fromList [0, 0]
   iters <- gradientDescent dat 0.0005 0.0001 p0
 
   -- Results

@@ -14,7 +14,7 @@ module Torch.Types.THC
   , CNNGenerator
 
   , CInt'
-  , CMaskTensor, CIndexTensor, CIndexStorage
+  , CMaskTensor, CIndexTensor, CIndexStorage, C'THCIndexTensor
   ,  MaskDynamic,  IndexDynamic,  MaskTensor, IndexTensor, IndexStorage
 
   , CByteTensor, ByteDynamic(..), byteDynamic, ByteTensor(..), byteAsStatic
@@ -63,7 +63,7 @@ descBuff p = (map (chr . fromIntegral) . c'THCDescBuff'str) <$> peek p
 
 type CState = C'THCState
 newtype State = State { asForeign :: ForeignPtr CState }
-  deriving (Eq, Show)
+  deriving (Eq)
 asState = State
 
 type CGenerator = C'_Generator
@@ -77,6 +77,7 @@ type CInt' = CLLong
 type Int' = Integer
 
 -- Some type alias'
+type C'THCIndexTensor = CLongTensor
 type CMaskTensor   = CByteTensor
 type CIndexTensor  = CLongTensor
 type CIndexStorage = CLongStorage
