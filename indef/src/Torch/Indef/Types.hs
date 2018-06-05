@@ -19,13 +19,6 @@ module Torch.Indef.Types
   , THDebug(..)
 
   , DimVal(..)
-  , KnownNat, Torch.Indef.Types.KnownDim, Dimensions
-  , KnownNat2, KnownDim2, Dimensions2
-  , KnownNat3, KnownDim3, Dimensions3
-  , KnownNat4, KnownDim4, Dimensions4
-  , KnownNat5, KnownDim5, Dimensions5
-  , KnownDim6, KnownDim7, KnownDim8
-
 
   , Step(..), Stride(..), StorageOffset(..), Size(..), KeepDim(..), fromKeepDim, keep, ignore, SortOrder(..), TopKOrder(..)
   , StorageSize(..), AllocatorContext(..), Index(..)
@@ -49,7 +42,7 @@ import Foreign.C.Types
 import Foreign.Ptr as X
 import GHC.Int (Int64(..), Int32(..))
 import Control.Monad.Managed as X
-import Numeric.Dimensions as X hiding (KnownDim)
+import Numeric.Dimensions
 import qualified Foreign.Marshal.Array as FM
 
 import Control.Arrow
@@ -71,40 +64,6 @@ import qualified Torch.Sig.Storage.Memory as SigStore
 
 -------------------------------------------------------------------------------
 -- helpers for dimensions:
-
--- | convenience constraint for 2 KnownNats
-type KnownNat2 n0 n1       = (KnownNat  n0,       KnownNat n1)
--- | convenience constraint for 3 KnownNats
-type KnownNat3 n0 n1 n2    = (KnownNat2 n0 n1,    KnownNat n2)
--- | convenience constraint for 4 KnownNats
-type KnownNat4 n0 n1 n2 n3 = (KnownNat3 n0 n1 n2, KnownNat n3)
--- | convenience constraint for 5 KnownNats
-type KnownNat5 n0 n1 n2 n3 n4 = (KnownNat4 n0 n1 n2 n3, KnownNat n4)
-
--- | convenience constraint for 2 KnownDims
-type KnownDim n = (Numeric.Dimensions.KnownDim n, KnownNat n)
-type KnownDim2 n0 n1       = (KnownDim  n0,       KnownDim n1, KnownNat2 n0 n1)
--- | convenience constraint for 3 KnownDims
-type KnownDim3 n0 n1 n2    = (KnownDim2 n0 n1,    KnownDim n2, KnownNat n2)
--- | convenience constraint for 4 KnownDims
-type KnownDim4 n0 n1 n2 n3 = (KnownDim3 n0 n1 n2, KnownDim n3, KnownNat n3)
--- | convenience constraint for 5 KnownDims
-type KnownDim5 n0 n1 n2 n3 n4 = (KnownDim4 n0 n1 n2 n3, KnownDim n4, KnownNat n4)
--- | convenience constraint for 6 KnownDims
-type KnownDim6 n0 n1 n2 n3 n4 n5 = (KnownDim5 n0 n1 n2 n3 n4, KnownDim n5, KnownNat n5)
--- | convenience constraint for 7 KnownDims
-type KnownDim7 n0 n1 n2 n3 n4 n5 n6 = (KnownDim6 n0 n1 n2 n3 n4 n5, KnownDim n6, KnownNat n6)
--- | convenience constraint for 8 KnownDims
-type KnownDim8 n0 n1 n2 n3 n4 n5 n6 n7 = (KnownDim7 n0 n1 n2 n3 n4 n5 n6, KnownDim n7, KnownNat n7)
-
--- | convenience constraint for 2 Dimensions
-type (Dimensions2 d d') = (Dimensions (d::[Nat]), Dimensions (d'::[Nat]))
--- | convenience constraint for 3 Dimensions
-type (Dimensions3 d d' d'' ) = (Dimensions2 d d', Dimensions (d''::[Nat]))
--- | convenience constraint for 4 Dimensions
-type (Dimensions4 d d' d'' d''') = (Dimensions2 d d', Dimensions2 d'' d''')
--- | convenience constraint for 5 Dimensions
-type (Dimensions5 d d' d'' d''' d'''') = (Dimensions4 d d' d'' d''', Dimensions d'''')
 
 -- | term-level representation of an index.
 newtype DimVal = DimVal Int32

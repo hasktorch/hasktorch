@@ -2,6 +2,7 @@
 module Torch.Indef.Dynamic.Tensor.Math.Reduce where
 
 import System.IO.Unsafe
+import Numeric.Dimensions
 
 import Torch.Indef.Types
 
