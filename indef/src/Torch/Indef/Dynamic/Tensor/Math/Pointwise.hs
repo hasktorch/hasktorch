@@ -1,3 +1,12 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Dynamic.Tensor.Math.Pointwise
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+-------------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math.Pointwise where
 
@@ -7,6 +16,7 @@ import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor
 
 import qualified Torch.Sig.Tensor.Math.Pointwise as Sig
+
 
 _sign :: Dynamic -> Dynamic -> IO ()
 _sign r t = with2DynamicState r t Sig.c_sign

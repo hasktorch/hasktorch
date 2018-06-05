@@ -84,7 +84,7 @@ library
     , Torch.Indef.Dynamic.Tensor.Math.Compare
     , Torch.Indef.Dynamic.Tensor.Math.CompareT
     , Torch.Indef.Dynamic.Tensor.Math.Pairwise
-    -- , Torch.Indef.Dynamic.Tensor.Math.Pointwise
+    , Torch.Indef.Dynamic.Tensor.Math.Pointwise
     -- , Torch.Indef.Dynamic.Tensor.Math.Reduce
     -- , Torch.Indef.Dynamic.Tensor.Math.Random.TH
     -- , Torch.Indef.Dynamic.Tensor.Math.Scan
