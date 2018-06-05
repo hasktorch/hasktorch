@@ -20,6 +20,7 @@ module Torch.Dimensions
   , SingDimensions
   , DimVal(..)
   , module Dim
+  , product'
   ) where
 
 import Data.Singletons as X

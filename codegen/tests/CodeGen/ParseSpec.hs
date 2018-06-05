@@ -11,22 +11,24 @@ import Data.Either
 import Data.Maybe
 import qualified Data.Text as T
 
+import Debug.Trace
+
 
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
-  -- describe "the skip parser" skipSpec
-  -- describe "the ptr parser" ptrSpec
-  -- describe "the ptr2 parser" ptr2Spec
-  -- describe "the ctypes parser" ctypesSpec
+  describe "the skip parser" skipSpec
+  describe "the ptr parser" ptrSpec
+  describe "the ptr2 parser" ptr2Spec
+  describe "the ctypes parser" ctypesSpec
   describe "the functionArg parser" functionArgSpec
   describe "the functionArgs parser" functionArgsSpec
   describe "the function parser" functionSpec
   -- describe "running the full parser" $ do
   --   describe "in concrete mode" fullConcreteParser
-    -- describe "in generic mode" fullGenericParser
+  --   describe "in generic mode" fullGenericParser
 
 runParser' p = runParser p "test"
 
@@ -171,7 +173,7 @@ functionArgSpec = do
     it "captures `THCTensor* topK,`" $
       runParser' functionArg "THCTensor* topK," `shouldBe` Right (Arg (Ptr (TenType (Pair (Tensor, THC)))) "topK")
     it "captures `THCudaLongTensor*indices,`" $
-      runParser' functionArg "THCudaLongTensor*indices," `shouldBe` Right (Arg (Ptr (TenType (Pair (LongTensor, THC)))) "indices")
+      runParser' functionArg "THCudaLongTensor*indices," `shouldBe` Right (Arg (Ptr (TenType (Pair (LongTensor, THCUNN)))) "indices")
     it "captures `THCTensor* input,`" $
       runParser' functionArg "THCTensor* input," `shouldBe` Right (Arg (Ptr (TenType (Pair (Tensor, THC)))) "input")
 
@@ -215,7 +217,8 @@ functionSpec = do
     runParser' function thcRandomFunction `shouldBe` Right (Just thcRandomFunction')
 
   it "will find functions with arguments that span several lines (THCTensorTopK.h)" $
-    runParser' function thcGenericTensorTopKFunction `shouldBe` Right (Just thcGenericTensorTopKFunction')
+    runParser' function thcGenericTensorTopKFunction
+      `shouldBe` Right (Just thcGenericTensorTopKFunction')
 
   describe "finding TH primatives in the generic/THCTensorCopy.h header" $ do
     it "finds thcCopyAsyncCPU" $
@@ -395,16 +398,20 @@ thcGenericTensorTopKContents = intercalate ""
 
 thcGenericTensorTopKFunction :: String
 thcGenericTensorTopKFunction = intercalate ""
-  [ "THC_API void THCTensor_(topk)(THCState* state,\n                               THCTensor* topK,"
-  , "\n                               THCudaLongTensor* indices,\n                               THC"
-  , "Tensor* input,\n                               int64_t k, int dim, int dir, int sorted);"
+  [ "THC_API void THCTensor_(topk)(THCState* state,\n"
+  , "                               THCTensor* topK,"
+  , "\n                               THCudaLongTens"
+  , "or* indices,\n                               THC"
+  , "Tensor* input,\n                               "
+  , "int64_t k, int dim, int dir, int sorted);"
   ]
 
 thcGenericTensorTopKFunction' :: Function
-thcGenericTensorTopKFunction' = Function (Just (THC, "Tensor")) "topk"
+thcGenericTensorTopKFunction'
+  = Function (Just (THC, "Tensor")) "topk"
   [ Arg (Ptr (TenType (Pair (State, THC)))) "state"
   , Arg (Ptr (TenType (Pair (Tensor, THC)))) "topK"
-  , Arg (Ptr (TenType (Pair (LongTensor, THC)))) "indices"
+  , Arg (Ptr (TenType (Pair (LongTensor, THCUNN)))) "indices"
   , Arg (Ptr (TenType (Pair (Tensor, THC)))) "input"
   , Arg (CType CInt64) "k"
   , Arg (CType CInt) "dim"

@@ -19,10 +19,10 @@ spec = do
 pcaRaw :: IO ()
 pcaRaw = do
 
-  a :: FloatDynamic <- constant (dim :: Dim '[2, 2]) 2
+  let a :: FloatDynamic = constant (dims :: Dims '[2, 2]) 2
   print a
 
-  b                 <- constant (dim :: Dim '[2]) 1
+  let b                 = constant (dims :: Dims '[2]) 1
   print b
 
   _set2d a 0 0 1.0
@@ -32,8 +32,8 @@ pcaRaw = do
   print a
   print b
 
-  resA <- constant (dim :: Dim '[2, 2]) 0
-  resB <- constant (dim :: Dim '[2, 2]) 0
+  let resA = constant (dims :: Dims '[2, 2]) 0
+  let resB = constant (dims :: Dims '[2, 2]) 0
   _gesv resB resA b a
   print resA
   print resB

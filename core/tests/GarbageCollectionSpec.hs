@@ -24,7 +24,7 @@ spec = do
 -- | basic test of garbage collected tensor
 testGCTensor :: Property
 testGCTensor = monadicIO . run $ do
-  let t0 = _new (dim :: Dim '[8, 4])
+  let t0 = _new (dims :: Dims '[8, 4])
       t1 = t0
   _fill 3 t1
   let t2 = _fill 6 t1
@@ -34,23 +34,25 @@ testGCTensor = monadicIO . run $ do
 
 testOps :: IO ()
 testOps = do
-  print $ _neg $ _addConst (_new (dim :: Dim '[2, 2])) 3
-  print $ _sigmoid $ _neg $ _addConst (_new (dim :: Dim '[2,2])) 3
-  new (dim :: Dim '[2, 2]) >>= addConst () 3 >>= sigmoid >>= \(r::DoubleDynamic) -> print r
+  print $ _neg $ _addConst (_new (dims :: Dims '[2, 2])) 3
+  print $ _sigmoid $ _neg $ _addConst (_new (dims :: Dims '[2,2])) 3
+  new (dims :: Dims '[2, 2]) >>= addConst () 3 >>= sigmoid >>= \(r::DoubleDynamic) -> print r
 
-  foo :: DoubleDynamic <- constant (dim :: Dim '[5]) 3
+  foo :: DoubleDynamic <- constant (dims :: Dims '[5]) 3
   print (3.0 * 3.0 * 5 :: Double)
   dot foo foo >>= print
 
-  new (dim :: Dim '[5]) >>= (`add` 2) >>= \(r::DoubleDynamic) -> print r
-  new (dim :: Dim '[5]) >>= (`add` 2) >>= (`Math.div` 4) >>= \(r::DoubleDynamic) -> print r
+  new (dims :: Dims '[5]) >>= (`add` 2) >>= \(r::DoubleDynamic) -> print r
+  new (dims :: Dims '[5]) >>= (`add` 2) >>= (`Math.div` 4) >>= \(r::DoubleDynamic) -> print r
 -}
 
 -- TODO : move raw test elsewhere?
 rawTest = do
-  x :: DoubleDynamic <- constant (dim :: Dim '[5]) 2.0
-  y <- constant (dim :: Dim '[5]) 3.0
-  z <- constant (dim :: Dim '[5]) 4.0
+  let
+    x :: DoubleDynamic
+    x = constant (dims :: Dims '[5]) 2.0
+    y = constant (dims :: Dims '[5]) 3.0
+    z = constant (dims :: Dims '[5]) 4.0
   print x
   -- cadd = z <- y + scalar * x, z value discarded
   print (2.0 * 4.4 + 3.0 :: Double)
@@ -58,14 +60,14 @@ rawTest = do
   print z
 
 testCadd = do
-  foo :: DoubleDynamic <- constant (dim :: Dim '[5]) 5
-  bar :: DoubleDynamic <- constant (dim :: Dim '[5]) 2
+  let foo :: DoubleDynamic = constant (dims :: Dims '[5]) 5
+      bar :: DoubleDynamic = constant (dims :: Dims '[5]) 2
   print $ 5 + 3 * 2
   cadd foo 3.0 bar >>= print
 
 testCopy :: IO ()
 testCopy = do
-  foo :: DoubleDynamic <- new (dim :: Dim '[3, 3])
+  foo :: DoubleDynamic <- new (dims :: Dims '[3, 3])
   _fill foo 5
   bar <- newWithTensor foo
   print foo
@@ -84,8 +86,8 @@ matrixMultTest = do
   mapM_ (\_ -> go gen) [1..10]
   where
     go gen = do
-      mat' :: DoubleDynamic <- uniform (dim :: Dim '[10, 7]) gen (-10) 10
-      vec' :: DoubleDynamic <- uniform (dim :: Dim '[7])     gen (-10) 10
+      mat' :: DoubleDynamic <- uniform (dims :: Dims '[10, 7]) gen (-10) 10
+      vec' :: DoubleDynamic <- uniform (dims :: Dims '[7])     gen (-10) 10
       print mat'
       print vec'
       -- print $ mat !* vec
@@ -93,17 +95,17 @@ matrixMultTest = do
 testLapack :: IO ()
 testLapack = do
   rng <- R.newRNG
-  t :: DoubleDynamic <- uniform (dim :: Dim '[2, 2]) rng (-1.0) 1.0
+  t :: DoubleDynamic <- uniform (dims :: Dims '[2, 2]) rng (-1.0) 1.0
 
-  b <- constant (dim :: Dim '[2]) 1.0
-  resA <- constant (dim :: Dim '[2, 2]) 0
-  resB <- constant (dim :: Dim '[2, 2]) 0
+  let b    = constant (dims :: Dims '[2]) 1.0
+      resA = constant (dims :: Dims '[2, 2]) 0
+      resB = constant (dims :: Dims '[2, 2]) 0
   _gesv resA resB t b
   print resA
   print resB
 
-  resQ <- constant (dim :: Dim '[2, 2]) 0
-  resR <- constant (dim :: Dim '[2, 2]) 0
+  let resQ = constant (dims :: Dims '[2, 2]) 0
+      resR = constant (dims :: Dims '[2, 2]) 0
   _qr resQ resR t
   print resQ
   print resR
