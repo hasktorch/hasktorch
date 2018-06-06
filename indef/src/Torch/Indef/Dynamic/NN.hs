@@ -152,20 +152,22 @@ import qualified Torch.Sig.NN as Sig
 
 import Torch.Indef.Types
 
--- FIXME: reintroduce these
-_indexLinear_updateOutput
-  :: IndexDynamic
-  -> Integer
-  -> Dynamic
-  -> IndexDynamic
-  -> IndexDynamic
-  -> Dynamic
-  -> Dynamic
-  -> Dynamic
-  -> Dynamic
-  -> Int
-  -> IO ()
-_indexLinear_updateOutput i0 l t0 i1 i2 t1 t2 t3 t4 i = undefined
+-- -- | indexLinear forward pass
+-- --
+-- -- FIXME: reintroduce these
+-- _indexLinear_updateOutput
+--   :: IndexDynamic
+--   -> Integer
+--   -> Dynamic
+--   -> IndexDynamic
+--   -> IndexDynamic
+--   -> Dynamic
+--   -> Dynamic
+--   -> Dynamic
+--   -> Dynamic
+--   -> Int
+--   -> IO ()
+-- _indexLinear_updateOutput i0 l t0 i1 i2 t1 t2 t3 t4 i = undefined
   -- Sig.c_IndexLinear_updateOutput
 
 -- c_IndexLinear_accGradParameters :: IndexDynamic -> CLLong -> Dynamic -> IndexDynamic -> IndexDynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> CDouble -> CDouble -> IO ()
@@ -175,25 +177,47 @@ _indexLinear_updateOutput i0 l t0 i1 i2 t1 t2 t3 t4 i = undefined
 -- c_LookupTable_accGradParameters :: Ptr CIndexTensor -> Ptr CDoubleTensor -> Ptr CDoubleTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> Ptr CIndexTensor -> CBool -> CInt -> CDouble -> IO ()
 -- c_LookupTable_renorm :: Ptr CIndexTensor -> Ptr CDoubleTensor -> CDouble -> CDouble -> IO ()
 
-
+-- | abs forward
 _abs_updateOutput :: Dynamic -> Dynamic -> IO ()
-_abs_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> IO ()
-_abs_updateOutput = ten2 Sig.c_Abs_updateOutput
-_abs_updateGradInput = ten3 Sig.c_Abs_updateGradInput
+_abs_updateOutput t0 t1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
+  Sig.c_Abs_updateOutput s' t0' t1'
 
-_absCriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+-- | abs backward
+_abs_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> IO ()
+_abs_updateGradInput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_Abs_updateGradInput s' t0' t1' t2'
+
+-- | absCriterion forward pass (updates the output tensor)
+_absCriterion_updateOutput :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+_absCriterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_AbsCriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
+
+-- | absCriterion backward-update (updates the layer and bias tensors)
 _absCriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+_absCriterion_updateGradInput = ten4bool2 Sig.c_AbsCriterion_updateGradInput
+
+-- | bCECriterion forward pass (updates the output tensor)
 _bCECriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Dynamic -> Bool -> IO ()
+-- | bCECriterion backward-update (updates the layer and bias tensors)
 _bCECriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Dynamic -> Bool -> IO ()
+-- | distKLDivCriterion forward pass (updates the output tensor)
 _distKLDivCriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+-- | distKLDivCriterion backward-update (updates the layer and bias tensors)
 _distKLDivCriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+-- | gatedLinear forward pass (updates the output tensor)
 _gatedLinear_updateOutput     :: Dynamic -> Dynamic -> Int -> IO ()
+-- | gatedLinear backward-update (updates the layer and bias tensors)
 _gatedLinear_updateGradInput  :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
+-- | hardTanh forward pass (updates the output tensor)
 _hardTanh_updateOutput        :: Dynamic -> Dynamic -> Double -> Double -> Bool -> IO ()
+-- | hardTanh backward-update (updates the layer and bias tensors)
 _hardTanh_updateGradInput     :: Dynamic -> Dynamic -> Dynamic -> Double -> Double -> Bool -> IO ()
+-- | im2Col forward pass (updates the output tensor)
 _im2Col_updateOutput          :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | im2Col backward-update (updates the layer and bias tensors)
 _im2Col_updateGradInput       :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 
+-- | col2Im forward pass (updates the output tensor)
 _col2Im_updateOutput
   :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _col2Im_updateOutput t0 t1 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 =
@@ -211,6 +235,7 @@ _col2Im_updateOutput t0 t1 a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 =
       (fromIntegral a9)
 
 
+-- | col2Im backward-update (updates the layer and bias tensors)
 _col2Im_updateGradInput :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _col2Im_updateGradInput t0 t1 a0 a1 a2 a3 a4 a5 a6 a7 =
   with2DynamicState t0 t1 $ \s' t0' t1' ->
@@ -224,46 +249,84 @@ _col2Im_updateGradInput t0 t1 a0 a1 a2 a3 a4 a5 a6 a7 =
       (fromIntegral a6)
       (fromIntegral a7)
 
-
+-- | l1Cost forward pass (updates the output tensor)
 _l1Cost_updateOutput          :: Dynamic -> Dynamic -> IO ()
+-- | l1Cost backward-update (updates the layer and bias tensors)
 _l1Cost_updateGradInput       :: Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | gRUFused forward pass (updates the output tensor)
 _gRUFused_updateOutput        :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | gRUFused backward-update (updates the layer and bias tensors)
 _gRUFused_updateGradInput     :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | lSTMFused forward pass (updates the output tensor)
 _lSTMFused_updateOutput       :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | lSTMFused backward-update (updates the layer and bias tensors)
 _lSTMFused_updateGradInput    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | logSigmoid forward pass (updates the output tensor)
 _logSigmoid_updateOutput      :: Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | logSigmoid backward-update (updates the layer and bias tensors)
 _logSigmoid_updateGradInput   :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | logSoftMax forward pass (updates the output tensor)
 _logSoftMax_updateOutput      :: Dynamic -> Dynamic -> Integer -> IO ()
+-- | logSoftMax backward-update (updates the layer and bias tensors)
 _logSoftMax_updateGradInput   :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Integer -> IO ()
+-- | marginCriterion forward pass (updates the output tensor)
 _marginCriterion_updateOutput        :: Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> IO ()
+-- | marginCriterion backward-update (updates the layer and bias tensors)
 _marginCriterion_updateGradInput     :: Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> IO ()
+-- | softMarginCriterion forward pass (updates the output tensor)
 _softMarginCriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+-- | softMarginCriterion backward-update (updates the layer and bias tensors)
 _softMarginCriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+-- | mSECriterion forward pass (updates the output tensor)
 _mSECriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+-- | mSECriterion backward-update (updates the layer and bias tensors)
 _mSECriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+-- | sigmoid forward pass (updates the output tensor)
 _sigmoid_updateOutput     :: Dynamic -> Dynamic -> IO ()
+-- | sigmoid backward-update (updates the layer and bias tensors)
 _sigmoid_updateGradInput  :: Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | smoothL1Criterion forward pass (updates the output tensor)
 _smoothL1Criterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+-- | smoothL1Criterion backward-update (updates the layer and bias tensors)
 _smoothL1Criterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+-- | softMax forward pass (updates the output tensor)
 _softMax_updateOutput       :: Dynamic -> Dynamic -> Integer -> IO ()
+-- | softMax backward-update (updates the layer and bias tensors)
 _softMax_updateGradInput    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Integer -> IO ()
+-- | softPlus forward pass (updates the output tensor)
 _softPlus_updateOutput      :: Dynamic -> Dynamic -> Double -> Double -> IO ()
+-- | softPlus backward-update (updates the layer and bias tensors)
 _softPlus_updateGradInput   :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Double -> Double -> IO ()
+-- | softShrink forward pass (updates the output tensor)
 _softShrink_updateOutput    :: Dynamic -> Dynamic -> Double -> IO ()
+-- | softShrink backward-update (updates the layer and bias tensors)
 _softShrink_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Double -> IO ()
+-- | sparseLinear forward pass (updates the output tensor)
 _sparseLinear_updateOutput             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | sparseLinear backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _sparseLinear_accGradParameters        :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Double -> Double -> IO ()
+-- | sparseLinear zeroGradParameters
 _sparseLinear_zeroGradParameters       :: Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | sparseLinear updateParameters
 _sparseLinear_updateParameters         :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Double -> IO ()
+-- | sparseLinear legacyUpdateOutput
 _sparseLinear_legacyUpdateOutput       :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | sparseLinear legacyAccGradParameters
 _sparseLinear_legacyAccGradParameters  :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Double -> Double -> IO ()
+-- | sqrt forward pass (updates the output tensor)
 _sqrt_updateOutput         :: Dynamic -> Dynamic -> Double -> IO ()
+-- | sqrt backward-update (updates the layer and bias tensors)
 _sqrt_updateGradInput      :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | square forward pass (updates the output tensor)
 _square_updateOutput       :: Dynamic -> Dynamic -> IO ()
+-- | square backward-update (updates the layer and bias tensors)
 _square_updateGradInput    :: Dynamic -> Dynamic -> Dynamic -> IO ()
+-- | tanh forward pass (updates the output tensor)
 _tanh_updateOutput         :: Dynamic -> Dynamic -> IO ()
+-- | tanh backward-update (updates the layer and bias tensors)
 _tanh_updateGradInput      :: Dynamic -> Dynamic -> Dynamic -> IO ()
 
+-- | temporalConvolution forward pass (updates the output tensor)
 _temporalConvolution_updateOutput
   :: Dynamic     -- ^ input
   -> Dynamic     -- ^ output -- this is the mutated return value
@@ -281,6 +344,7 @@ _temporalConvolution_updateOutput t0 t1 t2 t3 i0 i1 i2 i3 =
         (fromIntegral i0) (fromIntegral i1)
         (fromIntegral i2) (fromIntegral i3)
 
+-- | temporalConvolution backward-update (updates the layer and bias tensors)
 _temporalConvolution_updateGradInput
   :: Dynamic     -- ^ input
   -> Dynamic     -- ^ grad output
@@ -296,6 +360,7 @@ _temporalConvolution_updateGradInput t0 t1 t2 t3 i0 i1 =
         (fromIntegral i0) (fromIntegral i1)
 
 
+-- | temporalConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _temporalConvolution_accGradParameters
   :: Dynamic   -- ^ input
   -> Dynamic   -- ^ grad output
@@ -312,17 +377,26 @@ _temporalConvolution_accGradParameters t0 t1 t2 t3 i0 i1 scale =
         (fromIntegral i0) (fromIntegral i1)
         (realToFrac scale)
 
+-- | temporalRowConvolution forward pass (updates the output tensor)
 _temporalRowConvolution_updateOutput                :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Bool -> IO ()
+-- | temporalRowConvolution backward-update (updates the layer and bias tensors)
 _temporalRowConvolution_updateGradInput             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Bool -> IO ()
+-- | temporalRowConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _temporalRowConvolution_accGradParameters           :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Bool -> Double -> IO ()
+-- | temporalUpSamplingNearest forward pass (updates the output tensor)
 _temporalUpSamplingNearest_updateOutput             :: Dynamic -> Dynamic -> Int -> IO ()
+-- | temporalUpSamplingNearest backward-update (updates the layer and bias tensors)
 _temporalUpSamplingNearest_updateGradInput          :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
+-- | temporalUpSamplingLinear forward pass (updates the output tensor)
 _temporalUpSamplingLinear_updateOutput              :: Dynamic -> Dynamic -> Int -> IO ()
+-- | temporalUpSamplingLinear backward-update (updates the layer and bias tensors)
 _temporalUpSamplingLinear_updateGradInput           :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
+-- | batchNormalization forward pass (updates the output tensor)
 _batchNormalization_updateOutput                    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> Double -> IO ()
+-- | batchNormalization backward
 _batchNormalization_backward                        :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> Double -> IO ()
 
--- | dynamic spatial convolution
+-- | spatialConvolutionMM forward pass
 spatialConvolutionMM_updateOutput
   :: Dynamic    -- ^ input
   -> Dynamic    -- ^ 3D weight tensor (connTable:size(1) x kH x kW) 
@@ -349,6 +423,7 @@ spatialConvolutionMM_updateOutput inp weight bias (kW, kH) (dW, dH) (pW, pH) = d
       (fromIntegral pW) (fromIntegral pH)
   pure out
 
+-- | spatialConvolutionMM backward-update (updates the layer and bias tensors)
 _spatialConvolutionMM_updateGradInput
   :: Dynamic    -- ^ input
   -> Dynamic    -- ^ gradOutput
@@ -380,6 +455,7 @@ _spatialConvolutionMM_updateGradInput inp gout gin w columns ones (kW, kH) (dW, 
   --   (param2d pad)
 
 
+-- | spatialConvolutionMM backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _spatialConvolutionMM_accGradParameters
   :: Dynamic    -- ^ input
   -> Dynamic    -- ^ gradOutput
@@ -402,92 +478,170 @@ _spatialConvolutionMM_accGradParameters inp gout gweight gbias finput fgradInput
       (realToFrac scale)
 
 
+-- | spatialConvolutionLocal forward pass (updates the output tensor)
 _spatialConvolutionLocal_updateOutput               :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+-- | spatialConvolutionLocal backward-update (updates the layer and bias tensors)
 _spatialConvolutionLocal_updateGradInput            :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> IO ()
+-- | spatialConvolutionLocal backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _spatialConvolutionLocal_accGradParameters          :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> CLLong -> CLLong -> CLLong -> CLLong -> Double -> IO ()
+-- | spatialFullConvolution forward pass (updates the output tensor)
 _spatialFullConvolution_updateOutput                :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialFullConvolution backward-update (updates the layer and bias tensors)
 _spatialFullConvolution_updateGradInput             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialFullConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _spatialFullConvolution_accGradParameters           :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+-- | spatialDilatedConvolution forward pass (updates the output tensor)
 _spatialDilatedConvolution_updateOutput             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialDilatedConvolution backward-update (updates the layer and bias tensors)
 _spatialDilatedConvolution_updateGradInput          :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialDilatedConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _spatialDilatedConvolution_accGradParameters        :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+-- | spatialFullDilatedConvolution forward pass (updates the output tensor)
 _spatialFullDilatedConvolution_updateOutput         :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialFullDilatedConvolution backward-update (updates the layer and bias tensors)
 _spatialFullDilatedConvolution_updateGradInput      :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialFullDilatedConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _spatialFullDilatedConvolution_accGradParameters    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+-- | spatialSubSampling forward pass (updates the output tensor)
 _spatialSubSampling_updateOutput                    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialSubSampling backward-update (updates the layer and bias tensors)
 _spatialSubSampling_updateGradInput                 :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialSubSampling backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _spatialSubSampling_accGradParameters               :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Double -> IO ()
+-- | spatialUpSamplingNearest forward pass (updates the output tensor)
 _spatialUpSamplingNearest_updateOutput              :: Dynamic -> Dynamic -> Int -> IO ()
+-- | spatialUpSamplingNearest backward-update (updates the layer and bias tensors)
 _spatialUpSamplingNearest_updateGradInput           :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
+-- | spatialUpSamplingBilinear forward pass (updates the output tensor)
 _spatialUpSamplingBilinear_updateOutput             :: Dynamic -> Dynamic -> Int -> Int -> IO ()
+-- | spatialUpSamplingBilinear backward-update (updates the layer and bias tensors)
 _spatialUpSamplingBilinear_updateGradInput          :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialGridSamplerBilinear forward pass (updates the output tensor)
 _spatialGridSamplerBilinear_updateOutput            :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
+-- | spatialGridSamplerBilinear backward-update (updates the layer and bias tensors)
 _spatialGridSamplerBilinear_updateGradInput         :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
+-- | volumetricGridSamplerBilinear forward pass (updates the output tensor)
 _volumetricGridSamplerBilinear_updateOutput         :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
+-- | volumetricGridSamplerBilinear backward-update (updates the layer and bias tensors)
 _volumetricGridSamplerBilinear_updateGradInput      :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
+-- | volumetricConvolution forward pass (updates the output tensor)
 _volumetricConvolution_updateOutput                 :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricConvolution backward-update (updates the layer and bias tensors)
 _volumetricConvolution_updateGradInput              :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _volumetricConvolution_accGradParameters            :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+-- | volumetricFullConvolution forward pass (updates the output tensor)
 _volumetricFullConvolution_updateOutput             :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricFullConvolution backward-update (updates the layer and bias tensors)
 _volumetricFullConvolution_updateGradInput          :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricFullConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _volumetricFullConvolution_accGradParameters        :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+-- | volumetricDilatedConvolution forward pass (updates the output tensor)
 _volumetricDilatedConvolution_updateOutput          :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricDilatedConvolution backward-update (updates the layer and bias tensors)
 _volumetricDilatedConvolution_updateGradInput       :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricDilatedConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _volumetricDilatedConvolution_accGradParameters     :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+-- | volumetricFullDilatedConvolution forward pass (updates the output tensor)
 _volumetricFullDilatedConvolution_updateOutput      :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricFullDilatedConvolution backward-update (updates the layer and bias tensors)
 _volumetricFullDilatedConvolution_updateGradInput   :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricFullDilatedConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _volumetricFullDilatedConvolution_accGradParameters :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Double -> IO ()
+-- | spatialReflectionPadding forward pass (updates the output tensor)
 _spatialReflectionPadding_updateOutput              :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialReflectionPadding backward-update (updates the layer and bias tensors)
 _spatialReflectionPadding_updateGradInput           :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialReplicationPadding forward pass (updates the output tensor)
 _spatialReplicationPadding_updateOutput             :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
+-- | spatialReplicationPadding backward-update (updates the layer and bias tensors)
 _spatialReplicationPadding_updateGradInput          :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricReplicationPadding forward pass (updates the output tensor)
 _volumetricReplicationPadding_updateOutput          :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricReplicationPadding backward-update (updates the layer and bias tensors)
 _volumetricReplicationPadding_updateGradInput       :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | volumetricUpSamplingNearest forward pass (updates the output tensor)
 _volumetricUpSamplingNearest_updateOutput           :: Dynamic -> Dynamic -> Int -> IO ()
+-- | volumetricUpSamplingNearest backward-update (updates the layer and bias tensors)
 _volumetricUpSamplingNearest_updateGradInput        :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
+-- | volumetricUpSamplingTrilinear forward pass (updates the output tensor)
 _volumetricUpSamplingTrilinear_updateOutput         :: Dynamic -> Dynamic -> Int -> Int -> Int -> IO ()
+-- | volumetricUpSamplingTrilinear backward-update (updates the layer and bias tensors)
 _volumetricUpSamplingTrilinear_updateGradInput      :: Dynamic -> Dynamic -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
+-- | temporalReflectionPadding forward pass (updates the output tensor)
 _temporalReflectionPadding_updateOutput             :: Dynamic -> Dynamic -> Int -> Int -> IO ()
+-- | temporalReflectionPadding backward-update (updates the layer and bias tensors)
 _temporalReflectionPadding_updateGradInput          :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> IO ()
+-- | temporalReplicationPadding forward pass (updates the output tensor)
 _temporalReplicationPadding_updateOutput            :: Dynamic -> Dynamic -> Int -> Int -> IO ()
+-- | temporalReplicationPadding backward-update (updates the layer and bias tensors)
 _temporalReplicationPadding_updateGradInput         :: Dynamic -> Dynamic -> Dynamic -> Int -> Int -> IO ()
 
-_absCriterion_updateOutput = ten3bool2 Sig.c_AbsCriterion_updateOutput
-_absCriterion_updateGradInput = ten4bool2 Sig.c_AbsCriterion_updateGradInput
 _sqrt_updateGradInput = ten4 Sig.c_Sqrt_updateGradInput
 _square_updateOutput = ten2 Sig.c_Square_updateOutput
-_square_updateGradInput = ten3 Sig.c_Square_updateGradInput
+
+_square_updateGradInput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_Square_updateGradInput s' t0' t1' t2'
+
 _tanh_updateOutput = ten2 Sig.c_Tanh_updateOutput
-_tanh_updateGradInput = ten3 Sig.c_Tanh_updateGradInput
+_tanh_updateGradInput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_Tanh_updateGradInput s' t0' t1' t2'
+
 _l1Cost_updateOutput = ten2 Sig.c_L1Cost_updateOutput
-_l1Cost_updateGradInput = ten3 Sig.c_L1Cost_updateGradInput
-_logSigmoid_updateOutput = ten3 Sig.c_LogSigmoid_updateOutput
+_l1Cost_updateGradInput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_L1Cost_updateGradInput s' t0' t1' t2'
+
+_logSigmoid_updateOutput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_LogSigmoid_updateOutput s' t0' t1' t2'
+
 _logSigmoid_updateGradInput = ten4 Sig.c_LogSigmoid_updateGradInput
 _sigmoid_updateOutput = ten2 Sig.c_Sigmoid_updateOutput
-_sigmoid_updateGradInput = ten3 Sig.c_Sigmoid_updateGradInput
+_sigmoid_updateGradInput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_Sigmoid_updateGradInput s' t0' t1' t2'
+
 _logSoftMax_updateOutput = ten2dim1 Sig.c_LogSoftMax_updateOutput
 _im2Col_updateOutput = ten2int8 Sig.c_Im2Col_updateOutput
 _im2Col_updateGradInput = ten2int10 Sig.c_Im2Col_updateGradInput
 _gRUFused_updateGradInput = ten5 Sig.c_GRUFused_updateGradInput
 _softMax_updateOutput = ten2dim1 Sig.c_SoftMax_updateOutput
-_distKLDivCriterion_updateOutput = ten3bool2 Sig.c_DistKLDivCriterion_updateOutput
-_bCECriterion_updateOutput = ten3bool1ten1bool1 Sig.c_BCECriterion_updateOutput
-_marginCriterion_updateGradInput = ten3bool1double1 Sig.c_MarginCriterion_updateGradInput
+
+_distKLDivCriterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_DistKLDivCriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
+
+_bCECriterion_updateOutput t0 t1 t2 b0 t3 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  withDynamicState t3 $ \_ t3' ->
+    Sig.c_BCECriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) t3' (toEnum $ fromEnum b1)
+
+_marginCriterion_updateGradInput t0 t1 t2 b0 d0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_MarginCriterion_updateGradInput s' t0' t1' t2' (toEnum $ fromEnum b0) (realToFrac d0)
+
 _distKLDivCriterion_updateGradInput = ten4bool2 Sig.c_DistKLDivCriterion_updateGradInput
-_marginCriterion_updateOutput = ten3bool1double1 Sig.c_MarginCriterion_updateOutput
+_marginCriterion_updateOutput t0 t1 t2 b0 d0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_MarginCriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (realToFrac d0)
+
 _smoothL1Criterion_updateGradInput = ten4bool2 Sig.c_SmoothL1Criterion_updateGradInput
 _softMarginCriterion_updateGradInput = ten4bool2 Sig.c_SoftMarginCriterion_updateGradInput
 _mSECriterion_updateGradInput = ten4bool2 Sig.c_MSECriterion_updateGradInput
 _bCECriterion_updateGradInput = ten4bool1ten1bool1 Sig.c_BCECriterion_updateGradInput
-_smoothL1Criterion_updateOutput = ten3bool2 Sig.c_SmoothL1Criterion_updateOutput
-_softMarginCriterion_updateOutput = ten3bool2 Sig.c_SoftMarginCriterion_updateOutput
-_mSECriterion_updateOutput = ten3bool2 Sig.c_MSECriterion_updateOutput
+_smoothL1Criterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_SmoothL1Criterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
+
+_softMarginCriterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_SoftMarginCriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
+
+_mSECriterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_MSECriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
+
 _sqrt_updateOutput = ten2double1 Sig.c_Sqrt_updateOutput
 _softShrink_updateOutput = ten2double1 Sig.c_SoftShrink_updateOutput
 _softPlus_updateOutput = ten2double2 Sig.c_SoftPlus_updateOutput
 _hardTanh_updateOutput = ten2double2bool1 Sig.c_HardTanh_updateOutput
-_hardTanh_updateGradInput = ten3double2bool1 Sig.c_HardTanh_updateGradInput
-_softShrink_updateGradInput = ten3double1 Sig.c_SoftShrink_updateGradInput
+_hardTanh_updateGradInput t0 t1 t2 d0 d1 b0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_HardTanh_updateGradInput s' t0' t1' t2' (realToFrac d0) (realToFrac d0) (toEnum $ fromEnum b0)
+
+_softShrink_updateGradInput t0 t1 t2 d0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_SoftShrink_updateGradInput s' t0' t1' t2' (realToFrac d0)
+
 _softPlus_updateGradInput = ten4double2 Sig.c_SoftPlus_updateGradInput
 _logSoftMax_updateGradInput = ten4dim1 Sig.c_LogSoftMax_updateGradInput
 _softMax_updateGradInput = ten4dim1 Sig.c_SoftMax_updateGradInput
@@ -497,11 +651,21 @@ _spatialSubSampling_accGradParameters = ten4int4double1 Sig.c_SpatialSubSampling
 _spatialGridSamplerBilinear_updateGradInput = ten5int1 Sig.c_SpatialGridSamplerBilinear_updateGradInput
 _sparseLinear_updateParameters = ten5double1 Sig.c_SparseLinear_updateParameters
 _volumetricGridSamplerBilinear_updateGradInput = ten5int1 Sig.c_VolumetricGridSamplerBilinear_updateGradInput
-_spatialGridSamplerBilinear_updateOutput = ten3int1 Sig.c_SpatialGridSamplerBilinear_updateOutput
-_volumetricGridSamplerBilinear_updateOutput = ten3int1 Sig.c_VolumetricGridSamplerBilinear_updateOutput
-_spatialUpSamplingNearest_updateGradInput = ten3int1 Sig.c_SpatialUpSamplingNearest_updateGradInput
-_temporalUpSamplingNearest_updateGradInput = ten3int1 Sig.c_TemporalUpSamplingNearest_updateGradInput
-_gatedLinear_updateGradInput = ten3int1 Sig.c_GatedLinear_updateGradInput
+_spatialGridSamplerBilinear_updateOutput t0 t1 t2 i0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_SpatialGridSamplerBilinear_updateOutput s' t0' t1' t2' (fromIntegral i0)
+
+_volumetricGridSamplerBilinear_updateOutput t0 t1 t2 i0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_VolumetricGridSamplerBilinear_updateOutput s' t0' t1' t2' (fromIntegral i0)
+
+_spatialUpSamplingNearest_updateGradInput t0 t1 t2 i0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_SpatialUpSamplingNearest_updateGradInput s' t0' t1' t2' (fromIntegral i0)
+
+_temporalUpSamplingNearest_updateGradInput t0 t1 t2 i0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_TemporalUpSamplingNearest_updateGradInput s' t0' t1' t2' (fromIntegral i0)
+
+_gatedLinear_updateGradInput t0 t1 t2 i0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_GatedLinear_updateGradInput s' t0' t1' t2' (fromIntegral i0)
+
 _temporalUpSamplingNearest_updateOutput = ten2int1 Sig.c_TemporalUpSamplingNearest_updateOutput
 _temporalUpSamplingLinear_updateOutput = ten2int1 Sig.c_TemporalUpSamplingLinear_updateOutput
 _gatedLinear_updateOutput = ten2int1 Sig.c_GatedLinear_updateOutput
@@ -541,7 +705,9 @@ _volumetricDilatedConvolution_updateOutput = ten6int12 Sig.c_VolumetricDilatedCo
 _volumetricDilatedConvolution_updateGradInput = ten5int12 Sig.c_VolumetricDilatedConvolution_updateGradInput
 
 _sparseLinear_updateOutput = ten4 Sig.c_SparseLinear_updateOutput
-_sparseLinear_zeroGradParameters = ten3 Sig.c_SparseLinear_zeroGradParameters
+_sparseLinear_zeroGradParameters t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_SparseLinear_zeroGradParameters s' t0' t1' t2'
+
 _sparseLinear_legacyUpdateOutput = ten4 Sig.c_SparseLinear_legacyUpdateOutput
 _volumetricDilatedConvolution_accGradParameters = ten6int12double1 Sig.c_VolumetricDilatedConvolution_accGradParameters
 _volumetricFullDilatedConvolution_updateOutput = ten6int15 Sig.c_VolumetricFullDilatedConvolution_updateOutput
@@ -550,9 +716,13 @@ _volumetricFullDilatedConvolution_accGradParameters = ten6int15double1 Sig.c_Vol
 
 
 _spatialReflectionPadding_updateOutput     = ten2int4 Sig.c_SpatialReflectionPadding_updateOutput
-_spatialReflectionPadding_updateGradInput  = ten3int4 Sig.c_SpatialReflectionPadding_updateGradInput
+_spatialReflectionPadding_updateGradInput  t0 t1 t2 i0 i1 i2 i3 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_SpatialReflectionPadding_updateGradInput s' t0' t1' t2' (fromIntegral i0) (fromIntegral i1) (fromIntegral i2) (fromIntegral i3)
+
 _spatialReplicationPadding_updateOutput    = ten2int4 Sig.c_SpatialReplicationPadding_updateOutput
-_spatialReplicationPadding_updateGradInput = ten3int4 Sig.c_SpatialReplicationPadding_updateGradInput
+
+_spatialReplicationPadding_updateGradInput t0 t1 t2 i0 i1 i2 i3 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
+  Sig.c_SpatialReplicationPadding_updateGradInput s' t0' t1' t2' (fromIntegral i0) (fromIntegral i1) (fromIntegral i2) (fromIntegral i3)
 
 
 

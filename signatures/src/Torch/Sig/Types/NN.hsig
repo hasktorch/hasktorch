@@ -1,3 +1,18 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Sig.NN
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Global types used in Torch's Neural Network libraries (THNN and THCUNN).
+--
+-- FIXME: most of these are aliases and can either be removed in favour of
+-- 'Torch.Sig.Global.Types' or, in the case of CDim, should be pushed upstream
+-- back into Torch itself.
+-------------------------------------------------------------------------------
 signature Torch.Sig.Types.NN where
 
 import Torch.Sig.Types.Global
