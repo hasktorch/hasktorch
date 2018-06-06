@@ -1,3 +1,29 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Dynamic.Tensor.Math
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Torch provides MATLAB-like functions for manipulating Tensor objects.
+-- Functions fall into several types of categories:
+--
+--   * Constructors like zeros, ones;
+--   * Extractors like diag and triu;
+--   * Element-wise mathematical operations like abs and pow;
+--   * BLAS operations;
+--   * Column or row-wise operations like sum and max;
+--   * Matrix-wide operations like trace and norm;
+--   * Convolution and cross-correlation operations like conv2;
+--   * Basic linear algebra operations like eig;
+--   * Logical operations on Tensors.
+--
+-- Unfortunately the above this comes from the Lua docs. Hasktorch doesn't
+-- mimic this exactly and (FIXME) we will have to restructure this module
+-- header to reflect these changes.
+-------------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-cse #-}

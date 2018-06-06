@@ -1,4 +1,26 @@
-module Torch.Indef.Dynamic.Tensor.Random.TH where
+module Torch.Indef.Dynamic.Tensor.Random.TH
+  ( _random                 , random
+  , _clampedRandom          , clampedRandom
+  , _cappedRandom           , cappedRandom
+  , _geometric              , geometric
+  , _bernoulli              , bernoulli
+  , _bernoulli_FloatTensor  , bernoulli_FloatTensor
+  , _bernoulli_DoubleTensor , bernoulli_DoubleTensor
+  , _uniform                , uniform
+  , _normal                 , normal
+  , _normal_means           , normal_means
+  , _normal_stddevs         , normal_stddevs
+  , _normal_means_stddevs   , normal_means_stddevs
+  , _exponential            , exponential
+  , _standard_gamma         , standard_gamma
+  , _cauchy                 , cauchy
+  , _logNormal              , logNormal
+  , _multinomial
+  , _multinomialAliasSetup
+  , _multinomialAliasDraw
+  ) where
+
+import Numeric.Dimensions
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor
@@ -137,11 +159,9 @@ bernoulli_DoubleTensor d g a = flip withInplace d $ \t -> _bernoulli_DoubleTenso
 
 uniform :: Dims (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
 uniform d g a b = flip withInplace d $ \t -> _uniform t g a b
-uniform' (SomeDims d) = uniform d
 
--- normal :: Dims (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
--- normal d g a b = flip withInplace d $ \t -> _normal g a b
--- normal' (SomeDims d) = normal d
+normal :: Dims (d::[Nat]) -> Generator -> HsAccReal -> HsAccReal -> IO Dynamic
+normal d g a b = flip withInplace d $ \t -> _normal t g a b
 
 normal_means :: Dims (d::[Nat]) -> Generator -> Dynamic -> HsAccReal -> IO Dynamic
 normal_means d g m b = flip withInplace d $ \t -> _normal_means t g m b
@@ -152,8 +172,8 @@ normal_stddevs d g a s = flip withInplace d $ \t -> _normal_stddevs t g a s
 normal_means_stddevs :: Dims (d::[Nat]) -> Generator -> Dynamic -> Dynamic -> IO Dynamic
 normal_means_stddevs d g m s = flip withInplace d $ \t -> _normal_means_stddevs t g m s
 
--- exponential :: Dims (d::[Nat]) -> Generator -> HsAccReal -> IO Dynamic
--- exponential d g a = flip withInplace d $ \t -> _exponential g a
+exponential :: Dims (d::[Nat]) -> Generator -> HsAccReal -> IO Dynamic
+exponential d g a = flip withInplace d $ \t -> _exponential t g a
 
 standard_gamma :: Dims (d::[Nat]) -> Generator -> Dynamic -> IO Dynamic
 standard_gamma d g a = flip withInplace d $ \t -> _standard_gamma t g a
