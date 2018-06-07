@@ -214,7 +214,7 @@ conv1d_forwardBatch
   -> IO (Tensor '[b,s,o])
 conv1d_forwardBatch = _conv1d_forward
 
--- 'conv1d_backwardGradInput' with a batch dimension
+-- | 'conv1d_backwardGradInput' with a batch dimension
 conv1d_backwardGradInputBatch
   :: TemporalConvC s f kW dW o
   => KnownDim b
@@ -224,7 +224,7 @@ conv1d_backwardGradInputBatch
   -> IO (Tensor '[b, s, f])       -- ^ output
 conv1d_backwardGradInputBatch = _conv1d_backwardGradInput
 
--- 'conv1d_updGradParams' with a batch dimension
+-- | 'conv1d_updGradParams' with a batch dimension
 conv1d_updGradParamsBatch
   :: TemporalConvC s f kW dW o
   => KnownDim b

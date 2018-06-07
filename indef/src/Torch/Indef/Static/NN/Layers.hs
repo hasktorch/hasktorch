@@ -9,6 +9,7 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MonoLocalBinds #-}
 module Torch.Indef.Static.NN.Layers where
 
 import Data.List

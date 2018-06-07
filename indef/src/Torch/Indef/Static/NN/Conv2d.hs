@@ -141,6 +141,8 @@ instance Param2d (Conv2d f o) where
 
 -- ========================================================================= --
 
+-- | Constraint to check both sides (height and width) of a function and
+-- assert that all nessecary dimension values are 'KnownDim's.
 type SpatialConvolutionC f h w kH kW dH dW pH pW oH oW =
   ( All KnownDim '[f * kH * kW, oH * oW, f]
 
@@ -148,6 +150,7 @@ type SpatialConvolutionC f h w kH kW dH dW pH pW oH oW =
   , SideCheck w kW dW pW oW
   )
 
+-- | Constraint to check valid dimensions on one side.
 type SideCheck h k d p o =
   -- all of these are nats and 'dimensions' knows about them
   ( All KnownDim '[h,k,d,p,o]

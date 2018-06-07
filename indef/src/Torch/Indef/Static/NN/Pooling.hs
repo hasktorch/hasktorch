@@ -54,6 +54,9 @@ _temporalMaxPooling_updateGradInput t0 t1 t2 ix0 = Dynamic._temporalMaxPooling_u
 
 -- * 2d pooling functions
 
+-- | Constraint to assert that all hyperparameters are valid
+-- and to make the requirement that all dimension values are
+-- 'KnownDim's.
 type SpatialDilationCheckC kH kW dH dW pH pW dilH dilW =
   ( All KnownDim '[kH,kW,pH,pW,dH,dW,dilH,dilW]
   , kW > 0 ~ 'True
@@ -66,20 +69,17 @@ type SpatialDilationCheckC kH kW dH dW pH pW dilH dilW =
   , (Div kH 2) >= pH ~ 'True
   )
 
--- FIXME: need to figure out a type-level ceil function later
--- type SpatialDilationCeilCheckC iH iW oH oW kH kW dH dW pH pW dilH dilW =
---   ( SpatialDilationCheckC kH kW dH dW pH pW dilH dilW
---   , oH ~ (iH - Div (((dilH * (kH - 1)) + 1) + (2 * pH)) dH) + 1
---   , oW ~ (iW - Div (((dilW * (kW - 1)) + 1) + (2 * pW)) dW) + 1
---   )
-
--- POSSIBLY THIS:
+-- | Type-level if statement to indicate what the output dimension should be if
+-- CeilMode is turned on.
 type CeilModeOutputDims i k d p o dil ceilMode =
   ( If (ceilMode && (Rem (i - (dil * (k - 1) + 1) + (2 * p)) d > 0))
       ((2 + (Div (i - (dil * (k - 1) + 1) + (2 * p)) d)) ~ o)
       ((1 + (Div (i - (dil * (k - 1) + 1) + (2 * p)) d)) ~ o)
   )
 
+-- | Top-level constraint to assert that checks 'CeilModeOutputDims' on
+-- height and width dimensions and asserts that all dimensions checks in
+-- 'SpatialDilationCheckC' are true.
 type SpatialDilationC iH iW kH kW dH dW pH pW oW oH dilH dilW ceilMode =
    ( SpatialDilationCheckC kH kW dH dW pH pW dilH dilW
    , CeilModeOutputDims iH kH dH pH oH dilH ceilMode
