@@ -18,6 +18,8 @@ module Torch.Indef.Dynamic.Tensor.Index
   , _put
   ) where
 
+import Foreign
+import Foreign.Ptr
 import Torch.Sig.Types
 import qualified Torch.Sig.Types          as Sig
 import qualified Torch.Sig.Types.Global   as Sig

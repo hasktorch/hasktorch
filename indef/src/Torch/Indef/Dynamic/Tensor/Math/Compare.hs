@@ -18,6 +18,8 @@ module Torch.Indef.Dynamic.Tensor.Math.Compare
   , eqValue, eqValueT, eqValueT_
   ) where
 
+import Foreign hiding (with, new)
+import Foreign.Ptr
 import Numeric.Dimensions
 import System.IO.Unsafe
 

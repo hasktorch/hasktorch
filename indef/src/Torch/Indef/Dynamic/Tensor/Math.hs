@@ -29,6 +29,8 @@
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math where
 
+import Foreign hiding (new)
+import Foreign.Ptr
 import qualified Torch.Sig.Tensor.Math   as Sig
 import qualified Torch.Types.TH as TH (IndexStorage)
 import qualified Foreign.Marshal as FM

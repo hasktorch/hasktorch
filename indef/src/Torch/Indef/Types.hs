@@ -14,8 +14,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Indef.Types
-  ( module X
-  , module Sig
+  ( module Sig
   , THDebug(..)
 
   , DimVal(..)
@@ -37,18 +36,18 @@ module Torch.Indef.Types
   , mkDynamicIO, mkStorageIO
   ) where
 
-import Foreign as X (ForeignPtr, newForeignPtrEnv, withForeignPtr, newForeignPtr, FinalizerPtr)
+import Foreign
 import Foreign.C.Types
-import Foreign.Ptr as X
+import Foreign.Ptr
 import GHC.Int (Int64(..), Int32(..))
-import Control.Monad.Managed --  as X
+import Control.Monad.Managed
 import Numeric.Dimensions
 import qualified Foreign.Marshal.Array as FM
 
 import Control.Arrow
 import Control.Monad
-import Control.Monad.IO.Class --  as X
-import Control.Monad.Reader.Class -- as X
+import Control.Monad.IO.Class
+import Control.Monad.Reader.Class
 import Torch.Types.TH (C'THState)
 import GHC.TypeLits
 

@@ -20,6 +20,8 @@
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor where
 
+import Foreign hiding (with, new)
+import Foreign.Ptr
 import Control.Applicative ((<|>))
 import Control.Monad
 import Control.Monad.Managed

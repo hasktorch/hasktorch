@@ -42,6 +42,8 @@ module Torch.Indef.Dynamic.Tensor.Random.TH
   , Ord2Tuple, ord2Tuple, ord2TupleValues
   ) where
 
+import Foreign hiding (with, new)
+import Foreign.Ptr
 import GHC.Word
 import Numeric.Dimensions
 import Control.Monad.Managed (runManaged)

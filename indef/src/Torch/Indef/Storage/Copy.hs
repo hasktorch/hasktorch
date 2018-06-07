@@ -23,6 +23,8 @@ module Torch.Indef.Storage.Copy
   , copyDouble
   ) where
 
+import Foreign
+import Foreign.Ptr
 import qualified Torch.Types.TH           as TH
 import qualified Foreign.Marshal.Array    as FM
 import qualified Torch.Sig.Types          as Sig
