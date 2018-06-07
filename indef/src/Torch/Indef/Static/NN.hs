@@ -1,3 +1,12 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Static.NN
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+-------------------------------------------------------------------------------
 module Torch.Indef.Static.NN
   ( module X
   , _batchNormalization_updateOutput
@@ -26,6 +35,7 @@ import Torch.Indef.Static.NN.Pooling as X
 import Torch.Indef.Static.NN.Sampling as X
 import Torch.Indef.Static.NN.Backprop as X
 
+-- | batchNormalization forward pass (updates the output tensor)
 _batchNormalization_updateOutput
   :: Tensor d    -- ^ input
   -> Tensor d    -- ^ output
@@ -43,6 +53,7 @@ _batchNormalization_updateOutput t0 t1 t2 t3 t4 t5 t6 t7 = Dynamic._batchNormali
   (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4)
   (asDynamic t5) (asDynamic t6) (asDynamic t7)
 
+-- | batchNormalization backward
 _batchNormalization_backward
   :: Tensor d      -- ^ input
   -> Tensor d      -- ^ grad output
@@ -62,6 +73,7 @@ _batchNormalization_backward t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 = Dynamic._batchNorma
   (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4)
   (asDynamic t5) (asDynamic t6) (asDynamic t7) (asDynamic t8) (asDynamic t9)
 
+-- | col2Im forward pass (updates the output tensor)
 _col2Im_updateOutput
   :: Tensor d -- ^ input
   -> Tensor d -- ^ output
@@ -78,6 +90,7 @@ _col2Im_updateOutput
   -> IO ()
 _col2Im_updateOutput t0 t1 = Dynamic._col2Im_updateOutput (asDynamic t0) (asDynamic t1)
 
+-- | col2Im backward-update (updates the layer and bias tensors)
 _col2Im_updateGradInput
   :: Tensor d -- ^ grad output
   -> Tensor d -- ^ grad input
@@ -92,9 +105,11 @@ _col2Im_updateGradInput
   -> IO ()
 _col2Im_updateGradInput g0 g1 = Dynamic._col2Im_updateGradInput (asDynamic g0) (asDynamic g1)
 
+-- | im2Col forward pass (updates the output tensor)
 _im2Col_updateOutput :: Tensor d -> Tensor d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _im2Col_updateOutput g0 g1 = Dynamic._im2Col_updateOutput (asDynamic g0) (asDynamic g1)
 
+-- | im2Col backward-update (updates the layer and bias tensors)
 _im2Col_updateGradInput :: Tensor d -> Tensor d -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 _im2Col_updateGradInput g0 g1 = Dynamic._im2Col_updateGradInput (asDynamic g0) (asDynamic g1)
 

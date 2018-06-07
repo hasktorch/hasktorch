@@ -43,8 +43,11 @@ module Torch.Indef.Static.NN.Conv1d
   ) where
 
 import Numeric.Backprop
+import Numeric.Dimensions
 import Data.Kind (Type)
 import Data.List (intercalate)
+import Data.Singletons.Prelude (type (>), type (<))
+import Data.Singletons.TypeLits
 import System.IO.Unsafe
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
@@ -55,10 +58,18 @@ import Torch.Indef.Static.NN.Backprop ()
 
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
+
+-- | ADT representation of a convolutional 1d layer.
+--
+-- FIXME: the type is a bit of a hiccup: can we remove the kernel dimensions or
+-- move pad/stride into the phantoms?
+--
+-- See 'Conv2d' for ideas.
 newtype Conv1d f o kW dW
   = Conv1d { getTensors :: (Tensor '[o, f*kW], Tensor '[o]) }
 
-instance KnownDim4 f o kW dW => Show (Conv1d f o kW dW) where
+instance (KnownDim f, KnownDim o, KnownDim kW, KnownDim dW)
+  => Show (Conv1d f o kW dW) where
   show c = intercalate ","
     [ "Conv1d ("
     ++ "features: " ++ show (featureSize c)
@@ -73,15 +84,19 @@ instance (KnownDim (f*kW), KnownDim o) => Backprop (Conv1d f o kW dW) where
   one  = const . Conv1d $ (constant 1, constant 1)
   add c0 c1 = Conv1d (weights c0 + weights c1, bias c0 + bias c1)
 
+-- | get the weights from a 'Conv1d' ADT
 weights :: Conv1d f o kW dW -> Tensor '[o, f*kW]
 weights (Conv1d (w, _)) = w
 
+-- | get the bias from a 'Conv1d' ADT
 bias :: Conv1d f o kW dW -> Tensor '[o]
 bias (Conv1d (_, b)) = b
 
+-- | get the featureSize from a 'Conv1d' ADT
 featureSize :: forall f o kW dW . KnownDim f => Conv1d f o kW dW -> Int
 featureSize _ = fromIntegral (dimVal (dim :: Dim f))
 
+-- | get the outputSize from a 'Conv1d' ADT
 outputSize :: forall f o kW dW . KnownDim o => Conv1d f o kW dW -> Int
 outputSize _ = fromIntegral (dimVal (dim :: Dim o))
 
@@ -97,7 +112,7 @@ stepSize _ = fromIntegral (dimVal (dim :: Dim dW))
 
 -- | Type constraints required for temporal convolution
 type TemporalConvC s f kW dW o =
-  ( KnownDim5 s f kW dW o
+  ( All KnownDim '[s,f,kW,dW,o]
   , (s > kW) ~ 'True
   , (kW > 0) ~ 'True
   , (dW > 0) ~ 'True
@@ -134,8 +149,8 @@ _conv1d
   -- :: forall s seq f kW dW o d d'
   :: Reifies s W
   => KnownDim (f*kW)
-  => KnownDim4 f o kW dW
-  => Dimensions2 d d'
+  => All KnownDim '[f,kW,dW,o]
+  => All Dimensions '[d,d']
   => Double
   -> BVar s (Conv1d f o kW dW)
   -> BVar s (Tensor d)
@@ -226,7 +241,7 @@ conv1d_updGradParamsBatch = _conv1d_updGradParams
 -- * helper functions
 
 -- | forward pass without locking down the tensor dimensions
-_conv1d_forward :: (KnownDim4 f o kW dW) => Conv1d f o kW dW -> Tensor d -> IO (Tensor d')
+_conv1d_forward :: All KnownDim '[f,kW,dW,o] => Conv1d f o kW dW -> Tensor d -> IO (Tensor d')
 _conv1d_forward conv inp = do
   out <- empty
   Dynamic._temporalConvolution_updateOutput
@@ -239,8 +254,8 @@ _conv1d_forward conv inp = do
 -- | backward pass, computing the gradient input, without locking down the tensor dimensions
 _conv1d_backwardGradInput
   :: forall f o kW dW inputDim goutDim
-  . (KnownDim4 f o kW dW)
-  => Dimensions2 inputDim goutDim
+  .  All KnownDim '[f,kW,dW,o]
+  => All Dimensions '[inputDim,goutDim]
   => Conv1d f o kW dW
   -> Tensor inputDim
   -> Tensor goutDim
@@ -256,7 +271,8 @@ _conv1d_backwardGradInput conv input gradOut = do
 -- | backward pass, computing the weight updates, without locking down the tensor dimensions
 _conv1d_updGradParams
   :: forall f o kW dW inputDim gOutDim
-  . (KnownDim4 f o kW dW, Dimensions2 inputDim gOutDim)
+  .  All KnownDim '[f,kW,dW,o]
+  => All Dimensions '[inputDim,gOutDim]
   => Conv1d f o kW dW       -- ^ input state of conv1d (which includes weights and bias)
   -> Tensor inputDim        -- ^ input tensor
   -> Tensor gOutDim         -- ^ output gradient
@@ -273,15 +289,15 @@ _conv1d_updGradParams c@(Conv1d (w, b)) input gout scale = do
 
 -- ========================================================================= --
 
--- | TODO
+-- |  temporalRowConvolution forward pass (updates the output tensor)
 _temporalRowConvolution_updateOutput :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d -> Tensor d -> Int -> Int -> Int -> Bool -> IO ()
 _temporalRowConvolution_updateOutput t0 t1 t2 t3 t4 t5 = Dynamic._temporalRowConvolution_updateOutput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4) (asDynamic t5)
 
--- | TODO
+-- |  temporalRowConvolution backward-update (updates the layer and bias tensors)
 _temporalRowConvolution_updateGradInput :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d -> Tensor d -> Int -> Int -> Int -> Bool -> IO ()
 _temporalRowConvolution_updateGradInput t0 t1 t2 t3 t4 t5 = Dynamic._temporalRowConvolution_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4) (asDynamic t5)
 
--- | TODO
+-- |  temporalRowConvolution backward-update (updates the layer and bias tensors). Called 'accGradParameters' in C to indicate accumulating the gradient parameters.
 _temporalRowConvolution_updGradParameters :: Tensor d -> Tensor d' -> Tensor d'' -> Tensor d''' -> Tensor d -> Tensor d -> Int -> Int -> Int -> Bool -> Double -> IO ()
 _temporalRowConvolution_updGradParameters t0 t1 t2 t3 t4 t5 = Dynamic._temporalRowConvolution_accGradParameters (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3) (asDynamic t4) (asDynamic t5)
 

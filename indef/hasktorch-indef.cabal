@@ -127,18 +127,18 @@ library
 
     , Torch.Indef.Static.Tensor.Math.Pointwise.Signed
 
-    -- , Torch.Indef.Static.NN
-    -- , Torch.Indef.Static.NN.Activation
-    -- , Torch.Indef.Static.NN.Backprop
-    -- , Torch.Indef.Static.NN.Conv1d
-    -- , Torch.Indef.Static.NN.Conv2d
-    -- -- , Torch.Indef.Static.NN.Conv3d
-    -- , Torch.Indef.Static.NN.Criterion
-    -- , Torch.Indef.Static.NN.Layers
-    -- , Torch.Indef.Static.NN.Math
-    -- , Torch.Indef.Static.NN.Padding
-    -- , Torch.Indef.Static.NN.Pooling
-    -- , Torch.Indef.Static.NN.Sampling
+    , Torch.Indef.Static.NN
+    , Torch.Indef.Static.NN.Activation
+    , Torch.Indef.Static.NN.Backprop
+    , Torch.Indef.Static.NN.Conv1d
+    , Torch.Indef.Static.NN.Conv2d
+    -- , Torch.Indef.Static.NN.Conv3d
+    , Torch.Indef.Static.NN.Criterion
+    , Torch.Indef.Static.NN.Layers
+    , Torch.Indef.Static.NN.Math
+    , Torch.Indef.Static.NN.Padding
+    , Torch.Indef.Static.NN.Pooling
+    , Torch.Indef.Static.NN.Sampling
     , Torch.Indef.Static.Tensor.Math.Blas
     , Torch.Indef.Static.Tensor.Math.Floating
     , Torch.Indef.Static.Tensor.Math.Lapack
