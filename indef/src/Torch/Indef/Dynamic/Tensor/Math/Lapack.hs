@@ -308,6 +308,7 @@ gesv_ (x, lu) b a =
 -- On return, first @n@ rows of @x@ matrix contains the solution and the rest
 -- contains residual information. Square root of sum squares of elements of each
 -- column of @x@ starting at row @n + 1@ is the residual for corresponding column.
+gels :: Dynamic -> Dynamic -> IO (Dynamic, Dynamic)
 gels b a = (,) <$> empty <*> empty >>= \ret -> gels_ ret b a >> pure ret
 
 -- | Inplace version of 'gels'.

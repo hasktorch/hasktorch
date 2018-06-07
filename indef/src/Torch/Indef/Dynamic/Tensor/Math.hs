@@ -205,8 +205,8 @@ _diag t0 t1 i0 = with2DynamicState t0 t1 $ \s' t0' t1' -> Sig.c_diag s' t0' t1' 
 -- | mutates the tensor inplace and replaces it with the given k-th diagonal,
 -- where k=0 is the main diagonal, k>0 is above the main diagonal, and k<0 is
 -- below the main diagonal.
-diag_ :: Dynamic -> Int -> IO Dynamic
-diag_ t d = _diag t t d >> pure t
+diag_ :: Dynamic -> Int -> IO ()
+diag_ t d = _diag t t d
 
 -- | returns the k-th diagonal of the input tensor, where k=0 is the main diagonal,
 -- k>0 is above the main diagonal, and k<0 is below the main diagonal.

@@ -1,7 +1,8 @@
 module Torch.Indef.Static.NN.Backprop where
 
 import Numeric.Backprop
-import System.IO.Unsafe
+import Numeric.Dimensions
+
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Pointwise.Signed ()

@@ -72,19 +72,19 @@ _std r t a b c = with2DynamicState r t $ \s' r' t' ->
 -- | Get the variance over a tensor in the specified dimension. The 'Bool'
 -- parameter specifies whether the standard deviation should be used with
 -- @n-1@ or @n@. 'False' normalizes by @n-1@, while 'True' normalizes @n@.
-var :: Dynamic -> Int -> Int -> Int -> IO Dynamic
+var :: Dynamic -> DimVal -> KeepDim -> Bool -> IO Dynamic
 var t a b c = do
   r <- empty
   _var r t a b c
   pure r
 
 -- | Infix version of 'var'.
-var_ :: Dynamic -> Int -> Int -> Int -> IO ()
+var_ :: Dynamic -> DimVal -> KeepDim -> Bool -> IO ()
 var_ t = _var t t
 
 -- | C-style function of 'var' and 'var_'. Should not be exported.
-_var :: Dynamic -> Dynamic -> Int -> Int -> Int -> IO ()
-_var r t a b c = with2DynamicState r t $ \s' r' t' -> Sig.c_var s' r' t' (fromIntegral a) (fromIntegral b) (fromIntegral c)
+_var :: Dynamic -> Dynamic -> DimVal -> KeepDim -> Bool -> IO ()
+_var r t a b c = with2DynamicState r t $ \s' r' t' -> Sig.c_var s' r' t' (fromIntegral a) (fromIntegral $ fromEnum b) (fromIntegral $ fromEnum c)
 
 -- | Return the @p@-norms of the tensor, computed over dimension @dim@.
 norm :: Dynamic -> HsReal -> DimVal -> IO Dynamic

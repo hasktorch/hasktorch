@@ -1,148 +1,130 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Static.Tensor.Math.Pointwise.Floating
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+-------------------------------------------------------------------------------
 module Torch.Indef.Static.Tensor.Math.Pointwise.Floating where
 
+import Numeric.Dimensions
 import GHC.Int
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating as Dynamic
 
 import Torch.Indef.Types
 
-_cinv a b = Dynamic._cinv (asDynamic a) (asDynamic b)
-_sigmoid a b = Dynamic._sigmoid (asDynamic a) (asDynamic b)
-_log a b = Dynamic._log (asDynamic a) (asDynamic b)
-_lgamma a b = Dynamic._lgamma (asDynamic a) (asDynamic b)
-_log1p a b = Dynamic._log1p (asDynamic a) (asDynamic b)
-_exp a b = Dynamic._exp (asDynamic a) (asDynamic b)
-_cos a b = Dynamic._cos (asDynamic a) (asDynamic b)
-_acos a b = Dynamic._acos (asDynamic a) (asDynamic b)
-_cosh a b = Dynamic._cosh (asDynamic a) (asDynamic b)
-_sin a b = Dynamic._sin (asDynamic a) (asDynamic b)
-_asin a b = Dynamic._asin (asDynamic a) (asDynamic b)
-_sinh a b = Dynamic._sinh (asDynamic a) (asDynamic b)
-_tan a b = Dynamic._tan (asDynamic a) (asDynamic b)
-_atan a b = Dynamic._atan (asDynamic a) (asDynamic b)
-_tanh a b = Dynamic._tanh (asDynamic a) (asDynamic b)
-_erf a b = Dynamic._erf (asDynamic a) (asDynamic b)
-_erfinv a b = Dynamic._erfinv (asDynamic a) (asDynamic b)
-_sqrt a b = Dynamic._sqrt (asDynamic a) (asDynamic b)
-_rsqrt a b = Dynamic._rsqrt (asDynamic a) (asDynamic b)
-_ceil a b = Dynamic._ceil (asDynamic a) (asDynamic b)
-_floor a b = Dynamic._floor (asDynamic a) (asDynamic b)
-_round a b = Dynamic._round (asDynamic a) (asDynamic b)
-_trunc a b = Dynamic._trunc (asDynamic a) (asDynamic b)
-_frac a b = Dynamic._frac (asDynamic a) (asDynamic b)
-_pow a b = Dynamic._pow (asDynamic a) (asDynamic b)
-_tpow a v b = Dynamic._tpow (asDynamic a) v (asDynamic b)
-_atan2 a b c = Dynamic._atan2 (asDynamic a) (asDynamic b) (asDynamic c)
-_lerp a b c = Dynamic._lerp (asDynamic a) (asDynamic b) (asDynamic c)
+-- | Static version of 'Dynamic.cinv'
+cinv :: (Dimensions d) => Tensor d -> IO (Tensor d)
+cinv t = asStatic <$> Dynamic.cinv (asDynamic t)
 
-cinv_, cinv :: (Dimensions d) => Tensor d -> IO (Tensor d)
-cinv_ t = withInplace t _cinv
-cinv  t = withEmpty $ \r -> _cinv r t
+-- | Static version of 'Dynamic.sigmoid'
+sigmoid :: (Dimensions d) => Tensor d -> IO (Tensor d)
+sigmoid  t = asStatic <$> Dynamic.sigmoid (asDynamic t)
 
-sigmoid_, sigmoid :: (Dimensions d) => Tensor d -> IO (Tensor d)
-sigmoid_ t = withInplace t _sigmoid
-sigmoid  t = withEmpty $ \r -> _sigmoid r t
+-- | Static version of 'Dynamic.log'
+log :: (Dimensions d) => Tensor d -> IO (Tensor d)
+log  t = asStatic <$> Dynamic.log (asDynamic t)
 
-log_, log :: (Dimensions d) => Tensor d -> IO (Tensor d)
-log_ t = withInplace t _log
-log  t = withEmpty $ \r -> _log r t
+-- | Static version of 'Dynamic.lgamma'
+lgamma :: (Dimensions d) => Tensor d -> IO (Tensor d)
+lgamma  t = asStatic <$> Dynamic.lgamma (asDynamic t)
 
-lgamma_, lgamma :: (Dimensions d) => Tensor d -> IO (Tensor d)
-lgamma_ t = withInplace t _lgamma
-lgamma  t = withEmpty $ \r -> _lgamma r t
+-- | Static version of 'Dynamic.log1p'
+log1p :: (Dimensions d) => Tensor d -> IO (Tensor d)
+log1p  t = asStatic <$> Dynamic.log1p (asDynamic t)
 
-log1p_, log1p :: (Dimensions d) => Tensor d -> IO (Tensor d)
-log1p_ t = withInplace t _log1p
-log1p  t = withEmpty $ \r -> _log1p r t
+-- | Static version of 'Dynamic.exp'
+exp :: (Dimensions d) => Tensor d -> IO (Tensor d)
+exp  t = asStatic <$> Dynamic.exp (asDynamic t)
 
-exp_, exp :: (Dimensions d) => Tensor d -> IO (Tensor d)
-exp_ t = withInplace t _exp
-exp  t = withEmpty $ \r -> _exp r t
+-- | Static version of 'Dynamic.cos'
+cos :: (Dimensions d) => Tensor d -> IO (Tensor d)
+cos  t = asStatic <$> Dynamic.cos (asDynamic t)
 
-cos_, cos :: (Dimensions d) => Tensor d -> IO (Tensor d)
-cos_ t = withInplace t _cos
-cos  t = withEmpty $ \r -> _cos r t
+-- | Static version of 'Dynamic.acos'
+acos :: (Dimensions d) => Tensor d -> IO (Tensor d)
+acos  t = asStatic <$> Dynamic.acos (asDynamic t)
 
-acos_, acos :: (Dimensions d) => Tensor d -> IO (Tensor d)
-acos_ t = withInplace t _acos
-acos  t = withEmpty $ \r -> _acos r t
+-- | Static version of 'Dynamic.cosh'
+cosh :: (Dimensions d) => Tensor d -> IO (Tensor d)
+cosh  t = asStatic <$> Dynamic.cosh (asDynamic t)
 
-cosh_, cosh :: (Dimensions d) => Tensor d -> IO (Tensor d)
-cosh_ t = withInplace t _cosh
-cosh  t = withEmpty $ \r -> _cosh r t
+-- | Static version of 'Dynamic.sin'
+sin :: (Dimensions d) => Tensor d -> IO (Tensor d)
+sin  t = asStatic <$> Dynamic.sin (asDynamic t)
 
-sin_, sin :: (Dimensions d) => Tensor d -> IO (Tensor d)
-sin_ t = withInplace t _sin
-sin  t = withEmpty $ \r -> _sin r t
+-- | Static version of 'Dynamic.asin'
+asin :: (Dimensions d) => Tensor d -> IO (Tensor d)
+asin  t = asStatic <$> Dynamic.asin (asDynamic t)
 
-asin_, asin :: (Dimensions d) => Tensor d -> IO (Tensor d)
-asin_ t = withInplace t _asin
-asin  t = withEmpty $ \r -> _asin r t
+-- | Static version of 'Dynamic.sinh'
+sinh :: (Dimensions d) => Tensor d -> IO (Tensor d)
+sinh  t = asStatic <$> Dynamic.sinh (asDynamic t)
 
-sinh_, sinh :: (Dimensions d) => Tensor d -> IO (Tensor d)
-sinh_ t = withInplace t _sinh
-sinh  t = withEmpty $ \r -> _sinh r t
+-- | Static version of 'Dynamic.tan'
+tan :: (Dimensions d) => Tensor d -> IO (Tensor d)
+tan  t = asStatic <$> Dynamic.tan (asDynamic t)
 
-tan_, tan :: (Dimensions d) => Tensor d -> IO (Tensor d)
-tan_ t = withInplace t _tan
-tan  t = withEmpty $ \r -> _tan r t
+-- | Static version of 'Dynamic.atan'
+atan :: (Dimensions d) => Tensor d -> IO (Tensor d)
+atan  t = asStatic <$> Dynamic.atan (asDynamic t)
 
-atan_, atan :: (Dimensions d) => Tensor d -> IO (Tensor d)
-atan_ t = withInplace t _atan
-atan  t = withEmpty $ \r -> _atan r t
+-- | Static version of 'Dynamic.tanh'
+tanh :: (Dimensions d) => Tensor d -> IO (Tensor d)
+tanh  t = asStatic <$> Dynamic.tanh (asDynamic t)
 
-tanh_, tanh :: (Dimensions d) => Tensor d -> IO (Tensor d)
-tanh_ t = withInplace t _tanh
-tanh  t = withEmpty $ \r -> _tanh r t
+-- | Static version of 'Dynamic.erf'
+erf :: (Dimensions d) => Tensor d -> IO (Tensor d)
+erf  t = asStatic <$> Dynamic.erf (asDynamic t)
 
-erf_, erf :: (Dimensions d) => Tensor d -> IO (Tensor d)
-erf_ t = withInplace t _erf
-erf  t = withEmpty $ \r -> _erf r t
+-- | Static version of 'Dynamic.erfinv'
+erfinv :: (Dimensions d) => Tensor d -> IO (Tensor d)
+erfinv  t = asStatic <$> Dynamic.erfinv (asDynamic t)
 
-erfinv_, erfinv :: (Dimensions d) => Tensor d -> IO (Tensor d)
-erfinv_ t = withInplace t _erfinv
-erfinv  t = withEmpty $ \r -> _erfinv r t
+-- | Static version of 'Dynamic.pow'
+pow :: (Dimensions d) => Tensor d -> HsReal -> IO (Tensor d)
+pow  t v = asStatic <$> Dynamic.pow (asDynamic t) v
 
-pow_, pow :: (Dimensions d) => Tensor d -> HsReal -> IO (Tensor d)
-pow_ t v = withInplace t  $ \r t' -> _pow r t' v
-pow  t v = withEmpty $ \r -> _pow r t v
+-- | Static version of 'Dynamic.tpow'
+tpow :: (Dimensions d) => HsReal -> Tensor d -> IO (Tensor d)
+tpow v t = asStatic <$> Dynamic.tpow v (asDynamic t)
 
-tpow_, tpow :: (Dimensions d) => HsReal -> Tensor d -> IO (Tensor d)
-tpow_ v t = withInplace t $ \r t' -> _tpow r v t'
-tpow  v t = withEmpty $ \r -> _tpow r v t
+-- | Static version of 'Dynamic.sqrt'
+sqrt :: (Dimensions d) => Tensor d -> IO (Tensor d)
+sqrt  t = asStatic <$> Dynamic.sqrt (asDynamic t)
 
-sqrt_, sqrt :: (Dimensions d) => Tensor d -> IO (Tensor d)
-sqrt_ t = withInplace t _sqrt
-sqrt  t = withEmpty $ \r -> _sqrt r t
+-- | Static version of 'Dynamic.rsqrt'
+rsqrt :: (Dimensions d) => Tensor d -> IO (Tensor d)
+rsqrt  t = asStatic <$> Dynamic.rsqrt (asDynamic t)
 
-rsqrt_, rsqrt :: (Dimensions d) => Tensor d -> IO (Tensor d)
-rsqrt_ t = withInplace t _rsqrt
-rsqrt  t = withEmpty $ \r -> _rsqrt r t
+-- | Static version of 'Dynamic.ceil'
+ceil :: (Dimensions d) => Tensor d -> IO (Tensor d)
+ceil  t = asStatic <$> Dynamic.ceil (asDynamic t)
 
-ceil_, ceil :: (Dimensions d) => Tensor d -> IO (Tensor d)
-ceil_ t = withInplace t _ceil
-ceil  t = withEmpty $ \r -> _ceil r t
+-- | Static version of 'Dynamic.floor'
+floor :: (Dimensions d) => Tensor d -> IO (Tensor d)
+floor  t = asStatic <$> Dynamic.floor (asDynamic t)
 
-floor_, floor :: (Dimensions d) => Tensor d -> IO (Tensor d)
-floor_ t = withInplace t _floor
-floor  t = withEmpty $ \r -> _floor r t
+-- | Static version of 'Dynamic.round'
+round :: (Dimensions d) => Tensor d -> IO (Tensor d)
+round  t = asStatic <$> Dynamic.round (asDynamic t)
 
-round_, round :: (Dimensions d) => Tensor d -> IO (Tensor d)
-round_ t = withInplace t _round
-round  t = withEmpty $ \r -> _round r t
+-- | Static version of 'Dynamic.trunc'
+trunc :: (Dimensions d) => Tensor d -> IO (Tensor d)
+trunc  t = asStatic <$> Dynamic.trunc (asDynamic t)
 
-trunc_, trunc :: (Dimensions d) => Tensor d -> IO (Tensor d)
-trunc_ t = withInplace t _trunc
-trunc  t = withEmpty $ \r -> _trunc r t
+-- | Static version of 'Dynamic.frac'
+frac :: (Dimensions d) => Tensor d -> IO (Tensor d)
+frac  t = asStatic <$> Dynamic.frac (asDynamic t)
 
-frac_, frac :: (Dimensions d) => Tensor d -> IO (Tensor d)
-frac_ t = withInplace t _frac
-frac  t = withEmpty $ \r -> _frac r t
+-- | Static version of 'Dynamic.lerp'
+lerp :: (All Dimensions '[d, d', d'']) => Tensor d -> Tensor d' -> HsReal -> IO (Tensor d'')
+lerp a b v = asStatic <$> Dynamic.lerp (asDynamic a) (asDynamic b) v
 
-lerp_, lerp :: (Dimensions3 d d' d'') => Tensor d -> Tensor d' -> HsReal -> IO (Tensor d'')
-lerp_ a b v = _lerp a a b v >> pure (asStatic (asDynamic a))
-lerp  a b v = withEmpty $ \r -> _lerp r a b v
+-- | Static version of 'Dynamic.atan2'
+atan2 :: (All Dimensions '[d, d', d'']) => Tensor d -> Tensor d' -> IO (Tensor d'')
+atan2 a b = asStatic <$> Dynamic.atan2 (asDynamic a) (asDynamic b)
 
-atan2_, atan2 :: (Dimensions3 d d' d'') => Tensor d -> Tensor d' -> IO (Tensor d'')
-atan2_ a b = _atan2 a a b >> pure (asStatic (asDynamic a))
-atan2  a b = withEmpty $ \r -> _atan2 r a b

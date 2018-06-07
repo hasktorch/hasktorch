@@ -1,3 +1,12 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Static.Tensor.Math.Pointwise.Signed
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+-------------------------------------------------------------------------------
 module Torch.Indef.Static.Tensor.Math.Pointwise.Signed where
 
 import Torch.Indef.Types
@@ -6,17 +15,24 @@ import Torch.Indef.Static.Tensor.Math (constant)
 import Torch.Indef.Static.Tensor.Math.Pointwise (sign, (^*^), (^-^), (^+^))
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Dynamic
 
+import Numeric.Dimensions
 import System.IO.Unsafe
 
-_abs :: Tensor d -> Tensor d -> IO ()
-_abs r t = Dynamic._abs (asDynamic r) (asDynamic t)
+-- | Static call to 'Dynamic.abs_'
+abs_ :: Tensor d -> IO ()
+abs_ t = Dynamic.abs_ (asDynamic t)
 
-_neg :: Tensor d -> Tensor d -> IO ()
-_neg r t = Dynamic._neg (asDynamic r) (asDynamic t)
+-- | Static call to 'Dynamic.neg_'
+neg_ :: Tensor d -> IO ()
+neg_ t = Dynamic.neg_ (asDynamic t)
 
-neg, abs :: (Dimensions d) => Tensor d -> IO (Tensor d)
-neg t = withEmpty (`_neg` t)
-abs t = withEmpty (`_abs` t)
+-- | Static call to 'Dynamic.neg'
+neg :: Dimensions d => Tensor d -> IO (Tensor d)
+neg t = asStatic <$> Dynamic.neg (asDynamic t)
+
+-- | Static call to 'Dynamic.abs'
+abs :: Dimensions d => Tensor d -> IO (Tensor d)
+abs t = asStatic <$> Dynamic.abs (asDynamic t)
 
 
 instance Dimensions d => Num (Tensor d) where
