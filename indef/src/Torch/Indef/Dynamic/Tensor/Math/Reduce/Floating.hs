@@ -36,12 +36,8 @@ mean t d = do
 mean_ :: Dynamic -> DimVal -> IO ()
 mean_ t = _meanKeepDims t t
 
--- | '_mean' with defaulted 'KeepDim'.
---
--- Torch, with lua, doesn't document what keepdims does (and defaults the param
--- to "True"). That said, hasktorch devs fully allow users to shoot themselves
--- in the foot -- it's a big library with a lot of optimizations -- so users can
--- still use '_mean' directly.
+-- | '_mean' with defaulted 'KeepDim' as 'True' indicating that the result
+-- tensor will be 'squeeze1d' in the specified dimension.
 _meanKeepDims :: Dynamic -> Dynamic -> DimVal -> IO ()
 _meanKeepDims r t d = _mean r t d keep
 
@@ -73,12 +69,16 @@ _std :: Dynamic -> Dynamic -> DimVal -> KeepDim -> Bool -> IO ()
 _std r t a b c = with2DynamicState r t $ \s' r' t' ->
   Sig.c_std s' r' t' (fromIntegral a) (fromIntegral $ fromEnum b) (toEnum $ fromEnum c)
 
+-- | Get the variance over a tensor in the specified dimension. The 'Bool'
+-- parameter specifies whether the standard deviation should be used with
+-- @n-1@ or @n@. 'False' normalizes by @n-1@, while 'True' normalizes @n@.
 var :: Dynamic -> Int -> Int -> Int -> IO Dynamic
 var t a b c = do
   r <- empty
   _var r t a b c
   pure r
 
+-- | Infix version of 'var'.
 var_ :: Dynamic -> Int -> Int -> Int -> IO ()
 var_ t = _var t t
 
@@ -86,18 +86,25 @@ var_ t = _var t t
 _var :: Dynamic -> Dynamic -> Int -> Int -> Int -> IO ()
 _var r t a b c = with2DynamicState r t $ \s' r' t' -> Sig.c_var s' r' t' (fromIntegral a) (fromIntegral b) (fromIntegral c)
 
-norm :: Dynamic -> HsReal -> Int -> Int -> IO Dynamic
-norm t v a b = do
+-- | Return the @p@-norms of the tensor, computed over dimension @dim@.
+norm :: Dynamic -> HsReal -> DimVal -> IO Dynamic
+norm t p d = do
   r <- empty
-  _norm r t v a b
+  _normKeepDims r t p d
   pure r
 
-norm_ :: Dynamic -> HsReal -> Int -> Int -> IO ()
-norm_ t = _norm t t
+-- | Inplace version of 'norm'
+norm_ :: Dynamic -> HsReal -> DimVal -> IO ()
+norm_ t = _normKeepDims t t
+
+-- | '_norm' with defaulted 'KeepDim' as 'True' indicating that the result
+-- tensor will be 'squeeze1d'd in the specified dimension.
+_normKeepDims :: Dynamic -> Dynamic -> HsReal -> DimVal -> IO ()
+_normKeepDims r t p d = _norm r t p d keep
 
 -- | C-style function of 'norm' and 'norm_'. Should not be exported.
-_norm :: Dynamic -> Dynamic -> HsReal -> Int -> Int -> IO ()
-_norm r t v a b = with2DynamicState r t $ \s' r' t' -> Sig.c_norm s' r' t' (hs2cReal v) (fromIntegral a) (fromIntegral b)
+_norm :: Dynamic -> Dynamic -> HsReal -> DimVal -> KeepDim -> IO ()
+_norm r t p d k = with2DynamicState r t $ \s' r' t' -> Sig.c_norm s' r' t' (hs2cReal p) (fromIntegral d) (fromIntegral $ fromEnum k)
 
 -- | Renormalizes the sub-Tensors along dimension @dim@ such that they do not
 -- exceed norm @maxnorm@.

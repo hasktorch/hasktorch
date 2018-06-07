@@ -58,8 +58,6 @@ library
       Torch.Indef.Internal
 
   exposed-modules:
-    -- classes implementations with indefinites
-
     -- FIXME: not sure where to go with commented-out classes, they are TH-only but there are some THC-only things as well
     -- , Torch.Class.Blas
     -- , Torch.Class.Lapack
@@ -105,9 +103,9 @@ library
     , Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating
     , Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating
 
-    -- -- ==================================================== --
-    -- -- Static Tensor modules
-    -- -- ==================================================== --
+    -- ==================================================== --
+    -- Static Tensor modules
+    -- ==================================================== --
     -- , Torch.Indef.Static.Tensor
     -- , Torch.Indef.Static.Tensor.Copy
     -- , Torch.Indef.Static.Tensor.Index
