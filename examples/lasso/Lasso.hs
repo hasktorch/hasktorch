@@ -8,6 +8,7 @@ module Main where
 import Data.Monoid
 import Data.Proxy
 import GHC.Natural
+import GHC.TypeLits
 import Control.Monad (void)
 import Lens.Micro ((^.), _2, _1)
 import System.IO.Unsafe
@@ -49,8 +50,10 @@ genData :: Tensor '[M, 1] -> IO (Tensor '[N, M], Tensor '[N, 1])
 genData w = do
   gen <- RNG.newRNG
   RNG.manualSeed gen seedVal
-  noise        :: Tensor '[N, 1] <- T.normal gen 0 0.10
-  predictorVal :: Tensor '[N]    <- T.normal gen 0 1.0
+  let Just p0'10 = positive 0.10
+  let Just p1'00 = positive 1.00
+  noise        :: Tensor '[N, 1] <- T.normal gen 0 p0'10
+  predictorVal :: Tensor '[N]    <- T.normal gen 0 p1'00
   let ones     :: Tensor '[N] = T.constant 1
   x :: Tensor '[N, M] <- T.resizeAs <$> (predictorVal `T.cat1d` ones)
   let y :: Tensor '[N, 1] = T.resizeAs ((x !*! w) ^+^ noise)
@@ -69,7 +72,8 @@ runSynthetic
   -> IO (Tensor '[M, 1])
 runSynthetic fn iters l = do
   gen       <- RNG.newRNG
-  trueParam <- T.normal gen 20 1
+  let Just o = positive 1
+  trueParam <- T.normal gen 20 o
   (xs, ys)  <- genData trueParam
 
   lzy <- take iters <$> fn xs ys l

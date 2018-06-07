@@ -34,9 +34,12 @@ seedVal = 31415926535
 genData :: RNG.Generator -> Tensor '[1,3] -> IO (Tensor '[3, N], Tensor '[N])
 genData gen param = do
   RNG.manualSeed gen seedVal
-  noise :: Tensor '[N] <- normal gen 0.0 2.0
-  x1    :: Tensor '[N] <- normal gen 0.0 10.0
-  x2    :: Tensor '[N] <- normal gen 0.0 10.0
+  let
+    Just pos2  = positive 2
+    Just pos10 = positive 10
+  noise :: Tensor '[N] <- normal gen 0.0 pos2
+  x1    :: Tensor '[N] <- normal gen 0.0 pos10
+  x2    :: Tensor '[N] <- normal gen 0.0 pos10
   let x0 :: Tensor '[N] = constant 1
   x     :: Tensor '[3, N] <- resizeAs <$> (cat1d x1 x2 >>= cat1d x0)
   let y :: Tensor '[N] = noise ^+^ resizeAs (transpose2d (param !*! x))

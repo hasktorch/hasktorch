@@ -8,7 +8,35 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
-module Torch.Indef.Static.Tensor.Random.TH where
+module Torch.Indef.Static.Tensor.Random.TH
+  ( _random                 , random
+  , _clampedRandom          , clampedRandom
+  , _cappedRandom           , cappedRandom
+  , _geometric              , geometric
+  , _bernoulli              , bernoulli
+  , _bernoulli_FloatTensor  , bernoulli_FloatTensor
+  , _bernoulli_DoubleTensor , bernoulli_DoubleTensor
+  , _uniform                , uniform
+  , _normal                 , normal
+  , _normal_means           , normal_means
+  , _normal_stddevs         , normal_stddevs
+  , _normal_means_stddevs   , normal_means_stddevs
+  , _exponential            , exponential
+  , _standard_gamma         , standard_gamma
+  , _cauchy                 , cauchy
+  , _logNormal              , logNormal
+  , _multinomial
+  , _multinomialAliasSetup
+  , _multinomialAliasDraw
+
+  , OpenUnit   , Dynamic.openUnit   , Dynamic.openUnitValue
+  , ClosedUnit , Dynamic.closedUnit , Dynamic.closedUnitValue
+  , Positive   , Dynamic.positive   , Dynamic.positiveValue
+  , Ord2Tuple  , Dynamic.ord2Tuple  , Dynamic.ord2TupleValues
+
+  , multivariate_normal
+  ) where
+
 
 import Numeric.Dimensions
 import Control.Monad

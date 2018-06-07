@@ -44,6 +44,7 @@ module Torch.Indef.Dynamic.Tensor.Random.TH
 
 import GHC.Word
 import Numeric.Dimensions
+import Control.Monad.Managed (runManaged)
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor

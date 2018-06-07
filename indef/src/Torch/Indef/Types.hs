@@ -41,14 +41,14 @@ import Foreign as X (ForeignPtr, newForeignPtrEnv, withForeignPtr, newForeignPtr
 import Foreign.C.Types
 import Foreign.Ptr as X
 import GHC.Int (Int64(..), Int32(..))
-import Control.Monad.Managed as X
+import Control.Monad.Managed --  as X
 import Numeric.Dimensions
 import qualified Foreign.Marshal.Array as FM
 
 import Control.Arrow
 import Control.Monad
-import Control.Monad.IO.Class as X
-import Control.Monad.Reader.Class as X
+import Control.Monad.IO.Class --  as X
+import Control.Monad.Reader.Class -- as X
 import Torch.Types.TH (C'THState)
 import GHC.TypeLits
 

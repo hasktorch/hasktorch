@@ -13,6 +13,8 @@
 -------------------------------------------------------------------------------
 module Torch.Indef.Dynamic.Tensor.Random.THC where
 
+import Control.Monad.Managed (runManaged)
+
 import Torch.Indef.Types
 import qualified Torch.Sig.Tensor.Random.THC as Sig
 import qualified Torch.Sig.Types as Sig

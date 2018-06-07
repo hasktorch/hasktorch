@@ -10,16 +10,12 @@ module LeNet where
 
 import Data.Function ((&))
 import GHC.Generics
-import GHC.Natural
 import Numeric.Backprop
 import Prelude as P
+import Data.Singletons.Prelude hiding (type (*), All)
 
 import Torch.Double as Torch
-import qualified ReLU
-import qualified Torch.Long as Ix
 import qualified Torch.Double.NN.Conv2d     as NN
-import qualified Torch.Double.NN.Layers     as NN
-import qualified Torch.Double.NN.Activation as NN
 import Lens.Micro.TH
 
 data LeNet = LeNet
@@ -137,11 +133,11 @@ type DPad  = 0
 -- it's a little trickier to fold these back into their respective NN modules.
 
 -- | initialize a new linear layer
-newLinear :: forall o i . KnownDim2 i o => IO (Linear i o)
+newLinear :: forall o i . All KnownDim '[i,o] => IO (Linear i o)
 newLinear = fmap Linear . newLayerWithBias $ dimVal (dim :: Dim i)
 
 -- | initialize a new conv2d layer
-newConv2d :: forall o i kH kW . KnownDim4 i o kH kW => IO (Conv2d i o kH kW)
+newConv2d :: forall o i kH kW . All KnownDim '[i,o,kH,kW] => IO (Conv2d i o kH kW)
 newConv2d = fmap Conv2d . newLayerWithBias $
   dimVal (dim :: Dim i) * dimVal (dim :: Dim kH) * dimVal (dim :: Dim kW)
 
@@ -156,12 +152,13 @@ newLayerWithBias n = do
 -}
 
 -- | uniform random initialization
-newLayerWithBias :: Dimensions2 d d' => Word -> IO (Tensor d, Tensor d')
+newLayerWithBias :: All Dimensions '[d,d'] => Word -> IO (Tensor d, Tensor d')
 newLayerWithBias n = do
   g <- newRNG
+  let Just pair = ord2Tuple (-stdv, stdv)
   manualSeed g 10
-  (,) <$> uniform g (-stdv) stdv
-      <*> uniform g (-stdv) stdv
+  (,) <$> uniform g pair
+      <*> uniform g pair
   where
     stdv :: Double
     stdv = 1 / P.sqrt (fromIntegral n)

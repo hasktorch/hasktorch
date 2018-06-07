@@ -1,11 +1,11 @@
 module Main where
 
-import qualified Conv1d
-import qualified Conv2d
-import qualified ReLU
-import qualified MaxPooling
-import qualified LeNet
-import qualified DataLoader
+-- import qualified Conv1d
+-- import qualified Conv2d
+-- import qualified ReLU
+-- import qualified MaxPooling
+-- import qualified LeNet
+-- import qualified DataLoader
 import qualified Train
 
 main :: IO ()

@@ -3,6 +3,7 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 module Main where
 
+import Numeric.Dimensions
 import Torch.Double.Dynamic hiding (DoubleTensor)
 
 type DoubleTensor = DoubleDynamic
@@ -35,17 +36,24 @@ dispN (w :~ n') = putStrLn "Current Layer ::::\n" >> dispW w >> dispN n'
 randomWeights :: Word -> Word -> IO Weights
 randomWeights i o = do
   gen <- newRNG
-  let d1 = someDimsVal [fromIntegral o]
-  let d2 = someDimsVal [fromIntegral o, fromIntegral i]
-  b <- uniform' d1 gen (-1) 1
-  w <- uniform' d2 gen (-1) 1
+  let
+    d1 = someDimsVal [fromIntegral o]
+    d2 = someDimsVal [fromIntegral o, fromIntegral i]
+    Just bounds = ord2Tuple (-1, 1)
+  b <- uniform' d1 gen bounds
+  w <- uniform' d2 gen bounds
   pure W { biases = b, nodes = w }
+
+uniform' :: SomeDims -> Generator -> Ord2Tuple Double -> IO DoubleDynamic
+uniform' (SomeDims d) = uniform d
 
 randomData :: Word -> IO DoubleTensor
 randomData i = do
   gen <- newRNG
-  let someD1 = someDimsVal [fromIntegral i]
-  uniform' someD1 gen (-1.0) (1.0)
+  let
+    someD1 = someDimsVal [fromIntegral i]
+    Just bounds = ord2Tuple (-1, 1)
+  uniform' someD1 gen bounds
 
 randomNet :: Word -> [Word] -> Word -> IO Network
 randomNet i [] o = O <$> randomWeights i o

@@ -34,6 +34,8 @@ executable ad
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
+    , singletons
+    , dimensions
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -76,6 +78,7 @@ executable ff-typed
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
+    , dimensions
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -88,6 +91,8 @@ executable ff-untyped
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
+    , dimensions
+    , singletons
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -101,6 +106,8 @@ executable gradient-descent
       base >=4.7 && <5
     , hasktorch-core
     , microlens >=0.4.8.1
+    , dimensions
+    , singletons
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -147,6 +154,7 @@ executable convolutions
   build-depends:
       base >=4.7 && <5
     , backprop >= 0.2
+    , dimensions
     , directory
     , filepath
     , ghc-typelits-natnormalise
@@ -156,7 +164,6 @@ executable convolutions
     , microlens-th
     , mtl
     , monad-loops
-    -- , opto
     , singletons
     , time
     , transformers

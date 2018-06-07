@@ -17,6 +17,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Random.TH
   , _randperm
   ) where
 
+import Control.Monad.Managed (runManaged)
 import Torch.Indef.Types
 import qualified Torch.Types.TH as TH
 import qualified Torch.Sig.Types as Sig

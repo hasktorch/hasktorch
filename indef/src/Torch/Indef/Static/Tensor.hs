@@ -304,9 +304,10 @@ setDim_ t d v = case fromIntegral <$> listDims d of
   [x, y, z, q] -> _set4d t x y z q v
   _            -> throwGT4 "set"
 
--- 
--- setDim'_ :: Tensor d -> SomeDims -> HsReal -> IO ()
--- setDim'_ t (SomeDims d) = setDim_ t d -- (d :: Dims d')
+
+-- | runtime version of 'setDim_'
+setDim'_ :: Tensor d -> SomeDims -> HsReal -> IO ()
+setDim'_ t (SomeDims d) = setDim_ t d -- (d :: Dims d')
 
 -- | get the value of a tensor at the given index
 --

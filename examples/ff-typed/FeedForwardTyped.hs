@@ -4,9 +4,10 @@
 {-# LANGUAGE LambdaCase          #-}
 module Main where
 
-import Torch.Double
+import Numeric.Dimensions
 import System.IO.Unsafe (unsafePerformIO)
 
+import Torch.Double
 {- Simple FF neural network, statically typed version, based on JL's example -}
 
 type SW = StaticWeights
@@ -42,17 +43,18 @@ dispN (w :~ n') = putStrLn "\nCurrent Layer ::::" >> dispW w >> dispN n'
 randomWeights :: (KnownDim i, KnownDim o) => IO (SW i o)
 randomWeights = do
   gen <- newRNG
-  b <- uniform gen (-1.0) (1.0)
-  w <- uniform gen (-1.0) (1.0)
+  let Just bs = ord2Tuple (-1, 1)
+  b <- uniform gen bs
+  w <- uniform gen bs
   pure SW { biases = b, nodes = w }
 
-randomNet :: forall i hs o. (KnownDim i, SingI hs, KnownDim o) => IO (SN i hs o)
-randomNet = go (sing :: Sing hs)
+randomNet :: forall i hs o. (Dimensions hs, KnownDim i, KnownDim o) => IO (SN i hs o)
+randomNet = go (dims :: Dims hs)
   where
-    go :: forall h hs'. KnownDim h => Sing hs' -> IO (SN h hs' o)
+    go :: forall h hs'. KnownDim h => Dims hs' -> IO (SN h hs' o)
     go = \case
-      SNil            ->    O <$> randomWeights
-      SNat `SCons` ss -> (:~) <$> randomWeights <*> go ss
+      Empty         ->    O <$> randomWeights
+      Dim `Cons` ss -> (:~) <$> randomWeights <*> go ss
 
 runLayer :: (KnownDim i, KnownDim o) => SW i o -> DoubleTensor '[i] -> IO (DoubleTensor '[o])
 runLayer sw v = pure $ addmv 1.0 wB 1.0 wN v -- v are the inputs

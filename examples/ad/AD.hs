@@ -7,6 +7,7 @@
 module Main where
 
 import Torch.Double
+import Numeric.Dimensions
 import System.IO.Unsafe (unsafePerformIO)
 
 -- Promoted layer types promoted
@@ -91,16 +92,16 @@ backProp dEds LayerRelu              = (LayerRelu, dEds ^*^ undefined)
 backProp dEds (LayerLinear w)        = (undefined , undefined)
 backProp dEds (LayerAffine (AW w b)) = (undefined , undefined)
 
-trivial' :: SingDimensions d => Tensor d -> Tensor d
+trivial' :: Dimensions d => Tensor d -> Tensor d
 trivial' t = constant 1
 
-sigmoid' :: SingDimensions d => Tensor d -> IO (Tensor d)
+sigmoid' :: Dimensions d => Tensor d -> IO (Tensor d)
 sigmoid' t = do
   s <- sigmoid t
   let o = constant 1
   pure $ (s ^*^ o) ^-^ s
 
-relu' :: SingDimensions d => Tensor d -> Tensor d
+relu' :: Dimensions d => Tensor d -> Tensor d
 relu' t = gtTensorT t (constant 0)
 
 -- forward prop, don't retain values
@@ -118,7 +119,7 @@ forwardNetwork' t = \case
      adv <- forwardNetwork' output hs
      pure (output :^~ adv)
 
-mkW :: (SingI i, KnownDim i, KnownDim o, SingI o) => IO (AW i o)
+mkW :: (KnownDim i, KnownDim o) => IO (AW i o)
 mkW = AW <$> new <*> new
 
 type NW = Network
@@ -177,7 +178,8 @@ net = li :~ l2 :~ l3 :~ l4 :~ O lo
 main :: IO ()
 main = do
   gen <- newRNG
-  t :: Tensor '[10] <- normal gen 0 5
+  let Just stdv = positive 5
+  t :: Tensor '[10] <- normal gen 0 stdv
 
   putStrLn "Input"
   print $ gtTensorT t (constant 0)
