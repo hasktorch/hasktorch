@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Float (module X) where
 
+import Numeric.Dimensions
 import Torch.Types.TH as X
 
 import Torch.Float.Types as X hiding (storage)

@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Double (module X) where
 
+import Numeric.Dimensions as X
 import Torch.Types.TH as X
 import Torch.Double.NN as X
 
