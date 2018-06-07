@@ -69,9 +69,6 @@ library
     , Torch.Core.Random
     , Torch.Core.LogAdd
 
-  reexported-modules:
-      Torch.Dimensions
-
   exposed-modules:
       Torch.Byte
     , Torch.Byte.Dynamic
@@ -749,7 +746,7 @@ library
           ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Byte.Tensor.ScatterGather
           ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Byte.Tensor.Sort
           ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Byte.Tensor.TopK
-  
+
           ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Byte.Dynamic.Tensor
           ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Copy
           ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Index
