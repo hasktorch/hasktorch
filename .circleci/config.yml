@@ -1,135 +1,151 @@
-defaults: &default
+version: 2
+
+global_defaults: &defaults
+  machine: true
   environment:
-    PATH: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:~/.cabal/bin/:/usr/local/bin:$PATH
-    LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:/usr/local/lib/:/usr/lib/x86_64-linux-gnu/
+    PATH_ADDITIONS: ~/cmake-3.10.0-Linux-x86_64/bin/:~/.local/bin/:~/.cabal/bin/:/usr/local/bin
+    LD_LIBRARY_PATH: /home/circleci/hasktorch/vendor/build/:/usr/local/lib/:/usr/lib/x86_64-linux-gnu/
     C_INCLUDE_PATH: /usr/local/include
     LLVM_CONFIG: /usr/lib/llvm-3.8/bin/llvm-config
-version: 2
+
+update_path_command: &update_path
+  run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
+
 jobs:
   build_cmake:
-    # <<: *defaults
-    machine: true
+    <<: *defaults
     steps:
-      - restore_cache:
-         keys:
-           - cmake-3.10.0-cachekey # {{ checksum "pom.xml" }}
-           - cmake- # used if checksum fails
-      - run:
-          name: get llvm and cmake
-          command: |
-            wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-            sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main"
-            sudo apt-get update --fix-missing
-            sudo apt-get install clang-4.0 lldb-4.0 --fix-missing
-            if [ ! -d ~/cmake-3.10.0-Linux-x86_64 ]; then
-              echo "No cache - building CMake"
-              cd ~ && wget --no-check-certificate --quiet https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz && tar -xvf cmake-3.10.0-Linux-x86_64.tar.gz
-            else
-              echo "Cached CMake found"
-            fi
-            which cmake
-            cmake --version
-      - save_cache:
-         key: cmake-3.10.0-cachekey
-         paths:
-           - ~/cmake-3.10.0-Linux-x86_64
-           - /usr/lib/llvm-4.0
+      # Caching is broken in Circle 2.0 at the moment.
+      # ----------------------------------------------
+      # - restore_cache:
+      #    keys:
+      #      - cmake-3.10.0-cachekey # {{ checksum "pom.xml" }}
+      #      - cmake- # used if checksum fails
+      - *update_path
+      - run: wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      - run: sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main"
+      - run: sudo apt-get update --fix-missing
+      - run: sudo apt-get install clang-4.0 lldb-4.0 --fix-missing
+      - run: wget --no-check-certificate --quiet https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz
+      - run: tar -xvf cmake-3.10.0-Linux-x86_64.tar.gz
+      - run: which cmake
+      - run: cmake --version
+
+      - store_artifacts: { path: ~/cmake-3.10.0-Linux-x86_64/bin/cmake     }
+      - store_artifacts: { path: ~/cmake-3.10.0-Linux-x86_64/bin/ctest     }
+      - store_artifacts: { path: ~/cmake-3.10.0-Linux-x86_64/bin/cmake-gui }
+      - store_artifacts: { path: ~/cmake-3.10.0-Linux-x86_64/bin/cpack     }
+      - store_artifacts: { path: ~/cmake-3.10.0-Linux-x86_64/bin/ccmake    }
+
+      # destination: artifact-file
+
+      # Caching is broken in Circle 2.0 at the moment.
+      # ----------------------------------------------
+      # - save_cache:
+      #    key: cmake-3.10.0-cachekey
+      #    paths:
+      #      - cmake-3.10.0-Linux-x86_64
+      #        # - /usr/lib/llvm-4.0
+
+  build_ghc_8_4:
+    <<: *defaults
+    working_directory: ghc-8.4.2
+    steps:
+      - *update_path
+      - run: wget --no-check-certificate --quiet https://downloads.haskell.org/~ghc/8.4.2/ghc-8.4.2-x86_64-deb8-linux.tar.xz
+      - run: tar --strip-components=1 -xf ghc-8.4.2-x86_64-deb8-linux.tar.xz
+      - run: ./configure
+      - run: sudo make install
+      # could `sudo update-alternatives` instead
+      - run: sudo ln -fs /usr/local/bin/ghc-8.4.2         /usr/local/bin/ghc
+      - run: sudo ln -fs /usr/local/bin/ghci-8.4.2        /usr/local/bin/ghci
+      - run: sudo ln -fs /usr/local/bin/ghc-pkg-8.4.2     /usr/local/bin/ghc-pkg
+      - run: sudo ln -fs /usr/local/bin/haddock-ghc-8.4.2 /usr/local/bin/haddock-ghc
+      - run: sudo ln -fs /usr/local/bin/runghc-8.4.2      /usr/local/bin/runghc
+      - run: which ghc
+      - run: ghc --version
+      - store_artifacts: { path: /usr/local/bin/ghc-8.4.2           }
+      - store_artifacts: { path: /usr/local/bin/ghci-8.4.2          }
+      - store_artifacts: { path: /usr/local/bin/ghc-pkg-8.4.2       }
+      - store_artifacts: { path: /usr/local/bin/haddock-ghc-8.4.2   }
+      - store_artifacts: { path: /usr/local/bin/runghc-8.4.2        }
 
   build_cabal_2_3:
-    # <<: *defaults
-    machine: true
+    <<: *defaults
     steps:
-      - restore_cache:
-         keys:
-           - cabal-2.3-cachekey # {{ checksum "pom.xml" }}
-           - cabal- # used if checksum fails
-      - run:
-          name: Install GHC-8.4 on this build of Ubuntu (12.04)
-          command: |
-            if [ ! -d ~/ghc-8.4.2 ]; then
-              echo "No cache - building GHC-8.4.2" ;
-              cd ~ && wget --no-check-certificate --quiet https://downloads.haskell.org/~ghc/8.4.2/ghc-8.4.2-x86_64-deb8-linux.tar.xz && tar xf ghc-8.4.2-x86_64-deb8-linux.tar.xz ;
-              cd ghc-8.4.2 ;
-              ./configure ;
-              sudo make install ;
-              # could `sudo update-alternatives` instead
-              sudo ln -fs /usr/local/bin/ghc-8.4.2         /usr/local/bin/ghc ;
-              sudo ln -fs /usr/local/bin/ghci-8.4.2        /usr/local/bin/ghci ;
-              sudo ln -fs /usr/local/bin/ghc-pkg-8.4.2     /usr/local/bin/ghc-pkg ;
-              sudo ln -fs /usr/local/bin/haddock-ghc-8.4.2 /usr/local/bin/haddock-ghc ;
-              sudo ln -fs /usr/local/bin/runghc-8.4.2      /usr/local/bin/runghc ;
-            else
-              echo "Cached ~/ghc-8.4.2 directory found" ;
-            fi
-            which ghc
-            ghc --version
-      - run:
-          name: Get cabal-install head (this will one-day break. We really just want cabal-install-2.3)
-          command: |
-            mkdir -p ~/.cabal/bin
-            if [ ! -d ~/cabal ]; then
-              echo "No cache - building cabal-install from git" ;
-              sudo apt-get install cabal-install -y ;
-              cabal update ;
-              git clone git@github.com:haskell/cabal.git ~/cabal --recursive ;
-              (cd ~/cabal && git checkout d6b829ddc77859e6b2b5d49bb249e9859b81248b) ;
-              (cd ~/cabal/Cabal;         cabal install) ;
-              (cd ~/cabal/cabal-install; cabal install) ;
-            else
-              echo "Cached ~/cabal found"
-            fi
-            which cabal
-            cabal --version
-            cabal new-update
+      # Caching is broken in Circle 2.0 at the moment.
+      # ----------------------------------------------
+      # - restore_cache:
+      #    keys:
+      #      - cabal-2.3-cachekey # {{ checksum "pom.xml" }}
+      #      - cabal- # used if checksum fails
+      - *update_path
+      - run: mkdir -p ~/.cabal/bin
+      - run: sudo apt-get update
+      - run: sudo apt-get install cabal-install -y
+      - run: which ghc
+      - run: ghc --version
+      - run: cabal update
+      - run: git clone git@github.com:haskell/cabal.git ~/cabal --recursive
+      - run: (cd ~/cabal && git checkout d6b829ddc77859e6b2b5d49bb249e9859b81248b) 
+      - run: (cd ~/cabal/Cabal;         cabal install)
+      - run: (cd ~/cabal/cabal-install; cabal install)
+      - run: which cabal
+      - run: cabal --version
+      - run: cabal new-update
       - run:
           name: Get haskell binary dependencies with cabal-install-2.3
           command: cabal install hspec-discover
-      - save_cache:
-         key: cabal-2.3-cachekey
-         paths:
-           - /home/ubuntu/.cabal
-           - /home/ubuntu/cabal
-           - /home/ubuntu/ghc-8.4.2
-           - /usr/local/bin
+
+      - store_artifacts: { path: ~/.cabal/bin/cabal          }
+      - store_artifacts: { path: ~/.cabal/bin/hspec-discover }
+
+      # Caching is broken in Circle 2.0 at the moment.
+      # ----------------------------------------------
+      # - save_cache:
+      #    key: cabal-2.3-cachekey
+      #    paths:
+      #      - /home/circleci/.cabal
+      #      - /home/circleci/cabal
+      #      - /home/circleci/ghc-8.4.2
+      #      - /usr/local/bin
   build_aten:
-    # <<: *defaults
-    machine: true
+    <<: *defaults
     steps:
-      - restore_cache:
-         keys:
-           - aten-cachekey # {{ checksum "pom.xml" }}
-           - aten- # used if checksum fails
-      - run:
-          name: Build ATen dependency
-          command: |
-            if [ ! -f ${PWD}/vendor/build/libATen.so ]; then
-              echo "No cached libATen.so - building" ;
-              sudo pip install pyyaml typing ;
-              pip install pyyaml typing ;
-              cd ./vendor ;
-              ./build-aten.sh ;
-              sudo rm /usr/local/lib/libATen.so ;
-              sudo cp /usr/local/lib/libATen.so{.1,} ;
-              sed -i -e 's/\S*-- \(extra-lib-dirs:\)/\1 \/usr\/local\/lib/'         ~/.cabal/config
-              sed -i -e 's/\S*-- \(extra-include-dirs:\)/\1 \/usr\/local\/include/' ~/.cabal/config
-              ls ${PWD}/vendor/build/
-              ls /usr/local/lib/
-            else
-              echo "Cached ${PWD}/vendor/build/libATen.so found"
-            fi
-      - save_cache:
-         key: aten-cachekey
-         paths:
-           - /home/ubuntu/hasktorch/vendor/build/
-           - /usr/local/lib/
+      # Caching is broken in Circle 2.0 at the moment.
+      # ----------------------------------------------
+      # - restore_cache:
+      #    keys:
+      #      - aten-cachekey # {{ checksum "pom.xml" }}
+      #      - aten- # used if checksum fails
+      - *update_path
+      - run: sudo pip install pyyaml typing ;
+      - run: pip install pyyaml typing ;
+      - run: cd ./vendor ;
+      - run: ./build-aten.sh ;
+      - run: sudo rm /usr/local/lib/libATen.so ;
+      - run: sudo cp /usr/local/lib/libATen.so{.1,} ;
+      # run: sed -i -e 's/\S*-- \(extra-lib-dirs:\)/\1 \/usr\/local\/lib/'         ~/.cabal/config
+      # run: sed -i -e 's/\S*-- \(extra-include-dirs:\)/\1 \/usr\/local\/include/' ~/.cabal/config
+      - run: ls ${PWD}/vendor/build/
+      - run: ls /usr/local/lib/
+      - store_artifacts: { path: /usr/local/lib/libATen.so   }
+      - store_artifacts: { path: /usr/local/lib/libATen.so.1 }
+      # Caching is broken in Circle 2.0 at the moment.
+      # ----------------------------------------------
+      # - save_cache:
+      #    key: aten-cachekey
+      #    paths:
+      #      - /home/circleci/hasktorch/vendor/build/
+      #      - /usr/local/lib/
   build_hasktorch:
-    # <<: *defaults
-    machine: true
+    <<: *defaults
     steps:
       - restore_cache:
          keys:
-           - hasktorch-cachekey # {{ checksum "pom.xml" }}
+           - hasktorch-cachekey-{{ .Branch }}
            - hasktorch- # used if checksum fails
+      - *update_path
       - run:
           name: Update git submodules
           command: git submodule update --init --recursive
@@ -142,19 +158,20 @@ jobs:
       - run: cabal new-build all
 
       - save_cache:
-         key: hasktorch-cachekey
+         key: hasktorch-cachekey-{{ .Branch }}
          paths:
-           - /home/ubuntu/hasktorch/dist-newstyle
+           - /home/circleci/hasktorch/dist-newstyle
   test:
-    machine: true
+    <<: *defaults
     steps:
+      - *update_path
       - run: cabal new-test hasktorch-raw-th
       - run: cabal new-test hasktorch-core
       - run: cabal new-test hasktorch-codegen
   run_codegen_executable:
-    # <<: *defaults
-    machine: true
+    <<: *defaults
     steps:
+      - *update_path
       - run:
           name: Hasktorch codegen binary can run on all libraries
           command: |
@@ -164,17 +181,17 @@ jobs:
               done;
             done
   run_simple_examples:
-    # <<: *defaults
-    machine: true
+    <<: *defaults
     steps:
+      - *update_path
       - run: cabal new-run hasktorch-examples:download-mnist
       - run: cabal new-run hasktorch-examples:ff-typed
       - run: cabal new-run hasktorch-examples:ff-untyped
       - run: cabal new-run hasktorch-examples:static-tensor-usage
   run_examples:
-    # <<: *defaults
-    machine: true
+    <<: *defaults
     steps:
+      - *update_path
       - run: cabal new-run hasktorch-examples:ad
       - run: cabal new-run hasktorch-examples:bayesian-regression
       - run: cabal new-run hasktorch-examples:gradient-descent
@@ -184,8 +201,11 @@ workflows:
   version: 2
   build:
     jobs:
-      - build_cabal_2_3
+      - build_ghc_8_4
       - build_cmake
+      - build_cabal_2_3:
+          requires:
+            - build_ghc_8_4
       - build_aten:
           requires:
             - build_cmake
@@ -207,8 +227,8 @@ workflows:
             - build_hasktorch
 # THIS IS FROM CIRCLE V1.0
 # cache_directories:
-#   - "/home/ubuntu/hasktorch/.stack-work"
-#   - "/home/ubuntu/.stack"
+#   - "/home/circleci/hasktorch/.stack-work"
+#   - "/home/circleci/.stack"
 # # Install stack
 # # =============
 # - mkdir -p ~/.local/bin
