@@ -1,0 +1,16 @@
+optimization: False
+executable-stripping: False
+
+extra-include-dirs:/usr/local/include/
+extra-include-dirs:/tmp/aten/include/
+extra-include-dirs:/tmp/aten/include/ATen
+extra-include-dirs:/tmp/aten/include/TH
+extra-include-dirs:/tmp/aten/include/THS
+extra-include-dirs:/tmp/aten/include/THNN
+
+extra-lib-dirs: /tmp/aten/lib/
+extra-lib-dirs: /tmp/ghc-8.4.2/lib/
+
+program-locations
+  ghc-location:     /tmp/ghc-8.4.2/bin/ghc
+  ghc-pkg-location: /tmp/ghc-8.4.2/bin/ghc-pkg

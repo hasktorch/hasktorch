@@ -27,6 +27,7 @@ test-suite spec
       QuickCheck
     , base >=4.7 && <5
     , hasktorch-core
+    , dimensions
     , hspec >=2.4.4
     , text >=1.2.2.2
   other-modules:

@@ -6,6 +6,8 @@ module MemorySpec (spec) where
 import Test.Hspec
 import Control.Exception (bracket)
 import Control.Monad (forM_)
+import Numeric.Dimensions
+
 import Torch.Double.Dynamic as Dynamic
 
 import System.Mem ()
@@ -83,7 +85,7 @@ pr t = do
 
 -- |getDim' size per allocation
 memSizeGB :: SomeDims -> Double
-memSizeGB d = fromIntegral (product' d * 8) / 1000000000.0
+memSizeGB (SomeDims d) = (fromIntegral (totalDim d) * 8) / 1000000000.0
 
 memoryTestLarge :: IO ()
 memoryTestLarge = iterator (SomeDims (dims :: Dims '[200, 200, 200, 200])) 1000000 -- 12.8 GB x 1M = 12M GB

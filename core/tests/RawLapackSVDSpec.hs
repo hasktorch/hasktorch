@@ -4,7 +4,7 @@ module RawLapackSVDSpec where
 
 import Foreign.C.Types
 
-import Torch.Dimensions
+import Numeric.Dimensions
 import Torch.Float.Dynamic
 
 import Torch.Prelude.Extras
@@ -34,7 +34,7 @@ pcaRaw = do
 
   let resA = constant (dims :: Dims '[2, 2]) 0
   let resB = constant (dims :: Dims '[2, 2]) 0
-  _gesv resB resA b a
+  gesv_ (resB,resA) b a
   print resA
   print resB
 
