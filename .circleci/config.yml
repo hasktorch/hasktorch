@@ -4,7 +4,6 @@ defaults: &default
     LD_LIBRARY_PATH: /home/ubuntu/hasktorch/vendor/build/:/usr/local/lib/:/usr/lib/x86_64-linux-gnu/
     C_INCLUDE_PATH: /usr/local/include
     LLVM_CONFIG: /usr/lib/llvm-3.8/bin/llvm-config
-
 version: 2
 jobs:
   build_cmake:
@@ -95,8 +94,6 @@ jobs:
   build_aten:
     # <<: *defaults
     machine: true
-    requires:
-      - build_cmake
     steps:
       - restore_cache:
          keys:
@@ -128,9 +125,6 @@ jobs:
   build_hasktorch:
     # <<: *defaults
     machine: true
-    requires:
-      - build_aten
-      - build_cabal_2_3
     steps:
       - restore_cache:
          keys:
@@ -153,8 +147,6 @@ jobs:
            - /home/ubuntu/hasktorch/dist-newstyle
   test:
     machine: true
-    requires:
-      - build_hasktorch
     steps:
       - run: cabal new-test hasktorch-raw-th
       - run: cabal new-test hasktorch-core
@@ -162,8 +154,6 @@ jobs:
   run_codegen_executable:
     # <<: *defaults
     machine: true
-    requires:
-      - build_hasktorch
     steps:
       - run:
           name: Hasktorch codegen binary can run on all libraries
@@ -176,8 +166,6 @@ jobs:
   run_simple_examples:
     # <<: *defaults
     machine: true
-    requires:
-      - build_hasktorch
     steps:
       - run: cabal new-run hasktorch-examples:download-mnist
       - run: cabal new-run hasktorch-examples:ff-typed
@@ -186,14 +174,37 @@ jobs:
   run_examples:
     # <<: *defaults
     machine: true
-    requires:
-      - build_hasktorch
     steps:
       - run: cabal new-run hasktorch-examples:ad
       - run: cabal new-run hasktorch-examples:bayesian-regression
       - run: cabal new-run hasktorch-examples:gradient-descent
       - run: cabal new-run hasktorch-examples:multivariate-normal
 
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build_cabal_2_3
+      - build_cmake
+      - build_aten:
+          requires:
+            - build_cmake
+      - build_hasktorch:
+          requires:
+            - build_aten
+            - build_cabal_2_3
+      - test:
+          requires:
+            - build_hasktorch
+      - run_codegen_executable:
+          requires:
+            - build_hasktorch
+      - run_simple_examples:
+          requires:
+            - build_hasktorch
+      - run_examples:
+          requires:
+            - build_hasktorch
 # THIS IS FROM CIRCLE V1.0
 # cache_directories:
 #   - "/home/ubuntu/hasktorch/.stack-work"
