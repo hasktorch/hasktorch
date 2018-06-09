@@ -1,3 +1,12 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Int
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+-------------------------------------------------------------------------------
 module Torch.Int (module X) where
 
 import Torch.Int.Index as X

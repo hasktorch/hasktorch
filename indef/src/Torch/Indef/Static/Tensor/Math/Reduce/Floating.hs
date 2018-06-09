@@ -1,37 +1,70 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Static.Tensor.Math.Reduce.Floating
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+-------------------------------------------------------------------------------
 module Torch.Indef.Static.Tensor.Math.Reduce.Floating where
-
-import Torch.Dimensions
 
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating as Dynamic
 
-dist    :: Tensor d -> Tensor d' -> HsReal -> IO (HsAccReal)
+-- | Returns the @p@-norm of @x - y@.
+dist
+  :: Tensor d      -- ^ tensor @x@
+  -> Tensor d      -- ^ tensor @y@
+  -> HsReal        -- ^ @p@
+  -> IO HsAccReal
 dist r t = Dynamic.dist (asDynamic r) (asDynamic t)
 
-_var :: Tensor d -> Tensor d' -> Int -> Int -> Int -> IO ()
-_var r t = Dynamic._var (asDynamic r) (asDynamic t)
+-- | Get the variance over a tensor in the specified dimension. The 'Bool'
+-- parameter specifies whether the standard deviation should be used with
+-- @n-1@ or @n@. 'False' normalizes by @n-1@, while 'True' normalizes @n@.
+var :: Tensor d -> DimVal -> KeepDim -> Bool -> IO (Tensor d')
+var r a b c = asStatic <$> Dynamic.var (asDynamic r) a b c
 
+-- | Returns the variance of all elements.
 varall  :: Tensor d -> Int -> IO (HsAccReal)
 varall t = Dynamic.varall (asDynamic t)
 
-_std     :: Tensor d -> Tensor d' -> Int -> Int -> Int -> IO ()
-_std r t = Dynamic._std (asDynamic r) (asDynamic t)
+-- | Performs the @std@ operation over the specified dimension. The 'Bool'
+-- parameter specifies whether the standard deviation should be used with
+-- @n-1@ or @n@. 'False' normalizes by @n-1@, while 'True' normalizes @n@.
+std
+  :: (Tensor d)
+  -> DimVal
+  -> KeepDim
+  -> Bool
+  -> IO (Tensor d')
+std t a b c = asStatic <$> Dynamic.std (asDynamic t) a b c
 
+-- | Returns the standard deviation of all elements.
 stdall  :: Tensor d -> Int -> IO (HsAccReal)
 stdall t = Dynamic.stdall (asDynamic t)
 
-_renorm  :: Tensor d -> Tensor d' -> HsReal -> Int -> HsReal -> IO ()
-_renorm r t = Dynamic._renorm (asDynamic r) (asDynamic t)
+-- | Static 'Dynamic.renorm'
+renorm  :: Tensor d -> HsReal -> Int -> HsReal -> IO (Tensor d')
+renorm t a b c = asStatic <$> Dynamic.renorm (asDynamic t) a b c
 
-_norm    :: Tensor d -> Tensor d' -> HsReal -> Int -> Int -> IO ()
-_norm r t = Dynamic._norm (asDynamic r) (asDynamic t)
+-- | Static 'Dynamic.norm'
+norm :: Tensor d -> HsReal -> DimVal -> IO (Tensor d')
+norm t a b = asStatic <$> Dynamic.norm (asDynamic t) a b
 
-normall :: Tensor d -> HsReal -> IO HsAccReal
+-- | Returns the @p@-norm of all elements.
+normall
+  :: Tensor d  -- ^ tensor of values to norm over
+  -> HsReal   -- ^ @p@
+  -> IO HsAccReal
 normall t = Dynamic.normall (asDynamic t)
 
-_mean    :: Tensor d -> Tensor d' -> Int -> Int -> IO ()
-_mean r t = Dynamic._mean (asDynamic r) (asDynamic t)
+-- | Static 'Dynamic.mean
+mean :: Tensor d -> DimVal -> IO (Tensor d')
+mean r a = asStatic <$> Dynamic.mean (asDynamic r) a
 
+-- | Returns the mean of all elements.
 meanall :: Tensor d -> IO HsAccReal
 meanall t = Dynamic.meanall (asDynamic t)
 

@@ -1,7 +1,17 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Static.NN.Activation
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+-------------------------------------------------------------------------------
 {-# LANGUAGE FlexibleContexts #-}
 module Torch.Indef.Static.NN.Activation where
 
 import Numeric.Backprop
+import Numeric.Dimensions
 import Control.Monad
 import System.IO.Unsafe
 
@@ -11,17 +21,21 @@ import Torch.Indef.Static.NN.Backprop ()
 
 import qualified Torch.Indef.Dynamic.NN.Activation as Dynamic
 
+-- | pReLU updateOutput
 _pReLU_updateOutput :: Tensor d -> Tensor d -> Tensor d -> IO ()
 _pReLU_updateOutput a0 a1 a2 = Dynamic._pReLU_updateOutput (asDynamic a0) (asDynamic a1) (asDynamic a2)
 
+-- | pReLU updateGradInput
 _pReLU_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Tensor d -> IO ()
 _pReLU_updateGradInput a0 a1 a2 a3 =
   Dynamic._pReLU_updateGradInput (asDynamic a0) (asDynamic a1) (asDynamic a2) (asDynamic a3)
 
+-- | pReLU accGradParameters
 _pReLU_accGradParameters :: Tensor d -> Tensor d -> Tensor d -> Tensor d -> Tensor d -> Double -> IO ()
 _pReLU_accGradParameters a0 a1 a2 a3 a4 =
   Dynamic._pReLU_accGradParameters (asDynamic a0) (asDynamic a1) (asDynamic a2) (asDynamic a3) (asDynamic a4)
 
+-- | rReLU updateOutput
 _rReLU_updateOutput :: Tensor d -> Tensor d -> Tensor d -> Double -> Double -> Bool -> Bool -> Generator -> IO ()
 _rReLU_updateOutput t0 t1 t2 d0 d1 b0 b1 g =
   Dynamic._rReLU_updateOutput
@@ -30,6 +44,7 @@ _rReLU_updateOutput t0 t1 t2 d0 d1 b0 b1 g =
     (b0) (b1)
     g
 
+-- | rReLU updateGradInput
 _rReLU_updateGradInput   :: Tensor d -> Tensor d -> Tensor d -> Tensor d -> Double -> Double -> Bool -> Bool -> IO ()
 _rReLU_updateGradInput t0 t1 t2 t3 d0 d1 b0 b1 =
   Dynamic._rReLU_updateGradInput
@@ -37,6 +52,7 @@ _rReLU_updateGradInput t0 t1 t2 t3 d0 d1 b0 b1 =
     (d0) (d1)
     (b0) (b1)
 
+-- | eLU updateOutput
 _eLU_updateOutput :: Tensor d -> Tensor d -> Double -> Double -> Bool -> IO ()
 _eLU_updateOutput t0 t1 d0 d1 b0 =
   Dynamic._eLU_updateOutput
@@ -44,12 +60,14 @@ _eLU_updateOutput t0 t1 d0 d1 b0 =
     (d0) (d1)
     (b0)
 
+-- | eLU updateGradInput
 _eLU_updateGradInput :: Tensor d -> Tensor d' -> Tensor d'' -> Double -> Double -> IO ()
 _eLU_updateGradInput t0 t1 t2 d0 d1 =
   Dynamic._eLU_updateGradInput
     (asDynamic t0) (asDynamic t1) (asDynamic t2)
     (d0) (d1)
 
+-- | leakyReLU updateOutput
 _leakyReLU_updateOutput :: Tensor d -> Tensor d -> Double -> Bool -> IO ()
 _leakyReLU_updateOutput t0 t1 d0 b0 =
   Dynamic._leakyReLU_updateOutput
@@ -57,6 +75,7 @@ _leakyReLU_updateOutput t0 t1 d0 b0 =
     (d0) (b0)
 
 
+-- | leakyReLU updateGradInput
 _leakyReLU_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Double -> Bool -> IO ()
 _leakyReLU_updateGradInput t0 t1 t2 d0 b0 =
   Dynamic._leakyReLU_updateGradInput

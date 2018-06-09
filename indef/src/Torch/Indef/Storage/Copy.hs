@@ -1,3 +1,15 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Storage.Copy
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Conversions between two Storage types. Behaviour is not yet specified as to
+-- what happens when you copy between incompatible types.
+-------------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Torch.Indef.Storage.Copy
@@ -11,6 +23,8 @@ module Torch.Indef.Storage.Copy
   , copyDouble
   ) where
 
+import Foreign
+import Foreign.Ptr
 import qualified Torch.Types.TH           as TH
 import qualified Foreign.Marshal.Array    as FM
 import qualified Torch.Sig.Types          as Sig
@@ -32,7 +46,7 @@ import Torch.Indef.Types
 copyType
   :: IO (Ptr a)
   -> FinalizerPtr a
-  -> (ForeignPtr C'THState -> ForeignPtr a -> b)
+  -> (ForeignPtr TH.C'THState -> ForeignPtr a -> b)
   -> (Ptr CState -> Ptr CStorage -> Ptr a -> IO ())
   -> Storage -> IO b
 copyType newPtr fin builder cfun t = withStorageState t $ \s' t' -> do
@@ -56,18 +70,32 @@ rawCopy t = withStorageState t $ \s' t' -> do
   Sig.c_rawCopy s' t' res
   (fmap.fmap) c2hsReal (FM.peekArray (fromIntegral sz) res)
 
+-- | Copy a Storage object.
 copy :: Storage -> IO Storage
 copy t = withStorageState t $ \s' t' -> do
   store <- Sig.c_new s'
   Sig.c_copy s' t' store
   mkStorage s' store
 
+-- | Copy a 'Storage' object to a CPU-backed LongStorage.
 copyLong   = copyType L.c_new_ L.p_free TH.longStorage   Sig.c_copyLong
+
+-- | Copy a 'Storage' object to a CPU-backed FloatStorage.
 copyFloat  = copyType F.c_new_ F.p_free TH.floatStorage  Sig.c_copyFloat
+
+-- | Copy a 'Storage' object to a CPU-backed ByteStorage.
 copyByte   = copyType B.c_new_ B.p_free TH.byteStorage   Sig.c_copyByte
+
+-- | Copy a 'Storage' object to a CPU-backed CharStorage.
 copyChar   = copyType C.c_new_ C.p_free TH.charStorage   Sig.c_copyChar
+
+-- | Copy a 'Storage' object to a CPU-backed ShortStorage.
 copyShort  = copyType S.c_new_ S.p_free TH.shortStorage  Sig.c_copyShort
+
+-- | Copy a 'Storage' object to a CPU-backed IntStorage.
 copyInt    = copyType I.c_new_ I.p_free TH.intStorage    Sig.c_copyInt
+
+-- | Copy a 'Storage' object to a CPU-backed DoubleStorage.
 copyDouble = copyType D.c_new_ D.p_free TH.doubleStorage Sig.c_copyDouble
 
 -- FIXME: reintroduce half

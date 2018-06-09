@@ -28,13 +28,13 @@ library
   hs-source-dirs: src
   default-language: Haskell2010
   default-extensions: DataKinds, KindSignatures, TypeSynonymInstances
+  ghc-options: -Wno-deprecations
   build-depends:
       base >=4.7 && <5
     , backprop >= 0.2 && < 0.3
     , containers
     , deepseq >=1.3.0.0
     , dimensions >= 1.0
-    , hasktorch-dimensions
     , hasktorch-signatures
     , hasktorch-types-th
     , hasktorch-raw-th
@@ -58,8 +58,6 @@ library
       Torch.Indef.Internal
 
   exposed-modules:
-    -- classes implementations with indefinites
-
     -- FIXME: not sure where to go with commented-out classes, they are TH-only but there are some THC-only things as well
     -- , Torch.Class.Blas
     -- , Torch.Class.Lapack
@@ -75,7 +73,6 @@ library
     -- ==================================================== --
     -- Dynamic Tensor modules
     -- ==================================================== --
-    , Torch.Indef.Dynamic
     , Torch.Indef.Dynamic.Tensor
     , Torch.Indef.Dynamic.Tensor.Copy
     , Torch.Indef.Dynamic.Tensor.Index
@@ -109,7 +106,6 @@ library
     -- ==================================================== --
     -- Static Tensor modules
     -- ==================================================== --
-    , Torch.Indef.Static
     , Torch.Indef.Static.Tensor
     , Torch.Indef.Static.Tensor.Copy
     , Torch.Indef.Static.Tensor.Index

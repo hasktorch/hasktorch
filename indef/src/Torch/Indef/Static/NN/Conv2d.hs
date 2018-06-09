@@ -28,8 +28,10 @@ import Control.Arrow
 import Data.Kind (Type)
 import Data.List (intercalate)
 import Numeric.Backprop
+import Numeric.Dimensions
 import System.IO.Unsafe
-
+import Data.Singletons.Prelude (type (>), type (<))
+import GHC.TypeLits (Div) -- (type Div)
 
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Copy
@@ -52,7 +54,8 @@ import qualified Torch.Indef.Dynamic.NN as Dynamic
 newtype Conv2d i o kH kW
   = Conv2d { getTensors :: (Tensor '[o, i, kH, kW], Tensor '[o]) }
 
-instance KnownDim4 i o kH kW => Show (Conv2d i o kH kW) where
+instance (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
+  => Show (Conv2d i o kH kW) where
   show c = intercalate ","
     [ "Conv2d ("
     ++ "features: " ++ show (featureSize c)
@@ -62,50 +65,72 @@ instance KnownDim4 i o kH kW => Show (Conv2d i o kH kW) where
     ++ ")"
     ]
 
-instance KnownDim4 i o kH kW => Backprop (Conv2d i o kH kW) where
+instance (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
+  => Backprop (Conv2d i o kH kW) where
   one  = const $ Conv2d (constant 1, constant 1)
   zero = const $ Conv2d (constant 0, constant 0)
   add c0 c1 = Conv2d (weights c0 + weights c1, bias c0 + bias c1)
 
+-- | get the weights from a 'Conv2d' ADT
 weights :: Conv2d i o kH kW -> Tensor '[o, i, kH, kW]
 weights (Conv2d (w, _)) = w
 
+-- | get the bias from a 'Conv2d' ADT
 bias :: Conv2d i o kH kW -> Tensor '[o]
 bias (Conv2d (_, b)) = b
 
+-- | get the featureSize from a 'Conv2d' ADT
 featureSize :: forall i o kH kW . KnownDim i => Conv2d i o kH kW -> Int
 featureSize _ = fromIntegral (dimVal (dim :: Dim i))
 
+-- | get the outputSize from a 'Conv2d' ADT
 outputSize :: forall f o kH kW . KnownDim o => Conv2d f o kH kW -> Int
 outputSize _ = fromIntegral (dimVal (dim :: Dim o))
 
--- | The kernel width of the convolution
+-- | get the kernelWidth from a 'Conv2d' ADT
 kernelWidth :: forall i f o kH kW . (Integral i, KnownDim kW) => Conv2d f o kH kW -> i
 kernelWidth _ = fromIntegral (dimVal (dim :: Dim kW))
 
--- | The kernel height of the convolution
+-- | get the kernelHeight from a 'Conv2d' ADT
 kernelHeight :: forall i f o kH kW . (Integral i, KnownDim kH) => Conv2d f o kH kW -> i
 kernelHeight _ = fromIntegral (dimVal (dim :: Dim kH))
 
+-- | get the kernel tuple as (width, height) from a 'Conv2d' ADT
+--
+-- FIXME: Isn't this supposed to be "height" /then/ "width"???
 kernel2d :: (Integral i, KnownDim kH, KnownDim kW) => Conv2d f o kH kW -> (i, i)
 kernel2d = kernelWidth &&& kernelHeight
 
 -------------------------------------------------------------------------------
 
+-- | Typeclass to generically pull out Width and Height information from a parameter
+--
 -- FIXME: this can be replaced with simple functions.
 class Param2d (p :: Nat -> Nat -> Type) where
+
+  -- | get the width parameter
   paramW :: forall w h i . (KnownDim w, Integral i) => p h w -> i
   paramW _ = fromIntegral $ dimVal (dim :: Dim w)
 
+  -- | get the height parameter
   paramH :: forall w h i . (KnownDim h, Integral i) => p h w -> i
   paramH _ = fromIntegral $ dimVal (dim :: Dim h)
 
+  -- | get both parameters as a (width, height) tuple
+  -- FIXME: Isn't this supposed to be "height" /then/ "width"???
   param2d :: (KnownDim h, KnownDim w, Integral i) => p h w -> (i, i)
   param2d = paramW &&& paramH
 
+-- | Representation of how much to step in the height and width dimensions
 data Step2d     (h::Nat) (w::Nat) = Step2d
+
+-- | Representation of how much to pad in the height and width dimensions
 data Padding2d  (h::Nat) (w::Nat) = Padding2d
+
+-- | Representation of how big a kernel will be in the height and width dimensions
 data Kernel2d   (h::Nat) (w::Nat) = Kernel2d
+
+-- | Representation of how much to dilate in the height and width dimensions
 data Dilation2d (h::Nat) (w::Nat) = Dilation2d
 
 instance Param2d Step2d
@@ -116,21 +141,24 @@ instance Param2d (Conv2d f o) where
 
 -- ========================================================================= --
 
+-- | Constraint to check both sides (height and width) of a function and
+-- assert that all nessecary dimension values are 'KnownDim's.
 type SpatialConvolutionC f h w kH kW dH dW pH pW oH oW =
-  ( KnownDim3 (f * kH * kW) (oH * oW) f
+  ( All KnownDim '[f * kH * kW, oH * oW, f]
 
   , SideCheck h kH dH pH oH
   , SideCheck w kW dW pW oW
   )
 
+-- | Constraint to check valid dimensions on one side.
 type SideCheck h k d p o =
   -- all of these are nats and 'dimensions' knows about them
-  ( KnownDim5 h k d p o
+  ( All KnownDim '[h,k,d,p,o]
   -- kernel and step size must be > 0
   , k > 0 ~ 'True
   , d > 0 ~ 'True
   -- kernel size can't be greater than actual input size
-  , h + (2*p) < k ~ 'False
+  , (h + (2*p)) < k ~ 'False
 
   -- output size must be greater than 0
   , o > 0 ~ 'True
@@ -145,7 +173,7 @@ conv2dMM
   :: forall f h w kH kW dH dW pH pW oW oH s o
   .  Reifies s W
   => SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => KnownDim2 f o
+  => All KnownDim '[f,o]
   => Step2d dH dW                -- ^ step of the convolution in width and height dimensions.
                                  --   C-default is 1 for both.
                                  --
@@ -163,7 +191,7 @@ conv2dMMBatch
   :: forall f h w kH kW dH dW pH pW oW oH s o b
   .  Reifies s W
   => SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => KnownDim3 f o b
+  => All KnownDim '[f,o,b]
   => Step2d dH dW                -- ^ step of the convolution in width and height dimensions.
                                  --   C-default is 1 for both.
                                  --
@@ -179,8 +207,8 @@ conv2dMMBatch = _conv2dMM (new :: IO (Tensor '[b, f * kH * kW, oH * oW]))
 -- | Backprop convolution function
 _conv2dMM
   :: Reifies s W
-  => Dimensions3 din dout fgin
-  => (KnownDim2 f o, KnownDim2 kH kW, KnownDim2 dH dW, KnownDim2 pH pW)
+  => All Dimensions '[din,dout,fgin]
+  => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW]
   => IO (Tensor fgin)            -- ^ make grad input buffer
   -> Step2d dH dW                -- ^ step of the convolution in width and height dimensions.
                                  --   C-default is 1 for both.
@@ -216,6 +244,7 @@ conv2dMM_forward
   -> Tensor '[o, oH, oW]
 conv2dMM_forward = _conv2dMM_forward
 
+-- | conv2dMM updGradInput
 conv2dMM_updGradInput
   :: forall f h w kH kW dH dW pH pW oW oH o
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
@@ -231,6 +260,7 @@ conv2dMM_updGradInput =
   -- for dim2, see THNN/generic/SpatialConvolutionMM.c#L233: https://bit.ly/2G8Dvlw
   _conv2dMM_updGradInput (new :: IO (Tensor '[f * kH * kW, oH * oW]))
 
+-- | conv2dMM updGradParameters
 conv2dMM_updGradParameters
   :: forall f h w kH kW dH dW pH pW oW oH o
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
@@ -253,7 +283,7 @@ conv2dMM_updGradParameters =
 conv2dMM_forwardBatch
   :: forall f h w kH kW dH dW pH pW oW oH b o
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => KnownDim2 b o
+  => All KnownDim '[b,o]
   => Step2d dH dW          -- ^ step of the convolution in width and height dimensions.
                            --   C-default is 1 for both.
   -> Padding2d pH pW       -- ^ zero padding to the input plane for width and height.
@@ -267,7 +297,7 @@ conv2dMM_forwardBatch = _conv2dMM_forward
 conv2dMM_updGradInputBatch
   :: forall f h w kH kW dH dW pH pW oW oH o b
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => KnownDim3 b o (f*kW)
+  => All KnownDim '[b,o,f*kW]
   => Step2d dH dW         -- ^ (dH, dW) step of the convolution in width and height dimensions
   -> Padding2d pH pW      -- ^ (pH, pW) zero padding to the input plane for width and height.
   -> Conv2d f o kH kW     -- ^ conv2d state
@@ -281,7 +311,7 @@ conv2dMM_updGradInputBatch =
 conv2dMM_updGradParametersBatch
   :: forall f h w kH kW dH dW pH pW oW oH o b
   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => KnownDim2 b o
+  => All KnownDim '[b,o]
   => Step2d dH dW     -- ^ (dH, dW) step of the convolution in width and height dimensions
   -> Padding2d pH pW  -- ^ (pH, pW) zero padding to the input plane for width and height. (kW-1)/2 is often used.
   -> Double           -- ^ scale / learning rate
@@ -298,7 +328,7 @@ conv2dMM_updGradParametersBatch =
 
 -- | helper of forward functions with unspecified dimensions
 _conv2dMM_forward
-  :: KnownDim8 kH kW dH dW pH pW f o
+  :: All KnownDim '[kH,kW,dH,dW,pH,pW,f,o]
   => Step2d dH dW
   -> Padding2d pH pW
   -> Conv2d f o kH kW
@@ -314,7 +344,7 @@ _conv2dMM_forward step pad conv inp = unsafePerformIO $
 -- | helper of backward update to compute gradient input with unspecified dimensions
 _conv2dMM_updGradInput
   :: forall f o oH oW kH kW dH dW pH pW inp gout fgin
-  .  KnownDim8 kH kW dH dW pH pW f o
+  .  All KnownDim '[kH,kW,dH,dW,pH,pW,f,o]
   => IO (Tensor fgin)
   -> Step2d dH dW
   -> Padding2d pH pW
@@ -334,9 +364,10 @@ _conv2dMM_updGradInput mkGradIBuffer step pad conv inp gout = unsafePerformIO $ 
     (param2d pad)
   pure gin
 
+-- |  conv2dMM accGradParameters
 _conv2dMM_accGradParameters
   :: forall f o oH oW kH kW dH dW pH pW inp gout finput
-  .  KnownDim8 kH kW dH dW pH pW f o
+  .  All KnownDim '[kH,kW,dH,dW,pH,pW,f,o]
   => Dimensions finput
   => IO (Tensor finput)
   -> Step2d dH dW    -- ^ (dH, dW) step of the convolution in width and height dimensions
@@ -359,9 +390,10 @@ _conv2dMM_accGradParameters mkGradIBuffer step pad lr conv inp gout = do
     (param2d pad)
     lr
 
+-- |  conv2dMM updGradParameters
 _conv2dMM_updGradParameters
   :: forall f o oH oW kH kW dH dW pH pW inp gout finput
-  .  KnownDim8 kH kW dH dW pH pW f o
+  .  All KnownDim '[kH,kW,dH,dW,pH,pW,f,o]
   => Dimensions finput
   => IO (Tensor finput)
   -> Step2d dH dW     -- ^ (dH, dW) step of the convolution in width and height dimensions

@@ -27,6 +27,7 @@ test-suite spec
       QuickCheck
     , base >=4.7 && <5
     , hasktorch-core
+    , dimensions
     , hspec >=2.4.4
     , text >=1.2.2.2
   other-modules:
@@ -48,7 +49,6 @@ library
     , containers
     , deepseq >=1.3.0.0
     , dimensions >= 1.0
-    , hasktorch-dimensions
     , hasktorch-raw-th
     , hasktorch-types-th
     , managed >=1.0.0 && <1.1
@@ -68,9 +68,6 @@ library
       Torch.Core.Exceptions
     , Torch.Core.Random
     , Torch.Core.LogAdd
-
-  reexported-modules:
-      Torch.Dimensions
 
   exposed-modules:
       Torch.Byte
@@ -749,7 +746,7 @@ library
           ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Byte.Tensor.ScatterGather
           ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Byte.Tensor.Sort
           ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Byte.Tensor.TopK
-  
+
           ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Byte.Dynamic.Tensor
           ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Copy
           ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Index

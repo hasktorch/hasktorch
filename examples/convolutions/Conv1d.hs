@@ -6,13 +6,11 @@
 module Conv1d where
 
 import Numeric.Backprop
-import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 
 import Torch.Double as Torch
 import qualified Utils
 import qualified Torch.Double.NN.Conv1d as NN1
-import qualified Torch.Double.NN.Conv2d as NN2
 
 type Batch = 2
 type KW = 2
@@ -113,11 +111,12 @@ directFunctionCalls1d = Utils.section "Directly calling functions" $ do
 
 -- simple initilizer
 initConv1d
-  :: KnownDim3 s o (s * kW)
+  :: All KnownDim '[s,o,s * kW]
   => Generator -> Dims '[s,o,kW,dW]
   -> IO (Conv1d s o kW dW)
-initConv1d g _ =
+initConv1d g _ = do
+  let Just o = ord2Tuple (-10, 10)
   (Conv1d . (,Torch.constant 1))
-    <$> Torch.uniform g (-10::Double) 10
+    <$> Torch.uniform g o
 
 

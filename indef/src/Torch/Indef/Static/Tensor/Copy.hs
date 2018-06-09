@@ -14,7 +14,6 @@ module Torch.Indef.Static.Tensor.Copy where
 
 import Torch.Types.TH
 import Torch.Indef.Types (Tensor, asDynamic, asStatic)
-import Torch.Dimensions
 import qualified Torch.Indef.Dynamic.Tensor.Copy as Dynamic
 
 -- | copy a tensor

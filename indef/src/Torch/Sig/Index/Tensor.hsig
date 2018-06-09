@@ -1,3 +1,14 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Sig.Index.Tensor
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Basic Tensor functionality signature file for Index tensors.
+-------------------------------------------------------------------------------
 signature Torch.Sig.Index.Tensor where
 
 import Foreign.Ptr
@@ -5,15 +16,24 @@ import Foreign.C.Types
 import Torch.Sig.Types.Global
 import Torch.Types.TH (C'THLongStorage)
 
+-- | ffi to c-level newWithSize1d
 c_newWithSize1d :: Ptr CState -> CLLong -> IO (Ptr CLongTensor)
+-- | ffi to c-level set1d
 c_set1d :: Ptr CState -> Ptr CLongTensor -> CLLong -> CLong -> IO ()
+-- | ffi to c-level resize1d
 c_resize1d :: Ptr CState -> Ptr CLongTensor -> CLLong -> IO ()
 
+-- | ffi to c-level nDimension
 c_nDimension :: Ptr CState -> Ptr CLongTensor -> IO CInt
+-- | ffi to c-level size
 c_size :: Ptr CState -> Ptr CLongTensor -> CInt -> IO CLLong
+-- | ffi to c-level get1d
 c_get1d :: Ptr CState -> Ptr CLongTensor -> CLLong -> IO CLong
+-- | ffi to c-level get2d
 c_get2d :: Ptr CState -> Ptr CLongTensor -> CLLong -> CLLong -> IO CLong
+-- | ffi to c-level get3d
 c_get3d :: Ptr CState -> Ptr CLongTensor -> CLLong -> CLLong -> CLLong -> IO CLong
+-- | ffi to c-level get4d
 c_get4d :: Ptr CState -> Ptr CLongTensor -> CLLong -> CLLong -> CLLong -> CLLong -> IO CLong
 
 

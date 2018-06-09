@@ -11,6 +11,7 @@ dist-newstyle
 *.hsc
 *ubyte.gz
 .git
+gh-pages
 
 # Created by https://www.gitignore.io/api/c,vim,c++,linux,macos,emacs,haskell
 

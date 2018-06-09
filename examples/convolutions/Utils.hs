@@ -1,7 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 module Utils where
+
+import Numeric.Dimensions
+import Data.Singletons.Prelude.List hiding (All)
+import Data.Singletons.TypeLits
 
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
@@ -22,8 +27,8 @@ mkCosineTensor = do
   lift $ Torch.cos t
 
 printFullConv1d
-  :: KnownNat4 a c b d
-  => KnownDim5 a b c d (a*c)
+  :: All KnownNat '[a,c,b,d]
+  => All KnownDim '[a,b,c,d,a*c]
   => String -> Conv1d a b c d -> IO ()
 printFullConv1d title c = do
   putStrLn ""
@@ -34,7 +39,7 @@ printFullConv1d title c = do
   print (NN1.bias c)
   putStrLn "---------------------------------------"
 
-printFullConv2d :: KnownDim5 a b c d (a*c) => String -> Conv2d a b c d -> IO ()
+printFullConv2d :: All KnownDim '[a,b,c,d,a*c] => String -> Conv2d a b c d -> IO ()
 printFullConv2d title c = do
   putStrLn ""
   putStrLn "---------------------------------------"

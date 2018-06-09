@@ -9,7 +9,6 @@ import Torch.FFI.TH.Double.Tensor (c_THDoubleTensor_free)
 import Torch.FFI.TH.Double.TensorMath (c_THDoubleTensor_stdall, c_THDoubleTensor_meanall, c_THDoubleTensor_maxall)
 import Torch.FFI.TH.Double.TensorRandom (c_THDoubleTensor_normal, c_THDoubleTensor_uniform)
 
-import Torch.Dimensions
 import Torch.Core.Tensor.Types (TensorDoubleRaw)
 import Torch.Raw.Tensor.Generic
 
@@ -120,6 +119,10 @@ flattenSpec = do
     t <- runIO (mkTensor25 d)
     it "returns the correct length"     $ length (flatten t) `shouldBe` fromIntegral (product' d)
     it "returns the correct values"     $ flatten t   `shouldSatisfy` all (== 25)
+    where
+      product' :: SomeDims -> Int
+      product' (SomeDims d) = fromIntegral $ totalDim d
+
 
 
 testsRawRandomScenario :: IO ()

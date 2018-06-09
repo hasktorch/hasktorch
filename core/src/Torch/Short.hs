@@ -1,3 +1,12 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Short
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+-------------------------------------------------------------------------------
 module Torch.Short (module X) where
 
 import Torch.Short.Index as X

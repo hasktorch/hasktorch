@@ -1,3 +1,12 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Char.Dynamic
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+-------------------------------------------------------------------------------
 module Torch.Char.Dynamic (module X) where
 
 import Torch.Indef.Char.Dynamic.Tensor as X

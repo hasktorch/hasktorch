@@ -2,6 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module GarbageCollectionSpec (spec) where
 
+import Numeric.Dimensions
 import Torch.Double.Dynamic as Math
 import qualified Torch.Core.Random as R (newRNG)
 
@@ -56,8 +57,10 @@ rawTest = do
   print x
   -- cadd = z <- y + scalar * x, z value discarded
   print (2.0 * 4.4 + 3.0 :: Double)
-  _cadd z y 4.4 x
+  cadd_ z 4.4 x
+  cadd_ y 4.4 x
   print z
+  print y
 
 testCadd = do
   let foo :: DoubleDynamic = constant (dims :: Dims '[5]) 5
@@ -68,7 +71,7 @@ testCadd = do
 testCopy :: IO ()
 testCopy = do
   foo :: DoubleDynamic <- new (dims :: Dims '[3, 3])
-  _fill foo 5
+  fill_ foo 5
   bar <- newWithTensor foo
   print foo
   print bar
@@ -83,11 +86,12 @@ testCopy = do
 matrixMultTest :: IO ()
 matrixMultTest = do
   gen <- R.newRNG
-  mapM_ (\_ -> go gen) [1..10]
+  let Just o10 = ord2Tuple (-10, 10)
+  mapM_ (\_ -> go gen o10) [1..10]
   where
-    go gen = do
-      mat' :: DoubleDynamic <- uniform (dims :: Dims '[10, 7]) gen (-10) 10
-      vec' :: DoubleDynamic <- uniform (dims :: Dims '[7])     gen (-10) 10
+    go gen o10 = do
+      mat' :: DoubleDynamic <- uniform (dims :: Dims '[10, 7]) gen o10
+      vec' :: DoubleDynamic <- uniform (dims :: Dims '[7])     gen o10
       print mat'
       print vec'
       -- print $ mat !* vec
@@ -95,18 +99,19 @@ matrixMultTest = do
 testLapack :: IO ()
 testLapack = do
   rng <- R.newRNG
-  t :: DoubleDynamic <- uniform (dims :: Dims '[2, 2]) rng (-1.0) 1.0
+  let Just o1 = ord2Tuple (-1.0, 1.0)
+  t :: DoubleDynamic <- uniform (dims :: Dims '[2, 2]) rng o1
 
   let b    = constant (dims :: Dims '[2]) 1.0
       resA = constant (dims :: Dims '[2, 2]) 0
       resB = constant (dims :: Dims '[2, 2]) 0
-  _gesv resA resB t b
+  gesv_ (resA,resB) t b
   print resA
   print resB
 
   let resQ = constant (dims :: Dims '[2, 2]) 0
       resR = constant (dims :: Dims '[2, 2]) 0
-  _qr resQ resR t
+  qr_ (resQ,resR) t
   print resQ
   print resR
 

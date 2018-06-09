@@ -44,7 +44,8 @@ initialization = void $ do
 
   section "Random values" $ do
     gen :: Generator <- RNG.newRNG
-    randMat :: DoubleTensor '[4, 4] <- uniform gen 1 2
+    let Just p = ord2Tuple (1, 2)
+    randMat :: DoubleTensor '[4, 4] <- uniform gen p
     pure randMat
 
 matrixVectorOps :: IO ()
@@ -53,8 +54,9 @@ matrixVectorOps = void $ do
   gen <- RNG.newRNG
 
   randMat :: DoubleTensor '[2, 2] <-
-    section' "Random matrix" $
-      uniform gen (-1) 1
+    section' "Random matrix" $ do
+      let Just p = ord2Tuple (-1, 1)
+      uniform gen p
 
   constVec :: DoubleTensor '[2] <-
     section' "Constant vector" $
@@ -81,7 +83,8 @@ valueTransformations = void $ do
 
   randMat :: DoubleTensor '[4, 4] <-
     section' "Random matrix" $ do
-      uniform gen (1.0) (3.0)
+      let Just p = ord2Tuple (1, 3)
+      uniform gen p
 
   section "Negated" $
     neg randMat

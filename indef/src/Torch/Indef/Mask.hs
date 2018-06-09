@@ -1,8 +1,27 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Indef.Mask
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Redundant version of @Torch.Indef.{Dynamic/Static}.Tensor@ for Byte tensors.
+--
+-- This comes with the same fixme as 'Torch.Indef.Index':
+--
+-- FIXME: in the future, there could be a smaller subset of Torch which could
+-- be compiled to to keep the code dry. Alternatively, if backpack one day
+-- supports recursive indefinites, we could use this feature to possibly remove
+-- this package and 'Torch.Indef.Mask'.
+-------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Torch.Indef.Mask
   ( newMask
   , newMaskDyn
+  , withMask
   , allOf
   ) where
 
@@ -13,7 +32,7 @@ import Data.List
 import Control.Monad
 import System.IO.Unsafe
 
-import Torch.Dimensions
+import Numeric.Dimensions
 import Torch.Sig.Types.Global
 import Torch.Indef.Internal
 import Control.Monad.Managed as X
@@ -24,9 +43,11 @@ import qualified Torch.Sig.Mask.Tensor as MaskSig
 import qualified Torch.Sig.Mask.MathReduce as MaskSig
 import qualified Torch.Sig.Mask.TensorFree as MaskSig
 
+-- | build a new mask tensor with any known Dimension list.
 newMask :: forall d . Dimensions d => MaskTensor d
 newMask = byteAsStatic $ newMaskDyn (dims :: Dims d)
 
+-- | build a new dynamic mask tensor with any known Nat list.
 newMaskDyn :: Dims (d::[Nat]) -> MaskDynamic
 newMaskDyn d = unsafeDupablePerformIO $ do
   s <- Sig.newCState
@@ -42,7 +63,12 @@ newMaskDyn d = unsafeDupablePerformIO $ do
     <$> Sig.manageState s
     <*> newForeignPtrEnv MaskSig.p_free s bytePtr
 
+-- | run a function with access to a dynamic index tensor's raw c-pointer.
+withMask :: MaskDynamic -> (Ptr CMaskTensor -> IO x) -> IO x
+withMask ix fn = withForeignPtr (snd $ byteDynamicState ix) fn
+
 class IsMask t where
+  -- | assert that all of the values of the Byte tensor are true.
   allOf :: t -> Bool
   -- anyOf :: t -> Bool
 

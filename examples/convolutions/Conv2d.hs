@@ -5,6 +5,7 @@ module Conv2d where
 import Numeric.Backprop
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
+import Data.Singletons.TypeLits
 
 import Torch.Double as Torch
 import qualified Utils
@@ -101,8 +102,9 @@ directFunctionCalls2d = do
   shape o1' >>= print
   putStrLn "============="
 
-initConv2d :: KnownDim4 f o kW kH => Generator -> IO (Conv2d f o kW kH)
-initConv2d g =
+initConv2d :: All KnownDim '[f,o,kW,kH] => Generator -> IO (Conv2d f o kW kH)
+initConv2d g = do
+  let Just pair = ord2Tuple (-10, 10)
   (Conv2d . (,Torch.constant 1))
-    <$> Torch.uniform g (-10::Double) 10
+    <$> Torch.uniform g pair
 

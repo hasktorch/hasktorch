@@ -1,0 +1,8 @@
+hasktorch-examples:download-mnist
+hasktorch-examples:ff-typed
+hasktorch-examples:ff-untyped
+hasktorch-examples:static-tensor-usage
+hasktorch-examples:ad
+hasktorch-examples:bayesian-regression
+hasktorch-examples:gradient-descent
+hasktorch-examples:multivariate-normal

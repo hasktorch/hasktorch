@@ -3,7 +3,6 @@
 module Torch.Core.Tensor.Dynamic.DoubleRandomSpec (spec) where
 
 import Torch.Core.Tensor.Types
-import Torch.Dimensions
 import Torch.Core.Tensor.Dynamic.Double
 import qualified Torch.Core.Tensor.Dynamic.Double as DynamicClass
 import Torch.Core.Tensor.Dynamic.DoubleRandom (newRNG, td_random)

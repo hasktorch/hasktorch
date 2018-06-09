@@ -1,7 +1,19 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Float
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Reexports of Float-specific code from hasktorch-indef.
+-------------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-cse #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Float (module X) where
 
+import Numeric.Dimensions
 import Torch.Types.TH as X
 
 import Torch.Float.Types as X hiding (storage)

@@ -6,6 +6,7 @@ module MaxPooling where
 import Numeric.Backprop
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
+import Data.Singletons.Prelude
 
 import Torch.Double as Torch
 import Conv2d

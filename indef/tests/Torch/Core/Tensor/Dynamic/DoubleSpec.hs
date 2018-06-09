@@ -5,7 +5,6 @@ module Torch.Core.Tensor.Dynamic.DoubleSpec (spec) where
 import Torch.Prelude.Extras
 
 import Torch.Core.Tensor.Types
-import Torch.Dimensions
 import Torch.Core.Tensor.Dynamic.Double
 import qualified Torch.Core.Tensor.Dynamic.Double as DynamicClass
 

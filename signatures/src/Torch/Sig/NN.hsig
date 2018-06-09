@@ -1,3 +1,15 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module    :  Torch.Sig.NN
+-- Copyright :  (c) Sam Stites 2017
+-- License   :  BSD3
+-- Maintainer:  sam@stites.io
+-- Stability :  experimental
+-- Portability: non-portable
+--
+-- Signatures for Torch's Neural Network libraries (THNN and THCUNN). These are
+-- mapped directly to FFI calls.
+-------------------------------------------------------------------------------
 signature Torch.Sig.NN where
 
 import Foreign

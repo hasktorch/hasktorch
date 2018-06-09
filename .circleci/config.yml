@@ -1,0 +1,308 @@
+version: 2
+
+global_defaults: &defaults
+  machine: true
+  environment:
+    PATH_ADDITIONS: /tmp/cmake-3.10.0/bin/:/tmp/ghc-8.4.2/bin/:/tmp/cabal-2.3.0/bin/:~/.local/bin/:~/.cabal/bin/:/usr/local/bin
+
+    # /usr/local/lib/:/usr/lib/x86_64-linux-gnu/
+    LD_LIBRARY_PATH: /tmp/aten/lib/
+    # C_INCLUDE_PATH: /usr/local/include
+    # LLVM_CONFIG: /usr/lib/llvm-3.8/bin/llvm-config
+    CABAL_COMMIT: d6b829ddc77859e6b2b5d49bb249e9859b81248b
+
+
+update_path_command: &update_path
+  run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
+
+jobs:
+  ghc-8.4.2:
+    <<: *defaults
+    working_directory: /tmp/ghc-8.4.2
+    steps:
+      - *update_path
+      - run: wget --no-check-certificate --quiet https://downloads.haskell.org/~ghc/8.4.2/ghc-8.4.2-x86_64-deb8-linux.tar.xz
+      - restore_cache:
+          keys:
+            - ghc-cachekey-v1-{{ .Branch }}-{{ checksum "ghc-8.4.2-x86_64-deb8-linux.tar.xz" }}
+      - run: |
+          if [ ! -d /tmp/ghc-8.4.2/bin/ ]; then
+            echo "No cache - building GHC-8.4.2"
+            tar --strip-components=1 -xf ghc-8.4.2-x86_64-deb8-linux.tar.xz
+            ./configure --prefix=${PWD}
+            make install
+            cd bin
+            ln -fs ghc{-8.4.2,}
+            ln -fs ghci{-8.4.2,}
+            ln -fs ghc-pkg{-8.4.2,}
+            ln -fs haddock-ghc{-8.4.2,}
+            ln -fs runghc{-8.4.2,}
+          else
+            echo "Cached ~/ghc-8.4.2 directory found" ;
+          fi
+      - save_cache:
+          key: ghc-cachekey-v1-{{ .Branch }}-{{ checksum "ghc-8.4.2-x86_64-deb8-linux.tar.xz" }}
+          paths:
+            - bin
+            - lib
+      - run: command -v ghc
+      - run: ghc --version
+      - persist_to_workspace:
+          root: /tmp/ghc-8.4.2
+          paths:
+            - bin
+            - lib
+
+  cmake-3.10.0:
+    <<: *defaults
+    working_directory: /tmp/cmake-3.10.0
+    steps:
+      - *update_path
+      - run: wget --no-check-certificate --quiet https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz
+      - restore_cache:
+          keys:
+            - cmake-cachekey-v1-{{ .Branch }}-{{ checksum "cmake-3.10.0-Linux-x86_64.tar.gz" }}
+      - run: |
+          if [ ! -d ${PWD}/bin ]; then
+            echo "No cache - building CMake-3.10.0"
+            wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+            sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main"
+            sudo apt-get update --fix-missing
+            sudo apt-get install clang-4.0 lldb-4.0 --fix-missing
+
+            tar --strip-components=1 -xf cmake-3.10.0-Linux-x86_64.tar.gz
+          else
+            echo "Cached ${PWD}/bin directory found" ;
+          fi
+      - save_cache:
+          key: cmake-cachekey-v1-{{ .Branch }}-{{ checksum "cmake-3.10.0-Linux-x86_64.tar.gz" }}
+          paths:
+            - bin
+            - share
+      - run: command -v cmake
+      - run: cmake --version
+      - persist_to_workspace:
+          root: /tmp/cmake-3.10.0
+          paths:
+            - bin
+            - share
+  aten:
+    <<: *defaults
+    working_directory: /tmp/aten/
+    steps:
+      - *update_path
+      - attach_workspace: { at: /tmp/cmake-3.10.0 }
+      - checkout
+      - restore_cache:
+          keys:
+            - aten-cachekey-v1-{{ .Branch }}
+      - run: |
+          if [ ! -f ${PWD}/lib/libATen.so ]; then
+            echo "No cache - building libATen.so"
+            git submodule update --init --recursive
+            pip install pyyaml typing
+
+            (cd ./vendor && ./build-aten.sh)
+
+            cp -r {./vendor/aten/build/,}lib
+            cp -r {./vendor/aten/build/,}include
+            ls lib
+            ls include
+          else
+            echo "Cached ${PWD}/cabal directory found" ;
+          fi
+
+      - save_cache:
+          key: aten-cachekey-v1-{{ .Branch }}
+          paths:
+            - lib
+            - include
+
+      - run:
+          name: Copy the versioned libATen over symlinks (CircleCI caching hack).
+          command: cd lib && test -L libATen.so && rm libATen.so && cp libATen.so{.1,}
+      - persist_to_workspace:
+          root: /tmp/aten/lib
+          paths:
+            - libATen.so
+            - libATen.so.1
+      - persist_to_workspace:
+          root: /tmp/aten/include
+          paths:
+            - ATen
+            - TH
+            - THS
+            - THNN
+
+# cabal-install-2.3.0:
+  build:
+    <<: *defaults
+    parallelism: 1
+    working_directory: /tmp/cabal-2.3.0
+    steps:
+      - *update_path
+      - attach_workspace: { at: /tmp/ghc-8.4.2 }
+      - checkout
+      - restore_cache:
+          keys:
+            - cabal-cachekey-v2-{{ .Branch }}-d6b829ddc77859e6b2b5d49bb249e9859b81248b
+      - run: ghc --version
+
+      - run: |
+          if [ ! -d cabal ]; then
+            echo "No cache - building cabal-install-2.3.0"
+            mkdir -p ~/.cabal/bin
+
+            git clone git@github.com:haskell/cabal.git cabal --recursive && cd cabal
+            git checkout ${CABAL_COMMIT}
+            (cd cabal-install && ./bootstrap.sh)
+            # lighten up the cache
+            rm -rf cabal*
+            rm -rf Cabal*
+          else
+            echo "Cached ${PWD}/cabal directory found" ;
+          fi
+      - run: command -v cabal
+      - run: cabal --version
+      - run: mkdir /tmp/cabal-2.3.0/bin && cp {~/.cabal,/tmp/cabal-2.3.0}/bin/cabal
+      - save_cache:
+          key: cabal-cachekey-v2-{{ .Branch }}-d6b829ddc77859e6b2b5d49bb249e9859b81248b
+          paths:
+            - cabal
+            - ~/.cabal
+
+     #- run: ls /tmp/cabal-2.3.0/bin
+     #- persist_to_workspace:
+     #    root: bin
+     #    path:
+     #      - cabal
+     #- persist_to_workspace:
+     #    root: /home/circleci/.cabal
+     #    path:
+     #      - bin
+     #      - ls
+     #      - packages
+     #      - world
+
+      - attach_workspace: { at: /tmp/aten/lib }
+      - attach_workspace: { at: /tmp/aten/include }
+      # attach_workspace: { at: /tmp/ghc-8.4.2 }
+      # attach_workspace: { at: /tmp/cabal-2.3.0/bin/ }
+
+      # verify tools
+      - run: command -v cabal
+      - run: cabal --version
+      - run: command -v ghc
+      - run: ghc --version
+
+      - run: git submodule update --init --recursive
+      - run: ln -fs {.circleci/,}cabal.project.freeze
+      - run: ln -fs {.circleci/,}cabal.project.local
+
+      - run: cabal update
+      - run: cabal new-update
+      - run: cabal install hspec-discover
+
+      - restore_cache:
+          keys:
+            - hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".circleci/cabal.project.freeze" }}
+
+      - run: cabal new-build all
+
+      - save_cache:
+          key: hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".circleci/cabal.project.freeze" }}
+          paths:
+            - dist-newstyle
+            - ~/.cabal
+
+      # run tests
+      - run: cabal new-test hasktorch-raw-th
+      - run: cabal new-test hasktorch-core
+      - run: cabal new-test hasktorch-codegen
+
+      - run:
+          name: Hasktorch codegen binary can run on all libraries
+          command: |
+            for l in TH THNN THC THCUNN; do
+              for t in generic concrete; do
+                cabal new-run hasktorch-codegen:ht-codegen -- --type ${t} --lib ${l} --verbose;
+              done;
+            done
+
+      # run simple examples:
+      - run: cabal new-run hasktorch-examples:download-mnist
+      - run: cabal new-run hasktorch-examples:ff-typed
+      - run: cabal new-run hasktorch-examples:ff-untyped
+      - run: cabal new-run hasktorch-examples:static-tensor-usage
+
+      # run examples:
+      - run: cabal new-run hasktorch-examples:ad
+      - run: cabal new-run hasktorch-examples:bayesian-regression
+      - run: cabal new-run hasktorch-examples:gradient-descent
+      - run: cabal new-run hasktorch-examples:multivariate-normal
+
+
+# One day we will acheive this 2.0 workflow (with caching)...
+#                                           ...just not today
+# ===========================================================
+workflows:
+  version: 2
+  build:
+    jobs:
+      - ghc-8.4.2
+      - cmake-3.10.0
+      - aten:
+          requires:
+            - cmake-3.10.0
+      - build:
+          requires:
+            - ghc-8.4.2
+            - aten
+
+# FIXME:
+# move cabal-install-2.3.0 to build
+# =================================
+#     - build:
+#         requires:
+#           - aten
+#           - cabal-install-2.3.0
+# =================================
+
+#       - build_ghc_8_4
+#       - build_cmake
+#       - build_cabal_2_3:
+#           requires:
+#             - build_ghc_8_4
+#       - build_aten:
+#           requires:
+#             - build_cmake
+#       - build_hasktorch:
+#           requires:
+#             - build_aten
+#             - build_cabal_2_3
+#       - test:
+#           requires:
+#             - build_hasktorch
+#       - run_codegen_executable:
+#           requires:
+#             - build_hasktorch
+#       - run_simple_examples:
+#           requires:
+#             - build_hasktorch
+#       - run_examples:
+#           requires:
+#             - build_hasktorch
+
+
+# THIS IS FROM CIRCLE V1.0
+# cache_directories:
+#   - "/home/circleci/hasktorch/.stack-work"
+#   - "/home/circleci/.stack"
+# # Install stack
+# # =============
+# - mkdir -p ~/.local/bin
+# # full path to curl circumvents errors with /usr/local/bin/curl incompatabilities with libcurl
+# - /usr/bin/curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+# - stack upgrade
+# - stack update
+
