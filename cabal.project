@@ -12,7 +12,6 @@ packages:
     signatures/partial/*cabal
     signatures/*cabal
 
-    dimensions/*cabal
     indef/*cabal
 
     core/*cabal

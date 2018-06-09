@@ -49,7 +49,6 @@ library
     , containers
     , deepseq >=1.3.0.0
     , dimensions >= 1.0
-    , hasktorch-dimensions
     , hasktorch-raw-th
     , hasktorch-types-th
     , managed >=1.0.0 && <1.1
