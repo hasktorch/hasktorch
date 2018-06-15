@@ -35,6 +35,7 @@ module Torch.Indef.Storage
   , newWithSize4
   , newWithMapping
   , newWithData
+  , fromList
   , setFlag
   , clearFlag
   , retain
