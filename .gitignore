@@ -13,6 +13,11 @@ dist-newstyle
 .git
 gh-pages
 
+# from the output folder:
+output/raw
+# *.hs
+#core/src/*.hs
+
 # Created by https://www.gitignore.io/api/c,vim,c++,linux,macos,emacs,haskell
 
 ### C ###
