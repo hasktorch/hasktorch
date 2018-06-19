@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
+
+# To be run from the ./codegen folder:
 set -eu
+
+mkdir -p ../output
+cd ../output
 
 function __nuke {
   lib=$1
