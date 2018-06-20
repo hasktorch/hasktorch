@@ -77,9 +77,47 @@ _mSECriterion_updateOutput t0 t1 t2 = Dynamic._mSECriterion_updateOutput (asDyna
 _mSECriterion_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Tensor d -> Bool -> Bool -> IO ()
 _mSECriterion_updateGradInput t0 t1 t2 t3 = Dynamic._mSECriterion_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3)
 
+-- | The <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence Kullback-Leibler divergence> Loss
+--
+-- KL divergence is a useful distance measure for continuous distributions and
+-- is often useful when performing direct regression over the space of
+-- (discretely sampled) continuous output distributions.
+--
+-- As with 'NLLLoss', the input given is expected to contain log-probabilities,
+-- however unlike 'ClassNLLLoss', input is not restricted to a 2D Tensor,
+-- because the criterion is applied element-wise.
+--
+-- This criterion expects a target Tensor of the same size as the input Tensor.
+--
+-- The loss can be described as:
+-- @
+--   \ell(x, y) = L = \{l_1,\dots,l_N\}^\top, \quad
+--   l_n = y_n \odot \left( \log y_n - x_n \right),
+-- @
+--
+-- where @N@ is the batch size. If @reduce@ is @True@, then:
+-- @
+--   \begin{split}\ell(x, y) = \begin{cases}
+--       \operatorname{mean}(L), & \text{if}\; \text{size_average} = \text{True},\\
+--       \operatorname{sum}(L),  & \text{if}\; \text{size_average} = \text{False}.
+--   \end{cases}\end{split}
+-- @
+--
+-- By default, the losses are averaged for each minibatch over observations as
+-- well as over dimensions. However, if the field @size_average@ is set to
+-- @False@, the losses are instead summed.
+
+
 -- | distKLDivCriterion forward pass (updates the output tensor)
-_distKLDivCriterion_updateOutput :: Tensor d -> Tensor d -> Tensor d -> Bool -> Bool -> IO ()
+_distKLDivCriterion_updateOutput
+  :: Tensor d  -- ^ output tensor to update
+  -> Tensor d  -- ^ input tensor
+  -> Tensor d  -- ^ comparative tensor
+  -> Bool      -- ^ size_average
+  -> Bool      -- ^ reduce
+  -> IO ()
 _distKLDivCriterion_updateOutput t0 t1 t2 = Dynamic._distKLDivCriterion_updateOutput (asDynamic t0) (asDynamic t1) (asDynamic t2)
+
 -- | distKLDivCriterion backward-update (updates the layer and bias tensors)
 _distKLDivCriterion_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Tensor d -> Bool -> Bool -> IO ()
 _distKLDivCriterion_updateGradInput t0 t1 t2 t3 = Dynamic._distKLDivCriterion_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3)
