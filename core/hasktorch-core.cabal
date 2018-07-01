@@ -28,6 +28,8 @@ test-suite spec
     , base >=4.7 && <5
     , hasktorch-core
     , dimensions
+    , singletons
+    , backprop >= 2.5
     , hspec >=2.4.4
     , text >=1.2.2.2
   other-modules:
@@ -38,7 +40,10 @@ test-suite spec
     , Torch.Prelude.Extras
     , Torch.Core.LogAddSpec
     , Torch.Core.RandomSpec
+
+    -- We can't move this to hasktorch-indef until backpack gets some updates:
     , Torch.NN.Static.AbsSpec
+    , Torch.NN.Static.Conv1dSpec
 
 library
   hs-source-dirs: src, utils
