@@ -68,12 +68,15 @@ _clearFlag :: Dynamic -> Int8 -> IO ()
 _clearFlag t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
 
 -- | get the underlying data as a haskell list from the tensor
+--
+-- NOTE: This _cannot_ use a Tensor's storage size because ATen's Storage
+-- allocates up to the next 64-byte line on the CPU (needs reference, this
+-- is the unofficial response from \@soumith in slack).
 tensordata :: Dynamic -> IO [HsReal]
-tensordata t = withDynamicState t $ \s' t' ->
-  ptrArray2hs (Sig.c_data s') (arrayLen s') (Sig.ctensor t)
- where
-  arrayLen :: Ptr CState -> Ptr CTensor -> IO Int
-  arrayLen s' p = Sig.c_storage s' p >>= fmap fromIntegral . StorageSig.c_size s'
+tensordata t = withDynamicState t $ \s' t' -> do
+  sz <- (fromIntegral . product) <$> shape t
+  creals <- Sig.c_data s' t'
+  (fmap.fmap) c2hsReal (FM.peekArray sz creals)
 
 -- | get a value from dimension 1
 get1d :: Dynamic -> Int64 -> HsReal
