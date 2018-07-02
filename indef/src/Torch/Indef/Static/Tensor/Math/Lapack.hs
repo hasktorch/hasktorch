@@ -230,9 +230,9 @@ symeig_ = syev_
 -- @A@ has to be a square and non-singular matrix (a 2D tensor). @A@ and @LU@
 -- are @m × m@, @X@ is @m × k@ and @B@ is @m × k@.
 gesv
-  :: Tensor d                -- ^ @B@
-  -> Tensor d'                -- ^ @A@
-  -> IO (Tensor d'', Tensor d''')  -- ^ @(X, LU)@
+  :: Tensor '[m, k]                       -- ^ @B@
+  -> Tensor '[m, m]                       -- ^ @A@
+  -> IO (Tensor '[m, k], Tensor '[m, m])  -- ^ @(X, LU)@
 gesv b a = do
   (ra, rb) <- Dynamic.gesv (asDynamic b) (asDynamic a)
   pure (asStatic ra, asStatic rb)
@@ -247,9 +247,9 @@ gesv b a = do
 -- Note: Irrespective of the original strides, the returned matrices @x@ and @lu@ will be transposed,
 -- i.e. with strides @1, m@ instead of @m, 1@.
 gesv_
-  :: (Tensor d, Tensor d')  -- ^ @(X, LU)@
-  -> Tensor d''             -- ^ @B@
-  -> Tensor d'''           -- ^ @A@
+  :: (Tensor '[m, k], Tensor '[m, m])  -- ^ @(X, LU)@
+  -> Tensor '[m, k]                    -- ^ @B@
+  -> Tensor '[m, m]                    -- ^ @A@
   -> IO ()
 gesv_ (x, lu) b a = Dynamic.gesv_ (asDynamic x, asDynamic lu) (asDynamic b) (asDynamic a)
 
