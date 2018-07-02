@@ -1,15 +1,16 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
-module ReLU where
+module Torch.Static.NN.ReLUSpec where
 
+import Test.Hspec
 import Numeric.Backprop
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 
 import Torch.Double as Torch
-import Conv2d
-import qualified Utils
+import Torch.Static.NN.Conv2dSpec
+import qualified Torch.Static.NN.Internal as Utils
 import qualified Torch.Double.NN.Conv2d     as NN
 import qualified Torch.Double.NN.Activation as NN
 
@@ -23,6 +24,11 @@ reluLayer
   -> BVar s (Tensor '[F, H, Wid])
   -> BVar s (Tensor '[O, 7, 15])
 reluLayer steps pad lr conv inp = relu (NN.conv2dMM steps pad lr conv inp)
+
+spec :: Spec
+spec = do
+  it "still need to migrate the example into tests" $
+    pending
 
 main :: IO ()
 main = Utils.section "Using Backpack" $ do

@@ -5,10 +5,13 @@
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 module Torch.Static.NN.Conv1dSpec where
 
+import Test.Hspec
 import Numeric.Backprop
 import Control.Monad.Trans.Maybe
+import Torch.Double as Torch
 
-import Torch.Indef.Static.NN.Conv1d
+import Torch.Double.NN.Conv1d
+import qualified Torch.Static.NN.Internal as Utils
 
 type Batch = 2
 type KW = 2
@@ -31,9 +34,9 @@ spec = do
 
 usingBackpack1d :: Spec
 usingBackpack1d = do
-  g <- newRNG
-  manualSeed g 1
-  c <- initConv1d g params
+  g <- runIO $ newRNG
+  runIO $ manualSeed g 1
+  c <- runIO $ initConv1d g params
   it "can run a forward pass" $ do
     Just (input :: Tensor '[Sequence2, Input]) <- runMaybeT Utils.mkCosineTensor
 
@@ -59,12 +62,12 @@ usingBackpack1d = do
 
 directFunctionCalls1d :: Spec
 directFunctionCalls1d = do
-  g <- newRNG
-  manualSeed g 1
-  conv <- initConv1d g params
+  g <- runIO $ newRNG
+  runIO $ manualSeed g 1
+  conv <- runIO $ initConv1d g params
+  Just (input :: Tensor '[Sequence2, Input]) <- runIO $ runMaybeT Utils.mkCosineTensor
 
   it "does a forward pass" $ do
-    Just (input :: Tensor '[Sequence2, Input]) <- runMaybeT Utils.mkCosineTensor
     o1 <- conv1d_forward conv input
     shape o1 >>= print
 
@@ -78,8 +81,8 @@ directFunctionCalls1d = do
     -- do a backward pass for grad weights
     conv' <- conv1d_updGradParams conv input gout 0.5
     print conv'
-    print (NN1.weights conv')
-    print (NN1.bias conv')
+    print (weights conv')
+    print (bias conv')
 
     putStrLn "======================================="
 

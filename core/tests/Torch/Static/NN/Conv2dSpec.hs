@@ -1,15 +1,16 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TupleSections #-}
-module Conv2d where
+module Torch.Static.NN.Conv2dSpec where
 
+import Test.Hspec
 import Numeric.Backprop
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Data.Singletons.TypeLits
 
 import Torch.Double as Torch
-import qualified Utils
 import qualified Torch.Double.NN.Conv2d as NN
+import qualified Torch.Static.NN.Internal as Utils
 
 type Ch = 3
 type H = 8
@@ -34,6 +35,12 @@ main :: IO ()
 main = do
   usingBackpack2d
   directFunctionCalls2d
+
+spec :: Spec
+spec = do
+  it "still need to migrate the example into tests" $
+    pending
+
 
 usingBackpack2d :: IO ()
 usingBackpack2d = Utils.section "Using Backpack" $ do

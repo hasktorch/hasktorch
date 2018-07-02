@@ -22,16 +22,25 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   default-language: Haskell2010
+  default-extensions: DataKinds, ScopedTypeVariables, FlexibleContexts
   hs-source-dirs: tests
   build-depends:
       QuickCheck
+    , backprop >= 0.2.4
     , base >=4.7 && <5
-    , hasktorch-core
     , dimensions
-    , singletons >= 2.4.1
-    , backprop >= 2.5
+    , ghc-typelits-natnormalise
+    , hasktorch-core
     , hspec >=2.4.4
+    -- , hspec-discover
+    , singletons >= 2.4.1
     , text >=1.2.2.2
+
+    , mtl
+    , monad-loops
+    , singletons
+    , time
+    , transformers
   other-modules:
       Orphans
     , MemorySpec
@@ -43,6 +52,7 @@ test-suite spec
 
     -- We can't move this to hasktorch-indef until backpack gets some updates:
     , Torch.Static.NN.AbsSpec
+    , Torch.Static.NN.LinearSpec
     -- , Torch.Static.NN.Conv1dSpec
     -- , Torch.Static.NN.Conv2dSpec
     -- , Torch.Static.NN.ReLUSpec
