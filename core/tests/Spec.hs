@@ -8,6 +8,7 @@ import qualified GarbageCollectionSpec as GS
 import qualified Torch.Core.LogAddSpec as LS
 import qualified Torch.Core.RandomSpec as RS
 import qualified Torch.Static.NN.AbsSpec as AbsNN
+import qualified Torch.Static.NN.LinearSpec as LinearNN
 
 main :: IO ()
 main = hspec $ do
@@ -16,6 +17,7 @@ main = hspec $ do
   describe "GarbageCollectionSpec" GS.spec
   describe "Torch.Core.LogAddSpec" LS.spec
   describe "Torch.Core.RandomSpec" RS.spec
-  describe "Torch.NN.Static.AbsSpec" AbsNN.spec
+  describe "Torch.Static.NN.AbsSpec" AbsNN.spec
+  describe "Torch.Static.NN.LinearSpec" LinearNN.spec
 
 

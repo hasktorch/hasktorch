@@ -5,6 +5,7 @@ module Torch.Static.NN.LinearSpec where
 import Test.Hspec
 import Torch.Double
 import Numeric.Backprop
+import Torch.Double.NN.Linear
 
 main :: IO ()
 main = hspec spec

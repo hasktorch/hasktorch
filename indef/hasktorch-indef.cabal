@@ -135,6 +135,7 @@ library
     -- , Torch.Indef.Static.NN.Conv3d
     , Torch.Indef.Static.NN.Criterion
     , Torch.Indef.Static.NN.Layers
+    , Torch.Indef.Static.NN.Linear
     , Torch.Indef.Static.NN.Math
     , Torch.Indef.Static.NN.Padding
     , Torch.Indef.Static.NN.Pooling

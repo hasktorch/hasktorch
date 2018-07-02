@@ -87,6 +87,9 @@ library
     , Torch.Core.Random
     , Torch.Core.LogAdd
 
+  reexported-modules:
+      Torch.Types.Numeric
+
   exposed-modules:
       Torch.Byte
     , Torch.Byte.Dynamic
@@ -604,6 +607,7 @@ library
      , Torch.Double.NN.Conv2d
      , Torch.Double.NN.Criterion
      , Torch.Double.NN.Layers
+     , Torch.Double.NN.Linear
      , Torch.Double.NN.Math
      , Torch.Double.NN.Padding
      , Torch.Double.NN.Pooling
@@ -681,6 +685,7 @@ library
         ,Torch.Indef.Static.NN.Conv2d        as Torch.Double.NN.Conv2d
         ,Torch.Indef.Static.NN.Criterion     as Torch.Double.NN.Criterion
         ,Torch.Indef.Static.NN.Layers        as Torch.Double.NN.Layers
+        ,Torch.Indef.Static.NN.Linear        as Torch.Double.NN.Linear
         ,Torch.Indef.Static.NN.Math          as Torch.Double.NN.Math
         ,Torch.Indef.Static.NN.Padding       as Torch.Double.NN.Padding
         ,Torch.Indef.Static.NN.Pooling       as Torch.Double.NN.Pooling
@@ -1149,6 +1154,7 @@ library
        , Torch.Cuda.Double.NN.Conv2d
        , Torch.Cuda.Double.NN.Criterion
        , Torch.Cuda.Double.NN.Layers
+       , Torch.Cuda.Double.NN.Linear
        , Torch.Cuda.Double.NN.Math
        , Torch.Cuda.Double.NN.Padding
        , Torch.Cuda.Double.NN.Pooling
@@ -1222,6 +1228,7 @@ library
           ,Torch.Indef.Static.NN.Conv2d        as Torch.Cuda.Double.NN.Conv2d
           ,Torch.Indef.Static.NN.Criterion     as Torch.Cuda.Double.NN.Criterion
           ,Torch.Indef.Static.NN.Layers        as Torch.Cuda.Double.NN.Layers
+          ,Torch.Indef.Static.NN.Linear        as Torch.Cuda.Double.NN.Linear
           ,Torch.Indef.Static.NN.Math          as Torch.Cuda.Double.NN.Math
           ,Torch.Indef.Static.NN.Padding       as Torch.Cuda.Double.NN.Padding
           ,Torch.Indef.Static.NN.Pooling       as Torch.Cuda.Double.NN.Pooling
@@ -1466,6 +1473,7 @@ library hasktorch-indef-floating
     , Torch.Indef.Static.NN.Conv2d
     , Torch.Indef.Static.NN.Criterion
     , Torch.Indef.Static.NN.Layers
+    , Torch.Indef.Static.NN.Linear
     , Torch.Indef.Static.NN.Math
     , Torch.Indef.Static.NN.Padding
     , Torch.Indef.Static.NN.Pooling
