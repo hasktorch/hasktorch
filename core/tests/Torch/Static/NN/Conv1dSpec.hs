@@ -3,7 +3,7 @@
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
-module Torch.NN.Static.Conv1dSpec where
+module Torch.Static.NN.Conv1dSpec where
 
 import Numeric.Backprop
 import Control.Monad.Trans.Maybe
@@ -57,52 +57,51 @@ usingBackpack1d = do
 -- ========================================================================= --
 -- Example directly using functions
 
-directFunctionCalls1d :: IO ()
-directFunctionCalls1d = Utils.section "Directly calling functions" $ do
+directFunctionCalls1d :: Spec
+directFunctionCalls1d = do
   g <- newRNG
   manualSeed g 1
   conv <- initConv1d g params
-  Utils.printFullConv1d "initial conv1d state" conv
 
-  -- do a forward pass
-  Just (input :: Tensor '[Sequence2, Input]) <- runMaybeT Utils.mkCosineTensor
-  o1 <- conv1d_forward conv input
-  shape o1 >>= print
+  it "does a forward pass" $ do
+    Just (input :: Tensor '[Sequence2, Input]) <- runMaybeT Utils.mkCosineTensor
+    o1 <- conv1d_forward conv input
+    shape o1 >>= print
 
-  -- initialize a gradient output
-  let gout :: Tensor '[Sequence2, Output] = constant 1
+  it "initialize a gradient output" $ do
+    let gout :: Tensor '[Sequence2, Output] = constant 1
 
-  -- do a backward pass for grad input
-  o1' :: Tensor '[13, 5] <- conv1d_backwardGradInput conv input gout
-  print o1'
+    -- do a backward pass for grad input
+    o1' :: Tensor '[13, 5] <- conv1d_backwardGradInput conv input gout
+    print o1'
 
-  -- do a backward pass for grad weights
-  conv' <- conv1d_updGradParams conv input gout 0.5
-  print conv'
-  print (NN1.weights conv')
-  print (NN1.bias conv')
+    -- do a backward pass for grad weights
+    conv' <- conv1d_updGradParams conv input gout 0.5
+    print conv'
+    print (NN1.weights conv')
+    print (NN1.bias conv')
 
-  putStrLn "======================================="
+    putStrLn "======================================="
 
-  Utils.printFullConv1d "ensure that the last weight update is pure" conv
+    Utils.printFullConv1d "ensure that the last weight update is pure" conv
 
-  -- do a forward pass with batch data
-  Just (binput :: Tensor '[Batch, Sequence1, Input]) <- runMaybeT Utils.mkCosineTensor
-  o2 <- conv1d_forwardBatch conv binput
-  shape o2 >>= print
+    -- do a forward pass with batch data
+    Just (binput :: Tensor '[Batch, Sequence1, Input]) <- runMaybeT Utils.mkCosineTensor
+    o2 <- conv1d_forwardBatch conv binput
+    shape o2 >>= print
 
-  -- initialize a gradient input
-  let bgout :: Tensor '[Batch, Sequence1, Output] = constant 1
-  shape bgout >>= print
+    -- initialize a gradient input
+    let bgout :: Tensor '[Batch, Sequence1, Output] = constant 1
+    shape bgout >>= print
 
-  -- do a backwards pass with batch data
-  o2' :: Tensor '[2,7,5] <- conv1d_backwardGradInputBatch conv binput bgout
-  shape o2' >>= print
+    -- do a backwards pass with batch data
+    o2' :: Tensor '[2,7,5] <- conv1d_backwardGradInputBatch conv binput bgout
+    shape o2' >>= print
 
-  -- do a backward pass for grad weights
-  conv'' <- conv1d_updGradParamsBatch conv binput bgout 0.5
+    -- do a backward pass for grad weights
+    conv'' <- conv1d_updGradParamsBatch conv binput bgout 0.5
 
-  Utils.printFullConv1d "ensure that the last weight update is pure" conv''
+    Utils.printFullConv1d "ensure that the last weight update is pure" conv''
 
 -- ========================================================================= --
 -- utility functions for this exercise

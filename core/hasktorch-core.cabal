@@ -28,7 +28,7 @@ test-suite spec
     , base >=4.7 && <5
     , hasktorch-core
     , dimensions
-    , singletons
+    , singletons >= 2.4.1
     , backprop >= 2.5
     , hspec >=2.4.4
     , text >=1.2.2.2
@@ -42,8 +42,11 @@ test-suite spec
     , Torch.Core.RandomSpec
 
     -- We can't move this to hasktorch-indef until backpack gets some updates:
-    , Torch.NN.Static.AbsSpec
-    , Torch.NN.Static.Conv1dSpec
+    , Torch.Static.NN.AbsSpec
+    -- , Torch.Static.NN.Conv1dSpec
+    -- , Torch.Static.NN.Conv2dSpec
+    -- , Torch.Static.NN.ReLUSpec
+    -- , Torch.Static.NN.MaxPoolingSpec
 
 library
   hs-source-dirs: src, utils
