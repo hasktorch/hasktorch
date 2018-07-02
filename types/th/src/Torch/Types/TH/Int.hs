@@ -83,4 +83,5 @@ asDynamic = intAsDynamic
 -- | type alias to 'intAsStatic'
 asStatic = intAsStatic
 
+instance Fractional Int32
 

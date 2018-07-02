@@ -10,6 +10,8 @@
 -- Linear layers
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds #-}
 module Torch.Indef.Static.NN.Linear where
@@ -23,6 +25,7 @@ import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Blas
+import Torch.Indef.Static.Tensor.Math.Pairwise ((*^))
 import Torch.Indef.Static.NN.Backprop ()
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
@@ -60,6 +63,17 @@ inputSize _ = fromIntegral (dimVal (dim :: Dim i))
 outputSize :: forall i o kW dW . KnownDim o => Linear i o -> Int
 outputSize _ = fromIntegral (dimVal (dim :: Dim o))
 
+mkLinear
+  :: (KnownDim i, KnownDim o)
+  => (forall d . Dimensions d => IO (Tensor d))
+  -> IO (Linear i o)
+mkLinear initer = Linear <$> ((,) <$> initer <*> initer)
+
+xavier :: forall d . Dimensions d => IO (Tensor d)
+xavier = case (fromIntegral <$> listDims (dims :: Dims d)) of
+  [] -> empty
+  a:_ -> pure $ constant (1 / realToFrac (fromIntegral a))
+
 -- ========================================================================= --
 
 -- | Backprop linear function without batching
@@ -67,14 +81,15 @@ linear
   :: forall s i o
   .  Reifies s W
   => All KnownDim '[i,o]
-  => BVar s (Linear i o)
+  => HsReal
+  -> BVar s (Linear i o)
   -> BVar s (Tensor '[i])
   -> BVar s (Tensor '[o])
-linear = liftOp2 $ op2 $ \l i -> (transpose2d (weights l) `mv` i + bias l, go l i)
+linear lr = liftOp2 $ op2 $ \l i -> (transpose2d (weights l) `mv` i + bias l, back l i)
   where
-    go :: Linear i o -> Tensor '[i] -> Tensor '[o] -> (Linear i o, Tensor '[i])
-    go (Linear (w, b)) i gout = (Linear (i `outer` b', b'), w `mv` b')
+    back :: Linear i o -> Tensor '[i] -> Tensor '[o] -> (Linear i o, Tensor '[i])
+    back (Linear (w, b)) i gout = (Linear (i `outer` b', b'), w `mv` b')
       where
-        b' = gout - b
+        b' = lr *^ gout - b
 
 

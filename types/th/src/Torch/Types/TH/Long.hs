@@ -41,3 +41,4 @@ asDynamic = longAsDynamic
 asStatic = longAsStatic
 
 
+instance Fractional Integer

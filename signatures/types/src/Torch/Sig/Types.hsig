@@ -45,6 +45,7 @@ data HsReal
 instance Num  HsReal
 instance Show HsReal
 instance Ord HsReal
+instance Fractional HsReal
 
 data HsAccReal
 instance Num  HsAccReal
