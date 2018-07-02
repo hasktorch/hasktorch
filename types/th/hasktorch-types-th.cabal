@@ -36,6 +36,7 @@ library
       Torch.Types.TH
       Torch.Types.TH.Structs
 
+      Torch.Types.Numeric
   other-modules:
       Paths_hasktorch_types_th
   default-language: Haskell2010
