@@ -1,14 +1,18 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE BangPatterns #-}
-
 module Torch.Core.RandomSpec (spec) where
+
+import Test.Hspec
+import Test.QuickCheck
+import Test.QuickCheck.Monadic
 
 import Control.Monad (replicateM)
 import Foreign (Ptr)
 
 import qualified Control.Exception as E
 import Torch.Core.Random as R
-import Torch.Prelude.Extras
+import Torch.Prelude.Extras (doesn'tCrash)
+import Orphans ()
+
 
 main :: IO ()
 main = hspec spec
@@ -83,12 +87,12 @@ uniformSpec = do
 normalSpec :: Spec
 normalSpec = do
   rng <- runIO R.newRNG
-  distributed2BoundsCheck rng normal (\a b x -> doesn'tCrash ())
+  distributed2BoundsCheck rng (withStdv normal) (\a b x -> doesn'tCrash ())
 
 exponentialSpec :: Spec
 exponentialSpec = do
   rng <- runIO R.newRNG
-  distributed1BoundsCheck rng exponential (\a x -> doesn'tCrash ())
+  distributed1BoundsCheck rng exponential property (\a x -> doesn'tCrash ())
 
 cauchySpec :: Spec
 cauchySpec = do
@@ -98,17 +102,17 @@ cauchySpec = do
 logNormalSpec :: Spec
 logNormalSpec = do
   rng <- runIO R.newRNG
-  distributed2BoundsCheck rng logNormal (\a b x -> doesn'tCrash ())
+  distributed2BoundsCheck rng (withStdv logNormal) (\a b x -> doesn'tCrash ())
 
 geometricSpec :: Spec
 geometricSpec = do
   rng <- runIO R.newRNG
-  distributed1BoundsCheck rng geometric (\a x -> doesn'tCrash ())
+  distributed1BoundsCheck rng geometric (forAll $ choose (0.0001, 0.9999)) (\a x -> doesn'tCrash ())
 
 bernoulliSpec :: Spec
 bernoulliSpec = do
   rng <- runIO R.newRNG
-  distributed1BoundsCheck rng bernoulli (\a x -> doesn'tCrash ())
+  distributed1BoundsCheck rng bernoulli (forAll $ choose (0.0001, 0.9999)) (\a x -> doesn'tCrash ())
 
 -- |Check that seeds work as intended
 testScenario :: IO ()
@@ -126,16 +130,30 @@ testScenario = do
 
 -- ========================================================================= --
 
-distributed2BoundsCheck :: (Show a, Show b, Arbitrary a, Arbitrary b) => Generator -> (Generator -> a -> b -> IO Double) -> (a -> b -> Double -> Bool) -> Spec
+withStdv
+  :: (Generator -> a -> b -> IO Double)
+  -> Generator
+  -> a
+  -> NonZero (Positive b)
+  -> IO Double
+withStdv fn g a b = fn g a (getPositive (getNonZero b))
+
+
+distributed2BoundsCheck
+  :: (Show a, Show b, Arbitrary a, Arbitrary b)
+  => Generator
+  -> (Generator -> a -> b -> IO Double)
+  -> (a -> b -> Double -> Bool)
+  -> Spec
 distributed2BoundsCheck g fun check = do
   it "should generate random numbers in the correct bounds" . property $ \(a, b) ->
-    monadicIO $ do
-      x <- run (fun g a b)
-      assert (check a b x)
+      monadicIO $ do
+        x <- run (fun g a b)
+        assert (check a b x)
 
-distributed1BoundsCheck :: (Show a, Arbitrary a) => Generator -> (Generator -> a -> IO b) -> (a -> b -> Bool) -> Spec
-distributed1BoundsCheck g fun check = do
-  it "should generate random numbers in the correct bounds" . property $ \a -> monadicIO $ do
+distributed1BoundsCheck :: (Show a, Arbitrary a) => Generator -> (Generator -> a -> IO b) -> ((a -> Property) -> Property) -> (a -> b -> Bool) -> Spec
+distributed1BoundsCheck g fun pfun check = do
+  it "should generate random numbers in the correct bounds" . pfun $ \a -> monadicIO $ do
     x <- run (fun g a)
     assert (check a x)
 
