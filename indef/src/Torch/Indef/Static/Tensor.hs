@@ -41,7 +41,6 @@ import qualified Torch.Sig.Types as Sig
 
 instance Dimensions d => Show (Tensor d) where
   show t = unsafePerformIO $ do
-    SomeDims ds <- getDims t
     (vs, desc) <-
       Dynamic.showTensor -- (pure . get1d t) (get2d t) (get3d t) (get4d t) (fromIntegral <$> listDims (dims :: Dims d))
         (pure . get1d t) (pure .: get2d t) (\a b c -> pure $ get3d t a b c) (\a b c d -> pure $ get4d t a b c d)
@@ -205,7 +204,7 @@ squeeze1d
   -> Tensor (rs ++ ls)
 squeeze1d n t = unsafeDupablePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
-  Dynamic._squeeze1d (asDynamic t) (asDynamic t') (fromIntegral (dimVal n))
+  Dynamic._squeeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
   pure t'
 
 -- | Static call to 'Dynamic.storage'
@@ -228,7 +227,7 @@ unsqueeze1d
   -> Tensor (rs ++ '[1] ++ ls)
 unsqueeze1d n t = unsafeDupablePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
-  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t') (fromIntegral (dimVal n))
+  Dynamic._unsqueeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
   pure t'
 
 -- | *Not safe:*  unsqueeze a dimension of size 1 into the tensor.
@@ -246,16 +245,12 @@ unsqueeze1d_ n t = do
 -- ========================================================================= --
 
 -- | Get runtime shape information from a tensor
-shape :: Tensor d -> IO [Size]
-shape t = do
-  ds <- nDimension t
-  mapM (size t . fromIntegral) [0..ds-1]
+shape :: Tensor d -> [Word]
+shape t = Dynamic.shape (asDynamic t)
 
 -- | alias to 'shape', casting the dimensions into a runtime 'SomeDims'.
-getDims :: Tensor d -> IO SomeDims
-getDims t = do
-  ds <- shape t
-  pure (someDimsVal $ fromIntegral <$> ds)
+getDims :: Tensor d -> SomeDims
+getDims = someDimsVal . shape
 
 -- | helper function to make other parts of hasktorch valid pure functions.
 withNew :: forall d . (Dimensions d) => (Tensor d -> IO ()) -> IO (Tensor d)

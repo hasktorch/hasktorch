@@ -74,7 +74,7 @@ _clearFlag t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
 -- is the unofficial response from \@soumith in slack).
 tensordata :: Dynamic -> IO [HsReal]
 tensordata t = withDynamicState t $ \s' t' -> do
-  sz <- (fromIntegral . product) <$> shape t
+  let sz = fromIntegral $ product (shape t)
   creals <- Sig.c_data s' t'
   (fmap.fmap) c2hsReal (FM.peekArray sz creals)
 
@@ -469,7 +469,7 @@ _setStorageNd t s a b hsc hsd = do
     Sig.c_setStorageNd st' t' s' (fromIntegral a) (fromIntegral b) c d
 
 -- | get the size of a tensor's specific dimension.
-size :: Dynamic -> DimVal -> IO Size
+size :: Dynamic -> DimVal -> IO Word
 size t l0 = withDynamicState t $ \st' t' -> fromIntegral <$> Sig.c_size st' t' (fromIntegral l0)
 
 -- | primarily used for debugging. Get the size description from a c call.
@@ -537,8 +537,8 @@ _unsqueeze1d t0 t1 d = with2DynamicState t0 t1 $
 -- ========================================================================= --
 
 -- | return the a runtime shape representing the dimensions of a 'Dynamic'
-shape :: Dynamic -> IO [Size]
-shape t = do
+shape :: Dynamic -> [Word]
+shape t = unsafeDupablePerformIO $ do
   ds <- nDimension t
   mapM (size t . fromIntegral) [0..ds-1]
 

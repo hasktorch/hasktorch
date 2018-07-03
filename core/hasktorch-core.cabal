@@ -52,6 +52,7 @@ test-suite spec
     , Torch.Core.RandomSpec
 
     -- We can't move this to hasktorch-indef until backpack gets some updates:
+    , Torch.Static.TensorSpec
     , Torch.Static.NN.AbsSpec
     , Torch.Static.NN.LinearSpec
     -- , Torch.Static.NN.Conv1dSpec

@@ -7,7 +7,7 @@ module Torch.Static.NN.LinearSpec where
 import Data.Function ((&))
 import GHC.Generics
 import Test.Hspec
-import Lens.Micro.TH
+import Lens.Micro.Platform
 import Numeric.Backprop
 
 import Torch.Double
