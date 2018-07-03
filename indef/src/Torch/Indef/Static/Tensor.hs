@@ -121,8 +121,21 @@ newClone t = asStatic <$> Dynamic.newClone (asDynamic t)
 newContiguous t = asStatic <$> Dynamic.newContiguous (asDynamic t)
 -- | Static call to 'Dynamic.newNarrow'
 newNarrow t a b c = asStatic <$> Dynamic.newNarrow (asDynamic t) a b c
+
 -- | Static call to 'Dynamic.newSelect'
-newSelect t a b = asStatic <$> Dynamic.newSelect (asDynamic t) a b
+newSelect
+  :: KnownDim i
+  => '(ls, r:+rs) ~ SplitAt i d
+  => Tensor d
+  -> (Dim i, Idx i)
+  -> IO (Tensor (ls ++ rs))
+newSelect t (d, i) =
+  asStatic <$>
+    Dynamic.newSelect
+      (asDynamic t)
+      (fromIntegral (dimVal d))
+      (fromIntegral (fromEnum i))
+
 -- | Static call to 'Dynamic.newSizeOf'
 newSizeOf t = Dynamic.newSizeOf (asDynamic t)
 -- | Static call to 'Dynamic.newStrideOf'
@@ -333,28 +346,28 @@ getDim t d = case fromIntegral <$> listDims (dims :: Dims d) of
 
 -- | Select a dimension of a tensor. If a vector is passed in, return a singleton tensor
 -- with the index value of the vector.
-(!!) :: forall (d::[Nat]) (d'::[Nat]) .  (All Dimensions '[d, d']) => Tensor d -> DimVal -> Tensor d'
+(!!)
+  :: forall d ls r rs i
+  .  '(ls, r:+rs) ~ SplitAt i d
+  => KnownDim i
+  => Dimensions d
+  => Tensor d
+  -> Dim i
+  -> Tensor (ls ++ rs)
 t !! i = unsafePerformIO $
-  nDimension t >>= \case
+  case nDimension t of
     0 -> empty
     1 -> runMaybeT selectVal >>= maybe empty pure
-    _ -> selectRank
+    _ -> newSelect t (i, Idx 1)
 
   where
-    selectVal :: MaybeT IO (Tensor d')
+    selectVal :: MaybeT IO (Tensor (ls ++ rs))
     selectVal = do
-      sizeI <- fromIntegral <$> lift (size t i)
-      guard (i < sizeI)
+      sizeI <- fromIntegral <$> lift (size t (fromIntegral $ dimVal i))
+      guard (dimVal i < sizeI)
       r <- lift $ newWithSize1d 1
-      lift $ _set1d r 0 (get1d t (fromIntegral i))
+      lift $ _set1d r 0 (get1d t (fromIntegral $ dimVal i))
       pure r
-
-    selectRank :: IO (Tensor d')
-    selectRank = do
-      sz <- fmap fromIntegral (size t i)
-      r <- newSelect t i 0
-      pure r
-
 
 -- | Create a new tensor. Elements have not yet been allocated and there will
 -- not be any gauruntees regarding what is inside.

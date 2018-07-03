@@ -118,8 +118,8 @@ isSize t ls = withDynamicState t $ \s t' ->
   withForeignPtr (snd $ TH.longStorageState ls) (fmap (1 ==) . Sig.c_isSize s t')
 
 -- | Returns the number of dimensions in a Tensor.
-nDimension :: Dynamic -> IO Int32
-nDimension t = withDynamicState t (\s t' -> fromIntegral <$> Sig.c_nDimension s t')
+nDimension :: Dynamic -> Word
+nDimension t = unsafePerformIO $ withDynamicState t (\s t' -> fromIntegral <$> Sig.c_nDimension s t')
 
 -- | Returns the number of elements in a Tensor.
 nElement :: Dynamic -> IO Int64
@@ -538,9 +538,8 @@ _unsqueeze1d t0 t1 d = with2DynamicState t0 t1 $
 
 -- | return the a runtime shape representing the dimensions of a 'Dynamic'
 shape :: Dynamic -> [Word]
-shape t = unsafeDupablePerformIO $ do
-  ds <- nDimension t
-  mapM (size t . fromIntegral) [0..ds-1]
+shape t = unsafeDupablePerformIO $
+  mapM (size t . fromIntegral) [0.. nDimension t - 1]
 
 -- | set the storage dimensionality of a dynamic tensor, inplace, to any new size and stride pair.
 _setStorageDim :: Dynamic -> Storage -> StorageOffset -> [(Size, Stride)] -> IO ()
@@ -613,8 +612,7 @@ getDims = fmap someDimsVal . getDimList
 -- | get the runtime dimension list of a dynamic tensor
 getDimList :: Integral i => Dynamic -> IO [i]
 getDimList t = do
-  nd <- nDimension t
-  mapM (fmap fromIntegral . size t . fromIntegral) [0 .. nd -1]
+  mapM (fmap fromIntegral . size t . fromIntegral) [0 .. nDimension t - 1]
 
 -- | create a new dynamic tensor of size @Dims d@
 new :: forall (d::[Nat]) . Dims d -> IO Dynamic
