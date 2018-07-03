@@ -15,7 +15,7 @@ import Prelude as P
 import Data.Singletons.Prelude hiding (type (*), All)
 
 import Torch.Double as Torch
-import qualified Torch.Double.NN.Conv2d     as NN
+import qualified Torch.Double.NN.Conv2d as NN
 import Lens.Micro.TH
 
 data LeNet = LeNet
