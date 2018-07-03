@@ -200,12 +200,12 @@ _squeeze t0 t1 = Dynamic._squeeze (asDynamic t0) (asDynamic t1)
 squeeze1d
   :: Dimensions d
   => '(rs, 1:+ls) ~ (SplitAt n d)
-  => Idx n
+  => Dim n
   -> Tensor d
   -> Tensor (rs ++ ls)
 squeeze1d n t = unsafeDupablePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
-  Dynamic._squeeze1d (asDynamic t) (asDynamic t') (fromIntegral (idxToWord n))
+  Dynamic._squeeze1d (asDynamic t) (asDynamic t') (fromIntegral (dimVal n))
   pure t'
 
 -- | Static call to 'Dynamic.storage'
@@ -223,23 +223,23 @@ _unfold t0 t1 = Dynamic._unfold (asDynamic t0) (asDynamic t1)
 unsqueeze1d
   :: Dimensions d
   => '(rs, ls) ~ (SplitAt n d)
-  => Idx n
+  => Dim n
   -> Tensor d
   -> Tensor (rs ++ '[1] ++ ls)
 unsqueeze1d n t = unsafeDupablePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
-  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t') (fromIntegral (idxToWord n))
+  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t') (fromIntegral (dimVal n))
   pure t'
 
 -- | *Not safe:*  unsqueeze a dimension of size 1 into the tensor.
 unsqueeze1d_
   :: Dimensions d
   => '(rs, ls) ~ (SplitAt n d)
-  => Idx n
+  => Dim n
   -> Tensor d
   -> IO (Tensor (rs ++ '[1] ++ ls))
 unsqueeze1d_ n t = do
-  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t) (fromIntegral (idxToWord n))
+  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t) (fromIntegral (dimVal n))
   pure (asStatic (asDynamic t))
 
 

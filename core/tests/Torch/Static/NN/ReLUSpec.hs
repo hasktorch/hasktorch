@@ -15,10 +15,9 @@ main = hspec spec
 spec :: Spec
 spec = do
   describe "relu applied to a rank-1 tensor" $ do
-    t <-
-      runIO $ cat1d
-        (constant   5  :: Tensor '[2])
-        (constant (-1) :: Tensor '[2])
+    let t = cat1d
+              (constant   5  :: Tensor '[2])
+              (constant (-1) :: Tensor '[2])
 
     it "zeros out all < 0 values on the forward pass" $ do
       let (o, _) = backprop relu t

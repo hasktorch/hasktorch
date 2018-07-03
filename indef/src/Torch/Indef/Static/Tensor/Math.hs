@@ -8,6 +8,7 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Indef.Static.Tensor.Math where
 
@@ -15,7 +16,8 @@ import Numeric.Dimensions
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
-import Data.Singletons.Prelude.List hiding (All)
+import System.IO.Unsafe
+import Data.Singletons.Prelude.List hiding (All, type (++))
 import qualified Torch.Types.TH as TH
 import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
 
@@ -98,44 +100,62 @@ cat_ a b d = Dynamic._cat (asDynamic a) (asDynamic a) (asDynamic b) d >> pure (a
 {-# WARNING cat_ "this function is impure and the dimensions can fall out of sync with the type, if used incorrectly" #-}
 
 -- | Static call to 'Dynamic.cat'
-cat :: (All Dimensions '[d, d', d'']) => Tensor d -> Tensor d' -> DimVal -> IO (Tensor d'')
-cat a b d = asStatic <$> Dynamic.cat (asDynamic a) (asDynamic b) d
+cat
+  :: '(ls, r0:+rs) ~ SplitAt i d
+  => '(ls, r1:+rs) ~ SplitAt i d'
+  => Tensor d
+  -> Tensor d'
+  -> Dim (i::Nat)
+  -> Tensor (ls ++ '[r0 + r1] ++ rs)
+cat a b d = unsafePerformIO $ asStatic <$> Dynamic.cat (asDynamic a) (asDynamic b) (fromIntegral $ dimVal d)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
-cat1d :: (All KnownDim '[n1,n2,n], n ~ Sum [n1, n2]) => Tensor '[n1] -> Tensor '[n2] -> IO (Tensor '[n])
-cat1d a b = cat a b 0
+cat1d :: (All KnownDim '[n1,n2,n], n ~ Sum [n1, n2]) => Tensor '[n1] -> Tensor '[n2] -> Tensor '[n]
+cat1d a b = cat a b (dim :: Dim 0)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
-cat2d1 :: (All KnownDim '[n,m,m0,m1], m ~ Sum [m0, m1]) => Tensor '[n, m0] -> Tensor '[n, m1] -> IO (Tensor '[n, m])
-cat2d1 a b = cat a b 1
+cat2d0 :: (All KnownDim '[n,m,n0,n1], n ~ Sum [n0, n1]) => Tensor '[n0, m] -> Tensor '[n1, m] -> (Tensor '[n, m])
+cat2d0 a b = cat a b (dim :: Dim 0)
+
+-- | convenience function, stack two rank-1 tensors along the 0-dimension
+stack1d0 :: KnownDim m => Tensor '[m] -> Tensor '[m] -> (Tensor '[2, m])
+stack1d0 a b = cat2d0
+  (unsqueeze1d (dim :: Dim 0) a)
+  (unsqueeze1d (dim :: Dim 0) b)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
-cat2d0 :: (All KnownDim '[n,m,n0,n1], n ~ Sum [n0, n1]) => Tensor '[n0, m] -> Tensor '[n1, m] -> IO (Tensor '[n, m])
-cat2d0 a b = cat a b 0
+cat2d1 :: (All KnownDim '[n,m,m0,m1], m ~ Sum [m0, m1]) => Tensor '[n, m0] -> Tensor '[n, m1] -> (Tensor '[n, m])
+cat2d1 a b = cat a b (dim :: Dim 1)
+
+-- | convenience function, stack two rank-1 tensors along the 1-dimension
+stack1d1 :: KnownDim n => Tensor '[n] -> Tensor '[n] -> (Tensor '[n, 2])
+stack1d1 a b = cat2d1
+  (unsqueeze1d (dim :: Dim 1) a)
+  (unsqueeze1d (dim :: Dim 1) b)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
 cat3d0
   :: (All KnownDim '[x,y,x0,x1,z], x ~ Sum [x0, x1])
   => Tensor '[x0, y, z]
   -> Tensor '[x1, y, z]
-  -> IO (Tensor '[x, y, z])
-cat3d0 a b = cat a b 0
+  -> (Tensor '[x, y, z])
+cat3d0 a b = cat a b (dim :: Dim 0)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
 cat3d1
   :: (All KnownDim '[x,y,y0,y1,z], y ~ Sum [y0, y1])
   => Tensor '[x, y0, z]
   -> Tensor '[x, y1, z]
-  -> IO (Tensor '[x, y, z])
-cat3d1 a b = cat a b 1
+  -> (Tensor '[x, y, z])
+cat3d1 a b = cat a b (dim :: Dim 1)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
 cat3d2
   :: (All KnownDim '[x,y,z0,z1,z], z ~ Sum [z0, z1])
   => Tensor '[x, y, z0]
   -> Tensor '[x, y, z1]
-  -> IO (Tensor '[x, y, z])
-cat3d2 a b = cat a b 2
+  -> (Tensor '[x, y, z])
+cat3d2 a b = cat a b (dim :: Dim 2)
 
 -- | Concatenate all tensors in a given list of dynamic tensors along the given dimension.
 --
