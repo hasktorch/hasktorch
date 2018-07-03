@@ -24,7 +24,7 @@ import Control.Monad.Trans.Maybe
 import Data.Coerce
 import Data.Maybe
 import Data.List
-import Data.Singletons.Prelude.List hiding (All)
+import Data.Singletons.Prelude.List hiding (All, type (++))
 import Data.Proxy
 import GHC.Natural
 import System.IO.Unsafe
@@ -197,10 +197,15 @@ sizeDesc t = Dynamic.sizeDesc (asDynamic t)
 _squeeze t0 t1 = Dynamic._squeeze (asDynamic t0) (asDynamic t1)
 
 -- | Squeeze a dimension of size 1 out of the tensor
-squeeze1d :: Dimensions d => Dim n -> Tensor d -> Tensor d'
+squeeze1d
+  :: Dimensions d
+  => '(rs, 1:+ls) ~ (SplitAt n d)
+  => Idx n
+  -> Tensor d
+  -> Tensor (rs ++ ls)
 squeeze1d n t = unsafeDupablePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
-  Dynamic._squeeze1d (asDynamic t) (asDynamic t') (fromIntegral (dimVal n))
+  Dynamic._squeeze1d (asDynamic t) (asDynamic t') (fromIntegral (idxToWord n))
   pure t'
 
 -- | Static call to 'Dynamic.storage'
@@ -215,14 +220,24 @@ _transpose t0 t1 = Dynamic._transpose (asDynamic t0) (asDynamic t1)
 _unfold t0 t1 = Dynamic._unfold (asDynamic t0) (asDynamic t1)
 
 -- | Unsqueeze a dimension of size 1 into the tensor (pure, dupable)
-unsqueeze1d :: All Dimensions '[d, d'] => Idx n -> Tensor d -> Tensor d'
+unsqueeze1d
+  :: Dimensions d
+  => '(rs, ls) ~ (SplitAt n d)
+  => Idx n
+  -> Tensor d
+  -> Tensor (rs ++ '[1] ++ ls)
 unsqueeze1d n t = unsafeDupablePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
   Dynamic._unsqueeze1d (asDynamic t) (asDynamic t') (fromIntegral (idxToWord n))
   pure t'
 
 -- | *Not safe:*  unsqueeze a dimension of size 1 into the tensor.
-unsqueeze1d_ :: All Dimensions '[d, d'] => Idx n -> Tensor d -> IO (Tensor d')
+unsqueeze1d_
+  :: Dimensions d
+  => '(rs, ls) ~ (SplitAt n d)
+  => Idx n
+  -> Tensor d
+  -> IO (Tensor (rs ++ '[1] ++ ls))
 unsqueeze1d_ n t = do
   Dynamic._unsqueeze1d (asDynamic t) (asDynamic t) (fromIntegral (idxToWord n))
   pure (asStatic (asDynamic t))
