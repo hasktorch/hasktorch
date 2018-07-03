@@ -18,6 +18,12 @@ type CAccReal = CLong
 type HsReal = Word8
 type HsAccReal = Word64
 
+real2acc :: HsReal -> HsAccReal
+real2acc = fromIntegral
+
+acc2real :: HsAccReal -> HsReal
+acc2real = fromIntegral
+
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
 
@@ -49,4 +55,4 @@ type Tensor = ByteTensor
 asDynamic = byteAsDynamic
 asStatic = byteAsStatic
 
-
+instance Fractional Word8

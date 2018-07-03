@@ -52,6 +52,9 @@ instance Num  HsAccReal
 instance Show HsAccReal
 instance Ord HsAccReal
 
+real2acc :: HsReal -> HsAccReal
+acc2real :: HsAccReal -> HsReal
+
 hs2cReal :: HsReal -> CReal
 hs2cAccReal :: HsAccReal -> CAccReal
 

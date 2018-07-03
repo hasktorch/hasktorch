@@ -16,6 +16,12 @@ type CAccReal = CDouble
 type HsReal = Double
 type HsAccReal = Double
 
+real2acc :: HsReal -> HsAccReal
+real2acc = id
+
+acc2real :: HsAccReal -> HsReal
+acc2real = id
+
 hs2cReal :: HsReal -> CReal
 hs2cReal = realToFrac
 

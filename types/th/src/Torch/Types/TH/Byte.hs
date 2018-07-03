@@ -32,6 +32,12 @@ type HsReal = Word8
 -- | Hask-level representation of a torch "accreal" -- the accumulating type of a 'Tensor'. Alias to 'Word64'.
 type HsAccReal = Word64
 
+real2acc :: HsReal -> HsAccReal
+real2acc = fromIntegral
+
+acc2real :: HsAccReal -> HsReal
+acc2real = fromIntegral
+
 -- | convert an 'HsReal' to its C-level representation
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral

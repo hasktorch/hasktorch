@@ -20,6 +20,12 @@ type HsReal = Int8
 type HsUReal = Word8
 type HsAccReal = Int64
 
+real2acc :: HsReal -> HsAccReal
+real2acc = fromIntegral
+
+acc2real :: HsAccReal -> HsReal
+acc2real = fromIntegral
+
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
 

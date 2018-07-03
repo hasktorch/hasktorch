@@ -12,6 +12,12 @@ type CAccReal = CLong
 type HsReal = Integer
 type HsAccReal = Integer
 
+real2acc :: HsReal -> HsAccReal
+real2acc = fromIntegral
+
+acc2real :: HsAccReal -> HsReal
+acc2real = fromIntegral
+
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
 
