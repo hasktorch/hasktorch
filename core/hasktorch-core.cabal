@@ -37,7 +37,7 @@ test-suite spec
     , text >=1.2.2.2
 
     , mtl
-    , microlens-th
+    , microlens-platform
     , monad-loops
     , singletons
     , time

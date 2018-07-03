@@ -19,6 +19,8 @@ data FF2Network i h o = FF2Network
   , _layer2 :: Linear h o
   } deriving Generic
 
+weightsL :: Lens' (Linear i o) (Tensor '[i, o])
+weightsL = lens weights $ \(Linear (w,b)) w' -> Linear (w', b)
 makeLenses ''FF2Network
 instance (KnownDim i, KnownDim h, KnownDim o) => Backprop (FF2Network i h o)
 
@@ -37,39 +39,24 @@ spec = do
 singleLayer :: Spec
 singleLayer = do
   ll :: Linear 3 2 <- runIO $ mkLinear xavier
-  it "initializes with xavier correctly" $ do
-    w' <- tensordata (weights ll)
-    b' <- tensordata (bias ll)
-    w' `shouldSatisfy` all (== 1/3)
-    b' `shouldSatisfy` all (== 1/2)
+  xavierPurityCheck ll $ do
+    describe "the forward pass" $ do
+      let y = constant 5 :: Tensor '[3]
+          (o, _) = backprop2 (linear undefined) ll y
 
-  describe "the forward pass" $ do
-    let y = constant 1 :: Tensor '[3]
-        (o, _) = backprop2 (linear undefined) ll y
+      it "performs matrix multipication as you would expect" $ do
+        o =##= ((5/3)*3) + 1/2
+        o `elementsSatisfy` ((== 2) . length)
 
-    it "performs matrix multipication as you would expect" $
-      tensordata o >>= (`shouldSatisfy` all (== 3/2))
+    describe "the backward pass" $ do
+      let y = constant 1 :: Tensor '[3]
+          lr = 1.0
+          (_, (ll', o)) = backprop2 (linear lr) ll y
 
-    it "leaves weights unchanged" $
-      tensordata (weights ll) >>= (`shouldSatisfy` all (== 1/3))
+      it "returns updated weights" $ weights ll' =##= 1/2
+      it "returns updated bias"    $ bias    ll' =##= 1/2
 
-    it "leaves bias unchanged" $
-      tensordata (bias ll) >>= (`shouldSatisfy` all (== 1/2))
-
-  describe "the backward pass" $ do
-    let y = constant 1 :: Tensor '[3]
-        lr = 1.0
-        (_, (ll', o)) = backprop2 (linear lr) ll y
-
-    it "returns updated weights" $ do
-      tensordata (weights ll') >>= (`shouldSatisfy` all (== 1/2))
-
-    it "returns updated bias" $ do
-      tensordata (bias ll') >>= (`shouldSatisfy` all (== 1/2))
-
-    it "returns the updated output tensor" $ do
-      -- let x = (weights ll) `mv` (constant lr - bias ll)
-      tensordata o >>= (`shouldSatisfy` all (== 1/3))
+      it "returns the updated output tensor" $ o =##= 1/3
 
 -- ========================================================================= --
 
@@ -94,25 +81,63 @@ ff2network lr arch inp
 
 twoLayer :: Spec
 twoLayer = do
-  ll :: FF2Network 5 10 2 <- runIO mkFF2Network
-  it "initializes with xavier correctly" $ do
-    tensordata (weights $ _layer1 ll) >>= (`shouldSatisfy` all (== 1 /  5))
-    tensordata (bias    $ _layer1 ll) >>= (`shouldSatisfy` all (== 1 / 10))
-    tensordata (weights $ _layer2 ll) >>= (`shouldSatisfy` all (== 1 / 10))
-    tensordata (bias    $ _layer2 ll) >>= (`shouldSatisfy` all (== 1 /  2))
+  ll :: FF2Network 4 6 2 <- runIO mkFF2Network
+  describe "the forward pass" $ do
+    describe "with xavier instantiation" $ do
+      xavierPurityCheck (ll ^. layer1) $
+        xavierPurityCheck (ll ^. layer2) $
+          describe "with input all positive input" $ do
+            let y = constant 4 :: Tensor '[4]
+                (o, _) = backprop2 (ff2network undefined) ll y
 
---   describe "the forward pass" $ do
---     let y = constant 1 :: Tensor '[3]
---         (o, _) = backprop2 (linear undefined) ll y
+            it "performs matrix multipication as you would expect" $ o =##= 1/2
 
---     it "performs matrix multipication as you would expect" $
---       tensordata o >>= (`shouldSatisfy` all (== 3/2))
+      describe "with input that drops all values via ReLU" $ do
+        let y = constant (-1) :: Tensor '[4]
+            (o, _) = backprop2 (ff2network undefined) ll y
 
---     it "leaves weights unchanged" $
---       tensordata (weights ll) >>= (`shouldSatisfy` all (== 1/3))
+        it "performs matrix multipication as you would expect" $ o =##= 1/2
 
---     it "leaves bias unchanged" $
---       tensordata (bias ll) >>= (`shouldSatisfy` all (== 1/2))
+  describe "the backward pass" $ do
+    describe "dropping half the gradient during ReLU" $ do
+      let y = constant 4 :: Tensor '[4]
+          ll' = ll & (layer1 . weightsL) .~ (cat2d0
+                                               (stack1d0
+                                                 (constant (-4) :: Tensor '[6])
+                                                 (constant (-4) :: Tensor '[6]))
+                                               (stack1d0
+                                                 (constant   4  :: Tensor '[6])
+                                                 (constant   4  :: Tensor '[6])))
+
+          (o, (gll, o')) = backprop2 (ff2network 0.1) ll y
+      it "should be" $ tensordata (gll ^. layer2 . weightsL) >>= (`shouldBe` (replicate 12 0 ++ replicate 12 1))
+
+xavierPurityCheck :: forall i o . (KnownDim i, KnownDim o) => Linear i o -> Spec -> Spec
+xavierPurityCheck ll tests = do
+  it (header ++ "initializes with xavier correctly") $ do
+    weights ll =##= 1/i
+    bias    ll =##= 1/o
+
+  tests
+
+  it (header ++ "leaves weights unchanged") $ weights ll =##= 1/i
+  it (header ++ "leaves bias unchanged")    $ bias    ll =##= 1/o
+ where
+  header :: String
+  header = "[ref-check] " ++ unwords ["Linear", show (truncate i), show (truncate o)] ++ ": "
+
+  i, o :: Double
+  i = fromIntegral (dimVal (dim :: Dim i))
+  o = fromIntegral (dimVal (dim :: Dim o))
+
+
+elementsSatisfy :: Tensor d -> ([Double] -> Bool) -> IO ()
+elementsSatisfy o pred = tensordata o >>= (`shouldSatisfy` pred)
+
+(=##=) :: Tensor d -> Double -> IO ()
+(=##=) o v = elementsSatisfy o (all (== v))
+
+infixl 2 =##=
 
 --   describe "the backward pass" $ do
 --     let y = constant 1 :: Tensor '[3]
