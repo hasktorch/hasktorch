@@ -22,6 +22,9 @@ import Numeric.Dimensions
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
+import Torch.Indef.Static.Tensor.Math.Reduce
+import Torch.Indef.Static.Tensor.Math.Pairwise ((^/), (^-))
+import Torch.Indef.Static.Tensor.Math.Pointwise ((^*^))
 import Torch.Indef.Static.Tensor.Math.Blas
 import Torch.Indef.Static.NN.Backprop ()
 import qualified Torch.Indef.Dynamic.NN as Dynamic
@@ -31,6 +34,23 @@ flattenBP
   :: (Reifies s W, KnownDim (Product d), Dimensions (d::[Nat]))
   => BVar s (Tensor d) -> BVar s (Tensor '[Product d])
 flattenBP = liftOp1 . op1 $ \t -> (flatten t, resizeAs)
+
+-- | A backpropable 'softmax' operation
+softmax
+  :: (Reifies s W, KnownDim n)
+  => BVar s (Tensor '[n]) -> BVar s (Tensor '[n])
+softmax = liftOp1 . op1 $ \t ->
+  let
+    tot = acc2real (sumall t)
+    out = t ^/ tot
+  in
+    (out, \g -> out ^*^ (g ^- tot))
+
+
+  -- gradInput_data[i] = output_data[i] * (gradOutput_data[i] - sum);
+ -- where
+   -- forward :: Tensor d -> Tensor d
+   -- forward i = i ^/ acc2real (sumall i)
 
 -- mmultBP
 --   :: forall a b c s
