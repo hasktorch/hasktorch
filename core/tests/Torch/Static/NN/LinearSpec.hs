@@ -20,7 +20,11 @@ data FF2Network i h o = FF2Network
   } deriving Generic
 
 weightsL :: Lens' (Linear i o) (Tensor '[i, o])
-weightsL = lens weights $ \(Linear (w,b)) w' -> Linear (w', b)
+weightsL = lens weights $ \(Linear (_, b)) w' -> Linear (w', b)
+
+biasL :: Lens' (Linear i o) (Tensor '[o])
+biasL = lens bias $ \(Linear (w, _)) b' -> Linear (w, b')
+
 makeLenses ''FF2Network
 instance (KnownDim i, KnownDim h, KnownDim o) => Backprop (FF2Network i h o)
 

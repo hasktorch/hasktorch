@@ -59,6 +59,9 @@ vector rs
   | genericLength rs == dimVal (dim :: Dim n) = Just . asStatic . Dynamic.vector $ rs
   | otherwise = Nothing
 
+unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> Tensor '[n]
+unsafeVector = fromJust . vector
+ 
 -- | Static call to 'Dynamic.newExpand'
 newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
 -- | Static call to 'Dynamic._expand'
@@ -426,7 +429,7 @@ fromList l = unsafePerformIO . runMaybeT $ do
 -- or a string explaining what went wrong.
 matrix
   :: forall n m
-  .  (All KnownDim '[n, m]) => All KnownNat '[n, m]
+  .  (All KnownDim '[n, m], All KnownNat '[n, m])
 #if MIN_VERSION_singletons(2,4,0)
   => KnownDim (n*m) => KnownNat (n*m)
 #else
@@ -435,14 +438,37 @@ matrix
   => [[HsReal]] -> Either String (Tensor '[n, m])
 matrix ls
   | null ls = Left "no support for empty lists"
-  | genericLength ls /= (dimVal (dim :: Dim n)) = Left "length of outer list must match type-level columns"
-  | any (/= length (head ls)) (fmap length ls) = Left "can't build a matrix from jagged lists"
-  | genericLength (head ls) /= (dimVal (dim :: Dim n)) = Left "inner list length must match type-level rows"
+
+  | colLen /= mVal =
+    Left $ "length of outer list "++show colLen++" must match type-level columns " ++ show mVal
+
+  | any (/= colLen) (fmap length ls) =
+    Left $ "can't build a matrix from jagged lists: " ++ show (fmap length ls)
+
+  | rowLen /= nVal =
+    Left $ "inner list length " ++ show rowLen ++ " must match type-level rows " ++ show nVal
+
   | otherwise =
     case fromList (concat ls) of
       Nothing -> Left "impossible: number of elements doesn't match the dimensions"
       Just m -> Right m
+  where
+    rowLen :: Integral l => l
+    rowLen = genericLength ls
 
+    colLen :: Integral l => l
+    colLen = genericLength (head ls)
+
+    nVal = dimVal (dim :: Dim n)
+    mVal = dimVal (dim :: Dim m)
+
+unsafeMatrix
+  :: forall n m
+  .  All KnownDim '[n, m, n*m]
+  => All KnownNat '[n, m, n*m]
+  => [[HsReal]] -> Tensor '[n, m]
+unsafeMatrix = either error id . matrix
+ 
 -- | transpose a matrix (pure, dupable)
 transpose2d :: (All KnownDim '[r,c]) => Tensor '[r, c] -> Tensor '[c, r]
 transpose2d t = unsafeDupablePerformIO $ newTranspose t 1 0
