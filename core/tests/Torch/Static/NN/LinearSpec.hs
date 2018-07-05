@@ -4,8 +4,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Torch.Static.NN.LinearSpec where
 
+import Control.Monad (join)
 import Data.Function ((&))
-import GHC.Generics
+import GHC.Generics (Generic)
 import Test.Hspec
 import Lens.Micro.Platform
 import Numeric.Backprop
@@ -36,7 +37,9 @@ main = hspec spec
 spec :: Spec
 spec = do
   describe "a single linear layer" singleLayer
-  describe "a two-layer feed forward network" twoLayer
+  describe "a two-layer feed forward network" $ do
+    describe "with xavier initialization" twoLayerXavier
+    describe "forcing ReLU activity"      twoLayerForceReLU
 
 -- ========================================================================= --
 
@@ -46,7 +49,7 @@ singleLayer = do
   xavierPurityCheck ll $ do
     describe "the forward pass" $ do
       let y = constant 5 :: Tensor '[3]
-          (o, _) = backprop2 (linear undefined) ll y
+          o = evalBP2 (linear undefined) ll y
 
       it "performs matrix multipication as you would expect" $ do
         o =##= ((5/3)*3) + 1/2
@@ -83,8 +86,8 @@ ff2network lr arch inp
   & linear lr (arch ^^. layer2)
   & softmax
 
-twoLayer :: Spec
-twoLayer = do
+twoLayerXavier :: Spec
+twoLayerXavier = do
   ll :: FF2Network 4 6 2 <- runIO mkFF2Network
   describe "the forward pass" $ do
     describe "with xavier instantiation" $ do
@@ -102,39 +105,67 @@ twoLayer = do
 
         it "performs matrix multipication as you would expect" $ o =##= 1/2
 
-  describe "the backward pass" $ do
+twoLayerForceReLU :: Spec
+twoLayerForceReLU = do
+  describe "operations that force relu activity" $ do
+    let o1 = evalBP2 (relu    .: linear 1) (ff2 ^. layer1) oneInput
+        o2 = evalBP2 (           linear 1) (ff2 ^. layer2) o1
+        (out, (gff2, gin)) = backprop2 (ff2network 1) ff2 oneInput
     describe "dropping half the gradient during ReLU" $ do
-      let y = constant 1 :: Tensor '[4]
-          ll' = ll & (layer1 . weightsL) .~ (cat2d0
-                                               (stack1d0
-                                                 (constant (-40) :: Tensor '[6])
-                                                 (constant (-40) :: Tensor '[6]))
-                                               (stack1d0
-                                                 (constant   40  :: Tensor '[6])
-                                                 (constant   40  :: Tensor '[6])))
-                   & (layer2 . weightsL) .~ constant 0
-                   -- & (layer2 . weightsL) .~ (transpose2d
-                   --                             (stack1d0
-                   --                               (constant (-40) :: Tensor '[6])
-                   --                               (constant   40  :: Tensor '[6])))
-                   & (layer1 . biasL) .~ constant 0
-                   & (layer2 . biasL) .~ constant 0
+      describe "the forward pass" $ do
+        it "returns [0,0,0,4,4,4] after the first layer" $
+          tensordata o1 >>= (`shouldBe` [0,0,0,4,4,4])
 
-          (o, (gll, o')) = backprop2 (ff2network 0.1) ll y
-      it "should be" $ tensordata (gll ^. layer1 . weightsL) >>= (`shouldBe` (replicate 12 0 ++ replicate 12 1))
-      -- it "should be" $ tensordata (gll ^. layer1 . weightsL) >>= (`shouldBe` (replicate 12 0 ++ replicate 12 1))
-      -- it "should be" $ tensordata (gll ^. layer1 . biasL   ) >>= (`shouldBe` (replicate 12 0 ++ replicate 12 1))
+        it "returns [0,0,0,4,4,4] after the second layer" $
+          tensordata o2 >>= (`shouldBe` [12, 0])
+
+        it "returns [1, 0] as the output" $
+          tensordata out >>= (`shouldBe` [1, 0])
+
+      describe "the backward pass" $ do
+        it "returns a half zero-d out layer 1 gradient" $ do
+          join (shouldBe
+            <$> tensordata (gff2 ^. layer1 . weightsL)
+            <*> tensordata l1weightgrad)
+
+        it "returns a quarter zero-d out layer 2 gradient" $ do
+          join (shouldBe
+            <$> tensordata (gff2 ^. layer2 . weightsL)
+            <*> tensordata l2weightgrad)
+
+        it "returns a [-33,-33,-33,-33] input gradient" $ do
+          tensordata gin >>= (`shouldBe` replicate 4 (-33))
+
+ where
+  ff2 :: FF2Network 4 6 2
+  ff2 = FF2Network
+    (Linear (unsafeMatrix $ replicate 4 [ -1, -1, -1, 1, 1, 1], constant 0))
+    (Linear (unsafeMatrix $ replicate 6                 [1, 0], constant 0))
+
+  oneInput :: Tensor '[4]
+  oneInput = constant 1
+
+  l1weightgrad :: Tensor '[4, 6]
+  l1weightgrad = unsafeMatrix $ replicate 4 [ 0, 0, 0, -11, -11, -11]
+
+  l2weightgrad :: Tensor '[6, 2]
+  l2weightgrad = unsafeMatrix
+    [ [   0, 0]
+    , [   0, 0]
+    , [   0, 0]
+    , [ -44, 0]
+    , [ -44, 0]
+    , [ -44, 0]
+    ]
 
 xavierPurityCheck :: forall i o . (KnownDim i, KnownDim o) => Linear i o -> Spec -> Spec
-xavierPurityCheck ll tests = do
-  it (header ++ "initializes with xavier correctly") $ do
-    weights ll =##= 1/i
-    bias    ll =##= 1/o
-
-  tests
-
-  it (header ++ "leaves weights unchanged") $ weights ll =##= 1/i
-  it (header ++ "leaves bias unchanged")    $ bias    ll =##= 1/o
+xavierPurityCheck ll tests =
+  it (header ++ "initializes with xavier correctly")
+    (  weights ll =##= 1/i
+    >> bias    ll =##= 1/o)
+  >> tests
+  >> it (header ++ "leaves weights unchanged") (weights ll =##= 1/i)
+  >> it (header ++ "leaves bias unchanged")    (bias    ll =##= 1/o)
  where
   header :: String
   header = "[ref-check] " ++ unwords ["Linear", show (truncate i), show (truncate o)] ++ ": "
@@ -151,20 +182,5 @@ elementsSatisfy o pred = tensordata o >>= (`shouldSatisfy` pred)
 (=##=) o v = elementsSatisfy o (all (== v))
 
 infixl 2 =##=
-
---   describe "the backward pass" $ do
---     let y = constant 1 :: Tensor '[3]
---         lr = 1.0
---         (_, (ll', o)) = backprop2 (linear lr) ll y
-
---     it "returns updated weights" $ do
---       tensordata (weights ll') >>= (`shouldSatisfy` all (== 1/2))
-
---     it "returns updated bias" $ do
---       tensordata (bias ll') >>= (`shouldSatisfy` all (== 1/2))
-
---     it "returns the updated output tensor" $ do
---       -- let x = (weights ll) `mv` (constant lr - bias ll)
---       tensordata o >>= (`shouldSatisfy` all (== 1/3))
 
 

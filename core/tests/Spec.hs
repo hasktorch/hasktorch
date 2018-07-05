@@ -22,6 +22,6 @@ main = hspec $ do
   describe "Torch.Static.TensorSpec" Tensor.spec
   describe "Torch.Static.NN.AbsSpec" AbsNN.spec
   describe "Torch.Static.NN.ReLUSpec" ReLUNN.spec
-  -- describe "Torch.Static.NN.LinearSpec" LinearNN.spec
+  describe "Torch.Static.NN.LinearSpec" LinearNN.spec
 
 
