@@ -104,17 +104,26 @@ twoLayer = do
 
   describe "the backward pass" $ do
     describe "dropping half the gradient during ReLU" $ do
-      let y = constant 4 :: Tensor '[4]
+      let y = constant 1 :: Tensor '[4]
           ll' = ll & (layer1 . weightsL) .~ (cat2d0
                                                (stack1d0
-                                                 (constant (-4) :: Tensor '[6])
-                                                 (constant (-4) :: Tensor '[6]))
+                                                 (constant (-40) :: Tensor '[6])
+                                                 (constant (-40) :: Tensor '[6]))
                                                (stack1d0
-                                                 (constant   4  :: Tensor '[6])
-                                                 (constant   4  :: Tensor '[6])))
+                                                 (constant   40  :: Tensor '[6])
+                                                 (constant   40  :: Tensor '[6])))
+                   & (layer2 . weightsL) .~ constant 0
+                   -- & (layer2 . weightsL) .~ (transpose2d
+                   --                             (stack1d0
+                   --                               (constant (-40) :: Tensor '[6])
+                   --                               (constant   40  :: Tensor '[6])))
+                   & (layer1 . biasL) .~ constant 0
+                   & (layer2 . biasL) .~ constant 0
 
           (o, (gll, o')) = backprop2 (ff2network 0.1) ll y
-      it "should be" $ tensordata (gll ^. layer2 . weightsL) >>= (`shouldBe` (replicate 12 0 ++ replicate 12 1))
+      it "should be" $ tensordata (gll ^. layer1 . weightsL) >>= (`shouldBe` (replicate 12 0 ++ replicate 12 1))
+      -- it "should be" $ tensordata (gll ^. layer1 . weightsL) >>= (`shouldBe` (replicate 12 0 ++ replicate 12 1))
+      -- it "should be" $ tensordata (gll ^. layer1 . biasL   ) >>= (`shouldBe` (replicate 12 0 ++ replicate 12 1))
 
 xavierPurityCheck :: forall i o . (KnownDim i, KnownDim o) => Linear i o -> Spec -> Spec
 xavierPurityCheck ll tests = do

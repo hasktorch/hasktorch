@@ -90,6 +90,6 @@ linear lr = liftOp2 $ op2 $ \l i -> (addmv 1 (bias l) 1 (transpose2d (weights l)
     back :: Linear i o -> Tensor '[i] -> Tensor '[o] -> (Linear i o, Tensor '[i])
     back (Linear (w, b)) i gout = (Linear (i `outer` b', b'), w `mv` b')
       where
-        b' = {- lr *^ -} gout - b
+        b' = lr *^ gout - b
 
 
