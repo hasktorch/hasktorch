@@ -96,6 +96,7 @@ library
 
     , Torch.Indef.Dynamic.NN
     , Torch.Indef.Dynamic.NN.Activation
+    , Torch.Indef.Dynamic.NN.Criterion
     , Torch.Indef.Dynamic.NN.Pooling
     , Torch.Indef.Dynamic.Tensor.Math.Blas
     , Torch.Indef.Dynamic.Tensor.Math.Floating

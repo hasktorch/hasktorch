@@ -10,7 +10,8 @@
 module Torch.Indef.Static.NN.Criterion where
 
 import Torch.Indef.Types
-import qualified Torch.Indef.Dynamic.NN as Dynamic
+import qualified Torch.Indef.Dynamic.NN.Criterion as Dynamic
+
 
 -- | absCriterion forward pass (updates the output tensor)
 _absCriterion_updateOutput
