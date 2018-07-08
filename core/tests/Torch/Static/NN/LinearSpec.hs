@@ -7,6 +7,8 @@ module Torch.Static.NN.LinearSpec where
 import GHC.TypeLits
 import Control.Monad (join)
 import Data.Function ((&))
+import Data.Foldable
+import Debug.Trace
 import GHC.Generics (Generic)
 import Test.Hspec
 import Lens.Micro.Platform
@@ -20,7 +22,7 @@ import Torch.Double.NN.Linear
 data FF2Network i h o = FF2Network
   { _layer1 :: Linear i h
   , _layer2 :: Linear h o
-  } deriving Generic
+  } deriving (Generic, Show)
 
 weightsL :: Lens' (Linear i o) (Tensor '[i, o])
 weightsL = lens weights $ \(Linear (_, b)) w' -> Linear (w', b)
@@ -188,18 +190,23 @@ twoLayerForceReLU = do
 
 twoLayerOverfit :: Spec
 twoLayerOverfit = do
-  ll :: FF2Network 4 6 2 <- runIO mkFF2Network
+  net0 :: FF2Network 4 6 2 <- runIO mkFF2Network
   describe "with xavier instantiation and binary cross-entropy error" $ do
     it "returns a balanced distribution without training" $
-      tensordata (evalBP2 (ff2network undefined) ll  y) >>= (`shouldBe` [0.5, 0.5])
+      tensordata (evalBP2 (ff2network undefined) net0  y) >>= (`shouldBe` [0.5, 0.5])
 
-    it "overfits on a single input with lr=1.0" $ do
-      let ll' = train t 1 y ll
-      tensordata (evalBP2 (ff2network undefined) ll  y) >>= (`shouldBe` [0.0, 1.0])
+    it "overfits on a single input with lr=1.0 and 100 steps" $ do
+      let net' = foldl' (train t 1.0) net0 (replicate 1 y)
+      tensordata (evalBP2 (ff2network undefined) net' y) >>= (`shouldBe` [])
+
+      -- tensordata (evalBP2 (ff2network undefined) ll  y) >>= (`shouldBe` [0.0, 1.0])
+      -- tensordata (ll' ^. layer2 . weightsL) >>= (`shouldBe` [])
+      -- tensordata (ll' ^. layer2 . weightsL) >>= (`shouldBe` [])
+
 
   where
     y = constant 1          :: Tensor '[4]
-    t = unsafeVector [0, 1] :: Tensor '[2]
+    t = unsafeVector [0, 0.99] :: Tensor '[2]
 
     train
       :: forall i h o
@@ -207,10 +214,10 @@ twoLayerOverfit = do
       => All KnownNat '[i,h,o]
       => Tensor '[o]
       -> Double
-      -> Tensor '[i]       -- ^ input
       -> FF2Network i h o  -- ^ ff2network architecture
+      -> Tensor '[i]       -- ^ input
       -> FF2Network i h o  -- ^ new ff2network architecture
-    train tar lr inp arch = update arch
+    train tar lr arch inp = update arch
       (fst (gradBP2 (bCECriterion True True Nothing tar .: ff2network lr) arch inp))
 
 
