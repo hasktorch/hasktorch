@@ -7,9 +7,19 @@
 -- Stability :  experimental
 -- Portability: non-portable
 -------------------------------------------------------------------------------
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Torch.Indef.Static.NN.Criterion where
 
+import Control.Arrow ((&&&))
+import GHC.TypeLits
+import Numeric.Dimensions
+import Numeric.Backprop
+import System.IO.Unsafe
+
+import Torch.Indef.Static.Tensor
 import Torch.Indef.Types
+import Torch.Indef.Static.NN.Backprop ()
 import qualified Torch.Indef.Dynamic.NN.Criterion as Dynamic
 
 
@@ -34,28 +44,51 @@ _absCriterion_updateGradInput
   -> IO ()
 _absCriterion_updateGradInput i t go gi = Dynamic._absCriterion_updateGradInput (asDynamic i) (asDynamic t) (asDynamic go) (asDynamic gi)
 
--- | bCECriterion forward pass (updates the output tensor)
-_bCECriterion_updateOutput
-  :: Tensor d     -- ^ input
-  -> Tensor d'    -- ^ target
-  -> Tensor d''   -- ^ output
-  -> Bool    -- ^ sizeAverage
-  -> Tensor d'''  -- ^ weights
-  -> Bool    -- ^ reduce
-  -> IO ()
-_bCECriterion_updateOutput i t o b w = Dynamic._bCECriterion_updateOutput (asDynamic i) (asDynamic t) (asDynamic o) b (asDynamic w)
+-- | Binary cross-entropy for Sigmoid (two-class version of ClassNLLCriterion)
+--
+-- Creates a criterion that measures the Binary Cross Entropy between the target and
+-- the output:
+-- @
+--   loss(o, t) = - 1/n sum_i (t[i] * log(o[i]) + (1 - t[i]) * log(1 - o[i]))
+-- @
+-- or in the case of the weights argument being specified:
+-- @
+--   loss(o, t) = - 1/n sum_i weights[i] * (t[i] * log(o[i]) + (1 - t[i]) * log(1 - o[i]))
+-- @
+-- This is used for measuring the error of a reconstruction in for example an
+-- auto-encoder. Note that the outputs o[i] should be numbers between 0 and 1,
+-- for instance, the output of an nn.Sigmoid layer and should be interpreted as
+-- the probability of predicting t[i] = 1. Note t[i] can be either 0 or 1.
+--
+-- By default, the losses are averaged for each minibatch over observations as
+-- well as over dimensions. However, if the field sizeAverage is set to false,
+-- the losses are instead summed.
+bCECriterion
+  :: forall s n
+  . (Reifies s W, KnownNat n, KnownDim n)
+  => Bool                          -- ^ sizeAverage (TODO: swap this out with 'Reduction')
+  -> Bool                          -- ^ reduce (TODO: swap this out with 'Reduction')
+  -> Maybe (Tensor '[n])           -- ^ weights
+  -> Tensor '[n]                   -- ^ target
+  -> BVar s (Tensor '[n])          -- ^ input
+  -> BVar s (Tensor '[1])          -- ^ output
+bCECriterion savg r mw tar = liftOp1 . op1 $ (updateOutput &&& updateGradInput)
+  where
+    updateOutput
+      :: Tensor '[n]          -- input
+      -> Tensor '[1]          -- output
+    updateOutput i = unsafeDupablePerformIO . withNew $ \o ->
+      Dynamic._bCECriterion_updateOutput
+        (asDynamic i) (asDynamic tar) (asDynamic o) savg (asDynamic <$> mw) r
 
--- | bCECriterion backward-update (updates the layer and bias tensors)
-_bCECriterion_updateGradInput
-  :: Tensor d      -- ^ input
-  -> Tensor d'     -- ^ target
-  -> Tensor d''    -- ^ grad output
-  -> Tensor d'''   -- ^ grad input
-  -> Bool     -- ^  sizeAvreage
-  -> Tensor d''''  -- ^ weights
-  -> Bool     -- ^ reduce
-  -> IO ()
-_bCECriterion_updateGradInput i t go gi b w = Dynamic._bCECriterion_updateGradInput (asDynamic i) (asDynamic t) (asDynamic go) (asDynamic gi) b (asDynamic w)
+    updateGradInput
+      :: Tensor '[n]          -- input
+      -> Tensor '[1]          -- grad output
+      -> Tensor '[n]          -- grad input
+    updateGradInput i go = unsafeDupablePerformIO . withNew $ \gi ->
+      Dynamic._bCECriterion_updateGradInput
+        (asDynamic i) (asDynamic tar) (asDynamic go) (asDynamic gi) savg (asDynamic <$> mw) r
+
 
 -- | marginCriterion forward pass (updates the output tensor)
 _marginCriterion_updateOutput :: Tensor d -> Tensor d -> Tensor d -> Bool -> Double -> IO ()

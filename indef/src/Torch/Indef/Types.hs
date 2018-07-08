@@ -61,6 +61,20 @@ import qualified Torch.FFI.TH.Long.Storage as TH
 import qualified Torch.Sig.Tensor.Memory as SigTen
 import qualified Torch.Sig.Storage.Memory as SigStore
 
+
+-------------------------------------------------------------------------------
+
+-- | From
+-- https://github.com/pytorch/pytorch/blob/c61f0217a536d19c9ff3290067ddcbb9ce3a5c6a/aten/src/THNN/Reduction.h
+--
+-- NB: Keep this in sync with Reduction class in torch/nn/modules/functional.py
+-- These constants control the reduction behavior of loss functions.
+-- Ideally, this would be a scoped enum, but jit doesn't support that
+data Reduction
+  = NoReduce         -- ^ Do not reduce
+  | ElementwiseMean  -- ^ Sum losses and take mean over each individually computed loss element
+  | Sum              -- ^ Sum losses
+
 -------------------------------------------------------------------------------
 -- helpers for dimensions:
 
