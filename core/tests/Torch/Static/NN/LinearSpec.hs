@@ -4,12 +4,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Torch.Static.NN.LinearSpec where
 
+import GHC.TypeLits
 import Control.Monad (join)
 import Data.Function ((&))
 import GHC.Generics (Generic)
 import Test.Hspec
 import Lens.Micro.Platform
 import Numeric.Backprop
+import qualified Numeric.Backprop as B
 
 import Torch.Double
 import Torch.Double.NN.Linear
@@ -26,6 +28,17 @@ weightsL = lens weights $ \(Linear (_, b)) w' -> Linear (w', b)
 biasL :: Lens' (Linear i o) (Tensor '[o])
 biasL = lens bias $ \(Linear (w, _)) b' -> Linear (w, b')
 
+update
+  :: forall i h o
+  .  All KnownDim '[i, h, o]
+  => FF2Network i h o
+  -> FF2Network i h o
+  -> FF2Network i h o
+update i g = FF2Network
+  { _layer1 = B.add (_layer1 i) (_layer1 g)
+  , _layer2 = B.add (_layer2 i) (_layer2 g)
+  }
+
 makeLenses ''FF2Network
 instance (KnownDim i, KnownDim h, KnownDim o) => Backprop (FF2Network i h o)
 
@@ -40,6 +53,7 @@ spec = do
   describe "a two-layer feed forward network" $ do
     describe "with xavier initialization" twoLayerXavier
     describe "forcing ReLU activity"      twoLayerForceReLU
+    describe "overfitting to [-500, 338]" twoLayerOverfit
 
 -- ========================================================================= --
 
@@ -85,6 +99,20 @@ ff2network lr arch inp
   & relu
   & linear lr (arch ^^. layer2)
   & softmax
+
+train'
+  :: forall i h o
+  .  All KnownDim '[i,h,o]
+  => All KnownNat '[i,h,o]
+  => Double
+  -> Tensor '[o]
+  -> FF2Network i h o  -- ^ ff2network architecture
+  -> Tensor '[i]       -- ^ input
+  -> FF2Network i h o  -- ^ new ff2network architecture
+train' lr tar arch inp = update arch grad
+  where
+    (grad, _) = gradBP2 (bCECriterion True True Nothing tar .: ff2network lr) arch inp
+
 
 twoLayerXavier :: Spec
 twoLayerXavier = do
@@ -158,6 +186,34 @@ twoLayerForceReLU = do
     , [ -44, 0]
     ]
 
+twoLayerOverfit :: Spec
+twoLayerOverfit = do
+  ll :: FF2Network 4 6 2 <- runIO mkFF2Network
+  describe "with xavier instantiation and binary cross-entropy error" $ do
+    it "returns a balanced distribution without training" $
+      tensordata (evalBP2 (ff2network undefined) ll  y) >>= (`shouldBe` [0.5, 0.5])
+
+    it "overfits on a single input with lr=1.0" $ do
+      let ll' = train t 1 y ll
+      tensordata (evalBP2 (ff2network undefined) ll  y) >>= (`shouldBe` [0.0, 1.0])
+
+  where
+    y = constant 1          :: Tensor '[4]
+    t = unsafeVector [0, 1] :: Tensor '[2]
+
+    train
+      :: forall i h o
+      .  All KnownDim '[i,h,o]
+      => All KnownNat '[i,h,o]
+      => Tensor '[o]
+      -> Double
+      -> Tensor '[i]       -- ^ input
+      -> FF2Network i h o  -- ^ ff2network architecture
+      -> FF2Network i h o  -- ^ new ff2network architecture
+    train tar lr inp arch = update arch
+      (fst (gradBP2 (bCECriterion True True Nothing tar .: ff2network lr) arch inp))
+
+
 xavierPurityCheck :: forall i o . (KnownDim i, KnownDim o) => Linear i o -> Spec -> Spec
 xavierPurityCheck ll tests =
   it (header ++ "initializes with xavier correctly")
@@ -175,6 +231,9 @@ xavierPurityCheck ll tests =
   o = fromIntegral (dimVal (dim :: Dim o))
 
 
+approximately :: Tensor d -> ([Double] -> Bool) -> IO ()
+approximately o pred = tensordata o >>= (`shouldSatisfy` pred)
+
 elementsSatisfy :: Tensor d -> ([Double] -> Bool) -> IO ()
 elementsSatisfy o pred = tensordata o >>= (`shouldSatisfy` pred)
 
@@ -183,4 +242,38 @@ elementsSatisfy o pred = tensordata o >>= (`shouldSatisfy` pred)
 
 infixl 2 =##=
 
-
+-- twoLayerOverfit :: Spec
+-- twoLayerOverfit = do
+--   ll :: FF2Network 4 6 2 <- runIO mkFF2Network
+--   describe "with xavier instantiation and binary cross-entropy error" $ do
+--     it "returns a balanced distribution without training" $
+--       tensordata (evalBP2 (ff2network undefined) ll y) >>= (`approx` [0.5, 0.5])
+--
+--     it "overfits on a single input with lr=1.0" $ do
+--       let gll = fst (gradBP2 (bCECriterion True True Nothing t .: ff2network 1.0) ll y)
+--           newll = train t 1 y ll
+--       tensordata (evalBP2 (ff2network undefined) newll y) >>= (`approx` [0.0, 1.0])
+--
+--     -- it "overfits on a single input with lr=0.1 and 1000 steps" $ do
+--     --   tensordata (evalBP2 (ff2network undefined) (train t 1 y ll) y) >>= (`approx` [0.5, 0.5])
+--
+--       -- it "performs matrix multipication as you would expect" $
+--       --   tensordata (evalBP2 (ff2network undefined) ll' y) >>= (`shouldBe` [0.0, 1.0])
+--   where
+--     approx = approximately 0.00001
+--     y = constant 1          :: Tensor '[4]
+--     t = unsafeVector [0, 1] :: Tensor '[2]
+--
+--     train
+--       :: forall i h o
+--       .  All KnownDim '[i,h,o]
+--       => All KnownNat '[i,h,o]
+--       => Tensor '[o]
+--       -> Double
+--       -> Tensor '[i]       -- ^ input
+--       -> FF2Network i h o  -- ^ ff2network architecture
+--       -> FF2Network i h o  -- ^ new ff2network architecture
+--     train tar lr inp arch = update arch
+--       (fst (gradBP2 (bCECriterion True True Nothing tar .: ff2network lr) arch inp))
+--
+--
