@@ -5,7 +5,7 @@
 module Torch.Static.NN.LinearSpec where
 
 import GHC.TypeLits
-import Control.Monad (join)
+import Control.Monad (join, void)
 import Data.Function ((&))
 import Data.Foldable
 import Debug.Trace
@@ -55,7 +55,7 @@ spec = do
   describe "a two-layer feed forward network" $ do
     describe "with xavier initialization" twoLayerXavier
     describe "forcing ReLU activity"      twoLayerForceReLU
-    describe "overfitting to [-500, 338]" twoLayerOverfit
+    describe "overfitting to [0, 1]"      twoLayerOverfit
 
 -- ========================================================================= --
 
@@ -88,6 +88,7 @@ mkFF2Network = FF2Network
   <$> mkLinear xavier
   <*> mkLinear xavier
 
+
 ff2network
   :: forall s i h o
   .  Reifies s W
@@ -102,18 +103,28 @@ ff2network lr arch inp
   & linear lr (arch ^^. layer2)
   & softmax
 
-train'
+
+train
   :: forall i h o
   .  All KnownDim '[i,h,o]
   => All KnownNat '[i,h,o]
-  => Double
-  -> Tensor '[o]
+  => Tensor '[o]
+  -> Double
   -> FF2Network i h o  -- ^ ff2network architecture
   -> Tensor '[i]       -- ^ input
   -> FF2Network i h o  -- ^ new ff2network architecture
-train' lr tar arch inp = update arch grad
+train tar lr arch inp = update arch grad
   where
     (grad, _) = gradBP2 (bCECriterion True True Nothing tar .: ff2network lr) arch inp
+
+
+infer
+  :: All KnownDim '[i,h,o]
+  => All KnownNat '[i,h,o]
+  => FF2Network i h o
+  -> Tensor '[i]
+  -> Tensor '[o]
+infer = evalBP2 (ff2network undefined)
 
 
 twoLayerXavier :: Spec
@@ -135,57 +146,55 @@ twoLayerXavier = do
 
         it "performs matrix multipication as you would expect" $ o =##= 1/2
 
+
 twoLayerForceReLU :: Spec
 twoLayerForceReLU = do
   describe "operations that force relu activity" $ do
     let o1 = evalBP2 (relu    .: linear 1) (ff2 ^. layer1) oneInput
         o2 = evalBP2 (           linear 1) (ff2 ^. layer2) o1
         (out, (gff2, gin)) = backprop2 (ff2network 1) ff2 oneInput
+
     describe "dropping half the gradient during ReLU" $ do
       describe "the forward pass" $ do
         it "returns [0,0,0,4,4,4] after the first layer" $
           tensordata o1 >>= (`shouldBe` [0,0,0,4,4,4])
 
-        it "returns [0,0,0,4,4,4] after the second layer" $
-          tensordata o2 >>= (`shouldBe` [12, 0])
+        it "returns [-12,0] after the second layer" $
+          tensordata o2 >>= (`shouldBe` [-12, 0])
 
-        it "returns [1, 0] as the output" $
-          tensordata out >>= (`shouldBe` [1, 0])
+        it "returns [0, 1] as the output" $ do
+          out `lapprox` [0, 1]
 
       describe "the backward pass" $ do
-        it "returns a half zero-d out layer 1 gradient" $ do
-          join (shouldBe
-            <$> tensordata (gff2 ^. layer1 . weightsL)
-            <*> tensordata l1weightgrad)
+        it "returns a half zero-d out layer 1 gradient" $
+          (gff2 ^. layer1 . weightsL) `approx` l1weightgrad
 
-        it "returns a quarter zero-d out layer 2 gradient" $ do
-          join (shouldBe
-            <$> tensordata (gff2 ^. layer2 . weightsL)
-            <*> tensordata l2weightgrad)
+        it "returns a quarter zero-d out layer 2 gradient" $
+          (gff2 ^. layer2 . weightsL) `approx` l2weightgrad
 
-        it "returns a [-33,-33,-33,-33] input gradient" $ do
-          tensordata gin >>= (`shouldBe` replicate 4 (-33))
+        it "returns a [3,3,3] input gradient" $ do
+          gin `lapprox` replicate 4 3
 
  where
+  eps = 0.0001
+  approx = approximately eps
+  lapprox = lapproximately eps
+
   ff2 :: FF2Network 4 6 2
   ff2 = FF2Network
     (Linear (unsafeMatrix $ replicate 4 [ -1, -1, -1, 1, 1, 1], constant 0))
-    (Linear (unsafeMatrix $ replicate 6                 [1, 0], constant 0))
+    (Linear (unsafeMatrix $ replicate 6                [-1, 0], constant 0))
 
   oneInput :: Tensor '[4]
   oneInput = constant 1
 
   l1weightgrad :: Tensor '[4, 6]
-  l1weightgrad = unsafeMatrix $ replicate 4 [ 0, 0, 0, -11, -11, -11]
+  l1weightgrad = unsafeMatrix $ replicate 4 [ 0, 0, 0, 1, 1, 1]
 
   l2weightgrad :: Tensor '[6, 2]
-  l2weightgrad = unsafeMatrix
-    [ [   0, 0]
-    , [   0, 0]
-    , [   0, 0]
-    , [ -44, 0]
-    , [ -44, 0]
-    , [ -44, 0]
+  l2weightgrad = unsafeMatrix $ replicateN 3
+    [ [ 0, 0]
+    , [-4, 0]
     ]
 
 twoLayerOverfit :: Spec
@@ -193,32 +202,36 @@ twoLayerOverfit = do
   net0 :: FF2Network 4 6 2 <- runIO mkFF2Network
   describe "with xavier instantiation and binary cross-entropy error" $ do
     it "returns a balanced distribution without training" $
-      tensordata (evalBP2 (ff2network undefined) net0  y) >>= (`shouldBe` [0.5, 0.5])
+      infer net0  y `lapprox` [0.5, 0.5]
 
-    it "overfits on a single input with lr=1.0 and 100 steps" $ do
-      let net' = foldl' (train t 1.0) net0 (replicate 1 y)
-      tensordata (evalBP2 (ff2network undefined) net' y) >>= (`shouldBe` [])
+    it "performs an update on a single input with lr=0.3 and 1 step" $ do
+      let
+        net' = foldl' (train t 1) net0 (replicate 1 y)
 
-      -- tensordata (evalBP2 (ff2network undefined) ll  y) >>= (`shouldBe` [0.0, 1.0])
-      -- tensordata (ll' ^. layer2 . weightsL) >>= (`shouldBe` [])
-      -- tensordata (ll' ^. layer2 . weightsL) >>= (`shouldBe` [])
+      infer net' y `lnotApprox` [0.5, 0.5]
+      infer net' y `elementsSatisfy` (\[l,r] -> l < r)
 
-
+    it "overfits on a single input with lr=0.3 and 1000 steps" . void $ do
+      [l0, r0] <- tensordata $ infer net0 y
+      (fnet, (fl, fr)) <-
+        foldlM (\(net, (l, r)) i -> do
+          let speedup = 4
+              net' = train t (0.1 * speedup) net y
+          [l', r'] <- tensordata (infer net' y)
+          (i, l, l') `shouldSatisfy` (\(_, l, l') -> l' < l || (l' - (0.01 * speedup ^ 2)) < l)
+          (i, r, r') `shouldSatisfy` (\(_, r, r') -> r' > r || (r' + (0.01 * speedup ^ 2)) > r)
+          pure (net', (l', r'))
+          ) (net0, (l0, r0)) [1..1000]
+      lapproximately 0.08 (unsafeVector [fl, fr] :: Tensor '[2]) [0, 1]
   where
-    y = constant 1          :: Tensor '[4]
-    t = unsafeVector [0, 0.99] :: Tensor '[2]
+    eps = 0.0001
+    approx     = approximately eps
+    notApprox  = notCloseTo eps
+    lapprox    = lapproximately eps
+    lnotApprox = lnotCloseTo eps
 
-    train
-      :: forall i h o
-      .  All KnownDim '[i,h,o]
-      => All KnownNat '[i,h,o]
-      => Tensor '[o]
-      -> Double
-      -> FF2Network i h o  -- ^ ff2network architecture
-      -> Tensor '[i]       -- ^ input
-      -> FF2Network i h o  -- ^ new ff2network architecture
-    train tar lr arch inp = update arch
-      (fst (gradBP2 (bCECriterion True True Nothing tar .: ff2network lr) arch inp))
+    y = constant 1                :: Tensor '[4]
+    t = unsafeVector [0.01, 0.99] :: Tensor '[2]
 
 
 xavierPurityCheck :: forall i o . (KnownDim i, KnownDim o) => Linear i o -> Spec -> Spec
