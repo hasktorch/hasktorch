@@ -55,41 +55,19 @@ import System.IO.Unsafe
 
 instance Dimensions d => Fractional (Tensor d) where
   fromRational = constant . fromRational
-
   (/) = (^/^)
-  {-# NOINLINE (/) #-}
 
 instance Dimensions d => Floating (Tensor d) where
   pi = X.constant pi
-
-  exp = unsafePerformIO . X.exp
-  {-# NOINLINE exp #-}
-
-  log = unsafePerformIO . X.log
-  {-# NOINLINE log #-}
-
-  sqrt = unsafePerformIO . X.sqrt
-  {-# NOINLINE sqrt #-}
-
-  sin = unsafePerformIO . X.sin
-  {-# NOINLINE sin #-}
-
-  cos = unsafePerformIO . X.cos
-  {-# NOINLINE cos #-}
-
-  asin = unsafePerformIO . X.asin
-  {-# NOINLINE asin #-}
-
-  acos = unsafePerformIO . X.acos
-  {-# NOINLINE acos #-}
-
-  atan = unsafePerformIO . X.atan
-  {-# NOINLINE atan #-}
-
-  sinh = unsafePerformIO . X.sinh
-  {-# NOINLINE sinh #-}
-
-  cosh = unsafePerformIO . X.cosh
-  {-# NOINLINE cosh #-}
+  exp = X.exp
+  log = X.log
+  sqrt = X.sqrt
+  sin = X.sin
+  cos = X.cos
+  asin = X.asin
+  acos = X.acos
+  atan = X.atan
+  sinh = X.sinh
+  cosh = X.cosh
 
 

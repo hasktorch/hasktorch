@@ -55,10 +55,10 @@ softmax = liftOp1 . op1 $ \t ->
 -- mmultBP
 --   :: forall a b c s
 --   .  (KnownDim3 a b c, Reifies s W)
--- 
+--
 --   => BVar s (Tensor '[a, b])
 --   -> BVar s (Tensor '[b, c])
--- 
+--
 --   -> BVar s (Tensor '[a, c])
 -- mmultBP = liftOp2 . op2 $ \a b ->
 --   (a !*! b, \gout -> (gout !*! transpose2d b, transpose2d a !*! gout))

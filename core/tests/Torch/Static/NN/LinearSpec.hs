@@ -238,49 +238,27 @@ xavierPurityCheck ll tests =
   o = fromIntegral (dimVal (dim :: Dim o))
 
 
-approximately :: Tensor d -> ([Double] -> Bool) -> IO ()
-approximately o pred = tensordata o >>= (`shouldSatisfy` pred)
+_lapproximately :: ([Double] -> Bool) -> Double -> Tensor d -> [Double] -> IO ()
+_lapproximately pred e o dist = tensordata o >>= \os ->
+  zipWith (Prelude.abs .: (-)) os dist `shouldSatisfy` pred
+
+_approximately :: ([Double] -> Bool) -> Double -> Tensor d -> Tensor d -> IO ()
+_approximately pred e o dist = tensordata dist >>= _lapproximately pred e o
+
+approximately  e = _approximately  (all (< e)) e
+notCloseTo     e = _approximately  (all (> e)) e
+lapproximately e = _lapproximately (all (< e)) e
+lnotCloseTo    e = _lapproximately (all (> e)) e
 
 elementsSatisfy :: Tensor d -> ([Double] -> Bool) -> IO ()
 elementsSatisfy o pred = tensordata o >>= (`shouldSatisfy` pred)
+
+replicateN :: Int -> [a] -> [a]
+replicateN inner = concatMap (replicate inner)
 
 (=##=) :: Tensor d -> Double -> IO ()
 (=##=) o v = elementsSatisfy o (all (== v))
 
 infixl 2 =##=
 
--- twoLayerOverfit :: Spec
--- twoLayerOverfit = do
---   ll :: FF2Network 4 6 2 <- runIO mkFF2Network
---   describe "with xavier instantiation and binary cross-entropy error" $ do
---     it "returns a balanced distribution without training" $
---       tensordata (evalBP2 (ff2network undefined) ll y) >>= (`approx` [0.5, 0.5])
---
---     it "overfits on a single input with lr=1.0" $ do
---       let gll = fst (gradBP2 (bCECriterion True True Nothing t .: ff2network 1.0) ll y)
---           newll = train t 1 y ll
---       tensordata (evalBP2 (ff2network undefined) newll y) >>= (`approx` [0.0, 1.0])
---
---     -- it "overfits on a single input with lr=0.1 and 1000 steps" $ do
---     --   tensordata (evalBP2 (ff2network undefined) (train t 1 y ll) y) >>= (`approx` [0.5, 0.5])
---
---       -- it "performs matrix multipication as you would expect" $
---       --   tensordata (evalBP2 (ff2network undefined) ll' y) >>= (`shouldBe` [0.0, 1.0])
---   where
---     approx = approximately 0.00001
---     y = constant 1          :: Tensor '[4]
---     t = unsafeVector [0, 1] :: Tensor '[2]
---
---     train
---       :: forall i h o
---       .  All KnownDim '[i,h,o]
---       => All KnownNat '[i,h,o]
---       => Tensor '[o]
---       -> Double
---       -> Tensor '[i]       -- ^ input
---       -> FF2Network i h o  -- ^ ff2network architecture
---       -> FF2Network i h o  -- ^ new ff2network architecture
---     train tar lr inp arch = update arch
---       (fst (gradBP2 (bCECriterion True True Nothing tar .: ff2network lr) arch inp))
---
---
+
