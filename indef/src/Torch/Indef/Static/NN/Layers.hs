@@ -24,9 +24,10 @@ import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Reduce
 import Torch.Indef.Static.Tensor.Math.Pairwise ((^/), (^-))
-import Torch.Indef.Static.Tensor.Math.Pointwise ((^*^))
+import Torch.Indef.Static.Tensor.Math.Pointwise ((^*^), (^-^))
 import Torch.Indef.Static.Tensor.Math.Blas
 import Torch.Indef.Static.NN.Backprop ()
+import qualified Torch.Indef.Static.Tensor.Math.Pointwise.Floating as Torch
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
 -- | A backpropable 'flatten' operation
@@ -41,10 +42,11 @@ softmax
   => BVar s (Tensor '[n]) -> BVar s (Tensor '[n])
 softmax = liftOp1 . op1 $ \t ->
   let
-    tot = acc2real (sumall t)
-    out = t ^/ tot
+    texp = Torch.exp (t ^- maxall t)
+    tot = acc2real $ sumall texp
+    out = texp ^/ tot
   in
-    (out, \g -> out ^*^ (g ^- tot))
+    (out, \g -> out ^-^ g)
 
 
   -- gradInput_data[i] = output_data[i] * (gradOutput_data[i] - sum);
