@@ -19,6 +19,7 @@ import Data.Singletons.Prelude.List hiding (All)
 import Numeric.Backprop
 import Numeric.Dimensions
 
+import Debug.Trace as D
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
@@ -27,7 +28,6 @@ import Torch.Indef.Static.Tensor.Math.Pairwise ((^/), (^-))
 import Torch.Indef.Static.Tensor.Math.Pointwise ((^*^), (^-^))
 import Torch.Indef.Static.Tensor.Math.Blas
 import Torch.Indef.Static.NN.Backprop ()
-import qualified Torch.Indef.Static.Tensor.Math.Pointwise.Floating as Torch
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
 -- | A backpropable 'flatten' operation
@@ -36,34 +36,6 @@ flattenBP
   => BVar s (Tensor d) -> BVar s (Tensor '[Product d])
 flattenBP = liftOp1 . op1 $ \t -> (flatten t, resizeAs)
 
--- | A backpropable 'softmax' operation
-softmax
-  :: (Reifies s W, KnownDim n)
-  => BVar s (Tensor '[n]) -> BVar s (Tensor '[n])
-softmax = liftOp1 . op1 $ \t ->
-  let
-    texp = Torch.exp (t ^- maxall t)
-    tot = acc2real $ sumall texp
-    out = texp ^/ tot
-  in
-    (out, \g -> out ^-^ g)
-
-
-  -- gradInput_data[i] = output_data[i] * (gradOutput_data[i] - sum);
- -- where
-   -- forward :: Tensor d -> Tensor d
-   -- forward i = i ^/ acc2real (sumall i)
-
--- mmultBP
---   :: forall a b c s
---   .  (KnownDim3 a b c, Reifies s W)
---
---   => BVar s (Tensor '[a, b])
---   -> BVar s (Tensor '[b, c])
---
---   -> BVar s (Tensor '[a, c])
--- mmultBP = liftOp2 . op2 $ \a b ->
---   (a !*! b, \gout -> (gout !*! transpose2d b, transpose2d a !*! gout))
 
 -------------------------------------------------------------------------------
 

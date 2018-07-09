@@ -166,10 +166,10 @@ twoLayerForceReLU = do
           out `lapprox` [0, 1]
 
       describe "the backward pass" $ do
-        it "returns a half zero-d out layer 1 gradient" $
+        it "returns a half zero-d out layer 1 gradient" $ do
           (gff2 ^. layer1 . weightsL) `approx` l1weightgrad
 
-        it "returns a quarter zero-d out layer 2 gradient" $
+        it "returns a quarter zero-d out layer 2 gradient" $ do
           (gff2 ^. layer2 . weightsL) `approx` l2weightgrad
 
         it "returns a [3,3,3] input gradient" $ do
@@ -218,8 +218,8 @@ twoLayerOverfit = do
           let speedup = 4
               net' = train t (0.1 * speedup) net y
           [l', r'] <- tensordata (infer net' y)
-          (i, l, l') `shouldSatisfy` (\(_, l, l') -> l' < l || (l' - (0.01 * speedup ^ 2)) < l)
-          (i, r, r') `shouldSatisfy` (\(_, r, r') -> r' > r || (r' + (0.01 * speedup ^ 2)) > r)
+          (i, l, l') `shouldSatisfy` (\(_, l, l') -> l' < l || (l' - (0.2 * speedup * 2)) < l)
+          (i, r, r') `shouldSatisfy` (\(_, r, r') -> r' > r || (r' + (0.2 * speedup * 2)) > r)
           pure (net', (l', r'))
           ) (net0, (l0, r0)) [1..1000]
       lapproximately 0.08 (unsafeVector [fl, fr] :: Tensor '[2]) [0, 1]
