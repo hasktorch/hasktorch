@@ -447,6 +447,7 @@ library
         ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Long.Dynamic.Tensor.TopK
 
         ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Long.Dynamic.Tensor.Math.Pointwise.Signed
+        ,Torch.Indef.Types as Torch.Long.Types
         ,Torch.Indef.Index as Torch.Long.Index
         ,Torch.Indef.Mask  as Torch.Long.Mask
         )

@@ -9,7 +9,13 @@
 -------------------------------------------------------------------------------
 module Torch.Long (module X) where
 
-import Torch.Long.Index as X
+import Numeric.Dimensions as X
+import Torch.Types.TH as X
+
+import Torch.Long.Types as X hiding (storage)
+import Torch.Long.Index as X hiding (withDynamicState)
+import Torch.Long.Mask as X
+
 import Torch.Indef.Long.Tensor as X
 import Torch.Indef.Long.Tensor.Copy as X
 import Torch.Indef.Long.Tensor.Index as X

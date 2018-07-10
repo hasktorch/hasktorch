@@ -241,6 +241,7 @@ _sigmoid_updateGradInput  :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _softMax_updateOutput       :: Dynamic -> Dynamic -> Integer -> IO ()
 -- | softMax backward-update (updates the layer and bias tensors)
 _softMax_updateGradInput    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Integer -> IO ()
+
 -- | softPlus forward pass (updates the output tensor)
 _softPlus_updateOutput      :: Dynamic -> Dynamic -> Double -> Double -> IO ()
 -- | softPlus backward-update (updates the layer and bias tensors)
@@ -285,7 +286,7 @@ _temporalConvolution_updateOutput
   -> Int         -- ^ feature size
   -> Int         -- ^ output size
   -> IO ()
-_temporalConvolution_updateOutput t0 t1 t2 t3 i0 i1 i2 i3 = 
+_temporalConvolution_updateOutput t0 t1 t2 t3 i0 i1 i2 i3 =
   with2DynamicState t0 t1 $ \s' t0' t1' ->
     with2DynamicState t2 t3 $ \_  t2' t3' ->
       Sig.c_TemporalConvolution_updateOutput s' t0' t1' t2' t3'
@@ -347,7 +348,7 @@ _batchNormalization_backward                        :: Dynamic -> Dynamic -> Dyn
 -- | spatialConvolutionMM forward pass
 spatialConvolutionMM_updateOutput
   :: Dynamic    -- ^ input
-  -> Dynamic    -- ^ 3D weight tensor (connTable:size(1) x kH x kW) 
+  -> Dynamic    -- ^ 3D weight tensor (connTable:size(1) x kH x kW)
   -> Dynamic    -- ^ 1D bias tensor (nOutputPlane)
   -> (Int, Int) -- ^ (kW, kH) kernel height and width
   -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
@@ -826,7 +827,7 @@ ten6int15 fn t0 t1 t2 t3 t4 t5 i0 i1 i2 i3 i4 i5 i6 i7 i8 i9 i10 i11 i12 i13 i14
       (fromIntegral i8) (fromIntegral i9)
       (fromIntegral i10) (fromIntegral i11)
       (fromIntegral i12) (fromIntegral i13)
-      (fromIntegral i14) 
+      (fromIntegral i14)
 
 ten6int15double1 fn t0 t1 t2 t3 t4 t5 i0 i1 i2 i3 i4 i5 i6 i7 i8 i9 i10 i11 i12 i13 i14 d0 =
   with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
@@ -839,7 +840,7 @@ ten6int15double1 fn t0 t1 t2 t3 t4 t5 i0 i1 i2 i3 i4 i5 i6 i7 i8 i9 i10 i11 i12 
       (fromIntegral i8) (fromIntegral i9)
       (fromIntegral i10) (fromIntegral i11)
       (fromIntegral i12) (fromIntegral i13)
-      (fromIntegral i14) 
+      (fromIntegral i14)
       (realToFrac d0)
 
 ten4int2double1 fn t0 t1 t2 t3 i0 i1 d0 =
