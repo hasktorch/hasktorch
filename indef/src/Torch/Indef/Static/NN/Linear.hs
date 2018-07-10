@@ -69,11 +69,6 @@ mkLinear
   -> IO (Linear i o)
 mkLinear initer = Linear <$> ((,) <$> initer <*> initer)
 
-xavier :: forall d . Dimensions d => IO (Tensor d)
-xavier = case (fromIntegral <$> listDims (dims :: Dims d)) of
-  [] -> empty
-  a:_ -> pure $ constant (1 / realToFrac (fromIntegral a))
-
 -- ========================================================================= --
 
 -- | Backprop linear function without batching

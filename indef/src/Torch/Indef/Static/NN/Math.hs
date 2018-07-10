@@ -62,13 +62,6 @@ _logSigmoid_updateOutput t0 t1 t2 = Dynamic._logSigmoid_updateOutput (asDynamic 
 _logSigmoid_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Tensor d -> IO ()
 _logSigmoid_updateGradInput t0 t1 t2 t3 = Dynamic._logSigmoid_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3)
 
--- |  logSoftMax forward pass (updates the output tensor)
-_logSoftMax_updateOutput :: Tensor d -> Tensor d -> Integer -> IO ()
-_logSoftMax_updateOutput t0 t1 = Dynamic._logSoftMax_updateOutput (asDynamic t0) (asDynamic t1)
--- |  logSoftMax backward-update (updates the layer and bias tensors)
-_logSoftMax_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Tensor d -> Integer -> IO ()
-_logSoftMax_updateGradInput t0 t1 t2 t3 = Dynamic._logSoftMax_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3)
-
 -- |  sigmoid forward pass (updates the output tensor)
 _sigmoid_updateOutput :: Tensor d -> Tensor d -> IO ()
 _sigmoid_updateOutput t0 t1 = Dynamic._sigmoid_updateOutput (asDynamic t0) (asDynamic t1)
@@ -77,85 +70,102 @@ _sigmoid_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> IO ()
 _sigmoid_updateGradInput t0 t1 t2 = Dynamic._sigmoid_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2)
 
 -------------------------------------------------------------------------------
--- = SOFTMAX FUNCTIONALITY
---
--- DESIRABLE SIGNATURES
--- FIXME: return to these signatures when needed
--- -- | run a threshold function againts two BVar variables
--- softmax
---   :: KnownDim n
---   => Reifies s W
---   => BVar s (Tensor '[n])    -- ^ input
---   -> BVar s (Tensor '[n])    -- ^ output
--- softmax = softmaxN (dim :: Dim 0)
 
--- -- | run a threshold function againts two BVar variables
--- softmaxN
---   :: forall s i d
---   .  Reifies s W
---   => i < Length d ~ 'True
---   => Dimensions d
---   => Dim i                -- ^ dimension to softmax over
---   -> BVar s (Tensor d)    -- ^ input
---   -> BVar s (Tensor d)    -- ^ output
--- softmaxN d = liftOp1 . op1 $ \inp ->
---
--- ========================================================================= --
--- SOFTMAX WITH IN-BETWEEN GRAD_UPDATES
--- ========================================================================= --
--- softmax
---   :: KnownDim n
---   => Reifies s W
---   => BVar s (Tensor '[n])    -- ^ input
---   -> BVar s (Tensor '[n])    -- ^ output
--- softmax = liftOp1 . op1 $ \inp ->
---   let
---     idim = fromIntegral (dimVal (dim :: Dim 0))
---     out = updateOutput inp idim
---   in
---     (out, \gout -> updateGradInput inp gout out idim)
---  where
---   updateOutput :: Dimensions d => Tensor d -> Integer -> Tensor d
---   updateOutput inp i = unsafeDupablePerformIO . withEmpty $ \out -> do
---     Dynamic._softMax_updateOutput
---       (asDynamic inp)
---       (asDynamic out)
---       i
---
---   -- FIXME: There seems to be a bug in softmax. In the mean time, using a translation
---   -- of the raw THNN code:
---   -- https://github.com/hasktorch/ATen/blob/hasktorch-expand/src/THNN/generic/SoftMax.c#L111
---   updateGradInput
---     :: Dimensions d
---     => Tensor d  -- input
---     -> Tensor d  -- gradOutput
---     -> Tensor d  -- output
---     -> Integer   -- dimension
---     -> Tensor d  -- gradInput
---   updateGradInput inp gout out d = unsafeDupablePerformIO $ do
---     let mult = gout ^*^ out
---     pure $ mult ^*^ (gout ^- acc2real (sumall mult))
---
---   -- NOTE: This would have been the original codebase.
---   -- updateGradInput inp gout out d = unsafeDupablePerformIO . withEmpty $ \gin -> do
---     -- Dynamic._softMax_updateGradInput
---     --   (asDynamic inp)  -- input
---     --   (asDynamic gout) -- gradOutput
---     --   (asDynamic gin)  -- gradInput
---     --   (asDynamic out)  -- output
---     --   d                -- dimension
+{-# WARNING softmax, softmaxN "softmax gradients may not propagate correctly. This may require updating hasktorch/ATen. In the meantime consider using logSoftMax which is stable." #-}
 
--- | A backpropable 'softmax' operation
+-- | one dimensional version of 'softmaxN'
 softmax
-  :: (Reifies s W, KnownDim n)
-  => BVar s (Tensor '[n]) -> BVar s (Tensor '[n])
-softmax = liftOp1 . op1 $ \t ->
+  :: KnownDim n
+  => Reifies s W
+  => BVar s (Tensor '[n])    -- ^ input
+  -> BVar s (Tensor '[n])    -- ^ output
+softmax = softmaxN (dim :: Dim 0)
+
+-- | run a threshold function againts two BVar variables
+softmaxN
+  :: forall s i d
+  .  Reifies s W
+  => i < Length d ~ 'True
+  => Dimensions d
+  => Dim i                -- ^ dimension to softmax over
+  -> BVar s (Tensor d)    -- ^ input
+  -> BVar s (Tensor d)    -- ^ output
+softmaxN d = liftOp1 . op1 $ \inp ->
   let
-    texp = Torch.exp (t ^- maxall t)
-    tot = acc2real $ sumall texp
-    out = texp ^/ tot
+    idim = fromIntegral (dimVal d)
+    out = updateOutput inp idim
   in
-    (out, \g -> out ^-^ g)
+    (out, \gout -> updateGradInput inp gout out idim)
+ where
+  updateOutput :: Dimensions d => Tensor d -> Integer -> Tensor d
+  updateOutput inp i = unsafeDupablePerformIO . withEmpty $ \out -> do
+    Dynamic._softMax_updateOutput
+      (asDynamic inp)
+      (asDynamic out)
+      i
+
+  -- FIXME: There seems to be a bug in softmax. In the mean time, using a translation
+  -- of the raw THNN code:
+  -- https://github.com/hasktorch/ATen/blob/hasktorch-expand/src/THNN/generic/SoftMax.c#L111
+  updateGradInput
+    :: Dimensions d
+    => Tensor d  -- input
+    -> Tensor d  -- gradOutput
+    -> Tensor d  -- output
+    -> Integer   -- dimension
+    -> Tensor d  -- gradInput
+  -- updateGradInput inp gout out d = unsafeDupablePerformIO $ do
+    -- let mult = gout ^*^ out
+    -- pure $ mult ^*^ (gout ^- acc2real (sumall mult))
+
+  -- NOTE: This would have been the original codebase.
+  updateGradInput inp gout out d = unsafeDupablePerformIO . withEmpty $ \gin -> do
+    Dynamic._softMax_updateGradInput
+      (asDynamic inp)  -- input
+      (asDynamic gout) -- gradOutput
+      (asDynamic gin)  -- gradInput
+      (asDynamic out)  -- output
+      d                -- dimension
+
+
+-- | run a threshold function againts two BVar variables
+logSoftMax
+  :: KnownDim n
+  => Reifies s W
+  => BVar s (Tensor '[n])    -- ^ input
+  -> BVar s (Tensor '[n])    -- ^ output
+logSoftMax = logSoftMaxN (dim :: Dim 0)
+
+-- | run a threshold function againts two BVar variables
+logSoftMaxN
+  :: forall s i d
+  .  Reifies s W
+  => i < Length d ~ 'True
+  => Dimensions d
+  => Dim i                -- ^ dimension to logSoftMax over
+  -> BVar s (Tensor d)    -- ^ input
+  -> BVar s (Tensor d)    -- ^ output
+logSoftMaxN i = liftOp1 . op1 $ \inp ->
+  let out = updateOutput inp i
+  in (updateOutput inp i, \gout -> updateGradInput inp gout out i)
+ where
+  updateOutput :: Tensor d -> Dim i -> Tensor d
+  updateOutput inp i = unsafeDupablePerformIO . withEmpty $ \out ->
+    Dynamic._logSoftMax_updateOutput (asDynamic inp) (asDynamic out) (fromIntegral $ dimVal i)
+
+  updateGradInput
+    :: Tensor d  -- input
+    -> Tensor d  -- gradOutput
+    -> Tensor d  -- output
+    -> Dim i     -- dimension
+    -> Tensor d  -- gradInput
+  updateGradInput inp gout out i = unsafeDupablePerformIO . withEmpty $ \gin ->
+    Dynamic._logSoftMax_updateGradInput
+      (asDynamic inp)             -- input
+      (asDynamic gout)            -- gradOutput
+      (asDynamic gin)             -- gradInput
+      (asDynamic out)             -- output
+      (fromIntegral $ dimVal i)   -- dimension
 
 
 -- |  softPlus forward pass (updates the output tensor)
