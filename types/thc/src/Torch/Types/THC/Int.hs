@@ -50,4 +50,4 @@ type Tensor = IntTensor
 asDynamic = intAsDynamic
 asStatic = intAsStatic
 
-instance Fractional Int32
+-- instance Fractional Int32

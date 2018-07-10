@@ -45,7 +45,11 @@ data HsReal
 instance Num  HsReal
 instance Show HsReal
 instance Ord HsReal
-instance Fractional HsReal
+
+-- FIXME: Consider how we will add things that are Fractional-specific in the
+-- NN package like xavier instantiation.
+--
+-- instance Fractional HsReal
 
 data HsAccReal
 instance Num  HsAccReal

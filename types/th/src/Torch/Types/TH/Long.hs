@@ -46,5 +46,5 @@ type Tensor = LongTensor
 asDynamic = longAsDynamic
 asStatic = longAsStatic
 
-instance Fractional Integer where
-  fromRational = truncate
+-- instance Fractional Integer where
+--   fromRational = truncate

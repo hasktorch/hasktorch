@@ -55,4 +55,4 @@ type Tensor = ByteTensor
 asDynamic = byteAsDynamic
 asStatic = byteAsStatic
 
-instance Fractional Word8
+-- instance Fractional Word8

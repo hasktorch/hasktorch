@@ -50,4 +50,4 @@ type Tensor = ShortTensor
 asDynamic = shortAsDynamic
 asStatic = shortAsStatic
 
-instance Fractional Int16
+-- instance Fractional Int16

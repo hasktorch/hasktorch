@@ -93,5 +93,5 @@ asStatic = intAsStatic
 
 -- this is to make indef work with NN code and shouldn't be exported.
 -- FIXME: Remove this
-instance Fractional Int32
+-- instance Fractional Int32
 

@@ -52,6 +52,6 @@ type Tensor = CharTensor
 asDynamic = charAsDynamic
 asStatic = charAsStatic
 
-instance Fractional Int8
+-- instance Fractional Int8
 
 

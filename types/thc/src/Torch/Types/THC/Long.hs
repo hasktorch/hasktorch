@@ -49,4 +49,4 @@ type Tensor = LongTensor
 asDynamic = longAsDynamic
 asStatic = longAsStatic
 
-instance Fractional Integer
+-- instance Fractional Integer

@@ -87,4 +87,4 @@ asDynamic = byteAsDynamic
 -- | type alias to 'byteAsStatic'
 asStatic = byteAsStatic
 
-instance Fractional Word8
+-- instance Fractional Word8
