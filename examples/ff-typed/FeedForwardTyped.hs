@@ -62,14 +62,11 @@ runLayer sw v = pure $ addmv 1.0 wB 1.0 wN v -- v are the inputs
         wN = nodes sw
 
 runNet :: (KnownDim i, KnownDim o) => SN i hs o -> DoubleTensor '[i] -> IO (DoubleTensor '[o])
-runNet (O w) v = do
-  l <- runLayer w v
-  sigmoid l
+runNet (O w) v = sigmoid <$> runLayer w v
 
 runNet (w :~ n') v = do
   v' <- (runLayer w v)
-  active <- sigmoid v'
-  runNet n' active
+  runNet n' (sigmoid v')
 
 ih :: StaticWeights 10 7
 hh :: StaticWeights  7 4

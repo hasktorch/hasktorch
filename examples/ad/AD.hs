@@ -67,21 +67,28 @@ updateLayer learningRate (LayerAffine w) (LayerAffine gradient) =
 
 forwardProp
   :: forall l i o . (KnownDim i, KnownDim o)
-  => Tensor '[i] -> Layer l i o -> IO (Tensor '[o])
+  => Tensor '[i] -> Layer l i o -> Tensor '[o]
 forwardProp t = \case
-  LayerTrivial -> pure t
-  LayerLinear w -> do
-    let t' :: Tensor '[i, 1] = resizeAs t
-    pure $ resizeAs (w !*! t')
+  LayerTrivial -> t
+  LayerLinear w ->
+    let
+      t' :: Tensor '[i, 1] = resizeAs t
+    in
+      resizeAs (w !*! t')
 
   LayerSigmoid -> sigmoid t
-  LayerRelu    -> do
-    let active = gtTensorT t (constant 0)
-    pure $ active ^*^ t
-  LayerAffine (AW b w) -> do
-    let t' :: Tensor '[i, 1] = resizeAs t
-    let b' = resizeAs b
-    pure $ resizeAs ( w !*! t' ^+^ b')
+  LayerRelu    ->
+    let
+      active = gtTensorT t (constant 0)
+    in
+      active ^*^ t
+
+  LayerAffine (AW b w) ->
+    let
+      t' :: Tensor '[i, 1] = resizeAs t
+      b' = resizeAs b
+    in
+      resizeAs ( w !*! t' ^+^ b')
 
 -- TODO: write to Table
 backProp :: forall l i o . (KnownDim i, KnownDim o) =>
@@ -97,7 +104,7 @@ trivial' t = constant 1
 
 sigmoid' :: Dimensions d => Tensor d -> IO (Tensor d)
 sigmoid' t = do
-  s <- sigmoid t
+  let s = sigmoid t
   let o = constant 1
   pure $ (s ^*^ o) ^-^ s
 
@@ -107,15 +114,15 @@ relu' t = gtTensorT t (constant 0)
 -- forward prop, don't retain values
 forwardNetwork :: forall i h o . (KnownDim i, KnownDim o) => Tensor '[i] -> NW i h o  -> IO (Tensor '[o])
 forwardNetwork t = \case
-  O w      -> forwardProp t w
-  hh :~ hr -> forwardProp t hh >>= \p -> forwardNetwork p hr
+  O w      -> pure $ forwardProp t w
+  hh :~ hr -> forwardNetwork (forwardProp t hh) hr
 
 -- forward prop, retain values
 forwardNetwork' :: forall i h o . (KnownDim i, KnownDim o) => Tensor '[i] -> NW i h o -> IO (Values h o)
 forwardNetwork' t = \case
-   O olayer -> V <$> forwardProp t olayer
+   O olayer -> pure . V $ forwardProp t olayer
    h :~ hs  -> do
-     output <- forwardProp t h
+     output <- pure $ forwardProp t h
      adv <- forwardNetwork' output hs
      pure (output :^~ adv)
 
