@@ -50,7 +50,7 @@ sub  t v = asStatic <$> Dynamic.sub (asDynamic t) v
 
 -- | flipped version of '(^-)'
 (-^) :: Dimensions d => HsReal -> Tensor d -> (Tensor d)
-(-^) = flip (^-)
+v -^ t = v +^ ((-1) *^ t)
 
 -- | static version of 'Dynamic.add_'
 add_scaled_ :: Dimensions d => Tensor d -> HsReal -> HsReal -> IO ()

@@ -34,6 +34,14 @@ type HsReal = Int32
 -- | Hask-level representation of a torch "accreal" -- the accumulating type of a 'Tensor'. Alias to 'Int64'.
 type HsAccReal = Int64
 
+-- | convert a real to its accumulating representation
+real2acc :: HsReal -> HsAccReal
+real2acc = fromIntegral
+
+-- | convert an accumulating value to its base rperesentation
+acc2real :: HsAccReal -> HsReal
+acc2real = fromIntegral
+
 -- | convert an 'HsReal' to its C-level representation
 hs2cReal :: HsReal -> CReal
 hs2cReal = fromIntegral
@@ -83,4 +91,7 @@ asDynamic = intAsDynamic
 -- | type alias to 'intAsStatic'
 asStatic = intAsStatic
 
+-- this is to make indef work with NN code and shouldn't be exported.
+-- FIXME: Remove this
+-- instance Fractional Int32
 

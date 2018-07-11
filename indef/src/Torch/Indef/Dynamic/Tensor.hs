@@ -68,12 +68,15 @@ _clearFlag :: Dynamic -> Int8 -> IO ()
 _clearFlag t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
 
 -- | get the underlying data as a haskell list from the tensor
+--
+-- NOTE: This _cannot_ use a Tensor's storage size because ATen's Storage
+-- allocates up to the next 64-byte line on the CPU (needs reference, this
+-- is the unofficial response from \@soumith in slack).
 tensordata :: Dynamic -> IO [HsReal]
-tensordata t = withDynamicState t $ \s' t' ->
-  ptrArray2hs (Sig.c_data s') (arrayLen s') (Sig.ctensor t)
- where
-  arrayLen :: Ptr CState -> Ptr CTensor -> IO Int
-  arrayLen s' p = Sig.c_storage s' p >>= fmap fromIntegral . StorageSig.c_size s'
+tensordata t = withDynamicState t $ \s' t' -> do
+  let sz = fromIntegral $ product (shape t)
+  creals <- Sig.c_data s' t'
+  (fmap.fmap) c2hsReal (FM.peekArray sz creals)
 
 -- | get a value from dimension 1
 get1d :: Dynamic -> Int64 -> HsReal
@@ -115,8 +118,8 @@ isSize t ls = withDynamicState t $ \s t' ->
   withForeignPtr (snd $ TH.longStorageState ls) (fmap (1 ==) . Sig.c_isSize s t')
 
 -- | Returns the number of dimensions in a Tensor.
-nDimension :: Dynamic -> IO Int32
-nDimension t = withDynamicState t (\s t' -> fromIntegral <$> Sig.c_nDimension s t')
+nDimension :: Dynamic -> Word
+nDimension t = unsafePerformIO $ withDynamicState t (\s t' -> fromIntegral <$> Sig.c_nDimension s t')
 
 -- | Returns the number of elements in a Tensor.
 nElement :: Dynamic -> IO Int64
@@ -466,7 +469,7 @@ _setStorageNd t s a b hsc hsd = do
     Sig.c_setStorageNd st' t' s' (fromIntegral a) (fromIntegral b) c d
 
 -- | get the size of a tensor's specific dimension.
-size :: Dynamic -> DimVal -> IO Size
+size :: Dynamic -> DimVal -> IO Word
 size t l0 = withDynamicState t $ \st' t' -> fromIntegral <$> Sig.c_size st' t' (fromIntegral l0)
 
 -- | primarily used for debugging. Get the size description from a c call.
@@ -534,10 +537,9 @@ _unsqueeze1d t0 t1 d = with2DynamicState t0 t1 $
 -- ========================================================================= --
 
 -- | return the a runtime shape representing the dimensions of a 'Dynamic'
-shape :: Dynamic -> IO [Size]
-shape t = do
-  ds <- nDimension t
-  mapM (size t . fromIntegral) [0..ds-1]
+shape :: Dynamic -> [Word]
+shape t = unsafeDupablePerformIO $
+  mapM (size t . fromIntegral) [0.. nDimension t - 1]
 
 -- | set the storage dimensionality of a dynamic tensor, inplace, to any new size and stride pair.
 _setStorageDim :: Dynamic -> Storage -> StorageOffset -> [(Size, Stride)] -> IO ()
@@ -610,8 +612,7 @@ getDims = fmap someDimsVal . getDimList
 -- | get the runtime dimension list of a dynamic tensor
 getDimList :: Integral i => Dynamic -> IO [i]
 getDimList t = do
-  nd <- nDimension t
-  mapM (fmap fromIntegral . size t . fromIntegral) [0 .. nd -1]
+  mapM (fmap fromIntegral . size t . fromIntegral) [0 .. nDimension t - 1]
 
 -- | create a new dynamic tensor of size @Dims d@
 new :: forall (d::[Nat]) . Dims d -> IO Dynamic

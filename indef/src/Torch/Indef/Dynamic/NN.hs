@@ -24,12 +24,6 @@ module Torch.Indef.Dynamic.NN
   ( module X
   , _abs_updateOutput
   , _abs_updateGradInput
-  , _absCriterion_updateOutput
-  , _absCriterion_updateGradInput
-  , _bCECriterion_updateOutput
-  , _bCECriterion_updateGradInput
-  , _distKLDivCriterion_updateOutput
-  , _distKLDivCriterion_updateGradInput
   , _gatedLinear_updateOutput
   , _gatedLinear_updateGradInput
   , _hardTanh_updateOutput
@@ -38,8 +32,6 @@ module Torch.Indef.Dynamic.NN
   , _im2Col_updateGradInput
   , _col2Im_updateOutput
   , _col2Im_updateGradInput
-  , _l1Cost_updateOutput
-  , _l1Cost_updateGradInput
   , _gRUFused_updateOutput
   , _gRUFused_updateGradInput
   , _lSTMFused_updateOutput
@@ -48,16 +40,8 @@ module Torch.Indef.Dynamic.NN
   , _logSigmoid_updateGradInput
   , _logSoftMax_updateOutput
   , _logSoftMax_updateGradInput
-  , _marginCriterion_updateOutput
-  , _marginCriterion_updateGradInput
-  , _softMarginCriterion_updateOutput
-  , _softMarginCriterion_updateGradInput
-  , _mSECriterion_updateOutput
-  , _mSECriterion_updateGradInput
   , _sigmoid_updateOutput
   , _sigmoid_updateGradInput
-  , _smoothL1Criterion_updateOutput
-  , _smoothL1Criterion_updateGradInput
   , _softMax_updateOutput
   , _softMax_updateGradInput
   , _softPlus_updateOutput
@@ -187,24 +171,6 @@ _abs_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _abs_updateGradInput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
   Sig.c_Abs_updateGradInput s' t0' t1' t2'
 
--- | absCriterion forward pass (updates the output tensor)
-_absCriterion_updateOutput :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
-_absCriterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-  Sig.c_AbsCriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
-
--- | absCriterion backward-update (updates the layer and bias tensors)
-_absCriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
-_absCriterion_updateGradInput = ten4bool2 Sig.c_AbsCriterion_updateGradInput
-
--- | bCECriterion forward pass (updates the output tensor)
-_bCECriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Dynamic -> Bool -> IO ()
--- | bCECriterion backward-update (updates the layer and bias tensors)
-_bCECriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Dynamic -> Bool -> IO ()
--- | distKLDivCriterion forward pass (updates the output tensor)
-_distKLDivCriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
--- | distKLDivCriterion backward-update (updates the layer and bias tensors)
-_distKLDivCriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
--- | gatedLinear forward pass (updates the output tensor)
 _gatedLinear_updateOutput     :: Dynamic -> Dynamic -> Int -> IO ()
 -- | gatedLinear backward-update (updates the layer and bias tensors)
 _gatedLinear_updateGradInput  :: Dynamic -> Dynamic -> Dynamic -> Int -> IO ()
@@ -249,10 +215,7 @@ _col2Im_updateGradInput t0 t1 a0 a1 a2 a3 a4 a5 a6 a7 =
       (fromIntegral a6)
       (fromIntegral a7)
 
--- | l1Cost forward pass (updates the output tensor)
-_l1Cost_updateOutput          :: Dynamic -> Dynamic -> IO ()
--- | l1Cost backward-update (updates the layer and bias tensors)
-_l1Cost_updateGradInput       :: Dynamic -> Dynamic -> Dynamic -> IO ()
+
 -- | gRUFused forward pass (updates the output tensor)
 _gRUFused_updateOutput        :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO ()
 -- | gRUFused backward-update (updates the layer and bias tensors)
@@ -269,30 +232,16 @@ _logSigmoid_updateGradInput   :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> IO 
 _logSoftMax_updateOutput      :: Dynamic -> Dynamic -> Integer -> IO ()
 -- | logSoftMax backward-update (updates the layer and bias tensors)
 _logSoftMax_updateGradInput   :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Integer -> IO ()
--- | marginCriterion forward pass (updates the output tensor)
-_marginCriterion_updateOutput        :: Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> IO ()
--- | marginCriterion backward-update (updates the layer and bias tensors)
-_marginCriterion_updateGradInput     :: Dynamic -> Dynamic -> Dynamic -> Bool -> Double -> IO ()
--- | softMarginCriterion forward pass (updates the output tensor)
-_softMarginCriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
--- | softMarginCriterion backward-update (updates the layer and bias tensors)
-_softMarginCriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
--- | mSECriterion forward pass (updates the output tensor)
-_mSECriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
--- | mSECriterion backward-update (updates the layer and bias tensors)
-_mSECriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
--- | sigmoid forward pass (updates the output tensor)
+
 _sigmoid_updateOutput     :: Dynamic -> Dynamic -> IO ()
 -- | sigmoid backward-update (updates the layer and bias tensors)
 _sigmoid_updateGradInput  :: Dynamic -> Dynamic -> Dynamic -> IO ()
--- | smoothL1Criterion forward pass (updates the output tensor)
-_smoothL1Criterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
--- | smoothL1Criterion backward-update (updates the layer and bias tensors)
-_smoothL1Criterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Bool -> IO ()
+
 -- | softMax forward pass (updates the output tensor)
 _softMax_updateOutput       :: Dynamic -> Dynamic -> Integer -> IO ()
 -- | softMax backward-update (updates the layer and bias tensors)
 _softMax_updateGradInput    :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Integer -> IO ()
+
 -- | softPlus forward pass (updates the output tensor)
 _softPlus_updateOutput      :: Dynamic -> Dynamic -> Double -> Double -> IO ()
 -- | softPlus backward-update (updates the layer and bias tensors)
@@ -337,7 +286,7 @@ _temporalConvolution_updateOutput
   -> Int         -- ^ feature size
   -> Int         -- ^ output size
   -> IO ()
-_temporalConvolution_updateOutput t0 t1 t2 t3 i0 i1 i2 i3 = 
+_temporalConvolution_updateOutput t0 t1 t2 t3 i0 i1 i2 i3 =
   with2DynamicState t0 t1 $ \s' t0' t1' ->
     with2DynamicState t2 t3 $ \_  t2' t3' ->
       Sig.c_TemporalConvolution_updateOutput s' t0' t1' t2' t3'
@@ -399,7 +348,7 @@ _batchNormalization_backward                        :: Dynamic -> Dynamic -> Dyn
 -- | spatialConvolutionMM forward pass
 spatialConvolutionMM_updateOutput
   :: Dynamic    -- ^ input
-  -> Dynamic    -- ^ 3D weight tensor (connTable:size(1) x kH x kW) 
+  -> Dynamic    -- ^ 3D weight tensor (connTable:size(1) x kH x kW)
   -> Dynamic    -- ^ 1D bias tensor (nOutputPlane)
   -> (Int, Int) -- ^ (kW, kH) kernel height and width
   -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
@@ -587,9 +536,6 @@ _tanh_updateOutput = ten2 Sig.c_Tanh_updateOutput
 _tanh_updateGradInput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
   Sig.c_Tanh_updateGradInput s' t0' t1' t2'
 
-_l1Cost_updateOutput = ten2 Sig.c_L1Cost_updateOutput
-_l1Cost_updateGradInput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-  Sig.c_L1Cost_updateGradInput s' t0' t1' t2'
 
 _logSigmoid_updateOutput t0 t1 t2 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
   Sig.c_LogSigmoid_updateOutput s' t0' t1' t2'
@@ -604,33 +550,6 @@ _im2Col_updateOutput = ten2int8 Sig.c_Im2Col_updateOutput
 _im2Col_updateGradInput = ten2int10 Sig.c_Im2Col_updateGradInput
 _gRUFused_updateGradInput = ten5 Sig.c_GRUFused_updateGradInput
 _softMax_updateOutput = ten2dim1 Sig.c_SoftMax_updateOutput
-
-_distKLDivCriterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-  Sig.c_DistKLDivCriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
-
-_bCECriterion_updateOutput t0 t1 t2 b0 t3 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-  withDynamicState t3 $ \_ t3' ->
-    Sig.c_BCECriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) t3' (toEnum $ fromEnum b1)
-
-_marginCriterion_updateGradInput t0 t1 t2 b0 d0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-  Sig.c_MarginCriterion_updateGradInput s' t0' t1' t2' (toEnum $ fromEnum b0) (realToFrac d0)
-
-_distKLDivCriterion_updateGradInput = ten4bool2 Sig.c_DistKLDivCriterion_updateGradInput
-_marginCriterion_updateOutput t0 t1 t2 b0 d0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-  Sig.c_MarginCriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (realToFrac d0)
-
-_smoothL1Criterion_updateGradInput = ten4bool2 Sig.c_SmoothL1Criterion_updateGradInput
-_softMarginCriterion_updateGradInput = ten4bool2 Sig.c_SoftMarginCriterion_updateGradInput
-_mSECriterion_updateGradInput = ten4bool2 Sig.c_MSECriterion_updateGradInput
-_bCECriterion_updateGradInput = ten4bool1ten1bool1 Sig.c_BCECriterion_updateGradInput
-_smoothL1Criterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-  Sig.c_SmoothL1Criterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
-
-_softMarginCriterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-  Sig.c_SoftMarginCriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
-
-_mSECriterion_updateOutput t0 t1 t2 b0 b1 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-  Sig.c_MSECriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) (toEnum $ fromEnum b1)
 
 _sqrt_updateOutput = ten2double1 Sig.c_Sqrt_updateOutput
 _softShrink_updateOutput = ten2double1 Sig.c_SoftShrink_updateOutput
@@ -908,7 +827,7 @@ ten6int15 fn t0 t1 t2 t3 t4 t5 i0 i1 i2 i3 i4 i5 i6 i7 i8 i9 i10 i11 i12 i13 i14
       (fromIntegral i8) (fromIntegral i9)
       (fromIntegral i10) (fromIntegral i11)
       (fromIntegral i12) (fromIntegral i13)
-      (fromIntegral i14) 
+      (fromIntegral i14)
 
 ten6int15double1 fn t0 t1 t2 t3 t4 t5 i0 i1 i2 i3 i4 i5 i6 i7 i8 i9 i10 i11 i12 i13 i14 d0 =
   with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
@@ -921,7 +840,7 @@ ten6int15double1 fn t0 t1 t2 t3 t4 t5 i0 i1 i2 i3 i4 i5 i6 i7 i8 i9 i10 i11 i12 
       (fromIntegral i8) (fromIntegral i9)
       (fromIntegral i10) (fromIntegral i11)
       (fromIntegral i12) (fromIntegral i13)
-      (fromIntegral i14) 
+      (fromIntegral i14)
       (realToFrac d0)
 
 ten4int2double1 fn t0 t1 t2 t3 i0 i1 d0 =

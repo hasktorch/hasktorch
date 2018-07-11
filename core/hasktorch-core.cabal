@@ -22,14 +22,26 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   default-language: Haskell2010
+  default-extensions: DataKinds, ScopedTypeVariables, FlexibleContexts
   hs-source-dirs: tests
   build-depends:
       QuickCheck
+    , backprop >= 0.2.4
     , base >=4.7 && <5
-    , hasktorch-core
     , dimensions
+    , ghc-typelits-natnormalise
+    , hasktorch-core
     , hspec >=2.4.4
+    -- , hspec-discover
+    , singletons >= 2.4.1
     , text >=1.2.2.2
+
+    , mtl
+    , microlens-platform
+    , monad-loops
+    , singletons
+    , time
+    , transformers
   other-modules:
       Orphans
     , MemorySpec
@@ -38,7 +50,15 @@ test-suite spec
     , Torch.Prelude.Extras
     , Torch.Core.LogAddSpec
     , Torch.Core.RandomSpec
-    , Torch.NN.Static.AbsSpec
+
+    -- We can't move this to hasktorch-indef until backpack gets some updates:
+    , Torch.Static.TensorSpec
+    , Torch.Static.NN.AbsSpec
+    , Torch.Static.NN.LinearSpec
+    -- , Torch.Static.NN.Conv1dSpec
+    -- , Torch.Static.NN.Conv2dSpec
+    -- , Torch.Static.NN.ReLUSpec
+    -- , Torch.Static.NN.MaxPoolingSpec
 
 library
   hs-source-dirs: src, utils
@@ -68,6 +88,9 @@ library
       Torch.Core.Exceptions
     , Torch.Core.Random
     , Torch.Core.LogAdd
+
+  reexported-modules:
+      Torch.Types.Numeric
 
   exposed-modules:
       Torch.Byte
@@ -424,6 +447,7 @@ library
         ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Long.Dynamic.Tensor.TopK
 
         ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Long.Dynamic.Tensor.Math.Pointwise.Signed
+        ,Torch.Indef.Types as Torch.Long.Types
         ,Torch.Indef.Index as Torch.Long.Index
         ,Torch.Indef.Mask  as Torch.Long.Mask
         )
@@ -586,6 +610,7 @@ library
      , Torch.Double.NN.Conv2d
      , Torch.Double.NN.Criterion
      , Torch.Double.NN.Layers
+     , Torch.Double.NN.Linear
      , Torch.Double.NN.Math
      , Torch.Double.NN.Padding
      , Torch.Double.NN.Pooling
@@ -663,6 +688,7 @@ library
         ,Torch.Indef.Static.NN.Conv2d        as Torch.Double.NN.Conv2d
         ,Torch.Indef.Static.NN.Criterion     as Torch.Double.NN.Criterion
         ,Torch.Indef.Static.NN.Layers        as Torch.Double.NN.Layers
+        ,Torch.Indef.Static.NN.Linear        as Torch.Double.NN.Linear
         ,Torch.Indef.Static.NN.Math          as Torch.Double.NN.Math
         ,Torch.Indef.Static.NN.Padding       as Torch.Double.NN.Padding
         ,Torch.Indef.Static.NN.Pooling       as Torch.Double.NN.Pooling
@@ -1131,6 +1157,7 @@ library
        , Torch.Cuda.Double.NN.Conv2d
        , Torch.Cuda.Double.NN.Criterion
        , Torch.Cuda.Double.NN.Layers
+       , Torch.Cuda.Double.NN.Linear
        , Torch.Cuda.Double.NN.Math
        , Torch.Cuda.Double.NN.Padding
        , Torch.Cuda.Double.NN.Pooling
@@ -1204,6 +1231,7 @@ library
           ,Torch.Indef.Static.NN.Conv2d        as Torch.Cuda.Double.NN.Conv2d
           ,Torch.Indef.Static.NN.Criterion     as Torch.Cuda.Double.NN.Criterion
           ,Torch.Indef.Static.NN.Layers        as Torch.Cuda.Double.NN.Layers
+          ,Torch.Indef.Static.NN.Linear        as Torch.Cuda.Double.NN.Linear
           ,Torch.Indef.Static.NN.Math          as Torch.Cuda.Double.NN.Math
           ,Torch.Indef.Static.NN.Padding       as Torch.Cuda.Double.NN.Padding
           ,Torch.Indef.Static.NN.Pooling       as Torch.Cuda.Double.NN.Pooling
@@ -1448,6 +1476,7 @@ library hasktorch-indef-floating
     , Torch.Indef.Static.NN.Conv2d
     , Torch.Indef.Static.NN.Criterion
     , Torch.Indef.Static.NN.Layers
+    , Torch.Indef.Static.NN.Linear
     , Torch.Indef.Static.NN.Math
     , Torch.Indef.Static.NN.Padding
     , Torch.Indef.Static.NN.Pooling

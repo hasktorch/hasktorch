@@ -24,7 +24,7 @@ import Control.Monad.Trans.Maybe
 import Data.Coerce
 import Data.Maybe
 import Data.List
-import Data.Singletons.Prelude.List hiding (All)
+import Data.Singletons.Prelude.List hiding (All, type (++))
 import Data.Proxy
 import GHC.Natural
 import System.IO.Unsafe
@@ -41,7 +41,6 @@ import qualified Torch.Sig.Types as Sig
 
 instance Dimensions d => Show (Tensor d) where
   show t = unsafePerformIO $ do
-    SomeDims ds <- getDims t
     (vs, desc) <-
       Dynamic.showTensor -- (pure . get1d t) (get2d t) (get3d t) (get4d t) (fromIntegral <$> listDims (dims :: Dims d))
         (pure . get1d t) (pure .: get2d t) (\a b c -> pure $ get3d t a b c) (\a b c d -> pure $ get4d t a b c d)
@@ -60,6 +59,9 @@ vector rs
   | genericLength rs == dimVal (dim :: Dim n) = Just . asStatic . Dynamic.vector $ rs
   | otherwise = Nothing
 
+unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> Tensor '[n]
+unsafeVector = fromJust . vector
+ 
 -- | Static call to 'Dynamic.newExpand'
 newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
 -- | Static call to 'Dynamic._expand'
@@ -122,8 +124,21 @@ newClone t = asStatic <$> Dynamic.newClone (asDynamic t)
 newContiguous t = asStatic <$> Dynamic.newContiguous (asDynamic t)
 -- | Static call to 'Dynamic.newNarrow'
 newNarrow t a b c = asStatic <$> Dynamic.newNarrow (asDynamic t) a b c
+
 -- | Static call to 'Dynamic.newSelect'
-newSelect t a b = asStatic <$> Dynamic.newSelect (asDynamic t) a b
+newSelect
+  :: KnownDim i
+  => '(ls, r:+rs) ~ SplitAt i d
+  => Tensor d
+  -> (Dim i, Idx i)
+  -> IO (Tensor (ls ++ rs))
+newSelect t (d, i) =
+  asStatic <$>
+    Dynamic.newSelect
+      (asDynamic t)
+      (fromIntegral (dimVal d))
+      (fromIntegral (fromEnum i))
+
 -- | Static call to 'Dynamic.newSizeOf'
 newSizeOf t = Dynamic.newSizeOf (asDynamic t)
 -- | Static call to 'Dynamic.newStrideOf'
@@ -197,10 +212,15 @@ sizeDesc t = Dynamic.sizeDesc (asDynamic t)
 _squeeze t0 t1 = Dynamic._squeeze (asDynamic t0) (asDynamic t1)
 
 -- | Squeeze a dimension of size 1 out of the tensor
-squeeze1d :: Dimensions d => Dim n -> Tensor d -> Tensor d'
+squeeze1d
+  :: Dimensions d
+  => '(rs, 1:+ls) ~ (SplitAt n d)
+  => Dim n
+  -> Tensor d
+  -> Tensor (rs ++ ls)
 squeeze1d n t = unsafeDupablePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
-  Dynamic._squeeze1d (asDynamic t) (asDynamic t') (fromIntegral (dimVal n))
+  Dynamic._squeeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
   pure t'
 
 -- | Static call to 'Dynamic.storage'
@@ -215,32 +235,38 @@ _transpose t0 t1 = Dynamic._transpose (asDynamic t0) (asDynamic t1)
 _unfold t0 t1 = Dynamic._unfold (asDynamic t0) (asDynamic t1)
 
 -- | Unsqueeze a dimension of size 1 into the tensor (pure, dupable)
-unsqueeze1d :: All Dimensions '[d, d'] => Idx n -> Tensor d -> Tensor d'
+unsqueeze1d
+  :: Dimensions d
+  => '(rs, ls) ~ (SplitAt n d)
+  => Dim n
+  -> Tensor d
+  -> Tensor (rs ++ '[1] ++ ls)
 unsqueeze1d n t = unsafeDupablePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
-  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t') (fromIntegral (idxToWord n))
+  Dynamic._unsqueeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
   pure t'
 
 -- | *Not safe:*  unsqueeze a dimension of size 1 into the tensor.
-unsqueeze1d_ :: All Dimensions '[d, d'] => Idx n -> Tensor d -> IO (Tensor d')
+unsqueeze1d_
+  :: Dimensions d
+  => '(rs, ls) ~ (SplitAt n d)
+  => Dim n
+  -> Tensor d
+  -> IO (Tensor (rs ++ '[1] ++ ls))
 unsqueeze1d_ n t = do
-  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t) (fromIntegral (idxToWord n))
+  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t) (fromIntegral (dimVal n))
   pure (asStatic (asDynamic t))
 
 
 -- ========================================================================= --
 
 -- | Get runtime shape information from a tensor
-shape :: Tensor d -> IO [Size]
-shape t = do
-  ds <- nDimension t
-  mapM (size t . fromIntegral) [0..ds-1]
+shape :: Tensor d -> [Word]
+shape t = Dynamic.shape (asDynamic t)
 
 -- | alias to 'shape', casting the dimensions into a runtime 'SomeDims'.
-getDims :: Tensor d -> IO SomeDims
-getDims t = do
-  ds <- shape t
-  pure (someDimsVal $ fromIntegral <$> ds)
+getDims :: Tensor d -> SomeDims
+getDims = someDimsVal . shape
 
 -- | helper function to make other parts of hasktorch valid pure functions.
 withNew :: forall d . (Dimensions d) => (Tensor d -> IO ()) -> IO (Tensor d)
@@ -323,28 +349,28 @@ getDim t d = case fromIntegral <$> listDims (dims :: Dims d) of
 
 -- | Select a dimension of a tensor. If a vector is passed in, return a singleton tensor
 -- with the index value of the vector.
-(!!) :: forall (d::[Nat]) (d'::[Nat]) .  (All Dimensions '[d, d']) => Tensor d -> DimVal -> Tensor d'
+(!!)
+  :: forall d ls r rs i
+  .  '(ls, r:+rs) ~ SplitAt i d
+  => KnownDim i
+  => Dimensions d
+  => Tensor d
+  -> Dim i
+  -> Tensor (ls ++ rs)
 t !! i = unsafePerformIO $
-  nDimension t >>= \case
+  case nDimension t of
     0 -> empty
     1 -> runMaybeT selectVal >>= maybe empty pure
-    _ -> selectRank
+    _ -> newSelect t (i, Idx 1)
 
   where
-    selectVal :: MaybeT IO (Tensor d')
+    selectVal :: MaybeT IO (Tensor (ls ++ rs))
     selectVal = do
-      sizeI <- fromIntegral <$> lift (size t i)
-      guard (i < sizeI)
+      sizeI <- fromIntegral <$> lift (size t (fromIntegral $ dimVal i))
+      guard (dimVal i < sizeI)
       r <- lift $ newWithSize1d 1
-      lift $ _set1d r 0 (get1d t (fromIntegral i))
+      lift $ _set1d r 0 (get1d t (fromIntegral $ dimVal i))
       pure r
-
-    selectRank :: IO (Tensor d')
-    selectRank = do
-      sz <- fmap fromIntegral (size t i)
-      r <- newSelect t i 0
-      pure r
-
 
 -- | Create a new tensor. Elements have not yet been allocated and there will
 -- not be any gauruntees regarding what is inside.
@@ -403,7 +429,7 @@ fromList l = unsafePerformIO . runMaybeT $ do
 -- or a string explaining what went wrong.
 matrix
   :: forall n m
-  .  (All KnownDim '[n, m]) => All KnownNat '[n, m]
+  .  (All KnownDim '[n, m], All KnownNat '[n, m])
 #if MIN_VERSION_singletons(2,4,0)
   => KnownDim (n*m) => KnownNat (n*m)
 #else
@@ -412,14 +438,37 @@ matrix
   => [[HsReal]] -> Either String (Tensor '[n, m])
 matrix ls
   | null ls = Left "no support for empty lists"
-  | genericLength ls /= (dimVal (dim :: Dim n)) = Left "length of outer list must match type-level columns"
-  | any (/= length (head ls)) (fmap length ls) = Left "can't build a matrix from jagged lists"
-  | genericLength (head ls) /= (dimVal (dim :: Dim n)) = Left "inner list length must match type-level rows"
+
+  | colLen /= mVal =
+    Left $ "length of outer list "++show colLen++" must match type-level columns " ++ show mVal
+
+  | any (/= colLen) (fmap length ls) =
+    Left $ "can't build a matrix from jagged lists: " ++ show (fmap length ls)
+
+  | rowLen /= nVal =
+    Left $ "inner list length " ++ show rowLen ++ " must match type-level rows " ++ show nVal
+
   | otherwise =
     case fromList (concat ls) of
       Nothing -> Left "impossible: number of elements doesn't match the dimensions"
       Just m -> Right m
+  where
+    rowLen :: Integral l => l
+    rowLen = genericLength ls
 
+    colLen :: Integral l => l
+    colLen = genericLength (head ls)
+
+    nVal = dimVal (dim :: Dim n)
+    mVal = dimVal (dim :: Dim m)
+
+unsafeMatrix
+  :: forall n m
+  .  All KnownDim '[n, m, n*m]
+  => All KnownNat '[n, m, n*m]
+  => [[HsReal]] -> Tensor '[n, m]
+unsafeMatrix = either error id . matrix
+ 
 -- | transpose a matrix (pure, dupable)
 transpose2d :: (All KnownDim '[r,c]) => Tensor '[r, c] -> Tensor '[c, r]
 transpose2d t = unsafeDupablePerformIO $ newTranspose t 1 0

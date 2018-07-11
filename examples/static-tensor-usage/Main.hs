@@ -90,14 +90,14 @@ valueTransformations = void $ do
     neg randMat
 
   section "Sigmoid" $ do
-    sig :: DoubleTensor '[4, 4] <- Math.sigmoid randMat
+    let sig :: DoubleTensor '[4, 4] = Math.sigmoid randMat
     pure sig
 
-  section "Tanh" $ Math.tanh randMat
+  section "Tanh" $ pure $ Math.tanh randMat
 
-  section "Log" $ Math.log randMat
+  section "Log" $ pure $ Math.log randMat
 
-  section "Round" $ Math.round randMat
+  section "Round" $ pure $ Math.round randMat
 
 -- ========================================================================= --
 -- helpers

@@ -77,8 +77,8 @@ runLayer (W wB wN) v = do
   pure dt
 
 runNet :: Network -> DoubleTensor -> IO DoubleTensor
-runNet (O w) v     = runLayer w v >>= sigmoid
-runNet (w :~ n') v = runLayer w v >>= sigmoid >>= runNet n'
+runNet (O w) v     =  sigmoid <$> runLayer w v
+runNet (w :~ n') v = (sigmoid <$> runLayer w v) >>= runNet n'
 
 
 main :: IO ()

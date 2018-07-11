@@ -136,37 +136,34 @@ executable static-tensor-usage
       Paths_hasktorch_examples
   default-language: Haskell2010
 
-executable convolutions
-  main-is: Main.hs
-  hs-source-dirs: convolutions
-  default-language: Haskell2010
-  default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
-  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
-  other-modules:
-      Utils
-    , Conv1d
-    , Conv2d
-    , DataLoader
-    , LeNet
-    , MaxPooling
-    , ReLU
-    , Train
-  build-depends:
-      base >=4.7 && <5
-    , backprop >= 0.2
-    , dimensions
-    , directory
-    , filepath
-    , ghc-typelits-natnormalise
-    , hasktorch-core
-    , JuicyPixels
-    , list-t
-    , microlens-th
-    , mtl
-    , monad-loops
-    , singletons
-    , time
-    , transformers
+-- Disabled until FF2 is unit tested in hasktorch-core
+-- executable convolutions
+--   main-is: Main.hs
+--   hs-source-dirs: convolutions
+--   default-language: Haskell2010
+--   default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
+--   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+--   other-modules:
+--       Utils
+--     , DataLoader
+--     , LeNet
+--     , Train
+--   build-depends:
+--       base >=4.7 && <5
+--     , backprop >= 0.2
+--     , dimensions
+--     , directory
+--     , filepath
+--     , ghc-typelits-natnormalise
+--     , hasktorch-core
+--     , JuicyPixels
+--     , list-t
+--     , microlens-th
+--     , mtl
+--     , monad-loops
+--     , singletons
+--     , time
+--     , transformers
 
 -- Build only with cuda flags:
 --

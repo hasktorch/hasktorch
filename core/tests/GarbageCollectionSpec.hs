@@ -102,12 +102,13 @@ testLapack = do
   let Just o1 = ord2Tuple (-1.0, 1.0)
   t :: DoubleDynamic <- uniform (dims :: Dims '[2, 2]) rng o1
 
-  let b    = constant (dims :: Dims '[2]) 1.0
-      resA = constant (dims :: Dims '[2, 2]) 0
-      resB = constant (dims :: Dims '[2, 2]) 0
-  gesv_ (resA,resB) t b
-  print resA
-  print resB
+  let b  = constant (dims :: Dims '[2, 1]) 1.0
+      x  = constant (dims :: Dims '[2, 1]) 0
+      lu = constant (dims :: Dims '[2, 2]) 0
+
+  gesv_ (x, lu) b t
+  print x
+  print lu
 
   let resQ = constant (dims :: Dims '[2, 2]) 0
       resR = constant (dims :: Dims '[2, 2]) 0

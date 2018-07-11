@@ -25,4 +25,3 @@ instance Dimensions d => Backprop (Tensor d) where
   zero = (const . constant) 0
   one = (const . constant) 1
 
-

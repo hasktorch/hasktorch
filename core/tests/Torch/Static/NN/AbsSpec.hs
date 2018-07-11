@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Torch.NN.Static.AbsSpec where
+module Torch.Static.NN.AbsSpec where
 
 import Test.Hspec
 import Torch.Double

@@ -55,7 +55,7 @@ genData w = do
   noise        :: Tensor '[N, 1] <- T.normal gen 0 p0'10
   predictorVal :: Tensor '[N]    <- T.normal gen 0 p1'00
   let ones     :: Tensor '[N] = T.constant 1
-  x :: Tensor '[N, M] <- T.resizeAs <$> (predictorVal `T.cat1d` ones)
+  let x :: Tensor '[N, M] = T.resizeAs (predictorVal `T.cat1d` ones)
   let y :: Tensor '[N, 1] = T.resizeAs ((x !*! w) ^+^ noise)
   print x
   print y

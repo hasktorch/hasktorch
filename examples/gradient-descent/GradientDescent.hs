@@ -5,7 +5,6 @@ module Main where
 
 import Data.Proxy
 import GHC.TypeLits
-import Data.Singletons
 import Numeric.Dimensions hiding (N)
 import Data.Monoid ((<>))
 import Control.Monad
@@ -31,7 +30,7 @@ genData param = do
       Just p10 = positive 10
   noise        :: Tensor '[N] <- normal gen 0 p2
   predictorVal :: Tensor '[N] <- normal gen 0 p10
-  x :: Tensor '[2, N] <- resizeAs <$> (predictorVal `cat1d` (constant 1))
+  let x :: Tensor '[2, N] = resizeAs (predictorVal `cat1d` (constant 1))
   y :: Tensor '[N]    <- Math.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
 
   pure (x, y)

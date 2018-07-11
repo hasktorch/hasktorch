@@ -1,21 +1,26 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
-module MaxPooling where
+module Torch.Static.NN.MaxPoolingSpec where
 
+import Test.Hspec
 import Numeric.Backprop
+import Numeric.Dimensions
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Data.Singletons.Prelude
 
 import Torch.Double as Torch
-import Conv2d
-import qualified ReLU
+
 import qualified Torch.Long as Ix
-import qualified Utils
+import qualified Torch.Static.NN.Internal   as Utils
 import qualified Torch.Double.NN.Conv2d     as NN
 import qualified Torch.Double.NN.Activation as NN
 
+
+-- for args
+import Torch.Static.NN.Conv2dSpec
+import qualified Torch.Static.NN.ReLUSpec   as ReLU
 
 lenetLayer
   :: forall s . Reifies s W
@@ -34,6 +39,11 @@ lenetLayer lr conv
       (Step2d :: Step2d D D)
       (Padding2d :: Padding2d Pad Pad)
       lr conv
+
+spec :: Spec
+spec = do
+  it "still need to migrate the example into tests" $
+    pending
 
 
 main :: IO ()

@@ -39,38 +39,39 @@ module Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating
   ) where
 
 import GHC.Int
+import System.IO.Unsafe
 import Torch.Indef.Dynamic.Tensor
 import qualified Torch.Sig.Tensor.Math.Pointwise.Floating as Sig
 
 import Torch.Indef.Types
 
 -- | Return a new tensor applying @1.0 / x@ to all elements.
-cinv :: Dynamic -> IO Dynamic
-cinv  t = withEmpty t $ \r -> _cinv r t
+cinv :: Dynamic -> Dynamic
+cinv t = unsafeDupablePerformIO . withEmpty t $ \r -> _cinv r t
 
 -- | Inplace version of 'cinv', mutating the first tensor argument.
 cinv_ :: Dynamic -> IO ()
 cinv_ t = _cinv t t
 
 -- | Returns a new Tensor with the sigmoid of the elements of x.
-sigmoid :: Dynamic -> IO Dynamic
-sigmoid t = withEmpty t $ \r -> _sigmoid r t
+sigmoid :: Dynamic -> Dynamic
+sigmoid t = unsafeDupablePerformIO . withEmpty t $ \r -> _sigmoid r t
 
 -- | Inplace version of 'sigmoid', mutating the first tensor argument.
 sigmoid_ :: Dynamic -> IO ()
 sigmoid_ t = _sigmoid t t
 
 -- | Returns a new tensor with the natural logarithm of the elements of x.
-log :: Dynamic -> IO Dynamic
-log t = withEmpty t $ \r -> _log r t
+log :: Dynamic -> Dynamic
+log t = unsafeDupablePerformIO . withEmpty t $ \r -> _log r t
 
 -- | Inplace version of 'log', mutating the first tensor argument.
 log_ :: Dynamic -> IO ()
 log_ t = _log t t
 
 -- | Returns a new tensor with the natural logarithm of the absolute value of the gamma function of the elements of x.
-lgamma :: Dynamic -> IO Dynamic
-lgamma t = withEmpty t $ \r -> _lgamma r t
+lgamma :: Dynamic -> Dynamic
+lgamma t = unsafeDupablePerformIO . withEmpty t $ \r -> _lgamma r t
 
 -- | Inplace version of 'lgamma', mutating the first tensor argument.
 lgamma_ :: Dynamic -> IO ()
@@ -79,8 +80,8 @@ lgamma_ t = _lgamma t t
 -- | Returns a new tensor with the natural logarithm of the elements of x + 1.
 --
 -- This function is more accurate than log for small values of x.
-log1p :: Dynamic -> IO Dynamic
-log1p t = withEmpty t $ \r -> _log1p r t
+log1p :: Dynamic -> Dynamic
+log1p t = unsafeDupablePerformIO . withEmpty t $ \r -> _log1p r t
 
 -- | Inplace version of 'log1p', mutating the first tensor argument.
 log1p_ :: Dynamic -> IO ()
@@ -88,80 +89,80 @@ log1p_ t = _log1p t t
 
 -- | Returns, for each element in x, e (Neper number, the base of
 -- natural logarithms) raised to the power of the element in x.
-exp :: Dynamic -> IO Dynamic
-exp t = withEmpty t $ \r -> _exp r t
+exp :: Dynamic -> Dynamic
+exp t = unsafeDupablePerformIO . withEmpty t $ \r -> _exp r t
 
 -- | Inplace version of 'exp', mutating the first tensor argument.
 exp_ :: Dynamic -> IO ()
 exp_ t = _exp t t
 
 -- | Returns a new tensor with the cosine of the elements of x.
-cos :: Dynamic -> IO Dynamic
-cos t = withEmpty t $ \r -> _cos r t
+cos :: Dynamic -> Dynamic
+cos t = unsafeDupablePerformIO . withEmpty t $ \r -> _cos r t
 
 -- | Inplace version of 'cos', mutating the first tensor argument.
 cos_ :: Dynamic -> IO ()
 cos_ t = _cos t t
 
 -- | Returns a new tensor with the arcosine of the elements of x.
-acos :: Dynamic -> IO Dynamic
-acos t = withEmpty t $ \r -> _acos r t
+acos :: Dynamic -> Dynamic
+acos t = unsafeDupablePerformIO . withEmpty t $ \r -> _acos r t
 
 -- | Inplace version of 'acos', mutating the first tensor argument.
 acos_ :: Dynamic -> IO ()
 acos_ t = _acos t t
 
 -- | Returns a new tensor with the hyberbolic cosine of the elements of x.
-cosh :: Dynamic -> IO Dynamic
-cosh t = withEmpty t $ \r -> _cosh r t
+cosh :: Dynamic -> Dynamic
+cosh t = unsafeDupablePerformIO . withEmpty t $ \r -> _cosh r t
 
 -- | Inplace version of 'cosh', mutating the first tensor argument.
 cosh_ :: Dynamic -> IO ()
 cosh_ t = _cosh t t
 
 -- | Returns a new tensor with the sine of the elements of x.
-sin :: Dynamic -> IO Dynamic
-sin t = withEmpty t $ \r -> _sin r t
+sin :: Dynamic -> Dynamic
+sin t = unsafeDupablePerformIO . withEmpty t $ \r -> _sin r t
 
 -- | Inplace version of 'sin', mutating the first tensor argument.
 sin_ :: Dynamic -> IO ()
 sin_ t = _sin t t
 
 -- | Returns a new tensor with the arcsine of the elements of x.
-asin :: Dynamic -> IO Dynamic
-asin t = withEmpty t $ \r -> _asin r t
+asin :: Dynamic -> Dynamic
+asin t = unsafeDupablePerformIO . withEmpty t $ \r -> _asin r t
 
 -- | Inplace version of 'asin', mutating the first tensor argument.
 asin_ :: Dynamic -> IO ()
 asin_ t = _asin t t
 
 -- | Returns a new tensor with the hyperbolic sine of the elements of x.
-sinh :: Dynamic -> IO Dynamic
-sinh t = withEmpty t $ \r -> _sinh r t
+sinh :: Dynamic -> Dynamic
+sinh t = unsafeDupablePerformIO . withEmpty t $ \r -> _sinh r t
 
 -- | Inplace version of 'sinh', mutating the first tensor argument.
 sinh_ :: Dynamic -> IO ()
 sinh_ t = _sinh t t
 
 -- | Returns a new tensor with the tangent of the elements of x.
-tan :: Dynamic -> IO Dynamic
-tan t = withEmpty t $ \r -> _tan r t
+tan :: Dynamic -> Dynamic
+tan t = unsafeDupablePerformIO . withEmpty t $ \r -> _tan r t
 
 -- | Inplace version of 'tan', mutating the first tensor argument.
 tan_ :: Dynamic -> IO ()
 tan_ t = _tan t t
 
 -- | Returns a new tensor with the arctangent of the elements of x.
-atan :: Dynamic -> IO Dynamic
-atan t = withEmpty t $ \r -> _atan r t
+atan :: Dynamic -> Dynamic
+atan t = unsafeDupablePerformIO . withEmpty t $ \r -> _atan r t
 
 -- | Inplace version of 'atan', mutating the first tensor argument.
 atan_ :: Dynamic -> IO ()
 atan_ t = _atan t t
 
 -- | Returns a new tensor with the hyperbolic tangent of the elements of x.
-tanh :: Dynamic -> IO Dynamic
-tanh t = withEmpty t $ \r -> _tanh r t
+tanh :: Dynamic -> Dynamic
+tanh t = unsafeDupablePerformIO . withEmpty t $ \r -> _tanh r t
 
 -- | Inplace version of 'tanh', mutating the first tensor argument.
 tanh_ :: Dynamic -> IO ()
@@ -170,8 +171,8 @@ tanh_ t = _tanh t t
 -- | Returns a new tensor with the gauss error function applied to the elements of x.
 --
 -- The error function comes from https://en.wikipedia.org/wiki/Error_function
-erf :: Dynamic -> IO Dynamic
-erf t = withEmpty t $ \r -> _erf r t
+erf :: Dynamic -> Dynamic
+erf t = unsafeDupablePerformIO . withEmpty t $ \r -> _erf r t
 
 -- | Inplace version of 'erf', mutating the first tensor argument.
 erf_ :: Dynamic -> IO ()
@@ -180,16 +181,16 @@ erf_ t = _erf t t
 -- | Returns a new tensor with the inverse gauss error function applied to the elements of x.
 --
 -- See https://en.wikipedia.org/wiki/Error_function for the gauss error function. This is its inverse.
-erfinv :: Dynamic -> IO Dynamic
-erfinv t = withEmpty t $ \r -> _erfinv r t
+erfinv :: Dynamic -> Dynamic
+erfinv t = unsafeDupablePerformIO . withEmpty t $ \r -> _erfinv r t
 
 -- | Inplace version of 'erfinv', mutating the first tensor argument.
 erfinv_ :: Dynamic -> IO ()
 erfinv_ t = _erfinv t t
 
 -- | Returns a new tensor with the elements of @x@ to the power of @n@.
-pow :: Dynamic -> HsReal -> IO Dynamic
-pow t v = withEmpty t $ \r -> _pow r t v
+pow :: Dynamic -> HsReal -> Dynamic
+pow t v = unsafeDupablePerformIO . withEmpty t $ \r -> _pow r t v
 
 -- | Inplace version of 'pow', mutating the first tensor argument.
 pow_ :: Dynamic -> HsReal -> IO ()
@@ -199,24 +200,24 @@ pow_ t v = _pow t t v
 tpow
   :: HsReal      -- ^ base scalar @n@
   -> Dynamic     -- ^ tensor @x@ of powers to raise @n@ by.
-  -> IO Dynamic
-tpow v t = withEmpty t $ \r -> _tpow r v t
+  -> Dynamic
+tpow v t = unsafeDupablePerformIO . withEmpty t $ \r -> _tpow r v t
 
 -- | Inplace version of 'tpow', mutating the first tensor argument.
 tpow_ :: HsReal -> Dynamic -> IO ()
 tpow_ v t = _tpow t v t
 
 -- | Returns a new tensor with the square root of the elements of x.
-sqrt :: Dynamic -> IO Dynamic
-sqrt t = withEmpty t $ \r -> _sqrt r t
+sqrt :: Dynamic -> Dynamic
+sqrt t = unsafeDupablePerformIO . withEmpty t $ \r -> _sqrt r t
 
 -- | Inplace version of 'sqrt', mutating the first tensor argument.
 sqrt_ :: Dynamic -> IO ()
 sqrt_ t = _sqrt t t
 
 -- | Returns a new tensor with the reciprocal of the square root of the elements of x.
-rsqrt :: Dynamic -> IO Dynamic
-rsqrt t = withEmpty t $ \r -> _rsqrt r t
+rsqrt :: Dynamic -> Dynamic
+rsqrt t = unsafeDupablePerformIO . withEmpty t $ \r -> _rsqrt r t
 
 -- | Inplace version of 'rsqrt', mutating the first tensor argument.
 rsqrt_ :: Dynamic -> IO ()
@@ -224,8 +225,8 @@ rsqrt_ t = _rsqrt t t
 
 -- | Returns a new tensor with the values of the elements of x
 -- rounded up to the nearest integers.
-ceil :: Dynamic -> IO Dynamic
-ceil t = withEmpty t $ \r -> _ceil r t
+ceil :: Dynamic -> Dynamic
+ceil t = unsafeDupablePerformIO . withEmpty t $ \r -> _ceil r t
 
 -- | Inplace version of 'ceil', mutating the first tensor argument.
 ceil_ :: Dynamic -> IO ()
@@ -233,8 +234,8 @@ ceil_ t = _ceil t t
 
 -- | Returns a new Tensor with the values of the elements of x
 -- rounded down to the nearest integers.
-floor :: Dynamic -> IO Dynamic
-floor t = withEmpty t $ \r -> _floor r t
+floor :: Dynamic -> Dynamic
+floor t = unsafeDupablePerformIO . withEmpty t $ \r -> _floor r t
 
 -- | Inplace version of 'floor', mutating the first tensor argument.
 floor_ :: Dynamic -> IO ()
@@ -245,8 +246,8 @@ floor_ t = _floor t t
 --
 -- FIXME: The lua docs don't state how this rounding works. Someone
 -- should read the source code and document this.
-round :: Dynamic -> IO Dynamic
-round t = withEmpty t $ \r -> _round r t
+round :: Dynamic -> Dynamic
+round t = unsafeDupablePerformIO . withEmpty t $ \r -> _round r t
 
 -- | Inplace version of 'round', mutating the first tensor argument.
 round_ :: Dynamic -> IO ()
@@ -258,8 +259,8 @@ round_ t = _round t t
 -- FIXME: The lua docs don't state how this truncation works. Someone
 -- should read the source code, document this, and explain how this
 -- differs from 'floor'.
-trunc :: Dynamic -> IO Dynamic
-trunc t = withEmpty t $ \r -> _trunc r t
+trunc :: Dynamic -> Dynamic
+trunc t = unsafeDupablePerformIO . withEmpty t $ \r -> _trunc r t
 
 -- | Inplace version of 'trunc', mutating the first tensor argument.
 trunc_ :: Dynamic -> IO ()
@@ -267,8 +268,8 @@ trunc_ t = _trunc t t
 
 -- | Returns a new tensor with the fractional portion of the elements
 -- of x.
-frac :: Dynamic -> IO Dynamic
-frac t = withEmpty t $ \r -> _frac r t
+frac :: Dynamic -> Dynamic
+frac t = unsafeDupablePerformIO . withEmpty t $ \r -> _frac r t
 
 -- | Inplace version of 'frac', mutating the first tensor argument.
 frac_ :: Dynamic -> IO ()
@@ -279,8 +280,8 @@ frac_ t = _frac t t
 -- @
 --   res = a + weight * (b - a)
 -- @
-lerp :: Dynamic -> Dynamic -> HsReal -> IO Dynamic
-lerp a b v = withEmpty a $ \r -> _lerp r a b v
+lerp :: Dynamic -> Dynamic -> HsReal -> Dynamic
+lerp a b v = unsafeDupablePerformIO . withEmpty a $ \r -> _lerp r a b v
 
 -- | Inplace version of 'lerp', mutating the first tensor argument.
 lerp_ :: Dynamic -> Dynamic -> HsReal -> IO ()
@@ -291,8 +292,8 @@ lerp_ a b v = _lerp a a b v
 -- refers to the signed angle in radians between the rays ending
 -- at origin where the first one starts at (1, 0) and the second
 -- at (y, x).
-atan2 :: Dynamic -> Dynamic -> IO Dynamic
-atan2 a b = withEmpty a $ \r -> _atan2 r a b
+atan2 :: Dynamic -> Dynamic -> Dynamic
+atan2 a b = unsafeDupablePerformIO . withEmpty a $ \r -> _atan2 r a b
 
 -- | Inplace version of 'atan2', mutating the first tensor argument.
 atan2_ :: Dynamic -> Dynamic -> IO ()

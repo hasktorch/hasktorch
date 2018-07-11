@@ -96,6 +96,7 @@ library
 
     , Torch.Indef.Dynamic.NN
     , Torch.Indef.Dynamic.NN.Activation
+    , Torch.Indef.Dynamic.NN.Criterion
     , Torch.Indef.Dynamic.NN.Pooling
     , Torch.Indef.Dynamic.Tensor.Math.Blas
     , Torch.Indef.Dynamic.Tensor.Math.Floating
@@ -135,6 +136,7 @@ library
     -- , Torch.Indef.Static.NN.Conv3d
     , Torch.Indef.Static.NN.Criterion
     , Torch.Indef.Static.NN.Layers
+    , Torch.Indef.Static.NN.Linear
     , Torch.Indef.Static.NN.Math
     , Torch.Indef.Static.NN.Padding
     , Torch.Indef.Static.NN.Pooling
@@ -144,5 +146,4 @@ library
     , Torch.Indef.Static.Tensor.Math.Lapack
     , Torch.Indef.Static.Tensor.Math.Pointwise.Floating
     , Torch.Indef.Static.Tensor.Math.Reduce.Floating
-
 

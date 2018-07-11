@@ -26,6 +26,12 @@ hs2cReal = realToFrac
 hs2cAccReal :: HsAccReal -> CAccReal
 hs2cAccReal = realToFrac
 
+real2acc :: HsReal -> HsAccReal
+real2acc = realToFrac
+
+acc2real :: HsAccReal -> HsReal
+acc2real = realToFrac
+
 c2hsReal :: CReal -> HsReal
 c2hsReal = realToFrac
 
