@@ -56,34 +56,34 @@ instance Dimensions d => Fractional (Tensor d) where
 instance Dimensions d => Floating (Tensor d) where
   pi = X.constant pi
 
-  exp = unsafePerformIO . X.exp
+  exp = X.exp
   {-# NOINLINE exp #-}
 
-  log = unsafePerformIO . X.log
+  log = X.log
   {-# NOINLINE log #-}
 
-  sqrt = unsafePerformIO . X.sqrt
+  sqrt = X.sqrt
   {-# NOINLINE sqrt #-}
 
-  sin = unsafePerformIO . X.sin
+  sin = X.sin
   {-# NOINLINE sin #-}
 
-  cos = unsafePerformIO . X.cos
+  cos = X.cos
   {-# NOINLINE cos #-}
 
-  asin = unsafePerformIO . X.asin
+  asin = X.asin
   {-# NOINLINE asin #-}
 
-  acos = unsafePerformIO . X.acos
+  acos = X.acos
   {-# NOINLINE acos #-}
 
-  atan = unsafePerformIO . X.atan
+  atan = X.atan
   {-# NOINLINE atan #-}
 
-  sinh = unsafePerformIO . X.sinh
+  sinh = X.sinh
   {-# NOINLINE sinh #-}
 
-  cosh = unsafePerformIO . X.cosh
+  cosh = X.cosh
   {-# NOINLINE cosh #-}
 
 
