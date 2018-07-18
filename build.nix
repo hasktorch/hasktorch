@@ -7,19 +7,24 @@ let
         packages = pkgs.haskell.packages // {
           "${compilerVersion}" = pkgs.haskell.packages."${compilerVersion}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
-              # type-combinators = pkgs.callPackage ./vendor/type-combinators.nix { };
-
               hasktorch-codegen            = haskellPackagesNew.callPackage ./codegen { };
-              # hasktorch-core             = haskellPackagesNew.callPackage ./core { };
-              # hasktorch-indef            = haskellPackagesNew.callPackage ./indef { };
+
+              hasktorch-types-th         = haskellPackagesNew.callPackage ./types/th { };
+              hasktorch-types-thc        = haskellPackagesNew.callPackage ./types/thc { };
+
               # hasktorch-signatures       = haskellPackagesNew.callPackage ./signatures { };
               # hasktorch-signatures-types = haskellPackagesNew.callPackage ./signatures/types { };
               # hasktorch-partial          = haskellPackagesNew.callPackage ./signatures/partial { };
-              # hasktorch-types-th         = haskellPackagesNew.callPackage ./types/th { };
-              # hasktorch-types-thc        = haskellPackagesNew.callPackage ./types/thc { };
-              #hasktorch-raw-th           = haskellPackagesNew.callPackage ./raw/th { };
-              #hasktorch-raw-thc          = haskellPackagesNew.callPackage ./raw/thc { };
-              #hasktorch-raw-tests        = haskellPackagesNew.callPackage ./raw/tests { };
+
+              # hasktorch-raw-th           = haskellPackagesNew.callPackage ./raw/th { };
+              # hasktorch-raw-thc          = haskellPackagesNew.callPackage ./raw/thc { };
+              # hasktorch-raw-tests        = haskellPackagesNew.callPackage ./raw/tests { };
+
+              # type-combinators = pkgs.callPackage ./vendor/type-combinators.nix { };
+
+              # hasktorch-indef            = haskellPackagesNew.callPackage ./indef { };
+              # hasktorch-core             = haskellPackagesNew.callPackage ./core { };
+
               # hasktorch-examples         = haskellPackagesNew.callPackage ./examples { };
             };
           };
@@ -31,8 +36,17 @@ let
   pkgs = import <nixpkgs> { inherit config; };
 in
   {
-    hasktorch-aten = pkgs.callPackage ./vendor/aten.nix { };
-    hasktorch-codegen = pkgs.haskell.packages.${compilerVersion}.hasktorch-codegen;
+    # hasktorch-aten       = pkgs.callPackage ./vendor/aten.nix { };
+
+    hasktorch-codegen      = pkgs.haskell.packages.${compilerVersion}.hasktorch-codegen;
+
+    hasktorch-types-th     = pkgs.haskell.packages.${compilerVersion}.hasktorch-types-th;
+    hasktorch-types-thc    = pkgs.haskell.packages.${compilerVersion}.hasktorch-types-thc;
+
+    # hasktorch-signatures       = pkgs.haskell.packages.${compilerVersion}.hasktorch-signatures;
+    # hasktorch-signatures-types = pkgs.haskell.packages.${compilerVersion}.hasktorch-signatures-types;
+    # hasktorch-partial          = pkgs.haskell.packages.${compilerVersion}.hasktorch-partial;
+
     # type-combinators = pkgs.haskell.packages.${compilerVersion}.type-combinators;
     # hasktorch-raw-th = pkgs.haskell.packages.${compilerVersion}.hasktorch-raw-th;
   }
