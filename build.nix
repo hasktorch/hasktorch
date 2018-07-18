@@ -9,6 +9,7 @@ let
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
               # type-combinators = pkgs.callPackage ./vendor/type-combinators.nix { };
 
+              hasktorch-codegen            = haskellPackagesNew.callPackage ./codegen { };
               # hasktorch-core             = haskellPackagesNew.callPackage ./core { };
               # hasktorch-indef            = haskellPackagesNew.callPackage ./indef { };
               # hasktorch-signatures       = haskellPackagesNew.callPackage ./signatures { };
@@ -31,6 +32,7 @@ let
 in
   {
     hasktorch-aten = pkgs.callPackage ./vendor/aten.nix { };
+    hasktorch-codegen = pkgs.haskell.packages.${compilerVersion}.hasktorch-codegen;
     # type-combinators = pkgs.haskell.packages.${compilerVersion}.type-combinators;
     # hasktorch-raw-th = pkgs.haskell.packages.${compilerVersion}.hasktorch-raw-th;
   }
