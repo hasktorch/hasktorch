@@ -95,10 +95,10 @@ dilatedMaxPooling2d
   => Reifies s W
 
   -- Parameters
-  => Kernel2d kH kW         -- ^ kernel size
-  -> Step2d dH dW           -- ^ step size
-  -> Padding2d pH pW        -- ^ padding size
-  -> Dilation2d dilH dilW   -- ^ dilation size
+  => Kernel2d '(kH, kW)         -- ^ kernel size
+  -> Step2d '(dH, dW)           -- ^ step size
+  -> Padding2d '(pH, pW)        -- ^ padding size
+  -> Dilation2d '(dilH, dilW)   -- ^ dilation size
   -> SBool ceilMode         -- ^ ceil mode
 
   -- function arguments
@@ -114,10 +114,10 @@ dilatedMaxPooling2dBatch
   => Reifies s W
 
   -- Parameters
-  => Kernel2d kH kW         -- ^ kernel size
-  -> Step2d dH dW           -- ^ step size
-  -> Padding2d pH pW        -- ^ padding size
-  -> Dilation2d dilH dilW   -- ^ dilation size
+  => Kernel2d '(kH, kW)         -- ^ kernel size
+  -> Step2d '(dH, dW)           -- ^ step size
+  -> Padding2d '(pH, pW)        -- ^ padding size
+  -> Dilation2d '(dilH, dilW)   -- ^ dilation size
   -> SBool ceilMode         -- ^ ceil mode
 
   -- function arguments
@@ -133,10 +133,10 @@ _dilatedMaxPooling2d
   => Reifies s W
 
   -- Parameters
-  => Kernel2d kH kW         -- ^ kernel size
-  -> Step2d dH dW           -- ^ step size
-  -> Padding2d pH pW        -- ^ padding size
-  -> Dilation2d dilH dilW   -- ^ dilation size
+  => Kernel2d '(kH, kW)         -- ^ kernel size
+  -> Step2d '(dH, dW)           -- ^ step size
+  -> Padding2d '(pH, pW)        -- ^ padding size
+  -> Dilation2d '(dilH,dilW)   -- ^ dilation size
   -> SBool ceilMode         -- ^ ceil mode
 
   -- function arguments
@@ -149,10 +149,10 @@ _dilatedMaxPooling2d ker step pad dil ceil = liftOp1 . op1 $ \inp -> unsafePerfo
  where
   _spatialDilatedMaxPooling_updateOutput
     :: Tensor d              -- ^ input
-    -> Kernel2d kH kW        -- ^ kernel size
-    -> Step2d dH dW          -- ^ step size
-    -> Padding2d pH pW       -- ^ padding size
-    -> Dilation2d dilH dilW  -- ^ dilation size
+    -> Kernel2d '(kH, kW)        -- ^ kernel size
+    -> Step2d '(dH, dW)          -- ^ step size
+    -> Padding2d '(pH, pW)       -- ^ padding size
+    -> Dilation2d '(dilH, dilW)  -- ^ dilation size
     -> SBool ceilMode        -- ^ ceil mode
     -> IO (IndexTensor d', Tensor d') -- ^ index of each max from the indicies, output of the max pooling
   _spatialDilatedMaxPooling_updateOutput inp ker step pad dil ceilMode = do
@@ -166,10 +166,10 @@ _dilatedMaxPooling2d ker step pad dil ceil = liftOp1 . op1 $ \inp -> unsafePerfo
     :: Tensor d              -- ^ input
     -> Tensor d'             -- ^ gradOutput
     -> IndexTensor d'        -- ^ indices
-    -> Kernel2d kH kW        -- ^ kernel size
-    -> Step2d dH dW          -- ^ step size
-    -> Padding2d pH pW       -- ^ padding size
-    -> Dilation2d dilH dilW  -- ^ dilation size
+    -> Kernel2d '(kH, kW)        -- ^ kernel size
+    -> Step2d '(dH, dW)          -- ^ step size
+    -> Padding2d '(pH, pW)       -- ^ padding size
+    -> Dilation2d '(dilH, dilW)  -- ^ dilation size
     -> SBool ceilMode        -- ^ ceil mode
     -> IO (Tensor d)         -- ^ gradInput
   _spatialDilatedMaxPooling_updateGradInput inp gout ix ker step pad dil ceilMode = do
@@ -189,9 +189,9 @@ _maxPooling2d
   => Reifies s W
 
   -- Parameters
-  => Kernel2d kH kW         -- ^ kernel size
-  -> Step2d dH dW           -- ^ step size. Note: default in C is the kernel size.
-  -> Padding2d pH pW        -- ^ padding size
+  => Kernel2d '(kH, kW)         -- ^ kernel size
+  -> Step2d '(dH, dW)           -- ^ step size. Note: default in C is the kernel size.
+  -> Padding2d '(pH, pW)        -- ^ padding size
   -> SBool ceilMode         -- ^ ceil mode
 
   -- function arguments
@@ -207,9 +207,9 @@ _maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp ->
 
   _spatialMaxPooling_updateOutput
     :: Tensor d              -- ^ input
-    -> Kernel2d kH kW        -- ^ kernel size
-    -> Step2d dH dW          -- ^ step size
-    -> Padding2d pH pW       -- ^ padding size
+    -> Kernel2d '(kH, kW)        -- ^ kernel size
+    -> Step2d '(dH, dW)          -- ^ step size
+    -> Padding2d '(pH, pW)       -- ^ padding size
     -> SBool ceilMode                         -- ^ ceil mode
     -> (IndexTensor d', Tensor d')           -- ^ output
   _spatialMaxPooling_updateOutput inp ker step pad ceilMode = unsafePerformIO $ do
@@ -223,9 +223,9 @@ _maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp ->
     :: Tensor d              -- ^ input
     -> Tensor d'             -- ^ gradOutput
     -> IndexTensor d'        -- ^ indices
-    -> Kernel2d kH kW        -- ^ kernel size
-    -> Step2d dH dW          -- ^ step size
-    -> Padding2d pH pW       -- ^ padding size
+    -> Kernel2d '(kH, kW)        -- ^ kernel size
+    -> Step2d '(dH, dW)          -- ^ step size
+    -> Padding2d '(pH, pW)       -- ^ padding size
     -> SBool ceilMode        -- ^ ceil mode
     -> Tensor d              -- ^ gradInput
   _spatialMaxPooling_updateGradInput inp gout ix ker step pad ceilMode = unsafePerformIO $ do
@@ -242,9 +242,9 @@ maxPooling2d
   => KnownDim inPlane
 
   -- Parameters
-  => Kernel2d  kH kW       -- ^ kernel size
-  -> Step2d    dH dW       -- ^ step size
-  -> Padding2d pH pW       -- ^ padding size
+  => Kernel2d '(kH, kW)       -- ^ kernel size
+  -> Step2d '(dH, dW)       -- ^ step size
+  -> Padding2d '(pH, pW)       -- ^ padding size
   -> SBool ceilMode        -- ^ ceil mode
 
   -> BVar s (Tensor '[inPlane, iH, iW])
@@ -259,9 +259,9 @@ maxPooling2dBatch
   => KnownDim b
 
   -- Parameters
-  => Kernel2d kH kW        -- ^ kernel size
-  -> Step2d dH dW          -- ^ step size
-  -> Padding2d pH pW       -- ^ padding size
+  => Kernel2d '(kH, kW)        -- ^ kernel size
+  -> Step2d '(dH, dW)          -- ^ step size
+  -> Padding2d '(pH, pW)       -- ^ padding size
   -> SBool ceilMode        -- ^ ceil mode
 
   -> BVar s (Tensor '[b, inPlane, iH, iW])
