@@ -14,11 +14,15 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
+flag cuda
+  Description: build with nn support
+  Default: False
+
 library
   hs-source-dirs: src
   ghc-options: -Wall -fno-cse -Wno-missing-signatures
   other-modules: Paths_hasktorch_zoo
-  default-extensions: RankNTypes, DataKinds, TypeOperators, TypeFamilies
+  default-extensions: RankNTypes, DataKinds, TypeOperators, TypeFamilies, CPP
   default-language: Haskell2010
   build-depends:
       base >=4.7 && <5
@@ -49,33 +53,6 @@ library
       Torch.Data.Metrics
       -- Torch.Data.Runners.Cifar10
 
-
--- executable convolutions
---   main-is: Main.hs
---   hs-source-dirs: convolutions
---   default-language: Haskell2010
---   default-extensions: DataKinds, ScopedTypeVariables, OverloadedStrings
---   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
---   other-modules:
---       Utils
---     , DataLoader
---     , LeNet
---     , Train
---   build-depends:
---       base >=4.7 && <5
---     , backprop >= 0.2
---     , dimensions
---     , directory
---     , filepath
---     , ghc-typelits-natnormalise
---     , hasktorch-core
---     , JuicyPixels
---     , list-t
---     , microlens-th
---     , mtl
---     , monad-loops
---     , singletons
---     , time
---     , transformers
-
+  if flag(cuda)
+    cc-options: -DCUDA
 

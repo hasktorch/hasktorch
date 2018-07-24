@@ -8,10 +8,6 @@ author:        Sam Stites <sam@stites.io>
 build-type:    Simple
 cabal-version: >=2.0
 
-flag cuda
-  Description: build with THC support
-  Default: True
-
 library
   signatures:
       Torch.Sig.NN

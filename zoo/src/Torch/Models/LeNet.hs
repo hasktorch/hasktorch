@@ -12,12 +12,18 @@ import Data.Function ((&))
 import Data.List (intercalate)
 import Numeric.Backprop as Bp
 import Prelude as P
+import Lens.Micro.TH
 import Data.Singletons.Prelude hiding (type (*), All)
 
+#ifdef CUDA
+import Torch.Cuda.Double as Torch
+import Torch.Cuda.Double.NN.Linear (Linear(..), linear)
+import qualified Torch.Cuda.Double.NN.Conv2d as NN
+#else
 import Torch.Double as Torch
-import qualified Torch.Double.NN.Conv2d as NN
 import Torch.Double.NN.Linear (Linear(..), linear)
-import Lens.Micro.TH
+import qualified Torch.Double.NN.Conv2d as NN
+#endif
 
 import Torch.Models.Internal
 
@@ -91,9 +97,9 @@ newLeNet = LeNet
 --   => pad ~ 0
 --   -- => SpatialConvolutionC ch h w ker ker step step pad pad (16*step*step) mow
 --   -- => SpatialConvolutionC ch moh mow ker ker step step pad pad moh mow
--- 
+--
 --   => Double
--- 
+--
 --   -> BVar s (LeNet ch step)         -- ^ lenet architecture
 --   -> BVar s (Tensor '[ch,h,w])      -- ^ input
 --   -> BVar s (Tensor '[o])           -- ^ output

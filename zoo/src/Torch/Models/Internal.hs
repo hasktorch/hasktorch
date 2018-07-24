@@ -17,9 +17,15 @@ import GHC.Generics
 import Prelude as P
 import Data.Singletons.Prelude hiding (type (*), All)
 
+#ifdef CUDA
+import Torch.Cuda.Double as Torch
+import Torch.Cuda.Double.NN.Linear (Linear(..))
+import qualified Torch.Cuda.Double.NN.Conv2d as NN
+#else
 import Torch.Double as Torch
 import Torch.Double.NN.Linear (Linear(..))
 import qualified Torch.Double.NN.Conv2d as NN
+#endif
 
 
 -- Layer initialization: These depend on random functions which are not unified and, thus,

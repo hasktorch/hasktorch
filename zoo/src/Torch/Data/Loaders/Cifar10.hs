@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
 module Torch.Data.Loaders.Cifar10 where
 
 import Codec.Picture
@@ -12,8 +13,13 @@ import Control.Monad.Trans.Class
 import ListT
 import Data.Singletons
 
+#ifdef CUDA
+import Torch.Cuda.Double
+import qualified Torch.Cuda.Long as Long
+#else
 import Torch.Double
 import qualified Torch.Long as Long
+#endif
 
 -- This should be replaced with a download-aware cache.
 default_cifar_path :: FilePath

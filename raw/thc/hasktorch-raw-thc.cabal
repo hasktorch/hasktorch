@@ -17,9 +17,9 @@ flag float
   Description: Build with float support. THC doesn't seem to build uniform Float types by default.
   Default: False
 
-flag cuda
-  Description: Build with a system that has cuda support.
-  Default: True
+-- flag cuda
+--   Description: Build with a system that has cuda support.
+--   Default: True
 
 flag half
   Description: Build with half support.
@@ -35,8 +35,8 @@ library
       cbits/state_stuff.c
 
   -- this is primarily used in cbits/state_stuff.c and turned off for CI
-  if flag(cuda)
-    cpp-options: -DCUDA
+  -- if flag(cuda)
+  cpp-options: -DCUDA
 
   hs-source-dirs:
       src

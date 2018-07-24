@@ -17,3 +17,5 @@ extra-lib-dirs: /usr/local/cuda/lib64/
 -- program-locations
 --   ghc-location:     /opt/ghc/8.2.2/bin/ghc
 --   ghc-pkg-location: /opt/ghc/8.2.2/bin/ghc-pkg
+
+flags: +cuda
