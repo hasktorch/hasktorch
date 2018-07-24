@@ -1,14 +1,17 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 module Torch.Models.LeNet where
 
 import Data.Function ((&))
+import Data.List (intercalate)
 import GHC.Generics
-import Numeric.Backprop
+import Numeric.Backprop as Bp
 import Prelude as P
 import GHC.TypeLits (KnownNat)
 import Data.Singletons.Prelude hiding (type (*), All)
@@ -20,26 +23,58 @@ import Lens.Micro.TH
 
 import Torch.Models.Internal
 
-data LeNet ch = LeNet
-  { _conv1 :: !(Conv2d ch 6 '(5,5))
-  , _conv2 :: !(Conv2d 6 16 '(5,5))
-  , _fc1   :: !(Linear  (16*5*5) 120)
+data LeNet ch step = LeNet
+  { _conv1 :: !(Conv2d ch 6 '(step,step))
+  , _conv2 :: !(Conv2d 6 16 '(step,step))
+
+  , _fc1   :: !(Linear  (16*step*step) 120)
   , _fc2   :: !(Linear       120  84)
   , _fc3   :: !(Linear        84  10)
-  } deriving (Show, Generic)
+  }
+
+instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Show (LeNet ch step) where
+  show (LeNet c1 c2 f1 f2 f3) = intercalate "\n"
+    [ "LeNet {"
+    , "  conv1 :: " ++ show c1
+    , "  conv2 :: " ++ show c2
+    , "  fc1   :: " ++ show f1
+    , "  fc2   :: " ++ show f2
+    , "  fc3   :: " ++ show f3
+    , "}"
+    ]
 
 makeLenses ''LeNet
-instance KnownNat ch => Backprop (LeNet ch)
 
+instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Backprop (LeNet ch step) where
+  add a b = LeNet
+    (Bp.add (_conv1 a) (_conv1 b))
+    (Bp.add (_conv2 a) (_conv2 b))
+    (Bp.add (_fc1 a) (_fc1 b))
+    (Bp.add (_fc2 a) (_fc2 b))
+    (Bp.add (_fc3 a) (_fc3 b))
+
+  one _ = LeNet
+    (Bp.one undefined)
+    (Bp.one undefined)
+    (Bp.one undefined)
+    (Bp.one undefined)
+    (Bp.one undefined)
+
+  zero _ = LeNet
+    (Bp.zero undefined)
+    (Bp.zero undefined)
+    (Bp.zero undefined)
+    (Bp.zero undefined)
+    (Bp.zero undefined)
 
 -------------------------------------------------------------------------------
 
 main :: IO ()
 main = do
-  net <- newLeNet @3
+  net <- newLeNet @3 @5
   print net
 
-newLeNet :: KnownDim ch => IO (LeNet ch)
+newLeNet :: All KnownDim '[ch,step,16*step*step] => IO (LeNet ch step)
 newLeNet = LeNet
   <$> newConv2d
   <*> newConv2d
@@ -47,18 +82,23 @@ newLeNet = LeNet
   <*> newLinear
   <*> newLinear
 
-lenet
-  :: forall s ch h w o
-  .  Reifies s W
-  => All KnownDim '[ch,h,w,o,ch*5*5]
-  => All KnownNat '[ch,h,w,o,ch*5*5]
-  => o ~ 10
-  => h ~ 32
-  => w ~ 32
-  => Double
-  -> BVar s (LeNet ch)               -- ^ lenet architecture
-  -> BVar s (Tensor '[ch,h,w])      -- ^ input
-  -> BVar s (Tensor '[o])           -- ^ output
+-- lenet
+--   :: forall s ch h w o step pad -- ker moh mow
+--   .  Reifies s W
+--   => All KnownNat '[ch,h,w,o,step]
+--   => All KnownDim '[ch,h,w,o,ch*step*step] -- , (16*step*step)]
+--   => o ~ 10
+--   => h ~ 32
+--   => w ~ 32
+--   => pad ~ 0
+--   -- => SpatialConvolutionC ch h w ker ker step step pad pad (16*step*step) mow
+--   -- => SpatialConvolutionC ch moh mow ker ker step step pad pad moh mow
+-- 
+--   => Double
+-- 
+--   -> BVar s (LeNet ch step)         -- ^ lenet architecture
+--   -> BVar s (Tensor '[ch,h,w])      -- ^ input
+--   -> BVar s (Tensor '[o])           -- ^ output
 lenet lr arch inp
   = lenetLayer lr (arch ^^. conv1) inp
   & lenetLayer lr (arch ^^. conv2)
