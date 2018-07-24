@@ -29,9 +29,25 @@ library
     , microlens-th
     , singletons
     , ghc-typelits-natnormalise
+
+  -- data loader dependencies
+    , directory
+    , filepath
+    , JuicyPixels
+
+  -- training iterator dependencies
+    , list-t
+    , mtl
+    , monad-loops
+    , time
+    , transformers
+
   exposed-modules:
-     Torch.Models.LeNet
-     Torch.Models.Internal
+      Torch.Models.LeNet
+      Torch.Models.Internal
+      Torch.Data.Loaders.Cifar10
+      Torch.Data.Metrics
+      -- Torch.Data.Runners.Cifar10
 
 
 -- executable convolutions

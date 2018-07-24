@@ -10,10 +10,8 @@ module Torch.Models.LeNet where
 
 import Data.Function ((&))
 import Data.List (intercalate)
-import GHC.Generics
 import Numeric.Backprop as Bp
 import Prelude as P
-import GHC.TypeLits (KnownNat)
 import Data.Singletons.Prelude hiding (type (*), All)
 
 import Torch.Double as Torch

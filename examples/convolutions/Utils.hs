@@ -8,8 +8,6 @@ import Numeric.Dimensions
 import Data.Singletons.Prelude.List hiding (All)
 import Data.Singletons.TypeLits
 
-import Control.Monad.Trans
-import Control.Monad.Trans.Maybe
 import qualified Torch.Double.NN.Conv1d as NN1
 import qualified Torch.Double.NN.Conv2d as NN2
 
@@ -21,34 +19,34 @@ mkCosineTensor
   . Dimensions d
   => KnownDim (Product d)
   => KnownNat (Product d)
-  => MaybeT IO (Tensor d)
-mkCosineTensor = do
-  t <- MaybeT . pure . fromList $ [1..fromIntegral $ dimVal (dim :: Dim (Product d))]
-  lift $ Torch.cos t
+  => Maybe (Tensor d)
+mkCosineTensor =
+  Torch.cos <$> fromList [1..fromIntegral $ dimVal (dim :: Dim (Product d))]
 
 printFullConv1d
   :: All KnownNat '[a,c,b,d]
   => All KnownDim '[a,b,c,d,a*c]
-  => String -> Conv1d a b c d -> IO ()
-printFullConv1d title c = do
+  => String
+  -> Conv1d a b c d
+  -> IO ()
+printFullConv1d = printConvs NN1.weights NN1.bias
+
+printFullConv2d
+  :: All KnownDim '[a,b,c,d,a*c]
+  => String
+  -> Conv2d a b '(c,d)
+  -> IO ()
+printFullConv2d = printConvs NN2.weights NN2.bias
+
+printConvs :: (Show layer, Show weight, Show bias) => (layer -> weight) -> (layer -> bias) -> String -> layer -> IO ()
+printConvs toWeights toBias title layer = do
   putStrLn ""
   putStrLn "---------------------------------------"
   putStrLn title
-  print c
-  print (NN1.weights c)
-  print (NN1.bias c)
+  print layer
+  print (toWeights layer)
+  print (toBias layer)
   putStrLn "---------------------------------------"
-
-printFullConv2d :: All KnownDim '[a,b,c,d,a*c] => String -> Conv2d a b c d -> IO ()
-printFullConv2d title c = do
-  putStrLn ""
-  putStrLn "---------------------------------------"
-  putStrLn title
-  print c
-  print (NN2.weights c)
-  print (NN2.bias c)
-  putStrLn "---------------------------------------"
-
 
 section :: String -> IO () -> IO ()
 section header rest = do

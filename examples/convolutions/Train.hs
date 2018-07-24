@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 module Train where
 
 import Data.List
@@ -17,32 +18,29 @@ import System.IO.Unsafe
 import Torch.Double as Math hiding (Sum)
 import qualified Torch.Long as Long
 
-import LeNet
-import DataLoader
+import Torch.Models.LeNet
+import Torch.Data.Loaders.Cifar10
+import Torch.Data.Metrics
 
 main :: IO ()
 main = do
   t0 <- liftIO getCurrentTime
-  trainset <- ListT.toList . ListT.take (10) $ cifar10set Train
+  trainset <- ListT.toList . ListT.take (10) $ defaultCifar10set Train
   t1 <- liftIO getCurrentTime
   printf "Loaded training set in %s\n" (show (t1 `diffUTCTime` t0))
-  testset  <- ListT.toList $ cifar10set Test
+  testset  <- ListT.toList $ defaultCifar10set Test
 
   net0 <- newLeNet
   -- epochs 2 trainset net0
   lastnet <- runBatches 1 trainset net0
   print lastnet
 
-accuracy :: [(Tensor '[10], Integer)] -> Double
-accuracy xs = foldl go 0 xs / genericLength xs
-  where
-    go :: Double -> (Tensor '[10], Integer) -> Double
-    go acc (pred, y) = acc + fromIntegral (fromEnum (y == fromIntegral (Long.get1d (maxIndex1d pred) 0)))
-
-epochs :: Int -> [(Tensor '[3, 32, 32], Integer)] -> LeNet -> IO ()
+epochs
+  :: forall ch step . (ch ~ 3, step ~ 5)
+  => Int -> [(Tensor '[3, 32, 32], Integer)] -> LeNet ch step -> IO ()
 epochs mx tset = runEpoch 1
   where
-    runEpoch :: Int -> LeNet -> IO ()
+    runEpoch :: Int -> LeNet ch step -> IO ()
     runEpoch e net
       | e > mx    = putStrLn "Done!"
       | otherwise = do
@@ -51,7 +49,12 @@ epochs mx tset = runEpoch 1
         net' <- runBatches 1 tset net
         runEpoch (e + 1) net'
 
-runBatches :: Int -> [(Tensor '[3, 32, 32], Integer)] -> LeNet -> IO LeNet
+runBatches
+  :: forall ch step . (ch ~ 3, step ~ 5)
+  => Int
+  -> [(Tensor '[3, 32, 32], Integer)]
+  -> LeNet ch step
+  -> IO (LeNet ch step)
 runBatches b trainset net = do
   if null trainset
   then pure net
@@ -64,8 +67,8 @@ runBatches b trainset net = do
     go
       :: Int
       -> [(Tensor '[3, 32, 32], Integer)]
-      -> LeNet
-      -> IO LeNet
+      -> LeNet ch step
+      -> IO (LeNet ch step)
     go b chunk net0 = do
       printf "(Batch %d) Training on %d points\t" b (length chunk)
       t0 <- liftIO getCurrentTime
@@ -78,9 +81,10 @@ runBatches b trainset net = do
       pure net'
 
 step
-  :: (LeNet, [(Tensor '[10], Integer)])
-  -> (Tensor '[3, 32, 32], Integer)
-  -> IO (LeNet, [(Tensor '[10], Integer)])
+  :: (ch ~ 3, step ~ 5)
+  => (LeNet ch step, [(Tensor '[10], Integer)])
+  -> (Tensor '[ch, 32, 32], Integer)
+  -> IO (LeNet ch step, [(Tensor '[10], Integer)])
 step (net, hist) (x, y) = do
   let x = (net', (out, y):hist)
   pure x
