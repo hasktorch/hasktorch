@@ -26,7 +26,7 @@ test-suite spec
   hs-source-dirs: tests
   build-depends:
       QuickCheck
-    , backprop >= 0.2.4
+    , backprop >= 0.2.5
     , base >=4.7 && <5
     , dimensions
     , ghc-typelits-natnormalise

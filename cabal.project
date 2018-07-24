@@ -16,7 +16,7 @@ packages:
 
     core/*cabal
 
-    vendor/type-combinators/*cabal
+    -- vendor/type-combinators/*cabal
     -- vendor/opto/*cabal
 
     examples/*cabal
