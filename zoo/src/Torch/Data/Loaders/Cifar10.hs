@@ -12,6 +12,7 @@ import Control.Monad.Trans.Except
 import Control.Monad.Trans.Class
 import ListT
 import Data.Singletons
+import Numeric.Dimensions
 
 #ifdef CUDA
 import Torch.Cuda.Double

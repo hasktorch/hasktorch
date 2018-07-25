@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 module Train where
 
 import Data.List
@@ -24,16 +25,17 @@ import Torch.Data.Metrics
 
 main :: IO ()
 main = do
-  t0 <- liftIO getCurrentTime
-  trainset <- ListT.toList . ListT.take (10) $ defaultCifar10set Train
-  t1 <- liftIO getCurrentTime
-  printf "Loaded training set in %s\n" (show (t1 `diffUTCTime` t0))
-  testset  <- ListT.toList $ defaultCifar10set Test
+  -- t0 <- liftIO getCurrentTime
+  -- trainset <- ListT.toList . ListT.take (10) $ defaultCifar10set Train
+  -- t1 <- liftIO getCurrentTime
+  -- -- printf "Loaded training set in %s\n" (show (t1 `diffUTCTime` t0))
+  -- testset  <- ListT.toList $ defaultCifar10set Test
 
-  net0 <- newLeNet
-  -- epochs 2 trainset net0
-  lastnet <- runBatches 1 trainset net0
-  print lastnet
+  net0 <- newLeNet @3 @5
+  print net0
+  -- -- epochs 2 trainset net0
+  -- lastnet <- runBatches 1 trainset net0
+  -- print lastnet
 
 epochs
   :: forall ch step . (ch ~ 3, step ~ 5)

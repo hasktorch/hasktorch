@@ -16,6 +16,7 @@ import Lens.Micro.TH
 import Data.Singletons.Prelude hiding (type (*), All)
 
 #ifdef CUDA
+import Numeric.Dimensions
 import Torch.Cuda.Double as Torch
 import Torch.Cuda.Double.NN.Linear (Linear(..), linear)
 import qualified Torch.Cuda.Double.NN.Conv2d as NN
@@ -38,7 +39,11 @@ data LeNet ch step = LeNet
 
 instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Show (LeNet ch step) where
   show (LeNet c1 c2 f1 f2 f3) = intercalate "\n"
+#ifdef CUDA
+    [ "CudaLeNet {"
+#else
     [ "LeNet {"
+#endif
     , "  conv1 :: " ++ show c1
     , "  conv2 :: " ++ show c2
     , "  fc1   :: " ++ show f1

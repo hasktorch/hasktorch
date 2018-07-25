@@ -15,8 +15,8 @@ source-repository head
   location: https://github.com/hasktorch/hasktorch
 
 flag cuda
-  Description: build with nn support
-  Default: False
+  Description: build with cuda support
+  Default: True
 
 library
   hs-source-dirs: src
@@ -54,5 +54,5 @@ library
       -- Torch.Data.Runners.Cifar10
 
   if flag(cuda)
-    cc-options: -DCUDA
+    cpp-options: -DCUDA
 

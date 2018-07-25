@@ -18,4 +18,9 @@ extra-lib-dirs: /usr/local/cuda/lib64/
 --   ghc-location:     /opt/ghc/8.2.2/bin/ghc
 --   ghc-pkg-location: /opt/ghc/8.2.2/bin/ghc-pkg
 
-flags: +cuda
+package hasktorch-zoo
+  flags: +cuda
+package hasktorch-indef
+  flags: +cuda
+package hasktorch-core
+  flags: +cuda

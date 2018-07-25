@@ -16,6 +16,7 @@ import Data.Function ((&))
 import GHC.Generics
 import Prelude as P
 import Data.Singletons.Prelude hiding (type (*), All)
+import Numeric.Dimensions
 
 #ifdef CUDA
 import Torch.Cuda.Double as Torch
@@ -44,11 +45,16 @@ newConv2d = fmap Conv2d . newLayerWithBias $
 -- | uniform random initialization
 newLayerWithBias :: All Dimensions '[d,d'] => Word -> IO (Tensor d, Tensor d')
 newLayerWithBias n = do
+#ifdef CUDA
+  (,) <$> uniform (-stdv) stdv
+      <*> uniform (-stdv) stdv
+#else
   g <- newRNG
   let Just pair = ord2Tuple (-stdv, stdv)
   manualSeed g 10
   (,) <$> uniform g pair
       <*> uniform g pair
+#endif
   where
     stdv :: Double
     stdv = 1 / P.sqrt (fromIntegral n)

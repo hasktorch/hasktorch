@@ -137,7 +137,7 @@ executable static-tensor-usage
   default-language: Haskell2010
 
 -- Disabled until FF2 is unit tested in hasktorch-core
-executable lenet-convolutions
+executable lenet-cifar10
   main-is: Main.hs
   hs-source-dirs: convolutions
   default-language: Haskell2010
