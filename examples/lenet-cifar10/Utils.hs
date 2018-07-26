@@ -59,5 +59,3 @@ section header rest = do
   putStrLn ("END OF SECTION: " ++ header)
   putStrLn ""
 
-
-
