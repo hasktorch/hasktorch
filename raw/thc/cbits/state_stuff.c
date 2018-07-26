@@ -1,10 +1,13 @@
 #ifdef CUDA
 #include "THC/THCGeneral.h"
-#endif
-void free_CTHState(
-#ifdef CUDA
-  THCState* s
+void free_CTHState(THCState* s)
+{
+  THCudaShutdown(s);
+  THCState_free(s);
+}
 #else
-  int* s
+void free_CTHState(int* s)
+{
+  return;
+}
 #endif
-  ) { return; }

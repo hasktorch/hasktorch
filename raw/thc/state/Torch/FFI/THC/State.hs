@@ -5,11 +5,19 @@ import Control.Monad (void)
 
 import Torch.Types.THC (C'THCState)
 import qualified Torch.FFI.THC.General as General
+import System.IO.Unsafe
 
 newCState :: IO (Ptr C'THCState)
-newCState = do
+newCState = pure pureCState
+
+pureCState :: Ptr C'THCState
+pureCState = unsafeDupablePerformIO mkNewCState
+
+mkNewCState :: IO (Ptr C'THCState)
+mkNewCState = do
   s <- General.c_THCState_alloc
   General.c_THCudaInit s
+  General.c_THCMagma_init s
   pure s
 
 
@@ -28,7 +36,7 @@ foreign import ccall "&free_CTHState" state_free :: FunPtr (Ptr C'THCState -> IO
 manageState :: Ptr C'THCState -> IO (ForeignPtr C'THCState)
 manageState = newForeignPtr state_free
 
+cstate :: ForeignPtr C'THCState
+cstate = unsafeDupablePerformIO $ mkNewCState >>= newForeignPtr state_free
 
-shutdown :: ForeignPtr C'THCState -> IO ()
-shutdown fp = withForeignPtr fp General.c_THCudaShutdown
 
