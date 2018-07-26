@@ -1,8 +1,12 @@
 optimization: False
 debug-info: True
 executable-stripping: False
+profiling: True
 
+extra-lib-dirs: /usr/local/cuda/lib64/
 extra-include-dirs:/usr/local/cuda/include
+
+extra-lib-dirs: /usr/local/lib/
 extra-include-dirs:/usr/local/include/
 extra-include-dirs:/usr/local/include/TH
 extra-include-dirs:/usr/local/include/THS
@@ -10,9 +14,6 @@ extra-include-dirs:/usr/local/include/THNN
 extra-include-dirs:/usr/local/include/THC
 extra-include-dirs:/usr/local/include/THCS
 extra-include-dirs:/usr/local/include/THCUNN
-
-extra-lib-dirs: /usr/local/lib/
-extra-lib-dirs: /usr/local/cuda/lib64/
 
 -- program-locations
 --   ghc-location:     /opt/ghc/8.2.2/bin/ghc
