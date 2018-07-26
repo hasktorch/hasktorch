@@ -78,10 +78,12 @@ instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Backprop (LeNe
 
 -------------------------------------------------------------------------------
 
+#ifdef DEBUG
 main :: IO ()
 main = do
   net <- newLeNet @3 @5
   print net
+#endif
 
 newLeNet :: All KnownDim '[ch,step,16*step*step] => IO (LeNet ch step)
 newLeNet = LeNet

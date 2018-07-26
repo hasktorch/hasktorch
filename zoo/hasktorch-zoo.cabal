@@ -38,6 +38,7 @@ library
     , directory
     , filepath
     , JuicyPixels
+    , gd
 
   -- training iterator dependencies
     , list-t

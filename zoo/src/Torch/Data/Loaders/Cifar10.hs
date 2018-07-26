@@ -1,8 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 module Torch.Data.Loaders.Cifar10 where
 
-import Codec.Picture
 import Control.Monad
 import Data.Char
 import Data.List
@@ -14,9 +14,15 @@ import ListT
 import Data.Singletons
 import Numeric.Dimensions
 
+import qualified Codec.Picture as JP
+import qualified Graphics.GD as GD
+
+
+
 #ifdef CUDA
 import Torch.Cuda.Double
 import qualified Torch.Cuda.Long as Long
+import Control.Concurrent (threadDelay)
 #else
 import Torch.Double
 import qualified Torch.Long as Long
@@ -57,11 +63,12 @@ category_path cifarpath m c = intercalate "/"
 
 im2torch :: FilePath -> ExceptT String IO (Tensor '[3, 32, 32])
 im2torch fp = do
-  dynIm <- ExceptT $ readPng fp
-  let im = convertRGB8 dynIm
-  t <- lift new
+  -- !im <- JP.convertRGB8 <$> ExceptT (JP.readPng fp)
+  !im <- lift $ GD.loadPngFile fp
+  !t <- lift new
   lift $ forM_ [(h, w) | h <- [0..31], w <- [0..31]] $ \(h, w) -> do
-    let PixelRGB8 r g b = pixelAt im h w
+    -- let JP.PixelRGB8 r g b = JP.pixelAt im h w
+    (r,g,b,_) <- GD.toRGBA <$> GD.getPixel (h,w) im
     forM_ (zip [0..] [r, g, b]) $ \(c, px) ->
       setDim'_ t (someDimsVal $ fromIntegral <$> [c, h, w]) (fromIntegral px)
   pure t
@@ -69,11 +76,12 @@ im2torch fp = do
 cat2torch :: FilePath -> ListT IO (Tensor '[3, 32, 32])
 cat2torch fp = do
   ims <- lift $ filter ((== ".png") . takeExtension) <$> getDirectoryContents fp
-  im <- fromFoldable ims
+  im <- fromFoldable (Data.List.take 20 ims)
 
   lift (runExceptT (im2torch (fp </> im))) >>= \case
     Left _ -> mempty
-    Right t -> pure t
+    Right t -> do
+      pure t
 
 oneHot :: KnownDim n => Int -> IO (LongTensor '[n])
 oneHot i = do
@@ -85,16 +93,19 @@ cifar10set :: FilePath -> Mode -> ListT IO (Tensor '[3, 32, 32], Integer)
 cifar10set fp m = do
   c <- fromFoldable [minBound..maxBound :: Categories]
   t <- cat2torch (category_path fp m c)
+
   pure (t, fromIntegral (fromEnum c))
 
 defaultCifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Integer)
 defaultCifar10set = cifar10set default_cifar_path
 
 
+#ifdef DEBUG
 -- example use-case
 main :: IO ()
 main = do
   forM_ [minBound..maxBound :: Mode] $ \m -> do
     l <- toList (defaultCifar10set m)
-    print $ length l
+--  print $ length l
+#endif
 
