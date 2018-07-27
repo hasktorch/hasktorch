@@ -3,7 +3,7 @@
 module Torch.Types.TH
   ( module Torch.Types.TH.Structs
 
-  , C'THState, C'THNNState, CState, State(..), asState, newCState, manageState
+  , C'THState, C'THNNState, CState, State(..), asState, torchstate
   , CAllocator, Allocator
   , CGenerator, Generator(..), generatorToRng, Seed(..)
   , CDescBuff, DescBuff, descBuff
@@ -49,6 +49,7 @@ import Foreign
 import Foreign.C.Types
 import GHC.TypeLits
 import Data.Char (chr)
+import System.IO.Unsafe (unsafeDupablePerformIO)
 
 import Torch.Types.TH.Structs
 
@@ -58,8 +59,12 @@ type DescBuff = String
 descBuff :: Ptr CDescBuff -> IO DescBuff
 descBuff p = (map (chr . fromIntegral) . c'THDescBuff'str) <$> peek p
 
-newCState :: IO (Ptr C'THState)
-newCState = pure nullPtr
+foreign import ccall "&free_CTHState" state_free :: FunPtr (Ptr C'THState -> IO ())
+
+-- | 'torchstate' is just a foreign pointer wrapping around a null pointer with a noop
+-- finalizer. This is to keep the API unified with THC.
+torchstate :: ForeignPtr C'THState
+torchstate = unsafeDupablePerformIO $ newForeignPtr state_free nullPtr
 
 type C'THState = ()
 type C'THNNState = C'THState
@@ -67,11 +72,6 @@ type CState = C'THState
 newtype State = State { asForeign :: ForeignPtr C'THState }
   deriving (Eq, Show)
 asState = State
-
-foreign import ccall "&free_CTHState" state_free :: FunPtr (Ptr C'THState -> IO ())
-
-manageState :: Ptr C'THState -> IO (ForeignPtr C'THState)
-manageState = newForeignPtr state_free
 
 type CAllocator   = C'THAllocator
 newtype Allocator = Allocator { callocator :: ForeignPtr CAllocator }

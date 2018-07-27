@@ -247,15 +247,19 @@ with3DynamicState t0 t1 t2 fn = do
       fn s' t0' t1' t2'
 
 -- | smart constructor for a 'Sig.Dynamic' tensor
-mkDynamic :: Ptr Sig.CState -> Ptr Sig.CTensor -> IO Sig.Dynamic
-mkDynamic s t = Sig.dynamic
-  <$> Sig.manageState s
-  <*> newForeignPtrEnv SigTen.p_free s t
+mkDynamic :: Ptr Sig.CTensor -> IO Sig.Dynamic
+mkDynamic t =
+  withForeignPtr Sig.torchstate $ \s ->
+    Sig.dynamic Sig.torchstate
+      <$> newForeignPtrEnv SigTen.p_free s t
 
 -- | smart constructor for a 'Sig.Dynamic' tensor with a given builder function.
 mkDynamicIO :: (Ptr Sig.CState -> IO (Ptr Sig.CTensor)) -> IO Sig.Dynamic
-mkDynamicIO builder = Sig.newCState >>= \s ->
-  builder s >>= mkDynamic s
+mkDynamicIO builder =
+  withForeignPtr Sig.torchstate $ \s ->
+    builder s >>= mkDynamic
+
+
 
 -- | run a function with access to a 'Sig.Storage's underlying state and C-reference.
 withStorageState :: Sig.Storage -> (Ptr Sig.CState -> Ptr Sig.CStorage -> IO x) -> IO x
@@ -265,15 +269,17 @@ withStorageState t fn = do
       fn sref tref
 
 -- | smart constructor for 'Sig.Storage'
-mkStorage :: Ptr Sig.CState -> Ptr Sig.CStorage -> IO Sig.Storage
-mkStorage s t = Sig.storage
-  <$> Sig.manageState s
-  <*> newForeignPtrEnv SigStore.p_free s t
+mkStorage :: Ptr Sig.CStorage -> IO Sig.Storage
+mkStorage t =
+  withForeignPtr Sig.torchstate $ \s ->
+    Sig.storage Sig.torchstate
+      <$> newForeignPtrEnv SigStore.p_free s t
 
 -- | smart constructor for 'Sig.Storage' with a given builder function.
 mkStorageIO :: (Ptr Sig.CState -> IO (Ptr Sig.CStorage)) -> IO Sig.Storage
-mkStorageIO builder = Sig.newCState >>= \s ->
-  builder s >>= mkStorage s
+mkStorageIO builder =
+  withForeignPtr Sig.torchstate $ \s ->
+    builder s >>= mkStorage
 
 -- -------------------------------------------------------------------------------
 
