@@ -1102,6 +1102,8 @@ library
           ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Long.Dynamic.Tensor.ScatterGather
           ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Sort
           ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Long.Dynamic.Tensor.TopK
+
+          ,Torch.Indef.Types as Torch.Cuda.Long.Types
           ,Torch.Indef.Index as Torch.Cuda.Long.Index
           ,Torch.Indef.Mask as Torch.Cuda.Long.Mask
           )

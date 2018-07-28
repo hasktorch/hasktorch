@@ -33,6 +33,7 @@ library
     , microlens-th
     , singletons
     , ghc-typelits-natnormalise
+    , vector
 
   -- data loader dependencies
     , directory

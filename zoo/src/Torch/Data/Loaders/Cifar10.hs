@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE CPP #-}
 module Torch.Data.Loaders.Cifar10 where
 
@@ -13,11 +15,12 @@ import Control.Monad.Trans.Class
 import ListT
 import Data.Singletons
 import Numeric.Dimensions
+import Data.Singletons.Prelude.Enum
+import GHC.TypeLits
 
+import qualified Data.Vector as V
 import qualified Codec.Picture as JP
 import qualified Graphics.GD as GD
-
-
 
 #ifdef CUDA
 import Torch.Cuda.Double
@@ -41,20 +44,20 @@ testLength _ = Proxy
 trainLength :: Proxy 'Train -> Proxy 5000
 trainLength _ = Proxy
 
-data Categories
-  = Airplane
-  | Automobile
-  | Bird
-  | Cat
-  | Deer
-  | Dog
-  | Frog
-  | Horse
-  | Ship
-  | Truck
+data Category
+  = Airplane    -- 0
+  | Automobile  -- 2
+  | Bird        -- 3
+  | Cat         -- 4
+  | Deer        -- 5
+  | Dog         -- 6
+  | Frog        -- 7
+  | Horse       -- 8
+  | Ship        -- 9
+  | Truck       -- 10
   deriving (Eq, Enum, Ord, Show, Bounded)
 
-category_path :: FilePath -> Mode -> Categories -> FilePath
+category_path :: FilePath -> Mode -> Category -> FilePath
 category_path cifarpath m c = intercalate "/"
   [ cifarpath
   , toLower <$> show m
@@ -80,23 +83,32 @@ cat2torch fp = do
 
   lift (runExceptT (im2torch (fp </> im))) >>= \case
     Left _ -> mempty
-    Right t -> do
-      pure t
+    Right t -> pure t
 
-oneHot :: KnownDim n => Int -> IO (LongTensor '[n])
-oneHot i = do
-  let c = Long.constant 0
-  Long._set1d c (fromIntegral i) 1
-  pure c
+onehot
+  :: forall c sz
+  . (Ord c, Bounded c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
+  => c
+  -> LongTensor '[10] -- '[FromEnum (MaxBound c)]
+onehot c
+  = Long.unsafeVector
+  $ V.toList
+  $ onehotv c
 
-cifar10set :: FilePath -> Mode -> ListT IO (Tensor '[3, 32, 32], Integer)
+onehotv :: forall i c . (Integral i, Ord c, Bounded c, Enum c) => c -> V.Vector i
+onehotv c =
+  V.generate
+    (fromEnum (maxBound :: c) + 1)
+    (fromIntegral . fromEnum . (== fromEnum c))
+
+
+cifar10set :: FilePath -> Mode -> ListT IO (Tensor '[3, 32, 32], Category)
 cifar10set fp m = do
-  c <- fromFoldable [minBound..maxBound :: Categories]
+  c <- fromFoldable [minBound..maxBound :: Category]
   t <- cat2torch (category_path fp m c)
+  pure (t, c)
 
-  pure (t, fromIntegral (fromEnum c))
-
-defaultCifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Integer)
+defaultCifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Category)
 defaultCifar10set = cifar10set default_cifar_path
 
 
@@ -106,6 +118,6 @@ main :: IO ()
 main = do
   forM_ [minBound..maxBound :: Mode] $ \m -> do
     l <- toList (defaultCifar10set m)
---  print $ length l
+    print $ length l
 #endif
 

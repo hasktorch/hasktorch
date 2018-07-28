@@ -14,6 +14,10 @@ source-repository head
   type: git
   location: https://github.com/austinvhuang/hasktorch
 
+flag cuda
+  Description: build with cuda support
+  Default: True
+
 executable lasso
   main-is: Lasso.hs
   hs-source-dirs: lasso
@@ -143,6 +147,9 @@ executable lenet-cifar10
   default-language: Haskell2010
   default-extensions: DataKinds, ScopedTypeVariables
   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+  if flag(cuda)
+    cpp-options: -DCUDA
+
   build-depends:
       base >=4.7 && <5
     , backprop >= 0.2

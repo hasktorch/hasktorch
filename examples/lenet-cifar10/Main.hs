@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE CPP #-}
@@ -17,6 +18,7 @@ import ListT (ListT)
 import qualified ListT
 import Numeric.Backprop
 import System.IO.Unsafe
+import Control.Concurrent
 -- import qualified Foreign.CUDA as Cuda
 
 #ifdef CUDA
@@ -32,92 +34,113 @@ import Torch.Data.Loaders.Cifar10
 import Torch.Data.Metrics
 
 import Control.Monad.Trans.Except
+import System.IO (hFlush, stdout)
 
 main :: IO ()
 main = do
-  print (constant 0 :: Tensor '[3,2,2])
-  runExceptT (im2torch "/mnt/lake/datasets/cifar-10/train/truck/48151_truck.png") >>= print
-  runExceptT (im2torch "/mnt/lake/datasets/cifar-10/train/truck/48151_truck.png") >>= print
-  -- runExceptT (im2torch "/mnt/lake/datasets/cifar-10/train/truck/48151_truck.png") >>= print
-  -- runExceptT (im2torch "/mnt/lake/datasets/cifar-10/train/truck/48151_truck.png") >>= print
-  t0 <- liftIO getCurrentTime
-  trainset <- ListT.toList {- . ListT.take (5) -} $ defaultCifar10set Train
-  t1 <- liftIO getCurrentTime
-  -- print $ ListT.length trainset
-  printf "Loaded training set in %s\n" (show (t1 `diffUTCTime` t0))
-  -- testset <- ListT.toList $ defaultCifar10set Test
-  print $ length trainset
-  -- Cuda.get >>= Cuda.props >>= print
-
-  -- print "matrix"
-  -- let Right (t :: Tensor '[2,3]) = matrix [[2,3,4], [3,4,5]]
-  -- print t
-
-  -- net0 <- newLeNet @3 @5
-
-  -- t :: Tensor '[1,2,3] <- uniform (-1) 1
-  -- print t
-  -- print "starting"
-  -- print net0
-  -- epochs 1 trainset net0
+  clearScreen
+  xs  <- loadTrain 500
+  net0 <- newLeNet @3 @5
+  print net0
+  putStrLn "Start training:"
+  t0 <- getCurrentTime
+  net <- epochs 0.01 t0 3 xs net0
+  t1 <- getCurrentTime
+  printf "\nFinished training\n"
+  -- xs' <- loadTest  50
   -- lastnet <- runBatches 1 trainset net0
   -- print lastnet
-  print "done!"
 
---epochs
---  :: forall ch step . (ch ~ 3, step ~ 5)
---  => Int -> [(Tensor '[3, 32, 32], Integer)] -> LeNet ch step -> IO ()
---epochs mx tset = runEpoch 1
---  where
---    runEpoch :: Int -> LeNet ch step -> IO ()
---    runEpoch e net
---      | e > mx    = putStrLn "Done!"
---      | otherwise = do
---        print (e, "e")
---        printf "[Epoch %d]\n" e
---        net' <- runBatches 1 tset net
---        runEpoch (e + 1) net'
---
---runBatches
---  :: forall ch step . (ch ~ 3, step ~ 5)
---  => Int
---  -> [(Tensor '[3, 32, 32], Integer)]
---  -> LeNet ch step
---  -> IO (LeNet ch step)
---runBatches b trainset net = do
---  if null trainset
---  then pure net
---  else do
---    print "x"
---    let (batch, next) = splitAt 10 trainset
---    net' <- go b batch net
---    runBatches (b+1) next net'
---  where
---    go
---      :: Int
---      -> [(Tensor '[3, 32, 32], Integer)]
---      -> LeNet ch step
---      -> IO (LeNet ch step)
---    go b chunk net0 = do
---      printf "(Batch %d) Training on %d points\t" b (length chunk)
---      t0 <- liftIO getCurrentTime
---      (net', hist) <- foldM step (net0, []) chunk
---      let
---        acc = accuracy hist
---      printf "[Train accuracy: %.4f]\t" acc
---      t1 <- liftIO getCurrentTime
---      printf "in %s\n" (show (t1 `diffUTCTime` t0))
---      pure net'
---
---step
---  :: (ch ~ 3, step ~ 5)
---  => (LeNet ch step, [(Tensor '[10], Integer)])
---  -> (Tensor '[ch, 32, 32], Integer)
---  -> IO (LeNet ch step, [(Tensor '[10], Integer)])
---step (net, hist) (x, y) = do
---  let x = (net', (out, y):hist)
---  pure x
---  where
---    (out, (net', _)) = backprop2 (lenet 0.1) net x
---
---
+  putStrLn "\ndone!"
+ where
+  loadTest  = loadData Test
+  loadTrain = loadData Train
+  loadData m s = do
+    t0 <- getCurrentTime
+    xs <- ListT.toList . ListT.take s $ defaultCifar10set m
+    t1 <- getCurrentTime
+    let desc = case m of Train -> "training"; Test -> "testing"
+    printf "Loaded %s set of size %d in %s\n" desc (length xs) (show (t1 `diffUTCTime` t0))
+    pure xs
+
+epochs
+  :: forall ch step . (ch ~ 3, step ~ 5)
+  => HsReal
+  -> UTCTime
+  -> Int
+  -> [(Tensor '[3, 32, 32], Integer)]
+  -> LeNet ch step
+  -> IO ()
+epochs lr t0 mx tset = runEpoch 1
+  where
+    runEpoch :: Int -> LeNet ch step -> IO ()
+    runEpoch e net
+      | e > mx    = pure ()
+      | otherwise = do
+        net' <- runBatches lr t0 e 10 tset net
+        runEpoch (e + 1) net'
+
+runBatches
+  :: forall ch step . (ch ~ 3, step ~ 5)
+  => HsReal
+  -> UTCTime
+  -> Int
+  -> Int
+  -> [(Tensor '[3, 32, 32], Category)]
+  -> LeNet ch step
+  -> IO (LeNet ch step)
+runBatches lr t00 e bsize = go 0
+ where
+  go
+    :: Int
+    -> [(Tensor '[3, 32, 32], Category)]
+    -> LeNet ch step
+    -> IO (LeNet ch step)
+  go !bid !tset !net = do
+    let (batch, next) = splitAt bsize tset
+    if null batch
+    then pure net
+    else do
+      t0 <- getCurrentTime
+      (net', hist) <- foldM (step lr) (net, []) batch
+      t1 <- getCurrentTime
+      printf (setRewind ++ "[Epoch %d](%d-batch #%d)[accuracy: %.4f] in %s (total: %s)")
+        e bsize (bid+1)
+        (accuracy hist)
+        (show (t1 `diffUTCTime`  t0))
+        (show (t1 `diffUTCTime` t00))
+      hFlush stdout
+      go (bid+1) next net'
+
+ -- | Erase the last line in an ANSI terminal
+clearLn :: IO ()
+clearLn = printf "\ESC[2K"
+
+-- | set rewind marker for 'clearLn'
+setRewind :: String
+setRewind = "\r"
+
+-- | clear the screen in an ANSI terminal
+clearScreen :: IO ()
+clearScreen = putStr "\ESC[2J"
+
+step
+  :: (ch ~ 3, step ~ 5)
+  => HsReal -> (LeNet ch step, [(Tensor '[10], Category)])
+  -> (Tensor '[ch, 32, 32], Category)
+  -> IO (LeNet ch step, [(Tensor '[10], Category)])
+step lr (net, hist) (x, y) = pure (net', (out, y):hist)
+  where
+    (out, (net', _)) = backprop2 (lenet lr) net x
+
+trainStep
+  :: (ch ~ 3, step ~ 5)
+  => HsReal -> (LeNet ch step, [(Tensor '[10], Category)])
+  -> (Tensor '[ch, 32, 32], Category)
+  -> IO (LeNet ch step, [(Tensor '[10], Category)])
+trainStep lr (net, hist) (x, y) = pure (net', (out, y):hist)
+  where
+    (out, (net', _)) = backprop2 (classNLLCriterion (onehot y) .: lenet lr) net x
+
+-- (classNLLCriterion (Long.unsafeVector [0,1]))
+

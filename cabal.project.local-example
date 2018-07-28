@@ -25,3 +25,5 @@ package hasktorch-indef
   flags: +cuda
 package hasktorch-core
   flags: +cuda
+package hasktorch-examples
+  flags: +cuda
