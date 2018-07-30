@@ -19,7 +19,9 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE MonoLocalBinds #-}
 module Torch.Indef.Index
-  ( newIx
+  ( singleton
+  , esingleton
+  , newIx
   , newIxDyn
   , zeroIxNd
   , index
@@ -61,6 +63,12 @@ import qualified Torch.FFI.TH.Long.Storage as LongStorage
 import qualified Torch.FFI.TH.Long.Tensor as LongTensor
 import qualified Foreign as FM
 import qualified Foreign.Marshal.Array as FM
+
+singleton :: Integral i => i -> IndexTensor '[1]
+singleton = longAsStatic . indexDyn . (:[]) . fromIntegral
+
+esingleton :: Enum i => i -> IndexTensor '[1]
+esingleton = singleton . fromEnum
 
 -- | build a new static index tensor
 --
