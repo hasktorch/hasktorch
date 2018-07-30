@@ -157,8 +157,8 @@ mkCPUIxStorage p = fmap TH.LongStorage
   <$> newForeignPtr LongStorage.p_free p
 
 -- | get the shape of a static index tensor from the term-level
-ixShape :: IndexTensor d -> IO [Word]
-ixShape t = withDynamicState (longAsDynamic t) $ \s' t' -> do
+ixShape :: IndexTensor d -> [Word]
+ixShape t = unsafeDupablePerformIO $ withDynamicState (longAsDynamic t) $ \s' t' -> do
   ds <- IxSig.c_nDimension s' t'
   mapM (fmap fromIntegral . IxSig.c_size s' t' . fromIntegral) [0..ds-1]
 
@@ -169,7 +169,7 @@ ixShape t = withDynamicState (longAsDynamic t) $ \s' t' -> do
 -- the show instance in hasktorch-types/.
 {-# NOINLINE showIx #-}
 showIx t = unsafePerformIO $ do
-  ds <- (fmap.fmap) fromIntegral $ ixShape t
+  let ds = fromIntegral <$> ixShape t
   (vs, desc) <- go (ixGet1d t) (ixGet2d t) (ixGet3d t) (ixGet4d t) ds
   pure (vs ++ "\n" ++ desc)
  where
