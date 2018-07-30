@@ -215,15 +215,15 @@ _l1Cost_updateGradInput t0 t1 t2 = Dynamic._l1Cost_updateGradInput (asDynamic t0
 -- By default, the losses are averaged over observations for each minibatch. However, if the argument sizeAverage is set to false, the losses are instead summed for each minibatch.
 -- FIXME: add batch dimension
 classNLLCriterion'
-  :: forall s i n
-  . (Reifies s W, KnownDim n)
-  => Integer                -- int64_t ignore_index,
-  -> Bool                   -- bool sizeAverage,
-  -> Bool                   -- bool reduce
-  -> IndexTensor '[n]       -- THIndexTensor *target,
-  -- -> Maybe Dynamic          -- THTensor *weights,
-  -> BVar s (Tensor '[n])     -- THTensor *input,
-  -> BVar s (Tensor '[1])     -- THTensor *output,
+  :: forall s i sz ps
+  . (Reifies s W, All KnownDim '[sz, ps])
+  => Integer                    -- int64_t ignore_index,
+  -> Bool                       -- bool sizeAverage,
+  -> Bool                       -- bool reduce
+  -> IndexTensor '[sz]          -- THIndexTensor *target,
+  -- -> Maybe Dynamic           -- THTensor *weights,
+  -> BVar s (Tensor '[sz, ps])  -- THTensor *input,
+  -> BVar s (Tensor '[1])       -- THTensor *output,
 classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
   let
     (out, total_weight) = updateOutput inp target szAvg Nothing ix reduce
@@ -231,40 +231,41 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
     (out, \gout -> updateGradInput inp target gout szAvg Nothing total_weight ix reduce)
   where
     updateOutput
-      :: Tensor '[n]            -- THTensor *input,
-      -> IndexTensor '[n]       -- THIndexTensor *target,
-      -> Bool                   -- bool sizeAverage,
-      -> Maybe (Tensor '[n])    -- THTensor *weights,
-      -> Integer                -- int64_t ignore_index,
-      -> Bool                   -- bool reduce
+      :: Tensor '[sz, ps]            -- THTensor *input,
+      -> IndexTensor '[sz]           -- THIndexTensor *target,
+      -> Bool                        -- bool sizeAverage,
+      -> Maybe (Tensor '[sz, ps])    -- THTensor *weights,
+      -> Integer                     -- int64_t ignore_index,
+      -> Bool                        -- bool reduce
       -> (Tensor '[1], Tensor '[1])
     updateOutput inp tar szAvg mws ix reduce = unsafeDupablePerformIO $ do
-      out <- empty
+      out <- new
       let total_weight = constant 1  -- https://github.com/torch/nn/commit/3585e827eb65d071272a4aa4fab567b0b1eeee54#diff-1aa6a505cf16ad0e59498ada8432afb5
       Dynamic._ClassNLLCriterion_updateOutput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic out)
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
       pure (out, total_weight)
 
     updateGradInput
-      :: Tensor '[n]         -- THTensor *input,
-      -> IndexTensor '[n]    -- THIndexTensor *target,
-      -> Tensor '[1]         -- THTensor *gradOutput,
-      -> Bool                -- bool sizeAverage,
-      -> Maybe (Tensor '[n])   -- THTensor *weights,
-      -> Tensor '[1]         -- THTensor *total_weight,
-      -> Integer             -- int64_t ignore_index,
-      -> Bool                -- bool reduce)
-      -> Tensor '[n]
+      :: Tensor '[sz, ps]          -- THTensor *input,
+      -> IndexTensor '[sz]         -- THIndexTensor *target,
+      -> Tensor '[1]               -- THTensor *gradOutput,
+      -> Bool                      -- bool sizeAverage,
+      -> Maybe (Tensor '[sz, ps])  -- THTensor *weights,
+      -> Tensor '[1]               -- THTensor *total_weight,
+      -> Integer                   -- int64_t ignore_index,
+      -> Bool                      -- bool reduce
+      -> Tensor '[sz, ps]
     updateGradInput inp tar gout szAvg mws total_weight ix reduce = unsafeDupablePerformIO . withEmpty $ \gin ->
       Dynamic._ClassNLLCriterion_updateGradInput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
 
+
 -- | Due to behaviour of backend code, it is nessecary to set sizeAverage to False in Non-Batch mode.
 classNLLCriterion
-  :: (Reifies s W, KnownDim n)
-  => IndexTensor '[n]       -- THIndexTensor *target,
-  -> BVar s (Tensor '[n])     -- THTensor *input,
-  -> BVar s (Tensor '[1])     -- THTensor *output,
+  :: (Reifies s W, All KnownDim '[n, c])
+  => IndexTensor '[n]            -- THIndexTensor *target,
+  -> BVar s (Tensor '[n, c])     -- THTensor *input,
+  -> BVar s (Tensor '[1])        -- THTensor *output,
 classNLLCriterion = classNLLCriterion' (-100) False True
 
 {-
