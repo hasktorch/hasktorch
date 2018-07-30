@@ -206,7 +206,7 @@ multivariate_normal
   -> IO (Tensor '[n, p])
 multivariate_normal g mu eigvec eigval = go (transpose2d eigvec)
   <$> diag1d eigval
-  <*> expand2d mu
+  <*> pure (expand2d mu)
   <*> normal g 0 p1
  where
   Just p1 = Dynamic.positive 1

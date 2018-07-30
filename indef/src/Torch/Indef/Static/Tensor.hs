@@ -53,6 +53,7 @@ instance Dimensions d => Show (Tensor d) where
 -- isSameSizeAs :: forall d d' . (All Dimensions '[d, d']) => Tensor d -> Tensor d' -> Bool
 -- isSameSizeAs _ _ = (fromIntegral <$> listDims (dim :: Dim d)) == (fromIntegral <$> listDims (dim :: Dim d'))
 
+
 -- | Purely make a 1d tensor from a list of unknown length.
 vector :: forall n . KnownDim n => KnownNat n => [HsReal] -> Maybe (Tensor '[n])
 vector rs
@@ -61,7 +62,7 @@ vector rs
 
 unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> Tensor '[n]
 unsafeVector = fromJust . vector
- 
+
 -- | Static call to 'Dynamic.newExpand'
 newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
 -- | Static call to 'Dynamic._expand'
@@ -287,7 +288,7 @@ withEmpty' op = empty >>= \r -> op r >> pure r
 
 -- |
 -- This is actually 'inplace'. Dimensions may change from original tensor given Torch resizing.
--- 
+--
 -- FIXME: remove this function
 withInplace :: (Dimensions d) => Tensor d -> (Tensor d -> Tensor d -> IO ()) -> IO (Tensor d)
 withInplace t op = op t t >> pure t
@@ -393,7 +394,7 @@ _resizeDim t = case fromIntegral <$> listDims (dims :: Dims d') of
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
 -- | Resize the input with the output shape. impure and mutates the tensor inplace.
--- 
+--
 -- FIXME: replace @d@ with a linear type?
 resizeAs_ :: forall d d' . (All Dimensions '[d, d'], Product d ~ Product d') => Tensor d -> IO (Tensor d')
 resizeAs_ src = do
@@ -468,7 +469,7 @@ unsafeMatrix
   => All KnownNat '[n, m, n*m]
   => [[HsReal]] -> Tensor '[n, m]
 unsafeMatrix = either error id . matrix
- 
+
 -- | transpose a matrix (pure, dupable)
 transpose2d :: (All KnownDim '[r,c]) => Tensor '[r, c] -> Tensor '[c, r]
 transpose2d t = unsafeDupablePerformIO $ newTranspose t 1 0
@@ -477,8 +478,8 @@ transpose2d t = unsafeDupablePerformIO $ newTranspose t 1 0
 -- TODO - generalize this beyond the matrix case
 expand2d
   :: forall x y . (All KnownDim '[x, y])
-  => Tensor '[x] -> IO (Tensor '[y, x])
-expand2d t = do
+  => Tensor '[x] -> Tensor '[y, x]
+expand2d t = unsafeDupablePerformIO $ do
   res :: Tensor '[y, x] <- new
   s <- mkCPUIxStorage =<< TH.c_newWithSize2_ s2 s1
   _expand res t s

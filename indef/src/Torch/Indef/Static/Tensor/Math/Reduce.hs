@@ -30,6 +30,8 @@ module Torch.Indef.Static.Tensor.Math.Reduce
 import Numeric.Dimensions
 import Data.Coerce
 import System.IO.Unsafe
+import GHC.TypeLits
+
 
 import Data.Maybe (fromJust)
 import Torch.Indef.Index
@@ -59,34 +61,60 @@ prodall :: Tensor d -> HsAccReal
 prodall t = Dynamic.prodall (asDynamic t)
 
 -- | Static call to 'Dynamic.max'
-max :: (Dimensions d, KnownDim n) => Tensor d -> Idx dimval -> KeepDim -> (Tensor d, Maybe (IndexTensor '[n]))
-max    = withKeepDim Dynamic._max
+max
+  :: forall d n dimval
+  .  Dimensions d
+  => All KnownNat '[dimval, n]
+  => All KnownDim '[dimval, n]
+  => Tensor d
+  -> Dim dimval
+  -> KeepDim
+  -> (Tensor d, Maybe (IndexTensor '[n]))
+max = withKeepDim Dynamic._max
 
 -- | Static call to 'Dynamic.min'
-min :: (Dimensions d, KnownDim n) => Tensor d -> Idx dimval -> KeepDim -> (Tensor d, Maybe (IndexTensor '[n]))
-min    = withKeepDim Dynamic._min
+min
+  :: forall d n dimval
+  .  Dimensions d
+  => All KnownNat '[dimval, n]
+  => All KnownDim '[dimval, n]
+  => Tensor d
+  -> Dim dimval
+  -> KeepDim
+  -> (Tensor d, Maybe (IndexTensor '[n]))
+min = withKeepDim Dynamic._min
 
 -- | Static call to 'Dynamic.median'
-median :: (Dimensions d, KnownDim n) => Tensor d -> Idx dimval -> KeepDim -> (Tensor d, Maybe (IndexTensor '[n]))
+median
+  :: forall d n dimval
+  .  Dimensions d
+  => All KnownNat '[dimval, n]
+  => All KnownDim '[dimval, n]
+  => Tensor d
+  -> Dim dimval
+  -> KeepDim
+  -> (Tensor d, Maybe (IndexTensor '[n]))
 median = withKeepDim Dynamic._median
 
 -- | Convenience method for 'max'
 max1d :: (KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
-max1d t = Torch.Indef.Static.Tensor.Math.Reduce.max t (Idx 0)
+max1d t = Torch.Indef.Static.Tensor.Math.Reduce.max t (dim :: Dim 0)
 
 -- | Convenience method for 'min'
-min1d :: (KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
-min1d t = Torch.Indef.Static.Tensor.Math.Reduce.min t (Idx 0)
+min1d :: forall n . KnownDim n => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
+min1d t = Torch.Indef.Static.Tensor.Math.Reduce.min t (dim :: Dim 0)
 
 -- | Convenience method for 'median'
-median1d :: (KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
-median1d t = median t (Idx 0)
+median1d
+  :: (KnownDim n)
+  => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
+median1d t = median t (dim :: Dim 0)
 
 -- | Convenience method for 'max'
-maxIndex1d t    = fromJust . snd $ max1d t keep
+maxIndex1d t = fromJust . snd $ max1d t keep
 
 -- | Convenience method for 'min'
-minIndex1d t    = fromJust . snd $ min1d t keep
+minIndex1d t = fromJust . snd $ min1d t keep
 
 -- | Convenience method for 'median'
 medianIndex1d t = fromJust . snd $ median1d t keep
@@ -98,13 +126,19 @@ _prod r t = Dynamic._prod (asDynamic r) (asDynamic t)
 -------------------------------------------------------------------------------
 
 withKeepDim
-  :: forall d n dimval . (Dimensions d, KnownDim n)
+  :: forall d n dimval
+  . (Dimensions d)
+  => All KnownNat '[n, dimval]
+  => All KnownDim '[n, dimval]
   => ((Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ())
-  -> Tensor d -> Idx dimval -> KeepDim -> (Tensor d, Maybe (IndexTensor '[n]))
-withKeepDim _fn t d k = unsafePerformIO $ do
+  -> Tensor d
+  -> Dim dimval
+  -> KeepDim
+  -> (Tensor d, Maybe (IndexTensor '[n]))
+withKeepDim _fn t d k = unsafeDupablePerformIO $ do
   ret :: Tensor d <- new
   let ix :: IndexTensor '[n] = newIx
-  _fn (asDynamic ret, longAsDynamic ix) (asDynamic t) (fromIntegral $ idxToWord d) (Just k)
+  _fn (asDynamic ret, longAsDynamic ix) (asDynamic t) (fromIntegral $ dimVal d) (Just k)
   pure (ret, if coerce k then Just ix else Nothing)
 {-# NOINLINE withKeepDim #-}
 

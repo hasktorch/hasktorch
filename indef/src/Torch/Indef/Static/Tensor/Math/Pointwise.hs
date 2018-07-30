@@ -24,14 +24,21 @@ sign t = asStatic <$> Dynamic.sign (asDynamic t)
 clamp :: (Dimensions d) => Tensor d -> HsReal -> HsReal -> IO (Tensor d)
 clamp t a b = asStatic <$> Dynamic.clamp (asDynamic t) a b
 
--- | Static version of 'Dynamic.cadd'
-cadd :: (Dimensions d) => Tensor d -> HsReal -> Tensor d -> IO (Tensor d)
-cadd t v b = asStatic <$> Dynamic.cadd (asDynamic t) v (asDynamic b)
+-- | Multiply elements of tensor2 by the scalar value and add it to tensor1.
+-- The number of elements must match, but sizes do not matter.
+--
+-- Static version of 'Dynamic.cadd'.
+cadd
+  :: Tensor d  -- ^ tensor1
+  -> HsReal    -- ^ scale term to multiply againts tensor2
+  -> Tensor d  -- ^ tensor2
+  -> Tensor d
+cadd t v b = unsafePerformIO $ asStatic <$> Dynamic.cadd (asDynamic t) v (asDynamic b)
+{-# NOINLINE cadd #-}
 
 -- | infix version of 'cadd' on dimension 1
 (^+^) :: (Dimensions d) => Tensor d -> Tensor d -> Tensor d
-(^+^) a b = unsafePerformIO $ cadd a 1 b
-{-# NOINLINE (^+^) #-}
+(^+^) a b = cadd a 1 b
 
 -- | Static version of 'Dynamic.csub'
 csub :: (Dimensions d) => Tensor d -> HsReal -> Tensor d -> IO (Tensor d)
