@@ -31,7 +31,7 @@ genData param = do
   noise        :: Tensor '[N] <- normal gen 0 p2
   predictorVal :: Tensor '[N] <- normal gen 0 p10
   let x :: Tensor '[2, N] = resizeAs (predictorVal `cat1d` (constant 1))
-  y :: Tensor '[N]    <- Math.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
+  let y :: Tensor '[N]    = Math.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
 
   pure (x, y)
 

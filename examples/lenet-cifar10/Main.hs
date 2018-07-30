@@ -16,7 +16,7 @@ import Prelude as P
 import Text.Printf
 import ListT (ListT)
 import qualified ListT
-import Numeric.Backprop
+import Numeric.Backprop as Bp
 import Numeric.Dimensions
 import System.IO.Unsafe
 import Control.Concurrent
@@ -40,46 +40,65 @@ import System.IO (hFlush, stdout)
 main :: IO ()
 main = do
   clearScreen
-  xs  <- loadTrain 500
+  xs  <- loadTrain Nothing -- $ Just 50
+  xs' <- loadTest  Nothing -- $ Just 10
   net0 <- newLeNet @3 @5
   print net0
   putStrLn "Start training:"
   t0 <- getCurrentTime
-  net <- epochs 0.01 t0 3 xs net0
+  net <- epochs xs' 0.0001 t0 1 xs net0
   t1 <- getCurrentTime
-  printf "\nFinished training\n"
-  -- xs' <- loadTest  50
-  -- lastnet <- runBatches 1 trainset net0
-  -- print lastnet
-
+  printf "\nFinished training!\n"
+  print net
   putStrLn "\ndone!"
  where
   loadTest  = loadData Test
   loadTrain = loadData Train
-  loadData m s = do
+  loadData m ms = do
     t0 <- getCurrentTime
-    xs <- ListT.toList . ListT.take s $ defaultCifar10set m
+    xs <- ListT.toList . taker $ defaultCifar10set m
     t1 <- getCurrentTime
-    let desc = case m of Train -> "training"; Test -> "testing"
     printf "Loaded %s set of size %d in %s\n" desc (length xs) (show (t1 `diffUTCTime` t0))
     pure xs
 
+   where
+    taker = case ms of
+              Just s -> ListT.take s
+              Nothing -> id
+    desc = case m of Train -> "training"; Test -> "testing"
+
 epochs
   :: forall ch step . (ch ~ 3, step ~ 5)
-  => HsReal
+  => [(Tensor '[3, 32, 32], Category)]
+  -> HsReal
   -> UTCTime
   -> Int
   -> [(Tensor '[3, 32, 32], Category)]
   -> LeNet ch step
   -> IO ()
-epochs lr t0 mx tset = runEpoch 1
+epochs test lr t0 mx tset net0 = do
+  printf "initial "
+  testNet net0
+  runEpoch 1 net0
   where
     runEpoch :: Int -> LeNet ch step -> IO ()
     runEpoch e net
       | e > mx    = pure ()
       | otherwise = do
-        net' <- run1Batches lr t0 e 10 tset net
+        net' <- run1Batches lr t0 e 50 tset net
+        testNet net'
         runEpoch (e + 1) net'
+
+    testX = map fst test
+    testY = map snd test
+
+    testNet :: LeNet ch step -> IO ()
+    testNet net = do
+      printf ("[test accuracy: %.1f%% / %d]") (acc * 100 :: Float) (length testY)
+      hFlush stdout
+     where
+      preds = map (infer net) testX
+      acc = genericLength (filter id $ zipWith (==) preds testY) / genericLength testY
 
 run1Batches
   :: forall ch step . (ch ~ 3, step ~ 5)
@@ -105,9 +124,9 @@ run1Batches lr t00 e bsize = go 0
       t0 <- getCurrentTime
       (net', hist) <- foldM (trainStep lr) (net, []) batch
       t1 <- getCurrentTime
-      printf (setRewind ++ "[Epoch %d](%d-batch #%d)[accuracy: %.4f] in %s (total: %s)")
+      printf (setRewind ++ "[Epoch %d](%d-batch #%d)[nlloss: %.4f] in %s (total: %s)")
         e bsize (bid+1)
-        (accuracy hist)
+        (P.sum . map ((`get1d` 0) . fst) $ hist)
         (show (t1 `diffUTCTime`  t0))
         (show (t1 `diffUTCTime` t00))
       hFlush stdout
@@ -125,14 +144,17 @@ setRewind = "\r"
 clearScreen :: IO ()
 clearScreen = putStr "\ESC[2J"
 
--- step
---   :: (ch ~ 3, step ~ 5)
---   => HsReal -> (LeNet ch step, [(Tensor '[10], Category)])
---   -> (Tensor '[ch, 32, 32], Category)
---   -> IO (LeNet ch step, [(Tensor '[1], Category)])
--- step lr (net, hist) (x, y) = pure (net', (out, y):hist)
---   where
---     (out, (net', _)) = backprop2 (lenet lr) net x
+infer
+  :: (ch ~ 3, step ~ 5)
+  => LeNet ch step
+  -> Tensor '[ch, 32, 32]
+  -> Category
+infer net
+  = toEnum
+  . fromIntegral
+  . (`Long.get1d` 0)
+  . maxIndex1d
+  . evalBP2 (lenet undefined) net
 
 trainStep
   :: (ch ~ 3, step ~ 5)
@@ -140,14 +162,15 @@ trainStep
   -> (LeNet ch step, [(Tensor '[1], Category)])
   -> (Tensor '[ch, 32, 32], Category)
   -> IO (LeNet ch step, [(Tensor '[1], Category)])
-trainStep lr (net, hist) (x, y) = pure (net', (out, y):hist)
+trainStep lr (net, hist) (x, y) = do
+  print out
+  pure (Bp.add net gnet, (out, y):hist)
   where
-    (out, (net', _))
+    (out, (gnet, _))
       = backprop2
-        ( classNLLCriterion (onehot y)
+        ( classNLLCriterion (esingleton y)
         . unsqueeze1dBP (dim :: Dim 0)
         .: lenet lr)
         net x
 
--- (classNLLCriterion (Long.unsafeVector [0,1]))
 
