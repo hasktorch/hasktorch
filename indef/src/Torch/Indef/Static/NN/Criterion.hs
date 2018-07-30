@@ -266,7 +266,7 @@ classNLLCriterion
   => IndexTensor '[n]            -- THIndexTensor *target,
   -> BVar s (Tensor '[n, c])     -- THTensor *input,
   -> BVar s (Tensor '[1])        -- THTensor *output,
-classNLLCriterion = classNLLCriterion' (-100) False True
+classNLLCriterion = classNLLCriterion' (-100) True True
 
 {-
 c_SpatialClassNLLCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()
