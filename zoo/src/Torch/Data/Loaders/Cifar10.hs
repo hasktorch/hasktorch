@@ -17,19 +17,24 @@ import Data.Singletons
 import Numeric.Dimensions
 import Data.Singletons.Prelude.Enum
 import GHC.TypeLits
+import Numeric.Backprop
+
 
 import qualified Data.Vector as V
 import qualified Codec.Picture as JP
 import qualified Graphics.GD as GD
 
+import Control.Concurrent (threadDelay)
 #ifdef CUDA
 import Torch.Cuda.Double
 import qualified Torch.Cuda.Long as Long
-import Control.Concurrent (threadDelay)
 #else
 import Torch.Double
 import qualified Torch.Long as Long
 #endif
+
+import qualified Torch.Double as CPU
+import qualified Torch.Long as CPULong
 
 -- This should be replaced with a download-aware cache.
 default_cifar_path :: FilePath
@@ -95,6 +100,17 @@ onehot c
   $ V.toList
   $ onehotv c
 
+onehotT
+  :: forall c sz
+  . (Ord c, Bounded c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
+  => c
+  -> Tensor '[10] -- '[FromEnum (MaxBound c)]
+onehotT c
+  = unsafeVector
+  $ fmap fromIntegral
+  $ V.toList
+  $ onehotv c
+
 onehotv :: forall i c . (Integral i, Ord c, Bounded c, Enum c) => c -> V.Vector i
 onehotv c =
   V.generate
@@ -111,6 +127,47 @@ cifar10set fp m = do
 defaultCifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Category)
 defaultCifar10set = cifar10set default_cifar_path
 
+
+test :: Tensor '[1]
+test
+  = evalBP
+      (classNLLCriterion (Long.unsafeVector [2] :: Long.Tensor '[1]))
+      (unsqueeze1d (dim :: Dim 0) $ unsafeVector [1,0,0] :: Tensor '[1, 3])
+
+-- test2 :: Tensor '[1]
+-- test2
+--   = evalBP
+--   ( _classNLLCriterion'
+--       (-100) False True
+--       -- (Long.unsafeMatrix [[0,1,0]] :: Long.Tensor '[1,3])
+--       -- (Long.unsafeVector [0,1,0] :: Long.Tensor '[3])
+--       (Long.unsafeVector [0,1,2] :: Long.Tensor '[3])
+--     )
+--     -- (unsafeVector  [1,0,0]  :: Tensor '[3])
+--     -- (unsafeMatrix [[0,0,1]] :: Tensor '[1,3])
+--     (unsafeMatrix
+--       [ [1,0,0]
+--       , [0,1,0]
+--       , [0.5,0.5,0.5]
+--       ] :: Tensor '[3,3])
+
+-- test3 :: CPU.Tensor '[1]
+-- test3
+--   = evalBP
+--   ( CPU._classNLLCriterion'
+--       (-100) False True
+--       -- (CPULong.unsafeMatrix [[0,1,0]] :: CPULong.Tensor '[1,3])
+--       (CPULong.unsafeVector [0,8] :: CPULong.Tensor '[2])
+--       -- (CPULong.unsafeVector [0,1,0] :: CPULong.Tensor '[3])
+--       -- (CPULong.unsafeVector [0,1,2] :: CPULong.Tensor '[3])
+--     )
+--     -- (CPU.unsafeVector  [1,0,0]  :: CPU.Tensor '[3])
+--     -- (CPU.unsafeMatrix [[0,0,1]] :: CPU.Tensor '[1,3])
+--     (CPU.unsafeMatrix
+--       [ [1,0,0]
+--       -- , [0,1,0]
+--       , [0.5,0.5,0.5]
+--       ] :: CPU.Tensor '[2,3])
 
 #ifdef DEBUG
 -- example use-case

@@ -1,6 +1,9 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Data.Metrics where
 
 import Data.List (genericLength)
+import Data.Function (on)
+
 
 #ifdef CUDA
 import Torch.Cuda.Double
@@ -10,10 +13,15 @@ import Torch.Double
 import qualified Torch.Long as Long
 #endif
 
-accuracy :: [(Tensor '[10], Integer)] -> Double
-accuracy xs = foldl go 0 xs / genericLength xs
+
+catAccuracy
+  :: forall c sz
+  . (Eq c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
+  => [(Int, c)] --  [(Tensor '[FromEnum (MaxBound c)], c)]
+  -> Double
+catAccuracy xs = filter issame xs // xs
   where
-    go :: Double -> (Tensor '[10], Integer) -> Double
-    go acc (p, y) = acc + fromIntegral (fromEnum (y == fromIntegral (Long.get1d (maxIndex1d p) 0)))
+    (//) = (/) `on` genericLength
+    issame (p, y) = toEnum p == y
 
 
