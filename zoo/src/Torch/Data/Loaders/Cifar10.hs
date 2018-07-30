@@ -19,12 +19,14 @@ import Data.Singletons.Prelude.Enum
 import GHC.TypeLits
 import Numeric.Backprop
 
+import Text.Printf
+import System.IO (hFlush, stdout)
+import Data.IORef
 
 import qualified Data.Vector as V
 import qualified Codec.Picture as JP
 import qualified Graphics.GD as GD
 
-import Control.Concurrent (threadDelay)
 #ifdef CUDA
 import Torch.Cuda.Double
 import qualified Torch.Cuda.Long as Long
@@ -84,11 +86,18 @@ im2torch fp = do
 cat2torch :: FilePath -> ListT IO (Tensor '[3, 32, 32])
 cat2torch fp = do
   ims <- lift $ filter ((== ".png") . takeExtension) <$> getDirectoryContents fp
+  counter <- lift $ newIORef (0 :: Int)
   im <- fromFoldable (Data.List.take 20 ims)
 
   lift (runExceptT (im2torch (fp </> im))) >>= \case
     Left _ -> mempty
-    Right t -> pure t
+    Right t -> do
+      lift $ do
+        c <- (modifyIORef counter (+ 1) >> readIORef counter)
+        printf "\r[%d/%d] img: %s" c (length ims) (fp </> im)
+        hFlush stdout
+
+      pure t
 
 onehot
   :: forall c sz
@@ -120,13 +129,16 @@ onehotv c =
 
 cifar10set :: FilePath -> Mode -> ListT IO (Tensor '[3, 32, 32], Category)
 cifar10set fp m = do
-  c <- fromFoldable [minBound..maxBound :: Category]
+  c <- fromFoldable [minBound..mx]
+  lift $ printf "\n[%s](%d/%d)\n" (show c) (1 + fromEnum c) (1 + fromEnum mx)
   t <- cat2torch (category_path fp m c)
   pure (t, c)
+ where
+  mx :: Category
+  mx = maxBound
 
 defaultCifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Category)
 defaultCifar10set = cifar10set default_cifar_path
-
 
 test :: Tensor '[1]
 test
