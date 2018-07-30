@@ -17,6 +17,7 @@ import Text.Printf
 import ListT (ListT)
 import qualified ListT
 import Numeric.Backprop
+import Numeric.Dimensions
 import System.IO.Unsafe
 import Control.Concurrent
 -- import qualified Foreign.CUDA as Cuda
@@ -68,7 +69,7 @@ epochs
   => HsReal
   -> UTCTime
   -> Int
-  -> [(Tensor '[3, 32, 32], Integer)]
+  -> [(Tensor '[3, 32, 32], Category)]
   -> LeNet ch step
   -> IO ()
 epochs lr t0 mx tset = runEpoch 1
@@ -77,10 +78,10 @@ epochs lr t0 mx tset = runEpoch 1
     runEpoch e net
       | e > mx    = pure ()
       | otherwise = do
-        net' <- runBatches lr t0 e 10 tset net
+        net' <- run1Batches lr t0 e 10 tset net
         runEpoch (e + 1) net'
 
-runBatches
+run1Batches
   :: forall ch step . (ch ~ 3, step ~ 5)
   => HsReal
   -> UTCTime
@@ -89,7 +90,7 @@ runBatches
   -> [(Tensor '[3, 32, 32], Category)]
   -> LeNet ch step
   -> IO (LeNet ch step)
-runBatches lr t00 e bsize = go 0
+run1Batches lr t00 e bsize = go 0
  where
   go
     :: Int
@@ -102,7 +103,7 @@ runBatches lr t00 e bsize = go 0
     then pure net
     else do
       t0 <- getCurrentTime
-      (net', hist) <- foldM (step lr) (net, []) batch
+      (net', hist) <- foldM (trainStep lr) (net, []) batch
       t1 <- getCurrentTime
       printf (setRewind ++ "[Epoch %d](%d-batch #%d)[accuracy: %.4f] in %s (total: %s)")
         e bsize (bid+1)
@@ -124,23 +125,29 @@ setRewind = "\r"
 clearScreen :: IO ()
 clearScreen = putStr "\ESC[2J"
 
-step
-  :: (ch ~ 3, step ~ 5)
-  => HsReal -> (LeNet ch step, [(Tensor '[10], Category)])
-  -> (Tensor '[ch, 32, 32], Category)
-  -> IO (LeNet ch step, [(Tensor '[10], Category)])
-step lr (net, hist) (x, y) = pure (net', (out, y):hist)
-  where
-    (out, (net', _)) = backprop2 (lenet lr) net x
+-- step
+--   :: (ch ~ 3, step ~ 5)
+--   => HsReal -> (LeNet ch step, [(Tensor '[10], Category)])
+--   -> (Tensor '[ch, 32, 32], Category)
+--   -> IO (LeNet ch step, [(Tensor '[1], Category)])
+-- step lr (net, hist) (x, y) = pure (net', (out, y):hist)
+--   where
+--     (out, (net', _)) = backprop2 (lenet lr) net x
 
 trainStep
   :: (ch ~ 3, step ~ 5)
-  => HsReal -> (LeNet ch step, [(Tensor '[10], Category)])
+  => HsReal
+  -> (LeNet ch step, [(Tensor '[1], Category)])
   -> (Tensor '[ch, 32, 32], Category)
-  -> IO (LeNet ch step, [(Tensor '[10], Category)])
+  -> IO (LeNet ch step, [(Tensor '[1], Category)])
 trainStep lr (net, hist) (x, y) = pure (net', (out, y):hist)
   where
-    (out, (net', _)) = backprop2 (classNLLCriterion (onehot y) .: lenet lr) net x
+    (out, (net', _))
+      = backprop2
+        ( classNLLCriterion (onehot y)
+        . unsqueeze1dBP (dim :: Dim 0)
+        .: lenet lr)
+        net x
 
 -- (classNLLCriterion (Long.unsafeVector [0,1]))
 
