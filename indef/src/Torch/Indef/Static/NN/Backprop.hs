@@ -11,6 +11,7 @@
 -- functions that might work well with backprop.
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -23,6 +24,7 @@ import Numeric.Backprop
 import Numeric.Dimensions
 
 import Torch.Indef.Types
+import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Pointwise.Signed ()
 import qualified Torch.Indef.Index as Ix
@@ -57,4 +59,12 @@ unsqueeze1dBP d = liftOp1 . op1 $ \t ->
 
     -- d :: Dim 0
     -- d = dim
-
+clip :: Reifies s W => (HsReal, HsReal) -> BVar s (Tensor '[1]) -> BVar s (Tensor '[1])
+clip (mn,mx) = liftOp1 . op1 $ \i ->
+  let
+    x = case get1d i 0 of
+          x | x > mx ->   mx
+            | x < mn ->   mn
+            | otherwise -> x
+  in
+    (scalar x, id)
