@@ -46,7 +46,7 @@ main = do
   print net0
   putStrLn "Start training:"
   t0 <- getCurrentTime
-  net <- epochs xs' 0.0001 t0 1 xs net0
+  net <- epochs xs' 0.001 t0 50 xs net0
   t1 <- getCurrentTime
   printf "\nFinished training!\n"
   print net
@@ -124,7 +124,7 @@ run1Batches lr t00 e bsize = go 0
       t0 <- getCurrentTime
       (net', hist) <- foldM (trainStep lr) (net, []) batch
       t1 <- getCurrentTime
-      printf (setRewind ++ "[Epoch %d](%d-batch #%d)[nlloss: %.4f] in %s (total: %s)")
+      printf (setRewind ++ "[Epoch %d](%d-batch #%d)[mse %.4f] in %s (total: %s)")
         e bsize (bid+1)
         (P.sum . map ((`get1d` 0) . fst) $ hist)
         (show (t1 `diffUTCTime`  t0))
@@ -163,13 +163,12 @@ trainStep
   -> (Tensor '[ch, 32, 32], Category)
   -> IO (LeNet ch step, [(Tensor '[1], Category)])
 trainStep lr (net, hist) (x, y) = do
-  print out
   pure (Bp.add net gnet, (out, y):hist)
   where
     (out, (gnet, _))
       = backprop2
-        ( classNLLCriterion (esingleton y)
-        . unsqueeze1dBP (dim :: Dim 0)
+        ( clip (-1000,1000)
+        . mSECriterion (onehotT y)
         .: lenet lr)
         net x
 

@@ -87,7 +87,7 @@ cat2torch :: FilePath -> ListT IO (Tensor '[3, 32, 32])
 cat2torch fp = do
   ims <- lift $ filter ((== ".png") . takeExtension) <$> getDirectoryContents fp
   counter <- lift $ newIORef (0 :: Int)
-  im <- fromFoldable (Data.List.take 20 ims)
+  im <- fromFoldable ims -- (Data.List.take 20 ims)
 
   lift (runExceptT (im2torch (fp </> im))) >>= \case
     Left _ -> mempty
