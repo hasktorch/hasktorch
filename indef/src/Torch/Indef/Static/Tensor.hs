@@ -53,6 +53,8 @@ instance Dimensions d => Show (Tensor d) where
 -- isSameSizeAs :: forall d d' . (All Dimensions '[d, d']) => Tensor d -> Tensor d' -> Bool
 -- isSameSizeAs _ _ = (fromIntegral <$> listDims (dim :: Dim d)) == (fromIntegral <$> listDims (dim :: Dim d'))
 
+scalar :: HsReal -> Tensor '[1]
+scalar = unsafeVector . (:[])
 
 -- | Purely make a 1d tensor from a list of unknown length.
 vector :: forall n . KnownDim n => KnownNat n => [HsReal] -> Maybe (Tensor '[n])
