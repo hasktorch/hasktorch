@@ -9,6 +9,8 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
 module Torch.Indef.Static.NN.Criterion where
 
 import Control.Arrow ((&&&))
@@ -16,6 +18,7 @@ import GHC.TypeLits
 import Numeric.Dimensions
 import Numeric.Backprop
 import System.IO.Unsafe
+import Data.Singletons.Prelude hiding (All, type (*), type (-), type (+))
 
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
@@ -23,6 +26,8 @@ import Torch.Indef.Types
 import Torch.Indef.Static.NN.Backprop ()
 import qualified Torch.Indef.Dynamic.NN.Criterion as Dynamic
 import qualified Torch.Sig.Types.Global as Ix
+
+import Torch.Indef.Static.Tensor.Random.THC
 
 
 -- | absCriterion forward pass (updates the output tensor)
@@ -112,12 +117,73 @@ _softMarginCriterion_updateOutput t0 t1 t2 = Dynamic._softMarginCriterion_update
 _softMarginCriterion_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Tensor d -> Bool -> Bool -> IO ()
 _softMarginCriterion_updateGradInput t0 t1 t2 t3 = Dynamic._softMarginCriterion_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3)
 
--- | mSECriterion forward pass (updates the output tensor)
-_mSECriterion_updateOutput :: Tensor d -> Tensor d -> Tensor d -> Bool -> Bool -> IO ()
-_mSECriterion_updateOutput t0 t1 t2 = Dynamic._mSECriterion_updateOutput (asDynamic t0) (asDynamic t1) (asDynamic t2)
--- | mSECriterion backward-update (updates the layer and bias tensors)
-_mSECriterion_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Tensor d -> Bool -> Bool -> IO ()
-_mSECriterion_updateGradInput t0 t1 t2 t3 = Dynamic._mSECriterion_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2) (asDynamic t3)
+-- | MSECriterion
+--
+-- Creates a criterion that measures the mean squared error between n elements
+-- in the input x and output y:
+--
+-- @
+--   loss(x, y) = 1/n \sum |x_i - y_i|^2 .
+-- @
+--
+-- If x and y are d-dimensional Tensors with a total of n elements, the sum
+-- operation still operates over all the elements, and divides by n. The two
+-- Tensors must have the same number of elements (but their sizes might be
+-- different).
+--
+-- The division by n can be avoided if one sets the internal variable sizeAverage
+-- to false:
+--
+-- criterion = nn.MSECriterion()
+-- criterion.sizeAverage = false
+--
+-- By default, the losses are averaged over observations for each minibatch.
+-- However, if the field sizeAverage is set to false, the losses are instead
+-- summed.
+mSECriterion' :: forall s bs d d' reduce out
+  . Reifies s W
+  => All Dimensions '[d', d, out]
+  => KnownDim bs
+  => d ~ (bs :+ d') -- must have minibatch
+  => out ~ (If reduce '[1] d)
+  => Bool             -- ^ size_average:
+                      --     By default, the losses are averaged over each loss element in the batch.
+                      --     Note that for some losses, there multiple elements per sample.
+                      --     If the field size_average is set to False, the losses are instead
+                      --     summed for each minibatch. Ignored when reduce is False. Default: True
+  -> SBool reduce     -- ^ reduce:
+                      --     By default, the losses are averaged or summed over observations for each
+                      --     minibatch depending on size_average. When reduce is False, returns a loss
+                      --     per batch element instead and ignores size_average. Default: True
+  -> Tensor d
+  -> BVar s (Tensor d)
+  -> BVar s (Tensor out)
+mSECriterion' sizeAvg reduce target = liftOp1 . op1 $ \i -> (updateOutput i, \gout -> updateGradInput i gout)
+  where
+    -- mSECriterion forward pass (updates the output tensor)
+    updateOutput :: Tensor d -> Tensor out
+    updateOutput i = unsafeDupablePerformIO $ do
+      o <- new
+      Dynamic._mSECriterion_updateOutput (asDynamic i) (asDynamic target) (asDynamic o) sizeAvg (fromSing reduce)
+      pure o
+
+    -- mSECriterion backward-update (updates the layer and bias tensors)
+    updateGradInput :: Tensor d -> Tensor out -> Tensor d
+    updateGradInput i gout = unsafeDupablePerformIO $ do
+      gin <- new
+      Dynamic._mSECriterion_updateGradInput (asDynamic i) (asDynamic target) (asDynamic gout) (asDynamic gin) sizeAvg (fromSing reduce)
+      pure gin
+
+mSECriterion :: forall s bs d d'
+  . Reifies s W
+  => All Dimensions '[d', d]
+  => KnownDim bs
+  => d ~ (bs :+ d')
+  => Tensor d
+  -> BVar s (Tensor d)
+  -> BVar s (Tensor '[1])
+mSECriterion = mSECriterion' True (sing :: SBool 'True)
+
 
 -- | The <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence Kullback-Leibler divergence> Loss
 --
