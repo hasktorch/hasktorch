@@ -16,6 +16,14 @@ update_path_command: &update_path
   run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
 
 jobs:
+  system-libraries:
+    <<: *defaults
+    working_directory: /
+    steps:
+      # GD graphics library
+      - run: sudo apt-get update --fix-missing
+      - run: sudo apt-get install libgd2-xpm-dev
+
   ghc-8.4.2:
     <<: *defaults
     working_directory: /tmp/ghc-8.4.2
@@ -258,6 +266,7 @@ workflows:
           requires:
             - ghc-8.4.2
             - aten
+            - system-libraries
 
 # FIXME:
 # move cabal-install-2.3.0 to build
