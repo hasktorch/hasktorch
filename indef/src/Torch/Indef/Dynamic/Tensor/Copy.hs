@@ -32,6 +32,7 @@ import System.IO.Unsafe
 import Torch.Types.TH (C'THState)
 import qualified Torch.Types.TH as TH
 import qualified Torch.Sig.Tensor as Sig
+import qualified Torch.Sig.Types.Global as Sig
 import qualified Torch.Sig.Tensor.Copy as Sig
 
 import qualified Torch.FFI.TH.Byte.Tensor   as B
@@ -51,27 +52,25 @@ copyType
   -> (Ptr CState -> Ptr CTensor -> Ptr a -> IO ())
   -> (Ptr C'THState -> Ptr a -> Ptr TH.C'THLongStorage -> Ptr TH.C'THLongStorage -> IO ())
   -> Dynamic -> b
-copyType newPtr fin builder cfun resizer t = unsafePerformIO . withDynamicState t $ \s' t' -> do
+copyType newPtr fin builder cfun resizer t = unsafeDupablePerformIO . withDynamicState t $ \s' t' -> do
   target <- newPtr
+  withForeignPtr TH.torchstate $ \ths' -> do
+    resizer ths'
+      <$> pure target
+      <*> Sig.c_newSizeOf s' t'
+      <*> Sig.c_newStrideOf s' t'
 
-  resizer
-    <$> TH.newCState
-    <*> pure target
-    <*> Sig.c_newSizeOf s' t'
-    <*> Sig.c_newStrideOf s' t'
-
-  builder
-    <$> (TH.newCState >>= TH.manageState)
-    <*> newForeignPtr fin target
+    builder TH.torchstate
+      <$> newForeignPtr fin target
 {-# NOINLINE copyType #-}
 
 -- | Copy a tensor.
 copy :: Dynamic -> Dynamic
-copy t = unsafePerformIO . withDynamicState t $ \s' t' -> do
+copy t = unsafeDupablePerformIO . withDynamicState t $ \s' t' -> do
   target <- Sig.c_new s'
   Sig.c_resizeAs s' target t'
   Sig.c_copy s' target t'
-  mkDynamic s' target
+  mkDynamic target
 {-# NOINLINE copy #-}
 
 -- | copy a tensor to a byte tensor. *Use at your own discresion*
@@ -96,17 +95,17 @@ copyDouble = copyType D.c_new_ D.p_free TH.doubleDynamic Sig.c_copyDouble D.c_re
 -- class GPUTensorCopy gpu cpu | gpu -> cpu where
 --   copyCuda             :: gpu -> io gpu
 --   copyIgnoringOverlaps :: gpu -> io gpu
--- 
+--
 --   copyCudaByte    :: gpu -> IO Cuda.ByteDynamic
 --   copyCudaChar    :: gpu -> IO Cuda.CharDynamic
 --   copyCudaShort   :: gpu -> IO Cuda.ShortDynamic
 --   copyCudaInt     :: gpu -> IO Cuda.IntDynamic
 --   copyCudaLong    :: gpu -> IO Cuda.LongDynamic
 --   copyCudaDouble  :: gpu -> IO Cuda.DoubleDynamic
--- 
+--
 --   copyCPU         :: gpu -> IO cpu
 --   copyAsyncCPU    :: gpu -> IO cpu
--- 
+--
 --   thCopyCuda      :: cpu -> IO gpu
 --   thCopyAsyncCuda :: cpu -> IO gpu
 -- #endif

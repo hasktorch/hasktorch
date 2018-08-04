@@ -1,0 +1,60 @@
+name:                hasktorch-zoo
+version:             0.0.1.0
+synopsis:            Neural Architectures in hasktorch
+description:         Neural Architectures in hasktorch
+homepage:            https://github.com/hasktorch/hasktorch#readme
+bug-reports:         https://github.com/hasktorch/hasktorch/issues
+license:             BSD3
+author:              Sam Stites
+category:            Tensors, Machine Learning
+build-type:          Simple
+cabal-version:       >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/hasktorch/hasktorch
+
+flag cuda
+  Description: build with cuda support
+  Default: True
+
+library
+  hs-source-dirs: src
+  ghc-options: -Wall -fno-cse -Wno-missing-signatures
+  other-modules: Paths_hasktorch_zoo
+  default-extensions: RankNTypes, DataKinds, TypeOperators, TypeFamilies, CPP
+  default-language: Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , backprop
+    , dimensions
+    , hasktorch-core
+    , microlens-platform
+    , microlens-th
+    , singletons
+    , ghc-typelits-natnormalise
+    , vector
+
+  -- data loader dependencies
+    , directory
+    , filepath
+    , JuicyPixels
+    , gd
+
+  -- training iterator dependencies
+    , list-t
+    , mtl
+    , monad-loops
+    , time
+    , transformers
+
+  exposed-modules:
+      Torch.Models.LeNet
+      Torch.Models.Internal
+      Torch.Data.Loaders.Cifar10
+      Torch.Data.Metrics
+      -- Torch.Data.Runners.Cifar10
+
+  if flag(cuda)
+    cpp-options: -DCUDA
+

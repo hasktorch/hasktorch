@@ -58,9 +58,8 @@ copyType newPtr fin builder cfun t = withStorageState t $ \s' t' -> do
   -- Sig.c_resizeAs s' target t'       -- << THIS NEEDS TO BE REMAPPED TO TENSORLONG SIZES
   cfun s' t' target
 
-  builder
-    <$> (TH.newCState >>= TH.manageState)
-    <*> newForeignPtr fin target
+  builder TH.torchstate
+    <$> newForeignPtr fin target
 
 
 rawCopy :: Storage -> IO [HsReal]
@@ -75,7 +74,7 @@ copy :: Storage -> IO Storage
 copy t = withStorageState t $ \s' t' -> do
   store <- Sig.c_new s'
   Sig.c_copy s' t' store
-  mkStorage s' store
+  mkStorage store
 
 -- | Copy a 'Storage' object to a CPU-backed LongStorage.
 copyLong   = copyType L.c_new_ L.p_free TH.longStorage   Sig.c_copyLong

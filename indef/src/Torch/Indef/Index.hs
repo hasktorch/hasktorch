@@ -19,7 +19,9 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE MonoLocalBinds #-}
 module Torch.Indef.Index
-  ( newIx
+  ( singleton
+  , esingleton
+  , newIx
   , newIxDyn
   , zeroIxNd
   , index
@@ -62,6 +64,12 @@ import qualified Torch.FFI.TH.Long.Tensor as LongTensor
 import qualified Foreign as FM
 import qualified Foreign.Marshal.Array as FM
 
+singleton :: Integral i => i -> IndexTensor '[1]
+singleton = longAsStatic . indexDyn . (:[]) . fromIntegral
+
+esingleton :: Enum i => i -> IndexTensor '[1]
+esingleton = singleton . fromEnum
+
 -- | build a new static index tensor
 --
 -- FIXME: This can abstracted away with backpack, but I'm not sure if it can do it atm.
@@ -77,8 +85,9 @@ zeroIxNd = longAsStatic $ newIxDyn 0
 
 -- | build a new 1-dimensional, dynamically-typed index tensor of lenght @i@
 newIxDyn :: Integral i => i -> IndexDynamic
-newIxDyn x = unsafeDupablePerformIO . mkDynamicIO $ \s ->
-  IxSig.c_newWithSize1d s (fromIntegral x)
+newIxDyn x = unsafeDupablePerformIO $
+  withForeignPtr Sig.torchstate $ \s ->
+    IxSig.c_newWithSize1d s (fromIntegral x) >>= mkDynamic
 
 -- | Make a dynamic, 1d index tensor from a list.
 --
@@ -116,13 +125,11 @@ indexNd l
 
 -- | Convenience method for 'newWithData' specific to longs for making CPU Long storage.
 ixCPUStorage :: [Integer] -> IO TH.LongStorage
-ixCPUStorage pr = do
-  st  <- TH.newCState
+ixCPUStorage pr = withForeignPtr TH.torchstate $ \st -> do
   pr' <- FM.withArray (THLong.hs2cReal <$> pr) pure
   thl <- LongStorage.c_newWithData st pr' (fromIntegral $ length pr)
-  TH.LongStorage <$> ((,)
-    <$> TH.manageState st
-    <*> FM.newForeignPtr LongStorage.p_free thl)
+  TH.LongStorage <$> ((TH.torchstate,)
+    <$> FM.newForeignPtr LongStorage.p_free thl)
 
 -- | resize a 1d dynamic index tensor.
 --
@@ -133,9 +140,8 @@ _resizeDim1d t x = withDynamicState t $ \s' t' -> IxSig.c_resize1d s' t' (fromIn
 -- | make a dynamic CPU tensor from a raw torch ctensor
 mkCPUIx :: Ptr TH.C'THLongTensor -> IO TH.LongDynamic
 mkCPUIx p = fmap TH.LongDynamic
-  $ (,)
-  <$> (TH.newCState >>= TH.manageState)
-  <*> newForeignPtr LongTensor.p_free p
+  $ (TH.torchstate,)
+  <$> newForeignPtr LongTensor.p_free p
 
 -- | run a function with access to a raw CPU-bound Long tensor storage.
 withCPUIxStorage :: TH.LongStorage -> (Ptr TH.C'THLongStorage -> IO x) -> IO x
@@ -155,13 +161,12 @@ withIxStorage ix fn = withForeignPtr (snd $ Sig.longStorageState ix) fn
 -- | make a dynamic CPU tensor's storage from a raw torch LongStorage
 mkCPUIxStorage :: Ptr TH.C'THLongStorage -> IO TH.LongStorage
 mkCPUIxStorage p = fmap TH.LongStorage
-  $ (,)
-  <$> (TH.newCState >>= TH.manageState)
-  <*> newForeignPtr LongStorage.p_free p
+  $ (TH.torchstate,)
+  <$> newForeignPtr LongStorage.p_free p
 
 -- | get the shape of a static index tensor from the term-level
-ixShape :: IndexTensor d -> IO [Word]
-ixShape t = withDynamicState (longAsDynamic t) $ \s' t' -> do
+ixShape :: IndexTensor d -> [Word]
+ixShape t = unsafeDupablePerformIO $ withDynamicState (longAsDynamic t) $ \s' t' -> do
   ds <- IxSig.c_nDimension s' t'
   mapM (fmap fromIntegral . IxSig.c_size s' t' . fromIntegral) [0..ds-1]
 
@@ -172,7 +177,7 @@ ixShape t = withDynamicState (longAsDynamic t) $ \s' t' -> do
 -- the show instance in hasktorch-types/.
 {-# NOINLINE showIx #-}
 showIx t = unsafePerformIO $ do
-  ds <- (fmap.fmap) fromIntegral $ ixShape t
+  let ds = fromIntegral <$> ixShape t
   (vs, desc) <- go (ixGet1d t) (ixGet2d t) (ixGet3d t) (ixGet4d t) ds
   pure (vs ++ "\n" ++ desc)
  where
@@ -265,13 +270,10 @@ showIx t = unsafePerformIO $ do
 -------------------------------------------------------------------------------
 -- Helper functions which mimic code from 'Torch.Indef.Types'
 
-mkDynamic :: Ptr Sig.CState -> Ptr Sig.CLongTensor -> IO IndexDynamic
-mkDynamic s t = Sig.longDynamic
-  <$> Sig.manageState s
-  <*> newForeignPtrEnv IxSig.p_free s t
-
-mkDynamicIO :: (Ptr Sig.CState -> IO (Ptr Sig.CLongTensor)) -> IO IndexDynamic
-mkDynamicIO builder = Sig.newCState >>= \s ->
-  builder s >>= mkDynamic s
+mkDynamic :: Ptr Sig.CLongTensor -> IO IndexDynamic
+mkDynamic t =
+  withForeignPtr Sig.torchstate $ \s ->
+    Sig.longDynamic Sig.torchstate
+      <$> newForeignPtrEnv IxSig.p_free s t
 
 

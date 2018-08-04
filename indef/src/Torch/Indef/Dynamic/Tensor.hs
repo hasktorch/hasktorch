@@ -123,7 +123,7 @@ nDimension t = unsafePerformIO $ withDynamicState t (\s t' -> fromIntegral <$> S
 
 -- | Returns the number of elements in a Tensor.
 nElement :: Dynamic -> IO Int64
-nElement t = withDynamicState t (\s t' -> fmap fromIntegral $ Sig.c_nElement s t')
+nElement t = withDynamicState t (\s t' -> fromIntegral <$> Sig.c_nElement s t')
 
 -- | returns a tensor which /shares the same 'Storage'/ as the original. Hence, any modification in
 -- the memory of the sub-tensor will have an impact on the primary tensor, and vice-versa.
@@ -135,7 +135,7 @@ _narrow t0 t1 a b c = withDynamicState t0 $ \s t0' ->
 
 -- | Returns an empty tensor.
 empty :: IO Dynamic
-empty = Sig.newCState >>= \s -> Sig.c_new s >>= mkDynamic s
+empty = withForeignPtr Sig.torchstate $ Sig.c_new >=> mkDynamic
 
 -- | pure version of '_expand'
 newExpand :: Dynamic -> TH.IndexStorage -> IO Dynamic
@@ -143,7 +143,7 @@ newExpand r ix = flip with pure $ do
   s <- manage' Sig.dynamicStateRef r
   r' <- manage' Sig.ctensor r
   ix' <- manage' (snd . TH.longStorageState) ix
-  liftIO $ Sig.c_newExpand s r' ix' >>= mkDynamic s
+  liftIO $ Sig.c_newExpand s r' ix' >>= mkDynamic
 
 -- | Expanding a tensor does not allocate new memory, but only creates a new view on the
 -- existing tensor where singleton dimensions can be expanded to multiple ones by setting
@@ -180,24 +180,24 @@ _expandNd (rets@(s:|_)) ops i = runManaged $ do
 
 -- | purely clone a tensor
 newClone :: Dynamic -> IO Dynamic
-newClone t = withDynamicState t $ \s' t' -> Sig.c_newClone s' t' >>= mkDynamic s'
+newClone t = withDynamicState t $ \s' t' -> Sig.c_newClone s' t' >>= mkDynamic
 
 -- | purely clone a tensor to have a contiguous memory layout.
 newContiguous :: Dynamic -> IO Dynamic
-newContiguous t = withDynamicState t $ \s' t' -> Sig.c_newContiguous s' t' >>= mkDynamic s'
+newContiguous t = withDynamicState t $ \s' t' -> Sig.c_newContiguous s' t' >>= mkDynamic
 
 {-# WARNING newSelect, newNarrow, _set, _select, _narrow "hasktorch devs have not yet made this safe. You are warned." #-}
 -- | returns a tensor which /shares the same 'Storage'/ as the original. Hence, any modification in
 -- the memory of the sub-tensor will have an impact on the primary tensor, and vice-versa.
 -- These methods are very fast, as they do not involve any memory copy.
 newNarrow :: Dynamic -> DimVal -> Int64 -> Size -> IO Dynamic
-newNarrow t a b c = withDynamicState t $ \s' t' -> Sig.c_newNarrow s' t' (fromIntegral a) (fromIntegral b) (fromIntegral c) >>= mkDynamic s'
+newNarrow t a b c = withDynamicState t $ \s' t' -> Sig.c_newNarrow s' t' (fromIntegral a) (fromIntegral b) (fromIntegral c) >>= mkDynamic
 
 -- | returns a tensor which /shares the same 'Storage'/ as the original. Hence, any modification in
 -- the memory of the sub-tensor will have an impact on the primary tensor, and vice-versa.
 -- These methods are very fast, as they do not involve any memory copy.
 newSelect :: Dynamic -> DimVal -> Int64 -> IO Dynamic
-newSelect t a b = withDynamicState t $ \s' t' -> Sig.c_newSelect s' t' (fromIntegral a) (fromIntegral b) >>= mkDynamic s'
+newSelect t a b = withDynamicState t $ \s' t' -> Sig.c_newSelect s' t' (fromIntegral a) (fromIntegral b) >>= mkDynamic
 
 -- | get the sizes of each dimension
 --
@@ -213,11 +213,11 @@ newStrideOf t = withDynamicState t $ \s' t' -> Sig.c_newStrideOf s' t' >>= mkCPU
 
 -- | pure version of '_transpose'
 newTranspose :: Dynamic -> DimVal -> DimVal -> IO Dynamic
-newTranspose t a b = withDynamicState t $ \s' t' -> Sig.c_newTranspose s' t' (fromIntegral a) (fromIntegral b) >>= mkDynamic s'
+newTranspose t a b = withDynamicState t $ \s' t' -> Sig.c_newTranspose s' t' (fromIntegral a) (fromIntegral b) >>= mkDynamic
 
 -- | pure version of '_unfold'
 newUnfold :: Dynamic -> DimVal -> Int64 -> Int64 -> IO Dynamic
-newUnfold t a b c = withDynamicState t $ \s' t' -> Sig.c_newUnfold s' t' (fromIntegral a) (fromIntegral b) (fromIntegral c) >>= mkDynamic s'
+newUnfold t a b c = withDynamicState t $ \s' t' -> Sig.c_newUnfold s' t' (fromIntegral a) (fromIntegral b) (fromIntegral c) >>= mkDynamic
 
 -- |
 -- Creates a view with different dimensions of the storage associated with tensor, returning a new tensor.
@@ -228,7 +228,7 @@ newUnfold t a b c = withDynamicState t $ \s' t' -> Sig.c_newUnfold s' t' (fromIn
 -- for more.
 newView :: Dynamic -> TH.IndexStorage -> IO Dynamic
 newView t ix = withDynamicState t $ \s' t' ->
-  withCPUIxStorage ix (Sig.c_newView s' t' >=> mkDynamic s')
+  withCPUIxStorage ix (Sig.c_newView s' t' >=> mkDynamic)
 
 -- | create an uninitialized tensor with the given size and strides (?)
 --
@@ -266,7 +266,7 @@ newWithStorage s pd l0 l1 =
     withForeignPtr (snd $ TH.longStorageState l0) $ \l0' ->
       withForeignPtr (snd $ TH.longStorageState l1) $ \l1' ->
         Sig.c_newWithStorage state' s' (fromIntegral pd) l0' l1'
-        >>= mkDynamic state'
+        >>= mkDynamic
 
 -- | create a new 1d tensor with the given storage's first dimension.
 newWithStorage1d :: Storage -> StorageOffset -> (Size, Stride) -> IO Dynamic
@@ -274,7 +274,7 @@ newWithStorage1d s pd (d00,d01) =
   withStorageState s $ \state' s' ->
     Sig.c_newWithStorage1d state' s' (fromIntegral pd)
     (fromIntegral d00) (fromIntegral d01)
-    >>= mkDynamic state'
+    >>= mkDynamic
 
 
 -- | create a new 2d tensor with the given storage's first 2 dimensions.
@@ -284,7 +284,7 @@ newWithStorage2d s pd (d00,d01) (d10,d11) =
     Sig.c_newWithStorage2d state' s' (fromIntegral pd)
     (fromIntegral d00) (fromIntegral d01)
     (fromIntegral d10) (fromIntegral d11)
-    >>= mkDynamic state'
+    >>= mkDynamic
 
 
 -- | create a new 3d tensor with the given storage's first 3 dimensions.
@@ -295,7 +295,7 @@ newWithStorage3d s pd (d00,d01) (d10,d11) (d20,d21) =
       (fromIntegral d00) (fromIntegral d01)
       (fromIntegral d10) (fromIntegral d11)
       (fromIntegral d20) (fromIntegral d21)
-    >>= mkDynamic state'
+    >>= mkDynamic
 
 
 -- | create a new 4d tensor with the given storage's first 4 dimensions.
@@ -307,11 +307,11 @@ newWithStorage4d s pd (d00,d01) (d10,d11) (d20,d21) (d30,d31) =
       (fromIntegral d10) (fromIntegral d11)
       (fromIntegral d20) (fromIntegral d21)
       (fromIntegral d30) (fromIntegral d31)
-    >>= mkDynamic state'
+    >>= mkDynamic
 
 -- | create a new tensor with the given tensor's underlying storage.
 newWithTensor :: Dynamic -> IO Dynamic
-newWithTensor t = withDynamicState t $ \s' t' -> Sig.c_newWithTensor s' t' >>= mkDynamic s'
+newWithTensor t = withDynamicState t $ \s' t' -> Sig.c_newWithTensor s' t' >>= mkDynamic
 
 -- | Resize the tensor according to the given LongStorage size (and strides?)
 -- FIXME: doublecheck what the IndexStorages stands for
@@ -486,7 +486,7 @@ _squeeze1d t0 t1 d = with2DynamicState t0 t1 (shuffle3 Sig.c_squeeze1d (fromInte
 
 -- | get the underlying storage of a tensor
 storage :: Dynamic -> IO Storage
-storage t = withDynamicState t $ \s' t' -> Sig.c_storage s' t' >>= mkStorage s'
+storage t = withDynamicState t $ \s' t' -> Sig.c_storage s' t' >>= mkStorage
 
 -- | get the storage offset of a tensor
 storageOffset :: Dynamic -> IO StorageOffset

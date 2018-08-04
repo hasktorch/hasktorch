@@ -9,7 +9,13 @@
 -------------------------------------------------------------------------------
 module Torch.Cuda.Long (module X) where
 
-import Torch.Cuda.Long.Index as X
+import Numeric.Dimensions
+import Torch.Types.THC as X
+
+import Torch.Cuda.Long.Types as X hiding (storage)
+import Torch.Cuda.Long.Index as X hiding (withDynamicState)
+import Torch.Cuda.Long.Mask  as X
+
 import Torch.Indef.Cuda.Long.Tensor as X
 import Torch.Indef.Cuda.Long.Tensor.Copy as X
 import Torch.Indef.Cuda.Long.Tensor.Index as X
