@@ -41,6 +41,34 @@ If everything built, you should be able to run tests successfully:
 cabal new-test all
 ```
 
+# Common Issues
+
+## Building Hasktorch
+
+### `cabal: Could not resolve dependencies:...`
+
+usually resolved by having compatable GHC and cabal-install versions.
+
+For our own builds, we currently use ghc 8.4.2 and cabal-install 2.2.0.0 or cabal-install 2.3.0.0.
+
+### CPU-based Compute, Missing CUDA Dependencies
+
+If you're running on a machine without a GPU, the cuda flag should be turned off. 
+
+This can be done on the command line, for example:
+
+```
+cabal new-build all --flags=-cuda
+```
+
+Or for running a specific example:
+
+```
+cabal new-run lenet-cifar10 --flags=-cuda
+```
+
+Alternatively, cabal settings can be set using [cabal.project.local](https://www.haskell.org/cabal/users-guide/nix-local-build.html#configuring-builds-with-cabal-project).
+
 ## References
 
 ### Torch Internals

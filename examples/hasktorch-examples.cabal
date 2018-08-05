@@ -153,7 +153,6 @@ executable lenet-cifar10
   build-depends:
       base >=4.7 && <5
     , backprop >= 0.2
-    , cuda
     , dimensions
     , directory
     , filepath

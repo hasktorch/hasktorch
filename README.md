@@ -46,6 +46,13 @@ cabal new-build all
 cabal new-run static-tensor-usage
 ```
 
+To build without GPU support/CUDA, use:
+
+```
+cabal new-build all --flags=-cuda
+cabal new-run static-tensor-usage --flags=-cuda
+```
+
 For more development tips, see [DEVELOPERS.md][developers] and review the [`vendor/`][vendor] readme for details on external dependencies.
 
 ## Getting started
