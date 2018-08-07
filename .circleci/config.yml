@@ -256,7 +256,9 @@ workflows:
   version: 2
   build:
     jobs:
-      - ghc-8.4.2
+      - ghc-8.4.2:
+         requires:
+            - system-libraries
       - cmake-3.10.0
       - system-libraries
       - aten:
@@ -266,7 +268,6 @@ workflows:
           requires:
             - ghc-8.4.2
             - aten
-            - system-libraries
 
 # FIXME:
 # move cabal-install-2.3.0 to build
