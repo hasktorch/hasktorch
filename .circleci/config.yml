@@ -214,7 +214,7 @@ jobs:
           keys:
             - hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".circleci/cabal.project.freeze" }}
 
-      - run: cabal new-build all
+      - run: cabal new-build all --extra-include-dirs=/usr/include/ --extra-lib-dirs=/usr/lib/x86_64-linux-gnu/
 
       - save_cache:
           key: hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".circleci/cabal.project.freeze" }}
