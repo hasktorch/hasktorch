@@ -258,6 +258,7 @@ workflows:
     jobs:
       - ghc-8.4.2
       - cmake-3.10.0
+      - system-libraries
       - aten:
           requires:
             - cmake-3.10.0
