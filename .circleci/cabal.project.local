@@ -16,3 +16,12 @@ extra-lib-dirs: /tmp/ghc-8.4.2/lib/
 program-locations
   ghc-location:     /tmp/ghc-8.4.2/bin/ghc
   ghc-pkg-location: /tmp/ghc-8.4.2/bin/ghc-pkg
+
+package hasktorch-zoo
+  flags: -cuda
+package hasktorch-indef
+  flags: -cuda
+package hasktorch-core
+  flags: -cuda
+package hasktorch-examples
+  flags: -cuda
