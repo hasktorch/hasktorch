@@ -214,6 +214,9 @@ jobs:
           keys:
             - hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".circleci/cabal.project.freeze" }}
 
+      - run: sudo apt-get update --fix-missing
+      - run: sudo apt-get install libgd2-xpm-dev
+
       - run: cabal new-build all
 
       - save_cache:
@@ -256,11 +259,8 @@ workflows:
   version: 2
   build:
     jobs:
-      - ghc-8.4.2:
-         requires:
-            - system-libraries
+      - ghc-8.4.2
       - cmake-3.10.0
-      - system-libraries
       - aten:
           requires:
             - cmake-3.10.0
@@ -268,7 +268,6 @@ workflows:
           requires:
             - ghc-8.4.2
             - aten
-            - system-libraries
 
 # FIXME:
 # move cabal-install-2.3.0 to build
