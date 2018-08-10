@@ -1,6 +1,7 @@
 optimization: False
 executable-stripping: False
 
+extra-include-dirs:/usr/include/
 extra-include-dirs:/usr/local/include/
 extra-include-dirs:/tmp/aten/include/
 extra-include-dirs:/tmp/aten/include/ATen
@@ -8,6 +9,7 @@ extra-include-dirs:/tmp/aten/include/TH
 extra-include-dirs:/tmp/aten/include/THS
 extra-include-dirs:/tmp/aten/include/THNN
 
+extra-lib-dirs: /usr/lib/x86_64-linux-gnu/
 extra-lib-dirs: /tmp/aten/lib/
 extra-lib-dirs: /tmp/ghc-8.4.2/lib/
 
