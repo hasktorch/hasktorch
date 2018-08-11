@@ -11,11 +11,11 @@ extra-include-dirs:/tmp/aten/include/THNN
 
 extra-lib-dirs: /usr/lib/x86_64-linux-gnu/
 extra-lib-dirs: /tmp/aten/lib/
-extra-lib-dirs: /tmp/ghc-8.4.2/lib/
+extra-lib-dirs: /tmp/ghc-8.4.3/lib/
 
 program-locations
-  ghc-location:     /tmp/ghc-8.4.2/bin/ghc
-  ghc-pkg-location: /tmp/ghc-8.4.2/bin/ghc-pkg
+  ghc-location:     /tmp/ghc-8.4.3/bin/ghc
+  ghc-pkg-location: /tmp/ghc-8.4.3/bin/ghc-pkg
 
 package hasktorch-zoo
   flags: -cuda
