@@ -1,9 +1,13 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE CPP #-}
 module Main where
+
+import Prelude
 
 import Data.Typeable
 import Data.List
@@ -12,14 +16,16 @@ import Control.Monad.Loops
 import Data.Monoid
 import Data.Time
 import Control.Monad.IO.Class
-import Prelude as P
 import Text.Printf
 import ListT (ListT)
 import qualified ListT
 import Numeric.Backprop as Bp
 import Numeric.Dimensions
 import System.IO.Unsafe
+import GHC.TypeLits (KnownNat)
 import Control.Concurrent
+import qualified Prelude as P
+import qualified Data.List as P ((!!))
 -- import qualified Foreign.CUDA as Cuda
 
 #ifdef CUDA
@@ -30,23 +36,28 @@ import Torch.Double as Math hiding (Sum)
 import qualified Torch.Long as Long
 #endif
 
-import Torch.Models.LeNet
+import Torch.Models.Vision.LeNet
 import Torch.Data.Loaders.Cifar10
 import Torch.Data.Metrics
 
 import Control.Monad.Trans.Except
 import System.IO (hFlush, stdout)
 
+import System.Random.Shuffle (shuffleM)
+-- batch dimension
+-- shuffle data
+-- normalize inputs
+
 main :: IO ()
 main = do
   clearScreen
-  xs  <- loadTrain Nothing -- $ Just 50
-  xs' <- loadTest  Nothing -- $ Just 10
+  xs  <- shuffleM =<< loadTrain Nothing -- $ Just 500
+  xs' <- shuffleM =<< loadTest Nothing -- $ Just 100
   net0 <- newLeNet @3 @5
   print net0
   putStrLn "Start training:"
   t0 <- getCurrentTime
-  net <- epochs xs' 0.001 t0 50 xs net0
+  net <- epochs xs' 0.01 t0 2 xs net0
   t1 <- getCurrentTime
   printf "\nFinished training!\n"
   print net

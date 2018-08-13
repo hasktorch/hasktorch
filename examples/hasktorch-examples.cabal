@@ -168,6 +168,8 @@ executable lenet-cifar10
     , time
     , transformers
 
+    , random-shuffle
+
 -- Build only with cuda flags:
 --
 -- executable nlp
