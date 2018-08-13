@@ -123,7 +123,7 @@ linear lr = liftOp2 $ op2 $ \l i ->
     accGradParameters i gout (Linear (w, b)) = Linear (addr 1 (constant 0) lr i gout, cadd (constant 0) lr gout)
 
 -- | 'linear' with a batch dimension
-linearB
+linearBatch
   :: forall s i o b
   .  Reifies s W
   => All KnownDim '[b,i,o]
@@ -131,7 +131,7 @@ linearB
   -> BVar s (Linear i o)
   -> BVar s (Tensor '[b, i])
   -> BVar s (Tensor '[b, o])
-linearB lr = liftOp2 $ op2 $ \l i -> (updateOutput i l, \gout -> (accGradParameters i gout l, updateGradInput i gout (weights l)))
+linearBatch lr = liftOp2 $ op2 $ \l i -> (updateOutput i l, \gout -> (accGradParameters i gout l, updateGradInput i gout (weights l)))
   where
     updateOutput :: Tensor '[b, i] -> Linear i o -> Tensor '[b, o]
     updateOutput i (Linear (w,b)) =
