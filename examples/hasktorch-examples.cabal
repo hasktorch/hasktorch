@@ -169,8 +169,25 @@ executable ff-untyped
       Paths_hasktorch_examples
   default-language: Haskell2010
 
-
+-- Disabled until FF2 is unit tested in hasktorch-core
+executable lenet-cifar10
+  main-is: Main.hs
+  hs-source-dirs: lenet-cifar10
+  default-language: Haskell2010
+  default-extensions: DataKinds, ScopedTypeVariables
+  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , dimensions
+    , singletons
+    , time
+    , transformers
     , random-shuffle
+  if flag(cuda)
+    cpp-options: -DCUDA
+    build-depends:
+        cuda
 
 -- Build only with cuda flags:
 --
