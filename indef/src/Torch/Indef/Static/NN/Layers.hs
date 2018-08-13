@@ -12,6 +12,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
 module Torch.Indef.Static.NN.Layers where
 
 import Data.List
@@ -36,6 +38,13 @@ flattenBP
   => BVar s (Tensor d) -> BVar s (Tensor '[Product d])
 flattenBP = liftOp1 . op1 $ \t -> (flatten t, resizeAs)
 
+-- | A backpropable 'flatten' operation with a batch dimension
+flattenBPBatch
+  :: (Reifies s W, All KnownDim '[Product d, bs], Dimensions d)
+  => Product (bs:+d) ~ Product '[bs, Product d]
+  => BVar s (Tensor (bs:+d))
+  -> BVar s (Tensor '[bs, Product d])
+flattenBPBatch = liftOp1 . op1 $ \t -> (resizeAs t, resizeAs)
 
 -------------------------------------------------------------------------------
 
