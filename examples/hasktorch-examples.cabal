@@ -165,12 +165,12 @@ executable lenet-cifar10
     , singletons
     , time
     , transformers
+    , random-shuffle
   if flag(cuda)
     cpp-options: -DCUDA
     build-depends:
         cuda
 
-    , random-shuffle
 
 -- Build only with cuda flags:
 --
