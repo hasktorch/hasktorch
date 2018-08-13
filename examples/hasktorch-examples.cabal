@@ -170,6 +170,8 @@ executable ff-untyped
   default-language: Haskell2010
 
 
+    , random-shuffle
+
 -- Build only with cuda flags:
 --
 -- executable nlp
