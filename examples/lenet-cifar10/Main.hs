@@ -70,7 +70,7 @@ main = do
     xs <- ListT.toList . taker $ defaultCifar10set m
     t1 <- getCurrentTime
     printf "Loaded %s set of size %d in %s\n" desc (length xs) (show (t1 `diffUTCTime` t0))
-    pure xs
+    pure $ fmap (\(t, c) -> (t ^/ 255, c)) xs
 
    where
     taker = case ms of
