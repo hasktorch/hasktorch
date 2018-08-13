@@ -49,12 +49,11 @@ library
     , transformers
 
   exposed-modules:
-      Torch.Models.LeNet
-      Torch.Models.Internal
       Torch.Data.Loaders.Cifar10
       Torch.Data.Metrics
-      -- Torch.Data.Runners.Cifar10
-
+      Torch.Models.Vision.LeNet
+  other-modules:
+      Torch.Models.Internal
   if flag(cuda)
     cpp-options: -DCUDA
 

@@ -99,15 +99,14 @@ cat2torch fp = do
 
       pure t
 
-onehot
+onehotL
   :: forall c sz
   . (Ord c, Bounded c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
   => c
   -> LongTensor '[10] -- '[FromEnum (MaxBound c)]
-onehot c
+onehotL c
   = Long.unsafeVector
-  $ V.toList
-  $ onehotv c
+  $ onehot c
 
 onehotT
   :: forall c sz
@@ -117,14 +116,30 @@ onehotT
 onehotT c
   = unsafeVector
   $ fmap fromIntegral
-  $ V.toList
-  $ onehotv c
+  $ onehot c
 
-onehotv :: forall i c . (Integral i, Ord c, Bounded c, Enum c) => c -> V.Vector i
-onehotv c =
-  V.generate
+onehot
+  :: forall i c
+  . (Integral i, Ord c, Bounded c, Enum c)
+  => c
+  -> [i]
+onehot c
+  = V.toList
+  $ V.generate
     (fromEnum (maxBound :: c) + 1)
     (fromIntegral . fromEnum . (== fromEnum c))
+
+onehotf
+  :: forall i c
+  . (Fractional i, Ord c, Bounded c, Enum c)
+  => c
+  -> [i]
+onehotf c
+  = V.toList
+  $ V.generate
+    (fromEnum (maxBound :: c) + 1)
+    (realToFrac . fromIntegral . fromEnum . (== fromEnum c))
+
 
 
 cifar10set :: FilePath -> Mode -> ListT IO (Tensor '[3, 32, 32], Category)
