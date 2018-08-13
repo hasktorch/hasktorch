@@ -9,15 +9,17 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeInType #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Indef.Static.Tensor.Math where
 
-import Numeric.Dimensions
+import Numeric.Dimensions -- hiding (Length)
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import System.IO.Unsafe
-import Data.Singletons.Prelude.List hiding (All, type (++))
+import Data.Singletons.Prelude (fromSing)
+import qualified Data.Singletons.Prelude.List as Sing hiding (All, type (++))
 import qualified Torch.Types.TH as TH
 import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
 
@@ -101,8 +103,8 @@ cat_ a b d = Dynamic._cat (asDynamic a) (asDynamic a) (asDynamic b) d >> pure (a
 
 -- | Static call to 'Dynamic.cat'
 cat
-  :: '(ls, r0:+rs) ~ SplitAt i d
-  => '(ls, r1:+rs) ~ SplitAt i d'
+  :: '(ls, r0:+rs) ~ Sing.SplitAt i d
+  => '(ls, r1:+rs) ~ Sing.SplitAt i d'
   => Tensor d
   -> Tensor d'
   -> Dim (i::Nat)
@@ -110,11 +112,11 @@ cat
 cat a b d = unsafePerformIO $ asStatic <$> Dynamic.cat (asDynamic a) (asDynamic b) (fromIntegral $ dimVal d)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
-cat1d :: (All KnownDim '[n1,n2,n], n ~ Sum [n1, n2]) => Tensor '[n1] -> Tensor '[n2] -> Tensor '[n]
+cat1d :: (All KnownDim '[n1,n2,n], n ~ Sing.Sum [n1, n2]) => Tensor '[n1] -> Tensor '[n2] -> Tensor '[n]
 cat1d a b = cat a b (dim :: Dim 0)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
-cat2d0 :: (All KnownDim '[n,m,n0,n1], n ~ Sum [n0, n1]) => Tensor '[n0, m] -> Tensor '[n1, m] -> (Tensor '[n, m])
+cat2d0 :: (All KnownDim '[n,m,n0,n1], n ~ Sing.Sum [n0, n1]) => Tensor '[n0, m] -> Tensor '[n1, m] -> (Tensor '[n, m])
 cat2d0 a b = cat a b (dim :: Dim 0)
 
 -- | convenience function, stack two rank-1 tensors along the 0-dimension
@@ -124,7 +126,7 @@ stack1d0 a b = cat2d0
   (unsqueeze1d (dim :: Dim 0) b)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
-cat2d1 :: (All KnownDim '[n,m,m0,m1], m ~ Sum [m0, m1]) => Tensor '[n, m0] -> Tensor '[n, m1] -> (Tensor '[n, m])
+cat2d1 :: (All KnownDim '[n,m,m0,m1], m ~ Sing.Sum [m0, m1]) => Tensor '[n, m0] -> Tensor '[n, m1] -> (Tensor '[n, m])
 cat2d1 a b = cat a b (dim :: Dim 1)
 
 -- | convenience function, stack two rank-1 tensors along the 1-dimension
@@ -135,7 +137,7 @@ stack1d1 a b = cat2d1
 
 -- | convenience function, specifying a type-safe 'cat' operation.
 cat3d0
-  :: (All KnownDim '[x,y,x0,x1,z], x ~ Sum [x0, x1])
+  :: (All KnownDim '[x,y,x0,x1,z], x ~ Sing.Sum [x0, x1])
   => Tensor '[x0, y, z]
   -> Tensor '[x1, y, z]
   -> (Tensor '[x, y, z])
@@ -143,7 +145,7 @@ cat3d0 a b = cat a b (dim :: Dim 0)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
 cat3d1
-  :: (All KnownDim '[x,y,y0,y1,z], y ~ Sum [y0, y1])
+  :: (All KnownDim '[x,y,y0,y1,z], y ~ Sing.Sum [y0, y1])
   => Tensor '[x, y0, z]
   -> Tensor '[x, y1, z]
   -> (Tensor '[x, y, z])
@@ -151,7 +153,7 @@ cat3d1 a b = cat a b (dim :: Dim 1)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
 cat3d2
-  :: (All KnownDim '[x,y,z0,z1,z], z ~ Sum [z0, z1])
+  :: (All KnownDim '[x,y,z0,z1,z], z ~ Sing.Sum [z0, z1])
   => Tensor '[x, y, z0]
   -> Tensor '[x, y, z1]
   -> (Tensor '[x, y, z])
@@ -165,6 +167,44 @@ cat3d2 a b = cat a b (dim :: Dim 2)
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 catArray :: (Dimensions d) => [Dynamic] -> DimVal -> IO (Tensor d)
 catArray ts dv = empty >>= \r -> Dynamic._catArray (asDynamic r) ts dv >> pure r
+
+catArray0 :: (Dimensions d, Dimensions d2) => [Tensor d2] -> Tensor d
+catArray0 ts = unsafePerformIO $ catArray (asDynamic <$> ts) 0
+
+{-
+catArray_
+  :: forall d ls rs out n
+  .  All Dimensions '[out]
+  => out ~ (rs ++ '[Length '[Tensor d]] ++ ls)
+  => '(ls, rs) ~ Sing.SplitAt n d
+
+  => Sing.SList '[Tensor d]
+  -> Dim n
+  -> IO (Tensor out)
+catArray_ ts dv
+  = -- fmap asStatic
+    catArray
+    (asDynamic <$> (fromSing ts :: [Tensor d]))
+    (fromIntegral $ dimVal dv)
+
+-- data Sing (z :: [a]) where
+--     SNil :: Sing ([] :: [k])
+--     SCons :: Sing (n ': n)
+
+singToList :: forall k ks k2 x . Sing.SList '[x] -> [x]
+singToList sl = go [] sl
+ where
+  go :: [x] -> Sing.SList '[x] -> [x]
+  -- go acc Sing.SNil = acc
+  -- go acc (Sing.SNil :: Sing.SList ('[] :: [x])) = acc
+  -- go acc (Sing.SConst :: Sing.Sing '[]) = acc
+  go acc (Sing.SCons k ks) = go acc ks
+
+    -- | fromSing (Sing.sNull sl) = reverse acc
+    -- | otherwise = go (fromSing (Sing.sHead sl):acc) (Sing.sTail acc)
+  -- Sing.SNil = reverse acc
+  -- go acc (Sing.SCons sval rest) = go (fromSing sval:acc) rest
+-}
 
 -- | Static call to 'Dynamic.onesLike'
 onesLike :: forall d . Dimensions d => IO (Tensor d)
