@@ -189,6 +189,7 @@ executable lenet-cifar10
     build-depends:
         cuda
 
+
 -- Build only with cuda flags:
 --
 -- executable nlp
