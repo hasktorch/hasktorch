@@ -81,6 +81,16 @@ softmax
   -> BVar s (Tensor '[n])    -- ^ output
 softmax = softmaxN (dim :: Dim 0)
 
+-- | 'softmaxN' along the mini-batch dimension.
+softmaxBatch
+  :: KnownDim b
+  => KnownDim n
+  => Reifies s W
+  => BVar s (Tensor '[b, n])    -- ^ input
+  -> BVar s (Tensor '[b, n])    -- ^ output
+softmaxBatch = softmaxN (dim :: Dim 1)
+
+
 -- | run a threshold function againts two BVar variables
 softmaxN
   :: forall s i d
