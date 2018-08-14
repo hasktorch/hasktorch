@@ -49,7 +49,7 @@ cabal new-test all
 
 usually resolved by having compatable GHC and cabal-install versions.
 
-For our own builds, we currently use ghc 8.4.2 and cabal-install 2.2.0.0 or cabal-install 2.3.0.0.
+For our own builds, we currently use ghc 8.4.3 and cabal-install 2.2.0.0 or cabal-install 2.3.0.0.
 
 ### CPU-based Compute, Missing CUDA Dependencies
 
