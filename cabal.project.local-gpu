@@ -1,0 +1,33 @@
+-- See cabal.project.local-cpu for the fully-annotated version. This file is
+-- less verbose and is preconfigured for the GPU. Nothing new is added here,
+-- lines are only removed or modified.
+
+optimization: False
+debug-info: True
+executable-stripping: False
+
+extra-lib-dirs: /home/stites/git/hasktorch/vendor/aten/build/lib/
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/TH
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/THNN
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/THC
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/THCUNN
+
+-- If you have a custom CUDA install, you may need to add:
+-----------------------------------------------------------
+-- extra-include-dirs: /usr/local/cuda/include
+-- extra-lib-dirs: /usr/local/cuda/lib64/
+
+program-locations
+  ghc-location:     /opt/ghc/8.4.3/bin/ghc
+  ghc-pkg-location: /opt/ghc/8.4.3/bin/ghc-pkg
+
+package hasktorch-zoo
+  flags: +cuda
+package hasktorch-indef
+  flags: +cuda
+package hasktorch-core
+  flags: +cuda
+package hasktorch-examples
+  flags: +cuda
+
