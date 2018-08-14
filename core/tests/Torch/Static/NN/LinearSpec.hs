@@ -88,10 +88,9 @@ singleLayer = do
           lr = 1.0
           (_, (ll', o)) = backprop2 (linear lr) ll y
 
-      it "returns updated weights" $ weights ll' =##= 1/2
-      it "returns updated bias"    $ bias    ll' =##= 1/2
-
-      it "returns the updated output tensor" $ o =##= 1/3
+      it "returns updated weights" $ weights ll' =##= 1   -- 1/2
+      it "returns updated bias"    $ bias    ll' =##= 1   -- 1/2
+      it "returns the updated output tensor" $ o =##= 2/3 -- 1/3
 
 -- ========================================================================= --
 
@@ -201,22 +200,6 @@ twoLayerForceReLU = do
     , [ 4,-4]
     ]
 
--- classNLLCriterion
---   :: (Reifies s W, All KnownDim '[n, c])
---   => IndexTensor '[n]            -- THIndexTensor *target,
---   -> BVar s (Tensor '[n, c])     -- THTensor *input,
---   -> BVar s (Tensor '[1])        -- THTensor *output,
--- classNLLCriterion = classNLLCriterion' (-100) True True
---
--- bCECriterion
---   :: (Reifies s W, KnownNat n, KnownDim n)
---   => Tensor '[n]                   -- ^ target
---   -> BVar s (Tensor '[n])          -- ^ input
---   -> BVar s (Tensor '[1])          -- ^ output
--- bCECriterion = bCECriterion' True True Nothing
---
--- twoLayerOverfit softmax    (bCECriterion (unsafeVector [0,1])) id
--- twoLayerOverfit logSoftMax (classNLLCriterion (Long.unsafeVector [0,1])) Torch.exp
 
 twoLayerOverfit
   :: (forall s . Reifies s W => BVar s (Tensor '[2])    -> BVar s (Tensor '[2])) -- ^ inference layer
