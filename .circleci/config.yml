@@ -203,7 +203,7 @@ jobs:
       - run: ghc --version
 
       - run: git submodule update --init --recursive
-      - run: ln -fs {.circleci/,}cabal.project.freeze
+      - run: ln -fs .cabal.project.freeze/8.4.3 cabal.project.freeze
       - run: ln -fs {.circleci/,}cabal.project.local
 
       - run: cabal update
@@ -212,7 +212,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".circleci/cabal.project.freeze" }}
+            - hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".cabal.project.freeze/8.4.3" }}
 
       - run: sudo apt-get update --fix-missing
       - run: sudo apt-get install libgd2-xpm-dev
@@ -220,7 +220,7 @@ jobs:
       - run: cabal new-build all
 
       - save_cache:
-          key: hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".circleci/cabal.project.freeze" }}
+          key: hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".cabal.project.freeze/8.4.3" }}
           paths:
             - dist-newstyle
             - ~/.cabal
