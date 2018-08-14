@@ -286,7 +286,7 @@ classNLLCriterion'
   => Integer                    -- int64_t ignore_index,
   -> Bool                       -- bool sizeAverage,
   -> Bool                       -- bool reduce
-  -> IndexTensor '[sz]          -- THIndexTensor *target,
+  -> IndexTensor '[sz]          -- THIndexTensor *target. _not_ a one-hot encoded vector.
   -- -> Maybe Dynamic           -- THTensor *weights,
   -> BVar s (Tensor '[sz, ps])  -- THTensor *input,
   -> BVar s (Tensor '[1])       -- THTensor *output,

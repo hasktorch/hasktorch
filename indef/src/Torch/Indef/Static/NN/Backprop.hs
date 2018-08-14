@@ -19,9 +19,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Indef.Static.NN.Backprop where
 
-import Data.Singletons.Prelude.List hiding (All, Drop, type (++))
 import Numeric.Backprop
 import Numeric.Dimensions
+import Data.Singletons.Prelude.List (SplitAt)
+import qualified Data.Singletons.Prelude.List as S -- hiding (All, Drop, Take, type (++))
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
@@ -57,8 +58,24 @@ unsqueeze1dBP d = liftOp1 . op1 $ \t ->
     go :: Tensor (rs ++ '[1] ++ ls) -> Tensor d
     go o = T.squeeze1d d o
 
-    -- d :: Dim 0
-    -- d = dim
+-- | Squeeze a dimension of size 1 out of the tensor
+squeeze1dBP
+  :: forall s d rs ls n
+  .  Reifies s W
+  => All Dimensions '[d, rs ++ ls]
+  => All KnownDim '[n]
+  => '(rs, 1:+ls) ~ (SplitAt n d)
+  => d ~ (S.Take n (rs ++ ls) ++ '[1] ++ S.Drop n (rs ++ ls))
+  => Dim n
+  -> BVar s (Tensor d)
+  -> BVar s (Tensor (rs ++ ls))
+squeeze1dBP d = liftOp1 . op1 $ \t ->
+  (T.squeeze1d d t, go)
+  where
+    go :: Tensor (rs ++ ls) -> Tensor d
+    go o = T.unsqueeze1d (dim::Dim n) o
+
+
 clip :: Reifies s W => (HsReal, HsReal) -> BVar s (Tensor '[1]) -> BVar s (Tensor '[1])
 clip (mn,mx) = liftOp1 . op1 $ \i ->
   let

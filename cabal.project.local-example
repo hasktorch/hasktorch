@@ -1,29 +1,58 @@
+-- This cabal.project.local explains how to build hasktorch locally in development
+-- mode with a CPU or GPU.
+-- =============================================================================== --
+
+-- In "developer" mode, we probably want to set these so we don't have to rebuild
+-- the world when things go bad:
+---------------------------------------------------------------------------------
 optimization: False
 debug-info: True
 executable-stripping: False
-profiling: True
 
-extra-lib-dirs: /usr/local/cuda/lib64/
-extra-include-dirs:/usr/local/cuda/include
+-- NOTE: THAT CABAL DOESN'T LIKE SYMLINKS AND DOES LIKE VERSIONS!
+-- This means that you _must_ remove the symlink libATen.so->libATen.so.1 from
+-- the build directory, but you _must have_ both files. Hard-copy libATen.so.1
+-- to libATen.so to fix this. Probably, that looks like:
+--
+-- @
+--   $ cd /home/stites/git/hasktorch/vendor/aten/build/lib/
+--   $ cp -f libATen.so{.1,}     # {,} is a bash "expand" operator
+-- @
+--
+-- Other cabal weirdness: cabal will silently ignore flags if there isn't a
+-- space between the flag+colon and the path, like below:
+------------------------------------------------------------------------------
+extra-lib-dirs: /home/stites/git/hasktorch/vendor/aten/build/lib/
 
-extra-lib-dirs: /usr/local/lib/
-extra-include-dirs:/usr/local/include/
-extra-include-dirs:/usr/local/include/TH
-extra-include-dirs:/usr/local/include/THS
-extra-include-dirs:/usr/local/include/THNN
-extra-include-dirs:/usr/local/include/THC
-extra-include-dirs:/usr/local/include/THCS
-extra-include-dirs:/usr/local/include/THCUNN
+-- This is a hack around the cabal new-* bug where you can't add multi-line `dirs`:
+-----------------------------------------------------------------------------------
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/TH
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/THNN
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/THC
+extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/THCUNN
 
--- program-locations
---   ghc-location:     /opt/ghc/8.2.2/bin/ghc
---   ghc-pkg-location: /opt/ghc/8.2.2/bin/ghc-pkg
+-- If you have a custom CUDA install, you may need to add:
+-----------------------------------------------------------
+-- extra-include-dirs: /usr/local/cuda/include
+-- extra-lib-dirs: /usr/local/cuda/lib64/
 
+-- At the moment hasktorch _only_ builds on ghc-8.4.2. Install these from haskell.org
+-- and reference the resulting binaries like so:
+-------------------------------------------------------------------------------------
+program-locations
+  ghc-location:     /opt/ghc/8.4.3/bin/ghc
+  ghc-pkg-location: /opt/ghc/8.4.3/bin/ghc-pkg
+
+
+-- Change cuda flags here:
+----------------------------------------
 package hasktorch-zoo
-  flags: +cuda
+  flags: -cuda
 package hasktorch-indef
-  flags: +cuda
+  flags: -cuda
 package hasktorch-core
-  flags: +cuda
+  flags: -cuda
 package hasktorch-examples
-  flags: +cuda
+  flags: -cuda
+

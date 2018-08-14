@@ -3,7 +3,7 @@ version: 2
 global_defaults: &defaults
   machine: true
   environment:
-    PATH_ADDITIONS: /tmp/cmake-3.10.0/bin/:/tmp/ghc-8.4.2/bin/:/tmp/cabal-2.3.0/bin/:~/.local/bin/:~/.cabal/bin/:/usr/local/bin
+    PATH_ADDITIONS: /tmp/cmake-3.10.0/bin/:/tmp/ghc-8.4.3/bin/:/tmp/cabal-2.3.0/bin/:~/.local/bin/:~/.cabal/bin/:/usr/local/bin
 
     # /usr/local/lib/:/usr/lib/x86_64-linux-gnu/
     LD_LIBRARY_PATH: /tmp/aten/lib/
@@ -16,39 +16,46 @@ update_path_command: &update_path
   run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
 
 jobs:
-  ghc-8.4.2:
+  system-libraries:
     <<: *defaults
-    working_directory: /tmp/ghc-8.4.2
+    working_directory: /
+    steps:
+      - run: sudo apt-get update --fix-missing
+      - run: sudo apt-get install libgd2-xpm-dev
+
+  ghc-8.4.3:
+    <<: *defaults
+    working_directory: /tmp/ghc-8.4.3
     steps:
       - *update_path
-      - run: wget --no-check-certificate --quiet https://downloads.haskell.org/~ghc/8.4.2/ghc-8.4.2-x86_64-deb8-linux.tar.xz
+      - run: wget --no-check-certificate --quiet https://downloads.haskell.org/~ghc/8.4.3/ghc-8.4.3-x86_64-deb8-linux.tar.xz
       - restore_cache:
           keys:
-            - ghc-cachekey-v1-{{ .Branch }}-{{ checksum "ghc-8.4.2-x86_64-deb8-linux.tar.xz" }}
+            - ghc-cachekey-v1-{{ .Branch }}-{{ checksum "ghc-8.4.3-x86_64-deb8-linux.tar.xz" }}
       - run: |
-          if [ ! -d /tmp/ghc-8.4.2/bin/ ]; then
-            echo "No cache - building GHC-8.4.2"
-            tar --strip-components=1 -xf ghc-8.4.2-x86_64-deb8-linux.tar.xz
+          if [ ! -d /tmp/ghc-8.4.3/bin/ ]; then
+            echo "No cache - building GHC-8.4.3"
+            tar --strip-components=1 -xf ghc-8.4.3-x86_64-deb8-linux.tar.xz
             ./configure --prefix=${PWD}
             make install
             cd bin
-            ln -fs ghc{-8.4.2,}
-            ln -fs ghci{-8.4.2,}
-            ln -fs ghc-pkg{-8.4.2,}
-            ln -fs haddock-ghc{-8.4.2,}
-            ln -fs runghc{-8.4.2,}
+            ln -fs ghc{-8.4.3,}
+            ln -fs ghci{-8.4.3,}
+            ln -fs ghc-pkg{-8.4.3,}
+            ln -fs haddock-ghc{-8.4.3,}
+            ln -fs runghc{-8.4.3,}
           else
-            echo "Cached ~/ghc-8.4.2 directory found" ;
+            echo "Cached ~/ghc-8.4.3 directory found" ;
           fi
       - save_cache:
-          key: ghc-cachekey-v1-{{ .Branch }}-{{ checksum "ghc-8.4.2-x86_64-deb8-linux.tar.xz" }}
+          key: ghc-cachekey-v1-{{ .Branch }}-{{ checksum "ghc-8.4.3-x86_64-deb8-linux.tar.xz" }}
           paths:
             - bin
             - lib
       - run: command -v ghc
       - run: ghc --version
       - persist_to_workspace:
-          root: /tmp/ghc-8.4.2
+          root: /tmp/ghc-8.4.3
           paths:
             - bin
             - lib
@@ -141,7 +148,7 @@ jobs:
     working_directory: /tmp/cabal-2.3.0
     steps:
       - *update_path
-      - attach_workspace: { at: /tmp/ghc-8.4.2 }
+      - attach_workspace: { at: /tmp/ghc-8.4.3 }
       - checkout
       - restore_cache:
           keys:
@@ -186,7 +193,7 @@ jobs:
 
       - attach_workspace: { at: /tmp/aten/lib }
       - attach_workspace: { at: /tmp/aten/include }
-      # attach_workspace: { at: /tmp/ghc-8.4.2 }
+      # attach_workspace: { at: /tmp/ghc-8.4.3 }
       # attach_workspace: { at: /tmp/cabal-2.3.0/bin/ }
 
       # verify tools
@@ -206,6 +213,9 @@ jobs:
       - restore_cache:
           keys:
             - hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".circleci/cabal.project.freeze" }}
+
+      - run: sudo apt-get update --fix-missing
+      - run: sudo apt-get install libgd2-xpm-dev
 
       - run: cabal new-build all
 
@@ -249,14 +259,14 @@ workflows:
   version: 2
   build:
     jobs:
-      - ghc-8.4.2
+      - ghc-8.4.3
       - cmake-3.10.0
       - aten:
           requires:
             - cmake-3.10.0
       - build:
           requires:
-            - ghc-8.4.2
+            - ghc-8.4.3
             - aten
 
 # FIXME:

@@ -65,9 +65,9 @@ spec = do
     describe "forcing ReLU activity"      twoLayerForceReLU
     describe "overfitting to [0, 1]" $ do
       describe "with softmax and binary cross-entropy" $
-        twoLayerOverfit softmax (bCECriterion (unsafeVector [0,1])) id
+        twoLayerOverfit softmax (bCECriterion (unsafeVector [0,1]) . (squeeze1dBP (dim :: Dim 0))) id
       describe "with logSoftmax and multiclass log-loss" $
-        twoLayerOverfit logSoftMax (classNLLCriterion (Long.unsafeVector [0,1])) Torch.exp
+        twoLayerOverfit logSoftMax (classNLLCriterion (Long.unsafeVector [1])) Torch.exp
 
 -- ========================================================================= --
 
@@ -88,10 +88,9 @@ singleLayer = do
           lr = 1.0
           (_, (ll', o)) = backprop2 (linear lr) ll y
 
-      it "returns updated weights" $ weights ll' =##= 1/2
-      it "returns updated bias"    $ bias    ll' =##= 1/2
-
-      it "returns the updated output tensor" $ o =##= 1/3
+      it "returns updated weights" $ weights ll' =##= 1   -- 1/2
+      it "returns updated bias"    $ bias    ll' =##= 1   -- 1/2
+      it "returns the updated output tensor" $ o =##= 2/3 -- 1/3
 
 -- ========================================================================= --
 
@@ -119,14 +118,15 @@ ff2network
   => All KnownDim '[i,h,o]
   => (forall s . Reifies s W => BVar s (Tensor '[o]) -> BVar s (Tensor '[o]))
   -> Double
-  -> BVar s (FF2Network i h o)  -- ^ ff2network architecture
-  -> BVar s (Tensor '[i])       -- ^ input
-  -> BVar s (Tensor '[o])       -- ^ output
+  -> BVar s (FF2Network i h o)     -- ^ ff2network architecture
+  -> BVar s (Tensor '[i])          -- ^ input
+  -> BVar s (Tensor '[1, o])       -- ^ output
 ff2network final lr arch inp
   = linear lr (arch ^^. layer1) inp
   & relu
   & linear lr (arch ^^. layer2)
   & final
+  & unsqueeze1dBP (dim :: Dim 0)
 
 twoLayerXavier :: Spec
 twoLayerXavier = do
@@ -200,10 +200,11 @@ twoLayerForceReLU = do
     , [ 4,-4]
     ]
 
+
 twoLayerOverfit
-  :: (forall s . Reifies s W => BVar s (Tensor '[2]) -> BVar s (Tensor '[2]))
-  -> (forall s . Reifies s W => BVar s (Tensor '[2]) -> BVar s (Tensor '[1]))
-  -> (Tensor '[2] -> Tensor '[2])
+  :: (forall s . Reifies s W => BVar s (Tensor '[2])    -> BVar s (Tensor '[2])) -- ^ inference layer
+  -> (forall s . Reifies s W => BVar s (Tensor '[1, 2]) -> BVar s (Tensor '[1])) -- ^ loss function for 1-batch training
+  -> (Tensor '[2] -> Tensor '[2])                                                -- ^ post-processing of inference
   -> Spec
 twoLayerOverfit finalLayer loss postproc = do
   it "overfits on a single input with lr=0.3 and 100 steps" . void $ do
@@ -252,14 +253,14 @@ twoLayerOverfit finalLayer loss postproc = do
       :: FF2Network 4 6 2  -- ^ ff2network architecture
       -> Tensor '[4]       -- ^ input
       -> Tensor '[2]       -- ^ output
-    infer = postproc .: evalBP2 (ff2network' undefined)
+    infer = postproc . squeeze1d (dim :: Dim 0) .: evalBP2 (ff2network' undefined)
 
     ff2network'
       :: Reifies s W
       => Double
-      -> BVar s (FF2Network 4 6 2)  -- ^ ff2network architecture
-      -> BVar s (Tensor '[4])       -- ^ input
-      -> BVar s (Tensor '[2])       -- ^ output
+      -> BVar s (FF2Network 4 6 2)     -- ^ ff2network architecture
+      -> BVar s (Tensor '[4])          -- ^ input
+      -> BVar s (Tensor '[1, 2])       -- ^ output
     ff2network' = ff2network finalLayer
 
 
