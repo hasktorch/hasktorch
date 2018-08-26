@@ -1,9 +1,20 @@
+-------------------------------------------------------------------------------
+-- 
+-- This example illustrates sampling with hasktorch using a multivariate normal
+-- sampler as an example.
+-- 
+-------------------------------------------------------------------------------
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
 import Control.Monad
 import Torch.Double
+
+-- | Create an RNG of Generator type, specify eigenvector/eigenvalues of the covariance matrix,
+--   sample 10 samples of dimensions 2 (in the first case) and 3 (in the second case), print
+--   their values.
 
 test_mvn :: IO ()
 test_mvn = do
