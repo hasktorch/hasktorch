@@ -16,90 +16,7 @@ source-repository head
 
 flag cuda
   Description: build with cuda support
-  Default: True
-
-executable lasso
-  main-is: Lasso.hs
-  hs-source-dirs: lasso
-  ghc-options: -Wall -fno-cse
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core
-    , microlens
-  other-modules:
-      Paths_hasktorch_examples
-  default-language: Haskell2010
-
-executable ad
-  main-is: AD.hs
-  hs-source-dirs:
-      ad
-  ghc-options: -Wall -fno-cse
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core
-    , singletons
-    , dimensions
-  other-modules:
-      Paths_hasktorch_examples
-  default-language: Haskell2010
-
-executable bayesian-regression
-  default-language: Haskell2010
-  main-is: BayesianRegression.hs
-  hs-source-dirs:
-      bayesian-regression
-  ghc-options: -Wall -fno-cse
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core
-  other-modules:
-      Paths_hasktorch_examples
-
-executable download-mnist
-  main-is: DownloadMNIST.hs
-  hs-source-dirs:
-      download-mnist
-  ghc-options: -Wall -fno-cse
-  build-depends:
-      HTTP
-    , base >=4.7 && <5
-    , bytestring
-    , cryptonite
-    , directory
-    , filepath
-    , hasktorch-core
-    , network-uri
-  other-modules:
-      Paths_hasktorch_examples
-  default-language: Haskell2010
-
-executable ff-typed
-  main-is: FeedForwardTyped.hs
-  hs-source-dirs:
-      ff-typed
-  ghc-options: -Wall -fno-cse
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core
-    , dimensions
-  other-modules:
-      Paths_hasktorch_examples
-  default-language: Haskell2010
-
-executable ff-untyped
-  main-is: FeedForwardUntyped.hs
-  hs-source-dirs:
-      ff-untyped
-  ghc-options: -Wall -fno-cse
-  build-depends:
-      base >=4.7 && <5
-    , hasktorch-core
-    , dimensions
-    , singletons
-  other-modules:
-      Paths_hasktorch_examples
-  default-language: Haskell2010
+  Default: False
 
 executable gradient-descent
   main-is: GradientDescent.hs
@@ -149,6 +66,91 @@ executable lenet-cifar10
   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
   if flag(cuda)
     cpp-options: -DCUDA
+
+-- Experimental / work-in-progress examples --
+
+executable lasso
+  main-is: Lasso.hs
+  hs-source-dirs: experimental/lasso
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , microlens
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
+
+executable ad
+  main-is: AD.hs
+  hs-source-dirs:
+      experimental/ad
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , singletons
+    , dimensions
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
+
+executable bayesian-regression
+  default-language: Haskell2010
+  main-is: BayesianRegression.hs
+  hs-source-dirs:
+      experimental/bayesian-regression
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+  other-modules:
+      Paths_hasktorch_examples
+
+executable download-mnist
+  main-is: DownloadMNIST.hs
+  hs-source-dirs:
+      experimental/download-mnist
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      HTTP
+    , base >=4.7 && <5
+    , bytestring
+    , cryptonite
+    , directory
+    , filepath
+    , hasktorch-core
+    , network-uri
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
+
+executable ff-typed
+  main-is: FeedForwardTyped.hs
+  hs-source-dirs:
+      experimental/ff-typed
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , dimensions
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
+
+executable ff-untyped
+  main-is: FeedForwardUntyped.hs
+  hs-source-dirs:
+      experimental/ff-untyped
+  ghc-options: -Wall -fno-cse
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core
+    , dimensions
+    , singletons
+  other-modules:
+      Paths_hasktorch_examples
+  default-language: Haskell2010
 
   build-depends:
       base >=4.7 && <5
