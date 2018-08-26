@@ -66,6 +66,23 @@ executable lenet-cifar10
   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
   if flag(cuda)
     cpp-options: -DCUDA
+  build-depends:
+      base >=4.7 && <5
+    , backprop >= 0.2
+    , dimensions
+    , directory
+    , filepath
+    , ghc-typelits-natnormalise
+    , hasktorch-core
+    , hasktorch-zoo
+    , JuicyPixels
+    , list-t
+    , microlens-th
+    , mtl
+    , monad-loops
+    , singletons
+    , time
+    , transformers
 
 -- Experimental / work-in-progress examples --
 
@@ -152,23 +169,6 @@ executable ff-untyped
       Paths_hasktorch_examples
   default-language: Haskell2010
 
-  build-depends:
-      base >=4.7 && <5
-    , backprop >= 0.2
-    , dimensions
-    , directory
-    , filepath
-    , ghc-typelits-natnormalise
-    , hasktorch-core
-    , hasktorch-zoo
-    , JuicyPixels
-    , list-t
-    , microlens-th
-    , mtl
-    , monad-loops
-    , singletons
-    , time
-    , transformers
 
 -- Build only with cuda flags:
 --
