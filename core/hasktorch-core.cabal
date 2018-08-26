@@ -16,7 +16,7 @@ source-repository head
 
 flag cuda
   Description: build with THC support
-  Default: True
+  Default: False
 
 test-suite spec
   type: exitcode-stdio-1.0

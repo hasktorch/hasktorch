@@ -1,6 +1,19 @@
+-------------------------------------------------------------------------------
+-- Toy gradient descent example
+--
+-- This example illustrates using basic linear algebra functions in a toy test
+-- example linear regression optimization. It's mainly intended for 
+-- familiarity with basic matrix/vector operations and is not optimized.
+--
+-- For something more complex than this toy case, a backprop-based 
+-- implementation would probably be preferable. 
+-- 
+-------------------------------------------------------------------------------
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+
 module Main where
 
 import Data.Proxy
@@ -14,33 +27,49 @@ import Torch.Double hiding (N)
 import qualified Torch.Double as Math
 import qualified Torch.Core.Random as RNG
 
-type N = 2000 -- sample size
-type NumP = 2
+-- N, sample size, and P dimension of model parameters
+type N = 2000
 type P = '[1, 2]
 type Precision = Double
 
 seedVal :: RNG.Seed
 seedVal = 3141592653579
 
+-- | Generate simulated data by:
+-- - Sampling random predictor values from ~ N(0, 10)
+-- - The `param` function parameter specifies ground truth values 
+--   applied to the output function `y = (b_1 x + b_0)`
+-- - For vectorization, b_0 is represented as a coefficient
+--   on a second predictor dimension that is always 1
+-- - The x vector is thus represented as a 2xN matrix
+--   [[x_0 1], [x_1 1], ...]
+-- - Add a noise component to the observed y values from ~ N(0, 2)
 genData :: Tensor '[1,2] -> IO (Tensor '[2, N], Tensor '[N])
 genData param = do
   gen <- newRNG
   RNG.manualSeed gen seedVal
-  let Just p2  = positive 2
-      Just p10 = positive 10
-  noise        :: Tensor '[N] <- normal gen 0 p2
-  predictorVal :: Tensor '[N] <- normal gen 0 p10
+  let Just noiseScale = positive 2
+      Just xScale = positive 10
+  noise        :: Tensor '[N] <- normal gen 0 noiseScale
+  predictorVal :: Tensor '[N] <- normal gen 0 xScale
   let x :: Tensor '[2, N] = resizeAs (predictorVal `cat1d` (constant 1))
   let y :: Tensor '[N]    = Math.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
 
   pure (x, y)
 
+-- | Loss is defined as the sum of squared errors
 loss :: (Tensor '[2,N], Tensor '[N]) -> Tensor '[1, 2] -> IO Precision
 loss (x, y) param = do
-  let x' = y - resizeAs (param !*! x)
-  (realToFrac . Math.sumall) <$> Math.square x'
+  let errors = y - resizeAs (param !*! x)
+  (realToFrac . Math.sumall) <$> Math.square errors
 
 
+-- | Gradient is 2/N (error) x
+--   2 is from the derivative of the squared loss
+--   N is from a mean-squared-error interpretation of the loss
+--   normalizes the scale of the rate by the size of the dataset
+--   err is from the loss definition, the multiplication by x'
+--   is from the application of the chain rule
 gradient
   :: forall n . (KnownDim n)
   => (Tensor '[2, n], Tensor '[n]) -> Tensor '[1, 2] -> IO (Tensor '[1, 2])
@@ -49,14 +78,15 @@ gradient (x, y) param = do
   let x' :: Tensor '[n, 2] = transpose2d x
   let m  :: Tensor '[1, 2] = resizeAs (err y' !*! x')
   pure $ (-2 / nsamp) *^ m
-
   where
     err :: Tensor '[1, n] -> Tensor '[1, n]
     err y' = y' - (param !*! x)
-
     nsamp :: Precision
     nsamp = realToFrac (dimVal (dim :: Dim n))
 
+-- | Runs gradient descent until a specified threshold change
+--   Note that laziness of evaluation is exploited so this sequence
+--   does not run to completion of the iterations aren't evaluated
 gradientDescent
   :: (Tensor '[2, N], Tensor '[N])
   -> Precision
@@ -76,6 +106,9 @@ gradientDescent (x, y) rate eps = go 0 []
       let param' = param ^-^ (g ^* rate)
       go (i+1) ((param, j, g):res) param'
 
+
+-- |  Run N iterations of gradient descent, `take` is used + printing
+--    is used to force evaluation
 runN :: [(Tensor '[1, 2], Precision, Tensor '[1, 2])] -> Int -> IO (Tensor '[1,2])
 runN lazyIters nIter = do
   let final = last $ take nIter lazyIters
@@ -90,6 +123,7 @@ runN lazyIters nIter = do
   print p
   pure p
 
+-- | Define ground-truth parameters, generate data, then run GD procedure.
 runExample :: IO (Tensor '[1,2])
 runExample = do
   -- Generate data w/ ground truth params
@@ -107,15 +141,7 @@ runExample = do
   x <- runN iters (fromIntegral (natVal (Proxy :: Proxy N)))
   pure x
 
-
-  -- -- peek at value w/o dispRaw pretty-printing
-  -- putStrLn "Peek at raw pointer value of 2nd parameter:"
-  -- let testVal = unsafePerformIO $ do
-  --       withForeignPtr (tdsTensor res) (\pPtr -> pure $ c_THTensor_get2d pPtr 0 1)
-  -- print testVal
-
 main :: IO ()
 main = do
   putStrLn "\nRun #1"
-  putStrLn "\nRun #2 using the same random seed"
   void runExample

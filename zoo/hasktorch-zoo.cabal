@@ -16,7 +16,7 @@ source-repository head
 
 flag cuda
   Description: build with cuda support
-  Default: True
+  Default: False
 
 library
   hs-source-dirs: src
