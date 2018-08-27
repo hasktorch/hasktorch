@@ -18,6 +18,10 @@ flag cuda
   Description: build with cuda support
   Default: False
 
+flag gd
+  Description: use gd graphics library for loading images
+  Default: False
+
 library
   hs-source-dirs: src
   ghc-options: -Wall -fno-cse -Wno-missing-signatures
@@ -40,6 +44,9 @@ library
     , filepath
     , JuicyPixels
     , gd
+    , async
+    , SafeSemaphore
+    , deepseq
 
   -- training iterator dependencies
     , list-t
@@ -49,6 +56,7 @@ library
     , transformers
 
   exposed-modules:
+      Torch.Data.Loaders.Internal
       Torch.Data.Loaders.Cifar10
       Torch.Data.Metrics
       Torch.Models.Vision.LeNet
@@ -56,4 +64,21 @@ library
       Torch.Models.Internal
   if flag(cuda)
     cpp-options: -DCUDA
+  if flag(gd)
+    cpp-options: -DUSE_GD
 
+benchmark bench
+  type: exitcode-stdio-1.0
+  hs-source-dirs: bench
+  default-language: Haskell2010
+  main-is: Main.hs
+  build-depends:
+      base
+    , hasktorch-zoo
+    , hasktorch-core
+    , random-shuffle
+    , transformers
+    , list-t
+    , criterion
+  if flag(cuda)
+    cpp-options: -DCUDA
