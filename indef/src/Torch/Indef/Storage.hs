@@ -23,6 +23,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Torch.Indef.Storage
   ( module X
+
+  , cstorage
+  , storage
+  , storageState
+  , storageStateRef
+
   , tensordata
   , size
   , set
@@ -51,6 +57,7 @@ import GHC.ForeignPtr (ForeignPtr)
 import GHC.Int
 import Control.Monad
 import Control.Monad.Managed
+import Control.DeepSeq
 
 import Torch.Indef.Types
 import Torch.Indef.Internal
@@ -127,7 +134,8 @@ newWithMapping pcc' pd ci = mkStorageIO $ \st -> do
 -- remove it!
 newWithData :: [HsReal] -> StorageSize -> IO Storage
 newWithData pr pd = mkStorageIO $ \st -> do
-  pr' <- FM.withArray (hs2cReal <$> pr) pure
+  let crs = hs2cReal <$> pr
+  pr' <- FM.withArray (deepseq crs crs) pure
   Sig.c_newWithData st pr' (fromIntegral pd)
 
 -- | Convenience method for 'newWithData'
