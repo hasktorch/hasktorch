@@ -6,6 +6,7 @@ import Foreign
 import Foreign.Storable
 import GHC.TypeLits (Nat)
 import Torch.Sig.Types.Global as X
+import Control.DeepSeq
 
 -- all C-types
 data CTensor
@@ -35,16 +36,19 @@ data CReal
 instance Num  CReal
 instance Show CReal
 instance Storable CReal
+instance NFData CReal
 
 data CAccReal
 instance Num  CAccReal
 instance Show CAccReal
 instance Storable CAccReal
+instance NFData CAccReal
 
 data HsReal
 instance Num  HsReal
 instance Show HsReal
 instance Ord HsReal
+instance NFData HsReal
 
 -- FIXME: Consider how we will add things that are Fractional-specific in the
 -- NN package like xavier instantiation.
@@ -55,6 +59,7 @@ data HsAccReal
 instance Num  HsAccReal
 instance Show HsAccReal
 instance Ord HsAccReal
+instance NFData HsAccReal
 
 real2acc :: HsReal -> HsAccReal
 acc2real :: HsAccReal -> HsReal
