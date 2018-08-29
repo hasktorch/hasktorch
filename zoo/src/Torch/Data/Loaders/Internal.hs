@@ -1,12 +1,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 module Torch.Data.Loaders.Internal where
 
+import Data.Vector (Vector)
 import Control.Concurrent (threadDelay)
-import Control.Monad (forM_)
+import Control.Monad (forM_, filterM)
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
 import GHC.Conc (getNumProcessors)
 import Numeric.Dimensions
+import System.Random.MWC (GenIO)
+import System.Random.MWC.Distributions (uniformShuffle)
+import System.Directory (listDirectory, doesDirectoryExist)
+import System.FilePath ((</>), takeExtension)
+
+import qualified Data.Vector as V
 
 import qualified Control.Concurrent.MSem as MSem (new, with)
 import qualified Control.Concurrent.Async as Async
@@ -26,11 +34,13 @@ import qualified Torch.Long as Long
 #endif
 
 
+-- | asyncronously map across a pool with a maximum level of concurrency
 mapPool :: Traversable t => Int -> (a -> IO b) -> t a -> IO (t b)
 mapPool mx fn xs = do
   sem <- MSem.new mx
   Async.mapConcurrently (MSem.with sem . fn) xs
 
+-- | load an RGB PNG image into a Torch tensor
 rgb2torch
   :: forall h w . (KnownDim h, KnownDim w)
   => FilePath -> ExceptT String IO (Tensor '[3, h, w])
@@ -54,7 +64,34 @@ rgb2torch fp = do
     = lift . forM_ [(h, w) | h <- [0.. fromIntegral (dimVal (dim :: Dim h)) - 1]
                            , w <- [0.. fromIntegral (dimVal (dim :: Dim w)) - 1]]
 
+-- | Given a folder with subfolders of category images, return a uniform-randomly
+-- shuffled list of absolute filepaths with the corresponding category.
+shuffleCatFolders
+  :: forall c
+  .  GenIO                        -- ^ generator for shuffle
+  -> (FilePath -> Maybe c)        -- ^ how to convert a subfolder into a category
+  -> FilePath                     -- ^ absolute path of the dataset
+  -> IO (Vector (c, FilePath))    -- ^ shuffled list
+shuffleCatFolders g cast path = do
+  cats <- filterM (doesDirectoryExist) =<< listDirectory path
+  imgfiles <- sequence $ catContents <$> cats
+  uniformShuffle (V.concat imgfiles) g
+ where
+  catContents :: FilePath -> IO (Vector (c, FilePath))
+  catContents catFP =
+    case cast catFP of
+      Nothing -> pure mempty
+      Just c -> do
+        files <- listDirectory (path </> catFP)
+        pure . V.fromList . fmap (c,) . filter isImage $ files
+
+-- | verifies that an absolute filepath is an image
+isImage :: FilePath -> Bool
+isImage = (== ".png") . takeExtension
+
+#ifdef DEBUG
 main = do
   nprocs <- getNumProcessors
   putStrLn $ "number of cores: " ++ show nprocs
   mapPool nprocs (\x -> threadDelay 100000 >> print x >> pure x) [1..100]
+#endif
