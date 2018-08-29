@@ -1,18 +1,29 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
 import Control.Monad (void)
 
+#ifdef CUDA
+import Torch.Cuda.Double
+import qualified Torch.Cuda.Double as Math
+#else
 import Torch.Double
 import qualified Torch.Core.Random as RNG (newRNG)
 import qualified Torch.Double as Math
--- import Torch.Core.Tensor.Static.Math as Math
--- import Torch.Core.Tensor.Static.Math.Infix
+#endif
+
+
+#ifdef CUDA
+tensortype = "CUDA Tensors"
+#else
+tensortype = "CPU Tensors"
+#endif
 
 main :: IO ()
 main = do
-  h1 "Example Usage of Typed Tensors"
+  h1 $ "Example Usage of Typed " ++ tensortype
   initialization
   matrixVectorOps
   valueTransformations
@@ -43,20 +54,26 @@ initialization = void $ do
     pure listVec2
 
   section "Random values" $ do
-    gen :: Generator <- RNG.newRNG
     let Just p = ord2Tuple (1, 2)
-    randMat :: DoubleTensor '[4, 4] <- uniform gen p
-    pure randMat
+#ifdef CUDA
+    randMat <- uniform p
+#else
+    randMat <- (`uniform` p) =<< RNG.newRNG
+#endif
+    pure (randMat :: DoubleTensor '[4, 4])
 
 matrixVectorOps :: IO ()
 matrixVectorOps = void $ do
   h2 "Matrix/vector operations"
-  gen <- RNG.newRNG
 
   randMat :: DoubleTensor '[2, 2] <-
     section' "Random matrix" $ do
       let Just p = ord2Tuple (-1, 1)
-      uniform gen p
+#ifdef CUDA
+      uniform p
+#else
+      RNG.newRNG >>= (`uniform` p)
+#endif
 
   constVec :: DoubleTensor '[2] <-
     section' "Constant vector" $
@@ -79,12 +96,14 @@ valueTransformations :: IO ()
 valueTransformations = void $ do
   h2 "Batch tensor value transformations"
 
-  gen <- RNG.newRNG
-
   randMat :: DoubleTensor '[4, 4] <-
     section' "Random matrix" $ do
       let Just p = ord2Tuple (1, 3)
-      uniform gen p
+#ifdef CUDA
+      uniform p
+#else
+      RNG.newRNG >>= (`uniform` p)
+#endif
 
   section "Negated" $
     neg randMat
