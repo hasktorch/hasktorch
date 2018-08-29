@@ -184,10 +184,17 @@ executable lenet-cifar10
       base >=4.7 && <5
     , hasktorch-core
     , dimensions
+    , hasktorch-zoo
+
+    , dlist
+    , list-t
+    , mtl
+    , monad-loops
+    , mwc-random
+    , vector
     , singletons
     , time
     , transformers
-    , random-shuffle
     , safe-exceptions
   if flag(debug)
     cpp-options: -DDEBUG
