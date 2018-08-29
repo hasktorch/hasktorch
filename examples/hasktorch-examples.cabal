@@ -18,6 +18,10 @@ flag cuda
   Description: build with cuda support
   Default: False
 
+flag debug
+  Description: build with extremely verbose output and assertions
+  Default: False
+
 executable gradient-descent
   main-is: GradientDescent.hs
   hs-source-dirs:
@@ -184,6 +188,9 @@ executable lenet-cifar10
     , time
     , transformers
     , random-shuffle
+    , safe-exceptions
+  if flag(debug)
+    cpp-options: -DDEBUG
   if flag(cuda)
     cpp-options: -DCUDA
     build-depends:

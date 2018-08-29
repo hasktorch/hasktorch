@@ -26,6 +26,7 @@ import GHC.TypeLits (KnownNat)
 import Control.Concurrent
 import qualified Prelude as P
 import qualified Data.List as P ((!!))
+import Control.Exception.Safe
 -- import qualified Foreign.CUDA as Cuda
 
 #ifdef CUDA
@@ -51,8 +52,8 @@ import System.Random.Shuffle (shuffleM)
 main :: IO ()
 main = do
   clearScreen
-  xs  <- shuffleM =<< loadTrain Nothing -- $ Just 500
-  xs' <- shuffleM =<< loadTest Nothing -- $ Just 100
+  xs  <- loadData Train $ Just 500
+  xs' <- loadData Test  $ Just 100
   net0 <- newLeNet @3 @5
   print net0
   putStrLn "Start training:"
@@ -63,16 +64,36 @@ main = do
   print net
   putStrLn "\ndone!"
  where
-  loadTest  = loadData Test
-  loadTrain = loadData Train
+  loadData
+    :: Mode
+    -> Maybe Int
+    -> IO [(Tensor '[3, 32, 32], Category)]
   loadData m ms = do
     t0 <- getCurrentTime
     xs <- ListT.toList . taker $ defaultCifar10set m
     t1 <- getCurrentTime
     printf "Loaded %s set of size %d in %s\n" desc (length xs) (show (t1 `diffUTCTime` t0))
-    pure $ fmap (\(t, c) -> (t ^/ 255, c)) xs
+#ifdef DEBUG
+    assert $ fst <$> xs
+#endif
+    shuffleM $ fmap (\(t, c) -> (t ^/ 255, c)) xs
 
    where
+    assert :: [Tensor '[3, 32, 32]] -> IO ()
+    assert ts = mapM_ assert1 ts
+
+    assert1 :: Tensor '[3, 32, 32] -> IO ()
+    assert1 t = do
+      les <- leValueT t 255
+      ges <- geValueT t 0
+      if   sumall les == (3*32*32)
+        && sumall ges == (3*32*32)
+      then pure ()
+      else throwString (show t)
+
+    taker
+      :: ListT IO (Tensor '[3, 32, 32], Category)
+      -> ListT IO (Tensor '[3, 32, 32], Category)
     taker = case ms of
               Just s -> ListT.take s
               Nothing -> id
