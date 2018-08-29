@@ -8,6 +8,7 @@ module Torch.Data.Loaders.Cifar10 where
 
 import Control.Monad
 import Data.Char
+import Data.Maybe
 import Data.List
 import System.Directory
 import System.FilePath
@@ -79,9 +80,6 @@ category_path cifarpath m c = intercalate "/"
 categoryImgs :: FilePath -> IO [FilePath]
 categoryImgs fp = fmap (fp </>) . filter ((== ".png") . takeExtension) <$> getDirectoryContents fp
 
-cat2torch :: FilePath -> IO [Tensor '[3, 32, 32]]
-cat2torch = cat2torchThreaded 1
-
 cat2torchThreaded :: Int -> FilePath -> IO [Tensor '[3, 32, 32]]
 cat2torchThreaded mx fp = do
   ims <- categoryImgs fp
@@ -95,20 +93,24 @@ cat2torchThreaded mx fp = do
       Left _ -> pure Nothing
       Right t -> pure $ Just t
 
+cat2torch :: FilePath -> IO [Tensor '[3, 32, 32]]
+cat2torch fp = do
+  ims <- categoryImgs fp
+  counter <- newIORef (0 :: Int)
+  fmap catMaybes . sequence $ one counter (length ims) <$> ims
 
-  -- ims <- lift $ categoryImgs fp
-  -- counter <- lift $ newIORef (0 :: Int)
-  -- im <- fromFoldable ims -- (Data.List.take 20 ims)
+ where
+  one :: IORef Int -> Int -> FilePath -> IO (Maybe (Tensor '[3, 32, 32]))
+  one counter l im =
+    runExceptT (I.rgb2torch (fp </> im)) >>= \case
+      Left _ -> pure Nothing
+      Right t -> do
+        c <- (modifyIORef counter (+ 1) >> readIORef counter)
+        printf "\r[%d/%d] img: %s" c l (fp </> im)
+        hFlush stdout
+        pure (Just t)
 
-  -- lift (runExceptT (I.rgb2torch (fp </> im))) >>= \case
-  --   Left _ -> mempty
-  --   Right t -> do
-  --     lift $ do
-  --       c <- (modifyIORef counter (+ 1) >> readIORef counter)
-  --       printf "\r[%d/%d] img: %s" c (length ims) (fp </> im)
-  --       hFlush stdout
 
-  --     pure t
 
 onehotL
   :: forall c sz
@@ -212,12 +214,4 @@ test
 --       , [0.5,0.5,0.5]
 --       ] :: CPU.Tensor '[2,3])
 
-#ifdef DEBUG
--- example use-case
-main :: IO ()
-main = do
-  forM_ [minBound..maxBound :: Mode] $ \m -> do
-    l <- toList (defaultCifar10set m)
-    print $ length l
-#endif
 
