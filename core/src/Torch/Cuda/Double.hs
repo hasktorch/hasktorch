@@ -9,7 +9,7 @@
 -------------------------------------------------------------------------------
 module Torch.Cuda.Double (module X) where
 
-import Numeric.Dimensions
+import Numeric.Dimensions as X
 import Torch.Types.THC as X
 import Torch.Cuda.Double.NN as X
 

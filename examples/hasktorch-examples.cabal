@@ -127,6 +127,8 @@ executable bayesian-regression
     , hasktorch-core
   other-modules:
       Paths_hasktorch_examples
+  if flag(cuda)
+    cpp-options: -DCUDA
 
 executable download-mnist
   main-is: DownloadMNIST.hs
