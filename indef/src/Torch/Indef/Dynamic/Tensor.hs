@@ -49,6 +49,7 @@ import qualified Torch.Sig.Storage         as StorageSig (c_size)
 import Torch.Indef.Types
 import Torch.Indef.Internal
 import Torch.Indef.Index hiding (withDynamicState)
+import qualified Torch.Indef.Storage as Storage
 
 instance Show Dynamic where
   show t = unsafePerformIO $ do
@@ -585,6 +586,14 @@ vector l = unsafeDupablePerformIO $ do
  where
   upd :: Dynamic -> (Word, HsReal) -> IO ()
   upd t (idx, v) = setDim'_ t (someDimsVal [idx]) v
+
+{- | create a 1d Dynamic tensor from a list of elements.
+-- currently getting an error with Storage free
+vectorFast :: [HsReal] -> Dynamic
+vectorFast l = unsafeDupablePerformIO $ do
+  st <- Storage.fromList l
+  newWithStorage1d st (genericLength l) (genericLength l + 1, genericLength l + 1)
+  -}
 
 -- | resize a dynamic tensor with runtime 'SomeDims' representation of its new shape. Returns a pure copy of the
 -- input tensor.
