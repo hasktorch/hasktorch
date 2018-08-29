@@ -1,47 +1,33 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
-module Torch.Data.Loaders.Cifar10 where
+module Torch.Data.Loaders.Cifar10
+  ( default_cifar_path
+  , Mode(..)
+  , mode_path
+  , testLength
+  , trainLength
+  , Category(..)
+  , I.rgb2torch
+  , cifar10set
+  , defaultCifar10set
+  ) where
 
-import Control.Monad
-import Data.Char
-import Data.Maybe
-import Data.List
-import System.Directory
-import System.FilePath
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Class
-import ListT
-import Data.Singletons
-import Numeric.Dimensions
-import Data.Singletons.Prelude.Enum
-import GHC.TypeLits
+import System.FilePath ((</>))
+import Data.Proxy (Proxy(..))
 import GHC.Generics (Generic)
+import Text.Read (readMaybe)
 import Control.DeepSeq (NFData)
-import Numeric.Backprop
-
-
-import Data.Maybe
-
-import Text.Printf
-import System.IO (hFlush, stdout)
-import Data.IORef
-
-import qualified Data.Vector as V
+import Data.Vector (Vector)
+import System.Random.MWC (GenIO, createSystemRandom)
 
 #ifdef CUDA
 import Torch.Cuda.Double
-import qualified Torch.Cuda.Long as Long
 #else
 import Torch.Double
-import qualified Torch.Long as Long
 #endif
 
-import qualified Torch.Double as CPU
-import qualified Torch.Long as CPULong
+import qualified Data.Char as Char
 import qualified Torch.Data.Loaders.Internal as I
 
 -- This should be replaced with a download-aware cache.
@@ -68,117 +54,30 @@ data Category
   | Horse       -- 8
   | Ship        -- 9
   | Truck       -- 10
-  deriving (Eq, Enum, Ord, Show, Bounded, Generic, NFData)
+  deriving (Eq, Enum, Ord, Show, Bounded, Generic, NFData, Read)
 
-category_path :: FilePath -> Mode -> Category -> FilePath
-category_path cifarpath m c = intercalate "/"
-  [ cifarpath
-  , toLower <$> show m
-  , toLower <$> show c
-  ]
+mode_path :: FilePath -> Mode -> FilePath
+mode_path cifarpath m = cifarpath </> (Char.toLower <$> show m)
 
-categoryImgs :: FilePath -> IO [FilePath]
-categoryImgs fp = fmap (fp </>) . filter ((== ".png") . takeExtension) <$> getDirectoryContents fp
-
-cat2torchThreaded :: Int -> FilePath -> IO [Tensor '[3, 32, 32]]
-cat2torchThreaded mx fp = do
-  ims <- categoryImgs fp
-  mts <- I.mapPool mx (mkTen) ims
-  pure $ catMaybes mts
-
+cifar10set :: GenIO -> FilePath -> Mode -> IO (Vector (Category, FilePath))
+cifar10set g p m = I.shuffleCatFolders g cast (mode_path p m)
  where
-  mkTen :: FilePath -> IO (Maybe (Tensor '[3, 32, 32]))
-  mkTen fp =
-    runExceptT (I.rgb2torch fp) >>= \case
-      Left _ -> pure Nothing
-      Right t -> pure $ Just t
+  cast :: FilePath -> Maybe Category
+  cast fp =
+    case filter (not . (`elem` "/\\")) fp of
+      h:tl -> readMaybe (Char.toUpper h : map Char.toLower tl)
+      _    -> Nothing
 
-cat2torch :: FilePath -> IO [Tensor '[3, 32, 32]]
-cat2torch fp = do
-  ims <- categoryImgs fp
-  counter <- newIORef (0 :: Int)
-  fmap catMaybes . sequence $ one counter (length ims) <$> ims
+defaultCifar10set :: Mode -> IO (Vector (Category, FilePath))
+defaultCifar10set m =
+  createSystemRandom >>= \g -> cifar10set g default_cifar_path m
 
- where
-  one :: IORef Int -> Int -> FilePath -> IO (Maybe (Tensor '[3, 32, 32]))
-  one counter l im =
-    runExceptT (I.rgb2torch (fp </> im)) >>= \case
-      Left _ -> pure Nothing
-      Right t -> do
-        c <- (modifyIORef counter (+ 1) >> readIORef counter)
-        printf "\r[%d/%d] img: %s" c l (fp </> im)
-        hFlush stdout
-        pure (Just t)
-
-
-
-onehotL
-  :: forall c sz
-  . (Ord c, Bounded c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
-  => c
-  -> LongTensor '[10] -- '[FromEnum (MaxBound c)]
-onehotL c
-  = Long.unsafeVector
-  $ onehot c
-
-onehotT
-  :: forall c sz
-  . (Ord c, Bounded c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
-  => c
-  -> Tensor '[10] -- '[FromEnum (MaxBound c)]
-onehotT c
-  = unsafeVector
-  $ fmap fromIntegral
-  $ onehot c
-
-onehot
-  :: forall i c
-  . (Integral i, Ord c, Bounded c, Enum c)
-  => c
-  -> [i]
-onehot c
-  = V.toList
-  $ V.generate
-    (fromEnum (maxBound :: c) + 1)
-    (fromIntegral . fromEnum . (== fromEnum c))
-
-onehotf
-  :: forall i c
-  . (Fractional i, Ord c, Bounded c, Enum c)
-  => c
-  -> [i]
-onehotf c
-  = V.toList
-  $ V.generate
-    (fromEnum (maxBound :: c) + 1)
-    (realToFrac . fromIntegral . fromEnum . (== fromEnum c))
-
-cifar10set :: FilePath -> Mode -> ListT IO (Tensor '[3, 32, 32], Category)
-cifar10set = cifar10setThreaded 1
-
-cifar10setThreaded :: Int -> FilePath -> Mode -> ListT IO (Tensor '[3, 32, 32], Category)
-cifar10setThreaded j fp m = do
-  c <- fromFoldable [minBound..mx]
-  lift $ printf "\n[%s](%d/%d)\n" (show c) (1 + fromEnum c) (1 + fromEnum mx)
-  ts <- lift $ cat2torchThreaded j (category_path fp m c)
-  t <- fromFoldable ts
-  pure (t, c)
- where
-  mx :: Category
-  mx = maxBound
-
-defaultCifar10setThreaded :: Mode -> ListT IO (Tensor '[3, 32, 32], Category)
-defaultCifar10setThreaded = cifar10setThreaded 10 default_cifar_path
-
-defaultCifar10set :: Mode -> ListT IO (Tensor '[3, 32, 32], Category)
-defaultCifar10set = cifar10set default_cifar_path
-
-test :: Tensor '[1]
-test
-  = evalBP
-      (classNLLCriterion (Long.unsafeVector [2] :: Long.Tensor '[1]))
-      (unsqueeze1d (dim :: Dim 0) $ unsafeVector [1,0,0] :: Tensor '[1, 3])
-
+-- test :: Tensor '[1]
+-- test
+--   = evalBP
+--       (classNLLCriterion (Long.unsafeVector [2] :: Long.Tensor '[1]))
+--       (unsqueeze1d (dim :: Dim 0) $ unsafeVector [1,0,0] :: Tensor '[1, 3])
+--
 -- test2 :: Tensor '[1]
 -- test2
 --   = evalBP

@@ -42,11 +42,10 @@ library
   -- data loader dependencies
     , directory
     , filepath
-    , JuicyPixels
-    , gd
     , async
     , SafeSemaphore
     , deepseq
+    , mwc-random
 
   -- training iterator dependencies
     , list-t
@@ -59,13 +58,20 @@ library
       Torch.Data.Loaders.Internal
       Torch.Data.Loaders.Cifar10
       Torch.Data.Metrics
+      Torch.Data.OneHot
       Torch.Models.Vision.LeNet
   other-modules:
       Torch.Models.Internal
   if flag(cuda)
     cpp-options: -DCUDA
+
   if flag(gd)
     cpp-options: -DUSE_GD
+    build-depends:
+        gd
+  else
+    build-depends:
+        JuicyPixels
 
 benchmark bench
   type: exitcode-stdio-1.0
