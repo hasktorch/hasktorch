@@ -69,8 +69,12 @@ _tril r t = Dynamic._tril (asDynamic r) (asDynamic t)
 _triu r t = Dynamic._triu (asDynamic r) (asDynamic t)
 -- | Static call to 'Dynamic.eye_'
 eye_ r = Dynamic.eye_ (asDynamic r)
--- | Static call to 'Dynamic.trace'
-trace r = Dynamic.trace (asDynamic r)
+
+-- | Returns the trace (sum of the diagonal elements) of a matrix x. This is
+-- equal to the sum of the eigenvalues of x.
+--
+-- Static call to 'Dynamic.ttrace'
+ttrace r = Dynamic.ttrace (asDynamic r)
 -- | Static call to 'Dynamic._arange'
 _arange r = Dynamic._arange (asDynamic r)
 -- | Static call to 'Dynamic.range_'

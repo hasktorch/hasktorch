@@ -72,7 +72,7 @@ matrixVectorOps = void $ do
     pure $ constVec <.> constVec
 
   showSection "Matrix trace" $
-    trace randMat
+    ttrace randMat
 
 
 valueTransformations :: IO ()

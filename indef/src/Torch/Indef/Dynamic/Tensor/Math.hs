@@ -157,8 +157,8 @@ _nonzero ix t = withDynamicState t $ \s' t' -> Ix.withDynamicState ix $ \_ ix' -
 
 -- | Returns the trace (sum of the diagonal elements) of a matrix x. This is equal to the sum of the
 -- eigenvalues of x.
-trace :: Dynamic -> IO HsAccReal
-trace t = withDynamicState t (fmap c2hsAccReal .: Sig.c_trace)
+ttrace :: Dynamic -> IO HsAccReal
+ttrace t = withDynamicState t (fmap c2hsAccReal .: Sig.c_trace)
 
 -- | mutates a tensor to be an @n × m@ identity matrix with ones on the diagonal and zeros elsewhere.
 eye_
