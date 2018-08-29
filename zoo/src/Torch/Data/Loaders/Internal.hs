@@ -73,7 +73,7 @@ shuffleCatFolders
   -> FilePath                     -- ^ absolute path of the dataset
   -> IO (Vector (c, FilePath))    -- ^ shuffled list
 shuffleCatFolders g cast path = do
-  cats <- filterM (doesDirectoryExist) =<< listDirectory path
+  cats <- filterM (doesDirectoryExist . (path </>)) =<< listDirectory path
   imgfiles <- sequence $ catContents <$> cats
   uniformShuffle (V.concat imgfiles) g
  where
@@ -81,9 +81,13 @@ shuffleCatFolders g cast path = do
   catContents catFP =
     case cast catFP of
       Nothing -> pure mempty
-      Just c -> do
-        files <- listDirectory (path </> catFP)
-        pure . V.fromList . fmap (c,) . filter isImage $ files
+      Just c ->
+        let
+          fdr = path </> catFP
+          asPair img = (c, fdr </> img)
+        in
+          V.fromList . fmap asPair . filter isImage
+          <$> listDirectory fdr
 
 -- | verifies that an absolute filepath is an image
 isImage :: FilePath -> Bool
