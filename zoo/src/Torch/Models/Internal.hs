@@ -45,12 +45,12 @@ newConv2d = fmap Conv2d . newLayerWithBias $
 -- | uniform random initialization
 newLayerWithBias :: All Dimensions '[d,d'] => Word -> IO (Tensor d, Tensor d')
 newLayerWithBias n = do
+  let Just pair = ord2Tuple (-stdv, stdv)
 #ifdef CUDA
-  (,) <$> uniform (-stdv) stdv
-      <*> uniform (-stdv) stdv
+  (,) <$> uniform pair
+      <*> uniform pair
 #else
   g <- newRNG
-  let Just pair = ord2Tuple (-stdv, stdv)
   manualSeed g 10
   (,) <$> uniform g pair
       <*> uniform g pair

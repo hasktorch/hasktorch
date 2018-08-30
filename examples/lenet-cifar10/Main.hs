@@ -12,7 +12,7 @@ module Main where
 import Prelude
 
 import Data.DList (DList)
-import Data.Either (fromRight)
+import Data.Either -- (fromRight, is)
 import GHC.Exts
 import Data.Typeable
 import Data.List
@@ -33,6 +33,9 @@ import Control.Concurrent
 import qualified Prelude as P
 import qualified Data.List as P ((!!))
 import Control.Exception.Safe
+#ifdef DEBUG
+import Debug.Trace
+#endif
 -- import qualified Foreign.CUDA as Cuda
 
 #ifdef CUDA
@@ -65,24 +68,26 @@ main :: IO ()
 main = do
   clearScreen
   g <- MWC.initialize (V.singleton 42)
+  -- foo <- V.take 1 <$> cifar10set g default_cifar_path Train
+  -- print foo
+  -- V.mapM getdata (prepdata foo) >>= print
   ltrain <- prepdata . V.take 250 <$> cifar10set g default_cifar_path Train
   ltest  <- prepdata . V.take 100 <$> cifar10set g default_cifar_path Test
   let (lval, lhold) = V.splitAt (V.length ltest `P.div` 2) ltest
   net0 <- newLeNet @3 @5
   print net0
 
-  putStrLn "\nHoldout Results on initial net: "
+  putStr "\nInitial Holdout:\t"
   hold <- testNet net0 lhold
 
-  putStrLn "Start training:"
   t0 <- getCurrentTime
   net <- epochs lval 0.01 t0 2 ltrain net0
   t1 <- getCurrentTime
   printf "\nFinished training!\n"
 
-  putStrLn "\nHoldout Results on final net: "
-  _ <- testNet net hold
-  putStrLn "\nDone!"
+  -- putStrLn "\nHoldout Results on final net: "
+  -- _ <- testNet net hold
+  -- putStrLn "\nDone!"
 
 -- ========================================================================= --
 -- Data processing + bells and whistles for a slow loader
@@ -114,9 +119,8 @@ prepdata = fmap (second Left)
 
 -- | get something usable from a lazy datapoint
 getdata :: LDatum -> IO (Category, Tensor '[3, 32, 32])
-getdata = fmap (second (fromRight impossible)) . forcetensor
-  where
-    impossible = error "impossible: left after forcetensor"
+getdata (c, Right t) = pure (c, t)
+getdata (c, Left fp) = (c,) <$> preprocess fp
 
 -- | force a file into a tensor
 forcetensor :: LDatum -> IO LDatum
@@ -130,18 +134,25 @@ forcetensor = \case
 
 testNet :: (ch ~ 3, step ~ 5) => LeNet ch step -> LDataSet -> IO LDataSet
 testNet net ltest = do
-  test <- V.mapM getdata ltest
+  test <-
+    if all isRight (V.map snd ltest)
+    then pure $ V.map (second (fromRight undefined)) ltest
+    else V.mapM getdata ltest
+
   let
     testX = V.toList $ fmap snd test
     testY = V.toList $ fmap fst test
     preds = map (infer net) testX
     acc = genericLength (filter id $ zipWith (==) preds testY) / genericLength testY
 
-  printf ("[test accuracy: %.1f%% / %d] All same? %s") (acc * 100 :: Float) (length testY)
+  printf ("[test accuracy: %.1f%% / %d]\tAll same? %s")
+    (acc * 100 :: Float)
+    (length testY)
     (if all (== head preds) preds then show (head preds) else "No.")
+
   hFlush stdout
 
-  pure (fmap (id *** Right) test)
+  pure $ fmap (second Right) test
 
 
 -- ========================================================================= --
@@ -157,7 +168,7 @@ epochs
   -> LeNet ch step       -- ^ initial architecture
   -> IO (LeNet ch step)
 epochs lval lr t0 mx ltrain net0 = do
-  printf "initial "
+  putStr "\nInitial Validation:\t"
   val <- testNet net0 lval
   runEpoch val 1 net0
   where
@@ -165,8 +176,9 @@ epochs lval lr t0 mx ltrain net0 = do
     runEpoch val e net
       | e > mx    = pure net
       | otherwise = do
-        printf "\n[Epoch %d/%d]\n" e mx
-        (net', train) <- runBatches (dim :: Dim 4) lr t0 e ltrain net
+        putStr "\n"
+        let estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
+        (net', train) <- runBatches estr (dim :: Dim 4) lr t0 e ltrain net
         testNet net' val
         runEpoch val (e + 1) net'
 
@@ -178,7 +190,7 @@ mkBatches sz ds = DL.toList $ go mempty ds
     if V.null src
     then bs
     else
-      let (b, nxt) = V.splitAt sz ds
+      let (b, nxt) = V.splitAt sz src
       in go (bs `DL.snoc` b) nxt
 
 
@@ -189,7 +201,8 @@ runBatches
   => KnownDim (batch * 10)
   => KnownNat (batch * 10)
 
-  => Dim batch
+  => String
+  -> Dim batch
   -> HsReal
   -> UTCTime
   -> Int
@@ -197,17 +210,44 @@ runBatches
   -> LeNet ch step
 
   -> IO (LeNet ch step, LDataSet)
-runBatches d lr t00 e lds net = do
-  res <- V.ifoldM' go (net, DL.empty) lbatches
+runBatches estr d lr t00 e lds net = do
+  res <- V.ifoldM go (net, DL.empty) lbatches
   pure $ second (V.concat . DL.toList) res
  where
+  bs :: Word
+  bs = dimVal d
+
   lbatches :: Vector LDataSet
   lbatches = V.fromList $ mkBatches (fromIntegral bs) lds
+
+  go
+    :: (LeNet ch step, DList LDataSet)
+    -> Int
+    -> LDataSet
+    -> IO (LeNet ch step, DList LDataSet)
+  go (!net, !seen) !bid !lzy = do
+    fcd <- V.mapM forcetensor lzy
+    btensor fcd >>= \case
+        Nothing -> pure (net, seen)
+        Just (ys, xs) -> do
+          let (net', loss) = trainStep lr net xs ys
+          t1 <- getCurrentTime
+          let diff = realToFrac (t1 `diffUTCTime` t00) :: Float
+          printf (setRewind ++ estr ++ "(%db#%03d)[mse %.4f](elapsed: %.2fs)")
+            bs (bid+1)
+            (loss `get1d` 0)
+            diff -- ((t1 `diffUTCTime` t00))
+          hFlush stdout
+          pure (net', seen `DL.snoc` fcd)
 
   btensor :: LDataSet -> IO (Maybe (Tensor '[batch, 10], Tensor '[batch, 3, 32, 32]))
   btensor lds
     | V.length lds /= (fromIntegral bs) = pure Nothing
-    | otherwise = (Just . (toYs &&& toXs) . V.toList) <$> V.mapM getdata lds
+    | otherwise = do
+      -- ds <- V.mapM getdata lds
+      -- pure $ (Just . (toYs &&& toXs) . V.toList) ds
+
+      (Just . (toYs &&& toXs) . V.toList) <$> V.mapM getdata lds
     where
       toYs :: [(Category, Tensor '[3, 32, 32])] -> Tensor '[batch, 10]
       toYs = unsafeMatrix . fmap (onehotf . fst)
@@ -215,28 +255,6 @@ runBatches d lr t00 e lds net = do
       toXs :: [(Category, Tensor '[3, 32, 32])] ->  Tensor '[batch, 3, 32, 32]
       toXs = catArray0 . fmap (unsqueeze1d (dim :: Dim 0) . snd)
 
-  bs :: Word
-  bs = dimVal d
-
-  -- ifoldM' :: Monad m => (a -> Int -> b -> m a) -> a -> Vector b -> m a
-  go
-    :: (LeNet ch step, DList LDataSet)
-    -> Int
-    -> LDataSet
-    -> IO (LeNet ch step, DList LDataSet)
-  go (net, seen) bid lzy = do
-    fcd <- V.mapM forcetensor lzy
-    btensor fcd >>= \case
-        Nothing -> pure (net, seen)
-        Just (ys, xs) -> do
-          let (net', loss) = trainStep lr net xs ys
-          t1 <- getCurrentTime
-          printf (setRewind ++ "(%d-batch #%d)[mse %.4f] (elapsed: %s)")
-            bs (bid+1)
-            (loss `get1d` 0)
-            (show (t1 `diffUTCTime` t00))
-          hFlush stdout
-          pure (net', seen `DL.snoc` fcd)
 
  -- | Erase the last line in an ANSI terminal
 clearLn :: IO ()
@@ -293,7 +311,6 @@ trainStep
   -> (LeNet ch step, Tensor '[1])
 trainStep lr net xs ys = (Bp.add net gnet, out)
   where
-    out :: Tensor '[1]
     (out, (gnet, _)) = backprop2 ( mSECriterion ys .: lenetBatch lr) net xs
 
 
