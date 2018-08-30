@@ -26,6 +26,7 @@ import Control.Applicative ((<|>))
 import Control.Monad
 import Control.Monad.Managed
 import Control.Exception.Safe
+import Control.DeepSeq
 import Data.Coerce (coerce)
 import Data.Typeable
 import Data.Maybe (fromMaybe)
@@ -578,8 +579,8 @@ _resizeDim t d = case fromIntegral <$> listDims d of
 -- | create a 1d Dynamic tensor from a list of elements.
 --
 -- FIXME construct this with TH, not by using 'setDim' inplace (one-by-one) which might be doing a second linear pass.
-vector :: [HsReal] -> Dynamic
-vector l = unsafeDupablePerformIO $ do
+vectorOld :: [HsReal] -> Dynamic
+vectorOld l = unsafeDupablePerformIO $ do
   res <- new' (someDimsVal [genericLength l])
   mapM_  (upd res) (zip [0..genericLength l - 1] l)
   pure res
@@ -587,13 +588,12 @@ vector l = unsafeDupablePerformIO $ do
   upd :: Dynamic -> (Word, HsReal) -> IO ()
   upd t (idx, v) = setDim'_ t (someDimsVal [idx]) v
 
-{- | create a 1d Dynamic tensor from a list of elements.
--- currently getting an error with Storage free
-vectorFast :: [HsReal] -> Dynamic
-vectorFast l = unsafeDupablePerformIO $ do
-  st <- Storage.fromList l
-  newWithStorage1d st (genericLength l) (genericLength l + 1, genericLength l + 1)
-  -}
+-- | create a 1d Dynamic tensor from a list of elements.
+vector :: [HsReal] -> Dynamic
+vector l = unsafeDupablePerformIO $ do
+  st <- Storage.fromList (deepseq l l)
+  newWithStorage1d st 0 (genericLength l, 1)
+
 
 -- | resize a dynamic tensor with runtime 'SomeDims' representation of its new shape. Returns a pure copy of the
 -- input tensor.
