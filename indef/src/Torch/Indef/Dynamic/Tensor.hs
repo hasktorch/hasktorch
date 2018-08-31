@@ -874,6 +874,11 @@ instance NestableList [HsReal] where
 instance NestableList [[HsReal]] where
   fromNested = matrix
 
+instance NestableList [[[HsReal]]] where
+  fromNested = cuboid
+
+instance NestableList [[[[HsReal]]]] where
+  fromNested = hyper
 
 -- -- | create a 1d Dynamic tensor from a list of elements.
 -- vector :: [HsReal] -> Dynamic
