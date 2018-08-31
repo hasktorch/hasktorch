@@ -14,6 +14,7 @@
 -- using LongStorage).
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
@@ -594,6 +595,97 @@ vector l = unsafeDupablePerformIO $ do
   st <- Storage.fromList (deepseq l l)
   newWithStorage1d st 0 (genericLength l, 1)
 
+-- | create a 2d Dynamic tensor from a list of list of elements.
+matrix :: [[HsReal]] -> Either String Dynamic
+matrix ls
+  | null ls = Right $ unsafeDupablePerformIO empty
+  | any ((ncols /=) . length) ls = Left "rows are not all the same length"
+  | otherwise = Right . unsafeDupablePerformIO $ do
+      let l = concat ls
+      st <- Storage.fromList (deepseq l l)
+      newWithStorage2d st 0 (nrows, ncols) (ncols, 1)
+ where
+  ncols :: Integral i => i
+  ncols = genericLength (head ls)
+  nrows = genericLength ls
+
+
+-- | create a 3d Dynamic tensor (ie: rectangular cuboid) from a nested list of elements.
+cuboid :: [[[HsReal]]] -> Either String Dynamic
+cuboid ls
+  | isEmpty ls = Right $ unsafeDupablePerformIO empty
+  | null ls || any null ls || any (any null) ls = Left "can't accept empty lists"
+  | innerDimCheck ncols        ls  = Left "rows are not all the same length"
+  | innerDimCheck ndepth (head ls) = Left "columns are not all the same length"
+
+  | otherwise = Right . unsafeDupablePerformIO $ do
+      let l = concat (concat ls)
+      st <- Storage.fromList (deepseq l l)
+      newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
+ where
+  isEmpty = \case
+    []     -> True
+    [[]]   -> True
+    [[[]]] -> True
+    _      -> False
+
+  innerDimCheck :: Int -> [[x]] -> Bool
+  innerDimCheck d = any ((/= d) . length)
+
+  ndepth :: Integral i => i
+  ndepth = genericLength (head (head ls))
+
+  ncols :: Integral i => i
+  ncols = genericLength (head ls)
+
+  nrows :: Integral i => i
+  nrows = genericLength ls
+
+-- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
+hyper :: [[[[HsReal]]]] -> Either String Dynamic
+hyper ls
+  | isEmpty ls = Right $ unsafeDupablePerformIO empty
+  | null ls
+    || any null ls
+    || any (any null) ls
+    || any (any (any null)) ls
+    = Left "can't accept empty lists"
+
+  | innerDimCheck ncols              ls   = Left "rows are not all the same length"
+  | innerDimCheck ndepth       (head ls)  = Left "columns are not all the same length"
+  | innerDimCheck ntime  (head (head ls)) = Left "depths are not all the same length"
+
+  | otherwise = Right . unsafeDupablePerformIO $ do
+      let l = concat (concat (concat ls))
+      st <- Storage.fromList (deepseq l l)
+      newWithStorage4d st 0
+        (nrows, ncols * ndepth * ntime)
+        (ncols, ndepth * ntime)
+        (ndepth, ntime)
+        (ntime, 1)
+ where
+  isEmpty = \case
+    []       -> True
+    [[]]     -> True
+    [[[]]]   -> True
+    [[[[]]]] -> True
+    _        -> False
+
+  innerDimCheck :: Int -> [[x]] -> Bool
+  innerDimCheck d = any ((/= d) . length)
+
+  ntime :: Integral i => i
+  ntime = genericLength (head (head (head ls)))
+
+  ndepth :: Integral i => i
+  ndepth = genericLength (head (head ls))
+
+  ncols :: Integral i => i
+  ncols = genericLength (head ls)
+
+  nrows :: Integral i => i
+  nrows = genericLength ls
+
 
 -- | resize a dynamic tensor with runtime 'SomeDims' representation of its new shape. Returns a pure copy of the
 -- input tensor.
@@ -769,5 +861,25 @@ withEmpty t op = getDims t >>= new' >>= \r -> op r >> pure r
 -- does the resizing in C, but you need to look at the c implementation
 withEmpty' :: (Dynamic -> IO ()) -> IO Dynamic
 withEmpty' op = empty >>= \r -> op r >> pure r
+
+-- ========================================================================= --
+-- Attempt at super-crazy tensor function
+
+class NestableList t where
+  fromNested :: t -> Either String Dynamic
+
+instance NestableList [HsReal] where
+  fromNested = Right . vector
+
+instance NestableList [[HsReal]] where
+  fromNested = matrix
+
+
+-- -- | create a 1d Dynamic tensor from a list of elements.
+-- vector :: [HsReal] -> Dynamic
+-- vector l = unsafeDupablePerformIO $ do
+--   st <- Storage.fromList (deepseq l l)
+--   newWithStorage1d st 0 (genericLength l, 1)
+
 
 
