@@ -64,7 +64,7 @@ cifar10set g p m = I.shuffleCatFolders g cast (mode_path p m)
  where
   cast :: FilePath -> Maybe Category
   cast fp =
-    case filter (not . (`elem` "/\\")) fp of
+    case filter (not . (`elem` ("/\\"::String))) fp of
       h:tl -> readMaybe (Char.toUpper h : map Char.toLower tl)
       _    -> Nothing
 

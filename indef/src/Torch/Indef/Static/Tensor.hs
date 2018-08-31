@@ -475,6 +475,38 @@ unsafeMatrix
   => [[HsReal]] -> Tensor '[n, m]
 unsafeMatrix = either error id . matrix
 
+-- | Purely construct a cuboid from a list of list of lists. This assumes a dense
+-- representation. Returns either the successful construction of the tensor,
+-- or a string explaining what went wrong.
+cuboid
+  :: forall c h w
+  .  (All KnownDim '[c, h, w], All KnownNat '[c, h, w])
+  => [[[HsReal]]] -> Either String (Tensor '[c, h, w])
+cuboid ls
+  | isEmpty ls        = Left   "no support for empty lists"
+  | chan /= length ls = Left $ "channels are not all of length " ++ show chan
+  | any (/= rows) (lens ls)          = Left $     "rows are not all of length " ++ show rows
+  | any (/= cols) (lens (concat ls)) = Left $  "columns are not all of length " ++ show cols
+  | otherwise =
+    case Dynamic.cuboid ls of
+      Left err -> Left err
+      Right d -> Right (asStatic d)
+  where
+    isEmpty = \case
+      []     -> True
+      [[]]   -> True
+      [[[]]] -> True
+      list   -> null list || any null list || any (any null) list
+
+
+    chan = fromIntegral $ dimVal (dim :: Dim c)
+    rows = fromIntegral $ dimVal (dim :: Dim h)
+    cols = fromIntegral $ dimVal (dim :: Dim w)
+    lens = fmap length
+
+    innerDimCheck :: Int -> [Int] -> Bool
+    innerDimCheck d = any ((/= d))
+
 -- | transpose a matrix (pure, dupable)
 transpose2d :: (All KnownDim '[r,c]) => Tensor '[r, c] -> Tensor '[c, r]
 transpose2d t = unsafeDupablePerformIO $ newTranspose t 1 0

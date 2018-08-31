@@ -42,7 +42,7 @@ initialization = void $ do
 
   listVec :: DoubleTensor '[6] <-
     section' "Initialize 1D vector from list" $ do
-      let Just v = vector [1, 2, 3, 4, 5, 6]
+      let Right v = vector [1, 2, 3, 4, 5, 6]
       pure v
 
   section "Resize 1D vector as 2D matrix" $ do

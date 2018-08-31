@@ -1,3 +1,4 @@
+{-# LANGUAGE Strict #-}
 module Torch.FFI.THC.State where
 
 import Foreign

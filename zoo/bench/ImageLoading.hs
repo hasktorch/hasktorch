@@ -1,65 +1,57 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
-module Torch.Data.Loaders.Internal where
+{-# LANGUAGE TypeFamilies #-}
+module ImageLoading (img_loading_bench) where
 
-import Data.Proxy
-import Data.Vector (Vector)
-import Control.Concurrent (threadDelay)
-import Control.Monad -- (forM_, filterM)
+import Criterion.Main
+import Criterion.Types (resamples)
+
+import GHC.TypeLits
+import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
-import GHC.Conc (getNumProcessors)
-import GHC.TypeLits (KnownNat)
-import Numeric.Dimensions
-import System.Random.MWC (GenIO)
-import System.Random.MWC.Distributions (uniformShuffle)
-import System.Directory (listDirectory, doesDirectoryExist)
-import System.FilePath ((</>), takeExtension)
-
 import Control.Monad.Primitive
-import qualified Data.Vector as V
+import Data.Vector (Vector)
 import Data.Vector.Mutable (MVector)
+import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as M
-
-import qualified Control.Concurrent.MSem as MSem (new, with)
-import qualified Control.Concurrent.Async as Async
-
-#ifdef USE_GD
-import qualified Graphics.GD as GD
-#else
 import qualified Codec.Picture as JP
-#endif
 
 #ifdef CUDA
 import Torch.Cuda.Double
-import qualified Torch.Cuda.Long as Long
 #else
 import Torch.Double
-import qualified Torch.Long as Long
 #endif
 
 
--- | asyncronously map across a pool with a maximum level of concurrency
-mapPool :: Traversable t => Int -> (a -> IO b) -> t a -> IO (t b)
-mapPool mx fn xs = do
-  sem <- MSem.new mx
-  Async.mapConcurrently (MSem.with sem . fn) xs
+img_loading_bench :: [Benchmark]
+img_loading_bench = [
+  bgroup "Image Loading on CIFAR-10"
+    [ bench "rgb2torch_setter"  $ nfIO (go rgb2torch_setter >>= tensordata)
+    , bench "rgb2torch_storage" $ nfIO (go rgb2torch_storage >>= tensordata)
+    ]
+  ]
+ where
+  file = "/mnt/lake/datasets/cifar-10/train/cat/1_cat.png"
+
+  go :: (FilePath -> ExceptT String IO (Tensor '[3, 32, 32])) -> IO (Tensor '[3, 32, 32])
+  go getter = runExceptT (getter file) >>=
+    \case
+      Left s -> error "could not load"
+      Right t -> pure t
+
 
 -- | load an RGB PNG image into a Torch tensor
-rgb2torch
+rgb2torch_setter
   :: forall h w . (KnownDim h, KnownDim w)
   => FilePath -> ExceptT String IO (Tensor '[3, h, w])
-rgb2torch fp = do
+rgb2torch_setter fp = do
   t <- lift new
-#ifdef USE_GD
-  im <- lift $ GD.loadPngFile fp
-  setPixels $ \(h, w) -> do
-    (r,g,b,_) <- GD.toRGBA <$> GD.getPixel (h,w) im
-#else
   im <- JP.convertRGB8 <$> ExceptT (JP.readPng fp)
   setPixels $ \(h, w) -> do
     let JP.PixelRGB8 r g b = JP.pixelAt im h w
-#endif
     forM_ (zip [0..] [r, g, b]) $ \(c, px) ->
       setDim'_ t (someDimsVal $ fromIntegral <$> [c, h, w]) (fromIntegral px)
   pure t
@@ -69,17 +61,14 @@ rgb2torch fp = do
     = lift . forM_ [(h, w) | h <- [0.. fromIntegral (dimVal (dim :: Dim h)) - 1]
                            , w <- [0.. fromIntegral (dimVal (dim :: Dim w)) - 1]]
 
-runRgb2torch fp = runExceptT $ rgb2torch fp
-
-newtype Normalize = Normalize Bool
 
 -- | load an RGB PNG image into a Torch tensor
-rgb2torch'
+rgb2torch_storage
   :: forall h w . (All KnownDim '[h, w], All KnownNat '[h, w])
-  => Normalize
-  -> FilePath
+  -- => Normalize
+  => FilePath
   -> ExceptT String IO (Tensor '[3, h, w])
-rgb2torch' (Normalize norm) fp = do
+rgb2torch_storage {-(Normalize norm)-} fp = do
   im <- JP.convertRGB8 <$> ExceptT (JP.readPng fp)
   ExceptT $ do
     vec <- mkRGBVec
@@ -87,8 +76,8 @@ rgb2torch' (Normalize norm) fp = do
     cuboid <$> freezeList vec
  where
   prep w =
-    if norm
-    then fromIntegral w / 255
+    if True -- norm
+    then fromIntegral w {-/ 255 -}
     else fromIntegral w
 
   height :: Int
@@ -156,38 +145,3 @@ type MRGBVector s = MVector s (MVector s (MVector s HsReal))
 type RGBVector = Vector (Vector (Vector HsReal))
 
 
--- | Given a folder with subfolders of category images, return a uniform-randomly
--- shuffled list of absolute filepaths with the corresponding category.
-shuffleCatFolders
-  :: forall c
-  .  GenIO                        -- ^ generator for shuffle
-  -> (FilePath -> Maybe c)        -- ^ how to convert a subfolder into a category
-  -> FilePath                     -- ^ absolute path of the dataset
-  -> IO (Vector (c, FilePath))    -- ^ shuffled list
-shuffleCatFolders g cast path = do
-  cats <- filterM (doesDirectoryExist . (path </>)) =<< listDirectory path
-  imgfiles <- sequence $ catContents <$> cats
-  uniformShuffle (V.concat imgfiles) g
- where
-  catContents :: FilePath -> IO (Vector (c, FilePath))
-  catContents catFP =
-    case cast catFP of
-      Nothing -> pure mempty
-      Just c ->
-        let
-          fdr = path </> catFP
-          asPair img = (c, fdr </> img)
-        in
-          V.fromList . fmap asPair . filter isImage
-          <$> listDirectory fdr
-
--- | verifies that an absolute filepath is an image
-isImage :: FilePath -> Bool
-isImage = (== ".png") . takeExtension
-
-#ifdef DEBUG
-main = do
-  nprocs <- getNumProcessors
-  putStrLn $ "number of cores: " ++ show nprocs
-  mapPool nprocs (\x -> threadDelay 100000 >> print x >> pure x) [1..100]
-#endif

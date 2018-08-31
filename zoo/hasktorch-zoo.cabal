@@ -46,6 +46,7 @@ library
     , SafeSemaphore
     , deepseq
     , mwc-random
+    , primitive
 
   -- training iterator dependencies
     , list-t
@@ -86,5 +87,10 @@ benchmark bench
     , transformers
     , list-t
     , criterion
+    , vector
+    , primitive
+    , JuicyPixels
+  other-modules:
+    ImageLoading
   if flag(cuda)
     cpp-options: -DCUDA
