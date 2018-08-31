@@ -57,13 +57,13 @@ scalar :: HsReal -> Tensor '[1]
 scalar = unsafeVector . (:[])
 
 -- | Purely make a 1d tensor from a list of unknown length.
-vector :: forall n . KnownDim n => KnownNat n => [HsReal] -> Maybe (Tensor '[n])
+vector :: forall n . KnownDim n => KnownNat n => [HsReal] -> Either String (Tensor '[n])
 vector rs
-  | genericLength rs == dimVal (dim :: Dim n) = Just . asStatic . Dynamic.vector $ rs
-  | otherwise = Nothing
+  | genericLength rs == dimVal (dim :: Dim n) = Right . asStatic . Dynamic.vector $ rs
+  | otherwise = Left "Vector dimension does not match length of list"
 
 unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> Tensor '[n]
-unsafeVector = fromJust . vector
+unsafeVector = either error id  . vector
 
 -- | Static call to 'Dynamic.newExpand'
 newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
@@ -422,7 +422,10 @@ fromList
   => KnownDim (Product d)
   => [HsReal] -> Maybe (Tensor d)
 fromList l = unsafePerformIO . runMaybeT $ do
-  vec :: Tensor '[Product d] <- MaybeT (pure (vector l))
+  vec :: Tensor '[Product d] <-
+    case vector l of
+      Left _ -> mzero
+      Right t -> pure t
   guard (genericLength l == dimVal (dim :: Dim (Product d)))
   lift $ _resizeDim vec
 {-# NOINLINE fromList #-}

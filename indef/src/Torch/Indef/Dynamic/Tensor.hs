@@ -880,11 +880,4 @@ instance NestableList [[[HsReal]]] where
 instance NestableList [[[[HsReal]]]] where
   fromNested = hyper
 
--- -- | create a 1d Dynamic tensor from a list of elements.
--- vector :: [HsReal] -> Dynamic
--- vector l = unsafeDupablePerformIO $ do
---   st <- Storage.fromList (deepseq l l)
---   newWithStorage1d st 0 (genericLength l, 1)
-
-
 
