@@ -14,9 +14,9 @@ source-repository head
   type: git
   location: https://github.com/hasktorch/hasktorch
 
--- flag cuda
---   Description: build with THC support
---   Default: True
+flag cuda
+  Description: Unify with THC-based patches. Functionality is identical, but CPU-bound code should have better creation performance.
+  Default: False
 
 library
   signatures:
@@ -49,10 +49,10 @@ library
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
 
-  -- if flag(cuda)
-  --   build-depends:
-  --     hasktorch-types-thc
-  --   cpp-options: -DCUDA
+  if flag(cuda)
+    cpp-options: -DCUDA
+    -- build-depends:
+    --   hasktorch-types-thc
 
   other-modules:
       Torch.Indef.Internal

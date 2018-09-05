@@ -22,12 +22,18 @@ program-locations
   ghc-location:     /opt/ghc/8.4.3/bin/ghc
   ghc-pkg-location: /opt/ghc/8.4.3/bin/ghc-pkg
 
-package hasktorch-zoo
-  flags: +cuda
-package hasktorch-indef
-  flags: +cuda
-package hasktorch-core
-  flags: +cuda
-package hasktorch-examples
-  flags: +cuda
+flags: +cuda
+
+-- You can also configure packages individually. Currently
+-- we only support CUDA- or CPU- based builds for the zoo
+-- and examples.
+-----------------------------------------------------------
+-- package hasktorch-zoo
+--   flags: +cuda
+-- package hasktorch-indef
+--   flags: +cuda
+-- package hasktorch-core
+--   flags: +cuda
+-- package hasktorch-examples
+--   flags: +cuda
 
