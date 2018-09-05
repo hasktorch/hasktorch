@@ -6,6 +6,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE Strict #-}
 {-# LANGUAGE CPP #-}
 module Main where
 
@@ -48,6 +49,7 @@ import qualified Torch.Long as Long
 
 import Torch.Models.Vision.LeNet
 import Torch.Data.Loaders.Cifar10
+import Torch.Data.Loaders.Internal
 import Torch.Data.OneHot
 import Torch.Data.Metrics
 
@@ -66,7 +68,7 @@ import qualified Data.Singletons.Prelude.List as Sing (All)
 
 main :: IO ()
 main = do
-  clearScreen
+  -- clearScreen
   g <- MWC.initialize (V.singleton 42)
   -- foo <- V.take 1 <$> cifar10set g default_cifar_path Train
   -- print foo
@@ -93,12 +95,14 @@ main = do
 -- Data processing + bells and whistles for a slow loader
 -- ========================================================================= --
 preprocess :: FilePath -> IO (Tensor '[3, 32, 32])
-preprocess f =
-  runExceptT ((^/ 255) <$> rgb2torch f) >>= \case
+preprocess f = do
+  -- let op = if False then (^/ 255) else id
+
+  runExceptT (rgb2torch' (Normalize False) f) >>= \case
     Left s -> throwString s
     Right t -> do
 #ifdef DEBUG
-      assert t
+      --  assert t
 #endif
       pure t
  where
