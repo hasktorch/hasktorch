@@ -46,22 +46,20 @@ import qualified Torch.FFI.TH.Double.Tensor as D
 import Torch.Indef.Types
 
 copyType
-  :: IO (Ptr a)
+  :: (Ptr TH.C'THLongStorage -> Ptr TH.C'THLongStorage -> IO (Ptr a))
   -> FinalizerPtr a
   -> (ForeignPtr C'THState -> ForeignPtr a -> b)
-  -> (Ptr CState -> Ptr CTensor -> Ptr a -> IO ())
-  -> (Ptr C'THState -> Ptr a -> Ptr TH.C'THLongStorage -> Ptr TH.C'THLongStorage -> IO ())
-  -> Dynamic -> b
-copyType newPtr fin builder cfun resizer t = unsafeDupablePerformIO . withDynamicState t $ \s' t' -> do
-  target <- newPtr
-  withForeignPtr TH.torchstate $ \ths' -> do
-    resizer ths'
-      <$> pure target
-      <*> Sig.c_newSizeOf s' t'
-      <*> Sig.c_newStrideOf s' t'
 
-    builder TH.torchstate
-      <$> newForeignPtr fin target
+  -> (Ptr CState -> Ptr CTensor -> Ptr a -> IO ())
+  -> Dynamic -> b
+copyType newWithSize_ fin builder cfun t = unsafePerformIO . withDynamicState t $ \s' t' -> do
+    sizes   <- Sig.c_newSizeOf s' t'
+    strides <- Sig.c_newStrideOf s' t'
+    target  <- newWithSize_ sizes strides
+
+    cfun s' t' target
+
+    builder TH.torchstate <$> newForeignPtr fin target
 {-# NOINLINE copyType #-}
 
 -- | Copy a tensor.
@@ -74,19 +72,40 @@ copy t = unsafeDupablePerformIO . withDynamicState t $ \s' t' -> do
 {-# NOINLINE copy #-}
 
 -- | copy a tensor to a byte tensor. *Use at your own discresion*
-copyByte   = copyType B.c_new_ B.p_free   TH.byteDynamic Sig.c_copyByte B.c_resize
+copyByte :: Dynamic -> TH.ByteDynamic
+copyByte = copyType B.c_newWithSize_ B.p_free TH.byteDynamic Sig.c_copyByte
 -- | copy a tensor to a char tensor. *Use at your own discresion*
-copyChar   = copyType C.c_new_ C.p_free   TH.charDynamic Sig.c_copyChar C.c_resize
+copyChar :: Dynamic -> TH.CharDynamic
+copyChar   = copyType C.c_newWithSize_ C.p_free TH.charDynamic Sig.c_copyChar
 -- | copy a tensor to a short tensor. *Use at your own discresion*
-copyShort  = copyType S.c_new_ S.p_free  TH.shortDynamic Sig.c_copyShort S.c_resize
+copyShort :: Dynamic -> TH.ShortDynamic
+copyShort  = copyType S.c_newWithSize_ S.p_free TH.shortDynamic Sig.c_copyShort
 -- | copy a tensor to a int tensor. *Use at your own discresion*
-copyInt    = copyType I.c_new_ I.p_free    TH.intDynamic Sig.c_copyInt I.c_resize
+copyInt :: Dynamic -> TH.IntDynamic
+copyInt    = copyType I.c_newWithSize_ I.p_free TH.intDynamic Sig.c_copyInt
 -- | copy a tensor to a long tensor. *Use at your own discresion*
-copyLong   = copyType L.c_new_ L.p_free   TH.longDynamic Sig.c_copyLong L.c_resize
+copyLong :: Dynamic -> TH.LongDynamic
+copyLong   = copyType L.c_newWithSize_ L.p_free TH.longDynamic Sig.c_copyLong
 -- | copy a tensor to a float tensor. *Use at your own discresion*
-copyFloat  = copyType F.c_new_ F.p_free  TH.floatDynamic Sig.c_copyFloat F.c_resize
+copyFloat :: Dynamic -> TH.FloatDynamic
+copyFloat  = copyType F.c_newWithSize_ F.p_free TH.floatDynamic Sig.c_copyFloat
 -- | copy a tensor to a double tensor. *Use at your own discresion*
-copyDouble = copyType D.c_new_ D.p_free TH.doubleDynamic Sig.c_copyDouble D.c_resize
+-- copyDouble :: Dynamic -> TH.DoubleDynamic
+-- copyDouble = copyType D.c_new_ D.p_free TH.doubleDynamic Sig.c_copyDouble D.c_resize
+
+copyDouble :: Dynamic -> TH.DoubleDynamic
+copyDouble t = unsafePerformIO . withDynamicState t $ \s' t' -> do
+  withForeignPtr TH.torchstate $ \ths' -> do
+    sizes   <- Sig.c_newSizeOf s' t'
+    strides <- Sig.c_newStrideOf s' t'
+    target  <- D.c_newWithSize ths' sizes strides
+
+    -- mapM (size t . fromIntegral) [0.. nDimension t - 1] >>=
+    Sig.c_copyDouble s' t' target
+
+    out <- TH.doubleDynamic TH.torchstate <$> newForeignPtr D.p_free target
+    pure out
+
 
 -- FIXME: reintroduce Half
 -- copyHalf   :: t -> io H.Dynamic

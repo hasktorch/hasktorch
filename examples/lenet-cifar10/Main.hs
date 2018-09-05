@@ -36,11 +36,13 @@ import qualified Data.List as P ((!!))
 import Control.Exception.Safe
 #ifdef DEBUG
 import Debug.Trace
+import Data.IORef
 #endif
 -- import qualified Foreign.CUDA as Cuda
 
 #ifdef CUDA
 import Torch.Cuda.Double as Math hiding (Sum)
+import qualified Torch.Cuda.Double.Storage as S
 import qualified Torch.Cuda.Long as Long
 import Torch.FFI.THC.TensorRandom
 import Foreign
@@ -65,9 +67,12 @@ import qualified Data.Vector as V
 import qualified System.Random.MWC as MWC
 import qualified Data.Singletons.Prelude.List as Sing (All)
 
--- batch dimension
--- shuffle data
--- normalize inputs
+#ifdef DEBUG
+import Debug.Trace
+import qualified Torch.Double as CPU
+import qualified Torch.Double.Storage as CPUS
+#endif
+
 
 main :: IO ()
 main = do
@@ -79,8 +84,8 @@ main = do
   -- foo <- V.take 1 <$> cifar10set g default_cifar_path Train
   -- print foo
   -- V.mapM getdata (prepdata foo) >>= print
-  ltrain <- prepdata . V.take 250 <$> cifar10set g default_cifar_path Train
-  ltest  <- prepdata . V.take 100 <$> cifar10set g default_cifar_path Test
+  ltrain <- prepdata . V.take 500 <$> cifar10set g default_cifar_path Train
+  ltest  <- prepdata . V.take 200 <$> cifar10set g default_cifar_path Test
   let (lval, lhold) = V.splitAt (V.length ltest `P.div` 2) ltest
   net0 <- newLeNet @3 @5
   print net0
@@ -89,7 +94,7 @@ main = do
   hold <- testNet net0 lhold
 
   t0 <- getCurrentTime
-  net <- epochs lval 0.01 t0 2 ltrain net0
+  net <- epochs lval 0.001 t0 1 ltrain net0
   t1 <- getCurrentTime
   printf "\nFinished training!\n"
 
@@ -108,13 +113,13 @@ preprocess f = do
     Left s -> throwString s
     Right t -> do
 #ifdef DEBUG
-      --  assert t
+      assert t
 #endif
       pure t
  where
   assert :: Tensor '[3, 32, 32] -> IO ()
-  assert t = tensordata t >>= \rs ->
-    if getAll (mconcat (fmap (\x -> All $ x >= 0 && x <= 1) rs))
+  assert t = CPU.tensordata (copyDouble t) >>= \rs ->
+    if getAll (mconcat (fmap (\x -> trace (show x) $ All $ x >= 0 && x <= 1) rs))
     then pure ()
     else throwString (show t)
 
@@ -148,13 +153,15 @@ testNet net ltest = do
     if all isRight (V.map snd ltest)
     then pure $ V.map (second (fromRight undefined)) ltest
     else do
-      c <- newIORef 0
       let l = fromIntegral (length ltest) :: Float
+#ifdef DEBUG
+      c <- newIORef 0
       V.mapM (\x -> do
-#ifdef _DEBUG
         modifyIORef c (+1)
         c' <- readIORef c
         if c' `mod` 1000 == 1 then printf "\r%.1f%% " (fromIntegral c' / l) >> hFlush stdout else pure ()
+#else
+      V.mapM (\x -> do
 #endif
         getdata x) ltest
 
