@@ -195,11 +195,14 @@ executable static-tensor-usage
   build-depends:
       base >=4.7 && <5
     , hasktorch-core
+
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
   if flag(cuda)
     cpp-options: -DCUDA
+    build-depends:
+      cuda
 
 -- Disabled until FF2 is unit tested in hasktorch-core
 executable lenet-cifar10
@@ -230,6 +233,8 @@ executable lenet-cifar10
     cpp-options: -DCUDA
     build-depends:
         cuda
+      , hasktorch-raw-thc
+      , hasktorch-types-thc
 
 
 -- Build only with cuda flags:

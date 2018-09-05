@@ -42,6 +42,9 @@ import Debug.Trace
 #ifdef CUDA
 import Torch.Cuda.Double as Math hiding (Sum)
 import qualified Torch.Cuda.Long as Long
+import Torch.FFI.THC.TensorRandom
+import Foreign
+import Torch.FFI.THC.State
 #else
 import Torch.Double as Math hiding (Sum)
 import qualified Torch.Long as Long
@@ -70,6 +73,9 @@ main :: IO ()
 main = do
   -- clearScreen
   g <- MWC.initialize (V.singleton 42)
+#ifdef CUDA
+  withForeignPtr torchstate $ \s -> c_THCRandom_manualSeed s 42
+#endif
   -- foo <- V.take 1 <$> cifar10set g default_cifar_path Train
   -- print foo
   -- V.mapM getdata (prepdata foo) >>= print
@@ -141,7 +147,16 @@ testNet net ltest = do
   test <-
     if all isRight (V.map snd ltest)
     then pure $ V.map (second (fromRight undefined)) ltest
-    else V.mapM getdata ltest
+    else do
+      c <- newIORef 0
+      let l = fromIntegral (length ltest) :: Float
+      V.mapM (\x -> do
+#ifdef _DEBUG
+        modifyIORef c (+1)
+        c' <- readIORef c
+        if c' `mod` 1000 == 1 then printf "\r%.1f%% " (fromIntegral c' / l) >> hFlush stdout else pure ()
+#endif
+        getdata x) ltest
 
   let
     testX = V.toList $ fmap snd test
