@@ -18,6 +18,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor where
 
@@ -580,20 +581,27 @@ _resizeDim t d = case fromIntegral <$> listDims d of
 -- | create a 1d Dynamic tensor from a list of elements.
 --
 -- FIXME construct this with TH, not by using 'setDim' inplace (one-by-one) which might be doing a second linear pass.
+-- FIXME: CUDA doesn't like the storage allocation:
+
 vector :: [HsReal] -> Dynamic
 vector l = unsafeDupablePerformIO $ do
+---------------------------------------------------
+-- THCudaCheck FAIL file=/home/stites/git/hasktorch/vendor/aten/src/THC/generic/THCStorage.c line=150 error=11 : invalid argument
+-- terminate called after throwing an instance of 'std::runtime_error'
+--   what():  cuda runtime error (11) : invalid argument at /home/stites/git/hasktorch/vendor/aten/src/THC/generic/THCStorage.c:150
+--   Aborted (core dumped)
+#ifdef CUDA
   res <- new' (someDimsVal [genericLength l])
   mapM_  (upd res) (zip [0..genericLength l - 1] l)
   pure res
+#else
+  st <- Storage.fromList (deepseq l l)
+  newWithStorage1d st 0 (genericLength l, 1)
+#endif
  where
   upd :: Dynamic -> (Word, HsReal) -> IO ()
   upd t (idx, v) = setDim'_ t (someDimsVal [idx]) v
 
--- | create a 1d Dynamic tensor from a list of elements.
-vectorBork :: [HsReal] -> Dynamic
-vectorBork l = unsafeDupablePerformIO $ do
-  st <- Storage.fromList (deepseq l l)
-  newWithStorage1d st 0 (genericLength l, 1)
 
 -- | create a 2d Dynamic tensor from a list of list of elements.
 matrix :: [[HsReal]] -> Either String Dynamic
@@ -601,26 +609,18 @@ matrix ls
   | null ls = Right $ unsafeDupablePerformIO empty
   | any ((ncols /=) . length) ls = Left "rows are not all the same length"
   | otherwise = Right . unsafeDupablePerformIO $ do
+#ifdef CUDA
       let vec = vector (concat ls)
       go vec (someDimsVal [nrows, ncols])
-
       pure vec
- where
-  go vec (SomeDims ds) = _resizeDim vec ds
-  ncols :: Integral i => i
-  ncols = genericLength (head ls)
-  nrows = genericLength ls
-
--- | create a 2d Dynamic tensor from a list of list of elements.
-matrixBork :: [[HsReal]] -> Either String Dynamic
-matrixBork ls
-  | null ls = Right $ unsafeDupablePerformIO empty
-  | any ((ncols /=) . length) ls = Left "rows are not all the same length"
-  | otherwise = Right . unsafeDupablePerformIO $ do
+#else
       let l = concat ls
       st <- Storage.fromList (deepseq l l)
       newWithStorage2d st 0 (nrows, ncols) (ncols, 1)
+#endif
  where
+  go vec (SomeDims ds) = _resizeDim vec ds
+
   ncols :: Integral i => i
   ncols = genericLength (head ls)
   nrows = genericLength ls
@@ -634,8 +634,14 @@ cuboid ls
   | innerDimCheck ndepth (head ls) = Left "columns are not all the same length"
 
   | otherwise = Right . unsafeDupablePerformIO $ do
+#ifdef CUDA
       let vec = vector (concat (concat ls))
       go vec (someDimsVal [nrows, ncols, ndepth])
+#else
+      let l = concat (concat ls)
+      st <- Storage.fromList (deepseq l l)
+      newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
+#endif
  where
   go vec (SomeDims ds) = _resizeDim vec ds >> pure vec
 
@@ -657,37 +663,6 @@ cuboid ls
   nrows :: Integral i => i
   nrows = genericLength ls
 
-
--- | create a 3d Dynamic tensor (ie: rectangular cuboid) from a nested list of elements.
-cuboidBork :: [[[HsReal]]] -> Either String Dynamic
-cuboidBork ls
-  | isEmpty ls = Right $ unsafeDupablePerformIO empty
-  | null ls || any null ls || any (any null) ls = Left "can't accept empty lists"
-  | innerDimCheck ncols        ls  = Left "rows are not all the same length"
-  | innerDimCheck ndepth (head ls) = Left "columns are not all the same length"
-
-  | otherwise = Right . unsafeDupablePerformIO $ do
-      let l = concat (concat ls)
-      st <- Storage.fromList (deepseq l l)
-      newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
- where
-  isEmpty = \case
-    []     -> True
-    [[]]   -> True
-    [[[]]] -> True
-    _      -> False
-
-  innerDimCheck :: Int -> [[x]] -> Bool
-  innerDimCheck d = any ((/= d) . length)
-
-  ndepth :: Integral i => i
-  ndepth = genericLength (head (head ls))
-
-  ncols :: Integral i => i
-  ncols = genericLength (head ls)
-
-  nrows :: Integral i => i
-  nrows = genericLength ls
 
 -- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
 hyper :: [[[[HsReal]]]] -> Either String Dynamic
@@ -704,50 +679,10 @@ hyper ls
   | innerDimCheck ntime  (head (head ls)) = Left "depths are not all the same length"
 
   | otherwise = Right . unsafeDupablePerformIO $ do
+#ifdef CUDA
       let vec = vector (concat (concat (concat ls)))
       go vec (someDimsVal [nrows, ncols, ndepth, ntime])
- where
-  go vec (SomeDims ds) = _resizeDim vec ds >> pure vec
-
-  isEmpty = \case
-    []       -> True
-    [[]]     -> True
-    [[[]]]   -> True
-    [[[[]]]] -> True
-    _        -> False
-
-  innerDimCheck :: Int -> [[x]] -> Bool
-  innerDimCheck d = any ((/= d) . length)
-
-  ntime :: Integral i => i
-  ntime = genericLength (head (head (head ls)))
-
-  ndepth :: Integral i => i
-  ndepth = genericLength (head (head ls))
-
-  ncols :: Integral i => i
-  ncols = genericLength (head ls)
-
-  nrows :: Integral i => i
-  nrows = genericLength ls
-
-
-
--- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
-hyperBork :: [[[[HsReal]]]] -> Either String Dynamic
-hyperBork ls
-  | isEmpty ls = Right $ unsafeDupablePerformIO empty
-  | null ls
-    || any null ls
-    || any (any null) ls
-    || any (any (any null)) ls
-    = Left "can't accept empty lists"
-
-  | innerDimCheck ncols              ls   = Left "rows are not all the same length"
-  | innerDimCheck ndepth       (head ls)  = Left "columns are not all the same length"
-  | innerDimCheck ntime  (head (head ls)) = Left "depths are not all the same length"
-
-  | otherwise = Right . unsafeDupablePerformIO $ do
+#else
       let l = concat (concat (concat ls))
       st <- Storage.fromList (deepseq l l)
       newWithStorage4d st 0
@@ -755,7 +690,10 @@ hyperBork ls
         (ncols, ndepth * ntime)
         (ndepth, ntime)
         (ntime, 1)
+#endif
  where
+  go vec (SomeDims ds) = _resizeDim vec ds >> pure vec
+
   isEmpty = \case
     []       -> True
     [[]]     -> True
