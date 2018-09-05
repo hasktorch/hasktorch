@@ -118,10 +118,13 @@ preprocess f = do
       pure t
  where
   assert :: Tensor '[3, 32, 32] -> IO ()
-  assert t = CPU.tensordata (copyDouble t) >>= \rs ->
-    if getAll (mconcat (fmap (\x -> trace (show x) $ All $ x >= 0 && x <= 1) rs))
+  assert t = CPU.tensordata (copyDouble t) >>= \rs -> do
+    let
+      oob = filter (\x -> x < 0 && x > 1) rs
+      oox = filter (<= 2) oob
+    if null oob
     then pure ()
-    else throwString (show t)
+    else throwString (show (oob, oox))
 
 -- | potentially lazily loaded data point
 type LDatum = (Category, Either FilePath (Tensor '[3, 32, 32]))
