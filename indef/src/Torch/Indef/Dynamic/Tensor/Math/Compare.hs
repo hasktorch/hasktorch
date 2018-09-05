@@ -41,7 +41,7 @@ _eqValueT t0 t1 v = with2DynamicState t0 t1 (shuffle3 Sig.c_eqValueT (hs2cReal v
 compareTensorOp
   :: (Ptr CState -> Ptr CByteTensor -> Ptr CTensor -> CReal -> IO ())
   -> Dynamic -> HsReal -> MaskDynamic
-compareTensorOp op t0 v = unsafeDupablePerformIO $ do
+compareTensorOp op t0 v = unsafePerformIO $ do
   SomeDims d <- getDims t0
   let bt = newMaskDyn d
   withDynamicState t0 $ \s' t0' -> withMask bt $ \bt' -> op s' bt' t0' (hs2cReal v)

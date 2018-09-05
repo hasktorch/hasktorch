@@ -221,7 +221,7 @@ squeeze1d
   => Dim n
   -> Tensor d
   -> Tensor (rs ++ ls)
-squeeze1d n t = unsafeDupablePerformIO $ do
+squeeze1d n t = unsafePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
   Dynamic._squeeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
   pure t'
@@ -244,7 +244,7 @@ unsqueeze1d
   => Dim n
   -> Tensor d
   -> Tensor (rs ++ '[1] ++ ls)
-unsqueeze1d n t = unsafeDupablePerformIO $ do
+unsqueeze1d n t = unsafePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
   Dynamic._unsqueeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
   pure t'
@@ -405,7 +405,7 @@ resizeAs_ src = do
 
 -- | Pure version of 'resizeAs_' which clones the input tensor (pure, dupable?)
 resizeAs :: forall d d' . (All Dimensions [d,d'], Product d ~ Product d') => Tensor d -> Tensor d'
-resizeAs src = unsafeDupablePerformIO $ do
+resizeAs src = unsafePerformIO $ do
   res <- newClone src
   shape :: Tensor d' <- new
   _resizeAs res shape
@@ -509,14 +509,14 @@ cuboid ls
 
 -- | transpose a matrix (pure, dupable)
 transpose2d :: (All KnownDim '[r,c]) => Tensor '[r, c] -> Tensor '[c, r]
-transpose2d t = unsafeDupablePerformIO $ newTranspose t 1 0
+transpose2d t = unsafePerformIO $ newTranspose t 1 0
 
 -- | Expand a vector by copying into a matrix by set dimensions
 -- TODO - generalize this beyond the matrix case
 expand2d
   :: forall x y . (All KnownDim '[x, y])
   => Tensor '[x] -> Tensor '[y, x]
-expand2d t = unsafeDupablePerformIO $ do
+expand2d t = unsafePerformIO $ do
   res :: Tensor '[y, x] <- new
   s <- mkCPUIxStorage =<< TH.c_newWithSize2_ s2 s1
   _expand res t s

@@ -194,9 +194,9 @@ range d a b c = withInplace (\r -> range_ r a b c) d
 
 -- | create a 'Dynamic' tensor with a given dimension and value
 --
--- We can get away 'unsafeDupablePerformIO' this as constant is pure and thread-safe
+-- We can get away 'unsafePerformIO' this as constant is pure and thread-safe
 constant :: Dims (d :: [Nat]) -> HsReal -> Dynamic
-constant d v = unsafeDupablePerformIO $ new d >>= \r -> fill_ r v >> pure r
+constant d v = unsafePerformIO $ new d >>= \r -> fill_ r v >> pure r
 {-# NOINLINE constant #-}
 
 -- | direct call to the C-FFI of @diag@, mutating the first tensor argument with

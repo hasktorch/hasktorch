@@ -49,7 +49,7 @@ newMask = byteAsStatic $ newMaskDyn (dims :: Dims d)
 
 -- | build a new dynamic mask tensor with any known Nat list.
 newMaskDyn :: Dims (d::[Nat]) -> MaskDynamic
-newMaskDyn d = unsafeDupablePerformIO $ withForeignPtr Sig.torchstate $ \s -> do
+newMaskDyn d = unsafePerformIO $ withForeignPtr Sig.torchstate $ \s -> do
   bytePtr <- case fromIntegral <$> listDims d of
     []           -> MaskSig.c_newWithSize1d s 1
     [x]          -> MaskSig.c_newWithSize1d s x
@@ -71,7 +71,7 @@ class IsMask t where
   -- anyOf :: t -> Bool
 
 instance IsMask MaskDynamic where
-  allOf t = unsafeDupablePerformIO $ flip X.with pure $ do
+  allOf t = unsafePerformIO $ flip X.with pure $ do
     s' <- managed $ withForeignPtr s
     t' <- managed $ withForeignPtr fp
 

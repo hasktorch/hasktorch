@@ -42,7 +42,7 @@ addmv
   -> Tensor '[r, c]   -- ^ mat
   -> Tensor '[c]      -- ^ vec2
   -> Tensor '[r]      -- ^ res
-addmv a b c d e = unsafeDupablePerformIO $ asStatic <$> Dynamic.addmv a (asDynamic b) c (asDynamic d) (asDynamic e)
+addmv a b c d e = unsafePerformIO $ asStatic <$> Dynamic.addmv a (asDynamic b) c (asDynamic d) (asDynamic e)
 {-# NOINLINE addmv #-}
 
 -- | Inline version of 'addmv', mutating @vec1@ inplace.
@@ -86,7 +86,7 @@ addmm
   -> Tensor '[a, b]          -- ^ mat1
   -> Tensor '[b, c]          -- ^ mat2
   -> Tensor '[a, c]          -- ^ res
-addmm a b c d e = unsafeDupablePerformIO $ asStatic <$> Dynamic.addmm a (asDynamic b) c (asDynamic d) (asDynamic e)
+addmm a b c d e = unsafePerformIO $ asStatic <$> Dynamic.addmm a (asDynamic b) c (asDynamic d) (asDynamic e)
 {-# NOINLINE addmm #-}
 
 -- | Inline version of 'addmm', mutating @M@ inplace.
@@ -137,7 +137,7 @@ addr
   -> Tensor '[r]         -- ^ vec1_i
   -> Tensor '[c]         -- ^ vec2_j
   -> Tensor '[r, c]      -- ^ res_ij
-addr a b c d e = unsafeDupablePerformIO $ asStatic <$> Dynamic.addr a (asDynamic b) c (asDynamic d) (asDynamic e)
+addr a b c d e = unsafePerformIO $ asStatic <$> Dynamic.addr a (asDynamic b) c (asDynamic d) (asDynamic e)
 {-# NOINLINE addr #-}
 
 
@@ -180,7 +180,7 @@ addbmm
   -> Tensor '[b, n, m]  -- ^ batch1_i
   -> Tensor '[b, m, p]  -- ^ batch2_i
   -> Tensor '[n, p]     -- ^ res
-addbmm a b c d e = unsafeDupablePerformIO $ asStatic <$> Dynamic.addbmm a (asDynamic b) c (asDynamic d) (asDynamic e)
+addbmm a b c d e = unsafePerformIO $ asStatic <$> Dynamic.addbmm a (asDynamic b) c (asDynamic d) (asDynamic e)
 {-# NOINLINE addbmm #-}
 
 -- | Inline version of 'addbmm', mutating @M@ in-place.
@@ -214,7 +214,7 @@ baddbmm
   -> Tensor '[b, n, m]   -- ^ batch1_i
   -> Tensor '[b, m, p]   -- ^ batch2_i
   -> Tensor '[b, n, p]   -- ^ res_i
-baddbmm a b c d e = unsafeDupablePerformIO $ asStatic <$> Dynamic.baddbmm a (asDynamic b) c (asDynamic d) (asDynamic e)
+baddbmm a b c d e = unsafePerformIO $ asStatic <$> Dynamic.baddbmm a (asDynamic b) c (asDynamic d) (asDynamic e)
 {-# NOINLINE baddbmm #-}
 
 -- | Inline version of 'baddbmm', mutating @M_i@ in-place.

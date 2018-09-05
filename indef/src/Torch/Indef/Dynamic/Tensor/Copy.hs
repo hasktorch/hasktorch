@@ -64,7 +64,7 @@ copyType newWithSize_ fin builder cfun t = unsafePerformIO . withDynamicState t 
 
 -- | Copy a tensor.
 copy :: Dynamic -> Dynamic
-copy t = unsafeDupablePerformIO . withDynamicState t $ \s' t' -> do
+copy t = unsafePerformIO . withDynamicState t $ \s' t' -> do
   target <- Sig.c_new s'
   Sig.c_resizeAs s' target t'
   Sig.c_copy s' target t'

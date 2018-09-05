@@ -135,7 +135,7 @@ withKeepDim
   -> Dim dimval
   -> KeepDim
   -> (Tensor d, Maybe (IndexTensor '[n]))
-withKeepDim _fn t d k = unsafeDupablePerformIO $ do
+withKeepDim _fn t d k = unsafePerformIO $ do
   ret :: Tensor d <- new
   let ix :: IndexTensor '[n] = newIx
   _fn (asDynamic ret, longAsDynamic ix) (asDynamic t) (fromIntegral $ dimVal d) (Just k)

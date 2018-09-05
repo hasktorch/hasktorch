@@ -199,7 +199,7 @@ sparselinear lr = liftOp2 $ op2 $ \l i ->
   where
     -- sparseLinear forward pass (updates the output tensor)
     updateOutput :: Tensor '[i, 2] -> Linear i o -> Tensor '[o]
-    updateOutput i (Linear (w,b)) = unsafeDupablePerformIO $ do
+    updateOutput i (Linear (w,b)) = unsafePerformIO $ do
       o <- new
       Dynamic._sparseLinear_updateOutput (asDynamic i) (asDynamic o) (asDynamic w) (asDynamic b)
       pure o

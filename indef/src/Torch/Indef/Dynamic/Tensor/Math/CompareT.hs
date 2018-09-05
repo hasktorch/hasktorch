@@ -40,7 +40,7 @@ _eqTensorT = shuffle3 with3DynamicState Sig.c_eqTensorT
 compareTensorOp
   :: (Ptr CState -> Ptr CByteTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
   -> Dynamic -> Dynamic -> MaskDynamic
-compareTensorOp op t0 t1 = unsafeDupablePerformIO $ do
+compareTensorOp op t0 t1 = unsafePerformIO $ do
   SomeDims d <- getDims t0
   let bt = newMaskDyn d
   with2DynamicState t0 t1 $ \s' t0' t1' -> withMask bt $ \bt' -> op s' bt' t0' t1'
@@ -62,12 +62,12 @@ ltTensorT, leTensorT, gtTensorT, geTensorT, neTensorT, eqTensorT
   :: Dynamic  -- ^ source tensor.
   -> Dynamic  -- ^ tensor to compare with.
   -> Dynamic  -- ^ new return tensor.
-ltTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _ltTensorT r a b
-leTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _leTensorT r a b
-gtTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _gtTensorT r a b
-geTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _geTensorT r a b
-neTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _neTensorT r a b
-eqTensorT  a b = unsafeDupablePerformIO $ withEmpty a $ \r -> _eqTensorT r a b
+ltTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _ltTensorT r a b
+leTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _leTensorT r a b
+gtTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _gtTensorT r a b
+geTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _geTensorT r a b
+neTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _neTensorT r a b
+eqTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _eqTensorT r a b
 
 -- | mutate a tensor in-place with its numeric relation to the second tensor of the same size,
 -- where 0 stands for false and 1 stands for true.

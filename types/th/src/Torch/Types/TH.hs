@@ -49,7 +49,7 @@ import Foreign
 import Foreign.C.Types
 import GHC.TypeLits
 import Data.Char (chr)
-import System.IO.Unsafe (unsafeDupablePerformIO)
+import System.IO.Unsafe (unsafePerformIO)
 
 import Torch.Types.TH.Structs
 
@@ -64,7 +64,7 @@ foreign import ccall "&free_CTHState" state_free :: FunPtr (Ptr C'THState -> IO 
 -- | 'torchstate' is just a foreign pointer wrapping around a null pointer with a noop
 -- finalizer. This is to keep the API unified with THC.
 torchstate :: ForeignPtr C'THState
-torchstate = unsafeDupablePerformIO $ newForeignPtr state_free nullPtr
+torchstate = unsafePerformIO $ newForeignPtr state_free nullPtr
 
 type C'THState = ()
 type C'THNNState = C'THState

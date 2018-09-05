@@ -108,7 +108,7 @@ softmaxN d = liftOp1 . op1 $ \inp ->
     (out, \gout -> updateGradInput inp gout out idim)
  where
   updateOutput :: Dimensions d => Tensor d -> Integer -> Tensor d
-  updateOutput inp i = unsafeDupablePerformIO . withEmpty $ \out -> do
+  updateOutput inp i = unsafePerformIO . withEmpty $ \out -> do
     Dynamic._softMax_updateOutput
       (asDynamic inp)
       (asDynamic out)
@@ -124,12 +124,12 @@ softmaxN d = liftOp1 . op1 $ \inp ->
     -> Tensor d  -- output
     -> Integer   -- dimension
     -> Tensor d  -- gradInput
-  -- updateGradInput inp gout out d = unsafeDupablePerformIO $ do
+  -- updateGradInput inp gout out d = unsafePerformIO $ do
     -- let mult = gout ^*^ out
     -- pure $ mult ^*^ (gout ^- acc2real (sumall mult))
 
   -- NOTE: This would have been the original codebase.
-  updateGradInput inp gout out d = unsafeDupablePerformIO . withEmpty $ \gin -> do
+  updateGradInput inp gout out d = unsafePerformIO . withEmpty $ \gin -> do
     Dynamic._softMax_updateGradInput
       (asDynamic inp)  -- input
       (asDynamic gout) -- gradOutput
@@ -160,7 +160,7 @@ logSoftMaxN i = liftOp1 . op1 $ \inp ->
   in (updateOutput inp i, \gout -> updateGradInput inp gout out i)
  where
   updateOutput :: Tensor d -> Dim i -> Tensor d
-  updateOutput inp i = unsafeDupablePerformIO . withEmpty $ \out ->
+  updateOutput inp i = unsafePerformIO . withEmpty $ \out ->
     Dynamic._logSoftMax_updateOutput (asDynamic inp) (asDynamic out) (fromIntegral $ dimVal i)
 
   updateGradInput
@@ -169,7 +169,7 @@ logSoftMaxN i = liftOp1 . op1 $ \inp ->
     -> Tensor d  -- output
     -> Dim i     -- dimension
     -> Tensor d  -- gradInput
-  updateGradInput inp gout out i = unsafeDupablePerformIO . withEmpty $ \gin ->
+  updateGradInput inp gout out i = unsafePerformIO . withEmpty $ \gin ->
     Dynamic._logSoftMax_updateGradInput
       (asDynamic inp)             -- input
       (asDynamic gout)            -- gradOutput

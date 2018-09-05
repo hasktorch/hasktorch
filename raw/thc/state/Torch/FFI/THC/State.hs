@@ -12,7 +12,7 @@ import System.IO.Unsafe
 foreign import ccall "&free_CTHState" state_free :: FunPtr (Ptr C'THCState -> IO ())
 
 torchstate :: ForeignPtr C'THCState
-torchstate = unsafeDupablePerformIO $ do
+torchstate = unsafePerformIO $ do
   s <- General.c_THCState_alloc
   General.c_THCudaInit s
   General.c_THCMagma_init s

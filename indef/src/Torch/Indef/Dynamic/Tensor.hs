@@ -84,19 +84,19 @@ tensordata t = withDynamicState t $ \s' t' -> do
 
 -- | get a value from dimension 1
 get1d :: Dynamic -> Int64 -> HsReal
-get1d t d1 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get1d s t' (fromIntegral d1)
+get1d t d1 = unsafePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get1d s t' (fromIntegral d1)
 
 -- | get a value from dimension 2
 get2d :: Dynamic -> Int64 -> Int64 -> HsReal
-get2d t d1 d2 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get2d s t' (fromIntegral d1) (fromIntegral d2)
+get2d t d1 d2 = unsafePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get2d s t' (fromIntegral d1) (fromIntegral d2)
 
 -- | get a value from dimension 3
 get3d :: Dynamic -> Int64 -> Int64 -> Int64 -> HsReal
-get3d t d1 d2 d3 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get3d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3)
+get3d t d1 d2 d3 = unsafePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get3d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3)
 
 -- | get a value from dimension 4
 get4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal
-get4d t d1 d2 d3 d4 = unsafeDupablePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get4d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3) (fromIntegral d4)
+get4d t d1 d2 d3 d4 = unsafePerformIO . withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get4d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3) (fromIntegral d4)
 
 -- | whether or not the tensor is contiguous in memory.
 isContiguous :: Dynamic -> IO Bool
@@ -546,7 +546,7 @@ _unsqueeze1d t0 t1 d = with2DynamicState t0 t1 $
 
 -- | return the a runtime shape representing the dimensions of a 'Dynamic'
 shape :: Dynamic -> [Word]
-shape t = unsafeDupablePerformIO $
+shape t = unsafePerformIO $
   mapM (size t . fromIntegral) [0.. nDimension t - 1]
 
 -- | set the storage dimensionality of a dynamic tensor, inplace, to any new size and stride pair.
@@ -588,7 +588,7 @@ _resizeDim t d = case fromIntegral <$> listDims d of
 -- FIXME: CUDA doesn't like the storage allocation:
 
 vector :: [HsReal] -> Dynamic
-vector l = unsafeDupablePerformIO $ do
+vector l = unsafePerformIO $ do
 ---------------------------------------------------
 -- THCudaCheck FAIL file=/home/stites/git/hasktorch/vendor/aten/src/THC/generic/THCStorage.c line=150 error=11 : invalid argument
 -- terminate called after throwing an instance of 'std::runtime_error'
@@ -610,9 +610,9 @@ vector l = unsafeDupablePerformIO $ do
 -- | create a 2d Dynamic tensor from a list of list of elements.
 matrix :: [[HsReal]] -> Either String Dynamic
 matrix ls
-  | null ls = Right $ unsafeDupablePerformIO empty
+  | null ls = Right $ unsafePerformIO empty
   | any ((ncols /=) . length) ls = Left "rows are not all the same length"
-  | otherwise = Right . unsafeDupablePerformIO $ do
+  | otherwise = Right . unsafePerformIO $ do
 #ifdef CUDA
       let vec = vector (concat ls)
       go vec (someDimsVal [nrows, ncols])
@@ -632,12 +632,12 @@ matrix ls
 -- | create a 3d Dynamic tensor (ie: rectangular cuboid) from a nested list of elements.
 cuboid :: [[[HsReal]]] -> Either String Dynamic
 cuboid ls
-  | isEmpty ls = Right $ unsafeDupablePerformIO empty
+  | isEmpty ls = Right $ unsafePerformIO empty
   | null ls || any null ls || any (any null) ls = Left "can't accept empty lists"
   | innerDimCheck ncols        ls  = Left "rows are not all the same length"
   | innerDimCheck ndepth (head ls) = Left "columns are not all the same length"
 
-  | otherwise = Right . unsafeDupablePerformIO $ do
+  | otherwise = Right . unsafePerformIO $ do
 #ifdef CUDA
       let vec = vector (concat (concat ls))
       go vec (someDimsVal [nrows, ncols, ndepth])
@@ -671,7 +671,7 @@ cuboid ls
 -- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
 hyper :: [[[[HsReal]]]] -> Either String Dynamic
 hyper ls
-  | isEmpty ls = Right $ unsafeDupablePerformIO empty
+  | isEmpty ls = Right $ unsafePerformIO empty
   | null ls
     || any null ls
     || any (any null) ls
@@ -682,7 +682,7 @@ hyper ls
   | innerDimCheck ndepth       (head ls)  = Left "columns are not all the same length"
   | innerDimCheck ntime  (head (head ls)) = Left "depths are not all the same length"
 
-  | otherwise = Right . unsafeDupablePerformIO $ do
+  | otherwise = Right . unsafePerformIO $ do
 #ifdef CUDA
       let vec = vector (concat (concat (concat ls)))
       go vec (someDimsVal [nrows, ncols, ndepth, ntime])

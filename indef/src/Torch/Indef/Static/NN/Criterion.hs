@@ -84,7 +84,7 @@ bCECriterion' savg r mw tar = liftOp1 . op1 $ (updateOutput &&& updateGradInput)
     updateOutput
       :: Tensor '[n]          -- input
       -> Tensor '[1]          -- output
-    updateOutput i = unsafeDupablePerformIO . withNew $ \o ->
+    updateOutput i = unsafePerformIO . withNew $ \o ->
       Dynamic._bCECriterion_updateOutput
         (asDynamic i) (asDynamic tar) (asDynamic o) savg (asDynamic <$> mw) r
 
@@ -92,7 +92,7 @@ bCECriterion' savg r mw tar = liftOp1 . op1 $ (updateOutput &&& updateGradInput)
       :: Tensor '[n]          -- input
       -> Tensor '[1]          -- grad output
       -> Tensor '[n]          -- grad input
-    updateGradInput i go = unsafeDupablePerformIO . withNew $ \gi ->
+    updateGradInput i go = unsafePerformIO . withNew $ \gi ->
       Dynamic._bCECriterion_updateGradInput
         (asDynamic i) (asDynamic tar) (asDynamic go) (asDynamic gi) savg (asDynamic <$> mw) r
 
@@ -162,14 +162,14 @@ mSECriterion' sizeAvg reduce target = liftOp1 . op1 $ \i -> (updateOutput i, \go
   where
     -- mSECriterion forward pass (updates the output tensor)
     updateOutput :: Tensor d -> Tensor out
-    updateOutput i = unsafeDupablePerformIO $ do
+    updateOutput i = unsafePerformIO $ do
       o <- new
       Dynamic._mSECriterion_updateOutput (asDynamic i) (asDynamic target) (asDynamic o) sizeAvg (fromSing reduce)
       pure o
 
     -- mSECriterion backward-update (updates the layer and bias tensors)
     updateGradInput :: Tensor d -> Tensor out -> Tensor d
-    updateGradInput i gout = unsafeDupablePerformIO $ do
+    updateGradInput i gout = unsafePerformIO $ do
       gin <- new
       Dynamic._mSECriterion_updateGradInput (asDynamic i) (asDynamic target) (asDynamic gout) (asDynamic gin) sizeAvg (fromSing reduce)
       pure gin
@@ -304,7 +304,7 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
       -> Integer                     -- int64_t ignore_index,
       -> Bool                        -- bool reduce
       -> (Tensor '[1], Tensor '[1])
-    updateOutput inp tar szAvg mws ix reduce = unsafeDupablePerformIO $ do
+    updateOutput inp tar szAvg mws ix reduce = unsafePerformIO $ do
       out <- new
       let total_weight = constant 1  -- https://github.com/torch/nn/commit/3585e827eb65d071272a4aa4fab567b0b1eeee54#diff-1aa6a505cf16ad0e59498ada8432afb5
       Dynamic._ClassNLLCriterion_updateOutput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic out)
@@ -321,7 +321,7 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
       -> Integer                   -- int64_t ignore_index,
       -> Bool                      -- bool reduce
       -> Tensor '[sz, ps]
-    updateGradInput inp tar gout szAvg mws total_weight ix reduce = unsafeDupablePerformIO . withEmpty $ \gin ->
+    updateGradInput inp tar gout szAvg mws total_weight ix reduce = unsafePerformIO . withEmpty $ \gin ->
       Dynamic._ClassNLLCriterion_updateGradInput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
 

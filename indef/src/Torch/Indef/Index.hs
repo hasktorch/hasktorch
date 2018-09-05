@@ -85,7 +85,7 @@ zeroIxNd = longAsStatic $ newIxDyn 0
 
 -- | build a new 1-dimensional, dynamically-typed index tensor of lenght @i@
 newIxDyn :: Integral i => i -> IndexDynamic
-newIxDyn x = unsafeDupablePerformIO $
+newIxDyn x = unsafePerformIO $
   withForeignPtr Sig.torchstate $ \s ->
     IxSig.c_newWithSize1d s (fromIntegral x) >>= mkDynamic
 
@@ -93,7 +93,7 @@ newIxDyn x = unsafeDupablePerformIO $
 --
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
 indexDyn :: [Integer] -> IndexDynamic
-indexDyn l = unsafeDupablePerformIO $ do
+indexDyn l = unsafePerformIO $ do
   let res = newIxDyn (length l)
   mapM_  (upd res) (zip [0..length l - 1] l)
   pure res
@@ -166,7 +166,7 @@ mkCPUIxStorage p = fmap TH.LongStorage
 
 -- | get the shape of a static index tensor from the term-level
 ixShape :: IndexTensor d -> [Word]
-ixShape t = unsafeDupablePerformIO $ withDynamicState (longAsDynamic t) $ \s' t' -> do
+ixShape t = unsafePerformIO $ withDynamicState (longAsDynamic t) $ \s' t' -> do
   ds <- IxSig.c_nDimension s' t'
   mapM (fmap fromIntegral . IxSig.c_size s' t' . fromIntegral) [0..ds-1]
 
