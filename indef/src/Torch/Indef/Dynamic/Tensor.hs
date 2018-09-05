@@ -580,8 +580,8 @@ _resizeDim t d = case fromIntegral <$> listDims d of
 -- | create a 1d Dynamic tensor from a list of elements.
 --
 -- FIXME construct this with TH, not by using 'setDim' inplace (one-by-one) which might be doing a second linear pass.
-vectorOld :: [HsReal] -> Dynamic
-vectorOld l = unsafeDupablePerformIO $ do
+vector :: [HsReal] -> Dynamic
+vector l = unsafeDupablePerformIO $ do
   res <- new' (someDimsVal [genericLength l])
   mapM_  (upd res) (zip [0..genericLength l - 1] l)
   pure res
@@ -590,14 +590,30 @@ vectorOld l = unsafeDupablePerformIO $ do
   upd t (idx, v) = setDim'_ t (someDimsVal [idx]) v
 
 -- | create a 1d Dynamic tensor from a list of elements.
-vector :: [HsReal] -> Dynamic
-vector l = unsafeDupablePerformIO $ do
+vectorBork :: [HsReal] -> Dynamic
+vectorBork l = unsafeDupablePerformIO $ do
   st <- Storage.fromList (deepseq l l)
   newWithStorage1d st 0 (genericLength l, 1)
 
 -- | create a 2d Dynamic tensor from a list of list of elements.
 matrix :: [[HsReal]] -> Either String Dynamic
 matrix ls
+  | null ls = Right $ unsafeDupablePerformIO empty
+  | any ((ncols /=) . length) ls = Left "rows are not all the same length"
+  | otherwise = Right . unsafeDupablePerformIO $ do
+      let vec = vector (concat ls)
+      go vec (someDimsVal [nrows, ncols])
+
+      pure vec
+ where
+  go vec (SomeDims ds) = _resizeDim vec ds
+  ncols :: Integral i => i
+  ncols = genericLength (head ls)
+  nrows = genericLength ls
+
+-- | create a 2d Dynamic tensor from a list of list of elements.
+matrixBork :: [[HsReal]] -> Either String Dynamic
+matrixBork ls
   | null ls = Right $ unsafeDupablePerformIO empty
   | any ((ncols /=) . length) ls = Left "rows are not all the same length"
   | otherwise = Right . unsafeDupablePerformIO $ do
@@ -609,10 +625,42 @@ matrix ls
   ncols = genericLength (head ls)
   nrows = genericLength ls
 
-
 -- | create a 3d Dynamic tensor (ie: rectangular cuboid) from a nested list of elements.
 cuboid :: [[[HsReal]]] -> Either String Dynamic
 cuboid ls
+  | isEmpty ls = Right $ unsafeDupablePerformIO empty
+  | null ls || any null ls || any (any null) ls = Left "can't accept empty lists"
+  | innerDimCheck ncols        ls  = Left "rows are not all the same length"
+  | innerDimCheck ndepth (head ls) = Left "columns are not all the same length"
+
+  | otherwise = Right . unsafeDupablePerformIO $ do
+      let vec = vector (concat (concat ls))
+      go vec (someDimsVal [nrows, ncols, ndepth])
+ where
+  go vec (SomeDims ds) = _resizeDim vec ds >> pure vec
+
+  isEmpty = \case
+    []     -> True
+    [[]]   -> True
+    [[[]]] -> True
+    _      -> False
+
+  innerDimCheck :: Int -> [[x]] -> Bool
+  innerDimCheck d = any ((/= d) . length)
+
+  ndepth :: Integral i => i
+  ndepth = genericLength (head (head ls))
+
+  ncols :: Integral i => i
+  ncols = genericLength (head ls)
+
+  nrows :: Integral i => i
+  nrows = genericLength ls
+
+
+-- | create a 3d Dynamic tensor (ie: rectangular cuboid) from a nested list of elements.
+cuboidBork :: [[[HsReal]]] -> Either String Dynamic
+cuboidBork ls
   | isEmpty ls = Right $ unsafeDupablePerformIO empty
   | null ls || any null ls || any (any null) ls = Left "can't accept empty lists"
   | innerDimCheck ncols        ls  = Left "rows are not all the same length"
@@ -644,6 +692,50 @@ cuboid ls
 -- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
 hyper :: [[[[HsReal]]]] -> Either String Dynamic
 hyper ls
+  | isEmpty ls = Right $ unsafeDupablePerformIO empty
+  | null ls
+    || any null ls
+    || any (any null) ls
+    || any (any (any null)) ls
+    = Left "can't accept empty lists"
+
+  | innerDimCheck ncols              ls   = Left "rows are not all the same length"
+  | innerDimCheck ndepth       (head ls)  = Left "columns are not all the same length"
+  | innerDimCheck ntime  (head (head ls)) = Left "depths are not all the same length"
+
+  | otherwise = Right . unsafeDupablePerformIO $ do
+      let vec = vector (concat (concat (concat ls)))
+      go vec (someDimsVal [nrows, ncols, ndepth, ntime])
+ where
+  go vec (SomeDims ds) = _resizeDim vec ds >> pure vec
+
+  isEmpty = \case
+    []       -> True
+    [[]]     -> True
+    [[[]]]   -> True
+    [[[[]]]] -> True
+    _        -> False
+
+  innerDimCheck :: Int -> [[x]] -> Bool
+  innerDimCheck d = any ((/= d) . length)
+
+  ntime :: Integral i => i
+  ntime = genericLength (head (head (head ls)))
+
+  ndepth :: Integral i => i
+  ndepth = genericLength (head (head ls))
+
+  ncols :: Integral i => i
+  ncols = genericLength (head ls)
+
+  nrows :: Integral i => i
+  nrows = genericLength ls
+
+
+
+-- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
+hyperBork :: [[[[HsReal]]]] -> Either String Dynamic
+hyperBork ls
   | isEmpty ls = Right $ unsafeDupablePerformIO empty
   | null ls
     || any null ls
