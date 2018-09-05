@@ -613,12 +613,12 @@ matrix ls
   | null ls = Right $ unsafePerformIO empty
   | any ((ncols /=) . length) ls = Left "rows are not all the same length"
   | otherwise = Right . unsafePerformIO $ do
+      let l = concat ls
 #ifdef CUDA
-      let vec = vector (concat ls)
+          vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols])
       pure vec
 #else
-      let l = concat ls
       st <- Storage.fromList (deepseq l l)
       newWithStorage2d st 0 (nrows, ncols) (ncols, 1)
 #endif
@@ -638,11 +638,11 @@ cuboid ls
   | innerDimCheck ndepth (head ls) = Left "columns are not all the same length"
 
   | otherwise = Right . unsafePerformIO $ do
+      let l = concat (concat ls)
 #ifdef CUDA
-      let vec = vector (concat (concat ls))
+          vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols, ndepth])
 #else
-      let l = concat (concat ls)
       st <- Storage.fromList (deepseq l l)
       newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
 #endif
@@ -683,11 +683,11 @@ hyper ls
   | innerDimCheck ntime  (head (head ls)) = Left "depths are not all the same length"
 
   | otherwise = Right . unsafePerformIO $ do
+      let l = concat (concat (concat ls))
 #ifdef CUDA
-      let vec = vector (concat (concat (concat ls)))
+          vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols, ndepth, ntime])
 #else
-      let l = concat (concat (concat ls))
       st <- Storage.fromList (deepseq l l)
       newWithStorage4d st 0
         (nrows, ncols * ndepth * ntime)
