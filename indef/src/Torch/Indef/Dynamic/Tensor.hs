@@ -273,7 +273,11 @@ newWithStorage s pd l0 l1 =
         >>= mkDynamic
 
 -- | create a new 1d tensor with the given storage's first dimension.
-newWithStorage1d :: Storage -> StorageOffset -> (Size, Stride) -> IO Dynamic
+newWithStorage1d
+  :: Storage            -- storage to use
+  -> StorageOffset      -- storage offset must be >= 1
+  -> (Size, Stride)     -- size is of the 1st dimension, stride is the stride in the first dimension
+  -> IO Dynamic
 newWithStorage1d s pd (d00,d01) =
   withStorageState s $ \state' s' ->
     Sig.c_newWithStorage1d state' s' (fromIntegral pd)
