@@ -9,6 +9,7 @@
 --
 -- Element-wise functions.
 -------------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math.Pointwise
   ( cross
   , sign_       , sign
@@ -91,6 +92,7 @@ cadd  t v b = withEmpty t $ \r -> _cadd r t v b
 -- | inline alias to 'cadd'
 (^+^) :: Dynamic -> Dynamic -> Dynamic
 (^+^) a b = unsafePerformIO $ cadd a 1 b
+{-# NOINLINE (^+^) #-}
 
 -- | Multiply elements of tensor2 by the scalar value and subtract it from tensor1.
 -- The number of elements must match, but sizes do not matter.
@@ -115,6 +117,7 @@ csub  t v b = withEmpty t $ \r -> _csub r t v b
 -- | inline alias to 'csub'
 (^-^) :: Dynamic -> Dynamic -> Dynamic
 (^-^) a b = unsafePerformIO $ csub a 1 b
+{-# NOINLINE (^-^) #-}
 
 -- | Performs the element-wise multiplication of tensor1 by tensor2. The number of elements must match,
 -- but sizes do not matter.
@@ -143,6 +146,7 @@ square t = cmul t t
 -- | inline alias to 'cmul'
 (^*^) :: Dynamic -> Dynamic -> Dynamic
 (^*^) a b = unsafePerformIO $ cmul a b
+{-# NOINLINE (^*^) #-}
 
 -- | Performs the element-wise division of tensor1 by tensor2. The number of elements must match,
 -- but sizes do not matter.
@@ -165,6 +169,7 @@ cdiv  t1 t2 = withEmpty t1 $ \r -> _cdiv r t1 t2
 -- | inline alias to 'cdiv'
 (^/^) :: Dynamic -> Dynamic -> Dynamic
 (^/^) a b = unsafePerformIO $ cdiv a b
+{-# NOINLINE (^/^) #-}
 
 -- | Element-wise power operation, taking the elements of tensor1 to the powers given by elements
 -- of tensor2. The number of elements must match, but sizes do not matter.

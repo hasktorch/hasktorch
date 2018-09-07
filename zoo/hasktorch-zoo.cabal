@@ -22,6 +22,11 @@ flag gd
   Description: use gd graphics library for loading images
   Default: False
 
+flag debug
+  Description: use gd graphics library for loading images
+  Default: False
+
+
 library
   hs-source-dirs: src
   ghc-options: -Wall -fno-cse -Wno-missing-signatures
@@ -47,6 +52,7 @@ library
     , deepseq
     , mwc-random
     , primitive
+    , safe-exceptions
 
   -- training iterator dependencies
     , list-t

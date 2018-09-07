@@ -9,6 +9,7 @@
 --
 -- Compare a tensor with a scala value
 -------------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math.Compare
   ( ltValue, ltValueT, ltValueT_
   , leValue, leValueT, leValueT_
@@ -46,6 +47,7 @@ compareTensorOp op t0 v = unsafePerformIO $ do
   let bt = newMaskDyn d
   withDynamicState t0 $ \s' t0' -> withMask bt $ \bt' -> op s' bt' t0' (hs2cReal v)
   pure bt
+{-# NOINLINE compareTensorOp #-}
 
 -- | return a byte tensor which contains boolean values indicating the relation between a tensor and a given scalar.
 ltValue, leValue, gtValue, geValue, neValue, eqValue

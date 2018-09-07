@@ -71,20 +71,59 @@ import qualified Data.Singletons.Prelude.List as Sing (All)
 import Debug.Trace
 import qualified Torch.Double as CPU
 import qualified Torch.Double.Storage as CPUS
+import Control.Concurrent
 #endif
 
+main = runlenetcifar10
 
-main :: IO ()
-main = do
+loadtest :: IO ()
+loadtest = do
+  g <- MWC.initialize (V.singleton 42)
+  ltrain <- prepdata <$> cifar10set g default_cifar_path Train
+  forM_ ltrain $ \(_, y) -> case y of
+    Left x -> insanity x
+    Right x -> pure x
+
+insanity :: FilePath -> IO (Tensor '[3, 32, 32])
+insanity f = go 0
+ where
+  go x =
+    runExceptT (rgb2torch (Normalize True) f) >>= \case
+      Left s -> throwString s
+      Right t -> do
+#ifdef CUDA
+        CPU.tensordata (copyDouble t) >>= \rs -> do
+#else
+        tensordata t >>= \rs -> do
+#endif
+          let
+              oob = filter (\x -> x < 0 && x > 1) rs
+              oox = filter (<= 2) oob
+#ifdef DEBUG_VERBOSE
+          when (x == 0) $ modifyIORef counter (+1) >> readIORef counter >>= print
+#endif
+
+          if not (null oob)
+          then throwString (show (oob, oox))
+          else
+            if not (all (== 0) rs)
+            then pure t
+            else if x == 10
+              then throwString $ f ++ ": 10 retries -- failing on all-zero tensor"
+              else do
+                print $ f ++ ": retrying from " ++ show x
+                threadDelay 1000000
+                go (x+1)
+
+
+runlenetcifar10 :: IO ()
+runlenetcifar10 = do
   -- clearScreen
   g <- MWC.initialize (V.singleton 42)
 #ifdef CUDA
   withForeignPtr torchstate $ \s -> c_THCRandom_manualSeed s 42
 #endif
-  -- foo <- V.take 1 <$> cifar10set g default_cifar_path Train
-  -- print foo
-  -- V.mapM getdata (prepdata foo) >>= print
-  ltrain <- prepdata . V.take 500 <$> cifar10set g default_cifar_path Train
+  ltrain <- prepdata . V.take 250 <$> cifar10set g default_cifar_path Train
   ltest  <- prepdata . V.take 200 <$> cifar10set g default_cifar_path Test
   let (lval, lhold) = V.splitAt (V.length ltest `P.div` 2) ltest
   net0 <- newLeNet @3 @5
@@ -105,11 +144,15 @@ main = do
 -- ========================================================================= --
 -- Data processing + bells and whistles for a slow loader
 -- ========================================================================= --
-preprocess :: FilePath -> IO (Tensor '[3, 32, 32])
-preprocess f = do
-  -- let op = if False then (^/ 255) else id
+counter :: IORef Integer
+counter = unsafePerformIO $ newIORef 0
 
-  runExceptT (rgb2torch' (Normalize False) f) >>= \case
+preprocess :: FilePath -> IO (Tensor '[3, 32, 32])
+preprocess = insanity
+
+preprocess' :: FilePath -> IO (Tensor '[3, 32, 32])
+preprocess' f =
+  runExceptT (rgb2torch (Normalize True) f) >>= \case
     Left s -> throwString s
     Right t -> do
 #ifdef DEBUG
@@ -118,13 +161,24 @@ preprocess f = do
       pure t
  where
   assert :: Tensor '[3, 32, 32] -> IO ()
-  assert t = CPU.tensordata (copyDouble t) >>= \rs -> do
+  assert t =
+#ifdef CUDA
+    CPU.tensordata (copyDouble t) >>= \rs -> do
+#else
+    tensordata t >>= \rs -> do
+#endif
     let
       oob = filter (\x -> x < 0 && x > 1) rs
       oox = filter (<= 2) oob
-    if null oob
-    then pure ()
-    else throwString (show (oob, oox))
+    modifyIORef counter (+1)
+    readIORef counter >>= print
+
+    if not (null oob)
+    then throwString (show (oob, oox))
+    else
+      if all (== 0) rs
+      then throwString ("all-zero tensor! " ++ f)
+      else pure ()
 
 -- | potentially lazily loaded data point
 type LDatum = (Category, Either FilePath (Tensor '[3, 32, 32]))
@@ -157,16 +211,7 @@ testNet net ltest = do
     then pure $ V.map (second (fromRight undefined)) ltest
     else do
       let l = fromIntegral (length ltest) :: Float
-#ifdef DEBUG
-      c <- newIORef 0
-      V.mapM (\x -> do
-        modifyIORef c (+1)
-        c' <- readIORef c
-        if c' `mod` 1000 == 1 then printf "\r%.1f%% " (fromIntegral c' / l) >> hFlush stdout else pure ()
-#else
-      V.mapM (\x -> do
-#endif
-        getdata x) ltest
+      V.mapM getdata ltest
 
   let
     testX = V.toList $ fmap snd test
@@ -174,6 +219,9 @@ testNet net ltest = do
     preds = map (infer net) testX
     acc = genericLength (filter id $ zipWith (==) preds testY) / genericLength testY
 
+#ifdef DEBUG
+  printf "\n"
+#endif
   printf ("[test accuracy: %.1f%% / %d]\tAll same? %s")
     (acc * 100 :: Float)
     (length testY)
@@ -259,10 +307,22 @@ runBatches estr d lr t00 e lds net = do
     btensor fcd >>= \case
         Nothing -> pure (net, seen)
         Just (ys, xs) -> do
+#ifdef DEBUG
+          (net', loss) <- trainStep lr net xs ys
+#else
           let (net', loss) = trainStep lr net xs ys
+#endif
           t1 <- getCurrentTime
+
+#ifdef DEBUG
+          let diff = 0.0 :: Float
+              front = "\n"
+#else
           let diff = realToFrac (t1 `diffUTCTime` t00) :: Float
-          printf (setRewind ++ estr ++ "(%db#%03d)[mse %.4f](elapsed: %.2fs)")
+              front = setRewind
+#endif
+
+          printf (front ++ estr ++ "(%db#%03d)[mse %.4f](elapsed: %.2fs)")
             bs (bid+1)
             (loss `get1d` 0)
             diff -- ((t1 `diffUTCTime` t00))
@@ -337,8 +397,17 @@ trainStep
   -> LeNet ch step
   -> Tensor '[batch, ch, 32, 32]
   -> Tensor '[batch, 10]
+#ifndef DEBUG
   -> (LeNet ch step, Tensor '[1])
 trainStep lr net xs ys = (Bp.add net gnet, out)
+#else
+  -> IO (LeNet ch step, Tensor '[1])
+trainStep lr net xs ys = do
+#ifdef DEBUG_VERBOSE
+  print xs
+#endif
+  pure (Bp.add net gnet, out)
+#endif
   where
     (out, (gnet, _)) = backprop2 ( mSECriterion ys .: lenetBatch lr) net xs
 

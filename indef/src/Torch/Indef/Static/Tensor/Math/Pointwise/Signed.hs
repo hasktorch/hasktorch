@@ -7,6 +7,7 @@
 -- Stability :  experimental
 -- Portability: non-portable
 -------------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.Tensor.Math.Pointwise.Signed where
 
 import Torch.Indef.Types

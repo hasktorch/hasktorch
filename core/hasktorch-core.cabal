@@ -1193,14 +1193,14 @@ library
           ,Torch.Indef.Static.Tensor.ScatterGather  as Torch.Indef.Cuda.Double.Tensor.ScatterGather
           ,Torch.Indef.Static.Tensor.Sort           as Torch.Indef.Cuda.Double.Tensor.Sort
           ,Torch.Indef.Static.Tensor.TopK           as Torch.Indef.Cuda.Double.Tensor.TopK
-  
+
           ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Signed
           ,Torch.Indef.Static.Tensor.Math.Blas                as Torch.Indef.Cuda.Double.Tensor.Math.Blas
           ,Torch.Indef.Static.Tensor.Math.Floating            as Torch.Indef.Cuda.Double.Tensor.Math.Floating
           ,Torch.Indef.Static.Tensor.Math.Lapack              as Torch.Indef.Cuda.Double.Tensor.Math.Lapack
           ,Torch.Indef.Static.Tensor.Math.Pointwise.Floating  as Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Floating
           ,Torch.Indef.Static.Tensor.Math.Reduce.Floating     as Torch.Indef.Cuda.Double.Tensor.Math.Reduce.Floating
-  
+
           ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Double.Dynamic.Tensor
           ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Double.Dynamic.Tensor.Copy
           ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Double.Dynamic.Tensor.Index

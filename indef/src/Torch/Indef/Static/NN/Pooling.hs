@@ -14,6 +14,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Pooling where
 
 import Numeric.Backprop
@@ -126,6 +127,7 @@ dilatedMaxPooling2dBatch
 dilatedMaxPooling2dBatch = _dilatedMaxPooling2d
 
 -- | internal function of 'dilatedMaxPooling2d' and 'dilatedMaxPooling2dBatch'. Should not be used.
+{-# NOINLINE _dilatedMaxPooling2d #-}
 _dilatedMaxPooling2d
   :: forall s d d' kH kW dH dW pH pW dilH dilW ceilMode
   .  All KnownDim '[kH,kW,pH,pW,dH,dW,dilH,dilW]
@@ -147,6 +149,7 @@ _dilatedMaxPooling2d ker step pad dil ceil = liftOp1 . op1 $ \inp -> unsafePerfo
   pure (out, \gout ->
    unsafePerformIO (_spatialDilatedMaxPooling_updateGradInput inp gout ix ker step pad dil ceil))
  where
+  {-# NOINLINE _spatialDilatedMaxPooling_updateOutput #-}
   _spatialDilatedMaxPooling_updateOutput
     :: Tensor d              -- ^ input
     -> Kernel2d '(kH, kW)        -- ^ kernel size
@@ -205,6 +208,7 @@ _maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp ->
 
  where
 
+  {-# NOINLINE _spatialMaxPooling_updateOutput #-}
   _spatialMaxPooling_updateOutput
     :: Tensor d              -- ^ input
     -> Kernel2d '(kH, kW)        -- ^ kernel size
@@ -219,6 +223,7 @@ _maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp ->
       (param2d ker) (param2d step) (param2d pad) (fromSing ceilMode)
     pure (ix, out)
 
+  {-# NOINLINE _spatialMaxPooling_updateGradInput #-}
   _spatialMaxPooling_updateGradInput
     :: Tensor d              -- ^ input
     -> Tensor d'             -- ^ gradOutput

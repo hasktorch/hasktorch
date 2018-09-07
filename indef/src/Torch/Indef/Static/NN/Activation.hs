@@ -8,6 +8,7 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Activation where
 
 import Numeric.Backprop
@@ -98,6 +99,7 @@ threshold thr value = liftOp1 . op1 $ \inp ->
   (unsafePerformIO (_threshold_updateOutput thr value False inp), \gout ->
     unsafePerformIO (_threshold_updateGradInput thr value False inp gout))
   where
+    {-# NOINLINE _threshold_updateOutput #-}
     _threshold_updateOutput
       :: Double              -- ^ threshold
       -> Double              -- ^ replacement value
@@ -112,6 +114,7 @@ threshold thr value = liftOp1 . op1 $ \inp ->
         inplace
       pure out
 
+    {-# NOINLINE _threshold_updateGradInput #-}
     _threshold_updateGradInput
       :: Double        -- ^ threshold
       -> Double        -- ^ replacement value

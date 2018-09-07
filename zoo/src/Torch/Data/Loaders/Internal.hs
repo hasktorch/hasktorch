@@ -9,6 +9,8 @@ import Control.Concurrent (threadDelay)
 import Control.Monad -- (forM_, filterM)
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
+import Control.Exception.Safe
+import Control.DeepSeq
 import GHC.Conc (getNumProcessors)
 import GHC.TypeLits (KnownNat)
 import Numeric.Dimensions
@@ -16,6 +18,7 @@ import System.Random.MWC (GenIO)
 import System.Random.MWC.Distributions (uniformShuffle)
 import System.Directory (listDirectory, doesDirectoryExist)
 import System.FilePath ((</>), takeExtension)
+import Control.Concurrent
 
 import Control.Monad.Primitive
 import qualified Data.Vector as V
@@ -46,17 +49,6 @@ mapPool mx fn xs = do
   sem <- MSem.new mx
   Async.mapConcurrently (MSem.with sem . fn) xs
 
--- | load an RGB PNG image into a Torch tensor
-rgb2torch
-  :: forall h w
-  . (All KnownDim '[h, w], All KnownNat '[h, w])
-  => FilePath -> ExceptT String IO (Tensor '[3, h, w])
-rgb2torch fp = do
-  t <- lift new
-  pxs <- file2rgb (Proxy :: Proxy '(h, w)) fp
-  lift . fillFrom pxs $ \(c, h, w) px -> setDim'_ t (someDimsVal $ fromIntegral <$> [c, h, w]) px
-  pure t
-
 fillFrom :: (Num y, PrimMonad m) => [((Int, Int), (Int, Int, Int))] -> ((Int, Int, Int) -> y -> m ()) -> m ()
 fillFrom pxs filler =
   forM_ pxs $ \((h, w), (r, g, b)) ->
@@ -81,9 +73,16 @@ file2rgb hwp fp = do
   forM [(h, w) | h <- [0.. height - 1], w <- [0.. width - 1]] $ \(h, w) -> do
     let JP.PixelRGB8 r g b = JP.pixelAt im h w
 #endif
+    -- lift $ print (r, g, b)
     pure ((h, w), (fromIntegral r, fromIntegral g, fromIntegral b))
  where
   (height, width) = reifyHW hwp
+
+assertPixels :: [((Int, Int), (Int, Int, Int))] -> IO ()
+assertPixels pxs = do
+  if all ((\(r, g, b) -> all (==0) [r, g, b]). snd) pxs
+  then throwString "IMAGES LOADED INCORRECTLY!"
+  else pure ()
 
 reifyHW
   :: forall h w
@@ -92,21 +91,26 @@ reifyHW
   -> (Int, Int)
 reifyHW _ = (fromIntegral (dimVal (dim :: Dim h)), fromIntegral (dimVal (dim :: Dim w)))
 
-
 newtype Normalize = Normalize Bool
   deriving (Eq, Ord, Show, Enum, Bounded)
 
 -- | load an RGB PNG image into a Torch tensor
-rgb2torch'
+rgb2torch
   :: forall h w . (All KnownDim '[h, w], All KnownNat '[h, w])
   => Normalize
   -> FilePath
   -> ExceptT String IO (Tensor '[3, h, w])
-rgb2torch' (Normalize donorm) fp = do
+rgb2torch (Normalize donorm) fp = do
   pxs <- file2rgb hwp fp
+#ifdef DEBUG
+  lift $ assertPixels pxs
+#endif
   ExceptT $ do
     vec <- mkRGBVec
-    fillFrom pxs (\chw px -> writePx vec chw (prep px))
+    -- threadDelay 1000
+    fillFrom pxs $ \chw px -> do
+      let pxfin = prep px
+      writePx vec chw pxfin
     cuboid <$> freezeList vec
  where
   prep w =
@@ -187,9 +191,3 @@ shuffleCatFolders g cast path = do
 isImage :: FilePath -> Bool
 isImage = (== ".png") . takeExtension
 
-#ifdef DEBUG
-main = do
-  nprocs <- getNumProcessors
-  putStrLn $ "number of cores: " ++ show nprocs
-  mapPool nprocs (\x -> threadDelay 100000 >> print x >> pure x) [1..100]
-#endif

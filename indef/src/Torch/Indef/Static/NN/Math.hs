@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Math where
 
 import Data.Singletons.Prelude.Ord (type (<))
@@ -107,6 +108,7 @@ softmaxN d = liftOp1 . op1 $ \inp ->
   in
     (out, \gout -> updateGradInput inp gout out idim)
  where
+  {-# NOINLINE updateOutput #-}
   updateOutput :: Dimensions d => Tensor d -> Integer -> Tensor d
   updateOutput inp i = unsafePerformIO . withEmpty $ \out -> do
     Dynamic._softMax_updateOutput
@@ -114,6 +116,7 @@ softmaxN d = liftOp1 . op1 $ \inp ->
       (asDynamic out)
       i
 
+  {-# NOINLINE updateGradInput #-}
   -- FIXME: There seems to be a bug in softmax. In the mean time, using a translation
   -- of the raw THNN code:
   -- https://github.com/hasktorch/ATen/blob/hasktorch-expand/src/THNN/generic/SoftMax.c#L111
@@ -159,10 +162,12 @@ logSoftMaxN i = liftOp1 . op1 $ \inp ->
   let out = updateOutput inp i
   in (updateOutput inp i, \gout -> updateGradInput inp gout out i)
  where
+  {-# NOINLINE updateOutput #-}
   updateOutput :: Tensor d -> Dim i -> Tensor d
   updateOutput inp i = unsafePerformIO . withEmpty $ \out ->
     Dynamic._logSoftMax_updateOutput (asDynamic inp) (asDynamic out) (fromIntegral $ dimVal i)
 
+  {-# NOINLINE updateGradInput #-}
   updateGradInput
     :: Tensor d  -- input
     -> Tensor d  -- gradOutput

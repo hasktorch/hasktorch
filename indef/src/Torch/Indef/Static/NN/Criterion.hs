@@ -11,6 +11,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Criterion where
 
 import Control.Arrow ((&&&))
@@ -81,6 +82,7 @@ bCECriterion'
   -> BVar s (Tensor '[1])          -- ^ output
 bCECriterion' savg r mw tar = liftOp1 . op1 $ (updateOutput &&& updateGradInput)
   where
+    {-# NOINLINE updateOutput #-}
     updateOutput
       :: Tensor '[n]          -- input
       -> Tensor '[1]          -- output
@@ -88,6 +90,7 @@ bCECriterion' savg r mw tar = liftOp1 . op1 $ (updateOutput &&& updateGradInput)
       Dynamic._bCECriterion_updateOutput
         (asDynamic i) (asDynamic tar) (asDynamic o) savg (asDynamic <$> mw) r
 
+    {-# NOINLINE updateGradInput #-}
     updateGradInput
       :: Tensor '[n]          -- input
       -> Tensor '[1]          -- grad output
@@ -161,6 +164,7 @@ mSECriterion' :: forall s bs d d' reduce out
 mSECriterion' sizeAvg reduce target = liftOp1 . op1 $ \i -> (updateOutput i, \gout -> updateGradInput i gout)
   where
     -- mSECriterion forward pass (updates the output tensor)
+    {-# NOINLINE updateOutput #-}
     updateOutput :: Tensor d -> Tensor out
     updateOutput i = unsafePerformIO $ do
       o <- new
@@ -168,6 +172,7 @@ mSECriterion' sizeAvg reduce target = liftOp1 . op1 $ \i -> (updateOutput i, \go
       pure o
 
     -- mSECriterion backward-update (updates the layer and bias tensors)
+    {-# NOINLINE updateGradInput #-}
     updateGradInput :: Tensor d -> Tensor out -> Tensor d
     updateGradInput i gout = unsafePerformIO $ do
       gin <- new
@@ -296,6 +301,7 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
   in
     (out, \gout -> updateGradInput inp target gout szAvg Nothing total_weight ix reduce)
   where
+    {-# NOINLINE updateOutput #-}
     updateOutput
       :: Tensor '[sz, ps]            -- THTensor *input,
       -> IndexTensor '[sz]           -- THIndexTensor *target,
@@ -311,6 +317,7 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
       pure (out, total_weight)
 
+    {-# NOINLINE updateGradInput #-}
     updateGradInput
       :: Tensor '[sz, ps]          -- THTensor *input,
       -> IndexTensor '[sz]         -- THIndexTensor *target,

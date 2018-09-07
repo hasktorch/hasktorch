@@ -8,6 +8,7 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.Tensor.Math.Reduce
   ( minall
   , maxall

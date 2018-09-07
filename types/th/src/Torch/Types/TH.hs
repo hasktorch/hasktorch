@@ -1,5 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Types.TH
   ( module Torch.Types.TH.Structs
 
@@ -65,6 +66,7 @@ foreign import ccall "&free_CTHState" state_free :: FunPtr (Ptr C'THState -> IO 
 -- finalizer. This is to keep the API unified with THC.
 torchstate :: ForeignPtr C'THState
 torchstate = unsafePerformIO $ newForeignPtr state_free nullPtr
+{-# NOINLINE torchstate #-}
 
 type C'THState = ()
 type C'THNNState = C'THState

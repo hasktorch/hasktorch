@@ -8,6 +8,7 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.Tensor.Math.Blas where
 
 import Numeric.Dimensions
@@ -44,6 +45,7 @@ addmv
   -> Tensor '[r]      -- ^ res
 addmv a b c d e = unsafePerformIO $ asStatic <$> Dynamic.addmv a (asDynamic b) c (asDynamic d) (asDynamic e)
 {-# NOINLINE addmv #-}
+-- safeAddmv a b c d e = asStatic <$> Dynamic.addmv a (asDynamic b) c (asDynamic d) (asDynamic e)
 
 -- | Inline version of 'addmv', mutating @vec1@ inplace.
 addmv_

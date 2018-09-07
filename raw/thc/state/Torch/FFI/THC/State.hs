@@ -1,4 +1,5 @@
 {-# LANGUAGE Strict #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.FFI.THC.State where
 
 import Foreign
@@ -17,5 +18,7 @@ torchstate = unsafePerformIO $ do
   General.c_THCudaInit s
   General.c_THCMagma_init s
   newForeignPtr state_free s
+{-# NOINLINE torchstate #-}
+
 
 

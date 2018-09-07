@@ -17,6 +17,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-cse #-}
@@ -39,6 +40,7 @@ import GHC.ForeignPtr (ForeignPtr)
 import GHC.Int
 import Numeric.Dimensions
 import System.IO.Unsafe
+import Control.Concurrent
 
 import qualified Torch.Types.TH            as TH
 import qualified Foreign.Marshal.Array     as FM
@@ -140,6 +142,7 @@ _narrow t0 t1 a b c = withDynamicState t0 $ \s t0' ->
 -- | Returns an empty tensor.
 empty :: IO Dynamic
 empty = withForeignPtr Sig.torchstate $ Sig.c_new >=> mkDynamic
+{-# NOINLINE empty #-}
 
 -- | pure version of '_expand'
 newExpand :: Dynamic -> TH.IndexStorage -> IO Dynamic
@@ -261,6 +264,13 @@ newWithSize4d :: Size -> Size -> Size -> Size -> IO Dynamic
 newWithSize4d a0 a1 a2 a3 = mkDynamicIO $ \s -> Sig.c_newWithSize4d s (fromIntegral a0) (fromIntegral a1) (fromIntegral a2) (fromIntegral a3)
 
 {-# WARNING newWithStorage, newWithStorage1d, newWithStorage2d, newWithStorage3d, newWithStorage4d, newWithTensor "hasktorch devs have not yet made this safe. You are warned." #-}
+
+{-# NOINLINE newWithStorage #-}
+{-# NOINLINE newWithStorage1d #-}
+{-# NOINLINE newWithStorage2d #-}
+{-# NOINLINE newWithStorage3d #-}
+{-# NOINLINE newWithStorage4d #-}
+{-# NOINLINE newWithTensor  #-}
 -- | create a new tensor with the given size and strides, storage offset and storage.
 --
 -- FIXME: doublecheck what all of this does.
@@ -561,23 +571,25 @@ _setStorageDim t s o = \case
 
 -- | set a value of a dynamic tensor, inplace, with any dimensionality.
 _setDim :: Dynamic -> Dims (d::[Nat]) -> HsReal -> IO ()
-_setDim t d v = case fromIntegral <$> listDims d of
+_setDim t d !v = do
+ threadDelay 1000
+ case fromIntegral <$> listDims d of
   []           -> throwNE "can't set on an empty dimension."
-  [x]          -> _set1d t x       v
-  [x, y]       -> _set2d t x y     v
-  [x, y, z]    -> _set3d t x y z   v
-  [x, y, z, q] -> _set4d t x y z q v
+  [!x]          -> _set1d t x          v
+  [!x, !y]       -> _set2d t x y       v
+  [!x, !y, !z]    -> _set3d t x y z    v
+  [!x, !y, !z, !q] -> _set4d t x y z q v
   _            -> throwGT4 "set"
 
 -- | resize a dynamic tensor, inplace, to any new dimensionality
 _resizeDim :: Dynamic -> Dims (d::[Nat]) -> IO ()
 _resizeDim t d = case fromIntegral <$> listDims d of
   []              -> throwNE "can't resize to an empty dimension."
-  [x]             -> _resize1d t x
-  [x, y]          -> _resize2d t x y
-  [x, y, z]       -> _resize3d t x y z
-  [x, y, z, q]    -> _resize4d t x y z q
-  [x, y, z, q, w] -> _resize5d t x y z q w
+  [!x]             -> _resize1d t x
+  [!x, !y]          -> _resize2d t x y
+  [!x, !y, !z]       -> _resize3d t x y z
+  [!x, !y, !z, !q]    -> _resize4d t x y z q
+  [!x, !y, !z, !q, !w] -> _resize5d t x y z q w
   _ -> throwFIXME "this should be doable with resizeNd" "resizeDim"
   -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
@@ -587,6 +599,7 @@ _resizeDim t d = case fromIntegral <$> listDims d of
 -- FIXME construct this with TH, not by using 'setDim' inplace (one-by-one) which might be doing a second linear pass.
 -- FIXME: CUDA doesn't like the storage allocation:
 
+{-# NOINLINE vector #-}
 vector :: [HsReal] -> Dynamic
 vector l = unsafePerformIO $ do
 ---------------------------------------------------
@@ -604,10 +617,13 @@ vector l = unsafePerformIO $ do
 #endif
  where
   upd :: Dynamic -> (Word, HsReal) -> IO ()
-  upd t (idx, v) = setDim'_ t (someDimsVal [idx]) v
+  upd t (idx, v) =
+    let ix = [idx]
+    in setDim'_ t (someDimsVal (deepseq ix ix)) v
 
 
 -- | create a 2d Dynamic tensor from a list of list of elements.
+{-# NOINLINE matrix #-}
 matrix :: [[HsReal]] -> Either String Dynamic
 matrix ls
   | null ls = Right $ unsafePerformIO empty
@@ -630,6 +646,7 @@ matrix ls
   nrows = genericLength ls
 
 -- | create a 3d Dynamic tensor (ie: rectangular cuboid) from a nested list of elements.
+{-# NOINLINE cuboid #-}
 cuboid :: [[[HsReal]]] -> Either String Dynamic
 cuboid ls
   | isEmpty ls = Right $ unsafePerformIO empty
@@ -669,6 +686,7 @@ cuboid ls
 
 
 -- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
+{-# NOINLINE hyper #-}
 hyper :: [[[[HsReal]]]] -> Either String Dynamic
 hyper ls
   | isEmpty ls = Right $ unsafePerformIO empty

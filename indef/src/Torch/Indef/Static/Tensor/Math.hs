@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.Tensor.Math where
 
 import Numeric.Dimensions -- hiding (Length)
@@ -114,6 +115,7 @@ cat
   -> Dim (i::Nat)
   -> Tensor (ls ++ '[r0 + r1] ++ rs)
 cat a b d = unsafePerformIO $ asStatic <$> Dynamic.cat (asDynamic a) (asDynamic b) (fromIntegral $ dimVal d)
+{-# NOINLINE cat #-}
 
 -- | convenience function, specifying a type-safe 'cat' operation.
 cat1d :: (All KnownDim '[n1,n2,n], n ~ Sing.Sum [n1, n2]) => Tensor '[n1] -> Tensor '[n2] -> Tensor '[n]
@@ -174,6 +176,7 @@ catArray ts dv = empty >>= \r -> Dynamic._catArray (asDynamic r) ts dv >> pure r
 
 catArray0 :: (Dimensions d, Dimensions d2) => [Tensor d2] -> Tensor d
 catArray0 ts = unsafePerformIO $ catArray (asDynamic <$> ts) 0
+{-# NOINLINE catArray0 #-}
 
 {-
 catArray_

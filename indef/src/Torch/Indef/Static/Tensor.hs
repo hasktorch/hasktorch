@@ -225,6 +225,7 @@ squeeze1d n t = unsafePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
   Dynamic._squeeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
   pure t'
+{-# NOINLINE squeeze1d #-}
 
 -- | Static call to 'Dynamic.storage'
 storage t = Dynamic.storage (asDynamic t)
@@ -248,6 +249,8 @@ unsqueeze1d n t = unsafePerformIO $ do
   let t' = (asStatic . asDynamic) (copy t)
   Dynamic._unsqueeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
   pure t'
+{-# NOINLINE unsqueeze1d #-}
+
 
 -- | *Not safe:*  unsqueeze a dimension of size 1 into the tensor.
 unsqueeze1d_
@@ -374,6 +377,8 @@ t !! i = unsafePerformIO $
       r <- lift $ newWithSize1d 1
       lift $ _set1d r 0 (get1d t (fromIntegral $ dimVal i))
       pure r
+{-# NOINLINE (!!) #-}
+
 
 -- | Create a new tensor. Elements have not yet been allocated and there will
 -- not be any gauruntees regarding what is inside.
@@ -409,6 +414,7 @@ resizeAs src = unsafePerformIO $ do
   res <- newClone src
   shape :: Tensor d' <- new
   _resizeAs res shape
+{-# NOINLINE resizeAs #-}
 
 -- | flatten a tensor (pure, dupable)
 flatten :: (Dimensions d, KnownDim (Product d)) => Tensor d -> Tensor '[Product d]
@@ -510,6 +516,8 @@ cuboid ls
 -- | transpose a matrix (pure, dupable)
 transpose2d :: (All KnownDim '[r,c]) => Tensor '[r, c] -> Tensor '[c, r]
 transpose2d t = unsafePerformIO $ newTranspose t 1 0
+{-# NOINLINE transpose2d #-}
+
 
 -- | Expand a vector by copying into a matrix by set dimensions
 -- TODO - generalize this beyond the matrix case
@@ -524,6 +532,7 @@ expand2d t = unsafePerformIO $ do
   where
     s1 = fromIntegral $ dimVal (dim :: Dim  x)
     s2 = fromIntegral $ dimVal (dim :: Dim  y)
+{-# NOINLINE expand2d #-}
 
 -- | Get an element from a matrix with runtime index values.
 --
