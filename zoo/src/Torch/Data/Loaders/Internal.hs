@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TupleSections #-}
 module Torch.Data.Loaders.Internal where
 
@@ -47,31 +48,53 @@ mapPool mx fn xs = do
 
 -- | load an RGB PNG image into a Torch tensor
 rgb2torch
-  :: forall h w . (KnownDim h, KnownDim w)
+  :: forall h w
+  . (All KnownDim '[h, w], All KnownNat '[h, w])
   => FilePath -> ExceptT String IO (Tensor '[3, h, w])
 rgb2torch fp = do
   t <- lift new
+  pxs <- file2rgb (Proxy :: Proxy '(h, w)) fp
+  lift . fillFrom pxs $ \(c, h, w) px -> setDim'_ t (someDimsVal $ fromIntegral <$> [c, h, w]) px
+  pure t
+
+fillFrom :: (Num y, PrimMonad m) => [((Int, Int), (Int, Int, Int))] -> ((Int, Int, Int) -> y -> m ()) -> m ()
+fillFrom pxs filler =
+  forM_ pxs $ \((h, w), (r, g, b)) ->
+    forM_ (zip [0..] [r,g,b]) $ \(c, px) ->
+      filler (c, h, w) (fromIntegral px)
+
+file2rgb
+  :: forall h w hw rgb
+  . (All KnownDim '[h, w], All KnownNat '[h, w])
+  => hw ~ (Int, Int)
+  => rgb ~ (Int, Int, Int)
+  => Proxy '(h, w)
+  -> FilePath
+  -> ExceptT String IO [(hw, rgb)]
+file2rgb hwp fp = do
 #ifdef USE_GD
   im <- lift $ GD.loadPngFile fp
-  setPixels $ \(h, w) -> do
-    (r,g,b,_) <- GD.toRGBA <$> GD.getPixel (h,w) im
+  forM [(h, w) | h <- [0.. height - 1], w <- [0.. width - 1]] $ \(h, w) -> do
+    (r,g,b,_) <- lift $ GD.toRGBA <$> GD.getPixel (h,w) im
 #else
   im <- JP.convertRGB8 <$> ExceptT (JP.readPng fp)
-  setPixels $ \(h, w) -> do
+  forM [(h, w) | h <- [0.. height - 1], w <- [0.. width - 1]] $ \(h, w) -> do
     let JP.PixelRGB8 r g b = JP.pixelAt im h w
 #endif
-    forM_ (zip [0..] [r, g, b]) $ \(c, px) ->
-      setDim'_ t (someDimsVal $ fromIntegral <$> [c, h, w]) (fromIntegral px)
-  pure t
+    pure ((h, w), (fromIntegral r, fromIntegral g, fromIntegral b))
  where
-  setPixels :: ((Int, Int) -> IO ()) -> ExceptT String IO ()
-  setPixels
-    = lift . forM_ [(h, w) | h <- [0.. fromIntegral (dimVal (dim :: Dim h)) - 1]
-                           , w <- [0.. fromIntegral (dimVal (dim :: Dim w)) - 1]]
+  (height, width) = reifyHW hwp
 
-runRgb2torch fp = runExceptT $ rgb2torch fp
+reifyHW
+  :: forall h w
+  . (All KnownDim '[h, w], All KnownNat '[h, w])
+  => Proxy '(h, w)
+  -> (Int, Int)
+reifyHW _ = (fromIntegral (dimVal (dim :: Dim h)), fromIntegral (dimVal (dim :: Dim w)))
+
 
 newtype Normalize = Normalize Bool
+  deriving (Eq, Ord, Show, Enum, Bounded)
 
 -- | load an RGB PNG image into a Torch tensor
 rgb2torch'
@@ -79,23 +102,22 @@ rgb2torch'
   => Normalize
   -> FilePath
   -> ExceptT String IO (Tensor '[3, h, w])
-rgb2torch' (Normalize norm) fp = do
-  im <- JP.convertRGB8 <$> ExceptT (JP.readPng fp)
+rgb2torch' (Normalize donorm) fp = do
+  pxs <- file2rgb hwp fp
   ExceptT $ do
     vec <- mkRGBVec
-    fillFrom im vec
+    fillFrom pxs (\chw px -> writePx vec chw (prep px))
     cuboid <$> freezeList vec
  where
   prep w =
-    if norm
-    then fromIntegral w / 255
-    else fromIntegral w
+    if donorm
+    then w / 255
+    else w
 
-  height :: Int
-  height = fromIntegral (dimVal (dim :: Dim h))
+  (height, width) = reifyHW hwp
 
-  width :: Int
-  width = fromIntegral (dimVal (dim :: Dim w))
+  hwp :: Proxy '(h, w)
+  hwp = Proxy
 
   mkRGBVec :: PrimMonad m => m (MRGBVector (PrimState m))
   mkRGBVec = M.replicateM 3 (M.replicateM height (M.unsafeNew width))
@@ -110,26 +132,6 @@ rgb2torch' (Normalize norm) fp = do
     = M.unsafeRead channels c
     >>= \rows -> M.unsafeRead rows h
     >>= \cols -> M.unsafeWrite cols w px
-
-  fillFrom :: PrimMonad m => JP.Image JP.PixelRGB8 -> MRGBVector (PrimState m) -> m ()
-  fillFrom im vec =
-    forM_ [(h, w) | h <- [0.. height - 1], w <- [0.. width - 1]] $ \(h, w) -> do
-      let JP.PixelRGB8 r g b = JP.pixelAt im h w
-      forM_ (zip [0..] [r,g,b]) $ \(c, px) ->
-        writePx vec (c, h, w) (prep px)
-
-  freeze
-    :: forall m s
-    . PrimMonad m
-    => s ~ PrimState m
-    => MRGBVector s
-    -> m (Vector (Vector (Vector HsReal)))
-  freeze mvecs = do
-    -- frames <-
-    readNfreeze mvecs 3 $ \mframe ->
-      -- forM [0,1,2] $ (M.read mvecs >=> \mframe ->
-        readNfreeze mframe height V.unsafeFreeze
-    -- pure $ V.fromListN 3 frames
 
   freezeList
     :: forall m s
