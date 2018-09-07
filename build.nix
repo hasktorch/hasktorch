@@ -1,4 +1,4 @@
-{ compilerVersion ? "ghc822" }:
+{ compilerVersion ? "ghc843" }:
 let
   config = {
     allowUnfree = true;
@@ -31,9 +31,6 @@ let
               hasktorch-raw-tests =
                 haskellPackagesNew.callPackage ./raw/tests { };
 
-              type-combinators =
-                haskellPackagesOld.callPackage ./vendor/type-combinators.nix { };
-
               hasktorch-indef =
                 haskellPackagesNew.callPackage ./indef { };
               hasktorch-core =
@@ -60,5 +57,4 @@ in {
   hasktorch-signatures = ghc.hasktorch-signatures;
   hasktorch-signatures-types = ghc.hasktorch-signatures-types;
   hasktorch-partial = ghc.hasktorch-partial;
-  type-combinators = ghc.type-combinators;
 }

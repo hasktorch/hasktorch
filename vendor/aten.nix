@@ -19,7 +19,7 @@ stdenv.mkDerivation rec {
     liblapack
     gfortran.cc.lib
     ]
-    ++ lib.optionals cudaSupport [cudatoolkit];
+    ++ lib.optionals cudaSupport [cudatoolkit magma];
   cmakeFlags = [
     ("-DNO_CUDA=" + (if cudaSupport then "false" else "true"))
     "-Wno-dev"
