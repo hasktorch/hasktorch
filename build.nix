@@ -21,7 +21,7 @@ let
                 haskellPackagesNew.callPackage ./signatures { };
               hasktorch-signatures-types =
                 haskellPackagesNew.callPackage ./signatures/types { };
-              hasktorch-partial =
+              hasktorch-signatures-partial =
                 haskellPackagesNew.callPackage ./signatures/partial { };
 
               hasktorch-raw-th =
@@ -44,17 +44,29 @@ let
       };
     };
   };
-  pkgs = import <nixpkgs> { inherit config; };
+  pkgs = import <nixos-unstable> { inherit config; };
   ghc = pkgs.haskell.packages.${compilerVersion};
+  dev-env = pkgs.stdenv.mkDerivation {
+    name = "aten-development-environment";
+    buildInputs = [ pkgs.hasktorch-aten ];
+  };
 in {
-  hasktorch-aten = pkgs.hasktorch-aten;
-  hasktorch-codegen = ghc.hasktorch-codegen;
-  hasktorch-types-th = ghc.hasktorch-types-th;
-  hasktorch-raw-th = ghc.hasktorch-raw-th;
-  hasktorch-core = ghc.hasktorch-core;
-  hasktorch-types-thc = ghc.hasktorch-types-thc;
-  hasktorch-raw-thc = ghc.hasktorch-raw-thc;
-  hasktorch-signatures = ghc.hasktorch-signatures;
-  hasktorch-signatures-types = ghc.hasktorch-signatures-types;
-  hasktorch-partial = ghc.hasktorch-partial;
+  inherit (pkgs) hasktorch-aten;
+  inherit
+    (ghc)
+    # # These dependencies depend on backpack and backpack support in
+    # # nix is currently lacking
+    # # ref: https://github.com/NixOS/nixpkgs/issues/40128
+    # hasktorch-core
+    # hasktorch-signatures
+    # hasktorch-signatures-partial
+    # hasktorch-signatures-types
+    # hasktorch-examples
+    # hasktorch-indef
+    hasktorch-codegen
+    hasktorch-raw-th
+    hasktorch-raw-thc
+    hasktorch-types-th
+    hasktorch-types-thc;
+  inherit dev-env;
 }

@@ -1,8 +1,9 @@
 # See: https://gist.github.com/CMCDragonkai/41593d6d20a5f7c01b2e67a221aa0330
 
 { stdenv, cmake, blas, liblapack, gfortran, lib
-, typing, pyaml
+, typing, pyaml, magma
 , cudaSupport ? false, cudatoolkit ? null
+, dev ? false
 }:
 
 assert cudaSupport -> cudatoolkit != null;
@@ -22,6 +23,6 @@ stdenv.mkDerivation rec {
     ++ lib.optionals cudaSupport [cudatoolkit magma];
   cmakeFlags = [
     ("-DNO_CUDA=" + (if cudaSupport then "false" else "true"))
-    "-Wno-dev"
+    (if dev then "-Wno-dev" else "")
   ];
 }
