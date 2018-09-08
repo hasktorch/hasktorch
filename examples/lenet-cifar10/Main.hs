@@ -74,7 +74,7 @@ import qualified Torch.Double.Storage as CPUS
 import Control.Concurrent
 #endif
 
-main = runlenetcifar10
+main = loadtest
 
 loadtest :: IO ()
 loadtest = do
@@ -97,7 +97,7 @@ insanity f = go 0
         tensordata t >>= \rs -> do
 #endif
           let
-              oob = filter (\x -> x < 0 && x > 1) rs
+              oob = filter (\x -> x < 0 || x > 1) rs
               oox = filter (<= 2) oob
 #ifdef DEBUG_VERBOSE
           when (x == 0) $ modifyIORef counter (+1) >> readIORef counter >>= print
@@ -156,28 +156,30 @@ preprocess' f =
     Left s -> throwString s
     Right t -> do
 #ifdef DEBUG
-      assert t
+      assertTen t
 #endif
       pure t
- where
-  assert :: Tensor '[3, 32, 32] -> IO ()
-  assert t =
+
+assertTen :: Tensor d -> IO ()
+assertTen t =
 #ifdef CUDA
     CPU.tensordata (copyDouble t) >>= \rs -> do
 #else
     tensordata t >>= \rs -> do
 #endif
     let
-      oob = filter (\x -> x < 0 && x > 1) rs
+      oob = filter (\x -> x < 0 || x > 1) rs
       oox = filter (<= 2) oob
-    modifyIORef counter (+1)
-    readIORef counter >>= print
+
+#ifdef DEBUG_VERBOSE
+    when (x == 0) $ modifyIORef counter (+1) >> readIORef counter >>= print
+#endif
 
     if not (null oob)
     then throwString (show (oob, oox))
     else
       if all (== 0) rs
-      then throwString ("all-zero tensor! " ++ f)
+      then throwString ("all-zero tensor!")
       else pure ()
 
 -- | potentially lazily loaded data point
@@ -335,14 +337,23 @@ runBatches estr d lr t00 e lds net = do
     | otherwise = do
       -- ds <- V.mapM getdata lds
       -- pure $ (Just . (toYs &&& toXs) . V.toList) ds
-
-      (Just . (toYs &&& toXs) . V.toList) <$> V.mapM getdata lds
+      foo <- V.toList <$> V.mapM getdata lds
+      ys <- toYs foo
+      xs <- toXs foo
+      pure $ Just (ys, xs)
     where
-      toYs :: [(Category, Tensor '[3, 32, 32])] -> Tensor '[batch, 10]
-      toYs = unsafeMatrix . fmap (onehotf . fst)
+      toYs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[batch, 10])
+      toYs ys =
+        pure . unsafeMatrix . fmap (onehotf . fst) $ ys
 
-      toXs :: [(Category, Tensor '[3, 32, 32])] ->  Tensor '[batch, 3, 32, 32]
-      toXs = catArray0 . fmap (unsqueeze1d (dim :: Dim 0) . snd)
+      toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[batch, 3, 32, 32])
+      toXs xs = do
+        print "XS PREPO"
+        mapM_ assertTen (snd <$> xs)
+        print "XS CATTED"
+        let xs' = catArray0 $ fmap (unsqueeze1d (dim :: Dim 0) . snd) xs
+        assertTen xs'
+        pure xs'
 
 
  -- | Erase the last line in an ANSI terminal
@@ -403,8 +414,8 @@ trainStep lr net xs ys = (Bp.add net gnet, out)
 #else
   -> IO (LeNet ch step, Tensor '[1])
 trainStep lr net xs ys = do
-#ifdef DEBUG_VERBOSE
-  print xs
+#ifdef DEBUG
+  -- print xs
 #endif
   pure (Bp.add net gnet, out)
 #endif

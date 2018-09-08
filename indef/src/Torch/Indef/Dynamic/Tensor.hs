@@ -607,14 +607,15 @@ vector l = unsafePerformIO $ do
 -- terminate called after throwing an instance of 'std::runtime_error'
 --   what():  cuda runtime error (11) : invalid argument at /home/stites/git/hasktorch/vendor/aten/src/THC/generic/THCStorage.c:150
 --   Aborted (core dumped)
-#ifdef CUDA
+-- #ifdef CUDA
   res <- new' (someDimsVal [genericLength l])
   mapM_  (upd res) (zip [0..genericLength l - 1] l)
   pure res
-#else
-  st <- Storage.fromList (deepseq l l)
-  newWithStorage1d st 0 (genericLength l, 1)
-#endif
+-- #else
+--   -- IMPORTANT: This is safe for CPU. For GPU, I think we need to allocate and marshal a haskell list into cuda memory before continuing.
+--   st <- Storage.fromList (deepseq l l)
+--   newWithStorage1d st 0 (genericLength l, 1)
+-- #endif
  where
   upd :: Dynamic -> (Word, HsReal) -> IO ()
   upd t (idx, v) =
@@ -630,14 +631,14 @@ matrix ls
   | any ((ncols /=) . length) ls = Left "rows are not all the same length"
   | otherwise = Right . unsafePerformIO $ do
       let l = concat ls
-#ifdef CUDA
+-- #ifdef CUDA
           vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols])
       pure vec
-#else
-      st <- Storage.fromList (deepseq l l)
-      newWithStorage2d st 0 (nrows, ncols) (ncols, 1)
-#endif
+-- #else
+--       st <- Storage.fromList (deepseq l l)
+--       newWithStorage2d st 0 (nrows, ncols) (ncols, 1)
+-- #endif
  where
   go vec (SomeDims ds) = _resizeDim vec ds
 
@@ -656,13 +657,13 @@ cuboid ls
 
   | otherwise = Right . unsafePerformIO $ do
       let l = concat (concat ls)
-#ifdef CUDA
+-- #ifdef CUDA
           vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols, ndepth])
-#else
-      st <- Storage.fromList (deepseq l l)
-      newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
-#endif
+-- #else
+--       st <- Storage.fromList (deepseq l l)
+--       newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
+-- #endif
  where
   go vec (SomeDims ds) = _resizeDim vec ds >> pure vec
 
@@ -702,17 +703,17 @@ hyper ls
 
   | otherwise = Right . unsafePerformIO $ do
       let l = concat (concat (concat ls))
-#ifdef CUDA
+-- #ifdef CUDA
           vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols, ndepth, ntime])
-#else
-      st <- Storage.fromList (deepseq l l)
-      newWithStorage4d st 0
-        (nrows, ncols * ndepth * ntime)
-        (ncols, ndepth * ntime)
-        (ndepth, ntime)
-        (ntime, 1)
-#endif
+-- #else
+--       st <- Storage.fromList (deepseq l l)
+--       newWithStorage4d st 0
+--         (nrows, ncols * ndepth * ntime)
+--         (ncols, ndepth * ntime)
+--         (ndepth, ntime)
+--         (ntime, 1)
+-- #endif
  where
   go vec (SomeDims ds) = _resizeDim vec ds >> pure vec
 
