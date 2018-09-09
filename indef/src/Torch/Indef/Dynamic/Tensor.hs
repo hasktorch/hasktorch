@@ -78,11 +78,13 @@ _clearFlag t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
 -- NOTE: This _cannot_ use a Tensor's storage size because ATen's Storage
 -- allocates up to the next 64-byte line on the CPU (needs reference, this
 -- is the unofficial response from \@soumith in slack).
+#ifndef HASKTORCH_CORE_CUDA
 tensordata :: Dynamic -> IO [HsReal]
 tensordata t = withDynamicState t $ \s' t' -> do
   let sz = fromIntegral $ product (shape t)
   creals <- Sig.c_data s' t'
   (fmap.fmap) c2hsReal (FM.peekArray sz creals)
+#endif
 
 -- | get a value from dimension 1
 get1d :: Dynamic -> Int64 -> HsReal

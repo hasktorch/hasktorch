@@ -92,8 +92,10 @@ _resizeNd src a b c = Dynamic._resizeNd (asDynamic src) a b c >> pure ((asStatic
 retain t = Dynamic.retain (asDynamic t)
 -- | Static call to 'Dynamic._clearFlag'
 _clearFlag t = Dynamic._clearFlag (asDynamic t)
+#ifndef HASKTORCH_CORE_CUDA
 -- | Static call to 'Dynamic.tensordata'
 tensordata t = Dynamic.tensordata (asDynamic t)
+#endif
 -- | Static call to 'Dynamic.get1d'
 get1d t = Dynamic.get1d (asDynamic t)
 -- | Static call to 'Dynamic.get2d'

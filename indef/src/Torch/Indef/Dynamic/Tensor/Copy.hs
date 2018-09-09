@@ -91,21 +91,23 @@ copyLong   = copyType L.c_newWithSize_ L.p_free TH.longDynamic Sig.c_copyLong
 copyFloat :: Dynamic -> TH.FloatDynamic
 copyFloat  = copyType F.c_newWithSize_ F.p_free TH.floatDynamic Sig.c_copyFloat
 -- | copy a tensor to a double tensor. *Use at your own discresion*
+copyDouble :: Dynamic -> TH.DoubleDynamic
+copyDouble  = copyType D.c_newWithSize_ D.p_free TH.doubleDynamic Sig.c_copyDouble
 -- copyDouble :: Dynamic -> TH.DoubleDynamic
 -- copyDouble = copyType D.c_new_ D.p_free TH.doubleDynamic Sig.c_copyDouble D.c_resize
 
-copyDouble :: Dynamic -> TH.DoubleDynamic
-copyDouble t = unsafePerformIO . withDynamicState t $ \s' t' -> do
-  withForeignPtr TH.torchstate $ \ths' -> do
-    sizes   <- Sig.c_newSizeOf s' t'
-    strides <- Sig.c_newStrideOf s' t'
-    target  <- D.c_newWithSize ths' sizes strides
-
-    -- mapM (size t . fromIntegral) [0.. nDimension t - 1] >>=
-    Sig.c_copyDouble s' t' target
-
-    out <- TH.doubleDynamic TH.torchstate <$> newForeignPtr D.p_free target
-    pure out
+-- copyDouble :: Dynamic -> TH.DoubleDynamic
+-- copyDouble t = unsafePerformIO . withDynamicState t $ \s' t' -> do
+--   withForeignPtr TH.torchstate $ \ths' -> do
+--     sizes   <- Sig.c_newSizeOf s' t'
+--     strides <- Sig.c_newStrideOf s' t'
+--     target  <- D.c_newWithSize ths' sizes strides
+--
+--     -- mapM (size t . fromIntegral) [0.. nDimension t - 1] >>=
+--     Sig.c_copyDouble s' t' target
+--
+--     out <- TH.doubleDynamic TH.torchstate <$> newForeignPtr D.p_free target
+--     pure out
 
 
 -- FIXME: reintroduce Half

@@ -40,6 +40,7 @@ import GHC.TypeLits (Div) -- (type Div)
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Copy
 import Torch.Indef.Static.Tensor.Math
+import Torch.Indef.Static.Tensor.Math.Pairwise ((*^))
 import Torch.Indef.Static.NN.Backprop ()
 import Torch.Indef.Types
 import Numeric.Backprop
