@@ -73,6 +73,116 @@ test-suite spec
     -- , Torch.Static.NN.MaxPoolingSpec
 
 library
+  default-language: Haskell2010
+  default-extensions: LambdaCase, DataKinds, TypeFamilies, TypeSynonymInstances
+  hs-source-dirs: utils
+  build-depends:
+      base >=4.7 && <5
+    , hasktorch-core-cpu
+    , hasktorch-core-gpu
+    , hasktorch-types-th
+
+    , containers
+    , deepseq >=1.3.0.0
+    , dimensions >= 1.0
+    , hasktorch-raw-th
+    , hasktorch-types-th
+    , managed >=1.0.0 && <1.1
+    , microlens >=0.4.8.1
+    , numeric-limits
+    , safe-exceptions >=0.1.0.0
+    , singletons >=2.2
+    , text >=1.2.2.2
+    , typelits-witnesses >=0.2.3.0
+
+
+  -- support modules
+  exposed-modules:
+      Torch.Core.Exceptions
+    , Torch.Core.Random
+    , Torch.Core.LogAdd
+
+  reexported-modules:
+      -- support module
+      Torch.Types.Numeric
+
+    , Torch.Long
+    , Torch.Long.Dynamic
+    , Torch.Long.Storage
+
+    , Torch.Double
+    , Torch.Double.Dynamic
+    , Torch.Double.Storage
+    , Torch.Double.NN
+    , Torch.Double.NN.Activation
+    , Torch.Double.NN.Backprop
+    , Torch.Double.NN.Conv1d
+    , Torch.Double.NN.Conv2d
+    , Torch.Double.NN.Criterion
+    , Torch.Double.NN.Layers
+    , Torch.Double.NN.Linear
+    , Torch.Double.NN.Math
+    , Torch.Double.NN.Padding
+    , Torch.Double.NN.Pooling
+    , Torch.Double.NN.Sampling
+
+  if !flag(lite) {
+    reexported-modules:
+        Torch.Byte
+      , Torch.Byte.Dynamic
+      , Torch.Byte.Storage
+      , Torch.Char
+      , Torch.Char.Dynamic
+      , Torch.Char.Storage
+      , Torch.Short
+      , Torch.Short.Dynamic
+      , Torch.Short.Storage
+      , Torch.Int
+      , Torch.Int.Dynamic
+      , Torch.Int.Storage
+      , Torch.Float
+      , Torch.Float.Dynamic
+      , Torch.Float.Storage
+  }
+  if flag(cuda) {
+    reexported-modules:
+        Torch.Cuda.Long
+      , Torch.Cuda.Long.Dynamic
+      , Torch.Cuda.Long.Storage
+      , Torch.Cuda.Double
+      , Torch.Cuda.Double.Dynamic
+      , Torch.Cuda.Double.Storage
+      , Torch.Cuda.Double.NN
+      , Torch.Cuda.Double.NN.Activation
+      , Torch.Cuda.Double.NN.Backprop
+      , Torch.Cuda.Double.NN.Conv1d
+      , Torch.Cuda.Double.NN.Conv2d
+      , Torch.Cuda.Double.NN.Criterion
+      , Torch.Cuda.Double.NN.Layers
+      , Torch.Cuda.Double.NN.Linear
+      , Torch.Cuda.Double.NN.Math
+      , Torch.Cuda.Double.NN.Padding
+      , Torch.Cuda.Double.NN.Pooling
+      , Torch.Cuda.Double.NN.Sampling
+    if !flag(lite) {
+      reexported-modules:
+          Torch.Cuda.Byte
+        , Torch.Cuda.Byte.Dynamic
+        , Torch.Cuda.Byte.Storage
+        , Torch.Cuda.Char
+        , Torch.Cuda.Char.Dynamic
+        , Torch.Cuda.Char.Storage
+        , Torch.Cuda.Short
+        , Torch.Cuda.Short.Dynamic
+        , Torch.Cuda.Short.Storage
+        , Torch.Cuda.Int
+        , Torch.Cuda.Int.Dynamic
+        , Torch.Cuda.Int.Storage
+    }
+  }
+
+
+library hasktorch-core-cpu
   hs-source-dirs: src, utils
   default-language: Haskell2010
   default-extensions: LambdaCase, DataKinds, TypeFamilies, TypeSynonymInstances
@@ -93,15 +203,10 @@ library
 
     , hasktorch-indef-floating
     , hasktorch-indef-signed
-
-  -- support modules
-  exposed-modules:
-      Torch.Core.Exceptions
-    , Torch.Core.Random
-    , Torch.Core.LogAdd
-
-  reexported-modules:
-      Torch.Types.Numeric
+  other-modules:
+      Torch.Core.Random
+    -- , Torch.Core.Exceptions
+    -- , Torch.Core.LogAdd
 
   if !flag(lite) {
     build-depends:
@@ -759,400 +864,104 @@ library
 
 
 
-  if flag(cuda) {
-    cpp-options: -DCUDA
-    build-depends:
-        hasktorch-types-thc
-      , hasktorch-raw-thc
+library hasktorch-core-gpu
+  hs-source-dirs: src, utils
+  default-language: Haskell2010
+  default-extensions: LambdaCase, DataKinds, TypeFamilies, TypeSynonymInstances
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , deepseq >=1.3.0.0
+    , dimensions >= 1.0
+    , hasktorch-raw-th
+    , hasktorch-types-th
+    , managed >=1.0.0 && <1.1
+    , microlens >=0.4.8.1
+    , numeric-limits
+    , safe-exceptions >=0.1.0.0
+    , singletons >=2.2
+    , text >=1.2.2.2
+    , typelits-witnesses >=0.2.3.0
 
-    if !flag(lite) {
-      exposed-modules:
-          Torch.Cuda.Byte
-        , Torch.Cuda.Byte.Dynamic
-        , Torch.Cuda.Byte.Storage
+    , hasktorch-indef-floating
+    , hasktorch-indef-signed
 
-      mixins:
-          hasktorch-indef-unsigned
-            (Torch.Indef.Storage                       as Torch.Indef.Cuda.Byte.Storage
-            ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Byte.Storage.Copy
+  cpp-options: -DCUDA -DHASKTORCH_INTERNAL_CUDA
+  build-depends:
+      hasktorch-types-thc
+    , hasktorch-raw-thc
 
-            ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Byte.Tensor
-            ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Byte.Tensor.Copy
-            ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Byte.Tensor.Index
-            ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Byte.Tensor.Masked
-            ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Byte.Tensor.Math
-            ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Byte.Tensor.Math.Compare
-            ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Byte.Tensor.Math.CompareT
-            ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Byte.Tensor.Math.Pairwise
-            ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Byte.Tensor.Math.Pointwise
-            ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Byte.Tensor.Math.Reduce
-            ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Byte.Tensor.Math.Scan
-            ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Byte.Tensor.Mode
-            ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Byte.Tensor.ScatterGather
-            ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Byte.Tensor.Sort
-            ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Byte.Tensor.TopK
-
-            ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Byte.Dynamic.Tensor
-            ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Copy
-            ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Index
-            ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Masked
-            ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math
-            ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Compare
-            ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.CompareT
-            ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Pairwise
-            ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Pointwise
-            ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Reduce
-            ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Scan
-            ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Mode
-            ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Byte.Dynamic.Tensor.ScatterGather
-            ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Sort
-            ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.TopK
-            ,Torch.Indef.Index as Torch.Cuda.Byte.Index
-            ,Torch.Indef.Mask as Torch.Cuda.Byte.Mask
-            )
-            requires
-            (Torch.Sig.Types.Global   as Torch.Types.THC
-            ,Torch.Sig.Types          as Torch.Types.THC.Byte
-            ,Torch.Sig.State          as Torch.FFI.THC.State
-            ,Torch.Sig.Storage        as Torch.FFI.THC.Byte.Storage
-            ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Byte.StorageCopy
-            ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Byte.Storage
-
-            ,Torch.Sig.Tensor        as Torch.FFI.THC.Byte.Tensor
-            ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Byte.TensorCopy
-            ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Byte.Tensor
-
-            ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
-            ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
-            ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Byte.TensorMath
-            ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Byte.TensorMathCompare
-            ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Byte.TensorMathCompareT
-            ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Byte.TensorMathPairwise
-            ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Byte.TensorMathPointwise
-            ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Byte.TensorMathReduce
-            ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Byte.TensorMathScan
-            ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Byte.TensorMode
-            ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Byte.TensorScatterGather
-            ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Byte.TensorSort
-            ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Byte.TensorTopK
-
-            ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
-            ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
-            ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
-            ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
-            ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
-            )
-
-      exposed-modules:
-          Torch.Cuda.Char
-        , Torch.Cuda.Char.Dynamic
-        , Torch.Cuda.Char.Storage
-
-      mixins:
-          hasktorch-indef-unsigned
-            (Torch.Indef.Storage                       as Torch.Indef.Cuda.Char.Storage
-            ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Char.Storage.Copy
-
-            ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Char.Tensor
-            ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Char.Tensor.Copy
-            ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Char.Tensor.Index
-            ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Char.Tensor.Masked
-            ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Char.Tensor.Math
-            ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Char.Tensor.Math.Compare
-            ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Char.Tensor.Math.CompareT
-            ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Char.Tensor.Math.Pairwise
-            ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Char.Tensor.Math.Pointwise
-            ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Char.Tensor.Math.Reduce
-            ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Char.Tensor.Math.Scan
-            ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Char.Tensor.Mode
-            ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Char.Tensor.ScatterGather
-            ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Char.Tensor.Sort
-            ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Char.Tensor.TopK
-
-            ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Char.Dynamic.Tensor
-            ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Char.Dynamic.Tensor.Copy
-            ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Char.Dynamic.Tensor.Index
-            ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Char.Dynamic.Tensor.Masked
-            ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math
-            ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Compare
-            ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.CompareT
-            ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Pairwise
-            ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Pointwise
-            ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Reduce
-            ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Scan
-            ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Char.Dynamic.Tensor.Mode
-            ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Char.Dynamic.Tensor.ScatterGather
-            ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Char.Dynamic.Tensor.Sort
-            ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Char.Dynamic.Tensor.TopK
-            ,Torch.Indef.Index as Torch.Cuda.Char.Index
-            ,Torch.Indef.Mask as Torch.Cuda.Char.Mask
-            )
-            requires
-            (Torch.Sig.Types.Global   as Torch.Types.THC
-            ,Torch.Sig.Types          as Torch.Types.THC.Char
-            ,Torch.Sig.State          as Torch.FFI.THC.State
-            ,Torch.Sig.Storage        as Torch.FFI.THC.Char.Storage
-            ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Char.StorageCopy
-            ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Char.Storage
-
-            ,Torch.Sig.Tensor        as Torch.FFI.THC.Char.Tensor
-            ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Char.TensorCopy
-            ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Char.Tensor
-
-            ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Char.TensorIndex
-            ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Char.TensorMasked
-            ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Char.TensorMath
-            ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Char.TensorMathCompare
-            ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Char.TensorMathCompareT
-            ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Char.TensorMathPairwise
-            ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Char.TensorMathPointwise
-            ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Char.TensorMathReduce
-            ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Char.TensorMathScan
-            ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Char.TensorMode
-            ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Char.TensorScatterGather
-            ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Char.TensorSort
-            ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Char.TensorTopK
-            ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
-            ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
-            ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
-            ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
-            ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
-            )
-
-      exposed-modules:
-          Torch.Cuda.Short
-        , Torch.Cuda.Short.Dynamic
-        , Torch.Cuda.Short.Storage
-
-      mixins:
-          hasktorch-indef-signed
-            (Torch.Indef.Storage                       as Torch.Indef.Cuda.Short.Storage
-            ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Short.Storage.Copy
-
-            ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Short.Tensor
-            ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Short.Tensor.Copy
-            ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Short.Tensor.Index
-            ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Short.Tensor.Masked
-            ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Short.Tensor.Math
-            ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Short.Tensor.Math.Compare
-            ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Short.Tensor.Math.CompareT
-            ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Short.Tensor.Math.Pairwise
-            ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Short.Tensor.Math.Pointwise
-            ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Short.Tensor.Math.Reduce
-            ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Short.Tensor.Math.Scan
-            ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Short.Tensor.Mode
-            ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Short.Tensor.ScatterGather
-            ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Short.Tensor.Sort
-            ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Short.Tensor.TopK
-            ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed  as Torch.Indef.Cuda.Short.Tensor.Math.Pointwise.Signed
-
-            ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Short.Dynamic.Tensor
-            ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Short.Dynamic.Tensor.Copy
-            ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Short.Dynamic.Tensor.Index
-            ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Short.Dynamic.Tensor.Masked
-            ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math
-            ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Compare
-            ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.CompareT
-            ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Pairwise
-            ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Pointwise
-            ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Reduce
-            ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Scan
-            ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Short.Dynamic.Tensor.Mode
-            ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Short.Dynamic.Tensor.ScatterGather
-            ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Short.Dynamic.Tensor.Sort
-            ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Short.Dynamic.Tensor.TopK
-            ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Pointwise.Signed
-            ,Torch.Indef.Index as Torch.Cuda.Short.Index
-            ,Torch.Indef.Mask as Torch.Cuda.Short.Mask
-            )
-            requires
-            (Torch.Sig.Types.Global   as Torch.Types.THC
-            ,Torch.Sig.Types          as Torch.Types.THC.Short
-            ,Torch.Sig.State          as Torch.FFI.THC.State
-            ,Torch.Sig.Storage        as Torch.FFI.THC.Short.Storage
-            ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Short.StorageCopy
-            ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Short.Storage
-
-            ,Torch.Sig.Tensor        as Torch.FFI.THC.Short.Tensor
-            ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Short.TensorCopy
-            ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Short.Tensor
-
-            ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Short.TensorIndex
-            ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Short.TensorMasked
-            ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Short.TensorMath
-            ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Short.TensorMathCompare
-            ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Short.TensorMathCompareT
-            ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Short.TensorMathPairwise
-            ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Short.TensorMathPointwise
-            ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Short.TensorMathReduce
-            ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Short.TensorMathScan
-            ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Short.TensorMode
-            ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Short.TensorScatterGather
-            ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Short.TensorSort
-            ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Short.TensorTopK
-            ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Short.TensorMathPointwise
-            ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
-            ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
-            ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
-            ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
-            ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
-            )
-
-      exposed-modules:
-          Torch.Cuda.Int
-        , Torch.Cuda.Int.Dynamic
-        , Torch.Cuda.Int.Storage
-
-      mixins:
-          hasktorch-indef-signed
-            (Torch.Indef.Storage                       as Torch.Indef.Cuda.Int.Storage
-            ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Int.Storage.Copy
-
-            ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Int.Tensor
-            ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Int.Tensor.Copy
-            ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Int.Tensor.Index
-            ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Int.Tensor.Masked
-            ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Int.Tensor.Math
-            ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Int.Tensor.Math.Compare
-            ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Int.Tensor.Math.CompareT
-            ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Int.Tensor.Math.Pairwise
-            ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Int.Tensor.Math.Pointwise
-            ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed  as Torch.Indef.Cuda.Int.Tensor.Math.Pointwise.Signed
-            ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Int.Tensor.Math.Reduce
-            ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Int.Tensor.Math.Scan
-            ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Int.Tensor.Mode
-            ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Int.Tensor.ScatterGather
-            ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Int.Tensor.Sort
-            ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Int.Tensor.TopK
-
-            ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Int.Dynamic.Tensor
-            ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Int.Dynamic.Tensor.Copy
-            ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Int.Dynamic.Tensor.Index
-            ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Int.Dynamic.Tensor.Masked
-            ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math
-            ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Compare
-            ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.CompareT
-            ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Pairwise
-            ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Pointwise
-            ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Pointwise.Signed
-            ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Reduce
-            ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Scan
-            ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Int.Dynamic.Tensor.Mode
-            ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Int.Dynamic.Tensor.ScatterGather
-            ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Int.Dynamic.Tensor.Sort
-            ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Int.Dynamic.Tensor.TopK
-            ,Torch.Indef.Index as Torch.Cuda.Int.Index
-            ,Torch.Indef.Mask as Torch.Cuda.Int.Mask
-            )
-            requires
-            (Torch.Sig.Types.Global   as Torch.Types.THC
-            ,Torch.Sig.Types          as Torch.Types.THC.Int
-            ,Torch.Sig.State          as Torch.FFI.THC.State
-            ,Torch.Sig.Storage        as Torch.FFI.THC.Int.Storage
-            ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Int.StorageCopy
-            ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Int.Storage
-
-            ,Torch.Sig.Tensor        as Torch.FFI.THC.Int.Tensor
-            ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Int.TensorCopy
-            ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Int.Tensor
-
-            ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Int.TensorIndex
-            ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Int.TensorMasked
-            ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Int.TensorMath
-            ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Int.TensorMathCompare
-            ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Int.TensorMathCompareT
-            ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Int.TensorMathPairwise
-            ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Int.TensorMathPointwise
-            ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Int.TensorMathReduce
-            ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Int.TensorMathScan
-            ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Int.TensorMode
-            ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Int.TensorScatterGather
-            ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Int.TensorSort
-            ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Int.TensorTopK
-
-            ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Int.TensorMathPointwise
-            ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
-            ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
-            ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
-            ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
-            ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
-            )
-    }
-
+  if !flag(lite) {
     exposed-modules:
-        Torch.Cuda.Long
-      , Torch.Cuda.Long.Dynamic
-      , Torch.Cuda.Long.Storage
+        Torch.Cuda.Byte
+      , Torch.Cuda.Byte.Dynamic
+      , Torch.Cuda.Byte.Storage
 
     mixins:
-        hasktorch-indef-signed
-          (Torch.Indef.Storage                       as Torch.Indef.Cuda.Long.Storage
-          ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Long.Storage.Copy
+        hasktorch-indef-unsigned
+          (Torch.Indef.Storage                       as Torch.Indef.Cuda.Byte.Storage
+          ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Byte.Storage.Copy
 
-          ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Long.Tensor
-          ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Long.Tensor.Copy
-          ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Long.Tensor.Index
-          ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Long.Tensor.Masked
-          ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Long.Tensor.Math
-          ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Long.Tensor.Math.Compare
-          ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Long.Tensor.Math.CompareT
-          ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Long.Tensor.Math.Pairwise
-          ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Long.Tensor.Math.Pointwise
-          ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed  as Torch.Indef.Cuda.Long.Tensor.Math.Pointwise.Signed
-          ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Long.Tensor.Math.Reduce
-          ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Long.Tensor.Math.Scan
-          ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Long.Tensor.Mode
-          ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Long.Tensor.ScatterGather
-          ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Long.Tensor.Sort
-          ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Long.Tensor.TopK
+          ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Byte.Tensor
+          ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Byte.Tensor.Copy
+          ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Byte.Tensor.Index
+          ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Byte.Tensor.Masked
+          ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Byte.Tensor.Math
+          ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Byte.Tensor.Math.Compare
+          ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Byte.Tensor.Math.CompareT
+          ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Byte.Tensor.Math.Pairwise
+          ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Byte.Tensor.Math.Pointwise
+          ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Byte.Tensor.Math.Reduce
+          ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Byte.Tensor.Math.Scan
+          ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Byte.Tensor.Mode
+          ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Byte.Tensor.ScatterGather
+          ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Byte.Tensor.Sort
+          ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Byte.Tensor.TopK
 
-          ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Long.Dynamic.Tensor
-          ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Copy
-          ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Long.Dynamic.Tensor.Index
-          ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Long.Dynamic.Tensor.Masked
-          ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math
-          ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Compare
-          ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.CompareT
-          ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Pairwise
-          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Pointwise
-          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Pointwise.Signed
-          ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Reduce
-          ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Scan
-          ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Mode
-          ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Long.Dynamic.Tensor.ScatterGather
-          ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Sort
-          ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Long.Dynamic.Tensor.TopK
-
-          ,Torch.Indef.Types as Torch.Cuda.Long.Types
-          ,Torch.Indef.Index as Torch.Cuda.Long.Index
-          ,Torch.Indef.Mask as Torch.Cuda.Long.Mask
+          ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Byte.Dynamic.Tensor
+          ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Copy
+          ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Index
+          ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Masked
+          ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math
+          ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Compare
+          ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.CompareT
+          ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Pairwise
+          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Pointwise
+          ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Reduce
+          ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Math.Scan
+          ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Mode
+          ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Byte.Dynamic.Tensor.ScatterGather
+          ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.Sort
+          ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Byte.Dynamic.Tensor.TopK
+          ,Torch.Indef.Index as Torch.Cuda.Byte.Index
+          ,Torch.Indef.Mask as Torch.Cuda.Byte.Mask
           )
           requires
           (Torch.Sig.Types.Global   as Torch.Types.THC
-          ,Torch.Sig.Types          as Torch.Types.THC.Long
+          ,Torch.Sig.Types          as Torch.Types.THC.Byte
           ,Torch.Sig.State          as Torch.FFI.THC.State
-          ,Torch.Sig.Storage        as Torch.FFI.THC.Long.Storage
-          ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Long.StorageCopy
-          ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Long.Storage
+          ,Torch.Sig.Storage        as Torch.FFI.THC.Byte.Storage
+          ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Byte.StorageCopy
+          ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Byte.Storage
 
-          ,Torch.Sig.Tensor        as Torch.FFI.THC.Long.Tensor
-          ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Long.TensorCopy
-          ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Tensor        as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Byte.TensorCopy
+          ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Byte.Tensor
 
-          ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Long.TensorIndex
-          ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Long.TensorMasked
-          ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Long.TensorMath
-          ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Long.TensorMathCompare
-          ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Long.TensorMathCompareT
-          ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Long.TensorMathPairwise
-          ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Long.TensorMathPointwise
-          ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Long.TensorMathPointwise
-          ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Long.TensorMathReduce
-          ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Long.TensorMathScan
-          ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Long.TensorMode
-          ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Long.TensorScatterGather
-          ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Long.TensorSort
-          ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Long.TensorTopK
+          ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Byte.TensorIndex
+          ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Byte.TensorMasked
+          ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Byte.TensorMath
+          ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Byte.TensorMathCompare
+          ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Byte.TensorMathCompareT
+          ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Byte.TensorMathPairwise
+          ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Byte.TensorMathPointwise
+          ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Byte.TensorMathReduce
+          ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Byte.TensorMathScan
+          ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Byte.TensorMode
+          ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Byte.TensorScatterGather
+          ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Byte.TensorSort
+          ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Byte.TensorTopK
+
           ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
@@ -1160,145 +969,234 @@ library
           ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
           )
 
-
-      -- FIXME: ATen doesn't build these.
-      -- , Torch.Cuda.Float
-      -- , Torch.Cuda.Float.Dynamic
-      -- , Torch.Cuda.Float.Storage
-
     exposed-modules:
-         Torch.Cuda.Double
-       , Torch.Cuda.Double.Dynamic
-       , Torch.Cuda.Double.Storage
-
-    reexported-modules:
-         Torch.Cuda.Double.NN
-       , Torch.Cuda.Double.NN.Activation
-       , Torch.Cuda.Double.NN.Backprop
-       , Torch.Cuda.Double.NN.Conv1d
-       , Torch.Cuda.Double.NN.Conv2d
-       , Torch.Cuda.Double.NN.Criterion
-       , Torch.Cuda.Double.NN.Layers
-       , Torch.Cuda.Double.NN.Linear
-       , Torch.Cuda.Double.NN.Math
-       , Torch.Cuda.Double.NN.Padding
-       , Torch.Cuda.Double.NN.Pooling
-       , Torch.Cuda.Double.NN.Sampling
+        Torch.Cuda.Char
+      , Torch.Cuda.Char.Dynamic
+      , Torch.Cuda.Char.Storage
 
     mixins:
-        hasktorch-indef-floating
-          (Torch.Indef.Storage                      as Torch.Indef.Cuda.Double.Storage
-          ,Torch.Indef.Storage.Copy                 as Torch.Indef.Cuda.Double.Storage.Copy
+        hasktorch-indef-unsigned
+          (Torch.Indef.Storage                       as Torch.Indef.Cuda.Char.Storage
+          ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Char.Storage.Copy
 
-          ,Torch.Indef.Static.Tensor                as Torch.Indef.Cuda.Double.Tensor
-          ,Torch.Indef.Static.Tensor.Copy           as Torch.Indef.Cuda.Double.Tensor.Copy
-          ,Torch.Indef.Static.Tensor.Index          as Torch.Indef.Cuda.Double.Tensor.Index
-          ,Torch.Indef.Static.Tensor.Masked         as Torch.Indef.Cuda.Double.Tensor.Masked
-          ,Torch.Indef.Static.Tensor.Math           as Torch.Indef.Cuda.Double.Tensor.Math
-          ,Torch.Indef.Static.Tensor.Math.Compare   as Torch.Indef.Cuda.Double.Tensor.Math.Compare
-          ,Torch.Indef.Static.Tensor.Math.CompareT  as Torch.Indef.Cuda.Double.Tensor.Math.CompareT
-          ,Torch.Indef.Static.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Double.Tensor.Math.Pairwise
-          ,Torch.Indef.Static.Tensor.Math.Pointwise as Torch.Indef.Cuda.Double.Tensor.Math.Pointwise
-          ,Torch.Indef.Static.Tensor.Math.Reduce    as Torch.Indef.Cuda.Double.Tensor.Math.Reduce
-          ,Torch.Indef.Static.Tensor.Math.Scan      as Torch.Indef.Cuda.Double.Tensor.Math.Scan
-          ,Torch.Indef.Static.Tensor.Mode           as Torch.Indef.Cuda.Double.Tensor.Mode
-          ,Torch.Indef.Static.Tensor.ScatterGather  as Torch.Indef.Cuda.Double.Tensor.ScatterGather
-          ,Torch.Indef.Static.Tensor.Sort           as Torch.Indef.Cuda.Double.Tensor.Sort
-          ,Torch.Indef.Static.Tensor.TopK           as Torch.Indef.Cuda.Double.Tensor.TopK
+          ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Char.Tensor
+          ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Char.Tensor.Copy
+          ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Char.Tensor.Index
+          ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Char.Tensor.Masked
+          ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Char.Tensor.Math
+          ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Char.Tensor.Math.Compare
+          ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Char.Tensor.Math.CompareT
+          ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Char.Tensor.Math.Pairwise
+          ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Char.Tensor.Math.Pointwise
+          ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Char.Tensor.Math.Reduce
+          ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Char.Tensor.Math.Scan
+          ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Char.Tensor.Mode
+          ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Char.Tensor.ScatterGather
+          ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Char.Tensor.Sort
+          ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Char.Tensor.TopK
 
-          ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Signed
-          ,Torch.Indef.Static.Tensor.Math.Blas                as Torch.Indef.Cuda.Double.Tensor.Math.Blas
-          ,Torch.Indef.Static.Tensor.Math.Floating            as Torch.Indef.Cuda.Double.Tensor.Math.Floating
-          ,Torch.Indef.Static.Tensor.Math.Lapack              as Torch.Indef.Cuda.Double.Tensor.Math.Lapack
-          ,Torch.Indef.Static.Tensor.Math.Pointwise.Floating  as Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Floating
-          ,Torch.Indef.Static.Tensor.Math.Reduce.Floating     as Torch.Indef.Cuda.Double.Tensor.Math.Reduce.Floating
-
-          ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Double.Dynamic.Tensor
-          ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Double.Dynamic.Tensor.Copy
-          ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Double.Dynamic.Tensor.Index
-          ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Double.Dynamic.Tensor.Masked
-          ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math
-          ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Compare
-          ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.CompareT
-          ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pairwise
-          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pointwise
-          ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Reduce
-          ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Scan
-          ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Double.Dynamic.Tensor.Mode
-          ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Double.Dynamic.Tensor.ScatterGather
-          ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Double.Dynamic.Tensor.Sort
-          ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Double.Dynamic.Tensor.TopK
-
-          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pointwise.Signed
-          ,Torch.Indef.Dynamic.NN                              as Torch.Indef.Cuda.Double.Dynamic.NN
-          ,Torch.Indef.Dynamic.Tensor.Math.Blas                as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Blas
-          ,Torch.Indef.Dynamic.Tensor.Math.Floating            as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Floating
-          ,Torch.Indef.Dynamic.Tensor.Math.Lapack              as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Lapack
-          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating  as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pointwise.Floating
-          ,Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating     as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Reduce.Floating
-
-          ,Torch.Undefined.Tensor.Math.Random.TH as Torch.Undefined.Double.Tensor.Math.Random.TH
-          ,Torch.Undefined.Tensor.Random.TH      as Torch.Undefined.Double.Tensor.Random.TH
-
-          ,Torch.Indef.Static.Tensor.Random.THC as Torch.Indef.Cuda.Double.Tensor.Random.THC
-          ,Torch.Indef.Dynamic.Tensor.Random.THC as Torch.Indef.Cuda.Dynamic.Double.Tensor.Random.THC
-          ,Torch.Indef.Index as Torch.Cuda.Double.Index
-          ,Torch.Indef.Types as Torch.Cuda.Double.Types
-          ,Torch.Indef.Mask as Torch.Cuda.Double.Mask
-
-          ,Torch.Indef.Static.NN               as Torch.Cuda.Double.NN
-          ,Torch.Indef.Static.NN.Activation    as Torch.Cuda.Double.NN.Activation
-          ,Torch.Indef.Static.NN.Backprop      as Torch.Cuda.Double.NN.Backprop
-          ,Torch.Indef.Static.NN.Conv1d        as Torch.Cuda.Double.NN.Conv1d
-          ,Torch.Indef.Static.NN.Conv2d        as Torch.Cuda.Double.NN.Conv2d
-          ,Torch.Indef.Static.NN.Criterion     as Torch.Cuda.Double.NN.Criterion
-          ,Torch.Indef.Static.NN.Layers        as Torch.Cuda.Double.NN.Layers
-          ,Torch.Indef.Static.NN.Linear        as Torch.Cuda.Double.NN.Linear
-          ,Torch.Indef.Static.NN.Math          as Torch.Cuda.Double.NN.Math
-          ,Torch.Indef.Static.NN.Padding       as Torch.Cuda.Double.NN.Padding
-          ,Torch.Indef.Static.NN.Pooling       as Torch.Cuda.Double.NN.Pooling
-          ,Torch.Indef.Static.NN.Sampling      as Torch.Cuda.Double.NN.Sampling
+          ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Char.Dynamic.Tensor
+          ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Char.Dynamic.Tensor.Copy
+          ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Char.Dynamic.Tensor.Index
+          ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Char.Dynamic.Tensor.Masked
+          ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math
+          ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Compare
+          ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.CompareT
+          ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Pairwise
+          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Pointwise
+          ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Reduce
+          ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Char.Dynamic.Tensor.Math.Scan
+          ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Char.Dynamic.Tensor.Mode
+          ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Char.Dynamic.Tensor.ScatterGather
+          ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Char.Dynamic.Tensor.Sort
+          ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Char.Dynamic.Tensor.TopK
+          ,Torch.Indef.Index as Torch.Cuda.Char.Index
+          ,Torch.Indef.Mask as Torch.Cuda.Char.Mask
           )
           requires
           (Torch.Sig.Types.Global   as Torch.Types.THC
-          ,Torch.Sig.Types          as Torch.Types.THC.Double
+          ,Torch.Sig.Types          as Torch.Types.THC.Char
           ,Torch.Sig.State          as Torch.FFI.THC.State
-          ,Torch.Sig.Storage        as Torch.FFI.THC.Double.Storage
-          ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Double.StorageCopy
-          ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Double.Storage
+          ,Torch.Sig.Storage        as Torch.FFI.THC.Char.Storage
+          ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Char.StorageCopy
+          ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Char.Storage
 
-          ,Torch.Sig.Tensor        as Torch.FFI.THC.Double.Tensor
-          ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Double.TensorCopy
-          ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Double.Tensor
+          ,Torch.Sig.Tensor        as Torch.FFI.THC.Char.Tensor
+          ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Char.TensorCopy
+          ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Char.Tensor
 
-          ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Double.TensorIndex
-          ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Double.TensorMasked
-          ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Double.TensorMath
-          ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Double.TensorMathCompare
-          ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Double.TensorMathCompareT
-          ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Double.TensorMathPairwise
-          ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Double.TensorMathPointwise
-          ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Double.TensorMathPointwise
-          ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.THC.Double.TensorMathPointwise
-          ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Double.TensorMathReduce
-          ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Double.TensorMathScan
-          ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Double.TensorMode
-          ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Double.TensorScatterGather
-          ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Double.TensorSort
-          ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Double.TensorTopK
+          ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Char.TensorIndex
+          ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Char.TensorMasked
+          ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Char.TensorMath
+          ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Char.TensorMathCompare
+          ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Char.TensorMathCompareT
+          ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Char.TensorMathPairwise
+          ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Char.TensorMathPointwise
+          ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Char.TensorMathReduce
+          ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Char.TensorMathScan
+          ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Char.TensorMode
+          ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Char.TensorScatterGather
+          ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Char.TensorSort
+          ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Char.TensorTopK
+          ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
+          )
 
+    exposed-modules:
+        Torch.Cuda.Short
+      , Torch.Cuda.Short.Dynamic
+      , Torch.Cuda.Short.Storage
 
-          ,Torch.Sig.Tensor.Math.Blas     as Torch.FFI.THC.Double.TensorMathBlas
-          ,Torch.Sig.Tensor.Math.Lapack   as Torch.FFI.THC.Double.TensorMathMagma
-          ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.THC.Double.TensorMath
-          ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.THC.Double.TensorMathReduce
+    mixins:
+        hasktorch-indef-signed
+          (Torch.Indef.Storage                       as Torch.Indef.Cuda.Short.Storage
+          ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Short.Storage.Copy
 
-          ,Torch.Sig.Tensor.Math.Random.TH     as Torch.Undefined.Double.Tensor.Math.Random.TH
-          ,Torch.Sig.Tensor.Random.TH          as Torch.Undefined.Double.Tensor.Random.TH
-          ,Torch.Sig.Tensor.Random.THC         as Torch.FFI.THC.Double.TensorRandom
+          ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Short.Tensor
+          ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Short.Tensor.Copy
+          ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Short.Tensor.Index
+          ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Short.Tensor.Masked
+          ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Short.Tensor.Math
+          ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Short.Tensor.Math.Compare
+          ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Short.Tensor.Math.CompareT
+          ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Short.Tensor.Math.Pairwise
+          ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Short.Tensor.Math.Pointwise
+          ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Short.Tensor.Math.Reduce
+          ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Short.Tensor.Math.Scan
+          ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Short.Tensor.Mode
+          ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Short.Tensor.ScatterGather
+          ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Short.Tensor.Sort
+          ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Short.Tensor.TopK
+          ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed  as Torch.Indef.Cuda.Short.Tensor.Math.Pointwise.Signed
 
-          ,Torch.Sig.NN       as Torch.FFI.THC.NN.Double
-          ,Torch.Sig.Types.NN as Torch.Types.THC
+          ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Short.Dynamic.Tensor
+          ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Short.Dynamic.Tensor.Copy
+          ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Short.Dynamic.Tensor.Index
+          ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Short.Dynamic.Tensor.Masked
+          ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math
+          ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Compare
+          ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.CompareT
+          ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Pairwise
+          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Pointwise
+          ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Reduce
+          ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Scan
+          ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Short.Dynamic.Tensor.Mode
+          ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Short.Dynamic.Tensor.ScatterGather
+          ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Short.Dynamic.Tensor.Sort
+          ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Short.Dynamic.Tensor.TopK
+          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Short.Dynamic.Tensor.Math.Pointwise.Signed
+          ,Torch.Indef.Index as Torch.Cuda.Short.Index
+          ,Torch.Indef.Mask as Torch.Cuda.Short.Mask
+          )
+          requires
+          (Torch.Sig.Types.Global   as Torch.Types.THC
+          ,Torch.Sig.Types          as Torch.Types.THC.Short
+          ,Torch.Sig.State          as Torch.FFI.THC.State
+          ,Torch.Sig.Storage        as Torch.FFI.THC.Short.Storage
+          ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Short.StorageCopy
+          ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Short.Storage
+
+          ,Torch.Sig.Tensor        as Torch.FFI.THC.Short.Tensor
+          ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Short.TensorCopy
+          ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Short.Tensor
+
+          ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Short.TensorIndex
+          ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Short.TensorMasked
+          ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Short.TensorMath
+          ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Short.TensorMathCompare
+          ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Short.TensorMathCompareT
+          ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Short.TensorMathPairwise
+          ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Short.TensorMathPointwise
+          ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Short.TensorMathReduce
+          ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Short.TensorMathScan
+          ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Short.TensorMode
+          ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Short.TensorScatterGather
+          ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Short.TensorSort
+          ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Short.TensorTopK
+          ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Short.TensorMathPointwise
+          ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
+          ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+          ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
+          )
+
+    exposed-modules:
+        Torch.Cuda.Int
+      , Torch.Cuda.Int.Dynamic
+      , Torch.Cuda.Int.Storage
+
+    mixins:
+        hasktorch-indef-signed
+          (Torch.Indef.Storage                       as Torch.Indef.Cuda.Int.Storage
+          ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Int.Storage.Copy
+
+          ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Int.Tensor
+          ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Int.Tensor.Copy
+          ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Int.Tensor.Index
+          ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Int.Tensor.Masked
+          ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Int.Tensor.Math
+          ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Int.Tensor.Math.Compare
+          ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Int.Tensor.Math.CompareT
+          ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Int.Tensor.Math.Pairwise
+          ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Int.Tensor.Math.Pointwise
+          ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed  as Torch.Indef.Cuda.Int.Tensor.Math.Pointwise.Signed
+          ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Int.Tensor.Math.Reduce
+          ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Int.Tensor.Math.Scan
+          ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Int.Tensor.Mode
+          ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Int.Tensor.ScatterGather
+          ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Int.Tensor.Sort
+          ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Int.Tensor.TopK
+
+          ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Int.Dynamic.Tensor
+          ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Int.Dynamic.Tensor.Copy
+          ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Int.Dynamic.Tensor.Index
+          ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Int.Dynamic.Tensor.Masked
+          ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math
+          ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Compare
+          ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.CompareT
+          ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Pairwise
+          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Pointwise
+          ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Pointwise.Signed
+          ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Reduce
+          ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Int.Dynamic.Tensor.Math.Scan
+          ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Int.Dynamic.Tensor.Mode
+          ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Int.Dynamic.Tensor.ScatterGather
+          ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Int.Dynamic.Tensor.Sort
+          ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Int.Dynamic.Tensor.TopK
+          ,Torch.Indef.Index as Torch.Cuda.Int.Index
+          ,Torch.Indef.Mask as Torch.Cuda.Int.Mask
+          )
+          requires
+          (Torch.Sig.Types.Global   as Torch.Types.THC
+          ,Torch.Sig.Types          as Torch.Types.THC.Int
+          ,Torch.Sig.State          as Torch.FFI.THC.State
+          ,Torch.Sig.Storage        as Torch.FFI.THC.Int.Storage
+          ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Int.StorageCopy
+          ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Int.Storage
+
+          ,Torch.Sig.Tensor        as Torch.FFI.THC.Int.Tensor
+          ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Int.TensorCopy
+          ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Int.Tensor
+
+          ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Int.TensorIndex
+          ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Int.TensorMasked
+          ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Int.TensorMath
+          ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Int.TensorMathCompare
+          ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Int.TensorMathCompareT
+          ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Int.TensorMathPairwise
+          ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Int.TensorMathPointwise
+          ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Int.TensorMathReduce
+          ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Int.TensorMathScan
+          ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Int.TensorMode
+          ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Int.TensorScatterGather
+          ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Int.TensorSort
+          ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Int.TensorTopK
+
+          ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Int.TensorMathPointwise
           ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
           ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
@@ -1306,6 +1204,234 @@ library
           ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
           )
   }
+
+  exposed-modules:
+      Torch.Cuda.Long
+    , Torch.Cuda.Long.Dynamic
+    , Torch.Cuda.Long.Storage
+
+  mixins:
+      hasktorch-indef-signed
+        (Torch.Indef.Storage                       as Torch.Indef.Cuda.Long.Storage
+        ,Torch.Indef.Storage.Copy                  as Torch.Indef.Cuda.Long.Storage.Copy
+
+        ,Torch.Indef.Static.Tensor                 as Torch.Indef.Cuda.Long.Tensor
+        ,Torch.Indef.Static.Tensor.Copy            as Torch.Indef.Cuda.Long.Tensor.Copy
+        ,Torch.Indef.Static.Tensor.Index           as Torch.Indef.Cuda.Long.Tensor.Index
+        ,Torch.Indef.Static.Tensor.Masked          as Torch.Indef.Cuda.Long.Tensor.Masked
+        ,Torch.Indef.Static.Tensor.Math            as Torch.Indef.Cuda.Long.Tensor.Math
+        ,Torch.Indef.Static.Tensor.Math.Compare    as Torch.Indef.Cuda.Long.Tensor.Math.Compare
+        ,Torch.Indef.Static.Tensor.Math.CompareT   as Torch.Indef.Cuda.Long.Tensor.Math.CompareT
+        ,Torch.Indef.Static.Tensor.Math.Pairwise   as Torch.Indef.Cuda.Long.Tensor.Math.Pairwise
+        ,Torch.Indef.Static.Tensor.Math.Pointwise  as Torch.Indef.Cuda.Long.Tensor.Math.Pointwise
+        ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed  as Torch.Indef.Cuda.Long.Tensor.Math.Pointwise.Signed
+        ,Torch.Indef.Static.Tensor.Math.Reduce     as Torch.Indef.Cuda.Long.Tensor.Math.Reduce
+        ,Torch.Indef.Static.Tensor.Math.Scan       as Torch.Indef.Cuda.Long.Tensor.Math.Scan
+        ,Torch.Indef.Static.Tensor.Mode            as Torch.Indef.Cuda.Long.Tensor.Mode
+        ,Torch.Indef.Static.Tensor.ScatterGather   as Torch.Indef.Cuda.Long.Tensor.ScatterGather
+        ,Torch.Indef.Static.Tensor.Sort            as Torch.Indef.Cuda.Long.Tensor.Sort
+        ,Torch.Indef.Static.Tensor.TopK            as Torch.Indef.Cuda.Long.Tensor.TopK
+
+        ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Long.Dynamic.Tensor
+        ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Copy
+        ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Long.Dynamic.Tensor.Index
+        ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Long.Dynamic.Tensor.Masked
+        ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math
+        ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Compare
+        ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.CompareT
+        ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Pairwise
+        ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Pointwise
+        ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Pointwise.Signed
+        ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Reduce
+        ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Long.Dynamic.Tensor.Math.Scan
+        ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Mode
+        ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Long.Dynamic.Tensor.ScatterGather
+        ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Long.Dynamic.Tensor.Sort
+        ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Long.Dynamic.Tensor.TopK
+
+        ,Torch.Indef.Types as Torch.Cuda.Long.Types
+        ,Torch.Indef.Index as Torch.Cuda.Long.Index
+        ,Torch.Indef.Mask as Torch.Cuda.Long.Mask
+        )
+        requires
+        (Torch.Sig.Types.Global   as Torch.Types.THC
+        ,Torch.Sig.Types          as Torch.Types.THC.Long
+        ,Torch.Sig.State          as Torch.FFI.THC.State
+        ,Torch.Sig.Storage        as Torch.FFI.THC.Long.Storage
+        ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Long.StorageCopy
+        ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Long.Storage
+
+        ,Torch.Sig.Tensor        as Torch.FFI.THC.Long.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Long.TensorCopy
+        ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Long.Tensor
+
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Long.TensorIndex
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Long.TensorMasked
+        ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Long.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Long.TensorMathCompare
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Long.TensorMathCompareT
+        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Long.TensorMathPairwise
+        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Long.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Long.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Long.TensorMathReduce
+        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Long.TensorMathScan
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Long.TensorMode
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Long.TensorScatterGather
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Long.TensorSort
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Long.TensorTopK
+        ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
+        ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
+        ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+        ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+        ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
+        )
+
+
+    -- FIXME: ATen doesn't build these.
+    -- , Torch.Cuda.Float
+    -- , Torch.Cuda.Float.Dynamic
+    -- , Torch.Cuda.Float.Storage
+
+  exposed-modules:
+       Torch.Cuda.Double
+     , Torch.Cuda.Double.Dynamic
+     , Torch.Cuda.Double.Storage
+
+  reexported-modules:
+       Torch.Cuda.Double.NN
+     , Torch.Cuda.Double.NN.Activation
+     , Torch.Cuda.Double.NN.Backprop
+     , Torch.Cuda.Double.NN.Conv1d
+     , Torch.Cuda.Double.NN.Conv2d
+     , Torch.Cuda.Double.NN.Criterion
+     , Torch.Cuda.Double.NN.Layers
+     , Torch.Cuda.Double.NN.Linear
+     , Torch.Cuda.Double.NN.Math
+     , Torch.Cuda.Double.NN.Padding
+     , Torch.Cuda.Double.NN.Pooling
+     , Torch.Cuda.Double.NN.Sampling
+
+  mixins:
+      hasktorch-indef-floating
+        (Torch.Indef.Storage                      as Torch.Indef.Cuda.Double.Storage
+        ,Torch.Indef.Storage.Copy                 as Torch.Indef.Cuda.Double.Storage.Copy
+
+        ,Torch.Indef.Static.Tensor                as Torch.Indef.Cuda.Double.Tensor
+        ,Torch.Indef.Static.Tensor.Copy           as Torch.Indef.Cuda.Double.Tensor.Copy
+        ,Torch.Indef.Static.Tensor.Index          as Torch.Indef.Cuda.Double.Tensor.Index
+        ,Torch.Indef.Static.Tensor.Masked         as Torch.Indef.Cuda.Double.Tensor.Masked
+        ,Torch.Indef.Static.Tensor.Math           as Torch.Indef.Cuda.Double.Tensor.Math
+        ,Torch.Indef.Static.Tensor.Math.Compare   as Torch.Indef.Cuda.Double.Tensor.Math.Compare
+        ,Torch.Indef.Static.Tensor.Math.CompareT  as Torch.Indef.Cuda.Double.Tensor.Math.CompareT
+        ,Torch.Indef.Static.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Double.Tensor.Math.Pairwise
+        ,Torch.Indef.Static.Tensor.Math.Pointwise as Torch.Indef.Cuda.Double.Tensor.Math.Pointwise
+        ,Torch.Indef.Static.Tensor.Math.Reduce    as Torch.Indef.Cuda.Double.Tensor.Math.Reduce
+        ,Torch.Indef.Static.Tensor.Math.Scan      as Torch.Indef.Cuda.Double.Tensor.Math.Scan
+        ,Torch.Indef.Static.Tensor.Mode           as Torch.Indef.Cuda.Double.Tensor.Mode
+        ,Torch.Indef.Static.Tensor.ScatterGather  as Torch.Indef.Cuda.Double.Tensor.ScatterGather
+        ,Torch.Indef.Static.Tensor.Sort           as Torch.Indef.Cuda.Double.Tensor.Sort
+        ,Torch.Indef.Static.Tensor.TopK           as Torch.Indef.Cuda.Double.Tensor.TopK
+
+        ,Torch.Indef.Static.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Signed
+        ,Torch.Indef.Static.Tensor.Math.Blas                as Torch.Indef.Cuda.Double.Tensor.Math.Blas
+        ,Torch.Indef.Static.Tensor.Math.Floating            as Torch.Indef.Cuda.Double.Tensor.Math.Floating
+        ,Torch.Indef.Static.Tensor.Math.Lapack              as Torch.Indef.Cuda.Double.Tensor.Math.Lapack
+        ,Torch.Indef.Static.Tensor.Math.Pointwise.Floating  as Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Floating
+        ,Torch.Indef.Static.Tensor.Math.Reduce.Floating     as Torch.Indef.Cuda.Double.Tensor.Math.Reduce.Floating
+
+        ,Torch.Indef.Dynamic.Tensor                as Torch.Indef.Cuda.Double.Dynamic.Tensor
+        ,Torch.Indef.Dynamic.Tensor.Copy           as Torch.Indef.Cuda.Double.Dynamic.Tensor.Copy
+        ,Torch.Indef.Dynamic.Tensor.Index          as Torch.Indef.Cuda.Double.Dynamic.Tensor.Index
+        ,Torch.Indef.Dynamic.Tensor.Masked         as Torch.Indef.Cuda.Double.Dynamic.Tensor.Masked
+        ,Torch.Indef.Dynamic.Tensor.Math           as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math
+        ,Torch.Indef.Dynamic.Tensor.Math.Compare   as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Compare
+        ,Torch.Indef.Dynamic.Tensor.Math.CompareT  as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.CompareT
+        ,Torch.Indef.Dynamic.Tensor.Math.Pairwise  as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pairwise
+        ,Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pointwise
+        ,Torch.Indef.Dynamic.Tensor.Math.Reduce    as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Reduce
+        ,Torch.Indef.Dynamic.Tensor.Math.Scan      as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Scan
+        ,Torch.Indef.Dynamic.Tensor.Mode           as Torch.Indef.Cuda.Double.Dynamic.Tensor.Mode
+        ,Torch.Indef.Dynamic.Tensor.ScatterGather  as Torch.Indef.Cuda.Double.Dynamic.Tensor.ScatterGather
+        ,Torch.Indef.Dynamic.Tensor.Sort           as Torch.Indef.Cuda.Double.Dynamic.Tensor.Sort
+        ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Double.Dynamic.Tensor.TopK
+
+        ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pointwise.Signed
+        ,Torch.Indef.Dynamic.NN                              as Torch.Indef.Cuda.Double.Dynamic.NN
+        ,Torch.Indef.Dynamic.Tensor.Math.Blas                as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Blas
+        ,Torch.Indef.Dynamic.Tensor.Math.Floating            as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Floating
+        ,Torch.Indef.Dynamic.Tensor.Math.Lapack              as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Lapack
+        ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating  as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pointwise.Floating
+        ,Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating     as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Reduce.Floating
+
+        ,Torch.Undefined.Tensor.Math.Random.TH as Torch.Undefined.Double.Tensor.Math.Random.TH
+        ,Torch.Undefined.Tensor.Random.TH      as Torch.Undefined.Double.Tensor.Random.TH
+
+        ,Torch.Indef.Static.Tensor.Random.THC as Torch.Indef.Cuda.Double.Tensor.Random.THC
+        ,Torch.Indef.Dynamic.Tensor.Random.THC as Torch.Indef.Cuda.Dynamic.Double.Tensor.Random.THC
+        ,Torch.Indef.Index as Torch.Cuda.Double.Index
+        ,Torch.Indef.Types as Torch.Cuda.Double.Types
+        ,Torch.Indef.Mask as Torch.Cuda.Double.Mask
+
+        ,Torch.Indef.Static.NN               as Torch.Cuda.Double.NN
+        ,Torch.Indef.Static.NN.Activation    as Torch.Cuda.Double.NN.Activation
+        ,Torch.Indef.Static.NN.Backprop      as Torch.Cuda.Double.NN.Backprop
+        ,Torch.Indef.Static.NN.Conv1d        as Torch.Cuda.Double.NN.Conv1d
+        ,Torch.Indef.Static.NN.Conv2d        as Torch.Cuda.Double.NN.Conv2d
+        ,Torch.Indef.Static.NN.Criterion     as Torch.Cuda.Double.NN.Criterion
+        ,Torch.Indef.Static.NN.Layers        as Torch.Cuda.Double.NN.Layers
+        ,Torch.Indef.Static.NN.Linear        as Torch.Cuda.Double.NN.Linear
+        ,Torch.Indef.Static.NN.Math          as Torch.Cuda.Double.NN.Math
+        ,Torch.Indef.Static.NN.Padding       as Torch.Cuda.Double.NN.Padding
+        ,Torch.Indef.Static.NN.Pooling       as Torch.Cuda.Double.NN.Pooling
+        ,Torch.Indef.Static.NN.Sampling      as Torch.Cuda.Double.NN.Sampling
+        )
+        requires
+        (Torch.Sig.Types.Global   as Torch.Types.THC
+        ,Torch.Sig.Types          as Torch.Types.THC.Double
+        ,Torch.Sig.State          as Torch.FFI.THC.State
+        ,Torch.Sig.Storage        as Torch.FFI.THC.Double.Storage
+        ,Torch.Sig.Storage.Copy   as Torch.FFI.THC.Double.StorageCopy
+        ,Torch.Sig.Storage.Memory as Torch.FFI.THC.Double.Storage
+
+        ,Torch.Sig.Tensor        as Torch.FFI.THC.Double.Tensor
+        ,Torch.Sig.Tensor.Copy   as Torch.FFI.THC.Double.TensorCopy
+        ,Torch.Sig.Tensor.Memory as Torch.FFI.THC.Double.Tensor
+
+        ,Torch.Sig.Tensor.Index  as Torch.FFI.THC.Double.TensorIndex
+        ,Torch.Sig.Tensor.Masked as Torch.FFI.THC.Double.TensorMasked
+        ,Torch.Sig.Tensor.Math           as Torch.FFI.THC.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Compare   as Torch.FFI.THC.Double.TensorMathCompare
+        ,Torch.Sig.Tensor.Math.CompareT  as Torch.FFI.THC.Double.TensorMathCompareT
+        ,Torch.Sig.Tensor.Math.Pairwise  as Torch.FFI.THC.Double.TensorMathPairwise
+        ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.THC.Double.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.THC.Double.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.THC.Double.TensorMathPointwise
+        ,Torch.Sig.Tensor.Math.Reduce    as Torch.FFI.THC.Double.TensorMathReduce
+        ,Torch.Sig.Tensor.Math.Scan      as Torch.FFI.THC.Double.TensorMathScan
+        ,Torch.Sig.Tensor.Mode           as Torch.FFI.THC.Double.TensorMode
+        ,Torch.Sig.Tensor.ScatterGather  as Torch.FFI.THC.Double.TensorScatterGather
+        ,Torch.Sig.Tensor.Sort           as Torch.FFI.THC.Double.TensorSort
+        ,Torch.Sig.Tensor.TopK           as Torch.FFI.THC.Double.TensorTopK
+
+
+        ,Torch.Sig.Tensor.Math.Blas     as Torch.FFI.THC.Double.TensorMathBlas
+        ,Torch.Sig.Tensor.Math.Lapack   as Torch.FFI.THC.Double.TensorMathMagma
+        ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.THC.Double.TensorMath
+        ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.THC.Double.TensorMathReduce
+
+        ,Torch.Sig.Tensor.Math.Random.TH     as Torch.Undefined.Double.Tensor.Math.Random.TH
+        ,Torch.Sig.Tensor.Random.TH          as Torch.Undefined.Double.Tensor.Random.TH
+        ,Torch.Sig.Tensor.Random.THC         as Torch.FFI.THC.Double.TensorRandom
+
+        ,Torch.Sig.NN       as Torch.FFI.THC.NN.Double
+        ,Torch.Sig.Types.NN as Torch.Types.THC
+        ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
+        ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
+        ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
+        ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
+        ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
+        )
+  
 
 
 -- ================================================================================== --
