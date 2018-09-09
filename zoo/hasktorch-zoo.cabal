@@ -63,7 +63,10 @@ library
 
   exposed-modules:
       Torch.Data.Loaders.Internal
+      Torch.Data.Loaders.RGBVector
       Torch.Data.Loaders.Cifar10
+      Torch.Data.Loaders.Logging
+
       Torch.Data.Metrics
       Torch.Data.OneHot
       Torch.Models.Vision.LeNet

@@ -3,6 +3,7 @@
 {-# LANGUAGE TupleSections #-}
 module Torch.Data.Loaders.Internal where
 
+import GHC.Int
 import Data.Proxy
 import Data.Vector (Vector)
 import Control.Concurrent (threadDelay)
@@ -37,11 +38,16 @@ import qualified Codec.Picture as JP
 #ifdef CUDA
 import Torch.Cuda.Double
 import qualified Torch.Cuda.Long as Long
+import qualified Torch.Cuda.Double.Dynamic as Dynamic
+import qualified Torch.Double.Dynamic as CPU
 #else
 import Torch.Double
 import qualified Torch.Long as Long
+import qualified Torch.Double.Dynamic as Dynamic
 #endif
 
+import Torch.Data.Loaders.RGBVector
+import Data.List
 
 -- | asyncronously map across a pool with a maximum level of concurrency
 mapPool :: Traversable t => Int -> (a -> IO b) -> t a -> IO (t b)
@@ -49,117 +55,13 @@ mapPool mx fn xs = do
   sem <- MSem.new mx
   Async.mapConcurrently (MSem.with sem . fn) xs
 
-fillFrom :: (Num y, PrimMonad m) => [((Int, Int), (Int, Int, Int))] -> ((Int, Int, Int) -> y -> m ()) -> m ()
-fillFrom pxs filler =
-  forM_ pxs $ \((h, w), (r, g, b)) ->
-    forM_ (zip [0..] [r,g,b]) $ \(c, px) ->
-      filler (c, h, w) (fromIntegral px)
-
-file2rgb
-  :: forall h w hw rgb
-  . (All KnownDim '[h, w], All KnownNat '[h, w])
-  => hw ~ (Int, Int)
-  => rgb ~ (Int, Int, Int)
-  => Proxy '(h, w)
-  -> FilePath
-  -> ExceptT String IO [(hw, rgb)]
-file2rgb hwp fp = do
-#ifdef USE_GD
-  im <- lift $ GD.loadPngFile fp
-  forM [(h, w) | h <- [0.. height - 1], w <- [0.. width - 1]] $ \(h, w) -> do
-    (r,g,b,_) <- lift $ GD.toRGBA <$> GD.getPixel (h,w) im
-#else
-  im <- JP.convertRGB8 <$> ExceptT (JP.readPng fp)
-  forM [(h, w) | h <- [0.. height - 1], w <- [0.. width - 1]] $ \(h, w) -> do
-    let JP.PixelRGB8 r g b = JP.pixelAt im h w
-#endif
-    -- lift $ print (r, g, b)
-    pure ((h, w), (fromIntegral r, fromIntegral g, fromIntegral b))
- where
-  (height, width) = reifyHW hwp
-
-assertPixels :: [((Int, Int), (Int, Int, Int))] -> IO ()
-assertPixels pxs = do
-  if all ((\(r, g, b) -> all (==0) [r, g, b]). snd) pxs
-  then throwString "IMAGES LOADED INCORRECTLY!"
-  else pure ()
-
-reifyHW
-  :: forall h w
-  . (All KnownDim '[h, w], All KnownNat '[h, w])
-  => Proxy '(h, w)
-  -> (Int, Int)
-reifyHW _ = (fromIntegral (dimVal (dim :: Dim h)), fromIntegral (dimVal (dim :: Dim w)))
-
-newtype Normalize = Normalize Bool
-  deriving (Eq, Ord, Show, Enum, Bounded)
-
 -- | load an RGB PNG image into a Torch tensor
 rgb2torch
   :: forall h w . (All KnownDim '[h, w], All KnownNat '[h, w])
   => Normalize
   -> FilePath
   -> ExceptT String IO (Tensor '[3, h, w])
-rgb2torch (Normalize donorm) fp = do
-  pxs <- file2rgb hwp fp
-#ifdef DEBUG
-  lift $ assertPixels pxs
-#endif
-  ExceptT $ do
-    vec <- mkRGBVec
-    -- threadDelay 1000
-    fillFrom pxs $ \chw px -> do
-      let pxfin = prep px
-      writePx vec chw pxfin
-    cuboid <$> freezeList vec
- where
-  prep w =
-    if donorm
-    then w / 255
-    else w
-
-  (height, width) = reifyHW hwp
-
-  hwp :: Proxy '(h, w)
-  hwp = Proxy
-
-  mkRGBVec :: PrimMonad m => m (MRGBVector (PrimState m))
-  mkRGBVec = M.replicateM 3 (M.replicateM height (M.unsafeNew width))
-
-  writePx
-    :: PrimMonad m
-    => MRGBVector (PrimState m)
-    -> (Int, Int, Int)
-    -> HsReal
-    -> m ()
-  writePx channels (c, h, w) px
-    = M.unsafeRead channels c
-    >>= \rows -> M.unsafeRead rows h
-    >>= \cols -> M.unsafeWrite cols w px
-
-  freezeList
-    :: forall m s
-    . PrimMonad m
-    => s ~ PrimState m
-    => MRGBVector s
-    -> m [[[HsReal]]]
-  freezeList mvecs = do
-    readN mvecs 3 $ \mframe ->
-      readN mframe height $ \mrow ->
-        readN mrow width pure
-
-
-
-readNfreeze :: PrimMonad m => MVector (PrimState m) a -> Int -> (a -> m b) -> m (Vector b)
-readNfreeze mvec n op =
-  V.fromListN n <$> readN mvec n op
-
-readN :: PrimMonad m => MVector (PrimState m) a -> Int -> (a -> m b) -> m [b]
-readN mvec n op = mapM (M.read mvec >=> op) [0..n-1]
-
-
-type MRGBVector s = MVector s (MVector s (MVector s HsReal))
-type RGBVector = Vector (Vector (Vector HsReal))
+rgb2torch norm fp = ExceptT . pure . cuboid =<< rgb2list (Proxy :: Proxy '(h, w)) norm fp
 
 
 -- | Given a folder with subfolders of category images, return a uniform-randomly
