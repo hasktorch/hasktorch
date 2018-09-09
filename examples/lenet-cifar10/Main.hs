@@ -47,14 +47,17 @@ import qualified Torch.Cuda.Long as Long
 import Torch.FFI.THC.TensorRandom
 import Foreign
 import Torch.FFI.THC.State
+import qualified Torch.Cuda.Double.NN.Conv2d as Conv2d
 #else
 import Torch.Double as Math hiding (Sum)
 import qualified Torch.Long as Long
+import qualified Torch.Double.NN.Conv2d as Conv2d
 #endif
 
-import Torch.Models.Vision.LeNet
+import Torch.Models.Vision.LeNet as LeNet
 import Torch.Data.Loaders.Cifar10
 import Torch.Data.Loaders.Internal
+import Torch.Data.Loaders.RGBVector (Normalize(..))
 import Torch.Data.OneHot
 import Torch.Data.Metrics
 
@@ -74,46 +77,101 @@ import qualified Torch.Double.Storage as CPUS
 import Control.Concurrent
 #endif
 
-main = loadtest
+main = runlenetcifar10
+lr = 0.001
+bsz = (dim :: Dim 4)
+bs = (fromIntegral $ dimVal bsz)
 
-loadtest :: IO ()
-loadtest = do
-  g <- MWC.initialize (V.singleton 42)
-  ltrain <- prepdata <$> cifar10set g default_cifar_path Train
-  forM_ ltrain $ \(_, y) -> case y of
-    Left x -> insanity x
-    Right x -> pure x
+trainFourTest :: forall batch . batch ~ 4 => IO ()
+trainFourTest = seedAll >>= \g -> do
+  ltrain <- prepdata . V.take (bs) <$> cifar10set g default_cifar_path Train
+  net0 <- newLeNet @3 @5
+  print net0
 
-insanity :: FilePath -> IO (Tensor '[3, 32, 32])
-insanity f = go 0
- where
-  go x =
-    runExceptT (rgb2torch (Normalize True) f) >>= \case
-      Left s -> throwString s
-      Right t -> do
+  t0 <- getCurrentTime
+  let
+    lbatches :: Vector LDataSet
+    lbatches = V.fromList $ mkBatches (fromIntegral bs) ltrain
+
+  print lbatches
+
+  let
+    btensor :: LDataSet -> IO (Maybe (Tensor '[batch, 10], Tensor '[batch, 3, 32, 32]))
+    btensor lds
+      | V.length lds /= (fromIntegral bs) = pure Nothing
+      | otherwise = do
+        foo <- V.toList <$> V.mapM getdata lds
+        ys <- toYs foo
+        xs <- toXs foo
+        pure $ Just (ys, xs)
+
+    go
+      :: (LeNet 3 5, DList LDataSet)
+      -> Int
+      -> LDataSet
+      -> IO (LeNet 3 5, DList LDataSet)
+    go (!net, !seen) !bid !lzy = do
+      print "starting to load"
+      fcd <- V.mapM forcetensor lzy
+      mten <- btensor fcd
+      case mten of
+        Nothing -> pure (net, seen)
+        Just (ys, xs) -> do
+          print "starting to train"
+          (net', loss) <- trainStep lr net xs ys
+          t1 <- getCurrentTime
+          let diff = 0.0 :: Float
+              front = "\n"
+          printf (front ++ "(%db#%03d)[mse %.4f](elapsed: %.2fs)")
+            (bs::Int) (bid+1)
+            (loss `get1d` 0)
+            diff -- ((t1 `diffUTCTime` t00))
+          hFlush stdout
+          pure (net', seen `DL.snoc` fcd)
+
+
+  res <- V.ifoldM go (net0, DL.empty) lbatches
+  let (net', train) = second (V.concat . DL.toList) res
+
+  printf "\nFinished trainFourTest\n"
+
+toYs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[4, 10])
+toYs ys =
+  pure . unsafeMatrix . fmap (onehotf . fst) $ ys
+
+toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[4, 3, 32, 32])
+toXs xs = do
+  -- print "XS PREPO"
+  -- mapM_ assertTen (snd <$> xs)
+  -- print "XS CATTED"
+  let xs' = catArray0 $ fmap (unsqueeze1d (dim :: Dim 0) . snd) xs
+  -- assertTen xs'
+  pure xs'
+
+
+
+
+assertTen :: Tensor d -> IO ()
+assertTen t =
 #ifdef CUDA
-        CPU.tensordata (copyDouble t) >>= \rs -> do
+    CPU.tensordata (copyDouble t) >>= \rs -> do
 #else
-        tensordata t >>= \rs -> do
+    tensordata t >>= \rs -> do
 #endif
-          let
-              oob = filter (\x -> x < 0 || x > 1) rs
-              oox = filter (<= 2) oob
+    let
+      oob = filter (\x -> x < -0.1 || x > 1.1) rs
+      oox = filter (<= 2) oob
+
 #ifdef DEBUG_VERBOSE
-          when (x == 0) $ modifyIORef counter (+1) >> readIORef counter >>= print
+    when (x == 0) $ modifyIORef counter (+1) >> readIORef counter >>= print
 #endif
 
-          if not (null oob)
-          then throwString (show (oob, oox))
-          else
-            if not (all (== 0) rs)
-            then pure t
-            else if x == 10
-              then throwString $ f ++ ": 10 retries -- failing on all-zero tensor"
-              else do
-                print $ f ++ ": retrying from " ++ show x
-                threadDelay 1000000
-                go (x+1)
+    if not (null oob)
+    then throwString $ show (oob, length oob)
+    else
+      if all (== 0) rs
+      then throwString ("all-zero tensor!")
+      else pure ()
 
 
 runlenetcifar10 :: IO ()
@@ -123,8 +181,9 @@ runlenetcifar10 = do
 #ifdef CUDA
   withForeignPtr torchstate $ \s -> c_THCRandom_manualSeed s 42
 #endif
-  ltrain <- prepdata . V.take 250 <$> cifar10set g default_cifar_path Train
-  ltest  <- prepdata . V.take 200 <$> cifar10set g default_cifar_path Test
+  ltrain <- prepdata . V.take 25 <$> cifar10set g default_cifar_path Train
+  ltest  <- prepdata . V.take 20 <$> cifar10set g default_cifar_path Test
+
   let (lval, lhold) = V.splitAt (V.length ltest `P.div` 2) ltest
   net0 <- newLeNet @3 @5
   print net0
@@ -148,7 +207,7 @@ counter :: IORef Integer
 counter = unsafePerformIO $ newIORef 0
 
 preprocess :: FilePath -> IO (Tensor '[3, 32, 32])
-preprocess = insanity
+preprocess = preprocess'
 
 preprocess' :: FilePath -> IO (Tensor '[3, 32, 32])
 preprocess' f =
@@ -156,31 +215,18 @@ preprocess' f =
     Left s -> throwString s
     Right t -> do
 #ifdef DEBUG
-      assertTen t
+      -- assertTen t
 #endif
       pure t
 
-assertTen :: Tensor d -> IO ()
-assertTen t =
+seedAll :: IO MWC.GenIO
+seedAll = do
+  g <- MWC.initialize (V.singleton 42)
 #ifdef CUDA
-    CPU.tensordata (copyDouble t) >>= \rs -> do
-#else
-    tensordata t >>= \rs -> do
+  withForeignPtr torchstate $ \s -> c_THCRandom_manualSeed s 42
 #endif
-    let
-      oob = filter (\x -> x < 0 || x > 1) rs
-      oox = filter (<= 2) oob
+  pure g
 
-#ifdef DEBUG_VERBOSE
-    when (x == 0) $ modifyIORef counter (+1) >> readIORef counter >>= print
-#endif
-
-    if not (null oob)
-    then throwString (show (oob, oox))
-    else
-      if all (== 0) rs
-      then throwString ("all-zero tensor!")
-      else pure ()
 
 -- | potentially lazily loaded data point
 type LDatum = (Category, Either FilePath (Tensor '[3, 32, 32]))
@@ -201,38 +247,6 @@ forcetensor :: LDatum -> IO LDatum
 forcetensor = \case
   (c, Left fp) -> (c,) . Right <$> preprocess fp
   tens -> pure tens
-
--- ========================================================================= --
--- Testing a dataset
--- ========================================================================= --
-
-testNet :: (ch ~ 3, step ~ 5) => LeNet ch step -> LDataSet -> IO LDataSet
-testNet net ltest = do
-  test <-
-    if all isRight (V.map snd ltest)
-    then pure $ V.map (second (fromRight undefined)) ltest
-    else do
-      let l = fromIntegral (length ltest) :: Float
-      V.mapM getdata ltest
-
-  let
-    testX = V.toList $ fmap snd test
-    testY = V.toList $ fmap fst test
-    preds = map (infer net) testX
-    acc = genericLength (filter id $ zipWith (==) preds testY) / genericLength testY
-
-#ifdef DEBUG
-  printf "\n"
-#endif
-  printf ("[test accuracy: %.1f%% / %d]\tAll same? %s")
-    (acc * 100 :: Float)
-    (length testY)
-    (if all (== head preds) preds then show (head preds) else "No.")
-
-  hFlush stdout
-
-  pure $ fmap (second Right) test
-
 
 -- ========================================================================= --
 -- Training on a dataset
@@ -348,25 +362,13 @@ runBatches estr d lr t00 e lds net = do
 
       toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[batch, 3, 32, 32])
       toXs xs = do
-        print "XS PREPO"
-        mapM_ assertTen (snd <$> xs)
-        print "XS CATTED"
+        -- print "XS PREPO"
+        -- mapM_ assertTen (snd <$> xs)
+        -- print "XS CATTED"
         let xs' = catArray0 $ fmap (unsqueeze1d (dim :: Dim 0) . snd) xs
-        assertTen xs'
+        -- assertTen xs'
         pure xs'
 
-
- -- | Erase the last line in an ANSI terminal
-clearLn :: IO ()
-clearLn = printf "\ESC[2K"
-
--- | set rewind marker for 'clearLn'
-setRewind :: String
-setRewind = "\r"
-
--- | clear the screen in an ANSI terminal
-clearScreen :: IO ()
-clearScreen = putStr "\ESC[2J"
 
 infer
   :: (ch ~ 3, step ~ 5)
@@ -414,12 +416,112 @@ trainStep lr net xs ys = (Bp.add net gnet, out)
 #else
   -> IO (LeNet ch step, Tensor '[1])
 trainStep lr net xs ys = do
+
 #ifdef DEBUG
-  -- print xs
+  -- printL1Weights gnet
+  -- print out
+  -- print $ ys
+  -- print $ evalBP2 (lenetBatch undefined) net xs
+  -- print gnet
+
 #endif
-  pure (Bp.add net gnet, out)
+  pure (LeNet.update net lr gnet, out)
 #endif
   where
     (out, (gnet, _)) = backprop2 ( mSECriterion ys .: lenetBatch lr) net xs
 
+-- ========================================================================= --
+-- Testing a dataset
+-- ========================================================================= --
+
+testNet :: (ch ~ 3, step ~ 5) => LeNet ch step -> LDataSet -> IO LDataSet
+testNet net ltest = do
+  test <-
+    if all isRight (V.map snd ltest)
+    then pure $ V.map (second (fromRight undefined)) ltest
+    else do
+      -- print "getting test data"
+      let l = fromIntegral (length ltest) :: Float
+      V.mapM getdata ltest
+
+  let
+    testX = V.toList $ fmap snd test
+    testY = V.toList $ fmap fst test
+    preds = map (infer net) testX
+    acc = genericLength (filter id $ zipWith (==) preds testY) / genericLength testY
+
+#ifdef DEBUG
+  printf "\n"
+#endif
+  printf ("[test accuracy: %.1f%% / %d]\tAll same? %s")
+    (acc * 100 :: Float)
+    (length testY)
+    (if all (== head preds) preds then show (head preds) else "No.")
+
+  hFlush stdout
+
+  pure $ fmap (second Right) test
+
+
+-------------------------------------------------------------------------------
+-- Sanity check tests
+
+-- pased
+loadtest :: IO ()
+loadtest = do
+  g <- MWC.initialize (V.singleton 42)
+  ltrain <- prepdata . V.take 5000 <$> cifar10set g default_cifar_path Train
+  forM_ ltrain $ \(_, y) -> case y of
+    Left x -> insanity x
+    Right x -> pure x
+
+
+insanity :: FilePath -> IO (Tensor '[3, 32, 32])
+insanity f = go 0
+ where
+  go x =
+    runExceptT (rgb2torch (Normalize True) f) >>= \case
+      Left s -> throwString s
+      Right t -> do
+#ifdef CUDA
+        CPU.tensordata (copyDouble t) >>= \rs -> do
+#else
+        tensordata t >>= \rs -> do
+#endif
+          let
+              oob = filter (\x -> x < 0 || x > 1) rs
+              oox = filter (<= 2) oob
+#ifdef DEBUG_VERBOSE
+          when (x == 0) $ modifyIORef counter (+1) >> readIORef counter >>= print
+#endif
+
+          if not (null oob)
+          then throwString (show (oob, oox))
+          else
+            if not (all (== 0) rs)
+            then pure t
+            else if x == 10
+              then throwString $ f ++ ": 10 retries -- failing on all-zero tensor"
+              else do
+                print $ f ++ ": retrying from " ++ show x
+                threadDelay 1000000
+                go (x+1)
+
+-- ========================================================================= --
+-- printing helpers
+
+-- | Erase the last line in an ANSI terminal
+clearLn :: IO ()
+clearLn = printf "\ESC[2K"
+
+-- | set rewind marker for 'clearLn'
+setRewind :: String
+setRewind = "\r"
+
+-- | clear the screen in an ANSI terminal
+clearScreen :: IO ()
+clearScreen = putStr "\ESC[2J"
+
+printL1Weights :: KnownDim ch => KnownDim step => LeNet ch step -> IO ()
+printL1Weights = print . fst . Conv2d.getTensors . _conv1
 
