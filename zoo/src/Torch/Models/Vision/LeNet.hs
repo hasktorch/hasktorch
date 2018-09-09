@@ -14,16 +14,19 @@ import Numeric.Backprop as Bp
 import Prelude as P
 import Lens.Micro.TH
 import Data.Singletons.Prelude hiding (type (*), All)
+import Lens.Micro.Platform
 
 #ifdef CUDA
 import Numeric.Dimensions
 import Torch.Cuda.Double as Torch
 import Torch.Cuda.Double.NN.Linear -- (Linear(..), linear)
-import qualified Torch.Cuda.Double.NN.Conv2d as NN
+import qualified Torch.Cuda.Double.NN.Conv2d as Conv2d
+import qualified Torch.Cuda.Double.NN.Linear as Linear
 #else
 import Torch.Double as Torch
 import Torch.Double.NN.Linear -- (Linear(..), linear)
-import qualified Torch.Double.NN.Conv2d as NN
+import qualified Torch.Double.NN.Conv2d as Conv2d
+import qualified Torch.Double.NN.Linear as Linear
 #endif
 
 import Torch.Models.Internal
@@ -76,14 +79,8 @@ instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Backprop (LeNe
     (Bp.zero undefined)
     (Bp.zero undefined)
 
--------------------------------------------------------------------------------
 
-#ifdef DEBUG
-main :: IO ()
-main = do
-  net <- newLeNet @3 @5
-  print net
-#endif
+-------------------------------------------------------------------------------
 
 newLeNet :: All KnownDim '[ch,step,16*step*step] => IO (LeNet ch step)
 newLeNet = LeNet
@@ -92,6 +89,15 @@ newLeNet = LeNet
   <*> newLinear
   <*> newLinear
   <*> newLinear
+
+-- | update a LeNet network
+update net lr grad = LeNet
+  (Conv2d.update (net^.conv1) lr (grad^.conv1))
+  (Conv2d.update (net^.conv2) lr (grad^.conv2))
+  (Linear.update (net^.fc1)   lr (grad^.fc1))
+  (Linear.update (net^.fc2)   lr (grad^.fc2))
+  (Linear.update (net^.fc3)   lr (grad^.fc3))
+
 
 -- lenet
 --   :: forall s ch h w o step pad -- ker moh mow
@@ -151,7 +157,7 @@ lenetLayer
   -> BVar s (Tensor '[inp,   h,   w])  -- ^ input
   -> BVar s (Tensor '[out, moh, mow])  -- ^ output
 lenetLayer lr conv inp
-  = NN.conv2dMM
+  = Conv2d.conv2dMM
       (Step2d    :: Step2d '(1,1))
       (Padding2d :: Padding2d '(0,0))
       lr conv inp
@@ -219,7 +225,7 @@ lenetLayerBatch
   -> BVar s (Tensor '[batch, inp,   h,   w])  -- ^ input
   -> BVar s (Tensor '[batch, out, moh, mow])  -- ^ output
 lenetLayerBatch lr conv inp
-  = NN.conv2dMMBatch
+  = Conv2d.conv2dMMBatch
       (Step2d    :: Step2d '(1,1))
       (Padding2d :: Padding2d '(0,0))
       lr conv inp

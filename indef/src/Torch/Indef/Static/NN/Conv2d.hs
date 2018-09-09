@@ -76,6 +76,15 @@ instance (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
   zero = const $ Conv2d (constant 0, constant 0)
   add c0 c1 = Conv2d (weights c0 + weights c1, bias c0 + bias c1)
 
+-- | update a Conv2d layer
+update
+  :: (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
+  => Conv2d i o '(kH, kW)  -- ^ network to update
+  -> HsReal                -- ^ learning rate
+  -> Conv2d i o '(kH, kW)  -- ^ gradient
+  -> Conv2d i o '(kH, kW)  -- ^ updated network
+update net lr (Conv2d (gw, gb)) = add net $ Conv2d (lr *^ gw, lr *^ gb)
+
 -- | get the weights from a 'Conv2d' ADT
 weights :: Conv2d i o '(kH,kW) -> Tensor '[o, i, kH, kW]
 weights (Conv2d (w, _)) = w

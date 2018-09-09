@@ -49,6 +49,16 @@ instance (KnownDim i, KnownDim o) => Backprop (Linear i o) where
   one  = const . Linear $ (constant 1, constant 1)
   add c0 c1 = Linear (weights c0 + weights c1, bias c0 + bias c1)
 
+-- | update a Linear layer
+update
+  :: (KnownDim i, KnownDim o)
+  => Linear i o   -- ^ layer to update
+  -> HsReal       -- ^ learning rate
+  -> Linear i o   -- ^ gradient
+  -> Linear i o   -- ^ updated layer
+update net lr (Linear (gw, gb)) = add net $ Linear (lr *^ gw, lr *^ gb)
+
+
 -- | the dense weight matrix of a linear layer
 weights :: Linear i o -> Tensor '[i, o]
 weights (Linear (w, _)) = w
