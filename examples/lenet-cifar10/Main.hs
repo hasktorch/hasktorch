@@ -36,6 +36,10 @@ import Control.Concurrent
 import qualified Prelude as P
 import qualified Data.List as P ((!!))
 import Control.Exception.Safe
+
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
+
 #ifdef DEBUG
 import Debug.Trace
 import Data.IORef
@@ -91,8 +95,8 @@ main = do
   clearScreen
 #endif
   g <- seedAll
-  ltrain <- prepdata . V.take 500 <$> cifar10set g default_cifar_path Train
-  ltest  <- prepdata . V.take 200 <$> cifar10set g default_cifar_path Test
+  ltrain <- prepdata . V.take 5000 <$> cifar10set g default_cifar_path Train
+  ltest  <- prepdata . V.take 2000 <$> cifar10set g default_cifar_path Test
 
   let (lval, lhold) = V.splitAt (V.length ltest `P.div` 2) ltest
   net0 <- newLeNet @3 @5
@@ -100,6 +104,7 @@ main = do
 
   putStr "\nInitial Holdout:\t"
   hold <- testNet net0 lhold
+  report net0 hold
 
   t0 <- getCurrentTime
   net <- epochs lval 0.001 t0 5 ltrain net0
@@ -178,6 +183,7 @@ epochs lval lr t0 mx ltrain net0 = do
         let estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
         (net', train) <- runBatches estr (dim :: Dim 4) lr t0 e ltrain net
         testNet net' val
+        report net0 val
         runEpoch val (e + 1) net'
 
 mkBatches :: Int -> LDataSet -> [LDataSet]
@@ -237,7 +243,7 @@ runBatches estr d lr t00 e lds net = do
           let diff = realToFrac (t1 `diffUTCTime` t00) :: Float
               front = setRewind
 #endif
-          printf (front ++ estr ++ "(%db#%03d)[mse %.4f](elapsed: %.2fs)")
+          printf (front ++ estr ++ "(%db#%03d)[ce %.4f](elapsed: %.2fs)")
             bs (bid+1)
             (loss `get1d` 0)
             diff -- ((t1 `diffUTCTime` t00))
@@ -353,6 +359,26 @@ testNet net ltest = do
   hFlush stdout
 
   pure $ fmap (second Right) test
+
+
+report :: (ch ~ 3, step ~ 5) => LeNet ch step -> LDataSet -> IO ()
+report net ltest = do
+  -- assert $ all isRight (V.map snd ltest)
+  let
+    test = V.map (second (fromRight undefined)) ltest
+    cathm :: [(Category, [Tensor '[3, 32, 32]])]
+    cathm = HM.toList $ HM.fromListWith (++) $ V.toList (second (:[]) <$> test)
+
+  forM_ cathm $ \(y, xs) -> do
+    let
+      preds = map (infer net) xs
+      correct = length (filter (==y) preds)
+      acc = fromIntegral correct / genericLength xs :: Float
+
+    printf "\n[%s]: %.2f%% (%d / %d)" (show y) (acc*100) correct (length xs)
+    hFlush stdout
+
+
 
 
 -------------------------------------------------------------------------------

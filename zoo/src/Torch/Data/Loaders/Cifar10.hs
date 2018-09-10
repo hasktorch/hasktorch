@@ -20,6 +20,7 @@ import Text.Read (readMaybe)
 import Control.DeepSeq (NFData)
 import Data.Vector (Vector)
 import System.Random.MWC (GenIO, createSystemRandom)
+import Data.Hashable
 
 #ifdef CUDA
 import Torch.Cuda.Double
@@ -54,7 +55,7 @@ data Category
   | Horse       -- 8
   | Ship        -- 9
   | Truck       -- 10
-  deriving (Eq, Enum, Ord, Show, Bounded, Generic, NFData, Read)
+  deriving (Eq, Enum, Ord, Show, Bounded, Generic, NFData, Read, Hashable)
 
 mode_path :: FilePath -> Mode -> FilePath
 mode_path cifarpath m = cifarpath </> (Char.toLower <$> show m)

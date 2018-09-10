@@ -164,6 +164,7 @@ executable lenet-cifar10
       base >=4.7 && <5
     , backprop
     , hasktorch-core
+    , unordered-containers
     , dimensions
     , hasktorch-zoo
 

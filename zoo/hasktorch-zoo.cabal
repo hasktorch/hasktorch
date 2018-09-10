@@ -37,6 +37,7 @@ library
       base >=4.7 && <5
     , backprop
     , dimensions
+    , hashable
     , hasktorch-core
     , microlens-platform
     , microlens-th
