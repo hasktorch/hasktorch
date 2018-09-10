@@ -16,6 +16,7 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE MonoLocalBinds #-}
 module Torch.Indef.Index
@@ -73,28 +74,32 @@ esingleton = singleton . fromEnum
 -- | build a new static index tensor
 --
 -- FIXME: This can abstracted away with backpack, but I'm not sure if it can do it atm.
-newIx :: forall n . KnownDim n => IndexTensor '[n]
-newIx = longAsStatic $ newIxDyn (dimVal (dim :: Dim n))
+newIx :: forall d . Dimensions d => IndexTensor d
+newIx = longAsStatic $ newIxDyn (listDims (dims :: Dims d))
 
 -- | build a new, empty, static index tensor with no term-level dimensions -- but allow
 -- the type-level dimensions to vary.
 --
 -- FIXME: this is a bad function and should be replaced with a 'Torch.Indef.Static.Tensor.new' function.
 zeroIxNd :: Dimensions d => IndexTensor d
-zeroIxNd = longAsStatic $ newIxDyn 0
+zeroIxNd = longAsStatic $ newIxDyn [0]
 
 -- | build a new 1-dimensional, dynamically-typed index tensor of lenght @i@
-newIxDyn :: Integral i => i -> IndexDynamic
-newIxDyn x = unsafePerformIO $
-  withForeignPtr Sig.torchstate $ \s ->
-    IxSig.c_newWithSize1d s (fromIntegral x) >>= mkDynamic
+newIxDyn :: Integral i => [i] -> IndexDynamic
+newIxDyn is = unsafePerformIO $ withForeignPtr Sig.torchstate $ \s ->
+  case is of
+    [] -> IxSig.c_new s >>= mkDynamic
+    [x] -> IxSig.c_newWithSize1d s (fromIntegral x) >>= mkDynamic
+    [x, y] -> IxSig.c_newWithSize2d s (fromIntegral x) (fromIntegral y) >>= mkDynamic
+    [x, y, z] -> IxSig.c_newWithSize3d s (fromIntegral x) (fromIntegral y) (fromIntegral z) >>= mkDynamic
+    _ -> error "> 4-dimensional indexes not currently supported"
 
 -- | Make a dynamic, 1d index tensor from a list.
 --
 -- FIXME construct this with TH, not with the setting, which might be doing a second linear pass
 indexDyn :: [Integer] -> IndexDynamic
 indexDyn l = unsafePerformIO $ do
-  let res = newIxDyn (length l)
+  let res = newIxDyn [length l]
   mapM_  (upd res) (zip [0..length l - 1] l)
   pure res
 

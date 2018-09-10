@@ -8,6 +8,8 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.Tensor.Math.Reduce
   ( minall
@@ -20,9 +22,9 @@ module Torch.Indef.Static.Tensor.Math.Reduce
   , Torch.Indef.Static.Tensor.Math.Reduce.max
   , median
 
-  , min1d, minIndex1d
-  , max1d, maxIndex1d
-  , median1d, medianIndex1d
+  -- , minIndex1d    -- , min1d
+  -- , maxIndex1d    -- , max1d
+  -- , medianIndex1d -- , median1d
 
   , Torch.Indef.Static.Tensor.Math.Reduce.sum, rowsum, colsum
   , _prod
@@ -31,6 +33,8 @@ module Torch.Indef.Static.Tensor.Math.Reduce
 import Numeric.Dimensions
 import Data.Coerce
 import System.IO.Unsafe
+import Data.Singletons.Prelude.List hiding (All, type (++), Length)
+import Data.Singletons.Prelude.Ord
 import GHC.TypeLits
 
 
@@ -63,62 +67,76 @@ prodall t = Dynamic.prodall (asDynamic t)
 
 -- | Static call to 'Dynamic.max'
 max
-  :: forall d n dimval
-  .  Dimensions d
-  => All KnownNat '[dimval, n]
-  => All KnownDim '[dimval, n]
+  :: forall d n ix rs ls
+  .  All Dimensions '[d, rs ++ '[1] ++ ls]
+  => All KnownNat '[n, ix]
+  => All KnownDim '[n, ix]
+  => Length d > ix ~ True
+  => '(rs, n:+ls) ~ (SplitAt ix d)
   => Tensor d
-  -> Dim dimval
+  -> Dim ix
   -> KeepDim
-  -> (Tensor d, Maybe (IndexTensor '[n]))
+  -> (Tensor (rs ++ '[1] ++ ls), Maybe (IndexTensor (rs ++ '[1] ++ ls)))
 max = withKeepDim Dynamic._max
 
 -- | Static call to 'Dynamic.min'
 min
-  :: forall d n dimval
-  .  Dimensions d
-  => All KnownNat '[dimval, n]
-  => All KnownDim '[dimval, n]
+  :: forall d n ix rs ls
+  .  All Dimensions '[d, rs ++ '[1] ++ ls]
+  => All KnownNat '[n, ix]
+  => All KnownDim '[n, ix]
+  => Length d > ix ~ True
+  => '(rs, n:+ls) ~ (SplitAt ix d)
   => Tensor d
-  -> Dim dimval
+  -> Dim ix
   -> KeepDim
-  -> (Tensor d, Maybe (IndexTensor '[n]))
+  -> (Tensor (rs ++ '[1] ++ ls), Maybe (IndexTensor (rs ++ '[1] ++ ls)))
 min = withKeepDim Dynamic._min
 
 -- | Static call to 'Dynamic.median'
 median
-  :: forall d n dimval
-  .  Dimensions d
-  => All KnownNat '[dimval, n]
-  => All KnownDim '[dimval, n]
+  :: forall d n ix rs ls
+  .  All Dimensions '[d, rs ++ '[1] ++ ls]
+  => All KnownNat '[n, ix]
+  => All KnownDim '[n, ix]
+  => Length d > ix ~ True
+  => '(rs, n:+ls) ~ (SplitAt ix d)
   => Tensor d
-  -> Dim dimval
+  -> Dim ix
   -> KeepDim
-  -> (Tensor d, Maybe (IndexTensor '[n]))
+  -> (Tensor (rs ++ '[1] ++ ls), Maybe (IndexTensor (rs ++ '[1] ++ ls)))
 median = withKeepDim Dynamic._median
 
--- | Convenience method for 'max'
-max1d :: (KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
-max1d t = Torch.Indef.Static.Tensor.Math.Reduce.max t (dim :: Dim 0)
+-- -- | Convenience method for 'max'
+-- max1d :: (KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[], Maybe (IndexTensor '[0]))
+-- max1d t = Torch.Indef.Static.Tensor.Math.Reduce.max t (dim :: Dim 0)
 
--- | Convenience method for 'min'
-min1d :: forall n . KnownDim n => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
-min1d t = Torch.Indef.Static.Tensor.Math.Reduce.min t (dim :: Dim 0)
+-- -- | Convenience method for 'min'
+-- min1d :: forall n . KnownDim n => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
+--   :: forall d n ix rs ls
+--   .  All Dimensions '[d, rs ++ ls]
+--   => All KnownNat '[n, ix]
+--   => All KnownDim '[n, ix]
+--   => '(rs, n:+ls) ~ (SplitAt ix d)
+--   => Tensor '[n]
+--   -> KeepDim
+--   -> (Tensor '[], Maybe (IndexTensor '[1]))
+-- min1d t = Torch.Indef.Static.Tensor.Math.Reduce.min t (dim :: Dim 0)
 
--- | Convenience method for 'median'
-median1d
-  :: (KnownDim n)
-  => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
-median1d t = median t (dim :: Dim 0)
+-- -- | Convenience method for 'median'
+-- median1d
+--   :: (KnownDim n)
+--   => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
+-- median1d t = median t (dim :: Dim 0)
 
--- | Convenience method for 'max'
-maxIndex1d t = fromJust . snd $ max1d t keep
-
--- | Convenience method for 'min'
-minIndex1d t = fromJust . snd $ min1d t keep
-
--- | Convenience method for 'median'
-medianIndex1d t = fromJust . snd $ median1d t keep
+-- -- | Convenience method for 'max'
+-- maxIndex1d t = fromJust . snd $ max1d t keep
+--
+-- -- | Convenience method for 'min'
+-- minIndex1d t = fromJust . snd $ min1d t keep
+--
+-- -- | Convenience method for 'median'
+-- medianIndex1d t = fromJust . snd $ median1d t keep
 
 -- | Static call to 'Dynamic._prod'
 _prod :: Tensor d -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
@@ -127,19 +145,21 @@ _prod r t = Dynamic._prod (asDynamic r) (asDynamic t)
 -------------------------------------------------------------------------------
 
 withKeepDim
-  :: forall d n dimval
-  . (Dimensions d)
-  => All KnownNat '[n, dimval]
-  => All KnownDim '[n, dimval]
+  :: forall d n ix rs ls
+  .  All Dimensions '[d, rs ++ '[1] ++ ls]
+  => All KnownNat '[n, ix]
+  => All KnownDim '[n, ix]
+  => Length d > ix ~ True
+  => '(rs, n:+ls) ~ (SplitAt ix d)
   => ((Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ())
   -> Tensor d
-  -> Dim dimval
+  -> Dim ix
   -> KeepDim
-  -> (Tensor d, Maybe (IndexTensor '[n]))
+  -> (Tensor (rs ++ '[1] ++ ls), Maybe (IndexTensor (rs ++ '[1] ++ ls)))
 withKeepDim _fn t d k = unsafePerformIO $ do
-  ret :: Tensor d <- new
-  let ix :: IndexTensor '[n] = newIx
-  _fn (asDynamic ret, longAsDynamic ix) (asDynamic t) (fromIntegral $ dimVal d) (Just k)
+  ret :: Tensor (rs ++ '[1] ++ ls) <- new
+  let ix :: IndexTensor (rs ++ '[1] ++ ls) = newIx
+  _fn (asDynamic ret, longAsDynamic ix) (asDynamic t) ((fromIntegral $ dimVal d)) (Just k)
   pure (ret, if coerce k then Just ix else Nothing)
 {-# NOINLINE withKeepDim #-}
 

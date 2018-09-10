@@ -94,12 +94,12 @@ withKeepDim
   :: ((Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ())
   -> Dynamic -> DimVal -> Maybe KeepDim -> IO (Dynamic, Maybe (IndexDynamic))
 withKeepDim _fn t d k = do
-  tdim@(SomeDims d')<- getDims t
+  tdim@(SomeDims d') <- getDims t
   let (i:_) = listDims d'
-  ret :: Dynamic      <- new' tdim
-  let ix = Ix.newIxDyn i
+  ret :: Dynamic <- new' tdim
+  let ix = Ix.newIxDyn [i]
   _fn (ret, ix) t d k
-  pure (ret, maybe (Just ix) (pure Nothing) k)
+  pure (ret, maybe Nothing (\(KeepDim b) -> if b then Just ix else Nothing) k)
 
 -- | get the maximum value in the specified dimension and return an optional corresponding index tensor of the maximum value's index.
 max :: Dynamic -> DimVal -> Maybe KeepDim -> IO (Dynamic, Maybe (IndexDynamic))
