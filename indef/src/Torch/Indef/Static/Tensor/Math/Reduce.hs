@@ -22,9 +22,9 @@ module Torch.Indef.Static.Tensor.Math.Reduce
   , Torch.Indef.Static.Tensor.Math.Reduce.max
   , median
 
-  -- , minIndex1d    -- , min1d
-  -- , maxIndex1d    -- , max1d
-  -- , medianIndex1d -- , median1d
+  , minIndex1d    , min1d
+  , maxIndex1d    , max1d
+  , medianIndex1d , median1d
 
   , Torch.Indef.Static.Tensor.Math.Reduce.sum, rowsum, colsum
   , _prod
@@ -107,36 +107,26 @@ median
   -> (Tensor (rs ++ '[1] ++ ls), Maybe (IndexTensor (rs ++ '[1] ++ ls)))
 median = withKeepDim Dynamic._median
 
--- -- | Convenience method for 'max'
--- max1d :: (KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[], Maybe (IndexTensor '[0]))
--- max1d t = Torch.Indef.Static.Tensor.Math.Reduce.max t (dim :: Dim 0)
+-- | Convenience method for 'max'
+max1d :: (KnownNat n, KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[1], Maybe (IndexTensor '[1]))
+max1d t = Torch.Indef.Static.Tensor.Math.Reduce.max t (dim :: Dim 0)
 
--- -- | Convenience method for 'min'
--- min1d :: forall n . KnownDim n => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
---   :: forall d n ix rs ls
---   .  All Dimensions '[d, rs ++ ls]
---   => All KnownNat '[n, ix]
---   => All KnownDim '[n, ix]
---   => '(rs, n:+ls) ~ (SplitAt ix d)
---   => Tensor '[n]
---   -> KeepDim
---   -> (Tensor '[], Maybe (IndexTensor '[1]))
--- min1d t = Torch.Indef.Static.Tensor.Math.Reduce.min t (dim :: Dim 0)
+-- | Convenience method for 'min'
+min1d :: (KnownNat n, KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[1], Maybe (IndexTensor '[1]))
+min1d t = Torch.Indef.Static.Tensor.Math.Reduce.min t (dim :: Dim 0)
 
--- -- | Convenience method for 'median'
--- median1d
---   :: (KnownDim n)
---   => Tensor '[n] -> KeepDim -> (Tensor '[n], Maybe (IndexTensor '[1]))
--- median1d t = median t (dim :: Dim 0)
+-- | Convenience method for 'median'
+median1d :: (KnownNat n, KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[1], Maybe (IndexTensor '[1]))
+median1d t = median t (dim :: Dim 0)
 
--- -- | Convenience method for 'max'
--- maxIndex1d t = fromJust . snd $ max1d t keep
---
--- -- | Convenience method for 'min'
--- minIndex1d t = fromJust . snd $ min1d t keep
---
--- -- | Convenience method for 'median'
--- medianIndex1d t = fromJust . snd $ median1d t keep
+-- | Convenience method for 'max'
+maxIndex1d t = fromJust . snd $ max1d t keep
+
+-- | Convenience method for 'min'
+minIndex1d t = fromJust . snd $ min1d t keep
+
+-- | Convenience method for 'median'
+medianIndex1d t = fromJust . snd $ median1d t keep
 
 -- | Static call to 'Dynamic._prod'
 _prod :: Tensor d -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
