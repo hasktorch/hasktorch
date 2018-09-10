@@ -13,6 +13,8 @@ module Main where
 import Prelude
 
 import Data.DList (DList)
+import Data.Function
+import Data.Maybe
 import Data.Either -- (fromRight, is)
 import GHC.Exts
 import Data.Typeable
@@ -51,6 +53,7 @@ import qualified Torch.Cuda.Double.NN.Conv2d as Conv2d
 #else
 import Torch.Double as Math hiding (Sum)
 import qualified Torch.Long as Long
+import qualified Torch.Long.Dynamic as LDyn
 import qualified Torch.Double.NN.Conv2d as Conv2d
 #endif
 
@@ -73,116 +76,23 @@ import qualified Data.Singletons.Prelude.List as Sing (All)
 #ifdef DEBUG
 import Debug.Trace
 import qualified Torch.Double as CPU
+import qualified Torch.Double.Dynamic as Dyn
 import qualified Torch.Double.Storage as CPUS
 import Control.Concurrent
 #endif
 
-main = runlenetcifar10
 lr = 0.001
 bsz = (dim :: Dim 4)
 bs = (fromIntegral $ dimVal bsz)
 
-trainFourTest :: forall batch . batch ~ 4 => IO ()
-trainFourTest = seedAll >>= \g -> do
-  ltrain <- prepdata . V.take (bs) <$> cifar10set g default_cifar_path Train
-  net0 <- newLeNet @3 @5
-  print net0
-
-  t0 <- getCurrentTime
-  let
-    lbatches :: Vector LDataSet
-    lbatches = V.fromList $ mkBatches (fromIntegral bs) ltrain
-
-  print lbatches
-
-  let
-    btensor :: LDataSet -> IO (Maybe (Tensor '[batch, 10], Tensor '[batch, 3, 32, 32]))
-    btensor lds
-      | V.length lds /= (fromIntegral bs) = pure Nothing
-      | otherwise = do
-        foo <- V.toList <$> V.mapM getdata lds
-        ys <- toYs foo
-        xs <- toXs foo
-        pure $ Just (ys, xs)
-
-    go
-      :: (LeNet 3 5, DList LDataSet)
-      -> Int
-      -> LDataSet
-      -> IO (LeNet 3 5, DList LDataSet)
-    go (!net, !seen) !bid !lzy = do
-      print "starting to load"
-      fcd <- V.mapM forcetensor lzy
-      mten <- btensor fcd
-      case mten of
-        Nothing -> pure (net, seen)
-        Just (ys, xs) -> do
-          print "starting to train"
-          (net', loss) <- trainStep lr net xs ys
-          t1 <- getCurrentTime
-          let diff = 0.0 :: Float
-              front = "\n"
-          printf (front ++ "(%db#%03d)[mse %.4f](elapsed: %.2fs)")
-            (bs::Int) (bid+1)
-            (loss `get1d` 0)
-            diff -- ((t1 `diffUTCTime` t00))
-          hFlush stdout
-          pure (net', seen `DL.snoc` fcd)
-
-
-  res <- V.ifoldM go (net0, DL.empty) lbatches
-  let (net', train) = second (V.concat . DL.toList) res
-
-  printf "\nFinished trainFourTest\n"
-
-toYs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[4, 10])
-toYs ys =
-  pure . unsafeMatrix . fmap (onehotf . fst) $ ys
-
-toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[4, 3, 32, 32])
-toXs xs = do
-  -- print "XS PREPO"
-  -- mapM_ assertTen (snd <$> xs)
-  -- print "XS CATTED"
-  let xs' = catArray0 $ fmap (unsqueeze1d (dim :: Dim 0) . snd) xs
-  -- assertTen xs'
-  pure xs'
-
-
-
-
-assertTen :: Tensor d -> IO ()
-assertTen t =
-#ifdef CUDA
-    CPU.tensordata (copyDouble t) >>= \rs -> do
-#else
-    tensordata t >>= \rs -> do
+main :: IO ()
+main = do
+#ifndef DEBUG
+  clearScreen
 #endif
-    let
-      oob = filter (\x -> x < -0.1 || x > 1.1) rs
-      oox = filter (<= 2) oob
-
-#ifdef DEBUG_VERBOSE
-    when (x == 0) $ modifyIORef counter (+1) >> readIORef counter >>= print
-#endif
-
-    if not (null oob)
-    then throwString $ show (oob, length oob)
-    else
-      if all (== 0) rs
-      then throwString ("all-zero tensor!")
-      else pure ()
-
-
-runlenetcifar10 :: IO ()
-runlenetcifar10 = do
-  -- clearScreen
-  g <- MWC.initialize (V.singleton 42)
-#ifdef CUDA
-  withForeignPtr torchstate $ \s -> c_THCRandom_manualSeed s 42
-#endif
-  ltrain <- prepdata . V.take 25 <$> cifar10set g default_cifar_path Train
-  ltest  <- prepdata . V.take 20 <$> cifar10set g default_cifar_path Test
+  g <- seedAll
+  ltrain <- prepdata . V.take 500 <$> cifar10set g default_cifar_path Train
+  ltest  <- prepdata . V.take 200 <$> cifar10set g default_cifar_path Test
 
   let (lval, lhold) = V.splitAt (V.length ltest `P.div` 2) ltest
   net0 <- newLeNet @3 @5
@@ -192,7 +102,7 @@ runlenetcifar10 = do
   hold <- testNet net0 lhold
 
   t0 <- getCurrentTime
-  net <- epochs lval 0.001 t0 1 ltrain net0
+  net <- epochs lval 0.001 t0 5 ltrain net0
   t1 <- getCurrentTime
   printf "\nFinished training!\n"
 
@@ -205,25 +115,20 @@ runlenetcifar10 = do
 -- ========================================================================= --
 counter :: IORef Integer
 counter = unsafePerformIO $ newIORef 0
+{-# NOINLINE counter #-}
 
 preprocess :: FilePath -> IO (Tensor '[3, 32, 32])
-preprocess = preprocess'
-
-preprocess' :: FilePath -> IO (Tensor '[3, 32, 32])
-preprocess' f =
-  runExceptT (rgb2torch (Normalize True) f) >>= \case
+preprocess f =
+  runExceptT (rgb2torch NegOneToOne f) >>= \case
     Left s -> throwString s
     Right t -> do
-#ifdef DEBUG
-      -- assertTen t
-#endif
       pure t
 
 seedAll :: IO MWC.GenIO
-seedAll = do
-  g <- MWC.initialize (V.singleton 42)
+seedAll =
+  MWC.initialize (V.singleton 42) >>= \g ->
 #ifdef CUDA
-  withForeignPtr torchstate $ \s -> c_THCRandom_manualSeed s 42
+  withForeignPtr torchstate (\s -> c_THCRandom_manualSeed s 42) >>
 #endif
   pure g
 
@@ -323,13 +228,8 @@ runBatches estr d lr t00 e lds net = do
     btensor fcd >>= \case
         Nothing -> pure (net, seen)
         Just (ys, xs) -> do
-#ifdef DEBUG
           (net', loss) <- trainStep lr net xs ys
-#else
-          let (net', loss) = trainStep lr net xs ys
-#endif
           t1 <- getCurrentTime
-
 #ifdef DEBUG
           let diff = 0.0 :: Float
               front = "\n"
@@ -337,7 +237,6 @@ runBatches estr d lr t00 e lds net = do
           let diff = realToFrac (t1 `diffUTCTime` t00) :: Float
               front = setRewind
 #endif
-
           printf (front ++ estr ++ "(%db#%03d)[mse %.4f](elapsed: %.2fs)")
             bs (bid+1)
             (loss `get1d` 0)
@@ -361,13 +260,8 @@ runBatches estr d lr t00 e lds net = do
         pure . unsafeMatrix . fmap (onehotf . fst) $ ys
 
       toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[batch, 3, 32, 32])
-      toXs xs = do
-        -- print "XS PREPO"
-        -- mapM_ assertTen (snd <$> xs)
-        -- print "XS CATTED"
-        let xs' = catArray0 $ fmap (unsqueeze1d (dim :: Dim 0) . snd) xs
-        -- assertTen xs'
-        pure xs'
+      toXs xs =
+        pure . catArray0 $ fmap (unsqueeze1d (dim :: Dim 0) . snd) xs
 
 
 infer
@@ -410,25 +304,23 @@ trainStep
   -> LeNet ch step
   -> Tensor '[batch, ch, 32, 32]
   -> Tensor '[batch, 10]
-#ifndef DEBUG
-  -> (LeNet ch step, Tensor '[1])
-trainStep lr net xs ys = (Bp.add net gnet, out)
-#else
   -> IO (LeNet ch step, Tensor '[1])
 trainStep lr net xs ys = do
-
-#ifdef DEBUG
-  -- printL1Weights gnet
-  -- print out
-  -- print $ ys
-  -- print $ evalBP2 (lenetBatch undefined) net xs
-  -- print gnet
-
-#endif
+  let (dyn, Just ix) = CPU.max ys (dim :: Dim 1) keep
+  rix :: Long.Tensor '[batch] <- Long._resizeDim ix
+  let (out, (gnet, _)) = backprop2 (crossEntropy rix .: lenetBatch lr) net xs
   pure (LeNet.update net lr gnet, out)
-#endif
-  where
-    (out, (gnet, _)) = backprop2 ( mSECriterion ys .: lenetBatch lr) net xs
+
+
+crossEntropy
+  :: (Reifies s W, CPU.All KnownDim '[b, p])
+  => IndexTensor '[b]            -- THIndexTensor *target,
+  -> BVar s (Tensor '[b, p])     -- THTensor *input,
+  -> BVar s (Tensor '[1])        -- THTensor *output,
+crossEntropy ys inp
+  = logSoftMaxN (dim :: Dim 0) inp
+  & classNLLCriterion ys
+
 
 -- ========================================================================= --
 -- Testing a dataset
@@ -466,7 +358,7 @@ testNet net ltest = do
 -------------------------------------------------------------------------------
 -- Sanity check tests
 
--- pased
+-- There is a bug here having to do with CUDA.
 loadtest :: IO ()
 loadtest = do
   g <- MWC.initialize (V.singleton 42)
@@ -480,7 +372,7 @@ insanity :: FilePath -> IO (Tensor '[3, 32, 32])
 insanity f = go 0
  where
   go x =
-    runExceptT (rgb2torch (Normalize True) f) >>= \case
+    runExceptT (rgb2torch ZeroToOne f) >>= \case
       Left s -> throwString s
       Right t -> do
 #ifdef CUDA
@@ -491,10 +383,6 @@ insanity f = go 0
           let
               oob = filter (\x -> x < 0 || x > 1) rs
               oox = filter (<= 2) oob
-#ifdef DEBUG_VERBOSE
-          when (x == 0) $ modifyIORef counter (+1) >> readIORef counter >>= print
-#endif
-
           if not (null oob)
           then throwString (show (oob, oox))
           else

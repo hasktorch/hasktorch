@@ -678,14 +678,14 @@ cuboid ls
   innerDimCheck :: Int -> [[x]] -> Bool
   innerDimCheck d = any ((/= d) . length)
 
+  ndepth :: Integral i => i
+  ndepth = genericLength (head (head ls))
+
   ncols :: Integral i => i
-  ncols = genericLength (head (head ls))
+  ncols = genericLength (head ls)
 
   nrows :: Integral i => i
-  nrows = genericLength (head ls)
-
-  ndepth :: Integral i => i
-  ndepth = genericLength ls
+  nrows = genericLength ls
 
 
 -- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
@@ -699,9 +699,9 @@ hyper ls
     || any (any (any null)) ls
     = Left "can't accept empty lists"
 
-  | innerDimCheck ncols  (head (head ls)) = Left "rows are not all the same length"
-  | innerDimCheck ndepth       (head ls)  = Left "cols are not all the same length"
-  | innerDimCheck ntime              ls   = Left "depths are not all the same length"
+  | innerDimCheck ntime (head (head ls)) = Left "rows are not all the same length"
+  | innerDimCheck ndepth      (head ls)  = Left "cols are not all the same length"
+  | innerDimCheck ncols             ls   = Left "depths are not all the same length"
 
   | otherwise = Right . unsafePerformIO $ do
       let l = concat (concat (concat ls))
@@ -729,17 +729,17 @@ hyper ls
   innerDimCheck :: Int -> [[x]] -> Bool
   innerDimCheck d = any ((/= d) . length)
 
-  ncols :: Integral i => i
-  ncols = genericLength (head (head (head ls)))
-
-  nrows :: Integral i => i
-  nrows = genericLength (head (head ls))
+  ntime :: Integral i => i
+  ntime = genericLength (head (head (head ls)))
 
   ndepth :: Integral i => i
-  ndepth = genericLength (head ls)
+  ndepth = genericLength (head (head ls))
 
-  ntime :: Integral i => i
-  ntime = genericLength ls
+  ncols :: Integral i => i
+  ncols = genericLength (head ls)
+
+  nrows :: Integral i => i
+  nrows = genericLength ls
 
 
 -- | resize a dynamic tensor with runtime 'SomeDims' representation of its new shape. Returns a pure copy of the

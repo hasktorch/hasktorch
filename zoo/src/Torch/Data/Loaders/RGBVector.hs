@@ -1,5 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Data.Loaders.RGBVector
   ( Normalize(..)
   , file2rgb
@@ -46,7 +45,10 @@ type RGBVector = Vector (Vector (Vector HsReal))
 
 modulename = "Torch.Data.Loaders.RGBVector"
 
-newtype Normalize = Normalize Bool
+data Normalize
+  = ZeroToOne
+  | NegOneToOne
+  | NoNormalize
   deriving (Eq, Ord, Show, Enum, Bounded)
 
 -- | load an RGB PNG image into a Torch tensor
@@ -56,9 +58,9 @@ rgb2list
   -> Normalize
   -> FilePath
   -> ExceptT String IO [[[HsReal]]]
-rgb2list hwp (Normalize donorm) fp = do
+rgb2list hwp donorm fp = do
   pxs <- file2rgb hwp fp
-  lift $ assertPixels pxs
+  -- lift $ assertPixels pxs
   ExceptT $ do
     vec <- mkRGBVec
     -- threadDelay 1000
@@ -67,13 +69,14 @@ rgb2list hwp (Normalize donorm) fp = do
       writePx vec chw pxfin
 
     lst <- freezeList vec
-    assertList modulename (concat (concat lst))
+    -- assertList modulename (concat (concat lst))
     pure $ Right lst
  where
   prep w =
-    if donorm
-    then w / 255
-    else w
+    case donorm of
+      NoNormalize ->  w
+      ZeroToOne   ->  w / 255
+      NegOneToOne -> (w / 255) * 2 - 1
 
   (height, width) = reifyHW hwp
 
