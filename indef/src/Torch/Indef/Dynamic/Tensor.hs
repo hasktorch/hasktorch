@@ -609,15 +609,15 @@ vector l = unsafePerformIO $ do
 -- terminate called after throwing an instance of 'std::runtime_error'
 --   what():  cuda runtime error (11) : invalid argument at /home/stites/git/hasktorch/vendor/aten/src/THC/generic/THCStorage.c:150
 --   Aborted (core dumped)
--- #ifdef CUDA
+#ifdef HASKTORCH_CORE_CUDA
   res <- new' (someDimsVal [genericLength l])
   mapM_  (upd res) (zip [0..genericLength l - 1] l)
   pure res
--- #else
---   -- IMPORTANT: This is safe for CPU. For GPU, I think we need to allocate and marshal a haskell list into cuda memory before continuing.
---   st <- Storage.fromList (deepseq l l)
---   newWithStorage1d st 0 (genericLength l, 1)
--- #endif
+#else
+  -- IMPORTANT: This is safe for CPU. For GPU, I think we need to allocate and marshal a haskell list into cuda memory before continuing.
+  st <- Storage.fromList (deepseq l l)
+  newWithStorage1d st 0 (genericLength l, 1)
+#endif
  where
   upd :: Dynamic -> (Word, HsReal) -> IO ()
   upd t (idx, v) =
@@ -633,14 +633,14 @@ matrix ls
   | any ((ncols /=) . length) ls = Left "rows are not all the same length"
   | otherwise = Right . unsafePerformIO $ do
       let l = concat ls
--- #ifdef CUDA
+#ifdef HASKTORCH_CORE_CUDA
           vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols])
       pure vec
--- #else
---       st <- Storage.fromList (deepseq l l)
---       newWithStorage2d st 0 (nrows, ncols) (ncols, 1)
--- #endif
+#else
+      st <- Storage.fromList (deepseq l l)
+      newWithStorage2d st 0 (nrows, ncols) (ncols, 1)
+#endif
  where
   go vec (SomeDims ds) = _resizeDim vec ds
 
@@ -659,13 +659,13 @@ cuboid ls
 
   | otherwise = Right . unsafePerformIO $ do
       let l = concat (concat ls)
--- #ifdef CUDA
+#ifdef HASKTORCH_CORE_CUDA
           vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols, ndepth])
--- #else
---       st <- Storage.fromList (deepseq l l)
---       newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
--- #endif
+#else
+      st <- Storage.fromList (deepseq l l)
+      newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
+#endif
  where
   go vec (SomeDims ds) = _resizeDim vec ds >> pure vec
 
@@ -678,14 +678,14 @@ cuboid ls
   innerDimCheck :: Int -> [[x]] -> Bool
   innerDimCheck d = any ((/= d) . length)
 
-  ndepth :: Integral i => i
-  ndepth = genericLength (head (head ls))
-
   ncols :: Integral i => i
-  ncols = genericLength (head ls)
+  ncols = genericLength (head (head ls))
 
   nrows :: Integral i => i
-  nrows = genericLength ls
+  nrows = genericLength (head ls)
+
+  ndepth :: Integral i => i
+  ndepth = genericLength ls
 
 
 -- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
@@ -699,23 +699,23 @@ hyper ls
     || any (any (any null)) ls
     = Left "can't accept empty lists"
 
-  | innerDimCheck ncols              ls   = Left "rows are not all the same length"
-  | innerDimCheck ndepth       (head ls)  = Left "columns are not all the same length"
-  | innerDimCheck ntime  (head (head ls)) = Left "depths are not all the same length"
+  | innerDimCheck ncols  (head (head ls)) = Left "rows are not all the same length"
+  | innerDimCheck ndepth       (head ls)  = Left "cols are not all the same length"
+  | innerDimCheck ntime              ls   = Left "depths are not all the same length"
 
   | otherwise = Right . unsafePerformIO $ do
       let l = concat (concat (concat ls))
--- #ifdef CUDA
+#ifdef HASKTORCH_CORE_CUDA
           vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols, ndepth, ntime])
--- #else
---       st <- Storage.fromList (deepseq l l)
---       newWithStorage4d st 0
---         (nrows, ncols * ndepth * ntime)
---         (ncols, ndepth * ntime)
---         (ndepth, ntime)
---         (ntime, 1)
--- #endif
+#else
+      st <- Storage.fromList (deepseq l l)
+      newWithStorage4d st 0
+        (nrows, ncols * ndepth * ntime)
+        (ncols, ndepth * ntime)
+        (ndepth, ntime)
+        (ntime, 1)
+#endif
  where
   go vec (SomeDims ds) = _resizeDim vec ds >> pure vec
 
@@ -729,17 +729,17 @@ hyper ls
   innerDimCheck :: Int -> [[x]] -> Bool
   innerDimCheck d = any ((/= d) . length)
 
-  ntime :: Integral i => i
-  ntime = genericLength (head (head (head ls)))
-
-  ndepth :: Integral i => i
-  ndepth = genericLength (head (head ls))
-
   ncols :: Integral i => i
-  ncols = genericLength (head ls)
+  ncols = genericLength (head (head (head ls)))
 
   nrows :: Integral i => i
-  nrows = genericLength ls
+  nrows = genericLength (head (head ls))
+
+  ndepth :: Integral i => i
+  ndepth = genericLength (head ls)
+
+  ntime :: Integral i => i
+  ntime = genericLength ls
 
 
 -- | resize a dynamic tensor with runtime 'SomeDims' representation of its new shape. Returns a pure copy of the
