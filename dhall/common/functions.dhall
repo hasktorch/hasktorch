@@ -10,9 +10,7 @@ in
    λ(pkg : Text) →
    { name = pkg, original = { name = pkg, package = [] : Optional Text } }
 
-, mixinRequirements  =
-   λ(renames : List { rename : Text, to : Text }) →
-   < renaming = renames | default : {} | hiding : List Text >
+, showlib =  λ(isth : Bool) → if isth then "TH" else "THC"
 
 , renameSig =
    λ(to : Text) →

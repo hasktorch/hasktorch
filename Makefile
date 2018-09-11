@@ -48,4 +48,10 @@ run-examples:
 	for ex in ad bayesian-regression download-mnist ff-typed ff-untyped gradient-descent multivariate-normal static-tensor-usage; do echo "running $$ex" && sleep 1 && cabal new-run hasktorch-examples:$$ex && sleep 1 ; done
 	echo "finished running examples"
 
+dabal:
+	for lib in "signatures/hasktorch-signatures" ; do dhall-to-cabal $${lib}.dhall > $${lib}.cabal ; done
+
+test-signatures:
+	for pkg in floating-th floating-thc signed-th signed-thc unsigned-thc unsigned-th; do cabal new-build hasktorch-signatures:isdefinite-$${pkg} > /dev/null ; done
+
 .PHONY: clean build refresh codegen init dev run-examples
