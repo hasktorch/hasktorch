@@ -36,6 +36,74 @@ in  let packages =
   , hasktorch-partial          = fn.anyver "hasktorch-partial"
 
   , QuickCheck = fn.anyver "QuickCheck"
+  , containers = fn.anyver "containers"
+  , deepseq =
+    { bounds =
+      prelude.unionVersionRanges
+        ( prelude.thisVersion (prelude.v "1.3.0.0") )
+        ( prelude.laterVersion (prelude.v "1.3.0.0") )
+    , package = "deepseq" }
+  , dimensions =
+    { bounds =
+      prelude.unionVersionRanges
+        ( prelude.thisVersion (prelude.v "1.0"))
+        ( prelude.laterVersion (prelude.v "1.0"))
+    , package = "dimensions" }
+  , managed =
+    { bounds =
+      prelude.intersectVersionRanges
+        ( prelude.unionVersionRanges
+          ( prelude.thisVersion (prelude.v "1.0.0"))
+          ( prelude.laterVersion (prelude.v "1.0.0")))
+        ( prelude.earlierVersion (prelude.v "1.1"))
+    , package = "managed" }
+  , microlens =
+    { bounds =
+      prelude.unionVersionRanges
+        ( prelude.thisVersion (prelude.v "0.4.8.1"))
+        ( prelude.laterVersion (prelude.v "0.4.8.1"))
+    , package = "microlens" }
+  , numeric-limits = fn.anyver "numeric-limits"
+  , safe-exceptions =
+    { bounds =
+      prelude.unionVersionRanges
+        ( prelude.thisVersion (prelude.v "0.1.0.0"))
+        ( prelude.laterVersion (prelude.v "0.1.0.0"))
+    , package = "safe-exceptions" }
+  , singletons =
+    { bounds =
+      prelude.unionVersionRanges
+        ( prelude.thisVersion (prelude.v "2.2"))
+        ( prelude.laterVersion (prelude.v "2.2"))
+    , package = "singletons" }
+  , text =
+    { bounds =
+      prelude.unionVersionRanges
+        ( prelude.thisVersion (prelude.v "1.2.2.2"))
+        ( prelude.laterVersion (prelude.v "1.2.2.2"))
+    , package = "text" }
+  , typelits-witnesses = { bounds =
+      prelude.unionVersionRanges
+        ( prelude.thisVersion (prelude.v "0.2.3.0"))
+        ( prelude.laterVersion (prelude.v "0.2.3.0"))
+    , package = "typelits-witnesses" }
+  , backprop =
+    { bounds =
+      prelude.unionVersionRanges
+        (prelude.thisVersion (prelude.v "0.2.5"))
+        (prelude.laterVersion (prelude.v "0.2.5"))
+    , package = "backprop" }
+  , ghc-typelits-natnormalise = fn.anyver "ghc-typelits-natnormalise"
+  , hasktorch-core = fn.anyver "hasktorch-core"
+  , mtl = fn.anyver "mtl"
+  , microlens-platform = fn.anyver "microlens-platform"
+  , monad-loops = fn.anyver "monad-loops"
+  , time = fn.anyver "time"
+  , transformers = fn.anyver "transformers"
+
+  , hasktorch-indef-floating = fn.anyver "hasktorch-indef-floating"
+  , hasktorch-indef-signed   = fn.anyver "hasktorch-indef-signed"
+  , hasktorch-indef-unsigned = fn.anyver "hasktorch-indef-unsigned"
   }
 
 in  let cabalvars =
@@ -60,6 +128,13 @@ in  let cabalvars =
          , location = [ "https://github.com/hasktorch/hasktorch" ] : Optional Text
          }
     ] : List types.SourceRepo
+  , default-extensions = [ prelude.types.Extensions.LambdaCase True
+      , prelude.types.Extensions.DataKinds True
+      , prelude.types.Extensions.TypeFamilies True
+      , prelude.types.Extensions.TypeSynonymInstances True
+      , prelude.types.Extensions.ScopedTypeVariables True
+      , prelude.types.Extensions.FlexibleContexts True
+      ]
   }
 
 in
@@ -73,9 +148,27 @@ in
      , homepage = cabalvars.homepage
      , license = cabalvars.license
      , source-repos = cabalvars.source-repos
+     , category = "Tensors, Machine Learning"
      }
 , Library = prelude.defaults.Library
-  // { default-language = cabalvars.default-language }
+  //
+    { default-language = cabalvars.default-language
+    , default-extensions = cabalvars.default-extensions
+    }
+, flags =
+  { cuda =
+      { name = "cuda"
+      , description = "build with THC support"
+      , manual = False
+      , default = False
+      }
+  , lite =
+      { name = "lite"
+      , description = "only build with Double and Long support"
+      , manual = False
+      , default = False
+      }
+  }
 }
 
 
