@@ -155,17 +155,60 @@ executable static-tensor-usage
       cuda
 
 executable lenet-cifar10
-  main-is: Main.hs
+  main-is: Manual.hs
   hs-source-dirs: lenet-cifar10
   default-language: Haskell2010
   default-extensions: DataKinds, ScopedTypeVariables
   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+  other-modules:
+      DataLoading
+      Criterion
+      LeNet
   build-depends:
       base >=4.7 && <5
     , backprop
     , hasktorch-core
     , unordered-containers
     , dimensions
+    , hasktorch-zoo
+
+    , dlist
+    , list-t
+    , mtl
+    , monad-loops
+    , mwc-random
+    , microlens-platform
+    , vector
+    , singletons
+    , time
+    , transformers
+    , safe-exceptions
+  if flag(debug)
+    cpp-options: -DDEBUG
+  if flag(cuda)
+    cpp-options: -DCUDA
+    build-depends:
+        cuda
+      , hasktorch-raw-thc
+      , hasktorch-types-thc
+
+
+executable lenet-cifar10-initialization
+  main-is: Initialization.hs
+  hs-source-dirs: lenet-cifar10
+  default-language: Haskell2010
+  default-extensions: DataKinds, ScopedTypeVariables
+  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures
+  other-modules: Utils
+  build-depends:
+      base >=4.7 && <5
+    , backprop >= 0.2
+    , dimensions
+    , directory
+    , filepath
+    , unordered-containers
+    , ghc-typelits-natnormalise
+    , hasktorch-core
     , hasktorch-zoo
 
     , dlist
