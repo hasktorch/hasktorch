@@ -126,6 +126,8 @@ library
     , Torch.Double.Dynamic
     , Torch.Double.Dynamic.NN
     , Torch.Double.Dynamic.NN.Activation
+    , Torch.Double.Dynamic.NN.Criterion
+    , Torch.Double.Dynamic.NN.Pooling
 
   if !flag(lite) {
     reexported-modules:
@@ -661,12 +663,15 @@ library hasktorch-core-cpu
           ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Float.Dynamic.Tensor.TopK
 
           ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Float.Dynamic.Tensor.Math.Pointwise.Signed
-          ,Torch.Indef.Dynamic.NN                              as Torch.Indef.Float.Dynamic.NN
           ,Torch.Indef.Dynamic.Tensor.Math.Blas                as Torch.Indef.Float.Dynamic.Tensor.Math.Blas
           ,Torch.Indef.Dynamic.Tensor.Math.Floating            as Torch.Indef.Float.Dynamic.Tensor.Math.Floating
           ,Torch.Indef.Dynamic.Tensor.Math.Lapack              as Torch.Indef.Float.Dynamic.Tensor.Math.Lapack
           ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating  as Torch.Indef.Float.Dynamic.Tensor.Math.Pointwise.Floating
           ,Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating     as Torch.Indef.Float.Dynamic.Tensor.Math.Reduce.Floating
+          ,Torch.Indef.Dynamic.NN                              as Torch.Float.Dynamic.NN
+          ,Torch.Indef.Dynamic.NN.Activation                   as Torch.Float.Dynamic.NN.Activation
+          ,Torch.Indef.Dynamic.NN.Criterion                    as Torch.Float.Dynamic.NN.Criterion
+          ,Torch.Indef.Dynamic.NN.Pooling                      as Torch.Float.Dynamic.NN.Pooling
 
           ,Torch.Undefined.Tensor.Random.THC as Torch.Undefined.Float.Tensor.Random.THC
 
@@ -746,7 +751,8 @@ library hasktorch-core-cpu
 
      , Torch.Double.Dynamic.NN
      , Torch.Double.Dynamic.NN.Activation
-
+     , Torch.Double.Dynamic.NN.Criterion
+     , Torch.Double.Dynamic.NN.Pooling
 
   mixins:
       hasktorch-indef-floating
@@ -826,6 +832,8 @@ library hasktorch-core-cpu
 
         ,Torch.Indef.Dynamic.NN              as Torch.Double.Dynamic.NN
         ,Torch.Indef.Dynamic.NN.Activation   as Torch.Double.Dynamic.NN.Activation
+        ,Torch.Indef.Dynamic.NN.Criterion    as Torch.Double.Dynamic.NN.Criterion
+        ,Torch.Indef.Dynamic.NN.Pooling      as Torch.Double.Dynamic.NN.Pooling
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -1400,6 +1408,8 @@ library hasktorch-core-gpu
 
         ,Torch.Indef.Dynamic.NN              as Torch.Cuda.Double.Dynamic.NN
         ,Torch.Indef.Dynamic.NN.Activation   as Torch.Cuda.Double.Dynamic.NN.Activation
+        ,Torch.Indef.Dynamic.NN.Criterion    as Torch.Cuda.Double.Dynamic.NN.Criterion
+        ,Torch.Indef.Dynamic.NN.Pooling      as Torch.Cuda.Double.Dynamic.NN.Pooling
         )
         requires
         (Torch.Sig.Types.Global   as Torch.Types.THC
@@ -1629,6 +1639,8 @@ library hasktorch-indef-floating
 
     , Torch.Indef.Dynamic.NN
     , Torch.Indef.Dynamic.NN.Activation
+    , Torch.Indef.Dynamic.NN.Criterion
+    , Torch.Indef.Dynamic.NN.Pooling
 
     , Torch.Indef.Dynamic.Tensor.Math.Blas
     , Torch.Indef.Dynamic.Tensor.Math.Floating

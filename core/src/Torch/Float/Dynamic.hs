@@ -2,6 +2,8 @@ module Torch.Float.Dynamic (module X) where
 
 import Torch.Types.TH as X
 
+import Torch.Float.Dynamic.NN as X
+
 import Torch.Float.Types as X hiding (storage)
 import Torch.Float.Index as X hiding (withDynamicState)
 import Torch.Float.Mask  as X
@@ -24,7 +26,6 @@ import Torch.Indef.Float.Dynamic.Tensor.TopK as X
 
 import Torch.Indef.Float.Dynamic.Tensor.Math.Pointwise.Signed as X
 
-import Torch.Indef.Float.Dynamic.NN as X
 import Torch.Indef.Float.Dynamic.Tensor.Math.Blas as X
 import Torch.Indef.Float.Dynamic.Tensor.Math.Floating as X
 import Torch.Indef.Float.Dynamic.Tensor.Math.Lapack as X
