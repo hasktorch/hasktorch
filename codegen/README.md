@@ -26,7 +26,7 @@ For details on the TH library's pseudo-templating preprocessor mechanism for
 underlying the generic modules, see [Adam Paszke's
 writeup](https://apaszke.github.io/torch-internals.html).
 
-[th]: https://github.com/pytorch/pytorch/tree/master/torch/lib/TH
+[th]: https://github.com/pytorch/pytorch/tree/master/aten/src/TH
 
 <!-- project directory links -->
 
