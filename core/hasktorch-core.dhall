@@ -107,19 +107,96 @@ in let baseexports =
 in let nnexports =
     λ(isth : Bool)  →
     λ(ttype : Text) →
-      [ fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Activation"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Backprop"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Conv1d"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Conv2d"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Criterion"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Layers"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Linear"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Math"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Padding"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Pooling"
-      , fn.renameNoop "Torch"++(if isth then "" else "Cuda.")++"${ttype}.NN.Sampling"
+    let namespace = if isth then "${ttype}" else "Cuda.${ttype}"
+      [ fn.renameNoop "Torch.${namespace}.NN"
+      , fn.renameNoop "Torch.${namespace}.NN.Activation"
+      , fn.renameNoop "Torch.${namespace}.NN.Backprop"
+      , fn.renameNoop "Torch.${namespace}.NN.Conv1d"
+      , fn.renameNoop "Torch.${namespace}.NN.Conv2d"
+      , fn.renameNoop "Torch.${namespace}.NN.Criterion"
+      , fn.renameNoop "Torch.${namespace}.NN.Layers"
+      , fn.renameNoop "Torch.${namespace}.NN.Linear"
+      , fn.renameNoop "Torch.${namespace}.NN.Math"
+      , fn.renameNoop "Torch.${namespace}.NN.Padding"
+      , fn.renameNoop "Torch.${namespace}.NN.Pooling"
+      , fn.renameNoop "Torch.${namespace}.NN.Sampling"
+
+      , fn.renameNoop "Torch.${namespace}.Dynamic.NN"
+      , fn.renameNoop "Torch.${namespace}.Dynamic.NN.Activation"
       ]
+in let cpu-lite-depends =
+  [ packages.base
+  , packages.hasktorch-types-th
+  , packages.containers
+  , packages.deepseq
+  , packages.dimensions
+  , packages.hasktorch-raw-th
+  , packages.hasktorch-types-th
+  , packages.managed
+  , packages.microlens
+  , packages.numeric-limits
+  , packages.safe-exceptions
+  , packages.singletons
+  , packages.text
+  , packages.typelits-witnesses
+
+  , packages.hasktorch-indef-floating
+  , packages.hasktorch-indef-signed
+  ]
+in let gpu-lite-depends =
+  cpu-lite-depends #
+  [ packages.hasktorch-raw-thc
+  , packages.hasktorch-types-thc
+  ]
+
+in let lite-exposed =
+  λ(isth : Bool)
+  → baseexports isth "Long"
+  # baseexports isth "Double"
+
+in let lite-mixins =
+  λ(isth : Bool)
+  → [ { package = "hasktorch-indef-signed"
+      , renaming =
+        { provides = prelude.types.ModuleRenaming.renaming (provides.signed isth "Long")
+        , requires = prelude.types.ModuleRenaming.renaming (mixins.signed isth "Long" # indef-support isth)
+        } }
+      , { package = "hasktorch-indef-floating"
+        , renaming =
+          { provides = prelude.types.ModuleRenaming.renaming (provides.floating isth "Double")
+          , requires = prelude.types.ModuleRenaming.renaming (mixins.floating isth "Double" # indef-support isth)
+        } } ]
+
+in let full-mixins =
+  λ(isth : Bool)
+  → lite-mixins isth
+  # [ { package = "hasktorch-indef-unsigned"
+      , renaming =
+        { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned isth "Byte")
+        , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned isth "Byte" # indef-support isth)
+        } }
+    , { package = "hasktorch-indef-unsigned"
+      , renaming =
+        { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned isth "Char")
+        , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned isth "Char" # indef-support isth)
+        } }
+    , { package = "hasktorch-indef-unsigned"
+      , renaming =
+        { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned isth "Short")
+        , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned isth "Short" # indef-support isth)
+        } }
+    , { package = "hasktorch-indef-unsigned"
+      , renaming =
+        { provides = prelude.types.ModuleRenaming.renaming (provides.signed isth "Int")
+        , requires = prelude.types.ModuleRenaming.renaming (mixins.signed isth "Int" # indef-support isth)
+        } }
+    , { package = "hasktorch-indef-unsigned"
+      , renaming =
+        { provides = prelude.types.ModuleRenaming.renaming (provides.floating isth "Float")
+        , requires = prelude.types.ModuleRenaming.renaming (mixins.floating isth "Float" # indef-support isth)
+        } }
+    ]
+
 in common.Package
    // { name = "hasktorch-core"
       , flags = [ common.flags.cuda, common.flags.lite ]
@@ -246,156 +323,47 @@ in common.Package
         [ { name = "hasktorch-core-cpu"
           , library =
             λ (config : types.Config)
-            → common.Library
-            //
+            → common.Library //
               { hs-source-dirs = [ "utils", "src" ]
-              , build-depends =
-                [ packages.base
-                , packages.hasktorch-types-th
-                , packages.containers
-                , packages.deepseq
-                , packages.dimensions
-                , packages.hasktorch-raw-th
-                , packages.hasktorch-types-th
-                , packages.managed
-                , packages.microlens
-                , packages.numeric-limits
-                , packages.safe-exceptions
-                , packages.singletons
-                , packages.text
-                , packages.typelits-witnesses
-
-                , packages.hasktorch-indef-floating
-                , packages.hasktorch-indef-signed
-                ] # (if config.flag "lite" then [] else [packages.hasktorch-indef-unsigned])
+              , build-depends = if config.flag "lite" then cpu-lite-depends else cpu-lite-depends # [packages.hasktorch-indef-unsigned]
               , other-modules =
                 [ "Torch.Core.Random"
                 ]
               , reexported-modules = nnexports True "Double"
-              , exposed-modules =
-                  baseexports True "Long"
-                # baseexports True "Double"
-                # (if config.flag "lite" then [] else
-                    baseexports True "Byte"
+              , exposed-modules = if config.flag "lite" then lite-exposed True else
+                    lite-exposed True
+                  # baseexports True "Byte"
                   # baseexports True "Char"
                   # baseexports True "Short"
                   # baseexports True "Int"
                   # baseexports True "Float"
-                  )
-              , mixins =
-                [ { package = "hasktorch-indef-signed"
-                  , renaming =
-                    { provides = prelude.types.ModuleRenaming.renaming (provides.signed True "Long")
-                    , requires = prelude.types.ModuleRenaming.renaming (mixins.signed True "Long" # indef-support True)
-                    } }
-                , { package = "hasktorch-indef-floating"
-                  , renaming =
-                    { provides = prelude.types.ModuleRenaming.renaming (provides.floating True "Double")
-                    , requires = prelude.types.ModuleRenaming.renaming (mixins.floating True "Double" # indef-support True)
-                    } }
-                ] # if config.flag "lite" then [] else
-                  [ { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned True "Byte")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned True "Byte" # indef-support True)
-                      } }
-                  , { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned True "Char")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned True "Char" # indef-support True)
-                      } }
-                  , { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned True "Short")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned True "Short" # indef-support True)
-                      } }
-                  , { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.signed True "Int")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.signed True "Int" # indef-support True)
-                      } }
-                  , { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.floating True "Float")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.floating True "Float" # indef-support True)
-                      } }
-                  ] }
+              , mixins = if config.flag "lite" then lite-mixins True else full-mixins True
+              }
+          }
         , { name = "hasktorch-core-gpu"
           , library =
             λ (config : types.Config)
-            → common.Library
-            //
+            → common.Library //
               { hs-source-dirs = [ "utils", "src" ]
-              , build-depends =
-                [ packages.base
-                , packages.containers
-                , packages.deepseq
-                , packages.dimensions
-                , packages.hasktorch-raw-th
-                , packages.hasktorch-types-th
-                , packages.hasktorch-raw-thc
-                , packages.hasktorch-types-thc
-                , packages.managed
-                , packages.microlens
-                , packages.numeric-limits
-                , packages.safe-exceptions
-                , packages.singletons
-                , packages.text
-                , packages.typelits-witnesses
-
-                , packages.hasktorch-indef-floating
-                , packages.hasktorch-indef-signed
-                ] # (if config.flag "lite" then [] else [packages.hasktorch-indef-unsigned])
+              , build-depends = if config.flag "lite" then gpu-lite-depends else gpu-lite-depends # [packages.hasktorch-indef-unsigned]
               , reexported-modules = nnexports False "Double"
               , exposed-modules =
-                  baseexports False "Long"
-                # baseexports False "Double"
-                # (if config.flag "lite" then [] else
-                    baseexports False "Byte"
-                  # baseexports False "Char"
-                  # baseexports False "Short"
-                  # baseexports False "Int"
-                  # baseexports False "Float"
-                  )
-              , cpp-options = [ "-DHASKTORCH_INTERNAL_CUDA" ] # (if config.flag "cuda" then ["-DCUDA"] else [])
-              , mixins =
-                [ { package = "hasktorch-indef-signed"
-                  , renaming =
-                    { provides = prelude.types.ModuleRenaming.renaming (provides.signed False "Long")
-                    , requires = prelude.types.ModuleRenaming.renaming (mixins.signed False "Long" # indef-support False)
-                    } }
-                , { package = "hasktorch-indef-floating"
-                  , renaming =
-                    { provides = prelude.types.ModuleRenaming.renaming (provides.floating False "Double")
-                    , requires = prelude.types.ModuleRenaming.renaming (mixins.floating False "Double" # indef-support False)
-                    } }
-                ] # if config.flag "lite" then [] else
-                  [ { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned False "Byte")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned False "Byte" # indef-support False)
-                      } }
-                  , { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned False "Char")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned False "Char" # indef-support False)
-                      } }
-                  , { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned False "Short")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned False "Short" # indef-support False)
-                      } }
-                  , { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.signed False "Int")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.signed False "Int" # indef-support False)
-                      } }
-                  , { package = "hasktorch-indef-unsigned"
-                    , renaming =
-                      { provides = prelude.types.ModuleRenaming.renaming (provides.floating False "Float")
-                      , requires = prelude.types.ModuleRenaming.renaming (mixins.floating False "Float" # indef-support False)
-                      } }
-                  ] }
+                if config.flag "lite"
+                then ( baseexports False "Long"
+                     # baseexports False "Double"
+                     )
+                else ( baseexports False "Long"
+                     # baseexports False "Double"
+                     )
+                     # baseexports False "Byte"
+                     # baseexports False "Char"
+                     # baseexports False "Short"
+                     # baseexports False "Int"
+                     # baseexports False "Float"
+              , cpp-options = [ "-DCUDA", "-DHASKTORCH_INTERNAL_CUDA" ]
+              , mixins = if config.flag "lite" then lite-mixins True else full-mixins True
+              }
+          }
         , { name = "hasktorch-indef-unsigned"
           , library =
             λ (config : types.Config)
@@ -464,12 +432,10 @@ in common.Package
             λ (config : types.Config)
             → common.Library
             //
-              { build-depends =
-                [ packages.base
-                , packages.hasktorch-indef
-                ]
+              { build-depends = [ packages.base , packages.hasktorch-indef ]
               , reexported-modules = indef-floating-reexports
               }
           }
         ]
-      }
+    }
+

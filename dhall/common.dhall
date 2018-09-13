@@ -11,13 +11,6 @@ in  let packages =
             (prelude.laterVersion (prelude.v "4.7")))
           (prelude.earlierVersion (prelude.v "5"))
     } : types.Dependency
-  , text =
-    { package = "text"
-    , bounds =
-        prelude.unionVersionRanges
-          (prelude.thisVersion (prelude.v "1.2.2.2"))
-          (prelude.laterVersion (prelude.v "1.2.2.2"))
-    } : types.Dependency
   , hspec =
     { package = "hspec"
     , bounds =

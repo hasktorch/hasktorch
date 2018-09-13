@@ -87,6 +87,7 @@ _leakyReLU_updateGradInput t0 t1 t2 d0 b0 =
 relu :: Reifies s W => Dimensions d => BVar s (Tensor d) -> BVar s (Tensor d)
 relu = threshold 0 0
 
+{-# NOINLINE threshold #-}
 -- | run a threshold function againts two BVar variables
 threshold
   :: Reifies s W
@@ -129,4 +130,5 @@ threshold thr value = liftOp1 . op1 $ \inp ->
         thr val
         inplace
       pure gin
+
 

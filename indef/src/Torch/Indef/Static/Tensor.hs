@@ -417,6 +417,7 @@ resizeAs src = unsafePerformIO $ do
   shape :: Tensor d' <- new
   _resizeAs res shape
 {-# NOINLINE resizeAs #-}
+{-# WARNING resizeAs "This might be not be garbage collected well " #-}
 
 -- | flatten a tensor (pure, dupable)
 flatten :: (Dimensions d, KnownDim (Product d)) => Tensor d -> Tensor '[Product d]

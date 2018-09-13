@@ -15,20 +15,17 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Torch.Indef.Types
   ( module Sig
-  , THDebug(..)
-
   , DimVal(..)
 
   , Step(..), Stride(..), StorageOffset(..), Size(..), KeepDim(..), fromKeepDim, keep, ignore, SortOrder(..), TopKOrder(..)
   , StorageSize(..), AllocatorContext(..), Index(..)
 
-  , manage', joinIO
-
   , (.:), (..:), shuffle2, shuffle2'2, shuffle3, shuffle3'2
 
   , withGen
+  , managedState
+  , managedTensor
 
-  , withState
   , withDynamicState, withStorageState
   , with2DynamicState
   , with3DynamicState
@@ -36,7 +33,7 @@ module Torch.Indef.Types
   , mkDynamicIO, mkStorageIO
   ) where
 
-import Foreign
+import Foreign hiding (with)
 import Foreign.C.Types
 import Foreign.Ptr
 import GHC.Int (Int64(..), Int32(..))
@@ -213,15 +210,18 @@ withGen :: Sig.Generator -> (Ptr CGenerator -> IO x) -> IO x
 withGen g fn = withForeignPtr (Sig.rng g) fn
 
 -- | run a function with a managed state's raw internal pointer.
-withState :: Sig.State -> (Ptr Sig.CState ->IO x) -> IO x
-withState s = withForeignPtr (Sig.asForeign s)
+managedState :: Managed (Ptr Sig.CState)
+managedState = managed (withForeignPtr Sig.torchstate)
+
+managedTensor :: Sig.Dynamic -> Managed (Ptr Sig.CTensor)
+managedTensor t = managed (withForeignPtr (Sig.ctensor t))
 
 -- | run a function with access to a tensor's underlying state and C-tensor.
 withDynamicState :: Sig.Dynamic -> (Ptr Sig.CState -> Ptr Sig.CTensor -> IO x) -> IO x
-withDynamicState t fn = do
-  withForeignPtr (Sig.dynamicStateRef t) $ \sref ->
-    withForeignPtr (Sig.ctensor t) $ \tref ->
-      fn sref tref
+withDynamicState t fn =
+  flip with (uncurry fn) $ (,)
+    <$> managedState
+    <*> managedTensor t
 
 -- | run a function with two tensors with reference to the first tensor's underlying state.
 with2DynamicState
@@ -230,9 +230,10 @@ with2DynamicState
   -> (Ptr Sig.CState -> Ptr Sig.CTensor -> Ptr Sig.CTensor -> IO x)
   -> IO x
 with2DynamicState t0 t1 fn = do
-  withDynamicState t0 $ \s' t0' ->
-    withForeignPtr (Sig.ctensor t1) $ \t1' ->
-      fn s' t0' t1'
+  flip with (\(a,b,c) -> fn a b c) $ (,,)
+    <$> managedState
+    <*> managedTensor t0
+    <*> managedTensor t1
 
 -- | run a function with three tensors with reference to the first tensor's underlying state.
 with3DynamicState
@@ -242,23 +243,20 @@ with3DynamicState
   -> (Ptr Sig.CState -> Ptr Sig.CTensor -> Ptr Sig.CTensor -> Ptr Sig.CTensor -> IO x)
   -> IO x
 with3DynamicState t0 t1 t2 fn = do
-  with2DynamicState t0 t1 $ \s' t0' t1' ->
-    withForeignPtr (Sig.ctensor t2) $ \t2' ->
-      fn s' t0' t1' t2'
+  flip with (\(a,b,c,d) -> fn a b c d) $ (,,,)
+    <$> managedState
+    <*> managedTensor t0
+    <*> managedTensor t1
+    <*> managedTensor t2
 
 -- | smart constructor for a 'Sig.Dynamic' tensor
 mkDynamic :: Ptr Sig.CTensor -> IO Sig.Dynamic
-mkDynamic t =
-  withForeignPtr Sig.torchstate $ \s ->
-    Sig.dynamic Sig.torchstate
-      <$> newForeignPtrEnv SigTen.p_free s t
+mkDynamic t = with managedState $ \s ->
+  Sig.dynamic Sig.torchstate <$> newForeignPtrEnv SigTen.p_free s t
 
 -- | smart constructor for a 'Sig.Dynamic' tensor with a given builder function.
 mkDynamicIO :: (Ptr Sig.CState -> IO (Ptr Sig.CTensor)) -> IO Sig.Dynamic
-mkDynamicIO builder =
-  withForeignPtr Sig.torchstate $ \s ->
-    builder s >>= mkDynamic
-
+mkDynamicIO builder = with managedState $ builder >=> mkDynamic
 
 
 -- | run a function with access to a 'Sig.Storage's underlying state and C-reference.
@@ -270,36 +268,11 @@ withStorageState t fn = do
 
 -- | smart constructor for 'Sig.Storage'
 mkStorage :: Ptr Sig.CStorage -> IO Sig.Storage
-mkStorage t =
-  withForeignPtr Sig.torchstate $ \s ->
-    Sig.storage Sig.torchstate
-      <$> newForeignPtrEnv SigStore.p_free s t
+mkStorage t = with managedState $ \s ->
+  Sig.storage Sig.torchstate <$> newForeignPtrEnv SigStore.p_free s t
 
 -- | smart constructor for 'Sig.Storage' with a given builder function.
 mkStorageIO :: (Ptr Sig.CState -> IO (Ptr Sig.CStorage)) -> IO Sig.Storage
-mkStorageIO builder =
-  withForeignPtr Sig.torchstate $ \s ->
-    builder s >>= mkStorage
+mkStorageIO builder = with managedState $ builder >=> mkStorage
 
--- -------------------------------------------------------------------------------
-
--- | Class to print out C-references when working debugging segfaults.
-class THDebug t where
-  -- | print out all possible references we can find.
-  printRefs :: t -> IO ()
-
-instance THDebug Sig.Storage where
-  printRefs t = do
-    let (s, c) = Sig.storageState t
-    putStrLn $ "State reference   : " ++ show s
-    putStrLn $ "CStorage reference: " ++ show s
-
-instance THDebug Sig.Dynamic where
-  printRefs t = do
-    let (s, c) = Sig.dynamicState t
-    putStrLn $ "State reference  : " ++ show s
-    putStrLn $ "CTensor reference: " ++ show s
-
-instance THDebug (Sig.Tensor d) where
-  printRefs = printRefs . Sig.asDynamic
 

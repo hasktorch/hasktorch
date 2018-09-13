@@ -46,6 +46,9 @@ import Torch.Indef.Types
 import Numeric.Backprop
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
+import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
 
 -- ========================================================================= --
 
@@ -198,7 +201,7 @@ conv2dMM
   -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
   -> BVar s (Tensor '[f,h,w])    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor '[o,oH,oW])
-conv2dMM = _conv2dMM (new :: IO (Tensor '[f * kH * kW, oH * oW]))
+conv2dMM = genericBPConv2dMM (new :: IO (Tensor '[f * kH * kW, oH * oW]))
 
 -- | Backprop convolution function with batching
 conv2dMMBatch
@@ -216,10 +219,11 @@ conv2dMMBatch
   -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
   -> BVar s (Tensor '[b,f,h,w])    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor '[b,o,oH,oW])
-conv2dMMBatch = _conv2dMM (new :: IO (Tensor '[b, f * kH * kW, oH * oW]))
+conv2dMMBatch = genericBPConv2dMM (new :: IO (Tensor '[b, f * kH * kW, oH * oW]))
 
 -- | Backprop convolution function
-_conv2dMM
+{-# NOINLINE genericBPConv2dMM #-}
+genericBPConv2dMM
   :: Reifies s W
   => All Dimensions '[din,dout,fgin]
   => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW]
@@ -234,11 +238,38 @@ _conv2dMM
   -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
   -> BVar s (Tensor din)    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor dout)
-_conv2dMM mkGradIBuffer s p lr = liftOp2 . op2 $ \c inp ->
-  (_conv2dMM_forward s p c inp, \gout ->
-    ( _conv2dMM_updGradParameters mkGradIBuffer s p lr c inp gout
-    , _conv2dMM_updGradInput mkGradIBuffer s p c inp gout
-    ))
+genericBPConv2dMM mkGradIBuffer step pad lr = liftOp2 . op2 $ \conv inp -> unsafePerformIO $ do
+  out <-
+    asStatic <$> Dynamic.spatialConvolutionMM_updateOutput
+      (asDynamic inp) (asDynamic (weights conv)) (asDynamic (bias conv))
+      (kernel2d conv)
+      (param2d step)
+      (param2d pad)
+
+
+  pure (out, \gout -> unsafePerformIO $ do
+    gradInputBuffer <- mkGradIBuffer
+    (gin, ones) <- (,) <$> empty <*> empty
+    (gw, gb) <- (,) <$> new <*> new
+
+    Dynamic._spatialConvolutionMM_updateGradInput
+      (asDynamic inp) (asDynamic gout)
+      (asDynamic gin) (asDynamic (weights conv))
+      (asDynamic gradInputBuffer) (asDynamic ones)
+      (kernel2d conv)
+      (param2d step)
+      (param2d pad)
+
+    Dynamic._spatialConvolutionMM_accGradParameters
+      (asDynamic inp) (asDynamic gout)
+      (asDynamic gw) (asDynamic gb)
+      (asDynamic gradInputBuffer) (asDynamic ones)
+      (kernel2d conv)
+      (param2d step)
+      (param2d pad)
+      lr
+
+    pure (Conv2d (gw, gb), gin))
  where
   -- | helper of forward functions with unspecified dimensions
   --_conv2dMM_forward
@@ -249,7 +280,7 @@ _conv2dMM mkGradIBuffer s p lr = liftOp2 . op2 $ \c inp ->
   --  -> Tensor din
   --  -> Tensor dout
   {-# NOINLINE _conv2dMM_forward #-}
-  _conv2dMM_forward step pad conv inp = unsafePerformIO $
+  _conv2dMM_forward step pad conv inp =
     asStatic <$> Dynamic.spatialConvolutionMM_updateOutput
       (asDynamic inp) (asDynamic (weights conv)) (asDynamic (bias conv))
       (kernel2d conv)
@@ -270,11 +301,10 @@ _conv2dMM mkGradIBuffer s p lr = liftOp2 . op2 $ \c inp ->
   --   -> Tensor inp            -- ^ input
   --   -> Tensor gout           -- ^ gradOutput
   --   -> Conv2d f o '(kH, kW)
-  {-# NOINLINE _conv2dMM_updGradParameters #-}
-  _conv2dMM_updGradParameters mkGradIBuffer step pad lr conv inp gout = unsafePerformIO $ do
-    let conv' = Conv2d (copy (weights conv), copy (bias conv))
-    _conv2dMM_accGradParameters mkGradIBuffer step pad lr conv' inp gout
-    pure conv'
+  -- {-# NOINLINE _conv2dMM_updGradParameters #-}
+  -- _conv2dMM_updGradParameters mkGradIBuffer step pad lr conv inp gout =
+  --   _conv2dMM_accGradParameters mkGradIBuffer step pad lr conv inp gout
+  --   pure conv
 
   -- | helper of backward update to compute gradient input with unspecified dimensions
   -- _conv2dMM_updGradInput
@@ -287,18 +317,17 @@ _conv2dMM mkGradIBuffer s p lr = liftOp2 . op2 $ \c inp ->
   --   -> Tensor inp
   --   -> Tensor gout
   --   -> Tensor inp
-  {-# NOINLINE _conv2dMM_updGradInput #-}
-  _conv2dMM_updGradInput mkGradIBuffer step pad conv inp gout = unsafePerformIO $ do
-    (gin, ones) <- (,) <$> empty <*> empty
-    gradInputBuffer <- mkGradIBuffer
-    Dynamic._spatialConvolutionMM_updateGradInput
-      (asDynamic inp) (asDynamic gout)
-      (asDynamic gin) (asDynamic (weights conv))
-      (asDynamic gradInputBuffer) (asDynamic ones)
-      (kernel2d conv)
-      (param2d step)
-      (param2d pad)
-    pure gin
+  -- {-# NOINLINE _conv2dMM_updGradInput #-}
+  -- _conv2dMM_updGradInput gradInputBuffer step pad conv inp gout = do
+  --   -- gradInputBuffer <- mkGradIBuffer
+  --   Dynamic._spatialConvolutionMM_updateGradInput
+  --     (asDynamic inp) (asDynamic gout)
+  --     (asDynamic gin) (asDynamic (weights conv))
+  --     (asDynamic gradInputBuffer) (asDynamic ones)
+  --     (kernel2d conv)
+  --     (param2d step)
+  --     (param2d pad)
+  --   pure gin
 
   -- |  conv2dMM accGradParameters
   -- _conv2dMM_accGradParameters
@@ -325,7 +354,6 @@ _conv2dMM mkGradIBuffer s p lr = liftOp2 . op2 $ \c inp ->
       (param2d step)
       (param2d pad)
       lr
-
 
 
 -- -- ========================================================================= --

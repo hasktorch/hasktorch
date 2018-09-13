@@ -5,6 +5,8 @@ import Torch.Double.Types as X hiding (storage)
 import Torch.Double.Index as X hiding (withDynamicState)
 import Torch.Double.Mask as X
 
+import Torch.Double.Dynamic.NN as X
+
 import Torch.Indef.Double.Dynamic.Tensor as X
 import Torch.Indef.Double.Dynamic.Tensor.Copy as X
 import Torch.Indef.Double.Dynamic.Tensor.Index as X
@@ -23,7 +25,6 @@ import Torch.Indef.Double.Dynamic.Tensor.TopK as X
 
 import Torch.Indef.Double.Dynamic.Tensor.Math.Pointwise.Signed as X
 
-import Torch.Indef.Double.Dynamic.NN as X
 import Torch.Indef.Double.Dynamic.Tensor.Math.Blas as X
 import Torch.Indef.Double.Dynamic.Tensor.Math.Floating as X
 import Torch.Indef.Double.Dynamic.Tensor.Math.Lapack as X

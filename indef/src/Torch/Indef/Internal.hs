@@ -4,16 +4,16 @@ module Torch.Indef.Internal
   , throwNE
   , throwGT4
   , ptrArray2hs
-  , withDynamic
-  , with2Dynamics
-  , with3Dynamics
-  , with4Dynamics
-  , with5Dynamics
-  , _withDynamic
-  , _with2Dynamics
-  , _with3Dynamics
-  , _with4Dynamics
-  , _with5Dynamics
+  -- , withDynamic
+  -- , with2Dynamics
+  -- , with3Dynamics
+  -- , with4Dynamics
+  -- , with5Dynamics
+  -- , _withDynamic
+  -- , _with2Dynamics
+  -- , _with3Dynamics
+  -- , _with4Dynamics
+  -- , _with5Dynamics
   ) where
 
 import Foreign

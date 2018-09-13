@@ -30,6 +30,9 @@ import Torch.Indef.Static.Tensor.Math.Pointwise
 import Torch.Indef.Static.Tensor.Math.Pairwise ((*^))
 import Torch.Indef.Static.NN.Backprop ()
 import qualified Torch.Indef.Dynamic.NN as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
 
 -- | datatype representing a linear layer with bias. Represents
 -- @y = Ax + b@.

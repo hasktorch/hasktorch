@@ -65,19 +65,19 @@ instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Backprop (LeNe
     (Bp.add (_fc2 a) (_fc2 b))
     (Bp.add (_fc3 a) (_fc3 b))
 
-  one _ = LeNet
-    (Bp.one undefined)
-    (Bp.one undefined)
-    (Bp.one undefined)
-    (Bp.one undefined)
-    (Bp.one undefined)
+  one net = LeNet
+    (Bp.one (net^.conv1))
+    (Bp.one (net^.conv2))
+    (Bp.one (net^.fc1)  )
+    (Bp.one (net^.fc2)  )
+    (Bp.one (net^.fc3)  )
 
-  zero _ = LeNet
-    (Bp.zero undefined)
-    (Bp.zero undefined)
-    (Bp.zero undefined)
-    (Bp.zero undefined)
-    (Bp.zero undefined)
+  zero net = LeNet
+    (Bp.zero (net^.conv1))
+    (Bp.zero (net^.conv2))
+    (Bp.zero (net^.fc1)  )
+    (Bp.zero (net^.fc2)  )
+    (Bp.zero (net^.fc3)  )
 
 
 -------------------------------------------------------------------------------
@@ -91,12 +91,13 @@ newLeNet = LeNet
   <*> newLinear
 
 -- | update a LeNet network
-update net lr grad = LeNet
+update net lr grad = do --  LeNet
   (Conv2d.update (net^.conv1) lr (grad^.conv1))
   (Conv2d.update (net^.conv2) lr (grad^.conv2))
   (Linear.update (net^.fc1)   lr (grad^.fc1))
   (Linear.update (net^.fc2)   lr (grad^.fc2))
   (Linear.update (net^.fc3)   lr (grad^.fc3))
+  pure ()
 
 
 -- lenet

@@ -46,7 +46,7 @@ import Foreign hiding (with, new)
 import Foreign.Ptr
 import GHC.Word
 import Numeric.Dimensions
-import Control.Monad.Managed (runManaged)
+import Control.Monad.Managed
 
 import Torch.Types.Numeric
 import Torch.Indef.Types
@@ -259,91 +259,91 @@ _normal r g a b = tenGen r g $ shuffle3'2 Sig.c_normal (hs2cAccReal a) (hs2cAccR
 
 -- | call C-level @normal_means@
 _normal_means :: Dynamic -> Generator -> Dynamic -> Positive HsAccReal -> IO ()
-_normal_means r g m v = runManaged . joinIO $ Sig.c_normal_means
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
-  <*> manage' Sig.rng g
-  <*> manage' Sig.ctensor m
+_normal_means r g m v = runManaged . (liftIO =<<) $ Sig.c_normal_means
+  <$> managedState
+  <*> managedTensor r
+  <*> managed (withForeignPtr . Sig.rng $ g)
+  <*> managedTensor m
   <*> pure (Sig.hs2cAccReal $ positiveValue v)
 
 -- | call C-level @normal_stddevs@
 _normal_stddevs :: Dynamic -> Generator -> HsAccReal -> Dynamic -> IO ()
-_normal_stddevs r g v m = runManaged . joinIO $ Sig.c_normal_stddevs
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
-  <*> manage' Sig.rng g
+_normal_stddevs r g v m = runManaged . (liftIO =<<) $ Sig.c_normal_stddevs
+  <$> managedState
+  <*> managedTensor r
+  <*> managed (withForeignPtr . Sig.rng $ g)
   <*> pure (Sig.hs2cAccReal v)
-  <*> manage' Sig.ctensor m
+  <*> managedTensor m
 
 -- | call C-level @normal_means_stddevs@
 _normal_means_stddevs :: Dynamic -> Generator -> Dynamic -> Dynamic -> IO ()
-_normal_means_stddevs r g a b = runManaged . joinIO $ Sig.c_normal_means_stddevs
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
-  <*> manage' Sig.rng g
-  <*> manage' Sig.ctensor a
-  <*> manage' Sig.ctensor b
+_normal_means_stddevs r g a b = runManaged . (liftIO =<<) $ Sig.c_normal_means_stddevs
+  <$> managedState
+  <*> managedTensor r
+  <*> managed (withForeignPtr . Sig.rng $ g)
+  <*> managedTensor a
+  <*> managedTensor b
 
 -- | call C-level @exponential@
 _exponential :: Dynamic -> Generator -> HsAccReal -> IO ()
-_exponential r g v = runManaged . joinIO $ Sig.c_exponential
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
-  <*> manage' Sig.rng g
+_exponential r g v = runManaged . (liftIO =<<) $ Sig.c_exponential
+  <$> managedState
+  <*> managedTensor r
+  <*> managed (withForeignPtr . Sig.rng $ g)
   <*> pure (Sig.hs2cAccReal v)
 
 -- | call C-level @standard_gamma@
 _standard_gamma :: Dynamic -> Generator -> Dynamic -> IO ()
-_standard_gamma r g m = runManaged . joinIO $ Sig.c_standard_gamma
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
-  <*> manage' Sig.rng g
-  <*> manage' Sig.ctensor m
+_standard_gamma r g m = runManaged . (liftIO =<<) $ Sig.c_standard_gamma
+  <$> managedState
+  <*> managedTensor r
+  <*> managed (withForeignPtr . Sig.rng $ g)
+  <*> managedTensor m
 
 -- | call C-level @cauchy@
 _cauchy :: Dynamic -> Generator -> HsAccReal -> HsAccReal -> IO ()
-_cauchy r g a b = runManaged . joinIO $ Sig.c_cauchy
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
-  <*> manage' Sig.rng g
+_cauchy r g a b = runManaged . (liftIO =<<) $ Sig.c_cauchy
+  <$> managedState
+  <*> managedTensor r
+  <*> managed (withForeignPtr . Sig.rng $ g)
   <*> pure (Sig.hs2cAccReal a)
   <*> pure (Sig.hs2cAccReal b)
 
 -- | call C-level @logNormal@
 _logNormal :: Dynamic -> Generator -> HsAccReal -> Positive HsAccReal -> IO ()
-_logNormal r g a b = runManaged . joinIO $ Sig.c_logNormal
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
-  <*> manage' Sig.rng g
+_logNormal r g a b = runManaged . (liftIO =<<) $ Sig.c_logNormal
+  <$> managedState
+  <*> managedTensor r
+  <*> managed (withForeignPtr . Sig.rng $ g)
   <*> pure (Sig.hs2cAccReal a)
   <*> pure (Sig.hs2cAccReal $ positiveValue b)
 
 -- | call C-level @multinomial@
 _multinomial :: LongDynamic -> Generator -> Dynamic -> Int -> Int -> IO ()
-_multinomial r g t a b = runManaged . joinIO $ Sig.c_multinomial
-  <$> manage' (fst . Sig.longDynamicState) r
-  <*> manage' (snd . Sig.longDynamicState) r
-  <*> manage' Sig.rng g
-  <*> manage' Sig.ctensor t
+_multinomial r g t a b = runManaged . (liftIO =<<) $ Sig.c_multinomial
+  <$> managedState
+  <*> managed (withForeignPtr . snd . Sig.longDynamicState $ r)
+  <*> managed (withForeignPtr . Sig.rng $ g)
+  <*> managedTensor t
   <*> pure (fromIntegral a)
   <*> pure (fromIntegral b)
 
 -- | call C-level @multinomialAliasSetup@
 _multinomialAliasSetup :: Dynamic -> LongDynamic -> Dynamic -> IO ()
-_multinomialAliasSetup r l t = runManaged . joinIO $ Sig.c_multinomialAliasSetup
-  <$> manage' (Sig.dynamicStateRef) r
-  <*> manage' (Sig.ctensor) r
-  <*> manage' (snd . Sig.longDynamicState) l
-  <*> manage' (Sig.ctensor) t
+_multinomialAliasSetup r l t = runManaged . (liftIO =<<) $ Sig.c_multinomialAliasSetup
+  <$> managedState
+  <*> managedTensor r
+  <*> managed (withForeignPtr . snd . Sig.longDynamicState $ l)
+  <*> managedTensor t
 
 -- | call C-level @multinomialAliasDraw@
 _multinomialAliasDraw  :: LongDynamic -> Generator -> LongDynamic -> Dynamic -> IO ()
-_multinomialAliasDraw r g l t = runManaged . joinIO $ Sig.c_multinomialAliasDraw
-  <$> manage' (fst . Sig.longDynamicState) r
-  <*> manage' (snd . Sig.longDynamicState) r
-  <*> manage' (Sig.rng) g
-  <*> manage' (snd . Sig.longDynamicState) l
-  <*> manage' (Sig.ctensor) t
+_multinomialAliasDraw r g l t = runManaged . (liftIO =<<) $ Sig.c_multinomialAliasDraw
+  <$> managedState
+  <*> managed (withForeignPtr . snd . Sig.longDynamicState $ r)
+  <*> managed (withForeignPtr . Sig.rng $ g)
+  <*> managed (withForeignPtr . snd . Sig.longDynamicState $ l)
+  <*> managedTensor t
 
 -- ========================================================================= --
 -- helper functions

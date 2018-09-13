@@ -42,6 +42,7 @@ import Numeric.Dimensions
 import System.IO.Unsafe
 import Control.Concurrent
 
+import Text.Printf
 import qualified Torch.Types.TH            as TH
 import qualified Foreign.Marshal.Array     as FM
 import qualified Torch.Sig.State           as Sig
@@ -78,7 +79,7 @@ _clearFlag t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
 -- NOTE: This _cannot_ use a Tensor's storage size because ATen's Storage
 -- allocates up to the next 64-byte line on the CPU (needs reference, this
 -- is the unofficial response from \@soumith in slack).
-#ifndef HASKTORCH_CORE_CUDA
+#ifndef HASKTORCH_INTERNAL_CUDA
 tensordata :: Dynamic -> IO [HsReal]
 tensordata t = withDynamicState t $ \s' t' -> do
   let sz = fromIntegral $ product (shape t)
@@ -149,9 +150,9 @@ empty = withForeignPtr Sig.torchstate $ Sig.c_new >=> mkDynamic
 -- | pure version of '_expand'
 newExpand :: Dynamic -> TH.IndexStorage -> IO Dynamic
 newExpand r ix = flip with pure $ do
-  s <- manage' Sig.dynamicStateRef r
-  r' <- manage' Sig.ctensor r
-  ix' <- manage' (snd . TH.longStorageState) ix
+  s <- managedState
+  r' <- managedTensor r
+  ix' <- managed (withForeignPtr . snd $ TH.longStorageState ix)
   liftIO $ Sig.c_newExpand s r' ix' >>= mkDynamic
 
 -- | Expanding a tensor does not allocate new memory, but only creates a new view on the
@@ -164,16 +165,16 @@ _expand
   -> Dynamic          -- ^ source tensor to expand
   -> TH.IndexStorage  -- ^ how to expand the tensor.
   -> IO ()
-_expand r t ix = runManaged . joinIO $ Sig.c_expand
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
-  <*> manage' Sig.ctensor t
-  <*> manage' (snd . TH.longStorageState) ix
+_expand r t ix = runManaged . (liftIO =<<) $ Sig.c_expand
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> managed (withForeignPtr . snd $ TH.longStorageState ix)
 
 -- | FIXME: doublecheck what this does.
 _expandNd  :: NonEmpty Dynamic -> NonEmpty Dynamic -> Int -> IO ()
 _expandNd (rets@(s:|_)) ops i = runManaged $ do
-  st    <- manage' Sig.dynamicStateRef s
+  st    <- managedState
   rets' <- mngNonEmpty rets
   ops'  <- mngNonEmpty ops
   liftIO $ Sig.c_expandNd st rets' ops' (fromIntegral i)
@@ -609,7 +610,7 @@ vector l = unsafePerformIO $ do
 -- terminate called after throwing an instance of 'std::runtime_error'
 --   what():  cuda runtime error (11) : invalid argument at /home/stites/git/hasktorch/vendor/aten/src/THC/generic/THCStorage.c:150
 --   Aborted (core dumped)
-#ifdef HASKTORCH_CORE_CUDA
+#ifdef HASKTORCH_INTERNAL_CUDA
   res <- new' (someDimsVal [genericLength l])
   mapM_  (upd res) (zip [0..genericLength l - 1] l)
   pure res
@@ -633,7 +634,7 @@ matrix ls
   | any ((ncols /=) . length) ls = Left "rows are not all the same length"
   | otherwise = Right . unsafePerformIO $ do
       let l = concat ls
-#ifdef HASKTORCH_CORE_CUDA
+#ifdef HASKTORCH_INTERNAL_CUDA
           vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols])
       pure vec
@@ -659,7 +660,7 @@ cuboid ls
 
   | otherwise = Right . unsafePerformIO $ do
       let l = concat (concat ls)
-#ifdef HASKTORCH_CORE_CUDA
+#ifdef HASKTORCH_INTERNAL_CUDA
           vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols, ndepth])
 #else
@@ -705,7 +706,7 @@ hyper ls
 
   | otherwise = Right . unsafePerformIO $ do
       let l = concat (concat (concat ls))
-#ifdef HASKTORCH_CORE_CUDA
+#ifdef HASKTORCH_INTERNAL_CUDA
           vec = vector (deepseq l l)
       go vec (someDimsVal [nrows, ncols, ndepth, ntime])
 #else
@@ -875,8 +876,8 @@ showTensor get'1d get'2d get'3d get'4d ds =
 
      value :: String
      value = fromMaybe (show v) $
-           (show . truncTo 6 <$> (cast v :: Maybe Double))
-       <|> (show . truncTo 6 <$> (cast v :: Maybe Float))
+           (printf "%.4f" <$> (cast v :: Maybe Double))
+       <|> (printf "%.4f" <$> (cast v :: Maybe Float))
 
      spacing = case compare (signum v) 0 of
         LT -> " "

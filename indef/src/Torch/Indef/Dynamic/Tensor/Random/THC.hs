@@ -39,7 +39,9 @@ module Torch.Indef.Dynamic.Tensor.Random.THC
   , Ord2Tuple, ord2Tuple, ord2TupleValues
   ) where
 
-import Control.Monad.Managed (runManaged)
+import Control.Monad.Managed (runManaged, managed)
+import Foreign (withForeignPtr)
+import Control.Monad.IO.Class (liftIO)
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Random.TH
@@ -90,18 +92,18 @@ _uniform t tup = withDynamicState t (shuffle2'2 Sig.c_uniform (hs2cAccReal a) (h
 
 -- | CUDA version of 'THRandom._normal'
 _normal :: Dynamic -> HsAccReal -> Positive HsAccReal -> IO ()
-_normal r a b = runManaged . joinIO $ Sig.c_normal
-   <$> manage' (fst . Sig.dynamicState) r
-   <*> manage' (snd . Sig.dynamicState) r
+_normal r a b = runManaged . (liftIO =<<) $ Sig.c_normal
+   <$> managedState
+   <*> managedTensor r
    <*> pure (hs2cAccReal a)
    <*> pure (hs2cAccReal $ positiveValue b)
 
 -- | CUDA version of 'THRandom._normal_means'
 _normal_means :: Dynamic -> Dynamic -> Positive HsAccReal -> IO ()
-_normal_means r m v = runManaged . joinIO $ Sig.c_normal_means
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
-  <*> manage' Sig.ctensor m
+_normal_means r m v = runManaged . (liftIO =<<) $ Sig.c_normal_means
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor m
   <*> pure (Sig.hs2cAccReal $ positiveValue v)
 
 -- | CUDA version of 'THRandom._normal_stddevs'
@@ -115,9 +117,9 @@ _normal_means_stddevs t t0 t1 = with3DynamicState t t0 t1 Sig.c_normal_means_std
 -- | call C-level @logNormal@
 -- | CUDA version of 'THRandom._logNormal'
 _logNormal :: Dynamic -> HsAccReal -> Positive HsAccReal -> IO ()
-_logNormal r a b = runManaged . joinIO $ Sig.c_logNormal
-  <$> manage' Sig.dynamicStateRef r
-  <*> manage' Sig.ctensor r
+_logNormal r a b = runManaged . (liftIO =<<) $ Sig.c_logNormal
+  <$> managedState
+  <*> managedTensor r
   <*> pure (Sig.hs2cAccReal a)
   <*> pure (Sig.hs2cAccReal $ positiveValue b)
 
@@ -132,41 +134,41 @@ _cauchy t a b = withDynamicState t (shuffle2'2 Sig.c_cauchy (hs2cAccReal a) (hs2
 
 -- | CUDA version of 'THRandom._multinomial'
 _multinomial :: IndexDynamic -> Dynamic -> Int -> Int -> IO ()
-_multinomial r t a b = runManaged . joinIO $ Sig.c_multinomial
-   <$> manage' (fst . Sig.longDynamicState) r
-   <*> manage' (snd . Sig.longDynamicState) r
-   <*> manage' Sig.ctensor t
+_multinomial r t a b = runManaged . (liftIO =<<) $ Sig.c_multinomial
+   <$> managedState
+   <*> managed (withForeignPtr . snd . Sig.longDynamicState $ r)
+   <*> managedTensor t
    <*> pure (fromIntegral a)
    <*> pure (fromIntegral b)
 
 -- | CUDA version of 'THRandom._multinomialAliasSetup'
 _multinomialAliasSetup :: Dynamic -> LongDynamic -> Dynamic -> IO ()
-_multinomialAliasSetup r l t = runManaged . joinIO $ Sig.c_multinomialAliasSetup
-   <$> manage' (Sig.dynamicStateRef) r
-   <*> manage' (Sig.ctensor) r
-   <*> manage' (snd . Sig.longDynamicState) l
-   <*> manage' (Sig.ctensor) t
+_multinomialAliasSetup r l t = runManaged . (liftIO =<<) $ Sig.c_multinomialAliasSetup
+   <$> managedState
+   <*> managedTensor r
+   <*> managed (withForeignPtr . snd . Sig.longDynamicState $ l)
+   <*> managedTensor t
 
 -- | CUDA version of 'THRandom._multinomialAliasDraw'
 _multinomialAliasDraw  :: LongDynamic -> LongDynamic -> Dynamic -> IO ()
-_multinomialAliasDraw r l t = runManaged . joinIO $ Sig.c_multinomialAliasDraw
-   <$> manage' (fst . Sig.longDynamicState) r
-   <*> manage' (snd . Sig.longDynamicState) r
-   <*> manage' (snd . Sig.longDynamicState) l
-   <*> manage' (Sig.ctensor) t
+_multinomialAliasDraw r l t = runManaged . (liftIO =<<) $ Sig.c_multinomialAliasDraw
+   <$> managedState
+   <*> managed (withForeignPtr . snd . Sig.longDynamicState $ r)
+   <*> managed (withForeignPtr . snd . Sig.longDynamicState $ l)
+   <*> managedTensor t
 
 -- | CUDA version of 'THRandomMath._rand'
 _rand  :: Dynamic -> TH.LongStorage -> IO ()
-_rand r l = runManaged . joinIO $ Sig.c_rand
-   <$> manage' (Sig.dynamicStateRef) r
-   <*> manage' (Sig.ctensor) r
-   <*> manage' (snd . TH.longStorageState) l
+_rand r l = runManaged . (liftIO =<<) $ Sig.c_rand
+   <$> managedState
+   <*> managedTensor r
+   <*> managed (withForeignPtr . snd . TH.longStorageState $ l)
 
 -- | CUDA version of 'THRandomMath._randn'
 _randn  :: Dynamic -> TH.LongStorage -> IO ()
-_randn r l = runManaged . joinIO $ Sig.c_randn
-  <$> manage' (Sig.dynamicStateRef) r
-  <*> manage' (Sig.ctensor) r
-  <*> manage' (snd . TH.longStorageState) l
+_randn r l = runManaged . (liftIO =<<) $ Sig.c_randn
+  <$> managedState
+  <*> managedTensor r
+  <*> managed (withForeignPtr . snd . TH.longStorageState $ l)
 
 

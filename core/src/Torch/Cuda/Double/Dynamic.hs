@@ -19,7 +19,6 @@ import Torch.Indef.Cuda.Double.Dynamic.Tensor.TopK as X
 
 import Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pointwise.Signed as X
 
-import Torch.Indef.Cuda.Double.Dynamic.NN as X
 import Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Blas as X
 import Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Floating as X
 import Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Lapack as X

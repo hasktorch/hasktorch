@@ -51,7 +51,7 @@ in let signed =
       [ { rename = "Torch.Indef.Static.Tensor.Math.Pointwise.Signed"  , to = "Torch.Indef.${namespace}.Tensor.Math.Pointwise.Signed" }
       , { rename = "Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed" , to = "Torch.Indef.${namespace}.Dynamic.Tensor.Math.Pointwise.Signed" }
       ]
-in let floating =
+in let floatingbase =
     λ(isth : Bool) →
     λ(ttype : Text) →
       let namespace = if isth then "${ttype}" else "Cuda.${ttype}"
@@ -87,18 +87,26 @@ in let floating =
       , { rename = "Torch.Indef.Static.NN.Pooling"                      , to = "Torch.${namespace}.NN.Pooling" }
       , { rename = "Torch.Indef.Static.NN.Sampling"                     , to = "Torch.${namespace}.NN.Sampling" }
       ]
-      -- Random modules
-      # if isth
-        then
-          [ { rename = "Torch.Indef.Static.Tensor.Random.TH"            , to = "Torch.Indef.${namespace}.Tensor.Random.TH" }
-          , { rename = "Torch.Indef.Static.Tensor.Math.Random.TH"       , to = "Torch.Indef.${namespace}.Tensor.Math.Random.TH" }
-          , { rename = "Torch.Indef.Dynamic.Tensor.Random.TH"           , to = "Torch.Indef.${namespace}.Dynamic.Tensor.Random.TH" }
-          , { rename = "Torch.Indef.Dynamic.Tensor.Math.Random.TH"      , to = "Torch.Indef.${namespace}.Dynamic.Tensor.Math.Random.TH" }
-          , { rename = "Torch.Undefined.Tensor.Random.THC"              , to = "Torch.Undefined.${namespace}.Tensor.Random.THC" }
-          ]
-        else
-          [ { rename = "Torch.Undefined.Tensor.Random.TH"               , to = "Torch.Undefined.${namespace}.Tensor.Random.TH" }
-          , { rename = "Torch.Undefined.Tensor.Math.Random.TH"          , to = "Torch.Undefined.${namespace}.Tensor.Math.Random.TH" }
-          , { rename = "Torch.Indef.Static.Tensor.Random.THC"           , to = "Torch.Indef.${namespace}.Tensor.Random.THC" }
-          , { rename = "Torch.Indef.Dynamic.Tensor.Random.THC"          , to = "Torch.Indef.${namespace}.Dynamic.Tensor.Random.THC" }
-          ]
+in let floating =
+    λ(isth : Bool) →
+    λ(ttype : Text) →
+      let namespace = if isth then "${ttype}" else "Cuda.${ttype}"
+    in if isth
+       then floatingbase isth namespace #
+         [ { rename = "Torch.Indef.Static.Tensor.Random.TH"            , to = "Torch.Indef.${namespace}.Tensor.Random.TH" }
+         , { rename = "Torch.Indef.Static.Tensor.Math.Random.TH"       , to = "Torch.Indef.${namespace}.Tensor.Math.Random.TH" }
+         , { rename = "Torch.Indef.Dynamic.Tensor.Random.TH"           , to = "Torch.Indef.${namespace}.Dynamic.Tensor.Random.TH" }
+         , { rename = "Torch.Indef.Dynamic.Tensor.Math.Random.TH"      , to = "Torch.Indef.${namespace}.Dynamic.Tensor.Math.Random.TH" }
+         , { rename = "Torch.Undefined.Tensor.Random.THC"              , to = "Torch.Undefined.${namespace}.Tensor.Random.THC" }
+         ]
+       else floatingbase isth namespace #
+         [ { rename = "Torch.Undefined.Tensor.Random.TH"               , to = "Torch.Undefined.${namespace}.Tensor.Random.TH" }
+         , { rename = "Torch.Undefined.Tensor.Math.Random.TH"          , to = "Torch.Undefined.${namespace}.Tensor.Math.Random.TH" }
+         , { rename = "Torch.Indef.Static.Tensor.Random.THC"           , to = "Torch.Indef.${namespace}.Tensor.Random.THC" }
+         , { rename = "Torch.Indef.Dynamic.Tensor.Random.THC"          , to = "Torch.Indef.${namespace}.Dynamic.Tensor.Random.THC" }
+         ]
+in
+{ floating = floating
+, signed = signed
+, unsigned = unsigned
+}

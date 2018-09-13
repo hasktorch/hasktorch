@@ -1,14 +1,14 @@
+cabal-version:  2.2
 name:           hasktorch-core
-version:        0.0.1.0
+version:        0.1.0.0
 synopsis:       Torch for tensors and neural networks in Haskell
 description:    core tensor abstractions wrapping raw TH bindings
 category:       Tensors, Machine Learning
 homepage:       https://github.com/hasktorch/hasktorch#readme
 bug-reports:    https://github.com/hasktorch/hasktorch/issues
 author:         Austin Huang
-license:        BSD3
+license:        BSD-3-Clause
 build-type:     Simple
-cabal-version:  >= 2.0
 
 source-repository head
   type: git
@@ -79,7 +79,6 @@ library
   build-depends:
       base >=4.7 && <5
     , hasktorch-core-cpu
-    , hasktorch-core-gpu
     , hasktorch-types-th
 
     , containers
@@ -95,7 +94,6 @@ library
     , text >=1.2.2.2
     , typelits-witnesses >=0.2.3.0
 
-
   -- support modules
   exposed-modules:
       Torch.Core.Exceptions
@@ -110,9 +108,8 @@ library
     , Torch.Long.Dynamic
     , Torch.Long.Storage
 
-    , Torch.Double
-    , Torch.Double.Dynamic
     , Torch.Double.Storage
+    , Torch.Double
     , Torch.Double.NN
     , Torch.Double.NN.Activation
     , Torch.Double.NN.Backprop
@@ -125,6 +122,10 @@ library
     , Torch.Double.NN.Padding
     , Torch.Double.NN.Pooling
     , Torch.Double.NN.Sampling
+
+    , Torch.Double.Dynamic
+    , Torch.Double.Dynamic.NN
+    , Torch.Double.Dynamic.NN.Activation
 
   if !flag(lite) {
     reexported-modules:
@@ -145,6 +146,9 @@ library
       , Torch.Float.Storage
   }
   if flag(cuda) {
+    build-depends:
+        hasktorch-core-gpu
+
     reexported-modules:
         Torch.Cuda.Long
       , Torch.Cuda.Long.Dynamic
@@ -203,6 +207,7 @@ library hasktorch-core-cpu
 
     , hasktorch-indef-floating
     , hasktorch-indef-signed
+
   other-modules:
       Torch.Core.Random
     -- , Torch.Core.Exceptions
@@ -739,6 +744,9 @@ library hasktorch-core-cpu
      , Torch.Double.NN.Pooling
      , Torch.Double.NN.Sampling
 
+     , Torch.Double.Dynamic.NN
+     , Torch.Double.Dynamic.NN.Activation
+
 
   mixins:
       hasktorch-indef-floating
@@ -786,7 +794,6 @@ library hasktorch-core-cpu
         ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Double.Dynamic.Tensor.TopK
 
         ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Double.Dynamic.Tensor.Math.Pointwise.Signed
-        ,Torch.Indef.Dynamic.NN                              as Torch.Indef.Double.Dynamic.NN
         ,Torch.Indef.Dynamic.Tensor.Math.Blas                as Torch.Indef.Double.Dynamic.Tensor.Math.Blas
         ,Torch.Indef.Dynamic.Tensor.Math.Floating            as Torch.Indef.Double.Dynamic.Tensor.Math.Floating
         ,Torch.Indef.Dynamic.Tensor.Math.Lapack              as Torch.Indef.Double.Dynamic.Tensor.Math.Lapack
@@ -816,6 +823,9 @@ library hasktorch-core-cpu
         ,Torch.Indef.Static.NN.Padding       as Torch.Double.NN.Padding
         ,Torch.Indef.Static.NN.Pooling       as Torch.Double.NN.Pooling
         ,Torch.Indef.Static.NN.Sampling      as Torch.Double.NN.Sampling
+
+        ,Torch.Indef.Dynamic.NN              as Torch.Double.Dynamic.NN
+        ,Torch.Indef.Dynamic.NN.Activation   as Torch.Double.Dynamic.NN.Activation
         )
         requires
         (Torch.Sig.State          as Torch.Types.TH
@@ -892,6 +902,8 @@ library hasktorch-core-gpu
     , hasktorch-raw-thc
 
   if !flag(lite) {
+    build-depends:
+        hasktorch-indef-unsigned
     exposed-modules:
         Torch.Cuda.Byte
       , Torch.Cuda.Byte.Dynamic
@@ -1311,6 +1323,8 @@ library hasktorch-core-gpu
      , Torch.Cuda.Double.NN.Pooling
      , Torch.Cuda.Double.NN.Sampling
 
+     , Torch.Cuda.Double.Dynamic.NN
+     , Torch.Cuda.Double.Dynamic.NN.Activation
   mixins:
       hasktorch-indef-floating
         (Torch.Indef.Storage                      as Torch.Indef.Cuda.Double.Storage
@@ -1356,7 +1370,6 @@ library hasktorch-core-gpu
         ,Torch.Indef.Dynamic.Tensor.TopK           as Torch.Indef.Cuda.Double.Dynamic.Tensor.TopK
 
         ,Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Pointwise.Signed
-        ,Torch.Indef.Dynamic.NN                              as Torch.Indef.Cuda.Double.Dynamic.NN
         ,Torch.Indef.Dynamic.Tensor.Math.Blas                as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Blas
         ,Torch.Indef.Dynamic.Tensor.Math.Floating            as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Floating
         ,Torch.Indef.Dynamic.Tensor.Math.Lapack              as Torch.Indef.Cuda.Double.Dynamic.Tensor.Math.Lapack
@@ -1384,6 +1397,9 @@ library hasktorch-core-gpu
         ,Torch.Indef.Static.NN.Padding       as Torch.Cuda.Double.NN.Padding
         ,Torch.Indef.Static.NN.Pooling       as Torch.Cuda.Double.NN.Pooling
         ,Torch.Indef.Static.NN.Sampling      as Torch.Cuda.Double.NN.Sampling
+
+        ,Torch.Indef.Dynamic.NN              as Torch.Cuda.Double.Dynamic.NN
+        ,Torch.Indef.Dynamic.NN.Activation   as Torch.Cuda.Double.Dynamic.NN.Activation
         )
         requires
         (Torch.Sig.Types.Global   as Torch.Types.THC
@@ -1423,15 +1439,15 @@ library hasktorch-core-gpu
         ,Torch.Sig.Tensor.Random.TH          as Torch.Undefined.Double.Tensor.Random.TH
         ,Torch.Sig.Tensor.Random.THC         as Torch.FFI.THC.Double.TensorRandom
 
-        ,Torch.Sig.NN       as Torch.FFI.THC.NN.Double
-        ,Torch.Sig.Types.NN as Torch.Types.THC
+        ,Torch.Sig.NN                 as Torch.FFI.THC.NN.Double
+        ,Torch.Sig.Types.NN           as Torch.Types.THC
         ,Torch.Sig.Index.Tensor       as Torch.FFI.THC.Long.Tensor
         ,Torch.Sig.Index.TensorFree   as Torch.FFI.THC.Long.Tensor
         ,Torch.Sig.Mask.Tensor        as Torch.FFI.THC.Byte.Tensor
         ,Torch.Sig.Mask.TensorFree    as Torch.FFI.THC.Byte.Tensor
         ,Torch.Sig.Mask.MathReduce    as Torch.FFI.THC.Byte.TensorMathReduce
         )
-  
+
 
 
 -- ================================================================================== --
@@ -1612,6 +1628,8 @@ library hasktorch-indef-floating
     , Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed
 
     , Torch.Indef.Dynamic.NN
+    , Torch.Indef.Dynamic.NN.Activation
+
     , Torch.Indef.Dynamic.Tensor.Math.Blas
     , Torch.Indef.Dynamic.Tensor.Math.Floating
     , Torch.Indef.Dynamic.Tensor.Math.Lapack

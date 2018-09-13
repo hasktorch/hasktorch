@@ -72,7 +72,11 @@ module Torch.Indef.Dynamic.NN
   , _temporalUpSamplingLinear_updateGradInput
   , _batchNormalization_updateOutput
   , _batchNormalization_backward
+
+  -- start to clean up conv2d
   , spatialConvolutionMM_updateOutput
+  , _spatialConvolutionMM_updateOutput
+
   , _spatialConvolutionMM_updateGradInput
   , _spatialConvolutionMM_accGradParameters
   , _spatialConvolutionLocal_updateOutput
@@ -364,13 +368,33 @@ spatialConvolutionMM_updateOutput inp weight bias (kW, kH) (dW, dH) (pW, pH) = d
 
   -- This one as well:
   out     <- empty   -- output
+  _spatialConvolutionMM_updateOutput inp out weight bias columns ones (kW, kH) (dW, dH) (pW, pH)
+
+  pure out
+
+-- | spatialConvolutionMM forward pass
+_spatialConvolutionMM_updateOutput
+  :: Dynamic    -- ^ input
+
+  -> Dynamic    -- ^ output
+
+  -> Dynamic    -- ^ 3D weight tensor (connTable:size(1) x kH x kW)
+  -> Dynamic    -- ^ 1D bias tensor (nOutputPlane)
+
+  -> Dynamic    -- ^ BUFFER: temporary columns
+  -> Dynamic    -- ^ BUFFER: buffer of ones for bias accumulation
+
+  -> (Int, Int) -- ^ (kW, kH) kernel height and width
+  -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
+  -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
+  -> IO ()
+_spatialConvolutionMM_updateOutput inp out weight bias columns ones (kW, kH) (dW, dH) (pW, pH) = do
   with3DynamicState inp out weight $ \s' inp' out' weight' ->
    with3DynamicState bias columns ones $ \_ bias' columns' ones' ->
     Sig.c_SpatialConvolutionMM_updateOutput s' inp' out' weight' bias' columns' ones'
       (fromIntegral kW) (fromIntegral kH)
       (fromIntegral dW) (fromIntegral dH)
       (fromIntegral pW) (fromIntegral pH)
-  pure out
 
 -- | spatialConvolutionMM backward-update (updates the layer and bias tensors)
 _spatialConvolutionMM_updateGradInput
