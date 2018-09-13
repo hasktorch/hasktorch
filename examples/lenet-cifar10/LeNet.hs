@@ -14,6 +14,7 @@ module LeNet
   , lenetUpdate
   , Vision._conv1
   , Vision._conv2
+  , y2cat
   ) where
 
 import Control.Exception.Safe (throwString)
@@ -22,11 +23,13 @@ import Data.IORef
 import Data.Function ((&))
 import Data.Singletons.Prelude.List (Product)
 import Foreign
-import Lens.Micro.Platform
+import Lens.Micro.Platform ((^.))
 import System.IO.Unsafe
-import Torch.Double
-import Torch.Double.NN
-import Torch.Double.NN.Linear
+import Torch.Double hiding (logSoftMaxBatch)
+import Torch.Double.NN hiding (logSoftMaxBatch)
+import Torch.Double.NN.Linear hiding (linearBatch)
+
+import Torch.Data.Loaders.Cifar10
 import qualified Torch.Long as Long
 import qualified Torch.Long.Dynamic as LDyn
 import qualified Torch.Double.NN.Conv2d as Conv2d
@@ -36,7 +39,18 @@ import qualified Torch.Models.Vision.LeNet as Vision
 
 import qualified Torch.Double.Dynamic as Dynamic
 import qualified Torch.Double.Dynamic.NN as Dynamic
+import qualified Torch.Double.Dynamic.NN.Criterion as Dynamic
 import qualified Torch.Double.Dynamic.NN.Activation as Dynamic
+
+updateIORefWith :: IORef (Maybe (Tensor d)) -> Tensor d -> IO ()
+updateIORefWith ref nxt =
+  readIORef ref >>= \case
+    Nothing  -> writeIORef ref (Just $ copy nxt)
+
+    Just old ->
+      finalizeForeignPtr oldfp >> writeIORef ref Nothing
+     where
+      oldfp = ctensor (asDynamic old)
 
 
 bsz = (dim :: Dim 4)
@@ -71,9 +85,26 @@ fcout2Ref :: IORef (Tensor '[4, 84])
 fcout2Ref = unsafePerformIO $ newIORef (constant 0)
 {-# NOINLINE fcout2Ref #-}
 
-fcout3Ref :: IORef (Tensor '[4, 10])
-fcout3Ref = unsafePerformIO $ newIORef (constant 0)
-{-# NOINLINE fcout3Ref #-}
+
+cnlloutRef :: IORef (Tensor '[1])
+cnlloutRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE cnlloutRef #-}
+
+cnllwRef :: IORef (Tensor '[1])
+cnllwRef = unsafePerformIO $ newIORef (constant 1)
+{-# NOINLINE cnllwRef #-}
+
+cnllgRef :: IORef (Tensor '[4, 10])
+cnllgRef = unsafePerformIO $ newIORef (constant 1)
+{-# NOINLINE cnllgRef #-}
+
+logsmgRef :: IORef (Tensor '[4, 10])
+logsmgRef = unsafePerformIO $ empty >>= newIORef
+{-# NOINLINE logsmgRef #-}
+
+logsmoutRef :: IORef (Tensor '[4, 10])
+logsmoutRef = unsafePerformIO $ empty >>= newIORef
+{-# NOINLINE logsmoutRef #-}
 
 
 nullIx :: IORef Long.Dynamic
@@ -96,98 +127,92 @@ lenetBatchForward net inp = lenetBatch False net inp
 
 
 lenetBatchBP
-  -- :: (Tensor '[4, 10] -> IO HsReal) -- ^ criterion              <<< hardcode CE
   :: LeNet                          -- ^ architecture
   ->    (IndexTensor '[4])          -- ^ ys
   ->    (Tensor '[4, 3, 32, 32])    -- ^ xs
   -> IO (Tensor '[1], LeNet)    -- ^ output and gradient
 lenetBatchBP arch ys xs = do
   out <- lenetBatch True arch xs
-  loss <- crossentropy ys out
+  (loss, getCEgrad) <- crossentropy ys out
+  cegrad <- getCEgrad loss
+  print (fromEnum <$> y2cat out)
+  print (ys)
+  print loss
+  print cegrad
+  throwString "that's all, folks!"
   gnet <- getgrads
   pure (loss, gnet)
 
 crossentropy
   :: IndexTensor '[4]            -- THIndexTensor *target,
   -> Tensor '[4, 10]            -- THTensor *input,
-  -> IO (Tensor '[1])               -- THTensor *output,
-crossentropy ys inp
-  = undefined
-  -- = logSoftMaxN (dim :: Dim 1) inp
-  -- & classNLLCriterion ys
+  -> IO (Tensor '[1], Tensor '[1] -> IO (Tensor '[4, 10]))               -- THTensor *output, gradient
+crossentropy ys inp = do
+  (lout, getLSMGrad) <- logSoftMaxBatch inp
+  (nllout, getNLLGrad) <- classNLL ys lout
+  pure (nllout, getNLLGrad >=> getLSMGrad)
+
+
+y2cat :: Tensor '[4, 10] -> [Category]
+y2cat ys = map (toEnum . fromIntegral . (\i -> Long.get2d rez i 0)) [0..3]
+  where
+    rez :: LongTensor '[4, 1]
+    (_, Just rez) = Torch.max ys (dim :: Dim 1) keep
+
+classNLL
+  :: IndexTensor '[4]
+
+  -> (Tensor '[4, 10]                                       --  \___ these constitue a closed cartesian category and
+  -> IO (Tensor '[1], Tensor '[1] -> IO (Tensor '[4, 10]))) --  /    can be abstracted away into an autodiff lib.
+classNLL target inp = do
+  (out, total_weight) <- (,) <$> readIORef cnlloutRef <*> readIORef cnllwRef
+  -- let total_weight = constant 1  -- https://github.com/torch/nn/commit/3585e827eb65d071272a4aa4fab567b0b1eeee54#diff-1aa6a505cf16ad0e59498ada8432afb5
+  onesLike_ total_weight total_weight
+
+  updateOutput_ inp target szAvg Nothing ix reduce (out, total_weight)
+
+  pure (out, \gout -> do
+    gin <- readIORef cnllgRef
+    -- updateGradInput_ gout out inp target gout szAvg Nothing total_weight ix reduce gin >> pure gin)
+    updateGradInput_ inp target gout szAvg Nothing total_weight ix reduce gin
+    pure gin)
+  where
+    ix = (-100)
+    reduce = True
+    szAvg = True
+
+    updateOutput_
+      :: Tensor '[sz, ps]            -- THTensor *input,
+      -> IndexTensor '[sz]           -- THIndexTensor *target,
+      -> Bool                        -- bool sizeAverage,
+      -> Maybe (Tensor '[sz, ps])    -- THTensor *weights,
+      -> Integer                     -- int64_t ignore_index,
+      -> Bool                        -- bool reduce
+      -> (Tensor '[1], Tensor '[1])  -- THTensor *input, total_weight
+      -> IO ()
+    updateOutput_ inp tar szAvg mws ix reduce (out, total_weight) = do
+      Dynamic._ClassNLLCriterion_updateOutput (asDynamic inp) (Long.longAsDynamic tar) (asDynamic out)
+        szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
+
+    updateGradInput_
+      :: Tensor '[sz, ps]          -- THTensor *input,
+      -> IndexTensor '[sz]         -- THIndexTensor *target,
+      -> Tensor '[1]               -- THTensor *gradOutput,
+      -> Bool                      -- bool sizeAverage,
+      -> Maybe (Tensor '[sz, ps])  -- THTensor *weights,
+      -> Tensor '[1]               -- THTensor *total_weight,
+      -> Integer                   -- int64_t ignore_index,
+      -> Bool                      -- bool reduce
+
+      -> Tensor '[sz, ps]          -- gradient to update inplace
+      -> IO ()
+    updateGradInput_ inp tar gout szAvg mws total_weight ix reduce gin =
+      Dynamic._ClassNLLCriterion_updateGradInput (asDynamic inp) (Long.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
+        szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
+
 
 getgrads = undefined
 
--- -- By default, the losses are averaged over observations for each minibatch. However, if the argument sizeAverage is set to false, the losses are instead summed for each minibatch.
--- -- FIXME: add batch dimension
--- classNLLCriterion'
---   :: forall s i sz ps
---   . (Reifies s W, All KnownDim '[sz, ps])
---   => Integer                    -- int64_t ignore_index,
---   -> Bool                       -- bool sizeAverage,
---   -> Bool                       -- bool reduce
---   -> IndexTensor '[sz]          -- THIndexTensor *target. _not_ a one-hot encoded vector.
---   -- -> Maybe Dynamic           -- THTensor *weights,
---   -> BVar s (Tensor '[sz, ps])  -- THTensor *input,
---   -> BVar s (Tensor '[1])       -- THTensor *output,
--- classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
---   let
---     (out, total_weight) = updateOutput inp target szAvg Nothing ix reduce
---   in
---     (out, \gout -> updateGradInput inp target gout szAvg Nothing total_weight ix reduce)
---
---     {-# NOINLINE updateOutput #-}
---     updateOutput
---       :: Tensor '[sz, ps]            -- THTensor *input,
---       -> IndexTensor '[sz]           -- THIndexTensor *target,
---       -> Bool                        -- bool sizeAverage,
---       -> Maybe (Tensor '[sz, ps])    -- THTensor *weights,
---       -> Integer                     -- int64_t ignore_index,
---       -> Bool                        -- bool reduce
---       -> (Tensor '[1], Tensor '[1])
---     updateOutput inp tar szAvg mws ix reduce = unsafePerformIO $ do
---       out <- new
---       let total_weight = constant 1  -- https://github.com/torch/nn/commit/3585e827eb65d071272a4aa4fab567b0b1eeee54#diff-1aa6a505cf16ad0e59498ada8432afb5
---       Dynamic._ClassNLLCriterion_updateOutput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic out)
---         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
---       pure (out, total_weight)
---
---     {-# NOINLINE updateGradInput #-}
---     updateGradInput
---       :: Tensor '[sz, ps]          -- THTensor *input,
---       -> IndexTensor '[sz]         -- THIndexTensor *target,
---       -> Tensor '[1]               -- THTensor *gradOutput,
---       -> Bool                      -- bool sizeAverage,
---       -> Maybe (Tensor '[sz, ps])  -- THTensor *weights,
---       -> Tensor '[1]               -- THTensor *total_weight,
---       -> Integer                   -- int64_t ignore_index,
---       -> Bool                      -- bool reduce
---       -> Tensor '[sz, ps]
---     updateGradInput inp tar gout szAvg mws total_weight ix reduce = unsafePerformIO . withEmpty $ \gin ->
---       Dynamic._ClassNLLCriterion_updateGradInput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
---         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
---
-
-
--- crossEntropy
---   :: (All KnownDim '[b, p])
---   => IndexTensor '[b]            -- THIndexTensor *target,
---   -> (Tensor '[b, p])            -- THTensor *input,
---   -> (Tensor '[1])               -- THTensor *output,
--- crossEntropy ys inp
---   = logSoftMaxN (dim :: Dim 1) inp
---   & classNLLCriterion ys
-
-
-updateIORefWith :: IORef (Maybe (Tensor d)) -> Tensor d -> IO ()
-updateIORefWith ref nxt =
-  readIORef ref >>= \case
-    Nothing  -> writeIORef ref (Just $ copy nxt)
-
-    Just old ->
-      finalizeForeignPtr oldfp >> writeIORef ref Nothing
-     where
-      oldfp = ctensor (asDynamic old)
 
 
 
@@ -213,9 +238,9 @@ lenetBatch training arch i = do
       (param2d (Padding2d :: Padding2d '(0,0)))
 
     -- relu forward
-    reluForward_ convout1
+    (out, unrelu) <- reluBP__ convout1 (reluCONV1outRef, reluCONV1ginRef) False
 
-    let maxpoolInput1 = convout1
+    let maxpoolInput1 = out
     -- maxpoolOutput1 <- empty
     ix1 <- LDyn.empty
 
@@ -242,9 +267,9 @@ lenetBatch training arch i = do
       (param2d (Padding2d :: Padding2d '(0,0)))
 
     -- relu forward
-    reluForward_ convout2
+    (out, unrelu) <- reluBP__ convout2 (reluCONV2outRef, reluCONV2ginRef) False
 
-    let maxpoolInput2 = convout2
+    let maxpoolInput2 = out
     -- maxpoolOutput2 <- empty
     ix2 <- LDyn.empty
 
@@ -259,30 +284,119 @@ lenetBatch training arch i = do
     pure (asStatic (asDynamic convout2) :: Tensor '[4, 16, 5, 5])
   >>= \i -> (flattenBatchForward_ i :: IO (Tensor '[4, 16*5*5]))
   >>= \inp -> do
-    out <- readIORef fcout1Ref
-    zero_ out
-    -- print "hello1"
-    linearForwardBatch_ (arch ^. Vision.fc1) inp out
-    reluForward_ out
+    out <- fst <$> fc1BP (arch ^. Vision.fc1) inp
     pure out
 
   >>= \inp -> do
-    out <- readIORef fcout2Ref
-    zero_ out
-    -- print "hello2"
-    linearForwardBatch_ (arch ^. Vision.fc2) inp out
-    reluForward_ out
+    out <- fst <$> fc2BP (arch ^. Vision.fc2) inp
     pure out
 
   >>= \inp -> do
-    out <- readIORef fcout3Ref
-    zero_ out
-    -- print "hello3"
-    linearForwardBatch_ (arch ^. Vision.fc3) inp out
-    -- fin <- empty
-    Dynamic._logSoftMax_updateOutput (asDynamic out) (asDynamic out) 1 -- (fromIntegral $ dimVal 1)
-    -- throwString "hello!"
-    pure out
+    fst <$> fc3BP (arch ^. Vision.fc3) inp
+
+reluCONV1outRef :: IORef (Tensor '[4, 6])
+reluCONV1outRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE reluCONV1outRef #-}
+
+reluCONV1ginRef :: IORef (Tensor '[4, 6])
+reluCONV1ginRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE reluCONV1ginRef #-}
+
+
+reluCONV2outRef :: IORef (Tensor '[4, 6])
+reluCONV2outRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE reluCONV2outRef #-}
+
+reluCONV2ginRef :: IORef (Tensor '[4, 6])
+reluCONV2ginRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE reluCONV2ginRef #-}
+
+
+-- ========================================================================= --
+
+fc1outRef :: IORef (Tensor '[4, 120])
+fc1outRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE fc1outRef #-}
+
+fc1ginRef :: IORef (Tensor '[4, 400])
+fc1ginRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE fc1ginRef #-}
+
+
+fc1gradparamRef :: IORef (Linear 400 120)
+fc1gradparamRef = unsafePerformIO $ newIORef (Linear (constant 0, constant 0))
+{-# NOINLINE fc1gradparamRef #-}
+
+fc1BP :: Linear 400 120 -> Tensor '[4, 400] -> IO (Tensor '[4, 120], Tensor '[4, 120] -> IO (Linear 400 120, Tensor '[4, 400]))
+fc1BP fc1 inp = do
+  (out, getgrads) <- linearBatch 1 fc1outRef fc1ginRef fc1gradparamRef fc1 inp
+  (fin, unrelu) <- reluBP__ out (relu1outRef, relu1ginRef) False
+  pure (fin, \gout -> do
+    g <- unrelu False gout
+    getgrads g)
+
+
+relu1outRef :: IORef (Tensor '[4, 120])
+relu1outRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE relu1outRef #-}
+
+relu1ginRef :: IORef (Tensor '[4, 120])
+relu1ginRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE relu1ginRef #-}
+
+
+-- ========================================================================= --
+
+fc2outRef :: IORef (Tensor '[4, 84])
+fc2outRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE fc2outRef #-}
+
+fc2ginRef :: IORef (Tensor '[4, 120])
+fc2ginRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE fc2ginRef #-}
+
+fc2gradparamRef :: IORef (Linear 120 84)
+fc2gradparamRef = unsafePerformIO $ newIORef (Linear (constant 0, constant 0))
+{-# NOINLINE fc2gradparamRef #-}
+
+fc2BP :: Linear 120 84 -> Tensor '[4, 120] -> IO (Tensor '[4, 84], Tensor '[4, 84] -> IO (Linear 120 84, Tensor '[4, 120]))
+fc2BP fc2 inp = do
+  (out, getgrads) <- linearBatch 1 fc2outRef fc2ginRef fc2gradparamRef fc2 inp
+  (fin, unrelu) <- reluBP__ out (relu2outRef, relu2ginRef) False
+  pure (fin, \gout -> do
+    g <- unrelu False gout
+    getgrads g)
+
+
+relu2outRef :: IORef (Tensor '[4, 84])
+relu2outRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE relu2outRef #-}
+
+relu2ginRef :: IORef (Tensor '[4, 84])
+relu2ginRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE relu2ginRef #-}
+
+
+
+-- ========================================================================= --
+
+fc3outRef :: IORef (Tensor '[4, 10])
+fc3outRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE fc3outRef #-}
+
+fc3ginRef :: IORef (Tensor '[4, 84])
+fc3ginRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE fc3ginRef #-}
+
+fc3gradparamRef :: IORef (Linear 84 10)
+fc3gradparamRef = unsafePerformIO $ newIORef (Linear (constant 0, constant 0))
+{-# NOINLINE fc3gradparamRef #-}
+
+fc3BP :: Linear 84 10 -> Tensor '[4, 84] -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (Linear 84 10, Tensor '[4, 84]))
+fc3BP fc3 inp = do
+  (fc3out, getfc3Grads) <- linearBatch 1 fc3outRef fc3ginRef fc3gradparamRef fc3 inp
+  (fin, getlogsmGrads) <- logSoftMaxBatch fc3out
+  pure (fin, getlogsmGrads >=> getfc3Grads)
 
 
 
@@ -294,155 +408,100 @@ flattenBatchForward_
   -> IO (Tensor '[bs, Product d])
 flattenBatchForward_ = _resizeDim
 
--- lenetLayerBatchForward1
---   :: forall inp h w ker ow oh out mow moh step pad batch
---
---   -- backprop constraint to hold the wengert tape
---
---   -- leave input, output and square kernel size variable so that we
---   -- can reuse the layer...
---   .  All KnownDim '[4,inp,out,ker]
---
---   -- FIXME: derive these from the signature (maybe assign them as args)
---   => pad ~ 0   --  default padding size
---   => step ~ 1  --  default step size for Conv2d
---
---   -- ...this means we need the constraints for conv2dMM and maxPooling2d
---   -- Note that oh and ow are then used as input to the maxPooling2d constraint.
---   => SpatialConvolutionC inp h  w ker ker 1 1 0 0  oh  ow
---   => SpatialDilationC       oh ow   2   2 2 2 0 0 mow moh 1 1 'True
---
---   =>    (Conv2d inp out '(ker,ker))       -- ^ convolutional layer
---   ->    (Tensor '[4, inp,   h,   w])  -- ^ input
---   -> IO (Tensor '[4, out, moh, mow])  -- ^ output
--- lenetLayerBatchForward1 conv inp = do
---   conv2out <- empty
---   columnsbuff <- Dynamic.empty
---   onesbuff <- Dynamic.empty
---   Dynamic._spatialConvolutionMM_updateOutput (asDynamic inp) (asDynamic conv2out) (asDynamic (Conv2d.weights conv)) (asDynamic (Conv2d.bias conv))
---     columnsbuff onesbuff
---     (kernel2d conv)
---     (param2d (Step2d    :: Step2d '(1,1)))
---     (param2d (Padding2d :: Padding2d '(0,0)))
---
---   -- relu forward
---   let reluInput = conv2out
---   reluForward_ reluInput
---
---   let maxpoolInput = reluInput
---   maxpoolOutput <- empty
---   ix <- LDyn.empty
---
---   Dynamic._spatialMaxPooling_updateOutput (asDynamic maxpoolInput) (asDynamic maxpoolOutput) ix
---     (param2d  (Kernel2d  :: Kernel2d '(2,2)))
---     (param2d  (Step2d    :: Step2d '(2,2)))
---     (param2d  (Padding2d :: Padding2d '(0,0)))
---     True -- (fromSing (sing      :: SBool 'True))
---
---   -- print ix
---   pure maxpoolOutput
---
+reluBP__ :: Tensor d -> (IORef (Tensor d), IORef (Tensor d)) -> Bool -> IO (Tensor d, Bool -> Tensor d -> IO (Tensor d))
+reluBP__ inp (outref, ginref) inplace = do
+  out <- readIORef outref
+  Dynamic._threshold_updateOutput (asDynamic inp) (asDynamic out) 0 0 inplace
+  pure (out, \ginplace gout -> do
+    gin <- readIORef ginref
+    Dynamic._threshold_updateGradInput
+        (asDynamic inp) (asDynamic gout) (asDynamic gin) 0 0 ginplace
+    pure gin)
 
-reluForward_ :: Tensor d -> IO ()
-reluForward_ reluInput = do
-  Dynamic._threshold_updateOutput (asDynamic reluInput) (asDynamic reluInput) 0 0 (True {- inplace -})
-  -- print (asDynamic reluInput)
-  -- print (asDynamic reluOutput)
 
+-- ========================================================================= --
 
 -- | 'linear' with a batch dimension
-linearForwardBatch_
-  :: forall s i o b
-  .  All KnownDim '[b,i,o]
-  => (Linear i o)
+linearBatch
+  :: forall i o b
+   . All KnownDim '[b,i,o]
+  => HsReal
+  -> IORef (Tensor '[b, o])       -- output buffer. currently mutable.
+  -> IORef (Tensor '[b, i])       -- gradin buffer. currently mutable.
+  -> IORef (Linear i o)           -- gradparam buffer. currently mutable.
+
+  -> (Linear i o)
   -> (Tensor '[b, i])
-  -> (Tensor '[b, o]) -- should be initialized at zeros
-  -> IO ()
-linearForwardBatch_ (Linear (w,b)) inp out = do
-  addmm_ 0 out 1 inp w
-  addr_ 1 out 1 (constant 1) b
+  -> IO (Tensor '[b, o], Tensor '[b, o] -> IO ((Linear i o),  (Tensor '[b, i])))     --- by "simple autodifferentiation", I am seeing that this is a fork
+linearBatch lr outbufferRef gradinRef gradparamRef l i = do
+  out <- readIORef outbufferRef
+  zero_ out
+  updateOutput_ l i out
+  pure (out, \gout -> do
 
+    gin <- readIORef gradinRef
+    zero_ gin
+    updateGradInput_ i gout (weights l) gin
 
+    -- I am seeing that this is a fork : Notice there is no inter dependency here other than gout. `gout -> (linear -> dlinear, input s -> dinputs)`
+    gparam <- readIORef gradparamRef
+    zero_ (weights gparam)
+    zero_ (bias gparam)
+    accGradParameters_ i gout l gparam
 
+    pure (gparam, gin))
+  where
+    updateOutput_ :: Linear i o -> Tensor '[b, i] -> Tensor '[b, o] -> IO ()
+    updateOutput_ (Linear (w,b)) inp out = do
+      addmm_ 0 out 1 inp w
+      addr_  1 out 1 (constant 1) b
 
+    updateGradInput_ :: Tensor '[b, i] -> Tensor '[b, o] -> Tensor '[i,o] -> Tensor '[b, i] -> IO ()
+    updateGradInput_ i gout w gin = do
+      addmm_ 0 gin 1 gout (transpose2d w)
 
+    accGradParameters_ :: Tensor '[b,i] -> Tensor '[b, o] -> Linear i o -> Linear i o -> IO ()
+    accGradParameters_ i gout (Linear (w, b)) (Linear (gw, gb)) = do
+      addmm_ 1 gw lr (transpose2d i) gout
+      addmv_ 1 gb lr (transpose2d gout) (constant 1)
 
+-- ========================================================================= --
 
+-- | run a threshold function againts two BVar variables
+logSoftMaxBatch
+  :: Tensor '[4, 10]    -- ^ input
+  -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (Tensor '[4, 10]))   -- ^ output and gradient
+logSoftMaxBatch inp = do
+  out <- readIORef logsmoutRef
+  updateOutput_ inp i out
+  pure (out, \gout -> do
+    gin <- readIORef logsmgRef
+    updateGradInput_ inp gout out i gin
+    pure gin
+    )
 
+ where
+  i = (dim :: Dim 1)
 
+  updateOutput_ :: Tensor '[4, 10] -> Dim 1 -> Tensor '[4, 10] -> IO ()
+  updateOutput_ inp i out =
+    Dynamic._logSoftMax_updateOutput (asDynamic inp) (asDynamic out) (fromIntegral $ dimVal i)
 
+  updateGradInput_
+    :: Tensor '[4, 10]  -- input
+    -> Tensor '[4, 10]  -- gradOutput
+    -> Tensor '[4, 10]  -- output
+    -> Dim 1            -- dimension
 
-
--- -- | run a threshold function againts two BVar variables
--- my_logSoftMaxN
---   :: forall s i d
---   .  i < Length d ~ 'True
---   => Dimensions d
---   => Dim i                -- ^ dimension to logSoftMax over
---   -> (Tensor d -> IO (Tensor d, (Tensor d -> IO Tensor d)))        -- ^ output
--- my_logSoftMaxN i = liftOp1 . op1 $ \inp ->
---   let out = updateOutput inp i
---   in (updateOutput inp i, \gout -> updateGradInput inp gout out i)
---  where
---   idim = fromIntegral (dimVal i)
---
---   {-# NOINLINE updateOutput #-}
---   updateOutput :: Tensor d -> Dim i -> Tensor d
---   updateOutput inp i = unsafePerformIO . withEmpty $ \out ->
---     Dynamic._logSoftMax_updateOutput (asDynamic inp) (asDynamic out) idim
---
---   {-# NOINLINE updateGradInput #-}
---   updateGradInput
---     :: Tensor d  -- input
---     -> Tensor d  -- gradOutput
---     -> Tensor d  -- output
---     -> Dim i     -- dimension
---     -> Tensor d  -- gradInput
---   updateGradInput inp gout out i = unsafePerformIO . withEmpty $ \gin ->
---     Dynamic._logSoftMax_updateGradInput
---       (asDynamic inp)             -- input
---       (asDynamic gout)            -- gradOutput
---       (asDynamic gin)             -- gradInput
---       (asDynamic out)             -- output
---       (fromIntegral $ dimVal i)   -- dimension
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    -> Tensor '[4, 10]  -- gradInput
+    -> IO ()
+  updateGradInput_ inp gout out i gin =
+    Dynamic._logSoftMax_updateGradInput
+      (asDynamic inp)             -- input
+      (asDynamic gout)            -- gradOutput
+      (asDynamic gin)             -- gradInput
+      (asDynamic out)             -- output
+      (fromIntegral $ dimVal i)   -- dimension
 
 
 

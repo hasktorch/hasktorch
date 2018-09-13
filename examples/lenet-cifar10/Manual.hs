@@ -86,21 +86,25 @@ epochs
   -> Vector (Tensor '[4, 10], Tensor '[4, 3, 32, 32])
   -> LeNet               -- ^ initial model
   -> IO LeNet            -- ^ final model
-epochs lr mx batches = runEpoch 1 >=> runEpoch 2 >=> runEpoch 3
+epochs lr mx batches = runEpoch 0
   where
-    runEpoch :: Int -> LeNet -> IO (LeNet)
-    runEpoch e net = do
+    runEpoch :: Int -> LeNet -> IO LeNet
+    runEpoch e net
+      | e > mx = pure net
+      | otherwise = do
       putStr "\n"
 
       (net', _) <- V.ifoldM go (net, 0) batches
-      pure net'
+
+      performMajorGC
+      runEpoch (e+1) net'
 
       where
         estr :: String
-        estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
+        estr = "[Epoch "++ show (e+1) ++ "/"++ show mx ++ "]"
 
         go (!net, !runningloss) !bid (ys, xs) = do
-          (net', loss) <- undefined -- step lr net xs ys
+          (net', loss) <- step lr net xs ys
           let reportat = 200 :: Int
               reporttime = (bid `mod` reportat == (reportat - 1))
 
@@ -117,11 +121,6 @@ epochs lr mx batches = runEpoch 1 >=> runEpoch 2 >=> runEpoch 3
 forward :: LeNet -> Tensor '[4, 3, 32, 32] -> IO [Category]
 forward net xs = y2cat <$> MyLeNet.lenetBatchForward net xs
 
-y2cat :: Tensor '[4, 10] -> [Category]
-y2cat ys = map (toEnum . fromIntegral . (\i -> Long.get2d rez i 0)) [0..3]
-  where
-    rez :: LongTensor '[4, 1]
-    (_, Just rez) = Torch.max ys (dim :: Dim 1) keep
 
 step
   :: HsReal
@@ -143,10 +142,10 @@ step lr net xs ys = do
 
 main :: IO ()
 main = do
-  g <- MWC.initialize (V.singleton 42)
+  g <- MWC.initialize (V.singleton 44)
 
   lbatches :: Vector (Vector (Category, FilePath))
-    <- mkVBatches 4 . V.take 4000 <$> cifar10set g default_cifar_path Train
+    <- mkVBatches 4 . V.take 200 <$> cifar10set g default_cifar_path Train
   batches <- dataloader' bsz lbatches
 
   net0 <- newLeNet
@@ -154,13 +153,10 @@ main = do
 
   report net0 batches
   performMajorGC
-  report net0 batches
-  performMajorGC
-  report net0 batches
-  performMajorGC
-  report net0 batches
-  performMajorGC
-  report net0 batches
+
+  net <- epochs 0.001 3 batches net0
+
+  report net batches
   performMajorGC
   -- putStr "\nInitial Holdout:\n"
   -- net <- epochs 0.001 3 batches net0
