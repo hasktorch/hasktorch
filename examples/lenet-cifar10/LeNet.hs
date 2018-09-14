@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -22,9 +23,11 @@ import Control.Monad
 import Data.IORef
 import Data.Function ((&))
 import Data.Singletons.Prelude.List (Product)
-import Foreign
+import Foreign hiding (new)
 import Lens.Micro.Platform ((^.))
 import System.IO.Unsafe
+import Data.Singletons
+import Data.Singletons.Prelude.Bool
 import Torch.Double hiding (logSoftMaxBatch)
 import Torch.Double.NN hiding (logSoftMaxBatch)
 import Torch.Double.NN.Linear hiding (linearBatch)
@@ -140,7 +143,6 @@ lenetBatchBP arch ys xs = do
   print loss
   print cegrad
   throwString "that's all, folks!"
-  gnet <- getgrads
   pure (loss, gnet)
 
 crossentropy
@@ -211,10 +213,6 @@ classNLL target inp = do
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
 
 
-getgrads = undefined
-
-
-
 
 lenetBatch
   :: Bool                         -- ^ if you should perform backprop as well
@@ -252,6 +250,7 @@ lenetBatch training arch i = do
 
     -- print ix
     pure (asStatic (asDynamic convout1) :: Tensor '[4, 6, 5, 5])
+
   >>= \i -> do
     -- LAYER 1
     let conv2 = arch ^. Vision.conv2
@@ -259,31 +258,32 @@ lenetBatch training arch i = do
     columnsbuff2 <- readIORef columnsbuff1outRef
     onesbuff2    <- readIORef onesbuff1outRef
 
+    conv2ginbuffRef          -- IORef (Tensor '[b,f,h,w])     -- grad input buffer
+    conv2columnsbuffRef     -- IORef (Tensor '[])            -- columns buffer
+    conv2onesbuffRef        -- IORef (Tensor '[])            -- ones buffer
+    conv2outRef             -- IORef (Tensor '[b, o,oH,oW])  -- output
+    conv2iRef              -- IORef (Tensor '[b,f,h,w])     -- input
+    conv2ginRef          -- IORef (Tensor '[b,f,h,w])     -- gradient input
+    conv2gparamsRef    -- IORef (Conv2d f o '(kH, kW))  -- gradient params
+    (convout2, _) <-
+      conv2dMMBatch
+        lr conv2 i
 
-    Dynamic._spatialConvolutionMM_updateOutput (asDynamic i) (asDynamic convout2) (asDynamic (Conv2d.weights conv2)) (asDynamic (Conv2d.bias conv2))
-      columnsbuff2 onesbuff2
-      (kernel2d conv2)
-      (param2d (Step2d    :: Step2d '(1,1)))
-      (param2d (Padding2d :: Padding2d '(0,0)))
+    (reluout2, unrelu) <- reluBP__ convout2 (reluCONV2outRef, reluCONV2ginRef) False
 
-    -- relu forward
-    (out, unrelu) <- reluBP__ convout2 (reluCONV2outRef, reluCONV2ginRef) False
+    (mpout2, getmpgrad) <- maxPooling2dBatch'
+      mp2ixRef
+      mp2outRef
+      mp2ginRef
+      ((Kernel2d  :: Kernel2d '(2,2)))
+      ((Step2d    :: Step2d '(2,2)))
+      ((Padding2d :: Padding2d '(0,0)))
+      ((sing      :: SBool 'True))
+      reluout2
 
-    let maxpoolInput2 = out
-    -- maxpoolOutput2 <- empty
-    ix2 <- LDyn.empty
-
-    Dynamic._spatialMaxPooling_updateOutput (asDynamic convout2) (asDynamic convout2) ix2
-      (param2d  (Kernel2d  :: Kernel2d '(2,2)))
-      (param2d  (Step2d    :: Step2d '(2,2)))
-      (param2d  (Padding2d :: Padding2d '(0,0)))
-      True -- (fromSing (sing      :: SBool 'True))
-
-    -- print ix
-    -- pure (maxpoolOutput2 :: Tensor '[4, 16, 5, 5])
-    pure (asStatic (asDynamic convout2) :: Tensor '[4, 16, 5, 5])
-  >>= \i -> (flattenBatchForward_ i :: IO (Tensor '[4, 16*5*5]))
-  >>= \inp -> do
+    pure mpout2
+  >>= \i -> fst <$> flattenBPBatch_ i
+  >>= \(inp :: Tensor '[4, 400])-> do
     out <- fst <$> fc1BP (arch ^. Vision.fc1) inp
     pure out
 
@@ -293,6 +293,256 @@ lenetBatch training arch i = do
 
   >>= \inp -> do
     fst <$> fc3BP (arch ^. Vision.fc3) inp
+
+-------------------------------------------------------------------------------
+    let conv2 = arch ^. Vision.conv2
+    convout2     <- readIORef convout1Ref
+    columnsbuff2 <- readIORef columnsbuff1outRef
+    onesbuff2    <- readIORef onesbuff1outRef
+
+    Dynamic._spatialConvolutionMM_updateOutput (asDynamic i) (asDynamic convout2) (asDynamic (Conv2d.weights conv2)) (asDynamic (Conv2d.bias conv2))
+      columnsbuff2 onesbuff2
+      (kernel2d conv2)
+      (param2d (Step2d    :: Step2d '(1,1)))
+      (param2d (Padding2d :: Padding2d '(0,0)))
+
+
+
+-- | Backprop convolution function with batching
+conv2dMMBatch
+  :: forall f h w kH kW dH dW pH pW oW oH s o b
+  .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
+  => All KnownDim '[f,o,b]
+  => IORef (Tensor '[b,f,h,w])            -- ^ grad input buffer
+
+  -- buffers
+  -> IORef (Tensor '[])            -- ^ columns buffer
+  -> IORef (Tensor '[])            -- ^ ones buffer
+
+  -- cacheables
+  -> IORef (Tensor '[b, o,oH,oW])            -- output
+  -> IORef (Tensor '[b,f,h,w])             -- input
+  -> IORef (Tensor '[b,f,h,w])             -- gradient input
+  -> IORef (Conv2d f o '(kH, kW))   -- gradient params
+
+  -> Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
+  -> Padding2d '(pH,pW)             -- ^ zero padding to the input plane for width and height.
+  -> Double                      -- ^ learning rate
+  -> (Conv2d f o '(kH,kW))   -- ^ conv2d state
+  -> (Tensor '[b,f,h,w])    -- ^ input: f stands for "features" or "input plane")
+  -> IO (Tensor '[b, o,oH,oW], (Tensor '[b,o,oH,oW] -> IO (Conv2d f o '(kH,kW), Tensor '[b,f,h,w])))
+conv2dMMBatch = conv2dMM__
+
+conv2dMM__
+  :: forall din dout fgin f o kH kW dH dW pH pW
+  .  All Dimensions '[din,dout,fgin]
+  => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW]
+
+  -- buffers
+  => IORef (Tensor fgin)            -- ^ grad input buffer
+  -> IORef (Tensor '[])            -- ^ columns buffer
+  -> IORef (Tensor '[])            -- ^ ones buffer
+
+  -- cacheables
+  -> IORef (Tensor dout)            -- output
+  -> IORef (Tensor din)             -- input
+  -> IORef (Tensor din)             -- gradient input
+  -> IORef (Conv2d f o '(kH, kW))   -- gradient params
+
+  -> Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
+  -> Padding2d '(pH,pW)             -- ^ zero padding to the input plane for width and height.
+  -> Double                      -- ^ learning rate
+
+  -> (Conv2d f o '(kH,kW))   -- ^ conv2d state
+  -> (Tensor din)    -- ^ input: f stands for "features" or "input plane")
+  -> IO (Tensor dout, (Tensor dout -> IO (Conv2d f o '(kH,kW), Tensor din)))
+conv2dMM__
+  ginbufferRef columnsbuffref onesref outref inref ginref gparamsref
+  step pad lr conv inp = do
+  onesbuff <- readIORef onesref
+  columnsbuff <- readIORef columnsbuffref
+
+  out <- readIORef outref
+  updateOutput_ columnsbuff onesbuff step pad conv inp out
+  pure (out,
+    \gout -> do
+      ginbuffer <- readIORef ginbufferRef
+      gin <- readIORef ginref
+      gparams <- readIORef gparamsref
+      accGradParameters_ inp gout gparams columnsbuff onesbuff step pad
+
+      updateGradInput_ inp gout gin conv columnsbuff onesbuff step pad
+
+      pure (gparams, gin))
+ where
+  updateOutput_ colbuff onesbuff step pad conv inp out =
+    Dynamic._spatialConvolutionMM_updateOutput
+      (asDynamic inp)                      -- ^ input
+      (asDynamic out)                      -- ^ output
+      (asDynamic (Conv2d.weights conv))    -- ^ 3D weight tensor (connTable:size(1) x kH x kW)
+      (asDynamic (Conv2d.bias conv))       -- ^ 1D bias tensor (nOutputPlane)
+      (asDynamic colbuff)                  -- ^ BUFFER: temporary columns
+      (asDynamic onesbuff)                 -- ^ BUFFER: buffer of ones for bias accumulation
+      (Conv2d.kernel2d conv)               -- ^ (kW, kH) kernel height and width
+      (param2d step)                       -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
+      (param2d pad)                        -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
+
+  updateGradInput_ inp gout gin conv colsbuffer onesbuffer step pad = do
+    Dynamic._spatialConvolutionMM_updateGradInput
+      (asDynamic inp)                      -- ^ input
+      (asDynamic gout)                     -- ^ gradOutput
+      (asDynamic gin)                      -- ^ gradInput
+      (asDynamic (Conv2d.weights conv))    -- ^ weight
+      (asDynamic colsbuffer)               -- ^ columns
+      (asDynamic onesbuffer)               -- ^ ones
+      (Conv2d.kernel2d conv)               -- ^ (kW, kH) kernel height and width
+      (param2d step)                       -- ^ (dW, dH) step of the convolution in width and height dimensions
+      (param2d pad)                        -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
+
+
+  accGradParameters_ inp gout gconv columnsbuff onesbuff step pad = do
+    Dynamic._spatialConvolutionMM_accGradParameters
+      (asDynamic inp)    -- ^ input
+      (asDynamic gout)    -- ^ gradOutput
+      (asDynamic (Conv2d.weights gconv))    -- ^ gradWeight
+      (asDynamic (Conv2d.bias gconv))    -- ^ gradBias
+      (asDynamic columnsbuff)    -- ^ finput/columns <<- required. This can be NULL in C if gradWeight is NULL.
+      (asDynamic onesbuff)   -- ^ ones
+      (Conv2d.kernel2d conv) -- ^ (kW, kH) kernel height and width
+      (param2d step)         -- ^ (dW, dH) step of the convolution in width and height dimensions
+      (param2d pad)          -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
+      lr
+
+
+
+-------------------------------------------------------------------------------
+
+mp2ixRef  :: IORef (IndexTensor '[4, 6, 1, 1])
+mp2ixRef = unsafePerformIO $ newIORef (Long.constant 0)
+{-# NOINLINE mp2ixRef #-}
+
+mp2outRef :: IORef (     Tensor '[4, 6, 1, 1])
+mp2outRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE mp2outRef #-}
+
+mp2ginRef :: IORef (     Tensor '[4, 6, 2, 2])
+mp2ginRef = unsafePerformIO $ newIORef (constant 0)
+{-# NOINLINE mp2ginRef #-}
+
+
+-- | internal function of 'maxPooling2d' and 'maxPooling2dBatch'. Should not be used.
+_maxPooling2d'
+  :: forall d d' kH kW dH dW pH pW ceilMode
+  .  All KnownDim '[kH,kW,pH,pW,dH,dW]
+  => All Dimensions '[d',d]
+
+  -- optional buffers
+  => IORef (IndexTensor d')
+  -> IORef (Tensor d')
+  -> IORef (Tensor d)
+
+  -- Parameters
+  -> Kernel2d '(kH, kW)         -- ^ kernel size
+  -> Step2d '(dH, dW)           -- ^ step size. Note: default in C is the kernel size.
+  -> Padding2d '(pH, pW)        -- ^ padding size
+  -> SBool ceilMode         -- ^ ceil mode
+
+  -- function arguments
+  -> Tensor d
+  -> IO (Tensor d', Tensor d' -> IO (Tensor d))
+_maxPooling2d' ixref outref ginref ker step pad ceil inp = do
+  ix <- readIORef ixref
+  out <- readIORef outref
+
+  updateOutput_ inp ker step pad ceil (ix, out)
+  pure (out, \gout -> do
+    gin <- readIORef ginref
+    updateGradInput_ inp gout ix ker step pad ceil gin
+    pure gin)
+
+ where
+  updateOutput_
+    :: Tensor d              -- ^ input
+    -> Kernel2d '(kH, kW)        -- ^ kernel size
+    -> Step2d '(dH, dW)          -- ^ step size
+    -> Padding2d '(pH, pW)       -- ^ padding size
+    -> SBool ceilMode                         -- ^ ceil mode
+    -> (IndexTensor d', Tensor d')           -- ^ output
+    -> IO ()
+  updateOutput_ inp ker step pad sceil (ix, out) = do
+    Dynamic._spatialMaxPooling_updateOutput (asDynamic inp) (asDynamic out) (longAsDynamic ix)
+      (param2d ker) (param2d step) (param2d pad) (fromSing sceil)
+
+  updateGradInput_
+    :: Tensor d              -- ^ input
+    -> Tensor d'             -- ^ gradOutput
+    -> IndexTensor d'        -- ^ indices
+    -> Kernel2d '(kH, kW)        -- ^ kernel size
+    -> Step2d '(dH, dW)          -- ^ step size
+    -> Padding2d '(pH, pW)       -- ^ padding size
+    -> SBool ceilMode        -- ^ ceil mode
+    -> Tensor d              -- ^ gradInput
+    -> IO ()
+  updateGradInput_ inp gout ix ker step pad sceil gin =
+    Dynamic._spatialMaxPooling_updateGradInput
+      (asDynamic inp) (asDynamic gout) (asDynamic gin) (longAsDynamic ix)
+      (param2d ker) (param2d step) (param2d pad) (fromSing sceil)
+
+-- | backprop-aware @maxPooling2d@ function.
+maxPooling2d'
+  :: (SpatialDilationC iH iW kH kW dH dW pH pW oW oH 1 1 ceilMode)
+  => KnownDim inPlane
+
+  -- optional buffers
+  => IORef (IndexTensor '[inPlane, oH, oW])
+  -> IORef (Tensor '[inPlane, oH, oW])
+  -> IORef (Tensor '[inPlane, iH, iW])
+
+  -- Parameters
+  -> Kernel2d '(kH, kW)       -- ^ kernel size
+  -> Step2d '(dH, dW)       -- ^ step size
+  -> Padding2d '(pH, pW)       -- ^ padding size
+  -> SBool ceilMode        -- ^ ceil mode
+
+  -> (Tensor '[inPlane, iH, iW])
+  -> IO (Tensor '[inPlane, oH, oW], Tensor '[inPlane, oH, oW] -> IO (Tensor '[inPlane, iH, iW]))
+maxPooling2d' = _maxPooling2d'
+
+-- | backprop-aware @maxPooling2d@ function with a batch dimension.
+maxPooling2dBatch'
+  :: (SpatialDilationC iH iW kH kW dH dW pH pW oW oH 1 1 ceilMode)
+  => KnownDim inPlane
+  => KnownDim b
+
+  -- optional buffers
+  => IORef (IndexTensor '[b, inPlane, oH, oW])
+  -> IORef (Tensor '[b, inPlane, oH, oW])
+  -> IORef (Tensor '[b, inPlane, iH, iW])
+
+  -- Parameters
+  -> Kernel2d '(kH, kW)        -- ^ kernel size
+  -> Step2d '(dH, dW)          -- ^ step size
+  -> Padding2d '(pH, pW)       -- ^ padding size
+  -> SBool ceilMode        -- ^ ceil mode
+
+  -> (Tensor '[b, inPlane, iH, iW])
+  -> IO (Tensor '[b, inPlane, oH, oW], Tensor '[b, inPlane, oH, oW] -> IO (Tensor '[b, inPlane, iH, iW]))
+maxPooling2dBatch' = _maxPooling2d'
+
+
+-- ========================================================================= --
+
+
+-- | A backpropable 'flatten' operation with a batch dimension
+flattenBPBatch_
+  :: forall d bs . (All KnownDim '[Product d, bs], All Dimensions '[bs:+d, d])
+  => Product (bs:+d) ~ Product '[bs, Product d]
+  => Tensor (bs:+d)
+  -> IO (Tensor '[bs, Product d], Tensor '[bs, Product d] -> IO (Tensor (bs:+d)))
+flattenBPBatch_ i = resizeAs_ i >>= \o -> pure (o, resizeAs_)
+
+
+-- ========================================================================= --
 
 reluCONV1outRef :: IORef (Tensor '[4, 6])
 reluCONV1outRef = unsafePerformIO $ newIORef (constant 0)
