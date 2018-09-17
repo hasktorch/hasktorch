@@ -6,6 +6,8 @@ import torchvision
 import torchvision.transforms as transforms
 import numpy
 
+numpy.set_printoptions(threshold=numpy.nan, precision=4, suppress=True, linewidth=1000)
+
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 class LeNet(nn.Module):
@@ -19,7 +21,14 @@ class LeNet(nn.Module):
         self.fc3 = nn.Linear(84, 10)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
+        x = self.conv1(x)
+        n = x.data.numpy()
+        print(n)
+        print((n <  1000000000).any())
+        print((n > -1000000000).any())
+
+        raise RuntimeError("")
+        x = self.pool(F.relu())
         x = self.pool(F.relu(self.conv2(x)))
         x = x.view(-1, 16 * 5 * 5)
         x = F.relu(self.fc1(x))
@@ -43,11 +52,24 @@ def train(net, nepochs, optimizer, criterion, trainloader, report_at, lr):
 
             # forward + backward + optimize
             outputs = net(inputs)
+            # print(outputs.shape)
             loss = criterion(outputs, labels)
+            print(loss)
+            # print(loss.grad)
             loss.backward()
 
+            # layers = list(net.parameters())
+            # lst = layers[-1]
+            # print(lst.grad)
+            # print(loss)
             for param in net.parameters():
+                if len(param.grad.shape) == 2 and [param.grad.shape[0], param.grad.shape[1]] == [10, 84]:
+                  print(param.grad.data)
+
                 param.data.add_((-lr), param.grad.data)
+
+            if (i+1) == 2:
+              raise RuntimeError("!!!")
 
             # print(net.conv1.weight)
             # print statistics
@@ -118,9 +140,9 @@ def main(batch_size=4):
     for p in net.parameters():
         p.requires_grad_(True)
 
-    report(net, testloader)
-    train(net, 3, optimizer, criterion, trainloader, 100, lr=0.001)
-    report(net, trainloader)
+    # report(net, testloader)
+    train(net, 1, optimizer, criterion, trainloader, 100, lr=0.001)
+    # report(net, trainloader)
 
 if __name__ == "__main__":
     main()

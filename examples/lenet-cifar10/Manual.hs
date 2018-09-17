@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TupleSections #-}
-{- LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE BangPatterns #-}
@@ -86,7 +86,7 @@ epochs
   -> Vector (Tensor '[4, 10], Tensor '[4, 3, 32, 32])
   -> LeNet               -- ^ initial model
   -> IO LeNet            -- ^ final model
-epochs lr mx batches = runEpoch 0
+epochs lr mx batches = runEpoch 1
   where
     runEpoch :: Int -> LeNet -> IO LeNet
     runEpoch e net
@@ -94,6 +94,7 @@ epochs lr mx batches = runEpoch 0
       | otherwise = do
       putStr "\n"
 
+      print $ "epoch " ++ show (e, mx)
       (net', _) <- V.ifoldM go (net, 0) batches
 
       performMajorGC
@@ -101,25 +102,25 @@ epochs lr mx batches = runEpoch 0
 
       where
         estr :: String
-        estr = "[Epoch "++ show (e+1) ++ "/"++ show mx ++ "]"
+        estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
 
         go (!net, !runningloss) !bid (ys, xs) = do
           (net', loss) <- step lr net xs ys
-          let reportat = 200 :: Int
+          let reportat = reportat' :: Int
               reporttime = (bid `mod` reportat == (reportat - 1))
 
           when reporttime $ do
             printf ("\n%s(%db#%03d)[ce %.4f]") estr
               bs (bid+1)
-              (runningloss / fromIntegral reportat)
+              (runningloss / (if reportat == 1 then 1 else (fromIntegral reportat - 1)))
             hFlush stdout
             -- performGC
-
-          pure (net', if reporttime then 0 else runningloss + (loss `get1d` 0))
+          l <- loss `get1d` 0
+          pure (net', if reporttime then 0 else runningloss + l)
 
 
 forward :: LeNet -> Tensor '[4, 3, 32, 32] -> IO [Category]
-forward net xs = y2cat <$> MyLeNet.lenetBatchForward net xs
+forward net xs = y2cat =<< MyLeNet.lenetBatchForward net xs
 
 
 step
@@ -133,28 +134,60 @@ step lr net xs ys = do
   LDyn._resizeDim (Long.asDynamic ix) (dims :: Dims '[4])
   let rix = Long.asStatic (Long.asDynamic ix)
   (out, gnet) <- lenetBatchBP net rix xs
-  lenetUpdate net (lr, gnet)
+  lenetUpdate net (-lr, gnet)
   pure (net, out)
 
 
 -- ========================================================================= --
 
+-- datasize = 10000
+-- reportat' = 200
+-- epos = 3
+-- lr = 0.01
+
+datasize = 20000
+reportat' = 500
+epos = 3
+lr = 0.001
 
 main :: IO ()
 main = do
   g <- MWC.initialize (V.singleton 44)
 
+  -- let xs = (fmap (\x -> fmap ((11*x)+) [0..24]) [0..14])
+  -- print xs
+  -- runExceptT (Dyn.matrix
+  --   xs
+  -- -- runExceptT (Dyn.vector
+  -- --   ([1..107])
+  --   :: ExceptT String IO (Dynamic))
+  --   >>= \case
+  --     Left s -> print s
+  --     Right t -> do
+  --       print "x"
+  --       (Dyn.tensordata t) >>= print
+  --       print t
+
+  -- throwString ""
+
+
+
+
+
   lbatches :: Vector (Vector (Category, FilePath))
-    <- mkVBatches 4 . V.take 200 <$> cifar10set g default_cifar_path Train
+    <- mkVBatches 4 . V.take datasize <$> cifar10set g default_cifar_path Train
+  -- print (length lbatches)
+  -- print (fmap length lbatches)
   batches <- dataloader' bsz lbatches
 
   net0 <- newLeNet
   print net0
 
-  report net0 batches
-  performMajorGC
-
-  net <- epochs 0.001 3 batches net0
+  -- report net0 batches
+  -- performMajorGC
+  putStrLn "\nepochs start"
+  net <- epochs lr epos batches net0
+  putStrLn "\nepochs stop"
 
   report net batches
   performMajorGC
@@ -171,7 +204,9 @@ main = do
     report net ltest = do
 
       foo :: [DList (Category, Category)]
-        <- mapM (\(y, x) -> DL.fromList . zip (y2cat y) <$> forward net x) $ V.toList ltest
+        <- forM (V.toList ltest) $ \(y, x) -> do
+          bar <- y2cat y
+          DL.fromList . zip bar <$> forward net x
 
       let
         test :: [(Category, Category)]

@@ -150,6 +150,16 @@ logSoftMax
 logSoftMax = logSoftMaxN (dim :: Dim 0)
 
 -- | run a threshold function againts two BVar variables
+logSoftMaxBatch
+  :: KnownDim n
+  => KnownDim b
+  => Reifies s W
+  => BVar s (Tensor '[b, n])    -- ^ input
+  -> BVar s (Tensor '[b, n])    -- ^ output
+logSoftMaxBatch = logSoftMaxN (dim :: Dim 1)
+
+
+-- | run a threshold function againts two BVar variables
 logSoftMaxN
   :: forall s i d
   .  Reifies s W

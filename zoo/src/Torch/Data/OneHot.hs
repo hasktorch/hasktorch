@@ -11,24 +11,24 @@ import Torch.Double
 import qualified Torch.Long as Long
 #endif
 
-onehotL
-  :: forall c sz
-  . (Ord c, Bounded c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
-  => c
-  -> LongTensor '[10] -- '[FromEnum (MaxBound c)]
-onehotL c
-  = Long.unsafeVector
-  $ onehot c
+-- onehotL
+--   :: forall c sz
+--   . (Ord c, Bounded c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
+--   => c
+--   -> LongTensor '[10] -- '[FromEnum (MaxBound c)]
+-- onehotL c
+--   = Long.unsafeVector
+--   $ onehot c
 
-onehotT
-  :: forall c sz
-  . (Ord c, Bounded c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
-  => c
-  -> Tensor '[10] -- '[FromEnum (MaxBound c)]
-onehotT c
-  = unsafeVector
-  $ fmap fromIntegral
-  $ onehot c
+-- onehotT
+--   :: forall c sz
+--   . (Ord c, Bounded c, Enum c) -- , sz ~ FromEnum (MaxBound c), KnownDim sz, KnownNat sz)
+--   => c
+--   -> Tensor '[10] -- '[FromEnum (MaxBound c)]
+-- onehotT c
+--   = unsafeVector
+--   $ fmap fromIntegral
+  -- $ onehot c
 
 onehot
   :: forall i c

@@ -31,16 +31,16 @@ import qualified Torch.Double.NN.Linear as Linear
 
 import Torch.Models.Internal
 
-data LeNet ch step = LeNet
-  { _conv1 :: !(Conv2d ch 6 '(step,step))
-  , _conv2 :: !(Conv2d 6 16 '(step,step))
+data LeNet ch ker = LeNet
+  { _conv1 :: !(Conv2d ch 6 '(ker,ker))
+  , _conv2 :: !(Conv2d 6 16 '(ker,ker))
 
-  , _fc1   :: !(Linear  (16*step*step) 120)
+  , _fc1   :: !(Linear  (16*ker*ker) 120)
   , _fc2   :: !(Linear       120  84)
   , _fc3   :: !(Linear        84  10)
   }
 
-instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Show (LeNet ch step) where
+instance (KnownDim (16*ker*ker), KnownDim ch, KnownDim ker) => Show (LeNet ch ker) where
   show (LeNet c1 c2 f1 f2 f3) = intercalate "\n"
 #ifdef CUDA
     [ "CudaLeNet {"
@@ -57,7 +57,7 @@ instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Show (LeNet ch
 
 makeLenses ''LeNet
 
-instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Backprop (LeNet ch step) where
+instance (KnownDim (16*ker*ker), KnownDim ch, KnownDim ker) => Backprop (LeNet ch ker) where
   add a b = LeNet
     (Bp.add (_conv1 a) (_conv1 b))
     (Bp.add (_conv2 a) (_conv2 b))
@@ -80,9 +80,11 @@ instance (KnownDim (16*step*step), KnownDim ch, KnownDim step) => Backprop (LeNe
     (Bp.zero (net^.fc3)  )
 
 
+
+
 -------------------------------------------------------------------------------
 
-newLeNet :: All KnownDim '[ch,step,16*step*step] => IO (LeNet ch step)
+newLeNet :: All KnownDim '[ch,ker,16*ker*ker] => IO (LeNet ch ker)
 newLeNet = LeNet
   <$> newConv2d
   <*> newConv2d
@@ -237,4 +239,88 @@ lenetLayerBatch lr conv inp
       (Padding2d :: Padding2d '(0,0))
       (sing      :: SBool 'True)
 
+
+-- -- lenet
+-- --   :: forall s ch h w o step pad -- ker moh mow
+-- --   .  Reifies s W
+-- --   => All KnownNat '[ch,h,w,o,step]
+-- --   => All KnownDim '[ch,h,w,o,ch*step*step] -- , (16*step*step)]
+-- --   => o ~ 10
+-- --   => h ~ 32
+-- --   => w ~ 32
+-- --   => pad ~ 0
+-- --   -- => SpatialConvolutionC ch h w ker ker step step pad pad (16*step*step) mow
+-- --   -- => SpatialConvolutionC ch moh mow ker ker step step pad pad moh mow
+-- --
+-- --   => Double
+-- --
+-- --   -> BVar s (LeNet ch step)         -- ^ lenet architecture
+-- --   -> BVar s (Tensor '[ch,h,w])      -- ^ input
+-- --   -> BVar s (Tensor '[o])           -- ^ output
+-- lenet lr arch inp
+--   = lenetLayer lr (arch ^^. conv1) inp
+--   & lenetLayer lr (arch ^^. conv2)
+--
+--   & flattenBP
+--
+--   -- start fully connected network
+--   & relu . linear lr (arch ^^. fc1)
+--   & relu . linear lr (arch ^^. fc2)
+--   &        linear lr (arch ^^. fc3)
+--   -- & logSoftMax
+--   & softmax
+
+-- lenetBatch lr arch inp
+--   = lenetLayerBatch lr (arch ^^. conv1) inp
+--   & lenetLayerBatch lr (arch ^^. conv2)
+--
+--   & flattenBPBatch
+--
+--   -- start fully connected network
+--   & relu . linearBatch lr (arch ^^. fc1)
+--   & relu . linearBatch lr (arch ^^. fc2)
+--   &        linearBatch lr (arch ^^. fc3)
+--   -- & logSoftMax
+--   & softmaxN (dim :: Dim 1)
+
+
+-- -- FIXME: Move this to ST
+-- lenetLayerBatch_
+--   :: forall inp h w ker ow oh s out mow moh step pad batch
+--
+--   -- backprop constraint to hold the wengert tape
+--   .  Reifies s W
+--
+--   -- leave input, output and square kernel size variable so that we
+--   -- can reuse the layer...
+--   => All KnownDim '[batch,inp,out,ker]
+--
+--   -- FIXME: derive these from the signature (maybe assign them as args)
+--   => pad ~ 0   --  default padding size
+--   => step ~ 1  --  default step size for Conv2d
+--
+--   -- ...this means we need the constraints for conv2dMM and maxPooling2d
+--   -- Note that oh and ow are then used as input to the maxPooling2d constraint.
+--   => SpatialConvolutionC inp h  w ker ker step step pad pad  oh  ow
+--   => SpatialDilationC       oh ow   2   2    2    2 pad pad mow moh 1 1 'True
+--
+--   -- Start withe parameters
+--   => Tensor '[batch, out, moh, mow]    -- ^ output to mutate
+--   -> Double                            -- ^ learning rate for convolution layer
+--   -> Conv2d inp out '(ker,ker)         -- ^ convolutional layer
+--   -> Tensor '[batch, inp,   h,   w]    -- ^ input
+--   -> IO ()                             -- ^ output
+-- lenetLayerBatch_ lr conv inp = do
+-- Conv2d.conv2dMMBatch
+--       (Step2d    :: Step2d '(1,1))
+--       (Padding2d :: Padding2d '(0,0))
+--       lr conv inp
+--   & relu
+--   & maxPooling2dBatch
+--       (Kernel2d  :: Kernel2d '(2,2))
+--       (Step2d    :: Step2d '(2,2))
+--       (Padding2d :: Padding2d '(0,0))
+--       (sing      :: SBool 'True)
+--
+--
 

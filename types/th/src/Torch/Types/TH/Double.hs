@@ -4,6 +4,7 @@ import Foreign.C.Types
 import Foreign
 import GHC.TypeLits (Nat)
 import Torch.Types.TH
+import Text.Printf ()
 
 type CTensor = CDoubleTensor
 type CStorage = CDoubleStorage

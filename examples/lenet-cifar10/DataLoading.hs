@@ -79,7 +79,7 @@ dataloader d lds
   where
     toYs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[batch, 10])
     toYs ys =
-      pure . unsafeMatrix . fmap (onehotf . fst) $ ys
+      unsafeMatrix . fmap (onehotf . fst) $ ys
 
     toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[batch, 3, 32, 32])
     toXs xs =
@@ -104,7 +104,7 @@ dataloader' d = mapM go
     pure (ys, res)
    where
     toYs :: [Category] -> IO (Tensor '[batch, 10])
-    toYs ys = pure . unsafeMatrix . fmap onehotf $ ys
+    toYs ys = unsafeMatrix . fmap onehotf $ ys
 
 mkBatches :: Int -> (Vector x) -> [(Vector x)]
 mkBatches sz ds = DL.toList $ go mempty ds

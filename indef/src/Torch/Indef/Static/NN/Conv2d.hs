@@ -73,20 +73,57 @@ instance (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
     ++ ")"
     ]
 
+-- instance (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
+--   => Backprop (Conv2d i o '(kH,kW)) where
+--
+
 instance (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
   => Backprop (Conv2d i o '(kH,kW)) where
   one  = const $ Conv2d (constant 1, constant 1)
   zero = const $ Conv2d (constant 0, constant 0)
-  add c0 c1 = Conv2d (weights c0 + weights c1, bias c0 + bias c1)
 
+--   one  (Conv2d (a, b)) = unsafePerformIO $ do
+--     Dynamic.onesLike_ (asDynamic a) (asDynamic a)
+--     Dynamic.onesLike_ (asDynamic b) (asDynamic b)
+--     pure (Conv2d (a, b))
+--   {-# NOINLINE one #-}
+--
+--   zero (Conv2d (a, b)) = unsafePerformIO $ do
+--     Dynamic.zerosLike_ (asDynamic a) (asDynamic a)
+--     Dynamic.zerosLike_ (asDynamic b) (asDynamic b)
+--     pure (Conv2d (a, b))
+--   {-# NOINLINE zero #-}
+--
+  add (Conv2d (a0, b0)) (Conv2d (a1, b1)) = unsafePerformIO $ do
+    Dynamic.cadd_ (asDynamic a1) 1 (asDynamic a0)
+    Dynamic.cadd_ (asDynamic b1) 1 (asDynamic b0)
+    pure (Conv2d (a1, b1))
+  {-# NOINLINE add #-}
+  -- add c0 c1 = Conv2d (weights c0 + weights c1, bias c0 + bias c1)
+
+-- -- | update a Conv2d layer
+-- update
+--   :: (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
+--   => Conv2d i o '(kH, kW)  -- ^ network to update
+--   -> HsReal                -- ^ learning rate
+--   -> Conv2d i o '(kH, kW)  -- ^ gradient
+--   -> Conv2d i o '(kH, kW)  -- ^ updated network
+-- update net lr (Conv2d (gw, gb)) = add net $ Conv2d (lr *^ gw, lr *^ gb)
 -- | update a Conv2d layer
 update
   :: (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
   => Conv2d i o '(kH, kW)  -- ^ network to update
   -> HsReal                -- ^ learning rate
   -> Conv2d i o '(kH, kW)  -- ^ gradient
-  -> Conv2d i o '(kH, kW)  -- ^ updated network
-update net lr (Conv2d (gw, gb)) = add net $ Conv2d (lr *^ gw, lr *^ gb)
+  -> IO ()  -- ^ update network
+update (Conv2d (w, b)) lr (Conv2d (gw, gb)) = do
+  Dynamic.cadd_ (asDynamic w) lr (asDynamic gw)
+  Dynamic.cadd_ (asDynamic b) lr (asDynamic gb)
+  pure ()
+{-# NOINLINE update #-}
+
+
+
 
 -- | get the weights from a 'Conv2d' ADT
 weights :: Conv2d i o '(kH,kW) -> Tensor '[o, i, kH, kW]

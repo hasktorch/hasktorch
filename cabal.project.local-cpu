@@ -9,6 +9,10 @@ optimization: False
 debug-info: True
 executable-stripping: False
 
+executable-profiling: True
+library-profiling: True
+profiling: True
+
 -- NOTE: THAT CABAL DOESN'T LIKE SYMLINKS AND DOES LIKE VERSIONS!
 -- This means that you _must_ remove the symlink libATen.so->libATen.so.1 from
 -- the build directory, but you _must have_ both files. Hard-copy libATen.so.1
@@ -53,12 +57,18 @@ program-locations
 
 -- Change cuda flags here:
 ----------------------------------------
-package hasktorch-zoo
-  flags: -cuda
-package hasktorch-indef
-  flags: -cuda
-package hasktorch-core
-  flags: -cuda
-package hasktorch-examples
-  flags: -cuda
+-- package hasktorch-zoo
+--   flags: -cuda
+-- package hasktorch-indef
+--   flags: -cuda
+-- package hasktorch-core
+--   flags: -cuda
+-- package hasktorch-examples
+--   flags: -cuda
 
+package *
+  ghc-options: -fprof-auto
+  flags: -cuda +lite +debug
+
+program-options
+  ghc-options: -fprof-auto

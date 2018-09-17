@@ -30,6 +30,7 @@ import GHC.Natural
 import System.IO.Unsafe
 import GHC.TypeLits
 import Numeric.Dimensions
+import Control.Monad.Trans.Except
 
 import Torch.Indef.Types
 import Torch.Indef.Index
@@ -40,30 +41,24 @@ import qualified Torch.FFI.TH.Long.Storage as TH
 import qualified Torch.Sig.Types as Sig
 
 instance Dimensions d => Show (Tensor d) where
-  show t = unsafePerformIO $ do
-    (vs, desc) <-
-      Dynamic.showTensor -- (pure . get1d t) (get2d t) (get3d t) (get4d t) (fromIntegral <$> listDims (dims :: Dims d))
-        (pure . get1d t) (pure .: get2d t) (\a b c -> pure $ get3d t a b c) (\a b c d -> pure $ get4d t a b c d)
-        (fromIntegral <$> listDims (dims :: Dims d))
-    pure (vs ++ "\n" ++ desc)
-  {-# NOINLINE show #-}
+  show t = show (asDynamic t)
 
 -- unnessecary
 -- -- | same as 'Dynamic.isSameSizeAs' but only uses type-level dimensions to compute.
 -- isSameSizeAs :: forall d d' . (All Dimensions '[d, d']) => Tensor d -> Tensor d' -> Bool
 -- isSameSizeAs _ _ = (fromIntegral <$> listDims (dim :: Dim d)) == (fromIntegral <$> listDims (dim :: Dim d'))
 
-scalar :: HsReal -> Tensor '[1]
+scalar :: HsReal -> IO (Tensor '[1])
 scalar = unsafeVector . (:[])
 
 -- | Purely make a 1d tensor from a list of unknown length.
-vector :: forall n . KnownDim n => KnownNat n => [HsReal] -> Either String (Tensor '[n])
+vector :: forall n . KnownDim n => KnownNat n => [HsReal] -> ExceptT String IO (Tensor '[n])
 vector rs
-  | genericLength rs == dimVal (dim :: Dim n) = Right . asStatic . Dynamic.vector $ rs
-  | otherwise = Left "Vector dimension does not match length of list"
+  | genericLength rs == dimVal (dim :: Dim n) = asStatic <$> Dynamic.vector rs
+  | otherwise = ExceptT . pure $ Left "Vector dimension does not match length of list"
 
-unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> Tensor '[n]
-unsafeVector = either error id  . vector
+unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> IO (Tensor '[n])
+unsafeVector = fmap (either error id) . runExceptT . vector
 
 -- | Static call to 'Dynamic.newExpand'
 newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
@@ -269,12 +264,12 @@ unsqueeze1d_ n t = do
 -- ========================================================================= --
 
 -- | Get runtime shape information from a tensor
-shape :: Tensor d -> [Word]
+shape :: Tensor d -> IO [Word]
 shape t = Dynamic.shape (asDynamic t)
 
 -- | alias to 'shape', casting the dimensions into a runtime 'SomeDims'.
-getDims :: Tensor d -> SomeDims
-getDims = someDimsVal . shape
+getDims :: Tensor d -> IO SomeDims
+getDims = fmap someDimsVal . shape
 
 -- | helper function to make other parts of hasktorch valid pure functions.
 withNew :: forall d . (Dimensions d) => (Tensor d -> IO ()) -> IO (Tensor d)
@@ -318,25 +313,13 @@ throwGT4 fnname = throwFIXME
 
 -- | Set the storage of a tensor. This is incredibly unsafe.
 _setStorageDim :: Tensor d -> Storage -> StorageOffset -> [(Size, Stride)] -> IO ()
-_setStorageDim t s o = \case
-  []           -> throwNE "can't setStorage on an empty dimension."
-  [x]          -> _setStorage1d t s o x
-  [x, y]       -> _setStorage2d t s o x y
-  [x, y, z]    -> _setStorage3d t s o x y z
-  [x, y, z, q] -> _setStorage4d t s o x y z q
-  _            -> throwGT4 "setStorage"
+_setStorageDim t s o = Dynamic._setStorageDim (asDynamic t) s o
 
 -- | Set the value of a tensor at a given index
 --
 -- FIXME: there should be a constraint to see that d' is in d
 setDim_ :: Tensor d -> Dims (d'::[Nat]) -> HsReal -> IO ()
-setDim_ t d v = case fromIntegral <$> listDims d of
-  []           -> throwNE "can't set on an empty dimension."
-  [x]          -> _set1d t x       v
-  [x, y]       -> _set2d t x y     v
-  [x, y, z]    -> _set3d t x y z   v
-  [x, y, z, q] -> _set4d t x y z q v
-  _            -> throwGT4 "set"
+setDim_ t = Dynamic._setDim (asDynamic t)
 
 
 -- | runtime version of 'setDim_'
@@ -347,13 +330,7 @@ setDim'_ t (SomeDims d) = setDim_ t d -- (d :: Dims d')
 --
 -- FIXME: there should be a constraint to see that d' is in d
 getDim :: forall d d' . All Dimensions '[d, d'] => Tensor (d::[Nat]) -> Dims (d'::[Nat]) -> IO (HsReal)
-getDim t d = case fromIntegral <$> listDims (dims :: Dims d) of
-  []           -> throwNE "can't lookup an empty dimension"
-  [x]          -> pure $ get1d t x
-  [x, y]       -> pure $ get2d t x y
-  [x, y, z]    -> pure $ get3d t x y z
-  [x, y, z, q] -> pure $ get4d t x y z q
-  _            -> throwGT4 "get"
+getDim t d = Dynamic.getDim (asDynamic t) d
 
 -- | Select a dimension of a tensor. If a vector is passed in, return a singleton tensor
 -- with the index value of the vector.
@@ -366,7 +343,7 @@ getDim t d = case fromIntegral <$> listDims (dims :: Dims d) of
   -> Dim i
   -> Tensor (ls ++ rs)
 t !! i = unsafePerformIO $
-  case nDimension t of
+  nDimension t >>= \case
     0 -> empty
     1 -> runMaybeT selectVal >>= maybe empty pure
     _ -> newSelect t (i, Idx 1)
@@ -376,9 +353,11 @@ t !! i = unsafePerformIO $
     selectVal = do
       sizeI <- fromIntegral <$> lift (size t (fromIntegral $ dimVal i))
       guard (dimVal i < sizeI)
-      r <- lift $ newWithSize1d 1
-      lift $ _set1d r 0 (get1d t (fromIntegral $ dimVal i))
-      pure r
+      lift $ do
+        r <- newWithSize1d 1
+        v <- (get1d t (fromIntegral $ dimVal i))
+        _set1d r 0 v
+        pure r
 {-# NOINLINE (!!) #-}
 
 
@@ -391,16 +370,9 @@ new = asStatic <$> Dynamic.new (dims :: Dims d)
 --
 -- NOTE: This is copied from the dynamic version to keep the constraints clean and is _unsafe_
 _resizeDim :: forall d d' . (Dimensions d') => Tensor d -> IO (Tensor d')
-_resizeDim t = case fromIntegral <$> listDims (dims :: Dims d') of
-  []              -> throwNE "can't resize to an empty dimension."
-  [x]             -> _resize1d t x
-  [x, y]          -> _resize2d t x y
-  [x, y, z]       -> _resize3d t x y z
-  [x, y, z, q]    -> _resize4d t x y z q
-  [x, y, z, q, w] -> _resize5d t x y z q w
-  _ -> throwFIXME "this should be doable with resizeNd" "resizeDim"
-  -- ds              -> _resizeNd t (genericLength ds) ds
-                            -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
+_resizeDim t = do
+  Dynamic._resizeDim (asDynamic t) (dims :: Dims d')
+  pure $ asStatic (asDynamic t)
 
 -- | Resize the input with the output shape. impure and mutates the tensor inplace.
 --
@@ -429,10 +401,11 @@ fromList
   :: forall d .  Dimensions d
   => KnownNat (Product d)
   => KnownDim (Product d)
-  => [HsReal] -> Maybe (Tensor d)
-fromList l = unsafePerformIO . runMaybeT $ do
+  => [HsReal] -> IO (Maybe (Tensor d))
+fromList l = runMaybeT $ do
+  evec <- lift $ runExceptT (vector l)
   vec :: Tensor '[Product d] <-
-    case vector l of
+    case evec of
       Left _ -> mzero
       Right t -> pure t
   guard (genericLength l == dimVal (dim :: Dim (Product d)))
@@ -450,23 +423,20 @@ matrix
 #else
   => KnownDim (n*:m) => KnownNat (n*:m)
 #endif
-  => [[HsReal]] -> Either String (Tensor '[n, m])
+  => [[HsReal]] -> ExceptT String IO (Tensor '[n, m])
 matrix ls
-  | null ls = Left "no support for empty lists"
+  | null ls = ExceptT . pure . Left $ "no support for empty lists"
 
   | colLen /= mVal =
-    Left $ "length of outer list "++show colLen++" must match type-level columns " ++ show mVal
+    ExceptT . pure . Left $ "length of outer list "++show colLen++" must match type-level columns " ++ show mVal
 
   | any (/= colLen) (fmap length ls) =
-    Left $ "can't build a matrix from jagged lists: " ++ show (fmap length ls)
+    ExceptT . pure . Left $ "can't build a matrix from jagged lists: " ++ show (fmap length ls)
 
   | rowLen /= nVal =
-    Left $ "inner list length " ++ show rowLen ++ " must match type-level rows " ++ show nVal
+    ExceptT . pure . Left $ "inner list length " ++ show rowLen ++ " must match type-level rows " ++ show nVal
 
-  | otherwise =
-    case fromList (concat ls) of
-      Nothing -> Left "impossible: number of elements doesn't match the dimensions"
-      Just m -> Right m
+  | otherwise = asStatic <$> Dynamic.matrix ls
   where
     rowLen :: Integral l => l
     rowLen = genericLength ls
@@ -481,8 +451,8 @@ unsafeMatrix
   :: forall n m
   .  All KnownDim '[n, m, n*m]
   => All KnownNat '[n, m, n*m]
-  => [[HsReal]] -> Tensor '[n, m]
-unsafeMatrix = either error id . matrix
+  => [[HsReal]] -> IO (Tensor '[n, m])
+unsafeMatrix = fmap (either error id) . runExceptT . matrix
 
 -- | Purely construct a cuboid from a list of list of lists. This assumes a dense
 -- representation. Returns either the successful construction of the tensor,
@@ -490,16 +460,13 @@ unsafeMatrix = either error id . matrix
 cuboid
   :: forall c h w
   .  (All KnownDim '[c, h, w], All KnownNat '[c, h, w])
-  => [[[HsReal]]] -> Either String (Tensor '[c, h, w])
+  => [[[HsReal]]] -> ExceptT String IO (Tensor '[c, h, w])
 cuboid ls
-  | isEmpty ls        = Left   "no support for empty lists"
-  | chan /= length ls = Left $ "channels are not all of length " ++ show chan
-  | any (/= rows) (lens ls)          = Left $     "rows are not all of length " ++ show rows
-  | any (/= cols) (lens (concat ls)) = Left $  "columns are not all of length " ++ show cols
-  | otherwise =
-    case Dynamic.cuboid ls of
-      Left err -> Left err
-      Right d -> Right (asStatic d)
+  | isEmpty ls                       = ExceptT . pure . Left $ "no support for empty lists"
+  | chan /= length ls                = ExceptT . pure . Left $ "channels are not all of length " ++ show chan
+  | any (/= rows) (lens ls)          = ExceptT . pure . Left $     "rows are not all of length " ++ show rows
+  | any (/= cols) (lens (concat ls)) = ExceptT . pure . Left $  "columns are not all of length " ++ show cols
+  | otherwise = asStatic <$> Dynamic.cuboid ls
   where
     isEmpty = \case
       []     -> True
@@ -515,6 +482,14 @@ cuboid ls
 
     innerDimCheck :: Int -> [Int] -> Bool
     innerDimCheck d = any ((/= d))
+
+unsafeCuboid
+  :: forall c h w
+  .  All KnownDim '[c, h, w]
+  => All KnownNat '[c, h, w]
+  => [[[HsReal]]] -> IO (Tensor '[c, h, w])
+unsafeCuboid = fmap (either error id) . runExceptT . cuboid
+
 
 -- | transpose a matrix (pure, dupable)
 transpose2d :: (All KnownDim '[r,c]) => Tensor '[r, c] -> Tensor '[c, r]
@@ -548,7 +523,7 @@ getElem2d t r c
   | r > fromIntegral (dimVal (dim :: Dim n)) ||
     c > fromIntegral (dimVal (dim :: Dim m))
       = throwString "Indices out of bounds"
-  | otherwise = pure $ get2d t (fromIntegral r) (fromIntegral c)
+  | otherwise = get2d t (fromIntegral r) (fromIntegral c)
 {-# DEPRECATED getElem2d "use getDim instead" #-}
 
 -- | Set an element on a matrix with runtime index values.

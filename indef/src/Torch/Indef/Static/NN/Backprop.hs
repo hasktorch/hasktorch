@@ -31,11 +31,23 @@ import Torch.Indef.Static.Tensor.Math.Pointwise.Signed ()
 import qualified Torch.Indef.Index as Ix
 import qualified Torch.Indef.Static.Tensor as T
 
+import System.IO.Unsafe
+import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
 
+-- instance Dimensions d => Backprop (Tensor d) where
 instance Dimensions d => Backprop (Tensor d) where
-  add = (+)
+  -- add = (+)
   zero = (const . constant) 0
   one = (const . constant) 1
+  -- zero a = unsafePerformIO $ Dynamic.zero_ (asDynamic a) >> pure a
+  -- {-# NOINLINE zero #-}
+  -- one a = unsafePerformIO $ Dynamic.onesLike_ (asDynamic a) (asDynamic a) >> pure a
+  -- {-# NOINLINE one #-}
+  add a b = unsafePerformIO $ Dynamic.cadd_ (asDynamic b) 1 (asDynamic a) >> pure b
+  {-# NOINLINE add #-}
+
 
   -- :: Dimensions d
   -- => Dim n
@@ -76,12 +88,12 @@ squeeze1dBP d = liftOp1 . op1 $ \t ->
     go o = T.unsqueeze1d (dim::Dim n) o
 
 
-clip :: Reifies s W => (HsReal, HsReal) -> BVar s (Tensor '[1]) -> BVar s (Tensor '[1])
-clip (mn,mx) = liftOp1 . op1 $ \i ->
-  let
-    x = case get1d i 0 of
-          x | x > mx ->   mx
-            | x < mn ->   mn
-            | otherwise -> x
-  in
-    (scalar x, id)
+-- clip :: Reifies s W => (HsReal, HsReal) -> BVar s (Tensor '[1]) -> BVar s (Tensor '[1])
+-- clip (mn,mx) = liftOp1 . op1 $ \i ->
+--   let
+--     x = case get1d i 0 of
+--           x | x > mx ->   mx
+--             | x < mn ->   mn
+--             | otherwise -> x
+--   in
+--     (scalar x, id)

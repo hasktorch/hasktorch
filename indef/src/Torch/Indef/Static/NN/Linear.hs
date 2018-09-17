@@ -50,16 +50,50 @@ instance (KnownDim i, KnownDim o) => Show (Linear i o) where
 instance (KnownDim i, KnownDim o) => Backprop (Linear i o) where
   zero = const . Linear $ (constant 0, constant 0)
   one  = const . Linear $ (constant 1, constant 1)
-  add c0 c1 = Linear (weights c0 + weights c1, bias c0 + bias c1)
+  -- add c0 c1 = Linear (weights c0 + weights c1, bias c0 + bias c1)
 
--- | update a Linear layer
+-- instance (KnownDim i, KnownDim o) => Backprop (Linear i o) where
+--   one  (Linear (a, b)) = unsafePerformIO $ do
+--     Dynamic.onesLike_ (asDynamic a) (asDynamic a)
+--     Dynamic.onesLike_ (asDynamic b) (asDynamic b)
+--     pure (Linear (a, b))
+--   {-# NOINLINE one #-}
+
+--   zero (Linear (a, b)) = unsafePerformIO $ do
+--     Dynamic.zerosLike_ (asDynamic a) (asDynamic a)
+--     Dynamic.zerosLike_ (asDynamic b) (asDynamic b)
+--     pure (Linear (a, b))
+--   {-# NOINLINE zero #-}
+
+
+  add (Linear (a0, b0)) (Linear (a1, b1)) = unsafePerformIO $ do
+    Dynamic.cadd_ (asDynamic a1) 1 (asDynamic a0)
+    Dynamic.cadd_ (asDynamic b1) 1 (asDynamic b0)
+    pure (Linear (a1, b1))
+  {-# NOINLINE add #-}
+
+
+-- -- | update a Linear layer
+-- updatePure
+--   :: (KnownDim i, KnownDim o)
+--   => Linear i o   -- ^ layer to update
+--   -> HsReal       -- ^ learning rate
+--   -> Linear i o   -- ^ gradient
+--   -> Linear i o   -- ^ updated layer
+-- updatePure net lr (Linear (gw, gb)) = add net $ Linear (lr *^ gw, lr *^ gb)
+
+-- | update a Conv2d layer
 update
   :: (KnownDim i, KnownDim o)
   => Linear i o   -- ^ layer to update
   -> HsReal       -- ^ learning rate
   -> Linear i o   -- ^ gradient
-  -> Linear i o   -- ^ updated layer
-update net lr (Linear (gw, gb)) = add net $ Linear (lr *^ gw, lr *^ gb)
+  -> IO ()
+update (Linear (w, b)) lr (Linear (gw, gb)) = do
+  Dynamic.cadd_ (asDynamic w) lr (asDynamic gw)
+  Dynamic.cadd_ (asDynamic b) lr (asDynamic gb)
+  pure ()
+{-# NOINLINE update #-}
 
 
 -- | the dense weight matrix of a linear layer

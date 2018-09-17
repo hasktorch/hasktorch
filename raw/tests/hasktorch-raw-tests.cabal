@@ -1,3 +1,4 @@
+cabal-version:  2.2
 name:           hasktorch-raw-tests
 version:        0.0.1.0
 synopsis:       Testing library for raw TH and THC bindings
@@ -5,9 +6,8 @@ description:    core test libraries
 homepage:       https://github.com/hasktorch/hasktorch#readme
 bug-reports:    https://github.com/hasktorch/hasktorch/issues
 author:         Hasktorch dev team (Sam Stites, Austin Huang)
-license:        BSD3
+license:        BSD-3-Clause
 build-type:     Simple
-cabal-version:  >= 1.10
 
 source-repository head
   type: git
