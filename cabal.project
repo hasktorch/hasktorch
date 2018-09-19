@@ -14,7 +14,7 @@ packages:
 
     indef/*cabal
 
-    core/*cabal
+    hasktorch/*cabal
 
     -- vendor/type-combinators/*cabal
     -- vendor/opto/*cabal

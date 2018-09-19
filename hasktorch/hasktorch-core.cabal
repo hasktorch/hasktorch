@@ -904,7 +904,7 @@ library hasktorch-core-gpu
     , hasktorch-indef-floating
     , hasktorch-indef-signed
 
-  cpp-options: -DCUDA -DHASKTORCH_INTERNAL_CUDA
+  cpp-options: -DCUDA
   build-depends:
       hasktorch-types-thc
     , hasktorch-raw-thc
