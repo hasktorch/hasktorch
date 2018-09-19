@@ -27,15 +27,17 @@ module Torch.Indef.Dynamic.Tensor.Math.Blas
   , (<.>)
   ) where
 
-import Foreign
-import GHC.Int
 
-import Data.Void
+import Control.Monad.Managed (with)
+import Control.Monad.IO.Class (liftIO)
+import Foreign hiding (with)
+import GHC.Int
 import System.IO.Unsafe
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor
 import qualified Torch.Sig.Tensor.Math.Blas as Sig
+
 
 blasOp
   :: (Ptr CState -> Ptr CTensor -> CReal -> Ptr CTensor -> CReal -> Ptr CTensor -> Ptr CTensor -> IO ())
@@ -55,7 +57,11 @@ _baddbmm = blasOp Sig.c_baddbmm
 -- | Performs the dot product between two tensors. The number of elements must match: both tensors are
 -- seen as a 1D vector.
 dot :: Dynamic -> Dynamic -> IO HsAccReal
-dot a b = with2DynamicState a b $ fmap c2hsAccReal ..: Sig.c_dot
+dot a b = flip with (fmap c2hsAccReal)
+   $  Sig.c_dot
+  <$> managedState
+  <*> managedTensor a
+  <*> managedTensor b
 
 -- class GPUTensorMathBlas t where
 --   btrifact :: t -> IntTensor -> IntTensor -> Int -> t -> io ()

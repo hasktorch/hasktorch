@@ -51,8 +51,9 @@ library
 
   if flag(cuda)
     cpp-options: -DCUDA
-    -- build-depends:
-    --   hasktorch-types-thc
+    build-depends:
+        hasktorch-types-thc
+      , cuda
 
   other-modules:
       Torch.Indef.Internal

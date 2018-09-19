@@ -24,12 +24,18 @@ module Torch.Indef.Dynamic.Tensor.Math.Pairwise
 
 import Torch.Indef.Dynamic.Tensor
 import Torch.Indef.Types
+import Control.Monad.Managed (with)
+import Control.Monad.IO.Class (liftIO)
 
 import qualified Torch.Sig.Tensor.Math.Pairwise as Sig
 
 -- | Call Torch's C-level @equal@ function.
 equal :: Dynamic -> Dynamic -> IO Bool
-equal r t = with2DynamicState r t (fmap (== 1) ..: Sig.c_equal)
+equal r t = flip with (fmap (== 1))
+   $  Sig.c_equal
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
 
 -- | add a scalar to a tensor, inplace.
 add_ :: Dynamic -> HsReal -> IO ()

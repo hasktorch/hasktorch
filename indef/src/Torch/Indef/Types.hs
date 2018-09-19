@@ -21,7 +21,7 @@ module Torch.Indef.Types
   , Step(..), Stride(..), StorageOffset(..), Size(..), KeepDim(..), fromKeepDim, keep, ignore, SortOrder(..), TopKOrder(..)
   , StorageSize(..), AllocatorContext(..), Index(..)
 
-  , (.:), (..:), shuffle2, shuffle2'2, shuffle3, shuffle3'2
+  , (.:), shuffle2, shuffle2'2, shuffle3, shuffle3'2
 
   , withGen
   , managedState
@@ -174,13 +174,6 @@ joinIO c = join (liftIO <$> c)
 (.:) :: (b -> c) -> (a0 -> a1 -> b) -> a0 -> a1 -> c
 (.:) = (.) . (.)
 infixl 5 .:
-
--- | even more blackbird
---
--- FIXME(stites): remove this
-(..:) :: (b -> c) -> (a0 -> a1 -> a2 -> b) -> a0 -> a1 -> a2 -> c
-(..:) = (.) . (.) . (.)
-infixl 5 ..:
 
 -- | shuffle 2 arguments for pointfree raw-ffi functions.
 --
