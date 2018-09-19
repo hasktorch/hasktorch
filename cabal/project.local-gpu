@@ -22,7 +22,7 @@ program-locations
   ghc-location:     /opt/ghc/8.4.3/bin/ghc
   ghc-pkg-location: /opt/ghc/8.4.3/bin/ghc-pkg
 
-flags: +cuda
+flags: +cuda +lite
 
 -- You can also configure packages individually. Currently
 -- we only support CUDA- or CPU- based builds for the zoo

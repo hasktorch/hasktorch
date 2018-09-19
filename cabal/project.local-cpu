@@ -2,17 +2,6 @@
 -- mode with a CPU or GPU, with defaults set to CPU-settings.
 -- =============================================================================== --
 
--- In "developer" mode, we probably want to set these so we don't have to rebuild
--- the world when things go bad:
----------------------------------------------------------------------------------
-optimization: False
-debug-info: True
-executable-stripping: False
-
-executable-profiling: True
-library-profiling: True
-profiling: True
-
 -- NOTE: THAT CABAL DOESN'T LIKE SYMLINKS AND DOES LIKE VERSIONS!
 -- This means that you _must_ remove the symlink libATen.so->libATen.so.1 from
 -- the build directory, but you _must have_ both files. Hard-copy libATen.so.1
@@ -67,8 +56,5 @@ program-locations
 --   flags: -cuda
 
 package *
-  ghc-options: -fprof-auto
-  flags: -cuda +lite +debug
+  flags: -cuda +lite
 
-program-options
-  ghc-options: -fprof-auto
