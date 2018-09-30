@@ -44,7 +44,7 @@ let
       };
     };
   };
-  pkgs = import <nixos-unstable> { inherit config; };
+  pkgs = import <nixpkgs> { inherit config; };
   ghc = pkgs.haskell.packages.${compilerVersion};
   dev-env = pkgs.stdenv.mkDerivation {
     name = "aten-development-environment";
