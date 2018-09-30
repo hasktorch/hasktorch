@@ -76,7 +76,10 @@ instance Show Dynamic where
 
 -- | Clears the internal flags on a tensor. Uses bitwise operators for flags.
 _clearFlag :: Dynamic -> Int8 -> IO ()
-_clearFlag t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
+_clearFlag t cc = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_clearFlag s' t' (CChar cc)
 
 -- | get the underlying data as a haskell list from the tensor
 --
@@ -85,16 +88,22 @@ _clearFlag t cc = withDynamicState t $ shuffle2 Sig.c_clearFlag (CChar cc)
 -- is the unofficial response from \@soumith in slack).
 #ifndef HASKTORCH_INTERNAL_CUDA
 tensordata :: Dynamic -> IO [HsReal]
-tensordata t = withDynamicState t $ \s' t' -> do
-  ds <- (shape t)
-  let sz = fromIntegral $ product ds
-  creals <- Sig.c_data s' t'
-  (fmap.fmap) c2hsReal (FM.peekArray sz creals)
+tensordata t = flip with pure $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ do
+    ds <- shape t
+    let sz = fromIntegral $ product ds
+    creals <- Sig.c_data s' t'
+    (fmap.fmap) c2hsReal (FM.peekArray sz creals)
 #endif
 
 -- | get a value from dimension 1
 get1d :: Dynamic -> Int64 -> IO HsReal
-get1d t d1 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get1d s t' (fromIntegral d1)
+get1d t d1 = flip with (pure . c2hsReal) $ do
+  s <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_get1d s t' (fromIntegral d1)
 {-# NOINLINE get1d #-}
 
 -- | get a value from dimension 2
@@ -107,18 +116,26 @@ get2d t d1 d2 = flip with (pure . c2hsReal) $ do
 
 -- | get a value from dimension 3
 get3d :: Dynamic -> Int64 -> Int64 -> Int64 -> IO HsReal
-get3d t d1 d2 d3 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get3d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3)
+get3d t d1 d2 d3 = flip with (pure . c2hsReal) $ do
+  s <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_get3d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3)
 {-# NOINLINE get3d #-}
 
 -- | get a value from dimension 4
 get4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> IO HsReal
-get4d t d1 d2 d3 d4 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get4d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3) (fromIntegral d4)
+get4d t d1 d2 d3 d4 = flip with (pure . c2hsReal) $ do
+  s <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_get4d s t' (fromIntegral d1) (fromIntegral d2) (fromIntegral d3) (fromIntegral d4)
 {-# NOINLINE get4d #-}
 
 -- | whether or not the tensor is contiguous in memory.
 isContiguous :: Dynamic -> IO Bool
-isContiguous t = withDynamicState t $ \s t' ->
-  (1 ==) <$> Sig.c_isContiguous s t'
+isContiguous t = flip with (pure . (1 ==)) $ do
+  s <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_isContiguous s t'
 
 -- | check to see if to tensors are the same size as eachother.
 isSameSizeAs :: Dynamic -> Dynamic -> IO Bool
@@ -135,24 +152,35 @@ isSetTo t0 t1 = with2DynamicState t0 t1 $ \s t0' t1' ->
 
 -- | check to see if the tensor is the same size as the LongStorage.
 isSize :: Dynamic -> TH.LongStorage -> IO Bool
-isSize t ls = withDynamicState t $ \s t' ->
-  withForeignPtr (snd $ TH.longStorageState ls) (fmap (1 ==) . Sig.c_isSize s t')
+isSize t ls = flip with (pure . (1 ==)) $ do
+  s <- managedState
+  t' <- managedTensor t
+  l' <- managed $ withForeignPtr (snd $ TH.longStorageState ls)
+  liftIO $ Sig.c_isSize s t' l'
 
 -- | Returns the number of dimensions in a Tensor.
 nDimension :: Dynamic -> IO Word
-nDimension t = withDynamicState t (\s t' -> fromIntegral <$> Sig.c_nDimension s t')
+nDimension t = flip with (pure . fromIntegral) $ do
+  s <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_nDimension s t'
 
 -- | Returns the number of elements in a Tensor.
 nElement :: Dynamic -> IO Int64
-nElement t = withDynamicState t (\s t' -> fromIntegral <$> Sig.c_nElement s t')
+nElement t = flip with (pure . fromIntegral) $ do
+  s <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_nElement s t'
 
 -- | returns a tensor which /shares the same 'Storage'/ as the original. Hence, any modification in
 -- the memory of the sub-tensor will have an impact on the primary tensor, and vice-versa.
 -- These methods are very fast, as they do not involve any memory copy.
 _narrow :: Dynamic -> Dynamic -> DimVal -> Int64 -> Size -> IO ()
-_narrow t0 t1 a b c = withDynamicState t0 $ \s t0' ->
-  withForeignPtr (ctensor t1) $ \t1' ->
-    Sig.c_narrow s t0' t1' (fromIntegral a) (fromIntegral b) (fromIntegral c)
+_narrow t0 t1 a b c = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  liftIO $ Sig.c_narrow s' t0' t1' (fromIntegral a) (fromIntegral b) (fromIntegral c)
 
 -- | Returns an empty tensor.
 empty :: IO Dynamic
@@ -202,44 +230,68 @@ _expandNd (rets@(s:|_)) ops i = runManaged $ do
 
 -- | purely clone a tensor
 newClone :: Dynamic -> IO Dynamic
-newClone t = withDynamicState t $ \s' t' -> Sig.c_newClone s' t' >>= mkDynamic
+newClone t = flip with mkDynamic $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_newClone s' t'
 
 -- | purely clone a tensor to have a contiguous memory layout.
 newContiguous :: Dynamic -> IO Dynamic
-newContiguous t = withDynamicState t $ \s' t' -> Sig.c_newContiguous s' t' >>= mkDynamic
+newContiguous t = flip with mkDynamic $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_newContiguous s' t'
 
 {-# WARNING newSelect, newNarrow, _set, _select, _narrow "hasktorch devs have not yet made this safe. You are warned." #-}
 -- | returns a tensor which /shares the same 'Storage'/ as the original. Hence, any modification in
 -- the memory of the sub-tensor will have an impact on the primary tensor, and vice-versa.
 -- These methods are very fast, as they do not involve any memory copy.
 newNarrow :: Dynamic -> DimVal -> Int64 -> Size -> IO Dynamic
-newNarrow t a b c = withDynamicState t $ \s' t' -> Sig.c_newNarrow s' t' (fromIntegral a) (fromIntegral b) (fromIntegral c) >>= mkDynamic
+newNarrow t a b c = flip with mkDynamic $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_newNarrow s' t' (fromIntegral a) (fromIntegral b) (fromIntegral c)
 
 -- | returns a tensor which /shares the same 'Storage'/ as the original. Hence, any modification in
 -- the memory of the sub-tensor will have an impact on the primary tensor, and vice-versa.
 -- These methods are very fast, as they do not involve any memory copy.
 newSelect :: Dynamic -> DimVal -> Int64 -> IO Dynamic
-newSelect t a b = withDynamicState t $ \s' t' -> Sig.c_newSelect s' t' (fromIntegral a) (fromIntegral b) >>= mkDynamic
+newSelect t a b = flip with mkDynamic $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_newSelect s' t' (fromIntegral a) (fromIntegral b)
 
 -- | get the sizes of each dimension
 --
 -- FIXME: doublecheck this
 newSizeOf :: Dynamic -> IO (TH.IndexStorage)
-newSizeOf t = withDynamicState t $ \s' t' -> Sig.c_newSizeOf s' t' >>= mkCPUIxStorage
+newSizeOf t = flip with mkCPUIxStorage $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_newSizeOf s' t'
 
 -- | get the strides of each dimension
 --
 -- FIXME: doublecheck this
 newStrideOf :: Dynamic -> IO (TH.IndexStorage)
-newStrideOf t = withDynamicState t $ \s' t' -> Sig.c_newStrideOf s' t' >>= mkCPUIxStorage
+newStrideOf t = flip with mkCPUIxStorage $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_newStrideOf s' t'
 
 -- | pure version of '_transpose'
 newTranspose :: Dynamic -> DimVal -> DimVal -> IO Dynamic
-newTranspose t a b = withDynamicState t $ \s' t' -> Sig.c_newTranspose s' t' (fromIntegral a) (fromIntegral b) >>= mkDynamic
+newTranspose t a b = flip with mkDynamic $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_newTranspose s' t' (fromIntegral a) (fromIntegral b)
 
 -- | pure version of '_unfold'
 newUnfold :: Dynamic -> DimVal -> Int64 -> Int64 -> IO Dynamic
-newUnfold t a b c = withDynamicState t $ \s' t' -> Sig.c_newUnfold s' t' (fromIntegral a) (fromIntegral b) (fromIntegral c) >>= mkDynamic
+newUnfold t a b c = flip with mkDynamic $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_newUnfold s' t' (fromIntegral a) (fromIntegral b) (fromIntegral c)
 
 -- |
 -- Creates a view with different dimensions of the storage associated with tensor, returning a new tensor.
@@ -249,8 +301,11 @@ newUnfold t a b c = withDynamicState t $ \s' t' -> Sig.c_newUnfold s' t' (fromIn
 --
 -- for more.
 newView :: Dynamic -> TH.IndexStorage -> IO Dynamic
-newView t ix = withDynamicState t $ \s' t' ->
-  withCPUIxStorage ix (Sig.c_newView s' t' >=> mkDynamic)
+newView t ix = flip with mkDynamic $ do
+  s'  <- managedState
+  t'  <- managedTensor t
+  ix' <- managed $ withCPUIxStorage ix
+  liftIO $ Sig.c_newView s' t' ix'
 
 -- | create an uninitialized tensor with the given size and strides (?)
 --
@@ -346,38 +401,58 @@ newWithStorage4d s pd (d00,d01) (d10,d11) (d20,d21) (d30,d31) =
 
 -- | create a new tensor with the given tensor's underlying storage.
 newWithTensor :: Dynamic -> IO Dynamic
-newWithTensor t = withDynamicState t $ \s' t' -> Sig.c_newWithTensor s' t' >>= mkDynamic
+newWithTensor t = flip with mkDynamic $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_newWithTensor s' t'
 
 -- | Resize the tensor according to the given LongStorage size (and strides?)
 -- FIXME: doublecheck what the IndexStorages stands for
 _resize :: Dynamic -> TH.IndexStorage -> TH.IndexStorage -> IO ()
-_resize t l0 l1 = withDynamicState t $ \s' t' -> runManaged $ do
+_resize t l0 l1 = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
   l0' <- managed $ withCPUIxStorage l0
   l1' <- managed $ withCPUIxStorage l1
   liftIO $ Sig.c_resize s' t' l0' l1'
 
 -- | resize dimension 1 of a tensor.
 _resize1d :: Dynamic -> Int64 -> IO ()
-_resize1d t l0 = withDynamicState t (\s' t' -> Sig.c_resize1d s' t' (fromIntegral l0))
+_resize1d t l0 = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_resize1d s' t' (fromIntegral l0)
 
 -- | resize the first 2 dimensions of a tensor.
 _resize2d :: Dynamic -> Int64 -> Int64 -> IO ()
-_resize2d t l0 l1 = withDynamicState t $ \s' t' -> Sig.c_resize2d s' t'
+_resize2d t l0 l1 = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_resize2d s' t'
     (fromIntegral l0) (fromIntegral l1)
 
 -- | resize the first 3 dimensions of a tensor.
 _resize3d :: Dynamic -> Int64 -> Int64 -> Int64 -> IO ()
-_resize3d t l0 l1 l2 = withDynamicState t $ \s' t' -> Sig.c_resize3d s' t'
+_resize3d t l0 l1 l2 = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_resize3d s' t'
     (fromIntegral l0) (fromIntegral l1) (fromIntegral l2)
 
 -- | resize the first 4 dimensions of a tensor.
 _resize4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-_resize4d t l0 l1 l2 l3 = withDynamicState t $ \s' t' -> Sig.c_resize4d s' t'
+_resize4d t l0 l1 l2 l3 = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_resize4d s' t'
     (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3)
 
 -- | resize the first 5 dimensions of a tensor.
 _resize5d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> Int64 -> IO ()
-_resize5d t l0 l1 l2 l3 l4 = withDynamicState t $ \s' t' -> Sig.c_resize5d s' t'
+_resize5d t l0 l1 l2 l3 l4 = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_resize5d s' t'
     (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3) (fromIntegral l4)
 
 -- | Resize the tensor as the given tensor.
@@ -393,10 +468,13 @@ _resizeNd
   -> [Size]    -- ^ new sizes to update
   -> [Stride]  -- ^ new strides to update.
   -> IO ()
-_resizeNd t i l0' l1' = do
-  l0 <- FM.newArray (coerce l0' :: [CLLong])
-  l1 <- FM.newArray (coerce l1' :: [CLLong])
-  withDynamicState t $ \s' t' -> Sig.c_resizeNd s' t' (fromIntegral i) l0 l1
+_resizeNd t i l0' l1' = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ do
+    l0 <- FM.newArray (coerce l0' :: [CLLong])
+    l1 <- FM.newArray (coerce l1' :: [CLLong])
+    Sig.c_resizeNd s' t' (fromIntegral i) l0 l1
 
 -- | Increment the reference counter of the tensor.
 --
@@ -406,7 +484,10 @@ _resizeNd t i l0' l1' = do
 --
 -- These methods should be used with extreme care. In general, they should never be called, except if you know what you are doing, as the handling of references is done automatically. They can be useful in threaded environments. Note that these methods are atomic operations.
 retain :: Dynamic -> IO ()
-retain t = withDynamicState t Sig.c_retain
+retain t = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_retain s' t'
 
 -- | returns a tensor which /shares the same 'Storage'/ as the original. Hence, any modification in
 -- the memory of the sub-tensor will have an impact on the primary tensor, and vice-versa.
@@ -424,23 +505,38 @@ _set t0 t1 = with2DynamicState t0 t1 Sig.c_set
 
 -- | set a value in dimension 1, inplace.
 _set1d :: Dynamic -> Int64 -> HsReal -> IO ()
-_set1d t l0 v = withDynamicState t $ \s' t' -> Sig.c_set1d s' t' (fromIntegral l0) (hs2cReal v)
+_set1d t l0 v = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_set1d s' t' (fromIntegral l0) (hs2cReal v)
 
 -- | set a value in dimension 2, inplace.
 _set2d :: Dynamic -> Int64 -> Int64 -> HsReal -> IO ()
-_set2d t l0 l1 v = withDynamicState t $ \s' t' -> Sig.c_set2d s' t' (fromIntegral l0) (fromIntegral l1) (hs2cReal v)
+_set2d t l0 l1 v = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_set2d s' t' (fromIntegral l0) (fromIntegral l1) (hs2cReal v)
 
 -- | set a value in dimension 3, inplace.
 _set3d :: Dynamic -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
-_set3d t l0 l1 l2 v = withDynamicState t $ \s' t' -> Sig.c_set3d s' t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (hs2cReal v)
+_set3d t l0 l1 l2 v = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_set3d s' t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (hs2cReal v)
 
 -- | set a value in dimension 4, inplace.
 _set4d :: Dynamic -> Int64 -> Int64 -> Int64 -> Int64 -> HsReal -> IO ()
-_set4d t l0 l1 l2 l3 v = withDynamicState t $ \s' t' -> Sig.c_set4d s' t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3) (hs2cReal v)
+_set4d t l0 l1 l2 l3 v = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_set4d s' t' (fromIntegral l0) (fromIntegral l1) (fromIntegral l2) (fromIntegral l3) (hs2cReal v)
 
 -- | set the flags on a tensor inplace
 _setFlag :: Dynamic -> Int8 -> IO ()
-_setFlag t l0 = withDynamicState t $ shuffle2 Sig.c_setFlag (CChar l0)
+_setFlag t l0 = flip with pure $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_setFlag s' t' (CChar l0)
 
 -- | Set the storage of a tensor.
 --
@@ -505,11 +601,17 @@ _setStorageNd t s a b hsc hsd = do
 
 -- | get the size of a tensor's specific dimension.
 size :: Dynamic -> DimVal -> IO Word
-size t l0 = withDynamicState t $ \st' t' -> fromIntegral <$> Sig.c_size st' t' (fromIntegral l0)
+size t l0 = flip with (pure . fromIntegral) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_size s' t' (fromIntegral l0)
 
 -- | primarily used for debugging. Get the size description from a c call.
 sizeDesc :: Dynamic -> IO DescBuff
-sizeDesc t = withDynamicState t $ \s' t' -> Sig.c_sizeDesc s' t' >>= Sig.descBuff
+sizeDesc t = flip with (Sig.descBuff) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_sizeDesc s' t'
 
 -- | Removes all singleton dimensions of the tensor.
 _squeeze :: Dynamic -> Dynamic -> IO ()
@@ -521,16 +623,25 @@ _squeeze1d t0 t1 d = with2DynamicState t0 t1 (shuffle3 Sig.c_squeeze1d (fromInte
 
 -- | get the underlying storage of a tensor
 storage :: Dynamic -> IO Storage
-storage t = withDynamicState t $ \s' t' -> Sig.c_storage s' t' >>= mkStorage
+storage t = flip with mkStorage $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_storage s' t'
 
 -- | get the storage offset of a tensor
 storageOffset :: Dynamic -> IO StorageOffset
-storageOffset t = withDynamicState t (fmap fromIntegral .: Sig.c_storageOffset)
+storageOffset t = flip with (pure . fromIntegral) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_storageOffset s' t'
 
 -- | Returns the jump necessary to go from one element to the next one in the
 -- specified dimension dim.
 stride :: Dynamic -> DimVal -> IO Stride
-stride t a = withDynamicState t (fmap fromIntegral .: shuffle2 Sig.c_stride (fromIntegral a))
+stride t a = flip with (pure . fromIntegral) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_stride s' t' (fromIntegral a)
 
 -- | Returns a tensor where dimensions dim1 and dim2 have been swapped.
 _transpose
@@ -1008,9 +1119,10 @@ tensorSlices t get'1d get'2d -- get'3d get'4d
 
 -- | run a function with a dynamic tensor and storage's underlying implementation details.
 withDynamicStateAndStorage :: Sig.Dynamic -> Sig.Storage -> (Ptr Sig.CState -> Ptr Sig.CTensor -> Ptr Sig.CStorage -> IO x) -> IO x
-withDynamicStateAndStorage t s fn =
-  withDynamicState t $ \state' t' ->
-    withForeignPtr (Sig.cstorage s) (fn state' t')
+withDynamicStateAndStorage t s fn = flip with pure $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ withForeignPtr (Sig.cstorage s) (fn s' t')
 
 -- | exported helper function. Not actually "inplace" this is actually "with return and static dimensions"
 withInplace :: (Dynamic -> IO ()) -> Dims (d::[Nat]) -> IO Dynamic

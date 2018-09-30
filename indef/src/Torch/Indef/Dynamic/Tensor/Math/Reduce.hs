@@ -25,6 +25,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Reduce
   , median
   ) where
 
+import Control.Monad.Managed
 import System.IO.Unsafe
 import Numeric.Dimensions
 
@@ -36,23 +37,43 @@ import qualified Torch.Sig.Tensor.Math.Reduce as Sig
 
 -- | get the minima of a tensor's elements
 minall :: Dynamic -> HsReal
-minall = unsafePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_minall)
+minall t = unsafePerformIO . flip with (pure . c2hsReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_minall s' t'
+{-# NOINLINE minall #-}
 
 -- | get the maxima of a tensor's elements
 maxall :: Dynamic -> HsReal
-maxall = unsafePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_maxall)
+maxall t = unsafePerformIO . flip with (pure . c2hsReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_maxall s' t'
+{-# NOINLINE maxall #-}
 
 -- | get the median value of a tensor's elements
 medianall :: Dynamic -> HsReal
-medianall = unsafePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_medianall)
+medianall t = unsafePerformIO . flip with (pure . c2hsReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_medianall s' t'
+{-# NOINLINE medianall #-}
 
 -- | get the sum of a tensor's elements
 sumall :: Dynamic -> HsAccReal
-sumall = unsafePerformIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_sumall)
+sumall t = unsafePerformIO . flip with (pure . c2hsAccReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $  Sig.c_sumall s' t'
+{-# NOINLINE sumall #-}
 
 -- | get the product of a tensor's elements
 prodall :: Dynamic -> HsAccReal
-prodall = unsafePerformIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_prodall)
+prodall t = unsafePerformIO . flip with (pure . c2hsAccReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $  Sig.c_prodall s' t'
+{-# NOINLINE prodall #-}
 
 -- | get the maximal value in the specified dimension and a corresponding index tensor of the maximum value's index.
 --

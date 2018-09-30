@@ -21,6 +21,7 @@ module Torch.Indef.Dynamic.Tensor.Index
 import Foreign
 import Foreign.Ptr
 import Torch.Sig.Types
+import Control.Monad.Managed
 import qualified Torch.Sig.Types          as Sig
 import qualified Torch.Sig.Types.Global   as Sig
 import qualified Torch.Sig.Tensor.Index   as Sig
@@ -50,8 +51,10 @@ _indexAdd r i ix t = forIxFn r t ix $ \s' r' t' ix' ->
 
 -- | Fills the elements of the original Tensor with value val by selecting the indices in the order given in index.
 _indexFill :: Dynamic -> Int -> IndexDynamic -> HsReal -> IO ()
-_indexFill ret i ix v =
-  withDynamicState ret $ \s' ret' ->
+_indexFill ret i ix v = runManaged $ do
+  s' <- managedState
+  ret' <- managedTensor ret
+  liftIO $
     withForeignPtr (snd $ Sig.longDynamicState ix) $ \ix' ->
       Sig.c_indexFill s' ret' (fromIntegral i) ix' (Sig.hs2cReal v)
 

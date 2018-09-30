@@ -23,6 +23,7 @@ import Foreign hiding (with, new)
 import Foreign.Ptr
 import Numeric.Dimensions
 import System.IO.Unsafe
+import Control.Monad.Managed
 
 import Torch.Indef.Types
 import Torch.Indef.Mask
@@ -42,11 +43,15 @@ _eqValueT t0 t1 v = with2DynamicState t0 t1 (shuffle3 Sig.c_eqValueT (hs2cReal v
 compareTensorOp
   :: (Ptr CState -> Ptr CByteTensor -> Ptr CTensor -> CReal -> IO ())
   -> Dynamic -> HsReal -> MaskDynamic
-compareTensorOp op t0 v = unsafePerformIO $ do
-  SomeDims d <- getDims t0
+compareTensorOp op t0 v = unsafePerformIO . flip with pure $ do
+  s' <- managedState
+  t' <- managedTensor t0
+  SomeDims d <- liftIO $ getDims t0
   let bt = newMaskDyn d
-  withDynamicState t0 $ \s' t0' -> withMask bt $ \bt' -> op s' bt' t0' (hs2cReal v)
+  bt' <- managed $ withMask bt
+  liftIO $ op s' bt' t' (hs2cReal v)
   pure bt
+
 {-# NOINLINE compareTensorOp #-}
 
 -- | return a byte tensor which contains boolean values indicating the relation between a tensor and a given scalar.

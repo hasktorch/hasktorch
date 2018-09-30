@@ -9,6 +9,7 @@
 -------------------------------------------------------------------------------
 module Torch.Indef.Dynamic.Tensor.ScatterGather where
 
+import Control.Monad.Managed
 import Torch.Indef.Types
 import qualified Torch.Indef.Index as Ix
 import qualified Torch.Sig.Tensor.ScatterGather as Sig
@@ -16,7 +17,7 @@ import qualified Torch.Sig.Tensor.ScatterGather as Sig
 -- | From the Lua docs:
 --
 -- Creates a new Tensor from the original tensor by gathering a number of values from each "row", where the rows are along the dimension dim. The values in a LongTensor, passed as index, specify which values to take from each row. Specifically, the resulting Tensor, which will have the same size as the index tensor, is given by
--- 
+--
 -- @
 --   -- dim = 1
 --   result[i][j][k]... = src[index[i][j][k]...][j][k]...
@@ -55,7 +56,8 @@ _scatterAdd r d ix src = with2DynamicState r src $ \s' r' src' ->
 
 -- | TODO
 _scatterFill  :: Dynamic -> DimVal -> IndexDynamic -> HsReal -> IO ()
-_scatterFill r d ix v = withDynamicState r $ \s' r' ->
-  Ix.withDynamicState ix $ \_ ix' ->
-    Sig.c_scatterFill s' r' (fromIntegral d) ix' (hs2cReal v)
+_scatterFill r d ix v = runManaged $ do
+  s' <- managedState
+  r' <- managedTensor r
+  liftIO $ Ix.withDynamicState ix $ \_ ix' -> Sig.c_scatterFill s' r' (fromIntegral d) ix' (hs2cReal v)
 

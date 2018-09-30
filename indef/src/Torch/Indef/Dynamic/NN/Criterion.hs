@@ -1,7 +1,9 @@
 module Torch.Indef.Dynamic.NN.Criterion where
 
+import Foreign hiding (with, new)
 import Foreign.C.Types
 import Foreign.Ptr
+import Control.Monad.Managed
 import Torch.Sig.Types.NN
 import Torch.Indef.Dynamic.Tensor
 import qualified Torch.Sig.NN as Sig
@@ -20,14 +22,17 @@ _ClassNLLCriterion_updateOutput
   -> Integer                -- int64_t ignore_index,
   -> Bool                   -- bool reduce
   -> IO ()
-_ClassNLLCriterion_updateOutput t0 it0 t1 b0 mt2 t3 i b1 =
-  with2DynamicState t0 t1 $ \s' t0' t1' ->
-    withDynamicState t3 $ \_ t3' ->
-      Ix.withDynamicState it0 $ \_ it0' -> do
-        t2' <- case mt2 of
-          Just t2 -> withDynamicState t2 (\_ t -> pure t)
-          Nothing -> pure nullPtr
-        Sig.c_ClassNLLCriterion_updateOutput s' t0' it0' t1'
+_ClassNLLCriterion_updateOutput t0 it0 t1 b0 mt2 t3 i b1 = runManaged $ do
+  s' <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  t3' <- managedTensor t3
+  liftIO $ do
+    t2' <- case mt2 of
+      Just t2 -> withForeignPtr (ctensor t2) pure
+      Nothing -> pure nullPtr
+    Ix.withDynamicState it0 $ \ _ it0' ->
+      Sig.c_ClassNLLCriterion_updateOutput s' t0' it0' t1'
           (toEnum $ fromEnum b0)
           t2'
           t3'
@@ -47,14 +52,18 @@ _ClassNLLCriterion_updateGradInput
   -> Integer         -- int64_t ignore_index,
   -> Bool            -- bool reduce)
   -> IO ()
-_ClassNLLCriterion_updateGradInput t0 it0 t1 t2 b0 mt3 t4 i b1 =
-  with2DynamicState t0 t1 $ \s' t0' t1' ->
-    with2DynamicState t2 t4 $ \_ t2' t4' ->
-      Ix.withDynamicState it0 $ \_ it0' -> do
-        t3' <- case mt3 of
-          Just t3 -> withDynamicState t3 (\_ t -> pure t)
-          Nothing -> pure nullPtr
-        Sig.c_ClassNLLCriterion_updateGradInput s' t0' it0' t1' t2' (toEnum $ fromEnum b0) t3' t4' (fromIntegral i) (toEnum $ fromEnum b1)
+_ClassNLLCriterion_updateGradInput t0 it0 t1 t2 b0 mt3 t4 i b1 = runManaged $ do
+  s' <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  t2' <- managedTensor t2
+  t4' <- managedTensor t4
+  liftIO $ do
+    t3' <- case mt3 of
+      Just t3 -> withForeignPtr (ctensor t3) pure
+      Nothing -> pure nullPtr
+    Ix.withDynamicState it0 $ \_ it0' ->
+      Sig.c_ClassNLLCriterion_updateGradInput s' t0' it0' t1' t2' (toEnum $ fromEnum b0) t3' t4' (fromIntegral i) (toEnum $ fromEnum b1)
 
 
 
@@ -102,26 +111,30 @@ _absCriterion_updateGradInput t0 t1 t2 t3 b0 b1 =
 
 -- | bCECriterion forward pass (updates the output tensor)
 _bCECriterion_updateOutput    :: Dynamic -> Dynamic -> Dynamic -> Bool -> Maybe Dynamic -> Bool -> IO ()
-_bCECriterion_updateOutput t0 t1 t2 b0 mt3 b1 =
-  with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->
-    case mt3 of
-      Nothing ->
-        Sig.c_BCECriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) nullPtr (toEnum $ fromEnum b1)
-      Just t3 ->
-        withDynamicState t3 $ \_ t3' ->
-          Sig.c_BCECriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) t3' (toEnum $ fromEnum b1)
+_bCECriterion_updateOutput t0 t1 t2 b0 mt3 b1 = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  t2' <- managedTensor t2
+  liftIO $ do
+    t3' <- case mt3 of
+      Nothing -> pure nullPtr
+      Just t3 -> withForeignPtr (ctensor t3) pure
+    Sig.c_BCECriterion_updateOutput s' t0' t1' t2' (toEnum $ fromEnum b0) t3' (toEnum $ fromEnum b1)
 
 -- | bCECriterion backward-update (updates the layer and bias tensors)
 _bCECriterion_updateGradInput :: Dynamic -> Dynamic -> Dynamic -> Dynamic -> Bool -> Maybe Dynamic -> Bool -> IO ()
-_bCECriterion_updateGradInput t0 t1 t2 t3 b0 mt4 b1 =
-  with2DynamicState t0 t1 $ \s' t0' t1' ->
-    with2DynamicState t2 t3 $ \_ t2' t3' ->
-      case mt4 of
-        Nothing ->
-          Sig.c_BCECriterion_updateGradInput s' t0' t1' t2' t3' (toEnum $ fromEnum b0) nullPtr (toEnum $ fromEnum b1)
-        Just t4 ->
-          withDynamicState t4 $ \_ t4' ->
-            Sig.c_BCECriterion_updateGradInput s' t0' t1' t2' t3' (toEnum $ fromEnum b0) t4' (toEnum $ fromEnum b1)
+_bCECriterion_updateGradInput t0 t1 t2 t3 b0 mt4 b1 = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  t2' <- managedTensor t2
+  t3' <- managedTensor t3
+  liftIO $ do
+    t4' <- case mt4 of
+      Nothing -> pure nullPtr
+      Just t4 -> withForeignPtr (ctensor t4) pure
+    Sig.c_BCECriterion_updateGradInput s' t0' t1' t2' t3' (toEnum $ fromEnum b0) t4' (toEnum $ fromEnum b1)
 
 
 -- | distKLDivCriterion forward pass (updates the output tensor)

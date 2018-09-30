@@ -353,9 +353,11 @@ tenGen
   -> Generator
   -> (Ptr CState -> Ptr CTensor -> Ptr CGenerator -> IO x)
   -> IO x
-tenGen r g fn =
-  withDynamicState r $ \s' r' ->
-    withGen g (fn s' r')
+tenGen r g fn = flip with pure $ do
+  s' <- managedState
+  r' <- managedTensor r
+  g' <- managed $ withGen g
+  liftIO $ fn s' r' g'
 
 tenGenTen
   :: Dynamic

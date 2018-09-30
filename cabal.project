@@ -14,10 +14,10 @@ packages:
 
     indef/*cabal
 
-    hasktorch/*cabal
+    -- hasktorch/*cabal
 
-    examples/*cabal
-    zoo/*cabal
+    -- examples/*cabal
+    -- zoo/*cabal
 
 -- This absolute path would go in your ~/.cabal/config file.
 -- FIXME: figure out package-relative paths

@@ -132,6 +132,7 @@ module Torch.Indef.Dynamic.NN
 
 
 import Foreign.C.Types
+import Control.Monad.Managed
 import Torch.Sig.Types.NN
 import Torch.Indef.Dynamic.Tensor -- (empty, new)
 import Torch.Indef.Dynamic.NN.Activation as X
@@ -702,16 +703,22 @@ _temporalReplicationPadding_updateGradInput =
 -------------------------------------------------------------------------------
 -- Deal love of god...
 --
-ten1 fn t0 d0 =
-  withDynamicState t0 $ \s' t0' -> fn s' t0' (fromIntegral d0)
+ten1 fn t0 d0 = runManaged $ do
+  s' <- managedState
+  t0' <- managedTensor t0
+  liftIO $ fn s' t0' (fromIntegral d0)
 
-ten2dim1 fn t0 t1 d0 =
-  with2DynamicState t0 t1 $ \s' t0' t1' ->
-    fn s' t0' t1' (fromIntegral d0)
+ten2dim1 fn t0 t1 d0 = runManaged $ do
+  s' <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  liftIO $ fn s' t0' t1' (fromIntegral d0)
 
-ten2 fn t0 t1 =
-  with2DynamicState t0 t1 $ \s' t0' t1' ->
-    fn s' t0' t1'
+ten2 fn t0 t1 = runManaged $ do
+  s' <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  liftIO $ fn s' t0' t1'
 
 ten3 fn t0 t1 t2 =
   with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->

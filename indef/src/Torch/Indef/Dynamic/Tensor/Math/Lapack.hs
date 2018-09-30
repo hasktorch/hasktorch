@@ -30,6 +30,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Lapack
   , Triangle(..), EigenReturn(..), ComputeSingularValues(..)
   ) where
 
+import Control.Monad.Managed
 import Data.Coerce
 import Foreign
 import Foreign.C.Types
@@ -352,11 +353,13 @@ gesvd_
   -> Dynamic                     -- ^ m
   -> ComputeSingularValues       -- ^ Whether to compute all or some of the singular values
   -> IO ()
-gesvd_ (u, s, v) m num =
-  svArg2C num >>= \num' ->
-    with3DynamicState u s v $ \state' u' s' v' ->
-      withDynamicState m $ \_ m' ->
-        Sig.c_gesvd state' u' s' v' m' num'
+gesvd_ (u, s, v) m num = runManaged $ do
+  state' <- managedState
+  u' <- managedTensor u
+  s' <- managedTensor s
+  v' <- managedTensor v
+  m' <- managedTensor m
+  liftIO $ svArg2C num >>= Sig.c_gesvd state' u' s' v' m'
 
 -- | 'gesvd', computing @A = U*Σ*transpose(V)@.
 --
@@ -379,12 +382,14 @@ gesvd2_
   -> Dynamic                              -- ^ m
   -> ComputeSingularValues                -- ^ Whether to compute all or some of the singular values
   -> IO ()
-gesvd2_ (u, s, v, a) m csv = do
-  csv' <- svArg2C csv
-  with2DynamicState u s $ \state' u' s' ->
-    with2DynamicState v a $ \_ v' a' ->
-      withDynamicState m $ \_ m' ->
-        Sig.c_gesvd2 state' u' s' v' a' m' csv'
+gesvd2_ (u, s, v, a) m csv = runManaged $ do
+  state' <- managedState
+  u' <- managedTensor u
+  s' <- managedTensor s
+  v' <- managedTensor v
+  a' <- managedTensor a
+  m' <- managedTensor m
+  liftIO $ svArg2C csv >>= Sig.c_gesvd2 state' u' s' v' a' m'
 
 -- ========================================================================= --
 -- Helpers

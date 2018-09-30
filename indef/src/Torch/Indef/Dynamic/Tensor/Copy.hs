@@ -25,10 +25,11 @@ module Torch.Indef.Dynamic.Tensor.Copy
   , copyDouble
   ) where
 
-import Foreign
+import Foreign hiding (with)
 import Foreign.C.Types
 import Data.List (intercalate)
 import Control.Exception.Safe (throwString)
+import Control.Monad.Managed
 import System.IO.Unsafe
 import Torch.Types.TH (C'THState)
 import qualified Torch.Types.TH as TH
@@ -53,23 +54,31 @@ copyType
 
   -> (Ptr CState -> Ptr CTensor -> Ptr a -> IO ())
   -> Dynamic -> b
-copyType newWithSize_ fin builder cfun t = unsafePerformIO . withDynamicState t $ \s' t' -> do
-    sizes   <- Sig.c_newSizeOf s' t'
-    strides <- Sig.c_newStrideOf s' t'
-    target  <- newWithSize_ sizes strides
+copyType newWithSize_ fin builder cfun t
+  = unsafePerformIO
+  . flip with (pure . builder TH.torchstate) $ do
+    s' <- managedState
+    t' <- managedTensor t
+    liftIO $ do
+      sizes   <- Sig.c_newSizeOf s' t'
+      strides <- Sig.c_newStrideOf s' t'
+      target  <- newWithSize_ sizes strides
 
-    cfun s' t' target
+      cfun s' t' target
 
-    builder TH.torchstate <$> newForeignPtr fin target
+      newForeignPtr fin target
 {-# NOINLINE copyType #-}
 
 -- | Copy a tensor.
 copy :: Dynamic -> Dynamic
-copy t = unsafePerformIO . withDynamicState t $ \s' t' -> do
-  target <- Sig.c_new s'
-  Sig.c_resizeAs s' target t'
-  Sig.c_copy s' target t'
-  mkDynamic target
+copy t = unsafePerformIO . flip with pure $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ do
+    target <- Sig.c_new s'
+    Sig.c_resizeAs s' target t'
+    Sig.c_copy s' target t'
+    mkDynamic target
 {-# NOINLINE copy #-}
 
 -- | copy a tensor to a byte tensor. *Use at your own discresion*

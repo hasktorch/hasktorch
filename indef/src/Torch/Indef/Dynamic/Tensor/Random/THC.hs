@@ -62,19 +62,31 @@ import qualified Torch.Indef.Dynamic.Tensor.Math.Random.TH as THRandomMath
 
 -- | CUDA version of 'THRandom._random'
 _random :: Dynamic -> IO ()
-_random t = withDynamicState t Sig.c_random
+_random t = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_random s' t'
 
 -- | CUDA version of 'THRandom._clampedRandom'
 _clampedRandom :: Dynamic -> Integer -> Integer -> IO ()
-_clampedRandom t mn mx = withDynamicState t (shuffle2'2 Sig.c_clampedRandom (fromIntegral mn) (fromIntegral mx))
+_clampedRandom t mn mx = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_clampedRandom s' t' (fromIntegral mn) (fromIntegral mx)
 
 -- | CUDA version of 'THRandom._cappedRandom'
 _cappedRandom :: Dynamic -> Integer -> IO ()
-_cappedRandom t c = withDynamicState t (shuffle2 Sig.c_cappedRandom (fromIntegral c))
+_cappedRandom t c = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_cappedRandom s' t' (fromIntegral c)
 
 -- | CUDA version of 'THRandom._bernoulli'
 _bernoulli :: Dynamic -> HsAccReal -> IO ()
-_bernoulli t v = withDynamicState t (shuffle2 Sig.c_bernoulli (hs2cAccReal v))
+_bernoulli t v = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_bernoulli s' t' (hs2cAccReal v)
 
 -- | CUDA version of 'THRandom._bernoulli_DoubleTensor'
 _bernoulli_DoubleTensor :: Dynamic -> Dynamic -> IO ()
@@ -82,11 +94,17 @@ _bernoulli_DoubleTensor t d = with2DynamicState t d Sig.c_bernoulli_DoubleTensor
 
 -- | CUDA version of 'THRandom._geometric'
 _geometric :: Dynamic -> HsAccReal -> IO ()
-_geometric t v = withDynamicState t (shuffle2 Sig.c_geometric (hs2cAccReal v))
+_geometric t v = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_geometric s' t' (hs2cAccReal v)
 
 -- | CUDA version of 'THRandom._uniform'
 _uniform :: Dynamic -> Ord2Tuple HsAccReal -> IO ()
-_uniform t tup = withDynamicState t (shuffle2'2 Sig.c_uniform (hs2cAccReal a) (hs2cAccReal b))
+_uniform t tup = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_uniform s' t' (hs2cAccReal a) (hs2cAccReal b)
   where
     (a, b) = ord2TupleValues tup
 
@@ -126,11 +144,18 @@ _logNormal r a b = runManaged . (liftIO =<<) $ Sig.c_logNormal
 
 -- | CUDA version of 'THRandom._exponential'
 _exponential :: Dynamic -> HsAccReal -> IO ()
-_exponential t v = withDynamicState t (shuffle2 Sig.c_exponential (hs2cAccReal v))
+_exponential t v = runManaged . (liftIO =<<) $ Sig.c_exponential
+  <$> managedState
+  <*> managedTensor t
+  <*> pure (hs2cAccReal v)
 
 -- | CUDA version of 'THRandom._cauchy'
 _cauchy :: Dynamic -> HsAccReal -> HsAccReal -> IO ()
-_cauchy t a b = withDynamicState t (shuffle2'2 Sig.c_cauchy (hs2cAccReal a) (hs2cAccReal b))
+_cauchy t a b = runManaged . (liftIO =<<) $ Sig.c_cauchy
+  <$> managedState
+  <*> managedTensor t
+  <*> pure (hs2cAccReal a)
+  <*> pure (hs2cAccReal b)
 
 -- | CUDA version of 'THRandom._multinomial'
 _multinomial :: IndexDynamic -> Dynamic -> Int -> Int -> IO ()

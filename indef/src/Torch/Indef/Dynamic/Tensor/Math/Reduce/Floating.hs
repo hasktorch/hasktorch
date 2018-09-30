@@ -20,6 +20,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating
   , normall
   ) where
 
+import Control.Monad.Managed
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor (empty)
 
@@ -143,20 +144,32 @@ dist r t v = with2DynamicState r t $ \s' r' t' -> fmap c2hsAccReal $ Sig.c_dist 
 
 -- | Returns the mean of all elements.
 meanall :: Dynamic -> IO HsAccReal
-meanall t = withDynamicState t (fmap c2hsAccReal .: Sig.c_meanall)
+meanall t = flip with (pure . c2hsAccReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_meanall s' t'
 
 -- | Returns the variance of all elements.
 varall :: Dynamic -> Int -> IO HsAccReal
-varall t v = withDynamicState t $ \s' t' -> c2hsAccReal <$> Sig.c_varall s' t' (fromIntegral v)
+varall t v = flip with (pure . c2hsAccReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_varall s' t' (fromIntegral v)
 
 -- | Returns the standard deviation of all elements.
 stdall :: Dynamic -> Int -> IO HsAccReal
-stdall t v = withDynamicState t $ \s' t' -> c2hsAccReal <$> Sig.c_stdall s' t' (fromIntegral v)
+stdall t v = flip with (pure . c2hsAccReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_stdall s' t' (fromIntegral v)
 
 -- | Returns the @p@-norm of all elements.
 normall
   :: Dynamic  -- ^ tensor of values to norm over
   -> HsReal   -- ^ @p@
   -> IO HsAccReal
-normall t v = withDynamicState t $ \s' t' -> c2hsAccReal <$> Sig.c_normall s' t' (hs2cReal v)
+normall t v = flip with (pure . c2hsAccReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_normall s' t' (hs2cReal v)
 

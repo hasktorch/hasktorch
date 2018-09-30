@@ -28,7 +28,7 @@ module Torch.Indef.Types
   , managedTensor
   , ptrArray2hs
 
-  , withDynamicState, withStorageState
+  , withStorageState
   , with2DynamicState
   , with3DynamicState
   , mkDynamic, mkStorage

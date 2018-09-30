@@ -29,7 +29,7 @@
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math where
 
-import Foreign hiding (new)
+import Foreign hiding (new, with)
 import Foreign.Ptr
 import Control.Monad.Managed
 import Numeric.Dimensions
@@ -62,7 +62,10 @@ zero_ t = runManaged $ do
 -- | mutate a tensor, inplace, resizing the tensor to the given IndexStorage
 -- size and replacing its value with zeros.
 zeros_ :: Dynamic -> IndexStorage -> IO ()
-zeros_ t ix = withDynamicState t Sig.c_zero
+zeros_ t ix = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_zero s' t'
 
 -- | mutate a tensor, inplace, resizing the tensor to the same shape as the second tensor argument
 -- and replacing the first tensor's values with zeros.
@@ -75,8 +78,11 @@ zerosLike_ t0 t1 = with2DynamicState t0 t1 Sig.c_zerosLike
 -- | mutate a tensor, inplace, resizing the tensor to the given IndexStorage
 -- size and replacing its value with ones.
 ones_ :: Dynamic -> TH.IndexStorage -> IO ()
-ones_ t0 ix = withDynamicState t0 $ \s' t0' -> Ix.withCPUIxStorage ix $ \ix' ->
-  Sig.c_ones s' t0' ix'
+ones_ t ix = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  ix' <- managed $ Ix.withCPUIxStorage ix
+  liftIO $ Sig.c_ones s' t' ix'
 
 -- | mutate a tensor, inplace, resizing the tensor to the same shape as the second tensor argument
 -- and replacing the first tensor's values with ones.
@@ -88,7 +94,10 @@ onesLike_ t0 t1 = with2DynamicState t0 t1 Sig.c_onesLike
 
 -- | returns the count of the number of elements in the matrix.
 numel :: Dynamic -> IO Integer
-numel t = withDynamicState t (fmap fromIntegral .: Sig.c_numel)
+numel t = flip with (pure . fromIntegral) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_numel s' t'
 
 -- |
 -- @
@@ -117,9 +126,12 @@ _catArray
   -> [Dynamic] -- ^ tensors to concatenate
   -> DimVal    -- ^ dimension to concatenate along.
   -> IO ()
-_catArray res ds d = withDynamicState res $ \s' r' -> do
-  ds' <- FM.newArray =<< mapM (\d -> withForeignPtr (ctensor d) pure) ds
-  Sig.c_catArray s' r' ds' (fromIntegral $ length ds) (fromIntegral d)
+_catArray res ds d = runManaged $ do
+  s' <- managedState
+  r' <- managedTensor res
+  liftIO $ do
+    ds' <- FM.newArray =<< mapM (\d -> withForeignPtr (ctensor d) pure) ds
+    Sig.c_catArray s' r' ds' (fromIntegral $ length ds) (fromIntegral d)
 
 -- | "Get the lower triangle of a tensor."
 --
@@ -149,9 +161,12 @@ _triu t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_triu (fromInteger i0)
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 _cat :: Dynamic -> Dynamic -> Dynamic -> DimVal -> IO ()
-_cat t0 t1 t2 i = withDynamicState t0 $ \s' t0' ->
-  with2DynamicState t1 t2 $ \_ t1' t2' ->
-    Sig.c_cat s' t0' t1' t2' (fromIntegral i)
+_cat t0 t1 t2 i = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  t2' <- managedTensor t2
+  liftIO $ Sig.c_cat s' t0' t1' t2' (fromIntegral i)
 
 -- | pure version of '_cat'
 cat :: Dynamic -> Dynamic -> DimVal -> IO Dynamic
@@ -161,12 +176,18 @@ cat t0 t1 dv = empty >>= \r -> _cat r t0 t1 dv >> pure r
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 _nonzero :: IndexDynamic -> Dynamic -> IO ()
-_nonzero ix t = withDynamicState t $ \s' t' -> Ix.withDynamicState ix $ \_ ix' -> Sig.c_nonzero s' ix' t'
+_nonzero ix t =  runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Ix.withDynamicState ix $ \_ ix' -> Sig.c_nonzero s' ix' t'
 
 -- | Returns the trace (sum of the diagonal elements) of a matrix x. This is equal to the sum of the
 -- eigenvalues of x.
 ttrace :: Dynamic -> IO HsAccReal
-ttrace t = withDynamicState t (fmap c2hsAccReal .: Sig.c_trace)
+ttrace t = flip with (pure . c2hsAccReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_trace s' t'
 
 -- | mutates a tensor to be an @n × m@ identity matrix with ones on the diagonal and zeros elsewhere.
 eye_
@@ -174,11 +195,17 @@ eye_
   -> Integer  -- ^ @n@ dimension in an @n × m@ matrix
   -> Integer  -- ^ @m@ dimension in an @n × m@ matrix
   -> IO ()
-eye_ t0 l0 l1 = withDynamicState t0 $ \s' t0' -> Sig.c_eye s' t0' (fromIntegral l0) (fromIntegral l1)
+eye_ t0 l0 l1 = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  liftIO $ Sig.c_eye s' t0' (fromIntegral l0) (fromIntegral l1)
 
 -- | identical to a direct C call to the @arange@, or @range@ with special consideration for floating precision types.
 _arange :: Dynamic -> HsAccReal -> HsAccReal -> HsAccReal -> IO ()
-_arange t0 a0 a1 a2 = withDynamicState t0 $ \s' t0' -> Sig.c_arange s' t0' (hs2cAccReal a0) (hs2cAccReal a1) (hs2cAccReal a2)
+_arange t0 a0 a1 a2 = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  liftIO $ Sig.c_arange s' t0' (hs2cAccReal a0) (hs2cAccReal a1) (hs2cAccReal a2)
 
 -- | mutate a Tensor inplace, filling it with values from @min@ to @max@ with @step@. Will make the tensor take a
 -- shape of size @floor((y - x) / step) + 1@.
@@ -188,8 +215,10 @@ range_
   -> HsAccReal  -- ^ @max@ value
   -> HsAccReal  -- ^ @step@ size
   -> IO ()
-range_ t0 a0 a1 a2 = withDynamicState t0 $ \s' t0' ->
-  Sig.c_range s' t0' (hs2cAccReal a0) (hs2cAccReal a1) (hs2cAccReal a2)
+range_ t0 a0 a1 a2 = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  liftIO $ Sig.c_range s' t0' (hs2cAccReal a0) (hs2cAccReal a1) (hs2cAccReal a2)
 
 -- | pure version of 'range_'
 range
