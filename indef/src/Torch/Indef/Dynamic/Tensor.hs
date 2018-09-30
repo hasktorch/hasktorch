@@ -20,7 +20,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE Strict #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor where
 
@@ -47,6 +46,7 @@ import Control.Monad.Trans.Except
 
 import Text.Printf
 import qualified Data.List as List ((!!))
+import qualified Data.List.NonEmpty        as NE
 import qualified Torch.Types.TH            as TH
 import qualified Foreign.Marshal.Array     as FM
 import qualified Torch.Sig.State           as Sig
@@ -99,7 +99,10 @@ get1d t d1 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get1d s t' (fromIn
 
 -- | get a value from dimension 2
 get2d :: Dynamic -> Int64 -> Int64 -> IO HsReal
-get2d t d1 d2 = withDynamicState t $ \s t' -> c2hsReal <$> Sig.c_get2d s t' (fromIntegral d1) (fromIntegral d2)
+get2d t d1 d2 = flip with (pure . c2hsReal) $ do
+  s  <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_get2d s t' (fromIntegral d1) (fromIntegral d2)
 {-# NOINLINE get2d #-}
 
 -- | get a value from dimension 3
@@ -623,15 +626,15 @@ vector l = lift $ do
 --   Aborted (core dumped)
 -- #ifdef HASKTORCH_INTERNAL_CUDA
 
--- FIXME: uncommet these
-  res <- new' (someDimsVal [genericLength l])
-  mapM_  (upd res) (zip [0..genericLength l - 1] l)
-  pure res
+-- FIXME: uncomment these
+  -- res <- new' (someDimsVal [genericLength l])
+  -- mapM_  (upd res) (zip [0..genericLength l - 1] l)
+  -- pure res
 
 -- #else
 --   -- IMPORTANT: This is safe for CPU. For GPU, I think we need to allocate and marshal a haskell list into cuda memory before continuing.
-  -- st <- Storage.fromList (deepseq l l)
-  -- newWithStorage1d st 0 (genericLength l, 1)
+  st <- Storage.fromList (deepseq l l)
+  newWithStorage1d st 0 (genericLength l, 1)
 -- #endif
  where
   upd :: Dynamic -> (Word, HsReal) -> IO ()
@@ -647,17 +650,13 @@ matrix ls
   | any ((ncols /=) . length) ls = ExceptT . pure $ Left "rows are not all the same length"
   | otherwise = do
 -- #ifdef HASKTORCH_INTERNAL_CUDA
-    vec <- vector (deepseq l l)
-    lift $ go vec (someDimsVal [nrows, ncols])
-    pure vec
+    -- vec <- vector (deepseq l l)
+    -- lift $ go vec (someDimsVal [nrows, ncols])
+    -- pure vec
 -- #else
---     lift $ do
---       st <- Storage.fromList (deepseq l l)
---       Storage.tensordata st >>= print
-
---       x <- newWithStorage2d st 0 (nrows, ncols) (ncols, 1)
---       threadDelay 1000
---       pure x
+    lift $ do
+      st <- Storage.fromList (deepseq l l)
+      newWithStorage2d st 0 (nrows, ncols) (ncols, 1)
 -- #endif
  where
   l = concat ls
@@ -680,11 +679,14 @@ cuboid ls
   | innerDimCheck ncols        ls  = ExceptT . pure . Left $ "rows are not all the same length"
   | innerDimCheck ndepth (head ls) = ExceptT . pure . Left $ "columns are not all the same length"
 
-  | otherwise = do
+  | otherwise = lift $ do
+      st <- Storage.fromList l
+      -- FIXME: test that this is correct.
+      newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
 -- #ifdef HASKTORCH_INTERNAL_CUDA
-      vec <- vector (deepseq l l)
+      -- vec <- vector (deepseq l l)
       -- lift $ go vec (someDimsVal [nrows, ncols, ndepth])
-      lift $ go vec (someDimsVal [nrows, ncols, ndepth])
+      -- lift $ go vec (someDimsVal [nrows, ncols, ndepth])
       -- print "yas"
       -- pure v
 -- #else
@@ -749,17 +751,17 @@ hyper ls
   | innerDimCheck ndepth      (head ls)  = ExceptT . pure . Left $ "cols are not all the same length"
   | innerDimCheck ncols             ls   = ExceptT . pure . Left $ "depths are not all the same length"
 
-  | otherwise = do
+  | otherwise = lift $ do
 -- #ifdef HASKTORCH_INTERNAL_CUDA
-      vec <- vector (deepseq l l)
-      lift $ go vec (someDimsVal [nrows, ncols, ndepth, ntime])
+      -- vec <- vector (deepseq l l)
+      -- lift $ go vec (someDimsVal [nrows, ncols, ndepth, ntime])
 -- #else
---       st <- Storage.fromList (deepseq l l)
---       newWithStorage4d st 0
---         (nrows, ncols * ndepth * ntime)
---         (ncols, ndepth * ntime)
---         (ndepth, ntime)
---         (ntime, 1)
+      st <- Storage.fromList (deepseq l l)
+      newWithStorage4d st 0
+        (nrows, ncols * ndepth * ntime)
+        (ncols, ndepth * ntime)
+        (ndepth, ntime)
+        (ntime, 1)
 -- #endif
  where
   l = concat (concat (concat ls))
@@ -880,7 +882,7 @@ showTensor get'1d get'2d get'3d get'4d ds =
  where
   go :: String -> (Int64 -> Int64 -> IO a) -> Int64 -> Int64 -> IO String
   go fill getter x y = do
-    vs <- mapM (fmap valWithSpace . uncurry getter) (mkXY x y)
+    vs <- forM (mkXY x y) $ fmap valWithSpace . uncurry getter
     pure (mat2dGo fill y "" vs)
 
   mat2dGo :: String -> Int64 -> String -> [String] -> String
@@ -936,6 +938,70 @@ showTensor get'1d get'2d get'3d get'4d ds =
   descType = show (typeRep (Proxy :: Proxy a)) ++ " tensor with "
   descShape = "shape: " ++ intercalate "x" (fmap show ds)
   desc = brackets $ descType ++ descShape
+
+data TenSlices
+  = TenNone
+  | TenVector (NonEmpty HsReal)
+  | TenMatricies (NonEmpty (NonEmpty [HsReal]))
+
+-- | Helper function to show the matrix slices from a tensor.
+tensorSlices
+  :: Dynamic
+  -> (Int64 -> IO HsReal)
+  -> (Int64 -> Int64 -> IO HsReal)
+  -- -> (Int64 -> Int64 -> Int64 -> IO HsReal)
+  -- -> (Int64 -> Int64 -> Int64 -> Int64 -> IO HsReal)
+  -> [Word64]
+  -> IO TenSlices
+tensorSlices t get'1d get'2d -- get'3d get'4d
+  = \case
+    []  -> pure TenNone
+    [x] -> TenVector <$> go1d get'1d x
+    [x,y] -> (TenMatricies . (:|[])) <$> go2d get'2d x y
+    _ -> throwString "Can't slice this yet"
+ where
+  go1d :: (Int64 -> IO HsReal) -> Word64 -> IO (NonEmpty HsReal)
+  go1d getter x
+    = forM (mkIx x) getter
+
+  go2d :: (Int64 -> Int64 -> IO HsReal) -> Word64 -> Word64 -> IO (NonEmpty [HsReal])
+  go2d getter x y =
+    forM (mkIx x) $ \ix ->
+      forM (mkVIx y) $ \iy ->
+        getter ix iy
+
+  go3d :: (Int64 -> Int64 -> Int64 -> IO HsReal) -> Word64 -> Word64 -> Word64 -> IO (NonEmpty (NonEmpty [HsReal]))
+  go3d getter x y z =
+    forM (mkIx x) $ \ix ->
+      forM (mkIx y) $ \iy ->
+        -- forM [0..z - 1] $ \iz ->
+          traverse (getter ix iy) (mkVIx z)
+
+  -- mat2dGo :: Int64 -> String -> [HsReal] -> String
+  -- mat2dGo _ acc []  = acc
+  -- mat2dGo y acc rcs = mat2dGo y acc' rest
+  --   where
+  --     (row, rest) = splitAt (fromIntegral y) rcs
+  --     acc' = if null acc then row else acc ++ "\n" ++ row
+
+  -- mat3dGo :: Int64 -> Int64 -> Int64 -> IO String
+  -- mat3dGo x y z = fmap (intercalate "") $ forM (mkIx x) $ \x' -> do
+  --   mat <- go "  " (get'3d x') y z
+  --   pure $ gt2IxHeader [x'] ++ mat
+
+  -- mat4dGo :: Int64 -> Int64 -> Int64 -> Int64 -> IO String
+  -- mat4dGo w q x y = fmap (intercalate "") $ forM (mkXY w q) $ \(w', q') -> do
+  --   mat <- go "  " (get'4d w' q') x y
+  --   pure $ gt2IxHeader [w', q'] ++ mat
+
+  mkIx :: Word64 -> NonEmpty Int64
+  mkIx 0 = 0 :| []
+  mkIx x = 0 :| [1..fromIntegral x - 1]
+
+  mkVIx :: Word64 -> [Int64]
+  mkVIx 0 = []
+  mkVIx x = [0..fromIntegral x - 1]
+
 
 -------------------------------------------------------------------------------
 -- * Helper functions

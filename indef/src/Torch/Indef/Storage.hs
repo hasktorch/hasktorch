@@ -29,7 +29,7 @@ module Torch.Indef.Storage
   , storageState
   , storageStateRef
 
-  , tensordata
+  , storagedata
   , size
   , set
   , get
@@ -69,15 +69,15 @@ import qualified Torch.Sig.Storage.Memory as Sig
 import qualified Foreign.Marshal.Array    as FM
 
 -- | return the internal data of 'Storage' as a list of haskell values.
-tensordata :: Storage -> IO [HsReal]
-tensordata s = withStorageState s $ \st s' ->
+storagedata :: Storage -> IO [HsReal]
+storagedata s = withStorageState s $ \st s' ->
   ptrArray2hs (Sig.c_data st) (arrayLen st) (Sig.cstorage s)
  where
   arrayLen :: Ptr CState -> Ptr CStorage -> IO Int
   arrayLen st p = fromIntegral <$> Sig.c_size st p
 
 -- | Returns the number of elements in the storage. Equivalent to #.
-size :: Storage -> IO StorageSize
+size :: Storage -> IO Int
 size s = withStorageState s $ \st s' -> fromIntegral <$> (Sig.c_size st s')
 
 -- | set the value at 'Index' to 'HsReal' in a given 'Storage'.
@@ -135,7 +135,7 @@ newWithMapping pcc' pd ci = mkStorageIO $ \st -> do
 newWithData :: [HsReal] -> StorageSize -> IO Storage
 newWithData pr pd = mkStorageIO $ \st -> do
   let crs = hs2cReal <$> pr
-  pr' <- FM.withArray (deepseq crs crs) pure
+  pr' <- FM.newArray crs
   Sig.c_newWithData st pr' (fromIntegral pd)
 
 -- | Convenience method for 'newWithData'

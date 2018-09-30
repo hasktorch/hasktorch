@@ -3,7 +3,6 @@ module Torch.Indef.Internal
   ( throwFIXME
   , throwNE
   , throwGT4
-  , ptrArray2hs
   ) where
 
 import Foreign
@@ -23,12 +22,6 @@ throwGT4 :: MonadThrow io => String -> io x
 throwGT4 fnname = throwFIXME
   ("review how TH supports `" ++ fnname ++ "` operations on > rank-4 tensors")
   (fnname ++ " with >4 rank")
-
-ptrArray2hs :: (Ptr a -> IO (Ptr CReal)) -> (Ptr a -> IO Int) -> ForeignPtr a -> IO [HsReal]
-ptrArray2hs updPtrArray toSize fp = do
-  sz <- withForeignPtr fp toSize
-  creals <- withForeignPtr fp updPtrArray
-  (fmap.fmap) c2hsReal (FM.peekArray sz creals)
 
 -- ========================================================================= --
 

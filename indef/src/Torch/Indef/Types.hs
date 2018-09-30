@@ -26,6 +26,7 @@ module Torch.Indef.Types
   , withGen
   , managedState
   , managedTensor
+  , ptrArray2hs
 
   , withDynamicState, withStorageState
   , with2DynamicState
@@ -154,6 +155,12 @@ newtype AllocatorContext = AllocatorContext (Ptr ())
 {-# WARNING AllocatorContext "this should not be used or referenced -- we are still figuring out what to do with this." #-}
 
 -------------------------------------------------------------------------------
+
+ptrArray2hs :: (Ptr a -> IO (Ptr CReal)) -> (Ptr a -> IO Int) -> ForeignPtr a -> IO [HsReal]
+ptrArray2hs updPtrArray toSize fp = do
+  sz <- withForeignPtr fp toSize
+  creals <- withForeignPtr fp updPtrArray
+  (fmap.fmap) c2hsReal (FM.peekArray sz creals)
 
 
 -- | helper functions to start using the Managed Monad more.

@@ -31,25 +31,33 @@ module Torch.Indef.Dynamic.Tensor.Math where
 
 import Foreign hiding (new)
 import Foreign.Ptr
-import qualified Torch.Sig.Tensor.Math   as Sig
-import qualified Torch.Types.TH as TH (IndexStorage)
-import qualified Foreign.Marshal as FM
+import Control.Monad.Managed
 import Numeric.Dimensions
 import System.IO.Unsafe
-
+import qualified Foreign.Marshal as FM
 
 import Torch.Indef.Dynamic.Tensor
 import Torch.Indef.Types
-import qualified Torch.Indef.Index as Ix
+import qualified Torch.Indef.Index     as Ix
+import qualified Torch.Sig.Tensor.Math as Sig
+import qualified Torch.Sig.Types       as Sig
+import qualified Torch.Sig.State       as Sig
+import qualified Torch.Types.TH        as TH (IndexStorage)
 
 
 -- | fill a dynamic tensor, inplace, with the given value.
 fill_ :: Dynamic -> HsReal -> IO ()
-fill_ t v = withDynamicState t $ shuffle2 Sig.c_fill (hs2cReal v)
+fill_ t v = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_fill s' t' (hs2cReal v)
 
 -- | mutate a tensor, inplace, filling it with zero values.
 zero_ :: Dynamic -> IO ()
-zero_ t = withDynamicState t Sig.c_zero
+zero_ t = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_zero s' t'
 
 -- | mutate a tensor, inplace, resizing the tensor to the given IndexStorage
 -- size and replacing its value with zeros.
