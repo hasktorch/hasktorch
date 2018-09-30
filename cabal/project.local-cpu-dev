@@ -10,15 +10,15 @@ library-profiling: True
 profiling: True
 
 -- hardcode this to your aten repository, just like in the regular CPU build.
-extra-lib-dirs: /home/stites/git/hasktorch/vendor/aten/build/lib/
+extra-lib-dirs:     /home/stites/git/hasktorch/ffi/deps/aten/build/lib
 
 -- This is a hack around the cabal new-* bug where you can't add multi-line `dirs`:
 -----------------------------------------------------------------------------------
-extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/
-extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/TH
-extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/THNN
-extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/THC
-extra-include-dirs: /home/stites/git/hasktorch/vendor/aten/build/include/THCUNN
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include/TH
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include/THNN
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include/THC
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include/THCUNN
 
 program-locations
   ghc-location:     /opt/ghc/8.4.3/bin/ghc
@@ -26,7 +26,8 @@ program-locations
 
 package *
   -- add profiling on all (just in case)
-  ghc-options: -fprof-auto
+  ghc-options: -fprof-auto -Wall -Widentities -Wincomplete-record-updates -fprint-expanded-synonyms -fprint-explicit-foralls -fprint-explicit-kinds -fprint-potential-instances -H16m
+
   -- set +lite and +debug, which are common flags for hasktorch (maybe others)
   flags: -cuda +lite +debug
 
