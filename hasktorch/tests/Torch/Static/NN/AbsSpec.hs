@@ -10,7 +10,7 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  let Just (x :: DoubleTensor '[2, 4]) = fromList [-4..4-1]
+  Just (x :: DoubleTensor '[2, 4]) <- runIO $ fromList [-4..4-1]
   describe "abs_updateOutput" $ do
     it "runs the absolute function" $ do
       y <- tensordata =<< abs_updateOutput x

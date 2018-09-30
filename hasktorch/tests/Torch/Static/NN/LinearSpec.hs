@@ -38,13 +38,13 @@ weightsL = lens weights $ \(Linear (_, b)) w' -> Linear (w', b)
 biasL :: Lens' (Linear i o) (Tensor '[o])
 biasL = lens bias $ \(Linear (w, _)) b' -> Linear (w, b')
 
-update
+specupdate
   :: forall i h o
   .  All KnownDim '[i, h, o]
   => FF2Network i h o
   -> FF2Network i h o
   -> FF2Network i h o
-update i g = FF2Network
+specupdate i g = FF2Network
   { _layer1 = B.add (_layer1 i) (_layer1 g)
   , _layer2 = B.add (_layer2 i) (_layer2 g)
   }
@@ -88,9 +88,9 @@ singleLayer = do
           lr = 1.0
           (_, (ll', o)) = backprop2 (linear lr) ll y
 
-      it "returns updated weights" $ weights ll' =##= 1   -- 1/2
-      it "returns updated bias"    $ bias    ll' =##= 1   -- 1/2
-      it "returns the updated output tensor" $ o =##= 2/3 -- 1/3
+      it "returns specupdated weights" $ weights ll' =##= 1   -- 1/2
+      it "returns specupdated bias"    $ bias    ll' =##= 1   -- 1/2
+      it "returns the specupdated output tensor" $ o =##= 2/3 -- 1/3
 
 -- ========================================================================= --
 
@@ -191,10 +191,10 @@ twoLayerForceReLU = do
   oneInput :: Tensor '[4]
   oneInput = constant 1
 
-  l1weightgrad :: Tensor '[4, 6]
+  l1weightgrad :: IO (Tensor '[4, 6])
   l1weightgrad = unsafeMatrix $ replicate 4 [ 0, 0, 0,-1,-1,-1]
 
-  l2weightgrad :: Tensor '[6, 2]
+  l2weightgrad :: IO (Tensor '[6, 2])
   l2weightgrad = unsafeMatrix $ replicateN 3
     [ [ 0, 0]
     , [ 4,-4]
@@ -216,7 +216,7 @@ twoLayerOverfit finalLayer loss postproc = do
             lr = 0.01
         let net' = train lr net y -- gradBP2 (bCECriterion True True Nothing t .: ff2network lr) net y
         -- print (grad ^. layer2 . weightsL)
-        -- let net' = update net grad
+        -- let net' = specupdate net grad
 
         [l', r'] <- tensordata (infer net' y)
         -- print [l', r']
@@ -224,7 +224,7 @@ twoLayerOverfit finalLayer loss postproc = do
         (i, r, r') `shouldSatisfy` (\(_, r, r') -> r' > r || (r' + (0.2 * speedup * 2)) > r)
         pure (net', (l', r'))
         ) (net0, (l0, r0)) [1..50]
-    let fin = (unsafeVector [fl, fr] :: Tensor '[2])
+    fin  :: Tensor '[2] <- unsafeVector [fl, fr]
     -- print fin
     lapproximately 0.08 fin [0, 1]
   where
@@ -245,7 +245,7 @@ twoLayerOverfit finalLayer loss postproc = do
       -> FF2Network 4 6 2  -- ^ ff2network architecture
       -> Tensor '[4]       -- ^ input
       -> FF2Network 4 6 2  -- ^ new ff2network architecture
-    train lr arch inp = update arch grad
+    train lr arch inp = specupdate arch grad
       where
         (grad, _) = gradBP2 (loss .: ff2network' lr) arch inp
 
