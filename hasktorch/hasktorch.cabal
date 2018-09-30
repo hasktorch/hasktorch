@@ -1,5 +1,5 @@
 cabal-version:  2.2
-name:           hasktorch-core
+name:           hasktorch
 version:        0.1.0.0
 synopsis:       Torch for tensors and neural networks in Haskell
 description:    core tensor abstractions wrapping raw TH bindings
@@ -28,7 +28,7 @@ executable memcheck
   hs-source-dirs: exe
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core
+    , hasktorch
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -42,7 +42,8 @@ test-suite spec
     , base >=4.7 && <5
     , dimensions
     , ghc-typelits-natnormalise
-    , hasktorch-core
+    , hasktorch
+    , hasktorch-types-th
     , hspec >=2.4.4
     -- , hspec-discover
     , singletons >= 2.4.1
@@ -51,22 +52,24 @@ test-suite spec
     , mtl
     , microlens-platform
     , monad-loops
+    , managed
     , singletons
     , time
     , transformers
   other-modules:
       Orphans
-    , MemorySpec
-    , RawLapackSVDSpec
-    , GarbageCollectionSpec
-    , Torch.Prelude.Extras
-    , Torch.Core.LogAddSpec
-    , Torch.Core.RandomSpec
+    -- , MemorySpec
+    -- , RawLapackSVDSpec
+    -- , GarbageCollectionSpec
+    -- , Torch.Prelude.Extras
+    -- , Torch.Core.LogAddSpec
+    -- , Torch.Core.RandomSpec
 
     -- We can't move this to hasktorch-indef until backpack gets some updates:
     , Torch.Static.TensorSpec
-    , Torch.Static.NN.AbsSpec
-    , Torch.Static.NN.LinearSpec
+    , Torch.StorageSpec
+    -- , Torch.Static.NN.AbsSpec
+    -- , Torch.Static.NN.LinearSpec
     -- , Torch.Static.NN.Conv1dSpec
     -- , Torch.Static.NN.Conv2dSpec
     -- , Torch.Static.NN.ReLUSpec
@@ -78,7 +81,7 @@ library
   hs-source-dirs: utils
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core-cpu
+    , hasktorch-cpu
     , hasktorch-types-th
 
     , containers
@@ -149,7 +152,7 @@ library
   }
   if flag(cuda) {
     build-depends:
-        hasktorch-core-gpu
+        hasktorch-gpu
 
     reexported-modules:
         Torch.Cuda.Long
@@ -188,7 +191,7 @@ library
   }
 
 
-library hasktorch-core-cpu
+library hasktorch-cpu
   hs-source-dirs: src, utils
   default-language: Haskell2010
   default-extensions: LambdaCase, DataKinds, TypeFamilies, TypeSynonymInstances
@@ -882,7 +885,7 @@ library hasktorch-core-cpu
 
 
 
-library hasktorch-core-gpu
+library hasktorch-gpu
   hs-source-dirs: src, utils
   default-language: Haskell2010
   default-extensions: LambdaCase, DataKinds, TypeFamilies, TypeSynonymInstances

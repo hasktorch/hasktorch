@@ -38,7 +38,7 @@ library
     , backprop
     , dimensions
     , hashable
-    , hasktorch-core
+    , hasktorch
     , microlens-platform
     , microlens-th
     , singletons
@@ -92,7 +92,7 @@ benchmark bench
   build-depends:
       base
     , hasktorch-zoo
-    , hasktorch-core
+    , hasktorch
     , random-shuffle
     , transformers
     , list-t

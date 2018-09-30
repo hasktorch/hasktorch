@@ -29,7 +29,7 @@ executable gradient-descent
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core
+    , hasktorch
     , microlens >=0.4.8.1
     , dimensions
     , singletons
@@ -44,7 +44,7 @@ executable multivariate-normal
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core
+    , hasktorch
   other-modules:
       Paths_hasktorch_examples
   default-language: Haskell2010
@@ -58,7 +58,7 @@ executable lasso
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core
+    , hasktorch
     , microlens
   other-modules:
       Paths_hasktorch_examples
@@ -71,7 +71,7 @@ executable ad
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core
+    , hasktorch
     , singletons
     , dimensions
   other-modules:
@@ -86,7 +86,7 @@ executable bayesian-regression
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core
+    , hasktorch
   other-modules:
       Paths_hasktorch_examples
   if flag(cuda)
@@ -104,7 +104,7 @@ executable download-mnist
     , cryptonite
     , directory
     , filepath
-    , hasktorch-core
+    , hasktorch
     , network-uri
   other-modules:
       Paths_hasktorch_examples
@@ -117,7 +117,7 @@ executable ff-typed
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core
+    , hasktorch
     , dimensions
   other-modules:
       Paths_hasktorch_examples
@@ -130,7 +130,7 @@ executable ff-untyped
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core
+    , hasktorch
     , dimensions
     , singletons
   other-modules:
@@ -144,7 +144,7 @@ executable static-tensor-usage
   ghc-options: -Wall -fno-cse
   build-depends:
       base >=4.7 && <5
-    , hasktorch-core
+    , hasktorch
 
   other-modules:
       Paths_hasktorch_examples
@@ -167,7 +167,7 @@ executable lenet-cifar10
   build-depends:
       base >=4.7 && <5
     , backprop
-    , hasktorch-core
+    , hasktorch
     , unordered-containers
     , dimensions
     , hasktorch-zoo
@@ -208,7 +208,7 @@ executable lenet-cifar10-initialization
     , filepath
     , unordered-containers
     , ghc-typelits-natnormalise
-    , hasktorch-core
+    , hasktorch
     , hasktorch-zoo
 
     , dlist
@@ -245,7 +245,7 @@ executable lenet-cifar10-trainfour
     , directory
     , filepath
     , ghc-typelits-natnormalise
-    , hasktorch-core
+    , hasktorch
     , hasktorch-zoo
 
     , dlist
