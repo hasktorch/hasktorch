@@ -31,8 +31,7 @@ import qualified Torch.Sig.Tensor.Math.Pairwise as Sig
 
 -- | Call Torch's C-level @equal@ function.
 equal :: Dynamic -> Dynamic -> IO Bool
-equal r t = flip with (fmap (== 1))
-   $  Sig.c_equal
+equal r t = fmap (== 1) . withLift $ Sig.c_equal
   <$> managedState
   <*> managedTensor r
   <*> managedTensor t
@@ -110,42 +109,96 @@ bitxor_ t v = _bitxor t t v
 -- The remainder of this module includes C-styled versions of the haskell API
 
 _add :: Dynamic -> Dynamic -> HsReal -> IO ()
-_add r t v = with2DynamicState r t $ shuffle3 Sig.c_add (hs2cReal v)
+_add r t v = withLift $ Sig.c_add
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _sub :: Dynamic -> Dynamic -> HsReal -> IO ()
-_sub r t v = with2DynamicState r t $ shuffle3 Sig.c_sub (hs2cReal v)
+_sub r t v = withLift $ Sig.c_sub
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _add_scaled :: Dynamic -> Dynamic -> HsReal -> HsReal -> IO ()
-_add_scaled r t v0 v1 = with2DynamicState r t $ shuffle3'2 Sig.c_add_scaled (hs2cReal v0) (hs2cReal v1)
+_add_scaled r t v0 v1 = withLift $ Sig.c_add_scaled
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v0)
+  <*> pure (hs2cReal v1)
 
 _sub_scaled :: Dynamic -> Dynamic -> HsReal -> HsReal -> IO ()
-_sub_scaled r t v0 v1 = with2DynamicState r t $ shuffle3'2 Sig.c_sub_scaled (hs2cReal v0) (hs2cReal v1)
+_sub_scaled r t v0 v1 = withLift $ Sig.c_sub_scaled
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v0)
+  <*> pure (hs2cReal v1)
 
 _mul :: Dynamic -> Dynamic -> HsReal -> IO ()
-_mul r t v = with2DynamicState r t $ shuffle3 Sig.c_mul (hs2cReal v)
+_mul r t v = withLift $ Sig.c_mul
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _div :: Dynamic -> Dynamic -> HsReal -> IO ()
-_div r t v = with2DynamicState r t $ shuffle3 Sig.c_div (hs2cReal v)
+_div r t v = withLift $ Sig.c_div
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _lshift :: Dynamic -> Dynamic -> HsReal -> IO ()
-_lshift r t v = with2DynamicState r t $ shuffle3 Sig.c_lshift (hs2cReal v)
+_lshift r t v = withLift $ Sig.c_lshift
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _rshift :: Dynamic -> Dynamic -> HsReal -> IO ()
-_rshift r t v = with2DynamicState r t $ shuffle3 Sig.c_rshift (hs2cReal v)
+_rshift r t v = withLift $ Sig.c_rshift
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _fmod :: Dynamic -> Dynamic -> HsReal -> IO ()
-_fmod r t v = with2DynamicState r t $ shuffle3 Sig.c_fmod (hs2cReal v)
+_fmod r t v = withLift $ Sig.c_fmod
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _remainder :: Dynamic -> Dynamic -> HsReal -> IO ()
-_remainder r t v = with2DynamicState r t $ shuffle3 Sig.c_remainder (hs2cReal v)
+_remainder r t v = withLift $ Sig.c_remainder
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _bitand :: Dynamic -> Dynamic -> HsReal -> IO ()
-_bitand r t v = with2DynamicState r t $ shuffle3 Sig.c_bitand (hs2cReal v)
+_bitand r t v = withLift $ Sig.c_bitand
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _bitor :: Dynamic -> Dynamic -> HsReal -> IO ()
-_bitor r t v = with2DynamicState r t $ shuffle3 Sig.c_bitor (hs2cReal v)
+_bitor r t v = withLift $ Sig.c_bitor
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _bitxor :: Dynamic -> Dynamic -> HsReal -> IO ()
-_bitxor r t v = with2DynamicState r t $ shuffle3 Sig.c_bitxor (hs2cReal v)
+_bitxor r t v = withLift $ Sig.c_bitxor
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 

@@ -103,13 +103,24 @@ _median (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
 --
 -- Inplace and C-Style mutation
 _sum :: Dynamic -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
-_sum t0 t1 i0 i1 = with2DynamicState t0 t1 $ shuffle3'2 Sig.c_sum (fromIntegral i0) (fromKeepDim i1)
+_sum t0 t1 i0 i1 = withLift $ Sig.c_sum
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromIntegral i0)
+  <*> pure (fromKeepDim i1)
 
 -- | take the product of the tensor in the specified dimension.
 --
 -- Inplace and C-Style mutation
 _prod :: Dynamic -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
-_prod t0 t1 i0 i1 = with2DynamicState t0 t1 $ shuffle3'2 Sig.c_prod (fromIntegral i0) (fromKeepDim i1)
+_prod t0 t1 i0 i1 = withLift $ Sig.c_prod
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromIntegral i0)
+  <*> pure (fromKeepDim i1)
+
 
 withKeepDim
   :: ((Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ())

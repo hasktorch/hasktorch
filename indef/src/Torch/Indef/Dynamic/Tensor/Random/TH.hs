@@ -227,19 +227,35 @@ logNormal d g a b = flip withInplace d $ \t -> _logNormal t g a b
 _random t g = tenGen t g Sig.c_random
 
 -- | call C-level @clampedRandom@
-_clampedRandom r g tup =
-  tenGen r g $ shuffle3'2 Sig.c_clampedRandom (fromIntegral a) (fromIntegral b)
+_clampedRandom r g tup = withLift $ Sig.c_clampedRandom
+  <$> managedState
+  <*> managedTensor r
+  <*> managedGen g
+  <*> pure (fromIntegral a)
+  <*> pure (fromIntegral b)
   where
     (a, b) = ord2TupleValues tup
 
 -- | call C-level @cappedRandom@
-_cappedRandom r g a = tenGen r g $ shuffle3 Sig.c_cappedRandom (fromIntegral a)
+_cappedRandom r g a = withLift $ Sig.c_cappedRandom
+  <$> managedState
+  <*> managedTensor r
+  <*> managedGen g
+  <*> pure (fromIntegral a)
 
 -- | call C-level @geometric@
-_geometric r g a = tenGen r g $ shuffle3 Sig.c_geometric (hs2cAccReal a)
+_geometric r g a = withLift $ Sig.c_geometric
+  <$> managedState
+  <*> managedTensor r
+  <*> managedGen g
+  <*> pure (hs2cAccReal a)
 
 -- | call C-level @bernoulli@
-_bernoulli r g a = tenGen r g $ shuffle3 Sig.c_bernoulli (hs2cAccReal a)
+_bernoulli r g a = withLift $ Sig.c_bernoulli
+  <$> managedState
+  <*> managedTensor r
+  <*> managedGen g
+  <*> pure (hs2cAccReal a)
 
 -- | call C-level @bernoulli_FloatTensor@
 _bernoulli_FloatTensor r g a = tenGenTen r g (snd $ TH.floatDynamicState a) Sig.c_bernoulli_FloatTensor
@@ -249,17 +265,28 @@ _bernoulli_DoubleTensor r g a = tenGenTen r g (snd $ TH.doubleDynamicState a) Si
 
 -- | call C-level @uniform@
 _uniform :: Dynamic -> Generator -> Ord2Tuple HsAccReal -> IO ()
-_uniform r g tup = tenGen r g $ shuffle3'2 Sig.c_uniform (hs2cAccReal a) (hs2cAccReal b)
+_uniform r g tup = withLift $ Sig.c_uniform
+  <$> managedState
+  <*> managedTensor r
+  <*> managedGen g
+  <*> pure (hs2cAccReal a)
+  <*> pure (hs2cAccReal b)
   where
     (a, b) = ord2TupleValues tup
 
 -- | call C-level @normal@
 _normal :: Dynamic -> Generator -> HsAccReal -> Positive HsAccReal -> IO ()
-_normal r g a b = tenGen r g $ shuffle3'2 Sig.c_normal (hs2cAccReal a) (hs2cAccReal $ positiveValue b)
+_normal r g a b = withLift $ Sig.c_normal
+  <$> managedState
+  <*> managedTensor r
+  <*> managedGen g
+  <*> pure (hs2cAccReal a)
+  <*> pure (hs2cAccReal $ positiveValue b)
+
 
 -- | call C-level @normal_means@
 _normal_means :: Dynamic -> Generator -> Dynamic -> Positive HsAccReal -> IO ()
-_normal_means r g m v = runManaged . (liftIO =<<) $ Sig.c_normal_means
+_normal_means r g m v = withLift $ Sig.c_normal_means
   <$> managedState
   <*> managedTensor r
   <*> managed (withForeignPtr . Sig.rng $ g)
@@ -268,7 +295,7 @@ _normal_means r g m v = runManaged . (liftIO =<<) $ Sig.c_normal_means
 
 -- | call C-level @normal_stddevs@
 _normal_stddevs :: Dynamic -> Generator -> HsAccReal -> Dynamic -> IO ()
-_normal_stddevs r g v m = runManaged . (liftIO =<<) $ Sig.c_normal_stddevs
+_normal_stddevs r g v m = withLift $ Sig.c_normal_stddevs
   <$> managedState
   <*> managedTensor r
   <*> managed (withForeignPtr . Sig.rng $ g)
@@ -277,7 +304,7 @@ _normal_stddevs r g v m = runManaged . (liftIO =<<) $ Sig.c_normal_stddevs
 
 -- | call C-level @normal_means_stddevs@
 _normal_means_stddevs :: Dynamic -> Generator -> Dynamic -> Dynamic -> IO ()
-_normal_means_stddevs r g a b = runManaged . (liftIO =<<) $ Sig.c_normal_means_stddevs
+_normal_means_stddevs r g a b = withLift $ Sig.c_normal_means_stddevs
   <$> managedState
   <*> managedTensor r
   <*> managed (withForeignPtr . Sig.rng $ g)
@@ -286,7 +313,7 @@ _normal_means_stddevs r g a b = runManaged . (liftIO =<<) $ Sig.c_normal_means_s
 
 -- | call C-level @exponential@
 _exponential :: Dynamic -> Generator -> HsAccReal -> IO ()
-_exponential r g v = runManaged . (liftIO =<<) $ Sig.c_exponential
+_exponential r g v = withLift $ Sig.c_exponential
   <$> managedState
   <*> managedTensor r
   <*> managed (withForeignPtr . Sig.rng $ g)
@@ -294,7 +321,7 @@ _exponential r g v = runManaged . (liftIO =<<) $ Sig.c_exponential
 
 -- | call C-level @standard_gamma@
 _standard_gamma :: Dynamic -> Generator -> Dynamic -> IO ()
-_standard_gamma r g m = runManaged . (liftIO =<<) $ Sig.c_standard_gamma
+_standard_gamma r g m = withLift $ Sig.c_standard_gamma
   <$> managedState
   <*> managedTensor r
   <*> managed (withForeignPtr . Sig.rng $ g)
@@ -302,7 +329,7 @@ _standard_gamma r g m = runManaged . (liftIO =<<) $ Sig.c_standard_gamma
 
 -- | call C-level @cauchy@
 _cauchy :: Dynamic -> Generator -> HsAccReal -> HsAccReal -> IO ()
-_cauchy r g a b = runManaged . (liftIO =<<) $ Sig.c_cauchy
+_cauchy r g a b = withLift $ Sig.c_cauchy
   <$> managedState
   <*> managedTensor r
   <*> managed (withForeignPtr . Sig.rng $ g)
@@ -311,7 +338,7 @@ _cauchy r g a b = runManaged . (liftIO =<<) $ Sig.c_cauchy
 
 -- | call C-level @logNormal@
 _logNormal :: Dynamic -> Generator -> HsAccReal -> Positive HsAccReal -> IO ()
-_logNormal r g a b = runManaged . (liftIO =<<) $ Sig.c_logNormal
+_logNormal r g a b = withLift $ Sig.c_logNormal
   <$> managedState
   <*> managedTensor r
   <*> managed (withForeignPtr . Sig.rng $ g)
@@ -320,7 +347,7 @@ _logNormal r g a b = runManaged . (liftIO =<<) $ Sig.c_logNormal
 
 -- | call C-level @multinomial@
 _multinomial :: LongDynamic -> Generator -> Dynamic -> Int -> Int -> IO ()
-_multinomial r g t a b = runManaged . (liftIO =<<) $ Sig.c_multinomial
+_multinomial r g t a b = withLift $ Sig.c_multinomial
   <$> managedState
   <*> managed (withForeignPtr . snd . Sig.longDynamicState $ r)
   <*> managed (withForeignPtr . Sig.rng $ g)
@@ -330,7 +357,7 @@ _multinomial r g t a b = runManaged . (liftIO =<<) $ Sig.c_multinomial
 
 -- | call C-level @multinomialAliasSetup@
 _multinomialAliasSetup :: Dynamic -> LongDynamic -> Dynamic -> IO ()
-_multinomialAliasSetup r l t = runManaged . (liftIO =<<) $ Sig.c_multinomialAliasSetup
+_multinomialAliasSetup r l t = withLift $ Sig.c_multinomialAliasSetup
   <$> managedState
   <*> managedTensor r
   <*> managed (withForeignPtr . snd . Sig.longDynamicState $ l)
@@ -338,7 +365,7 @@ _multinomialAliasSetup r l t = runManaged . (liftIO =<<) $ Sig.c_multinomialAlia
 
 -- | call C-level @multinomialAliasDraw@
 _multinomialAliasDraw  :: LongDynamic -> Generator -> LongDynamic -> Dynamic -> IO ()
-_multinomialAliasDraw r g l t = runManaged . (liftIO =<<) $ Sig.c_multinomialAliasDraw
+_multinomialAliasDraw r g l t = withLift $ Sig.c_multinomialAliasDraw
   <$> managedState
   <*> managed (withForeignPtr . snd . Sig.longDynamicState $ r)
   <*> managed (withForeignPtr . Sig.rng $ g)
@@ -353,11 +380,10 @@ tenGen
   -> Generator
   -> (Ptr CState -> Ptr CTensor -> Ptr CGenerator -> IO x)
   -> IO x
-tenGen r g fn = flip with pure $ do
-  s' <- managedState
-  r' <- managedTensor r
-  g' <- managed $ withGen g
-  liftIO $ fn s' r' g'
+tenGen r g fn = withLift $ fn
+  <$> managedState
+  <*> managedTensor r
+  <*> managedGen g
 
 tenGenTen
   :: Dynamic
@@ -365,6 +391,9 @@ tenGenTen
   -> ForeignPtr a
   -> (Ptr CState -> Ptr CTensor -> Ptr CGenerator -> Ptr a -> IO x)
   -> IO x
-tenGenTen r g t fn = tenGen r g $ \s' r' g' ->
-    withForeignPtr t (fn s' r' g')
+tenGenTen r g t fn = withLift $ fn
+  <$> managedState
+  <*> managedTensor r
+  <*> managedGen g
+  <*> managed (withForeignPtr t)
 

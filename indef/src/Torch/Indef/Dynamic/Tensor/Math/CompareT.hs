@@ -30,12 +30,22 @@ import Torch.Indef.Dynamic.Tensor
 
 _ltTensorT, _leTensorT, _gtTensorT, _geTensorT, _neTensorT, _eqTensorT
   :: Dynamic -> Dynamic -> Dynamic -> IO ()
-_ltTensorT = shuffle3 with3DynamicState Sig.c_ltTensorT
-_leTensorT = shuffle3 with3DynamicState Sig.c_leTensorT
-_gtTensorT = shuffle3 with3DynamicState Sig.c_gtTensorT
-_geTensorT = shuffle3 with3DynamicState Sig.c_geTensorT
-_neTensorT = shuffle3 with3DynamicState Sig.c_neTensorT
-_eqTensorT = shuffle3 with3DynamicState Sig.c_eqTensorT
+_ltTensorT = compareTensorTOp Sig.c_ltTensorT
+_leTensorT = compareTensorTOp Sig.c_leTensorT
+_gtTensorT = compareTensorTOp Sig.c_gtTensorT
+_geTensorT = compareTensorTOp Sig.c_geTensorT
+_neTensorT = compareTensorTOp Sig.c_neTensorT
+_eqTensorT = compareTensorTOp Sig.c_eqTensorT
+
+compareTensorTOp
+  :: (Ptr CState -> Ptr CTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
+  -> Dynamic -> Dynamic -> Dynamic -> IO ()
+compareTensorTOp fn a b c = withLift $ fn
+  <$> managedState
+  <*> managedTensor a
+  <*> managedTensor b
+  <*> managedTensor c
+
 
 compareTensorOp
   :: (Ptr CState -> Ptr CByteTensor -> Ptr CTensor -> Ptr CTensor -> IO ())

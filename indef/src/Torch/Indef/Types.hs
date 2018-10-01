@@ -21,18 +21,26 @@ module Torch.Indef.Types
   , Step(..), Stride(..), StorageOffset(..), Size(..), KeepDim(..), fromKeepDim, keep, ignore, SortOrder(..), TopKOrder(..)
   , StorageSize(..), AllocatorContext(..), Index(..)
 
-  , (.:), shuffle2, shuffle2'2, shuffle3, shuffle3'2
+  , (.:)
 
-  , withGen
+  -- manage arguments to c functions
   , managedState
+  , managedStorage
   , managedTensor
-  , ptrArray2hs
+  , managedGen
 
-  , withStorageState
+  -- lift managed IO actions
+  , withLift
+  , withDynamic
+  , withStorage
+
+  -- monadic patterns to be replaced with applicative-style
   , with2DynamicState
   , with3DynamicState
+
+  -- helper functions which may not be needed to be exported with applicative-style
   , mkDynamic, mkStorage
-  , mkDynamicIO, mkStorageIO
+  -- , mkDynamicIO, mkStorageIO
   ) where
 
 import Foreign hiding (with)
@@ -162,17 +170,6 @@ ptrArray2hs updPtrArray toSize fp = do
   creals <- withForeignPtr fp updPtrArray
   (fmap.fmap) c2hsReal (FM.peekArray sz creals)
 
-
--- | helper functions to start using the Managed Monad more.
---
--- FIXME: Try to replace a lot of the below with this function, but ultimately try to remove this helper.
-manage' :: (c -> ForeignPtr a) -> c -> Managed (Ptr a)
-manage' fn c = managed (withForeignPtr (fn c))
-
--- | helper function to join MonadIO and IO.
-joinIO :: MonadIO m => m (IO x) -> m x
-joinIO c = join (liftIO <$> c)
-
 -- | The blackbird combinator.
 --
 -- (stites): This happens often enough that I'm pulling in the blackbird
@@ -181,30 +178,6 @@ joinIO c = join (liftIO <$> c)
 (.:) :: (b -> c) -> (a0 -> a1 -> b) -> a0 -> a1 -> c
 (.:) = (.) . (.)
 infixl 5 .:
-
--- | shuffle 2 arguments for pointfree raw-ffi functions.
---
--- FIXME(stites): remove this
-shuffle2 :: (a -> b -> c -> d) -> c -> a -> b -> d
-shuffle2 fn c a b = fn a b c
-
--- | shuffle the first two arguments two positions to the right for pointfree raw-ffi functions.
---
--- FIXME(stites): remove this
-shuffle2'2 :: (a -> b -> c -> d -> e) -> c -> d -> a -> b -> e
-shuffle2'2 fn c d a b = fn a b c d
-
--- | shuffle the first three arguments to the right for pointfree raw-ffi functions.
---
--- FIXME(stites): remove this
-shuffle3 :: (a -> b -> c -> d -> e) -> d -> a -> b -> c -> e
-shuffle3 fn d a b c = fn a b c d
-
--- | shuffle the first three arguments two positions to the right for pointfree raw-ffi functions.
---
--- FIXME(stites): remove this
-shuffle3'2 :: (a -> b -> c -> d -> e -> f) -> d -> e -> a -> b -> c -> f
-shuffle3'2 fn d e a b c = fn a b c d e
 
 -- | run a function against the internal reference of a torch generator.
 withGen :: Sig.Generator -> (Ptr CGenerator -> IO x) -> IO x
@@ -217,12 +190,12 @@ managedState = managed (withForeignPtr Sig.torchstate)
 managedTensor :: Sig.Dynamic -> Managed (Ptr Sig.CTensor)
 managedTensor t = managed (withForeignPtr (Sig.ctensor t))
 
--- | run a function with access to a tensor's underlying state and C-tensor.
-withDynamicState :: Sig.Dynamic -> (Ptr Sig.CState -> Ptr Sig.CTensor -> IO x) -> IO x
-withDynamicState t fn =
-  flip with (uncurry fn) $ (,)
-    <$> managedState
-    <*> managedTensor t
+managedStorage :: Sig.Storage -> Managed (Ptr Sig.CStorage)
+managedStorage t = managed (withForeignPtr (Sig.cstorage t))
+
+managedGen :: Sig.Generator -> Managed (Ptr CGenerator)
+managedGen g = managed (withForeignPtr (Sig.rng g))
+
 
 -- | run a function with two tensors with reference to the first tensor's underlying state.
 with2DynamicState
@@ -230,11 +203,10 @@ with2DynamicState
   -> Sig.Dynamic
   -> (Ptr Sig.CState -> Ptr Sig.CTensor -> Ptr Sig.CTensor -> IO x)
   -> IO x
-with2DynamicState t0 t1 fn = do
-  flip with (\(a,b,c) -> fn a b c) $ (,,)
-    <$> managedState
-    <*> managedTensor t0
-    <*> managedTensor t1
+with2DynamicState t0 t1 fn = withLift $ fn
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
 
 -- | run a function with three tensors with reference to the first tensor's underlying state.
 with3DynamicState
@@ -243,37 +215,36 @@ with3DynamicState
   -> Sig.Dynamic
   -> (Ptr Sig.CState -> Ptr Sig.CTensor -> Ptr Sig.CTensor -> Ptr Sig.CTensor -> IO x)
   -> IO x
-with3DynamicState t0 t1 t2 fn = do
-  flip with (\(a,b,c,d) -> fn a b c d) $ (,,,)
-    <$> managedState
-    <*> managedTensor t0
-    <*> managedTensor t1
-    <*> managedTensor t2
+with3DynamicState t0 t1 t2 fn = withLift $ fn
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> managedTensor t2
+
+withLift :: Managed (IO x) -> IO x
+withLift = flip with pure . (liftIO =<<)
+
+-- | smart constructor for a Managed 'Sig.Dynamic' tensor
+withDynamic :: Managed (IO (Ptr Sig.CTensor)) -> IO Sig.Dynamic
+withDynamic = flip with mkDynamic . (liftIO =<<)
+
+-- | smart constructor for a Managed 'Sig.Storage' tensor
+withStorage :: Managed (IO (Ptr Sig.CStorage)) -> IO Sig.Storage
+withStorage = flip with mkStorage . (liftIO =<<)
 
 -- | smart constructor for a 'Sig.Dynamic' tensor
 mkDynamic :: Ptr Sig.CTensor -> IO Sig.Dynamic
 mkDynamic t = with managedState $ \s ->
   Sig.dynamic Sig.torchstate <$> newForeignPtrEnv SigTen.p_free s t
 
--- | smart constructor for a 'Sig.Dynamic' tensor with a given builder function.
-mkDynamicIO :: (Ptr Sig.CState -> IO (Ptr Sig.CTensor)) -> IO Sig.Dynamic
-mkDynamicIO builder = with managedState $ builder >=> mkDynamic
-
-
 -- | run a function with access to a 'Sig.Storage's underlying state and C-reference.
 withStorageState :: Sig.Storage -> (Ptr Sig.CState -> Ptr Sig.CStorage -> IO x) -> IO x
-withStorageState t fn = do
-  withForeignPtr (Sig.storageStateRef t) $ \sref ->
-    withForeignPtr (Sig.cstorage t) $ \tref ->
-      fn sref tref
+withStorageState t fn = flip with pure . (liftIO =<<) $ fn
+  <$> managedState
+  <*> managedStorage t
 
 -- | smart constructor for 'Sig.Storage'
 mkStorage :: Ptr Sig.CStorage -> IO Sig.Storage
 mkStorage t = with managedState $ \s ->
   Sig.storage Sig.torchstate <$> newForeignPtrEnv SigStore.p_free s t
-
--- | smart constructor for 'Sig.Storage' with a given builder function.
-mkStorageIO :: (Ptr Sig.CState -> IO (Ptr Sig.CStorage)) -> IO Sig.Storage
-mkStorageIO builder = with managedState $ builder >=> mkStorage
-
 

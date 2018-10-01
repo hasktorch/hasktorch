@@ -21,6 +21,7 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Storage
   ( module X
 
@@ -51,13 +52,14 @@ module Torch.Indef.Storage
 
 import Torch.Indef.Storage.Copy as X
 
-import Foreign
+import Foreign hiding (with, new)
 import Foreign.C.Types
 import GHC.ForeignPtr (ForeignPtr)
 import GHC.Int
 import Control.Monad
 import Control.Monad.Managed
 import Control.DeepSeq
+import System.IO.Unsafe
 
 import Torch.Indef.Types
 import Torch.Indef.Internal
@@ -69,50 +71,80 @@ import qualified Torch.Sig.Storage.Memory as Sig
 import qualified Foreign.Marshal.Array    as FM
 
 -- | return the internal data of 'Storage' as a list of haskell values.
-storagedata :: Storage -> IO [HsReal]
-storagedata s = withStorageState s $ \st s' ->
-  ptrArray2hs (Sig.c_data st) (arrayLen st) (Sig.cstorage s)
+storagedata :: Storage -> [HsReal]
+storagedata s = unsafePerformIO . flip with (pure . fmap c2hsReal) $ do
+  st <- managedState
+  s' <- managedStorage s
+  liftIO $ do
+    sz <- liftIO $ Sig.c_size st s'
+    creals <- liftIO $ Sig.c_data st s'
+    FM.peekArray (fromIntegral sz) creals
  where
   arrayLen :: Ptr CState -> Ptr CStorage -> IO Int
   arrayLen st p = fromIntegral <$> Sig.c_size st p
+{-# NOINLINE storagedata #-}
 
 -- | Returns the number of elements in the storage. Equivalent to #.
 size :: Storage -> IO Int
-size s = withStorageState s $ \st s' -> fromIntegral <$> (Sig.c_size st s')
+size s = fmap fromIntegral . withLift $ Sig.c_size
+  <$> managedState
+  <*> managedStorage s
 
 -- | set the value at 'Index' to 'HsReal' in a given 'Storage'.
 set :: Storage -> Index -> HsReal -> IO ()
-set s pd v = withStorageState s  $ \st s' -> Sig.c_set st s' (fromIntegral pd) (hs2cReal v)
+set s pd v = withLift $ Sig.c_set
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral pd)
+  <*> pure (hs2cReal v)
 
 -- | get the value at 'Index' from a given 'Storage'.
 get :: Storage -> Index -> IO HsReal
-get s pd = withStorageState s  $ \st s' -> c2hsReal <$> Sig.c_get st s' (fromIntegral pd)
+get s pd = fmap c2hsReal . withLift $ Sig.c_get
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral pd)
 
 -- | make a new empty 'Storage'.
 empty :: IO Storage
-empty = mkStorageIO Sig.c_new
+empty = withStorage $ Sig.c_new
+  <$> managedState
 
 -- | create a new storage of a given length, 'StorageSize'.
 newWithSize :: StorageSize -> IO Storage
-newWithSize pd = mkStorageIO $ \st -> Sig.c_newWithSize st (fromIntegral pd)
+newWithSize pd = withStorage $ Sig.c_newWithSize
+  <$> managedState
+  <*> pure (fromIntegral pd)
 
 -- | make a new 'Storage' with a single value.
 newWithSize1 :: HsReal -> IO Storage
-newWithSize1 a0 = mkStorageIO $ \st -> Sig.c_newWithSize1 st (hs2cReal a0)
+newWithSize1 a0 = withStorage $ Sig.c_newWithSize1
+  <$> managedState
+  <*> pure (hs2cReal a0)
 
 -- | make a new 'Storage' with two values.
 newWithSize2 :: HsReal -> HsReal -> IO Storage
-newWithSize2 a0 a1 = mkStorageIO $ \st -> Sig.c_newWithSize2 st (hs2cReal a0) (hs2cReal a1)
+newWithSize2 a0 a1 = withStorage $ Sig.c_newWithSize2
+  <$> managedState
+  <*> pure (hs2cReal a0)
+  <*> pure (hs2cReal a1)
 
 -- | make a new 'Storage' with three values.
 newWithSize3 :: HsReal -> HsReal -> HsReal -> IO Storage
-newWithSize3 a0 a1 a2 = mkStorageIO $ \st ->
-  Sig.c_newWithSize3 st (hs2cReal a0) (hs2cReal a1) (hs2cReal a2)
+newWithSize3 a0 a1 a2 = withStorage $ Sig.c_newWithSize3
+  <$> managedState
+  <*> pure (hs2cReal a0)
+  <*> pure (hs2cReal a1)
+  <*> pure (hs2cReal a2)
 
 -- | make a new 'Storage' with four values.
 newWithSize4 :: HsReal -> HsReal -> HsReal -> HsReal -> IO Storage
-newWithSize4 a0 a1 a2 a3 = mkStorageIO $ \st ->
-  Sig.c_newWithSize4 st (hs2cReal a0) (hs2cReal a1) (hs2cReal a2) (hs2cReal a3)
+newWithSize4 a0 a1 a2 a3 = withStorage $ Sig.c_newWithSize4
+  <$> managedState
+  <*> pure (hs2cReal a0)
+  <*> pure (hs2cReal a1)
+  <*> pure (hs2cReal a2)
+  <*> pure (hs2cReal a3)
 
 -- | FIXME: This is totally broken. This takes a filename, size, and flags, and produces
 -- 'Storage' from these inputs. Figure out how to fix this, ideally.
@@ -124,19 +156,21 @@ newWithMapping
   -> StorageSize  -- ^ size
   -> Int32        -- ^ flags
   -> IO Storage
-newWithMapping pcc' pd ci = mkStorageIO $ \st -> do
-  pcc <- FM.newArray (map fromIntegral pcc')
-  Sig.c_newWithMapping st pcc (fromIntegral pd) (fromIntegral ci)
+newWithMapping pcc' pd ci = withStorage $ Sig.c_newWithMapping
+  <$> managedState
+  <*> liftIO (FM.newArray (map fromIntegral pcc'))
+  <*> pure (fromIntegral pd)
+  <*> pure (fromIntegral ci)
 
 -- | make a new 'Storage' from a given list and 'StorageSize'.
 --
 -- FIXME: find out if 'StorageSize' always corresponds to the length of the list. If so,
 -- remove it!
 newWithData :: [HsReal] -> StorageSize -> IO Storage
-newWithData pr pd = mkStorageIO $ \st -> do
-  let crs = hs2cReal <$> pr
-  pr' <- FM.newArray crs
-  Sig.c_newWithData st pr' (fromIntegral pd)
+newWithData pr pd = withStorage $ Sig.c_newWithData
+  <$> managedState
+  <*> liftIO (FM.newArray (hs2cReal <$> pr))
+  <*> pure (fromIntegral pd)
 
 -- | Convenience method for 'newWithData'
 fromList :: [HsReal] -> IO Storage
@@ -144,11 +178,17 @@ fromList pr = newWithData pr (fromIntegral $ length pr)
 
 -- | set the flags of a given 'Storage'. Flags are applied via bitwise-or.
 setFlag :: Storage -> Int8 -> IO ()
-setFlag s cc = withStorageState s $ \st s' -> Sig.c_setFlag st s' (fromIntegral cc)
+setFlag s cc = withLift $ Sig.c_setFlag
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral cc)
 
 -- | clear the flags of a given 'Storage'. Flags are cleanred via bitwise-and.
 clearFlag :: Storage -> Int8 -> IO ()
-clearFlag s cc = withStorageState s $ \st s' -> Sig.c_clearFlag st s' (fromIntegral cc)
+clearFlag s cc = withLift $ Sig.c_clearFlag
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral cc)
 
 -- | Increment the reference counter of the storage.
 --
@@ -157,15 +197,23 @@ clearFlag s cc = withStorageState s $ \st s' -> Sig.c_clearFlag st s' (fromInteg
 -- automatically. They can be useful in threaded environments. Note that these
 -- methods are atomic operations.
 retain :: Storage -> IO ()
-retain s = withStorageState s Sig.c_retain
+retain s = withLift $ Sig.c_retain
+  <$> managedState
+  <*> managedStorage s
 
 -- | Resize the storage to the provided size. /The new contents are undetermined/.
 resize :: Storage -> StorageSize -> IO ()
-resize s pd = withStorageState s $ \st s' -> Sig.c_resize st s' (fromIntegral pd)
+resize s pd = withLift $ Sig.c_resize
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral pd)
 
 -- | Fill the Storage with the given value.
 fill :: Storage -> Sig.HsReal -> IO ()
-fill s v = withStorageState s $ \st s' -> Sig.c_fill st s' (hs2cReal v)
+fill s v = withLift $ Sig.c_fill
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (hs2cReal v)
 
 
 {-

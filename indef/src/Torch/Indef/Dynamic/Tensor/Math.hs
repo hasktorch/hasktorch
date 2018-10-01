@@ -141,7 +141,11 @@ _catArray res ds d = runManaged $ do
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 _tril :: Dynamic -> Dynamic -> Integer -> IO ()
-_tril t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_tril (fromInteger i0)
+_tril t0 t1 i0 = withLift $ Sig.c_tril
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromInteger i0)
 
 -- | "Get the upper triangle of a tensor."
 --
@@ -151,7 +155,11 @@ _tril t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_tril (fromInteger i0)
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 _triu :: Dynamic -> Dynamic -> Integer -> IO ()
-_triu t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_triu (fromInteger i0)
+_triu t0 t1 i0 = withLift $ Sig.c_triu
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromInteger i0)
 
 -- | Concatinate two dynamic tensors along the specified dimension, treating the
 -- first argument as the return tensor, to be mutated in-place.

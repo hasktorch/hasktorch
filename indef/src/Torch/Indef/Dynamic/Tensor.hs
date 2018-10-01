@@ -61,14 +61,14 @@ import Torch.Indef.Internal
 import Torch.Indef.Index hiding (withDynamicState)
 import qualified Torch.Indef.Storage as Storage
 
-instance Show Dynamic where
-  show t = unsafePerformIO $ do
-    SomeDims ds <- getDims t
-    (vs, desc) <- showTensor
-      (get1d t) (get2d t) (\a b c -> get3d t a b c) (\a b c d -> get4d t a b c d)
-      (fromIntegral <$> listDims ds)
-    pure (vs ++ "\n" ++ desc)
-  {-# NOINLINE show #-}
+-- instance Show Dynamic where
+--   show t = unsafePerformIO $ do
+--     SomeDims ds <- getDims t
+--     (vs, desc) <- showTensor
+--       (pure . get1d t) (get2d t) (\a b c -> get3d t a b c) (\a b c d -> get4d t a b c d)
+--       (fromIntegral <$> listDims ds)
+--     pure (vs ++ "\n" ++ desc)
+--   {-# NOINLINE show #-}
 
 
 -- CPU ONLY:
@@ -99,12 +99,27 @@ tensordata t = flip with pure $ do
 #endif
 
 -- | get a value from dimension 1
-get1d :: Dynamic -> Int64 -> IO HsReal
-get1d t d1 = flip with (pure . c2hsReal) $ do
-  s <- managedState
-  t' <- managedTensor t
-  liftIO $ Sig.c_get1d s t' (fromIntegral d1)
+get1d :: Dynamic -> Int64 -> HsReal
+get1d t d1 = unsafePerformIO . flip with (pure . c2hsReal) . (liftIO =<<) $ Sig.c_get1d
+  <$> managedState
+  <*> managedTensor t
+  <*> pure (fromIntegral d1)
 {-# NOINLINE get1d #-}
+
+purify :: Managed a -> a
+purify = purifyAs id
+
+purifyAs :: (a -> b) -> Managed a -> b
+purifyAs fin mngd = unsafePerformIO $ with mngd (pure . fin)
+{-# NOINLINE purifyAs #-}
+
+-- | get a value from dimension 1
+get1dIO :: Dynamic -> Int64 -> HsReal
+get1dIO t d1 = purifyAs c2hsReal . (liftIO =<<) $ Sig.c_get1d
+  <$> managedState
+  <*> managedTensor t
+  <*> pure (fromIntegral d1)
+
 
 -- | get a value from dimension 2
 get2d :: Dynamic -> Int64 -> Int64 -> IO HsReal
@@ -301,37 +316,49 @@ newUnfold t a b c = flip with mkDynamic $ do
 --
 -- for more.
 newView :: Dynamic -> TH.IndexStorage -> IO Dynamic
-newView t ix = flip with mkDynamic $ do
-  s'  <- managedState
-  t'  <- managedTensor t
-  ix' <- managed $ withCPUIxStorage ix
-  liftIO $ Sig.c_newView s' t' ix'
+newView t ix = withDynamic $ Sig.c_newView
+  <$> managedState
+  <*> managedTensor t
+  <*> managed (withCPUIxStorage ix)
 
 -- | create an uninitialized tensor with the given size and strides (?)
 --
 -- FIXME: doublecheck what the IndexStorages stands for
 newWithSize :: TH.IndexStorage -> TH.IndexStorage -> IO Dynamic
-newWithSize l0 l1 =
-  withCPUIxStorage l0 $ \l0' ->
-    withCPUIxStorage l1 $ \l1' ->
-      mkDynamicIO $ \s ->
-        Sig.c_newWithSize s l0' l1'
+newWithSize l0 l1 = withDynamic $ Sig.c_newWithSize
+  <$> managedState
+  <*> managed (withCPUIxStorage l0)
+  <*> managed (withCPUIxStorage l1)
 
 -- | create an uninitialized 1d tensor
 newWithSize1d :: Size -> IO Dynamic
-newWithSize1d a0 = mkDynamicIO $ \s -> Sig.c_newWithSize1d s (fromIntegral a0)
+newWithSize1d a0 = withDynamic $ Sig.c_newWithSize1d
+  <$> managedState
+  <*> pure (fromIntegral a0)
 
 -- | create an uninitialized 2d tensor
 newWithSize2d :: Size -> Size -> IO Dynamic
-newWithSize2d a0 a1 = mkDynamicIO $ \s -> Sig.c_newWithSize2d s (fromIntegral a0) (fromIntegral a1)
+newWithSize2d a0 a1 = withDynamic $ Sig.c_newWithSize2d
+  <$> managedState
+  <*> pure (fromIntegral a0)
+  <*> pure (fromIntegral a1)
 
 -- | create an uninitialized 3d tensor
 newWithSize3d :: Size -> Size -> Size -> IO Dynamic
-newWithSize3d a0 a1 a2 = mkDynamicIO $ \s -> Sig.c_newWithSize3d s (fromIntegral a0) (fromIntegral a1) (fromIntegral a2)
+newWithSize3d a0 a1 a2 = withDynamic $ Sig.c_newWithSize3d
+  <$> managedState
+  <*> pure (fromIntegral a0)
+  <*> pure (fromIntegral a1)
+  <*> pure (fromIntegral a2)
 
 -- | create an uninitialized 4d tensor
 newWithSize4d :: Size -> Size -> Size -> Size -> IO Dynamic
-newWithSize4d a0 a1 a2 a3 = mkDynamicIO $ \s -> Sig.c_newWithSize4d s (fromIntegral a0) (fromIntegral a1) (fromIntegral a2) (fromIntegral a3)
+newWithSize4d a0 a1 a2 a3 = withDynamic $ Sig.c_newWithSize4d
+  <$> managedState
+  <*> pure (fromIntegral a0)
+  <*> pure (fromIntegral a1)
+  <*> pure (fromIntegral a2)
+  <*> pure (fromIntegral a3)
 
 {-# WARNING newWithStorage, newWithStorage1d, newWithStorage2d, newWithStorage3d, newWithStorage4d, newWithTensor "hasktorch devs have not yet made this safe. You are warned." #-}
 
@@ -342,15 +369,14 @@ newWithSize4d a0 a1 a2 a3 = mkDynamicIO $ \s -> Sig.c_newWithSize4d s (fromInteg
 {-# NOINLINE newWithStorage4d #-}
 {-# NOINLINE newWithTensor  #-}
 -- | create a new tensor with the given size and strides, storage offset and storage.
---
--- FIXME: doublecheck what all of this does.
 newWithStorage :: Storage -> StorageOffset -> TH.IndexStorage -> TH.IndexStorage -> IO Dynamic
-newWithStorage s pd l0 l1 =
-  withStorageState s $ \state' s' ->
-    withForeignPtr (snd $ TH.longStorageState l0) $ \l0' ->
-      withForeignPtr (snd $ TH.longStorageState l1) $ \l1' ->
-        Sig.c_newWithStorage state' s' (fromIntegral pd) l0' l1'
-        >>= mkDynamic
+newWithStorage s pd l0 l1 = withDynamic $ Sig.c_newWithStorage
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral pd)
+  <*> managed (withForeignPtr (snd $ TH.longStorageState l0))
+  <*> managed (withForeignPtr (snd $ TH.longStorageState l1))
+
 
 -- | create a new 1d tensor with the given storage's first dimension.
 newWithStorage1d
@@ -358,46 +384,44 @@ newWithStorage1d
   -> StorageOffset      -- storage offset must be >= 1
   -> (Size, Stride)     -- size is of the 1st dimension, stride is the stride in the first dimension
   -> IO Dynamic
-newWithStorage1d s pd (d00,d01) =
-  withStorageState s $ \state' s' ->
-    Sig.c_newWithStorage1d state' s' (fromIntegral pd)
-    (fromIntegral d00) (fromIntegral d01)
-    >>= mkDynamic
+newWithStorage1d s pd (d00,d01) = withDynamic $ Sig.c_newWithStorage1d
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral pd)
+  <*> pure (fromIntegral d00) <*> pure (fromIntegral d01)
 
 
 -- | create a new 2d tensor with the given storage's first 2 dimensions.
 newWithStorage2d :: Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> IO Dynamic
-newWithStorage2d s pd (d00,d01) (d10,d11) = flip with mkDynamic $ do
-  state' <- managedState
-  s'     <- managed (withForeignPtr (Sig.cstorage s))
-  liftIO $ Sig.c_newWithStorage2d state' s'
-    (fromIntegral pd)
-    (fromIntegral d00) (fromIntegral d01)
-    (fromIntegral d10) (fromIntegral d11)
-  -- liftIO $ mkDynamic t'
+newWithStorage2d s pd (d00,d01) (d10,d11) = withDynamic $ Sig.c_newWithStorage2d
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral pd)
+  <*> pure (fromIntegral d00) <*> pure (fromIntegral d01)
+  <*> pure (fromIntegral d10) <*> pure (fromIntegral d11)
 
 
 -- | create a new 3d tensor with the given storage's first 3 dimensions.
 newWithStorage3d :: Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO Dynamic
-newWithStorage3d s pd (d00,d01) (d10,d11) (d20,d21) =
-  withStorageState s $ \state' s' ->
-    Sig.c_newWithStorage3d state' s' (fromIntegral pd)
-      (fromIntegral d00) (fromIntegral d01)
-      (fromIntegral d10) (fromIntegral d11)
-      (fromIntegral d20) (fromIntegral d21)
-    >>= mkDynamic
+newWithStorage3d s pd (d00,d01) (d10,d11) (d20,d21) = withDynamic $ Sig.c_newWithStorage3d
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral pd)
+  <*> pure (fromIntegral d00) <*> pure (fromIntegral d01)
+  <*> pure (fromIntegral d10) <*> pure (fromIntegral d11)
+  <*> pure (fromIntegral d20) <*> pure (fromIntegral d21)
 
 
 -- | create a new 4d tensor with the given storage's first 4 dimensions.
 newWithStorage4d :: Storage -> StorageOffset -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> (Size, Stride) -> IO Dynamic
-newWithStorage4d s pd (d00,d01) (d10,d11) (d20,d21) (d30,d31) =
-  withStorageState s $ \state' s' ->
-    Sig.c_newWithStorage4d state' s' (fromIntegral pd)
-      (fromIntegral d00) (fromIntegral d01)
-      (fromIntegral d10) (fromIntegral d11)
-      (fromIntegral d20) (fromIntegral d21)
-      (fromIntegral d30) (fromIntegral d31)
-    >>= mkDynamic
+newWithStorage4d s pd (d00,d01) (d10,d11) (d20,d21) (d30,d31) = withDynamic $ Sig.c_newWithStorage4d
+  <$> managedState
+  <*> managedStorage s
+  <*> pure (fromIntegral pd)
+  <*> pure (fromIntegral d00) <*> pure (fromIntegral d01)
+  <*> pure (fromIntegral d10) <*> pure (fromIntegral d11)
+  <*> pure (fromIntegral d20) <*> pure (fromIntegral d21)
+  <*> pure (fromIntegral d30) <*> pure (fromIntegral d31)
 
 -- | create a new tensor with the given tensor's underlying storage.
 newWithTensor :: Dynamic -> IO Dynamic
@@ -418,10 +442,10 @@ _resize t l0 l1 = runManaged $ do
 
 -- | resize dimension 1 of a tensor.
 _resize1d :: Dynamic -> Int64 -> IO ()
-_resize1d t l0 = runManaged $ do
-  s' <- managedState
-  t' <- managedTensor t
-  liftIO $ Sig.c_resize1d s' t' (fromIntegral l0)
+_resize1d t l0 = withLift $ Sig.c_resize1d
+  <$> managedState
+  <*> managedTensor t
+  <*> pure (fromIntegral l0)
 
 -- | resize the first 2 dimensions of a tensor.
 _resize2d :: Dynamic -> Int64 -> Int64 -> IO ()
@@ -615,11 +639,18 @@ sizeDesc t = flip with (Sig.descBuff) $ do
 
 -- | Removes all singleton dimensions of the tensor.
 _squeeze :: Dynamic -> Dynamic -> IO ()
-_squeeze t0 t1 = with2DynamicState t0 t1 Sig.c_squeeze
+_squeeze t0 t1 = withLift $ Sig.c_squeeze
+  <$> managedState
+  <*> managedTensor t1
+  <*> managedTensor t0
 
 -- | Removes a singleton dimensions of the tensor at a given dimension.
 _squeeze1d :: Dynamic -> Dynamic -> DimVal -> IO ()
-_squeeze1d t0 t1 d = with2DynamicState t0 t1 (shuffle3 Sig.c_squeeze1d (fromIntegral d))
+_squeeze1d t0 t1 d = withLift $ Sig.c_squeeze1d
+  <$> managedState
+  <*> managedTensor t1
+  <*> managedTensor t0
+  <*> pure (fromIntegral d)
 
 -- | get the underlying storage of a tensor
 storage :: Dynamic -> IO Storage
@@ -675,8 +706,11 @@ _unsqueeze1d
   -> Dynamic  -- ^ source tensor to use for data.
   -> DimVal   -- ^ dimension to unsqueeze
   -> IO ()
-_unsqueeze1d t0 t1 d = with2DynamicState t0 t1 $
-  shuffle3 Sig.c_unsqueeze1d (fromIntegral d)
+_unsqueeze1d t0 t1 d = withLift $ Sig.c_unsqueeze1d
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromIntegral d)
 
 -- ========================================================================= --
 -- User API (can be bundled into the above)
@@ -914,7 +948,7 @@ resizeDim' t (SomeDims d) = resizeDim t d
 getDim :: Dynamic -> Dims (d::[Nat]) -> IO HsReal
 getDim t d = case fromIntegral <$> listDims d of
   []           -> throwNE "can't lookup an empty dimension"
-  [x]          -> get1d t x
+  [x]          -> undefined -- get1d t x
   [x, y]       -> get2d t x y
   [x, y, z]    -> get3d t x y z
   [x, y, z, q] -> get4d t x y z q

@@ -95,7 +95,11 @@ _potrf
   -> Dynamic   -- ^ matrix to decompose
   -> Triangle  -- ^ which triangle should be used.
   -> IO ()
-_potrf ret src t = triangleArg2C t >>= \c' -> with2DynamicState ret src $ shuffle3 Sig.c_potrf c'
+_potrf ret src t = withLift $ Sig.c_potrf
+  <$> managedState
+  <*> managedTensor ret
+  <*> managedTensor src
+  <*> liftIO (triangleArg2C t)
 
 -- | Returns the inverse of 2D @tensor A@ given its Cholesky decomposition @chol@.
 --
@@ -111,9 +115,11 @@ potri_ s t = _potri s s t
 
 -- | C-style mutation of 'potri_' and 'potri'. Should not be exported.
 _potri :: Dynamic -> Dynamic -> Triangle -> IO ()
-_potri a b v =
-  triangleArg2C v >>= \v' ->
-    with2DynamicState a b $ shuffle3 Sig.c_potri v'
+_potri a b v = withLift $ Sig.c_potri
+  <$> managedState
+  <*> managedTensor a
+  <*> managedTensor b
+  <*> liftIO (triangleArg2C v)
 
 -- | Returns the solution to linear system @AX = B@ using the Cholesky
 -- decomposition @chol@ of 2D tensor @A@.

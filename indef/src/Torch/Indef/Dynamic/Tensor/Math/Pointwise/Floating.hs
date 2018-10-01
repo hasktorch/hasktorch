@@ -374,7 +374,11 @@ _atan2 :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _atan2 a b c = with3DynamicState a b c Sig.c_atan2
 
 _pow :: Dynamic -> Dynamic -> HsReal -> IO ()
-_pow a b v = with2DynamicState a b (shuffle3 Sig.c_pow (hs2cReal v))
+_pow a b v = withLift $ Sig.c_pow
+  <$> managedState
+  <*> managedTensor a
+  <*> managedTensor b
+  <*> pure (hs2cReal v)
 
 _tpow :: Dynamic -> HsReal -> Dynamic -> IO ()
 _tpow a v b = with2DynamicState a b $ \s' a' b' -> Sig.c_tpow s' a' (hs2cReal v) b'

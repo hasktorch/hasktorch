@@ -23,8 +23,9 @@ module Torch.Indef.Storage.Copy
   , copyDouble
   ) where
 
-import Foreign
+import Foreign hiding (new, with)
 import Foreign.Ptr
+import Control.Monad.Managed
 import qualified Torch.Types.TH           as TH
 import qualified Foreign.Marshal.Array    as FM
 import qualified Torch.Sig.Types          as Sig
@@ -49,32 +50,40 @@ copyType
   -> (ForeignPtr TH.C'THState -> ForeignPtr a -> b)
   -> (Ptr CState -> Ptr CStorage -> Ptr a -> IO ())
   -> Storage -> IO b
-copyType newPtr fin builder cfun t = withStorageState t $ \s' t' -> do
-  target <- newPtr
-  -- throwString $ intercalate ""
-  --   [ "'hasktorch-indef-unsigned:Torch.Indef.Tensor.Dynamic.Copy.copyType':"
-  --   , "must resize the target tensor before continuing"
-  --   ]
-  -- Sig.c_resizeAs s' target t'       -- << THIS NEEDS TO BE REMAPPED TO TENSORLONG SIZES
-  cfun s' t' target
+copyType newPtr fin builder cfun t = flip with (pure . builder TH.torchstate) $ do
+  s' <- managedState
+  t' <- managedStorage t
+  liftIO $ do
+    target <- newPtr
+    -- throwString $ intercalate ""
+    --   [ "'hasktorch-indef-unsigned:Torch.Indef.Tensor.Dynamic.Copy.copyType':"
+    --   , "must resize the target tensor before continuing"
+    --   ]
+    -- Sig.c_resizeAs s' target t'       -- << THIS NEEDS TO BE REMAPPED TO TENSORLONG SIZES
+    cfun s' t' target
 
-  builder TH.torchstate
-    <$> newForeignPtr fin target
+    newForeignPtr fin target
 
 
 rawCopy :: Storage -> IO [HsReal]
-rawCopy t = withStorageState t $ \s' t' -> do
-  sz  <- fromIntegral <$> Sig.c_size s' t'
-  res <- FM.mallocArray (fromIntegral sz)
-  Sig.c_rawCopy s' t' res
-  (fmap.fmap) c2hsReal (FM.peekArray (fromIntegral sz) res)
+rawCopy t = flip with (pure . fmap c2hsReal) $ do
+  s' <- managedState
+  t' <- managedStorage t
+  liftIO $ do
+    sz  <- fromIntegral <$> Sig.c_size s' t'
+    res <- FM.mallocArray (fromIntegral sz)
+    Sig.c_rawCopy s' t' res
+    FM.peekArray (fromIntegral sz) res
 
 -- | Copy a Storage object.
 copy :: Storage -> IO Storage
-copy t = withStorageState t $ \s' t' -> do
-  store <- Sig.c_new s'
-  Sig.c_copy s' t' store
-  mkStorage store
+copy t = flip with mkStorage $ do
+  s' <- managedState
+  t' <- managedStorage t
+  liftIO $ do
+    store <- Sig.c_new s'
+    Sig.c_copy s' t' store
+    pure store
 
 -- | Copy a 'Storage' object to a CPU-backed LongStorage.
 copyLong   = copyType L.c_new_ L.p_free TH.longStorage   Sig.c_copyLong

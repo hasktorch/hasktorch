@@ -33,12 +33,21 @@ import qualified Torch.Sig.Tensor.Math.Compare as Sig
 
 _ltValueT, _leValueT, _gtValueT, _geValueT, _neValueT, _eqValueT
   :: Dynamic -> Dynamic -> HsReal -> IO ()
-_ltValueT t0 t1 v = with2DynamicState t0 t1 (shuffle3 Sig.c_ltValueT (hs2cReal v))
-_leValueT t0 t1 v = with2DynamicState t0 t1 (shuffle3 Sig.c_leValueT (hs2cReal v))
-_gtValueT t0 t1 v = with2DynamicState t0 t1 (shuffle3 Sig.c_gtValueT (hs2cReal v))
-_geValueT t0 t1 v = with2DynamicState t0 t1 (shuffle3 Sig.c_geValueT (hs2cReal v))
-_neValueT t0 t1 v = with2DynamicState t0 t1 (shuffle3 Sig.c_neValueT (hs2cReal v))
-_eqValueT t0 t1 v = with2DynamicState t0 t1 (shuffle3 Sig.c_eqValueT (hs2cReal v))
+_ltValueT = compareValueTOp Sig.c_ltValueT
+_leValueT = compareValueTOp Sig.c_leValueT
+_gtValueT = compareValueTOp Sig.c_gtValueT
+_geValueT = compareValueTOp Sig.c_geValueT
+_neValueT = compareValueTOp Sig.c_neValueT
+_eqValueT = compareValueTOp Sig.c_eqValueT
+
+compareValueTOp
+  :: (Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ())
+  -> Dynamic -> Dynamic -> HsReal -> IO ()
+compareValueTOp fn a b v = withLift $ fn
+  <$> managedState
+  <*> managedTensor a
+  <*> managedTensor b
+  <*> pure (hs2cReal v)
 
 compareTensorOp
   :: (Ptr CState -> Ptr CByteTensor -> Ptr CTensor -> CReal -> IO ())

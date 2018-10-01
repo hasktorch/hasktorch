@@ -356,7 +356,12 @@ _cross :: Dynamic -> Dynamic -> Dynamic -> DimVal -> IO ()
 _cross t0 t1 t2 i0 = with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' -> Sig.c_cross s' t0' t1' t2' (fromIntegral i0)
 
 _clamp :: Dynamic -> Dynamic -> HsReal -> HsReal -> IO ()
-_clamp r t v0 v1 = with2DynamicState r t $ shuffle3'2 Sig.c_clamp (hs2cReal v0) (hs2cReal v1)
+_clamp r t v0 v1 = withLift $ Sig.c_clamp
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v0)
+  <*> pure (hs2cReal v1)
 
 _cmax :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _cmax r t0 t1 = with3DynamicState r t0 t1 $ \s' r' t0' t1' ->  Sig.c_cmax s' r' t0' t1'
@@ -365,10 +370,18 @@ _cmin :: Dynamic -> Dynamic -> Dynamic -> IO ()
 _cmin r t0 t1 = with3DynamicState r t0 t1 $ \s' r' t0' t1' ->  Sig.c_cmin s' r' t0' t1'
 
 _cmaxValue :: Dynamic -> Dynamic -> HsReal -> IO ()
-_cmaxValue r t v = with2DynamicState r t $ shuffle3 Sig.c_cmaxValue (hs2cReal v)
+_cmaxValue r t v = withLift $ Sig.c_cmaxValue
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _cminValue :: Dynamic -> Dynamic -> HsReal -> IO ()
-_cminValue r t v = with2DynamicState r t $ shuffle3 Sig.c_cminValue (hs2cReal v)
+_cminValue r t v = withLift $ Sig.c_cminValue
+  <$> managedState
+  <*> managedTensor r
+  <*> managedTensor t
+  <*> pure (hs2cReal v)
 
 _addcmul :: Dynamic -> Dynamic -> HsReal -> Dynamic -> Dynamic -> IO ()
 _addcmul t0 t1 v t2 t3 =
