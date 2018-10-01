@@ -5,3 +5,6 @@
 # [submodule "vendor/opto"]
 #   path = vendor/opto
 #   url = https://github.com/mstksg/opto.git
+[submodule "dhall"]
+	path = dhall
+	url = git@github.com:hasktorch/dhall.git
