@@ -5,8 +5,8 @@ cabal-version: 2.2
 -- Do not edit it by hand, because your changes will be over-written!
 --
 -- Instead, edit the source Dhall file, namely
--- 'hasktorch-signatures.dhall', and re-generate this file by running
--- 'dhall-to-cabal -- hasktorch-signatures.dhall > hasktorch-signatures.cabal'.
+-- 'signatures/hasktorch-signatures.dhall', and re-generate this file by running
+-- 'dhall-to-cabal -- signatures/hasktorch-signatures.dhall > hasktorch-signatures.cabal'.
 -- * * * * * * * * * * * * WARNING * * * * * * * * * * * *
 name: hasktorch-signatures
 version: 0.0.1.0
@@ -17,6 +17,7 @@ bug-reports: https://github.com/hasktorch/hasktorch/issues
 synopsis: Backpack signature files to pair with hasktorch-raw and hasktorch-core
 description:
     CFFI backpack signatures
+category: Tensors, Machine Learning
 build-type: Simple
 
 source-repository head
@@ -54,6 +55,8 @@ library
                 Torch.Sig.Tensor.Random.THC
     hs-source-dirs: src
     default-language: Haskell2010
+    default-extensions: LambdaCase DataKinds TypeFamilies
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch-types-th -any,
@@ -65,24 +68,30 @@ library hasktorch-partial-floating
                         Torch.Undefined.Tensor.Random.TH,
                         Torch.Undefined.Tensor.Random.THC
     default-language: Haskell2010
+    default-extensions: LambdaCase DataKinds TypeFamilies
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch-partial -any,
+        hasktorch-signatures-partial -any,
         hasktorch-signatures -any
 
 library hasktorch-partial-signed
     default-language: Haskell2010
+    default-extensions: LambdaCase DataKinds TypeFamilies
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch-partial -any,
+        hasktorch-signatures-partial -any,
         hasktorch-signatures -any
     mixins: hasktorch-signatures requires (Torch.Sig.NN as Torch.Undefined.NN, Torch.Sig.Types.NN as Torch.Undefined.Types.NN, Torch.Sig.Tensor.Math.Blas as Torch.Undefined.Tensor.Math.Blas, Torch.Sig.Tensor.Math.Floating as Torch.Undefined.Tensor.Math.Floating, Torch.Sig.Tensor.Math.Lapack as Torch.Undefined.Tensor.Math.Lapack, Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.Undefined.Tensor.Math.Pointwise.Floating, Torch.Sig.Tensor.Math.Reduce.Floating as Torch.Undefined.Tensor.Math.Reduce.Floating, Torch.Sig.Tensor.Math.Random.TH as Torch.Undefined.Tensor.Math.Random.TH, Torch.Sig.Tensor.Random.TH as Torch.Undefined.Tensor.Random.TH, Torch.Sig.Tensor.Random.THC as Torch.Undefined.Tensor.Random.THC)
 
 library hasktorch-partial-unsigned
     default-language: Haskell2010
+    default-extensions: LambdaCase DataKinds TypeFamilies
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch-partial -any,
+        hasktorch-signatures-partial -any,
         hasktorch-signatures -any
     mixins: hasktorch-signatures requires (Torch.Sig.NN as Torch.Undefined.NN, Torch.Sig.Types.NN as Torch.Undefined.Types.NN, Torch.Sig.Tensor.Math.Blas as Torch.Undefined.Tensor.Math.Blas, Torch.Sig.Tensor.Math.Floating as Torch.Undefined.Tensor.Math.Floating, Torch.Sig.Tensor.Math.Lapack as Torch.Undefined.Tensor.Math.Lapack, Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.Undefined.Tensor.Math.Pointwise.Floating, Torch.Sig.Tensor.Math.Reduce.Floating as Torch.Undefined.Tensor.Math.Reduce.Floating, Torch.Sig.Tensor.Math.Random.TH as Torch.Undefined.Tensor.Math.Random.TH, Torch.Sig.Tensor.Random.TH as Torch.Undefined.Tensor.Random.TH, Torch.Sig.Tensor.Random.THC as Torch.Undefined.Tensor.Random.THC, Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.Undefined.Tensor.Math.Pointwise.Signed)
 
