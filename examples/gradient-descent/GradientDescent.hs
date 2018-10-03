@@ -53,8 +53,12 @@ genData param = do
   noise        :: Tensor '[N] <- normal gen 0 noiseScale
   predictorVal :: Tensor '[N] <- normal gen 0 xScale
   let x :: Tensor '[2, N] = resizeAs (predictorVal `cat1d` (constant 1))
+<<<<<<< HEAD
   let y :: Tensor '[N]    = Torch.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
 
+=======
+  let y :: Tensor '[N]    = Math.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
+>>>>>>> 9154bf31... start backprop-regression example
   pure (x, y)
 
 -- | Loss is defined as the sum of squared errors
