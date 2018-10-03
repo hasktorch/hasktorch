@@ -130,6 +130,3 @@ _section printer title buildit = do
   t <- buildit
   printer t
   pure t
-
-
-
