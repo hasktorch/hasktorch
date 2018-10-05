@@ -12,6 +12,7 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Storage.Copy
   ( copy
   , copyByte
@@ -26,6 +27,8 @@ module Torch.Indef.Storage.Copy
 import Foreign hiding (new, with)
 import Foreign.Ptr
 import Control.Monad.Managed
+import System.IO.Unsafe
+
 import qualified Torch.Types.TH           as TH
 import qualified Foreign.Marshal.Array    as FM
 import qualified Torch.Sig.Types          as Sig
@@ -49,8 +52,8 @@ copyType
   -> FinalizerPtr a
   -> (ForeignPtr TH.C'THState -> ForeignPtr a -> b)
   -> (Ptr CState -> Ptr CStorage -> Ptr a -> IO ())
-  -> Storage -> IO b
-copyType newPtr fin builder cfun t = flip with (pure . builder TH.torchstate) $ do
+  -> Storage -> b
+copyType newPtr fin builder cfun t = unsafeDupablePerformIO . flip with (pure . builder TH.torchstate) $ do
   s' <- managedState
   t' <- managedStorage t
   liftIO $ do
@@ -63,10 +66,10 @@ copyType newPtr fin builder cfun t = flip with (pure . builder TH.torchstate) $ 
     cfun s' t' target
 
     newForeignPtr fin target
+{-# NOINLINE copyType #-}
 
-
-rawCopy :: Storage -> IO [HsReal]
-rawCopy t = flip with (pure . fmap c2hsReal) $ do
+rawCopy :: Storage -> [HsReal]
+rawCopy t = unsafeDupablePerformIO . flip with (pure . fmap c2hsReal) $ do
   s' <- managedState
   t' <- managedStorage t
   liftIO $ do
@@ -74,36 +77,45 @@ rawCopy t = flip with (pure . fmap c2hsReal) $ do
     res <- FM.mallocArray (fromIntegral sz)
     Sig.c_rawCopy s' t' res
     FM.peekArray (fromIntegral sz) res
+{-# NOINLINE rawCopy #-}
 
 -- | Copy a Storage object.
-copy :: Storage -> IO Storage
-copy t = flip with mkStorage $ do
+copy :: Storage -> Storage
+copy t = unsafeDupablePerformIO . flip with mkStorage $ do
   s' <- managedState
   t' <- managedStorage t
   liftIO $ do
     store <- Sig.c_new s'
     Sig.c_copy s' t' store
     pure store
+{-# NOINLINE copy #-}
 
 -- | Copy a 'Storage' object to a CPU-backed LongStorage.
-copyLong   = copyType L.c_new_ L.p_free TH.longStorage   Sig.c_copyLong
+copyLong :: Storage -> TH.LongStorage
+copyLong = copyType L.c_new_ L.p_free TH.longStorage   Sig.c_copyLong
 
 -- | Copy a 'Storage' object to a CPU-backed FloatStorage.
-copyFloat  = copyType F.c_new_ F.p_free TH.floatStorage  Sig.c_copyFloat
+copyFloat :: Storage -> TH.FloatStorage
+copyFloat = copyType F.c_new_ F.p_free TH.floatStorage  Sig.c_copyFloat
 
 -- | Copy a 'Storage' object to a CPU-backed ByteStorage.
-copyByte   = copyType B.c_new_ B.p_free TH.byteStorage   Sig.c_copyByte
+copyByte :: Storage -> TH.ByteStorage
+copyByte = copyType B.c_new_ B.p_free TH.byteStorage   Sig.c_copyByte
 
 -- | Copy a 'Storage' object to a CPU-backed CharStorage.
-copyChar   = copyType C.c_new_ C.p_free TH.charStorage   Sig.c_copyChar
+copyChar :: Storage -> TH.CharStorage
+copyChar = copyType C.c_new_ C.p_free TH.charStorage   Sig.c_copyChar
 
 -- | Copy a 'Storage' object to a CPU-backed ShortStorage.
+copyShort :: Storage -> TH.ShortStorage
 copyShort  = copyType S.c_new_ S.p_free TH.shortStorage  Sig.c_copyShort
 
 -- | Copy a 'Storage' object to a CPU-backed IntStorage.
-copyInt    = copyType I.c_new_ I.p_free TH.intStorage    Sig.c_copyInt
+copyInt :: Storage -> TH.IntStorage
+copyInt = copyType I.c_new_ I.p_free TH.intStorage    Sig.c_copyInt
 
 -- | Copy a 'Storage' object to a CPU-backed DoubleStorage.
+copyDouble :: Storage -> TH.DoubleStorage
 copyDouble = copyType D.c_new_ D.p_free TH.doubleStorage Sig.c_copyDouble
 
 -- FIXME: reintroduce half

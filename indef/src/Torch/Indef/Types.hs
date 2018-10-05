@@ -38,9 +38,9 @@ module Torch.Indef.Types
   , with2DynamicState
   , with3DynamicState
 
-  -- helper functions which may not be needed to be exported with applicative-style
-  , mkDynamic, mkStorage
-  -- , mkDynamicIO, mkStorageIO
+  -- helper functions for monadic construction
+  , mkDynamic
+  , mkStorage
   ) where
 
 import Foreign hiding (with)

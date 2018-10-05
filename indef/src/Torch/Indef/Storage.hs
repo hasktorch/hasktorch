@@ -21,9 +21,11 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Storage
   ( module X
+  , Storage(..)
 
   , cstorage
   , storage
@@ -42,7 +44,6 @@ module Torch.Indef.Storage
   , newWithSize4
   , newWithMapping
   , newWithData
-  , fromList
   , setFlag
   , clearFlag
   , retain
@@ -60,6 +61,9 @@ import Control.Monad
 import Control.Monad.Managed
 import Control.DeepSeq
 import System.IO.Unsafe
+import GHC.Exts (IsList(..))
+import Control.Monad.ST
+import Data.STRef
 
 import Torch.Indef.Types
 import Torch.Indef.Internal
@@ -70,9 +74,19 @@ import qualified Torch.Sig.Storage        as Sig
 import qualified Torch.Sig.Storage.Memory as Sig
 import qualified Foreign.Marshal.Array    as FM
 
+-- TODO: use these?
+-- newtype MStorage s = MStorage (STRef s Storage)
+--
+-- freeze :: (forall s . STRef s Storage) -> Storage
+-- freeze ref = runST (readSTRef ref)
+--
+-- thaw :: Storage -> ST s (MStorage s)
+-- thaw s = MStorage <$> newSTRef s
+
+
 -- | return the internal data of 'Storage' as a list of haskell values.
 storagedata :: Storage -> [HsReal]
-storagedata s = unsafePerformIO . flip with (pure . fmap c2hsReal) $ do
+storagedata s = unsafeDupablePerformIO . flip with (pure . fmap c2hsReal) $ do
   st <- managedState
   s' <- managedStorage s
   liftIO $ do
@@ -85,13 +99,14 @@ storagedata s = unsafePerformIO . flip with (pure . fmap c2hsReal) $ do
 {-# NOINLINE storagedata #-}
 
 -- | Returns the number of elements in the storage. Equivalent to #.
-size :: Storage -> IO Int
-size s = fmap fromIntegral . withLift $ Sig.c_size
+size :: Storage -> Int
+size s = unsafeDupablePerformIO . fmap fromIntegral . withLift $ Sig.c_size
   <$> managedState
   <*> managedStorage s
+{-# NOINLINE size #-}
 
 -- | set the value at 'Index' to 'HsReal' in a given 'Storage'.
-set :: Storage -> Index -> HsReal -> IO ()
+set :: Storage -> Int -> HsReal -> IO ()
 set s pd v = withLift $ Sig.c_set
   <$> managedState
   <*> managedStorage s
@@ -99,52 +114,59 @@ set s pd v = withLift $ Sig.c_set
   <*> pure (hs2cReal v)
 
 -- | get the value at 'Index' from a given 'Storage'.
-get :: Storage -> Index -> IO HsReal
-get s pd = fmap c2hsReal . withLift $ Sig.c_get
+get :: Storage -> Int -> HsReal
+get s pd = unsafeDupablePerformIO . fmap c2hsReal . withLift $ Sig.c_get
   <$> managedState
   <*> managedStorage s
   <*> pure (fromIntegral pd)
+{-# NOINLINE get #-}
 
 -- | make a new empty 'Storage'.
-empty :: IO Storage
-empty = withStorage $ Sig.c_new
+empty :: Storage
+empty = unsafeDupablePerformIO . withStorage $ Sig.c_new
   <$> managedState
+{-# NOINLINE empty #-}
 
 -- | create a new storage of a given length, 'StorageSize'.
-newWithSize :: StorageSize -> IO Storage
-newWithSize pd = withStorage $ Sig.c_newWithSize
+newWithSize :: Int -> Storage
+newWithSize pd = unsafeDupablePerformIO . withStorage $ Sig.c_newWithSize
   <$> managedState
   <*> pure (fromIntegral pd)
+{-# NOINLINE newWithSize #-}
 
 -- | make a new 'Storage' with a single value.
-newWithSize1 :: HsReal -> IO Storage
-newWithSize1 a0 = withStorage $ Sig.c_newWithSize1
+newWithSize1 :: HsReal -> Storage
+newWithSize1 a0 = unsafeDupablePerformIO . withStorage $ Sig.c_newWithSize1
   <$> managedState
   <*> pure (hs2cReal a0)
+{-# NOINLINE newWithSize1 #-}
 
 -- | make a new 'Storage' with two values.
-newWithSize2 :: HsReal -> HsReal -> IO Storage
-newWithSize2 a0 a1 = withStorage $ Sig.c_newWithSize2
+newWithSize2 :: HsReal -> HsReal -> Storage
+newWithSize2 a0 a1 = unsafeDupablePerformIO . withStorage $ Sig.c_newWithSize2
   <$> managedState
   <*> pure (hs2cReal a0)
   <*> pure (hs2cReal a1)
+{-# NOINLINE newWithSize2 #-}
 
 -- | make a new 'Storage' with three values.
-newWithSize3 :: HsReal -> HsReal -> HsReal -> IO Storage
-newWithSize3 a0 a1 a2 = withStorage $ Sig.c_newWithSize3
+newWithSize3 :: HsReal -> HsReal -> HsReal -> Storage
+newWithSize3 a0 a1 a2 = unsafeDupablePerformIO . withStorage $ Sig.c_newWithSize3
   <$> managedState
   <*> pure (hs2cReal a0)
   <*> pure (hs2cReal a1)
   <*> pure (hs2cReal a2)
+{-# NOINLINE newWithSize3 #-}
 
 -- | make a new 'Storage' with four values.
-newWithSize4 :: HsReal -> HsReal -> HsReal -> HsReal -> IO Storage
-newWithSize4 a0 a1 a2 a3 = withStorage $ Sig.c_newWithSize4
+newWithSize4 :: HsReal -> HsReal -> HsReal -> HsReal -> Storage
+newWithSize4 a0 a1 a2 a3 = unsafeDupablePerformIO . withStorage $ Sig.c_newWithSize4
   <$> managedState
   <*> pure (hs2cReal a0)
   <*> pure (hs2cReal a1)
   <*> pure (hs2cReal a2)
   <*> pure (hs2cReal a3)
+{-# NOINLINE newWithSize4 #-}
 
 -- | FIXME: This is totally broken. This takes a filename, size, and flags, and produces
 -- 'Storage' from these inputs. Figure out how to fix this, ideally.
@@ -166,15 +188,12 @@ newWithMapping pcc' pd ci = withStorage $ Sig.c_newWithMapping
 --
 -- FIXME: find out if 'StorageSize' always corresponds to the length of the list. If so,
 -- remove it!
-newWithData :: [HsReal] -> StorageSize -> IO Storage
-newWithData pr pd = withStorage $ Sig.c_newWithData
+newWithData :: [HsReal] -> StorageSize -> Storage
+newWithData pr pd = unsafeDupablePerformIO . withStorage $ Sig.c_newWithData
   <$> managedState
   <*> liftIO (FM.newArray (hs2cReal <$> pr))
   <*> pure (fromIntegral pd)
-
--- | Convenience method for 'newWithData'
-fromList :: [HsReal] -> IO Storage
-fromList pr = newWithData pr (fromIntegral $ length pr)
+{-# NOINLINE newWithData #-}
 
 -- | set the flags of a given 'Storage'. Flags are applied via bitwise-or.
 setFlag :: Storage -> Int8 -> IO ()
@@ -202,18 +221,23 @@ retain s = withLift $ Sig.c_retain
   <*> managedStorage s
 
 -- | Resize the storage to the provided size. /The new contents are undetermined/.
-resize :: Storage -> StorageSize -> IO ()
+resize :: Storage -> Word32 -> IO ()
 resize s pd = withLift $ Sig.c_resize
   <$> managedState
   <*> managedStorage s
   <*> pure (fromIntegral pd)
 
 -- | Fill the Storage with the given value.
-fill :: Storage -> Sig.HsReal -> IO ()
+fill :: Storage -> HsReal -> IO ()
 fill s v = withLift $ Sig.c_fill
   <$> managedState
   <*> managedStorage s
   <*> pure (hs2cReal v)
+
+instance IsList Storage where
+  type Item Storage = HsReal
+  toList = storagedata
+  fromList pr = newWithData pr (fromIntegral $ length pr)
 
 
 {-
