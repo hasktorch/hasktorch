@@ -61,7 +61,7 @@ library hasktorch-partial-unsigned
   default-language: Haskell2010
   build-depends:
       base >=4.7 && <5
-    , hasktorch-partial
+    , hasktorch-signatures-partial
     , hasktorch-signatures
   mixins:
       hasktorch-signatures
@@ -83,7 +83,7 @@ library hasktorch-partial-signed
   default-language: Haskell2010
   build-depends:
       base >=4.7 && <5
-    , hasktorch-partial
+    , hasktorch-signatures-partial
     , hasktorch-signatures
   mixins:
       hasktorch-signatures
@@ -104,7 +104,7 @@ library hasktorch-partial-floating
   default-language: Haskell2010
   build-depends:
       base >=4.7 && <5
-    , hasktorch-partial
+    , hasktorch-signatures-partial
     , hasktorch-signatures
   reexported-modules:
       Torch.Undefined.Tensor.Math.Random.TH

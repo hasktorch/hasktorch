@@ -10,6 +10,7 @@ packages:
 
     signatures/types/*cabal
     signatures/partial/*cabal
+    signatures/support/*cabal
     signatures/*cabal
 
     indef/*cabal
