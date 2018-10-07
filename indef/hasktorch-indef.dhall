@@ -37,6 +37,7 @@ in common.Package
                     , hs-source-dirs = [ "tests" ]
                     , other-modules =
                       [ "Torch.Indef.StorageSpec"
+                      , "Torch.Indef.Dynamic.TensorSpec"
                       ]
                     , mixins =
                       [ { package = "hasktorch-indef-floating"

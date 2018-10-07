@@ -36,6 +36,15 @@ library
         Torch.Indef.Types
         Torch.Indef.Storage
         Torch.Indef.Storage.Copy
+        Torch.Indef.Dynamic.Print
+        Torch.Indef.Dynamic.Tensor
+        Torch.Indef.Dynamic.Tensor.Copy
+        Torch.Indef.Dynamic.Tensor.Index
+        Torch.Indef.Dynamic.Tensor.Masked
+        Torch.Indef.Dynamic.Tensor.Mode
+        Torch.Indef.Dynamic.Tensor.ScatterGather
+        Torch.Indef.Dynamic.Tensor.Sort
+        Torch.Indef.Dynamic.Tensor.TopK
     hs-source-dirs: src
     other-modules:
         Torch.Indef.Internal
@@ -73,6 +82,15 @@ library hasktorch-indef-floating
                         Torch.Indef.Types,
                         Torch.Indef.Storage,
                         Torch.Indef.Storage.Copy,
+                        Torch.Indef.Dynamic.Print,
+                        Torch.Indef.Dynamic.Tensor,
+                        Torch.Indef.Dynamic.Tensor.Copy,
+                        Torch.Indef.Dynamic.Tensor.Index,
+                        Torch.Indef.Dynamic.Tensor.Masked,
+                        Torch.Indef.Dynamic.Tensor.Mode,
+                        Torch.Indef.Dynamic.Tensor.ScatterGather,
+                        Torch.Indef.Dynamic.Tensor.Sort,
+                        Torch.Indef.Dynamic.Tensor.TopK,
                         Torch.Undefined.Tensor.Math.Random.TH,
                         Torch.Undefined.Tensor.Random.TH,
                         Torch.Undefined.Tensor.Random.THC
@@ -90,6 +108,7 @@ test-suite spec-double-th
     hs-source-dirs: tests
     other-modules:
         Torch.Indef.StorageSpec
+        Torch.Indef.Dynamic.TensorSpec
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
                         TypeSynonymInstances ScopedTypeVariables FlexibleContexts

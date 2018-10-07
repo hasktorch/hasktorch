@@ -239,6 +239,8 @@ instance IsList Storage where
   toList = storagedata
   fromList pr = newWithData pr (fromIntegral $ length pr)
 
+instance Show Storage where
+  show = show . storagedata
 
 {-
 -- FIXME: find out where signatures should go to fill in these indefinites
