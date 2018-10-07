@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -10,6 +11,7 @@ module Main where
 import System.IO (hFlush, stdout)
 import Text.Printf
 
+import Control.Monad (foldM)
 import Data.Generics.Product.Fields (field)
 import GHC.Generics
 
@@ -81,7 +83,7 @@ epochs
   -> HsReal
   -> Int
   -> [(Tensor '[2], Tensor '[1])]
-  -> Regression
+  -> Regression                      -- initial model
   -> IO ()
 epochs test lr mx tset net0 = do
   printf "initial "
@@ -105,7 +107,34 @@ epochs test lr mx tset net0 = do
       preds = map (infer net) testX
       acc = undefined :: Double -- TODO
 
-runBatch = undefined
+-- runBatch = undefined
+runBatch ::
+  HsReal
+  -> Int
+  -> Int
+  -> [(Tensor '[2], Tensor '[1])]
+  -> Regression
+  -> IO Regression
+runBatch lr e bsize = go 0
+ where
+  go
+    :: Int
+    -> [(Tensor '[2], Tensor '[1])]
+    -> Regression
+    -> IO Regression
+  go !bid !tset !net = do
+    let (batch, next) = splitAt bsize tset
+    if null batch
+    then pure net
+    else do
+      (net', hist) <- foldM (trainStep lr) (net, []) batch
+      printf (setRewind ++ "[Epoch %d](%d-batch #%d)[mse %.4f] in %s (total: %s)")
+        e bsize (bid+1)
+        (P.sum . map ((`get1d` 0) . fst) $ hist)
+      hFlush stdout
+      go (bid+1) next net'
+
+trainStep = undefined
 
 infer :: Regression -> Tensor '[2] -> Tensor '[1]
 infer architecture = evalBP2 (regression undefined) architecture
@@ -114,6 +143,9 @@ main :: IO ()
 main = do
     let Just trueParam = fromList [3.5, -4.4]
     _ <- genData trueParam -- simulated data
-    -- print simData
     _ <- newRegression -- instantiate network architecture
     putStrLn "Done"
+
+-- | set rewind marker for 'clearLn'
+setRewind :: String
+setRewind = "\r"
