@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -9,6 +9,9 @@ module Main where
 
 import System.IO (hFlush, stdout)
 import Text.Printf
+
+import Data.Generics.Product.Fields (field)
+import GHC.Generics
 
 import Numeric.Backprop as Bp
 import Prelude as P
@@ -24,12 +27,11 @@ seedVal :: RNG.Seed
 seedVal = 3141592653579
 
 data Regression = Regression {
-    _linearLayer :: Linear 2 1
-}
-makeLenses ''Regression
+    linearLayer :: Linear 2 1
+} deriving (Generic, Show)
 
 instance Backprop Regression where
-    add a b = Regression (Bp.add (_linearLayer a) (_linearLayer b))
+    add a b = Regression (Bp.add (linearLayer a) (linearLayer b))
     one _ = Regression (Bp.one undefined)
     zero _ = Regression (Bp.zero undefined)
 
@@ -57,7 +59,7 @@ regression ::
     -> BVar s (Tensor '[2]) -- input
     -> BVar s (Tensor '[1]) -- output
 regression learningRate modelArch input =
-    linear learningRate (modelArch ^^. linearLayer) input
+    linear learningRate (modelArch ^^. (field @"linearLayer")) input
 
 genData :: Tensor '[1,2] -> IO (Tensor '[2, NSamples], Tensor '[NSamples])
 genData param = do
@@ -111,7 +113,7 @@ infer architecture = evalBP2 (regression undefined) architecture
 main :: IO ()
 main = do
     let Just trueParam = fromList [3.5, -4.4]
-    simData <- genData trueParam
+    _ <- genData trueParam -- simulated data
     -- print simData
-    architecture <- newRegression
+    _ <- newRegression -- instantiate network architecture
     putStrLn "Done"
