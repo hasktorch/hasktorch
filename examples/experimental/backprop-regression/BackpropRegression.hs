@@ -17,10 +17,9 @@ import GHC.Generics
 
 import Numeric.Backprop as Bp
 import Prelude as P
-import Lens.Micro.TH
 import Torch.Double as Torch hiding (add)
 import Torch.Double.NN.Linear (Linear(..), linear)
-import Torch.Double as Math hiding (Sum, add)
+import Torch.Double as Math hiding (add)
 import qualified Torch.Core.Random as RNG
 
 type NSamples = 2000
@@ -54,8 +53,7 @@ newLinear = fmap Linear . newLayerWithBias $ dimVal (dim :: Dim i)
 newRegression :: IO Regression
 newRegression = Regression <$> newLinear
 
-regression ::
-    forall s . Reifies s W =>
+regression :: forall s . Reifies s W =>
     Double                  -- learning rate
     -> BVar s (Regression)  -- model architecture
     -> BVar s (Tensor '[2]) -- input
@@ -79,10 +77,10 @@ genData param = do
 train = undefined
 
 epochs
-  :: [(Tensor '[2], Tensor '[1])]
-  -> HsReal
-  -> Int
-  -> [(Tensor '[2], Tensor '[1])]
+  :: [(Tensor '[2], Tensor '[1])]    -- test observations
+  -> HsReal                          -- learning rate
+  -> Int                             -- max # of epochs
+  -> [(Tensor '[2], Tensor '[1])]    -- data to run batch on
   -> Regression                      -- initial model
   -> IO ()
 epochs test lr mx tset net0 = do
@@ -104,8 +102,9 @@ epochs test lr mx tset net0 = do
       printf ("[RMSE: %.1f%% / %d]") acc (length testY)
       hFlush stdout
      where
+      -- TODO: calculate metrics
       preds = map (infer net) testX
-      acc = undefined :: Double -- TODO
+      acc = undefined :: Double 
 
 -- runBatch = undefined
 runBatch ::
@@ -134,7 +133,20 @@ runBatch lr e bsize = go 0
       hFlush stdout
       go (bid+1) next net'
 
-trainStep = undefined
+trainStep :: 
+  HsReal                                           -- learning rate
+  -> (Regression, [(Tensor '[1], Tensor '[1])])    -- (network, history)
+  -> (Tensor '[2], Tensor '[1])                    -- input, output
+  -> IO (Regression, [(Tensor '[1], Tensor '[1])]) -- (updated network, history)
+trainStep lr (net, hist) (x, y) = do
+  pure (Bp.add net gnet, (out, y):hist)
+  where
+    (out, (gnet, _))
+      = backprop2
+        ( clip (-1000,1000)
+        . mSECriterion y
+        .: regression lr)
+        net x
 
 infer :: Regression -> Tensor '[2] -> Tensor '[1]
 infer architecture = evalBP2 (regression undefined) architecture
