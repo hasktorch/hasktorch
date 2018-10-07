@@ -7,8 +7,8 @@
 
 module Main where
 
-import Data.Proxy
-import GHC.TypeLits
+import System.IO (hFlush, stdout)
+import Text.Printf
 
 import Numeric.Backprop as Bp
 import Prelude as P
@@ -19,8 +19,6 @@ import Torch.Double as Math hiding (Sum, add)
 import qualified Torch.Core.Random as RNG
 
 type NSamples = 2000
-type P = '[1, 2]
-type Precision = Double
 
 seedVal :: RNG.Seed
 seedVal = 3141592653579
@@ -75,7 +73,40 @@ genData param = do
 
 -- TODO
 train = undefined
-infer = undefined
+
+epochs
+  :: [(Tensor '[2], Tensor '[1])]
+  -> HsReal
+  -> Int
+  -> [(Tensor '[2], Tensor '[1])]
+  -> Regression
+  -> IO ()
+epochs test lr mx tset net0 = do
+  printf "initial "
+  testNet net0
+  runEpoch 1 net0
+  where
+    runEpoch :: Int -> Regression -> IO ()
+    runEpoch e net
+      | e > mx    = pure ()
+      | otherwise = do
+        net' <- runBatch lr e 50 tset net
+        testNet net'
+        runEpoch (e + 1) net'
+    testX = map fst test
+    testY = map snd test
+    testNet :: Regression -> IO ()
+    testNet net = do
+      printf ("[RMSE: %.1f%% / %d]") acc (length testY)
+      hFlush stdout
+     where
+      preds = map (infer net) testX
+      acc = undefined :: Double -- TODO
+
+runBatch = undefined
+
+infer :: Regression -> Tensor '[2] -> Tensor '[1]
+infer architecture = evalBP2 (regression undefined) architecture
 
 main :: IO ()
 main = do
