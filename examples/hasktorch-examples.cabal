@@ -66,6 +66,7 @@ executable backprop-regression
     base >= 4.7 && < 5
     , backprop >= 0.2
     , dimensions
+    , generic-lens
     , hasktorch-core
     , microlens-th
     , singletons
