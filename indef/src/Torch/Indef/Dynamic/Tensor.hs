@@ -1109,8 +1109,8 @@ getDimsList :: Integral i => Dynamic -> [i]
 getDimsList t = map (fromIntegral . size t) [0 .. nDimension t - 1]
 
 -- | alias to 'getDimList' which wraps the dimensions list in a 'SomeDims'
-getSomeDimsList :: Dynamic -> SomeDims
-getSomeDimsList = someDimsVal . getDimsList
+getSomeDims :: Dynamic -> SomeDims
+getSomeDims = someDimsVal . getDimsList
 
 -- | create a new dynamic tensor of size @Dims d@
 new :: Dims (d::[Nat]) -> Dynamic

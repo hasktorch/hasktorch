@@ -21,6 +21,7 @@
 module Torch.Indef.Mask
   ( newMask
   , newMaskDyn
+  , newMaskDyn'
   , withMask
   , allOf
   ) where
@@ -49,7 +50,7 @@ newMask = byteAsStatic $ newMaskDyn (dims :: Dims d)
 
 -- | build a new dynamic mask tensor with any known Nat list.
 newMaskDyn :: Dims (d::[Nat]) -> MaskDynamic
-newMaskDyn d = unsafePerformIO $ withForeignPtr Sig.torchstate $ \s -> do
+newMaskDyn d = unsafeDupablePerformIO $ withForeignPtr Sig.torchstate $ \s -> do
   bytePtr <- case fromIntegral <$> listDims d of
     []           -> MaskSig.c_newWithSize1d s 1
     [x]          -> MaskSig.c_newWithSize1d s x
@@ -60,6 +61,9 @@ newMaskDyn d = unsafePerformIO $ withForeignPtr Sig.torchstate $ \s -> do
 
   byteDynamic Sig.torchstate
     <$> newForeignPtrEnv MaskSig.p_free s bytePtr
+
+newMaskDyn' :: SomeDims -> MaskDynamic
+newMaskDyn' (SomeDims d) = newMaskDyn d
 
 -- | run a function with access to a dynamic index tensor's raw c-pointer.
 withMask :: MaskDynamic -> (Ptr CMaskTensor -> IO x) -> IO x

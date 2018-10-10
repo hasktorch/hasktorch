@@ -9,6 +9,7 @@
 --
 -- Compare two tensors
 -------------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math.CompareT
   ( ltTensor, ltTensorT, ltTensorT_
   , leTensor, leTensorT, leTensorT_
@@ -50,11 +51,14 @@ compareTensorTOp fn a b c = withLift $ fn
 compareTensorOp
   :: (Ptr CState -> Ptr CByteTensor -> Ptr CTensor -> Ptr CTensor -> IO ())
   -> Dynamic -> Dynamic -> MaskDynamic
-compareTensorOp op t0 t1 = unsafePerformIO $ do
-  SomeDims d <- getDims t0
-  let bt = newMaskDyn d
-  with2DynamicState t0 t1 $ \s' t0' t1' -> withMask bt $ \bt' -> op s' bt' t0' t1'
+compareTensorOp op t0 t1 = unsafeDupablePerformIO $ do
+  let
+    sd = getSomeDims t0
+    bt = newMaskDyn' sd
+  with2DynamicState t0 t1 $ \s' t0' t1' ->
+    withMask bt $ \bt' -> op s' bt' t0' t1'
   pure bt
+{-# NOINLINE compareTensorOp #-}
 
 -- | Return a byte tensor which contains boolean values indicating the relation between two tensors.
 ltTensor, leTensor, gtTensor, geTensor, neTensor, eqTensor
@@ -72,12 +76,18 @@ ltTensorT, leTensorT, gtTensorT, geTensorT, neTensorT, eqTensorT
   :: Dynamic  -- ^ source tensor.
   -> Dynamic  -- ^ tensor to compare with.
   -> Dynamic  -- ^ new return tensor.
-ltTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _ltTensorT r a b
-leTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _leTensorT r a b
-gtTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _gtTensorT r a b
-geTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _geTensorT r a b
-neTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _neTensorT r a b
-eqTensorT  a b = unsafePerformIO $ withEmpty a $ \r -> _eqTensorT r a b
+ltTensorT  a b = unsafeDupablePerformIO $ let r = empty in _ltTensorT r a b >> pure r
+leTensorT  a b = unsafeDupablePerformIO $ let r = empty in _leTensorT r a b >> pure r
+gtTensorT  a b = unsafeDupablePerformIO $ let r = empty in _gtTensorT r a b >> pure r
+geTensorT  a b = unsafeDupablePerformIO $ let r = empty in _geTensorT r a b >> pure r
+neTensorT  a b = unsafeDupablePerformIO $ let r = empty in _neTensorT r a b >> pure r
+eqTensorT  a b = unsafeDupablePerformIO $ let r = empty in _eqTensorT r a b >> pure r
+{-# NOINLINE ltTensorT #-}
+{-# NOINLINE leTensorT #-}
+{-# NOINLINE gtTensorT #-}
+{-# NOINLINE geTensorT #-}
+{-# NOINLINE neTensorT #-}
+{-# NOINLINE eqTensorT #-}
 
 -- | mutate a tensor in-place with its numeric relation to the second tensor of the same size,
 -- where 0 stands for false and 1 stands for true.

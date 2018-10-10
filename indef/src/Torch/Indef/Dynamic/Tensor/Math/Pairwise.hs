@@ -7,6 +7,7 @@
 -- Stability :  experimental
 -- Portability: non-portable
 -------------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math.Pairwise
   ( equal
   , add, add_, add_scaled_
@@ -24,14 +25,15 @@ module Torch.Indef.Dynamic.Tensor.Math.Pairwise
 
 import Torch.Indef.Dynamic.Tensor
 import Torch.Indef.Types
+import System.IO.Unsafe
 import Control.Monad.Managed (with)
 import Control.Monad.IO.Class (liftIO)
 
 import qualified Torch.Sig.Tensor.Math.Pairwise as Sig
 
 -- | Call Torch's C-level @equal@ function.
-equal :: Dynamic -> Dynamic -> IO Bool
-equal r t = fmap (== 1) . withLift $ Sig.c_equal
+equal :: Dynamic -> Dynamic -> Bool
+equal r t = unsafeDupablePerformIO . fmap (== 1) . withLift $ Sig.c_equal
   <$> managedState
   <*> managedTensor r
   <*> managedTensor t
@@ -41,16 +43,24 @@ add_ :: Dynamic -> HsReal -> IO ()
 add_ t v = _add t t v
 
 -- | add a scalar to a tensor.
-add :: Dynamic -> HsReal -> IO Dynamic
-add  t v = withEmpty t $ \r -> _add r t v
+add :: Dynamic -> HsReal -> Dynamic
+add t v = unsafeDupablePerformIO $ do
+  let r = empty
+  _add r t v
+  pure r
+{-# NOINLINE add #-}
 
 -- | subtract a scalar from a tensor, inplace.
 sub_ :: Dynamic -> HsReal -> IO ()
 sub_ t v = _sub t t v
 
 -- | subtract a scalar from a tensor.
-sub :: Dynamic -> HsReal -> IO Dynamic
-sub  t v = withEmpty t $ \r -> _sub r t v
+sub :: Dynamic -> HsReal -> Dynamic
+sub  t v = unsafeDupablePerformIO $ do
+  let r = empty
+  _sub r t v
+  pure r
+{-# NOINLINE sub #-}
 
 -- | add a scalar, which has been scaled, to a tensor, inplace.
 add_scaled_
@@ -73,16 +83,24 @@ mul_ :: Dynamic -> HsReal -> IO ()
 mul_ t v = _mul t t v
 
 -- | multiply a tensor by a scalar value, pure.
-mul :: Dynamic -> HsReal -> IO Dynamic
-mul t v = withEmpty t $ \r -> _mul r t v
+mul :: Dynamic -> HsReal -> Dynamic
+mul t v = unsafeDupablePerformIO $ do
+  let r = empty
+  _mul r t v
+  pure r
+{-# NOINLINE mul #-}
 
 -- | divide a tensor by a scalar value, inplace.
 div_ :: Dynamic -> HsReal -> IO ()
 div_ t v = _div t t v
 
 -- | divide a tensor by a scalar value, pure.
-div :: Dynamic -> HsReal -> IO Dynamic
-div t v = withEmpty t $ \r -> _div r t v
+div :: Dynamic -> HsReal -> Dynamic
+div t v = unsafeDupablePerformIO $ do
+  let r = empty
+  _div r t v
+  pure r
+{-# NOINLINE div #-}
 
 -- | Left shift all elements in the tensor by the given value, inplace.
 lshift_ :: Dynamic -> HsReal -> IO ()

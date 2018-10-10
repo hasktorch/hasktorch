@@ -52,15 +52,13 @@ compareValueTOp fn a b v = withLift $ fn
 compareTensorOp
   :: (Ptr CState -> Ptr CByteTensor -> Ptr CTensor -> CReal -> IO ())
   -> Dynamic -> HsReal -> MaskDynamic
-compareTensorOp op t0 v = unsafePerformIO . flip with pure $ do
+compareTensorOp op t0 v = unsafeDupablePerformIO . flip with pure $ do
   s' <- managedState
   t' <- managedTensor t0
-  SomeDims d <- liftIO $ getDims t0
-  let bt = newMaskDyn d
+  let bt = newMaskDyn' (getSomeDims t0)
   bt' <- managed $ withMask bt
   liftIO $ op s' bt' t' (hs2cReal v)
   pure bt
-
 {-# NOINLINE compareTensorOp #-}
 
 -- | return a byte tensor which contains boolean values indicating the relation between a tensor and a given scalar.
@@ -76,13 +74,19 @@ eqValue = compareTensorOp Sig.c_eqValue
 -- | return a tensor which contains numeric values indicating the relation between a tensor and a given scalar.
 -- 0 stands for false, 1 stands for true.
 ltValueT, leValueT, gtValueT, geValueT, neValueT, eqValueT
-  :: Dynamic -> HsReal -> IO Dynamic
-ltValueT  a b = withEmpty a $ \r -> _ltValueT r a b
-leValueT  a b = withEmpty a $ \r -> _leValueT r a b
-gtValueT  a b = withEmpty a $ \r -> _gtValueT r a b
-geValueT  a b = withEmpty a $ \r -> _geValueT r a b
-neValueT  a b = withEmpty a $ \r -> _neValueT r a b
-eqValueT  a b = withEmpty a $ \r -> _eqValueT r a b
+  :: Dynamic -> HsReal -> Dynamic
+ltValueT  a b = unsafeDupablePerformIO $ let r = empty in _ltValueT r a b >> pure r
+leValueT  a b = unsafeDupablePerformIO $ let r = empty in _leValueT r a b >> pure r
+gtValueT  a b = unsafeDupablePerformIO $ let r = empty in _gtValueT r a b >> pure r
+geValueT  a b = unsafeDupablePerformIO $ let r = empty in _geValueT r a b >> pure r
+neValueT  a b = unsafeDupablePerformIO $ let r = empty in _neValueT r a b >> pure r
+eqValueT  a b = unsafeDupablePerformIO $ let r = empty in _eqValueT r a b >> pure r
+{-# NOINLINE ltValueT #-}
+{-# NOINLINE leValueT #-}
+{-# NOINLINE gtValueT #-}
+{-# NOINLINE geValueT #-}
+{-# NOINLINE neValueT #-}
+{-# NOINLINE eqValueT #-}
 
 -- | mutate a tensor in-place with its numeric relation to a given scalar, where 0 stands for false and
 -- 1 stands for true.

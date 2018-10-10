@@ -93,11 +93,11 @@ onesLike_
 onesLike_ t0 t1 = with2DynamicState t0 t1 Sig.c_onesLike
 
 -- | returns the count of the number of elements in the matrix.
-numel :: Dynamic -> IO Integer
-numel t = flip with (pure . fromIntegral) $ do
-  s' <- managedState
-  t' <- managedTensor t
-  liftIO $ Sig.c_numel s' t'
+numel :: Dynamic -> Integer
+numel t = fromIntegral . unsafeDupablePerformIO $ withLift $ Sig.c_numel
+  <$> managedState
+  <*> managedTensor t
+{-# NOINLINE numel #-}
 
 -- |
 -- @
@@ -112,8 +112,9 @@ _reshape t0 t1 ix = with2DynamicState t0 t1 $ \s' t0' t1' -> Ix.withCPUIxStorage
   Sig.c_reshape s' t0' t1' ix'
 
 -- | pure version of '_catArray'
-catArray :: [Dynamic] -> DimVal -> IO Dynamic
-catArray ts dv = empty >>= \r -> _catArray r ts dv >> pure r
+catArray :: [Dynamic] -> Word -> Dynamic
+catArray ts dv = unsafeDupablePerformIO $ let r = empty in _catArray r ts dv >> pure r
+{-# NOINLINE catArray #-}
 
 -- | Concatenate all tensors in a given list of dynamic tensors along the given dimension.
 --
@@ -124,7 +125,7 @@ catArray ts dv = empty >>= \r -> _catArray r ts dv >> pure r
 _catArray
   :: Dynamic   -- ^ result to mutate
   -> [Dynamic] -- ^ tensors to concatenate
-  -> DimVal    -- ^ dimension to concatenate along.
+  -> Word      -- ^ dimension to concatenate along.
   -> IO ()
 _catArray res ds d = runManaged $ do
   s' <- managedState
@@ -168,7 +169,9 @@ _triu t0 t1 i0 = withLift $ Sig.c_triu
 -- last dimension over all input tensors, except if all tensors are empty, then it is 1.
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
-_cat :: Dynamic -> Dynamic -> Dynamic -> DimVal -> IO ()
+_cat :: Dynamic -> Dynamic -> Dynamic
+  -> Word  -- ^ dimension to concatenate along
+  -> IO ()
 _cat t0 t1 t2 i = runManaged $ do
   s'  <- managedState
   t0' <- managedTensor t0
@@ -177,8 +180,9 @@ _cat t0 t1 t2 i = runManaged $ do
   liftIO $ Sig.c_cat s' t0' t1' t2' (fromIntegral i)
 
 -- | pure version of '_cat'
-cat :: Dynamic -> Dynamic -> DimVal -> IO Dynamic
-cat t0 t1 dv = empty >>= \r -> _cat r t0 t1 dv >> pure r
+cat :: Dynamic -> Dynamic -> Word -> Dynamic
+cat t0 t1 dv = unsafeDupablePerformIO $ let r = empty in _cat r t0 t1 dv >> pure r
+{-# NOINLINE cat #-}
 
 -- | Finds and returns a LongTensor corresponding to the subscript indices of all non-zero elements in tensor.
 --
@@ -191,11 +195,12 @@ _nonzero ix t =  runManaged $ do
 
 -- | Returns the trace (sum of the diagonal elements) of a matrix x. This is equal to the sum of the
 -- eigenvalues of x.
-ttrace :: Dynamic -> IO HsAccReal
-ttrace t = flip with (pure . c2hsAccReal) $ do
+ttrace :: Dynamic -> HsAccReal
+ttrace t = unsafeDupablePerformIO . flip with (pure . c2hsAccReal) $ do
   s' <- managedState
   t' <- managedTensor t
   liftIO $ Sig.c_trace s' t'
+{-# NOINLINE ttrace #-}
 
 -- | mutates a tensor to be an @n × m@ identity matrix with ones on the diagonal and zeros elsewhere.
 eye_
@@ -234,14 +239,15 @@ range
   -> HsAccReal
   -> HsAccReal
   -> HsAccReal
-  -> IO Dynamic
-range d a b c = withInplace (\r -> range_ r a b c) d
+  -> Dynamic
+range d a b c = unsafeDupablePerformIO $ withInplace (\r -> range_ r a b c) d
+{-# NOINLINE range #-}
 
 -- | create a 'Dynamic' tensor with a given dimension and value
 --
 -- We can get away 'unsafePerformIO' this as constant is pure and thread-safe
 constant :: Dims (d :: [Nat]) -> HsReal -> Dynamic
-constant d v = unsafePerformIO $ new d >>= \r -> fill_ r v >> pure r
+constant d v = unsafeDupablePerformIO $ let r = new d in fill_ r v >> pure r
 {-# NOINLINE constant #-}
 
 -- | direct call to the C-FFI of @diag@, mutating the first tensor argument with
@@ -257,11 +263,12 @@ diag_ t d = _diag t t d
 
 -- | returns the k-th diagonal of the input tensor, where k=0 is the main diagonal,
 -- k>0 is above the main diagonal, and k<0 is below the main diagonal.
-diag :: Dynamic -> Int -> IO Dynamic
-diag  t d = withEmpty t $ \r -> _diag r t d
+diag :: Dynamic -> Int -> Dynamic
+diag t d = unsafeDupablePerformIO $ let r = new' (getSomeDims t) in _diag r t d >> pure r
+{-# NOINLINE diag #-}
 
 -- | returns a diagonal matrix with diagonal elements constructed from the input tensor
-diag1d :: Dynamic -> IO Dynamic
+diag1d :: Dynamic -> Dynamic
 diag1d t = diag t 1
 
 -- | helper function for 'onesLike' and 'zerosLike'
@@ -269,19 +276,22 @@ _tenLike
   :: (Dynamic -> Dynamic -> IO ())
   -> Dims (d::[Nat]) -> IO Dynamic
 _tenLike _fn d = do
-  src <- new d
-  shape <- new d
+  let
+    src = new d
+    shape = new d
   _fn src shape
   pure src
 {-# WARNING _tenLike "this should not be exported outside of hasktorch" #-}
 
 -- | pure version of 'onesLike_'
-onesLike :: Dims (d::[Nat]) -> IO Dynamic
-onesLike = _tenLike onesLike_
+onesLike :: Dims (d::[Nat]) -> Dynamic
+onesLike = unsafeDupablePerformIO . _tenLike onesLike_
+{-# NOINLINE onesLike #-}
 
 -- | pure version of 'zerosLike_'
-zerosLike :: Dims (d::[Nat]) -> IO Dynamic
-zerosLike = _tenLike zerosLike_
+zerosLike :: Dims (d::[Nat]) -> Dynamic
+zerosLike = unsafeDupablePerformIO . _tenLike zerosLike_
+{-# NOINLINE zerosLike #-}
 
 
 -- class CPUTensorMath t where
