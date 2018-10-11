@@ -238,7 +238,7 @@ conv2dMM
   -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
   -> BVar s (Tensor '[f,h,w])    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor '[o,oH,oW])
-conv2dMM = genericBPConv2dMM (new :: IO (Tensor '[f * kH * kW, oH * oW]))
+conv2dMM = genericBPConv2dMM (new :: (Tensor '[f * kH * kW, oH * oW]))
 
 -- | Backprop convolution function with batching
 conv2dMMBatch
@@ -256,7 +256,7 @@ conv2dMMBatch
   -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
   -> BVar s (Tensor '[b,f,h,w])    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor '[b,o,oH,oW])
-conv2dMMBatch = genericBPConv2dMM (new :: IO (Tensor '[b, f * kH * kW, oH * oW]))
+conv2dMMBatch = genericBPConv2dMM (new :: (Tensor '[b, f * kH * kW, oH * oW]))
 
 -- | Backprop convolution function
 {-# NOINLINE genericBPConv2dMM #-}
@@ -264,7 +264,7 @@ genericBPConv2dMM
   :: Reifies s W
   => All Dimensions '[din,dout,fgin]
   => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW]
-  => IO (Tensor fgin)            -- ^ make grad input buffer
+  => (Tensor fgin)            -- ^ make grad input buffer
   -> Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
                                  --   C-default is 1 for both.
                                  --
@@ -285,9 +285,9 @@ genericBPConv2dMM mkGradIBuffer step pad lr = liftOp2 . op2 $ \conv inp -> unsaf
 
 
   pure (out, \gout -> unsafePerformIO $ do
-    gradInputBuffer <- mkGradIBuffer
-    (gin, ones) <- (,) <$> empty <*> empty
-    (gw, gb) <- (,) <$> new <*> new
+    let gradInputBuffer = mkGradIBuffer
+    let (gin, ones) = (empty, empty)
+    let (gw, gb) = (new, new)
 
     Dynamic._spatialConvolutionMM_updateGradInput
       (asDynamic inp) (asDynamic gout)
@@ -381,7 +381,7 @@ genericBPConv2dMM mkGradIBuffer step pad lr = liftOp2 . op2 $ \conv inp -> unsaf
   --   -> Tensor gout           -- ^ gradOutput
   --   -> IO ()
   _conv2dMM_accGradParameters mkGradIBuffer step pad lr conv inp gout = do
-    ones <- empty
+    let ones = empty
     gradInputBuffer <- mkGradIBuffer
     Dynamic._spatialConvolutionMM_accGradParameters
       (asDynamic inp) (asDynamic gout)

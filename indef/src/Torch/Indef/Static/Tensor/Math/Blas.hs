@@ -43,9 +43,9 @@ addmv
   -> Tensor '[r, c]   -- ^ mat
   -> Tensor '[c]      -- ^ vec2
   -> Tensor '[r]      -- ^ res
-addmv a b c d e = unsafePerformIO $ asStatic <$> Dynamic.addmv a (asDynamic b) c (asDynamic d) (asDynamic e)
-{-# NOINLINE addmv #-}
--- safeAddmv a b c d e = asStatic <$> Dynamic.addmv a (asDynamic b) c (asDynamic d) (asDynamic e)
+addmv a b c d e = asStatic $ Dynamic.addmv a (asDynamic b) c (asDynamic d) (asDynamic e)
+
+-- safeAddmv a b c d e = asStatic $ Dynamic.addmv a (asDynamic b) c (asDynamic d) (asDynamic e)
 
 -- | Inline version of 'addmv', mutating @vec1@ inplace.
 addmv_
@@ -88,8 +88,8 @@ addmm
   -> Tensor '[a, b]          -- ^ mat1
   -> Tensor '[b, c]          -- ^ mat2
   -> Tensor '[a, c]          -- ^ res
-addmm a b c d e = unsafePerformIO $ asStatic <$> Dynamic.addmm a (asDynamic b) c (asDynamic d) (asDynamic e)
-{-# NOINLINE addmm #-}
+addmm a b c d e = asStatic $ Dynamic.addmm a (asDynamic b) c (asDynamic d) (asDynamic e)
+
 
 -- | Inline version of 'addmm', mutating @M@ inplace.
 addmm_
@@ -139,8 +139,8 @@ addr
   -> Tensor '[r]         -- ^ vec1_i
   -> Tensor '[c]         -- ^ vec2_j
   -> Tensor '[r, c]      -- ^ res_ij
-addr a b c d e = unsafePerformIO $ asStatic <$> Dynamic.addr a (asDynamic b) c (asDynamic d) (asDynamic e)
-{-# NOINLINE addr #-}
+addr a b c d e = asStatic $ Dynamic.addr a (asDynamic b) c (asDynamic d) (asDynamic e)
+
 
 
 -- | Inline version of 'addr', mutating @mat_ij@ in-place.
@@ -182,8 +182,8 @@ addbmm
   -> Tensor '[b, n, m]  -- ^ batch1_i
   -> Tensor '[b, m, p]  -- ^ batch2_i
   -> Tensor '[n, p]     -- ^ res
-addbmm a b c d e = unsafePerformIO $ asStatic <$> Dynamic.addbmm a (asDynamic b) c (asDynamic d) (asDynamic e)
-{-# NOINLINE addbmm #-}
+addbmm a b c d e = asStatic $ Dynamic.addbmm a (asDynamic b) c (asDynamic d) (asDynamic e)
+
 
 -- | Inline version of 'addbmm', mutating @M@ in-place.
 addbmm_
@@ -216,8 +216,7 @@ baddbmm
   -> Tensor '[b, n, m]   -- ^ batch1_i
   -> Tensor '[b, m, p]   -- ^ batch2_i
   -> Tensor '[b, n, p]   -- ^ res_i
-baddbmm a b c d e = unsafePerformIO $ asStatic <$> Dynamic.baddbmm a (asDynamic b) c (asDynamic d) (asDynamic e)
-{-# NOINLINE baddbmm #-}
+baddbmm a b c d e = asStatic $ Dynamic.baddbmm a (asDynamic b) c (asDynamic d) (asDynamic e)
 
 -- | Inline version of 'baddbmm', mutating @M_i@ in-place.
 baddbmm_
@@ -233,7 +232,7 @@ baddbmm_ a b c d e = Dynamic.baddbmm_ a (asDynamic b) c (asDynamic d) (asDynamic
 
 -- | Performs the dot product between two tensors. The number of elements must match: both tensors are
 -- seen as a 1D vector.
-dot :: All Dimensions '[d,d'] => Tensor d -> Tensor d' -> IO HsAccReal
+dot :: All Dimensions '[d,d'] => Tensor d -> Tensor d' -> HsAccReal
 dot a b = Dynamic.dot (asDynamic a) (asDynamic b)
 
 -- | inline alias of 'dot'
@@ -242,6 +241,5 @@ dot a b = Dynamic.dot (asDynamic a) (asDynamic b)
   => Tensor d
   -> Tensor d'
   -> HsAccReal
-(<.>) a b = unsafePerformIO $ dot a b
-{-# NOINLINE (<.>) #-}
+(<.>) a b = dot a b
 

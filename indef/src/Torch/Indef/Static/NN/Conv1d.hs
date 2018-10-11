@@ -245,7 +245,7 @@ conv1d_updGradParamsBatch = _conv1d_updGradParams
 {-# NOINLINE _conv1d_forward #-}
 _conv1d_forward :: All KnownDim '[f,kW,dW,o] => Conv1d f o kW dW -> Tensor d -> IO (Tensor d')
 _conv1d_forward conv inp = do
-  out <- empty
+  let out = empty
   Dynamic._temporalConvolution_updateOutput
     (asDynamic inp) (asDynamic out)
     (asDynamic (weights conv)) (asDynamic (bias conv))
@@ -264,7 +264,7 @@ _conv1d_backwardGradInput
   -> Tensor goutDim
   -> IO (Tensor inputDim)
 _conv1d_backwardGradInput conv input gradOut = do
-  gradIn <- empty
+  let gradIn = empty
   Dynamic._temporalConvolution_updateGradInput
     (asDynamic input)  (asDynamic gradOut)
     (asDynamic gradIn) (asDynamic (weights conv))

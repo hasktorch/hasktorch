@@ -31,7 +31,10 @@ import qualified Torch.Indef.Static.Tensor.Math.Pointwise.Floating as Torch
 
 -- | abs forward pass (updates the output tensor)
 abs_updateOutput :: Tensor d -> IO (Tensor d)
-abs_updateOutput i = empty >>= \o -> Dynamic._abs_updateOutput (asDynamic i) (asDynamic o) >> pure o
+abs_updateOutput i =
+  let o = empty
+  in Dynamic._abs_updateOutput (asDynamic i) (asDynamic o)
+  >> pure o
 
 -- | abs backward-update (updates the layer and bias tensors)
 abs_updateGradInput
@@ -40,7 +43,9 @@ abs_updateGradInput
   -> Tensor d'       -- ^ gradOutput
   -> IO (Tensor d)   -- ^ gradInput
 abs_updateGradInput i go =
-  empty >>= \gi -> Dynamic._abs_updateGradInput (asDynamic i) (asDynamic go) (asDynamic gi) >> pure gi
+  let gi = empty
+  in Dynamic._abs_updateGradInput (asDynamic i) (asDynamic go) (asDynamic gi)
+  >> pure gi
 
 -- |  sqrt forward pass (updates the output tensor)
 _sqrt_updateOutput :: Tensor d -> Tensor d -> Double -> IO ()
@@ -110,11 +115,12 @@ softmaxN d = liftOp1 . op1 $ \inp ->
  where
   {-# NOINLINE updateOutput #-}
   updateOutput :: Dimensions d => Tensor d -> Integer -> Tensor d
-  updateOutput inp i = unsafePerformIO . withEmpty $ \out -> do
+  updateOutput inp i = unsafePerformIO $ let out = new in do
     Dynamic._softMax_updateOutput
       (asDynamic inp)
       (asDynamic out)
       i
+    >> pure out
 
   {-# NOINLINE updateGradInput #-}
   -- FIXME: There seems to be a bug in softmax. In the mean time, using a translation
@@ -132,13 +138,14 @@ softmaxN d = liftOp1 . op1 $ \inp ->
     -- pure $ mult ^*^ (gout ^- acc2real (sumall mult))
 
   -- NOTE: This would have been the original codebase.
-  updateGradInput inp gout out d = unsafePerformIO . withEmpty $ \gin -> do
+  updateGradInput inp gout out d = unsafePerformIO $ let gin = new in do
     Dynamic._softMax_updateGradInput
       (asDynamic inp)  -- input
       (asDynamic gout) -- gradOutput
       (asDynamic gin)  -- gradInput
       (asDynamic out)  -- output
       d                -- dimension
+    >> pure gin
 
 
 -- | run a threshold function againts two BVar variables
@@ -174,8 +181,9 @@ logSoftMaxN i = liftOp1 . op1 $ \inp ->
  where
   {-# NOINLINE updateOutput #-}
   updateOutput :: Tensor d -> Dim i -> Tensor d
-  updateOutput inp i = unsafePerformIO . withEmpty $ \out ->
+  updateOutput inp i = unsafePerformIO $ let out = new in
     Dynamic._logSoftMax_updateOutput (asDynamic inp) (asDynamic out) (fromIntegral $ dimVal i)
+    >> pure out
 
   {-# NOINLINE updateGradInput #-}
   updateGradInput
@@ -184,13 +192,14 @@ logSoftMaxN i = liftOp1 . op1 $ \inp ->
     -> Tensor d  -- output
     -> Dim i     -- dimension
     -> Tensor d  -- gradInput
-  updateGradInput inp gout out i = unsafePerformIO . withEmpty $ \gin ->
+  updateGradInput inp gout out i = unsafePerformIO $ let gin = new in
     Dynamic._logSoftMax_updateGradInput
       (asDynamic inp)             -- input
       (asDynamic gout)            -- gradOutput
       (asDynamic gin)             -- gradInput
       (asDynamic out)             -- output
       (fromIntegral $ dimVal i)   -- dimension
+    >> pure gin
 
 
 -- |  softPlus forward pass (updates the output tensor)

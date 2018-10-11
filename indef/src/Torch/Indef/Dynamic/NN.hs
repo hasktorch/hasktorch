@@ -364,11 +364,11 @@ spatialConvolutionMM_updateOutput inp weight bias (kW, kH) (dW, dH) (pW, pH) = d
   -- https://github.com/zdevito/ATen/blob/682cb389db5a318539ff03f031bf896a43a71b13/aten/src/THCUNN/generic/SpatialConvolutionMM.cu#L141
   --
   -- TODO: someone needs to verify that this is all above-board and we aren't missing out on some optimization tricks.
-  columns <- empty   -- temporary columns
-  ones    <- empty   -- buffer of ones for bias accumulation
+  let columns = empty   -- temporary columns
+  let ones    = empty   -- buffer of ones for bias accumulation
 
   -- This one as well:
-  out     <- empty   -- output
+  let out     = empty   -- output
   _spatialConvolutionMM_updateOutput inp out weight bias columns ones (kW, kH) (dW, dH) (pW, pH)
 
   pure out

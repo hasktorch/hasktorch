@@ -39,13 +39,13 @@ eqValue a v = byteAsStatic $ Dynamic.eqValue (asDynamic a) v
 -- 0 stands for false, 1 stands for true.
 ltValueT, leValueT, gtValueT, geValueT, neValueT, eqValueT
   :: (Dimensions d)
-  => Tensor d -> HsReal -> IO (Tensor d)
-ltValueT a b = asStatic <$> Dynamic.ltValueT (asDynamic a) b
-leValueT a b = asStatic <$> Dynamic.leValueT (asDynamic a) b
-gtValueT a b = asStatic <$> Dynamic.gtValueT (asDynamic a) b
-geValueT a b = asStatic <$> Dynamic.geValueT (asDynamic a) b
-neValueT a b = asStatic <$> Dynamic.neValueT (asDynamic a) b
-eqValueT a b = asStatic <$> Dynamic.eqValueT (asDynamic a) b
+  => Tensor d -> HsReal -> Tensor d
+ltValueT a b = asStatic $ Dynamic.ltValueT (asDynamic a) b
+leValueT a b = asStatic $ Dynamic.leValueT (asDynamic a) b
+gtValueT a b = asStatic $ Dynamic.gtValueT (asDynamic a) b
+geValueT a b = asStatic $ Dynamic.geValueT (asDynamic a) b
+neValueT a b = asStatic $ Dynamic.neValueT (asDynamic a) b
+eqValueT a b = asStatic $ Dynamic.eqValueT (asDynamic a) b
 
 -- | mutate a tensor in-place with its numeric relation to a given scalar, where 0 stands for false and
 -- 1 stands for true.

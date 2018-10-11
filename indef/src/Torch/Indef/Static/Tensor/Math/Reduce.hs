@@ -129,7 +129,7 @@ minIndex1d t = fromJust . snd $ min1d t keep
 medianIndex1d t = fromJust . snd $ median1d t keep
 
 -- | Static call to 'Dynamic._prod'
-_prod :: Tensor d -> Tensor d -> DimVal -> Maybe KeepDim -> IO ()
+_prod :: Tensor d -> Tensor d -> Word -> Maybe KeepDim -> IO ()
 _prod r t = Dynamic._prod (asDynamic r) (asDynamic t)
 
 -------------------------------------------------------------------------------
@@ -141,23 +141,23 @@ withKeepDim
   => All KnownDim '[n, ix]
   => Length d > ix ~ True
   => '(rs, n:+ls) ~ (SplitAt ix d)
-  => ((Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ())
+  => ((Dynamic, IndexDynamic) -> Dynamic -> Word -> Maybe KeepDim -> IO ())
   -> Tensor d
   -> Dim ix
   -> KeepDim
   -> (Tensor (rs ++ '[1] ++ ls), Maybe (IndexTensor (rs ++ '[1] ++ ls)))
 withKeepDim _fn t d k = unsafePerformIO $ do
-  ret :: Tensor (rs ++ '[1] ++ ls) <- new
+  let ret = new
   let ix :: IndexTensor (rs ++ '[1] ++ ls) = newIx
-  _fn (asDynamic ret, longAsDynamic ix) (asDynamic t) ((fromIntegral $ dimVal d)) (Just k)
+  _fn (asDynamic ret, longAsDynamic ix) (asDynamic t) (dimVal d) (Just k)
   pure (ret, if coerce k then Just ix else Nothing)
 {-# NOINLINE withKeepDim #-}
 
 
 -- | Static call to 'Dynamic.sum'
-sum :: Dimensions d' => Tensor d -> DimVal -> KeepDim -> Tensor d'
+sum :: Dimensions d' => Tensor d -> Word -> KeepDim -> Tensor d'
 sum t d k = unsafePerformIO $ do
-  r <- new
+  let r = new
   Dynamic._sum (asDynamic r) (asDynamic t) d (Just k)
   pure r
 {-# NOINLINE sum #-}

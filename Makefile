@@ -65,9 +65,11 @@ run-examples:
 	echo "finished running examples"
 
 dabal-all:
-	for lib in "signatures/hasktorch-signatures" \
+	for lib in "signatures/hasktorch-signatures"        \
 	  "signatures/partial/hasktorch-signatures-partial" \
-	  "signatures/types/hasktorch-signatures-types" ; do \
+	  "signatures/support/hasktorch-signatures-support" \
+	  "signatures/types/hasktorch-signatures-types"     \
+	  "indef/hasktorch-indef"  ; do                     \
 	  $(MAKE) dabal DABAL=$${lib} ; \
 	done
 

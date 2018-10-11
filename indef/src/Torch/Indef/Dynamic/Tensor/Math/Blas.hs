@@ -56,12 +56,13 @@ _baddbmm = blasOp Sig.c_baddbmm
 
 -- | Performs the dot product between two tensors. The number of elements must match: both tensors are
 -- seen as a 1D vector.
-dot :: Dynamic -> Dynamic -> IO HsAccReal
-dot a b = flip with (fmap c2hsAccReal)
+dot :: Dynamic -> Dynamic -> HsAccReal
+dot a b = unsafeDupablePerformIO $ flip with (fmap c2hsAccReal)
    $  Sig.c_dot
   <$> managedState
   <*> managedTensor a
   <*> managedTensor b
+{-# NOINLINE dot #-}
 
 -- class GPUTensorMathBlas t where
 --   btrifact :: t -> IntTensor -> IntTensor -> Int -> t -> io ()
@@ -70,13 +71,15 @@ dot a b = flip with (fmap c2hsAccReal)
 
 -- | inline alias of 'dot'
 (<.>) :: Dynamic -> Dynamic -> HsAccReal
-(<.>) a b = unsafePerformIO $ dot a b
-{-# NOINLINE (<.>) #-}
+(<.>) = dot
 
 mkNewFunction
   :: (Dynamic -> HsReal -> Dynamic -> HsReal -> Dynamic -> Dynamic -> IO ())
-  -> HsReal -> Dynamic -> HsReal -> Dynamic -> Dynamic -> IO Dynamic
-mkNewFunction op a m b x y = withEmpty x $ \r -> op r a m b x y
+  -> HsReal -> Dynamic -> HsReal -> Dynamic -> Dynamic -> Dynamic
+mkNewFunction op a m b x y = unsafeDupablePerformIO $
+  let r = new' (getSomeDims x)
+  in op r a m b x y >> pure r
+{-# NOINLINE mkNewFunction #-}
 
 mkInplaceFunction
   :: (Dynamic -> HsReal -> Dynamic -> HsReal -> Dynamic -> Dynamic -> IO ())
@@ -104,7 +107,7 @@ addmv
   -> HsReal    -- ^ v2
   -> Dynamic   -- ^ mat
   -> Dynamic   -- ^ vec2
-  -> IO Dynamic -- ^ res
+  -> Dynamic -- ^ res
 addmv = mkNewFunction _addmv
 
 -- | Inline version of 'addmv', mutating @vec1@ inplace.
@@ -135,7 +138,7 @@ addmm
   -> HsReal     -- ^ v2
   -> Dynamic    -- ^ mat1
   -> Dynamic    -- ^ mat2
-  -> IO Dynamic -- ^ res
+  -> Dynamic -- ^ res
 addmm = mkNewFunction _addmm
 
 -- | Inline version of 'addmm', mutating @M@ inplace.
@@ -168,7 +171,7 @@ addr
   -> HsReal     -- ^ v2
   -> Dynamic    -- ^ vec1_i
   -> Dynamic    -- ^ vec2_j
-  -> IO Dynamic -- ^ res_ij
+  -> Dynamic -- ^ res_ij
 addr = mkNewFunction _addr
 
 -- | Inline version of 'addr', mutating @mat_ij@ in-place.
@@ -200,7 +203,7 @@ addbmm
   -> HsReal     -- ^ v2
   -> Dynamic    -- ^ batch1_i
   -> Dynamic    -- ^ batch2_i
-  -> IO Dynamic -- ^ res
+  -> Dynamic -- ^ res
 addbmm  = mkNewFunction     _addbmm
 
 -- | Inline version of 'addbmm', mutating @M@ in-place.
@@ -231,7 +234,7 @@ baddbmm
   -> HsReal     -- ^ v2
   -> Dynamic    -- ^ batch1_i
   -> Dynamic    -- ^ batch2_i
-  -> IO Dynamic -- ^ res_i
+  -> Dynamic -- ^ res_i
 baddbmm  = mkNewFunction     _baddbmm
 
 -- | Inline version of 'baddbmm', mutating @M_i@ in-place.

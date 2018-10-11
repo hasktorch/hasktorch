@@ -561,7 +561,10 @@ resize5d_ t l0 l1 l2 l3 l4 = withLift $ Sig.c_resize5d
   <*> pure (fromIntegral l4)
 
 -- | Resize the tensor as the given tensor.
-resizeAs_ :: Dynamic -> Dynamic -> IO ()
+resizeAs_
+  :: Dynamic -- ^ tensor to mutate inplace
+  -> Dynamic -- ^ tensor used for its shape
+  -> IO ()
 resizeAs_ t0 t1 = with2DynamicState t0 t1 Sig.c_resizeAs
 
 -- | resize a tensor with given strides, sizes and a magical parameter.

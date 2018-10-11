@@ -159,7 +159,7 @@ _dilatedMaxPooling2d ker step pad dil ceil = liftOp1 . op1 $ \inp -> unsafePerfo
     -> SBool ceilMode        -- ^ ceil mode
     -> IO (IndexTensor d', Tensor d') -- ^ index of each max from the indicies, output of the max pooling
   _spatialDilatedMaxPooling_updateOutput inp ker step pad dil ceilMode = do
-    out <- empty
+    let out = empty
     let ix = Ix.zeroIxNd :: IndexTensor d'
     Dynamic._spatialDilatedMaxPooling_updateOutput (asDynamic inp) (asDynamic out) (longAsDynamic ix)
       (param2d ker) (param2d step) (param2d pad) (param2d dil) (fromSing ceilMode)
@@ -176,7 +176,7 @@ _dilatedMaxPooling2d ker step pad dil ceil = liftOp1 . op1 $ \inp -> unsafePerfo
     -> SBool ceilMode        -- ^ ceil mode
     -> IO (Tensor d)         -- ^ gradInput
   _spatialDilatedMaxPooling_updateGradInput inp gout ix ker step pad dil ceilMode = do
-    gin <- empty
+    let gin = empty
     Dynamic._spatialDilatedMaxPooling_updateGradInput
       (asDynamic inp) (asDynamic gout) (asDynamic gin) (longAsDynamic ix)
       (param2d ker) (param2d step) (param2d pad) (param2d dil) (fromSing ceilMode)
@@ -217,7 +217,7 @@ _maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp ->
     -> SBool ceilMode                         -- ^ ceil mode
     -> (IndexTensor d', Tensor d')           -- ^ output
   _spatialMaxPooling_updateOutput inp ker step pad ceilMode = unsafePerformIO $ do
-    out <- empty
+    let out = empty
     let ix = Ix.zeroIxNd :: IndexTensor d'
     Dynamic._spatialMaxPooling_updateOutput (asDynamic inp) (asDynamic out) (longAsDynamic ix)
       (param2d ker) (param2d step) (param2d pad) (fromSing ceilMode)
@@ -234,7 +234,7 @@ _maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp ->
     -> SBool ceilMode        -- ^ ceil mode
     -> Tensor d              -- ^ gradInput
   _spatialMaxPooling_updateGradInput inp gout ix ker step pad ceilMode = unsafePerformIO $ do
-    gin <- empty
+    let gin = empty
     Dynamic._spatialMaxPooling_updateGradInput
       (asDynamic inp) (asDynamic gout) (asDynamic gin) (longAsDynamic ix)
       (param2d ker) (param2d step) (param2d pad) (fromSing ceilMode)

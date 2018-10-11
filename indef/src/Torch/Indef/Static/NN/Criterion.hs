@@ -86,18 +86,20 @@ bCECriterion' savg r mw tar = liftOp1 . op1 $ (updateOutput &&& updateGradInput)
     updateOutput
       :: Tensor '[n]          -- input
       -> Tensor '[1]          -- output
-    updateOutput i = unsafePerformIO . withNew $ \o ->
+    updateOutput i = unsafePerformIO $ let o = new in
       Dynamic._bCECriterion_updateOutput
         (asDynamic i) (asDynamic tar) (asDynamic o) savg (asDynamic <$> mw) r
+      >> pure o
 
     {-# NOINLINE updateGradInput #-}
     updateGradInput
       :: Tensor '[n]          -- input
       -> Tensor '[1]          -- grad output
       -> Tensor '[n]          -- grad input
-    updateGradInput i go = unsafePerformIO . withNew $ \gi ->
+    updateGradInput i go = unsafePerformIO $ let gi = new in
       Dynamic._bCECriterion_updateGradInput
         (asDynamic i) (asDynamic tar) (asDynamic go) (asDynamic gi) savg (asDynamic <$> mw) r
+      >> pure gi
 
 bCECriterion
   :: (Reifies s W, KnownNat n, KnownDim n)
@@ -167,7 +169,7 @@ mSECriterion' sizeAvg reduce target = liftOp1 . op1 $ \i -> (updateOutput i, \go
     {-# NOINLINE updateOutput #-}
     updateOutput :: Tensor d -> Tensor out
     updateOutput i = unsafePerformIO $ do
-      o <- new
+      let o = new
       Dynamic._mSECriterion_updateOutput (asDynamic i) (asDynamic target) (asDynamic o) sizeAvg (fromSing reduce)
       pure o
 
@@ -175,7 +177,7 @@ mSECriterion' sizeAvg reduce target = liftOp1 . op1 $ \i -> (updateOutput i, \go
     {-# NOINLINE updateGradInput #-}
     updateGradInput :: Tensor d -> Tensor out -> Tensor d
     updateGradInput i gout = unsafePerformIO $ do
-      gin <- new
+      let gin = new
       Dynamic._mSECriterion_updateGradInput (asDynamic i) (asDynamic target) (asDynamic gout) (asDynamic gin) sizeAvg (fromSing reduce)
       pure gin
 
@@ -311,7 +313,7 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
       -> Bool                        -- bool reduce
       -> (Tensor '[1], Tensor '[1])
     updateOutput inp tar szAvg mws ix reduce = unsafePerformIO $ do
-      out <- new
+      let out = new
       let total_weight = constant 1  -- https://github.com/torch/nn/commit/3585e827eb65d071272a4aa4fab567b0b1eeee54#diff-1aa6a505cf16ad0e59498ada8432afb5
       Dynamic._ClassNLLCriterion_updateOutput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic out)
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
@@ -328,9 +330,12 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
       -> Integer                   -- int64_t ignore_index,
       -> Bool                      -- bool reduce
       -> Tensor '[sz, ps]
-    updateGradInput inp tar gout szAvg mws total_weight ix reduce = unsafePerformIO . withEmpty $ \gin ->
-      Dynamic._ClassNLLCriterion_updateGradInput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
+    updateGradInput inp tar gout szAvg mws total_weight ix reduce = unsafePerformIO $ do
+      let gin = empty
+      Dynamic._ClassNLLCriterion_updateGradInput
+        (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
+      pure gin
 
 
 -- | Due to behaviour of backend code, it is nessecary to set sizeAverage to False in Non-Batch mode.

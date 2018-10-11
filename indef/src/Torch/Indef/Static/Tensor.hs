@@ -61,28 +61,28 @@ unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> IO (Tensor '[n])
 unsafeVector = fmap (either error id) . runExceptT . vector
 
 -- | Static call to 'Dynamic.newExpand'
-newExpand t = fmap asStatic . Dynamic.newExpand (asDynamic t)
+newExpand t = asStatic . Dynamic.newExpand (asDynamic t)
 -- | Static call to 'Dynamic._expand'
 _expand r t = Dynamic._expand (asDynamic r) (asDynamic t)
 -- | Static call to 'Dynamic._expandNd'
 _expandNd rs os = Dynamic._expandNd (fmap asDynamic rs) (fmap asDynamic os)
 
--- | Static call to 'Dynamic._resize'
+-- | Static call to 'Dynamic.resize_'
 _resize t a b = Dynamic._resize (asDynamic t) a b >> pure ((asStatic . asDynamic) t)
--- | Static call to 'Dynamic._resize1d'
-_resize1d t a = Dynamic._resize1d (asDynamic t) a >> pure ((asStatic . asDynamic) t)
--- | Static call to 'Dynamic._resize2d'
-_resize2d t a b = Dynamic._resize2d (asDynamic t) a b >> pure ((asStatic . asDynamic) t)
--- | Static call to 'Dynamic._resize3d'
-_resize3d t a b c = Dynamic._resize3d (asDynamic t) a b c >> pure ((asStatic . asDynamic) t)
--- | Static call to 'Dynamic._resize4d'
-_resize4d t a b c d = Dynamic._resize4d (asDynamic t) a b c d >> pure ((asStatic . asDynamic) t)
--- | Static call to 'Dynamic._resize5d'
-_resize5d t a b c d e = Dynamic._resize5d (asDynamic t) a b c d e >> pure ((asStatic . asDynamic) t)
--- | Static call to 'Dynamic._resizeAs'
-_resizeAs src tar = Dynamic._resizeAs (asDynamic src) (asDynamic tar) >> pure ((asStatic . asDynamic) src)
--- | Static call to 'Dynamic._resizeNd'
-_resizeNd src a b c = Dynamic._resizeNd (asDynamic src) a b c >> pure ((asStatic . asDynamic) src)
+-- | Static call to 'Dynamic.resize1d_'
+resize1d_ t a = Dynamic.resize1d_ (asDynamic t) a >> pure ((asStatic . asDynamic) t)
+-- | Static call to 'Dynamic.resize2d_'
+resize2d_ t a b = Dynamic.resize2d_ (asDynamic t) a b >> pure ((asStatic . asDynamic) t)
+-- | Static call to 'Dynamic.resize3d_'
+resize3d_ t a b c = Dynamic.resize3d_ (asDynamic t) a b c >> pure ((asStatic . asDynamic) t)
+-- | Static call to 'Dynamic.resize4d_'
+resize4d_ t a b c d = Dynamic.resize4d_ (asDynamic t) a b c d >> pure ((asStatic . asDynamic) t)
+-- | Static call to 'Dynamic.resize5d_'
+resize5d_ t a b c d e = Dynamic.resize5d_ (asDynamic t) a b c d e >> pure ((asStatic . asDynamic) t)
+-- | Static call to 'Dynamic.resizeAs_'
+resizeAsT_ src tar = Dynamic.resizeAs_ (asDynamic src) (asDynamic tar) >> pure ((asStatic . asDynamic) src)
+-- | Static call to 'Dynamic.resizeNd_'
+resizeNd_ src a b c = Dynamic.resizeNd_ (asDynamic src) a b c >> pure ((asStatic . asDynamic) src)
 -- | Static call to 'Dynamic.retain'
 retain t = Dynamic.retain (asDynamic t)
 -- | Static call to 'Dynamic._clearFlag'
@@ -116,12 +116,14 @@ _narrow t0 t1 = Dynamic._narrow (asDynamic t0) (asDynamic t1)
 -- | renamed from TH's @new@ because this always returns an empty tensor
 -- FIXME: this __technically should be @IO (Tensor '[])@, but if you leave it as-is
 -- the types line-up nicely (and we currently don't use rank-0 tensors).
-empty = asStatic <$> Dynamic.empty
+empty = asStatic Dynamic.empty
 
 -- | Static call to 'Dynamic.newClone'
-newClone t = asStatic <$> Dynamic.newClone (asDynamic t)
+newClone :: Tensor d -> Tensor d
+newClone t = asStatic $ Dynamic.newClone (asDynamic t)
+
 -- | Static call to 'Dynamic.newContiguous'
-newContiguous t = asStatic <$> Dynamic.newContiguous (asDynamic t)
+newContiguous t = asStatic $ Dynamic.newContiguous (asDynamic t)
 -- | Static call to 'Dynamic.newNarrow'
 newNarrow t a b c = asStatic <$> Dynamic.newNarrow (asDynamic t) a b c
 
@@ -144,9 +146,9 @@ newSizeOf t = Dynamic.newSizeOf (asDynamic t)
 -- | Static call to 'Dynamic.newStrideOf'
 newStrideOf t = Dynamic.newStrideOf (asDynamic t)
 -- | Static call to 'Dynamic.newTranspose'
-newTranspose t a b = asStatic <$> Dynamic.newTranspose (asDynamic t) a b
+newTranspose t a b = asStatic $ Dynamic.newTranspose (asDynamic t) a b
 -- | Static call to 'Dynamic.newUnfold'
-newUnfold t a b c = asStatic <$> Dynamic.newUnfold (asDynamic t) a b c
+newUnfold t a b c = asStatic $ Dynamic.newUnfold (asDynamic t) a b c
 
 -- | Make a new view of a tensor.
 view :: forall d d' . (Dimensions d, Dimensions d') => Tensor d -> IO (Tensor d')
@@ -156,53 +158,53 @@ view src = do
 
 
 -- | Static call to 'Dynamic.newWithSize'
-newWithSize a0 a1 = asStatic <$> Dynamic.newWithSize a0 a1
+newWithSize a0 a1 = asStatic $ Dynamic.newWithSize a0 a1
 -- | Static call to 'Dynamic.newWithSize1d'
-newWithSize1d a0 = asStatic <$> Dynamic.newWithSize1d a0
+newWithSize1d a0 = asStatic $ Dynamic.newWithSize1d a0
 -- | Static call to 'Dynamic.newWithSize2d'
-newWithSize2d a0 a1 = asStatic <$> Dynamic.newWithSize2d a0 a1
+newWithSize2d a0 a1 = asStatic $ Dynamic.newWithSize2d a0 a1
 -- | Static call to 'Dynamic.newWithSize3d'
-newWithSize3d a0 a1 a2 = asStatic <$> Dynamic.newWithSize3d a0 a1 a2
+newWithSize3d a0 a1 a2 = asStatic $ Dynamic.newWithSize3d a0 a1 a2
 -- | Static call to 'Dynamic.newWithSize4d'
-newWithSize4d a0 a1 a2 a3 = asStatic <$> Dynamic.newWithSize4d a0 a1 a2 a3
+newWithSize4d a0 a1 a2 a3 = asStatic $ Dynamic.newWithSize4d a0 a1 a2 a3
 -- | Static call to 'Dynamic.newWithStorage'
-newWithStorage a0 a1 a2 a3 = asStatic <$> Dynamic.newWithStorage a0 a1 a2 a3
+newWithStorage a0 a1 a2 a3 = asStatic $ Dynamic.newWithStorage a0 a1 a2 a3
 -- | Static call to 'Dynamic.newWithStorage1d'
-newWithStorage1d a0 a1 a2 = asStatic <$> Dynamic.newWithStorage1d a0 a1 a2
+newWithStorage1d a0 a1 a2 = asStatic $ Dynamic.newWithStorage1d a0 a1 a2
 -- | Static call to 'Dynamic.newWithStorage2d'
-newWithStorage2d a0 a1 a2 a3 = asStatic <$> Dynamic.newWithStorage2d a0 a1 a2 a3
+newWithStorage2d a0 a1 a2 a3 = asStatic $ Dynamic.newWithStorage2d a0 a1 a2 a3
 -- | Static call to 'Dynamic.newWithStorage3d'
-newWithStorage3d a0 a1 a2 a3 a4 = asStatic <$> Dynamic.newWithStorage3d a0 a1 a2 a3 a4
+newWithStorage3d a0 a1 a2 a3 a4 = asStatic $ Dynamic.newWithStorage3d a0 a1 a2 a3 a4
 -- | Static call to 'Dynamic.newWithStorage4d'
-newWithStorage4d a0 a1 a2 a3 a4 a5 = asStatic <$> Dynamic.newWithStorage4d a0 a1 a2 a3 a4 a5
+newWithStorage4d a0 a1 a2 a3 a4 a5 = asStatic $ Dynamic.newWithStorage4d a0 a1 a2 a3 a4 a5
 -- | Static call to 'Dynamic.newWithTensor'
 newWithTensor t = asStatic <$> Dynamic.newWithTensor (asDynamic t)
 -- | Static call to 'Dynamic._select'
 _select t0 t1 = Dynamic._select (asDynamic t0) (asDynamic t1)
 -- | Static call to 'Dynamic._set'
 _set t0 t1 = Dynamic._set (asDynamic t0) (asDynamic t1)
--- | Static call to 'Dynamic._set1d'
-_set1d t = Dynamic._set1d (asDynamic t)
--- | Static call to 'Dynamic._set2d'
-_set2d t = Dynamic._set2d (asDynamic t)
--- | Static call to 'Dynamic._set3d'
-_set3d t = Dynamic._set3d (asDynamic t)
--- | Static call to 'Dynamic._set4d'
-_set4d t = Dynamic._set4d (asDynamic t)
--- | Static call to 'Dynamic._setFlag'
-_setFlag t = Dynamic._setFlag (asDynamic t)
--- | Static call to 'Dynamic._setStorage'
-_setStorage t = Dynamic._setStorage (asDynamic t)
--- | Static call to 'Dynamic._setStorage1d'
-_setStorage1d t = Dynamic._setStorage1d (asDynamic t)
--- | Static call to 'Dynamic._setStorage2d'
-_setStorage2d t = Dynamic._setStorage2d (asDynamic t)
--- | Static call to 'Dynamic._setStorage3d'
-_setStorage3d t = Dynamic._setStorage3d (asDynamic t)
--- | Static call to 'Dynamic._setStorage4d'
-_setStorage4d t = Dynamic._setStorage4d (asDynamic t)
--- | Static call to 'Dynamic._setStorageNd'
-_setStorageNd t = Dynamic._setStorageNd (asDynamic t)
+-- | Static call to 'Dynamic.set1d_'
+set1d_ t = Dynamic.set1d_ (asDynamic t)
+-- | Static call to 'Dynamic.set2d_'
+set2d_ t = Dynamic.set2d_ (asDynamic t)
+-- | Static call to 'Dynamic.set3d_'
+set3d_ t = Dynamic.set3d_ (asDynamic t)
+-- | Static call to 'Dynamic.set4d_'
+set4d_ t = Dynamic.set4d_ (asDynamic t)
+-- | Static call to 'Dynamic.setFlag_'
+setFlag_ t = Dynamic.setFlag_ (asDynamic t)
+-- | Static call to 'Dynamic.setStorage_'
+setStorage_ t = Dynamic.setStorage_ (asDynamic t)
+-- | Static call to 'Dynamic.setStorage1d_'
+setStorage1d_ t = Dynamic.setStorage1d_ (asDynamic t)
+-- | Static call to 'Dynamic.setStorage2d_'
+setStorage2d_ t = Dynamic.setStorage2d_ (asDynamic t)
+-- | Static call to 'Dynamic.setStorage3d_'
+setStorage3d_ t = Dynamic.setStorage3d_ (asDynamic t)
+-- | Static call to 'Dynamic.setStorage4d_'
+setStorage4d_ t = Dynamic.setStorage4d_ (asDynamic t)
+-- | Static call to 'Dynamic.setStorageNd_'
+setStorageNd_ t = Dynamic.setStorageNd_ (asDynamic t)
 -- | Static call to 'Dynamic.size'
 size t = Dynamic.size (asDynamic t)
 -- | Static call to 'Dynamic.sizeDesc'
@@ -264,20 +266,20 @@ unsqueeze1d_ n t = do
 -- ========================================================================= --
 
 -- | Get runtime shape information from a tensor
-shape :: Tensor d -> IO [Word]
+shape :: Tensor d -> [Word]
 shape t = Dynamic.shape (asDynamic t)
 
 -- | alias to 'shape', casting the dimensions into a runtime 'SomeDims'.
-getDims :: Tensor d -> IO SomeDims
-getDims = fmap someDimsVal . shape
+getSomeDims :: Tensor d -> SomeDims
+getSomeDims = someDimsVal . shape
 
--- | helper function to make other parts of hasktorch valid pure functions.
-withNew :: forall d . (Dimensions d) => (Tensor d -> IO ()) -> IO (Tensor d)
-withNew op = new >>= \r -> op r >> pure r
-
--- | Should be renamed to @newFromSize@
-withEmpty :: forall d . (Dimensions d) => (Tensor d -> IO ()) -> IO (Tensor d)
-withEmpty op = new >>= \r -> op r >> pure r
+-- -- | helper function to make other parts of hasktorch valid pure functions.
+-- withNew :: forall d . (Dimensions d) => (Tensor d -> IO ()) -> IO (Tensor d)
+-- withNew op = new >>= \r -> op r >> pure r
+--
+-- -- | Should be renamed to @newFromSize@
+-- withEmpty :: forall d . Dimensions d => (Tensor d -> IO ()) -> IO (Tensor d)
+-- withEmpty op = let r = new in op r >> pure r
 
 -- | same as 'withEmpty' (which should be called @newFromSize@) and 'withNew',
 -- but passes in an empty tensor to be mutated and returned with a static
@@ -285,8 +287,8 @@ withEmpty op = new >>= \r -> op r >> pure r
 --
 -- Note: We can get away with this when Torch does resizing in C, but you need
 -- to examine the C implementation of the function you are trying to make pure.
-withEmpty' :: (Dimensions d) => (Tensor d -> IO ()) -> IO (Tensor d)
-withEmpty' op = empty >>= \r -> op r >> pure r
+-- withEmpty' :: (Dimensions d) => (Tensor d -> IO ()) -> IO (Tensor d)
+-- withEmpty' op = let r = empty in op r >> pure r
 
 -- |
 -- This is actually 'inplace'. Dimensions may change from original tensor given Torch resizing.
@@ -312,14 +314,14 @@ throwGT4 fnname = throwFIXME
 
 
 -- | Set the storage of a tensor. This is incredibly unsafe.
-_setStorageDim :: Tensor d -> Storage -> StorageOffset -> [(Size, Stride)] -> IO ()
-_setStorageDim t s o = Dynamic._setStorageDim (asDynamic t) s o
+setStorageDim_ :: Tensor d -> Storage -> StorageOffset -> [(Size, Stride)] -> IO ()
+setStorageDim_ t s o = Dynamic.setStorageDim_ (asDynamic t) s o
 
 -- | Set the value of a tensor at a given index
 --
 -- FIXME: there should be a constraint to see that d' is in d
 setDim_ :: Tensor d -> Dims (d'::[Nat]) -> HsReal -> IO ()
-setDim_ t = Dynamic._setDim (asDynamic t)
+setDim_ t = Dynamic.setDim_ (asDynamic t)
 
 
 -- | runtime version of 'setDim_'
@@ -329,7 +331,12 @@ setDim'_ t (SomeDims d) = setDim_ t d -- (d :: Dims d')
 -- | get the value of a tensor at the given index
 --
 -- FIXME: there should be a constraint to see that d' is in d
-getDim :: forall d d' . All Dimensions '[d, d'] => Tensor (d::[Nat]) -> Dims (d'::[Nat]) -> IO (HsReal)
+getDim
+  :: forall d i d'
+  .  All Dimensions '[d, i:+d']
+  => Tensor (d::[Nat])
+  -> Dims ((i:+d')::[Nat]) -- ^ the index to get is a non-empty dims list
+  -> Maybe HsReal
 getDim t d = Dynamic.getDim (asDynamic t) d
 
 -- | Select a dimension of a tensor. If a vector is passed in, return a singleton tensor
@@ -343,51 +350,46 @@ getDim t d = Dynamic.getDim (asDynamic t) d
   -> Dim i
   -> Tensor (ls ++ rs)
 t !! i = unsafePerformIO $
-  nDimension t >>= \case
-    0 -> empty
-    1 -> runMaybeT selectVal >>= maybe empty pure
+  case nDimension t of
+    0 -> pure empty
+    1 -> fromMaybe empty <$> runMaybeT selectVal
     _ -> newSelect t (i, Idx 1)
 
   where
     selectVal :: MaybeT IO (Tensor (ls ++ rs))
     selectVal = do
-      sizeI <- fromIntegral <$> lift (size t (fromIntegral $ dimVal i))
-      guard (dimVal i < sizeI)
+      guard (dimVal i < size t (dimVal i))
+      v <- MaybeT . pure $ get1d t (fromIntegral $ dimVal i)
       lift $ do
-        r <- newWithSize1d 1
-        v <- (get1d t (fromIntegral $ dimVal i))
-        _set1d r 0 v
+        let r = newWithSize1d 1
+        set1d_ r 0 v
         pure r
 {-# NOINLINE (!!) #-}
 
 
 -- | Create a new tensor. Elements have not yet been allocated and there will
 -- not be any gauruntees regarding what is inside.
-new :: forall d . Dimensions d => IO (Tensor d)
-new = asStatic <$> Dynamic.new (dims :: Dims d)
+new :: forall d . Dimensions d => Tensor d
+new = asStatic $ Dynamic.new (dims :: Dims d)
 
 -- | Resize a tensor, returning the same tensor with a the changed dimensions.
 --
 -- NOTE: This is copied from the dynamic version to keep the constraints clean and is _unsafe_
 _resizeDim :: forall d d' . (Dimensions d') => Tensor d -> IO (Tensor d')
 _resizeDim t = do
-  Dynamic._resizeDim (asDynamic t) (dims :: Dims d')
+  Dynamic.resizeDim_ (asDynamic t) (dims :: Dims d')
   pure $ asStatic (asDynamic t)
 
 -- | Resize the input with the output shape. impure and mutates the tensor inplace.
 --
 -- FIXME: replace @d@ with a linear type?
 resizeAs_ :: forall d d' . (All Dimensions '[d, d'], Product d ~ Product d') => Tensor d -> IO (Tensor d')
-resizeAs_ src = do
-  shape :: Tensor d' <- new
-  _resizeAs src shape
+resizeAs_ src = resizeAsT_ src (new :: Tensor d')
 
 -- | Pure version of 'resizeAs_' which clones the input tensor (pure, dupable?)
 resizeAs :: forall d d' . (All Dimensions [d,d'], Product d ~ Product d') => Tensor d -> Tensor d'
-resizeAs src = unsafePerformIO $ do
-  res <- newClone src
-  shape :: Tensor d' <- new
-  _resizeAs res shape
+resizeAs src = unsafeDupablePerformIO $
+  resizeAsT_ (newClone src :: Tensor d) (new :: Tensor d')
 {-# NOINLINE resizeAs #-}
 {-# WARNING resizeAs "This might be not be garbage collected well " #-}
 
@@ -493,8 +495,7 @@ unsafeCuboid = fmap (either error id) . runExceptT . cuboid
 
 -- | transpose a matrix (pure, dupable)
 transpose2d :: (All KnownDim '[r,c]) => Tensor '[r, c] -> Tensor '[c, r]
-transpose2d t = unsafePerformIO $ newTranspose t 1 0
-{-# NOINLINE transpose2d #-}
+transpose2d t = newTranspose t 1 0
 
 
 -- | Expand a vector by copying into a matrix by set dimensions
@@ -502,8 +503,8 @@ transpose2d t = unsafePerformIO $ newTranspose t 1 0
 expand2d
   :: forall x y . (All KnownDim '[x, y])
   => Tensor '[x] -> Tensor '[y, x]
-expand2d t = unsafePerformIO $ do
-  res :: Tensor '[y, x] <- new
+expand2d t = unsafeDupablePerformIO $ do
+  let res :: Tensor '[y, x] = new
   s <- mkCPUIxStorage =<< TH.c_newWithSize2_ s2 s1
   _expand res t s
   pure res
@@ -518,11 +519,11 @@ expand2d t = unsafePerformIO $ do
 -- and should be removed.
 getElem2d
   :: forall (n::Nat) (m::Nat) . (All KnownDim '[n, m])
-  => Tensor '[n, m] -> Natural -> Natural -> IO (HsReal)
+  => Tensor '[n, m] -> Natural -> Natural -> Maybe (HsReal)
 getElem2d t r c
   | r > fromIntegral (dimVal (dim :: Dim n)) ||
     c > fromIntegral (dimVal (dim :: Dim m))
-      = throwString "Indices out of bounds"
+      = Nothing
   | otherwise = get2d t (fromIntegral r) (fromIntegral c)
 {-# DEPRECATED getElem2d "use getDim instead" #-}
 
@@ -537,7 +538,7 @@ setElem2d t r c v
   | r > fromIntegral (dimVal (dim :: Dim n)) ||
     c > fromIntegral (dimVal (dim :: Dim m))
       = throwString "Indices out of bounds"
-  | otherwise = _set2d t (fromIntegral r) (fromIntegral c) v
+  | otherwise = set2d_ t (fromIntegral r) (fromIntegral c) v
 {-# DEPRECATED setElem2d "use setDim_ instead" #-}
 
 

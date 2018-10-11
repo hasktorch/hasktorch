@@ -7,11 +7,13 @@
 -- Stability :  experimental
 -- Portability: non-portable
 -------------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math.Floating where
 
 import Control.Monad.Managed
 import GHC.Int
 import Numeric.Dimensions
+import System.IO.Unsafe
 
 import qualified Torch.Sig.Tensor.Math.Floating as Sig
 import Torch.Indef.Dynamic.Tensor (empty)
@@ -23,8 +25,9 @@ linspace
   :: HsReal  -- ^ @x1@
   -> HsReal  -- ^ @x2@
   -> Int64   -- ^ @n@
-  -> IO Dynamic
-linspace a b l = empty >>= \t -> linspace_ t a b l >> pure t
+  -> Dynamic
+linspace a b l = unsafeDupablePerformIO $ let t = empty in linspace_ t a b l >> pure t
+{-# NOINLINE linspace #-}
 
 -- | inplace version of 'linspace'
 linspace_ :: Dynamic -> HsReal -> HsReal -> Int64 -> IO ()
@@ -38,8 +41,9 @@ logspace
   :: HsReal  -- ^ @x1@
   -> HsReal  -- ^ @x2@
   -> Int64   -- ^ @n@
-  -> IO Dynamic
-logspace a b l = empty >>= \t -> logspace_ t a b l >> pure t
+  -> Dynamic
+logspace a b l = unsafeDupablePerformIO $ let t = empty in logspace_ t a b l >> pure t
+{-# NOINLINE logspace #-}
 
 -- | inplace version of 'logspace'
 logspace_ :: Dynamic -> HsReal -> HsReal -> Int64 -> IO ()

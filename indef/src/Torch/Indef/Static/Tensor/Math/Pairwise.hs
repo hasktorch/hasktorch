@@ -23,16 +23,15 @@ add_ :: Dimensions d => Tensor d -> HsReal -> IO ()
 add_ t = Dynamic.add_ (asDynamic t)
 
 -- | static version of 'Dynamic.add'
-add :: Dimensions d => Tensor d -> HsReal -> IO (Tensor d)
-add  t v = asStatic <$> Dynamic.add (asDynamic t) v
+add :: Dimensions d => Tensor d -> HsReal -> Tensor d
+add t v = asStatic $ Dynamic.add (asDynamic t) v
 
 -- | infix version of 'add'
-(^+) :: Dimensions d => Tensor d -> HsReal -> (Tensor d)
-(^+) a b = unsafePerformIO $ add a b
-{-# NOINLINE (^+) #-}
+(^+) :: Dimensions d => Tensor d -> HsReal -> Tensor d
+(^+) = add
 
 -- | flipped version of '(^+)'
-(+^) :: Dimensions d => HsReal -> Tensor d -> (Tensor d)
+(+^) :: Dimensions d => HsReal -> Tensor d -> Tensor d
 (+^) = flip (^+)
 
 -- | static version of 'Dynamic.sub_'
@@ -40,13 +39,12 @@ sub_ :: Dimensions d => Tensor d -> HsReal -> IO ()
 sub_ t = Dynamic.sub_ (asDynamic t)
 
 -- | static version of 'Dynamic.sub'
-sub :: Dimensions d => Tensor d -> HsReal -> IO (Tensor d)
-sub  t v = asStatic <$> Dynamic.sub (asDynamic t) v
+sub :: Dimensions d => Tensor d -> HsReal -> Tensor d
+sub t v = asStatic $ Dynamic.sub (asDynamic t) v
 
 -- | infix version of 'sub'
 (^-) :: Dimensions d => Tensor d -> HsReal -> (Tensor d)
-(^-) a b = unsafePerformIO $ sub a b
-{-# NOINLINE (^-) #-}
+(^-) = sub
 
 -- | flipped version of '(^-)'
 (-^) :: Dimensions d => HsReal -> Tensor d -> (Tensor d)
@@ -65,30 +63,26 @@ mul_ :: Dimensions d => Tensor d -> HsReal -> IO ()
 mul_ t = Dynamic.mul_ (asDynamic t)
 
 -- | static version of 'Dynamic.mul'
-mul :: Dimensions d => Tensor d -> HsReal -> IO (Tensor d)
-mul  t v = asStatic <$> Dynamic.mul (asDynamic t) v
+mul :: Dimensions d => Tensor d -> HsReal -> Tensor d
+mul t v = asStatic $ Dynamic.mul (asDynamic t) v
 
 -- | infix version of 'mul'
 (^*) :: Dimensions d => Tensor d -> HsReal -> (Tensor d)
-(^*) a b = unsafePerformIO $ mul a b
-{-# NOINLINE (^*) #-}
+(^*) = mul
 
 -- | flipped version of '(^*)'
 (*^) :: Dimensions d => HsReal -> Tensor d -> (Tensor d)
 (*^) = flip (^*)
 
 -- | static version of 'Dynamic.div_'
-div_ :: Dimensions d => Tensor d -> HsReal -> IO ()
 div_ t = Dynamic.div_ (asDynamic t)
 
 -- | static version of 'Dynamic.div'
-div :: Dimensions d => Tensor d -> HsReal -> IO (Tensor d)
-div  t v = asStatic <$> Dynamic.div (asDynamic t) v
+div t v = asStatic $ Dynamic.div (asDynamic t) v
 
 -- | infix version of 'div'
-(^/) :: Dimensions d => Tensor d -> HsReal -> (Tensor d)
-(^/) a b = unsafePerformIO $ Torch.Indef.Static.Tensor.Math.Pairwise.div a b
-{-# NOINLINE (^/) #-}
+(^/) :: Dimensions d => Tensor d -> HsReal -> Tensor d
+(^/) a b = Torch.Indef.Static.Tensor.Math.Pairwise.div a b
 
 -- | flipped version of '(^/)'
 (/^) :: Dimensions d => HsReal -> Tensor d -> (Tensor d)

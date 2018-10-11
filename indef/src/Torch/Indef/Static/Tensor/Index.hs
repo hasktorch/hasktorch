@@ -8,12 +8,14 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.Tensor.Index where
 
 import Numeric.Dimensions
 import GHC.TypeLits
-import GHC.Natural
 import Control.Exception.Safe
+import System.IO.Unsafe
+
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Index as Ix
@@ -50,27 +52,28 @@ _put r ix t d = Dynamic._put (asDynamic r) (longAsDynamic ix) (asDynamic t) d
 -- FIXME: Use 'Idx' and remove the 'throwString' function
 getRow
   :: forall t n m . (All KnownDim '[n, m], KnownNat m)
-  => Tensor '[n, m] -> Natural -> IO (Tensor '[1, m])
+  => Tensor '[n, m] -> Word -> Maybe (Tensor '[1, m])
 getRow t r
-  | r > fromIntegral (dimVal (dim :: Dim n)) = throwString "Row out of bounds"
-  | otherwise = do
-      res <- Dynamic.new (dims :: Dims '[1, m])
+  | r > dimVal (dim :: Dim n) = Nothing
+  | otherwise = unsafeDupablePerformIO $ do
+      let res = Dynamic.new (dims :: Dims '[1, m])
       let ixs = Ix.indexDyn [ fromIntegral r ]
       Dynamic._indexSelect res (asDynamic t) 0 ixs
-      pure (asStatic res)
+      pure . Just $ asStatic res
+{-# NOINLINE getRow #-}
 
 -- | Retrieve a single column from a matrix
 --
 -- FIXME: Use 'Idx' and remove the 'throwString' function
 getColumn
   :: forall t n m . (All KnownDim '[n, m], KnownNat n)
-  => Tensor '[n, m] -> Natural -> IO (Tensor '[n, 1])
+  => Tensor '[n, m] -> Word -> Maybe (Tensor '[n, 1])
 getColumn t r
-  | r > fromIntegral (dimVal (dim :: Dim m)) = throwString "Column out of bounds"
-  | otherwise = do
-      res <- new
+  | r > dimVal (dim :: Dim m) = Nothing
+  | otherwise = unsafeDupablePerformIO $ do
+      let res = Dynamic.new (dims :: Dims '[n, 1])
       let ixs = Ix.indexDyn [ fromIntegral r ]
-      _indexSelect res t 1 (longAsStatic ixs :: IndexTensor '[n])
-      pure res
-
+      Dynamic._indexSelect res (asDynamic t) 1 ixs
+      pure . Just $ asStatic res
+{-# NOINLINE getColumn #-}
 

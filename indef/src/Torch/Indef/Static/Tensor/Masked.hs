@@ -12,8 +12,8 @@ module Torch.Indef.Static.Tensor.Masked where
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Masked as Dynamic
 
--- | Static call to 'Dynamic._maskedFill'
-_maskedFill t m v = Dynamic._maskedFill (asDynamic t) (byteAsDynamic m) v
+-- | Static call to 'Dynamic.maskedFill_'
+maskedFill_ t m v = Dynamic.maskedFill_ (asDynamic t) (byteAsDynamic m) v
 -- | Static call to 'Dynamic._maskedCopy'
 _maskedCopy r m t = Dynamic._maskedCopy (asDynamic r) (byteAsDynamic m) (asDynamic t)
 -- | Static call to 'Dynamic._maskedSelect'

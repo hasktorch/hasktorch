@@ -108,7 +108,7 @@ threshold thr value = liftOp1 . op1 $ \inp ->
       -> Tensor d            -- ^ input
       -> IO (Tensor d)       -- ^ output
     _threshold_updateOutput thr val inplace input = do
-      out <- empty
+      let out = empty
       Dynamic._threshold_updateOutput
         (asDynamic input) (asDynamic out)
         thr val
@@ -124,7 +124,7 @@ threshold thr value = liftOp1 . op1 $ \inp ->
       -> Tensor d      -- ^ gradient output
       -> IO (Tensor d) -- ^ gradient input
     _threshold_updateGradInput thr val inplace input gout = do
-      gin <- empty
+      let gin = empty
       Dynamic._threshold_updateGradInput
         (asDynamic input) (asDynamic gout) (asDynamic gin)
         thr val
