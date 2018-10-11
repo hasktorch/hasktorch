@@ -38,6 +38,8 @@ in let nnexports =
 
       , "Torch.${namespace}.Dynamic.NN"
       , "Torch.${namespace}.Dynamic.NN.Activation"
+      , "Torch.${namespace}.Dynamic.NN.Pooling"
+      , "Torch.${namespace}.Dynamic.NN.Criterion"
       ]
 in let cpu-lite-depends =
   [ packages.base
@@ -95,30 +97,77 @@ in let full-mixins =
         { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned isth "Char")
         , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned isth "Char")
         } }
-    , { package = "hasktorch-indef-unsigned"
+    , { package = "hasktorch-indef-signed"
       , renaming =
-        { provides = prelude.types.ModuleRenaming.renaming (provides.unsigned isth "Short")
-        , requires = prelude.types.ModuleRenaming.renaming (mixins.unsigned isth "Short")
+        { provides = prelude.types.ModuleRenaming.renaming (provides.signed isth "Short")
+        , requires = prelude.types.ModuleRenaming.renaming (mixins.signed isth "Short")
         } }
-    , { package = "hasktorch-indef-unsigned"
+    , { package = "hasktorch-indef-signed"
       , renaming =
         { provides = prelude.types.ModuleRenaming.renaming (provides.signed isth "Int")
         , requires = prelude.types.ModuleRenaming.renaming (mixins.signed isth "Int")
         } }
-    , { package = "hasktorch-indef-unsigned"
+    ]
+  # (if isth then
+    [ { package = "hasktorch-indef-floating"
       , renaming =
         { provides = prelude.types.ModuleRenaming.renaming (provides.floating isth "Float")
         , requires = prelude.types.ModuleRenaming.renaming (mixins.floating isth "Float")
         } }
-    ]
+    ] else [] : List types.Mixin)
 
+in let backend-sublibrary =
+  λ(isth : Bool)
+  → { name = "hasktorch-${if isth then "cpu" else "gpu"}"
+    , library =
+      λ (config : types.Config)
+      →  let lite-depends = if isth then cpu-lite-depends else gpu-lite-depends
+      in let floatless-exports =
+         ( baseexports isth "Long"
+         # baseexports isth "Double"
+         ) # (
+          if config.flag "lite"
+          then [] : List Text
+          else
+           ( baseexports isth "Byte"
+           # baseexports isth "Char"
+           # baseexports isth "Short"
+           # baseexports isth "Int"
+           ) )
+      in common.Library //
+        { hs-source-dirs = [ "utils", "src" ]
+        , build-depends = if config.flag "lite" then lite-depends else lite-depends # [packages.hasktorch-indef-unsigned]
+        , reexported-modules = List/map Text ReexportedModule fn.renameNoop (nnexports isth "Double")
+        , exposed-modules = floatless-exports # (if isth then baseexports isth "Float" # nnexports isth "Float" else [] : List Text)
+        , cpp-options = if isth then [] : List Text else [ "-DCUDA", "-DHASKTORCH_INTERNAL_CUDA" ]
+        , mixins = if config.flag "lite" then lite-mixins isth else full-mixins isth
+        }
+     }
+in let mkdefinite-exe
+  = \(deftype : Text)
+  -> { name = ("isdefinite" ++ deftype)
+     , executable =
+       \(config : types.Config)
+       ->  prelude.defaults.Executable //
+         { main-is = "Noop.hs"
+         , build-depends =
+           [ packages.base
+           , fn.anyver ("hasktorch" ++ deftype)
+           ]
+           , default-language = cabalvars.default-language
+           , hs-source-dirs = [ "exe" ]
+           }
+     }
 in common.Package
    // { name = "hasktorch"
       , flags = [ common.flags.cuda, common.flags.lite ]
       , description = "core tensor abstractions wrapping raw TH bindings"
       , synopsis = "Torch for tensors and neural networks in Haskell"
       , executables =
-          [ { name = "memcheck"
+          [ mkdefinite-exe "-cpu"
+          , mkdefinite-exe "-gpu"
+          , mkdefinite-exe ""
+          , { name = "memcheck"
             , executable =
               λ(config : types.Config)
               → prelude.defaults.Executable
@@ -210,13 +259,9 @@ in common.Package
           // { hs-source-dirs = [ "utils" ]
             , build-depends =
               [ packages.base
-              , fn.anyver "hasktorch-cpu"
-              , fn.anyver "hasktorch-gpu"
-              , packages.hasktorch-types-th
               , packages.containers
               , packages.deepseq
               , packages.dimensions
-              , packages.hasktorch-raw-th
               , packages.managed
               , packages.microlens
               , packages.numeric-limits
@@ -224,6 +269,11 @@ in common.Package
               , packages.singletons
               , packages.text
               , packages.typelits-witnesses
+
+              , fn.anyver "hasktorch-cpu"
+              , fn.anyver "hasktorch-gpu"
+              , packages.hasktorch-raw-th
+              , packages.hasktorch-types-th
               ]
             , exposed-modules =
               [ "Torch.Core.Exceptions"
@@ -240,53 +290,8 @@ in common.Package
         ] : Optional (types.Config → types.Library)
 
       , sub-libraries =
-        [ { name = "hasktorch-cpu"
-          , library =
-            λ (config : types.Config)
-            → common.Library //
-              { hs-source-dirs = [ "utils", "src" ]
-              , build-depends =
-                  if config.flag "lite"
-                  then cpu-lite-depends
-                  else cpu-lite-depends # [packages.hasktorch-indef-unsigned]
-              , other-modules =
-                [ "Torch.Core.Random"
-                ]
-              , reexported-modules = List/map Text ReexportedModule fn.renameNoop (nnexports True "Double")
-              , exposed-modules = if config.flag "lite" then lite-exposed True else
-                    lite-exposed True
-                  # baseexports True "Byte"
-                  # baseexports True "Char"
-                  # baseexports True "Short"
-                  # baseexports True "Int"
-                  # baseexports True "Float"
-              , mixins = if config.flag "lite" then lite-mixins True else full-mixins True
-              }
-          }
-        , { name = "hasktorch-gpu"
-          , library =
-            λ (config : types.Config)
-            → common.Library //
-              { hs-source-dirs = [ "utils", "src" ]
-              , build-depends = if config.flag "lite" then gpu-lite-depends else gpu-lite-depends # [packages.hasktorch-indef-unsigned]
-              , reexported-modules = List/map Text ReexportedModule fn.renameNoop (nnexports False "Double")
-              , exposed-modules =
-                if config.flag "lite"
-                then ( baseexports False "Long"
-                     # baseexports False "Double"
-                     )
-                else ( baseexports False "Long"
-                     # baseexports False "Double"
-                     )
-                     # baseexports False "Byte"
-                     # baseexports False "Char"
-                     # baseexports False "Short"
-                     # baseexports False "Int"
-                     # baseexports False "Float"
-              , cpp-options = [ "-DCUDA", "-DHASKTORCH_INTERNAL_CUDA" ]
-              , mixins = if config.flag "lite" then lite-mixins True else full-mixins True
-              }
-          }
+        [ backend-sublibrary True
+        , backend-sublibrary False
         , sublibraries.unsigned
         , sublibraries.signed
         , sublibraries.floating
