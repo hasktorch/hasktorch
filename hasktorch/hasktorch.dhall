@@ -122,7 +122,7 @@ in let backend-sublibrary =
     , library =
       λ (config : types.Config)
       →  let lite-depends = if isth then cpu-lite-depends else gpu-lite-depends
-      in let floatless-exports =
+      in let exports =
          ( baseexports isth "Long"
          # baseexports isth "Double"
          ) # (
@@ -133,12 +133,17 @@ in let backend-sublibrary =
            # baseexports isth "Char"
            # baseexports isth "Short"
            # baseexports isth "Int"
+           ) # (
+             if isth then baseexports isth "Float" else [] : List Text
            ) )
+      in let reexports
+          = nnexports isth "Double"
+          # (if isth then nnexports isth "Float" else [] : List Text)
       in common.Library //
         { hs-source-dirs = [ "utils", "src" ]
         , build-depends = if config.flag "lite" then lite-depends else lite-depends # [packages.hasktorch-indef-unsigned]
-        , reexported-modules = List/map Text ReexportedModule fn.renameNoop (nnexports isth "Double")
-        , exposed-modules = floatless-exports # (if isth then baseexports isth "Float" # nnexports isth "Float" else [] : List Text)
+        , reexported-modules = List/map Text ReexportedModule fn.renameNoop reexports
+        , exposed-modules = exports
         , cpp-options = if isth then [] : List Text else [ "-DCUDA", "-DHASKTORCH_INTERNAL_CUDA" ]
         , mixins = if config.flag "lite" then lite-mixins isth else full-mixins isth
         }

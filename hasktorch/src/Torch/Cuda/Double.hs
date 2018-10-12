@@ -7,6 +7,7 @@
 -- Stability :  experimental
 -- Portability: non-portable
 -------------------------------------------------------------------------------
+{-# LANGUAGE InstanceSigs #-}
 module Torch.Cuda.Double (module X) where
 
 import Numeric.Dimensions as X
@@ -54,36 +55,30 @@ instance Dimensions d => Fractional (Tensor d) where
   {-# NOINLINE (/) #-}
 
 instance Dimensions d => Floating (Tensor d) where
+  pi :: Tensor d
   pi = X.constant pi
 
+  exp :: Tensor d -> Tensor d
   exp = X.exp
-  {-# NOINLINE exp #-}
 
+  log :: Tensor d -> Tensor d
   log = X.log
-  {-# NOINLINE log #-}
 
+  sqrt :: Tensor d -> Tensor d
   sqrt = X.sqrt
-  {-# NOINLINE sqrt #-}
 
   sin = X.sin
-  {-# NOINLINE sin #-}
 
   cos = X.cos
-  {-# NOINLINE cos #-}
 
   asin = X.asin
-  {-# NOINLINE asin #-}
 
   acos = X.acos
-  {-# NOINLINE acos #-}
 
   atan = X.atan
-  {-# NOINLINE atan #-}
 
   sinh = X.sinh
-  {-# NOINLINE sinh #-}
 
   cosh = X.cosh
-  {-# NOINLINE cosh #-}
 
 

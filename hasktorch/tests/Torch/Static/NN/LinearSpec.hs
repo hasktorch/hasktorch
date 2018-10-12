@@ -3,7 +3,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Static.NN.LinearSpec where
 
 import GHC.TypeLits
@@ -15,15 +17,32 @@ import GHC.Generics (Generic)
 import Test.Hspec
 import Lens.Micro.Platform
 import Numeric.Backprop
+import System.IO.Unsafe
 import qualified Numeric.Backprop as B
 
 import Torch.Double as Torch
 import Torch.Double.NN.Linear
 import qualified Torch.Long as Long
 
+reasonablyUnsafeVector :: (KnownDim m, KnownNat m) => [HsReal] -> Tensor '[m]
+reasonablyUnsafeVector = unsafePerformIO . unsafeVector
+{-# NOINLINE reasonablyUnsafeVector #-}
+
+reasonablyUnsafeLongVector :: (KnownDim m, KnownNat m) => [Long.HsReal] -> Long.Tensor '[m]
+reasonablyUnsafeLongVector = unsafePerformIO . Long.unsafeVector
+{-# NOINLINE reasonablyUnsafeLongVector #-}
+
+reasonablyUnsafeMatrix
+  :: All KnownDim '[m, n, n*m]
+  => All KnownNat '[m, n, n*m]
+  => [[HsReal]]
+  -> Tensor '[n,m]
+reasonablyUnsafeMatrix = unsafePerformIO . unsafeMatrix
+{-# NOINLINE reasonablyUnsafeMatrix #-}
+
 xavier :: forall d . Dimensions d => IO (Tensor d)
 xavier = case (fromIntegral <$> listDims (dims :: Dims d)) of
-  [] -> empty
+  [] -> pure empty
   a:_ -> pure $ constant (1 / realToFrac (fromIntegral a))
 
 
@@ -65,9 +84,9 @@ spec = do
     describe "forcing ReLU activity"      twoLayerForceReLU
     describe "overfitting to [0, 1]" $ do
       describe "with softmax and binary cross-entropy" $
-        twoLayerOverfit softmax (bCECriterion (unsafeVector [0,1]) . (squeeze1dBP (dim :: Dim 0))) id
+        twoLayerOverfit softmax (bCECriterion (reasonablyUnsafeVector [0,1]) . (squeeze1dBP (dim :: Dim 0))) id
       describe "with logSoftmax and multiclass log-loss" $
-        twoLayerOverfit logSoftMax (classNLLCriterion (Long.unsafeVector [1])) Torch.exp
+        twoLayerOverfit logSoftMax (classNLLCriterion (reasonablyUnsafeLongVector [1])) Torch.exp
 
 -- ========================================================================= --
 
@@ -155,15 +174,16 @@ twoLayerForceReLU = do
   describe "operations that force relu activity" $ do
     let o1 = evalBP2 (relu    .: linear 1) (ff2 ^. layer1) oneInput
         o2 = evalBP2 (           linear 1) (ff2 ^. layer2) o1
+        gin :: Tensor '[4]
         (out, (gff2, gin)) = backprop2 (ff2network logSoftMax 1) ff2 oneInput
 
     describe "dropping half the gradient during ReLU" $ do
       describe "the forward pass" $ do
         it "returns [0,0,0,4,4,4] after the first layer" $
-          tensordata o1 >>= (`shouldBe` [0,0,0,4,4,4])
+          tensordata o1 `shouldBe` [0,0,0,4,4,4]
 
         it "returns [-12,0] after the second layer" $
-          tensordata o2 >>= (`shouldBe` [-12, 0])
+          tensordata o2 `shouldBe` [-12, 0]
 
         it "returns [0, 1] as the output" $ do
           Torch.exp out `lapprox` [0, 1]
@@ -180,22 +200,26 @@ twoLayerForceReLU = do
 
  where
   eps = 0.0001
+
+  approx :: Tensor d -> Tensor d -> IO ()
   approx = approximately eps
+
+  lapprox :: Tensor d -> [HsReal] -> IO ()
   lapprox = lapproximately eps
 
   ff2 :: FF2Network 4 6 2
   ff2 = FF2Network
-    (Linear (unsafeMatrix $ replicate 4 [ -1, -1, -1, 1, 1, 1], constant 0))
-    (Linear (unsafeMatrix $ replicate 6                [-1, 0], constant 0))
+    (Linear (reasonablyUnsafeMatrix $ replicate 4 [ -1, -1, -1, 1, 1, 1], constant 0))
+    (Linear (reasonablyUnsafeMatrix $ replicate 6                [-1, 0], constant 0))
 
   oneInput :: Tensor '[4]
   oneInput = constant 1
 
-  l1weightgrad :: IO (Tensor '[4, 6])
-  l1weightgrad = unsafeMatrix $ replicate 4 [ 0, 0, 0,-1,-1,-1]
+  l1weightgrad :: (Tensor '[4, 6])
+  l1weightgrad = reasonablyUnsafeMatrix $ replicate 4 [ 0, 0, 0,-1,-1,-1]
 
-  l2weightgrad :: IO (Tensor '[6, 2])
-  l2weightgrad = unsafeMatrix $ replicateN 3
+  l2weightgrad :: (Tensor '[6, 2])
+  l2weightgrad = reasonablyUnsafeMatrix $ replicateN 3
     [ [ 0, 0]
     , [ 4,-4]
     ]
@@ -209,7 +233,7 @@ twoLayerOverfit
 twoLayerOverfit finalLayer loss postproc = do
   it "overfits on a single input with lr=0.3 and 100 steps" . void $ do
     net0 <- mkGaussianNetwork
-    [l0, r0] <- tensordata $ infer net0 y
+    let [l0, r0] = tensordata $ infer net0 y
     (fnet, (fl, fr)) <-
       foldlM (\(net, (l, r)) i -> do
         let speedup = 2
@@ -218,13 +242,12 @@ twoLayerOverfit finalLayer loss postproc = do
         -- print (grad ^. layer2 . weightsL)
         -- let net' = specupdate net grad
 
-        [l', r'] <- tensordata (infer net' y)
-        -- print [l', r']
+        let [l', r'] = tensordata (infer net' y)
         (i, l, l') `shouldSatisfy` (\(_, l, l') -> l' < l || (l' - (0.2 * speedup * 2)) < l)
         (i, r, r') `shouldSatisfy` (\(_, r, r') -> r' > r || (r' + (0.2 * speedup * 2)) > r)
         pure (net', (l', r'))
         ) (net0, (l0, r0)) [1..50]
-    fin  :: Tensor '[2] <- unsafeVector [fl, fr]
+    let fin  :: Tensor '[2] = reasonablyUnsafeVector [fl, fr]
     -- print fin
     lapproximately 0.08 fin [0, 1]
   where
@@ -282,11 +305,11 @@ xavierPurityCheck ll tests =
 
 
 _lapproximately :: ([Double] -> Bool) -> Double -> Tensor d -> [Double] -> IO ()
-_lapproximately pred e o dist = tensordata o >>= \os ->
-  zipWith (Prelude.abs .: (-)) os dist `shouldSatisfy` pred
+_lapproximately pred e o dist = let os = tensordata o in
+  zipWith (Prelude.abs .: subtract) os dist `shouldSatisfy` pred
 
 _approximately :: ([Double] -> Bool) -> Double -> Tensor d -> Tensor d -> IO ()
-_approximately pred e o dist = tensordata dist >>= _lapproximately pred e o
+_approximately pred e o dist = _lapproximately pred e o (tensordata dist)
 
 approximately  e = _approximately  (all (< e)) e
 notCloseTo     e = _approximately  (all (> e)) e
@@ -294,7 +317,7 @@ lapproximately e = _lapproximately (all (< e)) e
 lnotCloseTo    e = _lapproximately (all (> e)) e
 
 elementsSatisfy :: Tensor d -> ([Double] -> Bool) -> IO ()
-elementsSatisfy o pred = tensordata o >>= (`shouldSatisfy` pred)
+elementsSatisfy o pred = tensordata o `shouldSatisfy` pred
 
 replicateN :: Int -> [a] -> [a]
 replicateN inner = concatMap (replicate inner)

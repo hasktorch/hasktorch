@@ -7,7 +7,7 @@
 -- Stability :  experimental
 -- Portability: non-portable
 -------------------------------------------------------------------------------
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Activation where
 
@@ -18,6 +18,7 @@ import System.IO.Unsafe
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Copy
 import Torch.Indef.Static.NN.Backprop ()
 
 import qualified Torch.Indef.Dynamic.NN.Activation as Dynamic
@@ -90,7 +91,7 @@ relu = threshold 0 0
 {-# NOINLINE threshold #-}
 -- | run a threshold function againts two BVar variables
 threshold
-  :: Reifies s W
+  :: forall s d . Reifies s W
   => Dimensions d
   => Double               -- ^ threshold
   -> Double               -- ^ replacement value
@@ -108,25 +109,30 @@ threshold thr value = liftOp1 . op1 $ \inp ->
       -> Tensor d            -- ^ input
       -> IO (Tensor d)       -- ^ output
     _threshold_updateOutput thr val inplace input = do
-      let out = empty
+      let out = new
+      -- FIXME: this looks like a bug in ATen. Need to check if this still exists after updating.
+      let input' = if inplace then input else copy input
+
       Dynamic._threshold_updateOutput
-        (asDynamic input) (asDynamic out)
+        (asDynamic input') (asDynamic out)
         thr val
         inplace
+
       pure out
 
     {-# NOINLINE _threshold_updateGradInput #-}
     _threshold_updateGradInput
-      :: Double        -- ^ threshold
+      :: Dimensions d => Double        -- ^ threshold
       -> Double        -- ^ replacement value
       -> Bool          -- ^ inplace
       -> Tensor d      -- ^ input
       -> Tensor d      -- ^ gradient output
       -> IO (Tensor d) -- ^ gradient input
     _threshold_updateGradInput thr val inplace input gout = do
-      let gin = empty
+      let gin = new
+      let input' = if inplace then input else copy input
       Dynamic._threshold_updateGradInput
-        (asDynamic input) (asDynamic gout) (asDynamic gin)
+        (asDynamic input') (asDynamic gout) (asDynamic gin)
         thr val
         inplace
       pure gin

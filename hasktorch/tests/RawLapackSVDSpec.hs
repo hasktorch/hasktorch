@@ -25,10 +25,10 @@ pcaRaw = do
   let b                 = constant (dims :: Dims '[2]) 1
   print b
 
-  _set2d a 0 0 1.0
-  _set2d a 0 1 2.0
-  _set2d a 1 0 3.0
-  _set2d a 1 0 4.0
+  set2d_ a 0 0 1.0
+  set2d_ a 0 1 2.0
+  set2d_ a 1 0 3.0
+  set2d_ a 1 0 4.0
   print a
   print b
 

@@ -35,7 +35,7 @@ iteratorAssign d niter = do
   putStrLn $ show (memSizeGB d) ++ " GB per allocation x " ++ show niter
   forM_ [1..niter] $ \iter -> do
     putStr ("Iteration : " ++ show iter ++ " / ")
-    x <- (`getDim` headIdx) =<< (Dynamic.new' d :: IO DoubleDynamic)
+    let x = (Dynamic.new' d :: DoubleDynamic) `getDim` headIdx
     putStrLn $ "Printing dummy value: " ++ show x
   putStrLn "Done"
 
@@ -45,7 +45,7 @@ iteratorMonadic d niter = do
   putStrLn $ show (memSizeGB d) ++ " GB per allocation x " ++ show niter
   forM_ [1..niter] $ \iter -> do
     putStr ("Iteration : " ++ show iter ++ " / ")
-    x <- (`getDim` headIdx) =<< (Dynamic.new' d :: IO DoubleDynamic)
+    let x = (Dynamic.new' d :: DoubleDynamic) `getDim` headIdx
     putStrLn $ "Printing dummy value: " ++ show x
   putStrLn "Done"
 
@@ -57,7 +57,7 @@ iteratorBracket d niter = do
     bracket (pure iter)
     (\iter -> do
        putStr ("Iteration : " ++ show iter ++ " / ")
-       x <- (`getDim` headIdx) =<< (Dynamic.new' d :: IO DoubleDynamic)
+       let x = (Dynamic.new' d :: DoubleDynamic) `getDim` headIdx
        putStrLn $ "Printing dummy value: " ++ show x
     )
     (const (pure ()))
@@ -66,21 +66,21 @@ iteratorBracket d niter = do
 manualAlloc1 :: IO ()
 manualAlloc1 = do
   putStrLn   "Allocating"
-  !(t :: DoubleDynamic) <- new (dims :: Dims '[200, 200, 200, 200])
-  x <- getDim t headIdx
+  let !(t :: DoubleDynamic) = new (dims :: Dims '[200, 200, 200, 200])
+  let x = getDim t headIdx
   putStrLn $ "Printing dummy value: " ++ show x
 
 manualAlloc2 :: Double -> IO (DoubleDynamic)
 manualAlloc2 v = do
   putStrLn "Allocating"
   let !(t :: DoubleDynamic) = constant (dims :: Dims '[200, 200, 100, 100]) v
-  x <- getDim' t headIdx'
+  let x = getDim t headIdx
   putStrLn $ "Printing dummy value: " ++ show x
   pure t
 
 pr :: DoubleDynamic -> IO ()
 pr t = do
-  v <- getDim' t headIdx'
+  let v = getDim t headIdx
   putStrLn $ "Printing dummy value: " ++ show v
 
 -- |getDim' size per allocation

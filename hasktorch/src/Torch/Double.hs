@@ -28,7 +28,6 @@ import Torch.Indef.Double.Tensor.TopK as X
 
 import Torch.Indef.Double.Tensor.Math.Pointwise.Signed as X
 
-import Torch.Indef.Double.NN as X
 import Torch.Indef.Double.Tensor.Math.Blas as X
 import Torch.Indef.Double.Tensor.Math.Floating as X
 import Torch.Indef.Double.Tensor.Math.Lapack as X

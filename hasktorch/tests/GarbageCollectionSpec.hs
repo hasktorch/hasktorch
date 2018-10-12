@@ -66,17 +66,17 @@ testCadd = do
   let foo :: DoubleDynamic = constant (dims :: Dims '[5]) 5
       bar :: DoubleDynamic = constant (dims :: Dims '[5]) 2
   print $ 5 + 3 * 2
-  cadd foo 3.0 bar >>= print
+  print $ cadd foo 3 bar
 
 testCopy :: IO ()
 testCopy = do
-  foo :: DoubleDynamic <- new (dims :: Dims '[3, 3])
+  let foo :: DoubleDynamic = new (dims :: Dims '[3, 3])
   fill_ foo 5
   bar <- newWithTensor foo
   print foo
   print bar
-  baz <- add foo 2.0
-  fob <- sub bar 2.0
+  let baz = foo `add` 2
+  let fob = bar `sub` 2
   print foo
   print bar
   print baz

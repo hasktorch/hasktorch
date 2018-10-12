@@ -15,6 +15,7 @@ module Torch.Float (module X) where
 
 import Numeric.Dimensions
 import Torch.Types.TH as X
+import Torch.Float.NN as X
 
 import Torch.Float.Types as X hiding (storage)
 import Torch.Float.Index as X hiding (withDynamicState)
@@ -38,7 +39,6 @@ import Torch.Indef.Float.Tensor.TopK as X
 
 import Torch.Indef.Float.Tensor.Math.Pointwise.Signed as X
 
-import Torch.Indef.Float.NN as X
 import Torch.Indef.Float.Tensor.Math.Blas as X
 import Torch.Indef.Float.Tensor.Math.Floating as X
 import Torch.Indef.Float.Tensor.Math.Lapack as X

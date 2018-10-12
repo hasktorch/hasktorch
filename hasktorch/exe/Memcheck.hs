@@ -57,9 +57,9 @@ main = do
   -- let s = vector [0..100] :: Dynamic
   -- print s
 
-  s <- fromList [0..100]
+  let s = fromList [0..100]
   print $ storageState s
-  tensordata s >>= print
+  print $ storagedata s
   performGC
 
   -- fromList [10..1990] >>= tensordata >>= print

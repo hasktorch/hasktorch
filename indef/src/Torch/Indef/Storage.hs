@@ -22,9 +22,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE Strict #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Storage
-  ( module X
+  ( IsList(..)
   , Storage(..)
 
   , cstorage
@@ -106,7 +107,7 @@ size s = unsafeDupablePerformIO . fmap fromIntegral . withLift $ Sig.c_size
 {-# NOINLINE size #-}
 
 -- | set the value at 'Index' to 'HsReal' in a given 'Storage'.
-set :: Storage -> Int -> HsReal -> IO ()
+set :: Storage -> Word -> HsReal -> IO ()
 set s pd v = withLift $ Sig.c_set
   <$> managedState
   <*> managedStorage s
@@ -114,7 +115,7 @@ set s pd v = withLift $ Sig.c_set
   <*> pure (hs2cReal v)
 
 -- | get the value at 'Index' from a given 'Storage'.
-get :: Storage -> Int -> HsReal
+get :: Storage -> Word -> HsReal
 get s pd = unsafeDupablePerformIO . fmap c2hsReal . withLift $ Sig.c_get
   <$> managedState
   <*> managedStorage s
@@ -128,7 +129,7 @@ empty = unsafeDupablePerformIO . withStorage $ Sig.c_new
 {-# NOINLINE empty #-}
 
 -- | create a new storage of a given length, 'StorageSize'.
-newWithSize :: Int -> Storage
+newWithSize :: Word -> Storage
 newWithSize pd = unsafeDupablePerformIO . withStorage $ Sig.c_newWithSize
   <$> managedState
   <*> pure (fromIntegral pd)

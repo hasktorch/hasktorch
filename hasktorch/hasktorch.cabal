@@ -152,25 +152,6 @@ library hasktorch-cpu
         Torch.Double
         Torch.Double.Dynamic
         Torch.Double.Storage
-        Torch.Float
-        Torch.Float.Dynamic
-        Torch.Float.Storage
-        Torch.Float.NN
-        Torch.Float.NN.Activation
-        Torch.Float.NN.Backprop
-        Torch.Float.NN.Conv1d
-        Torch.Float.NN.Conv2d
-        Torch.Float.NN.Criterion
-        Torch.Float.NN.Layers
-        Torch.Float.NN.Linear
-        Torch.Float.NN.Math
-        Torch.Float.NN.Padding
-        Torch.Float.NN.Pooling
-        Torch.Float.NN.Sampling
-        Torch.Float.Dynamic.NN
-        Torch.Float.Dynamic.NN.Activation
-        Torch.Float.Dynamic.NN.Pooling
-        Torch.Float.Dynamic.NN.Criterion
     reexported-modules: Torch.Double.NN,
                         Torch.Double.NN.Activation,
                         Torch.Double.NN.Backprop,
@@ -186,11 +167,29 @@ library hasktorch-cpu
                         Torch.Double.Dynamic.NN,
                         Torch.Double.Dynamic.NN.Activation,
                         Torch.Double.Dynamic.NN.Pooling,
-                        Torch.Double.Dynamic.NN.Criterion
+                        Torch.Double.Dynamic.NN.Criterion,
+                        Torch.Float.NN,
+                        Torch.Float.NN.Activation,
+                        Torch.Float.NN.Backprop,
+                        Torch.Float.NN.Conv1d,
+                        Torch.Float.NN.Conv2d,
+                        Torch.Float.NN.Criterion,
+                        Torch.Float.NN.Layers,
+                        Torch.Float.NN.Linear,
+                        Torch.Float.NN.Math,
+                        Torch.Float.NN.Padding,
+                        Torch.Float.NN.Pooling,
+                        Torch.Float.NN.Sampling,
+                        Torch.Float.Dynamic.NN,
+                        Torch.Float.Dynamic.NN.Activation,
+                        Torch.Float.Dynamic.NN.Pooling,
+                        Torch.Float.Dynamic.NN.Criterion
     hs-source-dirs: utils src
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
                         TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+    other-modules:
+        Torch.Core.Random
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch-types-th -any,
@@ -226,6 +225,9 @@ library hasktorch-cpu
             Torch.Int
             Torch.Int.Dynamic
             Torch.Int.Storage
+            Torch.Float
+            Torch.Float.Dynamic
+            Torch.Float.Storage
         build-depends:
             hasktorch-indef-unsigned -any
         mixins: hasktorch-indef-unsigned (Torch.Indef.Storage as Torch.Indef.Byte.Storage, Torch.Indef.Storage.Copy as Torch.Indef.Byte.Storage.Copy, Torch.Indef.Static.Tensor as Torch.Indef.Byte.Tensor, Torch.Indef.Static.Tensor.Copy as Torch.Indef.Byte.Tensor.Copy, Torch.Indef.Static.Tensor.Index as Torch.Indef.Byte.Tensor.Index, Torch.Indef.Static.Tensor.Masked as Torch.Indef.Byte.Tensor.Masked, Torch.Indef.Static.Tensor.Math as Torch.Indef.Byte.Tensor.Math, Torch.Indef.Static.Tensor.Math.Compare as Torch.Indef.Byte.Tensor.Math.Compare, Torch.Indef.Static.Tensor.Math.CompareT as Torch.Indef.Byte.Tensor.Math.CompareT, Torch.Indef.Static.Tensor.Math.Pairwise as Torch.Indef.Byte.Tensor.Math.Pairwise, Torch.Indef.Static.Tensor.Math.Pointwise as Torch.Indef.Byte.Tensor.Math.Pointwise, Torch.Indef.Static.Tensor.Math.Reduce as Torch.Indef.Byte.Tensor.Math.Reduce, Torch.Indef.Static.Tensor.Math.Scan as Torch.Indef.Byte.Tensor.Math.Scan, Torch.Indef.Static.Tensor.Mode as Torch.Indef.Byte.Tensor.Mode, Torch.Indef.Static.Tensor.ScatterGather as Torch.Indef.Byte.Tensor.ScatterGather, Torch.Indef.Static.Tensor.Sort as Torch.Indef.Byte.Tensor.Sort, Torch.Indef.Static.Tensor.TopK as Torch.Indef.Byte.Tensor.TopK, Torch.Indef.Dynamic.Tensor as Torch.Indef.Byte.Dynamic.Tensor, Torch.Indef.Dynamic.Tensor.Copy as Torch.Indef.Byte.Dynamic.Tensor.Copy, Torch.Indef.Dynamic.Tensor.Index as Torch.Indef.Byte.Dynamic.Tensor.Index, Torch.Indef.Dynamic.Tensor.Masked as Torch.Indef.Byte.Dynamic.Tensor.Masked, Torch.Indef.Dynamic.Tensor.Math as Torch.Indef.Byte.Dynamic.Tensor.Math, Torch.Indef.Dynamic.Tensor.Math.Compare as Torch.Indef.Byte.Dynamic.Tensor.Math.Compare, Torch.Indef.Dynamic.Tensor.Math.CompareT as Torch.Indef.Byte.Dynamic.Tensor.Math.CompareT, Torch.Indef.Dynamic.Tensor.Math.Pairwise as Torch.Indef.Byte.Dynamic.Tensor.Math.Pairwise, Torch.Indef.Dynamic.Tensor.Math.Pointwise as Torch.Indef.Byte.Dynamic.Tensor.Math.Pointwise, Torch.Indef.Dynamic.Tensor.Math.Reduce as Torch.Indef.Byte.Dynamic.Tensor.Math.Reduce, Torch.Indef.Dynamic.Tensor.Math.Scan as Torch.Indef.Byte.Dynamic.Tensor.Math.Scan, Torch.Indef.Dynamic.Tensor.Mode as Torch.Indef.Byte.Dynamic.Tensor.Mode, Torch.Indef.Dynamic.Tensor.ScatterGather as Torch.Indef.Byte.Dynamic.Tensor.ScatterGather, Torch.Indef.Dynamic.Tensor.Sort as Torch.Indef.Byte.Dynamic.Tensor.Sort, Torch.Indef.Dynamic.Tensor.TopK as Torch.Indef.Byte.Dynamic.Tensor.TopK, Torch.Indef.Types as Torch.Byte.Types, Torch.Indef.Index as Torch.Byte.Index, Torch.Indef.Mask as Torch.Byte.Mask) requires (Torch.Sig.Index.Tensor as Torch.FFI.TH.Long.Tensor, Torch.Sig.Index.TensorFree as Torch.FFI.TH.Long.FreeTensor, Torch.Sig.Mask.Tensor as Torch.FFI.TH.Byte.Tensor, Torch.Sig.Mask.TensorFree as Torch.FFI.TH.Byte.FreeTensor, Torch.Sig.Mask.MathReduce as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.State as Torch.Types.TH, Torch.Sig.Types.Global as Torch.Types.TH, Torch.Sig.Types as Torch.Types.TH.Byte, Torch.Sig.Storage as Torch.FFI.TH.Byte.Storage, Torch.Sig.Storage.Copy as Torch.FFI.TH.Byte.StorageCopy, Torch.Sig.Storage.Memory as Torch.FFI.TH.Byte.FreeStorage, Torch.Sig.Tensor as Torch.FFI.TH.Byte.Tensor, Torch.Sig.Tensor.Copy as Torch.FFI.TH.Byte.TensorCopy, Torch.Sig.Tensor.Memory as Torch.FFI.TH.Byte.FreeTensor, Torch.Sig.Tensor.Index as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Masked as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Math as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Math.Compare as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Math.CompareT as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Math.Pairwise as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Math.Reduce as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Math.Scan as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Mode as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.ScatterGather as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.Sort as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.Tensor.TopK as Torch.FFI.TH.Byte.TensorMath),
