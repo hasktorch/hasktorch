@@ -40,7 +40,7 @@ import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
 import qualified Torch.Sig.Types as Sig
 
-instance Dimensions d => Show (Tensor d) where
+instance Show (Tensor d) where
   show t = show (asDynamic t)
 
 -- unnessecary
