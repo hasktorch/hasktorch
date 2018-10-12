@@ -14,7 +14,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
-{-# OPTIONS_GHC -fno-cse #-} -- -fplugin GHC.TypeLits.Normalise #-}
+{-# OPTIONS_GHC -fno-cse -Wno-deprecations #-} -- no deprications because we still bundle up all mutable functions
 module Torch.Indef.Static.Tensor where
 
 import Control.Exception.Safe
@@ -221,11 +221,21 @@ squeeze1d
   => Dim n
   -> Tensor d
   -> Tensor (rs ++ ls)
-squeeze1d n t = unsafePerformIO $ do
-  let t' = (asStatic . asDynamic) (copy t)
-  Dynamic._squeeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
-  pure t'
+squeeze1d n t =  unsafeDupablePerformIO $ squeeze1d_ n (newClone t)
 {-# NOINLINE squeeze1d #-}
+
+-- | *Not safe:*  squeeze a dimension of size 1 out of the tensor.
+squeeze1d_
+  :: Dimensions d
+  => '(rs, 1:+ls) ~ (SplitAt n d)
+  => Dim n
+  -> Tensor d
+  -> IO (Tensor (rs ++ ls))
+squeeze1d_ n t = do
+  let t' = asDynamic t
+  Dynamic.squeeze1d_ t' (fromIntegral (dimVal n))
+  pure (asStatic t')
+
 
 -- | Static call to 'Dynamic.storage'
 storage t = Dynamic.storage (asDynamic t)
@@ -245,12 +255,8 @@ unsqueeze1d
   => Dim n
   -> Tensor d
   -> Tensor (rs ++ '[1] ++ ls)
-unsqueeze1d n t = unsafePerformIO $ do
-  let t' = (asStatic . asDynamic) (copy t)
-  Dynamic._unsqueeze1d (asDynamic t') (asDynamic t) (fromIntegral (dimVal n))
-  pure t'
+unsqueeze1d n t = unsafeDupablePerformIO $ unsqueeze1d_ n (newClone t)
 {-# NOINLINE unsqueeze1d #-}
-
 
 -- | *Not safe:*  unsqueeze a dimension of size 1 into the tensor.
 unsqueeze1d_
@@ -260,7 +266,7 @@ unsqueeze1d_
   -> Tensor d
   -> IO (Tensor (rs ++ '[1] ++ ls))
 unsqueeze1d_ n t = do
-  Dynamic._unsqueeze1d (asDynamic t) (asDynamic t) (fromIntegral (dimVal n))
+  Dynamic.unsqueeze1d_ (asDynamic t) (fromIntegral (dimVal n))
   pure (asStatic (asDynamic t))
 
 

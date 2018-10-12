@@ -21,7 +21,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -fno-cse #-}
+{-# OPTIONS_GHC -fno-cse -Wno-deprecations #-} -- no deprications because we still bundle up all mutable functions
 module Torch.Indef.Dynamic.Tensor where
 
 import Foreign hiding (with, new)
@@ -788,6 +788,13 @@ _squeeze t0 t1 = withLift $ Sig.c_squeeze
   <$> managedState
   <*> managedTensor t1
   <*> managedTensor t0
+
+-- | Removes a singleton dimensions of the tensor at a given dimension.
+squeeze1d_
+  :: Dynamic -- ^ tensor to mutate
+  -> Word    -- ^ dimension to squeeze
+  -> IO ()
+squeeze1d_ t d = _squeeze1d t t d
 
 -- | Removes a singleton dimensions of the tensor at a given dimension.
 _squeeze1d

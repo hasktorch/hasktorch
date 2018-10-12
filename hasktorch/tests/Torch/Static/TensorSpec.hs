@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 module Torch.Static.TensorSpec where
 
 import Control.Monad
@@ -18,23 +17,6 @@ main = hspec spec
 spec :: Spec
 spec = do
   describe "tensor construction and access" tensorConstructionSpec
-  describe "un/squeezing" $ do
-    let d1 = dim :: Dim 1
-    it "a dimension" $ do
-      shape (unsqueeze1d d1 (constant 50 :: Tensor '[3,4,5])) `shouldBe` [3,1,4,5]
-
-    it "unsqueeze adds a dimension" $ do
-      shape (unsqueeze1d d1 (constant 50 :: Tensor '[3,4,5])) `shouldBe` [3,1,4,5]
-
-    it "squeeze removes a dimension2" $ do
-      shape (constant 50 :: Tensor '[3,1,4,5]) `shouldBe` [3,1,4,5]
-
-    it "squeeze removes a dimension" $ do
-      shape (squeeze1d d1 (constant 50 :: Tensor '[3,1,4,5])) `shouldBe` [3,4,5]
-
-    it "unsqueeze+squeeze forms an identity" $ do
-      shape (squeeze1d d1 (unsqueeze1d d1 (constant 50 :: Tensor '[3,4,5]))) `shouldBe` [3,4,5]
-
   describe "stacking" $ do
     it "works with two identical tensors" $ do
       let t = constant (-(1/4)) :: Tensor '[6]
@@ -44,6 +26,37 @@ spec = do
       let t1 = constant (-(1/4)) :: Tensor '[6]
           t2 = constant   (1/4)  :: Tensor '[6]
       tensordata (stack1d0 t1 t2) `shouldBe` (replicate 6 (-1/4) ++ replicate 6 (1/4))
+
+  describe "un/squeezing" $ do
+    let d1 = dim :: Dim 1
+    it "unsqueeze1d adds a dimension" $ do
+      shape (unsqueeze1d d1 (constant 50 :: Tensor '[3,4,5])) `shouldBe` [3,1,4,5]
+
+    it "unsqueeze1d_ adds a dimension and is unsafe" $ do
+      let t = constant 50 :: Tensor '[3,4,5]
+      shape t `shouldBe` [3,4,5]
+      t' <- unsqueeze1d_ d1 t
+      shape t' `shouldBe` [3,1,4,5]
+      shape t  `shouldBe` [3,1,4,5]
+
+    it "squeeze removes a dimension" $ do
+      let t = (constant 50 :: Tensor '[3,1,4,5])
+      shape t `shouldBe` [3,1,4,5]
+      shape (squeeze1d d1 t) `shouldBe` [3,4,5]
+
+    it "squeeze1d_ adds a dimension and is unsafe" $ do
+      let t = (constant 50 :: Tensor '[3,1,4,5])
+      shape t `shouldBe` [3,1,4,5]
+      t' <- squeeze1d_ d1 t
+      shape t' `shouldBe` [3,4,5]
+      shape t  `shouldBe` [3,4,5]
+
+    it "unsqueeze+squeeze forms an identity" $ do
+      let t  = constant 50 :: Tensor '[3,4,5]
+          t' = squeeze1d d1 (unsqueeze1d d1 t)
+      shape t' `shouldBe` [3,4,5]
+      nElement t' `shouldBe` product [3,4,5]
+      tensordata t' `shouldSatisfy` all (== 50)
 
 
 tensorConstructionSpec =
