@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP #-}
 module Torch.Data.Loaders.RGBVector
   ( Normalize(..)
   , file2rgb
@@ -27,7 +28,6 @@ import Control.Monad.Primitive
 import qualified Data.Vector as V
 import Data.Vector.Mutable (MVector)
 import qualified Data.Vector.Mutable as M
-
 import qualified Control.Concurrent.MSem as MSem (new, with)
 import qualified Control.Concurrent.Async as Async
 

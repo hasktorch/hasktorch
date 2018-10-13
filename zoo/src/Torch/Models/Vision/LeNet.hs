@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -126,9 +127,9 @@ lenet lr arch inp
   & flattenBP
 
   -- start fully connected network
-  & relu . linear lr (arch ^^. fc1)
-  & relu . linear lr (arch ^^. fc2)
-  &        linear lr (arch ^^. fc3)
+  & relu . linear (arch ^^. fc1)
+  & relu . linear (arch ^^. fc2)
+  &        linear (arch ^^. fc3)
   -- & logSoftMax
   & softmax
 

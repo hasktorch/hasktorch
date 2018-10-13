@@ -68,7 +68,7 @@ rgb2torch
   => Normalize
   -> FilePath
   -> ExceptT String IO (Tensor '[3, h, w])
-rgb2torch = fmap unsafeCuboid .: rgb2list (Proxy :: Proxy '(h, w))
+rgb2torch n f = rgb2list (Proxy :: Proxy '(h, w)) n f >>= cuboid
 
 -- | Given a folder with subfolders of category images, return a uniform-randomly
 -- shuffled list of absolute filepaths with the corresponding category.
