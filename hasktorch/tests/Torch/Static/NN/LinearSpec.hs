@@ -1,10 +1,12 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Static.NN.LinearSpec where
 
@@ -13,12 +15,16 @@ import Control.Monad (join, void)
 import Data.Function ((&))
 import Data.Foldable
 import Debug.Trace
+import Data.Maybe
 import GHC.Generics (Generic)
 import Test.Hspec
 import Lens.Micro.Platform
 import Numeric.Backprop
 import System.IO.Unsafe
+import Data.Generics.Product
 import qualified Numeric.Backprop as B
+
+import Debug.Trace
 
 import Torch.Double as Torch
 import Torch.Double.NN.Linear
@@ -45,17 +51,22 @@ xavier = case (fromIntegral <$> listDims (dims :: Dims d)) of
   [] -> pure empty
   a:_ -> pure $ constant (1 / realToFrac (fromIntegral a))
 
-
 data FF2Network i h o = FF2Network
-  { _layer1 :: Linear i h
-  , _layer2 :: Linear h o
+  { layer1 :: Linear i h
+  , layer2 :: Linear h o
   } deriving (Generic, Show)
 
+instance (KnownDim i, KnownDim h, KnownDim o) => Pairwise (FF2Network i h o) HsReal where
+  (FF2Network l0 l1) ^+ v = FF2Network (l0 ^+ v) (l1 ^+ v)
+  (FF2Network l0 l1) ^- v = FF2Network (l0 ^+ v) (l1 ^+ v)
+  (FF2Network l0 l1) ^* v = FF2Network (l0 ^+ v) (l1 ^+ v)
+  (FF2Network l0 l1) ^/ v = FF2Network (l0 ^+ v) (l1 ^+ v)
+
 weightsL :: Lens' (Linear i o) (Tensor '[i, o])
-weightsL = lens weights $ \(Linear (_, b)) w' -> Linear (w', b)
+weightsL = field @"getTensors" . _1
 
 biasL :: Lens' (Linear i o) (Tensor '[o])
-biasL = lens bias $ \(Linear (w, _)) b' -> Linear (w, b')
+biasL = field @"getTensors" . _2
 
 specupdate
   :: forall i h o
@@ -64,11 +75,10 @@ specupdate
   -> FF2Network i h o
   -> FF2Network i h o
 specupdate i g = FF2Network
-  { _layer1 = B.add (_layer1 i) (_layer1 g)
-  , _layer2 = B.add (_layer2 i) (_layer2 g)
+  { layer1 = B.add (layer1 i) (layer1 g)
+  , layer2 = B.add (layer2 i) (layer2 g)
   }
 
-makeLenses ''FF2Network
 instance (KnownDim i, KnownDim h, KnownDim o) => Backprop (FF2Network i h o)
 
 -- ========================================================================= --
@@ -83,10 +93,10 @@ spec = do
     describe "with xavier initialization" twoLayerXavier
     describe "forcing ReLU activity"      twoLayerForceReLU
     describe "overfitting to [0, 1]" $ do
-      describe "with softmax and binary cross-entropy" $
-        twoLayerOverfit softmax (bCECriterion (reasonablyUnsafeVector [0,1]) . (squeeze1dBP (dim :: Dim 0))) id
-      describe "with logSoftmax and multiclass log-loss" $
-        twoLayerOverfit logSoftMax (classNLLCriterion (reasonablyUnsafeLongVector [1])) Torch.exp
+      describe "with one layer and binary cross-entropy"   oneLayerOverfit
+      describe "with two layers and binary cross-entropy"   twoLayerOverfit
+      -- describe "with logSoftmax and multiclass log-loss" $
+      --   twoLayerOverfit logSoftMax (classNLLCriterion (reasonablyUnsafeLongVector [1])) Torch.exp
 
 -- ========================================================================= --
 
@@ -96,7 +106,7 @@ singleLayer = do
   xavierPurityCheck ll $ do
     describe "the forward pass" $ do
       let y = constant 5 :: Tensor '[3]
-          o = evalBP2 (linear undefined) ll y
+          o = evalBP2 (linear) ll y
 
       it "performs matrix multipication as you would expect" $ do
         o =##= ((5/3)*3) + 1/2
@@ -104,12 +114,11 @@ singleLayer = do
 
     describe "the backward pass" $ do
       let y = constant 1 :: Tensor '[3]
-          lr = 1.0
-          (_, (ll', o)) = backprop2 (linear lr) ll y
+          (_, (ll', o)) = backprop2 linear ll y
 
-      it "returns specupdated weights" $ weights ll' =##= 1   -- 1/2
-      it "returns specupdated bias"    $ bias    ll' =##= 1   -- 1/2
-      it "returns the specupdated output tensor" $ o =##= 2/3 -- 1/3
+      it "returns plain gradient of weights" $ weights ll' =##= 1   -- 1/2
+      it "returns plain gradient of bias"    $ bias    ll' =##= 3/2 -- 2/3
+      it "returns plain gradient of output tensor" $    o  =##= 2/3 -- 1/3
 
 -- ========================================================================= --
 
@@ -118,6 +127,18 @@ mkXavierNetwork =
   FF2Network
     <$> mkLinear xavier
     <*> mkLinear xavier
+
+
+mkUniform :: All KnownDim '[i,h,o] => IO (FF2Network i h o)
+mkUniform = do
+  g <- newRNG
+  manualSeed g 1
+  let Just rg = ord2Tuple (-1, 1)
+  w0 <- uniform g rg
+  w1 <- uniform g rg
+  pure $ FF2Network
+    (Linear (w0, constant 1))
+    (Linear (w1, constant 1))
 
 
 mkGaussianNetwork :: All KnownDim '[i,h,o] => IO (FF2Network i h o)
@@ -141,23 +162,24 @@ ff2network
   -> BVar s (Tensor '[i])          -- ^ input
   -> BVar s (Tensor '[1, o])       -- ^ output
 ff2network final lr arch inp
-  = linear lr (arch ^^. layer1) inp
+  = linear {-lr-} (arch ^^. field @"layer1") inp
   & relu
-  & linear lr (arch ^^. layer2)
+  & linear {-lr-} (arch ^^. field @"layer2")
   & final
-  & unsqueeze1dBP (dim :: Dim 0)
+  & foo
+  where
+    foo t = unsqueeze1dBP (dim :: Dim 0) t
 
 twoLayerXavier :: Spec
 twoLayerXavier = do
   ll :: FF2Network 4 6 2 <- runIO mkXavierNetwork
   describe "the forward pass" $ do
     describe "with xavier instantiation" $ do
-      xavierPurityCheck (ll ^. layer1) $
-        xavierPurityCheck (ll ^. layer2) $
+      xavierPurityCheck (ll ^. field @"layer1") $
+        xavierPurityCheck (ll ^. field @"layer2") $
           describe "with input all positive input" $ do
             let y = constant 4 :: Tensor '[4]
                 (o, _) = backprop2 (ff2network softmax undefined) ll y
-
             it "performs matrix multipication as you would expect" $ o `approx` [1/2, 1/2]
 
       describe "with input that drops all values via ReLU" $ do
@@ -172,8 +194,8 @@ twoLayerXavier = do
 twoLayerForceReLU :: Spec
 twoLayerForceReLU = do
   describe "operations that force relu activity" $ do
-    let o1 = evalBP2 (relu    .: linear 1) (ff2 ^. layer1) oneInput
-        o2 = evalBP2 (           linear 1) (ff2 ^. layer2) o1
+    let o1 = evalBP2 (relu    .: linear {-1-}) (ff2 ^. field @"layer1") oneInput
+        o2 = evalBP2 (           linear {-1-}) (ff2 ^. field @"layer2") o1
         gin :: Tensor '[4]
         (out, (gff2, gin)) = backprop2 (ff2network logSoftMax 1) ff2 oneInput
 
@@ -190,10 +212,10 @@ twoLayerForceReLU = do
 
       describe "the backward pass" $ do
         it "returns a half zero-d out layer 1 gradient" $ do
-          (gff2 ^. layer1 . weightsL) `approx` l1weightgrad
+          (gff2 ^. field @"layer1" . weightsL) `approx` l1weightgrad
 
         it "returns a quarter zero-d out layer 2 gradient" $ do
-          (gff2 ^. layer2 . weightsL) `approx` l2weightgrad
+          (gff2 ^. field @"layer2" . weightsL) `approx` l2weightgrad
 
         it "returns a [3,3,3] input gradient" $ do
           gin `lapprox` replicate 4 (-3)
@@ -224,67 +246,103 @@ twoLayerForceReLU = do
     , [ 4,-4]
     ]
 
+twoLayerOverfit :: Spec
+twoLayerOverfit = do
+  net0 <- runIO $ do
+    g <- newRNG
+    manualSeed g 1
+    l0 <- (Linear . (,constant 1)) <$> uniform g rg
+    l1 <- (Linear . (,constant 1)) <$> uniform g rg
+    pure (l0, l1)
 
-twoLayerOverfit
-  :: (forall s . Reifies s W => BVar s (Tensor '[2])    -> BVar s (Tensor '[2])) -- ^ inference layer
-  -> (forall s . Reifies s W => BVar s (Tensor '[1, 2]) -> BVar s (Tensor '[1])) -- ^ loss function for 1-batch training
-  -> (Tensor '[2] -> Tensor '[2])                                                -- ^ post-processing of inference
-  -> Spec
-twoLayerOverfit finalLayer loss postproc = do
-  it "overfits on a single input with lr=0.3 and 100 steps" . void $ do
-    net0 <- mkGaussianNetwork
-    let [l0, r0] = tensordata $ infer net0 y
-    (fnet, (fl, fr)) <-
-      foldlM (\(net, (l, r)) i -> do
-        let speedup = 2
-            lr = 0.01
-        let net' = train lr net y -- gradBP2 (bCECriterion True True Nothing t .: ff2network lr) net y
-        -- print (grad ^. layer2 . weightsL)
-        -- let net' = specupdate net grad
+  it "returns around 50-50 on uniform random initialization" . void $ do
+    let [l0, r0] = tensordata $ infer net0
+    let pointapprox pred truth = Prelude.abs (pred - truth) < 0.3
+    (l0, r0) `shouldSatisfy` (\(px, py) -> pointapprox px 0.5 && pointapprox py 0.5)
 
-        let [l', r'] = tensordata (infer net' y)
-        (i, l, l') `shouldSatisfy` (\(_, l, l') -> l' < l || (l' - (0.2 * speedup * 2)) < l)
-        (i, r, r') `shouldSatisfy` (\(_, r, r') -> r' > r || (r' + (0.2 * speedup * 2)) > r)
-        pure (net', (l', r'))
-        ) (net0, (l0, r0)) [1..50]
-    let fin  :: Tensor '[2] = reasonablyUnsafeVector [fl, fr]
-    -- print fin
-    lapproximately 0.08 fin [0, 1]
+  it "backprops to yield a loss smaller than its prior" . void $ do
+    let [l0, r0] = tensordata $ infer net0
+    let lr = (-0.001) :: HsReal
+    let (o, _) = bprop net0
+    (fnet, (fo, fl, fr)) <-
+      foldlM (\(net, (o, l, r)) i -> do
+        let (o, (Linear (gw0, gb0), Linear (gw1, gb1))) = bprop net
+        let net' = B.add net (Linear (gw0 ^* lr, gb0 ^* lr), Linear (gw1 ^* lr, gb1 ^* lr))
+        let (o', grad') = bprop net'
+        let [l', r'] = tensordata $ infer net'
+        o `shouldSatisfy` (> o')
+        pure (net', (o', l', r'))
+        ) (net0, (o, l0, r0)) [1..100]
+    let pointapprox pred truth = Prelude.abs (pred - truth) < 0.01
+    (fl, fr) `shouldSatisfy` (\(px, py) -> pointapprox px 0.0 && pointapprox py 1.0)
+
   where
-    eps = 0.0001
-    approx     = approximately eps
-    notApprox  = notCloseTo eps
-    lapprox    = lapproximately eps
-    lnotApprox = lnotCloseTo eps
+    Just rg = ord2Tuple (-1, 1)
 
-    y :: Tensor '[4]
-    y = constant 1
+    x :: Tensor '[4]
+    x = constant 1
 
-    -- t = Long.unsafeVector [0.01, 0.99] :: Long.Tensor '[2]
-    -- t = unsafeVector [0, 1] :: Tensor '[2]
+    answer :: Tensor '[2]
+    answer = reasonablyUnsafeVector [0,1]
 
-    train
-      :: Double
-      -> FF2Network 4 6 2  -- ^ ff2network architecture
-      -> Tensor '[4]       -- ^ input
-      -> FF2Network 4 6 2  -- ^ new ff2network architecture
-    train lr arch inp = specupdate arch grad
-      where
-        (grad, _) = gradBP2 (loss .: ff2network' lr) arch inp
+    arch :: Reifies s W => BVar s (Linear 4 6, Linear 6 2) -> BVar s (Tensor '[4]) -> BVar s (Tensor '[2])
+    arch arch inp
+      = linear (arch ^^. _1) inp
+      & relu
+      & linear (arch ^^. _2)
+      & softmax
 
-    infer
-      :: FF2Network 4 6 2  -- ^ ff2network architecture
-      -> Tensor '[4]       -- ^ input
-      -> Tensor '[2]       -- ^ output
-    infer = postproc . squeeze1d (dim :: Dim 0) .: evalBP2 (ff2network' undefined)
+    infer :: (Linear 4 6, Linear 6 2) -> Tensor '[2]
+    infer net = evalBP2 arch net x
 
-    ff2network'
-      :: Reifies s W
-      => Double
-      -> BVar s (FF2Network 4 6 2)     -- ^ ff2network architecture
-      -> BVar s (Tensor '[4])          -- ^ input
-      -> BVar s (Tensor '[1, 2])       -- ^ output
-    ff2network' = ff2network finalLayer
+    bprop net = (fromJust $ get1d o 0, g)
+     where
+      (o, (g, _)) = backprop2 (bCECriterion answer .: arch) net x
+
+
+
+oneLayerOverfit :: Spec
+oneLayerOverfit = do
+  net0 <- runIO (newRNG >>= \g -> manualSeed g 1 >> (Linear . (,constant 1)) <$> uniform g rg)
+  it "returns around 50-50 on uniform random initialization" . void $ do
+    let [l0, r0] = tensordata $ infer net0
+    let pointapprox pred truth = Prelude.abs (pred - truth) < 0.3
+    (l0, r0) `shouldSatisfy` (\(px, py) -> pointapprox px 0.5 && pointapprox py 0.5)
+
+  it "backprops to yield a loss smaller than its prior" . void $ do
+    let [l0, r0] = tensordata $ infer net0
+    let lr = (-0.1) :: HsReal
+    let (o, _) = bprop net0
+    (fnet, (fo, fl, fr)) <-
+      foldlM (\(net, (o, l, r)) i -> do
+        let (o, Linear (gw, gb)) = bprop net
+        let net' = B.add net (Linear (gw ^* lr, gb ^* lr))
+        let (o', grad') = bprop net'
+        let [l', r'] = tensordata $ infer net'
+        o `shouldSatisfy` (> o')
+        pure (net', (o', l', r'))
+        ) (net0, (o, l0, r0)) [1..100]
+    let pointapprox pred truth = Prelude.abs (pred - truth) < 0.01
+    (fl, fr) `shouldSatisfy` (\(px, py) -> pointapprox px 0.0 && pointapprox py 1.0)
+
+  where
+    Just rg = ord2Tuple (-1, 1)
+
+    x :: Tensor '[6]
+    x = constant 1
+
+    answer :: Tensor '[2]
+    answer = (reasonablyUnsafeVector [0,1])
+
+    arch :: Reifies s W => BVar s (Linear 6 2) -> BVar s (Tensor '[6]) -> BVar s (Tensor '[2])
+    arch a b = softmax $ linear a b
+
+    infer :: Linear 6 2 -> Tensor '[2]
+    infer net = evalBP2 arch net x
+
+    bprop net = (fromJust $ get1d o 0, g)
+     where
+      (o, (g, _)) = backprop2 (bCECriterion answer .: arch) net x
 
 
 xavierPurityCheck :: forall i o . (KnownDim i, KnownDim o) => Linear i o -> Spec -> Spec

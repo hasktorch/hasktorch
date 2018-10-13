@@ -146,8 +146,10 @@ newSelect t (d, i) =
 newSizeOf t = Dynamic.newSizeOf (asDynamic t)
 -- | Static call to 'Dynamic.newStrideOf'
 newStrideOf t = Dynamic.newStrideOf (asDynamic t)
+
 -- | Static call to 'Dynamic.newTranspose'
 newTranspose t a b = asStatic $ Dynamic.newTranspose (asDynamic t) a b
+
 -- | Static call to 'Dynamic.newUnfold'
 newUnfold t a b c = asStatic $ Dynamic.newUnfold (asDynamic t) a b c
 

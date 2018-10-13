@@ -13,21 +13,26 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Linear where
 
 import Data.List
+import GHC.Generics
 import Data.Singletons.Prelude.List hiding (All)
 import Numeric.Backprop
 import Numeric.Dimensions
 import System.IO.Unsafe
 
+import Debug.Trace
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Blas
 import Torch.Indef.Static.Tensor.Math.Pointwise
-import Torch.Indef.Static.Tensor.Math.Pairwise ((*^))
+import Torch.Indef.Static.Tensor.Math.Pointwise.Signed ()
+import Torch.Indef.Static.Tensor.Math.Pairwise (Pairwise(..))
 import Torch.Indef.Static.NN.Backprop ()
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
@@ -38,6 +43,7 @@ import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
 -- @y = Ax + b@.
 newtype Linear i o
   = Linear { getTensors :: (Tensor '[i, o], Tensor '[o]) }
+  deriving (Eq, Generic)
 
 instance (KnownDim i, KnownDim o) => Show (Linear i o) where
   show c = intercalate ","
@@ -50,8 +56,6 @@ instance (KnownDim i, KnownDim o) => Show (Linear i o) where
 instance (KnownDim i, KnownDim o) => Backprop (Linear i o) where
   zero = const . Linear $ (constant 0, constant 0)
   one  = const . Linear $ (constant 1, constant 1)
-  -- add c0 c1 = Linear (weights c0 + weights c1, bias c0 + bias c1)
-
 -- instance (KnownDim i, KnownDim o) => Backprop (Linear i o) where
 --   one  (Linear (a, b)) = unsafePerformIO $ do
 --     Dynamic.onesLike_ (asDynamic a) (asDynamic a)
@@ -72,6 +76,18 @@ instance (KnownDim i, KnownDim o) => Backprop (Linear i o) where
     pure (Linear (a1, b1))
   {-# NOINLINE add #-}
 
+instance (KnownDim i, KnownDim o) => Num (Linear i o) where
+  (+) (Linear (a0, b0)) (Linear (a1, b1)) = Linear (a0+a1, b0+b1)
+  (-) (Linear (a0, b0)) (Linear (a1, b1)) = Linear (a0-a1, b0-b1)
+  (*) (Linear (a0, b0)) (Linear (a1, b1)) = Linear (a0*a1, b0*b1)
+  abs (Linear (a0, b0)) = Linear (abs a0, abs b0)
+  fromInteger i = Linear (fromInteger i, fromInteger i)
+
+instance (KnownDim i, KnownDim o) => Pairwise (Linear i o) HsReal where
+  (Linear tens) ^+ v = Linear (tens ^+ v)
+  (Linear tens) ^- v = Linear (tens ^+ v)
+  (Linear tens) ^* v = Linear (tens ^+ v)
+  (Linear tens) ^/ v = Linear (tens ^+ v)
 
 -- -- | update a Linear layer
 -- updatePure
@@ -153,11 +169,10 @@ linear
   :: forall s i o
   .  Reifies s W
   => All KnownDim '[i,o]
-  => HsReal
-  -> BVar s (Linear i o)
+  => BVar s (Linear i o)
   -> BVar s (Tensor '[i])
   -> BVar s (Tensor '[o])
-linear lr = liftOp2 $ op2 $ \l i ->
+linear = liftOp2 $ op2 $ \l i ->
   (updateOutput i l, \gout -> (accGradParameters i gout l, updateGradInput i gout (weights l)))
   where
     updateOutput :: Tensor '[i] -> Linear i o -> Tensor '[o]
@@ -167,7 +182,11 @@ linear lr = liftOp2 $ op2 $ \l i ->
     updateGradInput i gout w = addmv 0 (constant 0) 1 w gout
 
     accGradParameters :: Tensor '[i] -> Tensor '[o] -> Linear i o -> Linear i o
-    accGradParameters i gout (Linear (w, b)) = Linear (addr 1 (constant 0) lr i gout, cadd (constant 0) lr gout)
+    accGradParameters i gout (Linear (w, b)) = Linear (w', b')
+      where
+        lr = 1
+        w' = addr 1 (constant 0) lr i gout
+        b' = cadd b lr gout
 
 -- | 'linear' with a batch dimension
 linearBatch

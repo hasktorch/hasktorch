@@ -79,13 +79,14 @@ library
         text ==1.2.2.2 || >1.2.2.2,
         typelits-witnesses ==0.2.3.0 || >0.2.3.0,
         hasktorch-cpu -any,
-        hasktorch-gpu -any,
         hasktorch-raw-th -any,
         hasktorch-types-th -any
     
-    if flag(lite)
+    if flag(cuda)
+        build-depends:
+            hasktorch-gpu -any
         
-        if flag(cuda)
+        if flag(lite)
             reexported-modules: Torch.Cuda.Long,
                                 Torch.Cuda.Long.Dynamic,
                                 Torch.Cuda.Long.Storage,
@@ -109,25 +110,22 @@ library
                                 Torch.Cuda.Double.Dynamic.NN.Pooling,
                                 Torch.Cuda.Double.Dynamic.NN.Criterion
         else
-    else
-        reexported-modules: Torch.Byte,
-                            Torch.Byte.Dynamic,
-                            Torch.Byte.Storage,
-                            Torch.Char,
-                            Torch.Char.Dynamic,
-                            Torch.Char.Storage,
-                            Torch.Short,
-                            Torch.Short.Dynamic,
-                            Torch.Short.Storage,
-                            Torch.Int,
-                            Torch.Int.Dynamic,
-                            Torch.Int.Storage,
-                            Torch.Float,
-                            Torch.Float.Dynamic,
-                            Torch.Float.Storage
-        
-        if flag(cuda)
-            reexported-modules: Torch.Cuda.Byte,
+            reexported-modules: Torch.Byte,
+                                Torch.Byte.Dynamic,
+                                Torch.Byte.Storage,
+                                Torch.Char,
+                                Torch.Char.Dynamic,
+                                Torch.Char.Storage,
+                                Torch.Short,
+                                Torch.Short.Dynamic,
+                                Torch.Short.Storage,
+                                Torch.Int,
+                                Torch.Int.Dynamic,
+                                Torch.Int.Storage,
+                                Torch.Float,
+                                Torch.Float.Dynamic,
+                                Torch.Float.Storage,
+                                Torch.Cuda.Byte,
                                 Torch.Cuda.Byte.Dynamic,
                                 Torch.Cuda.Byte.Storage,
                                 Torch.Cuda.Char,
@@ -142,7 +140,25 @@ library
                                 Torch.Cuda.Float,
                                 Torch.Cuda.Float.Dynamic,
                                 Torch.Cuda.Float.Storage
+    else
+        
+        if flag(lite)
         else
+            reexported-modules: Torch.Byte,
+                                Torch.Byte.Dynamic,
+                                Torch.Byte.Storage,
+                                Torch.Char,
+                                Torch.Char.Dynamic,
+                                Torch.Char.Storage,
+                                Torch.Short,
+                                Torch.Short.Dynamic,
+                                Torch.Short.Storage,
+                                Torch.Int,
+                                Torch.Int.Dynamic,
+                                Torch.Int.Storage,
+                                Torch.Float,
+                                Torch.Float.Dynamic,
+                                Torch.Float.Storage
 
 library hasktorch-cpu
     exposed-modules:
@@ -185,11 +201,13 @@ library hasktorch-cpu
                         Torch.Float.Dynamic.NN.Pooling,
                         Torch.Float.Dynamic.NN.Criterion
     hs-source-dirs: utils src
+    other-modules:
+        Torch.Core.Exceptions
+        Torch.Core.Random
+        Torch.Core.LogAdd
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
                         TypeSynonymInstances ScopedTypeVariables FlexibleContexts
-    other-modules:
-        Torch.Core.Random
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch-types-th -any,
@@ -262,6 +280,10 @@ library hasktorch-gpu
                         Torch.Cuda.Double.Dynamic.NN.Criterion
     cpp-options: -DCUDA -DHASKTORCH_INTERNAL_CUDA
     hs-source-dirs: utils src
+    other-modules:
+        Torch.Core.Exceptions
+        Torch.Core.Random
+        Torch.Core.LogAdd
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
                         TypeSynonymInstances ScopedTypeVariables FlexibleContexts
@@ -549,5 +571,6 @@ test-suite spec
         microlens-platform -any,
         monad-loops -any,
         time -any,
-        transformers -any
+        transformers -any,
+        generic-lens -any
 

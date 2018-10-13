@@ -35,18 +35,19 @@ import System.IO.Unsafe
 import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
+import Debug.Trace
 
 -- instance Dimensions d => Backprop (Tensor d) where
 instance Dimensions d => Backprop (Tensor d) where
-  -- add = (+)
+  add a b = a + b
   zero = (const . constant) 0
   one = (const . constant) 1
   -- zero a = unsafePerformIO $ Dynamic.zero_ (asDynamic a) >> pure a
   -- {-# NOINLINE zero #-}
   -- one a = unsafePerformIO $ Dynamic.onesLike_ (asDynamic a) (asDynamic a) >> pure a
   -- {-# NOINLINE one #-}
-  add a b = unsafePerformIO $ Dynamic.cadd_ (asDynamic b) 1 (asDynamic a) >> pure b
-  {-# NOINLINE add #-}
+  -- add a b = unsafePerformIO $ Dynamic.cadd_ (asDynamic b) 1 (asDynamic a) >> pure b
+  -- {-# NOINLINE add #-}
 
 
   -- :: Dimensions d

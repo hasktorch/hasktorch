@@ -33,6 +33,7 @@ import Control.Monad.IO.Class (liftIO)
 import Foreign hiding (with)
 import GHC.Int
 import System.IO.Unsafe
+import Debug.Trace
 
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor

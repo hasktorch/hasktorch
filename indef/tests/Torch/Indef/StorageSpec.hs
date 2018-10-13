@@ -5,13 +5,35 @@ import Control.Monad
 import GHC.Int
 import Test.Hspec
 import Test.Hspec.QuickCheck hiding (resize)
-import Test.QuickCheck ((.&&.), (==>), (===), property)
+import Test.QuickCheck ((.&&.), (==>), (===), property, Arbitrary(..))
+import qualified Test.QuickCheck as QC
 import Test.QuickCheck.Monadic
 import GHC.Exts
 import Debug.Trace
 import Control.Monad.IO.Class
+import Data.List
+import Data.Word
+import GHC.Natural
 
 import Torch.Indef.Storage
+
+data ListWithIx a = ListWithIx Word [a]
+  deriving (Eq, Show)
+
+instance Arbitrary a => Arbitrary (ListWithIx a) where
+  arbitrary = do
+    xs <- QC.listOf1 arbitrary
+    ix <- QC.choose (0, genericLength xs - 1)
+    pure $ ListWithIx ix xs
+
+data ListWithOOB a = ListWithOOB Word [a]
+  deriving (Eq, Show)
+
+instance Arbitrary a => Arbitrary (ListWithOOB a) where
+  arbitrary = do
+    xs <- QC.listOf1 arbitrary
+    ix <- QC.choose (genericLength xs, genericLength xs * 5)
+    pure $ ListWithOOB ix xs
 
 main :: IO ()
 main = hspec spec
@@ -25,21 +47,19 @@ spec = do
     size (fromList xs) `shouldBe` (length xs)
 
   describe "set / get" $ do
-    it "can update any index" $ property $ \ (xs, x, i) ->
-      length xs > 1 ==>
-      i >= 0 && i < length xs ==>
-      let st = (fromList xs)
-      in get st i /= x ==> do
-          set st i x
-          get st i `shouldBe` x
+    it "can update any index" $ property $ \ (x, ListWithIx i xs) -> do
+      let st = fromList xs
+      get st (fromIntegral i) /= x ==> do
+        set st (fromIntegral i) x
+        get st (fromIntegral i) `shouldBe` x
 
   describe "empty" $ do
     it "has a size of 0" $ do
       let st = empty
       size empty `shouldBe` 0
 
-  prop "newWithSize returns a size of input argument" $ \i ->
-    i >= 0 ==> size (newWithSize i) `shouldBe` i
+  prop "newWithSize returns a size of input argument" $ \(i::Word16) ->
+    size (newWithSize $ fromIntegral i) `shouldBe` fromIntegral i
 
   prop "newWithSize1 has size 1 and sets the argument" $ \v0 ->
     let st = newWithSize1 v0
@@ -73,19 +93,17 @@ spec = do
     fill st v
     toList st `shouldSatisfy` (all (== v))
 
-  xdescribe "resize" $ do
-    prop "will truncate storage if the new size is less than the old one (old size <100)" $ \xs i ->
-      length xs < 100 && length xs > fromIntegral i ==> do
+  describe "resize" $ do
+    prop "will truncate storage if the new size is less than the old one (old size < 100)" $
+      \(ListWithIx i xs) -> length xs < 100 ==> do
         let st = fromList xs
-        resize st i
-        size st `shouldBe` fromIntegral i
+        resize st (fromIntegral i)
         toList st `shouldBe` take (fromIntegral i) xs
 
-    prop "will expand storage if the new size is greater than the old one (new size <100)" $ \xs i ->
-      length xs < fromIntegral i && i < 100 ==> do
+    prop "will expand storage if the new size is greater than the old one (new size <100)" $
+      \(ListWithOOB i xs) -> i < 100 ==> do
         let st = fromList xs
-        resize st i
-        size st `shouldBe` fromIntegral i
+        resize st (fromIntegral i)
         take (length xs) (toList st) `shouldBe` xs
 
 

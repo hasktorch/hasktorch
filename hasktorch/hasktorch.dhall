@@ -115,7 +115,11 @@ in let full-mixins =
         , requires = prelude.types.ModuleRenaming.renaming (mixins.floating isth "Float")
         } }
     ] else [] : List types.Mixin)
-
+in let other-modules =
+  [ "Torch.Core.Exceptions"
+  , "Torch.Core.Random"
+  , "Torch.Core.LogAdd"
+  ]
 in let backend-sublibrary =
   λ(isth : Bool)
   → { name = "hasktorch-${if isth then "cpu" else "gpu"}"
@@ -144,6 +148,7 @@ in let backend-sublibrary =
         , build-depends = if config.flag "lite" then lite-depends else lite-depends # [packages.hasktorch-indef-unsigned]
         , reexported-modules = List/map Text ReexportedModule fn.renameNoop reexports
         , exposed-modules = exports
+        , other-modules = other-modules
         , cpp-options = if isth then [] : List Text else [ "-DCUDA", "-DHASKTORCH_INTERNAL_CUDA" ]
         , mixins = if config.flag "lite" then lite-mixins isth else full-mixins isth
         }
@@ -206,6 +211,7 @@ in common.Package
                       , packages.monad-loops
                       , packages.time
                       , packages.transformers
+                      , packages.generic-lens
                       ]
                     , default-extensions = cabalvars.default-extensions
                     , default-language = cabalvars.default-language
@@ -276,10 +282,9 @@ in common.Package
               , packages.typelits-witnesses
 
               , fn.anyver "hasktorch-cpu"
-              , fn.anyver "hasktorch-gpu"
               , packages.hasktorch-raw-th
               , packages.hasktorch-types-th
-              ]
+              ] # (if config.flag "cuda" then [fn.anyver "hasktorch-gpu"] else [] : List types.Dependency)
             , exposed-modules =
               [ "Torch.Core.Exceptions"
               , "Torch.Core.Random"

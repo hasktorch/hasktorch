@@ -19,6 +19,8 @@ import GHC.TypeLits
 import Numeric.Dimensions
 import Numeric.Backprop
 import System.IO.Unsafe
+import Control.Concurrent
+import Debug.Trace
 import Data.Singletons.Prelude hiding (All, type (*), type (-), type (+))
 
 import Torch.Indef.Static.Tensor
@@ -96,10 +98,11 @@ bCECriterion' savg r mw tar = liftOp1 . op1 $ (updateOutput &&& updateGradInput)
       :: Tensor '[n]          -- input
       -> Tensor '[1]          -- grad output
       -> Tensor '[n]          -- grad input
-    updateGradInput i go = unsafePerformIO $ let gi = new in
+    updateGradInput i go = unsafePerformIO $ do
+      let gi = new
       Dynamic._bCECriterion_updateGradInput
         (asDynamic i) (asDynamic tar) (asDynamic go) (asDynamic gi) savg (asDynamic <$> mw) r
-      >> pure gi
+      pure gi
 
 bCECriterion
   :: (Reifies s W, KnownNat n, KnownDim n)

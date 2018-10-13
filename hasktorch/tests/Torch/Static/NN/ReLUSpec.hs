@@ -38,7 +38,7 @@ spec = do
       let outputVal = [0,16]
       describe "with backprop'd Linear" $ do
         let ll = Linear (w, constant 0) :: Linear 4 2
-            (o ,(lg , gin )) = backprop2 (relu .: linear 1) ll i
+            (o ,(lg , gin )) = backprop2 (relu .: linear) ll i
 
         it "performs matrix multipication as you would expect" $ do
           tensordata o `shouldBe` outputVal

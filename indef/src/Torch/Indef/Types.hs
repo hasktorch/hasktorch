@@ -19,7 +19,7 @@ module Torch.Indef.Types
   , DimVal(..)
 
   , Step(..), Stride(..), StorageOffset(..), Size(..), KeepDim(..), fromKeepDim, keep, ignore, SortOrder(..), TopKOrder(..)
-  , StorageSize(..), AllocatorContext(..), Index(..)
+  , AllocatorContext(..) -- , StorageSize(..), Index(..)
 
   , (.:)
 
@@ -123,7 +123,7 @@ newtype Size = Size CLLong
   deriving (Bounded, Enum, Eq, Integral, Num, Ord, Read, Real, Show)
 
 -- | newtype wrapper around the C-level representation of a storage offset
-newtype StorageOffset = StorageOffset CPtrdiff
+newtype StorageOffset = Offset CPtrdiff
   deriving (Bounded, Enum, Eq, Integral, Num, Ord, Read, Real, Show)
 
 -- | Represents the size of storage, should be CPtrdiff to match with the C internals

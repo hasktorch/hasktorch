@@ -36,6 +36,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Pointwise
 
 import System.IO.Unsafe
 
+import Debug.Trace
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor
 
@@ -80,7 +81,7 @@ clamp_ t a b = _clamp t t a b
 -- | pure version of 'clamp_' returning a new tensor as output.
 clamp :: Dynamic -> HsReal -> HsReal -> Dynamic
 clamp  t a b = unsafeDupablePerformIO $ do
-  let r = empty
+  let r = new' (getSomeDims t)
   _clamp r t a b
   pure r
 {-# NOINLINE clamp #-}
@@ -104,7 +105,7 @@ cadd
   -> Dynamic  -- ^ tensor2
   -> Dynamic
 cadd t v b = unsafeDupablePerformIO $ do
-  let r = empty
+  let r = new' (getSomeDims t)
   _cadd r t v b
   pure r
 {-# NOINLINE cadd #-}
@@ -132,7 +133,7 @@ csub
   -> Dynamic  -- ^ tensor2
   -> Dynamic
 csub t v b = unsafeDupablePerformIO $ do
-  let r = empty
+  let r = new' (getSomeDims t)
   _csub r t v b
   pure r
 {-# NOINLINE csub #-}
@@ -158,7 +159,7 @@ cmul
   -> Dynamic  -- ^ tensor2
   -> Dynamic
 cmul t1 t2 = unsafeDupablePerformIO $ do
-  let r = empty
+  let r = new' (getSomeDims t1)
   _cmul r t1 t2
   pure r
 {-# NOINLINE cmul #-}
@@ -190,7 +191,7 @@ cdiv
   -> Dynamic  -- ^ tensor2
   -> Dynamic
 cdiv  t1 t2 = unsafeDupablePerformIO $ do
-  let r = empty
+  let r = new' (getSomeDims t1)
   _cdiv r t1 t2
   pure r
 {-# NOINLINE cdiv #-}

@@ -11,25 +11,30 @@ import Text.Printf
 
 -- all C-types
 data CTensor
+instance Eq CTensor
 data CStorage
+instance Eq CStorage
 
 -- freeStorage :: Ptr CState -> Ptr CStorage -> IO ()
 -- freeTensor  :: Ptr CState -> Ptr CTensor -> IO ()
 
 -- all haskell, memory-managed types
 data Dynamic
+instance Eq Dynamic
 ctensor         :: Dynamic -> ForeignPtr CTensor
 dynamic         :: ForeignPtr CState -> ForeignPtr CTensor -> Dynamic
 dynamicState    :: Dynamic -> (ForeignPtr CState, ForeignPtr CTensor)
 dynamicStateRef :: Dynamic -> ForeignPtr CState
 
 data Storage
+instance Eq Storage
 cstorage        :: Storage -> ForeignPtr CStorage
 storage         :: ForeignPtr CState -> ForeignPtr CStorage -> Storage
 storageState    :: Storage -> (ForeignPtr CState, ForeignPtr CStorage)
 storageStateRef :: Storage -> ForeignPtr CState
 
 data Tensor (d::[Nat])
+instance Eq (Tensor d)
 asStatic  :: Dynamic -> Tensor d
 asDynamic :: Tensor d -> Dynamic
 

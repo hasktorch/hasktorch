@@ -45,7 +45,7 @@ add_ t v = _add t t v
 -- | add a scalar to a tensor.
 add :: Dynamic -> HsReal -> Dynamic
 add t v = unsafeDupablePerformIO $ do
-  let r = empty
+  let r = new' (getSomeDims t)
   _add r t v
   pure r
 {-# NOINLINE add #-}
@@ -57,7 +57,7 @@ sub_ t v = _sub t t v
 -- | subtract a scalar from a tensor.
 sub :: Dynamic -> HsReal -> Dynamic
 sub  t v = unsafeDupablePerformIO $ do
-  let r = empty
+  let r = new' (getSomeDims t)
   _sub r t v
   pure r
 {-# NOINLINE sub #-}
@@ -85,7 +85,7 @@ mul_ t v = _mul t t v
 -- | multiply a tensor by a scalar value, pure.
 mul :: Dynamic -> HsReal -> Dynamic
 mul t v = unsafeDupablePerformIO $ do
-  let r = empty
+  let r = new' (getSomeDims t)
   _mul r t v
   pure r
 {-# NOINLINE mul #-}
@@ -97,7 +97,7 @@ div_ t v = _div t t v
 -- | divide a tensor by a scalar value, pure.
 div :: Dynamic -> HsReal -> Dynamic
 div t v = unsafeDupablePerformIO $ do
-  let r = empty
+  let r = new' (getSomeDims t)
   _div r t v
   pure r
 {-# NOINLINE div #-}

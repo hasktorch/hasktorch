@@ -81,11 +81,16 @@ tensordata t =
   case shape t of
     [] -> []
     ds ->
-      unsafeDupablePerformIO
-      . flip with ((fmap.fmap) c2hsReal . FM.peekArray (fromIntegral $ product ds))
-      . (liftIO =<<) $ Sig.c_data
-        <$> managedState
-        <*> managedTensor t
+      unsafeDupablePerformIO . flip with (pure . fmap c2hsReal) $ do
+        st <- managedState
+        t' <- managedTensor t
+        liftIO $ do
+          let sz = fromIntegral (product ds)
+          -- a strong dose of paranoia
+          tmp <- FM.mallocArray sz
+          creals <- Sig.c_data st t'
+          FM.copyArray tmp creals sz
+          FM.peekArray sz tmp
 {-# NOINLINE tensordata #-}
 
 -- | get a value from dimension 1
@@ -817,11 +822,11 @@ storage t = unsafeDupablePerformIO . withStorage $ Sig.c_storage
 {-# WARNING storage "extracting and using a tensor's storage can make your program unsafe. You are warned." #-}
 
 -- | get the storage offset of a tensor
-storageOffset :: Dynamic -> IO StorageOffset
-storageOffset t = flip with (pure . fromIntegral) $ do
-  s' <- managedState
-  t' <- managedTensor t
-  liftIO $ Sig.c_storageOffset s' t'
+storageOffset :: Dynamic -> StorageOffset
+storageOffset t = fromIntegral . unsafeDupablePerformIO . withLift $ Sig.c_storageOffset
+  <$> managedState
+  <*> managedTensor t
+{-# NOINLINE storageOffset #-}
 
 -- | Returns the jump necessary to go from one element to the next one in the
 -- specified dimension dim.

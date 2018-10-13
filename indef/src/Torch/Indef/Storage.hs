@@ -58,6 +58,7 @@ import Foreign hiding (with, new)
 import Foreign.C.Types
 import GHC.ForeignPtr (ForeignPtr)
 import GHC.Int
+import GHC.Word
 import Control.Monad
 import Control.Monad.Managed
 import Control.DeepSeq
@@ -91,9 +92,13 @@ storagedata s = unsafeDupablePerformIO . flip with (pure . fmap c2hsReal) $ do
   st <- managedState
   s' <- managedStorage s
   liftIO $ do
-    sz <- liftIO $ Sig.c_size st s'
-    creals <- liftIO $ Sig.c_data st s'
-    FM.peekArray (fromIntegral sz) creals
+    -- a strong dose of paranoia
+    sz <- fromIntegral <$> Sig.c_size st s'
+    tmp <- FM.mallocArray sz
+
+    creals <- Sig.c_data st s'
+    FM.copyArray tmp creals sz
+    FM.peekArray sz tmp
  where
   arrayLen :: Ptr CState -> Ptr CStorage -> IO Int
   arrayLen st p = fromIntegral <$> Sig.c_size st p
@@ -176,7 +181,7 @@ newWithSize4 a0 a1 a2 a3 = unsafeDupablePerformIO . withStorage $ Sig.c_newWithS
 -- https://github.com/torch/torch7/blob/04e1d1dce0f02aea82dc433c4f39e42650c4390f/lib/TH/generic/THStorage.h#L49
 newWithMapping
   :: [Int8]       -- ^ filename
-  -> StorageSize  -- ^ size
+  -> Word64       -- ^ size
   -> Int32        -- ^ flags
   -> IO Storage
 newWithMapping pcc' pd ci = withStorage $ Sig.c_newWithMapping
@@ -189,7 +194,10 @@ newWithMapping pcc' pd ci = withStorage $ Sig.c_newWithMapping
 --
 -- FIXME: find out if 'StorageSize' always corresponds to the length of the list. If so,
 -- remove it!
-newWithData :: [HsReal] -> StorageSize -> Storage
+newWithData
+  :: [HsReal]
+  -> Word64   -- ^ storage size
+  -> Storage
 newWithData pr pd = unsafeDupablePerformIO . withStorage $ Sig.c_newWithData
   <$> managedState
   <*> liftIO (FM.newArray (hs2cReal <$> pr))
