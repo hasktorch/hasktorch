@@ -23,7 +23,7 @@ module Torch.Indef.Static.Tensor.Math.Reduce
   , median
 
   , minIndex1d    , min1d
-  , maxIndex1d    , max1d
+  , maxIndex1d    , max1d, max2d0, max2d1
   , medianIndex1d , median1d
 
   , Torch.Indef.Static.Tensor.Math.Reduce.sum, rowsum, colsum
@@ -107,9 +107,17 @@ median
   -> (Tensor (rs ++ '[1] ++ ls), Maybe (IndexTensor (rs ++ '[1] ++ ls)))
 median = withKeepDim Dynamic._median
 
--- | Convenience method for 'max'
+-- | Convenience method for 'max' over vectors
 max1d :: (KnownNat n, KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[1], Maybe (IndexTensor '[1]))
 max1d t = Torch.Indef.Static.Tensor.Math.Reduce.max t (dim :: Dim 0)
+
+-- | Convenience method for 'max' over matricies
+max2d0 :: (KnownDim m, KnownNat n, KnownDim n) => Tensor '[n, m] -> KeepDim -> (Tensor '[1, m], Maybe (IndexTensor '[1, m]))
+max2d0 t = Torch.Indef.Static.Tensor.Math.Reduce.max t (dim :: Dim 0)
+
+-- | Convenience method for 'max' over matricies
+max2d1 :: (KnownDim n, KnownDim m, KnownNat m) => Tensor '[n, m] -> KeepDim -> (Tensor '[n, 1], Maybe (IndexTensor '[n, 1]))
+max2d1 t = Torch.Indef.Static.Tensor.Math.Reduce.max t (dim :: Dim 1)
 
 -- | Convenience method for 'min'
 min1d :: (KnownNat n, KnownDim n) => Tensor '[n] -> KeepDim -> (Tensor '[1], Maybe (IndexTensor '[1]))

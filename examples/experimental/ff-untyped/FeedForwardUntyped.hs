@@ -71,7 +71,7 @@ runLayer (W wB wN) v = do
   putStrLn ""
   -- print (wN !* v)
   putStrLn "========"
-  dt <- addmv 1 wB 1 wN v
+  let dt = addmv 1 wB 1 wN v
   putStrLn "y"
   print dt
   pure dt

@@ -65,7 +65,7 @@ library
     hs-source-dirs: utils
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         base (==4.7 || >4.7) && <5,
         containers -any,
@@ -207,7 +207,7 @@ library hasktorch-cpu
         Torch.Core.LogAdd
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch-types-th -any,
@@ -286,7 +286,7 @@ library hasktorch-gpu
         Torch.Core.LogAdd
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch-types-th -any,
@@ -370,7 +370,7 @@ library hasktorch-indef-unsigned
                         Torch.Indef.Static.Tensor.TopK
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch-signatures-partial -any,
@@ -418,7 +418,7 @@ library hasktorch-indef-signed
                         Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch-signatures-partial -any,
@@ -501,7 +501,7 @@ library hasktorch-indef-floating
                         Torch.Undefined.Tensor.Random.THC
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch-indef -any,
@@ -556,7 +556,7 @@ test-suite spec
         Torch.Static.NN.LinearSpec
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         QuickCheck -any,
         backprop ==0.2.5 || >0.2.5,

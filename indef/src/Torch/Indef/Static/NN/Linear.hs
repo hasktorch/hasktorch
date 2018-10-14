@@ -98,18 +98,26 @@ instance (KnownDim i, KnownDim o) => Pairwise (Linear i o) HsReal where
 --   -> Linear i o   -- ^ updated layer
 -- updatePure net lr (Linear (gw, gb)) = add net $ Linear (lr *^ gw, lr *^ gb)
 
+-- | update a Conv2d layer inplace
+update_
+  :: (KnownDim i, KnownDim o)
+  => Linear i o   -- ^ layer to update
+  -> HsReal       -- ^ learning rate
+  -> Linear i o   -- ^ gradient
+  -> IO ()
+update_ (Linear (w, b)) lr (Linear (gw, gb)) = do
+  Dynamic.cadd_ (asDynamic w) lr (asDynamic gw)
+  Dynamic.cadd_ (asDynamic b) lr (asDynamic gb)
+
+
 -- | update a Conv2d layer
 update
   :: (KnownDim i, KnownDim o)
   => Linear i o   -- ^ layer to update
   -> HsReal       -- ^ learning rate
   -> Linear i o   -- ^ gradient
-  -> IO ()
-update (Linear (w, b)) lr (Linear (gw, gb)) = do
-  Dynamic.cadd_ (asDynamic w) lr (asDynamic gw)
-  Dynamic.cadd_ (asDynamic b) lr (asDynamic gb)
-  pure ()
-{-# NOINLINE update #-}
+  -> Linear i o   -- ^ updated layer
+update layer lr grads = layer + (grads ^* lr)
 
 
 -- | the dense weight matrix of a linear layer

@@ -396,11 +396,12 @@ resizeAs_ :: forall d d' . (All Dimensions '[d, d'], Product d ~ Product d') => 
 resizeAs_ src = resizeAsT_ src (new :: Tensor d')
 
 -- | Pure version of 'resizeAs_' which clones the input tensor (pure, dupable?)
+--
+-- WARNING: This might be not be garbage collected as you expect since the input argument becomes a dangling phantom type.
 resizeAs :: forall d d' . (All Dimensions [d,d'], Product d ~ Product d') => Tensor d -> Tensor d'
 resizeAs src = unsafeDupablePerformIO $
   resizeAsT_ (newClone src :: Tensor d) (new :: Tensor d')
 {-# NOINLINE resizeAs #-}
-{-# WARNING resizeAs "This might be not be garbage collected well " #-}
 
 -- | flatten a tensor (pure, dupable)
 flatten :: (Dimensions d, KnownDim (Product d)) => Tensor d -> Tensor '[Product d]
@@ -528,7 +529,7 @@ expand2d t = unsafeDupablePerformIO $ do
 -- and should be removed.
 getElem2d
   :: forall (n::Nat) (m::Nat) . (All KnownDim '[n, m])
-  => Tensor '[n, m] -> Natural -> Natural -> Maybe (HsReal)
+  => Tensor '[n, m] -> Word -> Word -> Maybe (HsReal)
 getElem2d t r c
   | r > fromIntegral (dimVal (dim :: Dim n)) ||
     c > fromIntegral (dimVal (dim :: Dim m))
@@ -542,7 +543,7 @@ getElem2d t r c
 -- and should be removed.
 setElem2d
   :: forall (n::Nat) (m::Nat) ns . (All KnownDim '[n, m])
-  => Tensor '[n, m] -> Natural -> Natural -> HsReal -> IO ()
+  => Tensor '[n, m] -> Word -> Word -> HsReal -> IO ()
 setElem2d t r c v
   | r > fromIntegral (dimVal (dim :: Dim n)) ||
     c > fromIntegral (dimVal (dim :: Dim m))

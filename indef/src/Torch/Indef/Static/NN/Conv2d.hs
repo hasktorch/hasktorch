@@ -40,10 +40,9 @@ import GHC.TypeLits (Div) -- (type Div)
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Copy
 import Torch.Indef.Static.Tensor.Math
-import Torch.Indef.Static.Tensor.Math.Pairwise ((*^))
+import Torch.Indef.Static.Tensor.Math.Pairwise (Pairwise(..))
 import Torch.Indef.Static.NN.Backprop ()
 import Torch.Indef.Types
-import Numeric.Backprop
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 
 import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
@@ -101,26 +100,25 @@ instance (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
   {-# NOINLINE add #-}
   -- add c0 c1 = Conv2d (weights c0 + weights c1, bias c0 + bias c1)
 
--- -- | update a Conv2d layer
--- update
---   :: (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
---   => Conv2d i o '(kH, kW)  -- ^ network to update
---   -> HsReal                -- ^ learning rate
---   -> Conv2d i o '(kH, kW)  -- ^ gradient
---   -> Conv2d i o '(kH, kW)  -- ^ updated network
--- update net lr (Conv2d (gw, gb)) = add net $ Conv2d (lr *^ gw, lr *^ gb)
 -- | update a Conv2d layer
 update
   :: (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
   => Conv2d i o '(kH, kW)  -- ^ network to update
   -> HsReal                -- ^ learning rate
   -> Conv2d i o '(kH, kW)  -- ^ gradient
+  -> Conv2d i o '(kH, kW)  -- ^ updated network
+update (Conv2d (w, b)) lr (Conv2d (gw, gb)) = Conv2d (w + gw ^* lr, b + gb ^* lr)
+
+-- | update a Conv2d layer inplace
+update_
+  :: (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
+  => Conv2d i o '(kH, kW)  -- ^ network to update
+  -> HsReal                -- ^ learning rate
+  -> Conv2d i o '(kH, kW)  -- ^ gradient
   -> IO ()  -- ^ update network
-update (Conv2d (w, b)) lr (Conv2d (gw, gb)) = do
+update_ (Conv2d (w, b)) lr (Conv2d (gw, gb)) = do
   Dynamic.cadd_ (asDynamic w) lr (asDynamic gw)
   Dynamic.cadd_ (asDynamic b) lr (asDynamic gb)
-  pure ()
-{-# NOINLINE update #-}
 
 
 
@@ -238,7 +236,7 @@ conv2dMM
   -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
   -> BVar s (Tensor '[f,h,w])    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor '[o,oH,oW])
-conv2dMM = genericBPConv2dMM (new :: (Tensor '[f * kH * kW, oH * oW]))
+conv2dMM = genericBPConv2dMM (new :: (Tensor '[f * kH * kW, oH * oW])) (new :: Tensor '[2, 2]) (new :: Tensor '[2,2])
 
 -- | Backprop convolution function with batching
 conv2dMMBatch
@@ -256,15 +254,17 @@ conv2dMMBatch
   -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
   -> BVar s (Tensor '[b,f,h,w])    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor '[b,o,oH,oW])
-conv2dMMBatch = genericBPConv2dMM (new :: (Tensor '[b, f * kH * kW, oH * oW]))
+conv2dMMBatch = genericBPConv2dMM (new :: (Tensor '[b, f * kH * kW, oH * oW])) (new :: Tensor '[2, 2]) (new :: Tensor '[2,2])
 
 -- | Backprop convolution function
 {-# NOINLINE genericBPConv2dMM #-}
 genericBPConv2dMM
   :: Reifies s W
-  => All Dimensions '[din,dout,fgin]
-  => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW]
-  => (Tensor fgin)            -- ^ make grad input buffer
+  => All Dimensions '[din,dout,frame_gin]
+  => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW,tmp]
+  => (Tensor frame_gin)       -- ^ make grad input buffer (size corresponds to the frames of an input buffer)
+  -> (Tensor '[tmp, tmp])     -- ^ make temporary matrix for columns (this might be reshaped and is only a buffer)
+  -> (Tensor '[tmp, tmp])     -- ^ make temporary matrix for ones (this might be reshaped and is only a buffer)
   -> Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
                                  --   C-default is 1 for both.
                                  --
@@ -275,36 +275,44 @@ genericBPConv2dMM
   -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
   -> BVar s (Tensor din)    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor dout)
-genericBPConv2dMM mkGradIBuffer step pad lr = liftOp2 . op2 $ \conv inp -> unsafePerformIO $ do
-  out <-
-    asStatic <$> Dynamic.spatialConvolutionMM_updateOutput
-      (asDynamic inp) (asDynamic (weights conv)) (asDynamic (bias conv))
+genericBPConv2dMM gradInputBuffer tmp_columns tmp_ones step pad lr = liftOp2 . op2 $ \conv inp -> unsafePerformIO $ do
+  let out = new
+  print ("conv2d forward before", "input", shape inp)
+  Dynamic._spatialConvolutionMM_updateOutput
+      (asDynamic inp) (asDynamic out) (asDynamic (weights conv)) (asDynamic (bias conv))
+      (asDynamic tmp_columns) (asDynamic tmp_ones)
       (kernel2d conv)
       (param2d step)
       (param2d pad)
-
+  print ("conv2d forward after ", "input", shape inp)
 
   pure (out, \gout -> unsafePerformIO $ do
-    let gradInputBuffer = mkGradIBuffer
-    let (gin, ones) = (empty, empty)
-    let (gw, gb) = (new, new)
+    let
+      gin = empty
+      (gw, gb) = (new, new)
+
+    print ("conv2d - backprop start input", shape inp, shape (weights conv)) -- , shape gin, shape (weights conv), shape gradInputBuffer, shape tmp_ones)
 
     Dynamic._spatialConvolutionMM_updateGradInput
       (asDynamic inp) (asDynamic gout)
       (asDynamic gin) (asDynamic (weights conv))
-      (asDynamic gradInputBuffer) (asDynamic ones)
+      (asDynamic (new :: Tensor '[4, 2, 10, 10])) (asDynamic tmp_ones)
       (kernel2d conv)
       (param2d step)
       (param2d pad)
 
+    print ("conv2d - after updategin", shape inp, shape gout, shape gin, shape (weights conv), shape gradInputBuffer, shape tmp_ones)
+
     Dynamic._spatialConvolutionMM_accGradParameters
       (asDynamic inp) (asDynamic gout)
       (asDynamic gw) (asDynamic gb)
-      (asDynamic gradInputBuffer) (asDynamic ones)
+      (asDynamic gradInputBuffer) (asDynamic tmp_ones)
       (kernel2d conv)
       (param2d step)
       (param2d pad)
       lr
+
+    print ("conv2d - after accparams", shape inp, shape gout, shape gin, shape (weights conv), shape gradInputBuffer, shape tmp_ones)
 
     pure (Conv2d (gw, gb), gin))
  where

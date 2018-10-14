@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -9,9 +11,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module LeNet
-  ( newLeNet
-  , bs, bsz, LeNet
-  , lenetBatchForward
+  ( lenetBatchForward
   , lenetBatchBP
   , lenetUpdate
   , Vision._conv1
@@ -24,10 +24,11 @@ import qualified Prelude as P
 import Control.Exception.Safe (throwString)
 import Control.Monad
 import Data.IORef
+import Data.Maybe
 import Data.Function ((&))
 import Data.Singletons.Prelude.List (Product)
 import Foreign hiding (new)
-import Lens.Micro.Platform ((^.))
+import Lens.Micro ((^.))
 import System.IO.Unsafe
 import Data.Singletons
 import Data.Singletons.Prelude.Bool
@@ -87,15 +88,15 @@ convin1Ref = unsafePerformIO $ newIORef Nothing
 {-# NOINLINE convin1Ref #-}
 
 convout1Ref :: IORef (Tensor '[4, 6])
-convout1Ref = unsafePerformIO $ empty >>= newIORef
+convout1Ref = unsafePerformIO $ pure empty >>= newIORef
 {-# NOINLINE convout1Ref #-}
 
 columnsbuff1outRef :: IORef Dynamic
-columnsbuff1outRef = unsafePerformIO $ Dynamic.empty >>= newIORef
+columnsbuff1outRef = unsafePerformIO $ pure Dynamic.empty >>= newIORef
 {-# NOINLINE columnsbuff1outRef #-}
 
 onesbuff1outRef :: IORef Dynamic
-onesbuff1outRef = unsafePerformIO $ Dynamic.empty >>= newIORef
+onesbuff1outRef = unsafePerformIO $ pure Dynamic.empty >>= newIORef
 {-# NOINLINE onesbuff1outRef #-}
 
 
@@ -168,7 +169,7 @@ reluCONV2ginRef = unsafePerformIO $ newIORef (constant 0)
 -- ========================================================================= --
 
 lenetUpdate :: LeNet -> (HsReal, LeNet) -> IO ()
-lenetUpdate net (lr, g) = Vision.update net lr g
+lenetUpdate net (lr, g) = Vision.update_ net lr g
 
 
 lenetBatchForward
@@ -224,7 +225,7 @@ crossentropy ys inp = do
 
 
 y2cat :: Tensor '[4, 10] -> IO [Category]
-y2cat ys = mapM ((\i -> toEnum . fromIntegral <$> Long.get2d rez i 0)) [0..3]
+y2cat ys = mapM ((\i -> pure . toEnum . fromIntegral . fromJust $ Long.get2d rez i 0)) [0..3]
   where
     rez :: LongTensor '[4, 1]
     (_, Just rez) = Torch.max ys (dim :: Dim 1) keep
@@ -385,7 +386,7 @@ lenetBatch training lr arch i = do
       (fc2g::Linear  120 84, fc2gin::Tensor '[4, 120]) <- fc2getgrad fc3gin
       when verbose $ do
         print "getting fc1g"
-        shape fc2gin >>= print
+        pure (shape fc2gin) >>= print
       (fc1g::Linear 400 120, fc1gin::Tensor '[4, 400]) <- fc1getgrad fc2gin
       when verbose $ print "getting flatteng"
 
@@ -415,19 +416,19 @@ mp1outRef = unsafePerformIO $ newIORef (constant 0)
 mp1ginRef = unsafePerformIO $ newIORef (constant 0)
 {-# NOINLINE mp1ginRef #-}
 
-conv1ginbuffRef     = unsafePerformIO $ new >>= newIORef -- (Tensor '[b,f,h,w])     -- grad input buffer
+conv1ginbuffRef     = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- grad input buffer
 {-# NOINLINE conv1ginbuffRef #-}
-conv1columnsbuffRef = unsafePerformIO $ new >>= newIORef -- (Tensor '[])            -- columns buffer
+conv1columnsbuffRef = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- columns buffer
 {-# NOINLINE conv1columnsbuffRef #-}
-conv1onesbuffRef    = unsafePerformIO $ new >>= newIORef -- (Tensor '[])            -- ones buffer
+conv1onesbuffRef    = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- ones buffer
 {-# NOINLINE conv1onesbuffRef #-}
-conv1outRef         = unsafePerformIO $ new >>= newIORef -- (Tensor '[b, o,oH,oW])  -- output
+conv1outRef         = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b, o,oH,oW])  -- output
 {-# NOINLINE conv1outRef #-}
-conv1iRef           = unsafePerformIO $ new >>= newIORef -- (Tensor '[b,f,h,w])     -- input
+conv1iRef           = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- input
 {-# NOINLINE conv1iRef #-}
-conv1ginRef         = unsafePerformIO $ new >>= newIORef -- (Tensor '[b,f,h,w])     -- gradient input
+conv1ginRef         = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- gradient input
 {-# NOINLINE conv1ginRef #-}
-conv1gparamsRef     = unsafePerformIO $ Conv2d <$> ((,) <$> new <*> new) >>= newIORef  -- (Conv1d f o '(kH, kW))  -- gradient params
+conv1gparamsRef     = unsafePerformIO $ pure (Conv2d (new, new)) >>= newIORef  -- (Conv1d f o '(kH, kW))  -- gradient params
 {-# NOINLINE conv1gparamsRef #-}
 
 
@@ -437,19 +438,19 @@ reluCONV1outRef = unsafePerformIO $ newIORef (constant 0)
 -- reluCONV1ginRef :: IORef (Tensor '[4, 6])
 reluCONV1ginRef = unsafePerformIO $ newIORef (constant 0)
 {-# NOINLINE reluCONV1ginRef #-}
-conv2ginbuffRef     = unsafePerformIO $ new >>= newIORef -- (Tensor '[b,f,h,w])     -- grad input buffer
+conv2ginbuffRef     = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- grad input buffer
 {-# NOINLINE conv2ginbuffRef #-}
-conv2columnsbuffRef = unsafePerformIO $ new >>= newIORef -- (Tensor '[])            -- columns buffer
+conv2columnsbuffRef = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- columns buffer
 {-# NOINLINE conv2columnsbuffRef #-}
-conv2onesbuffRef    = unsafePerformIO $ new >>= newIORef -- (Tensor '[])            -- ones buffer
+conv2onesbuffRef    = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- ones buffer
 {-# NOINLINE conv2onesbuffRef #-}
-conv2outRef         = unsafePerformIO $ new >>= newIORef -- (Tensor '[b, o,oH,oW])  -- output
+conv2outRef         = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b, o,oH,oW])  -- output
 {-# NOINLINE conv2outRef #-}
-conv2iRef           = unsafePerformIO $ new >>= newIORef -- (Tensor '[b,f,h,w])     -- input
+conv2iRef           = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- input
 {-# NOINLINE conv2iRef #-}
-conv2ginRef         = unsafePerformIO $ new >>= newIORef -- (Tensor '[b,f,h,w])     -- gradient input
+conv2ginRef         = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- gradient input
 {-# NOINLINE conv2ginRef #-}
-conv2gparamsRef     = unsafePerformIO $ Conv2d <$> ((,) <$> new <*> new) >>= newIORef  -- (Conv2d f o '(kH, kW))  -- gradient params
+conv2gparamsRef     = unsafePerformIO $ pure (Conv2d (new, new)) >>= newIORef  -- (Conv2d f o '(kH, kW))  -- gradient params
 {-# NOINLINE conv2gparamsRef #-}
 
 
@@ -820,6 +821,7 @@ reluBP__ inp (outref, ginref) inplace = do
   pure (out, \ginplace gout -> do
     -- throwString "xxxx"
     replaceIORefWith ginref (constant 0 :: Tensor d)
+    -- zero_ ginref
 
     gin <- readIORef ginref
 

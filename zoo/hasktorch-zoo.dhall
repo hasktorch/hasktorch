@@ -25,6 +25,7 @@ in common.Package //
           , packages.microlens-platform
           , packages.microlens-th
           , packages.singletons
+          , packages.generic-lens
           , packages.ghc-typelits-natnormalise
           , packages.vector
 

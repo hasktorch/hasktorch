@@ -69,7 +69,10 @@ dabal-all:
 	  "signatures/partial/hasktorch-signatures-partial" \
 	  "signatures/support/hasktorch-signatures-support" \
 	  "signatures/types/hasktorch-signatures-types"     \
-	  "indef/hasktorch-indef"  ; do                     \
+	  "indef/hasktorch-indef"                           \
+	  "hasktorch/hasktorch"                             \
+	  "zoo/hasktorch-zoo"                               \
+	  "examples/hasktorch-examples"  ; do               \
 	  $(MAKE) dabal DABAL=$${lib} ; \
 	done
 

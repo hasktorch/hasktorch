@@ -184,6 +184,7 @@ _dilatedMaxPooling2d ker step pad dil ceil = liftOp1 . op1 $ \inp -> unsafePerfo
 
 -- * 2d max pooling helpers
 
+{-# NOINLINE _maxPooling2d #-}
 -- | internal function of 'maxPooling2d' and 'maxPooling2dBatch'. Should not be used.
 _maxPooling2d
   :: forall s d d' kH kW dH dW pH pW ceilMode
@@ -200,11 +201,13 @@ _maxPooling2d
   -- function arguments
   -> BVar s (Tensor d)      -- ^ input
   -> BVar s (Tensor d')     -- ^ output
-_maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp ->
-  let
-    (ix, out) = _spatialMaxPooling_updateOutput inp ker step pad ceil
-  in
-    (out, \gout -> _spatialMaxPooling_updateGradInput inp gout ix ker step pad ceil)
+_maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp -> unsafePerformIO $ do
+  (ix, out) <- _spatialMaxPooling_updateOutput inp ker step pad ceil
+  print ("_maxpooling2d forward - input", shape inp)
+  pure (out, \gout -> unsafePerformIO $ do
+    gin <- _spatialMaxPooling_updateGradInput inp gout ix ker step pad ceil
+    print ("_maxpooling2d backward- gin  ", shape gin)
+    pure gin)
 
  where
 
@@ -215,8 +218,8 @@ _maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp ->
     -> Step2d '(dH, dW)          -- ^ step size
     -> Padding2d '(pH, pW)       -- ^ padding size
     -> SBool ceilMode                         -- ^ ceil mode
-    -> (IndexTensor d', Tensor d')           -- ^ output
-  _spatialMaxPooling_updateOutput inp ker step pad ceilMode = unsafePerformIO $ do
+    -> IO (IndexTensor d', Tensor d')           -- ^ output
+  _spatialMaxPooling_updateOutput inp ker step pad ceilMode = do
     let out = empty
     let ix = Ix.zeroIxNd :: IndexTensor d'
     Dynamic._spatialMaxPooling_updateOutput (asDynamic inp) (asDynamic out) (longAsDynamic ix)
@@ -232,8 +235,8 @@ _maxPooling2d ker step pad ceil = liftOp1 . op1 $ \inp ->
     -> Step2d '(dH, dW)          -- ^ step size
     -> Padding2d '(pH, pW)       -- ^ padding size
     -> SBool ceilMode        -- ^ ceil mode
-    -> Tensor d              -- ^ gradInput
-  _spatialMaxPooling_updateGradInput inp gout ix ker step pad ceilMode = unsafePerformIO $ do
+    -> IO (Tensor d)              -- ^ gradInput
+  _spatialMaxPooling_updateGradInput inp gout ix ker step pad ceilMode = do
     let gin = empty
     Dynamic._spatialMaxPooling_updateGradInput
       (asDynamic inp) (asDynamic gout) (asDynamic gin) (longAsDynamic ix)

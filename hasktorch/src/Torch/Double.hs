@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-cse #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Torch.Double (module X) where
 

@@ -106,7 +106,7 @@ library
         Torch.Indef.Internal
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         base (==4.7 || >4.7) && <5,
         backprop ==0.2.5 || >0.2.5,
@@ -208,7 +208,7 @@ library hasktorch-indef-floating
                         Torch.Undefined.Tensor.Random.THC
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch-indef -any,
@@ -223,7 +223,7 @@ test-suite spec-double-th
         Torch.Indef.Dynamic.TensorSpec
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
-                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         QuickCheck -any,
         base (==4.7 || >4.7) && <5,

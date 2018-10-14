@@ -33,8 +33,7 @@ initialization = void $ do
   h2 "Initialization"
 
   section "Zeros" $ do
-    zeroMat :: DoubleTensor '[3, 2] <- new
-    pure zeroMat
+    pure (zerosLike :: DoubleTensor '[3, 2])
 
   section "Constant" $ do
     let constVec :: DoubleTensor '[2] = constant 2
@@ -42,15 +41,15 @@ initialization = void $ do
 
   listVec :: DoubleTensor '[6] <-
     section' "Initialize 1D vector from list" $ do
-      let Right v = vector [1, 2, 3, 4, 5, 6]
-      pure v
+      unsafeVector [1, 2, 3, 4, 5, 6]
 
   section "Resize 1D vector as 2D matrix" $ do
     let asMat :: Tensor '[3, 2] = resizeAs listVec
     pure asMat
 
   section "Initialize arbitrary dimensions directly from list" $ do
-    let Just (listVec2 :: DoubleTensor '[3, 2]) = fromList [1, 2, 3, 4, 5, 6]
+    Just (listVec2 :: DoubleTensor '[3, 2])
+      <- fromList [1, 2, 3, 4, 5, 6]
     pure listVec2
 
   section "Random values" $ do
@@ -89,7 +88,7 @@ matrixVectorOps = void $ do
     pure $ constVec <.> constVec
 
   showSection "Matrix trace" $
-    ttrace randMat
+    pure $ ttrace randMat
 
 
 valueTransformations :: IO ()
@@ -106,7 +105,7 @@ valueTransformations = void $ do
 #endif
 
   section "Negated" $
-    neg randMat
+    pure $ neg randMat
 
   section "Sigmoid" $ do
     let sig :: DoubleTensor '[4, 4] = Math.sigmoid randMat

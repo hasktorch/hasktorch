@@ -145,7 +145,7 @@ step lr net xs ys = do
 -- epos = 3
 -- lr = 0.01
 
-datasize = 20000
+datasize = 4000
 reportat' = 500
 epos = 3
 lr = 0.001
@@ -154,43 +154,23 @@ main :: IO ()
 main = do
   g <- MWC.initialize (V.singleton 44)
 
-  -- let xs = (fmap (\x -> fmap ((11*x)+) [0..24]) [0..14])
-  -- print xs
-  -- runExceptT (Dyn.matrix
-  --   xs
-  -- -- runExceptT (Dyn.vector
-  -- --   ([1..107])
-  --   :: ExceptT String IO (Dynamic))
-  --   >>= \case
-  --     Left s -> print s
-  --     Right t -> do
-  --       print "x"
-  --       (Dyn.tensordata t) >>= print
-  --       print t
-
-  -- throwString ""
-
-
-
-
-
+  printf "loading %i images\n\n" datasize
   lbatches :: Vector (Vector (Category, FilePath))
     <- mkVBatches 4 . V.take datasize <$> cifar10set g default_cifar_path Train
-  -- print (length lbatches)
-  -- print (fmap length lbatches)
+
+  print "transforming to tensors\n"
   batches <- dataloader' bsz lbatches
 
   net0 <- newLeNet
   print net0
 
-  -- report net0 batches
-  -- performMajorGC
   putStrLn "\nepochs start"
   net <- epochs lr epos batches net0
   putStrLn "\nepochs stop"
 
   report net batches
   performMajorGC
+  putStrLn ""
   -- putStr "\nInitial Holdout:\n"
   -- net <- epochs 0.001 3 batches net0
   -- printf "\nFinished training in %s!\n"

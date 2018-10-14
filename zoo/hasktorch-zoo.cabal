@@ -63,6 +63,7 @@ library
         microlens-platform -any,
         microlens-th -any,
         singletons ==2.2 || >2.2,
+        generic-lens -any,
         ghc-typelits-natnormalise -any,
         vector -any,
         directory -any,

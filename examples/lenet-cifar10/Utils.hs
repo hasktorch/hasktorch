@@ -1,73 +1,42 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE Strict #-}
 {-# LANGUAGE CPP #-}
 module Utils where
 
 import Prelude
 
+import Control.Arrow (second)
+import Control.Monad.Trans.Except (runExceptT)
+import Control.Exception.Safe (throwString)
 import Data.DList (DList)
-import Data.Either -- (fromRight, is)
-import GHC.Exts
-import Data.Typeable
-import Data.List
-import Control.Arrow
-import Control.Monad
-import Control.Monad.Loops
-import Data.Monoid
-import Data.Time
-import Control.Monad.IO.Class
-import Text.Printf
-import ListT (ListT)
-import qualified ListT
-import Numeric.Backprop as Bp
-import Numeric.Dimensions
-import System.IO.Unsafe
-import GHC.TypeLits (KnownNat)
-import Control.Concurrent
-import qualified Prelude as P
-import qualified Data.List as P ((!!))
-import Control.Exception.Safe
--- import qualified Foreign.CUDA as Cuda
-
-#ifdef CUDA
-import Torch.Cuda.Double as Math hiding (Sum)
-import qualified Torch.Cuda.Double.Storage as S
-import qualified Torch.Cuda.Long as Long
-import Torch.FFI.THC.TensorRandom
-import Foreign
-import Torch.FFI.THC.State
-#else
-import Torch.Double as Math hiding (Sum)
-import qualified Torch.Long as Long
-#endif
-
-import Torch.Models.Vision.LeNet
-import Torch.Data.Loaders.Cifar10
-import Torch.Data.Loaders.Internal
-import Torch.Data.OneHot
-import Torch.Data.Metrics
-
-import Control.Monad.Trans.Except
-import System.IO (hFlush, stdout)
-
+import Data.Either (fromRight)
+import Data.IORef
+import Data.Maybe (fromJust)
 import Data.Vector (Vector)
+import System.IO.Unsafe (unsafePerformIO)
+import Text.Printf (printf)
 import qualified Data.DList as DL
 import qualified Data.Vector as V
 import qualified System.Random.MWC as MWC
-import qualified Data.Singletons.Prelude.List as Sing (All)
 
-import Debug.Trace
-import qualified Torch.Double as CPU
-import qualified Torch.Double.Storage as CPUS
-import Control.Concurrent
-import Data.IORef
+import Torch.Models.Vision.LeNet (_conv1, LeNet)
+import qualified Torch.Double.NN.Conv2d as Conv2d (getTensors)
+import Torch.Data.Loaders.Cifar10 (Category)
+import Torch.Data.Loaders.Internal (rgb2torch)
+import Torch.Data.Loaders.RGBVector (Normalize(NegOneToOne))
+
+#ifdef CUDA
+import Torch.Cuda.Double hiding (Sum)
+import qualified Torch.Cuda.Long as Long
+import Torch.FFI.THC.TensorRandom
+#else
+import Torch.Double hiding (Sum)
+import qualified Torch.Long as Long
+#endif
 
 lr = 0.001
 bsz = (dim :: Dim 4)
@@ -99,12 +68,57 @@ mkBatches sz ds = DL.toList $ go mempty ds
       let (b, nxt) = V.splitAt sz src
       in go (bs `DL.snoc` b) nxt
 
+getloss :: Tensor '[1] -> HsReal
+getloss = fromJust . (`get1d` 0)
+
+getindex :: Long.Tensor '[1] -> Long.HsReal
+getindex = fromJust . (`Long.get1d` 0)
+
+
+-- ========================================================================= --
+-- Data processing + bells and whistles for a slow loader
+-- ========================================================================= --
+preprocess :: FilePath -> IO (Tensor '[3, 32, 32])
+preprocess f =
+  runExceptT (rgb2torch NegOneToOne f) >>= \case
+    Left s -> throwString s
+    Right t -> do
+      pure t
+
 -- | potentially lazily loaded data point
 type LDatum = (Category, Either FilePath (Tensor '[3, 32, 32]))
 -- | potentially lazily loaded dataset
 type LDataSet = Vector (Category, Either FilePath (Tensor '[3, 32, 32]))
 
--- | prep cifar10set
-prepdata :: Vector (Category, FilePath) -> LDataSet
+-- | get something usable from a lazy datapoint
+getdata :: LDatum -> IO (Category, Tensor '[3, 32, 32])
+getdata (c, Right t) = pure (c, t)
+getdata (c, Left fp) = (c,) <$> preprocess fp
+
+-- | force a file into a tensor
+forcetensor :: LDatum -> IO LDatum
+forcetensor = \case
+  (c, Left fp) -> (c,) . Right <$> preprocess fp
+  tens -> pure tens
+
+prepdata :: Functor f => f (a, b) -> f (a, Either b c)
 prepdata = fmap (second Left)
+
+-- ========================================================================= --
+-- printing helpers
+
+-- | Erase the last line in an ANSI terminal
+clearLn :: IO ()
+clearLn = printf "\ESC[2K"
+
+-- | set rewind marker for 'clearLn'
+setRewind :: String
+setRewind = "\r"
+
+-- | clear the screen in an ANSI terminal
+clearScreen :: IO ()
+clearScreen = putStr "\ESC[2J"
+
+printL1Weights :: KnownDim ch => KnownDim step => LeNet ch step -> IO ()
+printL1Weights = print . fst . Conv2d.getTensors . _conv1
 

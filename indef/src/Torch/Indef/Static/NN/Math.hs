@@ -77,8 +77,6 @@ _sigmoid_updateGradInput t0 t1 t2 = Dynamic._sigmoid_updateGradInput (asDynamic 
 
 -------------------------------------------------------------------------------
 
-{-# WARNING softmax, softmaxN "softmax gradients may not propagate correctly. This may require updating hasktorch/ATen. In the meantime consider using logSoftMax which is stable." #-}
-
 -- | one dimensional version of 'softmaxN'
 softmax
   :: KnownDim n

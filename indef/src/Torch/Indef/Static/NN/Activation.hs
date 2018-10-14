@@ -97,9 +97,14 @@ threshold
   -> Double               -- ^ replacement value
   -> BVar s (Tensor d)    -- ^ input
   -> BVar s (Tensor d)    -- ^ output
-threshold thr value = liftOp1 . op1 $ \inp ->
-  (unsafePerformIO (_threshold_updateOutput thr value False inp), \gout ->
-    unsafePerformIO (_threshold_updateGradInput thr value False inp gout))
+threshold thr value = liftOp1 . op1 $ \inp -> unsafePerformIO $ do
+  out <- _threshold_updateOutput thr value False inp
+  -- print ("relu forward - inp", shape inp)
+  pure (out, \gout -> unsafePerformIO $ do
+    gin <- _threshold_updateGradInput thr value False inp gout
+    -- print ("relu backward - gin", shape gin)
+    pure gin)
+
   where
     {-# NOINLINE _threshold_updateOutput #-}
     _threshold_updateOutput

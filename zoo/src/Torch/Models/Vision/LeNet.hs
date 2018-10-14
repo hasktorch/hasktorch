@@ -11,11 +11,12 @@ module Torch.Models.Vision.LeNet where
 
 import Data.Function ((&))
 import Data.List (intercalate)
+import Data.Singletons.Prelude hiding (type (*), All)
+import Debug.Trace
+import Lens.Micro.TH
+import Lens.Micro.Platform
 import Numeric.Backprop as Bp
 import Prelude as P
-import Lens.Micro.TH
-import Data.Singletons.Prelude hiding (type (*), All)
-import Lens.Micro.Platform
 
 #ifdef CUDA
 import Numeric.Dimensions
@@ -94,13 +95,20 @@ newLeNet = LeNet
   <*> newLinear
 
 -- | update a LeNet network
-update net lr grad = do --  LeNet
+update net lr grad = LeNet
   (Conv2d.update (net^.conv1) lr (grad^.conv1))
   (Conv2d.update (net^.conv2) lr (grad^.conv2))
   (Linear.update (net^.fc1)   lr (grad^.fc1))
   (Linear.update (net^.fc2)   lr (grad^.fc2))
   (Linear.update (net^.fc3)   lr (grad^.fc3))
-  pure ()
+
+-- | update a LeNet network inplace
+update_ net lr grad = do
+  (Conv2d.update_ (net^.conv1) lr (grad^.conv1))
+  (Conv2d.update_ (net^.conv2) lr (grad^.conv2))
+  (Linear.update_ (net^.fc1)   lr (grad^.fc1))
+  (Linear.update_ (net^.fc2)   lr (grad^.fc2))
+  (Linear.update_ (net^.fc3)   lr (grad^.fc3))
 
 
 -- lenet
