@@ -1,5 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE CPP #-}
 module DataLoading where
@@ -100,7 +103,7 @@ dataloader' d = mapM go
     ys <- toYs (V.toList $ fst <$> lzy)
     dyns <- mapM dynTransform (V.toList $ snd <$> lzy)
     forM_ dyns $ \t -> Dynamic._unsqueeze1d t t 0
-    res <- asStatic <$> Dynamic.catArray dyns 0
+    let res = asStatic $ Dynamic.catArray dyns 0
     pure (ys, res)
    where
     toYs :: [Category] -> IO (Tensor '[batch, 10])

@@ -11,9 +11,11 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module LeNet
-  ( lenetBatchForward
+  ( LeNet
+  , lenetBatchForward
   , lenetBatchBP
   , lenetUpdate
+  , lenetUpdate_
   , Vision._conv1
   , Vision._conv2
   , y2cat
@@ -64,6 +66,7 @@ updateIORefWith ref nxt =
       oldfp = ctensor (asDynamic old)
 
 
+-- FIXME: maybe this isn't working???
 replaceIORefWith :: IORef (Tensor d) -> Tensor d -> IO ()
 replaceIORefWith ref nxt = do
   old <- readIORef ref
@@ -168,9 +171,11 @@ reluCONV2ginRef = unsafePerformIO $ newIORef (constant 0)
 
 -- ========================================================================= --
 
-lenetUpdate :: LeNet -> (HsReal, LeNet) -> IO ()
-lenetUpdate net (lr, g) = Vision.update_ net lr g
+lenetUpdate_ :: LeNet -> (HsReal, LeNet) -> IO ()
+lenetUpdate_ net (lr, g) = Vision.update_ net lr g
 
+lenetUpdate :: LeNet -> (HsReal, LeNet) -> LeNet
+lenetUpdate net (lr, g) = Vision.update net lr g
 
 lenetBatchForward
   :: LeNet
@@ -225,7 +230,12 @@ crossentropy ys inp = do
 
 
 y2cat :: Tensor '[4, 10] -> IO [Category]
-y2cat ys = mapM ((\i -> pure . toEnum . fromIntegral . fromJust $ Long.get2d rez i 0)) [0..3]
+y2cat ys = do
+  putStrLn "starting to build tensor"
+  print ys
+  let rez = fromJust . snd $ Torch.max2d0 ys keep
+  print rez
+  mapM ((\i -> pure . toEnum . fromIntegral . fromJust $ Long.get2d rez i 0)) [0..3]
   where
     rez :: LongTensor '[4, 1]
     (_, Just rez) = Torch.max ys (dim :: Dim 1) keep

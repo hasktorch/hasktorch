@@ -80,6 +80,14 @@ dabal:
 	echo "Running: dhall-to-cabal $(DABAL).dhall > $(DABAL).cabal"
 	dhall-to-cabal $(DABAL).dhall > $(DABAL).cabal
 
+dabal-tmp:
+	echo "Running: dhall-to-cabal $(DABAL).dhall > $(DABAL)-tmp.cabal"
+	dhall-to-cabal $(DABAL).dhall > $(DABAL)-tmp.cabal
+
+dabal-tmp-switch:
+	echo "Moving dabal-tmp to cabal: mv $(DABAL)-tmp.cabal $(DABAL).cabal"
+	mv $(DABAL)-tmp.cabal $(DABAL).cabal
+
 test-signatures:
 	for pkg in \
 	  floating-th \
