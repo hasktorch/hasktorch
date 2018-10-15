@@ -94,7 +94,7 @@ showTensor get'1d get'2d get'3d get'4d ds =
 
      value :: String
      value = fromMaybe (show v) $
-           (printf "%.4f" <$> (cast v :: Maybe Double))
+           (printf "%.8f" <$> (cast v :: Maybe Double))
        <|> (printf "%.4f" <$> (cast v :: Maybe Float))
 
      spacing = magspacing ++ signspacing
