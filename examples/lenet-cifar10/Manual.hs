@@ -4,9 +4,12 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 module Main where
 
-import LeNet
+import Prelude hiding (print, putStrLn)
+import qualified Prelude as P
+import LeNet (LeNet, lenetUpdate, lenetUpdate_, lenetBatchBP, lenetBatchForward, y2cat, myupdate)
 import Utils (bs, bsz, lr, getloss)
 import DataLoading (mkVBatches, dataloader')
 import Criterion ()
@@ -39,6 +42,16 @@ import qualified Torch.Double.NN.Conv2d as Conv2d
 import qualified Torch.Double as Torch
 import qualified Torch.Models.Vision.LeNet as Vision
 
+print :: Show a => a -> IO ()
+print =
+  -- P.print
+  const (pure ())
+
+putStrLn :: String -> IO ()
+putStrLn =
+  -- P.putStrLn
+  const (pure ())
+
 -- ========================================================================= --
 -- global variables
 
@@ -47,8 +60,8 @@ printL1Weights x = (print . fst . Conv2d.getTensors . Vision._conv1) x
 
 -- ========================================================================= --
 
-datasize = 400
-reportat' = 500
+datasize = 80
+reportat' = 200
 epos = 1
 
 main :: IO ()
@@ -59,20 +72,20 @@ main = do
   lbatches :: Vector (Vector (Category, FilePath))
     <- mkVBatches 4 . V.take datasize <$> cifar10set g default_cifar_path Train
 
-  putStrLn "transforming to tensors"
+  P.putStrLn "transforming to tensors"
   batches <- dataloader' bsz lbatches
 
   net0 <- Vision.newLeNet
-  print net0
+  P.print net0
 
-  putStrLn "\nepochs start"
+  P.putStrLn "\nepochs start"
   net <- epochs lr epos batches net0
-  putStrLn "\nepochs stop"
+  P.putStrLn "\nepochs stop"
 
-  putStrLn "reporting:"
+  P.putStrLn "reporting:"
   report net batches
   performMajorGC
-  putStrLn ""
+  P.putStrLn ""
 
   -- putStr "\nInitial Holdout:\n"
   -- net <- epochs 0.001 3 batches net0
@@ -85,11 +98,13 @@ main = do
   where
     report :: LeNet -> Vector (Tensor '[4, 10], Tensor '[4, 3, 32, 32]) -> IO ()
     report net ltest = do
+      -- putStrLn "x"
 
       foo :: [DList (Category, Category)]
         <- forM (V.toList ltest) $ \(y, x) -> do
           bar <- y2cat y
-          print bar
+          -- print "bar"
+          -- print bar
           DL.fromList . zip bar <$> forward net x
 
       let
@@ -127,12 +142,14 @@ epochs lr mx batches = runEpoch 1
   where
     runEpoch :: Int -> LeNet -> IO LeNet
     runEpoch e net
-      | e > mx = putStrLn "finished training loops" >> pure net
+      | e > mx = P.putStrLn "\nfinished training loops" >> pure net
       | otherwise = do
-      putStrLn $ "\nepoch " ++ show (e, mx)
+      P.putStrLn $ "\nepoch " ++ show (e, mx)
+      putStrLn "y"
 
       (net', _) <- V.ifoldM go (net, 0) batches
 
+      putStrLn "xy"
       performMajorGC
       runEpoch (e+1) net'
 
@@ -141,7 +158,9 @@ epochs lr mx batches = runEpoch 1
         estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
 
         go (!net, !runningloss) !bid (ys, xs) = do
+          putStrLn "start step"
           (net', loss) <- step lr net xs ys
+          putStrLn "stop step"
           let reportat = reportat' :: Int
               reporttime = (bid `mod` reportat == (reportat - 1))
 
@@ -167,11 +186,23 @@ step
   -> Tensor '[4, 10]
   -> IO (LeNet, Tensor '[1])
 step lr net xs ys = do
-  let (dyn, Just ix) = Torch.max2d1 ys keep
+  let (!dyn, Just ix) = Torch.max2d1 ys keep
   LDyn.resizeDim_ (Long.asDynamic ix) (dims :: Dims '[4])
-  (out, gnet) <- lenetBatchBP net (Long.asStatic (Long.asDynamic ix)) xs
-  let net' = lenetUpdate net (0.01, gnet)
-  print out
-  pure (net', out)
+  putStrLn "start lenetBatchBP"
 
+  (out, gnet) <- lenetBatchBP net (Long.asStatic (Long.asDynamic ix)) xs
+  let o = getloss out
+
+  putStrLn "stop lenetBatchBP"
+  putStrLn "out"
+
+  -- lenetUpdate_ net (0.1, gnet)
+  net' <- myupdate net 0.1 gnet
+
+  (out', _) <- lenetBatchBP net' (Long.asStatic (Long.asDynamic ix)) xs
+
+  let o' = getloss out'
+  printf ("\nimprovement? %.4f -> %.4f : %s\n") o o' (show (o < o'))
+
+  pure (net', out)
 

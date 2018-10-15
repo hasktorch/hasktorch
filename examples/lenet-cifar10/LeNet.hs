@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
+{- LANGUAGE Strict #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -16,6 +17,7 @@ module LeNet
   , lenetBatchBP
   , lenetUpdate
   , lenetUpdate_
+  , myupdate
   , Vision._conv1
   , Vision._conv2
   , y2cat
@@ -28,10 +30,13 @@ import Control.Monad
 import Data.IORef
 import Data.Maybe
 import Data.Function ((&))
+import Data.Singletons.Prelude (Fst, Snd)
 import Data.Singletons.Prelude.List (Product)
 import Foreign hiding (new)
 import Lens.Micro ((^.))
+import System.IO (stdout, hFlush)
 import System.IO.Unsafe
+import Control.Concurrent
 import Data.Singletons
 import Data.Singletons.Prelude.Bool
 import Torch.Double hiding (logSoftMaxBatch, conv2dMMBatch)
@@ -74,10 +79,14 @@ replaceIORefWith ref nxt = do
   writeIORef ref nxt
 
 print :: Show a => a -> IO ()
-print = const (pure ()) --} P.print
+print =
+  P.print
+  -- const (pure ())
 
 putStrLn :: String -> IO ()
-putStrLn = const (pure ()) --} P.putStrLn
+putStrLn =
+  P.putStrLn
+  -- const (pure ())
 
 bsz = (dim :: Dim 4)
 bs = (fromIntegral $ dimVal bsz) :: Int
@@ -177,6 +186,47 @@ lenetUpdate_ net (lr, g) = Vision.update_ net lr g
 lenetUpdate :: LeNet -> (HsReal, LeNet) -> LeNet
 lenetUpdate net (lr, g) = Vision.update net lr g
 
+-- | update a LeNet network
+myupdate :: LeNet -> HsReal -> LeNet -> IO LeNet
+myupdate net lr grad = do
+  when verbose $ P.print $ Conv2d.weights (grad ^. Vision.conv1)
+  when verbose $ P.print $ Conv2d.bias    (grad ^. Vision.conv1)
+  when verbose $ P.print $ Conv2d.weights (grad ^. Vision.conv2)
+  when verbose $ P.print $ Conv2d.bias    (grad ^. Vision.conv2)
+  when verbose $ P.print $ Linear.weights (grad ^. Vision.fc1)
+  when verbose $ P.print $ Linear.bias    (grad ^. Vision.fc1)
+  when verbose $ P.print $ Linear.weights (grad ^. Vision.fc2)
+  when verbose $ P.print $ Linear.bias    (grad ^. Vision.fc2)
+  when verbose $ P.print $ Linear.weights (grad ^. Vision.fc3)
+  when verbose $ P.print $ Linear.bias    (grad ^. Vision.fc3)
+  throwString "x0"
+
+  pure $ Vision.LeNet
+    (Conv2d (conv1w', conv1b'))
+    (Conv2d (conv2w', conv2b'))
+    (Linear (fc1w', fc1b'))
+    (Linear (fc2w', fc2b'))
+    (Linear (fc3w', fc3b'))
+ where
+  verbose = False
+
+  conv1w' = Conv2d.weights (net ^. Vision.conv1) + Conv2d.weights (grad ^. Vision.conv1) ^* lr
+  conv1b' = Conv2d.bias    (net ^. Vision.conv1) + Conv2d.bias    (grad ^. Vision.conv1) ^* lr
+
+  conv2w' = Conv2d.weights (net ^. Vision.conv2) + Conv2d.weights (grad ^. Vision.conv2) ^* lr
+  conv2b' = Conv2d.bias    (net ^. Vision.conv2) + Conv2d.bias    (grad ^. Vision.conv2) ^* lr
+
+  fc1w'   = Linear.weights (net ^. Vision.fc1)   + Linear.weights (grad ^. Vision.fc1)   ^* lr
+  fc1b'   = Linear.bias    (net ^. Vision.fc1)   + Linear.bias    (grad ^. Vision.fc1)   ^* lr
+
+  fc2w'   = Linear.weights (net ^. Vision.fc2)   + Linear.weights (grad ^. Vision.fc2)   ^* lr
+  fc2b'   = Linear.bias    (net ^. Vision.fc2)   + Linear.bias    (grad ^. Vision.fc2)   ^* lr
+
+  fc3w'   = Linear.weights (net ^. Vision.fc3)   + Linear.weights (grad ^. Vision.fc3)   ^* lr
+  fc3b'   = Linear.bias    (net ^. Vision.fc3)   + Linear.bias    (grad ^. Vision.fc3)   ^* lr
+
+
+
 lenetBatchForward
   :: LeNet
   ->    (Tensor '[4, 3, 32, 32])  -- ^ input
@@ -194,7 +244,10 @@ lenetBatchBP arch ys xs = do
   -- print n
   -- newStrideOf n >>= LStorage.tensordata >>= print
   -- newSizeOf n >>= LStorage.tensordata >>= print
+  print "0"
   (out, getlenetgrad) <- lenetBatch True 1 arch xs
+  print out
+  print "1"
   -- throwString "working? next check that all values are < 2.73~"
   -- putStrLn "\n======================================"
   -- print out
@@ -202,6 +255,8 @@ lenetBatchBP arch ys xs = do
 
   -- halt 2 "all values are < 2.73~?"
   (loss, getCEgrad) <- crossentropy ys out
+  print loss
+  print "2"
   -- putStrLn "\n--------------------------------------"
   -- print loss
   -- putStrLn   "--------------------------------------"
@@ -221,24 +276,36 @@ crossentropy
   -> Tensor '[4, 10]            -- THTensor *input,
   -> IO (Tensor '[1], Tensor '[1] -> IO (Tensor '[4, 10]))               -- THTensor *output, gradient
 crossentropy ys inp = do
+  when verbose $ putStrLn "start crossentropy"
+
   -- putStrLn "!!!!!!!!!!!!!!!!!!!!!!!! crossentropy !!!!!!!!!!!!!!!!!!!!!!!!"
   -- -- print inp
   -- putStrLn "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-  (lout, getLSMGrad) <- logSoftMaxBatch inp
+  (lout, getLSMGrad) <- __logSoftMaxBatch True inp
+  when verbose $ do
+    print lout
+    print "2"
   (nllout, getNLLGrad) <- classNLL ys lout
+  when verbose $ do
+    print nllout
+    print "2"
+
+  when verbose $ putStrLn "stop crossentropy"
   pure (nllout, getNLLGrad >=> getLSMGrad)
+  where
+    verbose = True
 
 
 y2cat :: Tensor '[4, 10] -> IO [Category]
 y2cat ys = do
-  putStrLn "starting to build tensor"
-  print ys
-  let rez = fromJust . snd $ Torch.max2d0 ys keep
-  print rez
+  -- putStrLn "starting to build tensor"
+  -- print ys
+  let rez = fromJust . snd $ Torch.max2d1 ys keep
+  -- print rez
   mapM ((\i -> pure . toEnum . fromIntegral . fromJust $ Long.get2d rez i 0)) [0..3]
-  where
-    rez :: LongTensor '[4, 1]
-    (_, Just rez) = Torch.max ys (dim :: Dim 1) keep
+  -- where
+    -- rez :: LongTensor '[4, 1]
+    -- (_, Just rez) = Torch.max ys (dim :: Dim 1) keep
 
 classNLL
   :: IndexTensor '[4]
@@ -307,13 +374,13 @@ lenetBatch training lr arch i = do
     -- when training $ convin1Ref `updateIORefWith` i
     when tverbose $ do
       print "------------FORWARD-------------"
-      print "getting convout1"
+      print "=TRAINING= getting convout1"
 
     (convout1 :: Tensor '[4, 6, 28, 28], unconvout1) <-
-      conv2dMMBatch
-        conv1ginbuffRef         -- IORef (Tensor '[b,f,h,w])     -- grad input buffer
-        conv1columnsbuffRef     -- IORef (Tensor '[])            -- columns buffer
-        conv1onesbuffRef        -- IORef (Tensor '[])            -- ones buffer
+      conv2dMMBatch'
+        -- conv1ginbuffRef         -- IORef (Tensor '[b,f,h,w])     -- grad input buffer
+        -- conv1columnsbuffRef     -- IORef (Tensor '[])            -- columns buffer
+        -- conv1onesbuffRef        -- IORef (Tensor '[])            -- ones buffer
         conv1outRef             -- IORef (Tensor '[b, o,oH,oW])  -- output
         conv1iRef               -- IORef (Tensor '[b,f,h,w])     -- input
         conv1ginRef             -- IORef (Tensor '[b,f,h,w])     -- gradient input
@@ -341,10 +408,10 @@ lenetBatch training lr arch i = do
     -- ========================================================================= --
     -- LAYER 2
     when tverbose $ print "getting convout2"
-    (convout2::Tensor '[4, 16, 10, 10], unconvout2) <- conv2dMMBatch
-        conv2ginbuffRef         -- IORef (Tensor '[b,f,h,w])     -- grad input buffer
-        conv2columnsbuffRef     -- IORef (Tensor '[])            -- columns buffer
-        conv2onesbuffRef        -- IORef (Tensor '[])            -- ones buffer
+    (convout2::Tensor '[4, 16, 10, 10], unconvout2) <- conv2dMMBatch'
+        -- conv2ginbuffRef         -- IORef (Tensor '[b,f,h,w])     -- grad input buffer
+        -- conv2columnsbuffRef     -- IORef (Tensor '[])            -- columns buffer
+        -- conv2onesbuffRef        -- IORef (Tensor '[])            -- ones buffer
         conv2outRef             -- IORef (Tensor '[b, o,oH,oW])  -- output
         conv2iRef               -- IORef (Tensor '[b,f,h,w])     -- input
         conv2ginRef             -- IORef (Tensor '[b,f,h,w])     -- gradient input
@@ -370,13 +437,13 @@ lenetBatch training lr arch i = do
     -------------------------------------------------------------------------------
     -- print mpout2
 
-    when tverbose $ print "getting flatten"
+    when tverbose $ putStrLn "=TRAINING= getting flatten"
     (ftout  :: Tensor '[4, 400], unflatten) <- flattenBPBatch_ mpout2
-    when tverbose $ print "getting fc1"
+    when tverbose $ putStrLn "=TRAINING= getting fc1"
     (fc1out :: Tensor '[4, 120], fc1getgrad) <- fc1BP (arch ^. Vision.fc1) ftout
-    when tverbose $ print "getting fc2"
+    when tverbose $ putStrLn "=TRAINING= getting fc2"
     (fc2out :: Tensor '[4,  84], fc2getgrad) <- fc2BP (arch ^. Vision.fc2) fc1out
-    when tverbose $ print "getting fc3"
+    when tverbose $ putStrLn "=TRAINING= getting fc3"
     (fc3out :: Tensor '[4,  10], fc3getgrad) <- fc3BP (arch ^. Vision.fc3) fc2out
 
 
@@ -384,38 +451,61 @@ lenetBatch training lr arch i = do
     when tverbose $ print "----------END------------"
 
     pure (fc3out, \(gout::Tensor '[4, 10]) -> do
+
       when verbose $ do
-        print "+++++++++++AD++++++++++++"
-        print "getting fc3g"
+        putStrLn "+++++++++++AD++++++++++++"
+        putStrLn "=AD= fc3g"
         print gout
+
       (fc3g::Linear   84 10, fc3gin::Tensor '[4,  84]) <- fc3getgrad gout
+
       when verbose $ do
-        -- print (Linear.weights fc3g)
-        print "getting fc2g"
+        putStrLn $ "=AD= getting: fc3gin shape " ++ show (shape fc3gin) ++ ", shape fc3g: " ++ show (shape (Linear.weights fc3g))
 
       (fc2g::Linear  120 84, fc2gin::Tensor '[4, 120]) <- fc2getgrad fc3gin
       when verbose $ do
-        print "getting fc1g"
-        pure (shape fc2gin) >>= print
+        putStrLn $ "=AD= getting: fc2gin shape " ++ show (shape fc2gin) ++ ", shape fc2g: " ++ show (shape (Linear.weights fc2g))
+
       (fc1g::Linear 400 120, fc1gin::Tensor '[4, 400]) <- fc1getgrad fc2gin
-      when verbose $ print "getting flatteng"
+      when verbose $ do
+        putStrLn $ "=AD= getting: fc1gin shape " ++ show (shape fc1gin) ++ ", shape fc1g: " ++ show (shape (Linear.weights fc1g))
+
 
       inflatedg :: Tensor '[4,16, 5, 5] <- unflatten fc1gin
-      when verbose $ print "getting conv2g"
 
-      (conv2g::Conv2d 6 16 '(5,5), conv2gin :: Tensor '[4, 6, 14, 14]) <- unconvout2 =<< unrelu2 True =<< getmpgrad2 inflatedg
-      when verbose $ print "getting conv1g"
+      when verbose $ do
+        putStrLn $ "=AD= unflattening:   " ++ show (shape inflatedg)
+
+      (mpgrad2g :: Tensor '[4, 16,10,10]) <- getmpgrad2 inflatedg
+      when verbose $ do
+        putStrLn $ "=AD= mpgrad2g shape: " ++ show (shape mpgrad2g)
+
+      (relu2g :: Tensor '[4, 16, 10, 10]) <- unrelu2 True mpgrad2g
+      when verbose $ do
+        putStrLn $ "=AD= relu2g shape:   " ++ show (shape relu2g)
+
+      (conv2g::Conv2d 6 16 '(5,5), conv2gin :: Tensor '[4, 6, 14, 14]) <- unconvout2 relu2g
+      when verbose $ do
+        putStrLn $ "=AD= conv2g shape:   " ++ show (shape (Conv2d.weights conv2g))
+
+      when verbose $ putStrLn "=AD= getting conv1g"
 
       (conv1g::Conv2d 3  6 '(5,5), conv1gin :: Tensor '[4, 3, 32, 32]) <- unconvout1 =<< unrelu1 True =<< getmpgrad1 conv2gin
 
       when verbose $ do
-        print "done!"
-        print "+++++++++++END++++++++++++"
+        putStrLn "=AD= done!"
+        putStrLn "+++++++++++END++++++++++++"
+
+      putStrLn "conv1g"
+      print     conv1g
+
+      -- halt 2 "first bprop done"
+
 
       pure (Vision.LeNet conv1g conv2g fc1g fc2g fc3g, conv1gin))
 
   where
-    verbose = False
+    verbose = True
     tverbose = False
     -- tverbose = verbose && not training
 
@@ -426,12 +516,12 @@ mp1outRef = unsafePerformIO $ newIORef (constant 0)
 mp1ginRef = unsafePerformIO $ newIORef (constant 0)
 {-# NOINLINE mp1ginRef #-}
 
-conv1ginbuffRef     = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- grad input buffer
-{-# NOINLINE conv1ginbuffRef #-}
-conv1columnsbuffRef = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- columns buffer
-{-# NOINLINE conv1columnsbuffRef #-}
-conv1onesbuffRef    = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- ones buffer
-{-# NOINLINE conv1onesbuffRef #-}
+-- conv1ginbuffRef     = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- grad input buffer
+-- {-# NOINLINE conv1ginbuffRef #-}
+-- conv1columnsbuffRef = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- columns buffer
+-- {-# NOINLINE conv1columnsbuffRef #-}
+-- conv1onesbuffRef    = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- ones buffer
+-- {-# NOINLINE conv1onesbuffRef #-}
 conv1outRef         = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b, o,oH,oW])  -- output
 {-# NOINLINE conv1outRef #-}
 conv1iRef           = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- input
@@ -448,12 +538,12 @@ reluCONV1outRef = unsafePerformIO $ newIORef (constant 0)
 -- reluCONV1ginRef :: IORef (Tensor '[4, 6])
 reluCONV1ginRef = unsafePerformIO $ newIORef (constant 0)
 {-# NOINLINE reluCONV1ginRef #-}
-conv2ginbuffRef     = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- grad input buffer
-{-# NOINLINE conv2ginbuffRef #-}
-conv2columnsbuffRef = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- columns buffer
-{-# NOINLINE conv2columnsbuffRef #-}
-conv2onesbuffRef    = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- ones buffer
-{-# NOINLINE conv2onesbuffRef #-}
+-- conv2ginbuffRef     = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- grad input buffer
+-- {-# NOINLINE conv2ginbuffRef #-}
+-- conv2columnsbuffRef = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- columns buffer
+-- {-# NOINLINE conv2columnsbuffRef #-}
+-- conv2onesbuffRef    = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[])            -- ones buffer
+-- {-# NOINLINE conv2onesbuffRef #-}
 conv2outRef         = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b, o,oH,oW])  -- output
 {-# NOINLINE conv2outRef #-}
 conv2iRef           = unsafePerformIO $ pure new >>= newIORef -- (Tensor '[b,f,h,w])     -- input
@@ -490,6 +580,8 @@ conv2dMMBatch
 conv2dMMBatch = conv2dMM__
 
 
+
+
 nullFP :: IO (ForeignPtr a)
 nullFP = newForeignPtr nullFunPtr nullPtr
 
@@ -519,15 +611,20 @@ conv2dMM__
 conv2dMM__
   ginbufferRef columnsbuffref onesref outref inref ginref gparamsref
   step pad lr conv inp = do
-  onesbuff <- readIORef onesref
-  columnsbuff <- readIORef columnsbuffref
-  zero_ onesbuff
 
-  -- THTensor_(resize2d)(finput, kW*kH*nInputPlane, outputHeight*outputWidth);
-  zero_ columnsbuff
+  -- onesbuff <- readIORef onesref
+  -- columnsbuff <- readIORef columnsbuffref
+  -- zero_ onesbuff
 
-  out <- readIORef outref
-  zero_ out
+  -- -- THTensor_(resize2d)(finput, kW*kH*nInputPlane, outputHeight*outputWidth);
+  -- zero_ columnsbuff
+
+  -- out <- readIORef outref
+  -- zero_ out
+
+  let onesbuff    = constant 0 :: Tensor '[kH, kW]
+  let columnsbuff = constant 0 :: Tensor '[kH, kW]
+  let out         = constant 0
 
   -- print out
   -- print (Conv2d.weights out)
@@ -540,16 +637,28 @@ conv2dMM__
 
   pure (out,
     \gout -> do
-      ginbuffer <- readIORef ginbufferRef
-      zero_ ginbuffer
+      let putStrLn' s = putStrLn $ "=AD= [conv2d] " ++ s
+      -- -- putStrLn' "read ginbuffer"
+      -- -- ginbuffer <- readIORef ginbufferRef
+      -- -- zero_ ginbuffer
+      -- putStrLn' "read gin"
       gin <- readIORef ginref
       zero_ gin
+      -- putStrLn' "read gparams"
       gparams <- readIORef gparamsref
       zero_ (Conv2d.weights gparams)
       zero_ (Conv2d.bias gparams)
-      accGradParameters_ inp gout gparams columnsbuff onesbuff step pad
 
-      updateGradInput_ inp gout gin conv columnsbuff onesbuff step pad
+      let finput = constant 0 :: Tensor '[5,150,100]
+      let fgradInput = constant 0 :: Tensor '[kH, kW]
+
+      putStrLn' "updateGradInput_"
+      updateGradInput_ inp gout gin conv finput fgradInput step pad
+      print gin
+
+      putStrLn' "accGradParameters_"
+      accGradParameters_ inp gout gparams finput fgradInput step pad
+      putStrLn "ad runs without errors!"
 
       pure (gparams, gin))
  where
@@ -568,6 +677,130 @@ conv2dMM__
       (param2d pad)                        -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
 
   updateGradInput_ inp gout gin conv colsbuffer onesbuffer step pad = do
+    putStrLn $ "(inp))                  " ++ show (shape (inp))
+    putStrLn $ "(gout))                 " ++ show (shape (gout))
+    putStrLn $ "(gin))                  " ++ show (shape (gin))
+    putStrLn $ "((Conv2d.weights conv)))" ++ show (shape ((Conv2d.weights conv)))
+    putStrLn $ "(colsbuffer))           " ++ show (shape (colsbuffer))
+    putStrLn $ "(onesbuffer))           " ++ show (shape (onesbuffer))
+
+    -- _spatialConvolutionMM_updateGradInput inp gout gin w columns ones (kW, kH) (dW, dH) (pW, pH) = do
+    Dynamic._spatialConvolutionMM_updateGradInput
+      (asDynamic inp)                      -- ^ input
+      (asDynamic gout)                     -- ^ gradOutput
+      (asDynamic gin)                      -- ^ gradInput
+      (asDynamic (Conv2d.weights conv))    -- ^ weight
+      (asDynamic colsbuffer)               -- ^ columns
+      (asDynamic onesbuffer)               -- ^ ones
+      (Conv2d.kernel2d conv)               -- ^ (kW, kH) kernel height and width
+      (param2d step)                       -- ^ (dW, dH) step of the convolution in width and height dimensions
+      (param2d pad)                        -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
+
+
+  accGradParameters_ inp gout gconv columnsbuff onesbuff step pad = do
+    Dynamic._spatialConvolutionMM_accGradParameters
+      (asDynamic inp)    -- ^ input
+      (asDynamic gout)    -- ^ gradOutput
+      (asDynamic (Conv2d.weights gconv))    -- ^ gradWeight
+      (asDynamic (Conv2d.bias gconv))    -- ^ gradBias
+      (asDynamic columnsbuff)    -- ^ finput/columns <<- required. This can be NULL in C if gradWeight is NULL.
+      (asDynamic onesbuff)   -- ^ ones
+      (Conv2d.kernel2d conv) -- ^ (kW, kH) kernel height and width
+      (param2d step)         -- ^ (dW, dH) step of the convolution in width and height dimensions
+      (param2d pad)          -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
+      lr
+
+-- | Backprop convolution function with batching
+conv2dMMBatch'
+  :: forall f h w kH kW dH dW pH pW oW oH s o b
+  .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
+  => All KnownDim '[f,o,b,kW*kH*f,oH*oW]
+
+  -- cacheables
+  => IORef (Tensor '[b, o,oH,oW])            -- output
+  -> IORef (Tensor '[b,f,h,w])             -- input
+  -> IORef (Tensor '[b,f,h,w])             -- gradient input
+  -> IORef (Conv2d f o '(kH, kW))   -- gradient params
+
+  -> Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
+  -> Padding2d '(pH,pW)             -- ^ zero padding to the input plane for width and height.
+  -> Double                      -- ^ learning rate
+  -> (Conv2d f o '(kH,kW))   -- ^ conv2d state
+  -> (Tensor '[b,f,h,w])    -- ^ input: f stands for "features" or "input plane")
+  -> IO (Tensor '[b, o,oH,oW], (Tensor '[b,o,oH,oW] -> IO (Conv2d f o '(kH,kW), Tensor '[b,f,h,w])))
+conv2dMMBatch' = conv2dMM__'
+  (constant 0 :: Tensor '[b,f,h,w])
+  (constant 0 :: Tensor '[b,kW*kH*f,oH*oW])
+  (constant 0 :: Tensor '[b,kW*kH*f,oH*oW])
+
+conv2dMM__'
+  :: forall din dout fgin f o kH kW dH dW pH pW inBuff
+  .  All Dimensions '[din,dout,fgin, inBuff]
+  => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW]
+
+  -- buffers
+  => (Tensor fgin)            -- ^ grad input buffer
+  -> (Tensor inBuff)            -- ^ columns buffer
+  -> (Tensor inBuff)            -- ^ ones buffer
+
+  -- cacheables
+  -> IORef (Tensor dout)            -- output
+  -> IORef (Tensor din)             -- input
+  -> IORef (Tensor din)             -- gradient input
+  -> IORef (Conv2d f o '(kH, kW))   -- gradient params
+
+  -> Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
+  -> Padding2d '(pH,pW)             -- ^ zero padding to the input plane for width and height.
+  -> Double                      -- ^ learning rate
+
+  -> (Conv2d f o '(kH,kW))   -- ^ conv2d state
+  -> (Tensor din)    -- ^ input: f stands for "features" or "input plane")
+  -> IO (Tensor dout, (Tensor dout -> IO (Conv2d f o '(kH,kW), Tensor din)))
+conv2dMM__'
+  ginbuffer finput fgradInput outref inref ginref gparamsref
+  step pad lr conv inp = do
+
+  let out = constant 0
+
+  updateOutput_ (constant 0 :: Tensor inBuff) (constant 0 :: Tensor inBuff) step pad conv inp out
+
+  pure (out,
+    \gout -> do
+      let putStrLn' s = putStrLn $ "=AD= [conv2d] " ++ s
+      gin <- readIORef ginref
+      zero_ gin
+      gparams <- readIORef gparamsref
+      zero_ (Conv2d.weights gparams)
+      zero_ (Conv2d.bias gparams)
+
+      -- let finput = constant 0 :: Tensor '[5,150,100]
+      -- let fgradInput = constant 0 :: Tensor '[kH, kW]
+
+      putStrLn' "updateGradInput_"
+      updateGradInput_ inp gout gin conv finput fgradInput step pad
+
+      putStrLn' "accGradParameters_"
+      accGradParameters_ inp gout gparams finput fgradInput step pad
+      putStrLn "ad passes!"
+
+      pure (gparams, gin))
+ where
+  updateOutput_ colbuff onesbuff step pad conv inp out =
+    Dynamic._spatialConvolutionMM_updateOutput
+      (asDynamic inp)                      -- ^ input
+      (asDynamic out)                      -- ^ output
+      (asDynamic (Conv2d.weights conv))    -- ^ 3D weight tensor (connTable:size(1) x kH x kW)
+      (asDynamic (Conv2d.bias conv))       -- ^ 1D bias tensor (nOutputPlane)
+
+      (asDynamic colbuff)                  -- ^ BUFFER: temporary columns -- also called "finput"
+      (asDynamic onesbuff)                 -- ^ BUFFER: buffer of ones for bias accumulation  -- also called "fgradInput"
+
+      (Conv2d.kernel2d conv)               -- ^ (kW, kH) kernel height and width
+      (param2d step)                       -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
+      (param2d pad)                        -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
+
+  updateGradInput_ inp gout gin conv colsbuffer onesbuffer step pad = do
+    -- _spatialConvolutionMM_updateGradInput inp gout gin w columns ones (kW, kH) (dW, dH) (pW, pH) = do
     Dynamic._spatialConvolutionMM_updateGradInput
       (asDynamic inp)                      -- ^ input
       (asDynamic gout)                     -- ^ gradOutput
@@ -808,17 +1041,17 @@ fc3gradparamRef = unsafePerformIO $ newIORef (Linear (constant 0, constant 0))
 fc3BP :: Linear 84 10 -> Tensor '[4, 84] -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (Linear 84 10, Tensor '[4, 84]))
 fc3BP fc3 inp = do
   (fc3out, getfc3Grads) <- linearBatch 1 fc3outRef fc3ginRef fc3gradparamRef fc3 inp
-  (fin, getlogsmGrads) <- logSoftMaxBatch fc3out
+  (fin, getlogsmGrads) <- softMaxBatch fc3out
   pure (fin, \gout -> do
 
-    -- print "gout"
-    -- print gout
+    print "gout"
+    print gout
     x <- getlogsmGrads gout
-    -- print "x"
-    -- print x
+    print "x"
+    print x
     y <- getfc3Grads x
-    -- print "y"
-    -- print y
+    print "y"
+    print y
     pure y)
     -- (getlogsmGrads >=> getfc3Grads) gout)
 
@@ -991,11 +1224,28 @@ linearBatch lr outbufferRef gradinRef gradparamRef l i = do
 logSoftMaxBatch
   :: Tensor '[4, 10]    -- ^ input
   -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (Tensor '[4, 10]))   -- ^ output and gradient
-logSoftMaxBatch inp = do
-  replaceIORefWith logsmoutRef (constant 0)
-  out <- readIORef logsmoutRef
+logSoftMaxBatch = __logSoftMaxBatch False
 
+-- | run a threshold function againts two BVar variables
+__logSoftMaxBatch
+  :: Bool
+  -> Tensor '[4, 10]    -- ^ input
+  -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (Tensor '[4, 10]))   -- ^ output and gradient
+__logSoftMaxBatch islossfn inp = do
+  -- replaceIORefWith logsmoutRef (constant 0)
+  -- out <- readIORef logsmoutRef
+  let out = constant 0
+
+  when islossfn $ do
+    print "start updateOutput loss function"
+    print out
+
+  -- Dynamic._logSoftMax_updateOutput (asDynamic inp) (asDynamic out) i -- (if islossfn then 0 else 1)
   updateOutput_ inp i out
+
+  when islossfn $ do
+    print "stop updateOutput loss function"
+    print out
 
   -- print "outty"
   -- print inp
@@ -1004,15 +1254,15 @@ logSoftMaxBatch inp = do
   -- print out
 
   pure (out, \gout -> do
-
     -- putStrLn ""
     -- putStrLn ",--------------------------------------------------Q.Q-------------------------------------------------."
     -- putStrLn "|                                                                                                      |"
     -- print gout
 
-    replaceIORefWith logsmgRef (constant 0)
-    -- updateIORefWith logsmgRef (constant 0)
-    gin <- readIORef logsmgRef
+    let gin = constant 0
+    -- replaceIORefWith logsmgRef (constant 0)
+    -- -- updateIORefWith logsmgRef (constant 0)
+    -- gin <- readIORef logsmgRef
 
     -- THIS FUNCTION LINKS THE OUTPUT TO THE GRADINPUT !?!?
 --     zerosLike_ gin gin
@@ -1049,6 +1299,67 @@ logSoftMaxBatch inp = do
     -> IO ()
   updateGradInput_ inp gout out i gin =
     Dynamic._logSoftMax_updateGradInput
+      (asDynamic inp)             -- input
+      (asDynamic gout)            -- gradOutput
+      (asDynamic gin)             -- gradInput
+      (asDynamic out)             -- output
+      (fromIntegral $ dimVal i)   -- dimension
+
+
+
+-- ========================================================================= --
+
+-- | run a threshold function againts two BVar variables
+softMaxBatch
+  :: Tensor '[4, 10]    -- ^ input
+  -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (Tensor '[4, 10]))   -- ^ output and gradient
+softMaxBatch = __softMaxBatch False
+
+-- | run a threshold function againts two BVar variables
+__softMaxBatch
+  :: Bool
+  -> Tensor '[4, 10]    -- ^ input
+  -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (Tensor '[4, 10]))   -- ^ output and gradient
+__softMaxBatch islossfn inp = do
+  -- replaceIORefWith logsmoutRef (constant 0)
+  -- out <- readIORef logsmoutRef
+  let out = constant 0
+
+  when islossfn $ do
+    print "start updateOutput loss function"
+    print out
+
+  -- Dynamic._logSoftMax_updateOutput (asDynamic inp) (asDynamic out) i -- (if islossfn then 0 else 1)
+  updateOutput_ inp i out
+
+  when islossfn $ do
+    print "stop updateOutput loss function"
+    print out
+  pure (out, \gout -> do
+    -- replaceIORefWith logsmgRef (constant 0)
+    -- gin <- readIORef logsmgRef
+    let gin = constant 0
+    updateGradInput_ inp gout out i gin
+    pure gin
+    )
+
+ where
+  i = (dim :: Dim 1)
+
+  updateOutput_ :: Tensor '[4, 10] -> Dim 1 -> Tensor '[4, 10] -> IO ()
+  updateOutput_ inp i out =
+    Dynamic._softMax_updateOutput (asDynamic inp) (asDynamic out) (fromIntegral $ dimVal i)
+
+  updateGradInput_
+    :: Tensor '[4, 10]  -- input
+    -> Tensor '[4, 10]  -- gradOutput
+    -> Tensor '[4, 10]  -- output
+    -> Dim 1            -- dimension
+
+    -> Tensor '[4, 10]  -- gradInput
+    -> IO ()
+  updateGradInput_ inp gout out i gin =
+    Dynamic._softMax_updateGradInput
       (asDynamic inp)             -- input
       (asDynamic gout)            -- gradOutput
       (asDynamic gin)             -- gradInput
