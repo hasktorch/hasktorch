@@ -60,17 +60,17 @@ printL1Weights x = (print . fst . Conv2d.getTensors . Vision._conv1) x
 
 -- ========================================================================= --
 
-datasize = 80
-reportat' = 200
-epos = 1
+datasize = 400
+reportat' = 399
+epos = 20
 
 main :: IO ()
 main = do
   g <- MWC.initialize (V.singleton 44)
 
-  printf "loading %i images\n\n" datasize
   lbatches :: Vector (Vector (Category, FilePath))
     <- mkVBatches 4 . V.take datasize <$> cifar10set g default_cifar_path Train
+  printf "loaded %i filepaths\n\n" (length lbatches * 4)
 
   P.putStrLn "transforming to tensors"
   batches <- dataloader' bsz lbatches
@@ -103,8 +103,6 @@ main = do
       foo :: [DList (Category, Category)]
         <- forM (V.toList ltest) $ \(y, x) -> do
           bar <- y2cat y
-          -- print "bar"
-          -- print bar
           DL.fromList . zip bar <$> forward net x
 
       let
@@ -126,7 +124,7 @@ main = do
         let
           correct = length (filter (==y) preds)
           acc = fromIntegral correct / genericLength preds :: Float
-        printf "\n[%s]: %.2f%% (%d / %d)" (show y) (acc*100) correct (length preds)
+        printf "\n[%s]:\t%.2f%% (%d / %d)" (show y) (acc*100) correct (length preds)
         hFlush stdout
 
 -- ========================================================================= --
@@ -144,12 +142,10 @@ epochs lr mx batches = runEpoch 1
     runEpoch e net
       | e > mx = P.putStrLn "\nfinished training loops" >> pure net
       | otherwise = do
-      P.putStrLn $ "\nepoch " ++ show (e, mx)
-      putStrLn "y"
+      P.putStrLn $ "epoch " ++ show (e, mx)
 
       (net', _) <- V.ifoldM go (net, 0) batches
 
-      putStrLn "xy"
       performMajorGC
       runEpoch (e+1) net'
 
@@ -158,9 +154,8 @@ epochs lr mx batches = runEpoch 1
         estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
 
         go (!net, !runningloss) !bid (ys, xs) = do
-          putStrLn "start step"
           (net', loss) <- step lr net xs ys
-          putStrLn "stop step"
+          -- P.print loss
           let reportat = reportat' :: Int
               reporttime = (bid `mod` reportat == (reportat - 1))
 
@@ -173,6 +168,7 @@ epochs lr mx batches = runEpoch 1
           performGC
 
           let l = getloss loss
+          -- P.print l
           pure (net', if reporttime then 0 else runningloss + l)
 
 
@@ -188,21 +184,17 @@ step
 step lr net xs ys = do
   let (!dyn, Just ix) = Torch.max2d1 ys keep
   LDyn.resizeDim_ (Long.asDynamic ix) (dims :: Dims '[4])
-  putStrLn "start lenetBatchBP"
-
   (out, gnet) <- lenetBatchBP net (Long.asStatic (Long.asDynamic ix)) xs
-  let o = getloss out
 
-  putStrLn "stop lenetBatchBP"
-  putStrLn "out"
+  let Just plr = positive 0.001
+  -- let Just plr = positive 1.0
+  net' <- myupdate net plr gnet
 
-  -- lenetUpdate_ net (0.1, gnet)
-  net' <- myupdate net 0.1 gnet
-
-  (out', _) <- lenetBatchBP net' (Long.asStatic (Long.asDynamic ix)) xs
-
-  let o' = getloss out'
-  printf ("\nimprovement? %.4f -> %.4f : %s\n") o o' (show (o < o'))
+  when False $ do
+    (out', _) <- lenetBatchBP net' (Long.asStatic (Long.asDynamic ix)) xs
+    let o = getloss out
+    let o' = getloss out'
+    printf ("\nimprovement? %.4f -> %.4f : %s\n") o o' (show (o < o'))
 
   pure (net', out)
 

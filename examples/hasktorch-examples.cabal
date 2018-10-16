@@ -244,7 +244,8 @@ executable lenet-cifar10-trainonebatch
     hs-source-dirs: lenet-cifar10
     other-modules:
         Utils
-        LeNet.Forward
+        LeNet
+        -- LeNet.Forward
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
@@ -264,7 +265,49 @@ executable lenet-cifar10-trainonebatch
         vector -any,
         time -any,
         transformers -any,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0
+        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        ghc-typelits-natnormalise
+    
+    if flag(cuda)
+        cpp-options: -DCUDA
+        build-depends:
+            cuda -any,
+            hasktorch-raw-thc -any,
+            hasktorch-types-thc -any
+    else
+    
+    if flag(debug)
+        cpp-options: -DDEBUG
+    else
+
+executable dense3-cifar10
+    main-is: Dense3CIFAR.hs
+    hs-source-dirs: lenet-cifar10
+    other-modules:
+        Utils
+        Dense3
+        -- LeNet.Forward
+    default-language: Haskell2010
+    build-depends:
+        base (==4.7 || >4.7) && <5,
+        hasktorch -any,
+        microlens ==0.4.8.1 || >0.4.8.1,
+        dimensions ==1.0 || >1.0,
+        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        singletons ==2.2 || >2.2,
+        backprop ==0.2.5 || >0.2.5,
+        hasktorch-zoo -any,
+        unordered-containers -any,
+        dlist -any,
+        list-t -any,
+        mtl -any,
+        monad-loops -any,
+        mwc-random -any,
+        vector -any,
+        time -any,
+        transformers -any,
+        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        ghc-typelits-natnormalise
     
     if flag(cuda)
         cpp-options: -DCUDA

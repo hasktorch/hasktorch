@@ -28,6 +28,7 @@ import qualified Torch.Double.NN.Conv2d as Conv2d (getTensors)
 import Torch.Data.Loaders.Cifar10 (Category)
 import Torch.Data.Loaders.Internal (rgb2torch)
 import Torch.Data.Loaders.RGBVector (Normalize(NegOneToOne))
+import Torch.Core.Random (newRNG)
 
 #ifdef CUDA
 import Torch.Cuda.Double hiding (Sum)
@@ -50,7 +51,8 @@ counter = unsafePerformIO $ newIORef 0
 
 seedAll :: IO MWC.GenIO
 seedAll = do
-  g <- MWC.initialize (V.singleton 42)
+  g <- MWC.initialize (V.singleton 48)
+  -- g <- MWC.initialize (V.singleton 48)
 #ifdef CUDA
   withForeignPtr torchstate $ \s -> c_THCRandom_manualSeed s 42
 #endif

@@ -10,31 +10,35 @@ numpy.set_printoptions(threshold=numpy.nan, precision=4, suppress=True, linewidt
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
+# fclayer = 16 * 5 * 5
+fclayer = 3 * 32 * 32
 class LeNet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        # self.conv1 = nn.Conv2d(3, 6, 5)
+        # self.pool = nn.MaxPool2d(2, 2)
+        # self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(fclayer, 10)
+        # self.fc1 = nn.Linear(fclayer, 120)
+        # self.fc2 = nn.Linear(120, 84)
+        # self.fc3 = nn.Linear(84, 10)
 
     def forward(self, x):
-        x = self.conv1(x)
-        n = x.data.numpy()
-        print(n)
-        print((n <  1000000000).any())
-        print((n > -1000000000).any())
+        # x = self.conv1(x)
+        # n = x.data.numpy()
+        # print(n)
+        # print((n <  1000000000).any())
+        # print((n > -1000000000).any())
 
-        raise RuntimeError("")
-        x = self.pool(F.relu())
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return F.log_softmax(x)
+        # raise RuntimeError("")
+        # x = self.pool(x) # F.relu(x))
+        # x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, fclayer)
+        x = (self.fc1(x))
+        print(x)
+        # x = (self.fc2(x))
+        # x = self.fc3(x)
+        return F.softmax(x, dim=1)
 
 
 def train(net, nepochs, optimizer, criterion, trainloader, report_at, lr):
@@ -54,7 +58,7 @@ def train(net, nepochs, optimizer, criterion, trainloader, report_at, lr):
             outputs = net(inputs)
             # print(outputs.shape)
             loss = criterion(outputs, labels)
-            print(loss)
+            # print(loss)
             # print(loss.grad)
             loss.backward()
 
@@ -63,13 +67,13 @@ def train(net, nepochs, optimizer, criterion, trainloader, report_at, lr):
             # print(lst.grad)
             # print(loss)
             for param in net.parameters():
-                if len(param.grad.shape) == 2 and [param.grad.shape[0], param.grad.shape[1]] == [10, 84]:
-                  print(param.grad.data)
+                # if len(param.grad.shape) == 2 and [param.grad.shape[0], param.grad.shape[1]] == [10, 84]:
+                #   print(param.grad.data)
 
                 param.data.add_((-lr), param.grad.data)
 
-            if (i+1) == 2:
-              raise RuntimeError("!!!")
+            # if (i+1) == 2:
+            #   raise RuntimeError("!!!")
 
             # print(net.conv1.weight)
             # print statistics
@@ -128,11 +132,11 @@ def main(batch_size=4):
     numpy.random.seed(14)
     trainset = list(torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform))
     numpy.random.shuffle(trainset)
-    trainloader = torch.utils.data.DataLoader(trainset[:8000], batch_size=batch_size, shuffle=True, num_workers=2)
+    trainloader = torch.utils.data.DataLoader(trainset[:400], batch_size=batch_size, shuffle=True, num_workers=2)
 
-    testset = list(torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform))
-    numpy.random.shuffle(testset)
-    testloader = torch.utils.data.DataLoader(testset[:8000], batch_size=batch_size, shuffle=False, num_workers=2)
+    # testset = list(torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform))
+    # numpy.random.shuffle(testset)
+    # testloader = torch.utils.data.DataLoader(testset[:8000], batch_size=batch_size, shuffle=False, num_workers=2)
 
     net = LeNet()
     criterion = nn.CrossEntropyLoss()
@@ -141,8 +145,8 @@ def main(batch_size=4):
         p.requires_grad_(True)
 
     # report(net, testloader)
-    train(net, 1, optimizer, criterion, trainloader, 100, lr=0.001)
-    # report(net, trainloader)
+    train(net, 50, None, criterion, trainloader, 100, lr=0.01)
+    report(net, trainloader)
 
 if __name__ == "__main__":
     main()

@@ -98,13 +98,9 @@ threshold
   -> BVar s (Tensor d)    -- ^ input
   -> BVar s (Tensor d)    -- ^ output
 threshold thr value = liftOp1 . op1 $ \inp -> unsafePerformIO $ do
-  out <- _threshold_updateOutput thr value False inp
-  -- print ("relu forward - inp", shape inp)
-  pure (out, \gout -> unsafePerformIO $ do
-    gin <- _threshold_updateGradInput thr value False inp gout
-    -- print ("relu backward - gin", shape gin)
-    pure gin)
-
+  (out, getgrad) <- thresholdIO thr value inp
+  pure (out, unsafePerformIO . getgrad)
+{-
   where
     {-# NOINLINE _threshold_updateOutput #-}
     _threshold_updateOutput
@@ -126,6 +122,54 @@ threshold thr value = liftOp1 . op1 $ \inp -> unsafePerformIO $ do
       pure out
 
     {-# NOINLINE _threshold_updateGradInput #-}
+    _threshold_updateGradInput
+      :: Dimensions d => Double        -- ^ threshold
+      -> Double        -- ^ replacement value
+      -> Bool          -- ^ inplace
+      -> Tensor d      -- ^ input
+      -> Tensor d      -- ^ gradient output
+      -> IO (Tensor d) -- ^ gradient input
+    _threshold_updateGradInput thr val inplace input gout = do
+      let gin = new
+      let input' = if inplace then input else copy input
+      Dynamic._threshold_updateGradInput
+        (asDynamic input') (asDynamic gout) (asDynamic gin)
+        thr val
+        inplace
+      pure gin
+      -}
+
+-- | run a threshold function againts two BVar variables
+thresholdIO
+  :: forall d
+  .  Dimensions d
+  => Double               -- ^ threshold
+  -> Double               -- ^ replacement value
+  -> Tensor d    -- ^ input
+  -> IO (Tensor d, Tensor d -> IO (Tensor d))    -- ^ output
+thresholdIO thr value inp = do
+  out <- _threshold_updateOutput thr value False inp
+  pure (out, _threshold_updateGradInput thr value False inp)
+
+  where
+    _threshold_updateOutput
+      :: Double              -- ^ threshold
+      -> Double              -- ^ replacement value
+      -> Bool                -- ^ inplace
+      -> Tensor d            -- ^ input
+      -> IO (Tensor d)       -- ^ output
+    _threshold_updateOutput thr val inplace input = do
+      let out = new
+      -- FIXME: this looks like a bug in ATen. Need to check if this still exists after updating.
+      let input' = if inplace then input else copy input
+
+      Dynamic._threshold_updateOutput
+        (asDynamic input') (asDynamic out)
+        thr val
+        inplace
+
+      pure out
+
     _threshold_updateGradInput
       :: Dimensions d => Double        -- ^ threshold
       -> Double        -- ^ replacement value

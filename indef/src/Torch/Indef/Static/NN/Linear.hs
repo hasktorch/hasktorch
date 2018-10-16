@@ -85,9 +85,9 @@ instance (KnownDim i, KnownDim o) => Num (Linear i o) where
 
 instance (KnownDim i, KnownDim o) => Pairwise (Linear i o) HsReal where
   (Linear tens) ^+ v = Linear (tens ^+ v)
-  (Linear tens) ^- v = Linear (tens ^+ v)
-  (Linear tens) ^* v = Linear (tens ^+ v)
-  (Linear tens) ^/ v = Linear (tens ^+ v)
+  (Linear tens) ^- v = Linear (tens ^- v)
+  (Linear tens) ^* v = Linear (tens ^* v)
+  (Linear tens) ^/ v = Linear (tens ^/ v)
 
 -- -- | update a Linear layer
 -- updatePure
