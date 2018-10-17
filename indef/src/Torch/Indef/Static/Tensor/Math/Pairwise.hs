@@ -35,6 +35,9 @@ instance (Pairwise t0 r, Pairwise t1 r) => Pairwise (t0, t1) r where
   (a,b) ^* v = (a ^* v, b ^* v)
   (a,b) ^/ v = (a ^/ v, b ^/ v)
 
+infixl 7 ^*,^/
+infixl 6 ^+,^-
+
 instance Dimensions d => Pairwise (Tensor d) HsReal where
   (^+) = add
   (^-) = sub

@@ -24,6 +24,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Conv2d where
@@ -58,8 +59,8 @@ import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
 --
 -- possibly something like @Conv2d i o (kH, kW) (dH, dW) (pH, pW)@ or
 -- @Conv2d i o (kH, kW) (Maybe (dH, dW)) (Maybe (pH, pW))@
-newtype Conv2d i o step
-  = Conv2d { getTensors :: (Tensor '[o, i, Fst step, Snd step], Tensor '[o]) }
+newtype Conv2d i o kers
+  = Conv2d { getTensors :: (Tensor '[o, i, Fst kers, Snd kers], Tensor '[o]) }
 
 instance (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
   => Show (Conv2d i o '(kH, kW)) where
@@ -99,6 +100,20 @@ instance (KnownDim i, KnownDim o, KnownDim kH, KnownDim kW)
     pure (Conv2d (a1, b1))
   {-# NOINLINE add #-}
   -- add c0 c1 = Conv2d (weights c0 + weights c1, bias c0 + bias c1)
+
+instance (All KnownDim '[i, o, Fst kers, Snd kers]) => Num (Conv2d i o kers) where
+  (+) (Conv2d (a0, b0)) (Conv2d (a1, b1)) = Conv2d (a0+a1, b0+b1)
+  (-) (Conv2d (a0, b0)) (Conv2d (a1, b1)) = Conv2d (a0-a1, b0-b1)
+  (*) (Conv2d (a0, b0)) (Conv2d (a1, b1)) = Conv2d (a0*a1, b0*b1)
+  abs (Conv2d (a0, b0)) = Conv2d (abs a0, abs b0)
+  fromInteger i = Conv2d (fromInteger i, fromInteger i)
+
+instance (All KnownDim '[i, o, Fst kers, Snd kers]) => Pairwise (Conv2d i o kers) HsReal where
+  (Conv2d tens) ^+ v = Conv2d (tens ^+ v)
+  (Conv2d tens) ^- v = Conv2d (tens ^- v)
+  (Conv2d tens) ^* v = Conv2d (tens ^* v)
+  (Conv2d tens) ^/ v = Conv2d (tens ^/ v)
+
 
 -- | update a Conv2d layer
 update

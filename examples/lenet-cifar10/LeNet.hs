@@ -25,6 +25,14 @@ module LeNet
   , y2cat
   , crossentropy
 
+  -- Network-in-Network (bipass linear layer)
+  ,   NIN
+  , mkNIN
+  , ninForwardBatch
+  , ninBatch
+  , ninBatchBP
+  , ninUpdate
+
   -- * test
   , FC3Arch
   , mkFC3
@@ -166,6 +174,90 @@ halt mx msg = do
   else pure ()
 
 
+-- data NIN = NIN !(Conv2d 3 16 '(3, 3)) !(Conv2d 16 10 '(3, 3))
+data NIN = NIN !(Conv2d 3 10 '(3, 3)) !(Conv2d 16 10 '(3, 3))
+  deriving (Show)
+
+mkNIN :: IO NIN
+mkNIN = do
+  g <- newRNG
+  manualSeed g 1
+  let Just rg = ord2Tuple (-1, 1)
+  w0 <- uniform g rg
+  b0 <- uniform g rg
+  w1 <- uniform g rg
+  b1 <- uniform g rg
+  pure $ NIN (Conv2d (w0, b0)) (Conv2d (w1, b1))
+
+
+ninForwardBatch net inp = fst <$> ninBatch undefined net inp
+
+ninBatchBP
+  :: HsReal
+  -> NIN
+  ->    (IndexTensor '[4])          -- ^ ys
+  ->    (Tensor '[4, 3, 32, 32])    -- ^ xs
+  -> IO (Tensor '[1], NIN)          -- ^ output and gradient
+ninBatchBP = criterion crossentropy ninBatch
+
+criterion
+  :: (ys -> out -> IO (loss, loss -> IO out))              -- ^ loss function
+  -> (lr -> arch -> xs -> IO (out, out -> IO (arch, xs)))  -- ^ forward function with a learning rate
+  -> lr
+  -> arch
+  -> ys
+  -> xs
+  -> IO (loss, arch)
+criterion lossfn forward lr net ys xs = do
+  (out, getArchGrad) <- forward lr net xs
+  (loss, getLossGrad) <- lossfn ys out
+  gnet <- fmap fst . (getArchGrad <=< getLossGrad) $ loss
+  pure (loss, gnet)
+
+ninBatch
+  :: HsReal
+  -> NIN
+  ->    (Tensor '[4, 3, 32, 32])  -- ^ input
+  -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (NIN, Tensor '[4, 3, 32, 32]))
+ninBatch lr (NIN conv1 conv2) i = do
+  (conv1out :: Tensor '[4, 10, 30, 30], unconv1out)
+    <- conv2dMMBatch'
+      ((Step2d    @'(1,1)))
+      ((Padding2d @'(0,0)))
+      lr conv1 i
+
+--  (mpout1 :: Tensor '[4, 16, 15, 15], getmpgrad)
+--    <- maxPooling2dBatch'
+--      ((Kernel2d  @'(2,2)))
+--      ((Step2d    @'(2,2)))
+--      ((Padding2d @'(0,0)))
+--      ((sing      :: SBool 'True))
+--      (conv1out)
+--
+--  (conv2out :: Tensor '[4, 10, 13, 13], unconv2out)
+--    <- conv2dMMBatch'
+--      ((Step2d    @'(1,1)))
+--      ((Padding2d @'(0,0)))
+--      lr conv2 mpout1
+--  (gapout, getgapgrad) <- gapPool2dBatchIO conv2out
+
+  (gapout, getgapgrad) <- gapPool2dBatchIO conv1out
+  (smout, smgrads)       <- softMaxBatch gapout
+
+  pure (smout, \gout -> do
+    smgout <- smgrads gout
+    -- (conv2g, gin1) <- (getgapgrad >=> unconv2out) smgout
+    -- (conv1g, gin2) <- (getmpgrad >=> unconv1out) gin1
+    -- pure (NIN conv1g conv2g, gin2))
+
+    (conv1g, gin2) <- (getgapgrad >=> unconv1out) smgout
+    pure (NIN conv1g conv2, gin2))
+
+ninUpdate :: NIN -> (Positive HsReal, NIN) -> IO NIN
+ninUpdate net@(NIN c1 c2) (plr, g@(NIN g1 g2)) = pure $ NIN (c1 + (g1 ^* lr)) (c2 + (g2 ^* lr))
+ where
+  lr = positiveValue plr
+
 
 logsmoutRef :: IORef ((Tensor '[4, 10]))
 logsmoutRef = unsafePerformIO $ newIORef (constant 0)
@@ -221,20 +313,20 @@ myupdate net plr grad = do
 
   lr = positiveValue plr
 
-  conv1w' = Conv2d.weights (net ^. Vision.conv1) + Conv2d.weights (grad ^. Vision.conv1) ^* (-lr)
-  conv1b' = Conv2d.bias    (net ^. Vision.conv1) + Conv2d.bias    (grad ^. Vision.conv1) ^* (-lr)
+  conv1w' = Conv2d.weights (net ^. Vision.conv1) + (Conv2d.weights (grad ^. Vision.conv1) ^* (-lr))
+  conv1b' = Conv2d.bias    (net ^. Vision.conv1) + (Conv2d.bias    (grad ^. Vision.conv1) ^* (-lr))
 
   -- conv2w' = Conv2d.weights (net ^. Vision.conv2) + Conv2d.weights (grad ^. Vision.conv2) ^* (-lr)
   -- conv2b' = Conv2d.bias    (net ^. Vision.conv2) + Conv2d.bias    (grad ^. Vision.conv2) ^* (-lr)
 
-  fc1w'   = Linear.weights (net ^. Vision.fc1)   + Linear.weights (grad ^. Vision.fc1)   ^* (-lr)
-  fc1b'   = Linear.bias    (net ^. Vision.fc1)   + Linear.bias    (grad ^. Vision.fc1)   ^* (-lr)
+  fc1w'   = Linear.weights (net ^. Vision.fc1)   + (Linear.weights (grad ^. Vision.fc1)   ^* (-lr))
+  fc1b'   = Linear.bias    (net ^. Vision.fc1)   + (Linear.bias    (grad ^. Vision.fc1)   ^* (-lr))
 
-  fc2w'   = Linear.weights (net ^. Vision.fc2)   + Linear.weights (grad ^. Vision.fc2)   ^* (-lr)
-  fc2b'   = Linear.bias    (net ^. Vision.fc2)   + Linear.bias    (grad ^. Vision.fc2)   ^* (-lr)
+  fc2w'   = Linear.weights (net ^. Vision.fc2)   + (Linear.weights (grad ^. Vision.fc2)   ^* (-lr))
+  fc2b'   = Linear.bias    (net ^. Vision.fc2)   + (Linear.bias    (grad ^. Vision.fc2)   ^* (-lr))
 
-  fc3w'   = Linear.weights (net ^. Vision.fc3)   + Linear.weights (grad ^. Vision.fc3)   ^* (-lr)
-  fc3b'   = Linear.bias    (net ^. Vision.fc3)   + Linear.bias    (grad ^. Vision.fc3)   ^* (-lr)
+  fc3w'   = Linear.weights (net ^. Vision.fc3)   + (Linear.weights (grad ^. Vision.fc3)   ^* (-lr))
+  fc3b'   = Linear.bias    (net ^. Vision.fc3)   + (Linear.bias    (grad ^. Vision.fc3)   ^* (-lr))
 
 
 

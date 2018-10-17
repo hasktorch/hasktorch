@@ -17,6 +17,7 @@
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Pooling where
 
+import Data.Maybe
 import Numeric.Backprop
 import Numeric.Dimensions
 import System.IO.Unsafe
@@ -310,14 +311,138 @@ _spatialAdaptiveAveragePooling_updateOutput t0 t1 = Dynamic._spatialAdaptiveAver
 _spatialAdaptiveAveragePooling_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> IO ()
 _spatialAdaptiveAveragePooling_updateGradInput t0 t1 t2 = Dynamic._spatialAdaptiveAveragePooling_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2)
 
--- |  spatialAveragePooling forward pass (updates the output tensor)
-_spatialAveragePooling_updateOutput :: Tensor d -> Tensor d -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
-_spatialAveragePooling_updateOutput t0 t1 = Dynamic._spatialAveragePooling_updateOutput (asDynamic t0) (asDynamic t1)
+-- | Type-level if statement to indicate what the output dimension should be if
+-- CeilMode is turned on.
+type AvgPool2dOutputDim i k p s ceilMode o =
+  ( If (ceilMode && (Rem (i + (2 * p) - k) s > 0))
+      ((2 + (Div (i + (2 * p) - k) s)) ~ o)
+      ((1 + (Div (i + (2 * p) - k) s)) ~ o)
+  , k > 0 ~ 'True
+  , s > 0 ~ 'True
+  , o > 0 ~ 'True
+  , (Div k 2) >= p ~ 'True
+  )
 
--- |  spatialAveragePooling backward-update (updates the layer and bias tensors)
-_spatialAveragePooling_updateGradInput :: Tensor d -> Tensor d -> Tensor d -> Int -> Int -> Int -> Int -> Int -> Int -> Bool -> Bool -> IO ()
-_spatialAveragePooling_updateGradInput t0 t1 t2 = Dynamic._spatialAveragePooling_updateGradInput (asDynamic t0) (asDynamic t1) (asDynamic t2)
+-- | spatial global average pooling on batches in IO
+gapPool2dBatchIO
+  :: forall iH iW b c varlist
+  . varlist ~ '[b, c, iH, iW]
+  => All KnownNat varlist
+  => All KnownDim varlist
+  => AvgPool2dOutputDim iH iH 0 iH 'False 1
+  => AvgPool2dOutputDim iW iW 0 iW 'False 1
+  => Tensor '[b, c, iH, iW]               -- ^ input tensor
+  -> IO (Tensor '[b, c], Tensor '[b, c] -> IO (Tensor '[b, c, iH, iW]))
+gapPool2dBatchIO inp = do
+  (out, getgrad) <- avgPool2dBatchIO (Kernel2d  @'(iH, iW)) inp
+  pure (resizeAs out, getgrad . resizeAs)
 
+
+-- | spatial average pooling with backprop support in IO
+avgPool2dWithIO
+  :: All KnownNat '[c, iH, iW, oH, oW, kW, kH, dW, dH, padW, padH]
+  => All KnownDim '[c, iH, iW, oH, oW, kW, kH, dW, dH, padW, padH]
+  => AvgPool2dOutputDim iH kH padH dH ceil_mode oH
+  => AvgPool2dOutputDim iW kW padW dW ceil_mode oW
+  => Kernel2d  '(kH, kW)      -- ^ kernel sizes
+  -> Step2d    '(dH, dW)      -- ^ step sizes
+  -> Padding2d '(padH, padW)  -- ^ pad sizes
+  -> SBool ceil_mode          -- ^ ceiling mode: when True, will use `ceil` instead of `floor` to compute the output shape
+  -> SBool count_include_pad  -- ^ count_include_pad: when True, will include the zero-padding in the averaging calculation
+  -> Tensor '[c, iH, iW]      -- ^ input tensor
+  -> IO (Tensor '[c, oH, oW], Tensor '[c, oH, oW] -> IO (Tensor '[c, iH, iW]))
+avgPool2dWithIO = _avgPool2dWithIO (Just new) (Just new)
+
+
+-- | spatial average pooling on batches with backprop support in IO and defaults
+avgPool2dBatchIO
+  :: forall iH iW kH kW oH oW b c
+  .  All KnownNat '[b, c, iH, iW, oH, oW, kW, kH]
+  => All KnownDim '[b, c, iH, iW, oH, oW, kW, kH]
+  => AvgPool2dOutputDim iH kH 0 kH 'False oH
+  => AvgPool2dOutputDim iW kW 0 kW 'False oW
+  => Kernel2d  '(kH, kW)                  -- ^ kernel sizes
+  -> Tensor '[b, c, iH, iW]               -- ^ input tensor
+  -> IO (Tensor '[b, c, oH, oW], Tensor '[b, c, oH, oW] -> IO (Tensor '[b, c, iH, iW]))
+avgPool2dBatchIO ker = _avgPool2dWithIO (Just new) (Just new) ker (Step2d @'(kH, kW))
+      (Padding2d @'(0, 0))
+      (sing :: SBool 'False)
+      (sing :: SBool 'True)
+
+
+-- | spatial average pooling on batches with backprop support in IO
+avgPool2dBatchWithIO
+  :: All KnownNat '[b, c, iH, iW, oH, oW, kW, kH, dW, dH, padW, padH]
+  => All KnownDim '[b, c, iH, iW, oH, oW, kW, kH, dW, dH, padW, padH]
+  => AvgPool2dOutputDim iH kH padH dH ceil_mode oH
+  => AvgPool2dOutputDim iW kW padW dW ceil_mode oW
+  => Kernel2d  '(kH, kW)      -- ^ kernel sizes
+  -> Step2d    '(dH, dW)      -- ^ step sizes
+  -> Padding2d '(padH, padW)  -- ^ pad sizes
+  -> SBool ceil_mode          -- ^ ceiling mode: when True, will use `ceil` instead of `floor` to compute the output shape
+  -> SBool count_include_pad  -- ^ count_include_pad: when True, will include the zero-padding in the averaging calculation
+  -> Tensor '[b, c, iH, iW]               -- ^ input tensor
+  -> IO (Tensor '[b, c, oH, oW], Tensor '[b, c, oH, oW] -> IO (Tensor '[b, c, iH, iW]))
+avgPool2dBatchWithIO = _avgPool2dWithIO (Just new) (Just new)
+
+-- | generic spatial average pooling with backprop support in IO. This works without constraints and can be applied on either
+-- batch or non-batch tensors, but C errors may occur if you misuse this function.
+_avgPool2dWithIO
+  :: forall din kW kH dW dH padW padH ceil_mode count_include_pad dout
+  .  All KnownNat '[kW, kH, dW, dH, padW, padH]
+  => All KnownDim '[kW, kH, dW, dH, padW, padH]
+  => All Dimensions '[dout, din]
+  => Maybe (Tensor dout)      -- ^ cached output (optional)
+  -> Maybe (Tensor din)       -- ^ cached input gradient (optional)
+  -> Kernel2d  '(kH, kW)      -- ^ kernel sizes
+  -> Step2d    '(dH, dW)      -- ^ step sizes
+  -> Padding2d '(padH, padW)  -- ^ pad sizes
+  -> SBool ceil_mode          -- ^ ceiling mode: when True, will use `ceil` instead of `floor` to compute the output shape
+  -> SBool count_include_pad  -- ^ count_include_pad: when True, will include the zero-padding in the averaging calculation
+  -> Tensor din               -- ^ input tensor
+  -> IO (Tensor dout, Tensor dout -> IO (Tensor din))
+_avgPool2dWithIO mout mgin kers steps pads ceilMode countIncludePad inp = do
+  let out = fromMaybe new mout
+  _updateOutput
+    (asDynamic inp) (asDynamic out)
+    (param2d kers) (param2d steps) (param2d pads)
+    (fromSing ceilMode) (fromSing countIncludePad)
+  pure (out, \gout -> do
+    let gin = fromMaybe new mgin
+    _updateGradInput
+      (asDynamic inp) (asDynamic gout) (asDynamic gin)
+      (param2d kers) (param2d steps) (param2d pads)
+      (fromSing ceilMode) (fromSing countIncludePad)
+    pure gin)
+  where
+    -- spatialAveragePooling forward pass (updates the output tensor)
+    _updateOutput
+      :: Dynamic         -- input tensor
+      -> Dynamic         -- output tensor
+      -> (Int, Int)      -- kernel sizes
+      -> (Int, Int)      -- step sizes
+      -> (Int, Int)      -- pad sizes
+      -> Bool            -- ceiling mode: when True, will use `ceil` instead of `floor` to compute the output shape
+      -> Bool            -- count_include_pad: when True, will include the zero-padding in the averaging calculation
+      -> IO ()
+    _updateOutput inp out (kW, kH) (dW, dH) (padW, padH) ceil_mode count_include_pad =
+      Dynamic._spatialAveragePooling_updateOutput
+        inp out kW kH dW dH padW padH ceil_mode count_include_pad
+
+    -- spatialAveragePooling backward-update (updates the layer and bias tensors)
+    _updateGradInput
+      :: Dynamic         -- input tensor
+      -> Dynamic         -- gradient output tensor
+      -> Dynamic         -- gradient input tensor
+      -> (Int, Int)      -- kernel sizes
+      -> (Int, Int)      -- step sizes
+      -> (Int, Int)      -- pad sizes
+      -> Bool            -- ceiling mode: when True, will use `ceil` instead of `floor` to compute the output shape
+      -> Bool            -- count_include_pad: when True, will include the zero-padding in the averaging calculation
+      -> IO ()
+    _updateGradInput inp gout gin (kW, kH) (dW, dH) (padW, padH) ceil_mode count_include_pad =
+      Dynamic._spatialAveragePooling_updateGradInput
+        inp gout gin kW kH dW dH padW padH ceil_mode count_include_pad
 
 -- * 3D pooling functions
 

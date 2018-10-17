@@ -9,7 +9,7 @@ module Main where
 
 import Prelude hiding (print, putStrLn)
 import qualified Prelude as P
-import LeNet (LeNet, lenetUpdate, lenetUpdate_, lenetBatchBP, lenetBatchForward, y2cat, myupdate)
+import LeNet
 import Utils (bs, bsz, lr, getloss)
 import DataLoading (mkVBatches, dataloader')
 import Criterion ()
@@ -60,6 +60,19 @@ printL1Weights x = (print . fst . Conv2d.getTensors . Vision._conv1) x
 
 -- ========================================================================= --
 
+-- type Arch = LeNet
+-- mkNet = Vision.newLeNet
+-- forward = _forward lenetBatchForward
+-- netupdate = myupdate
+-- netBatchBP = lenetBatchBP
+type Arch = NIN
+mkNet = mkNIN
+forward = _forward ninForwardBatch
+netupdate = ninUpdate
+netBatchBP = ninBatchBP
+trainingLR = 1.0
+updateLR = 1.0
+
 datasize = 400
 reportat' = 399
 epos = 20
@@ -75,7 +88,7 @@ main = do
   P.putStrLn "transforming to tensors"
   batches <- dataloader' bsz lbatches
 
-  net0 <- Vision.newLeNet
+  net0 <- mkNet
   P.print net0
 
   P.putStrLn "\nepochs start"
@@ -87,16 +100,8 @@ main = do
   performMajorGC
   P.putStrLn ""
 
-  -- putStr "\nInitial Holdout:\n"
-  -- net <- epochs 0.001 3 batches net0
-  -- printf "\nFinished training in %s!\n"
-
-  -- putStrLn "\nHoldout Results on final net:\n"
-  -- report net batches
-  -- putStrLn "\nDone!\n"
-
   where
-    report :: LeNet -> Vector (Tensor '[4, 10], Tensor '[4, 3, 32, 32]) -> IO ()
+    report :: Arch -> Vector (Tensor '[4, 10], Tensor '[4, 3, 32, 32]) -> IO ()
     report net ltest = do
       -- putStrLn "x"
 
@@ -134,11 +139,11 @@ epochs
   :: HsReal              -- ^ learning rate
   -> Int                 -- number of epochs to train on
   -> Vector (Tensor '[4, 10], Tensor '[4, 3, 32, 32])
-  -> LeNet               -- ^ initial model
-  -> IO LeNet            -- ^ final model
-epochs lr mx batches = runEpoch 1
+  -> Arch               -- ^ initial model
+  -> IO Arch            -- ^ final model
+epochs _ mx batches = runEpoch 1
   where
-    runEpoch :: Int -> LeNet -> IO LeNet
+    runEpoch :: Int -> Arch -> IO Arch
     runEpoch e net
       | e > mx = P.putStrLn "\nfinished training loops" >> pure net
       | otherwise = do
@@ -153,8 +158,9 @@ epochs lr mx batches = runEpoch 1
         estr :: String
         estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
 
+        go :: (Arch, HsReal) -> Int -> (Tensor '[4, 10], Tensor '[4, 3, 32, 32]) -> IO (Arch, HsReal)
         go (!net, !runningloss) !bid (ys, xs) = do
-          (net', loss) <- step lr net xs ys
+          (net', loss) <- step undefined net xs ys
           -- P.print loss
           let reportat = reportat' :: Int
               reporttime = (bid `mod` reportat == (reportat - 1))
@@ -172,26 +178,25 @@ epochs lr mx batches = runEpoch 1
           pure (net', if reporttime then 0 else runningloss + l)
 
 
-forward :: LeNet -> Tensor '[4, 3, 32, 32] -> IO [Category]
-forward net xs = y2cat =<< lenetBatchForward net xs
+_forward :: (Arch -> Tensor '[4, 3, 32, 32] -> IO (Tensor '[4, 10])) -> Arch -> Tensor '[4, 3, 32, 32] -> IO [Category]
+_forward fwdfn net xs = y2cat =<< fwdfn net xs
 
 step
   :: HsReal
-  -> LeNet
+  -> Arch
   -> Tensor '[4, 3, 32, 32]
   -> Tensor '[4, 10]
-  -> IO (LeNet, Tensor '[1])
-step lr net xs ys = do
-  let (!dyn, Just ix) = Torch.max2d1 ys keep
+  -> IO (Arch, Tensor '[1])
+step _ net xs ys = do
+  let (_, Just ix) = Torch.max2d1 ys keep
   LDyn.resizeDim_ (Long.asDynamic ix) (dims :: Dims '[4])
-  (out, gnet) <- lenetBatchBP net (Long.asStatic (Long.asDynamic ix)) xs
+  (out, gnet) <- netBatchBP trainingLR net (Long.asStatic (Long.asDynamic ix)) xs
 
-  let Just plr = positive 0.001
-  -- let Just plr = positive 1.0
-  net' <- myupdate net plr gnet
+  let Just plr = positive updateLR
+  net' <- netupdate net (plr, gnet)
 
   when False $ do
-    (out', _) <- lenetBatchBP net' (Long.asStatic (Long.asDynamic ix)) xs
+    (out', _) <- netBatchBP trainingLR net' (Long.asStatic (Long.asDynamic ix)) xs
     let o = getloss out
     let o' = getloss out'
     printf ("\nimprovement? %.4f -> %.4f : %s\n") o o' (show (o < o'))

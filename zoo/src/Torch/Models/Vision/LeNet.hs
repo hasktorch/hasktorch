@@ -33,24 +33,26 @@ import qualified Torch.Double.NN.Linear as Linear
 
 import Torch.Models.Internal
 
+type Flattened ker = (6*ker*ker)
 data LeNet ch ker = LeNet
-  { _conv1 :: !(Conv2d ch 6 '(ker,ker))
-  , _conv2 :: !(Conv2d 6 16 '(ker,ker))
+  { _conv1 :: !(Conv2d ch 6 '(ker, ker))
+  -- , _conv2 :: !(Conv2d 6 16 '(ker,ker))
 
-  , _fc1   :: !(Linear  (16*ker*ker) 120)
+  -- , _fc1   :: !(Linear  (6*ker*ker) 120)
+  , _fc1   :: !(Linear  (6*14*14) 120)
   , _fc2   :: !(Linear       120  84)
   , _fc3   :: !(Linear        84  10)
   }
 
-instance (KnownDim (16*ker*ker), KnownDim ch, KnownDim ker) => Show (LeNet ch ker) where
-  show (LeNet c1 c2 f1 f2 f3) = intercalate "\n"
+instance (KnownDim (Flattened ker), KnownDim ch, KnownDim ker) => Show (LeNet ch ker) where
+  show (LeNet c1 {-c2-} f1 f2 f3) = intercalate "\n"
 #ifdef CUDA
     [ "CudaLeNet {"
 #else
     [ "LeNet {"
 #endif
     , "  conv1 :: " ++ show c1
-    , "  conv2 :: " ++ show c2
+    -- , "  conv2 :: " ++ show c2
     , "  fc1   :: " ++ show f1
     , "  fc2   :: " ++ show f2
     , "  fc3   :: " ++ show f3
@@ -59,24 +61,24 @@ instance (KnownDim (16*ker*ker), KnownDim ch, KnownDim ker) => Show (LeNet ch ke
 
 makeLenses ''LeNet
 
-instance (KnownDim (16*ker*ker), KnownDim ch, KnownDim ker) => Backprop (LeNet ch ker) where
+instance (KnownDim (Flattened ker), KnownDim ch, KnownDim ker) => Backprop (LeNet ch ker) where
   add a b = LeNet
     (Bp.add (_conv1 a) (_conv1 b))
-    (Bp.add (_conv2 a) (_conv2 b))
+    -- (Bp.add (_conv2 a) (_conv2 b))
     (Bp.add (_fc1 a) (_fc1 b))
     (Bp.add (_fc2 a) (_fc2 b))
     (Bp.add (_fc3 a) (_fc3 b))
 
   one net = LeNet
     (Bp.one (net^.conv1))
-    (Bp.one (net^.conv2))
+    -- (Bp.one (net^.conv2))
     (Bp.one (net^.fc1)  )
     (Bp.one (net^.fc2)  )
     (Bp.one (net^.fc3)  )
 
   zero net = LeNet
     (Bp.zero (net^.conv1))
-    (Bp.zero (net^.conv2))
+    -- (Bp.zero (net^.conv2))
     (Bp.zero (net^.fc1)  )
     (Bp.zero (net^.fc2)  )
     (Bp.zero (net^.fc3)  )
@@ -86,10 +88,10 @@ instance (KnownDim (16*ker*ker), KnownDim ch, KnownDim ker) => Backprop (LeNet c
 
 -------------------------------------------------------------------------------
 
-newLeNet :: All KnownDim '[ch,ker,16*ker*ker] => IO (LeNet ch ker)
+newLeNet :: All KnownDim '[ch,ker,Flattened ker] => IO (LeNet ch ker)
 newLeNet = LeNet
   <$> newConv2d
-  <*> newConv2d
+  -- <*> newConv2d
   <*> newLinear
   <*> newLinear
   <*> newLinear
@@ -97,7 +99,7 @@ newLeNet = LeNet
 -- | update a LeNet network
 update net lr grad = LeNet
   (Conv2d.update (net^.conv1) lr (grad^.conv1))
-  (Conv2d.update (net^.conv2) lr (grad^.conv2))
+  -- (Conv2d.update (net^.conv2) lr (grad^.conv2))
   (Linear.update (net^.fc1)   lr (grad^.fc1))
   (Linear.update (net^.fc2)   lr (grad^.fc2))
   (Linear.update (net^.fc3)   lr (grad^.fc3))
@@ -105,7 +107,7 @@ update net lr grad = LeNet
 -- | update a LeNet network inplace
 update_ net lr grad = do
   (Conv2d.update_ (net^.conv1) lr (grad^.conv1))
-  (Conv2d.update_ (net^.conv2) lr (grad^.conv2))
+  -- (Conv2d.update_ (net^.conv2) lr (grad^.conv2))
   (Linear.update_ (net^.fc1)   lr (grad^.fc1))
   (Linear.update_ (net^.fc2)   lr (grad^.fc2))
   (Linear.update_ (net^.fc3)   lr (grad^.fc3))
@@ -130,7 +132,7 @@ update_ net lr grad = do
 --   -> BVar s (Tensor '[o])           -- ^ output
 lenet lr arch inp
   = lenetLayer lr (arch ^^. conv1) inp
-  & lenetLayer lr (arch ^^. conv2)
+  -- & lenetLayer lr (arch ^^. conv2)
 
   & flattenBP
 
@@ -200,7 +202,7 @@ lenetLayer2 = lenetLayer
 
 lenetBatch lr arch inp
   = lenetLayerBatch lr (arch ^^. conv1) inp
-  & lenetLayerBatch lr (arch ^^. conv2)
+  -- & lenetLayerBatch lr (arch ^^. conv2)
 
   & flattenBPBatch
 
