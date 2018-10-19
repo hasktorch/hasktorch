@@ -129,6 +129,24 @@ in common.Package //
           { main-is = "TrainOneBatch.hs"
           , other-modules = [ "Utils", "LeNet.Forward" ]
           } }
+
+    , { name = "dense3-cifar10"
+      , executable =
+        \(config : types.Config)
+        -> lenet-experiment config //
+          { main-is = "Dense3CIFAR.hs"
+          , hs-source-dirs = [ "lenet-cifar10" ]
+          , other-modules = [ "Utils", "Dense3" ]
+          } }
+
+    , { name = "xor"
+      , executable =
+        \(config : types.Config)
+        -> lenet-experiment config //
+          { main-is = "Main.hs"
+          , hs-source-dirs = [ "lenet-cifar10", "xor" ]
+          , other-modules = [ "Utils", "Dense3" ]
+          } }
     ]
   }
 

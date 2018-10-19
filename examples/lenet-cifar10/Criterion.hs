@@ -18,7 +18,7 @@ import qualified Torch.Double.Dynamic as Dynamic
 
 import System.IO.Unsafe
 import Data.Maybe (fromMaybe)
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), (<=<))
 import Data.Function ((&))
 import Numeric.Backprop
 
@@ -164,5 +164,19 @@ _classNLLIO moutbuf mwbuf mginbuf target inp = do
     updateGradInput_ inp tar gout szAvg mws total_weight ix reduce gin =
       Dynamic._ClassNLLCriterion_updateGradInput (asDynamic inp) (Long.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
+
+criterion
+  :: (ys -> out -> IO (loss, loss -> IO out))              -- ^ loss function
+  -> (lr -> arch -> xs -> IO (out, out -> IO (arch, xs)))  -- ^ forward function with a learning rate
+  -> lr
+  -> arch
+  -> ys
+  -> xs
+  -> IO (loss, arch)
+criterion lossfn forward lr net ys xs = do
+  (out, getArchGrad) <- forward lr net xs
+  (loss, getLossGrad) <- lossfn ys out
+  gnet <- fmap fst . (getArchGrad <=< getLossGrad) $ loss
+  pure (loss, gnet)
 
 

@@ -200,20 +200,6 @@ ninBatchBP
   -> IO (Tensor '[1], NIN)          -- ^ output and gradient
 ninBatchBP = criterion crossentropy ninBatch
 
-criterion
-  :: (ys -> out -> IO (loss, loss -> IO out))              -- ^ loss function
-  -> (lr -> arch -> xs -> IO (out, out -> IO (arch, xs)))  -- ^ forward function with a learning rate
-  -> lr
-  -> arch
-  -> ys
-  -> xs
-  -> IO (loss, arch)
-criterion lossfn forward lr net ys xs = do
-  (out, getArchGrad) <- forward lr net xs
-  (loss, getLossGrad) <- lossfn ys out
-  gnet <- fmap fst . (getArchGrad <=< getLossGrad) $ loss
-  pure (loss, gnet)
-
 ninBatch
   :: HsReal
   -> NIN

@@ -21,6 +21,10 @@ module Dense3
   , FC3Arch
   , mkFC3
   , dense3BatchIO
+  , linearBatchIO
+  , linearBatchWithIO
+  , reluIO
+  , thresholdIO
   ) where
 
 import Criterion
@@ -105,7 +109,7 @@ dense3BatchIO lr (l1){-, l2, l3)-} i = do
   -- (fc3out, fc3getgrad) <- linearBatchIO 1 (constant 0) (constant 0) (Linear (constant 0, constant 0)) l3 r2out
   -- (fin, smgrads)       <- softMaxBatch fc3out
 
-  (fc1out, fc1getgrad) <- linearBatchIO lr (constant 0) (constant 0) (Linear (constant 0, constant 0)) l1 i
+  (fc1out, fc1getgrad) <- linearBatchIO lr l1 i
   -- (fc2out, fc2getgrad) <- linearBatchIO lr (constant 0) (constant 0) (Linear (constant 0, constant 0)) l2 fc1out
   -- (fc3out, fc3getgrad) <- linearBatchIO lr (constant 0) (constant 0) (Linear (constant 0, constant 0)) l3 fc2out
   -- (fin, smgrads)       <- softMaxBatch fc3out
@@ -132,28 +136,36 @@ reluIO :: Dimensions d => Tensor d -> IO (Tensor d, Tensor d -> IO (Tensor d))
 reluIO = thresholdIO 0 0
 
 -- ========================================================================= --
-
--- | 'linear' with a batch dimension
 linearBatchIO
   :: forall i o b
    . All KnownDim '[b,i,o]
   => HsReal
+  -> (Linear i o)
+  -> (Tensor '[b, i])
+  -> IO (Tensor '[b, o], Tensor '[b, o] -> IO ((Linear i o),  (Tensor '[b, i])))     --- by "simple autodifferentiation", I am seeing that this is a fork
+linearBatchIO = linearBatchWithIO Nothing Nothing Nothing
 
-  -> (Tensor '[b, o])       -- output buffer. currently mutable.
-  -> (Tensor '[b, i])       -- gradin buffer. currently mutable.
-  -> (Linear i o)           -- gradparam buffer. currently mutable.
+-- | 'linear' with a batch dimension
+linearBatchWithIO
+  :: forall i o b
+   . All KnownDim '[b,i,o]
+  => Maybe (Tensor '[b, o])       -- output buffer. currently mutable.
+  -> Maybe (Tensor '[b, i])       -- gradin buffer. currently mutable.
+  -> Maybe (Linear i o)           -- gradparam buffer. currently mutable.
+
+  -> HsReal
 
   -> (Linear i o)
   -> (Tensor '[b, i])
   -> IO (Tensor '[b, o], Tensor '[b, o] -> IO ((Linear i o),  (Tensor '[b, i])))     --- by "simple autodifferentiation", I am seeing that this is a fork
-linearBatchIO lr outbuffer gradinbuf gradparambuf l i = do
+linearBatchWithIO moutbuffer mgradinbuf mgradparambuf lr l i = do
   let o = updateOutput i l
   -- print o
   -- throwString "o"
   pure (o, \gout -> do
     let g@(Linear (gw, gb)) = accGradParameters i gout l
     let gin = updateGradInput i gout (Linear.weights l)
-    print gw
+    -- print gw
     pure (g, gin))
    where
     updateOutput :: Tensor '[b, i] -> Linear i o -> Tensor '[b, o]
@@ -161,8 +173,8 @@ linearBatchIO lr outbuffer gradinbuf gradparambuf l i = do
       let
         o = addmm 1 (constant 0) 1 i w
       in
-        o
-        -- addr 1 o 1 (constant 1) b
+        -- o
+        addr 1 o 1 (constant 1) b
 
 -- -- @
 -- --   res = (v1 * M) + (v2 * mat1 * mat2)
@@ -183,14 +195,13 @@ linearBatchIO lr outbuffer gradinbuf gradparambuf l i = do
     updateGradInput i gout w = addmm 0 (constant 0) 1 gout (transpose2d w)
 
     accGradParameters :: Tensor '[b,i] -> Tensor '[b,o] -> Linear i o -> Linear i o
-    -- accGradParameters i gout (Linear (w, b)) = Linear (gw, gb) -- addr 1 (constant 0) lr i gout, cadd (constant 0) lr gout)
-    accGradParameters i gout (Linear (w, b)) = Linear (gw, undefined) -- addr 1 (constant 0) lr i gout, cadd (constant 0) lr gout)
+    accGradParameters i gout (Linear (w, b)) = Linear (gw, gb) -- addr 1 (constant 0) lr i gout, cadd (constant 0) lr gout)
       where
         gw :: Tensor '[i, o]
         gw = addmm 1 (constant 0) lr (transpose2d i) gout
 
-        -- gb :: Tensor '[o]
-        -- gb = addmv 1 (constant 0) lr tgout (constant 1)
+        gb :: Tensor '[o]
+        gb = addmv 1 (constant 0) lr tgout (constant 1)
 
         tgout :: Tensor '[o,b]
         tgout = transpose2d gout
