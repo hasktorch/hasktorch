@@ -148,51 +148,73 @@ _softMarginCriterion_updateGradInput t0 t1 t2 t3 = Dynamic._softMarginCriterion_
 -- By default, the losses are averaged over observations for each minibatch.
 -- However, if the field sizeAverage is set to false, the losses are instead
 -- summed.
-mSECriterion' :: forall s bs d d' reduce out
-  . Reifies s W
+mSECriterionWith
+  :: forall s bs d d' reduce out size_average
+  .  Reifies s W
   => All Dimensions '[d', d, out]
   => KnownDim bs
   => d ~ (bs :+ d') -- must have minibatch
   => out ~ (If reduce '[1] d)
-  => Bool             -- ^ size_average:
-                      --     By default, the losses are averaged over each loss element in the batch.
-                      --     Note that for some losses, there multiple elements per sample.
-                      --     If the field size_average is set to False, the losses are instead
-                      --     summed for each minibatch. Ignored when reduce is False. Default: True
-  -> SBool reduce     -- ^ reduce:
-                      --     By default, the losses are averaged or summed over observations for each
-                      --     minibatch depending on size_average. When reduce is False, returns a loss
-                      --     per batch element instead and ignores size_average. Default: True
-  -> Tensor d
-  -> BVar s (Tensor d)
-  -> BVar s (Tensor out)
-mSECriterion' sizeAvg reduce target = liftOp1 . op1 $ \i -> (updateOutput i, \gout -> updateGradInput i gout)
-  where
-    -- mSECriterion forward pass (updates the output tensor)
-    {-# NOINLINE updateOutput #-}
-    updateOutput :: Tensor d -> Tensor out
-    updateOutput i = unsafePerformIO $ do
-      let o = new
-      Dynamic._mSECriterion_updateOutput (asDynamic i) (asDynamic target) (asDynamic o) sizeAvg (fromSing reduce)
-      pure o
+  => SBool size_average  -- ^ size_average:
+                         --     By default, the losses are averaged over each loss element in the batch.
+                         --     Note that for some losses, there multiple elements per sample.
+                         --     If the field size_average is set to False, the losses are instead
+                         --     summed for each minibatch. Ignored when reduce is False. Default: True
+  -> SBool reduce        -- ^ reduce:
+                         --     By default, the losses are averaged or summed over observations for each
+                         --     minibatch depending on size_average. When reduce is False, returns a loss
+                         --     per batch element instead and ignores size_average. Default: True
+  -> Tensor d            -- ^ target
+  -> BVar s (Tensor d)   -- ^ input
+  -> BVar s (Tensor out) -- ^ loss value and arrow from output gradient to input gradient
+mSECriterionWith sizeAvg reduce target = liftOp1 . op1 $ \i -> unsafePerformIO $ do
+  (o, getgrad) <- mSECriterionWithIO sizeAvg reduce target i
+  pure (o, unsafePerformIO . getgrad)
+{-# NOINLINE mSECriterionWith #-}
 
-    -- mSECriterion backward-update (updates the layer and bias tensors)
-    {-# NOINLINE updateGradInput #-}
-    updateGradInput :: Tensor d -> Tensor out -> Tensor d
-    updateGradInput i gout = unsafePerformIO $ do
-      let gin = new
-      Dynamic._mSECriterion_updateGradInput (asDynamic i) (asDynamic target) (asDynamic gout) (asDynamic gin) sizeAvg (fromSing reduce)
-      pure gin
 
-mSECriterion :: forall s bs d d'
-  . Reifies s W
-  => All Dimensions '[d', d]
+{-# NOINLINE mSECriterionWithIO #-}
+mSECriterionWithIO
+  :: forall bs d d' reduce out size_average
+  .  All Dimensions '[d', d, out]
   => KnownDim bs
-  => d ~ (bs :+ d')
-  => Tensor d
-  -> BVar s (Tensor d)
-  -> BVar s (Tensor '[1])
-mSECriterion = mSECriterion' True (sing :: SBool 'True)
+  => d ~ (bs :+ d') -- must have minibatch
+  => out ~ (If reduce '[1] d)
+  => SBool size_average  -- ^ size_average:
+                         --     By default, the losses are averaged over each loss element in the batch.
+                         --     Note that for some losses, there multiple elements per sample.
+                         --     If the field size_average is set to False, the losses are instead
+                         --     summed for each minibatch. Ignored when reduce is False. Default: True
+  -> SBool reduce        -- ^ reduce:
+                         --     By default, the losses are averaged or summed over observations for each
+                         --     minibatch depending on size_average. When reduce is False, returns a loss
+                         --     per batch element instead and ignores size_average. Default: True
+  -> Tensor d            -- ^ target
+  -> Tensor d            -- ^ input
+  -> IO (Tensor out, Tensor out -> IO (Tensor d)) -- ^ loss value and arrow from output gradient to input gradient
+mSECriterionWithIO sizeAvg' reduce' target i = do
+  let o = new
+
+  -- mSECriterion forward pass (updates the output tensor)
+  Dynamic._mSECriterion_updateOutput (asDynamic i) (asDynamic target) (asDynamic o) sizeAvg reduce
+
+  pure (o, \gout -> do
+    -- mSECriterion backward-update (updates the layer and bias tensors)
+    let gin = new
+    Dynamic._mSECriterion_updateGradInput (asDynamic i) (asDynamic target) (asDynamic gout) (asDynamic gin) sizeAvg reduce
+    pure gin)
+  where
+    sizeAvg = fromSing sizeAvg'
+    reduce = fromSing reduce'
+
+mSECriterionIO :: forall bs d d'
+  .  All Dimensions '[d', d]
+  => KnownDim bs
+  => d ~ (bs :+ d')      -- must have minibatch
+  => Tensor d            -- ^ target
+  -> Tensor d            -- ^ input
+  -> IO (Tensor '[1], Tensor '[1] -> IO (Tensor d)) -- ^ loss value and arrow from output gradient to input gradient
+mSECriterionIO = mSECriterionWithIO (sing :: SBool 'True) (sing :: SBool 'True)
 
 
 -- | The <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence Kullback-Leibler divergence> Loss
