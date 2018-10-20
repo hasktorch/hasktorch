@@ -342,6 +342,7 @@ executable xor
         vector -any,
         time -any,
         transformers -any,
+        primitive -any,
         safe-exceptions ==0.1.0.0 || >0.1.0.0
     
     if flag(cuda)
