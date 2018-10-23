@@ -1,13 +1,10 @@
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE Strict #-}
-{- OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 module Main where
 
 import Prelude
@@ -16,14 +13,15 @@ import DataLoading (mkVBatches, dataloader')
 import Dense3
 
 import Data.DList (DList)
-import Data.Maybe (fromJust)
 import Data.List (genericLength)
+import Data.Maybe (fromJust)
+import Data.Time (getCurrentTime, diffUTCTime)
 import Data.Vector (Vector)
 import Control.Arrow (second)
 import Control.Monad (forM, forM_, when)
 import System.IO (stdout, hFlush)
 import System.IO.Unsafe (unsafePerformIO)
-import System.Mem (performGC, performMajorGC)
+-- import System.Mem (performGC, performMajorGC)
 import Text.Printf (printf)
 
 import qualified Data.HashMap.Strict as HM
@@ -32,23 +30,31 @@ import qualified Data.Vector as V
 import qualified System.Random.MWC as MWC
 
 #ifdef CUDA
-import Torch.Cuda.Double -- (Tensor, HsReal, (.:), mSECriterion)
 import qualified Torch.Cuda.Double as D
 import qualified Torch.Cuda.Long as Long
+import Torch.Cuda.Double
 #else
-import Torch.Double -- (Tensor, HsReal, (.:), mSECriterion)
 import qualified Torch.Double as D
 import qualified Torch.Long as Long
+import Torch.Double
 #endif
+  ( Tensor, HsReal
+  , (.:), Dim, dim, dimVal
+  , mSECriterionIO
+  , Positive, positive, positiveValue
+  , (^*), get1d, keep
+  , max2d1
+  , resizeAs
+  )
 
 import Torch.Double.NN.Linear (Linear(..))
 import Torch.Data.Loaders.Cifar10
 import Torch.Data.OneHot (onehotf)
 
-lr = 1.0
-datasize = 40
-reportat' = 399
-epos = 1
+datasize = 10000
+reportat' = 1000
+epos = 30
+Just plr = positive 0.01
 
 type BatchSize = 4
 bsz :: Dim BatchSize
@@ -62,36 +68,30 @@ main = do
 
   lbatches :: Vector (Vector (Category, FilePath))
     <- mkVBatches 4 . V.take datasize <$> cifar10set g default_cifar_path Train
-  printf "loaded %i filepaths\n\n" (length lbatches * 4)
-
-  putStrLn "transforming to tensors"
+  printf "\nloaded %i filepaths" (length lbatches * 4)
+  putStrLn "\ntransforming to tensors"
   batches <- dataloader' bsz lbatches
 
   net0 <- mkFC3
   print net0
 
-  net <- epochs lr epos batches net0
+  net <- epochs plr epos batches net0
 
   putStrLn "reporting:"
   report net batches
-  performMajorGC
   putStrLn ""
 
   where
     report :: FC3Arch -> Vector (Tensor '[BatchSize, 10], Tensor '[BatchSize, 3, 32, 32]) -> IO ()
     report net ltest = do
-      -- putStrLn "x"
-
       foo :: [DList (Category, Category)]
         <- forM (V.toList ltest) $ \(y, x) -> do
           bar <- y2cat y
-          DL.fromList . zip bar . t2cat <$> forward net x
+          DL.fromList . zip bar . t2cat <$> forward3 net x
 
       let
         test :: [(Category, Category)]
         test = DL.toList (DL.concat foo)
-
-      -- print test
 
       let
         cathm :: [(Category, [Category])]
@@ -113,21 +113,22 @@ main = do
 -- Training on a dataset
 -- ========================================================================= --
 epochs
-  :: HsReal              -- ^ learning rate
+  :: Positive HsReal     -- ^ learning rate
   -> Int                 -- number of epochs to train on
   -> Vector (Tensor '[BatchSize, 10], Tensor '[BatchSize, 3, 32, 32])
   -> FC3Arch               -- ^ initial model
   -> IO FC3Arch            -- ^ final model
-epochs lr mx batches = runEpoch 1
+epochs plr mx batches = runEpoch 1
   where
     runEpoch :: Int -> FC3Arch -> IO FC3Arch
     runEpoch e net
       | e > mx = putStrLn "\nfinished training loops" >> pure net
       | otherwise = do
+      t0 <- getCurrentTime
       (net', losstot) <- V.ifoldM go (net, 0) batches
-      printf ("%s[ce %.4f]\n") estr (losstot / fromIntegral (V.length batches))
-
-      performMajorGC
+      t1 <- getCurrentTime
+      let diff = realToFrac (t1 `diffUTCTime` t0) :: Float
+      printf ("%s[ce %.8f] %.0fs\n") estr (losstot / fromIntegral (V.length batches)) diff
       runEpoch (e+1) net'
 
       where
@@ -135,8 +136,7 @@ epochs lr mx batches = runEpoch 1
         estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
 
         go (!net, !runningloss) !bid (ys, xs) = do
-          (net', loss) <- step True lr net xs ys
-          performGC
+          (loss, net') <- backward plr net xs ys
           pure (net', runningloss + getloss loss)
 
 toYs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[BatchSize, 10])
@@ -148,41 +148,34 @@ toXs xs = pure . D.catArray0 $ fmap (D.unsqueeze1d (dim :: Dim 0) . snd) xs
 t2cat :: Tensor '[BatchSize, 10] -> [Category]
 t2cat = (fmap (toEnum . fromIntegral) . Long.tensordata . fromJust . snd . flip max2d1 keep)
 
-forward arch xs = do
-  fst <$> dense3BatchIO lr arch (resizeAs xs)
+forward3 :: FC3Arch -> Tensor '[BatchSize, 3, 32, 32] -> IO (Tensor '[BatchSize, 10])
+forward3 arch xs = do
+  fst <$> dense3BatchIO undefined arch (resizeAs xs)
 
--- step
---   :: Bool
---   -> HsReal
---   -> FC3Arch
---   -> Tensor '[BatchSize, 3, 32, 32]
---   -> Tensor '[BatchSize, 10]
---   -> IO (FC3Arch, Tensor '[1])
--- step istraining lr net@(l1, l2, l3) xs ys = do
---   (ff3out, getff3grads) <- dense3BatchIO lr net (resizeAs xs)
---   (loss, getCEgrad) <- crossEntropyIO (Long.resizeAs . fromJust . snd $ max2d1 ys keep) ff3out
---   pure (if not istraining then undefined else unsafePerformIO $ do
---     (g1, g2, g3) <- fmap fst . getff3grads =<< getCEgrad loss
---     let l1' = (l1 - g1)
---     let l2' = (l2 - g2)
---     let l3' = (l3 - g3)
---     pure (l1', l2', l3')
---     , loss)
-
-step
-  :: Bool
-  -> HsReal
+backward
+  :: Positive HsReal
   -> FC3Arch
   -> Tensor '[BatchSize, 3, 32, 32]
   -> Tensor '[BatchSize, 10]
-  -> IO (FC3Arch, Tensor '[1])
-step istraining lr net@(Linear (l1, b1)) xs ys = do
-  -- print xs
-  (ff3out, getff3grads) <- dense3BatchIO lr net (resizeAs xs)
+  -> IO (Tensor '[1], FC3Arch)
+backward plr net xs ys = do
+  (ff3out, getff3grads) <- dense3BatchIO undefined net (resizeAs xs)
   (loss, getCEgrad) <- crossEntropyIO (Long.resizeAs . fromJust . snd $ max2d1 ys keep) ff3out
-  pure (if not istraining then undefined else unsafePerformIO $ do
-    (Linear (g1, _)) <- fmap fst . getff3grads =<< getCEgrad loss
-    -- let l1' = (l1 + g1)
-    pure (Linear (l1-g1, b1))
-    , loss)
+  printf "\rloss: %.12f" (fromJust $ get1d loss 0)
+  hFlush stdout
+  pure (loss, unsafePerformIO $ do
+    grad <- fmap fst . getff3grads =<< getCEgrad loss
+    pure $ net `update` (plr, grad)
+    )
+
+update :: FC3Arch -> (Positive HsReal, FC3Arch) -> FC3Arch
+update (l1, l2, l3) (plr, (g1, g2, g3)) =
+  ( l1 - (g1 ^* lr)
+  , l2 - (g2 ^* lr)
+  , l3 - (g3 ^* lr)
+  )
+ where
+  lr :: HsReal
+  lr = positiveValue plr
+
 

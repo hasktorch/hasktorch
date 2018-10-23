@@ -1,17 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
-{- LANGUAGE Strict #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE CPP #-}
-{- OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
+{-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Dense3
   ( y2cat
@@ -21,6 +18,7 @@ module Dense3
   , FC3Arch
   , mkFC3
   , dense3BatchIO
+
   , linearBatchIO
   , linearBatchWithIO
   , reluIO
@@ -73,68 +71,56 @@ y2cat ys = pure $
   where
     rez = fromJust . snd $ Torch.max2d1 ys keep
 
-type FC3Arch = (Linear (32*32*3) {-(32*32*3*2), Linear (32*32*3*2) (32*32), Linear (32*32)-} 10)
+type FC3Arch = (Linear (32*32*3) (32*32), Linear (32*32) 32, Linear 32 10)
 
 mkFC3 :: IO FC3Arch
 mkFC3 = do
+  -- xavier initialization
+  (,,)
+    <$> pure (Linear (constant (1/(32*32)), constant (1/(32*32))))
+    <*> pure (Linear (constant (1/32),      constant (1/32)))
+    <*> pure (Linear (constant (1/10),      constant (1/10)))
+{-
   g <- newRNG
   manualSeed g 1
-  let Just rg = ord2Tuple (-1, 1)
-  w0 <- uniform g rg
-  b0 <- uniform g rg
-  -- w1 <- uniform g rg
-  -- b1 <- uniform g rg
-  -- w2 <- uniform g rg
-  -- b2 <- uniform g rg
-  pure
-    ( Linear (w0, b0)
-    -- , Linear (w1, b1)
-    -- , Linear (w2, b2)
-    )
-
+  (,,)
+    <$> (Linear <$> ((,) <$> uniform g rg <*> uniform g rg))
+    <*> (Linear <$> ((,) <$> uniform g rg <*> uniform g rg))
+    <*> (Linear <$> ((,) <$> uniform g rg <*> uniform g rg))
+ where
+  Just rg = ord2Tuple (-1, 1)
+-}
 
 dense3BatchIO
-  -- :: All KnownNat '[i,h0,h1] -- '[i] --
-  -- => All KnownDim '[i,h0,h1] -- '[i] --
   :: HsReal
   -> FC3Arch
   ->    (Tensor '[4, 32*32*3])  -- ^ input
   -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (FC3Arch, Tensor '[4, 32*32*3]))
-dense3BatchIO lr (l1){-, l2, l3)-} i = do
-  -- (fc1out, fc1getgrad) <- linearBatchIO 1 (constant 0) (constant 0) (Linear (constant 0, constant 0)) l1 i
-  -- ( r1out, unrelu1)    <- reluIO fc1out
-  -- (fc2out, fc2getgrad) <- linearBatchIO 1 (constant 0) (constant 0) (Linear (constant 0, constant 0)) l2 r1out
-  -- ( r2out, unrelu2)    <- reluIO fc2out
-  -- (fc3out, fc3getgrad) <- linearBatchIO 1 (constant 0) (constant 0) (Linear (constant 0, constant 0)) l3 r2out
-  -- (fin, smgrads)       <- softMaxBatch fc3out
+dense3BatchIO lr (l1, l2, l3) i = do
+  (fc1out, fc1getgrad) <- linearBatchIO 1 l1 i
+  ( r1out, unrelu1)    <- reluIO fc1out
 
-  (fc1out, fc1getgrad) <- linearBatchIO lr l1 i
-  -- (fc2out, fc2getgrad) <- linearBatchIO lr (constant 0) (constant 0) (Linear (constant 0, constant 0)) l2 fc1out
-  -- (fc3out, fc3getgrad) <- linearBatchIO lr (constant 0) (constant 0) (Linear (constant 0, constant 0)) l3 fc2out
-  -- (fin, smgrads)       <- softMaxBatch fc3out
-  (fin, smgrads)       <- softMaxBatch fc1out
+  (fc2out, fc2getgrad) <- linearBatchIO 1 l2 r1out
+  ( r2out, unrelu2)    <- reluIO fc2out
+
+  (fc3out, fc3getgrad) <- linearBatchIO 1 l3 r2out
+  (fin, smgrads)       <- softMaxBatch fc3out
 
   pure (fin, \gout -> do
     smg <- smgrads gout
-    (fcg, fcgin) <- fc1getgrad smg
-    pure (fcg, fcgin))
+    (fc3g, fc3gin) <- fc3getgrad smg
+    (fc2g, fc2gin) <- fc2getgrad =<< unrelu2 fc3gin
+    (fc1g, fc1gin) <- fc1getgrad =<< unrelu1 fc2gin
 
---     (fc3g, fc3gin) <- fc3getgrad gout
--- -- #ifdef NONLINEAR
--- --     (fc2g, fc2gin) <- fc2getgrad =<< unrelu2 fc3gin
--- --     (fc1g, fc1gin) <- fc1getgrad =<< unrelu1 fc2gin
--- -- #else
---     (fc2g, fc2gin) <- fc2getgrad fc3gin
---     (fc1g, fc1gin) <- fc1getgrad fc2gin
--- -- #endif
---     pure ((fc1g, fc2g, fc3g), fc1gin))
+    pure ((fc1g, fc2g, fc3g), fc1gin))
 
+
+-- ========================================================================= --
 
 -- | ReLU activation function
 reluIO :: Dimensions d => Tensor d -> IO (Tensor d, Tensor d -> IO (Tensor d))
 reluIO = thresholdIO 0 0
 
--- ========================================================================= --
 linearBatchIO
   :: forall i o b
    . All KnownDim '[b,i,o]

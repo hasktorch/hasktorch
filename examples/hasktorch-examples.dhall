@@ -61,6 +61,7 @@ in let lenet-experiment =
       , packages.unordered-containers
 
       , packages.dlist
+      , packages.ghc-typelits-natnormalise
       , packages.list-t
       , packages.mtl
       , packages.monad-loops

@@ -52,6 +52,7 @@ in common.Package //
           [ "Torch.Data.Loaders.Internal"
           , "Torch.Data.Loaders.RGBVector"
           , "Torch.Data.Loaders.Cifar10"
+          -- , "Torch.Data.Loaders.MNIST"
           , "Torch.Data.Loaders.Logging"
 
           , "Torch.Data.Metrics"

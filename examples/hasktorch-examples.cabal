@@ -179,6 +179,7 @@ executable lenet-cifar10
         hasktorch-zoo -any,
         unordered-containers -any,
         dlist -any,
+        ghc-typelits-natnormalise -any,
         list-t -any,
         mtl -any,
         monad-loops -any,
@@ -218,6 +219,7 @@ executable lenet-cifar10-initialization
         hasktorch-zoo -any,
         unordered-containers -any,
         dlist -any,
+        ghc-typelits-natnormalise -any,
         list-t -any,
         mtl -any,
         monad-loops -any,
@@ -257,6 +259,7 @@ executable lenet-cifar10-trainonebatch
         hasktorch-zoo -any,
         unordered-containers -any,
         dlist -any,
+        ghc-typelits-natnormalise -any,
         list-t -any,
         mtl -any,
         monad-loops -any,
@@ -296,6 +299,7 @@ executable dense3-cifar10
         hasktorch-zoo -any,
         unordered-containers -any,
         dlist -any,
+        ghc-typelits-natnormalise -any,
         list-t -any,
         mtl -any,
         monad-loops -any,
@@ -335,6 +339,7 @@ executable xor
         hasktorch-zoo -any,
         unordered-containers -any,
         dlist -any,
+        ghc-typelits-natnormalise -any,
         list-t -any,
         mtl -any,
         monad-loops -any,
@@ -342,7 +347,6 @@ executable xor
         vector -any,
         time -any,
         transformers -any,
-        primitive -any,
         safe-exceptions ==0.1.0.0 || >0.1.0.0
     
     if flag(cuda)
