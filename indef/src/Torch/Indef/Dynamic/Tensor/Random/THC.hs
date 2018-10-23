@@ -36,7 +36,7 @@ module Torch.Indef.Dynamic.Tensor.Random.THC
   , OpenUnit, openUnit, openUnitValue
   , ClosedUnit, closedUnit, closedUnitValue
   , Positive, positive, positiveValue
-  , Ord2Tuple, ord2Tuple, ord2TupleValues
+  , Ord2Tuple, ord2Tuple, ord2TupleValue
   ) where
 
 import Control.Monad.Managed (runManaged, managed)
@@ -48,7 +48,7 @@ import Torch.Indef.Dynamic.Tensor.Random.TH
   ( OpenUnit, openUnit, openUnitValue
   , ClosedUnit, closedUnit, closedUnitValue
   , Positive, positive, positiveValue
-  , Ord2Tuple, ord2Tuple, ord2TupleValues
+  , Ord2Tuple, ord2Tuple, ord2TupleValue
   )
 
 import qualified Torch.Sig.Tensor.Random.THC as Sig
@@ -106,7 +106,7 @@ _uniform t tup = runManaged $ do
   t' <- managedTensor t
   liftIO $ Sig.c_uniform s' t' (hs2cAccReal a) (hs2cAccReal b)
   where
-    (a, b) = ord2TupleValues tup
+    (a, b) = ord2TupleValue tup
 
 -- | CUDA version of 'THRandom._normal'
 _normal :: Dynamic -> HsAccReal -> Positive HsAccReal -> IO ()

@@ -7,7 +7,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE Strict #-}
-{-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
+{- OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 module Main where
 
 import Prelude

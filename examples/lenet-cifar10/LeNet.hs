@@ -58,6 +58,7 @@ import Data.Singletons
 import Data.Singletons.Prelude.Bool
 import Torch.Double hiding (logSoftMaxBatch, conv2dMMBatch)
 
+import Criterion (criterion)
 import Torch.Double.NN.Linear (Linear(..))
 
 import Torch.Data.Loaders.Cifar10

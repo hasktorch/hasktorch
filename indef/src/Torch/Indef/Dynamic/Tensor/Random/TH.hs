@@ -39,7 +39,7 @@ module Torch.Indef.Dynamic.Tensor.Random.TH
   , OpenUnit, openUnit, openUnitValue
   , ClosedUnit, closedUnit, closedUnitValue
   , Positive, positive, positiveValue
-  , Ord2Tuple, ord2Tuple, ord2TupleValues
+  , Ord2Tuple, ord2Tuple, ord2TupleValue
   ) where
 
 import Foreign hiding (with, new)
@@ -234,7 +234,7 @@ _clampedRandom r g tup = withLift $ Sig.c_clampedRandom
   <*> pure (fromIntegral a)
   <*> pure (fromIntegral b)
   where
-    (a, b) = ord2TupleValues tup
+    (a, b) = ord2TupleValue tup
 
 -- | call C-level @cappedRandom@
 _cappedRandom r g a = withLift $ Sig.c_cappedRandom
@@ -272,7 +272,7 @@ _uniform r g tup = withLift $ Sig.c_uniform
   <*> pure (hs2cAccReal a)
   <*> pure (hs2cAccReal b)
   where
-    (a, b) = ord2TupleValues tup
+    (a, b) = ord2TupleValue tup
 
 -- | call C-level @normal@
 _normal :: Dynamic -> Generator -> HsAccReal -> Positive HsAccReal -> IO ()

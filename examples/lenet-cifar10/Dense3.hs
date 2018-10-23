@@ -67,7 +67,6 @@ import qualified Torch.Double.Dynamic.NN as Dynamic
 import qualified Torch.Double.Dynamic.NN.Criterion as Dynamic
 import qualified Torch.Double.Dynamic.NN.Activation as Dynamic
 
-
 y2cat :: Tensor '[4, 10] -> IO [Category]
 y2cat ys = pure $
   fmap ((\i -> toEnum . fromIntegral . fromJust $ Long.get2d rez i 0)) [0..3]
@@ -160,12 +159,9 @@ linearBatchWithIO
   -> IO (Tensor '[b, o], Tensor '[b, o] -> IO ((Linear i o),  (Tensor '[b, i])))     --- by "simple autodifferentiation", I am seeing that this is a fork
 linearBatchWithIO moutbuffer mgradinbuf mgradparambuf lr l i = do
   let o = updateOutput i l
-  -- print o
-  -- throwString "o"
   pure (o, \gout -> do
     let g@(Linear (gw, gb)) = accGradParameters i gout l
     let gin = updateGradInput i gout (Linear.weights l)
-    -- print gw
     pure (g, gin))
    where
     updateOutput :: Tensor '[b, i] -> Linear i o -> Tensor '[b, o]
@@ -173,29 +169,13 @@ linearBatchWithIO moutbuffer mgradinbuf mgradparambuf lr l i = do
       let
         o = addmm 1 (constant 0) 1 i w
       in
-        -- o
         addr 1 o 1 (constant 1) b
-
--- -- @
--- --   res = (v1 * M) + (v2 * mat1 * mat2)
--- -- @
--- --
--- -- If @mat1@ is a @n × m@ matrix, @mat2@ a @m × p@ matrix, @M@ must be a @n × p@ matrix.
--- addmm
---   :: HsReal     -- ^ v1
---   -> Dynamic    -- ^ M
---   -> HsReal     -- ^ v2
---   -> Dynamic    -- ^ mat1
---   -> Dynamic    -- ^ mat2
---   -> Dynamic -- ^ res
--- addmm = mkNewFunction _addmm
-
 
     updateGradInput :: Tensor '[b, i] -> Tensor '[b, o] -> Tensor '[i,o] -> Tensor '[b, i]
     updateGradInput i gout w = addmm 0 (constant 0) 1 gout (transpose2d w)
 
     accGradParameters :: Tensor '[b,i] -> Tensor '[b,o] -> Linear i o -> Linear i o
-    accGradParameters i gout (Linear (w, b)) = Linear (gw, gb) -- addr 1 (constant 0) lr i gout, cadd (constant 0) lr gout)
+    accGradParameters i gout (Linear (w, b)) = Linear (gw, gb)
       where
         gw :: Tensor '[i, o]
         gw = addmm 1 (constant 0) lr (transpose2d i) gout
@@ -225,12 +205,9 @@ softMaxBatchIO
 softMaxBatchIO mgin inp = do
   let out = constant 0
   updateOutput_ inp i out
-
-  -- print out
   pure (out, \gout -> do
     let gin = constant 0
     updateGradInput_ inp gout out i gin
-    -- print gin
     pure gin
     )
 

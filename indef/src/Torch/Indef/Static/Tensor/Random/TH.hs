@@ -32,7 +32,7 @@ module Torch.Indef.Static.Tensor.Random.TH
   , OpenUnit   , Dynamic.openUnit   , Dynamic.openUnitValue
   , ClosedUnit , Dynamic.closedUnit , Dynamic.closedUnitValue
   , Positive   , Dynamic.positive   , Dynamic.positiveValue
-  , Ord2Tuple  , Dynamic.ord2Tuple  , Dynamic.ord2TupleValues
+  , Ord2Tuple  , Dynamic.ord2Tuple  , Dynamic.ord2TupleValue
 
   , multivariate_normal
   ) where

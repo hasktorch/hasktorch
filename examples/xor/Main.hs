@@ -8,11 +8,14 @@ import Dense3 (linearBatchIO, reluIO)
 
 -- Dependencies
 import Text.Printf (printf)
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, when)
 import Control.Monad.ST (ST, runST)
+import Data.Maybe (fromJust)
+import System.IO (hFlush, stdout)
 import System.Random.MWC (GenST)
 import qualified System.Random.MWC as MWC (toSeed, Seed, save, restore, uniformR)
 import qualified Data.Vector as V (fromList)
+import Lens.Micro
 
 -- Torch deps
 import Torch.Double
@@ -21,12 +24,13 @@ import Torch.Double
   , constant                          -- Torch.Indef.Static.Tensor.Math
   , (^*)                              -- Torch.Indef.Static.Pairwise
   , uniform, ord2Tuple                -- Torch.Indef.Math.Random.TH
+  , positive, positiveValue, Positive -- Torch.Indef.Math.Random.TH
   , manualSeed, newRNG                -- Torch.Core.Random
   , eqTensor                          -- Torch.Indef.Static.CompareT
   , allOf                             -- Torch.Indef.Mask
   , mSECriterionIO                    -- Torch.Indef.Static.NN.Criterion
   )
-import Torch.Double.NN.Linear (Linear(Linear))
+import Torch.Double.NN.Linear (Linear(Linear), getTensors)
 
 type MLP2 i h o = (Linear i h, Linear h o)
 
@@ -49,46 +53,45 @@ main = do
     deterministic = do
       (xs, ys) <- mkExactData
       net0 <- mkExact
-      putStrLn "computing exact XOR function. True values:"
+      putStrLn "Inferring with the exact XOR function. True values:"
       print ys
-      (ys', _) <- xorForward undefined net0 xs
+      (ys', _) <- xorForward net0 xs
       putStrLn "Inferred values:"
       print ys'
-
       printf "All values are identical? %s\n" (show . allOf $ eqTensor ys ys')
-      (l, _) <- loss undefined net0 ys xs
+      (l, _) <- mSECriterionIO ys ys'
       printf "Mean-squared error: %s\n" (show (get1d l 0))
 
     seed0 = MWC.toSeed . V.fromList $ [0..256]
 
     stochastic = do
       net0 <- mkUniform
-      (_, s, net) <-
-        trainer 0.01 4 (0, seed0, net0)
-      (_, xs, ys) <- xorBatch s
-      (ys', _) <- xorForward undefined net xs
-      putStrLn "Inferred values:"
+      let Just lr = positive 0.2
+      (_, _, net) <-
+        trainer lr 10000 (0, seed0, net0)
+
+      (xs, ys) <- mkExactData
+      (ys', _) <- xorForward net xs
+      putStrLn "\nInferred values:"
       print ys'
 
-      printf "All values are identical? %s\n" (show . allOf $ eqTensor ys ys')
-      (l, _) <- loss undefined net0 ys xs
+      (l, _) <- mSECriterionIO ys ys'
       printf "Mean-squared error: %s\n" (show (get1d l 0))
 
     trainer lr n (c, s, net)
-      | c > n = pure (c, s, net)
+      | c >= n = pure (c, s, net)
       | otherwise = do
         (s', xs, ys) <- xorBatch s
-        (_, grad) <- loss lr net ys xs
+        (o, grad) <- backward net ys xs
         trainer lr n (c+1, s', update net (lr, grad))
 
 
 -- Forward + AD
 xorForward
-  :: HsReal
-  -> XORArch
+  :: XORArch
   -> Tensor '[4, 2]  -- ^ input
   -> IO (Tensor '[4, 1], Tensor '[4, 1] -> IO (XORArch, Tensor '[4, 2]))
-xorForward lr (l1, l2) i = do
+xorForward (l1, l2) i = do
   (fc1out,    getl1gin) <- linearBatchIO 1 l1 i
   (reluout, getrelugin) <- reluIO fc1out
   (fc2out,    getl2gin) <- linearBatchIO 1 l2 reluout
@@ -99,16 +102,22 @@ xorForward lr (l1, l2) i = do
     pure ((l1, l2), gin1))
 
 -- Forward + AD composed with the loss calculation
-loss :: HsReal -> XORArch -> Tensor '[4, 1] -> Tensor '[4, 2] -> IO (Tensor '[1], XORArch)
-loss lr net ys xs = do
-  (out, getArchGrad) <- xorForward lr net xs
+backward :: XORArch -> Tensor '[4, 1] -> Tensor '[4, 2] -> IO (Tensor '[1], XORArch)
+backward net ys xs = do
+  (out, getArchGrad) <- xorForward net xs
   (loss, getLossGrad) <- mSECriterionIO ys out
+
+  printf "\rloss: %f" (fromJust $ get1d loss 0)
+  hFlush stdout
+
   gnet <- fmap fst . getArchGrad =<< getLossGrad loss
   pure (loss, gnet)
 
 -- Simple way to update a network with a multiple of the gradient
-update :: XORArch -> (HsReal, XORArch) -> XORArch
-update (l1, l2) (lr, (g1, g2)) = (l1 + (g1 ^* lr), l2 + (g2 ^* lr))
+update :: XORArch -> (Positive HsReal, XORArch) -> XORArch
+update (l1, l2) (plr, (g1, g2)) = (l1 - (g1 ^* lr), l2 - (g2 ^* lr))
+  where
+    lr = positiveValue plr
 
 -- ========================================================================= --
 -- Initialize an architecture
@@ -128,7 +137,7 @@ mkUniform :: IO XORArch
 mkUniform = do
   g <- newRNG
   manualSeed g 1
-  let Just rg = ord2Tuple (-3, 3)
+  let Just rg = ord2Tuple (0, 1)
   l1 <- fmap Linear $ (,) <$> uniform g rg <*> uniform g rg
   l2 <- fmap Linear $ (,) <$> uniform g rg <*> uniform g rg
   pure (l1, l2)

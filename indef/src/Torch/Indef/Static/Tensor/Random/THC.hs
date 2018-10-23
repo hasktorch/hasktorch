@@ -32,7 +32,7 @@ module Torch.Indef.Static.Tensor.Random.THC
   , OpenUnit, openUnit, openUnitValue
   , ClosedUnit, closedUnit, closedUnitValue
   , Positive, positive, positiveValue
-  , Ord2Tuple, ord2Tuple, ord2TupleValues
+  , Ord2Tuple, ord2Tuple, ord2TupleValue
   ) where
 
 
@@ -46,7 +46,7 @@ import Torch.Indef.Dynamic.Tensor.Random.TH
   ( OpenUnit, openUnit, openUnitValue
   , ClosedUnit, closedUnit, closedUnitValue
   , Positive, positive, positiveValue
-  , Ord2Tuple, ord2Tuple, ord2TupleValues
+  , Ord2Tuple, ord2Tuple, ord2TupleValue
   )
 
 
