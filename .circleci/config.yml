@@ -4,11 +4,7 @@ global_defaults: &defaults
   machine: true
   environment:
     PATH_ADDITIONS: /tmp/cmake-3.10.0/bin/:/tmp/ghc-8.4.3/bin/:/tmp/cabal-2.3.0/bin/:~/.local/bin/:~/.cabal/bin/:/usr/local/bin
-
-    # /usr/local/lib/:/usr/lib/x86_64-linux-gnu/
     LD_LIBRARY_PATH: /tmp/aten/lib/
-    # C_INCLUDE_PATH: /usr/local/include
-    # LLVM_CONFIG: /usr/lib/llvm-3.8/bin/llvm-config
     CABAL_COMMIT: d6b829ddc77859e6b2b5d49bb249e9859b81248b
 
 
@@ -106,13 +102,14 @@ jobs:
       - run: |
           if [ ! -f ${PWD}/lib/libATen.so ]; then
             echo "No cache - building libATen.so"
+            git submodule sync
             git submodule update --init --recursive
             pip install pyyaml typing
 
-            (cd ./vendor && ./build-aten.sh)
+            (cd ./ffi/deps && ./build-aten.sh)
 
-            cp -r {./vendor/aten/build/,}lib
-            cp -r {./vendor/aten/build/,}include
+            cp -r {./ffi/deps/aten/build/,}lib
+            cp -r {./ffi/deps/aten/build/,}include
             ls lib
             ls include
           else
@@ -141,15 +138,12 @@ jobs:
             - THS
             - THNN
 
-# cabal-install-2.3.0:
-  build:
+  cabal-install-2.3.0:
     <<: *defaults
-    parallelism: 1
     working_directory: /tmp/cabal-2.3.0
     steps:
       - *update_path
       - attach_workspace: { at: /tmp/ghc-8.4.3 }
-      - checkout
       - restore_cache:
           keys:
             - cabal-cachekey-v2-{{ .Branch }}-d6b829ddc77859e6b2b5d49bb249e9859b81248b
@@ -178,23 +172,27 @@ jobs:
             - cabal
             - ~/.cabal
 
-     #- run: ls /tmp/cabal-2.3.0/bin
-     #- persist_to_workspace:
-     #    root: bin
-     #    path:
-     #      - cabal
-     #- persist_to_workspace:
-     #    root: /home/circleci/.cabal
-     #    path:
-     #      - bin
-     #      - ls
-     #      - packages
-     #      - world
+      - run: ls ${PWD}/bin
+      - persist_to_workspace:
+          root: bin
+          paths: cabal
+      - persist_to_workspace:
+          root: /home/circleci/.cabal
+          paths:
+            - bin
+            - ls
+            - packages
+            - world
 
+  build:
+    <<: *defaults
+    working_directory: /tmp/build/
+    steps:
+      - *update_path
       - attach_workspace: { at: /tmp/aten/lib }
       - attach_workspace: { at: /tmp/aten/include }
-      # attach_workspace: { at: /tmp/ghc-8.4.3 }
-      # attach_workspace: { at: /tmp/cabal-2.3.0/bin/ }
+      - attach_workspace: { at: /tmp/ghc-8.4.3 }
+      - attach_workspace: { at: /tmp/cabal-2.3.0 }
 
       # verify tools
       - run: command -v cabal
@@ -202,8 +200,10 @@ jobs:
       - run: command -v ghc
       - run: ghc --version
 
+      - checkout
+      - run: git submodule sync
       - run: git submodule update --init --recursive
-      - run: ln -fs .cabal.project.freeze/8.4.3 cabal.project.freeze
+      - run: ln -fs cabal/project.freeze-8.4.3 cabal.project.freeze
       - run: ln -fs {.circleci/,}cabal.project.local
 
       - run: cabal update
@@ -212,7 +212,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".cabal.project.freeze/8.4.3" }}
+            - hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum "cabal/project.freeze-8.4.3" }}
 
       - run: sudo apt-get update --fix-missing
       - run: sudo apt-get install libgd2-xpm-dev
@@ -220,7 +220,7 @@ jobs:
       - run: cabal new-build all
 
       - save_cache:
-          key: hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum ".cabal.project.freeze/8.4.3" }}
+          key: hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum "cabal/project.freeze-8.4.3" }}
           paths:
             - dist-newstyle
             - ~/.cabal
@@ -250,11 +250,9 @@ jobs:
       - run: cabal new-run hasktorch-examples:bayesian-regression
       - run: cabal new-run hasktorch-examples:gradient-descent
       - run: cabal new-run hasktorch-examples:multivariate-normal
+      - run: cabal new-run hasktorch-examples:xor
 
 
-# One day we will acheive this 2.0 workflow (with caching)...
-#                                           ...just not today
-# ===========================================================
 workflows:
   version: 2
   build:
@@ -264,32 +262,14 @@ workflows:
       - aten:
           requires:
             - cmake-3.10.0
-      - build:
+      - cabal-install-2.3.0:
           requires:
             - ghc-8.4.3
+      - build:
+          requires:
             - aten
+            - cabal-install-2.3.0
 
-# FIXME:
-# move cabal-install-2.3.0 to build
-# =================================
-#     - build:
-#         requires:
-#           - aten
-#           - cabal-install-2.3.0
-# =================================
-
-#       - build_ghc_8_4
-#       - build_cmake
-#       - build_cabal_2_3:
-#           requires:
-#             - build_ghc_8_4
-#       - build_aten:
-#           requires:
-#             - build_cmake
-#       - build_hasktorch:
-#           requires:
-#             - build_aten
-#             - build_cabal_2_3
 #       - test:
 #           requires:
 #             - build_hasktorch
@@ -302,17 +282,4 @@ workflows:
 #       - run_examples:
 #           requires:
 #             - build_hasktorch
-
-
-# THIS IS FROM CIRCLE V1.0
-# cache_directories:
-#   - "/home/circleci/hasktorch/.stack-work"
-#   - "/home/circleci/.stack"
-# # Install stack
-# # =============
-# - mkdir -p ~/.local/bin
-# # full path to curl circumvents errors with /usr/local/bin/curl incompatabilities with libcurl
-# - /usr/bin/curl -L --retry 3 https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-# - stack upgrade
-# - stack update
 

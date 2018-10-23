@@ -1,6 +1,7 @@
 # hasktorch
 
-[![Build Status](https://circleci.com/gh/hasktorch/hasktorch/tree/master.svg?style=shield&circle-token=9455d7cc953a58204f4d8dd683e9fa03fd5b2744)](https://circleci.com/gh/hasktorch/hasktorch/tree/master)
+[![Stable Status](https://circleci.com/gh/hasktorch/hasktorch/tree/master.svg?style=shield&circle-token=9455d7cc953a58204f4d8dd683e9fa03fd5b2744)](https://circleci.com/gh/hasktorch/hasktorch/tree/master)
+[![Development Status](https://circleci.com/gh/hasktorch/hasktorch/tree/dev.svg?style=shield&circle-token=9455d7cc953a58204f4d8dd683e9fa03fd5b2744)](https://circleci.com/gh/hasktorch/hasktorch/tree/dev)
 
 Hasktorch is a library for tensors and neural networks in Haskell. It is an independent open source community project which leverages the core C libraries shared by [Torch](http://torch.ch/) and [PyTorch](http://pytorch.org/). This library leverages cabal new-build and [backpack][backpack].
 
