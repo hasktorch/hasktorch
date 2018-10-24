@@ -227,8 +227,10 @@ jobs:
 
       # run tests
       - run: cabal new-test hasktorch-raw-th
-      - run: cabal new-test hasktorch-core
       - run: cabal new-test hasktorch-codegen
+
+      - run: cabal new-test hasktorch-indef
+      - run: cabal new-test hasktorch
 
       - run:
           name: Hasktorch codegen binary can run on all libraries
