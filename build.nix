@@ -1,14 +1,21 @@
-{ compilerVersion ? "ghc843" }:
+{ compilerVersion ? "ghc843", cudaSupport ? false, mklSupport ? false }:
 let
   config = {
     allowUnfree = true;
     packageOverrides = pkgs: rec {
-      hasktorch-aten = pkgs.callPackage ./vendor/aten.nix
-                       { inherit (pkgs.python36Packages) typing pyaml; };
+      hasktorch-aten = pkgs.callPackage ./ffi/deps/aten.nix
+                       { inherit (pkgs.python36Packages) typing pyaml; inherit cudaSupport mklSupport; };
       haskell = pkgs.haskell // {
         packages = pkgs.haskell.packages // {
           "${compilerVersion}" = pkgs.haskell.packages."${compilerVersion}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
+              hasktorch-raw-th =
+                haskellPackagesNew.callPackage ./ffi/ffi/th { ATen = hasktorch-aten; };
+              hasktorch-raw-thc =
+                haskellPackagesNew.callPackage ./ffi/ffi/thc { ATen = hasktorch-aten; };
+              hasktorch-raw-tests =
+                haskellPackagesNew.callPackage ./ffi/ffi/tests { };
+
               hasktorch-codegen =
                 haskellPackagesOld.callPackage ./codegen { };
 
@@ -23,13 +30,6 @@ let
                 haskellPackagesNew.callPackage ./signatures/types { };
               hasktorch-signatures-partial =
                 haskellPackagesNew.callPackage ./signatures/partial { };
-
-              hasktorch-raw-th =
-                haskellPackagesNew.callPackage ./raw/th { ATen = hasktorch-aten; };
-              hasktorch-raw-thc =
-                haskellPackagesNew.callPackage ./raw/thc { ATen = hasktorch-aten; };
-              hasktorch-raw-tests =
-                haskellPackagesNew.callPackage ./raw/tests { };
 
               hasktorch-indef =
                 haskellPackagesNew.callPackage ./indef { };
