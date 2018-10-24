@@ -1,5 +1,5 @@
-    let prelude = https://raw.githubusercontent.com/dhall-lang/dhall-to-cabal/master/dhall/prelude.dhall
-in  let types = https://raw.githubusercontent.com/dhall-lang/dhall-to-cabal/master/dhall/types.dhall
+    let prelude = ../../dhall-to-cabal/dhall/prelude.dhall
+in  let types =   ../../dhall-to-cabal/dhall/types.dhall
 in  let common = ../dhall/common.dhall
 in  let packages = common.packages
 in  let cabalvars = common.cabalvars
@@ -190,10 +190,10 @@ in  common.Package
                      , renaming =
                          { provides = prelude.types.ModuleRenaming.renaming
                              [ { rename = "Torch.Undefined.Tensor.Random.TH"
-                               , to = "Torch.Undefined.Double.Tensor.Random.TH"
+                               , to = "Torch.Undefined.Cuda.Double.Tensor.Random.TH"
                                }
                              , { rename = "Torch.Undefined.Tensor.Math.Random.TH"
-                               , to = "Torch.Undefined.Double.Tensor.Math.Random.TH"
+                               , to = "Torch.Undefined.Cuda.Double.Tensor.Math.Random.TH"
                                } ]
                          , requires = prelude.types.ModuleRenaming.renaming (mixins.floating False "Double")
                          }

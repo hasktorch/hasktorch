@@ -1,5 +1,5 @@
-    let prelude = https://raw.githubusercontent.com/dhall-lang/dhall-to-cabal/master/dhall/prelude.dhall
-in  let types = https://raw.githubusercontent.com/dhall-lang/dhall-to-cabal/master/dhall/types.dhall
+    let prelude = ../../dhall/dhall-to-cabal/dhall/prelude.dhall
+in  let types =   ../../dhall/dhall-to-cabal/dhall/types.dhall
 in  let common = ../../dhall/common.dhall
 in  let packages = common.packages
 in  let cabalvars = common.cabalvars
