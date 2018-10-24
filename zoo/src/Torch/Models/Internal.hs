@@ -21,6 +21,9 @@ import Numeric.Dimensions
 #ifdef CUDA
 import Torch.Cuda.Double as Torch
 import Torch.Cuda.Double.NN.Linear (Linear(..))
+import Foreign (withForeignPtr)
+import Torch.FFI.THC.TensorRandom (c_THCRandom_manualSeed)
+import Torch.FFI.THC.State (torchstate)
 import qualified Torch.Cuda.Double.NN.Conv2d as NN
 #else
 import Torch.Double as Torch

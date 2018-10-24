@@ -5,23 +5,32 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 module Main where
 
-import Prelude hiding (print, putStrLn)
+import Prelude
 import qualified Prelude as P
-import LeNet
-import Utils (bs, bsz, lr, getloss)
+import LeNet (maxPooling2dBatch', conv2dMMBatch', LeNet, myupdate)
+import Utils (getloss)
 import DataLoading (mkVBatches, dataloader')
-import Criterion ()
+import Dense3 (softMaxBatch, linearBatchIO, reluIO, y2cat)
+import Criterion (crossEntropyIO)
 
 -------------------------------------------------------------------------------
 
 import Data.Vector (Vector)
 import Data.DList (DList)
+import Data.Maybe (fromJust)
 import Data.List (genericLength)
+import Data.Singletons (sing)
+import Data.Singletons.Prelude.Bool (SBool)
+import Data.Singletons.Prelude.List (Product)
+import Data.Time (getCurrentTime, diffUTCTime)
 import Control.Arrow (second)
 import Control.Monad (forM, forM_, when)
+import Lens.Micro ((^.))
 import System.IO (stdout, hFlush)
+import System.IO.Unsafe (unsafePerformIO)
 import System.Mem (performGC, performMajorGC)
 import Text.Printf (printf)
 
@@ -34,6 +43,7 @@ import qualified System.Random.MWC as MWC
 
 import Torch.Data.Loaders.Cifar10 (Category(..), Mode(..), cifar10set, default_cifar_path)
 import Torch.Data.Loaders.RGBVector (Normalize(..))
+import Torch.Data.OneHot (onehotf)
 import Torch.Double
 
 import qualified Torch.Long as Long
@@ -42,40 +52,27 @@ import qualified Torch.Double.NN.Conv2d as Conv2d
 import qualified Torch.Double as Torch
 import qualified Torch.Models.Vision.LeNet as Vision
 
-print :: Show a => a -> IO ()
-print =
-  -- P.print
-  const (pure ())
+type Arch = LeNet
+mkNet = Vision.newLeNet
+-- netforward = LeNet.lenetBatch undefined undefined
+netupdate = LeNet.myupdate
 
-putStrLn :: String -> IO ()
-putStrLn =
-  -- P.putStrLn
-  const (pure ())
+-- type Arch = NIN
+-- mkNet = mkNIN
+-- forward = ninForwardBatch
+-- netupdate = ninUpdate
+-- netBatchBP = ninBatchBP
 
--- ========================================================================= --
--- global variables
-
-printL1Weights :: LeNet -> IO ()
-printL1Weights x = (print . fst . Conv2d.getTensors . Vision._conv1) x
-
--- ========================================================================= --
-
--- type Arch = LeNet
--- mkNet = Vision.newLeNet
--- forward = _forward lenetBatchForward
--- netupdate = myupdate
--- netBatchBP = lenetBatchBP
-type Arch = NIN
-mkNet = mkNIN
-forward = _forward ninForwardBatch
-netupdate = ninUpdate
-netBatchBP = ninBatchBP
-trainingLR = 1.0
-updateLR = 1.0
+Just plr = positive 0.3
 
 datasize = 400
 reportat' = 399
-epos = 20
+epos = 30
+type BatchSize = 4
+bsz :: Dim BatchSize
+bsz = dim
+bs :: Integral i => i
+bs = fromIntegral (dimVal bsz)
 
 main :: IO ()
 main = do
@@ -83,38 +80,30 @@ main = do
 
   lbatches :: Vector (Vector (Category, FilePath))
     <- mkVBatches 4 . V.take datasize <$> cifar10set g default_cifar_path Train
-  printf "loaded %i filepaths\n\n" (length lbatches * 4)
-
-  P.putStrLn "transforming to tensors"
+  printf "\nloaded %i filepaths" (length lbatches * 4)
+  putStrLn "\ntransforming to tensors"
   batches <- dataloader' bsz lbatches
 
   net0 <- mkNet
-  P.print net0
+  print net0
 
-  P.putStrLn "\nepochs start"
-  net <- epochs lr epos batches net0
-  P.putStrLn "\nepochs stop"
+  net <- epochs plr epos batches net0
 
-  P.putStrLn "reporting:"
+  putStrLn "reporting:"
   report net batches
-  performMajorGC
-  P.putStrLn ""
+  putStrLn ""
 
   where
     report :: Arch -> Vector (Tensor '[4, 10], Tensor '[4, 3, 32, 32]) -> IO ()
     report net ltest = do
-      -- putStrLn "x"
-
       foo :: [DList (Category, Category)]
         <- forM (V.toList ltest) $ \(y, x) -> do
           bar <- y2cat y
-          DL.fromList . zip bar <$> forward net x
+          DL.fromList . zip bar . t2cat <$> forward net x
 
       let
         test :: [(Category, Category)]
         test = DL.toList (DL.concat foo)
-
-      print test
 
       let
         cathm :: [(Category, [Category])]
@@ -132,74 +121,154 @@ main = do
         printf "\n[%s]:\t%.2f%% (%d / %d)" (show y) (acc*100) correct (length preds)
         hFlush stdout
 
+
 -- ========================================================================= --
 -- Training on a dataset
 -- ========================================================================= --
 epochs
-  :: HsReal              -- ^ learning rate
+  :: Positive HsReal     -- ^ learning rate
   -> Int                 -- number of epochs to train on
-  -> Vector (Tensor '[4, 10], Tensor '[4, 3, 32, 32])
+  -> Vector (Tensor '[BatchSize, 10], Tensor '[BatchSize, 3, 32, 32])
   -> Arch               -- ^ initial model
   -> IO Arch            -- ^ final model
-epochs _ mx batches = runEpoch 1
+epochs plr mx batches = runEpoch 1
   where
     runEpoch :: Int -> Arch -> IO Arch
     runEpoch e net
       | e > mx = P.putStrLn "\nfinished training loops" >> pure net
       | otherwise = do
-      P.putStrLn $ "epoch " ++ show (e, mx)
-
-      (net', _) <- V.ifoldM go (net, 0) batches
-
-      performMajorGC
+      t0 <- getCurrentTime
+      (net', losstot) <- V.ifoldM go (net, 0) batches
+      t1 <- getCurrentTime
+      let diff = realToFrac (t1 `diffUTCTime` t0) :: Float
+      printf ("%s[avg_cross_entropy %.8f] %.0fs\n") estr (losstot / fromIntegral (V.length batches)) diff
       runEpoch (e+1) net'
-
       where
         estr :: String
         estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
 
         go :: (Arch, HsReal) -> Int -> (Tensor '[4, 10], Tensor '[4, 3, 32, 32]) -> IO (Arch, HsReal)
         go (!net, !runningloss) !bid (ys, xs) = do
-          (net', loss) <- step undefined net xs ys
-          -- P.print loss
-          let reportat = reportat' :: Int
-              reporttime = (bid `mod` reportat == (reportat - 1))
+          (loss, net') <- backward plr net xs ys
+          pure (net', runningloss + getloss loss)
 
-          when reporttime $ do
-            printf ("\n%s(%db#%03d)[ce %.4f]") estr
-              (bs::Int) (bid+1)
-              (runningloss / (if reportat == 1 then 1 else (fromIntegral reportat - 1)))
-            hFlush stdout
+          -- ********* This is for intra-epoch reporting *********
+          -- let reportat = reportat' :: Int
+          --     reporttime = (bid `mod` reportat == (reportat - 1))
 
-          performGC
+          -- when reporttime $ do
+          --   printf ("\n%s(%db#%03d)[ce %.4f]") estr
+          --     (bs::Int) (bid+1)
+          --     (runningloss / (if reportat == 1 then 1 else (fromIntegral reportat - 1)))
+          --   hFlush stdout
 
-          let l = getloss loss
-          -- P.print l
-          pure (net', if reporttime then 0 else runningloss + l)
+          -- performGC
 
+          -- let l = getloss loss
+          -- -- P.print l
+          -- pure (net', if reporttime then 0 else runningloss + l)
+          -- *****************************************************
 
-_forward :: (Arch -> Tensor '[4, 3, 32, 32] -> IO (Tensor '[4, 10])) -> Arch -> Tensor '[4, 3, 32, 32] -> IO [Category]
-_forward fwdfn net xs = y2cat =<< fwdfn net xs
+toYs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[BatchSize, 10])
+toYs = Torch.unsafeMatrix . fmap (onehotf . fst)
 
-step
-  :: HsReal
+toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[BatchSize, 3, 32, 32])
+toXs xs = pure . Torch.catArray0 $ fmap (Torch.unsqueeze1d (dim :: Dim 0) . snd) xs
+
+t2cat :: Tensor '[BatchSize, 10] -> [Category]
+t2cat = (fmap (toEnum . fromIntegral) . Long.tensordata . fromJust . snd . flip max2d1 keep)
+
+forward :: Arch -> Tensor '[BatchSize, 3, 32, 32] -> IO (Tensor '[BatchSize, 10])
+forward arch xs = fst <$> netforward arch xs
+
+backward
+  :: Positive HsReal
   -> Arch
-  -> Tensor '[4, 3, 32, 32]
-  -> Tensor '[4, 10]
-  -> IO (Arch, Tensor '[1])
-step _ net xs ys = do
-  let (_, Just ix) = Torch.max2d1 ys keep
-  LDyn.resizeDim_ (Long.asDynamic ix) (dims :: Dims '[4])
-  (out, gnet) <- netBatchBP trainingLR net (Long.asStatic (Long.asDynamic ix)) xs
+  -> Tensor '[BatchSize, 3, 32, 32]
+  -> Tensor '[BatchSize, 10]
+  -> IO (Tensor '[1], Arch)
+backward plr net xs ys = do
+  (out, getgrads) <- netforward net xs
+  (loss, getCEgrad) <- crossEntropyIO (Long.resizeAs . fromJust . snd $ max2d1 ys keep) out
+  printf "\rcur_loss: %.12f" (fromJust $ get1d loss 0)
+  hFlush stdout
+  pure (loss, unsafePerformIO $ do
+    grad <- fmap fst . getgrads =<< getCEgrad loss
+    net' <- netupdate net (plr, grad)
+    pure net'
+    )
 
-  let Just plr = positive updateLR
-  net' <- netupdate net (plr, gnet)
+-- ========================================================================= --
+-- lenet from scratch
+-- ========================================================================= --
 
-  when False $ do
-    (out', _) <- netBatchBP trainingLR net' (Long.asStatic (Long.asDynamic ix)) xs
-    let o = getloss out
-    let o' = getloss out'
-    printf ("\nimprovement? %.4f -> %.4f : %s\n") o o' (show (o < o'))
+netforward
+  :: LeNet
+  ->    (Tensor '[4, 3, 32, 32])  -- ^ input
+  -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (LeNet, Tensor '[4, 3, 32, 32]))
+netforward arch i = do
+  (convout1, unconvout1) <- conv2dMMBatch'
+      ((Step2d    :: Step2d '(1,1)))
+      ((Padding2d :: Padding2d '(0,0)))
+      1
+      (arch ^. Vision.conv1)
+      i
+  (reluout1, unreluCONV1) <- reluIO convout1
+  (mpout1 :: Tensor '[4, 6, 14, 14], getmpgrad1) <-
+    maxPooling2dBatch'
+        ((Kernel2d  :: Kernel2d '(2,2)))
+        ((Step2d    :: Step2d '(2,2)))
+        ((Padding2d :: Padding2d '(0,0)))
+        ((sing      :: SBool 'True))
+        (reluout1 :: Tensor '[4, 6, 28, 28])
 
-  pure (net', out)
+  (convout2, unconvout2) <- conv2dMMBatch'
+      ((Step2d    :: Step2d '(1,1)))
+      ((Padding2d :: Padding2d '(0,0)))
+      1
+      (arch ^. Vision.conv2)
+      mpout1
+  (reluout2, unreluCONV2) <- reluIO convout2
+  (mpout2, getmpgrad2) <-
+    maxPooling2dBatch'
+        ((Kernel2d  :: Kernel2d '(2,2)))
+        ((Step2d    :: Step2d '(2,2)))
+        ((Padding2d :: Padding2d '(0,0)))
+        ((sing      :: SBool 'True))
+        reluout2
+
+
+  (flatout, unflatten) <- flattenBatchIO (mpout2 :: Tensor '[4, 16, 5, 5])
+
+  (fc1out, fc1getgrad) <- linearBatchIO 1 (arch ^. Vision.fc1) flatout
+  ( r1out, unreluFC1)    <- reluIO fc1out
+
+  (fc2out, fc2getgrad) <- linearBatchIO 1 (arch ^. Vision.fc2) r1out
+  ( r2out, unreluFC2)    <- reluIO fc2out
+
+  (fc3out, fc3getgrad) <- linearBatchIO 1 (arch ^. Vision.fc3) r2out
+  (fin, smgrads)       <- softMaxBatch fc3out
+
+  pure (fin, \gout -> do
+    smg <- smgrads gout
+    (fc3g, fc3gin) <- fc3getgrad smg
+    (fc2g, fc2gin) <- fc2getgrad =<< unreluFC2 fc3gin
+    (fc1g, fc1gin) <- fc1getgrad =<< unreluFC1 fc2gin
+
+    unflattenedGIN :: Tensor '[4, 16, 5, 5] <- unflatten fc1gin
+
+    (conv2g, conv2gin) <- unconvout2 =<< unreluCONV2 =<< getmpgrad2 unflattenedGIN
+    (conv1g, conv1gin) <- unconvout1 =<< unreluCONV1 =<< getmpgrad1 conv2gin
+    pure (Vision.LeNet conv1g conv2g fc1g fc2g fc3g, conv1gin))
+
+-- | A backpropable 'flatten' operation with a batch dimension
+flattenBatchIO
+  :: forall d bs . (All KnownDim '[Product d, bs], All Dimensions '[bs:+d, d])
+  => Product (bs:+d) ~ Product '[bs, Product d]
+  => Tensor (bs:+d)
+  -> IO (Tensor '[bs, Product d], Tensor '[bs, Product d] -> IO (Tensor (bs:+d)))
+flattenBatchIO i = do
+  o <- pure $ resizeAs i
+  pure (o, \gout -> pure $ resizeAs gout)
+
 

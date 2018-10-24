@@ -15,15 +15,14 @@
 {-# OPTIONS_GHC -fno-cse #-}
 module LeNet
   ( LeNet
-  , lenetBatchForward
-  , lenetBatchBP
+  -- , lenetBatch
   , lenetUpdate
   , lenetUpdate_
   , myupdate
   -- , Vision._conv1
   -- , Vision._conv2
-  , y2cat
-  , crossentropy
+  -- , y2cat
+  -- , crossentropy
 
   -- Network-in-Network (bipass linear layer)
   ,   NIN
@@ -37,6 +36,10 @@ module LeNet
   , FC3Arch
   , mkFC3
   , ff3Batch
+
+  -- * restart
+  , maxPooling2dBatch'
+  , conv2dMMBatch'
   ) where
 
 import Prelude hiding (print, putStrLn)
@@ -58,7 +61,7 @@ import Data.Singletons
 import Data.Singletons.Prelude.Bool
 import Torch.Double hiding (logSoftMaxBatch, conv2dMMBatch)
 
-import Criterion (criterion)
+import Criterion (criterion, crossEntropyIO)
 import Torch.Double.NN.Linear (Linear(..))
 
 import Torch.Data.Loaders.Cifar10
@@ -199,7 +202,7 @@ ninBatchBP
   ->    (IndexTensor '[4])          -- ^ ys
   ->    (Tensor '[4, 3, 32, 32])    -- ^ xs
   -> IO (Tensor '[1], NIN)          -- ^ output and gradient
-ninBatchBP = criterion crossentropy ninBatch
+ninBatchBP = criterion crossEntropyIO ninBatch
 
 ninBatch
   :: HsReal
@@ -275,12 +278,12 @@ lenetUpdate :: LeNet -> (HsReal, LeNet) -> LeNet
 lenetUpdate net (lr, g) = Vision.update net lr g
 
 -- | update a LeNet network
-myupdate :: LeNet -> Positive HsReal -> LeNet -> IO LeNet
-myupdate net plr grad = do
+myupdate :: LeNet -> (Positive HsReal, LeNet) -> IO LeNet
+myupdate net (plr, grad) = do
   when verbose $ P.print $ Conv2d.weights (grad ^. Vision.conv1)
   when verbose $ P.print $ Conv2d.bias    (grad ^. Vision.conv1)
-  -- when verbose $ P.print $ Conv2d.weights (grad ^. Vision.conv2)
-  -- when verbose $ P.print $ Conv2d.bias    (grad ^. Vision.conv2)
+  when verbose $ P.print $ Conv2d.weights (grad ^. Vision.conv2)
+  when verbose $ P.print $ Conv2d.bias    (grad ^. Vision.conv2)
   when verbose $ P.print $ Linear.weights (grad ^. Vision.fc1)
   when verbose $ P.print $ Linear.bias    (grad ^. Vision.fc1)
   when verbose $ P.print $ Linear.weights (grad ^. Vision.fc2)
@@ -291,7 +294,7 @@ myupdate net plr grad = do
 
   pure $ Vision.LeNet
     (Conv2d (conv1w', conv1b'))
-    -- (Conv2d (conv2w', conv2b'))
+    (Conv2d (conv2w', conv2b'))
     (Linear (fc1w', fc1b'))
     (Linear (fc2w', fc2b'))
     (Linear (fc3w', fc3b'))
@@ -300,102 +303,21 @@ myupdate net plr grad = do
 
   lr = positiveValue plr
 
-  conv1w' = Conv2d.weights (net ^. Vision.conv1) + (Conv2d.weights (grad ^. Vision.conv1) ^* (-lr))
-  conv1b' = Conv2d.bias    (net ^. Vision.conv1) + (Conv2d.bias    (grad ^. Vision.conv1) ^* (-lr))
+  conv1w' = Conv2d.weights (net ^. Vision.conv1) - (Conv2d.weights (grad ^. Vision.conv1) ^* lr)
+  conv1b' = Conv2d.bias    (net ^. Vision.conv1) - (Conv2d.bias    (grad ^. Vision.conv1) ^* lr)
 
-  -- conv2w' = Conv2d.weights (net ^. Vision.conv2) + Conv2d.weights (grad ^. Vision.conv2) ^* (-lr)
-  -- conv2b' = Conv2d.bias    (net ^. Vision.conv2) + Conv2d.bias    (grad ^. Vision.conv2) ^* (-lr)
+  conv2w' = Conv2d.weights (net ^. Vision.conv2) - Conv2d.weights (grad ^. Vision.conv2) ^* lr
+  conv2b' = Conv2d.bias    (net ^. Vision.conv2) - Conv2d.bias    (grad ^. Vision.conv2) ^* lr
 
-  fc1w'   = Linear.weights (net ^. Vision.fc1)   + (Linear.weights (grad ^. Vision.fc1)   ^* (-lr))
-  fc1b'   = Linear.bias    (net ^. Vision.fc1)   + (Linear.bias    (grad ^. Vision.fc1)   ^* (-lr))
+  fc1w'   = Linear.weights (net ^. Vision.fc1)   - (Linear.weights (grad ^. Vision.fc1)   ^* lr)
+  fc1b'   = Linear.bias    (net ^. Vision.fc1)   - (Linear.bias    (grad ^. Vision.fc1)   ^* lr)
 
-  fc2w'   = Linear.weights (net ^. Vision.fc2)   + (Linear.weights (grad ^. Vision.fc2)   ^* (-lr))
-  fc2b'   = Linear.bias    (net ^. Vision.fc2)   + (Linear.bias    (grad ^. Vision.fc2)   ^* (-lr))
+  fc2w'   = Linear.weights (net ^. Vision.fc2)   - (Linear.weights (grad ^. Vision.fc2)   ^* lr)
+  fc2b'   = Linear.bias    (net ^. Vision.fc2)   - (Linear.bias    (grad ^. Vision.fc2)   ^* lr)
 
-  fc3w'   = Linear.weights (net ^. Vision.fc3)   + (Linear.weights (grad ^. Vision.fc3)   ^* (-lr))
-  fc3b'   = Linear.bias    (net ^. Vision.fc3)   + (Linear.bias    (grad ^. Vision.fc3)   ^* (-lr))
+  fc3w'   = Linear.weights (net ^. Vision.fc3)   - (Linear.weights (grad ^. Vision.fc3)   ^* lr)
+  fc3b'   = Linear.bias    (net ^. Vision.fc3)   - (Linear.bias    (grad ^. Vision.fc3)   ^* lr)
 
-
-
-lenetBatchForward
-  :: LeNet
-  ->    (Tensor '[4, 3, 32, 32])  -- ^ input
-  -> IO (Tensor '[4, 10])         -- ^ output
-lenetBatchForward net inp = fst <$> lenetBatch False undefined net inp
-
-
-lenetBatchBP
-  :: LeNet                          -- ^ architecture
-  ->    (IndexTensor '[4])          -- ^ ys
-  ->    (Tensor '[4, 3, 32, 32])    -- ^ xs
-  -> IO (Tensor '[1], LeNet)    -- ^ output and gradient
-lenetBatchBP arch ys xs = do
-  -- let n = (constant 1 :: Tensor '[2, 3, 5])
-  -- print n
-  -- newStrideOf n >>= LStorage.tensordata >>= print
-  -- newSizeOf n >>= LStorage.tensordata >>= print
-  print "0"
-  (out, getlenetgrad) <- lenetBatch True 1 arch xs
-  print out
-  print "1"
-  -- throwString "working? next check that all values are < 2.73~"
-  -- putStrLn "\n======================================"
-  -- print out
-  -- putStrLn   "======================================"
-
-  -- halt 2 "all values are < 2.73~?"
-  (loss, getCEgrad) <- crossentropy ys out
-  print loss
-  print "2"
-  -- putStrLn "\n--------------------------------------"
-  -- print loss
-  -- putStrLn   "--------------------------------------"
-  cegrad <- getCEgrad loss
-  (gnet, _) <- getlenetgrad cegrad
-  -- print (Conv2d.weights $ gnet ^. Vision.conv1)
-  -- print (Conv2d.weights $ gnet ^. Vision.conv2)
-  -- print (Linear.weights $ gnet ^. Vision.fc1)
-  -- print (Linear.weights $ gnet ^. Vision.fc2)
-  -- print (Linear.weights $ gnet ^. Vision.fc3)
-  -- print "!!!"
-  -- halt 2 "!!!"
-  pure (loss, gnet)
-
-crossentropy
-  :: IndexTensor '[4]            -- THIndexTensor *target,
-  -> Tensor '[4, 10]            -- THTensor *input,
-  -> IO (Tensor '[1], Tensor '[1] -> IO (Tensor '[4, 10]))               -- THTensor *output, gradient
-crossentropy ys inp = do
-  when verbose $ putStrLn "start crossentropy"
-
-  -- putStrLn "!!!!!!!!!!!!!!!!!!!!!!!! crossentropy !!!!!!!!!!!!!!!!!!!!!!!!"
-  -- -- print inp
-  -- putStrLn "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-  (lout, getLSMGrad) <- __logSoftMaxBatch True inp
-  when verbose $ do
-    print lout
-    print "2"
-  (nllout, getNLLGrad) <- classNLL ys lout
-  when verbose $ do
-    print nllout
-    print "2"
-
-  when verbose $ putStrLn "stop crossentropy"
-  pure (nllout, getNLLGrad >=> getLSMGrad)
-  where
-    verbose = True
-
-
-y2cat :: Tensor '[4, 10] -> IO [Category]
-y2cat ys = do
-  -- putStrLn "starting to build tensor"
-  -- print ys
-  let rez = fromJust . snd $ Torch.max2d1 ys keep
-  -- print rez
-  mapM ((\i -> pure . toEnum . fromIntegral . fromJust $ Long.get2d rez i 0)) [0..3]
-  -- where
-    -- rez :: LongTensor '[4, 1]
-    -- (_, Just rez) = Torch.max ys (dim :: Dim 1) keep
 
 classNLL
   :: IndexTensor '[4]
@@ -451,148 +373,6 @@ classNLL target inp = do
 
 
 
-lenetBatch
-  :: Bool                         -- ^ if you should perform backprop as well
-  -> HsReal
-  -> LeNet
-  ->    (Tensor '[4, 3, 32, 32])  -- ^ input
-  -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (LeNet, Tensor '[4, 3, 32, 32]))
-lenetBatch training lr arch i = do
-    -- ========================================================================= --
-    -- LAYER 1
-
-    -- when training $ convin1Ref `updateIORefWith` i
-    when tverbose $ do
-      print "------------FORWARD-------------"
-      print "=TRAINING= getting convout1"
-
-    (convout1, unconvout1) <-
-      conv2dMMBatch'
-        -- conv1ginbuffRef         -- IORef (Tensor '[b,f,h,w])     -- grad input buffer
-        -- conv1columnsbuffRef     -- IORef (Tensor '[])            -- columns buffer
-        -- conv1onesbuffRef        -- IORef (Tensor '[])            -- ones buffer
-        -- conv1outRef             -- IORef (Tensor '[b, o,oH,oW])  -- output
-        -- conv1iRef               -- IORef (Tensor '[b,f,h,w])     -- input
-        -- conv1ginRef             -- IORef (Tensor '[b,f,h,w])     -- gradient input
-        -- conv1gparamsRef         -- IORef (Conv2d f o '(kH, kW))  -- gradient params
-        ((Step2d    :: Step2d '(1,1)))
-        ((Padding2d :: Padding2d '(0,0)))
-        lr
-        (arch ^. Vision.conv1)
-        (i)
-
-#ifdef NONLINEAR
-    -- (reluout1, unrelu1) <- reluBP__ convout1 (reluCONV1outRef, reluCONV1ginRef) False
-    (reluout1, unrelu1) <- relu''' convout1
-#else
-    let reluout1 = convout1
-#endif
-
-    (mpout1 :: Tensor '[4, 6, 14, 14], getmpgrad1) <-
-      maxPooling2dBatch'
-        -- mp1ixRef
-        -- mp1outRef
-        -- mp1ginRef
-        ((Kernel2d  :: Kernel2d '(2,2)))
-        ((Step2d    :: Step2d '(2,2)))
-        ((Padding2d :: Padding2d '(0,0)))
-        ((sing      :: SBool 'True))
-        (reluout1 :: Tensor '[4, 6, 28, 28])
-
---     -- ========================================================================= --
---     -- LAYER 2
---     when tverbose $ print "getting convout2"
---
---     (convout2  :: Tensor '[4, 16, 10, 10], unconvout2) <- conv2dMMBatch'
---         -- conv2ginbuffRef         -- IORef (Tensor '[b,f,h,w])     -- grad input buffer
---         -- conv2columnsbuffRef     -- IORef (Tensor '[])            -- columns buffer
---         -- conv2onesbuffRef        -- IORef (Tensor '[])            -- ones buffer
---         conv2outRef             -- IORef (Tensor '[b, o,oH,oW])  -- output
---         conv2iRef               -- IORef (Tensor '[b,f,h,w])     -- input
---         conv2ginRef             -- IORef (Tensor '[b,f,h,w])     -- gradient input
---         conv2gparamsRef         -- IORef (Conv2d f o '(kH, kW))  -- gradient params
---         ((Step2d    :: Step2d '(1,1)))
---         ((Padding2d :: Padding2d '(0,0)))
---         lr
---         (arch ^. Vision.conv2)
---         (mpout1 :: Tensor '[4, 6, 14, 14])
---
--- #ifdef NONLINEAR
---     -- (reluout2 , unrelu2) <- reluBP__ convout2 (reluCONV2outRef, reluCONV2ginRef) False
---     (reluout2, unrelu2) <- relu''' convout2
--- #else
---     let reluout2 = convout2
--- #endif
---
---     (mpout2 :: Tensor '[4,16,5,5], getmpgrad2) <- maxPooling2dBatch'
---       mp2ixRef
---       mp2outRef
---       mp2ginRef
---       ((Kernel2d  :: Kernel2d '(2,2)))
---       ((Step2d    :: Step2d '(2,2)))
---       ((Padding2d :: Padding2d '(0,0)))
---       ((sing      :: SBool 'True))
---       (reluout2 :: Tensor '[4, 16, 10, 10])
-
-    -------------------------------------------------------------------------------
-    -- print mpout2
-
-    when tverbose $ putStrLn "=TRAINING= getting flatten"
-
-    -- (ftout, unflatten) <- flattenBPBatch_ (mpout2)
-    (ftout, unflatten) <- flattenBPBatch_ (mpout1)
-
-    when tverbose $ putStrLn "=TRAINING= getting fc layers"
-    (fcout :: Tensor '[4, 10], fcgetgrad)
-      <- ff3Batch training lr
-                  ( arch ^. Vision.fc1
-                  , arch ^. Vision.fc2
-                  , arch ^. Vision.fc3
-                  )
-                  ftout
-    when tverbose $ print "done!"
-    when tverbose $ print "----------END------------"
-
-    pure (fcout, \(gout::Tensor '[4, 10]) -> do
-
-      when verbose $ do
-        putStrLn "+++++++++++AD++++++++++++"
-        putStrLn "=AD= fc3g"
-        print gout
-
-      ((fc1g, fc2g, fc3g), fcgin) <- fcgetgrad gout
-      inflatedg <- unflatten fcgin
-
---       mpgrad2g <- getmpgrad2 inflatedg
---
--- #ifdef NONLINEAR
---       -- (relu2g) <- unrelu2 True mpgrad2g
---       (relu2g) <- unrelu2 mpgrad2g
--- #else
---       let relu2g = mpgrad2g
--- #endif
---       (conv2g, conv2gin) <- unconvout2 relu2g
-
-      let conv2gin = inflatedg
-
-#ifdef NONLINEAR
-      (conv1g, conv1gin) <- unconvout1 =<< unrelu1 =<< getmpgrad1 conv2gin
-#else
-      (conv1g, conv1gin) <- unconvout1 =<< getmpgrad1 conv2gin
-#endif
-
-      when verbose $ do
-        putStrLn "=AD= done!"
-        putStrLn "+++++++++++END++++++++++++"
-
-      -- pure (Vision.LeNet conv1g conv2g fc1g fc2g fc3g, conv1gin))
-      pure (Vision.LeNet conv1g fc1g fc2g fc3g, conv1gin))
-
-  where
-    verbose = True
-    tverbose = False
-    -- tverbose = verbose && not training
-
 type FC3Arch = (Linear (32*32*3) (32*32*3*2), Linear (32*32*3*2) (32*32), Linear (32*32) 10)
 -- type FC3Arch = (Linear (32*32*3) 10)
 
@@ -614,15 +394,14 @@ mkFC3 = do
 ff3Batch
   :: All KnownNat '[i,h0,h1] -- '[i] --
   => All KnownDim '[i,h0,h1] -- '[i] --
-  => Bool                         -- ^ if you should perform backprop as well
-  -> HsReal
+  => HsReal
   -> (Linear i h0, Linear h0 h1, Linear h1 10)
   -- -> (Linear i 10)
   ->    (Tensor '[4, i])  -- ^ input
   -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO ((Linear i h0, Linear h0 h1, Linear h1 10), Tensor '[4, i]))
   -- -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO ((Linear i 10), Tensor '[4, i]))
 -- ff3Batch training lr (l1) i = do
-ff3Batch training lr (l1, l2, l3) i = do
+ff3Batch lr (l1, l2, l3) i = do
 
   -- start fully connected network
 #ifdef NONLINEAR

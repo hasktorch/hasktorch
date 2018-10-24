@@ -1,450 +1,441 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -fno-cse #-}
-module Backprop
-  ( newLeNet
-  , bs, bsz, LeNet
-  , lenetBatchForward
-  , lenetBatchBP
-  , lenetUpdate
-  , Vision._conv1
-  , Vision._conv2
-  ) where
+{-# LANGUAGE Strict #-}
+{-# LANGUAGE CPP #-}
+module Main where
 
-import Control.Exception.Safe (throwString)
+import Prelude
+
+import Data.DList (DList)
+import Data.Function
+import Data.Maybe
+import Data.Either -- (fromRight, is)
+import GHC.Exts
+import Data.Typeable
+import Data.List
+import Control.Arrow
 import Control.Monad
-import Data.IORef
-import Data.Function ((&))
-import Data.Singletons.Prelude.List (Product)
-import Foreign
-import Lens.Micro.Platform
+import Control.Monad.Loops
+import Data.Monoid
+import Data.Time
+import Control.Monad.IO.Class
+import Text.Printf
+import ListT (ListT)
+import qualified ListT
+import Numeric.Backprop as Bp
+import Numeric.Dimensions
 import System.IO.Unsafe
-import Torch.Double
-import Torch.Double.NN
-import Torch.Double.NN.Linear
+import GHC.TypeLits (KnownNat)
+import Control.Concurrent
+import qualified Prelude as P
+import qualified Data.List as P ((!!))
+import Control.Exception.Safe
+
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
+
+#ifdef DEBUG
+import Debug.Trace
+import Data.IORef
+#endif
+-- import qualified Foreign.CUDA as Cuda
+
+#ifdef CUDA
+import Torch.Cuda.Double as Math hiding (Sum)
+import qualified Torch.Cuda.Double.Storage as S
+import qualified Torch.Cuda.Long as Long
+import Torch.FFI.THC.TensorRandom
+import Foreign (withForeignPtr)
+import Torch.FFI.THC.State
+import qualified Torch.Cuda.Double.NN.Conv2d as Conv2d
+#else
+import Torch.Double as Math hiding (Sum)
 import qualified Torch.Long as Long
 import qualified Torch.Long.Dynamic as LDyn
 import qualified Torch.Double.NN.Conv2d as Conv2d
-import qualified Torch.Double as Torch
+#endif
+
+import Torch.Models.Vision.LeNet as LeNet
+import Torch.Data.Loaders.Cifar10
+import Torch.Data.Loaders.Internal
+import Torch.Data.Loaders.RGBVector (Normalize(..))
+import Torch.Data.OneHot
+import Torch.Data.Metrics
+
+import Control.Monad.Trans.Except
+import System.IO (hFlush, stdout)
+
+import Data.Vector (Vector)
+import qualified Data.DList as DL
+import qualified Data.Vector as V
+import qualified System.Random.MWC as MWC
+import qualified Data.Singletons.Prelude.List as Sing (All)
+
+#ifdef DEBUG
+import Debug.Trace
+import qualified Torch.Double as CPU
+import qualified Torch.Double.Dynamic as Dyn
 import qualified Torch.Double.Storage as CPUS
-import qualified Torch.Models.Vision.LeNet as Vision
+import Control.Concurrent
+#endif
 
-import qualified Torch.Double.Dynamic as Dynamic
-import qualified Torch.Double.Dynamic.NN as Dynamic
-import qualified Torch.Double.Dynamic.NN.Activation as Dynamic
-
-
+lr = 0.001
 bsz = (dim :: Dim 4)
-bs = (fromIntegral $ dimVal bsz) :: Int
-type LeNet = Vision.LeNet 3 5
+bs = (fromIntegral $ dimVal bsz)
 
-newLeNet :: IO LeNet
-newLeNet = Vision.newLeNet @3 @5
+main :: IO ()
+main = do
+#ifndef DEBUG
+  clearScreen
+#endif
+  g <- seedAll
+  ltrain <- prepdata . V.take 5000 <$> cifar10set g default_cifar_path Train
+  ltest  <- prepdata . V.take 2000 <$> cifar10set g default_cifar_path Test
 
-convin1Ref :: IORef (Maybe (Tensor '[4, 3, 32, 32]))
-convin1Ref = unsafePerformIO $ newIORef Nothing
-{-# NOINLINE convin1Ref #-}
+  let (lval, lhold) = V.splitAt (V.length ltest `P.div` 2) ltest
+  net0 <- newLeNet @3 @5
+  print net0
 
-convout1Ref :: IORef (Tensor '[4, 6])
-convout1Ref = unsafePerformIO $ empty >>= newIORef
-{-# NOINLINE convout1Ref #-}
+  putStr "\nInitial Holdout:\t"
+  hold <- testNet net0 lhold
+  report net0 hold
 
-columnsbuff1outRef :: IORef Dynamic
-columnsbuff1outRef = unsafePerformIO $ Dynamic.empty >>= newIORef
-{-# NOINLINE columnsbuff1outRef #-}
+  t0 <- getCurrentTime
+  net <- epochs lval 0.001 t0 5 ltrain net0
+  t1 <- getCurrentTime
+  printf "\nFinished training!\n"
 
-onesbuff1outRef :: IORef Dynamic
-onesbuff1outRef = unsafePerformIO $ Dynamic.empty >>= newIORef
-{-# NOINLINE onesbuff1outRef #-}
-
-
-fcout1Ref :: IORef (Tensor '[4, 120])
-fcout1Ref = unsafePerformIO $ newIORef (constant 0)
-{-# NOINLINE fcout1Ref #-}
-
-fcout2Ref :: IORef (Tensor '[4, 84])
-fcout2Ref = unsafePerformIO $ newIORef (constant 0)
-{-# NOINLINE fcout2Ref #-}
-
-fcout3Ref :: IORef (Tensor '[4, 10])
-fcout3Ref = unsafePerformIO $ newIORef (constant 0)
-{-# NOINLINE fcout3Ref #-}
-
-
-nullIx :: IORef Long.Dynamic
-nullIx = unsafePerformIO $ do
-  -- newForeignPtr nullPtr
-  newIORef undefined
-{-# NOINLINE nullIx #-}
+  -- putStrLn "\nHoldout Results on final net: "
+  -- _ <- testNet net hold
+  -- putStrLn "\nDone!"
 
 -- ========================================================================= --
-
-lenetUpdate :: LeNet -> (HsReal, LeNet) -> IO ()
-lenetUpdate net (lr, g) = Vision.update net lr g
-
-
-lenetBatchForward
-  :: LeNet
-  ->    (Tensor '[4, 3, 32, 32])  -- ^ input
-  -> IO (Tensor '[4, 10])         -- ^ output
-lenetBatchForward net inp = lenetBatch False net inp
-
-
-lenetBatchBP
-  -- :: (Tensor '[4, 10] -> IO HsReal) -- ^ criterion              <<< hardcode CE
-  :: LeNet                          -- ^ architecture
-  ->    (IndexTensor '[4])          -- ^ ys
-  ->    (Tensor '[4, 3, 32, 32])    -- ^ xs
-  -> IO (Tensor '[1], LeNet)    -- ^ output and gradient
-lenetBatchBP arch ys xs = do
-  out <- lenetBatch True arch xs
-  loss <- crossentropy ys out
-  gnet <- getgrads
-  pure (loss, gnet)
-
-crossentropy
-  :: IndexTensor '[4]            -- THIndexTensor *target,
-  -> Tensor '[4, 10]            -- THTensor *input,
-  -> IO (Tensor '[1])               -- THTensor *output,
-crossentropy ys inp
-  = undefined
-  -- = logSoftMaxN (dim :: Dim 1) inp
-  -- & classNLLCriterion ys
-
-getgrads = undefined
-
--- -- By default, the losses are averaged over observations for each minibatch. However, if the argument sizeAverage is set to false, the losses are instead summed for each minibatch.
--- -- FIXME: add batch dimension
--- classNLLCriterion'
---   :: forall s i sz ps
---   . (Reifies s W, All KnownDim '[sz, ps])
---   => Integer                    -- int64_t ignore_index,
---   -> Bool                       -- bool sizeAverage,
---   -> Bool                       -- bool reduce
---   -> IndexTensor '[sz]          -- THIndexTensor *target. _not_ a one-hot encoded vector.
---   -- -> Maybe Dynamic           -- THTensor *weights,
---   -> BVar s (Tensor '[sz, ps])  -- THTensor *input,
---   -> BVar s (Tensor '[1])       -- THTensor *output,
--- classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
---   let
---     (out, total_weight) = updateOutput inp target szAvg Nothing ix reduce
---   in
---     (out, \gout -> updateGradInput inp target gout szAvg Nothing total_weight ix reduce)
---
---     {-# NOINLINE updateOutput #-}
---     updateOutput
---       :: Tensor '[sz, ps]            -- THTensor *input,
---       -> IndexTensor '[sz]           -- THIndexTensor *target,
---       -> Bool                        -- bool sizeAverage,
---       -> Maybe (Tensor '[sz, ps])    -- THTensor *weights,
---       -> Integer                     -- int64_t ignore_index,
---       -> Bool                        -- bool reduce
---       -> (Tensor '[1], Tensor '[1])
---     updateOutput inp tar szAvg mws ix reduce = unsafePerformIO $ do
---       out <- new
---       let total_weight = constant 1  -- https://github.com/torch/nn/commit/3585e827eb65d071272a4aa4fab567b0b1eeee54#diff-1aa6a505cf16ad0e59498ada8432afb5
---       Dynamic._ClassNLLCriterion_updateOutput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic out)
---         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
---       pure (out, total_weight)
---
---     {-# NOINLINE updateGradInput #-}
---     updateGradInput
---       :: Tensor '[sz, ps]          -- THTensor *input,
---       -> IndexTensor '[sz]         -- THIndexTensor *target,
---       -> Tensor '[1]               -- THTensor *gradOutput,
---       -> Bool                      -- bool sizeAverage,
---       -> Maybe (Tensor '[sz, ps])  -- THTensor *weights,
---       -> Tensor '[1]               -- THTensor *total_weight,
---       -> Integer                   -- int64_t ignore_index,
---       -> Bool                      -- bool reduce
---       -> Tensor '[sz, ps]
---     updateGradInput inp tar gout szAvg mws total_weight ix reduce = unsafePerformIO . withEmpty $ \gin ->
---       Dynamic._ClassNLLCriterion_updateGradInput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
---         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
---
-
-
--- crossEntropy
---   :: (All KnownDim '[b, p])
---   => IndexTensor '[b]            -- THIndexTensor *target,
---   -> (Tensor '[b, p])            -- THTensor *input,
---   -> (Tensor '[1])               -- THTensor *output,
--- crossEntropy ys inp
---   = logSoftMaxN (dim :: Dim 1) inp
---   & classNLLCriterion ys
-
-
-updateIORefWith :: IORef (Maybe (Tensor d)) -> Tensor d -> IO ()
-updateIORefWith ref nxt =
-  readIORef ref >>= \case
-    Nothing  -> writeIORef ref (Just $ copy nxt)
-
-    Just old ->
-      finalizeForeignPtr oldfp >> writeIORef ref Nothing
-     where
-      oldfp = ctensor (asDynamic old)
-
-
-
-lenetBatch
-  :: Bool                         -- ^ if you should perform backprop as well
-  -> LeNet
-  ->    (Tensor '[4, 3, 32, 32])  -- ^ input
-  -> IO (Tensor '[4, 10])  -- ^ output and gradient
-lenetBatch training arch i = do
-    -- LAYER 1
-    when training $ convin1Ref `updateIORefWith` i
-
-    let conv1 = arch ^. Vision.conv1
-
-    convout1     <- readIORef convout1Ref
-    columnsbuff1 <- readIORef columnsbuff1outRef
-    onesbuff1    <- readIORef onesbuff1outRef
-
-    Dynamic._spatialConvolutionMM_updateOutput (asDynamic i) (asDynamic convout1) (asDynamic (Conv2d.weights conv1)) (asDynamic (Conv2d.bias conv1))
-      columnsbuff1 onesbuff1
-      (kernel2d conv1)
-      (param2d (Step2d    :: Step2d '(1,1)))
-      (param2d (Padding2d :: Padding2d '(0,0)))
-
-    -- relu forward
-    reluForward_ convout1
-
-    let maxpoolInput1 = convout1
-    -- maxpoolOutput1 <- empty
-    ix1 <- LDyn.empty
-
-    Dynamic._spatialMaxPooling_updateOutput (asDynamic convout1) (asDynamic convout1) ix1
-      (param2d  (Kernel2d  :: Kernel2d '(2,2)))
-      (param2d  (Step2d    :: Step2d '(2,2)))
-      (param2d  (Padding2d :: Padding2d '(0,0)))
-      True -- (fromSing (sing      :: SBool 'True))
-
-    -- print ix
-    pure (asStatic (asDynamic convout1) :: Tensor '[4, 6, 5, 5])
-  >>= \i -> do
-    -- LAYER 1
-    let conv2 = arch ^. Vision.conv2
-    convout2     <- readIORef convout1Ref
-    columnsbuff2 <- readIORef columnsbuff1outRef
-    onesbuff2    <- readIORef onesbuff1outRef
-
-
-    Dynamic._spatialConvolutionMM_updateOutput (asDynamic i) (asDynamic convout2) (asDynamic (Conv2d.weights conv2)) (asDynamic (Conv2d.bias conv2))
-      columnsbuff2 onesbuff2
-      (kernel2d conv2)
-      (param2d (Step2d    :: Step2d '(1,1)))
-      (param2d (Padding2d :: Padding2d '(0,0)))
-
-    -- relu forward
-    reluForward_ convout2
-
-    let maxpoolInput2 = convout2
-    -- maxpoolOutput2 <- empty
-    ix2 <- LDyn.empty
-
-    Dynamic._spatialMaxPooling_updateOutput (asDynamic convout2) (asDynamic convout2) ix2
-      (param2d  (Kernel2d  :: Kernel2d '(2,2)))
-      (param2d  (Step2d    :: Step2d '(2,2)))
-      (param2d  (Padding2d :: Padding2d '(0,0)))
-      True -- (fromSing (sing      :: SBool 'True))
-
-    -- print ix
-    -- pure (maxpoolOutput2 :: Tensor '[4, 16, 5, 5])
-    pure (asStatic (asDynamic convout2) :: Tensor '[4, 16, 5, 5])
-  >>= \i -> (flattenBatchForward_ i :: IO (Tensor '[4, 16*5*5]))
-  >>= \inp -> do
-    out <- readIORef fcout1Ref
-    zero_ out
-    -- print "hello1"
-    linearForwardBatch_ (arch ^. Vision.fc1) inp out
-    reluForward_ out
-    pure out
-
-  >>= \inp -> do
-    out <- readIORef fcout2Ref
-    zero_ out
-    -- print "hello2"
-    linearForwardBatch_ (arch ^. Vision.fc2) inp out
-    reluForward_ out
-    pure out
-
-  >>= \inp -> do
-    out <- readIORef fcout3Ref
-    zero_ out
-    -- print "hello3"
-    linearForwardBatch_ (arch ^. Vision.fc3) inp out
-    -- fin <- empty
-    Dynamic._logSoftMax_updateOutput (asDynamic out) (asDynamic out) 1 -- (fromIntegral $ dimVal 1)
-    -- throwString "hello!"
-    pure out
-
-
-
--- | A mutating 'flatten' operation with batch
-flattenBatchForward_
-  :: (All KnownDim '[Product d, bs], Dimensions d)
-  => Product (bs:+d) ~ Product '[bs, Product d]
-  => (Tensor (bs:+d))
-  -> IO (Tensor '[bs, Product d])
-flattenBatchForward_ = _resizeDim
-
--- lenetLayerBatchForward1
---   :: forall inp h w ker ow oh out mow moh step pad batch
---
---   -- backprop constraint to hold the wengert tape
---
---   -- leave input, output and square kernel size variable so that we
---   -- can reuse the layer...
---   .  All KnownDim '[4,inp,out,ker]
---
---   -- FIXME: derive these from the signature (maybe assign them as args)
---   => pad ~ 0   --  default padding size
---   => step ~ 1  --  default step size for Conv2d
---
---   -- ...this means we need the constraints for conv2dMM and maxPooling2d
---   -- Note that oh and ow are then used as input to the maxPooling2d constraint.
---   => SpatialConvolutionC inp h  w ker ker 1 1 0 0  oh  ow
---   => SpatialDilationC       oh ow   2   2 2 2 0 0 mow moh 1 1 'True
---
---   =>    (Conv2d inp out '(ker,ker))       -- ^ convolutional layer
---   ->    (Tensor '[4, inp,   h,   w])  -- ^ input
---   -> IO (Tensor '[4, out, moh, mow])  -- ^ output
--- lenetLayerBatchForward1 conv inp = do
---   conv2out <- empty
---   columnsbuff <- Dynamic.empty
---   onesbuff <- Dynamic.empty
---   Dynamic._spatialConvolutionMM_updateOutput (asDynamic inp) (asDynamic conv2out) (asDynamic (Conv2d.weights conv)) (asDynamic (Conv2d.bias conv))
---     columnsbuff onesbuff
---     (kernel2d conv)
---     (param2d (Step2d    :: Step2d '(1,1)))
---     (param2d (Padding2d :: Padding2d '(0,0)))
---
---   -- relu forward
---   let reluInput = conv2out
---   reluForward_ reluInput
---
---   let maxpoolInput = reluInput
---   maxpoolOutput <- empty
---   ix <- LDyn.empty
---
---   Dynamic._spatialMaxPooling_updateOutput (asDynamic maxpoolInput) (asDynamic maxpoolOutput) ix
---     (param2d  (Kernel2d  :: Kernel2d '(2,2)))
---     (param2d  (Step2d    :: Step2d '(2,2)))
---     (param2d  (Padding2d :: Padding2d '(0,0)))
---     True -- (fromSing (sing      :: SBool 'True))
---
---   -- print ix
---   pure maxpoolOutput
---
-
-reluForward_ :: Tensor d -> IO ()
-reluForward_ reluInput = do
-  Dynamic._threshold_updateOutput (asDynamic reluInput) (asDynamic reluInput) 0 0 (True {- inplace -})
-  -- print (asDynamic reluInput)
-  -- print (asDynamic reluOutput)
-
-
--- | 'linear' with a batch dimension
-linearForwardBatch_
-  :: forall s i o b
-  .  All KnownDim '[b,i,o]
-  => (Linear i o)
-  -> (Tensor '[b, i])
-  -> (Tensor '[b, o]) -- should be initialized at zeros
-  -> IO ()
-linearForwardBatch_ (Linear (w,b)) inp out = do
-  addmm_ 0 out 1 inp w
-  addr_ 1 out 1 (constant 1) b
-
-
-
-
-
-
-
-
-
-
-
-
--- -- | run a threshold function againts two BVar variables
--- my_logSoftMaxN
---   :: forall s i d
---   .  i < Length d ~ 'True
---   => Dimensions d
---   => Dim i                -- ^ dimension to logSoftMax over
---   -> (Tensor d -> IO (Tensor d, (Tensor d -> IO Tensor d)))        -- ^ output
--- my_logSoftMaxN i = liftOp1 . op1 $ \inp ->
---   let out = updateOutput inp i
---   in (updateOutput inp i, \gout -> updateGradInput inp gout out i)
---  where
---   idim = fromIntegral (dimVal i)
---
---   {-# NOINLINE updateOutput #-}
---   updateOutput :: Tensor d -> Dim i -> Tensor d
---   updateOutput inp i = unsafePerformIO . withEmpty $ \out ->
---     Dynamic._logSoftMax_updateOutput (asDynamic inp) (asDynamic out) idim
---
---   {-# NOINLINE updateGradInput #-}
---   updateGradInput
---     :: Tensor d  -- input
---     -> Tensor d  -- gradOutput
---     -> Tensor d  -- output
---     -> Dim i     -- dimension
---     -> Tensor d  -- gradInput
---   updateGradInput inp gout out i = unsafePerformIO . withEmpty $ \gin ->
---     Dynamic._logSoftMax_updateGradInput
---       (asDynamic inp)             -- input
---       (asDynamic gout)            -- gradOutput
---       (asDynamic gin)             -- gradInput
---       (asDynamic out)             -- output
---       (fromIntegral $ dimVal i)   -- dimension
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- Data processing + bells and whistles for a slow loader
+-- ========================================================================= --
+counter :: IORef Integer
+counter = unsafePerformIO $ newIORef 0
+{-# NOINLINE counter #-}
+
+preprocess :: FilePath -> IO (Tensor '[3, 32, 32])
+preprocess f =
+  runExceptT (rgb2torch NegOneToOne f) >>= \case
+    Left s -> throwString s
+    Right t -> do
+      pure t
+
+seedAll :: IO MWC.GenIO
+seedAll =
+  MWC.initialize (V.singleton 42) >>= \g ->
+#ifdef CUDA
+  withForeignPtr torchstate (\s -> c_THCRandom_manualSeed s 42) >>
+#endif
+  pure g
+
+
+-- | potentially lazily loaded data point
+type LDatum = (Category, Either FilePath (Tensor '[3, 32, 32]))
+-- | potentially lazily loaded dataset
+type LDataSet = Vector (Category, Either FilePath (Tensor '[3, 32, 32]))
+
+-- | prep cifar10set
+prepdata :: Vector (Category, FilePath) -> LDataSet
+prepdata = fmap (second Left)
+
+-- | get something usable from a lazy datapoint
+getdata :: LDatum -> IO (Category, Tensor '[3, 32, 32])
+getdata (c, Right t) = pure (c, t)
+getdata (c, Left fp) = (c,) <$> preprocess fp
+
+-- | force a file into a tensor
+forcetensor :: LDatum -> IO LDatum
+forcetensor = \case
+  (c, Left fp) -> (c,) . Right <$> preprocess fp
+  tens -> pure tens
+
+-- ========================================================================= --
+-- Training on a dataset
+-- ========================================================================= --
+epochs
+  :: forall ch step . (ch ~ 3, step ~ 5)
+  => LDataSet            -- ^ validation set
+  -> HsReal              -- ^ learning rate
+  -> UTCTime             -- ^ start time (for logging)
+  -> Int                 -- ^ number of epochs to run
+  -> LDataSet            -- ^ training set
+  -> LeNet ch step       -- ^ initial architecture
+  -> IO (LeNet ch step)
+epochs lval lr t0 mx ltrain net0 = do
+  putStr "\nInitial Validation:\t"
+  val <- testNet net0 lval
+  runEpoch val 1 net0
+  where
+    runEpoch :: LDataSet -> Int -> LeNet ch step -> IO (LeNet ch step)
+    runEpoch val e net
+      | e > mx    = pure net
+      | otherwise = do
+        putStr "\n"
+        let estr = "[Epoch "++ show e ++ "/"++ show mx ++ "]"
+        (net', train) <- runBatches estr (dim :: Dim 4) lr t0 e ltrain net
+        testNet net' val
+        report net0 val
+        runEpoch val (e + 1) net'
+
+mkBatches :: Int -> LDataSet -> [LDataSet]
+mkBatches sz ds = DL.toList $ go mempty ds
+ where
+  go :: DList LDataSet -> LDataSet -> DList LDataSet
+  go bs src =
+    if V.null src
+    then bs
+    else
+      let (b, nxt) = V.splitAt sz src
+      in go (bs `DL.snoc` b) nxt
+
+
+runBatches
+  :: forall ch step (batch::Nat) . (ch ~ 3, step ~ 5)
+  => KnownDim batch
+  => KnownNat batch
+  => KnownDim (batch * 10)
+  => KnownNat (batch * 10)
+
+  => String
+  -> Dim batch
+  -> HsReal
+  -> UTCTime
+  -> Int
+  -> LDataSet
+  -> LeNet ch step
+
+  -> IO (LeNet ch step, LDataSet)
+runBatches estr d lr t00 e lds net = do
+  res <- V.ifoldM go (net, DL.empty) lbatches
+  pure $ second (V.concat . DL.toList) res
+ where
+  bs :: Word
+  bs = dimVal d
+
+  lbatches :: Vector LDataSet
+  lbatches = V.fromList $ mkBatches (fromIntegral bs) lds
+
+  go
+    :: (LeNet ch step, DList LDataSet)
+    -> Int
+    -> LDataSet
+    -> IO (LeNet ch step, DList LDataSet)
+  go (!net, !seen) !bid !lzy = do
+    fcd <- V.mapM forcetensor lzy
+    btensor fcd >>= \case
+        Nothing -> pure (net, seen)
+        Just (ys, xs) -> do
+          (net', loss) <- trainStep lr net xs ys
+          t1 <- getCurrentTime
+#ifdef DEBUG
+          let diff = 0.0 :: Float
+              front = "\n"
+#else
+          let diff = realToFrac (t1 `diffUTCTime` t00) :: Float
+              front = setRewind
+#endif
+          printf (front ++ estr ++ "(%db#%03d)[ce %.4f](elapsed: %.2fs)")
+            bs (bid+1)
+            (loss `get1d` 0)
+            diff -- ((t1 `diffUTCTime` t00))
+          hFlush stdout
+          pure (net', seen `DL.snoc` fcd)
+
+  btensor :: LDataSet -> IO (Maybe (Tensor '[batch, 10], Tensor '[batch, 3, 32, 32]))
+  btensor lds
+    | V.length lds /= (fromIntegral bs) = pure Nothing
+    | otherwise = do
+      -- ds <- V.mapM getdata lds
+      -- pure $ (Just . (toYs &&& toXs) . V.toList) ds
+      foo <- V.toList <$> V.mapM getdata lds
+      ys <- toYs foo
+      xs <- toXs foo
+      pure $ Just (ys, xs)
+    where
+      toYs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[batch, 10])
+      toYs ys =
+        pure . unsafeMatrix . fmap (onehotf . fst) $ ys
+
+      toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[batch, 3, 32, 32])
+      toXs xs =
+        pure . catArray0 $ fmap (unsqueeze1d (dim :: Dim 0) . snd) xs
+
+
+infer
+  :: (ch ~ 3, step ~ 5)
+  => LeNet ch step
+  -> Tensor '[ch, 32, 32]
+  -> Category
+infer net
+
+  -- cast from Integer to 'Torch.Data.Loaders.Cifar10.Category'
+  = toEnum . fromIntegral
+
+  -- Unbox the LongTensor '[1] to get 'Integer'
+  . (`Long.get1d` 0)
+
+  -- argmax the output Tensor '[10] distriubtion. Returns LongTensor '[1]
+  . maxIndex1d
+
+  . foo
+
+ where
+  foo x
+    -- take an input tensor and run 'lenet' with the model (undefined is the
+    -- learning rate, which we can ignore)
+    = unsafePerformIO $ do
+        -- print $ x Math.!! (dim :: Dim 0) Math.!! (dim :: Dim 0)
+        let x' = evalBP2 (lenet undefined) net x
+        -- print x'
+        pure x'
+
+trainStep
+  :: forall ch step batch
+  .  (ch ~ 3, step ~ 5)
+  => KnownDim batch
+  => KnownNat batch
+  => KnownDim (batch * 10)
+  => KnownNat (batch * 10)
+
+  => HsReal
+  -> LeNet ch step
+  -> Tensor '[batch, ch, 32, 32]
+  -> Tensor '[batch, 10]
+  -> IO (LeNet ch step, Tensor '[1])
+trainStep lr net xs ys = do
+  let (dyn, Just ix) = CPU.max ys (dim :: Dim 1) keep
+  rix :: Long.Tensor '[batch] <- Long._resizeDim ix
+  let (out, (gnet, _)) = backprop2 (crossEntropy rix .: lenetBatch lr) net xs
+  pure (LeNet.update net lr gnet, out)
+
+
+crossEntropy
+  :: (Reifies s W, CPU.All KnownDim '[b, p])
+  => IndexTensor '[b]            -- THIndexTensor *target,
+  -> BVar s (Tensor '[b, p])     -- THTensor *input,
+  -> BVar s (Tensor '[1])        -- THTensor *output,
+crossEntropy ys inp
+  = logSoftMaxN (dim :: Dim 0) inp
+  & classNLLCriterion ys
+
+
+-- ========================================================================= --
+-- Testing a dataset
+-- ========================================================================= --
+
+testNet :: (ch ~ 3, step ~ 5) => LeNet ch step -> LDataSet -> IO LDataSet
+testNet net ltest = do
+  test <-
+    if all isRight (V.map snd ltest)
+    then pure $ V.map (second (fromRight undefined)) ltest
+    else do
+      -- print "getting test data"
+      let l = fromIntegral (length ltest) :: Float
+      V.mapM getdata ltest
+
+  let
+    testX = V.toList $ fmap snd test
+    testY = V.toList $ fmap fst test
+    preds = map (infer net) testX
+    acc = genericLength (filter id $ zipWith (==) preds testY) / genericLength testY
+
+#ifdef DEBUG
+  printf "\n"
+#endif
+  printf ("[test accuracy: %.1f%% / %d]\tAll same? %s")
+    (acc * 100 :: Float)
+    (length testY)
+    (if all (== head preds) preds then show (head preds) else "No.")
+
+  hFlush stdout
+
+  pure $ fmap (second Right) test
+
+
+report :: (ch ~ 3, step ~ 5) => LeNet ch step -> LDataSet -> IO ()
+report net ltest = do
+  -- assert $ all isRight (V.map snd ltest)
+  let
+    test = V.map (second (fromRight undefined)) ltest
+    cathm :: [(Category, [Tensor '[3, 32, 32]])]
+    cathm = HM.toList $ HM.fromListWith (++) $ V.toList (second (:[]) <$> test)
+
+  forM_ cathm $ \(y, xs) -> do
+    let
+      preds = map (infer net) xs
+      correct = length (filter (==y) preds)
+      acc = fromIntegral correct / genericLength xs :: Float
+
+    printf "\n[%s]: %.2f%% (%d / %d)" (show y) (acc*100) correct (length xs)
+    hFlush stdout
+
+
+
+
+-------------------------------------------------------------------------------
+-- Sanity check tests
+
+-- There is a bug here having to do with CUDA.
+loadtest :: IO ()
+loadtest = do
+  g <- MWC.initialize (V.singleton 42)
+  ltrain <- prepdata . V.take 5000 <$> cifar10set g default_cifar_path Train
+  forM_ ltrain $ \(_, y) -> case y of
+    Left x -> insanity x
+    Right x -> pure x
+
+
+insanity :: FilePath -> IO (Tensor '[3, 32, 32])
+insanity f = go 0
+ where
+  go x =
+    runExceptT (rgb2torch ZeroToOne f) >>= \case
+      Left s -> throwString s
+      Right t -> do
+#ifdef CUDA
+        CPU.tensordata (copyDouble t) >>= \rs -> do
+#else
+        tensordata t >>= \rs -> do
+#endif
+          let
+              oob = filter (\x -> x < 0 || x > 1) rs
+              oox = filter (<= 2) oob
+          if not (null oob)
+          then throwString (show (oob, oox))
+          else
+            if not (all (== 0) rs)
+            then pure t
+            else if x == 10
+              then throwString $ f ++ ": 10 retries -- failing on all-zero tensor"
+              else do
+                print $ f ++ ": retrying from " ++ show x
+                threadDelay 1000000
+                go (x+1)
+
+-- ========================================================================= --
+-- printing helpers
+
+-- | Erase the last line in an ANSI terminal
+clearLn :: IO ()
+clearLn = printf "\ESC[2K"
+
+-- | set rewind marker for 'clearLn'
+setRewind :: String
+setRewind = "\r"
+
+-- | clear the screen in an ANSI terminal
+clearScreen :: IO ()
+clearScreen = putStr "\ESC[2J"
+
+printL1Weights :: KnownDim ch => KnownDim step => LeNet ch step -> IO ()
+printL1Weights = print . fst . Conv2d.getTensors . _conv1
 

@@ -23,6 +23,8 @@ module Dense3
   , linearBatchWithIO
   , reluIO
   , thresholdIO
+  , softMaxBatch
+  , softMaxBatchIO
   ) where
 
 import Criterion
