@@ -235,6 +235,7 @@ jobs:
       - run:
           name: Hasktorch codegen binary can run on all libraries
           command: |
+            cd ffi
             for l in TH THNN THC THCUNN; do
               for t in generic concrete; do
                 cabal new-run hasktorch-codegen:ht-codegen -- --type ${t} --lib ${l} --verbose;
