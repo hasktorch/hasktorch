@@ -87,7 +87,7 @@ instance (KnownDim (Flattened ker), KnownDim ch, KnownDim ker) => Backprop (LeNe
 
 -------------------------------------------------------------------------------
 
-newLeNet :: All KnownDim '[ch,ker,Flattened ker] => IO (LeNet ch ker)
+newLeNet :: All KnownDim '[ch,ker,Flattened ker, ker*ker] => IO (LeNet ch ker)
 newLeNet = LeNet
   <$> newConv2d
   <*> newConv2d
