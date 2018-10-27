@@ -101,14 +101,9 @@ as well as to the Torch and PyTorch dev teams.
 <!-- project directory links -->
 [developers]: ./DEVELOPERS.md
 [makefile]: ./Makefile
-[codegen]: ./codegen/
 [types]: ./types/
 [signatures]: ./signatures/
-[core]: ./core/
+[hasktorch]: ./hasktorch/
 [examples]: ./examples/
-[output]: ./output/
-[raw]: ./raw/
-[vendor]: ./vendor/
-[classes]: ./classes/
-[dimensions]: ./dimensions/
 [indef]: ./indef/
+[zoo]: ./zoo/
