@@ -14,6 +14,7 @@
 -- user. (FIXME) Someone needs to test LAPACK-less compilation steps.
 -------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math.Lapack
   ( getri  , getri_
   , potrf  , potrf_
@@ -30,11 +31,13 @@ module Torch.Indef.Dynamic.Tensor.Math.Lapack
   , Triangle(..), EigenReturn(..), ComputeSingularValues(..)
   ) where
 
+import Control.Monad.Managed
 import Data.Coerce
 import Foreign
 import Foreign.C.Types
 import Foreign.C.String
 import Foreign.Marshal.Array
+import System.IO.Unsafe
 import Torch.Indef.Dynamic.Tensor (empty)
 import qualified Torch.Sig.Tensor.Math.Lapack as Sig
 
@@ -53,8 +56,9 @@ import Torch.Indef.Types
 -- @getrf@ and @getrs@, to solve the system @AX = B@, rather than inverting the
 -- matrix and multiplying to form @X = inv(A)*B@. Only in special instances
 -- should an explicit inverse be computed with this routine.
-getri :: Dynamic -> IO Dynamic
-getri t = empty >>= \r -> _getri r t >> pure r
+getri :: Dynamic -> Dynamic
+getri t = unsafeDupablePerformIO $ let r = empty in _getri r t >> pure r
+{-# NOINLINE getri #-}
 
 -- | inplace version of 'getri'
 getri_ :: Dynamic -> IO ()
@@ -78,8 +82,9 @@ _getri a b = with2DynamicState a b Sig.c_getri
 potrf
   :: Dynamic    -- ^ matrix to decompose
   -> Triangle   -- ^ which triangle should be used.
-  -> IO Dynamic
-potrf s t = empty >>= \r -> _potrf r s t >> pure r
+  -> Dynamic
+potrf s t = unsafeDupablePerformIO $ let r = empty in _potrf r s t >> pure r
+{-# NOINLINE potrf #-}
 
 -- | infix version of 'potrf'.
 potrf_
@@ -94,15 +99,20 @@ _potrf
   -> Dynamic   -- ^ matrix to decompose
   -> Triangle  -- ^ which triangle should be used.
   -> IO ()
-_potrf ret src t = triangleArg2C t >>= \c' -> with2DynamicState ret src $ shuffle3 Sig.c_potrf c'
+_potrf ret src t = withLift $ Sig.c_potrf
+  <$> managedState
+  <*> managedTensor ret
+  <*> managedTensor src
+  <*> liftIO (triangleArg2C t)
 
 -- | Returns the inverse of 2D @tensor A@ given its Cholesky decomposition @chol@.
 --
 -- Square matrix @chol@ should be triangular.
 --
 -- 'Triangle' specifies matrix @chol@ as either upper or lower triangular.
-potri :: Dynamic -> Triangle -> IO Dynamic
-potri s t = empty >>= \r -> _potri r s t >> pure r
+potri :: Dynamic -> Triangle -> Dynamic
+potri s t = unsafeDupablePerformIO $ let r = empty in _potri r s t >> pure r
+{-# NOINLINE potri #-}
 
 -- | inplace version of 'potri'.
 potri_ :: Dynamic -> Triangle -> IO ()
@@ -110,9 +120,11 @@ potri_ s t = _potri s s t
 
 -- | C-style mutation of 'potri_' and 'potri'. Should not be exported.
 _potri :: Dynamic -> Dynamic -> Triangle -> IO ()
-_potri a b v =
-  triangleArg2C v >>= \v' ->
-    with2DynamicState a b $ shuffle3 Sig.c_potri v'
+_potri a b v = withLift $ Sig.c_potri
+  <$> managedState
+  <*> managedTensor a
+  <*> managedTensor b
+  <*> liftIO (triangleArg2C v)
 
 -- | Returns the solution to linear system @AX = B@ using the Cholesky
 -- decomposition @chol@ of 2D tensor @A@.
@@ -126,8 +138,9 @@ potrs
   :: Dynamic    -- ^ Tensor @B@
   -> Dynamic    -- ^ Cholesky decomposition @chol@
   -> Triangle   -- ^ which triangle to use (upper or lower)
-  -> IO Dynamic
-potrs b chol t = empty >>= \r -> _potrs r b chol t >> pure r
+  -> Dynamic
+potrs b chol t = unsafeDupablePerformIO $ let r = empty in _potrs r b chol t >> pure r
+{-# NOINLINE potrs #-}
 
 -- | Inplace version of 'potri'. Mutating tensor B in place.
 potrs_
@@ -156,8 +169,9 @@ _potrs a b c v =
 --
 -- Note: Irrespective of the original strides, the returned matrix @q@ will be
 -- transposed, i.e. with strides @1, m@ instead of @m, 1@.
-qr :: Dynamic -> IO (Dynamic, Dynamic)
-qr x = (,) <$> empty <*> empty >>= \ret -> qr_ ret x >> pure ret
+qr :: Dynamic -> (Dynamic, Dynamic)
+qr x = unsafeDupablePerformIO $ let ret = (empty, empty) in qr_ ret x >> pure ret
+{-# NOINLINE qr #-}
 
 -- | Inplace version of 'qr'
 qr_ :: (Dynamic, Dynamic) -> Dynamic -> IO ()
@@ -197,14 +211,15 @@ _geqrf a b c = with3DynamicState a b c Sig.c_geqrf
 geev
   :: Dynamic                      -- ^ square matrix to get eigen{values/vectors} of.
   -> EigenReturn                  -- ^ whether or not to return eigenvectors.
-  -> IO (Dynamic, Maybe Dynamic)  -- ^ (e, V) standing for eigenvalues and eigenvectors
-geev m er = do
-  e <- empty
-  v <- empty
+  -> (Dynamic, Maybe Dynamic)  -- ^ (e, V) standing for eigenvalues and eigenvectors
+geev m er = unsafeDupablePerformIO $ do
+  let e = empty
+  let v = empty
   geev_ (e, v) m er
   case er of
     ReturnEigenValues          -> pure (e, Just v)
     ReturnEigenValuesAndVector -> pure (e, Nothing)
+{-# NOINLINE geev #-}
 
 -- | alias to 'geev' to match Torch naming conventions.
 eig = geev
@@ -240,14 +255,15 @@ syev
   :: Dynamic                      -- ^ square matrix to get eigen{values/vectors} of.
   -> EigenReturn                  -- ^ whether or not to return eigenvectors.
   -> Triangle                     -- ^ whether the upper or lower triangle should be used
-  -> IO (Dynamic, Maybe Dynamic)  -- ^ (e, V) standing for eigenvalues and eigenvectors
-syev m er tri = do
-  e <- empty
-  v <- empty
+  -> (Dynamic, Maybe Dynamic)  -- ^ (e, V) standing for eigenvalues and eigenvectors
+syev m er tri = unsafeDupablePerformIO $ do
+  let e = empty
+  let v = empty
   syev_ (e, v) m er tri
   case er of
     ReturnEigenValues          -> pure (e, Just v)
     ReturnEigenValuesAndVector -> pure (e, Nothing)
+{-# NOINLINE syev #-}
 
 -- | alias to 'syev' to match Torch naming conventions.
 symeig = syev
@@ -278,8 +294,9 @@ symeig_ = syev_
 gesv
   :: Dynamic                -- ^ @B@
   -> Dynamic                -- ^ @A@
-  -> IO (Dynamic, Dynamic)  -- ^ @(X, LU)@
-gesv b a = (,) <$> empty <*> empty >>= \ret -> gesv_ ret b a >> pure ret
+  -> (Dynamic, Dynamic)  -- ^ @(X, LU)@
+gesv b a = unsafeDupablePerformIO $ let ret = (empty, empty) in gesv_ ret b a >> pure ret
+{-# NOINLINE gesv #-}
 
 -- | Inplace version of 'gesv'.
 --
@@ -308,8 +325,9 @@ gesv_ (x, lu) b a =
 -- On return, first @n@ rows of @x@ matrix contains the solution and the rest
 -- contains residual information. Square root of sum squares of elements of each
 -- column of @x@ starting at row @n + 1@ is the residual for corresponding column.
-gels :: Dynamic -> Dynamic -> IO (Dynamic, Dynamic)
-gels b a = (,) <$> empty <*> empty >>= \ret -> gels_ ret b a >> pure ret
+gels :: Dynamic -> Dynamic -> (Dynamic, Dynamic)
+gels b a = unsafeDupablePerformIO $ let ret = (empty, empty) in gels_ ret b a >> pure ret
+{-# NOINLINE gels #-}
 
 -- | Inplace version of 'gels'.
 --
@@ -337,11 +355,12 @@ gels_ (a, b) c d =
 gesvd
   :: Dynamic
   -> ComputeSingularValues
-  -> IO (Dynamic, Dynamic, Dynamic)
-gesvd m num = do
-  ret <- (,,) <$> empty <*> empty <*> empty
+  -> (Dynamic, Dynamic, Dynamic)
+gesvd m num = unsafeDupablePerformIO $ do
+  let ret = (empty, empty, empty)
   gesvd_ ret m num
   pure ret
+{-# NOINLINE gesvd #-}
 
 -- | Inplace version of 'gesvd'.
 --
@@ -352,11 +371,13 @@ gesvd_
   -> Dynamic                     -- ^ m
   -> ComputeSingularValues       -- ^ Whether to compute all or some of the singular values
   -> IO ()
-gesvd_ (u, s, v) m num =
-  svArg2C num >>= \num' ->
-    with3DynamicState u s v $ \state' u' s' v' ->
-      withDynamicState m $ \_ m' ->
-        Sig.c_gesvd state' u' s' v' m' num'
+gesvd_ (u, s, v) m num = runManaged $ do
+  state' <- managedState
+  u' <- managedTensor u
+  s' <- managedTensor s
+  v' <- managedTensor v
+  m' <- managedTensor m
+  liftIO $ svArg2C num >>= Sig.c_gesvd state' u' s' v' m'
 
 -- | 'gesvd', computing @A = U*Σ*transpose(V)@.
 --
@@ -367,11 +388,12 @@ gesvd_ (u, s, v) m num =
 gesvd2
   :: Dynamic                                 -- ^ m
   -> ComputeSingularValues                   -- ^ Whether to compute all or some of the singular values
-  -> IO (Dynamic, Dynamic, Dynamic, Dynamic) -- ^ (u, s, v, a)
-gesvd2 m csv = do
-  ret <- (,,,) <$> empty <*> empty <*> empty <*> empty
+  -> (Dynamic, Dynamic, Dynamic, Dynamic) -- ^ (u, s, v, a)
+gesvd2 m csv = unsafeDupablePerformIO $ do
+  let ret = (empty, empty, empty, empty)
   gesvd2_ ret m csv
   pure ret
+{-# NOINLINE gesvd2 #-}
 
 -- | Inplace version of 'gesvd2_'.
 gesvd2_
@@ -379,12 +401,14 @@ gesvd2_
   -> Dynamic                              -- ^ m
   -> ComputeSingularValues                -- ^ Whether to compute all or some of the singular values
   -> IO ()
-gesvd2_ (u, s, v, a) m csv = do
-  csv' <- svArg2C csv
-  with2DynamicState u s $ \state' u' s' ->
-    with2DynamicState v a $ \_ v' a' ->
-      withDynamicState m $ \_ m' ->
-        Sig.c_gesvd2 state' u' s' v' a' m' csv'
+gesvd2_ (u, s, v, a) m csv = runManaged $ do
+  state' <- managedState
+  u' <- managedTensor u
+  s' <- managedTensor s
+  v' <- managedTensor v
+  a' <- managedTensor a
+  m' <- managedTensor m
+  liftIO $ svArg2C csv >>= Sig.c_gesvd2 state' u' s' v' a' m'
 
 -- ========================================================================= --
 -- Helpers

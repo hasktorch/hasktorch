@@ -32,7 +32,7 @@ module Torch.Indef.Static.Tensor.Random.TH
   , OpenUnit   , Dynamic.openUnit   , Dynamic.openUnitValue
   , ClosedUnit , Dynamic.closedUnit , Dynamic.closedUnitValue
   , Positive   , Dynamic.positive   , Dynamic.positiveValue
-  , Ord2Tuple  , Dynamic.ord2Tuple  , Dynamic.ord2TupleValues
+  , Ord2Tuple  , Dynamic.ord2Tuple  , Dynamic.ord2TupleValue
 
   , multivariate_normal
   ) where
@@ -204,10 +204,8 @@ multivariate_normal
   -> Tensor '[p, p]    -- ^ eigenvec
   -> Tensor '[p]       -- ^ eigenval
   -> IO (Tensor '[n, p])
-multivariate_normal g mu eigvec eigval = go (transpose2d eigvec)
-  <$> diag1d eigval
-  <*> pure (expand2d mu)
-  <*> normal g 0 p1
+multivariate_normal g mu eigvec eigval = go (transpose2d eigvec) (diag1d eigval) (expand2d mu)
+  <$> normal g 0 p1
  where
   Just p1 = Dynamic.positive 1
 

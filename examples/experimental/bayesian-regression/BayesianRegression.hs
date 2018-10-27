@@ -48,8 +48,12 @@ genData gen param = do
 
 genParam :: RNG.Generator -> IO (Tensor '[1, 3])
 genParam gen = do
-  let Just (eigenvectors :: Tensor '[3,3]) = fromList [1, 0, 0, 0, 1, 1, 1, 0, 1]
-  let Just (eigenvalues :: Tensor '[3]) = vector [1, 1, 1]
+  Just (eigenvectors :: Tensor '[3,3])
+    <- fromList [1, 0, 0, 0, 1, 1, 1, 0, 1]
+
+  eigenvalues :: Tensor '[3]
+    <- unsafeVector [1, 1, 1]
+
   let mu :: Tensor '[3] = constant 0
   predictorVal :: Tensor '[1, 3] <- multivariate_normal gen mu eigenvectors eigenvalues
   putStrLn "Parameter values:"

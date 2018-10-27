@@ -32,7 +32,11 @@ refresh:
 	cd output && ./refresh.sh
 
 codegen-th:
-	for l in TH THNN; do for t in generic concrete; do cabal new-run hasktorch-codegen:ht-codegen -- --type $$t --lib $$l --verbose; done; done
+	for l in TH THNN; do \
+	  for t in generic concrete; do \
+	    cabal new-run hasktorch-codegen:ht-codegen -- --type $$t --lib $$l --verbose; \
+	  done; \
+	done
 
 codegen-thc:
 	for l in THC THCUNN; do for t in generic concrete; do cabal new-run hasktorch-codegen:ht-codegen -- --type $$t --lib $$l --verbose; done; done
@@ -45,7 +49,50 @@ dev:
 
 # lasso is broken
 run-examples:
-	for ex in ad bayesian-regression download-mnist ff-typed ff-untyped gradient-descent multivariate-normal static-tensor-usage; do echo "running $$ex" && sleep 1 && cabal new-run hasktorch-examples:$$ex && sleep 1 ; done
+	for ex in ad \
+	  bayesian-regression \
+	  download-mnist \
+	  ff-typed \
+	  ff-untyped \
+	  gradient-descent \
+	  multivariate-normal \
+	  static-tensor-usage; do \
+	    echo "running $$ex" && \
+	    sleep 1 && \
+	    cabal new-run hasktorch-examples:$$ex && \
+	    sleep 1 ; \
+	done
 	echo "finished running examples"
+
+dabal-all:
+	for lib in "signatures/hasktorch-signatures"        \
+	  "signatures/partial/hasktorch-signatures-partial" \
+	  "signatures/support/hasktorch-signatures-support" \
+	  "signatures/types/hasktorch-signatures-types"     \
+	  "indef/hasktorch-indef"                           \
+	  "hasktorch/hasktorch"                             \
+	  "zoo/hasktorch-zoo"                               \
+	  "examples/hasktorch-examples"  ; do               \
+	  $(MAKE) dabal DABAL=$${lib} ; \
+	done
+
+dabal: dabal-tmp dabal-tmp-switch
+
+dabal-tmp:
+	dhall-to-cabal $(DABAL).dhall > $(DABAL)-tmp.cabal
+
+dabal-tmp-switch:
+	mv $(DABAL)-tmp.cabal $(DABAL).cabal
+
+test-signatures:
+	for pkg in \
+	  floating-th \
+	  floating-thc \
+	  signed-th \
+	  signed-thc \
+	  unsigned-thc \
+	  unsigned-th; do \
+	    cabal new-build hasktorch-signatures:isdefinite-$${pkg} > /dev/null ; \
+	done
 
 .PHONY: clean build refresh codegen init dev run-examples

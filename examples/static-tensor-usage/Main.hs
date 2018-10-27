@@ -1,18 +1,29 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
 import Control.Monad (void)
 
+#ifdef CUDA
+import Torch.Cuda.Double
+import qualified Torch.Cuda.Double as Math
+#else
 import Torch.Double
 import qualified Torch.Core.Random as RNG (newRNG)
 import qualified Torch.Double as Math
--- import Torch.Core.Tensor.Static.Math as Math
--- import Torch.Core.Tensor.Static.Math.Infix
+#endif
+
+
+#ifdef CUDA
+tensortype = "CUDA Tensors"
+#else
+tensortype = "CPU Tensors"
+#endif
 
 main :: IO ()
 main = do
-  h1 "Example Usage of Typed Tensors"
+  h1 $ "Example Usage of Typed " ++ tensortype
   initialization
   matrixVectorOps
   valueTransformations
@@ -22,8 +33,7 @@ initialization = void $ do
   h2 "Initialization"
 
   section "Zeros" $ do
-    zeroMat :: DoubleTensor '[3, 2] <- new
-    pure zeroMat
+    pure (zerosLike :: DoubleTensor '[3, 2])
 
   section "Constant" $ do
     let constVec :: DoubleTensor '[2] = constant 2
@@ -31,32 +41,38 @@ initialization = void $ do
 
   listVec :: DoubleTensor '[6] <-
     section' "Initialize 1D vector from list" $ do
-      let Just v = vector [1, 2, 3, 4, 5, 6]
-      pure v
+      unsafeVector [1, 2, 3, 4, 5, 6]
 
   section "Resize 1D vector as 2D matrix" $ do
     let asMat :: Tensor '[3, 2] = resizeAs listVec
     pure asMat
 
   section "Initialize arbitrary dimensions directly from list" $ do
-    let Just (listVec2 :: DoubleTensor '[3, 2]) = fromList [1, 2, 3, 4, 5, 6]
+    Just (listVec2 :: DoubleTensor '[3, 2])
+      <- fromList [1, 2, 3, 4, 5, 6]
     pure listVec2
 
   section "Random values" $ do
-    gen :: Generator <- RNG.newRNG
     let Just p = ord2Tuple (1, 2)
-    randMat :: DoubleTensor '[4, 4] <- uniform gen p
-    pure randMat
+#ifdef CUDA
+    randMat <- uniform p
+#else
+    randMat <- (`uniform` p) =<< RNG.newRNG
+#endif
+    pure (randMat :: DoubleTensor '[4, 4])
 
 matrixVectorOps :: IO ()
 matrixVectorOps = void $ do
   h2 "Matrix/vector operations"
-  gen <- RNG.newRNG
 
   randMat :: DoubleTensor '[2, 2] <-
     section' "Random matrix" $ do
       let Just p = ord2Tuple (-1, 1)
-      uniform gen p
+#ifdef CUDA
+      uniform p
+#else
+      RNG.newRNG >>= (`uniform` p)
+#endif
 
   constVec :: DoubleTensor '[2] <-
     section' "Constant vector" $
@@ -72,22 +88,24 @@ matrixVectorOps = void $ do
     pure $ constVec <.> constVec
 
   showSection "Matrix trace" $
-    trace randMat
+    pure $ ttrace randMat
 
 
 valueTransformations :: IO ()
 valueTransformations = void $ do
   h2 "Batch tensor value transformations"
 
-  gen <- RNG.newRNG
-
   randMat :: DoubleTensor '[4, 4] <-
     section' "Random matrix" $ do
       let Just p = ord2Tuple (1, 3)
-      uniform gen p
+#ifdef CUDA
+      uniform p
+#else
+      RNG.newRNG >>= (`uniform` p)
+#endif
 
   section "Negated" $
-    neg randMat
+    pure $ neg randMat
 
   section "Sigmoid" $ do
     let sig :: DoubleTensor '[4, 4] = Math.sigmoid randMat
@@ -130,6 +148,3 @@ _section printer title buildit = do
   t <- buildit
   printer t
   pure t
-
-
-

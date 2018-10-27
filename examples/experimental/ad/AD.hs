@@ -127,7 +127,7 @@ forwardNetwork' t = \case
      pure (output :^~ adv)
 
 mkW :: (KnownDim i, KnownDim o) => IO (AW i o)
-mkW = AW <$> new <*> new
+mkW = pure $ AW new new
 
 type NW = Network
 
@@ -167,18 +167,15 @@ dispV (V o)= putStrLn "\nOutput Layer ::::" >> print o
 dispV (v :^~ n) = putStrLn "\nCurrent Layer ::::" >> print v >> dispV n
 
 li :: Layer 'LLinear 10 7
-li = unsafePerformIO $ LayerLinear <$> new
-{-# NOINLINE li #-}
+li = LayerLinear new
 l2 :: Layer 'LSigmoid 7 7
 l2 = LayerSigmoid
 l3 :: Layer 'LLinear 7 4
-l3 = unsafePerformIO $ LayerLinear <$> new
-{-# NOINLINE l3 #-}
+l3 = LayerLinear new
 l4 :: Layer 'LSigmoid 4 4
 l4 = LayerSigmoid
 lo :: Layer 'LLinear 4 2
-lo = unsafePerformIO $ LayerLinear <$> new
-{-# NOINLINE lo #-}
+lo = LayerLinear new
 
 net = li :~ l2 :~ l3 :~ l4 :~ O lo
 

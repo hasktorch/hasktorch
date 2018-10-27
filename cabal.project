@@ -1,26 +1,24 @@
 packages:
-    codegen/*.cabal
+    ffi/codegen/*.cabal
 
-    raw/th/*.cabal
-    raw/thc/*.cabal
-    raw/tests/*.cabal
+    ffi/types/th/*.cabal
+    ffi/types/thc/*.cabal
 
-    types/th/*.cabal
-    types/thc/*.cabal
+    ffi/ffi/th/*.cabal
+    ffi/ffi/thc/*.cabal
+    ffi/ffi/tests/*.cabal
 
     signatures/types/*cabal
     signatures/partial/*cabal
+    signatures/support/*cabal
     signatures/*cabal
 
     indef/*cabal
 
-    core/*cabal
+    hasktorch/*cabal
 
-    -- vendor/type-combinators/*cabal
-    -- vendor/opto/*cabal
-
-    examples/*cabal
     zoo/*cabal
+    examples/*cabal
 
 -- This absolute path would go in your ~/.cabal/config file.
 -- FIXME: figure out package-relative paths

@@ -27,28 +27,23 @@ neg_ :: Tensor d -> IO ()
 neg_ t = Dynamic.neg_ (asDynamic t)
 
 -- | Static call to 'Dynamic.neg'
-neg :: Dimensions d => Tensor d -> IO (Tensor d)
-neg t = asStatic <$> Dynamic.neg (asDynamic t)
+neg :: Dimensions d => Tensor d -> Tensor d
+neg t = asStatic $ Dynamic.neg (asDynamic t)
 
 -- | Static call to 'Dynamic.abs'
-abs :: Dimensions d => Tensor d -> IO (Tensor d)
-abs t = asStatic <$> Dynamic.abs (asDynamic t)
+abs :: Dimensions d => Tensor d -> Tensor d
+abs t = asStatic $ Dynamic.abs (asDynamic t)
 
 
 instance Dimensions d => Num (Tensor d) where
   (+) = (^+^)
-  {-# NOINLINE (+) #-}
 
   (-) = (^-^)
-  {-# NOINLINE (-) #-}
 
   (*) = (^*^)
-  {-# NOINLINE (*) #-}
 
-  abs = unsafePerformIO . Torch.Indef.Static.Tensor.Math.Pointwise.Signed.abs
-  {-# NOINLINE abs #-}
+  abs = Torch.Indef.Static.Tensor.Math.Pointwise.Signed.abs
 
-  signum = unsafePerformIO . sign
-  {-# NOINLINE signum #-}
+  signum = sign
 
   fromInteger = constant . fromIntegral

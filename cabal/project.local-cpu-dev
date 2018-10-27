@@ -1,0 +1,36 @@
+-- In "developer" mode, we probably want to additionally set these so we don't
+-- have to rebuild the world when things go bad:
+---------------------------------------------------------------------------------
+optimization: False
+debug-info: True
+executable-stripping: False
+
+executable-profiling: True
+library-profiling: True
+profiling: True
+
+-- hardcode this to your aten repository, just like in the regular CPU build.
+extra-lib-dirs:     /home/stites/git/hasktorch/ffi/deps/aten/build/lib
+
+-- This is a hack around the cabal new-* bug where you can't add multi-line `dirs`:
+-----------------------------------------------------------------------------------
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include/TH
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include/THNN
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include/THC
+extra-include-dirs: /home/stites/git/hasktorch/ffi/deps/aten/build/include/THCUNN
+
+program-locations
+  ghc-location:     /opt/ghc/8.4.3/bin/ghc
+  ghc-pkg-location: /opt/ghc/8.4.3/bin/ghc-pkg
+
+package *
+  -- add profiling on all (just in case)
+  ghc-options: -fprof-auto -Wall -Widentities -Wincomplete-record-updates -fprint-expanded-synonyms -fprint-explicit-foralls -fprint-explicit-kinds -fprint-potential-instances -H16m
+
+  -- set +lite and +debug, which are common flags for hasktorch (maybe others)
+  flags: -cuda +lite +debug
+
+program-options
+  -- add profiling on hasktorch exes
+  ghc-options: -fprof-auto

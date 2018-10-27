@@ -72,7 +72,11 @@ module Torch.Indef.Dynamic.NN
   , _temporalUpSamplingLinear_updateGradInput
   , _batchNormalization_updateOutput
   , _batchNormalization_backward
+
+  -- start to clean up conv2d
   , spatialConvolutionMM_updateOutput
+  , _spatialConvolutionMM_updateOutput
+
   , _spatialConvolutionMM_updateGradInput
   , _spatialConvolutionMM_accGradParameters
   , _spatialConvolutionLocal_updateOutput
@@ -128,6 +132,7 @@ module Torch.Indef.Dynamic.NN
 
 
 import Foreign.C.Types
+import Control.Monad.Managed
 import Torch.Sig.Types.NN
 import Torch.Indef.Dynamic.Tensor -- (empty, new)
 import Torch.Indef.Dynamic.NN.Activation as X
@@ -359,18 +364,38 @@ spatialConvolutionMM_updateOutput inp weight bias (kW, kH) (dW, dH) (pW, pH) = d
   -- https://github.com/zdevito/ATen/blob/682cb389db5a318539ff03f031bf896a43a71b13/aten/src/THCUNN/generic/SpatialConvolutionMM.cu#L141
   --
   -- TODO: someone needs to verify that this is all above-board and we aren't missing out on some optimization tricks.
-  columns <- empty   -- temporary columns
-  ones    <- empty   -- buffer of ones for bias accumulation
+  let columns = empty   -- temporary columns
+  let ones    = empty   -- buffer of ones for bias accumulation
 
   -- This one as well:
-  out     <- empty   -- output
+  let out     = empty   -- output
+  _spatialConvolutionMM_updateOutput inp out weight bias columns ones (kW, kH) (dW, dH) (pW, pH)
+
+  pure out
+
+-- | spatialConvolutionMM forward pass
+_spatialConvolutionMM_updateOutput
+  :: Dynamic    -- ^ input
+
+  -> Dynamic    -- ^ output
+
+  -> Dynamic    -- ^ 3D weight tensor (connTable:size(1) x kH x kW)
+  -> Dynamic    -- ^ 1D bias tensor (nOutputPlane)
+
+  -> Dynamic    -- ^ BUFFER: temporary columns
+  -> Dynamic    -- ^ BUFFER: buffer of ones for bias accumulation
+
+  -> (Int, Int) -- ^ (kW, kH) kernel height and width
+  -> (Int, Int) -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
+  -> (Int, Int) -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
+  -> IO ()
+_spatialConvolutionMM_updateOutput inp out weight bias columns ones (kW, kH) (dW, dH) (pW, pH) = do
   with3DynamicState inp out weight $ \s' inp' out' weight' ->
    with3DynamicState bias columns ones $ \_ bias' columns' ones' ->
     Sig.c_SpatialConvolutionMM_updateOutput s' inp' out' weight' bias' columns' ones'
       (fromIntegral kW) (fromIntegral kH)
       (fromIntegral dW) (fromIntegral dH)
       (fromIntegral pW) (fromIntegral pH)
-  pure out
 
 -- | spatialConvolutionMM backward-update (updates the layer and bias tensors)
 _spatialConvolutionMM_updateGradInput
@@ -678,16 +703,22 @@ _temporalReplicationPadding_updateGradInput =
 -------------------------------------------------------------------------------
 -- Deal love of god...
 --
-ten1 fn t0 d0 =
-  withDynamicState t0 $ \s' t0' -> fn s' t0' (fromIntegral d0)
+ten1 fn t0 d0 = runManaged $ do
+  s' <- managedState
+  t0' <- managedTensor t0
+  liftIO $ fn s' t0' (fromIntegral d0)
 
-ten2dim1 fn t0 t1 d0 =
-  with2DynamicState t0 t1 $ \s' t0' t1' ->
-    fn s' t0' t1' (fromIntegral d0)
+ten2dim1 fn t0 t1 d0 = runManaged $ do
+  s' <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  liftIO $ fn s' t0' t1' (fromIntegral d0)
 
-ten2 fn t0 t1 =
-  with2DynamicState t0 t1 $ \s' t0' t1' ->
-    fn s' t0' t1'
+ten2 fn t0 t1 = runManaged $ do
+  s' <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  liftIO $ fn s' t0' t1'
 
 ten3 fn t0 t1 t2 =
   with3DynamicState t0 t1 t2 $ \s' t0' t1' t2' ->

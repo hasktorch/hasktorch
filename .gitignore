@@ -23,6 +23,21 @@ output/raw
 result
 result-*
 
+# profiling files
+*.log
+*.ps
+*.hp
+*.svg
+*.folded
+*.prof
+*.svg
+
+# old dependencies (moved to github.com/hasktorch/ffi)
+vendor/
+
+# files created by python examples
+data/
+
 # Created by https://www.gitignore.io/api/c,vim,c++,linux,macos,emacs,haskell
 
 ### C ###
@@ -239,5 +254,6 @@ tags
 
 
 # End of https://www.gitignore.io/api/c,vim,c++,linux,macos,emacs,haskell
+
 
 

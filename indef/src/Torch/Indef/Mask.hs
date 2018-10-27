@@ -21,6 +21,7 @@
 module Torch.Indef.Mask
   ( newMask
   , newMaskDyn
+  , newMaskDyn'
   , withMask
   , allOf
   ) where
@@ -61,6 +62,9 @@ newMaskDyn d = unsafeDupablePerformIO $ withForeignPtr Sig.torchstate $ \s -> do
   byteDynamic Sig.torchstate
     <$> newForeignPtrEnv MaskSig.p_free s bytePtr
 
+newMaskDyn' :: SomeDims -> MaskDynamic
+newMaskDyn' (SomeDims d) = newMaskDyn d
+
 -- | run a function with access to a dynamic index tensor's raw c-pointer.
 withMask :: MaskDynamic -> (Ptr CMaskTensor -> IO x) -> IO x
 withMask ix fn = withForeignPtr (snd $ byteDynamicState ix) fn
@@ -71,7 +75,7 @@ class IsMask t where
   -- anyOf :: t -> Bool
 
 instance IsMask MaskDynamic where
-  allOf t = unsafeDupablePerformIO $ flip X.with pure $ do
+  allOf t = unsafePerformIO $ flip X.with pure $ do
     s' <- managed $ withForeignPtr s
     t' <- managed $ withForeignPtr fp
 

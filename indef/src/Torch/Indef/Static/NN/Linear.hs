@@ -11,30 +11,40 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Linear where
 
 import Data.List
+import GHC.Generics
 import Data.Singletons.Prelude.List hiding (All)
 import Numeric.Backprop
 import Numeric.Dimensions
 import System.IO.Unsafe
 
+import Debug.Trace
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Blas
 import Torch.Indef.Static.Tensor.Math.Pointwise
-import Torch.Indef.Static.Tensor.Math.Pairwise ((*^))
+import Torch.Indef.Static.Tensor.Math.Pointwise.Signed ()
+import Torch.Indef.Static.Tensor.Math.Pairwise (Pairwise(..))
 import Torch.Indef.Static.NN.Backprop ()
 import qualified Torch.Indef.Dynamic.NN as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
 
 -- | datatype representing a linear layer with bias. Represents
 -- @y = Ax + b@.
 newtype Linear i o
   = Linear { getTensors :: (Tensor '[i, o], Tensor '[o]) }
+  deriving (Eq, Generic)
 
 instance (KnownDim i, KnownDim o) => Show (Linear i o) where
   show c = intercalate ","
@@ -47,7 +57,69 @@ instance (KnownDim i, KnownDim o) => Show (Linear i o) where
 instance (KnownDim i, KnownDim o) => Backprop (Linear i o) where
   zero = const . Linear $ (constant 0, constant 0)
   one  = const . Linear $ (constant 1, constant 1)
-  add c0 c1 = Linear (weights c0 + weights c1, bias c0 + bias c1)
+-- instance (KnownDim i, KnownDim o) => Backprop (Linear i o) where
+--   one  (Linear (a, b)) = unsafePerformIO $ do
+--     Dynamic.onesLike_ (asDynamic a) (asDynamic a)
+--     Dynamic.onesLike_ (asDynamic b) (asDynamic b)
+--     pure (Linear (a, b))
+--   {-# NOINLINE one #-}
+
+--   zero (Linear (a, b)) = unsafePerformIO $ do
+--     Dynamic.zerosLike_ (asDynamic a) (asDynamic a)
+--     Dynamic.zerosLike_ (asDynamic b) (asDynamic b)
+--     pure (Linear (a, b))
+--   {-# NOINLINE zero #-}
+
+
+  add (Linear (a0, b0)) (Linear (a1, b1)) = unsafePerformIO $ do
+    Dynamic.cadd_ (asDynamic a1) 1 (asDynamic a0)
+    Dynamic.cadd_ (asDynamic b1) 1 (asDynamic b0)
+    pure (Linear (a1, b1))
+  {-# NOINLINE add #-}
+
+instance (KnownDim i, KnownDim o) => Num (Linear i o) where
+  (+) (Linear (a0, b0)) (Linear (a1, b1)) = Linear (a0+a1, b0+b1)
+  (-) (Linear (a0, b0)) (Linear (a1, b1)) = Linear (a0-a1, b0-b1)
+  (*) (Linear (a0, b0)) (Linear (a1, b1)) = Linear (a0*a1, b0*b1)
+  abs (Linear (a0, b0)) = Linear (abs a0, abs b0)
+  fromInteger i = Linear (fromInteger i, fromInteger i)
+
+instance (KnownDim i, KnownDim o) => Pairwise (Linear i o) HsReal where
+  (Linear tens) ^+ v = Linear (tens ^+ v)
+  (Linear tens) ^- v = Linear (tens ^- v)
+  (Linear tens) ^* v = Linear (tens ^* v)
+  (Linear tens) ^/ v = Linear (tens ^/ v)
+
+-- -- | update a Linear layer
+-- updatePure
+--   :: (KnownDim i, KnownDim o)
+--   => Linear i o   -- ^ layer to update
+--   -> HsReal       -- ^ learning rate
+--   -> Linear i o   -- ^ gradient
+--   -> Linear i o   -- ^ updated layer
+-- updatePure net lr (Linear (gw, gb)) = add net $ Linear (lr *^ gw, lr *^ gb)
+
+-- | update a Conv2d layer inplace
+update_
+  :: (KnownDim i, KnownDim o)
+  => Linear i o   -- ^ layer to update
+  -> HsReal       -- ^ learning rate
+  -> Linear i o   -- ^ gradient
+  -> IO ()
+update_ (Linear (w, b)) lr (Linear (gw, gb)) = do
+  Dynamic.cadd_ (asDynamic w) lr (asDynamic gw)
+  Dynamic.cadd_ (asDynamic b) lr (asDynamic gb)
+
+
+-- | update a Conv2d layer
+update
+  :: (KnownDim i, KnownDim o)
+  => Linear i o   -- ^ layer to update
+  -> HsReal       -- ^ learning rate
+  -> Linear i o   -- ^ gradient
+  -> Linear i o   -- ^ updated layer
+update layer lr grads = layer + (grads ^* lr)
+
 
 -- | the dense weight matrix of a linear layer
 weights :: Linear i o -> Tensor '[i, o]
@@ -106,11 +178,10 @@ linear
   :: forall s i o
   .  Reifies s W
   => All KnownDim '[i,o]
-  => HsReal
-  -> BVar s (Linear i o)
+  => BVar s (Linear i o)
   -> BVar s (Tensor '[i])
   -> BVar s (Tensor '[o])
-linear lr = liftOp2 $ op2 $ \l i ->
+linear = liftOp2 $ op2 $ \l i ->
   (updateOutput i l, \gout -> (accGradParameters i gout l, updateGradInput i gout (weights l)))
   where
     updateOutput :: Tensor '[i] -> Linear i o -> Tensor '[o]
@@ -120,10 +191,14 @@ linear lr = liftOp2 $ op2 $ \l i ->
     updateGradInput i gout w = addmv 0 (constant 0) 1 w gout
 
     accGradParameters :: Tensor '[i] -> Tensor '[o] -> Linear i o -> Linear i o
-    accGradParameters i gout (Linear (w, b)) = Linear (addr 1 (constant 0) lr i gout, cadd (constant 0) lr gout)
+    accGradParameters i gout (Linear (w, b)) = Linear (w', b')
+      where
+        lr = 1
+        w' = addr 1 (constant 0) lr i gout
+        b' = cadd b lr gout
 
 -- | 'linear' with a batch dimension
-linearB
+linearBatch
   :: forall s i o b
   .  Reifies s W
   => All KnownDim '[b,i,o]
@@ -131,7 +206,7 @@ linearB
   -> BVar s (Linear i o)
   -> BVar s (Tensor '[b, i])
   -> BVar s (Tensor '[b, o])
-linearB lr = liftOp2 $ op2 $ \l i -> (updateOutput i l, \gout -> (accGradParameters i gout l, updateGradInput i gout (weights l)))
+linearBatch lr = liftOp2 $ op2 $ \l i -> (updateOutput i l, \gout -> (accGradParameters i gout l, updateGradInput i gout (weights l)))
   where
     updateOutput :: Tensor '[b, i] -> Linear i o -> Tensor '[b, o]
     updateOutput i (Linear (w,b)) =
@@ -199,7 +274,7 @@ sparselinear lr = liftOp2 $ op2 $ \l i ->
   where
     -- sparseLinear forward pass (updates the output tensor)
     updateOutput :: Tensor '[i, 2] -> Linear i o -> Tensor '[o]
-    updateOutput i (Linear (w,b)) = unsafeDupablePerformIO $ do
+    updateOutput i (Linear (w,b)) = unsafePerformIO $ do
       o <- new
       Dynamic._sparseLinear_updateOutput (asDynamic i) (asDynamic o) (asDynamic w) (asDynamic b)
       pure o

@@ -8,6 +8,7 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math.Reduce
   ( minall
   , maxall
@@ -24,6 +25,8 @@ module Torch.Indef.Dynamic.Tensor.Math.Reduce
   , median
   ) where
 
+import Control.Monad.Managed
+import Foreign (withForeignPtr)
 import System.IO.Unsafe
 import Numeric.Dimensions
 
@@ -31,85 +34,155 @@ import Torch.Indef.Types
 
 import Torch.Indef.Dynamic.Tensor
 import qualified Torch.Indef.Index as Ix
+import qualified Torch.Sig.Types.Global as Sig
 import qualified Torch.Sig.Tensor.Math.Reduce as Sig
 
 -- | get the minima of a tensor's elements
 minall :: Dynamic -> HsReal
-minall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_minall)
+minall t = unsafeDupablePerformIO . flip with (pure . c2hsReal) . (liftIO =<<) $ Sig.c_minall
+  <$> managedState
+  <*> managedTensor t
+{-# NOINLINE minall #-}
 
 -- | get the maxima of a tensor's elements
 maxall :: Dynamic -> HsReal
-maxall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_maxall)
+maxall t = unsafeDupablePerformIO . flip with (pure . c2hsReal) . (liftIO =<<) $ Sig.c_maxall
+  <$> managedState
+  <*> managedTensor t
+{-# NOINLINE maxall #-}
 
 -- | get the median value of a tensor's elements
 medianall :: Dynamic -> HsReal
-medianall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsReal .: Sig.c_medianall)
+medianall t = unsafeDupablePerformIO . flip with (pure . c2hsReal) . (liftIO =<<) $ Sig.c_medianall
+  <$> managedState
+  <*> managedTensor t
+{-# NOINLINE medianall #-}
 
 -- | get the sum of a tensor's elements
 sumall :: Dynamic -> HsAccReal
-sumall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_sumall)
+sumall t = unsafeDupablePerformIO . flip with (pure . c2hsAccReal) . (liftIO =<<) $ Sig.c_sumall
+  <$> managedState
+  <*> managedTensor t
+{-# NOINLINE sumall #-}
 
 -- | get the product of a tensor's elements
 prodall :: Dynamic -> HsAccReal
-prodall = unsafeDupablePerformIO . flip withDynamicState (fmap c2hsAccReal .: Sig.c_prodall)
+prodall t = unsafeDupablePerformIO . flip with (pure . c2hsAccReal) . (liftIO =<<) $ Sig.c_prodall
+  <$> managedState
+  <*> managedTensor t
+{-# NOINLINE prodall #-}
 
 -- | get the maximal value in the specified dimension and a corresponding index tensor of the maximum value's index.
 --
 -- Inplace and C-Style mutation
-_max :: (Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
-_max (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
-  Ix.withDynamicState ix $ \_ ix' ->
-    Sig.c_max s' t0' ix' t1' (fromIntegral i0) (fromKeepDim i1)
+_max
+  :: (Dynamic, IndexDynamic) -> Dynamic
+  -> Word -- ^ dimension to operate over
+  -> Maybe KeepDim -> IO ()
+_max (t0, ix) t1 i0 i1 = withLift $ Sig.c_max
+  <$> managedState
+  <*> managedTensor t0
+  <*> managed (withForeignPtr (snd $ Sig.longDynamicState ix))
+  <*> managedTensor t1
+  <*> pure (fromIntegral i0)
+  <*> pure (fromKeepDim i1)
+{-# NOINLINE _max #-}
 
 -- | get the minimal value in the specified dimension and a corresponding index tensor of the minimum value's index.
 --
 -- Inplace and C-Style mutation
-_min :: (Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
-_min (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
-  Ix.withDynamicState ix $ \_ ix' ->
-    Sig.c_min s' t0' ix' t1' (fromIntegral i0) (fromKeepDim i1)
+_min :: (Dynamic, IndexDynamic) -> Dynamic
+  -> Word -- ^ dimension to operate over
+  -> Maybe KeepDim -> IO ()
+_min (t0, ix) t1 i0 i1  = withLift $ Sig.c_min
+  <$> managedState
+  <*> managedTensor t0
+  <*> managed (withForeignPtr (snd $ Sig.longDynamicState ix))
+  <*> managedTensor t1
+  <*> pure (fromIntegral i0)
+  <*> pure (fromKeepDim i1)
+{-# NOINLINE _min #-}
 
 -- | get the median value in the specified dimension and a corresponding index tensor of the median value's index.
 --
 -- Inplace and C-Style mutation
-_median :: (Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
-_median (t0, ix) t1 i0 i1 = with2DynamicState t0 t1 $ \s' t0' t1' ->
-  Ix.withDynamicState ix $ \_ ix' ->
-    Sig.c_median s' t0' ix' t1' (fromIntegral i0) (fromKeepDim i1)
+_median :: (Dynamic, IndexDynamic) -> Dynamic
+  -> Word -- ^ dimension to operate over
+  -> Maybe KeepDim -> IO ()
+_median (t0, ix) t1 i0 i1 = withLift $ Sig.c_median
+  <$> managedState
+  <*> managedTensor t0
+  <*> managed (withForeignPtr (snd $ Sig.longDynamicState ix))
+  <*> managedTensor t1
+  <*> pure (fromIntegral i0)
+  <*> pure (fromKeepDim i1)
+{-# NOINLINE _median #-}
 
 -- | sum the tensor in the specified dimension.
 --
 -- Inplace and C-Style mutation
-_sum :: Dynamic -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
-_sum t0 t1 i0 i1 = with2DynamicState t0 t1 $ shuffle3'2 Sig.c_sum (fromIntegral i0) (fromKeepDim i1)
+_sum :: Dynamic -> Dynamic
+  -> Word -- ^ dimension to operate over
+  -> Maybe KeepDim -> IO ()
+_sum t0 t1 i0 i1 = withLift $ Sig.c_sum
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromIntegral i0)
+  <*> pure (fromKeepDim i1)
+{-# NOINLINE _sum #-}
 
 -- | take the product of the tensor in the specified dimension.
 --
 -- Inplace and C-Style mutation
-_prod :: Dynamic -> Dynamic -> DimVal -> Maybe KeepDim -> IO ()
-_prod t0 t1 i0 i1 = with2DynamicState t0 t1 $ shuffle3'2 Sig.c_prod (fromIntegral i0) (fromKeepDim i1)
+_prod
+  :: Dynamic -> Dynamic
+  -> Word -- ^ dimension to operate over
+  -> Maybe KeepDim -> IO ()
+_prod t0 t1 i0 i1 = withLift $ Sig.c_prod
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromIntegral i0)
+  <*> pure (fromKeepDim i1)
+{-# NOINLINE _prod #-}
+
 
 withKeepDim
-  :: ((Dynamic, IndexDynamic) -> Dynamic -> DimVal -> Maybe KeepDim -> IO ())
-  -> Dynamic -> DimVal -> Maybe KeepDim -> IO (Dynamic, Maybe (IndexDynamic))
-withKeepDim _fn t d k = do
-  tdim@(SomeDims d')<- getDims t
-  let (i:_) = listDims d'
-  ret :: Dynamic      <- new' tdim
-  let ix = Ix.newIxDyn i
+  :: ((Dynamic, IndexDynamic) -> Dynamic -> Word -> Maybe KeepDim -> IO ())
+  -> Dynamic -> Word -> Maybe KeepDim -> (Dynamic, Maybe (IndexDynamic))
+withKeepDim _fn t d k = unsafeDupablePerformIO $ do
   _fn (ret, ix) t d k
-  pure (ret, maybe (Just ix) (pure Nothing) k)
+  pure (ret, maybe Nothing (\(KeepDim b) -> if b then Just ix else Nothing) k)
+  where
+    tdim = getSomeDims t
+    (i:_) = shape t
+    ret :: Dynamic = new' tdim
+    ix = Ix.newIxDyn [i]
+{-# NOINLINE withKeepDim #-}
 
 -- | get the maximum value in the specified dimension and return an optional corresponding index tensor of the maximum value's index.
-max :: Dynamic -> DimVal -> Maybe KeepDim -> IO (Dynamic, Maybe (IndexDynamic))
+max
+  :: Dynamic
+  -> Word -- ^ dimension to operate over
+  -> Maybe KeepDim
+  -> (Dynamic, Maybe (IndexDynamic))
 max = withKeepDim _max
 
 -- | get the minimum value in the specified dimension and return an optional corresponding index tensor of the minimum value's index.
-min :: Dynamic -> DimVal -> Maybe KeepDim -> IO (Dynamic, Maybe (IndexDynamic))
+min
+  :: Dynamic
+  -> Word -- ^ dimension to operate over
+  -> Maybe KeepDim
+  -> (Dynamic, Maybe (IndexDynamic))
 min = withKeepDim _min
 
 -- | get the median value in the specified dimension and return an optional corresponding index tensor of the median value's index.
-median :: Dynamic -> DimVal -> Maybe KeepDim -> IO (Dynamic, Maybe (IndexDynamic))
+median
+  :: Dynamic
+  -> Word -- ^ dimension to operate over
+  -> Maybe KeepDim
+  -> (Dynamic, Maybe (IndexDynamic))
 median = withKeepDim _median
 
 

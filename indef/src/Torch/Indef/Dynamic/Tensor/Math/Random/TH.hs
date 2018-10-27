@@ -19,7 +19,8 @@ module Torch.Indef.Dynamic.Tensor.Math.Random.TH
 
 import Foreign
 import Foreign.Ptr
-import Control.Monad.Managed (runManaged)
+import Control.Monad
+import Control.Monad.Managed
 import Torch.Indef.Types
 import qualified Torch.Types.TH as TH
 import qualified Torch.Sig.Types as Sig
@@ -32,11 +33,11 @@ go
   -> Generator
   -> TH.IndexStorage
   -> IO ()
-go fn d g i = runManaged . joinIO $ fn
-  <$> manage' Sig.dynamicStateRef d
-  <*> manage' Sig.ctensor d
-  <*> manage' Sig.rng g
-  <*> manage' (snd . TH.longStorageState) i
+go fn d g i = runManaged . (liftIO =<<) $ fn
+  <$> managedState
+  <*> managedTensor d
+  <*> managed (withForeignPtr (Sig.rng g))
+  <*> managed (withForeignPtr . snd . TH.longStorageState $ i)
 
 -- | C-style, impure, call to Torch's @rand@ function.
 --
@@ -66,10 +67,10 @@ _randperm
   -> Generator -- ^ local generator to use
   -> Integer   -- ^ @n@
   -> IO ()
-_randperm t g i = runManaged . joinIO $ Sig.c_randperm
-  <$> manage' Sig.dynamicStateRef t
-  <*> manage' Sig.ctensor t
-  <*> manage' Sig.rng g
+_randperm t g i = runManaged . (liftIO =<<) $ Sig.c_randperm
+  <$> managedState
+  <*> managedTensor t
+  <*> managed (withForeignPtr (Sig.rng g))
   <*> pure (fromIntegral i)
 
 

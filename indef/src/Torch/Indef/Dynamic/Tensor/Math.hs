@@ -29,32 +29,43 @@
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math where
 
-import Foreign hiding (new)
+import Foreign hiding (new, with)
 import Foreign.Ptr
-import qualified Torch.Sig.Tensor.Math   as Sig
-import qualified Torch.Types.TH as TH (IndexStorage)
-import qualified Foreign.Marshal as FM
+import Control.Monad.Managed
 import Numeric.Dimensions
 import System.IO.Unsafe
-
+import qualified Foreign.Marshal as FM
 
 import Torch.Indef.Dynamic.Tensor
 import Torch.Indef.Types
-import qualified Torch.Indef.Index as Ix
+import qualified Torch.Indef.Index     as Ix
+import qualified Torch.Sig.Tensor.Math as Sig
+import qualified Torch.Sig.Types       as Sig
+import qualified Torch.Sig.State       as Sig
+import qualified Torch.Types.TH        as TH (IndexStorage)
 
 
 -- | fill a dynamic tensor, inplace, with the given value.
 fill_ :: Dynamic -> HsReal -> IO ()
-fill_ t v = withDynamicState t $ shuffle2 Sig.c_fill (hs2cReal v)
+fill_ t v = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_fill s' t' (hs2cReal v)
 
 -- | mutate a tensor, inplace, filling it with zero values.
 zero_ :: Dynamic -> IO ()
-zero_ t = withDynamicState t Sig.c_zero
+zero_ t = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_zero s' t'
 
 -- | mutate a tensor, inplace, resizing the tensor to the given IndexStorage
 -- size and replacing its value with zeros.
 zeros_ :: Dynamic -> IndexStorage -> IO ()
-zeros_ t ix = withDynamicState t Sig.c_zero
+zeros_ t ix = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_zero s' t'
 
 -- | mutate a tensor, inplace, resizing the tensor to the same shape as the second tensor argument
 -- and replacing the first tensor's values with zeros.
@@ -67,8 +78,11 @@ zerosLike_ t0 t1 = with2DynamicState t0 t1 Sig.c_zerosLike
 -- | mutate a tensor, inplace, resizing the tensor to the given IndexStorage
 -- size and replacing its value with ones.
 ones_ :: Dynamic -> TH.IndexStorage -> IO ()
-ones_ t0 ix = withDynamicState t0 $ \s' t0' -> Ix.withCPUIxStorage ix $ \ix' ->
-  Sig.c_ones s' t0' ix'
+ones_ t ix = runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  ix' <- managed $ Ix.withCPUIxStorage ix
+  liftIO $ Sig.c_ones s' t' ix'
 
 -- | mutate a tensor, inplace, resizing the tensor to the same shape as the second tensor argument
 -- and replacing the first tensor's values with ones.
@@ -79,8 +93,11 @@ onesLike_
 onesLike_ t0 t1 = with2DynamicState t0 t1 Sig.c_onesLike
 
 -- | returns the count of the number of elements in the matrix.
-numel :: Dynamic -> IO Integer
-numel t = withDynamicState t (fmap fromIntegral .: Sig.c_numel)
+numel :: Dynamic -> Integer
+numel t = fromIntegral . unsafeDupablePerformIO $ withLift $ Sig.c_numel
+  <$> managedState
+  <*> managedTensor t
+{-# NOINLINE numel #-}
 
 -- |
 -- @
@@ -95,8 +112,9 @@ _reshape t0 t1 ix = with2DynamicState t0 t1 $ \s' t0' t1' -> Ix.withCPUIxStorage
   Sig.c_reshape s' t0' t1' ix'
 
 -- | pure version of '_catArray'
-catArray :: [Dynamic] -> DimVal -> IO Dynamic
-catArray ts dv = empty >>= \r -> _catArray r ts dv >> pure r
+catArray :: [Dynamic] -> Word -> Dynamic
+catArray ts dv = unsafeDupablePerformIO $ let r = empty in _catArray r ts dv >> pure r
+{-# NOINLINE catArray #-}
 
 -- | Concatenate all tensors in a given list of dynamic tensors along the given dimension.
 --
@@ -107,11 +125,14 @@ catArray ts dv = empty >>= \r -> _catArray r ts dv >> pure r
 _catArray
   :: Dynamic   -- ^ result to mutate
   -> [Dynamic] -- ^ tensors to concatenate
-  -> DimVal    -- ^ dimension to concatenate along.
+  -> Word      -- ^ dimension to concatenate along.
   -> IO ()
-_catArray res ds d = withDynamicState res $ \s' r' -> do
-  ds' <- FM.newArray =<< mapM (\d -> withForeignPtr (ctensor d) pure) ds
-  Sig.c_catArray s' r' ds' (fromIntegral $ length ds) (fromIntegral d)
+_catArray res ds d = runManaged $ do
+  s' <- managedState
+  r' <- managedTensor res
+  liftIO $ do
+    ds' <- FM.newArray =<< mapM (\d -> withForeignPtr (ctensor d) pure) ds
+    Sig.c_catArray s' r' ds' (fromIntegral $ length ds) (fromIntegral d)
 
 -- | "Get the lower triangle of a tensor."
 --
@@ -121,7 +142,11 @@ _catArray res ds d = withDynamicState res $ \s' r' -> do
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 _tril :: Dynamic -> Dynamic -> Integer -> IO ()
-_tril t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_tril (fromInteger i0)
+_tril t0 t1 i0 = withLift $ Sig.c_tril
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromInteger i0)
 
 -- | "Get the upper triangle of a tensor."
 --
@@ -131,7 +156,11 @@ _tril t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_tril (fromInteger i0)
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 _triu :: Dynamic -> Dynamic -> Integer -> IO ()
-_triu t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_triu (fromInteger i0)
+_triu t0 t1 i0 = withLift $ Sig.c_triu
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromInteger i0)
 
 -- | Concatinate two dynamic tensors along the specified dimension, treating the
 -- first argument as the return tensor, to be mutated in-place.
@@ -140,25 +169,38 @@ _triu t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_triu (fromInteger i0)
 -- last dimension over all input tensors, except if all tensors are empty, then it is 1.
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
-_cat :: Dynamic -> Dynamic -> Dynamic -> DimVal -> IO ()
-_cat t0 t1 t2 i = withDynamicState t0 $ \s' t0' ->
-  with2DynamicState t1 t2 $ \_ t1' t2' ->
-    Sig.c_cat s' t0' t1' t2' (fromIntegral i)
+_cat :: Dynamic -> Dynamic -> Dynamic
+  -> Word  -- ^ dimension to concatenate along
+  -> IO ()
+_cat t0 t1 t2 i = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  t1' <- managedTensor t1
+  t2' <- managedTensor t2
+  liftIO $ Sig.c_cat s' t0' t1' t2' (fromIntegral i)
 
 -- | pure version of '_cat'
-cat :: Dynamic -> Dynamic -> DimVal -> IO Dynamic
-cat t0 t1 dv = empty >>= \r -> _cat r t0 t1 dv >> pure r
+cat :: Dynamic -> Dynamic -> Word -> Dynamic
+cat t0 t1 dv = unsafeDupablePerformIO $ let r = empty in _cat r t0 t1 dv >> pure r
+{-# NOINLINE cat #-}
 
 -- | Finds and returns a LongTensor corresponding to the subscript indices of all non-zero elements in tensor.
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 _nonzero :: IndexDynamic -> Dynamic -> IO ()
-_nonzero ix t = withDynamicState t $ \s' t' -> Ix.withDynamicState ix $ \_ ix' -> Sig.c_nonzero s' ix' t'
+_nonzero ix t =  runManaged $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Ix.withDynamicState ix $ \_ ix' -> Sig.c_nonzero s' ix' t'
 
 -- | Returns the trace (sum of the diagonal elements) of a matrix x. This is equal to the sum of the
 -- eigenvalues of x.
-trace :: Dynamic -> IO HsAccReal
-trace t = withDynamicState t (fmap c2hsAccReal .: Sig.c_trace)
+ttrace :: Dynamic -> HsAccReal
+ttrace t = unsafeDupablePerformIO . flip with (pure . c2hsAccReal) $ do
+  s' <- managedState
+  t' <- managedTensor t
+  liftIO $ Sig.c_trace s' t'
+{-# NOINLINE ttrace #-}
 
 -- | mutates a tensor to be an @n × m@ identity matrix with ones on the diagonal and zeros elsewhere.
 eye_
@@ -166,11 +208,17 @@ eye_
   -> Integer  -- ^ @n@ dimension in an @n × m@ matrix
   -> Integer  -- ^ @m@ dimension in an @n × m@ matrix
   -> IO ()
-eye_ t0 l0 l1 = withDynamicState t0 $ \s' t0' -> Sig.c_eye s' t0' (fromIntegral l0) (fromIntegral l1)
+eye_ t0 l0 l1 = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  liftIO $ Sig.c_eye s' t0' (fromIntegral l0) (fromIntegral l1)
 
 -- | identical to a direct C call to the @arange@, or @range@ with special consideration for floating precision types.
 _arange :: Dynamic -> HsAccReal -> HsAccReal -> HsAccReal -> IO ()
-_arange t0 a0 a1 a2 = withDynamicState t0 $ \s' t0' -> Sig.c_arange s' t0' (hs2cAccReal a0) (hs2cAccReal a1) (hs2cAccReal a2)
+_arange t0 a0 a1 a2 = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  liftIO $ Sig.c_arange s' t0' (hs2cAccReal a0) (hs2cAccReal a1) (hs2cAccReal a2)
 
 -- | mutate a Tensor inplace, filling it with values from @min@ to @max@ with @step@. Will make the tensor take a
 -- shape of size @floor((y - x) / step) + 1@.
@@ -180,8 +228,10 @@ range_
   -> HsAccReal  -- ^ @max@ value
   -> HsAccReal  -- ^ @step@ size
   -> IO ()
-range_ t0 a0 a1 a2 = withDynamicState t0 $ \s' t0' ->
-  Sig.c_range s' t0' (hs2cAccReal a0) (hs2cAccReal a1) (hs2cAccReal a2)
+range_ t0 a0 a1 a2 = runManaged $ do
+  s'  <- managedState
+  t0' <- managedTensor t0
+  liftIO $ Sig.c_range s' t0' (hs2cAccReal a0) (hs2cAccReal a1) (hs2cAccReal a2)
 
 -- | pure version of 'range_'
 range
@@ -189,14 +239,15 @@ range
   -> HsAccReal
   -> HsAccReal
   -> HsAccReal
-  -> IO Dynamic
-range d a b c = withInplace (\r -> range_ r a b c) d
+  -> Dynamic
+range d a b c = unsafeDupablePerformIO $ withInplace (\r -> range_ r a b c) d
+{-# NOINLINE range #-}
 
 -- | create a 'Dynamic' tensor with a given dimension and value
 --
--- We can get away 'unsafeDupablePerformIO' this as constant is pure and thread-safe
+-- We can get away 'unsafePerformIO' this as constant is pure and thread-safe
 constant :: Dims (d :: [Nat]) -> HsReal -> Dynamic
-constant d v = unsafeDupablePerformIO $ new d >>= \r -> fill_ r v >> pure r
+constant d v = unsafeDupablePerformIO $ let r = new d in fill_ r v >> pure r
 {-# NOINLINE constant #-}
 
 -- | direct call to the C-FFI of @diag@, mutating the first tensor argument with
@@ -212,11 +263,12 @@ diag_ t d = _diag t t d
 
 -- | returns the k-th diagonal of the input tensor, where k=0 is the main diagonal,
 -- k>0 is above the main diagonal, and k<0 is below the main diagonal.
-diag :: Dynamic -> Int -> IO Dynamic
-diag  t d = withEmpty t $ \r -> _diag r t d
+diag :: Dynamic -> Int -> Dynamic
+diag t d = unsafeDupablePerformIO $ let r = new' (getSomeDims t) in _diag r t d >> pure r
+{-# NOINLINE diag #-}
 
 -- | returns a diagonal matrix with diagonal elements constructed from the input tensor
-diag1d :: Dynamic -> IO Dynamic
+diag1d :: Dynamic -> Dynamic
 diag1d t = diag t 1
 
 -- | helper function for 'onesLike' and 'zerosLike'
@@ -224,19 +276,22 @@ _tenLike
   :: (Dynamic -> Dynamic -> IO ())
   -> Dims (d::[Nat]) -> IO Dynamic
 _tenLike _fn d = do
-  src <- new d
-  shape <- new d
+  let
+    src = new d
+    shape = new d
   _fn src shape
   pure src
 {-# WARNING _tenLike "this should not be exported outside of hasktorch" #-}
 
 -- | pure version of 'onesLike_'
-onesLike :: Dims (d::[Nat]) -> IO Dynamic
-onesLike = _tenLike onesLike_
+onesLike :: Dims (d::[Nat]) -> Dynamic
+onesLike = unsafeDupablePerformIO . _tenLike onesLike_
+{-# NOINLINE onesLike #-}
 
 -- | pure version of 'zerosLike_'
-zerosLike :: Dims (d::[Nat]) -> IO Dynamic
-zerosLike = _tenLike zerosLike_
+zerosLike :: Dims (d::[Nat]) -> Dynamic
+zerosLike = unsafeDupablePerformIO . _tenLike zerosLike_
+{-# NOINLINE zerosLike #-}
 
 
 -- class CPUTensorMath t where

@@ -11,6 +11,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Criterion where
 
 import Control.Arrow ((&&&))
@@ -18,6 +19,8 @@ import GHC.TypeLits
 import Numeric.Dimensions
 import Numeric.Backprop
 import System.IO.Unsafe
+import Control.Concurrent
+import Debug.Trace
 import Data.Singletons.Prelude hiding (All, type (*), type (-), type (+))
 
 import Torch.Indef.Static.Tensor
@@ -81,20 +84,25 @@ bCECriterion'
   -> BVar s (Tensor '[1])          -- ^ output
 bCECriterion' savg r mw tar = liftOp1 . op1 $ (updateOutput &&& updateGradInput)
   where
+    {-# NOINLINE updateOutput #-}
     updateOutput
       :: Tensor '[n]          -- input
       -> Tensor '[1]          -- output
-    updateOutput i = unsafeDupablePerformIO . withNew $ \o ->
+    updateOutput i = unsafePerformIO $ let o = new in
       Dynamic._bCECriterion_updateOutput
         (asDynamic i) (asDynamic tar) (asDynamic o) savg (asDynamic <$> mw) r
+      >> pure o
 
+    {-# NOINLINE updateGradInput #-}
     updateGradInput
       :: Tensor '[n]          -- input
       -> Tensor '[1]          -- grad output
       -> Tensor '[n]          -- grad input
-    updateGradInput i go = unsafeDupablePerformIO . withNew $ \gi ->
+    updateGradInput i go = unsafePerformIO $ do
+      let gi = new
       Dynamic._bCECriterion_updateGradInput
         (asDynamic i) (asDynamic tar) (asDynamic go) (asDynamic gi) savg (asDynamic <$> mw) r
+      pure gi
 
 bCECriterion
   :: (Reifies s W, KnownNat n, KnownDim n)
@@ -140,49 +148,73 @@ _softMarginCriterion_updateGradInput t0 t1 t2 t3 = Dynamic._softMarginCriterion_
 -- By default, the losses are averaged over observations for each minibatch.
 -- However, if the field sizeAverage is set to false, the losses are instead
 -- summed.
-mSECriterion' :: forall s bs d d' reduce out
-  . Reifies s W
+mSECriterionWith
+  :: forall s bs d d' reduce out size_average
+  .  Reifies s W
   => All Dimensions '[d', d, out]
   => KnownDim bs
   => d ~ (bs :+ d') -- must have minibatch
   => out ~ (If reduce '[1] d)
-  => Bool             -- ^ size_average:
-                      --     By default, the losses are averaged over each loss element in the batch.
-                      --     Note that for some losses, there multiple elements per sample.
-                      --     If the field size_average is set to False, the losses are instead
-                      --     summed for each minibatch. Ignored when reduce is False. Default: True
-  -> SBool reduce     -- ^ reduce:
-                      --     By default, the losses are averaged or summed over observations for each
-                      --     minibatch depending on size_average. When reduce is False, returns a loss
-                      --     per batch element instead and ignores size_average. Default: True
-  -> Tensor d
-  -> BVar s (Tensor d)
-  -> BVar s (Tensor out)
-mSECriterion' sizeAvg reduce target = liftOp1 . op1 $ \i -> (updateOutput i, \gout -> updateGradInput i gout)
-  where
-    -- mSECriterion forward pass (updates the output tensor)
-    updateOutput :: Tensor d -> Tensor out
-    updateOutput i = unsafeDupablePerformIO $ do
-      o <- new
-      Dynamic._mSECriterion_updateOutput (asDynamic i) (asDynamic target) (asDynamic o) sizeAvg (fromSing reduce)
-      pure o
+  => SBool size_average  -- ^ size_average:
+                         --     By default, the losses are averaged over each loss element in the batch.
+                         --     Note that for some losses, there multiple elements per sample.
+                         --     If the field size_average is set to False, the losses are instead
+                         --     summed for each minibatch. Ignored when reduce is False. Default: True
+  -> SBool reduce        -- ^ reduce:
+                         --     By default, the losses are averaged or summed over observations for each
+                         --     minibatch depending on size_average. When reduce is False, returns a loss
+                         --     per batch element instead and ignores size_average. Default: True
+  -> Tensor d            -- ^ target
+  -> BVar s (Tensor d)   -- ^ input
+  -> BVar s (Tensor out) -- ^ loss value and arrow from output gradient to input gradient
+mSECriterionWith sizeAvg reduce target = liftOp1 . op1 $ \i -> unsafePerformIO $ do
+  (o, getgrad) <- mSECriterionWithIO sizeAvg reduce target i
+  pure (o, unsafePerformIO . getgrad)
+{-# NOINLINE mSECriterionWith #-}
 
-    -- mSECriterion backward-update (updates the layer and bias tensors)
-    updateGradInput :: Tensor d -> Tensor out -> Tensor d
-    updateGradInput i gout = unsafeDupablePerformIO $ do
-      gin <- new
-      Dynamic._mSECriterion_updateGradInput (asDynamic i) (asDynamic target) (asDynamic gout) (asDynamic gin) sizeAvg (fromSing reduce)
-      pure gin
 
-mSECriterion :: forall s bs d d'
-  . Reifies s W
-  => All Dimensions '[d', d]
+{-# NOINLINE mSECriterionWithIO #-}
+mSECriterionWithIO
+  :: forall bs d d' reduce out size_average
+  .  All Dimensions '[d', d, out]
   => KnownDim bs
-  => d ~ (bs :+ d')
-  => Tensor d
-  -> BVar s (Tensor d)
-  -> BVar s (Tensor '[1])
-mSECriterion = mSECriterion' True (sing :: SBool 'True)
+  => d ~ (bs :+ d') -- must have minibatch
+  => out ~ (If reduce '[1] d)
+  => SBool size_average  -- ^ size_average:
+                         --     By default, the losses are averaged over each loss element in the batch.
+                         --     Note that for some losses, there multiple elements per sample.
+                         --     If the field size_average is set to False, the losses are instead
+                         --     summed for each minibatch. Ignored when reduce is False. Default: True
+  -> SBool reduce        -- ^ reduce:
+                         --     By default, the losses are averaged or summed over observations for each
+                         --     minibatch depending on size_average. When reduce is False, returns a loss
+                         --     per batch element instead and ignores size_average. Default: True
+  -> Tensor d            -- ^ target
+  -> Tensor d            -- ^ input
+  -> IO (Tensor out, Tensor out -> IO (Tensor d)) -- ^ loss value and arrow from output gradient to input gradient
+mSECriterionWithIO sizeAvg' reduce' target i = do
+  let o = new
+
+  -- mSECriterion forward pass (updates the output tensor)
+  Dynamic._mSECriterion_updateOutput (asDynamic i) (asDynamic target) (asDynamic o) sizeAvg reduce
+
+  pure (o, \gout -> do
+    -- mSECriterion backward-update (updates the layer and bias tensors)
+    let gin = new
+    Dynamic._mSECriterion_updateGradInput (asDynamic i) (asDynamic target) (asDynamic gout) (asDynamic gin) sizeAvg reduce
+    pure gin)
+  where
+    sizeAvg = fromSing sizeAvg'
+    reduce = fromSing reduce'
+
+mSECriterionIO :: forall bs d d'
+  .  All Dimensions '[d', d]
+  => KnownDim bs
+  => d ~ (bs :+ d')      -- must have minibatch
+  => Tensor d            -- ^ target
+  -> Tensor d            -- ^ input
+  -> IO (Tensor '[1], Tensor '[1] -> IO (Tensor d)) -- ^ loss value and arrow from output gradient to input gradient
+mSECriterionIO = mSECriterionWithIO (sing :: SBool 'True) (sing :: SBool 'True)
 
 
 -- | The <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence Kullback-Leibler divergence> Loss
@@ -296,6 +328,7 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
   in
     (out, \gout -> updateGradInput inp target gout szAvg Nothing total_weight ix reduce)
   where
+    {-# NOINLINE updateOutput #-}
     updateOutput
       :: Tensor '[sz, ps]            -- THTensor *input,
       -> IndexTensor '[sz]           -- THIndexTensor *target,
@@ -304,13 +337,14 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
       -> Integer                     -- int64_t ignore_index,
       -> Bool                        -- bool reduce
       -> (Tensor '[1], Tensor '[1])
-    updateOutput inp tar szAvg mws ix reduce = unsafeDupablePerformIO $ do
-      out <- new
+    updateOutput inp tar szAvg mws ix reduce = unsafePerformIO $ do
+      let out = new
       let total_weight = constant 1  -- https://github.com/torch/nn/commit/3585e827eb65d071272a4aa4fab567b0b1eeee54#diff-1aa6a505cf16ad0e59498ada8432afb5
       Dynamic._ClassNLLCriterion_updateOutput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic out)
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
       pure (out, total_weight)
 
+    {-# NOINLINE updateGradInput #-}
     updateGradInput
       :: Tensor '[sz, ps]          -- THTensor *input,
       -> IndexTensor '[sz]         -- THIndexTensor *target,
@@ -321,9 +355,12 @@ classNLLCriterion' ix szAvg reduce target = liftOp1 . op1 $ \inp ->
       -> Integer                   -- int64_t ignore_index,
       -> Bool                      -- bool reduce
       -> Tensor '[sz, ps]
-    updateGradInput inp tar gout szAvg mws total_weight ix reduce = unsafeDupablePerformIO . withEmpty $ \gin ->
-      Dynamic._ClassNLLCriterion_updateGradInput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
+    updateGradInput inp tar gout szAvg mws total_weight ix reduce = unsafePerformIO $ do
+      let gin = empty
+      Dynamic._ClassNLLCriterion_updateGradInput
+        (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
         szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
+      pure gin
 
 
 -- | Due to behaviour of backend code, it is nessecary to set sizeAverage to False in Non-Batch mode.

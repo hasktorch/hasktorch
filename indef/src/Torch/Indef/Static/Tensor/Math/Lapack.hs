@@ -42,8 +42,8 @@ import qualified Torch.Indef.Dynamic.Tensor.Math.Lapack as Dynamic
 -- @getrf@ and @getrs@, to solve the system @AX = B@, rather than inverting the
 -- matrix and multiplying to form @X = inv(A)*B@. Only in special instances
 -- should an explicit inverse be computed with this routine.
-getri :: Tensor d -> IO (Tensor d')
-getri t = asStatic <$> Dynamic.getri (asDynamic t)
+getri :: Tensor d -> (Tensor d')
+getri t = asStatic $ Dynamic.getri (asDynamic t)
 
 -- | inplace version of 'getri'
 getri_ :: Tensor d -> IO ()
@@ -63,8 +63,8 @@ getri_ t = Dynamic.getri_ (asDynamic t)
 potrf
   :: Tensor d   -- ^ matrix to decompose
   -> Triangle   -- ^ which triangle should be used.
-  -> IO (Tensor d')
-potrf s t = asStatic <$> Dynamic.potrf (asDynamic s) t
+  -> (Tensor d')
+potrf s t = asStatic $ Dynamic.potrf (asDynamic s) t
 
 -- | infix version of 'potrf'.
 potrf_
@@ -78,8 +78,8 @@ potrf_ s = Dynamic.potrf_ (asDynamic s)
 -- Square matrix @chol@ should be triangular.
 --
 -- 'Triangle' specifies matrix @chol@ as either upper or lower triangular.
-potri :: Tensor d -> Triangle -> IO (Tensor d')
-potri s t = asStatic <$> Dynamic.potri (asDynamic s) t
+potri :: Tensor d -> Triangle -> (Tensor d')
+potri s t = asStatic $ Dynamic.potri (asDynamic s) t
 
 -- | inplace version of 'potri'.
 potri_ :: Tensor d -> Triangle -> IO ()
@@ -97,8 +97,8 @@ potrs
   :: Tensor d    -- ^ Tensor @B@
   -> Tensor d'   -- ^ Cholesky decomposition @chol@
   -> Triangle   -- ^ which triangle to use (upper or lower)
-  -> IO (Tensor d'')
-potrs b chol t = asStatic <$> Dynamic.potrs (asDynamic b) (asDynamic chol) t
+  -> (Tensor d'')
+potrs b chol t = asStatic $ Dynamic.potrs (asDynamic b) (asDynamic chol) t
 
 -- | Inplace version of 'potri'. Mutating tensor B in place.
 potrs_
@@ -122,10 +122,9 @@ potrs_ b chol t = Dynamic.potrs_ (asDynamic b) (asDynamic chol) t
 --
 -- Note: Irrespective of the original strides, the returned matrix @q@ will be
 -- transposed, i.e. with strides @1, m@ instead of @m, 1@.
-qr :: Tensor d -> IO (Tensor d', Tensor d'')
-qr x = do
-  (ra, rb) <- Dynamic.qr (asDynamic x)
-  pure (asStatic ra, asStatic rb)
+qr :: Tensor d -> (Tensor d', Tensor d'')
+qr x = (asStatic ra, asStatic rb)
+  where (ra, rb) = Dynamic.qr (asDynamic x)
 
 -- | Inplace version of 'qr'
 qr_ :: (Tensor d, Tensor d') -> Tensor d'' -> IO ()
@@ -165,10 +164,9 @@ _geqrf a b c = Dynamic._geqrf (asDynamic a) (asDynamic b) (asDynamic c)
 geev
   :: Tensor d                      -- ^ square matrix to get eigen{values/vectors} of.
   -> EigenReturn                  -- ^ whether or not to return eigenvectors.
-  -> IO (Tensor d', Maybe (Tensor d''))  -- ^ (e, V) standing for eigenvalues and eigenvectors
-geev m er = do
-  (r, mt) <- Dynamic.geev (asDynamic m) er
-  pure (asStatic r, asStatic <$> mt)
+  -> (Tensor d', Maybe (Tensor d''))  -- ^ (e, V) standing for eigenvalues and eigenvectors
+geev m er = (asStatic r, asStatic <$> mt)
+  where (r, mt) = Dynamic.geev (asDynamic m) er
 
 -- | alias to 'geev' to match Torch naming conventions.
 eig = geev
@@ -202,10 +200,9 @@ syev
   :: Tensor d                      -- ^ square matrix to get eigen{values/vectors} of.
   -> EigenReturn                  -- ^ whether or not to return eigenvectors.
   -> Triangle                     -- ^ whether the upper or lower triangle should be used
-  -> IO (Tensor d', Maybe (Tensor d''))  -- ^ (e, V) standing for eigenvalues and eigenvectors
-syev m er tri = do
-  (r, mt) <- Dynamic.syev (asDynamic m) er tri
-  pure (asStatic r, asStatic <$> mt)
+  -> (Tensor d', Maybe (Tensor d''))  -- ^ (e, V) standing for eigenvalues and eigenvectors
+syev m er tri = (asStatic r, asStatic <$> mt)
+  where (r, mt) = Dynamic.syev (asDynamic m) er tri
 
 -- | alias to 'syev' to match Torch naming conventions.
 symeig = syev
@@ -232,10 +229,9 @@ symeig_ = syev_
 gesv
   :: Tensor '[m, k]                       -- ^ @B@
   -> Tensor '[m, m]                       -- ^ @A@
-  -> IO (Tensor '[m, k], Tensor '[m, m])  -- ^ @(X, LU)@
-gesv b a = do
-  (ra, rb) <- Dynamic.gesv (asDynamic b) (asDynamic a)
-  pure (asStatic ra, asStatic rb)
+  -> (Tensor '[m, k], Tensor '[m, m])  -- ^ @(X, LU)@
+gesv b a = (asStatic ra, asStatic rb)
+  where (ra, rb) = Dynamic.gesv (asDynamic b) (asDynamic a)
 
 -- | Inplace version of 'gesv'.
 --
@@ -261,10 +257,9 @@ gesv_ (x, lu) b a = Dynamic.gesv_ (asDynamic x, asDynamic lu) (asDynamic b) (asD
 -- On return, first @n@ rows of @x@ matrix contains the solution and the rest
 -- contains residual information. Square root of sum squares of elements of each
 -- column of @x@ starting at row @n + 1@ is the residual for corresponding column.
-gels :: Tensor d -> Tensor d' -> IO (Tensor d'', Tensor d''')
-gels b a = do
-  (ra, rb) <- Dynamic.gels (asDynamic b) (asDynamic a)
-  pure (asStatic ra, asStatic rb)
+gels :: Tensor d -> Tensor d' -> (Tensor d'', Tensor d''')
+gels b a = (asStatic ra, asStatic rb)
+  where (ra, rb) = Dynamic.gels (asDynamic b) (asDynamic a)
 
 -- | Inplace version of 'gels'.
 --
@@ -289,10 +284,9 @@ gels_ (a, b) c d = Dynamic.gels_ (asDynamic a, asDynamic b) (asDynamic c) (asDyn
 gesvd
   :: Tensor d
   -> ComputeSingularValues
-  -> IO (Tensor d', Tensor d'', Tensor d''')
-gesvd m num = do
-  (ra, rb, rc) <- Dynamic.gesvd (asDynamic m) num
-  pure (asStatic ra, asStatic rb, asStatic rc)
+  -> (Tensor d', Tensor d'', Tensor d''')
+gesvd m num = (asStatic ra, asStatic rb, asStatic rc)
+  where (ra, rb, rc) = Dynamic.gesvd (asDynamic m) num
 
 -- | Inplace version of 'gesvd'.
 --
@@ -314,10 +308,9 @@ gesvd_ (u, s, v) m num = Dynamic.gesvd_ (asDynamic u, asDynamic s, asDynamic v) 
 gesvd2
   :: Tensor d                                 -- ^ m
   -> ComputeSingularValues                   -- ^ Whether to compute all or some of the singular values
-  -> IO (Tensor d', Tensor d'', Tensor d''', Tensor d'''') -- ^ (u, s, v, a)
-gesvd2 m csv = do
-  (ra, rb, rc, rd) <- Dynamic.gesvd2 (asDynamic m) csv
-  pure (asStatic ra, asStatic rb, asStatic rc, asStatic rd)
+  -> (Tensor d', Tensor d'', Tensor d''', Tensor d'''') -- ^ (u, s, v, a)
+gesvd2 m csv = (asStatic ra, asStatic rb, asStatic rc, asStatic rd)
+  where (ra, rb, rc, rd) = Dynamic.gesvd2 (asDynamic m) csv
 
 -- | Inplace version of 'gesvd2_'.
 gesvd2_

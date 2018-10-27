@@ -1,7 +1,10 @@
-[submodule "vendor/aten"]
-  path = vendor/aten
-  url = https://github.com/hasktorch/ATen.git
-  branch = hasktorch-expand
+[submodule "ffi"]
+	path = ffi
+	url = git@github.com:hasktorch/ffi.git
+  branch = master
 # [submodule "vendor/opto"]
 #   path = vendor/opto
 #   url = https://github.com/mstksg/opto.git
+[submodule "dhall"]
+	path = dhall
+	url = git@github.com:hasktorch/dhall.git

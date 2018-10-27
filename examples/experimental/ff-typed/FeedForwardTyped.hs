@@ -19,7 +19,7 @@ data StaticWeights (i :: Nat) (o :: Nat) = SW
   } deriving (Show)
 
 mkW :: (KnownDim i, KnownDim o) => IO (SW i o)
-mkW = SW <$> new <*> new
+mkW = pure $ SW new new
 
 data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
   O :: (KnownDim i, KnownDim o) =>

@@ -14,10 +14,26 @@ import Torch.Indef.Types
 import qualified Torch.Sig.Tensor.Math.Scan as Sig
 
 -- | Mutate the first tensor to contain the cumulative sum of the elements in the second, performing the operation over the specified dimension.
-_cumsum :: Dynamic -> Dynamic -> DimVal -> IO ()
-_cumsum t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_cumsum (fromIntegral i0)
+_cumsum
+  :: Dynamic     -- ^ return tensor to mutate, inplace
+  -> Dynamic     -- ^ source tensor
+  -> Word        -- ^ dimension to operate on
+  -> IO ()
+_cumsum t0 t1 i0 = withLift $ Sig.c_cumsum
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromIntegral i0)
 
 -- | Mutate the first tensor to contain the cumulative product of the elements in the second, performing the operation over the specified dimension.
-_cumprod :: Dynamic -> Dynamic -> DimVal -> IO ()
-_cumprod t0 t1 i0 = with2DynamicState t0 t1 $ shuffle3 Sig.c_cumprod (fromIntegral i0)
+_cumprod
+  :: Dynamic     -- ^ return tensor to mutate, inplace
+  -> Dynamic     -- ^ source tensor
+  -> Word        -- ^ dimension to operate on
+  -> IO ()
+_cumprod t0 t1 i0 = withLift $ Sig.c_cumprod
+  <$> managedState
+  <*> managedTensor t0
+  <*> managedTensor t1
+  <*> pure (fromIntegral i0)
 

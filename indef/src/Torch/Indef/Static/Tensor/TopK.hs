@@ -8,9 +8,11 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.Tensor.TopK where
 
 import Numeric.Dimensions
+import System.IO.Unsafe
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
@@ -21,12 +23,12 @@ import Torch.Indef.Index
 topk
   :: forall d' d n
   .  (All Dimensions '[d, d'], KnownDim n)
-  => Tensor d -> Integer -> DimVal -> TopKOrder -> Maybe KeepDim -> IO (Tensor d', IndexTensor '[n])
-topk t k d o sorted = do
+  => Tensor d -> Integer -> Word -> TopKOrder -> Maybe KeepDim -> (Tensor d', IndexTensor '[n])
+topk t k d o sorted = unsafeDupablePerformIO $ do
   let ix :: IndexTensor '[n] = newIx
-  r  :: Tensor d' <- new
+  let r  :: Tensor d' = new
   Dynamic._topk (asDynamic r, longAsDynamic ix) (asDynamic t) k d o sorted
   pure (r, ix)
-
+{-# NOINLINE topk #-}
 
 

@@ -2,16 +2,18 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeApplications    #-}
 {-# OPTIONS_GHC -Wno-type-defaults -Wno-unused-local-binds -fno-cse #-}
 module Main where
 
 import Data.Monoid
 import Data.Proxy
-import GHC.Natural
+import GHC.Word
 import GHC.TypeLits
 import Control.Monad (void)
 import Lens.Micro ((^.), _2, _1)
 import System.IO.Unsafe
+import Control.Exception.Safe
 
 import Torch.Float hiding (N, abs, sqrt, round, max)
 import qualified Torch.Core.Random as RNG
@@ -33,14 +35,15 @@ seedVal = 3141592653579
 main :: IO ()
 main = do
   putStrLn "Run using the same random seed"
-  p :: Tensor '[M, 1] <- T.zerosLike
   let
+    p :: Tensor '[M, 1] = T.zerosLike
     runCoord xs ys l = cyclic_coordinate_descent (xs, ys) l 0.0001 p
+
   void $ runSynthetic runCoord 100 1
 
-  w0 :: Tensor '[M, 1] <- T.zerosLike
-  z0 :: Tensor '[M, 1] <- T.zerosLike
   let
+    w0 :: Tensor '[M, 1] = T.zerosLike
+    z0 :: Tensor '[M, 1] = T.zerosLike
     runFista xs ys l = fista (xs, ys) l 1 0.0001 w0 z0 1
   void $ runSynthetic runFista 100 1
 
@@ -113,7 +116,7 @@ cyclic_coordinate_descent (x, y) l eps = go []
   coordinate_descent
     :: (Tensor '[N, M], Tensor '[N, 1])
     -> Precision
-    -> Natural
+    -> Word
     -> Tensor '[M, 1]
     -> IO [(Tensor '[M, 1], Precision)]
   coordinate_descent (x, y) l = go 0 []
@@ -123,21 +126,24 @@ cyclic_coordinate_descent (x, y) l eps = go []
     nParams :: Int
     nParams = round ( getDim2d x D2 )
 
-    go :: Int -> [(Tensor '[M, 1], Precision)] -> Natural -> Tensor '[M, 1] -> IO [(Tensor '[M, 1], Precision)]
+    go :: Int -> [(Tensor '[M, 1], Precision)] -> Word -> Tensor '[M, 1] -> IO [(Tensor '[M, 1], Precision)]
     go ix res j w
-      | j > fromIntegral (natVal (Proxy :: Proxy M)) - 1 = pure ((w, loss (x, y) w):res)
+      | j > fromIntegral (natVal (Proxy @M)) - 1 = pure ((w, loss (x, y) w):res)
       | otherwise = do
         let jIdx = fromIntegral j
-        x_j <- T.getColumn x jIdx
-        w_j <- T.getRow w jIdx
+        case (T.getColumn x jIdx, T.getRow w jIdx) of
+          (Just x_j, Just w_j) -> do
+            let
+              r_j     = (y ^-^ (x !*! w)) ^+^ (x_j !*! w_j)
+              w_j_upd = prox_l1_single ((1 / nSamples) * (x_j <.> r_j)) (realToFrac l)
+              w_upd = T.copy w
+            T.setElem2d w_upd jIdx 0 w_j_upd
+            let
+              loss_obj = loss (x, y) w_upd
 
-        let r_j     = (y ^-^ (x !*! w)) ^+^ (x_j !*! w_j)
-        let w_j_upd = prox_l1_single ((1 / nSamples) * (x_j <.> r_j)) (realToFrac l)
-        let w_upd = T.copy w
-        T.setElem2d w_upd jIdx 0 w_j_upd
-        let loss_obj = loss (x, y) w_upd
+            go (ix+1) ((w_upd, loss_obj):res) (j + 1) w_upd
 
-        go (ix+1) ((w_upd, loss_obj):res) (j + 1) w_upd
+          _ -> pure res
 
 
 -- ========================================================================= --
@@ -180,11 +186,12 @@ fista (x, y) l est_L eps = go []
     :: (Tensor '[N, M], Tensor '[N, 1])
     -> Tensor '[M, 1]
     -> IO (Tensor '[M, 1])
-  gradient (x, y) w = do
-    let xT = T.transpose2d x
+  gradient (x, y) w =
     pure $ (1.0 / nSamples) *^ xT !*! (x !*! w - y)
-   where
-    nSamples = getDim2d x D1
+    where
+      nSamples :: Precision
+      nSamples = getDim2d x D1
+      xT = T.transpose2d x
 
   backtracking
     :: (Tensor '[N, M], Tensor '[N, 1])
@@ -214,24 +221,22 @@ loss :: (Tensor '[N, M], Tensor '[N, 1]) -> Tensor '[M, 1] -> Precision
 loss (x, y) w = squaredSum (y ^-^ (x !*! w)) + l1 w
  where
   squaredSum :: Tensor '[N, 1] -> Precision
-  squaredSum t = unsafePerformIO $ pure . realToFrac . TU.sumall =<< TU.square t
+  squaredSum t = realToFrac . TU.sumall $ TU.square t
 
 l1 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
-l1 t = unsafePerformIO $ pure . realToFrac . TU.sumall =<< TU.abs t
-{-# NOINLINE l1 #-}
+l1 t = realToFrac . TU.sumall $ TU.abs t
 
 l2 :: (Fractional prec, Real prec) => Tensor '[M, 1] -> prec
-l2 t = unsafePerformIO $ pure . realToFrac . sqrt . T.sumall =<< T.square t
-{-# NOINLINE l2 #-}
+l2 t = realToFrac . sqrt . T.sumall $ T.square t
 
 prox_l1 :: Tensor '[M, 1] -> Precision -> IO (Tensor '[M, 1])
 prox_l1 w l = do
-  a <- T.sign w
+  let a = T.sign w
   b <- max_plus (w ^- l)
   pure (a * b)
  where
    max_plus :: Tensor '[M, 1] -> IO (Tensor '[M, 1])
-   max_plus t = T.zerosLike >>= \z -> T.cmax t z
+   max_plus t = pure $ T.cmax t T.zerosLike
 
 prox_l1_single :: AccPrecision -> AccPrecision -> Precision
 prox_l1_single w_i l = realToFrac (signum w_i * max (w_i - l) 0)
@@ -245,8 +250,8 @@ getDim2d
   :: (Fractional precision, Real precision)
   => Tensor '[N, M] -> LassoDim -> precision
 getDim2d _ = \case
-  D1 -> realToFrac (natVal (Proxy :: Proxy N))
-  D2 -> realToFrac (natVal (Proxy :: Proxy M))
+  D1 -> realToFrac (natVal (Proxy @N))
+  D2 -> realToFrac (natVal (Proxy @M))
 
 
 
