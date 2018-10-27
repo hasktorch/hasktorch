@@ -15,17 +15,12 @@ In order of high-to-low level. The reverse order can also be seen in the `cabal.
 
 | Directory                   | Description |
 | --------------------------- | ----------- |
-| [`examples/`][examples]     | Examples of basic usage and experimental prototypes from a simple `hasktorch-core` dependency |
-| [`core/`][core]             | Reexports of all typeclasses (see `classes/`) and instances (see `indef/`) |
-| [`dimensions/`][dimensions] | Reexports and helpers of the `dimensions` library |
-| [`classes/`][classes]       | Typeclasses and helpers which consist of a user-friendly Haskell API |
+| [`examples/`][examples]     | Examples of basic usage and experimental prototypes |
+| [`hasktorch/`][hasktorch]   | Reexports of the high-level interface to basic tensor creation and math operations and manages allocation/deallocation via foreign pointers |
 | [`indef/`][indef]           | Orphan instances of the above typeclasses for the relevant backpack signatures |
 | [`signatures/`][signatures] | Backpack signatures which line up with the generated C-FFI |
 | [`types/`][types]           | Memory-managed tensors and core data types that satisfy global and type-specific backpack types |
-| [`raw/`][raw]               | Comprehensive raw bindings to C operations (TH, THNN, THC, THCUNN) |
-| [`codegen/`][codegen]       | Code generation to produce low-level raw Haskell bindings |
-| [`output/`][output]         | Staging directory for `codegen/` output, contents should not be under source control |
-| [`vendor/`][vendor]         | 3rd party dependencies as git submodules (links to ATen and, possibly, other libraries) |
+| [`zoo/`][zoo]               | Beginnings of a model zoo |
 
 ## Build Instructions 
 
