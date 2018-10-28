@@ -19,12 +19,11 @@ import GHC.Generics
 import Numeric.Backprop as Bp
 import Prelude as P
 import Torch.Double as Torch hiding (add)
-import Torch.Double.NN.Linear (Linear(..), linearBatch) 
+import Torch.Double.NN.Linear (Linear(..), linearBatch)
 import Torch.Double as Math hiding (add)
 import qualified Torch.Core.Random as RNG
-import qualified Torch.Long.Storage as Long
 
-type BatchSize = 20
+type BatchSize = 40
 
 seedVal :: RNG.Seed
 seedVal = 3141592653579
@@ -52,9 +51,6 @@ newLayerWithBias n = do
 newLinear :: forall o i . All KnownDim '[i,o] => IO (Linear i o)
 newLinear = fmap Linear . newLayerWithBias $ dimVal (dim :: Dim i)
 
-newRegression :: IO Regression
-newRegression = Regression <$> newLinear
-
 regression :: forall s . Reifies s W =>
     BVar s (Regression)  -- model architecture
     -> BVar s (Tensor '[BatchSize, 2]) -- input
@@ -65,7 +61,7 @@ regression modelArch input =
 genData :: Generator -> Tensor '[2, 1] -> IO (Tensor '[BatchSize, 2], Tensor '[BatchSize, 1])
 genData gen param = do
   RNG.manualSeed gen seedVal
-  let Just noiseScale = positive 2
+  let Just noiseScale = positive 0.1
       Just xScale = positive 10
   noise        :: Tensor '[BatchSize, 1] <- normal gen 0 noiseScale
   predictorVal :: Tensor '[BatchSize] <- normal gen 0 xScale
@@ -74,13 +70,13 @@ genData gen param = do
   pure (x, y)
 
 epochs
-  :: [(Tensor '[BatchSize, 2], Tensor '[BatchSize, 1])]    -- test observations
-  -> HsReal                          -- learning rate
+  :: 
+  HsReal                          -- learning rate
   -> Int                             -- max # of epochs
   -> [(Tensor '[BatchSize, 2], Tensor '[BatchSize, 1])]    -- data to run batch on
   -> Regression                      -- initial model
   -> IO ()
-epochs test lr mx tset net0 = do
+epochs lr mx tset net0 = do
   runEpoch 1 net0
   where
     runEpoch :: Int -> Regression -> IO ()
@@ -92,16 +88,6 @@ epochs test lr mx tset net0 = do
         printf ("[Epoch %d][mse %.4f]\n") e val
         hFlush stdout
         runEpoch (e + 1) net'
-    testX = map fst test
-    testY = map snd test
-    testNet :: Regression -> IO ()
-    testNet net = do
-      printf ("[RMSE: %.1f%% / %d]") acc (length testY)
-      hFlush stdout
-     where
-      -- TODO: calculate metrics
-      preds = map (infer net) testX
-      acc = undefined :: Double
 
 trainStep :: 
   HsReal                                              -- learning rate
@@ -114,8 +100,7 @@ trainStep lr (net, hist) (x, y) = do
     gnet = Regression (ll ^* (-lr))
     (out, (Regression ll, _))
       = backprop2
-        ( mSECriterion y 
-        .: regression)
+        (mSECriterion y .: regression) 
         net x
 
 infer :: Regression -> Tensor '[BatchSize, 2] -> Tensor '[BatchSize, 1]
@@ -125,12 +110,11 @@ main :: IO ()
 main = do
     Just trueParam <- fromList [3.5, -4.4]
     gen <- newRNG
-    trainData <- genData gen trueParam -- simulated data
-    net0 <- newRegression -- instantiate network architecture
+    batches <- mapM (\_ -> genData gen trueParam) ([0..100] :: [Integer]) -- simulated data
+    net0 <- Regression <$> newLinear -- instantiate network architecture
     let plr = 0.0001
-    let epos = 1000
-    let batches = [trainData]
-    _ <- epochs batches plr epos batches net0
+    let epos = 200
+    _ <- epochs plr epos batches net0
 
     putStrLn "Done"
 
