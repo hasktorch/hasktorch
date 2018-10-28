@@ -173,6 +173,18 @@ mSECriterionWith sizeAvg reduce target = liftOp1 . op1 $ \i -> unsafePerformIO $
 {-# NOINLINE mSECriterionWith #-}
 
 
+mSECriterion :: forall s bs d d'
+  .  All Dimensions '[d', d]
+  => Reifies s W
+  => KnownDim bs
+  => d ~ (bs :+ d')      -- must have minibatch
+  => Tensor d            -- ^ target
+  -> BVar s (Tensor d)   -- ^ input
+  -> BVar s (Tensor '[1]) -- ^ loss value and arrow from output gradient to input gradient
+mSECriterion = mSECriterionWith (sing :: SBool 'True) (sing :: SBool 'True)
+
+
+
 {-# NOINLINE mSECriterionWithIO #-}
 mSECriterionWithIO
   :: forall bs d d' reduce out size_average
