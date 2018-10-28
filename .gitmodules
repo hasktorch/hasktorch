@@ -1,10 +1,11 @@
 [submodule "ffi"]
 	path = ffi
-	url = git@github.com:hasktorch/ffi.git
-  branch = master
+	url = https://github.com/hasktorch/ffi.git
+	branch = master
 # [submodule "vendor/opto"]
 #   path = vendor/opto
 #   url = https://github.com/mstksg/opto.git
 [submodule "dhall"]
 	path = dhall
-	url = git@github.com:hasktorch/dhall.git
+	url = https://github.com/hasktorch/dhall.git
+	branch = master
