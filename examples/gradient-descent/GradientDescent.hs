@@ -28,7 +28,7 @@ import qualified Torch.Double as Torch
 import qualified Torch.Core.Random as RNG
 
 -- N, sample size, and P dimension of model parameters
-type N = 2000
+type N = 100
 type P = '[1, 2]
 type Precision = Double
 
@@ -53,12 +53,7 @@ genData param = do
   noise        :: Tensor '[N] <- normal gen 0 noiseScale
   predictorVal :: Tensor '[N] <- normal gen 0 xScale
   let x :: Tensor '[2, N] = resizeAs (predictorVal `cat1d` (constant 1))
-<<<<<<< HEAD
-  let y :: Tensor '[N]    = Torch.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
-
-=======
-  let y :: Tensor '[N]    = Math.cadd noise 1 (resizeAs (transpose2d (param !*! x)))
->>>>>>> 9154bf31... start backprop-regression example
+  let y :: Tensor '[N]    = cadd noise 1 (resizeAs (transpose2d (param !*! x)))
   pure (x, y)
 
 -- | Loss is defined as the sum of squared errors
@@ -136,6 +131,7 @@ runExample = do
   print trueParam
 
   dat <- genData trueParam
+  -- print dat
 
   -- Setup GD
   Just (p0 :: Tensor '[1, 2]) <- fromList [0, 0]
