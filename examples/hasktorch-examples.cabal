@@ -60,7 +60,7 @@ executable multivariate-normal
 
 executable backprop-regression
   main-is: BackpropRegression.hs
-  hs-source-dirs: experimental/backprop-regression
+  hs-source-dirs: backprop-regression
   ghc-options: -Wall -fno-cse
   build-depends:
     base >= 4.7 && < 5
