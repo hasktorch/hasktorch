@@ -20,10 +20,9 @@ import Numeric.Backprop as Bp
 import Prelude as P
 import Torch.Double as Torch hiding (add)
 import Torch.Double.NN.Linear (Linear(..), linearBatch)
-import Torch.Double as Math hiding (add)
 import qualified Torch.Core.Random as RNG
 
-type BatchSize = 20
+type BatchSize = 5
 
 seedVal :: RNG.Seed
 seedVal = 3141592653579
@@ -58,11 +57,22 @@ regression :: forall s . Reifies s W =>
 regression modelArch input =
     linearBatch 1 (modelArch ^^. (field @"linearLayer")) input
 
-genBatch ::
+testSampler :: Generator -> IO (Tensor '[1])
+testSampler gen = do
+  let Just noiseScale = positive 1.0
+  noise        :: Tensor '[1] <- normal gen 0 noiseScale
+  let !foo = noise
+  putStrLn ""
+  print foo
+  pure noise
+
+
+genBatch' ::
   Generator -- RNG
   -> (Tensor '[2, 1], Double) -- (parameters, bias)
-  -> IO (Tensor '[BatchSize, 2], Tensor '[BatchSize, 1], Generator)
-genBatch gen (param, bias) = do
+  -> IO (Tensor '[BatchSize, 2], Tensor '[BatchSize, 1])
+genBatch' gen (param, bias) = do
+  print gen
   let Just noiseScale = positive 1.0
       Just xScale = positive 10
   noise        :: Tensor '[BatchSize, 1] <- normal gen 0 noiseScale
@@ -71,10 +81,29 @@ genBatch gen (param, bias) = do
   let biasTerm :: Tensor '[BatchSize, 1]  = (constant 1) ^* bias
   let x :: Tensor '[BatchSize, 2] = transpose2d $ resizeAs (predictor1Val `cat1d` predictor2Val)
   -- let x :: Tensor '[BatchSize, 2] = transpose2d $ resizeAs (predictor1Val `cat1d` (constant 1))
-  let y :: Tensor '[BatchSize, 1] = (Math.cadd noise 1 (resizeAs (transpose2d (x !*! param)))) + biasTerm
+  let y :: Tensor '[BatchSize, 1] = (cadd noise 1 (resizeAs (transpose2d (x !*! param)))) + biasTerm
+  print gen
+  pure (x, y)
+
+genBatch ::
+  Generator -- RNG
+  -> (Tensor '[2, 1], Double) -- (parameters, bias)
+  -> IO (Tensor '[BatchSize, 2], Tensor '[BatchSize, 1], Generator)
+genBatch gen (param, bias) = do
+  print gen
+  let Just noiseScale = positive 1.0
+      Just xScale = positive 10
+  noise        :: Tensor '[BatchSize, 1] <- normal gen 0 noiseScale
+  predictor1Val :: Tensor '[BatchSize] <- normal gen 0 xScale
+  predictor2Val :: Tensor '[BatchSize] <- normal gen 0 xScale
+  let biasTerm :: Tensor '[BatchSize, 1]  = (constant 1) ^* bias
+  let x :: Tensor '[BatchSize, 2] = transpose2d $ resizeAs (predictor1Val `cat1d` predictor2Val)
+  -- let x :: Tensor '[BatchSize, 2] = transpose2d $ resizeAs (predictor1Val `cat1d` (constant 1))
+  let y :: Tensor '[BatchSize, 1] = (cadd noise 1 (resizeAs (transpose2d (x !*! param)))) + biasTerm
+  print gen
   pure (x, y, gen)
 
-genBatches :: 
+genBatches ::
   Generator -- RNG
   -> (Tensor '[2, 1], Double) -- (parameters, bias)
   -> Int -- number of batches
@@ -105,7 +134,7 @@ epochs lr maxEpochs tset net0 = do
         hFlush stdout
         runEpoch (epoch + 1) net'
 
-trainStep :: 
+trainStep ::
   HsReal                                              -- learning rate
   -> (Regression, [(Tensor '[1])])                    -- (network, history)
   -> (Tensor '[BatchSize, 2], Tensor '[BatchSize, 1]) -- input, output
@@ -119,6 +148,17 @@ trainStep lr (net, hist) (x, y) = do
 infer :: Regression -> Tensor '[BatchSize, 2] -> Tensor '[BatchSize, 1]
 infer architecture = evalBP2 regression architecture
 
+test :: IO ()
+test = do
+  Just (trueParam :: Tensor '[2, 1]) <- fromList [24.5, -80.4]
+  let trueBias = 52.4
+  gen <- newRNG
+  -- batches <- mapM (\_ -> testSampler gen)  ([0..10] :: [Integer]) -- simulated data
+  batches <- mapM (\_ -> genBatch' gen (trueParam, trueBias))  ([0..5] :: [Integer]) -- simulated data
+  print $ head batches
+  print $ last batches
+  pure ()
+
 main :: IO ()
 main = do
     -- NOTE - estimate seems to get 1/2 of bias term because linear layer has a nuilt in bias term
@@ -126,14 +166,18 @@ main = do
     let trueBias = 52.4
     gen <- newRNG
     RNG.manualSeed gen seedVal
-    -- batches <- mapM (\_ -> genData gen trueParam) ([0..1000] :: [Integer]) -- simulated data
-    batches <- genBatches gen (trueParam, trueBias) 10
+    batches <- mapM (\_ -> genBatch' gen (trueParam, trueBias))  ([0..10] :: [Integer]) -- simulated data
+    -- batches <- genBatches gen (trueParam, trueBias) 10
+
+    putStrLn "\nFirst batch:"
     print $ head $ batches
-    print $ head $ tail $ batches
-    print $ head $ tail $ tail $ batches
+    -- print $ head $ tail $ batches
+    -- print $ head $ tail $ tail $ batches
+    putStrLn "\nLast batch:"
+    print $ last batches
     net0 <- Regression <$> newLinear -- instantiate network architecture
     let plr = 0.001
-    let epos = 200
+    let epos = 2
     net <- epochs plr epos batches net0
     let (estParam, estBias) = getTensors $ linearLayer net
 
@@ -149,8 +193,9 @@ main = do
     putStrLn "Bias Estimate:"
     print estBias
 
-    putStrLn "\nDone"
 
--- | set rewind marker for 'clearLn'
-setRewind :: String
-setRewind = "\r"
+    gen2 <- newRNG
+    bar <- mapM (\_ -> (testSampler gen2))  ([0..5] :: [Integer]) -- simulated data
+    print bar
+
+    putStrLn "\nDone"
