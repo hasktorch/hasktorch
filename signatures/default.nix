@@ -1,5 +1,5 @@
-{ mkDerivation, base, hasktorch-partial, hasktorch-raw-th
-, hasktorch-raw-thc, hasktorch-signatures-types, hasktorch-types-th
+{ mkDerivation, base, hasktorch-partial, hasktorch-ffi-th
+, hasktorch-ffi-thc, hasktorch-signatures-types, hasktorch-types-th
 , hasktorch-types-thc, stdenv
 }:
 mkDerivation {
@@ -13,10 +13,10 @@ mkDerivation {
     hasktorch-types-th hasktorch-types-thc
   ];
   executableHaskellDepends = [
-    base hasktorch-raw-th hasktorch-raw-thc hasktorch-types-th
+    base hasktorch-ffi-th hasktorch-ffi-thc hasktorch-types-th
     hasktorch-types-thc
   ];
   homepage = "https://github.com/hasktorch/hasktorch#readme";
-  description = "Backpack signature files to pair with hasktorch-raw and hasktorch-core";
+  description = "Backpack signature files to pair with hasktorch-ffi and hasktorch-core";
   license = stdenv.lib.licenses.bsd3;
 }

@@ -9,11 +9,11 @@ let
         packages = pkgs.haskell.packages // {
           "${compilerVersion}" = pkgs.haskell.packages."${compilerVersion}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
-              hasktorch-raw-th =
+              hasktorch-ffi-th =
                 haskellPackagesNew.callPackage ./ffi/ffi/th { ATen = hasktorch-aten; };
-              hasktorch-raw-thc =
+              hasktorch-ffi-thc =
                 haskellPackagesNew.callPackage ./ffi/ffi/thc { ATen = hasktorch-aten; };
-              hasktorch-raw-tests =
+              hasktorch-ffi-tests =
                 haskellPackagesNew.callPackage ./ffi/ffi/tests { };
 
               hasktorch-codegen =
@@ -64,8 +64,8 @@ in {
     # hasktorch-examples
     # hasktorch-indef
     hasktorch-codegen
-    hasktorch-raw-th
-    hasktorch-raw-thc
+    hasktorch-ffi-th
+    hasktorch-ffi-thc
     hasktorch-types-th
     hasktorch-types-thc;
   inherit dev-env;

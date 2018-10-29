@@ -29,7 +29,7 @@ in common.Package
                       , packages.hspec
                       , packages.singletons
                       , packages.text
-                      , packages.hasktorch-raw-th
+                      , packages.hasktorch-ffi-th
                       , packages.hasktorch-types-th
                       ]
                     , default-extensions = cabalvars.default-extensions
@@ -66,7 +66,7 @@ in common.Package
           , packages.hasktorch-signatures
           , packages.hasktorch-signatures-support
           , packages.hasktorch-types-th
-          , packages.hasktorch-raw-th
+          , packages.hasktorch-ffi-th
           , packages.managed
           , packages.mtl
           , packages.safe-exceptions

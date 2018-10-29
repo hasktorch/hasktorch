@@ -16,7 +16,7 @@ in  let exeScaffold =
              , hs-source-dirs = [ "exe" ]
              , build-depends =
                [ packages.base
-               , fn.anyver ("hasktorch-raw-" ++ thtype)
+               , fn.anyver ("hasktorch-ffi-" ++ thtype)
                , fn.anyver ("hasktorch-types-" ++ thtype)
                , fn.anyver ("hasktorch-partial-" ++ sigset)
                ]
@@ -25,7 +25,7 @@ in  let exeScaffold =
 in  common.Package
    // { name = "hasktorch-signatures"
       , description = "CFFI backpack signatures"
-      , synopsis = "Backpack signature files to pair with hasktorch-raw and hasktorch-core"
+      , synopsis = "Backpack signature files to pair with hasktorch-ffi and hasktorch-core"
       , library =
           [   λ(config : types.Config)
             →   common.Library

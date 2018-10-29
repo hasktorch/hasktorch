@@ -5,6 +5,6 @@ mkDerivation {
   src = ./.;
   libraryHaskellDepends = [ base ];
   homepage = "https://github.com/hasktorch/hasktorch#readme";
-  description = "Backpack signature types to pair with hasktorch-raw and hasktorch-core";
+  description = "Backpack signature types to pair with hasktorch-ffi and hasktorch-core";
   license = stdenv.lib.licenses.bsd3;
 }

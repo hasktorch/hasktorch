@@ -75,7 +75,7 @@ in let lenet-experiment =
         then [] : List types.Dependency
         else
           [ packages.cuda
-          , packages.hasktorch-raw-thc
+          , packages.hasktorch-ffi-thc
           , packages.hasktorch-types-thc
           ])
 

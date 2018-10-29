@@ -209,7 +209,7 @@ executable lenet-cifar10
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-raw-thc -any,
+            hasktorch-ffi-thc -any,
             hasktorch-types-thc -any
     else
     
@@ -249,7 +249,7 @@ executable lenet-cifar10-initialization
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-raw-thc -any,
+            hasktorch-ffi-thc -any,
             hasktorch-types-thc -any
     else
     
@@ -289,7 +289,7 @@ executable lenet-cifar10-trainonebatch
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-raw-thc -any,
+            hasktorch-ffi-thc -any,
             hasktorch-types-thc -any
     else
     
@@ -329,7 +329,7 @@ executable dense3-cifar10
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-raw-thc -any,
+            hasktorch-ffi-thc -any,
             hasktorch-types-thc -any
     else
     
@@ -369,7 +369,7 @@ executable xor
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-raw-thc -any,
+            hasktorch-ffi-thc -any,
             hasktorch-types-thc -any
     else
     

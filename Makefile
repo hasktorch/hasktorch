@@ -49,12 +49,14 @@ dabal-all:
 	  "signatures/partial/hasktorch-signatures-partial" \
 	  "signatures/support/hasktorch-signatures-support" \
 	  "signatures/types/hasktorch-signatures-types"     \
+	  "ffi/ffi/tests/hasktorch-ffi-tests"               \
 	  "indef/hasktorch-indef"                           \
 	  "hasktorch/hasktorch"                             \
-	  "zoo/hasktorch-zoo"                               \
-	  "examples/hasktorch-examples"  ; do               \
+	  "zoo/hasktorch-zoo"; do                           \
 	  $(MAKE) dabal DABAL=$${lib} ; \
 	done
+
+# "examples/hasktorch-examples" # <<< this is still unstable
 
 dabal: dabal-tmp dabal-tmp-switch
 

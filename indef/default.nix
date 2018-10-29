@@ -1,5 +1,5 @@
 { mkDerivation, backprop, base, containers, deepseq, dimensions
-, ghc-typelits-natnormalise, hasktorch-raw-th, hasktorch-signatures
+, ghc-typelits-natnormalise, hasktorch-ffi-th, hasktorch-signatures
 , hasktorch-types-th, hasktorch-types-thc, managed, microlens, mtl
 , numeric-limits, safe-exceptions, singletons, stdenv, text
 , transformers, typelits-witnesses
@@ -10,7 +10,7 @@ mkDerivation {
   src = ./.;
   libraryHaskellDepends = [
     backprop base containers deepseq dimensions
-    ghc-typelits-natnormalise hasktorch-raw-th hasktorch-signatures
+    ghc-typelits-natnormalise hasktorch-ffi-th hasktorch-signatures
     hasktorch-types-th hasktorch-types-thc managed microlens mtl
     numeric-limits safe-exceptions singletons text transformers
     typelits-witnesses

@@ -47,7 +47,7 @@ in let cpu-lite-depends =
   , packages.containers
   , packages.deepseq
   , packages.dimensions
-  , packages.hasktorch-raw-th
+  , packages.hasktorch-ffi-th
   , packages.hasktorch-types-th
   , packages.managed
   , packages.microlens
@@ -62,7 +62,7 @@ in let cpu-lite-depends =
   ]
 in let gpu-lite-depends =
   cpu-lite-depends #
-  [ packages.hasktorch-raw-thc
+  [ packages.hasktorch-ffi-thc
   , packages.hasktorch-types-thc
   ]
 
@@ -282,7 +282,7 @@ in common.Package
               , packages.typelits-witnesses
 
               , fn.anyver "hasktorch-cpu"
-              , packages.hasktorch-raw-th
+              , packages.hasktorch-ffi-th
               , packages.hasktorch-types-th
               ] # (if config.flag "cuda" then [fn.anyver "hasktorch-gpu"] else [] : List types.Dependency)
             , exposed-modules =
