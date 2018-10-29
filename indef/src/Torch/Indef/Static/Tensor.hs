@@ -62,7 +62,9 @@ unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> IO (Tensor '[n])
 unsafeVector = fmap (either error id) . runExceptT . vector
 
 -- | Static call to 'Dynamic.newExpand'
+newExpand :: Tensor d -> TH.IndexStorage -> Tensor d'
 newExpand t = asStatic . Dynamic.newExpand (asDynamic t)
+
 -- | Static call to 'Dynamic._expand'
 _expand r t = Dynamic._expand (asDynamic r) (asDynamic t)
 -- | Static call to 'Dynamic._expandNd'

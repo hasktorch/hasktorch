@@ -9,6 +9,7 @@ module Main where
 
 import Prelude
 import Utils
+import LeNet (LeNet)
 import LeNet.Forward (infer)
 
 import Control.Arrow
@@ -41,7 +42,8 @@ import qualified Torch.Long.Dynamic as LDyn
 import qualified Torch.Double.NN.Conv2d as Conv2d
 #endif
 
-import Torch.Models.Vision.LeNet as LeNet
+import Torch.Models.Vision.LeNet (newLeNet)
+import qualified Torch.Models.Vision.LeNet as LeNet
 import Torch.Data.Loaders.Cifar10
 import Torch.Data.Loaders.Internal
 import Torch.Data.Loaders.RGBVector (Normalize(..))
@@ -52,7 +54,8 @@ main = do
   g <- seedAll
   ltest <- prepdata . V.take 200 <$> cifar10set g default_cifar_path Test
 
-  net0 <- newLeNet @3 @5
+  net0 :: LeNet
+    <- newLeNet =<< newRNG
   print net0
 
   putStr "\nInitial Holdout:\t"

@@ -56,11 +56,12 @@ main :: IO ()
 main = seedAll >>= \g -> do
 -- main = MWC.withSystemRandom $ \g -> do
   ltrain <- prepdata . V.take bs <$> cifar10set g default_cifar_path Train
-  net0
+  tg <- newRNG
+  net0 :: LeNet
 #ifdef LENET_HEAD_ONLY
     <- mkFC3
 #else
-    <- newLeNet @3 @5
+    <- newLeNet tg
 #endif
   print net0
 
@@ -146,7 +147,8 @@ trainStep istraining lr net@(l1, l2, l3) xs ys = do
 
 #else
 forward arch xs = do
-  lenetBatchForward arch xs
+  undefined
+  -- lenetBatchForward arch xs
 
 trainStep
   :: Bool
@@ -156,10 +158,10 @@ trainStep
   -> Tensor '[BatchSize, 10]
   -> IO (LeNet, Tensor '[1])
 trainStep istraining lr net xs ys = do
-  (out, gnet) <- lenetBatchBP net (Long.resizeAs . fromJust . snd $ max2d1 ys keep) xs
+  (out, gnet) <- undefined -- lenetBatchBP net (Long.resizeAs . fromJust . snd $ max2d1 ys keep) xs
   let Just plr = positive 1.0
   putStrLn "\nLOSS"
   print out
-  pure (if not istraining then undefined else unsafePerformIO (myupdate net plr gnet), out)
+  pure (if not istraining then undefined else unsafePerformIO (myupdate net (plr,gnet)), out)
 #endif
 

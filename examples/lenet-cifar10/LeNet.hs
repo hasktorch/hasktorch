@@ -113,7 +113,7 @@ bsz = (dim :: Dim 4)
 bs = (fromIntegral $ dimVal bsz) :: Int
 type LeNet = Vision.LeNet 3 5
 
-newLeNet :: IO LeNet
+newLeNet :: Generator -> IO LeNet
 newLeNet = Vision.newLeNet @3 @5
 
 convin1Ref :: IORef (Maybe (Tensor '[4, 3, 32, 32]))

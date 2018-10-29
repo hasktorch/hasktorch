@@ -55,7 +55,7 @@ regression :: forall s . Reifies s W =>
     -> BVar s (Tensor '[BatchSize, 2]) -- input
     -> BVar s (Tensor '[BatchSize, 1]) -- output
 regression modelArch input =
-    linearBatch 1 (modelArch ^^. (field @"linearLayer")) input
+    linearBatch (modelArch ^^. (field @"linearLayer")) input
 
 genBatch ::
   Generator -- RNG
@@ -122,7 +122,7 @@ main = do
     -- produce simulated data
     gen <- newRNG
     RNG.manualSeed gen seedVal
-    batches <- mapM (\_ -> genBatch gen (trueParam, trueBias))  ([1..numBatch] :: [Integer]) 
+    batches <- mapM (\_ -> genBatch gen (trueParam, trueBias))  ([1..numBatch] :: [Integer])
     -- FIXME: fix RNG advancement bug for cases where numBatch > 1
 
     -- train model

@@ -87,13 +87,13 @@ instance (KnownDim (Flattened ker), KnownDim ch, KnownDim ker) => Backprop (LeNe
 
 -------------------------------------------------------------------------------
 
-newLeNet :: All KnownDim '[ch,ker,Flattened ker, ker*ker] => IO (LeNet ch ker)
-newLeNet = LeNet
-  <$> newConv2d
-  <*> newConv2d
-  <*> newLinear
-  <*> newLinear
-  <*> newLinear
+newLeNet :: All KnownDim '[ch,ker,Flattened ker, ker*ker] => Generator -> IO (LeNet ch ker)
+newLeNet g = LeNet
+  <$> newConv2d g
+  <*> newConv2d g
+  <*> newLinear g
+  <*> newLinear g
+  <*> newLinear g
 
 -- | update a LeNet network
 update net lr grad = LeNet
@@ -206,9 +206,9 @@ lenetBatch lr arch inp
   & flattenBPBatch
 
   -- start fully connected network
-  & relu . linearBatch lr (arch ^^. fc1)
-  & relu . linearBatch lr (arch ^^. fc2)
-  &        linearBatch lr (arch ^^. fc3)
+  & relu . linearBatch (arch ^^. fc1)
+  & relu . linearBatch (arch ^^. fc2)
+  &        linearBatch (arch ^^. fc3)
   -- & logSoftMax
   & softmaxN (dim :: Dim 1)
 

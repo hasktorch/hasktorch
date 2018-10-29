@@ -77,6 +77,7 @@ bs = fromIntegral (dimVal bsz)
 main :: IO ()
 main = do
   g <- MWC.initialize (V.singleton 44)
+  tg <- newRNG
 
   lbatches :: Vector (Vector (Category, FilePath))
     <- mkVBatches 4 . V.take datasize <$> cifar10set g default_cifar_path Train
@@ -84,7 +85,7 @@ main = do
   putStrLn "\ntransforming to tensors"
   batches <- dataloader' bsz lbatches
 
-  net0 <- mkNet
+  net0 <- mkNet tg
   print net0
 
   net <- epochs plr epos batches net0

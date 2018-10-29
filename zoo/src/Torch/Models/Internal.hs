@@ -35,11 +35,11 @@ import qualified Torch.Double.NN.Conv2d as NN
 -- it's a little trickier to fold these back into their respective NN modules.
 
 -- | initialize a new linear layer
-newLinear :: forall o i . All KnownDim '[i,o] => IO (Linear i o)
-newLinear = fmap Linear $ do
+newLinear :: forall o i . All KnownDim '[i,o] => Generator -> IO (Linear i o)
+newLinear g = fmap Linear $ do
   let w = new
-  g <- newRNG
-  kaimingUniformWith_ (LeakyReluFn (Just $ P.sqrt 5)) FanIn g w
+  -- kaimingUniformWith_ (LeakyReluFn (Just $ P.sqrt 5)) FanIn g w
+  xavierUniform_ g w
 
   let
     fanin = calculateCorrectFan w FanIn
@@ -51,11 +51,11 @@ newLinear = fmap Linear $ do
 
 
 -- | initialize a new conv2d layer
-newConv2d :: forall o i kH kW . All KnownDim '[i,o,kH,kW,kH*kW] => IO (Conv2d i o '(kH,kW))
-newConv2d = fmap Conv2d $ do
+newConv2d :: forall o i kH kW . All KnownDim '[i,o,kH,kW,kH*kW] => Generator -> IO (Conv2d i o '(kH,kW))
+newConv2d g = fmap Conv2d $ do
   let w = new
-  g <- newRNG
-  kaimingUniformWith_ (LeakyReluFn (Just $ P.sqrt 5)) FanIn g w
+  -- kaimingUniformWith_ (LeakyReluFn (Just $ P.sqrt 5)) FanIn g w
+  xavierUniform_ g w
 
   let
     fanin = calculateCorrectFan w FanIn

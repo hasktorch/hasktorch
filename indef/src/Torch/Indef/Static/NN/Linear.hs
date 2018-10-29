@@ -202,12 +202,26 @@ linearBatch
   :: forall s i o b
   .  Reifies s W
   => All KnownDim '[b,i,o]
-  => HsReal
-  -> BVar s (Linear i o)
+  => BVar s (Linear i o)
   -> BVar s (Tensor '[b, i])
   -> BVar s (Tensor '[b, o])
-linearBatch lr = liftOp2 $ op2 $ \l i -> (updateOutput i l, \gout -> (accGradParameters i gout l, updateGradInput i gout (weights l)))
+linearBatch = liftOp2 $ op2 $ \l i -> unsafePerformIO $ do
+  (o, getgrad) <- linearBatchIO l i
+  pure (o, unsafePerformIO . getgrad)
+
+-- | 'linear' with a batch dimension in IO
+linearBatchIO
+  :: forall i o b
+  .  All KnownDim '[b,i,o]
+  => Linear i o
+  -> Tensor '[b, i]
+  -> IO (Tensor '[b, o], Tensor '[b, o] -> IO (Linear i o, Tensor '[b, i]))
+linearBatchIO l i = do
+  let o = updateOutput i l
+  pure (o, \gout -> pure (accGradParameters i gout l, updateGradInput i gout (weights l)))
   where
+    lr = 1
+
     updateOutput :: Tensor '[b, i] -> Linear i o -> Tensor '[b, o]
     updateOutput i (Linear (w,b)) =
       let
@@ -229,6 +243,7 @@ linearBatch lr = liftOp2 $ op2 $ \l i -> (updateOutput i l, \gout -> (accGradPar
 
         tgout :: Tensor '[o,b]
         tgout = transpose2d gout
+
 
 {-
 -- | SparseLinear
