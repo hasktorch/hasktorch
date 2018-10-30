@@ -43,10 +43,10 @@ import qualified Torch.Double.NN.Conv2d as Conv2d
 #endif
 
 import Torch.Models.Vision.LeNet (newLeNet)
-import qualified Torch.Models.Vision.LeNet as LeNet
 import Torch.Data.Loaders.Cifar10
 import Torch.Data.Loaders.Internal
 import Torch.Data.Loaders.RGBVector (Normalize(..))
+import qualified Torch.Models.Vision.LeNet as LeNet
 
 
 main :: IO ()

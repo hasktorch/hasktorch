@@ -11,13 +11,14 @@ cabal-version: 2.2
 name: hasktorch-signatures-partial
 version: 0.0.1.0
 license: BSD-3-Clause
-author: Hasktorch dev team (Sam Stites, Austin Huang)
+maintainer: Sam Stites <fnz@fgvgrf.vb>, Austin Huang <nhfgvau@nyhz.zvg.rqh> - cipher:ROT13
+author: Hasktorch dev team
 homepage: https://github.com/hasktorch/hasktorch#readme
 bug-reports: https://github.com/hasktorch/hasktorch/issues
-synopsis: Torch for tensors and neural networks in Haskell
+synopsis: Functions to partially satisfy tensor signatures
 description:
     Undefined functions to satisfy backpack signatures (never be exported in core)
-category: Tensors, Machine Learning
+category: Tensors, Machine Learning, AI
 build-type: Simple
 
 source-repository head

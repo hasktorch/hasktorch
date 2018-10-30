@@ -4,8 +4,8 @@ in  let common = ../../dhall/common.dhall
 in  let packages = common.packages
 in  common.Package
    // { name = "hasktorch-signatures-support"
-      , synopsis = "Backpack signature types to pair with hasktorch-ffi and hasktorch"
-      , description = "CFFI backpack signatures"
+      , synopsis = "Signatures for support tensors in hasktorch"
+      , description = "Backpack signatures which define redundant operators for mask tensors and index tensors in Hasktorch."
       , library =
           [   λ(config : types.Config)
             →   common.Library

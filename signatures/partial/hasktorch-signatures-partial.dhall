@@ -6,7 +6,7 @@ in  let cabalvars = common.cabalvars
 
 in  common.Package
    // { name = "hasktorch-signatures-partial"
-      , synopsis = "Torch for tensors and neural networks in Haskell"
+      , synopsis = "Functions to partially satisfy tensor signatures"
       , description = "Undefined functions to satisfy backpack signatures (never be exported in core)"
       , library =
           [   λ(config : types.Config)

@@ -11,7 +11,7 @@ in common.Package //
   { name = "hasktorch-zoo"
   , flags = [ common.flags.cuda, common.flags.gd, common.flags.debug ]
   , description = "Neural Architectures in hasktorch"
-  , synopsis = "Neural Architectures in hasktorch"
+  , synopsis = "Neural Architectures and abstractions which live above the raw-tensor level in hasktorch"
   , library =
     [ \( config : types.Config )
       -> common.Library //

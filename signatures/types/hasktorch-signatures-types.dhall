@@ -6,8 +6,8 @@ in  let cabalvars = common.cabalvars
 
 in  common.Package
    // { name = "hasktorch-signatures-types"
-      , synopsis = "Backpack signature types to pair with hasktorch-ffi and hasktorch"
-      , description = "CFFI backpack signatures"
+      , synopsis = "Core types for Hasktorch backpack signatures"
+      , description = "This package includes core signature types to abstract over the hasktorch-types-* packages."
       , library =
           [   λ(config : types.Config)
             →   common.Library

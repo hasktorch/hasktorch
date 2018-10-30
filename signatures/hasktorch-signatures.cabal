@@ -11,13 +11,14 @@ cabal-version: 2.2
 name: hasktorch-signatures
 version: 0.0.1.0
 license: BSD-3-Clause
-author: Hasktorch dev team (Sam Stites, Austin Huang)
+maintainer: Sam Stites <fnz@fgvgrf.vb>, Austin Huang <nhfgvau@nyhz.zvg.rqh> - cipher:ROT13
+author: Hasktorch dev team
 homepage: https://github.com/hasktorch/hasktorch#readme
 bug-reports: https://github.com/hasktorch/hasktorch/issues
-synopsis: Backpack signature files to pair with hasktorch-ffi and hasktorch-core
+synopsis: Backpack signatures for Tensor operations
 description:
-    CFFI backpack signatures
-category: Tensors, Machine Learning
+    Backpack signature files to glue FFI backends to Hasktorch
+category: Tensors, Machine Learning, AI
 build-type: Simple
 
 source-repository head

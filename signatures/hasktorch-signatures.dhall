@@ -8,8 +8,8 @@ in  let mixins = ../dhall/backpack/mixins.dhall
 in  let fn = ../dhall/common/functions.dhall
 
 in  let exeScaffold =
-    λ(sigset : Text) →
-    λ(thtype : Text) →
+    \(sigset : Text) →
+    \(thtype : Text) →
       prelude.defaults.Executable
           // { main-is = "Main.hs"
              , default-language = cabalvars.default-language
@@ -24,8 +24,8 @@ in  let exeScaffold =
 
 in  common.Package
    // { name = "hasktorch-signatures"
-      , description = "CFFI backpack signatures"
-      , synopsis = "Backpack signature files to pair with hasktorch-ffi and hasktorch-core"
+      , synopsis  = "Backpack signatures for Tensor operations"
+      , description = "Backpack signature files to glue FFI backends to Hasktorch"
       , library =
           [   λ(config : types.Config)
             →   common.Library

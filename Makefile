@@ -59,7 +59,7 @@ dabal-all:
 	  "indef/hasktorch-indef"                           \
 	  "hasktorch/hasktorch"                             \
 	  "zoo/hasktorch-zoo"; do                           \
-	  $(MAKE) dabal DABAL=$${lib} ; \
+	  $(MAKE) dabal DABAL=$${lib} & > /dev/null ; \
 	done
 
 # "examples/hasktorch-examples" # <<< this is still unstable

@@ -11,8 +11,9 @@ in let fn = ../dhall/common/functions.dhall
 in common.Package
    // { name = "hasktorch-indef"
       , flags = [ common.flags.cuda ]
-      , synopsis = "Torch for tensors and neural networks in Haskell"
-      , description = "Core tensor abstractions wrapping raw TH bindings"
+      , synopsis = "Core Hasktorch abstractions wrapping FFI bindings"
+      , description
+        = "The hasktorch-indef package constitutes the main user API for hasktorch. It uses backpack signatures to generically glue low-level FFI bindings to a high-level interface."
       , test-suites =
           [ { name = "spec-double-th"
             , test-suite =
