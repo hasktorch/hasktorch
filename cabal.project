@@ -4,9 +4,9 @@ packages:
     ffi/types/th/*.cabal
     ffi/types/thc/*.cabal
 
+    ffi/ffi/tests/*.cabal
     ffi/ffi/th/*.cabal
     ffi/ffi/thc/*.cabal
-    ffi/ffi/tests/*.cabal
 
     signatures/types/*cabal
     signatures/partial/*cabal

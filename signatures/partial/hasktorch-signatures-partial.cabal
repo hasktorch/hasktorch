@@ -45,5 +45,5 @@ library
         base (==4.7 || >4.7) && <5,
         hasktorch-types-th -any,
         hasktorch-signatures-types -any,
-        text ==1.2.2.2 || >1.2.2.2
+        text ==1.2.2 || >1.2.2
 

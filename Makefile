@@ -45,11 +45,17 @@ run-examples:
 	echo "finished running examples"
 
 dabal-all:
-	for lib in "signatures/hasktorch-signatures"        \
+	for lib in \
+	  "ffi/codegen/hasktorch-codegen"        \
+	  "ffi/ffi/tests/hasktorch-ffi-tests"    \
+	  "ffi/ffi/th/hasktorch-ffi-th"          \
+	  "ffi/ffi/thc/hasktorch-ffi-thc"        \
+	  "ffi/types/th/hasktorch-types-th"      \
+	  "ffi/types/thc/hasktorch-types-thc"    \
+	  "signatures/hasktorch-signatures"      \
 	  "signatures/partial/hasktorch-signatures-partial" \
 	  "signatures/support/hasktorch-signatures-support" \
 	  "signatures/types/hasktorch-signatures-types"     \
-	  "ffi/ffi/tests/hasktorch-ffi-tests"               \
 	  "indef/hasktorch-indef"                           \
 	  "hasktorch/hasktorch"                             \
 	  "zoo/hasktorch-zoo"; do                           \
