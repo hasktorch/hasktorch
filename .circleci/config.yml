@@ -226,7 +226,7 @@ jobs:
             - ~/.cabal
 
       # run tests
-      - run: cabal new-test hasktorch-raw-th
+      - run: cabal new-test hasktorch-ffi-th
       - run: cabal new-test hasktorch-codegen
 
       - run: cabal new-test hasktorch-indef
