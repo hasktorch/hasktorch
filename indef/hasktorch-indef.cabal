@@ -222,6 +222,7 @@ test-suite spec-double-th
     other-modules:
         Torch.Indef.StorageSpec
         Torch.Indef.Dynamic.TensorSpec
+        Torch.Indef.Static.TensorSpec
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
                         TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP

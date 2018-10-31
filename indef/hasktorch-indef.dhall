@@ -39,6 +39,7 @@ in common.Package
                     , other-modules =
                       [ "Torch.Indef.StorageSpec"
                       , "Torch.Indef.Dynamic.TensorSpec"
+                      , "Torch.Indef.Static.TensorSpec"
                       ]
                     , mixins =
                       [ { package = "hasktorch-indef-floating"
