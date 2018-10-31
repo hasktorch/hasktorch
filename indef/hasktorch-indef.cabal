@@ -124,7 +124,8 @@ library
         singletons ==2.2 || >2.2,
         ghc-typelits-natnormalise -any,
         transformers ==0.5.5 || >0.5.5,
-        text ==1.2.2 || >1.2.2
+        text ==1.2.2 || >1.2.2,
+        vector ==0.12.0 || >0.12.0
     
     if flag(cuda)
         cpp-options: -DCUDA -DHASKTORCH_INTERNAL_CUDA
@@ -228,13 +229,17 @@ test-suite spec-double-th
                         TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         QuickCheck ==2.11 || >2.11,
+        backprop ==0.2.5 || >0.2.5,
         base (==4.7 || >4.7) && <5,
         dimensions ==1.0 || >1.0,
+        ghc-typelits-natnormalise -any,
         hasktorch-indef-floating -any,
+        hasktorch-ffi-th -any,
+        hasktorch-types-th -any,
         hspec ==2.4.4 || >2.4.4,
+        mtl ==2.2.2 || >2.2.2,
         singletons ==2.2 || >2.2,
         text ==1.2.2 || >1.2.2,
-        hasktorch-ffi-th -any,
-        hasktorch-types-th -any
+        transformers ==0.5.5 || >0.5.5
     mixins: hasktorch-indef-floating requires (Torch.Sig.Index.Tensor as Torch.FFI.TH.Long.Tensor, Torch.Sig.Index.TensorFree as Torch.FFI.TH.Long.FreeTensor, Torch.Sig.Mask.Tensor as Torch.FFI.TH.Byte.Tensor, Torch.Sig.Mask.TensorFree as Torch.FFI.TH.Byte.FreeTensor, Torch.Sig.Mask.MathReduce as Torch.FFI.TH.Byte.TensorMath, Torch.Sig.State as Torch.Types.TH, Torch.Sig.Types.Global as Torch.Types.TH, Torch.Sig.Types as Torch.Types.TH.Double, Torch.Sig.Storage as Torch.FFI.TH.Double.Storage, Torch.Sig.Storage.Copy as Torch.FFI.TH.Double.StorageCopy, Torch.Sig.Storage.Memory as Torch.FFI.TH.Double.FreeStorage, Torch.Sig.Tensor as Torch.FFI.TH.Double.Tensor, Torch.Sig.Tensor.Copy as Torch.FFI.TH.Double.TensorCopy, Torch.Sig.Tensor.Memory as Torch.FFI.TH.Double.FreeTensor, Torch.Sig.Tensor.Index as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Masked as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Compare as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.CompareT as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Pairwise as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Reduce as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Scan as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Mode as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.ScatterGather as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Sort as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.TopK as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Floating as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Blas as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Math.Lapack as Torch.FFI.TH.Double.TensorLapack, Torch.Sig.NN as Torch.FFI.TH.NN.Double, Torch.Sig.Types.NN as Torch.Types.TH, Torch.Sig.Tensor.Math.Random.TH as Torch.FFI.TH.Double.TensorMath, Torch.Sig.Tensor.Random.TH as Torch.FFI.TH.Double.TensorRandom, Torch.Sig.Tensor.Random.THC as Torch.Undefined.Tensor.Random.THC)
 

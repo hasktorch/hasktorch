@@ -32,9 +32,16 @@ module Torch.Indef.Dynamic.Tensor.Math where
 import Foreign hiding (new, with)
 import Foreign.Ptr
 import Control.Monad.Managed
+import Data.Foldable (foldrM, foldlM)
 import Numeric.Dimensions
 import System.IO.Unsafe
 import qualified Foreign.Marshal as FM
+import Debug.Trace
+import Data.List (intercalate)
+import Data.List.NonEmpty (NonEmpty((:|)))
+import qualified Data.List.NonEmpty as NE
+import Data.Vector (Vector)
+import qualified Data.Vector as V
 
 import Torch.Indef.Dynamic.Tensor
 import Torch.Indef.Types
@@ -94,7 +101,7 @@ onesLike_ t0 t1 = with2DynamicState t0 t1 Sig.c_onesLike
 
 -- | returns the count of the number of elements in the matrix.
 numel :: Dynamic -> Integer
-numel t = fromIntegral . unsafeDupablePerformIO $ withLift $ Sig.c_numel
+numel t = fromIntegral . unsafePerformIO $ withLift $ Sig.c_numel
   <$> managedState
   <*> managedTensor t
 {-# NOINLINE numel #-}
@@ -112,9 +119,15 @@ _reshape t0 t1 ix = with2DynamicState t0 t1 $ \s' t0' t1' -> Ix.withCPUIxStorage
   Sig.c_reshape s' t0' t1' ix'
 
 -- | pure version of '_catArray'
-catArray :: [Dynamic] -> Word -> Dynamic
-catArray ts dv = unsafeDupablePerformIO $ let r = empty in _catArray r ts dv >> pure r
 {-# NOINLINE catArray #-}
+catArray :: NonEmpty Dynamic -> Word -> Either String Dynamic
+catArray ts dv =
+  case catDims ts dv of
+    Left msg -> Left msg
+    Right ds -> unsafePerformIO $ do
+      let r = new' (someDimsVal ds)
+      _catArray r ts dv
+      pure $ Right r
 
 -- | Concatenate all tensors in a given list of dynamic tensors along the given dimension.
 --
@@ -124,14 +137,14 @@ catArray ts dv = unsafeDupablePerformIO $ let r = empty in _catArray r ts dv >> 
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 _catArray
   :: Dynamic   -- ^ result to mutate
-  -> [Dynamic] -- ^ tensors to concatenate
+  -> NonEmpty Dynamic -- ^ tensors to concatenate
   -> Word      -- ^ dimension to concatenate along.
   -> IO ()
 _catArray res ds d = runManaged $ do
   s' <- managedState
   r' <- managedTensor res
   liftIO $ do
-    ds' <- FM.newArray =<< mapM (\d -> withForeignPtr (ctensor d) pure) ds
+    ds' <- FM.newArray =<< mapM (\d -> withForeignPtr (ctensor d) pure) (NE.toList ds)
     Sig.c_catArray s' r' ds' (fromIntegral $ length ds) (fromIntegral d)
 
 -- | "Get the lower triangle of a tensor."
@@ -180,15 +193,48 @@ _cat t0 t1 t2 i = runManaged $ do
   liftIO $ Sig.c_cat s' t0' t1' t2' (fromIntegral i)
 
 -- | pure version of '_cat'
-cat :: Dynamic -> Dynamic -> Word -> Dynamic
-cat t0 t1 dv = unsafeDupablePerformIO $ let r = empty in _cat r t0 t1 dv >> pure r
 {-# NOINLINE cat #-}
+cat :: Dynamic -> Dynamic -> Word -> Either String Dynamic
+cat t0 t1 dv =
+  case catDims (t0:|[t1]) dv of
+    Left msg -> Left msg
+    Right ds -> unsafePerformIO $ do
+      let r = new' (someDimsVal ds)
+      _cat r t0 t1 dv
+      pure $ Right r
+ where
+  iv = fromIntegral dv
+  s0 = shape t0
+  s1 = shape t1
+
+catDims :: NonEmpty Dynamic -> Word -> Either String [Word]
+catDims ts dv
+  | any ((length s /=) . length) ss = Left "Dimensions must all be same length."
+  | all ((ix >=) . length) shapes = Left "Cat dimension must exist on tensors."
+  | otherwise =
+  case foldlM go 0 ss of
+    Nothing -> Left $
+      "Dimensionality error: all dimensions must match except in the cat-dimensions. " ++
+      "Dimensions include: " ++ intercalate ", " (show <$> s:ss) ++ "."
+    Just cd -> Right (V.toList $ s V.// [(ix, cd)])
+ where
+  ix :: Int
+  ix = fromIntegral dv
+
+  shapes :: NonEmpty (Vector Word)
+  shapes@(s:|ss) = fmap (V.fromList . shape) ts
+
+  go :: Word -> Vector Word -> Maybe Word
+  go catdim nxt =
+    if length s == length (V.ifilter (\i' j -> s V.! i' == j || i' == ix) nxt)
+    then pure $ catdim + nxt V.! ix
+    else Nothing
 
 -- | Finds and returns a LongTensor corresponding to the subscript indices of all non-zero elements in tensor.
 --
 -- C-Style: In the classic Torch C-style, the first argument is treated as the return type and is mutated in-place.
 _nonzero :: IndexDynamic -> Dynamic -> IO ()
-_nonzero ix t =  runManaged $ do
+_nonzero ix t = runManaged $ do
   s' <- managedState
   t' <- managedTensor t
   liftIO $ Ix.withDynamicState ix $ \_ ix' -> Sig.c_nonzero s' ix' t'
@@ -196,7 +242,7 @@ _nonzero ix t =  runManaged $ do
 -- | Returns the trace (sum of the diagonal elements) of a matrix x. This is equal to the sum of the
 -- eigenvalues of x.
 ttrace :: Dynamic -> HsAccReal
-ttrace t = unsafeDupablePerformIO . flip with (pure . c2hsAccReal) $ do
+ttrace t = unsafePerformIO . flip with (pure . c2hsAccReal) $ do
   s' <- managedState
   t' <- managedTensor t
   liftIO $ Sig.c_trace s' t'
@@ -220,6 +266,14 @@ _arange t0 a0 a1 a2 = runManaged $ do
   t0' <- managedTensor t0
   liftIO $ Sig.c_arange s' t0' (hs2cAccReal a0) (hs2cAccReal a1) (hs2cAccReal a2)
 
+-- | identical to a direct C call to the @arange@, or @range@ with special consideration for floating precision types.
+arange :: HsAccReal -> HsAccReal -> HsAccReal -> Dynamic
+arange a0 a1 a2 = unsafePerformIO $ do
+  let t = empty
+  _arange t a0 a1 a2
+  return t
+{-# NOINLINE arange #-}
+
 -- | mutate a Tensor inplace, filling it with values from @min@ to @max@ with @step@. Will make the tensor take a
 -- shape of size @floor((y - x) / step) + 1@.
 range_
@@ -240,14 +294,14 @@ range
   -> HsAccReal
   -> HsAccReal
   -> Dynamic
-range d a b c = unsafeDupablePerformIO $ withInplace (\r -> range_ r a b c) d
+range d a b c = unsafePerformIO $ withInplace (\r -> range_ r a b c) d
 {-# NOINLINE range #-}
 
 -- | create a 'Dynamic' tensor with a given dimension and value
 --
 -- We can get away 'unsafePerformIO' this as constant is pure and thread-safe
 constant :: Dims (d :: [Nat]) -> HsReal -> Dynamic
-constant d v = unsafeDupablePerformIO $ let r = new d in fill_ r v >> pure r
+constant d v = unsafePerformIO $ let r = new d in fill_ r v >> pure r
 {-# NOINLINE constant #-}
 
 -- | direct call to the C-FFI of @diag@, mutating the first tensor argument with
@@ -264,7 +318,7 @@ diag_ t d = _diag t t d
 -- | returns the k-th diagonal of the input tensor, where k=0 is the main diagonal,
 -- k>0 is above the main diagonal, and k<0 is below the main diagonal.
 diag :: Dynamic -> Int -> Dynamic
-diag t d = unsafeDupablePerformIO $ let r = new' (getSomeDims t) in _diag r t d >> pure r
+diag t d = unsafePerformIO $ let r = new' (getSomeDims t) in _diag r t d >> pure r
 {-# NOINLINE diag #-}
 
 -- | returns a diagonal matrix with diagonal elements constructed from the input tensor
@@ -285,12 +339,12 @@ _tenLike _fn d = do
 
 -- | pure version of 'onesLike_'
 onesLike :: Dims (d::[Nat]) -> Dynamic
-onesLike = unsafeDupablePerformIO . _tenLike onesLike_
+onesLike = unsafePerformIO . _tenLike onesLike_
 {-# NOINLINE onesLike #-}
 
 -- | pure version of 'zerosLike_'
 zerosLike :: Dims (d::[Nat]) -> Dynamic
-zerosLike = unsafeDupablePerformIO . _tenLike zerosLike_
+zerosLike = unsafePerformIO . _tenLike zerosLike_
 {-# NOINLINE zerosLike #-}
 
 

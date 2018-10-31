@@ -11,6 +11,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.Tensor.Math where
 
@@ -20,6 +22,7 @@ import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import System.IO.Unsafe
 import Data.Singletons.Prelude (fromSing)
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.Singletons.Prelude.List as Sing hiding (All, type (++))
 import qualified Torch.Types.TH as TH
 import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
@@ -76,8 +79,9 @@ eye_ r = Dynamic.eye_ (asDynamic r)
 --
 -- Static call to 'Dynamic.ttrace'
 ttrace r = Dynamic.ttrace (asDynamic r)
--- | Static call to 'Dynamic._arange'
+-- | Identical to a direct C call to the @arange@, or @range@ with special consideration for floating precision types. Static call to 'Dynamic._arange'
 _arange r = Dynamic._arange (asDynamic r)
+
 -- | Static call to 'Dynamic.range_'
 range_ r = Dynamic.range_ (asDynamic r)
 
@@ -115,29 +119,29 @@ cat
   => Tensor d
   -> Tensor d'
   -> Dim (i::Nat)
-  -> Tensor (ls ++ '[r0 + r1] ++ rs)
-cat a b d = asStatic $ Dynamic.cat (asDynamic a) (asDynamic b) (fromIntegral $ dimVal d)
+  -> Either String (Tensor (ls ++ '[r0 + r1] ++ rs))
+cat a b d = asStatic <$> Dynamic.cat (asDynamic a) (asDynamic b) (fromIntegral $ dimVal d)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
-cat1d :: (All KnownDim '[n1,n2,n], n ~ Sing.Sum [n1, n2]) => Tensor '[n1] -> Tensor '[n2] -> Tensor '[n]
+cat1d :: (All KnownDim '[n1,n2,n], n ~ Sing.Sum [n1, n2]) => Tensor '[n1] -> Tensor '[n2] -> Either String (Tensor '[n])
 cat1d a b = cat a b (dim :: Dim 0)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
-cat2d0 :: (All KnownDim '[n,m,n0,n1], n ~ Sing.Sum [n0, n1]) => Tensor '[n0, m] -> Tensor '[n1, m] -> (Tensor '[n, m])
+cat2d0 :: (All KnownDim '[n,m,n0,n1], n ~ Sing.Sum [n0, n1]) => Tensor '[n0, m] -> Tensor '[n1, m] -> Either String (Tensor '[n, m])
 cat2d0 a b = cat a b (dim :: Dim 0)
 
 -- | convenience function, stack two rank-1 tensors along the 0-dimension
-stack1d0 :: KnownDim m => Tensor '[m] -> Tensor '[m] -> (Tensor '[2, m])
+stack1d0 :: KnownDim m => Tensor '[m] -> Tensor '[m] -> Either String (Tensor '[2, m])
 stack1d0 a b = cat2d0
   (unsqueeze1d (dim :: Dim 0) a)
   (unsqueeze1d (dim :: Dim 0) b)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
-cat2d1 :: (All KnownDim '[n,m,m0,m1], m ~ Sing.Sum [m0, m1]) => Tensor '[n, m0] -> Tensor '[n, m1] -> (Tensor '[n, m])
+cat2d1 :: (All KnownDim '[n,m,m0,m1], m ~ Sing.Sum [m0, m1]) => Tensor '[n, m0] -> Tensor '[n, m1] -> Either String (Tensor '[n, m])
 cat2d1 a b = cat a b (dim :: Dim 1)
 
 -- | convenience function, stack two rank-1 tensors along the 1-dimension
-stack1d1 :: KnownDim n => Tensor '[n] -> Tensor '[n] -> (Tensor '[n, 2])
+stack1d1 :: KnownDim n => Tensor '[n] -> Tensor '[n] -> Either String (Tensor '[n, 2])
 stack1d1 a b = cat2d1
   (unsqueeze1d (dim :: Dim 1) a)
   (unsqueeze1d (dim :: Dim 1) b)
@@ -147,7 +151,7 @@ cat3d0
   :: (All KnownDim '[x,y,x0,x1,z], x ~ Sing.Sum [x0, x1])
   => Tensor '[x0, y, z]
   -> Tensor '[x1, y, z]
-  -> (Tensor '[x, y, z])
+  -> Either String (Tensor '[x, y, z])
 cat3d0 a b = cat a b (dim :: Dim 0)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
@@ -155,7 +159,7 @@ cat3d1
   :: (All KnownDim '[x,y,y0,y1,z], y ~ Sing.Sum [y0, y1])
   => Tensor '[x, y0, z]
   -> Tensor '[x, y1, z]
-  -> (Tensor '[x, y, z])
+  -> Either String (Tensor '[x, y, z])
 cat3d1 a b = cat a b (dim :: Dim 1)
 
 -- | convenience function, specifying a type-safe 'cat' operation.
@@ -163,19 +167,49 @@ cat3d2
   :: (All KnownDim '[x,y,z0,z1,z], z ~ Sing.Sum [z0, z1])
   => Tensor '[x, y, z0]
   -> Tensor '[x, y, z1]
-  -> (Tensor '[x, y, z])
+  -> Either String (Tensor '[x, y, z])
 cat3d2 a b = cat a b (dim :: Dim 2)
 
 -- | Concatenate all tensors in a given list of dynamic tensors along the given dimension.
 --
 -- NOTE: In C, if the dimension is not specified or if it is -1, it is the maximum
 -- last dimension over all input tensors, except if all tensors are empty, then it is 1.
-catArray :: (Dimensions d) => [Dynamic] -> Word -> IO (Tensor d)
-catArray ts dv = let r = empty in Dynamic._catArray (asDynamic r) ts dv >> pure r
+catArray
+  :: (Dimensions d)
+  => NonEmpty Dynamic
+  -> Word
+  -> Either String (Tensor d)
+catArray ts dv = asStatic <$> Dynamic.catArray ts dv
 
-catArray0 :: (Dimensions d, Dimensions d2) => [Tensor d2] -> Tensor d
-catArray0 ts = unsafeDupablePerformIO $ catArray (asDynamic <$> ts) 0
-{-# NOINLINE catArray0 #-}
+-- | Concatenate all tensors in a given list of dynamic tensors along the given dimension.
+-- --
+-- -- NOTE: In C, if the dimension is not specified or if it is -1, it is the maximum
+-- -- last dimension over all input tensors, except if all tensors are empty, then it is 1.
+-- catArray0
+--   :: forall d ls rs r0 r1 i
+--   .  Dimensions d
+--   => '([], r0:+rs) ~ Sing.SplitAt i d
+--   => (forall _i . [Tensor (_i+:rs)])
+--   -> IO (Tensor (r0+:rs))
+-- catArray0 ts dv = catArray (asDynamic <$> ts) (dimVal dv)
+
+
+-- | Concatenate all tensors in a given list of dynamic tensors along the given dimension.
+--
+-- NOTE: In C, if the dimension is not specified or if it is -1, it is the maximum
+-- last dimension over all input tensors, except if all tensors are empty, then it is 1.
+catArray'
+  :: forall d ls rs r0 r1 i
+  .  Dimensions d
+  => '(ls, r0:+rs) ~ Sing.SplitAt i d
+  => d ~ (ls ++ '[r0] ++ rs)
+  => (forall _i . NonEmpty (Tensor (ls ++ '[_i] ++ rs)))
+  -> Dim i
+  -> Either String (Tensor d)
+catArray' ts dv = catArray (asDynamic <$> ts) (dimVal dv)
+
+catArray0 :: (Dimensions d, Dimensions d2) => NonEmpty (Tensor d2) -> Either String (Tensor d)
+catArray0 ts = catArray (asDynamic <$> ts) 0
 
 {-
 catArray_

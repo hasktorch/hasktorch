@@ -55,7 +55,7 @@ scalar = unsafeDupablePerformIO . unsafeVector . (:[])
 -- | Purely make a 1d tensor from a list of unknown length.
 vector :: forall n . KnownDim n => KnownNat n => [HsReal] -> ExceptT String IO (Tensor '[n])
 vector rs
-  | genericLength rs == dimVal (dim :: Dim n) = asStatic <$> Dynamic.vector rs
+  | genericLength rs == dimVal (dim :: Dim n) = asStatic <$> Dynamic.vectorEIO rs
   | otherwise = ExceptT . pure $ Left "Vector dimension does not match length of list"
 
 unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> IO (Tensor '[n])

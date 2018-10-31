@@ -40,6 +40,24 @@ main = hspec spec
 
 spec :: Spec
 spec = do
+  describe "fromList / storagedata" $ do
+    let
+      xs = [0..500]
+      st = fromList xs
+
+    it "is instantiated with an offset of 0" $
+      size st `shouldBe` length xs
+
+    it "returns xs for storagedata" $
+      storagedata st `shouldBe` xs
+
+    it ("can access the first 50 elements by `get`") $ do
+      forM_ [0..50] $ \i ->
+        get st i `shouldBe` fromIntegral i
+
+    it "should continue to be consistent after gets" $
+      storagedata st `shouldBe` xs
+
   prop "fromList / toList should form the identity" $ \xs ->
     toList (fromList xs :: Storage) `shouldBe` xs
 
@@ -105,5 +123,4 @@ spec = do
         let st = fromList xs
         resize st (fromIntegral i)
         take (length xs) (toList st) `shouldBe` xs
-
 

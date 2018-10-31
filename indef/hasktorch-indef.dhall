@@ -24,14 +24,18 @@ in common.Package
                // { type = < exitcode-stdio = { main-is = "Spec.hs" } | detailed : { module : Text } >
                   , build-depends =
                       [ packages.QuickCheck
+                      , packages.backprop
                       , packages.base
                       , packages.dimensions
+                      , packages.ghc-typelits-natnormalise
                       , fn.anyver "hasktorch-indef-floating"
-                      , packages.hspec
-                      , packages.singletons
-                      , packages.text
                       , packages.hasktorch-ffi-th
                       , packages.hasktorch-types-th
+                      , packages.hspec
+                      , packages.mtl
+                      , packages.singletons
+                      , packages.text
+                      , packages.transformers
                       ]
                     , default-extensions = cabalvars.default-extensions
                     , default-language = cabalvars.default-language
@@ -76,6 +80,7 @@ in common.Package
           , packages.ghc-typelits-natnormalise -- replace with thorin?
           , packages.transformers
           , packages.text
+          , packages.vector
           ]
         in common.Library
           // { hs-source-dirs = [ "src" ]

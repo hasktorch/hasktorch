@@ -3,28 +3,22 @@
 module Torch.Indef.Static.TensorSpec (spec) where
 
 import Control.Monad (replicateM, void)
-import Foreign (Ptr)
-
-import Torch.Indef.Types (Tensor, HsReal, asDynamic)
-import Torch.Indef.Static.Tensor
-import Torch.Indef.Static.Tensor.Math
-import Numeric.Dimensions
-import Control.Monad
-import GHC.Int
+import Data.Maybe (fromMaybe)
+import Numeric.Dimensions (Dim, dim)
 import Test.Hspec
-import Data.Maybe
-import Data.List.NonEmpty (NonEmpty((:|)))
-import Debug.Trace
-import Torch.Indef.Static.Tensor.Math.CompareT
-import Torch.Indef.Mask
-import qualified Torch.Indef.Dynamic.Tensor as Dynamic
-import qualified Torch.Indef.Storage as Storage
+import Test.QuickCheck (Property)
+import Test.QuickCheck.Monadic (run, monadicIO)
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NE
 
-import Test.Hspec
-import Test.QuickCheck
-import Test.QuickCheck.Monadic
+import Torch.Indef.Mask
+import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Math
+import Torch.Indef.Static.Tensor.Math.CompareT
+import Torch.Indef.Types (Tensor, HsReal, asDynamic)
+import qualified Torch.Indef.Dynamic.Tensor as Dynamic
+import qualified Torch.Indef.Storage as Storage
+
 
 main :: IO ()
 main = hspec spec
@@ -44,20 +38,20 @@ spec = do
   describe "transpose2d" transpose2dSpec
   xdescribe "expectations between tensor and storage" tensorStorageExpectationsSpec
 
--- testScenario :: Property
-testScenario = monadicIO $ do
-  run $ putStrLn "\n1 - new [2, 2]"
-  run $ print (new :: Tensor '[2, 2])
-  run $ putStrLn "\n2 - new [2, 4]"
-  run $ print (new :: Tensor '[2, 4])
-  run $ putStrLn "\n3 - new [2, 2, 2]"
-  run $ print (new :: Tensor '[2, 2, 2])
-  run $ putStrLn "\n4 - new [8, 4]"
-  run $ print (new :: Tensor '[8, 4])
-  run $ putStrLn "\n5 - constant [3, 4]"
-  run $ print $ asDynamic (constant 2 :: Tensor '[3, 4])
-  run $ putStrLn "\n6 - newClone [2, 3]"
-  run $ print $ newClone (constant 2 :: Tensor '[2, 3])
+testScenario :: Property
+testScenario = monadicIO . run $ do
+  putStrLn "\n1 - new [2, 2]"
+  print (new :: Tensor '[2, 2])
+  putStrLn "\n2 - new [2, 4]"
+  print (new :: Tensor '[2, 4])
+  putStrLn "\n3 - new [2, 2, 2]"
+  print (new :: Tensor '[2, 2, 2])
+  putStrLn "\n4 - new [8, 4]"
+  print (new :: Tensor '[8, 4])
+  putStrLn "\n5 - constant [3, 4]"
+  print $ asDynamic (constant 2 :: Tensor '[3, 4])
+  putStrLn "\n6 - newClone [2, 3]"
+  print $ newClone (constant 2 :: Tensor '[2, 3])
 
 eqSpec :: Spec
 eqSpec = do
@@ -145,12 +139,12 @@ stackingSpec :: Spec
 stackingSpec = do
   it "works with two identical tensors" $ do
     let t = constant (-(1/4)) :: Tensor '[6]
-    tensordata (stack1d0 t t) `shouldBe` replicate 12 (-1/4)
+    tensordata <$> (stack1d0 t t) `shouldBe` Right (replicate 12 (-1/4))
 
   it "works with two differing tensors" $ do
     let t1 = constant (-(1/4)) :: Tensor '[6]
         t2 = constant   (1/4)  :: Tensor '[6]
-    tensordata (stack1d0 t1 t2) `shouldBe` (replicate 6 (-1/4) ++ replicate 6 (1/4))
+    tensordata <$> (stack1d0 t1 t2) `shouldBe` Right (replicate 6 (-1/4) ++ replicate 6 (1/4))
 
 squeezeUnsqeezeSpec :: Spec
 squeezeUnsqeezeSpec = do
@@ -197,4 +191,5 @@ transpose2dSpec = do
     t :: Tensor '[2,3] <- unsafeMatrix xs
     tensordata t `shouldBe` tensordata (transpose2d t)
     tensordata t `shouldBe` concat xs
+
 

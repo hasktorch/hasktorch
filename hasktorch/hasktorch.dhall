@@ -225,7 +225,6 @@ in common.Package
                       , "Torch.Prelude.Extras"
                       , "Torch.Core.LogAddSpec"
                       , "Torch.Core.RandomSpec"
-                      , "Torch.Static.TensorSpec"
                       , "Torch.Static.NN.AbsSpec"
                       , "Torch.Static.NN.LinearSpec"
                       ]

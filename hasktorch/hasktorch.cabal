@@ -552,7 +552,6 @@ test-suite spec
         Torch.Prelude.Extras
         Torch.Core.LogAddSpec
         Torch.Core.RandomSpec
-        Torch.Static.TensorSpec
         Torch.Static.NN.AbsSpec
         Torch.Static.NN.LinearSpec
     default-language: Haskell2010

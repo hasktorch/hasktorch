@@ -942,8 +942,8 @@ resizeDim_ t d = case fromIntegral <$> listDims d of
 -- FIXME construct this with TH, not by using 'setDim' inplace (one-by-one) which might be doing a second linear pass.
 -- FIXME: CUDA doesn't like the storage allocation:
 
-vector :: [HsReal] -> ExceptT String IO Dynamic
-vector l = lift $ do
+vectorEIO :: [HsReal] -> ExceptT String IO Dynamic
+vectorEIO l = lift $ do
 ---------------------------------------------------
 -- THCudaCheck FAIL file=/home/stites/git/hasktorch/vendor/aten/src/THC/generic/THCStorage.c line=150 error=11 : invalid argument
 -- terminate called after throwing an instance of 'std::runtime_error'
@@ -962,6 +962,12 @@ vector l = lift $ do
   pure $ newWithStorage1d (fromList l) 0 (genericLength l, 1)
 -- #endif
 
+vectorE :: [HsReal] -> Either String Dynamic
+vectorE = unsafePerformIO . runExceptT . vectorEIO
+{-# NOINLINE vectorE #-}
+
+vector :: [HsReal] -> Maybe Dynamic
+vector = either (const Nothing) Just . vectorE
 
 -- | create a 2d Dynamic tensor from a list of list of elements.
 matrix :: [[HsReal]] -> ExceptT String IO Dynamic
