@@ -169,7 +169,7 @@ assertList hdr rs = do
   else
     if all (== 0) rs
     then throwString $ mkError hdr "all-zeros found!"
-    else pure () -- $ print $ mkInfo hdr "reified vals good"
+    else pure ()
 
 
 reifyHW

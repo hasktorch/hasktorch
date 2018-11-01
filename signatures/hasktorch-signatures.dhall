@@ -9,15 +9,15 @@ in  let fn = ../dhall/common/functions.dhall
 
 in  let exeScaffold =
     \(sigset : Text) →
-    \(thtype : Text) →
+    \(isth : Bool) →
       prelude.defaults.Executable
           // { main-is = "Main.hs"
              , default-language = cabalvars.default-language
              , hs-source-dirs = [ "exe" ]
              , build-depends =
                [ packages.base
-               , fn.anyver ("hasktorch-ffi-" ++ thtype)
-               , fn.anyver ("hasktorch-types-" ++ thtype)
+               , if isth then packages.hasktorch-ffi-th else packages.hasktorch-ffi-thc
+               , if isth then packages.hasktorch-types-th else packages.hasktorch-types-thc
                , fn.anyver ("hasktorch-partial-" ++ sigset)
                ]
              }
@@ -78,7 +78,7 @@ in  common.Package
       , executables =
           [ { name = "isdefinite-unsigned-th"
             , executable =
-              λ(config : types.Config) → exeScaffold "unsigned" "th"
+              λ(config : types.Config) → exeScaffold "unsigned" True
                // { mixins =
                    [ { package = partials.unsigned.name
                      , renaming =
@@ -95,7 +95,7 @@ in  common.Package
 
           , { name = "isdefinite-unsigned-thc"
             , executable =
-              λ(config : types.Config) → exeScaffold "unsigned" "thc"
+              λ(config : types.Config) → exeScaffold "unsigned" False
               // { mixins =
                    [ { package = partials.unsigned.name
                      , renaming =
@@ -112,7 +112,7 @@ in  common.Package
 
           , { name = "isdefinite-signed-th"
             , executable =
-              λ(config : types.Config) → exeScaffold "signed" "th"
+              λ(config : types.Config) → exeScaffold "signed" True
               // { mixins =
                    [ { package = partials.signed.name
                      , renaming =
@@ -137,7 +137,7 @@ in  common.Package
             }
           , { name = "isdefinite-signed-thc"
             , executable =
-              λ(config : types.Config) → exeScaffold "signed" "thc"
+              λ(config : types.Config) → exeScaffold "signed" False
               // { mixins =
                     [ { package = partials.signed.name
                       , renaming =
@@ -162,7 +162,7 @@ in  common.Package
             }
           , { name = "isdefinite-floating-th"
             , executable =
-              λ(config : types.Config) → exeScaffold "floating" "th"
+              λ(config : types.Config) → exeScaffold "floating" True
               // { mixins =
                    [ { package = partials.floating.name
                      , renaming =
@@ -184,7 +184,7 @@ in  common.Package
                    ] } }
           , { name = "isdefinite-floating-thc"
             , executable =
-              λ(config : types.Config) → exeScaffold "floating" "thc"
+              λ(config : types.Config) → exeScaffold "floating" False
               // { mixins =
                    [ { package = partials.floating.name
                      , renaming =

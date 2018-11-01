@@ -203,7 +203,7 @@ in common.Package
                   , packages.base
                   , packages.dimensions
                   , packages.ghc-typelits-natnormalise
-                  , packages.hasktorch
+                  , fn.anyver "hasktorch"
                   , packages.hspec
                   , packages.singletons
                   , packages.text

@@ -28,7 +28,7 @@ import qualified Torch.Long as Long
 -- onehotT c
 --   = unsafeVector
 --   $ fmap fromIntegral
-  -- $ onehot c
+--   $ onehot c
 
 onehot
   :: forall i c

@@ -44,8 +44,8 @@ library
                         TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch-types-th -any,
-        hasktorch-signatures-types -any,
+        hasktorch-types-th (==0.0.1 || >0.0.1) && <0.0.2,
+        hasktorch-signatures-types (==0.0.1 || >0.0.1) && <0.0.2,
         text ==1.2.2 || >1.2.2
     
     if impl(ghc >=8.6)

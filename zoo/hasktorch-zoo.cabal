@@ -60,7 +60,7 @@ library
         backprop ==0.2.5 || >0.2.5,
         dimensions ==1.0 || >1.0,
         hashable ==1.2.7 || >1.2.7,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens-platform ==0.3.10 || >0.3.10,
         microlens-th ==0.4.2 || >0.4.2,
         singletons ==2.2 || >2.2,
