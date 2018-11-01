@@ -1,5 +1,6 @@
-   let prelude = ../../dhall-to-cabal/dhall/prelude.dhall
-in let types = ../../dhall-to-cabal/dhall/types.dhall
+   let prelude = ../dhall/dhall-to-cabal/dhall/prelude.dhall sha256:01509b3c6e9eaae4150a6e0ced124c2db191bf6046534a9d4973b7f05afd1d0a
+in let types = ../dhall/dhall-to-cabal/dhall/types.dhall sha256:cfd7597246781e8d4c6dfa5f0eabba75f14dc3f3deb7527973909b37c93f42f5
+in let fn = ../dhall/common/functions.dhall sha256:45e8bee44c93da6f4c47a3fdacc558b00858461325b807d4afc8bf0965716c33
 in let common = ../dhall/common.dhall
 in let packages = common.packages
 in let cabalvars = common.cabalvars
@@ -37,7 +38,7 @@ in common.Package
                       , packages.text
                       , packages.transformers
                       ]
-                    , default-extensions = cabalvars.default-extensions
+                    , default-extensions = cabalvars.default-extensions config
                     , default-language = cabalvars.default-language
                     , hs-source-dirs = [ "tests" ]
                     , other-modules =
@@ -82,21 +83,22 @@ in common.Package
           , packages.text
           , packages.vector
           ]
-        in common.Library
-          // { hs-source-dirs = [ "src" ]
-             , build-depends =
-               if config.flag "cuda" == False
-               then  basedeps
-               else (basedeps #
-                 [ packages.hasktorch-types-thc
-                 , packages.cuda
-                 ])
-             , cpp-options =
-               if config.flag "cuda"
-               then [ "-DCUDA", "-DHASKTORCH_INTERNAL_CUDA" ]
-               else [] : List Text
-             , other-modules = [ "Torch.Indef.Internal" ]
-             , exposed-modules = fn.getnames sub-libraries.allindef-reexports
-             }
-          ] : Optional (types.Config → types.Library)
+        in common.Library config //
+          { hs-source-dirs = [ "src" ]
+          , build-depends =
+            if config.flag "cuda" == False
+            then  basedeps
+            else (basedeps #
+              [ packages.hasktorch-types-thc
+              , packages.cuda
+              ])
+          , cpp-options =
+            if config.flag "cuda"
+            then [ "-DCUDA", "-DHASKTORCH_INTERNAL_CUDA" ]
+            else [] : List Text
+          , other-modules = [ "Torch.Indef.Internal" ]
+          , default-extensions = cabalvars.default-extensions config
+          , exposed-modules = fn.getnames sub-libraries.allindef-reexports
+          }
+        ] : Optional (types.Config → types.Library)
       }

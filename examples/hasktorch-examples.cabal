@@ -11,13 +11,14 @@ cabal-version: 2.2
 name: hasktorch-examples
 version: 0.0.1.0
 license: BSD-3-Clause
-author: Hasktorch dev team (Sam Stites, Austin Huang)
+maintainer: Sam Stites <fnz@fgvgrf.vb>, Austin Huang <nhfgvau@nyhz.zvg.rqh> - cipher:ROT13
+author: Hasktorch dev team
 homepage: https://github.com/hasktorch/hasktorch#readme
 bug-reports: https://github.com/hasktorch/hasktorch/issues
 synopsis: Example usage
 description:
     Example usage
-category: Tensors, Machine Learning
+category: Tensors, Machine Learning, AI
 build-type: Simple
 
 source-repository head
@@ -41,10 +42,14 @@ executable gradient-descent
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
 
 executable multivariate-normal
     main-is: MultivariateNormal.hs
@@ -53,26 +58,14 @@ executable multivariate-normal
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2
-
-executable backprop-regression
-  main-is: BackpropRegression.hs
-  hs-source-dirs: backprop-regression
-  ghc-options: -Wall -fno-cse
-  build-depends:
-    base >= 4.7 && < 5
-    , backprop >= 0.2
-    , dimensions
-    , generic-lens
-    , hasktorch
-    , microlens-th
-    , singletons
-  other-modules:
-    Paths_hasktorch_examples
-  default-language: Haskell2010
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
 
 executable lasso
     main-is: Lasso.hs
@@ -81,10 +74,14 @@ executable lasso
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
 
 executable ad
     main-is: AD.hs
@@ -93,10 +90,14 @@ executable ad
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
 
 executable bayesian-regression
     main-is: BayesianRegression.hs
@@ -105,15 +106,19 @@ executable bayesian-regression
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2
     
     if flag(cuda)
         cpp-options: -DCUDA
         build-depends:
             cuda -any
+    else
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
     else
 
 executable download-mnist
@@ -123,16 +128,20 @@ executable download-mnist
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
-        HTTP -any,
-        bytestring -any,
-        cryptonite -any,
-        directory -any,
-        filepath -any,
-        network-uri -any
+        HTTP ==4000.3.11 || >4000.3.11,
+        bytestring ==0.10.8 || >0.10.8,
+        cryptonite ==0.25 || >0.25,
+        directory ==1.3.0 || >1.3.0,
+        filepath ==1.4.1 || >1.4.1,
+        network-uri ==2.6.1 || >2.6.1
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
 
 executable ff-typed
     main-is: FeedForwardTyped.hs
@@ -141,10 +150,14 @@ executable ff-typed
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
 
 executable ff-untyped
     main-is: FeedForwardUntyped.hs
@@ -153,10 +166,14 @@ executable ff-untyped
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
 
 executable static-tensor-usage
     main-is: Main.hs
@@ -165,15 +182,19 @@ executable static-tensor-usage
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2
     
     if flag(cuda)
         cpp-options: -DCUDA
         build-depends:
             cuda -any
+    else
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
     else
 
 executable lenet-cifar10
@@ -187,23 +208,23 @@ executable lenet-cifar10
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
         hasktorch-zoo -any,
-        unordered-containers -any,
-        dlist -any,
+        unordered-containers ==0.2.9 || >0.2.9,
+        dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
-        list-t -any,
-        mtl -any,
-        monad-loops -any,
-        mwc-random -any,
-        vector -any,
-        time -any,
-        transformers -any,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0
+        list-t ==1.0.1 || >1.0.1,
+        mtl ==2.2.2 || >2.2.2,
+        monad-loops ==0.4.3 || >0.4.3,
+        mwc-random ==0.14.0 || >0.14.0,
+        vector ==0.12.0 || >0.12.0,
+        time ==1.8.0 || >1.8.0,
+        transformers ==0.5.5 || >0.5.5,
+        safe-exceptions ==0.1.0 || >0.1.0
     
     if flag(cuda)
         cpp-options: -DCUDA
@@ -215,6 +236,10 @@ executable lenet-cifar10
     
     if flag(debug)
         cpp-options: -DDEBUG
+    else
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
     else
 
 executable lenet-cifar10-initialization
@@ -227,23 +252,23 @@ executable lenet-cifar10-initialization
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
         hasktorch-zoo -any,
-        unordered-containers -any,
-        dlist -any,
+        unordered-containers ==0.2.9 || >0.2.9,
+        dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
-        list-t -any,
-        mtl -any,
-        monad-loops -any,
-        mwc-random -any,
-        vector -any,
-        time -any,
-        transformers -any,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0
+        list-t ==1.0.1 || >1.0.1,
+        mtl ==2.2.2 || >2.2.2,
+        monad-loops ==0.4.3 || >0.4.3,
+        mwc-random ==0.14.0 || >0.14.0,
+        vector ==0.12.0 || >0.12.0,
+        time ==1.8.0 || >1.8.0,
+        transformers ==0.5.5 || >0.5.5,
+        safe-exceptions ==0.1.0 || >0.1.0
     
     if flag(cuda)
         cpp-options: -DCUDA
@@ -255,6 +280,10 @@ executable lenet-cifar10-initialization
     
     if flag(debug)
         cpp-options: -DDEBUG
+    else
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
     else
 
 executable lenet-cifar10-trainonebatch
@@ -267,23 +296,23 @@ executable lenet-cifar10-trainonebatch
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
         hasktorch-zoo -any,
-        unordered-containers -any,
-        dlist -any,
+        unordered-containers ==0.2.9 || >0.2.9,
+        dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
-        list-t -any,
-        mtl -any,
-        monad-loops -any,
-        mwc-random -any,
-        vector -any,
-        time -any,
-        transformers -any,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0
+        list-t ==1.0.1 || >1.0.1,
+        mtl ==2.2.2 || >2.2.2,
+        monad-loops ==0.4.3 || >0.4.3,
+        mwc-random ==0.14.0 || >0.14.0,
+        vector ==0.12.0 || >0.12.0,
+        time ==1.8.0 || >1.8.0,
+        transformers ==0.5.5 || >0.5.5,
+        safe-exceptions ==0.1.0 || >0.1.0
     
     if flag(cuda)
         cpp-options: -DCUDA
@@ -295,6 +324,10 @@ executable lenet-cifar10-trainonebatch
     
     if flag(debug)
         cpp-options: -DDEBUG
+    else
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
     else
 
 executable dense3-cifar10
@@ -307,23 +340,23 @@ executable dense3-cifar10
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
         hasktorch-zoo -any,
-        unordered-containers -any,
-        dlist -any,
+        unordered-containers ==0.2.9 || >0.2.9,
+        dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
-        list-t -any,
-        mtl -any,
-        monad-loops -any,
-        mwc-random -any,
-        vector -any,
-        time -any,
-        transformers -any,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0
+        list-t ==1.0.1 || >1.0.1,
+        mtl ==2.2.2 || >2.2.2,
+        monad-loops ==0.4.3 || >0.4.3,
+        mwc-random ==0.14.0 || >0.14.0,
+        vector ==0.12.0 || >0.12.0,
+        time ==1.8.0 || >1.8.0,
+        transformers ==0.5.5 || >0.5.5,
+        safe-exceptions ==0.1.0 || >0.1.0
     
     if flag(cuda)
         cpp-options: -DCUDA
@@ -335,6 +368,10 @@ executable dense3-cifar10
     
     if flag(debug)
         cpp-options: -DDEBUG
+    else
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
     else
 
 executable xor
@@ -347,23 +384,23 @@ executable xor
     build-depends:
         base (==4.7 || >4.7) && <5,
         hasktorch -any,
-        microlens ==0.4.8.1 || >0.4.8.1,
+        microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
         hasktorch-zoo -any,
-        unordered-containers -any,
-        dlist -any,
+        unordered-containers ==0.2.9 || >0.2.9,
+        dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
-        list-t -any,
-        mtl -any,
-        monad-loops -any,
-        mwc-random -any,
-        vector -any,
-        time -any,
-        transformers -any,
-        safe-exceptions ==0.1.0.0 || >0.1.0.0
+        list-t ==1.0.1 || >1.0.1,
+        mtl ==2.2.2 || >2.2.2,
+        monad-loops ==0.4.3 || >0.4.3,
+        mwc-random ==0.14.0 || >0.14.0,
+        vector ==0.12.0 || >0.12.0,
+        time ==1.8.0 || >1.8.0,
+        transformers ==0.5.5 || >0.5.5,
+        safe-exceptions ==0.1.0 || >0.1.0
     
     if flag(cuda)
         cpp-options: -DCUDA
@@ -375,5 +412,9 @@ executable xor
     
     if flag(debug)
         cpp-options: -DDEBUG
+    else
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
     else
 

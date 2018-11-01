@@ -5,6 +5,7 @@ module Main where
 
 import Numeric.Dimensions
 import Torch.Double.Dynamic hiding (DoubleTensor)
+import Data.Kind (Type)
 
 type DoubleTensor = DoubleDynamic
 
@@ -15,7 +16,7 @@ data Weights = W
 
 {- Simple FF neural network, dynamically typed version, based on JL's example -}
 
-data Network :: * where
+data Network :: Type where
   O :: Weights -> Network
   (:~) :: Weights -> Network -> Network
   deriving Show

@@ -6,6 +6,7 @@ module Main where
 
 import Numeric.Dimensions
 import System.IO.Unsafe (unsafePerformIO)
+import Data.Kind (Type)
 
 import Torch.Double
 {- Simple FF neural network, statically typed version, based on JL's example -}
@@ -21,7 +22,7 @@ data StaticWeights (i :: Nat) (o :: Nat) = SW
 mkW :: (KnownDim i, KnownDim o) => IO (SW i o)
 mkW = pure $ SW new new
 
-data StaticNetwork :: Nat -> [Nat] -> Nat -> * where
+data StaticNetwork :: Nat -> [Nat] -> Nat -> Type where
   O :: (KnownDim i, KnownDim o) =>
        SW i o -> SN i '[] o
   (:~) :: (KnownDim h, KnownDim i, KnownDim o) =>

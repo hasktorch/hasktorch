@@ -1,8 +1,8 @@
-   let prelude  = ../dhall/dhall-to-cabal/dhall/prelude.dhall
-in let types    = ../dhall/dhall-to-cabal/dhall/types.dhall
-in let List/map = ../dhall/Prelude/List/map
+   let prelude = ../dhall/dhall-to-cabal/dhall/prelude.dhall sha256:01509b3c6e9eaae4150a6e0ced124c2db191bf6046534a9d4973b7f05afd1d0a
+in let types   = ../dhall/dhall-to-cabal/dhall/types.dhall sha256:cfd7597246781e8d4c6dfa5f0eabba75f14dc3f3deb7527973909b37c93f42f5
+in let List/map = ../dhall/Prelude/List/map sha256:310614c2949366621d7848e37c7845090d6c5b644234a1defe4d4048cf124fcd
+in let ReexportedModule = ./types/ReexportedModule.dhall sha256:23ebbe22530692c84f9646131b55605be9506a56121a0cb1e5230e34a7675120
 in let common = ../dhall/common.dhall
-in let ReexportedModule = ../dhall/common/types/ReexportedModule.dhall
 in let packages = common.packages
 in let cabalvars = common.cabalvars
 in let partials = ../dhall/backpack/partials.dhall
@@ -143,7 +143,7 @@ in let backend-sublibrary =
       in let reexports
           = nnexports isth "Double"
           # (if isth then nnexports isth "Float" else [] : List Text)
-      in common.Library //
+      in common.Library config //
         { hs-source-dirs = [ "utils", "src" ]
         , build-depends = if config.flag "lite" then lite-depends else lite-depends # [packages.hasktorch-indef-unsigned]
         , reexported-modules = List/map Text ReexportedModule fn.renameNoop reexports
@@ -194,41 +194,41 @@ in common.Package
       , test-suites =
           [ { name = "spec"
             , test-suite =
-              λ(config : types.Config)
-              → prelude.defaults.TestSuite
-               // { type = < exitcode-stdio = { main-is = "Spec.hs" } | detailed : { module : Text } >
-                  , build-depends =
-                      [ packages.QuickCheck
-                      , packages.backprop
-                      , packages.base
-                      , packages.dimensions
-                      , packages.ghc-typelits-natnormalise
-                      , packages.hasktorch
-                      , packages.hspec
-                      , packages.singletons
-                      , packages.text
-                      , packages.mtl
-                      , packages.microlens-platform
-                      , packages.monad-loops
-                      , packages.time
-                      , packages.transformers
-                      , packages.generic-lens
-                      ]
-                    , default-extensions = cabalvars.default-extensions
-                    , default-language = cabalvars.default-language
-                    , hs-source-dirs = [ "tests" ]
-                    , other-modules =
-                      [ "Orphans"
-                      , "MemorySpec"
-                      , "RawLapackSVDSpec"
-                      , "GarbageCollectionSpec"
-                      , "Torch.Prelude.Extras"
-                      , "Torch.Core.LogAddSpec"
-                      , "Torch.Core.RandomSpec"
-                      , "Torch.Static.NN.AbsSpec"
-                      , "Torch.Static.NN.LinearSpec"
-                      ]
-                    }
+              \(config : types.Config)
+              -> prelude.defaults.TestSuite //
+                { type = < exitcode-stdio = { main-is = "Spec.hs" } | detailed : { module : Text } >
+                , build-depends =
+                  [ packages.QuickCheck
+                  , packages.backprop
+                  , packages.base
+                  , packages.dimensions
+                  , packages.ghc-typelits-natnormalise
+                  , packages.hasktorch
+                  , packages.hspec
+                  , packages.singletons
+                  , packages.text
+                  , packages.mtl
+                  , packages.microlens-platform
+                  , packages.monad-loops
+                  , packages.time
+                  , packages.transformers
+                  , packages.generic-lens
+                  ]
+                , default-extensions = cabalvars.default-extensions config
+                , default-language = cabalvars.default-language
+                , hs-source-dirs = [ "tests" ]
+                , other-modules =
+                  [ "Orphans"
+                  , "MemorySpec"
+                  , "RawLapackSVDSpec"
+                  , "GarbageCollectionSpec"
+                  , "Torch.Prelude.Extras"
+                  , "Torch.Core.LogAddSpec"
+                  , "Torch.Core.RandomSpec"
+                  , "Torch.Static.NN.AbsSpec"
+                  , "Torch.Static.NN.LinearSpec"
+                  ]
+                }
             }
           ]
       , library =
@@ -266,8 +266,8 @@ in common.Package
           in let cpu-full-reexports = List/map Text ReexportedModule fn.renameNoop cpu-full-exports
           in let gpu-lite-reexports = List/map Text ReexportedModule fn.renameNoop gpu-lite-exports
           in let gpu-full-reexports = List/map Text ReexportedModule fn.renameNoop gpu-full-exports
-          in common.Library
-          // { hs-source-dirs = [ "utils" ]
+          in common.Library config //
+            { hs-source-dirs = [ "utils" ]
             , build-depends =
               [ packages.base
               , packages.containers

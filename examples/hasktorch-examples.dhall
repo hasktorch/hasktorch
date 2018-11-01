@@ -1,7 +1,7 @@
-   let prelude = ../dhall/dhall-to-cabal/dhall/prelude.dhall
-in let types   = ../dhall/dhall-to-cabal/dhall/types.dhall
+   let prelude = ./dhall-to-cabal/dhall/prelude.dhall sha256:01509b3c6e9eaae4150a6e0ced124c2db191bf6046534a9d4973b7f05afd1d0a
+in let types = ./dhall-to-cabal/dhall/types.dhall sha256:cfd7597246781e8d4c6dfa5f0eabba75f14dc3f3deb7527973909b37c93f42f5
+in let fn = ./common/functions.dhall sha256:45e8bee44c93da6f4c47a3fdacc558b00858461325b807d4afc8bf0965716c33
 in let common  = ../dhall/common.dhall
-in let fn      = ../dhall/common/functions.dhall
 in let partials     = ../dhall/backpack/partials.dhall
 in let mixins       = ../dhall/backpack/mixins.dhall
 in let provides     = ../dhall/backpack/provides.dhall
@@ -32,6 +32,10 @@ in let exe-builder
          , default-language = cabalvars.default-language
          , hs-source-dirs = [ (if experimental then ("experimental/" ++ name) else name) ]
          , cpp-options = if (cancuda && config.flag "cuda") then [ "-DCUDA" ] else [] : List Text
+         , default-extensions =
+           if config.impl (prelude.types.Compilers.GHC {=}) (prelude.orLaterVersion (prelude.v "8.6"))
+           then [prelude.types.Extensions.StarIsType False]
+           else [] : List types.Extensions
          , build-depends
            = base-depends
            # extradeps
@@ -54,6 +58,10 @@ in let lenet-experiment =
     , cpp-options
       = (if config.flag "cuda"  then [ "-DCUDA"  ] else [] : List Text)
       # (if config.flag "debug" then [ "-DDEBUG" ] else [] : List Text)
+    , default-extensions =
+      if config.impl (prelude.types.Compilers.GHC {=}) (prelude.orLaterVersion (prelude.v "8.6"))
+      then [prelude.types.Extensions.StarIsType False]
+      else [] : List types.Extensions
     , build-depends
       = base-depends #
       [ packages.backprop

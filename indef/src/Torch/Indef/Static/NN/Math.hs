@@ -99,7 +99,7 @@ softmaxBatch = softmaxN (dim :: Dim 1)
 softmaxN
   :: forall s i d
   .  Reifies s W
-  => i < Length d ~ 'True
+  => (i < Length d) ~ True
   => Dimensions d
   => Dim i                -- ^ dimension to softmax over
   -> BVar s (Tensor d)    -- ^ input
@@ -168,7 +168,7 @@ logSoftMaxBatch = logSoftMaxN (dim :: Dim 1)
 logSoftMaxN
   :: forall s i d
   .  Reifies s W
-  => i < Length d ~ 'True
+  => (i < Length d) ~ True
   => Dimensions d
   => Dim i                -- ^ dimension to logSoftMax over
   -> BVar s (Tensor d)    -- ^ input

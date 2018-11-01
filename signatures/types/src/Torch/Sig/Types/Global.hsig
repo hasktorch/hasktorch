@@ -5,6 +5,7 @@ signature Torch.Sig.Types.Global where
 
 import Foreign
 import GHC.TypeLits
+import Data.Kind
 
 data CState
 data State
@@ -38,9 +39,9 @@ type CMaskTensor = CByteTensor
 type CIndexTensor = CLongTensor
 type CIndexStorage = CLongStorage
 
-type MaskTensor = (ByteTensor :: [Nat] -> *)
+type MaskTensor = (ByteTensor :: [Nat] -> Type)
 type MaskDynamic = ByteDynamic
-type IndexTensor = (LongTensor :: [Nat] -> *)
+type IndexTensor = (LongTensor :: [Nat] -> Type)
 type IndexDynamic = LongDynamic
 type IndexStorage = LongStorage
 

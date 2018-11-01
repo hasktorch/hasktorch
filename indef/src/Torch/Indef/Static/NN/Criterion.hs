@@ -22,7 +22,6 @@ import System.IO.Unsafe
 import Control.Concurrent
 import Debug.Trace
 import Data.Singletons.Prelude hiding (All, type (*), type (-), type (+))
-
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Types

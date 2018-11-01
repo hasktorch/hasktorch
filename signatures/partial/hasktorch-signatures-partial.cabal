@@ -47,4 +47,8 @@ library
         hasktorch-types-th -any,
         hasktorch-signatures-types -any,
         text ==1.2.2 || >1.2.2
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
 

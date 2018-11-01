@@ -39,4 +39,8 @@ library
         base (==4.7 || >4.7) && <5,
         hasktorch-signatures-types -any,
         hasktorch-types-th -any
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
 

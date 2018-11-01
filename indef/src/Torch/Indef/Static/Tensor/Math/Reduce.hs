@@ -71,7 +71,7 @@ max
   .  All Dimensions '[d, rs ++ '[1] ++ ls]
   => All KnownNat '[n, ix]
   => All KnownDim '[n, ix]
-  => Length d > ix ~ True
+  => (Length d > ix) ~ True
   => '(rs, n:+ls) ~ (SplitAt ix d)
   => Tensor d
   -> Dim ix
@@ -85,7 +85,7 @@ min
   .  All Dimensions '[d, rs ++ '[1] ++ ls]
   => All KnownNat '[n, ix]
   => All KnownDim '[n, ix]
-  => Length d > ix ~ True
+  => (Length d > ix) ~ True
   => '(rs, n:+ls) ~ (SplitAt ix d)
   => Tensor d
   -> Dim ix
@@ -99,7 +99,7 @@ median
   .  All Dimensions '[d, rs ++ '[1] ++ ls]
   => All KnownNat '[n, ix]
   => All KnownDim '[n, ix]
-  => Length d > ix ~ True
+  => (Length d > ix) ~ True
   => '(rs, n:+ls) ~ (SplitAt ix d)
   => Tensor d
   -> Dim ix
@@ -147,7 +147,7 @@ withKeepDim
   .  All Dimensions '[d, rs ++ '[1] ++ ls]
   => All KnownNat '[n, ix]
   => All KnownDim '[n, ix]
-  => Length d > ix ~ True
+  => (Length d > ix) ~ True
   => '(rs, n:+ls) ~ (SplitAt ix d)
   => ((Dynamic, IndexDynamic) -> Dynamic -> Word -> Maybe KeepDim -> IO ())
   -> Tensor d

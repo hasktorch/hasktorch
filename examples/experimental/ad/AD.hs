@@ -9,6 +9,7 @@ module Main where
 import Torch.Double
 import Numeric.Dimensions
 import System.IO.Unsafe (unsafePerformIO)
+import Data.Kind (Type)
 
 -- Promoted layer types promoted
 data LayerType = LTrivial | LLinear | LAffine | LSigmoid | LRelu
@@ -27,19 +28,19 @@ type Sensitivity i = Tensor '[i]
 type Output o = Tensor '[o]
 
 -- Backprop sensitivity and parameter gradients
-data Table :: Nat -> [Nat] -> Nat -> * where
+data Table :: Nat -> [Nat] -> Nat -> Type where
   T :: (KnownDim i, KnownDim o) => (Gradient l i o, Sensitivity i) -> Table i '[] o
   (:&~) :: (KnownDim h, KnownDim i, KnownDim o) =>
           (Gradient l i o, Sensitivity i) -> Table h hs o -> Table i (h ': hs) o
 
 -- Forwardprop values
-data Values :: [Nat] -> Nat -> * where
+data Values :: [Nat] -> Nat -> Type where
   V :: (KnownDim o) => Output o -> Values '[] o
   (:^~) :: (KnownDim h, KnownDim o) =>
            Output h -> Values hs o -> Values (h ': hs) o
 
 -- Network architecture
-data Network :: Nat -> [Nat] -> Nat -> * where
+data Network :: Nat -> [Nat] -> Nat -> Type where
   O :: (KnownDim i, KnownDim o) =>
        Layer l i o -> NW i '[] o
   (:~) :: (KnownDim h, KnownDim i, KnownDim o) =>

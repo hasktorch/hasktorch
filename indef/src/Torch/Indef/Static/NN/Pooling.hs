@@ -61,14 +61,14 @@ _temporalMaxPooling_updateGradInput t0 t1 t2 ix0 = Dynamic._temporalMaxPooling_u
 -- 'KnownDim's.
 type SpatialDilationCheckC kH kW dH dW pH pW dilH dilW =
   ( All KnownDim '[kH,kW,pH,pW,dH,dW,dilH,dilW]
-  , kW > 0 ~ 'True
-  , kH > 0 ~ 'True
-  , dW > 0 ~ 'True
-  , dH > 0 ~ 'True
-  , dilW > 0 ~ 'True
-  , dilH > 0 ~ 'True
-  , (Div kW 2) >= pW ~ 'True
-  , (Div kH 2) >= pH ~ 'True
+  , (kW > 0) ~ 'True
+  , (kH > 0) ~ 'True
+  , (dW > 0) ~ 'True
+  , (dH > 0) ~ 'True
+  , (dilW > 0) ~ 'True
+  , (dilH > 0) ~ 'True
+  , ((Div kW 2) >= pW) ~ 'True
+  , ((Div kH 2) >= pH) ~ 'True
   )
 
 -- | Type-level if statement to indicate what the output dimension should be if
@@ -317,10 +317,10 @@ type AvgPool2dOutputDim i k p s ceilMode o =
   ( If (ceilMode && (Rem (i + (2 * p) - k) s > 0))
       ((2 + (Div (i + (2 * p) - k) s)) ~ o)
       ((1 + (Div (i + (2 * p) - k) s)) ~ o)
-  , k > 0 ~ 'True
-  , s > 0 ~ 'True
-  , o > 0 ~ 'True
-  , (Div k 2) >= p ~ 'True
+  , (k > 0) ~ 'True
+  , (s > 0) ~ 'True
+  , (o > 0) ~ 'True
+  , ((Div k 2) >= p) ~ 'True
   )
 
 -- | spatial global average pooling on batches in IO

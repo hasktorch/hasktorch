@@ -10,7 +10,7 @@
 -- Temporal (1D) Convolutions
 -------------------------------------------------------------------------------
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}

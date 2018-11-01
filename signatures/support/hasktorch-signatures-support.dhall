@@ -1,5 +1,5 @@
-    let prelude = ../../dhall/dhall-to-cabal/dhall/prelude.dhall
-in  let types =   ../../dhall/dhall-to-cabal/dhall/types.dhall
+    let prelude = ../../dhall/dhall-to-cabal/dhall/prelude.dhall sha256:01509b3c6e9eaae4150a6e0ced124c2db191bf6046534a9d4973b7f05afd1d0a
+in  let types   = ../../dhall/dhall-to-cabal/dhall/types.dhall sha256:cfd7597246781e8d4c6dfa5f0eabba75f14dc3f3deb7527973909b37c93f42f5
 in  let common = ../../dhall/common.dhall
 in  let packages = common.packages
 in  common.Package
@@ -8,7 +8,7 @@ in  common.Package
       , description = "Backpack signatures which define redundant operators for mask tensors and index tensors in Hasktorch."
       , library =
           [   λ(config : types.Config)
-            →   common.Library
+            →   common.Library config
               // { hs-source-dirs = [ "src" ]
                  , build-depends =
                     [ packages.base
