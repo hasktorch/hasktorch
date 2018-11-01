@@ -36,6 +36,7 @@ in  common.Package
                     , packages.hasktorch-types-thc
                     , packages.hasktorch-signatures-types
                     ]
+                , default-extensions = [] : List types.Extensions
                 , signatures =
                     [ "Torch.Sig.NN"
                     , "Torch.Sig.Storage"

@@ -12,6 +12,7 @@ in  common.Package
           [   λ(config : types.Config)
             →   common.Library config
               // { hs-source-dirs = [ "src" ]
+                 , default-extensions = [] : List types.Extensions
                  , build-depends =
                     [ packages.base
                     , packages.deepseq
