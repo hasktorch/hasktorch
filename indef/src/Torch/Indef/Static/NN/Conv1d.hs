@@ -17,6 +17,12 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
+
+#if MIN_VERSION_base(4,12,0)
+{-# LANGUAGE NoStarIsType #-}
+#endif
+
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Conv1d

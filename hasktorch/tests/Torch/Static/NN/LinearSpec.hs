@@ -7,6 +7,12 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE CPP #-}
+
+#if MIN_VERSION_base(4,12,0)
+{-# LANGUAGE NoStarIsType #-}
+#endif
+
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Static.NN.LinearSpec where
 

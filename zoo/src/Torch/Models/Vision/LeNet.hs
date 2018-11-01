@@ -6,6 +6,12 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
+
+#if MIN_VERSION_base(4,12,0)
+{-# LANGUAGE NoStarIsType #-}
+#endif
+
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 module Torch.Models.Vision.LeNet where
 

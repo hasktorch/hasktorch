@@ -11,6 +11,12 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE CPP #-}
+
+#if MIN_VERSION_base(4,12,0)
+{-# LANGUAGE NoStarIsType #-}
+#endif
+
 module Torch.Models.Internal
   ( newLinear
   , newConv2d

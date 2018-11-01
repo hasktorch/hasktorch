@@ -13,6 +13,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
+
+#if MIN_VERSION_base(4,12,0)
+{-# LANGUAGE NoStarIsType #-}
+#endif
+
 {-# OPTIONS_GHC -fno-cse -Wno-deprecations #-} -- no deprications because we still bundle up all mutable functions
 module Torch.Indef.Static.Tensor where
 
