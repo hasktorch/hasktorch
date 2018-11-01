@@ -93,7 +93,7 @@ catSpec = do
       let
         t0 = constant i0 :: Tensor '[10]
         t1 = constant i1 :: Tensor '[10]
-      tensordata <$> (cat t0 t1 dim0) `shouldBe` Right (replicate 10 i0 ++ replicate 10 i1)
+      tensordata (cat t0 t1 dim0) `shouldBe` (replicate 10 i0 ++ replicate 10 i1)
 
     it "stacks three tensors together" . property $ \i0 i1 i2 -> do
       let
@@ -103,9 +103,9 @@ catSpec = do
         t0 = constant d0 :: Tensor '[10]
         t1 = constant d1 :: Tensor '[10]
         t2 = constant d2 :: Tensor '[10]
-        Right t12 = cat t1 t2 dim0
+        t12 = cat t1 t2 dim0
 
-      tensordata <$> cat t0 t12 dim0 `shouldBe` Right (replicate 10 d0 ++ replicate 10 d1 ++ replicate 10 d2)
+      tensordata (cat t0 t12 dim0) `shouldBe` (replicate 10 d0 ++ replicate 10 d1 ++ replicate 10 d2)
   where
     dim0 = (dim :: Dim 0)
 

@@ -23,7 +23,10 @@ import System.IO (stdout, hFlush)
 import System.IO.Unsafe (unsafePerformIO)
 -- import System.Mem (performGC, performMajorGC)
 import Text.Printf (printf)
+import Data.List.NonEmpty (NonEmpty)
+import Control.Exception.Safe
 
+import qualified Data.List.NonEmpty as NE
 import qualified Data.HashMap.Strict as HM
 import qualified Data.DList as DL
 import qualified Data.Vector as V
@@ -143,7 +146,10 @@ toYs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[BatchSize, 10])
 toYs = D.unsafeMatrix . fmap (onehotf . fst)
 
 toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[BatchSize, 3, 32, 32])
-toXs xs = pure . D.catArray0 $ fmap (D.unsqueeze1d (dim :: Dim 0) . snd) xs
+toXs xs =
+  case D.catArray0 $ fmap (D.unsqueeze1d (dim :: Dim 0) . snd) (NE.fromList xs) of
+    Left s -> throwString s
+    Right t -> pure t
 
 t2cat :: Tensor '[BatchSize, 10] -> [Category]
 t2cat = (fmap (toEnum . fromIntegral) . Long.tensordata . fromJust . snd . flip max2d1 keep)

@@ -23,6 +23,8 @@ import GHC.TypeLits (KnownNat)
 import Torch.Data.Loaders.Cifar10 (Category, rgb2torch)
 import Torch.Data.Loaders.RGBVector (Normalize(NegOneToOne))
 import Torch.Data.OneHot (onehotf)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
 import qualified Data.DList as DL
 import qualified Data.Vector as V
 import qualified Torch.Double.Dynamic as Dynamic
@@ -86,7 +88,9 @@ dataloader d lds
 
     toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[batch, 3, 32, 32])
     toXs xs =
-      pure . catArray0 $ fmap (unsqueeze1d (dim :: Dim 0) . snd) xs
+      case catArray0 $ fmap (unsqueeze1d (dim :: Dim 0) . snd) (NE.fromList xs) of
+        Left s -> throwString s
+        Right t -> pure t
 
 dataloader'
   :: forall batch
@@ -101,10 +105,11 @@ dataloader' d = mapM go
   go :: Vector (Category, FilePath) -> IO (Tensor '[batch, 10], Tensor '[batch, 3, 32, 32])
   go lzy = do
     ys <- toYs (V.toList $ fst <$> lzy)
-    dyns <- mapM dynTransform (V.toList $ snd <$> lzy)
+    dyns <- mapM dynTransform (NE.fromList . V.toList $ snd <$> lzy)
     forM_ dyns $ \t -> Dynamic._unsqueeze1d t t 0
-    let res = asStatic $ Dynamic.catArray dyns 0
-    pure (ys, res)
+    case asStatic <$> Dynamic.catArray dyns 0 of
+      Left s -> throwString s
+      Right res -> pure (ys, res)
    where
     toYs :: [Category] -> IO (Tensor '[batch, 10])
     toYs ys = unsafeMatrix . fmap onehotf $ ys

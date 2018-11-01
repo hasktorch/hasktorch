@@ -139,12 +139,12 @@ stackingSpec :: Spec
 stackingSpec = do
   it "works with two identical tensors" $ do
     let t = constant (-(1/4)) :: Tensor '[6]
-    tensordata <$> (stack1d0 t t) `shouldBe` Right (replicate 12 (-1/4))
+    tensordata (stack1d0 t t) `shouldBe` (replicate 12 (-1/4))
 
   it "works with two differing tensors" $ do
     let t1 = constant (-(1/4)) :: Tensor '[6]
         t2 = constant   (1/4)  :: Tensor '[6]
-    tensordata <$> (stack1d0 t1 t2) `shouldBe` Right (replicate 6 (-1/4) ++ replicate 6 (1/4))
+    tensordata (stack1d0 t1 t2) `shouldBe` (replicate 6 (-1/4) ++ replicate 6 (1/4))
 
 squeezeUnsqeezeSpec :: Spec
 squeezeUnsqeezeSpec = do

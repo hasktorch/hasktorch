@@ -19,6 +19,7 @@ import LeNet
 
 import Data.Maybe
 import Data.Time (getCurrentTime)
+import Data.List.NonEmpty (NonEmpty)
 import Debug.Trace
 import Text.Printf
 import GHC.TypeLits (KnownNat)
@@ -27,6 +28,7 @@ import Control.Monad.Trans.Except
 import System.IO (hFlush, stdout)
 import System.IO.Unsafe
 import qualified Data.Vector as V
+import qualified Data.List.NonEmpty as NE
 
 #ifdef CUDA
 import Torch.Cuda.Double -- (Tensor, HsReal, (.:), mSECriterion)
@@ -79,7 +81,7 @@ main = seedAll >>= \g -> do
     btensor lds
       | V.length lds /= (fromIntegral bs) = pure Nothing
       | otherwise = do
-        foo <- V.toList <$> V.mapM getdata lds
+        foo <- NE.fromList . V.toList <$> V.mapM getdata lds
         ys <- toYs foo
         xs <- toXs foo
         pure $ Just (ys, xs)
@@ -101,7 +103,7 @@ main = seedAll >>= \g -> do
 
       pred1 <- t2cat <$> forward net' xs
 
-      printf ("\nprediction1: %s") (show pred1)
+      printf "\nprediction1: %s" (show pred1)
 
       (_, !loss') <- trainStep False lr net' xs ys
       let l' = getloss loss'
@@ -112,11 +114,13 @@ main = seedAll >>= \g -> do
 
   printf "\nFinished single-batch training!\n"
 
-toYs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[BatchSize, 10])
-toYs = D.unsafeMatrix . fmap (onehotf . fst)
+toYs :: NonEmpty (Category, Tensor '[3, 32, 32]) -> IO (Tensor '[BatchSize, 10])
+toYs = D.unsafeMatrix . fmap (onehotf . fst) . NE.toList
 
-toXs :: [(Category, Tensor '[3, 32, 32])] -> IO (Tensor '[BatchSize, 3, 32, 32])
-toXs xs = pure . D.catArray0 $ fmap (D.unsqueeze1d (dim :: Dim 0) . snd) xs
+toXs :: NonEmpty (Category, Tensor '[3, 32, 32]) -> IO (Tensor '[BatchSize, 3, 32, 32])
+toXs xs = case D.catArray0 (fmap (D.unsqueeze1d (dim :: Dim 0) . snd) xs) of
+  Left  s -> throwString s
+  Right t -> pure t
 
 t2cat :: Tensor '[BatchSize, 10] -> [Category]
 t2cat = (fmap (toEnum . fromIntegral) . Long.tensordata . fromJust . snd . flip max2d1 keep)
