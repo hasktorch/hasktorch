@@ -374,42 +374,42 @@ genericConv2dWithIO
  where
   updateOutput_ finput fgradInput step pad conv inp out =
     Dynamic._spatialConvolutionMM_updateOutput
-      (asDynamic inp)                      -- ^ input
-      (asDynamic out)                      -- ^ output
-      (asDynamic (weights conv))    -- ^ 3D weight tensor (connTable:size(1) x kH x kW)
-      (asDynamic (bias conv))       -- ^ 1D bias tensor (nOutputPlane)
+      (asDynamic inp)                      -- input
+      (asDynamic out)                      -- output
+      (asDynamic (weights conv))    -- 3D weight tensor (connTable:size(1) x kH x kW)
+      (asDynamic (bias conv))       -- 1D bias tensor (nOutputPlane)
 
-      (asDynamic finput)                  -- ^ BUFFER: temporary columns -- also called "finput"
-      (asDynamic fgradInput)              -- ^ BUFFER: buffer of ones for bias accumulation  -- also called "fgradInput"
+      (asDynamic finput)                  -- BUFFER: temporary columns -- also called "finput"
+      (asDynamic fgradInput)              -- BUFFER: buffer of ones for bias accumulation  -- also called "fgradInput"
 
-      (kernel2d conv)               -- ^ (kW, kH) kernel height and width
-      (param2d step)                       -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
-      (param2d pad)                        -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
+      (kernel2d conv)               -- (kW, kH) kernel height and width
+      (param2d step)                       -- (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
+      (param2d pad)                        -- (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
 
   updateGradInput_ inp gout gin conv colsbuffer onesbuffer step pad = do
     Dynamic._spatialConvolutionMM_updateGradInput
-      (asDynamic inp)                      -- ^ input
-      (asDynamic gout)                     -- ^ gradOutput
-      (asDynamic gin)                      -- ^ gradInput
-      (asDynamic (weights conv))    -- ^ weight
-      (asDynamic colsbuffer)               -- ^ columns
-      (asDynamic onesbuffer)               -- ^ ones
-      (kernel2d conv)               -- ^ (kW, kH) kernel height and width
-      (param2d step)                       -- ^ (dW, dH) step of the convolution in width and height dimensions
-      (param2d pad)                        -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
+      (asDynamic inp)                      -- input
+      (asDynamic gout)                     -- gradOutput
+      (asDynamic gin)                      -- gradInput
+      (asDynamic (weights conv))    -- weight
+      (asDynamic colsbuffer)               -- columns
+      (asDynamic onesbuffer)               -- ones
+      (kernel2d conv)               -- (kW, kH) kernel height and width
+      (param2d step)                       -- (dW, dH) step of the convolution in width and height dimensions
+      (param2d pad)                        -- (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
 
 
   accGradParameters_ inp gout gconv columnsbuff onesbuff step pad = do
     Dynamic._spatialConvolutionMM_accGradParameters
-      (asDynamic inp)    -- ^ input
-      (asDynamic gout)    -- ^ gradOutput
-      (asDynamic (weights gconv))    -- ^ gradWeight
-      (asDynamic (bias gconv))    -- ^ gradBias
-      (asDynamic columnsbuff)    -- ^ finput/columns <<- required. This can be NULL in C if gradWeight is NULL.
-      (asDynamic onesbuff)   -- ^ ones
-      (kernel2d conv) -- ^ (kW, kH) kernel height and width
-      (param2d step)         -- ^ (dW, dH) step of the convolution in width and height dimensions
-      (param2d pad)          -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
+      (asDynamic inp)    -- input
+      (asDynamic gout)    -- gradOutput
+      (asDynamic (weights gconv))    -- gradWeight
+      (asDynamic (bias gconv))    -- gradBias
+      (asDynamic columnsbuff)    -- finput/columns <<- required. This can be NULL in C if gradWeight is NULL.
+      (asDynamic onesbuff)   -- ones
+      (kernel2d conv) -- (kW, kH) kernel height and width
+      (param2d step)         -- (dW, dH) step of the convolution in width and height dimensions
+      (param2d pad)          -- (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
       lr
 
 -- ========================================================================= --
