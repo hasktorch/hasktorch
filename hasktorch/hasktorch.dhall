@@ -185,7 +185,7 @@ in common.Package
                // { main-is = "Memcheck.hs"
                   , build-depends =
                       [ packages.base
-                      , packages.hasktorch
+                      , fn.anyver "hasktorch"
                       ]
                     , default-language = cabalvars.default-language
                     , hs-source-dirs = [ "exe" ]

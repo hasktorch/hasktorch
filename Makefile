@@ -57,7 +57,6 @@ dabal-all:
 	  "signatures/support/hasktorch-signatures-support" \
 	  "signatures/types/hasktorch-signatures-types"     \
 	  "indef/hasktorch-indef"                           \
-	  "hasktorch/hasktorch"                             \
 	  "zoo/hasktorch-zoo"; do                           \
 	  $(MAKE) dabal DABAL=$${lib} & > /dev/null ; \
 	done
