@@ -15,9 +15,9 @@ maintainer: Sam Stites <fnz@fgvgrf.vb>, Austin Huang <nhfgvau@nyhz.zvg.rqh> - ci
 author: Hasktorch dev team
 homepage: https://github.com/hasktorch/hasktorch#readme
 bug-reports: https://github.com/hasktorch/hasktorch/issues
-synopsis: Neural Architectures and abstractions which live above the raw-tensor level in hasktorch
+synopsis: Neural architectures in hasktorch
 description:
-    Neural Architectures in hasktorch
+    Neural architectures, data loading packages, initializations, and common tensor abstractions in hasktorch.
 category: Tensors, Machine Learning, AI
 build-type: Simple
 
@@ -33,11 +33,6 @@ flag cuda
 flag gd
     description:
         use gd graphics library for loading images
-    default: False
-
-flag debug
-    description:
-        turn on debugging flags
     default: False
 
 library
