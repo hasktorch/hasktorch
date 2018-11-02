@@ -60,26 +60,19 @@ library
         dimensions ==1.0 || >1.0,
         hashable ==1.2.7 || >1.2.7,
         hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
-        microlens-platform ==0.3.10 || >0.3.10,
-        microlens-th ==0.4.2 || >0.4.2,
+        microlens ==0.4.8 || >0.4.8,
         singletons ==2.2 || >2.2,
         generic-lens -any,
         ghc-typelits-natnormalise -any,
         vector ==0.12.0 || >0.12.0,
         directory ==1.3.0 || >1.3.0,
         filepath ==1.4.1 || >1.4.1,
-        async -any,
-        SafeSemaphore -any,
         deepseq ==1.3.0 || >1.3.0,
         mwc-random ==0.14.0 || >0.14.0,
         primitive ==0.6.3 || >0.6.3,
         safe-exceptions ==0.1.0 || >0.1.0,
-        list-t ==1.0.1 || >1.0.1,
         mtl ==2.2.2 || >2.2.2,
-        monad-loops ==0.4.3 || >0.4.3,
-        time ==1.8.0 || >1.8.0,
-        transformers ==0.5.5 || >0.5.5,
-        generic-lens -any
+        transformers ==0.5.5 || >0.5.5
     
     if flag(gd)
         cpp-options: -DUSE_GD

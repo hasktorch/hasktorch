@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeApplications #-}
@@ -7,6 +6,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE RankNTypes #-}
 
 #if MIN_VERSION_base(4,12,0)
 {-# LANGUAGE NoStarIsType #-}
@@ -16,13 +16,16 @@
 module Torch.Models.Vision.LeNet where
 
 import Data.Function ((&))
+import Data.Generics.Product.Fields (field)
+import Data.Generics.Product.Typed (typed)
 import Data.List (intercalate)
-import Data.Singletons.Prelude hiding (type (*), All)
-import Debug.Trace
-import Lens.Micro.TH
-import Lens.Micro.Platform
-import Numeric.Backprop as Bp
-import Prelude as P
+import Data.Singletons.Prelude (SBool, sing)
+import GHC.Generics (Generic)
+import Lens.Micro (Lens', (^.))
+import Numeric.Backprop (Backprop, BVar, Reifies, W, (^^.))
+import GHC.TypeLits (KnownNat)
+import qualified Numeric.Backprop as Bp
+import qualified GHC.TypeLits
 
 #ifdef CUDA
 import Numeric.Dimensions
@@ -47,7 +50,22 @@ data LeNet ch ker = LeNet
   , _fc1   :: !(Linear  (Flattened ker) 120)
   , _fc2   :: !(Linear       120  84)
   , _fc3   :: !(Linear        84  10)
-  }
+  } deriving (Generic)
+
+conv1 :: Lens' (LeNet ch ker) (Conv2d ch 6 '(ker, ker))
+conv1 = field @"_conv1"
+
+conv2 :: Lens' (LeNet ch ker) (Conv2d 6 16 '(ker,ker))
+conv2 = field @"_conv2"
+
+fc1 :: forall ch ker . Lens' (LeNet ch ker) (Linear (Flattened ker) 120)
+fc1 = typed @(Linear (Flattened ker) 120)
+
+fc2 :: Lens' (LeNet ch ker) (Linear 120  84)
+fc2 = field @"_fc2"
+
+fc3 :: Lens' (LeNet ch ker) (Linear 84  10)
+fc3 = field @"_fc3"
 
 instance (KnownDim (Flattened ker), KnownDim ch, KnownDim ker) => Show (LeNet ch ker) where
   show (LeNet c1 c2 f1 f2 f3) = intercalate "\n"
@@ -63,8 +81,6 @@ instance (KnownDim (Flattened ker), KnownDim ch, KnownDim ker) => Show (LeNet ch
     , "  fc3   :: " ++ show f3
     , "}"
     ]
-
-makeLenses ''LeNet
 
 instance (KnownDim (Flattened ker), KnownDim ch, KnownDim ker) => Backprop (LeNet ch ker) where
   add a b = LeNet

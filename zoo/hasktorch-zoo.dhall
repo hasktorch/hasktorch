@@ -23,8 +23,7 @@ in common.Package //
           , packages.dimensions
           , packages.hashable
           , packages.hasktorch
-          , packages.microlens-platform
-          , packages.microlens-th
+          , packages.microlens
           , packages.singletons
           , packages.generic-lens
           , packages.ghc-typelits-natnormalise
@@ -33,20 +32,14 @@ in common.Package //
           -- data loader dependencies
           , packages.directory
           , packages.filepath
-          , packages.async
-          , packages.SafeSemaphore
           , packages.deepseq
           , packages.mwc-random
           , packages.primitive
           , packages.safe-exceptions
 
           -- training iterator dependencies
-          , packages.list-t
           , packages.mtl
-          , packages.monad-loops
-          , packages.time
           , packages.transformers
-          , packages.generic-lens
           , if config.flag "gd" then packages.gd else packages.JuicyPixels
           ]
         , exposed-modules =

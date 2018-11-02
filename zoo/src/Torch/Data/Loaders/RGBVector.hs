@@ -14,7 +14,7 @@ import Control.Monad -- (forM_, filterM)
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
 import Control.Exception.Safe
-import Control.DeepSeq
+-- import Control.DeepSeq
 import GHC.Conc (getNumProcessors)
 import GHC.TypeLits (KnownNat)
 import Numeric.Dimensions
@@ -28,8 +28,6 @@ import Control.Monad.Primitive
 import qualified Data.Vector as V
 import Data.Vector.Mutable (MVector)
 import qualified Data.Vector.Mutable as M
-import qualified Control.Concurrent.MSem as MSem (new, with)
-import qualified Control.Concurrent.Async as Async
 
 #ifdef USE_GD
 import qualified Graphics.GD as GD
