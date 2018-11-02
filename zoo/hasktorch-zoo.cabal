@@ -49,9 +49,8 @@ library
         Torch.Data.Metrics
         Torch.Data.OneHot
         Torch.Models.Vision.LeNet
+        Torch.Initialization
     hs-source-dirs: src
-    other-modules:
-        Torch.Models.Internal
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies
                         TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP

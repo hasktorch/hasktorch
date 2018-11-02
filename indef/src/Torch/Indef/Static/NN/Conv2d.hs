@@ -38,6 +38,7 @@ module Torch.Indef.Static.NN.Conv2d where
 import Control.Arrow
 import Data.Kind (Type)
 import Data.List (intercalate)
+import Data.Maybe
 import Numeric.Backprop
 import Numeric.Dimensions
 import System.IO.Unsafe
@@ -241,12 +242,74 @@ type SideCheck h k d p o =
   )
 
 
--- | Backprop convolution function
-conv2dMM
-  :: forall f h w kH kW dH dW pH pW oW oH s o
-  .  Reifies s W
+-- | Backprop convolution function with batching
+conv2dBatchIO
+  :: forall f h w kH kW dH dW pH pW oW oH s o b
+  .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
+  => All KnownDim '[f,o,b,kW*kH*f,oH*oW]
+  => Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
+  -> Padding2d '(pH,pW)             -- ^ zero padding to the input plane for width and height.
+  -> Double                      -- ^ learning rate
+  -> (Conv2d f o '(kH,kW))   -- ^ conv2d state
+  -> (Tensor '[b,f,h,w])    -- ^ input: f stands for "features" or "input plane")
+  -> IO (Tensor '[b, o,oH,oW], (Tensor '[b,o,oH,oW] -> IO (Conv2d f o '(kH,kW), Tensor '[b,f,h,w])))
+conv2dBatchIO = genericConv2dWithIO
+  (Just ( constant 0 :: Tensor '[b,f,h,w]))
+  (Just ( constant 0 :: Tensor '[b,kW*kH*f,oH*oW]))
+  (Just ( constant 0 :: Tensor '[b,kW*kH*f,oH*oW]))
+  (Just $ constant 0)
+  (Just $ constant 0)
+  (Just $ Conv2d (constant 0, constant 0))
+
+-- | Backprop convolution function with batching
+{-# NOINLINE conv2dBatch #-}
+conv2dBatch
+  :: Reifies s W
   => SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => All KnownDim '[f,o]
+  => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW,b]
+  => All KnownDim '[kW*kH*f,oH*oW]
+  => Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
+                                 --   C-default is 1 for both.
+                                 --
+  -> Padding2d '(pH,pW)             -- ^ zero padding to the input plane for width and height.
+                                 --   (kW-1)/2 is often used. C-default is 0 for both.
+                                 --
+  -> Double                      -- ^ learning rate
+  -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
+  -> BVar s (Tensor '[b,f,h,w])    -- ^ input: f stands for "features" or "input plane")
+  -> BVar s (Tensor '[b, o,oH,oW])
+conv2dBatch step pad lr = liftOp2 . op2 $ \conv inp -> unsafePerformIO $ do
+  (o, getgrad) <- conv2dBatchIO step pad lr conv inp
+  pure (o, unsafePerformIO . getgrad)
+
+
+-- | Backprop convolution function with batching
+conv2dIO
+  :: forall f h w kH kW dH dW pH pW oW oH s o
+  .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
+  => All KnownDim '[f,o,kW*kH*f,oH*oW]
+  => Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
+  -> Padding2d '(pH,pW)             -- ^ zero padding to the input plane for width and height.
+  -> Double                      -- ^ learning rate
+  -> (Conv2d f o '(kH,kW))   -- ^ conv2d state
+  -> (Tensor '[f,h,w])    -- ^ input: f stands for "features" or "input plane")
+  -> IO (Tensor '[o,oH,oW], (Tensor '[o,oH,oW] -> IO (Conv2d f o '(kH,kW), Tensor '[f,h,w])))
+conv2dIO = genericConv2dWithIO
+  (Just ( constant 0 :: Tensor '[f,h,w]))
+  (Just ( constant 0 :: Tensor '[kW*kH*f,oH*oW]))
+  (Just ( constant 0 :: Tensor '[kW*kH*f,oH*oW]))
+  (Just $ constant 0)
+  (Just $ constant 0)
+  (Just $ Conv2d (constant 0, constant 0))
+
+
+-- | Backprop convolution function
+{-# NOINLINE conv2d #-}
+conv2d
+  :: Reifies s W
+  => SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
+  => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW]
+  => All KnownDim '[kW*kH*f,oH*oW]
   => Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
                                  --   C-default is 1 for both.
                                  --
@@ -257,268 +320,97 @@ conv2dMM
   -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
   -> BVar s (Tensor '[f,h,w])    -- ^ input: f stands for "features" or "input plane")
   -> BVar s (Tensor '[o,oH,oW])
-conv2dMM = genericBPConv2dMM (new :: (Tensor '[f * kH * kW, oH * oW])) (new :: Tensor '[2, 2]) (new :: Tensor '[2,2])
+conv2d step pad lr = liftOp2 . op2 $ \conv inp -> unsafePerformIO $ do
+  (o, getgrad) <- conv2dIO step pad lr conv inp
+  pure (o, unsafePerformIO . getgrad)
 
--- | Backprop convolution function with batching
-conv2dMMBatch
-  :: forall f h w kH kW dH dW pH pW oW oH s o b
-  .  Reifies s W
-  => SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
-  => All KnownDim '[f,o,b]
-  => Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
-                                 --   C-default is 1 for both.
-                                 --
-  -> Padding2d '(pH,pW)             -- ^ zero padding to the input plane for width and height.
-                                 --   (kW-1)/2 is often used. C-default is 0 for both.
-                                 --
-  -> Double                      -- ^ learning rate
-  -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
-  -> BVar s (Tensor '[b,f,h,w])    -- ^ input: f stands for "features" or "input plane")
-  -> BVar s (Tensor '[b,o,oH,oW])
-conv2dMMBatch = genericBPConv2dMM (new :: (Tensor '[b, f * kH * kW, oH * oW])) (new :: Tensor '[2, 2]) (new :: Tensor '[2,2])
+genericConv2dWithIO
+  :: forall din dout fgin f o kH kW dH dW pH pW inBuff
+  .  All Dimensions '[din,dout,fgin, inBuff]
+  => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW]
 
--- | Backprop convolution function
-{-# NOINLINE genericBPConv2dMM #-}
-genericBPConv2dMM
-  :: Reifies s W
-  => All Dimensions '[din,dout,frame_gin]
-  => All KnownDim '[f,o,kH,kW,dH,dW,pH,pW,tmp]
-  => (Tensor frame_gin)       -- ^ make grad input buffer (size corresponds to the frames of an input buffer)
-  -> (Tensor '[tmp, tmp])     -- ^ make temporary matrix for columns (this might be reshaped and is only a buffer)
-  -> (Tensor '[tmp, tmp])     -- ^ make temporary matrix for ones (this might be reshaped and is only a buffer)
+  -- buffers
+  => Maybe (Tensor fgin)            -- ^ grad input buffer
+  -> Maybe (Tensor inBuff)            -- ^ columns buffer
+  -> Maybe (Tensor inBuff)            -- ^ ones buffer
+
+  -- cacheables
+  -> Maybe (Tensor dout)            -- output
+  -> Maybe (Tensor din)             -- gradient input
+  -> Maybe (Conv2d f o '(kH, kW))   -- gradient params
+
   -> Step2d '(dH,dW)                -- ^ step of the convolution in width and height dimensions.
-                                 --   C-default is 1 for both.
-                                 --
   -> Padding2d '(pH,pW)             -- ^ zero padding to the input plane for width and height.
-                                 --   (kW-1)/2 is often used. C-default is 0 for both.
-                                 --
   -> Double                      -- ^ learning rate
-  -> BVar s (Conv2d f o '(kH,kW))   -- ^ conv2d state
-  -> BVar s (Tensor din)    -- ^ input: f stands for "features" or "input plane")
-  -> BVar s (Tensor dout)
-genericBPConv2dMM gradInputBuffer tmp_columns tmp_ones step pad lr = liftOp2 . op2 $ \conv inp -> unsafePerformIO $ do
-  let out = new
-  print ("conv2d forward before", "input", shape inp)
-  Dynamic._spatialConvolutionMM_updateOutput
-      (asDynamic inp) (asDynamic out) (asDynamic (weights conv)) (asDynamic (bias conv))
-      (asDynamic tmp_columns) (asDynamic tmp_ones)
-      (kernel2d conv)
-      (param2d step)
-      (param2d pad)
-  print ("conv2d forward after ", "input", shape inp)
 
-  pure (out, \gout -> unsafePerformIO $ do
-    let
-      gin = empty
-      (gw, gb) = (new, new)
+  -> (Conv2d f o '(kH,kW))   -- ^ conv2d state
+  -> (Tensor din)    -- ^ input: f stands for "features" or "input plane")
+  -> IO (Tensor dout, (Tensor dout -> IO (Conv2d f o '(kH,kW), Tensor din)))
+genericConv2dWithIO
+  mginbuffer mfinput mfgradInput mout mgin mgparams
+  step pad lr conv inp = do
+  let ginbuffer = fromMaybe new mginbuffer
+  let finput = fromMaybe new mfinput
+  let fgradInput = fromMaybe new mfgradInput
+  let out = fromMaybe new mout
 
-    print ("conv2d - backprop start input", shape inp, shape (weights conv)) -- , shape gin, shape (weights conv), shape gradInputBuffer, shape tmp_ones)
+  zero_ out
+  updateOutput_ finput fgradInput step pad conv inp out
 
-    Dynamic._spatialConvolutionMM_updateGradInput
-      (asDynamic inp) (asDynamic gout)
-      (asDynamic gin) (asDynamic (weights conv))
-      (asDynamic (new :: Tensor '[4, 2, 10, 10])) (asDynamic tmp_ones)
-      (kernel2d conv)
-      (param2d step)
-      (param2d pad)
+  pure (copy out,
+    \gout -> do
+      let gin = fromMaybe new mgin
+      let gparams = fromMaybe (Conv2d (new, new)) mgparams
+      zero_ gin
+      zero_ (weights gparams)
+      zero_ (bias gparams)
 
-    print ("conv2d - after updategin", shape inp, shape gout, shape gin, shape (weights conv), shape gradInputBuffer, shape tmp_ones)
+      updateGradInput_ inp gout gin conv finput fgradInput step pad
 
-    Dynamic._spatialConvolutionMM_accGradParameters
-      (asDynamic inp) (asDynamic gout)
-      (asDynamic gw) (asDynamic gb)
-      (asDynamic gradInputBuffer) (asDynamic tmp_ones)
-      (kernel2d conv)
-      (param2d step)
-      (param2d pad)
-      lr
+      accGradParameters_ inp gout gparams finput fgradInput step pad
+      print (weights gparams)
 
-    print ("conv2d - after accparams", shape inp, shape gout, shape gin, shape (weights conv), shape gradInputBuffer, shape tmp_ones)
-
-    pure (Conv2d (gw, gb), gin))
+      pure (gparams, gin))
  where
-  -- | helper of forward functions with unspecified dimensions
-  --_conv2dMM_forward
-  --  :: All KnownDim '[kH,kW,dH,dW,pH,pW,f,o]
-  --  => Step2d dH dW
-  --  -> Padding2d pH pW
-  --  -> Conv2d f o kH kW
-  --  -> Tensor din
-  --  -> Tensor dout
-  {-# NOINLINE _conv2dMM_forward #-}
-  _conv2dMM_forward step pad conv inp =
-    asStatic <$> Dynamic.spatialConvolutionMM_updateOutput
-      (asDynamic inp) (asDynamic (weights conv)) (asDynamic (bias conv))
-      (kernel2d conv)
-      (param2d step)
-      (param2d pad)
+  updateOutput_ finput fgradInput step pad conv inp out =
+    Dynamic._spatialConvolutionMM_updateOutput
+      (asDynamic inp)                      -- ^ input
+      (asDynamic out)                      -- ^ output
+      (asDynamic (weights conv))    -- ^ 3D weight tensor (connTable:size(1) x kH x kW)
+      (asDynamic (bias conv))       -- ^ 1D bias tensor (nOutputPlane)
 
-  -- |  conv2dMM updGradParameters
-  -- _conv2dMM_updGradParameters
-  --   :: forall f o oH oW kH kW dH dW pH pW inp gout finput
-  --   .  All KnownDim '[kH,kW,dH,dW,pH,pW,f,o]
-  --   => Dimensions finput
-  --   => IO (Tensor finput)
-  --   -> Step2d '(dH,dW)     -- ^ (dH, dW) step of the convolution in width and height dimensions
-  --   -> Padding2d '(pH,pW)  -- ^ (pH, pW) zero padding to the input plane for width and height. (kW-1)/2 is often used.
-  --   -> Double           -- ^ scale / learning rate
-  --
-  --   -> Conv2d f o '(kH, kW)  -- ^ weights and bias which will be mutated in-place
-  --   -> Tensor inp            -- ^ input
-  --   -> Tensor gout           -- ^ gradOutput
-  --   -> Conv2d f o '(kH, kW)
-  -- {-# NOINLINE _conv2dMM_updGradParameters #-}
-  -- _conv2dMM_updGradParameters mkGradIBuffer step pad lr conv inp gout =
-  --   _conv2dMM_accGradParameters mkGradIBuffer step pad lr conv inp gout
-  --   pure conv
+      (asDynamic finput)                  -- ^ BUFFER: temporary columns -- also called "finput"
+      (asDynamic fgradInput)              -- ^ BUFFER: buffer of ones for bias accumulation  -- also called "fgradInput"
 
-  -- | helper of backward update to compute gradient input with unspecified dimensions
-  -- _conv2dMM_updGradInput
-  --   :: forall f o oH oW kH kW dH dW pH pW inp gout fgin
-  --   .  All KnownDim '[kH,kW,dH,dW,pH,pW,f,o]
-  --   => IO (Tensor fgin)
-  --   -> Step2d dH dW
-  --   -> Padding2d pH pW
-  --   -> Conv2d f o kH kW
-  --   -> Tensor inp
-  --   -> Tensor gout
-  --   -> Tensor inp
-  -- {-# NOINLINE _conv2dMM_updGradInput #-}
-  -- _conv2dMM_updGradInput gradInputBuffer step pad conv inp gout = do
-  --   -- gradInputBuffer <- mkGradIBuffer
-  --   Dynamic._spatialConvolutionMM_updateGradInput
-  --     (asDynamic inp) (asDynamic gout)
-  --     (asDynamic gin) (asDynamic (weights conv))
-  --     (asDynamic gradInputBuffer) (asDynamic ones)
-  --     (kernel2d conv)
-  --     (param2d step)
-  --     (param2d pad)
-  --   pure gin
+      (kernel2d conv)               -- ^ (kW, kH) kernel height and width
+      (param2d step)                       -- ^ (dW, dH) step of the convolution in width and height dimensions. C-default is 1 for both.
+      (param2d pad)                        -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used. C-default is 0 for both.
 
-  -- |  conv2dMM accGradParameters
-  -- _conv2dMM_accGradParameters
-  --   :: forall f o oH oW kH kW dH dW pH pW inp gout finput
-  --   .  All KnownDim '[kH,kW,dH,dW,pH,pW,f,o]
-  --   => Dimensions finput
-  --   => IO (Tensor finput)
-  --   -> Step2d dH dW    -- ^ (dH, dW) step of the convolution in width and height dimensions
-  --   -> Padding2d pH pW -- ^ (pH, pW) zero padding to the input plane for width and height. (kW-1)/2 is often used.
-  --   -> Double          -- ^ scale / learning rate
-  --
-  --   -> Conv2d f o kH kW      -- ^ weights and bias which will be mutated in-place
-  --   -> Tensor inp            -- ^ input
-  --   -> Tensor gout           -- ^ gradOutput
-  --   -> IO ()
-  _conv2dMM_accGradParameters mkGradIBuffer step pad lr conv inp gout = do
-    let ones = empty
-    gradInputBuffer <- mkGradIBuffer
+  updateGradInput_ inp gout gin conv colsbuffer onesbuffer step pad = do
+    Dynamic._spatialConvolutionMM_updateGradInput
+      (asDynamic inp)                      -- ^ input
+      (asDynamic gout)                     -- ^ gradOutput
+      (asDynamic gin)                      -- ^ gradInput
+      (asDynamic (weights conv))    -- ^ weight
+      (asDynamic colsbuffer)               -- ^ columns
+      (asDynamic onesbuffer)               -- ^ ones
+      (kernel2d conv)               -- ^ (kW, kH) kernel height and width
+      (param2d step)                       -- ^ (dW, dH) step of the convolution in width and height dimensions
+      (param2d pad)                        -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
+
+
+  accGradParameters_ inp gout gconv columnsbuff onesbuff step pad = do
     Dynamic._spatialConvolutionMM_accGradParameters
-      (asDynamic inp) (asDynamic gout)
-      (asDynamic (weights conv)) (asDynamic (bias conv))
-      (asDynamic gradInputBuffer) (asDynamic ones)
-      (kernel2d conv)
-      (param2d step)
-      (param2d pad)
+      (asDynamic inp)    -- ^ input
+      (asDynamic gout)    -- ^ gradOutput
+      (asDynamic (weights gconv))    -- ^ gradWeight
+      (asDynamic (bias gconv))    -- ^ gradBias
+      (asDynamic columnsbuff)    -- ^ finput/columns <<- required. This can be NULL in C if gradWeight is NULL.
+      (asDynamic onesbuff)   -- ^ ones
+      (kernel2d conv) -- ^ (kW, kH) kernel height and width
+      (param2d step)         -- ^ (dW, dH) step of the convolution in width and height dimensions
+      (param2d pad)          -- ^ (pW, pH) zero padding to the input plane for width and height. (kW-1)/2 is often used.
       lr
-
-
--- -- ========================================================================= --
---
--- -- | Applies a 2D convolution over an input image composed of several input
--- -- planes. The input tensor in forward(input) is expected to be a 3D tensor
--- -- (nInputPlane x height x width).
--- --
--- conv2dMM_forward
---   :: SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
---   => KnownDim o
---   => Step2d dH dW        -- ^ step of the convolution in width and height dimensions.
---                          --   C-default is 1 for both.
---   -> Padding2d pH pW     -- ^ zero padding to the input plane for width and height.
---                          --   (kW-1)/2 is often used. C-default is 0 for both.
---   -> Conv2d f o kH kW    -- ^ conv2d state
---   -> Tensor '[f,  h,  w] -- ^ input: f stands for "features" or "input plane"
---   -> Tensor '[o, oH, oW]
--- conv2dMM_forward = _conv2dMM_forward
---
--- -- | conv2dMM updGradInput
--- conv2dMM_updGradInput
---   :: forall f h w kH kW dH dW pH pW oW oH o
---   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
---   => KnownDim o
---   => Step2d dH dW         -- ^ (dH, dW) step of the convolution in width and height dimensions
---   -> Padding2d pH pW      -- ^ (pH, pW) zero padding to the input plane for width and height. (kW-1)/2 is often used.
---   -> Conv2d f o kH kW     -- ^ conv2d state
---   -> Tensor '[f,h,w]      -- ^ input
---   -> Tensor '[o, oH, oW]  -- ^ gradOutput
---   -> Tensor '[f,h,w]
--- conv2dMM_updGradInput =
---   -- for dim1, see THNN/generic/SpatialConvolutionMM.c#L85: https://bit.ly/2KRQhsa
---   -- for dim2, see THNN/generic/SpatialConvolutionMM.c#L233: https://bit.ly/2G8Dvlw
---   _conv2dMM_updGradInput (new :: IO (Tensor '[f * kH * kW, oH * oW]))
---
--- -- | conv2dMM updGradParameters
--- conv2dMM_updGradParameters
---   :: forall f h w kH kW dH dW pH pW oW oH o
---   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
---   => KnownDim o
---   => Step2d dH dW     -- ^ (dH, dW) step of the convolution in width and height dimensions
---   -> Padding2d pH pW  -- ^ (pH, pW) zero padding to the input plane for width and height. (kW-1)/2 is often used.
---   -> Double           -- ^ scale / learning rate
---
---   -> Conv2d f o kH kW
---   -> Tensor '[f,h,w]      -- ^ input
---   -> Tensor '[o, oH, oW]  -- ^ gradOutput
---   -> Conv2d f o kH kW
--- conv2dMM_updGradParameters =
---   _conv2dMM_updGradParameters (new :: IO (Tensor '[f * kH * kW, oH * oW]))
---
---
--- -- ========================================================================= --
---
--- -- | 'conv2dMM_forward' with a batch dimension
--- conv2dMM_forwardBatch
---   :: forall f h w kH kW dH dW pH pW oW oH b o
---   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
---   => All KnownDim '[b,o]
---   => Step2d dH dW          -- ^ step of the convolution in width and height dimensions.
---                            --   C-default is 1 for both.
---   -> Padding2d pH pW       -- ^ zero padding to the input plane for width and height.
---                            --   (kW-1)/2 is often used. C-default is 0 for both.
---   -> Conv2d f o kH kW      -- ^ conv2d state
---   -> Tensor '[b,f,h,w]     -- ^ input: f stands for "features" or "input plane"
---   -> Tensor '[b,o,oH,oW]
--- conv2dMM_forwardBatch = _conv2dMM_forward
---
--- -- | 'conv2dMM_updGradInputBatch' with batch dimension
--- conv2dMM_updGradInputBatch
---   :: forall f h w kH kW dH dW pH pW oW oH o b
---   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
---   => All KnownDim '[b,o,f*kW]
---   => Step2d dH dW         -- ^ (dH, dW) step of the convolution in width and height dimensions
---   -> Padding2d pH pW      -- ^ (pH, pW) zero padding to the input plane for width and height.
---   -> Conv2d f o kH kW     -- ^ conv2d state
---   -> Tensor '[b,f,h,w]    -- ^ input
---   -> Tensor '[b,o,oH,oW]    -- ^ gradOutput
---   -> Tensor '[b,f,h,w]
--- conv2dMM_updGradInputBatch =
---   _conv2dMM_updGradInput (new :: IO (Tensor '[b, f * kH * kW, oH * oW]))
---
--- -- | 'conv2dMM_updGradParameters' with batch dimension
--- conv2dMM_updGradParametersBatch
---   :: forall f h w kH kW dH dW pH pW oW oH o b
---   .  SpatialConvolutionC f h w kH kW dH dW pH pW oH oW
---   => All KnownDim '[b,o]
---   => Step2d dH dW     -- ^ (dH, dW) step of the convolution in width and height dimensions
---   -> Padding2d pH pW  -- ^ (pH, pW) zero padding to the input plane for width and height. (kW-1)/2 is often used.
---   -> Double           -- ^ scale / learning rate
---
---   -> Conv2d f o kH kW
---   -> Tensor '[b,f,h,w]      -- ^ input
---   -> Tensor '[b,o, oH, oW]  -- ^ gradOutput
---   -> Conv2d f o kH kW
--- conv2dMM_updGradParametersBatch =
---   _conv2dMM_updGradParameters (new :: IO (Tensor '[b, f * kH * kW, oH * oW]))
-
 
 -- ========================================================================= --
 

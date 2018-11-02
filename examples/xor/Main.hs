@@ -92,9 +92,9 @@ xorForward
   -> Tensor '[4, 2]  -- ^ input
   -> IO (Tensor '[4, 1], Tensor '[4, 1] -> IO (XORArch, Tensor '[4, 2]))
 xorForward (l1, l2) i = do
-  (fc1out,    getl1gin) <- linearBatchIO 1 l1 i
+  (fc1out,    getl1gin) <- linearBatchIO l1 i
   (reluout, getrelugin) <- reluIO fc1out
-  (fc2out,    getl2gin) <- linearBatchIO 1 l2 reluout
+  (fc2out,    getl2gin) <- linearBatchIO l2 reluout
 
   pure (fc2out, \gout -> do
     (l2, gin2) <- getl2gin gout

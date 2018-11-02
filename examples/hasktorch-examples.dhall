@@ -128,7 +128,7 @@ in common.Package //
         \(config : types.Config)
         -> lenet-experiment config //
           { main-is = "Initialization.hs"
-          , other-modules = [ "Utils", "LeNet.Forward" ]
+          , other-modules = [ "Utils" ]
           } }
 
     , { name = "lenet-cifar10-trainonebatch"
@@ -136,7 +136,7 @@ in common.Package //
         \(config : types.Config)
         -> lenet-experiment config //
           { main-is = "TrainOneBatch.hs"
-          , other-modules = [ "Utils", "LeNet.Forward" ]
+          , other-modules = [ "Utils" ]
           } }
 
     , { name = "dense3-cifar10"

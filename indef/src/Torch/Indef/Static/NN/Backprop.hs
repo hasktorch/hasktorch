@@ -21,7 +21,7 @@ module Torch.Indef.Static.NN.Backprop where
 
 import Numeric.Backprop
 import Numeric.Dimensions
-import Data.Singletons.Prelude.List (SplitAt)
+import Data.Singletons.Prelude.List (SplitAt, Product)
 import qualified Data.Singletons.Prelude.List as S -- hiding (All, Drop, Take, type (++))
 
 import Torch.Indef.Types
@@ -88,6 +88,15 @@ squeeze1dBP d = liftOp1 . op1 $ \t ->
     go :: Tensor (rs ++ ls) -> Tensor d
     go o = T.unsqueeze1d (dim::Dim n) o
 
+-- | A backprop-able 'flatten' operation with a batch dimension in IO
+flattenBatchIO
+  :: forall d bs . (All KnownDim '[Product d, bs], All Dimensions '[bs:+d, d])
+  => Product (bs:+d) ~ Product '[bs, Product d]
+  => Tensor (bs:+d)
+  -> IO (Tensor '[bs, Product d], Tensor '[bs, Product d] -> IO (Tensor (bs:+d)))
+flattenBatchIO i = do
+  o <- pure $ resizeAs i
+  pure (o, \gout -> pure $ resizeAs gout)
 
 -- clip :: Reifies s W => (HsReal, HsReal) -> BVar s (Tensor '[1]) -> BVar s (Tensor '[1])
 -- clip (mn,mx) = liftOp1 . op1 $ \i ->

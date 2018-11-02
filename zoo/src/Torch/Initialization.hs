@@ -17,9 +17,20 @@
 {-# LANGUAGE NoStarIsType #-}
 #endif
 
-module Torch.Models.Internal
+module Torch.Initialization
   ( newLinear
   , newConv2d
+  , xavierUniformWith_
+  , xavierUniform_
+  , xavierNormalWith_
+  , xavierNormal_
+
+  , Activation(..)
+  , FanMode(..)
+  , kaimingUniformWith_
+  , kaimingUniform_
+  , kaimingNormalWith_
+  , kaimingNormal_
   ) where
 
 import Data.Maybe (fromMaybe)
@@ -44,8 +55,7 @@ import qualified Torch.Double.NN.Conv2d as NN
 newLinear :: forall o i . All KnownDim '[i,o] => Generator -> IO (Linear i o)
 newLinear g = fmap Linear $ do
   let w = new
-  -- kaimingUniformWith_ (LeakyReluFn (Just $ P.sqrt 5)) FanIn g w
-  xavierUniform_ g w
+  kaimingUniformWith_ (LeakyReluFn (Just $ P.sqrt 5)) FanIn g w
 
   let
     fanin = calculateCorrectFan w FanIn
@@ -60,8 +70,7 @@ newLinear g = fmap Linear $ do
 newConv2d :: forall o i kH kW . All KnownDim '[i,o,kH,kW,kH*kW] => Generator -> IO (Conv2d i o '(kH,kW))
 newConv2d g = fmap Conv2d $ do
   let w = new
-  -- kaimingUniformWith_ (LeakyReluFn (Just $ P.sqrt 5)) FanIn g w
-  xavierUniform_ g w
+  kaimingUniformWith_ (LeakyReluFn (Just $ P.sqrt 5)) FanIn g w
 
   let
     fanin = calculateCorrectFan w FanIn

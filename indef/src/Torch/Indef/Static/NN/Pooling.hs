@@ -32,6 +32,7 @@ import Data.Singletons.TypeLits
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Math (zero_)
 import Torch.Indef.Static.NN.Backprop ()
 import Torch.Indef.Static.NN.Conv2d (Conv2d(..), Param2d(..), Kernel2d(..), Dilation2d(..), Padding2d(..), Step2d(..))
 import Data.Singletons.Prelude.Bool
@@ -282,6 +283,110 @@ maxPooling2dBatch
   -> BVar s (Tensor '[b, inPlane, iH, iW])
   -> BVar s (Tensor '[b, inPlane, oH, oW])
 maxPooling2dBatch = _maxPooling2d
+
+-- | internal function of 'maxPooling2d' and 'maxPooling2dBatch'. Should not be used.
+maxPooling2dWithIO
+  :: forall d d' kH kW dH dW pH pW ceilMode
+  .  All KnownDim '[kH,kW,pH,pW,dH,dW]
+  => All Dimensions '[d',d]
+
+  -- optional buffers
+  => Maybe (IndexTensor d')
+  -> Maybe (Tensor d')
+  -> Maybe (Tensor d)
+
+  -- Parameters
+  -> Kernel2d '(kH, kW)         -- ^ kernel size
+  -> Step2d '(dH, dW)           -- ^ step size. Note: default in C is the kernel size.
+  -> Padding2d '(pH, pW)        -- ^ padding size
+  -> SBool ceilMode         -- ^ ceil mode
+
+  -- function arguments
+  -> Tensor d
+  -> IO (Tensor d', Tensor d' -> IO (Tensor d))
+maxPooling2dWithIO mix mout mgin ker step pad ceil inp = do
+  -- let ix = fromMaybe new mix
+  -- Ix.zero_ ix
+  let ix = Ix.zeroIxNd :: IndexTensor d'
+  let out = fromMaybe new mout
+  zero_ out
+
+  updateOutput_ inp ker step pad ceil (ix, out)
+  pure (out, \gout -> do
+    let gin = fromMaybe new mgin
+    zero_ gin
+    updateGradInput_ inp gout ix ker step pad ceil gin
+    pure gin)
+
+ where
+  updateOutput_
+    :: Tensor d              -- ^ input
+    -> Kernel2d '(kH, kW)        -- ^ kernel size
+    -> Step2d '(dH, dW)          -- ^ step size
+    -> Padding2d '(pH, pW)       -- ^ padding size
+    -> SBool ceilMode                         -- ^ ceil mode
+    -> (IndexTensor d', Tensor d')           -- ^ output
+    -> IO ()
+  updateOutput_ inp ker step pad sceil (ix, out) = do
+    Dynamic._spatialMaxPooling_updateOutput (asDynamic inp) (asDynamic out) (longAsDynamic ix)
+      (param2d ker) (param2d step) (param2d pad) (fromSing sceil)
+
+  updateGradInput_
+    :: Tensor d              -- ^ input
+    -> Tensor d'             -- ^ gradOutput
+    -> IndexTensor d'        -- ^ indices
+    -> Kernel2d '(kH, kW)        -- ^ kernel size
+    -> Step2d '(dH, dW)          -- ^ step size
+    -> Padding2d '(pH, pW)       -- ^ padding size
+    -> SBool ceilMode        -- ^ ceil mode
+    -> Tensor d              -- ^ gradInput
+    -> IO ()
+  updateGradInput_ inp gout ix ker step pad sceil gin =
+    Dynamic._spatialMaxPooling_updateGradInput
+      (asDynamic inp) (asDynamic gout) (asDynamic gin) (longAsDynamic ix)
+      (param2d ker) (param2d step) (param2d pad) (fromSing sceil)
+
+-- | backprop-aware @maxPooling2d@ function.
+maxPooling2dIO
+  :: forall iH iW kH kW dH dW pH pW oW oH ceilMode inPlane
+  .  (SpatialDilationC iH iW kH kW dH dW pH pW oW oH 1 1 ceilMode)
+  => KnownDim inPlane
+
+  -- Parameters
+  => Kernel2d '(kH, kW)       -- ^ kernel size
+  -> Step2d '(dH, dW)       -- ^ step size
+  -> Padding2d '(pH, pW)       -- ^ padding size
+  -> SBool ceilMode        -- ^ ceil mode
+
+  -> (Tensor '[inPlane, iH, iW])
+  -> IO (Tensor '[inPlane, oH, oW], Tensor '[inPlane, oH, oW] -> IO (Tensor '[inPlane, iH, iW]))
+maxPooling2dIO =
+  maxPooling2dWithIO
+    (Just (Ix.newIx :: IndexTensor '[inPlane, oH, oW]))
+    (Just (new :: Tensor '[inPlane, oH, oW]))
+    (Just (new :: Tensor '[inPlane, iH, iW]))
+
+-- | backprop-aware @maxPooling2d@ function with a batch dimension.
+maxPooling2dBatchIO
+  :: forall iH iW kH kW dH dW pH pW oW oH ceilMode b inPlane
+  .  (SpatialDilationC iH iW kH kW dH dW pH pW oW oH 1 1 ceilMode)
+  => KnownDim inPlane
+  => KnownDim b
+
+  -- Parameters
+  => Kernel2d '(kH, kW)        -- ^ kernel size
+  -> Step2d '(dH, dW)          -- ^ step size
+  -> Padding2d '(pH, pW)       -- ^ padding size
+  -> SBool ceilMode        -- ^ ceil mode
+
+  -> (Tensor '[b, inPlane, iH, iW])
+  -> IO (Tensor '[b, inPlane, oH, oW], Tensor '[b, inPlane, oH, oW] -> IO (Tensor '[b, inPlane, iH, iW]))
+maxPooling2dBatchIO =
+  maxPooling2dWithIO
+    (Just (Ix.newIx :: IndexTensor '[b, inPlane, oH, oW]))
+    (Just (new :: Tensor '[b, inPlane, oH, oW]))
+    (Just (new :: Tensor '[b, inPlane, iH, iW]))
+
 
 
 -- |  spatialAdaptiveMaxPooling forward pass (updates the output tensor)

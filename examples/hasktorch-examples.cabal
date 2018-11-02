@@ -41,7 +41,7 @@ executable gradient-descent
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
@@ -57,7 +57,7 @@ executable multivariate-normal
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
@@ -73,7 +73,7 @@ executable lasso
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
@@ -89,7 +89,7 @@ executable ad
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
@@ -105,7 +105,7 @@ executable bayesian-regression
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
@@ -127,7 +127,7 @@ executable download-mnist
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
@@ -149,7 +149,7 @@ executable ff-typed
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
@@ -165,7 +165,7 @@ executable ff-untyped
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
@@ -181,7 +181,7 @@ executable static-tensor-usage
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
@@ -207,13 +207,13 @@ executable lenet-cifar10
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
-        hasktorch-zoo -any,
+        hasktorch-zoo (==0.0.1 || >0.0.1) && <0.0.2,
         unordered-containers ==0.2.9 || >0.2.9,
         dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
@@ -230,8 +230,8 @@ executable lenet-cifar10
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-ffi-thc -any,
-            hasktorch-types-thc -any
+            hasktorch-ffi-thc (==0.0.1 || >0.0.1) && <0.0.2,
+            hasktorch-types-thc (==0.0.1 || >0.0.1) && <0.0.2
     else
     
     if flag(debug)
@@ -247,17 +247,16 @@ executable lenet-cifar10-initialization
     hs-source-dirs: lenet-cifar10
     other-modules:
         Utils
-        LeNet.Forward
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
-        hasktorch-zoo -any,
+        hasktorch-zoo (==0.0.1 || >0.0.1) && <0.0.2,
         unordered-containers ==0.2.9 || >0.2.9,
         dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
@@ -274,8 +273,8 @@ executable lenet-cifar10-initialization
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-ffi-thc -any,
-            hasktorch-types-thc -any
+            hasktorch-ffi-thc (==0.0.1 || >0.0.1) && <0.0.2,
+            hasktorch-types-thc (==0.0.1 || >0.0.1) && <0.0.2
     else
     
     if flag(debug)
@@ -291,17 +290,16 @@ executable lenet-cifar10-trainonebatch
     hs-source-dirs: lenet-cifar10
     other-modules:
         Utils
-        LeNet.Forward
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
-        hasktorch-zoo -any,
+        hasktorch-zoo (==0.0.1 || >0.0.1) && <0.0.2,
         unordered-containers ==0.2.9 || >0.2.9,
         dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
@@ -318,8 +316,8 @@ executable lenet-cifar10-trainonebatch
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-ffi-thc -any,
-            hasktorch-types-thc -any
+            hasktorch-ffi-thc (==0.0.1 || >0.0.1) && <0.0.2,
+            hasktorch-types-thc (==0.0.1 || >0.0.1) && <0.0.2
     else
     
     if flag(debug)
@@ -339,13 +337,13 @@ executable dense3-cifar10
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
-        hasktorch-zoo -any,
+        hasktorch-zoo (==0.0.1 || >0.0.1) && <0.0.2,
         unordered-containers ==0.2.9 || >0.2.9,
         dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
@@ -362,8 +360,8 @@ executable dense3-cifar10
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-ffi-thc -any,
-            hasktorch-types-thc -any
+            hasktorch-ffi-thc (==0.0.1 || >0.0.1) && <0.0.2,
+            hasktorch-types-thc (==0.0.1 || >0.0.1) && <0.0.2
     else
     
     if flag(debug)
@@ -383,13 +381,13 @@ executable xor
     default-language: Haskell2010
     build-depends:
         base (==4.7 || >4.7) && <5,
-        hasktorch -any,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
         microlens ==0.4.8 || >0.4.8,
         dimensions ==1.0 || >1.0,
         safe-exceptions ==0.1.0 || >0.1.0,
         singletons ==2.2 || >2.2,
         backprop ==0.2.5 || >0.2.5,
-        hasktorch-zoo -any,
+        hasktorch-zoo (==0.0.1 || >0.0.1) && <0.0.2,
         unordered-containers ==0.2.9 || >0.2.9,
         dlist ==0.8.0 || >0.8.0,
         ghc-typelits-natnormalise -any,
@@ -406,8 +404,8 @@ executable xor
         cpp-options: -DCUDA
         build-depends:
             cuda -any,
-            hasktorch-ffi-thc -any,
-            hasktorch-types-thc -any
+            hasktorch-ffi-thc (==0.0.1 || >0.0.1) && <0.0.2,
+            hasktorch-types-thc (==0.0.1 || >0.0.1) && <0.0.2
     else
     
     if flag(debug)

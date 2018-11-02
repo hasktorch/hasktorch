@@ -59,9 +59,7 @@ in common.Package //
           , "Torch.Data.Metrics"
           , "Torch.Data.OneHot"
           , "Torch.Models.Vision.LeNet"
-          ]
-        , other-modules =
-          [ "Torch.Models.Internal"
+          , "Torch.Initialization"
           ]
         , cpp-options
           = (if config.flag "cuda" then [ "-DCUDA" ] else [] : List Text)

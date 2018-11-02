@@ -37,7 +37,7 @@ import qualified Torch.Double.NN.Conv2d as Conv2d
 import qualified Torch.Double.NN.Linear as Linear
 #endif
 
-import Torch.Models.Internal
+import Torch.Initialization
 
 type Flattened ker = (16*ker*ker)
 data LeNet ch ker = LeNet
@@ -159,13 +159,13 @@ lenetLayer
 
   -- leave input, output and square kernel size variable so that we
   -- can reuse the layer...
-  => All KnownDim '[inp,out,ker]
+  => All KnownDim '[inp,out,ker,(ker*ker)*inp]
 
   -- FIXME: derive these from the signature (maybe assign them as args)
   => pad ~ 0   --  default padding size
   => step ~ 1  --  default step size for Conv2d
 
-  -- ...this means we need the constraints for conv2dMM and maxPooling2d
+  -- ...this means we need the constraints for conv2d and maxPooling2d
   -- Note that oh and ow are then used as input to the maxPooling2d constraint.
   => SpatialConvolutionC inp h  w ker ker step step pad pad  oh  ow
   => SpatialDilationC       oh ow   2   2    2    2 pad pad mow moh 1 1 'True
@@ -176,7 +176,7 @@ lenetLayer
   -> BVar s (Tensor '[inp,   h,   w])  -- ^ input
   -> BVar s (Tensor '[out, moh, mow])  -- ^ output
 lenetLayer lr conv inp
-  = Conv2d.conv2dMM
+  = Conv2d.conv2d
       (Step2d    :: Step2d '(1,1))
       (Padding2d :: Padding2d '(0,0))
       lr conv inp
@@ -227,13 +227,13 @@ lenetLayerBatch
 
   -- leave input, output and square kernel size variable so that we
   -- can reuse the layer...
-  => All KnownDim '[batch,inp,out,ker]
+  => All KnownDim '[batch,inp,out,ker,(ker*ker)*inp]
 
   -- FIXME: derive these from the signature (maybe assign them as args)
   => pad ~ 0   --  default padding size
   => step ~ 1  --  default step size for Conv2d
 
-  -- ...this means we need the constraints for conv2dMM and maxPooling2d
+  -- ...this means we need the constraints for conv2d and maxPooling2d
   -- Note that oh and ow are then used as input to the maxPooling2d constraint.
   => SpatialConvolutionC inp h  w ker ker step step pad pad  oh  ow
   => SpatialDilationC       oh ow   2   2    2    2 pad pad mow moh 1 1 'True
@@ -244,7 +244,7 @@ lenetLayerBatch
   -> BVar s (Tensor '[batch, inp,   h,   w])  -- ^ input
   -> BVar s (Tensor '[batch, out, moh, mow])  -- ^ output
 lenetLayerBatch lr conv inp
-  = Conv2d.conv2dMMBatch
+  = Conv2d.conv2dBatch
       (Step2d    :: Step2d '(1,1))
       (Padding2d :: Padding2d '(0,0))
       lr conv inp
@@ -315,7 +315,7 @@ lenetLayerBatch lr conv inp
 --   => pad ~ 0   --  default padding size
 --   => step ~ 1  --  default step size for Conv2d
 --
---   -- ...this means we need the constraints for conv2dMM and maxPooling2d
+--   -- ...this means we need the constraints for conv2d and maxPooling2d
 --   -- Note that oh and ow are then used as input to the maxPooling2d constraint.
 --   => SpatialConvolutionC inp h  w ker ker step step pad pad  oh  ow
 --   => SpatialDilationC       oh ow   2   2    2    2 pad pad mow moh 1 1 'True
@@ -327,7 +327,7 @@ lenetLayerBatch lr conv inp
 --   -> Tensor '[batch, inp,   h,   w]    -- ^ input
 --   -> IO ()                             -- ^ output
 -- lenetLayerBatch_ lr conv inp = do
--- Conv2d.conv2dMMBatch
+-- Conv2d.conv2dBatch
 --       (Step2d    :: Step2d '(1,1))
 --       (Padding2d :: Padding2d '(0,0))
 --       lr conv inp

@@ -10,7 +10,7 @@ module Main where
 
 import Prelude
 import qualified Prelude as P
-import LeNet (maxPooling2dBatch', conv2dMMBatch', LeNet, myupdate)
+import LeNet (maxPooling2dBatchIO, conv2dBatchIO, LeNet, myupdate)
 import Utils (getloss)
 import DataLoading (mkVBatches, dataloader')
 import Dense3 (softMaxBatch, linearBatchIO, reluIO, y2cat)
@@ -213,7 +213,7 @@ netforward
   ->    (Tensor '[4, 3, 32, 32])  -- ^ input
   -> IO (Tensor '[4, 10], Tensor '[4, 10] -> IO (LeNet, Tensor '[4, 3, 32, 32]))
 netforward arch i = do
-  (convout1, unconvout1) <- conv2dMMBatch'
+  (convout1, unconvout1) <- conv2dBatchIO
       ((Step2d    :: Step2d '(1,1)))
       ((Padding2d :: Padding2d '(0,0)))
       1
@@ -221,14 +221,14 @@ netforward arch i = do
       i
   (reluout1, unreluCONV1) <- reluIO convout1
   (mpout1 :: Tensor '[4, 6, 14, 14], getmpgrad1) <-
-    maxPooling2dBatch'
+    maxPooling2dBatchIO
         ((Kernel2d  :: Kernel2d '(2,2)))
         ((Step2d    :: Step2d '(2,2)))
         ((Padding2d :: Padding2d '(0,0)))
         ((sing      :: SBool 'True))
         (reluout1 :: Tensor '[4, 6, 28, 28])
 
-  (convout2, unconvout2) <- conv2dMMBatch'
+  (convout2, unconvout2) <- conv2dBatchIO
       ((Step2d    :: Step2d '(1,1)))
       ((Padding2d :: Padding2d '(0,0)))
       1
@@ -236,7 +236,7 @@ netforward arch i = do
       mpout1
   (reluout2, unreluCONV2) <- reluIO convout2
   (mpout2, getmpgrad2) <-
-    maxPooling2dBatch'
+    maxPooling2dBatchIO
         ((Kernel2d  :: Kernel2d '(2,2)))
         ((Step2d    :: Step2d '(2,2)))
         ((Padding2d :: Padding2d '(0,0)))
@@ -246,13 +246,13 @@ netforward arch i = do
 
   (flatout, unflatten) <- flattenBatchIO (mpout2 :: Tensor '[4, 16, 5, 5])
 
-  (fc1out, fc1getgrad) <- linearBatchIO 1 (arch ^. Vision.fc1) flatout
+  (fc1out, fc1getgrad) <- linearBatchIO (arch ^. Vision.fc1) flatout
   ( r1out, unreluFC1)    <- reluIO fc1out
 
-  (fc2out, fc2getgrad) <- linearBatchIO 1 (arch ^. Vision.fc2) r1out
+  (fc2out, fc2getgrad) <- linearBatchIO (arch ^. Vision.fc2) r1out
   ( r2out, unreluFC2)    <- reluIO fc2out
 
-  (fc3out, fc3getgrad) <- linearBatchIO 1 (arch ^. Vision.fc3) r2out
+  (fc3out, fc3getgrad) <- linearBatchIO (arch ^. Vision.fc3) r2out
   (fin, smgrads)       <- softMaxBatch fc3out
 
   pure (fin, \gout -> do
@@ -266,15 +266,5 @@ netforward arch i = do
     (conv2g, conv2gin) <- unconvout2 =<< unreluCONV2 =<< getmpgrad2 unflattenedGIN
     (conv1g, conv1gin) <- unconvout1 =<< unreluCONV1 =<< getmpgrad1 conv2gin
     pure (Vision.LeNet conv1g conv2g fc1g fc2g fc3g, conv1gin))
-
--- | A backpropable 'flatten' operation with a batch dimension
-flattenBatchIO
-  :: forall d bs . (All KnownDim '[Product d, bs], All Dimensions '[bs:+d, d])
-  => Product (bs:+d) ~ Product '[bs, Product d]
-  => Tensor (bs:+d)
-  -> IO (Tensor '[bs, Product d], Tensor '[bs, Product d] -> IO (Tensor (bs:+d)))
-flattenBatchIO i = do
-  o <- pure $ resizeAs i
-  pure (o, \gout -> pure $ resizeAs gout)
 
 

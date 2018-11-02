@@ -10,7 +10,6 @@ module Main where
 import Prelude
 import Utils
 import LeNet (LeNet)
-import LeNet.Forward (infer)
 
 import Control.Arrow
 import Control.Monad
@@ -42,12 +41,45 @@ import qualified Torch.Long.Dynamic as LDyn
 import qualified Torch.Double.NN.Conv2d as Conv2d
 #endif
 
-import Torch.Models.Vision.LeNet (newLeNet)
+import Torch.Models.Vision.LeNet (newLeNet, lenet)
 import Torch.Data.Loaders.Cifar10
 import Torch.Data.Loaders.Internal
 import Torch.Data.Loaders.RGBVector (Normalize(..))
 import qualified Torch.Models.Vision.LeNet as LeNet
 
+
+
+infer
+  :: LeNet
+  -> Tensor '[3, 32, 32]
+  -> Category
+infer net
+
+  -- cast from Integer to 'Torch.Data.Loaders.Cifar10.Category'
+  = toEnum . fromIntegral
+
+  -- Unbox the LongTensor '[1] to get 'Integer'
+  . getindex
+
+  -- argmax the output Tensor '[10] distriubtion. Returns LongTensor '[1]
+  . maxIndex1d
+
+#ifndef DEBUG
+  -- take an input tensor and run 'lenet' with the model (undefined is the
+  -- learning rate, which we can ignore)
+  . evalBP2 (lenet undefined) net
+
+#else
+  . foo
+
+ where
+  foo x
+    -- take an input tensor and run 'lenet' with the model (undefined is the
+    -- learning rate, which we can ignore)
+    = unsafePerformIO $ do
+        let x' = evalBP2 (lenet undefined) net x
+        pure x'
+#endif
 
 main :: IO ()
 main = do

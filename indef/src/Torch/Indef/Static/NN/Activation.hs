@@ -88,6 +88,10 @@ _leakyReLU_updateGradInput t0 t1 t2 d0 b0 =
 relu :: Reifies s W => Dimensions d => BVar s (Tensor d) -> BVar s (Tensor d)
 relu = threshold 0 0
 
+-- | ReLU activation function
+reluIO :: Dimensions d => Tensor d -> IO (Tensor d, Tensor d -> IO (Tensor d))
+reluIO = thresholdIO 0 0
+
 {-# NOINLINE threshold #-}
 -- | run a threshold function againts two BVar variables
 threshold
@@ -100,51 +104,13 @@ threshold
 threshold thr value = liftOp1 . op1 $ \inp -> unsafePerformIO $ do
   (out, getgrad) <- thresholdIO thr value inp
   pure (out, unsafePerformIO . getgrad)
-{-
-  where
-    {-# NOINLINE _threshold_updateOutput #-}
-    _threshold_updateOutput
-      :: Double              -- ^ threshold
-      -> Double              -- ^ replacement value
-      -> Bool                -- ^ inplace
-      -> Tensor d            -- ^ input
-      -> IO (Tensor d)       -- ^ output
-    _threshold_updateOutput thr val inplace input = do
-      let out = new
-      -- FIXME: this looks like a bug in ATen. Need to check if this still exists after updating.
-      let input' = if inplace then input else copy input
 
-      Dynamic._threshold_updateOutput
-        (asDynamic input') (asDynamic out)
-        thr val
-        inplace
-
-      pure out
-
-    {-# NOINLINE _threshold_updateGradInput #-}
-    _threshold_updateGradInput
-      :: Dimensions d => Double        -- ^ threshold
-      -> Double        -- ^ replacement value
-      -> Bool          -- ^ inplace
-      -> Tensor d      -- ^ input
-      -> Tensor d      -- ^ gradient output
-      -> IO (Tensor d) -- ^ gradient input
-    _threshold_updateGradInput thr val inplace input gout = do
-      let gin = new
-      let input' = if inplace then input else copy input
-      Dynamic._threshold_updateGradInput
-        (asDynamic input') (asDynamic gout) (asDynamic gin)
-        thr val
-        inplace
-      pure gin
-      -}
-
--- | run a threshold function againts two BVar variables
+-- | run a threshold function in IO
 thresholdIO
   :: forall d
   .  Dimensions d
-  => Double               -- ^ threshold
-  -> Double               -- ^ replacement value
+  => Double      -- ^ threshold
+  -> Double      -- ^ replacement value
   -> Tensor d    -- ^ input
   -> IO (Tensor d, Tensor d -> IO (Tensor d))    -- ^ output
 thresholdIO thr value inp = do

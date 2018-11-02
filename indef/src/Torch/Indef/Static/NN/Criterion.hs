@@ -28,6 +28,7 @@ import System.IO.Unsafe
 import Control.Concurrent
 import Debug.Trace
 import Data.Singletons.Prelude hiding (All, type (*), type (-), type (+))
+import Data.Maybe
 import Torch.Indef.Static.Tensor
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Types
@@ -387,6 +388,71 @@ classNLLCriterion
   -> BVar s (Tensor '[n, c])     -- THTensor *input,
   -> BVar s (Tensor '[1])        -- THTensor *output,
 classNLLCriterion = classNLLCriterion' (-100) True True
+
+classNLLIO
+  :: forall sz ps
+  .  (KnownDim sz, KnownDim ps)
+  => IndexTensor '[sz]
+  -> (Tensor '[sz, ps]
+  -> IO (Tensor '[1], Tensor '[1] -> IO (Tensor '[sz, ps])))
+classNLLIO = classNLLWithIO (Just new) (Just new) (Just new)
+
+classNLLWithIO
+  :: forall sz ps
+  .  (KnownDim sz, KnownDim ps)
+  => Maybe (Tensor '[1])
+  -> Maybe (Tensor '[1])
+  -> Maybe (Tensor '[sz, ps])
+  -> IndexTensor '[sz]
+  -> (Tensor '[sz, ps]                                       --  \___ these constitue a closed cartesian category and
+  -> IO (Tensor '[1], Tensor '[1] -> IO (Tensor '[sz, ps]))) --  /    can be abstracted away into an autodiff lib.
+classNLLWithIO cnlloutref cnllwRef mgin target inp = do
+  let out = fromMaybe new cnlloutref
+  let total_weight = fromMaybe new cnllwRef
+  -- let total_weight = constant 1  -- https://github.com/torch/nn/commit/3585e827eb65d071272a4aa4fab567b0b1eeee54#diff-1aa6a505cf16ad0e59498ada8432afb5
+  onesLike_ total_weight total_weight
+
+  updateOutput_ inp target szAvg Nothing ix reduce (out, total_weight)
+
+  pure (out, \gout -> do
+    let gin = fromMaybe new mgin
+    zero_ gin
+    updateGradInput_ inp target gout szAvg Nothing total_weight ix reduce gin
+    pure gin)
+  where
+    ix = (-100)
+    reduce = True
+    szAvg = True
+
+    updateOutput_
+      :: Tensor '[sz, ps]            -- THTensor *input,
+      -> IndexTensor '[sz]           -- THIndexTensor *target,
+      -> Bool                        -- bool sizeAverage,
+      -> Maybe (Tensor '[sz, ps])    -- THTensor *weights,
+      -> Integer                     -- int64_t ignore_index,
+      -> Bool                        -- bool reduce
+      -> (Tensor '[1], Tensor '[1])  -- THTensor *input, total_weight
+      -> IO ()
+    updateOutput_ inp tar szAvg mws ix reduce (out, total_weight) = do
+      Dynamic._ClassNLLCriterion_updateOutput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic out)
+        szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
+
+    updateGradInput_
+      :: Tensor '[sz, ps]          -- THTensor *input,
+      -> IndexTensor '[sz]         -- THIndexTensor *target,
+      -> Tensor '[1]               -- THTensor *gradOutput,
+      -> Bool                      -- bool sizeAverage,
+      -> Maybe (Tensor '[sz, ps])  -- THTensor *weights,
+      -> Tensor '[1]               -- THTensor *total_weight,
+      -> Integer                   -- int64_t ignore_index,
+      -> Bool                      -- bool reduce
+
+      -> Tensor '[sz, ps]          -- gradient to update inplace
+      -> IO ()
+    updateGradInput_ inp tar gout szAvg mws total_weight ix reduce gin =
+      Dynamic._ClassNLLCriterion_updateGradInput (asDynamic inp) (Ix.longAsDynamic tar) (asDynamic gout) (asDynamic gin)
+        szAvg (asDynamic <$> mws) (asDynamic total_weight) ix reduce
+
 
 {-
 c_SpatialClassNLLCriterion_updateOutput :: Ptr CNNState -> Ptr CTensor -> Ptr CIndexTensor -> Ptr CTensor -> CBool -> Ptr CTensor -> Ptr CTensor -> CLLong -> CBool -> IO ()

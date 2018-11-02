@@ -209,23 +209,36 @@ linearBatch = liftOp2 $ op2 $ \l i -> unsafePerformIO $ do
   (o, getgrad) <- linearBatchIO l i
   pure (o, unsafePerformIO . getgrad)
 
--- | 'linear' with a batch dimension in IO
 linearBatchIO
   :: forall i o b
-  .  All KnownDim '[b,i,o]
-  => Linear i o
-  -> Tensor '[b, i]
-  -> IO (Tensor '[b, o], Tensor '[b, o] -> IO (Linear i o, Tensor '[b, i]))
-linearBatchIO l i = do
-  let o = updateOutput i l
-  pure (o, \gout -> pure (accGradParameters i gout l, updateGradInput i gout (weights l)))
-  where
-    lr = 1
+   . All KnownDim '[b,i,o]
+  => (Linear i o)
+  -> (Tensor '[b, i])
+  -> IO (Tensor '[b, o], Tensor '[b, o] -> IO ((Linear i o),  (Tensor '[b, i])))     --- by "simple autodifferentiation", I am seeing that this is a fork
+linearBatchIO = linearBatchWithIO (Just new) (Just new) (Just $ Linear (new, new))
 
+-- | 'linear' with a batch dimension
+linearBatchWithIO
+  :: forall i o b
+   . All KnownDim '[b,i,o]
+  => Maybe (Tensor '[b, o])       -- output buffer. currently mutable.
+  -> Maybe (Tensor '[b, i])       -- gradin buffer. currently mutable.
+  -> Maybe (Linear i o)           -- gradparam buffer. currently mutable.
+  -> (Linear i o)
+  -> (Tensor '[b, i])
+  -> IO (Tensor '[b, o], Tensor '[b, o] -> IO ((Linear i o),  (Tensor '[b, i])))     --- by "simple autodifferentiation", I am seeing that this is a fork
+linearBatchWithIO moutbuffer mgradinbuf mgradparambuf l i = do
+  let o = updateOutput i l
+  pure (o, \gout -> do
+    let g@(Linear (gw, gb)) = accGradParameters i gout l
+    let gin = updateGradInput i gout (weights l)
+    pure (g, gin))
+   where
+    lr = 1
     updateOutput :: Tensor '[b, i] -> Linear i o -> Tensor '[b, o]
     updateOutput i (Linear (w,b)) =
       let
-        o = addmm 0 (constant 0) 1 i w
+        o = addmm 1 (constant 0) 1 i w
       in
         addr 1 o 1 (constant 1) b
 
@@ -233,7 +246,7 @@ linearBatchIO l i = do
     updateGradInput i gout w = addmm 0 (constant 0) 1 gout (transpose2d w)
 
     accGradParameters :: Tensor '[b,i] -> Tensor '[b,o] -> Linear i o -> Linear i o
-    accGradParameters i gout (Linear (w, b)) = Linear (gw, gb) -- addr 1 (constant 0) lr i gout, cadd (constant 0) lr gout)
+    accGradParameters i gout (Linear (w, b)) = Linear (gw, gb)
       where
         gw :: Tensor '[i, o]
         gw = addmm 1 (constant 0) lr (transpose2d i) gout
@@ -243,6 +256,7 @@ linearBatchIO l i = do
 
         tgout :: Tensor '[o,b]
         tgout = transpose2d gout
+
 
 
 {-
