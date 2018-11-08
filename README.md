@@ -35,7 +35,7 @@ Following this, you will need cabal-install > 2.0 for `new-build` and backpack s
 [cabal-latest]:https://github.com/haskell/cabal/tree/30d0c10349b6cc69adebfe06c230c784574ebf7a
 [stack-backpack]:https://github.com/commercialhaskell/stack/issues/2540
 
-Ensure that libATen.so is on your library path. This can be done by sourcing the `setenv` file, configuring cabal locally with a cabal.project.local (examples in `hasktorch/cabal`), or configuring cabal globally (in `~/.cabal/config`). Now you can build hasktorch:
+Now you can build hasktorch:
 
 ```
 cabal new-build all
