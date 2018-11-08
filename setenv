@@ -3,7 +3,7 @@
 # execute this command if needed when building on OSX if there are linker errors.
 # dylib files in extra-lib-dirs  don't get forwarded to ghc
 # in some versions of OSX. See https://github.com/commercialhaskell/stack/issues/1826
-HASKTORCH_LIB_PATH="$(pwd)/vendor/build/"
+HASKTORCH_LIB_PATH="$(pwd)/ffi/deps/aten/build/lib/"
 
 function add_vendor_lib_path {
     case "$(uname)" in
