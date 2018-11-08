@@ -2,7 +2,7 @@ UNAME:=$(shell uname)
 PWD:=$(shell pwd)
 
 clean:
-	rm -rf dist{,-newbuild)
+	rm -rf dist{,-newbuild}
 
 purge:
 	rm -rf vendor

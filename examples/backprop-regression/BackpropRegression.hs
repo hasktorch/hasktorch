@@ -51,7 +51,7 @@ newLinear :: forall o i . All KnownDim '[i,o] => IO (Linear i o)
 newLinear = fmap Linear . newLayerWithBias $ dimVal (dim :: Dim i)
 
 regression :: forall s . Reifies s W =>
-    BVar s (Regression)  -- model architecture
+    BVar s Regression  -- model architecture
     -> BVar s (Tensor '[BatchSize, 2]) -- input
     -> BVar s (Tensor '[BatchSize, 1]) -- output
 regression modelArch input =
