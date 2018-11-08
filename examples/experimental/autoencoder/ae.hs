@@ -28,10 +28,10 @@ type DataDim = 256
 
 data Autoencoder = Autoencoder {
     enc1 :: Linear DataDim 64
-    enc2 :: Linear 256 64
-    enc3 :: Linear 64 32
-    dec1 :: Linear 32 64
-    dec2 :: Linear 64 DataDim
+    , enc2 :: Linear 256 64
+    , enc3 :: Linear 64 32
+    , dec1 :: Linear 32 64
+    , dec2 :: Linear 64 DataDim
 } deriving (Generic, Show)
 
 instance Backprop Autoencoder where

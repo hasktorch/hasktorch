@@ -1,12 +1,31 @@
 UNAME:=$(shell uname)
 PWD:=$(shell pwd)
+GHC_VERSION:=$(shell ghc --version | cut -d' ' -f 8)
 
 clean:
 	rm -rf dist{,-newbuild}
 
+init:
+	# (cd ffi/deps && ./build-aten.sh)
+	$(info GHC version detected ${GHC_VERSION})
+ifeq ($(GHC_VERSION),8.4.2)
+	ln -fs cabal/project.freeze-8.4.2 cabal.project.freeze
+else ifeq ($(GHC_VERSION),8.4.3)
+	ln -fs cabal/project.freeze-8.4.3 cabal.project.freeze
+else ifeq ($(GHC_VERSION),8.4.4)
+	ln -fs cabal/project.freeze-8.4.4 cabal.project.freeze
+else ifeq ($(GHC_VERSION),8.6.1)
+	ln -fs cabal/project.freeze-8.6.1 cabal.project.freeze
+else
+	$(error GHC version must be 8.4.2, 8.4.3, 8.4.4, or 8.6.1)
+endif
+	$(info defaulting to CPU configuration)
+	./make_cabal_local.sh
+	# cabal new-update
+	cabal new-build all
+
 purge:
-	rm -rf vendor
-	git checkout -- vendor
+	rm -rf dist-newstyle
 	git submodule update --init --recursive
 
 build:
@@ -27,7 +46,6 @@ codegen: codegen-th codegen-thc
 dev:
 	sos -e 'dist' -p '.*hsig$$' -p '.*hs$$' -p '.*cabal$$' -p 'cabal.project$$' -c 'cabal new-build all'
 
-# lasso is broken
 run-examples:
 	for ex in ad \
 	  bayesian-regression \
