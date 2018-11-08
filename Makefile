@@ -6,7 +6,7 @@ clean:
 	rm -rf dist{,-newbuild}
 
 init:
-	# (cd ffi/deps && ./build-aten.sh)
+	(cd ffi/deps && ./build-aten.sh)
 	$(info GHC version detected ${GHC_VERSION})
 ifeq ($(GHC_VERSION),8.4.2)
 	ln -fs cabal/project.freeze-8.4.2 cabal.project.freeze
