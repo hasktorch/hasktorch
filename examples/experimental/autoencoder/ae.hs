@@ -25,6 +25,7 @@ import qualified Torch.Core.Random as RNG
 import GHC.Generics (Generic)
 
 type DataDim = 256
+type BatchSize = 10
 
 data Autoencoder = Autoencoder {
     enc1 :: Linear DataDim 64
@@ -39,10 +40,10 @@ instance Backprop Autoencoder where
         (Bp.add (enc1 a) (enc1 b))
         (Bp.add (enc2 a) (enc2 b))
         (Bp.add (enc3 a) (enc3 b))
-        (Bp.add (dec1 a) (dec2 b))
-        (Bp.add (dec1 a) (dec2 b))
-    one _ = Autoencoder (Bp.one undefined)
-    zero _ = Autoencoder (Bp.zero undefined)
+        (Bp.add (dec1 a) (dec1 b))
+        (Bp.add (dec2 a) (dec2 b))
+    one _ = Autoencoder (Bp.one undefined) (Bp.one undefined) (Bp.one undefined) (Bp.one undefined) (Bp.one undefined)
+    zero _ = Autoencoder (Bp.zero undefined) (Bp.zero undefined) (Bp.zero undefined) (Bp.zero undefined)  (Bp.zero undefined)
 
 seedVal = 31415926535
 
@@ -60,12 +61,12 @@ newLayerWithBias n = do
 newLinear :: forall o i . All KnownDim '[i,o] => IO (Linear i o)
 newLinear = fmap Linear . newLayerWithBias $ dimVal (dim :: Dim i)
 
-forward :: forall s . Reifies s W =>
-    BVar s Autoencoder -- model architecture
-    -> BVar s (Tensor '[BatchSize, 2]) -- input
-    -> BVar s (Tensor '[BatchSize, 1]) -- output
-forward modelArch input =
-    linearBatch (modelArch ^^. (field @"linearLayer")) input
+-- forward :: forall s . Reifies s W =>
+--     BVar s Autoencoder -- model architecture
+--     -> BVar s (Tensor '[BatchSize, 2]) -- input
+--     -> BVar s (Tensor '[BatchSize, 1]) -- output
+-- forward modelArch input =
+--     linearBatch (modelArch ^^. (field @"enc1")) input
 
 genBatch ::
   Generator -- RNG

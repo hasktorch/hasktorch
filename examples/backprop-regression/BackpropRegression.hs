@@ -30,7 +30,7 @@ seedVal = 3141592653579
 data Regression = Regression {
     linearLayer :: Linear 2 1
 } deriving (Generic, Show)
-
+  
 instance Backprop Regression where
     add a b = Regression (Bp.add (linearLayer a) (linearLayer b))
     one _ = Regression (Bp.one undefined)
