@@ -42,8 +42,18 @@ instance Backprop Autoencoder where
         (Bp.add (enc3 a) (enc3 b))
         (Bp.add (dec1 a) (dec1 b))
         (Bp.add (dec2 a) (dec2 b))
-    one _ = Autoencoder (Bp.one undefined) (Bp.one undefined) (Bp.one undefined) (Bp.one undefined) (Bp.one undefined)
-    zero _ = Autoencoder (Bp.zero undefined) (Bp.zero undefined) (Bp.zero undefined) (Bp.zero undefined)  (Bp.zero undefined)
+    one _ = Autoencoder 
+        (Bp.one undefined) 
+        (Bp.one undefined) 
+        (Bp.one undefined) 
+        (Bp.one undefined) 
+        (Bp.one undefined)
+    zero _ = Autoencoder 
+        (Bp.zero undefined) 
+        (Bp.zero undefined) 
+        (Bp.zero undefined) 
+        (Bp.zero undefined)  
+        (Bp.zero undefined)
 
 seedVal = 31415926535
 
