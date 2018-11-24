@@ -83,14 +83,6 @@ genBatch ::
   -> IO (Tensor '[BatchSize, DataDim])
 genBatch gen = do
   let Just scale = positive 5
-
---   let eigenVectors = diag (constant 1.0 :: Tensor '[DataDim]) 64 
-  -- TODO fix static diag so it doesn't take dimension parameter
---   let eigenValues = constant 1.0 :: Tensor '[DataDim]
---   let mu = constant 0 :: Tensor '[DataDim]
---   x :: Tensor '[BatchSize, DataDim] <-
---     multivariate_normal gen mu eigenVectors eigenValues
-
   -- data drawn from a gaussian mixture
   x1 :: Tensor '[25, DataDim] <- normal gen 0 scale
   x2 :: Tensor '[25, DataDim] <- normal gen 10 scale
