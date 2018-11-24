@@ -96,13 +96,28 @@ diag_ t d = do
   Dynamic.diag_ (asDynamic t) d
   pure $ (asStatic . asDynamic) t
 
+data DiagDir = DiagAbove | DiagBelow
+
 -- | Static call to 'Dynamic.diag'
-diag :: All Dimensions '[d, d'] => Tensor d -> Int -> Tensor d'
-diag t d = asStatic $ Dynamic.diag (asDynamic t) d
+-- | returns the k-th diagonal of the input tensor, where k=0 is the main diagonal,
+-- k>0 is above the main diagonal, and k<0 is below the main diagonal.
+-- cat2d0 :: (All KnownDim '[n,m,n0,n1], n ~ Sing.Sum [n0, n1]) => Tensor '[n0, m] -> Tensor '[n1, m] -> Tensor '[n, m]
+diag :: forall k d d' . (All KnownDim '[d, k], d' ~ Sing.Sum [d, k])
+     => Tensor '[d] -> Dim (k::Nat) -> DiagDir -> Tensor [d', d']
+diag t offset diagDir = asStatic $ Dynamic.diag (asDynamic t) offset'
+  where
+    offset' = case diagDir of
+      DiagAbove -> fromIntegral $ dimVal offset
+      DiagBelow -> (fromIntegral $ dimVal offset)
+
+-- | Static call to 'Dynamic.diag' w/o dimension checks
+-- warning - can create tensors w/ dims inconsistent w/ type
+diagUnsafe :: All Dimensions '[d, d'] => Tensor d -> Int -> Tensor d'
+diagUnsafe t d = asStatic $ Dynamic.diag (asDynamic t) d
 
 -- | Create a diagonal matrix from a 1D vector
 diag1d :: (KnownDim n) => Tensor '[n] -> Tensor '[n, n]
-diag1d t = diag t 0
+diag1d t = diagUnsafe t 0
 
 -- | Static call to 'Dynamic.cat_'. Unsafely returning the resulting tensor with new dimensions.
 cat_

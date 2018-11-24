@@ -25,16 +25,14 @@ import qualified Torch.Core.Random as RNG
 
 import GHC.Generics (Generic)
 
-type DataDim = 128
+type DataDim = 64
 type BatchSize = 100
 
-
--- TODO - add relu activations
 data Autoencoder = Autoencoder {
-    enc1 :: Linear DataDim 64
-    , enc2 :: Linear 64 32
-    , dec1 :: Linear 32 64
-    , dec2 :: Linear 64 DataDim
+    enc1 :: Linear DataDim 32
+    , enc2 :: Linear 32 16
+    , dec1 :: Linear 16 32
+    , dec2 :: Linear 32 DataDim
 } deriving (Generic, Show)
 
 instance Backprop Autoencoder where
@@ -84,9 +82,21 @@ genBatch ::
   Generator -- RNG
   -> IO (Tensor '[BatchSize, DataDim])
 genBatch gen = do
-  let Just scale = positive 10
-  x :: Tensor '[BatchSize, DataDim] <- normal gen 0 scale
-  pure x
+  let Just scale = positive 5
+
+--   let eigenVectors = diag (constant 1.0 :: Tensor '[DataDim]) 64 
+  -- TODO fix static diag so it doesn't take dimension parameter
+--   let eigenValues = constant 1.0 :: Tensor '[DataDim]
+--   let mu = constant 0 :: Tensor '[DataDim]
+--   x :: Tensor '[BatchSize, DataDim] <-
+--     multivariate_normal gen mu eigenVectors eigenValues
+
+  -- data drawn from a gaussian mixture
+  x1 :: Tensor '[25, DataDim] <- normal gen 0 scale
+  x2 :: Tensor '[25, DataDim] <- normal gen 10 scale
+  x3 :: Tensor '[25, DataDim] <- normal gen 20 scale
+  x4 :: Tensor '[25, DataDim] <- normal gen 30 scale
+  pure $ cat2d0 x1 $ cat2d0 x2 $ cat2d0 x3 x4
 
 trainStep ::
   HsReal                                              -- learning rate
@@ -127,8 +137,8 @@ main = do
 
     -- model parameters
     let numBatch = 1
-    let learningRate = 0.0005
-    let numEpochs = 1000
+    let learningRate = 1.5e-6
+    let numEpochs = 5000
 
     -- produce simulated data
     gen <- newRNG
@@ -147,3 +157,4 @@ main = do
     -- let (estParam, estBias) = getTensors $ linearLayer net
 
     putStrLn "Done"
+    pure net
