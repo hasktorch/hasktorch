@@ -26,7 +26,7 @@ import qualified Torch.Core.Random as RNG
 import GHC.Generics (Generic)
 
 type DataDim = 128
-type BatchSize = 500
+type BatchSize = 100
 
 
 -- TODO - add relu activations
@@ -75,12 +75,10 @@ forward :: forall s . Reifies s W =>
     -> BVar s (Tensor '[BatchSize, DataDim]) -- input
     -> BVar s (Tensor '[BatchSize, DataDim]) -- output
 forward modelArch input =
-    (linearBatch (modelArch ^^. (field @"dec2"))) $
-    (linearBatch (modelArch ^^. (field @"dec1"))) $
-    (linearBatch (modelArch ^^. (field @"enc2"))) $
-    (linearBatch (modelArch ^^. (field @"enc1"))) input
-
--- forward = undefined
+    relu $ (linearBatch (modelArch ^^. (field @"dec2"))) $
+    relu $ (linearBatch (modelArch ^^. (field @"dec1"))) $
+    relu $ (linearBatch (modelArch ^^. (field @"enc2"))) $
+    relu $ (linearBatch (modelArch ^^. (field @"enc1"))) input
 
 genBatch ::
   Generator -- RNG
@@ -127,7 +125,6 @@ epochs learningRate maxEpochs tset net0 = do
 
 main = do
 
-
     -- model parameters
     let numBatch = 1
     let learningRate = 0.0005
@@ -142,6 +139,8 @@ main = do
     -- train model
     net0 <- Autoencoder <$> 
         newLinear <*> newLinear <*> newLinear <*> newLinear
+
+    print net0
 
     putStrLn "\nTraining ========================================\n"
     net <- epochs learningRate numEpochs batches net0

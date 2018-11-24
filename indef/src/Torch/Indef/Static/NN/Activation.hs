@@ -120,31 +120,6 @@ relu = threshold 0 0
 reluIO :: Dimensions d => Tensor d -> IO (Tensor d, Tensor d -> IO (Tensor d))
 reluIO = thresholdIO 0 0
 
--- -- | 'linear' with a batch dimension
--- reluBatch
---   :: forall s d b
---   .  Reifies s W
---   => All KnownDim '[b, d]
---   => BVar s (Relu d)
---   -> BVar s (Tensor '[b, d])
---   -> BVar s (Tensor '[b, d])
--- reluBatch = liftOp2 $ op2 $ \l i -> unsafePerformIO $ do
---   (o, getgrad) <- reluBatchIO l i
---   pure (o, unsafePerformIO . getgrad)
-
--- reluBatchIO
---   :: forall d b
---    . All KnownDim '[b, d]
---   => Relu d
---   -> (Tensor '[b, d])
---   -> IO (Tensor '[b, d],
---          Tensor '[b, d] -> IO (Relu d,  (Tensor '[b, d]))
---          )
--- reluBatchIO = reluBatchWithIO (Just new) (Just new) (Just $ Relu)
-
--- TODO
-reluBatchWithIO = undefined
-
 
 {-# NOINLINE threshold #-}
 -- | run a threshold function againts two BVar variables
