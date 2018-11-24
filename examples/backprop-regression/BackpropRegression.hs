@@ -115,7 +115,7 @@ main = do
     -- model parameters
     Just trueParam <- fromList [24.5, -80.4]
     let trueBias = 52.4
-    let numBatch = 2
+    let numBatch = 1
     let learningRate = 0.005
     let numEpochs = 200
 
