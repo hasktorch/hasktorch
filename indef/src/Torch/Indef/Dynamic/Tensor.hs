@@ -1186,6 +1186,7 @@ withInplace op d =
   let
     r = new d
   in op r >> pure r
+{-# NOINLINE withInplace #-}
 
 -- | exported helper function. not actually "inplace" this is actually "with return and runtime dimensions"
 withInplace' :: (Dynamic -> IO ()) -> SomeDims -> IO Dynamic
