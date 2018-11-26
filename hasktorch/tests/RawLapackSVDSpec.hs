@@ -28,7 +28,7 @@ pcaRaw = do
   set2d_ a 0 0 1.0
   set2d_ a 0 1 2.0
   set2d_ a 1 0 3.0
-  set2d_ a 1 0 4.0
+  set2d_ a 1 1 4.0
   print a
   print b
 

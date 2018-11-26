@@ -6,8 +6,6 @@ module Main where
 
 import Torch.Double as Torch
 import qualified Torch.Core.Random as RNG
--- import Torch.Indef.Dynamic.Tensor (_normal)
--- import qualified Torch.Indef.Dynamic.Tensor as Dyn
 
 genRand1 :: Generator -> IO (Tensor '[2])
 genRand1 gen = do
@@ -81,23 +79,6 @@ genRand7 = do
     print vals1
     print vals2
 
-
--- genRand8 :: IO ()
--- genRand8 = do
---     gen <- newRNG
---     let Just sd = positive 1.0
---     let
---     vals1 <- Dyn.new (Dims :: '[3])
---     _normal vals1 gen 0.0 sd
---     print vals1
---     vals2 <- Dyn.new (Dims :: '[3])
---     _normal vals2 gen 0.0 sd
---     print vals2
---     putStrLn ""
---     print vals1
---     print vals2
-   
-
 main = do
 
     let iter = 3
@@ -134,7 +115,3 @@ main = do
     putStrLn "\nV7 ========================================\n"
 
     genRand7
-
-    putStrLn "\nV8 ========================================\n"
-
-    -- genRand8

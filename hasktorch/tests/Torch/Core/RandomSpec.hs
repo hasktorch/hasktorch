@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+
 module Torch.Core.RandomSpec (spec) where
 
 import Test.Hspec
@@ -9,10 +11,10 @@ import Control.Monad (replicateM)
 import Foreign (Ptr)
 
 import qualified Control.Exception as E
+import qualified Torch.Double as T
 import Torch.Core.Random as R
 import Torch.Prelude.Extras (doesn'tCrash)
 import Orphans ()
-
 
 main :: IO ()
 main = hspec spec
@@ -31,6 +33,7 @@ spec = do
   describe "logNormal" logNormalSpec
   describe "geometric" geometricSpec
   describe "bernoulli" bernoulliSpec
+  describe "sampler generates unique values" uniqueSpec
   describe "scenario" $ do
     it "runs this scenario as expected" $ testScenario
 
@@ -158,4 +161,17 @@ distributed1BoundsCheck g fun pfun check = do
     assert (check a x)
 
 
-
+uniqueSpec :: Spec
+uniqueSpec = do
+  it "`normal` tensor sampler should generate unique tensors" $ do
+    rng <- newRNG
+    let Just sd = T.positive 1.0
+    vals1 :: T.Tensor '[2] <- T.normal rng 0.0 sd
+    vals2 :: T.Tensor '[2] <- T.normal rng 0.0 sd
+    vals1 /= vals2 `shouldBe` True
+  it "`logNormal` tensor sampler should generate unique tensors" $ do
+    rng <- newRNG
+    let Just sd = T.positive 1.0
+    vals1 :: T.Tensor '[2] <- T.logNormal rng 0.0 sd
+    vals2 :: T.Tensor '[2] <- T.logNormal rng 0.0 sd
+    vals1 /= vals2 `shouldBe` True

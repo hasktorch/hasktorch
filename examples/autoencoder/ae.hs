@@ -91,21 +91,22 @@ genBatch gen = do
   pure $ cat2d0 x1 $ cat2d0 x2 $ cat2d0 x3 x4
 
 trainStep ::
-  HsReal                                              -- learning rate
-  -> (Autoencoder, [(Tensor '[1])])                    -- (network, history)
-  -> Tensor '[BatchSize, DataDim] -- input
-  -> IO (Autoencoder, [(Tensor '[1])])                 -- (updated network, history)
+  HsReal                               -- learning rate
+  -> (Autoencoder, [(Tensor '[1])])    -- (network, history)
+  -> Tensor '[BatchSize, DataDim]      -- input
+  -> IO (Autoencoder, [(Tensor '[1])]) -- (updated network, history)
 trainStep learningRate (net, hist) x = do
   pure (Bp.add net gnet, (out):hist)
   where
-    (out, (Autoencoder e1 e2 d1 d2, _)) = backprop2 (mSECriterion x .: forward) net x
+    (out, (Autoencoder e1 e2 d1 d2, _)) =
+      backprop2 (mSECriterion x .: forward) net x
     gnet = Autoencoder 
         (e1 ^* (-learningRate)) (e2 ^* (-learningRate))
         (d1 ^* (-learningRate)) (d2 ^* (-learningRate))
 
 epochs ::
-  HsReal                                                -- learning rate
-  -> Int                                                -- max # of epochs
+  HsReal                            -- learning rate
+  -> Int                            -- max # of epochs
   -> [Tensor '[BatchSize, DataDim]] -- data to run batch on
   -> Autoencoder
   -> IO Autoencoder
@@ -136,7 +137,6 @@ main = do
     gen <- newRNG
     RNG.manualSeed gen seedVal
     batches <- mapM (\_ -> genBatch gen)  ([1..numBatch] :: [Integer])
-    -- FIXME: fix RNG advancement bug for cases where numBatch > 1
 
     -- train model
     net0 <- Autoencoder <$> 
@@ -146,7 +146,6 @@ main = do
 
     putStrLn "\nTraining ========================================\n"
     net <- epochs learningRate numEpochs batches net0
-    -- let (estParam, estBias) = getTensors $ linearLayer net
 
     putStrLn "Done"
     pure net
