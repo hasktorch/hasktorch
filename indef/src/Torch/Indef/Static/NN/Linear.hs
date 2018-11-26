@@ -70,7 +70,6 @@ instance (KnownDim i, KnownDim o) => Backprop (Linear i o) where
 --     pure (Linear (a, b))
 --   {-# NOINLINE zero #-}
 
-
   add (Linear (a0, b0)) (Linear (a1, b1)) = unsafePerformIO $ do
     Dynamic.cadd_ (asDynamic a1) 1 (asDynamic a0)
     Dynamic.cadd_ (asDynamic b1) 1 (asDynamic b0)

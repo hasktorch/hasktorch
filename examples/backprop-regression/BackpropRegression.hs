@@ -30,7 +30,7 @@ seedVal = 3141592653579
 data Regression = Regression {
     linearLayer :: Linear 2 1
 } deriving (Generic, Show)
-
+  
 instance Backprop Regression where
     add a b = Regression (Bp.add (linearLayer a) (linearLayer b))
     one _ = Regression (Bp.one undefined)
@@ -115,7 +115,7 @@ main = do
     -- model parameters
     Just trueParam <- fromList [24.5, -80.4]
     let trueBias = 52.4
-    let numBatch = 2
+    let numBatch = 1
     let learningRate = 0.005
     let numEpochs = 200
 

@@ -250,6 +250,8 @@ jobs:
 
       # run examples:
       - run: cabal new-run hasktorch-examples:ad
+      - run: cabal new-run hasktorch-examples:ae
+      - run: cabal new-run hasktorch-examples:backprop-regression
       - run: cabal new-run hasktorch-examples:bayesian-regression
       - run: cabal new-run hasktorch-examples:gradient-descent
       - run: cabal new-run hasktorch-examples:multivariate-normal

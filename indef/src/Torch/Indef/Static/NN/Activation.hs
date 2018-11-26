@@ -7,9 +7,13 @@
 -- Stability :  experimental
 -- Portability: non-portable
 -------------------------------------------------------------------------------
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Static.NN.Activation where
+
+import Data.List (intercalate)
+import GHC.Generics
 
 import Numeric.Backprop
 import Numeric.Dimensions
@@ -18,10 +22,34 @@ import System.IO.Unsafe
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Math (constant)
 import Torch.Indef.Static.Tensor.Copy
 import Torch.Indef.Static.NN.Backprop ()
 
 import qualified Torch.Indef.Dynamic.NN.Activation as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
+
+-- | datatype representing a relu activation. 
+data Relu d = Relu deriving (Eq, Generic)
+
+instance KnownDim d => Show (Relu d) where
+  show c = intercalate ","
+    [ "Relu ("
+    ++ "dimensions: "  ++ show (reluSize c)
+    ++ ")"
+    ]
+
+-- | The size of a relu
+reluSize :: forall d . KnownDim d => Relu d -> Int
+reluSize _ = fromIntegral (dimVal (dim :: Dim d))
+
+instance (KnownDim d) => Backprop (Relu d) where
+  zero = const Relu
+  one  = const Relu
+  add Relu Relu = Relu
+  {-# NOINLINE add #-}
 
 -- | pReLU updateOutput
 _pReLU_updateOutput :: Tensor d -> Tensor d -> Tensor d -> IO ()
@@ -91,6 +119,7 @@ relu = threshold 0 0
 -- | ReLU activation function
 reluIO :: Dimensions d => Tensor d -> IO (Tensor d, Tensor d -> IO (Tensor d))
 reluIO = thresholdIO 0 0
+
 
 {-# NOINLINE threshold #-}
 -- | run a threshold function againts two BVar variables
