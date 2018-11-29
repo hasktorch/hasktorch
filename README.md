@@ -16,11 +16,12 @@ In order of high-to-low level. The reverse order can also be seen in the `cabal.
 | Directory                   | Description |
 | --------------------------- | ----------- |
 | [`examples/`][examples]     | Examples of basic usage and experimental prototypes |
+| [`zoo/`][zoo]               | Beginnings of a model zoo |
 | [`hasktorch/`][hasktorch]   | Reexports of the high-level interface to basic tensor creation and math operations and manages allocation/deallocation via foreign pointers |
 | [`indef/`][indef]           | Orphan instances of the above typeclasses for the relevant backpack signatures |
 | [`signatures/`][signatures] | Backpack signatures which line up with the generated C-FFI |
 | [`types/`][types]           | Memory-managed tensors and core data types that satisfy global and type-specific backpack types |
-| [`zoo/`][zoo]               | Beginnings of a model zoo |
+| [`ffi/`][ffi]           | Submodule for low-level C ffi |
 
 ## Build Instructions
 
