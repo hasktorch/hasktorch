@@ -25,18 +25,22 @@ In order of high-to-low level. The reverse order can also be seen in the `cabal.
 
 ## Build Instructions
 
+Due to the aten shared library and use of new cabal functionality with backpack, the setup process can be a bit more involved than a typical haskell library. Don't hesitate to reach out to the development team for questions or issues with getting setup (see Contributing below). 
+
 Currently hasktorch only supports OSX and Linux builds because these are what the development team works on -- if you would like to add *BSD or Windows support, please let us know!
 
-Building Hasktorch requires retrieving and building a fork of pytorch's [ATen library][aten] dependency. Currently we fork ATen to reintroduce some C-native broadcasting functionality which was moved to ATen's C++ core. This step has been condensed in our Makefile as `make init`.
+To get started building and testing the library:
+
+1. Build PyTorch's [ATen library][aten] dependency. Currently we fork ATen to reintroduce some C-native broadcasting functionality which was moved to ATen's C++ core. This step has been condensed in our Makefile as `make init`.
 
 [aten]:https://github.com/zdevito/ATen/
 
-Following this, you will need cabal-install > 2.0 for `new-build` and backpack support. We would like to support stack in the future, but that is pending  the completion of [backpack support in stack][stack-backpack].
+2. You will need cabal-install > 2.0 for `new-build` and backpack support. We would like to support stack in the future, but that is pending  the completion of [backpack support in stack][stack-backpack].
 
 [cabal-latest]:https://github.com/haskell/cabal/tree/30d0c10349b6cc69adebfe06c230c784574ebf7a
 [stack-backpack]:https://github.com/commercialhaskell/stack/issues/2540
 
-Now you can build hasktorch:
+3. Now you can build hasktorch:
 
 ```
 cabal new-build all
@@ -49,8 +53,6 @@ To build without GPU support/CUDA, use:
 cabal new-build all --flags=-cuda
 cabal new-run static-tensor-usage --flags=-cuda
 ```
-
-Due to the aten shared library and use of new cabal functionality with backpack, the setup process can be a bit more involved than a typical haskell library. Don't hesitate to reach out to the development team for questions or issues with getting setup (see Contributing below). 
 
 ## Getting started
 
