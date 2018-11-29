@@ -15,3 +15,5 @@ Other examples:
 - *lenet-cifar10* - lenet NN on cifar10 data, using backprop typeclasses
 - *multivariate-normal* - example of random sampling from a multivariate
   gaussian distribution.
+
+The [experimental](./experimental) directory contains work-in-progress experiments/examples.
