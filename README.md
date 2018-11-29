@@ -25,7 +25,7 @@ In order of high-to-low level. The reverse order can also be seen in the `cabal.
 
 ## Build Instructions
 
-Due to the aten shared library and use of new cabal functionality with backpack, the setup process can be a bit more involved than a typical haskell library. Don't hesitate to reach out to the development team for questions or issues with getting setup (see Contributing below). 
+Due to the aten library and use of new cabal functionality with backpack, the setup process can be a bit more involved than a typical haskell library. Don't hesitate to reach out to the development team for questions or issues with getting setup (see Contributing below). 
 
 Currently hasktorch only supports OSX and Linux builds because these are what the development team works on -- if you would like to add *BSD or Windows support, please let us know!
 
@@ -54,7 +54,7 @@ cabal new-build all --flags=-cuda
 cabal new-run static-tensor-usage --flags=-cuda
 ```
 
-## Getting started
+## Examples to Get Started
 
 For an example of basic end-user API usage, see the [statically typed
 tensor usage][static-tensor-usage] example and the example of [simple linear regression using backprop][backprop-regression].
