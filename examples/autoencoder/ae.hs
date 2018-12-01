@@ -1,29 +1,24 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
 
 module Main where
 
-import System.IO (hFlush, stdout)
-import Text.Printf
-    
 import Control.Monad (foldM)
 import Data.Maybe (catMaybes)
 import Data.Generics.Product.Fields (field)
-import GHC.Generics
+import GHC.Generics (Generic)
+import Prelude as P
+import Text.Printf (printf)
+import System.IO (hFlush, stdout)
     
 import Numeric.Backprop as Bp
-import Prelude as P
 import Torch.Double as Torch hiding (add)
 import Torch.Double.NN.Linear (Linear(..), linearBatch)
 import Torch.Double.NN.Activation (Relu(..), relu)
 import qualified Torch.Core.Random as RNG
-
-import GHC.Generics (Generic)
 
 type DataDim = 64
 type BatchSize = 100
@@ -37,20 +32,14 @@ data Autoencoder = Autoencoder {
 
 instance Backprop Autoencoder where
     add a b = Autoencoder 
-        (Bp.add (enc1 a) (enc1 b))
-        (Bp.add (enc2 a) (enc2 b))
-        (Bp.add (dec1 a) (dec1 b))
-        (Bp.add (dec2 a) (dec2 b))
+        (Bp.add (enc1 a) (enc1 b)) (Bp.add (enc2 a) (enc2 b))
+        (Bp.add (dec1 a) (dec1 b)) (Bp.add (dec2 a) (dec2 b))
     one _ = Autoencoder 
-        (Bp.one undefined) 
-        (Bp.one undefined) 
-        (Bp.one undefined) 
-        (Bp.one undefined)
+        (Bp.one undefined) (Bp.one undefined)  
+        (Bp.one undefined) (Bp.one undefined) 
     zero _ = Autoencoder 
-        (Bp.zero undefined) 
-        (Bp.zero undefined) 
-        (Bp.zero undefined) 
-        (Bp.zero undefined)
+        (Bp.zero undefined) (Bp.zero undefined)  
+        (Bp.zero undefined) (Bp.zero undefined) 
 
 seedVal = 31415926535
 
@@ -118,9 +107,9 @@ epochs learningRate maxEpochs tset net0 = do
       | epoch > maxEpochs = pure net
       | otherwise = do
         (net', hist) <- foldM (trainStep learningRate) (net, []) tset
-        let val =  P.sum $ catMaybes ((map ((`get1d` 0)) $ hist) :: [Maybe Double])
+        let val =  P.sum $ catMaybes (map (`get1d` 0) $ hist :: [Maybe Double])
         if epoch `mod` 50 == 0 then
-          printf ("[Epoch %d][Loss %.4f]\n") epoch val
+          printf "[Epoch %d][Loss %.4f]\n" epoch val
         else
           pure ()
         hFlush stdout
