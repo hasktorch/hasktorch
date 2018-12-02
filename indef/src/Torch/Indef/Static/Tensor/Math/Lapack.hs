@@ -63,7 +63,7 @@ getri_ t = Dynamic.getri_ (asDynamic t)
 potrf
   :: Tensor d   -- ^ matrix to decompose
   -> Triangle   -- ^ which triangle should be used.
-  -> (Tensor d')
+  -> Tensor d
 potrf s t = asStatic $ Dynamic.potrf (asDynamic s) t
 
 -- | infix version of 'potrf'.
