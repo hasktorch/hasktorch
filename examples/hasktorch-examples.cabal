@@ -223,6 +223,30 @@ executable ff-untyped
         default-extensions: NoStarIsType
     else
 
+executable gp
+    main-is: GP.hs
+    hs-source-dirs: experimental/gp
+    default-language: Haskell2010
+    build-depends:
+        base (==4.7 || >4.7) && <5,
+        backprop ==0.2.5 || >0.2.5,
+        generic-lens == 1.0.0.2,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
+        microlens ==0.4.8 || >0.4.8,
+        dimensions ==1.0 || >1.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
+        singletons ==2.2 || >2.2
+    
+    if flag(cuda)
+        cpp-options: -DCUDA
+        build-depends:
+            cuda -any
+    else
+    
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
+
 executable static-tensor-usage
     main-is: Main.hs
     hs-source-dirs: static-tensor-usage

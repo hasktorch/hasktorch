@@ -1,5 +1,5 @@
 packages:
-    ffi/codegen/*.cabal
+--    ffi/codegen/*.cabal
 
     ffi/types/th/*.cabal
     ffi/types/thc/*.cabal
@@ -19,9 +19,3 @@ packages:
 
     zoo/*cabal
     examples/*cabal
-
--- This absolute path would go in your ~/.cabal/config file.
--- FIXME: figure out package-relative paths
--- ghc-options:
---     hasktorch-raw-th: -L/home/stites/git/hasktorch/vendor/build/
---     hasktorch-raw-thc: -L/home/stites/git/hasktorch/vendor/build/
