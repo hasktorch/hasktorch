@@ -235,6 +235,7 @@ gesv
 gesv b a = (asStatic ra, asStatic rb)
   where (ra, rb) = Dynamic.gesv (asDynamic b) (asDynamic a)
 
+
 -- | Inplace version of 'gesv'.
 --
 -- In this case @x@ and @lu@ will be used for temporary storage and returning the result.

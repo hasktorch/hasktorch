@@ -75,6 +75,9 @@ _triu r t = Dynamic._triu (asDynamic r) (asDynamic t)
 -- | Static call to 'Dynamic.eye_'
 eye_ r = Dynamic.eye_ (asDynamic r)
 
+eye :: forall d1 d2 . (All KnownDim '[d1, d2]) => Tensor '[d1, d2]
+eye = asStatic $ Dynamic.eye (dim :: Dim d1) (dim :: Dim d2)
+
 -- | Returns the trace (sum of the diagonal elements) of a matrix x. This is
 -- equal to the sum of the eigenvalues of x.
 --
@@ -108,7 +111,7 @@ diag t offset diagDir = asStatic $ Dynamic.diag (asDynamic t) offset'
   where
     offset' = case diagDir of
       DiagAbove -> fromIntegral $ dimVal offset
-      DiagBelow -> (fromIntegral $ dimVal offset)
+      DiagBelow -> -(fromIntegral $ dimVal offset)
 
 -- | Static call to 'Dynamic.diag' w/o dimension checks
 -- warning - can create tensors w/ dims inconsistent w/ type

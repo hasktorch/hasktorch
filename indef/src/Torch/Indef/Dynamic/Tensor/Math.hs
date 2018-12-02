@@ -259,6 +259,15 @@ eye_ t0 l0 l1 = runManaged $ do
   t0' <- managedTensor t0
   liftIO $ Sig.c_eye s' t0' (fromIntegral l0) (fromIntegral l1)
 
+eye :: forall d1 d2 . (All KnownDim '[d1, d2]) =>
+  Dim (d1 :: Nat) -> Dim (d2 :: Nat) -> Dynamic
+eye dim1 dim2 = unsafePerformIO $ let r = new' sDims in eye_ r dim1' dim2' >> pure r
+  where
+    dim1' = fromIntegral $ dimVal dim1
+    dim2' = fromIntegral $ dimVal dim2
+    sDims = SomeDims (dims :: Dims '[d1, d2])
+{-# NOINLINE eye #-}
+
 -- | identical to a direct C call to the @arange@, or @range@ with special consideration for floating precision types.
 _arange :: Dynamic -> HsAccReal -> HsAccReal -> HsAccReal -> IO ()
 _arange t0 a0 a1 a2 = runManaged $ do

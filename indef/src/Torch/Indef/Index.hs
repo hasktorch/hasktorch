@@ -241,7 +241,7 @@ showIx t = unsafePerformIO $ do
       pure $ gt2IxHeader [w', q'] ++ mat
 
     gt2IxHeader :: [Int64] -> String
-    gt2IxHeader is = "\n(" ++ intercalate "," (fmap show is) ++",.,.):\n"
+    gt2IxHeader is = "\n(" ++ intercalate ",\n" (fmap show is) ++",.,.):\n"
 
     mkIx :: Int64 -> [Int64]
     mkIx x = [0..x - 1]
