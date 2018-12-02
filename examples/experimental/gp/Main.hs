@@ -16,8 +16,6 @@ import Kernels (kernel1d_rbf)
 
 {- Helper functions -}
 
--- type D = 11
-
 type GridDim = 9
 type GridSize = 81
 type NSamp = 5

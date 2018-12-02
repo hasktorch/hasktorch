@@ -25,12 +25,12 @@ kernel_rbf :: KnownDim d =>
 kernel_rbf (sigma :: Double) (length :: Double) t t' =
     (sigma^2) *^ T.exp eterm
     where
-        eterm = (sum' $ - (t - t')^2) ^/ (2 * length^2) 
+        eterm = (sum' $ - (t - t')^2) ^/ (2 * length^2)
 
 kernel_periodic :: KnownDim d =>
     Double -> Double -> Double -> Tensor '[d] -> Tensor '[d] -> Tensor '[1]
 kernel_periodic (sigma :: Double) (length :: Double) (period :: Double) t t' =
-    (sigma^2) *^ (2 * (T.sin $ pi * (sum' (T.abs $ t - t')) ^/ period)) 
+    (sigma^2) *^ (2 * (T.sin $ pi * (sum' (T.abs $ t - t')) ^/ period))
       ^/ length^2
     where pi' = scalar pi
 
@@ -46,14 +46,4 @@ kernel1d_rbf :: KnownDim d =>
 kernel1d_rbf (sigma :: Double) (length :: Double) t t' =
     (sigma^2) *^ T.exp eterm
     where
-        eterm = (-(t - t')^2) ^/ (2 * length^2) 
-
--- test = do
---     v1 :: DoubleTensor '[3] <- unsafeVector [0.1, 0.2, 0.5]
---     v2 :: DoubleTensor '[3] <- unsafeVector [1.1, 0.4, 0.55]
---     print v1
---     print v2
---     let k = kernel_rbf (1.0 :: Double) (2.0 :: Double) v1 v2 :: Tensor '[1]
---     print k
---     -- let k = kernel_linear (1.0 :: Double) (2.0 :: Double) (3.0 :: Double) v1 v2 :: Tensor '[1]
---     print k
+        eterm = (-(t - t')^2) ^/ (2 * length^2)
