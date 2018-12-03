@@ -1,5 +1,5 @@
 packages:
---    ffi/codegen/*.cabal
+    ffi/codegen/*.cabal
 
     ffi/types/th/*.cabal
     ffi/types/thc/*.cabal
