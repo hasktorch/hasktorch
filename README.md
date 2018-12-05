@@ -2,7 +2,7 @@
 
 [![Stable Status](https://circleci.com/gh/hasktorch/hasktorch/tree/master.svg?style=shield&circle-token=9455d7cc953a58204f4d8dd683e9fa03fd5b2744)](https://circleci.com/gh/hasktorch/hasktorch/tree/master)
 [![Development Status](https://circleci.com/gh/hasktorch/hasktorch/tree/dev.svg?style=shield&circle-token=9455d7cc953a58204f4d8dd683e9fa03fd5b2744)](https://circleci.com/gh/hasktorch/hasktorch/tree/dev)
-: (master branch | dev branch)
+(master branch | dev branch)
 
 Hasktorch is a library for tensors and neural networks in Haskell. It is an independent open source community project which leverages the core C libraries shared by [Torch](http://torch.ch/) and [PyTorch](http://pytorch.org/). This library leverages cabal new-build and [backpack][backpack].
  
@@ -14,13 +14,15 @@ Hasktorch is a library for tensors and neural networks in Haskell. It is an inde
 
 | Directory                   | Description |
 | --------------------------- | ----------- |
-| [`examples/`][examples]     | Examples of basic usage and experimental prototypes (start here) |
+| [`examples/`][examples]     | Examples of basic usage and experimental prototypes (recommended starting point) |
 | [`zoo/`][zoo]               | Beginnings of a model zoo |
 | [`hasktorch/`][hasktorch]   | Reexports of the high-level interface to basic tensor creation and math operations and manages allocation/deallocation via foreign pointers |
 | [`indef/`][indef]           | Orphan instances of the above typeclasses for the relevant backpack signatures |
 | [`signatures/`][signatures] | Backpack signatures which line up with the generated C-FFI |
 | [`types/`][types]           | Memory-managed tensors and core data types that satisfy global and type-specific backpack types |
 | [`ffi/`][ffi]           | Submodule for low-level C ffi |
+
+[ffi]:https://github.com/hasktorch/ffi
 
 ## Build Instructions
 
@@ -30,16 +32,16 @@ Currently hasktorch only supports OSX and Linux builds -- if you would like to a
 
 To get started building and testing the library:
 
-- Run `make init` which uses the Makefile to build PyTorch's [ATen library][aten] dependency. 
+1. Run `make init` which uses the Makefile to build PyTorch's [ATen library][aten] dependency. 
 
 [aten]:https://github.com/zdevito/ATen/
 
-- You will need cabal-install > 2.2 for `new-build` and backpack support. We would like to support stack in the future, but that is pending the completion of [backpack support in stack][stack-backpack].
+2. You will need cabal-install > 2.2 for `new-build` and backpack support. We would like to support stack in the future, but that is pending the completion of [backpack support in stack][stack-backpack]. Note stack can still be used as an installer for a new version of cabal using `stack install cabal-install --resolver lts-12.21`.
 
 [cabal-latest]:https://github.com/haskell/cabal/tree/30d0c10349b6cc69adebfe06c230c784574ebf7a
 [stack-backpack]:https://github.com/commercialhaskell/stack/issues/2540
 
-- Now you can build hasktorch:
+3. Now you can build hasktorch and run some examples:
 
 ```
 cabal new-build all
