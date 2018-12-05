@@ -296,6 +296,7 @@ gesv
   -> Dynamic                -- ^ @A@
   -> (Dynamic, Dynamic)  -- ^ @(X, LU)@
 gesv b a = unsafeDupablePerformIO $ let ret = (empty, empty) in gesv_ ret b a >> pure ret
+gesv b a = unsafeDupablePerformIO $ let ret = (empty, empty) in gesv_ ret b a >> pure ret
 {-# NOINLINE gesv #-}
 
 -- | Inplace version of 'gesv'.

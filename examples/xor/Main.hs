@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Main where
 
 -- Other modules
@@ -11,6 +12,7 @@ import Text.Printf (printf)
 import Control.Monad (replicateM, when)
 import Control.Monad.ST (ST, runST)
 import Data.Maybe (fromJust)
+import Numeric.Backprop (BVar, Reifies, W, (^^.), backprop, backprop2)
 import System.IO (hFlush, stdout)
 import System.Random.MWC (GenST)
 import qualified System.Random.MWC as MWC (toSeed, Seed, save, restore, uniformR)
@@ -23,6 +25,7 @@ import Torch.Double
   , unsafeMatrix, unsafeVector, get1d -- Torch.Indef.Static.Tensor
   , constant                          -- Torch.Indef.Static.Tensor.Math
   , (^*)                              -- Torch.Indef.Static.Pairwise
+  , (.:)                              -- Torch.Indef.Types (helper function)
   , uniform, ord2Tuple                -- Torch.Indef.Math.Random.TH
   , positive, positiveValue, Positive -- Torch.Indef.Math.Random.TH
   , manualSeed, newRNG                -- Torch.Core.Random
@@ -31,6 +34,9 @@ import Torch.Double
   , mSECriterionIO                    -- Torch.Indef.Static.NN.Criterion
   )
 import Torch.Double.NN.Linear (Linear(Linear), getTensors)
+import qualified Torch.Double.NN.Criterion as Bp (mSECriterion)
+import qualified Torch.Double.NN.Linear as Bp (linearBatch)
+import qualified Torch.Double as Bp (relu)
 
 type MLP2 i h o = (Linear i h, Linear h o)
 
@@ -40,6 +46,7 @@ main :: IO ()
 main = do
   section "Deterministic Inference" deterministic
   section "Stochastic Training"     stochastic
+  section "Stochastic Training with Backprop" stochasticBackprop
 
   where
     section title action = do
@@ -55,7 +62,7 @@ main = do
       net0 <- mkExact
       putStrLn "Inferring with the exact XOR function. True values:"
       print ys
-      (ys', _) <- xorForward net0 xs
+      (ys', _) <- xorForwardIO net0 xs
       putStrLn "Inferred values:"
       print ys'
       printf "All values are identical? %s\n" (show . allOf $ eqTensor ys ys')
@@ -68,30 +75,63 @@ main = do
       net0 <- mkUniform
       let Just lr = positive 0.2
       (_, _, net) <-
-        trainer lr 10000 (0, seed0, net0)
+        trainerIO lr 10000 (0, seed0, net0)
 
       (xs, ys) <- mkExactData
-      (ys', _) <- xorForward net xs
+      (ys', _) <- xorForwardIO net xs
       putStrLn "\nInferred values:"
       print ys'
 
       (l, _) <- mSECriterionIO ys ys'
       printf "Mean-squared error: %s\n" (show (get1d l 0))
+      where
+        trainerIO lr n (c, s, net)
+          | c >= n = pure (c, s, net)
+          | otherwise = do
+            (s', xs, ys) <- xorBatch s
+            (o, grad) <- backwardIO net ys xs
+            trainerIO lr n (c+1, s', update net (lr, grad))
 
-    trainer lr n (c, s, net)
-      | c >= n = pure (c, s, net)
-      | otherwise = do
-        (s', xs, ys) <- xorBatch s
-        (o, grad) <- backward net ys xs
-        trainer lr n (c+1, s', update net (lr, grad))
+    stochasticBackprop = do
+      net0 <- mkUniform
+      let Just lr = positive 0.01
+      (_, _, net) <-
+        trainer lr 2500 (0, seed0, net0)
+
+      (xs, ys) <- mkExactData
+      let (ys', _) = backprop2 xorForward net xs
+      putStrLn "\nInferred values:"
+      print ys'
+
+      let (l, _) = backprop (Bp.mSECriterion ys) ys'
+      printf "Mean-squared error: %s\n" (show (get1d l 0))
+      where
+        trainer lr n (c, s, net)
+          | c >= n = pure (c, s, net)
+          | otherwise = do
+            (s', xs, ys) <- xorBatch s
+            let (loss, (grad, _)) = backprop2 (Bp.mSECriterion ys .: xorForward) net xs
+            printf "\rloss: %f" (fromJust $ get1d loss 0)
+            trainer lr n (c+1, s', update net (lr, grad))
+
+-- Forward + AD in backprop
+xorForward
+  :: Reifies s W
+  => BVar s XORArch
+  -> BVar s (Tensor '[4, 2])  -- ^ input
+  -> BVar s (Tensor '[4, 1])
+xorForward arch inp
+  = Bp.linearBatch (arch ^^. _1) inp
+  & Bp.relu
+  & Bp.linearBatch (arch ^^. _2)
 
 
 -- Forward + AD
-xorForward
+xorForwardIO
   :: XORArch
   -> Tensor '[4, 2]  -- ^ input
   -> IO (Tensor '[4, 1], Tensor '[4, 1] -> IO (XORArch, Tensor '[4, 2]))
-xorForward (l1, l2) i = do
+xorForwardIO (l1, l2) i = do
   (fc1out,    getl1gin) <- linearBatchIO l1 i
   (reluout, getrelugin) <- reluIO fc1out
   (fc2out,    getl2gin) <- linearBatchIO l2 reluout
@@ -102,9 +142,9 @@ xorForward (l1, l2) i = do
     pure ((l1, l2), gin1))
 
 -- Forward + AD composed with the loss calculation
-backward :: XORArch -> Tensor '[4, 1] -> Tensor '[4, 2] -> IO (Tensor '[1], XORArch)
-backward net ys xs = do
-  (out, getArchGrad) <- xorForward net xs
+backwardIO :: XORArch -> Tensor '[4, 1] -> Tensor '[4, 2] -> IO (Tensor '[1], XORArch)
+backwardIO net ys xs = do
+  (out, getArchGrad) <- xorForwardIO net xs
   (loss, getLossGrad) <- mSECriterionIO ys out
 
   printf "\rloss: %f" (fromJust $ get1d loss 0)

@@ -25,6 +25,8 @@ module Torch.Indef.Static.Tensor.Math.Lapack
 
 import GHC.Int
 
+import Numeric.Dimensions (KnownDim)
+
 import Torch.Indef.Types
 import Torch.Indef.Dynamic.Tensor.Math.Lapack (Triangle(..), EigenReturn(..), ComputeSingularValues(..))
 import qualified Torch.Indef.Dynamic.Tensor.Math.Lapack as Dynamic
@@ -61,15 +63,15 @@ getri_ t = Dynamic.getri_ (asDynamic t)
 --
 -- where @U@ is an upper triangular matrix and @L@ is lower triangular.
 potrf
-  :: Tensor d   -- ^ matrix to decompose
-  -> Triangle   -- ^ which triangle should be used.
-  -> (Tensor d')
+  :: KnownDim d => Tensor '[d, d] -- ^ square matrix to decompose
+  -> Triangle                     -- ^ which triangle should be used.
+  -> Tensor '[d, d]
 potrf s t = asStatic $ Dynamic.potrf (asDynamic s) t
 
 -- | infix version of 'potrf'.
 potrf_
-  :: Tensor d  -- ^ matrix to decompose
-  -> Triangle  -- ^ which triangle should be used.
+  :: KnownDim d => Tensor '[d, d] -- ^ square matrix to decompose
+  -> Triangle                     -- ^ which triangle should be used.
   -> IO ()
 potrf_ s = Dynamic.potrf_ (asDynamic s)
 
@@ -232,6 +234,7 @@ gesv
   -> (Tensor '[m, k], Tensor '[m, m])  -- ^ @(X, LU)@
 gesv b a = (asStatic ra, asStatic rb)
   where (ra, rb) = Dynamic.gesv (asDynamic b) (asDynamic a)
+
 
 -- | Inplace version of 'gesv'.
 --
