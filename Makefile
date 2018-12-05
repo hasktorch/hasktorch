@@ -6,6 +6,7 @@ clean:
 	rm -rf dist{,-newbuild}
 
 init:
+	git submodule update --init --recursive
 	(cd ffi/deps && ./build-aten.sh)
 	$(info GHC version detected ${GHC_VERSION})
 ifeq ($(GHC_VERSION),8.4.2)
