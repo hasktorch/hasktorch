@@ -23,10 +23,19 @@ import Kernels (kernel1d_rbf)
 -- type NSamp = 5
 -- xRange = [-4..4]
 
+-- type GridDim = 7
+-- type GridSize = 49
+-- type NSamp = 5
+-- xRange = [-3..3]
+
 type GridDim = 5
 type GridSize = 25
 type NSamp = 3
 xRange = [-2..2]
+
+tst = do
+    foo <- makeGrid
+    pure $ fst foo
 
 makeGrid :: IO (DoubleTensor '[GridSize], DoubleTensor '[GridSize])
 makeGrid = do
@@ -85,17 +94,13 @@ testGetri = do
 main = do
     (x, y) <- makeGrid
     let rbf = kernel1d_rbf 1.0 1.0 x y
+    putStrLn "Radial Basis Function Kernel Values"
     print rbf
     let mu = constant 0 :: DoubleTensor [GridDim, GridDim]
     let cov = resizeAs rbf :: DoubleTensor [GridDim, GridDim]
 
-    putStrLn "\nCovariance Matrix"
+    putStrLn "\nReshaped as a Covariance Matrix"
     print cov
-
-    putStrLn "\nGP Samples (cols = realizations)"
-    gen <- newRNG
-    mvnSamp :: DoubleTensor '[GridDim, NSamp] <- mvnCholesky gen cov
-    print mvnSamp
 
     -- let (invX, invLU) = gesv (eye :: DoubleTensor '[GridDim, GridDim]) cov
     -- putStrLn "\nCovariance Inverse X"
@@ -107,8 +112,15 @@ main = do
     putStrLn "\nInv Covariance"
     print invCov
 
-    putStrLn "\nCheck"
+    putStrLn "\nCheck Inversion Operation (should recover identity matrix)"
     print $ invCov !*! cov
 
+    putStrLn "\nGP Samples (cols = realizations)"
+    gen <- newRNG
+    mvnSamp :: DoubleTensor '[GridDim, NSamp] <- mvnCholesky gen cov
+    print mvnSamp
+
     putStrLn "Done"
+
+    tst
     pure ()
