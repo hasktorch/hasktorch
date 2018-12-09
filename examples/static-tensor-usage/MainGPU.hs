@@ -5,12 +5,25 @@ module Main where
 
 import Control.Monad (void)
 
+#ifdef CUDA
+import Torch.Cuda.Double
+import qualified Torch.Cuda.Double as Math
+#else
 import Torch.Double
 import qualified Torch.Core.Random as RNG (newRNG)
 import qualified Torch.Double as Math
+#endif
+
+
+#ifdef CUDA
+tensortype = "CUDA Tensors"
+#else
+tensortype = "CPU Tensors"
+#endif
 
 main :: IO ()
 main = do
+  h1 $ "Example Usage of Typed " ++ tensortype
   initialization
   matrixVectorOps
   valueTransformations
@@ -41,7 +54,11 @@ initialization = void $ do
 
   section "Random values" $ do
     let Just p = ord2Tuple (1, 2)
+#ifdef CUDA
+    randMat <- uniform p
+#else
     randMat <- (`uniform` p) =<< RNG.newRNG
+#endif
     pure (randMat :: DoubleTensor '[4, 4])
 
 matrixVectorOps :: IO ()
@@ -51,7 +68,11 @@ matrixVectorOps = void $ do
   randMat :: DoubleTensor '[2, 2] <-
     section' "Random matrix" $ do
       let Just p = ord2Tuple (-1, 1)
+#ifdef CUDA
+      uniform p
+#else
       RNG.newRNG >>= (`uniform` p)
+#endif
 
   constVec :: DoubleTensor '[2] <-
     section' "Constant vector" $
@@ -77,7 +98,11 @@ valueTransformations = void $ do
   randMat :: DoubleTensor '[4, 4] <-
     section' "Random matrix" $ do
       let Just p = ord2Tuple (1, 3)
+#ifdef CUDA
+      uniform p
+#else
       RNG.newRNG >>= (`uniform` p)
+#endif
 
   section "Negated" $
     pure $ neg randMat

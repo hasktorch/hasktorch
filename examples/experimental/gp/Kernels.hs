@@ -22,28 +22,28 @@ sum' x = T.sum x 0 (KeepDim True)
 
 kernel_rbf :: KnownDim d =>
     Double -> Double -> Tensor '[d] -> Tensor '[d] -> Tensor '[1]
-kernel_rbf (sigma :: Double) (length :: Double) t t' =
+kernel_rbf sigma length t t' =
     (sigma^2) *^ T.exp eterm
     where
         eterm = (sum' $ - (t - t')^2) ^/ (2 * length^2)
 
 kernel_periodic :: KnownDim d =>
     Double -> Double -> Double -> Tensor '[d] -> Tensor '[d] -> Tensor '[1]
-kernel_periodic (sigma :: Double) (length :: Double) (period :: Double) t t' =
+kernel_periodic sigma length period t t' =
     (sigma^2) *^ (2 * (T.sin $ pi * (sum' (T.abs $ t - t')) ^/ period))
       ^/ length^2
     where pi' = scalar pi
 
 kernel_linear :: KnownDim d =>
      Double -> Double -> Double -> Tensor '[d] -> Tensor '[d] -> Tensor '[1]
-kernel_linear (sigma :: Double) (sigma_b :: Double) (c :: Double) t t' =
+kernel_linear sigma sigma_b c t t' =
     (sigma_b^2) +^ ((sigma^2) *^ (sum' $ (t ^- c) ^*^ (t' ^- c)))
 
 {- Kernels - 1 dimension, d observations -}
 
 kernel1d_rbf :: KnownDim d =>
     Double -> Double -> Tensor '[d] -> Tensor '[d] -> Tensor '[d]
-kernel1d_rbf (sigma :: Double) (length :: Double) t t' =
+kernel1d_rbf sigma length t t' =
     (sigma^2) *^ T.exp eterm
     where
         eterm = (-(t - t')^2) ^/ (2 * length^2)

@@ -75,6 +75,10 @@ _expand r t = Dynamic._expand (asDynamic r) (asDynamic t)
 -- | Static call to 'Dynamic._expandNd'
 _expandNd rs os = Dynamic._expandNd (fmap asDynamic rs) (fmap asDynamic os)
 
+-- In general recommend using resizeAs over other resize* functions- 
+-- these are not dimension safe and also type-invalidate the underlying tensor
+-- properties after the mutation.
+
 -- | Static call to 'Dynamic.resize_'
 _resize t a b = Dynamic._resize (asDynamic t) a b >> pure ((asStatic . asDynamic) t)
 -- | Static call to 'Dynamic.resize1d_'

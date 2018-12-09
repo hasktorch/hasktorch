@@ -36,12 +36,12 @@ To get started building and testing the library:
 
 [aten]:https://github.com/zdevito/ATen/
 
-2. You will need cabal-install > 2.2 for `new-build` and backpack support. We would like to support stack in the future, but that is pending the completion of [backpack support in stack][stack-backpack]. Note stack can still be used as an installer for a new version of cabal using `stack install cabal-install --resolver lts-12.21`.
+2. Install cabal-install > 2.2 for `new-build` and backpack support if it is not already installed. We would like to support stack in the future, but that is pending the completion of [backpack support in stack][stack-backpack]. Note stack can still be used as an installer for a new version of cabal-install using `stack install cabal-install --resolver lts-12.21`.
 
 [cabal-latest]:https://github.com/haskell/cabal/tree/30d0c10349b6cc69adebfe06c230c784574ebf7a
 [stack-backpack]:https://github.com/commercialhaskell/stack/issues/2540
 
-3. Now you can build hasktorch and run some examples:
+3. Build Hasktorch and run an example:
 
 ```
 cabal new-build all
@@ -62,13 +62,13 @@ cabal new-repl static-tensor-usage
 
 ## Examples to Get Started
 
-For an example of basic end-user API usage, see the [statically typed
-tensor usage][static-tensor-usage] example and the example of [simple linear regression using backprop][backprop-regression].
+For examples of basic end-user API usage, see [statically typed
+tensor usage][static-tensor-usage] and [simple linear regression using backprop][backprop-regression].
 
 [static-tensor-usage]: https://github.com/hasktorch/hasktorch/blob/master/examples/static-tensor-usage/Main.hs
 [backprop-regression]:https://github.com/hasktorch/hasktorch/blob/master/examples/backprop-regression/BackpropRegression.hs
 
-Additional examples can be found in [`examples/`][examples] as well as the test modules.
+Additional examples can be found in [`examples/`][examples] as well as the [test modules](tests).
 
 ## Contributing
 
@@ -77,8 +77,11 @@ We welcome new contributors. For a rough list of outstanding items on deck
 
 https://github.com/hasktorch/hasktorch/projects/1
 
-Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack]. You can find our contact information by digging through cabal files or you can ping us on gitter in the [DataHaskell Lobby][gitter-dh].
+Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack]. You can ping us on gitter in the [DataHaskell Lobby][gitter-dh] or on twitter as [@austinvhuang][austin-twitter] and [@SamStites][sam-twitter].
 
+
+[austin-twitter]:https://twitter.com/austinvhuang
+[sam-twitter]:https://twitter.com/samstites
 [slack]:https://hasktorch.slack.com 
 [gitter-dh]:https://gitter.im/dataHaskell/Lobby
 
@@ -111,5 +114,6 @@ as well as to the Torch and PyTorch dev teams.
 [signatures]: ./signatures/
 [hasktorch]: ./hasktorch/
 [examples]: ./examples/
+[tests]: ./hasktorch/tests/
 [indef]: ./indef/
 [zoo]: ./zoo/
