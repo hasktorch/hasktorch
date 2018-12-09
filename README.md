@@ -62,13 +62,13 @@ cabal new-repl static-tensor-usage
 
 ## Examples to Get Started
 
-For examples of basic end-user API usage, see the [statically typed
+For examples of basic end-user API usage, see [statically typed
 tensor usage][static-tensor-usage] and [simple linear regression using backprop][backprop-regression].
 
 [static-tensor-usage]: https://github.com/hasktorch/hasktorch/blob/master/examples/static-tensor-usage/Main.hs
 [backprop-regression]:https://github.com/hasktorch/hasktorch/blob/master/examples/backprop-regression/BackpropRegression.hs
 
-Additional examples can be found in [`examples/`][examples] as well as the test modules.
+Additional examples can be found in [`examples/`][examples] as well as the [test modules](tests).
 
 ## Contributing
 
@@ -77,8 +77,11 @@ We welcome new contributors. For a rough list of outstanding items on deck
 
 https://github.com/hasktorch/hasktorch/projects/1
 
-Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack]. You can find our contact information by digging through cabal files or you can ping us on gitter in the [DataHaskell Lobby][gitter-dh].
+Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack]. You can ping us on gitter in the [DataHaskell Lobby][gitter-dh] or on twitter as [@austinvhuang][austin-twitter] and [@SamStites][sam-twitter].
 
+
+[austin-twitter]:https://twitter.com/austinvhuang
+[sam-twitter]:https://twitter.com/samstites
 [slack]:https://hasktorch.slack.com 
 [gitter-dh]:https://gitter.im/dataHaskell/Lobby
 
@@ -111,5 +114,6 @@ as well as to the Torch and PyTorch dev teams.
 [signatures]: ./signatures/
 [hasktorch]: ./hasktorch/
 [examples]: ./examples/
+[tests]: ./hasktorch/tests/
 [indef]: ./indef/
 [zoo]: ./zoo/
