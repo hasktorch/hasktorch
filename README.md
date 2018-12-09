@@ -68,7 +68,7 @@ tensor usage][static-tensor-usage] and [simple linear regression using backprop]
 [static-tensor-usage]: https://github.com/hasktorch/hasktorch/blob/master/examples/static-tensor-usage/Main.hs
 [backprop-regression]:https://github.com/hasktorch/hasktorch/blob/master/examples/backprop-regression/BackpropRegression.hs
 
-Additional examples can be found in [`examples/`][examples] as well as the [test modules](tests).
+Additional examples can be found in [`examples/`][examples] as well as the [test modules][tests].
 
 ## Contributing
 
