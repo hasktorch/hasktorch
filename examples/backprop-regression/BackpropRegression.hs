@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -44,21 +43,20 @@ newLayerWithBias n = do
   (,) <$> uniform g pair
       <*> uniform g pair
   where
-    stdv :: Double
-    stdv = 1 / P.sqrt (fromIntegral n)
+    stdv = (1 / P.sqrt (fromIntegral n)) :: Double
 
 newLinear :: forall o i . All KnownDim '[i,o] => IO (Linear i o)
 newLinear = fmap Linear . newLayerWithBias $ dimVal (dim :: Dim i)
 
 regression :: forall s . Reifies s W =>
-    BVar s Regression  -- model architecture
+    BVar s Regression                  -- model architecture
     -> BVar s (Tensor '[BatchSize, 2]) -- input
     -> BVar s (Tensor '[BatchSize, 1]) -- output
 regression modelArch input =
     linearBatch (modelArch ^^. (field @"linearLayer")) input
 
 genBatch ::
-  Generator -- RNG
+  Generator                   -- RNG
   -> (Tensor '[2, 1], Double) -- (parameters, bias)
   -> IO (Tensor '[BatchSize, 2], Tensor '[BatchSize, 1])
 genBatch gen (param, bias) = do
@@ -69,7 +67,6 @@ genBatch gen (param, bias) = do
   predictor2Val :: Tensor '[BatchSize] <- normal gen 0 xScale
   let biasTerm :: Tensor '[BatchSize, 1]  = (constant 1) ^* bias
   let x :: Tensor '[BatchSize, 2] = transpose2d $ resizeAs (predictor1Val `cat1d` predictor2Val)
-  -- let x :: Tensor '[BatchSize, 2] = transpose2d $ resizeAs (predictor1Val `cat1d` (constant 1))
   let y :: Tensor '[BatchSize, 1] = (cadd noise 1 (resizeAs (transpose2d (x !*! param)))) + biasTerm
   pure (x, y)
 
@@ -106,8 +103,8 @@ epochs learningRate maxEpochs tset net0 = do
         hFlush stdout
         runEpoch (epoch + 1) net'
 
-infer :: Regression -> Tensor '[BatchSize, 2] -> Tensor '[BatchSize, 1]
-infer architecture = evalBP2 regression architecture
+-- infer :: Regression -> Tensor '[BatchSize, 2] -> Tensor '[BatchSize, 1]
+-- infer architecture = evalBP2 regression architecture
 
 main :: IO ()
 main = do
@@ -115,7 +112,7 @@ main = do
     -- model parameters
     Just trueParam <- fromList [24.5, -80.4]
     let trueBias = 52.4
-    let numBatch = 1
+    let numBatch = 10
     let learningRate = 0.005
     let numEpochs = 200
 
@@ -123,7 +120,6 @@ main = do
     gen <- newRNG
     RNG.manualSeed gen seedVal
     batches <- mapM (\_ -> genBatch gen (trueParam, trueBias))  ([1..numBatch] :: [Integer])
-    -- FIXME: fix RNG advancement bug for cases where numBatch > 1
 
     -- train model
     net0 <- Regression <$> newLinear -- instantiate network architecture
