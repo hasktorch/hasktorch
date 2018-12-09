@@ -8,11 +8,10 @@
 module Main where
 
 import Data.List (tails)
+import Graphics.Vega.VegaLite
 import Prelude as P
 import Torch.Double as T
 import qualified Torch.Core.Random as RNG
-
--- import Torch.Indef.Dynamic.Tensor.Math (new') -- for testing
 
 import Kernels (kernel1d_rbf)
 
@@ -33,14 +32,11 @@ type GridSize = 25
 type NSamp = 3
 xRange = [-2..2]
 
-tst = do
-    foo <- makeGrid
-    pure $ fst foo
-
-makeGrid :: IO (DoubleTensor '[GridSize], DoubleTensor '[GridSize])
+-- | cartesian product of all predictor values
+makeGrid :: IO (Tensor '[GridSize], Tensor '[GridSize])
 makeGrid = do
-    x :: DoubleTensor '[GridSize] <- unsafeVector (fst <$> rngPairs)
-    x' :: DoubleTensor '[GridSize] <- unsafeVector (snd <$> rngPairs)
+    x :: Tensor '[GridSize] <- unsafeVector (fst <$> rngPairs)
+    x' :: Tensor '[GridSize] <- unsafeVector (snd <$> rngPairs)
     pure (x, x')
     where 
         pairs l = [(x * 0.1 ,x' * 0.1) | x <- l, x' <- l]
@@ -72,9 +68,9 @@ conditionalYX muX muY covXX covXY covYX covYY x y =
 
 testGesv = do
     putStrLn "\n\ngesv test\n\n"
-    Just (t :: DoubleTensor '[3, 3]) <- fromList [2, 4, 6, 0, -1, -8, 0, 0, 96]
-    let trg = eye :: DoubleTensor '[3, 3]
-    let (invT, invTLU) = gesv (eye :: DoubleTensor '[3, 3]) t
+    Just (t :: Tensor '[3, 3]) <- fromList [2, 4, 6, 0, -1, -8, 0, 0, 96]
+    let trg = eye :: Tensor '[3, 3]
+    let (invT, invTLU) = gesv (eye :: Tensor '[3, 3]) t
     print t
     print trg
     print invT
@@ -83,32 +79,47 @@ testGesv = do
 
 testGetri = do
     putStrLn "\n\ngetri test\n\n"
-    Just (t :: DoubleTensor '[3, 3]) <- fromList [2, 4, 6, 0, -1, -8, 0, 0, 96]
-    let invT = (getri t) :: DoubleTensor '[3, 3]
+    Just (t :: Tensor '[3, 3]) <- fromList [2, 4, 6, 0, -1, -8, 0, 0, 96]
+    let invT = (getri t) :: Tensor '[3, 3]
     print t
     print invT
     print (t !*! invT)
 
 {- Main -}
 
+-- | produce observation data
+addObservations :: IO (Tensor '[2], Tensor '[2], Tensor '[2, 2])
+addObservations = do
+    let xList = [-1.4, 0.3]
+    obsX :: Tensor '[2] <- unsafeVector xList
+    obsY :: Tensor '[2] <- unsafeVector [0.4, 1.8]
+    let pairs = [(x,x') | x <- xList, x' <- xList]
+    x :: Tensor '[4] <- unsafeVector (fst <$> pairs)
+    x' :: Tensor '[4] <- unsafeVector (snd <$> pairs)
+    let obsCov :: Tensor '[2, 2] = resizeAs $ kernel1d_rbf 1.0 1.0 x x'
+    -- print obsCov
+    pure (obsX, obsY, obsCov)
+
+-- | condition on observations
+condition :: IO ()
+condition = do
+    -- let combinedX = cat1d x obsX
+    -- let crossCov = kernel1d_rbf 1.0 1.0 x obsX
+    --postMu = mu + (transpose2d crossCov) !*! (getri )
+    pure undefined
+
 main = do
     (x, y) <- makeGrid
     let rbf = kernel1d_rbf 1.0 1.0 x y
     putStrLn "Radial Basis Function Kernel Values"
     print rbf
-    let mu = constant 0 :: DoubleTensor [GridDim, GridDim]
-    let cov = resizeAs rbf :: DoubleTensor [GridDim, GridDim]
+    let mu = constant 0 :: Tensor [GridDim, GridDim]
+    let cov = resizeAs rbf :: Tensor [GridDim, GridDim]
 
     putStrLn "\nReshaped as a Covariance Matrix"
     print cov
 
-    -- let (invX, invLU) = gesv (eye :: DoubleTensor '[GridDim, GridDim]) cov
-    -- putStrLn "\nCovariance Inverse X"
-    -- print invX
-    -- putStrLn "\nCovariance Inverse LU"
-    -- print invLU
-
-    let invCov = getri cov :: DoubleTensor '[GridDim, GridDim]
+    let invCov = getri cov :: Tensor '[GridDim, GridDim]
     putStrLn "\nInv Covariance"
     print invCov
 
@@ -117,10 +128,11 @@ main = do
 
     putStrLn "\nGP Samples (cols = realizations)"
     gen <- newRNG
-    mvnSamp :: DoubleTensor '[GridDim, NSamp] <- mvnCholesky gen cov
+    mvnSamp :: Tensor '[GridDim, NSamp] <- mvnCholesky gen cov
     print mvnSamp
+
+    addObservations
 
     putStrLn "Done"
 
-    tst
     pure ()
