@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Main where
 
@@ -28,9 +29,25 @@ import Kernels (kernel1d_rbf)
 -- xRange = [-3..3]
 
 type GridDim = 5
-type GridSize = 25
-type NSamp = 3
+type GridSize = GridDim * GridDim
 xRange = [-2..2]
+
+type DataDim = 2
+type DataSize = DataDim * DataDim
+type CrossDim = DataDim * GridDim
+dataPredictors = [-0.4, 1.3]
+dataValues = [1.8, 0.4]
+
+type CrossSize = GridDim * DataDim
+
+type NSamp = 3
+
+data DataModel = DataModel {
+    predTensor :: Tensor '[DataDim],
+    valTensor :: Tensor '[DataDim],
+    dataCov :: Tensor '[DataDim, DataDim],
+    crossCov :: Tensor '[GridDim, DataDim]
+}
 
 -- | cartesian product of all predictor values
 makeGrid :: IO (Tensor '[GridSize], Tensor '[GridSize])
@@ -57,13 +74,6 @@ conditionalXY muX muY covXX covXY covYX covYY x y =
         postMu = muX + covXY !*! (getri covYY) !*! (y - muY)
         postCov = covXX - covXY !*! (getri covYY) !*! covYX
 
--- | conditional distribution parameters for X|Y
-conditionalYX muX muY covXX covXY covYX covYY x y = 
-    (postMu, postCov)
-    where
-        postMu = muY + covYX !*! (getri covXX) !*! (x - muX)
-        postCov = covYY - covYX !*! (getri covXX) !*! covXY
-
 {- Lapack sanity checks -}
 
 testGesv = do
@@ -88,17 +98,32 @@ testGetri = do
 {- Main -}
 
 -- | produce observation data
-addObservations :: IO (Tensor '[2], Tensor '[2], Tensor '[2, 2])
+addObservations :: IO DataModel
 addObservations = do
-    let xList = [-1.4, 0.3]
-    obsX :: Tensor '[2] <- unsafeVector xList
-    obsY :: Tensor '[2] <- unsafeVector [0.4, 1.8]
-    let pairs = [(x,x') | x <- xList, x' <- xList]
-    x :: Tensor '[4] <- unsafeVector (fst <$> pairs)
-    x' :: Tensor '[4] <- unsafeVector (snd <$> pairs)
-    let obsCov :: Tensor '[2, 2] = resizeAs $ kernel1d_rbf 1.0 1.0 x x'
-    -- print obsCov
-    pure (obsX, obsY, obsCov)
+    y :: Tensor '[DataDim] <- unsafeVector dataPredictors
+    vals :: Tensor '[DataDim] <- unsafeVector dataValues
+
+    -- covariance terms for data
+    let pairs = [(y, y') | y <- dataPredictors, y' <- dataPredictors]
+    t :: Tensor '[DataSize] <- unsafeVector (fst <$> pairs)
+    t' :: Tensor '[DataSize] <- unsafeVector (snd <$> pairs)
+    let obsCov :: Tensor '[DataDim, DataDim] = 
+            resizeAs $ kernel1d_rbf 1.0 1.0 t t'
+
+    -- cross-covariance terms
+    let pairs = [(x, y) | x <- xRange, y <- dataPredictors]
+    t :: Tensor '[CrossSize] <- unsafeVector (fst <$> pairs)
+    t' :: Tensor '[CrossSize] <- unsafeVector (snd <$> pairs)
+    let crossCov :: Tensor '[GridDim, DataDim] = 
+            resizeAs $ kernel1d_rbf 1.0 1.0 t t'
+
+    putStrLn "\nObservation covariance"
+    print obsCov
+
+    putStrLn "\nCross covariance"
+    print crossCov
+
+    pure $ DataModel y vals obsCov crossCov
 
 -- | condition on observations
 condition :: IO ()
