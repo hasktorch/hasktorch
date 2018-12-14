@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 
@@ -7,8 +8,7 @@ module Main where
 
 import Data.List (tails)
 import Data.Proxy (Proxy(..))
-import GHC.TypeLits (natVal)
-import Graphics.Vega.VegaLite
+import GHC.TypeLits (natVal, KnownNat)
 import Kernels (kernel1d_rbf)
 import Prelude as P
 import Torch.Double as T
@@ -17,7 +17,7 @@ import qualified Torch.Core.Random as RNG
 -- Define an axis
 type GridDim = 5
 type GridSize = GridDim * GridDim
-xRange = (*) scale <$> ([-halfwidth .. halfwidth] :: [HsReal])
+tRange = (*) scale <$> ([-halfwidth .. halfwidth] :: [HsReal])
     where scale = 0.2
           gridDim = natVal (Proxy :: Proxy GridDim)
           halfwidth = fromIntegral (P.div gridDim 2)
@@ -27,15 +27,17 @@ type DataDim = 3
 dataPredictors = [-0.3, 0.0, 0.4]
 dataValues = [-2.3, 1.5, -4]
 
--- | Cartesian product of axis coordinates with itself
-makeGrid :: IO (Tensor '[GridSize], Tensor '[GridSize])
-makeGrid = do
-    t :: Tensor '[GridSize] <- unsafeVector (fst <$> rngPairs)
-    t' :: Tensor '[GridSize] <- unsafeVector (snd <$> rngPairs)
+-- | Cartesian product of axis coordinates
+-- d represents the total number of elements and should be |axis1| x |axis2|
+makeGrid :: (KnownDim d, KnownNat d) 
+         => [Double] -> [Double] -> IO (Tensor '[d], Tensor '[d])
+makeGrid axis1 axis2 = do
+    t :: Tensor '[d] <- unsafeVector (fst <$> rngPairs)
+    t' :: Tensor '[d] <- unsafeVector (snd <$> rngPairs)
     pure (t, t')
     where 
-        pairs l = [(t, t') | t <- l, t' <- l]
-        rngPairs = pairs xRange
+        pairs axis1' axis2' = [(t, t') | t <- axis1', t' <- axis2']
+        rngPairs = pairs axis1 axis2
 
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: (KnownDim b, KnownDim c) =>
@@ -58,48 +60,41 @@ condition muX muY covXX covXY covYY y =
 -- | Compute GP conditioned on observed points
 computePosterior :: IO (Tensor '[GridDim, 1], Tensor '[GridDim, GridDim])
 computePosterior = do
-    -- instantiate tensors from data lists
-    y :: Tensor '[DataDim] <- unsafeVector dataPredictors
-    vals :: Tensor '[DataDim] <- unsafeVector dataValues
-
     -- covariance terms for predictions
-    (t, t') <- makeGrid
+    (t, t') <- makeGrid tRange tRange
     let rbf = kernel1d_rbf 1.0 1.0 t t' 
     let priorMu = constant 0 :: Tensor [GridDim, 1]
     let priorCov = (resizeAs rbf) :: Tensor [GridDim, GridDim]
 
-    -- covariance terms for data
-    let pairs = [(y, y') | y <- dataPredictors, y' <- dataPredictors]
-    t :: Tensor '[DataDim * DataDim] <- unsafeVector (fst <$> pairs)
-    t' :: Tensor '[DataDim * DataDim] <- unsafeVector (snd <$> pairs)
+    -- covariance terms for observations
+    (t, t') <- makeGrid dataPredictors dataPredictors
     let obsCov :: Tensor '[DataDim, DataDim] = 
             resizeAs $ kernel1d_rbf 1.0 1.0 t t'
     putStrLn $ "\nObservation coordinates covariance\n" ++ show obsCov
 
     -- cross-covariance terms
-    let pairs = [(x, y) | x <- xRange, y <- dataPredictors]
-    t :: Tensor '[GridDim * DataDim] <- unsafeVector (fst <$> pairs)
-    t' :: Tensor '[GridDim * DataDim] <- unsafeVector (snd <$> pairs)
+    (t, t') <- makeGrid tRange dataPredictors
     let crossCov :: Tensor '[GridDim, DataDim] = 
             resizeAs $ kernel1d_rbf 1.0 1.0 t t'
     putStrLn $ "\nCross covariance\n" ++ show crossCov
 
     -- conditional distribution
+    obsVals :: Tensor '[DataDim] <- unsafeVector dataValues
     let (postMu, postCov) = 
             condition
-                priorMu (constant 0 :: Tensor '[DataDim, 1]) -- mean
-                priorCov crossCov obsCov -- covariance matrix terms
-                vals -- observed y
+                priorMu (constant 0 :: Tensor '[DataDim, 1])
+                priorCov crossCov obsCov
+                obsVals -- observed y
     pure $ (postMu, postCov)
     
 main :: IO ()
 main = do
     -- Setup prediction axis
-    (t, t') <- makeGrid
+    (t, t') <- makeGrid tRange tRange
     let rbf = kernel1d_rbf 1.0 1.0 t t'
         cov = resizeAs rbf :: Tensor [GridDim, GridDim]
         mu = constant 0 :: Tensor [GridDim, GridDim]
-    putStrLn $ "Predictor values\n" ++ show xRange
+    putStrLn $ "Predictor values\n" ++ show tRange
     putStrLn $ "\nCovariance based on radial basis function\n" ++ show cov
 
     -- Prior GP, take 3 samples
