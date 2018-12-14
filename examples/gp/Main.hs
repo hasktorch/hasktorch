@@ -14,25 +14,29 @@ import Graphics.Vega.VegaLite
 import Prelude as P
 import Torch.Double as T
 import qualified Torch.Core.Random as RNG
+import GHC.TypeLits (natVal)
+import Data.Proxy (Proxy(..))
+
 
 import Kernels (kernel1d_rbf)
 
 -- type GridDim = 9
 -- type GridSize = 81
 -- type NSamp = 5
--- xRange = [-4..4]
 
 -- type GridDim = 7
 -- type GridSize = 49
 -- type NSamp = 5
--- xRange = [-3..3]
 
 -- Function predicted value locations (on a grid)
 type GridDim = 5
 type GridSize = GridDim * GridDim
 type NSamp = 3
-xRange = [-2..2]
-xScale = 0.2
+
+xRange = (*) (0.2) <$> ([-halfwidth .. halfwidth] :: [HsReal])
+    where
+        gridDim = natVal (Proxy :: Proxy GridDim)
+        halfwidth = fromIntegral (P.div gridDim 2)
 
 -- Observed data
 type DataDim = 2
@@ -53,10 +57,12 @@ makeGrid = do
     x' :: Tensor '[GridSize] <- unsafeVector (snd <$> rngPairs)
     pure (x, x')
     where 
-        pairs l = [(x * xScale ,x' * xScale) | x <- l, x' <- l]
+        pairs l = [(x, x') | x <- l, x' <- l]
         rngPairs = pairs xRange
 
 -- | multivariate 0-mean normal via cholesky decomposition
+mvnCholesky :: (KnownDim b, KnownDim c) =>
+    Generator -> Tensor '[b, b] -> IO (Tensor '[b, c])
 mvnCholesky gen cov = do
     let Just sd = positive 1.0
     samples <- normal gen 0.0 sd
@@ -65,7 +71,8 @@ mvnCholesky gen cov = do
     pure mvnSamp
 
 -- | conditional distribution parameters for X|Y
-conditionalXY (muX :: Tensor '[GridDim, 1]) (muY :: Tensor '[DataDim, 1]) covXX covXY covYY y = (postMu, postCov) 
+conditionalXY (muX :: Tensor '[GridDim, 1]) (muY :: Tensor '[DataDim, 1]) covXX covXY covYY y =
+    (postMu, postCov) 
     where
         covYX = transpose2d covXY
         y' = resizeAs y
@@ -128,7 +135,7 @@ main = do
     let cov = resizeAs rbf :: Tensor [GridDim, GridDim]
 
     putStrLn "Predictor values"
-    print [x * xScale | x <- xRange]
+    print [x | x <- xRange]
 
     putStrLn "\nCovariance based on radial basis function"
     print cov
