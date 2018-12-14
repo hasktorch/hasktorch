@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE KindSignatures #-}
@@ -7,6 +8,7 @@
 module Main where
 
 import Data.Proxy (Proxy(..))
+import Data.Singletons.Prelude.List (Product)
 import GHC.TypeLits (natVal, KnownNat)
 import Kernels (kernel1d_rbf)
 import Prelude as P
@@ -37,6 +39,13 @@ makeGrid axis1 axis2 = do
         pairs axis1' axis2' = [(t, t') | t <- axis1', t' <- axis2']
         rngPairs = pairs axis1 axis2
 
+makeCovmatrix
+ :: (All KnownDim [d1, d2, d3], All KnownNat [d1, d2, d3], d3 ~ Product [d1, d2]) 
+ => [Double] -> [Double] -> IO (Tensor '[d1, d2])
+makeCovmatrix axis1 axis2 = do
+    (t, t') :: (Tensor '[d3], Tensor '[d3]) <- makeGrid axis1 axis2
+    pure $ resizeAs $ kernel1d_rbf 1.0 1.0 t t'
+
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: (KnownDim b, KnownDim c) =>
     Generator -> Tensor '[b, b] -> IO (Tensor '[b, c])
@@ -58,29 +67,24 @@ condition muX muY covXX covXY covYY y =
 -- | Compute GP conditioned on observed points
 computePosterior :: IO (Tensor '[GridDim, 1], Tensor '[GridDim, GridDim])
 computePosterior = do
-    -- covariance terms for predictions
-    (t, t') <- makeGrid tRange tRange
-    let rbf = kernel1d_rbf 1.0 1.0 t t' 
-    let priorMu = constant 0 :: Tensor [GridDim, 1]
-    let priorCov = (resizeAs rbf) :: Tensor [GridDim, GridDim]
+    -- multivariate normal parameters for axis locations
+    let priorMuAxis = constant 0 :: Tensor [GridDim, 1]
+    priorCov <-  makeCovmatrix tRange tRange
 
-    -- covariance terms for observations
-    (t, t') <- makeGrid dataPredictors dataPredictors
-    let obsCov :: Tensor '[DataDim, DataDim] = 
-            resizeAs $ kernel1d_rbf 1.0 1.0 t t'
+    -- multivariate normal parameters for observation locations
+    let priorMuData = (constant 0 :: Tensor '[DataDim, 1])
+    obsCov :: Tensor '[DataDim, DataDim] <- makeCovmatrix dataPredictors dataPredictors
     putStrLn $ "\nObservation coordinates covariance\n" ++ show obsCov
 
     -- cross-covariance terms
-    (t, t') <- makeGrid tRange dataPredictors
-    let crossCov :: Tensor '[GridDim, DataDim] = 
-            resizeAs $ kernel1d_rbf 1.0 1.0 t t'
+    crossCov :: Tensor '[GridDim, DataDim] <- makeCovmatrix tRange dataPredictors
     putStrLn $ "\nCross covariance\n" ++ show crossCov
 
     -- conditional distribution
     obsVals :: Tensor '[DataDim] <- unsafeVector dataValues
     let (postMu, postCov) = 
             condition
-                priorMu (constant 0 :: Tensor '[DataDim, 1])
+                priorMuAxis priorMuData 
                 priorCov crossCov obsCov
                 obsVals -- observed y
     pure $ (postMu, postCov)
@@ -88,10 +92,7 @@ computePosterior = do
 main :: IO ()
 main = do
     -- Setup prediction axis
-    (t, t') <- makeGrid tRange tRange
-    let rbf = kernel1d_rbf 1.0 1.0 t t'
-        cov = resizeAs rbf :: Tensor [GridDim, GridDim]
-        mu = constant 0 :: Tensor [GridDim, GridDim]
+    cov :: Tensor [GridDim, GridDim] <- makeCovmatrix tRange tRange
     putStrLn $ "Predictor values\n" ++ show tRange
     putStrLn $ "\nCovariance based on radial basis function\n" ++ show cov
 
