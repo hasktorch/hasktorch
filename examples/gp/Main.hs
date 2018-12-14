@@ -10,54 +10,44 @@
 module Main where
 
 import Data.List (tails)
+import Data.Proxy (Proxy(..))
+import GHC.TypeLits (natVal)
 import Graphics.Vega.VegaLite
+import Kernels (kernel1d_rbf)
 import Prelude as P
 import Torch.Double as T
 import qualified Torch.Core.Random as RNG
-import GHC.TypeLits (natVal)
-import Data.Proxy (Proxy(..))
-
-
-import Kernels (kernel1d_rbf)
-
--- type GridDim = 9
--- type GridSize = 81
--- type NSamp = 5
-
--- type GridDim = 7
--- type GridSize = 49
--- type NSamp = 5
 
 -- Function predicted value locations (on a grid)
 type GridDim = 5
-type GridSize = GridDim * GridDim
 type NSamp = 3
+type GridSize = GridDim * GridDim
 
-xRange = (*) (0.2) <$> ([-halfwidth .. halfwidth] :: [HsReal])
+-- Construct an axis w/ function values of size GridDim
+xRange = (*) scale <$> ([-halfwidth .. halfwidth] :: [HsReal])
     where
+        scale = 0.2
         gridDim = natVal (Proxy :: Proxy GridDim)
         halfwidth = fromIntegral (P.div gridDim 2)
 
 -- Observed data
-type DataDim = 2
+type DataDim = 3
 type DataSize = DataDim * DataDim
-dataPredictors = [-0.3, 0.3]
-dataValues = [-2.3, 1.5]
+dataPredictors = [-0.3, 0.3, 0.5]
+dataValues = [-2.3, 1.5, -4]
 
 -- Cross-covariance dimensions
 type CrossDim = DataDim * GridDim
 type CrossSize = GridDim * DataDim
 
-{- Helper functions -}
-
--- | cartesian product of all predictor values
+-- | Cartesian product of predictor axes coordinates
 makeGrid :: IO (Tensor '[GridSize], Tensor '[GridSize])
 makeGrid = do
-    x :: Tensor '[GridSize] <- unsafeVector (fst <$> rngPairs)
-    x' :: Tensor '[GridSize] <- unsafeVector (snd <$> rngPairs)
-    pure (x, x')
+    t :: Tensor '[GridSize] <- unsafeVector (fst <$> rngPairs)
+    t' :: Tensor '[GridSize] <- unsafeVector (snd <$> rngPairs)
+    pure (t, t')
     where 
-        pairs l = [(x, x') | x <- l, x' <- l]
+        pairs l = [(t, t') | t <- l, t' <- l]
         rngPairs = pairs xRange
 
 -- | multivariate 0-mean normal via cholesky decomposition
@@ -71,7 +61,8 @@ mvnCholesky gen cov = do
     pure mvnSamp
 
 -- | conditional distribution parameters for X|Y
-conditionalXY muX muY covXX covXY covYY y =
+--  Y are data points, X are predicted points
+condition muX muY covXX covXY covYY y =
     (postMu, postCov) 
     where
         covYX = transpose2d covXY
@@ -79,11 +70,9 @@ conditionalXY muX muY covXX covXY covYY y =
         postMu = muX + covXY !*! (getri covYY) !*! (y' - muY)
         postCov = covXX - covXY !*! (getri covYY) !*! covYX
 
-{- Main -}
-
--- | produce observation data
-addObservations :: IO (Tensor '[GridDim, 1], Tensor '[GridDim, GridDim])
-addObservations = do
+-- | Compute GP conditioned on observed points
+computePosterior :: IO (Tensor '[GridDim, 1], Tensor '[GridDim, GridDim])
+computePosterior = do
     y :: Tensor '[DataDim] <- unsafeVector dataPredictors
     vals :: Tensor '[DataDim] <- unsafeVector dataValues
 
@@ -109,56 +98,52 @@ addObservations = do
 
     -- conditional distribution
     let (postMu, postCov) = 
-            conditionalXY 
+            condition
                 priorMu (constant 0 :: Tensor '[DataDim, 1]) -- mean
                 priorCov crossCov obsCov -- covariance matrix terms
                 vals -- observed y
-        
-    putStrLn "\nObservations: predictor coordinates"
-    print dataPredictors 
-
-    putStrLn "\nObservations: values"
-    print dataValues
 
     putStrLn "\nObservation coordinates covariance"
     print obsCov
-
     putStrLn "\nCross covariance"
     print crossCov
-
     pure $ (postMu, postCov)
     
-
 main :: IO ()
 main = do
-    (x, y) <- makeGrid
-    let rbf = kernel1d_rbf 1.0 1.0 x y
+    (t, t') <- makeGrid
+    let rbf = kernel1d_rbf 1.0 1.0 t t'
     let mu = constant 0 :: Tensor [GridDim, GridDim]
     let cov = resizeAs rbf :: Tensor [GridDim, GridDim]
+    let regularizationScale = 0.01
+    let reg = regularizationScale * eye
 
+    -- Setup prediction axis
     putStrLn "Predictor values"
-    print [x | x <- xRange]
-
+    print xRange
     putStrLn "\nCovariance based on radial basis function"
     print cov
 
+    -- Prior GP
     putStrLn "\nGP Samples (prior,  rows = values, cols = realizations)"
     gen <- newRNG
-    mvnSamp :: Tensor '[GridDim, NSamp] <- mvnCholesky gen cov
+    mvnSamp :: Tensor '[GridDim, NSamp] <- mvnCholesky gen (cov + reg)
     print mvnSamp
 
-    (postMu, postCov) <- addObservations
+    -- Observations
+    putStrLn "\nObservations: predictor coordinates"
+    print dataPredictors 
+    putStrLn "\nObservations: values"
+    print dataValues
+    (postMu, postCov) <- computePosterior
 
+    -- Conditional GP
     putStrLn "\nConditional mu (posterior)"
     print postMu
-
     putStrLn "\nConditional covariance (posterior)"
     print postCov
-
     putStrLn "\nGP Conditional Samples (posterior, rows = values, cols = realizations)"
     gen <- newRNG
-    let regularizationScale = 1.0
-    let reg = regularizationScale * eye
     mvnSamp :: Tensor '[GridDim, 1] <- mvnCholesky gen (postCov + reg)
     print (postMu + mvnSamp)
 
