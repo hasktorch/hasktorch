@@ -1,11 +1,7 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GADTs #-}
 
 module Main where
 
@@ -50,8 +46,7 @@ mvnCholesky gen cov = do
     let l = potrf cov Upper
     pure $ l !*! samples
 
--- | conditional distribution parameters for X|Y
---  Y are data points, X are predicted points
+-- | Conditional multivariate normal parameters for Predicted (X) | Observed (Y)
 condition muX muY covXX covXY covYY y =
     (postMu, postCov) 
     where
