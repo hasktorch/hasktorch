@@ -6,7 +6,6 @@
 
 module Main where
 
-import Data.List (tails)
 import Data.Proxy (Proxy(..))
 import GHC.TypeLits (natVal, KnownNat)
 import Kernels (kernel1d_rbf)
@@ -17,14 +16,13 @@ import qualified Torch.Core.Random as RNG
 -- Define an axis
 type GridDim = 5
 type GridSize = GridDim * GridDim
-tRange = (*) scale <$> ([-halfwidth .. halfwidth] :: [HsReal])
+tRange = (*) scale <$> ([0 .. (gridDim - 1)] :: [HsReal])
     where scale = 0.2
-          gridDim = natVal (Proxy :: Proxy GridDim)
-          halfwidth = fromIntegral (P.div gridDim 2)
+          gridDim = fromIntegral $ natVal (Proxy :: Proxy GridDim)
 
 -- Observed data points
 type DataDim = 3
-dataPredictors = [-0.3, 0.0, 0.4]
+dataPredictors = [0.1, 0.3, 0.6]
 dataValues = [-2.3, 1.5, -4]
 
 -- | Cartesian product of axis coordinates
