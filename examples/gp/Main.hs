@@ -71,7 +71,7 @@ mvnCholesky gen cov = do
     pure mvnSamp
 
 -- | conditional distribution parameters for X|Y
-conditionalXY (muX :: Tensor '[GridDim, 1]) (muY :: Tensor '[DataDim, 1]) covXX covXY covYY y =
+conditionalXY muX muY covXX covXY covYY y =
     (postMu, postCov) 
     where
         covYX = transpose2d covXY
@@ -82,7 +82,7 @@ conditionalXY (muX :: Tensor '[GridDim, 1]) (muY :: Tensor '[DataDim, 1]) covXX 
 {- Main -}
 
 -- | produce observation data
--- addObservations :: IO ()
+addObservations :: IO (Tensor '[GridDim, 1], Tensor '[GridDim, GridDim])
 addObservations = do
     y :: Tensor '[DataDim] <- unsafeVector dataPredictors
     vals :: Tensor '[DataDim] <- unsafeVector dataValues
@@ -127,7 +127,9 @@ addObservations = do
     print crossCov
 
     pure $ (postMu, postCov)
+    
 
+main :: IO ()
 main = do
     (x, y) <- makeGrid
     let rbf = kernel1d_rbf 1.0 1.0 x y
@@ -161,5 +163,3 @@ main = do
     print (postMu + mvnSamp)
 
     putStrLn "Done"
-
-    pure ()
