@@ -256,6 +256,7 @@ jobs:
       - run: cabal new-run hasktorch-examples:gradient-descent
       - run: cabal new-run hasktorch-examples:multivariate-normal
       - run: cabal new-run hasktorch-examples:xor
+      - run: cabal new-run hasktorch-examples:gp
 
 
 workflows:
