@@ -43,8 +43,7 @@ makeCovmatrix
  :: (All KnownDim [d1, d2, d3], All KnownNat [d1, d2, d3], d3 ~ Product [d1, d2]) 
  => [Double] -> [Double] -> IO (Tensor '[d1, d2])
 makeCovmatrix axis1 axis2 = do
-    -- (t, t') :: (Tensor '[d3], Tensor '[d3]) <- makeAxis axis1 axis2
-    (t, t') <- makeAxis axis1 axis2
+    (t, t') :: (Tensor '[d3], Tensor '[d3]) <- makeAxis axis1 axis2
     pure $ resizeAs $ kernel1d_rbf 1.0 1.0 t t'
 
 -- | Multivariate 0-mean normal via cholesky decomposition
@@ -64,15 +63,16 @@ condition
     -> Tensor '[AxisDim, DataDim]                         -- covXY
     -> Tensor '[DataDim, DataDim]                         -- covYY
     -> Tensor '[DataDim, 1]                               -- y
-    -> (Tensor '[AxisDim, 1], Tensor '[AxisDim, AxisDim]) -- (postMu,postCov)
+    -> (Tensor '[AxisDim, 1], Tensor '[AxisDim, AxisDim]) -- (postMu, postCov)
 condition muX muY covXX covXY covYY y =
     (postMu, postCov) 
     where
-        !covYX = transpose2d covXY
-        !invY = getri covYY 
-        !postMu = muX ^+^ covXY !*! invY !*! (y ^-^ muY)
+        covYX = transpose2d covXY
+        invY = getri covYY 
+        postMu = muX ^+^ covXY !*! invY !*! (y ^-^ muY)
         -- !postCov = covXX ^-^ covXY !*! invY' !*! covYX
-        !tmp = invY !*! covYX -- FIXME : shouldn't need this to avoid runtime error
+        -- FIXME : shouldn't need this to avoid runtime error
+        !tmp = invY !*! covYX
         postCov = covXX ^-^ covXY !*! tmp
 
 -- | Compute GP conditioned on observed points
@@ -84,7 +84,7 @@ computePosterior = do
 
     -- multivariate normal parameters for observation locations
     let priorMuData = (constant 0 :: Tensor '[DataDim, 1])
-    !(obsCov :: Tensor '[DataDim, DataDim]) <- makeCovmatrix dataPredictors dataPredictors
+    (obsCov :: Tensor '[DataDim, DataDim]) <- makeCovmatrix dataPredictors dataPredictors
     putStrLn $ "\nObservation coordinates covariance\n" ++ show obsCov
 
     -- cross-covariance terms
