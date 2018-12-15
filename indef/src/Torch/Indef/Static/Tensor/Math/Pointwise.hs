@@ -16,6 +16,9 @@ import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic
 
+infixl 6 ^+^, ^-^
+infixl 7 ^*^, ^/^
+
 -- | Static version of 'Dynamic.sign'
 sign :: Tensor d -> Tensor d
 sign t = asStatic $ Dynamic.sign (asDynamic t)

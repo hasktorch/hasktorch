@@ -65,6 +65,7 @@ vector rs
 
 unsafeVector :: (KnownDim n, KnownNat n) => [HsReal] -> IO (Tensor '[n])
 unsafeVector = fmap (either error id) . runExceptT . vector
+{-# NOINLINE unsafeVector #-}
 
 -- | Static call to 'Dynamic.newExpand'
 newExpand :: Tensor d -> TH.IndexStorage -> Tensor d'

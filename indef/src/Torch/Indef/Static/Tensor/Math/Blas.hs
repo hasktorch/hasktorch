@@ -20,6 +20,8 @@ import Torch.Indef.Static.Tensor.Math
 
 import qualified Torch.Indef.Dynamic.Tensor.Math.Blas as Dynamic
 
+infixl 7 !*, !*!
+
 -- | Performs a matrix-vector multiplication between @mat@ (2D Tensor) and @vec2@
 -- (1D Tensor) and add it to @vec1@.
 --

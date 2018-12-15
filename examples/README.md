@@ -11,7 +11,7 @@ Basic usage examples:
 Other examples:
 
 - *autoencoder* - a simple autoencoder fit with backprop
-- *gp* - gaussian process example
+- *gaussian-process* - gaussian process example
 - *gradient-descent* - simple gradient descent example without backprop abstractions
 - *lenet-cifar10* - lenet NN on cifar10 data, using backprop typeclasses
 - *multivariate-normal* - example of random sampling from a multivariate

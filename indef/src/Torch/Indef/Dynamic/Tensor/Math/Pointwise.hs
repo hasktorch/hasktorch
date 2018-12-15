@@ -42,6 +42,9 @@ import Torch.Indef.Dynamic.Tensor
 
 import qualified Torch.Sig.Tensor.Math.Pointwise as Sig
 
+infixl 6 ^+^, ^-^
+infixl 7 ^*^, ^/^
+
 -- | Replaces all elements in-place with the sign of the elements of the tensor.
 sign_ :: Dynamic -> IO ()
 sign_ a = _sign a a
