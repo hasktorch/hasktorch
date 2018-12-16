@@ -91,6 +91,7 @@ addmm
   -> Tensor '[b, c]          -- ^ mat2
   -> Tensor '[a, c]          -- ^ res
 addmm a b c d e = asStatic $ Dynamic.addmm a (asDynamic b) c (asDynamic d) (asDynamic e)
+{-# NOINLINE addmm #-}
 
 -- | Inline version of 'addmm', mutating @M@ inplace.
 addmm_
