@@ -92,7 +92,6 @@ addmm
   -> Tensor '[a, c]          -- ^ res
 addmm a b c d e = asStatic $ Dynamic.addmm a (asDynamic b) c (asDynamic d) (asDynamic e)
 
-
 -- | Inline version of 'addmm', mutating @M@ inplace.
 addmm_
   :: All KnownDim '[a, b, c]

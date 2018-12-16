@@ -70,10 +70,7 @@ condition muX muY covXX covXY covYY y =
         covYX = transpose2d covXY
         invY = getri covYY 
         postMu = muX ^+^ covXY !*! invY !*! (y ^-^ muY)
-        -- !postCov = covXX ^-^ covXY !*! invY' !*! covYX
-        -- FIXME : shouldn't need this to avoid runtime error
-        !tmp = invY !*! covYX
-        postCov = covXX ^-^ covXY !*! tmp
+        postCov = covXX ^-^ covXY !*! invY !*! covYX
 
 -- | Compute GP conditioned on observed points
 computePosterior :: IO (Tensor '[AxisDim, 1], Tensor '[AxisDim, AxisDim])

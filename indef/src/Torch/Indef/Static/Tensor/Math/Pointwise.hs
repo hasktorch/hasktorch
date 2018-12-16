@@ -48,6 +48,7 @@ csub
   -> Tensor d  -- ^ tensor2
   -> Tensor d
 csub t v b = asStatic $ Dynamic.csub (asDynamic t) v (asDynamic b)
+{-# NOINLINE csub #-}
 
 -- | infix version of 'csub' on dimension 1
 (^-^) a b = csub a 1 b
