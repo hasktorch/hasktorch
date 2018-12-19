@@ -44,7 +44,8 @@ makeCovmatrix
  => [Double] -> [Double] -> IO (Tensor '[d1, d2])
 makeCovmatrix axis1 axis2 = do
     (t, t') :: (Tensor '[d3], Tensor '[d3]) <- makeAxis axis1 axis2
-    pure $ resizeAs $ kernel1d_rbf 1.0 1.0 t t'
+    let !result = resizeAs $ kernel1d_rbf 1.0 1.0 t t'
+    pure $ result
 
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: (KnownDim b, KnownDim c) =>
@@ -65,10 +66,10 @@ condition
     -> Tensor '[DataDim, 1]                               -- y
     -> (Tensor '[AxisDim, 1], Tensor '[AxisDim, AxisDim]) -- (postMu, postCov)
 condition muX muY covXX covXY covYY y =
-    (postMu, postCov) 
+    (postMu, postCov)
     where
         covYX = transpose2d covXY
-        invY = getri covYY 
+        invY = getri covYY
         postMu = muX ^+^ covXY !*! invY !*! (y ^-^ muY)
         postCov = covXX ^-^ covXY !*! invY !*! covYX
 
@@ -120,9 +121,10 @@ main = do
     -- Conditional GP
     putStrLn $ "\nConditional mu (posterior)\n" ++ show postMu
     putStrLn $ "\nConditional covariance (posterior)\n" ++ show postCov
-    gen <- newRNG
-    mvnSamp :: Tensor '[AxisDim, 1] <- mvnCholesky gen (postCov + reg)
-    putStrLn "\nGP Conditional Samples (posterior, rows = values, cols = realizations)"
-    print (postMu + mvnSamp)
+
+    -- gen <- newRNG
+    -- mvnSamp :: Tensor '[AxisDim, 1] <- mvnCholesky gen (postCov + reg)
+    -- putStrLn "\nGP Conditional Samples (posterior, rows = values, cols = realizations)"
+    -- print (postMu + mvnSamp)
 
     putStrLn "Done"

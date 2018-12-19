@@ -37,6 +37,7 @@ cadd
   -> Tensor d  -- ^ tensor2
   -> Tensor d
 cadd t v b = asStatic $ Dynamic.cadd (asDynamic t) v (asDynamic b)
+{-# NOINLINE cadd #-}
 
 -- | infix version of 'cadd' on dimension 1
 (^+^) a b = cadd a 1 b
