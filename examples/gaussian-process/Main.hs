@@ -122,9 +122,9 @@ main = do
     putStrLn $ "\nConditional mu (posterior)\n" ++ show postMu
     putStrLn $ "\nConditional covariance (posterior)\n" ++ show postCov
 
-    -- gen <- newRNG
-    -- mvnSamp :: Tensor '[AxisDim, 1] <- mvnCholesky gen (postCov + reg)
-    -- putStrLn "\nGP Conditional Samples (posterior, rows = values, cols = realizations)"
-    -- print (postMu + mvnSamp)
+    gen <- newRNG
+    mvnSamp :: Tensor '[AxisDim, 1] <- mvnCholesky gen (postCov + reg)
+    putStrLn "\nGP Conditional Samples (posterior, rows = values, cols = realizations)"
+    print (postMu + mvnSamp)
 
     putStrLn "Done"
