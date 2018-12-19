@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE KindSignatures #-}
@@ -16,11 +17,10 @@ import Torch.Double as T
 import qualified Torch.Core.Random as RNG
 
 -- Define an axis
-type GridDim = 5
-type GridSize = GridDim * GridDim
-tRange = (*) scale <$> ([0 .. (gridDim - 1)] :: [HsReal])
+type AxisDim = 5
+tRange = (*) scale <$> ([0 .. (axisDim - 1)] :: [HsReal])
     where scale = 0.2
-          gridDim = fromIntegral $ natVal (Proxy :: Proxy GridDim)
+          axisDim = fromIntegral $ natVal (Proxy :: Proxy AxisDim)
 
 -- Observed data points
 type DataDim = 3
@@ -29,9 +29,9 @@ dataValues = [-2.3, 1.5, -4]
 
 -- | Cartesian product of axis coordinates
 -- d represents the total number of elements and should be |axis1| x |axis2|
-makeGrid :: (KnownDim d, KnownNat d) 
+makeAxis :: (KnownDim d, KnownNat d) 
          => [Double] -> [Double] -> IO (Tensor '[d], Tensor '[d])
-makeGrid axis1 axis2 = do
+makeAxis axis1 axis2 = do
     t :: Tensor '[d] <- unsafeVector (fst <$> rngPairs)
     t' :: Tensor '[d] <- unsafeVector (snd <$> rngPairs)
     pure (t, t')
@@ -43,8 +43,9 @@ makeCovmatrix
  :: (All KnownDim [d1, d2, d3], All KnownNat [d1, d2, d3], d3 ~ Product [d1, d2]) 
  => [Double] -> [Double] -> IO (Tensor '[d1, d2])
 makeCovmatrix axis1 axis2 = do
-    (t, t') :: (Tensor '[d3], Tensor '[d3]) <- makeGrid axis1 axis2
-    pure $ resizeAs $ kernel1d_rbf 1.0 1.0 t t'
+    (t, t') :: (Tensor '[d3], Tensor '[d3]) <- makeAxis axis1 axis2
+    let !result = resizeAs $ kernel1d_rbf 1.0 1.0 t t'
+    pure $ result
 
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: (KnownDim b, KnownDim c) =>
@@ -56,28 +57,36 @@ mvnCholesky gen cov = do
     pure $ l !*! samples
 
 -- | Conditional multivariate normal parameters for Predicted (X) | Observed (Y)
+condition 
+    :: Tensor '[AxisDim, 1]                               -- muX
+    -> Tensor '[DataDim, 1]                               -- muY
+    -> Tensor '[AxisDim, AxisDim]                         -- covXX
+    -> Tensor '[AxisDim, DataDim]                         -- covXY
+    -> Tensor '[DataDim, DataDim]                         -- covYY
+    -> Tensor '[DataDim, 1]                               -- y
+    -> (Tensor '[AxisDim, 1], Tensor '[AxisDim, AxisDim]) -- (postMu, postCov)
 condition muX muY covXX covXY covYY y =
-    (postMu, postCov) 
+    (postMu, postCov)
     where
         covYX = transpose2d covXY
-        y' = resizeAs y
-        postMu = muX + covXY !*! (getri covYY) !*! (y' - muY)
-        postCov = covXX - covXY !*! (getri covYY) !*! covYX
+        invY = getri covYY
+        postMu = muX ^+^ covXY !*! invY !*! (y ^-^ muY)
+        postCov = covXX ^-^ covXY !*! invY !*! covYX
 
 -- | Compute GP conditioned on observed points
-computePosterior :: IO (Tensor '[GridDim, 1], Tensor '[GridDim, GridDim])
+computePosterior :: IO (Tensor '[AxisDim, 1], Tensor '[AxisDim, AxisDim])
 computePosterior = do
     -- multivariate normal parameters for axis locations
-    let priorMuAxis = constant 0 :: Tensor [GridDim, 1]
+    let priorMuAxis = constant 0 :: Tensor [AxisDim, 1]
     priorCov <-  makeCovmatrix tRange tRange
 
     -- multivariate normal parameters for observation locations
     let priorMuData = (constant 0 :: Tensor '[DataDim, 1])
-    obsCov :: Tensor '[DataDim, DataDim] <- makeCovmatrix dataPredictors dataPredictors
+    (obsCov :: Tensor '[DataDim, DataDim]) <- makeCovmatrix dataPredictors dataPredictors
     putStrLn $ "\nObservation coordinates covariance\n" ++ show obsCov
 
     -- cross-covariance terms
-    crossCov :: Tensor '[GridDim, DataDim] <- makeCovmatrix tRange dataPredictors
+    crossCov :: Tensor '[AxisDim, DataDim] <- makeCovmatrix tRange dataPredictors
     putStrLn $ "\nCross covariance\n" ++ show crossCov
 
     -- conditional distribution
@@ -86,20 +95,21 @@ computePosterior = do
             condition
                 priorMuAxis priorMuData 
                 priorCov crossCov obsCov
-                obsVals -- observed y
+                (resizeAs obsVals) -- observed y
+
     pure $ (postMu, postCov)
     
 main :: IO ()
 main = do
     -- Setup prediction axis
-    cov :: Tensor [GridDim, GridDim] <- makeCovmatrix tRange tRange
+    cov :: Tensor [AxisDim, AxisDim] <- makeCovmatrix tRange tRange
     putStrLn $ "Predictor values\n" ++ show tRange
     putStrLn $ "\nCovariance based on radial basis function\n" ++ show cov
 
     -- Prior GP, take 3 samples
     let reg = 0.01 * eye -- regularization
     gen <- newRNG
-    mvnSamp :: Tensor '[GridDim, 3] <- mvnCholesky gen (cov + reg)
+    mvnSamp :: Tensor '[AxisDim, 3] <- mvnCholesky gen (cov + reg)
     putStrLn $ "\nGP Samples (prior,  rows = values, cols = realizations)\n"
         ++ show mvnSamp
 
@@ -111,9 +121,10 @@ main = do
     -- Conditional GP
     putStrLn $ "\nConditional mu (posterior)\n" ++ show postMu
     putStrLn $ "\nConditional covariance (posterior)\n" ++ show postCov
-    gen <- newRNG
-    mvnSamp :: Tensor '[GridDim, 1] <- mvnCholesky gen (postCov + reg)
-    putStrLn "\nGP Conditional Samples (posterior, rows = values, cols = realizations)"
-    print (postMu + mvnSamp)
+
+    -- gen <- newRNG
+    -- mvnSamp :: Tensor '[AxisDim, 1] <- mvnCholesky gen (postCov + reg)
+    -- putStrLn "\nGP Conditional Samples (posterior, rows = values, cols = realizations)"
+    -- print (postMu + mvnSamp)
 
     putStrLn "Done"

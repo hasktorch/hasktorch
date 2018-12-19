@@ -16,6 +16,9 @@ import Torch.Indef.Types
 import Torch.Indef.Static.Tensor
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic
 
+infixl 6 ^+^, ^-^
+infixl 7 ^*^, ^/^
+
 -- | Static version of 'Dynamic.sign'
 sign :: Tensor d -> Tensor d
 sign t = asStatic $ Dynamic.sign (asDynamic t)
@@ -34,6 +37,7 @@ cadd
   -> Tensor d  -- ^ tensor2
   -> Tensor d
 cadd t v b = asStatic $ Dynamic.cadd (asDynamic t) v (asDynamic b)
+{-# NOINLINE cadd #-}
 
 -- | infix version of 'cadd' on dimension 1
 (^+^) a b = cadd a 1 b
@@ -45,6 +49,7 @@ csub
   -> Tensor d  -- ^ tensor2
   -> Tensor d
 csub t v b = asStatic $ Dynamic.csub (asDynamic t) v (asDynamic b)
+{-# NOINLINE csub #-}
 
 -- | infix version of 'csub' on dimension 1
 (^-^) a b = csub a 1 b

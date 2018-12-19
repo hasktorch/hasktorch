@@ -102,6 +102,8 @@ div t v = unsafeDupablePerformIO $ do
   pure r
 {-# NOINLINE div #-}
 
+-- | 
+
 -- | Left shift all elements in the tensor by the given value, inplace.
 lshift_ :: Dynamic -> HsReal -> IO ()
 lshift_ t v = _lshift t t v

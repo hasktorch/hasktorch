@@ -44,7 +44,8 @@ import qualified Torch.Indef.Dynamic.Tensor.Math.Lapack as Dynamic
 -- @getrf@ and @getrs@, to solve the system @AX = B@, rather than inverting the
 -- matrix and multiplying to form @X = inv(A)*B@. Only in special instances
 -- should an explicit inverse be computed with this routine.
-getri :: Tensor d -> (Tensor d')
+-- getri :: Tensor d -> (Tensor d')
+getri :: Tensor [d, d] -> (Tensor [d, d])
 getri t = asStatic $ Dynamic.getri (asDynamic t)
 
 -- | inplace version of 'getri'
