@@ -1,43 +1,45 @@
-{ compilerVersion ? "ghc843", cudaSupport ? false, mklSupport ? false }:
+{ compilerVersion ? "ghc844", cudaSupport ? false, mklSupport ? true }:
 let
   config = {
     allowUnfree = true;
     packageOverrides = pkgs: rec {
-      hasktorch-aten = pkgs.callPackage ./ffi/deps/aten.nix
-                       { inherit (pkgs.python36Packages) typing pyaml; inherit cudaSupport mklSupport; };
+      hasktorch-aten =
+        pkgs.callPackage ./ffi/deps/hasktorch-aten.nix
+          { inherit (pkgs.python36Packages) typing pyaml; inherit cudaSupport mklSupport; };
+
       haskell = pkgs.haskell // {
         packages = pkgs.haskell.packages // {
           "${compilerVersion}" = pkgs.haskell.packages."${compilerVersion}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
               hasktorch-ffi-th =
                 haskellPackagesNew.callPackage ./ffi/ffi/th { ATen = hasktorch-aten; };
-              hasktorch-ffi-thc =
-                haskellPackagesNew.callPackage ./ffi/ffi/thc { ATen = hasktorch-aten; };
+              # hasktorch-ffi-thc =
+              #   haskellPackagesNew.callPackage ./ffi/ffi/thc { ATen = hasktorch-aten; };
               hasktorch-ffi-tests =
                 haskellPackagesNew.callPackage ./ffi/ffi/tests { };
 
               hasktorch-codegen =
-                haskellPackagesOld.callPackage ./codegen { };
+                haskellPackagesOld.callPackage ./ffi/codegen { };
 
               hasktorch-types-th =
-                haskellPackagesOld.callPackage ./types/th { };
-              hasktorch-types-thc =
-                haskellPackagesNew.callPackage ./types/thc { };
+                haskellPackagesOld.callPackage ./ffi/types/th { };
+              # hasktorch-types-thc =
+              #   haskellPackagesNew.callPackage ./ffi/types/thc { };
 
-              hasktorch-signatures =
-                haskellPackagesNew.callPackage ./signatures { };
-              hasktorch-signatures-types =
-                haskellPackagesNew.callPackage ./signatures/types { };
-              hasktorch-signatures-partial =
-                haskellPackagesNew.callPackage ./signatures/partial { };
+              # hasktorch-signatures =
+              #   haskellPackagesNew.callPackage ./signatures { };
+              # hasktorch-signatures-types =
+              #   haskellPackagesNew.callPackage ./signatures/types { };
+              # hasktorch-signatures-partial =
+              #   haskellPackagesNew.callPackage ./signatures/partial { };
 
-              hasktorch-indef =
-                haskellPackagesNew.callPackage ./indef { };
-              hasktorch-core =
-                haskellPackagesNew.callPackage ./core { };
+              # hasktorch-indef =
+              #   haskellPackagesNew.callPackage ./indef { };
+              # hasktorch-core =
+              #   haskellPackagesNew.callPackage ./core { };
 
-              hasktorch-examples =
-                haskellPackagesNew.callPackage ./examples { };
+              # hasktorch-examples =
+              #   haskellPackagesNew.callPackage ./examples { };
             };
           };
         };
@@ -46,10 +48,7 @@ let
   };
   pkgs = import <nixpkgs> { inherit config; };
   ghc = pkgs.haskell.packages.${compilerVersion};
-  dev-env = pkgs.stdenv.mkDerivation {
-    name = "aten-development-environment";
-    buildInputs = [ pkgs.hasktorch-aten ];
-  };
+
 in {
   inherit (pkgs) hasktorch-aten;
   inherit
@@ -65,8 +64,8 @@ in {
     # hasktorch-indef
     hasktorch-codegen
     hasktorch-ffi-th
-    hasktorch-ffi-thc
-    hasktorch-types-th
-    hasktorch-types-thc;
-  inherit dev-env;
+    # hasktorch-ffi-thc
+    hasktorch-ffi-tests
+    hasktorch-types-th;
+    # hasktorch-types-thc;
 }
