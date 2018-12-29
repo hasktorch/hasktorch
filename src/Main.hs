@@ -30,7 +30,7 @@ data NativeFunction = NativeFunction {
   , requires_tensor :: Maybe Bool
 } deriving (Show, Generic)
 
-instance FromJSON Function
+instance FromJSON NativeFunction
 instance FromJSON Dispatch
 
 {- derivatives.yaml -}
@@ -44,13 +44,13 @@ data Derivative = Derivative {
 
 } deriving (Show, Generic)
 
-instance FromJSON Dispatch
+instance FromJSON Derivative
 
 {- Execution -}
 
 main :: IO ()
 main = do
-  file <- Y.decodeFileEither "spec/small_test.yaml" :: IO (Either ParseException [Function])
+  file <- Y.decodeFileEither "spec/small_test.yaml" :: IO (Either ParseException [NativeFunction])
   -- putStrLn (maybe "Error" show file)
   -- putStrLn (show file)
   prettyPrint file
