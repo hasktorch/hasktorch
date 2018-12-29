@@ -77,9 +77,9 @@ We welcome new contributors. For a rough list of outstanding items on deck
 
 https://github.com/hasktorch/hasktorch/projects/1
 
-Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack]. You can ping us on gitter in the [DataHaskell Lobby][gitter-dh] or on twitter as [@austinvhuang][austin-twitter] and [@SamStites][sam-twitter].
+Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack]. You can send an email to [hasktorch@gmail.com][email], ping us on gitter in the [DataHaskell Lobby][gitter-dh], or on twitter as [@austinvhuang][austin-twitter] and [@SamStites][sam-twitter].
 
-
+[email]:mailto:hasktorch@gmail.com
 [austin-twitter]:https://twitter.com/austinvhuang
 [sam-twitter]:https://twitter.com/samstites
 [slack]:https://hasktorch.slack.com 
