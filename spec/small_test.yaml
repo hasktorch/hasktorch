@@ -1,0 +1,25 @@
+- func: hello
+- func: _cast_Byte(Tensor self, bool non_blocking=false) -> Tensor
+  variants: function
+
+- func: unfold(Tensor self, int64_t dimension, int64_t size, int64_t step) -> Tensor
+  variants: method
+  device_guard: false
+
+- func: _cholesky_helper(Tensor self, bool upper) -> Tensor
+  variants: function
+  dispatch:
+    CPU: _cholesky_helper_cpu
+    CUDA: _cholesky_helper_cuda
+
+- func: sparse_dim(Tensor self) -> int64_t
+  variants: method
+  dispatch:
+    SparseCPU: sparse_dim_sparse
+    SparseCUDA: sparse_dim_sparse
+  requires_tensor: True
+  device_guard: False
+
+- func: pow(Tensor self, Scalar exponent) -> Tensor
+  variants: function, method
+  variants: method, function
