@@ -6,6 +6,7 @@ module Main where
 import GHC.Generics
 import Data.Yaml
 
+import qualified Options.Applicative as O
 import qualified Data.Yaml as Y
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -46,13 +47,37 @@ data Derivative = Derivative {
 
 instance FromJSON Derivative
 
+{- CLI options -}
+
+data Options = Options
+    { specFile :: !String
+    } deriving Show
+
+optsParser :: O.ParserInfo Options
+optsParser =
+  O.info
+    (O.helper <*> versionOption <*> programOptions)
+    (O.fullDesc <> O.progDesc "ffi codegen" <>
+    O.header
+    "codegen for hasktorch 0.0.2")
+
+versionOption :: O.Parser (a -> a)
+versionOption = O.infoOption "0.0.2" (O.long "version" <> O.help "Show version")
+
+programOptions :: O.Parser Options
+programOptions =
+  Options <$> 
+    O.strOption
+    (O.long "spec-file" <> O.metavar "FILENAME" <> O.value "spec/small_test.yaml" <>
+    O.help "Specification file")
+
+
 {- Execution -}
 
 main :: IO ()
 main = do
-  file <- Y.decodeFileEither "spec/small_test.yaml" :: IO (Either ParseException [NativeFunction])
-  -- putStrLn (maybe "Error" show file)
-  -- putStrLn (show file)
+  opts <- O.execParser optsParser
+  file <- Y.decodeFileEither (specFile opts) :: IO (Either ParseException [NativeFunction])
   prettyPrint file
 
   putStrLn "Done"
