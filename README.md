@@ -9,4 +9,17 @@ Ideas being explored:
 - Get a vertical slice working for a small number of functions.
 - Scale up.
 
+To run:
+
+```
+stack build ffi-experimental
+stack exec ffi-experimental
+```
+
+To get CLI options:
+
+```
+stack exec ffi-experimental -- --help
+```
+
 Contributions/PRs are welcome.
