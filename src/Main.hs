@@ -11,7 +11,7 @@ import qualified Data.Yaml as Y
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Text.Megaparsec as M
-import Text.Show.Prettyprint
+import Text.Show.Prettyprint (prettyPrint)
 
 {- native_functions.yaml -}
 
@@ -70,7 +70,6 @@ programOptions =
     O.strOption
     (O.long "spec-file" <> O.metavar "FILENAME" <> O.value "spec/small_test.yaml" <>
     O.help "Specification file")
-
 
 {- Execution -}
 
