@@ -1,1 +1,4 @@
-.stack-work
+.stack-work/
+dist-newstyle/
+src/build/
+.ghc.environment*
