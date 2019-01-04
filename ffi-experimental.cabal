@@ -23,3 +23,12 @@ executable ffi-experimental
                      , optparse-applicative == 0.14.3.0
                      , show-prettyprint == 0.2.2
                      , yaml == 0.11.0.0
+
+executable cpp-test
+  hs-source-dirs:      src
+  main-is:             CppTest.hs
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                     , inline-c-cpp == 0.3.0.1
+                     , optparse-applicative == 0.14.3.0
+
