@@ -28,7 +28,7 @@ Contributions/PRs are welcome.
 
 `libtorch-test/` and `deps/` have scripts that retrieve libtorch and mkl-dnn library dependencies and builds/tests them using a [minimal example](https://pytorch.org/cppdocs/installing.html).
 
-To build (OSX only for now):
+To build:
 
 ```
 cd libtorch-test
