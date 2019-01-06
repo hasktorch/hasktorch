@@ -36,10 +36,6 @@ source ./set-dyld-path.sh ; cd build ; ./libtorch-test
 [ Variable[CPUFloatType]{2,3} ]
 ```
 
-## Contributions
-
-Contributions/PRs are welcome.
-
 ## yaml -> binding codegen (WIP)
 
 To run:
@@ -57,9 +53,28 @@ stack exec codegen -- --help
 
 ## ffi testing (WIP)
 
-To run:
+To run (currently works in the repl):
 
 ```
-stack build ffi
-stack exec ffi
+stack ghci --ghc-options='-fobject-code'  ffi
+...
+Prelude Main> main
+Hello torch!
+ 0.2401  0.0901  0.9807
+ 0.9168  0.3757  0.4029
+[ Variable[CPUFloatType]{2,3} ]
+ 1  1
+ 1  1
+[ Variable[CPUFloatType]{2,2} ]
+ 0.1232  1.5721
+ 0.5392  0.2395
+[ Variable[CPUFloatType]{2,2} ]
+ 1.1232  2.5721
+ 1.5392  1.2395
+[ Variable[CPUFloatType]{2,2} ]
+Prelude Main>
 ```
+
+## Contributions
+
+Contributions/PRs are welcome.
