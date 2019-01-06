@@ -21,4 +21,5 @@ mkl_lib/libmklml.$(LIBSUFFIX):
 
 clean:
 	rm -rf build
-	cd ../deps/ ; ./clean-deps.sh
+	cd ../deps/ ; rm -rf libtorch
+	cd ../deps/ ; rm -rf mklml

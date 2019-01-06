@@ -9,30 +9,6 @@ Ideas being explored:
 - Get a vertical slice working for a small number of functions.
 - Scale up.
 
-## yaml -> binding codegen (WIP)
-
-To run:
-
-```
-stack build codegen
-stack exec codegen
-```
-
-To get CLI options:
-
-```
-stack exec codegen -- --help
-```
-
-## ffi testing
-
-To run:
-
-```
-stack build ffi
-stack exec ffi
-```
-
 ## libtorch dependency retrieval and testing
 
 `libtorch-test/` and `deps/` have scripts that retrieve libtorch and mkl-dnn library dependencies and builds/tests them using a [minimal example](https://pytorch.org/cppdocs/installing.html).
@@ -63,3 +39,27 @@ source ./set-dyld-path.sh ; cd build ; ./libtorch-test
 ## Contributions
 
 Contributions/PRs are welcome.
+
+## yaml -> binding codegen (WIP)
+
+To run:
+
+```
+stack build codegen
+stack exec codegen
+```
+
+To get CLI options:
+
+```
+stack exec codegen -- --help
+```
+
+## ffi testing (WIP)
+
+To run:
+
+```
+stack build ffi
+stack exec ffi
+```
