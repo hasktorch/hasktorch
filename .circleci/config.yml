@@ -5,14 +5,17 @@ global_defaults: &defaults
 
 jobs:
   system-libraries:
+    machine: true
     steps:
       - run: sudo apt-get update --fix-missing
 
   stack:
+    machine: true
     steps:
       - run: wget -qO- https://get.haskellstack.org/ | sh
 
   build:
+    machine: true
     steps:
       - run: gcc --version
       - run: stack --version
