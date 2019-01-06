@@ -32,5 +32,7 @@ executable cpp-test
   build-depends:       base >= 4.7 && < 5
                      , inline-c-cpp == 0.3.0.1
                      , optparse-applicative == 0.14.3.0
-  extra-libraries:     stdc++
+  extra-libraries:     stdc++, iomp5, mklml, torch
+  ghc-options:         -optc-std=c++14
+  cc-options:          -std=c++14
 

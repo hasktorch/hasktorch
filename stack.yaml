@@ -2,3 +2,16 @@ resolver: lts-13.0
 
 packages:
 - .
+
+
+extra-include-dirs:
+  - deps/libtorch/include/torch/csrc/api/include
+  - deps/libtorch/include
+
+extra-lib-dirs:
+  - deps/libtorch/lib 
+  - deps/mklml_mac_2019.0.1.20181227/lib
+  - deps/mklml_lnx_2019.0.1.20181227/lib
+
+# see https://github.com/commercialhaskell/stack/issues/4073
+# with-gcc: /usr/local/bin/gcc-7

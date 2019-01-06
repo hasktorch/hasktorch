@@ -23,6 +23,6 @@ case "$(uname)" in
     wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz
     tar -xzf mklml_lnx_2019.0.1.20181227.tgz
     rm -f mklml_lnx_2019.0.1.20181227.tgz
-    rm -f mklml_mac_2019.0.1.20181227.tgz.1
+    rm -f mklml_lnx_2019.0.1.20181227.tgz.1
     ;;
 esac

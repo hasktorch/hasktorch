@@ -6,10 +6,6 @@ select compiler using:
 run in ghci using:
 `stack ghci --ghc-options='-fobject-code' --main-is ffi-experimental:exe:cpp-test`
 
-currently ghci run works, but `stack build` runs into an issue
-similar to
-https://github.com/fpco/inline-c/issues/75
-
 -}
 
 {-# LANGUAGE TemplateHaskell #-}
@@ -22,10 +18,12 @@ import qualified Language.C.Inline.Cpp.Exceptions as C
 C.context C.cppCtx
 
 C.include "<iostream>"
+C.include "<torch/torch.h>"
 
 main :: IO ()
 main = do
-    let x = 3
     [C.block| void {
-        std::cout << "Hello, world: " << $(int x) << std::endl;
+        std::cout << "Hello torch!" << std::endl;
+        torch::Tensor tensor = torch::rand({2, 3});
+        std::cout << tensor << std::endl;
     } |]
