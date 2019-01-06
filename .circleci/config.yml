@@ -18,7 +18,7 @@ jobs:
   build:
     machine: true
     steps:
-      - run: echo 'export PATH=$PATH_ADDITONS:$PATH' >> $BASH_ENV
+      - run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
       - run: gcc --version
       - run: stack --version
       - run: cd libtorch-test ; make

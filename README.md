@@ -1,5 +1,12 @@
 # ffi-experimental
 
+[![master status]
+(https://circleci.com/gh/hasktorch/ffi-experimental/tree/master.svg)](https://circleci.com/gh/hasktorch/ffi-experimental/tree/master)
+[![dev status]
+(https://circleci.com/gh/hasktorch/ffi-experimental/tree/dev.svg)](https://circleci.com/gh/hasktorch/ffi-experimental/tree/dev)
+
+(master branch | dev branch)
+
 Experimental next-gen code generation for aten bindings in preparation for 0.0.2 which targets the 1.0 aten backend.
 
 Ideas being explored:
