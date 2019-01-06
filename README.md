@@ -9,6 +9,8 @@ Ideas being explored:
 - Get a vertical slice working for a small number of functions.
 - Scale up.
 
+## yaml -> binding codegen (WIP)
+
 To run:
 
 ```

@@ -1,0 +1,41 @@
+version: 2
+
+global_defaults: &defaults
+  machine: true
+  environment:
+
+update_path_command: &update_path
+  run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
+
+jobs:
+  system-libraries:
+    <<: *defaults
+    working_directory: /
+    steps:
+      - run: sudo apt-get update --fix-missing
+
+  stack:
+    <<: *defaults
+    working_directory: /tmp/build/
+    - run: wget -qO- https://get.haskellstack.org/ | sh
+
+  build:
+    <<: *defaults
+    working_directory: /tmp/build/
+    steps:
+      - run: gcc --version
+      - run: stack --version
+      - run: cd libtorch-test ; make
+      - run: stack build
+      - run: stack exec ffi-experimental
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - stack
+      - build:
+          requires:
+            - stack
+            - system-libraries
