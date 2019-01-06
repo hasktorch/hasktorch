@@ -2,6 +2,7 @@ version: 2
 
 global_defaults: &defaults
   machine: true
+  PATH_ADDITIONS: /home/circleci/.local/bin
 
 jobs:
   system-libraries:
@@ -17,6 +18,7 @@ jobs:
   build:
     machine: true
     steps:
+      - run: echo 'export PATH=$PATH_ADDITONS:$PATH' >> $BASH_ENV
       - run: gcc --version
       - run: stack --version
       - run: cd libtorch-test ; make
