@@ -29,4 +29,3 @@ workflows:
       - build:
           requires:
             - stack
-            - system-libraries
