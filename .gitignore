@@ -1,5 +1,6 @@
 .stack-work/
 dist-newstyle/
 libtorch-test/build
-src/build/
+codegen/build/
 .ghc.environment*
+

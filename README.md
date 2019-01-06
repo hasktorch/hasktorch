@@ -1,13 +1,5 @@
 # ffi-experimental
 
-[![master status]
-(https://circleci.com/gh/hasktorch/ffi-experimental/tree/master.svg)](https://circleci.com/gh/hasktorch/ffi-experimental/tree/master)
-
-[![dev status]
-(https://circleci.com/gh/hasktorch/ffi-experimental/tree/dev.svg)](https://circleci.com/gh/hasktorch/ffi-experimental/tree/dev)
-
-(master branch | dev branch)
-
 Experimental next-gen code generation for aten bindings in preparation for 0.0.2 which targets the 1.0 aten backend.
 
 Ideas being explored:
@@ -22,17 +14,24 @@ Ideas being explored:
 To run:
 
 ```
-stack build ffi-experimental
-stack exec ffi-experimental
+stack build codegen
+stack exec codegen
 ```
 
 To get CLI options:
 
 ```
-stack exec ffi-experimental -- --help
+stack exec codegen -- --help
 ```
 
-Contributions/PRs are welcome.
+## ffi testing
+
+To run:
+
+```
+stack build ffi
+stack exec ffi
+```
 
 ## libtorch dependency retrieval and testing
 
@@ -60,3 +59,7 @@ source ./set-dyld-path.sh ; cd build ; ./libtorch-test
  0.9908  0.6380  0.3997
 [ Variable[CPUFloatType]{2,3} ]
 ```
+
+## Contributions
+
+Contributions/PRs are welcome.

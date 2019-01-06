@@ -15,6 +15,7 @@ case "$(uname)" in
     tar -xzf mklml_mac_2019.0.1.20181227.tgz
     rm -f mklml_mac_2019.0.1.20181227.tgz
     rm -f mklml_mac_2019.0.1.20181227.tgz.1
+    mv mklml_mac_2019.0.1.20181227 mklml
     ;;
   "Linux")
     wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
@@ -24,5 +25,6 @@ case "$(uname)" in
     tar -xzf mklml_lnx_2019.0.1.20181227.tgz
     rm -f mklml_lnx_2019.0.1.20181227.tgz
     rm -f mklml_lnx_2019.0.1.20181227.tgz.1
+    mv mklml_lnx_2019.0.1.20181227 mklml
     ;;
 esac

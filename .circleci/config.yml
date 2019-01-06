@@ -18,12 +18,14 @@ jobs:
   build:
     machine: true
     steps:
-      - run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
+      - run: echo 'export PATH=/home/circleci/.local/bin:$PATH' >> $BASH_ENV
       - run: gcc --version
       - run: stack --version
       - run: cd libtorch-test ; make
       - run: stack build
-      - run: stack exec ffi-experimental
+      - run: stack exec codegen
+      - run: stack exec ffi
+
 
 
 workflows:

@@ -1,0 +1,3 @@
+packages:
+    codegen/*.cabal
+    ffi/*.cabal
