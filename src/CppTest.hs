@@ -6,7 +6,7 @@ select compiler using:
 run in ghci using:
 `stack ghci --ghc-options='-fobject-code' --main-is ffi-experimental:exe:cpp-test`
 
-currently ghci run works, but buiild runs into an issue
+currently ghci run works, but `stack build` runs into an issue
 similar to
 https://github.com/fpco/inline-c/issues/75
 

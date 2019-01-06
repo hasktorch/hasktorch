@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# - Sets LD_LIBRARY_PATH (if run using `source`)
+# - Sets LD_LIBRARY_PATH (run this using `source`)
 
 case "$(uname)" in
   "Darwin")

@@ -54,29 +54,32 @@ data Options = Options
     } deriving Show
 
 optsParser :: O.ParserInfo Options
-optsParser =
-  O.info
-    (O.helper <*> versionOption <*> programOptions)
-    (O.fullDesc <> O.progDesc "ffi codegen" <>
-    O.header
-    "codegen for hasktorch 0.0.2")
+optsParser = O.info
+  (O.helper <*> versionOption <*> programOptions)
+  ( O.fullDesc <> O.progDesc "ffi codegen" <> O.header
+    "codegen for hasktorch 0.0.2"
+  )
 
 versionOption :: O.Parser (a -> a)
-versionOption = O.infoOption "0.0.2" (O.long "version" <> O.help "Show version")
+versionOption =
+  O.infoOption "0.0.2" (O.long "version" <> O.help "Show version")
 
 programOptions :: O.Parser Options
-programOptions =
-  Options <$> 
-    O.strOption
-    (O.long "spec-file" <> O.metavar "FILENAME" <> O.value "spec/small_test.yaml" <>
-    O.help "Specification file")
+programOptions = Options <$> O.strOption
+  (  O.long "spec-file"
+  <> O.metavar "FILENAME"
+  <> O.value "spec/small_test.yaml"
+  <> O.help "Specification file"
+  )
 
 {- Execution -}
 
 main :: IO ()
 main = do
   opts <- O.execParser optsParser
-  file <- Y.decodeFileEither (specFile opts) :: IO (Either ParseException [NativeFunction])
+  file <-
+    Y.decodeFileEither (specFile opts) :: IO
+      (Either ParseException [NativeFunction])
   prettyPrint file
 
   putStrLn "Done"

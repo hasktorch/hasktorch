@@ -24,6 +24,7 @@ executable ffi-experimental
                      , show-prettyprint == 0.2.2
                      , yaml == 0.11.0.0
   extra-libraries:     stdc++
+
 executable cpp-test
   hs-source-dirs:      src
   main-is:             CppTest.hs
