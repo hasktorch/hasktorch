@@ -1,7 +1,8 @@
 resolver: lts-13.0
 
 packages:
-- .
+- codegen
+- ffi
 
 
 extra-include-dirs:
