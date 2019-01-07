@@ -23,3 +23,8 @@
 - func: pow(Tensor self, Scalar exponent) -> Tensor
   variants: function, method
   variants: method, function
+
+- func: _ctc_loss_backward(Tensor grad, Tensor log_probs, Tensor targets, IntList input_lengths, IntList target_lengths, Tensor neg_log_likelihood, Tensor log_alpha, int64_t blank) -> Tensor
+  dispatch:
+    CPU: ctc_loss_backward_cpu
+    CUDA: ctc_loss_backward_gpu

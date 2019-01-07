@@ -3,11 +3,13 @@
 
 module Main where
 
+import Data.Char (toUpper)
 import GHC.Generics
 import Data.Yaml
 
 import qualified Options.Applicative as O
 import qualified Data.Yaml as Y
+import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import qualified Text.Megaparsec as M
@@ -16,8 +18,9 @@ import Text.Show.Prettyprint (prettyPrint)
 {- native_functions.yaml -}
 
 data Dispatch = Dispatch {
-  cpu :: Maybe String -- FIXME: how to use generics with capital "CPU"?
-  , gpu :: Maybe String -- FIXME: how to use generics with capital "GPU"?
+  cpu :: Maybe String
+  , gpu :: Maybe String
+  , cuda :: Maybe String
   , sparseCPU :: Maybe String
   , sparseCUDA :: Maybe String
 } deriving (Show, Generic)
@@ -31,8 +34,18 @@ data NativeFunction = NativeFunction {
   , requires_tensor :: Maybe Bool
 } deriving (Show, Generic)
 
+dispatchModifier fieldName
+  | fieldName `elem` ["cpu", "gpu", "cuda"] = upper fieldName
+  | otherwise = fieldName
+  where upper = map toUpper
+
 instance FromJSON NativeFunction
-instance FromJSON Dispatch
+instance FromJSON Dispatch where
+  parseJSON = genericParseJSON $
+    defaultOptions {
+      fieldLabelModifier = dispatchModifier
+    }
+
 
 {- derivatives.yaml -}
 
@@ -74,12 +87,15 @@ programOptions = Options <$> O.strOption
 
 {- Execution -}
 
+
+decodeAndPrint :: String -> IO ()
+decodeAndPrint fileName = do
+  file <-
+    Y.decodeFileEither fileName :: IO (Either ParseException [NativeFunction])
+  prettyPrint file
+
 main :: IO ()
 main = do
   opts <- O.execParser optsParser
-  file <-
-    Y.decodeFileEither (specFile opts) :: IO
-      (Either ParseException [NativeFunction])
-  prettyPrint file
-
+  decodeAndPrint (specFile opts)
   putStrLn "Done"

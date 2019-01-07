@@ -4,14 +4,12 @@ version:             0.1.0.0
 -- description:
 homepage:            https://github.com/githubuser/ffi-experimental#readme
 license:             BSD3
-license-file:        ../LICENSE
 author:              Austin Huang
 maintainer:          hasktorch@gmail.com
 copyright:           2018 Austin Huang
 category:            Codegen
 build-type:          Simple
 cabal-version:       >=1.10
-extra-source-files:  ../README.md
 
 executable ffi-test
   hs-source-dirs:      .
