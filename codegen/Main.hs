@@ -17,6 +17,20 @@ import Text.Show.Prettyprint (prettyPrint)
 
 {- native_functions.yaml -}
 
+data NativeFunction = NativeFunction {
+  func :: String
+  , variants :: Maybe String
+  , python_module :: Maybe String
+  , device_guard :: Maybe Bool
+  , dispatch :: Maybe Dispatch
+  -- , dispatch :: Maybe DispatchSum
+  , requires_tensor :: Maybe Bool
+} deriving (Show, Generic)
+
+-- data DispatchSum = DStruct Dispatch | SStruct String deriving (Show, Generic)
+-- data DispatchSum = Either Dispatch String deriving (Show, Generic)
+-- instance FromJSON DispatchSum
+
 data Dispatch = Dispatch {
   cpu :: Maybe String
   , gpu :: Maybe String
@@ -25,21 +39,16 @@ data Dispatch = Dispatch {
   , sparseCUDA :: Maybe String
 } deriving (Show, Generic)
 
-data NativeFunction = NativeFunction {
-  func :: String
-  , variants :: Maybe String
-  , python_module :: Maybe String
-  , device_guard :: Maybe Bool
-  , dispatch :: Maybe Dispatch
-  , requires_tensor :: Maybe Bool
-} deriving (Show, Generic)
-
 dispatchModifier fieldName
   | fieldName `elem` ["cpu", "gpu", "cuda"] = upper fieldName
+  | fieldName == "sparseCPU" = "SparseCPU"
+  | fieldName == "sparseGPU" = "SparseGPU"
+  | fieldName == "sparseCUDA" = "SparseCUDA"
   | otherwise = fieldName
   where upper = map toUpper
 
-instance FromJSON NativeFunction
+instance FromJSON NativeFunction where
+
 instance FromJSON Dispatch where
   parseJSON = genericParseJSON $
     defaultOptions {
@@ -98,4 +107,6 @@ main :: IO ()
 main = do
   opts <- O.execParser optsParser
   decodeAndPrint (specFile opts)
+  -- decodeAndPrint "spec/native_functions.yaml"
+  -- decodeAndPrint "spec/tiny.yaml"
   putStrLn "Done"

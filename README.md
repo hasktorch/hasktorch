@@ -1,11 +1,11 @@
-# ffi-experimental
+# Experimental Libtorch 1.0 FFI
 
-Experimental next-gen code generation for aten bindings in preparation for 0.0.2 which targets the 1.0 aten backend.
+Experimental work on next-gen ffi bindings into the c++ libtorch library in preparation for 0.0.2 which targets the 1.0 backend.
 
-Ideas being explored:
+Approaches to explore:
 
 - Use yaml specs (which seemed to have been cleaned up since PT ~ 0.4) instead of header parsing.
-- Try inline-cpp functionality to bind the C++ API instead of the C API. Benchmark potential template haskell overhead vs. other approaches.
+- Try inline-cpp functionality to bind the C++ API instead of the C API. Benchmark potential template haskell overhead vs. code generating C wrappers for C++ functions.
 - Get a vertical slice working for a small number of functions.
 - Scale up.
 
@@ -77,4 +77,4 @@ Prelude Main>
 
 ## Contributions
 
-Contributions/PRs are welcome.
+Contributions/PRs are welcome. 
