@@ -7,6 +7,7 @@ module Main where
 import qualified Options.Applicative as O
 import qualified ParseNativeFunctions as NF
 import qualified ParseDerivatives as D
+import qualified ParseFunctionSig as F
 
 {- CLI options -}
 

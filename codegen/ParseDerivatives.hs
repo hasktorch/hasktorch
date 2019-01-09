@@ -14,7 +14,6 @@ import qualified Data.Yaml as Y
 import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
-import qualified Text.Megaparsec as M
 import Text.Show.Prettyprint (prettyPrint)
 
 {- derivatives.yaml -}
