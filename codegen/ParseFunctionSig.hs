@@ -5,7 +5,9 @@
 
 module ParseFunctionSig where
 
-import qualified Text.Megaparsec as M
+import GHC.Generics
+import Text.Megaparsec as M
+import Text.Megaparsec.Char as M
 
 -- Examples:
 -- - func: log10_(Tensor self) -> Tensor
@@ -16,11 +18,6 @@ import qualified Text.Megaparsec as M
 -- - func: _cudnn_rnn_backward(Tensor input, TensorList weight, int64_t weight_stride0, Tensor weight_buf, Tensor hx, Tensor? cx, Tensor output, Tensor? grad_output, Tensor? grad_hy, Tensor? grad_cy, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntList batch_sizes, BoolTensor? dropout_state, Tensor reserve, std::array<bool,4> output_mask) -> (Tensor, Tensor, Tensor, TensorList)
 -- - func: einsum(std::string equation, TensorList tensors) -> Tensor
 -- - func: empty(IntList size, TensorOptions options={}) -> Tensor
-
-import GHC.Generics
-import Text.Megaparsec as M
-import Text.Megaparsec.Char as M
-
 
 data DefaultValue =
     ValBool Bool

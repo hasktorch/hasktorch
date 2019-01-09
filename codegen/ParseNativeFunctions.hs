@@ -25,7 +25,6 @@ data NativeFunction = NativeFunction {
   , requires_tensor :: Maybe Bool
 } deriving (Show, Generic)
 
-
 data Dispatch = Dispatch {
   cpu :: Maybe String
   , gpu :: Maybe String
@@ -52,22 +51,7 @@ instance FromJSON Dispatch where
 
 instance ToJSON Dispatch
 
-
-{- derivatives.yaml -}
-
-data Derivative = Derivative {
-  name :: String
-  , grad_output :: Maybe String
-  , output_differentiability :: [Bool]
-  , self :: Maybe String
-  , tensors :: Maybe String
-
-} deriving (Show, Generic)
-
-instance FromJSON Derivative
-
 {- Execution -}
-
 
 decodeAndPrint :: String -> IO ()
 decodeAndPrint fileName = do

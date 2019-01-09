@@ -56,7 +56,6 @@ data Derivative = Derivative {
 
 instance FromJSON Derivative
 
-
 decodeAndPrint :: String -> IO ()
 decodeAndPrint fileName = do
   file <- Y.decodeFileEither fileName :: IO (Either ParseException [Derivative])
