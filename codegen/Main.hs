@@ -28,21 +28,25 @@ versionOption =
   O.infoOption "0.0.2" (O.long "version" <> O.help "Show version")
 
 programOptions :: O.Parser Options
-programOptions = Options <$> O.strOption
-  (  O.long "spec-file"
-  <> O.short 'f'
-  <> O.metavar "FILENAME"
-  <> O.value "spec/native_functions_modified.yaml"
-  <> O.help "Specification file"
-  ) <*>
-  O.strOption (  O.long "mode"
-  <> O.short 'm'
-  <> O.metavar "MODE"
-  <> O.value "native-functions"
-  <> O.help "native-functions or derivatives"
-  )
+programOptions =
+  Options
+    <$> O.strOption
+          (  O.long "spec-file"
+          <> O.short 'f'
+          <> O.metavar "FILENAME"
+          <> O.value "spec/native_functions_modified.yaml"
+          <> O.help "Specification file"
+          )
+    <*> O.strOption
+          (  O.long "mode"
+          <> O.short 'm'
+          <> O.metavar "MODE"
+          <> O.value "native-functions"
+          <> O.help "native-functions or derivatives"
+          )
 
 main = do
-  opts <- O.execParser optsParser
-  NF.decodeAndPrint (specFile opts)
+  -- opts <- O.execParser optsParser
+  -- NF.decodeAndPrint (specFile opts)
+  pure ()
 
