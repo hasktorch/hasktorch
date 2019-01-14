@@ -22,7 +22,7 @@ else
 endif
 	$(info defaulting to CPU configuration)
 	./make_cabal_local.sh
-	cabal new-update
+	cabal update
 
 purge:
 	rm -rf dist-newstyle

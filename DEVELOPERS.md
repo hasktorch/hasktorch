@@ -68,6 +68,17 @@ cabal new-test all
 
 ## Building Hasktorch
 
+### libnuma-dev install
+
+### cabal install issues
+
+Cabal installs in odd locations & it's quite some effort to get cabal 2.2.4 installed
+
+### python dependencies
+
+pyyaml
+typing
+
 ### `cabal: Could not resolve dependencies:...`
 
 usually resolved by having compatable GHC and cabal-install versions.
