@@ -52,7 +52,24 @@ On OSX the above script looks for the gcc-6 binary which needs to be installed
 using [homebrew](https://brew.sh/). On linux, this simply uses gcc. 
 
 If successful, this builds the TH shared library and places it in the
-`vendor/build/` directory. Then build the project using stack:
+`vendor/build/` directory. 
+
+Then return to the hasktorch head directory, and run `ghc --version` to find out your GHC version.
+
+Then run:
+
+```
+ln -fs cabal/project.freeze-<ghc version number here> cabal.project.freeze
+./make_cabal_local.sh
+```
+
+Also update cabal dependencies:
+
+```
+cabal new-update
+```
+
+Then build the project using stack:
 
 ```
 cabal new-build all
@@ -64,9 +81,45 @@ If everything built, you should be able to run tests successfully:
 cabal new-test all
 ```
 
-# Common Issues
+## Common Issues
 
-## Building Hasktorch
+### Errors in build-aten.sh
+
+The steps to manually replicate `build-aten.sh` are (assuming that you're on a linux machine):
+
+```
+command -v gcc 
+```
+
+Replace `gcc` with your version of gcc.
+
+```mkdir -p ./aten/build
+cd ./aten/build
+cmake -DNO_CUDA=<true if no GPU, false if GPU> -DCMAKE_C_COMPILER=<your gcc version> -DCMAKE_CXX_COMPILER=<your g++ version> -DCMAKE_CC_COMPILER=<your gcc version> -DCXX=<your g++ version> -DCC=<your gcc version> -Wno-dev -DCMAKE_INSTALL_PREFIX=.
+make install
+```
+
+Then return to hasktorch head directory.
+
+The GPU version on one machine I tried on gave me this error, which is why I built aten dependencies from scratch:
+
+`nvcc fatal   : Unsupported gpu architecture 'compute_61'`
+
+
+### python dependencies missing
+
+Install these before running `make init`:
+
+```
+pip install pyyaml
+pip install typing
+```
+
+### `cannot find -lnuma`
+
+```
+sudo apt install libnuma-dev`
+```
 
 ### `cabal: Could not resolve dependencies:...`
 
