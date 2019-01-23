@@ -1,0 +1,1 @@
+typedef torch::Tensor* PtrTensor;
