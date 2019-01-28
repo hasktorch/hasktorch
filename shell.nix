@@ -18,6 +18,6 @@ pkgs.mkShell {
     hasktorch-codegen
     hasktorch-types-th
     hasktorch-ffi-th
-    ] ; # ++ (lib.optionals cudaSupport [ hasktorch-types-thc hasktorch-ffi-thc ]);
+    ] ++ (lib.optionals cudaSupport [ hasktorch-types-thc hasktorch-ffi-thc ]);
 }
 
