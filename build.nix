@@ -17,11 +17,11 @@ let
       });
 
     in rec {
-      cmake_3_12_2 = pkgs.libsForQt5.callPackage ./ffi/deps/cmake-nix-3_12_2 {};
-      magma = (pkgs.callPackage ./ffi/deps/magma-nix {}).magma.override {
+      # magma-2.4.0 >>> Fixed some compilation issues with inf, nan, and nullptr.
+      # NOTE(stites): I think these compilation issues are more prevalent with gcc5
+      magma = (pkgs.callPackage ./ffi/deps/magma-nix {}).magma_2_4_0.override {
         mklSupport = true;
         cudatoolkit = pkgs.cudatoolkit_9_0;
-        cmake = cmake_3_12_2;
         stdenv = stdenv5;
         gfortran = gfortran-gcc5;
       };
@@ -39,20 +39,27 @@ let
         packages = pkgs.haskell.packages // {
           "${compilerVersion}" = pkgs.haskell.packages."${compilerVersion}".override {
             overrides = haskellPackagesNew: haskellPackagesOld: rec {
-              hasktorch-ffi-th =
-                haskellPackagesNew.callPackage ./ffi/ffi/th { ATen = hasktorch-aten; };
-              # hasktorch-ffi-thc =
-              #   haskellPackagesNew.callPackage ./ffi/ffi/thc { ATen = hasktorch-aten; };
-              hasktorch-ffi-tests =
-                haskellPackagesNew.callPackage ./ffi/ffi/tests { };
-
               hasktorch-codegen =
                 haskellPackagesOld.callPackage ./ffi/codegen { };
 
+              # These are unnessecary but can be built in nix, so we do it waiting for
+              # https://github.com/NixOS/nixpkgs/issues/40128 to get fixed
+              hasktorch-ffi-th =
+                haskellPackagesNew.callPackage ./ffi/ffi/th { ATen = hasktorch-aten; };
+
+              hasktorch-ffi-thc =
+                haskellPackagesNew.callPackage ./ffi/ffi/thc { ATen = hasktorch-aten; };
+
+              hasktorch-ffi-tests =
+                haskellPackagesNew.callPackage ./ffi/ffi/tests { };
+
               hasktorch-types-th =
                 haskellPackagesOld.callPackage ./ffi/types/th { };
-              # hasktorch-types-thc =
-              #   haskellPackagesNew.callPackage ./ffi/types/thc { };
+
+              hasktorch-types-thc =
+                haskellPackagesNew.callPackage ./ffi/types/thc { };
+
+              # These are unbuildable in nix and depend on backpack
 
               # hasktorch-signatures =
               #   haskellPackagesNew.callPackage ./signatures { };
@@ -79,6 +86,7 @@ let
 
 in {
   inherit (pkgs) hasktorch-aten;
+  inherit (pkgs) magma;
   inherit
     (ghc)
     # # These dependencies depend on backpack and backpack support in
@@ -92,8 +100,8 @@ in {
     # hasktorch-indef
     hasktorch-codegen
     hasktorch-ffi-th
-    # hasktorch-ffi-thc
+    hasktorch-ffi-thc
     hasktorch-ffi-tests
-    hasktorch-types-th;
-    # hasktorch-types-thc;
+    hasktorch-types-th
+    hasktorch-types-thc;
 }
