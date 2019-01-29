@@ -10,14 +10,19 @@ with release;
 
 pkgs.mkShell {
   name = "hasktorch-dev-environment";
-  LD_LIBRARY_PATH    = "${hasktorch-aten}/lib";
-  C_INCLUDE_PATH     = "${hasktorch-aten}/include";
-  CPLUS_INCLUDE_PATH = "${hasktorch-aten}/include";
+  PATH               = "${cudatoolkit}/bin";
+  LD_LIBRARY_PATH    = "${hasktorch-aten}/lib:${cudatoolkit}/lib64";
+  C_INCLUDE_PATH     = "${hasktorch-aten}/include:${cudatoolkit}/include";
+  CPLUS_INCLUDE_PATH = "${hasktorch-aten}/include:${cudatoolkit}/include";
   buildInputs = [
+    pkgs.gmp
+    pkgs.ncurses
+    pkgs.zlib.out
     hasktorch-aten
     hasktorch-codegen
     hasktorch-types-th
     hasktorch-ffi-th
-    ] ++ (lib.optionals cudaSupport [ hasktorch-types-thc hasktorch-ffi-thc ]);
+    # these seem to have a runtime dependency error
+    ] ; # ++ (lib.optionals cudaSupport [ hasktorch-types-thc hasktorch-ffi-thc ]);
 }
 

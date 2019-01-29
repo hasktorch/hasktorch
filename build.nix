@@ -85,8 +85,8 @@ let
   ghc = pkgs.haskell.packages.${compilerVersion};
 
 in {
-  inherit (pkgs) hasktorch-aten;
-  inherit (pkgs) magma;
+  cudatoolkit = pkgs.cudatoolkit_9_0;
+  inherit (pkgs) magma hasktorch-aten;
   inherit
     (ghc)
     # # These dependencies depend on backpack and backpack support in
