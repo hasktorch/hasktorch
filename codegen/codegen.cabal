@@ -24,3 +24,11 @@ executable codegen
                      , show-prettyprint >= 0.2.2
                      , yaml >= 0.11.0.0
   extra-libraries:     stdc++
+
+test-suite doctests
+  type:            exitcode-stdio-1.0
+  hs-source-dirs:  test
+  main-is:         doctests.hs
+  ghc-options:     -Wall -threaded
+  build-depends:   base,
+                   doctest

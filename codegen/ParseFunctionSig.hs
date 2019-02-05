@@ -118,6 +118,13 @@ identStart = ['a'..'z'] ++ ['A'..'Z'] ++ ['_']
 identLetter :: [Char]
 identLetter = ['a'..'z'] ++ ['A'..'Z'] ++ ['_'] ++ ['0'..'9'] ++ [':', '<', '>']
 
+
+-- | parser of identifier
+--
+-- >>> parseTest identifier "fft"
+-- "fft"
+-- >>> parseTest identifier "_fft"
+-- "_fft"
 identifier :: Parser String
 identifier = (lexm . try) (p >>= check)
  where
@@ -126,29 +133,66 @@ identifier = (lexm . try) (p >>= check)
     then fail $ "keyword " ++ show x ++ " cannot be an identifier"
     else return x
 
+-- | parser of identifier
+--
+-- >>> parseTest typ "Tensor"
+-- TenType Tensor
+typ :: Parser Parsable
+typ = tensor <|> ctype
+  where
+    tensor = do
+      lexm $ string "Tensor"
+      pure $ TenType Tensor
+    ctype =
+      ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
+      ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
+      ((lexm $ string "double") >> (pure $ CType CDouble)) <|>
+      ((lexm $ string "int64_t") >> (pure $ CType CInt64))
+
+
+
+-- | parser of identifier
+--
+-- >>> parseTest typ "Tensor"
+-- TenType Tensor
+defaultValue :: Parser DefaultValue
+defaultValue = defBool
+
+-- | parser of argument
+--
+-- >>> parseTest arg "*"
+-- Star
+-- >>> parseTest arg "Tensor self"
+-- Parameter {ptype = TenType Tensor, pname = "self", val = Nothing}
+-- >>> parseTest (sepBy arg (lexm (string ","))) "Tensor self, Tensor self"
+-- [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = TenType Tensor, pname = "self", val = Nothing}]
 arg :: Parser Parameter
 arg = star <|> param
  where
   param = do
     -- ptype <- lexm $ identifier
-    ptype <- undefined
+    ptype <- typ
     pname <- lexm $ identifier
-    val   <- undefined
+    val   <- (do lexm (string "="); v <- defaultValue ; pure (Just v)) <|> (pure Nothing)
     pure $ Parameter ptype pname val
   star = do
     string "*"
     pure Star
 
+-- | parser of function
+--
+-- >>> parseTest func "fft(Tensor self, int64_t signal_ndim, bool normalized=false) -> Tensor"
+-- Function {name = "fft", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = CType CInt64, pname = "signal_ndim", val = Nothing},Parameter {ptype = CType CBool, pname = "normalized", val = Just (ValBool False)}], retType = TenType Tensor}
 func :: Parser Function
 func = do
   fName <- identifier
   lexm $ string "("
   -- parse list of parameters
-  args <- some arg
+  args <- (sepBy arg (lexm (string ",")))
   lexm $ string ")"
   lexm $ string "->"
   retType <- identifier
-  pure $ Function fName [] (TenType Tensor)
+  pure $ Function fName args (TenType Tensor)
 
 test = do
   --parseTest defBool "true"
