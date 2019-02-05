@@ -138,11 +138,20 @@ identifier = (lexm . try) (p >>= check)
 -- >>> parseTest typ "Tensor"
 -- TenType Tensor
 typ :: Parser Parsable
-typ = tensor <|> ctype
+typ = tensor <|> intlistDim <|> intlistNoDim <|> ctype
   where
     tensor = do
       lexm $ string "Tensor"
       pure $ TenType Tensor
+    intlistDim = do
+      lexm $ string "IntList"
+      lexm $ string "["
+      val <- (sepBy pinteger (lexm (string ",")))
+      lexm $ string "]"
+      pure $ TenType $ IntList (Just (map fromIntegral val))
+    intlistNoDim = do
+      lexm $ string "IntList"
+      pure $ TenType $ IntList Nothing
     ctype =
       ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
       ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
@@ -181,8 +190,12 @@ arg = star <|> param
 
 -- | parser of function
 --
+-- >>> parseTest func "log10_(Tensor self) -> Tensor"
+-- Function {name = "log10_", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing}], retType = TenType Tensor}
 -- >>> parseTest func "fft(Tensor self, int64_t signal_ndim, bool normalized=false) -> Tensor"
 -- Function {name = "fft", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = CType CInt64, pname = "signal_ndim", val = Nothing},Parameter {ptype = CType CBool, pname = "normalized", val = Just (ValBool False)}], retType = TenType Tensor}
+-- >>> parseTest func "frobenius_norm_out(Tensor result, Tensor self, IntList[1] dim, bool keepdim=false) -> Tensor"
+-- Function {name = "frobenius_norm_out", parameters = [Parameter {ptype = TenType Tensor, pname = "result", val = Nothing},Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [1]}), pname = "dim", val = Nothing},Parameter {ptype = CType CBool, pname = "keepdim", val = Just (ValBool False)}], retType = TenType Tensor}
 func :: Parser Function
 func = do
   fName <- identifier
