@@ -46,7 +46,7 @@ programOptions =
           )
 
 main = do
-  -- opts <- O.execParser optsParser
-  -- NF.decodeAndPrint (specFile opts)
+  opts <- O.execParser optsParser
+  NF.decodeAndCodeGen (specFile opts)
   pure ()
 
