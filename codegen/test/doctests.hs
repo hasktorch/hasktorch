@@ -7,5 +7,5 @@ main = do
   doctest $
     [
       "-XOverloadedStrings",
-      "ParseFunctionSig.hs"
+      "src/ParseFunctionSig.hs"
     ]
