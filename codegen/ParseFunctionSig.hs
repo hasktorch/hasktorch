@@ -111,10 +111,17 @@ rword w = (lexm . try) (string w *> notFollowedBy alphaNumChar)
 rws :: [String]
 rws = []
 
+
+identStart :: [Char]
+identStart = ['a'..'z'] ++ ['A'..'Z'] ++ ['_']
+
+identLetter :: [Char]
+identLetter = ['a'..'z'] ++ ['A'..'Z'] ++ ['_'] ++ ['0'..'9'] ++ [':', '<', '>']
+
 identifier :: Parser String
 identifier = (lexm . try) (p >>= check)
  where
-  p = (:) <$> letterChar <*> many M.alphaNumChar
+  p = (:) <$> (oneOf identStart) <*> many (oneOf identLetter)
   check x = if x `elem` rws
     then fail $ "keyword " ++ show x ++ " cannot be an identifier"
     else return x
