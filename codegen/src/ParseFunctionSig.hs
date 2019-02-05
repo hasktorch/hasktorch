@@ -67,6 +67,8 @@ data TenType = Scalar
     | Tensor
     | TensorQ -- Tensor?
     | TensorOptions
+    | TensorList
+    | BoolTensor
     | IntList { dim :: Maybe [Int] }
     deriving Show
 
@@ -145,13 +147,19 @@ identifier = (lexm . try) (p >>= check)
 -- >>> parseTest typ "Tensor"
 -- TenType Tensor
 typ :: Parser Parsable
-typ = tuple <|> tensorq <|>  tensor <|> intlistDim <|> intlistNoDim <|> ctype
+typ = tuple <|> booltensor <|> tensorlist <|> tensorq <|> tensor <|> intlistDim <|> intlistNoDim <|> ctype
  where
   tuple = do
     lexm $ string "("
     val <- (sepBy typ (lexm (string ",")))
     lexm $ string ")"
     pure $ Tuple val
+  booltensor = do
+    lexm $ string "BoolTensor"
+    pure $ TenType BoolTensor
+  tensorlist = do
+    lexm $ string "TensorList"
+    pure $ TenType TensorList
   tensorq = do
     lexm $ string "Tensor?"
     pure $ TenType TensorQ
@@ -159,8 +167,7 @@ typ = tuple <|> tensorq <|>  tensor <|> intlistDim <|> intlistNoDim <|> ctype
     lexm $ string "Tensor"
     pure $ TenType Tensor
   intlistDim = do
-    lexm $ string "IntList"
-    lexm $ string "["
+    lexm $ string "IntList["
     val <- (sepBy pinteger (lexm (string ",")))
     lexm $ string "]"
     pure $ TenType $ IntList (Just (map fromIntegral val))
