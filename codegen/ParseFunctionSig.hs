@@ -50,7 +50,7 @@ data Parsable
     = Ptr Parsable
     | TenType TenType
     | CType CType
-    | Tuple Parsable Parsable
+    | Tuple [Parsable]
     deriving (Show, Generic)
 
 data CType
@@ -76,6 +76,13 @@ defBool :: Parser DefaultValue
 defBool = do
   val <- string "true" <|> string "false"
   pure $ if val == "true" then ValBool True else ValBool False
+
+defInt :: Parser DefaultValue
+defInt = do
+  val <- pinteger
+  pure $ ValInt (fromIntegral val)
+
+
 
 -- defVal = do 
 --     val <- L.float
@@ -138,25 +145,33 @@ identifier = (lexm . try) (p >>= check)
 -- >>> parseTest typ "Tensor"
 -- TenType Tensor
 typ :: Parser Parsable
-typ = tensor <|> intlistDim <|> intlistNoDim <|> ctype
-  where
-    tensor = do
-      lexm $ string "Tensor"
-      pure $ TenType Tensor
-    intlistDim = do
-      lexm $ string "IntList"
-      lexm $ string "["
-      val <- (sepBy pinteger (lexm (string ",")))
-      lexm $ string "]"
-      pure $ TenType $ IntList (Just (map fromIntegral val))
-    intlistNoDim = do
-      lexm $ string "IntList"
-      pure $ TenType $ IntList Nothing
-    ctype =
-      ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
-      ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
-      ((lexm $ string "double") >> (pure $ CType CDouble)) <|>
-      ((lexm $ string "int64_t") >> (pure $ CType CInt64))
+typ = tuple <|> tensorq <|>  tensor <|> intlistDim <|> intlistNoDim <|> ctype
+ where
+  tuple = do
+    lexm $ string "("
+    val <- (sepBy typ (lexm (string ",")))
+    lexm $ string ")"
+    pure $ Tuple val
+  tensorq = do
+    lexm $ string "Tensor?"
+    pure $ TenType TensorQ
+  tensor = do
+    lexm $ string "Tensor"
+    pure $ TenType Tensor
+  intlistDim = do
+    lexm $ string "IntList"
+    lexm $ string "["
+    val <- (sepBy pinteger (lexm (string ",")))
+    lexm $ string "]"
+    pure $ TenType $ IntList (Just (map fromIntegral val))
+  intlistNoDim = do
+    lexm $ string "IntList"
+    pure $ TenType $ IntList Nothing
+  ctype =
+    ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
+    ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
+    ((lexm $ string "double") >> (pure $ CType CDouble)) <|>
+    ((lexm $ string "int64_t") >> (pure $ CType CInt64))
 
 
 
@@ -165,7 +180,7 @@ typ = tensor <|> intlistDim <|> intlistNoDim <|> ctype
 -- >>> parseTest typ "Tensor"
 -- TenType Tensor
 defaultValue :: Parser DefaultValue
-defaultValue = defBool
+defaultValue = defBool <|> defInt
 
 -- | parser of argument
 --
@@ -188,6 +203,28 @@ arg = star <|> param
     string "*"
     pure Star
 
+-- | parser of argument
+--
+-- >>> parseTest rettype "Tensor"
+-- TenType Tensor
+-- >>> parseTest rettype "Tensor hoo"
+-- TenType Tensor
+-- >>> parseTest rettype "(Tensor hoo,Tensor bar)"
+-- Tuple [TenType Tensor,TenType Tensor] 
+rettype :: Parser Parsable
+rettype = tuple <|> single
+ where
+  tuple = do
+    lexm $ string "("
+    val <- (sepBy rettype (lexm (string ",")))
+    lexm $ string ")"
+    pure $ Tuple val
+  single = do
+    type' <- typ
+    _ <- ((do v <- lexm (identifier) ; pure (Just v)) <|> (pure Nothing))
+    pure type'
+
+
 -- | parser of function
 --
 -- >>> parseTest func "log10_(Tensor self) -> Tensor"
@@ -196,6 +233,8 @@ arg = star <|> param
 -- Function {name = "fft", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = CType CInt64, pname = "signal_ndim", val = Nothing},Parameter {ptype = CType CBool, pname = "normalized", val = Just (ValBool False)}], retType = TenType Tensor}
 -- >>> parseTest func "frobenius_norm_out(Tensor result, Tensor self, IntList[1] dim, bool keepdim=false) -> Tensor"
 -- Function {name = "frobenius_norm_out", parameters = [Parameter {ptype = TenType Tensor, pname = "result", val = Nothing},Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [1]}), pname = "dim", val = Nothing},Parameter {ptype = CType CBool, pname = "keepdim", val = Just (ValBool False)}], retType = TenType Tensor}
+-- >>> parseTest func "thnn_conv_dilated3d_forward(Tensor self, Tensor weight, IntList[3] kernel_size, Tensor? bias, IntList[3] stride, IntList[3] padding, IntList[3] dilation) -> (Tensor output, Tensor columns, Tensor ones)"
+-- Function {name = "thnn_conv_dilated3d_forward", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = TenType Tensor, pname = "weight", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "kernel_size", val = Nothing},Parameter {ptype = TenType TensorQ, pname = "bias", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "stride", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "padding", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "dilation", val = Nothing}], retType = Tuple [TenType Tensor,TenType Tensor,TenType Tensor]}
 func :: Parser Function
 func = do
   fName <- identifier
@@ -204,8 +243,8 @@ func = do
   args <- (sepBy arg (lexm (string ",")))
   lexm $ string ")"
   lexm $ string "->"
-  retType <- identifier
-  pure $ Function fName args (TenType Tensor)
+  retType <- rettype
+  pure $ Function fName args retType
 
 test = do
   --parseTest defBool "true"
