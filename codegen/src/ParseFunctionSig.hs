@@ -49,7 +49,12 @@ data Function  = Function {
 data Parsable
     = Ptr Parsable
     | TenType TenType
+    | DeviceType
+    | GeneratorType
+    | StorageType
     | CType CType
+    | STLType STLType
+    | CppString
     | Tuple [Parsable]
     deriving (Show, Generic)
 
@@ -58,18 +63,25 @@ data CType
     | CVoid
     | CDouble
     | CInt64
+    | CInt64Q
     deriving (Eq, Show, Generic, Bounded, Enum)
 
 data STLType
     = Array CType Int
+    deriving (Show, Generic)
 
 data TenType = Scalar
     | Tensor
     | TensorQ -- Tensor?
     | TensorOptions
     | TensorList
+    | IndexTensor
     | BoolTensor
+    | BoolTensorQ
     | IntList { dim :: Maybe [Int] }
+    | ScalarQ
+    | ScalarType
+    | SparseTensorRef
     deriving Show
 
 type Parser = Parsec Void String
@@ -144,28 +156,91 @@ identifier = (lexm . try) (p >>= check)
 
 -- | parser of identifier
 --
+-- >>> parseTest typ "BoolTensor"
+-- TenType BoolTensor
+-- >>> parseTest typ "BoolTensor?"
+-- TenType BoolTensorQ
+-- >>> parseTest typ "Device"
+-- DeviceType
+-- >>> parseTest typ "Generator*"
+-- GeneratorType
+-- >>> parseTest typ "IndexTensor"
+-- TenType IndexTensor
+-- >>> parseTest typ "IntList"
+-- TenType (IntList {dim = Nothing})
+-- >>> parseTest typ "IntList[1]"
+-- TenType (IntList {dim = Just [1]})
+-- >>> parseTest typ "Scalar"
+-- TenType Scalar
+-- >>> parseTest typ "Scalar?"
+-- TenType ScalarQ
+-- >>> parseTest typ "ScalarType"
+-- TenType ScalarType
+-- >>> parseTest typ "SparseTensorRef"
+-- TenType SparseTensorRef
+-- >>> parseTest typ "Storage"
+-- StorageType
 -- >>> parseTest typ "Tensor"
 -- TenType Tensor
+-- >>> parseTest typ "Tensor?"
+-- TenType TensorQ
+-- >>> parseTest typ "TensorList"
+-- TenType TensorList
+-- >>> parseTest typ "TensorOptions"
+-- TenType TensorOptions
+-- >>> parseTest typ "bool"
+-- CType CBool
+-- >>> parseTest typ "double"
+-- CType CDouble
+-- >>> parseTest typ "int64_t"
+-- CType CInt64
+-- >>> parseTest typ "int64_t?"
+-- CType CInt64Q
+-- >>> parseTest typ "std::array<bool,2>"
+-- STLType (Array CBool 2)
+-- >>> parseTest typ "std::string"
+-- CppString
 typ :: Parser Parsable
-typ = tuple <|> booltensor <|> tensorlist <|> tensorq <|> tensor <|> intlistDim <|> intlistNoDim <|> ctype
+typ =
+  tuple <|>
+  idxtensor <|>
+  booltensorq <|> booltensor <|>
+  tensor <|>
+  intlistDim <|> intlistNoDim <|>
+  scalar <|>
+  ctype <|>
+  stl <|>
+  cppstring <|>
+  other
  where
   tuple = do
     lexm $ string "("
     val <- (sepBy typ (lexm (string ",")))
     lexm $ string ")"
     pure $ Tuple val
+  other =
+    ((lexm $ string "Device") >> (pure $ DeviceType)) <|>
+    ((lexm $ string "Generator*") >> (pure $ GeneratorType)) <|>
+    ((lexm $ string "Storage") >> (pure $ StorageType))
+  scalar =
+    ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ)) <|>
+    ((lexm $ string "ScalarType") >> (pure $ TenType ScalarType)) <|>
+    ((lexm $ string "Scalar") >> (pure $ TenType Scalar)) <|>
+    ((lexm $ string "SparseTensorRef") >> (pure $ TenType SparseTensorRef))
+  idxtensor = do
+    lexm $ string "IndexTensor"
+    pure $ TenType IndexTensor
   booltensor = do
     lexm $ string "BoolTensor"
     pure $ TenType BoolTensor
-  tensorlist = do
-    lexm $ string "TensorList"
-    pure $ TenType TensorList
-  tensorq = do
-    lexm $ string "Tensor?"
-    pure $ TenType TensorQ
-  tensor = do
-    lexm $ string "Tensor"
-    pure $ TenType Tensor
+  booltensorq = do
+    lexm $ string "BoolTensor?"
+    pure $ TenType BoolTensorQ
+  tensor =
+    ((lexm $ string "TensorOptions") >> (pure $ TenType TensorOptions)) <|>
+    ((lexm $ string "Tensor?") >> (pure $ TenType TensorQ)) <|>
+    ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
+    ((lexm $ string "Tensor") >> (pure $ TenType Tensor))
   intlistDim = do
     lexm $ string "IntList["
     val <- (sepBy pinteger (lexm (string ",")))
@@ -178,9 +253,18 @@ typ = tuple <|> booltensor <|> tensorlist <|> tensorq <|> tensor <|> intlistDim 
     ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
     ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
     ((lexm $ string "double") >> (pure $ CType CDouble)) <|>
+    ((lexm $ string "int64_t?") >> (pure $ CType CInt64Q)) <|>
     ((lexm $ string "int64_t") >> (pure $ CType CInt64))
-
-
+  stl = do
+    lexm $ string "std::array<"
+    val <- ctype
+    lexm $ string ","
+    num <- pinteger
+    lexm $ string ">"
+    case val of
+      CType v -> pure $ STLType $ Array v (fromIntegral num)
+      _ -> fail "Can not parse ctype."
+  cppstring = ((lexm $ string "std::string") >> (pure $ CppString))
 
 -- | parser of identifier
 --
@@ -195,8 +279,12 @@ defaultValue = defBool <|> defInt
 -- Star
 -- >>> parseTest arg "Tensor self"
 -- Parameter {ptype = TenType Tensor, pname = "self", val = Nothing}
--- >>> parseTest (sepBy arg (lexm (string ","))) "Tensor self, Tensor self"
--- [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = TenType Tensor, pname = "self", val = Nothing}]
+-- >>> Right v = parse (sepBy arg (lexm (string ","))) "" "Tensor self, Tensor self"
+-- >>> map ptype v
+-- [TenType Tensor,TenType Tensor]
+-- >>> Right v = parse (sepBy arg (lexm (string ","))) "" "Tensor self, Tensor? self"
+-- >>> map ptype v
+-- [TenType Tensor,TenType TensorQ]
 arg :: Parser Parameter
 arg = star <|> param
  where
