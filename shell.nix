@@ -1,8 +1,8 @@
-{ cudaSupport ? false, mklSupport ? true }:
+{ cudaSupport ? false, mklSupport ? true, releasePkgs ? true }:
 
 let
   release = import ./build.nix { inherit cudaSupport mklSupport; };
-  pkgs = import <nixpkgs> {};
+  pkgs = if releasePkgs then release.pkgs else (import <nixpkgs> {});
   lib = pkgs.lib;
 in
 
@@ -15,9 +15,9 @@ pkgs.mkShell {
   C_INCLUDE_PATH     = "${hasktorch-aten}/include:${cudatoolkit}/include";
   CPLUS_INCLUDE_PATH = "${hasktorch-aten}/include:${cudatoolkit}/include";
   buildInputs = [
-    pkgs.gmp
-    pkgs.ncurses
-    pkgs.zlib.out
+    pkgs.cabal-install
+    (pkgs.haskellPackages.ghcWithPackages (self: with self; [ hspec-discover ]))
+
     hasktorch-aten
     hasktorch-codegen
     hasktorch-types-th

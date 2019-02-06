@@ -1,4 +1,4 @@
-{ compilerVersion ? "ghc844", cudaSupport ? false, mklSupport ? true }:
+{ compilerVersion ? "ghc844", cudaSupport ? false, mklSupport ? true, atenDev ? false }:
 let
   config = {
     allowUnfree = true;
@@ -30,6 +30,7 @@ let
         pkgs.callPackage ./ffi/deps/hasktorch-aten.nix {
           inherit (pkgs.python36Packages) typing pyaml;
           inherit cudaSupport mklSupport;
+          dev = atenDev;
           magma_cudatoolkit_9_0 = magma;
           stdenv = stdenv5;
           gfortran = gfortran-gcc5;
@@ -81,11 +82,19 @@ let
       };
     };
   };
-  pkgs = import <nixpkgs> { inherit config; };
+
+  pkgs = import ((import <nixpkgs> {}).fetchFromGitHub {
+    owner  = "NixOS";
+    repo   = "nixpkgs-channels";
+    rev    = "2d6f84c1090ae39c58dcec8f35a3ca62a43ad38c";
+    sha256 = "0l8b51lwxlqc3h6gy59mbz8bsvgc0q6b3gf7p3ib1icvpmwqm773";
+  }) { inherit config; };
+
   ghc = pkgs.haskell.packages.${compilerVersion};
 
 in {
   cudatoolkit = pkgs.cudatoolkit_9_0;
+  inherit pkgs;
   inherit (pkgs) magma hasktorch-aten;
   inherit
     (ghc)
