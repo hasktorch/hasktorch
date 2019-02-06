@@ -83,6 +83,16 @@ cabal new-test all
 
 ## Common Issues
 
+### Aten Library Linkage Issue
+
+The error is:
+
+```
+/home/ciel/Projects/hasktorch/dist-newstyle/build/x86_64-linux/ghc-8.4.2/hasktorch-examples-0.0.1.0/x/static-tensor-usage/build/static-tensor-usage/static-tensor-usage: error while loading shared libraries: libATen.so.1: cannot open shared object file: No such file or directory
+```
+
+Solution is to run `source setenv`.
+
 ### Errors in build-aten.sh
 
 The steps to manually replicate `build-aten.sh` are (assuming that you're on a linux machine):
