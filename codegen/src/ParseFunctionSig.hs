@@ -31,6 +31,7 @@ data DefaultValue =
     | AtKLong
     | ReductionMean
     | NullPtr -- nullptr 
+    | ValNone
     deriving Show
 
 data Parameter  = Parameter {
@@ -88,14 +89,18 @@ type Parser = Parsec Void String
 
 defBool :: Parser DefaultValue
 defBool = do
-  val <- string "true" <|> string "false"
-  pure $ if val == "true" then ValBool True else ValBool False
+  val <- string "true" <|> string "false" <|> string "True" <|> string "False"
+  pure $ if val == "true" || val == "True" then ValBool True else ValBool False
 
 defInt :: Parser DefaultValue
 defInt = do
   val <- pinteger
   pure $ ValInt (fromIntegral val)
 
+defFloat :: Parser DefaultValue
+defFloat = do
+  val <- L.scientific
+  pure $ ValDouble (realToFrac val)
 
 
 -- defVal = do 
@@ -121,10 +126,12 @@ parens :: Parser a -> Parser a
 parens = between (string "(") (string ")")
 
 pinteger :: Parser Integer
-pinteger = lexm L.decimal
+pinteger =
+  (L.decimal) <|>
+  ((string "-") >> L.decimal >>= \v -> pure (-v))
 
 pfloat :: Parser Float
-pfloat = lexm L.float
+pfloat = L.float
 
 rword :: String -> Parser ()
 rword w = (lexm . try) (string w *> notFollowedBy alphaNumChar)
@@ -266,12 +273,72 @@ typ =
       _ -> fail "Can not parse ctype."
   cppstring = ((lexm $ string "std::string") >> (pure $ CppString))
 
--- | parser of identifier
+-- | parser of defaultValue
 --
--- >>> parseTest typ "Tensor"
--- TenType Tensor
+-- >>> parseTest defaultValue "-100"
+-- ValInt (-100)
+-- >>> parseTest defaultValue "20"
+-- ValInt 20
+-- >>> parseTest defaultValue "0.125"
+-- ValDouble 0.125
+-- >>> parseTest defaultValue "1e-8"
+-- ValDouble 1.0e-8
+-- >>> parseTest defaultValue "False"
+-- ValBool False
+-- >>> parseTest defaultValue "None"
+-- ValNone
+-- >>> parseTest defaultValue "Reduction::Mean"
+-- ReductionMean
+-- >>> parseTest defaultValue "True"
+-- ValBool True
+-- >>> parseTest defaultValue "at::kLong"
+-- AtKLong
+-- >>> parseTest defaultValue "false"
+-- ValBool False
+-- >>> parseTest defaultValue "nullptr"
+-- NullPtr
+-- >>> parseTest defaultValue "true"
+-- ValBool True
+-- >>> parseTest defaultValue "{0,1}"
+-- ValDict
+-- >>> parseTest defaultValue "{}"
+-- ValDict
 defaultValue :: Parser DefaultValue
-defaultValue = defBool <|> defInt
+defaultValue =
+  try floatp <|>
+  try intp <|>
+  defBool <|>
+  nullp <|>
+  nonep <|>
+  reductionp <|>
+  atklongp <|>
+  dict <|>
+  dict01
+ where
+   intp = do
+     val <- lexm $ pinteger  :: Parser Integer
+     pure $ ValInt (fromIntegral val)
+   floatp = do
+     v <- lexm $ L.float :: Parser Double
+     pure $ ValDouble v
+   nullp = do
+     lexm $ string "nullptr"
+     pure NullPtr
+   reductionp = do
+     lexm $ string "Reduction::Mean"
+     pure ReductionMean
+   atklongp = do
+     lexm $ string "at::kLong"
+     pure AtKLong
+   dict = do
+     lexm $ string "{}"
+     pure ValDict
+   dict01 = do
+     lexm $ string "{0,1}"
+     pure ValDict
+   nonep = do
+     lexm $ string "None"
+     pure ValNone
 
 -- | parser of argument
 --
