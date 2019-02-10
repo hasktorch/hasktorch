@@ -4,20 +4,27 @@ global_defaults: &defaults
   machine: true
   PATH_ADDITIONS: /home/circleci/.local/bin:~/.local/bin/:~/.cabal/bin/:/usr/local/bin
 
+update_path_command: &update_path
+  run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
+
 jobs:
   system-libraries:
+    <<: *defaults
     machine: true
     steps:
       - run: sudo apt-get update --fix-missing
 
   stack:
+    <<: *defaults
     machine: true
     steps:
       - run: wget -qO- https://get.haskellstack.org/ | sh
 
   build:
+    <<: *defaults
     machine: true
     steps:
+      - *update_path
       - run: echo 'export PATH=/home/circleci/.local/bin:$PATH' >> $BASH_ENV
       - run: gcc --version
       - run: stack --version
