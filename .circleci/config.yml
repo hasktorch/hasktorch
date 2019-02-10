@@ -2,7 +2,7 @@ version: 2
 
 global_defaults: &defaults
   machine: true
-  PATH_ADDITIONS: /home/circleci/.local/bin
+  PATH_ADDITIONS: /home/circleci/.local/bin:~/.local/bin/:~/.cabal/bin/:/usr/local/bin
 
 jobs:
   system-libraries:
@@ -23,6 +23,7 @@ jobs:
       - run: stack --version
       - run: cd libtorch-test ; make
       - run: stack build
+      - run: stack test
       - run: stack exec codegen
       - run: stack exec ffi
 
