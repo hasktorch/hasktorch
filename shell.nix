@@ -1,9 +1,7 @@
-{ cudaSupport ? false, mklSupport ? true, releasePkgs ? true }:
+{ cudaSupport ? false, mklSupport ? true }:
 
 let
   release = import ./build.nix { inherit cudaSupport mklSupport; };
-  pkgs = if releasePkgs then release.pkgs else (import <nixpkgs> {});
-  lib = pkgs.lib;
 in
 
 with release;
@@ -11,10 +9,11 @@ with release;
 pkgs.mkShell {
   name = "hasktorch-dev-environment";
   PATH               = "${cudatoolkit}/bin";
-  LD_LIBRARY_PATH    = "${hasktorch-aten}/lib:${cudatoolkit}/lib64";
+  LD_LIBRARY_PATH    = "${hasktorch-aten}/lib:${cudatoolkit}/lib64:${nvidia_x11-pinned}/lib";
   C_INCLUDE_PATH     = "${hasktorch-aten}/include:${cudatoolkit}/include";
   CPLUS_INCLUDE_PATH = "${hasktorch-aten}/include:${cudatoolkit}/include";
   buildInputs = [
+    # pkgs.busybox
     pkgs.cabal-install
     (pkgs.haskellPackages.ghcWithPackages (self: with self; [ hspec-discover ]))
 

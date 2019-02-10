@@ -49,7 +49,7 @@ let
                 haskellPackagesNew.callPackage ./ffi/ffi/th { ATen = hasktorch-aten; };
 
               hasktorch-ffi-thc =
-                haskellPackagesNew.callPackage ./ffi/ffi/thc { ATen = hasktorch-aten; };
+                haskellPackagesNew.callPackage ./ffi/ffi/thc { ATen = hasktorch-aten; }; #nvidia_x11 = nvidia_x11-pinned; };
 
               hasktorch-ffi-tests =
                 haskellPackagesNew.callPackage ./ffi/ffi/tests { };
@@ -90,10 +90,19 @@ let
     sha256 = "0l8b51lwxlqc3h6gy59mbz8bsvgc0q6b3gf7p3ib1icvpmwqm773";
   }) { inherit config; };
 
+  nvidia_x11-410-66 = (import (builtins.fetchTarball {
+    name = "nvidia-410-66_2018-11-03";
+    url = https://github.com/nixos/nixpkgs/archive/bf084e0ed7a625b50b1b0f42b98358dfa23326ee.tar.gz;
+    sha256 = "0w05cw9s2pa07vqy21ack7g7983ig67lhwkdn24bzah3z49c2d8k";
+  }) { }).linuxPackages_latest.nvidia_x11;
+
+  nvidia_x11-pinned = nvidia_x11-410-66;
+
   ghc = pkgs.haskell.packages.${compilerVersion};
 
 in {
   cudatoolkit = pkgs.cudatoolkit_9_0;
+  inherit nvidia_x11-pinned;
   inherit pkgs;
   inherit (pkgs) magma hasktorch-aten;
   inherit
@@ -109,8 +118,8 @@ in {
     # hasktorch-indef
     hasktorch-codegen
     hasktorch-ffi-th
-    hasktorch-ffi-thc
+    # hasktorch-ffi-thc
     hasktorch-ffi-tests
-    hasktorch-types-th
-    hasktorch-types-thc;
+    hasktorch-types-th;
+    # hasktorch-types-thc;
 }
