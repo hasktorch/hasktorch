@@ -117,9 +117,13 @@ in {
     # hasktorch-examples
     # hasktorch-indef
     hasktorch-codegen
-    hasktorch-ffi-th
+
+    # hasktorch-ffi-thc will have a mismatched cuda versions depending
+    # on if you build on nixos or not, haskell's cuda-9.0 is also acting up.
     # hasktorch-ffi-thc
+    hasktorch-types-thc
+
     hasktorch-ffi-tests
+    hasktorch-ffi-th
     hasktorch-types-th;
-    # hasktorch-types-thc;
 }
