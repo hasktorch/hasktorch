@@ -26,5 +26,6 @@ case "$(uname)" in
     rm -f mklml_lnx_2019.0.1.20181227.tgz
     rm -f mklml_lnx_2019.0.1.20181227.tgz.1
     mv mklml_lnx_2019.0.1.20181227 mklml
+    ln -s libmklml_intel.so mklml/lib/libmklml.so
     ;;
 esac

@@ -1,46 +1,20 @@
 version: 2
 
-global_defaults: &defaults
-  machine: true
-  PATH_ADDITIONS: /home/circleci/.local/bin:~/.local/bin/:~/.cabal/bin/:/usr/local/bin
-
-update_path_command: &update_path
-  run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
-
 jobs:
-  system-libraries:
-    <<: *defaults
-    machine: true
-    steps:
-      - run: sudo apt-get update --fix-missing
-
-  stack:
-    <<: *defaults
-    machine: true
-    steps:
-      - run: wget -qO- https://get.haskellstack.org/ | sh
-
   build:
-    <<: *defaults
-    machine: true
+    docker:
+      - image: "ubuntu:18.04"
+    environment:
+      LD_LIBRARY_PATH: /root/project/deps/libtorch/lib:/root/project/deps/mklml/lib
     steps:
-      - *update_path
-      - run: echo 'export PATH=/home/circleci/.local/bin:$PATH' >> $BASH_ENV
+      - run: echo $LD_LIBRARY_PATH
+      - run: apt update -qq && apt install -y cmake wget unzip git libtinfo-dev
+      - checkout
+      - run: wget -qO- https://get.haskellstack.org/ | sh
       - run: gcc --version
       - run: stack --version
       - run: cd libtorch-test ; make
       - run: stack build
       - run: stack test
       - run: stack exec codegen
-      - run: stack exec ffi
-
-
-
-workflows:
-  version: 2
-  build:
-    jobs:
-      - stack
-      - build:
-          requires:
-            - stack
+      - run: stack exec ffi-test
