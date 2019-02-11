@@ -1,29 +1,41 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 module Main where
 
-import Test.Hspec
 import Control.Exception.Safe (throwString, throw)
+import Data.Proxy
+import ParseNativeFunctions (NativeFunction, NativeFunction')
 import System.Directory (doesFileExist)
+import Test.Hspec
 import qualified Data.Yaml as Y
 
-import ParseNativeFunctions
-
 main :: IO ()
-main = hspec $ do
-  describe "parsing native_functions.yaml" nativeFunctionsSpec
+main = hspec $
+  describe "parsing native_functions.yaml" $ do
+    describe "NativeFunction Spec" nativeFunctionsSpec
+
+nativeFunctionsPath :: FilePath
+nativeFunctionsPath = "../spec/native_functions_modified.yaml"
 
 nativeFunctionsSpec :: Spec
 nativeFunctionsSpec = do
-  it "parses the same number of functions as a vanilla" $ do
-    xs <- vanillaParse nativeFunctionsPath
+  xs <- runIO $ vanillaParse nativeFunctionsPath
+
+  it "parses the same number of stringy functions as a vanilla parsing" $
+     testit xs (Proxy @ NativeFunction)
+
+  it "parses the same number of typed functions as a vanilla parsing" $
+     testit xs (Proxy @ NativeFunction')
+
+ where
+  testit :: forall x funtype . Y.FromJSON funtype => [x] -> Proxy funtype -> IO ()
+  testit xs _ = do
+    print (length xs)
     Y.decodeFileEither nativeFunctionsPath >>= \case
       Left exception -> throw exception
-      Right (fs::[NativeFunction]) -> do
+      Right (fs::[funtype]) -> do
         (length fs) `shouldBe` (length xs)
- where
-  nativeFunctionsPath :: FilePath
-  nativeFunctionsPath = "spec/native_functions_modified.yaml"
 
 vanillaParse :: FilePath -> IO [Y.Value]
 vanillaParse fp = do

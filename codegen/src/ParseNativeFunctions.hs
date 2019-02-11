@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-
+{-# LANGUAGE ScopedTypeVariables #-}
 module ParseNativeFunctions where
 
 import Data.Char (toUpper)
@@ -15,7 +15,7 @@ import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import Text.Show.Prettyprint (prettyPrint)
 import qualified ParseFunctionSig as P
-import Text.Megaparsec (parse, ParseErrorBundle)
+import Text.Megaparsec (parse, ParseErrorBundle, errorBundlePretty)
 import Data.Void (Void)
 import Control.Monad (forM_)
 
@@ -39,6 +39,19 @@ data NativeFunction' = NativeFunction' {
   , dispatch' :: Maybe Dispatch
   , requires_tensor' :: Maybe Bool
 } deriving (Show, Generic)
+
+instance FromJSON NativeFunction' where
+  parseJSON v = do
+    nf :: NativeFunction <- parseJSON v
+    case parse P.func "" (func nf) of
+      Left err -> fail (errorBundlePretty err)
+      Right f ->
+        pure $ NativeFunction' f
+          (variants nf)
+          (python_module nf)
+          (device_guard nf)
+          (dispatch nf)
+          (requires_tensor nf)
 
 
 data Dispatch = Dispatch {

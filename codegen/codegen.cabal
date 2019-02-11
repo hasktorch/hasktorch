@@ -43,8 +43,10 @@ test-suite doctests
   hs-source-dirs:  test
   main-is:         doctests.hs
   ghc-options:     -Wall -threaded
-  build-depends:   base,
-                   doctest
+  build-depends:
+      base
+    , doctest
+    , megaparsec
 
 test-suite spec
   default-language: Haskell2010

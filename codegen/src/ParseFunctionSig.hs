@@ -22,6 +22,7 @@ import Text.Megaparsec.Char.Lexer as L
 -- - func: einsum(std::string equation, TensorList tensors) -> Tensor
 -- - func: empty(IntList size, TensorOptions options={}) -> Tensor
 -- - func: conv3d(Tensor input, Tensor weight, Tensor? bias={}, IntList[3] stride=1, IntList[3] padding=0, IntList[3] dilation=1, int64_t groups=1) -> Tensor
+-- - func: _cudnn_ctc_loss(Tensor log_probs, Tensor targets, IntList input_lengths, IntList target_lengths, int64_t blank, bool deterministic) -> (Tensor, Tensor)
 
 data DefaultValue =
     ValBool Bool
