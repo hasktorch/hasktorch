@@ -33,20 +33,20 @@ data DefaultValue =
     | ReductionMean
     | NullPtr -- nullptr 
     | ValNone
-    deriving Show
+    deriving (Eq, Show)
 
 data Parameter  = Parameter {
     ptype :: Parsable
     , pname :: String
     , val :: Maybe DefaultValue
-    } | Star  -- , *,  
-    deriving Show
+    } | Star  -- , *,
+    deriving (Eq, Show)
 
 data Function  = Function {
     name :: String
     , parameters :: [Parameter]
     , retType :: Parsable
-} deriving Show
+} deriving (Eq, Show)
 
 data Parsable
     = Ptr Parsable
@@ -58,7 +58,7 @@ data Parsable
     | STLType STLType
     | CppString
     | Tuple [Parsable]
-    deriving (Show, Generic)
+    deriving (Eq, Show, Generic)
 
 data CType
     = CBool
@@ -70,7 +70,7 @@ data CType
 
 data STLType
     = Array CType Int
-    deriving (Show, Generic)
+    deriving (Eq, Show, Generic)
 
 data TenType = Scalar
     | Tensor
@@ -84,7 +84,7 @@ data TenType = Scalar
     | ScalarQ
     | ScalarType
     | SparseTensorRef
-    deriving Show
+    deriving (Eq, Show)
 
 type Parser = Parsec Void String
 
