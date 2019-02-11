@@ -9,7 +9,6 @@ import Data.Char (toUpper)
 import GHC.Generics
 import Data.Yaml
 
-import qualified Options.Applicative as O
 import qualified Data.Yaml as Y
 import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
 import qualified Language.C.Inline.Cpp as C
