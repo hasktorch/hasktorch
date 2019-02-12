@@ -11,24 +11,53 @@ category:            Codegen
 build-type:          Simple
 cabal-version:       >=1.10
 
+library
+  exposed-modules:
+    ParseNativeFunctions
+    ParseDerivatives
+    ParseFunctionSig
+  hs-source-dirs: src
+  default-language: Haskell2010
+  build-depends:
+      base >= 4.7 && < 5
+    , aeson >= 1.4.2.0
+    , inline-c-cpp >= 0.3.0.1
+    , megaparsec >= 7.0.4
+    , show-prettyprint >= 0.2.2
+    , yaml >= 0.11.0.0
+  extra-libraries: stdc++
+
 executable codegen
-  hs-source-dirs:      src
+  hs-source-dirs:      exe
   main-is:             Main.hs
-  other-modules:       ParseNativeFunctions, ParseDerivatives, ParseFunctionSig
   default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5
-                     , aeson >= 1.4.2.0
-                     , inline-c-cpp >= 0.3.0.1
-                     , megaparsec >= 7.0.4
-                     , optparse-applicative >= 0.14.3.0
-                     , show-prettyprint >= 0.2.2
-                     , yaml >= 0.11.0.0
+  build-depends:
+      base >= 4.7 && < 5
+    , codegen
+    , optparse-applicative >= 0.14.3.0
   extra-libraries:     stdc++
 
 test-suite doctests
+  default-language: Haskell2010
   type:            exitcode-stdio-1.0
   hs-source-dirs:  test
   main-is:         doctests.hs
   ghc-options:     -Wall -threaded
-  build-depends:   base,
-                   doctest
+  build-depends:
+      base
+    , doctest
+    , megaparsec
+
+test-suite spec
+  default-language: Haskell2010
+  type:            exitcode-stdio-1.0
+  hs-source-dirs:  test
+  main-is:         Spec.hs
+  ghc-options:     -Wall -threaded
+  build-depends:   base
+                 , codegen
+                 , hspec
+                 , yaml
+                 , safe-exceptions
+                 , directory
+

@@ -22,6 +22,7 @@ import Text.Megaparsec.Char.Lexer as L
 -- - func: einsum(std::string equation, TensorList tensors) -> Tensor
 -- - func: empty(IntList size, TensorOptions options={}) -> Tensor
 -- - func: conv3d(Tensor input, Tensor weight, Tensor? bias={}, IntList[3] stride=1, IntList[3] padding=0, IntList[3] dilation=1, int64_t groups=1) -> Tensor
+-- - func: _cudnn_ctc_loss(Tensor log_probs, Tensor targets, IntList input_lengths, IntList target_lengths, int64_t blank, bool deterministic) -> (Tensor, Tensor)
 
 data DefaultValue =
     ValBool Bool
@@ -32,20 +33,20 @@ data DefaultValue =
     | ReductionMean
     | NullPtr -- nullptr 
     | ValNone
-    deriving Show
+    deriving (Eq, Show)
 
 data Parameter  = Parameter {
     ptype :: Parsable
     , pname :: String
     , val :: Maybe DefaultValue
-    } | Star  -- , *,  
-    deriving Show
+    } | Star  -- , *,
+    deriving (Eq, Show)
 
 data Function  = Function {
     name :: String
     , parameters :: [Parameter]
     , retType :: Parsable
-} deriving Show
+} deriving (Eq, Show)
 
 data Parsable
     = Ptr Parsable
@@ -57,7 +58,7 @@ data Parsable
     | STLType STLType
     | CppString
     | Tuple [Parsable]
-    deriving (Show, Generic)
+    deriving (Eq, Show, Generic)
 
 data CType
     = CBool
@@ -69,7 +70,7 @@ data CType
 
 data STLType
     = Array CType Int
-    deriving (Show, Generic)
+    deriving (Eq, Show, Generic)
 
 data TenType = Scalar
     | Tensor
@@ -83,7 +84,7 @@ data TenType = Scalar
     | ScalarQ
     | ScalarType
     | SparseTensorRef
-    deriving Show
+    deriving (Eq, Show)
 
 type Parser = Parsec Void String
 
