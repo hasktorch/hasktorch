@@ -97,13 +97,7 @@ parseNativeFunction nfunc@NativeFunction{..} =
 
 decodeAndCodeGen :: String -> IO ()
 decodeAndCodeGen fileName = do
-  funcs <-
-    Y.decodeFileEither fileName :: IO (Either ParseException [NativeFunction])
+  funcs <- Y.decodeFileEither fileName :: IO (Either ParseException [NativeFunction'])
   case funcs of
-    Left err -> print err
-    Right funcs' ->
-      forM_ (map parseNativeFunction funcs') $ \v -> do
-        case v of
-          Left err' -> print err'
-          Right funcs'' -> print funcs''
-
+    Left err' -> print err'
+    Right funcs' -> forM_ funcs' print
