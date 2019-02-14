@@ -16,6 +16,7 @@ library
     ParseNativeFunctions
     ParseDerivatives
     ParseFunctionSig
+    RenderNativeFunctions
   hs-source-dirs: src
   default-language: Haskell2010
   build-depends:
@@ -25,7 +26,10 @@ library
     , megaparsec >= 7.0.4
     , show-prettyprint >= 0.2.2
     , yaml >= 0.11.0.0
+    , shakespeare
+    , text
   extra-libraries: stdc++
+  ghc-options:     -Wall
 
 executable codegen
   hs-source-dirs:      exe

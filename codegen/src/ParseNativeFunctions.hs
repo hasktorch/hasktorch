@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE QuasiQuotes #-}
 module ParseNativeFunctions where
 
 import Data.Char (toUpper)
@@ -18,6 +19,10 @@ import qualified ParseFunctionSig as P
 import Text.Megaparsec (parse, ParseErrorBundle, errorBundlePretty)
 import Data.Void (Void)
 import Control.Monad (forM_)
+import Text.Shakespeare.Text (st)
+--import qualified Data.Text as T
+import Data.Text (Text)
+import qualified Data.Text.IO as T
 
 {- native_functions_modified.yaml -}
 
@@ -94,10 +99,3 @@ parseNativeFunction nfunc@NativeFunction{..} =
   case parse P.func "" func of
     Right v -> Right $ NativeFunction' v variants python_module device_guard dispatch requires_tensor
     Left err -> Left err
-
-decodeAndCodeGen :: String -> IO ()
-decodeAndCodeGen fileName = do
-  funcs <- Y.decodeFileEither fileName :: IO (Either ParseException [NativeFunction'])
-  case funcs of
-    Left err' -> print err'
-    Right funcs' -> forM_ funcs' print

@@ -35,5 +35,5 @@ C.context $ C.cppCtx <> mempty {
 
 C.include "<ATen/ATen.h>"
 
-cast_Byte :: Ptr Tensor -> CBool -> IO (Ptr Tensor)
-cast_Byte a b =  [C.block| at::Tensor* { return new at::Tensor(at::native::_cast_Byte(*$(at::Tensor* a), $(bool b)));}|]
+cpp_cast_Byte :: Ptr Tensor -> CBool -> IO (Ptr Tensor)
+cpp_cast_Byte a b =  [C.block| at::Tensor* { return new at::Tensor(at::native::_cast_Byte(*$(at::Tensor* a), $(bool b))); }|]
