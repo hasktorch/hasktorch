@@ -8,6 +8,7 @@ import qualified Options.Applicative as O
 import qualified ParseNativeFunctions as NF
 import qualified ParseDerivatives as D
 import qualified ParseFunctionSig as F
+import qualified RenderNativeFunctions as RNF
 
 {- CLI options -}
 
@@ -47,6 +48,6 @@ programOptions =
 
 main = do
   opts <- O.execParser optsParser
-  NF.decodeAndCodeGen (specFile opts)
+  RNF.decodeAndCodeGen (specFile opts)
   pure ()
 

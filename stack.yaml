@@ -3,6 +3,8 @@ resolver: lts-13.1
 packages:
 - codegen
 - ffi
+- inline-c/inline-c
+- inline-c/inline-c-cpp
 
 
 extra-include-dirs:
@@ -10,7 +12,7 @@ extra-include-dirs:
   - deps/libtorch/include
 
 extra-lib-dirs:
-  - deps/libtorch/lib 
+  - deps/libtorch/lib
   - deps/mklml/lib
 
 # see https://github.com/commercialhaskell/stack/issues/4073
