@@ -12,17 +12,10 @@ import Data.Yaml
 
 import qualified Data.Yaml as Y
 import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
 import Text.Show.Prettyprint (prettyPrint)
 import qualified ParseFunctionSig as P
 import Text.Megaparsec (parse, ParseErrorBundle, errorBundlePretty)
 import Data.Void (Void)
-import Control.Monad (forM_)
-import Text.Shakespeare.Text (st)
---import qualified Data.Text as T
-import Data.Text (Text)
-import qualified Data.Text.IO as T
 
 {- native_functions_modified.yaml -}
 
@@ -67,6 +60,7 @@ data Dispatch = Dispatch {
   , sparseCUDA :: Maybe String
 } deriving (Show, Generic)
 
+dispatchModifier :: [Char] -> [Char]
 dispatchModifier fieldName
   | fieldName `elem` ["cpu", "gpu", "cuda"] = upper fieldName
   | fieldName == "sparseCPU"  = "SparseCPU"
@@ -95,7 +89,7 @@ decodeAndPrint fileName = do
 
 
 parseNativeFunction :: NativeFunction -> Either (ParseErrorBundle String Void) NativeFunction'
-parseNativeFunction nfunc@NativeFunction{..} =
+parseNativeFunction NativeFunction{..} =
   case parse P.func "" func of
     Right v -> Right $ NativeFunction' v variants python_module device_guard dispatch requires_tensor
     Left err -> Left err

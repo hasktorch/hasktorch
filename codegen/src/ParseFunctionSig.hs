@@ -8,7 +8,7 @@ module ParseFunctionSig where
 import Data.Void (Void)
 import GHC.Generics
 import Text.Megaparsec as M
-import Text.Megaparsec.Error as M
+--import Text.Megaparsec.Error as M
 import Text.Megaparsec.Char as M
 import Text.Megaparsec.Char.Lexer as L
 
@@ -90,19 +90,18 @@ type Parser = Parsec Void String
 
 defBool :: Parser DefaultValue
 defBool = do
-  val <- string "true" <|> string "false" <|> string "True" <|> string "False"
-  pure $ if val == "true" || val == "True" then ValBool True else ValBool False
+  val' <- string "true" <|> string "false" <|> string "True" <|> string "False"
+  pure $ if val' == "true" || val' == "True" then ValBool True else ValBool False
 
 defInt :: Parser DefaultValue
 defInt = do
-  val <- pinteger
-  pure $ ValInt (fromIntegral val)
+  val' <- pinteger
+  pure $ ValInt (fromIntegral val')
 
 defFloat :: Parser DefaultValue
 defFloat = do
-  val <- L.scientific
-  pure $ ValDouble (realToFrac val)
-
+  val' <- L.scientific
+  pure $ ValDouble (realToFrac val')
 
 -- defVal = do 
 --     val <- L.float
@@ -170,8 +169,10 @@ identifier = (lexm . try) (p >>= check)
 -- TenType BoolTensorQ
 -- >>> parseTest typ "Device"
 -- DeviceType
--- >>> parseTest typ "Generator*"
+-- >>> parseTest typ "Generator"
 -- GeneratorType
+-- >>> parseTest typ "Generator*"
+-- Ptr GeneratorType
 -- >>> parseTest typ "IndexTensor"
 -- TenType IndexTensor
 -- >>> parseTest typ "IntList"
@@ -222,13 +223,13 @@ typ =
   other
  where
   tuple = do
-    lexm $ string "("
-    val <- (sepBy typ (lexm (string ",")))
-    lexm $ string ")"
-    pure $ Tuple val
+    _ <- lexm $ string "("
+    val' <- (sepBy typ (lexm (string ",")))
+    _ <- lexm $ string ")"
+    pure $ Tuple val'
   other =
     ((lexm $ string "Device") >> (pure $ DeviceType)) <|>
-    ((lexm $ string "Generator*") >> (pure $ GeneratorType)) <|>
+    ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Storage") >> (pure $ StorageType))
   scalar =
     ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ)) <|>
@@ -236,13 +237,13 @@ typ =
     ((lexm $ string "Scalar") >> (pure $ TenType Scalar)) <|>
     ((lexm $ string "SparseTensorRef") >> (pure $ TenType SparseTensorRef))
   idxtensor = do
-    lexm $ string "IndexTensor"
+    _ <- lexm $ string "IndexTensor"
     pure $ TenType IndexTensor
   booltensor = do
-    lexm $ string "BoolTensor"
+    _ <- lexm $ string "BoolTensor"
     pure $ TenType BoolTensor
   booltensorq = do
-    lexm $ string "BoolTensor?"
+    _ <- lexm $ string "BoolTensor?"
     pure $ TenType BoolTensorQ
   tensor =
     ((lexm $ string "TensorOptions") >> (pure $ TenType TensorOptions)) <|>
@@ -250,12 +251,12 @@ typ =
     ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
     ((lexm $ string "Tensor") >> (pure $ TenType Tensor))
   intlistDim = do
-    lexm $ string "IntList["
-    val <- (sepBy pinteger (lexm (string ",")))
-    lexm $ string "]"
-    pure $ TenType $ IntList (Just (map fromIntegral val))
+    _ <- lexm $ string "IntList["
+    val' <- (sepBy pinteger (lexm (string ",")))
+    _ <- lexm $ string "]"
+    pure $ TenType $ IntList (Just (map fromIntegral val'))
   intlistNoDim = do
-    lexm $ string "IntList"
+    _ <- lexm $ string "IntList"
     pure $ TenType $ IntList Nothing
   ctype =
     ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
@@ -264,12 +265,12 @@ typ =
     ((lexm $ string "int64_t?") >> (pure $ CType CInt64Q)) <|>
     ((lexm $ string "int64_t") >> (pure $ CType CInt64))
   stl = do
-    lexm $ string "std::array<"
-    val <- ctype
-    lexm $ string ","
+    _ <- lexm $ string "std::array<"
+    val' <- ctype
+    _ <- lexm $ string ","
     num <- pinteger
-    lexm $ string ">"
-    case val of
+    _ <- lexm $ string ">"
+    case val' of
       CType v -> pure $ STLType $ Array v (fromIntegral num)
       _ -> fail "Can not parse ctype."
   cppstring = ((lexm $ string "std::string") >> (pure $ CppString))
@@ -317,28 +318,28 @@ defaultValue =
   dict01
  where
    intp = do
-     val <- lexm $ pinteger  :: Parser Integer
-     pure $ ValInt (fromIntegral val)
+     val' <- lexm $ pinteger  :: Parser Integer
+     pure $ ValInt (fromIntegral val')
    floatp = do
      v <- lexm $ L.float :: Parser Double
      pure $ ValDouble v
    nullp = do
-     lexm $ string "nullptr"
+     _ <- lexm $ string "nullptr"
      pure NullPtr
    reductionp = do
-     lexm $ string "Reduction::Mean"
+     _ <- lexm $ string "Reduction::Mean"
      pure ReductionMean
    atklongp = do
-     lexm $ string "at::kLong"
+     _ <- lexm $ string "at::kLong"
      pure AtKLong
    dict = do
-     lexm $ string "{}"
+     _ <- lexm $ string "{}"
      pure ValDict
    dict01 = do
-     lexm $ string "{0,1}"
+     _ <- lexm $ string "{0,1}"
      pure ValDict
    nonep = do
-     lexm $ string "None"
+     _ <- lexm $ string "None"
      pure ValNone
 
 -- | parser of argument
@@ -358,12 +359,16 @@ arg = star <|> param
  where
   param = do
     -- ptype <- lexm $ identifier
-    ptype <- typ
-    pname <- lexm $ identifier
-    val   <- (do lexm (string "="); v <- defaultValue ; pure (Just v)) <|> (pure Nothing)
-    pure $ Parameter ptype pname val
+    pt <- typ
+    pn <- lexm $ identifier
+    let withDefault = do
+          _ <- lexm (string "=")
+          v <- defaultValue
+          pure (Just v)
+    val'  <- withDefault <|> (pure Nothing)
+    pure $ Parameter pt pn val'
   star = do
-    string "*"
+    _ <- string "*"
     pure Star
 
 -- | parser of argument
@@ -375,14 +380,14 @@ arg = star <|> param
 -- >>> parseTest rettype "(Tensor hoo,Tensor bar)"
 -- Tuple [TenType Tensor,TenType Tensor] 
 rettype :: Parser Parsable
-rettype = tuple <|> single
+rettype = tuple <|> single'
  where
   tuple = do
-    lexm $ string "("
-    val <- (sepBy rettype (lexm (string ",")))
-    lexm $ string ")"
-    pure $ Tuple val
-  single = do
+    _ <- lexm $ string "("
+    val' <- (sepBy rettype (lexm (string ",")))
+    _ <- lexm $ string ")"
+    pure $ Tuple val'
+  single' = do
     type' <- typ
     _ <- ((do v <- lexm (identifier) ; pure (Just v)) <|> (pure Nothing))
     pure type'
@@ -401,14 +406,15 @@ rettype = tuple <|> single
 func :: Parser Function
 func = do
   fName <- identifier
-  lexm $ string "("
+  _ <- lexm $ string "("
   -- parse list of parameters
   args <- (sepBy arg (lexm (string ",")))
-  lexm $ string ")"
-  lexm $ string "->"
-  retType <- rettype
-  pure $ Function fName args retType
+  _ <- lexm $ string ")"
+  _ <- lexm $ string "->"
+  retType' <- rettype
+  pure $ Function fName args retType'
 
+test :: IO ()
 test = do
   --parseTest defBool "true"
   parseTest func "foo() -> Tensor"
