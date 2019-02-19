@@ -10,11 +10,15 @@ jobs:
       - run: echo $LD_LIBRARY_PATH
       - run: apt update -qq && apt install -y cmake wget unzip git libtinfo-dev
       - checkout
+      - run: git submodule init && git submodule update
       - run: wget -qO- https://get.haskellstack.org/ | sh
       - run: gcc --version
       - run: stack --version
       - run: cd libtorch-test ; make
-      - run: stack build
+      - run:
+          name: stack build
+          command: stack build
+          no_output_timeout: 15m
       - run: stack test
       - run: stack exec codegen
       - run: stack exec ffi-test

@@ -45,6 +45,7 @@ nativeFunctionsSpec = do
           , F.Parameter (F.TenType (F.IntList Nothing)) "target_lengths" Nothing
           , F.Parameter (F.CType F.CInt64)  "blank" Nothing
           , F.Parameter (F.CType F.CBool ) "deterministic" Nothing
+          , F.Parameter (F.CType F.CBool ) "zero_infinity" Nothing
           ]
         F.retType nf `shouldBe` F.Tuple [F.TenType F.Tensor, F.TenType F.Tensor]
 
