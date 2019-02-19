@@ -29,7 +29,7 @@
 - func: _cast_Half(Tensor self, bool non_blocking=false) -> Tensor
   variants: function
 
-- func: _cudnn_ctc_loss(Tensor log_probs, Tensor targets, IntList input_lengths, IntList target_lengths, int64_t blank, bool deterministic) -> (Tensor, Tensor)
+- func: _cudnn_ctc_loss(Tensor log_probs, Tensor targets, IntList input_lengths, IntList target_lengths, int64_t blank, bool deterministic, bool zero_infinity) -> (Tensor, Tensor)
   dispatch:
     CUDA: _cudnn_ctc_loss
 
@@ -1782,9 +1782,9 @@
 
 - func: _unique_dim(Tensor self, int64_t dim, bool sorted=true, bool return_inverse=false) -> (Tensor, Tensor)
   variants: function
-#  dispatch:
-#    CPU: _unique_dim_cpu
-#    CUDA: _unique_dim_cuda
+  dispatch:
+    CPU: _unique_dim_cpu
+    CUDA: _unique_dim_cuda
 
 - func: _unsafe_view(Tensor self, IntList size) -> Tensor
 
@@ -2929,9 +2929,15 @@
   variants: method, function
 
 - func: histc_out(Tensor result, Tensor self, int64_t bins=100, Scalar min=0, Scalar max=0) -> Tensor
+  dispatch:
+     CPU: _histc_out_cpu
+     CUDA: _histc_out_cuda
 
 - func: histc(Tensor self, int64_t bins=100, Scalar min=0, Scalar max=0) -> Tensor
   variants: method, function
+  dispatch:
+     CPU: _histc_cpu
+     CUDA: _histc_cuda
 
 - func: sign_out(Tensor result, Tensor self) -> Tensor
 
@@ -3287,11 +3293,11 @@
     CPU: adaptive_avg_pool2d_cpu
     CUDA: adaptive_avg_pool2d_cuda
 
-- func: adaptive_avg_pool2d_backward_out(Tensor grad_input, Tensor grad_output, Tensor self) -> Tensor
-  python_module: nn
-  dispatch:
-    CPU: adaptive_avg_pool2d_backward_out_cpu
-    CUDA: adaptive_avg_pool2d_backward_out_cuda
+#- func: adaptive_avg_pool2d_backward_out(Tensor grad_input, Tensor grad_output, Tensor self) -> Tensor
+#  python_module: nn
+#  dispatch:
+#    CPU: adaptive_avg_pool2d_backward_out_cpu
+#    CUDA: adaptive_avg_pool2d_backward_out_cuda
 
 - func: adaptive_avg_pool2d_backward(Tensor grad_output, Tensor self) -> Tensor
   python_module: nn

@@ -37,7 +37,7 @@ tenTypeToCppType tentype =
     IndexTensor -> "at::Tensor"
     BoolTensor -> "at::Tensor"
     BoolTensorQ -> "at::Tensor"
-    IntList _ -> "at::IntList"
+    IntList _ -> "at::IntArrayRef"
     ScalarQ -> "at::Scalar"
     ScalarType -> "at::ScalarType"
     SparseTensorRef -> "at::SparseTensorRef"
@@ -311,7 +311,7 @@ C.context $ C.cppCtx <> mempty {
       , (C.TypeName "at::TensorOptions", #{bra}t|TensorOptions|#{cket})
       , (C.TypeName "at::TensorList", #{bra}t|TensorList|#{cket})
       , (C.TypeName "at::IndexTensor", #{bra}t|IndexTensor|#{cket})
-      , (C.TypeName "at::IntList", #{bra}t|IntList|#{cket})
+      , (C.TypeName "at::IntArrayRef", #{bra}t|IntList|#{cket})
       , (C.TypeName "at::ScalarType", #{bra}t|ScalarType|#{cket})
       , (C.TypeName "at::SparseTensorRef", #{bra}t|SparseTensorRef|#{cket})
       , (C.TypeName "at::Storage", #{bra}t|Storage|#{cket})
