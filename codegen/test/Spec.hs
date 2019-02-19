@@ -6,6 +6,8 @@ module Main where
 import Control.Exception.Safe (throwString, throw)
 import Data.Proxy
 import ParseNativeFunctions (NativeFunction, NativeFunction')
+import ParseNN (NN)
+import ParseDerivatives (Derivative)
 import System.Directory (doesFileExist)
 import Test.Hspec
 import qualified Data.Yaml as Y
@@ -13,9 +15,13 @@ import qualified ParseFunctionSig as F
 import qualified ParseNativeFunctions as NF
 
 main :: IO ()
-main = hspec $
+main = hspec $ do
   describe "parsing native_functions.yaml" $ do
     describe "NativeFunction Spec" nativeFunctionsSpec
+  describe "parsing nn.yaml" $ do
+    describe "NN Spec" nnSpec
+  describe "parsing derivatives.yaml" $ do
+    describe "Derivatives Spec" nnSpec
 
 nativeFunctionsPath :: FilePath
 nativeFunctionsPath = "../spec/native_functions_modified.yaml"
@@ -58,6 +64,42 @@ nativeFunctionsSpec = do
   parseWith :: forall x funtype . Y.FromJSON funtype => Proxy funtype -> IO [funtype]
   parseWith _ = do
     Y.decodeFileEither nativeFunctionsPath >>= \case
+      Left exception -> throw exception
+      Right (fs::[funtype]) -> pure fs
+
+nnPath :: FilePath
+nnPath = "../spec/nn.yaml"
+
+nnSpec :: Spec
+nnSpec = do
+  xs <- runIO $ vanillaParse nnPath
+
+  it "parses the same number of stringy functions as a vanilla parsing" $ do
+    fs <- parseWith (Proxy @ NN)
+    (length fs) `shouldBe` (length xs)
+
+ where
+  parseWith :: forall x funtype . Y.FromJSON funtype => Proxy funtype -> IO [funtype]
+  parseWith _ = do
+    Y.decodeFileEither nnPath >>= \case
+      Left exception -> throw exception
+      Right (fs::[funtype]) -> pure fs
+
+derivativesPath :: FilePath
+derivativesPath = "../spec/derivatives.yaml"
+
+derivativesSpec :: Spec
+derivativesSpec = do
+  xs <- runIO $ vanillaParse derivativesPath
+
+  it "parses the same number of stringy functions as a vanilla parsing" $ do
+    fs <- parseWith (Proxy @ Derivative)
+    (length fs) `shouldBe` (length xs)
+
+ where
+  parseWith :: forall x funtype . Y.FromJSON funtype => Proxy funtype -> IO [funtype]
+  parseWith _ = do
+    Y.decodeFileEither derivativesPath >>= \case
       Left exception -> throw exception
       Right (fs::[funtype]) -> pure fs
 
