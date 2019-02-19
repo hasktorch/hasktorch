@@ -34,7 +34,7 @@ tenTypeToCppType tentype =
     TensorQ -> "at::Tensor"
     TensorOptions -> "at::TensorOptions"
     TensorList -> "at::TensorList"
-    IndexTensor -> "at::IndexTensor"
+    IndexTensor -> "at::Tensor"
     BoolTensor -> "at::Tensor"
     BoolTensorQ -> "at::Tensor"
     IntList _ -> "at::IntList"
@@ -80,7 +80,7 @@ tenTypeToHsType tentype =
     TensorQ -> "Tensor"
     TensorOptions -> "TensorOptions"
     TensorList -> "TensorList"
-    IndexTensor -> "IndexTensor"
+    IndexTensor -> "Tensor"
     BoolTensor -> "Tensor"
     BoolTensorQ -> "Tensor"
     IntList _ -> "IntList"
@@ -125,7 +125,7 @@ tenTypeToInitial tentype =
     TensorQ -> "t"
     TensorOptions -> "o"
     TensorList -> "l"
-    IndexTensor -> "i"
+    IndexTensor -> "t"
     BoolTensor -> "t"
     BoolTensorQ -> "t"
     IntList _ -> "l"
@@ -193,7 +193,7 @@ renameFunc (x:xs) = toLower x : xs
 functionToCpp :: Function -> Text
 functionToCpp fn =
   [sbt|#{hsfuncname}_#{type_initials} :: #{types}
-      |#{hsfuncname}_#{type_initials} #{args} = #{bra}C.block| #{ret_type} { return #{ret_wrapper}(at::native::#{name fn}(#{cargs})); }|#{cket}
+      |#{hsfuncname}_#{type_initials} #{args} = #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(at::native::#{name fn}(#{cargs})); }|#{cket}
       |
       |]
   where
@@ -206,7 +206,7 @@ functionToCpp fn =
       if isCType (ptype p)
       then [st|$(#{parsableToCppType (ptype p)} _#{pname p})|]
       else [st|*$(#{parsableToCppType (ptype p)}* _#{pname p})|]
-    type_initials :: Text
+    type_initials :: Text --- This is for avoding c++ overload arguments.
     type_initials = mconcat $ flip map parameters' $ \p ->parsableToInitial (ptype p)
     types_list :: [Text]
     types_list = flip map parameters' $ \p ->
@@ -230,9 +230,14 @@ functionToCpp fn =
       if isCType (retType fn)
       then ""
       else [st|new #{parsableToCppType (retType fn)}|]
+    call_return :: Text
+    call_return =
+      case (retType fn) of
+        CType CVoid -> ""
+        _ -> "return"
 
 renderFunctions :: [NativeFunction'] -> Text
-renderFunctions nfs = mconcat $ flip map nfs $ \nf -> mconcat $ 
+renderFunctions nfs = mconcat $ flip map nfs $ \nf -> mconcat $
   case dispatch' nf of
     Nothing -> [functionToCpp $ func' nf]
     Just d -> map (\c -> functionToCpp $ (func' nf){name=c}) (uniqFunctions d)
