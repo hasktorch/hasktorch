@@ -17,8 +17,8 @@ jobs:
       - run: cd libtorch-test ; make
       - run:
           name: stack build
-          command: stack build
+          command: stack build --jobs 2
           no_output_timeout: 15m
-      - run: stack test
+      - run: stack test --jobs 2
       - run: stack exec codegen
       - run: stack exec ffi-test
