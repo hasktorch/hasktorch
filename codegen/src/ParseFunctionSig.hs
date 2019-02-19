@@ -169,8 +169,6 @@ identifier = (lexm . try) (p >>= check)
 -- TenType BoolTensorQ
 -- >>> parseTest typ "Device"
 -- DeviceType
--- >>> parseTest typ "Generator"
--- GeneratorType
 -- >>> parseTest typ "Generator*"
 -- Ptr GeneratorType
 -- >>> parseTest typ "IndexTensor"
