@@ -522,9 +522,9 @@
   dispatch:
     CUDA: cudnn_convolution_transpose_backward
 
-- func: cudnn_convolution_transpose_backward_bias(Tensor grad_output) -> Tensor
-  dispatch:
-    CUDA: cudnn_convolution_backward_bias
+#- func: cudnn_convolution_transpose_backward_bias(Tensor grad_output) -> Tensor
+#  dispatch:
+#    CUDA: cudnn_convolution_backward_bias
 
 - func: cudnn_convolution_transpose_backward_input(Tensor grad_output, Tensor weight, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic) -> Tensor
   dispatch:
@@ -681,6 +681,9 @@
   device_guard: False
 
 - func: empty_strided(IntList size, IntList stride, *, TensorOptions options={}) -> Tensor
+  dispatch:
+    CPU: empty_strided_cpu
+    CUDA: empty_strided_cuda
 
 - func: erf(Tensor self) -> Tensor
   variants: function, method
@@ -1779,9 +1782,9 @@
 
 - func: _unique_dim(Tensor self, int64_t dim, bool sorted=true, bool return_inverse=false) -> (Tensor, Tensor)
   variants: function
-  dispatch:
-    CPU: _unique_dim_cpu
-    CUDA: _unique_dim_cuda
+#  dispatch:
+#    CPU: _unique_dim_cpu
+#    CUDA: _unique_dim_cuda
 
 - func: _unsafe_view(Tensor self, IntList size) -> Tensor
 
@@ -2554,9 +2557,15 @@
 
 - func: tril_(Tensor self, int64_t diagonal=0) -> Tensor
   variants: method
+  dispatch:
+    CPU: tril_cpu_
+    CUDA: tril_cuda_
 
 - func: triu_(Tensor self,  int64_t diagonal=0) -> Tensor
   variants: method
+  dispatch:
+    CPU: triu_cpu_
+    CUDA: triu_cuda_
 
 - func: digamma_(Tensor self) -> Tensor
   variants: method
@@ -2656,12 +2665,12 @@
 - func: cross(Tensor self, Tensor other, int64_t dim=-1) -> Tensor
   variants: method, function
 
-- func: triu_out(Tensor result, Tensor self, int64_t diagonal=0) -> Tensor
+#- func: triu_out(Tensor result, Tensor self, int64_t diagonal=0) -> Tensor
 
 - func: triu(Tensor self, int64_t diagonal=0) -> Tensor
   variants: method, function
 
-- func: tril_out(Tensor result, Tensor self, int64_t diagonal=0) -> Tensor
+#- func: tril_out(Tensor result, Tensor self, int64_t diagonal=0) -> Tensor
 
 - func: tril(Tensor self, int64_t diagonal=0) -> Tensor
   variants: method, function
@@ -3352,15 +3361,27 @@
 
 - func: fractional_max_pool2d_out(Tensor output, Tensor indices, Tensor self, IntList[2] kernel_size, IntList[2] output_size, Tensor random_samples) -> (Tensor output, Tensor indices)
   python_module: nn
+  dispatch:
+    CPU: fractional_max_pool2d_out_cpu
+    CUDA: fractional_max_pool2d_out_cuda
 
 - func: fractional_max_pool2d(Tensor self, IntList[2] kernel_size, IntList[2] output_size, Tensor random_samples) -> (Tensor output, Tensor indices)
   python_module: nn
+  dispatch:
+    CPU: fractional_max_pool2d_cpu
+    CUDA: fractional_max_pool2d_cuda
 
 - func: fractional_max_pool2d_backward_out(Tensor grad_input, Tensor grad_output, Tensor self, IntList[2] kernel_size, IntList[2] output_size, Tensor indices) -> Tensor
   python_module: nn
+  dispatch:
+    CPU: fractional_max_pool2d_backward_out_cpu
+    CUDA: fractional_max_pool2d_backward_out_cuda
 
 - func: fractional_max_pool2d_backward(Tensor grad_output, Tensor self, IntList[2] kernel_size, IntList[2] output_size, Tensor indices) -> Tensor
   python_module: nn
+  dispatch:
+    CPU: fractional_max_pool2d_backward_cpu
+    CUDA: fractional_max_pool2d_backward_cuda
 
 - func: max_pool2d_with_indices_out(Tensor output, Tensor indices, Tensor self, IntList[2] kernel_size, IntList[2] stride={}, IntList[2] padding=0, IntList[2] dilation=1, bool ceil_mode=false) -> (Tensor output, Tensor indices)
   python_module: nn
@@ -3436,15 +3457,27 @@
 
 - func: reflection_pad2d_out(Tensor output, Tensor self, IntList[4] padding) -> Tensor
   python_module: nn
+  dispatch:
+    CPU: reflection_pad2d_out_cpu
+    CUDA: reflection_pad2d_out_cuda
 
 - func: reflection_pad2d(Tensor self, IntList[4] padding) -> Tensor
   python_module: nn
+  dispatch:
+    CPU: reflection_pad2d_cpu
+    CUDA: reflection_pad2d_cuda
 
 - func: reflection_pad2d_backward_out(Tensor grad_input, Tensor grad_output, Tensor self, IntList[4] padding) -> Tensor
   python_module: nn
+  dispatch:
+    CPU: reflection_pad2d_backward_out_cpu
+    CUDA: reflection_pad2d_backward_out_cuda
 
 - func: reflection_pad2d_backward(Tensor grad_output, Tensor self, IntList[4] padding) -> Tensor
   python_module: nn
+  dispatch:
+    CPU: reflection_pad2d_backward_cpu
+    CUDA: reflection_pad2d_backward_cuda
 
 - func: replication_pad1d_out(Tensor output, Tensor self, IntList[2] padding) -> Tensor
   python_module: nn
