@@ -87,7 +87,6 @@ decodeAndPrint fileName = do
     Y.decodeFileEither fileName :: IO (Either ParseException [NativeFunction])
   prettyPrint file
 
-
 parseNativeFunction :: NativeFunction -> Either (ParseErrorBundle String Void) NativeFunction'
 parseNativeFunction NativeFunction{..} =
   case parse P.func "" func of

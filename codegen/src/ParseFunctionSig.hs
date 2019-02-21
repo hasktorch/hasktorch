@@ -80,6 +80,7 @@ data TenType = Scalar
     | IndexTensor
     | BoolTensor
     | BoolTensorQ
+    | LongTensor
     | IntList { dim :: Maybe [Int] }
     | ScalarQ
     | ScalarType
@@ -247,7 +248,8 @@ typ =
     ((lexm $ string "TensorOptions") >> (pure $ TenType TensorOptions)) <|>
     ((lexm $ string "Tensor?") >> (pure $ TenType TensorQ)) <|>
     ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
-    ((lexm $ string "Tensor") >> (pure $ TenType Tensor))
+    ((lexm $ string "Tensor") >> (pure $ TenType Tensor)) <|>
+    ((lexm $ string "LongTensor") >> (pure $ TenType LongTensor))
   intlistDim = do
     _ <- lexm $ string "IntList["
     val' <- (sepBy pinteger (lexm (string ",")))

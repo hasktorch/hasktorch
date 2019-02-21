@@ -6,7 +6,7 @@ module Main where
 import Control.Exception.Safe (throwString, throw)
 import Data.Proxy
 import ParseNativeFunctions (NativeFunction, NativeFunction')
-import ParseNN (NN)
+import ParseNN (NN, NN')
 import ParseDerivatives (Derivative)
 import System.Directory (doesFileExist)
 import Test.Hspec
@@ -76,6 +76,10 @@ nnSpec = do
 
   it "parses the same number of stringy functions as a vanilla parsing" $ do
     fs <- parseWith (Proxy @ NN)
+    (length fs) `shouldBe` (length xs)
+
+  it "parses the same number of typed functions as a vanilla parsing" $ do
+    fs <- parseWith (Proxy @ NN')
     (length fs) `shouldBe` (length xs)
 
  where
