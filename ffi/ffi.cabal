@@ -12,8 +12,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:
-    NativeFunctions
+  exposed-modules:     NativeFunctions
+                     , NN
   hs-source-dirs: .
   default-language: Haskell2010
   build-depends:       base >= 4.7 && < 5

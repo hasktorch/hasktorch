@@ -1,16 +1,18 @@
-
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ParseNN where
 
 import GHC.Generics
 import Data.Yaml
 
-import qualified Data.Yaml as Y
 import Data.Aeson.Types ()
-import Text.Show.Prettyprint (prettyPrint)
+import qualified ParseFunctionSig as P
+import qualified Data.List as L
+import Text.Megaparsec (parse, errorBundlePretty)
 
 {- nn.yaml -}
 
@@ -41,12 +43,37 @@ data NN = NN {
   , default_init :: Maybe DefaultInit
 } deriving (Show, Generic)
 
+data NN' = NN' {
+  func' :: P.Function
+  , cname' :: String
+  , scalar_check' :: Maybe ScalarCheck
+  , buffers' :: Maybe [String]
+  , has_inplace' :: Maybe Bool
+  , wrap_dim' :: Maybe WrapDim
+  , default_init' :: Maybe DefaultInit
+} deriving (Show, Generic)
+
 instance FromJSON ScalarCheck
 instance FromJSON WrapDim
 instance FromJSON DefaultInit
 instance FromJSON NN
 
-decodeAndPrint :: String -> IO ()
-decodeAndPrint fileName = do
-  file <- Y.decodeFileEither fileName :: IO (Either ParseException [NN])
-  prettyPrint file
+instance FromJSON NN' where
+  parseJSON v = do
+    nn :: NN <- parseJSON v
+    case parse P.func "" ((name nn) ++ ret_types nn)  of
+      Left err -> fail (errorBundlePretty err)
+      Right f ->
+        pure $ NN' f
+          (cname nn)
+          (scalar_check nn)
+          (buffers nn)
+          (has_inplace nn)
+          (wrap_dim nn)
+          (default_init nn)
+    where
+      ret_types nn =
+        case (buffers nn) of
+          Just [] -> " -> Tensor"
+          Just v' -> " -> (" <> L.intercalate ", " (take (1 + length v') (repeat "Tensor")) <> ")"
+          Nothing -> " -> Tensor"

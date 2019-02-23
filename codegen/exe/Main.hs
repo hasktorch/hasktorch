@@ -9,6 +9,7 @@ import qualified ParseNativeFunctions as NF
 import qualified ParseDerivatives as D
 import qualified ParseFunctionSig as F
 import qualified RenderNativeFunctions as RNF
+import qualified RenderNN as RNN
 
 {- CLI options -}
 
@@ -49,5 +50,6 @@ programOptions =
 main = do
   opts <- O.execParser optsParser
   RNF.decodeAndCodeGen (specFile opts)
+  RNN.decodeAndCodeGen "spec/nn.yaml"
   pure ()
 
