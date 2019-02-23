@@ -9,10 +9,8 @@ module RenderNativeFunctions where
 import Data.Yaml
 
 import qualified Data.Yaml as Y
-import Text.Shakespeare.Text (st,sbt)
-import Data.Char (toLower)
+import Text.Shakespeare.Text (st)
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.List as L
 

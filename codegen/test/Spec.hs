@@ -47,11 +47,11 @@ nativeFunctionsSpec = do
         F.parameters nf `shouldBe`
           [ F.Parameter (F.TenType F.Tensor) "log_probs" Nothing
           , F.Parameter (F.TenType F.Tensor) "targets" Nothing
-          , F.Parameter (F.TenType (F.IntList Nothing)) "input_lengths" Nothing
-          , F.Parameter (F.TenType (F.IntList Nothing)) "target_lengths" Nothing
-          , F.Parameter (F.CType F.CInt64)  "blank" Nothing
-          , F.Parameter (F.CType F.CBool ) "deterministic" Nothing
-          , F.Parameter (F.CType F.CBool ) "zero_infinity" Nothing
+          , F.Parameter (F.TenType (F.IntList (Just []))) "input_lengths" Nothing
+          , F.Parameter (F.TenType (F.IntList (Just []))) "target_lengths" Nothing
+          , F.Parameter (F.CType F.CInt)  "blank" Nothing
+          , F.Parameter (F.CType F.CBool) "deterministic" Nothing
+          , F.Parameter (F.CType F.CBool) "zero_infinity" Nothing
           ]
         F.retType nf `shouldBe` F.Tuple [F.TenType F.Tensor, F.TenType F.Tensor]
 

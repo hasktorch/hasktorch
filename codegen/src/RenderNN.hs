@@ -6,15 +6,11 @@
 {-# LANGUAGE QuasiQuotes #-}
 module RenderNN where
 
-import Data.Yaml
-
+import Data.Yaml (ParseException)
 import qualified Data.Yaml as Y
-import Text.Shakespeare.Text (st,sbt)
-import Data.Char (toLower)
+import Text.Shakespeare.Text (st)
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import qualified Data.List as L
 
 import qualified ParseNN as NN
 import ParseFunctionSig as P
@@ -25,6 +21,7 @@ mkBackwardAndForward nn = [nn_forward, nn_forward_out, nn_backward, nn_backward_
   where
     fn = NN.func' nn
     params = parameters fn
+--    has_target = or $ map (\v -> pname v == "target") params
     nn_forward = fn {
       name = (name fn) ++ "_forward"
       }

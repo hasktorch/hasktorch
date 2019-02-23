@@ -6,14 +6,10 @@
 {-# LANGUAGE QuasiQuotes #-}
 module RenderCommon where
 
-import Data.Yaml
-
-import qualified Data.Yaml as Y
 import Text.Shakespeare.Text (st,sbt)
 import Data.Char (toLower)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import qualified Data.List as L
 
 import ParseFunctionSig as P
@@ -30,6 +26,8 @@ tenTypeToCppType tentype =
   case tentype of
     Scalar -> "at::Scalar"
     Tensor -> "at::Tensor"
+    TensorA -> "at::Tensor"
+    TensorA' -> "at::Tensor"
     TensorQ -> "at::Tensor"
     TensorOptions -> "at::TensorOptions"
     TensorList -> "at::TensorList"
@@ -47,7 +45,9 @@ ctypeToCppType ct =
   case ct of
     CBool -> "bool"
     CVoid -> "void"
+    CFloat -> "float"
     CDouble -> "double"
+    CInt -> "int"
     CInt64 -> "int64_t"
     CInt64Q -> "int64_t"
 
@@ -78,6 +78,8 @@ tenTypeToHsType tentype =
     Scalar -> "Scalar"
     Tensor -> "Tensor"
     TensorQ -> "Tensor"
+    TensorA -> "Tensor"
+    TensorA' -> "Tensor"
     TensorOptions -> "TensorOptions"
     TensorList -> "TensorList"
     IndexTensor -> "Tensor"
@@ -99,7 +101,9 @@ ctypeToHsType ct =
   case ct of
     CBool -> "CBool"
     CVoid -> ""
+    CFloat -> "CFloat"
     CDouble -> "CDouble"
+    CInt -> "Int"
     CInt64 -> "Int64"
     CInt64Q -> "Int64"
 
@@ -124,6 +128,8 @@ tenTypeToInitial tentype =
     Scalar -> "s"
     Tensor -> "t"
     TensorQ -> "t"
+    TensorA -> "t"
+    TensorA' -> "T"
     TensorOptions -> "o"
     TensorList -> "l"
     IndexTensor -> "t"
@@ -145,7 +151,9 @@ ctypeToInitial ct =
   case ct of
     CBool -> "b"
     CVoid -> "v"
+    CFloat -> "f"
     CDouble -> "d"
+    CInt -> "i"
     CInt64 -> "l"
     CInt64Q -> "l"
 

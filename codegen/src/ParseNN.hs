@@ -9,9 +9,7 @@ module ParseNN where
 import GHC.Generics
 import Data.Yaml
 
-import qualified Data.Yaml as Y
 import Data.Aeson.Types ()
-import Text.Show.Prettyprint (prettyPrint)
 import qualified ParseFunctionSig as P
 import qualified Data.List as L
 import Text.Megaparsec (parse, errorBundlePretty)
@@ -77,5 +75,5 @@ instance FromJSON NN' where
       ret_types nn =
         case (buffers nn) of
           Just [] -> " -> Tensor"
-          Just v -> " -> (" <> L.intercalate ", " (take (1 + length v) (repeat "Tensor")) <> ")"
+          Just v' -> " -> (" <> L.intercalate ", " (take (1 + length v') (repeat "Tensor")) <> ")"
           Nothing -> " -> Tensor"

@@ -29,6 +29,7 @@ data DefaultValue =
     | ValInt Int
     | ValDouble Double
     | ValDict
+    | ValArray
     | AtKLong
     | ReductionMean
     | NullPtr -- nullptr 
@@ -63,7 +64,9 @@ data Parsable
 data CType
     = CBool
     | CVoid
+    | CFloat
     | CDouble
+    | CInt
     | CInt64
     | CInt64Q
     deriving (Eq, Show, Generic, Bounded, Enum)
@@ -74,6 +77,8 @@ data STLType
 
 data TenType = Scalar
     | Tensor
+    | TensorA -- Tensor(a)
+    | TensorA' -- Tensor(a!)
     | TensorQ -- Tensor?
     | TensorOptions
     | TensorList
@@ -104,18 +109,7 @@ defFloat = do
   val' <- L.scientific
   pure $ ValDouble (realToFrac val')
 
--- defVal = do 
---     val <- L.float
---     pure (val :: Double)
-
--- Variants field
-
 data Variants = VFunction | VMethod
-
--- variantsParser = do
---     string "variants:" 
---     val <- string ","
---     pure VNone
 
 sc :: Parser ()
 sc = L.space space1 empty empty
@@ -178,6 +172,10 @@ identifier = (lexm . try) (p >>= check)
 -- TenType (IntList {dim = Nothing})
 -- >>> parseTest typ "IntList[1]"
 -- TenType (IntList {dim = Just [1]})
+-- >>> parseTest typ "int[]"
+-- TenType (IntList {dim = Just []})
+-- >>> parseTest typ "int[1]"
+-- TenType (IntList {dim = Just [1]})
 -- >>> parseTest typ "Scalar"
 -- TenType Scalar
 -- >>> parseTest typ "Scalar?"
@@ -192,6 +190,14 @@ identifier = (lexm . try) (p >>= check)
 -- TenType Tensor
 -- >>> parseTest typ "Tensor?"
 -- TenType TensorQ
+-- >>> parseTest typ "Tensor(a)"
+-- TenType TensorA
+-- >>> parseTest typ "Tensor(a!)"
+-- TenType TensorA'
+-- >>> parseTest typ "Tensor[]"
+-- TenType TensorList
+-- >>> parseTest typ "Tensor?[]"
+-- TenType TensorList
 -- >>> parseTest typ "TensorList"
 -- TenType TensorList
 -- >>> parseTest typ "TensorOptions"
@@ -200,11 +206,19 @@ identifier = (lexm . try) (p >>= check)
 -- CType CBool
 -- >>> parseTest typ "double"
 -- CType CDouble
+-- >>> parseTest typ "float"
+-- CType CFloat
+-- >>> parseTest typ "int"
+-- CType CInt
+-- >>> parseTest typ "int?"
+-- CType CInt
 -- >>> parseTest typ "int64_t"
 -- CType CInt64
 -- >>> parseTest typ "int64_t?"
 -- CType CInt64Q
 -- >>> parseTest typ "std::array<bool,2>"
+-- STLType (Array CBool 2)
+-- >>> parseTest typ "bool[2]"
 -- STLType (Array CBool 2)
 -- >>> parseTest typ "std::string"
 -- CppString
@@ -215,7 +229,10 @@ typ =
   booltensorq <|> booltensor <|>
   tensor <|>
   intlistDim <|> intlistNoDim <|>
+  intpDim <|> intpNoDim <|>
+  intpDim' <|> intpNoDim' <|>
   scalar <|>
+  try stlbool <|>
   ctype <|>
   stl <|>
   cppstring <|>
@@ -229,6 +246,7 @@ typ =
   other =
     ((lexm $ string "Device") >> (pure $ DeviceType)) <|>
     ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType)) <|>
+    ((lexm $ string "Generator?") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Storage") >> (pure $ StorageType))
   scalar =
     ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ)) <|>
@@ -246,8 +264,26 @@ typ =
     pure $ TenType BoolTensorQ
   tensor =
     ((lexm $ string "TensorOptions") >> (pure $ TenType TensorOptions)) <|>
-    ((lexm $ string "Tensor?") >> (pure $ TenType TensorQ)) <|>
     ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
+    try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList)) <|>
+    try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList)) <|>
+    try ((lexm $ string "Tensor(a)") >> (pure $ TenType TensorA)) <|>
+    try ((lexm $ string "Tensor(a!)") >> (pure $ TenType TensorA')) <|>
+    try ((lexm $ string "Tensor(b)") >> (pure $ TenType TensorA)) <|>
+    try ((lexm $ string "Tensor(b!)") >> (pure $ TenType TensorA')) <|>
+    try ((lexm $ string "Tensor(c)") >> (pure $ TenType TensorA)) <|>
+    try ((lexm $ string "Tensor(c!)") >> (pure $ TenType TensorA')) <|>
+    try ((lexm $ string "Tensor(d)") >> (pure $ TenType TensorA)) <|>
+    try ((lexm $ string "Tensor(d!)") >> (pure $ TenType TensorA')) <|>
+    try ((lexm $ string "Tensor?(a)") >> (pure $ TenType TensorA)) <|>
+    try ((lexm $ string "Tensor?(a!)") >> (pure $ TenType TensorA')) <|>
+    try ((lexm $ string "Tensor?(b)") >> (pure $ TenType TensorA)) <|>
+    try ((lexm $ string "Tensor?(b!)") >> (pure $ TenType TensorA')) <|>
+    try ((lexm $ string "Tensor?(c)") >> (pure $ TenType TensorA)) <|>
+    try ((lexm $ string "Tensor?(c!)") >> (pure $ TenType TensorA')) <|>
+    try ((lexm $ string "Tensor?(d)") >> (pure $ TenType TensorA)) <|>
+    try ((lexm $ string "Tensor?(d!)") >> (pure $ TenType TensorA')) <|>
+    ((lexm $ string "Tensor?") >> (pure $ TenType TensorQ)) <|>
     ((lexm $ string "Tensor") >> (pure $ TenType Tensor)) <|>
     ((lexm $ string "LongTensor") >> (pure $ TenType LongTensor))
   intlistDim = do
@@ -258,12 +294,31 @@ typ =
   intlistNoDim = do
     _ <- lexm $ string "IntList"
     pure $ TenType $ IntList Nothing
+  intpDim = do
+    _ <- lexm $ string "int["
+    val' <- (sepBy pinteger (lexm (string ",")))
+    _ <- lexm $ string "]"
+    pure $ TenType $ IntList (Just (map fromIntegral val'))
+  intpNoDim = do
+    _ <- lexm $ string "int[]"
+    pure $ TenType $ IntList Nothing
+  intpDim' = do
+    _ <- lexm $ string "IntArrayRef["
+    val' <- (sepBy pinteger (lexm (string ",")))
+    _ <- lexm $ string "]"
+    pure $ TenType $ IntList (Just (map fromIntegral val'))
+  intpNoDim' = do
+    _ <- lexm $ string "IntArrayRef[]"
+    pure $ TenType $ IntList Nothing
   ctype =
     ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
     ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
+    ((lexm $ string "float") >> (pure $ CType CFloat)) <|>
     ((lexm $ string "double") >> (pure $ CType CDouble)) <|>
-    ((lexm $ string "int64_t?") >> (pure $ CType CInt64Q)) <|>
-    ((lexm $ string "int64_t") >> (pure $ CType CInt64))
+    try ((lexm $ string "int64_t?") >> (pure $ CType CInt64Q)) <|>
+    try ((lexm $ string "int64_t") >> (pure $ CType CInt64)) <|>
+    try ((lexm $ string "int?") >> (pure $ CType CInt)) <|>
+    ((lexm $ string "int") >> (pure $ CType CInt))
   stl = do
     _ <- lexm $ string "std::array<"
     val' <- ctype
@@ -273,6 +328,11 @@ typ =
     case val' of
       CType v -> pure $ STLType $ Array v (fromIntegral num)
       _ -> fail "Can not parse ctype."
+  stlbool = do
+    _ <- lexm $ string "bool["
+    num <- pinteger
+    _ <- lexm $ string "]"
+    pure $ STLType $ Array CBool (fromIntegral num)
   cppstring = ((lexm $ string "std::string") >> (pure $ CppString))
 
 -- | parser of defaultValue
@@ -291,6 +351,8 @@ typ =
 -- ValNone
 -- >>> parseTest defaultValue "Reduction::Mean"
 -- ReductionMean
+-- >>> parseTest defaultValue "Mean"
+-- ReductionMean
 -- >>> parseTest defaultValue "True"
 -- ValBool True
 -- >>> parseTest defaultValue "at::kLong"
@@ -305,6 +367,10 @@ typ =
 -- ValDict
 -- >>> parseTest defaultValue "{}"
 -- ValDict
+-- >>> parseTest defaultValue "[0,1]"
+-- ValArray
+-- >>> parseTest defaultValue "[]"
+-- ValArray
 defaultValue :: Parser DefaultValue
 defaultValue =
   try floatp <|>
@@ -313,9 +379,12 @@ defaultValue =
   nullp <|>
   nonep <|>
   reductionp <|>
+  reductionp' <|>
   atklongp <|>
+  try dict01 <|>
   dict <|>
-  dict01
+  try ary01 <|>
+  ary
  where
    intp = do
      val' <- lexm $ pinteger  :: Parser Integer
@@ -329,6 +398,9 @@ defaultValue =
    reductionp = do
      _ <- lexm $ string "Reduction::Mean"
      pure ReductionMean
+   reductionp' = do
+     _ <- lexm $ string "Mean"
+     pure ReductionMean
    atklongp = do
      _ <- lexm $ string "at::kLong"
      pure AtKLong
@@ -338,6 +410,12 @@ defaultValue =
    dict01 = do
      _ <- lexm $ string "{0,1}"
      pure ValDict
+   ary01 = do
+     _ <- lexm $ string "[0,1]"
+     pure ValArray
+   ary = do
+     _ <- lexm $ string "[]"
+     pure ValArray
    nonep = do
      _ <- lexm $ string "None"
      pure ValNone
