@@ -6,6 +6,8 @@
 
 set -eu
 
+USE_BINARY_FOR_CI="$1"
+
 case "$(uname)" in
   "Darwin")
     wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.0.0.zip
@@ -18,7 +20,12 @@ case "$(uname)" in
     mv mklml_mac_2019.0.1.20181227 mklml
     ;;
   "Linux")
-    wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
+    if [ -z "$USE_BINARY_FOR_CI" ] ; then
+      wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
+    else
+      git clone git@github.com:hasktorch/libtorch-binary-for-ci.git
+      cp libtorch-binary-for-ci/libtorch-shared-with-deps-latest.zip .
+    fi
     unzip libtorch-shared-with-deps-latest.zip
     rm libtorch-shared-with-deps-latest.zip
     wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz

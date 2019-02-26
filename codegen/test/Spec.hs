@@ -106,7 +106,7 @@ nativeFunctionsSpec = do
           , F.Parameter (F.TenType F.TensorAQ') "grad_weight" (Nothing)
           , F.Parameter (F.TenType F.TensorAQ') "grad_bias" (Nothing)
           ]
-        F.retType nf `shouldBe` F.TenType F.TensorA'
+        F.retType nf `shouldBe` F.Tuple [F.TenType F.TensorA',F.TenType F.TensorA',F.TenType F.TensorA']
 
 
  where
