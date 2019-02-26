@@ -31,6 +31,7 @@ tenTypeToCppType tentype =
     TensorAQ -> "at::Tensor"
     TensorAQ' -> "at::Tensor"
     TensorQ -> "at::Tensor"
+    TensorAVector -> "std::vector<at::Tensor>"
     TensorOptions -> "at::TensorOptions"
     TensorList -> "at::TensorList"
     IndexTensor -> "at::Tensor"
@@ -84,6 +85,7 @@ tenTypeToHsType tentype =
     TensorAQ -> "Tensor"
     TensorAQ' -> "Tensor"
     TensorQ -> "Tensor"
+    TensorAVector -> "TensorAVector"
     TensorOptions -> "TensorOptions"
     TensorList -> "TensorList"
     IndexTensor -> "Tensor"
@@ -136,6 +138,7 @@ tenTypeToInitial tentype =
     TensorAQ -> "t"
     TensorAQ' -> "T"
     TensorQ -> "t"
+    TensorAVector -> "v"
     TensorOptions -> "o"
     TensorList -> "l"
     IndexTensor -> "t"
@@ -202,54 +205,6 @@ retToCppType parsable =
     CppString -> "std::string"
     Tuple parsables -> [st|tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
 
-{-
-
-From native_function.yaml
-- func: add(Tensor self, Tensor other, *, Scalar alpha=1) -> Tensor
-  matches_jit_signature: True
-  variants: function, method
-
-- func: add_(Tensor(a!) self, Tensor other, *, Scalar alpha=1) -> Tensor(a!)
-  matches_jit_signature: True
-  variants: method
-
-# For C++ only, until we have conversion from C++ numbers to Tensor
-- func: add(Tensor self, Tensor other, *, Scalar alpha=1, Tensor(a!) out) -> Tensor(a!)
-  matches_jit_signature: True
-
-- func: add(Tensor self, Scalar other, Scalar alpha=1) -> Tensor
-  matches_jit_signature: True
-  variants: function, method
-
-- func: add_(Tensor(a!) self, Scalar other, Scalar alpha=1) -> Tensor(a!)
-  matches_jit_signature: True
-  variants: method
-
-From NativeFunction.h(C++)
-CAFFE2_API Tensor add(const Tensor & self, const Tensor & other, Scalar alpha=1);
-CAFFE2_API Tensor & add_(Tensor & self, const Tensor & other, Scalar alpha=1);
-
--- see : https://github.com/pytorch/pytorch/blob/9101dfc57ccb6b6931b4e80233bbc64d9080d2e8/aten/src/ATen/native_parse.py#L159-L178
-CAFFE2_API Tensor & add_out(Tensor & out, const Tensor & self, const Tensor & other, Scalar alpha=1);
-
-CAFFE2_API Tensor add(const Tensor & self, Scalar other, Scalar alpha=1);
-CAFFE2_API Tensor & add_(Tensor & self, Scalar other, Scalar alpha=1);
--}
-
-removeStarArgument :: Function -> Function
-removeStarArgument fn =
-  if arguments_out /= []
-  then fn {parameters = new_params, name = (name fn) ++ "_out" }
-  else fn
-  where
-    params = parameters fn
-    splitByStar [] _ = ([],[])
-    splitByStar (Star:xs) (y,y') = (y,y'++xs)
-    splitByStar (x:xs) (y,y') = splitByStar xs (y++[x],y')
-    (front_star,back_star) = splitByStar params ([],[])
-    arguments_out = filter (\v -> ptype v == TenType TensorA') back_star
-    arguments_other = filter (\v -> ptype v /= TenType TensorA') back_star
-    new_params = arguments_out ++ front_star ++ arguments_other
 
 functionToCpp :: Bool -> String -> Function -> Text
 functionToCpp add_type_initials prefix fn = [st|

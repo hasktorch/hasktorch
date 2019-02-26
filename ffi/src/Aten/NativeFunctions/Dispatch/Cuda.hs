@@ -206,14 +206,14 @@ _acos__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-arange_cuda_out_out_Tsss
+arange_cuda_out_Tsss
   :: Ptr Tensor
   -> Ptr Scalar
   -> Ptr Scalar
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-arange_cuda_out_out_Tsss _out _start _end _step =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::arange_cuda_out_out(
+arange_cuda_out_Tsss _out _start _end _step =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::arange_cuda_out(
     *$(at::Tensor* _out)
   , *$(at::Scalar* _start)
   , *$(at::Scalar* _end)
@@ -228,12 +228,12 @@ _asin__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_asin_out_cuda_out_Tt
+_asin_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_asin_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_asin_out_cuda_out(
+_asin_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_asin_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -246,12 +246,12 @@ _atan__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_atan_out_cuda_out_Tt
+_atan_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_atan_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_atan_out_cuda_out(
+_atan_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_atan_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -288,7 +288,7 @@ baddbmm__cuda_Tttss _self _batch1 _batch2 _beta _alpha =
   , *$(at::Scalar* _alpha)));
   }|]
 
-baddbmm_out_cuda_out_Ttttss
+baddbmm_out_cuda_Ttttss
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -296,8 +296,8 @@ baddbmm_out_cuda_out_Ttttss
   -> Ptr Scalar
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-baddbmm_out_cuda_out_Ttttss _out _self _batch1 _batch2 _beta _alpha =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::baddbmm_out_cuda_out(
+baddbmm_out_cuda_Ttttss _out _self _batch1 _batch2 _beta _alpha =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::baddbmm_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _batch1)
@@ -352,13 +352,13 @@ bmm_cuda_tt _self _mat2 =
   , *$(at::Tensor* _mat2)));
   }|]
 
-bmm_out_cuda_out_Ttt
+bmm_out_cuda_Ttt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-bmm_out_cuda_out_Ttt _out _self _mat2 =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::bmm_out_cuda_out(
+bmm_out_cuda_Ttt _out _self _mat2 =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::bmm_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _mat2)));
@@ -372,12 +372,12 @@ _ceil__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_ceil_out_cuda_out_Tt
+_ceil_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_ceil_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_ceil_out_cuda_out(
+_ceil_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_ceil_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -394,14 +394,14 @@ _clamp__cuda_Tss _self _min _max =
   , *$(at::Scalar* _max)));
   }|]
 
-_clamp_out_cuda_out_Ttss
+_clamp_out_cuda_Ttss
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-_clamp_out_cuda_out_Ttss _out _self _min _max =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_clamp_out_cuda_out(
+_clamp_out_cuda_Ttss _out _self _min _max =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_clamp_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Scalar* _min)
@@ -418,13 +418,13 @@ _clamp_max__cuda_Ts _self _max =
   , *$(at::Scalar* _max)));
   }|]
 
-_clamp_max_out_cuda_out_Tts
+_clamp_max_out_cuda_Tts
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-_clamp_max_out_cuda_out_Tts _out _self _max =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_clamp_max_out_cuda_out(
+_clamp_max_out_cuda_Tts _out _self _max =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_clamp_max_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Scalar* _max)));
@@ -440,13 +440,13 @@ _clamp_min__cuda_Ts _self _min =
   , *$(at::Scalar* _min)));
   }|]
 
-_clamp_min_out_cuda_out_Tts
+_clamp_min_out_cuda_Tts
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-_clamp_min_out_cuda_out_Tts _out _self _min =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_clamp_min_out_cuda_out(
+_clamp_min_out_cuda_Tts _out _self _min =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_clamp_min_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Scalar* _min)));
@@ -484,12 +484,12 @@ _cos__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_cos_out_cuda_out_Tt
+_cos_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_cos_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_cos_out_cuda_out(
+_cos_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_cos_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -502,12 +502,12 @@ _cosh__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_cosh_out_cuda_out_Tt
+_cosh_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_cosh_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_cosh_out_cuda_out(
+_cosh_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_cosh_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -748,14 +748,6 @@ cudnn_convolution_transpose_backward_tttllllibba _self _grad_output _weight _pad
   , *$(std::array<bool,3>* _output_mask)));
   }|]
 
-cudnn_convolution_backward_bias_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-cudnn_convolution_backward_bias_t _grad_output =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::cudnn_convolution_backward_bias(
-    *$(at::Tensor* _grad_output)));
-  }|]
-
 cudnn_convolution_transpose_backward_input_ttlllibb
   :: Ptr Tensor
   -> Ptr Tensor
@@ -978,12 +970,12 @@ _erf__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_erf_out_cuda_out_Tt
+_erf_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_erf_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_erf_out_cuda_out(
+_erf_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_erf_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -996,12 +988,12 @@ _erfc__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_erfc_out_cuda_out_Tt
+_erfc_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_erfc_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_erfc_out_cuda_out(
+_erfc_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_erfc_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1014,12 +1006,12 @@ _exp__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_exp_out_cuda_out_Tt
+_exp_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_exp_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_exp_out_cuda_out(
+_exp_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_exp_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1032,33 +1024,33 @@ _expm1__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_expm1_out_cuda_out_Tt
+_expm1_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_expm1_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_expm1_out_cuda_out(
+_expm1_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_expm1_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
 
-eye_out_cuda_out_Ti
+eye_out_cuda_Ti
   :: Ptr Tensor
   -> CInt
   -> IO (Ptr Tensor)
-eye_out_cuda_out_Ti _out _n =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::eye_out_cuda_out(
+eye_out_cuda_Ti _out _n =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::eye_out_cuda(
     *$(at::Tensor* _out)
   , $(int _n)));
   }|]
 
-eye_out_cuda_out_Tii
+eye_out_cuda_Tii
   :: Ptr Tensor
   -> CInt
   -> CInt
   -> IO (Ptr Tensor)
-eye_out_cuda_out_Tii _out _n _m =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::eye_out_cuda_out(
+eye_out_cuda_Tii _out _n _m =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::eye_out_cuda(
     *$(at::Tensor* _out)
   , $(int _n)
   , $(int _m)));
@@ -1072,12 +1064,12 @@ _floor__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_floor_out_cuda_out_Tt
+_floor_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_floor_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_floor_out_cuda_out(
+_floor_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_floor_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1198,14 +1190,14 @@ kl_div_backward_cuda_ttti _grad_output _self _target _reduction =
   , $(int _reduction)));
   }|]
 
-linspace_cuda_out_out_Tssi
+linspace_cuda_out_Tssi
   :: Ptr Tensor
   -> Ptr Scalar
   -> Ptr Scalar
   -> CInt
   -> IO (Ptr Tensor)
-linspace_cuda_out_out_Tssi _out _start _end _steps =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::linspace_cuda_out_out(
+linspace_cuda_out_Tssi _out _start _end _steps =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::linspace_cuda_out(
     *$(at::Tensor* _out)
   , *$(at::Scalar* _start)
   , *$(at::Scalar* _end)
@@ -1220,12 +1212,12 @@ _log__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_log_out_cuda_out_Tt
+_log_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_log_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_log_out_cuda_out(
+_log_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_log_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1238,12 +1230,12 @@ _log10__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_log10_out_cuda_out_Tt
+_log10_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_log10_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_log10_out_cuda_out(
+_log10_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_log10_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1256,12 +1248,12 @@ _log1p__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_log1p_out_cuda_out_Tt
+_log1p_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_log1p_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_log1p_out_cuda_out(
+_log1p_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_log1p_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1274,24 +1266,24 @@ _log2__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_log2_out_cuda_out_Tt
+_log2_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_log2_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_log2_out_cuda_out(
+_log2_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_log2_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
 
-logspace_cuda_out_out_Tssi
+logspace_cuda_out_Tssi
   :: Ptr Tensor
   -> Ptr Scalar
   -> Ptr Scalar
   -> CInt
   -> IO (Ptr Tensor)
-logspace_cuda_out_out_Tssi _out _start _end _steps =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::logspace_cuda_out_out(
+logspace_cuda_out_Tssi _out _start _end _steps =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::logspace_cuda_out(
     *$(at::Tensor* _out)
   , *$(at::Scalar* _start)
   , *$(at::Scalar* _end)
@@ -1650,26 +1642,26 @@ batch_norm_update_stats_cuda_tttf _input _running_mean _running_var _momentum =
   , $(float _momentum)));
   }|]
 
-randperm_out_cuda_out_Tip
+randperm_out_cuda_Tip
   :: Ptr Tensor
   -> CInt
   -> Ptr Generator
   -> IO (Ptr Tensor)
-randperm_out_cuda_out_Tip _out _n _generator =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::randperm_out_cuda_out(
+randperm_out_cuda_Tip _out _n _generator =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::randperm_out_cuda(
     *$(at::Tensor* _out)
   , $(int _n)
   , $(at::Generator * _generator)));
   }|]
 
-range_cuda_out_out_Tsss
+range_cuda_out_Tsss
   :: Ptr Tensor
   -> Ptr Scalar
   -> Ptr Scalar
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-range_cuda_out_out_Tsss _out _start _end _step =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::range_cuda_out_out(
+range_cuda_out_Tsss _out _start _end _step =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::range_cuda_out(
     *$(at::Tensor* _out)
   , *$(at::Scalar* _start)
   , *$(at::Scalar* _end)
@@ -1684,12 +1676,12 @@ _round__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_round_out_cuda_out_Tt
+_round_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_round_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_round_out_cuda_out(
+_round_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_round_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1746,12 +1738,12 @@ _rsqrt__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_rsqrt_out_cuda_out_Tt
+_rsqrt_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_rsqrt_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_rsqrt_out_cuda_out(
+_rsqrt_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_rsqrt_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1764,12 +1756,12 @@ _sigmoid__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_sigmoid_out_cuda_out_Tt
+_sigmoid_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_sigmoid_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_sigmoid_out_cuda_out(
+_sigmoid_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_sigmoid_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1782,12 +1774,12 @@ _sin__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_sin_out_cuda_out_Tt
+_sin_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_sin_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_sin_out_cuda_out(
+_sin_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_sin_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1800,12 +1792,12 @@ _sinh__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_sinh_out_cuda_out_Tt
+_sinh_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_sinh_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_sinh_out_cuda_out(
+_sinh_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_sinh_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1836,21 +1828,21 @@ softmax_backward_cuda_ttit _grad_output _output _dim _self =
   , *$(at::Tensor* _self)));
   }|]
 
-add_out_dense_sparse_cuda_out_Ttrs
+add_out_dense_sparse_cuda_Ttrs
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr SparseTensorRef
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-add_out_dense_sparse_cuda_out_Ttrs _out _self _other _alpha =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::add_out_dense_sparse_cuda_out(
+add_out_dense_sparse_cuda_Ttrs _out _self _other _alpha =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::add_out_dense_sparse_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::SparseTensorRef* _other)
   , *$(at::Scalar* _alpha)));
   }|]
 
-_sspaddmm_out_only_sparse_cuda_out_Ttttss
+_sspaddmm_out_only_sparse_cuda_Ttttss
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -1858,8 +1850,8 @@ _sspaddmm_out_only_sparse_cuda_out_Ttttss
   -> Ptr Scalar
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-_sspaddmm_out_only_sparse_cuda_out_Ttttss _out _self _mat1 _mat2 _beta _alpha =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_sspaddmm_out_only_sparse_cuda_out(
+_sspaddmm_out_only_sparse_cuda_Ttttss _out _self _mat1 _mat2 _beta _alpha =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_sspaddmm_out_only_sparse_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _mat1)
@@ -1876,12 +1868,12 @@ _sqrt__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_sqrt_out_cuda_out_Tt
+_sqrt_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_sqrt_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_sqrt_out_cuda_out(
+_sqrt_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_sqrt_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1894,12 +1886,12 @@ _tan__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_tan_out_cuda_out_Tt
+_tan_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_tan_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_tan_out_cuda_out(
+_tan_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_tan_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1912,12 +1904,12 @@ _tanh__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_tanh_out_cuda_out_Tt
+_tanh_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_tanh_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_tanh_out_cuda_out(
+_tanh_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_tanh_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -1952,12 +1944,12 @@ _trunc__cuda_T _self =
     *$(at::Tensor* _self)));
   }|]
 
-_trunc_out_cuda_out_Tt
+_trunc_out_cuda_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-_trunc_out_cuda_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_trunc_out_cuda_out(
+_trunc_out_cuda_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_trunc_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -2058,7 +2050,7 @@ _s_poisson_cuda_tp _self _generator =
   , $(at::Generator * _generator)));
   }|]
 
-s_addmm_out_sparse_dense_cuda_out_Ttttss
+s_addmm_out_sparse_dense_cuda_Ttttss
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -2066,8 +2058,8 @@ s_addmm_out_sparse_dense_cuda_out_Ttttss
   -> Ptr Scalar
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-s_addmm_out_sparse_dense_cuda_out_Ttttss _out _self _mat1 _mat2 _beta _alpha =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::s_addmm_out_sparse_dense_cuda_out(
+s_addmm_out_sparse_dense_cuda_Ttttss _out _self _mat1 _mat2 _beta _alpha =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::s_addmm_out_sparse_dense_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _mat1)
@@ -2226,25 +2218,25 @@ triu_cuda__Ti _self _diagonal =
   , $(int _diagonal)));
   }|]
 
-triu_cuda_out_out_Tti
+triu_cuda_out_Tti
   :: Ptr Tensor
   -> Ptr Tensor
   -> CInt
   -> IO (Ptr Tensor)
-triu_cuda_out_out_Tti _out _self _diagonal =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::triu_cuda_out_out(
+triu_cuda_out_Tti _out _self _diagonal =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::triu_cuda_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , $(int _diagonal)));
   }|]
 
-tril_cuda_out_out_Tti
+tril_cuda_out_Tti
   :: Ptr Tensor
   -> Ptr Tensor
   -> CInt
   -> IO (Ptr Tensor)
-tril_cuda_out_out_Tti _out _self _diagonal =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::tril_cuda_out_out(
+tril_cuda_out_Tti _out _self _diagonal =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::tril_cuda_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , $(int _diagonal)));
@@ -2300,15 +2292,15 @@ _cholesky_solve_helper_cuda_ttb _self _A _upper =
   , $(bool _upper)));
   }|]
 
-_histc_out_cuda_out_Ttiss
+_histc_out_cuda_Ttiss
   :: Ptr Tensor
   -> Ptr Tensor
   -> CInt
   -> Ptr Scalar
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-_histc_out_cuda_out_Ttiss _out _self _bins _min _max =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_histc_out_cuda_out(
+_histc_out_cuda_Ttiss _out _self _bins _min _max =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_histc_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , $(int _bins)
@@ -2330,13 +2322,13 @@ _histc_cuda_tiss _self _bins _min _max =
   , *$(at::Scalar* _max)));
   }|]
 
-adaptive_avg_pool2d_out_cuda_out_Ttl
+adaptive_avg_pool2d_out_cuda_Ttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-adaptive_avg_pool2d_out_cuda_out_Ttl _output _self _output_size =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::adaptive_avg_pool2d_out_cuda_out(
+adaptive_avg_pool2d_out_cuda_Ttl _output _self _output_size =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::adaptive_avg_pool2d_out_cuda(
     *$(at::Tensor* _output)
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _output_size)));
@@ -2362,7 +2354,7 @@ adaptive_avg_pool2d_backward_cuda_tt _grad_output _self =
   , *$(at::Tensor* _self)));
   }|]
 
-fractional_max_pool2d_out_cuda_out_TTtllt
+fractional_max_pool2d_out_cuda_TTtllt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -2370,8 +2362,8 @@ fractional_max_pool2d_out_cuda_out_TTtllt
   -> Ptr IntList
   -> Ptr Tensor
   -> IO (Ptr (Tensor,Tensor))
-fractional_max_pool2d_out_cuda_out_TTtllt _output _indices _self _kernel_size _output_size _random_samples =
-  [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::native::fractional_max_pool2d_out_cuda_out(
+fractional_max_pool2d_out_cuda_TTtllt _output _indices _self _kernel_size _output_size _random_samples =
+  [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::native::fractional_max_pool2d_out_cuda(
     *$(at::Tensor* _output)
   , *$(at::Tensor* _indices)
   , *$(at::Tensor* _self)
@@ -2394,7 +2386,7 @@ fractional_max_pool2d_cuda_tllt _self _kernel_size _output_size _random_samples 
   , *$(at::Tensor* _random_samples)));
   }|]
 
-fractional_max_pool2d_backward_out_cuda_out_Tttllt
+fractional_max_pool2d_backward_out_cuda_Tttllt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -2402,8 +2394,8 @@ fractional_max_pool2d_backward_out_cuda_out_Tttllt
   -> Ptr IntList
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-fractional_max_pool2d_backward_out_cuda_out_Tttllt _grad_input _grad_output _self _kernel_size _output_size _indices =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::fractional_max_pool2d_backward_out_cuda_out(
+fractional_max_pool2d_backward_out_cuda_Tttllt _grad_input _grad_output _self _kernel_size _output_size _indices =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::fractional_max_pool2d_backward_out_cuda(
     *$(at::Tensor* _grad_input)
   , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
@@ -2428,7 +2420,7 @@ fractional_max_pool2d_backward_cuda_ttllt _grad_output _self _kernel_size _outpu
   , *$(at::Tensor* _indices)));
   }|]
 
-fractional_max_pool3d_out_cuda_out_TTtllt
+fractional_max_pool3d_out_cuda_TTtllt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -2436,8 +2428,8 @@ fractional_max_pool3d_out_cuda_out_TTtllt
   -> Ptr IntList
   -> Ptr Tensor
   -> IO (Ptr (Tensor,Tensor))
-fractional_max_pool3d_out_cuda_out_TTtllt _output _indices _self _kernel_size _output_size _random_samples =
-  [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::native::fractional_max_pool3d_out_cuda_out(
+fractional_max_pool3d_out_cuda_TTtllt _output _indices _self _kernel_size _output_size _random_samples =
+  [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::native::fractional_max_pool3d_out_cuda(
     *$(at::Tensor* _output)
   , *$(at::Tensor* _indices)
   , *$(at::Tensor* _self)
@@ -2460,7 +2452,7 @@ fractional_max_pool3d_cuda_tllt _self _kernel_size _output_size _random_samples 
   , *$(at::Tensor* _random_samples)));
   }|]
 
-fractional_max_pool3d_backward_out_cuda_out_Tttllt
+fractional_max_pool3d_backward_out_cuda_Tttllt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -2468,8 +2460,8 @@ fractional_max_pool3d_backward_out_cuda_out_Tttllt
   -> Ptr IntList
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-fractional_max_pool3d_backward_out_cuda_out_Tttllt _grad_input _grad_output _self _kernel_size _output_size _indices =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::fractional_max_pool3d_backward_out_cuda_out(
+fractional_max_pool3d_backward_out_cuda_Tttllt _grad_input _grad_output _self _kernel_size _output_size _indices =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::fractional_max_pool3d_backward_out_cuda(
     *$(at::Tensor* _grad_input)
   , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
@@ -2494,13 +2486,13 @@ fractional_max_pool3d_backward_cuda_ttllt _grad_output _self _kernel_size _outpu
   , *$(at::Tensor* _indices)));
   }|]
 
-reflection_pad1d_out_cuda_out_Ttl
+reflection_pad1d_out_cuda_Ttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-reflection_pad1d_out_cuda_out_Ttl _output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::reflection_pad1d_out_cuda_out(
+reflection_pad1d_out_cuda_Ttl _output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::reflection_pad1d_out_cuda(
     *$(at::Tensor* _output)
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _padding)));
@@ -2516,14 +2508,14 @@ reflection_pad1d_cuda_tl _self _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-reflection_pad1d_backward_out_cuda_out_Tttl
+reflection_pad1d_backward_out_cuda_Tttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-reflection_pad1d_backward_out_cuda_out_Tttl _grad_input _grad_output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::reflection_pad1d_backward_out_cuda_out(
+reflection_pad1d_backward_out_cuda_Tttl _grad_input _grad_output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::reflection_pad1d_backward_out_cuda(
     *$(at::Tensor* _grad_input)
   , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
@@ -2542,13 +2534,13 @@ reflection_pad1d_backward_cuda_ttl _grad_output _self _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-reflection_pad2d_out_cuda_out_Ttl
+reflection_pad2d_out_cuda_Ttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-reflection_pad2d_out_cuda_out_Ttl _output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::reflection_pad2d_out_cuda_out(
+reflection_pad2d_out_cuda_Ttl _output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::reflection_pad2d_out_cuda(
     *$(at::Tensor* _output)
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _padding)));
@@ -2564,14 +2556,14 @@ reflection_pad2d_cuda_tl _self _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-reflection_pad2d_backward_out_cuda_out_Tttl
+reflection_pad2d_backward_out_cuda_Tttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-reflection_pad2d_backward_out_cuda_out_Tttl _grad_input _grad_output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::reflection_pad2d_backward_out_cuda_out(
+reflection_pad2d_backward_out_cuda_Tttl _grad_input _grad_output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::reflection_pad2d_backward_out_cuda(
     *$(at::Tensor* _grad_input)
   , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
@@ -2590,13 +2582,13 @@ reflection_pad2d_backward_cuda_ttl _grad_output _self _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-replication_pad1d_out_cuda_out_Ttl
+replication_pad1d_out_cuda_Ttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-replication_pad1d_out_cuda_out_Ttl _output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad1d_out_cuda_out(
+replication_pad1d_out_cuda_Ttl _output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad1d_out_cuda(
     *$(at::Tensor* _output)
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _padding)));
@@ -2612,14 +2604,14 @@ replication_pad1d_cuda_tl _self _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-replication_pad1d_backward_out_cuda_out_Tttl
+replication_pad1d_backward_out_cuda_Tttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-replication_pad1d_backward_out_cuda_out_Tttl _grad_input _grad_output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad1d_backward_out_cuda_out(
+replication_pad1d_backward_out_cuda_Tttl _grad_input _grad_output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad1d_backward_out_cuda(
     *$(at::Tensor* _grad_input)
   , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
@@ -2638,13 +2630,13 @@ replication_pad1d_backward_cuda_ttl _grad_output _self _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-replication_pad2d_out_cuda_out_Ttl
+replication_pad2d_out_cuda_Ttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-replication_pad2d_out_cuda_out_Ttl _output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad2d_out_cuda_out(
+replication_pad2d_out_cuda_Ttl _output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad2d_out_cuda(
     *$(at::Tensor* _output)
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _padding)));
@@ -2660,14 +2652,14 @@ replication_pad2d_cuda_tl _self _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-replication_pad2d_backward_out_cuda_out_Tttl
+replication_pad2d_backward_out_cuda_Tttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-replication_pad2d_backward_out_cuda_out_Tttl _grad_input _grad_output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad2d_backward_out_cuda_out(
+replication_pad2d_backward_out_cuda_Tttl _grad_input _grad_output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad2d_backward_out_cuda(
     *$(at::Tensor* _grad_input)
   , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
@@ -2686,13 +2678,13 @@ replication_pad2d_backward_cuda_ttl _grad_output _self _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-replication_pad3d_out_cuda_out_Ttl
+replication_pad3d_out_cuda_Ttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-replication_pad3d_out_cuda_out_Ttl _output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad3d_out_cuda_out(
+replication_pad3d_out_cuda_Ttl _output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad3d_out_cuda(
     *$(at::Tensor* _output)
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _padding)));
@@ -2708,14 +2700,14 @@ replication_pad3d_cuda_tl _self _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-replication_pad3d_backward_out_cuda_out_Tttl
+replication_pad3d_backward_out_cuda_Tttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntList
   -> IO (Ptr Tensor)
-replication_pad3d_backward_out_cuda_out_Tttl _grad_input _grad_output _self _padding =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad3d_backward_out_cuda_out(
+replication_pad3d_backward_out_cuda_Tttl _grad_input _grad_output _self _padding =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::replication_pad3d_backward_out_cuda(
     *$(at::Tensor* _grad_input)
   , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)

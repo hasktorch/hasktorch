@@ -82,6 +82,7 @@ data TenType = Scalar
     | TensorAQ -- Tensor(a)?
     | TensorAQ' -- Tensor(a!)?
     | TensorQ -- Tensor?
+    | TensorAVector -- Tensor(a)[]
     | TensorOptions
     | TensorList
     | IndexTensor
@@ -196,6 +197,8 @@ identifier = (lexm . try) (p >>= check)
 -- TenType TensorA
 -- >>> parseTest typ "Tensor(a!)"
 -- TenType TensorA'
+-- >>> parseTest typ "Tensor(a)[]"
+-- TenType TensorAVector
 -- >>> parseTest typ "Tensor[]"
 -- TenType TensorList
 -- >>> parseTest typ "Tensor?[]"
@@ -271,6 +274,7 @@ typ =
     ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
     try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList)) <|>
     try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList)) <|>
+    try ((lexm $ string "Tensor(a)[]") >> (pure $ TenType TensorAVector)) <|>
     try ((lexm $ string "Tensor(a)") >> (pure $ TenType TensorA)) <|>
     try ((lexm $ string "Tensor(a!)") >> (pure $ TenType TensorA')) <|>
     try ((lexm $ string "Tensor(b)") >> (pure $ TenType TensorA)) <|>

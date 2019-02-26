@@ -659,10 +659,10 @@
   dispatch:
     CUDA: cudnn_convolution_transpose_backward
 
-- func: cudnn_convolution_transpose_backward_bias(Tensor grad_output) -> Tensor
-  matches_jit_signature: True
-  dispatch:
-    CUDA: cudnn_convolution_backward_bias
+#- func: cudnn_convolution_transpose_backward_bias(Tensor grad_output) -> Tensor
+#  matches_jit_signature: True
+#  dispatch:
+#    CUDA: cudnn_convolution_backward_bias
 
 - func: cudnn_convolution_transpose_backward_input(Tensor grad_output, Tensor weight, int[] padding, int[] stride, int[] dilation, int groups, bool benchmark, bool deterministic) -> Tensor
   matches_jit_signature: True

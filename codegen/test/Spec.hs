@@ -13,6 +13,7 @@ import Test.Hspec
 import qualified Data.Yaml as Y
 import qualified ParseFunctionSig as F
 import qualified ParseNativeFunctions as NF
+import qualified RenderNativeFunctions as RNF
 
 main :: IO ()
 main = hspec $ do
@@ -54,6 +55,59 @@ nativeFunctionsSpec = do
           , F.Parameter (F.CType F.CBool) "zero_infinity" Nothing
           ]
         F.retType nf `shouldBe` F.Tuple [F.TenType F.Tensor, F.TenType F.Tensor]
+  it "parses the `add_out` function" $ do
+    fs <- parseWith (Proxy @ NativeFunction')
+
+    case fmap NF.func' $ mhead $ tail $ filter (("add" ==) . F.name . NF.func') fs of
+      Nothing -> fail "add_out function not found!"
+      Just nf -> do
+        F.parameters nf `shouldBe`
+          [ F.Parameter (F.TenType F.Tensor) "self" Nothing
+          , F.Parameter (F.TenType F.Tensor) "other" Nothing
+          , F.Star
+          , F.Parameter (F.TenType F.Scalar) "alpha" (Just (F.ValInt 1))
+          , F.Parameter (F.TenType F.TensorA') "out" Nothing
+          ]
+        F.retType nf `shouldBe` F.TenType F.TensorA'
+  it "parses the `add_out` function" $ do
+    fs <- parseWith (Proxy @ NativeFunction')
+
+    case fmap NF.func' $ mhead $ tail $ filter (("add" ==) . F.name . NF.func') fs of
+      Nothing -> fail "add_out function not found!"
+      Just nf -> do
+        let nf' = RNF.removeStarArgument (RNF.Common, nf)
+        F.parameters nf' `shouldBe`
+          [ F.Parameter (F.TenType F.TensorA') "out" Nothing
+          , F.Parameter (F.TenType F.Tensor) "self" Nothing
+          , F.Parameter (F.TenType F.Tensor) "other" Nothing
+          , F.Parameter (F.TenType F.Scalar) "alpha" (Just (F.ValInt 1))
+          ]
+        F.retType nf' `shouldBe` F.TenType F.TensorA'
+  it "parses the `thnn_conv_transpose2d_backward` function" $ do
+    fs <- parseWith (Proxy @ NativeFunction')
+
+    case fmap NF.func' $ mhead $ filter (("thnn_conv_transpose2d_backward" ==) . F.name . NF.func') fs of
+      Nothing -> fail "thnn_conv_transpose2d_backward function not found!"
+      Just nf -> do
+        F.parameters nf `shouldBe`
+          [
+            F.Parameter (F.TenType F.Tensor) "grad_output" (Nothing)
+          , F.Parameter (F.TenType F.Tensor) "self" (Nothing)
+          , F.Parameter (F.TenType F.Tensor) "weight" (Nothing)
+          , F.Parameter (F.TenType (F.IntList (Just [2]))) "kernel_size" (Nothing)
+          , F.Parameter (F.TenType (F.IntList (Just [2]))) "stride" (Nothing)
+          , F.Parameter (F.TenType (F.IntList (Just [2]))) "padding" (Nothing)
+          , F.Parameter (F.TenType (F.IntList (Just [2]))) "output_padding" (Nothing)
+          , F.Parameter (F.TenType (F.IntList (Just [2]))) "dilation" (Nothing)
+          , F.Parameter (F.TenType F.Tensor) "columns" (Nothing)
+          , F.Parameter (F.TenType F.Tensor) "ones" (Nothing)
+          , F.Star
+          , F.Parameter (F.TenType F.TensorAQ') "grad_input" (Nothing)
+          , F.Parameter (F.TenType F.TensorAQ') "grad_weight" (Nothing)
+          , F.Parameter (F.TenType F.TensorAQ') "grad_bias" (Nothing)
+          ]
+        F.retType nf `shouldBe` F.TenType F.TensorA'
+
 
  where
   mhead :: [a] -> Maybe a

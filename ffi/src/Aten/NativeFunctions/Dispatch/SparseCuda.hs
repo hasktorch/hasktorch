@@ -44,12 +44,12 @@ log1p_sparse__T _self =
     *$(at::Tensor* _self)));
   }|]
 
-log1p_out_sparse_out_Tt
+log1p_out_sparse_Tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-log1p_out_sparse_out_Tt _out _self =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::log1p_out_sparse_out(
+log1p_out_sparse_Tt _out _self =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::log1p_out_sparse(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)));
   }|]
@@ -68,81 +68,81 @@ narrow_copy_sparse_tiii _self _dim _start _length =
   , $(int _length)));
   }|]
 
-add_out_sparse_cuda_out_Ttts
+add_out_sparse_cuda_Ttts
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-add_out_sparse_cuda_out_Ttts _out _self _other _alpha =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::add_out_sparse_cuda_out(
+add_out_sparse_cuda_Ttts _out _self _other _alpha =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::add_out_sparse_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _other)
   , *$(at::Scalar* _alpha)));
   }|]
 
-div_out_sparse_zerodim_out_Ttt
+div_out_sparse_zerodim_Ttt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-div_out_sparse_zerodim_out_Ttt _out _self _other =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::div_out_sparse_zerodim_out(
+div_out_sparse_zerodim_Ttt _out _self _other =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::div_out_sparse_zerodim(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _other)));
   }|]
 
-div_out_sparse_scalar_out_Tts
+div_out_sparse_scalar_Tts
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-div_out_sparse_scalar_out_Tts _out _self _other =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::div_out_sparse_scalar_out(
+div_out_sparse_scalar_Tts _out _self _other =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::div_out_sparse_scalar(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Scalar* _other)));
   }|]
 
-mul_out_sparse_cuda_out_Ttt
+mul_out_sparse_cuda_Ttt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-mul_out_sparse_cuda_out_Ttt _out _self _other =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::mul_out_sparse_cuda_out(
+mul_out_sparse_cuda_Ttt _out _self _other =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::mul_out_sparse_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _other)));
   }|]
 
-mul_out_sparse_zerodim_out_Ttt
+mul_out_sparse_zerodim_Ttt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-mul_out_sparse_zerodim_out_Ttt _out _self _other =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::mul_out_sparse_zerodim_out(
+mul_out_sparse_zerodim_Ttt _out _self _other =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::mul_out_sparse_zerodim(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _other)));
   }|]
 
-mul_out_sparse_scalar_out_Tts
+mul_out_sparse_scalar_Tts
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-mul_out_sparse_scalar_out_Tts _out _self _other =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::mul_out_sparse_scalar_out(
+mul_out_sparse_scalar_Tts _out _self _other =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::mul_out_sparse_scalar(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Scalar* _other)));
   }|]
 
-_sspaddmm_out_cuda_out_Ttttss
+_sspaddmm_out_cuda_Ttttss
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
@@ -150,8 +150,8 @@ _sspaddmm_out_cuda_out_Ttttss
   -> Ptr Scalar
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-_sspaddmm_out_cuda_out_Ttttss _out _self _mat1 _mat2 _beta _alpha =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::_sspaddmm_out_cuda_out(
+_sspaddmm_out_cuda_Ttttss _out _self _mat1 _mat2 _beta _alpha =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::_sspaddmm_out_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _mat1)
@@ -200,13 +200,13 @@ resize_as_sparse__Tt _self _the_template =
   , *$(at::Tensor* _the_template)));
   }|]
 
-pow_out_sparse_scalar_out_Tts
+pow_out_sparse_scalar_Tts
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Scalar
   -> IO (Ptr Tensor)
-pow_out_sparse_scalar_out_Tts _out _self _exponent =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::pow_out_sparse_scalar_out(
+pow_out_sparse_scalar_Tts _out _self _exponent =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::pow_out_sparse_scalar(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::Scalar* _exponent)));
@@ -380,13 +380,13 @@ values_sparse_t _self =
     *$(at::Tensor* _self)));
   }|]
 
-hspmm_out_sparse_cuda_out_Ttt
+hspmm_out_sparse_cuda_Ttt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
-hspmm_out_sparse_cuda_out_Ttt _out _mat1 _mat2 =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::hspmm_out_sparse_cuda_out(
+hspmm_out_sparse_cuda_Ttt _out _mat1 _mat2 =
+  [C.block| at::Tensor* { return new at::Tensor(at::native::hspmm_out_sparse_cuda(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _mat1)
   , *$(at::Tensor* _mat2)));

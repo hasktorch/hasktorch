@@ -956,9 +956,9 @@ chunk_tii
   :: Ptr Tensor
   -> CInt
   -> CInt
-  -> IO (Ptr Tensor)
+  -> IO (Ptr TensorAVector)
 chunk_tii _self _chunks _dim =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::chunk(
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::native::chunk(
     *$(at::Tensor* _self)
   , $(int _chunks)
   , $(int _dim)));
@@ -3991,9 +3991,9 @@ split_tii
   :: Ptr Tensor
   -> CInt
   -> CInt
-  -> IO (Ptr Tensor)
+  -> IO (Ptr TensorAVector)
 split_tii _self _split_size _dim =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::split(
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::native::split(
     *$(at::Tensor* _self)
   , $(int _split_size)
   , $(int _dim)));
@@ -5190,9 +5190,9 @@ numel_t _self =
 unbind_ti
   :: Ptr Tensor
   -> CInt
-  -> IO (Ptr Tensor)
+  -> IO (Ptr TensorAVector)
 unbind_ti _self _dim =
-  [C.block| at::Tensor* { return new at::Tensor(at::native::unbind(
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::native::unbind(
     *$(at::Tensor* _self)
   , $(int _dim)));
   }|]
@@ -10701,24 +10701,27 @@ thnn_conv_transpose2d_forward_ttltllll _self _weight _kernel_size _bias _stride 
   , *$(at::IntArrayRef* _dilation)));
   }|]
 
-thnn_conv_transpose2d_backward_tttlllllttTTT
+thnn_conv_transpose2d_backward_out_TTTtttllllltt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr (Tensor,Tensor,Tensor))
-thnn_conv_transpose2d_backward_tttlllllttTTT _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _columns _ones _grad_input _grad_weight _grad_bias =
-  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv_transpose2d_backward(
-    *$(at::Tensor* _grad_output)
+thnn_conv_transpose2d_backward_out_TTTtttllllltt _grad_input _grad_weight _grad_bias _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _columns _ones =
+  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv_transpose2d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_weight)
+  , *$(at::Tensor* _grad_bias)
+  , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _weight)
   , *$(at::IntArrayRef* _kernel_size)
@@ -10727,10 +10730,7 @@ thnn_conv_transpose2d_backward_tttlllllttTTT _grad_output _self _weight _kernel_
   , *$(at::IntArrayRef* _output_padding)
   , *$(at::IntArrayRef* _dilation)
   , *$(at::Tensor* _columns)
-  , *$(at::Tensor* _ones)
-  , *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_weight)
-  , *$(at::Tensor* _grad_bias)));
+  , *$(at::Tensor* _ones)));
   }|]
 
 thnn_conv_transpose2d_backward_tttllllltta
@@ -10857,24 +10857,27 @@ thnn_conv_transpose3d_forward_ttltllll _self _weight _kernel_size _bias _stride 
   , *$(at::IntArrayRef* _dilation)));
   }|]
 
-thnn_conv_transpose3d_backward_tttlllllttTTT
+thnn_conv_transpose3d_backward_out_TTTtttllllltt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr (Tensor,Tensor,Tensor))
-thnn_conv_transpose3d_backward_tttlllllttTTT _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _finput _fgrad_input _grad_input _grad_weight _grad_bias =
-  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv_transpose3d_backward(
-    *$(at::Tensor* _grad_output)
+thnn_conv_transpose3d_backward_out_TTTtttllllltt _grad_input _grad_weight _grad_bias _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _finput _fgrad_input =
+  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv_transpose3d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_weight)
+  , *$(at::Tensor* _grad_bias)
+  , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _weight)
   , *$(at::IntArrayRef* _kernel_size)
@@ -10883,10 +10886,7 @@ thnn_conv_transpose3d_backward_tttlllllttTTT _grad_output _self _weight _kernel_
   , *$(at::IntArrayRef* _output_padding)
   , *$(at::IntArrayRef* _dilation)
   , *$(at::Tensor* _finput)
-  , *$(at::Tensor* _fgrad_input)
-  , *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_weight)
-  , *$(at::Tensor* _grad_bias)));
+  , *$(at::Tensor* _fgrad_input)));
   }|]
 
 thnn_conv_transpose3d_backward_tttllllltta
@@ -10997,32 +10997,32 @@ thnn_conv2d_forward_ttltll _self _weight _kernel_size _bias _stride _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-thnn_conv2d_backward_tttlllttTTT
+thnn_conv2d_backward_out_TTTtttllltt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr (Tensor,Tensor,Tensor))
-thnn_conv2d_backward_tttlllttTTT _grad_output _self _weight _kernel_size _stride _padding _finput _fgrad_input _grad_input _grad_weight _grad_bias =
-  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv2d_backward(
-    *$(at::Tensor* _grad_output)
+thnn_conv2d_backward_out_TTTtttllltt _grad_input _grad_weight _grad_bias _grad_output _self _weight _kernel_size _stride _padding _finput _fgrad_input =
+  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv2d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_weight)
+  , *$(at::Tensor* _grad_bias)
+  , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _weight)
   , *$(at::IntArrayRef* _kernel_size)
   , *$(at::IntArrayRef* _stride)
   , *$(at::IntArrayRef* _padding)
   , *$(at::Tensor* _finput)
-  , *$(at::Tensor* _fgrad_input)
-  , *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_weight)
-  , *$(at::Tensor* _grad_bias)));
+  , *$(at::Tensor* _fgrad_input)));
   }|]
 
 thnn_conv2d_backward_tttllltta
@@ -11133,28 +11133,28 @@ thnn_conv_depthwise2d_forward_ttltlll _self _weight _kernel_size _bias _stride _
   , *$(at::IntArrayRef* _dilation)));
   }|]
 
-thnn_conv_depthwise2d_backward_tttllllTT
+thnn_conv_depthwise2d_backward_out_TTtttllll
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
   -> IO (Ptr (Tensor,Tensor))
-thnn_conv_depthwise2d_backward_tttllllTT _grad_output _self _weight _kernel_size _stride _padding _dilation _grad_input _grad_weight =
-  [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::native::thnn_conv_depthwise2d_backward(
-    *$(at::Tensor* _grad_output)
+thnn_conv_depthwise2d_backward_out_TTtttllll _grad_input _grad_weight _grad_output _self _weight _kernel_size _stride _padding _dilation =
+  [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::native::thnn_conv_depthwise2d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_weight)
+  , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _weight)
   , *$(at::IntArrayRef* _kernel_size)
   , *$(at::IntArrayRef* _stride)
   , *$(at::IntArrayRef* _padding)
-  , *$(at::IntArrayRef* _dilation)
-  , *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_weight)));
+  , *$(at::IntArrayRef* _dilation)));
   }|]
 
 thnn_conv_depthwise2d_backward_tttlllla
@@ -11259,32 +11259,32 @@ thnn_conv3d_forward_ttltll _self _weight _kernel_size _bias _stride _padding =
   , *$(at::IntArrayRef* _padding)));
   }|]
 
-thnn_conv3d_backward_tttlllttTTT
+thnn_conv3d_backward_out_TTTtttllltt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr (Tensor,Tensor,Tensor))
-thnn_conv3d_backward_tttlllttTTT _grad_output _self _weight _kernel_size _stride _padding _finput _fgrad_input _grad_input _grad_weight _grad_bias =
-  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv3d_backward(
-    *$(at::Tensor* _grad_output)
+thnn_conv3d_backward_out_TTTtttllltt _grad_input _grad_weight _grad_bias _grad_output _self _weight _kernel_size _stride _padding _finput _fgrad_input =
+  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv3d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_weight)
+  , *$(at::Tensor* _grad_bias)
+  , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _weight)
   , *$(at::IntArrayRef* _kernel_size)
   , *$(at::IntArrayRef* _stride)
   , *$(at::IntArrayRef* _padding)
   , *$(at::Tensor* _finput)
-  , *$(at::Tensor* _fgrad_input)
-  , *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_weight)
-  , *$(at::Tensor* _grad_bias)));
+  , *$(at::Tensor* _fgrad_input)));
   }|]
 
 thnn_conv3d_backward_tttllltta
@@ -11399,23 +11399,26 @@ thnn_conv_dilated2d_forward_ttltlll _self _weight _kernel_size _bias _stride _pa
   , *$(at::IntArrayRef* _dilation)));
   }|]
 
-thnn_conv_dilated2d_backward_tttllllttTTT
+thnn_conv_dilated2d_backward_out_TTTtttlllltt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr (Tensor,Tensor,Tensor))
-thnn_conv_dilated2d_backward_tttllllttTTT _grad_output _self _weight _kernel_size _stride _padding _dilation _columns _ones _grad_input _grad_weight _grad_bias =
-  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv_dilated2d_backward(
-    *$(at::Tensor* _grad_output)
+thnn_conv_dilated2d_backward_out_TTTtttlllltt _grad_input _grad_weight _grad_bias _grad_output _self _weight _kernel_size _stride _padding _dilation _columns _ones =
+  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv_dilated2d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_weight)
+  , *$(at::Tensor* _grad_bias)
+  , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _weight)
   , *$(at::IntArrayRef* _kernel_size)
@@ -11423,10 +11426,7 @@ thnn_conv_dilated2d_backward_tttllllttTTT _grad_output _self _weight _kernel_siz
   , *$(at::IntArrayRef* _padding)
   , *$(at::IntArrayRef* _dilation)
   , *$(at::Tensor* _columns)
-  , *$(at::Tensor* _ones)
-  , *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_weight)
-  , *$(at::Tensor* _grad_bias)));
+  , *$(at::Tensor* _ones)));
   }|]
 
 thnn_conv_dilated2d_backward_tttlllltta
@@ -11543,23 +11543,26 @@ thnn_conv_dilated3d_forward_ttltlll _self _weight _kernel_size _bias _stride _pa
   , *$(at::IntArrayRef* _dilation)));
   }|]
 
-thnn_conv_dilated3d_backward_tttllllttTTT
+thnn_conv_dilated3d_backward_out_TTTtttlllltt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
-  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
+  -> Ptr IntList
   -> Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr (Tensor,Tensor,Tensor))
-thnn_conv_dilated3d_backward_tttllllttTTT _grad_output _self _weight _kernel_size _stride _padding _dilation _columns _ones _grad_input _grad_weight _grad_bias =
-  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv_dilated3d_backward(
-    *$(at::Tensor* _grad_output)
+thnn_conv_dilated3d_backward_out_TTTtttlllltt _grad_input _grad_weight _grad_bias _grad_output _self _weight _kernel_size _stride _padding _dilation _columns _ones =
+  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::native::thnn_conv_dilated3d_backward_out(
+    *$(at::Tensor* _grad_input)
+  , *$(at::Tensor* _grad_weight)
+  , *$(at::Tensor* _grad_bias)
+  , *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _weight)
   , *$(at::IntArrayRef* _kernel_size)
@@ -11567,10 +11570,7 @@ thnn_conv_dilated3d_backward_tttllllttTTT _grad_output _self _weight _kernel_siz
   , *$(at::IntArrayRef* _padding)
   , *$(at::IntArrayRef* _dilation)
   , *$(at::Tensor* _columns)
-  , *$(at::Tensor* _ones)
-  , *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_weight)
-  , *$(at::Tensor* _grad_bias)));
+  , *$(at::Tensor* _ones)));
   }|]
 
 thnn_conv_dilated3d_backward_tttlllltta
