@@ -509,3 +509,6 @@ test = do
   parseTest
     func
     "fft(Tensor self, int64_t signal_ndim, bool normalized=false) -> Tensor"
+
+parseFuncSig :: String -> Either (ParseErrorBundle String Void) Function
+parseFuncSig sig = parse func "" sig

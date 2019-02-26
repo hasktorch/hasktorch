@@ -12,7 +12,8 @@ import Data.Yaml
 import Data.Aeson.Types ()
 import qualified ParseFunctionSig as P
 import qualified Data.List as L
-import Text.Megaparsec (parse, errorBundlePretty)
+import Text.Megaparsec (parse, errorBundlePretty, ParseErrorBundle)
+import Data.Void (Void)
 
 {- nn.yaml -}
 
@@ -58,10 +59,22 @@ instance FromJSON WrapDim
 instance FromJSON DefaultInit
 instance FromJSON NN
 
+nnWithReturnType :: NN -> String
+nnWithReturnType nn' = ((name nn') ++ ret_types nn')
+  where
+    ret_types nn =
+      case (buffers nn) of
+        Just [] -> " -> Tensor"
+        Just v' -> " -> (" <> L.intercalate ", " (take (1 + length v') (repeat "Tensor")) <> ")"
+        Nothing -> " -> Tensor"
+
+parseNN :: NN -> Either (ParseErrorBundle String Void) P.Function
+parseNN nn = parse P.func "" (nnWithReturnType nn)
+
 instance FromJSON NN' where
   parseJSON v = do
     nn :: NN <- parseJSON v
-    case parse P.func "" ((name nn) ++ ret_types nn)  of
+    case parseNN nn of
       Left err -> fail (errorBundlePretty err)
       Right f ->
         pure $ NN' f
@@ -71,9 +84,3 @@ instance FromJSON NN' where
           (has_inplace nn)
           (wrap_dim nn)
           (default_init nn)
-    where
-      ret_types nn =
-        case (buffers nn) of
-          Just [] -> " -> Tensor"
-          Just v' -> " -> (" <> L.intercalate ", " (take (1 + length v') (repeat "Tensor")) <> ")"
-          Nothing -> " -> Tensor"
