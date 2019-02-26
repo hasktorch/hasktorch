@@ -13,6 +13,7 @@ import Text.Shakespeare.Text (st)
 import Data.Text (Text)
 import qualified Data.Text.IO as T
 import qualified Data.List as L
+import System.Directory (createDirectoryIfMissing)
 
 import ParseNativeFunctions
 import ParseFunctionSig as P
@@ -210,13 +211,13 @@ C.include "<ATen/ATen.h>"
         SparseCpu -> "Dispatch.SparseCpu"
         SparseCuda -> "Dispatch.SparseCuda"
 
-
 decodeAndCodeGen :: String -> String -> IO ()
 decodeAndCodeGen basedir fileName = do
   funcs <- Y.decodeFileEither fileName :: IO (Either ParseException [NativeFunction'])
   case funcs of
     Left err' -> print err'
     Right fns -> do
+      createDirectoryIfMissing True (basedir <> "/Aten/NativeFunctions/Dispatch")
       T.writeFile (basedir <> "/Aten/NativeFunctions/Type.hs") typeTemplate
       T.writeFile (basedir <> "/Aten/NativeFunctions/Common.hs") $ codeTemplate Common fns
       T.writeFile (basedir <> "/Aten/NativeFunctions/Dispatch/Cpu.hs") $ codeTemplate Cpu fns
