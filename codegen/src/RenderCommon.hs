@@ -6,7 +6,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 module RenderCommon where
 
-import Text.Shakespeare.Text (st,sbt)
+import Text.Shakespeare.Text (st)
 import Data.Char (toLower)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -28,7 +28,10 @@ tenTypeToCppType tentype =
     Tensor -> "at::Tensor"
     TensorA -> "at::Tensor"
     TensorA' -> "at::Tensor"
+    TensorAQ -> "at::Tensor"
+    TensorAQ' -> "at::Tensor"
     TensorQ -> "at::Tensor"
+    TensorAVector -> "std::vector<at::Tensor>"
     TensorOptions -> "at::TensorOptions"
     TensorList -> "at::TensorList"
     IndexTensor -> "at::Tensor"
@@ -77,9 +80,12 @@ tenTypeToHsType tentype =
   case tentype of
     Scalar -> "Scalar"
     Tensor -> "Tensor"
-    TensorQ -> "Tensor"
     TensorA -> "Tensor"
     TensorA' -> "Tensor"
+    TensorAQ -> "Tensor"
+    TensorAQ' -> "Tensor"
+    TensorQ -> "Tensor"
+    TensorAVector -> "TensorAVector"
     TensorOptions -> "TensorOptions"
     TensorList -> "TensorList"
     IndexTensor -> "Tensor"
@@ -103,7 +109,7 @@ ctypeToHsType ct =
     CVoid -> ""
     CFloat -> "CFloat"
     CDouble -> "CDouble"
-    CInt -> "Int"
+    CInt -> "CInt"
     CInt64 -> "Int64"
     CInt64Q -> "Int64"
 
@@ -127,9 +133,12 @@ tenTypeToInitial tentype =
   case tentype of
     Scalar -> "s"
     Tensor -> "t"
-    TensorQ -> "t"
     TensorA -> "t"
     TensorA' -> "T"
+    TensorAQ -> "t"
+    TensorAQ' -> "T"
+    TensorQ -> "t"
+    TensorAVector -> "v"
     TensorOptions -> "o"
     TensorList -> "l"
     IndexTensor -> "t"
@@ -196,23 +205,26 @@ retToCppType parsable =
     CppString -> "std::string"
     Tuple parsables -> [st|tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
 
-renameFunc :: String -> String
-renameFunc [] = []
-renameFunc (x:xs) = toLower x : xs
 
 functionToCpp :: Bool -> String -> Function -> Text
-functionToCpp add_type_initials prefix fn =
-  [sbt|#{hsfuncname}#{type_initials} :: #{types}
-      |#{hsfuncname}#{type_initials} #{args} = #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(#{prefix}#{name fn}(#{cargs})); }|#{cket}
-      |
-      |]
+functionToCpp add_type_initials prefix fn = [st|
+#{hsfuncname}#{type_initials}
+  :: #{types}
+#{hsfuncname}#{type_initials} #{args} =
+  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(#{prefix}#{name fn}(
+    #{cargs}));
+  }|#{cket}
+|]
   where
+    renameFunc :: String -> String
+    renameFunc [] = []
+    renameFunc (x:xs) = toLower x : xs
     hsfuncname = renameFunc $ name fn
     parameters' = filter isNotStar $ parameters fn
     args :: String
     args = L.intercalate " " $ map (\p -> "_" <> pname p) parameters'
     cargs :: Text
-    cargs = T.intercalate ", " $ flip map parameters' $ \p ->
+    cargs = T.intercalate "\n  , " $ flip map parameters' $ \p ->
       if isCType (ptype p)
       then [st|$(#{parsableToCppType (ptype p)} _#{pname p})|]
       else [st|*$(#{parsableToCppType (ptype p)}* _#{pname p})|]
@@ -227,7 +239,7 @@ functionToCpp add_type_initials prefix fn =
       then [st|#{parsableToHsType (ptype p)}|]
       else [st|Ptr #{parsableToHsType (ptype p)}|]
     types :: Text
-    types = T.intercalate " -> " $ types_list ++ [[st|IO (#{ret_hstype})|]]
+    types = T.intercalate "\n  -> " $ types_list ++ [[st|IO (#{ret_hstype})|]]
     ret_type :: Text
     ret_type =
       if isCType (retType fn)

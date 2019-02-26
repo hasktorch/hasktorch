@@ -14,11 +14,14 @@ jobs:
       - run: wget -qO- https://get.haskellstack.org/ | sh
       - run: gcc --version
       - run: stack --version
+      - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
       - run: cd libtorch-test ; make
       - run:
           name: stack build
           command: stack build --jobs 2
           no_output_timeout: 15m
       - run: stack test --jobs 2
-      - run: stack exec codegen
+      - run: stack exec ffi-test
+      - run: stack exec codegen-exe
+      - run: stack test --jobs 2
       - run: stack exec ffi-test

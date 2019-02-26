@@ -79,7 +79,10 @@ data TenType = Scalar
     | Tensor
     | TensorA -- Tensor(a)
     | TensorA' -- Tensor(a!)
+    | TensorAQ -- Tensor(a)?
+    | TensorAQ' -- Tensor(a!)?
     | TensorQ -- Tensor?
+    | TensorAVector -- Tensor(a)[]
     | TensorOptions
     | TensorList
     | IndexTensor
@@ -194,6 +197,8 @@ identifier = (lexm . try) (p >>= check)
 -- TenType TensorA
 -- >>> parseTest typ "Tensor(a!)"
 -- TenType TensorA'
+-- >>> parseTest typ "Tensor(a)[]"
+-- TenType TensorAVector
 -- >>> parseTest typ "Tensor[]"
 -- TenType TensorList
 -- >>> parseTest typ "Tensor?[]"
@@ -221,6 +226,8 @@ identifier = (lexm . try) (p >>= check)
 -- >>> parseTest typ "bool[2]"
 -- STLType (Array CBool 2)
 -- >>> parseTest typ "std::string"
+-- CppString
+-- >>> parseTest typ "str"
 -- CppString
 typ :: Parser Parsable
 typ =
@@ -267,6 +274,7 @@ typ =
     ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
     try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList)) <|>
     try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList)) <|>
+    try ((lexm $ string "Tensor(a)[]") >> (pure $ TenType TensorAVector)) <|>
     try ((lexm $ string "Tensor(a)") >> (pure $ TenType TensorA)) <|>
     try ((lexm $ string "Tensor(a!)") >> (pure $ TenType TensorA')) <|>
     try ((lexm $ string "Tensor(b)") >> (pure $ TenType TensorA)) <|>
@@ -275,14 +283,14 @@ typ =
     try ((lexm $ string "Tensor(c!)") >> (pure $ TenType TensorA')) <|>
     try ((lexm $ string "Tensor(d)") >> (pure $ TenType TensorA)) <|>
     try ((lexm $ string "Tensor(d!)") >> (pure $ TenType TensorA')) <|>
-    try ((lexm $ string "Tensor?(a)") >> (pure $ TenType TensorA)) <|>
-    try ((lexm $ string "Tensor?(a!)") >> (pure $ TenType TensorA')) <|>
-    try ((lexm $ string "Tensor?(b)") >> (pure $ TenType TensorA)) <|>
-    try ((lexm $ string "Tensor?(b!)") >> (pure $ TenType TensorA')) <|>
-    try ((lexm $ string "Tensor?(c)") >> (pure $ TenType TensorA)) <|>
-    try ((lexm $ string "Tensor?(c!)") >> (pure $ TenType TensorA')) <|>
-    try ((lexm $ string "Tensor?(d)") >> (pure $ TenType TensorA)) <|>
-    try ((lexm $ string "Tensor?(d!)") >> (pure $ TenType TensorA')) <|>
+    try ((lexm $ string "Tensor?(a)") >> (pure $ TenType TensorAQ)) <|>
+    try ((lexm $ string "Tensor?(a!)") >> (pure $ TenType TensorAQ')) <|>
+    try ((lexm $ string "Tensor?(b)") >> (pure $ TenType TensorAQ)) <|>
+    try ((lexm $ string "Tensor?(b!)") >> (pure $ TenType TensorAQ')) <|>
+    try ((lexm $ string "Tensor?(c)") >> (pure $ TenType TensorAQ)) <|>
+    try ((lexm $ string "Tensor?(c!)") >> (pure $ TenType TensorAQ')) <|>
+    try ((lexm $ string "Tensor?(d)") >> (pure $ TenType TensorAQ)) <|>
+    try ((lexm $ string "Tensor?(d!)") >> (pure $ TenType TensorAQ')) <|>
     ((lexm $ string "Tensor?") >> (pure $ TenType TensorQ)) <|>
     ((lexm $ string "Tensor") >> (pure $ TenType Tensor)) <|>
     ((lexm $ string "LongTensor") >> (pure $ TenType LongTensor))
@@ -333,7 +341,9 @@ typ =
     num <- pinteger
     _ <- lexm $ string "]"
     pure $ STLType $ Array CBool (fromIntegral num)
-  cppstring = ((lexm $ string "std::string") >> (pure $ CppString))
+  cppstring =
+    ((lexm $ string "std::string") >> (pure $ CppString)) <|>
+    ((lexm $ string "str") >> (pure $ CppString))
 
 -- | parser of defaultValue
 --
