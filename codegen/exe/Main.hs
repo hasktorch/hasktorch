@@ -49,7 +49,7 @@ programOptions =
 
 main = do
   opts <- O.execParser optsParser
-  RNF.decodeAndCodeGen (specFile opts)
-  RNN.decodeAndCodeGen "spec/nn.yaml"
+  RNF.decodeAndCodeGen "output" (specFile opts)
+  RNN.decodeAndCodeGen "output" "spec/nn.yaml"
   pure ()
 

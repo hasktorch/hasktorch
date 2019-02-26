@@ -9,6 +9,9 @@ module ParseNativeFunctions where
 import Data.Char (toUpper)
 import GHC.Generics
 import Data.Yaml
+import Data.Aeson ((.:!))
+import Data.String.Conversions (cs)
+
 
 import qualified Data.Yaml as Y
 import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
@@ -56,28 +59,16 @@ instance FromJSON NativeFunction' where
 
 data Dispatch = Dispatch {
   cpu :: Maybe String
-  , gpu :: Maybe String
   , cuda :: Maybe String
   , sparseCPU :: Maybe String
   , sparseCUDA :: Maybe String
 } deriving (Show, Generic)
 
-dispatchModifier :: [Char] -> [Char]
-dispatchModifier fieldName
-  | fieldName `elem` ["cpu", "gpu", "cuda"] = upper fieldName
-  | fieldName == "sparseCPU"  = "SparseCPU"
-  | fieldName == "sparseGPU"  = "SparseGPU"
-  | fieldName == "sparseCUDA" = "SparseCUDA"
-  | otherwise                 = fieldName
-  where upper = map toUpper
-
 instance FromJSON NativeFunction
 
 instance FromJSON Dispatch where
-  parseJSON = genericParseJSON $
-    defaultOptions {
-      fieldLabelModifier = dispatchModifier
-    }
+  parseJSON (Object v) =  Dispatch <$> v .:! "CPU" <*> v .:! "CUDA" <*> v .:! "SparseCPU" <*> v .:! "SparseCUDA"
+  parseJSON (String v) =  pure $ Dispatch (Just (cs v)) Nothing Nothing Nothing
 
 instance ToJSON Dispatch
 

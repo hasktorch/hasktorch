@@ -31,10 +31,11 @@ library
     , yaml >= 0.11.0.0
     , shakespeare
     , text
+    , string-conversions
   extra-libraries: stdc++
   ghc-options:     -Wall
 
-executable codegen
+executable codegen-exe
   hs-source-dirs:      exe
   main-is:             Main.hs
   default-language:    Haskell2010
