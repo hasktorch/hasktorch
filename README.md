@@ -42,13 +42,13 @@ To run:
 
 ```
 stack build codegen
-stack exec codegen
+stack exec codegen-exe
 ```
 
 To get CLI options:
 
 ```
-stack exec codegen -- --help
+stack exec codegen-exe -- --help
 ```
 
 ## ffi testing (WIP)
