@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module NN where
+module Aten.NN where
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -20,46 +20,14 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 
-data Scalar
-data Tensor
-data TensorOptions
-data TensorList
-data IndexTensor
-data IntList
-data StdArray a b
-data ScalarType
-data SparseTensorRef
+import qualified Data.Map as Map
 
-data StdString
-data Generator
-data Device
-data Storage
+import Foreign.C.String
+import Foreign.C.Types
+import Foreign
+import Aten.NativeFunctions.Type
 
-C.context $ C.cppCtx <> mempty {
-    C.ctxTypesTable = Map.fromList [
-        (C.TypeName "at::Scalar", [t|Scalar|])
-      , (C.TypeName "at::Tensor", [t|Tensor|])
-      , (C.TypeName "at::TensorOptions", [t|TensorOptions|])
-      , (C.TypeName "at::TensorList", [t|TensorList|])
-      , (C.TypeName "at::IndexTensor", [t|IndexTensor|])
-      , (C.TypeName "at::IntArrayRef", [t|IntList|])
-      , (C.TypeName "at::ScalarType", [t|ScalarType|])
-      , (C.TypeName "at::SparseTensorRef", [t|SparseTensorRef|])
-      , (C.TypeName "at::Storage", [t|Storage|])
-      , (C.TypeName "at::Device", [t|Device|])
-      , (C.TypeName "at::Generator", [t|Generator|])
-      , (C.TypeName "std::string", [t|StdString|])
-      , (C.TypeName "std::array<bool,2>", [t|StdArray CBool 2|])
-      , (C.TypeName "std::array<bool,3>", [t|StdArray CBool 3|])
-      , (C.TypeName "std::array<bool,4>", [t|StdArray CBool 4|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor>", [t|(Tensor,Tensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor,Tensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>", [t|(Tensor,Tensor,Tensor,TensorList)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", [t|(Tensor,Tensor,CDouble,Int64)|])
-    ]
-}
+C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<ATen/ATen.h>"
 

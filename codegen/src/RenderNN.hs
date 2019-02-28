@@ -16,6 +16,9 @@ import qualified ParseNN as NN
 import ParseFunctionSig as P
 import RenderCommon
 
+dropGenerator :: [Parameter] -> [Parameter]
+dropGenerator params = filter (\v' -> ptype v' /= Ptr GeneratorType) params
+
 mkBackwardAndForward :: NN.NN' -> [P.Function]
 mkBackwardAndForward nn = [nn_forward, nn_forward_out, nn_backward, nn_backward_out]
   where
@@ -31,12 +34,12 @@ mkBackwardAndForward nn = [nn_forward, nn_forward_out, nn_backward, nn_backward_
       }
     nn_backward = fn {
       name = (name fn) ++ "_backward"
-      , parameters = [grad_output] ++ params ++ buffer_param
+      , parameters = dropGenerator $ [grad_output] ++ params ++ buffer_param
       , retType = TenType Tensor
       }
     nn_backward_out = fn {
       name = (name fn) ++ "_backward_out"
-      , parameters = [grad_input, grad_output] ++ params ++ buffer_param
+      , parameters = dropGenerator $ [grad_input, grad_output] ++ params ++ buffer_param
       , retType = TenType Tensor
       }
     tensor_param = Parameter
@@ -75,7 +78,7 @@ decodeAndCodeGen basedir fileName = do
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module NN where
+module Aten.NN where
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -87,46 +90,14 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 
-data Scalar
-data Tensor
-data TensorOptions
-data TensorList
-data IndexTensor
-data IntList
-data StdArray a b
-data ScalarType
-data SparseTensorRef
+import qualified Data.Map as Map
 
-data StdString
-data Generator
-data Device
-data Storage
+import Foreign.C.String
+import Foreign.C.Types
+import Foreign
+import Aten.NativeFunctions.Type
 
-C.context $ C.cppCtx <> mempty {
-    C.ctxTypesTable = Map.fromList [
-        (C.TypeName "at::Scalar", #{bra}t|Scalar|#{cket})
-      , (C.TypeName "at::Tensor", #{bra}t|Tensor|#{cket})
-      , (C.TypeName "at::TensorOptions", #{bra}t|TensorOptions|#{cket})
-      , (C.TypeName "at::TensorList", #{bra}t|TensorList|#{cket})
-      , (C.TypeName "at::IndexTensor", #{bra}t|IndexTensor|#{cket})
-      , (C.TypeName "at::IntArrayRef", #{bra}t|IntList|#{cket})
-      , (C.TypeName "at::ScalarType", #{bra}t|ScalarType|#{cket})
-      , (C.TypeName "at::SparseTensorRef", #{bra}t|SparseTensorRef|#{cket})
-      , (C.TypeName "at::Storage", #{bra}t|Storage|#{cket})
-      , (C.TypeName "at::Device", #{bra}t|Device|#{cket})
-      , (C.TypeName "at::Generator", #{bra}t|Generator|#{cket})
-      , (C.TypeName "std::string", #{bra}t|StdString|#{cket})
-      , (C.TypeName "std::array<bool,2>", #{bra}t|StdArray CBool 2|#{cket})
-      , (C.TypeName "std::array<bool,3>", #{bra}t|StdArray CBool 3|#{cket})
-      , (C.TypeName "std::array<bool,4>", #{bra}t|StdArray CBool 4|#{cket})
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor>", #{bra}t|(Tensor,Tensor)|#{cket})
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor>", #{bra}t|(Tensor,Tensor,Tensor)|#{cket})
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>", #{bra}t|(Tensor,Tensor,Tensor,Tensor)|#{cket})
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>", #{bra}t|(Tensor,Tensor,Tensor,Tensor,Tensor)|#{cket})
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>", #{bra}t|(Tensor,Tensor,Tensor,TensorList)|#{cket})
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", #{bra}t|(Tensor,Tensor,CDouble,Int64)|#{cket})
-    ]
-}
+C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<ATen/ATen.h>"
 
