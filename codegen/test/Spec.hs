@@ -243,25 +243,27 @@ nnSpec = do
 
 
 thnnPath :: FilePath
-thnnPath = "../spec/THNN_SIMPLE.h"
+thnnPath = "../spec/THNN.h"
 
 thcunnPath :: FilePath
 thcunnPath = "../spec/THCUNN.h"
 
 thnnSpec :: Spec
 thnnSpec = do
-  it "parses the same number of stringy functions as a vanilla parsing" $ do
-    fs <- parseWith
---    (length fs) `shouldBe` 111
-    (length fs) `shouldBe` 1
+  it "parses the same number of functions as the number of the line including `_THNN` in THNN.h" $ do
+    fs <- parseWith thnnPath
+    (length fs) `shouldBe` 111
+  it "parses the same number of functions as the number of the line including `_THNN` in THCUNN.h" $ do
+    fs <- parseWith thcunnPath
+    (length fs) `shouldBe` 149
  where
   mhead :: [a] -> Maybe a
   mhead = \case
     [] -> Nothing
     a:_ -> Just a
-  parseWith :: IO [HNN.Function]
-  parseWith = do
-    readFile thnnPath >>= \f -> do
+  parseWith :: FilePath -> IO [HNN.Function]
+  parseWith file = do
+    readFile file >>= \f -> do
       case parse HNN.functions "" f of
         Left exception -> throw exception
         Right fs -> pure fs

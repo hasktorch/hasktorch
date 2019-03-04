@@ -82,12 +82,14 @@ comment =
 -- >>> parseTest (comments >> string "1") "#define FOO 1\n//aaaa\n\n#define BAR 1\n\n1"
 -- "1"
 comments :: Parser ()
-comments = try (comment >> comments) <|> comment
+comments = comment >> optional comments >> pure ()
 
 -- | parser of type-identifier
 -- >>> parseTest typ "THCIndexTensor"
 -- TenType IndexTensor
 -- >>> parseTest typ "THCState"
+-- StateType
+-- >>> parseTest typ "THCState "
 -- StateType
 -- >>> parseTest typ "THCState*"
 -- Ptr StateType
@@ -166,39 +168,46 @@ identifier = (lexm . try) (p >>= check)
 
 arg :: Parser Parameter
 arg = do
-  _ <- optional comment
+  _ <- optional $ lexm comment
   v <- param
-  _ <- optional comment
+  _ <- optional $ lexm comment
   pure v
  where
   param = do
     pt <- typ
-    pn <- lexm $ identifier
+    pn <- identifier
     pure $ Parameter pt pn
 
 -- | parser of a function
--- >>> parseTest func "TH_API void THNN_(GatedLinear_updateOutput)(THNNState *state,THTensor *input,THTensor *output,int dim);"
+-- >>> parseTest func "TH_API void THNN_(GatedLinear_updateOutput)(    THNNState *state,    THTensor *input,   \n THTensor *output, \n int dim);"
 -- Function {name = "GatedLinear_updateOutput", parameters = [Parameter {ptype = Ptr StateType, pname = "state"},Parameter {ptype = Ptr (TenType Tensor), pname = "input"},Parameter {ptype = Ptr (TenType Tensor), pname = "output"},Parameter {ptype = CType CInt, pname = "dim"}]}
--- >>> parseTest func "TH_API void THNN_(GatedLinear_updateOutput)(THNNState *state,   // library's state\nTHTensor *input,THTensor *output,int dim);"
+-- >>> parseTest func "TH_API void THNN_(GatedLinear_updateOutput)(THNNState *state,   // library's state\n  THTensor *input,THTensor *output,int dim);"
 -- Function {name = "GatedLinear_updateOutput", parameters = [Parameter {ptype = Ptr StateType, pname = "state"},Parameter {ptype = Ptr (TenType Tensor), pname = "input"},Parameter {ptype = Ptr (TenType Tensor), pname = "output"},Parameter {ptype = CType CInt, pname = "dim"}]}
 func :: Parser Function
 func = do
-  _ <- lexm $ string "TH_API void THNN_("
+  _ <- try (manyTill (anySingle <|> newline) $ (string "TH_API void THNN_(" <|> string "THC_API void THNN_("))
   v <- identifier
   _ <- lexm $ string ")("
   args <- (sepBy arg (lexm (string ",")))
-  _ <- string ");"
+  _ <- lexm $ string ");"
   pure $ Function v args
 
 -- | parser of a function
+-- >>> parseTest functions "TH_API void THNN_(GatedLinear_updateOutput)(THNNState *state,THTensor *input,THTensor *output,int dim);"
+-- [Function {name = "GatedLinear_updateOutput", parameters = [Parameter {ptype = Ptr StateType, pname = "state"},Parameter {ptype = Ptr (TenType Tensor), pname = "input"},Parameter {ptype = Ptr (TenType Tensor), pname = "output"},Parameter {ptype = CType CInt, pname = "dim"}]}]
+-- >>> parseTest functions "#define FOO 1\nTH_API void THNN_(GatedLinear_updateOutput)(THNNState *state,THTensor *input,THTensor *output,int dim);"
+-- [Function {name = "GatedLinear_updateOutput", parameters = [Parameter {ptype = Ptr StateType, pname = "state"},Parameter {ptype = Ptr (TenType Tensor), pname = "input"},Parameter {ptype = Ptr (TenType Tensor), pname = "output"},Parameter {ptype = CType CInt, pname = "dim"}]}]
+-- >>> parseTest functions "TH_API void THNN_(GatedLinear_updateOutput)(THNNState *state,THTensor *input,THTensor *output,int dim);\n"
+-- [Function {name = "GatedLinear_updateOutput", parameters = [Parameter {ptype = Ptr StateType, pname = "state"},Parameter {ptype = Ptr (TenType Tensor), pname = "input"},Parameter {ptype = Ptr (TenType Tensor), pname = "output"},Parameter {ptype = CType CInt, pname = "dim"}]}]
 -- >>> parseTest functions "#define FOO 1\n\n#define BAR 1\n\nTH_API void THNN_(GatedLinear_updateOutput)(THNNState *state,THTensor *input,THTensor *output,int dim);\n\n"
 -- [Function {name = "GatedLinear_updateOutput", parameters = [Parameter {ptype = Ptr StateType, pname = "state"},Parameter {ptype = Ptr (TenType Tensor), pname = "input"},Parameter {ptype = Ptr (TenType Tensor), pname = "output"},Parameter {ptype = CType CInt, pname = "dim"}]}]
 functions :: Parser [Function]
-functions = ((lexm eof) >> pure []) <|> funcs
-  where
-    funcs = do
-      optional comments
-      x <- func
-      optional comments
-      xs <- functions
-      return (x:xs)
+functions =  do
+  x <- optional func
+  case x of
+    Just x' -> do
+      xs <- optional functions
+      case xs of
+        Nothing -> pure [x']
+        Just xs' -> pure (x':xs')
+    Nothing -> pure []
