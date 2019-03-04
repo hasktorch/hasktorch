@@ -5,6 +5,7 @@ module Main where
 
 import Control.Exception.Safe (throwString, throw)
 import Data.Proxy
+import Text.Megaparsec (parse, errorBundlePretty)
 import ParseNativeFunctions (NativeFunction, NativeFunction')
 import ParseNN (NN, NN')
 import ParseDerivatives (Derivative)
@@ -14,6 +15,7 @@ import qualified Data.Yaml as Y
 import ParseFunctionSig
 import qualified ParseNativeFunctions as NF
 import qualified ParseNN as NN
+import qualified ParseHeadersForNN as HNN
 import qualified RenderNativeFunctions as RNF
 import qualified RenderNN as RNN
 
@@ -23,6 +25,8 @@ main = hspec $ do
     describe "NativeFunction Spec" nativeFunctionsSpec
   describe "parsing nn.yaml" $ do
     describe "NN Spec" nnSpec
+  describe "parsing THNN.h and THCUNN.h" $ do
+    describe "THNN.h Spec" thnnSpec
   describe "parsing derivatives.yaml" $ do
     describe "Derivatives Spec" derivativesSpec
 
@@ -236,6 +240,33 @@ nnSpec = do
     Y.decodeFileEither nnPath >>= \case
       Left exception -> throw exception
       Right (fs::[funtype]) -> pure fs
+
+
+thnnPath :: FilePath
+thnnPath = "../spec/THNN.h"
+
+thcunnPath :: FilePath
+thcunnPath = "../spec/THCUNN.h"
+
+thnnSpec :: Spec
+thnnSpec = do
+  it "parses the same number of functions as the number of the line including `_THNN` in THNN.h" $ do
+    fs <- parseWith thnnPath
+    (length fs) `shouldBe` 111
+  it "parses the same number of functions as the number of the line including `_THNN` in THCUNN.h" $ do
+    fs <- parseWith thcunnPath
+    (length fs) `shouldBe` 149
+ where
+  mhead :: [a] -> Maybe a
+  mhead = \case
+    [] -> Nothing
+    a:_ -> Just a
+  parseWith :: FilePath -> IO [HNN.Function]
+  parseWith file = do
+    readFile file >>= \f -> do
+      case parse HNN.functions "" f of
+        Left exception -> throw exception
+        Right fs -> pure fs
 
 derivativesPath :: FilePath
 derivativesPath = "../spec/derivatives.yaml"

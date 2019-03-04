@@ -17,6 +17,7 @@ library
     ParseNN
     ParseDerivatives
     ParseFunctionSig
+    ParseHeadersForNN
     RenderNativeFunctions
     RenderNN
     RenderCommon
@@ -69,4 +70,5 @@ test-suite spec
                  , yaml
                  , safe-exceptions
                  , directory
+                 , megaparsec
 
