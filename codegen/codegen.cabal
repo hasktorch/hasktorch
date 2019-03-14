@@ -15,6 +15,7 @@ library
   exposed-modules:
     ParseNativeFunctions
     ParseNN
+    ParseDeclarations
     ParseDerivatives
     ParseFunctionSig
     ParseHeadersForNN

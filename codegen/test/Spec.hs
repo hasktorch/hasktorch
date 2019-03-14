@@ -29,6 +29,8 @@ main = hspec $ do
     describe "THNN.h Spec" thnnSpec
   describe "parsing derivatives.yaml" $ do
     describe "Derivatives Spec" derivativesSpec
+  describe "parsing Declarations.yaml" $ do
+    describe "Declarations Spec" declarationsSpec
 
 nativeFunctionsPath :: FilePath
 nativeFunctionsPath = "../spec/native_functions_modified.yaml"
@@ -291,4 +293,24 @@ vanillaParse fp = do
   doesFileExist fp >>= \case
     False -> throwString "Spec doesn't exist! Review README to get spec yaml"
     True -> Y.decodeFileThrow fp
+
+
+
+declarationsPath :: FilePath
+declarationsPath = "../spec/Declarations.yaml"
+
+declarationsSpec :: Spec
+declarationsSpec = do
+  xs <- runIO $ vanillaParse declarationsPath
+
+  it "parses the same number of stringy functions as a vanilla parsing" $ do
+    fs <- parseWith (Proxy @ Derivative)
+    (length fs) `shouldBe` (length xs)
+
+ where
+  parseWith :: forall funtype . Y.FromJSON funtype => Proxy funtype -> IO [funtype]
+  parseWith _ = do
+    Y.decodeFileEither declarationsPath >>= \case
+      Left exception -> throw exception
+      Right (fs::[funtype]) -> pure fs
 

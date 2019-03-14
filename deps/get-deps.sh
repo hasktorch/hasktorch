@@ -36,3 +36,23 @@ case "$(uname)" in
     ln -s libmklml_intel.so mklml/lib/libmklml.so
     ;;
 esac
+
+
+# Following codes are copied from pytorch/tools/run-clang-tidy-in-ci.sh.
+# Generate ATen files.
+pushd pytorch
+
+if [[ ! -d build ]]; then
+mkdir build
+fi
+
+python aten/src/ATen/gen.py \
+  -s aten/src/ATen \
+  -d build/aten/src/ATen \
+  aten/src/ATen/Declarations.cwrap \
+  aten/src/THNN/generic/THNN.h \
+  aten/src/THCUNN/generic/THCUNN.h \
+  aten/src/ATen/nn.yaml \
+  aten/src/ATen/native/native_functions.yaml
+
+popd
