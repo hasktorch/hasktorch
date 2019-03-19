@@ -35,6 +35,7 @@ tenTypeToCppType tentype =
     TensorOptions -> "at::TensorOptions"
     TensorList -> "at::TensorList"
     IndexTensor -> "at::Tensor"
+    IntegerTensor -> "at::Tensor"
     BoolTensor -> "at::Tensor"
     BoolTensorQ -> "at::Tensor"
     LongTensor -> "at::Tensor"
@@ -88,6 +89,7 @@ tenTypeToHsType tentype =
     TensorAVector -> "TensorAVector"
     TensorOptions -> "TensorOptions"
     TensorList -> "TensorList"
+    IntegerTensor -> "Tensor"
     IndexTensor -> "Tensor"
     BoolTensor -> "Tensor"
     BoolTensorQ -> "Tensor"
@@ -106,7 +108,7 @@ ctypeToHsType :: CType -> Text
 ctypeToHsType ct =
   case ct of
     CBool -> "CBool"
-    CVoid -> ""
+    CVoid -> "()"
     CFloat -> "CFloat"
     CDouble -> "CDouble"
     CInt -> "CInt"
@@ -142,6 +144,7 @@ tenTypeToInitial tentype =
     TensorOptions -> "o"
     TensorList -> "l"
     IndexTensor -> "t"
+    IntegerTensor -> "t"
     BoolTensor -> "t"
     BoolTensorQ -> "t"
     LongTensor -> "L"
@@ -171,9 +174,9 @@ parsableToInitial parsable =
   case parsable of
     Ptr _ -> "p"
     TenType t -> tenTypeToInitial t
-    DeviceType -> "device"
-    GeneratorType -> "generator"
-    StorageType -> "storage"
+    DeviceType -> "D"
+    GeneratorType -> "G"
+    StorageType -> "S"
     CType ct -> ctypeToInitial ct
     STLType t -> stltypeToInitial t
     CppString -> "s"

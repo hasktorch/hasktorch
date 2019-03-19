@@ -11,6 +11,9 @@ import Text.Megaparsec as M
 --import Text.Megaparsec.Error as M
 import Text.Megaparsec.Char as M
 import Text.Megaparsec.Char.Lexer as L
+import Data.Yaml hiding (Parser, Array)
+import Data.Aeson.Types ()
+import Data.String.Conversions (cs)
 
 -- Examples:
 -- - func: log10_(Tensor self) -> Tensor
@@ -85,6 +88,7 @@ data TenType = Scalar
     | TensorAVector -- Tensor(a)[]
     | TensorOptions
     | TensorList
+    | IntegerTensor
     | IndexTensor
     | BoolTensor
     | BoolTensorQ
@@ -169,8 +173,14 @@ identifier = (lexm . try) (p >>= check)
 -- DeviceType
 -- >>> parseTest typ "Generator*"
 -- Ptr GeneratorType
+-- >>> parseTest typ "Generator *"
+-- Ptr GeneratorType
 -- >>> parseTest typ "IndexTensor"
 -- TenType IndexTensor
+-- >>> parseTest typ "IntegerTensor"
+-- TenType IntegerTensor
+-- >>> parseTest typ "IntArrayRef"
+-- TenType (IntList {dim = Nothing})
 -- >>> parseTest typ "IntList"
 -- TenType (IntList {dim = Nothing})
 -- >>> parseTest typ "IntList[1]"
@@ -179,6 +189,12 @@ identifier = (lexm . try) (p >>= check)
 -- TenType (IntList {dim = Just []})
 -- >>> parseTest typ "int[1]"
 -- TenType (IntList {dim = Just [1]})
+-- >>> parseTest typ "ScalarType"
+-- TenType ScalarType
+-- >>> parseTest typ "real"
+-- TenType Scalar
+-- >>> parseTest typ "accreal"
+-- TenType Scalar
 -- >>> parseTest typ "Scalar"
 -- TenType Scalar
 -- >>> parseTest typ "Scalar?"
@@ -237,7 +253,7 @@ typ =
   tensor <|>
   intlistDim <|> intlistNoDim <|>
   intpDim <|> intpNoDim <|>
-  intpDim' <|> intpNoDim' <|>
+  try intpDim' <|> try intpNoDim' <|> intpNoDim'' <|>
   scalar <|>
   try stlbool <|>
   ctype <|>
@@ -252,6 +268,7 @@ typ =
     pure $ Tuple val'
   other =
     ((lexm $ string "Device") >> (pure $ DeviceType)) <|>
+    ((lexm $ string "Generator *") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Generator?") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Storage") >> (pure $ StorageType))
@@ -259,6 +276,8 @@ typ =
     ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ)) <|>
     ((lexm $ string "ScalarType") >> (pure $ TenType ScalarType)) <|>
     ((lexm $ string "Scalar") >> (pure $ TenType Scalar)) <|>
+    ((lexm $ string "real") >> (pure $ TenType Scalar)) <|>
+    ((lexm $ string "accreal") >> (pure $ TenType Scalar)) <|>
     ((lexm $ string "SparseTensorRef") >> (pure $ TenType SparseTensorRef))
   idxtensor = do
     _ <- lexm $ string "IndexTensor"
@@ -270,6 +289,7 @@ typ =
     _ <- lexm $ string "BoolTensor?"
     pure $ TenType BoolTensorQ
   tensor =
+    ((lexm $ string "IntegerTensor") >> (pure $ TenType IntegerTensor)) <|>
     ((lexm $ string "TensorOptions") >> (pure $ TenType TensorOptions)) <|>
     ((lexm $ string "TensorList") >> (pure $ TenType TensorList)) <|>
     try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList)) <|>
@@ -318,8 +338,12 @@ typ =
   intpNoDim' = do
     _ <- lexm $ string "IntArrayRef[]"
     pure $ TenType $ IntList Nothing
+  intpNoDim'' = do
+    _ <- lexm $ string "IntArrayRef"
+    pure $ TenType $ IntList Nothing
   ctype =
     ((lexm $ string "bool") >> (pure $ CType CBool)) <|>
+    ((lexm $ string "void*") >> (pure $ Ptr (CType CVoid))) <|>
     ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
     ((lexm $ string "float") >> (pure $ CType CFloat)) <|>
     ((lexm $ string "double") >> (pure $ CType CDouble)) <|>
@@ -512,3 +536,10 @@ test = do
 
 parseFuncSig :: String -> Either (ParseErrorBundle String Void) Function
 parseFuncSig sig = parse func "" sig
+
+instance FromJSON Parsable where
+  parseJSON (String v) = do
+    case parse typ "" (cs v) of
+      Left err -> fail (errorBundlePretty err)
+      Right p -> pure p
+  parseJSON _ = fail "This type is not string-type."

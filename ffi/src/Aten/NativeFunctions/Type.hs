@@ -57,7 +57,7 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor,Tensor)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>", [t|(Tensor,Tensor,Tensor,TensorList)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", [t|(Tensor,Tensor,CDouble,CLong)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", [t|(Tensor,Tensor,CDouble,Int64)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,float,int>", [t|(Tensor,Tensor,CFloat,CInt)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", [t|(Tensor,Tensor,Tensor,Int64)|])
       , (C.TypeName "std::vector<at::Tensor>", [t|TensorAVector|])

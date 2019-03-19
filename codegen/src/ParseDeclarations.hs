@@ -8,12 +8,14 @@ module ParseDeclarations where
 import Data.Char (toUpper)
 import GHC.Generics
 import Data.Yaml
+import Data.Aeson ((.:!))
 
 import qualified Data.Yaml as Y
 import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
 import Text.Show.Prettyprint (prettyPrint)
+import qualified ParseFunctionSig as S
 
 {- Declarations.yaml -}
 {- --A example--
@@ -49,39 +51,53 @@ import Text.Show.Prettyprint (prettyPrint)
 
 data Type = Type
   { name' :: String
-  , dynamic_type' :: String
+  , dynamic_type' :: S.Parsable
   , type' :: String
-} deriving (Show, Generic)
+} deriving (Show, Eq, Generic)
+
+type2type :: Type -> S.Parsable
+type2type typ =
+  case dynamic_type' typ of
+    S.TenType S.Scalar -> if type' typ == "Tensor" then S.TenType S.Tensor else S.TenType S.Scalar
+    a -> a
 
 data Mode
   = TH
   | THC
-  deriving (Show, Generic)
+  | NN
+  | Native
+  deriving (Show, Eq, Generic)
 
-data Declaration = Derivative
+data Declaration = Declaration
   { name :: String
   , matches_jit_signature :: Bool
-  , schema_string :: [String]
-  , method_prefix_derived :: [String]
+  , schema_string :: String
+  , method_prefix_derived :: String
   , arguments :: [Type]
   , method_of :: [String]
   , mode :: Mode
   , python_module :: String
-  , buffers :: [String]
-  , returns :: Type
+--  , buffers :: [String]
+  , returns :: [Type]
   , inplace :: Bool
-  , is_factory_method :: Bool
+  , is_factory_method :: Maybe Bool
   , abstract :: Bool
   , requires_tensor :: Bool
-  , device_guard :: Bool
-  , with_gil :: Bool
-  , deprecated :: Bool
-} deriving (Show, Generic)
+  , device_guard :: Maybe Bool
+  , with_gil :: Maybe Bool
+  , deprecated :: Maybe Bool
+} deriving (Show, Eq, Generic)
+
 
 instance FromJSON Type where
     parseJSON = genericParseJSON defaultOptions{ fieldLabelModifier = reverse.(drop 1).reverse }
 
-instance FromJSON Mode
+instance FromJSON Mode where
+    parseJSON (String "TH") = pure TH
+    parseJSON (String "THC") = pure THC
+    parseJSON (String "NN") = pure NN
+    parseJSON (String "native") = pure Native
+    parseJSON v = fail $ show v <> " is not a string of Mode."
 
 instance FromJSON Declaration
 

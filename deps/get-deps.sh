@@ -23,8 +23,7 @@ case "$(uname)" in
     if [ -z "$USE_BINARY_FOR_CI" ] ; then
       wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
     else
-      git clone git@github.com:hasktorch/libtorch-binary-for-ci.git
-      cp libtorch-binary-for-ci/libtorch-shared-with-deps-latest.zip .
+      wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.0.0.dev20190319/libtorch-shared-with-deps-latest.zip
     fi
     unzip libtorch-shared-with-deps-latest.zip
     rm libtorch-shared-with-deps-latest.zip
@@ -54,5 +53,7 @@ python aten/src/ATen/gen.py \
   aten/src/THCUNN/generic/THCUNN.h \
   aten/src/ATen/nn.yaml \
   aten/src/ATen/native/native_functions.yaml
+
+sed -i -e "s/ name: n$/ name: 'n'/g" -e "s/ name: N$/ name: 'N'/g" build/aten/src/ATen/Declarations.yaml
 
 popd

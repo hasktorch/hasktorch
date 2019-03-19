@@ -23,10 +23,10 @@ main :: IO ()
 main = hspec $ do
   describe "parsing native_functions.yaml" $ do
     describe "NativeFunction Spec" nativeFunctionsSpec
-  describe "parsing nn.yaml" $ do
-    describe "NN Spec" nnSpec
-  describe "parsing THNN.h and THCUNN.h" $ do
-    describe "THNN.h Spec" thnnSpec
+--  describe "parsing nn.yaml" $ do
+--    describe "NN Spec" nnSpec
+--  describe "parsing THNN.h and THCUNN.h" $ do
+--    describe "THNN.h Spec" thnnSpec
   describe "parsing derivatives.yaml" $ do
     describe "Derivatives Spec" derivativesSpec
   describe "parsing Declarations.yaml" $ do
