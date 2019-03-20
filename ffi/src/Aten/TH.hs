@@ -25,7 +25,7 @@ import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import Aten.NativeFunctions.Type
+import Aten.Type
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 

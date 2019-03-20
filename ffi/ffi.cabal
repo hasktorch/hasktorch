@@ -12,16 +12,10 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
- exposed-modules:     Aten.NativeFunctions.Type
---                    , Aten.NativeFunctions.Common
---                    , Aten.NativeFunctions.Dispatch.Cpu
---                    , Aten.NativeFunctions.Dispatch.Cuda
---                    , Aten.NativeFunctions.Dispatch.SparseCpu
---                    , Aten.NativeFunctions.Dispatch.SparseCuda
+ exposed-modules:     Aten.Type
                     , Aten.NN
                     , Aten.TH
                     , Aten.Native
---                    , Aten.NativeAbstract
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5

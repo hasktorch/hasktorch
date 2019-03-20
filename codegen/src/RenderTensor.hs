@@ -17,9 +17,9 @@ import FFICXX.Generate.Type.Module
 import FFICXX.Generate.Type.PackageInterface
 
 
-cabal = Cabal { cabal_pkgname = CabalName "aten-tensor"
+cabal = Cabal { cabal_pkgname = CabalName "output"
               , cabal_cheaderprefix = "Aten"
-              , cabal_moduleprefix = "Aten.Tensor"
+              , cabal_moduleprefix = "Aten"
               , cabal_version = ">=1.10"
               , cabal_license = Just "BSD3"
               , cabal_additional_c_incs = []
