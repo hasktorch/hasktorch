@@ -21,3 +21,4 @@ extra-lib-dirs:
 extra-deps:
 - fficxx-0.5.0.1@sha256:dd3638df82c2ce179f17e97f22068031ae0ba9aa75de9ed8a6b026c8088cc40c
 - template-0.2.0.10@sha256:f822de4d34c45bc84b33a61bc112c15fedee6fa6dc414c62b10456395a868f85
+- fficxx-runtime-0.5

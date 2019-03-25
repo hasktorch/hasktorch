@@ -10,12 +10,20 @@ copyright:           2018 Austin Huang
 category:            Codegen
 build-type:          Simple
 cabal-version:       >=1.10
+Extra-source-files:   csrc/AtenTensor.h
+                    , csrc/AtenTensor.cpp
 
 library
  exposed-modules:     Aten.Type
                     , Aten.NN
                     , Aten.TH
                     , Aten.Native
+                    , Aten.Tensor
+                    , Aten.Tensor.RawType
+                    , Aten.Tensor.FFI
+                    , Aten.Tensor.Interface
+                    , Aten.Tensor.Cast
+                    , Aten.Tensor.Implementation
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
@@ -23,7 +31,19 @@ library
                     , inline-c
                     , optparse-applicative >= 0.14.3.0
                     , containers
- extra-libraries: stdc++
+                    , fficxx >= 0.5
+                    , fficxx-runtime >= 0.5
+                    , template-haskell
+ extra-libraries:     stdc++
+                    , c10
+                    , iomp5
+                    , mklml
+                    , caffe2
+ include-dirs:        csrc
+ install-includes:    outputType.h
+                    , AtenTensor.h
+ c-sources:           csrc/AtenTensor.cpp
+ ghc-options:        -optc-D_GLIBCXX_USE_CXX11_ABI=0
 
 executable ffi-test
   hs-source-dirs:      example
@@ -34,10 +54,6 @@ executable ffi-test
                      , inline-c
                      , optparse-applicative >= 0.14.3.0
                      , containers
-  extra-libraries:     stdc++
-                     , c10
-                     , iomp5
-                     , mklml
-                     , caffe2
-                     , torch
-  ghc-options:         -optc-std=c++14 -optc-D_GLIBCXX_USE_CXX11_ABI=0
+                     , ffi
+  ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0
+ extra-libraries:     torch
