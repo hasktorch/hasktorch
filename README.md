@@ -2,12 +2,10 @@
 
 Experimental work on next-gen ffi bindings into the c++ libtorch library in preparation for 0.0.2 which targets the 1.0 backend.
 
-Approaches to explore:
+General approach:
 
-- Use yaml specs (which seemed to have been cleaned up since PT ~ 0.4) instead of header parsing.
+- Use generated `Declarations.yaml` spec instead of header parsing for code generation.
 - Try inline-cpp functionality to bind the C++ API instead of the C API. Benchmark potential template haskell overhead vs. code generating C wrappers for C++ functions.
-- Get a vertical slice working for a small number of functions.
-- Scale up.
 
 ## libtorch dependency retrieval and testing
 
