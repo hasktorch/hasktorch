@@ -79,25 +79,25 @@ parsableToCppType parsable =
 tenTypeToHsType :: TenType -> Text
 tenTypeToHsType tentype =
   case tentype of
-    Scalar -> "Scalar"
-    Tensor -> "Tensor"
-    TensorA -> "Tensor"
-    TensorA' -> "Tensor"
-    TensorAQ -> "Tensor"
-    TensorAQ' -> "Tensor"
-    TensorQ -> "Tensor"
-    TensorAVector -> "TensorAVector"
-    TensorOptions -> "TensorOptions"
-    TensorList -> "TensorList"
-    IntegerTensor -> "Tensor"
-    IndexTensor -> "Tensor"
-    BoolTensor -> "Tensor"
-    BoolTensorQ -> "Tensor"
-    LongTensor -> "Tensor"
-    IntList _ -> "IntList"
-    ScalarQ -> "Scalar"
-    ScalarType -> "ScalarType"
-    SparseTensorRef -> "SparseTensorRef"
+    Scalar -> "RawScalar"
+    Tensor -> "RawTensor"
+    TensorA -> "RawTensor"
+    TensorA' -> "RawTensor"
+    TensorAQ -> "RawTensor"
+    TensorAQ' -> "RawTensor"
+    TensorQ -> "RawTensor"
+    TensorAVector -> "RawTensorAVector"
+    TensorOptions -> "RawTensorOptions"
+    TensorList -> "RawTensorList"
+    IntegerTensor -> "RawTensor"
+    IndexTensor -> "RawTensor"
+    BoolTensor -> "RawTensor"
+    BoolTensorQ -> "RawTensor"
+    LongTensor -> "RawTensor"
+    IntList _ -> "RawIntArrayRef"
+    ScalarQ -> "RawScalar"
+    ScalarType -> "RawScalarType"
+    SparseTensorRef -> "RawSparseTensorRef"
 
 stltypeToHsType :: STLType -> Text
 stltypeToHsType t =
@@ -122,7 +122,7 @@ parsableToHsType parsable =
     TenType t -> tenTypeToHsType t
     DeviceType -> "Device"
     GeneratorType -> "Generator"
-    StorageType -> "Storage"
+    StorageType -> "RawStorage"
     CType ct -> ctypeToHsType ct
     STLType t -> stltypeToHsType t
     CppString -> "StdString"

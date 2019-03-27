@@ -1,15 +1,11 @@
-#include <ATen/ATen.h>
-
-// Both c10/util/logging_is_not_google_glog.h and MacroPatternMatch.h define 'CHECK'.
-// The conflict of CHECK-define causes compile error.
-// To prevent the error, undef CHECK-define.
-#undef CHECK
-#include <MacroPatternMatch.h>
-
+#include<MacroPatternMatch.h>
+#include "Mask.h"
+#include "ATen/ATen.h"
 #include "AtenTensor.h"
 
-
 using namespace at;
+
+
 
 
 

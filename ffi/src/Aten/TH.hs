@@ -33,9 +33,9 @@ C.include "<ATen/ATen.h>"
 
 
 _th_set__tS
-  :: Ptr Tensor
-  -> Ptr Storage
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawStorage
+  -> IO (Ptr RawTensor)
 _th_set__tS _self _source =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_set_(
     *$(at::Tensor* _self)
@@ -43,12 +43,12 @@ _th_set__tS _self _source =
   }|]
 
 _th_set__tSlll
-  :: Ptr Tensor
-  -> Ptr Storage
+  :: Ptr RawTensor
+  -> Ptr RawStorage
   -> Int64
-  -> Ptr IntList
-  -> Ptr IntList
-  -> IO (Ptr Tensor)
+  -> Ptr RawIntArrayRef
+  -> Ptr RawIntArrayRef
+  -> IO (Ptr RawTensor)
 _th_set__tSlll _self _source _storage_offset _size _stride =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_set_(
     *$(at::Tensor* _self)
@@ -59,9 +59,9 @@ _th_set__tSlll _self _source _storage_offset _size _stride =
   }|]
 
 _th_set__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_set__tt _self _source =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_set_(
     *$(at::Tensor* _self)
@@ -69,17 +69,17 @@ _th_set__tt _self _source =
   }|]
 
 _th_set__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_set__t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_set_(
     *$(at::Tensor* _self)));
   }|]
 
 _th_fill__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_fill__ts _self _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_fill_(
     *$(at::Tensor* _self)
@@ -87,9 +87,9 @@ _th_fill__ts _self _value =
   }|]
 
 _th_fill__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_fill__tt _self _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_fill_(
     *$(at::Tensor* _self)
@@ -97,8 +97,8 @@ _th_fill__tt _self _value =
   }|]
 
 _th_is_set_to_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> IO (CBool)
 _th_is_set_to_tt _self _tensor =
   [C.block| bool { return (at::_th_is_set_to(
@@ -107,10 +107,10 @@ _th_is_set_to_tt _self _tensor =
   }|]
 
 _th_masked_fill__tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_masked_fill__tts _self _mask _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_masked_fill_(
     *$(at::Tensor* _self)
@@ -119,10 +119,10 @@ _th_masked_fill__tts _self _mask _value =
   }|]
 
 _th_masked_fill__ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_masked_fill__ttt _self _mask _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_masked_fill_(
     *$(at::Tensor* _self)
@@ -131,10 +131,10 @@ _th_masked_fill__ttt _self _mask _value =
   }|]
 
 _th_masked_scatter__ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_masked_scatter__ttt _self _mask _source =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_masked_scatter_(
     *$(at::Tensor* _self)
@@ -143,10 +143,10 @@ _th_masked_scatter__ttt _self _mask _source =
   }|]
 
 _th_masked_select_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_masked_select_out_ttt _result _self _mask =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_masked_select_out(
     *$(at::Tensor* _result)
@@ -155,9 +155,9 @@ _th_masked_select_out_ttt _result _self _mask =
   }|]
 
 _th_masked_select_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_masked_select_tt _self _mask =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_masked_select(
     *$(at::Tensor* _self)
@@ -165,9 +165,9 @@ _th_masked_select_tt _self _mask =
   }|]
 
 _th_nonzero_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_nonzero_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_nonzero_out(
     *$(at::Tensor* _result)
@@ -175,25 +175,25 @@ _th_nonzero_out_tt _result _self =
   }|]
 
 _th_nonzero_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_nonzero_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_nonzero(
     *$(at::Tensor* _self)));
   }|]
 
 _th_clone_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_clone_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_clone(
     *$(at::Tensor* _self)));
   }|]
 
 _th_view_tl
-  :: Ptr Tensor
-  -> Ptr IntList
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawIntArrayRef
+  -> IO (Ptr RawTensor)
 _th_view_tl _self _size =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_view(
     *$(at::Tensor* _self)
@@ -201,9 +201,9 @@ _th_view_tl _self _size =
   }|]
 
 _th_resize_as__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_resize_as__tt _self _the_template =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_resize_as_(
     *$(at::Tensor* _self)
@@ -211,11 +211,11 @@ _th_resize_as__tt _self _the_template =
   }|]
 
 _th_index_select_out_ttlt
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_index_select_out_ttlt _result _self _dim _index =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_index_select_out(
     *$(at::Tensor* _result)
@@ -225,10 +225,10 @@ _th_index_select_out_ttlt _result _self _dim _index =
   }|]
 
 _th_index_select_tlt
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_index_select_tlt _self _dim _index =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_index_select(
     *$(at::Tensor* _self)
@@ -237,11 +237,11 @@ _th_index_select_tlt _self _dim _index =
   }|]
 
 _th_index_copy__tltt
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_index_copy__tltt _self _dim _index _source =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_index_copy_(
     *$(at::Tensor* _self)
@@ -251,10 +251,10 @@ _th_index_copy__tltt _self _dim _index _source =
   }|]
 
 _th_take_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_take_out_ttt _result _self _index =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_take_out(
     *$(at::Tensor* _result)
@@ -263,9 +263,9 @@ _th_take_out_ttt _result _self _index =
   }|]
 
 _th_take_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_take_tt _self _index =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_take(
     *$(at::Tensor* _self)
@@ -273,11 +273,11 @@ _th_take_tt _self _index =
   }|]
 
 _th_put__tttb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_put__tttb _self _index _source _accumulate =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_put_(
     *$(at::Tensor* _self)
@@ -287,11 +287,11 @@ _th_put__tttb _self _index _source _accumulate =
   }|]
 
 _th_index_add__tltt
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_index_add__tltt _self _dim _index _source =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_index_add_(
     *$(at::Tensor* _self)
@@ -301,11 +301,11 @@ _th_index_add__tltt _self _dim _index _source =
   }|]
 
 _th_index_fill__tlts
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_index_fill__tlts _self _dim _index _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_index_fill_(
     *$(at::Tensor* _self)
@@ -315,11 +315,11 @@ _th_index_fill__tlts _self _dim _index _value =
   }|]
 
 _th_index_fill__tltt
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_index_fill__tltt _self _dim _index _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_index_fill_(
     *$(at::Tensor* _self)
@@ -329,12 +329,12 @@ _th_index_fill__tltt _self _dim _index _value =
   }|]
 
 _th_unfold_out_ttlll
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> Int64
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_unfold_out_ttlll _result _self _dimension _size _step =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_unfold_out(
     *$(at::Tensor* _result)
@@ -345,11 +345,11 @@ _th_unfold_out_ttlll _result _self _dimension _size _step =
   }|]
 
 _th_unfold_tlll
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> Int64
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_unfold_tlll _self _dimension _size _step =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_unfold(
     *$(at::Tensor* _self)
@@ -359,11 +359,11 @@ _th_unfold_tlll _self _dimension _size _step =
   }|]
 
 _th_scatter__tltt
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_scatter__tltt _self _dim _index _src =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_scatter_(
     *$(at::Tensor* _self)
@@ -373,11 +373,11 @@ _th_scatter__tltt _self _dim _index _src =
   }|]
 
 _th_scatter__tlts
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_scatter__tlts _self _dim _index _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_scatter_(
     *$(at::Tensor* _self)
@@ -387,11 +387,11 @@ _th_scatter__tlts _self _dim _index _value =
   }|]
 
 _th_scatter_add__tltt
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_scatter_add__tltt _self _dim _index _src =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_scatter_add_(
     *$(at::Tensor* _self)
@@ -401,11 +401,11 @@ _th_scatter_add__tltt _self _dim _index _src =
   }|]
 
 _th_gather_out_ttlt
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_gather_out_ttlt _result _self _dim _index =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_gather_out(
     *$(at::Tensor* _result)
@@ -415,10 +415,10 @@ _th_gather_out_ttlt _result _self _dim _index =
   }|]
 
 _th_gather_tlt
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_gather_tlt _self _dim _index =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_gather(
     *$(at::Tensor* _self)
@@ -427,8 +427,8 @@ _th_gather_tlt _self _dim _index =
   }|]
 
 _th_equal_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> IO (CBool)
 _th_equal_tt _self _other =
   [C.block| bool { return (at::_th_equal(
@@ -437,10 +437,10 @@ _th_equal_tt _self _other =
   }|]
 
 _th_and_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_and_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_and_out(
     *$(at::Tensor* _result)
@@ -449,9 +449,9 @@ _th_and_out_tts _result _self _other =
   }|]
 
 _th_and_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_and_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_and(
     *$(at::Tensor* _self)
@@ -459,10 +459,10 @@ _th_and_ts _self _other =
   }|]
 
 _th_and_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_and_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_and_out(
     *$(at::Tensor* _result)
@@ -471,9 +471,9 @@ _th_and_out_ttt _result _self _other =
   }|]
 
 _th_and_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_and_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_and(
     *$(at::Tensor* _self)
@@ -481,9 +481,9 @@ _th_and_tt _self _other =
   }|]
 
 _th_iand__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_iand__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_iand_(
     *$(at::Tensor* _self)
@@ -491,9 +491,9 @@ _th_iand__ts _self _other =
   }|]
 
 _th_iand__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_iand__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_iand_(
     *$(at::Tensor* _self)
@@ -501,10 +501,10 @@ _th_iand__tt _self _other =
   }|]
 
 _th_or_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_or_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_or_out(
     *$(at::Tensor* _result)
@@ -513,9 +513,9 @@ _th_or_out_tts _result _self _other =
   }|]
 
 _th_or_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_or_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_or(
     *$(at::Tensor* _self)
@@ -523,10 +523,10 @@ _th_or_ts _self _other =
   }|]
 
 _th_or_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_or_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_or_out(
     *$(at::Tensor* _result)
@@ -535,9 +535,9 @@ _th_or_out_ttt _result _self _other =
   }|]
 
 _th_or_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_or_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_or(
     *$(at::Tensor* _self)
@@ -545,9 +545,9 @@ _th_or_tt _self _other =
   }|]
 
 _th_ior__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_ior__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ior_(
     *$(at::Tensor* _self)
@@ -555,9 +555,9 @@ _th_ior__ts _self _other =
   }|]
 
 _th_ior__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ior__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ior_(
     *$(at::Tensor* _self)
@@ -565,10 +565,10 @@ _th_ior__tt _self _other =
   }|]
 
 _th_xor_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_xor_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_xor_out(
     *$(at::Tensor* _result)
@@ -577,9 +577,9 @@ _th_xor_out_tts _result _self _other =
   }|]
 
 _th_xor_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_xor_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_xor(
     *$(at::Tensor* _self)
@@ -587,10 +587,10 @@ _th_xor_ts _self _other =
   }|]
 
 _th_xor_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_xor_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_xor_out(
     *$(at::Tensor* _result)
@@ -599,9 +599,9 @@ _th_xor_out_ttt _result _self _other =
   }|]
 
 _th_xor_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_xor_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_xor(
     *$(at::Tensor* _self)
@@ -609,9 +609,9 @@ _th_xor_tt _self _other =
   }|]
 
 _th_ixor__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_ixor__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ixor_(
     *$(at::Tensor* _self)
@@ -619,9 +619,9 @@ _th_ixor__ts _self _other =
   }|]
 
 _th_ixor__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ixor__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ixor_(
     *$(at::Tensor* _self)
@@ -629,10 +629,10 @@ _th_ixor__tt _self _other =
   }|]
 
 _th_lshift_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_lshift_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lshift_out(
     *$(at::Tensor* _result)
@@ -641,9 +641,9 @@ _th_lshift_out_tts _result _self _other =
   }|]
 
 _th_lshift_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_lshift_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lshift(
     *$(at::Tensor* _self)
@@ -651,10 +651,10 @@ _th_lshift_ts _self _other =
   }|]
 
 _th_lshift_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_lshift_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lshift_out(
     *$(at::Tensor* _result)
@@ -663,9 +663,9 @@ _th_lshift_out_ttt _result _self _other =
   }|]
 
 _th_lshift_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_lshift_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lshift(
     *$(at::Tensor* _self)
@@ -673,9 +673,9 @@ _th_lshift_tt _self _other =
   }|]
 
 _th_ilshift__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_ilshift__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ilshift_(
     *$(at::Tensor* _self)
@@ -683,9 +683,9 @@ _th_ilshift__ts _self _other =
   }|]
 
 _th_ilshift__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ilshift__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ilshift_(
     *$(at::Tensor* _self)
@@ -693,10 +693,10 @@ _th_ilshift__tt _self _other =
   }|]
 
 _th_rshift_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_rshift_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_rshift_out(
     *$(at::Tensor* _result)
@@ -705,9 +705,9 @@ _th_rshift_out_tts _result _self _other =
   }|]
 
 _th_rshift_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_rshift_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_rshift(
     *$(at::Tensor* _self)
@@ -715,10 +715,10 @@ _th_rshift_ts _self _other =
   }|]
 
 _th_rshift_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_rshift_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_rshift_out(
     *$(at::Tensor* _result)
@@ -727,9 +727,9 @@ _th_rshift_out_ttt _result _self _other =
   }|]
 
 _th_rshift_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_rshift_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_rshift(
     *$(at::Tensor* _self)
@@ -737,9 +737,9 @@ _th_rshift_tt _self _other =
   }|]
 
 _th_irshift__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_irshift__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_irshift_(
     *$(at::Tensor* _self)
@@ -747,9 +747,9 @@ _th_irshift__ts _self _other =
   }|]
 
 _th_irshift__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_irshift__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_irshift_(
     *$(at::Tensor* _self)
@@ -757,10 +757,10 @@ _th_irshift__tt _self _other =
   }|]
 
 _th_lt_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_lt_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lt_out(
     *$(at::Tensor* _result)
@@ -769,9 +769,9 @@ _th_lt_out_tts _result _self _other =
   }|]
 
 _th_lt_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_lt_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lt(
     *$(at::Tensor* _self)
@@ -779,10 +779,10 @@ _th_lt_ts _self _other =
   }|]
 
 _th_lt_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_lt_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lt_out(
     *$(at::Tensor* _result)
@@ -791,9 +791,9 @@ _th_lt_out_ttt _result _self _other =
   }|]
 
 _th_lt_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_lt_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lt(
     *$(at::Tensor* _self)
@@ -801,9 +801,9 @@ _th_lt_tt _self _other =
   }|]
 
 _th_lt__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_lt__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lt_(
     *$(at::Tensor* _self)
@@ -811,9 +811,9 @@ _th_lt__ts _self _other =
   }|]
 
 _th_lt__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_lt__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lt_(
     *$(at::Tensor* _self)
@@ -821,10 +821,10 @@ _th_lt__tt _self _other =
   }|]
 
 _th_gt_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_gt_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_gt_out(
     *$(at::Tensor* _result)
@@ -833,9 +833,9 @@ _th_gt_out_tts _result _self _other =
   }|]
 
 _th_gt_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_gt_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_gt(
     *$(at::Tensor* _self)
@@ -843,10 +843,10 @@ _th_gt_ts _self _other =
   }|]
 
 _th_gt_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_gt_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_gt_out(
     *$(at::Tensor* _result)
@@ -855,9 +855,9 @@ _th_gt_out_ttt _result _self _other =
   }|]
 
 _th_gt_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_gt_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_gt(
     *$(at::Tensor* _self)
@@ -865,9 +865,9 @@ _th_gt_tt _self _other =
   }|]
 
 _th_gt__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_gt__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_gt_(
     *$(at::Tensor* _self)
@@ -875,9 +875,9 @@ _th_gt__ts _self _other =
   }|]
 
 _th_gt__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_gt__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_gt_(
     *$(at::Tensor* _self)
@@ -885,10 +885,10 @@ _th_gt__tt _self _other =
   }|]
 
 _th_le_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_le_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_le_out(
     *$(at::Tensor* _result)
@@ -897,9 +897,9 @@ _th_le_out_tts _result _self _other =
   }|]
 
 _th_le_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_le_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_le(
     *$(at::Tensor* _self)
@@ -907,10 +907,10 @@ _th_le_ts _self _other =
   }|]
 
 _th_le_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_le_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_le_out(
     *$(at::Tensor* _result)
@@ -919,9 +919,9 @@ _th_le_out_ttt _result _self _other =
   }|]
 
 _th_le_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_le_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_le(
     *$(at::Tensor* _self)
@@ -929,9 +929,9 @@ _th_le_tt _self _other =
   }|]
 
 _th_le__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_le__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_le_(
     *$(at::Tensor* _self)
@@ -939,9 +939,9 @@ _th_le__ts _self _other =
   }|]
 
 _th_le__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_le__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_le_(
     *$(at::Tensor* _self)
@@ -949,10 +949,10 @@ _th_le__tt _self _other =
   }|]
 
 _th_ge_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_ge_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ge_out(
     *$(at::Tensor* _result)
@@ -961,9 +961,9 @@ _th_ge_out_tts _result _self _other =
   }|]
 
 _th_ge_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_ge_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ge(
     *$(at::Tensor* _self)
@@ -971,10 +971,10 @@ _th_ge_ts _self _other =
   }|]
 
 _th_ge_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ge_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ge_out(
     *$(at::Tensor* _result)
@@ -983,9 +983,9 @@ _th_ge_out_ttt _result _self _other =
   }|]
 
 _th_ge_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ge_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ge(
     *$(at::Tensor* _self)
@@ -993,9 +993,9 @@ _th_ge_tt _self _other =
   }|]
 
 _th_ge__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_ge__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ge_(
     *$(at::Tensor* _self)
@@ -1003,9 +1003,9 @@ _th_ge__ts _self _other =
   }|]
 
 _th_ge__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ge__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ge_(
     *$(at::Tensor* _self)
@@ -1013,10 +1013,10 @@ _th_ge__tt _self _other =
   }|]
 
 _th_eq_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_eq_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_eq_out(
     *$(at::Tensor* _result)
@@ -1025,9 +1025,9 @@ _th_eq_out_tts _result _self _other =
   }|]
 
 _th_eq_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_eq_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_eq(
     *$(at::Tensor* _self)
@@ -1035,10 +1035,10 @@ _th_eq_ts _self _other =
   }|]
 
 _th_eq_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_eq_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_eq_out(
     *$(at::Tensor* _result)
@@ -1047,9 +1047,9 @@ _th_eq_out_ttt _result _self _other =
   }|]
 
 _th_eq_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_eq_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_eq(
     *$(at::Tensor* _self)
@@ -1057,9 +1057,9 @@ _th_eq_tt _self _other =
   }|]
 
 _th_eq__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_eq__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_eq_(
     *$(at::Tensor* _self)
@@ -1067,9 +1067,9 @@ _th_eq__ts _self _other =
   }|]
 
 _th_eq__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_eq__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_eq_(
     *$(at::Tensor* _self)
@@ -1077,10 +1077,10 @@ _th_eq__tt _self _other =
   }|]
 
 _th_ne_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_ne_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ne_out(
     *$(at::Tensor* _result)
@@ -1089,9 +1089,9 @@ _th_ne_out_tts _result _self _other =
   }|]
 
 _th_ne_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_ne_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ne(
     *$(at::Tensor* _self)
@@ -1099,10 +1099,10 @@ _th_ne_ts _self _other =
   }|]
 
 _th_ne_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ne_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ne_out(
     *$(at::Tensor* _result)
@@ -1111,9 +1111,9 @@ _th_ne_out_ttt _result _self _other =
   }|]
 
 _th_ne_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ne_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ne(
     *$(at::Tensor* _self)
@@ -1121,9 +1121,9 @@ _th_ne_tt _self _other =
   }|]
 
 _th_ne__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_ne__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ne_(
     *$(at::Tensor* _self)
@@ -1131,9 +1131,9 @@ _th_ne__ts _self _other =
   }|]
 
 _th_ne__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ne__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ne_(
     *$(at::Tensor* _self)
@@ -1141,10 +1141,10 @@ _th_ne__tt _self _other =
   }|]
 
 _th_min_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_min_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_min_out(
     *$(at::Tensor* _result)
@@ -1153,9 +1153,9 @@ _th_min_out_ttt _result _self _other =
   }|]
 
 _th_min_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_min_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_min(
     *$(at::Tensor* _self)
@@ -1163,20 +1163,20 @@ _th_min_tt _self _other =
   }|]
 
 _th_min_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_min_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_min(
     *$(at::Tensor* _self)));
   }|]
 
 _th_min_out_tttlb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_min_out_tttlb _min _min_indices _self _dim _keepdim =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_min_out(
     *$(at::Tensor* _min)
@@ -1187,10 +1187,10 @@ _th_min_out_tttlb _min _min_indices _self _dim _keepdim =
   }|]
 
 _th_min_tlb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_min_tlb _self _dim _keepdim =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_min(
     *$(at::Tensor* _self)
@@ -1199,10 +1199,10 @@ _th_min_tlb _self _dim _keepdim =
   }|]
 
 _th_max_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_max_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_max_out(
     *$(at::Tensor* _result)
@@ -1211,9 +1211,9 @@ _th_max_out_ttt _result _self _other =
   }|]
 
 _th_max_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_max_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_max(
     *$(at::Tensor* _self)
@@ -1221,20 +1221,20 @@ _th_max_tt _self _other =
   }|]
 
 _th_max_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_max_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_max(
     *$(at::Tensor* _self)));
   }|]
 
 _th_max_out_tttlb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_max_out_tttlb _max _max_indices _self _dim _keepdim =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_max_out(
     *$(at::Tensor* _max)
@@ -1245,10 +1245,10 @@ _th_max_out_tttlb _max _max_indices _self _dim _keepdim =
   }|]
 
 _th_max_tlb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_max_tlb _self _dim _keepdim =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_max(
     *$(at::Tensor* _self)
@@ -1257,12 +1257,12 @@ _th_max_tlb _self _dim _keepdim =
   }|]
 
 _th_mode_out_tttlb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_mode_out_tttlb _values _indices _self _dim _keepdim =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_mode_out(
     *$(at::Tensor* _values)
@@ -1273,10 +1273,10 @@ _th_mode_out_tttlb _values _indices _self _dim _keepdim =
   }|]
 
 _th_mode_tlb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_mode_tlb _self _dim _keepdim =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_mode(
     *$(at::Tensor* _self)
@@ -1285,20 +1285,20 @@ _th_mode_tlb _self _dim _keepdim =
   }|]
 
 _th_median_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_median_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_median(
     *$(at::Tensor* _self)));
   }|]
 
 _th_median_out_tttlb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_median_out_tttlb _values _indices _self _dim _keepdim =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_median_out(
     *$(at::Tensor* _values)
@@ -1309,10 +1309,10 @@ _th_median_out_tttlb _values _indices _self _dim _keepdim =
   }|]
 
 _th_median_tlb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_median_tlb _self _dim _keepdim =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_median(
     *$(at::Tensor* _self)
@@ -1321,12 +1321,12 @@ _th_median_tlb _self _dim _keepdim =
   }|]
 
 _th_sort_out_tttlb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_sort_out_tttlb _values _indices _self _dim _descending =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_sort_out(
     *$(at::Tensor* _values)
@@ -1337,10 +1337,10 @@ _th_sort_out_tttlb _values _indices _self _dim _descending =
   }|]
 
 _th_sort_tlb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_sort_tlb _self _dim _descending =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_sort(
     *$(at::Tensor* _self)
@@ -1349,14 +1349,14 @@ _th_sort_tlb _self _dim _descending =
   }|]
 
 _th_topk_out_tttllbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> Int64
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_topk_out_tttllbb _values _indices _self _k _dim _largest _sorted =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_topk_out(
     *$(at::Tensor* _values)
@@ -1369,12 +1369,12 @@ _th_topk_out_tttllbb _values _indices _self _k _dim _largest _sorted =
   }|]
 
 _th_topk_tllbb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> Int64
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_topk_tllbb _self _k _dim _largest _sorted =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_topk(
     *$(at::Tensor* _self)
@@ -1385,9 +1385,9 @@ _th_topk_tllbb _self _k _dim _largest _sorted =
   }|]
 
 _th_abs_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_abs_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_abs_out(
     *$(at::Tensor* _result)
@@ -1395,17 +1395,17 @@ _th_abs_out_tt _result _self =
   }|]
 
 _th_abs_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_abs_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_abs(
     *$(at::Tensor* _self)));
   }|]
 
 _th_sigmoid_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sigmoid_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sigmoid_out(
     *$(at::Tensor* _result)
@@ -1413,17 +1413,17 @@ _th_sigmoid_out_tt _result _self =
   }|]
 
 _th_sigmoid_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sigmoid_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sigmoid(
     *$(at::Tensor* _self)));
   }|]
 
 _th_log_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_log_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_log_out(
     *$(at::Tensor* _result)
@@ -1431,17 +1431,17 @@ _th_log_out_tt _result _self =
   }|]
 
 _th_log_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_log_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_log(
     *$(at::Tensor* _self)));
   }|]
 
 _th_log10_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_log10_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_log10_out(
     *$(at::Tensor* _result)
@@ -1449,17 +1449,17 @@ _th_log10_out_tt _result _self =
   }|]
 
 _th_log10_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_log10_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_log10(
     *$(at::Tensor* _self)));
   }|]
 
 _th_log1p_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_log1p_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_log1p_out(
     *$(at::Tensor* _result)
@@ -1467,17 +1467,17 @@ _th_log1p_out_tt _result _self =
   }|]
 
 _th_log1p_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_log1p_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_log1p(
     *$(at::Tensor* _self)));
   }|]
 
 _th_log2_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_log2_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_log2_out(
     *$(at::Tensor* _result)
@@ -1485,17 +1485,17 @@ _th_log2_out_tt _result _self =
   }|]
 
 _th_log2_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_log2_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_log2(
     *$(at::Tensor* _self)));
   }|]
 
 _th_lgamma_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_lgamma_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lgamma_out(
     *$(at::Tensor* _result)
@@ -1503,25 +1503,25 @@ _th_lgamma_out_tt _result _self =
   }|]
 
 _th_lgamma_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_lgamma_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lgamma(
     *$(at::Tensor* _self)));
   }|]
 
 _th_lgamma__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_lgamma__t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_lgamma_(
     *$(at::Tensor* _self)));
   }|]
 
 _th_digamma_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_digamma_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_digamma_out(
     *$(at::Tensor* _result)
@@ -1529,26 +1529,26 @@ _th_digamma_out_tt _result _self =
   }|]
 
 _th_digamma_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_digamma_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_digamma(
     *$(at::Tensor* _self)));
   }|]
 
 _th_digamma__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_digamma__t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_digamma_(
     *$(at::Tensor* _self)));
   }|]
 
 _th_polygamma_out_tlt
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_polygamma_out_tlt _result _n _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_polygamma_out(
     *$(at::Tensor* _result)
@@ -1558,8 +1558,8 @@ _th_polygamma_out_tlt _result _n _self =
 
 _th_polygamma_lt
   :: Int64
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_polygamma_lt _n _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_polygamma(
     $(int64_t _n)
@@ -1567,9 +1567,9 @@ _th_polygamma_lt _n _self =
   }|]
 
 _th_polygamma__tl
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_polygamma__tl _self _n =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_polygamma_(
     *$(at::Tensor* _self)
@@ -1577,9 +1577,9 @@ _th_polygamma__tl _self _n =
   }|]
 
 _th_exp_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_exp_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_exp_out(
     *$(at::Tensor* _result)
@@ -1587,17 +1587,17 @@ _th_exp_out_tt _result _self =
   }|]
 
 _th_exp_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_exp_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_exp(
     *$(at::Tensor* _self)));
   }|]
 
 _th_expm1_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_expm1_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_expm1_out(
     *$(at::Tensor* _result)
@@ -1605,17 +1605,17 @@ _th_expm1_out_tt _result _self =
   }|]
 
 _th_expm1_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_expm1_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_expm1(
     *$(at::Tensor* _self)));
   }|]
 
 _th_cos_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_cos_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cos_out(
     *$(at::Tensor* _result)
@@ -1623,17 +1623,17 @@ _th_cos_out_tt _result _self =
   }|]
 
 _th_cos_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_cos_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cos(
     *$(at::Tensor* _self)));
   }|]
 
 _th_acos_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_acos_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_acos_out(
     *$(at::Tensor* _result)
@@ -1641,17 +1641,17 @@ _th_acos_out_tt _result _self =
   }|]
 
 _th_acos_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_acos_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_acos(
     *$(at::Tensor* _self)));
   }|]
 
 _th_cosh_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_cosh_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cosh_out(
     *$(at::Tensor* _result)
@@ -1659,17 +1659,17 @@ _th_cosh_out_tt _result _self =
   }|]
 
 _th_cosh_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_cosh_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cosh(
     *$(at::Tensor* _self)));
   }|]
 
 _th_sin_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sin_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sin_out(
     *$(at::Tensor* _result)
@@ -1677,17 +1677,17 @@ _th_sin_out_tt _result _self =
   }|]
 
 _th_sin_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sin_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sin(
     *$(at::Tensor* _self)));
   }|]
 
 _th_asin_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_asin_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_asin_out(
     *$(at::Tensor* _result)
@@ -1695,17 +1695,17 @@ _th_asin_out_tt _result _self =
   }|]
 
 _th_asin_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_asin_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_asin(
     *$(at::Tensor* _self)));
   }|]
 
 _th_sinh_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sinh_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sinh_out(
     *$(at::Tensor* _result)
@@ -1713,17 +1713,17 @@ _th_sinh_out_tt _result _self =
   }|]
 
 _th_sinh_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sinh_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sinh(
     *$(at::Tensor* _self)));
   }|]
 
 _th_tan_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_tan_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_tan_out(
     *$(at::Tensor* _result)
@@ -1731,17 +1731,17 @@ _th_tan_out_tt _result _self =
   }|]
 
 _th_tan_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_tan_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_tan(
     *$(at::Tensor* _self)));
   }|]
 
 _th_atan_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_atan_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_atan_out(
     *$(at::Tensor* _result)
@@ -1749,17 +1749,17 @@ _th_atan_out_tt _result _self =
   }|]
 
 _th_atan_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_atan_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_atan(
     *$(at::Tensor* _self)));
   }|]
 
 _th_tanh_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_tanh_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_tanh_out(
     *$(at::Tensor* _result)
@@ -1767,17 +1767,17 @@ _th_tanh_out_tt _result _self =
   }|]
 
 _th_tanh_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_tanh_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_tanh(
     *$(at::Tensor* _self)));
   }|]
 
 _th_erf_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_erf_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_erf_out(
     *$(at::Tensor* _result)
@@ -1785,17 +1785,17 @@ _th_erf_out_tt _result _self =
   }|]
 
 _th_erf_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_erf_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_erf(
     *$(at::Tensor* _self)));
   }|]
 
 _th_erfc_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_erfc_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_erfc_out(
     *$(at::Tensor* _result)
@@ -1803,25 +1803,25 @@ _th_erfc_out_tt _result _self =
   }|]
 
 _th_erfc_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_erfc_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_erfc(
     *$(at::Tensor* _self)));
   }|]
 
 _th_erfinv__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_erfinv__t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_erfinv_(
     *$(at::Tensor* _self)));
   }|]
 
 _th_erfinv_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_erfinv_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_erfinv_out(
     *$(at::Tensor* _result)
@@ -1829,17 +1829,17 @@ _th_erfinv_out_tt _result _self =
   }|]
 
 _th_erfinv_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_erfinv_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_erfinv(
     *$(at::Tensor* _self)));
   }|]
 
 _th_sqrt_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sqrt_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sqrt_out(
     *$(at::Tensor* _result)
@@ -1847,17 +1847,17 @@ _th_sqrt_out_tt _result _self =
   }|]
 
 _th_sqrt_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sqrt_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sqrt(
     *$(at::Tensor* _self)));
   }|]
 
 _th_rsqrt_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_rsqrt_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_rsqrt_out(
     *$(at::Tensor* _result)
@@ -1865,17 +1865,17 @@ _th_rsqrt_out_tt _result _self =
   }|]
 
 _th_rsqrt_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_rsqrt_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_rsqrt(
     *$(at::Tensor* _self)));
   }|]
 
 _th_ceil_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ceil_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ceil_out(
     *$(at::Tensor* _result)
@@ -1883,17 +1883,17 @@ _th_ceil_out_tt _result _self =
   }|]
 
 _th_ceil_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ceil_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ceil(
     *$(at::Tensor* _self)));
   }|]
 
 _th_floor_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_floor_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_floor_out(
     *$(at::Tensor* _result)
@@ -1901,17 +1901,17 @@ _th_floor_out_tt _result _self =
   }|]
 
 _th_floor_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_floor_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_floor(
     *$(at::Tensor* _self)));
   }|]
 
 _th_round_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_round_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_round_out(
     *$(at::Tensor* _result)
@@ -1919,17 +1919,17 @@ _th_round_out_tt _result _self =
   }|]
 
 _th_round_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_round_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_round(
     *$(at::Tensor* _self)));
   }|]
 
 _th_trunc_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_trunc_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_trunc_out(
     *$(at::Tensor* _result)
@@ -1937,25 +1937,25 @@ _th_trunc_out_tt _result _self =
   }|]
 
 _th_trunc_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_trunc_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_trunc(
     *$(at::Tensor* _self)));
   }|]
 
 _th_frac__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_frac__t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_frac_(
     *$(at::Tensor* _self)));
   }|]
 
 _th_frac_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_frac_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_frac_out(
     *$(at::Tensor* _result)
@@ -1963,20 +1963,20 @@ _th_frac_out_tt _result _self =
   }|]
 
 _th_frac_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_frac_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_frac(
     *$(at::Tensor* _self)));
   }|]
 
 _th_var_out_ttlbb
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> CBool
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_var_out_ttlbb _result _self _dim _unbiased _keepdim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_var_out(
     *$(at::Tensor* _result)
@@ -1987,11 +1987,11 @@ _th_var_out_ttlbb _result _self _dim _unbiased _keepdim =
   }|]
 
 _th_var_tlbb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> CBool
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_var_tlbb _self _dim _unbiased _keepdim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_var(
     *$(at::Tensor* _self)
@@ -2001,9 +2001,9 @@ _th_var_tlbb _self _dim _unbiased _keepdim =
   }|]
 
 _th_var_tb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_var_tb _self _unbiased =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_var(
     *$(at::Tensor* _self)
@@ -2011,12 +2011,12 @@ _th_var_tb _self _unbiased =
   }|]
 
 _th_std_out_ttlbb
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> CBool
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_std_out_ttlbb _result _self _dim _unbiased _keepdim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_std_out(
     *$(at::Tensor* _result)
@@ -2027,11 +2027,11 @@ _th_std_out_ttlbb _result _self _dim _unbiased _keepdim =
   }|]
 
 _th_std_tlbb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> CBool
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_std_tlbb _self _dim _unbiased _keepdim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_std(
     *$(at::Tensor* _self)
@@ -2041,9 +2041,9 @@ _th_std_tlbb _self _dim _unbiased _keepdim =
   }|]
 
 _th_std_tb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_std_tb _self _unbiased =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_std(
     *$(at::Tensor* _self)
@@ -2051,12 +2051,12 @@ _th_std_tb _self _unbiased =
   }|]
 
 _th_renorm_out_ttsls
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
   -> Int64
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_renorm_out_ttsls _result _self _p _dim _maxnorm =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_renorm_out(
     *$(at::Tensor* _result)
@@ -2067,11 +2067,11 @@ _th_renorm_out_ttsls _result _self _p _dim _maxnorm =
   }|]
 
 _th_renorm_tsls
-  :: Ptr Tensor
-  -> Ptr Scalar
+  :: Ptr RawTensor
+  -> Ptr RawScalar
   -> Int64
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_renorm_tsls _self _p _dim _maxnorm =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_renorm(
     *$(at::Tensor* _self)
@@ -2081,11 +2081,11 @@ _th_renorm_tsls _self _p _dim _maxnorm =
   }|]
 
 _th_renorm__tsls
-  :: Ptr Tensor
-  -> Ptr Scalar
+  :: Ptr RawTensor
+  -> Ptr RawScalar
   -> Int64
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_renorm__tsls _self _p _dim _maxnorm =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_renorm_(
     *$(at::Tensor* _self)
@@ -2095,10 +2095,10 @@ _th_renorm__tsls _self _p _dim _maxnorm =
   }|]
 
 _th_dist_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_dist_tts _self _other _p =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_dist(
     *$(at::Tensor* _self)
@@ -2107,9 +2107,9 @@ _th_dist_tts _self _other _p =
   }|]
 
 _th_reciprocal_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_reciprocal_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_reciprocal_out(
     *$(at::Tensor* _result)
@@ -2117,25 +2117,25 @@ _th_reciprocal_out_tt _result _self =
   }|]
 
 _th_reciprocal_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_reciprocal_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_reciprocal(
     *$(at::Tensor* _self)));
   }|]
 
 _th_reciprocal__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_reciprocal__t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_reciprocal_(
     *$(at::Tensor* _self)));
   }|]
 
 _th_neg_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_neg_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_neg_out(
     *$(at::Tensor* _result)
@@ -2143,26 +2143,26 @@ _th_neg_out_tt _result _self =
   }|]
 
 _th_neg_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_neg_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_neg(
     *$(at::Tensor* _self)));
   }|]
 
 _th_neg__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_neg__t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_neg_(
     *$(at::Tensor* _self)));
   }|]
 
 _th_atan2_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_atan2_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_atan2_out(
     *$(at::Tensor* _result)
@@ -2171,9 +2171,9 @@ _th_atan2_out_ttt _result _self _other =
   }|]
 
 _th_atan2_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_atan2_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_atan2(
     *$(at::Tensor* _self)
@@ -2181,9 +2181,9 @@ _th_atan2_tt _self _other =
   }|]
 
 _th_atan2__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_atan2__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_atan2_(
     *$(at::Tensor* _self)
@@ -2191,10 +2191,10 @@ _th_atan2__tt _self _other =
   }|]
 
 _th_pow_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_pow_out_tts _result _self _exponent =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_pow_out(
     *$(at::Tensor* _result)
@@ -2203,9 +2203,9 @@ _th_pow_out_tts _result _self _exponent =
   }|]
 
 _th_pow_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_pow_ts _self _exponent =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_pow(
     *$(at::Tensor* _self)
@@ -2213,10 +2213,10 @@ _th_pow_ts _self _exponent =
   }|]
 
 _th_pow_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_pow_out_ttt _result _self _exponent =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_pow_out(
     *$(at::Tensor* _result)
@@ -2225,9 +2225,9 @@ _th_pow_out_ttt _result _self _exponent =
   }|]
 
 _th_pow_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_pow_tt _self _exponent =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_pow(
     *$(at::Tensor* _self)
@@ -2235,10 +2235,10 @@ _th_pow_tt _self _exponent =
   }|]
 
 _th_pow_out_tst
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_pow_out_tst _result _self _exponent =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_pow_out(
     *$(at::Tensor* _result)
@@ -2247,9 +2247,9 @@ _th_pow_out_tst _result _self _exponent =
   }|]
 
 _th_pow_st
-  :: Ptr Scalar
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawScalar
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_pow_st _self _exponent =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_pow(
     *$(at::Scalar* _self)
@@ -2257,9 +2257,9 @@ _th_pow_st _self _exponent =
   }|]
 
 _th_pow__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_pow__ts _self _exponent =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_pow_(
     *$(at::Tensor* _self)
@@ -2267,9 +2267,9 @@ _th_pow__ts _self _exponent =
   }|]
 
 _th_pow__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_pow__tt _self _exponent =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_pow_(
     *$(at::Tensor* _self)
@@ -2277,12 +2277,12 @@ _th_pow__tt _self _exponent =
   }|]
 
 _th_histc_out_ttlss
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_histc_out_ttlss _result _self _bins _min _max =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_histc_out(
     *$(at::Tensor* _result)
@@ -2293,11 +2293,11 @@ _th_histc_out_ttlss _result _self _bins _min _max =
   }|]
 
 _th_histc_tlss
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_histc_tlss _self _bins _min _max =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_histc(
     *$(at::Tensor* _self)
@@ -2307,18 +2307,18 @@ _th_histc_tlss _self _bins _min _max =
   }|]
 
 _th_zero__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_zero__t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_zero_(
     *$(at::Tensor* _self)));
   }|]
 
 _th_cumsum_out_ttl
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_cumsum_out_ttl _result _self _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cumsum_out(
     *$(at::Tensor* _result)
@@ -2327,9 +2327,9 @@ _th_cumsum_out_ttl _result _self _dim =
   }|]
 
 _th_cumsum_tl
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_cumsum_tl _self _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cumsum(
     *$(at::Tensor* _self)
@@ -2337,10 +2337,10 @@ _th_cumsum_tl _self _dim =
   }|]
 
 _th_cumprod_out_ttl
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_cumprod_out_ttl _result _self _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cumprod_out(
     *$(at::Tensor* _result)
@@ -2349,9 +2349,9 @@ _th_cumprod_out_ttl _result _self _dim =
   }|]
 
 _th_cumprod_tl
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_cumprod_tl _self _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cumprod(
     *$(at::Tensor* _self)
@@ -2359,9 +2359,9 @@ _th_cumprod_tl _self _dim =
   }|]
 
 _th_sign_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sign_out_tt _result _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sign_out(
     *$(at::Tensor* _result)
@@ -2369,34 +2369,34 @@ _th_sign_out_tt _result _self =
   }|]
 
 _th_sign_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sign_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sign(
     *$(at::Tensor* _self)));
   }|]
 
 _th_sign__t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_sign__t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_sign_(
     *$(at::Tensor* _self)));
   }|]
 
 _th_trace_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_trace_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_trace(
     *$(at::Tensor* _self)));
   }|]
 
 _th_fmod_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_fmod_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_fmod_out(
     *$(at::Tensor* _result)
@@ -2405,9 +2405,9 @@ _th_fmod_out_tts _result _self _other =
   }|]
 
 _th_fmod_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_fmod_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_fmod(
     *$(at::Tensor* _self)
@@ -2415,10 +2415,10 @@ _th_fmod_ts _self _other =
   }|]
 
 _th_fmod_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_fmod_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_fmod_out(
     *$(at::Tensor* _result)
@@ -2427,9 +2427,9 @@ _th_fmod_out_ttt _result _self _other =
   }|]
 
 _th_fmod_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_fmod_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_fmod(
     *$(at::Tensor* _self)
@@ -2437,9 +2437,9 @@ _th_fmod_tt _self _other =
   }|]
 
 _th_fmod__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_fmod__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_fmod_(
     *$(at::Tensor* _self)
@@ -2447,9 +2447,9 @@ _th_fmod__ts _self _other =
   }|]
 
 _th_fmod__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_fmod__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_fmod_(
     *$(at::Tensor* _self)
@@ -2457,10 +2457,10 @@ _th_fmod__tt _self _other =
   }|]
 
 _th_remainder_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_remainder_out_tts _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_remainder_out(
     *$(at::Tensor* _result)
@@ -2469,9 +2469,9 @@ _th_remainder_out_tts _result _self _other =
   }|]
 
 _th_remainder_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_remainder_ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_remainder(
     *$(at::Tensor* _self)
@@ -2479,10 +2479,10 @@ _th_remainder_ts _self _other =
   }|]
 
 _th_remainder_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_remainder_out_ttt _result _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_remainder_out(
     *$(at::Tensor* _result)
@@ -2491,9 +2491,9 @@ _th_remainder_out_ttt _result _self _other =
   }|]
 
 _th_remainder_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_remainder_tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_remainder(
     *$(at::Tensor* _self)
@@ -2501,9 +2501,9 @@ _th_remainder_tt _self _other =
   }|]
 
 _th_remainder__ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_remainder__ts _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_remainder_(
     *$(at::Tensor* _self)
@@ -2511,9 +2511,9 @@ _th_remainder__ts _self _other =
   }|]
 
 _th_remainder__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_remainder__tt _self _other =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_remainder_(
     *$(at::Tensor* _self)
@@ -2521,11 +2521,11 @@ _th_remainder__tt _self _other =
   }|]
 
 _th_clamp_out_ttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_clamp_out_ttss _result _self _min _max =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_clamp_out(
     *$(at::Tensor* _result)
@@ -2535,10 +2535,10 @@ _th_clamp_out_ttss _result _self _min _max =
   }|]
 
 _th_clamp_tss
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_clamp_tss _self _min _max =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_clamp(
     *$(at::Tensor* _self)
@@ -2547,10 +2547,10 @@ _th_clamp_tss _self _min _max =
   }|]
 
 _th_clamp_min_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_clamp_min_out_tts _result _self _min =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_clamp_min_out(
     *$(at::Tensor* _result)
@@ -2559,9 +2559,9 @@ _th_clamp_min_out_tts _result _self _min =
   }|]
 
 _th_clamp_min_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_clamp_min_ts _self _min =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_clamp_min(
     *$(at::Tensor* _self)
@@ -2569,10 +2569,10 @@ _th_clamp_min_ts _self _min =
   }|]
 
 _th_clamp_max_out_tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_clamp_max_out_tts _result _self _max =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_clamp_max_out(
     *$(at::Tensor* _result)
@@ -2581,9 +2581,9 @@ _th_clamp_max_out_tts _result _self _max =
   }|]
 
 _th_clamp_max_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_clamp_max_ts _self _max =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_clamp_max(
     *$(at::Tensor* _self)
@@ -2591,9 +2591,9 @@ _th_clamp_max_ts _self _max =
   }|]
 
 _th_dot_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_dot_tt _self _tensor =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_dot(
     *$(at::Tensor* _self)
@@ -2601,11 +2601,11 @@ _th_dot_tt _self _tensor =
   }|]
 
 _th_cross_out_tttl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_cross_out_tttl _result _self _other _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cross_out(
     *$(at::Tensor* _result)
@@ -2615,10 +2615,10 @@ _th_cross_out_tttl _result _self _other _dim =
   }|]
 
 _th_cross_ttl
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_cross_ttl _self _other _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cross(
     *$(at::Tensor* _self)
@@ -2627,10 +2627,10 @@ _th_cross_ttl _self _other _dim =
   }|]
 
 _th_diag_out_ttl
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_diag_out_ttl _result _self _diagonal =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_diag_out(
     *$(at::Tensor* _result)
@@ -2639,9 +2639,9 @@ _th_diag_out_ttl _result _self _diagonal =
   }|]
 
 _th_diag_tl
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_diag_tl _self _diagonal =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_diag(
     *$(at::Tensor* _self)
@@ -2649,13 +2649,13 @@ _th_diag_tl _self _diagonal =
   }|]
 
 _th_addmm_out_ttttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addmm_out_ttttss _result _self _mat1 _mat2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addmm_out(
     *$(at::Tensor* _result)
@@ -2667,12 +2667,12 @@ _th_addmm_out_ttttss _result _self _mat1 _mat2 _beta _alpha =
   }|]
 
 _th_addmm_tttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addmm_tttss _self _mat1 _mat2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addmm(
     *$(at::Tensor* _self)
@@ -2683,12 +2683,12 @@ _th_addmm_tttss _self _mat1 _mat2 _beta _alpha =
   }|]
 
 _th_addmm__tttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addmm__tttss _self _mat1 _mat2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addmm_(
     *$(at::Tensor* _self)
@@ -2699,13 +2699,13 @@ _th_addmm__tttss _self _mat1 _mat2 _beta _alpha =
   }|]
 
 _th_addmv_out_ttttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addmv_out_ttttss _result _self _mat _vec _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addmv_out(
     *$(at::Tensor* _result)
@@ -2717,12 +2717,12 @@ _th_addmv_out_ttttss _result _self _mat _vec _beta _alpha =
   }|]
 
 _th_addmv_tttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addmv_tttss _self _mat _vec _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addmv(
     *$(at::Tensor* _self)
@@ -2733,12 +2733,12 @@ _th_addmv_tttss _self _mat _vec _beta _alpha =
   }|]
 
 _th_addmv__tttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addmv__tttss _self _mat _vec _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addmv_(
     *$(at::Tensor* _self)
@@ -2749,13 +2749,13 @@ _th_addmv__tttss _self _mat _vec _beta _alpha =
   }|]
 
 _th_addr_out_ttttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addr_out_ttttss _result _self _vec1 _vec2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addr_out(
     *$(at::Tensor* _result)
@@ -2767,12 +2767,12 @@ _th_addr_out_ttttss _result _self _vec1 _vec2 _beta _alpha =
   }|]
 
 _th_addr_tttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addr_tttss _self _vec1 _vec2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addr(
     *$(at::Tensor* _self)
@@ -2783,12 +2783,12 @@ _th_addr_tttss _self _vec1 _vec2 _beta _alpha =
   }|]
 
 _th_addr__tttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addr__tttss _self _vec1 _vec2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addr_(
     *$(at::Tensor* _self)
@@ -2799,10 +2799,10 @@ _th_addr__tttss _self _vec1 _vec2 _beta _alpha =
   }|]
 
 _th_ger_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ger_out_ttt _result _self _vec2 =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ger_out(
     *$(at::Tensor* _result)
@@ -2811,9 +2811,9 @@ _th_ger_out_ttt _result _self _vec2 =
   }|]
 
 _th_ger_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_ger_tt _self _vec2 =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ger(
     *$(at::Tensor* _self)
@@ -2821,10 +2821,10 @@ _th_ger_tt _self _vec2 =
   }|]
 
 _th_mv_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_mv_out_ttt _result _self _vec =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_mv_out(
     *$(at::Tensor* _result)
@@ -2833,9 +2833,9 @@ _th_mv_out_ttt _result _self _vec =
   }|]
 
 _th_mv_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_mv_tt _self _vec =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_mv(
     *$(at::Tensor* _self)
@@ -2843,10 +2843,10 @@ _th_mv_tt _self _vec =
   }|]
 
 _th_mm_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_mm_out_ttt _result _self _mat2 =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_mm_out(
     *$(at::Tensor* _result)
@@ -2855,9 +2855,9 @@ _th_mm_out_ttt _result _self _mat2 =
   }|]
 
 _th_mm_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_mm_tt _self _mat2 =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_mm(
     *$(at::Tensor* _self)
@@ -2865,10 +2865,10 @@ _th_mm_tt _self _mat2 =
   }|]
 
 _th_bmm_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_bmm_out_ttt _result _self _mat2 =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_bmm_out(
     *$(at::Tensor* _result)
@@ -2877,9 +2877,9 @@ _th_bmm_out_ttt _result _self _mat2 =
   }|]
 
 _th_bmm_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_bmm_tt _self _mat2 =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_bmm(
     *$(at::Tensor* _self)
@@ -2887,13 +2887,13 @@ _th_bmm_tt _self _mat2 =
   }|]
 
 _th_addbmm_out_ttttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addbmm_out_ttttss _result _self _batch1 _batch2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addbmm_out(
     *$(at::Tensor* _result)
@@ -2905,12 +2905,12 @@ _th_addbmm_out_ttttss _result _self _batch1 _batch2 _beta _alpha =
   }|]
 
 _th_addbmm_tttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addbmm_tttss _self _batch1 _batch2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addbmm(
     *$(at::Tensor* _self)
@@ -2921,12 +2921,12 @@ _th_addbmm_tttss _self _batch1 _batch2 _beta _alpha =
   }|]
 
 _th_addbmm__tttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addbmm__tttss _self _batch1 _batch2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addbmm_(
     *$(at::Tensor* _self)
@@ -2937,13 +2937,13 @@ _th_addbmm__tttss _self _batch1 _batch2 _beta _alpha =
   }|]
 
 _th_baddbmm_out_ttttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_baddbmm_out_ttttss _result _self _batch1 _batch2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_baddbmm_out(
     *$(at::Tensor* _result)
@@ -2955,12 +2955,12 @@ _th_baddbmm_out_ttttss _result _self _batch1 _batch2 _beta _alpha =
   }|]
 
 _th_baddbmm_tttss
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_baddbmm_tttss _self _batch1 _batch2 _beta _alpha =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_baddbmm(
     *$(at::Tensor* _self)
@@ -2971,12 +2971,12 @@ _th_baddbmm_tttss _self _batch1 _batch2 _beta _alpha =
   }|]
 
 _th_addcmul_out_tttts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addcmul_out_tttts _result _self _tensor1 _tensor2 _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addcmul_out(
     *$(at::Tensor* _result)
@@ -2987,11 +2987,11 @@ _th_addcmul_out_tttts _result _self _tensor1 _tensor2 _value =
   }|]
 
 _th_addcmul_ttts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addcmul_ttts _self _tensor1 _tensor2 _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addcmul(
     *$(at::Tensor* _self)
@@ -3001,11 +3001,11 @@ _th_addcmul_ttts _self _tensor1 _tensor2 _value =
   }|]
 
 _th_addcmul__ttts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addcmul__ttts _self _tensor1 _tensor2 _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addcmul_(
     *$(at::Tensor* _self)
@@ -3015,12 +3015,12 @@ _th_addcmul__ttts _self _tensor1 _tensor2 _value =
   }|]
 
 _th_addcdiv_out_tttts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addcdiv_out_tttts _result _self _tensor1 _tensor2 _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addcdiv_out(
     *$(at::Tensor* _result)
@@ -3031,11 +3031,11 @@ _th_addcdiv_out_tttts _result _self _tensor1 _tensor2 _value =
   }|]
 
 _th_addcdiv_ttts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addcdiv_ttts _self _tensor1 _tensor2 _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addcdiv(
     *$(at::Tensor* _self)
@@ -3045,11 +3045,11 @@ _th_addcdiv_ttts _self _tensor1 _tensor2 _value =
   }|]
 
 _th_addcdiv__ttts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawScalar
+  -> IO (Ptr RawTensor)
 _th_addcdiv__ttts _self _tensor1 _tensor2 _value =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_addcdiv_(
     *$(at::Tensor* _self)
@@ -3059,11 +3059,11 @@ _th_addcdiv__ttts _self _tensor1 _tensor2 _value =
   }|]
 
 _th_gels_out_tttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_gels_out_tttt _res1 _res2 _self _A =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_gels_out(
     *$(at::Tensor* _res1)
@@ -3073,9 +3073,9 @@ _th_gels_out_tttt _res1 _res2 _self _A =
   }|]
 
 _th_gels_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_gels_tt _self _A =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_gels(
     *$(at::Tensor* _self)
@@ -3083,14 +3083,14 @@ _th_gels_tt _self _A =
   }|]
 
 _th_trtrs_out_ttttbbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_trtrs_out_ttttbbb _res1 _res2 _self _A _upper _transpose _unitriangular =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_trtrs_out(
     *$(at::Tensor* _res1)
@@ -3103,12 +3103,12 @@ _th_trtrs_out_ttttbbb _res1 _res2 _self _A _upper _transpose _unitriangular =
   }|]
 
 _th_trtrs_ttbbb
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_trtrs_ttbbb _self _A _upper _transpose _unitriangular =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_trtrs(
     *$(at::Tensor* _self)
@@ -3119,12 +3119,12 @@ _th_trtrs_ttbbb _self _A _upper _transpose _unitriangular =
   }|]
 
 _th_symeig_out_tttbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_symeig_out_tttbb _res1 _res2 _self _eigenvectors _upper =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_symeig_out(
     *$(at::Tensor* _res1)
@@ -3135,10 +3135,10 @@ _th_symeig_out_tttbb _res1 _res2 _self _eigenvectors _upper =
   }|]
 
 _th_symeig_tbb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_symeig_tbb _self _eigenvectors _upper =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_symeig(
     *$(at::Tensor* _self)
@@ -3147,11 +3147,11 @@ _th_symeig_tbb _self _eigenvectors _upper =
   }|]
 
 _th_eig_out_tttb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_eig_out_tttb _res1 _res2 _self _eigenvectors =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_eig_out(
     *$(at::Tensor* _res1)
@@ -3161,9 +3161,9 @@ _th_eig_out_tttb _res1 _res2 _self _eigenvectors =
   }|]
 
 _th_eig_tb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_eig_tb _self _eigenvectors =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_eig(
     *$(at::Tensor* _self)
@@ -3171,13 +3171,13 @@ _th_eig_tb _self _eigenvectors =
   }|]
 
 _th_svd_out_ttttbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor,RawTensor))
 _th_svd_out_ttttbb _res1 _res2 _res3 _self _some _compute_uv =
   [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_th_svd_out(
     *$(at::Tensor* _res1)
@@ -3189,10 +3189,10 @@ _th_svd_out_ttttbb _res1 _res2 _res3 _self _some _compute_uv =
   }|]
 
 _th_svd_tbb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor,Tensor))
+  -> IO (Ptr (RawTensor,RawTensor,RawTensor))
 _th_svd_tbb _self _some _compute_uv =
   [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_th_svd(
     *$(at::Tensor* _self)
@@ -3201,9 +3201,9 @@ _th_svd_tbb _self _some _compute_uv =
   }|]
 
 _th_getri_single_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_getri_single_out_tt _output _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_getri_single_out(
     *$(at::Tensor* _output)
@@ -3211,18 +3211,18 @@ _th_getri_single_out_tt _output _self =
   }|]
 
 _th_getri_single_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_getri_single_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_getri_single(
     *$(at::Tensor* _self)));
   }|]
 
 _th_potri_out_ttb
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_potri_out_ttb _output _self _upper =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_potri_out(
     *$(at::Tensor* _output)
@@ -3231,9 +3231,9 @@ _th_potri_out_ttb _output _self _upper =
   }|]
 
 _th_potri_tb
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_potri_tb _self _upper =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_potri(
     *$(at::Tensor* _self)
@@ -3241,12 +3241,12 @@ _th_potri_tb _self _upper =
   }|]
 
 _th_pstrf_out_tttbs
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
-  -> Ptr Scalar
-  -> IO (Ptr (Tensor,Tensor))
+  -> Ptr RawScalar
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_pstrf_out_tttbs _res1 _res2 _self _upper _tol =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_pstrf_out(
     *$(at::Tensor* _res1)
@@ -3257,10 +3257,10 @@ _th_pstrf_out_tttbs _res1 _res2 _self _upper _tol =
   }|]
 
 _th_pstrf_tbs
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CBool
-  -> Ptr Scalar
-  -> IO (Ptr (Tensor,Tensor))
+  -> Ptr RawScalar
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_pstrf_tbs _self _upper _tol =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_pstrf(
     *$(at::Tensor* _self)
@@ -3269,10 +3269,10 @@ _th_pstrf_tbs _self _upper _tol =
   }|]
 
 _th_qr_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_qr_out_ttt _res1 _res2 _self =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_qr_out(
     *$(at::Tensor* _res1)
@@ -3281,18 +3281,18 @@ _th_qr_out_ttt _res1 _res2 _self =
   }|]
 
 _th_qr_t
-  :: Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  :: Ptr RawTensor
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_qr_t _self =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_qr(
     *$(at::Tensor* _self)));
   }|]
 
 _th_geqrf_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_geqrf_out_ttt _res1 _res2 _self =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_geqrf_out(
     *$(at::Tensor* _res1)
@@ -3301,18 +3301,18 @@ _th_geqrf_out_ttt _res1 _res2 _self =
   }|]
 
 _th_geqrf_t
-  :: Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  :: Ptr RawTensor
+  -> IO (Ptr (RawTensor,RawTensor))
 _th_geqrf_t _self =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_th_geqrf(
     *$(at::Tensor* _self)));
   }|]
 
 _th_orgqr_out_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_orgqr_out_ttt _result _self _input2 =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_orgqr_out(
     *$(at::Tensor* _result)
@@ -3321,9 +3321,9 @@ _th_orgqr_out_ttt _result _self _input2 =
   }|]
 
 _th_orgqr_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_orgqr_tt _self _input2 =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_orgqr(
     *$(at::Tensor* _self)
@@ -3331,13 +3331,13 @@ _th_orgqr_tt _self _input2 =
   }|]
 
 _th_ormqr_out_ttttbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_ormqr_out_ttttbb _result _self _input2 _input3 _left _transpose =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ormqr_out(
     *$(at::Tensor* _result)
@@ -3349,12 +3349,12 @@ _th_ormqr_out_ttttbb _result _self _input2 _input3 _left _transpose =
   }|]
 
 _th_ormqr_tttbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> CBool
   -> CBool
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_ormqr_tttbb _self _input2 _input3 _left _transpose =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_ormqr(
     *$(at::Tensor* _self)
@@ -3365,11 +3365,11 @@ _th_ormqr_tttbb _self _input2 _input3 _left _transpose =
   }|]
 
 _th_btrisolve_out_tttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_btrisolve_out_tttt _result _self _LU_data _LU_pivots =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_btrisolve_out(
     *$(at::Tensor* _result)
@@ -3379,10 +3379,10 @@ _th_btrisolve_out_tttt _result _self _LU_data _LU_pivots =
   }|]
 
 _th_btrisolve_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_btrisolve_ttt _self _LU_data _LU_pivots =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_btrisolve(
     *$(at::Tensor* _self)
@@ -3391,11 +3391,11 @@ _th_btrisolve_ttt _self _LU_data _LU_pivots =
   }|]
 
 _th_random__tllp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> Int64
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_random__tllp _self _from _to _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_random_(
     *$(at::Tensor* _self)
@@ -3405,10 +3405,10 @@ _th_random__tllp _self _from _to _generator =
   }|]
 
 _th_random__tlp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_random__tlp _self _to _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_random_(
     *$(at::Tensor* _self)
@@ -3417,9 +3417,9 @@ _th_random__tlp _self _to _generator =
   }|]
 
 _th_random__tp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_random__tp _self _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_random_(
     *$(at::Tensor* _self)
@@ -3427,12 +3427,12 @@ _th_random__tp _self _generator =
   }|]
 
 _th_multinomial_out_ttlbp
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Int64
   -> CBool
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_multinomial_out_ttlbp _result _self _num_samples _replacement _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_multinomial_out(
     *$(at::Tensor* _result)
@@ -3443,11 +3443,11 @@ _th_multinomial_out_ttlbp _result _self _num_samples _replacement _generator =
   }|]
 
 _th_multinomial_tlbp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> Int64
   -> CBool
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_multinomial_tlbp _self _num_samples _replacement _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_multinomial(
     *$(at::Tensor* _self)
@@ -3457,11 +3457,11 @@ _th_multinomial_tlbp _self _num_samples _replacement _generator =
   }|]
 
 _th_uniform__tddp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CDouble
   -> CDouble
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_uniform__tddp _self _from _to _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_uniform_(
     *$(at::Tensor* _self)
@@ -3471,11 +3471,11 @@ _th_uniform__tddp _self _from _to _generator =
   }|]
 
 _th_normal_out_ttdp
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> CDouble
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_normal_out_ttdp _output _mean _std _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_normal_out(
     *$(at::Tensor* _output)
@@ -3485,10 +3485,10 @@ _th_normal_out_ttdp _output _mean _std _generator =
   }|]
 
 _th_normal_tdp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CDouble
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_normal_tdp _mean _std _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_normal(
     *$(at::Tensor* _mean)
@@ -3497,11 +3497,11 @@ _th_normal_tdp _mean _std _generator =
   }|]
 
 _th_normal_out_tdtp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CDouble
-  -> Ptr Tensor
+  -> Ptr RawTensor
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_normal_out_tdtp _output _mean _std _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_normal_out(
     *$(at::Tensor* _output)
@@ -3512,9 +3512,9 @@ _th_normal_out_tdtp _output _mean _std _generator =
 
 _th_normal_dtp
   :: CDouble
-  -> Ptr Tensor
+  -> Ptr RawTensor
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_normal_dtp _mean _std _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_normal(
     $(double _mean)
@@ -3523,11 +3523,11 @@ _th_normal_dtp _mean _std _generator =
   }|]
 
 _th_normal_out_tttp
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_normal_out_tttp _output _mean _std _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_normal_out(
     *$(at::Tensor* _output)
@@ -3537,10 +3537,10 @@ _th_normal_out_tttp _output _mean _std _generator =
   }|]
 
 _th_normal_ttp
-  :: Ptr Tensor
-  -> Ptr Tensor
+  :: Ptr RawTensor
+  -> Ptr RawTensor
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_normal_ttp _mean _std _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_normal(
     *$(at::Tensor* _mean)
@@ -3549,11 +3549,11 @@ _th_normal_ttp _mean _std _generator =
   }|]
 
 _th_normal__tddp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CDouble
   -> CDouble
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_normal__tddp _self _mean _std _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_normal_(
     *$(at::Tensor* _self)
@@ -3563,11 +3563,11 @@ _th_normal__tddp _self _mean _std _generator =
   }|]
 
 _th_cauchy__tddp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CDouble
   -> CDouble
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_cauchy__tddp _self _median _sigma _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cauchy_(
     *$(at::Tensor* _self)
@@ -3577,11 +3577,11 @@ _th_cauchy__tddp _self _median _sigma _generator =
   }|]
 
 _th_log_normal__tddp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CDouble
   -> CDouble
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_log_normal__tddp _self _mean _std _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_log_normal_(
     *$(at::Tensor* _self)
@@ -3591,10 +3591,10 @@ _th_log_normal__tddp _self _mean _std _generator =
   }|]
 
 _th_exponential__tdp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CDouble
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_exponential__tdp _self _lambd _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_exponential_(
     *$(at::Tensor* _self)
@@ -3603,10 +3603,10 @@ _th_exponential__tdp _self _lambd _generator =
   }|]
 
 _th_geometric__tdp
-  :: Ptr Tensor
+  :: Ptr RawTensor
   -> CDouble
   -> Ptr Generator
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_geometric__tdp _self _p _generator =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_geometric_(
     *$(at::Tensor* _self)
@@ -3615,11 +3615,11 @@ _th_geometric__tdp _self _p _generator =
   }|]
 
 _th_dirichlet_grad_out_tttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_dirichlet_grad_out_tttt _output _x _alpha _total =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_dirichlet_grad_out(
     *$(at::Tensor* _output)
@@ -3629,10 +3629,10 @@ _th_dirichlet_grad_out_tttt _output _x _alpha _total =
   }|]
 
 _th_dirichlet_grad_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_dirichlet_grad_ttt _x _alpha _total =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_dirichlet_grad(
     *$(at::Tensor* _x)
@@ -3641,17 +3641,17 @@ _th_dirichlet_grad_ttt _x _alpha _total =
   }|]
 
 _th_alias_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_alias_t _self =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_alias(
     *$(at::Tensor* _self)));
   }|]
 
 _th_copy_ignoring_overlaps__tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
+  :: Ptr RawTensor
+  -> Ptr RawTensor
+  -> IO (Ptr RawTensor)
 _th_copy_ignoring_overlaps__tt _self _src =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_copy_ignoring_overlaps_(
     *$(at::Tensor* _self)
@@ -3659,10 +3659,10 @@ _th_copy_ignoring_overlaps__tt _self _src =
   }|]
 
 _th_cat_out_tll
-  :: Ptr Tensor
-  -> Ptr TensorList
+  :: Ptr RawTensor
+  -> Ptr RawTensorList
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_cat_out_tll _self _tensors _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cat_out(
     *$(at::Tensor* _self)
@@ -3671,9 +3671,9 @@ _th_cat_out_tll _self _tensors _dim =
   }|]
 
 _th_cat_ll
-  :: Ptr TensorList
+  :: Ptr RawTensorList
   -> Int64
-  -> IO (Ptr Tensor)
+  -> IO (Ptr RawTensor)
 _th_cat_ll _tensors _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cat(
     *$(at::TensorList* _tensors)

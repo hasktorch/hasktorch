@@ -2,7 +2,7 @@
   ForeignFunctionInterface, IncoherentInstances,
   MultiParamTypeClasses, OverlappingInstances, TemplateHaskell,
   TypeFamilies, TypeSynonymInstances #-}
-module Aten.Tensor.Implementation where
+module Aten.Type.Generator.Implementation where
 import Data.Monoid
 import Data.Word
 import Foreign.C
@@ -12,12 +12,7 @@ import Language.Haskell.TH.Syntax
 import System.IO.Unsafe
 import FFICXX.Runtime.Cast
 import FFICXX.Runtime.TH
-import Aten.Tensor.RawType
-import Aten.Tensor.FFI
-import Aten.Tensor.Interface
-import Aten.Tensor.Cast
-
-instance () => ITensor (Tensor) where
-
-newTensor :: () => IO Tensor
-newTensor = xformnull c_tensor_newtensor
+import Aten.Type.Generator.RawType
+import Aten.Type.Generator.FFI
+import Aten.Type.Generator.Interface
+import Aten.Type.Generator.Cast

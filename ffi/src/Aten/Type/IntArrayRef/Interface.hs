@@ -2,23 +2,25 @@
   FlexibleContexts, FlexibleInstances, ForeignFunctionInterface,
   MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies,
   TypeSynonymInstances #-}
-module Aten.Tensor.Interface where
+module Aten.Type.IntArrayRef.Interface where
 import Data.Word
 import Foreign.C
 import Foreign.Ptr
 import FFICXX.Runtime.Cast
-import Aten.Tensor.RawType
+import Aten.Type.IntArrayRef.RawType
 
-class () => ITensor a where
+class () => IIntArrayRef a where
 
-upcastTensor :: forall a . (FPtr a, ITensor a) => a -> Tensor
-upcastTensor h
+upcastIntArrayRef ::
+                  forall a . (FPtr a, IIntArrayRef a) => a -> IntArrayRef
+upcastIntArrayRef h
   = let fh = get_fptr h
-        fh2 :: Ptr RawTensor = castPtr fh
+        fh2 :: Ptr RawIntArrayRef = castPtr fh
       in cast_fptr_to_obj fh2
 
-downcastTensor :: forall a . (FPtr a, ITensor a) => Tensor -> a
-downcastTensor h
+downcastIntArrayRef ::
+                    forall a . (FPtr a, IIntArrayRef a) => IntArrayRef -> a
+downcastIntArrayRef h
   = let fh = get_fptr h
         fh2 = castPtr fh
       in cast_fptr_to_obj fh2

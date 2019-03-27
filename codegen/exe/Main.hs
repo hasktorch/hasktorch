@@ -47,7 +47,7 @@ programOptions =
 
 main = do
   opts <- O.execParser optsParser
-  RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RT.tensorBuilder
+  RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   pure ()
 

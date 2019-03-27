@@ -10,20 +10,84 @@ copyright:           2018 Austin Huang
 category:            Codegen
 build-type:          Simple
 cabal-version:       >=1.10
-Extra-source-files:   csrc/AtenTensor.h
-                    , csrc/AtenTensor.cpp
+Extra-source-files:    csrc/Mask.h
+                    ,  csrc/AtenGenerator.h
+                    ,  csrc/AtenIntArrayRef.h
+                    ,  csrc/AtenScalar.h
+                    ,  csrc/AtenScalarType.h
+                    ,  csrc/AtenSparseTensorRef.h
+                    ,  csrc/AtenStorage.h
+                    ,  csrc/AtenTensor.h
+                    ,  csrc/AtenTensorList.h
+                    ,  csrc/AtenTensorOptions.h
+                    ,  csrc/AtenGenerator.cpp
+                    ,  csrc/AtenScalar.cpp
+                    ,  csrc/AtenScalarType.cpp
+                    ,  csrc/AtenSparseTensorRef.cpp
+                    ,  csrc/AtenStorage.cpp
+                    ,  csrc/AtenTensor.cpp
+                    ,  csrc/AtenTensorList.cpp
+                    ,  csrc/AtenTensorOptions.cpp
 
 library
  exposed-modules:     Aten.Type
                     , Aten.NN
                     , Aten.TH
                     , Aten.Native
-                    , Aten.Tensor
-                    , Aten.Tensor.RawType
-                    , Aten.Tensor.FFI
-                    , Aten.Tensor.Interface
-                    , Aten.Tensor.Cast
-                    , Aten.Tensor.Implementation
+                    , Aten.Type.Generator
+                    , Aten.Type.Generator.Cast
+                    , Aten.Type.Generator.FFI
+                    , Aten.Type.Generator.Implementation
+                    , Aten.Type.Generator.Interface
+                    , Aten.Type.Generator.RawType
+                    , Aten.Type.IntArrayRef
+                    , Aten.Type.IntArrayRef.Cast
+                    , Aten.Type.IntArrayRef.FFI
+                    , Aten.Type.IntArrayRef.Implementation
+                    , Aten.Type.IntArrayRef.Interface
+                    , Aten.Type.IntArrayRef.RawType
+                    , Aten.Type.Scalar
+                    , Aten.Type.Scalar.Cast
+                    , Aten.Type.Scalar.FFI
+                    , Aten.Type.Scalar.Implementation
+                    , Aten.Type.Scalar.Interface
+                    , Aten.Type.Scalar.RawType
+                    , Aten.Type.ScalarType
+                    , Aten.Type.ScalarType.Cast
+                    , Aten.Type.ScalarType.FFI
+                    , Aten.Type.ScalarType.Implementation
+                    , Aten.Type.ScalarType.Interface
+                    , Aten.Type.ScalarType.RawType
+                    , Aten.Type.SparseTensorRef
+                    , Aten.Type.SparseTensorRef.Cast
+                    , Aten.Type.SparseTensorRef.FFI
+                    , Aten.Type.SparseTensorRef.Implementation
+                    , Aten.Type.SparseTensorRef.Interface
+                    , Aten.Type.SparseTensorRef.RawType
+                    , Aten.Type.Storage
+                    , Aten.Type.Storage.Cast
+                    , Aten.Type.Storage.FFI
+                    , Aten.Type.Storage.Implementation
+                    , Aten.Type.Storage.Interface
+                    , Aten.Type.Storage.RawType
+                    , Aten.Type.Tensor
+                    , Aten.Type.Tensor.Cast
+                    , Aten.Type.Tensor.FFI
+                    , Aten.Type.Tensor.Implementation
+                    , Aten.Type.Tensor.Interface
+                    , Aten.Type.Tensor.RawType
+                    , Aten.Type.TensorList
+                    , Aten.Type.TensorList.Cast
+                    , Aten.Type.TensorList.FFI
+                    , Aten.Type.TensorList.Implementation
+                    , Aten.Type.TensorList.Interface
+                    , Aten.Type.TensorList.RawType
+                    , Aten.Type.TensorOptions
+                    , Aten.Type.TensorOptions.Cast
+                    , Aten.Type.TensorOptions.FFI
+                    , Aten.Type.TensorOptions.Implementation
+                    , Aten.Type.TensorOptions.Interface
+                    , Aten.Type.TensorOptions.RawType
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
@@ -40,11 +104,30 @@ library
                     , mklml
                     , caffe2
  include-dirs:        csrc
- install-includes:    outputType.h
-                    , AtenTensor.h
- c-sources:           csrc/AtenTensor.cpp
+ install-includes:     outputType.h
+                    ,  Mask.h
+                    ,  AtenGenerator.h
+                    ,  AtenIntArrayRef.h
+                    ,  AtenScalar.h
+                    ,  AtenScalarType.h
+                    ,  AtenSparseTensorRef.h
+                    ,  AtenStorage.h
+                    ,  AtenTensor.h
+                    ,  AtenTensorList.h
+                    ,  AtenTensorOptions.h
+ c-sources:            csrc/AtenGenerator.cpp
+                    ,  csrc/AtenIntArrayRef.cpp
+                    ,  csrc/AtenScalar.cpp
+                    ,  csrc/AtenScalarType.cpp
+                    ,  csrc/AtenSparseTensorRef.cpp
+                    ,  csrc/AtenStorage.cpp
+                    ,  csrc/AtenTensor.cpp
+                    ,  csrc/AtenTensorList.cpp
+                    ,  csrc/AtenTensorOptions.cpp
  ghc-options:        -optc-D_GLIBCXX_USE_CXX11_ABI=0
 
+
+ 
 executable ffi-test
   hs-source-dirs:      example
   main-is:             CppTest.hs
