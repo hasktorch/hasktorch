@@ -11,7 +11,8 @@
 module Aten.Type
   ( RawIntArrayRef
   , RawScalar
-  , RawScalarType
+  , ScalarType
+  , DeviceType
   , RawSparseTensorRef
   , RawStorage
   , RawTensor
@@ -37,12 +38,14 @@ import Foreign
 
 import Aten.Type.IntArrayRef.RawType (RawIntArrayRef)
 import Aten.Type.Scalar.RawType (RawScalar)
-import Aten.Type.ScalarType.RawType (RawScalarType)
 import Aten.Type.SparseTensorRef.RawType (RawSparseTensorRef)
 import Aten.Type.Storage.RawType (RawStorage)
 import Aten.Type.Tensor.RawType (RawTensor)
 import Aten.Type.TensorList.RawType (RawTensorList)
 import Aten.Type.TensorOptions.RawType (RawTensorOptions)
+
+type ScalarType = Int8
+type DeviceType = Int16
 
 data TensorAVector
 data StdArray a b
@@ -56,7 +59,8 @@ typeTable = Map.fromList [
       , (C.TypeName "at::TensorOptions", [t|RawTensorOptions|])
       , (C.TypeName "at::TensorList", [t|RawTensorList|])
       , (C.TypeName "at::IntArrayRef", [t|RawIntArrayRef|])
-      , (C.TypeName "at::ScalarType", [t|RawScalarType|])
+      , (C.TypeName "at::ScalarType", [t|ScalarType|])
+      , (C.TypeName "at::DeviceType", [t|DeviceType|])
       , (C.TypeName "at::SparseTensorRef", [t|RawSparseTensorRef|])
       , (C.TypeName "at::Storage", [t|RawStorage|])
       , (C.TypeName "at::Device", [t|Device|])

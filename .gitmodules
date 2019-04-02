@@ -4,3 +4,6 @@
 [submodule "inline-c"]
 	path = inline-c
 	url = https://github.com/hasktorch/inline-c.git
+[submodule "fficxx"]
+	path = fficxx
+	url = git@github.com:hasktorch/fficxx.git

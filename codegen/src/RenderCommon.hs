@@ -96,7 +96,7 @@ tenTypeToHsType tentype =
     LongTensor -> "RawTensor"
     IntList _ -> "RawIntArrayRef"
     ScalarQ -> "RawScalar"
-    ScalarType -> "RawScalarType"
+    ScalarType -> "ScalarType"
     SparseTensorRef -> "RawSparseTensorRef"
 
 stltypeToHsType :: STLType -> Text
@@ -185,6 +185,7 @@ parsableToInitial parsable =
 isCType :: Parsable -> Bool
 isCType p =
   case p of
+    TenType ScalarType -> True
     CType _ -> True
     Ptr _ -> True
     _ -> False

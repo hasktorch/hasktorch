@@ -59,13 +59,6 @@ t_Scalar =
   []
   []
 
-t_ScalarType =
-  Class cabal "ScalarType" [] mempty Nothing
-  [ Constructor [] Nothing
-  ]
-  []
-  []
-
 t_SparseTensorRef =
   Class cabal "SparseTensorRef" [] mempty Nothing
   [ Constructor [(cppclassref_ t_Tensor, "t")] Nothing
@@ -103,7 +96,8 @@ t_TensorList =
 
 t_TensorOptions =
   Class cabal "TensorOptions" [] mempty Nothing
-  [ Constructor [] Nothing
+  [ Constructor [(short_, "device")] Nothing
+  , NonVirtual (cppclasscopy_ t_TensorOptions) "dtype" [(char_, "data_type")] Nothing
   ]
   []
   []
@@ -113,7 +107,6 @@ classes =
   [ t_Generator
   , t_IntArrayRef
   , t_Scalar
-  , t_ScalarType
   , t_SparseTensorRef
   , t_Storage
   , t_Tensor

@@ -15,7 +15,8 @@ extern "C" {
 
 #undef TENSOROPTIONS_DECL_NONVIRT 
 #define TENSOROPTIONS_DECL_NONVIRT(Type) \
-Type ## _p Type ## _newTensorOptions (  )
+Type ## _p Type ## _newTensorOptions ( at::DeviceType device );           \
+TensorOptions_p Type ## _tensorOptions_dtype ( Type ## _p p, at::ScalarType data_type )
 
 #undef TENSOROPTIONS_DECL_ACCESSOR
 #define TENSOROPTIONS_DECL_ACCESSOR(Type)\
@@ -27,10 +28,14 @@ Type ## _p Type ## _newTensorOptions (  )
 
 #undef TENSOROPTIONS_DEF_NONVIRT
 #define TENSOROPTIONS_DEF_NONVIRT(Type)\
-Type ## _p Type ## _newTensorOptions (  )\
+Type ## _p Type ## _newTensorOptions ( at::DeviceType device )    \
 {\
-Type * newp = new Type (); \
+Type * newp = new Type (device); \
 return to_nonconst<Type ## _t, Type >(newp);\
+}\
+TensorOptions_p Type ## _tensorOptions_dtype ( Type ## _p p, at::ScalarType data_type ) \
+{\
+return to_nonconst<TensorOptions_t,TensorOptions>(new TensorOptions(to_nonconst<Type,Type ## _t>(p)->dtype(data_type)));\
 }
 
 #undef TENSOROPTIONS_DEF_ACCESSOR

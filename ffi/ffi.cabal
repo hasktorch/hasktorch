@@ -11,26 +11,25 @@ category:            Codegen
 build-type:          Simple
 cabal-version:       >=1.10
 Extra-source-files:    csrc/Mask.h
+                    ,  csrc/AtenGenerator.cpp
                     ,  csrc/AtenGenerator.h
                     ,  csrc/AtenIntArrayRef.h
-                    ,  csrc/AtenScalar.h
-                    ,  csrc/AtenScalarType.h
-                    ,  csrc/AtenSparseTensorRef.h
-                    ,  csrc/AtenStorage.h
-                    ,  csrc/AtenTensor.h
-                    ,  csrc/AtenTensorList.h
-                    ,  csrc/AtenTensorOptions.h
-                    ,  csrc/AtenGenerator.cpp
                     ,  csrc/AtenScalar.cpp
-                    ,  csrc/AtenScalarType.cpp
+                    ,  csrc/AtenScalar.h
                     ,  csrc/AtenSparseTensorRef.cpp
+                    ,  csrc/AtenSparseTensorRef.h
                     ,  csrc/AtenStorage.cpp
+                    ,  csrc/AtenStorage.h
                     ,  csrc/AtenTensor.cpp
+                    ,  csrc/AtenTensor.h
                     ,  csrc/AtenTensorList.cpp
+                    ,  csrc/AtenTensorList.h
                     ,  csrc/AtenTensorOptions.cpp
+                    ,  csrc/AtenTensorOptions.h
 
 library
  exposed-modules:     Aten.Type
+                    , Aten.Const
                     , Aten.NN
                     , Aten.TH
                     , Aten.Native
@@ -52,12 +51,6 @@ library
                     , Aten.Type.Scalar.Implementation
                     , Aten.Type.Scalar.Interface
                     , Aten.Type.Scalar.RawType
-                    , Aten.Type.ScalarType
-                    , Aten.Type.ScalarType.Cast
-                    , Aten.Type.ScalarType.FFI
-                    , Aten.Type.ScalarType.Implementation
-                    , Aten.Type.ScalarType.Interface
-                    , Aten.Type.ScalarType.RawType
                     , Aten.Type.SparseTensorRef
                     , Aten.Type.SparseTensorRef.Cast
                     , Aten.Type.SparseTensorRef.FFI
@@ -109,7 +102,6 @@ library
                     ,  AtenGenerator.h
                     ,  AtenIntArrayRef.h
                     ,  AtenScalar.h
-                    ,  AtenScalarType.h
                     ,  AtenSparseTensorRef.h
                     ,  AtenStorage.h
                     ,  AtenTensor.h
@@ -118,7 +110,6 @@ library
  c-sources:            csrc/AtenGenerator.cpp
                     ,  csrc/AtenIntArrayRef.cpp
                     ,  csrc/AtenScalar.cpp
-                    ,  csrc/AtenScalarType.cpp
                     ,  csrc/AtenSparseTensorRef.cpp
                     ,  csrc/AtenStorage.cpp
                     ,  csrc/AtenTensor.cpp

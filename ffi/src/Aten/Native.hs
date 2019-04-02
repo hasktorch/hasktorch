@@ -2083,13 +2083,13 @@ cudnn_grid_sampler_backward_ttt _self _grid _grad_output =
 cumsum_tls
   :: Ptr RawTensor
   -> Int64
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 cumsum_tls _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::cumsum(
     *$(at::Tensor* _self)
   , $(int64_t _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 cumsum_tl
@@ -2106,14 +2106,14 @@ cumsum_out_ttls
   :: Ptr RawTensor
   -> Ptr RawTensor
   -> Int64
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 cumsum_out_ttls _out _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::cumsum_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , $(int64_t _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 cumsum_out_ttl
@@ -2131,13 +2131,13 @@ cumsum_out_ttl _out _self _dim =
 cumprod_tls
   :: Ptr RawTensor
   -> Int64
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 cumprod_tls _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::cumprod(
     *$(at::Tensor* _self)
   , $(int64_t _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 cumprod_tl
@@ -2154,14 +2154,14 @@ cumprod_out_ttls
   :: Ptr RawTensor
   -> Ptr RawTensor
   -> Int64
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 cumprod_out_ttls _out _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::cumprod_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , $(int64_t _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 cumprod_out_ttl
@@ -3649,13 +3649,13 @@ logspace_out_tssl _out _start _end _steps =
 log_softmax_tls
   :: Ptr RawTensor
   -> Int64
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 log_softmax_tls _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::log_softmax(
     *$(at::Tensor* _self)
   , $(int64_t _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 log_softmax_tl
@@ -3904,12 +3904,12 @@ max_pool3d_tllllb _self _kernel_size _stride _padding _dilation _ceil_mode =
 
 mean_ts
   :: Ptr RawTensor
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 mean_ts _self _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::mean(
     *$(at::Tensor* _self)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 mean_t
@@ -3924,14 +3924,14 @@ mean_tlbs
   :: Ptr RawTensor
   -> Ptr RawIntArrayRef
   -> CBool
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 mean_tlbs _self _dim _keepdim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::mean(
     *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _dim)
   , $(bool _keepdim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 mean_tlb
@@ -3949,13 +3949,13 @@ mean_tlb _self _dim _keepdim =
 mean_tls
   :: Ptr RawTensor
   -> Ptr RawIntArrayRef
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 mean_tls _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::mean(
     *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 mean_out_ttlbs
@@ -3963,7 +3963,7 @@ mean_out_ttlbs
   -> Ptr RawTensor
   -> Ptr RawIntArrayRef
   -> CBool
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 mean_out_ttlbs _out _self _dim _keepdim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::mean_out(
@@ -3971,7 +3971,7 @@ mean_out_ttlbs _out _self _dim _keepdim _dtype =
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _dim)
   , $(bool _keepdim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 mean_out_ttlb
@@ -3992,14 +3992,14 @@ mean_out_ttls
   :: Ptr RawTensor
   -> Ptr RawTensor
   -> Ptr RawIntArrayRef
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 mean_out_ttls _out _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::mean_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 median_tlb
@@ -5722,13 +5722,13 @@ smm_tt _self _mat2 =
 softmax_tls
   :: Ptr RawTensor
   -> Int64
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 softmax_tls _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::softmax(
     *$(at::Tensor* _self)
   , $(int64_t _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 softmax_tl
@@ -5985,12 +5985,12 @@ stride_tl _self _dim =
 
 sum_ts
   :: Ptr RawTensor
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 sum_ts _self _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::sum(
     *$(at::Tensor* _self)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 sum_t
@@ -6005,14 +6005,14 @@ sum_tlbs
   :: Ptr RawTensor
   -> Ptr RawIntArrayRef
   -> CBool
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 sum_tlbs _self _dim _keepdim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::sum(
     *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _dim)
   , $(bool _keepdim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 sum_tlb
@@ -6030,13 +6030,13 @@ sum_tlb _self _dim _keepdim =
 sum_tls
   :: Ptr RawTensor
   -> Ptr RawIntArrayRef
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 sum_tls _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::sum(
     *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 sum_out_ttlbs
@@ -6044,7 +6044,7 @@ sum_out_ttlbs
   -> Ptr RawTensor
   -> Ptr RawIntArrayRef
   -> CBool
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 sum_out_ttlbs _out _self _dim _keepdim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::sum_out(
@@ -6052,7 +6052,7 @@ sum_out_ttlbs _out _self _dim _keepdim _dtype =
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _dim)
   , $(bool _keepdim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 sum_out_ttlb
@@ -6073,14 +6073,14 @@ sum_out_ttls
   :: Ptr RawTensor
   -> Ptr RawTensor
   -> Ptr RawIntArrayRef
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 sum_out_ttls _out _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::sum_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 sqrt_t
@@ -6151,12 +6151,12 @@ std_out_ttlbb _out _self _dim _unbiased _keepdim =
 
 prod_ts
   :: Ptr RawTensor
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 prod_ts _self _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::prod(
     *$(at::Tensor* _self)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 prod_t
@@ -6171,14 +6171,14 @@ prod_tlbs
   :: Ptr RawTensor
   -> Int64
   -> CBool
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 prod_tlbs _self _dim _keepdim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::prod(
     *$(at::Tensor* _self)
   , $(int64_t _dim)
   , $(bool _keepdim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 prod_tlb
@@ -6196,13 +6196,13 @@ prod_tlb _self _dim _keepdim =
 prod_tls
   :: Ptr RawTensor
   -> Int64
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 prod_tls _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::prod(
     *$(at::Tensor* _self)
   , $(int64_t _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 prod_out_ttlbs
@@ -6210,7 +6210,7 @@ prod_out_ttlbs
   -> Ptr RawTensor
   -> Int64
   -> CBool
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 prod_out_ttlbs _out _self _dim _keepdim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::prod_out(
@@ -6218,7 +6218,7 @@ prod_out_ttlbs _out _self _dim _keepdim _dtype =
   , *$(at::Tensor* _self)
   , $(int64_t _dim)
   , $(bool _keepdim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 prod_out_ttlb
@@ -6239,14 +6239,14 @@ prod_out_ttls
   :: Ptr RawTensor
   -> Ptr RawTensor
   -> Int64
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 prod_out_ttls _out _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::prod_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _self)
   , $(int64_t _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 t_t
@@ -6765,12 +6765,12 @@ _sparse_sum_t _self =
 
 _sparse_sum_ts
   :: Ptr RawTensor
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 _sparse_sum_ts _self _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::_sparse_sum(
     *$(at::Tensor* _self)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 _sparse_sum_tl
@@ -6786,13 +6786,13 @@ _sparse_sum_tl _self _dim =
 _sparse_sum_tls
   :: Ptr RawTensor
   -> Ptr RawIntArrayRef
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 _sparse_sum_tls _self _dim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::_sparse_sum(
     *$(at::Tensor* _self)
   , *$(at::IntArrayRef* _dim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 _sparse_sum_backward_ttl
@@ -6810,13 +6810,13 @@ _sparse_sum_backward_ttl _grad _self _dim =
 norm_tss
   :: Ptr RawTensor
   -> Ptr RawScalar
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 norm_tss _self _p _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::norm(
     *$(at::Tensor* _self)
   , *$(at::Scalar* _p)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 norm_ts
@@ -6834,7 +6834,7 @@ norm_tslbs
   -> Ptr RawScalar
   -> Ptr RawIntArrayRef
   -> CBool
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 norm_tslbs _self _p _dim _keepdim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::norm(
@@ -6842,7 +6842,7 @@ norm_tslbs _self _p _dim _keepdim _dtype =
   , *$(at::Scalar* _p)
   , *$(at::IntArrayRef* _dim)
   , $(bool _keepdim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 norm_tslb
@@ -6865,7 +6865,7 @@ norm_out_ttslbs
   -> Ptr RawScalar
   -> Ptr RawIntArrayRef
   -> CBool
-  -> Ptr RawScalarType
+  -> ScalarType
   -> IO (Ptr RawTensor)
 norm_out_ttslbs _out _self _p _dim _keepdim _dtype =
   [C.block| at::Tensor* { return new at::Tensor(at::norm_out(
@@ -6874,7 +6874,7 @@ norm_out_ttslbs _out _self _p _dim _keepdim _dtype =
   , *$(at::Scalar* _p)
   , *$(at::IntArrayRef* _dim)
   , $(bool _keepdim)
-  , *$(at::ScalarType* _dtype)));
+  , $(at::ScalarType _dtype)));
   }|]
 
 norm_out_ttslb

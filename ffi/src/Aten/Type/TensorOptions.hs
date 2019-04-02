@@ -1,6 +1,6 @@
 module Aten.Type.TensorOptions
        (TensorOptions(..), ITensorOptions, upcastTensorOptions,
-        downcastTensorOptions, newTensorOptions)
+        downcastTensorOptions, newTensorOptions, tensorOptions_dtype)
        where
 import Aten.Type.TensorOptions.RawType
 import Aten.Type.TensorOptions.Interface
