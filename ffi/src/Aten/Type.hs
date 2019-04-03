@@ -44,8 +44,8 @@ import Aten.Type.Tensor.RawType (RawTensor)
 import Aten.Type.TensorList.RawType (RawTensorList)
 import Aten.Type.TensorOptions.RawType (RawTensorOptions)
 
-type ScalarType = Int8
-type DeviceType = Int16
+type ScalarType = CChar
+type DeviceType = CShort
 
 data TensorAVector
 data StdArray a b
