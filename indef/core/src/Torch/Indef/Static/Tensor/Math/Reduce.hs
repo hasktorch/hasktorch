@@ -40,7 +40,7 @@ import GHC.TypeLits
 
 import Data.Maybe (fromJust)
 import Torch.Indef.Index
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (new)
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Math.Reduce as Dynamic
 

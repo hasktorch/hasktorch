@@ -31,7 +31,7 @@ import Data.Singletons.Prelude hiding (All, type (*), type (-), type (+))
 import Data.Singletons.TypeLits
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (new, empty, shape, resizeAs)
 import Torch.Indef.Static.Tensor.Math (zero_)
 import Torch.Indef.Static.NN.Backprop ()
 import Torch.Indef.Static.NN.Conv2d (Conv2d(..), Param2d(..), Kernel2d(..), Dilation2d(..), Padding2d(..), Step2d(..))

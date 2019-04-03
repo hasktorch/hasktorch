@@ -23,7 +23,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Pairwise
   , bitxor_
   ) where
 
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal (empty, new', getSomeDims)
 import Torch.Indef.Types
 import System.IO.Unsafe
 import Control.Monad.Managed (with)
@@ -102,7 +102,7 @@ div t v = unsafeDupablePerformIO $ do
   pure r
 {-# NOINLINE div #-}
 
--- | 
+-- |
 
 -- | Left shift all elements in the tensor by the given value, inplace.
 lshift_ :: Dynamic -> HsReal -> IO ()

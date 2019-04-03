@@ -41,7 +41,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating
 
 import GHC.Int
 import System.IO.Unsafe
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal (empty)
 import qualified Torch.Sig.Tensor.Math.Pointwise.Floating as Sig
 
 import Torch.Indef.Types

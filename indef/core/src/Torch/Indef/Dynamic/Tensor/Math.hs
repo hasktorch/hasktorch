@@ -43,7 +43,7 @@ import qualified Data.List.NonEmpty as NE
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal (new', new, withInplace, empty, shape, getSomeDims)
 import Torch.Indef.Types
 import qualified Torch.Indef.Index     as Ix
 import qualified Torch.Sig.Tensor.Math as Sig

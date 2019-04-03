@@ -19,7 +19,7 @@ module Torch.Indef.Static.Tensor.Math where
 import Numeric.Dimensions -- hiding (Length)
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (unsqueeze1d)
 import System.IO.Unsafe
 import Data.Singletons.Prelude (fromSing)
 import Data.List.NonEmpty (NonEmpty)

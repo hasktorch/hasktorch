@@ -11,7 +11,7 @@ module Torch.Indef.Static.Tensor.Math.Pointwise.Floating where
 
 import Numeric.Dimensions
 import GHC.Int
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (empty)
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating as Dynamic
 
 import Torch.Indef.Types

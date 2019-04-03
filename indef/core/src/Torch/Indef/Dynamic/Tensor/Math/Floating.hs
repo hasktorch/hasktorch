@@ -16,7 +16,7 @@ import Numeric.Dimensions
 import System.IO.Unsafe
 
 import qualified Torch.Sig.Tensor.Math.Floating as Sig
-import Torch.Indef.Dynamic.Tensor (empty)
+import Torch.Indef.Dynamic.Tensor.Internal (empty)
 
 import Torch.Indef.Types
 

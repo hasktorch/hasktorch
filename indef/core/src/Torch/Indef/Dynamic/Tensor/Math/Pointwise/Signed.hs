@@ -16,7 +16,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed
 import System.IO.Unsafe
 
 import Torch.Indef.Types
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal (empty)
 import qualified Torch.Sig.Tensor.Math.Pointwise.Signed as Sig
 
 _abs r t = withLift $ Sig.c_abs

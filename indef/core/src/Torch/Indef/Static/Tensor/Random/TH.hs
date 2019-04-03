@@ -42,7 +42,7 @@ import Numeric.Dimensions
 import Control.Monad
 import GHC.Word
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (transpose2d, expand2d)
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Pointwise
 import Torch.Indef.Static.Tensor.Math.Blas

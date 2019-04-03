@@ -23,7 +23,7 @@ import Numeric.Dimensions
 
 import Debug.Trace as D
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (resizeAs, flatten)
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Reduce
 import Torch.Indef.Static.Tensor.Math.Pairwise ((^/), (^-))

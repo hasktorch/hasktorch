@@ -11,13 +11,26 @@
 -------------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Dynamic.Tensor.Math.Compare
-  ( ltValue, ltValueT, ltValueT_
-  , leValue, leValueT, leValueT_
-  , gtValue, gtValueT, gtValueT_
-  , geValue, geValueT, geValueT_
-  , neValue, neValueT, neValueT_
-  , eqValue, eqValueT, eqValueT_
-  ) where
+  ( ltValue
+  , ltValueT
+  , ltValueT_
+  , leValue
+  , leValueT
+  , leValueT_
+  , gtValue
+  , gtValueT
+  , gtValueT_
+  , geValue
+  , geValueT
+  , geValueT_
+  , neValue
+  , neValueT
+  , neValueT_
+  , eqValue
+  , eqValueT
+  , eqValueT_
+  )
+where
 
 import Foreign hiding (with, new)
 import Foreign.Ptr
@@ -27,7 +40,7 @@ import Control.Monad.Managed
 
 import Torch.Indef.Types
 import Torch.Indef.Mask
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal (empty, getSomeDims)
 
 import qualified Torch.Sig.Tensor.Math.Compare as Sig
 
@@ -42,16 +55,23 @@ _eqValueT = compareValueTOp Sig.c_eqValueT
 
 compareValueTOp
   :: (Ptr CState -> Ptr CTensor -> Ptr CTensor -> CReal -> IO ())
-  -> Dynamic -> Dynamic -> HsReal -> IO ()
-compareValueTOp fn a b v = withLift $ fn
-  <$> managedState
-  <*> managedTensor a
-  <*> managedTensor b
-  <*> pure (hs2cReal v)
+  -> Dynamic
+  -> Dynamic
+  -> HsReal
+  -> IO ()
+compareValueTOp fn a b v =
+  withLift
+    $   fn
+    <$> managedState
+    <*> managedTensor a
+    <*> managedTensor b
+    <*> pure (hs2cReal v)
 
 compareTensorOp
   :: (Ptr CState -> Ptr CByteTensor -> Ptr CTensor -> CReal -> IO ())
-  -> Dynamic -> HsReal -> MaskDynamic
+  -> Dynamic
+  -> HsReal
+  -> MaskDynamic
 compareTensorOp op t0 v = unsafeDupablePerformIO . flip with pure $ do
   s' <- managedState
   t' <- managedTensor t0
@@ -75,12 +95,18 @@ eqValue = compareTensorOp Sig.c_eqValue
 -- 0 stands for false, 1 stands for true.
 ltValueT, leValueT, gtValueT, geValueT, neValueT, eqValueT
   :: Dynamic -> HsReal -> Dynamic
-ltValueT  a b = unsafeDupablePerformIO $ let r = empty in _ltValueT r a b >> pure r
-leValueT  a b = unsafeDupablePerformIO $ let r = empty in _leValueT r a b >> pure r
-gtValueT  a b = unsafeDupablePerformIO $ let r = empty in _gtValueT r a b >> pure r
-geValueT  a b = unsafeDupablePerformIO $ let r = empty in _geValueT r a b >> pure r
-neValueT  a b = unsafeDupablePerformIO $ let r = empty in _neValueT r a b >> pure r
-eqValueT  a b = unsafeDupablePerformIO $ let r = empty in _eqValueT r a b >> pure r
+ltValueT a b =
+  unsafeDupablePerformIO $ let r = empty in _ltValueT r a b >> pure r
+leValueT a b =
+  unsafeDupablePerformIO $ let r = empty in _leValueT r a b >> pure r
+gtValueT a b =
+  unsafeDupablePerformIO $ let r = empty in _gtValueT r a b >> pure r
+geValueT a b =
+  unsafeDupablePerformIO $ let r = empty in _geValueT r a b >> pure r
+neValueT a b =
+  unsafeDupablePerformIO $ let r = empty in _neValueT r a b >> pure r
+eqValueT a b =
+  unsafeDupablePerformIO $ let r = empty in _eqValueT r a b >> pure r
 {-# NOINLINE ltValueT #-}
 {-# NOINLINE leValueT #-}
 {-# NOINLINE gtValueT #-}

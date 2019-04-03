@@ -27,7 +27,7 @@ import qualified Torch.Sig.Tensor.Math.CompareT as Sig
 
 import Torch.Indef.Mask
 import Torch.Indef.Types
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal (empty, getSomeDims)
 
 _ltTensorT, _leTensorT, _gtTensorT, _geTensorT, _neTensorT, _eqTensorT
   :: Dynamic -> Dynamic -> Dynamic -> IO ()

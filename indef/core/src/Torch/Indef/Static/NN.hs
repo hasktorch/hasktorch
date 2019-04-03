@@ -21,7 +21,7 @@ module Torch.Indef.Static.NN
 import Torch.Indef.Types
 
 import qualified Torch.Indef.Dynamic.NN as Dynamic
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal ()
 
 import Torch.Indef.Static.NN.Activation as X
 import Torch.Indef.Static.NN.Conv1d as X hiding (getTensors, weights, bias, featureSize, outputSize, kernelWidth)

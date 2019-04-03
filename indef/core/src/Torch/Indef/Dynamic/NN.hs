@@ -134,7 +134,7 @@ module Torch.Indef.Dynamic.NN
 import Foreign.C.Types
 import Control.Monad.Managed
 import Torch.Sig.Types.NN
-import Torch.Indef.Dynamic.Tensor -- (empty, new)
+import Torch.Indef.Dynamic.Tensor.Internal (empty, new)
 import Torch.Indef.Dynamic.NN.Activation as X
 import Torch.Indef.Dynamic.NN.Pooling as X
 import qualified Torch.Sig.NN as Sig

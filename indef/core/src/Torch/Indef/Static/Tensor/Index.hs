@@ -17,10 +17,10 @@ import Control.Exception.Safe
 import System.IO.Unsafe
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal ()
 import qualified Torch.Indef.Index as Ix
-import qualified Torch.Indef.Dynamic.Tensor as Dynamic
 import qualified Torch.Indef.Dynamic.Tensor.Index as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Internal as Dynamic
 
 -- | Static call to 'Dynamic._indexCopy'
 _indexCopy :: Tensor d -> Int -> IndexTensor '[n] -> Tensor d' -> IO ()

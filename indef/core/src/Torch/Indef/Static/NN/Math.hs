@@ -24,7 +24,7 @@ import Torch.Indef.Static.Tensor.Math.Pointwise ((^*^), (^-^))
 import Torch.Indef.Static.Tensor.Math.Pairwise ((^-), (^/))
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (empty, new)
 import Torch.Indef.Static.NN.Backprop ()
 import qualified Torch.Indef.Dynamic.NN as Dynamic
 import qualified Torch.Indef.Static.Tensor.Math.Pointwise.Floating as Torch

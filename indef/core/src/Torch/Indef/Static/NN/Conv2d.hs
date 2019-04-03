@@ -45,7 +45,7 @@ import System.IO.Unsafe
 import Data.Singletons.Prelude (type (>), type (<), Fst, Snd)
 import GHC.TypeLits (Div) -- (type Div)
 
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (new)
 import Torch.Indef.Static.Tensor.Copy
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Pairwise (Pairwise(..))

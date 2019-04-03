@@ -20,7 +20,7 @@ module Torch.Indef.Static.Tensor.Math.Compare
 import Numeric.Dimensions
 
 import Torch.Indef.Mask
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal ()
 import Torch.Indef.Types
 import qualified Torch.Indef.Dynamic.Tensor.Math.Compare as Dynamic
 

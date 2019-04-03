@@ -57,7 +57,7 @@ import Data.Singletons.Prelude (type (>), type (<))
 import Data.Singletons.TypeLits
 import System.IO.Unsafe
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (empty)
 import Torch.Indef.Static.Tensor.Copy
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.CompareT

@@ -21,7 +21,7 @@ import Control.Monad
 import System.IO.Unsafe
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (new)
 import Torch.Indef.Static.Tensor.Math (constant)
 import Torch.Indef.Static.Tensor.Copy
 import Torch.Indef.Static.NN.Backprop ()
@@ -31,7 +31,7 @@ import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise as Dynamic
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
 
--- | datatype representing a relu activation. 
+-- | datatype representing a relu activation.
 data Relu d = Relu deriving (Eq, Generic)
 
 instance KnownDim d => Show (Relu d) where

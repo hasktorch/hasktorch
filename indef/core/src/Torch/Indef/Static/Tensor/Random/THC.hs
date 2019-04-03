@@ -39,7 +39,7 @@ module Torch.Indef.Static.Tensor.Random.THC
 import Numeric.Dimensions
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (new)
 import qualified Torch.Indef.Dynamic.Tensor.Random.THC as Dynamic
 import qualified Torch.Types.TH as TH
 import Torch.Indef.Dynamic.Tensor.Random.TH

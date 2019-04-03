@@ -24,7 +24,7 @@ module Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating
 import Control.Monad.Managed
 import System.IO.Unsafe
 import Torch.Indef.Types
-import Torch.Indef.Dynamic.Tensor (empty)
+import Torch.Indef.Dynamic.Tensor.Internal (empty)
 
 import qualified Torch.Sig.Tensor.Math.Reduce.Floating as Sig
 

@@ -50,7 +50,7 @@ import Control.Monad.Managed
 
 import Torch.Types.Numeric
 import Torch.Indef.Types
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal (withInplace)
 import qualified Torch.Sig.Tensor.Random.TH as Sig
 import qualified Torch.Sig.Types as Sig
 import qualified Torch.Sig.Types.Global as Sig

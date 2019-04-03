@@ -38,7 +38,7 @@ import System.IO.Unsafe
 
 import Debug.Trace
 import Torch.Indef.Types
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal (empty, new', getSomeDims)
 
 import qualified Torch.Sig.Tensor.Math.Pointwise as Sig
 

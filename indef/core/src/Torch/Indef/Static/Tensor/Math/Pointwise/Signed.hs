@@ -10,7 +10,7 @@
 module Torch.Indef.Static.Tensor.Math.Pointwise.Signed where
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal ()
 import Torch.Indef.Static.Tensor.Math (constant)
 import Torch.Indef.Static.Tensor.Math.Pointwise (sign, (^*^), (^-^), (^+^))
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed as Dynamic

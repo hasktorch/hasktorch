@@ -25,11 +25,11 @@ import Data.Singletons.Prelude.List (SplitAt, Product)
 import qualified Data.Singletons.Prelude.List as S -- hiding (All, Drop, Take, type (++))
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal (resizeAs)
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Pointwise.Signed ()
 import qualified Torch.Indef.Index as Ix
-import qualified Torch.Indef.Static.Tensor as T
+import qualified Torch.Indef.Static.Tensor.Internal as T
 
 import System.IO.Unsafe
 import qualified Torch.Indef.Dynamic.Tensor.Math as Dynamic

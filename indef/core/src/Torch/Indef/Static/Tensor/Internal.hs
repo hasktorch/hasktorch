@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------------
 -- |
--- Module    :  Torch.Indef.Static.Tensor
+-- Module    :  Torch.Indef.Static.Tensor.Internal
 -- Copyright :  (c) Sam Stites 2017
 -- License   :  BSD3
 -- Maintainer:  sam@stites.io
@@ -20,7 +20,7 @@
 #endif
 
 {-# OPTIONS_GHC -fno-cse -Wno-deprecations #-} -- no deprications because we still bundle up all mutable functions
-module Torch.Indef.Static.Tensor where
+module Torch.Indef.Static.Tensor.Internal where
 
 import Control.Exception.Safe
 import Control.Monad
@@ -40,7 +40,7 @@ import Control.Monad.Trans.Except
 import Torch.Indef.Types
 import Torch.Indef.Index
 import Torch.Indef.Static.Tensor.Copy
-import qualified Torch.Indef.Dynamic.Tensor as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Internal as Dynamic
 import qualified Torch.Types.TH as TH
 import qualified Torch.FFI.TH.Long.Storage as TH
 import qualified Torch.Sig.Types as Sig
@@ -76,7 +76,7 @@ _expand r t = Dynamic._expand (asDynamic r) (asDynamic t)
 -- | Static call to 'Dynamic._expandNd'
 _expandNd rs os = Dynamic._expandNd (fmap asDynamic rs) (fmap asDynamic os)
 
--- In general recommend using resizeAs over other resize* functions- 
+-- In general recommend using resizeAs over other resize* functions-
 -- these are not dimension safe and also type-invalidate the underlying tensor
 -- properties after the mutation.
 

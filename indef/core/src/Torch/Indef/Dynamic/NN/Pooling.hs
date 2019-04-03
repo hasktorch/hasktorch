@@ -17,7 +17,7 @@
 module Torch.Indef.Dynamic.NN.Pooling where
 
 import Torch.Sig.Types.NN
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal ()
 import qualified Torch.Sig.NN as Sig
 import qualified Torch.Indef.Index as Ix
 

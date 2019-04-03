@@ -32,7 +32,7 @@ import Numeric.Dimensions
 
 import Torch.Indef.Types
 
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal (new', shape, getSomeDims)
 import qualified Torch.Indef.Index as Ix
 import qualified Torch.Sig.Types.Global as Sig
 import qualified Torch.Sig.Tensor.Math.Reduce as Sig

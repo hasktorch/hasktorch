@@ -16,7 +16,7 @@ import Numeric.Dimensions
 import System.IO.Unsafe
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal ()
 import qualified Torch.Indef.Dynamic.Tensor.Math.Pairwise as Dynamic
 
 class Num real => Pairwise tensor real where

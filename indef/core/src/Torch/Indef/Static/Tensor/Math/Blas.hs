@@ -15,7 +15,7 @@ import Numeric.Dimensions
 import System.IO.Unsafe
 
 import Torch.Indef.Types
-import Torch.Indef.Static.Tensor
+import Torch.Indef.Static.Tensor.Internal ()
 import Torch.Indef.Static.Tensor.Math
 
 import qualified Torch.Indef.Dynamic.Tensor.Math.Blas as Dynamic

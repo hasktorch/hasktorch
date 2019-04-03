@@ -38,7 +38,7 @@ import Foreign.C.Types
 import Foreign.C.String
 import Foreign.Marshal.Array
 import System.IO.Unsafe
-import Torch.Indef.Dynamic.Tensor (empty)
+import Torch.Indef.Dynamic.Tensor.Internal (empty)
 import qualified Torch.Sig.Tensor.Math.Lapack as Sig
 
 import Torch.Indef.Types

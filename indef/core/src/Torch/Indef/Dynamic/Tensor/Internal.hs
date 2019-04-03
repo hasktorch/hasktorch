@@ -1,13 +1,15 @@
 -------------------------------------------------------------------------------
 -- |
--- Module    :  Torch.Indef.Dynamic.Tensor
+-- Module    :  Torch.Indef.Dynamic.Tensor.Internal
 -- Copyright :  (c) Sam Stites 2017
 -- License   :  BSD3
 -- Maintainer:  sam@stites.io
 -- Stability :  experimental
 -- Portability: non-portable
 --
--- This package is the class for handling numeric data in dynamic tensors.
+-- This package is the class for handling numeric data in dynamic tensors. It
+-- should be reexported under the Torch.Indef.Dynamic.Tensor module with
+-- backend-specific code.
 --
 -- A 'Dynamic' is a multi-dimensional matrix without static type-level
 -- dimensions. The number of dimensions is unlimited (up to what can be created
@@ -22,7 +24,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-cse -Wno-deprecations #-} -- no deprications because we still bundle up all mutable functions
-module Torch.Indef.Dynamic.Tensor where
+module Torch.Indef.Dynamic.Tensor.Internal where
 
 import Foreign hiding (with, new)
 import Foreign.Ptr
@@ -62,7 +64,7 @@ import Torch.Indef.Dynamic.Print (showTensor, describeTensor)
 import Torch.Indef.Types
 import Torch.Indef.Internal
 import Torch.Indef.Index hiding (withDynamicState)
-import qualified Torch.Indef.Storage as Storage
+import qualified Torch.Indef.Storage.Internal as Storage ()
 
 -- | Clears the internal flags on a tensor. Uses bitwise operators for flags.
 _clearFlag :: Dynamic -> Int8 -> IO ()

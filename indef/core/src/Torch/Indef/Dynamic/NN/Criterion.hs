@@ -5,7 +5,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Control.Monad.Managed
 import Torch.Sig.Types.NN
-import Torch.Indef.Dynamic.Tensor
+import Torch.Indef.Dynamic.Tensor.Internal ()
 import qualified Torch.Sig.NN as Sig
 import qualified Torch.Indef.Index as Ix
 
