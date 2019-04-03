@@ -9,7 +9,7 @@ import Data.List (genericLength)
 import GHC.Exts
 
 import Torch.Indef.Types
-import Torch.Indef.Dynamic.Tensor.Internal ()
+import Torch.Indef.Dynamic.Tensor
 
 main :: IO ()
 main = hspec spec
