@@ -25,11 +25,6 @@ source-repository head
     type: git
     location: https://github.com/hasktorch/hasktorch
 
-flag cuda
-    description:
-        build with THC support
-    default: False
-
 library
     exposed-modules:
         Torch.Indef.Index
@@ -75,17 +70,11 @@ library
         Torch.Indef.Dynamic.Tensor.Math.Lapack
         Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating
         Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating
-        Torch.Indef.Dynamic.Tensor.Random.TH
-        Torch.Indef.Dynamic.Tensor.Random.THC
-        Torch.Indef.Dynamic.Tensor.Math.Random.TH
         Torch.Indef.Static.Tensor.Math.Blas
         Torch.Indef.Static.Tensor.Math.Floating
         Torch.Indef.Static.Tensor.Math.Lapack
         Torch.Indef.Static.Tensor.Math.Pointwise.Floating
         Torch.Indef.Static.Tensor.Math.Reduce.Floating
-        Torch.Indef.Static.Tensor.Random.TH
-        Torch.Indef.Static.Tensor.Random.THC
-        Torch.Indef.Static.Tensor.Math.Random.TH
         Torch.Indef.Dynamic.NN
         Torch.Indef.Dynamic.NN.Activation
         Torch.Indef.Dynamic.NN.Pooling
@@ -126,12 +115,12 @@ library
         transformers ==0.5.5 || >0.5.5,
         text ==1.2.2 || >1.2.2,
         vector ==0.12.0 || >0.12.0
-    
-    if flag(cuda)
-        cpp-options: -DCUDA -DHASKTORCH_INTERNAL_CUDA
-        build-depends:
-            hasktorch-types-thc (==0.0.1 || >0.0.1) && <0.0.2,
-            cuda -any
-    else
+
+    -- if flag(cuda)
+    --     cpp-options: -DCUDA -DHASKTORCH_INTERNAL_CUDA
+    --     build-depends:
+    --         hasktorch-types-thc (==0.0.1 || >0.0.1) && <0.0.2,
+    --         cuda -any
+    -- else
 
 

@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------------
 -- |
--- Module    :  Torch.Indef.Static.Tensor.Math.Random.TH
+-- Module    :  Torch.Indef.Static.Tensor.Math.Random
 -- Copyright :  (c) Sam Stites 2017
 -- License   :  BSD3
 -- Maintainer:  sam@stites.io
@@ -9,12 +9,12 @@
 --
 -- FIXME: copy-paste, or switch documentation to preference Static modules.
 -------------------------------------------------------------------------------
-module Torch.Indef.Static.Tensor.Math.Random.TH where
+module Torch.Indef.Static.Tensor.Math.Random where
 
 import Numeric.Dimensions
 
 import Torch.Indef.Types
-import qualified Torch.Indef.Dynamic.Tensor.Math.Random.TH as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Math.Random as Dynamic
 import qualified Torch.Types.TH as TH
 
 -- | Statically typed version of 'Dynamic._rand'.

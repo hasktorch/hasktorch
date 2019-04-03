@@ -51,8 +51,8 @@ import Text.Printf
 
 import qualified Data.List                 as List ((!!))
 import qualified Data.List.NonEmpty        as NE
-import qualified Torch.Types.TH            as TH
 import qualified Foreign.Marshal.Array     as FM
+import qualified Torch.Types.TH            as TH
 import qualified Torch.Sig.State           as Sig
 import qualified Torch.Sig.Types           as Sig
 import qualified Torch.Sig.Types.Global    as Sig
@@ -72,28 +72,6 @@ _clearFlag t cc = runManaged $ do
   s' <- managedState
   t' <- managedTensor t
   liftIO $ Sig.c_clearFlag s' t' (CChar cc)
-
--- | Get the underlying data as a haskell list from the tensor
---
--- NOTE: This _cannot_ use a Tensor's storage size because ATen's Storage
--- allocates up to the next 64-byte line on the CPU (needs reference, this
--- is the unofficial response from \@soumith in slack).
-tensordata :: Dynamic -> [HsReal]
-tensordata t =
-  case shape t of
-    [] -> []
-    ds ->
-      unsafeDupablePerformIO . flip with (pure . fmap c2hsReal) $ do
-        st <- managedState
-        t' <- managedTensor t
-        liftIO $ do
-          let sz = fromIntegral (product ds)
-          -- a strong dose of paranoia
-          tmp <- FM.mallocArray sz
-          creals <- Sig.c_data st t'
-          FM.copyArray tmp creals sz
-          FM.peekArray sz tmp
-{-# NOINLINE tensordata #-}
 
 -- | get a value from dimension 1
 get1d :: Dynamic -> Word -> Maybe HsReal
@@ -258,23 +236,6 @@ _expand r t ix = withLift $ Sig.c_expand
   <*> managedTensor r
   <*> managedTensor t
   <*> managed (withForeignPtr . snd $ TH.longStorageState ix)
-
--- | FIXME: doublecheck what this does.
-_expandNd  :: NonEmpty Dynamic -> NonEmpty Dynamic -> Int -> IO ()
-_expandNd (rets@(s:|_)) ops i = runManaged $ do
-  st    <- managedState
-  rets' <- mngNonEmpty rets
-  ops'  <- mngNonEmpty ops
-  liftIO $ Sig.c_expandNd st rets' ops' (fromIntegral i)
- where
-  mngNonEmpty :: NonEmpty Dynamic -> Managed (Ptr (Ptr CTensor))
-  mngNonEmpty = mapM toMPtr . NE.toList >=> mWithArray
-
-  mWithArray :: [Ptr a] -> Managed (Ptr (Ptr a))
-  mWithArray as = managed (FM.withArray as)
-
-  toMPtr :: Dynamic -> Managed (Ptr CTensor)
-  toMPtr d = managed (withForeignPtr (Sig.ctensor d))
 
 -- | purely clone a tensor
 newClone :: Dynamic -> Dynamic
@@ -939,184 +900,6 @@ resizeDim_ t d = case fromIntegral <$> listDims d of
   -- ds              -> _resizeNd t (genericLength ds) ds
                             -- (error "resizeNd_'s stride should be given a c-NULL or a haskell-nullPtr")
 
--- | create a 1d Dynamic tensor from a list of elements.
---
--- FIXME construct this with TH, not by using 'setDim' inplace (one-by-one) which might be doing a second linear pass.
--- FIXME: CUDA doesn't like the storage allocation:
-
-vectorEIO :: [HsReal] -> ExceptT String IO Dynamic
-vectorEIO l = lift $ do
----------------------------------------------------
--- THCudaCheck FAIL file=/home/stites/git/hasktorch/vendor/aten/src/THC/generic/THCStorage.c line=150 error=11 : invalid argument
--- terminate called after throwing an instance of 'std::runtime_error'
---   what():  cuda runtime error (11) : invalid argument at /home/stites/git/hasktorch/vendor/aten/src/THC/generic/THCStorage.c:150
---   Aborted (core dumped)
--- #ifdef HASKTORCH_INTERNAL_CUDA
-
--- FIXME: uncomment these
-  -- res <- new' (someDimsVal [genericLength l])
-  -- mapM_  (upd res) (zip [0..genericLength l - 1] l)
-  -- pure res
-
--- #else
---   -- IMPORTANT: This is safe for CPU. For GPU, I think we need to allocate and marshal a haskell list into cuda memory before continuing.
-  -- let st = (Storage.fromList l) -- (deepseq l l)
-  pure $ newWithStorage1d (fromList l) 0 (genericLength l, 1)
--- #endif
-
-vectorE :: [HsReal] -> Either String Dynamic
-vectorE = unsafePerformIO . runExceptT . vectorEIO
-{-# NOINLINE vectorE #-}
-
-vector :: [HsReal] -> Maybe Dynamic
-vector = either (const Nothing) Just . vectorE
-
--- | create a 2d Dynamic tensor from a list of list of elements.
-matrix :: [[HsReal]] -> ExceptT String IO Dynamic
-matrix ls
-  | null ls = lift (pure empty)
-  | any ((ncols /=) . length) ls = ExceptT . pure $ Left "rows are not all the same length"
-  | otherwise = do
--- #ifdef HASKTORCH_INTERNAL_CUDA
-    -- vec <- vector (deepseq l l)
-    -- lift $ go vec (someDimsVal [nrows, ncols])
-    -- pure vec
--- #else
-    lift $ do
-      -- st <- Storage.fromList (deepseq l l)
-      pure $ newWithStorage2d (fromList l) 0 (nrows, ncols) (ncols, 1)
--- #endif
- where
-  l = concat ls
-  go vec (SomeDims ds) = resizeDim_ vec ds
-
-  ncols :: Integral i => i
-  ncols = genericLength (head ls)
-
-  nrows :: Integral i => i
-  nrows = genericLength ls
-
-
--- | create a 3d Dynamic tensor (ie: rectangular cuboid) from a nested list of elements.
-{-# NOINLINE cuboid #-}
-cuboid :: [[[HsReal]]] -> ExceptT String IO Dynamic
-cuboid ls
-  | isEmpty ls = lift (pure empty)
-  | null ls || any null ls || any (any null) ls
-                                   = ExceptT . pure . Left $ "can't accept empty lists"
-  | innerDimCheck ncols        ls  = ExceptT . pure . Left $ "rows are not all the same length"
-  | innerDimCheck ndepth (head ls) = ExceptT . pure . Left $ "columns are not all the same length"
-
-  | otherwise = lift $ do
-      -- st <- Storage.fromList l
-      -- FIXME: test that this is correct.
-      pure $ newWithStorage3d (fromList l) 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
--- #ifdef HASKTORCH_INTERNAL_CUDA
-      -- vec <- vector (deepseq l l)
-      -- lift $ go vec (someDimsVal [nrows, ncols, ndepth])
-      -- lift $ go vec (someDimsVal [nrows, ncols, ndepth])
-      -- print "yas"
-      -- pure v
--- #else
---       -- st <- Storage.fromList (deepseq l l)
---       -- hs <- Storage.tensordata st
---
---       -- print (nrows, ncols, ndepth)
---       -- forM_ [0..nrows-1] $ \r -> do
---       -- -- forM_ [0..nrows-1] $ \r -> do
---       --   forM_ [0..ncols-1] $ \c -> do
---       --   -- forM_ [0..1] $ \c -> do
---       --     printf "\n]] "
---       --     forM_ [0..ndepth-1] $ \d -> do
---       --     -- forM_ [0..1] $ \d -> do
---       --       let v = hs List.!! ((r*ncols*ndepth) + (c*ndepth) + d)
---       --       -- let v = (x List.!! 0) List.!! r List.!! c :: HsReal
---       --       printf ((if v < 0 then " " else "  ")++"%.4f") (v :: HsReal)
---       --   putStrLn ("\n" :: String)
---       -- print "ax"
---
---       vec <- vector (deepseq l l)
---       lift $ go vec (someDimsVal [nrows, ncols, ndepth])
---
---
---       -- newWithStorage3d st 0 (nrows, ncols * ndepth) (ncols, ndepth) (ndepth, 1)
---       -- newWithStorage3d st 0 (nrows, nrows) (ncols, 1) (ndepth, 1)
---       -- newWithStorage3d st 0 (nrows, ncols*ndepth) (ncols, ndepth) (ndepth, 1)
--- #endif
- where
-  l = concat (concat ls)
-  go vec (SomeDims ds) = resizeDim_ vec ds >> pure vec
-
-  isEmpty = \case
-    []     -> True
-    [[]]   -> True
-    [[[]]] -> True
-    _      -> False
-
-  innerDimCheck :: Int -> [[x]] -> Bool
-  innerDimCheck d = any ((/= d) . length)
-
-  ndepth :: Integral i => i
-  ndepth = genericLength (head (head ls))
-
-  ncols :: Integral i => i
-  ncols = genericLength (head ls)
-
-  nrows :: Integral i => i
-  nrows = genericLength ls
-
-
--- | create a 4d Dynamic tensor (ie: hyperrectangle) from a nested list of elements.
-{-# NOINLINE hyper #-}
-hyper :: [[[[HsReal]]]] -> ExceptT String IO Dynamic
-hyper ls
-  | isEmpty ls = lift (pure empty)
-  | null ls
-    || any null ls
-    || any (any null) ls
-    || any (any (any null)) ls           = ExceptT . pure . Left $ "can't accept empty lists"
-  | innerDimCheck ntime (head (head ls)) = ExceptT . pure . Left $ "rows are not all the same length"
-  | innerDimCheck ndepth      (head ls)  = ExceptT . pure . Left $ "cols are not all the same length"
-  | innerDimCheck ncols             ls   = ExceptT . pure . Left $ "depths are not all the same length"
-
-  | otherwise = lift $ do
--- #ifdef HASKTORCH_INTERNAL_CUDA
-      -- vec <- vector (deepseq l l)
-      -- lift $ go vec (someDimsVal [nrows, ncols, ndepth, ntime])
--- #else
-      -- st <- Storage.fromList (deepseq l l)
-      pure $ newWithStorage4d (fromList l) 0
-        (nrows, ncols * ndepth * ntime)
-        (ncols, ndepth * ntime)
-        (ndepth, ntime)
-        (ntime, 1)
--- #endif
- where
-  l = concat (concat (concat ls))
-  go vec (SomeDims ds) = resizeDim_ vec ds >> pure vec
-
-  isEmpty = \case
-    []       -> True
-    [[]]     -> True
-    [[[]]]   -> True
-    [[[[]]]] -> True
-    _        -> False
-
-  innerDimCheck :: Int -> [[x]] -> Bool
-  innerDimCheck d = any ((/= d) . length)
-
-  ntime :: Integral i => i
-  ntime = genericLength (head (head (head ls)))
-
-  ndepth :: Integral i => i
-  ndepth = genericLength (head (head ls))
-
-  ncols :: Integral i => i
-  ncols = genericLength (head ls)
-
-  nrows :: Integral i => i
-  nrows = genericLength ls
-
 
 -- -- | resize a dynamic tensor with runtime 'SomeDims' representation of its new shape. Returns a pure copy of the
 -- -- input tensor.
@@ -1208,11 +991,6 @@ withEmpty' :: (Dynamic -> IO ()) -> IO Dynamic
 withEmpty' op = let r = empty in op r >> pure r
 
 
-instance IsList Dynamic where
-  type Item Dynamic = HsReal
-  toList = tensordata
-  fromList l = newWithStorage1d (fromList l) 0 (genericLength l, 1)
-
 instance Show Dynamic where
   show t = vs ++ "\n" ++ desc
    where
@@ -1224,8 +1002,5 @@ instance Show Dynamic where
       (unsafeGet3d t)
       (unsafeGet4d t)
       dims
-
--- CPU ONLY:
---   desc :: Dynamic -> IO (DescBuff t)
 
 

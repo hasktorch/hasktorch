@@ -36,7 +36,7 @@ import Torch.Indef.Static.NN.Backprop ()
 import qualified Torch.Indef.Dynamic.NN.Criterion as Dynamic
 import qualified Torch.Sig.Types.Global as Ix
 
-import Torch.Indef.Static.Tensor.Random.THC
+-- import Torch.Indef.Static.Tensor.Random.THC
 
 
 -- | absCriterion forward pass (updates the output tensor)

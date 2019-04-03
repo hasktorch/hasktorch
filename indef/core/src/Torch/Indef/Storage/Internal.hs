@@ -29,13 +29,11 @@
 {-# LANGUAGE Strict #-}
 {-# OPTIONS_GHC -fno-cse #-}
 module Torch.Indef.Storage.Internal
-  ( IsList(..)
-  , Storage(..)
+  ( Storage(..)
   , cstorage
   , storage
   , storageState
   , storageStateRef
-  , storagedata
   , size
   , set
   , get
@@ -46,16 +44,12 @@ module Torch.Indef.Storage.Internal
   , newWithSize3
   , newWithSize4
   , newWithMapping
-  , newWithData
   , setFlag
   , clearFlag
   , retain
   , resize
   , fill
-  )
-where
-
-import Torch.Indef.Storage.Copy as X
+  ) where
 
 import Foreign hiding (with, new)
 import Foreign.C.Types
@@ -69,6 +63,7 @@ import System.IO.Unsafe
 import GHC.Exts (IsList(..))
 import Control.Monad.ST
 import Data.STRef
+import Data.Char (chr)
 
 import Torch.Indef.Types
 import Torch.Indef.Internal
@@ -79,6 +74,34 @@ import qualified Torch.Sig.Storage as Sig
 import qualified Torch.Sig.Storage.Memory as Sig
 import qualified Foreign.Marshal.Array as FM
 
+-- -- ======================= --
+-- --       Mix-in code       --
+-- -- ======================= --
+--
+-- -- | return the internal data of 'Storage' as a list of haskell values.
+-- storagedata :: Storage -> [HsReal]
+--
+-- -- | make a new 'Storage' from a given list and 'StorageSize'.
+-- --
+-- -- FIXME: find out if 'StorageSize' always corresponds to the length of the list. If so,
+-- -- remove it!
+-- newWithData
+--   :: [HsReal]
+--   -> Word64   -- ^ storage size
+--   -> Storage
+--
+-- instance IsList Storage where
+--   type Item Storage = HsReal
+--   toList = storagedata
+--   fromList pr = newWithData pr (fromIntegral $ length pr)
+--
+-- instance Show Storage where
+--   show = show . storagedata
+
+-- ======================= --
+-- Fully instantiated code --
+-- ======================= --
+
 -- TODO: use these?
 -- newtype MStorage s = MStorage (STRef s Storage)
 --
@@ -87,28 +110,6 @@ import qualified Foreign.Marshal.Array as FM
 --
 -- thaw :: Storage -> ST s (MStorage s)
 -- thaw s = MStorage <$> newSTRef s
-
-
--- | return the internal data of 'Storage' as a list of haskell values.
-storagedata :: Storage -> [HsReal]
-storagedata s =
-  unsafeDupablePerformIO
-    . flip with (pure . fmap c2hsReal)
-    $ do
-        st <- managedState
-        s' <- managedStorage s
-        liftIO $ do
-          -- a strong dose of paranoia
-          sz     <- fromIntegral <$> Sig.c_size st s'
-          tmp    <- FM.mallocArray sz
-
-          creals <- Sig.c_data st s'
-          FM.copyArray tmp creals sz
-          FM.peekArray sz tmp
- where
-  arrayLen :: Ptr CState -> Ptr CStorage -> IO Int
-  arrayLen st p = fromIntegral <$> Sig.c_size st p
-{-# NOINLINE storagedata #-}
 
 -- | Returns the number of elements in the storage. Equivalent to #.
 size :: Storage -> Int
@@ -222,23 +223,6 @@ newWithMapping pcc' pd ci =
     <*> pure (fromIntegral pd)
     <*> pure (fromIntegral ci)
 
--- | make a new 'Storage' from a given list and 'StorageSize'.
---
--- FIXME: find out if 'StorageSize' always corresponds to the length of the list. If so,
--- remove it!
-newWithData
-  :: [HsReal]
-  -> Word64   -- ^ storage size
-  -> Storage
-newWithData pr pd =
-  unsafeDupablePerformIO
-    .   withStorage
-    $   Sig.c_newWithData
-    <$> managedState
-    <*> liftIO (FM.newArray (hs2cReal <$> pr))
-    <*> pure (fromIntegral pd)
-{-# NOINLINE newWithData #-}
-
 -- | set the flags of a given 'Storage'. Flags are applied via bitwise-or.
 setFlag :: Storage -> Int8 -> IO ()
 setFlag s cc =
@@ -268,37 +252,9 @@ resize s pd =
 
 -- | Fill the Storage with the given value.
 fill :: Storage -> HsReal -> IO ()
-fill s v = withLift $ Sig.c_fill <$> managedState <*> managedStorage s <*> pure
-  (hs2cReal v)
-
-instance IsList Storage where
-  type Item Storage = HsReal
-  toList = storagedata
-  fromList pr = newWithData pr (fromIntegral $ length pr)
-
-instance Show Storage where
-  show = show . storagedata
+fill s v = withLift $ Sig.c_fill <$> managedState <*> managedStorage s <*> pure (hs2cReal v)
 
 {-
--- FIXME: find out where signatures should go to fill in these indefinites
-
-instance Class.CPUStorage Storage where
-  newWithAllocator :: StorageSize -> (CTHAllocatorPtr, AllocatorContext) -> IO Storage
-  newWithAllocator pd (alloc, AllocatorContext ctx) = Sig.c_newWithAllocator (fromIntegral pd) alloc ctx >>= mkStorage
-
-  newWithDataAndAllocator :: [HsReal] -> StorageSize -> (CTHAllocatorPtr, AllocatorContext) -> IO Storage
-  newWithDataAndAllocator pr pd (alloc, AllocatorContext ctx) = do
-    pr' <- FM.withArray (hs2cReal <$> pr) pure
-    s <- Sig.c_newWithDataAndAllocator pr' (fromIntegral pd) alloc ctx {-seems like it's fine to pass nullPtr-}
-    mkStorage s
-
-  swap :: Storage -> Storage -> IO ()
-  swap s0 s1 =
-    withForeignPtr (storage s0) $ \s0' ->
-      withForeignPtr (storage s1) $ \s1' ->
-        Sig.c_swap s0' s1'
-
-
 instance Class.GPUStorage t where
   c_getDevice :: t -> io Int
 -}

@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------------
 -- |
--- Module    :  Torch.Indef.Static.Tensor.Random.TH
+-- Module    :  Torch.Indef.Static.Tensor.Random
 -- Copyright :  (c) Sam Stites 2017
 -- License   :  BSD3
 -- Maintainer:  sam@stites.io
@@ -8,7 +8,7 @@
 -- Portability: non-portable
 -------------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
-module Torch.Indef.Static.Tensor.Random.TH
+module Torch.Indef.Static.Tensor.Random
   ( _random                 , random
   , _clampedRandom          , clampedRandom
   , _cappedRandom           , cappedRandom
@@ -46,8 +46,8 @@ import Torch.Indef.Static.Tensor.Internal (transpose2d, expand2d)
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Pointwise
 import Torch.Indef.Static.Tensor.Math.Blas
-import Torch.Indef.Dynamic.Tensor.Random.TH (Ord2Tuple, Positive, ClosedUnit, OpenUnit)
-import qualified Torch.Indef.Dynamic.Tensor.Random.TH as Dynamic
+import Torch.Indef.Dynamic.Tensor.Random (Ord2Tuple, Positive, ClosedUnit, OpenUnit)
+import qualified Torch.Indef.Dynamic.Tensor.Random as Dynamic
 import qualified Torch.Types.TH as TH
 import qualified Torch.Sig.Tensor.Random.TH as Sig
 import qualified Torch.Sig.Types as Sig

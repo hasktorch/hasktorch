@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------------
 -- |
--- Module    :  Torch.Indef.Dynamic.Tensor.Random.TH
+-- Module    :  Torch.Indef.Dynamic.Tensor.Random
 -- Copyright :  (c) Sam Stites 2017
 -- License   :  BSD3
 -- Maintainer:  sam@stites.io
@@ -15,7 +15,7 @@
 -- <https://github.com/torch/torch7/blob/aed31711c6b8846b8337a263a7f9f998697994e7/doc/random.md
 -- random.md> from torch/torch7.
 -------------------------------------------------------------------------------
-module Torch.Indef.Dynamic.Tensor.Random.TH
+module Torch.Indef.Dynamic.Tensor.Random
   ( _random                 , random
   , _clampedRandom          , clampedRandom
   , _cappedRandom           , cappedRandom

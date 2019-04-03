@@ -9,9 +9,7 @@
 --
 -- Random functions for CPU-based tensors.
 -------------------------------------------------------------------------------
-
-
-module Torch.Indef.Dynamic.Tensor.Math.Random.TH
+module Torch.Indef.Dynamic.Tensor.Math.Random
   ( _rand
   , _randn
   , _randperm
