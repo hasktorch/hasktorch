@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------------
 -- |
--- Module    :  Torch.Indef.Static.Tensor.Random.THC
+-- Module    :  Torch.Indef.Static.Tensor.Random
 -- Copyright :  (c) Sam Stites 2017
 -- License   :  BSD3
 -- Maintainer:  sam@stites.io
 -- Stability :  experimental
 -- Portability: non-portable
 -------------------------------------------------------------------------------
-module Torch.Indef.Static.Tensor.Random.THC
+module Torch.Indef.Static.Tensor.Random
   ( random
   , clampedRandom
   , cappedRandom
@@ -40,13 +40,13 @@ import Numeric.Dimensions
 
 import Torch.Indef.Types
 import Torch.Indef.Static.Tensor.Internal (new)
-import qualified Torch.Indef.Dynamic.Tensor.Random.THC as Dynamic
+import qualified Torch.Indef.Dynamic.Tensor.Random as Dynamic
 import qualified Torch.Types.TH as TH
-import Torch.Indef.Dynamic.Tensor.Random.TH
-  ( OpenUnit, openUnit, openUnitValue
-  , ClosedUnit, closedUnit, closedUnitValue
-  , Positive, positive, positiveValue
-  , Ord2Tuple, ord2Tuple, ord2TupleValue
+import Torch.Types.Numeric
+  ( OpenUnit   , openUnit   , openUnitValue
+  , ClosedUnit , closedUnit , closedUnitValue
+  , Positive   , positive   , positiveValue
+  , Ord2Tuple  , ord2Tuple  , ord2TupleValue
   )
 
 

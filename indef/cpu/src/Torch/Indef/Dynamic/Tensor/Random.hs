@@ -35,11 +35,6 @@ module Torch.Indef.Dynamic.Tensor.Random
   , _multinomial
   , _multinomialAliasSetup
   , _multinomialAliasDraw
-
-  , OpenUnit, openUnit, openUnitValue
-  , ClosedUnit, closedUnit, closedUnitValue
-  , Positive, positive, positiveValue
-  , Ord2Tuple, ord2Tuple, ord2TupleValue
   ) where
 
 import Foreign hiding (with, new)

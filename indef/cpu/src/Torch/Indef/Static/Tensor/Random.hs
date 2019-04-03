@@ -29,10 +29,10 @@ module Torch.Indef.Static.Tensor.Random
   , _multinomialAliasSetup
   , _multinomialAliasDraw
 
-  , OpenUnit   , Dynamic.openUnit   , Dynamic.openUnitValue
-  , ClosedUnit , Dynamic.closedUnit , Dynamic.closedUnitValue
-  , Positive   , Dynamic.positive   , Dynamic.positiveValue
-  , Ord2Tuple  , Dynamic.ord2Tuple  , Dynamic.ord2TupleValue
+  , OpenUnit   , Numeric.openUnit   , Numeric.openUnitValue
+  , ClosedUnit , Numeric.closedUnit , Numeric.closedUnitValue
+  , Positive   , Numeric.positive   , Numeric.positiveValue
+  , Ord2Tuple  , Numeric.ord2Tuple  , Numeric.ord2TupleValue
 
   , multivariate_normal
   ) where
@@ -46,9 +46,10 @@ import Torch.Indef.Static.Tensor.Internal (transpose2d, expand2d)
 import Torch.Indef.Static.Tensor.Math
 import Torch.Indef.Static.Tensor.Math.Pointwise
 import Torch.Indef.Static.Tensor.Math.Blas
-import Torch.Indef.Dynamic.Tensor.Random (Ord2Tuple, Positive, ClosedUnit, OpenUnit)
+import Torch.Types.Numeric (Ord2Tuple, Positive, ClosedUnit, OpenUnit)
 import qualified Torch.Indef.Dynamic.Tensor.Random as Dynamic
 import qualified Torch.Types.TH as TH
+import qualified Torch.Types.Numeric as Numeric
 import qualified Torch.Sig.Tensor.Random.TH as Sig
 import qualified Torch.Sig.Types as Sig
 import qualified Torch.Sig.Types.Global as Sig
@@ -207,7 +208,7 @@ multivariate_normal
 multivariate_normal g mu eigvec eigval = go (transpose2d eigvec) (diag1d eigval) (expand2d mu)
   <$> normal g 0 p1
  where
-  Just p1 = Dynamic.positive 1
+  Just p1 = Numeric.positive 1
 
   go :: Tensor '[p, p] -> Tensor '[p, p] -> Tensor '[n, p] -> Tensor '[p, n] -> Tensor '[n, p]
   go evec' eval' offset samps = transpose2d (y !*! samps) ^+^ offset

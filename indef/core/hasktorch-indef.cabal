@@ -116,11 +116,4 @@ library
         text ==1.2.2 || >1.2.2,
         vector ==0.12.0 || >0.12.0
 
-    -- if flag(cuda)
-    --     cpp-options: -DCUDA -DHASKTORCH_INTERNAL_CUDA
-    --     build-depends:
-    --         hasktorch-types-thc (==0.0.1 || >0.0.1) && <0.0.2,
-    --         cuda -any
-    -- else
-
 
