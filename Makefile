@@ -2,9 +2,6 @@ UNAME:=$(shell uname)
 PWD:=$(shell pwd)
 GHC_VERSION:=$(shell ghc --version | cut -d' ' -f 8)
 
-clean:
-	rm -rf dist{,-newbuild}
-
 init:
 	git submodule update --init --recursive
 	(cd ffi/deps && ./build-aten.sh)
@@ -23,6 +20,9 @@ endif
 	$(info defaulting to CPU configuration)
 	./make_cabal_local.sh
 	cabal new-update
+
+clean:
+	rm -rf dist{,-newbuild}
 
 purge:
 	rm -rf dist-newstyle
