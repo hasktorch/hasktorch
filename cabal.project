@@ -13,7 +13,7 @@ packages:
     signatures/support/*cabal
     signatures/*cabal
 
-    indef/*cabal
+    indef/core/*cabal
 
     hasktorch/*cabal
 
