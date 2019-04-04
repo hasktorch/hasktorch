@@ -19,5 +19,5 @@ packages:
 
     hasktorch/*cabal
 
-    -- zoo/*cabal
-    -- examples/*cabal
+    zoo/*cabal
+    examples/*cabal

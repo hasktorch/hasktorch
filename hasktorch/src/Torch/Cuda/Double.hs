@@ -42,7 +42,7 @@ import Torch.Indef.Cuda.Double.Tensor.Math.Lapack as X
 import Torch.Indef.Cuda.Double.Tensor.Math.Pointwise.Floating as X
 import Torch.Indef.Cuda.Double.Tensor.Math.Reduce.Floating as X
 
-import Torch.Indef.Cuda.Double.Tensor.Random.THC as X
+import Torch.Indef.Cuda.Double.Tensor.Random as X
 
 -------------------------------------------------------------------------------
 

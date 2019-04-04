@@ -87,6 +87,17 @@ library
       , Torch.Indef.Static.NN.Padding
       , Torch.Indef.Static.NN.Pooling
       , Torch.Indef.Static.NN.Sampling
+
+      -- bundle up undefined packages to satisfy all types in a definite
+      , Torch.Undefined.NN
+      , Torch.Undefined.Types.NN
+      , Torch.Undefined.Tensor.Math.Blas
+      , Torch.Undefined.Tensor.Math.Floating
+      , Torch.Undefined.Tensor.Math.Lapack
+      , Torch.Undefined.Tensor.Math.Pointwise.Signed
+      , Torch.Undefined.Tensor.Math.Pointwise.Floating
+      , Torch.Undefined.Tensor.Math.Reduce.Floating
+      , Torch.Undefined.Tensor.Random.THC
     hs-source-dirs: src
     default-language: Haskell2010
     default-extensions: LambdaCase DataKinds TypeFamilies

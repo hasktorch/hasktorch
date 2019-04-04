@@ -35,6 +35,11 @@ module Torch.Indef.Dynamic.Tensor.Random
   , _multinomial
   , _multinomialAliasSetup
   , _multinomialAliasDraw
+
+  , OpenUnit   , Numeric.openUnit   , Numeric.openUnitValue
+  , ClosedUnit , Numeric.closedUnit , Numeric.closedUnitValue
+  , Positive   , Numeric.positive   , Numeric.positiveValue
+  , Ord2Tuple  , Numeric.ord2Tuple  , Numeric.ord2TupleValue
   ) where
 
 import Foreign hiding (with, new)
@@ -49,6 +54,7 @@ import Torch.Indef.Dynamic.Tensor.Internal (withInplace)
 import qualified Torch.Sig.Tensor.Random.TH as Sig
 import qualified Torch.Sig.Types as Sig
 import qualified Torch.Sig.Types.Global as Sig
+import qualified Torch.Types.Numeric as Numeric
 import qualified Torch.Types.TH as TH
 
 -- | Returns a tensor of specified size with random numbers from [1,2^mantissa].
