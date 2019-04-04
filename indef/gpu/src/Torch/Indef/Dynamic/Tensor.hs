@@ -39,6 +39,8 @@ import Numeric.Dimensions
 import System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
 import Control.Monad.Trans.Except
 import qualified Data.List.NonEmpty           as NE
+import qualified Foreign.CUDA.Types           as CUDA
+import qualified Foreign.CUDA.Runtime.Marshal as CUDA
 import qualified Foreign.Marshal.Array        as FM
 import qualified Torch.Sig.Types              as Sig
 import qualified Torch.Sig.Tensor             as Sig
@@ -63,11 +65,12 @@ tensordata t =
         t' <- managedTensor t
         liftIO $ do
           let sz = fromIntegral (product ds)
-          -- a strong dose of paranoia
-          tmp <- FM.mallocArray sz
-          creals <- Sig.c_data st t'
-          FM.copyArray tmp creals sz
-          FM.peekArray sz tmp
+          -- FIXME: I think we can remove the extra copy here
+          -- but I'm not going to do it just now
+          tmp <- CUDA.mallocArray sz
+          creals <- CUDA.DevicePtr <$> Sig.c_data st t'
+          CUDA.copyArray sz tmp creals
+          CUDA.peekListArray sz tmp
 {-# NOINLINE tensordata #-}
 
 ----------------------------------------------------------------

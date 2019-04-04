@@ -11,7 +11,8 @@ import Control.Monad.Managed
 import Foreign hiding (with, new)
 import GHC.Exts (IsList(..))
 import System.IO.Unsafe
-import qualified Foreign.Marshal.Array as FM
+import qualified Foreign.CUDA.Types as CUDA
+import qualified Foreign.CUDA.Runtime.Marshal as CUDA
 
 import Torch.Indef.Types
 import qualified Torch.Sig.Storage as Sig
@@ -27,11 +28,11 @@ storagedata s =
         liftIO $ do
           -- a strong dose of paranoia
           sz     <- fromIntegral <$> Sig.c_size st s'
-          tmp    <- FM.mallocArray sz
+          tmp    <- CUDA.mallocArray sz
 
-          creals <- Sig.c_data st s'
-          FM.copyArray tmp creals sz
-          FM.peekArray sz tmp
+          creals <- CUDA.DevicePtr <$> Sig.c_data st s'
+          CUDA.copyArray sz tmp creals
+          CUDA.peekListArray sz tmp
  where
   arrayLen :: Ptr CState -> Ptr CStorage -> IO Int
   arrayLen st p = fromIntegral <$> Sig.c_size st p
@@ -50,7 +51,7 @@ newWithData pr pd =
     .   withStorage
     $   Sig.c_newWithData
     <$> managedState
-    <*> liftIO (FM.newArray (hs2cReal <$> pr))
+    <*> liftIO (CUDA.useDevicePtr <$> CUDA.newListArray (hs2cReal <$> pr))
     <*> pure (fromIntegral pd)
 {-# NOINLINE newWithData #-}
 
