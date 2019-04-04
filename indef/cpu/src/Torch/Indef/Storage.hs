@@ -26,13 +26,9 @@ storagedata s =
         st <- managedState
         s' <- managedStorage s
         liftIO $ do
-          -- a strong dose of paranoia
           sz     <- fromIntegral <$> Sig.c_size st s'
-          tmp    <- FM.mallocArray sz
-
           creals <- Sig.c_data st s'
-          FM.copyArray tmp creals sz
-          FM.peekArray sz tmp
+          FM.peekArray sz creals
  where
   arrayLen :: Ptr CState -> Ptr CStorage -> IO Int
   arrayLen st p = fromIntegral <$> Sig.c_size st p

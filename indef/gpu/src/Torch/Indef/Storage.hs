@@ -26,13 +26,9 @@ storagedata s =
         st <- managedState
         s' <- managedStorage s
         liftIO $ do
-          -- a strong dose of paranoia
           sz     <- fromIntegral <$> Sig.c_size st s'
-          tmp    <- CUDA.mallocArray sz
-
           creals <- CUDA.DevicePtr <$> Sig.c_data st s'
-          CUDA.copyArray sz tmp creals
-          CUDA.peekListArray sz tmp
+          CUDA.peekListArray sz creals
  where
   arrayLen :: Ptr CState -> Ptr CStorage -> IO Int
   arrayLen st p = fromIntegral <$> Sig.c_size st p

@@ -62,12 +62,8 @@ tensordata t =
         st <- managedState
         t' <- managedTensor t
         liftIO $ do
-          let sz = fromIntegral (product ds)
-          -- a strong dose of paranoia
-          tmp <- FM.mallocArray sz
           creals <- Sig.c_data st t'
-          FM.copyArray tmp creals sz
-          FM.peekArray sz tmp
+          FM.peekArray (fromIntegral (product ds)) creals
 {-# NOINLINE tensordata #-}
 
 

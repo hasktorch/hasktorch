@@ -64,13 +64,8 @@ tensordata t =
         st <- managedState
         t' <- managedTensor t
         liftIO $ do
-          let sz = fromIntegral (product ds)
-          -- FIXME: I think we can remove the extra copy here
-          -- but I'm not going to do it just now
-          tmp <- CUDA.mallocArray sz
           creals <- CUDA.DevicePtr <$> Sig.c_data st t'
-          CUDA.copyArray sz tmp creals
-          CUDA.peekListArray sz tmp
+          CUDA.peekListArray (fromIntegral (product ds)) creals
 {-# NOINLINE tensordata #-}
 
 ----------------------------------------------------------------
