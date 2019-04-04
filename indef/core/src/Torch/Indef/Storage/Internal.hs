@@ -74,34 +74,6 @@ import qualified Torch.Sig.Storage as Sig
 import qualified Torch.Sig.Storage.Memory as Sig
 import qualified Foreign.Marshal.Array as FM
 
--- -- ======================= --
--- --       Mix-in code       --
--- -- ======================= --
---
--- -- | return the internal data of 'Storage' as a list of haskell values.
--- storagedata :: Storage -> [HsReal]
---
--- -- | make a new 'Storage' from a given list and 'StorageSize'.
--- --
--- -- FIXME: find out if 'StorageSize' always corresponds to the length of the list. If so,
--- -- remove it!
--- newWithData
---   :: [HsReal]
---   -> Word64   -- ^ storage size
---   -> Storage
---
--- instance IsList Storage where
---   type Item Storage = HsReal
---   toList = storagedata
---   fromList pr = newWithData pr (fromIntegral $ length pr)
---
--- instance Show Storage where
---   show = show . storagedata
-
--- ======================= --
--- Fully instantiated code --
--- ======================= --
-
 -- TODO: use these?
 -- newtype MStorage s = MStorage (STRef s Storage)
 --
@@ -254,7 +226,4 @@ resize s pd =
 fill :: Storage -> HsReal -> IO ()
 fill s v = withLift $ Sig.c_fill <$> managedState <*> managedStorage s <*> pure (hs2cReal v)
 
-{-
-instance Class.GPUStorage t where
-  c_getDevice :: t -> io Int
--}
+

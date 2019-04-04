@@ -55,24 +55,6 @@ newWithData pr pd =
 {-# NOINLINE newWithData #-}
 
 
--- -- FIXME: reintroduce these???
---
--- instance Class.CPUStorage Storage where
---   newWithAllocator :: StorageSize -> (CTHAllocatorPtr, AllocatorContext) -> IO Storage
---   newWithAllocator pd (alloc, AllocatorContext ctx) = Sig.c_newWithAllocator (fromIntegral pd) alloc ctx >>= mkStorage
---
---   newWithDataAndAllocator :: [HsReal] -> StorageSize -> (CTHAllocatorPtr, AllocatorContext) -> IO Storage
---   newWithDataAndAllocator pr pd (alloc, AllocatorContext ctx) = do
---     pr' <- FM.withArray (hs2cReal <$> pr) pure
---     s <- Sig.c_newWithDataAndAllocator pr' (fromIntegral pd) alloc ctx {-seems like it's fine to pass nullPtr-}
---     mkStorage s
---
---   swap :: Storage -> Storage -> IO ()
---   swap s0 s1 =
---     withForeignPtr (storage s0) $ \s0' ->
---       withForeignPtr (storage s1) $ \s1' ->
---         Sig.c_swap s0' s1'
-
 instance IsList Storage where
   type Item Storage = HsReal
   toList = storagedata
@@ -81,3 +63,7 @@ instance IsList Storage where
 instance Show Storage where
   show = show . storagedata
 
+{-
+instance Class.GPUStorage t where
+  c_getDevice :: t -> io Int
+-}

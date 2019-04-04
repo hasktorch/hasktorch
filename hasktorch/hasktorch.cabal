@@ -113,21 +113,22 @@ library
         Torch.Cuda.Double.Dynamic.NN.Criterion
       if !flag(lite) {
         reexported-modules:
-          Torch.Cuda.Byte,
-          Torch.Cuda.Byte.Dynamic,
-          Torch.Cuda.Byte.Storage,
-          Torch.Cuda.Char,
-          Torch.Cuda.Char.Dynamic,
-          Torch.Cuda.Char.Storage,
-          Torch.Cuda.Short,
-          Torch.Cuda.Short.Dynamic,
-          Torch.Cuda.Short.Storage,
-          Torch.Cuda.Int,
-          Torch.Cuda.Int.Dynamic,
-          Torch.Cuda.Int.Storage,
-          Torch.Cuda.Float,
-          Torch.Cuda.Float.Dynamic,
-          Torch.Cuda.Float.Storage
+            Torch.Cuda.Byte
+          , Torch.Cuda.Byte.Dynamic
+          , Torch.Cuda.Byte.Storage
+          , Torch.Cuda.Char
+          , Torch.Cuda.Char.Dynamic
+          , Torch.Cuda.Char.Storage
+          , Torch.Cuda.Short
+          , Torch.Cuda.Short.Dynamic
+          , Torch.Cuda.Short.Storage
+          , Torch.Cuda.Int
+          , Torch.Cuda.Int.Dynamic
+          , Torch.Cuda.Int.Storage
+          -- These are not supported in our version of ATen
+          -- , Torch.Cuda.Float
+          -- , Torch.Cuda.Float.Dynamic
+          -- , Torch.Cuda.Float.Storage
        }
     }
 
