@@ -14,8 +14,10 @@ packages:
     signatures/*cabal
 
     indef/core/*cabal
+    indef/cpu/*cabal
+    indef/gpu/*cabal
 
     hasktorch/*cabal
 
-    zoo/*cabal
-    examples/*cabal
+    -- zoo/*cabal
+    -- examples/*cabal

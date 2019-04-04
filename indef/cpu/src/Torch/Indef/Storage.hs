@@ -2,6 +2,7 @@ module Torch.Indef.Storage
   ( module X
   , storagedata
   , newWithData
+  , IsList(fromList, toList)
   ) where
 
 import Torch.Indef.Storage.Copy as X

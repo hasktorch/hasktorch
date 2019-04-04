@@ -33,13 +33,11 @@ import Torch.Indef.Double.Tensor.Math.Lapack as X
 import Torch.Indef.Double.Tensor.Math.Pointwise.Floating as X
 import Torch.Indef.Double.Tensor.Math.Reduce.Floating as X
 
-import Torch.Indef.Double.Tensor.Math.Random.TH as X
-import Torch.Indef.Double.Tensor.Random.TH as X
+import Torch.Indef.Double.Tensor.Math.Random as X
+import Torch.Indef.Double.Tensor.Random as X
 import Torch.Core.Random as X (newRNG, seed, manualSeed, initialSeed)
 
 -------------------------------------------------------------------------------
-
-import System.IO.Unsafe
 
 instance Dimensions d => Fractional (Tensor d) where
   fromRational = constant . fromRational
