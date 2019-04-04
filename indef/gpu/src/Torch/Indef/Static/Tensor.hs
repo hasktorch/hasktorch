@@ -51,8 +51,8 @@ fromList
   :: forall d .  Dimensions d
   => KnownNat (Product d)
   => KnownDim (Product d)
-  => [HsReal] -> IO (Maybe (Tensor d))
-fromList l = runMaybeT $ do
+  => [HsReal] -> Maybe (Tensor d)
+fromList l = unsafeDupablePerformIO . runMaybeT $ do
   evec <- lift $ runExceptT (vector l)
   vec :: Tensor '[Product d] <-
     case evec of
