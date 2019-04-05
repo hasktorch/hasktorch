@@ -21,13 +21,13 @@ main = do
   gen <- newRNG
 
   void $ do
-    Just (evec :: Tensor '[2, 2]) <- fromList [1, 0, 0.5, 1]
-    Just (eval :: Tensor '[2])    <- fromList [10, 30]
+    let Just (evec :: Tensor '[2, 2]) = fromList [1, 0, 0.5, 1]
+    let Just (eval :: Tensor '[2])    = fromList [10, 30]
     runMultivariate gen evec eval
 
   void $ do
-    Just (evec :: Tensor '[3, 3]) <- fromList [1, 1, 1, 1, 1, 1, 0, 0, 0]
-    Just (eval :: Tensor '[3])    <- fromList [1, 1, 1]
+    let Just (evec :: Tensor '[3, 3]) = fromList [1, 1, 1, 1, 1, 1, 0, 0, 0]
+    let Just (eval :: Tensor '[3])    = fromList [1, 1, 1]
     runMultivariate gen evec eval
 
   putStrLn "Done"

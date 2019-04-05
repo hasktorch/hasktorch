@@ -5,6 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import Prelude

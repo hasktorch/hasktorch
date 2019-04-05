@@ -7,11 +7,13 @@ module Criterion where
 #ifdef CUDA
 import Torch.Cuda.Double
 import qualified Torch.Cuda.Long as Long
+import qualified Torch.Cuda.Double.Dynamic.NN as Dynamic
 import qualified Torch.Cuda.Double.Dynamic.NN.Criterion as Dynamic
 import qualified Torch.Cuda.Double.Dynamic as Dynamic
 #else
 import Torch.Double
 import qualified Torch.Long as Long
+import qualified Torch.Double.Dynamic.NN as Dynamic
 import qualified Torch.Double.Dynamic.NN.Criterion as Dynamic
 import qualified Torch.Double.Dynamic as Dynamic
 #endif
