@@ -11,7 +11,7 @@ import Control.Monad.Managed
 import Foreign hiding (with, new)
 import GHC.Exts (IsList(..))
 import System.IO.Unsafe
-import qualified Foreign.CUDA.Types as CUDA
+import qualified Foreign.CUDA.Ptr             as CUDA
 import qualified Foreign.CUDA.Runtime.Marshal as CUDA
 
 import Torch.Indef.Types

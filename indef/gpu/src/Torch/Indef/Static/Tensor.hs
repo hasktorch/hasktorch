@@ -7,8 +7,12 @@
 -- Stability :  experimental
 -- Portability: non-portable
 -------------------------------------------------------------------------------
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
+#if MIN_VERSION_base(4,12,0)
+{-# LANGUAGE NoStarIsType #-}
+#endif
 module Torch.Indef.Static.Tensor
   ( module X
   , _expandNd

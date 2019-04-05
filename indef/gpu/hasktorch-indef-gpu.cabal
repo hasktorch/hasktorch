@@ -111,8 +111,8 @@ library
       , hasktorch-indef (==0.0.1 || >0.0.1) && <0.0.2
       , hasktorch-types-th (==0.0.1 || >0.0.1) && <0.0.2
       , hasktorch-types-thc (==0.0.1 || >0.0.1) && <0.0.2
-      , cuda (==0.9.0.0 || >0.9.0.0) && <0.10.0.0
       , hasktorch-signatures-partial (==0.0.1 || >0.0.1) && <0.0.2
+      , cuda (==0.10.0.0 || >0.10.0.0)
     mixins:
         hasktorch-indef requires
           (Torch.Sig.Tensor.Math.Random.TH as Torch.Undefined.Tensor.Math.Random.TH

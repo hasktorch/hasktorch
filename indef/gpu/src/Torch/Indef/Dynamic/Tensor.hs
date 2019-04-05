@@ -39,7 +39,7 @@ import Numeric.Dimensions
 import System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
 import Control.Monad.Trans.Except
 import qualified Data.List.NonEmpty           as NE
-import qualified Foreign.CUDA.Types           as CUDA
+import qualified Foreign.CUDA.Ptr             as CUDA
 import qualified Foreign.CUDA.Runtime.Marshal as CUDA
 import qualified Foreign.Marshal.Array        as FM
 import qualified Torch.Sig.Types              as Sig
