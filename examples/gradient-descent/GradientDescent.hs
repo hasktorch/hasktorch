@@ -127,14 +127,14 @@ runExample :: IO (Tensor '[1,2])
 runExample = do
   -- Generate data w/ ground truth params
   putStrLn "True parameters"
-  Just trueParam <- fromList [3.5, -4.4]
+  let Just trueParam = fromList [3.5, -4.4]
   print trueParam
 
   dat <- genData trueParam
   -- print dat
 
   -- Setup GD
-  Just (p0 :: Tensor '[1, 2]) <- fromList [0, 0]
+  let Just (p0 :: Tensor '[1, 2]) = fromList [0, 0]
   iters <- gradientDescent dat 0.0005 0.0001 p0
 
   -- Results

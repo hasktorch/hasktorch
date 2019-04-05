@@ -35,8 +35,8 @@ initialization = void $ do
     pure asMat
 
   section "Initialize arbitrary dimensions directly from list" $ do
-    Just (listVec2 :: DoubleTensor '[3, 2])
-      <- fromList [1, 2, 3, 4, 5, 6]
+    let Just (listVec2 :: DoubleTensor '[3, 2])
+          = fromList [1, 2, 3, 4, 5, 6]
     pure listVec2
 
   section "Random values" $ do

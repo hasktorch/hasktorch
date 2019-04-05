@@ -48,8 +48,8 @@ genData gen param = do
 
 genParam :: RNG.Generator -> IO (Tensor '[1, 3])
 genParam gen = do
-  Just (eigenvectors :: Tensor '[3,3])
-    <- fromList [1, 0, 0, 0, 1, 1, 1, 0, 1]
+  let Just (eigenvectors :: Tensor '[3,3])
+        = fromList [1, 0, 0, 0, 1, 1, 1, 0, 1]
 
   eigenvalues :: Tensor '[3]
     <- unsafeVector [1, 1, 1]
