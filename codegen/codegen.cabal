@@ -16,9 +16,11 @@ library
     ParseDeclarations
     ParseDerivatives
     ParseFunctionSig
+    ParseTuples
     RenderDeclarations
     RenderCommon
     RenderTensor
+    RenderTuples
   hs-source-dirs: src
   default-language: Haskell2010
   build-depends:

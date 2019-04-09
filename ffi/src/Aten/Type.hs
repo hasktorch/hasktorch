@@ -7,6 +7,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Aten.Type
   ( RawIntArrayRef
@@ -79,3 +80,4 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", [t|(RawTensor,RawTensor,RawTensor,Int64)|])
       , (C.TypeName "std::vector<at::Tensor>", [t|TensorAVector|])
     ]
+

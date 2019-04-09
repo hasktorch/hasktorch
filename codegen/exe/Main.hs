@@ -7,12 +7,14 @@ module Main where
 import qualified Options.Applicative as O
 import qualified ParseFunctionSig as F
 import qualified RenderDeclarations as RD
+import qualified RenderTuples as RTL
 import qualified RenderTensor as RT
 
 {- CLI options -}
 
 data Options = Options
     { specFileDL :: !String
+    , specFileTuple :: !String
     , outputDir :: !String
     } deriving Show
 
@@ -38,6 +40,13 @@ programOptions =
           <> O.help "Specification file of Declarations"
           )
     <*> O.strOption
+          (  O.long "tuple-spec"
+          <> O.short 't'
+          <> O.metavar "FILENAME"
+          <> O.value "spec/tuples.yaml"
+          <> O.help "Specification file of Tuples"
+          )
+    <*> O.strOption
           (  O.long "output-dir"
           <> O.short 'o'
           <> O.metavar "DIRNAME"
@@ -48,6 +57,7 @@ programOptions =
 main = do
   opts <- O.execParser optsParser
   RT.tensorBuilder
+  RTL.decodeAndCodeGen (outputDir opts) (specFileTuple opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   pure ()
 

@@ -30,10 +30,12 @@ Extra-source-files:    csrc/Mask.h
 
 library
  exposed-modules:     Aten.Type
+                    , Aten.Class
                     , Aten.Const
                     , Aten.NN
                     , Aten.TH
                     , Aten.Native
+                    , Aten.Type.Tuple
                     , Aten.Type.Generator
                     , Aten.Type.Generator.Cast
                     , Aten.Type.Generator.FFI
