@@ -10,80 +10,40 @@ copyright:           2018 Austin Huang
 category:            Codegen
 build-type:          Simple
 cabal-version:       >=1.10
-Extra-source-files:    csrc/Mask.h
-                    ,  csrc/AtenGenerator.cpp
-                    ,  csrc/AtenGenerator.h
-                    ,  csrc/AtenIntArrayRef.h
-                    ,  csrc/AtenScalar.cpp
-                    ,  csrc/AtenScalar.h
-                    ,  csrc/AtenSparseTensorRef.cpp
-                    ,  csrc/AtenSparseTensorRef.h
-                    ,  csrc/AtenStorage.cpp
-                    ,  csrc/AtenStorage.h
-                    ,  csrc/AtenTensor.cpp
-                    ,  csrc/AtenTensor.h
-                    ,  csrc/AtenTensorList.cpp
-                    ,  csrc/AtenTensorList.h
-                    ,  csrc/AtenTensorOptions.cpp
-                    ,  csrc/AtenTensorOptions.h
-
 
 library
  exposed-modules:     Aten.Type
-                    , Aten.Class
                     , Aten.Const
-                    , Aten.NN
-                    , Aten.TH
-                    , Aten.Native
-                    , Aten.Type.Tuple
-                    , Aten.Type.Generator
-                    , Aten.Type.Generator.Cast
-                    , Aten.Type.Generator.FFI
-                    , Aten.Type.Generator.Implementation
-                    , Aten.Type.Generator.Interface
-                    , Aten.Type.Generator.RawType
-                    , Aten.Type.IntArrayRef
-                    , Aten.Type.IntArrayRef.Cast
-                    , Aten.Type.IntArrayRef.FFI
-                    , Aten.Type.IntArrayRef.Implementation
-                    , Aten.Type.IntArrayRef.Interface
-                    , Aten.Type.IntArrayRef.RawType
-                    , Aten.Type.Scalar
-                    , Aten.Type.Scalar.Cast
-                    , Aten.Type.Scalar.FFI
-                    , Aten.Type.Scalar.Implementation
-                    , Aten.Type.Scalar.Interface
-                    , Aten.Type.Scalar.RawType
-                    , Aten.Type.SparseTensorRef
-                    , Aten.Type.SparseTensorRef.Cast
-                    , Aten.Type.SparseTensorRef.FFI
-                    , Aten.Type.SparseTensorRef.Implementation
-                    , Aten.Type.SparseTensorRef.Interface
-                    , Aten.Type.SparseTensorRef.RawType
-                    , Aten.Type.Storage
-                    , Aten.Type.Storage.Cast
-                    , Aten.Type.Storage.FFI
-                    , Aten.Type.Storage.Implementation
-                    , Aten.Type.Storage.Interface
-                    , Aten.Type.Storage.RawType
-                    , Aten.Type.Tensor
-                    , Aten.Type.Tensor.Cast
-                    , Aten.Type.Tensor.FFI
-                    , Aten.Type.Tensor.Implementation
-                    , Aten.Type.Tensor.Interface
-                    , Aten.Type.Tensor.RawType
-                    , Aten.Type.TensorList
-                    , Aten.Type.TensorList.Cast
-                    , Aten.Type.TensorList.FFI
-                    , Aten.Type.TensorList.Implementation
-                    , Aten.Type.TensorList.Interface
-                    , Aten.Type.TensorList.RawType
-                    , Aten.Type.TensorOptions
-                    , Aten.Type.TensorOptions.Cast
-                    , Aten.Type.TensorOptions.FFI
-                    , Aten.Type.TensorOptions.Implementation
-                    , Aten.Type.TensorOptions.Interface
-                    , Aten.Type.TensorOptions.RawType
+                    , Aten.Cast
+                    , Aten.Class
+                    , Aten.Unmanaged.NN
+                    , Aten.Unmanaged.TH
+                    , Aten.Unmanaged.Native
+                    , Aten.Unmanaged.Type.Tuple
+                    , Aten.Unmanaged.Type.Generator
+                    , Aten.Unmanaged.Type.IntArray
+                    , Aten.Unmanaged.Type.Scalar
+                    , Aten.Unmanaged.Type.SparseTensorRef
+                    , Aten.Unmanaged.Type.Storage
+                    , Aten.Unmanaged.Type.Tensor
+                    , Aten.Unmanaged.Type.TensorList
+                    , Aten.Unmanaged.Type.TensorOptions
+                    , Aten.Unmanaged.Type.StdString
+                    , Aten.Unmanaged.Type.StdArray
+                    , Aten.Managed.NN
+                    , Aten.Managed.TH
+                    , Aten.Managed.Native
+                    , Aten.Managed.Type.Tuple
+                    , Aten.Managed.Type.Generator
+                    , Aten.Managed.Type.IntArray
+                    , Aten.Managed.Type.Scalar
+                    , Aten.Managed.Type.SparseTensorRef
+                    , Aten.Managed.Type.Storage
+                    , Aten.Managed.Type.Tensor
+                    , Aten.Managed.Type.TensorList
+                    , Aten.Managed.Type.TensorOptions
+                    , Aten.Managed.Type.StdString
+                    , Aten.Managed.Type.StdArray
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
@@ -91,33 +51,13 @@ library
                     , inline-c
                     , optparse-applicative >= 0.14.3.0
                     , containers
-                    , fficxx >= 0.5
-                    , fficxx-runtime >= 0.5
                     , template-haskell
+                    , bytestring
  extra-libraries:     stdc++
                     , c10
                     , iomp5
                     , mklml
                     , caffe2
- include-dirs:        csrc
- install-includes:     outputType.h
-                    ,  Mask.h
-                    ,  AtenGenerator.h
-                    ,  AtenIntArrayRef.h
-                    ,  AtenScalar.h
-                    ,  AtenSparseTensorRef.h
-                    ,  AtenStorage.h
-                    ,  AtenTensor.h
-                    ,  AtenTensorList.h
-                    ,  AtenTensorOptions.h
- c-sources:            csrc/AtenGenerator.cpp
-                    ,  csrc/AtenIntArrayRef.cpp
-                    ,  csrc/AtenScalar.cpp
-                    ,  csrc/AtenSparseTensorRef.cpp
-                    ,  csrc/AtenStorage.cpp
-                    ,  csrc/AtenTensor.cpp
-                    ,  csrc/AtenTensorList.cpp
-                    ,  csrc/AtenTensorOptions.cpp
  ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0
  cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0
  cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0

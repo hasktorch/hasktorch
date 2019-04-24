@@ -1,0 +1,8 @@
+signature: Scalar
+cppname: Scalar
+hsname: Scalar
+constructors:
+- new() -> Scalar
+- new_int(int a) -> Scalar
+- new_double(double a) -> Scalar
+methods: []

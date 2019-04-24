@@ -1,0 +1,6 @@
+signature: TensorList
+cppname: TensorList
+hsname: TensorList
+constructors:
+- new() -> TensorList
+methods: []

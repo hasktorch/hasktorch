@@ -7,25 +7,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
 
-module Aten.Type
-  ( RawIntArrayRef
-  , RawScalar
-  , ScalarType
-  , DeviceType
-  , RawSparseTensorRef
-  , RawStorage
-  , RawTensor
-  , RawTensorList
-  , RawTensorOptions
-  , TensorAVector
-  , StdArray
-  , StdString
-  , Generator
-  , Device
-  , typeTable
-) where
+module Aten.Type where
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -37,47 +20,47 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign
 
-import Aten.Type.IntArrayRef.RawType (RawIntArrayRef)
-import Aten.Type.Scalar.RawType (RawScalar)
-import Aten.Type.SparseTensorRef.RawType (RawSparseTensorRef)
-import Aten.Type.Storage.RawType (RawStorage)
-import Aten.Type.Tensor.RawType (RawTensor)
-import Aten.Type.TensorList.RawType (RawTensorList)
-import Aten.Type.TensorOptions.RawType (RawTensorOptions)
+type ScalarType = Int8
+type DeviceType = Int16
 
-type ScalarType = CChar
-type DeviceType = CShort
-
+data Tensor
+data Scalar
+data TensorOptions
+data TensorList
+data IntArrayRef
+data IntArray
 data TensorAVector
+data SparseTensorRef
+data Storage
 data StdArray a b
 data StdString
 data Generator
 data Device
 
 typeTable = Map.fromList [
-        (C.TypeName "at::Scalar", [t|RawScalar|])
-      , (C.TypeName "at::Tensor", [t|RawTensor|])
-      , (C.TypeName "at::TensorOptions", [t|RawTensorOptions|])
-      , (C.TypeName "at::TensorList", [t|RawTensorList|])
-      , (C.TypeName "at::IntArrayRef", [t|RawIntArrayRef|])
+        (C.TypeName "at::Scalar", [t|Scalar|])
+      , (C.TypeName "at::Tensor", [t|Tensor|])
+      , (C.TypeName "at::TensorOptions", [t|TensorOptions|])
+      , (C.TypeName "at::TensorList", [t|TensorList|])
+      , (C.TypeName "at::IntArrayRef", [t|IntArrayRef|])
+      , (C.TypeName "std::vector<int64_t>", [t|IntArray|])
       , (C.TypeName "at::ScalarType", [t|ScalarType|])
       , (C.TypeName "at::DeviceType", [t|DeviceType|])
-      , (C.TypeName "at::SparseTensorRef", [t|RawSparseTensorRef|])
-      , (C.TypeName "at::Storage", [t|RawStorage|])
+      , (C.TypeName "at::SparseTensorRef", [t|SparseTensorRef|])
+      , (C.TypeName "at::Storage", [t|Storage|])
       , (C.TypeName "at::Device", [t|Device|])
       , (C.TypeName "at::Generator", [t|Generator|])
       , (C.TypeName "std::string", [t|StdString|])
       , (C.TypeName "std::array<bool,2>", [t|StdArray CBool 2|])
       , (C.TypeName "std::array<bool,3>", [t|StdArray CBool 3|])
       , (C.TypeName "std::array<bool,4>", [t|StdArray CBool 4|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor>", [t|(RawTensor,RawTensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor>", [t|(RawTensor,RawTensor,RawTensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(RawTensor,RawTensor,RawTensor,RawTensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(RawTensor,RawTensor,RawTensor,RawTensor,RawTensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>", [t|(RawTensor,RawTensor,RawTensor,RawTensorList)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", [t|(RawTensor,RawTensor,CDouble,Int64)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,float,int>", [t|(RawTensor,RawTensor,CFloat,CInt)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", [t|(RawTensor,RawTensor,RawTensor,Int64)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor>", [t|(Tensor,Tensor)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor,Tensor)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>", [t|(Tensor,Tensor,Tensor,TensorList)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", [t|(Tensor,Tensor,CDouble,Int64)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,float,int>", [t|(Tensor,Tensor,CFloat,CInt)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", [t|(Tensor,Tensor,Tensor,Int64)|])
       , (C.TypeName "std::vector<at::Tensor>", [t|TensorAVector|])
     ]
-

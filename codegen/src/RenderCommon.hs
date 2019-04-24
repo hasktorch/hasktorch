@@ -1,3 +1,5 @@
+
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,10 +11,12 @@ module RenderCommon where
 import Text.Shakespeare.Text (st)
 import Data.Char (toLower)
 import Data.Text (Text)
+import Data.String (fromString)
 import qualified Data.Text as T
 import qualified Data.List as L
 
 import ParseFunctionSig as P
+import ParseClass as PC
 
 bra :: Text
 bra = "["
@@ -51,6 +55,7 @@ ctypeToCppType ct =
     CVoid -> "void"
     CFloat -> "float"
     CDouble -> "double"
+    CSize -> "size_t"
     CInt -> "int"
     CInt64 -> "int64_t"
     CInt64Q -> "int64_t"
@@ -73,31 +78,32 @@ parsableToCppType parsable =
     STLType t -> stltypeToCppType t
     CppString -> "std::string"
     Tuple parsables -> [st|std::tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
+    P.CppClass _ cpptype _ -> fromString cpptype
 
 
 ------ To Haskell Type ------
 tenTypeToHsType :: TenType -> Text
 tenTypeToHsType tentype =
   case tentype of
-    Scalar -> "RawScalar"
-    Tensor -> "RawTensor"
-    TensorA -> "RawTensor"
-    TensorA' -> "RawTensor"
-    TensorAQ -> "RawTensor"
-    TensorAQ' -> "RawTensor"
-    TensorQ -> "RawTensor"
-    TensorAVector -> "RawTensorAVector"
-    TensorOptions -> "RawTensorOptions"
-    TensorList -> "RawTensorList"
-    IntegerTensor -> "RawTensor"
-    IndexTensor -> "RawTensor"
-    BoolTensor -> "RawTensor"
-    BoolTensorQ -> "RawTensor"
-    LongTensor -> "RawTensor"
-    IntList _ -> "RawIntArrayRef"
-    ScalarQ -> "RawScalar"
+    Scalar -> "Scalar"
+    Tensor -> "Tensor"
+    TensorA -> "Tensor"
+    TensorA' -> "Tensor"
+    TensorAQ -> "Tensor"
+    TensorAQ' -> "Tensor"
+    TensorQ -> "Tensor"
+    TensorAVector -> "TensorAVector"
+    TensorOptions -> "TensorOptions"
+    TensorList -> "TensorList"
+    IntegerTensor -> "Tensor"
+    IndexTensor -> "Tensor"
+    BoolTensor -> "Tensor"
+    BoolTensorQ -> "Tensor"
+    LongTensor -> "Tensor"
+    IntList _ -> "IntArrayRef"
+    ScalarQ -> "Scalar"
     ScalarType -> "ScalarType"
-    SparseTensorRef -> "RawSparseTensorRef"
+    SparseTensorRef -> "SparseTensorRef"
 
 stltypeToHsType :: STLType -> Text
 stltypeToHsType t =
@@ -111,6 +117,7 @@ ctypeToHsType ct =
     CVoid -> "()"
     CFloat -> "CFloat"
     CDouble -> "CDouble"
+    CSize -> "CSize"
     CInt -> "CInt"
     CInt64 -> "Int64"
     CInt64Q -> "Int64"
@@ -122,11 +129,12 @@ parsableToHsType parsable =
     TenType t -> tenTypeToHsType t
     DeviceType -> "Device"
     GeneratorType -> "Generator"
-    StorageType -> "RawStorage"
+    StorageType -> "Storage"
     CType ct -> ctypeToHsType ct
     STLType t -> stltypeToHsType t
     CppString -> "StdString"
     Tuple parsables -> [st|(#{T.intercalate "," (map parsableToHsType parsables)})|]
+    P.CppClass _ _ hstype -> fromString hstype
 
 
 ------ To initial characters ------
@@ -165,6 +173,7 @@ ctypeToInitial ct =
     CVoid -> "v"
     CFloat -> "f"
     CDouble -> "d"
+    CSize -> "s"
     CInt -> "i"
     CInt64 -> "l"
     CInt64Q -> "l"
@@ -181,6 +190,7 @@ parsableToInitial parsable =
     STLType t -> stltypeToInitial t
     CppString -> "s"
     Tuple _ -> "t"
+    P.CppClass _ _ _ -> "c"
 
 isCType :: Parsable -> Bool
 isCType p =
@@ -208,14 +218,24 @@ retToCppType parsable =
     STLType t -> stltypeToCppType t
     CppString -> "std::string"
     Tuple parsables -> [st|tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
+    P.CppClass _ cpptype _ -> fromString cpptype
 
 
-functionToCpp :: Bool -> String -> Function -> Text
-functionToCpp add_type_initials prefix fn = [st|
+--functionToCpp :: Bool -> String -> String -> Function -> Text
+--functionToCpp = functionToCpp' False
+
+functionToCpp :: Bool -> Bool -> String -> String -> Function -> Text
+functionToCpp is_managed add_type_initials prefix suffix fn =
+  if is_managed then [st|
+#{hsfuncname}#{type_initials}
+  :: #{types}
+#{hsfuncname}#{type_initials} = cast#{num_args} Unmanaged.#{hsfuncname}#{type_initials}
+|]
+  else [st|
 #{hsfuncname}#{type_initials}
   :: #{types}
 #{hsfuncname}#{type_initials} #{args} =
-  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(#{prefix}#{name fn}(
+  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(#{prefix}#{P.name fn}#{suffix}(
     #{cargs}));
   }|#{cket}
 |]
@@ -223,8 +243,10 @@ functionToCpp add_type_initials prefix fn = [st|
     renameFunc :: String -> String
     renameFunc [] = []
     renameFunc (x:xs) = toLower x : xs
-    hsfuncname = renameFunc $ name fn
+    hsfuncname = renameFunc $ P.name fn
     parameters' = filter isNotStar $ parameters fn
+    num_args :: Int
+    num_args = length parameters'
     args :: String
     args = L.intercalate " " $ map (\p -> "_" <> pname p) parameters'
     cargs :: Text
@@ -237,11 +259,16 @@ functionToCpp add_type_initials prefix fn = [st|
       if add_type_initials
       then "_" <> (mconcat $ flip map parameters' $ \p -> parsableToInitial (ptype p))
       else ""
+    pointer :: Text
+    pointer =
+      if is_managed
+      then "ForeignPtr"
+      else "Ptr"
     types_list :: [Text]
     types_list = flip map parameters' $ \p ->
       if isCType (ptype p)
       then [st|#{parsableToHsType (ptype p)}|]
-      else [st|Ptr #{parsableToHsType (ptype p)}|]
+      else [st|#{pointer} #{parsableToHsType (ptype p)}|]
     types :: Text
     types = T.intercalate "\n  -> " $ types_list ++ [[st|IO (#{ret_hstype})|]]
     ret_type :: Text
@@ -253,7 +280,105 @@ functionToCpp add_type_initials prefix fn = [st|
     ret_hstype =
       if isCType (retType fn)
       then [st|#{parsableToHsType (retType fn)}|]
-      else [st|Ptr #{parsableToHsType (retType fn)}|]
+      else [st|#{pointer} #{parsableToHsType (retType fn)}|]
+    ret_wrapper :: Text
+    ret_wrapper =
+      if isCType (retType fn)
+      then ""
+      else [st|new #{parsableToCppType (retType fn)}|]
+    call_return :: Text
+    call_return =
+      case (retType fn) of
+        CType CVoid -> ""
+        _ -> "return"
+
+methodToCpp :: PC.CppClassSpec -> Bool -> Bool -> Bool -> String -> String -> Function -> Text
+methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn =
+  case (is_managed,is_constructor) of
+    (True,True) -> [st|
+new#{drop 3 (PC.hsname class')}#{hsfuncname}#{type_initials}
+  :: #{types'}
+new#{drop 3 (PC.hsname class')}#{hsfuncname}#{type_initials} = cast#{num_args'} Unmanaged.#{hsfuncname}#{PC.hsname class'}#{type_initials}
+|]
+    (True,False) -> [st|
+#{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials}
+  :: #{types}
+#{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials} = cast#{num_args} Unmanaged.#{renameFunc (PC.hsname class')}_#{hsfuncname}
+|]
+    (False,True) -> [st|
+#{hsfuncname}#{PC.hsname class'}#{type_initials}
+  :: #{types'}
+#{hsfuncname}#{PC.hsname class'}#{type_initials} #{args'} =
+  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(
+    #{cargs});
+  }|#{cket}
+|]
+    (False,False) -> [st|
+#{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials}
+  :: #{types}
+#{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials} #{args} =
+  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(#{type_object_str}->#{prefix}#{P.name fn}#{suffix}(
+    #{cargs}));
+  }|#{cket}
+|]
+  where
+    type_object :: Parameter
+    type_object = Parameter (P.CppClass (PC.signature class')  (PC.cppname class')  (PC.hsname class') ) "obj" Nothing
+    type_object_str :: Text
+    type_object_str = [st|$(#{parsableToCppType (ptype type_object)}* _#{pname type_object})|]
+    renameFunc :: String -> String
+    renameFunc [] = []
+    renameFunc (x:xs) = toLower x : xs
+    hsfuncname = renameFunc $ P.name fn
+    parameters' = (filter isNotStar $ parameters fn)
+    parameters'' = [type_object] <> parameters'
+    num_args :: Int
+    num_args = length parameters''
+    num_args' :: Int
+    num_args' = length parameters'
+    args :: String
+    args = L.intercalate " " $ map (\p -> "_" <> pname p) parameters''
+    args' :: String
+    args' = L.intercalate " " $ map (\p -> "_" <> pname p) parameters'
+    cargs :: Text
+    cargs = T.intercalate "\n  , " $ flip map parameters' $ \p ->
+      if isCType (ptype p)
+      then [st|$(#{parsableToCppType (ptype p)} _#{pname p})|]
+      else [st|*$(#{parsableToCppType (ptype p)}* _#{pname p})|]
+    type_initials :: Text --- This is for avoding c++ overload arguments.
+    type_initials =
+      if add_type_initials
+      then "_" <> (mconcat $ flip map parameters'' $ \p -> parsableToInitial (ptype p))
+      else ""
+    pointer :: Text
+    pointer =
+      if is_managed
+      then "ForeignPtr"
+      else "Ptr"
+    types_list :: [Text]
+    types_list = flip map parameters'' $ \p ->
+      if isCType (ptype p)
+      then [st|#{parsableToHsType (ptype p)}|]
+      else [st|#{pointer} #{parsableToHsType (ptype p)}|]
+    types_list' :: [Text]
+    types_list' = flip map parameters' $ \p ->
+      if isCType (ptype p)
+      then [st|#{parsableToHsType (ptype p)}|]
+      else [st|#{pointer} #{parsableToHsType (ptype p)}|]
+    types :: Text
+    types = T.intercalate "\n  -> " $ types_list ++ [[st|IO (#{ret_hstype})|]]
+    types' :: Text
+    types' = T.intercalate "\n  -> " $ types_list' ++ [[st|IO (#{ret_hstype})|]]
+    ret_type :: Text
+    ret_type =
+      if isCType (retType fn)
+      then [st|#{parsableToCppType (retType fn)}|]
+      else [st|#{parsableToCppType (retType fn)}*|]
+    ret_hstype :: Text
+    ret_hstype =
+      if isCType (retType fn)
+      then [st|#{parsableToHsType (retType fn)}|]
+      else [st|#{pointer} #{parsableToHsType (retType fn)}|]
     ret_wrapper :: Text
     ret_wrapper =
       if isCType (retType fn)

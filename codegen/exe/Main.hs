@@ -8,7 +8,7 @@ import qualified Options.Applicative as O
 import qualified ParseFunctionSig as F
 import qualified RenderDeclarations as RD
 import qualified RenderTuples as RTL
-import qualified RenderTensor as RT
+import qualified RenderClass as RC
 
 {- CLI options -}
 
@@ -56,7 +56,15 @@ programOptions =
 
 main = do
   opts <- O.execParser optsParser
-  RT.tensorBuilder
+--  RT.tensorBuilder
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensor.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/intarray.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensoroptions.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/generator.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/scalar.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/sparsetensorref.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/storage.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensorlist.yaml"
   RTL.decodeAndCodeGen (outputDir opts) (specFileTuple opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   pure ()

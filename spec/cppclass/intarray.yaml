@@ -1,0 +1,10 @@
+signature: IntArray
+cppname: std::vector<int64_t>
+hsname: IntArray
+constructors:
+- new() -> IntArray
+methods:
+- empty() -> bool
+- size() -> size_t
+- at(size_t s) -> int64_t
+- push_back(int64_t v) -> void

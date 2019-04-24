@@ -1,0 +1,83 @@
+
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
+
+module Aten.Unmanaged.Type.IntArray where
+
+
+import qualified Language.C.Inline.Cpp as C
+import qualified Language.C.Inline.Cpp.Exceptions as C
+import qualified Language.C.Inline.Context as C
+import qualified Language.C.Types as C
+import qualified Data.Map as Map
+import Foreign.C.String
+import Foreign.C.Types
+import Foreign hiding (newForeignPtr)
+import Foreign.Concurrent
+import Aten.Type
+import Aten.Class
+
+C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
+
+C.include "<ATen/ATen.h>"
+C.include "<vector>"
+
+
+
+newIntArray
+  :: IO (Ptr IntArray)
+newIntArray  =
+  [C.block| std::vector<int64_t>* { return new std::vector<int64_t>(
+    );
+  }|]
+
+
+
+deleteIntArray :: Ptr IntArray -> IO ()
+deleteIntArray object = [C.block| void { delete $(std::vector<int64_t>* object);}|]
+
+instance CppObject IntArray where
+  fromPtr ptr = newForeignPtr ptr (deleteIntArray ptr)
+
+
+
+intArray_empty
+  :: Ptr IntArray
+  -> IO (CBool)
+intArray_empty _obj =
+  [C.block| bool { return ($(std::vector<int64_t>* _obj)->empty(
+    ));
+  }|]
+
+intArray_size
+  :: Ptr IntArray
+  -> IO (CSize)
+intArray_size _obj =
+  [C.block| size_t { return ($(std::vector<int64_t>* _obj)->size(
+    ));
+  }|]
+
+intArray_at
+  :: Ptr IntArray
+  -> CSize
+  -> IO (Int64)
+intArray_at _obj _s =
+  [C.block| int64_t { return ($(std::vector<int64_t>* _obj)->at(
+    $(size_t _s)));
+  }|]
+
+intArray_push_back
+  :: Ptr IntArray
+  -> Int64
+  -> IO (())
+intArray_push_back _obj _v =
+  [C.block| void {  ($(std::vector<int64_t>* _obj)->push_back(
+    $(int64_t _v)));
+  }|]
+

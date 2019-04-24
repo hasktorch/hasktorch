@@ -7,9 +7,10 @@ module Main where
 import Test.Hspec
 import Aten.Const
 import Aten.Type
-import Aten.Type.TensorOptions
-import Aten.Type.Tensor
-import Aten.Native
+import Aten.Managed.Type.TensorOptions
+import Aten.Managed.Type.Tensor
+import Aten.Managed.Type.IntArray
+import Aten.Managed.Native
 
 
 main :: IO ()
@@ -22,5 +23,10 @@ createSpec :: Spec
 createSpec = do
   it "Create Tensor" $ do
     to <- newTensorOptions kCPU
+    dsize <- newIntArray
+    intArray_push_back dsize 2
+    intArray_push_back dsize 2
     tod <- tensorOptions_dtype to kByte
+    ten <- zeros_lo dsize tod
+    tensor_print ten
     return ()

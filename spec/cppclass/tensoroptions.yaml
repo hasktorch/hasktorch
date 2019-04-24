@@ -1,0 +1,7 @@
+signature: TensorOptions
+cppname: TensorOptions
+hsname: TensorOptions
+constructors:
+- new(Device d) -> TensorOptions
+methods:
+- dtype(ScalarType t) -> TensorOptions

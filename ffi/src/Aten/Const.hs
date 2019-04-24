@@ -19,12 +19,6 @@ import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-
-import qualified Data.Map as Map
-
-import Foreign.C.String
-import Foreign.C.Types
-import Foreign
 import Aten.Type
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
@@ -33,78 +27,78 @@ C.include "<ATen/ATen.h>"
 
 
 kByte :: ScalarType
-kByte = [C.pure| char { (char) at::ScalarType::Byte } |]
+kByte = [C.pure| int8_t { (int8_t) at::ScalarType::Byte } |]
 
 kChar :: ScalarType
-kChar = [C.pure| char { (char) at::ScalarType::Char } |]
+kChar = [C.pure| int8_t { (int8_t) at::ScalarType::Char } |]
 
 kDouble :: ScalarType
-kDouble = [C.pure| char { (char) at::ScalarType::Double } |]
+kDouble = [C.pure| int8_t { (int8_t) at::ScalarType::Double } |]
 
 kFloat :: ScalarType
-kFloat = [C.pure| char { (char) at::ScalarType::Float } |]
+kFloat = [C.pure| int8_t { (int8_t) at::ScalarType::Float } |]
 
 kInt :: ScalarType
-kInt = [C.pure| char { (char) at::ScalarType::Int } |]
+kInt = [C.pure| int8_t { (int8_t) at::ScalarType::Int } |]
 
 kLong :: ScalarType
-kLong = [C.pure| char { (char) at::ScalarType::Long } |]
+kLong = [C.pure| int8_t { (int8_t) at::ScalarType::Long } |]
 
 kShort :: ScalarType
-kShort = [C.pure| char { (char) at::ScalarType::Short } |]
+kShort = [C.pure| int8_t { (int8_t) at::ScalarType::Short } |]
 
 kHalf :: ScalarType
-kHalf = [C.pure| char { (char) at::ScalarType::Half } |]
+kHalf = [C.pure| int8_t { (int8_t) at::ScalarType::Half } |]
 
 kBool :: ScalarType
-kBool = [C.pure| char { (char) at::ScalarType::Bool } |]
+kBool = [C.pure| int8_t { (int8_t) at::ScalarType::Bool } |]
 
 kComplexHalf :: ScalarType
-kComplexHalf = [C.pure| char { (char) at::ScalarType::ComplexHalf } |]
+kComplexHalf = [C.pure| int8_t { (int8_t) at::ScalarType::ComplexHalf } |]
 
 kComplexFloat :: ScalarType
-kComplexFloat = [C.pure| char { (char) at::ScalarType::ComplexFloat } |]
+kComplexFloat = [C.pure| int8_t { (int8_t) at::ScalarType::ComplexFloat } |]
 
 kComplexDouble :: ScalarType
-kComplexDouble = [C.pure| char { (char) at::ScalarType::ComplexDouble } |]
+kComplexDouble = [C.pure| int8_t { (int8_t) at::ScalarType::ComplexDouble } |]
 
 kUndefined :: ScalarType
-kUndefined = [C.pure| char { (char) at::ScalarType::Undefined } |]
+kUndefined = [C.pure| int8_t { (int8_t) at::ScalarType::Undefined } |]
 
 kCPU :: DeviceType
-kCPU = [C.pure| short { (short) at::DeviceType::CPU } |]
+kCPU = [C.pure| int16_t { (int16_t) at::DeviceType::CPU } |]
 
 kCUDA :: DeviceType
-kCUDA = [C.pure| short { (short) at::DeviceType::CUDA } |]
+kCUDA = [C.pure| int16_t { (int16_t) at::DeviceType::CUDA } |]
 
 kMKLDNN :: DeviceType
-kMKLDNN = [C.pure| short { (short) at::DeviceType::MKLDNN } |]
+kMKLDNN = [C.pure| int16_t { (int16_t) at::DeviceType::MKLDNN } |]
 
 kOPENGL :: DeviceType
-kOPENGL = [C.pure| short { (short) at::DeviceType::OPENGL } |]
+kOPENGL = [C.pure| int16_t { (int16_t) at::DeviceType::OPENGL } |]
 
 kOPENCL :: DeviceType
-kOPENCL = [C.pure| short { (short) at::DeviceType::OPENCL } |]
+kOPENCL = [C.pure| int16_t { (int16_t) at::DeviceType::OPENCL } |]
 
 kIDEEP :: DeviceType
-kIDEEP = [C.pure| short { (short) at::DeviceType::IDEEP } |]
+kIDEEP = [C.pure| int16_t { (int16_t) at::DeviceType::IDEEP } |]
 
 kHIP :: DeviceType
-kHIP = [C.pure| short { (short) at::DeviceType::HIP } |]
+kHIP = [C.pure| int16_t { (int16_t) at::DeviceType::HIP } |]
 
 kFPGA :: DeviceType
-kFPGA = [C.pure| short { (short) at::DeviceType::FPGA } |]
+kFPGA = [C.pure| int16_t { (int16_t) at::DeviceType::FPGA } |]
 
 kMSNPU :: DeviceType
-kMSNPU = [C.pure| short { (short) at::DeviceType::MSNPU } |]
+kMSNPU = [C.pure| int16_t { (int16_t) at::DeviceType::MSNPU } |]
 
 kXLA :: DeviceType
-kXLA = [C.pure| short { (short) at::DeviceType::XLA } |]
+kXLA = [C.pure| int16_t { (int16_t) at::DeviceType::XLA } |]
 
 kCOMPILE_TIME_MAX_DEVICE_TYPES :: DeviceType
-kCOMPILE_TIME_MAX_DEVICE_TYPES = [C.pure| short { (short) at::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES } |]
+kCOMPILE_TIME_MAX_DEVICE_TYPES = [C.pure| int16_t { (int16_t) at::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES } |]
 
 kONLY_FOR_TEST :: DeviceType
-kONLY_FOR_TEST = [C.pure| short { (short) at::DeviceType::ONLY_FOR_TEST } |]
+kONLY_FOR_TEST = [C.pure| int16_t { (int16_t) at::DeviceType::ONLY_FOR_TEST } |]
 
 

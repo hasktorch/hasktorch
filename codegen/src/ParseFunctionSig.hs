@@ -52,6 +52,10 @@ data Function  = Function {
     , retType :: Parsable
 } deriving (Eq, Show)
 
+type SignatureStr = String
+type CppTypeStr = String
+type HsTypeStr = String
+
 data Parsable
     = Ptr Parsable
     | TenType TenType
@@ -62,6 +66,7 @@ data Parsable
     | STLType STLType
     | CppString
     | Tuple [Parsable]
+    | CppClass SignatureStr CppTypeStr HsTypeStr
     deriving (Eq, Show, Generic)
 
 data CType
@@ -69,6 +74,7 @@ data CType
     | CVoid
     | CFloat
     | CDouble
+    | CSize
     | CInt
     | CInt64
     | CInt64Q
@@ -100,6 +106,9 @@ data TenType = Scalar
     deriving (Eq, Show)
 
 type Parser = Parsec Void String
+
+cppClassList :: [(String,String,String)]
+cppClassList = [("IntArray", "std::vector<int64_t>", "IntArray")]
 
 defBool :: Parser DefaultValue
 defBool = do
@@ -237,6 +246,8 @@ identifier = (lexm . try) (p >>= check)
 -- CType CInt64
 -- >>> parseTest typ "int64_t?"
 -- CType CInt64Q
+-- >>> parseTest typ "size_t"
+-- CType CSize
 -- >>> parseTest typ "std::array<bool,2>"
 -- STLType (Array CBool 2)
 -- >>> parseTest typ "bool[2]"
@@ -259,6 +270,7 @@ typ =
   ctype <|>
   stl <|>
   cppstring <|>
+  cppclass <|>
   other
  where
   tuple = do
@@ -272,6 +284,7 @@ typ =
     ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Generator?") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Storage") >> (pure $ StorageType))
+  cppclass = foldl (<|>) (fail "Can not parse cpptype.") $ map (\(sig,cpptype,hstype) -> ((lexm $ string sig) >> (pure $ CppClass sig cpptype hstype))) cppClassList
   scalar =
     ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ)) <|>
     ((lexm $ string "ScalarType") >> (pure $ TenType ScalarType)) <|>
@@ -347,6 +360,7 @@ typ =
     ((lexm $ string "void") >> (pure $ CType CVoid)) <|>
     ((lexm $ string "float") >> (pure $ CType CFloat)) <|>
     ((lexm $ string "double") >> (pure $ CType CDouble)) <|>
+    ((lexm $ string "size_t") >> (pure $ CType CSize)) <|>
     try ((lexm $ string "int64_t?") >> (pure $ CType CInt64Q)) <|>
     try ((lexm $ string "int64_t") >> (pure $ CType CInt64)) <|>
     try ((lexm $ string "int?") >> (pure $ CType CInt)) <|>
@@ -543,3 +557,10 @@ instance FromJSON Parsable where
       Left err -> fail (errorBundlePretty err)
       Right p -> pure p
   parseJSON _ = fail "This type is not string-type."
+
+instance FromJSON Function where
+  parseJSON (String v) = do
+    case parse func "" (cs v) of
+      Left err -> fail (errorBundlePretty err)
+      Right p -> pure p
+  parseJSON _ = fail "This type is not function-type."

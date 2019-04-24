@@ -1,0 +1,6 @@
+signature: Storage
+cppname: Storage
+hsname: Storage
+constructors:
+- new() -> Storage
+methods: []

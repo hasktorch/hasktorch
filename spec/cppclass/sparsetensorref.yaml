@@ -1,0 +1,6 @@
+signature: SparseTensorRef
+cppname: SparseTensorRef
+hsname: SparseTensorRef
+constructors:
+- new(Tensor x) -> SparseTensorRef
+methods: []
