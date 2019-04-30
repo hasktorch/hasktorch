@@ -35,7 +35,6 @@ library
     , text
     , string-conversions
     , directory
-    , fficxx
     , unordered-containers
   extra-libraries: stdc++
   ghc-options:     -Wall

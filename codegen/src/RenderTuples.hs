@@ -27,8 +27,18 @@ import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
 import Aten.Type
 import Aten.Class
+import Aten.Cast
 
 import qualified Aten.Unmanaged.Type.Tuple as Unmanaged
+import Aten.Unmanaged.Type.Generator
+import Aten.Unmanaged.Type.IntArray
+import Aten.Unmanaged.Type.Scalar
+import Aten.Unmanaged.Type.SparseTensorRef
+import Aten.Unmanaged.Type.Storage
+import Aten.Unmanaged.Type.Tensor
+import Aten.Unmanaged.Type.TensorList
+import Aten.Unmanaged.Type.TensorOptions
+import Aten.Unmanaged.Type.Tuple
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
@@ -133,9 +143,9 @@ renderCppTuple5 _ = ""
 renderManagedCppTuple2 typ@(PT.Tuple (a:b:_)) = [st|
 instance CppTuple2 (ForeignPtr #{tupleToHs typ}) where
   type A (ForeignPtr #{tupleToHs typ}) = #{toManagedHs a}
-  type B (ForeignPtr #{tupleToHs typ}) = #{toHs b}
-  get0 v = cast1 get0 v
-  get1 v = cast1 get1 v
+  type B (ForeignPtr #{tupleToHs typ}) = #{toManagedHs b}
+  get0 v = cast1 (get0 :: Ptr #{tupleToHs typ} -> IO (#{toHs a})) v
+  get1 v = cast1 (get1 :: Ptr #{tupleToHs typ} -> IO (#{toHs b})) v
 |]
 renderManagedCppTuple2 _ = ""
 
@@ -143,7 +153,7 @@ renderManagedCppTuple3 :: PT.Tuple -> Text
 renderManagedCppTuple3 typ@(PT.Tuple (_:_:c:_)) = [st|
 instance CppTuple3 (ForeignPtr #{tupleToHs typ}) where
   type C (ForeignPtr #{tupleToHs typ}) = #{toManagedHs c}
-  get2 v = cast1 get2 v
+  get2 v = cast1 (get2 :: Ptr #{tupleToHs typ} -> IO (#{toHs c})) v
 |]
 renderManagedCppTuple3 _ = ""
 
@@ -151,7 +161,7 @@ renderManagedCppTuple4 :: PT.Tuple -> Text
 renderManagedCppTuple4 typ@(PT.Tuple (_:_:_:d:_)) = [st|
 instance CppTuple4 (ForeignPtr #{tupleToHs typ}) where
   type D (ForeignPtr #{tupleToHs typ}) = #{toManagedHs d}
-  get3 v = cast1 get3 v
+  get3 v = cast1 (get3 :: Ptr #{tupleToHs typ} -> IO (#{toHs d})) v
 |]
 renderManagedCppTuple4 _ = ""
 
@@ -160,7 +170,7 @@ renderManagedCppTuple5 :: PT.Tuple -> Text
 renderManagedCppTuple5 typ@(PT.Tuple (_:_:_:_:e:_)) = [st|
 instance CppTuple5 (ForeignPtr #{tupleToHs typ}) where
   type E (ForeignPtr #{tupleToHs typ}) = #{toManagedHs e}
-  get4 v = cast1 get4 v
+  get4 v = cast1 (get4 :: Ptr #{tupleToHs typ} -> IO (#{toHs e})) v
 |]
 renderManagedCppTuple5 _ = ""
 

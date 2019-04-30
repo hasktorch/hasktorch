@@ -22,7 +22,6 @@ import Aten.Class
 import Aten.Cast
 
 import qualified Aten.Unmanaged.Type.Tuple as Unmanaged
-
 import Aten.Unmanaged.Type.Generator
 import Aten.Unmanaged.Type.IntArray
 import Aten.Unmanaged.Type.Scalar
@@ -32,6 +31,7 @@ import Aten.Unmanaged.Type.Tensor
 import Aten.Unmanaged.Type.TensorList
 import Aten.Unmanaged.Type.TensorOptions
 import Aten.Unmanaged.Type.Tuple
+
 
 
 instance CppTuple2 (ForeignPtr (Tensor,Tensor)) where
@@ -104,11 +104,11 @@ instance CppTuple2 (ForeignPtr (Tensor,Tensor,CDouble,Int64)) where
 
 instance CppTuple3 (ForeignPtr (Tensor,Tensor,CDouble,Int64)) where
   type C (ForeignPtr (Tensor,Tensor,CDouble,Int64)) = CDouble
-  get2 v = cast1 (get2 :: Ptr (Tensor,Tensor,CDouble,Int64) -> IO CDouble) v
+  get2 v = cast1 (get2 :: Ptr (Tensor,Tensor,CDouble,Int64) -> IO (CDouble)) v
 
 instance CppTuple4 (ForeignPtr (Tensor,Tensor,CDouble,Int64)) where
   type D (ForeignPtr (Tensor,Tensor,CDouble,Int64)) = Int64
-  get3 v = cast1 (get3 :: Ptr (Tensor,Tensor,CDouble,Int64) -> IO Int64) v
+  get3 v = cast1 (get3 :: Ptr (Tensor,Tensor,CDouble,Int64) -> IO (Int64)) v
 
 instance CppTuple2 (ForeignPtr (Tensor,Tensor,CFloat,CInt)) where
   type A (ForeignPtr (Tensor,Tensor,CFloat,CInt)) = ForeignPtr Tensor
@@ -118,11 +118,11 @@ instance CppTuple2 (ForeignPtr (Tensor,Tensor,CFloat,CInt)) where
 
 instance CppTuple3 (ForeignPtr (Tensor,Tensor,CFloat,CInt)) where
   type C (ForeignPtr (Tensor,Tensor,CFloat,CInt)) = CFloat
-  get2 v = cast1 (get2 :: Ptr (Tensor,Tensor,CFloat,CInt) -> IO CFloat) v
+  get2 v = cast1 (get2 :: Ptr (Tensor,Tensor,CFloat,CInt) -> IO (CFloat)) v
 
 instance CppTuple4 (ForeignPtr (Tensor,Tensor,CFloat,CInt)) where
   type D (ForeignPtr (Tensor,Tensor,CFloat,CInt)) = CInt
-  get3 v = cast1 (get3 :: Ptr (Tensor,Tensor,CFloat,CInt) -> IO CInt) v
+  get3 v = cast1 (get3 :: Ptr (Tensor,Tensor,CFloat,CInt) -> IO (CInt)) v
 
 instance CppTuple2 (ForeignPtr (Tensor,Tensor,Tensor,Int64)) where
   type A (ForeignPtr (Tensor,Tensor,Tensor,Int64)) = ForeignPtr Tensor
@@ -136,5 +136,5 @@ instance CppTuple3 (ForeignPtr (Tensor,Tensor,Tensor,Int64)) where
 
 instance CppTuple4 (ForeignPtr (Tensor,Tensor,Tensor,Int64)) where
   type D (ForeignPtr (Tensor,Tensor,Tensor,Int64)) = Int64
-  get3 v = cast1 (get3 :: Ptr (Tensor,Tensor,Tensor,Int64) -> IO Int64) v
+  get3 v = cast1 (get3 :: Ptr (Tensor,Tensor,Tensor,Int64) -> IO (Int64)) v
 

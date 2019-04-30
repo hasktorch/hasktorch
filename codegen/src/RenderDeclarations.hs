@@ -63,7 +63,19 @@ import Foreign.C.Types
 import Foreign
 import Aten.Type
 import Aten.Class
+import Aten.Cast
 import qualified #{replace "Managed" "Unmanaged" module_name} as Unmanaged
+import Aten.Unmanaged.Type.Generator
+import Aten.Unmanaged.Type.IntArray
+import Aten.Unmanaged.Type.Scalar
+import Aten.Unmanaged.Type.SparseTensorRef
+import Aten.Unmanaged.Type.Storage
+import Aten.Unmanaged.Type.Tensor
+import Aten.Unmanaged.Type.TensorList
+import Aten.Unmanaged.Type.TensorOptions
+import Aten.Unmanaged.Type.Tuple
+import Aten.Unmanaged.Type.StdString
+import Aten.Unmanaged.Type.StdArray
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
@@ -80,6 +92,7 @@ import qualified Data.Map as Map
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<ATen/ATen.h>"
+C.include "<vector>"
 |]
 
 template :: Bool -> Text -> Text -> Text
@@ -96,7 +109,6 @@ template is_managed module_name functions = [st|
 module #{module_name} where
 
 #{renderImport is_managed module_name}
-
 #{functions}
 |]
 
@@ -146,6 +158,7 @@ typeTable = Map.fromList [
       , (C.TypeName "at::TensorOptions", #{bra}t|TensorOptions|#{cket})
       , (C.TypeName "at::TensorList", #{bra}t|TensorList|#{cket})
       , (C.TypeName "at::IntArrayRef", #{bra}t|IntArrayRef|#{cket})
+      , (C.TypeName "std::vector<int64_t>", #{bra}t|IntArray|#{cket})
       , (C.TypeName "at::ScalarType", #{bra}t|ScalarType|#{cket})
       , (C.TypeName "at::DeviceType", #{bra}t|DeviceType|#{cket})
       , (C.TypeName "at::SparseTensorRef", #{bra}t|SparseTensorRef|#{cket})

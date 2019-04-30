@@ -29,7 +29,6 @@ C.include "<ATen/ATen.h>"
 C.include "<vector>"
 
 
-
 _th_set__tS
   :: Ptr Tensor
   -> Ptr Storage

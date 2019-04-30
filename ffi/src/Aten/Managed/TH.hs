@@ -27,7 +27,8 @@ import Aten.Unmanaged.Type.Tensor
 import Aten.Unmanaged.Type.TensorList
 import Aten.Unmanaged.Type.TensorOptions
 import Aten.Unmanaged.Type.Tuple
-
+import Aten.Unmanaged.Type.StdString
+import Aten.Unmanaged.Type.StdArray
 
 
 _th_set__tS

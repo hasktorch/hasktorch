@@ -29,7 +29,6 @@ C.include "<ATen/ATen.h>"
 C.include "<vector>"
 
 
-
 _cast_Byte_tb
   :: Ptr Tensor
   -> CBool

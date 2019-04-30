@@ -1,5 +1,5 @@
 signature: Storage
-cppname: Storage
+cppname: at::Storage
 hsname: Storage
 constructors:
 - new() -> Storage

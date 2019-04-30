@@ -29,7 +29,6 @@ C.include "<ATen/ATen.h>"
 C.include "<vector>"
 
 
-
 _thnn_binary_cross_entropy_forward_out
   :: Ptr Tensor
   -> Ptr Tensor

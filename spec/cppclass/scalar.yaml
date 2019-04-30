@@ -1,5 +1,5 @@
 signature: Scalar
-cppname: Scalar
+cppname: at::Scalar
 hsname: Scalar
 constructors:
 - new() -> Scalar

@@ -1,5 +1,5 @@
 signature: SparseTensorRef
-cppname: SparseTensorRef
+cppname: at::SparseTensorRef
 hsname: SparseTensorRef
 constructors:
 - new(Tensor x) -> SparseTensorRef

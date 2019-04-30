@@ -22,12 +22,11 @@ import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
 import Aten.Type
 import Aten.Class
-import Aten.Cast
-import Aten.Unmanaged.Type.Tensor
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<ATen/ATen.h>"
+C.include "<vector>"
 
 
 

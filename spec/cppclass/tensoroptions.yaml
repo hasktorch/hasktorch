@@ -1,5 +1,5 @@
 signature: TensorOptions
-cppname: TensorOptions
+cppname: at::TensorOptions
 hsname: TensorOptions
 constructors:
 - new(Device d) -> TensorOptions

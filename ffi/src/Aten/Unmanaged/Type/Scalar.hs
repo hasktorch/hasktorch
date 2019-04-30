@@ -26,6 +26,7 @@ import Aten.Class
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<ATen/ATen.h>"
+C.include "<vector>"
 
 
 

@@ -1,5 +1,5 @@
 signature: Tensor
-cppname: Tensor
+cppname: at::Tensor
 hsname: Tensor
 constructors:
 - new() -> Tensor

@@ -43,7 +43,12 @@ tenTypeToCppType tentype =
     BoolTensor -> "at::Tensor"
     BoolTensorQ -> "at::Tensor"
     LongTensor -> "at::Tensor"
-    IntList _ -> "at::IntArrayRef"
+-- In libtorch, IntList is at::IntArrayRef. at::IntArrayRef is refernece-type supporting various array-types.
+-- When we use at::IntArrayRef directly, it is diffcult to manage memory by GHC.
+-- Because at::IntArrayRef do not managae refering memory.
+-- For now, this codes uses std::vector<int64_t> instead of at::IntArrayRef.
+--    IntList _ -> "at::IntArrayRef"
+    IntList _ -> "std::vector<int64_t>"
     ScalarQ -> "at::Scalar"
     ScalarType -> "at::ScalarType"
     SparseTensorRef -> "at::SparseTensorRef"
@@ -71,7 +76,7 @@ parsableToCppType parsable =
   case parsable of
     Ptr p -> parsableToCppType p <> " *"
     TenType t -> tenTypeToCppType t
-    DeviceType -> "at::Device"
+    DeviceType -> "at::DeviceType"
     GeneratorType -> "at::Generator"
     StorageType -> "at::Storage"
     CType ct -> ctypeToCppType ct
@@ -100,7 +105,8 @@ tenTypeToHsType tentype =
     BoolTensor -> "Tensor"
     BoolTensorQ -> "Tensor"
     LongTensor -> "Tensor"
-    IntList _ -> "IntArrayRef"
+--    IntList _ -> "IntArrayRef"
+    IntList _ -> "IntArray"
     ScalarQ -> "Scalar"
     ScalarType -> "ScalarType"
     SparseTensorRef -> "SparseTensorRef"
@@ -127,7 +133,7 @@ parsableToHsType parsable =
   case parsable of
     Ptr p -> "Ptr " <> parsableToHsType p
     TenType t -> tenTypeToHsType t
-    DeviceType -> "Device"
+    DeviceType -> "DeviceType"
     GeneratorType -> "Generator"
     StorageType -> "Storage"
     CType ct -> ctypeToHsType ct
@@ -196,6 +202,7 @@ isCType :: Parsable -> Bool
 isCType p =
   case p of
     TenType ScalarType -> True
+    DeviceType -> True
     CType _ -> True
     Ptr _ -> True
     _ -> False
@@ -211,7 +218,7 @@ retToCppType parsable =
   case parsable of
     Ptr p -> parsableToCppType p <> " *"
     TenType t -> tenTypeToCppType t
-    DeviceType -> "Device"
+    DeviceType -> "DeviceType"
     GeneratorType -> "Generator"
     StorageType -> "Storage"
     CType ct -> ctypeToCppType ct
@@ -296,9 +303,9 @@ methodToCpp :: PC.CppClassSpec -> Bool -> Bool -> Bool -> String -> String -> Fu
 methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn =
   case (is_managed,is_constructor) of
     (True,True) -> [st|
-new#{drop 3 (PC.hsname class')}#{hsfuncname}#{type_initials}
+new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials}
   :: #{types'}
-new#{drop 3 (PC.hsname class')}#{hsfuncname}#{type_initials} = cast#{num_args'} Unmanaged.#{hsfuncname}#{PC.hsname class'}#{type_initials}
+new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials} = cast#{num_args'} Unmanaged.#{hsfuncname}#{PC.hsname class'}#{type_initials}
 |]
     (True,False) -> [st|
 #{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials}

@@ -27,6 +27,17 @@ import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
 import Aten.Type
 import Aten.Class
+import Aten.Cast
+import Aten.Unmanaged.Type.Generator
+import Aten.Unmanaged.Type.IntArray
+import Aten.Unmanaged.Type.Scalar
+import Aten.Unmanaged.Type.SparseTensorRef
+import Aten.Unmanaged.Type.Storage
+import Aten.Unmanaged.Type.Tensor
+import Aten.Unmanaged.Type.TensorList
+import Aten.Unmanaged.Type.TensorOptions
+import Aten.Unmanaged.Type.Tuple
+
 import qualified #{"Aten.Unmanaged.Type." <> (PC.hsname typ)} as Unmanaged
 |] else [st|
 import qualified Language.C.Inline.Cpp as C
@@ -44,6 +55,7 @@ import Aten.Class
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<ATen/ATen.h>"
+C.include "<vector>"
 |]
 
 renderConstructors :: Bool -> PC.CppClassSpec -> Text

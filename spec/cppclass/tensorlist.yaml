@@ -1,5 +1,5 @@
 signature: TensorList
-cppname: TensorList
+cppname: at::TensorList
 hsname: TensorList
 constructors:
 - new() -> TensorList

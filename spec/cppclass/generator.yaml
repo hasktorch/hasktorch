@@ -1,5 +1,5 @@
 signature: Generator
-cppname: Generator
+cppname: at::Generator
 hsname: Generator
 constructors: []
 methods: []

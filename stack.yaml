@@ -5,9 +5,6 @@ packages:
 - ffi
 - inline-c/inline-c
 - inline-c/inline-c-cpp
-- fficxx/fficxx
-- fficxx/fficxx-runtime
-
 
 extra-include-dirs:
   - deps/libtorch/include/torch/csrc/api/include
