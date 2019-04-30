@@ -39,7 +39,7 @@ newTensor = cast0 Unmanaged.newTensor
 newTensor_Tensor
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-newTensor_Tensor = cast1 Unmanaged.new_TensorTensor
+newTensor_Tensor = cast1 Unmanaged.newTensor_Tensor
 
 
 

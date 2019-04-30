@@ -37,10 +37,10 @@ newTensor  =
     );
   }|]
 
-new_TensorTensor
+newTensor_Tensor
   :: Ptr Tensor
   -> IO (Ptr Tensor)
-new_TensorTensor _x =
+newTensor_Tensor _x =
   [C.block| at::Tensor* { return new at::Tensor(
     *$(at::Tensor* _x));
   }|]

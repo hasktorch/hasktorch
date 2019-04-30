@@ -305,7 +305,7 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
     (True,True) -> [st|
 new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials}
   :: #{types'}
-new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials} = cast#{num_args'} Unmanaged.#{hsfuncname}#{PC.hsname class'}#{type_initials}
+new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials} = cast#{num_args'} Unmanaged.new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials}
 |]
     (True,False) -> [st|
 #{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials}
@@ -313,9 +313,9 @@ new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials} = cast#{num_args'
 #{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials} = cast#{num_args} Unmanaged.#{renameFunc (PC.hsname class')}_#{hsfuncname}
 |]
     (False,True) -> [st|
-#{hsfuncname}#{PC.hsname class'}#{type_initials}
+new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials}
   :: #{types'}
-#{hsfuncname}#{PC.hsname class'}#{type_initials} #{args'} =
+new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials} #{args'} =
   #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(
     #{cargs});
   }|#{cket}

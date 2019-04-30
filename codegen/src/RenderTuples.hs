@@ -68,109 +68,109 @@ tupleToHs' :: PT.Tuple -> Text
 tupleToHs' (PT.Tuple parsables) = [st|#{T.intercalate "" (map parsableToHsType parsables)}|]
 
 toHs :: P.Parsable -> Text
-toHs typ =
-  if isCType typ
-  then [st|#{parsableToHsType typ}|]
-  else [st|Ptr #{parsableToHsType typ}|]
+toHs typ_ =
+  if isCType typ_
+  then [st|#{parsableToHsType typ_}|]
+  else [st|Ptr #{parsableToHsType typ_}|]
 
 toManagedHs :: P.Parsable -> Text
-toManagedHs typ =
-  if isCType typ
-  then [st|#{parsableToHsType typ}|]
-  else [st|ForeignPtr #{parsableToHsType typ}|]
+toManagedHs typ_ =
+  if isCType typ_
+  then [st|#{parsableToHsType typ_}|]
+  else [st|ForeignPtr #{parsableToHsType typ_}|]
 
 
 toCpp :: P.Parsable -> Text
-toCpp typ =
-  if isCType typ
-  then [st|#{parsableToCppType typ}|]
-  else [st|#{parsableToCppType typ}*|]
+toCpp typ_ =
+  if isCType typ_
+  then [st|#{parsableToCppType typ_}|]
+  else [st|#{parsableToCppType typ_}*|]
 
 toCpp' :: P.Parsable -> Text
-toCpp' typ =
-  if isCType typ
+toCpp' typ_ =
+  if isCType typ_
   then [st||]
-  else [st|new #{parsableToCppType typ}|]
+  else [st|new #{parsableToCppType typ_}|]
 
 renderCppObject :: PT.Tuple -> Text
-renderCppObject typ = [st|
+renderCppObject typ_ = [st|
 
------------------#{tupleToHs typ}---------------------
+-----------------#{tupleToHs typ_}---------------------
 
-delete#{tupleToHs' typ} :: Ptr #{tupleToHs typ} -> IO ()
-delete#{tupleToHs' typ} ptr = #{bra}C.block| void { delete $(#{tupleToCpp typ}* ptr); return; }|#{cket}
+delete#{tupleToHs' typ_} :: Ptr #{tupleToHs typ_} -> IO ()
+delete#{tupleToHs' typ_} ptr = #{bra}C.block| void { delete $(#{tupleToCpp typ_}* ptr); return; }|#{cket}
 
-instance CppObject #{tupleToHs typ} where
-  fromPtr ptr = newForeignPtr ptr (delete#{tupleToHs' typ} ptr)
+instance CppObject #{tupleToHs typ_} where
+  fromPtr ptr = newForeignPtr ptr (delete#{tupleToHs' typ_} ptr)
 |]
 
 renderCppTuple2 :: PT.Tuple -> Text
-renderCppTuple2 typ@(PT.Tuple (a:b:_)) = [st|
-instance CppTuple2 (Ptr #{tupleToHs typ}) where
-  type A (Ptr #{tupleToHs typ}) = #{toHs a}
-  type B (Ptr #{tupleToHs typ}) = #{toHs b}
-  get0 v = #{bra}C.block| #{toCpp a} { return #{toCpp' a}(std::get<0>(*$(#{tupleToCpp typ}* v)));}|#{cket}
-  get1 v = #{bra}C.block| #{toCpp b} { return #{toCpp' b}(std::get<1>(*$(#{tupleToCpp typ}* v)));}|#{cket}
+renderCppTuple2 typ_@(PT.Tuple (a:b:_)) = [st|
+instance CppTuple2 (Ptr #{tupleToHs typ_}) where
+  type A (Ptr #{tupleToHs typ_}) = #{toHs a}
+  type B (Ptr #{tupleToHs typ_}) = #{toHs b}
+  get0 v = #{bra}C.block| #{toCpp a} { return #{toCpp' a}(std::get<0>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+  get1 v = #{bra}C.block| #{toCpp b} { return #{toCpp' b}(std::get<1>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple2 _ = ""
 
 renderCppTuple3 :: PT.Tuple -> Text
-renderCppTuple3 typ@(PT.Tuple (_:_:c:_)) = [st|
-instance CppTuple3 (Ptr #{tupleToHs typ}) where
-  type C (Ptr #{tupleToHs typ}) = #{toHs c}
-  get2 v = #{bra}C.block| #{toCpp c} { return #{toCpp' c}(std::get<2>(*$(#{tupleToCpp typ}* v)));}|#{cket}
+renderCppTuple3 typ_@(PT.Tuple (_:_:c:_)) = [st|
+instance CppTuple3 (Ptr #{tupleToHs typ_}) where
+  type C (Ptr #{tupleToHs typ_}) = #{toHs c}
+  get2 v = #{bra}C.block| #{toCpp c} { return #{toCpp' c}(std::get<2>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple3 _ = ""
 
 renderCppTuple4 :: PT.Tuple -> Text
-renderCppTuple4 typ@(PT.Tuple (_:_:_:d:_)) = [st|
-instance CppTuple4 (Ptr #{tupleToHs typ}) where
-  type D (Ptr #{tupleToHs typ}) = #{toHs d}
-  get3 v = #{bra}C.block| #{toCpp d} { return #{toCpp' d}(std::get<3>(*$(#{tupleToCpp typ}* v)));}|#{cket}
+renderCppTuple4 typ_@(PT.Tuple (_:_:_:d:_)) = [st|
+instance CppTuple4 (Ptr #{tupleToHs typ_}) where
+  type D (Ptr #{tupleToHs typ_}) = #{toHs d}
+  get3 v = #{bra}C.block| #{toCpp d} { return #{toCpp' d}(std::get<3>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple4 _ = ""
 
 
 renderCppTuple5 :: PT.Tuple -> Text
-renderCppTuple5 typ@(PT.Tuple (_:_:_:_:e:_)) = [st|
-instance CppTuple5 (Ptr #{tupleToHs typ}) where
-  type E (Ptr #{tupleToHs typ}) = #{toHs e}
-  get4 v = #{bra}C.block| #{toCpp e} { return #{toCpp' e}(std::get<4>(*$(#{tupleToCpp typ}* v)));}|#{cket}
+renderCppTuple5 typ_@(PT.Tuple (_:_:_:_:e:_)) = [st|
+instance CppTuple5 (Ptr #{tupleToHs typ_}) where
+  type E (Ptr #{tupleToHs typ_}) = #{toHs e}
+  get4 v = #{bra}C.block| #{toCpp e} { return #{toCpp' e}(std::get<4>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple5 _ = ""
 
-
-renderManagedCppTuple2 typ@(PT.Tuple (a:b:_)) = [st|
-instance CppTuple2 (ForeignPtr #{tupleToHs typ}) where
-  type A (ForeignPtr #{tupleToHs typ}) = #{toManagedHs a}
-  type B (ForeignPtr #{tupleToHs typ}) = #{toManagedHs b}
-  get0 v = cast1 (get0 :: Ptr #{tupleToHs typ} -> IO (#{toHs a})) v
-  get1 v = cast1 (get1 :: Ptr #{tupleToHs typ} -> IO (#{toHs b})) v
+renderManagedCppTuple2 :: PT.Tuple -> Text
+renderManagedCppTuple2 typ_@(PT.Tuple (a:b:_)) = [st|
+instance CppTuple2 (ForeignPtr #{tupleToHs typ_}) where
+  type A (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs a}
+  type B (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs b}
+  get0 v = cast1 (get0 :: Ptr #{tupleToHs typ_} -> IO (#{toHs a})) v
+  get1 v = cast1 (get1 :: Ptr #{tupleToHs typ_} -> IO (#{toHs b})) v
 |]
 renderManagedCppTuple2 _ = ""
 
 renderManagedCppTuple3 :: PT.Tuple -> Text
-renderManagedCppTuple3 typ@(PT.Tuple (_:_:c:_)) = [st|
-instance CppTuple3 (ForeignPtr #{tupleToHs typ}) where
-  type C (ForeignPtr #{tupleToHs typ}) = #{toManagedHs c}
-  get2 v = cast1 (get2 :: Ptr #{tupleToHs typ} -> IO (#{toHs c})) v
+renderManagedCppTuple3 typ_@(PT.Tuple (_:_:c:_)) = [st|
+instance CppTuple3 (ForeignPtr #{tupleToHs typ_}) where
+  type C (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs c}
+  get2 v = cast1 (get2 :: Ptr #{tupleToHs typ_} -> IO (#{toHs c})) v
 |]
 renderManagedCppTuple3 _ = ""
 
 renderManagedCppTuple4 :: PT.Tuple -> Text
-renderManagedCppTuple4 typ@(PT.Tuple (_:_:_:d:_)) = [st|
-instance CppTuple4 (ForeignPtr #{tupleToHs typ}) where
-  type D (ForeignPtr #{tupleToHs typ}) = #{toManagedHs d}
-  get3 v = cast1 (get3 :: Ptr #{tupleToHs typ} -> IO (#{toHs d})) v
+renderManagedCppTuple4 typ_@(PT.Tuple (_:_:_:d:_)) = [st|
+instance CppTuple4 (ForeignPtr #{tupleToHs typ_}) where
+  type D (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs d}
+  get3 v = cast1 (get3 :: Ptr #{tupleToHs typ_} -> IO (#{toHs d})) v
 |]
 renderManagedCppTuple4 _ = ""
 
 
 renderManagedCppTuple5 :: PT.Tuple -> Text
-renderManagedCppTuple5 typ@(PT.Tuple (_:_:_:_:e:_)) = [st|
-instance CppTuple5 (ForeignPtr #{tupleToHs typ}) where
-  type E (ForeignPtr #{tupleToHs typ}) = #{toManagedHs e}
-  get4 v = cast1 (get4 :: Ptr #{tupleToHs typ} -> IO (#{toHs e})) v
+renderManagedCppTuple5 typ_@(PT.Tuple (_:_:_:_:e:_)) = [st|
+instance CppTuple5 (ForeignPtr #{tupleToHs typ_}) where
+  type E (ForeignPtr #{tupleToHs typ_}) = #{toManagedHs e}
+  get4 v = cast1 (get4 :: Ptr #{tupleToHs typ_} -> IO (#{toHs e})) v
 |]
 renderManagedCppTuple5 _ = ""
 

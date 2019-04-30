@@ -5,14 +5,10 @@
 
 module ParseDerivatives where
 
-import Data.Char (toUpper)
 import GHC.Generics
 import Data.Yaml
 
 import qualified Data.Yaml as Y
-import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
 import Text.Show.Prettyprint (prettyPrint)
 
 {- derivatives.yaml -}

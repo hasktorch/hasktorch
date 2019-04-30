@@ -39,12 +39,12 @@ newScalar = cast0 Unmanaged.newScalar
 newScalar_int
   :: CInt
   -> IO (ForeignPtr Scalar)
-newScalar_int = cast1 Unmanaged.new_intScalar
+newScalar_int = cast1 Unmanaged.newScalar_int
 
 newScalar_double
   :: CDouble
   -> IO (ForeignPtr Scalar)
-newScalar_double = cast1 Unmanaged.new_doubleScalar
+newScalar_double = cast1 Unmanaged.newScalar_double
 
 
 

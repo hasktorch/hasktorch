@@ -12,15 +12,13 @@ import Text.Shakespeare.Text (st)
 import Data.Text (Text)
 import Data.String (fromString)
 import qualified Data.Text.IO as T
-import qualified Data.Text as T
 import System.Directory (createDirectoryIfMissing)
 
 import qualified ParseClass as PC
-import ParseFunctionSig as P
 import RenderCommon
 
 renderImport :: Bool -> PC.CppClassSpec -> Text
-renderImport is_managed typ =  if is_managed then  [st|
+renderImport is_managed typ_ =  if is_managed then  [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
@@ -38,7 +36,7 @@ import Aten.Unmanaged.Type.TensorList
 import Aten.Unmanaged.Type.TensorOptions
 import Aten.Unmanaged.Type.Tuple
 
-import qualified #{"Aten.Unmanaged.Type." <> (PC.hsname typ)} as Unmanaged
+import qualified #{"Aten.Unmanaged.Type." <> (PC.hsname typ_)} as Unmanaged
 |] else [st|
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -59,20 +57,20 @@ C.include "<vector>"
 |]
 
 renderConstructors :: Bool -> PC.CppClassSpec -> Text
-renderConstructors is_managed typ = mconcat $ map (methodToCpp typ True is_managed False "" "") (PC.constructors typ)
+renderConstructors is_managed typ_ = mconcat $ map (methodToCpp typ_ True is_managed False "" "") (PC.constructors typ_)
 
 renderDestructor :: Bool -> PC.CppClassSpec -> Text
-renderDestructor is_managed typ = if is_managed then "" else [st|
-delete#{PC.hsname typ} :: Ptr #{PC.hsname typ} -> IO ()
-delete#{PC.hsname typ} object = #{bra}C.block| void { delete $(#{PC.cppname typ}* object);}|#{cket}
+renderDestructor is_managed typ_ = if is_managed then "" else [st|
+delete#{PC.hsname typ_} :: Ptr #{PC.hsname typ_} -> IO ()
+delete#{PC.hsname typ_} object = #{bra}C.block| void { delete $(#{PC.cppname typ_}* object);}|#{cket}
 
-instance CppObject #{PC.hsname typ} where
-  fromPtr ptr = newForeignPtr ptr (delete#{PC.hsname typ} ptr)
+instance CppObject #{PC.hsname typ_} where
+  fromPtr ptr = newForeignPtr ptr (delete#{PC.hsname typ_} ptr)
 |]
 
 
 renderMethods :: Bool -> PC.CppClassSpec -> Text
-renderMethods is_managed typ = mconcat $ map (methodToCpp typ False is_managed False "" "") (PC.methods typ)
+renderMethods is_managed typ_ = mconcat $ map (methodToCpp typ_ False is_managed False "" "") (PC.methods typ_)
 
 
 decodeAndCodeGen :: String -> String -> IO ()
