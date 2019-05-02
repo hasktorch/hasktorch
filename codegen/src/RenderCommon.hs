@@ -302,59 +302,79 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
 methodToCpp :: PC.CppClassSpec -> Bool -> Bool -> Bool -> String -> String -> Function -> Text
 methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn =
   case (is_managed,is_constructor) of
-    (True,True) -> [st|
-new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials}
-  :: #{types'}
-new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials} = cast#{num_args'} Unmanaged.new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials}
-|]
-    (True,False) -> [st|
-#{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials}
+    (True,_) -> [st|
+#{function_name}
   :: #{types}
-#{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials} = cast#{num_args} Unmanaged.#{renameFunc (PC.hsname class')}_#{hsfuncname}
+#{function_name} = cast#{num_args} Unmanaged.#{function_name}
 |]
     (False,True) -> [st|
-new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials}
-  :: #{types'}
-new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials} #{args'} =
+#{function_name}
+  :: #{types}
+#{function_name} #{args} =
   #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(
     #{cargs});
   }|#{cket}
 |]
     (False,False) -> [st|
-#{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials}
+#{function_name}
   :: #{types}
-#{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials} #{args} =
-  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(#{type_object_str}->#{prefix}#{P.name fn}#{suffix}(
-    #{cargs}));
+#{function_name} #{args} =
+  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(#{type_object_str}#{op'});
   }|#{cket}
 |]
   where
+    function_name :: Text
+    function_name =
+      if is_constructor
+      then [st|new#{(PC.hsname class')}#{(hsfuncname)}#{type_initials}|]
+      else [st|#{renameFunc (PC.hsname class')}_#{hsfuncname}#{type_initials}|]
     type_object :: Parameter
     type_object = Parameter (P.CppClass (PC.signature class')  (PC.cppname class')  (PC.hsname class') ) "obj" Nothing
     type_object_str :: Text
-    type_object_str = [st|$(#{parsableToCppType (ptype type_object)}* _#{pname type_object})|]
+    type_object_str = [st|(*$(#{parsableToCppType (ptype type_object)}* _#{pname type_object}))|]
     renameFunc :: String -> String
     renameFunc [] = []
     renameFunc (x:xs) = toLower x : xs
-    hsfuncname = renameFunc $ P.name fn
-    parameters' = (filter isNotStar $ parameters fn)
-    parameters'' = [type_object] <> parameters'
+    hsfuncname' =
+      if is_constructor
+      then drop 3 $ renameFunc $ P.name fn
+      else renameFunc $ P.name fn
+    hsfuncname =
+      case hsfuncname' of
+        "=" -> "_assign_"
+        "+=" -> "_iadd_"
+        "-=" -> "_isub_"
+        "*=" -> "_imul_"
+        "[]" -> "_at_"
+        _ -> hsfuncname'
+    op :: Text -> Text -> Text
+    op fn' args' =
+      case fn' of
+        "=" -> "=" <> args'
+        "+=" -> "+=" <> args'
+        "-=" -> "-=" <> args'
+        "*=" -> "*=" <> args'
+        "[]" -> "[" <> args' <> "]"
+        _ -> "." <> fn' <> args'
+    op' = op (fromString (prefix <> P.name fn <> suffix)) [st|(
+    #{cargs})|]
+    parameters' =
+      if is_constructor
+      then (filter isNotStar $ parameters fn)
+      else [type_object] <> (filter isNotStar $ parameters fn)
+    parameters'' = (filter isNotStar $ parameters fn)
     num_args :: Int
-    num_args = length parameters''
-    num_args' :: Int
-    num_args' = length parameters'
+    num_args = length parameters'
     args :: String
-    args = L.intercalate " " $ map (\p -> "_" <> pname p) parameters''
-    args' :: String
-    args' = L.intercalate " " $ map (\p -> "_" <> pname p) parameters'
+    args = L.intercalate " " $ map (\p -> "_" <> pname p) parameters'
     cargs :: Text
-    cargs = T.intercalate "\n  , " $ flip map parameters' $ \p ->
+    cargs = T.intercalate "\n  , " $ flip map parameters'' $ \p ->
       if isCType (ptype p)
       then [st|$(#{parsableToCppType (ptype p)} _#{pname p})|]
       else [st|*$(#{parsableToCppType (ptype p)}* _#{pname p})|]
     type_initials :: Text --- This is for avoding c++ overload arguments.
     type_initials =
-      if add_type_initials
+      if add_type_initials && length parameters'' > 0
       then "_" <> (mconcat $ flip map parameters'' $ \p -> parsableToInitial (ptype p))
       else ""
     pointer :: Text
@@ -363,19 +383,12 @@ new#{(PC.hsname class')}#{drop 3 (hsfuncname)}#{type_initials} #{args'} =
       then "ForeignPtr"
       else "Ptr"
     types_list :: [Text]
-    types_list = flip map parameters'' $ \p ->
-      if isCType (ptype p)
-      then [st|#{parsableToHsType (ptype p)}|]
-      else [st|#{pointer} #{parsableToHsType (ptype p)}|]
-    types_list' :: [Text]
-    types_list' = flip map parameters' $ \p ->
+    types_list = flip map parameters' $ \p ->
       if isCType (ptype p)
       then [st|#{parsableToHsType (ptype p)}|]
       else [st|#{pointer} #{parsableToHsType (ptype p)}|]
     types :: Text
     types = T.intercalate "\n  -> " $ types_list ++ [[st|IO (#{ret_hstype})|]]
-    types' :: Text
-    types' = T.intercalate "\n  -> " $ types_list' ++ [[st|IO (#{ret_hstype})|]]
     ret_type :: Text
     ret_type =
       if isCType (retType fn)

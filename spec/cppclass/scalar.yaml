@@ -3,6 +3,6 @@ cppname: at::Scalar
 hsname: Scalar
 constructors:
 - new() -> Scalar
-- new_int(int a) -> Scalar
-- new_double(double a) -> Scalar
+- new(int a) -> Scalar
+- new(double a) -> Scalar
 methods: []

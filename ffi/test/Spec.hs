@@ -22,11 +22,11 @@ main = hspec $ do
 createSpec :: Spec
 createSpec = do
   it "Create Tensor" $ do
-    to <- newTensorOptions kCPU
+    to <- newTensorOptions_D kCPU
     dsize <- newIntArray
-    intArray_push_back dsize 2
-    intArray_push_back dsize 2
-    tod <- tensorOptions_dtype to kByte
+    intArray_push_back_l dsize 2
+    intArray_push_back_l dsize 2
+    tod <- tensorOptions_dtype_s to kByte
     ten <- zeros_lo dsize tod
     tensor_print ten
     return ()

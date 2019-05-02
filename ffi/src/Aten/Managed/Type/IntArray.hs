@@ -50,15 +50,15 @@ intArray_size
   -> IO (CSize)
 intArray_size = cast1 Unmanaged.intArray_size
 
-intArray_at
+intArray_at_s
   :: ForeignPtr IntArray
   -> CSize
   -> IO (Int64)
-intArray_at = cast2 Unmanaged.intArray_at
+intArray_at_s = cast2 Unmanaged.intArray_at_s
 
-intArray_push_back
+intArray_push_back_l
   :: ForeignPtr IntArray
   -> Int64
   -> IO (())
-intArray_push_back = cast2 Unmanaged.intArray_push_back
+intArray_push_back_l = cast2 Unmanaged.intArray_push_back_l
 

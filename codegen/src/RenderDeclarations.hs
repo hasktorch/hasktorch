@@ -27,6 +27,7 @@ toFunction dl = P.Function
   , P.retType = case D.returns dl of
       [a] -> D.type2type a
       ax -> P.Tuple $ map D.type2type ax
+  , P.variant = P.VFunction
   }
 
 renderFunctions :: Bool -> Bool -> String -> [D.Declaration] -> Text

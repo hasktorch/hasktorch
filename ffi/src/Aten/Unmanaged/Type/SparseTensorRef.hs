@@ -30,10 +30,10 @@ C.include "<vector>"
 
 
 
-newSparseTensorRef
+newSparseTensorRef_t
   :: Ptr Tensor
   -> IO (Ptr SparseTensorRef)
-newSparseTensorRef _x =
+newSparseTensorRef_t _x =
   [C.block| at::SparseTensorRef* { return new at::SparseTensorRef(
     *$(at::Tensor* _x));
   }|]

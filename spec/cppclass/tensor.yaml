@@ -3,18 +3,15 @@ cppname: at::Tensor
 hsname: Tensor
 constructors:
 - new() -> Tensor
-- new_Tensor(Tensor x) -> Tensor
+- new(Tensor x) -> Tensor
 methods:
 - dim() -> int64_t
 - storage_offset() -> int64_t
 - defined() -> bool
 - reset() -> void
-#- operator=(Tensor x) -> Tensor
-#- operator=(Tensor x) -> Tensor
-#- operator=(Scalar v) -> Tensor
-#- operator=(Tensor) -> Tensor
-#- operator=(Tensor) -> Tensor
-#- is_same(Tensor other) -> bool
+#- operator=(Tensor x) -> void
+#- operator=(Scalar v) -> void
+- is_same(Tensor other) -> bool
 - use_count() -> size_t
 - weak_use_count() -> size_t
 #- toString() -> char*
@@ -28,12 +25,12 @@ methods:
 #- type() -> Type
 #- type_id() -> TensorTypeId
 #- scalar_type() -> ScalarType
-#- has_storage() -> bool
+- has_storage() -> bool
 #- storage() -> Storage
-#- is_alias_of(at::Tensor other) -> bool
+- is_alias_of(Tensor other) -> bool
 #- toType(Type  t, bool non_blocking=false) -> Tensor
-#- copy_(Tensor  src, bool non_blocking=false) -> Tensor
-#- toType(ScalarType t) -> Tensor
+- copy_(Tensor  src, bool non_blocking=false) -> Tensor
+- toType(ScalarType t) -> Tensor
 #- toBackend(Backend b) -> Tensor
 - is_variable() -> bool
 #- layout() -> Layout
@@ -43,7 +40,7 @@ methods:
 - is_cuda() -> bool
 - is_hip() -> bool
 - is_sparse() -> bool
-#- options() -> TensorOptions
+- options() -> TensorOptions
 #- data() -> T*
 #- item() -> T
 - print() -> void
@@ -52,423 +49,422 @@ methods:
 #- packed_accessor() -> PackedTensorAccessor<T,N,PtrTraits,index_t>
 #- packed_accessor() -> PackedTensorAccessor<T,N>
 #- operator-() -> Tensor
-#- operator+=(Tensor  other) -> Tensor
-#- operator+=(Scalar other) -> Tensor
-#- operator-=(Tensor  other) -> Tensor
-#- operator-=(Scalar other) -> Tensor
-#- operator*=(Tensor  other) -> Tensor
-#- operator*=(Scalar other) -> Tensor
+- operator+=(Tensor  other) -> void
+- operator+=(Scalar other) -> void
+- operator-=(Tensor  other) -> void
+- operator-=(Scalar other) -> void
+- operator*=(Tensor  other) -> void
+- operator*=(Scalar other) -> void
 #- operator/=(Tensor  other) -> Tensor
 #- operator/=(Scalar other) -> Tensor
-#- operator[](Scalar index) -> Tensor
-#- operator[](Tensor index) -> Tensor
-#- operator[](int64_t index) -> Tensor
-#- cpu() -> Tensor
-#- cuda() -> Tensor
-#- hip() -> Tensor
-#- set_requires_grad(bool requires_grad) -> Tensor
-#- requires_grad() -> bool
-#- grad() -> Tensor
-#- grad() -> Tensor
-#- set_data(Tensor new_data) -> void
-#- abs() -> Tensor
-#- abs_() -> Tensor
-#- acos() -> Tensor
-#- acos_() -> Tensor
-#- add(Tensor  other, Scalar alpha=1) -> Tensor
-#- add_(Tensor  other, Scalar alpha=1) -> Tensor
-#- add(Scalar other, Scalar alpha=1) -> Tensor
-#- add_(Scalar other, Scalar alpha=1) -> Tensor
-#- addmv(Tensor  mat, Tensor  vec, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- addmv_(Tensor  mat, Tensor  vec, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- addr(Tensor  vec1, Tensor  vec2, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- addr_(Tensor  vec1, Tensor  vec2, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- all(int64_t dim, bool keepdim=false) -> Tensor
-#- allclose(Tensor  other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false) -> bool
-#- any(int64_t dim, bool keepdim=false) -> Tensor
-#- argmax(int64_t dim, bool keepdim=false) -> Tensor
-#- argmax() -> Tensor
-#- argmin(int64_t dim, bool keepdim=false) -> Tensor
-#- argmin() -> Tensor
-#- asin() -> Tensor
-#- asin_() -> Tensor
-#- atan() -> Tensor
-#- atan_() -> Tensor
-#- baddbmm(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- baddbmm_(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- bernoulli(Generator * generator=nullptr) -> Tensor
-#- bernoulli_(Tensor  p, Generator * generator=nullptr) -> Tensor
-#- bernoulli_(double p=0.5, Generator * generator=nullptr) -> Tensor
-#- bernoulli(double p, Generator * generator=nullptr) -> Tensor
-#- bincount(Tensor  weights={}, int64_t minlength=0) -> Tensor
-#- bmm(Tensor  mat2) -> Tensor
-#- ceil() -> Tensor
-#- ceil_() -> Tensor
+- operator[](Scalar index) -> Tensor
+- operator[](Tensor index) -> Tensor
+- operator[](int64_t index) -> Tensor
+- cpu() -> Tensor
+- cuda() -> Tensor
+- hip() -> Tensor
+- set_requires_grad(bool requires_grad) -> Tensor
+- requires_grad() -> bool
+- grad() -> Tensor
+- set_data(Tensor new_data) -> void
+- abs() -> Tensor
+- abs_() -> Tensor
+- acos() -> Tensor
+- acos_() -> Tensor
+- add(Tensor  other, Scalar alpha=1) -> Tensor
+- add_(Tensor  other, Scalar alpha=1) -> Tensor
+- add(Scalar other, Scalar alpha=1) -> Tensor
+- add_(Scalar other, Scalar alpha=1) -> Tensor
+- addmv(Tensor  mat, Tensor  vec, Scalar beta=1, Scalar alpha=1) -> Tensor
+- addmv_(Tensor  mat, Tensor  vec, Scalar beta=1, Scalar alpha=1) -> Tensor
+- addr(Tensor  vec1, Tensor  vec2, Scalar beta=1, Scalar alpha=1) -> Tensor
+- addr_(Tensor  vec1, Tensor  vec2, Scalar beta=1, Scalar alpha=1) -> Tensor
+- all(int64_t dim, bool keepdim=false) -> Tensor
+- allclose(Tensor  other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false) -> bool
+- any(int64_t dim, bool keepdim=false) -> Tensor
+- argmax(int64_t dim, bool keepdim=false) -> Tensor
+- argmax() -> Tensor
+- argmin(int64_t dim, bool keepdim=false) -> Tensor
+- argmin() -> Tensor
+- asin() -> Tensor
+- asin_() -> Tensor
+- atan() -> Tensor
+- atan_() -> Tensor
+- baddbmm(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
+- baddbmm_(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
+- bernoulli(Generator * generator=nullptr) -> Tensor
+- bernoulli_(Tensor  p, Generator * generator=nullptr) -> Tensor
+- bernoulli_(double p=0.5, Generator * generator=nullptr) -> Tensor
+- bernoulli(double p, Generator * generator=nullptr) -> Tensor
+- bincount(Tensor  weights={}, int64_t minlength=0) -> Tensor
+- bmm(Tensor  mat2) -> Tensor
+- ceil() -> Tensor
+- ceil_() -> Tensor
 #- chunk(int64_t chunks, int64_t dim=0) -> std::vector<Tensor>
-#- clamp_max(Scalar max) -> Tensor
-#- clamp_max_(Scalar max) -> Tensor
-#- clamp_min(Scalar min) -> Tensor
-#- clamp_min_(Scalar min) -> Tensor
-#- contiguous() -> Tensor
-#- cos() -> Tensor
-#- cos_() -> Tensor
-#- cosh() -> Tensor
-#- cosh_() -> Tensor
-#- cumsum(int64_t dim, ScalarType dtype) -> Tensor
-#- cumsum(int64_t dim) -> Tensor
-#- cumprod(int64_t dim, ScalarType dtype) -> Tensor
-#- cumprod(int64_t dim) -> Tensor
-#- det() -> Tensor
-#- diag_embed(int64_t offset=0, int64_t dim1=-2, int64_t dim2=-1) -> Tensor
-#- diagflat(int64_t offset=0) -> Tensor
-#- diagonal(int64_t offset=0, int64_t dim1=0, int64_t dim2=1) -> Tensor
-#- div(Tensor  other) -> Tensor
-#- div_(Tensor  other) -> Tensor
-#- div(Scalar other) -> Tensor
-#- div_(Scalar other) -> Tensor
-#- dot(Tensor  tensor) -> Tensor
-#- resize_(IntArrayRef size) -> Tensor
-#- erf() -> Tensor
-#- erf_() -> Tensor
-#- erfc() -> Tensor
-#- erfc_() -> Tensor
-#- exp() -> Tensor
-#- exp_() -> Tensor
-#- expm1() -> Tensor
-#- expm1_() -> Tensor
-#- expand(IntArrayRef size, bool implicit=false) -> Tensor
-#- expand_as(Tensor  other) -> Tensor
-#- flatten(int64_t start_dim=0, int64_t end_dim=-1) -> Tensor
-#- fill_(Scalar value) -> Tensor
-#- fill_(Tensor  value) -> Tensor
-#- floor() -> Tensor
-#- floor_() -> Tensor
-#- ger(Tensor  vec2) -> Tensor
-#- fft(int64_t signal_ndim, bool normalized=false) -> Tensor
-#- ifft(int64_t signal_ndim, bool normalized=false) -> Tensor
-#- rfft(int64_t signal_ndim, bool normalized=false, bool onesided=true) -> Tensor
-#- irfft(int64_t signal_ndim, bool normalized=false, bool onesided=true, IntArrayRef signal_sizes={}) -> Tensor
-#- index(TensorList indices) -> Tensor
-#- index_copy_(int64_t dim, Tensor  index, Tensor  source) -> Tensor
-#- index_copy(int64_t dim, Tensor  index, Tensor  source) -> Tensor
-#- index_put_(TensorList indices, Tensor  values, bool accumulate=false) -> Tensor
-#- index_put(TensorList indices, Tensor  values, bool accumulate=false) -> Tensor
-#- inverse() -> Tensor
-#- isclose(Tensor  other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false) -> Tensor
-#- is_distributed() -> bool
-#- is_floating_point() -> bool
-#- is_complex() -> bool
-#- is_nonzero() -> bool
-#- is_same_size(Tensor  other) -> bool
-#- is_signed() -> bool
-#- kthvalue(int64_t k, int64_t dim=-1, bool keepdim=false) -> std::tuple<Tensor,Tensor>
-#- log() -> Tensor
-#- log_() -> Tensor
-#- log10() -> Tensor
-#- log10_() -> Tensor
-#- log1p() -> Tensor
-#- log1p_() -> Tensor
-#- log2() -> Tensor
-#- log2_() -> Tensor
-#- logdet() -> Tensor
-#- log_softmax(int64_t dim, ScalarType dtype) -> Tensor
-#- log_softmax(int64_t dim) -> Tensor
-#- logsumexp(IntArrayRef dim, bool keepdim=false) -> Tensor
-#- matmul(Tensor  other) -> Tensor
-#- matrix_power(int64_t n) -> Tensor
-#- max(int64_t dim, bool keepdim=false) -> std::tuple<Tensor,Tensor>
-#- max_values(IntArrayRef dim, bool keepdim=false) -> Tensor
-#- mean(ScalarType dtype) -> Tensor
-#- mean() -> Tensor
-#- mean(IntArrayRef dim, bool keepdim, ScalarType dtype) -> Tensor
-#- mean(IntArrayRef dim, bool keepdim=false) -> Tensor
-#- mean(IntArrayRef dim, ScalarType dtype) -> Tensor
-#- median(int64_t dim, bool keepdim=false) -> std::tuple<Tensor,Tensor>
-#- min(int64_t dim, bool keepdim=false) -> std::tuple<Tensor,Tensor>
-#- min_values(IntArrayRef dim, bool keepdim=false) -> Tensor
-#- mm(Tensor  mat2) -> Tensor
-#- mode(int64_t dim=-1, bool keepdim=false) -> std::tuple<Tensor,Tensor>
-#- mul(Tensor  other) -> Tensor
-#- mul_(Tensor  other) -> Tensor
-#- mul(Scalar other) -> Tensor
-#- mul_(Scalar other) -> Tensor
-#- mv(Tensor  vec) -> Tensor
-#- mvlgamma(int64_t p) -> Tensor
-#- mvlgamma_(int64_t p) -> Tensor
-#- narrow_copy(int64_t dim, int64_t start, int64_t length) -> Tensor
-#- narrow(int64_t dim, int64_t start, int64_t length) -> Tensor
-#- permute(IntArrayRef dims) -> Tensor
-#- pin_memory() -> Tensor
-#- pinverse(double rcond=1e-15) -> Tensor
-#- repeat(IntArrayRef repeats) -> Tensor
-#- reshape(IntArrayRef shape) -> Tensor
-#- reshape_as(Tensor  other) -> Tensor
-#- round() -> Tensor
-#- round_() -> Tensor
-#- relu() -> Tensor
-#- relu_() -> Tensor
-#- prelu(Tensor  weight) -> Tensor
-#- prelu_backward(Tensor  grad_output, Tensor  weight) -> std::tuple<Tensor,Tensor>
-#- hardshrink(Scalar lambd=0.5) -> Tensor
-#- hardshrink_backward(Tensor  grad_out, Scalar lambd) -> Tensor
-#- rsqrt() -> Tensor
-#- rsqrt_() -> Tensor
-#- select(int64_t dim, int64_t index) -> Tensor
-#- sigmoid() -> Tensor
-#- sigmoid_() -> Tensor
-#- sin() -> Tensor
-#- sin_() -> Tensor
-#- sinh() -> Tensor
-#- sinh_() -> Tensor
-#- detach() -> Tensor
-#- detach_() -> Tensor
-#- size(int64_t dim) -> int64_t
-#- slice(int64_t dim=0, int64_t start=0, int64_t end=9223372036854775807, int64_t step=1) -> Tensor
-#- slogdet() -> std::tuple<Tensor,Tensor>
-#- smm(Tensor  mat2) -> Tensor
-#- softmax(int64_t dim, ScalarType dtype) -> Tensor
-#- softmax(int64_t dim) -> Tensor
+- clamp_max(Scalar max) -> Tensor
+- clamp_max_(Scalar max) -> Tensor
+- clamp_min(Scalar min) -> Tensor
+- clamp_min_(Scalar min) -> Tensor
+- contiguous() -> Tensor
+- cos() -> Tensor
+- cos_() -> Tensor
+- cosh() -> Tensor
+- cosh_() -> Tensor
+- cumsum(int64_t dim, ScalarType dtype) -> Tensor
+- cumsum(int64_t dim) -> Tensor
+- cumprod(int64_t dim, ScalarType dtype) -> Tensor
+- cumprod(int64_t dim) -> Tensor
+- det() -> Tensor
+- diag_embed(int64_t offset=0, int64_t dim1=-2, int64_t dim2=-1) -> Tensor
+- diagflat(int64_t offset=0) -> Tensor
+- diagonal(int64_t offset=0, int64_t dim1=0, int64_t dim2=1) -> Tensor
+- div(Tensor  other) -> Tensor
+- div_(Tensor  other) -> Tensor
+- div(Scalar other) -> Tensor
+- div_(Scalar other) -> Tensor
+- dot(Tensor  tensor) -> Tensor
+- resize_(IntArrayRef size) -> Tensor
+- erf() -> Tensor
+- erf_() -> Tensor
+- erfc() -> Tensor
+- erfc_() -> Tensor
+- exp() -> Tensor
+- exp_() -> Tensor
+- expm1() -> Tensor
+- expm1_() -> Tensor
+- expand(IntArrayRef size, bool implicit=false) -> Tensor
+- expand_as(Tensor  other) -> Tensor
+- flatten(int64_t start_dim=0, int64_t end_dim=-1) -> Tensor
+- fill_(Scalar value) -> Tensor
+- fill_(Tensor  value) -> Tensor
+- floor() -> Tensor
+- floor_() -> Tensor
+- ger(Tensor  vec2) -> Tensor
+- fft(int64_t signal_ndim, bool normalized=false) -> Tensor
+- ifft(int64_t signal_ndim, bool normalized=false) -> Tensor
+- rfft(int64_t signal_ndim, bool normalized=false, bool onesided=true) -> Tensor
+- irfft(int64_t signal_ndim, bool normalized=false, bool onesided=true, IntArrayRef signal_sizes={}) -> Tensor
+- index(TensorList indices) -> Tensor
+- index_copy_(int64_t dim, Tensor  index, Tensor  source) -> Tensor
+- index_copy(int64_t dim, Tensor  index, Tensor  source) -> Tensor
+- index_put_(TensorList indices, Tensor  values, bool accumulate=false) -> Tensor
+- index_put(TensorList indices, Tensor  values, bool accumulate=false) -> Tensor
+- inverse() -> Tensor
+- isclose(Tensor  other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false) -> Tensor
+- is_distributed() -> bool
+- is_floating_point() -> bool
+- is_complex() -> bool
+- is_nonzero() -> bool
+- is_same_size(Tensor  other) -> bool
+- is_signed() -> bool
+- kthvalue(int64_t k, int64_t dim=-1, bool keepdim=false) -> (Tensor,Tensor)
+- log() -> Tensor
+- log_() -> Tensor
+- log10() -> Tensor
+- log10_() -> Tensor
+- log1p() -> Tensor
+- log1p_() -> Tensor
+- log2() -> Tensor
+- log2_() -> Tensor
+- logdet() -> Tensor
+- log_softmax(int64_t dim, ScalarType dtype) -> Tensor
+- log_softmax(int64_t dim) -> Tensor
+- logsumexp(IntArrayRef dim, bool keepdim=false) -> Tensor
+- matmul(Tensor  other) -> Tensor
+- matrix_power(int64_t n) -> Tensor
+- max(int64_t dim, bool keepdim=false) -> (Tensor,Tensor)
+- max_values(IntArrayRef dim, bool keepdim=false) -> Tensor
+- mean(ScalarType dtype) -> Tensor
+- mean() -> Tensor
+- mean(IntArrayRef dim, bool keepdim, ScalarType dtype) -> Tensor
+- mean(IntArrayRef dim, bool keepdim=false) -> Tensor
+- mean(IntArrayRef dim, ScalarType dtype) -> Tensor
+- median(int64_t dim, bool keepdim=false) -> (Tensor,Tensor)
+- min(int64_t dim, bool keepdim=false) -> (Tensor,Tensor)
+- min_values(IntArrayRef dim, bool keepdim=false) -> Tensor
+- mm(Tensor  mat2) -> Tensor
+- mode(int64_t dim=-1, bool keepdim=false) -> (Tensor,Tensor)
+- mul(Tensor  other) -> Tensor
+- mul_(Tensor  other) -> Tensor
+- mul(Scalar other) -> Tensor
+- mul_(Scalar other) -> Tensor
+- mv(Tensor  vec) -> Tensor
+- mvlgamma(int64_t p) -> Tensor
+- mvlgamma_(int64_t p) -> Tensor
+- narrow_copy(int64_t dim, int64_t start, int64_t length) -> Tensor
+- narrow(int64_t dim, int64_t start, int64_t length) -> Tensor
+- permute(IntArrayRef dims) -> Tensor
+- pin_memory() -> Tensor
+- pinverse(double rcond=1e-15) -> Tensor
+- repeat(IntArrayRef repeats) -> Tensor
+- reshape(IntArrayRef shape) -> Tensor
+- reshape_as(Tensor  other) -> Tensor
+- round() -> Tensor
+- round_() -> Tensor
+- relu() -> Tensor
+- relu_() -> Tensor
+- prelu(Tensor  weight) -> Tensor
+- prelu_backward(Tensor  grad_output, Tensor  weight) -> (Tensor,Tensor)
+- hardshrink(Scalar lambd=0.5) -> Tensor
+- hardshrink_backward(Tensor  grad_out, Scalar lambd) -> Tensor
+- rsqrt() -> Tensor
+- rsqrt_() -> Tensor
+- select(int64_t dim, int64_t index) -> Tensor
+- sigmoid() -> Tensor
+- sigmoid_() -> Tensor
+- sin() -> Tensor
+- sin_() -> Tensor
+- sinh() -> Tensor
+- sinh_() -> Tensor
+- detach() -> Tensor
+- detach_() -> Tensor
+- size(int64_t dim) -> int64_t
+- slice(int64_t dim=0, int64_t start=0, int64_t end=9223372036854775807, int64_t step=1) -> Tensor
+- slogdet() -> (Tensor,Tensor)
+- smm(Tensor  mat2) -> Tensor
+- softmax(int64_t dim, ScalarType dtype) -> Tensor
+- softmax(int64_t dim) -> Tensor
 #- split(int64_t split_size, int64_t dim=0) -> std::vector<Tensor>
 #- split_with_sizes(IntArrayRef split_sizes, int64_t dim=0) -> std::vector<Tensor>
-#- squeeze() -> Tensor
-#- squeeze(int64_t dim) -> Tensor
-#- squeeze_() -> Tensor
-#- squeeze_(int64_t dim) -> Tensor
-#- sspaddmm(Tensor  mat1, Tensor  mat2, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- stride(int64_t dim) -> int64_t
-#- sum(ScalarType dtype) -> Tensor
-#- sum() -> Tensor
-#- sum(IntArrayRef dim, bool keepdim, ScalarType dtype) -> Tensor
-#- sum(IntArrayRef dim, bool keepdim=false) -> Tensor
-#- sum(IntArrayRef dim, ScalarType dtype) -> Tensor
-#- sum_to_size(IntArrayRef size) -> Tensor
-#- sqrt() -> Tensor
-#- sqrt_() -> Tensor
-#- std(bool unbiased=true) -> Tensor
-#- std(IntArrayRef dim, bool unbiased=true, bool keepdim=false) -> Tensor
-#- prod(ScalarType dtype) -> Tensor
-#- prod() -> Tensor
-#- prod(int64_t dim, bool keepdim, ScalarType dtype) -> Tensor
-#- prod(int64_t dim, bool keepdim=false) -> Tensor
-#- prod(int64_t dim, ScalarType dtype) -> Tensor
-#- t() -> Tensor
-#- t_() -> Tensor
-#- tan() -> Tensor
-#- tan_() -> Tensor
-#- tanh() -> Tensor
-#- tanh_() -> Tensor
-#- transpose(int64_t dim0, int64_t dim1) -> Tensor
-#- transpose_(int64_t dim0, int64_t dim1) -> Tensor
-#- flip(IntArrayRef dims) -> Tensor
-#- roll(IntArrayRef shifts, IntArrayRef dims={}) -> Tensor
-#- rot90(int64_t k=1, IntArrayRef dims={0,1}) -> Tensor
-#- trunc() -> Tensor
-#- trunc_() -> Tensor
-#- type_as(Tensor  other) -> Tensor
-#- unsqueeze(int64_t dim) -> Tensor
-#- unsqueeze_(int64_t dim) -> Tensor
-#- var(bool unbiased=true) -> Tensor
-#- var(IntArrayRef dim, bool unbiased=true, bool keepdim=false) -> Tensor
-#- view_as(Tensor  other) -> Tensor
-#- where(Tensor  condition, Tensor  other) -> Tensor
-#- norm(Scalar p=2) -> Tensor
-#- clone() -> Tensor
-#- resize_as_(Tensor  the_template) -> Tensor
-#- pow(Scalar exponent) -> Tensor
-#- zero_() -> Tensor
-#- sub(Tensor  other, Scalar alpha=1) -> Tensor
-#- sub_(Tensor  other, Scalar alpha=1) -> Tensor
-#- sub(Scalar other, Scalar alpha=1) -> Tensor
-#- sub_(Scalar other, Scalar alpha=1) -> Tensor
-#- addmm(Tensor  mat1, Tensor  mat2, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- addmm_(Tensor  mat1, Tensor  mat2, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- sparse_resize_(IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) -> Tensor
-#- sparse_resize_and_clear_(IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) -> Tensor
-#- sparse_mask(SparseTensorRef mask) -> Tensor
-#- to_dense() -> Tensor
-#- sparse_dim() -> int64_t
-#- _dimI() -> int64_t
-#- dense_dim() -> int64_t
-#- _dimV() -> int64_t
-#- _nnz() -> int64_t
-#- coalesce() -> Tensor
-#- is_coalesced() -> bool
-#- _indices() -> Tensor
-#- _values() -> Tensor
-#- _coalesced_(bool coalesced) -> Tensor
-#- indices() -> Tensor
-#- values() -> Tensor
-#- numel() -> int64_t
+- squeeze() -> Tensor
+- squeeze(int64_t dim) -> Tensor
+- squeeze_() -> Tensor
+- squeeze_(int64_t dim) -> Tensor
+- sspaddmm(Tensor  mat1, Tensor  mat2, Scalar beta=1, Scalar alpha=1) -> Tensor
+- stride(int64_t dim) -> int64_t
+- sum(ScalarType dtype) -> Tensor
+- sum() -> Tensor
+- sum(IntArrayRef dim, bool keepdim, ScalarType dtype) -> Tensor
+- sum(IntArrayRef dim, bool keepdim=false) -> Tensor
+- sum(IntArrayRef dim, ScalarType dtype) -> Tensor
+- sum_to_size(IntArrayRef size) -> Tensor
+- sqrt() -> Tensor
+- sqrt_() -> Tensor
+- std(bool unbiased=true) -> Tensor
+- std(IntArrayRef dim, bool unbiased=true, bool keepdim=false) -> Tensor
+- prod(ScalarType dtype) -> Tensor
+- prod() -> Tensor
+- prod(int64_t dim, bool keepdim, ScalarType dtype) -> Tensor
+- prod(int64_t dim, bool keepdim=false) -> Tensor
+- prod(int64_t dim, ScalarType dtype) -> Tensor
+- t() -> Tensor
+- t_() -> Tensor
+- tan() -> Tensor
+- tan_() -> Tensor
+- tanh() -> Tensor
+- tanh_() -> Tensor
+- transpose(int64_t dim0, int64_t dim1) -> Tensor
+- transpose_(int64_t dim0, int64_t dim1) -> Tensor
+- flip(IntArrayRef dims) -> Tensor
+- roll(IntArrayRef shifts, IntArrayRef dims={}) -> Tensor
+- rot90(int64_t k=1, IntArrayRef dims={0,1}) -> Tensor
+- trunc() -> Tensor
+- trunc_() -> Tensor
+- type_as(Tensor  other) -> Tensor
+- unsqueeze(int64_t dim) -> Tensor
+- unsqueeze_(int64_t dim) -> Tensor
+- var(bool unbiased=true) -> Tensor
+- var(IntArrayRef dim, bool unbiased=true, bool keepdim=false) -> Tensor
+- view_as(Tensor  other) -> Tensor
+- where(Tensor  condition, Tensor  other) -> Tensor
+- norm(Scalar p=2) -> Tensor
+- clone() -> Tensor
+- resize_as_(Tensor  the_template) -> Tensor
+- pow(Scalar exponent) -> Tensor
+- zero_() -> Tensor
+- sub(Tensor  other, Scalar alpha=1) -> Tensor
+- sub_(Tensor  other, Scalar alpha=1) -> Tensor
+- sub(Scalar other, Scalar alpha=1) -> Tensor
+- sub_(Scalar other, Scalar alpha=1) -> Tensor
+- addmm(Tensor  mat1, Tensor  mat2, Scalar beta=1, Scalar alpha=1) -> Tensor
+- addmm_(Tensor  mat1, Tensor  mat2, Scalar beta=1, Scalar alpha=1) -> Tensor
+- sparse_resize_(IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) -> Tensor
+- sparse_resize_and_clear_(IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) -> Tensor
+- sparse_mask(SparseTensorRef mask) -> Tensor
+- to_dense() -> Tensor
+- sparse_dim() -> int64_t
+- _dimI() -> int64_t
+- dense_dim() -> int64_t
+- _dimV() -> int64_t
+- _nnz() -> int64_t
+- coalesce() -> Tensor
+- is_coalesced() -> bool
+- _indices() -> Tensor
+- _values() -> Tensor
+- _coalesced_(bool coalesced) -> Tensor
+- indices() -> Tensor
+- values() -> Tensor
+- numel() -> int64_t
 #- unbind(int64_t dim=0) -> std::vector<Tensor>
-#- to_sparse(int64_t sparse_dim) -> Tensor
-#- to_sparse() -> Tensor
-#- to(TensorOptions  options, bool non_blocking=false, bool copy=false) -> Tensor
-#- to(Device device, ScalarType dtype, bool non_blocking=false, bool copy=false) -> Tensor
-#- to(ScalarType dtype, bool non_blocking=false, bool copy=false) -> Tensor
-#- to(Tensor  other, bool non_blocking=false, bool copy=false) -> Tensor
-#- item() -> Scalar
-#- data_ptr() -> void*
-#- set_(Storage source) -> Tensor
-#- set_(Storage source, int64_t storage_offset, IntArrayRef size, IntArrayRef stride={}) -> Tensor
-#- set_(Tensor  source) -> Tensor
-#- set_() -> Tensor
-#- is_set_to(Tensor  tensor) -> bool
-#- masked_fill_(Tensor  mask, Scalar value) -> Tensor
-#- masked_fill(Tensor  mask, Scalar value) -> Tensor
-#- masked_fill_(Tensor  mask, Tensor  value) -> Tensor
-#- masked_fill(Tensor  mask, Tensor  value) -> Tensor
-#- masked_scatter_(Tensor  mask, Tensor  source) -> Tensor
-#- masked_scatter(Tensor  mask, Tensor  source) -> Tensor
-#- view(IntArrayRef size) -> Tensor
-#- put_(Tensor  index, Tensor  source, bool accumulate=false) -> Tensor
-#- index_add_(int64_t dim, Tensor  index, Tensor  source) -> Tensor
-#- index_add(int64_t dim, Tensor  index, Tensor  source) -> Tensor
-#- index_fill_(int64_t dim, Tensor  index, Scalar value) -> Tensor
-#- index_fill(int64_t dim, Tensor  index, Scalar value) -> Tensor
-#- index_fill_(int64_t dim, Tensor  index, Tensor  value) -> Tensor
-#- index_fill(int64_t dim, Tensor  index, Tensor  value) -> Tensor
-#- scatter_(int64_t dim, Tensor  index, Tensor  src) -> Tensor
-#- scatter(int64_t dim, Tensor  index, Tensor  src) -> Tensor
-#- scatter_(int64_t dim, Tensor  index, Scalar value) -> Tensor
-#- scatter(int64_t dim, Tensor  index, Scalar value) -> Tensor
-#- scatter_add_(int64_t dim, Tensor  index, Tensor  src) -> Tensor
-#- scatter_add(int64_t dim, Tensor  index, Tensor  src) -> Tensor
-#- lt_(Scalar other) -> Tensor
-#- lt_(Tensor  other) -> Tensor
-#- gt_(Scalar other) -> Tensor
-#- gt_(Tensor  other) -> Tensor
-#- le_(Scalar other) -> Tensor
-#- le_(Tensor  other) -> Tensor
-#- ge_(Scalar other) -> Tensor
-#- ge_(Tensor  other) -> Tensor
-#- eq_(Scalar other) -> Tensor
-#- eq_(Tensor  other) -> Tensor
-#- ne_(Scalar other) -> Tensor
-#- ne_(Tensor  other) -> Tensor
-#- __and__(Scalar other) -> Tensor
-#- __and__(Tensor  other) -> Tensor
-#- __iand__(Scalar other) -> Tensor
-#- __iand__(Tensor  other) -> Tensor
-#- __or__(Scalar other) -> Tensor
-#- __or__(Tensor  other) -> Tensor
-#- __ior__(Scalar other) -> Tensor
-#- __ior__(Tensor  other) -> Tensor
-#- __xor__(Scalar other) -> Tensor
-#- __xor__(Tensor  other) -> Tensor
-#- __ixor__(Scalar other) -> Tensor
-#- __ixor__(Tensor  other) -> Tensor
-#- __lshift__(Scalar other) -> Tensor
-#- __lshift__(Tensor  other) -> Tensor
-#- __ilshift__(Scalar other) -> Tensor
-#- __ilshift__(Tensor  other) -> Tensor
-#- __rshift__(Scalar other) -> Tensor
-#- __rshift__(Tensor  other) -> Tensor
-#- __irshift__(Scalar other) -> Tensor
-#- __irshift__(Tensor  other) -> Tensor
-#- lgamma_() -> Tensor
-#- atan2_(Tensor  other) -> Tensor
-#- tril_(int64_t diagonal=0) -> Tensor
-#- triu_(int64_t diagonal=0) -> Tensor
-#- digamma_() -> Tensor
-#- polygamma_(int64_t n) -> Tensor
-#- erfinv_() -> Tensor
-#- frac_() -> Tensor
-#- renorm_(Scalar p, int64_t dim, Scalar maxnorm) -> Tensor
-#- reciprocal_() -> Tensor
-#- neg_() -> Tensor
-#- pow_(Scalar exponent) -> Tensor
-#- pow_(Tensor  exponent) -> Tensor
-#- lerp_(Tensor  end, Scalar weight) -> Tensor
-#- lerp_(Tensor  end, Tensor  weight) -> Tensor
-#- sign_() -> Tensor
-#- fmod_(Scalar other) -> Tensor
-#- fmod_(Tensor  other) -> Tensor
-#- remainder_(Scalar other) -> Tensor
-#- remainder_(Tensor  other) -> Tensor
-#- addbmm_(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- addbmm(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
-#- addcmul_(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
-#- addcdiv_(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
-#- random_(int64_t from, int64_t to, Generator * generator=nullptr) -> Tensor
-#- random_(int64_t to, Generator * generator=nullptr) -> Tensor
-#- random_(Generator * generator=nullptr) -> Tensor
-#- uniform_(double from=0, double to=1, Generator * generator=nullptr) -> Tensor
-#- normal_(double mean=0, double std=1, Generator * generator=nullptr) -> Tensor
-#- cauchy_(double median=0, double sigma=1, Generator * generator=nullptr) -> Tensor
-#- log_normal_(double mean=1, double std=2, Generator * generator=nullptr) -> Tensor
-#- exponential_(double lambd=1, Generator * generator=nullptr) -> Tensor
-#- geometric_(double p, Generator * generator=nullptr) -> Tensor
-#- diag(int64_t diagonal=0) -> Tensor
-#- cross(Tensor  other, int64_t dim=-1) -> Tensor
-#- triu(int64_t diagonal=0) -> Tensor
-#- tril(int64_t diagonal=0) -> Tensor
-#- trace() -> Tensor
-#- ne(Scalar other) -> Tensor
-#- ne(Tensor  other) -> Tensor
-#- eq(Scalar other) -> Tensor
-#- eq(Tensor  other) -> Tensor
-#- ge(Scalar other) -> Tensor
-#- ge(Tensor  other) -> Tensor
-#- le(Scalar other) -> Tensor
-#- le(Tensor  other) -> Tensor
-#- gt(Scalar other) -> Tensor
-#- gt(Tensor  other) -> Tensor
-#- lt(Scalar other) -> Tensor
-#- lt(Tensor  other) -> Tensor
-#- take(Tensor  index) -> Tensor
-#- index_select(int64_t dim, Tensor  index) -> Tensor
-#- masked_select(Tensor  mask) -> Tensor
-#- nonzero() -> Tensor
-#- gather(int64_t dim, Tensor  index, bool sparse_grad=false) -> Tensor
-#- addcmul(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
-#- addcdiv(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
-#- gels(Tensor  A) -> std::tuple<Tensor,Tensor>
-#- trtrs(Tensor  A, bool upper=true, bool transpose=false, bool unitriangular=false) -> std::tuple<Tensor,Tensor>
-#- symeig(bool eigenvectors=false, bool upper=true) -> std::tuple<Tensor,Tensor>
-#- eig(bool eigenvectors=false) -> std::tuple<Tensor,Tensor>
-#- svd(bool some=true, bool compute_uv=true) -> std::tuple<Tensor,Tensor,Tensor>
-#- cholesky(bool upper=false) -> Tensor
-#- cholesky_solve(Tensor  input2, bool upper=false) -> Tensor
-#- solve(Tensor  A) -> std::tuple<Tensor,Tensor>
-#- potri(bool upper=true) -> Tensor
-#- pstrf(bool upper=true, Scalar tol=-1) -> std::tuple<Tensor,Tensor>
-#- qr() -> std::tuple<Tensor,Tensor>
-#- geqrf() -> std::tuple<Tensor,Tensor>
-#- orgqr(Tensor  input2) -> Tensor
-#- ormqr(Tensor  input2, Tensor  input3, bool left=true, bool transpose=false) -> Tensor
-#- btrifact(bool pivot=true) -> std::tuple<Tensor,Tensor>
-#- btrifact_with_info(bool pivot=true) -> std::tuple<Tensor,Tensor,Tensor>
-#- btrisolve(Tensor  LU_data, Tensor  LU_pivots) -> Tensor
-#- multinomial(int64_t num_samples, bool replacement=false, Generator * generator=nullptr) -> Tensor
-#- lgamma() -> Tensor
-#- digamma() -> Tensor
-#- polygamma(int64_t n) -> Tensor
-#- erfinv() -> Tensor
-#- frac() -> Tensor
-#- dist(Tensor  other, Scalar p=2) -> Tensor
-#- reciprocal() -> Tensor
-#- neg() -> Tensor
-#- atan2(Tensor  other) -> Tensor
-#- lerp(Tensor  end, Scalar weight) -> Tensor
-#- lerp(Tensor  end, Tensor  weight) -> Tensor
-#- histc(int64_t bins=100, Scalar min=0, Scalar max=0) -> Tensor
-#- sign() -> Tensor
-#- fmod(Scalar other) -> Tensor
-#- fmod(Tensor  other) -> Tensor
-#- remainder(Scalar other) -> Tensor
-#- remainder(Tensor  other) -> Tensor
-#- min(Tensor  other) -> Tensor
-#- min() -> Tensor
-#- max(Tensor  other) -> Tensor
-#- max() -> Tensor
-#- median() -> Tensor
-#- sort(int64_t dim=-1, bool descending=false) -> std::tuple<Tensor,Tensor>
-#- argsort(int64_t dim=-1, bool descending=false) -> Tensor
-#- topk(int64_t k, int64_t dim=-1, bool largest=true, bool sorted=true) -> std::tuple<Tensor,Tensor>
-#- all() -> Tensor
-#- any() -> Tensor
-#- renorm(Scalar p, int64_t dim, Scalar maxnorm) -> Tensor
-#- unfold(int64_t dimension, int64_t size, int64_t step) -> Tensor
-#- equal(Tensor  other) -> bool
-#- pow(Tensor  exponent) -> Tensor
-#- alias() -> Tensor
+- to_sparse(int64_t sparse_dim) -> Tensor
+- to_sparse() -> Tensor
+- to(TensorOptions  options, bool non_blocking=false, bool copy=false) -> Tensor
+- to(Device device, ScalarType dtype, bool non_blocking=false, bool copy=false) -> Tensor
+- to(ScalarType dtype, bool non_blocking=false, bool copy=false) -> Tensor
+- to(Tensor  other, bool non_blocking=false, bool copy=false) -> Tensor
+- item() -> Scalar
+- data_ptr() -> void*
+- set_(Storage source) -> Tensor
+- set_(Storage source, int64_t storage_offset, IntArrayRef size, IntArrayRef stride={}) -> Tensor
+- set_(Tensor  source) -> Tensor
+- set_() -> Tensor
+- is_set_to(Tensor  tensor) -> bool
+- masked_fill_(Tensor  mask, Scalar value) -> Tensor
+- masked_fill(Tensor  mask, Scalar value) -> Tensor
+- masked_fill_(Tensor  mask, Tensor  value) -> Tensor
+- masked_fill(Tensor  mask, Tensor  value) -> Tensor
+- masked_scatter_(Tensor  mask, Tensor  source) -> Tensor
+- masked_scatter(Tensor  mask, Tensor  source) -> Tensor
+- view(IntArrayRef size) -> Tensor
+- put_(Tensor  index, Tensor  source, bool accumulate=false) -> Tensor
+- index_add_(int64_t dim, Tensor  index, Tensor  source) -> Tensor
+- index_add(int64_t dim, Tensor  index, Tensor  source) -> Tensor
+- index_fill_(int64_t dim, Tensor  index, Scalar value) -> Tensor
+- index_fill(int64_t dim, Tensor  index, Scalar value) -> Tensor
+- index_fill_(int64_t dim, Tensor  index, Tensor  value) -> Tensor
+- index_fill(int64_t dim, Tensor  index, Tensor  value) -> Tensor
+- scatter_(int64_t dim, Tensor  index, Tensor  src) -> Tensor
+- scatter(int64_t dim, Tensor  index, Tensor  src) -> Tensor
+- scatter_(int64_t dim, Tensor  index, Scalar value) -> Tensor
+- scatter(int64_t dim, Tensor  index, Scalar value) -> Tensor
+- scatter_add_(int64_t dim, Tensor  index, Tensor  src) -> Tensor
+- scatter_add(int64_t dim, Tensor  index, Tensor  src) -> Tensor
+- lt_(Scalar other) -> Tensor
+- lt_(Tensor  other) -> Tensor
+- gt_(Scalar other) -> Tensor
+- gt_(Tensor  other) -> Tensor
+- le_(Scalar other) -> Tensor
+- le_(Tensor  other) -> Tensor
+- ge_(Scalar other) -> Tensor
+- ge_(Tensor  other) -> Tensor
+- eq_(Scalar other) -> Tensor
+- eq_(Tensor  other) -> Tensor
+- ne_(Scalar other) -> Tensor
+- ne_(Tensor  other) -> Tensor
+- __and__(Scalar other) -> Tensor
+- __and__(Tensor  other) -> Tensor
+- __iand__(Scalar other) -> Tensor
+- __iand__(Tensor  other) -> Tensor
+- __or__(Scalar other) -> Tensor
+- __or__(Tensor  other) -> Tensor
+- __ior__(Scalar other) -> Tensor
+- __ior__(Tensor  other) -> Tensor
+- __xor__(Scalar other) -> Tensor
+- __xor__(Tensor  other) -> Tensor
+- __ixor__(Scalar other) -> Tensor
+- __ixor__(Tensor  other) -> Tensor
+- __lshift__(Scalar other) -> Tensor
+- __lshift__(Tensor  other) -> Tensor
+- __ilshift__(Scalar other) -> Tensor
+- __ilshift__(Tensor  other) -> Tensor
+- __rshift__(Scalar other) -> Tensor
+- __rshift__(Tensor  other) -> Tensor
+- __irshift__(Scalar other) -> Tensor
+- __irshift__(Tensor  other) -> Tensor
+- lgamma_() -> Tensor
+- atan2_(Tensor  other) -> Tensor
+- tril_(int64_t diagonal=0) -> Tensor
+- triu_(int64_t diagonal=0) -> Tensor
+- digamma_() -> Tensor
+- polygamma_(int64_t n) -> Tensor
+- erfinv_() -> Tensor
+- frac_() -> Tensor
+- renorm_(Scalar p, int64_t dim, Scalar maxnorm) -> Tensor
+- reciprocal_() -> Tensor
+- neg_() -> Tensor
+- pow_(Scalar exponent) -> Tensor
+- pow_(Tensor  exponent) -> Tensor
+- lerp_(Tensor  end, Scalar weight) -> Tensor
+- lerp_(Tensor  end, Tensor  weight) -> Tensor
+- sign_() -> Tensor
+- fmod_(Scalar other) -> Tensor
+- fmod_(Tensor  other) -> Tensor
+- remainder_(Scalar other) -> Tensor
+- remainder_(Tensor  other) -> Tensor
+- addbmm_(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
+- addbmm(Tensor  batch1, Tensor  batch2, Scalar beta=1, Scalar alpha=1) -> Tensor
+- addcmul_(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
+- addcdiv_(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
+- random_(int64_t from, int64_t to, Generator * generator=nullptr) -> Tensor
+- random_(int64_t to, Generator * generator=nullptr) -> Tensor
+- random_(Generator * generator=nullptr) -> Tensor
+- uniform_(double from=0, double to=1, Generator * generator=nullptr) -> Tensor
+- normal_(double mean=0, double std=1, Generator * generator=nullptr) -> Tensor
+- cauchy_(double median=0, double sigma=1, Generator * generator=nullptr) -> Tensor
+- log_normal_(double mean=1, double std=2, Generator * generator=nullptr) -> Tensor
+- exponential_(double lambd=1, Generator * generator=nullptr) -> Tensor
+- geometric_(double p, Generator * generator=nullptr) -> Tensor
+- diag(int64_t diagonal=0) -> Tensor
+- cross(Tensor  other, int64_t dim=-1) -> Tensor
+- triu(int64_t diagonal=0) -> Tensor
+- tril(int64_t diagonal=0) -> Tensor
+- trace() -> Tensor
+- ne(Scalar other) -> Tensor
+- ne(Tensor  other) -> Tensor
+- eq(Scalar other) -> Tensor
+- eq(Tensor  other) -> Tensor
+- ge(Scalar other) -> Tensor
+- ge(Tensor  other) -> Tensor
+- le(Scalar other) -> Tensor
+- le(Tensor  other) -> Tensor
+- gt(Scalar other) -> Tensor
+- gt(Tensor  other) -> Tensor
+- lt(Scalar other) -> Tensor
+- lt(Tensor  other) -> Tensor
+- take(Tensor  index) -> Tensor
+- index_select(int64_t dim, Tensor  index) -> Tensor
+- masked_select(Tensor  mask) -> Tensor
+- nonzero() -> Tensor
+- gather(int64_t dim, Tensor  index, bool sparse_grad=false) -> Tensor
+- addcmul(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
+- addcdiv(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
+- gels(Tensor  A) -> (Tensor,Tensor)
+- trtrs(Tensor  A, bool upper=true, bool transpose=false, bool unitriangular=false) -> (Tensor,Tensor)
+- symeig(bool eigenvectors=false, bool upper=true) -> (Tensor,Tensor)
+- eig(bool eigenvectors=false) -> (Tensor,Tensor)
+- svd(bool some=true, bool compute_uv=true) -> (Tensor,Tensor,Tensor)
+- cholesky(bool upper=false) -> Tensor
+- cholesky_solve(Tensor  input2, bool upper=false) -> Tensor
+- solve(Tensor  A) -> (Tensor,Tensor)
+- potri(bool upper=true) -> Tensor
+- pstrf(bool upper=true, Scalar tol=-1) -> (Tensor,Tensor)
+- qr() -> (Tensor,Tensor)
+- geqrf() -> (Tensor,Tensor)
+- orgqr(Tensor  input2) -> Tensor
+- ormqr(Tensor  input2, Tensor  input3, bool left=true, bool transpose=false) -> Tensor
+- btrifact(bool pivot=true) -> (Tensor,Tensor)
+- btrifact_with_info(bool pivot=true) -> (Tensor,Tensor,Tensor)
+- btrisolve(Tensor  LU_data, Tensor  LU_pivots) -> Tensor
+- multinomial(int64_t num_samples, bool replacement=false, Generator * generator=nullptr) -> Tensor
+- lgamma() -> Tensor
+- digamma() -> Tensor
+- polygamma(int64_t n) -> Tensor
+- erfinv() -> Tensor
+- frac() -> Tensor
+- dist(Tensor  other, Scalar p=2) -> Tensor
+- reciprocal() -> Tensor
+- neg() -> Tensor
+- atan2(Tensor  other) -> Tensor
+- lerp(Tensor  end, Scalar weight) -> Tensor
+- lerp(Tensor  end, Tensor  weight) -> Tensor
+- histc(int64_t bins=100, Scalar min=0, Scalar max=0) -> Tensor
+- sign() -> Tensor
+- fmod(Scalar other) -> Tensor
+- fmod(Tensor  other) -> Tensor
+- remainder(Scalar other) -> Tensor
+- remainder(Tensor  other) -> Tensor
+- min(Tensor  other) -> Tensor
+- min() -> Tensor
+- max(Tensor  other) -> Tensor
+- max() -> Tensor
+- median() -> Tensor
+- sort(int64_t dim=-1, bool descending=false) -> (Tensor,Tensor)
+- argsort(int64_t dim=-1, bool descending=false) -> Tensor
+- topk(int64_t k, int64_t dim=-1, bool largest=true, bool sorted=true) -> (Tensor,Tensor)
+- all() -> Tensor
+- any() -> Tensor
+- renorm(Scalar p, int64_t dim, Scalar maxnorm) -> Tensor
+- unfold(int64_t dimension, int64_t size, int64_t step) -> Tensor
+- equal(Tensor  other) -> bool
+- pow(Tensor  exponent) -> Tensor
+- alias() -> Tensor

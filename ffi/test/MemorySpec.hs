@@ -39,19 +39,19 @@ spec = do
 fromList :: [Int64] -> IO (ForeignPtr IntArray)
 fromList dims = do
   ary <- newIntArray
-  forM_ dims $ intArray_push_back ary
+  forM_ dims $ intArray_push_back_l ary
   return ary
 
 newTensor_zeros :: (ForeignPtr IntArray) -> IO (ForeignPtr Tensor)
 newTensor_zeros dims = do
-    to <- newTensorOptions kCPU
-    tod <- tensorOptions_dtype to kByte
+    to <- newTensorOptions_D kCPU
+    tod <- tensorOptions_dtype_s to kByte
     zeros_lo dims tod
 
 totalDim :: (ForeignPtr IntArray) -> IO Int64
 totalDim dims = do
   size <- intArray_size dims
-  dims' <- forM [0..(size-1)] $ \i -> intArray_at dims i
+  dims' <- forM [0..(size-1)] $ \i -> intArray_at_s dims i
   return $ sum dims'
 
 iterator :: (ForeignPtr IntArray) -> Int -> IO ()

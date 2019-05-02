@@ -37,18 +37,18 @@ newScalar  =
     );
   }|]
 
-newScalar_int
+newScalar_i
   :: CInt
   -> IO (Ptr Scalar)
-newScalar_int _a =
+newScalar_i _a =
   [C.block| at::Scalar* { return new at::Scalar(
     $(int _a));
   }|]
 
-newScalar_double
+newScalar_d
   :: CDouble
   -> IO (Ptr Scalar)
-newScalar_double _a =
+newScalar_d _a =
   [C.block| at::Scalar* { return new at::Scalar(
     $(double _a));
   }|]

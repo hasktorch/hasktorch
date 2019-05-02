@@ -46,10 +46,17 @@ data Parameter  = Parameter {
     } | Star  -- , *,
     deriving (Eq, Show)
 
+data Variants =
+  VFunction |
+  VMethod |
+  VOperator
+  deriving (Eq, Show)
+
 data Function  = Function {
     name :: String
     , parameters :: [Parameter]
     , retType :: Parsable
+    , variant :: Variants
 } deriving (Eq, Show)
 
 type SignatureStr = String
@@ -124,8 +131,6 @@ defFloat :: Parser DefaultValue
 defFloat = do
   val' <- L.scientific
   pure $ ValDouble (realToFrac val')
-
-data Variants = VFunction | VMethod
 
 sc :: Parser ()
 sc = L.space space1 empty empty
@@ -522,23 +527,45 @@ rettype = tuple <|> single'
 -- | parser of function
 --
 -- >>> parseTest func "log10_(Tensor self) -> Tensor"
--- Function {name = "log10_", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing}], retType = TenType Tensor}
+-- Function {name = "log10_", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing}], retType = TenType Tensor, variant = VFunction}
 -- >>> parseTest func "fft(Tensor self, int64_t signal_ndim, bool normalized=false) -> Tensor"
--- Function {name = "fft", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = CType CInt64, pname = "signal_ndim", val = Nothing},Parameter {ptype = CType CBool, pname = "normalized", val = Just (ValBool False)}], retType = TenType Tensor}
+-- Function {name = "fft", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = CType CInt64, pname = "signal_ndim", val = Nothing},Parameter {ptype = CType CBool, pname = "normalized", val = Just (ValBool False)}], retType = TenType Tensor, variant = VFunction}
 -- >>> parseTest func "frobenius_norm_out(Tensor result, Tensor self, IntList[1] dim, bool keepdim=false) -> Tensor"
--- Function {name = "frobenius_norm_out", parameters = [Parameter {ptype = TenType Tensor, pname = "result", val = Nothing},Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [1]}), pname = "dim", val = Nothing},Parameter {ptype = CType CBool, pname = "keepdim", val = Just (ValBool False)}], retType = TenType Tensor}
+-- Function {name = "frobenius_norm_out", parameters = [Parameter {ptype = TenType Tensor, pname = "result", val = Nothing},Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [1]}), pname = "dim", val = Nothing},Parameter {ptype = CType CBool, pname = "keepdim", val = Just (ValBool False)}], retType = TenType Tensor, variant = VFunction}
 -- >>> parseTest func "thnn_conv_dilated3d_forward(Tensor self, Tensor weight, IntList[3] kernel_size, Tensor? bias, IntList[3] stride, IntList[3] padding, IntList[3] dilation) -> (Tensor output, Tensor columns, Tensor ones)"
--- Function {name = "thnn_conv_dilated3d_forward", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = TenType Tensor, pname = "weight", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "kernel_size", val = Nothing},Parameter {ptype = TenType TensorQ, pname = "bias", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "stride", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "padding", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "dilation", val = Nothing}], retType = Tuple [TenType Tensor,TenType Tensor,TenType Tensor]}
+-- Function {name = "thnn_conv_dilated3d_forward", parameters = [Parameter {ptype = TenType Tensor, pname = "self", val = Nothing},Parameter {ptype = TenType Tensor, pname = "weight", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "kernel_size", val = Nothing},Parameter {ptype = TenType TensorQ, pname = "bias", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "stride", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "padding", val = Nothing},Parameter {ptype = TenType (IntList {dim = Just [3]}), pname = "dilation", val = Nothing}], retType = Tuple [TenType Tensor,TenType Tensor,TenType Tensor], variant = VFunction}
 func :: Parser Function
-func = do
-  fName <- identifier
-  _ <- lexm $ string "("
-  -- parse list of parameters
-  args <- (sepBy arg (lexm (string ",")))
-  _ <- lexm $ string ")"
-  _ <- lexm $ string "->"
-  retType' <- rettype
-  pure $ Function fName args retType'
+func = try operator <|> function
+  where
+    function = do
+      fName <- identifier
+      _ <- lexm $ string "("
+      -- parse list of parameters
+      args <- (sepBy arg (lexm (string ",")))
+      _ <- lexm $ string ")"
+      _ <- lexm $ string "->"
+      retType' <- rettype
+      pure $ Function fName args retType' VFunction
+    operator = do
+      _ <- lexm $ string "operator"
+      fName <-
+        try (string "+=") <|>
+        try (string "-=") <|>
+        try (string "*=") <|>
+        try (string "/=") <|>
+        string "=" <|>
+        string "-" <|>
+        string "+" <|>
+        string "*" <|>
+        string "/" <|>
+        string "[]"
+      _ <- lexm $ string "("
+      -- parse list of parameters
+      args <- (sepBy arg (lexm (string ",")))
+      _ <- lexm $ string ")"
+      _ <- lexm $ string "->"
+      retType' <- rettype
+      pure $ Function fName args retType' VOperator
 
 test :: IO ()
 test = do

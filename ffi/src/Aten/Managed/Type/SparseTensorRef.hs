@@ -32,10 +32,10 @@ import qualified Aten.Unmanaged.Type.SparseTensorRef as Unmanaged
 
 
 
-newSparseTensorRef
+newSparseTensorRef_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr SparseTensorRef)
-newSparseTensorRef = cast1 Unmanaged.newSparseTensorRef
+newSparseTensorRef_t = cast1 Unmanaged.newSparseTensorRef_t
 
 
 

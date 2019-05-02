@@ -57,7 +57,7 @@ C.include "<vector>"
 |]
 
 renderConstructors :: Bool -> PC.CppClassSpec -> Text
-renderConstructors is_managed typ_ = mconcat $ map (methodToCpp typ_ True is_managed False "" "") (PC.constructors typ_)
+renderConstructors is_managed typ_ = mconcat $ map (methodToCpp typ_ True is_managed True "" "") (PC.constructors typ_)
 
 renderDestructor :: Bool -> PC.CppClassSpec -> Text
 renderDestructor is_managed typ_ = if is_managed then "" else [st|
@@ -70,7 +70,7 @@ instance CppObject #{PC.hsname typ_} where
 
 
 renderMethods :: Bool -> PC.CppClassSpec -> Text
-renderMethods is_managed typ_ = mconcat $ map (methodToCpp typ_ False is_managed False "" "") (PC.methods typ_)
+renderMethods is_managed typ_ = mconcat $ map (methodToCpp typ_ False is_managed True "" "") (PC.methods typ_)
 
 
 decodeAndCodeGen :: String -> String -> IO ()

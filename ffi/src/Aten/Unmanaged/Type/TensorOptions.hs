@@ -30,10 +30,10 @@ C.include "<vector>"
 
 
 
-newTensorOptions
+newTensorOptions_D
   :: DeviceType
   -> IO (Ptr TensorOptions)
-newTensorOptions _d =
+newTensorOptions_D _d =
   [C.block| at::TensorOptions* { return new at::TensorOptions(
     $(at::DeviceType _d));
   }|]
@@ -48,12 +48,12 @@ instance CppObject TensorOptions where
 
 
 
-tensorOptions_dtype
+tensorOptions_dtype_s
   :: Ptr TensorOptions
   -> ScalarType
   -> IO (Ptr TensorOptions)
-tensorOptions_dtype _obj _t =
-  [C.block| at::TensorOptions* { return new at::TensorOptions($(at::TensorOptions* _obj)->dtype(
+tensorOptions_dtype_s _obj _t =
+  [C.block| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).dtype(
     $(at::ScalarType _t)));
   }|]
 

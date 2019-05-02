@@ -32,18 +32,18 @@ import qualified Aten.Unmanaged.Type.TensorOptions as Unmanaged
 
 
 
-newTensorOptions
+newTensorOptions_D
   :: DeviceType
   -> IO (ForeignPtr TensorOptions)
-newTensorOptions = cast1 Unmanaged.newTensorOptions
+newTensorOptions_D = cast1 Unmanaged.newTensorOptions_D
 
 
 
 
 
-tensorOptions_dtype
+tensorOptions_dtype_s
   :: ForeignPtr TensorOptions
   -> ScalarType
   -> IO (ForeignPtr TensorOptions)
-tensorOptions_dtype = cast2 Unmanaged.tensorOptions_dtype
+tensorOptions_dtype_s = cast2 Unmanaged.tensorOptions_dtype_s
 

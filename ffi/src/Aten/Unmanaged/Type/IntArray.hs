@@ -51,7 +51,7 @@ intArray_empty
   :: Ptr IntArray
   -> IO (CBool)
 intArray_empty _obj =
-  [C.block| bool { return ($(std::vector<int64_t>* _obj)->empty(
+  [C.block| bool { return ((*$(std::vector<int64_t>* _obj)).empty(
     ));
   }|]
 
@@ -59,25 +59,25 @@ intArray_size
   :: Ptr IntArray
   -> IO (CSize)
 intArray_size _obj =
-  [C.block| size_t { return ($(std::vector<int64_t>* _obj)->size(
+  [C.block| size_t { return ((*$(std::vector<int64_t>* _obj)).size(
     ));
   }|]
 
-intArray_at
+intArray_at_s
   :: Ptr IntArray
   -> CSize
   -> IO (Int64)
-intArray_at _obj _s =
-  [C.block| int64_t { return ($(std::vector<int64_t>* _obj)->at(
+intArray_at_s _obj _s =
+  [C.block| int64_t { return ((*$(std::vector<int64_t>* _obj)).at(
     $(size_t _s)));
   }|]
 
-intArray_push_back
+intArray_push_back_l
   :: Ptr IntArray
   -> Int64
   -> IO (())
-intArray_push_back _obj _v =
-  [C.block| void {  ($(std::vector<int64_t>* _obj)->push_back(
+intArray_push_back_l _obj _v =
+  [C.block| void {  ((*$(std::vector<int64_t>* _obj)).push_back(
     $(int64_t _v)));
   }|]
 
