@@ -42,6 +42,29 @@ executable gradient-descent
         default-extensions: NoStarIsType
     else
 
+executable mnist
+    main-is: MNIST.hs
+    hs-source-dirs: mnist
+    default-language: Haskell2010
+    build-depends:
+        base (==4.7 || >4.7) && <5,
+        backprop ==0.2.5 || >0.2.5,
+        hasktorch (==0.0.1 || >0.0.1) && <0.0.2,
+        microlens ==0.4.8 || >0.4.8,
+        dimensions ==1.0 || >1.0,
+        safe-exceptions ==0.1.0 || >0.1.0,
+        singletons ==2.2 || >2.2,
+        bytestring ==0.10.8 || >0.10.8,
+        random ==1.1,
+        zlib ==0.6 || >0.6,
+        vector ==0.12.0 || >0.12.0,
+
+        split ==0.2.3 || > 0.2.3,
+
+    if impl(ghc >=8.6)
+        default-extensions: NoStarIsType
+    else
+
 executable multivariate-normal
     main-is: MultivariateNormal.hs
     hs-source-dirs: multivariate-normal
