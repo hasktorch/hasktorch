@@ -9,14 +9,13 @@ methods:
 - storage_offset() -> int64_t
 - defined() -> bool
 - reset() -> void
-#- operator=(Tensor x) -> void
-#- operator=(Scalar v) -> void
+- operator=(Tensor x) -> void
 - is_same(Tensor other) -> bool
 - use_count() -> size_t
 - weak_use_count() -> size_t
 #- toString() -> char*
-#- sizes() -> IntArrayRef
-#- strides() -> IntArrayRef
+- sizes() -> IntArrayRef
+- strides() -> IntArrayRef
 - ndimension() -> int64_t
 - is_contiguous() -> bool
 - nbytes() -> size_t
@@ -24,7 +23,7 @@ methods:
 - element_size() -> size_t
 #- type() -> Type
 #- type_id() -> TensorTypeId
-#- scalar_type() -> ScalarType
+- scalar_type() -> ScalarType
 - has_storage() -> bool
 #- storage() -> Storage
 - is_alias_of(Tensor other) -> bool
@@ -43,6 +42,9 @@ methods:
 - options() -> TensorOptions
 #- data() -> T*
 #- item() -> T
+- item<int64_t>() -> int64_t
+- item<float>() -> float
+- item<double>() -> double
 - print() -> void
 #- accessor() -> TensorAccessor<T,N>
 #- accessor() -> TensorAccessor<T,N>
@@ -55,8 +57,8 @@ methods:
 - operator-=(Scalar other) -> void
 - operator*=(Tensor  other) -> void
 - operator*=(Scalar other) -> void
-#- operator/=(Tensor  other) -> Tensor
-#- operator/=(Scalar other) -> Tensor
+- operator/=(Tensor  other) -> Tensor
+- operator/=(Scalar other) -> Tensor
 - operator[](Scalar index) -> Tensor
 - operator[](Tensor index) -> Tensor
 - operator[](int64_t index) -> Tensor

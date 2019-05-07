@@ -59,32 +59,41 @@ tensor_dim
   :: Ptr Tensor
   -> IO (Int64)
 tensor_dim _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj)).dim(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).dim(
+    );
   }|]
 
 tensor_storage_offset
   :: Ptr Tensor
   -> IO (Int64)
 tensor_storage_offset _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj)).storage_offset(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).storage_offset(
+    );
   }|]
 
 tensor_defined
   :: Ptr Tensor
   -> IO (CBool)
 tensor_defined _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).defined(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).defined(
+    );
   }|]
 
 tensor_reset
   :: Ptr Tensor
   -> IO (())
 tensor_reset _obj =
-  [C.block| void {  ((*$(at::Tensor* _obj)).reset(
-    ));
+  [C.block| void {  (*$(at::Tensor* _obj)).reset(
+    );
+  }|]
+
+tensor__assign__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (())
+tensor__assign__t _obj _x =
+  [C.block| void {  (*$(at::Tensor* _obj))=(
+    *$(at::Tensor* _x));
   }|]
 
 tensor_is_same_t
@@ -92,72 +101,96 @@ tensor_is_same_t
   -> Ptr Tensor
   -> IO (CBool)
 tensor_is_same_t _obj _other =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_same(
-    *$(at::Tensor* _other)));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_same(
+    *$(at::Tensor* _other));
   }|]
 
 tensor_use_count
   :: Ptr Tensor
   -> IO (CSize)
 tensor_use_count _obj =
-  [C.block| size_t { return ((*$(at::Tensor* _obj)).use_count(
-    ));
+  [C.block| size_t { return (*$(at::Tensor* _obj)).use_count(
+    );
   }|]
 
 tensor_weak_use_count
   :: Ptr Tensor
   -> IO (CSize)
 tensor_weak_use_count _obj =
-  [C.block| size_t { return ((*$(at::Tensor* _obj)).weak_use_count(
-    ));
+  [C.block| size_t { return (*$(at::Tensor* _obj)).weak_use_count(
+    );
+  }|]
+
+tensor_sizes
+  :: Ptr Tensor
+  -> IO (Ptr IntArray)
+tensor_sizes _obj =
+  [C.block| std::vector<int64_t>* { return new std::vector<int64_t>((*$(at::Tensor* _obj)).sizes(
+    ).vec());
+  }|]
+
+tensor_strides
+  :: Ptr Tensor
+  -> IO (Ptr IntArray)
+tensor_strides _obj =
+  [C.block| std::vector<int64_t>* { return new std::vector<int64_t>((*$(at::Tensor* _obj)).strides(
+    ).vec());
   }|]
 
 tensor_ndimension
   :: Ptr Tensor
   -> IO (Int64)
 tensor_ndimension _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj)).ndimension(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).ndimension(
+    );
   }|]
 
 tensor_is_contiguous
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_contiguous _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_contiguous(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_contiguous(
+    );
   }|]
 
 tensor_nbytes
   :: Ptr Tensor
   -> IO (CSize)
 tensor_nbytes _obj =
-  [C.block| size_t { return ((*$(at::Tensor* _obj)).nbytes(
-    ));
+  [C.block| size_t { return (*$(at::Tensor* _obj)).nbytes(
+    );
   }|]
 
 tensor_itemsize
   :: Ptr Tensor
   -> IO (CSize)
 tensor_itemsize _obj =
-  [C.block| size_t { return ((*$(at::Tensor* _obj)).itemsize(
-    ));
+  [C.block| size_t { return (*$(at::Tensor* _obj)).itemsize(
+    );
   }|]
 
 tensor_element_size
   :: Ptr Tensor
   -> IO (CSize)
 tensor_element_size _obj =
-  [C.block| size_t { return ((*$(at::Tensor* _obj)).element_size(
-    ));
+  [C.block| size_t { return (*$(at::Tensor* _obj)).element_size(
+    );
+  }|]
+
+tensor_scalar_type
+  :: Ptr Tensor
+  -> IO (ScalarType)
+tensor_scalar_type _obj =
+  [C.block| at::ScalarType { return (*$(at::Tensor* _obj)).scalar_type(
+    );
   }|]
 
 tensor_has_storage
   :: Ptr Tensor
   -> IO (CBool)
 tensor_has_storage _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).has_storage(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).has_storage(
+    );
   }|]
 
 tensor_is_alias_of_t
@@ -165,8 +198,8 @@ tensor_is_alias_of_t
   -> Ptr Tensor
   -> IO (CBool)
 tensor_is_alias_of_t _obj _other =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_alias_of(
-    *$(at::Tensor* _other)));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_alias_of(
+    *$(at::Tensor* _other));
   }|]
 
 tensor_copy__tb
@@ -193,40 +226,40 @@ tensor_is_variable
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_variable _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_variable(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_variable(
+    );
   }|]
 
 tensor_get_device
   :: Ptr Tensor
   -> IO (Int64)
 tensor_get_device _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj)).get_device(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).get_device(
+    );
   }|]
 
 tensor_is_cuda
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_cuda _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_cuda(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_cuda(
+    );
   }|]
 
 tensor_is_hip
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_hip _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_hip(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_hip(
+    );
   }|]
 
 tensor_is_sparse
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_sparse _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_sparse(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_sparse(
+    );
   }|]
 
 tensor_options
@@ -237,12 +270,36 @@ tensor_options _obj =
     ));
   }|]
 
+tensor_item_int64_t
+  :: Ptr Tensor
+  -> IO (Int64)
+tensor_item_int64_t _obj =
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).item<int64_t>(
+    );
+  }|]
+
+tensor_item_float
+  :: Ptr Tensor
+  -> IO (CFloat)
+tensor_item_float _obj =
+  [C.block| float { return (*$(at::Tensor* _obj)).item<float>(
+    );
+  }|]
+
+tensor_item_double
+  :: Ptr Tensor
+  -> IO (CDouble)
+tensor_item_double _obj =
+  [C.block| double { return (*$(at::Tensor* _obj)).item<double>(
+    );
+  }|]
+
 tensor_print
   :: Ptr Tensor
   -> IO (())
 tensor_print _obj =
-  [C.block| void {  ((*$(at::Tensor* _obj)).print(
-    ));
+  [C.block| void {  (*$(at::Tensor* _obj)).print(
+    );
   }|]
 
 tensor__iadd__t
@@ -250,8 +307,8 @@ tensor__iadd__t
   -> Ptr Tensor
   -> IO (())
 tensor__iadd__t _obj _other =
-  [C.block| void {  ((*$(at::Tensor* _obj))+=(
-    *$(at::Tensor* _other)));
+  [C.block| void {  (*$(at::Tensor* _obj))+=(
+    *$(at::Tensor* _other));
   }|]
 
 tensor__iadd__s
@@ -259,8 +316,8 @@ tensor__iadd__s
   -> Ptr Scalar
   -> IO (())
 tensor__iadd__s _obj _other =
-  [C.block| void {  ((*$(at::Tensor* _obj))+=(
-    *$(at::Scalar* _other)));
+  [C.block| void {  (*$(at::Tensor* _obj))+=(
+    *$(at::Scalar* _other));
   }|]
 
 tensor__isub__t
@@ -268,8 +325,8 @@ tensor__isub__t
   -> Ptr Tensor
   -> IO (())
 tensor__isub__t _obj _other =
-  [C.block| void {  ((*$(at::Tensor* _obj))-=(
-    *$(at::Tensor* _other)));
+  [C.block| void {  (*$(at::Tensor* _obj))-=(
+    *$(at::Tensor* _other));
   }|]
 
 tensor__isub__s
@@ -277,8 +334,8 @@ tensor__isub__s
   -> Ptr Scalar
   -> IO (())
 tensor__isub__s _obj _other =
-  [C.block| void {  ((*$(at::Tensor* _obj))-=(
-    *$(at::Scalar* _other)));
+  [C.block| void {  (*$(at::Tensor* _obj))-=(
+    *$(at::Scalar* _other));
   }|]
 
 tensor__imul__t
@@ -286,8 +343,8 @@ tensor__imul__t
   -> Ptr Tensor
   -> IO (())
 tensor__imul__t _obj _other =
-  [C.block| void {  ((*$(at::Tensor* _obj))*=(
-    *$(at::Tensor* _other)));
+  [C.block| void {  (*$(at::Tensor* _obj))*=(
+    *$(at::Tensor* _other));
   }|]
 
 tensor__imul__s
@@ -295,7 +352,25 @@ tensor__imul__s
   -> Ptr Scalar
   -> IO (())
 tensor__imul__s _obj _other =
-  [C.block| void {  ((*$(at::Tensor* _obj))*=(
+  [C.block| void {  (*$(at::Tensor* _obj))*=(
+    *$(at::Scalar* _other));
+  }|]
+
+tensor__idiv__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor__idiv__t _obj _other =
+  [C.block| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))/=(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor__idiv__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor__idiv__s _obj _other =
+  [C.block| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))/=(
     *$(at::Scalar* _other)));
   }|]
 
@@ -363,8 +438,8 @@ tensor_requires_grad
   :: Ptr Tensor
   -> IO (CBool)
 tensor_requires_grad _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).requires_grad(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).requires_grad(
+    );
   }|]
 
 tensor_grad
@@ -380,8 +455,8 @@ tensor_set_data_t
   -> Ptr Tensor
   -> IO (())
 tensor_set_data_t _obj _new_data =
-  [C.block| void {  ((*$(at::Tensor* _obj)).set_data(
-    *$(at::Tensor* _new_data)));
+  [C.block| void {  (*$(at::Tensor* _obj)).set_data(
+    *$(at::Tensor* _new_data));
   }|]
 
 tensor_abs
@@ -539,11 +614,11 @@ tensor_allclose_tddb
   -> CBool
   -> IO (CBool)
 tensor_allclose_tddb _obj _other _rtol _atol _equal_nan =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).allclose(
+  [C.block| bool { return (*$(at::Tensor* _obj)).allclose(
     *$(at::Tensor* _other)
   , $(double _rtol)
   , $(double _atol)
-  , $(bool _equal_nan)));
+  , $(bool _equal_nan));
   }|]
 
 tensor_any_lb
@@ -1142,7 +1217,7 @@ tensor_index_l
   -> IO (Ptr Tensor)
 tensor_index_l _obj _indices =
   [C.block| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).index(
-    *$(at::TensorList* _indices)));
+    *$(std::vector<at::Tensor>* _indices)));
   }|]
 
 tensor_index_copy__ltt
@@ -1179,7 +1254,7 @@ tensor_index_put__ltb
   -> IO (Ptr Tensor)
 tensor_index_put__ltb _obj _indices _values _accumulate =
   [C.block| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).index_put_(
-    *$(at::TensorList* _indices)
+    *$(std::vector<at::Tensor>* _indices)
   , *$(at::Tensor* _values)
   , $(bool _accumulate)));
   }|]
@@ -1192,7 +1267,7 @@ tensor_index_put_ltb
   -> IO (Ptr Tensor)
 tensor_index_put_ltb _obj _indices _values _accumulate =
   [C.block| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).index_put(
-    *$(at::TensorList* _indices)
+    *$(std::vector<at::Tensor>* _indices)
   , *$(at::Tensor* _values)
   , $(bool _accumulate)));
   }|]
@@ -1224,32 +1299,32 @@ tensor_is_distributed
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_distributed _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_distributed(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_distributed(
+    );
   }|]
 
 tensor_is_floating_point
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_floating_point _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_floating_point(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_floating_point(
+    );
   }|]
 
 tensor_is_complex
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_complex _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_complex(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_complex(
+    );
   }|]
 
 tensor_is_nonzero
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_nonzero _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_nonzero(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_nonzero(
+    );
   }|]
 
 tensor_is_same_size_t
@@ -1257,16 +1332,16 @@ tensor_is_same_size_t
   -> Ptr Tensor
   -> IO (CBool)
 tensor_is_same_size_t _obj _other =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_same_size(
-    *$(at::Tensor* _other)));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_same_size(
+    *$(at::Tensor* _other));
   }|]
 
 tensor_is_signed
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_signed _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_signed(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_signed(
+    );
   }|]
 
 tensor_kthvalue_llb
@@ -1840,8 +1915,8 @@ tensor_size_l
   -> Int64
   -> IO (Int64)
 tensor_size_l _obj _dim =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj)).size(
-    $(int64_t _dim)));
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).size(
+    $(int64_t _dim));
   }|]
 
 tensor_slice_llll
@@ -1950,8 +2025,8 @@ tensor_stride_l
   -> Int64
   -> IO (Int64)
 tensor_stride_l _obj _dim =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj)).stride(
-    $(int64_t _dim)));
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).stride(
+    $(int64_t _dim));
   }|]
 
 tensor_sum_s
@@ -2455,40 +2530,40 @@ tensor_sparse_dim
   :: Ptr Tensor
   -> IO (Int64)
 tensor_sparse_dim _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj)).sparse_dim(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).sparse_dim(
+    );
   }|]
 
 tensor__dimI
   :: Ptr Tensor
   -> IO (Int64)
 tensor__dimI _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj))._dimI(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj))._dimI(
+    );
   }|]
 
 tensor_dense_dim
   :: Ptr Tensor
   -> IO (Int64)
 tensor_dense_dim _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj)).dense_dim(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).dense_dim(
+    );
   }|]
 
 tensor__dimV
   :: Ptr Tensor
   -> IO (Int64)
 tensor__dimV _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj))._dimV(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj))._dimV(
+    );
   }|]
 
 tensor__nnz
   :: Ptr Tensor
   -> IO (Int64)
 tensor__nnz _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj))._nnz(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj))._nnz(
+    );
   }|]
 
 tensor_coalesce
@@ -2503,8 +2578,8 @@ tensor_is_coalesced
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_coalesced _obj =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_coalesced(
-    ));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_coalesced(
+    );
   }|]
 
 tensor__indices
@@ -2552,8 +2627,8 @@ tensor_numel
   :: Ptr Tensor
   -> IO (Int64)
 tensor_numel _obj =
-  [C.block| int64_t { return ((*$(at::Tensor* _obj)).numel(
-    ));
+  [C.block| int64_t { return (*$(at::Tensor* _obj)).numel(
+    );
   }|]
 
 tensor_to_sparse_l
@@ -2639,8 +2714,8 @@ tensor_data_ptr
   :: Ptr Tensor
   -> IO (Ptr ())
 tensor_data_ptr _obj =
-  [C.block| void * { return ((*$(at::Tensor* _obj)).data_ptr(
-    ));
+  [C.block| void * { return (*$(at::Tensor* _obj)).data_ptr(
+    );
   }|]
 
 tensor_set__S
@@ -2689,8 +2764,8 @@ tensor_is_set_to_t
   -> Ptr Tensor
   -> IO (CBool)
 tensor_is_set_to_t _obj _tensor =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).is_set_to(
-    *$(at::Tensor* _tensor)));
+  [C.block| bool { return (*$(at::Tensor* _obj)).is_set_to(
+    *$(at::Tensor* _tensor));
   }|]
 
 tensor_masked_fill__ts
@@ -4267,8 +4342,8 @@ tensor_equal_t
   -> Ptr Tensor
   -> IO (CBool)
 tensor_equal_t _obj _other =
-  [C.block| bool { return ((*$(at::Tensor* _obj)).equal(
-    *$(at::Tensor* _other)));
+  [C.block| bool { return (*$(at::Tensor* _obj)).equal(
+    *$(at::Tensor* _other));
   }|]
 
 tensor_pow_t

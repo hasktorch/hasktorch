@@ -65,6 +65,12 @@ tensor_reset
   -> IO (())
 tensor_reset = cast1 Unmanaged.tensor_reset
 
+tensor__assign__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (())
+tensor__assign__t = cast2 Unmanaged.tensor__assign__t
+
 tensor_is_same_t
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -80,6 +86,16 @@ tensor_weak_use_count
   :: ForeignPtr Tensor
   -> IO (CSize)
 tensor_weak_use_count = cast1 Unmanaged.tensor_weak_use_count
+
+tensor_sizes
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr IntArray)
+tensor_sizes = cast1 Unmanaged.tensor_sizes
+
+tensor_strides
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr IntArray)
+tensor_strides = cast1 Unmanaged.tensor_strides
 
 tensor_ndimension
   :: ForeignPtr Tensor
@@ -105,6 +121,11 @@ tensor_element_size
   :: ForeignPtr Tensor
   -> IO (CSize)
 tensor_element_size = cast1 Unmanaged.tensor_element_size
+
+tensor_scalar_type
+  :: ForeignPtr Tensor
+  -> IO (ScalarType)
+tensor_scalar_type = cast1 Unmanaged.tensor_scalar_type
 
 tensor_has_storage
   :: ForeignPtr Tensor
@@ -160,6 +181,21 @@ tensor_options
   -> IO (ForeignPtr TensorOptions)
 tensor_options = cast1 Unmanaged.tensor_options
 
+tensor_item_int64_t
+  :: ForeignPtr Tensor
+  -> IO (Int64)
+tensor_item_int64_t = cast1 Unmanaged.tensor_item_int64_t
+
+tensor_item_float
+  :: ForeignPtr Tensor
+  -> IO (CFloat)
+tensor_item_float = cast1 Unmanaged.tensor_item_float
+
+tensor_item_double
+  :: ForeignPtr Tensor
+  -> IO (CDouble)
+tensor_item_double = cast1 Unmanaged.tensor_item_double
+
 tensor_print
   :: ForeignPtr Tensor
   -> IO (())
@@ -200,6 +236,18 @@ tensor__imul__s
   -> ForeignPtr Scalar
   -> IO (())
 tensor__imul__s = cast2 Unmanaged.tensor__imul__s
+
+tensor__idiv__t
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor__idiv__t = cast2 Unmanaged.tensor__idiv__t
+
+tensor__idiv__s
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+tensor__idiv__s = cast2 Unmanaged.tensor__idiv__s
 
 tensor__at__s
   :: ForeignPtr Tensor

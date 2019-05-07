@@ -141,7 +141,7 @@ _cudnn_rnn_flatten_weight_llllllbb
   -> IO (Ptr Tensor)
 _cudnn_rnn_flatten_weight_llllllbb _weight_arr _weight_stride0 _input_size _mode _hidden_size _num_layers _batch_first _bidirectional =
   [C.block| at::Tensor* { return new at::Tensor(at::_cudnn_rnn_flatten_weight(
-    *$(at::TensorList* _weight_arr)
+    *$(std::vector<at::Tensor>* _weight_arr)
   , $(int64_t _weight_stride0)
   , $(int64_t _input_size)
   , $(int64_t _mode)
@@ -171,7 +171,7 @@ _cudnn_rnn_tlltttlllbdbblt
 _cudnn_rnn_tlltttlllbdbblt _input _weight _weight_stride0 _weight_buf _hx _cx _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state =
   [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_cudnn_rnn(
     *$(at::Tensor* _input)
-  , *$(at::TensorList* _weight)
+  , *$(std::vector<at::Tensor>* _weight)
   , $(int64_t _weight_stride0)
   , *$(at::Tensor* _weight_buf)
   , *$(at::Tensor* _hx)
@@ -211,9 +211,9 @@ _cudnn_rnn_backward_tlltttttttlllbdbbltta
   -> Ptr (StdArray CBool 4)
   -> IO (Ptr (Tensor,Tensor,Tensor,TensorList))
 _cudnn_rnn_backward_tlltttttttlllbdbbltta _input _weight _weight_stride0 _weight_buf _hx _cx _output _grad_output _grad_hy _grad_cy _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state _reserve _output_mask =
-  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>(at::_cudnn_rnn_backward(
+  [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>(at::_cudnn_rnn_backward(
     *$(at::Tensor* _input)
-  , *$(at::TensorList* _weight)
+  , *$(std::vector<at::Tensor>* _weight)
   , $(int64_t _weight_stride0)
   , *$(at::Tensor* _weight_buf)
   , *$(at::Tensor* _hx)
@@ -1199,8 +1199,8 @@ broadcast_tensors_l
   :: Ptr TensorList
   -> IO (Ptr TensorList)
 broadcast_tensors_l _tensors =
-  [C.block| at::TensorList* { return new at::TensorList(at::broadcast_tensors(
-    *$(at::TensorList* _tensors)));
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::broadcast_tensors(
+    *$(std::vector<at::Tensor>* _tensors)));
   }|]
 
 cat_ll
@@ -1209,7 +1209,7 @@ cat_ll
   -> IO (Ptr Tensor)
 cat_ll _tensors _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::cat(
-    *$(at::TensorList* _tensors)
+    *$(std::vector<at::Tensor>* _tensors)
   , $(int64_t _dim)));
   }|]
 
@@ -1221,7 +1221,7 @@ cat_out_tll
 cat_out_tll _out _tensors _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::cat_out(
     *$(at::Tensor* _out)
-  , *$(at::TensorList* _tensors)
+  , *$(std::vector<at::Tensor>* _tensors)
   , $(int64_t _dim)));
   }|]
 
@@ -1256,7 +1256,7 @@ chain_matmul_l
   -> IO (Ptr Tensor)
 chain_matmul_l _matrices =
   [C.block| at::Tensor* { return new at::Tensor(at::chain_matmul(
-    *$(at::TensorList* _matrices)));
+    *$(std::vector<at::Tensor>* _matrices)));
   }|]
 
 chunk_tll
@@ -1265,7 +1265,7 @@ chunk_tll
   -> Int64
   -> IO (Ptr TensorList)
 chunk_tll _self _chunks _dim =
-  [C.block| at::TensorList* { return new at::TensorList(at::chunk(
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::chunk(
     *$(at::Tensor* _self)
   , $(int64_t _chunks)
   , $(int64_t _dim)));
@@ -2362,7 +2362,7 @@ einsum_sl
 einsum_sl _equation _tensors =
   [C.block| at::Tensor* { return new at::Tensor(at::einsum(
     *$(std::string* _equation)
-  , *$(at::TensorList* _tensors)));
+  , *$(std::vector<at::Tensor>* _tensors)));
   }|]
 
 embedding_ttlbb
@@ -3171,7 +3171,7 @@ index_tl
 index_tl _self _indices =
   [C.block| at::Tensor* { return new at::Tensor(at::index(
     *$(at::Tensor* _self)
-  , *$(at::TensorList* _indices)));
+  , *$(std::vector<at::Tensor>* _indices)));
   }|]
 
 index_copy_tltt
@@ -3197,7 +3197,7 @@ index_put__tltb
 index_put__tltb _self _indices _values _accumulate =
   [C.block| at::Tensor* { return new at::Tensor(at::index_put_(
     *$(at::Tensor* _self)
-  , *$(at::TensorList* _indices)
+  , *$(std::vector<at::Tensor>* _indices)
   , *$(at::Tensor* _values)
   , $(bool _accumulate)));
   }|]
@@ -3211,7 +3211,7 @@ index_put_tltb
 index_put_tltb _self _indices _values _accumulate =
   [C.block| at::Tensor* { return new at::Tensor(at::index_put(
     *$(at::Tensor* _self)
-  , *$(at::TensorList* _indices)
+  , *$(std::vector<at::Tensor>* _indices)
   , *$(at::Tensor* _values)
   , $(bool _accumulate)));
   }|]
@@ -5858,7 +5858,7 @@ split_tll
   -> Int64
   -> IO (Ptr TensorList)
 split_tll _self _split_size _dim =
-  [C.block| at::TensorList* { return new at::TensorList(at::split(
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::split(
     *$(at::Tensor* _self)
   , $(int64_t _split_size)
   , $(int64_t _dim)));
@@ -5870,7 +5870,7 @@ split_with_sizes_tll
   -> Int64
   -> IO (Ptr TensorList)
 split_with_sizes_tll _self _split_sizes _dim =
-  [C.block| at::TensorList* { return new at::TensorList(at::split_with_sizes(
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::split_with_sizes(
     *$(at::Tensor* _self)
   , *$(std::vector<int64_t>* _split_sizes)
   , $(int64_t _dim)));
@@ -5934,7 +5934,7 @@ stack_ll
   -> IO (Ptr Tensor)
 stack_ll _tensors _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::stack(
-    *$(at::TensorList* _tensors)
+    *$(std::vector<at::Tensor>* _tensors)
   , $(int64_t _dim)));
   }|]
 
@@ -5946,7 +5946,7 @@ stack_out_tll
 stack_out_tll _out _tensors _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::stack_out(
     *$(at::Tensor* _out)
-  , *$(at::TensorList* _tensors)
+  , *$(std::vector<at::Tensor>* _tensors)
   , $(int64_t _dim)));
   }|]
 
@@ -7333,7 +7333,7 @@ unbind_tl
   -> Int64
   -> IO (Ptr TensorList)
 unbind_tl _self _dim =
-  [C.block| at::TensorList* { return new at::TensorList(at::unbind(
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::unbind(
     *$(at::Tensor* _self)
   , $(int64_t _dim)));
   }|]
@@ -7342,8 +7342,8 @@ meshgrid_l
   :: Ptr TensorList
   -> IO (Ptr TensorList)
 meshgrid_l _tensors =
-  [C.block| at::TensorList* { return new at::TensorList(at::meshgrid(
-    *$(at::TensorList* _tensors)));
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::meshgrid(
+    *$(std::vector<at::Tensor>* _tensors)));
   }|]
 
 cartesian_prod_l
@@ -7351,7 +7351,7 @@ cartesian_prod_l
   -> IO (Ptr Tensor)
 cartesian_prod_l _tensors =
   [C.block| at::Tensor* { return new at::Tensor(at::cartesian_prod(
-    *$(at::TensorList* _tensors)));
+    *$(std::vector<at::Tensor>* _tensors)));
   }|]
 
 combinations_tlb
@@ -7450,8 +7450,8 @@ lstm_tllbldbbb
 lstm_tllbldbbb _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first =
   [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::lstm(
     *$(at::Tensor* _input)
-  , *$(at::TensorList* _hx)
-  , *$(at::TensorList* _params)
+  , *$(std::vector<at::Tensor>* _hx)
+  , *$(std::vector<at::Tensor>* _params)
   , $(bool _has_biases)
   , $(int64_t _num_layers)
   , $(double _dropout)
@@ -7475,8 +7475,8 @@ lstm_ttllbldbb _data _batch_sizes _hx _params _has_biases _num_layers _dropout _
   [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::lstm(
     *$(at::Tensor* _data)
   , *$(at::Tensor* _batch_sizes)
-  , *$(at::TensorList* _hx)
-  , *$(at::TensorList* _params)
+  , *$(std::vector<at::Tensor>* _hx)
+  , *$(std::vector<at::Tensor>* _params)
   , $(bool _has_biases)
   , $(int64_t _num_layers)
   , $(double _dropout)
@@ -7499,7 +7499,7 @@ gru_ttlbldbbb _input _hx _params _has_biases _num_layers _dropout _train _bidire
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::gru(
     *$(at::Tensor* _input)
   , *$(at::Tensor* _hx)
-  , *$(at::TensorList* _params)
+  , *$(std::vector<at::Tensor>* _params)
   , $(bool _has_biases)
   , $(int64_t _num_layers)
   , $(double _dropout)
@@ -7524,7 +7524,7 @@ gru_tttlbldbb _data _batch_sizes _hx _params _has_biases _num_layers _dropout _t
     *$(at::Tensor* _data)
   , *$(at::Tensor* _batch_sizes)
   , *$(at::Tensor* _hx)
-  , *$(at::TensorList* _params)
+  , *$(std::vector<at::Tensor>* _params)
   , $(bool _has_biases)
   , $(int64_t _num_layers)
   , $(double _dropout)
@@ -7547,7 +7547,7 @@ rnn_tanh_ttlbldbbb _input _hx _params _has_biases _num_layers _dropout _train _b
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::rnn_tanh(
     *$(at::Tensor* _input)
   , *$(at::Tensor* _hx)
-  , *$(at::TensorList* _params)
+  , *$(std::vector<at::Tensor>* _params)
   , $(bool _has_biases)
   , $(int64_t _num_layers)
   , $(double _dropout)
@@ -7572,7 +7572,7 @@ rnn_tanh_tttlbldbb _data _batch_sizes _hx _params _has_biases _num_layers _dropo
     *$(at::Tensor* _data)
   , *$(at::Tensor* _batch_sizes)
   , *$(at::Tensor* _hx)
-  , *$(at::TensorList* _params)
+  , *$(std::vector<at::Tensor>* _params)
   , $(bool _has_biases)
   , $(int64_t _num_layers)
   , $(double _dropout)
@@ -7595,7 +7595,7 @@ rnn_relu_ttlbldbbb _input _hx _params _has_biases _num_layers _dropout _train _b
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::rnn_relu(
     *$(at::Tensor* _input)
   , *$(at::Tensor* _hx)
-  , *$(at::TensorList* _params)
+  , *$(std::vector<at::Tensor>* _params)
   , $(bool _has_biases)
   , $(int64_t _num_layers)
   , $(double _dropout)
@@ -7620,7 +7620,7 @@ rnn_relu_tttlbldbb _data _batch_sizes _hx _params _has_biases _num_layers _dropo
     *$(at::Tensor* _data)
   , *$(at::Tensor* _batch_sizes)
   , *$(at::Tensor* _hx)
-  , *$(at::TensorList* _params)
+  , *$(std::vector<at::Tensor>* _params)
   , $(bool _has_biases)
   , $(int64_t _num_layers)
   , $(double _dropout)
@@ -7639,7 +7639,7 @@ lstm_cell_tltttt
 lstm_cell_tltttt _input _hx _w_ih _w_hh _b_ih _b_hh =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::lstm_cell(
     *$(at::Tensor* _input)
-  , *$(at::TensorList* _hx)
+  , *$(std::vector<at::Tensor>* _hx)
   , *$(at::Tensor* _w_ih)
   , *$(at::Tensor* _w_hh)
   , *$(at::Tensor* _b_ih)
@@ -7714,8 +7714,8 @@ quantized_lstm_tllbldbbb
 quantized_lstm_tllbldbbb _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first =
   [C.block| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::quantized_lstm(
     *$(at::Tensor* _input)
-  , *$(at::TensorList* _hx)
-  , *$(at::TensorList* _params)
+  , *$(std::vector<at::Tensor>* _hx)
+  , *$(std::vector<at::Tensor>* _params)
   , $(bool _has_biases)
   , $(int64_t _num_layers)
   , $(double _dropout)
@@ -7743,7 +7743,7 @@ quantized_lstm_cell_tlttttttttssss
 quantized_lstm_cell_tlttttttttssss _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh =
   [C.block| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::quantized_lstm_cell(
     *$(at::Tensor* _input)
-  , *$(at::TensorList* _hx)
+  , *$(std::vector<at::Tensor>* _hx)
   , *$(at::Tensor* _w_ih)
   , *$(at::Tensor* _w_hh)
   , *$(at::Tensor* _b_ih)

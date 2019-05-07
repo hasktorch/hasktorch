@@ -3663,7 +3663,7 @@ _th_cat_out_tll
 _th_cat_out_tll _self _tensors _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cat_out(
     *$(at::Tensor* _self)
-  , *$(at::TensorList* _tensors)
+  , *$(std::vector<at::Tensor>* _tensors)
   , $(int64_t _dim)));
   }|]
 
@@ -3673,7 +3673,7 @@ _th_cat_ll
   -> IO (Ptr Tensor)
 _th_cat_ll _tensors _dim =
   [C.block| at::Tensor* { return new at::Tensor(at::_th_cat(
-    *$(at::TensorList* _tensors)
+    *$(std::vector<at::Tensor>* _tensors)
   , $(int64_t _dim)));
   }|]
 

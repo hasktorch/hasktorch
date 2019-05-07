@@ -33,17 +33,51 @@ C.include "<vector>"
 newTensorList
   :: IO (Ptr TensorList)
 newTensorList  =
-  [C.block| at::TensorList* { return new at::TensorList(
+  [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(
     );
   }|]
 
 
 
 deleteTensorList :: Ptr TensorList -> IO ()
-deleteTensorList object = [C.block| void { delete $(at::TensorList* object);}|]
+deleteTensorList object = [C.block| void { delete $(std::vector<at::Tensor>* object);}|]
 
 instance CppObject TensorList where
   fromPtr ptr = newForeignPtr ptr (deleteTensorList ptr)
 
 
+
+tensorList_empty
+  :: Ptr TensorList
+  -> IO (CBool)
+tensorList_empty _obj =
+  [C.block| bool { return (*$(std::vector<at::Tensor>* _obj)).empty(
+    );
+  }|]
+
+tensorList_size
+  :: Ptr TensorList
+  -> IO (CSize)
+tensorList_size _obj =
+  [C.block| size_t { return (*$(std::vector<at::Tensor>* _obj)).size(
+    );
+  }|]
+
+tensorList_at_s
+  :: Ptr TensorList
+  -> CSize
+  -> IO (Ptr Tensor)
+tensorList_at_s _obj _s =
+  [C.block| at::Tensor* { return new at::Tensor((*$(std::vector<at::Tensor>* _obj)).at(
+    $(size_t _s)));
+  }|]
+
+tensorList_push_back_t
+  :: Ptr TensorList
+  -> Ptr Tensor
+  -> IO (())
+tensorList_push_back_t _obj _v =
+  [C.block| void {  (*$(std::vector<at::Tensor>* _obj)).push_back(
+    *$(at::Tensor* _v));
+  }|]
 

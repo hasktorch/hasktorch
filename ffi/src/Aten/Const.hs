@@ -101,4 +101,32 @@ kCOMPILE_TIME_MAX_DEVICE_TYPES = [C.pure| int16_t { (int16_t) at::DeviceType::CO
 kONLY_FOR_TEST :: DeviceType
 kONLY_FOR_TEST = [C.pure| int16_t { (int16_t) at::DeviceType::ONLY_FOR_TEST } |]
 
+bCPU :: Backend
+bCPU = [C.pure| int { (int) at::Backend::CPU } |]
 
+bCUDA :: Backend
+bCUDA = [C.pure| int { (int) at::Backend::CUDA } |]
+
+bHIP :: Backend
+bHIP = [C.pure| int { (int) at::Backend::HIP } |]
+
+bSparseCPU :: Backend
+bSparseCPU = [C.pure| int { (int) at::Backend::SparseCPU } |]
+
+bSparseCUDA :: Backend
+bSparseCUDA = [C.pure| int { (int) at::Backend::SparseCUDA } |]
+
+bSparseHIP :: Backend
+bSparseHIP = [C.pure| int { (int) at::Backend::SparseHIP } |]
+
+bMSNPU :: Backend
+bMSNPU = [C.pure| int { (int) at::Backend::MSNPU } |]
+
+bXLA :: Backend
+bXLA = [C.pure| int { (int) at::Backend::XLA } |]
+
+bUndefined :: Backend
+bUndefined = [C.pure| int { (int) at::Backend::Undefined } |]
+
+bNumOptions :: Backend
+bNumOptions = [C.pure| int { (int) at::Backend::NumOptions } |]

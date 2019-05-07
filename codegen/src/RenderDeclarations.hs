@@ -157,7 +157,7 @@ typeTable = Map.fromList [
         (C.TypeName "at::Scalar", #{bra}t|Scalar|#{cket})
       , (C.TypeName "at::Tensor", #{bra}t|Tensor|#{cket})
       , (C.TypeName "at::TensorOptions", #{bra}t|TensorOptions|#{cket})
-      , (C.TypeName "at::TensorList", #{bra}t|TensorList|#{cket})
+      , (C.TypeName "std::vector<at::Tensor>", #{bra}t|TensorList|#{cket})
       , (C.TypeName "at::IntArrayRef", #{bra}t|IntArrayRef|#{cket})
       , (C.TypeName "std::vector<int64_t>", #{bra}t|IntArray|#{cket})
       , (C.TypeName "at::ScalarType", #{bra}t|ScalarType|#{cket})
@@ -174,10 +174,9 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor>", #{bra}t|(Tensor,Tensor,Tensor)|#{cket})
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>", #{bra}t|(Tensor,Tensor,Tensor,Tensor)|#{cket})
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>", #{bra}t|(Tensor,Tensor,Tensor,Tensor,Tensor)|#{cket})
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>", #{bra}t|(Tensor,Tensor,Tensor,TensorList)|#{cket})
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>", #{bra}t|(Tensor,Tensor,Tensor,TensorList)|#{cket})
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", #{bra}t|(Tensor,Tensor,CDouble,Int64)|#{cket})
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,float,int>", #{bra}t|(Tensor,Tensor,CFloat,CInt)|#{cket})
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", #{bra}t|(Tensor,Tensor,Tensor,Int64)|#{cket})
-      , (C.TypeName "std::vector<at::Tensor>", #{bra}t|TensorAVector|#{cket})
     ]
 |]

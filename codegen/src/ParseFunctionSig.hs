@@ -83,6 +83,13 @@ data CType
     | CDouble
     | CSize
     | CInt
+    | CUInt8
+    | CUInt16
+    | CUInt32
+    | CUInt64
+    | CInt8
+    | CInt16
+    | CInt32
     | CInt64
     | CInt64Q
     deriving (Eq, Show, Generic, Bounded, Enum)
@@ -368,6 +375,13 @@ typ =
     ((lexm $ string "size_t") >> (pure $ CType CSize)) <|>
     try ((lexm $ string "int64_t?") >> (pure $ CType CInt64Q)) <|>
     try ((lexm $ string "int64_t") >> (pure $ CType CInt64)) <|>
+    try ((lexm $ string "int32_t") >> (pure $ CType CInt32)) <|>
+    try ((lexm $ string "int16_t") >> (pure $ CType CInt16)) <|>
+    try ((lexm $ string "int8_t") >> (pure $ CType CInt8)) <|>
+    try ((lexm $ string "uint64_t") >> (pure $ CType CUInt64)) <|>
+    try ((lexm $ string "uint32_t") >> (pure $ CType CUInt32)) <|>
+    try ((lexm $ string "uint16_t") >> (pure $ CType CUInt16)) <|>
+    try ((lexm $ string "uint8_t") >> (pure $ CType CUInt8)) <|>
     try ((lexm $ string "int?") >> (pure $ CType CInt)) <|>
     ((lexm $ string "int") >> (pure $ CType CInt))
   stl = do

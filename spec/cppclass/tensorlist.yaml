@@ -1,6 +1,10 @@
 signature: TensorList
-cppname: at::TensorList
+cppname: std::vector<at::Tensor>
 hsname: TensorList
 constructors:
 - new() -> TensorList
-methods: []
+methods:
+- empty() -> bool
+- size() -> size_t
+- at(size_t s) -> Tensor
+- push_back(Tensor v) -> void

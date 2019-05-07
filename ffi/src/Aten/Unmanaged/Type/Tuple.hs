@@ -120,7 +120,7 @@ instance CppTuple5 (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) where
 -----------------(Tensor,Tensor,Tensor,TensorList)---------------------
 
 deleteTensorTensorTensorTensorList :: Ptr (Tensor,Tensor,Tensor,TensorList) -> IO ()
-deleteTensorTensorTensorTensorList ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>* ptr); return; }|]
+deleteTensorTensorTensorTensorList ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* ptr); return; }|]
 
 instance CppObject (Tensor,Tensor,Tensor,TensorList) where
   fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorTensorList ptr)
@@ -128,16 +128,16 @@ instance CppObject (Tensor,Tensor,Tensor,TensorList) where
 instance CppTuple2 (Ptr (Tensor,Tensor,Tensor,TensorList)) where
   type A (Ptr (Tensor,Tensor,Tensor,TensorList)) = Ptr Tensor
   type B (Ptr (Tensor,Tensor,Tensor,TensorList)) = Ptr Tensor
-  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>* v)));}|]
-  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>* v)));}|]
+  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
+  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
 
 instance CppTuple3 (Ptr (Tensor,Tensor,Tensor,TensorList)) where
   type C (Ptr (Tensor,Tensor,Tensor,TensorList)) = Ptr Tensor
-  get2 v = [C.block| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>* v)));}|]
+  get2 v = [C.block| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
 
 instance CppTuple4 (Ptr (Tensor,Tensor,Tensor,TensorList)) where
   type D (Ptr (Tensor,Tensor,Tensor,TensorList)) = Ptr TensorList
-  get3 v = [C.block| at::TensorList* { return new at::TensorList(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>* v)));}|]
+  get3 v = [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
 
 
 -----------------(Tensor,Tensor,CDouble,Int64)---------------------

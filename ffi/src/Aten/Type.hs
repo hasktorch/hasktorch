@@ -22,6 +22,7 @@ import Foreign
 
 type ScalarType = Int8
 type DeviceType = Int16
+type Backend = CInt
 
 data Tensor
 data Scalar
@@ -41,7 +42,7 @@ typeTable = Map.fromList [
         (C.TypeName "at::Scalar", [t|Scalar|])
       , (C.TypeName "at::Tensor", [t|Tensor|])
       , (C.TypeName "at::TensorOptions", [t|TensorOptions|])
-      , (C.TypeName "at::TensorList", [t|TensorList|])
+      , (C.TypeName "std::vector<at::Tensor>", [t|TensorList|])
       , (C.TypeName "at::IntArrayRef", [t|IntArrayRef|])
       , (C.TypeName "std::vector<int64_t>", [t|IntArray|])
       , (C.TypeName "at::ScalarType", [t|ScalarType|])
@@ -58,9 +59,9 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor,Tensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::TensorList>", [t|(Tensor,Tensor,Tensor,TensorList)|])
+      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>", [t|(Tensor,Tensor,Tensor,TensorList)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", [t|(Tensor,Tensor,CDouble,Int64)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,float,int>", [t|(Tensor,Tensor,CFloat,CInt)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", [t|(Tensor,Tensor,Tensor,Int64)|])
-      , (C.TypeName "std::vector<at::Tensor>", [t|TensorAVector|])
+      , (C.TypeName "at::Backend", [t|Backend|])
     ]

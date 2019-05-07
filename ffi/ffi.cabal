@@ -30,6 +30,7 @@ library
                     , Aten.Unmanaged.Type.TensorOptions
                     , Aten.Unmanaged.Type.StdString
                     , Aten.Unmanaged.Type.StdArray
+                    , Aten.Unmanaged.Type.Extra
                     , Aten.Managed.NN
                     , Aten.Managed.TH
                     , Aten.Managed.Native
@@ -44,6 +45,7 @@ library
                     , Aten.Managed.Type.TensorOptions
                     , Aten.Managed.Type.StdString
                     , Aten.Managed.Type.StdArray
+                    , Aten.Managed.Type.Extra
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
@@ -86,25 +88,8 @@ test-suite spec
   type:            exitcode-stdio-1.0
   hs-source-dirs:  test
   main-is:         Spec.hs
-  default-language: Haskell2010
-  build-depends:       base >= 4.7 && < 5
-                     , inline-c-cpp >= 0.3.0.1
-                     , inline-c
-                     , optparse-applicative >= 0.14.3.0
-                     , containers
-                     , ffi
-                     , hspec
-  ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0
-  cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0
-  cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0
-  extra-libraries:    torch
-  extensions:          Strict
-                     , StrictData
-
-test-suite memory-spec
-  type:            exitcode-stdio-1.0
-  hs-source-dirs:  test
-  main-is:         MemorySpec.hs
+  other-modules:   BasicSpec
+                 , MemorySpec
   default-language: Haskell2010
   build-depends:       base >= 4.7 && < 5
                      , inline-c-cpp >= 0.3.0.1
