@@ -304,6 +304,11 @@ tensor_set_data_t
   -> IO (())
 tensor_set_data_t = cast2 Unmanaged.tensor_set_data_t
 
+tensor_backward
+  :: ForeignPtr Tensor
+  -> IO (())
+tensor_backward = cast1 Unmanaged.tensor_backward
+
 tensor_abs
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)

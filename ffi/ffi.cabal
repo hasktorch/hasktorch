@@ -77,6 +77,7 @@ executable ffi-test
                      , optparse-applicative >= 0.14.3.0
                      , containers
                      , ffi
+                     , safe-exceptions
   ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0
   cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0
   cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0
@@ -98,9 +99,10 @@ test-suite spec
                      , containers
                      , ffi
                      , hspec
+                     , safe-exceptions
   ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0
   cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0
   cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0
-  extra-libraries:    torch
+--  extra-libraries:    torch
   extensions:          Strict
                      , StrictData

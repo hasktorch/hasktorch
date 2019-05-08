@@ -34,14 +34,14 @@ newSparseTensorRef_t
   :: Ptr Tensor
   -> IO (Ptr SparseTensorRef)
 newSparseTensorRef_t _x =
-  [C.block| at::SparseTensorRef* { return new at::SparseTensorRef(
+  [C.throwBlock| at::SparseTensorRef* { return new at::SparseTensorRef(
     *$(at::Tensor* _x));
   }|]
 
 
 
 deleteSparseTensorRef :: Ptr SparseTensorRef -> IO ()
-deleteSparseTensorRef object = [C.block| void { delete $(at::SparseTensorRef* object);}|]
+deleteSparseTensorRef object = [C.throwBlock| void { delete $(at::SparseTensorRef* object);}|]
 
 instance CppObject SparseTensorRef where
   fromPtr ptr = newForeignPtr ptr (deleteSparseTensorRef ptr)

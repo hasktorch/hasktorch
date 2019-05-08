@@ -69,6 +69,9 @@ methods:
 - requires_grad() -> bool
 - grad() -> Tensor
 - set_data(Tensor new_data) -> void
+#ToDo: support c10::optional<Tensor>-type
+#- backward(c10::optional<Tensor> gradient = c10::nullopt, bool keep_graph = false, bool create_graph = false) -> void
+- backward() -> void
 - abs() -> Tensor
 - abs_() -> Tensor
 - acos() -> Tensor

@@ -7,7 +7,8 @@
 module BasicSpec (spec) where
 
 import Test.Hspec
-import Control.Exception (bracket)
+import Control.Exception.Safe
+import qualified Language.C.Inline.Cpp.Exceptions as C
 import Control.Monad (forM_,forM,join)
 import Data.Int
 import Foreign
@@ -38,15 +39,23 @@ tensorList dims = do
 options :: DeviceType -> ScalarType -> IO (ForeignPtr TensorOptions)
 options dtype stype = join $ tensorOptions_dtype_s <$> newTensorOptions_D dtype <*> pure stype
 
-ap1 (fn,a0) = join $ fn <$> a0
-ap2 (fn,a0,a1) = join $ fn <$> a0 <*> a1
-ap3 (fn,a0,a1,a2) = join $ fn <$> a0 <*> a1 <*> a2
-ap4 (fn,a0,a1,a2,a3) = join $ fn <$> a0 <*> a1 <*> a2 <*> a3
+class Apr a where
+  ap :: (b -> IO a) -> IO b -> IO a
+
+ap1 fn a0  = join $ fn <$> a0
+ap2 fn a0 a1  = join $ fn <$> a0 <*> a1
+ap3 fn a0 a1 a2  = join $ fn <$> a0 <*> a1 <*> a2
+ap4 fn a0 a1 a2 a3 = join $ fn <$> a0 <*> a1 <*> a2 <*> a3
 
 at1 tensor i0 = tensor__at__l tensor i0
-at2 tensor i0 i1 = ap2 (tensor__at__l, at1 tensor i0, pure i1)
-at3 tensor i0 i1 i2 = ap2 (tensor__at__l, at2 tensor i0 i1, pure i2)
+at2 tensor i0 i1 = ap2 tensor__at__l (at1 tensor i0) (pure i1)
+at3 tensor i0 i1 i2 = ap2 tensor__at__l (at2 tensor i0 i1) (pure i2)
 
+new' fn dsize dtype = ap2 fn (intArray dsize) (options kCPU dtype)
+add' a b = join $ add_tts <$> pure a <*> pure b <*> newScalar_d 1
+addM' a b = join $ add_tts <$> a <*> b <*> newScalar_d 1
+add_s' a b = join $ add_tss <$> pure a <*> pure b <*> newScalar_d 1
+addM_s' a b = join $ add_tss <$> a <*> b <*> newScalar_d 1
 
 spec :: Spec
 spec = forM_ [
@@ -61,7 +70,7 @@ spec = forM_ [
 --   ASSERT_EQ_RESOLVED(a.numel(), 35);
 -- }
   it "TestReisze" $ do
-    a <- ap2 (empty_lo, intArray [1,1], options kCPU dtype)
+    a <- new' empty_lo [1,1] dtype
     a1 <- join $ tensor_resize__l <$> pure a <*> intArray [3,4]
     tensor_numel a1 `shouldReturn` 12
 
@@ -81,18 +90,18 @@ spec = forM_ [
 --   ASSERT_EQ_RESOLVED(b.view(-1).dot(b.view(-1)).item<double>(), 12);
 -- }
   it "TestOnesAndDot" $ do
-    b0 <- join $ ones_lo <$> intArray [1,1] <*> options kCPU dtype
-    b01 <- join $ add_tts <$> pure b0 <*> pure b0 <*> newScalar_d 1
+    b0 <- new' ones_lo [1,1] dtype
+    b01 <- add' b0 b0
     b02 <- sum_t b01
     tensor_item_double b02 `shouldReturn` 2
 
-    b0 <- join $ ones_lo <$> intArray [1,2] <*> options kCPU dtype
-    b01 <- join $ add_tts <$> pure b0 <*> pure b0 <*> newScalar_d 1
+    b0 <- new' ones_lo [1,2] dtype
+    b01 <- add' b0 b0
     b02 <- sum_t b01
     tensor_item_double b02 `shouldReturn` 4
 
-    b0 <- join $ ones_lo <$> intArray [3,4] <*> options kCPU dtype
-    b01 <- join $ add_tts <$> pure b0 <*> pure b0 <*> newScalar_d 1
+    b0 <- new' ones_lo [3,4] dtype
+    b01 <- add' b0 b0
     b02 <- sum_t b01
     tensor_item_double b02 `shouldReturn` 24
     tensor_numel b0 `shouldReturn` 12
@@ -111,15 +120,11 @@ spec = forM_ [
 --   ASSERT_TRUE(isLT);
 -- }
   it "TestSort" $ do
-    b <- join $ rand_lo <$> intArray [3,4] <*> options kCPU dtype
+    b <- new' rand_lo [3,4] dtype
     z <- tensor_sort_lb b 1 0 :: IO (ForeignPtr (Tensor,Tensor))
     z_sorted <- get0 z
-    z00 <- join $
-      tensor_item_float <$>
-      (join $ tensor__at__l <$> (tensor__at__l z_sorted 0) <*> (pure 0))
-    z01 <- join $
-      tensor_item_float <$>
-      (join $ tensor__at__l <$> (tensor__at__l z_sorted 0) <*> (pure 1))
+    z00 <- at2 z_sorted 0 0 >>= tensor_item_float
+    z01 <- at2 z_sorted 0 1 >>= tensor_item_float
     z00 < z01 `shouldBe` True
 
 -- void TestRandperm(Type& type) {
@@ -146,13 +151,12 @@ spec = forM_ [
 --   ASSERT_TRUE(add(c, d).allclose(a + a + b + d));
 -- }
   it "TestAdd" $ do
-    a <- join $ rand_lo <$> intArray [3,4] <*> options kCPU dtype
-    b <- join $ rand_lo <$> intArray [3,4] <*> options kCPU dtype
-    one <- newScalar_d 1
-    c <- join $ add_tts <$> pure a <*> add_tts a b one <*> pure one
+    a <- new' rand_lo [3,4] dtype
+    b <- new' rand_lo [3,4] dtype
+    c <- addM' (pure a) (add' a b)
     d <- newScalar_d 3
-    e <- add_tss c d one
-    f <- join $ add_tss <$> (join $ add_tts <$> add_tts a a one <*> pure b <*> pure one) <*> pure d <*> pure one
+    e <- add_s' c d
+    f <- addM_s' (addM' (add' a a) (pure b)) (pure d)
     allclose_ttddb e f (1e-05) (1e-08) 0 `shouldReturn` 1
 
 -- void TestLoadsOfAdds(Type& type) {
@@ -173,8 +177,8 @@ spec = forM_ [
 -- }
 {-
   it "TestLoadsOfAdds" $ do
-    d <- join $ ones_lo <$> intArray [3,4] <*> options kCPU dtype
-    r <- join $ rand_lo <$> intArray [3,4] <*> options kCPU dtype
+    d <- new' ones_lo [3,4] dtype
+    r <- new' rand_lo [3,4] dtype
     one <- newScalar_d 1
     forM_ [0..99999] $ \_ -> do
       void $ add_out_ttts r r d one
@@ -205,7 +209,7 @@ spec = forM_ [
 --   ASSERT_FALSE(a.is_contiguous());
 -- }
   it "TestIsContiguous" $ do
-    a <- join $ rand_lo <$> intArray [3,4] <*> options kCPU dtype
+    a <- new' rand_lo [3,4] dtype
     tensor_is_contiguous a `shouldReturn` 1
     (join $ tensor_is_contiguous <$> tensor_transpose_ll a 0 1) `shouldReturn` 0
 
@@ -223,10 +227,10 @@ spec = forM_ [
 --   ASSERT_TRUE(c.equal(addmv(zeros({3}, type), a, b, 0, 1)));
 -- }
   it "TTestMm" $ do
-    a <- join $ rand_lo <$> intArray [3,4] <*> options kCPU dtype
-    b <- join $ rand_lo <$> intArray [4] <*> options kCPU dtype
+    a <- new' rand_lo [3,4] dtype
+    b <- new' rand_lo [4] dtype
     c <- mv_tt a b
-    z <- join $ zeros_lo <$> intArray [3] <*> options kCPU dtype
+    z <- new' zeros_lo [3] dtype
     d <- join $ addmv_tttss <$> pure z <*> pure a <*> pure b <*> newScalar_d 0 <*> newScalar_d 1
     tensor_equal_t c d `shouldReturn` 1
 
@@ -240,10 +244,10 @@ spec = forM_ [
 --   ASSERT_TRUE(a[0].equal(b));
 -- }
   it "TestSqueeze" $ do
-    a <- join $ rand_lo <$> intArray [2,1] <*> options kCPU dtype
+    a <- new' rand_lo [2,1] dtype
     b <- squeeze_t a
     tensor_dim b `shouldReturn` 1
-    a <- join $ rand_lo <$> intArray [1] <*> options kCPU dtype
+    a <- new' rand_lo [1] dtype
     b <- squeeze_t a
     (join $ tensor_equal_t <$> (tensor__at__l a 0) <*> pure b) `shouldReturn` 1
 
@@ -254,8 +258,8 @@ spec = forM_ [
 --   ASSERT_TRUE(a.equal(e));
 -- }
   it "TTestCopy" $ do
-    a <- join $ zeros_lo <$> intArray [4,3] <*> options kCPU dtype
-    e <- join $ rand_lo <$> intArray [4,3] <*> options kCPU dtype
+    a <- new' zeros_lo [4,3] dtype
+    e <- new' rand_lo [4,3] dtype
     _ <- tensor_copy__tb a e 0
     tensor_equal_t a e `shouldReturn` 1
 
@@ -268,8 +272,8 @@ spec = forM_ [
 --   }
 -- }
   it "TestCopyBroadcasting" $ do
-    a <- join $ zeros_lo <$> intArray [4,3] <*> options kCPU dtype
-    e <- join $ rand_lo <$> intArray [3] <*> options kCPU dtype
+    a <- new' zeros_lo [4,3] dtype
+    e <- new' rand_lo [3] dtype
     _ <- tensor_copy__tb a e 0
     forM_ [0..3] $ \i -> do
       (join $ tensor_equal_t <$>  tensor__at__l a i <*> pure e) `shouldReturn` 1
@@ -287,11 +291,11 @@ spec = forM_ [
 --   ASSERT_TRUE((ones({4, 3}, type) + a).equal(add(a, 1)));
 -- }
   it "TestAddingAValueWithScalar" $ do
-    a <- join $ rand_lo <$> intArray [4, 3] <*> options kCPU dtype
-    b <- join $ ones_lo <$> intArray [4, 3] <*> options kCPU dtype
+    a <- new' rand_lo [4, 3] dtype
+    b <- new' ones_lo [4, 3] dtype
     one <- newScalar_d 1
-    c <- add_tts b a one
-    d <- add_tss a one one
+    c <- add' b a
+    d <- add_s' a one
     tensor_equal_t c d  `shouldReturn` 1
 
 -- void TestSelect(Type& type) {
@@ -302,11 +306,11 @@ spec = forM_ [
 --   ASSERT_TRUE(a[2][3].equal(a_13_02));
 -- }
   it "TestSelect" $ do
-    a <- ap2 (rand_lo, intArray [3, 7], options kCPU dtype)
+    a <- new' rand_lo [3, 7] dtype
     a13 <- select_tll a 1 3
-    a13_02 <- ap3 (select_tll, select_tll a 1 3, pure 0, pure 2)
-    ap2 (tensor_equal_t, at2 a 0 3, at1 a13 0) `shouldReturn` 1
-    ap2 (tensor_equal_t, at2 a 2 3, pure a13_02) `shouldReturn` 1
+    a13_02 <- ap3 select_tll (select_tll a 1 3) (pure 0) (pure 2)
+    ap2 tensor_equal_t (at2 a 0 3) (at1 a13 0) `shouldReturn` 1
+    ap2 tensor_equal_t (at2 a 2 3) (pure a13_02) `shouldReturn` 1
 
 
 -- void TestZeroDim(Type& type) {
@@ -326,19 +330,19 @@ spec = forM_ [
 --   ASSERT_EQ_RESOLVED(f[2][0].item<double>(), 0);
 -- }
   it "TestZeroDim" $ do
-    a <- ap2 (scalar_tensor_so, newScalar_i 4, options kCPU dtype)
-    b <- ap2 (rand_lo, intArray [3,4], options kCPU dtype)
+    a <- ap2 scalar_tensor_so (newScalar_i 4) (options kCPU dtype)
+    b <- new' rand_lo [3,4] dtype
     one <- newScalar_d 1
-    ap1 (tensor_dim, add_tts a a one) `shouldReturn` 0
-    ap1 (tensor_dim, add_tss a one one) `shouldReturn` 0
-    ap1 (tensor_dim, add_tts b a one) `shouldReturn` 2
-    ap1 (tensor_dim, add_tts a b one) `shouldReturn` 2
-    c <- ap2 (rand_lo, intArray [3,4], options kCPU dtype)
-    ap1 (tensor_dim, at2 c 1 2) `shouldReturn` 0
-    f <- ap2 (rand_lo, intArray [3,4], options kCPU dtype)
-    ap3 (tensor_assign1_t, pure f, pure 2, ap2 (zeros_lo, intArray [4], options kCPU dtype))
+    (add' a a     >>= tensor_dim) `shouldReturn` 0
+    (add_s' a one >>= tensor_dim) `shouldReturn` 0
+    (add' b a     >>= tensor_dim) `shouldReturn` 2
+    (add' a b     >>= tensor_dim) `shouldReturn` 2
+    c <- new' rand_lo [3,4] dtype
+    (at2 c 1 2    >>= tensor_dim) `shouldReturn` 0
+    f <- new' rand_lo [3,4] dtype
+    ap3 tensor_assign1_t (pure f) (pure 2) (new' zeros_lo [4] dtype)
     tensor_assign2_l f 1 0 (-1)
-    ap1 (tensor_item_double, at2 f 2 0) `shouldReturn` 0
+    (at2 f 2 0 >>= tensor_item_double) `shouldReturn` 0
 
 
 -- void TestTensorFromTH() {
@@ -357,9 +361,9 @@ spec = forM_ [
 --   ASSERT_EQ_RESOLVED(*e.data<float>(), e.sum().item<float>());
 -- }
   it "TestToCFloat" $ do
-    a <- ap2 (zeros_lo, intArray [3,4], options kCPU dtype)
-    b <- ap2 (ones_lo, intArray [3,7], options kCPU dtype)
-    c <- ap2 (cat_ll, tensorList [a,b], pure 1)
+    a <- new' zeros_lo [3,4] dtype
+    b <- new' ones_lo [3,7] dtype
+    c <- ap2 cat_ll (tensorList [a,b]) (pure 1)
     tensor_size_l c 1 `shouldReturn` 11
 
 -- void TestToString() {
@@ -391,6 +395,16 @@ spec = forM_ [
 --   // Throw StartsWith("Can only index tensors with integral scalars")
 --   ASSERT_ANY_THROW(tensor[Scalar(3.14)].equal(one));
 -- }
+  it "TestIndexingByScalar" $ do
+    tensor <- ap3 arange_sso (newScalar_i 0) (newScalar_i 10) (options kCPU kInt)
+    one <- new' ones_lo [] kInt
+    num <- tensor_numel tensor
+    forM_ [0..(num-1)] $ \i -> do
+      ap2 tensor_equal_t (at1 tensor i) (ap2 mul_ts (pure one) (newScalar_i (fromIntegral i))) `shouldReturn` 1
+    forM_ [0..(num-1)] $ \i -> do
+      ap2 tensor_equal_t (at1 tensor i) (ap2 mul_ts (pure one) (newScalar_i (fromIntegral i))) `shouldReturn` 1
+    at1 tensor 314 `shouldThrow` anyException
+
 
 -- void TestIndexingByZerodimTensor() {
 --   Tensor tensor = arange(0, 10, kInt);

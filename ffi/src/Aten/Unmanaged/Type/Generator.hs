@@ -33,7 +33,7 @@ C.include "<vector>"
 
 
 deleteGenerator :: Ptr Generator -> IO ()
-deleteGenerator object = [C.block| void { delete $(at::Generator* object);}|]
+deleteGenerator object = [C.throwBlock| void { delete $(at::Generator* object);}|]
 
 instance CppObject Generator where
   fromPtr ptr = newForeignPtr ptr (deleteGenerator ptr)

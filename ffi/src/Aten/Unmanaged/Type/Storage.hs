@@ -33,14 +33,14 @@ C.include "<vector>"
 newStorage
   :: IO (Ptr Storage)
 newStorage  =
-  [C.block| at::Storage* { return new at::Storage(
+  [C.throwBlock| at::Storage* { return new at::Storage(
     );
   }|]
 
 
 
 deleteStorage :: Ptr Storage -> IO ()
-deleteStorage object = [C.block| void { delete $(at::Storage* object);}|]
+deleteStorage object = [C.throwBlock| void { delete $(at::Storage* object);}|]
 
 instance CppObject Storage where
   fromPtr ptr = newForeignPtr ptr (deleteStorage ptr)

@@ -62,7 +62,7 @@ renderConstructors is_managed typ_ = mconcat $ map (methodToCpp typ_ True is_man
 renderDestructor :: Bool -> PC.CppClassSpec -> Text
 renderDestructor is_managed typ_ = if is_managed then "" else [st|
 delete#{PC.hsname typ_} :: Ptr #{PC.hsname typ_} -> IO ()
-delete#{PC.hsname typ_} object = #{bra}C.block| void { delete $(#{PC.cppname typ_}* object);}|#{cket}
+delete#{PC.hsname typ_} object = #{bra}C.throwBlock| void { delete $(#{PC.cppname typ_}* object);}|#{cket}
 
 instance CppObject #{PC.hsname typ_} where
   fromPtr ptr = newForeignPtr ptr (delete#{PC.hsname typ_} ptr)

@@ -36,7 +36,7 @@ C.include "<ATen/ATen.h>"
 -----------------(Tensor,Tensor)---------------------
 
 deleteTensorTensor :: Ptr (Tensor,Tensor) -> IO ()
-deleteTensorTensor ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor>* ptr); return; }|]
+deleteTensorTensor ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor>* ptr); return; }|]
 
 instance CppObject (Tensor,Tensor) where
   fromPtr ptr = newForeignPtr ptr (deleteTensorTensor ptr)
@@ -44,14 +44,14 @@ instance CppObject (Tensor,Tensor) where
 instance CppTuple2 (Ptr (Tensor,Tensor)) where
   type A (Ptr (Tensor,Tensor)) = Ptr Tensor
   type B (Ptr (Tensor,Tensor)) = Ptr Tensor
-  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor>* v)));}|]
-  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor>* v)));}|]
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor>* v)));}|]
+  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor>* v)));}|]
 
 
 -----------------(Tensor,Tensor,Tensor)---------------------
 
 deleteTensorTensorTensor :: Ptr (Tensor,Tensor,Tensor) -> IO ()
-deleteTensorTensorTensor ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor>* ptr); return; }|]
+deleteTensorTensorTensor ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor>* ptr); return; }|]
 
 instance CppObject (Tensor,Tensor,Tensor) where
   fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensor ptr)
@@ -59,18 +59,18 @@ instance CppObject (Tensor,Tensor,Tensor) where
 instance CppTuple2 (Ptr (Tensor,Tensor,Tensor)) where
   type A (Ptr (Tensor,Tensor,Tensor)) = Ptr Tensor
   type B (Ptr (Tensor,Tensor,Tensor)) = Ptr Tensor
-  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor>* v)));}|]
-  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor>* v)));}|]
 
 instance CppTuple3 (Ptr (Tensor,Tensor,Tensor)) where
   type C (Ptr (Tensor,Tensor,Tensor)) = Ptr Tensor
-  get2 v = [C.block| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get2 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor>* v)));}|]
 
 
 -----------------(Tensor,Tensor,Tensor,Tensor)---------------------
 
 deleteTensorTensorTensorTensor :: Ptr (Tensor,Tensor,Tensor,Tensor) -> IO ()
-deleteTensorTensorTensorTensor ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr); return; }|]
+deleteTensorTensorTensorTensor ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr); return; }|]
 
 instance CppObject (Tensor,Tensor,Tensor,Tensor) where
   fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorTensor ptr)
@@ -78,22 +78,22 @@ instance CppObject (Tensor,Tensor,Tensor,Tensor) where
 instance CppTuple2 (Ptr (Tensor,Tensor,Tensor,Tensor)) where
   type A (Ptr (Tensor,Tensor,Tensor,Tensor)) = Ptr Tensor
   type B (Ptr (Tensor,Tensor,Tensor,Tensor)) = Ptr Tensor
-  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
-  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
 
 instance CppTuple3 (Ptr (Tensor,Tensor,Tensor,Tensor)) where
   type C (Ptr (Tensor,Tensor,Tensor,Tensor)) = Ptr Tensor
-  get2 v = [C.block| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get2 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
 
 instance CppTuple4 (Ptr (Tensor,Tensor,Tensor,Tensor)) where
   type D (Ptr (Tensor,Tensor,Tensor,Tensor)) = Ptr Tensor
-  get3 v = [C.block| at::Tensor* { return new at::Tensor(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get3 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
 
 
 -----------------(Tensor,Tensor,Tensor,Tensor,Tensor)---------------------
 
 deleteTensorTensorTensorTensorTensor :: Ptr (Tensor,Tensor,Tensor,Tensor,Tensor) -> IO ()
-deleteTensorTensorTensorTensorTensor ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr); return; }|]
+deleteTensorTensorTensorTensorTensor ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr); return; }|]
 
 instance CppObject (Tensor,Tensor,Tensor,Tensor,Tensor) where
   fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorTensorTensor ptr)
@@ -101,26 +101,26 @@ instance CppObject (Tensor,Tensor,Tensor,Tensor,Tensor) where
 instance CppTuple2 (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) where
   type A (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) = Ptr Tensor
   type B (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) = Ptr Tensor
-  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
-  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
 
 instance CppTuple3 (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) where
   type C (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) = Ptr Tensor
-  get2 v = [C.block| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get2 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
 
 instance CppTuple4 (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) where
   type D (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) = Ptr Tensor
-  get3 v = [C.block| at::Tensor* { return new at::Tensor(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get3 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
 
 instance CppTuple5 (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) where
   type E (Ptr (Tensor,Tensor,Tensor,Tensor,Tensor)) = Ptr Tensor
-  get4 v = [C.block| at::Tensor* { return new at::Tensor(std::get<4>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
+  get4 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<4>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* v)));}|]
 
 
 -----------------(Tensor,Tensor,Tensor,TensorList)---------------------
 
 deleteTensorTensorTensorTensorList :: Ptr (Tensor,Tensor,Tensor,TensorList) -> IO ()
-deleteTensorTensorTensorTensorList ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* ptr); return; }|]
+deleteTensorTensorTensorTensorList ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* ptr); return; }|]
 
 instance CppObject (Tensor,Tensor,Tensor,TensorList) where
   fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorTensorList ptr)
@@ -128,22 +128,22 @@ instance CppObject (Tensor,Tensor,Tensor,TensorList) where
 instance CppTuple2 (Ptr (Tensor,Tensor,Tensor,TensorList)) where
   type A (Ptr (Tensor,Tensor,Tensor,TensorList)) = Ptr Tensor
   type B (Ptr (Tensor,Tensor,Tensor,TensorList)) = Ptr Tensor
-  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
-  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
+  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
 
 instance CppTuple3 (Ptr (Tensor,Tensor,Tensor,TensorList)) where
   type C (Ptr (Tensor,Tensor,Tensor,TensorList)) = Ptr Tensor
-  get2 v = [C.block| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
+  get2 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
 
 instance CppTuple4 (Ptr (Tensor,Tensor,Tensor,TensorList)) where
   type D (Ptr (Tensor,Tensor,Tensor,TensorList)) = Ptr TensorList
-  get3 v = [C.block| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
+  get3 v = [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* v)));}|]
 
 
 -----------------(Tensor,Tensor,CDouble,Int64)---------------------
 
 deleteTensorTensorCDoubleInt64 :: Ptr (Tensor,Tensor,CDouble,Int64) -> IO ()
-deleteTensorTensorCDoubleInt64 ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor,double,int64_t>* ptr); return; }|]
+deleteTensorTensorCDoubleInt64 ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,double,int64_t>* ptr); return; }|]
 
 instance CppObject (Tensor,Tensor,CDouble,Int64) where
   fromPtr ptr = newForeignPtr ptr (deleteTensorTensorCDoubleInt64 ptr)
@@ -151,22 +151,22 @@ instance CppObject (Tensor,Tensor,CDouble,Int64) where
 instance CppTuple2 (Ptr (Tensor,Tensor,CDouble,Int64)) where
   type A (Ptr (Tensor,Tensor,CDouble,Int64)) = Ptr Tensor
   type B (Ptr (Tensor,Tensor,CDouble,Int64)) = Ptr Tensor
-  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,double,int64_t>* v)));}|]
-  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,double,int64_t>* v)));}|]
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,double,int64_t>* v)));}|]
+  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,double,int64_t>* v)));}|]
 
 instance CppTuple3 (Ptr (Tensor,Tensor,CDouble,Int64)) where
   type C (Ptr (Tensor,Tensor,CDouble,Int64)) = CDouble
-  get2 v = [C.block| double { return (std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,double,int64_t>* v)));}|]
+  get2 v = [C.throwBlock| double { return (std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,double,int64_t>* v)));}|]
 
 instance CppTuple4 (Ptr (Tensor,Tensor,CDouble,Int64)) where
   type D (Ptr (Tensor,Tensor,CDouble,Int64)) = Int64
-  get3 v = [C.block| int64_t { return (std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,double,int64_t>* v)));}|]
+  get3 v = [C.throwBlock| int64_t { return (std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,double,int64_t>* v)));}|]
 
 
 -----------------(Tensor,Tensor,CFloat,CInt)---------------------
 
 deleteTensorTensorCFloatCInt :: Ptr (Tensor,Tensor,CFloat,CInt) -> IO ()
-deleteTensorTensorCFloatCInt ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor,float,int>* ptr); return; }|]
+deleteTensorTensorCFloatCInt ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,float,int>* ptr); return; }|]
 
 instance CppObject (Tensor,Tensor,CFloat,CInt) where
   fromPtr ptr = newForeignPtr ptr (deleteTensorTensorCFloatCInt ptr)
@@ -174,22 +174,22 @@ instance CppObject (Tensor,Tensor,CFloat,CInt) where
 instance CppTuple2 (Ptr (Tensor,Tensor,CFloat,CInt)) where
   type A (Ptr (Tensor,Tensor,CFloat,CInt)) = Ptr Tensor
   type B (Ptr (Tensor,Tensor,CFloat,CInt)) = Ptr Tensor
-  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,float,int>* v)));}|]
-  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,float,int>* v)));}|]
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,float,int>* v)));}|]
+  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,float,int>* v)));}|]
 
 instance CppTuple3 (Ptr (Tensor,Tensor,CFloat,CInt)) where
   type C (Ptr (Tensor,Tensor,CFloat,CInt)) = CFloat
-  get2 v = [C.block| float { return (std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,float,int>* v)));}|]
+  get2 v = [C.throwBlock| float { return (std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,float,int>* v)));}|]
 
 instance CppTuple4 (Ptr (Tensor,Tensor,CFloat,CInt)) where
   type D (Ptr (Tensor,Tensor,CFloat,CInt)) = CInt
-  get3 v = [C.block| int { return (std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,float,int>* v)));}|]
+  get3 v = [C.throwBlock| int { return (std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,float,int>* v)));}|]
 
 
 -----------------(Tensor,Tensor,Tensor,Int64)---------------------
 
 deleteTensorTensorTensorInt64 :: Ptr (Tensor,Tensor,Tensor,Int64) -> IO ()
-deleteTensorTensorTensorInt64 ptr = [C.block| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* ptr); return; }|]
+deleteTensorTensorTensorInt64 ptr = [C.throwBlock| void { delete $(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* ptr); return; }|]
 
 instance CppObject (Tensor,Tensor,Tensor,Int64) where
   fromPtr ptr = newForeignPtr ptr (deleteTensorTensorTensorInt64 ptr)
@@ -197,14 +197,14 @@ instance CppObject (Tensor,Tensor,Tensor,Int64) where
 instance CppTuple2 (Ptr (Tensor,Tensor,Tensor,Int64)) where
   type A (Ptr (Tensor,Tensor,Tensor,Int64)) = Ptr Tensor
   type B (Ptr (Tensor,Tensor,Tensor,Int64)) = Ptr Tensor
-  get0 v = [C.block| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
-  get1 v = [C.block| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
+  get0 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<0>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
+  get1 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<1>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
 
 instance CppTuple3 (Ptr (Tensor,Tensor,Tensor,Int64)) where
   type C (Ptr (Tensor,Tensor,Tensor,Int64)) = Ptr Tensor
-  get2 v = [C.block| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
+  get2 v = [C.throwBlock| at::Tensor* { return new at::Tensor(std::get<2>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
 
 instance CppTuple4 (Ptr (Tensor,Tensor,Tensor,Int64)) where
   type D (Ptr (Tensor,Tensor,Tensor,Int64)) = Int64
-  get3 v = [C.block| int64_t { return (std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
+  get3 v = [C.throwBlock| int64_t { return (std::get<3>(*$(std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>* v)));}|]
 

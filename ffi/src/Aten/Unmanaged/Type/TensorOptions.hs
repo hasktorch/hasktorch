@@ -34,14 +34,14 @@ newTensorOptions_D
   :: DeviceType
   -> IO (Ptr TensorOptions)
 newTensorOptions_D _d =
-  [C.block| at::TensorOptions* { return new at::TensorOptions(
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
     $(at::DeviceType _d));
   }|]
 
 
 
 deleteTensorOptions :: Ptr TensorOptions -> IO ()
-deleteTensorOptions object = [C.block| void { delete $(at::TensorOptions* object);}|]
+deleteTensorOptions object = [C.throwBlock| void { delete $(at::TensorOptions* object);}|]
 
 instance CppObject TensorOptions where
   fromPtr ptr = newForeignPtr ptr (deleteTensorOptions ptr)
@@ -53,7 +53,7 @@ tensorOptions_dtype_s
   -> ScalarType
   -> IO (Ptr TensorOptions)
 tensorOptions_dtype_s _obj _t =
-  [C.block| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).dtype(
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).dtype(
     $(at::ScalarType _t)));
   }|]
 

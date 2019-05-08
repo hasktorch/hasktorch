@@ -287,7 +287,7 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
 #{hsfuncname}#{type_initials}
   :: #{types}
 #{hsfuncname}#{type_initials} #{args} =
-  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper}(#{prefix}#{P.name fn}#{suffix}(
+  #{bra}C.throwBlock| #{ret_type} { #{call_return} #{ret_wrapper}(#{prefix}#{P.name fn}#{suffix}(
     #{cargs}));
   }|#{cket}
 |]
@@ -353,14 +353,14 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
 #{function_name}
   :: #{types}
 #{function_name} #{args} =
-  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper cargs'}
+  #{bra}C.throwBlock| #{ret_type} { #{call_return} #{ret_wrapper cargs'}
   }|#{cket}
 |]
     (False,False) -> [st|
 #{function_name}
   :: #{types}
 #{function_name} #{args} =
-  #{bra}C.block| #{ret_type} { #{call_return} #{ret_wrapper cargs_with_obj}
+  #{bra}C.throwBlock| #{ret_type} { #{call_return} #{ret_wrapper cargs_with_obj}
   }|#{cket}
 |]
   where

@@ -33,14 +33,14 @@ C.include "<vector>"
 newIntArray
   :: IO (Ptr IntArray)
 newIntArray  =
-  [C.block| std::vector<int64_t>* { return new std::vector<int64_t>(
+  [C.throwBlock| std::vector<int64_t>* { return new std::vector<int64_t>(
     );
   }|]
 
 
 
 deleteIntArray :: Ptr IntArray -> IO ()
-deleteIntArray object = [C.block| void { delete $(std::vector<int64_t>* object);}|]
+deleteIntArray object = [C.throwBlock| void { delete $(std::vector<int64_t>* object);}|]
 
 instance CppObject IntArray where
   fromPtr ptr = newForeignPtr ptr (deleteIntArray ptr)
@@ -51,7 +51,7 @@ intArray_empty
   :: Ptr IntArray
   -> IO (CBool)
 intArray_empty _obj =
-  [C.block| bool { return (*$(std::vector<int64_t>* _obj)).empty(
+  [C.throwBlock| bool { return (*$(std::vector<int64_t>* _obj)).empty(
     );
   }|]
 
@@ -59,7 +59,7 @@ intArray_size
   :: Ptr IntArray
   -> IO (CSize)
 intArray_size _obj =
-  [C.block| size_t { return (*$(std::vector<int64_t>* _obj)).size(
+  [C.throwBlock| size_t { return (*$(std::vector<int64_t>* _obj)).size(
     );
   }|]
 
@@ -68,7 +68,7 @@ intArray_at_s
   -> CSize
   -> IO (Int64)
 intArray_at_s _obj _s =
-  [C.block| int64_t { return (*$(std::vector<int64_t>* _obj)).at(
+  [C.throwBlock| int64_t { return (*$(std::vector<int64_t>* _obj)).at(
     $(size_t _s));
   }|]
 
@@ -77,7 +77,7 @@ intArray_push_back_l
   -> Int64
   -> IO (())
 intArray_push_back_l _obj _v =
-  [C.block| void {  (*$(std::vector<int64_t>* _obj)).push_back(
+  [C.throwBlock| void {  (*$(std::vector<int64_t>* _obj)).push_back(
     $(int64_t _v));
   }|]
 

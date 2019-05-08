@@ -138,6 +138,7 @@ import Foreign
 
 type ScalarType = Int8
 type DeviceType = Int16
+type Backend = CInt
 
 data Tensor
 data Scalar
@@ -178,5 +179,6 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", #{bra}t|(Tensor,Tensor,CDouble,Int64)|#{cket})
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,float,int>", #{bra}t|(Tensor,Tensor,CFloat,CInt)|#{cket})
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", #{bra}t|(Tensor,Tensor,Tensor,Int64)|#{cket})
+      , (C.TypeName "at::Backend", #{bra}t|Backend|#{cket})
     ]
 |]

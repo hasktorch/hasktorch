@@ -33,14 +33,14 @@ C.include "<string>"
 newStdString
   :: IO (Ptr StdString)
 newStdString  =
-  [C.block| std::string* { return new std::string(
+  [C.throwBlock| std::string* { return new std::string(
     );
   }|]
 
 
 
 deleteStdString :: Ptr StdString -> IO ()
-deleteStdString object = [C.block| void { delete $(std::string* object);}|]
+deleteStdString object = [C.throwBlock| void { delete $(std::string* object);}|]
 
 instance CppObject StdString where
   fromPtr ptr = newForeignPtr ptr (deleteStdString ptr)

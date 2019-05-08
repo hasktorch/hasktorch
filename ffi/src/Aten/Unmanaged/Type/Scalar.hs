@@ -33,7 +33,7 @@ C.include "<vector>"
 newScalar
   :: IO (Ptr Scalar)
 newScalar  =
-  [C.block| at::Scalar* { return new at::Scalar(
+  [C.throwBlock| at::Scalar* { return new at::Scalar(
     );
   }|]
 
@@ -41,7 +41,7 @@ newScalar_i
   :: CInt
   -> IO (Ptr Scalar)
 newScalar_i _a =
-  [C.block| at::Scalar* { return new at::Scalar(
+  [C.throwBlock| at::Scalar* { return new at::Scalar(
     $(int _a));
   }|]
 
@@ -49,14 +49,14 @@ newScalar_d
   :: CDouble
   -> IO (Ptr Scalar)
 newScalar_d _a =
-  [C.block| at::Scalar* { return new at::Scalar(
+  [C.throwBlock| at::Scalar* { return new at::Scalar(
     $(double _a));
   }|]
 
 
 
 deleteScalar :: Ptr Scalar -> IO ()
-deleteScalar object = [C.block| void { delete $(at::Scalar* object);}|]
+deleteScalar object = [C.throwBlock| void { delete $(at::Scalar* object);}|]
 
 instance CppObject Scalar where
   fromPtr ptr = newForeignPtr ptr (deleteScalar ptr)

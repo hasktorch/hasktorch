@@ -33,33 +33,33 @@ C.include "<array>"
 newStdArrayBool2
   :: IO (Ptr (StdArray CBool 2))
 newStdArrayBool2  =
-  [C.block| std::array<bool,2>* { return new std::array<bool,2>(
+  [C.throwBlock| std::array<bool,2>* { return new std::array<bool,2>(
     );
   }|]
 
 newStdArrayBool3
   :: IO (Ptr (StdArray CBool 3))
 newStdArrayBool3  =
-  [C.block| std::array<bool,3>* { return new std::array<bool,3>(
+  [C.throwBlock| std::array<bool,3>* { return new std::array<bool,3>(
     );
   }|]
 
 newStdArrayBool4
   :: IO (Ptr (StdArray CBool 4))
 newStdArrayBool4  =
-  [C.block| std::array<bool,4>* { return new std::array<bool,4>(
+  [C.throwBlock| std::array<bool,4>* { return new std::array<bool,4>(
     );
   }|]
 
 
 deleteStdArrayBool2 :: Ptr (StdArray CBool 2) -> IO ()
-deleteStdArrayBool2 object = [C.block| void { delete $(std::array<bool,2>* object);}|]
+deleteStdArrayBool2 object = [C.throwBlock| void { delete $(std::array<bool,2>* object);}|]
 
 deleteStdArrayBool3 :: Ptr (StdArray CBool 3) -> IO ()
-deleteStdArrayBool3 object = [C.block| void { delete $(std::array<bool,3>* object);}|]
+deleteStdArrayBool3 object = [C.throwBlock| void { delete $(std::array<bool,3>* object);}|]
 
 deleteStdArrayBool4 :: Ptr (StdArray CBool 4) -> IO ()
-deleteStdArrayBool4 object = [C.block| void { delete $(std::array<bool,4>* object);}|]
+deleteStdArrayBool4 object = [C.throwBlock| void { delete $(std::array<bool,4>* object);}|]
 
 
 instance CppObject (StdArray CBool 2) where

@@ -35,7 +35,7 @@ tensor_assign1_l
   -> Int64
   -> IO ()
 tensor_assign1_l _obj _idx0 _val  =
-  [C.block| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)] = $(int64_t _val); }|]
+  [C.throwBlock| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)] = $(int64_t _val); }|]
 
 tensor_assign2_l
   :: Ptr Tensor
@@ -44,7 +44,7 @@ tensor_assign2_l
   -> Int64
   -> IO ()
 tensor_assign2_l _obj _idx0 _idx1 _val  =
-  [C.block| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)][$(int64_t _idx1)] = $(int64_t _val); }|]
+  [C.throwBlock| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)][$(int64_t _idx1)] = $(int64_t _val); }|]
 
 tensor_assign1_d
   :: Ptr Tensor
@@ -52,7 +52,7 @@ tensor_assign1_d
   -> CDouble
   -> IO ()
 tensor_assign1_d _obj _idx0 _val  =
-  [C.block| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)] = $(double _val); }|]
+  [C.throwBlock| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)] = $(double _val); }|]
 
 tensor_assign2_d
   :: Ptr Tensor
@@ -61,7 +61,7 @@ tensor_assign2_d
   -> CDouble
   -> IO ()
 tensor_assign2_d _obj _idx0 _idx1 _val  =
-  [C.block| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)][$(int64_t _idx1)] = $(double _val); }|]
+  [C.throwBlock| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)][$(int64_t _idx1)] = $(double _val); }|]
 
 
 tensor_assign1_t
@@ -70,7 +70,7 @@ tensor_assign1_t
   -> Ptr Tensor
   -> IO ()
 tensor_assign1_t _obj _idx0 _val  =
-  [C.block| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)] = *$(at::Tensor* _val); }|]
+  [C.throwBlock| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)] = *$(at::Tensor* _val); }|]
 
 tensor_assign2_t
   :: Ptr Tensor
@@ -79,5 +79,5 @@ tensor_assign2_t
   -> Ptr Tensor
   -> IO ()
 tensor_assign2_t _obj _idx0 _idx1 _val  =
-  [C.block| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)][$(int64_t _idx1)] = *$(at::Tensor* _val); }|]
+  [C.throwBlock| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)][$(int64_t _idx1)] = *$(at::Tensor* _val); }|]
 

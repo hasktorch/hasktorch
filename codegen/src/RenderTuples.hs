@@ -98,7 +98,7 @@ renderCppObject typ_ = [st|
 -----------------#{tupleToHs typ_}---------------------
 
 delete#{tupleToHs' typ_} :: Ptr #{tupleToHs typ_} -> IO ()
-delete#{tupleToHs' typ_} ptr = #{bra}C.block| void { delete $(#{tupleToCpp typ_}* ptr); return; }|#{cket}
+delete#{tupleToHs' typ_} ptr = #{bra}C.throwBlock| void { delete $(#{tupleToCpp typ_}* ptr); return; }|#{cket}
 
 instance CppObject #{tupleToHs typ_} where
   fromPtr ptr = newForeignPtr ptr (delete#{tupleToHs' typ_} ptr)
@@ -109,8 +109,8 @@ renderCppTuple2 typ_@(PT.Tuple (a:b:_)) = [st|
 instance CppTuple2 (Ptr #{tupleToHs typ_}) where
   type A (Ptr #{tupleToHs typ_}) = #{toHs a}
   type B (Ptr #{tupleToHs typ_}) = #{toHs b}
-  get0 v = #{bra}C.block| #{toCpp a} { return #{toCpp' a}(std::get<0>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
-  get1 v = #{bra}C.block| #{toCpp b} { return #{toCpp' b}(std::get<1>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+  get0 v = #{bra}C.throwBlock| #{toCpp a} { return #{toCpp' a}(std::get<0>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+  get1 v = #{bra}C.throwBlock| #{toCpp b} { return #{toCpp' b}(std::get<1>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple2 _ = ""
 
@@ -118,7 +118,7 @@ renderCppTuple3 :: PT.Tuple -> Text
 renderCppTuple3 typ_@(PT.Tuple (_:_:c:_)) = [st|
 instance CppTuple3 (Ptr #{tupleToHs typ_}) where
   type C (Ptr #{tupleToHs typ_}) = #{toHs c}
-  get2 v = #{bra}C.block| #{toCpp c} { return #{toCpp' c}(std::get<2>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+  get2 v = #{bra}C.throwBlock| #{toCpp c} { return #{toCpp' c}(std::get<2>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple3 _ = ""
 
@@ -126,7 +126,7 @@ renderCppTuple4 :: PT.Tuple -> Text
 renderCppTuple4 typ_@(PT.Tuple (_:_:_:d:_)) = [st|
 instance CppTuple4 (Ptr #{tupleToHs typ_}) where
   type D (Ptr #{tupleToHs typ_}) = #{toHs d}
-  get3 v = #{bra}C.block| #{toCpp d} { return #{toCpp' d}(std::get<3>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+  get3 v = #{bra}C.throwBlock| #{toCpp d} { return #{toCpp' d}(std::get<3>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple4 _ = ""
 
@@ -135,7 +135,7 @@ renderCppTuple5 :: PT.Tuple -> Text
 renderCppTuple5 typ_@(PT.Tuple (_:_:_:_:e:_)) = [st|
 instance CppTuple5 (Ptr #{tupleToHs typ_}) where
   type E (Ptr #{tupleToHs typ_}) = #{toHs e}
-  get4 v = #{bra}C.block| #{toCpp e} { return #{toCpp' e}(std::get<4>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+  get4 v = #{bra}C.throwBlock| #{toCpp e} { return #{toCpp' e}(std::get<4>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
 |]
 renderCppTuple5 _ = ""
 
