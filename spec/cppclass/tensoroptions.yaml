@@ -3,5 +3,40 @@ cppname: at::TensorOptions
 hsname: TensorOptions
 constructors:
 - new(Device d) -> TensorOptions
+- new(Backend d) -> TensorOptions
+- new(ScalarType d) -> TensorOptions
+- new(Layout d) -> TensorOptions
 methods:
-- dtype(ScalarType t) -> TensorOptions
+#- operator==(TensorOptions other) -> bool
+#- operator!=(TensorOptions other) -> bool
+#- device(c10::optional<Device> device) -> TensorOptions
+- device(Device device) -> TensorOptions
+#- device(Args... args) -> TensorOptions
+- device_index(int16_t device_index) -> TensorOptions
+#- dtype(c10::optional<caffe2::TypeMeta> dtype) -> TensorOptions
+#- dtype(c10::optional<ScalarType> dtype) -> TensorOptions
+- dtype(ScalarType dtype) -> TensorOptions
+- dtype() -> TensorOptions
+#- layout(c10::optional<Layout> layout) -> TensorOptions
+- layout(Layout layout) -> TensorOptions
+#- requires_grad(c10::optional<bool> requires_grad) -> TensorOptions
+- requires_grad(bool requires_grad) -> TensorOptions
+#- is_variable(c10::optional<bool> is_variable) -> TensorOptions
+- is_variable(bool is_variable) -> TensorOptions
+#- device() -> Device
+- has_device() -> bool
+#- device_opt() -> c10::optional<Device>
+- device_index() -> int32_t
+#- dtype() -> caffe2::TypeMeta
+- has_dtype() -> bool
+#- dtype_opt() -> c10::optional<caffe2::TypeMeta>
+- layout() -> Layout
+- has_layout() -> bool
+#- layout_opt() -> c10::optional<Layout>
+- requires_grad() -> bool
+- has_requires_grad() -> bool
+#- requires_grad_opt() -> c10::optional<bool>
+- is_variable() -> bool
+- has_is_variable() -> bool
+#- is_variable_opt() -> c10::optional<bool>
+- backend() -> Backend

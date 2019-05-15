@@ -193,6 +193,14 @@ tensor_has_storage _obj =
     );
   }|]
 
+tensor_storage
+  :: Ptr Tensor
+  -> IO (Ptr Storage)
+tensor_storage _obj =
+  [C.throwBlock| at::Storage* { return new at::Storage((*$(at::Tensor* _obj)).storage(
+    ));
+  }|]
+
 tensor_is_alias_of_t
   :: Ptr Tensor
   -> Ptr Tensor
@@ -222,11 +230,28 @@ tensor_toType_s _obj _t =
     $(at::ScalarType _t)));
   }|]
 
+tensor_toBackend_B
+  :: Ptr Tensor
+  -> Backend
+  -> IO (Ptr Tensor)
+tensor_toBackend_B _obj _b =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).toBackend(
+    $(at::Backend _b)));
+  }|]
+
 tensor_is_variable
   :: Ptr Tensor
   -> IO (CBool)
 tensor_is_variable _obj =
   [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_variable(
+    );
+  }|]
+
+tensor_layout
+  :: Ptr Tensor
+  -> IO (Layout)
+tensor_layout _obj =
+  [C.throwBlock| at::Layout { return (*$(at::Tensor* _obj)).layout(
     );
   }|]
 
@@ -816,6 +841,17 @@ tensor_ceil_
 tensor_ceil_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).ceil_(
     ));
+  }|]
+
+tensor_chunk_ll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr TensorList)
+tensor_chunk_ll _obj _chunks _dim =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).chunk(
+    $(int64_t _chunks)
+  , $(int64_t _dim)));
   }|]
 
 tensor_clamp_max_s
@@ -1979,6 +2015,28 @@ tensor_softmax_l _obj _dim =
     $(int64_t _dim)));
   }|]
 
+tensor_split_ll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr TensorList)
+tensor_split_ll _obj _split_size _dim =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).split(
+    $(int64_t _split_size)
+  , $(int64_t _dim)));
+  }|]
+
+tensor_split_with_sizes_ll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Int64
+  -> IO (Ptr TensorList)
+tensor_split_with_sizes_ll _obj _split_sizes _dim =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).split_with_sizes(
+    *$(std::vector<int64_t>* _split_sizes)
+  , $(int64_t _dim)));
+  }|]
+
 tensor_squeeze
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -2637,6 +2695,15 @@ tensor_numel
 tensor_numel _obj =
   [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).numel(
     );
+  }|]
+
+tensor_unbind_l
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr TensorList)
+tensor_unbind_l _obj _dim =
+  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>((*$(at::Tensor* _obj)).unbind(
+    $(int64_t _dim)));
   }|]
 
 tensor_to_sparse_l

@@ -26,4 +26,11 @@ int main() {
   const int64_t dims[3] = {4, 5, 2};
   std::cout << wrap_rand(dims, 3) << std::endl;
   std::cout << wrap_eye(3) << std::endl;
+
+  auto a = torch::ones({4,3},torch::requires_grad());
+  auto b = torch::ones({4,3},torch::requires_grad());
+  auto c = at::add(a,b,1);
+  std::cout << c[0][0] << std::endl;
+  c.backward();
+  std::cout << a.grad() << std::endl;
 }

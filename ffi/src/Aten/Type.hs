@@ -23,6 +23,7 @@ import Foreign
 type ScalarType = Int8
 type DeviceType = Int16
 type Backend = CInt
+type Layout = Int8
 
 data Tensor
 data Scalar
@@ -64,4 +65,5 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,float,int>", [t|(Tensor,Tensor,CFloat,CInt)|])
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", [t|(Tensor,Tensor,Tensor,Int64)|])
       , (C.TypeName "at::Backend", [t|Backend|])
+      , (C.TypeName "at::Layout", [t|Layout|])
     ]

@@ -46,6 +46,12 @@ library
                     , Aten.Managed.Type.StdString
                     , Aten.Managed.Type.StdArray
                     , Aten.Managed.Type.Extra
+                    , Torch.Unmanaged.NN
+                    , Torch.Unmanaged.TH
+                    , Torch.Unmanaged.Native
+                    , Torch.Managed.NN
+                    , Torch.Managed.TH
+                    , Torch.Managed.Native
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
@@ -60,6 +66,7 @@ library
                     , iomp5
                     , mklml
                     , caffe2
+                    , torch
  ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0
  cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0
  cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0
@@ -76,14 +83,18 @@ executable ffi-test
                      , inline-c
                      , optparse-applicative >= 0.14.3.0
                      , containers
-                     , ffi
                      , safe-exceptions
   ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0
   cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0
   cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0
-  extra-libraries:    torch
- extensions:          Strict
-                    , StrictData
+  extra-libraries:     stdc++
+                     , c10
+                     , iomp5
+                     , mklml
+                     , caffe2
+                     , torch
+  extensions:          Strict
+                     , StrictData
 
 test-suite spec
   type:            exitcode-stdio-1.0
@@ -91,6 +102,7 @@ test-suite spec
   main-is:         Spec.hs
   other-modules:   BasicSpec
                  , MemorySpec
+                 , BackwardSpec
   default-language: Haskell2010
   build-depends:       base >= 4.7 && < 5
                      , inline-c-cpp >= 0.3.0.1

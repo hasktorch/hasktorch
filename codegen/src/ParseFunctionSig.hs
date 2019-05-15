@@ -74,6 +74,8 @@ data Parsable
     | CppString
     | Tuple [Parsable]
     | CppClass SignatureStr CppTypeStr HsTypeStr
+    | Backend
+    | Layout
     deriving (Eq, Show, Generic)
 
 data CType
@@ -224,6 +226,10 @@ identifier = (lexm . try) (p >>= check)
 -- TenType ScalarType
 -- >>> parseTest typ "SparseTensorRef"
 -- TenType SparseTensorRef
+-- >>> parseTest typ "Backend"
+-- Backend
+-- >>> parseTest typ "Layout"
+-- Layout
 -- >>> parseTest typ "Storage"
 -- StorageType
 -- >>> parseTest typ "Tensor"
@@ -291,6 +297,8 @@ typ =
     _ <- lexm $ string ")"
     pure $ Tuple val'
   other =
+    ((lexm $ string "Backend") >> (pure $ Backend)) <|>
+    ((lexm $ string "Layout") >> (pure $ Layout)) <|>
     ((lexm $ string "Device") >> (pure $ DeviceType)) <|>
     ((lexm $ string "Generator *") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType)) <|>

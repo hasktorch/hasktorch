@@ -57,6 +57,26 @@ decodeAndCodeGen basedir fileName = do
         template False "Aten.Unmanaged.Native" $
         renderFunctions False True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
 
+      createDirectoryIfMissing True (basedir <> "/Torch/Managed")
+      createDirectoryIfMissing True (basedir <> "/Torch/Unmanaged")
+      T.writeFile (basedir <> "/Torch/Managed/NN.hs") $
+        template True "Torch.Managed.NN" (renderFunctions True False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just False) fns))
+      T.writeFile (basedir <> "/Torch/Managed/TH.hs") $
+        template True "Torch.Managed.TH" (renderFunctions True True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just False) fns))
+      T.writeFile (basedir <> "/Torch/Managed/Native.hs") $
+        template True "Torch.Managed.Native" $
+        renderFunctions True True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just False) fns)
+      T.writeFile (basedir <> "/Torch/Unmanaged/NN.hs") $
+        template False "Torch.Unmanaged.NN" (renderFunctions False False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just False) fns))
+      T.writeFile (basedir <> "/Torch/Unmanaged/TH.hs") $
+        template False "Torch.Unmanaged.TH" (renderFunctions False True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just False) fns))
+      T.writeFile (basedir <> "/Torch/Unmanaged/Native.hs") $
+        template False "Torch.Unmanaged.Native" $
+        renderFunctions False True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just False) fns)
+
+
+
+
 renderImport :: Bool -> Text-> Text
 renderImport is_managed module_name =  if is_managed then  [st|
 import Foreign.C.String
@@ -139,6 +159,7 @@ import Foreign
 type ScalarType = Int8
 type DeviceType = Int16
 type Backend = CInt
+type Layout = Int8
 
 data Tensor
 data Scalar
@@ -180,5 +201,6 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,float,int>", #{bra}t|(Tensor,Tensor,CFloat,CInt)|#{cket})
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", #{bra}t|(Tensor,Tensor,Tensor,Int64)|#{cket})
       , (C.TypeName "at::Backend", #{bra}t|Backend|#{cket})
+      , (C.TypeName "at::Layout", #{bra}t|Layout|#{cket})
     ]
 |]

@@ -38,6 +38,30 @@ newTensorOptions_D _d =
     $(at::DeviceType _d));
   }|]
 
+newTensorOptions_B
+  :: Backend
+  -> IO (Ptr TensorOptions)
+newTensorOptions_B _d =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
+    $(at::Backend _d));
+  }|]
+
+newTensorOptions_s
+  :: ScalarType
+  -> IO (Ptr TensorOptions)
+newTensorOptions_s _d =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
+    $(at::ScalarType _d));
+  }|]
+
+newTensorOptions_L
+  :: Layout
+  -> IO (Ptr TensorOptions)
+newTensorOptions_L _d =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
+    $(at::Layout _d));
+  }|]
+
 
 
 deleteTensorOptions :: Ptr TensorOptions -> IO ()
@@ -48,12 +72,145 @@ instance CppObject TensorOptions where
 
 
 
+tensorOptions_device_D
+  :: Ptr TensorOptions
+  -> DeviceType
+  -> IO (Ptr TensorOptions)
+tensorOptions_device_D _obj _device =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).device(
+    $(at::DeviceType _device)));
+  }|]
+
+tensorOptions_device_index_s
+  :: Ptr TensorOptions
+  -> Int16
+  -> IO (Ptr TensorOptions)
+tensorOptions_device_index_s _obj _device_index =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).device_index(
+    $(int16_t _device_index)));
+  }|]
+
 tensorOptions_dtype_s
   :: Ptr TensorOptions
   -> ScalarType
   -> IO (Ptr TensorOptions)
-tensorOptions_dtype_s _obj _t =
+tensorOptions_dtype_s _obj _dtype =
   [C.throwBlock| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).dtype(
-    $(at::ScalarType _t)));
+    $(at::ScalarType _dtype)));
+  }|]
+
+tensorOptions_dtype
+  :: Ptr TensorOptions
+  -> IO (Ptr TensorOptions)
+tensorOptions_dtype _obj =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).dtype(
+    ));
+  }|]
+
+tensorOptions_layout_L
+  :: Ptr TensorOptions
+  -> Layout
+  -> IO (Ptr TensorOptions)
+tensorOptions_layout_L _obj _layout =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).layout(
+    $(at::Layout _layout)));
+  }|]
+
+tensorOptions_requires_grad_b
+  :: Ptr TensorOptions
+  -> CBool
+  -> IO (Ptr TensorOptions)
+tensorOptions_requires_grad_b _obj _requires_grad =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).requires_grad(
+    $(bool _requires_grad)));
+  }|]
+
+tensorOptions_is_variable_b
+  :: Ptr TensorOptions
+  -> CBool
+  -> IO (Ptr TensorOptions)
+tensorOptions_is_variable_b _obj _is_variable =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions((*$(at::TensorOptions* _obj)).is_variable(
+    $(bool _is_variable)));
+  }|]
+
+tensorOptions_has_device
+  :: Ptr TensorOptions
+  -> IO (CBool)
+tensorOptions_has_device _obj =
+  [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).has_device(
+    );
+  }|]
+
+tensorOptions_device_index
+  :: Ptr TensorOptions
+  -> IO (Int32)
+tensorOptions_device_index _obj =
+  [C.throwBlock| int32_t { return (*$(at::TensorOptions* _obj)).device_index(
+    );
+  }|]
+
+tensorOptions_has_dtype
+  :: Ptr TensorOptions
+  -> IO (CBool)
+tensorOptions_has_dtype _obj =
+  [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).has_dtype(
+    );
+  }|]
+
+tensorOptions_layout
+  :: Ptr TensorOptions
+  -> IO (Layout)
+tensorOptions_layout _obj =
+  [C.throwBlock| at::Layout { return (*$(at::TensorOptions* _obj)).layout(
+    );
+  }|]
+
+tensorOptions_has_layout
+  :: Ptr TensorOptions
+  -> IO (CBool)
+tensorOptions_has_layout _obj =
+  [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).has_layout(
+    );
+  }|]
+
+tensorOptions_requires_grad
+  :: Ptr TensorOptions
+  -> IO (CBool)
+tensorOptions_requires_grad _obj =
+  [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).requires_grad(
+    );
+  }|]
+
+tensorOptions_has_requires_grad
+  :: Ptr TensorOptions
+  -> IO (CBool)
+tensorOptions_has_requires_grad _obj =
+  [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).has_requires_grad(
+    );
+  }|]
+
+tensorOptions_is_variable
+  :: Ptr TensorOptions
+  -> IO (CBool)
+tensorOptions_is_variable _obj =
+  [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).is_variable(
+    );
+  }|]
+
+tensorOptions_has_is_variable
+  :: Ptr TensorOptions
+  -> IO (CBool)
+tensorOptions_has_is_variable _obj =
+  [C.throwBlock| bool { return (*$(at::TensorOptions* _obj)).has_is_variable(
+    );
+  }|]
+
+tensorOptions_backend
+  :: Ptr TensorOptions
+  -> IO (Backend)
+tensorOptions_backend _obj =
+  [C.throwBlock| at::Backend { return (*$(at::TensorOptions* _obj)).backend(
+    );
   }|]
 

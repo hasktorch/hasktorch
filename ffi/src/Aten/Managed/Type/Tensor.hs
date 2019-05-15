@@ -132,6 +132,11 @@ tensor_has_storage
   -> IO (CBool)
 tensor_has_storage = cast1 Unmanaged.tensor_has_storage
 
+tensor_storage
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Storage)
+tensor_storage = cast1 Unmanaged.tensor_storage
+
 tensor_is_alias_of_t
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -151,10 +156,21 @@ tensor_toType_s
   -> IO (ForeignPtr Tensor)
 tensor_toType_s = cast2 Unmanaged.tensor_toType_s
 
+tensor_toBackend_B
+  :: ForeignPtr Tensor
+  -> Backend
+  -> IO (ForeignPtr Tensor)
+tensor_toBackend_B = cast2 Unmanaged.tensor_toBackend_B
+
 tensor_is_variable
   :: ForeignPtr Tensor
   -> IO (CBool)
 tensor_is_variable = cast1 Unmanaged.tensor_is_variable
+
+tensor_layout
+  :: ForeignPtr Tensor
+  -> IO (Layout)
+tensor_layout = cast1 Unmanaged.tensor_layout
 
 tensor_get_device
   :: ForeignPtr Tensor
@@ -527,6 +543,13 @@ tensor_ceil_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_ceil_ = cast1 Unmanaged.tensor_ceil_
+
+tensor_chunk_ll
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr TensorList)
+tensor_chunk_ll = cast3 Unmanaged.tensor_chunk_ll
 
 tensor_clamp_max_s
   :: ForeignPtr Tensor
@@ -1269,6 +1292,20 @@ tensor_softmax_l
   -> IO (ForeignPtr Tensor)
 tensor_softmax_l = cast2 Unmanaged.tensor_softmax_l
 
+tensor_split_ll
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr TensorList)
+tensor_split_ll = cast3 Unmanaged.tensor_split_ll
+
+tensor_split_with_sizes_ll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> Int64
+  -> IO (ForeignPtr TensorList)
+tensor_split_with_sizes_ll = cast3 Unmanaged.tensor_split_with_sizes_ll
+
 tensor_squeeze
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -1687,6 +1724,12 @@ tensor_numel
   :: ForeignPtr Tensor
   -> IO (Int64)
 tensor_numel = cast1 Unmanaged.tensor_numel
+
+tensor_unbind_l
+  :: ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr TensorList)
+tensor_unbind_l = cast2 Unmanaged.tensor_unbind_l
 
 tensor_to_sparse_l
   :: ForeignPtr Tensor

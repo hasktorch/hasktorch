@@ -68,6 +68,9 @@ testAutograd = do
         auto c = a + b;
         c.backward();
         std::cout << a << std::endl << b << std::endl << c << std::endl;
+        a.print();
+        b.print();
+        c.print();
     } |]
     [C.block| void {
         std::cout << "Hello torch!" << std::endl;

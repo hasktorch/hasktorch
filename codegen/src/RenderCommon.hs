@@ -91,6 +91,8 @@ parsableToCppType parsable =
     CppString -> "std::string"
     Tuple parsables -> [st|std::tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
     P.CppClass _ cpptype _ -> fromString cpptype
+    Backend -> "at::Backend"
+    Layout -> "at::Layout"
 
 
 ------ To Haskell Type ------
@@ -155,6 +157,8 @@ parsableToHsType parsable =
     CppString -> "StdString"
     Tuple parsables -> [st|(#{T.intercalate "," (map parsableToHsType parsables)})|]
     P.CppClass _ _ hstype -> fromString hstype
+    Backend -> "Backend"
+    Layout -> "Layout"
 
 
 ------ To initial characters ------
@@ -218,12 +222,16 @@ parsableToInitial parsable =
     CppString -> "s"
     Tuple _ -> "t"
     P.CppClass _ _ _ -> "c"
+    Backend -> "B"
+    Layout -> "L"
 
 isCType :: Parsable -> Bool
 isCType p =
   case p of
     TenType ScalarType -> True
     DeviceType -> True
+    Backend -> True
+    Layout -> True
     CType _ -> True
     Ptr _ -> True
     _ -> False
@@ -247,6 +255,8 @@ retToCppType parsable =
     CppString -> "std::string"
     Tuple parsables -> [st|tuple<#{T.intercalate "," (map parsableToCppType parsables)}>|]
     P.CppClass _ cpptype _ -> fromString cpptype
+    Backend -> "at::Backend"
+    Layout -> "at::Layout"
 
 
 

@@ -39,9 +39,6 @@ tensorList dims = do
 options :: DeviceType -> ScalarType -> IO (ForeignPtr TensorOptions)
 options dtype stype = join $ tensorOptions_dtype_s <$> newTensorOptions_D dtype <*> pure stype
 
-class Apr a where
-  ap :: (b -> IO a) -> IO b -> IO a
-
 ap1 fn a0  = join $ fn <$> a0
 ap2 fn a0 a1  = join $ fn <$> a0 <*> a1
 ap3 fn a0 a1 a2  = join $ fn <$> a0 <*> a1 <*> a2
@@ -158,6 +155,12 @@ spec = forM_ [
     e <- add_s' c d
     f <- addM_s' (addM' (add' a a) (pure b)) (pure d)
     allclose_ttddb e f (1e-05) (1e-08) 0 `shouldReturn` 1
+
+  it "TestAdd2" $ do
+    a <- new' ones_lo [3,4] dtype
+    b <- new' ones_lo [3,4] dtype
+    c <- add' a b
+    (at2 c 0 0 >>= tensor_item_double) `shouldReturn` 2
 
 -- void TestLoadsOfAdds(Type& type) {
 --   auto begin = std::chrono::high_resolution_clock::now();
