@@ -65,6 +65,7 @@ main = do
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/sparsetensorref.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/storage.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensorlist.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/context.yaml"
   RTL.decodeAndCodeGen (outputDir opts) (specFileTuple opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   pure ()

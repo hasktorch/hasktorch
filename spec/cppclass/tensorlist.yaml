@@ -1,6 +1,7 @@
 signature: TensorList
 cppname: std::vector<at::Tensor>
 hsname: TensorList
+functions: []
 constructors:
 - new() -> TensorList
 methods:

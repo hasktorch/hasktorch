@@ -25,9 +25,10 @@ import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
-C.include "<torch/torch.h>"
 C.include "<vector>"
+C.include "<ATen/ATen.h>"
+
+C.include "<torch/torch.h>"
 
 
 _th_set__tS
@@ -1277,42 +1278,6 @@ _th_mode_tlb
   -> IO (Ptr (Tensor,Tensor))
 _th_mode_tlb _self _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_th_mode(
-    *$(at::Tensor* _self)
-  , $(int64_t _dim)
-  , $(bool _keepdim)));
-  }|]
-
-_th_median_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-_th_median_t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_th_median(
-    *$(at::Tensor* _self)));
-  }|]
-
-_th_median_out_tttlb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Int64
-  -> CBool
-  -> IO (Ptr (Tensor,Tensor))
-_th_median_out_tttlb _values _indices _self _dim _keepdim =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_th_median_out(
-    *$(at::Tensor* _values)
-  , *$(at::Tensor* _indices)
-  , *$(at::Tensor* _self)
-  , $(int64_t _dim)
-  , $(bool _keepdim)));
-  }|]
-
-_th_median_tlb
-  :: Ptr Tensor
-  -> Int64
-  -> CBool
-  -> IO (Ptr (Tensor,Tensor))
-_th_median_tlb _self _dim _keepdim =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_th_median(
     *$(at::Tensor* _self)
   , $(int64_t _dim)
   , $(bool _keepdim)));
@@ -2598,27 +2563,27 @@ _th_dot_tt _self _tensor =
   , *$(at::Tensor* _tensor)));
   }|]
 
-_th_cross_out_tttl
+_th_cross_kernel_out_tttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Int64
   -> IO (Ptr Tensor)
-_th_cross_out_tttl _result _self _other _dim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_th_cross_out(
+_th_cross_kernel_out_tttl _result _self _other _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_th_cross_kernel_out(
     *$(at::Tensor* _result)
   , *$(at::Tensor* _self)
   , *$(at::Tensor* _other)
   , $(int64_t _dim)));
   }|]
 
-_th_cross_ttl
+_th_cross_kernel_ttl
   :: Ptr Tensor
   -> Ptr Tensor
   -> Int64
   -> IO (Ptr Tensor)
-_th_cross_ttl _self _other _dim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_th_cross(
+_th_cross_kernel_ttl _self _other _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_th_cross_kernel(
     *$(at::Tensor* _self)
   , *$(at::Tensor* _other)
   , $(int64_t _dim)));
@@ -3080,42 +3045,6 @@ _th_gels_tt _self _A =
   , *$(at::Tensor* _A)));
   }|]
 
-_th_trtrs_out_ttttbbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> CBool
-  -> CBool
-  -> CBool
-  -> IO (Ptr (Tensor,Tensor))
-_th_trtrs_out_ttttbbb _res1 _res2 _self _A _upper _transpose _unitriangular =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_th_trtrs_out(
-    *$(at::Tensor* _res1)
-  , *$(at::Tensor* _res2)
-  , *$(at::Tensor* _self)
-  , *$(at::Tensor* _A)
-  , $(bool _upper)
-  , $(bool _transpose)
-  , $(bool _unitriangular)));
-  }|]
-
-_th_trtrs_ttbbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> CBool
-  -> CBool
-  -> CBool
-  -> IO (Ptr (Tensor,Tensor))
-_th_trtrs_ttbbb _self _A _upper _transpose _unitriangular =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_th_trtrs(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _A)
-  , $(bool _upper)
-  , $(bool _transpose)
-  , $(bool _unitriangular)));
-  }|]
-
 _th_symeig_out_tttbb
   :: Ptr Tensor
   -> Ptr Tensor
@@ -3421,6 +3350,56 @@ _th_random__tp
 _th_random__tp _self _generator =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_th_random_(
     *$(at::Tensor* _self)
+  , $(at::Generator * _generator)));
+  }|]
+
+_th_multinomial_alias_setup_out_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (Tensor,Tensor))
+_th_multinomial_alias_setup_out_ttt _J _q _probs =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_th_multinomial_alias_setup_out(
+    *$(at::Tensor* _J)
+  , *$(at::Tensor* _q)
+  , *$(at::Tensor* _probs)));
+  }|]
+
+_th_multinomial_alias_setup_t
+  :: Ptr Tensor
+  -> IO (Ptr (Tensor,Tensor))
+_th_multinomial_alias_setup_t _probs =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_th_multinomial_alias_setup(
+    *$(at::Tensor* _probs)));
+  }|]
+
+_th_multinomial_alias_draw_out_tttlp
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Ptr Generator
+  -> IO (Ptr Tensor)
+_th_multinomial_alias_draw_out_tttlp _result _q _J _num_samples _generator =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_th_multinomial_alias_draw_out(
+    *$(at::Tensor* _result)
+  , *$(at::Tensor* _q)
+  , *$(at::Tensor* _J)
+  , $(int64_t _num_samples)
+  , $(at::Generator * _generator)));
+  }|]
+
+_th_multinomial_alias_draw_ttlp
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Ptr Generator
+  -> IO (Ptr Tensor)
+_th_multinomial_alias_draw_ttlp _q _J _num_samples _generator =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_th_multinomial_alias_draw(
+    *$(at::Tensor* _q)
+  , *$(at::Tensor* _J)
+  , $(int64_t _num_samples)
   , $(at::Generator * _generator)));
   }|]
 

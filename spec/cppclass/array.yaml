@@ -1,5 +1,6 @@
 name: std::array<bool,4>
 hstype: std::array<bool,4>
+functions: []
 constructors:
 - new(bool,bool,bool,bool) -> std::array<bool,4>
 methods:

@@ -22,6 +22,7 @@ import Aten.Managed.Type.Extra
 import Aten.Managed.Type.IntArray
 import Aten.Managed.Type.Scalar
 import Aten.Managed.Type.Tuple
+import Aten.Managed.Type.Context
 import Aten.Managed.Native
 
 intArray :: [Int64] -> IO (ForeignPtr IntArray)
@@ -37,7 +38,7 @@ tensorList dims = do
   return ary
 
 options :: DeviceType -> ScalarType -> IO (ForeignPtr TensorOptions)
-options dtype stype = join $ tensorOptions_dtype_s <$> newTensorOptions_D dtype <*> pure stype
+options dtype stype = join $ tensorOptions_dtype_s <$> device_D dtype <*> pure stype
 
 ap1 fn a0  = join $ fn <$> a0
 ap2 fn a0 a1  = join $ fn <$> a0 <*> a1

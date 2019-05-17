@@ -54,7 +54,7 @@ addM_s' a b = join $ A.add_tss <$> a <*> b <*> newScalar_d 1
 
 
 options :: DeviceType -> ScalarType -> IO (ForeignPtr TensorOptions)
-options dtype stype = ap2 tensorOptions_requires_grad_b (ap2 tensorOptions_dtype_s (newTensorOptions_D dtype) (pure stype)) (pure 1)
+options dtype stype = ap2 tensorOptions_requires_grad_b (ap2 tensorOptions_dtype_s (device_D dtype) (pure stype)) (pure 1)
 
 spec :: Spec
 spec = forM_ [

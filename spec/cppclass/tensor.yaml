@@ -1,6 +1,7 @@
 signature: Tensor
 cppname: at::Tensor
 hsname: Tensor
+functions: []
 constructors:
 - new() -> Tensor
 - new(Tensor x) -> Tensor
@@ -424,22 +425,22 @@ methods:
 - addcmul(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
 - addcdiv(Tensor  tensor1, Tensor  tensor2, Scalar value=1) -> Tensor
 - gels(Tensor  A) -> (Tensor,Tensor)
-- trtrs(Tensor  A, bool upper=true, bool transpose=false, bool unitriangular=false) -> (Tensor,Tensor)
+#- trtrs(Tensor  A, bool upper=true, bool transpose=false, bool unitriangular=false) -> (Tensor,Tensor)
 - symeig(bool eigenvectors=false, bool upper=true) -> (Tensor,Tensor)
 - eig(bool eigenvectors=false) -> (Tensor,Tensor)
 - svd(bool some=true, bool compute_uv=true) -> (Tensor,Tensor,Tensor)
 - cholesky(bool upper=false) -> Tensor
 - cholesky_solve(Tensor  input2, bool upper=false) -> Tensor
 - solve(Tensor  A) -> (Tensor,Tensor)
-- potri(bool upper=true) -> Tensor
+#- potri(bool upper=true) -> Tensor
 - pstrf(bool upper=true, Scalar tol=-1) -> (Tensor,Tensor)
 - qr() -> (Tensor,Tensor)
 - geqrf() -> (Tensor,Tensor)
 - orgqr(Tensor  input2) -> Tensor
 - ormqr(Tensor  input2, Tensor  input3, bool left=true, bool transpose=false) -> Tensor
-- btrifact(bool pivot=true) -> (Tensor,Tensor)
-- btrifact_with_info(bool pivot=true) -> (Tensor,Tensor,Tensor)
-- btrisolve(Tensor  LU_data, Tensor  LU_pivots) -> Tensor
+#- btrifact(bool pivot=true) -> (Tensor,Tensor)
+#- btrifact_with_info(bool pivot=true) -> (Tensor,Tensor,Tensor)
+#- btrisolve(Tensor  LU_data, Tensor  LU_pivots) -> Tensor
 - multinomial(int64_t num_samples, bool replacement=false, Generator * generator=nullptr) -> Tensor
 - lgamma() -> Tensor
 - digamma() -> Tensor

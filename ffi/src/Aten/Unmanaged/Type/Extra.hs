@@ -81,3 +81,4 @@ tensor_assign2_t
 tensor_assign2_t _obj _idx0 _idx1 _val  =
   [C.throwBlock| void { (*$(at::Tensor* _obj))[$(int64_t _idx0)][$(int64_t _idx1)] = *$(at::Tensor* _val); }|]
 
+

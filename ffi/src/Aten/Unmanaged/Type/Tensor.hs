@@ -3958,21 +3958,6 @@ tensor_gels_t _obj _A =
     *$(at::Tensor* _A)));
   }|]
 
-tensor_trtrs_tbbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> CBool
-  -> CBool
-  -> CBool
-  -> IO (Ptr (Tensor,Tensor))
-tensor_trtrs_tbbb _obj _A _upper _transpose _unitriangular =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).trtrs(
-    *$(at::Tensor* _A)
-  , $(bool _upper)
-  , $(bool _transpose)
-  , $(bool _unitriangular)));
-  }|]
-
 tensor_symeig_bb
   :: Ptr Tensor
   -> CBool
@@ -4033,15 +4018,6 @@ tensor_solve_t _obj _A =
     *$(at::Tensor* _A)));
   }|]
 
-tensor_potri_b
-  :: Ptr Tensor
-  -> CBool
-  -> IO (Ptr Tensor)
-tensor_potri_b _obj _upper =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).potri(
-    $(bool _upper)));
-  }|]
-
 tensor_pstrf_bs
   :: Ptr Tensor
   -> CBool
@@ -4091,35 +4067,6 @@ tensor_ormqr_ttbb _obj _input2 _input3 _left _transpose =
   , *$(at::Tensor* _input3)
   , $(bool _left)
   , $(bool _transpose)));
-  }|]
-
-tensor_btrifact_b
-  :: Ptr Tensor
-  -> CBool
-  -> IO (Ptr (Tensor,Tensor))
-tensor_btrifact_b _obj _pivot =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).btrifact(
-    $(bool _pivot)));
-  }|]
-
-tensor_btrifact_with_info_b
-  :: Ptr Tensor
-  -> CBool
-  -> IO (Ptr (Tensor,Tensor,Tensor))
-tensor_btrifact_with_info_b _obj _pivot =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).btrifact_with_info(
-    $(bool _pivot)));
-  }|]
-
-tensor_btrisolve_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_btrisolve_tt _obj _LU_data _LU_pivots =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).btrisolve(
-    *$(at::Tensor* _LU_data)
-  , *$(at::Tensor* _LU_pivots)));
   }|]
 
 tensor_multinomial_lbp
@@ -4437,4 +4384,6 @@ tensor_alias _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).alias(
     ));
   }|]
+
+
 

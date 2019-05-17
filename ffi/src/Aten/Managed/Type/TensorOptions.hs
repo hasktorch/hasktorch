@@ -32,25 +32,10 @@ import qualified Aten.Unmanaged.Type.TensorOptions as Unmanaged
 
 
 
-newTensorOptions_D
-  :: DeviceType
-  -> IO (ForeignPtr TensorOptions)
-newTensorOptions_D = cast1 Unmanaged.newTensorOptions_D
-
-newTensorOptions_B
-  :: Backend
-  -> IO (ForeignPtr TensorOptions)
-newTensorOptions_B = cast1 Unmanaged.newTensorOptions_B
-
 newTensorOptions_s
   :: ScalarType
   -> IO (ForeignPtr TensorOptions)
 newTensorOptions_s = cast1 Unmanaged.newTensorOptions_s
-
-newTensorOptions_L
-  :: Layout
-  -> IO (ForeignPtr TensorOptions)
-newTensorOptions_L = cast1 Unmanaged.newTensorOptions_L
 
 
 
@@ -146,4 +131,31 @@ tensorOptions_backend
   :: ForeignPtr TensorOptions
   -> IO (Backend)
 tensorOptions_backend = cast1 Unmanaged.tensorOptions_backend
+
+
+
+dtype_s
+  :: ScalarType
+  -> IO (ForeignPtr TensorOptions)
+dtype_s = cast1 Unmanaged.dtype_s
+
+layout_L
+  :: Layout
+  -> IO (ForeignPtr TensorOptions)
+layout_L = cast1 Unmanaged.layout_L
+
+device_D
+  :: DeviceType
+  -> IO (ForeignPtr TensorOptions)
+device_D = cast1 Unmanaged.device_D
+
+device_index_s
+  :: Int16
+  -> IO (ForeignPtr TensorOptions)
+device_index_s = cast1 Unmanaged.device_index_s
+
+requires_grad_b
+  :: CBool
+  -> IO (ForeignPtr TensorOptions)
+requires_grad_b = cast1 Unmanaged.requires_grad_b
 

@@ -25,9 +25,10 @@ import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
-C.include "<torch/torch.h>"
 C.include "<vector>"
+C.include "<ATen/ATen.h>"
+
+C.include "<torch/torch.h>"
 
 
 _cudnn_init_dropout_state_dblo
@@ -134,6 +135,20 @@ empty_lo _size _options =
   , *$(at::TensorOptions* _options)));
   }|]
 
+_empty_affine_quantized_lodl
+  :: Ptr IntArray
+  -> Ptr TensorOptions
+  -> CDouble
+  -> Int64
+  -> IO (Ptr Tensor)
+_empty_affine_quantized_lodl _size _options _scale _zero_point =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_empty_affine_quantized(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)
+  , $(double _scale)
+  , $(int64_t _zero_point)));
+  }|]
+
 empty_like_to
   :: Ptr Tensor
   -> Ptr TensorOptions
@@ -199,6 +214,20 @@ full_like_tso _self _fill_value _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::full_like(
     *$(at::Tensor* _self)
   , *$(at::Scalar* _fill_value)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+from_file_sblo
+  :: Ptr StdString
+  -> CBool
+  -> Int64
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+from_file_sblo _filename _shared _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::from_file(
+    *$(std::string* _filename)
+  , $(bool _shared)
+  , $(int64_t _size)
   , *$(at::TensorOptions* _options)));
   }|]
 
@@ -290,17 +319,19 @@ linspace_sslo _start _end _steps _options =
   , *$(at::TensorOptions* _options)));
   }|]
 
-logspace_sslo
+logspace_ssldo
   :: Ptr Scalar
   -> Ptr Scalar
   -> Int64
+  -> CDouble
   -> Ptr TensorOptions
   -> IO (Ptr Tensor)
-logspace_sslo _start _end _steps _options =
+logspace_ssldo _start _end _steps _base _options =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::logspace(
     *$(at::Scalar* _start)
   , *$(at::Scalar* _end)
   , $(int64_t _steps)
+  , $(double _base)
   , *$(at::TensorOptions* _options)));
   }|]
 

@@ -72,6 +72,8 @@ instance CppObject #{PC.hsname typ_} where
 renderMethods :: Bool -> PC.CppClassSpec -> Text
 renderMethods is_managed typ_ = mconcat $ map (methodToCpp typ_ False is_managed True "" "") (PC.methods typ_)
 
+renderFunctions :: Bool -> PC.CppClassSpec -> Text
+renderFunctions is_managed typ_ = mconcat $ map (functionToCpp is_managed True "at::" "") (PC.functions typ_)
 
 decodeAndCodeGen :: String -> String -> IO ()
 decodeAndCodeGen basedir fileName = do
@@ -108,5 +110,7 @@ module #{module_name} where
 #{renderDestructor is_managed types}
 
 #{renderMethods is_managed types}
+
+#{renderFunctions is_managed types}
 |]
 

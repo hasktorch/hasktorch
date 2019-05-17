@@ -1,11 +1,17 @@
 signature: TensorOptions
 cppname: at::TensorOptions
 hsname: TensorOptions
+functions:
+- dtype(ScalarType dtype) -> TensorOptions
+- layout(Layout layout) -> TensorOptions
+- device(Device device) -> TensorOptions
+- device_index(int16_t device_index) -> TensorOptions
+- requires_grad(bool requires_grad) -> TensorOptions
 constructors:
-- new(Device d) -> TensorOptions
-- new(Backend d) -> TensorOptions
+#- new(Device d) -> TensorOptions
+#- new(Backend d) -> TensorOptions
 - new(ScalarType d) -> TensorOptions
-- new(Layout d) -> TensorOptions
+#- new(Layout d) -> TensorOptions
 methods:
 #- operator==(TensorOptions other) -> bool
 #- operator!=(TensorOptions other) -> bool

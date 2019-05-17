@@ -42,6 +42,7 @@ tenTypeToCppType tentype =
     IntegerTensor -> "at::Tensor"
     BoolTensor -> "at::Tensor"
     BoolTensorQ -> "at::Tensor"
+    ByteTensor -> "at::Tensor"
     LongTensor -> "at::Tensor"
 -- In libtorch, IntList is at::IntArrayRef. at::IntArrayRef is refernece-type supporting various array-types.
 -- When we use at::IntArrayRef directly, it is diffcult to manage memory by GHC.
@@ -113,6 +114,7 @@ tenTypeToHsType tentype =
     IndexTensor -> "Tensor"
     BoolTensor -> "Tensor"
     BoolTensorQ -> "Tensor"
+    ByteTensor -> "Tensor"
     LongTensor -> "Tensor"
 --    IntList _ -> "IntArrayRef"
     IntList _ -> "IntArray"
@@ -179,6 +181,7 @@ tenTypeToInitial tentype =
     IntegerTensor -> "t"
     BoolTensor -> "t"
     BoolTensorQ -> "t"
+    ByteTensor -> "t"
     LongTensor -> "L"
     IntList _ -> "l"
     ScalarQ -> "s"
@@ -315,7 +318,7 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
       else [st|*$(#{parsableToCppType (ptype p)}* _#{pname p})|]
     type_initials :: Text --- This is for avoding c++ overload arguments.
     type_initials =
-      if add_type_initials
+      if add_type_initials && length parameters' > 0
       then "_" <> (mconcat $ flip map parameters' $ \p -> parsableToInitial (ptype p))
       else ""
     pointer :: Text

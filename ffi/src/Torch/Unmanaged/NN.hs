@@ -25,9 +25,10 @@ import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
-C.include "<torch/torch.h>"
 C.include "<vector>"
+C.include "<ATen/ATen.h>"
+
+C.include "<torch/torch.h>"
 
 
 _thnn_binary_cross_entropy_forward_out
@@ -1212,106 +1213,6 @@ _thnn_adaptive_avg_pool3d_backward _grad_output _self =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_thnn_adaptive_avg_pool3d_backward(
     *$(at::Tensor* _grad_output)
   , *$(at::Tensor* _self)));
-  }|]
-
-_thnn_adaptive_max_pool2d_forward_out
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr (Tensor,Tensor))
-_thnn_adaptive_max_pool2d_forward_out _output _indices _self _output_size =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_thnn_adaptive_max_pool2d_forward_out(
-    *$(at::Tensor* _output)
-  , *$(at::Tensor* _indices)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)));
-  }|]
-
-_thnn_adaptive_max_pool2d_forward
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr (Tensor,Tensor))
-_thnn_adaptive_max_pool2d_forward _self _output_size =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_thnn_adaptive_max_pool2d_forward(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)));
-  }|]
-
-_thnn_adaptive_max_pool2d_backward_out
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-_thnn_adaptive_max_pool2d_backward_out _grad_input _grad_output _self _indices =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_thnn_adaptive_max_pool2d_backward_out(
-    *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_output)
-  , *$(at::Tensor* _self)
-  , *$(at::Tensor* _indices)));
-  }|]
-
-_thnn_adaptive_max_pool2d_backward
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-_thnn_adaptive_max_pool2d_backward _grad_output _self _indices =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_thnn_adaptive_max_pool2d_backward(
-    *$(at::Tensor* _grad_output)
-  , *$(at::Tensor* _self)
-  , *$(at::Tensor* _indices)));
-  }|]
-
-_thnn_adaptive_max_pool3d_forward_out
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr (Tensor,Tensor))
-_thnn_adaptive_max_pool3d_forward_out _output _indices _self _output_size =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_thnn_adaptive_max_pool3d_forward_out(
-    *$(at::Tensor* _output)
-  , *$(at::Tensor* _indices)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)));
-  }|]
-
-_thnn_adaptive_max_pool3d_forward
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr (Tensor,Tensor))
-_thnn_adaptive_max_pool3d_forward _self _output_size =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(torch::_thnn_adaptive_max_pool3d_forward(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)));
-  }|]
-
-_thnn_adaptive_max_pool3d_backward_out
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-_thnn_adaptive_max_pool3d_backward_out _grad_input _grad_output _self _indices =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_thnn_adaptive_max_pool3d_backward_out(
-    *$(at::Tensor* _grad_input)
-  , *$(at::Tensor* _grad_output)
-  , *$(at::Tensor* _self)
-  , *$(at::Tensor* _indices)));
-  }|]
-
-_thnn_adaptive_max_pool3d_backward
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-_thnn_adaptive_max_pool3d_backward _grad_output _self _indices =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_thnn_adaptive_max_pool3d_backward(
-    *$(at::Tensor* _grad_output)
-  , *$(at::Tensor* _self)
-  , *$(at::Tensor* _indices)));
   }|]
 
 _thnn_avg_pool2d_forward_out

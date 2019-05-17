@@ -43,42 +43,42 @@ decodeAndCodeGen basedir fileName = do
       T.writeFile (basedir <> "/Aten/Type.hs") $
         typeTemplate
       T.writeFile (basedir <> "/Aten/Managed/NN.hs") $
-        template True "Aten.Managed.NN" (renderFunctions True False "at::" (filter (\a -> D.mode a == D.NN) fns))
+        template False True "Aten.Managed.NN" (renderFunctions True False "at::" (filter (\a -> D.mode a == D.NN) fns))
       T.writeFile (basedir <> "/Aten/Managed/TH.hs") $
-        template True "Aten.Managed.TH" (renderFunctions True True "at::" (filter (\a -> D.mode a == D.TH) fns))
+        template False True "Aten.Managed.TH" (renderFunctions True True "at::" (filter (\a -> D.mode a == D.TH) fns))
       T.writeFile (basedir <> "/Aten/Managed/Native.hs") $
-        template True "Aten.Managed.Native" $
+        template False True "Aten.Managed.Native" $
         renderFunctions True True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
       T.writeFile (basedir <> "/Aten/Unmanaged/NN.hs") $
-        template False "Aten.Unmanaged.NN" (renderFunctions False False "at::" (filter (\a -> D.mode a == D.NN) fns))
+        template False False "Aten.Unmanaged.NN" (renderFunctions False False "at::" (filter (\a -> D.mode a == D.NN) fns))
       T.writeFile (basedir <> "/Aten/Unmanaged/TH.hs") $
-        template False "Aten.Unmanaged.TH" (renderFunctions False True "at::" (filter (\a -> D.mode a == D.TH) fns))
+        template False False "Aten.Unmanaged.TH" (renderFunctions False True "at::" (filter (\a -> D.mode a == D.TH) fns))
       T.writeFile (basedir <> "/Aten/Unmanaged/Native.hs") $
-        template False "Aten.Unmanaged.Native" $
+        template False False "Aten.Unmanaged.Native" $
         renderFunctions False True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
 
       createDirectoryIfMissing True (basedir <> "/Torch/Managed")
       createDirectoryIfMissing True (basedir <> "/Torch/Unmanaged")
       T.writeFile (basedir <> "/Torch/Managed/NN.hs") $
-        template True "Torch.Managed.NN" (renderFunctions True False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just False) fns))
+        template True True "Torch.Managed.NN" (renderFunctions True False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just False) fns))
       T.writeFile (basedir <> "/Torch/Managed/TH.hs") $
-        template True "Torch.Managed.TH" (renderFunctions True True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just False) fns))
+        template True True "Torch.Managed.TH" (renderFunctions True True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just False) fns))
       T.writeFile (basedir <> "/Torch/Managed/Native.hs") $
-        template True "Torch.Managed.Native" $
+        template True True "Torch.Managed.Native" $
         renderFunctions True True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just False) fns)
       T.writeFile (basedir <> "/Torch/Unmanaged/NN.hs") $
-        template False "Torch.Unmanaged.NN" (renderFunctions False False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just False) fns))
+        template True False "Torch.Unmanaged.NN" (renderFunctions False False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just False) fns))
       T.writeFile (basedir <> "/Torch/Unmanaged/TH.hs") $
-        template False "Torch.Unmanaged.TH" (renderFunctions False True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just False) fns))
+        template True False "Torch.Unmanaged.TH" (renderFunctions False True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just False) fns))
       T.writeFile (basedir <> "/Torch/Unmanaged/Native.hs") $
-        template False "Torch.Unmanaged.Native" $
+        template True False "Torch.Unmanaged.Native" $
         renderFunctions False True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just False) fns)
 
 
 
 
-renderImport :: Bool -> Text-> Text
-renderImport is_managed module_name =  if is_managed then  [st|
+renderImport :: Bool -> Bool -> Text -> Text
+renderImport is_torch_factory_method is_managed module_name =  if is_managed then  [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
@@ -112,12 +112,15 @@ import qualified Data.Map as Map
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
-C.include "<ATen/ATen.h>"
 C.include "<vector>"
-|]
+C.include "<ATen/ATen.h>"
+|] <> if is_torch_factory_method then [st|
+C.include "<torch/torch.h>"
+|] else ""
 
-template :: Bool -> Text -> Text -> Text
-template is_managed module_name functions = [st|
+
+template :: Bool -> Bool -> Text -> Text -> Text
+template is_torch_factory_method is_managed module_name functions = [st|
 -- generated by using spec/Declarations.yaml
 
 {-# LANGUAGE DataKinds #-}
@@ -129,7 +132,7 @@ template is_managed module_name functions = [st|
 
 module #{module_name} where
 
-#{renderImport is_managed module_name}
+#{renderImport is_torch_factory_method is_managed module_name}
 #{functions}
 |]
 
@@ -174,6 +177,7 @@ data StdArray a b
 data StdString
 data Generator
 data Device
+data Context
 
 typeTable = Map.fromList [
         (C.TypeName "at::Scalar", #{bra}t|Scalar|#{cket})
@@ -202,5 +206,6 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", #{bra}t|(Tensor,Tensor,Tensor,Int64)|#{cket})
       , (C.TypeName "at::Backend", #{bra}t|Backend|#{cket})
       , (C.TypeName "at::Layout", #{bra}t|Layout|#{cket})
+      , (C.TypeName "at::Context", #{bra}t|Context|#{cket})
     ]
 |]

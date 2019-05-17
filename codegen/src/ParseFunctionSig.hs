@@ -114,6 +114,7 @@ data TenType = Scalar
     | IndexTensor
     | BoolTensor
     | BoolTensorQ
+    | ByteTensor
     | LongTensor
     | IntList { dim :: Maybe [Int] }
     | ScalarQ
@@ -192,6 +193,8 @@ identifier = (lexm . try) (p >>= check)
 -- TenType BoolTensor
 -- >>> parseTest typ "BoolTensor?"
 -- TenType BoolTensorQ
+-- >>> parseTest typ "ByteTensor"
+-- TenType ByteTensor
 -- >>> parseTest typ "Device"
 -- DeviceType
 -- >>> parseTest typ "Generator*"
@@ -279,6 +282,7 @@ typ =
   tuple <|>
   idxtensor <|>
   booltensorq <|> booltensor <|>
+  bytetensor <|>
   tensor <|>
   intlistDim <|> intlistNoDim <|>
   intpDim <|> intpNoDim <|>
@@ -321,6 +325,9 @@ typ =
   booltensorq = do
     _ <- lexm $ string "BoolTensor?"
     pure $ TenType BoolTensorQ
+  bytetensor = do
+    _ <- lexm $ string "ByteTensor"
+    pure $ TenType ByteTensor
   tensor =
     ((lexm $ string "IntegerTensor") >> (pure $ TenType IntegerTensor)) <|>
     ((lexm $ string "TensorOptions") >> (pure $ TenType TensorOptions)) <|>

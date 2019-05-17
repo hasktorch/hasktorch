@@ -769,27 +769,6 @@ _th_mode_tlb
   -> IO (ForeignPtr (Tensor,Tensor))
 _th_mode_tlb = cast3 Unmanaged._th_mode_tlb
 
-_th_median_t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-_th_median_t = cast1 Unmanaged._th_median_t
-
-_th_median_out_tttlb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> Int64
-  -> CBool
-  -> IO (ForeignPtr (Tensor,Tensor))
-_th_median_out_tttlb = cast5 Unmanaged._th_median_out_tttlb
-
-_th_median_tlb
-  :: ForeignPtr Tensor
-  -> Int64
-  -> CBool
-  -> IO (ForeignPtr (Tensor,Tensor))
-_th_median_tlb = cast3 Unmanaged._th_median_tlb
-
 _th_sort_out_tttlb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1556,20 +1535,20 @@ _th_dot_tt
   -> IO (ForeignPtr Tensor)
 _th_dot_tt = cast2 Unmanaged._th_dot_tt
 
-_th_cross_out_tttl
+_th_cross_kernel_out_tttl
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr Tensor)
-_th_cross_out_tttl = cast4 Unmanaged._th_cross_out_tttl
+_th_cross_kernel_out_tttl = cast4 Unmanaged._th_cross_kernel_out_tttl
 
-_th_cross_ttl
+_th_cross_kernel_ttl
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr Tensor)
-_th_cross_ttl = cast3 Unmanaged._th_cross_ttl
+_th_cross_kernel_ttl = cast3 Unmanaged._th_cross_kernel_ttl
 
 _th_diag_out_ttl
   :: ForeignPtr Tensor
@@ -1831,26 +1810,6 @@ _th_gels_tt
   -> IO (ForeignPtr (Tensor,Tensor))
 _th_gels_tt = cast2 Unmanaged._th_gels_tt
 
-_th_trtrs_out_ttttbbb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr (Tensor,Tensor))
-_th_trtrs_out_ttttbbb = cast7 Unmanaged._th_trtrs_out_ttttbbb
-
-_th_trtrs_ttbbb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr (Tensor,Tensor))
-_th_trtrs_ttbbb = cast5 Unmanaged._th_trtrs_ttbbb
-
 _th_symeig_out_tttbb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -2029,6 +1988,35 @@ _th_random__tp
   -> Ptr Generator
   -> IO (ForeignPtr Tensor)
 _th_random__tp = cast2 Unmanaged._th_random__tp
+
+_th_multinomial_alias_setup_out_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr (Tensor,Tensor))
+_th_multinomial_alias_setup_out_ttt = cast3 Unmanaged._th_multinomial_alias_setup_out_ttt
+
+_th_multinomial_alias_setup_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr (Tensor,Tensor))
+_th_multinomial_alias_setup_t = cast1 Unmanaged._th_multinomial_alias_setup_t
+
+_th_multinomial_alias_draw_out_tttlp
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> Ptr Generator
+  -> IO (ForeignPtr Tensor)
+_th_multinomial_alias_draw_out_tttlp = cast5 Unmanaged._th_multinomial_alias_draw_out_tttlp
+
+_th_multinomial_alias_draw_ttlp
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> Ptr Generator
+  -> IO (ForeignPtr Tensor)
+_th_multinomial_alias_draw_ttlp = cast4 Unmanaged._th_multinomial_alias_draw_ttlp
 
 _th_multinomial_out_ttlbp
   :: ForeignPtr Tensor

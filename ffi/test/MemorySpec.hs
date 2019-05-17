@@ -13,6 +13,7 @@ import Aten.Type
 import Aten.Managed.Type.TensorOptions
 import Aten.Managed.Type.Tensor
 import Aten.Managed.Type.IntArray
+import Aten.Managed.Type.Context
 import Aten.Managed.Native
 
 import System.Mem ()
@@ -37,9 +38,10 @@ fromList dims = do
 
 newTensor_zeros :: (ForeignPtr IntArray) -> IO (ForeignPtr Tensor)
 newTensor_zeros dims = do
-    to <- newTensorOptions_D kCPU
-    tod <- tensorOptions_dtype_s to kByte
-    zeros_lo dims tod
+  flag <- hasCUDA
+  to <- device_D $ if flag == 0 then kCPU else kCUDA
+  tod <- tensorOptions_dtype_s to kByte
+  zeros_lo dims tod
 
 totalDim :: (ForeignPtr IntArray) -> IO Int64
 totalDim dims = do

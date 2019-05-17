@@ -92,6 +92,14 @@ empty_lo
   -> IO (ForeignPtr Tensor)
 empty_lo = cast2 Unmanaged.empty_lo
 
+_empty_affine_quantized_lodl
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> CDouble
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+_empty_affine_quantized_lodl = cast4 Unmanaged._empty_affine_quantized_lodl
+
 empty_like_to
   :: ForeignPtr Tensor
   -> ForeignPtr TensorOptions
@@ -131,6 +139,14 @@ full_like_tso
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 full_like_tso = cast3 Unmanaged.full_like_tso
+
+from_file_sblo
+  :: ForeignPtr StdString
+  -> CBool
+  -> Int64
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+from_file_sblo = cast4 Unmanaged.from_file_sblo
 
 hann_window_lo
   :: Int64
@@ -183,13 +199,14 @@ linspace_sslo
   -> IO (ForeignPtr Tensor)
 linspace_sslo = cast4 Unmanaged.linspace_sslo
 
-logspace_sslo
+logspace_ssldo
   :: ForeignPtr Scalar
   -> ForeignPtr Scalar
   -> Int64
+  -> CDouble
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
-logspace_sslo = cast4 Unmanaged.logspace_sslo
+logspace_ssldo = cast5 Unmanaged.logspace_ssldo
 
 ones_lo
   :: ForeignPtr IntArray

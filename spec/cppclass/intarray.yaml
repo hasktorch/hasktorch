@@ -1,6 +1,7 @@
 signature: IntArray
 cppname: std::vector<int64_t>
 hsname: IntArray
+functions: []
 constructors:
 - new() -> IntArray
 methods:

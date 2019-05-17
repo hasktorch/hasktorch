@@ -30,6 +30,7 @@ library
                     , Aten.Unmanaged.Type.TensorOptions
                     , Aten.Unmanaged.Type.StdString
                     , Aten.Unmanaged.Type.StdArray
+                    , Aten.Unmanaged.Type.Context
                     , Aten.Unmanaged.Type.Extra
                     , Aten.Managed.NN
                     , Aten.Managed.TH
@@ -45,6 +46,7 @@ library
                     , Aten.Managed.Type.TensorOptions
                     , Aten.Managed.Type.StdString
                     , Aten.Managed.Type.StdArray
+                    , Aten.Managed.Type.Context
                     , Aten.Managed.Type.Extra
                     , Torch.Unmanaged.NN
                     , Torch.Unmanaged.TH

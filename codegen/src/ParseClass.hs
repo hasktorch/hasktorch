@@ -18,6 +18,7 @@ data CppClassSpec = CppClassSpec
   , hsname :: String
   , constructors :: [S.Function]
   , methods :: [S.Function]
+  , functions :: [S.Function]
 } deriving (Show, Eq, Generic)
 
 instance FromJSON CppClassSpec

@@ -38,6 +38,7 @@ data StdArray a b
 data StdString
 data Generator
 data Device
+data Context
 
 typeTable = Map.fromList [
         (C.TypeName "at::Scalar", [t|Scalar|])
@@ -66,4 +67,5 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", [t|(Tensor,Tensor,Tensor,Int64)|])
       , (C.TypeName "at::Backend", [t|Backend|])
       , (C.TypeName "at::Layout", [t|Layout|])
+      , (C.TypeName "at::Context", [t|Context|])
     ]

@@ -30,36 +30,12 @@ C.include "<vector>"
 
 
 
-newTensorOptions_D
-  :: DeviceType
-  -> IO (Ptr TensorOptions)
-newTensorOptions_D _d =
-  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
-    $(at::DeviceType _d));
-  }|]
-
-newTensorOptions_B
-  :: Backend
-  -> IO (Ptr TensorOptions)
-newTensorOptions_B _d =
-  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
-    $(at::Backend _d));
-  }|]
-
 newTensorOptions_s
   :: ScalarType
   -> IO (Ptr TensorOptions)
 newTensorOptions_s _d =
   [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
     $(at::ScalarType _d));
-  }|]
-
-newTensorOptions_L
-  :: Layout
-  -> IO (Ptr TensorOptions)
-newTensorOptions_L _d =
-  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(
-    $(at::Layout _d));
   }|]
 
 
@@ -212,5 +188,47 @@ tensorOptions_backend
 tensorOptions_backend _obj =
   [C.throwBlock| at::Backend { return (*$(at::TensorOptions* _obj)).backend(
     );
+  }|]
+
+
+
+dtype_s
+  :: ScalarType
+  -> IO (Ptr TensorOptions)
+dtype_s _dtype =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(at::dtype(
+    $(at::ScalarType _dtype)));
+  }|]
+
+layout_L
+  :: Layout
+  -> IO (Ptr TensorOptions)
+layout_L _layout =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(at::layout(
+    $(at::Layout _layout)));
+  }|]
+
+device_D
+  :: DeviceType
+  -> IO (Ptr TensorOptions)
+device_D _device =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(at::device(
+    $(at::DeviceType _device)));
+  }|]
+
+device_index_s
+  :: Int16
+  -> IO (Ptr TensorOptions)
+device_index_s _device_index =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(at::device_index(
+    $(int16_t _device_index)));
+  }|]
+
+requires_grad_b
+  :: CBool
+  -> IO (Ptr TensorOptions)
+requires_grad_b _requires_grad =
+  [C.throwBlock| at::TensorOptions* { return new at::TensorOptions(at::requires_grad(
+    $(bool _requires_grad)));
   }|]
 

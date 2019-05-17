@@ -2535,15 +2535,6 @@ tensor_gels_t
   -> IO (ForeignPtr (Tensor,Tensor))
 tensor_gels_t = cast2 Unmanaged.tensor_gels_t
 
-tensor_trtrs_tbbb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr (Tensor,Tensor))
-tensor_trtrs_tbbb = cast5 Unmanaged.tensor_trtrs_tbbb
-
 tensor_symeig_bb
   :: ForeignPtr Tensor
   -> CBool
@@ -2583,12 +2574,6 @@ tensor_solve_t
   -> IO (ForeignPtr (Tensor,Tensor))
 tensor_solve_t = cast2 Unmanaged.tensor_solve_t
 
-tensor_potri_b
-  :: ForeignPtr Tensor
-  -> CBool
-  -> IO (ForeignPtr Tensor)
-tensor_potri_b = cast2 Unmanaged.tensor_potri_b
-
 tensor_pstrf_bs
   :: ForeignPtr Tensor
   -> CBool
@@ -2620,25 +2605,6 @@ tensor_ormqr_ttbb
   -> CBool
   -> IO (ForeignPtr Tensor)
 tensor_ormqr_ttbb = cast5 Unmanaged.tensor_ormqr_ttbb
-
-tensor_btrifact_b
-  :: ForeignPtr Tensor
-  -> CBool
-  -> IO (ForeignPtr (Tensor,Tensor))
-tensor_btrifact_b = cast2 Unmanaged.tensor_btrifact_b
-
-tensor_btrifact_with_info_b
-  :: ForeignPtr Tensor
-  -> CBool
-  -> IO (ForeignPtr (Tensor,Tensor,Tensor))
-tensor_btrifact_with_info_b = cast2 Unmanaged.tensor_btrifact_with_info_b
-
-tensor_btrisolve_tt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_btrisolve_tt = cast3 Unmanaged.tensor_btrisolve_tt
 
 tensor_multinomial_lbp
   :: ForeignPtr Tensor
@@ -2840,4 +2806,6 @@ tensor_alias
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_alias = cast1 Unmanaged.tensor_alias
+
+
 

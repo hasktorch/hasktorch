@@ -22,11 +22,13 @@ case "$(uname)" in
     USE_BINARY_FOR_CI="$1"
     if [ -z "$USE_BINARY_FOR_CI" ] ; then
       wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
+      unzip libtorch-shared-with-deps-latest.zip
+      rm libtorch-shared-with-deps-latest.zip
     else
-      wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.0.0.dev20190319/libtorch-shared-with-deps-latest.zip
+      wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.1.0/cpu-libtorch-shared-with-deps-latest.zip
+      unzip cpu-libtorch-shared-with-deps-latest.zip
+      rm cpu-libtorch-shared-with-deps-latest.zip
     fi
-    unzip libtorch-shared-with-deps-latest.zip
-    rm libtorch-shared-with-deps-latest.zip
     wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz
     tar -xzf mklml_lnx_2019.0.1.20181227.tgz
     rm -f mklml_lnx_2019.0.1.20181227.tgz

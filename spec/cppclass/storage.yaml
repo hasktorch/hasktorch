@@ -1,6 +1,7 @@
 signature: Storage
 cppname: at::Storage
 hsname: Storage
+functions: []
 constructors:
 - new() -> Storage
 methods: []

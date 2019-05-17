@@ -1,6 +1,7 @@
 signature: Scalar
 cppname: at::Scalar
 hsname: Scalar
+functions: []
 constructors:
 - new() -> Scalar
 - new(int a) -> Scalar
