@@ -1,0 +1,23 @@
+resolver: lts-13.2
+
+packages:
+- ffi/ffi/th/
+- ffi/ffi/thc/
+- ffi/types/th/
+- ffi/types/thc/
+- hasktorch/
+- indef/
+- signatures/
+- signatures/partial/
+- signatures/support/
+- signatures/types/
+
+extra-deps:
+- dimensions-1.0.1.1
+
+extra-include-dirs:
+  - ffi/deps/aten/build/include
+
+extra-lib-dirs:
+  - ffi/deps/aten/build/lib
+
