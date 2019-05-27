@@ -51,6 +51,26 @@ stack exec codegen-exe -- --help
 
 ## ffi testing (WIP)
 
+To run without repl:
+
+```
+#Download libtorch-binary
+pushd deps
+./get-deps.sh
+popd
+
+#Set environment variable(LD_LIBRARY_PATH)
+source setenv
+
+#Build and test with stack
+stack test
+
+#Build and test with cabal
+#setup cabal.project.freeze using stackage, extra-include-dirs and extra-lib-dirs for cabal
+./setup-cabal.sh
+cabal new-test all
+```
+
 To run (currently works in the repl):
 
 ```
