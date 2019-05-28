@@ -1,3 +1,5 @@
 packages:
     codegen/*.cabal
     ffi/*.cabal
+    inline-c/inline-c/*.cabal
+    inline-c/inline-c-cpp/*.cabal
