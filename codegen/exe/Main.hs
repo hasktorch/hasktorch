@@ -14,7 +14,6 @@ import qualified RenderClass as RC
 
 data Options = Options
     { specFileDL :: !String
-    , specFileTuple :: !String
     , outputDir :: !String
     } deriving Show
 
@@ -40,13 +39,6 @@ programOptions =
           <> O.help "Specification file of Declarations"
           )
     <*> O.strOption
-          (  O.long "tuple-spec"
-          <> O.short 't'
-          <> O.metavar "FILENAME"
-          <> O.value "spec/tuples.yaml"
-          <> O.help "Specification file of Tuples"
-          )
-    <*> O.strOption
           (  O.long "output-dir"
           <> O.short 'o'
           <> O.metavar "DIRNAME"
@@ -66,7 +58,7 @@ main = do
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/storage.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensorlist.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/context.yaml"
-  RTL.decodeAndCodeGen (outputDir opts) (specFileTuple opts)
+  RTL.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   pure ()
 

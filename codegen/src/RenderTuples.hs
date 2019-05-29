@@ -10,11 +10,14 @@ import Data.Yaml (ParseException)
 import qualified Data.Yaml as Y
 import Text.Shakespeare.Text (st)
 import Data.Text (Text)
+import Data.Maybe (mapMaybe)
+import Data.List (nubBy)
 import qualified Data.Text.IO as T
 import qualified Data.Text as T
 import System.Directory (createDirectoryIfMissing)
 
 import qualified ParseTuples as PT
+import qualified ParseDeclarations as D
 import ParseFunctionSig as P
 import RenderCommon
 
@@ -196,16 +199,26 @@ renderTuples False (x:xs) =
 
 decodeAndCodeGen :: String -> String -> IO ()
 decodeAndCodeGen basedir fileName = do
-  funcs <- Y.decodeFileEither fileName :: IO (Either ParseException [PT.Tuple])
-  case funcs of
+  maybe_decls <- Y.decodeFileEither fileName :: IO (Either ParseException [D.Declaration])
+  --funcs <- Y.decodeFileEither fileName :: IO (Either ParseException [PT.Tuple])
+  case maybe_decls of
     Left err' -> print err'
-    Right fns -> do
+    Right decls -> do
+      let tuples = nubBy tupleHsTypeEq $ mapMaybe (getTupleType . D.returns) decls
       createDirectoryIfMissing True (basedir <> "/Aten/Unmanaged/Type")
       T.writeFile (basedir <> "/Aten/Unmanaged/Type/Tuple.hs") $
-        template False "Aten.Unmanaged.Type.Tuple" fns
+        template False "Aten.Unmanaged.Type.Tuple" tuples
       createDirectoryIfMissing True (basedir <> "/Aten/Managed/Type")
       T.writeFile (basedir <> "/Aten/Managed/Type/Tuple.hs") $
-        template True "Aten.Managed.Type.Tuple" fns
+        template True "Aten.Managed.Type.Tuple" tuples
+  where
+    getTupleType :: [D.Type] -> Maybe PT.Tuple
+    getTupleType [] = Nothing
+    getTupleType [_] = Nothing
+    getTupleType rets = Just $ PT.Tuple $ map D.type2type rets
+
+    tupleHsTypeEq :: PT.Tuple -> PT.Tuple -> Bool
+    tupleHsTypeEq a b = (fmap parsableToHsType (PT.types a)) == (fmap parsableToHsType (PT.types b))
 
 
 template :: Bool -> Text -> [PT.Tuple] -> Text
