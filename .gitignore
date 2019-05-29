@@ -4,3 +4,5 @@ libtorch-test/build
 codegen/build/
 .ghc.environment*
 deps/mklml
+cabal.project.local
+cabal.project.freeze

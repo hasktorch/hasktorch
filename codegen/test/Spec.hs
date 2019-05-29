@@ -22,7 +22,7 @@ main = hspec $ do
 
 
 derivativesPath :: FilePath
-derivativesPath = "../spec/derivatives.yaml"
+derivativesPath = "../deps/pytorch/tools/autograd/derivatives.yaml"
 
 derivativesSpec :: Spec
 derivativesSpec = do
@@ -42,7 +42,7 @@ derivativesSpec = do
 vanillaParse :: FilePath -> IO [Y.Value]
 vanillaParse fp = do
   doesFileExist fp >>= \case
-    False -> throwString "Spec doesn't exist! Review README to get spec yaml"
+    False -> throwString $ "Spec " ++ fp ++ " doesn't exist! Review README to get spec yaml"
     True -> Y.decodeFileThrow fp
 
 
