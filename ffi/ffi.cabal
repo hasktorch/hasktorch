@@ -113,6 +113,7 @@ test-suite spec
                      , containers
                      , ffi
                      , hspec
+                     , hspec-discover
                      , safe-exceptions
   ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0
   cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0

@@ -2,7 +2,7 @@
 
 set -xe
 
-curl https://www.stackage.org/lts-13.23/cabal.config > cabal.project.freeze
+curl https://www.stackage.org/lts-13.23/cabal.config | grep -v inline-c > cabal.project.freeze
 
 cat <<EOF > cabal.project.local
 
