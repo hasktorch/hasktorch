@@ -28,27 +28,27 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import Aten.Type
-import Aten.Class
-import Aten.Cast
+import ATen.Type
+import ATen.Class
+import ATen.Cast
 
-import qualified Aten.Unmanaged.Type.Tuple as Unmanaged
-import Aten.Unmanaged.Type.Generator
-import Aten.Unmanaged.Type.IntArray
-import Aten.Unmanaged.Type.Scalar
-import Aten.Unmanaged.Type.SparseTensorRef
-import Aten.Unmanaged.Type.Storage
-import Aten.Unmanaged.Type.Tensor
-import Aten.Unmanaged.Type.TensorList
-import Aten.Unmanaged.Type.TensorOptions
-import Aten.Unmanaged.Type.Tuple
+import qualified ATen.Unmanaged.Type.Tuple as Unmanaged
+import ATen.Unmanaged.Type.Generator
+import ATen.Unmanaged.Type.IntArray
+import ATen.Unmanaged.Type.Scalar
+import ATen.Unmanaged.Type.SparseTensorRef
+import ATen.Unmanaged.Type.Storage
+import ATen.Unmanaged.Type.Tensor
+import ATen.Unmanaged.Type.TensorList
+import ATen.Unmanaged.Type.TensorOptions
+import ATen.Unmanaged.Type.Tuple
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import Aten.Type
-import Aten.Class
+import ATen.Type
+import ATen.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -205,12 +205,12 @@ decodeAndCodeGen basedir fileName = do
     Left err' -> print err'
     Right decls -> do
       let tuples = nubBy tupleHsTypeEq $ mapMaybe (getTupleType . D.returns) decls
-      createDirectoryIfMissing True (basedir <> "/Aten/Unmanaged/Type")
-      T.writeFile (basedir <> "/Aten/Unmanaged/Type/Tuple.hs") $
-        template False "Aten.Unmanaged.Type.Tuple" tuples
-      createDirectoryIfMissing True (basedir <> "/Aten/Managed/Type")
-      T.writeFile (basedir <> "/Aten/Managed/Type/Tuple.hs") $
-        template True "Aten.Managed.Type.Tuple" tuples
+      createDirectoryIfMissing True (basedir <> "/ATen/Unmanaged/Type")
+      T.writeFile (basedir <> "/ATen/Unmanaged/Type/Tuple.hs") $
+        template False "ATen.Unmanaged.Type.Tuple" tuples
+      createDirectoryIfMissing True (basedir <> "/ATen/Managed/Type")
+      T.writeFile (basedir <> "/ATen/Managed/Type/Tuple.hs") $
+        template True "ATen.Managed.Type.Tuple" tuples
   where
     getTupleType :: [D.Type] -> Maybe PT.Tuple
     getTupleType [] = Nothing

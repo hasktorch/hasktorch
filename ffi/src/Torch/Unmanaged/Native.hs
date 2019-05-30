@@ -14,8 +14,8 @@ module Torch.Unmanaged.Native where
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import Aten.Type
-import Aten.Class
+import ATen.Type
+import ATen.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C

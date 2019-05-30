@@ -12,18 +12,18 @@ import qualified Language.C.Inline.Cpp.Exceptions as C
 import Control.Monad (forM_,forM,join)
 import Data.Int
 import Foreign
-import Aten.Const
-import Aten.Type
-import Aten.Class
-import Aten.Managed.Type.TensorOptions
-import Aten.Managed.Type.Tensor
-import Aten.Managed.Type.TensorList
-import Aten.Managed.Type.Extra
-import Aten.Managed.Type.IntArray
-import Aten.Managed.Type.Scalar
-import Aten.Managed.Type.Tuple
-import Aten.Managed.Type.Context
-import Aten.Managed.Native
+import ATen.Const
+import ATen.Type
+import ATen.Class
+import ATen.Managed.Type.TensorOptions
+import ATen.Managed.Type.Tensor
+import ATen.Managed.Type.TensorList
+import ATen.Managed.Type.Extra
+import ATen.Managed.Type.IntArray
+import ATen.Managed.Type.Scalar
+import ATen.Managed.Type.Tuple
+import ATen.Managed.Type.Context
+import ATen.Managed.Native
 
 intArray :: [Int64] -> IO (ForeignPtr IntArray)
 intArray dims = do

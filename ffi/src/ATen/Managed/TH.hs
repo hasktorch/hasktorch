@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Torch.Managed.TH where
+module ATen.Managed.TH where
 
 
 import Foreign.C.String
@@ -17,7 +17,7 @@ import Foreign
 import ATen.Type
 import ATen.Class
 import ATen.Cast
-import qualified Torch.Unmanaged.TH as Unmanaged
+import qualified ATen.Unmanaged.TH as Unmanaged
 import ATen.Unmanaged.Type.Generator
 import ATen.Unmanaged.Type.IntArray
 import ATen.Unmanaged.Type.Scalar

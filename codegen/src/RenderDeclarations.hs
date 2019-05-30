@@ -39,22 +39,22 @@ decodeAndCodeGen basedir fileName = do
   case funcs of
     Left err' -> print err'
     Right fns -> do
-      createDirectoryIfMissing True (basedir <> "/Aten")
-      T.writeFile (basedir <> "/Aten/Type.hs") $
+      createDirectoryIfMissing True (basedir <> "/ATen")
+      T.writeFile (basedir <> "/ATen/Type.hs") $
         typeTemplate
-      T.writeFile (basedir <> "/Aten/Managed/NN.hs") $
-        template False True "Aten.Managed.NN" (renderFunctions True False "at::" (filter (\a -> D.mode a == D.NN) fns))
-      T.writeFile (basedir <> "/Aten/Managed/TH.hs") $
-        template False True "Aten.Managed.TH" (renderFunctions True True "at::" (filter (\a -> D.mode a == D.TH) fns))
-      T.writeFile (basedir <> "/Aten/Managed/Native.hs") $
-        template False True "Aten.Managed.Native" $
+      T.writeFile (basedir <> "/ATen/Managed/NN.hs") $
+        template False True "ATen.Managed.NN" (renderFunctions True False "at::" (filter (\a -> D.mode a == D.NN) fns))
+      T.writeFile (basedir <> "/ATen/Managed/TH.hs") $
+        template False True "ATen.Managed.TH" (renderFunctions True True "at::" (filter (\a -> D.mode a == D.TH) fns))
+      T.writeFile (basedir <> "/ATen/Managed/Native.hs") $
+        template False True "ATen.Managed.Native" $
         renderFunctions True True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
-      T.writeFile (basedir <> "/Aten/Unmanaged/NN.hs") $
-        template False False "Aten.Unmanaged.NN" (renderFunctions False False "at::" (filter (\a -> D.mode a == D.NN) fns))
-      T.writeFile (basedir <> "/Aten/Unmanaged/TH.hs") $
-        template False False "Aten.Unmanaged.TH" (renderFunctions False True "at::" (filter (\a -> D.mode a == D.TH) fns))
-      T.writeFile (basedir <> "/Aten/Unmanaged/Native.hs") $
-        template False False "Aten.Unmanaged.Native" $
+      T.writeFile (basedir <> "/ATen/Unmanaged/NN.hs") $
+        template False False "ATen.Unmanaged.NN" (renderFunctions False False "at::" (filter (\a -> D.mode a == D.NN) fns))
+      T.writeFile (basedir <> "/ATen/Unmanaged/TH.hs") $
+        template False False "ATen.Unmanaged.TH" (renderFunctions False True "at::" (filter (\a -> D.mode a == D.TH) fns))
+      T.writeFile (basedir <> "/ATen/Unmanaged/Native.hs") $
+        template False False "ATen.Unmanaged.Native" $
         renderFunctions False True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
 
       createDirectoryIfMissing True (basedir <> "/Torch/Managed")
@@ -82,27 +82,27 @@ renderImport is_torch_factory_method is_managed module_name =  if is_managed the
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import Aten.Type
-import Aten.Class
-import Aten.Cast
+import ATen.Type
+import ATen.Class
+import ATen.Cast
 import qualified #{replace "Managed" "Unmanaged" module_name} as Unmanaged
-import Aten.Unmanaged.Type.Generator
-import Aten.Unmanaged.Type.IntArray
-import Aten.Unmanaged.Type.Scalar
-import Aten.Unmanaged.Type.SparseTensorRef
-import Aten.Unmanaged.Type.Storage
-import Aten.Unmanaged.Type.Tensor
-import Aten.Unmanaged.Type.TensorList
-import Aten.Unmanaged.Type.TensorOptions
-import Aten.Unmanaged.Type.Tuple
-import Aten.Unmanaged.Type.StdString
-import Aten.Unmanaged.Type.StdArray
+import ATen.Unmanaged.Type.Generator
+import ATen.Unmanaged.Type.IntArray
+import ATen.Unmanaged.Type.Scalar
+import ATen.Unmanaged.Type.SparseTensorRef
+import ATen.Unmanaged.Type.Storage
+import ATen.Unmanaged.Type.Tensor
+import ATen.Unmanaged.Type.TensorList
+import ATen.Unmanaged.Type.TensorOptions
+import ATen.Unmanaged.Type.Tuple
+import ATen.Unmanaged.Type.StdString
+import ATen.Unmanaged.Type.StdArray
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import Aten.Type
-import Aten.Class
+import ATen.Type
+import ATen.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -147,7 +147,7 @@ typeTemplate = [st|
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Aten.Type where
+module ATen.Type where
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
