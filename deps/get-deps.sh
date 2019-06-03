@@ -8,9 +8,16 @@ set -eu
 
 case "$(uname)" in
   "Darwin")
-    wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.1.0.zip
-    unzip libtorch-macos-1.1.0.zip
-    rm libtorch-macos-1.1.0.zip
+    USE_BINARY_FOR_CI="$1"
+    if [ -z "$USE_BINARY_FOR_CI" ] ; then
+      wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.1.0.zip
+      unzip libtorch-macos-1.1.0.zip
+      rm libtorch-macos-1.1.0.zip
+    else
+      wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.1.0/cpu-libtorch-macos-latest.zip
+      unzip cpu-libtorch-macos-latest.zip
+      rm cpu-libtorch-macos-latest.zip
+    fi
     wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_mac_2019.0.1.20181227.tgz
     tar -xzf mklml_mac_2019.0.1.20181227.tgz
     rm -f mklml_mac_2019.0.1.20181227.tgz
