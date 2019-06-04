@@ -26,6 +26,7 @@ jobs:
       - run: stack exec codegen-exe
       - run: stack test --jobs 2
       - run: stack exec ffi-test
+      - run: stack exec xor_mlp
   cabal-build:
     docker:
       - image: "ubuntu:18.04"
@@ -57,6 +58,8 @@ jobs:
       - run: cabal new-exec codegen-exe
       - run: cabal new-test ffi --jobs=2
       - run: cabal new-exec ffi-test
+      - run: cabal new-test hasktorch
+      - run: cabal exec xor_mlp
   osx-stack-build:
     macos:
       xcode: "10.2.1"
@@ -89,6 +92,7 @@ jobs:
       - run: stack exec codegen-exe
       - run: stack test --jobs 2
       - run: stack exec ffi-test
+      - run: stack exec xor_mlp
 
 workflows:
   version: 2

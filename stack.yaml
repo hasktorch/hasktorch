@@ -5,6 +5,8 @@ packages:
 - ffi
 - inline-c/inline-c
 - inline-c/inline-c-cpp
+- hasktorch
+- examples
 
 extra-include-dirs:
   - deps/libtorch/include/torch/csrc/api/include

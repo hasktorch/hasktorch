@@ -25,7 +25,6 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<ATen/ATen.h>"
 
-
 kByte :: ScalarType
 kByte = [C.pure| int8_t { (int8_t) at::ScalarType::Byte } |]
 
@@ -100,6 +99,11 @@ kCOMPILE_TIME_MAX_DEVICE_TYPES = [C.pure| int16_t { (int16_t) at::DeviceType::CO
 
 kONLY_FOR_TEST :: DeviceType
 kONLY_FOR_TEST = [C.pure| int16_t { (int16_t) at::DeviceType::ONLY_FOR_TEST } |]
+
+-- TODO: add all values for at::Reduction
+
+kMean :: Int64
+kMean = [C.pure| int64_t { (int64_t) Reduction::Mean } |]
 
 bCPU :: Backend
 bCPU = [C.pure| int { (int) at::Backend::CPU } |]
