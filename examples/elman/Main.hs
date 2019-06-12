@@ -36,18 +36,33 @@ main = do
     init <- sample $ MLPSpec { feature_counts = [2, 1], nonlinearitySpec = Torch.Functions.tanh }
     rnnLayer <- sample $ RecurrentSpec { in_features = 2, hidden_features = 2, nonlinearitySpec = Torch.Functions.tanh }
 
-    -- TODO: test if the cell function is correct
-    inp <- randn' [2]
-    hid <- randn' [2]
-    let expected = inp
+    print rnnLayer
+    putStrLn "***"
 
-    let output = recurrent rnnLayer inp hid
+    inp <- randn' [1, 2]
+    hid <- randn' [1, 2]
+    out <- randn' [1, 2]
 
-    let loss = mse_loss output expected
+    print inp
+    print hid
+    print out
+    putStrLn "***"
+
+    let out' = recurrent rnnLayer inp hid
+
+    print out'
+    putStrLn "***"
+
+    let loss = mse_loss out' out
+
+    print loss
+    putStrLn "***"
 
     let flat_parameters = flattenParameters rnnLayer
     let gradients = grad loss flat_parameters
+
     print gradients
+    putStrLn "***"
 {-
         if i `mod` 100 == 0
           then do print loss
