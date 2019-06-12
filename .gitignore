@@ -1,3 +1,4 @@
+output/
 .stack-work/
 dist-newstyle/
 libtorch-test/build
