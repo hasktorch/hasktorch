@@ -16,7 +16,6 @@ jobs:
       - run: gcc --version
       - run: stack --version
       - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
-      - run: cd libtorch-test ; make
       - run:
           name: stack build
           command: stack build --jobs 2
@@ -45,7 +44,6 @@ jobs:
       - run: gcc --version
       - run: cabal --version
       - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
-      - run: cd libtorch-test ; make
       - run: ./setup-cabal.sh
       - run: cabal new-update
       - run: cabal new-install hspec-discover
@@ -82,7 +80,6 @@ jobs:
       - run: stack --version
       - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
       - run: cp -a deps/libtorch/lib/*.dylib deps/mklml/lib/*.dylib /usr/local/lib/
-      - run: cd libtorch-test ; make
       - run:
           name: stack build
           command: stack build --jobs 2
