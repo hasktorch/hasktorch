@@ -4,13 +4,13 @@ Work on ffi bindings into the c++ libtorch library in preparation for 0.2 which 
 
 General approach is to use generated `Declarations.yaml` spec instead of header parsing for code generation.
 
-## getting dependencies
+## Getting dependencies
 
 `deps/` holds several external dependencies that are retrieved using the `deps/get-deps.sh` script.
 
 This should be run prior to building
 
-## yaml -> binding codegen (WIP)
+## yaml -> binding codegen
 
 To run:
 
@@ -25,7 +25,7 @@ To get CLI options:
 stack exec codegen-exe -- --help
 ```
 
-## ffi testing (WIP)
+## ffi testing
 
 To run without repl:
 
@@ -47,7 +47,7 @@ stack test
 cabal new-test all
 ```
 
-To run (currently works in the repl):
+To run:
 
 ```
 stack ghci --ghc-options='-fobject-code'  ffi
