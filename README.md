@@ -1,38 +1,14 @@
-# Experimental Libtorch 1.0 FFI
+# Hasktorch 0.2 Libtorch 1.0 FFI
 
-Experimental work on next-gen ffi bindings into the c++ libtorch library in preparation for 0.0.2 which targets the 1.0 backend.
+Work on ffi bindings into the c++ libtorch library in preparation for 0.2 which targets the pytorch's post 1.0libtorch backend.
 
-General approach:
+General approach is to use generated `Declarations.yaml` spec instead of header parsing for code generation.
 
-- Use generated `Declarations.yaml` spec instead of header parsing for code generation.
-- Try inline-cpp functionality to bind the C++ API instead of the C API. Benchmark potential template haskell overhead vs. code generating C wrappers for C++ functions.
+## getting dependencies
 
-## libtorch dependency retrieval and testing
+`deps/` holds several external dependencies that are retrieved using the `deps/get-deps.sh` script.
 
-`libtorch-test/` and `deps/` have scripts that retrieve libtorch and mkl-dnn library dependencies and builds/tests them using a [minimal example](https://pytorch.org/cppdocs/installing.html).
-
-To build:
-
-```
-cd libtorch-test
-make
-```
-
-The makefile pulls in libtorch + mkl-dnn (not included in libtorch) prebuilt shared library files.
-
-If the dependencies are retrieved and built successfully, you should see at the end of the build process the expected output of a random 2x2 matrix (exact values may differ):
-
-```
-...
-[ 50%] Building CXX object CMakeFiles/libtorch-test.dir/cpptest.cpp.o
-[100%] Linking CXX executable libtorch-test
-[100%] Built target libtorch-test
-export LD_LIBRARY_PATH=/Users/huanga13/projects-personal/ffi-experimental/libtorch-test/deps/mklml_mac_2019.0.1.20181227/lib:/Users/huanga13/projects-personal/ffi-experimental/libtorch-test/deps/libtorch/lib
-source ./set-dyld-path.sh ; cd build ; ./libtorch-test
- 0.5790  0.5507  0.6433
- 0.9908  0.6380  0.3997
-[ Variable[CPUFloatType]{2,3} ]
-```
+This should be run prior to building
 
 ## yaml -> binding codegen (WIP)
 
