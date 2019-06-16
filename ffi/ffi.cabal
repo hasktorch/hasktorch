@@ -80,8 +80,8 @@ library
   ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0 -optc-std=c++11
  cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
  cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
- extensions:          Strict
-                    , StrictData
+ default-extensions:          Strict
+                            , StrictData
 
 
 test-suite spec
@@ -109,5 +109,5 @@ test-suite spec
   cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
   cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
 --  extra-libraries:    torch
-  extensions:          Strict
-                     , StrictData
+  default-extensions:          Strict
+                             , StrictData
