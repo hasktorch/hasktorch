@@ -84,32 +84,6 @@ library
                     , StrictData
 
 
-executable ffi-test
-  hs-source-dirs:      example
-  main-is:             CppTest.hs
-  default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5
-                     , inline-c-cpp >= 0.3.0.1
-                     , inline-c
-                     , optparse-applicative >= 0.14.3.0
-                     , containers
-                     , safe-exceptions
-  if os(darwin)
-    ld-options: -Wl,-keep_dwarf_unwind
-    ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0 -optc-std=c++11 -optc-xc++
-  else
-    ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0 -optc-std=c++11
-  cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
-  cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
-  extra-libraries:     stdc++
-                     , c10
-                     , iomp5
-                     , mklml
-                     , caffe2
-                     , torch
-  extensions:          Strict
-                     , StrictData
-
 test-suite spec
   type:            exitcode-stdio-1.0
   hs-source-dirs:  test

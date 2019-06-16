@@ -21,10 +21,8 @@ jobs:
           command: stack build --jobs 2
           no_output_timeout: 15m
       - run: stack test --jobs 2
-      - run: stack exec ffi-test
       - run: stack exec codegen-exe
       - run: stack test --jobs 2
-      - run: stack exec ffi-test
       - run: stack exec xor_mlp
   cabal-build:
     docker:
@@ -52,10 +50,8 @@ jobs:
           command: cabal new-build all --jobs=2
           no_output_timeout: 15m
       - run: cabal new-test ffi --jobs=2
-      - run: cabal new-exec ffi-test
       - run: cabal new-exec codegen-exe
       - run: cabal new-test ffi --jobs=2
-      - run: cabal new-exec ffi-test
       - run: cabal new-test hasktorch
       - run: cabal exec xor_mlp
   osx-stack-build:
@@ -85,10 +81,8 @@ jobs:
           command: stack build --jobs 2
           no_output_timeout: 15m
       - run: stack test --jobs 2
-      - run: stack exec ffi-test
       - run: stack exec codegen-exe
       - run: stack test --jobs 2
-      - run: stack exec ffi-test
       - run: stack exec xor_mlp
 
 workflows:
