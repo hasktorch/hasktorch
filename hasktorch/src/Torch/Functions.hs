@@ -65,6 +65,33 @@ tanh t = unsafePerformIO $ (cast1 ATen.tanh_t) t
 gt :: Tensor -> Tensor -> Tensor
 gt a b = unsafePerformIO $ (cast2 ATen.gt_tt) a b
 
+(>.) = gt
+
+lt :: Tensor -> Tensor -> Tensor
+lt a b = unsafePerformIO $ (cast2 ATen.lt_tt) a b
+
+(<.) = lt
+
+ge :: Tensor -> Tensor -> Tensor
+ge a b = unsafePerformIO $ (cast2 ATen.ge_tt) a b
+
+(>=.) = ge
+
+le :: Tensor -> Tensor -> Tensor
+le a b = unsafePerformIO $ (cast2 ATen.le_tt) a b
+
+(<=.) = le
+
+eq :: Tensor -> Tensor -> Tensor
+eq a b = unsafePerformIO $ (cast2 ATen.eq_tt) a b
+
+(==.) = eq
+
+ne :: Tensor -> Tensor -> Tensor
+ne a b = unsafePerformIO $ (cast2 ATen.ne_tt) a b
+
+(/=.) = ne
+
 toDType :: DType -> Tensor -> Tensor
 toDType dtype t = unsafePerformIO $ (cast4 ATen.tensor_to_sbb) t dtype False False
 

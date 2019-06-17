@@ -12,6 +12,7 @@ import Foreign.Storable
 import System.IO.Unsafe
 import Data.Int (Int64)
 import Data.List (intercalate)
+import Numeric
 
 import ATen.Cast
 import ATen.Class (Castable(..))
@@ -35,14 +36,12 @@ instance Castable Tensor ATenTensor where
   cast (Tensor aten_tensor) f = f aten_tensor
   uncast aten_tensor f = f $ Tensor aten_tensor
 
-debugPrint :: Tensor -> IO ()
-debugPrint = cast1 ATen.tensor_print
+--------------------------------------------------------------------------------
+-- Basic tensor properties
+--------------------------------------------------------------------------------
 
 numel :: Tensor -> Int
 numel t = unsafePerformIO $ cast1 ATen.tensor_numel $ t
-
-select :: Tensor -> Int -> Int -> Tensor
-select t dim idx = unsafePerformIO $ (cast3 ATen.tensor_select_ll) t dim idx
 
 size :: Tensor -> Int -> Int
 size t dim = unsafePerformIO $ (cast2 ATen.tensor_size_l) t dim
@@ -53,34 +52,49 @@ shape t = unsafePerformIO $ (cast1 ATen.tensor_sizes) t
 dim :: Tensor -> Int
 dim t = unsafePerformIO $ (cast1 ATen.tensor_dim) t
 
-asDouble :: Tensor -> Double
-asDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double $ t
+dtype :: Tensor -> DType
+dtype t = unsafePerformIO $ (cast1 ATen.tensor_scalar_type) t
 
-asInt :: Tensor -> Int
-asInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t $ t
+select :: Tensor -> Int -> Int -> Tensor
+select t dim idx = unsafePerformIO $ (cast3 ATen.tensor_select_ll) t dim idx
 
+toDouble :: Tensor -> Double
+toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double $ t
 
+toInt :: Tensor -> Int
+toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t $ t
+
+--------------------------------------------------------------------------------
+-- Indexing support
+--------------------------------------------------------------------------------
+
+(@@) :: TensorIndex a => Tensor -> a -> Tensor
+t @@ idx = fst $ indexWith (t, 0) idx
 
 class TensorIndex a where
-  (@@) :: Tensor -> a -> Tensor
+  indexWith :: (Tensor, Int) -> a -> (Tensor, Int)
 
 instance TensorIndex Int where
-  t @@ idx = select t 0 idx
+  indexWith (t, offset) idx = (select t offset idx, offset)
 
 instance TensorIndex Integer where
-  t @@ idx = select t 0 $ fromIntegral idx
+  indexWith (t, offset) idx = (select t offset (fromIntegral idx), offset)
 
--- TODO: advanced indexing
+instance TensorIndex () where
+  indexWith (t, offset) idx = (t, offset + 1)
 
 instance (TensorIndex a, TensorIndex b) => TensorIndex (a,b) where
-  t @@ (a, b) = (t @@ a) @@ b
+  indexWith toff (a, b) = indexWith (indexWith toff a) b
 
 instance (TensorIndex a, TensorIndex b, TensorIndex c) => TensorIndex (a,b,c) where
-  t @@ (a, b, c) = (t @@ (a, b)) @@ c
+  indexWith toff (a, b, c) = indexWith (indexWith (indexWith toff a) b) c
 
 instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d) => TensorIndex (a,b,c,d) where
-  t @@ (a, b, c, d) = (t @@ (a, b, c)) @@ c
+  indexWith toff (a, b, c, d) = indexWith (indexWith (indexWith (indexWith toff a) b) c) d
 
+--------------------------------------------------------------------------------
+-- Scalar -> Tensor promotion
+--------------------------------------------------------------------------------
 
 class TensorLike a where
   asTensor :: a -> Tensor
@@ -100,19 +114,31 @@ instance TensorLike Integer where
 
 instance TensorLike Double where
   -- XXX: This implicit cast to float is very meh, but I don't have any better ideas
+  --      This is our default dtype, so it's the most convenient thing we can do
   asTensor v = mkScalarTensor @Float (realToFrac v) float_opts
 
+--------------------------------------------------------------------------------
+-- Show
+--------------------------------------------------------------------------------
 
 instance Show Tensor where
   show t = case (dim t) of
-      0 -> show0d t
-      1 -> show1d t
-      2 -> show2d t
-      _ -> "Tensor"
+      0 -> details ++ show0d t
+      1 -> details ++ show1d t
+      2 -> details ++ show2d t
+      _ -> details
     where
       -- TODO: this is obviously not the right way to do it,
       -- and will be terribly slow, so please fix it.
       showElems elemShow sep t = "[" ++ (intercalate sep $ map elemShow [t @@ i | i <- [0..((size t 0) - 1)]]) ++ "]"
-      show0d = show . asDouble
+      padPositive x s = if x >= 0 then " " ++ s else s
+      -- TODO: this assumes that scientific notation only uses one-digit exponents, which is not
+      --       true in general
+      padLarge x s = if (abs x) >= 0.1 then s ++ "   " else s
+      show0d x = if isIntegral (dtype t)
+                  then padPositive (toInt x) $ show $ toInt x
+                  else padLarge (toDouble x) $ padPositive (toDouble x) $ showGFloat (Just 4) (toDouble x) ""
       show1d = showElems show0d ", "
-      show2d = showElems show1d ",\n "
+      show2d = showElems show1d (",\n " ++ padding)
+      details = "Tensor " ++ (show $ dtype t) ++ " " ++ (show $ shape t) ++ " "
+      padding = map (const ' ') details
