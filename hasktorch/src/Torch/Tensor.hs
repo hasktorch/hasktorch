@@ -64,6 +64,11 @@ toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double $ t
 toInt :: Tensor -> Int
 toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t $ t
 
+select :: Tensor -> Int -> Int -> Tensor
+select t dim idx = unsafePerformIO $ (cast3 ATen.tensor_select_ll) t dim idx
+
+reshape :: Tensor -> [Int] -> Tensor
+reshape t shape = unsafePerformIO $ (cast2 ATen.reshape_tl) t shape
 --------------------------------------------------------------------------------
 -- Indexing support
 --------------------------------------------------------------------------------
