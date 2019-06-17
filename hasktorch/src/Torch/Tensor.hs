@@ -55,9 +55,6 @@ dim t = unsafePerformIO $ (cast1 ATen.tensor_dim) t
 dtype :: Tensor -> DType
 dtype t = unsafePerformIO $ (cast1 ATen.tensor_scalar_type) t
 
-select :: Tensor -> Int -> Int -> Tensor
-select t dim idx = unsafePerformIO $ (cast3 ATen.tensor_select_ll) t dim idx
-
 toDouble :: Tensor -> Double
 toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double $ t
 
