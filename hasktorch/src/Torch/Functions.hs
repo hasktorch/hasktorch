@@ -36,6 +36,9 @@ instance Fractional Tensor where
 sumAll :: Tensor -> Tensor
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
+abs :: Tensor -> Tensor
+abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
+
 add :: Tensor -> Tensor -> Tensor
 add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne
 
