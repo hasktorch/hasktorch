@@ -1,4 +1,4 @@
-# Hasktorch 0.2 Libtorch 1.0 FFI
+# Hasktorch 0.2 Libtorch FFI
 
 Work on ffi bindings into the c++ libtorch library in preparation for 0.2 which targets the pytorch's post 1.0libtorch backend.
 
@@ -10,7 +10,29 @@ General approach is to use generated `Declarations.yaml` spec instead of header 
 
 This should be run prior to building
 
-## yaml -> binding codegen
+## XOR MLP Example
+
+The following steps should run the xor mlp example:
+
+```
+# Download libtorch-binary and other shared library dependencies
+pushd deps
+./get-deps.sh
+popd
+
+# Set shared library environment variables
+source setenv
+
+stack build examples
+
+stack exec xor_mlp
+```
+
+## Running code generation
+
+Corde generation is used to build low-level FFI functions.
+
+Note that the code is already generated in this repo under `ffi`, running this is only needed if changes are being made to the code generation process.
 
 To run:
 
@@ -23,50 +45,6 @@ To get CLI options:
 
 ```
 stack exec codegen-exe -- --help
-```
-
-## ffi testing
-
-To run without repl:
-
-```
-#Download libtorch-binary
-pushd deps
-./get-deps.sh
-popd
-
-#Set environment variable(LD_LIBRARY_PATH)
-source setenv
-
-#Build and test with stack
-stack test
-
-#Build and test with cabal
-#setup cabal.project.freeze using stackage, extra-include-dirs and extra-lib-dirs for cabal
-./setup-cabal.sh
-cabal new-test all
-```
-
-To run:
-
-```
-stack ghci --ghc-options='-fobject-code'  ffi
-...
-Prelude Main> main
-Hello torch!
- 0.2401  0.0901  0.9807
- 0.9168  0.3757  0.4029
-[ Variable[CPUFloatType]{2,3} ]
- 1  1
- 1  1
-[ Variable[CPUFloatType]{2,2} ]
- 0.1232  1.5721
- 0.5392  0.2395
-[ Variable[CPUFloatType]{2,2} ]
- 1.1232  2.5721
- 1.5392  1.2395
-[ Variable[CPUFloatType]{2,2} ]
-Prelude Main>
 ```
 
 ## Contributions
