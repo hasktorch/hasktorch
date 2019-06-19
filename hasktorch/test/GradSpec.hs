@@ -16,12 +16,12 @@ spec = do
     xi <- makeIndependent $ ones' []
     let x = toDependent xi
         y = x * x + 5 * x + 3
-    fmap asDouble (grad y [xi]) `shouldBe` [7.0]
+    fmap toDouble (grad y [xi]) `shouldBe` [7.0]
   it "grad with ones" $ do
     xi <- makeIndependent $ ones' []
     yi <- makeIndependent $ ones' []
     let x = toDependent xi
         y = toDependent yi
         z = x * x * y
-    fmap asDouble (grad z [xi]) `shouldBe` [2.0]
-    fmap asDouble (grad z [yi]) `shouldBe` [1.0]
+    fmap toDouble (grad z [xi]) `shouldBe` [2.0]
+    fmap toDouble (grad z [yi]) `shouldBe` [1.0]

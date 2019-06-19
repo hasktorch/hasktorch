@@ -18,3 +18,12 @@ executable xor_mlp
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl
+
+executable cnn
+  hs-source-dirs:      cnn
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , mtl

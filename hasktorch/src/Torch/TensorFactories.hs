@@ -1,4 +1,3 @@
-{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Torch.TensorFactories where
@@ -17,6 +16,7 @@ import ATen.Cast
 
 import Torch.Tensor
 import Torch.TensorOptions
+import Torch.Scalar
 
 -- XXX: We use the torch:: constructors, not at:: constructures, because
 --      otherwise we cannot use libtorch's AD.
@@ -48,6 +48,9 @@ rand = mkFactory LibTorch.rand_lo
 randn :: [Int] -> TensorOptions -> IO Tensor
 randn = mkFactory LibTorch.randn_lo
 
+linspace :: (Scalar a, Scalar b) => a -> b -> Int -> TensorOptions -> Tensor
+linspace start end steps opts = unsafePerformIO $ (cast4 LibTorch.linspace_sslo) start end steps opts
+
 -------------------- Factories with default type --------------------
 
 ones' :: [Int] -> Tensor
@@ -61,3 +64,6 @@ rand' = mkDefaultFactory rand
 
 randn' :: [Int] -> IO Tensor
 randn' = mkDefaultFactory randn
+
+linspace' :: (Scalar a, Scalar b) => a -> b -> Int -> Tensor
+linspace' start end steps = linspace start end steps defaultOpts
