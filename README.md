@@ -1,40 +1,38 @@
-# Experimental Libtorch 1.0 FFI
+# Hasktorch 0.2 Libtorch FFI
 
-Experimental work on next-gen ffi bindings into the c++ libtorch library in preparation for 0.0.2 which targets the 1.0 backend.
+Work on ffi bindings into the c++ libtorch library in preparation for 0.2 which targets the pytorch's post 1.0libtorch backend.
 
-General approach:
+General approach is to use generated `Declarations.yaml` spec instead of header parsing for code generation.
 
-- Use generated `Declarations.yaml` spec instead of header parsing for code generation.
-- Try inline-cpp functionality to bind the C++ API instead of the C API. Benchmark potential template haskell overhead vs. code generating C wrappers for C++ functions.
+## Getting dependencies
 
-## libtorch dependency retrieval and testing
+`deps/` holds several external dependencies that are retrieved using the `deps/get-deps.sh` script.
 
-`libtorch-test/` and `deps/` have scripts that retrieve libtorch and mkl-dnn library dependencies and builds/tests them using a [minimal example](https://pytorch.org/cppdocs/installing.html).
+This should be run prior to building
 
-To build:
+## XOR MLP Example
 
-```
-cd libtorch-test
-make
-```
-
-The makefile pulls in libtorch + mkl-dnn (not included in libtorch) prebuilt shared library files.
-
-If the dependencies are retrieved and built successfully, you should see at the end of the build process the expected output of a random 2x2 matrix (exact values may differ):
+The following steps should run the xor mlp example:
 
 ```
-...
-[ 50%] Building CXX object CMakeFiles/libtorch-test.dir/cpptest.cpp.o
-[100%] Linking CXX executable libtorch-test
-[100%] Built target libtorch-test
-export LD_LIBRARY_PATH=/Users/huanga13/projects-personal/ffi-experimental/libtorch-test/deps/mklml_mac_2019.0.1.20181227/lib:/Users/huanga13/projects-personal/ffi-experimental/libtorch-test/deps/libtorch/lib
-source ./set-dyld-path.sh ; cd build ; ./libtorch-test
- 0.5790  0.5507  0.6433
- 0.9908  0.6380  0.3997
-[ Variable[CPUFloatType]{2,3} ]
+# Download libtorch-binary and other shared library dependencies
+pushd deps
+./get-deps.sh
+popd
+
+# Set shared library environment variables
+source setenv
+
+stack build examples
+
+stack exec xor_mlp
 ```
 
-## yaml -> binding codegen (WIP)
+## Running code generation
+
+Corde generation is used to build low-level FFI functions.
+
+Note that the code is already generated in this repo under `ffi`, running this is only needed if changes are being made to the code generation process.
 
 To run:
 
@@ -47,50 +45,6 @@ To get CLI options:
 
 ```
 stack exec codegen-exe -- --help
-```
-
-## ffi testing (WIP)
-
-To run without repl:
-
-```
-#Download libtorch-binary
-pushd deps
-./get-deps.sh
-popd
-
-#Set environment variable(LD_LIBRARY_PATH)
-source setenv
-
-#Build and test with stack
-stack test
-
-#Build and test with cabal
-#setup cabal.project.freeze using stackage, extra-include-dirs and extra-lib-dirs for cabal
-./setup-cabal.sh
-cabal new-test all
-```
-
-To run (currently works in the repl):
-
-```
-stack ghci --ghc-options='-fobject-code'  ffi
-...
-Prelude Main> main
-Hello torch!
- 0.2401  0.0901  0.9807
- 0.9168  0.3757  0.4029
-[ Variable[CPUFloatType]{2,3} ]
- 1  1
- 1  1
-[ Variable[CPUFloatType]{2,2} ]
- 0.1232  1.5721
- 0.5392  0.2395
-[ Variable[CPUFloatType]{2,2} ]
- 1.1232  2.5721
- 1.5392  1.2395
-[ Variable[CPUFloatType]{2,2} ]
-Prelude Main>
 ```
 
 ## Contributions

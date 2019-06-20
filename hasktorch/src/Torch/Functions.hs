@@ -36,8 +36,26 @@ instance Fractional Tensor where
 sumAll :: Tensor -> Tensor
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
+abs :: Tensor -> Tensor
+abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
+
 add :: Tensor -> Tensor -> Tensor
 add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne
+
+ceil :: Tensor -> Tensor
+ceil t = unsafePerformIO $ (cast1 ATen.ceil_t) t
+
+floor :: Tensor -> Tensor
+floor t = unsafePerformIO $ (cast1 ATen.floor_t) t
+
+min :: Tensor -> Tensor
+min t = unsafePerformIO $ (cast1 ATen.min_t) t
+
+max :: Tensor -> Tensor
+max t = unsafePerformIO $ (cast1 ATen.max_t) t
+
+median :: Tensor -> Tensor
+median t = unsafePerformIO $ (cast1 ATen.median_t) t
 
 sub :: Tensor -> Tensor -> Tensor
 sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
@@ -53,11 +71,41 @@ matmul a b =
   where
     mm = cast2 ATen.mm_tt
 
+erf :: Tensor -> Tensor
+erf t = unsafePerformIO $ (cast1 ATen.erf_t) t
+
+exp :: Tensor -> Tensor
+exp t = unsafePerformIO $ (cast1 ATen.exp_t) t
+
+log1p :: Tensor -> Tensor
+log1p t = unsafePerformIO $ (cast1 ATen.log1p_t) t
+
+log2 :: Tensor -> Tensor
+log2 t = unsafePerformIO $ (cast1 ATen.log2_t) t
+
+log10 :: Tensor -> Tensor
+log10 t = unsafePerformIO $ (cast1 ATen.log10_t) t
+
 relu :: Tensor -> Tensor
 relu t = unsafePerformIO $ (cast1 ATen.relu_t) t
 
+selu :: Tensor -> Tensor
+selu t = unsafePerformIO $ (cast1 ATen.selu_t) t
+
 sigmoid :: Tensor -> Tensor
 sigmoid t = unsafePerformIO $ (cast1 ATen.sigmoid_t) t
+
+sin :: Tensor -> Tensor
+sin t = unsafePerformIO $ (cast1 ATen.sin_t) t
+
+sinh :: Tensor -> Tensor
+sinh t = unsafePerformIO $ (cast1 ATen.sinh_t) t
+
+cos :: Tensor -> Tensor
+cos t = unsafePerformIO $ (cast1 ATen.cos_t) t
+
+sqrt :: Tensor -> Tensor
+sqrt t = unsafePerformIO $ (cast1 ATen.sqrt_t) t
 
 tanh :: Tensor -> Tensor
 tanh t = unsafePerformIO $ (cast1 ATen.tanh_t) t
