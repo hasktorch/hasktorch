@@ -28,6 +28,9 @@ transpose2D :: Tensor -> Tensor
 transpose2D t = transpose t 0 1
 
 
+-- transpose1D :: Tensor -> Tensor
+-- transpose1D t = 
+
 data RecurrentSpec = RecurrentSpec { in_features :: Int, hidden_features :: Int, nonlinearitySpec :: Tensor -> Tensor }
 
 
@@ -42,7 +45,7 @@ instance Randomizable RecurrentSpec Recurrent where
       b_ih <- makeIndependent =<< randn' [1, in_features]
       w_hh <- makeIndependent =<< randn' [hidden_features, hidden_features]
       b_hh <- makeIndependent =<< randn' [1, hidden_features]
-      return $ Recurrent w_ih b_ih w_hh b_hh
+      return $ Recurrent w_ih b_ih w_hh b_hh 
 
 
 instance Parametrized Recurrent where
@@ -82,3 +85,16 @@ recurrent Recurrent{..} input hidden =
       (transpose2D $ toDependent bias)
 
     h' ig hg = transpose2D $ Torch.Functions.tanh (ig + hg)
+
+---------------------------------------------------------
+
+-- to store the running of a recurrent cell
+data RunRecurrent = RunRecurrent {
+  rnn :: Recurrent,
+  past :: [Tensor]
+}
+
+instance Show RunRecurrent where
+  show RunRecurrent{..} =
+    (show rnn) ++ "\n" ++
+    (show past)
