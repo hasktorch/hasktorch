@@ -19,7 +19,11 @@ instance Castable [Int] (ForeignPtr IntArray) where
     f arr
   uncast xs f = do
     len <- intArray_size xs
-    f =<< mapM (\i -> intArray_at_s xs i >>= return . fromIntegral) [0..(len - 1)]
+    -- NB: This check is necessary, because len is unsigned and it will wrap around if
+    --     we subtract 1 when it's 0.
+    if len == 0
+      then f []
+      else f =<< mapM (\i -> intArray_at_s xs i >>= return . fromIntegral) [0..(len - 1)]
 
 instance Castable [ForeignPtr Tensor] (ForeignPtr TensorList) where
   cast xs f = do

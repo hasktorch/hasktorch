@@ -30,3 +30,14 @@ instance Castable DType ATen.ScalarType where
     | x == ATen.kHalf = f Half
     | x == ATen.kFloat = f Float
     | x == ATen.kDouble = f Double
+
+
+isIntegral :: DType -> Bool
+isIntegral UInt8  = True
+isIntegral Int8   = True
+isIntegral Int16  = True
+isIntegral Int32  = True
+isIntegral Int64  = True
+isIntegral Half   = False
+isIntegral Float  = False
+isIntegral Double = False

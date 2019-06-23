@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 
+# - gets submodules recursively to get pytorch and inline-c fork repo dependencies
 # - Retrieves a prebuilt libtorch binary per https://pytorch.org/cppdocs/installing.html
 # - Retrieves a release binary for mkl https://github.com/intel/mkl-dnn/releases
 #   which is a runtime dependency that is not package w/ libtorch
 
 set -eu
+
+git submodule update --init --recursive
 
 case "$(uname)" in
   "Darwin")
