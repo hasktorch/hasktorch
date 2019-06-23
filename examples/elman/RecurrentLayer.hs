@@ -28,8 +28,9 @@ transpose2D :: Tensor -> Tensor
 transpose2D t = transpose t 0 1
 
 
--- transpose1D :: Tensor -> Tensor
--- transpose1D t = 
+transpose1D :: Tensor -> Tensor
+transpose1D t = reshape t  [(head $ shape t), 1]
+
 
 data RecurrentSpec = RecurrentSpec { in_features :: Int, hidden_features :: Int, nonlinearitySpec :: Tensor -> Tensor }
 
@@ -96,5 +97,7 @@ data RunRecurrent = RunRecurrent {
 
 instance Show RunRecurrent where
   show RunRecurrent{..} =
+    "RNN:" ++ "\n" ++
     (show rnn) ++ "\n" ++
+    "Previous Hidden States:" ++ "\n" ++
     (show past)

@@ -31,42 +31,41 @@ main :: IO ()
 main = do
     rnnLayer <- sample $ RecurrentSpec { in_features = 2, hidden_features = 2, nonlinearitySpec = Torch.Functions.tanh }
 
-    let myRNN = RunRecurrent rnnLayer []
     let foldLoop x count block = foldM block x [1..count]
 
     -- randomly initializing training values
     inp <- randn' [num_iters, 2]
-    hid <- randn' [1, 2]
+    init_hidden <- randn' [2]
     out <- randn' [1, 2]
 
-{-
-    print $ select inp 0 0
-    print $ select inp 0 1
-    print $ select inp 0 2
--}
+    let init_hidden' = reshape init_hidden [1, 2]
+    let myRNN = RunRecurrent rnnLayer [init_hidden']
+
     -- running the thing
-    foldLoop myRNN num_iters $ \model i -> do
+    output <- foldLoop myRNN num_iters $ \model i -> do
 
-        -- putStrLn $ "FF timestep" ++ (show i) 
-        -- print $ rnn model
-        -- putStrLn "***"
 
-        -- print inp
-        -- print hid
-        -- print out
---        print $ select inp 0 (i-1)
-        -- putStrLn "***"
+            print model
+            -- putStrLn $ "FF timestep" ++ (show i) 
+            -- print $ rnn model
+            -- putStrLn "***"
 
-        let inp1 = select inp 0 (i-1)
-        print inp1
-        print $ reshape inp1 [2, 1]
-        let out' = recurrent (rnn model) hid hid
+            -- print inp
+            -- print hid
+            -- print out
+            -- print $ select inp 0 (i-1)
+            -- putStrLn "***"
 
-        -- print out'
-        let model' = RunRecurrent (rnn model) (out' : (past model))
+            let inp' = reshape (select inp 0 (i-1)) [1, 2]
+            let hidden = head $ past model
+        
+            let out' = recurrent (rnn model) inp' hidden
 
-        putStrLn "--------------------------------------------"
+            -- print out'
+            let model' = RunRecurrent (rnn model) (out' : (past model))
 
-        return model'
+            putStrLn "--------------------------------------------"
 
-    return ()
+            return model'
+
+    print output
