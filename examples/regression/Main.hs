@@ -36,35 +36,55 @@ instance Parameterized Linear where
     bias <- nextParameter
     return $ Linear{..}
 
-batch_size = 32
+{- Constants -}
+
+batch_size = 128
 num_iters = 10000
 
+{- Forward functions -}
+
 model :: Linear -> Tensor -> Tensor
-model params t = (linear params t)
+model params t = linear params t
 
 linear :: Linear -> Tensor -> Tensor
-linear Linear{..} input = (matmul input (toDependent weight)) + (toDependent bias)
+linear Linear{..} input = (matmul input dWeight) + dBias
+  where
+    (dWeight, dBias) = (toDependent weight, toDependent bias)
+  
+{- Optimization -}
 
 sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
-sgd lr parameters gradients = zipWith (\p dp -> p - (lr * dp)) (map toDependent parameters) gradients
+sgd lr parameters gradients = zipWith step depParameters gradients
+  where 
+    step p dp = p - (lr * dp)
+    depParameters = (map toDependent parameters)
+
+{- Main -}
 
 main :: IO ()
 main = do
-    init <- sample $ LinearSpec { in_features = 3, out_features = 1 } 
+    init <- sample $ LinearSpec { in_features = num_features, out_features = 1 } 
     trained <- foldLoop init num_iters $ \state i -> do
-        input <- rand' [batch_size, 2] >>= return . (toDType Float) . (gt 0.5)
-        let expected_output = groundTruth input
+        input <- rand' [batch_size, num_features] >>= return . (toDType Float) . (gt 0.5)
+        let expected_output = squeezeAll $ groundTruth input
         let output = squeezeAll $ model state input
         let loss = mse_loss output expected_output
         let flat_parameters = flattenParameters state
         let gradients = grad loss flat_parameters
-        if i `mod` 100 == 0
-          then do putStrLn $ show loss
-          else return ()
+        if i `mod` 500 == 0 then
+          putStrLn $ "Loss: " ++ show loss
+        else
+          pure ()
         new_flat_parameters <- mapM makeIndependent $ sgd 5e-4 flat_parameters gradients
         return $ replaceParameters state $ new_flat_parameters
+    putStrLn "Parameters:"
+    print $ toDependent $ weight trained
+    putStrLn "Bias:"
+    print $ toDependent $ bias trained
     pure ()
   where
+    num_features = 3
     foldLoop x count block = foldM block x [1..count]
     groundTruth :: Tensor -> Tensor
-    groundTruth t = undefined
+    groundTruth = linear Linear { weight = IndependentTensor $ 3.0 * ones' [num_features, 1],
+                                    bias = IndependentTensor $ 2.5 * ones' [] }
