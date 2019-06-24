@@ -17,11 +17,11 @@ nextParameter = do
     [] -> error "Not enough parameters supplied to replaceParameters"
     (p : t) -> do put t; return p
 
-class Parametrized f where
+class Parameterized f where
   flattenParameters :: f -> [Parameter]
   replaceOwnParameters :: f -> ParamStream f
 
-replaceParameters :: Parametrized f => f -> [Parameter] -> f
+replaceParameters :: Parameterized f => f -> [Parameter] -> f
 replaceParameters f params =
   let (f', remaining) = runState (replaceOwnParameters f) params in
   if null remaining
@@ -31,4 +31,4 @@ replaceParameters f params =
 class Randomizable spec f | spec -> f where
   sample :: spec -> IO f
 
-class (Randomizable spec f, Parametrized f) => Module spec f
+class (Randomizable spec f, Parameterized f) => Module spec f

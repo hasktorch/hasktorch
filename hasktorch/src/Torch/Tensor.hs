@@ -30,7 +30,7 @@ import Torch.TensorOptions
 
 type ATenTensor = ForeignPtr ATen.Tensor
 
-data Tensor = Tensor ATenTensor
+newtype Tensor = Tensor ATenTensor
 
 instance Castable Tensor ATenTensor where
   cast (Tensor aten_tensor) f = f aten_tensor

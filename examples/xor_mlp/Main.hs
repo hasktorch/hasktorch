@@ -30,7 +30,7 @@ instance Randomizable LinearSpec Linear where
       b <- makeIndependent =<< randn' [out_features]
       return $ Linear w b
 
-instance Parametrized Linear where
+instance Parameterized Linear where
   flattenParameters Linear{..} = [weight, bias]
   replaceOwnParameters _ = do
     weight <- nextParameter
@@ -60,7 +60,7 @@ instance Randomizable MLPSpec MLP where
         where
           shift (a, b) c = (b, c)
 
-instance Parametrized MLP where
+instance Parameterized MLP where
   flattenParameters MLP{..} = concat $ map flattenParameters layers
   replaceOwnParameters mlp = do
     new_layers <- mapM replaceOwnParameters (layers mlp)
