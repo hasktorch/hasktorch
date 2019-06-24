@@ -22,7 +22,8 @@ import MLP
 -- Training code
 --------------------------------------------------------------------------------
 
-num_iters = 3
+num_iters = 100
+num_timesteps = 3
 
 sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
 sgd lr parameters gradients = zipWith (\p dp -> p - (lr * dp)) (map toDependent parameters) gradients
@@ -34,38 +35,47 @@ main = do
     let foldLoop x count block = foldM block x [1..count]
 
     -- randomly initializing training values
-    inp <- randn' [num_iters, 2]
+    inp <- randn' [num_timesteps, 2]
     init_hidden <- randn' [2]
-    out <- randn' [1, 2]
+    expected_output <- randn' [1, 2]
 
     let init_hidden' = reshape init_hidden [1, 2]
     let myRNN = RunRecurrent rnnLayer [init_hidden']
 
-    -- running the thing
-    output <- foldLoop myRNN num_iters $ \model i -> do
+    -- training
+    trained <- foldLoop myRNN num_iters $ \model i -> do
 
+        -- running the thing over n timesteps
+        model_after_timesteps <-
+            foldLoop myRNN num_timesteps $ \model i -> do
 
-            print model
-            -- putStrLn $ "FF timestep" ++ (show i) 
-            -- print $ rnn model
-            -- putStrLn "***"
+                let inp' = reshape (select inp 0 (i-1)) [1, 2]
+                let hidden = head $ past model
 
-            -- print inp
-            -- print hid
-            -- print out
-            -- print $ select inp 0 (i-1)
-            -- putStrLn "***"
+                let out' = recurrent (rnn model) inp' hidden
 
-            let inp' = reshape (select inp 0 (i-1)) [1, 2]
-            let hidden = head $ past model
-        
-            let out' = recurrent (rnn model) inp' hidden
+                let model' = RunRecurrent (rnn model) (out' : (past model))
 
-            -- print out'
-            let model' = RunRecurrent (rnn model) (out' : (past model))
+                return model'
+        -------------------------------------
 
-            putStrLn "--------------------------------------------"
+        let output = head $ past model_after_timesteps
 
-            return model'
+        let loss = mse_loss output expected_output
 
-    print output
+        let flat_parameters = flattenParameters $ rnn model
+
+        let gradients = grad loss flat_parameters
+
+        -- if i `mod` 10 == 0
+        --   then do putStrLn $ show loss
+        --  else return ()
+
+        new_flat_parameters <- mapM makeIndependent $ sgd 5e-4 flat_parameters gradients
+
+        let rnn' = replaceParameters (rnn model) $ new_flat_parameters
+        let updated_model = RunRecurrent rnn' [init_hidden']
+
+        return updated_model
+
+    return ()
