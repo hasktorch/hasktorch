@@ -36,11 +36,6 @@ instance Parameterized Linear where
     bias <- nextParameter
     return $ Linear{..}
 
-{- Constants -}
-
-batch_size = 128
-num_iters = 10000
-
 {- Forward functions -}
 
 model :: Linear -> Tensor -> Tensor
@@ -83,6 +78,8 @@ main = do
     print $ toDependent $ bias trained
     pure ()
   where
+    batch_size = 64
+    num_iters = 20000
     num_features = 3
     foldLoop x count block = foldM block x [1..count]
     groundTruth :: Tensor -> Tensor
