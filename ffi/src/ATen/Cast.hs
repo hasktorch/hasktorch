@@ -35,6 +35,7 @@ import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.Storable
 import ATen.Class
+import ATen.GC
 
 instance Castable () () where
   cast x f = f x
@@ -247,24 +248,24 @@ instance (CppObject a) => Castable (ForeignPtr a) (Ptr a) where
   uncast x f = fromPtr x >>= f
 
 cast0 :: (Castable a ca) => (IO ca) -> IO a
-cast0 f = f >>= \ca -> uncast ca return
+cast0 f = retryWithGC (f) >>= \ca -> uncast ca return
 
 cast1 :: (Castable a ca, Castable y cy)
        => (ca -> IO cy) -> a -> IO y
-cast1 f a = cast a $ \ca -> f ca >>= \cy -> uncast cy return
+cast1 f a = cast a $ \ca -> retryWithGC (f ca) >>= \cy -> uncast cy return
 
 cast2 :: (Castable a ca, Castable x1 cx1, Castable y cy)
        => (ca -> cx1 -> IO cy) -> a -> x1 -> IO y
 cast2 f a x1 = cast a $ \ca ->
                   cast x1 $ \cx1 ->
-                    f ca cx1 >>= \cy -> uncast cy return
+                    retryWithGC (f ca cx1) >>= \cy -> uncast cy return
 
 cast3 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable y cy)
        => (ca -> cx1 -> cx2 -> IO cy) -> a -> x1 -> x2-> IO y
 cast3 f a x1 x2 = cast a $ \ca ->
                      cast x1 $ \cx1 ->
                        cast x2 $ \cx2 ->
-                         f ca cx1 cx2 >>= \cy -> uncast cy return
+                         retryWithGC (f ca cx1 cx2) >>= \cy -> uncast cy return
 
 cast4 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable y cy)
        => (ca -> cx1 -> cx2 -> cx3 -> IO cy) -> a -> x1 -> x2 -> x3 -> IO y
@@ -272,7 +273,7 @@ cast4 f a x1 x2 x3 = cast a $ \ca ->
                         cast x1 $ \cx1 ->
                           cast x2 $ \cx2 ->
                             cast x3 $ \cx3 ->
-                              f ca cx1 cx2 cx3 >>= \cy -> uncast cy return
+                              retryWithGC (f ca cx1 cx2 cx3) >>= \cy -> uncast cy return
 
 cast5 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4, Castable y cy)
        => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> IO cy) -> a -> x1 -> x2 -> x3 -> x4 -> IO y
@@ -282,7 +283,7 @@ cast5 f a x1 x2 x3 x4 =
       cast x2 $ \cx2 ->
         cast x3 $ \cx3 ->
           cast x4 $ \cx4 ->
-            f ca cx1 cx2 cx3 cx4 >>= \cy -> uncast cy return
+            retryWithGC (f ca cx1 cx2 cx3 cx4) >>= \cy -> uncast cy return
 
 
 cast6 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
@@ -295,7 +296,7 @@ cast6 f a x1 x2 x3 x4 x5 =
         cast x3 $ \cx3 ->
           cast x4 $ \cx4 ->
             cast x5 $ \cx5 ->
-              f ca cx1 cx2 cx3 cx4 cx5 >>= \cy -> uncast cy return
+              retryWithGC (f ca cx1 cx2 cx3 cx4 cx5) >>= \cy -> uncast cy return
 
 cast7 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
            Castable x5 cx5, Castable x6 cx6, Castable y cy)
@@ -309,7 +310,7 @@ cast7 f a x1 x2 x3 x4 x5 x6 =
           cast x4 $ \cx4 ->
             cast x5 $ \cx5 ->
               cast x6 $ \cx6 ->
-                f ca cx1 cx2 cx3 cx4 cx5 cx6 >>= \cy -> uncast cy return
+                retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6) >>= \cy -> uncast cy return
 
 cast8 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable y cy)
@@ -324,7 +325,7 @@ cast8 f a x1 x2 x3 x4 x5 x6 x7 =
             cast x5 $ \cx5 ->
               cast x6 $ \cx6 ->
                 cast x7 $ \cx7 ->
-                  f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 >>= \cy -> uncast cy return
+                  retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7) >>= \cy -> uncast cy return
 
 
 cast9 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
@@ -341,7 +342,7 @@ cast9 f a x1 x2 x3 x4 x5 x6 x7 x8 =
               cast x6 $ \cx6 ->
                 cast x7 $ \cx7 ->
                   cast x8 $ \cx8 ->
-                    f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 >>= \cy -> uncast cy return
+                    retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8) >>= \cy -> uncast cy return
 
 cast10 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
@@ -359,7 +360,7 @@ cast10 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 =
                 cast x7 $ \cx7 ->
                   cast x8 $ \cx8 ->
                     cast x9 $ \cx9 ->
-                      f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 >>= \cy -> uncast cy return
+                      retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9) >>= \cy -> uncast cy return
 
 cast11 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
             Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
@@ -378,7 +379,7 @@ cast11 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 =
                   cast x8 $ \cx8 ->
                     cast x9 $ \cx9 ->
                       cast x10 $ \cx10 ->
-                        f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 >>= \cy -> uncast cy return
+                        retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10) >>= \cy -> uncast cy return
 
 cast12 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
             Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
@@ -398,7 +399,7 @@ cast12 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 =
                     cast x9 $ \cx9 ->
                       cast x10 $ \cx10 ->
                         cast x11 $ \cx11 ->
-                         f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 >>= \cy -> uncast cy return
+                         retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11) >>= \cy -> uncast cy return
 
 
 cast13 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
@@ -420,7 +421,7 @@ cast13 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 =
                       cast x10 $ \cx10 ->
                         cast x11 $ \cx11 ->
                           cast x12 $ \cx12 ->
-                            f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 >>= \cy -> uncast cy return
+                            retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12) >>= \cy -> uncast cy return
 
 cast14 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
             Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
@@ -442,7 +443,7 @@ cast14 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 =
                         cast x11 $ \cx11 ->
                           cast x12 $ \cx12 ->
                           cast x13 $ \cx13 ->
-                            f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 >>= \cy -> uncast cy return
+                            retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13) >>= \cy -> uncast cy return
 
 
 cast15 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
@@ -466,7 +467,7 @@ cast15 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 =
                           cast x12 $ \cx12 ->
                           cast x13 $ \cx13 ->
                           cast x14 $ \cx14 ->
-                            f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14 >>= \cy -> uncast cy return
+                            retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14) >>= \cy -> uncast cy return
 
 
 cast16 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
@@ -491,7 +492,7 @@ cast16 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 =
                           cast x13 $ \cx13 ->
                           cast x14 $ \cx14 ->
                           cast x15 $ \cx15 ->
-                            f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14 cx15 >>= \cy -> uncast cy return
+                            retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14 cx15) >>= \cy -> uncast cy return
 
 cast21 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
             Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
@@ -525,7 +526,7 @@ cast21 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x2
                           cast x18 $ \cx18 ->
                           cast x19 $ \cx19 ->
                           cast x20 $ \cx20 ->
-                            f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9
+                            retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9
                               cx10 cx11 cx12 cx13 cx14 cx15 cx16 cx17 cx18 cx19
-                              cx20 >>= \cy -> uncast cy return
+                              cx20) >>= \cy -> uncast cy return
 
