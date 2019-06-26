@@ -84,6 +84,7 @@ jobs:
       - run: stack exec codegen-exe
       - run: stack test --jobs 2
       - run: stack exec xor_mlp
+      - run: stack exec regression
 
 workflows:
   version: 2

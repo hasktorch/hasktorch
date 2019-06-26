@@ -40,7 +40,7 @@ stack exec xor_mlp
 
 ## Running code generation
 
-Corde generation is used to build low-level FFI functions.
+Code generation is used to build low-level FFI functions.
 
 Note that the code is already generated in this repo under `ffi`, running this is only needed if changes are being made to the code generation process.
 
