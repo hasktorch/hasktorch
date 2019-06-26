@@ -22,11 +22,18 @@ import MLP
 -- Training code
 --------------------------------------------------------------------------------
 
-num_iters = 100
+num_iters = 10000
 num_timesteps = 3
 
 sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
 sgd lr parameters gradients = zipWith (\p dp -> p - (lr * dp)) (map toDependent parameters) gradients
+
+runOverTimesteps :: Tensor -> Recurrent -> Int -> Tensor -> Tensor
+runOverTimesteps inp layer 0 hidden = hidden
+runOverTimesteps inp layer n hidden = 
+    runOverTimesteps inp layer (n-1) $ recurrent layer inp' hidden
+    where
+        inp' = reshape (select inp 0 (n-1)) [1, 2]
 
 main :: IO ()
 main = do
@@ -39,42 +46,24 @@ main = do
     init_hidden <- randn' [1, 2]
     expected_output <- randn' [1, 2]
 
-    let initRNN = RunRecurrent rnnLayer [init_hidden]
+    -- training loop
+    foldLoop rnnLayer num_iters $ \model i -> do
 
-    -- training
-    trained <- foldLoop initRNN num_iters $ \model i -> do
-
-        -- running the thing over n timesteps
-        model_after_timesteps <-
-            foldLoop initRNN num_timesteps $ \model i -> do
-
-                let inp' = reshape (select inp 0 (i-1)) [1, 2]
-                let hidden = head $ past model
-
-                let out' = recurrent (rnn model) inp' hidden
-
-                let model' = RunRecurrent (rnn model) (out' : (past model))
-
-                return model'
-        -------------------------------------
-
-        let output = head $ past model_after_timesteps
+        let output = runOverTimesteps inp model num_timesteps init_hidden
+        -- print output
 
         let loss = mse_loss output expected_output
 
-        let flat_parameters = flattenParameters $ rnn model
+        let flat_parameters = flattenParameters model
 
         let gradients = grad loss flat_parameters
 
-        -- if i `mod` 10 == 0
-        --   then do putStrLn $ show loss
-        --  else return ()
+        if i `mod` 100 == 0
+           then do putStrLn $ show loss
+          else return ()
 
-        new_flat_parameters <- mapM makeIndependent $ sgd 5e-4 flat_parameters gradients
+        new_flat_parameters <- mapM makeIndependent $ sgd 5e-2 flat_parameters gradients
 
-        let rnn' = replaceParameters (rnn model) $ new_flat_parameters
-        let updated_model = RunRecurrent rnn' [init_hidden]
-
-        return updated_model
+        return $ replaceParameters model $ new_flat_parameters
 
     return ()
