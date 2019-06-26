@@ -13,20 +13,20 @@ import Torch.Autograd
 import Torch.NN
 
 batch_size = 64
-num_iters = 10000
+num_iters = 2000
 num_features = 3
 
 model :: Linear -> Tensor -> Tensor
-model Linear{..} input = (matmul input depWeight) + depBias
+model Linear{..} input = squeezeAll $ matmul input depWeight + depBias
   where
     (depWeight, depBias) = (toDependent weight, toDependent bias)
 
-groundTruth :: Tensor -> IO Tensor
-groundTruth t = do 
-    weight <- makeIndependent $ 5.0 * ones' [num_features, 1]
-    bias <- makeIndependent $ 2.5 * ones' []
-    pure $ model Linear { weight = weight, bias = bias} t
-
+groundTruth :: Tensor -> Tensor
+groundTruth t = squeezeAll $ matmul t weight + bias
+  where
+    weight = 42.0 * ones' [num_features, 1]
+    bias = 3.14 * ones' [1]
+    
 printParams :: Linear -> IO ()
 printParams trained = do
     putStrLn "Parameters:"
@@ -38,13 +38,13 @@ main :: IO ()
 main = do
     init <- sample $ LinearSpec { in_features = num_features, out_features = 1 } 
     trained <- foldLoop init num_iters $ \state i -> do
-        input <- randn' [batch_size, num_features] >>= return . (toDType Float)
-        expected_output <- squeezeAll <$> groundTruth input
-        let output = squeezeAll $ model state input
+        input <- randn' [batch_size, num_features]
+        let expected_output = groundTruth input
+            output = model state input
             loss = mse_loss output expected_output
             flat_parameters = flattenParameters state
             gradients = grad loss flat_parameters
-        if i `mod` 500 == 0 then
+        if i `mod` 100 == 0 then
           putStrLn $ "Loss: " ++ show loss
         else
           pure ()
