@@ -12,7 +12,7 @@ jobs:
       - run: update-alternatives --install /usr/bin/python python /usr/bin/python3 1
       - checkout
       - run: git submodule init && git submodule update
-      - run: wget -qO- https://get.haskellstack.org/ | sh
+      - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
       - run: gcc --version
       - run: stack --version
       - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
@@ -71,7 +71,7 @@ jobs:
       - run: mkdir -p .local/bin
       - run: rm /usr/local/bin/python
       - run: ln -s /usr/local/bin/python3 .local/bin/python
-      - run: wget -qO- https://get.haskellstack.org/ | sh
+      - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
       - run: clang --version
       - run: stack --version
       - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
