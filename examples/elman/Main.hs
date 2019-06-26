@@ -36,18 +36,17 @@ main = do
 
     -- randomly initializing training values
     inp <- randn' [num_timesteps, 2]
-    init_hidden <- randn' [2]
+    init_hidden <- randn' [1, 2]
     expected_output <- randn' [1, 2]
 
-    let init_hidden' = reshape init_hidden [1, 2]
-    let myRNN = RunRecurrent rnnLayer [init_hidden']
+    let initRNN = RunRecurrent rnnLayer [init_hidden]
 
     -- training
-    trained <- foldLoop myRNN num_iters $ \model i -> do
+    trained <- foldLoop initRNN num_iters $ \model i -> do
 
         -- running the thing over n timesteps
         model_after_timesteps <-
-            foldLoop myRNN num_timesteps $ \model i -> do
+            foldLoop initRNN num_timesteps $ \model i -> do
 
                 let inp' = reshape (select inp 0 (i-1)) [1, 2]
                 let hidden = head $ past model
@@ -74,7 +73,7 @@ main = do
         new_flat_parameters <- mapM makeIndependent $ sgd 5e-4 flat_parameters gradients
 
         let rnn' = replaceParameters (rnn model) $ new_flat_parameters
-        let updated_model = RunRecurrent rnn' [init_hidden']
+        let updated_model = RunRecurrent rnn' [init_hidden]
 
         return updated_model
 
