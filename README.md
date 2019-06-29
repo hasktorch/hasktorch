@@ -57,6 +57,10 @@ To get CLI options:
 stack exec codegen-exe -- --help
 ```
 
+## Additional Information
+
+See [the wiki](https://github.com/hasktorch/ffi-experimental/wiki) for developer information.
+
 ## Contributions
 
 Contributions/PRs are welcome. 
