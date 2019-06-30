@@ -2,7 +2,7 @@
 
 module FunctionsSpec(spec) where
 
-import Prelude hiding (abs, floor, min, max)
+import Prelude hiding (abs, exp, floor, log, min, max)
 
 import Test.Hspec
 import Control.Exception.Safe
@@ -16,18 +16,14 @@ import Torch.TensorOptions
 spec :: Spec
 spec = do
   it "scales and adds" $ do
-    let x = 2 * ones' [10]
-    let y = 3 * ones' [10]
-    let z = x + y
-    (toDouble $ select z 0 4) `shouldBe` 5.0
+    let x = 2 * ones' [10] + 3 * ones' [10]
+    (toDouble $ select x 0 4) `shouldBe` 5.0
   it "sumAll" $ do
-    let x = 2 * ones' [5]
-    let y = sumAll x
-    toDouble y `shouldBe` 10.0
+    let x = sumAll (2 * ones' [5])
+    toDouble x `shouldBe` 10.0
   it "abs" $ do
-    let x = (-2) * ones' [5]
-    let y = abs x
-    (toDouble $ select y 0 0) `shouldBe` 2.0
+    let x = abs $ (-2) * ones' [5]
+    (toDouble $ select x 0 0) `shouldBe` 2.0
   it "add" $ do
     let x = (-2) * ones' [5]
     let y = abs x
@@ -47,18 +43,40 @@ spec = do
     let y = floor x
     (toDouble $ select y 0 0) `shouldBe` 0.0
   it "takes the minimum of a linspace" $ do
-    let start = 5.0 :: Double
-    let end = 25.0 :: Double
-    let x = linspace start end 50 defaultOpts
+    let x = linspace (5.0 :: Double) (25.0 :: Double) 50 defaultOpts
     let m = min x
     toDouble m `shouldBe` 5.0
   it "takes the maximum of a linspace" $ do
-    let start = 5.0 :: Double
-    let end = 25.0 :: Double
-    let x = linspace start end 50 defaultOpts
+    let x = linspace (5.0 :: Double) (25.0 :: Double) 50 defaultOpts
     let m = max x
     toDouble m `shouldBe` 25.0
   it "takes the median of a linspace" $ do
     let x = linspace (5.0 :: Double) (10.0 :: Double) 5 defaultOpts
     let m = median x
     toDouble m `shouldBe` 7.5
+  it "performs matrix vector multiplication" $ do
+    let m = 3 * ones' [5, 5]
+    let v = 2 * ones' [5, 1]
+    let x = matmul m v
+    (toDouble $ select x 0 0) `shouldBe` 30.0
+  it "erf" $ do
+    let x = erf $ zeros' [4]
+    (toDouble $ select x 0 0) `shouldBe` 0.0
+  it "exp" $ do
+    let x = exp $ zeros' [4]
+    (toDouble $ select x 0 0) `shouldBe` 1.0
+  it "log1p" $ do
+    let x = log1p $ zeros' [4]
+    (toDouble $ select x 0 0) `shouldBe` 0.0
+  it "log2" $ do
+    let x = log2 $ 4 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` 2.0
+  it "log10" $ do
+    let x = log10 $ 1000 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` 3.0
+  it "relu (pos)" $ do
+    let x = relu $ 5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` 5.0
+  it "relu (neg)" $ do
+    let x = relu $ -5 * ones' [4]
+    (toDouble $ select x 0 0) `shouldBe` 0.0
