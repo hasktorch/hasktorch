@@ -2,7 +2,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 
 module Main where
-
+ 
 import Torch.Tensor
 import Torch.DType
 import Torch.TensorFactories
@@ -18,11 +18,12 @@ import LinearLayer
 import RecurrentLayer
 import MLP
 
+
 --------------------------------------------------------------------------------
 -- Training code
 --------------------------------------------------------------------------------
 
-num_iters = 10000
+num_iters = 5
 num_timesteps = 3
 
 sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
@@ -39,6 +40,10 @@ main :: IO ()
 main = do
     rnnLayer <- sample $ RecurrentSpec { in_features = 2, hidden_features = 2, nonlinearitySpec = Torch.Functions.tanh }
 
+    -- test print
+    print rnnLayer
+    putStrLn "----"
+
     let foldLoop x count block = foldM block x [1..count]
 
     -- randomly initializing training values
@@ -46,24 +51,42 @@ main = do
     init_hidden <- randn' [1, 2]
     expected_output <- randn' [1, 2]
 
+    -- test print
+    print inp
+    print init_hidden
+    print expected_output
+    putStrLn "----"
+
     -- training loop
     foldLoop rnnLayer num_iters $ \model i -> do
 
         let output = runOverTimesteps inp model num_timesteps init_hidden
-        -- print output
+        
+        -- test print
+        print output
+        putStrLn "----"
 
         let loss = mse_loss output expected_output
+
+        -- test print
+        print loss
+        putStrLn "----"
 
         let flat_parameters = flattenParameters model
 
         let gradients = grad loss flat_parameters
 
+        -- test print
+        print gradients
+        putStrLn "----"
+
         if i `mod` 100 == 0
-           then do putStrLn $ show loss
+            then do putStrLn $ show loss
           else return ()
 
         new_flat_parameters <- mapM makeIndependent $ sgd 5e-2 flat_parameters gradients
-
+        putStrLn "===="
         return $ replaceParameters model $ new_flat_parameters
+
 
     return ()

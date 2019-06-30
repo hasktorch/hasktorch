@@ -90,31 +90,3 @@ hidden_ = torch.matmul(rnn.weight_ih, inp.t())
 print(rnn.bias_ih.t())
 print(hidden_)
 print(hidden_t1)
-"""
-# arbitrary loss function
-loss = nn.MSELoss()
-
-# loss for our first timestep
-t1_loss = loss(hidden_t1, out)
-
-print(loss_)
-print(t1_loss)
-"""
-"""
-# backprop the loss using pytorch's handy auto-backprop mechanism
-rnn.zero_grad()
-t1_loss.backward()
-
-# and for the update, we'll use simple gradient descent
-# i.e: updatedWeights = weights - learning_rate * gradient
-# and a ridiculously large learning rate so that the change is noticeable
-learningRate = 100
-
-rnn.weight_ih = nn.Parameter(rnn.weight_ih - (learningRate * rnn.weight_ih.grad))
-rnn.weight_hh = nn.Parameter(rnn.weight_hh - (learningRate * rnn.weight_hh.grad))
-rnn.bias_ih = nn.Parameter(rnn.bias_ih - (learningRate * rnn.bias_ih.grad))
-rnn.bias_hh = nn.Parameter(rnn.bias_hh - (learningRate * rnn.bias_hh.grad))
-
-# print the updated weights of the cell
-print_details(rnn)
-"""
