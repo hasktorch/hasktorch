@@ -33,8 +33,3 @@ instance Castable [ForeignPtr Tensor] (ForeignPtr TensorList) where
   uncast xs f = do
     len <- tensorList_size xs
     f =<< mapM (tensorList_at_s xs) [0..(len - 1)]
-
-
-instance Castable (ForeignPtr Scalar) (ForeignPtr Scalar) where
-  cast x f = f x
-  uncast x f = f x
