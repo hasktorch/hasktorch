@@ -51,6 +51,9 @@ randn = mkFactory LibTorch.randn_lo
 linspace :: (Scalar a, Scalar b) => a -> b -> Int -> TensorOptions -> Tensor
 linspace start end steps opts = unsafePerformIO $ (cast4 LibTorch.linspace_sslo) start end steps opts
 
+logspace :: (Scalar a, Scalar b) => a -> b -> Int -> Double -> TensorOptions -> Tensor
+logspace start end steps base opts = unsafePerformIO $ (cast5 LibTorch.logspace_ssldo) start end steps base opts
+
 -------------------- Factories with default type --------------------
 
 ones' :: [Int] -> Tensor
@@ -67,3 +70,6 @@ randn' = mkDefaultFactory randn
 
 linspace' :: (Scalar a, Scalar b) => a -> b -> Int -> Tensor
 linspace' start end steps = linspace start end steps defaultOpts
+
+logspace' :: (Scalar a, Scalar b) => a -> b -> Int -> Double -> Tensor
+logspace' start end steps base = logspace start end steps base defaultOpts
