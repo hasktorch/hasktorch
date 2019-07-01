@@ -54,6 +54,9 @@ linspace start end steps opts = unsafePerformIO $ (cast4 LibTorch.linspace_sslo)
 logspace :: (Scalar a, Scalar b) => a -> b -> Int -> Double -> TensorOptions -> Tensor
 logspace start end steps base opts = unsafePerformIO $ (cast5 LibTorch.logspace_ssldo) start end steps base opts
 
+sparseCooTensor :: ConstTensor -> ConstTensor -> [Int] -> TensorOptions -> Tensor
+sparseCooTensor indices values size opts = unsafePerformIO $ (cast4 LibTorch.sparse_coo_tensor_ttlo) indices values size opts
+
 -------------------- Factories with default type --------------------
 
 ones' :: [Int] -> Tensor
@@ -73,3 +76,6 @@ linspace' start end steps = linspace start end steps defaultOpts
 
 logspace' :: (Scalar a, Scalar b) => a -> b -> Int -> Double -> Tensor
 logspace' start end steps base = logspace start end steps base defaultOpts
+
+sparseCooTensor' :: ConstTensor -> ConstTensor -> [Int] -> Tensor
+sparseCooTensor' indices values size = sparseCooTensor indices values size defaultOpts
