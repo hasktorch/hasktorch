@@ -126,9 +126,9 @@ instance TensorLike Double where
 
 instance Show Tensor where
   show t = case (dim t) of
-      0 -> show0d t
-      1 -> show1d t
-      2 -> show2d t
+      0 -> details ++ show0d t
+      1 -> details ++ show1d t
+      2 -> details ++ show2d t
       _ -> details
     where
       -- TODO: this is obviously not the right way to do it,
