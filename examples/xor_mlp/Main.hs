@@ -15,35 +15,11 @@ import Control.Monad (foldM)
 import Data.List (foldl', scanl', intersperse)
 
 --------------------------------------------------------------------------------
--- Linear function
+-- MLP
 --------------------------------------------------------------------------------
-
-data LinearSpec = LinearSpec { in_features :: Int, out_features :: Int }
-  deriving (Show, Eq)
-
-data Linear = Linear { weight :: Parameter, bias :: Parameter }
-  deriving (Show)
-
-instance Randomizable LinearSpec Linear where
-  sample LinearSpec{..} = do
-      w <- makeIndependent =<< randn' [in_features, out_features]
-      b <- makeIndependent =<< randn' [out_features]
-      return $ Linear w b
-
-instance Parametrized Linear where
-  flattenParameters Linear{..} = [weight, bias]
-  replaceOwnParameters _ = do
-    weight <- nextParameter
-    bias <- nextParameter
-    return $ Linear{..}
-
 
 linear :: Linear -> Tensor -> Tensor
 linear Linear{..} input = (matmul input (toDependent weight)) + (toDependent bias)
-
---------------------------------------------------------------------------------
--- MLP
---------------------------------------------------------------------------------
 
 data MLPSpec = MLPSpec { feature_counts :: [Int], nonlinearitySpec :: Tensor -> Tensor }
 
@@ -60,7 +36,7 @@ instance Randomizable MLPSpec MLP where
         where
           shift (a, b) c = (b, c)
 
-instance Parametrized MLP where
+instance Parameterized MLP where
   flattenParameters MLP{..} = concat $ map flattenParameters layers
   replaceOwnParameters mlp = do
     new_layers <- mapM replaceOwnParameters (layers mlp)
@@ -79,9 +55,6 @@ num_iters = 10000
 
 model :: MLP -> Tensor -> Tensor
 model params t = sigmoid (mlp params t)
-
-sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
-sgd lr parameters gradients = zipWith (\p dp -> p - (lr * dp)) (map toDependent parameters) gradients
 
 main :: IO ()
 main = do

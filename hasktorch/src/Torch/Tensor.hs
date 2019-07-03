@@ -30,11 +30,12 @@ import Torch.TensorOptions
 
 type ATenTensor = ForeignPtr ATen.Tensor
 
-data Tensor = Tensor ATenTensor
+-- do not use the constructor
+newtype Tensor = Unsafe ATenTensor
 
 instance Castable Tensor ATenTensor where
-  cast (Tensor aten_tensor) f = f aten_tensor
-  uncast aten_tensor f = f $ Tensor aten_tensor
+  cast (Unsafe aten_tensor) f = f aten_tensor
+  uncast aten_tensor f = f $ Unsafe aten_tensor
 
 --------------------------------------------------------------------------------
 -- Basic tensor properties
