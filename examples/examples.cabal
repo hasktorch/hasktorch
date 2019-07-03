@@ -23,9 +23,12 @@ executable elman
   hs-source-dirs:      elman
   main-is:             Main.hs
   other-modules:       Parameters,
-                       LinearLayer,
                        RecurrentLayer,
-                       MLP
+                       Utils
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , mtl
+                     , ffi
 
 executable regression
   hs-source-dirs:      regression
@@ -34,7 +37,6 @@ executable regression
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl
-
                      , ffi
 
 executable cnn

@@ -1,3 +1,4 @@
+-- Adam Paszke's module from the xor_mlp example
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
 

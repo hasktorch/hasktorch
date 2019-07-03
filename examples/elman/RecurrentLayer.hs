@@ -18,28 +18,21 @@ import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
 import Parameters
+import Utils
+
+{- This is the core of the RNN example- an Elman Cell type -}
 
 
-transpose :: Tensor -> Int -> Int -> Tensor
-transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
-
-
-transpose2D :: Tensor -> Tensor
-transpose2D t = transpose t 0 1
-
-
-transpose1D :: Tensor -> Tensor
-transpose1D t = reshape t  [(head $ shape t), 1]
-
-
+-- Specifying the shape of the recurrent layer
 data RecurrentSpec = RecurrentSpec { in_features :: Int, hidden_features :: Int, nonlinearitySpec :: Tensor -> Tensor }
 
-
+-- Recurrent layer type holding the weights for the layer
 data Recurrent = Recurrent { weight_ih :: Parameter, bias_ih :: Parameter,
                              weight_hh :: Parameter, bias_hh :: Parameter
                         }
 
 
+-- Typeclass that shows that the layer weights can be randomly initialized
 instance Randomizable RecurrentSpec Recurrent where
   sample RecurrentSpec{..} = do
       w_ih <- makeIndependent =<< randn' [in_features, hidden_features]
@@ -49,6 +42,7 @@ instance Randomizable RecurrentSpec Recurrent where
       return $ Recurrent w_ih b_ih w_hh b_hh
 
 
+-- Typeclass that allows us to manipulate and update the layer weights
 instance Parametrized Recurrent where
   flattenParameters Recurrent{..} = [weight_ih, bias_ih, weight_hh, bias_hh]
   replaceOwnParameters _ = do
@@ -66,28 +60,35 @@ instance Show Recurrent where
     (show $ toDependent bias_hh)
 
 
-recurrent :: Recurrent -> Tensor -> Tensor -> Tensor
+-- The layer 'function', i.e: passes an input through the layer
+-- and returns output
+recurrent :: Recurrent  -- current state of layer
+          -> Tensor     -- input tensor
+          -> Tensor     -- previous hidden state
+          -> Tensor     -- output tensor
 recurrent Recurrent{..} input hidden =
   h' (inputGate weight_ih bias_ih input)
      (hiddenGate weight_hh bias_hh hidden)
 
   where
-
+    -- Input gate
     inputGate weight bias input =
       (matmul
         (toDependent weight)
         (transpose2D input)) +
       (transpose2D $ toDependent bias)
-
+    -- hidden gate
     hiddenGate weight bias hidden =
       (matmul
         (toDependent weight)
         (transpose2D hidden)) +
       (transpose2D $ toDependent bias)
-
+    -- combined result of input and hidden gate
     h' ig hg = transpose2D $ Torch.Functions.tanh (ig + hg)
 
 
+-- Running the same layer over multiple timesteps
+-- where no. of timesteps = length of input sequence
 runOverTimesteps :: Tensor -> Recurrent -> Int -> Tensor -> Tensor
 runOverTimesteps inp layer 0 hidden = hidden
 runOverTimesteps inp layer n hidden =
