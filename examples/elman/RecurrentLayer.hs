@@ -46,7 +46,7 @@ instance Randomizable RecurrentSpec Recurrent where
       b_ih <- makeIndependent =<< randn' [1, in_features]
       w_hh <- makeIndependent =<< randn' [hidden_features, hidden_features]
       b_hh <- makeIndependent =<< randn' [1, hidden_features]
-      return $ Recurrent w_ih b_ih w_hh b_hh 
+      return $ Recurrent w_ih b_ih w_hh b_hh
 
 
 instance Parametrized Recurrent where
@@ -68,36 +68,29 @@ instance Show Recurrent where
 
 recurrent :: Recurrent -> Tensor -> Tensor -> Tensor
 recurrent Recurrent{..} input hidden =
-  h' (inputGate weight_ih bias_ih input) 
+  h' (inputGate weight_ih bias_ih input)
      (hiddenGate weight_hh bias_hh hidden)
 
   where
 
-    inputGate weight bias input = 
-      (matmul 
-        (toDependent weight) 
-        (transpose2D input)) + 
+    inputGate weight bias input =
+      (matmul
+        (toDependent weight)
+        (transpose2D input)) +
       (transpose2D $ toDependent bias)
 
-    hiddenGate weight bias hidden = 
-      (matmul 
-        (toDependent weight) 
-        (transpose2D hidden)) + 
+    hiddenGate weight bias hidden =
+      (matmul
+        (toDependent weight)
+        (transpose2D hidden)) +
       (transpose2D $ toDependent bias)
 
     h' ig hg = transpose2D $ Torch.Functions.tanh (ig + hg)
 
----------------------------------------------------------
 
--- to store the running of a recurrent cell
-data RunRecurrent = RunRecurrent {
-  rnn :: Recurrent,
-  past :: [Tensor]
-}
-
-instance Show RunRecurrent where
-  show RunRecurrent{..} =
-    "RNN:" ++ "\n" ++
-    (show rnn) ++ "\n" ++
-    "Previous Hidden States:" ++ "\n" ++
-    (show past)
+runOverTimesteps :: Tensor -> Recurrent -> Int -> Tensor -> Tensor
+runOverTimesteps inp layer 0 hidden = hidden
+runOverTimesteps inp layer n hidden =
+    runOverTimesteps inp layer (n-1) $ recurrent layer inp' hidden
+    where
+        inp' = reshape (select inp 0 (n-1)) [1, 2]

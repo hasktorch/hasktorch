@@ -7,3 +7,4 @@ codegen/build/
 deps/mklml
 cabal.project.local
 cabal.project.freeze
+venv/
