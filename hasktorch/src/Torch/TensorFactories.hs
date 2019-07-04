@@ -7,9 +7,11 @@ import Foreign.ForeignPtr
 
 import qualified ATen.Const as ATen
 import qualified ATen.Managed.Native as ATen
+import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.TensorOptions as ATen
 import qualified ATen.Type as ATen
 import qualified Torch.Managed.Native as LibTorch
+import qualified Torch.Managed.Autograd as LibTorch
 import ATen.Managed.Cast
 import ATen.Class (Castable(..))
 import ATen.Cast
@@ -54,8 +56,13 @@ linspace start end steps opts = unsafePerformIO $ (cast4 LibTorch.linspace_sslo)
 logspace :: (Scalar a, Scalar b) => a -> b -> Int -> Double -> TensorOptions -> Tensor
 logspace start end steps base opts = unsafePerformIO $ (cast5 LibTorch.logspace_ssldo) start end steps base opts
 
-sparseCooTensor :: ConstTensor -> ConstTensor -> [Int] -> TensorOptions -> Tensor
-sparseCooTensor indices values size opts = unsafePerformIO $ (cast4 LibTorch.sparse_coo_tensor_ttlo) indices values size opts
+sparseCooTensor :: Tensor -> Tensor -> [Int] -> TensorOptions -> Tensor
+sparseCooTensor indices values size opts =  unsafePerformIO $ (cast4 sparse_coo_tensor_ttlo) indices values size opts
+  where
+    sparse_coo_tensor_ttlo indices' values' size' opts' = do
+      i' <- LibTorch.dropVariable indices'
+      v' <- LibTorch.dropVariable values'
+      LibTorch.sparse_coo_tensor_ttlo i' v' size' opts'
 
 -------------------- Factories with default type --------------------
 
@@ -77,5 +84,5 @@ linspace' start end steps = linspace start end steps defaultOpts
 logspace' :: (Scalar a, Scalar b) => a -> b -> Int -> Double -> Tensor
 logspace' start end steps base = logspace start end steps base defaultOpts
 
-sparseCooTensor' :: ConstTensor -> ConstTensor -> [Int] -> Tensor
+sparseCooTensor' :: Tensor -> Tensor -> [Int] -> Tensor
 sparseCooTensor' indices values size = sparseCooTensor indices values size defaultOpts

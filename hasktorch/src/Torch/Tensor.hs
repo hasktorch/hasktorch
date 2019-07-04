@@ -38,12 +38,6 @@ instance Castable Tensor ATenTensor where
   cast (Unsafe aten_tensor) f = f aten_tensor
   uncast aten_tensor f = f $ Unsafe aten_tensor
 
-newtype ConstTensor = UnsafeConst ATenTensor
-
-instance Castable ConstTensor ATenTensor where
-  cast (UnsafeConst aten_tensor) f = f aten_tensor
-  uncast aten_tensor f = f $ UnsafeConst aten_tensor
-
 --------------------------------------------------------------------------------
 -- Basic tensor properties
 --------------------------------------------------------------------------------
@@ -207,50 +201,6 @@ instance TensorLike [[[Integer]]] where
 instance TensorLike [[[Double]]] where
   asTensor v = mkTensor @Float (map realToFrac (concat (concat v))) [length v, length (head v), length (head (head v))] float_opts
   asValue t = split2d (shape t) $ map realToFrac $ mkValue @Float t
-
----------------------------------------------------------------------------------------
--- Tensor without variable. This is the same as torch.LongTensor or torch.FloatTensor.
----------------------------------------------------------------------------------------
-
-class ConstTensorLike a where
-  asConstTensor :: a -> ConstTensor
-  asConstValue :: ConstTensor -> a
-
-mkConstTensor :: (Storable a) => [a] -> [Int] -> TensorOptions -> ConstTensor
-mkConstTensor vs dims opts = unsafePerformIO $ do
-  t <- ((cast2 ATen.empty_lo) :: [Int] -> TensorOptions -> IO ConstTensor) dims opts
-  --           *~~~~~~~~~~~*  This line is different from mkTensor's one not to use variable.
-  ptr <- ((cast1 ATen.tensor_data_ptr) :: ConstTensor -> IO (Ptr ())) t
-  forM_ (zip [0..] vs) $ \(i,v) ->
-    pokeElemOff (castPtr ptr) i v
-  return t
-
-unsafeConstCast :: ConstTensor -> Tensor
-unsafeConstCast (UnsafeConst t) = Unsafe t
-
-instance ConstTensorLike [Integer] where
-  asConstTensor v = mkConstTensor @Int64 (map fromIntegral v) [length v] int64_opts
-  asConstValue t = map fromIntegral $ mkValue @Int64 (unsafeConstCast t)
-
-instance ConstTensorLike [Double] where
-  asConstTensor v = mkConstTensor @Float (map realToFrac v) [length v] float_opts
-  asConstValue t = map realToFrac $ mkValue @Float (unsafeConstCast t)
-
-instance ConstTensorLike [[Integer]] where
-  asConstTensor v = mkConstTensor @Int64 (map fromIntegral (concat v)) [length v, length (head v)] int64_opts
-  asConstValue t = split1d (shape (unsafeConstCast t)) $ map fromIntegral $ mkValue @Int64 (unsafeConstCast t)
-
-instance ConstTensorLike [[Double]] where
-  asConstTensor v = mkConstTensor @Float (map realToFrac (concat v)) [length v, length (head v)] float_opts
-  asConstValue t = split1d (shape (unsafeConstCast t)) $ map realToFrac $ mkValue @Float (unsafeConstCast t)
-
-instance ConstTensorLike [[[Integer]]] where
-  asConstTensor v = mkConstTensor @Int64 (map fromIntegral (concat (concat v))) [length v, length (head v), length (head (head v))] int64_opts
-  asConstValue t = split2d (shape (unsafeConstCast t)) $ map fromIntegral $ mkValue @Int64 (unsafeConstCast t)
-
-instance ConstTensorLike [[[Double]]] where
-  asConstTensor v = mkConstTensor @Float (map realToFrac (concat (concat v))) [length v, length (head v), length (head (head v))] float_opts
-  asConstValue t = split2d (shape (unsafeConstCast t)) $ map realToFrac $ mkValue @Float (unsafeConstCast t)
 
 --------------------------------------------------------------------------------
 -- Show

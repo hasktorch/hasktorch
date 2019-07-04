@@ -17,3 +17,6 @@ grad = cast2 Unmanaged.grad
 
 makeIndependent :: ForeignPtr Tensor -> IO (ForeignPtr Tensor)
 makeIndependent = cast1 Unmanaged.makeIndependent
+
+dropVariable :: ForeignPtr Tensor -> IO (ForeignPtr Tensor)
+dropVariable = cast1 Unmanaged.dropVariable

@@ -20,7 +20,7 @@ spec = do
     let i = [[0, 1, 1],
              [2, 0, 2]] :: [[Integer]]
         v = [3, 4, 5] :: [Double]
-    let x = sparseCooTensor' (asConstTensor i) (asConstTensor v) [2, 3]
+    let x = sparseCooTensor' (asTensor i) (asTensor v) [2, 3]
     print (toDense x)
     -- When we call print for sparse tensor, it throws a exception.
     (print x) `shouldThrow` anyException
