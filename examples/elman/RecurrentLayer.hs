@@ -88,7 +88,7 @@ recurrent Recurrent{..} input hidden =
 
 
 -- Running the same layer over multiple timesteps
--- where no. of timesteps = length of input sequence
+-- where no. of timesteps <= length of input sequence
 runOverTimesteps :: Tensor -> Recurrent -> Int -> Tensor -> Tensor
 runOverTimesteps inp layer 0 hidden = hidden
 runOverTimesteps inp layer n hidden =
