@@ -15,17 +15,28 @@ import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
 
-{- This is the core of the RNN example- an Elman Cell type -}
+class (Randomizable a, Parameterized a) => Recurrent a where
+    run :: a -> Tensor -> Tensor -> Tensor
+    runOverTimesteps :: a -> Tensor -> Tensor -> Tensor
 
 
 -- Specifying the shape of the recurrent layer
 data RecurrentSpec = RecurrentSpec { in_features :: Int, hidden_features :: Int, nonlinearitySpec :: Tensor -> Tensor }
 
 -- Recurrent layer type holding the weights for the layer
-data Recurrent = Recurrent { weight_ih :: Parameter, bias_ih :: Parameter,
-                             weight_hh :: Parameter, bias_hh :: Parameter,
-                             nonLinearity :: Tensor -> Tensor
-                        }
+--data Recurrent = Recurrent { weight_ih :: Parameter, bias_ih :: Parameter,
+--                             weight_hh :: Parameter, bias_hh :: Parameter,
+--                             nonLinearity :: Tensor -> Tensor
+--                        }
+
+
+data GRUCell = GRUCell {weight_ir :: Parameter, bias_ir :: Parameter,
+                        weight_iz :: Parameter, bias_iz :: Parameter,
+                        weight_in :: Parameter, bias_in :: Parameter,
+                        weight_hr :: Parameter, bias_hr :: Parameter,
+                        weight_hz :: Parameter, bias_hz :: Parameter,
+                        weight_hn :: Parameter, bias_hn :: Parameter
+                      }
 
 
 -- Typeclass that shows that the layer weights can be randomly initialized
