@@ -22,9 +22,7 @@ executable xor_mlp
 executable elman
   hs-source-dirs:      elman
   main-is:             Main.hs
-  other-modules:       Parameters,
-                       RecurrentLayer,
-                       Utils
+  other-modules:       RecurrentLayer
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
                      , hasktorch

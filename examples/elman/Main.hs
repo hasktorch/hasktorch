@@ -9,13 +9,12 @@ import Torch.TensorFactories
 import Torch.Functions
 import Torch.TensorOptions
 import Torch.Autograd
+import Torch.NN 
 
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
-import Parameters
 import RecurrentLayer
-import Utils
 
 --------------------------------------------------------------------------------
 -- Training code

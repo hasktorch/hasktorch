@@ -9,16 +9,11 @@ import Torch.TensorFactories
 import Torch.Functions
 import Torch.TensorOptions
 import Torch.Autograd
+import Torch.NN
 
-import ATen.Cast
-import qualified ATen.Managed.Native as ATen
-
-import System.IO.Unsafe
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
-import Parameters
-import Utils
 
 {- This is the core of the RNN example- an Elman Cell type -}
 
@@ -28,7 +23,8 @@ data RecurrentSpec = RecurrentSpec { in_features :: Int, hidden_features :: Int,
 
 -- Recurrent layer type holding the weights for the layer
 data Recurrent = Recurrent { weight_ih :: Parameter, bias_ih :: Parameter,
-                             weight_hh :: Parameter, bias_hh :: Parameter
+                             weight_hh :: Parameter, bias_hh :: Parameter,
+                             nonLinearity :: Tensor -> Tensor
                         }
 
 
@@ -39,17 +35,19 @@ instance Randomizable RecurrentSpec Recurrent where
       b_ih <- makeIndependent =<< randn' [1, in_features]
       w_hh <- makeIndependent =<< randn' [hidden_features, hidden_features]
       b_hh <- makeIndependent =<< randn' [1, hidden_features]
-      return $ Recurrent w_ih b_ih w_hh b_hh
+      return $ Recurrent w_ih b_ih w_hh b_hh nonlinearitySpec
 
 
 -- Typeclass that allows us to manipulate and update the layer weights
-instance Parametrized Recurrent where
+instance Parameterized Recurrent where
   flattenParameters Recurrent{..} = [weight_ih, bias_ih, weight_hh, bias_hh]
   replaceOwnParameters _ = do
     weight_ih <- nextParameter
     bias_ih   <- nextParameter
     weight_hh <- nextParameter
     bias_hh   <- nextParameter
+    -- TODO: how do I get around this??
+    let nonLinearity = Torch.Functions.tanh
     return $ Recurrent{..}
 
 instance Show Recurrent where
@@ -71,20 +69,21 @@ recurrent Recurrent{..} input hidden =
      (hiddenGate weight_hh bias_hh hidden)
 
   where
+
+    linear weight bias features = 
+      (matmul
+        (toDependent weight)
+        (transpose2D features)) +
+      (transpose2D $ toDependent bias)
+
     -- Input gate
-    inputGate weight bias input =
-      (matmul
-        (toDependent weight)
-        (transpose2D input)) +
-      (transpose2D $ toDependent bias)
+    inputGate weight bias input = linear weight bias input
+
     -- hidden gate
-    hiddenGate weight bias hidden =
-      (matmul
-        (toDependent weight)
-        (transpose2D hidden)) +
-      (transpose2D $ toDependent bias)
+    hiddenGate weight bias hidden = linear weight bias hidden
+
     -- combined result of input and hidden gate
-    h' ig hg = transpose2D $ Torch.Functions.tanh (ig + hg)
+    h' ig hg = transpose2D $ nonLinearity (ig + hg)
 
 
 -- Running the same layer over multiple timesteps
