@@ -65,8 +65,8 @@ recurrent :: Recurrent  -- current state of layer
           -> Tensor     -- previous hidden state
           -> Tensor     -- output tensor
 recurrent Recurrent{..} input hidden =
-  h' (inputGate weight_ih bias_ih input)
-     (hiddenGate weight_hh bias_hh hidden)
+  h' (linear weight_ih bias_ih input)
+     (linear weight_hh bias_hh hidden)
 
   where
 
@@ -75,12 +75,6 @@ recurrent Recurrent{..} input hidden =
         (toDependent weight)
         (transpose2D features)) +
       (transpose2D $ toDependent bias)
-
-    -- Input gate
-    inputGate weight bias input = linear weight bias input
-
-    -- hidden gate
-    hiddenGate weight bias hidden = linear weight bias hidden
 
     -- combined result of input and hidden gate
     h' ig hg = transpose2D $ nonLinearity (ig + hg)
