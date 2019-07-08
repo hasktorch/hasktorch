@@ -14,7 +14,77 @@ import Torch.NN
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
 
-import RecurrentLayer
+
+{- This is the core of the RNN example- an Elman Cell type -}
+
+-- Specifying the shape of the recurrent layer
+data RecurrentSpec = RecurrentSpec { in_features :: Int, hidden_features :: Int }
+
+-- Recurrent layer type holding the weights for the layer
+data Recurrent = Recurrent { weight_ih :: Parameter, 
+                             weight_hh :: Parameter,
+                             bias :: Parameter
+                           }
+
+
+-- Typeclass that shows that the layer weights can be randomly initialized
+instance Randomizable RecurrentSpec Recurrent where
+  sample RecurrentSpec{..} = do
+      w_ih <- makeIndependent =<< randn' [in_features, hidden_features]
+      w_hh <- makeIndependent =<< randn' [hidden_features, hidden_features]
+      b <- makeIndependent =<< randn' [1, hidden_features]
+      return $ Recurrent w_ih w_hh b
+
+
+-- Typeclass that allows us to manipulate and update the layer weights
+instance Parameterized Recurrent where
+  flattenParameters Recurrent{..} = [weight_ih, weight_hh, bias]
+  replaceOwnParameters _ = do
+    weight_ih <- nextParameter
+    weight_hh <- nextParameter
+    bias   <- nextParameter
+    return $ Recurrent{..}
+
+instance Show Recurrent where
+  show Recurrent{..} =
+    (show $ toDependent weight_ih) ++ "\n" ++
+    (show $ toDependent weight_hh) ++ "\n" ++
+    (show $ toDependent bias)
+
+
+-- The layer 'function', i.e: passes an input through the layer
+-- and returns output
+recurrent :: Recurrent  -- current state of layer
+          -> Tensor     -- input tensor
+          -> Tensor     -- previous hidden state
+          -> Tensor     -- output tensor
+recurrent Recurrent{..} input hidden =
+  h' (linear weight_ih input)
+     (linear weight_hh hidden)
+     bias
+
+  where
+
+    linear weight features = 
+      matmul
+        (toDependent weight)
+        (transpose2D features)
+
+    -- combined result of input and hidden gate
+    h' ig hg bias = transpose2D 
+                    (Torch.Functions.tanh 
+                        (ig + hg + 
+                            (transpose2D $ toDependent bias)))
+
+
+-- Running the same layer over multiple timesteps
+-- where no. of timesteps <= length of input sequence
+runOverTimesteps :: Tensor -> Recurrent -> Int -> Tensor -> Tensor
+runOverTimesteps inp layer 0 hidden = hidden
+runOverTimesteps inp layer n hidden =
+    runOverTimesteps inp layer (n-1) $ recurrent layer inp' hidden
+    where
+        inp' = reshape (inp @@ (n-1)) [1, 2]
 
 --------------------------------------------------------------------------------
 -- Training code
@@ -27,7 +97,7 @@ num_timesteps = 3
 main :: IO ()
 main = do
     -- randomly initialize the elman cell
-    rnnLayer <- sample $ RecurrentSpec { in_features = 2, hidden_features = 2, nonlinearitySpec = Torch.Functions.tanh }
+    rnnLayer <- sample $ RecurrentSpec { in_features = 2, hidden_features = 2 }
 
     let foldLoop x count block = foldM block x [1..count]
 
@@ -62,6 +132,5 @@ main = do
 
         -- return the new model state "to" the next iteration of foldLoop
         return $ replaceParameters model $ new_flat_parameters
-
 
     return ()

@@ -165,10 +165,6 @@ logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim 
 transpose :: Tensor -> Int -> Int -> Tensor
 transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
 
--- transpose special case for a 1D tensor
--- uses reshape instead of transpose
-transpose1D :: Tensor -> Tensor
-transpose1D t = reshape t  [(head $ shape t), 1]
 
 -- transpose special case for a 2D tensor
 transpose2D :: Tensor -> Tensor
