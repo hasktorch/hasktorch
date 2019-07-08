@@ -6,6 +6,7 @@
 
 module Torch.Tensor where
 
+import Control.Monad (forM_, forM)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
@@ -67,6 +68,23 @@ select t dim idx = unsafePerformIO $ (cast3 ATen.tensor_select_ll) t dim idx
 
 reshape :: Tensor -> [Int] -> Tensor
 reshape t shape = unsafePerformIO $ (cast2 ATen.reshape_tl) t shape
+
+--------------------------------------------------------------------------------
+-- Move backend
+--------------------------------------------------------------------------------
+
+toSparse :: Tensor -> Tensor
+toSparse t = unsafePerformIO $ (cast1 ATen.tensor_to_sparse) t
+
+toDense :: Tensor -> Tensor
+toDense t = unsafePerformIO $ (cast1 ATen.tensor_to_dense) t
+
+toCPU :: Tensor -> Tensor
+toCPU t = unsafePerformIO $ (cast1 ATen.tensor_cpu) t
+
+toCUDA :: Tensor -> Tensor
+toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
+
 --------------------------------------------------------------------------------
 -- Indexing support
 --------------------------------------------------------------------------------
@@ -96,11 +114,12 @@ instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d) => TensorI
   indexWith toff (a, b, c, d) = indexWith (indexWith (indexWith (indexWith toff a) b) c) d
 
 --------------------------------------------------------------------------------
--- Scalar -> Tensor promotion
+-- Scalar <-> Tensor promotion
 --------------------------------------------------------------------------------
 
 class TensorLike a where
   asTensor :: a -> Tensor
+  asValue :: Tensor -> a
 
 mkScalarTensor :: Storable a => a -> TensorOptions -> Tensor
 mkScalarTensor v opts = unsafePerformIO $ do
@@ -109,16 +128,79 @@ mkScalarTensor v opts = unsafePerformIO $ do
   poke (castPtr ptr) v
   return t
 
+mkScalarValue :: Storable a => Tensor -> a
+mkScalarValue t = unsafePerformIO $ do
+  ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
+  peek (castPtr ptr)
+
 int64_opts = withDType Int64 defaultOpts
 float_opts = withDType Float defaultOpts
 
 instance TensorLike Integer where
   asTensor v = mkScalarTensor @Int64 (fromIntegral v) int64_opts
+  asValue t = fromIntegral $ mkScalarValue @Int64 t
 
 instance TensorLike Double where
   -- XXX: This implicit cast to float is very meh, but I don't have any better ideas
   --      This is our default dtype, so it's the most convenient thing we can do
   asTensor v = mkScalarTensor @Float (realToFrac v) float_opts
+  asValue t = realToFrac $ mkScalarValue @Float t
+
+--------------------------------------------------------------------------------
+-- List <-> Tensor promotion
+--------------------------------------------------------------------------------
+
+mkTensor :: (Storable a) => [a] -> [Int] -> TensorOptions -> Tensor
+mkTensor vs dims opts = unsafePerformIO $ do
+  t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) dims opts
+  ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
+  forM_ (zip [0..] vs) $ \(i,v) ->
+    pokeElemOff (castPtr ptr) i v
+  return t
+
+mkValue :: (Storable a) => Tensor -> [a]
+mkValue t = unsafePerformIO $ do
+  let dims = shape t
+  ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
+  forM [0..((product dims)-1)] $ \i ->
+    peekElemOff (castPtr ptr) i
+
+split1d :: [Int] -> [a] -> [[a]]
+split1d _ [] = []
+split1d ns xs =
+  let n = head $ reverse ns
+      (x,y) = splitAt n xs
+  in x:(split1d ns y)
+
+split2d :: [Int] -> [a] -> [[[a]]]
+split2d _ [] = []
+split2d ns xs =
+  let (n0:n1:_) = reverse ns
+  in flip map (split1d [n0] xs) $ split1d [n1]
+
+instance TensorLike [Integer] where
+  asTensor v = mkTensor @Int64 (map fromIntegral v) [length v] int64_opts
+  asValue t = map fromIntegral $ mkValue @Int64 t
+
+instance TensorLike [Double] where
+  asTensor v = mkTensor @Float (map realToFrac v) [length v] float_opts
+  asValue t = map realToFrac $ mkValue @Float t
+
+instance TensorLike [[Integer]] where
+  asTensor v = mkTensor @Int64 (map fromIntegral (concat v)) [length v, length (head v)] int64_opts
+  asValue t = split1d (shape t) $ map fromIntegral $ mkValue @Int64 t
+
+instance TensorLike [[Double]] where
+  asTensor v = mkTensor @Float (map realToFrac (concat v)) [length v, length (head v)] float_opts
+  asValue t = split1d (shape t) $ map realToFrac $ mkValue @Float t
+
+instance TensorLike [[[Integer]]] where
+  asTensor v = mkTensor @Int64 (map fromIntegral (concat (concat v))) [length v, length (head v), length (head (head v))] int64_opts
+  asValue t = split2d (shape t) $ map fromIntegral $ mkValue @Int64 t
+
+instance TensorLike [[[Double]]] where
+  asTensor v = mkTensor @Float (map realToFrac (concat (concat v))) [length v, length (head v), length (head (head v))] float_opts
+  asValue t = split2d (shape t) $ map realToFrac $ mkValue @Float t
 
 --------------------------------------------------------------------------------
 -- Show

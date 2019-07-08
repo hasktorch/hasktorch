@@ -69,3 +69,10 @@ makeIndependent :: Ptr Tensor -> IO (Ptr Tensor)
 makeIndependent t = [C.throwBlock| at::Tensor* {
     return new at::Tensor($(at::Tensor* t)->detach().set_requires_grad(true));
   }|]
+
+dropVariable :: Ptr Tensor -> IO (Ptr Tensor)
+dropVariable t = [C.throwBlock| at::Tensor* {
+    auto ret = $(at::Tensor* t)->detach();
+    ret.unsafeGetTensorImpl()->set_autograd_meta(nullptr);
+    return new at::Tensor(ret);
+  }|]

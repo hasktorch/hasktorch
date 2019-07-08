@@ -14,6 +14,7 @@ import qualified ATen.Const as ATen
 import qualified ATen.Managed.Type.TensorOptions as ATen
 
 import Torch.DType
+import Torch.Layout
 
 type ATenTensorOptions = ForeignPtr ATen.TensorOptions
 
@@ -28,3 +29,6 @@ defaultOpts = TensorOptions $ unsafePerformIO $ ATen.newTensorOptions_s ATen.kFl
 
 withDType :: DType -> TensorOptions -> TensorOptions
 withDType dtype opts = unsafePerformIO $ (cast2 ATen.tensorOptions_dtype_s) opts dtype
+
+withLayout :: Layout -> TensorOptions -> TensorOptions
+withLayout layout opts = unsafePerformIO $ (cast2 ATen.tensorOptions_layout_L) opts layout
