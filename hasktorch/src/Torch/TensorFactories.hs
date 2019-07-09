@@ -7,9 +7,11 @@ import Foreign.ForeignPtr
 
 import qualified ATen.Const as ATen
 import qualified ATen.Managed.Native as ATen
+import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.TensorOptions as ATen
 import qualified ATen.Type as ATen
 import qualified Torch.Managed.Native as LibTorch
+import qualified Torch.Managed.Autograd as LibTorch
 import ATen.Managed.Cast
 import ATen.Class (Castable(..))
 import ATen.Cast
@@ -67,6 +69,14 @@ eye nrows ncols opts = unsafePerformIO $ (cast3 LibTorch.eye_llo) nrows ncols op
 full :: Scalar a => [Int] -> a -> TensorOptions -> Tensor
 full shape value opts = unsafePerformIO $ (cast3 LibTorch.full_lso) shape value opts
 
+sparseCooTensor :: Tensor -> Tensor -> [Int] -> TensorOptions -> Tensor
+sparseCooTensor indices values size opts =  unsafePerformIO $ (cast4 sparse_coo_tensor_ttlo) indices values size opts
+  where
+    sparse_coo_tensor_ttlo indices' values' size' opts' = do
+      i' <- LibTorch.dropVariable indices'
+      v' <- LibTorch.dropVariable values'
+      LibTorch.sparse_coo_tensor_ttlo i' v' size' opts'
+
 -------------------- Factories with default type --------------------
 
 ones' :: [Int] -> Tensor
@@ -95,3 +105,6 @@ eye' nrows ncols =  eye nrows ncols defaultOpts
 
 full' :: Scalar a => [Int] -> a -> Tensor
 full' shape value = full shape value defaultOpts
+
+sparseCooTensor' :: Tensor -> Tensor -> [Int] -> Tensor
+sparseCooTensor' indices values size = sparseCooTensor indices values size defaultOpts
