@@ -26,12 +26,12 @@ instance Num Tensor where
   negate t = unsafePerformIO $ (cast1 ATen.neg_t) t
   abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
   signum t = unsafePerformIO $ (cast1 ATen.sign_t) t
-  fromInteger = asTensor
+  fromInteger i = asTensor @Int $ fromInteger @Int i
 
 instance Fractional Tensor where
   a / b = unsafePerformIO $ (cast2 ATen.div_tt) a b
   recip t = unsafePerformIO $ (cast1 ATen.reciprocal_t) t
-  fromRational = asTensor . (fromRational @Double)
+  fromRational i = asTensor @Float $ fromRational @Float i
 
 sumAll :: Tensor -> Tensor
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
