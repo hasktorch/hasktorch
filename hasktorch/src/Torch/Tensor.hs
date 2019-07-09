@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Torch.Tensor where
 
@@ -10,15 +11,17 @@ import Control.Monad (forM_, forM)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
+import Foreign.C.Types (CDouble, CFloat, CInt)
 import System.IO.Unsafe
 import Data.Int (Int64)
 import Data.List (intercalate)
 import Numeric
 
 import ATen.Cast
-import ATen.Class (Castable(..))
+import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..), CppTuple5(..))
 import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.TensorOptions as ATen
+import qualified ATen.Managed.Type.Tuple as ATen
 import qualified ATen.Managed.Native as ATen
 import qualified ATen.Managed.Cast as ATen
 import qualified ATen.Type as ATen
@@ -201,6 +204,82 @@ instance TensorLike [[[Integer]]] where
 instance TensorLike [[[Double]]] where
   asTensor v = mkTensor @Float (map realToFrac (concat (concat v))) [length v, length (head v), length (head (head v))] float_opts
   asValue t = split2d (shape t) $ map realToFrac $ mkValue @Float t
+
+--------------------------------------------------------------------------------
+-- Tuple -> ForeignPtr (ATen's Tuple)
+--------------------------------------------------------------------------------
+
+instance Castable (Tensor,Tensor) (ForeignPtr (ATen.Tensor,ATen.Tensor)) where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    f (Unsafe t0, Unsafe t1)
+
+instance Castable (Tensor,Tensor,Tensor) (ForeignPtr (ATen.Tensor,ATen.Tensor,ATen.Tensor)) where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    f (Unsafe t0, Unsafe t1, Unsafe t2)
+
+instance Castable (Tensor,Tensor,Tensor,Tensor) (ForeignPtr (ATen.Tensor,ATen.Tensor,ATen.Tensor,ATen.Tensor)) where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    t3 <- get3 t
+    f (Unsafe t0, Unsafe t1, Unsafe t2, Unsafe t3)
+
+instance Castable (Tensor,Tensor,Tensor,[Tensor]) (ForeignPtr (ATen.Tensor,ATen.Tensor,ATen.Tensor,ATen.TensorList)) where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    xs <- get3 t
+    uncast xs $ \ptr_list -> do
+      tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
+      f (Unsafe t0, Unsafe t1, Unsafe t2, map Unsafe tensor_list)
+
+instance Castable (Tensor,Tensor,Tensor,Tensor,Tensor) (ForeignPtr (ATen.Tensor,ATen.Tensor,ATen.Tensor,ATen.Tensor,ATen.Tensor)) where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    t3 <- get3 t
+    t4 <- get4 t
+    f (Unsafe t0, Unsafe t1, Unsafe t2, Unsafe t3, Unsafe t4)
+
+instance Castable (Tensor,Tensor,Double,Int64) (ForeignPtr (ATen.Tensor,ATen.Tensor,CDouble,Int64)) where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    t3 <- get3 t
+    f (Unsafe t0, Unsafe t1, realToFrac t2, t3)
+
+instance Castable (Tensor,Tensor,Float,Int) (ForeignPtr (ATen.Tensor,ATen.Tensor,CFloat,CInt)) where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    t3 <- get3 t
+    f (Unsafe t0, Unsafe t1, realToFrac t2, fromIntegral t3)
+
+instance Castable (Tensor,Tensor,Tensor,Int64) (ForeignPtr (ATen.Tensor,ATen.Tensor,ATen.Tensor,Int64)) where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    t3 <- get3 t
+    f (Unsafe t0, Unsafe t1, Unsafe t2, t3)
 
 --------------------------------------------------------------------------------
 -- Show
