@@ -67,6 +67,7 @@ select t dim idx = unsafePerformIO $ (cast3 ATen.tensor_select_ll) t dim idx
 
 reshape :: Tensor -> [Int] -> Tensor
 reshape t shape = unsafePerformIO $ (cast2 ATen.reshape_tl) t shape
+
 --------------------------------------------------------------------------------
 -- Indexing support
 --------------------------------------------------------------------------------
