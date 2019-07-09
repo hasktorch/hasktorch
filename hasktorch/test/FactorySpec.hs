@@ -33,13 +33,13 @@ spec = do
     let end = 25.0 :: Double
     let x = logspace start end 50 2.0 defaultOpts
     (toDouble $ select x 0 0) `shouldBe` 32.0
-  it "eye factory" $ do
-    let x = eye' 7
+  it "eyeSquare factory" $ do
+    let x = eyeSquare' 7
     shape x `shouldBe` [7, 7]
     (toDouble $ select (select x 0 0) 0 0) `shouldBe` 1.0
     (toDouble $ select (select x 0 0) 0 1) `shouldBe` 0.0
-  it "eye2 factory" $ do
-    let x = eye2' 7 3
+  it "eye factory" $ do
+    let x = eye' 7 3
     shape x `shouldBe` [7, 3]
     (toDouble $ select (select x 0 0) 0 0) `shouldBe` 1.0
     (toDouble $ select (select x 0 0) 0 1) `shouldBe` 0.0

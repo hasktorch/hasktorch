@@ -58,11 +58,11 @@ logspace start end steps base opts = unsafePerformIO $ (cast5 LibTorch.logspace_
 -- empty :: [Int] -> TensorOptions -> Tensor
 -- empty = mkFactoryUnsafe LibTorch.empty_lo
 
-eye :: Int -> TensorOptions -> Tensor
-eye dim opts = unsafePerformIO $ (cast2 LibTorch.eye_lo) dim opts
+eyeSquare :: Int -> TensorOptions -> Tensor
+eyeSquare dim opts = unsafePerformIO $ (cast2 LibTorch.eye_lo) dim opts
 
-eye2 :: Int -> Int -> TensorOptions -> Tensor
-eye2 nrows ncols opts = unsafePerformIO $ (cast3 LibTorch.eye_llo) nrows ncols opts
+eye :: Int -> Int -> TensorOptions -> Tensor
+eye nrows ncols opts = unsafePerformIO $ (cast3 LibTorch.eye_llo) nrows ncols opts
 
 full :: Scalar a => [Int] -> a -> TensorOptions -> Tensor
 full shape value opts = unsafePerformIO $ (cast3 LibTorch.full_lso) shape value opts
@@ -87,11 +87,11 @@ linspace' start end steps = linspace start end steps defaultOpts
 logspace' :: (Scalar a, Scalar b) => a -> b -> Int -> Double -> Tensor
 logspace' start end steps base = logspace start end steps base defaultOpts
 
-eye' :: Int -> Tensor
-eye' dim =  eye dim defaultOpts
+eyeSquare' :: Int -> Tensor
+eyeSquare' dim =  eyeSquare dim defaultOpts
 
-eye2' :: Int -> Int -> Tensor
-eye2' nrows ncols =  eye2 nrows ncols defaultOpts
+eye' :: Int -> Int -> Tensor
+eye' nrows ncols =  eye nrows ncols defaultOpts
 
 full' :: Scalar a => [Int] -> a -> Tensor
 full' shape value = full shape value defaultOpts

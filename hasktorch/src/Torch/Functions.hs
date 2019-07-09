@@ -162,4 +162,4 @@ logSoftmax :: Tensor -> Int -> Tensor
 logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
 
 diag :: Tensor -> Int -> Tensor
-diag t padding = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t padding
+diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
