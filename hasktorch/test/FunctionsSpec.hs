@@ -80,3 +80,9 @@ spec = do
   it "relu (neg)" $ do
     let x = relu $ -5 * ones' [4]
     (toDouble $ select x 0 0) `shouldBe` 0.0
+  it "diag" $ do
+    let x = ones' [3]
+    let y = diag x 2
+    shape y `shouldBe` [5, 5]
+
+

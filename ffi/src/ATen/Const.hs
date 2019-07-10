@@ -134,3 +134,12 @@ bUndefined = [C.pure| int { (int) at::Backend::Undefined } |]
 
 bNumOptions :: Backend
 bNumOptions = [C.pure| int { (int) at::Backend::NumOptions } |]
+
+kStrided :: Layout
+kStrided = [C.pure| int8_t { (int8_t) at::kStrided } |]
+
+kSparse :: Layout
+kSparse = [C.pure| int8_t { (int8_t) at::kSparse } |]
+
+kMkldnn :: Layout
+kMkldnn = [C.pure| int8_t { (int8_t) at::kMkldnn } |]

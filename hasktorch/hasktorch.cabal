@@ -22,6 +22,8 @@ library
                     , Torch.Static
                     , Torch.NN
                     , Torch.Scalar
+                    , Torch.Backend
+                    , Torch.Layout
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.KnownNat.Solver -fconstraint-solver-iterations=0
@@ -35,10 +37,13 @@ test-suite spec
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Spec.hs
-  other-modules:      FactorySpec, FunctionsSpec, GradSpec
+  other-modules:      FactorySpec
+                    , FunctionsSpec
+                    , GradSpec
+                    , SparseSpec
   default-language: Haskell2010
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch
-                     , hspec
-                     , hspec-discover
-                     , safe-exceptions
+  build-depends:      base >= 4.7 && < 5
+                    , hasktorch
+                    , hspec
+                    , hspec-discover
+                    , safe-exceptions
