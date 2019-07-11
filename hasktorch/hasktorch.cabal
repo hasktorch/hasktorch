@@ -41,9 +41,11 @@ test-suite spec
                     , FunctionsSpec
                     , GradSpec
                     , SparseSpec
+                    , TensorSpec
   default-language: Haskell2010
   build-depends:      base >= 4.7 && < 5
                     , hasktorch
                     , hspec
                     , hspec-discover
                     , safe-exceptions
+                    , QuickCheck

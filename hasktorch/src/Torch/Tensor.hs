@@ -167,7 +167,7 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
     ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
     _peekElemOff ptr 0 (shape t)
 
-  _dtype [] = undefined
+  _dtype [] = error "TensorLike [a] does not allow for a list of zero-length."
   _dtype (x:_) = _dtype x
 
   _dims [] = []
