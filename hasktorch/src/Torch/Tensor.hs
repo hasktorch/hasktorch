@@ -10,6 +10,7 @@
 module Torch.Tensor where
 
 import Control.Monad (forM_, forM)
+import Control.Exception.Safe (throwIO)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
@@ -125,7 +126,7 @@ class TensorLike a where
   asTensor :: a -> Tensor
   asValue :: Tensor -> a
   -- Internal functions(like "_xxx") are below. Do not use them directly.
-  _dtype :: a -> DType
+  _dtype :: DType
   _dims :: a -> [Int]
   _peekElemOff :: Ptr () -> Int -> [Int] -> IO a
   _pokeElemOff :: Ptr () -> Int -> a -> IO ()
@@ -143,20 +144,21 @@ instance (DataType a, Storable a) => TensorLike a where
   asTensor v = asTensor' v defaultOpts
 
   asValue t = unsafePerformIO $ do
-    ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-    _peekElemOff ptr 0 []
+    if dataType @a == dtype t
+    then do
+      ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
+      _peekElemOff ptr 0 []
+    else
+      throwIO $ userError $ " DType(" ++ show (dataType @a)  ++ ") of asValue is different from Tensor's one(" ++ show (dtype t) ++ ")."
 
-  _dtype _ = dataType @a
-
+  _dtype = dataType @a
   _dims _ = []
-
   _peekElemOff ptr offset _ = peekElemOff (castPtr ptr) offset
-
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
 
 instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
   asTensor' v opts = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype v) opts
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) opts
     ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
     _pokeElemOff ptr 0 v
     return t
@@ -164,11 +166,14 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
   asTensor v = asTensor' v defaultOpts
 
   asValue t = unsafePerformIO $ do
-    ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-    _peekElemOff ptr 0 (shape t)
+    if _dtype @a == dtype t
+    then do
+      ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
+      _peekElemOff ptr 0 (shape t)
+    else
+      throwIO $ userError $ " DType(" ++ show (_dtype @a)  ++ ") of asValue is different from Tensor's one(" ++ show (dtype t) ++ ")."
 
-  _dtype [] = error "TensorLike [a] does not allow for a list of zero-length."
-  _dtype (x:_) = _dtype x
+  _dtype = _dtype @a
 
   _dims [] = []
   _dims v@(x:_) = (length v):(_dims x)

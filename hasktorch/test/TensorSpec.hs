@@ -34,52 +34,50 @@ spec = do
     \x -> asValue (asTensor x) `shouldBe` (x :: Double)
 
   it "TensorLike [Word8]" $ property $
-    \(NonEmpty (x :: [Word8])) -> asValue (asTensor x) `shouldBe` x
+    \(NonEmpty (x :: [Word8])) -> do
+      asValue (asTensor x) `shouldBe` x
+      toDouble (select (asTensor x) 0 0) `shouldBe` fromIntegral (head x)
+      shape (asTensor x) `shouldBe` [length x]
   it "TensorLike [Int8]" $ property $
-    \(NonEmpty (x :: [Int8])) -> asValue (asTensor x)  `shouldBe` x
+    \(NonEmpty (x :: [Int8])) -> do
+      asValue (asTensor x) `shouldBe` x
+      toDouble (select (asTensor x) 0 0) `shouldBe` fromIntegral (head x)
+      shape (asTensor x) `shouldBe` [length x]
   it "TensorLike [Int16]" $ property $
-    \(NonEmpty (x :: [Int16])) -> asValue (asTensor x)  `shouldBe` x
+    \(NonEmpty (x :: [Int16])) -> do
+      asValue (asTensor x) `shouldBe` x
+      toDouble (select (asTensor x) 0 0) `shouldBe` fromIntegral (head x)
+      shape (asTensor x) `shouldBe` [length x]
   it "TensorLike [Int32]" $ property $
-    \(NonEmpty (x :: [Int32])) -> asValue (asTensor x)  `shouldBe` x
+    \(NonEmpty (x :: [Int32])) -> do
+      asValue (asTensor x) `shouldBe` x
+      toDouble (select (asTensor x) 0 0) `shouldBe` fromIntegral (head x)
+      shape (asTensor x) `shouldBe` [length x]
   it "TensorLike [Int]" $ property $
-    \(NonEmpty (x :: [Int])) -> asValue (asTensor x)  `shouldBe` x
+    \(NonEmpty (x :: [Int])) -> do
+      asValue (asTensor x) `shouldBe` x
+      toDouble (select (asTensor x) 0 0) `shouldBe` fromIntegral (head x)
+      shape (asTensor x) `shouldBe` [length x]
   it "TensorLike [Int64]" $ property $
-    \(NonEmpty (x :: [Int64])) -> asValue (asTensor x)  `shouldBe` x
+    \(NonEmpty (x :: [Int64])) -> do
+      asValue (asTensor x) `shouldBe` x
+      toDouble (select (asTensor x) 0 0) `shouldBe` fromIntegral (head x)
+      shape (asTensor x) `shouldBe` [length x]
   it "TensorLike [Float]" $ property $
-    \(NonEmpty (x :: [Float])) -> asValue (asTensor x)  `shouldBe` x
+    \(NonEmpty (x :: [Float])) -> do
+      asValue (asTensor x) `shouldBe` x
+      toDouble (select (asTensor x) 0 0) `shouldBe` realToFrac (head x)
+      shape (asTensor x) `shouldBe` [length x]
   it "TensorLike [Double]" $ property $
-    \(NonEmpty (x :: [Double])) -> asValue (asTensor x)  `shouldBe` x
+    \(NonEmpty (x :: [Double])) -> do
+      asValue (asTensor x) `shouldBe` x
+      toDouble (select (asTensor x) 0 0) `shouldBe` realToFrac (head x)
+      shape (asTensor x) `shouldBe` [length x]
 
-  it "TensorLike [Word8]" $ property $
-    \(NonEmpty (x :: [Word8])) -> toDouble (select (asTensor x) 0 0) `shouldBe` fromIntegral (head x)
-  it "TensorLike [Int8]" $ property $
-    \(NonEmpty (x :: [Int8])) -> toDouble (select (asTensor x) 0 0)  `shouldBe` fromIntegral (head x)
-  it "TensorLike [Int16]" $ property $
-    \(NonEmpty (x :: [Int16])) -> toDouble (select (asTensor x) 0 0)  `shouldBe` fromIntegral (head x)
-  it "TensorLike [Int32]" $ property $
-    \(NonEmpty (x :: [Int32])) -> toDouble (select (asTensor x) 0 0)  `shouldBe` fromIntegral (head x)
-  it "TensorLike [Int]" $ property $
-    \(NonEmpty (x :: [Int])) -> toDouble (select (asTensor x) 0 0)  `shouldBe` fromIntegral (head x)
-  it "TensorLike [Int64]" $ property $
-    \(NonEmpty (x :: [Int64])) -> toDouble (select (asTensor x) 0 0)  `shouldBe` fromIntegral (head x)
-  it "TensorLike [Float]" $ property $
-    \(NonEmpty (x :: [Float])) -> toDouble (select (asTensor x) 0 0)  `shouldBe` realToFrac (head x)
-  it "TensorLike [Double]" $ property $
-    \(NonEmpty (x :: [Double])) -> toDouble (select (asTensor x) 0 0)  `shouldBe` realToFrac (head x)
-
-  it "length of TensorLike [Word8]" $ property $
-    \(NonEmpty (x :: [Word8])) -> shape (asTensor x) `shouldBe` [length x]
-  it "length of TensorLike [Int8]" $ property $
-    \(NonEmpty (x :: [Int8])) -> shape (asTensor x)  `shouldBe` [length x]
-  it "length of TensorLike [Int16]" $ property $
-    \(NonEmpty (x :: [Int16])) -> shape (asTensor x)  `shouldBe` [length x]
-  it "length of TensorLike [Int32]" $ property $
-    \(NonEmpty (x :: [Int32])) -> shape (asTensor x)  `shouldBe` [length x]
-  it "length of TensorLike [Int]" $ property $
-    \(NonEmpty (x :: [Int])) -> shape (asTensor x)  `shouldBe` [length x]
-  it "length of TensorLike [Int64]" $ property $
-    \(NonEmpty (x :: [Int64])) -> shape (asTensor x)  `shouldBe` [length x]
-  it "length of TensorLike [Float]" $ property $
-    \(NonEmpty (x :: [Float])) -> shape (asTensor x)  `shouldBe` [length x]
-  it "length of TensorLike [Double]" $ property $
-    \(NonEmpty (x :: [Double])) -> shape (asTensor x)  `shouldBe` [length x]
+  it "invalid cast of TensorLike a" $ do
+    let x = asTensor (10 :: Int)
+    (dtype x) `shouldBe` Int64
+    (print (asValue x :: Double)) `shouldThrow` anyException
+  it "invalid cast of TensorLike [a]" $ do
+    let x = asTensor ([0..10] :: [Int])
+    (print (asValue x :: [Double])) `shouldThrow` anyException
