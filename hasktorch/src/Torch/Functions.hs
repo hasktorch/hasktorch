@@ -8,6 +8,7 @@ import Foreign.ForeignPtr
 import qualified ATen.Managed.Native as ATen
 import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.Scalar as ATen
+import qualified ATen.Managed.Type.Tuple as ATen
 import qualified ATen.Const as ATen
 import qualified ATen.Type as ATen
 import qualified ATen.Managed.Cast
