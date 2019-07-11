@@ -58,7 +58,7 @@ recurrent :: Recurrent  -- current state of layer
           -> Tensor     -- input tensor
           -> Tensor     -- previous hidden state
           -> Tensor     -- output tensor
-recurrent Recurrent{..} input hidden =
+recurrent Recurrent{..} hidden input =
   h' (linear weight_ih input)
      (linear weight_hh hidden)
      bias
@@ -79,12 +79,14 @@ recurrent Recurrent{..} input hidden =
 
 -- Running the same layer over multiple timesteps
 -- where no. of timesteps <= length of input sequence
-runOverTimesteps :: Tensor -> Recurrent -> Int -> Tensor -> Tensor
-runOverTimesteps inp layer 0 hidden = hidden
-runOverTimesteps inp layer n hidden =
-    runOverTimesteps inp layer (n-1) $ recurrent layer inp' hidden
-    where
-        inp' = reshape (inp @@ (n-1)) [1, 2]
+runOverTimesteps :: Tensor -> Recurrent -> Tensor -> Tensor
+runOverTimesteps inp layer hidden = 
+  foldl (recurrent layer) hidden inpList
+  where
+    -- converting matrix into a list of tensors
+    -- this hack stays until I can write a Foldable instance
+    -- for a tensor
+    inpList = [reshape (inp @@ x) [1, 2] | x <- [0.. ((size inp 0) - 1)]]
 
 --------------------------------------------------------------------------------
 -- Training code
@@ -110,7 +112,7 @@ main = do
     foldLoop rnnLayer num_iters $ \model i -> do
 
         -- calculate output when RNN is run over timesteps
-        let output = runOverTimesteps inp model num_timesteps init_hidden
+        let output = runOverTimesteps inp model init_hidden
 
         let loss = mse_loss output expected_output
 
