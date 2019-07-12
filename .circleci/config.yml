@@ -66,7 +66,6 @@ jobs:
       - run: git submodule init && git submodule update
       - run: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
       - run: brew install wget cmake libomp
-      - run: brew install python
       - run: pip3 install pyyaml
       - run: mkdir -p .local/bin
       - run: rm /usr/local/bin/python
