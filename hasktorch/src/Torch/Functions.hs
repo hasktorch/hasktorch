@@ -8,6 +8,7 @@ import Foreign.ForeignPtr
 import qualified ATen.Managed.Native as ATen
 import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.Scalar as ATen
+import qualified ATen.Managed.Type.Tuple as ATen
 import qualified ATen.Const as ATen
 import qualified ATen.Type as ATen
 import qualified ATen.Managed.Cast
@@ -160,6 +161,9 @@ maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
 
 logSoftmax :: Tensor -> Int -> Tensor
 logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
+
+gels :: Tensor -> Tensor -> (Tensor,Tensor)
+gels _B _A = unsafePerformIO $ (cast2 ATen.gels_tt) _B _A
 
 transpose :: Tensor -> Int -> Int -> Tensor
 transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
