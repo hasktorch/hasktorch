@@ -56,6 +56,19 @@ linspace start end steps opts = unsafePerformIO $ (cast4 LibTorch.linspace_sslo)
 logspace :: (Scalar a, Scalar b) => a -> b -> Int -> Double -> TensorOptions -> Tensor
 logspace start end steps base opts = unsafePerformIO $ (cast5 LibTorch.logspace_ssldo) start end steps base opts
 
+-- https://github.com/hasktorch/ffi-experimental/pull/57#discussion_r301062033
+-- empty :: [Int] -> TensorOptions -> Tensor
+-- empty = mkFactoryUnsafe LibTorch.empty_lo
+
+eyeSquare :: Int -> TensorOptions -> Tensor
+eyeSquare dim opts = unsafePerformIO $ (cast2 LibTorch.eye_lo) dim opts
+
+eye :: Int -> Int -> TensorOptions -> Tensor
+eye nrows ncols opts = unsafePerformIO $ (cast3 LibTorch.eye_llo) nrows ncols opts
+
+full :: Scalar a => [Int] -> a -> TensorOptions -> Tensor
+full shape value opts = unsafePerformIO $ (cast3 LibTorch.full_lso) shape value opts
+
 sparseCooTensor :: Tensor -> Tensor -> [Int] -> TensorOptions -> Tensor
 sparseCooTensor indices values size opts =  unsafePerformIO $ (cast4 sparse_coo_tensor_ttlo) indices values size opts
   where
@@ -83,6 +96,15 @@ linspace' start end steps = linspace start end steps defaultOpts
 
 logspace' :: (Scalar a, Scalar b) => a -> b -> Int -> Double -> Tensor
 logspace' start end steps base = logspace start end steps base defaultOpts
+
+eyeSquare' :: Int -> Tensor
+eyeSquare' dim =  eyeSquare dim defaultOpts
+
+eye' :: Int -> Int -> Tensor
+eye' nrows ncols =  eye nrows ncols defaultOpts
+
+full' :: Scalar a => [Int] -> a -> Tensor
+full' shape value = full shape value defaultOpts
 
 sparseCooTensor' :: Tensor -> Tensor -> [Int] -> Tensor
 sparseCooTensor' indices values size = sparseCooTensor indices values size defaultOpts

@@ -164,3 +164,13 @@ logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim 
 
 gels :: Tensor -> Tensor -> (Tensor,Tensor)
 gels _B _A = unsafePerformIO $ (cast2 ATen.gels_tt) _B _A
+
+transpose :: Tensor -> Int -> Int -> Tensor
+transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
+
+-- transpose special case for a 2D tensor
+transpose2D :: Tensor -> Tensor
+transpose2D t = transpose t 0 1
+
+diag :: Tensor -> Int -> Tensor
+diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
