@@ -149,7 +149,7 @@ instance (DataType a, Storable a) => TensorLike a where
       ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
       _peekElemOff ptr 0 []
     else
-      throwIO $ userError $ " DType(" ++ show (dataType @a)  ++ ") of asValue is different from Tensor's one(" ++ show (dtype t) ++ ")."
+      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
 
   _dtype = dataType @a
   _dims _ = []
@@ -171,7 +171,7 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
       ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
       _peekElemOff ptr 0 (shape t)
     else
-      throwIO $ userError $ " DType(" ++ show (_dtype @a)  ++ ") of asValue is different from Tensor's one(" ++ show (dtype t) ++ ")."
+      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
 
   _dtype = _dtype @a
 
@@ -188,7 +188,9 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
   _pokeElemOff ptr offset v@(x:_) =
     let width = product (_dims x)
     in forM_ (zip [0..] v) $ \(i,d) ->
-         (_pokeElemOff @a) ptr (offset+i*width) d
+         if product (_dims d) == width -- This validation may be slow.
+         then (_pokeElemOff @a) ptr (offset+i*width) d
+         else throwIO $ userError $ "There are lists having different length."
 
 --------------------------------------------------------------------------------
 -- Show
