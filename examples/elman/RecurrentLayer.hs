@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module RecurrentLayer where
 
@@ -75,6 +77,9 @@ type ElmanCell = Gate
 
 
 ----------------- LSTM Cell ---------------------
+-- Specifying the shape of the recurrent layer
+data LSTMSpec = LSTMSpec { inf :: Int, hf :: Int}
+
 data LSTMCell = LSTMCell {
   input_gate   :: Gate,
   forget_gate  :: Gate,
@@ -99,45 +104,111 @@ instance RecurrentCell LSTMCell where
       cNew = newCellState cell input hidden
 
 -- Typeclass that shows that the layer weights can be randomly initialized
-instance Randomizable RecurrentSpec LSTMCell where
-  sample RecurrentSpec{..} = do
-      w_ih <- makeIndependent =<< randn' [in_features, hidden_features]
-      w_hh <- makeIndependent =<< randn' [hidden_features, hidden_features]
-      b <- makeIndependent =<< randn' [1, hidden_features]
-      return $ Gate w_ih w_hh b nonlinearitySpec
-
+instance Randomizable LSTMSpec LSTMCell where
+  sample LSTMSpec{..} = do
+      w_ih <- makeIndependent =<< randn' [inf, hf]
+      w_hh <- makeIndependent =<< randn' [hf, hf]
+      b <- makeIndependent =<< randn' [1, hf]
+      let ig = Gate w_ih w_hh b Torch.Functions.sigmoid
+      let fg = Gate w_ih w_hh b Torch.Functions.sigmoid
+      let og = Gate w_ih w_hh b Torch.Functions.sigmoid
+      let hg = Gate w_ih w_hh b Torch.Functions.sigmoid
+      c <- makeIndependent =<< randn' [hf, hf]
+      return $ LSTMCell ig fg og hg c
 
 -- Typeclass that allows us to manipulate and update the layer weights
-instance Parameterized Gate where
-  flattenParameters Gate{..} = [inputWt, hiddenWt, biasWt]
+instance Parameterized LSTMCell where
+  flattenParameters LSTMCell{..} = 
+    (flattenParameters input_gate) ++ 
+    (flattenParameters forget_gate) ++
+    (flattenParameters hidden_gate) ++
+    (flattenParameters output_gate) ++
+    [cell_state]
   replaceOwnParameters _ = do
-    inputWt <- nextParameter
-    hiddenWt <- nextParameter
-    biasWt   <- nextParameter
-    return $ Gate{..}
+    ig_ih <- nextParameter
+    ig_hh <- nextParameter
+    ig_b  <- nextParameter
+    fg_ih <- nextParameter
+    fg_hh <- nextParameter
+    fg_b <- nextParameter
+    hg_ih <- nextParameter
+    hg_hh <- nextParameter
+    hg_b <- nextParameter
+    og_ih <- nextParameter
+    og_hh <- nextParameter
+    og_b <- nextParameter
+    cell_state <- nextParameter
+    let input_gate = Gate ig_ih ig_hh ig_b Torch.Functions.sigmoid
+    let forget_gate = Gate fg_ih fg_hh fg_b Torch.Functions.sigmoid
+    let hidden_gate = Gate hg_ih hg_hh hg_b Torch.Functions.sigmoid
+    let output_gate = Gate og_ih og_hh og_b Torch.Functions.sigmoid
+    return $ LSTMCell{..}
 
-instance Show Gate where
-  show Gate{..} =
-    (show $ toDependent inputWt) ++ "\n" ++
-    (show $ toDependent hiddenWt) ++ "\n" ++
-    (show $ toDependent biasWt)
+instance Show LSTMCell where
+  show LSTMCell{..} =
+    (show $ input_gate) ++ "\n" ++
+    (show $ forget_gate) ++ "\n" ++
+    (show $ output_gate) ++ "\n" ++
+    (show $ hidden_gate) ++ "\n" ++
+    (show $ toDependent cell_state)
 
 ------------------------------------------------
 
-{-
+
 ------------------ GRU Cell ----------------------
+-- Specifying the shape of the recurrent layer
+data GRUSpec = GRUSpec { in_f :: Int, h_f :: Int}
+
 data GRUCell = GRUCell {
-  reset_gate :: RecurrentGate,
-  update_gate :: RecurrentGate,
-  hidden_gate :: RecurrentGate
+  reset_gate :: Gate,
+  update_gate :: Gate,
+  gru_hidden_gate :: Gate
 }
+
 
 instance RecurrentCell GRUCell where
   nextState GRUCell{..} input hidden =
     (ug * hidden) + ((1 - ug) * h')
     where 
-      rg = gate reset_gate input hidden
-      ug = gate update_gate input hidden
-      h' = gate hidden_gate input (rg * hidden)
+      rg = nextState reset_gate input hidden
+      ug = nextState update_gate input hidden
+      h' = nextState gru_hidden_gate input (rg * hidden)
+
+
+instance Randomizable GRUSpec GRUCell where
+  sample GRUSpec{..} = do
+      w_ih <- makeIndependent =<< randn' [in_f, h_f]
+      w_hh <- makeIndependent =<< randn' [h_f, h_f]
+      b <- makeIndependent =<< randn' [1, h_f]
+      let rg = Gate w_ih w_hh b Torch.Functions.sigmoid
+      let ug = Gate w_ih w_hh b Torch.Functions.sigmoid
+      let hg = Gate w_ih w_hh b Torch.Functions.sigmoid
+      return $ GRUCell rg ug hg
+
+instance Parameterized GRUCell where
+  flattenParameters GRUCell{..} = 
+    (flattenParameters reset_gate) ++ 
+    (flattenParameters update_gate) ++
+    (flattenParameters gru_hidden_gate)
+  replaceOwnParameters _ = do
+    rg_ih <- nextParameter
+    rg_hh <- nextParameter
+    rg_b  <- nextParameter
+    ug_ih <- nextParameter
+    ug_hh <- nextParameter
+    ug_b <- nextParameter
+    hg_ih <- nextParameter
+    hg_hh <- nextParameter
+    hg_b <- nextParameter
+    let reset_gate = Gate rg_ih rg_hh rg_b Torch.Functions.sigmoid
+    let update_gate = Gate ug_ih ug_hh ug_b Torch.Functions.sigmoid
+    let gru_hidden_gate = Gate hg_ih hg_hh hg_b Torch.Functions.sigmoid
+    return $ GRUCell{..}
+
+instance Show GRUCell where
+  show GRUCell{..} =
+    (show $ reset_gate) ++ "\n" ++
+    (show $ update_gate) ++ "\n" ++
+    (show $ gru_hidden_gate)
+
 --------------------------------------------------
--}
