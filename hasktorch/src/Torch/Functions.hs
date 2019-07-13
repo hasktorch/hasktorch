@@ -162,8 +162,44 @@ maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
 logSoftmax :: Tensor -> Int -> Tensor
 logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
 
-gels :: Tensor -> Tensor -> (Tensor,Tensor)
+gels :: Tensor -> Tensor -> (Tensor, Tensor)
 gels _B _A = unsafePerformIO $ (cast2 ATen.gels_tt) _B _A
+
+symeig :: Tensor -> Bool -> Bool -> (Tensor, Tensor)
+symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors upper
+
+eig :: Tensor -> Bool -> (Tensor, Tensor)
+eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
+
+svd :: Tensor -> Bool -> Bool -> (Tensor, Tensor, Tensor)
+svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
+
+cholesky :: Tensor -> Bool -> Tensor
+cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t upper
+
+cholesky_solve :: Tensor -> Tensor -> Bool -> Tensor
+cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 upper
+
+solve :: Tensor -> Tensor -> (Tensor,Tensor)
+solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a 
+
+cholesky_inverse :: Tensor -> Bool -> Tensor
+cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t upper
+
+-- pstrf :: Tensor -> Bool -> Double -> (Tensor, Tensor)
+-- pstrf t upper tol = unsafePerformIO $ (cast3 ATen.pstrf_tbs) t upper tol
+
+qr :: Tensor -> (Tensor, Tensor)
+qr t = unsafePerformIO $ (cast1 ATen.qr_t) t
+
+geqrf :: Tensor -> (Tensor, Tensor)
+geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t 
+
+orgqr :: Tensor -> Tensor -> Tensor
+orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a 
+
+sign :: Tensor -> Tensor
+sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
 
 transpose :: Tensor -> Int -> Int -> Tensor
 transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
