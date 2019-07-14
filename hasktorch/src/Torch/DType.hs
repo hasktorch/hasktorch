@@ -14,32 +14,32 @@ import Data.Word
 data DType = UInt8 | Int8 | Int16 | Int32 | Int64 | Half | Float | Double
   deriving (Eq, Show)
 
-class DataType a where
-  dataType :: DataType a => DType
+class Dtype a where
+  dType :: Dtype a => DType
 
-instance DataType Word8 where
-  dataType = UInt8
+instance Dtype Word8 where
+  dType = UInt8
 
-instance DataType Int8 where
-  dataType = Int8
+instance Dtype Int8 where
+  dType = Int8
 
-instance DataType Int16 where
-  dataType = Int16
+instance Dtype Int16 where
+  dType = Int16
 
-instance DataType Int32 where
-  dataType = Int32
+instance Dtype Int32 where
+  dType = Int32
 
-instance DataType Int where
-  dataType = Int64
+instance Dtype Int where
+  dType = Int64
 
-instance DataType Int64 where
-  dataType = Int64
+instance Dtype Int64 where
+  dType = Int64
 
-instance DataType Float where
-  dataType = Float
+instance Dtype Float where
+  dType = Float
 
-instance DataType Double where
-  dataType = Double
+instance Dtype Double where
+  dType = Double
 
 instance Castable DType ATen.ScalarType where
   cast UInt8  f = f ATen.kByte
