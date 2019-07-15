@@ -47,12 +47,11 @@ jobs:
       - run: cabal new-install hspec-discover
       - run:
           name: cabal new-build all
-          command: cabal new-build all --jobs=2
+          command: cabal new-build all --jobs=2 --write-ghc-environment-files=always
           no_output_timeout: 15m
-      - run: cabal new-test ffi --jobs=2
+      - run: cabal new-test all --jobs=2 --write-ghc-environment-files=always
       - run: cabal new-exec codegen-exe
-      - run: cabal new-test ffi --jobs=2
-      - run: cabal new-test hasktorch
+      - run: cabal new-test all --jobs=2 --write-ghc-environment-files=always
       - run: cabal exec xor_mlp
   osx-stack-build:
     macos:
