@@ -39,13 +39,14 @@ instance Randomizable RecurrentSpec Recurrent where
 
 
 -- Typeclass that allows us to manipulate and update the layer weights
-instance Parameterized Recurrent where
-  flattenParameters Recurrent{..} = [weight_ih, weight_hh, bias]
-  replaceOwnParameters _ = do
-    weight_ih <- nextParameter
-    weight_hh <- nextParameter
-    bias   <- nextParameter
-    return $ Recurrent{..}
+instance Parameterized Recurrent
+-- instance Parameterized Recurrent where
+--   flattenParameters Recurrent{..} = [weight_ih, weight_hh, bias]
+--   replaceOwnParameters _ = do
+--     weight_ih <- nextParameter
+--     weight_hh <- nextParameter
+--     bias   <- nextParameter
+--     return $ Recurrent{..}
 
 instance Show Recurrent where
   show Recurrent{..} =

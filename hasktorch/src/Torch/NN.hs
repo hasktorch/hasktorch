@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
 
 module Torch.NN where
@@ -39,6 +40,14 @@ class Parameterized f where
 instance Parameterized Parameter where
   flattenParameters x = [x]
   replaceOwnParameters _ = nextParameter
+
+instance Parameterized [Int] where
+  flattenParameters x = []
+  replaceOwnParameters x = return x
+
+instance Parameterized (Tensor -> Tensor) where
+  flattenParameters x = []
+  replaceOwnParameters x = return x
 
 class Parameterized' f where
   flattenParameters' :: f a -> [Parameter]
@@ -111,8 +120,10 @@ instance Parameterized Linear
 --     bias <- nextParameter
 --     return $ Linear{..}
 
+instance Parameterized [Linear]
+
 sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
 sgd lr parameters gradients = zipWith step depParameters gradients
-  where 
+  where
     step p dp = p - (lr * dp)
     depParameters = (map toDependent parameters)
