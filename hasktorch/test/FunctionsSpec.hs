@@ -95,8 +95,4 @@ spec = do
     let x = asTensor ([[4.0, 12.0, -16.0], [12.0, 37.0, -43.0], [-16.0, -43.0, 98.0]] :: [[Double]])
         c = cholesky x Upper
         c' = asTensor ([[2.0, 6.0, -8.0], [0.0, 1.0, 5.0], [0.0, 0.0, 3.0]] :: [[Double]])
-        check = all_mat (c ==. c')
-    check `shouldBe` True
-  where 
-    all_mat m = 1 == (toInt $ all (all m 0 False) 0 False) --TODO: switch to full reduction all when available
-
+    (toInt $ all (c ==. c')) `shouldBe` 1

@@ -224,8 +224,14 @@ transpose2D t = transpose t 0 1
 diag :: Tensor -> Int -> Tensor
 diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
-all :: Tensor -> Int -> Bool -> Tensor
-all t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
+all :: Tensor -> Tensor
+all t = unsafePerformIO $ (cast1 ATen.all_t) t
 
-any :: Tensor -> Int -> Bool -> Tensor
-any t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
+any :: Tensor -> Tensor
+any t = unsafePerformIO $ (cast1 ATen.any_t) t
+
+all' :: Tensor -> Int -> Bool -> Tensor
+all' t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
+
+any' :: Tensor -> Int -> Bool -> Tensor
+any' t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim

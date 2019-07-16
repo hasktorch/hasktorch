@@ -14,6 +14,19 @@ import Torch.Functions
 import Torch.Autograd
 import Torch.NN
 
+-- | construct pairs of points on the axis
+makeAxis axis1 axis2 = do
+    let t = asTensor (fst <$> rngPairs)
+    let t' = asTensor (snd <$> rngPairs)
+    pure (t, t')
+    where 
+        pairs axis1' axis2' = [(t, t') | t <- axis1', t' <- axis2']
+        rngPairs = pairs axis1 axis2
+
+makeCovmatrix axis1 axis2 = do
+    (t, t') <- makeAxis axis1 axis2
+    let result = kernel1d_rbf 1.0 1.0 t t'
+    pure $ result
 
 -- | 1-dimensional radial basis function kernel
 kernel1d_rbf :: Double -> Double -> Tensor -> Tensor -> Tensor
