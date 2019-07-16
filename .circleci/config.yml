@@ -15,7 +15,7 @@ jobs:
       - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
       - run: gcc --version
       - run: stack --version
-      - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
+      - run: cd deps/ ; ./get-deps.sh -a cpu -c
       - run:
           name: stack build
           command: stack build --jobs 2
@@ -41,7 +41,7 @@ jobs:
       - run: git submodule init && git submodule update
       - run: gcc --version
       - run: cabal --version
-      - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
+      - run: cd deps/ ; ./get-deps.sh -a cpu -c
       - run: ./setup-cabal.sh
       - run: cabal new-update
       - run: cabal new-install hspec-discover
@@ -72,7 +72,7 @@ jobs:
       - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
       - run: clang --version
       - run: stack --version
-      - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
+      - run: cd deps/ ; ./get-deps.sh -a cpu -c
       - run: cp -a deps/libtorch/lib/*.dylib deps/mklml/lib/*.dylib /usr/local/lib/
       - run:
           name: stack build
