@@ -9,6 +9,7 @@ import qualified ParseFunctionSig as F
 import qualified RenderDeclarations as RD
 import qualified RenderTuples as RTL
 import qualified RenderClass as RC
+import qualified RenderPure as RP
 
 {- CLI options -}
 
@@ -60,5 +61,6 @@ main = do
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/context.yaml"
   RTL.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
+  RP.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   pure ()
 

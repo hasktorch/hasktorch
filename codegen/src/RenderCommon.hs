@@ -122,6 +122,34 @@ tenTypeToHsType tentype =
     ScalarType -> "ScalarType"
     SparseTensorRef -> "SparseTensorRef"
 
+
+
+------ To Higher Level Haskell Type ------
+tenTypeToHigherHsType :: TenType -> Text
+tenTypeToHigherHsType tentype =
+  case tentype of
+    Scalar -> "Double"
+    Tensor -> "Tensor"
+    TensorA -> "Tensor"
+    TensorA' -> "Tensor"
+    TensorAQ -> "Tensor"
+    TensorAQ' -> "Tensor"
+    TensorQ -> "Tensor"
+    TensorAVector -> "[Tensor]"
+    TensorOptions -> "TensorOptions"
+    TensorList -> "[Tensor]"
+    IntegerTensor -> "Tensor"
+    IndexTensor -> "Tensor"
+    BoolTensor -> "Tensor"
+    BoolTensorQ -> "Tensor"
+    ByteTensor -> "Tensor"
+    LongTensor -> "Tensor"
+--    IntList _ -> "IntArrayRef"
+    IntList _ -> "[Int]"
+    ScalarQ -> "Scalar"
+    ScalarType -> "ScalarType"
+    SparseTensorRef -> "SparseTensorRef"
+
 stltypeToHsType :: STLType -> Text
 stltypeToHsType t =
   case t of
@@ -146,6 +174,25 @@ ctypeToHsType ct =
     CInt64 -> "Int64"
     CInt64Q -> "Int64"
 
+ctypeToHigherHsType :: CType -> Text
+ctypeToHigherHsType ct =
+  case ct of
+    CBool -> "Bool"
+    CVoid -> "()"
+    CFloat -> "Float"
+    CDouble -> "Double"
+    CSize -> "Int"
+    CInt -> "Int"
+    CUInt8 -> "Word8"
+    CUInt16 -> "Word16"
+    CUInt32 -> "Word32"
+    CUInt64 -> "Word64"
+    CInt8 -> "Int8"
+    CInt16 -> "Int16"
+    CInt32 -> "Int32"
+    CInt64 -> "Int64"
+    CInt64Q -> "Int64"
+
 parsableToHsType :: Parsable -> Text
 parsableToHsType parsable =
   case parsable of
@@ -155,6 +202,22 @@ parsableToHsType parsable =
     GeneratorType -> "Generator"
     StorageType -> "Storage"
     CType ct -> ctypeToHsType ct
+    STLType t -> stltypeToHsType t
+    CppString -> "StdString"
+    Tuple parsables -> [st|(#{T.intercalate "," (map parsableToHsType parsables)})|]
+    P.CppClass _ _ hstype -> fromString hstype
+    Backend -> "Backend"
+    Layout -> "Layout"
+
+parsableToHigherHsType :: Parsable -> Text
+parsableToHigherHsType parsable =
+  case parsable of
+    Ptr p -> "Ptr " <> parsableToHsType p
+    TenType t -> tenTypeToHigherHsType t
+    DeviceType -> "DeviceType"
+    GeneratorType -> "Generator"
+    StorageType -> "Storage"
+    CType ct -> ctypeToHigherHsType ct
     STLType t -> stltypeToHsType t
     CppString -> "StdString"
     Tuple parsables -> [st|(#{T.intercalate "," (map parsableToHsType parsables)})|]
@@ -459,3 +522,35 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
       case (retType fn) of
         CType CVoid -> ""
         _ -> "return"
+
+pureFunction :: Bool -> Function -> Text
+pureFunction add_type_initials fn = [st|
+#{hsfuncname} :: #{types}
+#{hsfuncname} #{args} = unsafePerformIO $ (cast#{num_args} Managed.#{hsfuncname}#{type_initials}) #{args}
+|]
+  where
+    hsfuncname = toHsFuncName False (P.name fn)
+    parameters' = filter isNotStar $ parameters fn
+    num_args :: Int
+    num_args = length parameters'
+    args :: String
+    args = L.intercalate " " $ map (\p -> "_" <> pname p) parameters'
+    type_initials :: Text --- This is for avoding c++ overload arguments.
+    type_initials =
+      if add_type_initials && length parameters' > 0
+      then "_" <> (mconcat $ flip map parameters' $ \p -> parsableToInitial (ptype p))
+      else ""
+    pointer :: Text
+    pointer = ""
+    types_list :: [Text]
+    types_list = flip map parameters' $ \p ->
+      if isCType (ptype p)
+      then [st|#{parsableToHigherHsType (ptype p)}|]
+      else [st|#{pointer} #{parsableToHigherHsType (ptype p)}|]
+    types :: Text
+    types = T.intercalate " -> " $ types_list ++ [[st|#{ret_hstype}|]]
+    ret_hstype :: Text
+    ret_hstype =
+      if isCType (retType fn)
+      then [st|#{parsableToHigherHsType (retType fn)}|]
+      else [st|#{pointer} #{parsableToHigherHsType (retType fn)}|]
