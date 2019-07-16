@@ -34,6 +34,11 @@ instance Fractional Tensor where
   recip t = unsafePerformIO $ (cast1 ATen.reciprocal_t) t
   fromRational i = asTensor @Float $ fromRational @Float i
 
+data Tri = Upper | Lower
+
+isUpper Upper = True
+isUpper Lower = False
+
 sumAll :: Tensor -> Tensor
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
@@ -165,8 +170,10 @@ logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim 
 gels :: Tensor -> Tensor -> (Tensor, Tensor)
 gels _B _A = unsafePerformIO $ (cast2 ATen.gels_tt) _B _A
 
-symeig :: Tensor -> Bool -> Bool -> (Tensor, Tensor)
-symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors upper
+symeig :: Tensor -> Bool -> Tri -> (Tensor, Tensor)
+symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
+  where boolUpper = isUpper upper
+
 
 eig :: Tensor -> Bool -> (Tensor, Tensor)
 eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
@@ -174,17 +181,20 @@ eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
 svd :: Tensor -> Bool -> Bool -> (Tensor, Tensor, Tensor)
 svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
 
-cholesky :: Tensor -> Bool -> Tensor
-cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t upper
+cholesky :: Tensor -> Tri -> Tensor
+cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
+  where boolUpper = isUpper upper
 
-cholesky_solve :: Tensor -> Tensor -> Bool -> Tensor
-cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 upper
+cholesky_solve :: Tensor -> Tensor -> Tri -> Tensor
+cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
+  where boolUpper = isUpper upper
 
 solve :: Tensor -> Tensor -> (Tensor,Tensor)
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a 
 
-cholesky_inverse :: Tensor -> Bool -> Tensor
-cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t upper
+cholesky_inverse :: Tensor -> Tri -> Tensor
+cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
+  where boolUpper = isUpper upper
 
 -- pstrf :: Tensor -> Bool -> Double -> (Tensor, Tensor)
 -- pstrf t upper tol = unsafePerformIO $ (cast3 ATen.pstrf_tbs) t upper tol
@@ -210,3 +220,9 @@ transpose2D t = transpose t 0 1
 
 diag :: Tensor -> Int -> Tensor
 diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
+
+all :: Tensor -> Int -> Bool -> Tensor
+all t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
+
+any :: Tensor -> Int -> Bool -> Tensor
+any t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
