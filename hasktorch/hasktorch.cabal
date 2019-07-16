@@ -51,3 +51,4 @@ test-suite spec
                     , hspec-discover
                     , safe-exceptions
                     , QuickCheck
+                    , mtl
