@@ -167,6 +167,9 @@ maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
 logSoftmax :: Tensor -> Int -> Tensor
 logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
 
+inverse :: Tensor -> Tensor
+inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
+
 gels :: Tensor -> Tensor -> (Tensor, Tensor)
 gels _B _A = unsafePerformIO $ (cast2 ATen.gels_tt) _B _A
 
