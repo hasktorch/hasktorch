@@ -14,6 +14,7 @@ import qualified ATen.Type as ATen
 import qualified ATen.Managed.Cast
 import ATen.Cast
 
+import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
 
@@ -69,6 +70,9 @@ sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
 mul :: Tensor -> Tensor -> Tensor
 mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
 
+cmul :: Scalar a => Tensor -> a -> Tensor
+cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
+
 matmul :: Tensor -> Tensor -> Tensor
 matmul a b =
     unsafePerformIO $ case (dim a, dim b) of
@@ -91,6 +95,9 @@ log2 t = unsafePerformIO $ (cast1 ATen.log2_t) t
 
 log10 :: Tensor -> Tensor
 log10 t = unsafePerformIO $ (cast1 ATen.log10_t) t
+
+pow :: Scalar a => Tensor -> a -> Tensor
+pow t s = unsafePerformIO $ (cast2 ATen.pow_ts) t s
 
 relu :: Tensor -> Tensor
 relu t = unsafePerformIO $ (cast1 ATen.relu_t) t

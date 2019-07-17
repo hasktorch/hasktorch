@@ -23,19 +23,19 @@ makeAxis axis1 axis2 = do
         pairs axis1' axis2' = [(t, t') | t <- axis1', t' <- axis2']
         rngPairs = pairs axis1 axis2
 
-makeCovmatrix axis1 axis2 = do
-    (t, t') <- makeAxis axis1 axis2
-    let result = kernel1d_rbf 1.0 1.0 t t'
-    pure $ result
-
 -- | 1-dimensional radial basis function kernel
 kernel1d_rbf :: Double -> Double -> Tensor -> Tensor -> Tensor
 kernel1d_rbf sigma length t t' =
     (sigma'^2) * exp eterm
     where
         sigma' = asTensor sigma
-        eterm = undefined
-        -- eterm = (-(t - t')^2) / (2 * length^2)
+        eterm = cmul (- (pow (t - t') (2 :: Int))) (1 / 2 * length^2)
+
+-- | derive a covariance matrix from the kernel for points on the axis
+makeCovmatrix axis1 axis2 = do
+    (t, t') <- makeAxis axis1 axis2
+    let result = kernel1d_rbf 1.0 1.0 t t'
+    pure $ result
 
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: Tensor -> Int -> IO Tensor
