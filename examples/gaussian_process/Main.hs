@@ -9,10 +9,20 @@ import Prelude hiding (exp)
 
 import Torch.Tensor
 import Torch.DType (DType (Float))
-import Torch.TensorFactories (eye', ones', rand', randn')
+import Torch.TensorFactories (eye', ones', rand', randn', zeros')
 import Torch.Functions
 import Torch.Autograd
 import Torch.NN
+
+-- Axis points
+axisDim = 5
+tRange = (*) scale <$> (fromIntegral <$> [0 .. (axisDim - 1)])
+    where scale = 0.2
+
+-- Observed data points
+dataDim = 3
+dataPredictors = [0.1, 0.3, 0.6] :: [Float]
+dataValues = [-2.3, 1.5, -4] :: [Float]
 
 -- | construct pairs of points on the axis
 makeAxis axis1 axis2 = do
@@ -32,6 +42,7 @@ kernel1d_rbf sigma length t t' =
         eterm = cmul (- (pow (t - t') (2 :: Int))) (1 / 2 * length^2)
 
 -- | derive a covariance matrix from the kernel for points on the axis
+makeCovmatrix :: [Float] -> [Float] -> IO Tensor
 makeCovmatrix axis1 axis2 = do
     (t, t') <- makeAxis axis1 axis2
     let result = kernel1d_rbf 1.0 1.0 t t'
@@ -53,6 +64,32 @@ condition muX muY covXX covXY covYY y =
         invY = inverse covYY
         postMu = muX + (matmul covXY (matmul invY (y - muY)))
         postCov = covXX - (matmul covXY (matmul invY covYX))
+
+
+computePosterior = do
+
+    -- multivariate normal parameters for axis locations
+    let priorMuAxis = zeros' [axisDim]
+    priorCov <-  makeCovmatrix tRange tRange
+
+    -- multivariate normal parameters for observation locations
+    let priorMuData = zeros' [dataDim]
+    obsCov <- makeCovmatrix dataPredictors dataPredictors
+    putStrLn $ "\nObservation coordinates covariance\n" ++ show obsCov
+
+    -- cross-covariance terms
+    crossCov <- makeCovmatrix tRange dataPredictors
+    putStrLn $ "\nCross covariance\n" ++ show crossCov
+
+    -- conditional distribution
+    let obsVals = asTensor dataValues
+    let (postMu, postCov) = 
+            condition
+                priorMuAxis priorMuData 
+                priorCov crossCov obsCov
+                obsVals
+
+    pure $ (postMu, postCov)
 
 main = do
     let cov = asTensor ([[1.2, 0.4], [0.4, 1.2]] :: [[Float]])
