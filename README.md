@@ -27,7 +27,12 @@ The following steps should run the xor mlp example:
 ```
 # Download libtorch-binary and other shared library dependencies
 pushd deps
+# For CPU
 ./get-deps.sh
+# For CUDA-9
+# ./get-deps.sh -a cu90
+# For CUDA-10
+# ./get-deps.sh -a cu100
 popd
 
 # Set shared library environment variables
