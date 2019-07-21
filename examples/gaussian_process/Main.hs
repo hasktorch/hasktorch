@@ -50,10 +50,9 @@ makeCovmatrix axis1 axis2 = reshape (kernel1d_rbf 1.0 1.0 t t') [length axis1, l
 mvnCholesky :: Tensor -> Int -> IO Tensor
 mvnCholesky cov n = do
     samples <- randn' [axisDim, n]
-    let l = cholesky cov Upper
-    putStrLn $ show l
-    putStrLn $ show samples
     pure $ matmul l samples
+    where 
+      l = cholesky cov Upper
 
 condition muX muY covXX covXY covYY y =
     (postMu, postCov)

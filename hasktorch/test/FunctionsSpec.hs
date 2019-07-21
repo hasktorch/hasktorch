@@ -96,3 +96,9 @@ spec = do
         c = cholesky x Upper
         c' = asTensor ([[2.0, 6.0, -8.0], [0.0, 1.0, 5.0], [0.0, 0.0, 3.0]] :: [[Double]])
     all (c ==. c') `shouldBe` True
+  it "inverse of an identity matrix is an identity matrix" $ do
+    let soln = eq (inverse $ eye' 3 3) (eye' 3 3)
+    all soln `shouldBe` True
+    
+
+
