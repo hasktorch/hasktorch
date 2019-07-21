@@ -61,6 +61,6 @@ main = do
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/context.yaml"
   RTL.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
-  RP.decodeAndCodeGen (outputDir opts) (specFileDL opts)
+  RP.decodeAndCodeGen (outputDir opts) (specFileDL opts) "spec/bindings.yaml"
   pure ()
 

@@ -18,8 +18,20 @@ import qualified ParseDeclarations as D
 import ParseFunctionSig as P
 import RenderCommon
 
-dropGenerator :: [Parameter] -> [Parameter]
-dropGenerator params = filter (\v' -> ptype v' /= Ptr GeneratorType) params
+data BindingName
+  = HsName String
+  | CppName String
+  deriving (Show, Eq, Generic)
+
+data Binding
+  = BindRename { src :: BindingName, hsName :: String }
+  | Bind       { src :: BindingName }
+  | BindRemove { src :: BindingName }
+  deriving (Show, Eq, Generic)
+
+instance FromJSON BindingName
+instance FromJSON Binding
+
 
 toFunction :: D.Declaration -> P.Function
 toFunction dl = P.Function
@@ -43,7 +55,6 @@ nativeFunctionsFilter fns =
             not (isPrefixOf "_" (D.name a)) &&
             not (isSuffixOf "_" (D.name a)) &&
             not (isSuffixOf "_out" (D.name a)) &&
-            all (/= P.TenType P.ScalarType) (map D.dynamic_type' (D.arguments a)) &&
             all (/= P.Ptr P.GeneratorType) (map D.dynamic_type' (D.arguments a)) &&
             not ((D.name a) `elem` notUniqList)
 --            map D.dynamic_type' (D.returns a) == [P.TenType P.Tensor]
@@ -56,8 +67,9 @@ nativeFunctionsFilter fns =
     notUniq a b = b
 
 decodeAndCodeGen :: String -> String -> IO ()
-decodeAndCodeGen basedir fileName = do
-  funcs <- Y.decodeFileEither fileName :: IO (Either ParseException [D.Declaration])
+decodeAndCodeGen basedir yamlSpecFileName bindingsFileName = do
+  funcs <- Y.decodeFileEither yamlSpecFileName :: IO (Either ParseException [D.Declaration])
+  bindings <- Y.decodeFileEither bindingsFileName :: IO (Either ParseException [Bindings])
   case funcs of
     Left err' -> print err'
     Right fns -> do

@@ -81,7 +81,6 @@ decodeAndCodeGen basedir fileName = do
   case funcs of
     Left err' -> print err'
     Right fns -> do
-      print fns
       createDirectoryIfMissing True (basedir <> "/ATen/Unmanaged/Type")
       T.writeFile (basedir <> "/ATen/Unmanaged/Type/" <> PC.hsname fns <> ".hs") $
         template False ("ATen.Unmanaged.Type." <> fromString (PC.hsname fns)) fns
