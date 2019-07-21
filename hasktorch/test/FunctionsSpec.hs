@@ -2,7 +2,7 @@
 
 module FunctionsSpec(spec) where
 
-import Prelude hiding (abs, exp, floor, log, min, max)
+import Prelude hiding (all, abs, exp, floor, log, min, max)
 
 import Test.Hspec
 import Control.Exception.Safe
@@ -88,3 +88,17 @@ spec = do
     let x = ones' [3]
     let y = diag x 2
     shape y `shouldBe` [5, 5]
+
+  -- decomposition / solvers
+
+  it "cholesky decomposes" $ do
+    let x = asTensor ([[4.0, 12.0, -16.0], [12.0, 37.0, -43.0], [-16.0, -43.0, 98.0]] :: [[Double]])
+        c = cholesky x Upper
+        c' = asTensor ([[2.0, 6.0, -8.0], [0.0, 1.0, 5.0], [0.0, 0.0, 3.0]] :: [[Double]])
+    all (c ==. c') `shouldBe` True
+  it "inverse of an identity matrix is an identity matrix" $ do
+    let soln = eq (inverse $ eye' 3 3) (eye' 3 3)
+    all soln `shouldBe` True
+    
+
+
