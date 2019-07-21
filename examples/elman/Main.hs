@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Main where
 
@@ -9,7 +10,8 @@ import Torch.TensorFactories
 import Torch.Functions
 import Torch.TensorOptions
 import Torch.Autograd
-import Torch.NN 
+import Torch.NN
+import GHC.Generics
 
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
@@ -24,7 +26,7 @@ data RecurrentSpec = RecurrentSpec { in_features :: Int, hidden_features :: Int 
 data Recurrent = Recurrent { weight_ih :: Parameter, 
                              weight_hh :: Parameter,
                              bias :: Parameter
-                           }
+                           } deriving (Generic)
 
 
 -- Typeclass that shows that the layer weights can be randomly initialized
@@ -37,13 +39,14 @@ instance Randomizable RecurrentSpec Recurrent where
 
 
 -- Typeclass that allows us to manipulate and update the layer weights
-instance Parameterized Recurrent where
-  flattenParameters Recurrent{..} = [weight_ih, weight_hh, bias]
-  replaceOwnParameters _ = do
-    weight_ih <- nextParameter
-    weight_hh <- nextParameter
-    bias   <- nextParameter
-    return $ Recurrent{..}
+instance Parameterized Recurrent
+-- instance Parameterized Recurrent where
+--   flattenParameters Recurrent{..} = [weight_ih, weight_hh, bias]
+--   replaceOwnParameters _ = do
+--     weight_ih <- nextParameter
+--     weight_hh <- nextParameter
+--     bias   <- nextParameter
+--     return $ Recurrent{..}
 
 instance Show Recurrent where
   show Recurrent{..} =
