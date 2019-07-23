@@ -14,6 +14,7 @@ import qualified ATen.Type as ATen
 import qualified ATen.Managed.Cast
 import ATen.Cast
 
+import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
 
@@ -33,6 +34,11 @@ instance Fractional Tensor where
   a / b = unsafePerformIO $ (cast2 ATen.div_tt) a b
   recip t = unsafePerformIO $ (cast1 ATen.reciprocal_t) t
   fromRational i = asTensor @Float $ fromRational @Float i
+
+data Tri = Upper | Lower
+
+isUpper Upper = True
+isUpper Lower = False
 
 sumAll :: Tensor -> Tensor
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
@@ -64,6 +70,9 @@ sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
 mul :: Tensor -> Tensor -> Tensor
 mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
 
+cmul :: Scalar a => Tensor -> a -> Tensor
+cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
+
 matmul :: Tensor -> Tensor -> Tensor
 matmul a b =
     unsafePerformIO $ case (dim a, dim b) of
@@ -86,6 +95,9 @@ log2 t = unsafePerformIO $ (cast1 ATen.log2_t) t
 
 log10 :: Tensor -> Tensor
 log10 t = unsafePerformIO $ (cast1 ATen.log10_t) t
+
+pow :: Scalar a => Tensor -> a -> Tensor
+pow t s = unsafePerformIO $ (cast2 ATen.pow_ts) t s
 
 relu :: Tensor -> Tensor
 relu t = unsafePerformIO $ (cast1 ATen.relu_t) t
@@ -162,8 +174,52 @@ maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
 logSoftmax :: Tensor -> Int -> Tensor
 logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
 
-gels :: Tensor -> Tensor -> (Tensor,Tensor)
+inverse :: Tensor -> Tensor
+inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
+
+gels :: Tensor -> Tensor -> (Tensor, Tensor)
 gels _B _A = unsafePerformIO $ (cast2 ATen.gels_tt) _B _A
+
+symeig :: Tensor -> Bool -> Tri -> (Tensor, Tensor)
+symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
+  where boolUpper = isUpper upper
+
+
+eig :: Tensor -> Bool -> (Tensor, Tensor)
+eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
+
+svd :: Tensor -> Bool -> Bool -> (Tensor, Tensor, Tensor)
+svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
+
+cholesky :: Tensor -> Tri -> Tensor
+cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
+  where boolUpper = isUpper upper
+
+cholesky_solve :: Tensor -> Tensor -> Tri -> Tensor
+cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
+  where boolUpper = isUpper upper
+
+solve :: Tensor -> Tensor -> (Tensor,Tensor)
+solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a 
+
+cholesky_inverse :: Tensor -> Tri -> Tensor
+cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
+  where boolUpper = isUpper upper
+
+-- pstrf :: Tensor -> Bool -> Double -> (Tensor, Tensor)
+-- pstrf t upper tol = unsafePerformIO $ (cast3 ATen.pstrf_tbs) t upper tol
+
+qr :: Tensor -> (Tensor, Tensor)
+qr t = unsafePerformIO $ (cast1 ATen.qr_t) t
+
+geqrf :: Tensor -> (Tensor, Tensor)
+geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t 
+
+orgqr :: Tensor -> Tensor -> Tensor
+orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a 
+
+sign :: Tensor -> Tensor
+sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
 
 transpose :: Tensor -> Int -> Int -> Tensor
 transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
@@ -174,3 +230,15 @@ transpose2D t = transpose t 0 1
 
 diag :: Tensor -> Int -> Tensor
 diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
+
+all :: Tensor -> Bool
+all t = toInt (unsafePerformIO $ (cast1 ATen.all_t) t) == 1
+
+any :: Tensor -> Bool
+any t = toInt (unsafePerformIO $ (cast1 ATen.any_t) t) == 1
+
+all' :: Tensor -> Int -> Bool -> Tensor
+all' t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
+
+any' :: Tensor -> Int -> Bool -> Tensor
+any' t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
