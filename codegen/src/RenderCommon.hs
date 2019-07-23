@@ -8,6 +8,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 module RenderCommon where
 
+import Data.String.Conversions (cs)
 import Text.Shakespeare.Text (st)
 import Data.Char (toLower)
 import Data.Text (Text)
@@ -523,13 +524,25 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
         CType CVoid -> ""
         _ -> "return"
 
-pureFunction :: Bool -> Function -> Text
-pureFunction add_type_initials fn = [st|
+getSignatures :: Function -> String
+getSignatures fn = hsfuncname <> cs type_initials
+  where
+    type_initials :: Text --- This is for avoding c++ overload arguments.
+    type_initials =
+      if length parameters' > 0
+      then "_" <> (mconcat $ flip map parameters' $ \p -> parsableToInitial (ptype p))
+      else ""
+    hsfuncname = toHsFuncName False (P.name fn)
+    parameters' = filter isNotStar $ parameters fn
+
+
+pureFunction :: Bool -> String -> Function -> Text
+pureFunction add_type_initials hsfuncname fn = [st|
 #{hsfuncname} :: #{types}
 #{hsfuncname} #{args} = unsafePerformIO $ (cast#{num_args} Managed.#{hsfuncname}#{type_initials}) #{args}
 |]
   where
-    hsfuncname = toHsFuncName False (P.name fn)
+--    hsfuncname = toHsFuncName False (P.name fn)
     parameters' = filter isNotStar $ parameters fn
     num_args :: Int
     num_args = length parameters'

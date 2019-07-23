@@ -6,13 +6,16 @@
 {-# LANGUAGE QuasiQuotes #-}
 module RenderPure where
 
-import Data.Yaml (ParseException)
+import GHC.Generics
+import Data.Yaml (ParseException,FromJSON(..))
 import qualified Data.Yaml as Y
 import Text.Shakespeare.Text (st)
-import Data.Text (Text, replace)
+import Data.Text (Text)
 import Data.List (isPrefixOf, isSuffixOf, sort)
+import Data.Maybe (isJust)
 import qualified Data.Text.IO as T
 import System.Directory (createDirectoryIfMissing)
+import Data.Aeson.Types (defaultOptions, genericParseJSON, constructorTagModifier)
 
 import qualified ParseDeclarations as D
 import ParseFunctionSig as P
@@ -21,16 +24,37 @@ import RenderCommon
 data BindingName
   = HsName String
   | CppName String
+--  | RegexHsName String
+--  | RegexCppName String
   deriving (Show, Eq, Generic)
 
 data Binding
-  = BindRename { src :: BindingName, hsName :: String }
+  = BindRename { src :: BindingName, hs_name :: String }
   | Bind       { src :: BindingName }
   | BindRemove { src :: BindingName }
   deriving (Show, Eq, Generic)
 
-instance FromJSON BindingName
-instance FromJSON Binding
+instance FromJSON BindingName where
+  parseJSON = genericParseJSON defaultOptions{
+    constructorTagModifier = \tag ->
+      case tag of
+        "HsName" -> "hs_name"
+        "CppName" -> "cpp_name"
+--        "RegexHsName" -> "regex_hs_name"
+--        "RegexCppName" -> "regex_cpp_name"
+        a -> a
+    }
+
+instance FromJSON Binding where
+  parseJSON = genericParseJSON defaultOptions{
+    constructorTagModifier = \tag ->
+      case tag of
+        "BindRename" -> "rename"
+        "Bind"       -> "bind"
+        "BindRemove" -> "remove"
+        a -> a
+    }
+
 
 
 toFunction :: D.Declaration -> P.Function
@@ -43,12 +67,51 @@ toFunction dl = P.Function
   , P.variant = P.VFunction
   }
 
-renderFunctions :: [D.Declaration] -> Text
-renderFunctions nfs = mconcat $ flip map nfs $ \nf -> pureFunction True (toFunction nf)
+renderFunctions :: [(String, D.Declaration)] -> Text
+renderFunctions nfs = mconcat $ flip map nfs $ \(n,nf) -> pureFunction True n (toFunction nf)
 
-nativeFunctionsFilter :: [D.Declaration] -> [D.Declaration]
-nativeFunctionsFilter fns =
-  filter (\a ->
+isRemove :: Binding ->  Bool
+isRemove (BindRemove _) = True
+isRemove _ = False
+
+isRename :: Binding ->  Bool
+isRename (BindRename _ _) = True
+isRename _ = False
+
+removeBinding :: Binding -> (String, D.Declaration) -> Bool
+removeBinding (BindRemove (HsName n)) (hsName, _) = n == hsName
+removeBinding (BindRemove (CppName n)) (_, d) = n == D.name d
+removeBinding _ _ = False
+
+removeBinding' :: [Binding] -> (String, D.Declaration) -> Bool
+removeBinding' bindings decl = any (\b -> removeBinding b decl) bindings
+
+removeFilter :: [Binding] -> [(String, D.Declaration)] -> [(String, D.Declaration)]
+removeFilter bindings fns = filter (removeBinding' bindings') fns
+  where
+    bindings' = filter isRemove bindings
+
+renameBinding :: Binding -> (String, D.Declaration) -> Maybe (String, D.Declaration)
+renameBinding (BindRename (HsName n) new_name) (hsName, decl) =
+  if n == hsName then Just (new_name,decl) else Nothing
+renameBinding (BindRename (CppName n) new_name) (_, decl) =
+  if n == D.name decl then Just (new_name,decl) else Nothing
+renameBinding _ _ = Nothing
+
+renameBinding' :: [Binding] -> (String, D.Declaration) -> (String, D.Declaration)
+renameBinding' bindings decl =
+  case foldl (\i b -> let v = (renameBinding b decl) in if isJust v then v else i) Nothing bindings of
+    Just v -> v
+    Nothing -> decl
+
+renameFilter ::  [Binding] -> [(String, D.Declaration)] -> [(String, D.Declaration)]
+renameFilter bindings fns = map (renameBinding' bindings') fns
+  where
+    bindings' = filter isRename bindings
+
+nativeFunctionsFilter :: [D.Declaration] -> [Binding] -> [(String, D.Declaration)]
+nativeFunctionsFilter fns bindings =
+  filter (\(n,a) ->
             D.mode a == D.Native &&
             "namespace" `elem` (D.method_of a) &&
             D.is_factory_method a == Nothing &&
@@ -58,7 +121,10 @@ nativeFunctionsFilter fns =
             all (/= P.Ptr P.GeneratorType) (map D.dynamic_type' (D.arguments a)) &&
             not ((D.name a) `elem` notUniqList)
 --            map D.dynamic_type' (D.returns a) == [P.TenType P.Tensor]
-         ) fns
+         ) $
+  renameFilter bindings $
+  removeFilter bindings $
+  map (\f -> (getSignatures (toFunction f),f)) fns
   where
     notUniqList :: [String]
     notUniqList = notUniq (sort $ map D.name fns) []
@@ -66,17 +132,18 @@ nativeFunctionsFilter fns =
     notUniq (x:y:xs) ys = if x == y then notUniq xs (y:ys) else (notUniq (y:xs) ys)
     notUniq a b = b
 
-decodeAndCodeGen :: String -> String -> IO ()
+decodeAndCodeGen :: String -> String -> String -> IO ()
 decodeAndCodeGen basedir yamlSpecFileName bindingsFileName = do
   funcs <- Y.decodeFileEither yamlSpecFileName :: IO (Either ParseException [D.Declaration])
-  bindings <- Y.decodeFileEither bindingsFileName :: IO (Either ParseException [Bindings])
-  case funcs of
-    Left err' -> print err'
-    Right fns -> do
+  bindings <- Y.decodeFileEither bindingsFileName :: IO (Either ParseException [Binding])
+  case (funcs,bindings) of
+    (Left err', _) -> print err'
+    (Right _  , Left err') -> print err'
+    (Right fns, Right bnd) -> do
       createDirectoryIfMissing True (basedir <> "/Torch/Pure")
       T.writeFile (basedir <> "/ATen/Pure/Native.hs") $
         template "ATen.Pure.Native" $
-        renderFunctions $ nativeFunctionsFilter fns
+        renderFunctions $ nativeFunctionsFilter fns bnd
 
 renderImport :: Text -> Text
 renderImport module_name = [st|
