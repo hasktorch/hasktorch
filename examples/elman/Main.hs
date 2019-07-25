@@ -23,18 +23,16 @@ import LSTM
 import GRU
 
 
-
-num_iters = 5
-num_timesteps = 3
+num_iters = 10
 
 run :: (RecurrentCell a, Parameterized a) 
-    => a 
+    => Tensor
     -> Tensor
     -> Tensor
-    -> Tensor
+    -> a
     -> Int 
     -> IO (a)
-run model input_tensor init_hidden expected_output i = do
+run input_tensor init_hidden expected_output model i = do
     
     let output = finalState model input_tensor init_hidden
     let loss = mse_loss output expected_output
@@ -69,56 +67,14 @@ main = do
 
     putStrLn "\nElman Cell Training Loop"
     -- training loop for elman cell
-    foldLoop rnnLayer num_iters $ \model i -> do
-
-        let output = finalState model input_tensor init_hidden
-        let loss = mse_loss output expected_output
-
-        print loss 
-
-        let flat_parameters = flattenParameters model
-        let gradients = grad loss flat_parameters
-        
-
-        -- new parameters returned by the SGD update functions
-        new_flat_parameters <- mapM makeIndependent $ sgd 5e-2 flat_parameters gradients
-
-        -- return the new model state "to" the next iteration of foldLoop
-        return $ replaceParameters model new_flat_parameters
+    foldLoop rnnLayer num_iters (run input_tensor init_hidden expected_output) 
 
     putStrLn "\nLSTM Training Loop"
     -- training loop for LSTM cell
-    foldLoop lstmLayer num_iters $ \model i -> do
-
-        let output = finalState model input_tensor init_hidden
-        let loss = mse_loss output expected_output
-
-        print loss 
-
-        let flat_parameters = flattenParameters model
-        let gradients = grad loss flat_parameters
-        
-        -- new parameters returned by the SGD update functions
-        new_flat_parameters <- mapM makeIndependent $ sgd 5e-2 flat_parameters gradients
-
-        -- return the new model state "to" the next iteration of foldLoop
-        return $ replaceParameters model new_flat_parameters
+    foldLoop lstmLayer num_iters (run input_tensor init_hidden expected_output)
 
     putStrLn "\nGRU Training Loop"
     -- training loop for GRU cell
-    foldLoop gruLayer num_iters $ \model i -> do
-
-        let output = finalState model input_tensor init_hidden
-        let loss = mse_loss output expected_output
-        
-        print loss 
-
-        let flat_parameters = flattenParameters model
-        let gradients = grad loss flat_parameters
-
-        -- new parameters returned by the SGD update functions
-        new_flat_parameters <- mapM makeIndependent $ sgd 5e-2 flat_parameters gradients
-
-        return $ replaceParameters model new_flat_parameters
+    foldLoop gruLayer num_iters (run input_tensor init_hidden expected_output)
 
     return ()
