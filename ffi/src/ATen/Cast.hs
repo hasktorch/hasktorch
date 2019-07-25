@@ -7,6 +7,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 
 
 -----------------------------------------------------------------------------
@@ -94,6 +97,120 @@ instance Castable [ByteString] (Ptr CString) where
 instance (CppObject a) => Castable (ForeignPtr a) (Ptr a) where
   cast x f = withForeignPtr x f
   uncast x f = fromPtr x >>= f
+
+
+--------------------------------------------------------------------------------
+-- Tuples of Castable
+--------------------------------------------------------------------------------
+
+instance (Castable a a', Castable b b') => Castable (a,b) (a',b') where
+  cast (t0,t1) f = do
+    t0' <- cast t0 return
+    t1' <- cast t1 return
+    f (t0',t1')
+  uncast (t0,t1) f = do
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    f (t0',t1')
+
+instance (Castable a a', Castable b b', Castable c c') => Castable (a,b,c) (a',b',c') where
+  cast (t0,t1,t2) f = do
+    t0' <- cast t0 return
+    t1' <- cast t1 return
+    t2' <- cast t2 return
+    f (t0',t1',t2')
+  uncast (t0,t1,t2) f = do
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    t2' <- uncast t2 return
+    f (t0',t1',t2')
+
+instance (Castable a a', Castable b b', Castable c c', Castable d d') => Castable (a,b,c,d) (a',b',c',d') where
+  cast (t0,t1,t2,t3) f = do
+    t0' <- cast t0 return
+    t1' <- cast t1 return
+    t2' <- cast t2 return
+    t3' <- cast t3 return
+    f (t0',t1',t2',t3')
+  uncast (t0,t1,t2,t3) f = do
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    t2' <- uncast t2 return
+    t3' <- uncast t3 return
+    f (t0',t1',t2',t3')
+
+instance (Castable a a', Castable b b', Castable c c', Castable d d', Castable e e') => Castable (a,b,c,d,e) (a',b',c',d',e') where
+  cast (t0,t1,t2,t3,t4) f = do
+    t0' <- cast t0 return
+    t1' <- cast t1 return
+    t2' <- cast t2 return
+    t3' <- cast t3 return
+    t4' <- cast t4 return
+    f (t0',t1',t2',t3',t4')
+  uncast (t0,t1,t2,t3,t4) f = do
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    t2' <- uncast t2 return
+    t3' <- uncast t3 return
+    t4' <- uncast t4 return
+    f (t0',t1',t2',t3',t4')
+
+--------------------------------------------------------------------------------
+-- These casts convert the value from C++ Tuple(CppTuple) to Haskell Tuple.
+-- Reverse side is not supported.
+--------------------------------------------------------------------------------
+
+instance (CppTuple2 c, Castable a (A c), Castable b (B c)) => Castable (a,b) c where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    f (t0',t1')
+
+instance (CppTuple3 d, Castable a (A d), Castable b (B d), Castable c (C d)) => Castable (a,b,c) d where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    t2' <- uncast t2 return
+    f (t0',t1',t2')
+
+instance (CppTuple4 e, Castable a (A e), Castable b (B e), Castable c (C e), Castable d (D e)) => Castable (a,b,c,d) e where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    t3 <- get3 t
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    t2' <- uncast t2 return
+    t3' <- uncast t3 return
+    f (t0',t1',t2',t3')
+
+instance (CppTuple5 f, Castable a (A f), Castable b (B f), Castable c (C f), Castable d (D f), Castable e (E f)) => Castable (a,b,c,d,e) f where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    t3 <- get3 t
+    t4 <- get4 t
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    t2' <- uncast t2 return
+    t3' <- uncast t3 return
+    t4' <- uncast t4 return
+    f (t0',t1',t2',t3',t4')
+
+--------------------------------------------------------------------------------
+-- Cast functions for various numbers of arguments
+--------------------------------------------------------------------------------
 
 cast0 :: (Castable a ca) => (IO ca) -> IO a
 cast0 f = retryWithGC (f) >>= \ca -> uncast ca return

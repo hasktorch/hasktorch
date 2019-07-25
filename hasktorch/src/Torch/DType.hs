@@ -1,15 +1,45 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Torch.DType where
 
 import ATen.Class (Castable(..))
 import qualified ATen.Const as ATen
 import qualified ATen.Type as ATen
+import Data.Int
+import Data.Word
 
 data DType = UInt8 | Int8 | Int16 | Int32 | Int64 | Half | Float | Double
   deriving (Eq, Show)
+
+class DataType a where
+  dataType :: DataType a => DType
+
+instance DataType Word8 where
+  dataType = UInt8
+
+instance DataType Int8 where
+  dataType = Int8
+
+instance DataType Int16 where
+  dataType = Int16
+
+instance DataType Int32 where
+  dataType = Int32
+
+instance DataType Int where
+  dataType = Int64
+
+instance DataType Int64 where
+  dataType = Int64
+
+instance DataType Float where
+  dataType = Float
+
+instance DataType Double where
+  dataType = Double
 
 instance Castable DType ATen.ScalarType where
   cast UInt8  f = f ATen.kByte

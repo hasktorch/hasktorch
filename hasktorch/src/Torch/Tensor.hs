@@ -2,11 +2,15 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Torch.Tensor where
 
 import Control.Monad (forM_, forM)
+import Control.Exception.Safe (throwIO)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
@@ -17,6 +21,7 @@ import Numeric
 
 import ATen.Cast
 import ATen.Class (Castable(..))
+import qualified ATen.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.TensorOptions as ATen
 import qualified ATen.Managed.Native as ATen
@@ -118,89 +123,78 @@ instance (TensorIndex a, TensorIndex b, TensorIndex c, TensorIndex d) => TensorI
 --------------------------------------------------------------------------------
 
 class TensorLike a where
+  asTensor' :: a -> TensorOptions -> Tensor
   asTensor :: a -> Tensor
   asValue :: Tensor -> a
-
-mkScalarTensor :: Storable a => a -> TensorOptions -> Tensor
-mkScalarTensor v opts = unsafePerformIO $ do
-  t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] opts
-  ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-  poke (castPtr ptr) v
-  return t
-
-mkScalarValue :: Storable a => Tensor -> a
-mkScalarValue t = unsafePerformIO $ do
-  ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-  peek (castPtr ptr)
+  -- Internal functions(like "_xxx") are below. Do not use them directly.
+  _dtype :: DType
+  _dims :: a -> [Int]
+  _peekElemOff :: Ptr () -> Int -> [Int] -> IO a
+  _pokeElemOff :: Ptr () -> Int -> a -> IO ()
 
 int64_opts = withDType Int64 defaultOpts
 float_opts = withDType Float defaultOpts
 
-instance TensorLike Integer where
-  asTensor v = mkScalarTensor @Int64 (fromIntegral v) int64_opts
-  asValue t = fromIntegral $ mkScalarValue @Int64 t
+withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
+withTensor t fn = cast t $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
 
-instance TensorLike Double where
-  -- XXX: This implicit cast to float is very meh, but I don't have any better ideas
-  --      This is our default dtype, so it's the most convenient thing we can do
-  asTensor v = mkScalarTensor @Float (realToFrac v) float_opts
-  asValue t = realToFrac $ mkScalarValue @Float t
+instance (DataType a, Storable a) => TensorLike a where
+  asTensor' v opts = unsafePerformIO $ do
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (dataType @a) opts
+    withTensor t $ \ptr -> do
+      _pokeElemOff ptr 0 v
+    return t
 
---------------------------------------------------------------------------------
--- List <-> Tensor promotion
---------------------------------------------------------------------------------
+  asTensor v = asTensor' v defaultOpts
 
-mkTensor :: (Storable a) => [a] -> [Int] -> TensorOptions -> Tensor
-mkTensor vs dims opts = unsafePerformIO $ do
-  t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) dims opts
-  ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-  forM_ (zip [0..] vs) $ \(i,v) ->
-    pokeElemOff (castPtr ptr) i v
-  return t
+  asValue t = unsafePerformIO $ do
+    if dataType @a == dtype t
+    then do
+      withTensor t $ \ptr -> do
+        _peekElemOff ptr 0 []
+    else
+      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
 
-mkValue :: (Storable a) => Tensor -> [a]
-mkValue t = unsafePerformIO $ do
-  let dims = shape t
-  ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-  forM [0..((product dims)-1)] $ \i ->
-    peekElemOff (castPtr ptr) i
+  _dtype = dataType @a
+  _dims _ = []
+  _peekElemOff ptr offset _ = peekElemOff (castPtr ptr) offset
+  _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
 
-split1d :: [Int] -> [a] -> [[a]]
-split1d _ [] = []
-split1d ns xs =
-  let n = head $ reverse ns
-      (x,y) = splitAt n xs
-  in x:(split1d ns y)
+instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
+  asTensor' v opts = unsafePerformIO $ do
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) opts
+    withTensor t $ \ptr -> do
+      _pokeElemOff ptr 0 v
+    return t
 
-split2d :: [Int] -> [a] -> [[[a]]]
-split2d _ [] = []
-split2d ns xs =
-  let (n0:n1:_) = reverse ns
-  in flip map (split1d [n0] xs) $ split1d [n1]
+  asTensor v = asTensor' v defaultOpts
 
-instance TensorLike [Integer] where
-  asTensor v = mkTensor @Int64 (map fromIntegral v) [length v] int64_opts
-  asValue t = map fromIntegral $ mkValue @Int64 t
+  asValue t = unsafePerformIO $ do
+    if _dtype @a == dtype t
+    then do
+      withTensor t $ \ptr -> do
+        _peekElemOff ptr 0 (shape t)
+    else
+      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
 
-instance TensorLike [Double] where
-  asTensor v = mkTensor @Float (map realToFrac v) [length v] float_opts
-  asValue t = map realToFrac $ mkValue @Float t
+  _dtype = _dtype @a
 
-instance TensorLike [[Integer]] where
-  asTensor v = mkTensor @Int64 (map fromIntegral (concat v)) [length v, length (head v)] int64_opts
-  asValue t = split1d (shape t) $ map fromIntegral $ mkValue @Int64 t
+  _dims [] = []
+  _dims v@(x:_) = (length v):(_dims x)
 
-instance TensorLike [[Double]] where
-  asTensor v = mkTensor @Float (map realToFrac (concat v)) [length v, length (head v)] float_opts
-  asValue t = split1d (shape t) $ map realToFrac $ mkValue @Float t
+  _peekElemOff ptr offset [] = return []
+  _peekElemOff ptr offset (d:dims) =
+    let width = product dims
+    in forM [0..(d-1)] $ \i ->
+         _peekElemOff ptr (offset+i*width) dims
 
-instance TensorLike [[[Integer]]] where
-  asTensor v = mkTensor @Int64 (map fromIntegral (concat (concat v))) [length v, length (head v), length (head (head v))] int64_opts
-  asValue t = split2d (shape t) $ map fromIntegral $ mkValue @Int64 t
-
-instance TensorLike [[[Double]]] where
-  asTensor v = mkTensor @Float (map realToFrac (concat (concat v))) [length v, length (head v), length (head (head v))] float_opts
-  asValue t = split2d (shape t) $ map realToFrac $ mkValue @Float t
+  _pokeElemOff ptr offset [] = return ()
+  _pokeElemOff ptr offset v@(x:_) =
+    let width = product (_dims x)
+    in forM_ (zip [0..] v) $ \(i,d) ->
+         if product (_dims d) == width -- This validation may be slow.
+         then (_pokeElemOff @a) ptr (offset+i*width) d
+         else throwIO $ userError $ "There are lists having different length."
 
 --------------------------------------------------------------------------------
 -- Show
