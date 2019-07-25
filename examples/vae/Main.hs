@@ -43,6 +43,15 @@ reparamaterize mu logvar = do
 linear Linear{..} input = squeezeAll $ matmul input depWeight + depBias
   where (depWeight, depBias) = (toDependent weight, toDependent bias)
 
+loss recon_x x mu logvar = bce + kld
+  where
+    xview = undefined -- TODO
+    oneTensor = ones' undefined -- TODO
+    bce = binary_cross_entropy_loss recon_x xview oneTensor ReduceSum
+    kld = -0.5 * (sumAll (1 + logvar - pow mu (2 :: Int) - exp logvar))
+    -- BCE = F.binary_cross_entropy(recon_x, x.view(-1, 784), reduction='sum')
+    -- KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
 model :: VAEState -> Tensor -> Tensor
 model VAEState{..} input = undefined
 
