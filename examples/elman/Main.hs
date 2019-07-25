@@ -24,6 +24,7 @@ import GRU
 
 
 num_iters = 10
+num_timesteps = 3
 
 run :: (RecurrentCell a, Parameterized a) 
     => Tensor
