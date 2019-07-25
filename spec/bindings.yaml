@@ -1,0 +1,6 @@
+- tag: bind
+  contents: {src: {cpp_name: relu}} # bind is default, so this line is not needed.
+- tag: rename
+  contents: {src: {hs_name: sum_t}, hs_name: sumAll}
+- tag: remove
+  contents: {src: {cpp_name: add}}
