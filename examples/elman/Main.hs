@@ -19,15 +19,18 @@ import Elman
 import LSTM
 import GRU
 
---------------------------------------------------------------------------------
--- Training code
---------------------------------------------------------------------------------
+
 num_iters = 5
 num_timesteps = 3
 
 
 main :: IO ()
 main = do
+
+    -- randomly initialize the elman cell
+    rnnLayer <- sample $ RecurrentSpec { in_features = 2, hidden_features = 2 }
+
+    let foldLoop x count block = foldM block x [1..count]
 
     -- randomly initializing training values
     input_tensor <- randn' [num_timesteps, 2]
@@ -39,11 +42,15 @@ main = do
     lstmLayer <- sample $ LSTMSpec 2 2
     gruLayer <- sample $ GRUSpec 2 2
 
+
     let foldLoop x count block = foldM block x [1..count]
     
     putStrLn "\nElman Cell Training Loop"
     -- training loop for elman cell
     foldLoop rnnLayer num_iters $ \model i -> do
+
+        -- calculate output when RNN is run over timesteps
+        let output = runOverTimesteps inp model init_hidden
 
         let output = finalState model input_tensor init_hidden
         let loss = mse_loss output expected_output
