@@ -1,6 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric #-}
+
 module Main where
 
 import Torch.Tensor
@@ -9,7 +11,8 @@ import Torch.TensorFactories
 import Torch.Functions
 import Torch.TensorOptions
 import Torch.Autograd
-import Torch.NN 
+import Torch.NN
+import GHC.Generics
 
 import Control.Monad.State.Strict
 import Data.List (foldl', scanl', intersperse)
@@ -18,6 +21,7 @@ import RecurrentLayer
 import Elman
 import LSTM
 import GRU
+
 
 
 num_iters = 5

@@ -15,7 +15,7 @@ jobs:
       - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
       - run: gcc --version
       - run: stack --version
-      - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
+      - run: cd deps/ ; ./get-deps.sh -a cpu -c
       - run:
           name: stack build
           command: stack build --jobs 2
@@ -41,18 +41,17 @@ jobs:
       - run: git submodule init && git submodule update
       - run: gcc --version
       - run: cabal --version
-      - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
+      - run: cd deps/ ; ./get-deps.sh -a cpu -c
       - run: ./setup-cabal.sh
       - run: cabal new-update
       - run: cabal new-install hspec-discover
       - run:
           name: cabal new-build all
-          command: cabal new-build all --jobs=2
+          command: cabal new-build all --jobs=2 --write-ghc-environment-files=always
           no_output_timeout: 15m
-      - run: cabal new-test ffi --jobs=2
+      - run: cabal new-test all --jobs=2 --write-ghc-environment-files=always
       - run: cabal new-exec codegen-exe
-      - run: cabal new-test ffi --jobs=2
-      - run: cabal new-test hasktorch
+      - run: cabal new-test all --jobs=2 --write-ghc-environment-files=always
       - run: cabal exec xor_mlp
   osx-stack-build:
     macos:
@@ -73,7 +72,7 @@ jobs:
       - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
       - run: clang --version
       - run: stack --version
-      - run: cd deps/ ; ./get-deps.sh USE_BINARY_FOR_CI
+      - run: cd deps/ ; ./get-deps.sh -a cpu -c
       - run: cp -a deps/libtorch/lib/*.dylib deps/mklml/lib/*.dylib /usr/local/lib/
       - run:
           name: stack build
@@ -84,6 +83,7 @@ jobs:
       - run: stack test --jobs 2
       - run: stack exec xor_mlp
       - run: stack exec regression
+      - run: stack exec gaussian_process
 
 workflows:
   version: 2
