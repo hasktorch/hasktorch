@@ -25,6 +25,7 @@
 - remove: {src: relu_t}
 - remove: {src: selu_t}
 - remove: {src: sigmoid_t}
+- remove: {src: size_tl}
 
 # remove overloaded functions
 - remove: {src: add_tts}

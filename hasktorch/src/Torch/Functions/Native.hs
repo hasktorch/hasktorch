@@ -558,9 +558,6 @@ celu _self _alpha = unsafePerformIO $ (cast2 ATen.celu_ts) _self _alpha
 detach :: Tensor -> Tensor
 detach _self = unsafePerformIO $ (cast1 ATen.detach_t) _self
 
-size :: Tensor -> Int -> Int
-size _self _dim = unsafePerformIO $ (cast2 ATen.size_tl) _self _dim
-
 slice :: Tensor -> Int -> Int -> Int -> Int -> Tensor
 slice _self _dim _start _end _step = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
 
