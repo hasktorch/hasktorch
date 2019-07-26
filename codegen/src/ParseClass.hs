@@ -28,3 +28,21 @@ decodeAndPrint :: String -> IO ()
 decodeAndPrint fileName = do
   file <- Y.decodeFileEither fileName :: IO (Either ParseException CppClassSpec)
   prettyPrint file
+
+trimSpace :: String -> String
+trimSpace [] = []
+trimSpace (' ':xs) = trimSpace xs
+trimSpace (x:xs) = x:trimSpace xs
+
+hasSpace :: String -> Bool
+hasSpace [] = False
+hasSpace (' ':_) = True
+hasSpace (_:xs) = hasSpace xs
+
+hsnameWithoutSpace :: CppClassSpec -> String
+hsnameWithoutSpace typ_ = trimSpace $ hsname typ_
+
+hsnameWithParens :: CppClassSpec -> String
+hsnameWithParens typ_ = if hasSpace name then "(" <> name <> ")" else name
+  where
+    name = hsname typ_

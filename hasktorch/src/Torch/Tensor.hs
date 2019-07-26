@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 
 module Torch.Tensor where
 
@@ -14,15 +15,18 @@ import Control.Exception.Safe (throwIO)
 import Foreign.ForeignPtr
 import Foreign.Ptr
 import Foreign.Storable
+import Foreign.C.Types
 import System.IO.Unsafe
 import Data.Int (Int64)
 import Data.List (intercalate)
 import Numeric
 
 import ATen.Cast
-import ATen.Class (Castable(..))
+import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
 import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.TensorOptions as ATen
+import qualified ATen.Managed.Type.StdArray as ATen
+import qualified ATen.Managed.Type.StdString as ATen
 import qualified ATen.Managed.Native as ATen
 import qualified ATen.Managed.Cast as ATen
 import qualified ATen.Type as ATen
@@ -220,6 +224,7 @@ instance Show Tensor where
 
 
 --------------------------------------------------------------------------------
+
 -- Castable instances
 --------------------------------------------------------------------------------
 
@@ -233,11 +238,6 @@ instance Castable [Tensor] (ForeignPtr ATen.TensorList) where
     f tensor_list
 
 
-instance Castable (Tensor,Tensor) (ForeignPtr ATen.TensorList) where
-  cast xs f = do
-    ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
-    cast ptr_list f
-  uncast xs f = uncast xs $ \ptr_list -> do
-    tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
-    f tensor_list
-
+instance Castable String (ForeignPtr ATen.StdString) where
+  cast str f = ATen.newStdString_s str >>= f
+  uncast xs f = ATen.string_c_str xs >>= f

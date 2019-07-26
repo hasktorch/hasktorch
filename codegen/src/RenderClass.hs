@@ -36,7 +36,7 @@ import ATen.Unmanaged.Type.TensorList
 import ATen.Unmanaged.Type.TensorOptions
 import ATen.Unmanaged.Type.Tuple
 
-import qualified #{"ATen.Unmanaged.Type." <> (PC.hsname typ_)} as Unmanaged
+import qualified #{"ATen.Unmanaged.Type." <> (PC.hsnameWithoutSpace typ_)} as Unmanaged
 |] else [st|
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -56,16 +56,17 @@ C.include "<ATen/ATen.h>"
 C.include "<vector>"
 |]
 
+
 renderConstructors :: Bool -> PC.CppClassSpec -> Text
 renderConstructors is_managed typ_ = mconcat $ map (methodToCpp typ_ True is_managed True "" "") (PC.constructors typ_)
 
 renderDestructor :: Bool -> PC.CppClassSpec -> Text
 renderDestructor is_managed typ_ = if is_managed then "" else [st|
-delete#{PC.hsname typ_} :: Ptr #{PC.hsname typ_} -> IO ()
-delete#{PC.hsname typ_} object = #{bra}C.throwBlock| void { delete $(#{PC.cppname typ_}* object);}|#{cket}
+delete#{PC.hsnameWithoutSpace typ_} :: Ptr #{PC.hsnameWithParens typ_} -> IO ()
+delete#{PC.hsnameWithoutSpace typ_} object = #{bra}C.throwBlock| void { delete $(#{PC.cppname typ_}* object);}|#{cket}
 
-instance CppObject #{PC.hsname typ_} where
-  fromPtr ptr = newForeignPtr ptr (delete#{PC.hsname typ_} ptr)
+instance CppObject #{PC.hsnameWithParens typ_} where
+  fromPtr ptr = newForeignPtr ptr (delete#{PC.hsnameWithoutSpace typ_} ptr)
 |]
 
 
@@ -82,11 +83,11 @@ decodeAndCodeGen basedir fileName = do
     Left err' -> print err'
     Right fns -> do
       createDirectoryIfMissing True (basedir <> "/ATen/Unmanaged/Type")
-      T.writeFile (basedir <> "/ATen/Unmanaged/Type/" <> PC.hsname fns <> ".hs") $
-        template False ("ATen.Unmanaged.Type." <> fromString (PC.hsname fns)) fns
+      T.writeFile (basedir <> "/ATen/Unmanaged/Type/" <> PC.hsnameWithoutSpace fns <> ".hs") $
+        template False ("ATen.Unmanaged.Type." <> fromString (PC.hsnameWithoutSpace fns)) fns
       createDirectoryIfMissing True (basedir <> "/ATen/Managed/Type")
-      T.writeFile (basedir <> "/ATen/Managed/Type/" <> PC.hsname fns <> ".hs") $
-        template True ("ATen.Managed.Type." <> fromString (PC.hsname fns)) fns
+      T.writeFile (basedir <> "/ATen/Managed/Type/" <> PC.hsnameWithoutSpace fns <> ".hs") $
+        template True ("ATen.Managed.Type." <> fromString (PC.hsnameWithoutSpace fns)) fns
 
 
 template :: Bool -> Text -> PC.CppClassSpec -> Text

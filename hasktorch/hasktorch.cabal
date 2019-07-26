@@ -18,6 +18,7 @@ library
                     , Torch.DType
                     , Torch.TensorFactories
                     , Torch.Functions
+                    , Torch.Functions.Native
                     , Torch.Autograd
                     , Torch.Static
                     , Torch.NN
