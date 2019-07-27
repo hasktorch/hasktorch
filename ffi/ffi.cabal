@@ -30,9 +30,6 @@ library
                     , ATen.Unmanaged.Type.TensorList
                     , ATen.Unmanaged.Type.TensorOptions
                     , ATen.Unmanaged.Type.StdString
---                    , ATen.Unmanaged.Type.StdArrayCBool2
---                    , ATen.Unmanaged.Type.StdArrayCBool3
---                    , ATen.Unmanaged.Type.StdArrayCBool4
                     , ATen.Unmanaged.Type.StdArray
                     , ATen.Unmanaged.Type.Context
                     , ATen.Unmanaged.Type.Extra
@@ -50,9 +47,6 @@ library
                     , ATen.Managed.Type.TensorList
                     , ATen.Managed.Type.TensorOptions
                     , ATen.Managed.Type.StdString
---                    , ATen.Managed.Type.StdArrayCBool2
---                    , ATen.Managed.Type.StdArrayCBool3
---                    , ATen.Managed.Type.StdArrayCBool4
                     , ATen.Managed.Type.StdArray
                     , ATen.Managed.Type.Context
                     , ATen.Managed.Type.Extra
