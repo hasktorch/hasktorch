@@ -145,7 +145,8 @@ tenTypeToHigherHsType tentype =
     BoolTensorQ -> "Tensor"
     ByteTensor -> "Tensor"
     LongTensor -> "Tensor"
---    IntList _ -> "IntArrayRef"
+    IntList (Just [1]) -> "Int"
+    IntList (Just [s]) -> [st|(#{T.intercalate "," (Prelude.replicate s "Int")})|]
     IntList _ -> "[Int]"
     ScalarQ -> "Float"
     ScalarType -> "DType"

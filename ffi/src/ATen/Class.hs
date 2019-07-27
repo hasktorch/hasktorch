@@ -35,3 +35,7 @@ class CppTuple3 m => CppTuple4 m where
 class CppTuple4 m => CppTuple5 m where
   type E m
   get4 :: m -> IO (E m)
+
+class CppTuple5 m => CppTuple6 m where
+  type F m
+  get5 :: m -> IO (F m)

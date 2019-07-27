@@ -12,6 +12,15 @@ import ATen.Type
 import ATen.Managed.Type.IntArray
 import ATen.Managed.Type.TensorList
 
+instance Castable Int (ForeignPtr IntArray) where
+  cast xs f = do
+    arr <- newIntArray
+    intArray_push_back_l arr $ fromIntegral xs
+    f arr
+  uncast xs f = do
+    v <- intArray_at_s xs 0
+    f (fromIntegral v)
+
 instance Castable [Int] (ForeignPtr IntArray) where
   cast xs f = do
     arr <- newIntArray
