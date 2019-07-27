@@ -1,4 +1,9 @@
 - rename: {src: where_ttt, dst: where'}
+- rename: {src: min_t, dst: minAll}
+- rename: {src: max_t, dst: maxAll}
+- rename: {src: median_t, dst: medianAll}
+- rename: {src: all_t, dst: allAll}
+- rename: {src: any_t, dst: anyAll}
 
 # remove already registered functions
 - remove: {src: transpose_tll}
@@ -63,6 +68,7 @@
 - remove: {src: softmax_tl}
 - remove: {src: squeeze_t}
 - remove: {src: squeeze_tl}
+- remove: {src: sum_t}
 - remove: {src: sum_ts}
 - remove: {src: sum_tlbs}
 - remove: {src: sum_tlb}
@@ -120,11 +126,6 @@
 - remove: {src: remainder_ts}
 - remove: {src: remainder_tt}
 - remove: {src: min_tt}
-- remove: {src: min_t}
 - remove: {src: max_tt}
-- remove: {src: max_t}
-- remove: {src: median_t}
-- remove: {src: all_t}
-- remove: {src: any_t}
 - remove: {src: pow_tt}
 - remove: {src: pow_st}

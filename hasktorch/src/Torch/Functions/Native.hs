@@ -585,9 +585,6 @@ stft _self _n_fft _hop_length _win_length _window _normalized _onesided = unsafe
 stride :: Tensor -> Int -> Int
 stride _self _dim = unsafePerformIO $ (cast2 ATen.stride_tl) _self _dim
 
-sum :: Tensor -> Tensor
-sum _self = unsafePerformIO $ (cast1 ATen.sum_t) _self
-
 t :: Tensor -> Tensor
 t _self = unsafePerformIO $ (cast1 ATen.t_t) _self
 
@@ -837,6 +834,15 @@ histc _self _bins _min _max = unsafePerformIO $ (cast4 ATen.histc_tlss) _self _b
 sign :: Tensor -> Tensor
 sign _self = unsafePerformIO $ (cast1 ATen.sign_t) _self
 
+minAll :: Tensor -> Tensor
+minAll _self = unsafePerformIO $ (cast1 ATen.min_t) _self
+
+maxAll :: Tensor -> Tensor
+maxAll _self = unsafePerformIO $ (cast1 ATen.max_t) _self
+
+medianAll :: Tensor -> Tensor
+medianAll _self = unsafePerformIO $ (cast1 ATen.median_t) _self
+
 sort :: Tensor -> Int -> Bool -> (Tensor,Tensor)
 sort _self _dim _descending = unsafePerformIO $ (cast3 ATen.sort_tlb) _self _dim _descending
 
@@ -845,6 +851,12 @@ argsort _self _dim _descending = unsafePerformIO $ (cast3 ATen.argsort_tlb) _sel
 
 topk :: Tensor -> Int -> Int -> Bool -> Bool -> (Tensor,Tensor)
 topk _self _k _dim _largest _sorted = unsafePerformIO $ (cast5 ATen.topk_tllbb) _self _k _dim _largest _sorted
+
+allAll :: Tensor -> Tensor
+allAll _self = unsafePerformIO $ (cast1 ATen.all_t) _self
+
+anyAll :: Tensor -> Tensor
+anyAll _self = unsafePerformIO $ (cast1 ATen.any_t) _self
 
 renorm :: Tensor -> Float -> Int -> Float -> Tensor
 renorm _self _p _dim _maxnorm = unsafePerformIO $ (cast4 ATen.renorm_tsls) _self _p _dim _maxnorm
