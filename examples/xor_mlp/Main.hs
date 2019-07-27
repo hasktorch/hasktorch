@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Main where
 
@@ -10,6 +11,7 @@ import Torch.Functions hiding (linear)
 import Torch.TensorOptions
 import Torch.Autograd
 import Torch.NN
+import GHC.Generics
 
 import Control.Monad (foldM)
 import Data.List (foldl', scanl', intersperse)
@@ -23,7 +25,7 @@ linear Linear{..} input = (matmul input (toDependent weight)) + (toDependent bia
 
 data MLPSpec = MLPSpec { feature_counts :: [Int], nonlinearitySpec :: Tensor -> Tensor }
 
-data MLP = MLP { layers :: [Linear], nonlinearity :: Tensor -> Tensor }
+data MLP = MLP { layers :: [Linear], nonlinearity :: Tensor -> Tensor } deriving (Generic)
 
 instance Randomizable MLPSpec MLP where
   sample MLPSpec{..} = do
@@ -36,11 +38,15 @@ instance Randomizable MLPSpec MLP where
         where
           shift (a, b) c = (b, c)
 
-instance Parameterized MLP where
-  flattenParameters MLP{..} = concat $ map flattenParameters layers
-  replaceOwnParameters mlp = do
-    new_layers <- mapM replaceOwnParameters (layers mlp)
-    return $ mlp { layers = new_layers }
+instance Parameterized MLP
+-- This instance generates following codes.
+--
+---------------------------------------------------
+-- instance Parameterized MLP where
+--   flattenParameters MLP{..} = concat $ map flattenParameters layers
+--   replaceOwnParameters mlp = do
+--     new_layers <- mapM replaceOwnParameters (layers mlp)
+--     return $ mlp { layers = new_layers }
 
 mlp :: MLP -> Tensor -> Tensor
 mlp MLP{..} input = foldl' revApply input $ intersperse nonlinearity $ map linear layers

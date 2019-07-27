@@ -7,50 +7,101 @@
 
 set -eu
 
-git submodule update --init --recursive
+usage_exit() {
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu90" or "cu100"] [-s]" 1>&2
+    echo " -n # Use nightly libtorch w/  -l" 1>&2
+    echo "    # Use libtorch-1.1.0   w/o -l" 1>&2
+    echo "" 1>&2
+    echo " -c # Download libtorch from hasktorch's site w/ -c" 1>&2
+    echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
+    echo "" 1>&2
+    echo " -a cpu   # Use CPU without CUDA" 1>&2
+    echo " -a cu90  # Use CUDA-9" 1>&2
+    echo " -a cu100 # Use CUDA-10" 1>&2
+    echo "" 1>&2
+    echo " -s # Skip download" 1>&2
+    echo "" 1>&2
+    echo " -h # Show this help" 1>&2
+    exit 1
+}
 
-case "$(uname)" in
-  "Darwin")
-    USE_BINARY_FOR_CI="$1"
-    if [ -z "$USE_BINARY_FOR_CI" ] ; then
-      wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.1.0.zip
-      unzip libtorch-macos-1.1.0.zip
-      rm libtorch-macos-1.1.0.zip
-    else
-      wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.1.0/cpu-libtorch-macos-latest.zip
-      unzip cpu-libtorch-macos-latest.zip
-      rm cpu-libtorch-macos-latest.zip
-    fi
-    wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_mac_2019.0.1.20181227.tgz
-    tar -xzf mklml_mac_2019.0.1.20181227.tgz
-    rm -f mklml_mac_2019.0.1.20181227.tgz
-    rm -f mklml_mac_2019.0.1.20181227.tgz.1
-    rm -rf mklml
-    mv mklml_mac_2019.0.1.20181227 mklml
-    ;;
-  "Linux")
-    USE_BINARY_FOR_CI="$1"
-    if [ -z "$USE_BINARY_FOR_CI" ] ; then
-      wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
-      unzip libtorch-shared-with-deps-latest.zip
-      rm libtorch-shared-with-deps-latest.zip
-    else
-      wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.1.0/cpu-libtorch-shared-with-deps-latest.zip
-      unzip cpu-libtorch-shared-with-deps-latest.zip
-      rm cpu-libtorch-shared-with-deps-latest.zip
-    fi
-    wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz
-    tar -xzf mklml_lnx_2019.0.1.20181227.tgz
-    rm -f mklml_lnx_2019.0.1.20181227.tgz
-    rm -f mklml_lnx_2019.0.1.20181227.tgz.1
-    rm -rf mklml
-    mv mklml_lnx_2019.0.1.20181227 mklml
-    ln -s libmklml_intel.so mklml/lib/libmklml.so
-    ;;
-esac
+USE_NIGHTLY=0
+USE_BINARY_FOR_CI=0
+COMPUTE_ARCH=cpu
+SKIP_DOWNLOAD=0
+
+while getopts nca:sh OPT
+do
+    case $OPT in
+        n)  USE_NIGHTLY=1
+            ;;
+        c)  USE_BINARY_FOR_CI=1
+            ;;
+        a)  COMPUTE_ARCH=$OPTARG
+            ;;
+        s)  SKIP_DOWNLOAD=1
+            ;;
+        h)  usage_exit
+            ;;
+        \?) usage_exit
+            ;;
+    esac
+done
+
+if [ "$SKIP_DOWNLOAD" = 0 ] ; then
+  git submodule update --init --recursive
+
+  case "$(uname)" in
+    "Darwin")
+      if [ "$USE_NIGHTLY" = 1 ] ; then
+        wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-macos-latest.zip
+        unzip libtorch-macos-latest.zip
+        rm libtorch-macos-latest.zip
+      elif [ "$USE_BINARY_FOR_CI" = 1 ] ; then
+        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.1.0/cpu-libtorch-macos-latest.zip
+        unzip cpu-libtorch-macos-latest.zip
+        rm cpu-libtorch-macos-latest.zip
+      else
+        wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.1.0.zip
+        unzip libtorch-macos-1.1.0.zip
+        rm libtorch-macos-1.1.0.zip
+      fi
+      wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_mac_2019.0.1.20181227.tgz
+      tar -xzf mklml_mac_2019.0.1.20181227.tgz
+      rm -f mklml_mac_2019.0.1.20181227.tgz
+      rm -f mklml_mac_2019.0.1.20181227.tgz.1
+      rm -rf mklml
+      mv mklml_mac_2019.0.1.20181227 mklml
+      ;;
+    "Linux")
+      if [ "$USE_NIGHTLY" = 1 ] ; then
+        wget https://download.pytorch.org/libtorch/nightly/${COMPUTE_ARCH}/libtorch-shared-with-deps-latest.zip
+        unzip libtorch-shared-with-deps-latest.zip
+        rm libtorch-shared-with-deps-latest.zip
+      elif [ "$USE_BINARY_FOR_CI" = 1 ] ; then
+        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.1.0/${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
+        unzip ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
+        rm ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
+      else
+        wget https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-1.1.0.zip
+        unzip libtorch-shared-with-deps-1.1.0.zip
+        rm libtorch-shared-with-deps-1.1.0.zip
+      fi
+      wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz
+      tar -xzf mklml_lnx_2019.0.1.20181227.tgz
+      rm -f mklml_lnx_2019.0.1.20181227.tgz
+      rm -f mklml_lnx_2019.0.1.20181227.tgz.1
+      rm -rf mklml
+      mv mklml_lnx_2019.0.1.20181227 mklml
+      ln -s libmklml_intel.so mklml/lib/libmklml.so
+      ;;
+  esac
+fi
 
 # Following codes are copied from pytorch/tools/run-clang-tidy-in-ci.sh.
 # Generate ATen files.
+
+echo "Generate ATen files."
 pushd pytorch
 
 if [[ ! -d build ]]; then
