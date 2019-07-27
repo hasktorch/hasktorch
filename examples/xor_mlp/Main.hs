@@ -6,7 +6,7 @@ module Main where
 import Torch.Tensor
 import Torch.DType
 import Torch.TensorFactories
-import Torch.Functions
+import Torch.Functions hiding (linear)
 import Torch.TensorOptions
 import Torch.Autograd
 import Torch.NN
