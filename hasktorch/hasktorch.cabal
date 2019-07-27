@@ -33,6 +33,7 @@ library
                     , ghc-typelits-knownnat
                     , mtl
                     , safe-exceptions
+                    , reflection
 
 test-suite spec
   type:               exitcode-stdio-1.0
