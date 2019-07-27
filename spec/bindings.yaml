@@ -2,8 +2,6 @@
 - rename: {src: min_t, dst: minAll}
 - rename: {src: max_t, dst: maxAll}
 - rename: {src: median_t, dst: medianAll}
-- rename: {src: all_t, dst: allAll}
-- rename: {src: any_t, dst: anyAll}
 
 # remove already registered functions
 - remove: {src: transpose_tll}
@@ -129,3 +127,17 @@
 - remove: {src: max_tt}
 - remove: {src: pow_tt}
 - remove: {src: pow_st}
+- remove: {src: all_t}
+- remove: {src: any_t}
+- remove: {src: qr_t}
+- remove: {src: geqrf_t}
+- remove: {src: orgqr_tt}
+- remove: {src: sign_t}
+- remove: {src: inverse_t}
+- remove: {src: cholesky_tb}
+- remove: {src: cholesky_inverse_tb}
+- remove: {src: cholesky_solve_ttb}
+- remove: {src: eig_tb}
+- remove: {src: solve_tt}
+- remove: {src: svd_tbb}
+- remove: {src: symeig_tbb}

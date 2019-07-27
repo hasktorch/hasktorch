@@ -306,9 +306,6 @@ index_put _self _indices _values _accumulate = unsafePerformIO $ (cast4 ATen.ind
 instance_norm :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Bool -> Double -> Double -> Bool -> Tensor
 instance_norm _input _weight _bias _running_mean _running_var _use_input_stats _momentum _eps _cudnn_enabled = unsafePerformIO $ (cast9 ATen.instance_norm_tttttbddb) _input _weight _bias _running_mean _running_var _use_input_stats _momentum _eps _cudnn_enabled
 
-inverse :: Tensor -> Tensor
-inverse _self = unsafePerformIO $ (cast1 ATen.inverse_t) _self
-
 isclose :: Tensor -> Tensor -> Double -> Double -> Bool -> Tensor
 isclose _self _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.isclose_ttddb) _self _other _rtol _atol _equal_nan
 
@@ -771,38 +768,8 @@ addcdiv _self _tensor1 _tensor2 _value = unsafePerformIO $ (cast4 ATen.addcdiv_t
 triangular_solve :: Tensor -> Tensor -> Bool -> Bool -> Bool -> (Tensor,Tensor)
 triangular_solve _self _A _upper _transpose _unitriangular = unsafePerformIO $ (cast5 ATen.triangular_solve_ttbbb) _self _A _upper _transpose _unitriangular
 
-symeig :: Tensor -> Bool -> Bool -> (Tensor,Tensor)
-symeig _self _eigenvectors _upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) _self _eigenvectors _upper
-
-eig :: Tensor -> Bool -> (Tensor,Tensor)
-eig _self _eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) _self _eigenvectors
-
-svd :: Tensor -> Bool -> Bool -> (Tensor,Tensor,Tensor)
-svd _self _some _compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) _self _some _compute_uv
-
-cholesky :: Tensor -> Bool -> Tensor
-cholesky _self _upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) _self _upper
-
-cholesky_solve :: Tensor -> Tensor -> Bool -> Tensor
-cholesky_solve _self _input2 _upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) _self _input2 _upper
-
-solve :: Tensor -> Tensor -> (Tensor,Tensor)
-solve _self _A = unsafePerformIO $ (cast2 ATen.solve_tt) _self _A
-
-cholesky_inverse :: Tensor -> Bool -> Tensor
-cholesky_inverse _self _upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) _self _upper
-
 pstrf :: Tensor -> Bool -> Float -> (Tensor,Tensor)
 pstrf _self _upper _tol = unsafePerformIO $ (cast3 ATen.pstrf_tbs) _self _upper _tol
-
-qr :: Tensor -> (Tensor,Tensor)
-qr _self = unsafePerformIO $ (cast1 ATen.qr_t) _self
-
-geqrf :: Tensor -> (Tensor,Tensor)
-geqrf _self = unsafePerformIO $ (cast1 ATen.geqrf_t) _self
-
-orgqr :: Tensor -> Tensor -> Tensor
-orgqr _self _input2 = unsafePerformIO $ (cast2 ATen.orgqr_tt) _self _input2
 
 ormqr :: Tensor -> Tensor -> Tensor -> Bool -> Bool -> Tensor
 ormqr _self _input2 _input3 _left _transpose = unsafePerformIO $ (cast5 ATen.ormqr_tttbb) _self _input2 _input3 _left _transpose
@@ -831,9 +798,6 @@ atan2 _self _other = unsafePerformIO $ (cast2 ATen.atan2_tt) _self _other
 histc :: Tensor -> Int -> Float -> Float -> Tensor
 histc _self _bins _min _max = unsafePerformIO $ (cast4 ATen.histc_tlss) _self _bins _min _max
 
-sign :: Tensor -> Tensor
-sign _self = unsafePerformIO $ (cast1 ATen.sign_t) _self
-
 minAll :: Tensor -> Tensor
 minAll _self = unsafePerformIO $ (cast1 ATen.min_t) _self
 
@@ -851,12 +815,6 @@ argsort _self _dim _descending = unsafePerformIO $ (cast3 ATen.argsort_tlb) _sel
 
 topk :: Tensor -> Int -> Int -> Bool -> Bool -> (Tensor,Tensor)
 topk _self _k _dim _largest _sorted = unsafePerformIO $ (cast5 ATen.topk_tllbb) _self _k _dim _largest _sorted
-
-allAll :: Tensor -> Tensor
-allAll _self = unsafePerformIO $ (cast1 ATen.all_t) _self
-
-anyAll :: Tensor -> Tensor
-anyAll _self = unsafePerformIO $ (cast1 ATen.any_t) _self
 
 renorm :: Tensor -> Float -> Int -> Float -> Tensor
 renorm _self _p _dim _maxnorm = unsafePerformIO $ (cast4 ATen.renorm_tsls) _self _p _dim _maxnorm
