@@ -1,7 +1,12 @@
+# This file controls functions in hasktorch/src/Torch/Functions/Native.hs.
+# The functions are pure-functions not using IO-monad.
 - rename: {src: where_ttt, dst: where'}
 - rename: {src: min_t, dst: minAll}
 - rename: {src: max_t, dst: maxAll}
 - rename: {src: median_t, dst: medianAll}
+
+# detach needs IO-monad to create new-tensor.
+- remove: {src: detach_t}
 
 # remove already registered functions
 - remove: {src: transpose_tll}

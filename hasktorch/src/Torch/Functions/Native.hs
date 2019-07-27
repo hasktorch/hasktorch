@@ -552,9 +552,6 @@ rsqrt _self = unsafePerformIO $ (cast1 ATen.rsqrt_t) _self
 celu :: Tensor -> Float -> Tensor
 celu _self _alpha = unsafePerformIO $ (cast2 ATen.celu_ts) _self _alpha
 
-detach :: Tensor -> Tensor
-detach _self = unsafePerformIO $ (cast1 ATen.detach_t) _self
-
 slice :: Tensor -> Int -> Int -> Int -> Int -> Tensor
 slice _self _dim _start _end _step = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
 

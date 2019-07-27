@@ -98,7 +98,6 @@ instance (CppObject a) => Castable (ForeignPtr a) (Ptr a) where
   cast x f = withForeignPtr x f
   uncast x f = fromPtr x >>= f
 
-
 --------------------------------------------------------------------------------
 -- Tuples of Castable
 --------------------------------------------------------------------------------

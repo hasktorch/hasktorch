@@ -240,8 +240,3 @@ instance Castable [Tensor] (ForeignPtr ATen.TensorList) where
   uncast xs f = uncast xs $ \ptr_list -> do
     tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
     f tensor_list
-
-
-instance Castable String (ForeignPtr ATen.StdString) where
-  cast str f = ATen.newStdString_s str >>= f
-  uncast xs f = ATen.string_c_str xs >>= f
