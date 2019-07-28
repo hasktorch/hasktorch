@@ -10,36 +10,34 @@ import qualified ATen.Const as ATen
 import qualified ATen.Type as ATen
 import Data.Int
 import Data.Word
+import Data.Reflection
 
 data DType = UInt8 | Int8 | Int16 | Int32 | Int64 | Half | Float | Double
   deriving (Eq, Show)
 
-class DataType a where
-  dataType :: DataType a => DType
+instance Reifies Word8 DType where
+  reflect _ = UInt8
 
-instance DataType Word8 where
-  dataType = UInt8
+instance Reifies Int8 DType where
+  reflect _ = Int8
 
-instance DataType Int8 where
-  dataType = Int8
+instance Reifies Int16 DType where
+  reflect _ = Int16
 
-instance DataType Int16 where
-  dataType = Int16
+instance Reifies Int32 DType where
+  reflect _ = Int32
 
-instance DataType Int32 where
-  dataType = Int32
+instance Reifies Int DType where
+  reflect _ = Int64
 
-instance DataType Int where
-  dataType = Int64
+instance Reifies Int64 DType where
+  reflect _ = Int64
 
-instance DataType Int64 where
-  dataType = Int64
+instance Reifies Float DType where
+  reflect _ = Float
 
-instance DataType Float where
-  dataType = Float
-
-instance DataType Double where
-  dataType = Double
+instance Reifies Double DType where
+  reflect _ = Double
 
 instance Castable DType ATen.ScalarType where
   cast UInt8  f = f ATen.kByte

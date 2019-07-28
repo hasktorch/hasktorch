@@ -17,6 +17,8 @@ import Foreign.Storable
 import System.IO.Unsafe
 import Data.Int (Int64)
 import Data.List (intercalate)
+import Data.Proxy
+import Data.Reflection
 import Numeric
 
 import ATen.Cast
@@ -138,9 +140,9 @@ float_opts = withDType Float defaultOpts
 withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
 withTensor t fn = cast t $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
 
-instance (DataType a, Storable a) => TensorLike a where
+instance (Reifies a DType, Storable a) => TensorLike a where
   asTensor' v opts = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (dataType @a) opts
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @a) opts
     withTensor t $ \ptr -> do
       _pokeElemOff ptr 0 v
     return t
@@ -148,14 +150,14 @@ instance (DataType a, Storable a) => TensorLike a where
   asTensor v = asTensor' v defaultOpts
 
   asValue t = unsafePerformIO $ do
-    if dataType @a == dtype t
+    if _dtype @a == dtype t
     then do
       withTensor t $ \ptr -> do
         _peekElemOff ptr 0 []
     else
       throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
 
-  _dtype = dataType @a
+  _dtype = reflect (Proxy :: Proxy a)
   _dims _ = []
   _peekElemOff ptr offset _ = peekElemOff (castPtr ptr) offset
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
