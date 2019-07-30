@@ -17,10 +17,13 @@ import Foreign.Storable
 import System.IO.Unsafe
 import Data.Int (Int64)
 import Data.List (intercalate)
+import Data.Proxy
+import Data.Reflection
 import Numeric
 
 import ATen.Cast
 import ATen.Class (Castable(..))
+import qualified ATen.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.TensorOptions as ATen
 import qualified ATen.Managed.Native as ATen
@@ -134,33 +137,14 @@ class TensorLike a where
 int64_opts = withDType Int64 defaultOpts
 float_opts = withDType Float defaultOpts
 
-instance (DataType a, Storable a) => TensorLike a where
+withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
+withTensor t fn = cast t $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
+
+instance (Reifies a DType, Storable a) => TensorLike a where
   asTensor' v opts = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (dataType @a) opts
-    ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-    _pokeElemOff ptr 0 v
-    return t
-
-  asTensor v = asTensor' v defaultOpts
-
-  asValue t = unsafePerformIO $ do
-    if dataType @a == dtype t
-    then do
-      ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-      _peekElemOff ptr 0 []
-    else
-      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
-
-  _dtype = dataType @a
-  _dims _ = []
-  _peekElemOff ptr offset _ = peekElemOff (castPtr ptr) offset
-  _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
-
-instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
-  asTensor' v opts = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) opts
-    ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-    _pokeElemOff ptr 0 v
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @a) opts
+    withTensor t $ \ptr -> do
+      _pokeElemOff ptr 0 v
     return t
 
   asTensor v = asTensor' v defaultOpts
@@ -168,8 +152,30 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
   asValue t = unsafePerformIO $ do
     if _dtype @a == dtype t
     then do
-      ptr <- ((cast1 ATen.tensor_data_ptr) :: Tensor -> IO (Ptr ())) t
-      _peekElemOff ptr 0 (shape t)
+      withTensor t $ \ptr -> do
+        _peekElemOff ptr 0 []
+    else
+      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
+
+  _dtype = reflect (Proxy :: Proxy a)
+  _dims _ = []
+  _peekElemOff ptr offset _ = peekElemOff (castPtr ptr) offset
+  _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
+
+instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
+  asTensor' v opts = unsafePerformIO $ do
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) opts
+    withTensor t $ \ptr -> do
+      _pokeElemOff ptr 0 v
+    return t
+
+  asTensor v = asTensor' v defaultOpts
+
+  asValue t = unsafePerformIO $ do
+    if _dtype @a == dtype t
+    then do
+      withTensor t $ \ptr -> do
+        _peekElemOff ptr 0 (shape t)
     else
       throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
 
