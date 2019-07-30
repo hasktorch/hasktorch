@@ -9,7 +9,7 @@ import Prelude hiding (exp)
 
 import Torch.Tensor
 import Torch.DType (DType (Float))
-import Torch.TensorFactories (ones', rand', randn')
+import Torch.TensorFactories (ones', rand', randn', randn_like)
 import Torch.Functions
 import Torch.Autograd
 import Torch.NN
@@ -28,17 +28,18 @@ data VAEState = VAEState {
 
 instance Randomizable VAESpec VAEState where
   sample VAESpec{..} = do
-    pure undefined
+    encoderState <- mapM sample encoderSpec
+    decoderState <- mapM sample decoderSpec
+    pure $ VAEState{..}
     
 instance Parameterized VAEState
 
 reparamaterize :: Tensor -> Tensor -> IO Tensor
 reparamaterize mu logvar = do
-    eps <- undefined -- eps = torch.randn_like(std)
-    pure undefined --  mu + eps * std
+    eps <- randn_like std
+    pure $ mu + eps * std
   where 
       std = exp (0.5 * logvar)
-
       
 linear Linear{..} input = squeezeAll $ matmul input depWeight + depBias
   where (depWeight, depBias) = (toDependent weight, toDependent bias)
