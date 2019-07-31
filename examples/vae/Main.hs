@@ -5,6 +5,8 @@
 module Main where
 
 import Control.Monad (foldM)
+import Data.List (foldl', scanl', intersperse)
+import GHC.Generics
 import Prelude hiding (exp)
 
 import Torch.Tensor
@@ -14,21 +16,26 @@ import Torch.Functions
 import Torch.Autograd
 import Torch.NN
 
-import GHC.Generics
-
 data VAESpec = VAESpec {
   encoderSpec :: [LinearSpec],
-  decoderSpec :: [LinearSpec]
-} deriving (Show, Generic)
+  muSpec :: LinearSpec,
+  logvarSpec :: LinearSpec,
+  decoderSpec :: [LinearSpec],
+  nonlinearity :: Tensor -> Tensor
+} deriving (Generic)
 
 data VAEState = VAEState {
   encoderState :: [Linear],
+  muFC :: Linear,
+  logvarFC :: Linear,
   decoderState :: [Linear]
 } deriving (Show, Generic)
 
 instance Randomizable VAESpec VAEState where
   sample VAESpec{..} = do
     encoderState <- mapM sample encoderSpec
+    muFC <- sample muSpec
+    logvarFC <- sample logvarSpec
     decoderState <- mapM sample decoderSpec
     pure $ VAEState{..}
     
@@ -54,7 +61,13 @@ loss recon_x x mu logvar = bce + kld
     -- KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
 model :: VAEState -> Tensor -> Tensor
-model VAEState{..} input = undefined
+model VAEState{..} input = encoder input
+  where 
+    revApply x f = f x
+    mlp :: [Linear] -> Tensor -> Tensor
+    mlp mlpState x = undefined
+    encoder x = mlp encoderState x
+    decoder x = mlp decoderState x
 
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: Tensor -> Int -> Int -> IO Tensor
