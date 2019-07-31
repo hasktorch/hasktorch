@@ -32,7 +32,7 @@ data GRUCell = GRUCell {
 instance RecurrentCell GRUCell where
   nextState GRUCell{..} input hidden =
     (ug * hidden) + ((1 - ug) * h')
-    where 
+    where
       rg = gate input hidden Torch.Functions.sigmoid
                 (reset_gate !! 0)
                 (reset_gate !! 1)
@@ -44,16 +44,7 @@ instance RecurrentCell GRUCell where
       h' = gate input (rg * hidden) Torch.Functions.tanh
                 (gru_hidden_gate !! 0)
                 (gru_hidden_gate !! 1)
-                (gru_hidden_gate !! 2) 
-
-  finalState layer input hidden =     
-        let
-        -- converting matrix into a list of tensors
-        -- this hack stays until I can write a Foldable instance
-        -- for a tensor
-            inputAsList = [reshape (input @@ x) [1, 2] | x <- [0.. ((size input 0) - 1)]]
-        in
-        foldl (nextState layer) hidden inputAsList
+                (gru_hidden_gate !! 2)
 
 
 instance Randomizable GRUSpec GRUCell where
@@ -74,7 +65,7 @@ instance Randomizable GRUSpec GRUCell where
 
 
 instance Parameterized GRUCell where
-  flattenParameters GRUCell{..} = 
+  flattenParameters GRUCell{..} =
     reset_gate ++ update_gate ++ gru_hidden_gate
   replaceOwnParameters _ = do
     rg_ih <- nextParameter

@@ -25,23 +25,14 @@ data ElmanCell = ElmanCell {
     input_weight :: Parameter,
     hidden_weight :: Parameter,
     bias :: Parameter
-}                            
+}
 
 
 instance RecurrentCell ElmanCell where
 
-    nextState ElmanCell{..} input hidden = 
+    nextState ElmanCell{..} input hidden =
         gate input hidden Torch.Functions.tanh input_weight hidden_weight bias
 
-    finalState layer input hidden =     
-        let
-        -- converting matrix into a list of tensors
-        -- this hack stays until I can write a Foldable instance
-        -- for a tensor
-            inputAsList = [reshape (input @@ x) [1, 2] | x <- [0.. ((size input 0) - 1)]]
-        in
-            foldl (nextState layer) hidden inputAsList
-        
 
 instance Randomizable ElmanSpec ElmanCell where
     sample ElmanSpec{..} = do

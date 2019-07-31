@@ -26,7 +26,7 @@ data LSTMCell = LSTMCell {
   forget_gate  :: [Parameter],
   output_gate  :: [Parameter],
   hidden_gate  :: [Parameter],
-  cell_state   :: Parameter 
+  cell_state   :: Parameter
 }
 
 
@@ -37,7 +37,7 @@ newCellState LSTMCell{..} input hidden =
     ig = gate input hidden Torch.Functions.sigmoid
          (input_gate !! 0)
          (input_gate !! 1)
-         (input_gate !! 2)  
+         (input_gate !! 2)
     fg = gate input hidden Torch.Functions.sigmoid
          (forget_gate !! 0)
          (forget_gate !! 1)
@@ -58,16 +58,6 @@ instance RecurrentCell LSTMCell where
            (og' !! 1)
            (og' !! 2)
       cNew = newCellState cell input hidden
-
-  finalState layer input hidden =     
-        let
-        -- converting matrix into a list of tensors
-        -- this hack stays until I can write a Foldable instance
-        -- for a tensor
-            inputAsList = [reshape (input @@ x) [1, 2] | x <- [0.. ((size input 0) - 1)]]
-        in
-        foldl (nextState layer) hidden inputAsList
-     
 
 
 instance Randomizable LSTMSpec LSTMCell where
@@ -94,7 +84,7 @@ instance Randomizable LSTMSpec LSTMCell where
 
 -- Typeclass that allows us to manipulate and update the layer weights
 instance Parameterized LSTMCell where
-  flattenParameters LSTMCell{..} = 
+  flattenParameters LSTMCell{..} =
     input_gate ++ forget_gate ++ hidden_gate ++
     output_gate ++ [cell_state]
   replaceOwnParameters _ = do

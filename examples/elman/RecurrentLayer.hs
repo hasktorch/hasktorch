@@ -23,6 +23,14 @@ class RecurrentCell a where
   -- function to run the cell over multiple timesteps and get
   -- final hidden state
   finalState :: a -> Tensor -> Tensor -> Tensor
+  finalState layer input hidden =
+        let
+        -- converting matrix into a list of tensors
+        -- this hack stays until I can write a Foldable instance
+        -- for a tensor
+            inputAsList = [reshape (input @@ x) [1, 2] | x <- [0.. ((size input 0) - 1)]]
+        in
+        foldl (nextState layer) hidden inputAsList
 
 
 {-
@@ -32,15 +40,15 @@ class RecurrentCell a where
   of the ATen function arguments -}
 
 
-gate :: Tensor 
-     -> Tensor 
-     -> (Tensor -> Tensor) 
+gate :: Tensor
+     -> Tensor
+     -> (Tensor -> Tensor)
      -> Parameter
      -> Parameter
      -> Parameter
      -> Tensor
-gate input hidden nonLinearity inputWt hiddenWt biasWt = 
-    nonLinearity $ (mul input inputWt) + (mul hidden hiddenWt) + (toDependent biasWt) 
+gate input hidden nonLinearity inputWt hiddenWt biasWt =
+    nonLinearity $ (mul input inputWt) + (mul hidden hiddenWt) + (toDependent biasWt)
     where
       mul features wts = transpose2D $ matmul (toDependent wts) (transpose2D features)
 
