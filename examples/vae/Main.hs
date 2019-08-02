@@ -102,15 +102,18 @@ mvnCholesky cov n axisDim = do
 main :: IO ()
 main = 
   let nSamples = 32768
-      dataDim = 4 -- TODO - use higher dimensions once functionality works
-      batchSize = 512 -- TODO - crashes for case where any batch is of size n=1
-      numIters = 10000
+      -- TODO - use higher dimensions once functionality works
+      dataDim = 4 
+      hDim = 2
+      zDim = 2
+      batchSize = 256 -- TODO - crashes for case where any batch is of size n=1
+      numIters = 8000
   in do
     init <- sample $ VAESpec {
-        encoderSpec = [LinearSpec dataDim 2],
-        muSpec = LinearSpec 2 2,
-        logvarSpec = LinearSpec 2 2,
-        decoderSpec = [LinearSpec 2 2, LinearSpec 2 dataDim],
+        encoderSpec = [LinearSpec dataDim hDim],
+        muSpec = LinearSpec hDim zDim,
+        logvarSpec = LinearSpec hDim zDim,
+        decoderSpec = [LinearSpec zDim hDim, LinearSpec hDim dataDim],
         nonlinearitySpec = relu }
 
     dat <- transpose2D <$> 
@@ -128,11 +131,11 @@ main =
       let loss = vaeLoss reconX input muVal logvarVal
       let flat_parameters = flattenParameters vaeState
       let gradients = grad loss flat_parameters
-      if i `mod` 10 == 0
+      if i `mod` 100 == 0
           then do putStrLn $ show loss
           else return ()
 
-      new_flat_parameters <- mapM makeIndependent $ sgd 1e-20 flat_parameters gradients
+      new_flat_parameters <- mapM makeIndependent $ sgd 1e-6 flat_parameters gradients
       pure $ replaceParameters vaeState $ new_flat_parameters
     putStrLn "Done"
   where

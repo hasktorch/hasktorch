@@ -84,6 +84,7 @@ jobs:
       - run: stack exec xor_mlp
       - run: stack exec regression
       - run: stack exec gaussian_process
+      - run: stack exec vae
 
 workflows:
   version: 2
