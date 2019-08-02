@@ -70,7 +70,7 @@ model VAEState{..} input = do
         mu = (linear muFC) encoded
         logvar = (linear logvarFC) encoded
     z <- reparamaterize mu logvar
-    let output = mlp decoderState nonlinearity z
+    let output = mlp decoderState nonlinearity z -- TODO - try sampling output
     pure $ ModelOutput output mu logvar
 
 -- | MLP helper function for model used by both encoder & decoder
@@ -102,7 +102,7 @@ mvnCholesky cov n axisDim = do
 main :: IO ()
 main = 
   let nSamples = 32768
-      dataDim = 3 -- TODO - use higher dimensions once functionality works
+      dataDim = 4 -- TODO - use higher dimensions once functionality works
       batchSize = 512 -- TODO - crashes for case where any batch is of size n=1
       numIters = 10000
   in do
@@ -114,13 +114,17 @@ main =
         nonlinearitySpec = relu }
 
     dat <- transpose2D <$> 
-      mvnCholesky (asTensor ([[1, 0.3, 0.1], [0.3, 1.0, 0.3], [0.1, 0.3, 1]] :: [[Float]])) nSamples dataDim
+      mvnCholesky (asTensor ([[1.0, 0.3, 0.1, 0.0], 
+                              [0.3, 1.0, 0.3, 0.1], 
+                              [0.1, 0.3, 1.0, 0.3], 
+                              [0.0, 0.1, 0.3, 1.0]] :: [[Float]])) 
+                              nSamples dataDim
     trained <- foldLoop init numIters $ \vaeState i -> do
       let startIndex = mod (batchSize * i) nSamples
           endIndex = Prelude.min (startIndex + batchSize) nSamples
           input = slice dat 0 startIndex endIndex 1 -- size should be [batchSize, dataDim]
       output <- model vaeState input
-      let (reconX, muVal, logvarVal) = (squeezeAll $ recon output, mu output, logvar output)
+      let (reconX, muVal, logvarVal) = (squeezeAll $ recon output, mu output, logvar output )
       let loss = vaeLoss reconX input muVal logvarVal
       let flat_parameters = flattenParameters vaeState
       let gradients = grad loss flat_parameters
