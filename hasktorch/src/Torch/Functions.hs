@@ -257,3 +257,6 @@ all' t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
 
 any' :: Tensor -> Int -> Bool -> Tensor
 any' t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
+
+slice :: Tensor -> Int -> Int -> Int -> Int -> Tensor
+slice t dim start end step = unsafePerformIO $ (cast5 ATen.slice_tllll) t dim start end step

@@ -4,7 +4,6 @@
 
 module Main where
 
-import Control.Arrow ((>>>))
 import Control.Monad (foldM)
 import Data.List (foldl', scanl', intersperse)
 import GHC.Generics
@@ -17,6 +16,8 @@ import Torch.Functions
 import Torch.Autograd
 import Torch.NN
 
+-- Model Specification
+
 data VAESpec = VAESpec {
   encoderSpec :: [LinearSpec],
   muSpec :: LinearSpec,
@@ -24,6 +25,8 @@ data VAESpec = VAESpec {
   decoderSpec :: [LinearSpec],
   nonlinearitySpec :: Tensor -> Tensor
 } deriving (Generic)
+
+-- Model State
 
 data VAEState = VAEState {
   encoderState :: [Linear],
@@ -44,12 +47,15 @@ instance Randomizable VAESpec VAEState where
     
 instance Parameterized VAEState
 
+-- Output including latent mu and logvar used for VAE loss
+
 data ModelOutput = ModelOutput {
   recon :: Tensor,
   mu :: Tensor,
   logvar :: Tensor
 } deriving (Show)
 
+-- Recon Error + KL Divergence VAE Loss
 vaeLoss :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor
 vaeLoss recon_x x mu logvar = reconLoss + kld
   where
@@ -67,7 +73,7 @@ model VAEState{..} input = do
     let output = mlp decoderState nonlinearity z
     pure $ ModelOutput output mu logvar
 
--- | MLP helper function used for encoder & decoder
+-- | MLP helper function for model used by both encoder & decoder
 mlp :: [Linear] -> (Tensor -> Tensor) -> Tensor -> Tensor
 mlp mlpState nonlin input = foldl' revApply input layerFunctionsList
   where 
@@ -93,7 +99,13 @@ mvnCholesky cov n axisDim = do
     where 
       l = cholesky cov Upper
 
-main = do
+main :: IO ()
+main = 
+  let nSamples = 32768
+      dataDim = 2
+      batchSize = 256 -- TODO - fix - crashes for case where any batch is of size n=1
+      numIters = 10000
+  in do
     init <- sample $ VAESpec {
         encoderSpec = [LinearSpec dataDim 15],
         muSpec = LinearSpec 15 3,
@@ -101,26 +113,23 @@ main = do
         decoderSpec = [LinearSpec 3 15, LinearSpec 15 dataDim],
         nonlinearitySpec = relu }
 
-    dat <- mvnCholesky (asTensor ([[1, 0.3], [0.3, 1.0]] :: [[Float]])) 1000 dataDim
-
-    trained <- foldLoop init num_iters $ \vaeState i -> do
-      input <- randn' [batchSize, dataDim]
+    dat <- transpose2D <$> 
+      mvnCholesky (asTensor ([[1, 0.3], [0.3, 1.0]] :: [[Float]])) nSamples dataDim
+    trained <- foldLoop init numIters $ \vaeState i -> do
+      let startIndex = mod (batchSize * i) nSamples
+          endIndex = Prelude.min (startIndex + batchSize) nSamples
+          input = slice dat 0 startIndex endIndex 1 -- size should be [batchSize, dataDim]
       output <- model vaeState input
-      let reconX = squeezeAll $ recon output
-      let (muVal, logvarVal) = (mu output, logvar output)
+      let (reconX, muVal, logvarVal) = (squeezeAll $ recon output, mu output, logvar output)
       let loss = vaeLoss reconX input muVal logvarVal
       let flat_parameters = flattenParameters vaeState
       let gradients = grad loss flat_parameters
-      if i `mod` 100 == 0
+      if i `mod` 10 == 0
           then do putStrLn $ show loss
           else return ()
 
-      new_flat_parameters <- mapM makeIndependent $ sgd 5e-4 flat_parameters gradients
+      new_flat_parameters <- mapM makeIndependent $ sgd 1e-19 flat_parameters gradients
       pure $ replaceParameters vaeState $ new_flat_parameters
     putStrLn "Done"
-    pure init
   where
-    dataDim = 2
-    batchSize = 256
-    num_iters = 10000
-    foldLoop x count block = foldM block x [1..count]
+    foldLoop x count block = foldM block x [0..count]
