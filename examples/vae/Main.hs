@@ -102,19 +102,19 @@ mvnCholesky cov n axisDim = do
 main :: IO ()
 main = 
   let nSamples = 32768
-      dataDim = 2
-      batchSize = 256 -- TODO - fix - crashes for case where any batch is of size n=1
+      dataDim = 3 -- TODO - use higher dimensions once functionality works
+      batchSize = 512 -- TODO - crashes for case where any batch is of size n=1
       numIters = 10000
   in do
     init <- sample $ VAESpec {
-        encoderSpec = [LinearSpec dataDim 15],
-        muSpec = LinearSpec 15 3,
-        logvarSpec = LinearSpec 15 3,
-        decoderSpec = [LinearSpec 3 15, LinearSpec 15 dataDim],
+        encoderSpec = [LinearSpec dataDim 2],
+        muSpec = LinearSpec 2 2,
+        logvarSpec = LinearSpec 2 2,
+        decoderSpec = [LinearSpec 2 2, LinearSpec 2 dataDim],
         nonlinearitySpec = relu }
 
     dat <- transpose2D <$> 
-      mvnCholesky (asTensor ([[1, 0.3], [0.3, 1.0]] :: [[Float]])) nSamples dataDim
+      mvnCholesky (asTensor ([[1, 0.3, 0.1], [0.3, 1.0, 0.3], [0.1, 0.3, 1]] :: [[Float]])) nSamples dataDim
     trained <- foldLoop init numIters $ \vaeState i -> do
       let startIndex = mod (batchSize * i) nSamples
           endIndex = Prelude.min (startIndex + batchSize) nSamples
@@ -128,7 +128,7 @@ main =
           then do putStrLn $ show loss
           else return ()
 
-      new_flat_parameters <- mapM makeIndependent $ sgd 1e-19 flat_parameters gradients
+      new_flat_parameters <- mapM makeIndependent $ sgd 1e-20 flat_parameters gradients
       pure $ replaceParameters vaeState $ new_flat_parameters
     putStrLn "Done"
   where
