@@ -1,0 +1,185 @@
+cabal-version: 2.2
+name: hasktorch-indef-cpu
+version: 0.0.1.0
+license: BSD-3-Clause
+maintainer: Sam Stites <fnz@fgvgrf.vb>, Austin Huang <nhfgvau@nyhz.zvg.rqh> - cipher:ROT13
+author: Hasktorch dev team
+homepage: https://github.com/hasktorch/hasktorch#readme
+bug-reports: https://github.com/hasktorch/hasktorch/issues
+synopsis: Core Hasktorch abstractions wrapping FFI bindings
+description:
+    The hasktorch-indef-cpu package re-exports the core API of hasktorch-indef and also includes CPU-specific API code.
+category: Tensors, Machine Learning, AI
+build-type: Simple
+
+source-repository head
+    type: git
+    location: https://github.com/hasktorch/hasktorch
+
+library
+    exposed-modules:
+        Torch.Indef.Storage
+        Torch.Indef.Dynamic.Tensor
+        Torch.Indef.Dynamic.Tensor.Random
+        Torch.Indef.Dynamic.Tensor.Math.Random
+        Torch.Indef.Static.Tensor
+        Torch.Indef.Static.Tensor.Random
+        Torch.Indef.Static.Tensor.Math.Random
+    reexported-modules:
+        Torch.Indef.Index
+      , Torch.Indef.Mask
+      , Torch.Indef.Types
+      , Torch.Indef.Storage.Copy
+      , Torch.Indef.Dynamic.Print
+      , Torch.Indef.Dynamic.Tensor.Internal
+      , Torch.Indef.Dynamic.Tensor.Copy
+      , Torch.Indef.Dynamic.Tensor.Index
+      , Torch.Indef.Dynamic.Tensor.Masked
+      , Torch.Indef.Dynamic.Tensor.Math
+      , Torch.Indef.Dynamic.Tensor.Math.Compare
+      , Torch.Indef.Dynamic.Tensor.Math.CompareT
+      , Torch.Indef.Dynamic.Tensor.Math.Pairwise
+      , Torch.Indef.Dynamic.Tensor.Math.Pointwise
+      , Torch.Indef.Dynamic.Tensor.Math.Reduce
+      , Torch.Indef.Dynamic.Tensor.Math.Scan
+      , Torch.Indef.Dynamic.Tensor.Mode
+      , Torch.Indef.Dynamic.Tensor.ScatterGather
+      , Torch.Indef.Dynamic.Tensor.Sort
+      , Torch.Indef.Dynamic.Tensor.TopK
+      , Torch.Indef.Static.Tensor.Internal
+      , Torch.Indef.Static.Tensor.Copy
+      , Torch.Indef.Static.Tensor.Index
+      , Torch.Indef.Static.Tensor.Masked
+      , Torch.Indef.Static.Tensor.Math
+      , Torch.Indef.Static.Tensor.Math.Compare
+      , Torch.Indef.Static.Tensor.Math.CompareT
+      , Torch.Indef.Static.Tensor.Math.Pairwise
+      , Torch.Indef.Static.Tensor.Math.Pointwise
+      , Torch.Indef.Static.Tensor.Math.Reduce
+      , Torch.Indef.Static.Tensor.Math.Scan
+      , Torch.Indef.Static.Tensor.Mode
+      , Torch.Indef.Static.Tensor.ScatterGather
+      , Torch.Indef.Static.Tensor.Sort
+      , Torch.Indef.Static.Tensor.TopK
+      , Torch.Indef.Static.Tensor.Math.Pointwise.Signed
+      , Torch.Indef.Dynamic.Tensor.Math.Pointwise.Signed
+      , Torch.Indef.Dynamic.Tensor.Math.Blas
+      , Torch.Indef.Dynamic.Tensor.Math.Floating
+      , Torch.Indef.Dynamic.Tensor.Math.Lapack
+      , Torch.Indef.Dynamic.Tensor.Math.Pointwise.Floating
+      , Torch.Indef.Dynamic.Tensor.Math.Reduce.Floating
+      , Torch.Indef.Static.Tensor.Math.Blas
+      , Torch.Indef.Static.Tensor.Math.Floating
+      , Torch.Indef.Static.Tensor.Math.Lapack
+      , Torch.Indef.Static.Tensor.Math.Pointwise.Floating
+      , Torch.Indef.Static.Tensor.Math.Reduce.Floating
+      , Torch.Indef.Dynamic.NN
+      , Torch.Indef.Dynamic.NN.Activation
+      , Torch.Indef.Dynamic.NN.Pooling
+      , Torch.Indef.Dynamic.NN.Criterion
+      , Torch.Indef.Static.NN
+      , Torch.Indef.Static.NN.Activation
+      , Torch.Indef.Static.NN.Backprop
+      , Torch.Indef.Static.NN.Conv1d
+      , Torch.Indef.Static.NN.Conv2d
+      , Torch.Indef.Static.NN.Criterion
+      , Torch.Indef.Static.NN.Layers
+      , Torch.Indef.Static.NN.Linear
+      , Torch.Indef.Static.NN.Math
+      , Torch.Indef.Static.NN.Padding
+      , Torch.Indef.Static.NN.Pooling
+      , Torch.Indef.Static.NN.Sampling
+      -- bundle up undefined packages to satisfy all types in a definite
+      , Torch.Undefined.NN
+      , Torch.Undefined.Types.NN
+      , Torch.Undefined.Tensor.Math.Blas
+      , Torch.Undefined.Tensor.Math.Floating
+      , Torch.Undefined.Tensor.Math.Lapack
+      , Torch.Undefined.Tensor.Math.Pointwise.Signed
+      , Torch.Undefined.Tensor.Math.Pointwise.Floating
+      , Torch.Undefined.Tensor.Math.Reduce.Floating
+      , Torch.Undefined.Tensor.Random.TH
+      , Torch.Undefined.Tensor.Math.Random.TH
+    hs-source-dirs: src
+    default-language: Haskell2010
+    default-extensions: LambdaCase DataKinds TypeFamilies
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
+    build-depends:
+        base (==4.7 || >4.7) && <5
+      , dimensions ==1.0 || >1.0
+      , managed (==1.0.0 || >1.0.0) && <1.1
+      , singletons ==2.2 || >2.2
+      , transformers ==0.5.5 || >0.5.5
+      , hasktorch-indef (==0.0.1 || >0.0.1) && <0.0.2
+      , hasktorch-types-th (==0.0.1 || >0.0.1) && <0.0.2
+      , hasktorch-signatures-partial (==0.0.1 || >0.0.1) && <0.0.2
+    mixins:
+        hasktorch-indef requires (Torch.Sig.Tensor.Random.THC as Torch.Undefined.Tensor.Random.THC)
+
+test-suite spec-double-th
+    type: exitcode-stdio-1.0
+    main-is: Spec.hs
+    hs-source-dirs: tests
+    other-modules:
+        Torch.Indef.StorageSpec
+        Torch.Indef.Dynamic.TensorSpec
+        Torch.Indef.Static.TensorSpec
+    default-language: Haskell2010
+    default-extensions: LambdaCase DataKinds TypeFamilies
+                        TypeSynonymInstances ScopedTypeVariables FlexibleContexts CPP
+    build-depends:
+        QuickCheck ==2.11 || >2.11,
+        backprop ==0.2.5 || >0.2.5,
+        base (==4.7 || >4.7) && <5,
+        dimensions ==1.0 || >1.0,
+        ghc-typelits-natnormalise -any,
+        hasktorch-indef-cpu -any,
+        hasktorch-ffi-th (==0.0.1 || >0.0.1) && <0.0.2,
+        hasktorch-types-th (==0.0.1 || >0.0.1) && <0.0.2,
+        hspec ==2.4.4 || >2.4.4,
+        mtl ==2.2.2 || >2.2.2,
+        singletons ==2.2 || >2.2,
+        text ==1.2.2 || >1.2.2,
+        transformers ==0.5.5 || >0.5.5
+    mixins:
+        -- DO NOT ADD A SPACE TO THE BEGINNING PAREN
+        hasktorch-indef-cpu requires
+          (Torch.Sig.Index.Tensor as Torch.FFI.TH.Long.Tensor
+          ,Torch.Sig.Index.TensorFree as Torch.FFI.TH.Long.FreeTensor
+          ,Torch.Sig.Mask.Tensor as Torch.FFI.TH.Byte.Tensor
+          ,Torch.Sig.Mask.TensorFree as Torch.FFI.TH.Byte.FreeTensor
+          ,Torch.Sig.Mask.MathReduce as Torch.FFI.TH.Byte.TensorMath
+          ,Torch.Sig.State as Torch.Types.TH
+          ,Torch.Sig.Types.Global as Torch.Types.TH
+          ,Torch.Sig.Types as Torch.Types.TH.Double
+          ,Torch.Sig.Storage as Torch.FFI.TH.Double.Storage
+          ,Torch.Sig.Storage.Copy as Torch.FFI.TH.Double.StorageCopy
+          ,Torch.Sig.Storage.Memory as Torch.FFI.TH.Double.FreeStorage
+          ,Torch.Sig.Tensor as Torch.FFI.TH.Double.Tensor
+          ,Torch.Sig.Tensor.Copy as Torch.FFI.TH.Double.TensorCopy
+          ,Torch.Sig.Tensor.Memory as Torch.FFI.TH.Double.FreeTensor
+          ,Torch.Sig.Tensor.Index as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Masked as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Compare as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.CompareT as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Pairwise as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Pointwise as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Reduce as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Scan as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Mode as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.ScatterGather as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Sort as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.TopK as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Pointwise.Signed as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Pointwise.Floating as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Reduce.Floating as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Floating as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Blas as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Math.Lapack as Torch.FFI.TH.Double.TensorLapack
+          ,Torch.Sig.NN as Torch.FFI.TH.NN.Double
+          ,Torch.Sig.Types.NN as Torch.Types.TH
+          ,Torch.Sig.Tensor.Math.Random.TH as Torch.FFI.TH.Double.TensorMath
+          ,Torch.Sig.Tensor.Random.TH as Torch.FFI.TH.Double.TensorRandom
+          )
+

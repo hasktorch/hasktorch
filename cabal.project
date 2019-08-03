@@ -13,7 +13,9 @@ packages:
     signatures/support/*cabal
     signatures/*cabal
 
-    indef/*cabal
+    indef/core/*cabal
+    indef/cpu/*cabal
+    indef/gpu/*cabal
 
     hasktorch/*cabal
 

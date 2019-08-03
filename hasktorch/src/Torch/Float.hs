@@ -19,7 +19,7 @@ import Torch.Float.NN as X
 
 import Torch.Float.Types as X hiding (storage)
 import Torch.Float.Index as X hiding (withDynamicState)
-import Torch.Float.Mask  as X
+import Torch.Float.Mask as X
 
 import Torch.Indef.Float.Tensor as X
 import Torch.Indef.Float.Tensor.Copy as X
@@ -45,8 +45,8 @@ import Torch.Indef.Float.Tensor.Math.Lapack as X
 import Torch.Indef.Float.Tensor.Math.Pointwise.Floating as X
 import Torch.Indef.Float.Tensor.Math.Reduce.Floating as X
 
-import Torch.Indef.Float.Tensor.Math.Random.TH as X
-import Torch.Indef.Float.Tensor.Random.TH as X
+import Torch.Indef.Float.Tensor.Math.Random as X
+import Torch.Indef.Float.Tensor.Random as X
 import Torch.Core.Random as X (newRNG, seed, manualSeed, initialSeed)
 
 -------------------------------------------------------------------------------
