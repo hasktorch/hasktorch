@@ -1,6 +1,9 @@
 {-# LANGUAGE TypeApplications #-}
 
-module Torch.Functions where
+module Torch.Functions (
+    module Torch.Functions
+  , module Torch.Functions.Native
+) where
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
@@ -17,6 +20,7 @@ import ATen.Cast
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
+import Torch.Functions.Native
 
 kOne :: ForeignPtr ATen.Scalar
 kOne = unsafePerformIO $ ATen.newScalar_i 1

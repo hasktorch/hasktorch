@@ -48,12 +48,17 @@ data Type = Type
   { name' :: String
   , dynamic_type' :: S.Parsable
   , type' :: String
+  , size' :: Maybe Int
 } deriving (Show, Eq, Generic)
 
 type2type :: Type -> S.Parsable
 type2type typ =
   case dynamic_type' typ of
     S.TenType S.Scalar -> if type' typ == "Tensor" then S.TenType S.Tensor else S.TenType S.Scalar
+    S.TenType (S.IntList s) ->
+      case size' typ of
+        Nothing -> S.TenType (S.IntList {S.dim = s})
+        Just s' -> S.TenType (S.IntList {S.dim = Just [s']})
     a -> a
 
 data Mode

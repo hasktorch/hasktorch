@@ -8,6 +8,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 module RenderCommon where
 
+import Data.String.Conversions (cs)
 import Text.Shakespeare.Text (st)
 import Data.Char (toLower)
 import Data.Text (Text)
@@ -122,10 +123,44 @@ tenTypeToHsType tentype =
     ScalarType -> "ScalarType"
     SparseTensorRef -> "SparseTensorRef"
 
+
+
+------ To Higher Level Haskell Type ------
+tenTypeToHigherHsType :: TenType -> Text
+tenTypeToHigherHsType tentype =
+  case tentype of
+    Scalar -> "Float"
+    Tensor -> "Tensor"
+    TensorA -> "Tensor"
+    TensorA' -> "Tensor"
+    TensorAQ -> "Tensor"
+    TensorAQ' -> "Tensor"
+    TensorQ -> "Tensor"
+    TensorAVector -> "[Tensor]"
+    TensorOptions -> "TensorOptions"
+    TensorList -> "[Tensor]"
+    IntegerTensor -> "Tensor"
+    IndexTensor -> "Tensor"
+    BoolTensor -> "Tensor"
+    BoolTensorQ -> "Tensor"
+    ByteTensor -> "Tensor"
+    LongTensor -> "Tensor"
+    IntList (Just [1]) -> "Int"
+    IntList (Just [s]) -> [st|(#{T.intercalate "," (Prelude.replicate s "Int")})|]
+    IntList _ -> "[Int]"
+    ScalarQ -> "Float"
+    ScalarType -> "DType"
+    SparseTensorRef -> "SparseTensorRef"
+
 stltypeToHsType :: STLType -> Text
 stltypeToHsType t =
   case t of
     P.Array ct len -> [st|(StdArray #{ctypeToHsType ct} #{len})|]
+
+stltypeToHigherHsType :: STLType -> Text
+stltypeToHigherHsType t =
+  case t of
+    P.Array ct len -> [st|(#{T.intercalate "," (Prelude.replicate len (ctypeToHigherHsType ct))})|]
 
 ctypeToHsType :: CType -> Text
 ctypeToHsType ct =
@@ -146,10 +181,35 @@ ctypeToHsType ct =
     CInt64 -> "Int64"
     CInt64Q -> "Int64"
 
+ctypeToHigherHsType :: CType -> Text
+ctypeToHigherHsType ct =
+  case ct of
+    CBool -> "Bool"
+    CVoid -> "()"
+    CFloat -> "Float"
+    CDouble -> "Double"
+    CSize -> "Int"
+    CInt -> "Int"
+    CUInt8 -> "Word8"
+    CUInt16 -> "Word16"
+    CUInt32 -> "Word32"
+    CUInt64 -> "Word64"
+    CInt8 -> "Int8"
+    CInt16 -> "Int16"
+    CInt32 -> "Int32"
+    CInt64 -> "Int"
+    CInt64Q -> "Int"
+
+withParens :: Text -> Text
+withParens txt = if hasSpace' txt then "(" <> txt <> ")" else txt
+  where
+    hasSpace' :: Text -> Bool
+    hasSpace' txt' = T.any (== ' ') txt'
+
 parsableToHsType :: Parsable -> Text
 parsableToHsType parsable =
   case parsable of
-    Ptr p -> "Ptr " <> parsableToHsType p
+    Ptr p -> "Ptr " <> withParens (parsableToHsType p)
     TenType t -> tenTypeToHsType t
     DeviceType -> "DeviceType"
     GeneratorType -> "Generator"
@@ -158,6 +218,22 @@ parsableToHsType parsable =
     STLType t -> stltypeToHsType t
     CppString -> "StdString"
     Tuple parsables -> [st|(#{T.intercalate "," (map parsableToHsType parsables)})|]
+    P.CppClass _ _ hstype -> fromString hstype
+    Backend -> "Backend"
+    Layout -> "Layout"
+
+parsableToHigherHsType :: Parsable -> Text
+parsableToHigherHsType parsable =
+  case parsable of
+    Ptr p -> "Ptr " <> withParens (parsableToHsType p)
+    TenType t -> tenTypeToHigherHsType t
+    DeviceType -> "DeviceType"
+    GeneratorType -> "Generator"
+    StorageType -> "Storage"
+    CType ct -> ctypeToHigherHsType ct
+    STLType t -> stltypeToHigherHsType t
+    CppString -> "String"
+    Tuple parsables -> [st|(#{T.intercalate "," (map parsableToHigherHsType parsables)})|]
     P.CppClass _ _ hstype -> fromString hstype
     Backend -> "Backend"
     Layout -> "Layout"
@@ -380,10 +456,10 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
     function_name :: Text
     function_name =
       if is_constructor
-      then [st|new#{(PC.hsname class')}#{(hsfuncname)}#{type_initials}|]
-      else [st|#{toHsFuncName False (PC.hsname class')}_#{hsfuncname}#{type_initials}|]
+      then [st|new#{(PC.hsnameWithoutSpace class')}#{(hsfuncname)}#{type_initials}|]
+      else [st|#{toHsFuncName False (PC.hsnameWithoutSpace class')}_#{hsfuncname}#{type_initials}|]
     type_object :: Parameter
-    type_object = Parameter (P.CppClass (PC.signature class')  (PC.cppname class')  (PC.hsname class') ) "obj" Nothing
+    type_object = Parameter (P.CppClass (PC.signature class')  (PC.cppname class')  (PC.hsnameWithParens class') ) "obj" Nothing
     type_object_str :: Text
     type_object_str = [st|(*$(#{parsableToCppType (ptype type_object)}* _#{pname type_object}))|]
     hsfuncname = toHsFuncName is_constructor (P.name fn)
@@ -459,3 +535,33 @@ methodToCpp class' is_constructor is_managed add_type_initials prefix suffix fn 
       case (retType fn) of
         CType CVoid -> ""
         _ -> "return"
+
+getSignatures :: Function -> String
+getSignatures fn = hsfuncname <> cs type_initials
+  where
+    type_initials :: Text --- This is for avoding c++ overload arguments.
+    type_initials =
+      if length parameters' > 0
+      then "_" <> (mconcat $ flip map parameters' $ \p -> parsableToInitial (ptype p))
+      else ""
+    hsfuncname = toHsFuncName False (P.name fn)
+    parameters' = filter isNotStar $ parameters fn
+
+
+pureFunction :: String -> Function -> Text
+pureFunction hsfuncname fn = [st|
+#{hsfuncname} :: #{types}
+#{hsfuncname} #{args} = unsafePerformIO $ (cast#{num_args} ATen.#{getSignatures fn}) #{args}
+|]
+  where
+    parameters' = filter isNotStar $ parameters fn
+    num_args :: Int
+    num_args = length parameters'
+    args :: String
+    args = L.intercalate " " $ map (\p -> "_" <> pname p) parameters'
+    types_list :: [Text]
+    types_list = flip map parameters' $ \p -> [st|#{parsableToHigherHsType (ptype p)}|]
+    types :: Text
+    types = T.intercalate " -> " $ types_list ++ [[st|#{ret_hstype}|]]
+    ret_hstype :: Text
+    ret_hstype = [st|#{parsableToHigherHsType (retType fn)}|]

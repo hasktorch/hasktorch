@@ -1,4 +1,3 @@
-
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -7,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module ATen.Managed.Type.StdString where
 
@@ -26,7 +26,16 @@ newStdString
   :: IO (ForeignPtr StdString)
 newStdString = cast0 Unmanaged.newStdString
 
+newStdString_s
+  :: String
+  -> IO (ForeignPtr StdString)
+newStdString_s str = cast1 Unmanaged.newStdString_s str
 
+string_c_str
+  :: ForeignPtr StdString
+  -> IO String
+string_c_str str = cast1 Unmanaged.string_c_str str
 
-
-
+instance Castable String (ForeignPtr StdString) where
+  cast str f = newStdString_s str >>= f
+  uncast xs f = string_c_str xs >>= f

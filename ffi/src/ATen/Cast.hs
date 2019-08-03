@@ -98,7 +98,6 @@ instance (CppObject a) => Castable (ForeignPtr a) (Ptr a) where
   cast x f = withForeignPtr x f
   uncast x f = fromPtr x >>= f
 
-
 --------------------------------------------------------------------------------
 -- Tuples of Castable
 --------------------------------------------------------------------------------
@@ -155,6 +154,25 @@ instance (Castable a a', Castable b b', Castable c c', Castable d d', Castable e
     t4' <- uncast t4 return
     f (t0',t1',t2',t3',t4')
 
+instance (Castable a a', Castable b b', Castable c c',
+          Castable d d', Castable e e', Castable f f') => Castable (a,b,c,d,e,f) (a',b',c',d',e',f') where
+  cast (t0,t1,t2,t3,t4,t5) f = do
+    t0' <- cast t0 return
+    t1' <- cast t1 return
+    t2' <- cast t2 return
+    t3' <- cast t3 return
+    t4' <- cast t4 return
+    t5' <- cast t5 return
+    f (t0',t1',t2',t3',t4',t5')
+  uncast (t0,t1,t2,t3,t4,t5) f = do
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    t2' <- uncast t2 return
+    t3' <- uncast t3 return
+    t4' <- uncast t4 return
+    t5' <- uncast t5 return
+    f (t0',t1',t2',t3',t4',t5')
+
 --------------------------------------------------------------------------------
 -- These casts convert the value from C++ Tuple(CppTuple) to Haskell Tuple.
 -- Reverse side is not supported.
@@ -207,6 +225,25 @@ instance (CppTuple5 f, Castable a (A f), Castable b (B f), Castable c (C f), Cas
     t3' <- uncast t3 return
     t4' <- uncast t4 return
     f (t0',t1',t2',t3',t4')
+
+instance (CppTuple6 g,
+          Castable a (A g), Castable b (B g), Castable c (C g),
+          Castable d (D g), Castable e (E g), Castable f (F g)) => Castable (a,b,c,d,e,f) g where
+  cast _ _ = undefined
+  uncast t f = do
+    t0 <- get0 t
+    t1 <- get1 t
+    t2 <- get2 t
+    t3 <- get3 t
+    t4 <- get4 t
+    t5 <- get5 t
+    t0' <- uncast t0 return
+    t1' <- uncast t1 return
+    t2' <- uncast t2 return
+    t3' <- uncast t3 return
+    t4' <- uncast t4 return
+    t5' <- uncast t5 return
+    f (t0',t1',t2',t3',t4',t5')
 
 --------------------------------------------------------------------------------
 -- Cast functions for various numbers of arguments

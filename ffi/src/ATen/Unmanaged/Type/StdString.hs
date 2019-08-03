@@ -37,7 +37,11 @@ newStdString  =
     );
   }|]
 
-
+newStdString_s
+  :: String
+  -> IO (Ptr StdString)
+newStdString_s str =
+  withCString str $ \cstr -> [C.throwBlock| std::string* { return new std::string($(char* cstr));}|]
 
 deleteStdString :: Ptr StdString -> IO ()
 deleteStdString object = [C.throwBlock| void { delete $(std::string* object);}|]
@@ -45,5 +49,7 @@ deleteStdString object = [C.throwBlock| void { delete $(std::string* object);}|]
 instance CppObject StdString where
   fromPtr ptr = newForeignPtr ptr (deleteStdString ptr)
 
-
-
+string_c_str
+  :: Ptr StdString
+  -> IO String
+string_c_str str = [C.throwBlock| const char* { return (*$(std::string* str)).c_str();}|] >>= peekCString
