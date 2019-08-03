@@ -1,0 +1,17 @@
+signature: Context
+cppname: at::Context
+hsname: Context
+functions:
+- init() -> void
+- hasCUDA() -> bool
+- hasHIP() -> bool
+- hasXLA() -> bool
+- getNumGPUs() -> size_t
+- hasOpenMP() -> bool
+- hasMKL() -> bool
+- hasLAPACK() -> bool
+- hasMAGMA() -> bool
+- hasMKLDNN() -> bool
+- manual_seed(uint64_t seed) -> void
+constructors: []
+methods: []

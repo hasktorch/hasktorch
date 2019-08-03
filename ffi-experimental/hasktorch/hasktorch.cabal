@@ -1,0 +1,57 @@
+name:                hasktorch
+version:             0.2.0.0
+synopsis:            initial implementation for hasktorch based on libtorch
+-- description:
+homepage:            https://github.com/githubuser/ffi-experimental#readme
+license:             BSD3
+author:              Austin Huang
+maintainer:          hasktorch@gmail.com
+copyright:           2019 Austin Huang
+category:            Codegen
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+ exposed-modules:     Torch
+                      Torch.Tensor
+                    , Torch.TensorOptions
+                    , Torch.DType
+                    , Torch.TensorFactories
+                    , Torch.Functions
+                    , Torch.Functions.Native
+                    , Torch.Autograd
+                    , Torch.Static
+                    , Torch.NN
+                    , Torch.Scalar
+                    , Torch.Backend
+                    , Torch.Layout
+                    , Torch.Cast
+ hs-source-dirs:      src
+ default-language:    Haskell2010
+ ghc-options:         -fplugin GHC.TypeLits.KnownNat.Solver -fconstraint-solver-iterations=0
+ build-depends:       base >= 4.7 && < 5
+                    , ffi
+                    , finite-typelits
+                    , ghc-typelits-knownnat
+                    , mtl
+                    , safe-exceptions
+                    , reflection
+
+test-suite spec
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test
+  main-is:            Spec.hs
+  other-modules:      FactorySpec
+                    , FunctionsSpec
+                    , GradSpec
+                    , SparseSpec
+                    , TensorSpec
+                    , NNSpec
+  default-language: Haskell2010
+  build-depends:      base >= 4.7 && < 5
+                    , hasktorch
+                    , hspec
+                    , hspec-discover
+                    , safe-exceptions
+                    , QuickCheck
+                    , mtl
