@@ -219,7 +219,7 @@ cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t
   where boolUpper = isUpper upper
 
 solve :: Tensor -> Tensor -> (Tensor,Tensor)
-solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a 
+solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
 
 cholesky_inverse :: Tensor -> Tri -> Tensor
 cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
@@ -232,10 +232,10 @@ qr :: Tensor -> (Tensor, Tensor)
 qr t = unsafePerformIO $ (cast1 ATen.qr_t) t
 
 geqrf :: Tensor -> (Tensor, Tensor)
-geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t 
+geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
 
 orgqr :: Tensor -> Tensor -> Tensor
-orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a 
+orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
 
 sign :: Tensor -> Tensor
 sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
@@ -262,5 +262,3 @@ all' t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
 any' :: Tensor -> Int -> Bool -> Tensor
 any' t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
 
-slice :: Tensor -> Int -> Int -> Int -> Int -> Tensor
-slice t dim start end step = unsafePerformIO $ (cast5 ATen.slice_tllll) t dim start end step

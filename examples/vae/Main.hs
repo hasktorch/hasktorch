@@ -12,7 +12,7 @@ import Prelude hiding (exp)
 import Torch.Tensor
 import Torch.DType (DType (Float))
 import Torch.TensorFactories (ones', rand', randn', randn_like)
-import Torch.Functions
+import Torch.Functions hiding (linear)
 import Torch.Autograd
 import Torch.NN
 
@@ -44,7 +44,7 @@ instance Randomizable VAESpec VAEState where
     decoderState <- mapM sample decoderSpec
     let nonlinearity = nonlinearitySpec
     pure $ VAEState{..}
-    
+
 instance Parameterized VAEState
 
 -- Output including latent mu and logvar used for VAE loss
@@ -76,16 +76,16 @@ model VAEState{..} input = do
 -- | MLP helper function for model used by both encoder & decoder
 mlp :: [Linear] -> (Tensor -> Tensor) -> Tensor -> Tensor
 mlp mlpState nonlin input = foldl' revApply input layerFunctionsList
-  where 
-    layerFunctionsList = intersperse nonlin $ (map linear mlpState) 
+  where
+    layerFunctionsList = intersperse nonlin $ (map linear mlpState)
     revApply x f = f x
 
 -- | Reparamaterization trick to sample from latent space while allowing differentiation
 reparamaterize :: Tensor -> Tensor -> IO Tensor
 reparamaterize mu logvar = do
-    eps <- randn_like mu
+    eps <- Torch.TensorFactories.randn_like mu
     pure $ mu + eps * exp (0.5 * logvar)
-      
+
 -- | Given weights, apply linear layer to an input
 linear :: Linear -> Tensor -> Tensor
 linear Linear{..} input = squeezeAll $ matmul input depWeight + depBias
@@ -96,14 +96,14 @@ mvnCholesky :: Tensor -> Int -> Int -> IO Tensor
 mvnCholesky cov n axisDim = do
     samples <- randn' [axisDim, n]
     pure $ matmul l samples
-    where 
+    where
       l = cholesky cov Upper
 
 main :: IO ()
-main = 
+main =
   let nSamples = 32768
       -- TODO - use higher dimensions once functionality works
-      dataDim = 4 
+      dataDim = 4
       hDim = 2
       zDim = 2
       batchSize = 256 -- TODO - crashes for case where any batch is of size n=1
@@ -116,11 +116,11 @@ main =
         decoderSpec = [LinearSpec zDim hDim, LinearSpec hDim dataDim],
         nonlinearitySpec = relu }
 
-    dat <- transpose2D <$> 
-      mvnCholesky (asTensor ([[1.0, 0.3, 0.1, 0.0], 
-                              [0.3, 1.0, 0.3, 0.1], 
-                              [0.1, 0.3, 1.0, 0.3], 
-                              [0.0, 0.1, 0.3, 1.0]] :: [[Float]])) 
+    dat <- transpose2D <$>
+      mvnCholesky (asTensor ([[1.0, 0.3, 0.1, 0.0],
+                              [0.3, 1.0, 0.3, 0.1],
+                              [0.1, 0.3, 1.0, 0.3],
+                              [0.0, 0.1, 0.3, 1.0]] :: [[Float]]))
                               nSamples dataDim
     trained <- foldLoop init numIters $ \vaeState i -> do
       let startIndex = mod (batchSize * i) nSamples
