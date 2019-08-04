@@ -1,0 +1,11 @@
+signature: TensorList
+cppname: std::vector<at::Tensor>
+hsname: TensorList
+functions: []
+constructors:
+- new() -> TensorList
+methods:
+- empty() -> bool
+- size() -> size_t
+- at(size_t s) -> Tensor
+- push_back(Tensor v) -> void

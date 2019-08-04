@@ -1,23 +1,23 @@
-resolver: lts-13.2
+resolver: lts-13.1
 
 packages:
-- ffi/ffi/th/
-- ffi/ffi/thc/
-- ffi/types/th/
-- ffi/types/thc/
-- hasktorch/
-- indef/
-- signatures/
-- signatures/partial/
-- signatures/support/
-- signatures/types/
-
-extra-deps:
-- dimensions-1.0.1.1
+- codegen
+- ffi
+- inline-c/inline-c
+- inline-c/inline-c-cpp
+- hasktorch
+- examples
 
 extra-include-dirs:
-  - ffi/deps/aten/build/include
+  - deps/libtorch/include/torch/csrc/api/include
+  - deps/libtorch/include
 
 extra-lib-dirs:
-  - ffi/deps/aten/build/lib
+  - deps/libtorch/lib
+  - deps/mklml/lib
 
+# see https://github.com/commercialhaskell/stack/issues/4073
+# with-gcc: /usr/local/bin/gcc-7
+
+extra-deps:
+- template-0.2.0.10@sha256:f822de4d34c45bc84b33a61bc112c15fedee6fa6dc414c62b10456395a868f85

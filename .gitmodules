@@ -1,11 +1,9 @@
-[submodule "ffi"]
-	path = ffi
-	url = https://github.com/hasktorch/ffi.git
-	branch = master
-# [submodule "vendor/opto"]
-#   path = vendor/opto
-#   url = https://github.com/mstksg/opto.git
-[submodule "dhall"]
-	path = dhall
-	url = https://github.com/hasktorch/dhall.git
-	branch = master
+[submodule "deps/pytorch"]
+	path = deps/pytorch
+	url = https://github.com/pytorch/pytorch.git
+[submodule "inline-c"]
+	path = inline-c
+	url = https://github.com/hasktorch/inline-c.git
+[submodule "fficxx"]
+	path = fficxx
+	url = git@github.com:hasktorch/fficxx.git

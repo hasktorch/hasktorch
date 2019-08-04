@@ -1,291 +1,95 @@
 version: 2
 
-global_defaults: &defaults
-  machine: true
-  environment:
-    PATH_ADDITIONS: /tmp/cmake-3.10.0/bin/:/tmp/ghc-8.4.4/bin/:/tmp/cabal-2.3.0/bin/:~/.local/bin/:~/.cabal/bin/:/usr/local/bin
-    LD_LIBRARY_PATH: /tmp/aten/lib/
-    CABAL_COMMIT: d6b829ddc77859e6b2b5d49bb249e9859b81248b
-
-
-update_path_command: &update_path
-  run: echo 'export PATH=$PATH_ADDITIONS:$PATH' >> $BASH_ENV
-
 jobs:
-  system-libraries:
-    <<: *defaults
-    working_directory: /
+  stack-build:
+    docker:
+      - image: "ubuntu:18.04"
+    environment:
+      LD_LIBRARY_PATH: /root/project/deps/libtorch/lib:/root/project/deps/mklml/lib
     steps:
-      - run: sudo apt-get update --fix-missing
-      - run: sudo apt-get install libgd2-xpm-dev
-
-  ghc-8.4.4:
-    <<: *defaults
-    working_directory: /tmp/ghc-8.4.4
-    steps:
-      - *update_path
-      - run: wget --no-check-certificate --quiet https://downloads.haskell.org/~ghc/8.4.4/ghc-8.4.4-x86_64-deb8-linux.tar.xz
-      - restore_cache:
-          keys:
-            - ghc-cachekey-v1-{{ .Branch }}-{{ checksum "ghc-8.4.4-x86_64-deb8-linux.tar.xz" }}
-      - run: |
-          if [ ! -d /tmp/ghc-8.4.4/bin/ ]; then
-            echo "No cache - building GHC-8.4.4"
-            tar --strip-components=1 -xf ghc-8.4.4-x86_64-deb8-linux.tar.xz
-            ./configure --prefix=${PWD}
-            make install
-            cd bin
-            ln -fs ghc{-8.4.4,}
-            ln -fs ghci{-8.4.4,}
-            ln -fs ghc-pkg{-8.4.4,}
-            ln -fs haddock-ghc{-8.4.4,}
-            ln -fs runghc{-8.4.4,}
-          else
-            echo "Cached ~/ghc-8.4.4 directory found" ;
-          fi
-      - save_cache:
-          key: ghc-cachekey-v1-{{ .Branch }}-{{ checksum "ghc-8.4.4-x86_64-deb8-linux.tar.xz" }}
-          paths:
-            - bin
-            - lib
-      - run: command -v ghc
-      - run: ghc --version
-      - persist_to_workspace:
-          root: /tmp/ghc-8.4.4
-          paths:
-            - bin
-            - lib
-
-  cmake-3.10.0:
-    <<: *defaults
-    working_directory: /tmp/cmake-3.10.0
-    steps:
-      - *update_path
-      - run: wget --no-check-certificate --quiet https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz
-      - restore_cache:
-          keys:
-            - cmake-cachekey-v1-{{ .Branch }}-{{ checksum "cmake-3.10.0-Linux-x86_64.tar.gz" }}
-      - run: |
-          if [ ! -d ${PWD}/bin ]; then
-            echo "No cache - building CMake-3.10.0"
-            wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-            sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-4.0 main"
-            sudo apt-get update --fix-missing
-            sudo apt-get install clang-4.0 lldb-4.0 --fix-missing
-
-            tar --strip-components=1 -xf cmake-3.10.0-Linux-x86_64.tar.gz
-          else
-            echo "Cached ${PWD}/bin directory found" ;
-          fi
-      - save_cache:
-          key: cmake-cachekey-v1-{{ .Branch }}-{{ checksum "cmake-3.10.0-Linux-x86_64.tar.gz" }}
-          paths:
-            - bin
-            - share
-      - run: command -v cmake
-      - run: cmake --version
-      - persist_to_workspace:
-          root: /tmp/cmake-3.10.0
-          paths:
-            - bin
-            - share
-  aten:
-    <<: *defaults
-    working_directory: /tmp/aten/
-    steps:
-      - *update_path
-      - attach_workspace: { at: /tmp/cmake-3.10.0 }
+      - run: echo $LD_LIBRARY_PATH
+      - run: apt update -qq && apt install -y cmake wget unzip git libtinfo-dev python3 python3-yaml
+      - run: update-alternatives --install /usr/bin/python python /usr/bin/python3 1
       - checkout
-      - restore_cache:
-          keys:
-            - aten-cachekey-v1-{{ .Branch }}
-      - run: |
-          if [ ! -f ${PWD}/lib/libATen.so ]; then
-            echo "No cache - building libATen.so"
-            git submodule sync
-            git submodule update --init --recursive
-            pip install pyyaml typing
-
-            (cd ./ffi/deps && ./build-aten.sh)
-
-            cp -r {./ffi/deps/aten/build/,}lib
-            cp -r {./ffi/deps/aten/build/,}include
-            ls lib
-            ls include
-          else
-            echo "Cached ${PWD}/cabal directory found" ;
-          fi
-
-      - save_cache:
-          key: aten-cachekey-v1-{{ .Branch }}
-          paths:
-            - lib
-            - include
-
+      - run: git submodule init && git submodule update
+      - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
+      - run: gcc --version
+      - run: stack --version
+      - run: cd deps/ ; ./get-deps.sh -a cpu -c
       - run:
-          name: Copy the versioned libATen over symlinks (CircleCI caching hack).
-          command: cd lib && test -L libATen.so && rm libATen.so && cp libATen.so{.1,}
-      - persist_to_workspace:
-          root: /tmp/aten/lib
-          paths:
-            - libATen.so
-            - libATen.so.1
-      - persist_to_workspace:
-          root: /tmp/aten/include
-          paths:
-            - ATen
-            - TH
-            - THS
-            - THNN
-
-  cabal-install-2.3.0:
-    <<: *defaults
-    working_directory: /tmp/cabal-2.3.0
+          name: stack build
+          command: stack build --jobs 2
+          no_output_timeout: 15m
+      - run: stack test --jobs 2
+      - run: stack exec codegen-exe
+      - run: stack test --jobs 2
+      - run: stack exec xor_mlp
+  cabal-build:
+    docker:
+      - image: "ubuntu:18.04"
+    environment:
+      LD_LIBRARY_PATH: /root/project/deps/libtorch/lib:/root/project/deps/mklml/lib
+      PATH: /opt/ghc/bin:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin
     steps:
-      - *update_path
-      - attach_workspace: { at: /tmp/ghc-8.4.4 }
-      - restore_cache:
-          keys:
-            - cabal-cachekey-v2-{{ .Branch }}-d6b829ddc77859e6b2b5d49bb249e9859b81248b
-      - run: ghc --version
-
-      - run: |
-          if [ ! -d cabal ]; then
-            echo "No cache - building cabal-install-2.3.0"
-            mkdir -p ~/.cabal/bin
-
-            git clone git@github.com:haskell/cabal.git cabal --recursive && cd cabal
-            git checkout ${CABAL_COMMIT}
-            (cd cabal-install && ./bootstrap.sh)
-            # lighten up the cache
-            rm -rf cabal*
-            rm -rf Cabal*
-          else
-            echo "Cached ${PWD}/cabal directory found" ;
-          fi
-      - run: command -v cabal
-      - run: cabal --version
-      - run: mkdir /tmp/cabal-2.3.0/bin && cp {~/.cabal,/tmp/cabal-2.3.0}/bin/cabal
-      - save_cache:
-          key: cabal-cachekey-v2-{{ .Branch }}-d6b829ddc77859e6b2b5d49bb249e9859b81248b
-          paths:
-            - cabal
-            - ~/.cabal
-
-      - run: ls ${PWD}/bin
-      - persist_to_workspace:
-          root: bin
-          paths: cabal
-      - persist_to_workspace:
-          root: /home/circleci/.cabal
-          paths:
-            - bin
-            - ls
-            - packages
-            - world
-
-  build:
-    <<: *defaults
-    working_directory: /tmp/build/
-    steps:
-      - *update_path
-      - attach_workspace: { at: /tmp/aten/lib }
-      - attach_workspace: { at: /tmp/aten/include }
-      - attach_workspace: { at: /tmp/ghc-8.4.4 }
-      - attach_workspace: { at: /tmp/cabal-2.3.0 }
-
-      # verify tools
-      - run: command -v cabal
-      - run: cabal --version
-      - run: command -v ghc
-      - run: ghc --version
-
+      - run: echo $LD_LIBRARY_PATH
+      - run: apt update -qq && apt install -y cmake curl wget unzip git libtinfo-dev python3 python3-yaml
+      - run: apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
+      - run: add-apt-repository ppa:hvr/ghc
+      - run: apt-get update -qq && apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev ghc-8.6.4 cabal-install-head devscripts debhelper python3-pip
+      - run: update-alternatives --install /usr/bin/python python /usr/bin/python3 1
       - checkout
-      - run: git submodule sync
-      - run: git submodule update --init --recursive
-      - run: ln -fs cabal/project.freeze-8.4.4 cabal.project.freeze
-      - run: ln -fs {.circleci/,}cabal.project.local
-
-      - run: cabal update
+      - run: git submodule init && git submodule update
+      - run: gcc --version
+      - run: cabal --version
+      - run: cd deps/ ; ./get-deps.sh -a cpu -c
+      - run: ./setup-cabal.sh
       - run: cabal new-update
-      - run: cabal install hspec-discover
-
-      - restore_cache:
-          keys:
-            - hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum "cabal/project.freeze-8.4.4" }}
-
-      - run: sudo apt-get update --fix-missing
-      - run: sudo apt-get install libgd2-xpm-dev
-
-      - run: cabal new-build hasktorch-examples
-
-      - save_cache:
-          key: hasktorch-cachekey-v2-{{ .Branch }}-{{ checksum "cabal/project.freeze-8.4.4" }}
-          paths:
-            - dist-newstyle
-            - ~/.cabal
-
-      # run tests
-      - run: cabal new-test hasktorch-ffi-th
-      - run: cabal new-test hasktorch-codegen
-
-      - run: cabal new-test hasktorch-indef
-      - run: cabal new-test hasktorch
-
+      - run: cabal new-install hspec-discover
       - run:
-          name: Hasktorch codegen binary can run on all libraries
-          command: |
-            cd ffi
-            for l in TH THNN THC THCUNN; do
-              for t in generic concrete; do
-                cabal new-run hasktorch-codegen:ht-codegen -- --type ${t} --lib ${l} --verbose;
-              done;
-            done
-
-      # run simple examples:
-      - run: cabal new-run hasktorch-examples:download-mnist
-      - run: cabal new-run hasktorch-examples:ff-typed
-      - run: cabal new-run hasktorch-examples:ff-untyped
-      - run: cabal new-run hasktorch-examples:static-tensor-usage
-
-      # run examples:
-      - run: cabal new-run hasktorch-examples:ad
-      - run: cabal new-run hasktorch-examples:ae
-      - run: cabal new-run hasktorch-examples:backprop-regression
-      - run: cabal new-run hasktorch-examples:bayesian-regression
-      - run: cabal new-run hasktorch-examples:gradient-descent
-      - run: cabal new-run hasktorch-examples:multivariate-normal
-      - run: cabal new-run hasktorch-examples:xor
-      - run: cabal new-run hasktorch-examples:gaussian-process
-
+          name: cabal new-build all
+          command: cabal new-build all --jobs=2 --write-ghc-environment-files=always
+          no_output_timeout: 15m
+      - run: cabal new-test all --jobs=2 --write-ghc-environment-files=always
+      - run: cabal new-exec codegen-exe
+      - run: cabal new-test all --jobs=2 --write-ghc-environment-files=always
+      - run: cabal exec xor_mlp
+  osx-stack-build:
+    macos:
+      xcode: "10.2.1"
+    environment:
+      DYLD_LIBRARY_PATH: /Users/distiller/project/deps/libtorch/lib:/Users/distiller/project/deps/mklml/lib
+      PATH: /Users/distiller/project/.local/bin:/usr/local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+    steps:
+      - run: echo $LD_LIBRARY_PATH
+      - checkout
+      - run: git submodule init && git submodule update
+      - run: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+      - run: brew install wget cmake libomp
+      - run: pip3 install pyyaml
+      - run: mkdir -p .local/bin
+      - run: rm /usr/local/bin/python
+      - run: ln -s /usr/local/bin/python3 .local/bin/python
+      - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
+      - run: clang --version
+      - run: stack --version
+      - run: cd deps/ ; ./get-deps.sh -a cpu -c
+      - run: cp -a deps/libtorch/lib/*.dylib deps/mklml/lib/*.dylib /usr/local/lib/
+      - run:
+          name: stack build
+          command: stack build --jobs 2
+          no_output_timeout: 15m
+      - run: stack test --jobs 2
+      - run: stack exec codegen-exe
+      - run: stack test --jobs 2
+      - run: stack exec xor_mlp
+      - run: stack exec regression
+      - run: stack exec gaussian_process
+      - run: stack exec vae
 
 workflows:
   version: 2
   build:
     jobs:
-      - ghc-8.4.4
-      - cmake-3.10.0
-      - aten:
-          requires:
-            - cmake-3.10.0
-      - cabal-install-2.3.0:
-          requires:
-            - ghc-8.4.4
-      - build:
-          requires:
-            - aten
-            - cabal-install-2.3.0
-
-#       - test:
-#           requires:
-#             - build_hasktorch
-#       - run_codegen_executable:
-#           requires:
-#             - build_hasktorch
-#       - run_simple_examples:
-#           requires:
-#             - build_hasktorch
-#       - run_examples:
-#           requires:
-#             - build_hasktorch
-
+      - "stack-build"
+      - "cabal-build"
+      - "osx-stack-build"
