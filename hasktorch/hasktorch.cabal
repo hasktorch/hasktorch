@@ -2,7 +2,7 @@ name:                hasktorch
 version:             0.2.0.0
 synopsis:            initial implementation for hasktorch based on libtorch
 -- description:
-homepage:            https://github.com/githubuser/ffi-experimental#readme
+homepage:            https://github.com/hasktorch/hasktorch#readme
 license:             BSD3
 author:              Austin Huang
 maintainer:          hasktorch@gmail.com
@@ -30,7 +30,7 @@ library
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.KnownNat.Solver -fconstraint-solver-iterations=0
  build-depends:       base >= 4.7 && < 5
-                    , ffi
+                    , libtorch-ffi
                     , finite-typelits
                     , ghc-typelits-knownnat
                     , mtl
