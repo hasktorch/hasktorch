@@ -31,6 +31,7 @@ import qualified Torch.Functions as D
 import qualified Torch.TensorFactories as D
 import GHC.Generics
 import GHC.TypeLits
+import Data.Reflection
 
 import Control.Monad (foldM)
 import Data.List (foldl', scanl', intersperse)
@@ -69,7 +70,7 @@ makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
 
 instance A.Parameterized (Linear d n m)
 
-instance (TensorOptions d '[n,m],TensorOptions d '[m]) => A.Randomizable (LinearSpec d n m) (Linear d n m) where
+instance (KnownNat n,KnownNat m,Reifies d DType) => A.Randomizable (LinearSpec d n m) (Linear d n m) where
   sample LinearSpec = do
       w <- makeIndependent =<< (randn :: IO (Tensor d '[n,m]))
       b <- makeIndependent =<< (randn :: IO (Tensor d '[m]))
@@ -85,12 +86,7 @@ data MLP d (i::Nat) (o::Nat) =
 
 instance A.Parameterized (MLP d i o)
 
-instance (TensorOptions d '[n,20],
-          TensorOptions d '[20,20],
-          TensorOptions d '[20,m],
-          TensorOptions d '[20],
-          TensorOptions d '[m]
-         ) => A.Randomizable (MLPSpec d n m) (MLP d n m) where
+instance (KnownNat n, KnownNat m, Reifies d DType) => A.Randomizable (MLPSpec d n m) (MLP d n m) where
   sample MLPSpec = do
       l0 <- A.sample LinearSpec :: IO (Linear d n 20)
       l1 <- A.sample LinearSpec :: IO (Linear d 20 20)
