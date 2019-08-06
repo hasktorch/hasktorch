@@ -12,7 +12,8 @@ jobs:
       - run: update-alternatives --install /usr/bin/python python /usr/bin/python3 1
       - checkout
       - run: git submodule init && git submodule update
-      - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
+#      - run: wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh
+      - run: wget -qO- https://get.haskellstack.org/ | sh
       - run: gcc --version
       - run: stack --version
       - run: cd deps/ ; ./get-deps.sh -a cpu -c
@@ -20,9 +21,14 @@ jobs:
           name: stack build
           command: stack build --jobs 2
           no_output_timeout: 15m
-      - run: stack test --jobs 2
+#     When we call `stack test --jobs 2` with stack-2.1.3, doctest fails. So tests are splited.
+      - run: stack test codegen --jobs 2
+      - run: stack test ffi --jobs 2
+      - run: stack test hasktorch --jobs 2
       - run: stack exec codegen-exe
-      - run: stack test --jobs 2
+      - run: stack test codegen --jobs 2
+      - run: stack test ffi --jobs 2
+      - run: stack test hasktorch --jobs 2
       - run: stack exec xor_mlp
   cabal-build:
     docker:
@@ -35,7 +41,7 @@ jobs:
       - run: apt update -qq && apt install -y cmake curl wget unzip git libtinfo-dev python3 python3-yaml
       - run: apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
       - run: add-apt-repository ppa:hvr/ghc
-      - run: apt-get update -qq && apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev ghc-8.6.4 cabal-install-head devscripts debhelper python3-pip
+      - run: apt-get update -qq && apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev ghc-8.6.5 cabal-install-head devscripts debhelper python3-pip
       - run: update-alternatives --install /usr/bin/python python /usr/bin/python3 1
       - checkout
       - run: git submodule init && git submodule update

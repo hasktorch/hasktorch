@@ -108,7 +108,12 @@ if [[ ! -d build ]]; then
 mkdir build
 fi
 
-python aten/src/ATen/gen.py \
+PYTHON=python
+if ! (python --version | grep "Python 2") ;then
+    PYTHON=python3
+fi
+
+$PYTHON aten/src/ATen/gen.py \
   -s aten/src/ATen \
   -d build/aten/src/ATen \
   aten/src/ATen/Declarations.cwrap \
