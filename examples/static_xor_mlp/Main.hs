@@ -59,11 +59,8 @@ data Linear d (in_features::Nat) (out_features::Nat) =
          , bias :: Parameter d '[out_features]
          } deriving (Show, Generic)
 
-add' ::Tensor dtype '[n,m] -> Tensor dtype '[m] -> Tensor dtype '[n,m]
-add' a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
-
 linear :: Linear d i o -> Tensor d '[k,i] -> Tensor d '[k,o]
-linear Linear{..} input = add' (mm input (toDependent weight)) (toDependent bias)
+linear Linear{..} input = add (mm input (toDependent weight)) (toDependent bias)
 
 makeIndependent :: Tensor d s -> IO (Parameter d s)
 makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
