@@ -1,3 +1,4 @@
+
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -38,6 +39,7 @@ instance Reifies Float DType where
 
 instance Reifies Double DType where
   reflect _ = Double
+
 
 instance Castable DType ATen.ScalarType where
   cast UInt8  f = f ATen.kByte
