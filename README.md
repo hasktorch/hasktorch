@@ -1,8 +1,10 @@
-# Hasktorch 0.2 Libtorch FFI
+# Hasktorch 0.2 Pre-Release
 
-Work on ffi bindings into the c++ libtorch library in preparation for 0.2 which targets the pytorch's post 1.0libtorch backend.
+Hasktorch is a library for tensors and neural networks in Haskell. It is an independent open source community project which leverages the core C++ libraries shared by PyTorch. 
 
-General approach is to use generated `Declarations.yaml` spec instead of header parsing for code generation.
+This project is in early development and should only be used by contributing developers. Expect substantial changes to the library API as it evolves. Contributions and PRs are welcome.
+
+Currently we are prepping development and migration for a major 2nd release (please excuse sparsity of docs in the meantime). If you're interested in details or contributing please get in touch (see contributing).
 
 ## Project Structure
 
@@ -19,29 +21,6 @@ General approach is to use generated `Declarations.yaml` spec instead of header 
 `deps/` holds several external dependencies that are retrieved using the `deps/get-deps.sh` script.
 
 This should be run prior to building
-
-## XOR MLP Example
-
-The following steps should run the xor mlp example:
-
-```
-# Download libtorch-binary and other shared library dependencies
-pushd deps
-# For CPU
-./get-deps.sh
-# For CUDA-9
-# ./get-deps.sh -a cu90
-# For CUDA-10
-# ./get-deps.sh -a cu100
-popd
-
-# Set shared library environment variables
-source setenv
-
-stack build examples
-
-stack exec xor_mlp
-```
 
 ## Running code generation
 
@@ -62,10 +41,18 @@ To get CLI options:
 stack exec codegen-exe -- --help
 ```
 
-## Additional Information
+## Contributing
+
+We welcome new contributors. 
+
+Contact Austin Huang or Sam Stites for access to the [hasktorch slack channel][slack]. You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinvhuang][austin-twitter] and [@SamStites][sam-twitter].
+
+[email]:mailto:hasktorch@gmail.com
+[austin-twitter]:https://twitter.com/austinvhuang
+[sam-twitter]:https://twitter.com/samstites
+[slack]:https://hasktorch.slack.com 
+[gitter-dh]:https://gitter.im/dataHaskell/Lobby
+
+## Developer Information
 
 See [the wiki](https://github.com/hasktorch/ffi-experimental/wiki) for developer information.
-
-## Contributions
-
-Contributions/PRs are welcome. 
