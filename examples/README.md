@@ -14,7 +14,7 @@ Most examples use untyped dimensions for now with the exception of `cnn`. More e
 The following steps should run the xor mlp example, assuming hasktorch has only been cloned but dependencies have not been pulled yet.
 
 Start at the top-level directory of the project.
-```
+
 ```
 # Download libtorch-binary and other shared library dependencies
 pushd deps
