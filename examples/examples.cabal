@@ -32,8 +32,9 @@ executable rnn
                      , mtl
                      , ffi
 
-executable hello
-  hs-source-dirs:      rnn
+executable minimal-text-example
+  hs-source-dirs:      minimal-text,
+                       rnn
   main-is:             Hello.hs
   other-modules:       RecurrentLayer,
                        Elman,
