@@ -33,7 +33,7 @@ executable rnn
                      , ffi
 
 executable minimal-text-example
-  hs-source-dirs:      minimal-text,
+  hs-source-dirs:      minimal-text-example,
                        rnn
   main-is:             Hello.hs
   other-modules:       RecurrentLayer,
