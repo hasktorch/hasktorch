@@ -21,6 +21,7 @@ module Torch.Static where
 import Data.Proxy
 import Data.Finite
 import Data.Kind (Constraint)
+import Data.Reflection
 import GHC.TypeLits
 
 import qualified Torch.Tensor as D
@@ -43,22 +44,36 @@ instance (KnownNat h, KnownShape t) => KnownShape (h ': t) where
 getFiniteI :: Finite n -> Int
 getFiniteI = fromIntegral . getFinite
 
-data Tensor (dtype :: DType.DType) (shape :: [Nat]) = UnsafeMkTensor { toDynamic :: D.Tensor }
+data Tensor dtype (shape :: [Nat]) = UnsafeMkTensor { toDynamic :: D.Tensor }
+
+instance Num (Tensor dtype shape) where
+  (+) a b = UnsafeMkTensor $ toDynamic a + toDynamic b
+  (-) a b = UnsafeMkTensor $ toDynamic a - toDynamic b
+  (*) a b = UnsafeMkTensor $ toDynamic a * toDynamic b
+  negate t = UnsafeMkTensor $ negate $ toDynamic t
+  abs t = UnsafeMkTensor $ abs $ toDynamic t
+  signum t = UnsafeMkTensor $ signum $ toDynamic t
+  fromInteger i = UnsafeMkTensor $ D.asTensor @Int $ fromInteger @Int i
+
+instance Fractional (Tensor dtype shape) where
+  a / b = UnsafeMkTensor $ toDynamic a / toDynamic b
+  recip t = UnsafeMkTensor $ recip $ toDynamic t
+  fromRational i = UnsafeMkTensor $ D.asTensor @Float $ fromRational @Float i
 
 instance Show (Tensor dtype shape) where
     show (UnsafeMkTensor dynamic) = show dynamic
 
-class TensorOptions (dtype :: DType.DType) (shape :: [Nat]) where
+class (Reifies dtype DType.DType) => TensorOptions dtype (shape :: [Nat]) where
     optionsRuntimeShape :: [Int]
-    ones :: Tensor dtype shape
+    optionsRuntimeDType :: DType.DType
 
-instance TensorOptions DType.Float '[] where
+instance (Reifies a DType.DType) => TensorOptions a '[] where
     optionsRuntimeShape = []
-    ones = UnsafeMkTensor $ D.ones' []
+    optionsRuntimeDType = reflect (Proxy :: Proxy a)
 
-instance (KnownNat h, TensorOptions DType.Float t) => TensorOptions DType.Float (h ': t) where
-    optionsRuntimeShape = (natValI @h : optionsRuntimeShape @DType.Float @t)
-    ones = UnsafeMkTensor $ D.ones' (optionsRuntimeShape @DType.Float @(h ': t))
+instance (KnownNat h, TensorOptions a t) => TensorOptions a (h ': t) where
+    optionsRuntimeShape = (natValI @h : optionsRuntimeShape @a @t)
+    optionsRuntimeDType = reflect (Proxy :: Proxy a)
 
 --------------------------------------------------------------------------------
 -- Dynamic -> Static typecasts
