@@ -24,7 +24,6 @@ import GRU
 
 
 num_iters = 1000
-
 num_features = 4
 
 
