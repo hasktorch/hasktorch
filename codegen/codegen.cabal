@@ -2,7 +2,7 @@ name:                codegen
 version:             0.1.0.0
 synopsis:            parse torch yaml spec files, generate code
 -- description:
-homepage:            https://github.com/githubuser/ffi-experimental#readme
+homepage:            https://github.com/hasktorch/hasktorch#readme
 license:             BSD3
 author:              Austin Huang
 maintainer:          hasktorch@gmail.com

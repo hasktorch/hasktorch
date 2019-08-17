@@ -2,7 +2,7 @@ name:                examples
 version:             0.2.0.0
 synopsis:            examples for the new version of hasktorch
 -- description:
-homepage:            https://github.com/githubuser/ffi-experimental#readme
+homepage:            https://github.com/hasktorch/hasktorch#readme
 license:             BSD3
 author:              Austin Huang
 maintainer:          hasktorch@gmail.com
@@ -39,7 +39,7 @@ executable elman
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl
-                     , ffi
+                     , libtorch-ffi
 
 
 executable regression
@@ -49,7 +49,7 @@ executable regression
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl
-                     , ffi
+                     , libtorch-ffi
 
 executable cnn
   hs-source-dirs:      cnn
