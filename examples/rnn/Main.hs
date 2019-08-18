@@ -24,28 +24,25 @@ import GRU
 
 
 num_iters = 10
+num_timesteps = 3
 
-seq_size = 5
-num_features = 4
-
-
-run :: (RecurrentCell a, Parameterized a)
+run :: (RecurrentCell a, Parameterized a) 
     => Tensor
     -> Tensor
     -> Tensor
     -> a
-    -> Int
+    -> Int 
     -> IO (a)
 run input_tensor init_hidden expected_output model i = do
-
+    
     let output = finalState model input_tensor init_hidden
     let loss = mse_loss output expected_output
 
-    print loss
+    print loss 
 
     let flat_parameters = flattenParameters model
     let gradients = grad loss flat_parameters
-
+        
 
     -- new parameters returned by the SGD update functions
     new_flat_parameters <- mapM makeIndependent $ sgd 5e-2 flat_parameters gradients
@@ -57,22 +54,21 @@ run input_tensor init_hidden expected_output model i = do
 main :: IO ()
 main = do
 
---    let input_tensor = fromNestedList $ map representation "hello"
     let foldLoop x count block = foldM block x [1..count]
 
     -- randomly initializing training values
-    input_tensor <- randn' [seq_size, num_features]
-    init_hidden <- randn' [1, num_features]
-    expected_output <- randn' [1, num_features]
+    input_tensor <- randn' [num_timesteps, 2]
+    init_hidden <- randn' [1, 2]
+    expected_output <- randn' [1, 2]
 
     -- randomly initialize a gate
-    rnnLayer <- sample $ ElmanSpec { in_features = num_features, hidden_features = num_features }
-    lstmLayer <- sample $ LSTMSpec num_features num_features
-    gruLayer <- sample $ GRUSpec num_features num_features
+    rnnLayer <- sample $ ElmanSpec { in_features = 2, hidden_features = 2 }
+    lstmLayer <- sample $ LSTMSpec 2 2
+    gruLayer <- sample $ GRUSpec 2 2
 
     putStrLn "\nElman Cell Training Loop"
     -- training loop for elman cell
-    foldLoop rnnLayer num_iters (run input_tensor init_hidden expected_output)
+    foldLoop rnnLayer num_iters (run input_tensor init_hidden expected_output) 
 
     putStrLn "\nLSTM Training Loop"
     -- training loop for LSTM cell

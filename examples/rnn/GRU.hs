@@ -49,12 +49,18 @@ instance RecurrentCell GRUCell where
 
 instance Randomizable GRUSpec GRUCell where
   sample GRUSpec{..} = do
-      w_ih <- makeIndependent =<< randn' [in_f, h_f]
-      w_hh <- makeIndependent =<< randn' [h_f, h_f]
-      b <- makeIndependent =<< randn' [1, h_f]
-      let rg = [w_ih, w_hh, b]
-      let ug = [w_ih, w_hh, b]
-      let hg = [w_ih, w_hh, b]
+      rg_ih <- makeIndependent =<< randn' [in_f, h_f]
+      rg_hh <- makeIndependent =<< randn' [h_f, h_f]
+      rg_b <- makeIndependent =<< randn' [1, h_f]
+      ug_ih <- makeIndependent =<< randn' [in_f, h_f]
+      ug_hh <- makeIndependent =<< randn' [h_f, h_f]
+      ug_b <- makeIndependent =<< randn' [1, h_f]
+      hg_ih <- makeIndependent =<< randn' [in_f, h_f]
+      hg_hh <- makeIndependent =<< randn' [h_f, h_f]
+      hg_b <- makeIndependent =<< randn' [1, h_f]
+      let rg = [rg_ih, rg_hh, rg_b]
+      let ug = [ug_ih, ug_hh, ug_b]
+      let hg = [hg_ih, hg_hh, hg_b]
       return $ GRUCell rg ug hg
 
 

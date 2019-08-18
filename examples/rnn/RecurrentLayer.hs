@@ -24,13 +24,13 @@ class RecurrentCell a where
   -- final hidden state
   finalState :: a -> Tensor -> Tensor -> Tensor
   finalState layer input hidden =
-    let
-      -- converting matrix into a list of tensors
-      -- this hack stays until I can write a Foldable instance
-      -- for a tensor
-      inputAsList = [reshape (input @@ x) [1, (size input 1)] | x <- [0.. ((size input 0) - 1)]]
-    in
-      foldl (nextState layer) hidden inputAsList
+        let
+        -- converting matrix into a list of tensors
+        -- this hack stays until I can write a Foldable instance
+        -- for a tensor
+            inputAsList = [reshape (input @@ x) [1, (size input 1)] | x <- [0.. ((size input 0) - 1)]]
+        in
+        foldl (nextState layer) hidden inputAsList
 
 
 {-
@@ -51,5 +51,6 @@ gate input hidden nonLinearity inputWt hiddenWt biasWt =
     nonLinearity $ (mul input inputWt) + (mul hidden hiddenWt) + (toDependent biasWt)
     where
       mul features wts = transpose2D $ matmul (toDependent wts) (transpose2D features)
+
 
 
