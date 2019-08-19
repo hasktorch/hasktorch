@@ -1,6 +1,6 @@
 packages:
     codegen/*.cabal
-    ffi/*.cabal
+    libtorch-ffi/*.cabal
     hasktorch/*.cabal
     examples/*.cabal
     inline-c/inline-c/*.cabal
