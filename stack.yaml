@@ -2,7 +2,7 @@ resolver: lts-13.30
 
 packages:
 - codegen
-- ffi
+- libtorch-ffi
 - inline-c/inline-c
 - inline-c/inline-c-cpp
 - hasktorch

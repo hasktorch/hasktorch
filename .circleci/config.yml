@@ -23,11 +23,11 @@ jobs:
           no_output_timeout: 15m
 #     When we call `stack test --jobs 2` with stack-2.1.3, doctest fails. So tests are splited.
       - run: stack test codegen --jobs 2
-      - run: stack test ffi --jobs 2
+      - run: stack test libtorch-ffi --jobs 2
       - run: stack test hasktorch --jobs 2
       - run: stack exec codegen-exe
       - run: stack test codegen --jobs 2
-      - run: stack test ffi --jobs 2
+      - run: stack test libtorch-ffi --jobs 2
       - run: stack test hasktorch --jobs 2
       - run: stack exec xor_mlp
   cabal-build:
