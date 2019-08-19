@@ -8,12 +8,17 @@ Currently we are prepping development and migration for a major 2nd release (ple
 
 ## Project Structure
 
-- `codegen/` - code generation, parses `Declarations.yaml` spec from pytorch and produces `ffi/` contents
-- `deps/` - submodules for dependencies - libtorch, mklml, pytorch
+Basic functionality:
+
+- `deps/` - submodules for build dependencies - libtorch, mklml, pytorch
 - `examples/` - high level example models (xor mlp, typed cnn)
-- `ffi/`- low level FFI bindings to libtorch
 - `hasktorch/` - higher level user-facing library, calls into `ffi/`, used by `examples/`
+
+Internals (for contributing developers):
+
+- `codegen/` - code generation, parses `Declarations.yaml` spec from pytorch and produces `ffi/` contents
 - `inline-c/` - submodule to inline-cpp fork used for C++ FFI
+- `libtorch-ffi/`- low level FFI bindings to libtorch
 - `spec/` - specification files used for `codegen/`
 
 Start with `examples/` if you are new to the project.
