@@ -29,7 +29,6 @@ import ATen.Cast
 import ATen.Unmanaged.Type.Generator
 import ATen.Unmanaged.Type.IntArray
 import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.SparseTensorRef
 import ATen.Unmanaged.Type.Storage
 import ATen.Unmanaged.Type.Tensor
 import ATen.Unmanaged.Type.TensorList

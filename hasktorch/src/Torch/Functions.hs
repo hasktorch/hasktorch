@@ -196,9 +196,6 @@ logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim 
 inverse :: Tensor -> Tensor
 inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 
-gels :: Tensor -> Tensor -> (Tensor, Tensor)
-gels _B _A = unsafePerformIO $ (cast2 ATen.gels_tt) _B _A
-
 symeig :: Tensor -> Bool -> Tri -> (Tensor, Tensor)
 symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
   where boolUpper = isUpper upper
@@ -228,8 +225,8 @@ cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t 
 -- pstrf :: Tensor -> Bool -> Double -> (Tensor, Tensor)
 -- pstrf t upper tol = unsafePerformIO $ (cast3 ATen.pstrf_tbs) t upper tol
 
-qr :: Tensor -> (Tensor, Tensor)
-qr t = unsafePerformIO $ (cast1 ATen.qr_t) t
+--qr :: Tensor -> (Tensor, Tensor)
+--qr t = unsafePerformIO $ (cast1 ATen.qr_t) t
 
 geqrf :: Tensor -> (Tensor, Tensor)
 geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t

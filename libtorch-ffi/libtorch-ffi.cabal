@@ -25,7 +25,6 @@ library
                     , ATen.Unmanaged.Type.Generator
                     , ATen.Unmanaged.Type.IntArray
                     , ATen.Unmanaged.Type.Scalar
-                    , ATen.Unmanaged.Type.SparseTensorRef
                     , ATen.Unmanaged.Type.Storage
                     , ATen.Unmanaged.Type.Tensor
                     , ATen.Unmanaged.Type.TensorList
@@ -33,6 +32,7 @@ library
                     , ATen.Unmanaged.Type.StdString
                     , ATen.Unmanaged.Type.StdArray
                     , ATen.Unmanaged.Type.Context
+                    , ATen.Unmanaged.Type.ConstQuantizerPtr
                     , ATen.Unmanaged.Type.Extra
                     , ATen.Managed.NN
                     , ATen.Managed.TH
@@ -42,7 +42,6 @@ library
                     , ATen.Managed.Type.Generator
                     , ATen.Managed.Type.IntArray
                     , ATen.Managed.Type.Scalar
-                    , ATen.Managed.Type.SparseTensorRef
                     , ATen.Managed.Type.Storage
                     , ATen.Managed.Type.Tensor
                     , ATen.Managed.Type.TensorList
@@ -50,6 +49,7 @@ library
                     , ATen.Managed.Type.StdString
                     , ATen.Managed.Type.StdArray
                     , ATen.Managed.Type.Context
+                    , ATen.Managed.Type.ConstQuantizerPtr
                     , ATen.Managed.Type.Extra
                     , Torch.Unmanaged.Autograd
                     , Torch.Unmanaged.NN
@@ -75,7 +75,6 @@ library
                     , c10
                     , iomp5
                     , mklml
-                    , caffe2
                     , torch
  extra-ghci-libraries: stdc++
  if os(darwin)

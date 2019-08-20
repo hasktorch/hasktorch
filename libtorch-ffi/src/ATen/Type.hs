@@ -24,6 +24,8 @@ type ScalarType = Int8
 type DeviceType = Int16
 type Backend = CInt
 type Layout = Int8
+type MemoryFormat = Int8
+type QScheme = Int8
 
 data Tensor
 data Scalar
@@ -32,13 +34,13 @@ data TensorList
 data IntArrayRef
 data IntArray
 data TensorAVector
-data SparseTensorRef
 data Storage
 data StdArray a b
 data StdString
 data Generator
 data Device
 data Context
+data ConstQuantizerPtr
 
 typeTable = Map.fromList [
         (C.TypeName "at::Scalar", [t|Scalar|])
@@ -49,7 +51,6 @@ typeTable = Map.fromList [
       , (C.TypeName "std::vector<int64_t>", [t|IntArray|])
       , (C.TypeName "at::ScalarType", [t|ScalarType|])
       , (C.TypeName "at::DeviceType", [t|DeviceType|])
-      , (C.TypeName "at::SparseTensorRef", [t|SparseTensorRef|])
       , (C.TypeName "at::Storage", [t|Storage|])
       , (C.TypeName "at::Device", [t|Device|])
       , (C.TypeName "at::Generator", [t|Generator|])
@@ -67,5 +68,8 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", [t|(Tensor,Tensor,Tensor,Int64)|])
       , (C.TypeName "at::Backend", [t|Backend|])
       , (C.TypeName "at::Layout", [t|Layout|])
+      , (C.TypeName "at::MemoryFormat", [t|MemoryFormat|])
       , (C.TypeName "at::Context", [t|Context|])
+      , (C.TypeName "at::ConstQuantizerPtr", [t|ConstQuantizerPtr|])
+      , (C.TypeName "at::QScheme", [t|QScheme|])
     ]

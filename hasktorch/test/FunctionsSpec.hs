@@ -80,10 +80,10 @@ spec = do
   it "relu (neg)" $ do
     let x = relu $ -5 * ones' [4]
     (toDouble $ select x 0 0) `shouldBe` 0.0
-  it "gels" $ do
-    let (x,qr) = gels (ones' [5,2]) (ones' [5,3])
-    shape x `shouldBe` [5,2]
-    shape qr `shouldBe` [5,3]
+  -- it "gels" $ do
+  --   let (x,qr) = gels (ones' [5,2]) (ones' [5,3])
+  --   shape x `shouldBe` [5,2]
+  --   shape qr `shouldBe` [5,3]
   it "diag" $ do
     let x = ones' [3]
     let y = diag x 2

@@ -55,10 +55,10 @@ main = do
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensoroptions.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/generator.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/scalar.yaml"
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/sparsetensorref.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/storage.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensorlist.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/context.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/constquantizerptr.yaml"
   RTL.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RP.decodeAndCodeGen (outputDir opts) (specFileDL opts) "spec/bindings.yaml"

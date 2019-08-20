@@ -11,6 +11,7 @@ import qualified Data.Yaml as Y
 import Text.Shakespeare.Text (st)
 import Data.Text (Text, replace)
 import qualified Data.Text.IO as T
+import qualified Data.Set as S
 import System.Directory (createDirectoryIfMissing)
 
 import qualified ParseDeclarations as D
@@ -19,6 +20,15 @@ import RenderCommon
 
 dropGenerator :: [Parameter] -> [Parameter]
 dropGenerator params = filter (\v' -> ptype v' /= Ptr GeneratorType) params
+
+addFunctionWithDefaultArguments :: D.Declaration -> [D.Declaration]
+addFunctionWithDefaultArguments dl = map (\args -> dl{D.arguments = args}) genArgsWithDefault'
+  where
+    genArgsWithDefault [] = []
+    genArgsWithDefault (x:xs) | D.default' x /= Nothing = (x:xs) : genArgsWithDefault xs
+                              | otherwise = [(x:xs)]
+    genArgsWithDefault' = map reverse $ genArgsWithDefault (reverse $ D.arguments dl)
+
 
 toFunction :: D.Declaration -> P.Function
 toFunction dl = P.Function
@@ -30,15 +40,26 @@ toFunction dl = P.Function
   , P.variant = P.VFunction
   }
 
-renderFunctions :: Bool -> Bool -> String -> [D.Declaration] -> Text
-renderFunctions is_managed enb_type_initials namespace nfs = mconcat $ flip map nfs $ \nf -> functionToCpp is_managed enb_type_initials namespace "" (toFunction nf)
+uniqFilter :: Ord n => (a -> n) -> [a] -> [a]
+uniqFilter item xs = uniqFilter' xs S.empty
+  where
+    uniqFilter' [] _ = []
+    uniqFilter' (x:xs) ids = if S.member (item x) ids then uniqFilter' xs ids else x:(uniqFilter' xs (S.insert (item x) ids))
 
+renderFunctions :: Bool -> Bool -> String -> [D.Declaration] -> Text
+renderFunctions is_managed enb_type_initials namespace nfs =
+  mconcat $
+  map (\nf -> functionToCpp is_managed enb_type_initials namespace "" nf) $
+  uniqFilter getSignatures $
+  map toFunction nfs
+  
 decodeAndCodeGen :: String -> String -> IO ()
 decodeAndCodeGen basedir fileName = do
   funcs <- Y.decodeFileEither fileName :: IO (Either ParseException [D.Declaration])
   case funcs of
     Left err' -> print err'
-    Right fns -> do
+    Right fns' -> do
+      let fns = concat $ map addFunctionWithDefaultArguments fns' 
       createDirectoryIfMissing True (basedir <> "/ATen")
       T.writeFile (basedir <> "/ATen/Type.hs") $
         typeTemplate
@@ -60,19 +81,19 @@ decodeAndCodeGen basedir fileName = do
       createDirectoryIfMissing True (basedir <> "/Torch/Managed")
       createDirectoryIfMissing True (basedir <> "/Torch/Unmanaged")
       T.writeFile (basedir <> "/Torch/Managed/NN.hs") $
-        template True True "Torch.Managed.NN" (renderFunctions True False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just False) fns))
+        template True True "Torch.Managed.NN" (renderFunctions True False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just True) fns))
       T.writeFile (basedir <> "/Torch/Managed/TH.hs") $
-        template True True "Torch.Managed.TH" (renderFunctions True True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just False) fns))
+        template True True "Torch.Managed.TH" (renderFunctions True True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just True) fns))
       T.writeFile (basedir <> "/Torch/Managed/Native.hs") $
         template True True "Torch.Managed.Native" $
-        renderFunctions True True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just False) fns)
+        renderFunctions True True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just True) fns)
       T.writeFile (basedir <> "/Torch/Unmanaged/NN.hs") $
-        template True False "Torch.Unmanaged.NN" (renderFunctions False False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just False) fns))
+        template True False "Torch.Unmanaged.NN" (renderFunctions False False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just True) fns))
       T.writeFile (basedir <> "/Torch/Unmanaged/TH.hs") $
-        template True False "Torch.Unmanaged.TH" (renderFunctions False True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just False) fns))
+        template True False "Torch.Unmanaged.TH" (renderFunctions False True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just True) fns))
       T.writeFile (basedir <> "/Torch/Unmanaged/Native.hs") $
         template True False "Torch.Unmanaged.Native" $
-        renderFunctions False True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just False) fns)
+        renderFunctions False True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just True) fns)
 
 
 
@@ -89,7 +110,6 @@ import qualified #{replace "Managed" "Unmanaged" module_name} as Unmanaged
 import ATen.Unmanaged.Type.Generator
 import ATen.Unmanaged.Type.IntArray
 import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.SparseTensorRef
 import ATen.Unmanaged.Type.Storage
 import ATen.Unmanaged.Type.Tensor
 import ATen.Unmanaged.Type.TensorList
@@ -163,6 +183,8 @@ type ScalarType = Int8
 type DeviceType = Int16
 type Backend = CInt
 type Layout = Int8
+type MemoryFormat = Int8
+type QScheme = Int8
 
 data Tensor
 data Scalar
@@ -171,13 +193,13 @@ data TensorList
 data IntArrayRef
 data IntArray
 data TensorAVector
-data SparseTensorRef
 data Storage
 data StdArray a b
 data StdString
 data Generator
 data Device
 data Context
+data ConstQuantizerPtr
 
 typeTable = Map.fromList [
         (C.TypeName "at::Scalar", #{bra}t|Scalar|#{cket})
@@ -188,7 +210,6 @@ typeTable = Map.fromList [
       , (C.TypeName "std::vector<int64_t>", #{bra}t|IntArray|#{cket})
       , (C.TypeName "at::ScalarType", #{bra}t|ScalarType|#{cket})
       , (C.TypeName "at::DeviceType", #{bra}t|DeviceType|#{cket})
-      , (C.TypeName "at::SparseTensorRef", #{bra}t|SparseTensorRef|#{cket})
       , (C.TypeName "at::Storage", #{bra}t|Storage|#{cket})
       , (C.TypeName "at::Device", #{bra}t|Device|#{cket})
       , (C.TypeName "at::Generator", #{bra}t|Generator|#{cket})
@@ -206,6 +227,8 @@ typeTable = Map.fromList [
       , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", #{bra}t|(Tensor,Tensor,Tensor,Int64)|#{cket})
       , (C.TypeName "at::Backend", #{bra}t|Backend|#{cket})
       , (C.TypeName "at::Layout", #{bra}t|Layout|#{cket})
+      , (C.TypeName "at::MemoryFormat", #{bra}t|MemoryFormat|#{cket})
       , (C.TypeName "at::Context", #{bra}t|Context|#{cket})
+      , (C.TypeName "at::ConstQuantizerPtr", #{bra}t|ConstQuantizerPtr|#{cket})
     ]
 |]
