@@ -83,7 +83,8 @@ spec = forM_ [
       forM_ [0..1] $ \j ->
         at2 c i j >>= tensor_item_double >>= print
     tensor_print c
-    tensor_backward c
+    t <- newTensor
+    tensor_backward_tbb c t 0 0
     a' <- tensor_grad a
     print "--a'--"
     forM_ [0..1] $ \i ->

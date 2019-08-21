@@ -37,6 +37,7 @@ library
     , string-conversions
     , directory
     , unordered-containers
+    , containers
   extra-libraries: stdc++
   ghc-options:     -Wall
 

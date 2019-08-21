@@ -10,7 +10,7 @@ set -eu
 usage_exit() {
     echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu90" or "cu100"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
-    echo "    # Use libtorch-1.1.0   w/o -l" 1>&2
+    echo "    # Use libtorch-1.2.0   w/o -l" 1>&2
     echo "" 1>&2
     echo " -c # Download libtorch from hasktorch's site w/ -c" 1>&2
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
@@ -29,6 +29,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
+VERSION=1.2.0
 
 while getopts nca:sh OPT
 do
@@ -58,13 +59,13 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
         unzip libtorch-macos-latest.zip
         rm libtorch-macos-latest.zip
       elif [ "$USE_BINARY_FOR_CI" = 1 ] ; then
-        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.1.0/cpu-libtorch-macos-latest.zip
+        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/cpu-libtorch-macos-latest.zip
         unzip cpu-libtorch-macos-latest.zip
         rm cpu-libtorch-macos-latest.zip
       else
-        wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.1.0.zip
-        unzip libtorch-macos-1.1.0.zip
-        rm libtorch-macos-1.1.0.zip
+        wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-${VERSION}.zip
+        unzip libtorch-macos-${VERSION}.zip
+        rm libtorch-macos-${VERSION}.zip
       fi
       wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_mac_2019.0.1.20181227.tgz
       tar -xzf mklml_mac_2019.0.1.20181227.tgz
@@ -79,13 +80,13 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
         unzip libtorch-shared-with-deps-latest.zip
         rm libtorch-shared-with-deps-latest.zip
       elif [ "$USE_BINARY_FOR_CI" = 1 ] ; then
-        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/1.1.0/${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
+        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
         unzip ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
         rm ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
       else
-        wget https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-1.1.0.zip
-        unzip libtorch-shared-with-deps-1.1.0.zip
-        rm libtorch-shared-with-deps-1.1.0.zip
+        wget https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}.zip
+        unzip libtorch-shared-with-deps-${VERSION}.zip
+        rm libtorch-shared-with-deps-${VERSION}.zip
       fi
       wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz
       tar -xzf mklml_lnx_2019.0.1.20181227.tgz
@@ -127,9 +128,15 @@ $PYTHON aten/src/ATen/gen.py \
 case "$(uname)" in
   "Darwin")
     sed -i '' -e "s/ name: n$/ name: 'n'/g" -e "s/ name: N$/ name: 'N'/g" build/aten/src/ATen/Declarations.yaml
+    sed -i '' -e "s/ name: t$/ name: 't'/g" -e "s/ name: T$/ name: 'T'/g" build/aten/src/ATen/Declarations.yaml
+    sed -i '' -e "s/ name: y$/ name: 'y'/g" -e "s/ name: Y$/ name: 'Y'/g" build/aten/src/ATen/Declarations.yaml
+    sed -i '' -e "s/ default: \([^'].*\)$/ default: '\1'/g" build/aten/src/ATen/Declarations.yaml
     ;;
   "Linux")
     sed -i -e "s/ name: n$/ name: 'n'/g" -e "s/ name: N$/ name: 'N'/g" build/aten/src/ATen/Declarations.yaml
+    sed -i -e "s/ name: t$/ name: 't'/g" -e "s/ name: T$/ name: 'T'/g" build/aten/src/ATen/Declarations.yaml
+    sed -i -e "s/ name: y$/ name: 'y'/g" -e "s/ name: Y$/ name: 'Y'/g" build/aten/src/ATen/Declarations.yaml
+    sed -i -e "s/ default: \([^'].*\)$/ default: '\1'/g" build/aten/src/ATen/Declarations.yaml
     ;;
 esac
 

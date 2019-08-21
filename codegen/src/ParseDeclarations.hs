@@ -49,6 +49,7 @@ data Type = Type
   , dynamic_type' :: S.Parsable
   , type' :: String
   , size' :: Maybe Int
+  , default' :: Maybe String
 } deriving (Show, Eq, Generic)
 
 type2type :: Type -> S.Parsable

@@ -53,7 +53,6 @@ tenTypeToCppType tentype =
     IntList _ -> "std::vector<int64_t>"
     ScalarQ -> "at::Scalar"
     ScalarType -> "at::ScalarType"
-    SparseTensorRef -> "at::SparseTensorRef"
 
 ctypeToCppType :: CType -> Text
 ctypeToCppType ct =
@@ -95,6 +94,9 @@ parsableToCppType parsable =
     P.CppClass _ cpptype _ -> fromString cpptype
     Backend -> "at::Backend"
     Layout -> "at::Layout"
+    MemoryFormat -> "at::MemoryFormat"
+    QScheme -> "at::QScheme"
+    ConstQuantizerPtr -> "at::ConstQuantizerPtr"
 
 
 ------ To Haskell Type ------
@@ -121,7 +123,6 @@ tenTypeToHsType tentype =
     IntList _ -> "IntArray"
     ScalarQ -> "Scalar"
     ScalarType -> "ScalarType"
-    SparseTensorRef -> "SparseTensorRef"
 
 
 
@@ -150,7 +151,6 @@ tenTypeToHigherHsType tentype =
     IntList _ -> "[Int]"
     ScalarQ -> "Float"
     ScalarType -> "DType"
-    SparseTensorRef -> "SparseTensorRef"
 
 stltypeToHsType :: STLType -> Text
 stltypeToHsType t =
@@ -221,6 +221,9 @@ parsableToHsType parsable =
     P.CppClass _ _ hstype -> fromString hstype
     Backend -> "Backend"
     Layout -> "Layout"
+    MemoryFormat -> "MemoryFormat"
+    QScheme -> "QScheme"
+    ConstQuantizerPtr -> "ConstQuantizerPtr"
 
 parsableToHigherHsType :: Parsable -> Text
 parsableToHigherHsType parsable =
@@ -237,6 +240,9 @@ parsableToHigherHsType parsable =
     P.CppClass _ _ hstype -> fromString hstype
     Backend -> "Backend"
     Layout -> "Layout"
+    MemoryFormat -> "MemoryFormat"
+    QScheme -> "QScheme"
+    ConstQuantizerPtr -> "ConstQuantizerPtr"
 
 
 ------ To initial characters ------
@@ -262,7 +268,6 @@ tenTypeToInitial tentype =
     IntList _ -> "l"
     ScalarQ -> "s"
     ScalarType -> "s"
-    SparseTensorRef -> "r"
 
 stltypeToInitial :: STLType -> Text
 stltypeToInitial t =
@@ -303,6 +308,9 @@ parsableToInitial parsable =
     P.CppClass _ _ _ -> "c"
     Backend -> "B"
     Layout -> "L"
+    MemoryFormat -> "M"
+    QScheme -> "S"
+    ConstQuantizerPtr -> "Q"
 
 isCType :: Parsable -> Bool
 isCType p =
@@ -311,6 +319,8 @@ isCType p =
     DeviceType -> True
     Backend -> True
     Layout -> True
+    MemoryFormat -> True
+    QScheme -> True
     CType _ -> True
     Ptr _ -> True
     _ -> False
@@ -336,6 +346,9 @@ retToCppType parsable =
     P.CppClass _ cpptype _ -> fromString cpptype
     Backend -> "at::Backend"
     Layout -> "at::Layout"
+    MemoryFormat -> "at::MemoryFormat"
+    QScheme -> "at::QScheme"
+    ConstQuantizerPtr -> "at::ConstQuantizerPtr"
 
 
 

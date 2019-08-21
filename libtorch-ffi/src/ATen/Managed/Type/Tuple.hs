@@ -25,7 +25,6 @@ import qualified ATen.Unmanaged.Type.Tuple as Unmanaged
 import ATen.Unmanaged.Type.Generator
 import ATen.Unmanaged.Type.IntArray
 import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.SparseTensorRef
 import ATen.Unmanaged.Type.Storage
 import ATen.Unmanaged.Type.Tensor
 import ATen.Unmanaged.Type.TensorList
@@ -39,16 +38,6 @@ instance CppTuple2 (ForeignPtr (Tensor,Tensor)) where
   type B (ForeignPtr (Tensor,Tensor)) = ForeignPtr Tensor
   get0 v = cast1 (get0 :: Ptr (Tensor,Tensor) -> IO (Ptr Tensor)) v
   get1 v = cast1 (get1 :: Ptr (Tensor,Tensor) -> IO (Ptr Tensor)) v
-
-instance CppTuple2 (ForeignPtr (Tensor,Tensor,Tensor)) where
-  type A (ForeignPtr (Tensor,Tensor,Tensor)) = ForeignPtr Tensor
-  type B (ForeignPtr (Tensor,Tensor,Tensor)) = ForeignPtr Tensor
-  get0 v = cast1 (get0 :: Ptr (Tensor,Tensor,Tensor) -> IO (Ptr Tensor)) v
-  get1 v = cast1 (get1 :: Ptr (Tensor,Tensor,Tensor) -> IO (Ptr Tensor)) v
-
-instance CppTuple3 (ForeignPtr (Tensor,Tensor,Tensor)) where
-  type C (ForeignPtr (Tensor,Tensor,Tensor)) = ForeignPtr Tensor
-  get2 v = cast1 (get2 :: Ptr (Tensor,Tensor,Tensor) -> IO (Ptr Tensor)) v
 
 instance CppTuple2 (ForeignPtr (Tensor,Tensor,Tensor,Tensor,Tensor)) where
   type A (ForeignPtr (Tensor,Tensor,Tensor,Tensor,Tensor)) = ForeignPtr Tensor
@@ -95,6 +84,16 @@ instance CppTuple3 (ForeignPtr (Tensor,Tensor,Tensor,Int64)) where
 instance CppTuple4 (ForeignPtr (Tensor,Tensor,Tensor,Int64)) where
   type D (ForeignPtr (Tensor,Tensor,Tensor,Int64)) = Int64
   get3 v = cast1 (get3 :: Ptr (Tensor,Tensor,Tensor,Int64) -> IO (Int64)) v
+
+instance CppTuple2 (ForeignPtr (Tensor,Tensor,Tensor)) where
+  type A (ForeignPtr (Tensor,Tensor,Tensor)) = ForeignPtr Tensor
+  type B (ForeignPtr (Tensor,Tensor,Tensor)) = ForeignPtr Tensor
+  get0 v = cast1 (get0 :: Ptr (Tensor,Tensor,Tensor) -> IO (Ptr Tensor)) v
+  get1 v = cast1 (get1 :: Ptr (Tensor,Tensor,Tensor) -> IO (Ptr Tensor)) v
+
+instance CppTuple3 (ForeignPtr (Tensor,Tensor,Tensor)) where
+  type C (ForeignPtr (Tensor,Tensor,Tensor)) = ForeignPtr Tensor
+  get2 v = cast1 (get2 :: Ptr (Tensor,Tensor,Tensor) -> IO (Ptr Tensor)) v
 
 instance CppTuple2 (ForeignPtr (Tensor,Tensor,Tensor,Tensor)) where
   type A (ForeignPtr (Tensor,Tensor,Tensor,Tensor)) = ForeignPtr Tensor

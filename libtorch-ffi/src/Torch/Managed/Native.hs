@@ -21,7 +21,6 @@ import qualified Torch.Unmanaged.Native as Unmanaged
 import ATen.Unmanaged.Type.Generator
 import ATen.Unmanaged.Type.IntArray
 import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.SparseTensorRef
 import ATen.Unmanaged.Type.Storage
 import ATen.Unmanaged.Type.Tensor
 import ATen.Unmanaged.Type.TensorList
@@ -45,12 +44,23 @@ arange_so
   -> IO (ForeignPtr Tensor)
 arange_so = cast2 Unmanaged.arange_so
 
+arange_s
+  :: ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+arange_s = cast1 Unmanaged.arange_s
+
 arange_sso
   :: ForeignPtr Scalar
   -> ForeignPtr Scalar
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 arange_sso = cast3 Unmanaged.arange_sso
+
+arange_ss
+  :: ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+arange_ss = cast2 Unmanaged.arange_ss
 
 arange_ssso
   :: ForeignPtr Scalar
@@ -60,11 +70,23 @@ arange_ssso
   -> IO (ForeignPtr Tensor)
 arange_ssso = cast4 Unmanaged.arange_ssso
 
+arange_sss
+  :: ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+arange_sss = cast3 Unmanaged.arange_sss
+
 bartlett_window_lo
   :: Int64
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 bartlett_window_lo = cast2 Unmanaged.bartlett_window_lo
+
+bartlett_window_l
+  :: Int64
+  -> IO (ForeignPtr Tensor)
+bartlett_window_l = cast1 Unmanaged.bartlett_window_l
 
 bartlett_window_lbo
   :: Int64
@@ -73,11 +95,22 @@ bartlett_window_lbo
   -> IO (ForeignPtr Tensor)
 bartlett_window_lbo = cast3 Unmanaged.bartlett_window_lbo
 
+bartlett_window_lb
+  :: Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+bartlett_window_lb = cast2 Unmanaged.bartlett_window_lb
+
 blackman_window_lo
   :: Int64
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 blackman_window_lo = cast2 Unmanaged.blackman_window_lo
+
+blackman_window_l
+  :: Int64
+  -> IO (ForeignPtr Tensor)
+blackman_window_l = cast1 Unmanaged.blackman_window_l
 
 blackman_window_lbo
   :: Int64
@@ -86,11 +119,38 @@ blackman_window_lbo
   -> IO (ForeignPtr Tensor)
 blackman_window_lbo = cast3 Unmanaged.blackman_window_lbo
 
+blackman_window_lb
+  :: Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+blackman_window_lb = cast2 Unmanaged.blackman_window_lb
+
+empty_loM
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+empty_loM = cast3 Unmanaged.empty_loM
+
 empty_lo
   :: ForeignPtr IntArray
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 empty_lo = cast2 Unmanaged.empty_lo
+
+empty_l
+  :: ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+empty_l = cast1 Unmanaged.empty_l
+
+_empty_affine_quantized_lodlM
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> CDouble
+  -> Int64
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+_empty_affine_quantized_lodlM = cast5 Unmanaged._empty_affine_quantized_lodlM
 
 _empty_affine_quantized_lodl
   :: ForeignPtr IntArray
@@ -99,6 +159,31 @@ _empty_affine_quantized_lodl
   -> Int64
   -> IO (ForeignPtr Tensor)
 _empty_affine_quantized_lodl = cast4 Unmanaged._empty_affine_quantized_lodl
+
+_empty_affine_quantized_lod
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+_empty_affine_quantized_lod = cast3 Unmanaged._empty_affine_quantized_lod
+
+_empty_affine_quantized_lo
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_empty_affine_quantized_lo = cast2 Unmanaged._empty_affine_quantized_lo
+
+_empty_affine_quantized_l
+  :: ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+_empty_affine_quantized_l = cast1 Unmanaged._empty_affine_quantized_l
+
+empty_like_toM
+  :: ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+empty_like_toM = cast3 Unmanaged.empty_like_toM
 
 empty_like_to
   :: ForeignPtr Tensor
@@ -113,11 +198,22 @@ empty_strided_llo
   -> IO (ForeignPtr Tensor)
 empty_strided_llo = cast3 Unmanaged.empty_strided_llo
 
+empty_strided_ll
+  :: ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+empty_strided_ll = cast2 Unmanaged.empty_strided_ll
+
 eye_lo
   :: Int64
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 eye_lo = cast2 Unmanaged.eye_lo
+
+eye_l
+  :: Int64
+  -> IO (ForeignPtr Tensor)
+eye_l = cast1 Unmanaged.eye_l
 
 eye_llo
   :: Int64
@@ -126,12 +222,24 @@ eye_llo
   -> IO (ForeignPtr Tensor)
 eye_llo = cast3 Unmanaged.eye_llo
 
+eye_ll
+  :: Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+eye_ll = cast2 Unmanaged.eye_ll
+
 full_lso
   :: ForeignPtr IntArray
   -> ForeignPtr Scalar
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 full_lso = cast3 Unmanaged.full_lso
+
+full_ls
+  :: ForeignPtr IntArray
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+full_ls = cast2 Unmanaged.full_ls
 
 full_like_tso
   :: ForeignPtr Tensor
@@ -148,11 +256,34 @@ from_file_sblo
   -> IO (ForeignPtr Tensor)
 from_file_sblo = cast4 Unmanaged.from_file_sblo
 
+from_file_sbl
+  :: ForeignPtr StdString
+  -> CBool
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+from_file_sbl = cast3 Unmanaged.from_file_sbl
+
+from_file_sb
+  :: ForeignPtr StdString
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+from_file_sb = cast2 Unmanaged.from_file_sb
+
+from_file_s
+  :: ForeignPtr StdString
+  -> IO (ForeignPtr Tensor)
+from_file_s = cast1 Unmanaged.from_file_s
+
 hann_window_lo
   :: Int64
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 hann_window_lo = cast2 Unmanaged.hann_window_lo
+
+hann_window_l
+  :: Int64
+  -> IO (ForeignPtr Tensor)
+hann_window_l = cast1 Unmanaged.hann_window_l
 
 hann_window_lbo
   :: Int64
@@ -161,11 +292,22 @@ hann_window_lbo
   -> IO (ForeignPtr Tensor)
 hann_window_lbo = cast3 Unmanaged.hann_window_lbo
 
+hann_window_lb
+  :: Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+hann_window_lb = cast2 Unmanaged.hann_window_lb
+
 hamming_window_lo
   :: Int64
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 hamming_window_lo = cast2 Unmanaged.hamming_window_lo
+
+hamming_window_l
+  :: Int64
+  -> IO (ForeignPtr Tensor)
+hamming_window_l = cast1 Unmanaged.hamming_window_l
 
 hamming_window_lbo
   :: Int64
@@ -174,6 +316,12 @@ hamming_window_lbo
   -> IO (ForeignPtr Tensor)
 hamming_window_lbo = cast3 Unmanaged.hamming_window_lbo
 
+hamming_window_lb
+  :: Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+hamming_window_lb = cast2 Unmanaged.hamming_window_lb
+
 hamming_window_lbdo
   :: Int64
   -> CBool
@@ -181,6 +329,13 @@ hamming_window_lbdo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 hamming_window_lbdo = cast4 Unmanaged.hamming_window_lbdo
+
+hamming_window_lbd
+  :: Int64
+  -> CBool
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+hamming_window_lbd = cast3 Unmanaged.hamming_window_lbd
 
 hamming_window_lbddo
   :: Int64
@@ -191,6 +346,14 @@ hamming_window_lbddo
   -> IO (ForeignPtr Tensor)
 hamming_window_lbddo = cast5 Unmanaged.hamming_window_lbddo
 
+hamming_window_lbdd
+  :: Int64
+  -> CBool
+  -> CDouble
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+hamming_window_lbdd = cast4 Unmanaged.hamming_window_lbdd
+
 linspace_sslo
   :: ForeignPtr Scalar
   -> ForeignPtr Scalar
@@ -198,6 +361,19 @@ linspace_sslo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 linspace_sslo = cast4 Unmanaged.linspace_sslo
+
+linspace_ssl
+  :: ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+linspace_ssl = cast3 Unmanaged.linspace_ssl
+
+linspace_ss
+  :: ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+linspace_ss = cast2 Unmanaged.linspace_ss
 
 logspace_ssldo
   :: ForeignPtr Scalar
@@ -208,11 +384,37 @@ logspace_ssldo
   -> IO (ForeignPtr Tensor)
 logspace_ssldo = cast5 Unmanaged.logspace_ssldo
 
+logspace_ssld
+  :: ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> Int64
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+logspace_ssld = cast4 Unmanaged.logspace_ssld
+
+logspace_ssl
+  :: ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+logspace_ssl = cast3 Unmanaged.logspace_ssl
+
+logspace_ss
+  :: ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+logspace_ss = cast2 Unmanaged.logspace_ss
+
 ones_lo
   :: ForeignPtr IntArray
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 ones_lo = cast2 Unmanaged.ones_lo
+
+ones_l
+  :: ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+ones_l = cast1 Unmanaged.ones_l
 
 ones_like_to
   :: ForeignPtr Tensor
@@ -226,11 +428,21 @@ scalar_tensor_so
   -> IO (ForeignPtr Tensor)
 scalar_tensor_so = cast2 Unmanaged.scalar_tensor_so
 
+scalar_tensor_s
+  :: ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+scalar_tensor_s = cast1 Unmanaged.scalar_tensor_s
+
 rand_lo
   :: ForeignPtr IntArray
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 rand_lo = cast2 Unmanaged.rand_lo
+
+rand_l
+  :: ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+rand_l = cast1 Unmanaged.rand_l
 
 rand_lpo
   :: ForeignPtr IntArray
@@ -238,6 +450,12 @@ rand_lpo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 rand_lpo = cast3 Unmanaged.rand_lpo
+
+rand_lp
+  :: ForeignPtr IntArray
+  -> Ptr Generator
+  -> IO (ForeignPtr Tensor)
+rand_lp = cast2 Unmanaged.rand_lp
 
 rand_like_to
   :: ForeignPtr Tensor
@@ -252,6 +470,12 @@ randint_llo
   -> IO (ForeignPtr Tensor)
 randint_llo = cast3 Unmanaged.randint_llo
 
+randint_ll
+  :: Int64
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+randint_ll = cast2 Unmanaged.randint_ll
+
 randint_llpo
   :: Int64
   -> ForeignPtr IntArray
@@ -259,6 +483,13 @@ randint_llpo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randint_llpo = cast4 Unmanaged.randint_llpo
+
+randint_llp
+  :: Int64
+  -> ForeignPtr IntArray
+  -> Ptr Generator
+  -> IO (ForeignPtr Tensor)
+randint_llp = cast3 Unmanaged.randint_llp
 
 randint_lllo
   :: Int64
@@ -268,6 +499,13 @@ randint_lllo
   -> IO (ForeignPtr Tensor)
 randint_lllo = cast4 Unmanaged.randint_lllo
 
+randint_lll
+  :: Int64
+  -> Int64
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+randint_lll = cast3 Unmanaged.randint_lll
+
 randint_lllpo
   :: Int64
   -> Int64
@@ -276,6 +514,14 @@ randint_lllpo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randint_lllpo = cast5 Unmanaged.randint_lllpo
+
+randint_lllp
+  :: Int64
+  -> Int64
+  -> ForeignPtr IntArray
+  -> Ptr Generator
+  -> IO (ForeignPtr Tensor)
+randint_lllp = cast4 Unmanaged.randint_lllp
 
 randint_like_tlo
   :: ForeignPtr Tensor
@@ -298,12 +544,23 @@ randn_lo
   -> IO (ForeignPtr Tensor)
 randn_lo = cast2 Unmanaged.randn_lo
 
+randn_l
+  :: ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+randn_l = cast1 Unmanaged.randn_l
+
 randn_lpo
   :: ForeignPtr IntArray
   -> Ptr Generator
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randn_lpo = cast3 Unmanaged.randn_lpo
+
+randn_lp
+  :: ForeignPtr IntArray
+  -> Ptr Generator
+  -> IO (ForeignPtr Tensor)
+randn_lp = cast2 Unmanaged.randn_lp
 
 randn_like_to
   :: ForeignPtr Tensor
@@ -317,12 +574,23 @@ randperm_lo
   -> IO (ForeignPtr Tensor)
 randperm_lo = cast2 Unmanaged.randperm_lo
 
+randperm_l
+  :: Int64
+  -> IO (ForeignPtr Tensor)
+randperm_l = cast1 Unmanaged.randperm_l
+
 randperm_lpo
   :: Int64
   -> Ptr Generator
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randperm_lpo = cast3 Unmanaged.randperm_lpo
+
+randperm_lp
+  :: Int64
+  -> Ptr Generator
+  -> IO (ForeignPtr Tensor)
+randperm_lp = cast2 Unmanaged.randperm_lp
 
 range_ssso
   :: ForeignPtr Scalar
@@ -331,6 +599,19 @@ range_ssso
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 range_ssso = cast4 Unmanaged.range_ssso
+
+range_sss
+  :: ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+range_sss = cast3 Unmanaged.range_sss
+
+-- range_ss
+--   :: ForeignPtr Scalar
+--   -> ForeignPtr Scalar
+--   -> IO (ForeignPtr Tensor)
+-- range_ss = cast2 Unmanaged.range_ss
 
 range_sso
   :: ForeignPtr Scalar
@@ -344,6 +625,11 @@ zeros_lo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 zeros_lo = cast2 Unmanaged.zeros_lo
+
+zeros_l
+  :: ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+zeros_l = cast1 Unmanaged.zeros_l
 
 zeros_like_to
   :: ForeignPtr Tensor
@@ -364,6 +650,12 @@ sparse_coo_tensor_tto
   -> IO (ForeignPtr Tensor)
 sparse_coo_tensor_tto = cast3 Unmanaged.sparse_coo_tensor_tto
 
+sparse_coo_tensor_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+sparse_coo_tensor_tt = cast2 Unmanaged.sparse_coo_tensor_tt
+
 sparse_coo_tensor_ttlo
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -372,6 +664,13 @@ sparse_coo_tensor_ttlo
   -> IO (ForeignPtr Tensor)
 sparse_coo_tensor_ttlo = cast4 Unmanaged.sparse_coo_tensor_ttlo
 
+sparse_coo_tensor_ttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+sparse_coo_tensor_ttl = cast3 Unmanaged.sparse_coo_tensor_ttl
+
 _sparse_coo_tensor_unsafe_ttlo
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -379,6 +678,13 @@ _sparse_coo_tensor_unsafe_ttlo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 _sparse_coo_tensor_unsafe_ttlo = cast4 Unmanaged._sparse_coo_tensor_unsafe_ttlo
+
+_sparse_coo_tensor_unsafe_ttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+_sparse_coo_tensor_unsafe_ttl = cast3 Unmanaged._sparse_coo_tensor_unsafe_ttl
 
 _sparse_coo_tensor_with_dims_lllo
   :: Int64
@@ -406,6 +712,19 @@ tril_indices_lllo
   -> IO (ForeignPtr Tensor)
 tril_indices_lllo = cast4 Unmanaged.tril_indices_lllo
 
+tril_indices_lll
+  :: Int64
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+tril_indices_lll = cast3 Unmanaged.tril_indices_lll
+
+tril_indices_ll
+  :: Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+tril_indices_ll = cast2 Unmanaged.tril_indices_ll
+
 triu_indices_lllo
   :: Int64
   -> Int64
@@ -413,4 +732,41 @@ triu_indices_lllo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 triu_indices_lllo = cast4 Unmanaged.triu_indices_lllo
+
+triu_indices_lll
+  :: Int64
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+triu_indices_lll = cast3 Unmanaged.triu_indices_lll
+
+triu_indices_ll
+  :: Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+triu_indices_ll = cast2 Unmanaged.triu_indices_ll
+
+normal_ddlpo
+  :: CDouble
+  -> CDouble
+  -> ForeignPtr IntArray
+  -> Ptr Generator
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+normal_ddlpo = cast5 Unmanaged.normal_ddlpo
+
+normal_ddlp
+  :: CDouble
+  -> CDouble
+  -> ForeignPtr IntArray
+  -> Ptr Generator
+  -> IO (ForeignPtr Tensor)
+normal_ddlp = cast4 Unmanaged.normal_ddlp
+
+normal_ddl
+  :: CDouble
+  -> CDouble
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+normal_ddl = cast3 Unmanaged.normal_ddl
 
