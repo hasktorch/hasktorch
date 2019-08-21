@@ -214,5 +214,6 @@ typeTable = Map.fromList [
       , (C.TypeName "at::MemoryFormat", #{bra}t|MemoryFormat|#{cket})
       , (C.TypeName "at::Context", #{bra}t|Context|#{cket})
       , (C.TypeName "at::ConstQuantizerPtr", #{bra}t|ConstQuantizerPtr|#{cket})
+      , (C.TypeName "at::QScheme", #{bra}t|QScheme|#{cket})
     ]
 |]

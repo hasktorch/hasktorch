@@ -31,7 +31,7 @@ C.include "<vector>"
 
 
 
-
+-- Quantizer is not available in pytorch-1.2.
 deleteConstQuantizerPtr :: Ptr ConstQuantizerPtr -> IO ()
 deleteConstQuantizerPtr object = return () --[C.throwBlock| void { delete $(c10::intrusive_ptr<Quantizer>* object);}|]
 
