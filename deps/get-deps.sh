@@ -130,20 +130,12 @@ case "$(uname)" in
     sed -i '' -e "s/ name: n$/ name: 'n'/g" -e "s/ name: N$/ name: 'N'/g" build/aten/src/ATen/Declarations.yaml
     sed -i '' -e "s/ name: t$/ name: 't'/g" -e "s/ name: T$/ name: 'T'/g" build/aten/src/ATen/Declarations.yaml
     sed -i '' -e "s/ name: y$/ name: 'y'/g" -e "s/ name: Y$/ name: 'Y'/g" build/aten/src/ATen/Declarations.yaml
-    sed -i '' -e "s/ default: n$/ default: 'n'/g" -e "s/ default: N$/ default: 'N'/g" build/aten/src/ATen/Declarations.yaml
-    sed -i '' -e "s/ default: t$/ default: 't'/g" -e "s/ default: T$/ default: 'T'/g" build/aten/src/ATen/Declarations.yaml
-    sed -i '' -e "s/ default: y$/ default: 'y'/g" -e "s/ default: Y$/ default: 'Y'/g" build/aten/src/ATen/Declarations.yaml
-    sed -i '' -e "s/ default: false$/ default: 'false'/g" -e "s/ default: true$/ default: 'true'/g" build/aten/src/ATen/Declarations.yaml
     sed -i '' -e "s/ default: \([^'].*\)$/ default: '\1'/g" build/aten/src/ATen/Declarations.yaml
     ;;
   "Linux")
     sed -i -e "s/ name: n$/ name: 'n'/g" -e "s/ name: N$/ name: 'N'/g" build/aten/src/ATen/Declarations.yaml
     sed -i -e "s/ name: t$/ name: 't'/g" -e "s/ name: T$/ name: 'T'/g" build/aten/src/ATen/Declarations.yaml
     sed -i -e "s/ name: y$/ name: 'y'/g" -e "s/ name: Y$/ name: 'Y'/g" build/aten/src/ATen/Declarations.yaml
-    sed -i -e "s/ default: n$/ default: 'n'/g" -e "s/ default: N$/ default: 'N'/g" build/aten/src/ATen/Declarations.yaml
-    sed -i -e "s/ default: t$/ default: 't'/g" -e "s/ default: T$/ default: 'T'/g" build/aten/src/ATen/Declarations.yaml
-    sed -i -e "s/ default: y$/ default: 'y'/g" -e "s/ default: Y$/ default: 'Y'/g" build/aten/src/ATen/Declarations.yaml
-    sed -i -e "s/ default: false$/ default: 'false'/g" -e "s/ default: true$/ default: 'true'/g" build/aten/src/ATen/Declarations.yaml
     sed -i -e "s/ default: \([^'].*\)$/ default: '\1'/g" build/aten/src/ATen/Declarations.yaml
     ;;
 esac

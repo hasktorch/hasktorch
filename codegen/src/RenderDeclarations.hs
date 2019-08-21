@@ -63,34 +63,18 @@ decodeAndCodeGen basedir fileName = do
       createDirectoryIfMissing True (basedir <> "/ATen")
       T.writeFile (basedir <> "/ATen/Type.hs") $
         typeTemplate
-      T.writeFile (basedir <> "/ATen/Managed/NN.hs") $
-        template False True "ATen.Managed.NN" (renderFunctions True False "at::" (filter (\a -> D.mode a == D.NN) fns))
-      T.writeFile (basedir <> "/ATen/Managed/TH.hs") $
-        template False True "ATen.Managed.TH" (renderFunctions True True "at::" (filter (\a -> D.mode a == D.TH) fns))
       T.writeFile (basedir <> "/ATen/Managed/Native.hs") $
         template False True "ATen.Managed.Native" $
         renderFunctions True True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
-      T.writeFile (basedir <> "/ATen/Unmanaged/NN.hs") $
-        template False False "ATen.Unmanaged.NN" (renderFunctions False False "at::" (filter (\a -> D.mode a == D.NN) fns))
-      T.writeFile (basedir <> "/ATen/Unmanaged/TH.hs") $
-        template False False "ATen.Unmanaged.TH" (renderFunctions False True "at::" (filter (\a -> D.mode a == D.TH) fns))
       T.writeFile (basedir <> "/ATen/Unmanaged/Native.hs") $
         template False False "ATen.Unmanaged.Native" $
         renderFunctions False True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
 
       createDirectoryIfMissing True (basedir <> "/Torch/Managed")
       createDirectoryIfMissing True (basedir <> "/Torch/Unmanaged")
-      T.writeFile (basedir <> "/Torch/Managed/NN.hs") $
-        template True True "Torch.Managed.NN" (renderFunctions True False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just True) fns))
-      T.writeFile (basedir <> "/Torch/Managed/TH.hs") $
-        template True True "Torch.Managed.TH" (renderFunctions True True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just True) fns))
       T.writeFile (basedir <> "/Torch/Managed/Native.hs") $
         template True True "Torch.Managed.Native" $
         renderFunctions True True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just True) fns)
-      T.writeFile (basedir <> "/Torch/Unmanaged/NN.hs") $
-        template True False "Torch.Unmanaged.NN" (renderFunctions False False "torch::" (filter (\a -> D.mode a == D.NN && D.is_factory_method a == Just True) fns))
-      T.writeFile (basedir <> "/Torch/Unmanaged/TH.hs") $
-        template True False "Torch.Unmanaged.TH" (renderFunctions False True "torch::" (filter (\a -> D.mode a == D.TH && D.is_factory_method a == Just True) fns))
       T.writeFile (basedir <> "/Torch/Unmanaged/Native.hs") $
         template True False "Torch.Unmanaged.Native" $
         renderFunctions False True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just True) fns)

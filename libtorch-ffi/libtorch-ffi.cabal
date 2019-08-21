@@ -18,8 +18,6 @@ library
                     , ATen.Cast
                     , ATen.Class
                     , ATen.GC
-                    , ATen.Unmanaged.NN
-                    , ATen.Unmanaged.TH
                     , ATen.Unmanaged.Native
                     , ATen.Unmanaged.Type.Tuple
                     , ATen.Unmanaged.Type.Generator
@@ -34,8 +32,6 @@ library
                     , ATen.Unmanaged.Type.Context
                     , ATen.Unmanaged.Type.ConstQuantizerPtr
                     , ATen.Unmanaged.Type.Extra
-                    , ATen.Managed.NN
-                    , ATen.Managed.TH
                     , ATen.Managed.Cast
                     , ATen.Managed.Native
                     , ATen.Managed.Type.Tuple
@@ -52,12 +48,8 @@ library
                     , ATen.Managed.Type.ConstQuantizerPtr
                     , ATen.Managed.Type.Extra
                     , Torch.Unmanaged.Autograd
-                    , Torch.Unmanaged.NN
-                    , Torch.Unmanaged.TH
                     , Torch.Unmanaged.Native
                     , Torch.Managed.Autograd
-                    , Torch.Managed.NN
-                    , Torch.Managed.TH
                     , Torch.Managed.Native
  hs-source-dirs: src
  default-language: Haskell2010
