@@ -23,15 +23,18 @@ import GRU
 
 import GenerateSamples
 
+num_iters = 5
+num_features = 8
+
 run :: (RecurrentCell a, Parameterized a)
     => Tensor
-    -> Tensor
-    -> Tensor
     -> a
-    -> Int
+    -> (Tensor, Tensor)
     -> IO (a)
-run input_tensor init_hidden expected_output model i = do
+run init_hidden model io = do
 
+    let input_tensor = fst io
+    let expected_output = snd io
     let output = finalState model input_tensor init_hidden
     let loss = mse_loss output expected_output
 
@@ -48,8 +51,32 @@ run input_tensor init_hidden expected_output model i = do
     -- return the new model state "to" the next iteration of foldLoop
     return $ replaceParameters model new_flat_parameters
 
-{- generateExamples.hs, num->repr file, repr-> num file, this file -}
+
+map' :: (Double -> Double) -> Tensor -> Tensor
+map' f t = map'' [] t ((size t 1) - 1)
+    where
+        map'' acc tensor (-1) = asTensor $ reverse acc
+        map'' acc tensor n = map'' ((f (toDouble (select tensor 1 n))) : acc) tensor (n - 1)
+
+threshold' :: Double -> Double
+threshold' a = if a > 0.5 then 1.0 else 0.0
+
+eval :: RecurrentCell a
+     => a   -- trained model
+     -> Tensor  -- input
+     -> Tensor  -- initial hidden tensor
+     -> [Tensor]  -- accumulator
+     -> Int       -- number of units left in sequence
+     -> [Tensor]    -- output sequence
+eval model input hidden acc 0 = reverse acc
+eval model input hidden acc n = eval (next : acc) (n - 1)
+    where
+        next = finalState model input hidden
+
 main = do
-    n <- randomInt
-    print n
-    print $ num2tensor n
+
+    putStrLn "Generating examples..."
+    samples <- generate 1
+
+
+
