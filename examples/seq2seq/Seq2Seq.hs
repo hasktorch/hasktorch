@@ -26,6 +26,7 @@ import GenerateSamples
 num_iters = 5
 num_features = 8
 
+
 run :: (RecurrentCell a, Parameterized a)
     => Tensor
     -> a
@@ -69,7 +70,7 @@ eval :: RecurrentCell a
      -> Int       -- number of units left in sequence
      -> [Tensor]    -- output sequence
 eval model input hidden acc 0 = reverse acc
-eval model input hidden acc n = eval (next : acc) (n - 1)
+eval model input hidden acc n = eval model input hidden (next : acc) (n - 1)
     where
         next = finalState model input hidden
 
@@ -77,6 +78,11 @@ main = do
 
     putStrLn "Generating examples..."
     samples <- generate 1
+    print samples
 
-
+    -- initialize encoder LSTM cell
+    encoder <- sample $ LSTMSpec num_features num_features
+    -- initialize decoder LSTM cell
+    decoder <- sample $ LSTMSpec num_features num_features
+    print "How do we train the encoder???"
 
