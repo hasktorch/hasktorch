@@ -19,6 +19,7 @@ executable xor_mlp
                      , hasktorch
                      , mtl
 
+
 executable static_xor_mlp
   hs-source-dirs:      static_xor_mlp
   main-is:             Main.hs
@@ -28,8 +29,8 @@ executable static_xor_mlp
                      , mtl
                      , reflection
 
-executable elman
-  hs-source-dirs:      elman
+executable rnn
+  hs-source-dirs:      rnn
   main-is:             Main.hs
   other-modules:       RecurrentLayer,
                        Elman,
@@ -40,6 +41,20 @@ executable elman
                      , hasktorch
                      , mtl
                      , libtorch-ffi
+
+executable minimal-text-example
+  hs-source-dirs:      minimal-text-example,
+                       rnn
+  main-is:             Hello.hs
+  other-modules:       RecurrentLayer,
+                       Elman,
+                       LSTM,
+                       GRU
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , mtl
+                     , ffi
 
 
 executable regression
