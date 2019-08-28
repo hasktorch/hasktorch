@@ -92,3 +92,14 @@ executable vae
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl
+
+executable serialization
+  hs-source-dirs:      serialization
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , mtl
+                     , serialise
+                     , bytestring
