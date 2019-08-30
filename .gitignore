@@ -8,6 +8,7 @@ deps/mklml
 cabal.project.local
 cabal.project.freeze
 venv/
+**/dist/
 
 *.swp
 *.lock

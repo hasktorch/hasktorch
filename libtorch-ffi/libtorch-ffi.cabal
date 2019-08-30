@@ -64,10 +64,7 @@ library
                     , sysinfo
                     , async
  extra-libraries:     stdc++
-                    , c10
-                    , iomp5
-                    , mklml
-                    , torch
+                    , libtorch-cuda
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
