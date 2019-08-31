@@ -53,8 +53,7 @@ stdenv.mkDerivation {
 
   # pytorch.dev has include files in a non-standard way.
   # For development, we use CPATH to fix it.
-  shellHook =
-  ''
+  shellHook = ''
     export CPATH=${pytorch.dev}/include/torch/csrc/api/include
   '';
 
