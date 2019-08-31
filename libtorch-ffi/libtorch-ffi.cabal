@@ -71,11 +71,11 @@ library
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
-  ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0 -optc-std=c++11 -optc-xc++
+  ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=1 -optc-std=c++11 -optc-xc++
  else
-  ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=0 -optc-std=c++11
- cc-options:        -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
- cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
+  ghc-options:       -optc-D_GLIBCXX_USE_CXX11_ABI=1 -optc-std=c++11
+ cc-options:        -D_GLIBCXX_USE_CXX11_ABI=1 -std=c++11
+ cxx-options:       -D_GLIBCXX_USE_CXX11_ABI=1 -std=c++11
  default-extensions:          Strict
                             , StrictData
 
