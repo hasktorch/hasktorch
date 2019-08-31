@@ -2,20 +2,24 @@
 
 let
   overlayShared = pkgsNew: pkgsOld: {
-    libtorch-cuda =
-      let src = pkgsOld.fetchFromGitHub {
-          owner  = "stites";
-          repo   = "pytorch-world";
-          rev    = "4c4bd205e47477c723209f3677bddceabb614237";
-          sha256 = "1zqhm0874gfs1qp3glc1i1dswlrksby1wf9dr4pclkabs0smbqxc";
-        };
-      in
-      (import "${src}/release.nix" { }).libtorch-cuda;
+    #libtorch-cuda =
+    #  let src = pkgsOld.fetchFromGitHub {
+    #      owner  = "stites";
+    #      repo   = "pytorch-world";
+    #      rev    = "4c4bd205e47477c723209f3677bddceabb614237";
+    #      sha256 = "1zqhm0874gfs1qp3glc1i1dswlrksby1wf9dr4pclkabs0smbqxc";
+    #    };
+    #  in
+    #  (import "${src}/release.nix" { }).libtorch-cuda;
+    pytorch = pkgsOld.python3Packages.pytorchWithoutCuda.override {
+      mklSupport = true;
+    };
     haskell = pkgsOld.haskell // {
       packages = pkgsOld.haskell.packages // {
         "${compiler}" = pkgsOld.haskell.packages."${compiler}".override (old: {
             overrides =
               let
+                dontCheck = pkgsOld.haskell.lib.dontCheck;
                 failOnAllWarnings = pkgsOld.haskell.lib.failOnAllWarnings;
                 overrideExtraLibraries = drv: xs: pkgsOld.haskell.lib.overrideCabal drv (drv: { extraLibraries = xs; });
 
@@ -83,7 +87,7 @@ let
   };
 
   pkgs = import src {
-    config = {};
+    config = { allowUnsupportedSystem = true; allowUnfree = true; };
     overlays = [ overlayShared ];
   };
 

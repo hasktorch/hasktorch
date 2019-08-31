@@ -64,7 +64,7 @@ library
                     , sysinfo
                     , async
  extra-libraries:     stdc++
-                    , libtorch-cuda
+                    , pytorch
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
