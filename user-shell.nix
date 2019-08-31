@@ -26,6 +26,7 @@ let
       libtorch-ffi = self.callPackage ./libtorch-ffi {
         torch = pytorch.dev;
       };
+      hasktorch = self.callPackage ./hasktorch {};
     };
   };
 
@@ -33,13 +34,18 @@ let
     inline-c
     inline-c-cpp
     libtorch-ffi
+    hasktorch
+    # add any dependencies for your project
+    random
+    call-stack
+    hspec
   ]);
 
 in
 
 stdenv.mkDerivation {
   name = "hasktorch-env";
-  buildInputs = [ hsenv ];
+  buildInputs = [ hsenv pytorch.dev mkl ];
 
   shellHook = ''
   '';
