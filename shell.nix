@@ -41,18 +41,21 @@ let
     vector
   ]);
 
+  pytorch = python3Packages.pytorchWithoutCuda.override {
+    mklSupport = true; inherit mkl;
+  };
+
 in
 
 stdenv.mkDerivation {
   name = "hasktorch-dev";
-  buildInputs = [ hsenv mkl python3Packages.pytorchWithoutCuda ];
+  buildInputs = [ hsenv pytorch pytorch.dev mkl ];
+
+  # pytorch.dev has include files in a non-standard way.
+  # For development, we use CPATH to fix it.
   shellHook =
-    let
-      libtorch_path = "${python3Packages.pytorchWithoutCuda}/lib/${python3Packages.python.libPrefix}/site-packages/torch";
-    in
   ''
-    export CPATH=${libtorch_path}/include/torch/csrc/api/include
-    export LD_LIBRARY_PATH=${libtorch_path}/lib
+    export CPATH=${pytorch.dev}/include/torch/csrc/api/include
   '';
 
 }
