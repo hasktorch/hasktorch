@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { config.allowUnfree = true; } }:
+{ pkgs ? import <nixpkgs> { config.allowUnfree = true; config.allowUnsupportedSystem = true; } }:
 
 with pkgs;
 
@@ -29,6 +29,6 @@ in
 
 stdenv.mkDerivation {
   name = "hasktorch-dev";
-  buildInputs = [ hsenv mkl ];
+  buildInputs = [ hsenv python3Packages.pytorchWithoutCuda ];
 
 }
