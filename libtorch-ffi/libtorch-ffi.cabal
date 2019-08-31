@@ -65,8 +65,8 @@ library
                     , async
  extra-libraries:     stdc++
                     , c10
-                    , iomp5
-                    , mklml
+                    -- , iomp5   -- for now
+                    -- , mklml
                     , torch
  extra-ghci-libraries: stdc++
  if os(darwin)

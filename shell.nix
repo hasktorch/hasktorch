@@ -39,6 +39,9 @@ in
 
 stdenv.mkDerivation {
   name = "hasktorch-dev";
-  buildInputs = [ hsenv python3Packages.pytorchWithoutCuda ];
+  buildInputs = [ hsenv mkl python3Packages.pytorchWithoutCuda ];
+  shellHook = ''
+    export CPATH=${python3Packages.pytorchWithoutCuda}/lib/${python3Packages.python.libPrefix}/site-packages/torch/include/torch/csrc/api/include
+  '';
 
 }
