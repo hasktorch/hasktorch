@@ -15,16 +15,24 @@
 with pkgs;
 
 let
+  pytorch = python3Packages.pytorchWithoutCuda.override {
+    mklSupport = true; inherit mkl;
+  };
+
   myHaskellPackages = haskellPackages.override {
     overrides = self: super: {
       inline-c = self.callPackage ./nix/inline-c.nix {};
       inline-c-cpp = self.callPackage ./nix/inline-c-cpp.nix {};
+      libtorch-ffi = self.callPackage ./libtorch-ffi {
+        torch = pytorch.dev;
+      };
     };
   };
 
   hsenv = myHaskellPackages.ghcWithPackages (p: with p; [
     inline-c
     inline-c-cpp
+    libtorch-ffi
   ]);
 
 in
