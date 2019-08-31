@@ -24,6 +24,10 @@ import Data.Kind (Constraint)
 import Data.Reflection
 import GHC.TypeLits
 
+import ATen.Cast
+import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
+import qualified ATen.Type as ATen
+import Foreign.ForeignPtr
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.Functions as D
@@ -304,3 +308,19 @@ reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
 
 logSoftmax :: KnownShape shape => Tensor dtype shape -> Int -> Tensor dtype shape
 logSoftmax input dim = UnsafeMkTensor $ D.logSoftmax (toDynamic input) dim
+
+--instance Castable (Tensor dtype shape) D.Tensor where
+--  cast (UnsafeMkTensor dtensor) f = f dtensor
+--  uncast dtensor f = f $ UnsafeMkTensor dtensor
+
+instance Castable (Tensor dtype shape) D.ATenTensor where
+  cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
+  uncast aten_tensor f = f $ (UnsafeMkTensor (D.Unsafe aten_tensor))
+
+instance Castable [Tensor dtype shape] (ForeignPtr ATen.TensorList) where
+  cast xs f = do
+    ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
+    cast ptr_list f
+  uncast xs f = uncast xs $ \ptr_list -> do
+    tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
+    f tensor_list
