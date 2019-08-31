@@ -21,11 +21,17 @@ let
     bytestring
     containers
     exceptions
+    finite-typelits
+    ghc-typelits-knownnat
     hashable
+    hspec
+    hspec-discover
     mtl
     optparse-applicative
     parsec
     parsers
+    QuickCheck
+    reflection
     safe-exceptions
     sysinfo
     template-haskell
@@ -40,8 +46,13 @@ in
 stdenv.mkDerivation {
   name = "hasktorch-dev";
   buildInputs = [ hsenv mkl python3Packages.pytorchWithoutCuda ];
-  shellHook = ''
-    export CPATH=${python3Packages.pytorchWithoutCuda}/lib/${python3Packages.python.libPrefix}/site-packages/torch/include/torch/csrc/api/include
+  shellHook =
+    let
+      libtorch_path = "${python3Packages.pytorchWithoutCuda}/lib/${python3Packages.python.libPrefix}/site-packages/torch";
+    in
+  ''
+    export CPATH=${libtorch_path}/include/torch/csrc/api/include
+    export LD_LIBRARY_PATH=${libtorch_path}/lib
   '';
 
 }
