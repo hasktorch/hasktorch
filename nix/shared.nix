@@ -41,7 +41,7 @@ let
                           { }
                         );
                     hasktorch-examples =
-                      failOnAllWarnings
+                      # failOnAllWarnings
                         (haskellPackagesNew.callCabal2nix
                           "examples"
                           ../examples
