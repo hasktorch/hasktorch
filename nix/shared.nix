@@ -40,6 +40,13 @@ let
                           ../codegen
                           { }
                         );
+                    hasktorch-examples =
+                      failOnAllWarnings
+                        (haskellPackagesNew.callCabal2nix
+                          "examples"
+                          ../examples
+                          { }
+                        );
                     libtorch-ffi =
                       appendConfigureFlag
                         (haskellPackagesNew.callCabal2nix
@@ -97,6 +104,7 @@ in
     inherit (pkgs.haskell.packages."${compiler}")
       hasktorch
       hasktorch-codegen
+      hasktorch-examples
       libtorch-ffi
       inline-c
       inline-c-cpp
@@ -104,6 +112,7 @@ in
 
     shell-hasktorch = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch).env;
     shell-hasktorch-codegen = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-codegen).env;
+    shell-hasktorch-examples = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples).env;
     shell-libtorch-ffi = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi).env;
     shell-inline-c = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c).env;
     shell-inline-c-cpp = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c-cpp).env;
