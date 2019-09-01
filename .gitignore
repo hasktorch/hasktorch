@@ -9,6 +9,7 @@ cabal.project.local
 cabal.project.freeze
 venv/
 **/dist/
+**/result
 
 *.swp
 *.lock

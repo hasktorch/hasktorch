@@ -2,7 +2,7 @@
 
 let
   overlayShared = pkgsNew: pkgsOld: {
-    #libtorch-cuda =
+    #libtorch =
     #  let src = pkgsOld.fetchFromGitHub {
     #      owner  = "stites";
     #      repo   = "pytorch-world";
@@ -10,7 +10,7 @@ let
     #      sha256 = "1zqhm0874gfs1qp3glc1i1dswlrksby1wf9dr4pclkabs0smbqxc";
     #    };
     #  in
-    #  (import "${src}/release.nix" { }).libtorch-cuda;
+    #  (import "${src}/release.nix" { }).libtorch;
     pytorch = pkgsOld.python3Packages.pytorchWithoutCuda.override {
       mklSupport = true;
     };
@@ -19,9 +19,10 @@ let
         "${compiler}" = pkgsOld.haskell.packages."${compiler}".override (old: {
             overrides =
               let
-                dontCheck = pkgsOld.haskell.lib.dontCheck;
-                failOnAllWarnings = pkgsOld.haskell.lib.failOnAllWarnings;
-                overrideExtraLibraries = drv: xs: pkgsOld.haskell.lib.overrideCabal drv (drv: { extraLibraries = xs; });
+                appendConfigureFlag = pkgsNew.haskell.lib.appendConfigureFlag;
+                dontCheck = pkgsNew.haskell.lib.dontCheck;
+                failOnAllWarnings = pkgsNew.haskell.lib.failOnAllWarnings;
+                overrideExtraLibraries = drv: xs: pkgsNew.haskell.lib.overrideCabal drv (drv: { extraLibraries = xs; });
 
                 extension =
                   haskellPackagesNew: haskellPackagesOld: {
@@ -40,12 +41,12 @@ let
                           { }
                         );
                     libtorch-ffi =
-                      # failOnAllWarnings
+                      appendConfigureFlag
                         (haskellPackagesNew.callCabal2nix
                           "libtorch-ffi"
                           ../libtorch-ffi
-                          { }
-                        );
+                          { c10 = pkgsNew.pytorch.dev; torch = pkgsNew.pytorch.dev; }
+                        ) "--extra-include-dirs=${pkgsNew.pytorch.dev}/include/torch/csrc/api/include";
                     inline-c =
                       # failOnAllWarnings
                         (haskellPackagesNew.callCabal2nix
