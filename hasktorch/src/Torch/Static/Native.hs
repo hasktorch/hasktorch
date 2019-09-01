@@ -64,8 +64,8 @@ sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 abs :: Tensor dtype shape -> Tensor dtype shape
 abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
 
-add :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne
+-- add :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
+-- add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne
 
 ceil :: Tensor dtype shape -> Tensor dtype shape
 ceil t = unsafePerformIO $ (cast1 ATen.ceil_t) t
@@ -586,8 +586,8 @@ native_layer_norm_backward _grad_out _input _mean _rstd _weight _M _N _output_ma
 native_layer_norm_double_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> (Bool,Bool,Bool) -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape)
 native_layer_norm_double_backward _ggI _ggW _ggb _gO _input _mean _rstd _weight _M _N _output_mask = unsafePerformIO $ (cast11 ATen.native_layer_norm_double_backward_ttttttttlla) _ggI _ggW _ggb _gO _input _mean _rstd _weight _M _N _output_mask
 
-linear :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.linear_ttt) _input _weight _bias
+-- linear :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
+-- linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.linear_ttt) _input _weight _bias
 
 mkldnn_linear :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 mkldnn_linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.mkldnn_linear_ttt) _input _weight _bias
@@ -712,8 +712,8 @@ miopen_rnn _input _weight _weight_stride0 _hx _cx _mode _hidden_size _num_layers
 miopen_rnn_backward :: Tensor dtype shape -> [Tensor dtype shape] -> Int -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> Int -> Bool -> Double -> Bool -> Bool -> [Int] -> Tensor dtype shape -> Tensor dtype shape -> (Bool,Bool,Bool,Bool) -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape,[Tensor dtype shape])
 miopen_rnn_backward _input _weight _weight_stride0 _weight_buf _hx _cx _output _grad_output _grad_hy _grad_cy _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state _reserve _output_mask = unsafePerformIO $ (cast21 ATen.miopen_rnn_backward_tlltttttttlllbdbbltta) _input _weight _weight_stride0 _weight_buf _hx _cx _output _grad_output _grad_hy _grad_cy _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state _reserve _output_mask
 
-mm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-mm _self _mat2 = unsafePerformIO $ (cast2 ATen.mm_tt) _self _mat2
+-- mm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
+-- mm _self _mat2 = unsafePerformIO $ (cast2 ATen.mm_tt) _self _mat2
 
 mode :: Tensor dtype shape -> Int -> Bool -> (Tensor dtype shape,Tensor dtype shape)
 mode _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.mode_tlb) _self _dim _keepdim
