@@ -10,6 +10,8 @@ cabal.project.freeze
 venv/
 **/dist/
 **/result
+**/hie.log
+**/hie.err
 
 *.swp
 *.lock
