@@ -288,12 +288,38 @@ orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
 sign :: Tensor dtype shape -> Tensor dtype shape
 sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
 
-transpose :: Tensor dtype shape -> Int -> Int -> Tensor dtype shape
-transpose t a b = unsafePerformIO $ (cast3 ATen.transpose_tll) t a b
+-- | transpose
+-- See ../../../../deps/pytorch/aten/src/ATen/native/TensorShape.cpp
+-- >>> t = transpose @0 @1 (ones :: Tensor Float '[3,2])
+-- >>> (dtype t,shape t)
+-- (Float,[2,3])
+-- >>> t = transpose @0 @1 (ones :: Tensor Float '[3,2,1])
+-- >>> (dtype t,shape t)
+-- (Float,[2,3,1])
+-- >>> t = transpose @1 @2 (ones :: Tensor Float '[3,2,1])
+-- >>> (dtype t,shape t)
+-- (Float,[3,1,2])
+type family SetValue (shape :: [Nat]) (i :: Nat) (j :: Nat)  :: [Nat] where
+    SetValue '[] _ _ = '[]
+    SetValue (x: xs) 0 j = j: xs
+    SetValue (x: xs) i j = x: SetValue xs (i-1) j
+type family GetValue (shape :: [Nat]) (i :: Nat) :: Nat where
+    GetValue '[] _ = TypeError (Text "Can not find a element in the list.")
+    GetValue (x: xs) 0 = x
+    GetValue (x: xs) i = GetValue xs (i-1)
 
--- transpose special case for a 2D tensor
-transpose2D :: Tensor dtype shape -> Tensor dtype shape
-transpose2D t = transpose t 0 1
+type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] where
+    Transpose s d0 d1 = (SetValue (SetValue s d0 (GetValue s d1)) d1 (GetValue s d0))
+
+transpose :: forall n m (shape::[Nat]) dtype.(KnownNat n, KnownNat m) => Tensor dtype shape -> Tensor dtype (Transpose shape n m)
+transpose t = unsafePerformIO $ (cast3 ATen.transpose_tll) t (natValI @n) (natValI @m)
+
+-- | transpose special case for a 2D tensor
+-- >>> t = transpose2D (ones :: Tensor Float '[3,2])
+-- >>> (dtype t,shape t)
+-- (Float,[2,3])
+transpose2D :: forall (i::Nat) (j::Nat) dtype. Tensor dtype '[i,j] -> Tensor dtype '[j,i]
+transpose2D t = transpose @0 @1 t
 
 diag :: Tensor dtype shape -> Int -> Tensor dtype shape
 diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index

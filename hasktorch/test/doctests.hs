@@ -9,5 +9,6 @@ main = do
       "-XOverloadedStrings",
       "-XDataKinds",
       "-XTypeFamilies",
+      "-XTypeApplications",
       "src/Torch/Static/Native.hs"
     ]
