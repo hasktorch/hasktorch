@@ -65,7 +65,7 @@ library
                     , async
  extra-libraries:     stdc++
                     , c10
-                    -- , iomp5
+                    , iomp5
                     -- , mklml
                     , torch
  extra-ghci-libraries: stdc++
