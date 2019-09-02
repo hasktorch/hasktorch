@@ -52,7 +52,7 @@ let
                         (haskellPackagesNew.callCabal2nix
                           "libtorch-ffi"
                           ../libtorch-ffi
-                          { c10 = pkgsNew.pytorch.dev; torch = pkgsNew.pytorch.dev; }
+                          { c10 = pkgsNew.pytorch.dev; iomp5 = pkgsNew.mkl; torch = pkgsNew.pytorch.dev; }
                         ) "--extra-include-dirs=${pkgsNew.pytorch.dev}/include/torch/csrc/api/include";
                     inline-c =
                       # failOnAllWarnings
