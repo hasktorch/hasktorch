@@ -76,17 +76,17 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
       ;;
     "Linux")
       if [ "$USE_NIGHTLY" = 1 ] ; then
-        wget https://download.pytorch.org/libtorch/nightly/${COMPUTE_ARCH}/libtorch-shared-with-deps-latest.zip
-        unzip libtorch-shared-with-deps-latest.zip
-        rm libtorch-shared-with-deps-latest.zip
+        wget https://download.pytorch.org/libtorch/nightly/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-latest.zip
+        unzip libtorch-cxx11-abi-shared-with-deps-latest.zip
+        rm libtorch-cxx11-abi-shared-with-deps-latest.zip
       elif [ "$USE_BINARY_FOR_CI" = 1 ] ; then
-        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
-        unzip ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
-        rm ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
+        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
+        unzip ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
+        rm ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
       else
-        wget https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}.zip
-        unzip libtorch-shared-with-deps-${VERSION}.zip
-        rm libtorch-shared-with-deps-${VERSION}.zip
+        wget https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
+        unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
+        rm libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
       fi
       wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz
       tar -xzf mklml_lnx_2019.0.1.20181227.tgz
