@@ -60,12 +60,12 @@ test-suite spec
                     , mtl
                     , reflection
 
-test-suite doctests
-  default-language: Haskell2010
-  type:            exitcode-stdio-1.0
-  hs-source-dirs:  test
-  main-is:         doctests.hs
-  ghc-options:     -Wall -threaded
-  build-depends:
-      base
-    , doctest
+-- test-suite doctests
+--   default-language: Haskell2010
+--   type:            exitcode-stdio-1.0
+--   hs-source-dirs:  test
+--   main-is:         doctests.hs
+--   ghc-options:     -Wall -threaded
+--   build-depends:
+--       base
+--     , doctest

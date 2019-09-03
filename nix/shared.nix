@@ -12,7 +12,7 @@ let
     #  in
     #  (import "${src}/release.nix" { }).libtorch;
     pytorch = pkgsOld.python3Packages.pytorchWithoutCuda.override {
-      mklSupport = true;
+      mklSupport = true; inherit (pkgsOld.mkl);
     };
     haskell = pkgsOld.haskell // {
       packages = pkgsOld.haskell.packages // {
