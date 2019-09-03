@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Torch.Functions (
     module Torch.Functions
@@ -16,6 +17,8 @@ import qualified ATen.Const as ATen
 import qualified ATen.Type as ATen
 import qualified ATen.Managed.Cast
 import ATen.Cast
+import ATen.Class
+import Data.Int
 
 import Torch.Scalar
 import Torch.Tensor
@@ -45,6 +48,14 @@ data Tri = Upper | Lower
 -- Reductions, used by BCE loss, see -
 -- https://github.com/pytorch/pytorch/blob/3762cf9cc63e2032410d50f218c1406668177c23/aten/src/ATen/core/Reduction.h
 data Reduction = ReduceNone | ReduceMean | ReduceSum
+
+instance Castable Reduction Int64 where
+  cast ReduceNone f = f 0
+  cast ReduceMean f = f 1
+  cast ReduceSum f = f 2
+  uncast 0 f = f ReduceNone
+  uncast 1 f = f ReduceMean
+  uncast _ f = f ReduceSum
 
 isUpper Upper = True
 isUpper Lower = False
@@ -169,14 +180,7 @@ squeezeAll :: Tensor -> Tensor
 squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
 
 binary_cross_entropy_loss :: Tensor -> Tensor -> Tensor -> Reduction-> Tensor
-binary_cross_entropy_loss t target weight reduction =
-    unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction'
-    where
-      enumVal :: Reduction -> Int
-      enumVal ReduceNone = 0
-      enumVal ReduceMean = 1
-      enumVal ReduceSum = 2
-      reduction' = enumVal reduction
+binary_cross_entropy_loss t target weight reduction = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction
 
 mse_loss :: Tensor -> Tensor -> Tensor
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean

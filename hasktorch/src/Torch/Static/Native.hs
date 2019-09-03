@@ -22,6 +22,7 @@ import Data.Proxy
 import Data.Finite
 import Data.Kind (Constraint)
 import GHC.TypeLits
+import qualified Data.Int as I
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
@@ -221,15 +222,48 @@ type family SqueezeAll (shape :: [Nat]) :: [Nat] where
 squeezeAll :: Tensor dtype shape -> Tensor dtype (SqueezeAll shape)
 squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
 
-binary_cross_entropy_loss :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Reduction-> Tensor dtype shape
-binary_cross_entropy_loss t target weight reduction =
-    unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction'
-    where
-      enumVal :: Reduction -> Int
-      enumVal ReduceNone = 0
-      enumVal ReduceMean = 1
-      enumVal ReduceSum = 2
-      reduction' = enumVal reduction
+
+
+-- |
+-- >>> :kind! ConditionalReduction '[3,2] ReduceNone
+-- ConditionalReduction '[3,2] ReduceNone :: [Nat]
+-- = '[3, 2]
+-- >>> :kind! ConditionalReduction '[3,2] ReduceMean
+-- ConditionalReduction '[3,2] ReduceMean :: [Nat]
+-- = '[]
+type family ConditionalReduction (shape :: [Nat]) (reduction :: Reduction) :: [Nat] where
+    ConditionalReduction shape ReduceNone = shape
+    ConditionalReduction shape _ = '[]
+
+
+class KnownReduction reduction where
+    reductionVal :: Int
+
+instance KnownReduction ReduceNone where
+    reductionVal = 0
+instance KnownReduction ReduceMean where
+    reductionVal = 1
+instance KnownReduction ReduceSum where
+    reductionVal = 2
+
+-- |
+-- >>> tt = ones :: Tensor Float '[2,2]
+-- >>> t = binary_cross_entropy_loss @ReduceNone tt tt tt :: Tensor Float '[2,2]
+-- >>> (dtype t,shape t)
+-- (Float,[2,2])
+-- >>> t = binary_cross_entropy_loss @ReduceMean tt tt tt :: Tensor Float '[]
+-- >>> (dtype t,shape t)
+-- (Float,[])
+-- >>> t = binary_cross_entropy_loss @ReduceSum tt tt tt :: Tensor Float '[]
+-- >>> (dtype t,shape t)
+-- (Float,[])
+binary_cross_entropy_loss
+  :: forall reduction dtype shape. (KnownReduction reduction)
+  => Tensor dtype shape
+  -> Tensor dtype shape
+  -> Tensor dtype shape
+  -> Tensor dtype (ConditionalReduction shape reduction)
+binary_cross_entropy_loss t target weight = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight (reductionVal @reduction)
 
 -- |
 -- >>> t = mse_loss (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
@@ -288,6 +322,25 @@ orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
 sign :: Tensor dtype shape -> Tensor dtype shape
 sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
 
+type family SetValue (shape :: [Nat]) (i :: Nat) (j :: Nat)  :: [Nat] where
+    SetValue '[] _ _ = '[]
+    SetValue (x: xs) 0 j = j: xs
+    SetValue (x: xs) i j = x: SetValue xs (i-1) j
+type family GetValue (shape :: [Nat]) (i :: Nat) :: Nat where
+    GetValue '[] _ = TypeError (Text "Can not find a element in the list.")
+    GetValue (x: xs) 0 = x
+    GetValue (x: xs) i = GetValue xs (i-1)
+
+-- | Transpose
+-- >>> :kind! Transpose '[3,2] 0 1
+-- Transpose '[3,2] 0 1 :: [Nat]
+-- = '[2, 3]
+-- >>> :kind! Transpose '[3,2,1] 1 2
+-- Transpose '[3,2,1] 1 2 :: [Nat]
+-- = '[3, 1, 2]
+type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] where
+    Transpose s d0 d1 = (SetValue (SetValue s d0 (GetValue s d1)) d1 (GetValue s d0))
+
 -- | transpose
 -- See ../../../../deps/pytorch/aten/src/ATen/native/TensorShape.cpp
 -- >>> t = transpose @0 @1 (ones :: Tensor Float '[3,2])
@@ -299,18 +352,6 @@ sign t = unsafePerformIO $ (cast1 ATen.sign_t) t
 -- >>> t = transpose @1 @2 (ones :: Tensor Float '[3,2,1])
 -- >>> (dtype t,shape t)
 -- (Float,[3,1,2])
-type family SetValue (shape :: [Nat]) (i :: Nat) (j :: Nat)  :: [Nat] where
-    SetValue '[] _ _ = '[]
-    SetValue (x: xs) 0 j = j: xs
-    SetValue (x: xs) i j = x: SetValue xs (i-1) j
-type family GetValue (shape :: [Nat]) (i :: Nat) :: Nat where
-    GetValue '[] _ = TypeError (Text "Can not find a element in the list.")
-    GetValue (x: xs) 0 = x
-    GetValue (x: xs) i = GetValue xs (i-1)
-
-type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] where
-    Transpose s d0 d1 = (SetValue (SetValue s d0 (GetValue s d1)) d1 (GetValue s d0))
-
 transpose :: forall n m (shape::[Nat]) dtype.(KnownNat n, KnownNat m) => Tensor dtype shape -> Tensor dtype (Transpose shape n m)
 transpose t = unsafePerformIO $ (cast3 ATen.transpose_tll) t (natValI @n) (natValI @m)
 
@@ -615,10 +656,16 @@ index_put _self _indices _values _accumulate = unsafePerformIO $ (cast4 ATen.ind
 instance_norm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Bool -> Double -> Double -> Bool -> Tensor dtype shape
 instance_norm _input _weight _bias _running_mean _running_var _use_input_stats _momentum _eps _cudnn_enabled = unsafePerformIO $ (cast9 ATen.instance_norm_tttttbddb) _input _weight _bias _running_mean _running_var _use_input_stats _momentum _eps _cudnn_enabled
 
-isclose :: Tensor dtype shape -> Tensor dtype shape -> Double -> Double -> Bool -> Tensor dtype shape
+
+
+-- |
+-- >>> t = isclose (ones :: Tensor Float '[3,2]) (ones :: Tensor Float '[3,2]) 0.1 0.1 False
+-- >>> (dtype t,shape t)
+-- (Bool,[3,2])
+isclose :: Tensor dtype shape -> Tensor dtype shape -> Double -> Double -> Bool -> Tensor Bool shape
 isclose _self _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.isclose_ttddb) _self _other _rtol _atol _equal_nan
 
-isnan :: Tensor dtype shape -> Tensor dtype shape
+isnan :: Tensor dtype shape -> Tensor Bool shape
 isnan _self = unsafePerformIO $ (cast1 ATen.isnan_t) _self
 
 is_distributed :: Tensor dtype shape -> Bool
@@ -855,11 +902,11 @@ pinverse _self _rcond = unsafePerformIO $ (cast2 ATen.pinverse_td) _self _rcond
 poisson_nll_loss :: Tensor dtype shape -> Tensor dtype shape -> Bool -> Bool -> Double -> Int -> Tensor dtype shape
 poisson_nll_loss _input _target _log_input _full _eps _reduction = unsafePerformIO $ (cast6 ATen.poisson_nll_loss_ttbbdl) _input _target _log_input _full _eps _reduction
 
-rand_like :: Tensor dtype shape -> Tensor dtype shape
-rand_like _self = unsafePerformIO $ (cast1 ATen.rand_like_t) _self
+rand_like :: Tensor dtype shape -> IO (Tensor dtype shape)
+rand_like _self = (cast1 ATen.rand_like_t) _self
 
-randn_like :: Tensor dtype shape -> Tensor dtype shape
-randn_like _self = unsafePerformIO $ (cast1 ATen.randn_like_t) _self
+randn_like :: Tensor dtype shape -> IO (Tensor dtype shape)
+randn_like _self = (cast1 ATen.randn_like_t) _self
 
 reciprocal :: Tensor dtype shape -> Tensor dtype shape
 reciprocal _self = unsafePerformIO $ (cast1 ATen.reciprocal_t) _self
@@ -1152,13 +1199,17 @@ atan2 _self _other = unsafePerformIO $ (cast2 ATen.atan2_tt) _self _other
 histc :: Tensor dtype shape -> Int -> Float -> Float -> Tensor dtype shape
 histc _self _bins _min _max = unsafePerformIO $ (cast4 ATen.histc_tlss) _self _bins _min _max
 
-minAll :: Tensor dtype shape -> Tensor dtype shape
+-- |
+-- >>> t = minAll (ones :: Tensor Float '[2,2])
+-- >>> (dtype t,shape t)
+-- (Float,[])
+minAll :: Tensor dtype shape -> Tensor dtype '[]
 minAll _self = unsafePerformIO $ (cast1 ATen.min_t) _self
 
-maxAll :: Tensor dtype shape -> Tensor dtype shape
+maxAll :: Tensor dtype shape -> Tensor dtype '[]
 maxAll _self = unsafePerformIO $ (cast1 ATen.max_t) _self
 
-medianAll :: Tensor dtype shape -> Tensor dtype shape
+medianAll :: Tensor dtype shape -> Tensor dtype '[]
 medianAll _self = unsafePerformIO $ (cast1 ATen.median_t) _self
 
 sort :: Tensor dtype shape -> Int -> Bool -> (Tensor dtype shape,Tensor dtype shape)
@@ -1188,8 +1239,15 @@ binary_cross_entropy_backward _grad_output _self _target _weight _reduction = un
 mse_loss_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
 mse_loss_backward _grad_output _self _target _reduction = unsafePerformIO $ (cast4 ATen.mse_loss_backward_tttl) _grad_output _self _target _reduction
 
-l1_loss :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
-l1_loss _self _target _reduction = unsafePerformIO $ (cast3 ATen.l1_loss_ttl) _self _target _reduction
+-- |
+-- >>> t = l1_loss @ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) :: Tensor Float '[2,2]
+-- >>> (dtype t,shape t)
+-- (Float,[2,2])
+-- >>> t = l1_loss @ReduceSum (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) :: Tensor Float '[]
+-- >>> (dtype t,shape t)
+-- (Float,[])
+l1_loss :: forall reduction dtype shape. (KnownReduction reduction) => Tensor dtype shape -> Tensor dtype shape -> Tensor dtype (ConditionalReduction shape reduction)
+l1_loss _self _target = unsafePerformIO $ (cast3 ATen.l1_loss_ttl) _self _target (reductionVal @reduction)
 
 l1_loss_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
 l1_loss_backward _grad_output _self _target _reduction = unsafePerformIO $ (cast4 ATen.l1_loss_backward_tttl) _grad_output _self _target _reduction
@@ -1227,8 +1285,15 @@ nll_loss2d_forward _self _target _weight _reduction _ignore_index = unsafePerfor
 nll_loss2d_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> Tensor dtype shape -> Tensor dtype shape
 nll_loss2d_backward _grad_output _self _target _weight _reduction _ignore_index _total_weight = unsafePerformIO $ (cast7 ATen.nll_loss2d_backward_ttttllt) _grad_output _self _target _weight _reduction _ignore_index _total_weight
 
-smooth_l1_loss :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
-smooth_l1_loss _self _target _reduction = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) _self _target _reduction
+-- |
+-- >>> t = smooth_l1_loss @ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
+-- >>> (dtype t,shape t)
+-- (Float,[2,2])
+-- >>> t = smooth_l1_loss @ReduceSum (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
+-- >>> (dtype t,shape t)
+-- (Float,[])
+smooth_l1_loss :: forall reduction dtype shape. (KnownReduction reduction) => Tensor dtype shape -> Tensor dtype shape -> Tensor dtype (ConditionalReduction shape reduction)
+smooth_l1_loss _self _target = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) _self _target (reductionVal @reduction)
 
 smooth_l1_loss_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
 smooth_l1_loss_backward _grad_output _self _target _reduction = unsafePerformIO $ (cast4 ATen.smooth_l1_loss_backward_tttl) _grad_output _self _target _reduction
