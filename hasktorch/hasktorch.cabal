@@ -13,7 +13,7 @@ cabal-version:       >=1.10
 
 library
  exposed-modules:     Torch
-                      Torch.Tensor
+                    , Torch.Tensor
                     , Torch.TensorOptions
                     , Torch.DType
                     , Torch.TensorFactories
@@ -60,12 +60,12 @@ test-suite spec
                     , mtl
                     , reflection
 
--- test-suite doctests
---   default-language: Haskell2010
---   type:            exitcode-stdio-1.0
---   hs-source-dirs:  test
---   main-is:         doctests.hs
---   ghc-options:     -Wall -threaded
---   build-depends:
---       base
---     , doctest
+test-suite doctests
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test
+  main-is:            doctests.hs
+  ghc-options:        -Wall -threaded
+  default-language:   Haskell2010
+  build-depends:      base >= 4.7 && < 5
+                    , doctest
+                    , libtorch-ffi
