@@ -248,22 +248,22 @@ instance KnownReduction ReduceSum where
 
 -- |
 -- >>> tt = ones :: Tensor Float '[2,2]
--- >>> t = binary_cross_entropy_loss @ReduceNone tt tt tt :: Tensor Float '[2,2]
+-- >>> t = binary_cross_entropy @ReduceNone tt tt tt :: Tensor Float '[2,2]
 -- >>> (dtype t,shape t)
 -- (Float,[2,2])
--- >>> t = binary_cross_entropy_loss @ReduceMean tt tt tt :: Tensor Float '[]
+-- >>> t = binary_cross_entropy @ReduceMean tt tt tt :: Tensor Float '[]
 -- >>> (dtype t,shape t)
 -- (Float,[])
--- >>> t = binary_cross_entropy_loss @ReduceSum tt tt tt :: Tensor Float '[]
+-- >>> t = binary_cross_entropy @ReduceSum tt tt tt :: Tensor Float '[]
 -- >>> (dtype t,shape t)
 -- (Float,[])
-binary_cross_entropy_loss
-  :: forall reduction dtype shape. (KnownReduction reduction)
+binary_cross_entropy
+  :: forall (reduction :: Reduction) dtype shape. (KnownReduction reduction)
   => Tensor dtype shape
   -> Tensor dtype shape
   -> Tensor dtype shape
   -> Tensor dtype (ConditionalReduction shape reduction)
-binary_cross_entropy_loss t target weight = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight (reductionVal @reduction)
+binary_cross_entropy t target weight = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight (reductionVal @reduction)
 
 -- |
 -- >>> t = mse_loss (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
@@ -1230,11 +1230,11 @@ equal _self _other = unsafePerformIO $ (cast2 ATen.equal_tt) _self _other
 alias :: Tensor dtype shape -> Tensor dtype shape
 alias _self = unsafePerformIO $ (cast1 ATen.alias_t) _self
 
-binary_cross_entropy :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
-binary_cross_entropy _self _target _weight _reduction = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) _self _target _weight _reduction
+--binary_cross_entropy :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
+--binary_cross_entropy _self _target _weight _reduction = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) _self _target _weight _reduction
 
-binary_cross_entropy_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
-binary_cross_entropy_backward _grad_output _self _target _weight _reduction = unsafePerformIO $ (cast5 ATen.binary_cross_entropy_backward_ttttl) _grad_output _self _target _weight _reduction
+--binary_cross_entropy_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
+--binary_cross_entropy_backward _grad_output _self _target _weight _reduction = unsafePerformIO $ (cast5 ATen.binary_cross_entropy_backward_ttttl) _grad_output _self _target _weight _reduction
 
 mse_loss_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
 mse_loss_backward _grad_output _self _target _reduction = unsafePerformIO $ (cast4 ATen.mse_loss_backward_tttl) _grad_output _self _target _reduction
