@@ -5,7 +5,6 @@
 module Main where
 
 import qualified Options.Applicative as O
-import qualified ParseFunctionSig as F
 import qualified RenderDeclarations as RD
 import qualified RenderTuples as RTL
 import qualified RenderClass as RC
@@ -47,6 +46,7 @@ programOptions =
           <> O.help "Output-directory"
           )
 
+main :: IO ()
 main = do
   opts <- O.execParser optsParser
 --  RT.tensorBuilder

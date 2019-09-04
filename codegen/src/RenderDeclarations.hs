@@ -44,7 +44,7 @@ uniqFilter :: Ord n => (a -> n) -> [a] -> [a]
 uniqFilter item xs = uniqFilter' xs S.empty
   where
     uniqFilter' [] _ = []
-    uniqFilter' (x:xs) ids = if S.member (item x) ids then uniqFilter' xs ids else x:(uniqFilter' xs (S.insert (item x) ids))
+    uniqFilter' (x:xs') ids = if S.member (item x) ids then uniqFilter' xs' ids else x:(uniqFilter' xs (S.insert (item x) ids))
 
 renderFunctions :: Bool -> Bool -> String -> [D.Declaration] -> Text
 renderFunctions is_managed enb_type_initials namespace nfs =

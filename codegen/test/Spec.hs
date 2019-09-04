@@ -5,13 +5,11 @@ module Main where
 
 import Control.Exception.Safe (throwString, throw)
 import Data.Proxy
-import Text.Megaparsec (parse, errorBundlePretty)
 import ParseDerivatives (Derivative)
 import ParseDeclarations (Declaration)
 import System.Directory (doesFileExist)
 import Test.Hspec
 import qualified Data.Yaml as Y
-import ParseFunctionSig
 
 main :: IO ()
 main = hspec $ do
