@@ -7,3 +7,6 @@
 [submodule "fficxx"]
 	path = fficxx
 	url = git@github.com:hasktorch/fficxx.git
+[submodule "hasktorch-naperian"]
+	path = hasktorch-naperian
+	url = https://github.com/jasigal/hasktorch-naperian

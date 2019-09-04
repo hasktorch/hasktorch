@@ -71,6 +71,15 @@ let
                           ; hasktorch = haskellPackagesNew."hasktorch_${postfix}"
                           ; }
                         );
+                    "hasktorch-naperian_${postfix}" =
+                      # failOnAllWarnings
+                        (haskellPackagesOld.callCabal2nix
+                          "hasktorch-naperian"
+                          ../hasktorch-naperian
+                          { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"
+                          ; hasktorch = haskellPackagesNew."hasktorch_${postfix}"
+                          ; }
+                        );
                   };
 
                 extension =
@@ -158,6 +167,9 @@ in
       hasktorch-examples_cpu
       hasktorch-examples_cudatoolkit_9_2
       hasktorch-examples_cudatoolkit_10_1
+      hasktorch-naperian_cpu
+      hasktorch-naperian_cudatoolkit_9_2
+      hasktorch-naperian_cudatoolkit_10_1
     ;
 
     shell-hasktorch-codegen = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-codegen).env;
@@ -172,5 +184,8 @@ in
     shell-hasktorch-examples_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cpu).env.overrideAttrs fixmkl;
     shell-hasktorch-examples_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_9_2).env.overrideAttrs fixmkl;
     shell-hasktorch-examples_cudatoolkit_10_1 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_1).env.overrideAttrs fixmkl;
+    shell-hasktorch-naperian_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-naperian_cpu).env.overrideAttrs fixmkl;
+    shell-hasktorch-naperian_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-naperian_cudatoolkit_9_2).env.overrideAttrs fixmkl;
+    shell-hasktorch-naperian_cudatoolkit_10_1 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-naperian_cudatoolkit_10_1).env.overrideAttrs fixmkl;
   }
 
