@@ -112,7 +112,7 @@ in
 
     shell-hasktorch = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch).env.overrideAttrs (oldAttrs: oldAttrs // {
       shellHook = ''
-        export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_core.so:${pkgs.mkl}/lib/libmkl_sequential.so
+        export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_rt.so
       '';
     });
     shell-hasktorch-codegen = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-codegen).env;
