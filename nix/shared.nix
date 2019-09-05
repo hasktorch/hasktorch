@@ -2,18 +2,18 @@
 
 let
   overlayShared = pkgsNew: pkgsOld: {
-    #libtorch =
-    #  let src = pkgsOld.fetchFromGitHub {
-    #      owner  = "stites";
-    #      repo   = "pytorch-world";
-    #      rev    = "4c4bd205e47477c723209f3677bddceabb614237";
-    #      sha256 = "1zqhm0874gfs1qp3glc1i1dswlrksby1wf9dr4pclkabs0smbqxc";
-    #    };
-    #  in
-    #  (import "${src}/release.nix" { }).libtorch;
-    pytorch = pkgsOld.python3Packages.pytorchWithoutCuda.override {
-      mklSupport = true; inherit (pkgsOld.mkl);
-    };
+    libtorch =
+      let src = pkgsOld.fetchFromGitHub {
+          owner  = "stites";
+          repo   = "pytorch-world";
+          rev    = "7178a0e61edee422266dae5d984034c3705fce91";
+          sha256 = "0hzl3l3s1nalfiwbh30qswi31irz6bgvrr17brg04hzdspq7rygn";
+        };
+      in
+      (pkgsOld.python37Packages.callPackage "${src}/pytorch/default.nix" { mklSupport = true; }).dev;
+    #pytorch = pkgsOld.python3Packages.pytorchWithoutCuda.override {
+    #  mklSupport = true;
+    #};
     haskell = pkgsOld.haskell // {
       packages = pkgsOld.haskell.packages // {
         "${compiler}" = pkgsOld.haskell.packages."${compiler}".override (old: {
@@ -52,8 +52,8 @@ let
                         (haskellPackagesNew.callCabal2nix
                           "libtorch-ffi"
                           ../libtorch-ffi
-                          { c10 = pkgsNew.pytorch.dev; iomp5 = pkgsNew.mkl; torch = pkgsNew.pytorch.dev; }
-                        ) "--extra-include-dirs=${pkgsNew.pytorch.dev}/include/torch/csrc/api/include";
+                          { c10 = pkgsNew.libtorch; iomp5 = pkgsNew.mkl; torch = pkgsNew.libtorch; }
+                        ) "--extra-include-dirs=${pkgsNew.libtorch}/include/torch/csrc/api/include";
                     inline-c =
                       # failOnAllWarnings
                         (haskellPackagesNew.callCabal2nix
