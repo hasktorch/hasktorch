@@ -5,5 +5,6 @@ in
       libtorch-ffi
       hasktorch
       hasktorch-codegen
+      hasktorch-examples
     ;
   }
