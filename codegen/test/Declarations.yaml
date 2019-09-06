@@ -1,0 +1,145 @@
+- name: _cast_Byte
+  matches_jit_signature: true
+  schema_string: aten::_cast_Byte(Tensor self, bool non_blocking=False) -> Tensor
+  method_prefix_derived: ''
+  arguments:
+  - annotation: null
+    dynamic_type: Tensor
+    is_nullable: false
+    name: self
+    type: const Tensor &
+  - annotation: null
+    default: 'false'
+    dynamic_type: bool
+    is_nullable: false
+    name: non_blocking
+    type: bool
+  method_of:
+  - Type
+  - namespace
+  mode: native
+  python_module: ''
+  returns:
+  - dynamic_type: Tensor
+    name: result
+    type: Tensor
+  inplace: false
+  is_factory_method: null
+  abstract: false
+  requires_tensor: false
+  device_guard: true
+  with_gil: false
+  deprecated: false
+- name: ones
+  matches_jit_signature: true
+  schema_string: aten::ones(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+  method_prefix_derived: ''
+  arguments:
+  - annotation: null
+    dynamic_type: IntArrayRef
+    is_nullable: false
+    name: size
+    type: IntArrayRef
+  - annotation: null
+    default: '{}'
+    dynamic_type: TensorOptions
+    is_nullable: false
+    kwarg_only: true
+    name: options
+    type: const TensorOptions &
+  method_of:
+  - Type
+  - namespace
+  mode: native
+  python_module: ''
+  returns:
+  - dynamic_type: Tensor
+    name: result
+    type: Tensor
+  inplace: false
+  is_factory_method: true
+  abstract: false
+  requires_tensor: false
+  device_guard: true
+  with_gil: false
+  deprecated: false
+- name: sum
+  matches_jit_signature: true
+  schema_string: aten::sum(Tensor self, *, ScalarType? dtype=None) -> Tensor
+  method_prefix_derived: ''
+  arguments:
+  - annotation: null
+    dynamic_type: Tensor
+    is_nullable: false
+    name: self
+    type: const Tensor &
+  - annotation: null
+    default: 'c10::nullopt'
+    dynamic_type: ScalarType
+    is_nullable: true
+    kwarg_only: true
+    name: dtype
+    type: c10::optional<ScalarType>
+  method_of:
+  - Type
+  - Tensor
+  - namespace
+  mode: native
+  python_module: ''
+  returns:
+  - dynamic_type: Tensor
+    name: result
+    type: Tensor
+  inplace: false
+  is_factory_method: null
+  abstract: false
+  requires_tensor: false
+  device_guard: true
+  with_gil: false
+  deprecated: false
+- name: sum
+  matches_jit_signature: true
+  schema_string: aten::sum(Tensor self, int[1] dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
+  method_prefix_derived: ''
+  arguments:
+  - annotation: null
+    dynamic_type: Tensor
+    is_nullable: false
+    name: self
+    type: const Tensor &
+  - annotation: null
+    dynamic_type: IntArrayRef
+    is_nullable: false
+    name: dim
+    size: 1
+    type: IntArrayRef
+  - annotation: null
+    default: 'false'
+    dynamic_type: bool
+    is_nullable: false
+    name: keepdim
+    type: bool
+  - annotation: null
+    default: 'c10::nullopt'
+    dynamic_type: ScalarType
+    is_nullable: true
+    kwarg_only: true
+    name: dtype
+    type: c10::optional<ScalarType>
+  method_of:
+  - Type
+  - Tensor
+  - namespace
+  mode: native
+  python_module: ''
+  returns:
+  - dynamic_type: Tensor
+    name: result
+    type: Tensor
+  inplace: false
+  is_factory_method: null
+  abstract: false
+  requires_tensor: false
+  device_guard: true
+  with_gil: false
+  deprecated: false
