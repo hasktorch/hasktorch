@@ -79,8 +79,14 @@ sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
 mul :: Tensor -> Tensor -> Tensor
 mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
 
+cadd :: Scalar a => Tensor -> a -> Tensor
+cadd t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
+
 cmul :: Scalar a => Tensor -> a -> Tensor
 cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
+
+csub :: Scalar a => Tensor -> a -> Tensor
+csub t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
 
 matmul :: Tensor -> Tensor -> Tensor
 matmul a b =
