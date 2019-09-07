@@ -125,33 +125,12 @@ max t = unsafePerformIO $ (ATen.cast1 ATen.max_t) t
 median :: Tensor dtype shape -> Tensor dtype '[]
 median t = unsafePerformIO $ (ATen.cast1 ATen.median_t) t
 
--- -- |
--- -- >>> t = sub (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
--- -- >>> (dtype t,shape t)
--- -- (Float,[2,2])
--- sub :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- sub a b = unsafePerformIO $ (ATen.cast3 ATen.sub_tts) a b D.kOne
-
--- |
--- >>> t = mul (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
--- >>> (dtype t,shape t)
--- (Float,[2,2])
-mul :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-mul a b = unsafePerformIO $ (ATen.cast2 ATen.mul_tt) a b
-
 -- |
 -- >>> t = cmul (ones :: Tensor Float '[2,2]) 1
 -- >>> (dtype t,shape t)
 -- (Float,[2,2])
 cmul :: D.Scalar a => Tensor dtype shape -> a -> Tensor dtype shape
 cmul t a = unsafePerformIO $ (ATen.cast2 ATen.mul_ts) t a
-
--- |
--- >>> t = matmul (ones :: Tensor Float '[3,2]) (zeros :: Tensor Float '[2,4])
--- >>> (dtype t,shape t)
--- (Float,[3,4])
-matmul :: Tensor dtype '[n, k] -> Tensor dtype '[k, m] -> Tensor dtype '[n, m]
-matmul a b = unsafePerformIO $ (ATen.cast2 ATen.mm_tt) a b
 
 erf :: Tensor dtype shape -> Tensor dtype shape
 erf t = unsafePerformIO $ (ATen.cast1 ATen.erf_t) t
@@ -270,7 +249,6 @@ type family ConditionalReduction (shape :: [Nat]) (reduction :: D.Reduction) :: 
     ConditionalReduction shape D.ReduceNone = shape
     ConditionalReduction shape _ = '[]
 
-
 class KnownReduction reduction where
     reductionVal :: Int
 
@@ -283,23 +261,23 @@ instance KnownReduction D.ReduceSum where
 
 -- |
 -- >>> tt = ones :: Tensor Float '[2,2]
--- >>> t = binary_cross_entropy_loss @D.ReduceNone tt tt tt :: Tensor Float '[2,2]
+-- >>> t = binaryCrossEntropy @D.ReduceNone tt tt tt :: Tensor Float '[2,2]
 -- >>> (dtype t,shape t)
 -- (Float,[2,2])
--- >>> t = binary_cross_entropy_loss @D.ReduceMean tt tt tt :: Tensor Float '[]
+-- >>> t = binaryCrossEntropy @D.ReduceMean tt tt tt :: Tensor Float '[]
 -- >>> (dtype t,shape t)
 -- (Float,[])
--- >>> t = binary_cross_entropy_loss @D.ReduceSum tt tt tt :: Tensor Float '[]
+-- >>> t = binaryCrossEntropy @D.ReduceSum tt tt tt :: Tensor Float '[]
 -- >>> (dtype t,shape t)
 -- (Float,[])
-binary_cross_entropy_loss
+binaryCrossEntropy
   :: forall reduction dtype shape
    . (KnownReduction reduction)
   => Tensor dtype shape
   -> Tensor dtype shape
   -> Tensor dtype shape
   -> Tensor dtype (ConditionalReduction shape reduction)
-binary_cross_entropy_loss t target weight =
+binaryCrossEntropy t target weight =
   unsafePerformIO $ (ATen.cast4 ATen.binary_cross_entropy_tttl)
     t
     target
@@ -307,11 +285,11 @@ binary_cross_entropy_loss t target weight =
     (reductionVal @reduction)
 
 -- |
--- >>> t = mse_loss (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
+-- >>> t = mseLoss (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
 -- >>> (dtype t,shape t)
 -- (Float,[])
-mse_loss :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype '[]
-mse_loss a b = unsafePerformIO $ (ATen.cast3 ATen.mse_loss_ttl) a b ATen.kMean
+mseLoss :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype '[]
+mseLoss a b = unsafePerformIO $ (ATen.cast3 ATen.mse_loss_ttl) a b ATen.kMean
 
 conv2d
   :: Tensor dtype shape
@@ -329,19 +307,19 @@ conv2d input weight bias (dh, dw) (ph, pw) =
                                                      ([1, 1] :: [Int])
                                                      (0 :: Int)
 
-maxPool2d
-  :: Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> Tensor dtype shape
-maxPool2d input (kh, kw) (dh, dw) (ph, pw) =
-  unsafePerformIO $ (ATen.cast6 ATen.max_pool2d_tllllb) input
-                                                        [kh, kw]
-                                                        [dh, dw]
-                                                        [ph, pw]
-                                                        ([1, 1] :: [Int])
-                                                        False
+-- maxPool2d
+--   :: Tensor dtype shape
+--   -> (Int, Int)
+--   -> (Int, Int)
+--   -> (Int, Int)
+--   -> Tensor dtype shape
+-- maxPool2d input (kh, kw) (dh, dw) (ph, pw) =
+--   unsafePerformIO $ (ATen.cast6 ATen.max_pool2d_tllllb) input
+--                                                         [kh, kw]
+--                                                         [dh, dw]
+--                                                         [ph, pw]
+--                                                         ([1, 1] :: [Int])
+--                                                         False
 
 logSoftmax :: Tensor dtype shape -> Int -> Tensor dtype shape
 logSoftmax input dim =
@@ -3316,32 +3294,41 @@ mse_loss_backward _grad_output _self _target _reduction =
                                                              _reduction
 
 -- |
--- >>> t = l1_loss @D.ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) :: Tensor Float '[2,2]
+-- >>> t = l1Loss @D.ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) :: Tensor Float '[2,2]
 -- >>> (dtype t,shape t)
 -- (Float,[2,2])
--- >>> t = l1_loss @D.ReduceSum (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) :: Tensor Float '[]
+-- >>> t = l1Loss @D.ReduceSum (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) :: Tensor Float '[]
 -- >>> (dtype t,shape t)
 -- (Float,[])
-l1_loss
+l1Loss
   :: forall reduction dtype shape
    . (KnownReduction reduction)
   => Tensor dtype shape
   -> Tensor dtype shape
   -> Tensor dtype (ConditionalReduction shape reduction)
-l1_loss _self _target = unsafePerformIO
-  $ (ATen.cast3 ATen.l1_loss_ttl) _self _target (reductionVal @reduction)
+l1Loss self target = unsafePerformIO
+  $ (ATen.cast3 ATen.l1_loss_ttl) self target (reductionVal @reduction)
 
-l1_loss_backward
-  :: Tensor dtype shape
+-- |
+-- >>> t = l1LossBackward @D.ReduceNone @Float @[2,2] (ones @Float @[2,2]) ones ones
+-- >>> (dtype t,shape t)
+-- (Float,[2,2])
+-- >>> t = l1LossBackward @D.ReduceSum @Float @[2,2] (ones @Float @'[]) ones ones
+-- >>> (dtype t,shape t)
+-- (Float,[2,2])
+l1LossBackward
+  :: forall reduction dtype shape
+   . (KnownReduction reduction)
+  => Tensor dtype (ConditionalReduction shape reduction)
   -> Tensor dtype shape
   -> Tensor dtype shape
-  -> Int
   -> Tensor dtype shape
-l1_loss_backward _grad_output _self _target _reduction =
-  unsafePerformIO $ (ATen.cast4 ATen.l1_loss_backward_tttl) _grad_output
-                                                            _self
-                                                            _target
-                                                            _reduction
+l1LossBackward grad_output self target =
+  unsafePerformIO $ (ATen.cast4 ATen.l1_loss_backward_tttl)
+    grad_output
+    self
+    target
+    (reductionVal @reduction)
 
 multi_margin_loss
   :: Tensor dtype shape

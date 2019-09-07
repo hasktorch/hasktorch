@@ -88,3 +88,27 @@ spec = do
       D.asValue (toDynamic c) `shouldBe` ([[0, 0], [0, 0], [0, 0]] :: [[Float]])
       shape c `shouldBe` [3, 2, 4, 1]
       dtype c `shouldBe` D.Float
+  describe "mul" $ do
+    it "works on tensors of identical shapes" $ do
+      let a = ones :: Tensor Float '[2, 3]
+      let b = ones :: Tensor Float '[2, 3]
+      let c = mul a b
+      D.asValue (toDynamic c) `shouldBe` ([[1, 1, 1], [1, 1, 1]] :: [[Float]])
+      shape c `shouldBe` [2, 3]
+      dtype c `shouldBe` D.Float
+    it "works on broadcastable tensors of different shapes" $ do
+      let a = ones :: Tensor Float '[3, 1, 4, 1]
+      let b = ones :: Tensor Float '[2, 1, 1]
+      let c = mul a b
+      D.asValue (toDynamic c) `shouldBe` ([[1, 1], [1, 1], [1, 1]] :: [[Float]])
+      shape c `shouldBe` [3, 2, 4, 1]
+      dtype c `shouldBe` D.Float
+  describe "matmul" $
+    it "works" $ do
+      let a = ones :: Tensor Float '[2, 3]
+      let b = ones :: Tensor Float '[3, 1]
+      let c = matmul a b
+      D.asValue (toDynamic c) `shouldBe` ([[3],[3]] :: [[Float]])
+      shape c `shouldBe` [2, 1]
+      dtype c `shouldBe` D.Float
+

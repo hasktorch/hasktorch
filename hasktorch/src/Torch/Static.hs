@@ -237,11 +237,15 @@ sub :: (shape'' ~ Broadcast shape shape') =>
        Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
 sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
 
+mul :: (shape'' ~ Broadcast shape shape') =>
+       Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
+mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
+
 relu :: Tensor dtype shape -> Tensor dtype shape
 relu t = UnsafeMkTensor $ D.relu (toDynamic t)
 
-mm :: Tensor dtype [n, k] -> Tensor dtype [k, m] -> Tensor dtype [n, m]
-mm a b = UnsafeMkTensor $ D.matmul (toDynamic a) (toDynamic b)
+matmul :: Tensor dtype [n, k] -> Tensor dtype [k, m] -> Tensor dtype [n, m]
+matmul a b = UnsafeMkTensor $ D.matmul (toDynamic a) (toDynamic b)
 
 select :: forall dim idx shape dtype shape'.
           (KnownNat dim, KnownNat idx,
