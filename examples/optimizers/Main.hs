@@ -1,9 +1,27 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+import GHC.Generics
 
 import Torch.Tensor
 import Torch.TensorFactories (eye', ones', rand', randn', zeros')
 import Torch.Functions
+import Torch.Autograd
+import Torch.NN
+
+data Coord = Coord { x :: Parameter, y :: Parameter } deriving (Show, Generic)
+
+data CoordSpec = CoordSpec { n :: Int }
+
+instance Randomizable CoordSpec Coord where
+  sample (CoordSpec n) = do
+      x <- makeIndependent =<< randn' [n]
+      y <- makeIndependent =<< randn' [n]
+      return $ Coord x y
+
+instance Parameterized Coord
 
 rosenbrock :: Float -> Float -> Tensor -> Tensor -> Tensor
 rosenbrock a b x y = square (cadd (cmul x (-1.0 :: Float)) a) + cmul (square (y - square x)) b

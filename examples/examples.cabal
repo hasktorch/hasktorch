@@ -110,9 +110,9 @@ executable optimizers
   default-language:    Haskell2010
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       base >= 4.7 && < 5
-	             , aeson
-		     , bytestring
+	                 , aeson
+                     , bytestring
                      , hasktorch
-		     , hvega
+		             , hvega
                      , mtl
-		     , process
+         		     , process
