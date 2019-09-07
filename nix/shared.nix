@@ -34,7 +34,7 @@ let
                           { }
                         );
                     hasktorch-codegen =
-                      failOnAllWarnings
+                      # failOnAllWarnings
                         (haskellPackagesNew.callCabal2nix
                           "codegen"
                           ../codegen
