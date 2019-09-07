@@ -9,4 +9,5 @@ main = doctest
   , "-XTypeFamilies"
   , "-XTypeApplications"
   , "-isrc"
+  , "src/Torch/Static/Native"
   ]

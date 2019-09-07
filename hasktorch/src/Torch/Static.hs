@@ -120,11 +120,12 @@ type family AppendToMaybe (n :: Nat) (l :: Maybe [Nat]) where
     AppendToMaybe n Nothing = Nothing
     AppendToMaybe n (Just l) = Just (n : l)
 
--- TODO: broadcast with a one!
 type family ComputeBroadcast (shape :: [Nat]) (shape' :: [Nat]) :: Maybe [Nat] where
     ComputeBroadcast '[] shape = Just shape
     ComputeBroadcast shape '[] = Just shape
     ComputeBroadcast (h ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast (h ': t) (1 ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast (1 ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
     ComputeBroadcast _ _ = Nothing
 
 type family CheckBroadcast (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
@@ -231,6 +232,10 @@ type (>=) (n :: Nat) (m :: Nat) = (IsAtLeast n m (CmpNat n m), KnownNat (n - m))
 add :: (shape'' ~ Broadcast shape shape') =>
        Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
 add a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
+
+sub :: (shape'' ~ Broadcast shape shape') =>
+       Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
+sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
 
 relu :: Tensor dtype shape -> Tensor dtype shape
 relu t = UnsafeMkTensor $ D.relu (toDynamic t)
