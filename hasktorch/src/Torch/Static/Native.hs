@@ -3294,10 +3294,10 @@ mse_loss_backward _grad_output _self _target _reduction =
                                                              _reduction
 
 -- |
--- >>> t = l1Loss @D.ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) :: Tensor Float '[2,2]
+-- >>> t = l1Loss @D.ReduceNone @Float @[2,2] ones ones
 -- >>> (dtype t,shape t)
 -- (Float,[2,2])
--- >>> t = l1Loss @D.ReduceSum (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) :: Tensor Float '[]
+-- >>> t = l1Loss @D.ReduceSum @Float @[2,2] ones ones
 -- >>> (dtype t,shape t)
 -- (Float,[])
 l1Loss
@@ -3330,21 +3330,29 @@ l1LossBackward grad_output self target =
     target
     (reductionVal @reduction)
 
-multi_margin_loss
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Float
-  -> Float
-  -> Tensor dtype shape
+-- | WIP, see https://github.com/pytorch/pytorch/blob/master/aten/src/THNN/generic/MultiMarginCriterion.c
+-- >>> t = multiMarginLoss @D.ReduceNone @Float @3 @2 ones ones 1 1 ones :: Tensor Float '[3]
+-- >>> (dtype t,shape t)
+-- (Float,[3])
+-- >>> t = multiMarginLoss @D.ReduceSum @Float @3 @2 ones ones 1 1 ones :: Tensor Float '[]
+-- >>> (dtype t,shape t)
+-- (Float,[])
+multiMarginLoss
+  :: forall reduction dtype n m
+   . (KnownReduction reduction)
+  => Tensor dtype [n, m]
+  -> Tensor Int '[n]
   -> Int
-  -> Tensor dtype shape
-multi_margin_loss _self _target _p _margin _weight _reduction =
-  unsafePerformIO $ (ATen.cast6 ATen.multi_margin_loss_ttsstl) _self
-                                                               _target
-                                                               _p
-                                                               _margin
-                                                               _weight
-                                                               _reduction
+  -> Float
+  -> Tensor dtype '[]
+  -> Tensor dtype (ConditionalReduction '[n] reduction)
+multiMarginLoss self target p margin weight =
+  unsafePerformIO $ (ATen.cast6 ATen.multi_margin_loss_ttsstl) self
+                                                               target
+                                                               p
+                                                               margin
+                                                               weight
+                                                               (reductionVal @reduction)
 
 multi_margin_loss_backward
   :: Tensor dtype shape
@@ -3365,6 +3373,7 @@ multi_margin_loss_backward _grad_output _self _target _p _margin _weight _reduct
     _weight
     _reduction
 
+-- | WIP, see https://github.com/pytorch/pytorch/blob/master/aten/src/THNN/generic/MultiLabelMarginCriterion.c
 multilabel_margin_loss
   :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
 multilabel_margin_loss _self _target _reduction =
