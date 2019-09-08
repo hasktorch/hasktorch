@@ -107,7 +107,7 @@ test-suite spec
                      , safe-exceptions
   if os(darwin)
     ld-options: -Wl,-keep_dwarf_unwind
-    ghc-options:       -optc-std=c++11 -optc-xc++
+    ghc-options:       -optc-xc++
   else
     ghc-options:       -optc-std=c++11
   cc-options:        -std=c++11
