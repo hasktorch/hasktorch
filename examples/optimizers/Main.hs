@@ -25,10 +25,10 @@ data CoordSpec = CoordSpec { n :: Int } deriving (Show, Eq)
 
 instance Randomizable CoordSpec Coord where
   sample (CoordSpec n) = do
-      -- x <- makeIndependent =<< randn' [n]
-      -- y <- makeIndependent =<< randn' [n]
-      x <- makeIndependent (ones' [n] + 0.5 * ones' [n])
-      y <- makeIndependent (ones' [n] + 0.5 * ones' [n])
+      x <- makeIndependent =<< randn' [n]
+      y <- makeIndependent =<< randn' [n]
+      -- x <- makeIndependent (ones' [n] + 0.5 * ones' [n]) -- check with fixed values
+      -- y <- makeIndependent (ones' [n] + 0.5 * ones' [n])
       pure $ Coord x y
 
 instance Parameterized Coord
@@ -36,7 +36,6 @@ instance Parameterized Coord
 instance Parameterized [Coord]
 
 rosenbrock :: Float -> Float -> Tensor -> Tensor -> Tensor
--- rosenbrock a b x y = square (cadd ((-1.0) * x ) a) + cmul (square (y - square x)) b
 rosenbrock a b x y = square (cadd ((-1.0) * x ) a) + cmul (square (y - x*x)) b
     where square c = pow c (2 :: Int)
 
@@ -44,8 +43,7 @@ rosenbrock' :: Tensor -> Tensor -> Tensor
 rosenbrock' = rosenbrock 1.0 100.0
 
 loss :: Coord -> Tensor
-loss Coord{..} = rosenbrock' x' y'
-  where (x', y') = (toDependent x, toDependent y)
+loss Coord{..} = rosenbrock' (toDependent x) (toDependent y)
 
 gd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
 gd lr parameters gradients = zipWith step depParameters gradients
@@ -64,13 +62,13 @@ main = do
     putStrLn ("Initial :" ++ showParam init)
     trained <- foldLoop init num_iters $ \state i -> do
         let lossValue = loss state
-        when (mod i 25 == 0) do
+        when (mod i 100 == 0) do
             putStrLn ("Iter: " ++ printf "%4d" i 
                 ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
                 ++ " | Parameters: " ++ showParam state)
         let flatParameters = flattenParameters (state :: Coord)
         let gradients = grad lossValue flatParameters
-        newFlatParam <- mapM makeIndependent $ gd 5e-5 flatParameters gradients
+        newFlatParam <- mapM makeIndependent $ gd 2e-3 flatParameters gradients
         pure $ replaceParameters state $ newFlatParam
 
     putStrLn "Check Actual Global Minimum (at 1, 1):"
