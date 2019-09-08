@@ -2,36 +2,81 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE BlockArguments #-}
 
+{- Optimizer Implementations on math functions -}
+
+import Control.Monad (foldM, when)
 import GHC.Generics
+import Text.Printf (printf)
 
 import Torch.Tensor
 import Torch.TensorFactories (eye', ones', rand', randn', zeros')
 import Torch.Functions
 import Torch.Autograd
-import Torch.NN
+import Torch.NN hiding (sgd)
 
 data Coord = Coord { x :: Parameter, y :: Parameter } deriving (Show, Generic)
 
-data CoordSpec = CoordSpec { n :: Int }
+-- note - only works for n=1 for now
+data CoordSpec = CoordSpec { n :: Int } deriving (Show, Eq)
 
 instance Randomizable CoordSpec Coord where
   sample (CoordSpec n) = do
-      x <- makeIndependent =<< randn' [n]
-      y <- makeIndependent =<< randn' [n]
-      return $ Coord x y
+      -- x <- makeIndependent =<< randn' [n]
+      -- y <- makeIndependent =<< randn' [n]
+      x <- makeIndependent (ones' [n] + 0.5 * ones' [n])
+      y <- makeIndependent (ones' [n] + 0.5 * ones' [n])
+      pure $ Coord x y
 
 instance Parameterized Coord
 
+instance Parameterized [Coord]
+
 rosenbrock :: Float -> Float -> Tensor -> Tensor -> Tensor
-rosenbrock a b x y = square (cadd (cmul x (-1.0 :: Float)) a) + cmul (square (y - square x)) b
+-- rosenbrock a b x y = square (cadd ((-1.0) * x ) a) + cmul (square (y - square x)) b
+rosenbrock a b x y = square (cadd ((-1.0) * x ) a) + cmul (square (y - x*x)) b
     where square c = pow c (2 :: Int)
 
+rosenbrock' :: Tensor -> Tensor -> Tensor
 rosenbrock' = rosenbrock 1.0 100.0
 
+loss :: Coord -> Tensor
+loss Coord{..} = rosenbrock' x' y'
+  where (x', y') = (toDependent x, toDependent y)
+
+gd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
+gd lr parameters gradients = zipWith step depParameters gradients
+  where
+    step p dp = p - (lr * dp)
+    depParameters = (map toDependent parameters)
+
+showParam (Coord x y) = show (extract x :: Float, extract y :: Float)
+  where
+    extract :: TensorLike a => Parameter -> a
+    extract p = asValue $ toDependent p
+
+main :: IO ()
 main = do
-    print $ rosenbrock' (asTensor ([-2.0, -1.0, 0.0, 1.0, 2.0] :: [Float])) 0.0
-    print $ rosenbrock' (asTensor ([-2.0, -1.0, 0.0, 1.0, 2.0] :: [Float])) 1.0
-    print $ rosenbrock' (asTensor ([-2.0, -1.0, 0.0, 1.0, 2.0] :: [Float])) 2.0
+    init <- sample $ CoordSpec {n=1}
+    putStrLn ("Initial :" ++ showParam init)
+    trained <- foldLoop init num_iters $ \state i -> do
+        let lossValue = loss state
+        when (mod i 25 == 0) do
+            putStrLn ("Iter: " ++ printf "%4d" i 
+                ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
+                ++ " | Parameters: " ++ showParam state)
+        let flatParameters = flattenParameters (state :: Coord)
+        let gradients = grad lossValue flatParameters
+        newFlatParam <- mapM makeIndependent $ gd 5e-5 flatParameters gradients
+        pure $ replaceParameters state $ newFlatParam
+
+    putStrLn "Check Actual Global Minimum (at 1, 1):"
+    print $ rosenbrock' (asTensor (1.0 :: Float)) (asTensor (1.0 :: Float))
     putStrLn "Done"
+    where
+        foldLoop x count block = foldM block x [1..count]
+        num_iters = (5000 :: Int)
 
