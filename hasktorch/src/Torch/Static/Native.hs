@@ -3406,19 +3406,24 @@ multilabel_margin_loss_backward _grad_output _self _target _reduction _is_target
     _reduction
     _is_target
 
-nll_loss
-  :: Tensor dtype shape
+-- | The negative log likelihood loss.
+-- >>> input = randn @Float @[3, 5]
+-- >>> target = 
+-- >>> t = nllLoss @D.ReduceNone @Float @[2, 2] 
+nllLoss
+  :: forall reduction dtype shape
+   . (KnownReduction reduction)
+  => Tensor dtype shape
   -> Tensor dtype shape
   -> Tensor dtype shape
   -> Int
-  -> Int
   -> Tensor dtype shape
-nll_loss _self _target _weight _reduction _ignore_index =
-  unsafePerformIO $ (ATen.cast5 ATen.nll_loss_tttll) _self
-                                                     _target
-                                                     _weight
-                                                     _reduction
-                                                     _ignore_index
+nllLoss input target weight ignoreIndex =
+  unsafePerformIO $ (ATen.cast5 ATen.nll_loss_tttll) input
+                                                     target
+                                                     weight
+                                                     (reductionVal @reduction)
+                                                     ignoreIndex
 
 nll_loss_forward
   :: Tensor dtype shape

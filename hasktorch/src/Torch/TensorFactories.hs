@@ -50,9 +50,6 @@ rand = mkFactory LibTorch.rand_lo
 randn :: [Int] -> TensorOptions -> IO Tensor
 randn = mkFactory LibTorch.randn_lo
 
-randn_like :: Tensor -> IO Tensor
-randn_like = cast1 ATen.randn_like_t
-
 linspace :: (Scalar a, Scalar b) => a -> b -> Int -> TensorOptions -> Tensor
 linspace start end steps opts = unsafePerformIO $ (cast4 LibTorch.linspace_sslo) start end steps opts
 

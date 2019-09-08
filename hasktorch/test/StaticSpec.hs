@@ -111,4 +111,9 @@ spec = do
       D.asValue (toDynamic c) `shouldBe` ([[3],[3]] :: [[Float]])
       shape c `shouldBe` [2, 1]
       dtype c `shouldBe` D.Float
-
+  describe "eyeSquare" $
+    it "works" $ do
+      let t = eyeSquare :: Tensor Float '[2, 2, 2]
+      D.asValue (toDynamic t) `shouldBe` ([[[1]]] :: [[[Float]]])
+      shape t `shouldBe` [2,2,2]
+      dtype t `shouldBe` D.Float
