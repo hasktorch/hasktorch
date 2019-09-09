@@ -514,12 +514,6 @@ affine_grid_generator :: Tensor dtype shape -> [Int] -> Tensor dtype shape
 affine_grid_generator _theta _size =
   unsafePerformIO $ (ATen.cast2 ATen.affine_grid_generator_tl) _theta _size
 
-affine_grid_generator_backward
-  :: Tensor dtype shape -> [Int] -> Tensor dtype shape
-affine_grid_generator_backward _grad _size =
-  unsafePerformIO
-    $ (ATen.cast2 ATen.affine_grid_generator_backward_tl) _grad _size
-
 allclose
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -607,24 +601,6 @@ binary_cross_entropy_with_logits _self _target _weight _pos_weight _reduction =
     _weight
     _pos_weight
     _reduction
-
-binary_cross_entropy_with_logits_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Tensor dtype shape
-binary_cross_entropy_with_logits_backward _grad_output _self _target _weight _pos_weight _reduction
-  = unsafePerformIO
-    $ (ATen.cast6 ATen.binary_cross_entropy_with_logits_backward_tttttl)
-        _grad_output
-        _self
-        _target
-        _weight
-        _pos_weight
-        _reduction
 
 bincount
   :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
@@ -739,20 +715,6 @@ conv_tbc
 conv_tbc _self _weight _bias _pad =
   unsafePerformIO $ (ATen.cast4 ATen.conv_tbc_tttl) _self _weight _bias _pad
 
-conv_tbc_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> (Tensor dtype shape, Tensor dtype shape, Tensor dtype shape)
-conv_tbc_backward _self _input _weight _bias _pad =
-  unsafePerformIO $ (ATen.cast5 ATen.conv_tbc_backward_ttttl) _self
-                                                              _input
-                                                              _weight
-                                                              _bias
-                                                              _pad
-
 conv_transpose1d
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -797,16 +759,6 @@ cudnn_affine_grid_generator _theta _N _C _H _W =
   unsafePerformIO
     $ (ATen.cast5 ATen.cudnn_affine_grid_generator_tllll) _theta _N _C _H _W
 
-cudnn_affine_grid_generator_backward
-  :: Tensor dtype shape -> Int -> Int -> Int -> Int -> Tensor dtype shape
-cudnn_affine_grid_generator_backward _grad _N _C _H _W =
-  unsafePerformIO $ (ATen.cast5 ATen.cudnn_affine_grid_generator_backward_tllll)
-    _grad
-    _N
-    _C
-    _H
-    _W
-
 cudnn_batch_norm
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -831,30 +783,6 @@ cudnn_batch_norm _input _weight _bias _running_mean _running_var _training _expo
     _exponential_average_factor
     _epsilon
 
-cudnn_batch_norm_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Double
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-cudnn_batch_norm_backward _input _grad_output _weight _running_mean _running_var _save_mean _save_var _epsilon
-  = unsafePerformIO $ (ATen.cast8 ATen.cudnn_batch_norm_backward_tttttttd)
-    _input
-    _grad_output
-    _weight
-    _running_mean
-    _running_var
-    _save_mean
-    _save_var
-    _epsilon
-
 cudnn_convolution
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -877,86 +805,6 @@ cudnn_convolution _self _weight _bias _padding _stride _dilation _groups _benchm
     _groups
     _benchmark
     _deterministic
-
-cudnn_convolution_backward_input
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-cudnn_convolution_backward_input _self_size _grad_output _weight _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast9 ATen.cudnn_convolution_backward_input_lttllllbb)
-        _self_size
-        _grad_output
-        _weight
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-
-cudnn_convolution_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-cudnn_convolution_backward _self _grad_output _weight _padding _stride _dilation _groups _benchmark _deterministic _output_mask
-  = unsafePerformIO $ (ATen.cast10 ATen.cudnn_convolution_backward_tttllllbba)
-    _self
-    _grad_output
-    _weight
-    _padding
-    _stride
-    _dilation
-    _groups
-    _benchmark
-    _deterministic
-    _output_mask
-
-cudnn_convolution_backward_bias :: Tensor dtype shape -> Tensor dtype shape
-cudnn_convolution_backward_bias _grad_output = unsafePerformIO
-  $ (ATen.cast1 ATen.cudnn_convolution_backward_bias_t) _grad_output
-
-cudnn_convolution_backward_weight
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-cudnn_convolution_backward_weight _weight_size _grad_output _self _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast9 ATen.cudnn_convolution_backward_weight_lttllllbb)
-        _weight_size
-        _grad_output
-        _self
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
 
 cudnn_convolution_transpose
   :: Tensor dtype shape
@@ -983,103 +831,10 @@ cudnn_convolution_transpose _self _weight _bias _padding _output_padding _stride
     _benchmark
     _deterministic
 
-cudnn_convolution_transpose_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-cudnn_convolution_transpose_backward _self _grad_output _weight _padding _output_padding _stride _dilation _groups _benchmark _deterministic _output_mask
-  = unsafePerformIO
-    $ (ATen.cast11 ATen.cudnn_convolution_transpose_backward_tttlllllbba)
-        _self
-        _grad_output
-        _weight
-        _padding
-        _output_padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-        _output_mask
-
-cudnn_convolution_transpose_backward_bias
-  :: Tensor dtype shape -> Tensor dtype shape
-cudnn_convolution_transpose_backward_bias _grad_output = unsafePerformIO
-  $ (ATen.cast1 ATen.cudnn_convolution_transpose_backward_bias_t) _grad_output
-
-cudnn_convolution_transpose_backward_input
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-cudnn_convolution_transpose_backward_input _grad_output _weight _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast8 ATen.cudnn_convolution_transpose_backward_input_ttllllbb)
-        _grad_output
-        _weight
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-
-cudnn_convolution_transpose_backward_weight
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-cudnn_convolution_transpose_backward_weight _weight_size _grad_output _self _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast9 ATen.cudnn_convolution_transpose_backward_weight_lttllllbb)
-        _weight_size
-        _grad_output
-        _self
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-
 cudnn_grid_sampler
   :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 cudnn_grid_sampler _self _grid =
   unsafePerformIO $ (ATen.cast2 ATen.cudnn_grid_sampler_tt) _self _grid
-
-cudnn_grid_sampler_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Tensor dtype shape, Tensor dtype shape)
-cudnn_grid_sampler_backward _self _grid _grad_output =
-  unsafePerformIO $ (ATen.cast3 ATen.cudnn_grid_sampler_backward_ttt)
-    _self
-    _grid
-    _grad_output
 
 det :: Tensor dtype shape -> Tensor dtype shape
 det _self = unsafePerformIO $ (ATen.cast1 ATen.det_t) _self
@@ -1116,53 +871,6 @@ embedding _weight _indices _padding_idx _scale_grad_by_freq _sparse =
                                                       _padding_idx
                                                       _scale_grad_by_freq
                                                       _sparse
-
-embedding_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-embedding_backward _grad _indices _num_weights _padding_idx _scale_grad_by_freq _sparse
-  = unsafePerformIO $ (ATen.cast6 ATen.embedding_backward_ttllbb)
-    _grad
-    _indices
-    _num_weights
-    _padding_idx
-    _scale_grad_by_freq
-    _sparse
-
-embedding_dense_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> Bool
-  -> Tensor dtype shape
-embedding_dense_backward _grad_output _indices _num_weights _padding_idx _scale_grad_by_freq
-  = unsafePerformIO $ (ATen.cast5 ATen.embedding_dense_backward_ttllb)
-    _grad_output
-    _indices
-    _num_weights
-    _padding_idx
-    _scale_grad_by_freq
-
-embedding_sparse_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> Bool
-  -> Tensor dtype shape
-embedding_sparse_backward _grad _indices _num_weights _padding_idx _scale_grad_by_freq
-  = unsafePerformIO $ (ATen.cast5 ATen.embedding_sparse_backward_ttllb)
-    _grad
-    _indices
-    _num_weights
-    _padding_idx
-    _scale_grad_by_freq
 
 embedding_bag
   :: Tensor dtype shape
@@ -1231,21 +939,6 @@ grid_sampler_2d _input _grid _interpolation_mode _padding_mode =
                                                            _interpolation_mode
                                                            _padding_mode
 
-grid_sampler_2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> (Tensor dtype shape, Tensor dtype shape)
-grid_sampler_2d_backward _grad_output _input _grid _interpolation_mode _padding_mode
-  = unsafePerformIO $ (ATen.cast5 ATen.grid_sampler_2d_backward_tttll)
-    _grad_output
-    _input
-    _grid
-    _interpolation_mode
-    _padding_mode
-
 grid_sampler_3d
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -1257,21 +950,6 @@ grid_sampler_3d _input _grid _interpolation_mode _padding_mode =
                                                            _grid
                                                            _interpolation_mode
                                                            _padding_mode
-
-grid_sampler_3d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> (Tensor dtype shape, Tensor dtype shape)
-grid_sampler_3d_backward _grad_output _input _grid _interpolation_mode _padding_mode
-  = unsafePerformIO $ (ATen.cast5 ATen.grid_sampler_3d_backward_tttll)
-    _grad_output
-    _input
-    _grid
-    _interpolation_mode
-    _padding_mode
 
 hinge_embedding_loss
   :: Tensor dtype shape
@@ -1417,18 +1095,6 @@ kl_div :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
 kl_div _self _target _reduction =
   unsafePerformIO $ (ATen.cast3 ATen.kl_div_ttl) _self _target _reduction
 
-kl_div_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Tensor dtype shape
-kl_div_backward _grad_output _self _target _reduction =
-  unsafePerformIO $ (ATen.cast4 ATen.kl_div_backward_tttl) _grad_output
-                                                           _self
-                                                           _target
-                                                           _reduction
-
 kthvalue
   :: Tensor dtype shape
   -> Int
@@ -1472,61 +1138,6 @@ native_layer_norm _input _weight _bias _M _N _eps =
                                                                _M
                                                                _N
                                                                _eps
-
-native_layer_norm_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-native_layer_norm_backward _grad_out _input _mean _rstd _weight _M _N _output_mask
-  = unsafePerformIO $ (ATen.cast8 ATen.native_layer_norm_backward_tttttlla)
-    _grad_out
-    _input
-    _mean
-    _rstd
-    _weight
-    _M
-    _N
-    _output_mask
-
-native_layer_norm_double_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-native_layer_norm_double_backward _ggI _ggW _ggb _gO _input _mean _rstd _weight _M _N _output_mask
-  = unsafePerformIO
-    $ (ATen.cast11 ATen.native_layer_norm_double_backward_ttttttttlla)
-        _ggI
-        _ggW
-        _ggb
-        _gO
-        _input
-        _mean
-        _rstd
-        _weight
-        _M
-        _N
-        _output_mask
 
 -- linear :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 -- linear _input _weight _bias = unsafePerformIO $ (ATen.cast3 ATen.linear_ttt) _input _weight _bias
@@ -1736,74 +1347,6 @@ mkldnn_convolution _self _weight _bias _padding _stride _dilation _groups =
                                                                  _dilation
                                                                  _groups
 
-mkldnn_convolution_backward_input
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Tensor dtype shape
-mkldnn_convolution_backward_input _self_size _grad_output _weight _padding _stride _dilation _groups _bias_defined
-  = unsafePerformIO
-    $ (ATen.cast8 ATen.mkldnn_convolution_backward_input_lttllllb)
-        _self_size
-        _grad_output
-        _weight
-        _padding
-        _stride
-        _dilation
-        _groups
-        _bias_defined
-
-mkldnn_convolution_backward_weights
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> (Tensor dtype shape, Tensor dtype shape)
-mkldnn_convolution_backward_weights _weight_size _grad_output _self _padding _stride _dilation _groups _bias_defined
-  = unsafePerformIO
-    $ (ATen.cast8 ATen.mkldnn_convolution_backward_weights_lttllllb)
-        _weight_size
-        _grad_output
-        _self
-        _padding
-        _stride
-        _dilation
-        _groups
-        _bias_defined
-
-mkldnn_convolution_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-mkldnn_convolution_backward _self _grad_output _weight _padding _stride _dilation _groups _output_mask
-  = unsafePerformIO $ (ATen.cast8 ATen.mkldnn_convolution_backward_tttlllla)
-    _self
-    _grad_output
-    _weight
-    _padding
-    _stride
-    _dilation
-    _groups
-    _output_mask
-
 miopen_batch_norm
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -1828,30 +1371,6 @@ miopen_batch_norm _input _weight _bias _running_mean _running_var _training _exp
     _exponential_average_factor
     _epsilon
 
-miopen_batch_norm_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Double
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-miopen_batch_norm_backward _input _grad_output _weight _running_mean _running_var _save_mean _save_var _epsilon
-  = unsafePerformIO $ (ATen.cast8 ATen.miopen_batch_norm_backward_tttttttd)
-    _input
-    _grad_output
-    _weight
-    _running_mean
-    _running_var
-    _save_mean
-    _save_var
-    _epsilon
-
 miopen_convolution
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -1874,86 +1393,6 @@ miopen_convolution _self _weight _bias _padding _stride _dilation _groups _bench
     _groups
     _benchmark
     _deterministic
-
-miopen_convolution_backward_input
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-miopen_convolution_backward_input _self_size _grad_output _weight _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast9 ATen.miopen_convolution_backward_input_lttllllbb)
-        _self_size
-        _grad_output
-        _weight
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-
-miopen_convolution_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-miopen_convolution_backward _self _grad_output _weight _padding _stride _dilation _groups _benchmark _deterministic _output_mask
-  = unsafePerformIO $ (ATen.cast10 ATen.miopen_convolution_backward_tttllllbba)
-    _self
-    _grad_output
-    _weight
-    _padding
-    _stride
-    _dilation
-    _groups
-    _benchmark
-    _deterministic
-    _output_mask
-
-miopen_convolution_backward_bias :: Tensor dtype shape -> Tensor dtype shape
-miopen_convolution_backward_bias _grad_output = unsafePerformIO
-  $ (ATen.cast1 ATen.miopen_convolution_backward_bias_t) _grad_output
-
-miopen_convolution_backward_weight
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-miopen_convolution_backward_weight _weight_size _grad_output _self _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast9 ATen.miopen_convolution_backward_weight_lttllllbb)
-        _weight_size
-        _grad_output
-        _self
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
 
 miopen_convolution_transpose
   :: Tensor dtype shape
@@ -1980,83 +1419,6 @@ miopen_convolution_transpose _self _weight _bias _padding _output_padding _strid
     _benchmark
     _deterministic
 
-miopen_convolution_transpose_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-miopen_convolution_transpose_backward _self _grad_output _weight _padding _output_padding _stride _dilation _groups _benchmark _deterministic _output_mask
-  = unsafePerformIO
-    $ (ATen.cast11 ATen.miopen_convolution_transpose_backward_tttlllllbba)
-        _self
-        _grad_output
-        _weight
-        _padding
-        _output_padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-        _output_mask
-
-miopen_convolution_transpose_backward_input
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-miopen_convolution_transpose_backward_input _grad_output _weight _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast8 ATen.miopen_convolution_transpose_backward_input_ttllllbb)
-        _grad_output
-        _weight
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-
-miopen_convolution_transpose_backward_weight
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-miopen_convolution_transpose_backward_weight _weight_size _grad_output _self _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast9 ATen.miopen_convolution_transpose_backward_weight_lttllllbb)
-        _weight_size
-        _grad_output
-        _self
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-
 miopen_depthwise_convolution
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -2080,104 +1442,6 @@ miopen_depthwise_convolution _self _weight _bias _padding _stride _dilation _gro
     _benchmark
     _deterministic
 
-miopen_depthwise_convolution_backward_input
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-miopen_depthwise_convolution_backward_input _self_size _grad_output _weight _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast9 ATen.miopen_depthwise_convolution_backward_input_lttllllbb)
-        _self_size
-        _grad_output
-        _weight
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-
-miopen_depthwise_convolution_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-miopen_depthwise_convolution_backward _self _grad_output _weight _padding _stride _dilation _groups _benchmark _deterministic _output_mask
-  = unsafePerformIO
-    $ (ATen.cast10 ATen.miopen_depthwise_convolution_backward_tttllllbba)
-        _self
-        _grad_output
-        _weight
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-        _output_mask
-
-miopen_depthwise_convolution_backward_weight
-  :: [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> [Int]
-  -> [Int]
-  -> [Int]
-  -> Int
-  -> Bool
-  -> Bool
-  -> Tensor dtype shape
-miopen_depthwise_convolution_backward_weight _weight_size _grad_output _self _padding _stride _dilation _groups _benchmark _deterministic
-  = unsafePerformIO
-    $ (ATen.cast9 ATen.miopen_depthwise_convolution_backward_weight_lttllllbb)
-        _weight_size
-        _grad_output
-        _self
-        _padding
-        _stride
-        _dilation
-        _groups
-        _benchmark
-        _deterministic
-
-miopen_rnn
-  :: Tensor dtype shape
-  -> [Tensor dtype shape]
-  -> Int
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> Int
-  -> Bool
-  -> Double
-  -> Bool
-  -> Bool
-  -> [Int]
-  -> Tensor dtype shape
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
 miopen_rnn _input _weight _weight_stride0 _hx _cx _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state
   = unsafePerformIO $ (ATen.cast14 ATen.miopen_rnn_tllttlllbdbblt)
     _input
@@ -2194,74 +1458,6 @@ miopen_rnn _input _weight _weight_stride0 _hx _cx _mode _hidden_size _num_layers
     _bidirectional
     _batch_sizes
     _dropout_state
-
-miopen_rnn_backward
-  :: Tensor dtype shape
-  -> [Tensor dtype shape]
-  -> Int
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> Int
-  -> Bool
-  -> Double
-  -> Bool
-  -> Bool
-  -> [Int]
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> ( Bool
-     , Bool
-     , Bool
-     , Bool
-     )
-  -> ( Tensor
-         dtype
-         shape
-     , Tensor
-         dtype
-         shape
-     , Tensor
-         dtype
-         shape
-     , [ Tensor
-           dtype
-           shape
-       ]
-     )
-miopen_rnn_backward _input _weight _weight_stride0 _weight_buf _hx _cx _output _grad_output _grad_hy _grad_cy _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state _reserve _output_mask
-  = unsafePerformIO
-    $ (ATen.cast21 ATen.miopen_rnn_backward_tlltttttttlllbdbbltta)
-        _input
-        _weight
-        _weight_stride0
-        _weight_buf
-        _hx
-        _cx
-        _output
-        _grad_output
-        _grad_hy
-        _grad_cy
-        _mode
-        _hidden_size
-        _num_layers
-        _batch_first
-        _dropout
-        _train
-        _bidirectional
-        _batch_sizes
-        _dropout_state
-        _reserve
-        _output_mask
-
--- mm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- mm _self _mat2 = unsafePerformIO $ (ATen.cast2 ATen.mm_tt) _self _mat2
 
 mode
   :: Tensor dtype shape
@@ -2369,76 +1565,6 @@ batch_norm_gather_stats_with_counts _input _mean _invstd _running_mean _running_
         _eps
         _counts
 
-native_batch_norm_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Bool
-  -> Double
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-native_batch_norm_backward _grad_out _input _weight _running_mean _running_var _save_mean _save_invstd _train _eps _output_mask
-  = unsafePerformIO $ (ATen.cast10 ATen.native_batch_norm_backward_tttttttbda)
-    _grad_out
-    _input
-    _weight
-    _running_mean
-    _running_var
-    _save_mean
-    _save_invstd
-    _train
-    _eps
-    _output_mask
-
-batch_norm_backward_reduce
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Bool
-  -> Bool
-  -> Bool
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-batch_norm_backward_reduce _grad_out _input _mean _invstd _input_g _weight_g _bias_g
-  = unsafePerformIO $ (ATen.cast7 ATen.batch_norm_backward_reduce_ttttbbb)
-    _grad_out
-    _input
-    _mean
-    _invstd
-    _input_g
-    _weight_g
-    _bias_g
-
-batch_norm_backward_elemt
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-batch_norm_backward_elemt _grad_out _input _mean _invstd _weight _mean_dy _mean_dy_xmu
-  = unsafePerformIO $ (ATen.cast7 ATen.batch_norm_backward_elemt_ttttttt)
-    _grad_out
-    _input
-    _mean
-    _invstd
-    _weight
-    _mean_dy
-    _mean_dy_xmu
-
 batch_norm_update_stats
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -2528,31 +1654,12 @@ prelu :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 prelu _self _weight =
   unsafePerformIO $ (ATen.cast2 ATen.prelu_tt) _self _weight
 
-prelu_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Tensor dtype shape, Tensor dtype shape)
-prelu_backward _grad_output _self _weight =
-  unsafePerformIO
-    $ (ATen.cast3 ATen.prelu_backward_ttt) _grad_output _self _weight
-
 gelu :: Tensor dtype shape -> Tensor dtype shape
 gelu _self = unsafePerformIO $ (ATen.cast1 ATen.gelu_t) _self
-
-gelu_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-gelu_backward _grad _self =
-  unsafePerformIO $ (ATen.cast2 ATen.gelu_backward_tt) _grad _self
 
 hardshrink :: Tensor dtype shape -> Float -> Tensor dtype shape
 hardshrink _self _lambd =
   unsafePerformIO $ (ATen.cast2 ATen.hardshrink_ts) _self _lambd
-
-hardshrink_backward
-  :: Tensor dtype shape -> Tensor dtype shape -> Float -> Tensor dtype shape
-hardshrink_backward _grad_out _self _lambd =
-  unsafePerformIO
-    $ (ATen.cast3 ATen.hardshrink_backward_tts) _grad_out _self _lambd
 
 rsqrt :: Tensor dtype shape -> Tensor dtype shape
 rsqrt _self = unsafePerformIO $ (ATen.cast1 ATen.rsqrt_t) _self
@@ -2634,12 +1741,6 @@ tensordot _self _other _dims_self _dims_other =
 threshold :: Tensor dtype shape -> Float -> Float -> Tensor dtype shape
 threshold _self _threshold _value =
   unsafePerformIO $ (ATen.cast3 ATen.threshold_tss) _self _threshold _value
-
-threshold_backward
-  :: Tensor dtype shape -> Tensor dtype shape -> Float -> Tensor dtype shape
-threshold_backward _grad_output _self _threshold =
-  unsafePerformIO
-    $ (ATen.cast3 ATen.threshold_backward_tts) _grad_output _self _threshold
 
 one_hot :: Tensor dtype shape -> Int -> Tensor dtype shape
 one_hot _self _num_classes =
@@ -2769,11 +1870,6 @@ addmm
 addmm _self _mat1 _mat2 _beta _alpha =
   unsafePerformIO $ (ATen.cast5 ATen.addmm_tttss) _self _mat1 _mat2 _beta _alpha
 
-to_dense_backward
-  :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-to_dense_backward _grad _input =
-  unsafePerformIO $ (ATen.cast2 ATen.to_dense_backward_tt) _grad _input
-
 hspmm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 hspmm _mat1 _mat2 = unsafePerformIO $ (ATen.cast2 ATen.hspmm_tt) _mat1 _mat2
 
@@ -2797,11 +1893,6 @@ mkldnn_reorder_conv2d_weight _self _padding _stride _dilation _groups =
     _stride
     _dilation
     _groups
-
-to_mkldnn_backward
-  :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-to_mkldnn_backward _grad _input =
-  unsafePerformIO $ (ATen.cast2 ATen.to_mkldnn_backward_tt) _grad _input
 
 --quantize_linear :: Tensor dtype shape -> Double -> Int -> DType -> Tensor dtype shape
 --quantize_linear _self _scale _zero_point _dtype = unsafePerformIO $ (ATen.cast4 ATen.quantize_linear_tdls) _self _scale _zero_point _dtype
@@ -2830,24 +1921,6 @@ fake_quantize_per_tensor_affine _self _scale _zero_point _quant_min _quant_max
     _zero_point
     _quant_min
     _quant_max
-
-fake_quantize_per_tensor_affine_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Double
-  -> Int
-  -> Int
-  -> Int
-  -> Tensor dtype shape
-fake_quantize_per_tensor_affine_backward _grad _self _scale _zero_point _quant_min _quant_max
-  = unsafePerformIO
-    $ (ATen.cast6 ATen.fake_quantize_per_tensor_affine_backward_ttdlll)
-        _grad
-        _self
-        _scale
-        _zero_point
-        _quant_min
-        _quant_max
 
 meshgrid :: [Tensor dtype shape] -> [Tensor dtype shape]
 meshgrid _tensors = unsafePerformIO $ (ATen.cast1 ATen.meshgrid_l) _tensors
@@ -3263,36 +2336,6 @@ equal _self _other = unsafePerformIO $ (ATen.cast2 ATen.equal_tt) _self _other
 alias :: Tensor dtype shape -> Tensor dtype shape
 alias _self = unsafePerformIO $ (ATen.cast1 ATen.alias_t) _self
 
--- binary_cross_entropy :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
--- binary_cross_entropy _self _target _weight _reduction = unsafePerformIO $ (ATen.cast4 ATen.binary_cross_entropy_tttl) _self _target _weight _reduction
-
-binary_cross_entropy_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Tensor dtype shape
-binary_cross_entropy_backward _grad_output _self _target _weight _reduction =
-  unsafePerformIO $ (ATen.cast5 ATen.binary_cross_entropy_backward_ttttl)
-    _grad_output
-    _self
-    _target
-    _weight
-    _reduction
-
-mse_loss_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Tensor dtype shape
-mse_loss_backward _grad_output _self _target _reduction =
-  unsafePerformIO $ (ATen.cast4 ATen.mse_loss_backward_tttl) _grad_output
-                                                             _self
-                                                             _target
-                                                             _reduction
-
 -- |
 -- >>> t = l1Loss @D.ReduceNone @Float @[2,2] ones ones
 -- >>> (dtype t,shape t)
@@ -3308,27 +2351,6 @@ l1Loss
   -> Tensor dtype (ConditionalReduction shape reduction)
 l1Loss self target = unsafePerformIO
   $ (ATen.cast3 ATen.l1_loss_ttl) self target (reductionVal @reduction)
-
--- |
--- >>> t = l1LossBackward @D.ReduceNone @Float @[2,2] (ones @Float @[2,2]) ones ones
--- >>> (dtype t,shape t)
--- (Float,[2,2])
--- >>> t = l1LossBackward @D.ReduceSum @Float @[2,2] (ones @Float @'[]) ones ones
--- >>> (dtype t,shape t)
--- (Float,[2,2])
-l1LossBackward
-  :: forall reduction dtype shape
-   . (KnownReduction reduction)
-  => Tensor dtype (ConditionalReduction shape reduction)
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-l1LossBackward grad_output self target =
-  unsafePerformIO $ (ATen.cast4 ATen.l1_loss_backward_tttl)
-    grad_output
-    self
-    target
-    (reductionVal @reduction)
 
 -- | WIP, see https://github.com/pytorch/pytorch/blob/master/aten/src/THNN/generic/MultiMarginCriterion.c
 -- >>> t = multiMarginLoss @D.ReduceNone @Float @3 @2 ones ones 1 1 ones :: Tensor Float '[3]
@@ -3354,25 +2376,6 @@ multiMarginLoss self target p margin weight =
                                                                weight
                                                                (reductionVal @reduction)
 
-multi_margin_loss_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Float
-  -> Float
-  -> Tensor dtype shape
-  -> Int
-  -> Tensor dtype shape
-multi_margin_loss_backward _grad_output _self _target _p _margin _weight _reduction
-  = unsafePerformIO $ (ATen.cast7 ATen.multi_margin_loss_backward_tttsstl)
-    _grad_output
-    _self
-    _target
-    _p
-    _margin
-    _weight
-    _reduction
-
 -- | WIP, see https://github.com/pytorch/pytorch/blob/master/aten/src/THNN/generic/MultiLabelMarginCriterion.c
 multilabel_margin_loss
   :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
@@ -3390,21 +2393,6 @@ multilabel_margin_loss_forward _self _target _reduction =
     _self
     _target
     _reduction
-
-multilabel_margin_loss_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-multilabel_margin_loss_backward _grad_output _self _target _reduction _is_target
-  = unsafePerformIO $ (ATen.cast5 ATen.multilabel_margin_loss_backward_tttlt)
-    _grad_output
-    _self
-    _target
-    _reduction
-    _is_target
 
 -- | The negative log likelihood loss.
 -- >>> input = randn @Float @[3, 5]
@@ -3439,25 +2427,6 @@ nll_loss_forward _self _target _weight _reduction _ignore_index =
                                                              _reduction
                                                              _ignore_index
 
-nll_loss_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-nll_loss_backward _grad_output _self _target _weight _reduction _ignore_index _total_weight
-  = unsafePerformIO $ (ATen.cast7 ATen.nll_loss_backward_ttttllt)
-    _grad_output
-    _self
-    _target
-    _weight
-    _reduction
-    _ignore_index
-    _total_weight
-
 nll_loss2d
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -3486,25 +2455,6 @@ nll_loss2d_forward _self _target _weight _reduction _ignore_index =
                                                                _reduction
                                                                _ignore_index
 
-nll_loss2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-nll_loss2d_backward _grad_output _self _target _weight _reduction _ignore_index _total_weight
-  = unsafePerformIO $ (ATen.cast7 ATen.nll_loss2d_backward_ttttllt)
-    _grad_output
-    _self
-    _target
-    _weight
-    _reduction
-    _ignore_index
-    _total_weight
-
 -- |
 -- >>> t = smooth_l1_loss @D.ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
 -- >>> (dtype t,shape t)
@@ -3520,27 +2470,6 @@ smooth_l1_loss
   -> Tensor dtype (ConditionalReduction shape reduction)
 smooth_l1_loss self target =
   unsafePerformIO $ (ATen.cast3 ATen.smooth_l1_loss_ttl)
-    self
-    target
-    (reductionVal @reduction)
-
--- |
--- >>> t = smooth_l1_loss_backward @D.ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
--- >>> (dtype t,shape t)
--- (Float,[2,2])
--- >>> t = smooth_l1_loss_backward @D.ReduceSum (ones :: Tensor Float '[]) (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
--- >>> (dtype t,shape t)
--- (Float,[2,2])
-smooth_l1_loss_backward
-  :: forall reduction dtype shape
-   . (KnownReduction reduction)
-  => Tensor dtype (ConditionalReduction shape reduction)
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-smooth_l1_loss_backward grad_output self target =
-  unsafePerformIO $ (ATen.cast4 ATen.smooth_l1_loss_backward_tttl)
-    grad_output
     self
     target
     (reductionVal @reduction)
@@ -3565,27 +2494,6 @@ soft_margin_loss self target =
     (reductionVal @reduction)
 
 -- |
--- >>> t = soft_margin_loss_backward @D.ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
--- >>> (dtype t,shape t)
--- (Float,[2,2])
--- >>> t = soft_margin_loss_backward @D.ReduceSum (ones :: Tensor Float '[]) (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
--- >>> (dtype t,shape t)
--- (Float,[2,2])
-soft_margin_loss_backward
-  :: forall reduction dtype shape
-   . (KnownReduction reduction)
-  => Tensor dtype (ConditionalReduction shape reduction)
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-soft_margin_loss_backward grad_output self target =
-  unsafePerformIO $ (ATen.cast4 ATen.soft_margin_loss_backward_tttl)
-    grad_output
-    self
-    target
-    (reductionVal @reduction)
-
--- |
 -- >>> t = elu (ones :: Tensor Float '[2,2]) 1 1 1
 -- >>> (dtype t,shape t)
 -- (Float,[2,2])
@@ -3593,54 +2501,16 @@ elu :: Tensor dtype shape -> Float -> Float -> Float -> Tensor dtype shape
 elu self alpha scale input_scale =
   unsafePerformIO $ (ATen.cast4 ATen.elu_tsss) self alpha scale input_scale
 
-elu_backward
-  :: Tensor dtype shape
-  -> Float
-  -> Float
-  -> Float
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-elu_backward _grad_output _alpha _scale _input_scale _output =
-  unsafePerformIO $ (ATen.cast5 ATen.elu_backward_tssst) _grad_output
-                                                         _alpha
-                                                         _scale
-                                                         _input_scale
-                                                         _output
-
 glu :: Tensor dtype shape -> Int -> Tensor dtype shape
 glu _self _dim = unsafePerformIO $ (ATen.cast2 ATen.glu_tl) _self _dim
-
-glu_backward
-  :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
-glu_backward _grad_output _self _dim =
-  unsafePerformIO $ (ATen.cast3 ATen.glu_backward_ttl) _grad_output _self _dim
 
 hardtanh :: Tensor dtype shape -> Float -> Float -> Tensor dtype shape
 hardtanh _self _min_val _max_val =
   unsafePerformIO $ (ATen.cast3 ATen.hardtanh_tss) _self _min_val _max_val
 
-hardtanh_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Float
-  -> Float
-  -> Tensor dtype shape
-hardtanh_backward _grad_output _self _min_val _max_val =
-  unsafePerformIO $ (ATen.cast4 ATen.hardtanh_backward_ttss) _grad_output
-                                                             _self
-                                                             _min_val
-                                                             _max_val
-
 leaky_relu :: Tensor dtype shape -> Float -> Tensor dtype shape
 leaky_relu _self _negative_slope =
   unsafePerformIO $ (ATen.cast2 ATen.leaky_relu_ts) _self _negative_slope
-
-leaky_relu_backward
-  :: Tensor dtype shape -> Tensor dtype shape -> Float -> Tensor dtype shape
-leaky_relu_backward _grad_output _self _negative_slope =
-  unsafePerformIO $ (ATen.cast3 ATen.leaky_relu_backward_tts) _grad_output
-                                                              _self
-                                                              _negative_slope
 
 log_sigmoid :: Tensor dtype shape -> Tensor dtype shape
 log_sigmoid _self = unsafePerformIO $ (ATen.cast1 ATen.log_sigmoid_t) _self
@@ -3650,59 +2520,13 @@ log_sigmoid_forward
 log_sigmoid_forward _self =
   unsafePerformIO $ (ATen.cast1 ATen.log_sigmoid_forward_t) _self
 
-log_sigmoid_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-log_sigmoid_backward _grad_output _self _buffer =
-  unsafePerformIO
-    $ (ATen.cast3 ATen.log_sigmoid_backward_ttt) _grad_output _self _buffer
-
-rrelu_with_noise_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Float
-  -> Float
-  -> Bool
-  -> Tensor dtype shape
-rrelu_with_noise_backward _grad_output _self _noise _lower _upper _training =
-  unsafePerformIO $ (ATen.cast6 ATen.rrelu_with_noise_backward_tttssb)
-    _grad_output
-    _self
-    _noise
-    _lower
-    _upper
-    _training
-
 softplus :: Tensor dtype shape -> Float -> Float -> Tensor dtype shape
 softplus _self _beta _threshold =
   unsafePerformIO $ (ATen.cast3 ATen.softplus_tss) _self _beta _threshold
 
-softplus_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Float
-  -> Float
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-softplus_backward _grad_output _self _beta _threshold _output =
-  unsafePerformIO $ (ATen.cast5 ATen.softplus_backward_ttsst) _grad_output
-                                                              _self
-                                                              _beta
-                                                              _threshold
-                                                              _output
-
 softshrink :: Tensor dtype shape -> Float -> Tensor dtype shape
 softshrink _self _lambd =
   unsafePerformIO $ (ATen.cast2 ATen.softshrink_ts) _self _lambd
-
-softshrink_backward
-  :: Tensor dtype shape -> Tensor dtype shape -> Float -> Tensor dtype shape
-softshrink_backward _grad_output _self _lambd =
-  unsafePerformIO
-    $ (ATen.cast3 ATen.softshrink_backward_tts) _grad_output _self _lambd
 
 adaptive_avg_pool2d :: Tensor dtype shape -> (Int, Int) -> Tensor dtype shape
 adaptive_avg_pool2d _self _output_size =
@@ -3719,12 +2543,6 @@ adaptive_avg_pool3d
 adaptive_avg_pool3d _self _output_size =
   unsafePerformIO $ (ATen.cast2 ATen.adaptive_avg_pool3d_tl) _self _output_size
 
-adaptive_avg_pool3d_backward
-  :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-adaptive_avg_pool3d_backward _grad_output _self =
-  unsafePerformIO
-    $ (ATen.cast2 ATen.adaptive_avg_pool3d_backward_tt) _grad_output _self
-
 adaptive_max_pool2d
   :: Tensor dtype shape
   -> (Int, Int)
@@ -3732,34 +2550,12 @@ adaptive_max_pool2d
 adaptive_max_pool2d _self _output_size =
   unsafePerformIO $ (ATen.cast2 ATen.adaptive_max_pool2d_tl) _self _output_size
 
-adaptive_max_pool2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-adaptive_max_pool2d_backward _grad_output _self _indices =
-  unsafePerformIO $ (ATen.cast3 ATen.adaptive_max_pool2d_backward_ttt)
-    _grad_output
-    _self
-    _indices
-
 adaptive_max_pool3d
   :: Tensor dtype shape
   -> (Int, Int, Int)
   -> (Tensor dtype shape, Tensor dtype shape)
 adaptive_max_pool3d _self _output_size =
   unsafePerformIO $ (ATen.cast2 ATen.adaptive_max_pool3d_tl) _self _output_size
-
-adaptive_max_pool3d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-adaptive_max_pool3d_backward _grad_output _self _indices =
-  unsafePerformIO $ (ATen.cast3 ATen.adaptive_max_pool3d_backward_ttt)
-    _grad_output
-    _self
-    _indices
 
 avg_pool2d
   :: Tensor dtype shape
@@ -3779,27 +2575,6 @@ avg_pool2d _self _kernel_size _stride _padding _ceil_mode _count_include_pad _di
                                                            _count_include_pad
                                                            _divisor_override
 
-avg_pool2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> Bool
-  -> Bool
-  -> Int
-  -> Tensor dtype shape
-avg_pool2d_backward _grad_output _self _kernel_size _stride _padding _ceil_mode _count_include_pad _divisor_override
-  = unsafePerformIO $ (ATen.cast8 ATen.avg_pool2d_backward_ttlllbbl)
-    _grad_output
-    _self
-    _kernel_size
-    _stride
-    _padding
-    _ceil_mode
-    _count_include_pad
-    _divisor_override
-
 avg_pool3d
   :: Tensor dtype shape
   -> (Int, Int, Int)
@@ -3818,27 +2593,6 @@ avg_pool3d _self _kernel_size _stride _padding _ceil_mode _count_include_pad _di
                                                            _count_include_pad
                                                            _divisor_override
 
-avg_pool3d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> Bool
-  -> Bool
-  -> Int
-  -> Tensor dtype shape
-avg_pool3d_backward _grad_output _self _kernel_size _stride _padding _ceil_mode _count_include_pad _divisor_override
-  = unsafePerformIO $ (ATen.cast8 ATen.avg_pool3d_backward_ttlllbbl)
-    _grad_output
-    _self
-    _kernel_size
-    _stride
-    _padding
-    _ceil_mode
-    _count_include_pad
-    _divisor_override
-
 fractional_max_pool2d
   :: Tensor dtype shape
   -> (Int, Int)
@@ -3852,21 +2606,6 @@ fractional_max_pool2d _self _kernel_size _output_size _random_samples =
     _output_size
     _random_samples
 
-fractional_max_pool2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-fractional_max_pool2d_backward _grad_output _self _kernel_size _output_size _indices
-  = unsafePerformIO $ (ATen.cast5 ATen.fractional_max_pool2d_backward_ttllt)
-    _grad_output
-    _self
-    _kernel_size
-    _output_size
-    _indices
-
 fractional_max_pool3d
   :: Tensor dtype shape
   -> (Int, Int, Int)
@@ -3879,21 +2618,6 @@ fractional_max_pool3d _self _kernel_size _output_size _random_samples =
     _kernel_size
     _output_size
     _random_samples
-
-fractional_max_pool3d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-fractional_max_pool3d_backward _grad_output _self _kernel_size _output_size _indices
-  = unsafePerformIO $ (ATen.cast5 ATen.fractional_max_pool3d_backward_ttllt)
-    _grad_output
-    _self
-    _kernel_size
-    _output_size
-    _indices
 
 max_pool2d_with_indices
   :: Tensor dtype shape
@@ -3912,27 +2636,6 @@ max_pool2d_with_indices _self _kernel_size _stride _padding _dilation _ceil_mode
     _dilation
     _ceil_mode
 
-max_pool2d_with_indices_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> Bool
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-max_pool2d_with_indices_backward _grad_output _self _kernel_size _stride _padding _dilation _ceil_mode _indices
-  = unsafePerformIO
-    $ (ATen.cast8 ATen.max_pool2d_with_indices_backward_ttllllbt) _grad_output
-                                                                  _self
-                                                                  _kernel_size
-                                                                  _stride
-                                                                  _padding
-                                                                  _dilation
-                                                                  _ceil_mode
-                                                                  _indices
-
 max_pool3d_with_indices
   :: Tensor dtype shape
   -> (Int, Int, Int)
@@ -3950,27 +2653,6 @@ max_pool3d_with_indices _self _kernel_size _stride _padding _dilation _ceil_mode
     _dilation
     _ceil_mode
 
-max_pool3d_with_indices_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> Bool
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-max_pool3d_with_indices_backward _grad_output _self _kernel_size _stride _padding _dilation _ceil_mode _indices
-  = unsafePerformIO
-    $ (ATen.cast8 ATen.max_pool3d_with_indices_backward_ttllllbt) _grad_output
-                                                                  _self
-                                                                  _kernel_size
-                                                                  _stride
-                                                                  _padding
-                                                                  _dilation
-                                                                  _ceil_mode
-                                                                  _indices
-
 max_unpool2d
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -3979,18 +2661,6 @@ max_unpool2d
 max_unpool2d _self _indices _output_size =
   unsafePerformIO
     $ (ATen.cast3 ATen.max_unpool2d_ttl) _self _indices _output_size
-
-max_unpool2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> Tensor dtype shape
-max_unpool2d_backward _grad_output _self _indices _output_size =
-  unsafePerformIO $ (ATen.cast4 ATen.max_unpool2d_backward_tttl) _grad_output
-                                                                 _self
-                                                                 _indices
-                                                                 _output_size
 
 max_unpool3d
   :: Tensor dtype shape
@@ -4006,115 +2676,34 @@ max_unpool3d _self _indices _output_size _stride _padding =
                                                          _stride
                                                          _padding
 
-max_unpool3d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> Tensor dtype shape
-max_unpool3d_backward _grad_output _self _indices _output_size _stride _padding
-  = unsafePerformIO $ (ATen.cast6 ATen.max_unpool3d_backward_tttlll)
-    _grad_output
-    _self
-    _indices
-    _output_size
-    _stride
-    _padding
-
 reflection_pad1d :: Tensor dtype shape -> (Int, Int) -> Tensor dtype shape
 reflection_pad1d _self _padding =
   unsafePerformIO $ (ATen.cast2 ATen.reflection_pad1d_tl) _self _padding
-
-reflection_pad1d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> Tensor dtype shape
-reflection_pad1d_backward _grad_output _self _padding =
-  unsafePerformIO $ (ATen.cast3 ATen.reflection_pad1d_backward_ttl)
-    _grad_output
-    _self
-    _padding
 
 reflection_pad2d
   :: Tensor dtype shape -> (Int, Int, Int, Int) -> Tensor dtype shape
 reflection_pad2d _self _padding =
   unsafePerformIO $ (ATen.cast2 ATen.reflection_pad2d_tl) _self _padding
 
-reflection_pad2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int, Int)
-  -> Tensor dtype shape
-reflection_pad2d_backward _grad_output _self _padding =
-  unsafePerformIO $ (ATen.cast3 ATen.reflection_pad2d_backward_ttl)
-    _grad_output
-    _self
-    _padding
-
 replication_pad1d :: Tensor dtype shape -> (Int, Int) -> Tensor dtype shape
 replication_pad1d _self _padding =
   unsafePerformIO $ (ATen.cast2 ATen.replication_pad1d_tl) _self _padding
-
-replication_pad1d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> Tensor dtype shape
-replication_pad1d_backward _grad_output _self _padding =
-  unsafePerformIO $ (ATen.cast3 ATen.replication_pad1d_backward_ttl)
-    _grad_output
-    _self
-    _padding
 
 replication_pad2d
   :: Tensor dtype shape -> (Int, Int, Int, Int) -> Tensor dtype shape
 replication_pad2d _self _padding =
   unsafePerformIO $ (ATen.cast2 ATen.replication_pad2d_tl) _self _padding
 
-replication_pad2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int, Int)
-  -> Tensor dtype shape
-replication_pad2d_backward _grad_output _self _padding =
-  unsafePerformIO $ (ATen.cast3 ATen.replication_pad2d_backward_ttl)
-    _grad_output
-    _self
-    _padding
-
 replication_pad3d
   :: Tensor dtype shape -> (Int, Int, Int, Int, Int, Int) -> Tensor dtype shape
 replication_pad3d _self _padding =
   unsafePerformIO $ (ATen.cast2 ATen.replication_pad3d_tl) _self _padding
-
-replication_pad3d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int, Int, Int, Int)
-  -> Tensor dtype shape
-replication_pad3d_backward _grad_output _self _padding =
-  unsafePerformIO $ (ATen.cast3 ATen.replication_pad3d_backward_ttl)
-    _grad_output
-    _self
-    _padding
 
 upsample_linear1d :: Tensor dtype shape -> Int -> Bool -> Tensor dtype shape
 upsample_linear1d _self _output_size _align_corners =
   unsafePerformIO $ (ATen.cast3 ATen.upsample_linear1d_tlb) _self
                                                             _output_size
                                                             _align_corners
-
-upsample_linear1d_backward
-  :: Tensor dtype shape -> Int -> (Int, Int, Int) -> Bool -> Tensor dtype shape
-upsample_linear1d_backward _grad_output _output_size _input_size _align_corners
-  = unsafePerformIO $ (ATen.cast4 ATen.upsample_linear1d_backward_tllb)
-    _grad_output
-    _output_size
-    _input_size
-    _align_corners
 
 upsample_bilinear2d
   :: Tensor dtype shape -> (Int, Int) -> Bool -> Tensor dtype shape
@@ -4123,38 +2712,12 @@ upsample_bilinear2d _self _output_size _align_corners =
                                                               _output_size
                                                               _align_corners
 
-upsample_bilinear2d_backward
-  :: Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int, Int, Int)
-  -> Bool
-  -> Tensor dtype shape
-upsample_bilinear2d_backward _grad_output _output_size _input_size _align_corners
-  = unsafePerformIO $ (ATen.cast4 ATen.upsample_bilinear2d_backward_tllb)
-    _grad_output
-    _output_size
-    _input_size
-    _align_corners
-
 upsample_bicubic2d
   :: Tensor dtype shape -> (Int, Int) -> Bool -> Tensor dtype shape
 upsample_bicubic2d _self _output_size _align_corners =
   unsafePerformIO $ (ATen.cast3 ATen.upsample_bicubic2d_tlb) _self
                                                              _output_size
                                                              _align_corners
-
-upsample_bicubic2d_backward
-  :: Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int, Int, Int)
-  -> Bool
-  -> Tensor dtype shape
-upsample_bicubic2d_backward _grad_output _output_size _input_size _align_corners
-  = unsafePerformIO $ (ATen.cast4 ATen.upsample_bicubic2d_backward_tllb)
-    _grad_output
-    _output_size
-    _input_size
-    _align_corners
 
 upsample_trilinear3d
   :: Tensor dtype shape -> (Int, Int, Int) -> Bool -> Tensor dtype shape
@@ -4163,130 +2726,18 @@ upsample_trilinear3d _self _output_size _align_corners =
                                                                _output_size
                                                                _align_corners
 
-upsample_trilinear3d_backward
-  :: Tensor dtype shape
-  -> (Int, Int, Int)
-  -> (Int, Int, Int, Int, Int)
-  -> Bool
-  -> Tensor dtype shape
-upsample_trilinear3d_backward _grad_output _output_size _input_size _align_corners
-  = unsafePerformIO $ (ATen.cast4 ATen.upsample_trilinear3d_backward_tllb)
-    _grad_output
-    _output_size
-    _input_size
-    _align_corners
-
 upsample_nearest1d :: Tensor dtype shape -> Int -> Tensor dtype shape
 upsample_nearest1d _self _output_size =
   unsafePerformIO $ (ATen.cast2 ATen.upsample_nearest1d_tl) _self _output_size
-
-upsample_nearest1d_backward
-  :: Tensor dtype shape -> Int -> (Int, Int, Int) -> Tensor dtype shape
-upsample_nearest1d_backward _grad_output _output_size _input_size =
-  unsafePerformIO $ (ATen.cast3 ATen.upsample_nearest1d_backward_tll)
-    _grad_output
-    _output_size
-    _input_size
 
 upsample_nearest2d :: Tensor dtype shape -> (Int, Int) -> Tensor dtype shape
 upsample_nearest2d _self _output_size =
   unsafePerformIO $ (ATen.cast2 ATen.upsample_nearest2d_tl) _self _output_size
 
-upsample_nearest2d_backward
-  :: Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int, Int, Int)
-  -> Tensor dtype shape
-upsample_nearest2d_backward _grad_output _output_size _input_size =
-  unsafePerformIO $ (ATen.cast3 ATen.upsample_nearest2d_backward_tll)
-    _grad_output
-    _output_size
-    _input_size
-
 upsample_nearest3d
   :: Tensor dtype shape -> (Int, Int, Int) -> Tensor dtype shape
 upsample_nearest3d _self _output_size =
   unsafePerformIO $ (ATen.cast2 ATen.upsample_nearest3d_tl) _self _output_size
-
-upsample_nearest3d_backward
-  :: Tensor dtype shape
-  -> (Int, Int, Int)
-  -> (Int, Int, Int, Int, Int)
-  -> Tensor dtype shape
-upsample_nearest3d_backward _grad_output _output_size _input_size =
-  unsafePerformIO $ (ATen.cast3 ATen.upsample_nearest3d_backward_tll)
-    _grad_output
-    _output_size
-    _input_size
-
-sigmoid_backward
-  :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-sigmoid_backward _grad_output _output =
-  unsafePerformIO $ (ATen.cast2 ATen.sigmoid_backward_tt) _grad_output _output
-
-tanh_backward :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-tanh_backward _grad_output _output =
-  unsafePerformIO $ (ATen.cast2 ATen.tanh_backward_tt) _grad_output _output
-
-conv_transpose2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-conv_transpose2d_backward _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _columns _ones _output_mask
-  = unsafePerformIO $ (ATen.cast11 ATen.conv_transpose2d_backward_tttllllltta)
-    _grad_output
-    _self
-    _weight
-    _kernel_size
-    _stride
-    _padding
-    _output_padding
-    _dilation
-    _columns
-    _ones
-    _output_mask
-
-conv_transpose3d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-conv_transpose3d_backward _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _finput _fgrad_input _output_mask
-  = unsafePerformIO $ (ATen.cast11 ATen.conv_transpose3d_backward_tttllllltta)
-    _grad_output
-    _self
-    _weight
-    _kernel_size
-    _stride
-    _padding
-    _output_padding
-    _dilation
-    _finput
-    _fgrad_input
-    _output_mask
 
 thnn_conv2d
   :: Tensor dtype shape
@@ -4322,32 +2773,6 @@ thnn_conv2d_forward _self _weight _kernel_size _bias _stride _padding =
                                                                  _bias
                                                                  _stride
                                                                  _padding
-
-thnn_conv2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-thnn_conv2d_backward _grad_output _self _weight _kernel_size _stride _padding _finput _fgrad_input _output_mask
-  = unsafePerformIO $ (ATen.cast9 ATen.thnn_conv2d_backward_tttllltta)
-    _grad_output
-    _self
-    _weight
-    _kernel_size
-    _stride
-    _padding
-    _finput
-    _fgrad_input
-    _output_mask
 
 thnn_conv_depthwise2d
   :: Tensor dtype shape
@@ -4387,27 +2812,6 @@ thnn_conv_depthwise2d_forward _self _weight _kernel_size _bias _stride _padding 
     _padding
     _dilation
 
-thnn_conv_depthwise2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Bool, Bool)
-  -> (Tensor dtype shape, Tensor dtype shape)
-thnn_conv_depthwise2d_backward _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask
-  = unsafePerformIO $ (ATen.cast8 ATen.thnn_conv_depthwise2d_backward_tttlllla)
-    _grad_output
-    _self
-    _weight
-    _kernel_size
-    _stride
-    _padding
-    _dilation
-    _output_mask
-
 thnn_conv3d
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -4443,32 +2847,6 @@ thnn_conv3d_forward _self _weight _kernel_size _bias _stride _padding =
                                                                  _stride
                                                                  _padding
 
-thnn_conv3d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-thnn_conv3d_backward _grad_output _self _weight _kernel_size _stride _padding _finput _fgrad_input _output_mask
-  = unsafePerformIO $ (ATen.cast9 ATen.thnn_conv3d_backward_tttllltta)
-    _grad_output
-    _self
-    _weight
-    _kernel_size
-    _stride
-    _padding
-    _finput
-    _fgrad_input
-    _output_mask
-
 conv_dilated2d
   :: Tensor dtype shape
   -> Tensor dtype shape
@@ -4486,30 +2864,6 @@ conv_dilated2d _self _weight _kernel_size _bias _stride _padding _dilation =
                                                              _stride
                                                              _padding
                                                              _dilation
-
-conv_dilated2d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-conv_dilated2d_backward _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask
-  = unsafePerformIO $ (ATen.cast8 ATen.conv_dilated2d_backward_tttlllla)
-    _grad_output
-    _self
-    _weight
-    _kernel_size
-    _stride
-    _padding
-    _dilation
-    _output_mask
 
 conv_dilated3d
   :: Tensor dtype shape
@@ -4529,30 +2883,6 @@ conv_dilated3d _self _weight _kernel_size _bias _stride _padding _dilation =
                                                              _padding
                                                              _dilation
 
-conv_dilated3d_backward
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Int, Int, Int)
-  -> (Bool, Bool, Bool)
-  -> ( Tensor dtype shape
-     , Tensor dtype shape
-     , Tensor dtype shape
-     )
-conv_dilated3d_backward _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask
-  = unsafePerformIO $ (ATen.cast8 ATen.conv_dilated3d_backward_tttlllla)
-    _grad_output
-    _self
-    _weight
-    _kernel_size
-    _stride
-    _padding
-    _dilation
-    _output_mask
-
 col2im
   :: Tensor dtype shape
   -> (Int, Int)
@@ -4569,20 +2899,6 @@ col2im _self _output_size _kernel_size _dilation _padding _stride =
                                                     _padding
                                                     _stride
 
-col2im_backward
-  :: Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> Tensor dtype shape
-col2im_backward _grad_output _kernel_size _dilation _padding _stride =
-  unsafePerformIO $ (ATen.cast5 ATen.col2im_backward_tllll) _grad_output
-                                                            _kernel_size
-                                                            _dilation
-                                                            _padding
-                                                            _stride
-
 im2col
   :: Tensor dtype shape
   -> (Int, Int)
@@ -4596,20 +2912,4 @@ im2col _self _kernel_size _dilation _padding _stride =
                                                    _dilation
                                                    _padding
                                                    _stride
-
-im2col_backward
-  :: Tensor dtype shape
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> (Int, Int)
-  -> Tensor dtype shape
-im2col_backward _grad_output _input_size _kernel_size _dilation _padding _stride
-  = unsafePerformIO $ (ATen.cast6 ATen.im2col_backward_tlllll) _grad_output
-                                                               _input_size
-                                                               _kernel_size
-                                                               _dilation
-                                                               _padding
-                                                               _stride
 
