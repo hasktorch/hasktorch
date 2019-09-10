@@ -332,7 +332,8 @@ mse_loss a b = unsafePerformIO $ (ATen.cast3 ATen.mse_loss_ttl) a b ATen.kMean
 -- >>> dtype &&& shape $ log_softmax (ones :: Tensor Float '[2,2]) 1
 -- (Float,[2,2])
 log_softmax :: Tensor dtype shape -> Int -> Tensor dtype shape
-log_softmax input dim = unsafePerformIO $ (ATen.cast3 ATen.log_softmax_tls) input dim (dtype input)
+log_softmax input dim =
+  unsafePerformIO $ (ATen.cast3 ATen.log_softmax_tls) input dim (dtype input)
 
 
 type family Square (shape :: [Nat]) :: [Nat] where
@@ -473,12 +474,17 @@ acos _self = unsafePerformIO $ (ATen.cast1 ATen.acos_t) _self
 -- >>> :t t
 -- t :: Tensor Float '[1, 3, 4]
 avg_pool1d
-  :: forall k s p c i n dtype.
-     (All KnownNat [k,s,p,c,i,n])
-  => Tensor dtype '[n,c,i]
-  -> Tensor dtype '[n,c,ConvOutputSize s p k i]
-avg_pool1d _self =
-  unsafePerformIO $ (ATen.cast6 ATen.avg_pool1d_tlllbb) _self (natValI @k) (natValI @s) (natValI @p) False True 
+  :: forall k s p c i n dtype
+   . (All KnownNat '[k, s, p, c, i, n])
+  => Tensor dtype '[n, c, i]
+  -> Tensor dtype '[n, c, ConvOutputSize s p k i]
+avg_pool1d _self = unsafePerformIO $ (ATen.cast6 ATen.avg_pool1d_tlllbb)
+  _self
+  (natValI @k)
+  (natValI @s)
+  (natValI @p)
+  False
+  True
 
 -- adaptive_avg_pool1d :: Tensor dtype shape -> Int -> Tensor dtype shape
 -- adaptive_avg_pool1d _self _output_size = unsafePerformIO $ (ATen.cast2 ATen.adaptive_avg_pool1d_tl) _self _output_size
@@ -791,7 +797,8 @@ frac _self = unsafePerformIO $ (ATen.cast1 ATen.frac_t) _self
 -- >>> dtype &&& shape $ full_like (ones :: Tensor Float '[3,2]) 3.0
 -- (Float,[3,2])
 full_like :: Tensor dtype shape -> Float -> Tensor dtype shape
-full_like _self _fill_value = unsafePerformIO $ (ATen.cast2 ATen.full_like_ts) _self _fill_value
+full_like _self _fill_value =
+  unsafePerformIO $ (ATen.cast2 ATen.full_like_ts) _self _fill_value
 
 -- grid_sampler :: Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> Tensor dtype shape
 -- grid_sampler _input _grid _interpolation_mode _padding_mode = unsafePerformIO $ (ATen.cast4 ATen.grid_sampler_ttll) _input _grid _interpolation_mode _padding_mode
@@ -1487,8 +1494,19 @@ maxDim _self =
 medianAll :: Tensor dtype shape -> Tensor dtype '[]
 medianAll _self = unsafePerformIO $ (ATen.cast1 ATen.median_t) _self
 
-medianDim :: forall d dtype shape. (KnownNat d) => Tensor dtype shape -> Tensor dtype (DropValue shape d)
-medianDim _self = fst $ (unsafePerformIO $ (ATen.cast2 ATen.median_tl) _self (natValI @d) :: (Tensor dtype  (DropValue shape d),Tensor Int (DropValue shape d)))
+medianDim
+  :: forall d dtype shape
+   . (KnownNat d)
+  => Tensor dtype shape
+  -> Tensor dtype (DropValue shape d)
+medianDim _self =
+  fst
+    $ (unsafePerformIO $ (ATen.cast2 ATen.median_tl) _self (natValI @d) :: ( Tensor
+            dtype
+            (DropValue shape d)
+        , Tensor Int (DropValue shape d)
+        )
+      )
 
 -- sort :: Tensor dtype shape -> Int -> Bool -> (Tensor dtype shape,Tensor dtype shape)
 -- sort _self _dim _descending = unsafePerformIO $ (ATen.cast3 ATen.sort_tlb) _self _dim _descending
@@ -1556,37 +1574,68 @@ multilabel_margin_loss _self _target _reduction =
 
 -- | The negative log likelihood loss.
 -- See https://pytorch.org/docs/stable/nn.functional.html?highlight=nll_loss#torch.nn.functional.nll_loss.
--- >>> input = randn @Float @[3, 5]
--- >>> target = 
--- >>> t = nll_loss @D.ReduceNone @Float @[2, 2] 
+-- >>> input <- randn @Float @[3, 5]
+-- >>> target = UnsafeMkTensor (D.asTensor ([1, 0, 4] :: [Int])) :: Tensor Int '[3]
+-- >>> weight = ones @Float @'[5]
+-- >>> dtype &&& shape $ nll_loss @D.ReduceNone @Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
+-- (Float,[3])
+-- >>> dtype &&& shape $ nll_loss @D.ReduceMean @Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
+-- (Float,[])
+-- >>> input <- randn @Float @[3, 5, 2]
+-- >>> target = UnsafeMkTensor (D.asTensor ([[1, 1], [0, 1], [4, 0]] :: [[Int]])) :: Tensor Int '[3, 2]
+-- >>> weight = ones @Float @'[5]
+-- >>> dtype &&& shape $ nll_loss @D.ReduceNone @Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
+-- (Float,[3,2])
+-- >>> dtype &&& shape $ nll_loss @D.ReduceMean @Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
+-- (Float,[])
+-- >>> input <- randn @Float @[3, 5, 1, 2]
+-- >>> target = UnsafeMkTensor (D.asTensor ([[[1, 1]], [[0, 1]], [[4, 0]]] :: [[[Int]]])) :: Tensor Int '[3, 1, 2]
+-- >>> weight = ones @Float @'[5]
+-- >>> dtype &&& shape $ nll_loss @D.ReduceNone @Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
+-- (Float,[3,1,2])
+-- >>> dtype &&& shape $ nll_loss @D.ReduceMean @Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
+-- (Float,[])
+-- >>> input <- randn @Float @[3, 5, 2, 1, 2]
+-- >>> target = UnsafeMkTensor (D.asTensor ([[[[1, 1]], [[0, 2]]], [[[0, 1]], [[1, 0]]], [[[4, 0]], [[1, 2]]]] :: [[[[Int]]]])) :: Tensor Int '[3, 2, 1, 2]
+-- >>> weight = ones @Float @'[5]
+-- >>> dtype &&& shape $ nll_loss @D.ReduceNone @Float @3 @5 @[2, 1, 2] (log_softmax input 1) target weight (-100)
+-- (Float,[3,2,1,2])
+-- >>> dtype &&& shape $ nll_loss @D.ReduceMean @Float @3 @5 @[2, 1, 2] (log_softmax input 1) target weight (-100)
+-- (Float,[])
 nll_loss
-  :: forall reduction dtype shape
-   . (KnownReduction reduction)
-  => Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
+  :: forall reduction dtype n c ds
+   . (KnownReduction reduction, KnownNat n, KnownNat c, KnownShape ds)
+  => Tensor dtype (n ': c ': ds)
+  -> Tensor Int (n ': ds)
+  -> Tensor dtype '[c]
   -> Int
-  -> Tensor dtype shape
-nll_loss input target weight ignoreIndex =
-  unsafePerformIO $ (ATen.cast5 ATen.nll_loss_tttll) input
-                                                     target
-                                                     weight
-                                                     (reductionVal @reduction)
-                                                     ignoreIndex
-
-nll_loss2d
-  :: Tensor dtype shape
-  -> Tensor dtype shape
-  -> Tensor dtype shape
-  -> Int
-  -> Int
-  -> Tensor dtype shape
-nll_loss2d _self _target _weight _reduction _ignore_index =
-  unsafePerformIO $ (ATen.cast5 ATen.nll_loss2d_tttll) _self
-                                                       _target
-                                                       _weight
-                                                       _reduction
-                                                       _ignore_index
+  -> Tensor dtype (ConditionalReduction (n ': ds) reduction)
+nll_loss input target weight ignoreIndex = case shapeVal @ds of
+  [] -> unsafePerformIO $ (ATen.cast5 ATen.nll_loss_tttll)
+    input
+    target
+    weight
+    (reductionVal @reduction)
+    ignoreIndex
+  [_h, _w] -> unsafePerformIO $ (ATen.cast5 ATen.nll_loss2d_tttll)
+    input
+    target
+    weight
+    (reductionVal @reduction)
+    ignoreIndex
+  h : t -> case reductionVal @reduction of
+    0 -> UnsafeMkTensor . D.reshape out $ (natValI @n) : h : t
+    _ -> UnsafeMkTensor out
+   where
+    t'      = [1, foldl (*) h t]
+    input'  = D.reshape (toDynamic input) (natValI @n : natValI @c : t')
+    target' = D.reshape (toDynamic target) (natValI @n : t')
+    out     = unsafePerformIO $ (ATen.cast5 ATen.nll_loss2d_tttll)
+      input'
+      target'
+      weight
+      (reductionVal @reduction)
+      ignoreIndex
 
 -- |
 -- >>> dtype &&& shape $ smooth_l1_loss @D.ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
@@ -1606,12 +1655,21 @@ smooth_l1_loss self target =
     (reductionVal @reduction)
 
 -- |
--- >>> dtype &&& shape $ soft_margin_loss @ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
+-- >>> dtype &&& shape $ soft_margin_loss @D.ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
 -- (Float,[2,2])
--- >>> dtype &&& shape $ soft_margin_loss @ReduceSum (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
+-- >>> dtype &&& shape $ soft_margin_loss @D.ReduceSum (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
 -- (Float,[])
-soft_margin_loss :: forall reduction dtype shape. (KnownReduction reduction) => Tensor dtype shape -> Tensor dtype shape -> Tensor dtype (ConditionalReduction shape reduction)
-soft_margin_loss _self _target = unsafePerformIO $ (ATen.cast3 ATen.soft_margin_loss_ttl) _self _target (reductionVal @reduction)
+soft_margin_loss
+  :: forall reduction dtype shape
+   . (KnownReduction reduction)
+  => Tensor dtype shape
+  -> Tensor dtype shape
+  -> Tensor dtype (ConditionalReduction shape reduction)
+soft_margin_loss _self _target =
+  unsafePerformIO $ (ATen.cast3 ATen.soft_margin_loss_ttl)
+    _self
+    _target
+    (reductionVal @reduction)
 
 -- elu :: Tensor dtype shape -> Float -> Float -> Float -> Tensor dtype shape
 -- elu _self _alpha _scale _input_scale = unsafePerformIO $ (ATen.cast4 ATen.elu_tsss) _self _alpha _scale _input_scale
