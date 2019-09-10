@@ -54,24 +54,10 @@ randn = UnsafeMkTensor <$> D.randn
   (optionsRuntimeShape @dtype @shape)
   (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
 
-type family SquareCheck (shape :: [Nat]) :: Constraint where
-  SquareCheck '[] = ()
-  SquareCheck (h ': '[]) = ()
-  SquareCheck (h ': h ': t) = SquareCheck (h ': t)
-  SquareCheck (h ': h2 ': _) = TypeError (Text "Shape is not square " :<>:
-                                          Text "(dimensions " :<>:
-                                          ShowType h :<>:
-                                          Text " and " :<>:
-                                          ShowType h2 :<>:
-                                          Text " differ)")
-
 eyeSquare
-  :: forall dtype shape
-   . ( SquareCheck shape
-     , KnownNat (ListLength shape)
-     , TensorOptions dtype shape
-     )
-  => Tensor dtype shape
+  :: forall dtype n
+   . (KnownNat n, TensorOptions dtype '[n, n])
+  => Tensor dtype '[n, n]
 eyeSquare = UnsafeMkTensor $ D.eyeSquare
-  (natValI @(ListLength shape))
-  (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+  (natValI @n)
+  (D.withDType (optionsRuntimeDType @dtype @'[n, n]) D.defaultOpts)

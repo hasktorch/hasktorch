@@ -108,6 +108,6 @@ spec = do
     checkDynamicTensorAttributes c
     D.asValue (toDynamic c) `shouldBe` ([[3], [3]] :: [[Float]])
   describe "eyeSquare" $ it "works" $ do
-    let t = eyeSquare :: Tensor Float '[2, 2, 2]
+    let t = eyeSquare @Float @2
     checkDynamicTensorAttributes t
-    D.asValue (toDynamic t) `shouldBe` ([[[1]]] :: [[[Float]]])
+    D.asValue (toDynamic t) `shouldBe` ([[1, 0], [0, 1]] :: [[Float]])
