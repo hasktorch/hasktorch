@@ -293,16 +293,33 @@ binary_cross_entropy t target weight = unsafePerformIO $ (cast4 ATen.binary_cros
 mse_loss :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype '[]
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 
-logSoftmax :: Tensor dtype shape -> Int -> Tensor dtype shape
-logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
+-- |
+-- >>> dtype &&& shape $ log_softmax (ones :: Tensor Float '[2,2]) 0
+-- (Float,[2,2])
+-- >>> dtype &&& shape $ log_softmax (ones :: Tensor Float '[2,2]) 1
+-- (Float,[2,2])
+log_softmax :: Tensor dtype shape -> Int -> Tensor dtype shape
+log_softmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
 
-inverse :: Tensor dtype shape -> Tensor dtype shape
+
+type family Square (shape :: [Nat]) :: [Nat] where
+    Square (n:n:'[]) = '[n,n]
+    Square (b:n:n:'[]) = '[b,n,n]
+    Square _  = TypeError (Text "This shape must be square matrix or batch + squre matrix.")
+
+-- |
+-- >>> t <- randn :: IO (Tensor Float '[3,2,2])
+-- >>> dtype &&& shape $ inverse t
+-- (Float,[3,2,2])
+-- >>> t <- randn :: IO (Tensor Float '[2,2])
+-- >>> dtype &&& shape $ inverse t
+-- (Float,[2,2])
+inverse :: Tensor dtype shape -> Tensor dtype (Square shape)
 inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 
 symeig :: Tensor dtype shape -> Bool -> Tri -> (Tensor dtype shape, Tensor dtype shape)
 symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
   where boolUpper = isUpper upper
-
 
 eig :: Tensor dtype shape -> Bool -> (Tensor dtype shape, Tensor dtype shape)
 eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
@@ -409,8 +426,19 @@ feature_alpha_dropout _input _p _train = unsafePerformIO $ (cast3 ATen.feature_a
 acos :: Tensor dtype shape -> Tensor dtype shape
 acos _self = unsafePerformIO $ (cast1 ATen.acos_t) _self
 
-avg_pool1d :: Tensor dtype shape -> Int -> Int -> Int -> Bool -> Bool -> Tensor dtype shape
-avg_pool1d _self _kernel_size _stride _padding _ceil_mode _count_include_pad = unsafePerformIO $ (cast6 ATen.avg_pool1d_tlllbb) _self _kernel_size _stride _padding _ceil_mode _count_include_pad
+-- |
+-- >>> t = avg_pool1d @1 @1 @0 (ones::Tensor Float '[1,3,4])
+-- >>> shape t
+-- [1,3,4]
+-- >>> :t t
+-- t :: Tensor Float '[1, 3, 4]
+avg_pool1d
+  :: forall k s p c i n dtype.
+     (All KnownNat [k,s,p,c,i,n])
+  => Tensor dtype '[n,c,i]
+  -> Tensor dtype '[n,c,ConvOutputSize s p k i]
+avg_pool1d _self =
+  unsafePerformIO $ (cast6 ATen.avg_pool1d_tlllbb) _self (natValI @k) (natValI @s) (natValI @p) False True 
 
 adaptive_avg_pool1d :: Tensor dtype shape -> Int -> Tensor dtype shape
 adaptive_avg_pool1d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool1d_tl) _self _output_size
@@ -1375,8 +1403,13 @@ nll_loss2d _self _target _weight _reduction _ignore_index = unsafePerformIO $ (c
 smooth_l1_loss :: forall reduction dtype shape. (KnownReduction reduction) => Tensor dtype shape -> Tensor dtype shape -> Tensor dtype (ConditionalReduction shape reduction)
 smooth_l1_loss _self _target = unsafePerformIO $ (cast3 ATen.smooth_l1_loss_ttl) _self _target (reductionVal @reduction)
 
-soft_margin_loss :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
-soft_margin_loss _self _target _reduction = unsafePerformIO $ (cast3 ATen.soft_margin_loss_ttl) _self _target _reduction
+-- |
+-- >>> dtype &&& shape $ soft_margin_loss @ReduceNone (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
+-- (Float,[2,2])
+-- >>> dtype &&& shape $ soft_margin_loss @ReduceSum (ones :: Tensor Float '[2,2]) (ones :: Tensor Float '[2,2])
+-- (Float,[])
+soft_margin_loss :: forall reduction dtype shape. (KnownReduction reduction) => Tensor dtype shape -> Tensor dtype shape -> Tensor dtype (ConditionalReduction shape reduction)
+soft_margin_loss _self _target = unsafePerformIO $ (cast3 ATen.soft_margin_loss_ttl) _self _target (reductionVal @reduction)
 
 elu :: Tensor dtype shape -> Float -> Float -> Float -> Tensor dtype shape
 elu _self _alpha _scale _input_scale = unsafePerformIO $ (cast4 ATen.elu_tsss) _self _alpha _scale _input_scale
