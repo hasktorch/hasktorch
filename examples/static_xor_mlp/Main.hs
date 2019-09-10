@@ -21,7 +21,7 @@
 module Main where
 
 import Torch.Static
-import Torch.Static.Native
+import Torch.Static.Native hiding (linear)
 import Torch.Static.Factories
 import Torch.DType
 import qualified Torch.Autograd as A

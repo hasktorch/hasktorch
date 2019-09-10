@@ -293,47 +293,43 @@ binary_cross_entropy t target weight = unsafePerformIO $ (cast4 ATen.binary_cros
 mse_loss :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype '[]
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 
--- maxPool2d :: Tensor dtype shape -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor dtype shape
--- maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
---     (cast6 ATen.max_pool2d_tllllb) input [kh, kw] [dh, dw] [ph, pw] ([1, 1] :: [Int]) False
+logSoftmax :: Tensor dtype shape -> Int -> Tensor dtype shape
+logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
 
--- logSoftmax :: Tensor dtype shape -> Int -> Tensor dtype shape
--- logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
+inverse :: Tensor dtype shape -> Tensor dtype shape
+inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 
--- inverse :: Tensor dtype shape -> Tensor dtype shape
--- inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
-
--- symeig :: Tensor dtype shape -> Bool -> Tri -> (Tensor dtype shape, Tensor dtype shape)
--- symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
---   where boolUpper = isUpper upper
+symeig :: Tensor dtype shape -> Bool -> Tri -> (Tensor dtype shape, Tensor dtype shape)
+symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
+  where boolUpper = isUpper upper
 
 
--- eig :: Tensor dtype shape -> Bool -> (Tensor dtype shape, Tensor dtype shape)
--- eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
+eig :: Tensor dtype shape -> Bool -> (Tensor dtype shape, Tensor dtype shape)
+eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
 
--- svd :: Tensor dtype shape -> Bool -> Bool -> (Tensor dtype shape, Tensor dtype shape, Tensor dtype shape)
--- svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
+svd :: Tensor dtype shape -> Bool -> Bool -> (Tensor dtype shape, Tensor dtype shape, Tensor dtype shape)
+svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
 
--- cholesky :: Tensor dtype shape -> Tri -> Tensor dtype shape
--- cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
---   where boolUpper = isUpper upper
+cholesky :: Tensor dtype shape -> Tri -> Tensor dtype shape
+cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
+  where boolUpper = isUpper upper
 
--- cholesky_solve :: Tensor dtype shape -> Tensor dtype shape -> Tri -> Tensor dtype shape
--- cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
---   where boolUpper = isUpper upper
+cholesky_solve :: Tensor dtype shape -> Tensor dtype shape -> Tri -> Tensor dtype shape
+cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
+  where boolUpper = isUpper upper
 
--- solve :: Tensor dtype shape -> Tensor dtype shape -> (Tensor dtype shape,Tensor dtype shape)
--- solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
+solve :: Tensor dtype shape -> Tensor dtype shape -> (Tensor dtype shape,Tensor dtype shape)
+solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
 
--- cholesky_inverse :: Tensor dtype shape -> Tri -> Tensor dtype shape
--- cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
---   where boolUpper = isUpper upper
+cholesky_inverse :: Tensor dtype shape -> Tri -> Tensor dtype shape
+cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
+  where boolUpper = isUpper upper
 
--- geqrf :: Tensor dtype shape -> (Tensor dtype shape, Tensor dtype shape)
--- geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
+geqrf :: Tensor dtype shape -> (Tensor dtype shape, Tensor dtype shape)
+geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
 
--- orgqr :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
+orgqr :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
+orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
 
 -- |
 -- >>> dtype &&& shape $ sign (ones :: Tensor Float '[3,2])
@@ -520,12 +516,12 @@ convolution _input _weight _bias _stride _padding _dilation _transposed _output_
 
 
 -- |
--- >>> :kind! CondOutputSize 1 0 1 4
--- CondOutputSize 1 0 1 4 :: Nat
+-- >>> :kind! ConvOutputSize 1 0 1 4
+-- ConvOutputSize 1 0 1 4 :: Nat
 -- = 4
 
-type family CondOutputSize (stride :: Nat) (padding :: Nat) (kernel_size :: Nat)  (input_size :: Nat) :: Nat where
-    CondOutputSize s p k i = (Div (i + 2 * p - k) s) + 1
+type family ConvOutputSize (stride :: Nat) (padding :: Nat) (kernel_size :: Nat)  (input_size :: Nat) :: Nat where
+    ConvOutputSize s p k i = (Div (i + 2 * p - k) s) + 1
 
 -- |
 -- >>> t = conv1d @1 @0 (ones::Tensor Float '[1,3,4]) (ones :: Tensor Float '[10,3,1]) (ones :: Tensor Float '[10])
@@ -539,7 +535,7 @@ conv1d
   => Tensor dtype '[n,ci,i]
   -> Tensor dtype '[co,ci,k]
   -> Tensor dtype '[co]
-  -> Tensor dtype '[n,co,CondOutputSize stride padding k i]
+  -> Tensor dtype '[n,co,ConvOutputSize stride padding k i]
 conv1d _input _weight _bias =
   unsafePerformIO $ (cast7 ATen.conv1d_tttllll) _input _weight _bias (natValI @stride::Int) (natValI @padding::Int) (1::Int) (1::Int)
 
@@ -560,7 +556,7 @@ conv2d
   => Tensor dtype '[n,ci,i0,i1]
   -> Tensor dtype '[co,ci,k0,k1]
   -> Tensor dtype '[co]
-  -> Tensor dtype '[n,co,CondOutputSize (Fst s) (Fst p) k0 i0,CondOutputSize (Snd s) (Snd p) k1 i1]
+  -> Tensor dtype '[n,co,ConvOutputSize (Fst s) (Fst p) k0 i0,ConvOutputSize (Snd s) (Snd p) k1 i1]
 conv2d _input _weight _bias =
   unsafePerformIO $ (cast7 ATen.conv2d_tttllll)
     _input
@@ -588,7 +584,7 @@ conv3d
   => Tensor dtype '[n,ci,i0,i1,i2]
   -> Tensor dtype '[co,ci,k0,k1,k2]
   -> Tensor dtype '[co]
-  -> Tensor dtype '[n,co,CondOutputSize (Fst3 s) (Fst3 p) k0 i0,CondOutputSize (Snd3 s) (Snd3 p) k1 i1,CondOutputSize (Trd3 s) (Trd3 p) k2 i2]
+  -> Tensor dtype '[n,co,ConvOutputSize (Fst3 s) (Fst3 p) k0 i0,ConvOutputSize (Snd3 s) (Snd3 p) k1 i1,ConvOutputSize (Trd3 s) (Trd3 p) k2 i2]
 conv3d _input _weight _bias =
   unsafePerformIO $ (cast7 ATen.conv3d_tttllll)
     _input
@@ -788,8 +784,8 @@ layer_norm _input _normalized_shape _weight _bias _eps _cudnn_enable = unsafePer
 native_layer_norm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> Double -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape)
 native_layer_norm _input _weight _bias _M _N _eps = unsafePerformIO $ (cast6 ATen.native_layer_norm_tttlld) _input _weight _bias _M _N _eps
 
--- linear :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.linear_ttt) _input _weight _bias
+linear :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
+linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.linear_ttt) _input _weight _bias
 
 mkldnn_linear :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 mkldnn_linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.mkldnn_linear_ttt) _input _weight _bias
@@ -851,20 +847,71 @@ max_pool1d
   :: forall kernel stride padding c i n dtype.
      (All KnownNat [kernel,stride,padding,c,i,n])
   => Tensor dtype '[n,c,i]
-  -> Tensor dtype '[n,c,CondOutputSize stride padding kernel i]
+  -> Tensor dtype '[n,c,ConvOutputSize stride padding kernel i]
 max_pool1d _self = unsafePerformIO $ (cast6 ATen.max_pool1d_tllllb) _self (natValI @kernel) (natValI @stride) (natValI @padding) (1::Int) False
 
-max_pool2d :: Tensor dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Bool -> Tensor dtype shape
-max_pool2d _self _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
+-- |
+-- >>> t = max_pool2d @'(1,1) @'(1,1) @'(0,0) (ones::Tensor Float '[1,3,4,5])
+-- >>> shape t
+-- [1,3,4,5]
+-- >>> :t t
+-- t :: Tensor Float '[1, 3, 4, 5]
+max_pool2d
+  :: forall k s p c i0 i1 n dtype.
+     (All KnownNat [Fst k, Snd k,
+                    Fst s, Snd s,
+                    Fst p, Snd p,
+                    c,i0,i1,n])
+  => Tensor dtype '[n,c,i0,i1]
+  -> Tensor dtype '[n,c,ConvOutputSize (Fst s) (Fst p) (Fst k) i0,ConvOutputSize (Snd s) (Snd p) (Snd k) i1]
+max_pool2d _self =
+  unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb) _self [(natValI @(Fst k)),(natValI @(Snd k))] [(natValI @(Fst s)),(natValI @(Snd s))] [(natValI @(Fst p)),(natValI @(Snd p))] ([1,1]::[Int]) False
 
-mkldnn_max_pool2d :: Tensor dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Bool -> Tensor dtype shape
-mkldnn_max_pool2d _self _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.mkldnn_max_pool2d_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
+mkldnn_max_pool2d
+  :: forall k s p c i0 i1 n dtype.
+     (All KnownNat [Fst k, Snd k,
+                    Fst s, Snd s,
+                    Fst p, Snd p,
+                    c,i0,i1,n])
+  => Tensor dtype '[n,c,i0,i1]
+  -> Tensor dtype '[n,c,ConvOutputSize (Fst s) (Fst p) (Fst k) i0,ConvOutputSize (Snd s) (Snd p) (Snd k) i1]
+mkldnn_max_pool2d _self =
+  unsafePerformIO $ (cast6 ATen.mkldnn_max_pool2d_tllllb) _self [(natValI @(Fst k)),(natValI @(Snd k))] [(natValI @(Fst s)),(natValI @(Snd s))] [(natValI @(Fst p)),(natValI @(Snd p))] ([1,1]::[Int]) False
 
-quantized_max_pool2d :: Tensor dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor dtype shape
-quantized_max_pool2d _self _kernel_size _stride _padding _dilation = unsafePerformIO $ (cast5 ATen.quantized_max_pool2d_tllll) _self _kernel_size _stride _padding _dilation
+quantized_max_pool2d
+  :: forall k s p c i0 i1 n dtype.
+     (All KnownNat [Fst k, Snd k,
+                    Fst s, Snd s,
+                    Fst p, Snd p,
+                    c,i0,i1,n])
+  => Tensor dtype '[n,c,i0,i1]
+  -> Tensor dtype '[n,c,ConvOutputSize (Fst s) (Fst p) (Fst k) i0,ConvOutputSize (Snd s) (Snd p) (Snd k) i1]
+quantized_max_pool2d _self =
+  unsafePerformIO $ (cast5 ATen.quantized_max_pool2d_tllll) _self [(natValI @(Fst k)),(natValI @(Snd k))] [(natValI @(Fst s)),(natValI @(Snd s))] [(natValI @(Fst p)),(natValI @(Snd p))] ([1,1]::[Int])
 
-max_pool3d :: Tensor dtype shape -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Bool -> Tensor dtype shape
-max_pool3d _self _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
+-- |
+-- >>> t = max_pool3d @'(1,1,1) @'(1,1,1) @'(0,0,0) (ones::Tensor Float '[1,3,4,5,6])
+-- >>> shape t
+-- [1,3,4,5,6]
+-- >>> :t t
+-- t :: Tensor Float '[1, 3, 4, 5, 6]
+max_pool3d
+  :: forall k s p c i0 i1 i2 n dtype.
+     (All KnownNat [Fst3 k, Snd3 k, Trd3 k,
+                    Fst3 s, Snd3 s, Trd3 s,
+                    Fst3 p, Snd3 p, Trd3 p,
+                    c,i0,i1,i2,n])
+  => Tensor dtype '[n,c,i0,i1,i2]
+  -> Tensor dtype '[n,c,ConvOutputSize (Fst3 s) (Fst3 p) (Fst3 k) i0,ConvOutputSize (Snd3 s) (Snd3 p) (Snd3 k) i1,ConvOutputSize (Trd3 s) (Trd3 p) (Trd3 k) i2]
+max_pool3d _self =
+  unsafePerformIO $
+  (cast6 ATen.max_pool3d_tllllb)
+    _self
+    [(natValI @(Fst3 k)),(natValI @(Snd3 k)),(natValI @(Trd3 k))]
+    [(natValI @(Fst3 s)),(natValI @(Snd3 s)),(natValI @(Trd3 s))]
+    [(natValI @(Fst3 p)),(natValI @(Snd3 p)),(natValI @(Trd3 p))]
+    ([1,1,1]::[Int])
+    False
 
 min_values :: Tensor dtype shape -> Int -> Bool -> Tensor dtype shape
 min_values _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.min_values_tlb) _self _dim _keepdim
@@ -1367,11 +1414,47 @@ adaptive_max_pool2d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_
 adaptive_max_pool3d :: Tensor dtype shape -> (Int,Int,Int) -> (Tensor dtype shape,Tensor dtype shape)
 adaptive_max_pool3d _self _output_size = unsafePerformIO $ (cast2 ATen.adaptive_max_pool3d_tl) _self _output_size
 
-avg_pool2d :: Tensor dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Bool -> Bool -> Int -> Tensor dtype shape
-avg_pool2d _self _kernel_size _stride _padding _ceil_mode _count_include_pad _divisor_override = unsafePerformIO $ (cast7 ATen.avg_pool2d_tlllbbl) _self _kernel_size _stride _padding _ceil_mode _count_include_pad _divisor_override
+-- |
+-- >>> t = avg_pool2d @'(1,1) @'(1,1) @'(0,0) (ones::Tensor Float '[1,3,4,5])
+-- >>> shape t
+-- [1,3,4,5]
+-- >>> :t t
+-- t :: Tensor Float '[1, 3, 4, 5]
+avg_pool2d
+  :: forall k s p c i0 i1 n dtype.
+     (All KnownNat [Fst k, Snd k,
+                    Fst s, Snd s,
+                    Fst p, Snd p,
+                    c,i0,i1,n])
+  => Tensor dtype '[n,c,i0,i1]
+  -> Tensor dtype '[n,c,ConvOutputSize (Fst s) (Fst p) (Fst k) i0,ConvOutputSize (Snd s) (Snd p) (Snd k) i1]
+avg_pool2d _self =
+  unsafePerformIO $ (cast7 ATen.avg_pool2d_tlllbbl) _self [(natValI @(Fst k)),(natValI @(Snd k))] [(natValI @(Fst s)),(natValI @(Snd s))] [(natValI @(Fst p)),(natValI @(Snd p))] False True (1::Int)
 
-avg_pool3d :: Tensor dtype shape -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Bool -> Bool -> Int -> Tensor dtype shape
-avg_pool3d _self _kernel_size _stride _padding _ceil_mode _count_include_pad _divisor_override = unsafePerformIO $ (cast7 ATen.avg_pool3d_tlllbbl) _self _kernel_size _stride _padding _ceil_mode _count_include_pad _divisor_override
+-- |
+-- >>> t = avg_pool3d @'(1,1,1) @'(1,1,1) @'(0,0,0) (ones::Tensor Float '[1,3,4,5,6])
+-- >>> shape t
+-- [1,3,4,5,6]
+-- >>> :t t
+-- t :: Tensor Float '[1, 3, 4, 5, 6]
+avg_pool3d
+  :: forall k s p c i0 i1 i2 n dtype.
+     (All KnownNat [Fst3 k, Snd3 k, Trd3 k,
+                    Fst3 s, Snd3 s, Trd3 s,
+                    Fst3 p, Snd3 p, Trd3 p,
+                    c,i0,i1,i2,n])
+  => Tensor dtype '[n,c,i0,i1,i2]
+  -> Tensor dtype '[n,c,ConvOutputSize (Fst3 s) (Fst3 p) (Fst3 k) i0,ConvOutputSize (Snd3 s) (Snd3 p) (Snd3 k) i1,ConvOutputSize (Trd3 s) (Trd3 p) (Trd3 k) i2]
+avg_pool3d _self =
+  unsafePerformIO $
+  (cast7 ATen.avg_pool3d_tlllbbl)
+    _self
+    [(natValI @(Fst3 k)),(natValI @(Snd3 k)),(natValI @(Trd3 k))]
+    [(natValI @(Fst3 s)),(natValI @(Snd3 s)),(natValI @(Trd3 s))]
+    [(natValI @(Fst3 p)),(natValI @(Snd3 p)),(natValI @(Trd3 p))]
+    False
+    True
+    (1::Int)
 
 fractional_max_pool2d :: Tensor dtype shape -> (Int,Int) -> (Int,Int) -> Tensor dtype shape -> (Tensor dtype shape,Tensor dtype shape)
 fractional_max_pool2d _self _kernel_size _output_size _random_samples = unsafePerformIO $ (cast4 ATen.fractional_max_pool2d_tllt) _self _kernel_size _output_size _random_samples
