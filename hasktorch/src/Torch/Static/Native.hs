@@ -1389,28 +1389,28 @@ l1_loss _self _target = unsafePerformIO $ (cast3 ATen.l1_loss_ttl) _self _target
 -- | The negative log likelihood loss.
 -- See https://pytorch.org/docs/stable/nn.functional.html?highlight=nll_loss#torch.nn.functional.nll_loss.
 -- >>> input <- randn @Float @[3, 5]
--- >>> target = UnsafeMkTensor (asTensor ([1, 0, 4] :: [Int])) :: Tensor Int '[3]
+-- >>> target = UnsafeMkTensor (D.asTensor ([1, 0, 4] :: [Int])) :: Tensor Int '[3]
 -- >>> weight = ones @Float @'[5]
 -- >>> dtype &&& shape $ nll_loss @ReduceNone @Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
 -- (Float,[3])
 -- >>> dtype &&& shape $ nll_loss @ReduceMean @Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @Float @[3, 5, 2]
--- >>> target = UnsafeMkTensor (asTensor ([[1, 1], [0, 1], [4, 0]] :: [[Int]])) :: Tensor Int '[3, 2]
+-- >>> target = UnsafeMkTensor (D.asTensor ([[1, 1], [0, 1], [4, 0]] :: [[Int]])) :: Tensor Int '[3, 2]
 -- >>> weight = ones @Float @'[5]
 -- >>> dtype &&& shape $ nll_loss @ReduceNone @Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
 -- (Float,[3,2])
 -- >>> dtype &&& shape $ nll_loss @ReduceMean @Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @Float @[3, 5, 1, 2]
--- >>> target = UnsafeMkTensor (asTensor ([[[1, 1]], [[0, 1]], [[4, 0]]] :: [[[Int]]])) :: Tensor Int '[3, 1, 2]
+-- >>> target = UnsafeMkTensor (D.asTensor ([[[1, 1]], [[0, 1]], [[4, 0]]] :: [[[Int]]])) :: Tensor Int '[3, 1, 2]
 -- >>> weight = ones @Float @'[5]
 -- >>> dtype &&& shape $ nll_loss @ReduceNone @Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
 -- (Float,[3,1,2])
 -- >>> dtype &&& shape $ nll_loss @ReduceMean @Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @Float @[3, 5, 2, 1, 2]
--- >>> target = UnsafeMkTensor (asTensor ([[[[1, 1]], [[0, 2]]], [[[0, 1]], [[1, 0]]], [[[4, 0]], [[1, 2]]]] :: [[[[Int]]]])) :: Tensor Int '[3, 2, 1, 2]
+-- >>> target = UnsafeMkTensor (D.asTensor ([[[[1, 1]], [[0, 2]]], [[[0, 1]], [[1, 0]]], [[[4, 0]], [[1, 2]]]] :: [[[[Int]]]])) :: Tensor Int '[3, 2, 1, 2]
 -- >>> weight = ones @Float @'[5]
 -- >>> dtype &&& shape $ nll_loss @ReduceNone @Float @3 @5 @[2, 1, 2] (log_softmax input 1) target weight (-100)
 -- (Float,[3,2,1,2])
