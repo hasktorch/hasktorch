@@ -31,6 +31,7 @@ import           Prelude                 hiding ( sin
                                                 , atan
                                                 , atanh
                                                 , abs
+                                                , floor
                                                 , max
                                                 , min
                                                 , exp
@@ -2644,6 +2645,7 @@ multilabel_margin_loss_forward _self _target _reduction =
     _reduction
 
 -- | The negative log likelihood loss.
+-- See https://pytorch.org/docs/stable/nn.functional.html?highlight=nll_loss#torch.nn.functional.nll_loss.
 -- >>> input = randn @Float @[3, 5]
 -- >>> target = 
 -- >>> t = nll_loss @D.ReduceNone @Float @[2, 2] 
