@@ -268,6 +268,15 @@ type family Fst (t :: (a, b)) :: a where
 type family Snd (t :: (a, b)) :: b where
     Snd '(_,x) = x
 
+type family Fst3 (t :: (a, b, c)) :: a where
+    Fst3 '(x,_,_) = x
+
+type family Snd3 (t :: (a, b, c)) :: b where
+    Snd3 '(_,x,_) = x
+
+type family Trd3 (t :: (a, b, c)) :: c where
+    Trd3 '(_,_,x) = x
+
 -- TODO: Perhaps use distinct types for stride and padding so that people
 -- don't confuse them later?
 conv2dBias
