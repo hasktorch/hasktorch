@@ -100,12 +100,6 @@ max t = unsafePerformIO $ (cast1 ATen.max_t) t
 median :: Tensor dtype shape -> Tensor dtype '[]
 median t = unsafePerformIO $ (cast1 ATen.median_t) t
 
-sub :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
-
-mul :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
-mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
-
 cmul :: Scalar a => Tensor dtype shape -> a -> Tensor dtype shape
 cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
 
