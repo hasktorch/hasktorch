@@ -66,45 +66,48 @@ spec = do
     it "works on tensors of identical shapes" $ do
       let a = ones :: Tensor Float '[2, 3]
       let b = ones :: Tensor Float '[2, 3]
-      let c = add a b
+      let c = add a b :: Tensor Float '[2, 3]
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[2, 2, 2], [2, 2, 2]] :: [[Float]])
     it "works on broadcastable tensors of different shapes" $ do
       let a = ones :: Tensor Float '[3, 1, 4, 1]
       let b = ones :: Tensor Float '[2, 1, 1]
-      let c = add a b
+      let c = add a b :: Tensor Float '[3, 2, 4, 1]
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[2, 2], [2, 2], [2, 2]] :: [[Float]])
+      D.asValue (toDynamic c) `shouldBe` ([[[[2],[2],[2],[2]],[[2],[2],[2],[2]]],[[[2],[2],[2],[2]],[[2],[2],[2],[2]]],[[[2],[2],[2],[2]],[[2],[2],[2],[2]]]] :: [[[[Float]]]])
   describe "sub" $ do
     it "works on tensors of identical shapes" $ do
       let a = ones :: Tensor Float '[2, 3]
       let b = ones :: Tensor Float '[2, 3]
-      let c = sub a b
+      let c = sub a b :: Tensor Float '[2, 3]
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[0, 0, 0], [0, 0, 0]] :: [[Float]])
     it "works on broadcastable tensors of different shapes" $ do
       let a = ones :: Tensor Float '[3, 1, 4, 1]
       let b = ones :: Tensor Float '[2, 1, 1]
-      let c = sub a b
+      let c = sub a b :: Tensor Float '[3, 2, 4, 1]
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[0, 0], [0, 0], [0, 0]] :: [[Float]])
+      D.asValue (toDynamic c) `shouldBe` ([[[[0],[0],[0],[0]],[[0],[0],[0],[0]]],[[[0],[0],[0],[0]],[[0],[0],[0],[0]]],[[[0],[0],[0],[0]],[[0],[0],[0],[0]]]] :: [[[[Float]]]])
   describe "mul" $ do
     it "works on tensors of identical shapes" $ do
       let a = ones :: Tensor Float '[2, 3]
       let b = ones :: Tensor Float '[2, 3]
-      let c = mul a b
+      let c = mul a b :: Tensor Float '[2, 3]
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[1, 1, 1], [1, 1, 1]] :: [[Float]])
     it "works on broadcastable tensors of different shapes" $ do
       let a = ones :: Tensor Float '[3, 1, 4, 1]
       let b = ones :: Tensor Float '[2, 1, 1]
-      let c = mul a b
+      let c = mul a b :: Tensor Float '[3, 2, 4, 1]
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[1, 1], [1, 1], [1, 1]] :: [[Float]])
+      D.asValue (toDynamic c) `shouldBe` ([[[[1],[1],[1],[1]],[[1],[1],[1],[1]]],[[[1],[1],[1],[1]],[[1],[1],[1],[1]]],[[[1],[1],[1],[1]],[[1],[1],[1],[1]]]] :: [[[[Float]]]])
   describe "matmul" $ it "works" $ do
     let a = ones :: Tensor Float '[2, 3]
     let b = ones :: Tensor Float '[3, 1]
-    let c = matmul a b
+    let c = matmul a b :: Tensor Float '[2, 1]
     checkDynamicTensorAttributes c
     D.asValue (toDynamic c) `shouldBe` ([[3], [3]] :: [[Float]])
   describe "eyeSquare" $ it "works" $ do
