@@ -544,11 +544,11 @@ pinverse _self _rcond = unsafePerformIO $ (cast2 ATen.pinverse_td) _self _rcond
 poisson_nll_loss :: Tensor -> Tensor -> Bool -> Bool -> Double -> Int -> Tensor
 poisson_nll_loss _input _target _log_input _full _eps _reduction = unsafePerformIO $ (cast6 ATen.poisson_nll_loss_ttbbdl) _input _target _log_input _full _eps _reduction
 
-rand_like :: Tensor -> Tensor
-rand_like _self = unsafePerformIO $ (cast1 ATen.rand_like_t) _self
+rand_like :: Tensor -> IO Tensor
+rand_like _self = (cast1 ATen.rand_like_t) _self
 
-randn_like :: Tensor -> Tensor
-randn_like _self = unsafePerformIO $ (cast1 ATen.randn_like_t) _self
+randn_like :: Tensor -> IO Tensor
+randn_like _self = (cast1 ATen.randn_like_t) _self
 
 reciprocal :: Tensor -> Tensor
 reciprocal _self = unsafePerformIO $ (cast1 ATen.reciprocal_t) _self

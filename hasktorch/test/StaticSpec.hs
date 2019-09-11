@@ -62,3 +62,7 @@ spec = do
     D.asValue (toDynamic c) `shouldBe` ([[2,2,2],[2,2,2]]::[[Float]])
     D.shape (toDynamic c) `shouldBe` [2,3]
     D.dtype (toDynamic c) `shouldBe` D.Float
+  describe "eyeSquare" $ it "works" $ do
+    let t = eyeSquare @Float @2
+    -- checkDynamicTensorAttributes t
+    D.asValue (toDynamic t) `shouldBe` ([[1, 0], [0, 1]] :: [[Float]])

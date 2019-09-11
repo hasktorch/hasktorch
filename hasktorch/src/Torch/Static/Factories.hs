@@ -41,3 +41,10 @@ ones = UnsafeMkTensor $ D.ones (optionsRuntimeShape @dtype @shape) (D.withDType 
 randn :: forall dtype shape. (TensorOptions dtype shape) => IO (Tensor dtype shape)
 randn = UnsafeMkTensor <$> D.randn (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
 
+eyeSquare
+  :: forall dtype n
+   . (KnownNat n, TensorOptions dtype '[n, n])
+  => Tensor dtype '[n, n]
+eyeSquare = UnsafeMkTensor $ D.eyeSquare
+  (natValI @n)
+  (D.withDType (optionsRuntimeDType @dtype @'[n, n]) D.defaultOpts)
