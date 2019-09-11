@@ -71,7 +71,6 @@ spec = do
       let b = ones :: Tensor Float '[2, 1, 1]
       let c = add a b :: Tensor Float '[3, 2, 4, 1]
       checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[2, 2], [2, 2], [2, 2]] :: [[Float]])
       D.asValue (toDynamic c) `shouldBe` ([[[[2],[2],[2],[2]],[[2],[2],[2],[2]]],[[[2],[2],[2],[2]],[[2],[2],[2],[2]]],[[[2],[2],[2],[2]],[[2],[2],[2],[2]]]] :: [[[[Float]]]])
   describe "sub" $ do
     it "works on tensors of identical shapes" $ do
@@ -85,7 +84,6 @@ spec = do
       let b = ones :: Tensor Float '[2, 1, 1]
       let c = sub a b :: Tensor Float '[3, 2, 4, 1]
       checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[0, 0], [0, 0], [0, 0]] :: [[Float]])
       D.asValue (toDynamic c) `shouldBe` ([[[[0],[0],[0],[0]],[[0],[0],[0],[0]]],[[[0],[0],[0],[0]],[[0],[0],[0],[0]]],[[[0],[0],[0],[0]],[[0],[0],[0],[0]]]] :: [[[[Float]]]])
   describe "mul" $ do
     it "works on tensors of identical shapes" $ do
@@ -99,7 +97,6 @@ spec = do
       let b = ones :: Tensor Float '[2, 1, 1]
       let c = mul a b :: Tensor Float '[3, 2, 4, 1]
       checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[1, 1], [1, 1], [1, 1]] :: [[Float]])
       D.asValue (toDynamic c) `shouldBe` ([[[[1],[1],[1],[1]],[[1],[1],[1],[1]]],[[[1],[1],[1],[1]],[[1],[1],[1],[1]]],[[[1],[1],[1],[1]],[[1],[1],[1],[1]]]] :: [[[[Float]]]])
   describe "eyeSquare" $ it "works" $ do
     let t = eyeSquare @Float @2
