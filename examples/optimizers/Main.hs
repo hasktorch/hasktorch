@@ -18,32 +18,46 @@ import Torch.Functions
 import Torch.Autograd
 import Torch.NN hiding (sgd)
 
+-- 2d Rosenbrock
+
+data RosenSpec = RosenSpec deriving (Show, Eq)
 data Coord = Coord { x :: Parameter, y :: Parameter } deriving (Show, Generic)
 
--- note - only works for n=1 for now
-data CoordSpec = CoordSpec { n :: Int } deriving (Show, Eq)
-
-instance Randomizable CoordSpec Coord where
-  sample (CoordSpec n) = do
-      x <- makeIndependent =<< randn' [n]
-      y <- makeIndependent =<< randn' [n]
-      -- x <- makeIndependent (ones' [n] + 0.5 * ones' [n]) -- check with fixed values
-      -- y <- makeIndependent (ones' [n] + 0.5 * ones' [n])
+instance Randomizable RosenSpec Coord where
+  sample RosenSpec = do
+      x <- makeIndependent =<< randn' [1]
+      y <- makeIndependent =<< randn' [1]
       pure $ Coord x y
 
 instance Parameterized Coord
-
 instance Parameterized [Coord]
 
-rosenbrock :: Float -> Float -> Tensor -> Tensor -> Tensor
-rosenbrock a b x y = square (cadd ((-1.0) * x ) a) + cmul (square (y - x*x)) b
+rosenbrock2d :: Float -> Float -> Tensor -> Tensor -> Tensor
+rosenbrock2d a b x y = square (cadd ((-1.0) * x ) a) + cmul (square (y - x*x)) b
     where square c = pow c (2 :: Int)
 
 rosenbrock' :: Tensor -> Tensor -> Tensor
-rosenbrock' = rosenbrock 1.0 100.0
+rosenbrock' = rosenbrock2d 1.0 100.0
 
 loss :: Coord -> Tensor
 loss Coord{..} = rosenbrock' (toDependent x) (toDependent y)
+
+-- Convex Quadratic
+
+data CQSpec = CQSpec { n :: Int }
+data CQ = CQ { pos :: Parameter } deriving (Show, Generic)
+
+instance Randomizable CQSpec CQ where
+  sample (CQSpec n) = do
+        x <- makeIndependent =<<randn' [n]
+        pure $ CQ x
+
+instance Parameterized CQ
+instance Parameterized [CQ]
+
+convexQuadratic w = undefined
+
+-- Optimizers
 
 gd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
 gd lr parameters gradients = zipWith step depParameters gradients
@@ -65,7 +79,7 @@ showParam (Coord x y) = show (extract x :: Float, extract y :: Float)
 
 testGD :: Int -> IO ()
 testGD numIters = do
-    init <- sample $ CoordSpec {n=1}
+    init <- sample $ RosenSpec
     putStrLn ("Initial :" ++ showParam init)
     trained <- foldLoop init numIters $ \state i -> do
         let lossValue = loss state
