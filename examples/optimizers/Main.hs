@@ -49,18 +49,25 @@ gd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
 gd lr parameters gradients = zipWith step depParameters gradients
   where
     step p dp = p - (lr * dp)
-    depParameters = (map toDependent parameters)
+    depParameters = fmap toDependent parameters
+
+gdMomentum :: Tensor -> Tensor -> [Tensor] -> [Parameter] -> [Tensor] -> [(Tensor, Tensor)]
+gdMomentum lr beta gradMemory parameters gradients = zipWith3 step depParameters gradients gradMemory
+  where
+    z' dp z = beta * z + dp
+    step p dp z = let newZ = z' dp z in (p - lr * newZ, newZ)
+    depParameters = fmap toDependent parameters
 
 showParam (Coord x y) = show (extract x :: Float, extract y :: Float)
   where
     extract :: TensorLike a => Parameter -> a
     extract p = asValue $ toDependent p
 
-main :: IO ()
-main = do
+testGD :: Int -> IO ()
+testGD numIters = do
     init <- sample $ CoordSpec {n=1}
     putStrLn ("Initial :" ++ showParam init)
-    trained <- foldLoop init num_iters $ \state i -> do
+    trained <- foldLoop init numIters $ \state i -> do
         let lossValue = loss state
         when (mod i 100 == 0) do
             putStrLn ("Iter: " ++ printf "%4d" i 
@@ -70,11 +77,14 @@ main = do
         let gradients = grad lossValue flatParameters
         newFlatParam <- mapM makeIndependent $ gd 2e-3 flatParameters gradients
         pure $ replaceParameters state $ newFlatParam
+    pure ()
+    where
+        foldLoop x count block = foldM block x [1..count]
 
+main :: IO ()
+main = do
+    testGD 5000
     putStrLn "Check Actual Global Minimum (at 1, 1):"
     print $ rosenbrock' (asTensor (1.0 :: Float)) (asTensor (1.0 :: Float))
     putStrLn "Done"
-    where
-        foldLoop x count block = foldM block x [1..count]
-        num_iters = (5000 :: Int)
 
