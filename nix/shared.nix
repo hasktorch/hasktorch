@@ -22,7 +22,9 @@ let
                 appendConfigureFlag = pkgsNew.haskell.lib.appendConfigureFlag;
                 dontCheck = pkgsNew.haskell.lib.dontCheck;
                 failOnAllWarnings = pkgsNew.haskell.lib.failOnAllWarnings;
-                overrideExtraLibraries = drv: xs: pkgsNew.haskell.lib.overrideCabal drv (drv: { extraLibraries = xs; });
+                overrideCabal = pkgsNew.haskell.lib.overrideCabal;
+                optionalString = pkgsNew.stdenv.lib.optionalString;
+                isDarwin = pkgsNew.stdenv.isDarwin;
 
                 extension =
                   haskellPackagesNew: haskellPackagesOld: {
@@ -49,11 +51,20 @@ let
                         );
                     libtorch-ffi =
                       appendConfigureFlag
-                        (haskellPackagesNew.callCabal2nix
-                          "libtorch-ffi"
-                          ../libtorch-ffi
-                          { c10 = pkgsNew.libtorch; iomp5 = pkgsNew.mkl; torch = pkgsNew.libtorch; }
-                        ) "--extra-include-dirs=${pkgsNew.libtorch}/include/torch/csrc/api/include";
+                        (overrideCabal
+                          (haskellPackagesNew.callCabal2nix
+                            "libtorch-ffi"
+                            ../libtorch-ffi
+                            { c10 = pkgsNew.libtorch; iomp5 = pkgsNew.mkl; torch = pkgsNew.libtorch; }
+                          )
+                          (old: {
+                              preConfigure = (old.preConfigure or "") + optionalString isDarwin ''
+                                sed -i -e 's/-optc-std=c++11 -optc-xc++/-optc-xc++/g' ../libtorch-ffi/libtorch-ffi.cabal;
+                              '';
+                            }
+                          )
+                        )
+                        "--extra-include-dirs=${pkgsNew.libtorch}/include/torch/csrc/api/include";
                     inline-c =
                       # failOnAllWarnings
                         (haskellPackagesNew.callCabal2nix
@@ -110,14 +121,24 @@ in
       inline-c-cpp
     ;
 
-    shell-hasktorch = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch).env.overrideAttrs (oldAttrs: oldAttrs // {
-      shellHook = ''
-        export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_core.so:${pkgs.mkl}/lib/libmkl_sequential.so
-      '';
-    });
+    shell-hasktorch = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch).env.overrideAttrs
+      (oldAttrs:
+        oldAttrs // {
+          shellHook = ''
+            export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_rt.so
+          '';
+        }
+      );
     shell-hasktorch-codegen = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-codegen).env;
     shell-hasktorch-examples = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples).env;
-    shell-libtorch-ffi = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi).env;
+    shell-libtorch-ffi = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi).env.overrideAttrs
+      (oldAttrs:
+        oldAttrs // {
+          shellHook = ''
+            export CPATH=${pkgs.libtorch}/include/torch/csrc/api/include
+          '';
+        }
+      );
     shell-inline-c = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c).env;
     shell-inline-c-cpp = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c-cpp).env;
   }
