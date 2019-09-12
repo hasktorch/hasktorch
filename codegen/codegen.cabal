@@ -10,11 +10,11 @@ copyright:           2018 Austin Huang
 category:            Codegen
 build-type:          Simple
 cabal-version:       >=1.10
+extra-source-files:  test/Declarations.yaml
 
 library
   exposed-modules:
     ParseDeclarations
-    ParseDerivatives
     ParseFunctionSig
     ParseTuples
     ParseClass

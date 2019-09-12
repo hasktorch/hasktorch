@@ -91,6 +91,17 @@ jobs:
       - run: stack exec regression
       - run: stack exec gaussian_process
       - run: stack exec vae
+  nix-build:
+    docker:
+      - image: "nixos/nix:latest"
+    steps:
+      - run: nix-env -i git
+      - checkout
+      - run: git submodule init && git submodule update
+      - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
+      - run: cachix use hasktorch
+      - run: cd deps;nix-shell --pure -p python37.pkgs.pyyaml --run "./get-deps.sh -s"
+      - run: nix-build
 
 workflows:
   version: 2
@@ -99,3 +110,4 @@ workflows:
       - "stack-build"
       - "cabal-build"
       - "osx-stack-build"
+      - "nix-build"
