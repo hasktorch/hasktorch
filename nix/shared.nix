@@ -29,11 +29,17 @@ let
                 extension =
                   haskellPackagesNew: haskellPackagesOld: {
                     hasktorch =
-                      # failOnAllWarnings
+                      overrideCabal
                         (haskellPackagesNew.callCabal2nix
                           "hasktorch"
                           ../hasktorch
                           { }
+                        )
+                        (old: {
+                              preConfigure = (old.preConfigure or "") + optionalString (!isDarwin) ''
+                                export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_rt.so
+                              '';
+                            }
                         );
                     hasktorch-codegen =
                       # failOnAllWarnings
