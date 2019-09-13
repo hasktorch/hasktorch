@@ -236,7 +236,7 @@ add a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
 sub :: (shape'' ~ Broadcast shape shape') =>
         Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
 sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
-	
+
 mul :: (shape'' ~ Broadcast shape shape') =>
         Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
 mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)

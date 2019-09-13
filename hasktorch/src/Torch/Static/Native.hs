@@ -68,6 +68,14 @@ sumAll :: Tensor dtype shape -> Tensor dtype shape
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
 -- |
+-- >>> dtype &&& shape $ sumDim @0 (ones :: Tensor Float '[3,4,5])
+-- (Float,[4,5])
+-- >>> sumDim @1 (ones :: Tensor Float '[2,4])
+-- Tensor Float [2] [ 4.0000   ,  4.0000   ]
+sumDim :: forall d dtype shape. (KnownNat d) => Tensor dtype shape -> Tensor dtype (DropValue shape d)
+sumDim t = unsafePerformIO $ (cast2 ATen.sum_tl) t (natValI @d)
+
+-- |
 -- >>> dtype &&& shape $ abs (ones :: Tensor Float '[2,2])
 -- (Float,[2,2])
 abs :: Tensor dtype shape -> Tensor dtype shape
