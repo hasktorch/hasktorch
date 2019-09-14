@@ -1,4 +1,3 @@
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
@@ -18,15 +17,18 @@
 
 module Torch.Static.Native where
 
-import Data.Proxy
+import Prelude hiding (all, any, sin, sinh, cos, cosh, tan, tanh, asin, asinh, acos, acosh, atan, atanh, abs, max, min, exp, log, round)
 import Data.Finite
-import Data.Kind (Constraint)
-import GHC.TypeLits
 import qualified Data.Int as I
-
+import Data.Kind (Constraint)
+import Data.Proxy
+import Data.Reflection
+import Control.Arrow ((&&&))
+import GHC.TypeLits
+import GHC.TypeLits.KnownNat
 import System.IO.Unsafe
-import Foreign.ForeignPtr
 
+import Foreign.ForeignPtr
 import qualified ATen.Managed.Native as ATen
 import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.Scalar as ATen
@@ -36,19 +38,14 @@ import qualified ATen.Type as ATen
 import qualified ATen.Managed.Cast
 import ATen.Cast
 
-
-import Prelude hiding (sin, sinh, cos, cosh, tan, tanh, asin, asinh, acos, acosh, atan, atanh, abs, max, min, exp, log, round)
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
+import qualified Torch.TensorOptions as D
 import Torch.Functions (Reduction(..), Tri(..), isUpper, kOne)
 import Torch.DType
 import Torch.Static
 import Torch.Static.Factories
 import Torch.Scalar
-import qualified Torch.TensorOptions as D
-import Data.Reflection
-import ATen.Cast
-import Control.Arrow ((&&&))
 
 ---
 
@@ -395,17 +392,75 @@ transpose2D t = transpose @0 @1 t
 -- diag :: Tensor dtype shape -> Int -> Tensor dtype shape
 -- diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
-all :: Tensor dtype shape -> Bool
-all t = toInt (unsafePerformIO $ (cast1 ATen.all_t) t) == 1
+-- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
+-- >>> t = all (UnsafeMkTensor (D.asTensor ([False, False] :: [Bool])) :: Tensor Bool '[1, 2])
+-- >>> toInt t == 1
+-- False
+-- >>> t = all (UnsafeMkTensor (D.asTensor ([False, True] :: [Bool])) :: Tensor Bool '[1, 2])
+-- >>> toInt t == 1
+-- False
+-- >>> t = all (UnsafeMkTensor (D.asTensor ([True, True] :: [Bool])) :: Tensor Bool '[1, 2])
+-- >>> toInt t == 1
+-- True
+all :: Tensor Bool shape -> Tensor Bool '[]
+all t = unsafePerformIO $ cast1 ATen.all_t t
+-- all :: Tensor Bool shape -> Bool
+-- all t = toInt (unsafePerformIO $ cast1 ATen.all_t t) == 1
 
-any :: Tensor dtype shape -> Bool
-any t = toInt (unsafePerformIO $ (cast1 ATen.any_t) t) == 1
+-- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.any.
+-- >>> t = any (UnsafeMkTensor (D.asTensor ([False, False] :: [Bool])) :: Tensor Bool '[1, 2])
+-- >>> toInt t == 1
+-- False
+-- >>> t = any (UnsafeMkTensor (D.asTensor ([False, True] :: [Bool])) :: Tensor Bool '[1, 2])
+-- >>> toInt t == 1
+-- True
+-- >>> t = any (UnsafeMkTensor (D.asTensor ([True, True] :: [Bool])) :: Tensor Bool '[1, 2])
+-- >>> toInt t == 1
+-- True
+any :: Tensor Bool shape -> Tensor Bool '[]
+any t = unsafePerformIO $ cast1 ATen.any_t t
+-- any :: Tensor Bool shape -> Bool
+-- any t = toInt (unsafePerformIO $ cast1 ATen.any_t t) == 1
 
-all' :: Tensor dtype shape -> Int -> Bool -> Tensor dtype shape
-all' t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
+type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepdim :: Bool) :: [Nat] where
+  ConditionalDropDimension '[]      _ _     = TypeError (Text "The specified dimension is not available.")
+  ConditionalDropDimension (x : xs) 0 True  = 1 ': xs
+  ConditionalDropDimension (x : xs) 0 False = xs
+  ConditionalDropDimension (x : xs) i b     = x ': ConditionalDropDimension xs (i - 1) b
 
-any' :: Tensor dtype shape -> Int -> Bool -> Tensor dtype shape
-any' t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
+-- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
+-- >>> t = UnsafeMkTensor (D.asTensor ([[True, True], [True, False], [True, True], [True, True]] :: [[Bool]])) :: Tensor Bool '[4, 2]
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (all' @1 @False t :: Tensor Bool '[4])
+-- (Bool,([4],[True,False,True,True]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (all' @1 @True t :: Tensor Bool '[4, 1])
+-- (Bool,([4,1],[[True],[False],[True],[True]]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (all' @0 @False t :: Tensor Bool '[2])
+-- (Bool,([2],[True,False]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (all' @0 @True t :: Tensor Bool '[1, 2])
+-- (Bool,([1,2],[[True,False]]))
+all'
+  :: forall dim keepdim shape
+   . (KnownNat dim, KnownBool keepdim)
+  => Tensor Bool shape
+  -> Tensor Bool (ConditionalDropDimension shape dim keepdim)
+all' t = unsafePerformIO $ cast3 ATen.all_tlb t (natValI @dim) (boolVal $ Proxy @keepdim)
+
+-- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.any.
+-- >>> t = UnsafeMkTensor (D.asTensor ([[True, True], [True, False], [True, True], [True, True]] :: [[Bool]])) :: Tensor Bool '[4, 2]
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (any' @1 @False t :: Tensor Bool '[4])
+-- (Bool,([4],[True,True,True,True]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (any' @1 @True t :: Tensor Bool '[4, 1])
+-- (Bool,([4,1],[[True],[True],[True],[True]]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (any' @0 @False t :: Tensor Bool '[2])
+-- (Bool,([2],[True,True]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (any' @0 @True t :: Tensor Bool '[1, 2])
+-- (Bool,([1,2],[[True,True]]))
+any'
+  :: forall dim keepdim shape
+   . (KnownNat dim, KnownBool keepdim)
+  => Tensor Bool shape
+  -> Tensor Bool (ConditionalDropDimension shape dim keepdim)
+any' t = unsafePerformIO $ cast3 ATen.any_tlb t (natValI @dim) (boolVal $ Proxy @keepdim)
 
 
 ---
