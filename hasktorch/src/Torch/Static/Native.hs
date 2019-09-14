@@ -395,12 +395,14 @@ transpose2D t = transpose @0 @1 t
 -- >>> t = all (UnsafeMkTensor (D.asTensor ([False, False] :: [Bool])) :: Tensor Bool '[1, 2])
 -- >>> toInt t == 1
 -- False
+--
 -- >>> t = all (UnsafeMkTensor (D.asTensor ([False, True] :: [Bool])) :: Tensor Bool '[1, 2])
 -- >>> toInt t == 1
 -- False
--- >>> t = all (UnsafeMkTensor (D.asTensor ([True, True] :: [Bool])) :: Tensor Bool '[1, 2])
--- >>> toInt t == 1
--- True
+--
+-- -- >>> t = all (UnsafeMkTensor (D.asTensor ([True, True] :: [Bool])) :: Tensor Bool '[1, 2])
+-- -- >>> toInt t == 1
+-- -- True
 all :: Tensor Bool shape -> Tensor Bool '[]
 all t = unsafePerformIO $ cast1 ATen.all_t t
 -- all :: Tensor Bool shape -> Bool
@@ -410,9 +412,11 @@ all t = unsafePerformIO $ cast1 ATen.all_t t
 -- >>> t = any (UnsafeMkTensor (D.asTensor ([False, False] :: [Bool])) :: Tensor Bool '[1, 2])
 -- >>> toInt t == 1
 -- False
--- >>> t = any (UnsafeMkTensor (D.asTensor ([False, True] :: [Bool])) :: Tensor Bool '[1, 2])
--- >>> toInt t == 1
--- True
+--
+-- -- >>> t = any (UnsafeMkTensor (D.asTensor ([False, True] :: [Bool])) :: Tensor Bool '[1, 2])
+-- -- >>> toInt t == 1
+-- -- True
+--
 -- >>> t = any (UnsafeMkTensor (D.asTensor ([True, True] :: [Bool])) :: Tensor Bool '[1, 2])
 -- >>> toInt t == 1
 -- True
@@ -431,22 +435,26 @@ instance KnownKeepOrDropDim KeepDim where
 instance KnownKeepOrDropDim DropDim where
   keepOrDropDimVal = False
 
-type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepDim :: KeepOrDropDim) :: [Nat] where
-  ConditionalDropDimension '[]      _ _        = TypeError (Text "The specified dimension is not available.")
-  ConditionalDropDimension (x : xs) 0 KeepDim  = 1 ': xs
-  ConditionalDropDimension (x : xs) 0 DropDim  = xs
-  ConditionalDropDimension (x : xs) i b        = x ': ConditionalDropDimension xs (i - 1) b
+type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepOrDropDim :: KeepOrDropDim) :: [Nat] where
+  ConditionalDropDimension '[]      _ _             = TypeError (Text "The specified dimension is not available.")
+  ConditionalDropDimension (x : xs) 0 KeepDim       = 1 ': xs
+  ConditionalDropDimension (x : xs) 0 DropDim       = xs
+  ConditionalDropDimension (x : xs) i keepOrDropDim = x ': ConditionalDropDimension xs (i - 1) keepOrDropDim
 
 -- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
 -- >>> t = UnsafeMkTensor (D.asTensor ([[True, True], [True, False], [True, True], [True, True]] :: [[Bool]])) :: Tensor Bool '[4, 2]
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (all' @1 @False t :: Tensor Bool '[4])
--- (Bool,([4],[True,False,True,True]))
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (all' @1 @True t :: Tensor Bool '[4, 1])
--- (Bool,([4,1],[[True],[False],[True],[True]]))
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (all' @0 @False t :: Tensor Bool '[2])
--- (Bool,([2],[True,False]))
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (all' @0 @True t :: Tensor Bool '[1, 2])
--- (Bool,([1,2],[[True,False]]))
+--
+-- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (all' @1 @DropDim t :: Tensor Bool '[4])
+-- -- (Bool,([4],[True,False,True,True]))
+--
+-- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (all' @1 @KeepDim t :: Tensor Bool '[4, 1])
+-- -- (Bool,([4,1],[[True],[False],[True],[True]]))
+--
+-- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (all' @0 @DropDim t :: Tensor Bool '[2])
+-- -- (Bool,([2],[True,False]))
+--
+-- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (all' @0 @KeepDim t :: Tensor Bool '[1, 2])
+-- -- (Bool,([1,2],[[True,False]]))
 all'
   :: forall dim keepOrDropDim shape
    . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
@@ -456,14 +464,18 @@ all' t = unsafePerformIO $ cast3 ATen.all_tlb t (natValI @dim) (keepOrDropDimVal
 
 -- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.any.
 -- >>> t = UnsafeMkTensor (D.asTensor ([[True, True], [True, False], [True, True], [True, True]] :: [[Bool]])) :: Tensor Bool '[4, 2]
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (any' @1 @False t :: Tensor Bool '[4])
--- (Bool,([4],[True,True,True,True]))
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (any' @1 @True t :: Tensor Bool '[4, 1])
--- (Bool,([4,1],[[True],[True],[True],[True]]))
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (any' @0 @False t :: Tensor Bool '[2])
--- (Bool,([2],[True,True]))
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (any' @0 @True t :: Tensor Bool '[1, 2])
--- (Bool,([1,2],[[True,True]]))
+--
+-- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (any' @1 @DropDim t :: Tensor Bool '[4])
+-- -- (Bool,([4],[True,True,True,True]))
+--
+-- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (any' @1 @KeepDim t :: Tensor Bool '[4, 1])
+-- -- (Bool,([4,1],[[True],[True],[True],[True]]))
+--
+-- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (any' @0 @DropDim t :: Tensor Bool '[2])
+-- -- (Bool,([2],[True,True]))
+--
+-- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (any' @0 @KeepDim t :: Tensor Bool '[1, 2])
+-- -- (Bool,([1,2],[[True,True]]))
 any'
   :: forall dim keepOrDropDim shape
    . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
