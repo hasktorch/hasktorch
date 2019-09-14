@@ -25,7 +25,6 @@ import Data.Proxy
 import Data.Reflection
 import Control.Arrow ((&&&))
 import GHC.TypeLits
-import GHC.TypeLits.KnownNat
 import System.IO.Unsafe
 
 import Foreign.ForeignPtr
@@ -422,11 +421,21 @@ any t = unsafePerformIO $ cast1 ATen.any_t t
 -- any :: Tensor Bool shape -> Bool
 -- any t = toInt (unsafePerformIO $ cast1 ATen.any_t t) == 1
 
-type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepdim :: Bool) :: [Nat] where
-  ConditionalDropDimension '[]      _ _     = TypeError (Text "The specified dimension is not available.")
-  ConditionalDropDimension (x : xs) 0 True  = 1 ': xs
-  ConditionalDropDimension (x : xs) 0 False = xs
-  ConditionalDropDimension (x : xs) i b     = x ': ConditionalDropDimension xs (i - 1) b
+data KeepOrDropDim = KeepDim | DropDim
+
+class KnownKeepOrDropDim keepOrDropDim where
+  keepOrDropDimVal :: Bool
+
+instance KnownKeepOrDropDim KeepDim where
+  keepOrDropDimVal = True
+instance KnownKeepOrDropDim DropDim where
+  keepOrDropDimVal = False
+
+type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepDim :: KeepOrDropDim) :: [Nat] where
+  ConditionalDropDimension '[]      _ _        = TypeError (Text "The specified dimension is not available.")
+  ConditionalDropDimension (x : xs) 0 KeepDim  = 1 ': xs
+  ConditionalDropDimension (x : xs) 0 DropDim  = xs
+  ConditionalDropDimension (x : xs) i b        = x ': ConditionalDropDimension xs (i - 1) b
 
 -- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
 -- >>> t = UnsafeMkTensor (D.asTensor ([[True, True], [True, False], [True, True], [True, True]] :: [[Bool]])) :: Tensor Bool '[4, 2]
@@ -439,11 +448,11 @@ type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepdim :: B
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (all' @0 @True t :: Tensor Bool '[1, 2])
 -- (Bool,([1,2],[[True,False]]))
 all'
-  :: forall dim keepdim shape
-   . (KnownNat dim, KnownBool keepdim)
+  :: forall dim keepOrDropDim shape
+   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
   => Tensor Bool shape
-  -> Tensor Bool (ConditionalDropDimension shape dim keepdim)
-all' t = unsafePerformIO $ cast3 ATen.all_tlb t (natValI @dim) (boolVal $ Proxy @keepdim)
+  -> Tensor Bool (ConditionalDropDimension shape dim keepOrDropDim)
+all' t = unsafePerformIO $ cast3 ATen.all_tlb t (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.any.
 -- >>> t = UnsafeMkTensor (D.asTensor ([[True, True], [True, False], [True, True], [True, True]] :: [[Bool]])) :: Tensor Bool '[4, 2]
@@ -456,11 +465,11 @@ all' t = unsafePerformIO $ cast3 ATen.all_tlb t (natValI @dim) (boolVal $ Proxy 
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (any' @0 @True t :: Tensor Bool '[1, 2])
 -- (Bool,([1,2],[[True,True]]))
 any'
-  :: forall dim keepdim shape
-   . (KnownNat dim, KnownBool keepdim)
+  :: forall dim keepOrDropDim shape
+   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
   => Tensor Bool shape
-  -> Tensor Bool (ConditionalDropDimension shape dim keepdim)
-any' t = unsafePerformIO $ cast3 ATen.any_tlb t (natValI @dim) (boolVal $ Proxy @keepdim)
+  -> Tensor Bool (ConditionalDropDimension shape dim keepOrDropDim)
+any' t = unsafePerformIO $ cast3 ATen.any_tlb t (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 
 ---

@@ -34,7 +34,7 @@ library
  build-depends:       base >= 4.7 && < 5
                     , libtorch-ffi
                     , finite-typelits
-                    , ghc-typelits-knownnat >= 0.7
+                    , ghc-typelits-knownnat
                     , mtl
                     , safe-exceptions
                     , reflection
