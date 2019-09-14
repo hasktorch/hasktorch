@@ -536,11 +536,47 @@ avg_pool1d _self =
 -- allclose :: Tensor dtype shape -> Tensor dtype shape -> Double -> Double -> Bool -> Bool
 -- allclose _self _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.allclose_ttddb) _self _other _rtol _atol _equal_nan
 
--- argmax :: Tensor dtype shape -> Int -> Bool -> Tensor dtype shape
--- argmax _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.argmax_tlb) _self _dim _keepdim
+-- | See https://pytorch.org/docs/stable/torch.html#torch.argmax.
+-- >>> t = UnsafeMkTensor (D.asTensor ([[0, 1], [-1, 2], [0, 1], [0, -2]] :: [[Float]])) :: Tensor Float '[4, 2]
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Int]) $ (argmax @1 @DropDim t :: Tensor Int64 '[4])
+-- (Int64,([4],[1,1,1,0]))
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Int]]) $ (argmax @1 @KeepDim t :: Tensor Int64 '[4, 1])
+-- (Int64,([4,1],[[1],[1],[1],[0]]))
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Int]) $ (argmax @0 @DropDim t :: Tensor Int64 '[2])
+-- (Int64,([2],[3,1]))
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Int]]) $ (argmax @0 @KeepDim t :: Tensor Int64 '[1, 2])
+-- (Int64,([1,2],[[3,1]]))
+argmax
+  :: forall dim keepOrDropDim dtype shape
+   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
+  => Tensor dtype shape
+  -> Tensor Int64 (ConditionalDropDimension shape dim keepOrDropDim)
+argmax t = unsafePerformIO $ cast3 ATen.argmax_tlb t (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
--- argmin :: Tensor dtype shape -> Int -> Bool -> Tensor dtype shape
--- argmin _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.argmin_tlb) _self _dim _keepdim
+-- | See https://pytorch.org/docs/stable/torch.html#torch.argmin.
+-- >>> t = UnsafeMkTensor (D.asTensor ([[0, 1], [-1, 2], [0, 1], [0, -2]] :: [[Float]])) :: Tensor Float '[4, 2]
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Int]) $ (argmin @1 @DropDim t :: Tensor Int64 '[4])
+-- (Int64,([4],[0,0,0,1]))
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Int]]) $ (argmin @1 @KeepDim t :: Tensor Int64 '[4, 1])
+-- (Int64,([4,1],[[0],[0],[0],[1]]))
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Int]) $ (argmin @0 @DropDim t :: Tensor Int64 '[2])
+-- (Int64,([2],[1,3]))
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Int]]) $ (argmin @0 @KeepDim t :: Tensor Int64 '[1, 2])
+-- (Int64,([1,2],[[1,3]]))
+argmin
+  :: forall dim keepOrDropDim dtype shape
+   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
+  => Tensor dtype shape
+  -> Tensor Int64 (ConditionalDropDimension shape dim keepOrDropDim)
+argmin t = unsafePerformIO $ cast3 ATen.argmin_tlb t (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- as_strided :: Tensor dtype shape -> [Int] -> [Int] -> Int -> Tensor dtype shape
 -- as_strided _self _size _stride _storage_offset = unsafePerformIO $ (cast4 ATen.as_strided_tlll) _self _size _stride _storage_offset
