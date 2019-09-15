@@ -961,8 +961,73 @@ log _self = unsafePerformIO $ (cast1 ATen.log_t) _self
 logdet :: Tensor dtype shape -> Tensor dtype (Det shape)
 logdet _self = unsafePerformIO $ (cast1 ATen.logdet_t) _self
 
--- logsumexp :: Tensor dtype shape -> Int -> Bool -> Tensor dtype shape
--- logsumexp _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.logsumexp_tlb) _self _dim _keepdim
+-- class KnownDType dtype where
+--   dtypeVal :: DType
+
+-- instance KnownDType Bool where
+--   dtypeVal = Bool
+-- instance KnownDType UInt8 where
+--   dtypeVal = UInt8
+-- instance KnownDType Int8 where
+--   dtypeVal = Int8
+-- instance KnownDType Int16 where
+--   dtypeVal = Int16
+-- instance KnownDType Int32 where
+--   dtypeVal = Int32
+-- instance KnownDType Int64 where
+--   dtypeVal = Int64
+-- instance KnownDType Half where
+--   dtypeVal = Half
+-- instance KnownDType Float where
+--   dtypeVal = Float
+-- instance KnownDType Double where
+--   dtypeVal = Double
+
+type family IsFloatingPoint (dtype :: DType) :: Constraint where
+  -- IsFloatingPoint Bool = ()
+  -- IsFloatingPoint UInt8 = ()
+  -- IsFloatingPoint Int8 = ()
+  -- IsFloatingPoint Int16 = ()
+  -- IsFloatingPoint Int32 = ()
+  -- IsFloatingPoint Int64 = ()
+  IsFloatingPoint 'Half   = ()
+  IsFloatingPoint 'Float  = ()
+  IsFloatingPoint 'Double = ()
+  IsFloatingPoint dtype  = TypeError (Text "Data type " :<>:
+                                      ShowType dtype :<>:
+                                      Text " not supported")
+
+type family IsIntegral (dtype :: DType) :: Constraint where
+  IsFloatingPoint 'Bool = ()
+  IsFloatingPoint 'UInt8 = ()
+  IsFloatingPoint 'Int8 = ()
+  IsFloatingPoint 'Int16 = ()
+  IsFloatingPoint 'Int32 = ()
+  IsFloatingPoint 'Int64 = ()
+  IsFloatingPoint dtype  = TypeError (Text "Data type " :<>:
+                                      ShowType dtype :<>:
+                                      Text " not supported")                         
+
+-- | See https://pytorch.org/docs/stable/torch.html#torch.logsumexp.
+-- >>> t = UnsafeMkTensor (D.asTensor ([[5, 1], [3, 2], [4, 1], [2, 7]] :: [[Float]])) :: Tensor 'Float '[4, 2]
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ (logsumexp @1 @DropDim t :: Tensor 'Float '[4])
+-- (Float,([4],[5.01815,3.3132617,4.0485873,7.0067153]))
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ (logsumexp @1 @KeepDim t :: Tensor 'Float '[4, 1])
+-- (Float,([4,1],[[5.01815],[3.3132617],[4.0485873],[7.0067153]]))
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ (logsumexp @0 @DropDim t :: Tensor 'Float '[2])
+-- (Float,([2],[5.44019,7.0116277]))
+--
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ (logsumexp @0 @KeepDim t :: Tensor 'Float '[1, 2])
+-- (Float,([1,2],[[5.44019,7.0116277]]))
+logsumexp
+  :: forall dim keepOrDropDim (dtype :: DType) shape
+   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim, IsFloatingPoint dtype)
+  => Tensor dtype shape
+  -> Tensor dtype (ConditionalDropDimension shape dim keepOrDropDim)
+logsumexp t = unsafePerformIO $ cast3 ATen.logsumexp_tlb t (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- margin_ranking_loss :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Double -> Int -> Tensor dtype shape
 -- margin_ranking_loss _input1 _input2 _target _margin _reduction = unsafePerformIO $ (cast5 ATen.margin_ranking_loss_tttdl) _input1 _input2 _target _margin _reduction
