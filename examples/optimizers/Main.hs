@@ -46,27 +46,23 @@ lossRosen  Coord{..} = rosenbrock' (toDependent x) (toDependent y)
 -- Convex Quadratic
 
 data CQSpec = CQSpec { n :: Int }
-data CQ = CQ { pos :: Parameter } deriving (Show, Generic)
+data CQ = CQ { w :: Parameter } deriving (Show, Generic)
 
 instance Randomizable CQSpec CQ where
   sample (CQSpec n) = do
-        x <- makeIndependent =<<randn' [n]
-        pure $ CQ x
+        w <- makeIndependent =<<randn' [n]
+        pure $ CQ w
 
 instance Parameterized CQ
 instance Parameterized [CQ]
 
-convexQuadratic :: CQ -> Tensor -> Tensor -> Tensor
-convexQuadratic (CQ mat) b w =
-    cmul (matmul (matmul (transpose2D w) mat') w) (0.5 :: Float) - matmul (transpose2D b) mat'
-    where mat' = toDependent mat
+convexQuadratic :: Tensor -> Tensor -> Tensor -> Tensor
+convexQuadratic a b w =
+    cmul (dot w (mv a w)) (0.5 :: Float) - dot b w
 
--- convexQuadratic' = convexQuadratic (CQ (eye' 3 3))  
-
-lossCQ :: CQ-> Tensor -> Tensor -> Tensor
-lossCQ (CQ pos) = convexQuadratic (CQ pos)
-
--- Convex Quadratic
+lossCQ :: Tensor -> Tensor -> CQ -> Tensor
+lossCQ a b (CQ w) = convexQuadratic a b w'
+    where w' = toDependent w
 
 -- Optimizers
 
@@ -108,10 +104,13 @@ testGD_Rosen numIters = do
 
 testGD_CQ :: Int -> IO ()
 testGD_CQ numIters = do
-    init <- sample $ CQSpec 1 
+    let dim = 2
+    init <- sample $ CQSpec dim
+    let a = eye' dim dim
+    let b = zeros' [dim]
     putStrLn ("Initial :" ++ show init)
     trained <- foldLoop init numIters $ \state i -> do
-        let lossValue = lossCQ state undefined undefined -- TOOD
+        let lossValue = lossCQ a b state
         when (mod i 100 == 0) do
             putStrLn ("Iter: " ++ printf "%4d" i 
                 ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
