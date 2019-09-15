@@ -48,7 +48,23 @@ instance (KnownNat h, KnownShape t) => KnownShape (h ': t) where
 getFiniteI :: Finite n -> Int
 getFiniteI = fromIntegral . getFinite
 
-data Tensor dtype (shape :: [Nat]) = UnsafeMkTensor { toDynamic :: D.Tensor }
+type family ComputeDType (dtype' :: dtype) :: DType.DType where
+  ComputeDType Bool = DType.Bool
+  ComputeDType DType.Bool = DType.Bool
+  ComputeDType DType.UInt8 = DType.UInt8
+  ComputeDType DType.Int8 = DType.Int8
+  ComputeDType DType.Int16 = DType.Int16
+  ComputeDType DType.Int32 = DType.Int32
+  ComputeDType Int = DType.Int64
+  ComputeDType DType.Int64 = DType.Int64
+  ComputeDType Float = DType.Float
+  ComputeDType DType.Float = DType.Float
+  ComputeDType Double = DType.Double
+  ComputeDType DType.Double = DType.Double
+  ComputeDType dtype' = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype')
+
+data Tensor (dtype :: DType.DType) (shape :: [Nat]) where
+  UnsafeMkTensor :: forall dtype shape . { toDynamic :: D.Tensor } -> Tensor dtype shape
 
 instance Num (Tensor dtype shape) where
   (+) a b = UnsafeMkTensor $ toDynamic a + toDynamic b
