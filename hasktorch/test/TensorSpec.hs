@@ -16,6 +16,8 @@ import Data.Int
 
 spec :: Spec
 spec = do
+  it "TensorLike Bool" $ property $
+    \x -> asValue (asTensor x) `shouldBe` (x :: Bool)
   it "TensorLike Word8" $ property $
     \x -> asValue (asTensor x) `shouldBe` (x :: Word8)
   it "TensorLike Int8" $ property $
@@ -33,6 +35,35 @@ spec = do
   it "TensorLike Double" $ property $
     \x -> asValue (asTensor x) `shouldBe` (x :: Double)
 
+  it "Compare internal expression of c++ with Storable expression of haskell" $ do
+    show (asTensor [True,False,True,False]) `shouldBe`
+      "Tensor Bool [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1,0,1,0]::[Word8])) `shouldBe`
+      "Tensor UInt8 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1,0,1,0]::[Int8])) `shouldBe`
+      "Tensor Int8 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1,0,1,0]::[Int16])) `shouldBe`
+      "Tensor Int16 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1,0,1,0]::[Int32])) `shouldBe`
+      "Tensor Int32 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1,0,1,0]::[Int])) `shouldBe`
+      "Tensor Int64 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1,0,1,0]::[Int64])) `shouldBe`
+      "Tensor Int64 [4] [ 1,  0,  1,  0]"
+    show (asTensor ([1,0,1,0]::[Float])) `shouldBe`
+      "Tensor Float [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
+    show (asTensor ([1,0,1,0]::[Double])) `shouldBe`
+      "Tensor Double [4] [ 1.0000   ,  0.0000,  1.0000   ,  0.0000]"
+
+  it "TensorLike [Bool]" $ property $
+    \(NonEmpty (x :: [Bool])) -> do
+      asValue (asTensor x) `shouldBe` x
+      toDouble (select (asTensor x) 0 0) `shouldBe` (if (head x) then 1 else 0)
+      shape (asTensor x) `shouldBe` [length x]
+      let xx = replicate 5 x
+      asValue (asTensor xx) `shouldBe` xx
+      let xxx = replicate 3 xx
+      asValue (asTensor xxx) `shouldBe` xxx
   it "TensorLike [Word8]" $ property $
     \(NonEmpty (x :: [Word8])) -> do
       asValue (asTensor x) `shouldBe` x
