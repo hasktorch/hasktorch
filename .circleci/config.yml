@@ -91,6 +91,7 @@ jobs:
       - run: stack exec regression
       - run: stack exec gaussian_process
       - run: stack exec vae
+      - run: stack exec optimizers
   nix-build:
     docker:
       - image: "nixos/nix:latest"
