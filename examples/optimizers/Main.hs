@@ -7,7 +7,9 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-{- Optimizer Implementations on math functions -}
+module Main where
+
+{- Optimizer implementations run on standard test functions -}
 
 import Control.Monad (foldM, when)
 import GHC.Generics
@@ -19,50 +21,7 @@ import Torch.Functions
 import Torch.Autograd
 import Torch.NN hiding (sgd)
 
--- 2d Rosenbrock
-
-data RosenSpec = RosenSpec deriving (Show, Eq)
-data Coord = Coord { x :: Parameter, y :: Parameter } deriving (Show, Generic)
-
-instance Randomizable RosenSpec Coord where
-  sample RosenSpec = do
-      x <- makeIndependent =<< randn' [1]
-      y <- makeIndependent =<< randn' [1]
-      pure $ Coord x y
-
-instance Parameterized Coord
-instance Parameterized [Coord]
-
-rosenbrock2d :: Float -> Float -> Tensor -> Tensor -> Tensor
-rosenbrock2d a b x y = square (cadd ((-1.0) * x ) a) + cmul (square (y - x*x)) b
-    where square c = pow c (2 :: Int)
-
-rosenbrock' :: Tensor -> Tensor -> Tensor
-rosenbrock' = rosenbrock2d 1.0 100.0
-
-lossRosen :: Coord -> Tensor
-lossRosen  Coord{..} = rosenbrock' (toDependent x) (toDependent y)
-
--- Convex Quadratic
-
-data CQSpec = CQSpec { n :: Int }
-data CQ = CQ { w :: Parameter } deriving (Show, Generic)
-
-instance Randomizable CQSpec CQ where
-  sample (CQSpec n) = do
-        w <- makeIndependent =<<randn' [n]
-        pure $ CQ w
-
-instance Parameterized CQ
-instance Parameterized [CQ]
-
-convexQuadratic :: Tensor -> Tensor -> Tensor -> Tensor
-convexQuadratic a b w =
-    cmul (dot w (mv a w)) (0.5 :: Float) - dot b w
-
-lossCQ :: Tensor -> Tensor -> CQ -> Tensor
-lossCQ a b (CQ w) = convexQuadratic a b w'
-    where w' = toDependent w
+import TestFunctions
 
 -- Optimizers
 
@@ -72,31 +31,32 @@ gd lr parameters gradients = zipWith step depParameters gradients
     step p dp = p - (lr * dp)
     depParameters = fmap toDependent parameters
 
-gdMomentum :: Tensor -> Tensor -> [Tensor] -> [Parameter] -> [Tensor] -> [(Tensor, Tensor)]
-gdMomentum lr beta gradMemory parameters gradients = zipWith3 step depParameters gradients gradMemory
+-- gradient descent with momentum
+--     lr        beta      memory      parameters     gradients
+gdm :: Tensor -> Tensor -> [Tensor] -> [Parameter] -> [Tensor] -> [(Tensor, Tensor)]
+gdm lr beta gradMemory parameters gradients = zipWith3 step depParameters gradients gradMemory
   where
     z' dp z = beta * z + dp
     step p dp z = let newZ = z' dp z in (p - lr * newZ, newZ)
     depParameters = fmap toDependent parameters
 
-showParam (Coord x y) = show (extract x :: Float, extract y :: Float)
-  where
-    extract :: TensorLike a => Parameter -> a
-    extract p = asValue $ toDependent p
+showLog :: (Show a) => Int -> Tensor -> a -> IO ()
+showLog i lossValue state = 
+    when (mod i 1000 == 0) do
+        putStrLn ("Iter: " ++ printf "%4d" i 
+            ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
+            ++ " | Parameters: " ++ show state)
 
 testGD_Rosen :: Int -> IO ()
 testGD_Rosen numIters = do
     init <- sample $ RosenSpec
-    putStrLn ("Initial :" ++ showParam init)
+    putStrLn ("Initial :" ++ show init)
     trained <- foldLoop init numIters $ \state i -> do
         let lossValue = lossRosen state
-        when (mod i 100 == 0) do
-            putStrLn ("Iter: " ++ printf "%4d" i 
-                ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
-                ++ " | Parameters: " ++ showParam state)
+        showLog i lossValue state
         let flatParameters = flattenParameters (state :: Coord)
         let gradients = grad lossValue flatParameters
-        newFlatParam <- mapM makeIndependent $ gd 2e-3 flatParameters gradients
+        newFlatParam <- mapM makeIndependent $ gd 1e-3 flatParameters gradients
         pure $ replaceParameters state $ newFlatParam
     pure ()
     where
@@ -105,29 +65,86 @@ testGD_Rosen numIters = do
 testGD_CQ :: Int -> IO ()
 testGD_CQ numIters = do
     let dim = 2
-    init <- sample $ CQSpec dim
+    (init :: CQ) <- sample $ CQSpec dim
     let a = eye' dim dim
     let b = zeros' [dim]
     putStrLn ("Initial :" ++ show init)
     trained <- foldLoop init numIters $ \state i -> do
         let lossValue = lossCQ a b state
-        when (mod i 100 == 0) do
-            putStrLn ("Iter: " ++ printf "%4d" i 
-                ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
-                ++ " | Parameters: " ++ show state)
+        showLog i lossValue state
         let flatParameters = flattenParameters (state :: CQ)
         let gradients = grad lossValue flatParameters
-        newFlatParam <- mapM makeIndependent $ gd 2e-3 flatParameters gradients
+        newFlatParam <- mapM makeIndependent $ gd 1e-3 flatParameters gradients
         pure $ replaceParameters state $ newFlatParam
     pure ()
     where
         foldLoop x count block = foldM block x [1..count]
 
-main :: IO ()
-main = do
-    testGD_Rosen  5000
+
+testGDM_Rosen :: Int -> IO ()
+testGDM_Rosen numIters = do
+    init <- sample $ RosenSpec
+    let memory = [zeros' [1], zeros' [1]]
+    putStrLn ("Initial :" ++ show init)
+    trained <- foldLoop (init, memory) numIters $ \(state, memory) i -> do
+        let lossValue = lossRosen state
+        showLog i lossValue state
+        let flatParameters = flattenParameters (state :: Coord)
+        let gradients = grad lossValue flatParameters
+        let result =  gdm 1e-3 0.9 memory flatParameters gradients
+        newFlatParam <- mapM (makeIndependent . fst) result
+        pure (replaceParameters state $ newFlatParam, fmap snd result)
+    pure ()
+    where
+        foldLoop x count block = foldM block x [1..count]
+
+testGDM_CQ :: Int -> IO ()
+testGDM_CQ numIters = do
+    let dim = 2
+    init <- sample $ CQSpec dim
+    let a = eye' dim dim
+    let b = zeros' [dim]
+    let z = [zeros' [dim]] -- momentum
+    putStrLn ("Initial :" ++ show init)
+    trained <- foldLoop (init, z) numIters $ \(state, z) i -> do
+        let lossValue = lossCQ a b state
+        showLog i lossValue state
+        let flatParameters = flattenParameters (state :: CQ)
+        let gradients = grad lossValue flatParameters
+        let result = gdm 1e-3 0.9 z flatParameters gradients
+        newFlatParam <- mapM (makeIndependent . fst) result
+        pure $ (replaceParameters state $ newFlatParam, fmap snd result)
+    pure ()
+    where
+        foldLoop x count block = foldM block x [1..count]
+
+checkRosen = do
     putStrLn "Check Actual Global Minimum (at 1, 1):"
     print $ rosenbrock' (asTensor (1.0 :: Float)) (asTensor (1.0 :: Float))
-    testGD_CQ 5000
+
+checkCQ = do
+    putStrLn "Check Actual Global Minimum (at 0, 0):"
+    let dim = 2
+    let (a, b) = (eye' dim dim, zeros' [dim])
+    print $ convexQuadratic a b (zeros' [dim])
+
+
+main :: IO ()
+main = do
+
+    let iter = 6000
+
+    testGD_Rosen iter
+    checkRosen
+
+    testGDM_Rosen iter
+    checkRosen
+
+    testGD_CQ iter
+    checkCQ
+
+    testGDM_CQ iter
+    checkCQ
+
     putStrLn "Done"
 

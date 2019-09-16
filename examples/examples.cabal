@@ -107,6 +107,7 @@ executable serialization
 executable optimizers
   hs-source-dirs:      optimizers
   main-is:             Main.hs
+  other-modules:       TestFunctions
   default-language:    Haskell2010
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       base >= 4.7 && < 5
