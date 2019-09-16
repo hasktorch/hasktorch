@@ -13,6 +13,7 @@ module Main where
 
 import Control.Monad (foldM, when)
 import GHC.Generics
+import Prelude hiding (sqrt)
 import Text.Printf (printf)
 
 import Torch.Tensor
@@ -25,20 +26,50 @@ import TestFunctions
 
 -- Optimizers
 
-gd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
+type LearningRate = Tensor
+type Gradient = [Tensor]
+
+gd :: LearningRate -> [Parameter] -> Gradient -> [Tensor]
 gd lr parameters gradients = zipWith step depParameters gradients
   where
     step p dp = p - (lr * dp)
     depParameters = fmap toDependent parameters
 
 -- gradient descent with momentum
---     lr        beta      memory      parameters     gradients
-gdm :: Tensor -> Tensor -> [Tensor] -> [Parameter] -> [Tensor] -> [(Tensor, Tensor)]
-gdm lr beta gradMemory parameters gradients = zipWith3 step depParameters gradients gradMemory
+--     lr              beta      memory      parameters     gradients
+gdm :: LearningRate -> Tensor -> [Tensor] -> [Parameter] -> Gradient -> [(Tensor, Tensor)]
+gdm lr beta gradMemory parameters gradients = (zipWith3 step) depParameters gradients gradMemory
   where
     z' dp z = beta * z + dp
     step p dp z = let newZ = z' dp z in (p - lr * newZ, newZ)
     depParameters = fmap toDependent parameters
+
+data Adam = Adam { 
+    beta1 :: Float,
+    beta2 :: Float,
+    m1 :: [Tensor], -- 1st moment
+    m2 :: [Tensor], -- 2nd moment
+    m1Avg :: [Tensor],
+    m2Avg :: [Tensor],
+    modelParam :: [Tensor] 
+    } deriving Show
+
+adam :: LearningRate -> Adam -> Gradient -> Int -> Adam
+adam lr Adam{..} gradients iter = Adam beta1 beta2 m1' m2' a1 a2 w
+    where
+        -- moments
+        f1 m1 dp = cmul m1 beta1 + cmul dp (1 - beta1)
+        f2 m2 dp = cmul m2 beta2 + cmul (dp * dp) (1 - beta2)
+        m1' = zipWith f1 m1 gradients
+        m2' = zipWith f2 m2 gradients
+        -- averages
+        a beta m = cdiv m (1 - beta^(iter + 1))
+        a1 = fmap (a beta1) m1'
+        a2 = fmap (a beta2) m2'
+        -- parameter
+        eps = 1e-6
+        fw wprev avg1 avg2 = wprev - lr * avg1 / (sqrt avg2 + eps)
+        w = zipWith3 fw modelParam a1 a2
 
 showLog :: (Show a) => Int -> Tensor -> a -> IO ()
 showLog i lossValue state = 
@@ -46,6 +77,20 @@ showLog i lossValue state =
         putStrLn ("Iter: " ++ printf "%4d" i 
             ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
             ++ " | Parameters: " ++ show state)
+
+-- TODO - generic train
+train init memory numIters loss optStep lr beta = do
+    trained <- foldLoop (init, memory) numIters $ \(state, memory) i -> do
+        let lossValue = loss state
+        showLog i lossValue state
+        let flatParameters = flattenParameters state
+            gradients = grad lossValue flatParameters
+            result = optStep lr beta memory flatParameters gradients
+        newFlatParam <- mapM (makeIndependent . fst) result
+        pure (replaceParameters state $ newFlatParam, fmap snd result)
+    pure trained
+    where
+        foldLoop x count block = foldM block x [1..count]
 
 testGD_Rosen :: Int -> IO ()
 testGD_Rosen numIters = do
@@ -135,14 +180,10 @@ main = do
     let iter = 6000
 
     testGD_Rosen iter
-    checkRosen
-
     testGDM_Rosen iter
     checkRosen
 
     testGD_CQ iter
-    checkCQ
-
     testGDM_CQ iter
     checkCQ
 

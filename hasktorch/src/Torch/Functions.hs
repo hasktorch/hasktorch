@@ -85,6 +85,9 @@ cadd t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
 cmul :: Scalar a => Tensor -> a -> Tensor
 cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
 
+cdiv :: Scalar a => Tensor -> a -> Tensor
+cdiv t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
+
 csub :: Scalar a => Tensor -> a -> Tensor
 csub t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
 
