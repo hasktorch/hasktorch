@@ -45,24 +45,20 @@ gdm lr beta gradMemory parameters gradients = (zipWith3 step) depParameters grad
     depParameters = fmap toDependent parameters
 
 data Adam = Adam { 
-    beta1 :: Float,
-    beta2 :: Float,
     m1 :: [Tensor], -- 1st moment
     m2 :: [Tensor], -- 2nd moment
-    m1Avg :: [Tensor],
-    m2Avg :: [Tensor],
     modelParam :: [Tensor] 
     } deriving Show
 
-adam :: LearningRate -> Adam -> Gradient -> Int -> Adam
-adam lr Adam{..} gradients iter = Adam beta1 beta2 m1' m2' a1 a2 w
+adam :: LearningRate -> Float -> Float -> Adam -> Gradient -> Int -> Adam
+adam lr beta1 beta2 Adam{..} gradients iter = Adam m1' m2' w
     where
-        -- moments
+        -- 1st & 2nd moments
         f1 m1 dp = cmul m1 beta1 + cmul dp (1 - beta1)
         f2 m2 dp = cmul m2 beta2 + cmul (dp * dp) (1 - beta2)
         m1' = zipWith f1 m1 gradients
         m2' = zipWith f2 m2 gradients
-        -- averages
+        -- averages of moments
         a beta m = cdiv m (1 - beta^(iter + 1))
         a1 = fmap (a beta1) m1'
         a2 = fmap (a beta2) m2'
@@ -78,20 +74,6 @@ showLog i lossValue state =
             ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
             ++ " | Parameters: " ++ show state)
 
--- TODO - generic train
-train init memory numIters loss optStep lr beta = do
-    trained <- foldLoop (init, memory) numIters $ \(state, memory) i -> do
-        let lossValue = loss state
-        showLog i lossValue state
-        let flatParameters = flattenParameters state
-            gradients = grad lossValue flatParameters
-            result = optStep lr beta memory flatParameters gradients
-        newFlatParam <- mapM (makeIndependent . fst) result
-        pure (replaceParameters state $ newFlatParam, fmap snd result)
-    pure trained
-    where
-        foldLoop x count block = foldM block x [1..count]
-
 testGD_Rosen :: Int -> IO ()
 testGD_Rosen numIters = do
     init <- sample $ RosenSpec
@@ -103,6 +85,45 @@ testGD_Rosen numIters = do
         let gradients = grad lossValue flatParameters
         newFlatParam <- mapM makeIndependent $ gd 1e-3 flatParameters gradients
         pure $ replaceParameters state $ newFlatParam
+    pure ()
+    where
+        foldLoop x count block = foldM block x [1..count]
+
+testGDM_Rosen :: Int -> IO ()
+testGDM_Rosen numIters = do
+    init <- sample $ RosenSpec
+    let memory = [zeros' [1], zeros' [1]]
+    putStrLn ("Initial :" ++ show init)
+    trained <- foldLoop (init, memory) numIters $ \(state, memory) i -> do
+        let lossValue = lossRosen state
+        showLog i lossValue state
+        let flatParameters = flattenParameters (state :: Coord)
+        let gradients = grad lossValue flatParameters
+        let result =  gdm 1e-4 0.9 memory flatParameters gradients
+        newFlatParam <- mapM (makeIndependent . fst) result
+        pure (replaceParameters state $ newFlatParam, fmap snd result)
+    pure ()
+    where
+        foldLoop x count block = foldM block x [1..count]
+
+testAdam_Rosen :: Int -> IO ()
+testAdam_Rosen numIters = do
+    init <- sample $ RosenSpec
+    let adamInit = Adam {
+        m1=[zeros' [1], zeros' [1]],
+        m2=[zeros' [1], zeros' [1]],
+        modelParam=[zeros' [1], zeros' [1]]
+        }
+    putStrLn ("Initial :" ++ show init)
+    trained <- foldLoop (init, adamInit) numIters $ \(state, adamState) i -> do
+        let lossValue = lossRosen state
+        showLog i lossValue state
+        let flatParameters = flattenParameters (state :: Coord)
+        let gradients = grad lossValue flatParameters
+        let params = fmap toDependent flatParameters
+        let adamState' = adam 1e-3 0.9 0.999 adamState gradients i
+        newFlatParam <- mapM makeIndependent (modelParam adamState')
+        pure (replaceParameters state $ newFlatParam, adamState')
     pure ()
     where
         foldLoop x count block = foldM block x [1..count]
@@ -121,24 +142,6 @@ testGD_CQ numIters = do
         let gradients = grad lossValue flatParameters
         newFlatParam <- mapM makeIndependent $ gd 1e-3 flatParameters gradients
         pure $ replaceParameters state $ newFlatParam
-    pure ()
-    where
-        foldLoop x count block = foldM block x [1..count]
-
-
-testGDM_Rosen :: Int -> IO ()
-testGDM_Rosen numIters = do
-    init <- sample $ RosenSpec
-    let memory = [zeros' [1], zeros' [1]]
-    putStrLn ("Initial :" ++ show init)
-    trained <- foldLoop (init, memory) numIters $ \(state, memory) i -> do
-        let lossValue = lossRosen state
-        showLog i lossValue state
-        let flatParameters = flattenParameters (state :: Coord)
-        let gradients = grad lossValue flatParameters
-        let result =  gdm 1e-3 0.9 memory flatParameters gradients
-        newFlatParam <- mapM (makeIndependent . fst) result
-        pure (replaceParameters state $ newFlatParam, fmap snd result)
     pure ()
     where
         foldLoop x count block = foldM block x [1..count]
@@ -163,6 +166,31 @@ testGDM_CQ numIters = do
     where
         foldLoop x count block = foldM block x [1..count]
 
+testAdam_CQ :: Int -> IO ()
+testAdam_CQ numIters = do
+    let dim = 2
+    init <- sample $ CQSpec dim
+    let a = eye' dim dim
+    let b = zeros' [dim]
+    let adamInit = Adam {
+        m1=[zeros' [1], zeros' [1]],
+        m2=[zeros' [1], zeros' [1]],
+        modelParam=[zeros' [1], zeros' [1]]
+        }
+    putStrLn ("Initial :" ++ show init)
+    trained <- foldLoop (init, adamInit) numIters $ \(state, adamState) i -> do
+        let lossValue = lossCQ a b state
+        showLog i lossValue state
+        let flatParameters = flattenParameters (state :: CQ)
+        let gradients = grad lossValue flatParameters
+        let params = fmap toDependent flatParameters
+        let adamState' = adam 1e-3 0.9 0.999 adamState gradients i
+        newFlatParam <- mapM makeIndependent (modelParam adamState')
+        pure (replaceParameters state $ newFlatParam, adamState')
+    pure ()
+    where
+        foldLoop x count block = foldM block x [1..count]
+
 checkRosen = do
     putStrLn "Check Actual Global Minimum (at 1, 1):"
     print $ rosenbrock' (asTensor (1.0 :: Float)) (asTensor (1.0 :: Float))
@@ -179,12 +207,22 @@ main = do
 
     let iter = 6000
 
+    putStrLn "2D Rosenbrock\n================"
+    putStrLn "GD"
     testGD_Rosen iter
+    putStrLn "GD + Momentum"
     testGDM_Rosen iter
+    putStrLn "Adam"
+    testAdam_Rosen iter
     checkRosen
 
+    putStrLn "Convex Quadratic\n================"
+    putStrLn "GD"
     testGD_CQ iter
+    putStrLn "GD + Momentum"
     testGDM_CQ iter
+    putStrLn "Adam"
+    testAdam_CQ iter
     checkCQ
 
     putStrLn "Done"
