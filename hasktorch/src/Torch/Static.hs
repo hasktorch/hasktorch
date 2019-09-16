@@ -36,7 +36,7 @@ import qualified Torch.DType as DType
 natValI :: forall n. KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n
 
-class (All KnownNat shape) => KnownShape shape where
+class KnownShape shape where
     shapeVal :: [Int]
 
 instance KnownShape '[] where
@@ -47,6 +47,28 @@ instance (KnownNat h, KnownShape t) => KnownShape (h ': t) where
 
 getFiniteI :: Finite n -> Int
 getFiniteI = fromIntegral . getFinite
+
+class KnownDType dtype where
+  dtypeVal :: DType.DType
+
+instance KnownDType 'DType.Bool where
+  dtypeVal = DType.Bool
+instance KnownDType 'DType.UInt8 where
+  dtypeVal = DType.UInt8
+instance KnownDType 'DType.Int8 where
+  dtypeVal = DType.Int8
+instance KnownDType 'DType.Int16 where
+  dtypeVal = DType.Int16
+instance KnownDType 'DType.Int32 where
+  dtypeVal = DType.Int32
+instance KnownDType 'DType.Int64 where
+  dtypeVal = DType.Int64
+instance KnownDType 'DType.Half where
+  dtypeVal = DType.Half
+instance KnownDType 'DType.Float where
+  dtypeVal = DType.Float
+instance KnownDType 'DType.Double where
+  dtypeVal = DType.Double
 
 type family ComputeDType (dtype' :: dtype) :: DType.DType where
   ComputeDType Bool = DType.Bool
@@ -83,17 +105,17 @@ instance Fractional (Tensor dtype shape) where
 instance Show (Tensor dtype shape) where
     show (UnsafeMkTensor dynamic) = show dynamic
 
-class (Reifies dtype DType.DType) => TensorOptions dtype (shape :: [Nat]) where
-    optionsRuntimeShape :: [Int]
-    optionsRuntimeDType :: DType.DType
+class TensorOptions (dtype :: DType.DType) (shape :: [Nat]) where
+  optionsRuntimeDType :: DType.DType
+  optionsRuntimeShape :: [Int]
 
-instance (Reifies a DType.DType) => TensorOptions a '[] where
-    optionsRuntimeShape = []
-    optionsRuntimeDType = reflect (Proxy :: Proxy a)
+instance (KnownDType dtype) => TensorOptions dtype '[] where
+  optionsRuntimeDType = dtypeVal @dtype
+  optionsRuntimeShape = []
 
-instance (KnownNat h, TensorOptions a t) => TensorOptions a (h ': t) where
-    optionsRuntimeShape = (natValI @h : optionsRuntimeShape @a @t)
-    optionsRuntimeDType = reflect (Proxy :: Proxy a)
+instance (KnownDType dtype, KnownNat h, TensorOptions dtype t) => TensorOptions dtype (h ': t) where
+  optionsRuntimeDType = dtypeVal @dtype
+  optionsRuntimeShape = (natValI @h : optionsRuntimeShape @dtype @t)
 
 --------------------------------------------------------------------------------
 -- Dynamic -> Static typecasts

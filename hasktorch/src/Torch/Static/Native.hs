@@ -967,28 +967,6 @@ log _self = unsafePerformIO $ (cast1 ATen.log_t) _self
 logdet :: Tensor dtype shape -> Tensor dtype (Det shape)
 logdet _self = unsafePerformIO $ (cast1 ATen.logdet_t) _self
 
-class KnownDType dtype where
-  dtypeVal :: D.DType
-
-instance KnownDType 'D.Bool where
-  dtypeVal = D.Bool
-instance KnownDType 'D.UInt8 where
-  dtypeVal = D.UInt8
-instance KnownDType 'D.Int8 where
-  dtypeVal = D.Int8
-instance KnownDType 'D.Int16 where
-  dtypeVal = D.Int16
-instance KnownDType 'D.Int32 where
-  dtypeVal = D.Int32
-instance KnownDType 'D.Int64 where
-  dtypeVal = D.Int64
-instance KnownDType 'D.Half where
-  dtypeVal = D.Half
-instance KnownDType 'D.Float where
-  dtypeVal = D.Float
-instance KnownDType 'D.Double where
-  dtypeVal = D.Double
-
 type family IsFloatingPoint (dtype :: D.DType) :: Constraint where
   IsFloatingPoint 'D.Half   = ()
   IsFloatingPoint 'D.Float  = ()
