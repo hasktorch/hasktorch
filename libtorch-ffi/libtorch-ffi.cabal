@@ -1,16 +1,16 @@
+cabal-version:       2.1
 name:                libtorch-ffi
 version:             1.1.0.0
 -- The prefix(1.1) of this version("1.1.0.0") is the same as libtorch's one.
 synopsis:            test out alternative options for ffi interface to libtorch 1.x
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
-license:             BSD3
+license:             BSD-3-Clause
 author:              Austin Huang
 maintainer:          hasktorch@gmail.com
 copyright:           2018 Austin Huang
 category:            Codegen
 build-type:          Simple
-cabal-version:       >=1.10
 
 library
  exposed-modules:     ATen.Type
@@ -63,11 +63,18 @@ library
                     , safe-exceptions
                     , sysinfo
                     , async
- extra-libraries:     stdc++
-                    , c10
-                    , iomp5
-                    , mklml
-                    , torch
+ if os(darwin)
+  extra-libraries:     c++
+                     , c10
+                     , iomp5
+                     -- , mklml
+                     , torch
+ else
+  extra-libraries:     stdc++
+                     , c10
+                     , iomp5
+                     -- , mklml
+                     , torch
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind

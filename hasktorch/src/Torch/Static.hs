@@ -24,6 +24,10 @@ import Data.Kind (Constraint)
 import Data.Reflection
 import GHC.TypeLits
 
+import ATen.Cast
+import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
+import qualified ATen.Type as ATen
+import Foreign.ForeignPtr
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.Functions as D
@@ -116,11 +120,12 @@ type family AppendToMaybe (n :: Nat) (l :: Maybe [Nat]) where
     AppendToMaybe n Nothing = Nothing
     AppendToMaybe n (Just l) = Just (n : l)
 
--- TODO: broadcast with a one!
 type family ComputeBroadcast (shape :: [Nat]) (shape' :: [Nat]) :: Maybe [Nat] where
     ComputeBroadcast '[] shape = Just shape
     ComputeBroadcast shape '[] = Just shape
     ComputeBroadcast (h ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast (h ': t) (1 ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast (1 ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
     ComputeBroadcast _ _ = Nothing
 
 type family CheckBroadcast (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
@@ -228,6 +233,14 @@ add :: (shape'' ~ Broadcast shape shape') =>
        Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
 add a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
 
+sub :: (shape'' ~ Broadcast shape shape') =>
+        Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
+sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
+
+mul :: (shape'' ~ Broadcast shape shape') =>
+        Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
+mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
+
 relu :: Tensor dtype shape -> Tensor dtype shape
 relu t = UnsafeMkTensor $ D.relu (toDynamic t)
 
@@ -263,6 +276,15 @@ type family Fst (t :: (a, b)) :: a where
 
 type family Snd (t :: (a, b)) :: b where
     Snd '(_,x) = x
+
+type family Fst3 (t :: (a, b, c)) :: a where
+    Fst3 '(x,_,_) = x
+
+type family Snd3 (t :: (a, b, c)) :: b where
+    Snd3 '(_,x,_) = x
+
+type family Trd3 (t :: (a, b, c)) :: c where
+    Trd3 '(_,_,x) = x
 
 -- TODO: Perhaps use distinct types for stride and padding so that people
 -- don't confuse them later?
@@ -304,3 +326,19 @@ reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
 
 logSoftmax :: KnownShape shape => Tensor dtype shape -> Int -> Tensor dtype shape
 logSoftmax input dim = UnsafeMkTensor $ D.logSoftmax (toDynamic input) dim
+
+--instance Castable (Tensor dtype shape) D.Tensor where
+--  cast (UnsafeMkTensor dtensor) f = f dtensor
+--  uncast dtensor f = f $ UnsafeMkTensor dtensor
+
+instance Castable (Tensor dtype shape) D.ATenTensor where
+  cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
+  uncast aten_tensor f = f $ (UnsafeMkTensor (D.Unsafe aten_tensor))
+
+instance Castable [Tensor dtype shape] (ForeignPtr ATen.TensorList) where
+  cast xs f = do
+    ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
+    cast ptr_list f
+  uncast xs f = uncast xs $ \ptr_list -> do
+    tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
+    f tensor_list

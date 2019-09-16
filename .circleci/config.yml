@@ -40,7 +40,7 @@ jobs:
       - run: echo $LD_LIBRARY_PATH
       - run: apt update -qq && apt install -y cmake curl wget unzip git libtinfo-dev python3 python3-yaml
       - run: apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
-      - run: add-apt-repository ppa:hvr/ghc
+      - run: add-apt-repository -y ppa:hvr/ghc
       - run: apt-get update -qq && apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev ghc-8.6.5 cabal-install-head devscripts debhelper python3-pip
       - run: update-alternatives --install /usr/bin/python python /usr/bin/python3 1
       - checkout
@@ -91,6 +91,17 @@ jobs:
       - run: stack exec regression
       - run: stack exec gaussian_process
       - run: stack exec vae
+  nix-build:
+    docker:
+      - image: "nixos/nix:latest"
+    steps:
+      - run: nix-env -i git
+      - checkout
+      - run: git submodule init && git submodule update
+      - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
+      - run: cachix use hasktorch
+      - run: cd deps;nix-shell --pure -p python37.pkgs.pyyaml --run "./get-deps.sh -s"
+      - run: nix-build
 
 workflows:
   version: 2
@@ -99,3 +110,4 @@ workflows:
       - "stack-build"
       - "cabal-build"
       - "osx-stack-build"
+      - "nix-build"
