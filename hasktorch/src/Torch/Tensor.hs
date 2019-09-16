@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE IncoherentInstances #-}
 
 module Torch.Tensor where
 
@@ -136,6 +137,7 @@ class TensorLike a where
   -- Internal functions(like "_xxx") are below. Do not use them directly.
   _dtype :: DType
   _dims :: a -> [Int]
+  _deepDims :: a -> Maybe [Int]
   _peekElemOff :: Ptr () -> Int -> [Int] -> IO a
   _pokeElemOff :: Ptr () -> Int -> a -> IO ()
 
@@ -164,6 +166,7 @@ instance (Reifies a DType, Storable a) => TensorLike a where
 
   _dtype = reflect (Proxy :: Proxy a)
   _dims _ = []
+  _deepDims _ = Just []
   _peekElemOff ptr offset _ = peekElemOff (castPtr ptr) offset
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
 
@@ -187,6 +190,7 @@ instance {-# OVERLAPPING #-}TensorLike Bool where
 
   _dtype = reflect (Proxy :: Proxy Bool)
   _dims _ = []
+  _deepDims _ = Just []
   _peekElemOff ptr offset _ = (/= 0) <$> (peekElemOff (castPtr ptr) offset :: IO Word8)
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset ((if v then 1 else 0) :: Word8)
 
@@ -212,6 +216,14 @@ instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
 
   _dims [] = []
   _dims v@(x:_) = (length v):(_dims x)
+
+  _deepDims [] = Just []
+  _deepDims v@(x:xs) = do
+    deepDimsX <- _deepDims x
+    deepDimsXs <- traverse _deepDims xs
+    if and $ fmap (deepDimsX ==) deepDimsXs
+    then return $ length v : deepDimsX
+    else Nothing
 
   _peekElemOff ptr offset [] = return []
   _peekElemOff ptr offset (d:dims) =

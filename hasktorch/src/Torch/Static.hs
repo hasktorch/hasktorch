@@ -20,9 +20,11 @@ module Torch.Static where
 
 import Data.Proxy
 import Data.Finite
-import Data.Kind (Constraint)
+import Data.Kind (Constraint, Type)
 import Data.Reflection
+import Foreign.Storable
 import GHC.TypeLits
+import GHC.Exts
 
 import ATen.Cast
 import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
@@ -88,6 +90,30 @@ type family ComputeDType (dtype' :: dtype) :: DType.DType where
 data Tensor (dtype :: DType.DType) (shape :: [Nat]) where
   UnsafeMkTensor :: forall dtype shape . { toDynamic :: D.Tensor } -> Tensor dtype shape
 
+type family ComputeHaskellType (dtype :: DType.DType) :: Type where
+  ComputeHaskellType DType.Bool = Bool
+  ComputeHaskellType DType.Int64 = Int
+  ComputeHaskellType DType.Float = Float
+  ComputeHaskellType DType.Double = Double
+  ComputeHaskellType dtype = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype)
+  
+type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
+  ComputeItemType _ '[] = TypeError (Text "Scalars are not supported")
+  ComputeItemType ty (_ ': '[]) = ty
+  ComputeItemType ty (_ ': h ': t) = [ComputeItemType ty (h ': t)]
+
+instance (D.TensorLike [ComputeItemType (ComputeHaskellType dtype) shape], KnownShape shape) => IsList (Maybe (Tensor dtype shape)) where
+  type Item (Maybe (Tensor dtype shape)) = ComputeItemType (ComputeHaskellType dtype) shape
+  -- fromList :: [Item (Maybe (Tensor dtype shape))] -> Maybe (Tensor dtype shape)
+  fromList xs = do
+    shapeXs <- D._deepDims xs
+    if shapeVal @shape == shapeXs
+    then return $ UnsafeMkTensor . D.asTensor $ xs
+    else Nothing
+  -- Maybe (Tensor dtype shape) -> [Item (Maybe (Tensor dtype shape))]
+  toList Nothing = []
+  toList (Just t) = D.asValue . toDynamic $ t
+ 
 instance Num (Tensor dtype shape) where
   (+) a b = UnsafeMkTensor $ toDynamic a + toDynamic b
   (-) a b = UnsafeMkTensor $ toDynamic a - toDynamic b
