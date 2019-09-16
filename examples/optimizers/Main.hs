@@ -29,6 +29,7 @@ import TestFunctions
 type LearningRate = Tensor
 type Gradient = [Tensor]
 
+-- gradient descent
 gd :: LearningRate -> [Parameter] -> Gradient -> [Tensor]
 gd lr parameters gradients = zipWith step depParameters gradients
   where
@@ -43,6 +44,8 @@ gdm lr beta gradMemory parameters gradients = (zipWith3 step) depParameters grad
     z' dp z = beta * z + dp
     step p dp z = let newZ = z' dp z in (p - lr * newZ, newZ)
     depParameters = fmap toDependent parameters
+
+-- Adam
 
 data Adam = Adam { 
     m1 :: [Tensor], -- 1st moment
@@ -62,52 +65,53 @@ adam lr beta1 beta2 Adam{..} gradients iter = Adam m1' m2' w
         a beta m = cdiv m (1 - beta^(iter + 1))
         a1 = fmap (a beta1) m1'
         a2 = fmap (a beta2) m2'
-        -- parameter
-        eps = 1e-6
+        -- parameter update
+        eps = 1e-15
         fw wprev avg1 avg2 = wprev - lr * avg1 / (sqrt avg2 + eps)
         w = zipWith3 fw modelParam a1 a2
 
-showLog :: (Show a) => Int -> Tensor -> a -> IO ()
-showLog i lossValue state = 
-    when (mod i 1000 == 0) do
+-- show output after n iterations
+showLog :: (Show a) => Int -> Int -> Tensor -> a -> IO ()
+showLog n i lossValue state = 
+    when (mod i n == 0) do
         putStrLn ("Iter: " ++ printf "%4d" i 
             ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
             ++ " | Parameters: " ++ show state)
 
-testGD_Rosen :: Int -> IO ()
-testGD_Rosen numIters = do
+testRosenGD :: Int -> IO ()
+testRosenGD numIters = do
     init <- sample $ RosenSpec
     putStrLn ("Initial :" ++ show init)
     trained <- foldLoop init numIters $ \state i -> do
         let lossValue = lossRosen state
-        showLog i lossValue state
+        showLog 1000 i lossValue state
         let flatParameters = flattenParameters (state :: Coord)
         let gradients = grad lossValue flatParameters
-        newFlatParam <- mapM makeIndependent $ gd 1e-3 flatParameters gradients
+        newFlatParam <- mapM makeIndependent $ gd 5e-4 flatParameters gradients
         pure $ replaceParameters state $ newFlatParam
     pure ()
     where
         foldLoop x count block = foldM block x [1..count]
 
-testGDM_Rosen :: Int -> IO ()
-testGDM_Rosen numIters = do
+testRosenGDM :: Int -> IO ()
+testRosenGDM numIters = do
     init <- sample $ RosenSpec
     let memory = [zeros' [1], zeros' [1]]
     putStrLn ("Initial :" ++ show init)
     trained <- foldLoop (init, memory) numIters $ \(state, memory) i -> do
         let lossValue = lossRosen state
-        showLog i lossValue state
+        showLog 1000 i lossValue state
         let flatParameters = flattenParameters (state :: Coord)
         let gradients = grad lossValue flatParameters
-        let result =  gdm 1e-4 0.9 memory flatParameters gradients
+        let result =  gdm 5e-4 0.9 memory flatParameters gradients
         newFlatParam <- mapM (makeIndependent . fst) result
         pure (replaceParameters state $ newFlatParam, fmap snd result)
     pure ()
     where
         foldLoop x count block = foldM block x [1..count]
 
-testAdam_Rosen :: Int -> IO ()
-testAdam_Rosen numIters = do
+testRosenAdam :: Int -> IO ()
+testRosenAdam numIters = do
     init <- sample $ RosenSpec
     let adamInit = Adam {
         m1=[zeros' [1], zeros' [1]],
@@ -117,19 +121,19 @@ testAdam_Rosen numIters = do
     putStrLn ("Initial :" ++ show init)
     trained <- foldLoop (init, adamInit) numIters $ \(state, adamState) i -> do
         let lossValue = lossRosen state
-        showLog i lossValue state
+        showLog 1000 i lossValue state
         let flatParameters = flattenParameters (state :: Coord)
         let gradients = grad lossValue flatParameters
         let params = fmap toDependent flatParameters
-        let adamState' = adam 1e-3 0.9 0.999 adamState gradients i
+        let adamState' = adam 5e-4 0.9 0.999 adamState gradients i
         newFlatParam <- mapM makeIndependent (modelParam adamState')
         pure (replaceParameters state $ newFlatParam, adamState')
     pure ()
     where
         foldLoop x count block = foldM block x [1..count]
 
-testGD_CQ :: Int -> IO ()
-testGD_CQ numIters = do
+testConvQuadGD :: Int -> IO ()
+testConvQuadGD numIters = do
     let dim = 2
     (init :: CQ) <- sample $ CQSpec dim
     let a = eye' dim dim
@@ -137,7 +141,7 @@ testGD_CQ numIters = do
     putStrLn ("Initial :" ++ show init)
     trained <- foldLoop init numIters $ \state i -> do
         let lossValue = lossCQ a b state
-        showLog i lossValue state
+        showLog 1000 i lossValue state
         let flatParameters = flattenParameters (state :: CQ)
         let gradients = grad lossValue flatParameters
         newFlatParam <- mapM makeIndependent $ gd 1e-3 flatParameters gradients
@@ -146,8 +150,8 @@ testGD_CQ numIters = do
     where
         foldLoop x count block = foldM block x [1..count]
 
-testGDM_CQ :: Int -> IO ()
-testGDM_CQ numIters = do
+testConvQuadGDM :: Int -> IO ()
+testConvQuadGDM numIters = do
     let dim = 2
     init <- sample $ CQSpec dim
     let a = eye' dim dim
@@ -156,18 +160,18 @@ testGDM_CQ numIters = do
     putStrLn ("Initial :" ++ show init)
     trained <- foldLoop (init, z) numIters $ \(state, z) i -> do
         let lossValue = lossCQ a b state
-        showLog i lossValue state
+        showLog 1000 i lossValue state
         let flatParameters = flattenParameters (state :: CQ)
         let gradients = grad lossValue flatParameters
-        let result = gdm 1e-3 0.9 z flatParameters gradients
+        let result = gdm 5e-4 0.9 z flatParameters gradients
         newFlatParam <- mapM (makeIndependent . fst) result
         pure $ (replaceParameters state $ newFlatParam, fmap snd result)
     pure ()
     where
         foldLoop x count block = foldM block x [1..count]
 
-testAdam_CQ :: Int -> IO ()
-testAdam_CQ numIters = do
+testConvQuadAdam :: Int -> IO ()
+testConvQuadAdam numIters = do
     let dim = 2
     init <- sample $ CQSpec dim
     let a = eye' dim dim
@@ -180,11 +184,11 @@ testAdam_CQ numIters = do
     putStrLn ("Initial :" ++ show init)
     trained <- foldLoop (init, adamInit) numIters $ \(state, adamState) i -> do
         let lossValue = lossCQ a b state
-        showLog i lossValue state
+        showLog 1000 i lossValue state
         let flatParameters = flattenParameters (state :: CQ)
         let gradients = grad lossValue flatParameters
         let params = fmap toDependent flatParameters
-        let adamState' = adam 1e-3 0.9 0.999 adamState gradients i
+        let adamState' = adam 5e-4 0.9 0.999 adamState gradients i
         newFlatParam <- mapM makeIndependent (modelParam adamState')
         pure (replaceParameters state $ newFlatParam, adamState')
     pure ()
@@ -209,20 +213,20 @@ main = do
 
     putStrLn "2D Rosenbrock\n================"
     putStrLn "GD"
-    testGD_Rosen iter
+    testRosenGD iter
     putStrLn "GD + Momentum"
-    testGDM_Rosen iter
+    testRosenGDM iter
     putStrLn "Adam"
-    testAdam_Rosen iter
+    testRosenAdam iter
     checkRosen
 
     putStrLn "Convex Quadratic\n================"
     putStrLn "GD"
-    testGD_CQ iter
+    testConvQuadGD iter
     putStrLn "GD + Momentum"
-    testGDM_CQ iter
+    testConvQuadGDM iter
     putStrLn "Adam"
-    testAdam_CQ iter
+    testConvQuadAdam iter
     checkCQ
 
     putStrLn "Done"
