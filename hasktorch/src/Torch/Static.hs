@@ -104,13 +104,11 @@ type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
 
 instance (D.TensorLike [ComputeItemType (ComputeHaskellType dtype) shape], KnownShape shape) => IsList (Maybe (Tensor dtype shape)) where
   type Item (Maybe (Tensor dtype shape)) = ComputeItemType (ComputeHaskellType dtype) shape
-  -- fromList :: [Item (Maybe (Tensor dtype shape))] -> Maybe (Tensor dtype shape)
   fromList xs = do
     shapeXs <- D._deepDims xs
     if shapeVal @shape == shapeXs
     then return $ UnsafeMkTensor . D.asTensor $ xs
     else Nothing
-  -- Maybe (Tensor dtype shape) -> [Item (Maybe (Tensor dtype shape))]
   toList Nothing = []
   toList (Just t) = D.asValue . toDynamic $ t
  

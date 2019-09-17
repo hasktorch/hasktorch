@@ -21,6 +21,7 @@ import Prelude hiding (all, any, sin, sinh, cos, cosh, tan, tanh, asin, asinh, a
 import Data.Finite
 import qualified Data.Int as I
 import Data.Kind (Constraint)
+import Data.Maybe
 import Data.Proxy
 import Data.Reflection
 import Control.Arrow ((&&&))
@@ -398,15 +399,15 @@ transpose2D t = transpose @0 @1 t
 -- diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
 -- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
--- >>> t = all (UnsafeMkTensor (D.asTensor ([False, False] :: [Bool])) :: Tensor 'D.Bool '[1, 2])
+-- >>> t = all (fromJust [False, False] :: Tensor 'D.Bool '[2])
 -- >>> toInt t == 1
 -- False
 --
--- >>> t = all (UnsafeMkTensor (D.asTensor ([False, True] :: [Bool])) :: Tensor 'D.Bool '[1, 2])
+-- >>> t = all (fromJust [False, True] :: Tensor 'D.Bool '[2])
 -- >>> toInt t == 1
 -- False
 --
--- >>> t = all (UnsafeMkTensor (D.asTensor ([True, True] :: [Bool])) :: Tensor 'D.Bool '[1, 2])
+-- >>> t = all (fromJust [True, True] :: Tensor 'D.Bool '[2])
 -- >>> toInt t == 1
 -- True
 all :: Tensor 'D.Bool shape -> Tensor 'D.Bool '[]
@@ -415,15 +416,15 @@ all t = unsafePerformIO $ cast1 ATen.all_t t
 -- all t = toInt (unsafePerformIO $ cast1 ATen.all_t t) == 1
 
 -- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.any.
--- >>> t = any (UnsafeMkTensor (D.asTensor ([False, False] :: [Bool])) :: Tensor 'D.Bool '[1, 2])
+-- >>> t = any (fromJust [False, False] :: Tensor 'D.Bool '[2])
 -- >>> toInt t == 1
 -- False
 --
--- >>> t = any (UnsafeMkTensor (D.asTensor ([False, True] :: [Bool])) :: Tensor 'D.Bool '[1, 2])
+-- >>> t = any (fromJust [False, True] :: Tensor 'D.Bool '[2])
 -- >>> toInt t == 1
 -- True
 --
--- >>> t = any (UnsafeMkTensor (D.asTensor ([True, True] :: [Bool])) :: Tensor 'D.Bool '[1, 2])
+-- >>> t = any (fromJust [True, True] :: Tensor 'D.Bool '[2])
 -- >>> toInt t == 1
 -- True
 any :: Tensor 'D.Bool shape -> Tensor 'D.Bool '[]
@@ -448,7 +449,7 @@ type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepOrDropDi
   ConditionalDropDimension (x : xs) i keepOrDropDim = x ': ConditionalDropDimension xs (i - 1) keepOrDropDim
 
 -- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.all.
--- >>> t = UnsafeMkTensor (D.asTensor ([[True, True], [True, False], [True, True], [True, True]] :: [[Bool]])) :: Tensor 'D.Bool '[4, 2]
+-- >>> t = fromJust [[True, True], [True, False], [True, True], [True, True]] :: Tensor 'D.Bool '[4, 2]
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (all' @1 @DropDim t :: Tensor 'D.Bool '[4])
 -- (Bool,([4],[True,False,True,True]))
@@ -469,7 +470,7 @@ all'
 all' t = unsafePerformIO $ cast3 ATen.all_tlb t (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- | See https://pytorch.org/docs/stable/tensors.html#torch.BoolTensor.any.
--- >>> t = UnsafeMkTensor (D.asTensor ([[True, True], [True, False], [True, True], [True, True]] :: [[Bool]])) :: Tensor 'D.Bool '[4, 2]
+-- >>> t = fromJust [[True, True], [True, False], [True, True], [True, True]] :: Tensor 'D.Bool '[4, 2]
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Bool]) $ (any' @1 @DropDim t :: Tensor 'D.Bool '[4])
 -- (Bool,([4],[True,True,True,True]))
@@ -543,7 +544,7 @@ avg_pool1d _self =
 -- allclose _self _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.allclose_ttddb) _self _other _rtol _atol _equal_nan
 
 -- | See https://pytorch.org/docs/stable/torch.html#torch.argmax.
--- >>> t = UnsafeMkTensor (D.asTensor ([[0, 1], [-1, 2], [0, 1], [0, -2]] :: [[Float]])) :: Tensor 'D.Float '[4, 2]
+-- >>> t = fromJust [[0, 1], [-1, 2], [0, 1], [0, -2]] :: Tensor 'D.Float '[4, 2]
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Int]) $ (argmax @1 @DropDim t :: Tensor 'D.Int64 '[4])
 -- (Int64,([4],[1,1,1,0]))
@@ -564,7 +565,7 @@ argmax
 argmax t = unsafePerformIO $ cast3 ATen.argmax_tlb t (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- | See https://pytorch.org/docs/stable/torch.html#torch.argmin.
--- >>> t = UnsafeMkTensor (D.asTensor ([[0, 1], [-1, 2], [0, 1], [0, -2]] :: [[Float]])) :: Tensor 'D.Float '[4, 2]
+-- >>> t = fromJust [[0, 1], [-1, 2], [0, 1], [0, -2]] :: Tensor 'D.Float '[4, 2]
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Int]) $ (argmin @1 @DropDim t :: Tensor 'D.Int64 '[4])
 -- (Int64,([4],[0,0,0,1]))
@@ -707,8 +708,8 @@ conv2d _input _weight _bias =
     _input
     _weight
     _bias
-    [natValI @(Fst s), natValI @(Snd s)]
-    [natValI @(Fst p), natValI @(Snd p)]
+    ([natValI @(Fst s), natValI @(Snd s)] :: [Int])
+    ([natValI @(Fst p), natValI @(Snd p)] :: [Int])
     ([1,1] :: [Int])
     (1::Int)
 
@@ -735,8 +736,8 @@ conv3d _input _weight _bias =
     _input
     _weight
     _bias
-    [natValI @(Fst3 s), natValI @(Snd3 s), natValI @(Trd3 s)]
-    [natValI @(Fst3 p), natValI @(Snd3 p), natValI @(Trd3 p)]
+    ([natValI @(Fst3 s), natValI @(Snd3 s), natValI @(Trd3 s)] :: [Int])
+    ([natValI @(Fst3 p), natValI @(Snd3 p), natValI @(Trd3 p)] :: [Int])
     ([1,1,1] :: [Int])
     (1::Int)
 
@@ -987,7 +988,7 @@ type family IsIntegral (dtype :: D.DType) :: Constraint where
                                  Text " not supported")                         
 
 -- | See https://pytorch.org/docs/stable/torch.html#torch.logsumexp.
--- >>> t = UnsafeMkTensor (D.asTensor ([[5, 1], [3, 2], [4, 1], [2, 7]] :: [[Float]])) :: Tensor 'D.Float '[4, 2]
+-- >>> t = fromJust [[5, 1], [3, 2], [4, 1], [2, 7]] :: Tensor 'D.Float '[4, 2]
 --
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ (logsumexp @1 @DropDim t :: Tensor 'D.Float '[4])
 -- (Float,([4],[5.01815,3.3132617,4.0485873,7.0067153]))
@@ -1046,8 +1047,13 @@ max_pool2d
                     c,i0,i1,n])
   => Tensor dtype '[n,c,i0,i1]
   -> Tensor dtype '[n,c,ConvOutputSize (Fst s) (Fst p) (Fst k) i0,ConvOutputSize (Snd s) (Snd p) (Snd k) i1]
-max_pool2d _self =
-  unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb) _self [(natValI @(Fst k)),(natValI @(Snd k))] [(natValI @(Fst s)),(natValI @(Snd s))] [(natValI @(Fst p)),(natValI @(Snd p))] ([1,1]::[Int]) False
+max_pool2d _self = unsafePerformIO $ (cast6 ATen.max_pool2d_tllllb)
+  _self
+  ([natValI @(Fst k), natValI @(Snd k)] :: [Int])
+  ([natValI @(Fst s), natValI @(Snd s)] :: [Int])
+  ([natValI @(Fst p), natValI @(Snd p)] :: [Int])
+  ([1, 1] :: [Int])
+  False
 
 mkldnn_max_pool2d
   :: forall k s p c i0 i1 n dtype.
@@ -1058,7 +1064,13 @@ mkldnn_max_pool2d
   => Tensor dtype '[n,c,i0,i1]
   -> Tensor dtype '[n,c,ConvOutputSize (Fst s) (Fst p) (Fst k) i0,ConvOutputSize (Snd s) (Snd p) (Snd k) i1]
 mkldnn_max_pool2d _self =
-  unsafePerformIO $ (cast6 ATen.mkldnn_max_pool2d_tllllb) _self [(natValI @(Fst k)),(natValI @(Snd k))] [(natValI @(Fst s)),(natValI @(Snd s))] [(natValI @(Fst p)),(natValI @(Snd p))] ([1,1]::[Int]) False
+  unsafePerformIO $ (cast6 ATen.mkldnn_max_pool2d_tllllb)
+    _self
+    ([natValI @(Fst k), natValI @(Snd k)] :: [Int])
+    ([natValI @(Fst s), natValI @(Snd s)] :: [Int])
+    ([natValI @(Fst p), natValI @(Snd p)] :: [Int])
+    ([1, 1] :: [Int])
+    False
 
 quantized_max_pool2d
   :: forall k s p c i0 i1 n dtype.
@@ -1069,7 +1081,12 @@ quantized_max_pool2d
   => Tensor dtype '[n,c,i0,i1]
   -> Tensor dtype '[n,c,ConvOutputSize (Fst s) (Fst p) (Fst k) i0,ConvOutputSize (Snd s) (Snd p) (Snd k) i1]
 quantized_max_pool2d _self =
-  unsafePerformIO $ (cast5 ATen.quantized_max_pool2d_tllll) _self [(natValI @(Fst k)),(natValI @(Snd k))] [(natValI @(Fst s)),(natValI @(Snd s))] [(natValI @(Fst p)),(natValI @(Snd p))] ([1,1]::[Int])
+  unsafePerformIO $ (cast5 ATen.quantized_max_pool2d_tllll)
+    _self
+    ([natValI @(Fst k), natValI @(Snd k)] :: [Int])
+    ([natValI @(Fst s), natValI @(Snd s)] :: [Int])
+    ([natValI @(Fst p), natValI @(Snd p)] :: [Int])
+    ([1, 1] :: [Int])
 
 -- |
 -- >>> t = max_pool3d @'(1,1,1) @'(1,1,1) @'(0,0,0) (ones::Tensor 'D.Float '[1,3,4,5,6])
@@ -1089,9 +1106,9 @@ max_pool3d _self =
   unsafePerformIO $
   (cast6 ATen.max_pool3d_tllllb)
     _self
-    [(natValI @(Fst3 k)),(natValI @(Snd3 k)),(natValI @(Trd3 k))]
-    [(natValI @(Fst3 s)),(natValI @(Snd3 s)),(natValI @(Trd3 s))]
-    [(natValI @(Fst3 p)),(natValI @(Snd3 p)),(natValI @(Trd3 p))]
+    ([natValI @(Fst3 k), natValI @(Snd3 k), natValI @(Trd3 k)] :: [Int])
+    ([natValI @(Fst3 s), natValI @(Snd3 s), natValI @(Trd3 s)] :: [Int])
+    ([natValI @(Fst3 p), natValI @(Snd3 p), natValI @(Trd3 p)] :: [Int])
     ([1,1,1]::[Int])
     False
 
@@ -1511,7 +1528,7 @@ medianDim :: forall d dtype shape. (KnownNat d) => Tensor dtype shape -> Tensor 
 medianDim _self = fst $ (unsafePerformIO $ (cast2 ATen.median_tl) _self (natValI @d) :: (Tensor dtype  (DropValue shape d), Tensor 'D.Int64 (DropValue shape d)))
 
 -- | See https://pytorch.org/docs/stable/torch.html#torch.median.
--- >>> t = UnsafeMkTensor (D.asTensor ([[5, 1], [3, 2], [4, 1], [2, 7]] :: [[Float]])) :: Tensor 'D.Float '[4, 2]
+-- >>> t = fromJust [[5, 1], [3, 2], [4, 1], [2, 7]] :: Tensor 'D.Float '[4, 2]
 -- >>> median' @0 @KeepDim t :: (Tensor 'D.Float '[1, 2], Tensor 'D.Int64 '[1, 2])
 -- (Tensor Float [1,2] [[ 3.0000   ,  1.0000   ]],Tensor Int64 [1,2] [[ 1,  0]])
 median'
@@ -1557,28 +1574,28 @@ l1_loss _self _target = unsafePerformIO $ (cast3 ATen.l1_loss_ttl) _self _target
 -- | The negative log likelihood loss.
 -- See https://pytorch.org/docs/stable/nn.functional.html?highlight=nll_loss#torch.nn.functional.nll_loss.
 -- >>> input <- randn @'D.Float @[3, 5]
--- >>> target = UnsafeMkTensor (D.asTensor ([1, 0, 4] :: [I.Int])) :: Tensor 'D.Int64 '[3]
+-- >>> target = fromJust [1, 0, 4] :: Tensor 'D.Int64 '[3]
 -- >>> weight = ones @'D.Float @'[5]
 -- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
 -- (Float,[3])
 -- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @'D.Float @[3, 5, 2]
--- >>> target = UnsafeMkTensor (D.asTensor ([[1, 1], [0, 1], [4, 0]] :: [[I.Int]])) :: Tensor 'D.Int64 '[3, 2]
+-- >>> target = fromJust [[1, 1], [0, 1], [4, 0]] :: Tensor 'D.Int64 '[3, 2]
 -- >>> weight = ones @'D.Float @'[5]
 -- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
 -- (Float,[3,2])
 -- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @'D.Float @[3, 5, 1, 2]
--- >>> target = UnsafeMkTensor (D.asTensor ([[[1, 1]], [[0, 1]], [[4, 0]]] :: [[[I.Int]]])) :: Tensor 'D.Int64 '[3, 1, 2]
+-- >>> target = fromJust [[[1, 1]], [[0, 1]], [[4, 0]]] :: Tensor 'D.Int64 '[3, 1, 2]
 -- >>> weight = ones @'D.Float @'[5]
 -- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
 -- (Float,[3,1,2])
 -- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @'D.Float @[3, 5, 2, 1, 2]
--- >>> target = UnsafeMkTensor (D.asTensor ([[[[1, 1]], [[0, 2]]], [[[0, 1]], [[1, 0]]], [[[4, 0]], [[1, 2]]]] :: [[[[I.Int]]]])) :: Tensor 'D.Int64 '[3, 2, 1, 2]
+-- >>> target = fromJust [[[[1, 1]], [[0, 2]]], [[[0, 1]], [[1, 0]]], [[[4, 0]], [[1, 2]]]] :: Tensor 'D.Int64 '[3, 2, 1, 2]
 -- >>> weight = ones @'D.Float @'[5]
 -- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[2, 1, 2] (log_softmax input 1) target weight (-100)
 -- (Float,[3,2,1,2])
@@ -1685,8 +1702,14 @@ avg_pool2d
                     c,i0,i1,n])
   => Tensor dtype '[n,c,i0,i1]
   -> Tensor dtype '[n,c,ConvOutputSize (Fst s) (Fst p) (Fst k) i0,ConvOutputSize (Snd s) (Snd p) (Snd k) i1]
-avg_pool2d _self =
-  unsafePerformIO $ (cast7 ATen.avg_pool2d_tlllbbl) _self [(natValI @(Fst k)),(natValI @(Snd k))] [(natValI @(Fst s)),(natValI @(Snd s))] [(natValI @(Fst p)),(natValI @(Snd p))] False True (1::Int)
+avg_pool2d _self = unsafePerformIO $ (cast7 ATen.avg_pool2d_tlllbbl)
+  _self
+  ([natValI @(Fst k), natValI @(Snd k)] :: [Int])
+  ([natValI @(Fst s), natValI @(Snd s)] :: [Int])
+  ([natValI @(Fst p), natValI @(Snd p)] :: [Int])
+  False
+  True
+  (1 :: Int)
 
 -- |
 -- >>> t = avg_pool3d @'(1,1,1) @'(1,1,1) @'(0,0,0) (ones::Tensor 'D.Float '[1,3,4,5,6])
@@ -1706,9 +1729,9 @@ avg_pool3d _self =
   unsafePerformIO $
   (cast7 ATen.avg_pool3d_tlllbbl)
     _self
-    [(natValI @(Fst3 k)),(natValI @(Snd3 k)),(natValI @(Trd3 k))]
-    [(natValI @(Fst3 s)),(natValI @(Snd3 s)),(natValI @(Trd3 s))]
-    [(natValI @(Fst3 p)),(natValI @(Snd3 p)),(natValI @(Trd3 p))]
+    ([natValI @(Fst3 k), natValI @(Snd3 k), natValI @(Trd3 k)] :: [Int])
+    ([natValI @(Fst3 s), natValI @(Snd3 s), natValI @(Trd3 s)] :: [Int])
+    ([natValI @(Fst3 p), natValI @(Snd3 p), natValI @(Trd3 p)] :: [Int])
     False
     True
     (1::Int)

@@ -5,6 +5,7 @@ import Test.DocTest
 main :: IO ()
 main = doctest
   [ "-XOverloadedStrings"
+  , "-XOverloadedLists"
   , "-XDataKinds"
   , "-XTypeFamilies"
   , "-XTypeApplications"
