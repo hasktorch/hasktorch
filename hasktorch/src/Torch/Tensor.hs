@@ -18,6 +18,7 @@ import Foreign.Storable
 import Foreign.C.Types
 import System.IO.Unsafe
 import Data.Int (Int64)
+import Data.Word (Word8)
 import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
@@ -165,6 +166,30 @@ instance (Reifies a DType, Storable a) => TensorLike a where
   _dims _ = []
   _peekElemOff ptr offset _ = peekElemOff (castPtr ptr) offset
   _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset v
+
+
+instance {-# OVERLAPPING #-}TensorLike Bool where
+  asTensor' v opts = unsafePerformIO $ do
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @Bool) opts
+    withTensor t $ \ptr -> do
+      _pokeElemOff ptr 0 v
+    return t
+
+  asTensor v = asTensor' v defaultOpts
+
+  asValue t = unsafePerformIO $ do
+    if _dtype @Bool == dtype t
+    then do
+      withTensor t $ \ptr -> do
+        _peekElemOff ptr 0 []
+    else
+      throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @Bool)  ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
+
+  _dtype = reflect (Proxy :: Proxy Bool)
+  _dims _ = []
+  _peekElemOff ptr offset _ = (/= 0) <$> (peekElemOff (castPtr ptr) offset :: IO Word8)
+  _pokeElemOff ptr offset v = pokeElemOff (castPtr ptr) offset ((if v then 1 else 0) :: Word8)
+
 
 instance {-# OVERLAPPING #-}TensorLike a => TensorLike [a] where
   asTensor' v opts = unsafePerformIO $ do
