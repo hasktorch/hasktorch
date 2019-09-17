@@ -3,15 +3,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module TestFunctions where
 
 import GHC.Generics

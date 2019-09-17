@@ -38,17 +38,16 @@ gd lr parameters gradients = zipWith step depParameters gradients
 
 -- gradient descent with momentum step
 --     lr              beta      memory      parameters     gradients
-gdm :: LearningRate -> Tensor -> [Tensor] -> [Parameter] -> Gradient -> [(Tensor, Tensor)]
+gdm :: LearningRate -> Float -> [Tensor] -> [Parameter] -> Gradient -> [(Tensor, Tensor)]
 gdm lr beta gradMemory parameters gradients = (zipWith3 step) depParameters gradients gradMemory
   where
-    z' dp z = beta * z + dp
+    z' dp z = cmul z beta + dp
     step p dp z = let newZ = z' dp z in (p - lr * newZ, newZ)
     depParameters = fmap toDependent parameters
 
 -- Adam
 
 -- | State representation for Adam Optimizer
--- NOTE - decide what goes into data represenation vs. passed as function parameters
 data Adam = Adam { 
     m1 :: [Tensor], -- 1st moment
     m2 :: [Tensor], -- 2nd moment
@@ -73,7 +72,7 @@ adam lr beta1 beta2 Adam{..} gradients iter = Adam m1' m2' w
         fw wprev avg1 avg2 = wprev - lr * avg1 / (sqrt avg2 + eps)
         w = zipWith3 fw modelParam a1 a2
 
--- show output after n iterations
+-- | show output after n iterations
 showLog :: (Show a) => Int -> Int -> Tensor -> a -> IO ()
 showLog n i lossValue state = 
     when (mod i n == 0) do
@@ -81,7 +80,7 @@ showLog n i lossValue state =
             ++ " | Loss:" ++ printf "%.4f" (asValue lossValue :: Float)
             ++ " | Parameters: " ++ show state)
 
--- produce flattened parameters and gradient for a single iteration
+-- | produce flattened parameters and gradient for a single iteration
 runIter state loss i = do
     showLog 1000 i lossValue state
     pure (flattenParameters state, grad lossValue flatParameters)
@@ -90,7 +89,11 @@ runIter state loss i = do
         flatParameters = flattenParameters state
         gradients = grad lossValue flatParameters
 
--- Rosenbrock function gradient descent
+-- | foldM as a loop with action block as the last argument
+foldLoop :: Monad m => a -> Int -> (a -> Int -> m a) -> m a
+foldLoop x count block = foldM block x [1..count]
+
+-- | Rosenbrock function gradient descent
 testRosenGD :: Int -> IO ()
 testRosenGD numIters = do
     init <- sample $ RosenSpec
@@ -100,10 +103,8 @@ testRosenGD numIters = do
         newFlatParam <- mapM makeIndependent $ gd 5e-4 flatParameters gradients
         pure $ replaceParameters state $ newFlatParam
     pure ()
-    where
-        foldLoop x count block = foldM block x [1..count]
 
--- Rosenbrock function gradient descent + momentum
+-- | Rosenbrock function gradient descent + momentum
 testRosenGDM :: Int -> IO ()
 testRosenGDM numIters = do
     init <- sample $ RosenSpec
@@ -115,10 +116,8 @@ testRosenGDM numIters = do
         newFlatParam <- mapM (makeIndependent . fst) result
         pure (replaceParameters state $ newFlatParam, fmap snd result)
     pure ()
-    where
-        foldLoop x count block = foldM block x [1..count]
 
--- Rosenbrock function Adam
+-- | Rosenbrock function Adam
 testRosenAdam :: Int -> IO ()
 testRosenAdam numIters = do
     init <- sample $ RosenSpec
@@ -135,8 +134,6 @@ testRosenAdam numIters = do
         newFlatParam <- mapM makeIndependent (modelParam adamState')
         pure (replaceParameters state $ newFlatParam, adamState')
     pure ()
-    where
-        foldLoop x count block = foldM block x [1..count]
 
 -- | Convex Quadratic Gradient Descent
 testConvQuadGD :: Int -> IO ()
@@ -148,11 +145,9 @@ testConvQuadGD numIters = do
     putStrLn ("Initial :" ++ show init)
     trained <- foldLoop init numIters $ \state i -> do
         (flatParameters, gradients) <- runIter state (lossCQ a b) i
-        newFlatParam <- mapM makeIndependent $ gd 1e-3 flatParameters gradients
+        newFlatParam <- mapM makeIndependent $ gd 5e-4 flatParameters gradients
         pure $ replaceParameters state $ newFlatParam
     pure ()
-    where
-        foldLoop x count block = foldM block x [1..count]
 
 -- | Convex Quadratic Gradient Descent + Momentum
 testConvQuadGDM :: Int -> IO ()
@@ -169,8 +164,6 @@ testConvQuadGDM numIters = do
         newFlatParam <- mapM (makeIndependent . fst) result
         pure $ (replaceParameters state $ newFlatParam, fmap snd result)
     pure ()
-    where
-        foldLoop x count block = foldM block x [1..count]
 
 -- | Convex Quadratic Adam
 testConvQuadAdam :: Int -> IO ()
@@ -192,17 +185,15 @@ testConvQuadAdam numIters = do
         newFlatParam <- mapM makeIndependent (modelParam adamState')
         pure (replaceParameters state $ newFlatParam, adamState')
     pure ()
-    where
-        foldLoop x count block = foldM block x [1..count]
 
 -- | Check global minimum point for Rosenbrock
 checkRosen = do
-    putStrLn "Check Actual Global Minimum (at 1, 1):"
+    putStrLn "\nCheck Actual Global Minimum (at 1, 1):"
     print $ rosenbrock' (asTensor (1.0 :: Float)) (asTensor (1.0 :: Float))
 
 -- | Check global minimum point for Convex Quadratic
 checkCQ = do
-    putStrLn "Check Actual Global Minimum (at 0, 0):"
+    putStrLn "\nCheck Actual Global Minimum (at 0, 0):"
     let dim = 2
         a = eye' dim dim
         b = zeros' [dim]
@@ -231,5 +222,5 @@ main = do
     testConvQuadAdam iter
     checkCQ
 
-    putStrLn "Done"
+    putStrLn "\nDone"
 
