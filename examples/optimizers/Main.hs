@@ -37,9 +37,14 @@ gd lr parameters gradients = zipWith step depParameters gradients
     depParameters = fmap toDependent parameters
 
 -- gradient descent with momentum step
---     lr              beta      memory      parameters     gradients
-gdm :: LearningRate -> Float -> [Tensor] -> [Parameter] -> Gradient -> [(Tensor, Tensor)]
-gdm lr beta gradMemory parameters gradients = (zipWith3 step) depParameters gradients gradMemory
+gdm 
+    :: LearningRate -- ^ learning rate
+    -> Float -- ^ beta
+    -> [Tensor] -- ^ memory
+    -> [Parameter] -- ^ parameters
+    -> Gradient --gradients
+    -> [(Tensor, Tensor)]
+gdm lr beta memory parameters gradients = (zipWith3 step) depParameters gradients memory
   where
     z' dp z = cmul z beta + dp
     step p dp z = let newZ = z' dp z in (p - lr * newZ, newZ)
@@ -81,6 +86,9 @@ showLog n i lossValue state =
             ++ " | Parameters: " ++ show state)
 
 -- | produce flattened parameters and gradient for a single iteration
+runIter
+  :: (Show f, Parameterized f) =>
+     f -> (f -> Tensor) -> Int -> IO ([Parameter], [Tensor])
 runIter state loss i = do
     showLog 1000 i lossValue state
     pure (flattenParameters state, grad lossValue flatParameters)
