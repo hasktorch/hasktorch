@@ -1,7 +1,7 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 
 module Torch.DType where
 
@@ -18,16 +18,28 @@ data DType = Bool | UInt8 | Int8 | Int16 | Int32 | Int64 | Half | Float | Double
 instance Reifies Bool DType where
   reflect _ = Bool
 
+instance Reifies 'Bool DType where
+  reflect _ = Bool
+
 instance Reifies Word8 DType where
   reflect _ = UInt8
 
 instance Reifies Int8 DType where
   reflect _ = Int8
 
+instance Reifies 'Int8 DType where
+  reflect _ = Int8
+
 instance Reifies Int16 DType where
   reflect _ = Int16
 
+instance Reifies 'Int16 DType where
+  reflect _ = Int16
+
 instance Reifies Int32 DType where
+  reflect _ = Int32
+
+instance Reifies 'Int32 DType where
   reflect _ = Int32
 
 instance Reifies Int DType where
@@ -36,11 +48,20 @@ instance Reifies Int DType where
 instance Reifies Int64 DType where
   reflect _ = Int64
 
+instance Reifies 'Int64 DType where
+  reflect _ = Int64
+
 instance Reifies Float DType where
+  reflect _ = Float
+
+instance Reifies 'Float DType where
   reflect _ = Float
 
 instance Reifies Double DType where
   reflect _ = Double
+
+instance Reifies 'Double DType where
+  reflect _ = Float
 
 instance Castable DType ATen.ScalarType where
   cast Bool   f = f ATen.kBool
