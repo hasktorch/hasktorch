@@ -34,7 +34,7 @@ instance Parameterized Coord
 instance Parameterized [Coord]
 
 rosenbrock2d :: Float -> Float -> Tensor -> Tensor -> Tensor
-rosenbrock2d a b x y = square (cadd ((-1.0) * x ) a) + cmul (square (y - x*x)) b
+rosenbrock2d a b x y = square (addScalar ((-1.0) * x ) a) + mulScalar (square (y - x*x)) b
     where square c = pow c (2 :: Int)
 
 rosenbrock' :: Tensor -> Tensor -> Tensor
@@ -58,7 +58,7 @@ instance Parameterized [CQ]
 
 convexQuadratic :: Tensor -> Tensor -> Tensor -> Tensor
 convexQuadratic a b w =
-    cmul (dot w (mv a w)) (0.5 :: Float) - dot b w
+    mulScalar (dot w (mv a w)) (0.5 :: Float) - dot b w
 
 lossCQ :: Tensor -> Tensor -> CQ -> Tensor
 lossCQ a b (CQ w) = convexQuadratic a b w'

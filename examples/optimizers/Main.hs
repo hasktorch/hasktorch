@@ -46,7 +46,7 @@ gdm
     -> [(Tensor, Tensor)]
 gdm lr beta memory parameters gradients = (zipWith3 step) depParameters gradients memory
   where
-    z' dp z = cmul z beta + dp
+    z' dp z = mulScalar z beta + dp
     step p dp z = let newZ = z' dp z in (p - lr * newZ, newZ)
     depParameters = fmap toDependent parameters
 
@@ -64,12 +64,12 @@ adam :: LearningRate -> Float -> Float -> Adam -> Gradient -> Int -> Adam
 adam lr beta1 beta2 Adam{..} gradients iter = Adam m1' m2' w
     where
         -- 1st & 2nd moments
-        f1 m1 dp = cmul m1 beta1 + cmul dp (1 - beta1)
-        f2 m2 dp = cmul m2 beta2 + cmul (dp * dp) (1 - beta2)
+        f1 m1 dp = mulScalar m1 beta1 + mulScalar dp (1 - beta1)
+        f2 m2 dp = mulScalar m2 beta2 + mulScalar (dp * dp) (1 - beta2)
         m1' = zipWith f1 m1 gradients
         m2' = zipWith f2 m2 gradients
         -- averages of moments
-        a beta m = cdiv m (1 - beta^(iter + 1))
+        a beta m = divScalar m (1 - beta^(iter + 1))
         a1 = fmap (a beta1) m1'
         a2 = fmap (a beta2) m2'
         -- parameter update

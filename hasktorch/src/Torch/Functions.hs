@@ -90,8 +90,13 @@ sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
 mul :: Tensor -> Tensor -> Tensor
 mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
 
+-- TODO - cxxx wll be fully deprecated in favor of xxxScalar once dependencies are migrated
+
 cadd :: Scalar a => Tensor -> a -> Tensor
 cadd t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
+
+csub :: Scalar a => Tensor -> a -> Tensor
+csub t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
 
 cmul :: Scalar a => Tensor -> a -> Tensor
 cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
@@ -99,8 +104,19 @@ cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
 cdiv :: Scalar a => Tensor -> a -> Tensor
 cdiv t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
 
-csub :: Scalar a => Tensor -> a -> Tensor
-csub t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
+-- TODO - These replace the above TH naming after migrating dependencies
+
+addScalar :: Scalar a => Tensor -> a -> Tensor
+addScalar t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
+
+subScalar :: Scalar a => Tensor -> a -> Tensor
+subScalar t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
+
+mulScalar :: Scalar a => Tensor -> a -> Tensor
+mulScalar t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
+
+divScalar :: Scalar a => Tensor -> a -> Tensor
+divScalar t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
 
 matmul :: Tensor -> Tensor -> Tensor
 matmul a b =
