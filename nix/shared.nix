@@ -5,8 +5,8 @@ let
     let src = pkgsOld.fetchFromGitHub {
           owner  = "junjihashimoto";
           repo   = "pytorch-world";
-          rev    = "3fab6c6ec237b63ed8c61a90efb5c3bb11686037";
-          sha256 = "1ghjfz9fc7m8877bqkk37ikssc9qjf4bqb75aiyhrx7gxp4km3dh";
+          rev    = "8b9336576c1d1b93fb80d133e1ea4995a4a8d10d";
+          sha256 = "0hj448w6cgklx8hsr50656pq4hzx1mdwljqn0b42zhbvbyqsqihs";
     };
     in (pkgsOld.callPackage "${src}/libtorch/release.nix" { });
   overlayShared = pkgsNew: pkgsOld: {
