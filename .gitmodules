@@ -9,4 +9,4 @@
 	url = git@github.com:hasktorch/fficxx.git
 [submodule "hasktorch-naperian"]
 	path = hasktorch-naperian
-	url = https://github.com/jasigal/hasktorch-naperian
+	url = https://github.com/tscholak/hasktorch-naperian
