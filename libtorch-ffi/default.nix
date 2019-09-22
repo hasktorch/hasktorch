@@ -1,1 +1,1 @@
-(import ../nix/shared.nix { }).libtorch-ffi
+(import ../nix/shared.nix { }).libtorch-ffi_cpu
