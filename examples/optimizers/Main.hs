@@ -93,7 +93,7 @@ checkGlobalMinConvQuad = do
 main :: IO ()
 main = do
 
-    let iter = 6000
+    let iter = 10000
 
     putStrLn "\n2D Rosenbrock\n================"
     putStrLn "\nGD"
