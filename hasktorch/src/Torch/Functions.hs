@@ -69,6 +69,12 @@ abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
 add :: Tensor -> Tensor -> Tensor
 add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne
 
+mul :: Tensor -> Tensor -> Tensor
+mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
+
+sub :: Tensor -> Tensor -> Tensor
+sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
+
 ceil :: Tensor -> Tensor
 ceil t = unsafePerformIO $ (cast1 ATen.ceil_t) t
 
@@ -83,12 +89,6 @@ max t = unsafePerformIO $ (cast1 ATen.max_t) t
 
 median :: Tensor -> Tensor
 median t = unsafePerformIO $ (cast1 ATen.median_t) t
-
-sub :: Tensor -> Tensor -> Tensor
-sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
-
-mul :: Tensor -> Tensor -> Tensor
-mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
 
 -- TODO - cxxx wll be fully deprecated in favor of xxxScalar once dependencies are migrated
 
