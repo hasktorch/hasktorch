@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Main where
 
@@ -109,12 +110,12 @@ showLog n i lossValue state =
             ++ " | Parameters: " ++ show state)
 
 -- | produce flattened parameters and gradient for a single iteration
-runIter
-  :: (Show f, Parameterized f) =>
-     f -> (f -> Tensor) -> Int -> IO ([Parameter], [Tensor])
+-- runIter
+--   :: (Show f, Parameterized f) =>
+--      f -> (f -> Tensor) -> Int -> IO ([Parameter], [Tensor])
 runIter state loss i = do
     showLog 1000 i lossValue state
-    pure (flattenParameters state, grad lossValue flatParameters)
+    pure (flatParameters, gradients)
     where
         lossValue = loss state
         flatParameters = flattenParameters state
@@ -124,51 +125,38 @@ runIter state loss i = do
 foldLoop :: Monad m => a -> Int -> (a -> Int -> m a) -> m a
 foldLoop x count block = foldM block x [1..count]
 
+-- | Optimize Rosenbrock function with specified optimizer
+optRosen :: (Optimizer o, Show o) => Int -> o -> IO ()
+optRosen numIters optInit = do
+    paramInit <- sample RosenSpec
+    putStrLn ("Initial :" ++ show paramInit)
+    trained <- foldLoop (paramInit, optInit) numIters $ \(paramState, optState) i -> do
+        (flatParameters, gradients) <- runIter paramState lossRosen i
+        let (result, newMemory) = step 5e-4 optState flatParameters gradients
+        newFlatParam <- mapM makeIndependent result
+        pure $ (replaceParameters paramState $ newFlatParam, newMemory)
+    pure ()
+
 -- | Rosenbrock function gradient descent
 testRosenGD :: Int -> IO ()
 testRosenGD numIters = do
-    init <- sample $ RosenSpec
-    putStrLn ("Initial :" ++ show init)
-    -- TODO - incorporate optimizer
-    trained <- foldLoop init numIters $ \state i -> do
-        (flatParameters, gradients) <- runIter state lossRosen i
-        newFlatParam <- mapM makeIndependent $ gd 5e-4 flatParameters gradients
-        pure $ replaceParameters state $ newFlatParam
-    pure ()
+    optRosen numIters GD
 
 -- | Rosenbrock function gradient descent + momentum
 testRosenGDM :: Int -> IO ()
 testRosenGDM numIters = do
-    init <- sample $ RosenSpec
-    let memory = GDM 0.9 [zeros' [1], zeros' [1]]
-    putStrLn ("Initial :" ++ show init)
-    trained <- foldLoop (init, memory) numIters $ \(state, memory) i -> do
-        (flatParameters, gradients) <- runIter state lossRosen i
-        let (result, newMemory) =  gdm 5e-4 memory flatParameters gradients
-        newFlatParam <- mapM makeIndependent result
-        pure (replaceParameters state $ newFlatParam, newMemory)
-    pure ()
+    optRosen numIters (GDM 0.9 [zeros' [1], zeros' [1]])
 
 -- | Rosenbrock function Adam
 testRosenAdam :: Int -> IO ()
 testRosenAdam numIters = do
-    init <- sample $ RosenSpec
-    let adamInit = Adam {
+    optRosen numIters Adam {
         beta1=0.9,
         beta2=0.999,
         m1=[zeros' [1], zeros' [1]],
         m2=[zeros' [1], zeros' [1]],
         iter=0
         }
-    let modelParam=[zeros' [1], zeros' [1]]
-    putStrLn ("Initial :" ++ show init)
-    trained <- foldLoop (init, adamInit) numIters $ \(state, adamState) i -> do
-        (flatParameters, gradients) <- runIter state lossRosen i
-        let params = fmap toDependent flatParameters
-        let (result, adamState') = adam 5e-4 adamState flatParameters gradients 
-        newFlatParam <- mapM makeIndependent result
-        pure (replaceParameters state $ newFlatParam, adamState')
-    pure ()
 
 -- | Convex Quadratic Gradient Descent
 testConvQuadGD :: Int -> IO ()
