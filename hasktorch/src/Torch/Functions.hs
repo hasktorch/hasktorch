@@ -213,11 +213,11 @@ mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
 conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $
     (cast7 ATen.conv2d_tttllll) input weight bias
-                                [dh, dw] [ph, pw] ([1, 1] :: [Int]) (0 :: Int)
+                                ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) (0 :: Int)
 
 maxPool2d :: Tensor -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor
 maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
-    (cast6 ATen.max_pool2d_tllllb) input [kh, kw] [dh, dw] [ph, pw] ([1, 1] :: [Int]) False
+    (cast6 ATen.max_pool2d_tllllb) input ([kh, kw] :: [Int]) ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) False
 
 logSoftmax :: Tensor -> Int -> Tensor
 logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)

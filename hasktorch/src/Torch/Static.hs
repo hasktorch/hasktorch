@@ -20,9 +20,11 @@ module Torch.Static where
 
 import Data.Proxy
 import Data.Finite
-import Data.Kind (Constraint)
+import Data.Kind (Constraint, Type)
 import Data.Reflection
+import Foreign.Storable
 import GHC.TypeLits
+import GHC.Exts
 
 import ATen.Cast
 import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
@@ -36,7 +38,7 @@ import qualified Torch.DType as DType
 natValI :: forall n. KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n
 
-class (All KnownNat shape) => KnownShape shape where
+class KnownShape shape where
     shapeVal :: [Int]
 
 instance KnownShape '[] where
@@ -48,8 +50,68 @@ instance (KnownNat h, KnownShape t) => KnownShape (h ': t) where
 getFiniteI :: Finite n -> Int
 getFiniteI = fromIntegral . getFinite
 
-data Tensor dtype (shape :: [Nat]) = UnsafeMkTensor { toDynamic :: D.Tensor }
+class KnownDType dtype where
+  dtypeVal :: DType.DType
 
+instance KnownDType 'DType.Bool where
+  dtypeVal = DType.Bool
+instance KnownDType 'DType.UInt8 where
+  dtypeVal = DType.UInt8
+instance KnownDType 'DType.Int8 where
+  dtypeVal = DType.Int8
+instance KnownDType 'DType.Int16 where
+  dtypeVal = DType.Int16
+instance KnownDType 'DType.Int32 where
+  dtypeVal = DType.Int32
+instance KnownDType 'DType.Int64 where
+  dtypeVal = DType.Int64
+instance KnownDType 'DType.Half where
+  dtypeVal = DType.Half
+instance KnownDType 'DType.Float where
+  dtypeVal = DType.Float
+instance KnownDType 'DType.Double where
+  dtypeVal = DType.Double
+
+type family ComputeDType (dtype' :: dtype) :: DType.DType where
+  ComputeDType Bool = DType.Bool
+  ComputeDType DType.Bool = DType.Bool
+  ComputeDType DType.UInt8 = DType.UInt8
+  ComputeDType DType.Int8 = DType.Int8
+  ComputeDType DType.Int16 = DType.Int16
+  ComputeDType DType.Int32 = DType.Int32
+  ComputeDType Int = DType.Int64
+  ComputeDType DType.Int64 = DType.Int64
+  ComputeDType Float = DType.Float
+  ComputeDType DType.Float = DType.Float
+  ComputeDType Double = DType.Double
+  ComputeDType DType.Double = DType.Double
+  ComputeDType dtype' = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype')
+
+data Tensor (dtype :: DType.DType) (shape :: [Nat]) where
+  UnsafeMkTensor :: forall dtype shape . { toDynamic :: D.Tensor } -> Tensor dtype shape
+
+type family ComputeHaskellType (dtype :: DType.DType) :: Type where
+  ComputeHaskellType DType.Bool = Bool
+  ComputeHaskellType DType.Int64 = Int
+  ComputeHaskellType DType.Float = Float
+  ComputeHaskellType DType.Double = Double
+  ComputeHaskellType dtype = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype)
+  
+type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
+  ComputeItemType _ '[] = TypeError (Text "Scalars are not supported")
+  ComputeItemType ty (_ ': '[]) = ty
+  ComputeItemType ty (_ ': h ': t) = [ComputeItemType ty (h ': t)]
+
+instance (D.TensorLike [ComputeItemType (ComputeHaskellType dtype) shape], KnownShape shape) => IsList (Maybe (Tensor dtype shape)) where
+  type Item (Maybe (Tensor dtype shape)) = ComputeItemType (ComputeHaskellType dtype) shape
+  fromList xs = do
+    shapeXs <- D._deepDims xs
+    if shapeVal @shape == shapeXs
+    then return $ UnsafeMkTensor . D.asTensor $ xs
+    else Nothing
+  toList Nothing = []
+  toList (Just t) = D.asValue . toDynamic $ t
+ 
 instance Num (Tensor dtype shape) where
   (+) a b = UnsafeMkTensor $ toDynamic a + toDynamic b
   (-) a b = UnsafeMkTensor $ toDynamic a - toDynamic b
@@ -67,17 +129,17 @@ instance Fractional (Tensor dtype shape) where
 instance Show (Tensor dtype shape) where
     show (UnsafeMkTensor dynamic) = show dynamic
 
-class (Reifies dtype DType.DType) => TensorOptions dtype (shape :: [Nat]) where
-    optionsRuntimeShape :: [Int]
-    optionsRuntimeDType :: DType.DType
+class TensorOptions (dtype :: DType.DType) (shape :: [Nat]) where
+  optionsRuntimeDType :: DType.DType
+  optionsRuntimeShape :: [Int]
 
-instance (Reifies a DType.DType) => TensorOptions a '[] where
-    optionsRuntimeShape = []
-    optionsRuntimeDType = reflect (Proxy :: Proxy a)
+instance (KnownDType dtype) => TensorOptions dtype '[] where
+  optionsRuntimeDType = dtypeVal @dtype
+  optionsRuntimeShape = []
 
-instance (KnownNat h, TensorOptions a t) => TensorOptions a (h ': t) where
-    optionsRuntimeShape = (natValI @h : optionsRuntimeShape @a @t)
-    optionsRuntimeDType = reflect (Proxy :: Proxy a)
+instance (KnownDType dtype, KnownNat h, TensorOptions dtype t) => TensorOptions dtype (h ': t) where
+  optionsRuntimeDType = dtypeVal @dtype
+  optionsRuntimeShape = (natValI @h : optionsRuntimeShape @dtype @t)
 
 --------------------------------------------------------------------------------
 -- Dynamic -> Static typecasts

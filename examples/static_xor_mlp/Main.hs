@@ -20,6 +20,7 @@
 
 module Main where
 
+import Prelude hiding (tanh)
 import Torch.Static
 import Torch.Static.Native hiding (linear)
 import Torch.Static.Factories
@@ -51,10 +52,10 @@ instance A.Parameterized (Parameter d s) where
   flattenParameters (Parameter x) = [x]
   replaceOwnParameters _ = Parameter <$> A.nextParameter
 
-data LinearSpec d (i::Nat) (o::Nat) = LinearSpec
+data LinearSpec (d::DType) (i::Nat) (o::Nat) = LinearSpec
   deriving (Show, Eq)
 
-data Linear d (in_features::Nat) (out_features::Nat) =
+data Linear (d::DType) (in_features::Nat) (out_features::Nat) =
   Linear { weight :: Parameter d '[in_features,out_features]
          , bias :: Parameter d '[out_features]
          } deriving (Show, Generic)
@@ -67,15 +68,15 @@ makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
 
 instance A.Parameterized (Linear d n m)
 
-instance (KnownNat n,KnownNat m,Reifies d DType) => A.Randomizable (LinearSpec d n m) (Linear d n m) where
+instance (KnownDType d, KnownNat n, KnownNat m) => A.Randomizable (LinearSpec d n m) (Linear d n m) where
   sample LinearSpec = do
       w <- makeIndependent =<< (randn :: IO (Tensor d '[n,m]))
       b <- makeIndependent =<< (randn :: IO (Tensor d '[m]))
       return $ Linear w b
 
-data MLPSpec d (i::Nat) (o::Nat) = MLPSpec
+data MLPSpec (d::DType) (i::Nat) (o::Nat) = MLPSpec
 
-data MLP d (i::Nat) (o::Nat) =
+data MLP (d::DType) (i::Nat) (o::Nat) =
   MLP { l0 :: Linear d i 20
       , l1 :: Linear d 20 20
       , l2 :: Linear d 20 o
@@ -83,7 +84,7 @@ data MLP d (i::Nat) (o::Nat) =
 
 instance A.Parameterized (MLP d i o)
 
-instance (KnownNat n, KnownNat m, Reifies d DType) => A.Randomizable (MLPSpec d n m) (MLP d n m) where
+instance (KnownDType d, KnownNat n, KnownNat m) => A.Randomizable (MLPSpec d n m) (MLP d n m) where
   sample MLPSpec = do
       l0 <- A.sample LinearSpec :: IO (Linear d n 20)
       l1 <- A.sample LinearSpec :: IO (Linear d 20 20)
@@ -91,21 +92,21 @@ instance (KnownNat n, KnownNat m, Reifies d DType) => A.Randomizable (MLPSpec d 
       return $ MLP {..}
 
 mlp :: MLP d i o -> Tensor d '[b,i] -> Tensor d '[b,o]
-mlp MLP{..} input = linear l2 $ linear l1 $ linear l0 input 
+mlp MLP{..} input = linear l2 . tanh . linear l1 . tanh . linear l0 $ input
 
 batch_size = 32
 num_iters = 10000
 
-model :: MLP Float 2 1 -> Tensor Float '[n,2] -> Tensor Float '[n,1]
+model :: MLP 'Float 2 1 -> Tensor 'Float '[n,2] -> Tensor 'Float '[n,1]
 model params t = sigmoid (mlp params t)
 
 main = do
-    init <- A.sample $ (MLPSpec :: MLPSpec Float 2 1)
+    init <- A.sample $ (MLPSpec :: MLPSpec 'Float 2 1)
     trained <- foldLoop init num_iters $ \state i -> do
         input <- D.rand' [batch_size, 2] >>= return . (D.toDType Float) . (D.gt 0.5)
         let expected_output = tensorXOR input
 
-        let output = D.squeezeAll $ toDynamic $ model state (UnsafeMkTensor input :: Tensor Float '[batch_size,2])
+        let output = D.squeezeAll $ toDynamic $ model state (UnsafeMkTensor input :: Tensor 'Float '[batch_size,2])
         let loss = D.mse_loss output expected_output
 
         let flat_parameters = A.flattenParameters state
