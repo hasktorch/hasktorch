@@ -1,4 +1,4 @@
-# Optimizers Example Example Example Example
+# Optimizers Example
 
 Implementations of optimizers run on simple test functions. This implementation is for untyped tensors.
 
