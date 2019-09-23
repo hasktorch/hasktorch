@@ -1,19 +1,16 @@
 { compiler ? "ghc865" }:
 
 let
-  overlayShared = pkgsNew: pkgsOld: {
-    libtorch =
-      let src = pkgsOld.fetchFromGitHub {
-          owner  = "stites";
+  libtorch_src = pkgsOld:
+    let src = pkgsOld.fetchFromGitHub {
+          owner  = "junjihashimoto";
           repo   = "pytorch-world";
-          rev    = "7178a0e61edee422266dae5d984034c3705fce91";
-          sha256 = "0hzl3l3s1nalfiwbh30qswi31irz6bgvrr17brg04hzdspq7rygn";
-        };
-      in
-      (pkgsOld.python37Packages.callPackage "${src}/pytorch/default.nix" { mklSupport = true; }).dev;
-    #pytorch = pkgsOld.python3Packages.pytorchWithoutCuda.override {
-    #  mklSupport = true;
-    #};
+          rev    = "8b9336576c1d1b93fb80d133e1ea4995a4a8d10d";
+          sha256 = "0hj448w6cgklx8hsr50656pq4hzx1mdwljqn0b42zhbvbyqsqihs";
+    };
+    in (pkgsOld.callPackage "${src}/libtorch/release.nix" { });
+  overlayShared = pkgsNew: pkgsOld: {
+    libtorch = (libtorch_src pkgsOld).libtorch_cpu;
     haskell = pkgsOld.haskell // {
       packages = pkgsOld.haskell.packages // {
         "${compiler}" = pkgsOld.haskell.packages."${compiler}".override (old: {
@@ -61,7 +58,7 @@ let
                           (haskellPackagesNew.callCabal2nix
                             "libtorch-ffi"
                             ../libtorch-ffi
-                            { c10 = pkgsNew.libtorch; iomp5 = pkgsNew.mkl; torch = pkgsNew.libtorch; }
+                             { c10 = pkgsNew.libtorch; torch = pkgsNew.libtorch; }
                           )
                           (old: {
                               preConfigure = (old.preConfigure or "") + optionalString isDarwin ''

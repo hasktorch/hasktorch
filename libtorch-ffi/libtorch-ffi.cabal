@@ -66,14 +66,10 @@ library
  if os(darwin)
   extra-libraries:     c++
                      , c10
-                     , iomp5
-                     -- , mklml
                      , torch
  else
   extra-libraries:     stdc++
                      , c10
-                     , iomp5
-                     -- , mklml
                      , torch
  extra-ghci-libraries: stdc++
  if os(darwin)
