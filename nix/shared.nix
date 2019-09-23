@@ -102,7 +102,7 @@ let
                 pkgsNew.lib.fold
                   pkgsNew.lib.composeExtensions
                   (old.overrides or (_: _: {}))
-                  [ (pkgsNew.haskell.lib.packagesFromDirectory { directory = ./.; })
+                  [ (pkgsNew.haskell.lib.packagesFromDirectory { directory = ./haskellExtensions/.; })
                     extension
                     (mkHasktorchExtension "cpu")
                     (mkHasktorchExtension "cudatoolkit_9_2")
