@@ -2,6 +2,6 @@ let
   shared = import ./nix/shared.nix { };
 in
   { inherit (shared)
-      hasktorch
+      hasktorch_cpu
     ;
   }

@@ -1,1 +1,1 @@
-(import ../nix/shared.nix { }).hasktorch
+(import ../nix/shared.nix { }).hasktorch_cpu
