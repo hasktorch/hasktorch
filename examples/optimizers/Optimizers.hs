@@ -35,12 +35,12 @@ instance Optimizer GD where
 -- Gradient Descent with Momentum
 --
 
-data GDM = GDM { beta :: Float, memory :: [Tensor] } deriving Show
+data GDM = GDM { beta :: Float, momentum :: [Tensor] } deriving Show
 
 -- gradient descent with momentum step
 gdm 
     :: LearningRate -- ^ learning rate
-    -> GDM -- ^ beta & memory
+    -> GDM -- ^ beta & momentum
     -> [Parameter] -- ^ parameters
     -> Gradient --gradients
     -> ([Tensor], GDM)
@@ -49,7 +49,7 @@ gdm lr GDM{..} parameters gradients = (fmap fst runStep, GDM beta (fmap snd runS
     z' dp z = mulScalar z beta + dp
     step p dp z = let newZ = z' dp z in (p - lr * newZ, newZ)
     depParameters = fmap toDependent parameters
-    runStep = (zipWith3 step) depParameters gradients memory
+    runStep = (zipWith3 step) depParameters gradients momentum
 
 instance Optimizer GDM where
     step lr state parameters gradients = gdm lr state parameters gradients
