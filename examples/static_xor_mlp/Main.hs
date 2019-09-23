@@ -16,6 +16,7 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Main where
 
@@ -85,7 +86,7 @@ data MLP (d::D.DType) (i::Nat) (o::Nat) (h::Nat) =
   MLP { l0 :: Linear d i h
       , l1 :: Linear d h h
       , l2 :: Linear d h o
-      } deriving (Generic)
+      } deriving (Show, Generic)
 
 instance A.Parameterized (MLP d i o h)
 
@@ -102,32 +103,39 @@ mlp MLP {..} = linear l2 . tanh . linear l1 . tanh . linear l0
 model :: MLP d i o h -> Tensor d '[n, i] -> Tensor d '[n, o]
 model = (sigmoid .) . mlp
 
-batchSize = 32
-numIters = 10000
-
 main = do
-  init    <- A.sample (MLPSpec :: MLPSpec 'D.Float 2 1 20)
+  let numIters = 100000
+  init    <- A.sample (MLPSpec :: MLPSpec 'D.Float 2 1 4)
   trained <- foldLoop init numIters $ \state i -> do
-    input <- D.toDType D.Float . D.gt 0.5 <$> D.rand' [batchSize, 2]
-    let expected_output = tensorXOR input
+    input <-
+      toDType @D.Float
+      .   gt (0.5 :: Tensor 'D.Float '[])
+      <$> rand @D.Float @'[256, 2]
 
-    let output = D.squeezeAll . toDynamic $ model
-          state
-          (UnsafeMkTensor input :: Tensor 'D.Float '[batchSize, 2])
-    let loss            = D.mse_loss output expected_output
+    let expected_output = tensorXOR input
+    let actual_output   = squeezeAll . model state $ input
+    let loss            = mse_loss actual_output expected_output
 
     let flat_parameters = A.flattenParameters state
-    let gradients       = A.grad loss flat_parameters
+    let gradients       = A.grad (toDynamic loss) flat_parameters
 
-    when (i `mod` 100 == 0) (print loss)
+    when (i `mod` 2500 == 0) (print loss)
 
     new_flat_parameters <- mapM A.makeIndependent
-      $ A.sgd 5e-4 flat_parameters gradients
+      $ A.sgd 1e-1 flat_parameters gradients
     return $ A.replaceParameters state new_flat_parameters
-  return ()
+  print trained
  where
-  foldLoop x count block = foldM block x [1 .. count]
+  foldLoop
+    :: forall a b m
+     . (Num a, Enum a, Monad m)
+    => b
+    -> a
+    -> (b -> a -> m b)
+    -> m b
+  foldLoop x count block = foldM block x ([1 .. count] :: [a])
+  tensorXOR :: forall d b . Tensor d '[b, 2] -> Tensor d '[b]
   tensorXOR t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
    where
-    a = D.select t 1 0
-    b = D.select t 1 1
+    a = select @1 @0 t
+    b = select @1 @1 t

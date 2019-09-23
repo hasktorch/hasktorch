@@ -112,12 +112,7 @@ cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
 -- >>> dtype &&& shape $ matmul (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2,4])
 -- (Float,[3,4])
 matmul :: Tensor dtype '[n,k] -> Tensor dtype '[k,m] -> Tensor dtype '[n,m]
-matmul a b =
-    unsafePerformIO $ case (dim a, dim b) of
-      (2, 2) -> mm a b
-      _ -> error "Unsupported case in matmul!"
-  where
-    mm = cast2 ATen.mm_tt
+matmul a b = unsafePerformIO $ cast2 ATen.mm_tt a b
 
 -- |
 -- >>> dtype &&& shape $ erf (ones :: Tensor 'D.Float '[3,2])
@@ -195,46 +190,10 @@ tanh :: Tensor dtype shape -> Tensor dtype shape
 tanh t = unsafePerformIO $ (cast1 ATen.tanh_t) t
 
 -- |
--- >>> dtype &&& shape $ gt (ones :: Tensor 'D.Float '[2,2]) (zeros :: Tensor 'D.Float '[2,2])
--- (Bool,[2,2])
-gt :: Tensor dtype shape -> Tensor dtype shape -> Tensor 'D.Bool shape
-gt a b = unsafePerformIO $ (cast2 ATen.gt_tt) a b
-
-(>.) = gt
-
-lt :: Tensor dtype shape -> Tensor dtype shape -> Tensor 'D.Bool shape
-lt a b = unsafePerformIO $ (cast2 ATen.lt_tt) a b
-
-(<.) = lt
-
-ge :: Tensor dtype shape -> Tensor dtype shape -> Tensor 'D.Bool shape
-ge a b = unsafePerformIO $ (cast2 ATen.ge_tt) a b
-
-(>=.) = ge
-
-le :: Tensor dtype shape -> Tensor dtype shape -> Tensor 'D.Bool shape
-le a b = unsafePerformIO $ (cast2 ATen.le_tt) a b
-
-(<=.) = le
-
--- |
--- >>> dtype &&& shape $ eq (ones :: Tensor 'D.Float '[2,2]) (zeros :: Tensor 'D.Float '[2,2])
--- (Bool,[2,2])
-eq :: Tensor dtype shape -> Tensor dtype shape -> Tensor 'D.Bool shape
-eq a b = unsafePerformIO $ (cast2 ATen.eq_tt) a b
-
-(==.) = eq
-
-ne :: Tensor dtype shape -> Tensor dtype shape -> Tensor 'D.Bool shape
-ne a b = unsafePerformIO $ (cast2 ATen.ne_tt) a b
-
-(/=.) = ne
-
--- |
 -- >>> dtype &&& shape $ (toDType (ones :: Tensor 'D.Float '[2,2]) :: Tensor 'D.Double '[2,2])
 -- (Double,[2,2])
 toDType
-  :: forall dtype dtype' shape
+  :: forall dtype' dtype shape
    . (KnownDType dtype')
   => Tensor dtype shape
   -> Tensor dtype' shape
