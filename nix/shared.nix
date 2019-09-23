@@ -3,10 +3,10 @@
 let
   libtorch_src = pkgs:
     let src = pkgs.fetchFromGitHub {
-          owner  = "junjihashimoto";
+          owner  = "stites";
           repo   = "pytorch-world";
-          rev    = "8b9336576c1d1b93fb80d133e1ea4995a4a8d10d";
-          sha256 = "0hj448w6cgklx8hsr50656pq4hzx1mdwljqn0b42zhbvbyqsqihs";
+          rev    = "72a8ab0149e6da91b0d7b97adfb73872335c6bc9";
+          sha256 = "0pdld2rpjmliaw0ii0fg62x4q0zk2khwzny4s2sspwmk3d57w3mp";
     };
     in (pkgs.callPackage "${src}/libtorch/release.nix" { });
 
