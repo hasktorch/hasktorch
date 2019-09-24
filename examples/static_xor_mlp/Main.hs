@@ -44,64 +44,81 @@ import qualified Torch.TensorFactories         as D
 
 
 --------------------------------------------------------------------------------
--- MLP
+-- Multi-Layer Perceptron (MLP)
 --------------------------------------------------------------------------------
 
 
-newtype Parameter d s = Parameter A.IndependentTensor deriving (Show)
+newtype Parameter dtype shape = Parameter A.IndependentTensor deriving (Show)
 
-toDependent :: Parameter d s -> Tensor d s
+toDependent :: Parameter dtype shape -> Tensor dtype shape
 toDependent (Parameter t) = UnsafeMkTensor $ A.toDependent t
 
-instance A.Parameterized (Parameter d s) where
+instance A.Parameterized (Parameter dtype shape) where
   flattenParameters (Parameter x) = [x]
   replaceOwnParameters _ = Parameter <$> A.nextParameter
 
-data LinearSpec (d::D.DType) (i::Nat) (o::Nat) = LinearSpec
+data LinearSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) = LinearSpec
   deriving (Show, Eq)
 
-data Linear (d::D.DType) (in_features::Nat) (out_features::Nat) =
-  Linear { weight :: Parameter d '[in_features,out_features]
-         , bias :: Parameter d '[out_features]
+data Linear (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) =
+  Linear { weight :: Parameter dtype '[inputFeatures, outputFeatures]
+         , bias :: Parameter dtype '[outputFeatures]
          } deriving (Show, Generic)
 
-linear :: Linear d i o -> Tensor d '[k, i] -> Tensor d '[k, o]
+linear
+  :: Linear dtype inputFeatures outputFeatures
+  -> Tensor dtype '[batchSize, inputFeatures]
+  -> Tensor dtype '[batchSize, outputFeatures]
 linear Linear {..} input =
   add (mm input (toDependent weight)) (toDependent bias)
 
-makeIndependent :: Tensor d s -> IO (Parameter d s)
+makeIndependent :: Tensor dtype shape -> IO (Parameter dtype shape)
 makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
 
-instance A.Parameterized (Linear d n m)
+instance A.Parameterized (Linear dtype inputFeatures outputFeatures)
 
-instance (KnownDType d, KnownNat n, KnownNat m) => A.Randomizable (LinearSpec d n m) (Linear d n m) where
-  sample LinearSpec = do
-    w <- makeIndependent =<< (randn :: IO (Tensor d '[n, m]))
-    b <- makeIndependent =<< (randn :: IO (Tensor d '[m]))
-    return $ Linear w b
+instance (KnownDType dtype, KnownNat inputFeatures, KnownNat outputFeatures) => A.Randomizable (LinearSpec dtype inputFeatures outputFeatures) (Linear dtype inputFeatures outputFeatures) where
+  sample LinearSpec =
+    Linear <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
-data MLPSpec (d::D.DType) (i::Nat) (o::Nat) (h::Nat) = MLPSpec
+data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) = MLPSpec
 
-data MLP (d::D.DType) (i::Nat) (o::Nat) (h::Nat) =
-  MLP { l0 :: Linear d i h
-      , l1 :: Linear d h h
-      , l2 :: Linear d h o
+data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) =
+  MLP { layer0 :: Linear dtype inputFeatures hiddenFeatures
+      , layer1 :: Linear dtype hiddenFeatures hiddenFeatures
+      , layer2 :: Linear dtype hiddenFeatures outputFeatures
       } deriving (Show, Generic)
 
-instance A.Parameterized (MLP d i o h)
+instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures)
 
-instance (KnownDType d, KnownNat n, KnownNat m, KnownNat h) => A.Randomizable (MLPSpec d n m h) (MLP d n m h) where
-  sample MLPSpec = do
-    l0 <- A.sample LinearSpec :: IO (Linear d n h)
-    l1 <- A.sample LinearSpec :: IO (Linear d h h)
-    l2 <- A.sample LinearSpec :: IO (Linear d h m)
-    return $ MLP { .. }
+instance (KnownDType dtype, KnownNat inputFeatures, KnownNat outputFeatures, KnownNat hiddenFeatures) => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures) (MLP dtype inputFeatures outputFeatures hiddenFeatures) where
+  sample MLPSpec =
+    MLP <$> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample LinearSpec
 
-mlp :: MLP d i o h -> Tensor d '[b, i] -> Tensor d '[b, o]
-mlp MLP {..} = linear l2 . tanh . linear l1 . tanh . linear l0
+mlp
+  :: MLP dtype inputFeatures outputFeatures hiddenFeatures
+  -> Tensor dtype '[batchSize, inputFeatures]
+  -> Tensor dtype '[batchSize, outputFeatures]
+mlp MLP {..} = linear layer2 . tanh . linear layer1 . tanh . linear layer0
 
-model :: MLP d i o h -> Tensor d '[n, i] -> Tensor d '[n, o]
+model
+  :: MLP dtype inputFeatures outputFeatures hiddenFeatures
+  -> Tensor dtype '[batchSize, inputFeatures]
+  -> Tensor dtype '[batchSize, outputFeatures]
 model = (sigmoid .) . mlp
+
+foldLoop
+  :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
+foldLoop x count block = foldM block x ([1 .. count] :: [a])
+
+xor
+  :: forall dtype batchSize
+   . Tensor dtype '[batchSize, 2]
+  -> Tensor dtype '[batchSize]
+xor t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
+ where
+  a = select @1 @0 t
+  b = select @1 @1 t
 
 main = do
   let numIters = 100000
@@ -112,7 +129,7 @@ main = do
       .   gt (0.5 :: Tensor 'D.Float '[])
       <$> rand @D.Float @'[256, 2]
 
-    let expected_output = tensorXOR input
+    let expected_output = xor input
     let actual_output   = squeezeAll . model state $ input
     let loss            = mse_loss actual_output expected_output
 
@@ -125,17 +142,3 @@ main = do
       $ A.sgd 1e-1 flat_parameters gradients
     return $ A.replaceParameters state new_flat_parameters
   print trained
- where
-  foldLoop
-    :: forall a b m
-     . (Num a, Enum a, Monad m)
-    => b
-    -> a
-    -> (b -> a -> m b)
-    -> m b
-  foldLoop x count block = foldM block x ([1 .. count] :: [a])
-  tensorXOR :: forall d b . Tensor d '[b, 2] -> Tensor d '[b]
-  tensorXOR t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
-   where
-    a = select @1 @0 t
-    b = select @1 @1 t
