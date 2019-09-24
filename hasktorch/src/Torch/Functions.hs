@@ -90,22 +90,6 @@ max t = unsafePerformIO $ (cast1 ATen.max_t) t
 median :: Tensor -> Tensor
 median t = unsafePerformIO $ (cast1 ATen.median_t) t
 
--- TODO - cxxx wll be fully deprecated in favor of xxxScalar once dependencies are migrated
-
-cadd :: Scalar a => Tensor -> a -> Tensor
-cadd t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
-
-csub :: Scalar a => Tensor -> a -> Tensor
-csub t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
-
-cmul :: Scalar a => Tensor -> a -> Tensor
-cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
-
-cdiv :: Scalar a => Tensor -> a -> Tensor
-cdiv t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
-
--- TODO - These replace the above TH naming after migrating dependencies
-
 addScalar :: Scalar a => Tensor -> a -> Tensor
 addScalar t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
 
