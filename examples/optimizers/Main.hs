@@ -67,10 +67,20 @@ optConvQuad numIter optInit = do
     let dim = 2
         a = eye' dim dim
         b = zeros' [dim]
-    paramInit <- sample $ CQSpec dim
+    paramInit <- sample $ ConvQuadSpec dim
     putStrLn ("Initial :" ++ show paramInit)
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
-        (paramState' , optState') <- runIter paramState optState (lossCQ a b) 5e-4 i numIter
+        (paramState' , optState') <- runIter paramState optState (lossConvQuad a b) 5e-4 i numIter
+        pure (replaceParameters paramState paramState', optState')
+    pure ()
+
+-- | Optimize Ackley function with specified optimizer
+optAckley :: (Optimizer o) => Int -> o -> IO ()
+optAckley numIter optInit = do
+    paramInit <- sample AckleySpec
+    putStrLn ("Initial :" ++ show paramInit)
+    trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
+        (paramState', optState') <- runIter paramState optState lossAckley 5e-4 i numIter
         pure (replaceParameters paramState paramState', optState')
     pure ()
 
@@ -87,11 +97,16 @@ checkGlobalMinConvQuad = do
         b = zeros' [dim]
     print $ convexQuadratic a b (zeros' [dim])
 
+-- | Check global minimum point for Ackley
+checkGlobalMinAckley = do
+    putStrLn "\nCheck Actual Global Minimum (at 0, 0):"
+    print $ ackley' (zeros' [2])
+
 main :: IO ()
 main = do
 
     let numIter = 20000
-    
+
     -- Convex Quadratic w/ GD, GD+Momentum, Adam
     putStrLn "\nConvex Quadratic\n================"
     putStrLn "\nGD"
@@ -120,3 +135,17 @@ main = do
         m2=[zeros' [1], zeros' [1]],
         iter=0 }
     checkGlobalMinRosen
+
+    -- Ackley w/ GD, GD+Momentum, Adam
+    putStrLn "\nAckley (Gradient methods fail)\n================"
+    putStrLn "\nGD"
+    optAckley numIter GD
+    putStrLn "\nGD + Momentum"
+    optAckley numIter (GDM 0.9 [zeros' [1], zeros' [1]])
+    putStrLn "\nAdam"
+    optAckley numIter Adam { 
+        beta1=0.9, beta2=0.999,
+        m1=[zeros' [1], zeros' [1]], 
+        m2=[zeros' [1], zeros' [1]],
+        iter=0 }
+    checkGlobalMinAckley

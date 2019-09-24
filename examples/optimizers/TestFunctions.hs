@@ -7,6 +7,9 @@ module TestFunctions where
 
 import GHC.Generics
 
+import Prelude hiding (exp, cos, sqrt)
+import qualified Prelude as P
+
 import Torch.Tensor
 import Torch.TensorFactories (eye', ones', rand', randn', zeros')
 import Torch.Functions
@@ -16,22 +19,21 @@ import Torch.NN hiding (sgd)
 -- 2D Rosenbrock
 
 data RosenSpec = RosenSpec deriving (Show, Eq)
-data Coord = Coord { x :: Parameter, y :: Parameter } deriving (Generic)
+data Rosen = Rosen { x :: Parameter, y :: Parameter } deriving (Generic)
 
-instance Show Coord where
-    show (Coord x y) = show (extract x :: Float, extract y :: Float)
+instance Show Rosen where
+    show (Rosen x y) = show (extract x :: Float, extract y :: Float)
         where
             extract :: TensorLike a => Parameter -> a
             extract p = asValue $ toDependent p
 
-instance Randomizable RosenSpec Coord where
+instance Randomizable RosenSpec Rosen where
   sample RosenSpec = do
       x <- makeIndependent =<< randn' [1]
       y <- makeIndependent =<< randn' [1]
-      pure $ Coord x y
+      pure $ Rosen x y
 
-instance Parameterized Coord
-instance Parameterized [Coord]
+instance Parameterized Rosen
 
 rosenbrock2d :: Float -> Float -> Tensor -> Tensor -> Tensor
 rosenbrock2d a b x y = square (addScalar ((-1.0) * x ) a) + mulScalar (square (y - x*x)) b
@@ -40,26 +42,53 @@ rosenbrock2d a b x y = square (addScalar ((-1.0) * x ) a) + mulScalar (square (y
 rosenbrock' :: Tensor -> Tensor -> Tensor
 rosenbrock' = rosenbrock2d 1.0 100.0
 
-lossRosen :: Coord -> Tensor
-lossRosen  Coord{..} = rosenbrock' (toDependent x) (toDependent y)
+lossRosen :: Rosen -> Tensor
+lossRosen  Rosen{..} = rosenbrock' (toDependent x) (toDependent y)
 
 -- Convex Quadratic
 
-data CQSpec = CQSpec { n :: Int }
-data CQ = CQ { w :: Parameter } deriving (Show, Generic)
+data ConvQuadSpec = ConvQuadSpec { n :: Int }
+data ConvQuad = ConvQuad { w :: Parameter } deriving (Show, Generic)
 
-instance Randomizable CQSpec CQ where
-  sample (CQSpec n) = do
+instance Randomizable ConvQuadSpec ConvQuad where
+  sample (ConvQuadSpec n) = do
         w <- makeIndependent =<<randn' [n]
-        pure $ CQ w
+        pure $ ConvQuad w
 
-instance Parameterized CQ
-instance Parameterized [CQ]
+instance Parameterized ConvQuad
 
 convexQuadratic :: Tensor -> Tensor -> Tensor -> Tensor
 convexQuadratic a b w =
     mulScalar (dot w (mv a w)) (0.5 :: Float) - dot b w
 
-lossCQ :: Tensor -> Tensor -> CQ -> Tensor
-lossCQ a b (CQ w) = convexQuadratic a b w'
+lossConvQuad :: Tensor -> Tensor -> ConvQuad -> Tensor
+lossConvQuad a b (ConvQuad w) = convexQuadratic a b w'
     where w' = toDependent w
+
+-- Ackley function
+
+data AckleySpec = AckleySpec deriving (Show, Eq)
+data Ackley = Ackley { pos :: Parameter } deriving (Show, Generic)
+
+instance Randomizable AckleySpec Ackley where
+  sample AckleySpec = do
+      pos <- makeIndependent =<< randn' [2]
+      pure $ Ackley pos
+
+instance Parameterized Ackley
+
+ackley :: Float -> Float -> Float -> Tensor -> Tensor
+ackley a b c x = 
+    mulScalar (exp (-b' * (sqrt $ (sumAll (x * x)) / d))) (-a)
+    - exp (1.0 / d * sumAll (cos (mulScalar x c))) 
+    + (asTensor $ a + P.exp 1.0)
+    where
+        b' = asTensor b
+        c' = asTensor c
+        d = asTensor . product $ shape x
+
+ackley' = ackley 20.0 0.2 (2*pi :: Float)
+
+lossAckley :: Ackley -> Tensor
+lossAckley (Ackley x) = ackley' x'
+    where x' = toDependent x
