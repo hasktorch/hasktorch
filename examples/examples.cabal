@@ -56,7 +56,21 @@ executable minimal-text-example
                      , mtl
                      , libtorch-ffi
 
-
+executable seq2seq
+  hs-source-dirs:      seq2seq,
+                       rnn
+  main-is:             Seq2Seq.hs
+  other-modules:       RecurrentLayer,
+                       Elman,
+                       LSTM,
+                       GRU,
+                       GenerateSamples
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , mtl
+                     , ffi
+                     
 executable regression
   hs-source-dirs:      regression
   main-is:             Main.hs
