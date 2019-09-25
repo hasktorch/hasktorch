@@ -449,21 +449,6 @@ conv2dBias input weight bias = UnsafeMkTensor $
              (natValI @(Fst stride), natValI @(Snd stride))
              (natValI @(Fst padding), natValI @(Snd padding))
 
-maxPool2d :: forall kernel_size stride padding dtype n c ih iw oh ow.
-             ( All KnownNat [ Fst kernel_size, Snd kernel_size
-                            , Fst stride, Snd stride
-                            , Fst padding, Snd padding ]
-             , ConvSideCheck ih (Fst kernel_size) (Fst stride) (Fst padding) oh
-             , ConvSideCheck iw (Snd kernel_size) (Snd stride) (Snd padding) ow ) =>
-               Tensor dtype '[n, c, ih, iw] ->
-               Tensor dtype '[n, c, oh, ow]
-maxPool2d input = UnsafeMkTensor $
-    D.maxPool2d (toDynamic input)
-                (natValI @(Fst kernel_size), natValI @(Snd kernel_size))
-                (natValI @(Fst stride), natValI @(Snd stride))
-                (natValI @(Fst padding), natValI @(Snd padding))
-
-
 type family Numel (shape :: [Nat]) :: Nat where
     Numel '[] = 1
     Numel (h ': t) = h * (Numel t)
@@ -618,3 +603,22 @@ test'' xs = cast xs return
 
 test''' :: [D.ATenTensor] -> IO (HList '[Tensor dtype shape])
 test''' xs = uncast xs return
+
+--------------------------------------------------------------------------------
+-- Move backend
+--------------------------------------------------------------------------------
+
+toSparse :: Tensor dtype shape -> Tensor dtype shape
+toSparse t = UnsafeMkTensor $ D.toSparse (toDynamic t)
+
+toDense :: Tensor dtype shape -> Tensor dtype shape
+toDense t = UnsafeMkTensor $ D.toDense (toDynamic t)
+
+toMKLDNN :: Tensor dtype shape -> Tensor dtype shape
+toMKLDNN t = UnsafeMkTensor $ D.toMKLDNN (toDynamic t)
+
+toCPU :: Tensor dtype shape -> Tensor dtype shape
+toCPU t = UnsafeMkTensor $ D.toCPU (toDynamic t)
+
+toCUDA :: Tensor dtype shape -> Tensor dtype shape
+toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
