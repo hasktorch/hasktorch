@@ -33,7 +33,7 @@ import Foreign.ForeignPtr
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.Functions as D
-import qualified Torch.DType as DType
+import qualified Torch.DType as D
 
 natValI :: forall n. KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n
@@ -51,50 +51,50 @@ getFiniteI :: Finite n -> Int
 getFiniteI = fromIntegral . getFinite
 
 class KnownDType dtype where
-  dtypeVal :: DType.DType
+  dtypeVal :: D.DType
 
-instance KnownDType 'DType.Bool where
-  dtypeVal = DType.Bool
-instance KnownDType 'DType.UInt8 where
-  dtypeVal = DType.UInt8
-instance KnownDType 'DType.Int8 where
-  dtypeVal = DType.Int8
-instance KnownDType 'DType.Int16 where
-  dtypeVal = DType.Int16
-instance KnownDType 'DType.Int32 where
-  dtypeVal = DType.Int32
-instance KnownDType 'DType.Int64 where
-  dtypeVal = DType.Int64
-instance KnownDType 'DType.Half where
-  dtypeVal = DType.Half
-instance KnownDType 'DType.Float where
-  dtypeVal = DType.Float
-instance KnownDType 'DType.Double where
-  dtypeVal = DType.Double
+instance KnownDType 'D.Bool where
+  dtypeVal = D.Bool
+instance KnownDType 'D.UInt8 where
+  dtypeVal = D.UInt8
+instance KnownDType 'D.Int8 where
+  dtypeVal = D.Int8
+instance KnownDType 'D.Int16 where
+  dtypeVal = D.Int16
+instance KnownDType 'D.Int32 where
+  dtypeVal = D.Int32
+instance KnownDType 'D.Int64 where
+  dtypeVal = D.Int64
+instance KnownDType 'D.Half where
+  dtypeVal = D.Half
+instance KnownDType 'D.Float where
+  dtypeVal = D.Float
+instance KnownDType 'D.Double where
+  dtypeVal = D.Double
 
-type family ComputeDType (dtype' :: dtype) :: DType.DType where
-  ComputeDType Bool = DType.Bool
-  ComputeDType DType.Bool = DType.Bool
-  ComputeDType DType.UInt8 = DType.UInt8
-  ComputeDType DType.Int8 = DType.Int8
-  ComputeDType DType.Int16 = DType.Int16
-  ComputeDType DType.Int32 = DType.Int32
-  ComputeDType Int = DType.Int64
-  ComputeDType DType.Int64 = DType.Int64
-  ComputeDType Float = DType.Float
-  ComputeDType DType.Float = DType.Float
-  ComputeDType Double = DType.Double
-  ComputeDType DType.Double = DType.Double
+type family ComputeDType (dtype' :: dtype) :: D.DType where
+  ComputeDType Bool = D.Bool
+  ComputeDType D.Bool = D.Bool
+  ComputeDType D.UInt8 = D.UInt8
+  ComputeDType D.Int8 = D.Int8
+  ComputeDType D.Int16 = D.Int16
+  ComputeDType D.Int32 = D.Int32
+  ComputeDType Int = D.Int64
+  ComputeDType D.Int64 = D.Int64
+  ComputeDType Float = D.Float
+  ComputeDType D.Float = D.Float
+  ComputeDType Double = D.Double
+  ComputeDType D.Double = D.Double
   ComputeDType dtype' = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype')
 
-data Tensor (dtype :: DType.DType) (shape :: [Nat]) where
+data Tensor (dtype :: D.DType) (shape :: [Nat]) where
   UnsafeMkTensor :: forall dtype shape . { toDynamic :: D.Tensor } -> Tensor dtype shape
 
-type family ComputeHaskellType (dtype :: DType.DType) :: Type where
-  ComputeHaskellType DType.Bool = Bool
-  ComputeHaskellType DType.Int64 = Int
-  ComputeHaskellType DType.Float = Float
-  ComputeHaskellType DType.Double = Double
+type family ComputeHaskellType (dtype :: D.DType) :: Type where
+  ComputeHaskellType D.Bool = Bool
+  ComputeHaskellType D.Int64 = Int
+  ComputeHaskellType D.Float = Float
+  ComputeHaskellType D.Double = Double
   ComputeHaskellType dtype = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype)
   
 type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
@@ -129,8 +129,8 @@ instance Fractional (Tensor dtype shape) where
 instance Show (Tensor dtype shape) where
     show (UnsafeMkTensor dynamic) = show dynamic
 
-class TensorOptions (dtype :: DType.DType) (shape :: [Nat]) where
-  optionsRuntimeDType :: DType.DType
+class TensorOptions (dtype :: D.DType) (shape :: [Nat]) where
+  optionsRuntimeDType :: D.DType
   optionsRuntimeShape :: [Int]
 
 instance (KnownDType dtype) => TensorOptions dtype '[] where
@@ -160,13 +160,13 @@ someShape (h : t) = case someNatVal (fromIntegral h) of
         (SomeShape (Proxy :: Proxy tt)) -> SomeShape $ Proxy @(ht ': tt)
 
 data SomeDType where
-    SomeDType :: forall (dtype :: DType.DType). Proxy dtype -> SomeDType
+    SomeDType :: forall (dtype :: D.DType). Proxy dtype -> SomeDType
 
-someDType :: DType.DType -> SomeDType
-someDType DType.Float = SomeDType $ Proxy @DType.Float
+someDType :: D.DType -> SomeDType
+someDType D.Float = SomeDType $ Proxy @D.Float
 
 withTensor :: D.Tensor ->
-              (forall (dtype :: DType.DType) (shape :: [Nat]).
+              (forall (dtype :: D.DType) (shape :: [Nat]).
                     KnownShape shape => Tensor dtype shape -> r) ->
               r
 
@@ -302,6 +302,42 @@ sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
 mul :: (shape'' ~ Broadcast shape shape') =>
         Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
 mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
+
+gt :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+gt a b = UnsafeMkTensor $ D.gt (toDynamic a) (toDynamic b)
+
+(>.) = gt
+
+lt :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+lt a b = UnsafeMkTensor $ D.lt (toDynamic a) (toDynamic b)
+
+(<.) = lt
+
+ge :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+ge a b = UnsafeMkTensor $ D.ge (toDynamic a) (toDynamic b)
+
+(>=.) = ge
+
+le :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+le a b = UnsafeMkTensor $ D.le (toDynamic a) (toDynamic b)
+
+(<=.) = le
+
+eq :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+eq a b = UnsafeMkTensor $ D.eq (toDynamic a) (toDynamic b)
+
+(==.) = eq
+
+ne :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
+
+(/=.) = ne
 
 relu :: Tensor dtype shape -> Tensor dtype shape
 relu t = UnsafeMkTensor $ D.relu (toDynamic t)

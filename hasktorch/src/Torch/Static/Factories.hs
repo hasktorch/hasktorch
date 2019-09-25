@@ -38,6 +38,9 @@ zeros = UnsafeMkTensor $ D.zeros (optionsRuntimeShape @dtype @shape) (D.withDTyp
 ones :: forall dtype shape. (TensorOptions dtype shape) => Tensor dtype shape
 ones = UnsafeMkTensor $ D.ones (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
 
+rand :: forall dtype shape. (TensorOptions dtype shape) => IO (Tensor dtype shape)
+rand = UnsafeMkTensor <$> D.rand (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+
 randn :: forall dtype shape. (TensorOptions dtype shape) => IO (Tensor dtype shape)
 randn = UnsafeMkTensor <$> D.randn (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
 

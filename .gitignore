@@ -9,7 +9,7 @@ cabal.project.local
 cabal.project.freeze
 venv/
 **/dist/
-**/result
+**/result*
 **/hie.log
 **/hie.err
 

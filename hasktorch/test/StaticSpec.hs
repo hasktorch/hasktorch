@@ -98,6 +98,84 @@ spec = do
       let c = mul a b :: Tensor 'D.Float '[3, 2, 4, 1]
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[[[1],[1],[1],[1]],[[1],[1],[1],[1]]],[[[1],[1],[1],[1]],[[1],[1],[1],[1]]],[[[1],[1],[1],[1]],[[1],[1],[1],[1]]]] :: [[[[Float]]]])
+  describe "gt" $ do
+    it "works on tensors of identical shapes" $ do
+      let a = ones :: Tensor 'D.Float '[2, 3]
+      let b = ones :: Tensor 'D.Float '[2, 3]
+      let c = gt a b :: Tensor 'D.Bool '[2, 3]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[False, False, False], [False, False, False]] :: [[Bool]])
+    it "works on broadcastable tensors of different shapes" $ do
+      let a = ones :: Tensor 'D.Float '[3, 1, 4, 1]
+      let b = ones :: Tensor 'D.Float '[2, 1, 1]
+      let c = gt a b :: Tensor 'D.Bool '[3, 2, 4, 1]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]]] :: [[[[Bool]]]])
+  describe "lt" $ do
+    it "works on tensors of identical shapes" $ do
+      let a = ones :: Tensor 'D.Float '[2, 3]
+      let b = ones :: Tensor 'D.Float '[2, 3]
+      let c = lt a b :: Tensor 'D.Bool '[2, 3]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[False, False, False], [False, False, False]] :: [[Bool]])
+    it "works on broadcastable tensors of different shapes" $ do
+      let a = ones :: Tensor 'D.Float '[3, 1, 4, 1]
+      let b = ones :: Tensor 'D.Float '[2, 1, 1]
+      let c = lt a b :: Tensor 'D.Bool '[3, 2, 4, 1]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]]] :: [[[[Bool]]]])
+  describe "ge" $ do
+    it "works on tensors of identical shapes" $ do
+      let a = ones :: Tensor 'D.Float '[2, 3]
+      let b = ones :: Tensor 'D.Float '[2, 3]
+      let c = ge a b :: Tensor 'D.Bool '[2, 3]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[True, True, True], [True, True, True]] :: [[Bool]])
+    it "works on broadcastable tensors of different shapes" $ do
+      let a = ones :: Tensor 'D.Float '[3, 1, 4, 1]
+      let b = ones :: Tensor 'D.Float '[2, 1, 1]
+      let c = ge a b :: Tensor 'D.Bool '[3, 2, 4, 1]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]]] :: [[[[Bool]]]])
+  describe "le" $ do
+    it "works on tensors of identical shapes" $ do
+      let a = ones :: Tensor 'D.Float '[2, 3]
+      let b = ones :: Tensor 'D.Float '[2, 3]
+      let c = le a b :: Tensor 'D.Bool '[2, 3]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[True, True, True], [True, True, True]] :: [[Bool]])
+    it "works on broadcastable tensors of different shapes" $ do
+      let a = ones :: Tensor 'D.Float '[3, 1, 4, 1]
+      let b = ones :: Tensor 'D.Float '[2, 1, 1]
+      let c = le a b :: Tensor 'D.Bool '[3, 2, 4, 1]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]]] :: [[[[Bool]]]])
+  describe "eq" $ do
+    it "works on tensors of identical shapes" $ do
+      let a = ones :: Tensor 'D.Float '[2, 3]
+      let b = ones :: Tensor 'D.Float '[2, 3]
+      let c = eq a b :: Tensor 'D.Bool '[2, 3]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[True, True, True], [True, True, True]] :: [[Bool]])
+    it "works on broadcastable tensors of different shapes" $ do
+      let a = ones :: Tensor 'D.Float '[3, 1, 4, 1]
+      let b = ones :: Tensor 'D.Float '[2, 1, 1]
+      let c = eq a b :: Tensor 'D.Bool '[3, 2, 4, 1]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]]] :: [[[[Bool]]]])
+  describe "ne" $ do
+    it "works on tensors of identical shapes" $ do
+      let a = ones :: Tensor 'D.Float '[2, 3]
+      let b = ones :: Tensor 'D.Float '[2, 3]
+      let c = ne a b :: Tensor 'D.Bool '[2, 3]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[False, False, False], [False, False, False]] :: [[Bool]])
+    it "works on broadcastable tensors of different shapes" $ do
+      let a = ones :: Tensor 'D.Float '[3, 1, 4, 1]
+      let b = ones :: Tensor 'D.Float '[2, 1, 1]
+      let c = ne a b :: Tensor 'D.Bool '[3, 2, 4, 1]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]]] :: [[[[Bool]]]])
   describe "eyeSquare" $ it "works" $ do
     let t = eyeSquare @'D.Float @2
     -- checkDynamicTensorAttributes t
