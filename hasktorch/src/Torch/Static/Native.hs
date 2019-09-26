@@ -279,7 +279,12 @@ logSoftmax a = unsafePerformIO $ cast3 ATen.log_softmax_tls a (natValI @dim) (dt
 type family Square (shape :: [Nat]) :: [Nat] where
     Square (n:n:'[]) = '[n,n]
     Square (b:n:n:'[]) = '[b,n,n]
-    Square _  = TypeError (Text "This shape must be square matrix or batch + squre matrix.")
+    Square _  = TypeError (Text "This shape must be square matrix or batch + square matrix.")
+
+type family FstDim (shape :: [Nat]) :: Nat where
+    FstDim (n:m:'[]) = n
+    FstDim (b:n:m:'[]) = n
+    FstDim _  = TypeError (Text "Can not get first dimention of matrix or batch + matrix.")
 
 -- |
 -- >>> t <- randn :: IO (Tensor 'D.Float '[3,2,2])
@@ -308,7 +313,7 @@ inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 -- (Float,[2,2])
 -- >>> :t c
 -- c :: Tensor 'D.Float '[2, 2]
-cholesky :: forall dtype n. (KnownNat n) => Tensor dtype '[n,n] -> Tri -> Tensor dtype '[n,n]
+cholesky :: Tensor dtype shape -> Tri -> Tensor dtype (Square shape)
 cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
   where boolUpper = isUpper upper
 
@@ -316,8 +321,24 @@ cholesky t upper = unsafePerformIO $ (cast2 ATen.cholesky_tb) t boolUpper
 -- cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
 --   where boolUpper = isUpper upper
 
--- solve :: Tensor dtype shape -> Tensor dtype shape -> (Tensor dtype shape,Tensor dtype shape)
--- solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
+-- |
+-- >>> a <- rand :: IO (Tensor 'D.Float '[10,10])
+-- >>> b <- rand :: IO (Tensor 'D.Float '[10,3])
+-- >>> (c,lu) = solve b a
+-- >>> dtype &&& shape $ c
+-- (Float,[10,3])
+-- >>> dtype &&& shape $ lu
+-- (Float,[10,10])
+-- >>> :t c
+-- c :: Tensor 'D.Float '[10, 3]
+-- >>> :t lu
+-- lu :: Tensor 'D.Float '[10, 10]
+solve
+  :: forall dtype m_k m_m
+   . (Square m_m ~ m_m
+    , FstDim m_m ~ FstDim m_k)
+  => Tensor dtype m_k -> Tensor dtype m_m -> (Tensor dtype m_k,Tensor dtype m_m)
+solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
 
 -- cholesky_inverse :: Tensor dtype shape -> Tri -> Tensor dtype shape
 -- cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
@@ -1923,12 +1944,12 @@ elu :: Tensor dtype shape -> Float -> Float -> Float -> Tensor dtype shape
 elu _input _alpha _scale _input_scale = unsafePerformIO $ (cast4 ATen.elu_tsss) _input _alpha _scale _input_scale
 
 -- |
--- >>> dtype &&& shape $ glu (ones :: Tensor 'D.Float '[3,2]) 0
--- (Float,[3,2])
--- >>> dtype &&& shape $ glu (ones :: Tensor 'D.Float '[3,2]) 1
--- (Float,[3,2])
-glu :: Tensor dtype shape -> Int -> Tensor dtype shape
-glu _input _dim = unsafePerformIO $ (cast2 ATen.glu_tl) _input _dim
+-- -- >>> dtype &&& shape $ glu (ones :: Tensor 'D.Float '[3,2]) 1
+-- -- (Float,[3,1])
+-- -- >>> dtype &&& shape $ glu (ones :: Tensor 'D.Float '[3,2]) 3
+-- -- (Float,[3,2])
+-- glu :: Tensor dtype shape -> Int -> Tensor dtype shape
+-- glu _input _dim = unsafePerformIO $ (cast2 ATen.glu_tl) _input _dim
 
 -- |
 -- >>> dtype &&& shape $ hardtanh (ones :: Tensor 'D.Float '[3,2]) 0 1
@@ -1946,10 +1967,10 @@ logSigmoid :: Tensor dtype shape -> Tensor dtype shape
 logSigmoid _input = unsafePerformIO $ (cast1 ATen.log_sigmoid_t) _input
 
 -- |
--- >>> dtype &&& shape $ softplus (ones :: Tensor 'D.Float '[3,2])
--- (Float,[3,2])
-softplus :: Tensor dtype shape -> Float -> Float -> Tensor dtype shape
-softplus _input _beta _threshold = unsafePerformIO $ (cast3 ATen.softplus_tss) _input _beta _threshold
+-- -- >>> dtype &&& shape $ softplus (ones :: Tensor 'D.Float '[3,2])
+-- -- (Float,[3,2])
+-- softplus :: Tensor dtype shape -> Float -> Float -> Tensor dtype shape
+-- softplus _input _beta _threshold = unsafePerformIO $ (cast3 ATen.softplus_tss) _input _beta _threshold
 
 -- |
 -- >>> dtype &&& shape $ softshrink (ones :: Tensor 'D.Float '[3,2]) 0.2
