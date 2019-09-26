@@ -1986,8 +1986,20 @@ adaptiveAvgPool2d _input = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl)
   _input
   ([natValI @(Fst outputSize), natValI @(Snd outputSize)] :: [Int])
 
--- mkldnn_adaptive_avg_pool2d :: Tensor dtype shape -> (Int,Int) -> Tensor dtype shape
--- mkldnn_adaptive_avg_pool2d _input _output_size = unsafePerformIO $ (cast2 ATen.mkldnn_adaptive_avg_pool2d_tl) _input _output_size
+-- |
+-- >>> t = mkldnnAdaptiveAvgPool2d @'(8,16) (toMKLDNN (ones::Tensor 'D.Float '[1,3,16,32]))
+-- >>> shape t
+-- [1,3,8,16]
+-- >>> :t t
+-- t :: Tensor 'D.Float '[1, 3, 8, 16]
+mkldnnAdaptiveAvgPool2d
+  :: forall outputSize channelSize inputSize0 inputSize1 batchSize dtype
+   . (All KnownNat [channelSize, inputSize0, inputSize1, batchSize, Fst outputSize, Snd outputSize])
+  => Tensor dtype '[batchSize, channelSize, inputSize0, inputSize1]
+  -> Tensor dtype '[batchSize, channelSize, Fst outputSize, Snd outputSize]
+mkldnnAdaptiveAvgPool2d _input = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl)
+  _input
+  ([natValI @(Fst outputSize), natValI @(Snd outputSize)] :: [Int])
 
 -- adaptive_avg_pool3d :: Tensor dtype shape -> (Int,Int,Int) -> Tensor dtype shape
 -- adaptive_avg_pool3d _input _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool3d_tl) _input _output_size
