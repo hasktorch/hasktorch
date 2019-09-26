@@ -1197,13 +1197,6 @@ logsumexp t = unsafePerformIO $ cast3 ATen.logsumexp_tlb t (natValI @dim) (keepO
 -- matrix_power :: Tensor dtype shape -> Int -> Tensor dtype shape
 -- matrix_power _input _n = unsafePerformIO $ (cast2 ATen.matrix_power_tl) _input _n
 
-
-type family DropValueWithKeepDim (shape :: [Nat]) (i :: Nat) (keepDim :: Bool) :: [Nat] where
-    DropValueWithKeepDim '[] _ _ = TypeError (Text "Can not find a element in the list.")
-    DropValueWithKeepDim (x: xs) 0 True = 1:xs
-    DropValueWithKeepDim (x: xs) 0 False = xs
-    DropValueWithKeepDim (x: xs) i b = x ': DropValueWithKeepDim xs (i-1) b
-
 -- |
 -- >>> dtype &&& shape $ maxValues @0 @KeepDim (ones :: Tensor 'D.Float '[3,4,5])
 -- (Float,[1,4,5])
