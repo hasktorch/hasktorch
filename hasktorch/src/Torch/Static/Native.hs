@@ -1971,8 +1971,20 @@ logSigmoid _input = unsafePerformIO $ (cast1 ATen.log_sigmoid_t) _input
 softshrink :: Tensor dtype shape -> Float -> Tensor dtype shape
 softshrink _input _lambd = unsafePerformIO $ (cast2 ATen.softshrink_ts) _input _lambd
 
--- adaptive_avg_pool2d :: Tensor dtype shape -> (Int,Int) -> Tensor dtype shape
--- adaptive_avg_pool2d _input _output_size = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl) _input _output_size
+-- |
+-- >>> t = adaptiveAvgPool2d @'(8,16) (ones::Tensor 'D.Float '[1,3,16,32])
+-- >>> shape t
+-- [1,3,8,16]
+-- >>> :t t
+-- t :: Tensor 'D.Float '[1, 3, 8, 16]
+adaptiveAvgPool2d
+  :: forall outputSize channelSize inputSize0 inputSize1 batchSize dtype
+   . (All KnownNat [channelSize, inputSize0, inputSize1, batchSize, Fst outputSize, Snd outputSize])
+  => Tensor dtype '[batchSize, channelSize, inputSize0, inputSize1]
+  -> Tensor dtype '[batchSize, channelSize, Fst outputSize, Snd outputSize]
+adaptiveAvgPool2d _input = unsafePerformIO $ (cast2 ATen.adaptive_avg_pool2d_tl)
+  _input
+  ([natValI @(Fst outputSize), natValI @(Snd outputSize)] :: [Int])
 
 -- mkldnn_adaptive_avg_pool2d :: Tensor dtype shape -> (Int,Int) -> Tensor dtype shape
 -- mkldnn_adaptive_avg_pool2d _input _output_size = unsafePerformIO $ (cast2 ATen.mkldnn_adaptive_avg_pool2d_tl) _input _output_size
