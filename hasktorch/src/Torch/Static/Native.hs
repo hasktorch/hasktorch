@@ -584,8 +584,24 @@ adaptiveMaxPool1d
   -> Tensor dtype '[batchSize, channelSize, outputSize]
 adaptiveMaxPool1d _input = fst $ (unsafePerformIO $ (cast2 ATen.adaptive_max_pool1d_tl) _input (natValI @outputSize) :: (Tensor dtype '[batchSize, channelSize, outputSize], Tensor dtype '[batchSize, channelSize, outputSize]))
 
--- addmv :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Float -> Float -> Tensor dtype shape
--- addmv _input _mat _vec _beta _alpha = unsafePerformIO $ (cast5 ATen.addmv_tttss) _input _mat _vec _beta _alpha
+
+-- |
+-- >>> t = addmv (ones :: Tensor 'D.Float '[]) (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2]) 1 1
+-- >>> dtype &&& shape $ t
+-- (Float,[3])
+-- >>> :t t
+-- t :: Tensor 'D.Float '[3]
+addmv
+  :: forall shape' shape n m dtype
+   . (KnownNat n, KnownNat m,
+      shape' ~ Broadcast shape '[n])
+  => Tensor dtype shape
+  -> Tensor dtype '[n,m]
+  -> Tensor dtype '[m]
+  -> Float
+  -> Float
+  -> Tensor dtype shape'
+addmv _input _mat _vec _beta _alpha = unsafePerformIO $ (cast5 ATen.addmv_tttss) _input _mat _vec _beta _alpha
 
 -- addr :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Float -> Float -> Tensor dtype shape
 -- addr _input _vec1 _vec2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addr_tttss) _input _vec1 _vec2 _beta _alpha
@@ -653,8 +669,23 @@ asin _input = unsafePerformIO $ (cast1 ATen.asin_t) _input
 atan :: Tensor dtype shape -> Tensor dtype shape
 atan _input = unsafePerformIO $ (cast1 ATen.atan_t) _input
 
--- baddbmm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Float -> Float -> Tensor dtype shape
--- baddbmm _input _batch1 _batch2 _beta _alpha = unsafePerformIO $ (cast5 ATen.baddbmm_tttss) _input _batch1 _batch2 _beta _alpha
+-- |
+-- >>> t = baddbmm (ones :: Tensor 'D.Float '[]) (ones :: Tensor 'D.Float '[5,3,2]) (zeros :: Tensor 'D.Float '[5,2,4]) 1 1
+-- >>> dtype &&& shape $ t
+-- (Float,[5,3,4])
+-- >>> :t t
+-- t :: Tensor 'D.Float '[5, 3, 4]
+baddbmm
+  :: forall shape' shape batchSize n k m dtype
+   . (KnownNat n, KnownNat m, KnownNat k,
+      shape' ~ Broadcast shape '[batchSize,n,m])
+  => Tensor dtype shape
+  -> Tensor dtype '[batchSize,n,k]
+  -> Tensor dtype '[batchSize,k,m]
+  -> Float
+  -> Float
+  -> Tensor dtype shape'
+baddbmm _input _batch1 _batch2 _beta _alpha = unsafePerformIO $ (cast5 ATen.baddbmm_tttss) _input _batch1 _batch2 _beta _alpha
 
 -- batch_norm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Bool -> Double -> Double -> Bool -> Tensor dtype shape
 -- batch_norm _input _weight _bias _running_mean _running_var _training _momentum _eps _cudnn_enabled = unsafePerformIO $ (cast9 ATen.batch_norm_tttttbddb) _input _weight _bias _running_mean _running_var _training _momentum _eps _cudnn_enabled
@@ -671,8 +702,11 @@ atan _input = unsafePerformIO $ (cast1 ATen.atan_t) _input
 -- bitwise_not :: Tensor dtype shape -> Tensor dtype shape
 -- bitwise_not _input = unsafePerformIO $ (cast1 ATen.bitwise_not_t) _input
 
--- bmm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- bmm _input _mat2 = unsafePerformIO $ (cast2 ATen.bmm_tt) _input _mat2
+-- | mm(matrix multiply) for batch
+-- >>> dtype &&& shape $ bmm (ones :: Tensor 'D.Float '[5,3,2]) (zeros :: Tensor 'D.Float '[5,2,4])
+-- (Float,[5,3,4])
+bmm :: Tensor dtype '[batchSize,n,k] -> Tensor dtype '[batchSize,k,m] -> Tensor dtype '[batchSize,n,m]
+bmm _input _mat2 = unsafePerformIO $ (cast2 ATen.bmm_tt) _input _mat2
 
 -- broadcast_tensors :: [Tensor dtype shape] -> [Tensor dtype shape]
 -- broadcast_tensors _tensors = unsafePerformIO $ (cast1 ATen.broadcast_tensors_l) _tensors
@@ -1393,8 +1427,11 @@ mm a b = unsafePerformIO $ cast2 ATen.mm_tt a b
 -- mode :: Tensor dtype shape -> Int -> Bool -> (Tensor dtype shape,Tensor dtype shape)
 -- mode _input _dim _keepdim = unsafePerformIO $ (cast3 ATen.mode_tlb) _input _dim _keepdim
 
--- mv :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- mv _input _vec = unsafePerformIO $ (cast2 ATen.mv_tt) _input _vec
+-- |
+-- >>> dtype &&& shape $ mv (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2])
+-- (Float,[3])
+mv :: Tensor dtype '[n,m] -> Tensor dtype '[m] -> Tensor dtype '[n]
+mv _input _vec = unsafePerformIO $ (cast2 ATen.mv_tt) _input _vec
 
 -- mvlgamma :: Tensor dtype shape -> Int -> Tensor dtype shape
 -- mvlgamma _input _p = unsafePerformIO $ (cast2 ATen.mvlgamma_tl) _input _p
@@ -1606,8 +1643,23 @@ clone _input = (cast1 ATen.clone_t) _input
 -- s_native_addmm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Float -> Float -> Tensor dtype shape
 -- s_native_addmm _input _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.s_native_addmm_tttss) _input _mat1 _mat2 _beta _alpha
 
--- addmm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Float -> Float -> Tensor dtype shape
--- addmm _input _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addmm_tttss) _input _mat1 _mat2 _beta _alpha
+-- |
+-- >>> t = addmm (ones :: Tensor 'D.Float '[]) (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2,4]) 1 1
+-- >>> dtype &&& shape $ t
+-- (Float,[3,4])
+-- >>> :t t
+-- t :: Tensor 'D.Float '[3, 4]
+addmm
+  :: forall shape' shape n k m dtype
+   . (KnownNat n, KnownNat m, KnownNat k,
+      shape' ~ Broadcast shape '[n,m])
+  => Tensor dtype shape
+  -> Tensor dtype '[n,k]
+  -> Tensor dtype '[k,m]
+  -> Float
+  -> Float
+  -> Tensor dtype shape'
+addmm _input _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addmm_tttss) _input _mat1 _mat2 _beta _alpha
 
 -- hspmm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 -- hspmm _mat1 _mat2 = unsafePerformIO $ (cast2 ATen.hspmm_tt) _mat1 _mat2
