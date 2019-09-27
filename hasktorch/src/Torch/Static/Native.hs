@@ -1162,8 +1162,21 @@ is_signed _input = unsafePerformIO $ (cast1 ATen.is_signed_t) _input
 -- native_layer_norm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> Double -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape)
 -- native_layer_norm _input _weight _bias _M _N _eps = unsafePerformIO $ (cast6 ATen.native_layer_norm_tttlld) _input _weight _bias _M _N _eps
 
--- linear :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.linear_ttt) _input _weight _bias
+
+-- |
+-- >>> t = linear @5 @3 @2 @'D.Float ones ones ones 
+-- >>> dtype &&& shape $ t
+-- (Float,[5,2])
+-- >>> :t t
+-- t :: Tensor 'D.Float '[5, 2] 
+linear
+  :: forall batchSize inputFeatures outputFeatures dtype
+   . (All KnownNat [batchSize, inputFeatures, outputFeatures])
+  => Tensor dtype '[batchSize, inputFeatures]
+  -> Tensor dtype '[outputFeatures, inputFeatures]
+  -> Tensor dtype '[outputFeatures]
+  -> Tensor dtype '[batchSize, outputFeatures]
+linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.linear_ttt) _input _weight _bias
 
 -- mkldnn_linear :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 -- mkldnn_linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.mkldnn_linear_ttt) _input _weight _bias
