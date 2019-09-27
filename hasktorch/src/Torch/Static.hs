@@ -15,6 +15,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Torch.Static where
 
@@ -145,6 +147,9 @@ instance (KnownDType dtype, KnownNat h, TensorOptions dtype t) => TensorOptions 
 -- Dynamic -> Static typecasts
 --------------------------------------------------------------------------------
 
+-- type family Flip (constraint :: a -> b -> Constraint) (fst :: b) (snd :: a) :: Constraint where
+--   Flip constraint b a = constraint a b
+
 type family All (pred :: a -> Constraint) (l :: [a]) :: Constraint where
     All _    '[] = ()
     All pred (h ': t) = (pred h, All pred t)
@@ -178,9 +183,9 @@ withTensor d f = case someShape (D.shape d) of
 -- Broadcast type-level function
 --------------------------------------------------------------------------------
 
-type family AppendToMaybe (n :: Nat) (l :: Maybe [Nat]) where
-    AppendToMaybe n Nothing = Nothing
-    AppendToMaybe n (Just l) = Just (n : l)
+type family AppendToMaybe (h :: a) (mt :: Maybe [a]) where
+    AppendToMaybe h Nothing = Nothing
+    AppendToMaybe h (Just t) = Just (h : t)
 
 type family ComputeBroadcast (shape :: [Nat]) (shape' :: [Nat]) :: Maybe [Nat] where
     ComputeBroadcast '[] shape = Just shape
@@ -429,14 +434,154 @@ logSoftmax input dim = UnsafeMkTensor $ D.logSoftmax (toDynamic input) dim
 --  cast (UnsafeMkTensor dtensor) f = f dtensor
 --  uncast dtensor f = f $ UnsafeMkTensor dtensor
 
-instance Castable (Tensor dtype shape) D.ATenTensor where
+instance Castable D.ATenTensor (Tensor dtype shape) where
+  -- cast :: Tensor dtype shape -> (D.ATenTensor -> IO r) -> IO r
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
-  uncast aten_tensor f = f $ (UnsafeMkTensor (D.Unsafe aten_tensor))
+  uncast aten_tensor f = f $ UnsafeMkTensor (D.Unsafe aten_tensor)
 
-instance Castable [Tensor dtype shape] (ForeignPtr ATen.TensorList) where
+instance Castable (ForeignPtr ATen.TensorList) [Tensor dtype shape] where
   cast xs f = do
     ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
     cast ptr_list f
   uncast xs f = uncast xs $ \ptr_list -> do
     tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
     f tensor_list
+
+data family HList (l :: [Type])
+data instance HList '[] = HNil
+newtype instance HList (x ': xs) = HCons1 (x, HList xs)
+pattern HCons x xs = HCons1 (x, xs)
+
+instance Eq (HList '[]) where
+  HNil == HNil = True
+
+instance (Eq x, Eq (HList xs)) => Eq (HList (x ': xs)) where
+  (HCons x xs) == (HCons y ys) = x == y && xs == ys
+
+class Apply f a b where
+  apply :: f -> a -> b
+
+class HMap f xs ys where
+  hmap :: f -> HList xs -> HList ys
+
+instance HMap f '[] '[] where
+  hmap _ _ = HNil
+
+instance (Apply f x y, HMap f xs ys) => HMap f (x ': xs) (y ': ys) where
+  hmap f (HCons x xs) = HCons (apply f x) (hmap f xs)
+
+class HFoldr f acc xs where
+  hfoldr :: f -> acc -> HList xs -> acc
+
+instance HFoldr f acc '[] where
+  hfoldr _ acc _ = acc
+
+instance (Apply f x (acc -> acc), HFoldr f acc xs) => HFoldr f acc (x ': xs) where
+  hfoldr f acc (HCons x xs) = apply f x $ hfoldr f acc xs
+
+class HFoldrM m f acc xs where
+  hfoldrM :: f -> acc -> HList xs -> m acc
+
+instance (Monad m) => HFoldrM m f acc '[] where
+  hfoldrM _ acc _ = pure acc
+
+instance (Monad m, Apply f x (acc -> m acc), HFoldrM m f acc xs) => HFoldrM m f acc (x ': xs) where
+  hfoldrM f acc (HCons x xs) = apply f x =<< hfoldrM f acc xs
+
+data HNothing  = HNothing
+data HJust x   = HJust x
+
+class HUnfold f res xs where
+  hunfoldr' :: f -> res -> HList xs
+
+type family HUnfoldRes s xs where
+  HUnfoldRes _ '[] = HNothing
+  HUnfoldRes s (x ': _) = HJust (x, s)
+
+instance HUnfold f HNothing '[] where
+  hunfoldr' _ _ = HNil
+
+instance (Apply f s res, HUnfold f res xs, res ~ HUnfoldRes s xs) => HUnfold f (HJust (x, s)) (x ': xs) where
+  hunfoldr' f (HJust (x, s)) = HCons x (hunfoldr' f (apply f s :: res))
+  --  hunfoldr' f (HJust (x, s)) = HCons x (hunfoldr @f @res f s)
+
+hunfoldr
+  :: forall f res (xs :: [Type]) a
+   . (Apply f a res, HUnfold f res xs)
+  => f
+  -> a
+  -> HList xs
+hunfoldr f s = hunfoldr' f (apply f s :: res)
+
+class HUnfoldM m f res xs where
+  hunfoldrM' :: f -> res -> m (HList xs)
+
+type family HUnfoldMRes m s xs where
+  HUnfoldMRes m _ '[] = m HNothing
+  HUnfoldMRes m s (x ': _) = m (HJust (x, s))
+
+instance (Monad m) => HUnfoldM m f (m HNothing) '[] where
+  hunfoldrM' _ _ = pure HNil
+
+instance (Monad m, HUnfoldM m f res xs, Apply f s res, res ~ HUnfoldMRes m s xs) => HUnfoldM m f (m (HJust (x, s))) (x ': xs) where
+  hunfoldrM' f just = do
+    HJust (x, s) <- just
+    xs <- hunfoldrM' f (apply f s :: res)
+    -- xs <- hunfoldrM @m @f @res f s
+    return (HCons x xs)
+
+hunfoldrM
+  :: forall (m :: Type -> Type) f res (xs :: [Type]) a
+   . (HUnfoldM m f res xs, Apply f a res, res ~ HUnfoldMRes m a xs)
+  => f
+  -> a
+  -> m (HList xs)
+hunfoldrM f s = hunfoldrM' f (apply f s :: res)
+
+data TensorListFolds = TensorListFolds
+
+instance (Castable D.ATenTensor x) => Apply TensorListFolds x ([D.ATenTensor] -> IO [D.ATenTensor]) where
+  apply _ x = \xs -> do
+    x' <- cast x return
+    return (x' : xs)
+
+instance Apply TensorListFolds [D.ATenTensor] (IO HNothing) where
+  apply _ [] = pure HNothing
+
+instance (Castable D.ATenTensor x) => Apply TensorListFolds [D.ATenTensor] (IO (HJust (x, [D.ATenTensor]))) where
+  apply _ (x : xs) = do
+    x' <- uncast x return
+    return $ HJust (x', xs)
+
+-- instance (All (Castable D.ATenTensor) l) => Castable [D.ATenTensor] (HList l) where
+instance (HFoldrM IO TensorListFolds [D.ATenTensor] l, Apply TensorListFolds [D.ATenTensor] res, HUnfoldM IO TensorListFolds res l, res ~ (HUnfoldMRes IO [D.ATenTensor] l)) => Castable [D.ATenTensor] (HList l) where
+  cast xs f = f =<< go xs
+   where
+    go :: HList l -> IO [D.ATenTensor]
+    go xs = hfoldrM TensorListFolds [] xs
+  uncast xs f = f =<< go xs
+   where
+    go :: [D.ATenTensor] -> IO (HList l)
+    go xs = hunfoldrM TensorListFolds xs
+
+instance Castable [D.ATenTensor] (HList l) => Castable (ForeignPtr ATen.TensorList) (HList l) where
+  cast xs f = do
+    ts <- cast xs return :: IO [D.ATenTensor]
+    ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) ts
+    cast ptr_list f
+  uncast xs f = _undefined
+  -- uncast xs f = uncast xs $ \ptr_list -> do
+  --   tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
+  --   f tensor_list
+
+test :: forall dtype shape . Tensor dtype shape -> IO [D.ATenTensor]
+test t = hfoldrM TensorListFolds [] (HCons t HNil)
+
+test' :: forall dtype shape dtype' shape' . [D.ATenTensor] -> IO (HList '[Tensor dtype shape, Tensor dtype' shape'])
+test' xs = hunfoldrM TensorListFolds xs
+
+test'' :: HList '[Tensor dtype shape] -> IO [D.ATenTensor]
+test'' xs = cast xs return
+
+test''' :: [D.ATenTensor] -> IO (HList '[Tensor dtype shape])
+test''' xs = uncast xs return

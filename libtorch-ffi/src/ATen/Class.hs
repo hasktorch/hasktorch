@@ -11,7 +11,7 @@ module ATen.Class where
 
 import Foreign (Ptr, ForeignPtr)
 
-class Castable a b where
+class Castable b a where
   cast   :: a -> (b -> IO r) -> IO r
   uncast :: b -> (a -> IO r) -> IO r
 

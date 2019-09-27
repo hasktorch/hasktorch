@@ -11,7 +11,7 @@ import qualified ATen.Type as ATen
 data Layout = Strided | Sparse | Mkldnn
   deriving (Eq, Show)
 
-instance Castable Layout ATen.Layout where
+instance Castable ATen.Layout Layout where
   cast Strided f = f ATen.kStrided
   cast Sparse f  = f ATen.kSparse
   cast Mkldnn f  = f ATen.kMkldnn

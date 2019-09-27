@@ -11,7 +11,7 @@ import qualified ATen.Type as ATen
 data Backend = CPU | CUDA | HIP | SparseCPU | SparseCUDA | MSNPU | XLA
   deriving (Eq, Show)
 
-instance Castable Backend ATen.Backend where
+instance Castable ATen.Backend Backend where
   cast CPU f        = f ATen.bCPU
   cast CUDA f       = f ATen.bCUDA
   cast HIP f        = f ATen.bHIP

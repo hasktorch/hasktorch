@@ -20,7 +20,7 @@ module Torch.Static.Native where
 import Prelude hiding (all, any, sin, sinh, cos, cosh, tan, tanh, asin, asinh, acos, acosh, atan, atanh, abs, max, min, exp, log, round)
 import Data.Finite
 import qualified Data.Int as I
-import Data.Kind (Constraint)
+import Data.Kind (Constraint, Type)
 import Data.Maybe
 import Data.Proxy
 import Data.Reflection
@@ -589,8 +589,31 @@ atan _self = unsafePerformIO $ (cast1 ATen.atan_t) _self
 -- chain_matmul :: [Tensor dtype shape] -> Tensor dtype shape
 -- chain_matmul _matrices = unsafePerformIO $ (cast1 ATen.chain_matmul_l) _matrices
 
--- chunk :: Tensor dtype shape -> Int -> Int -> [Tensor dtype shape]
--- chunk _self _chunks _dim = unsafePerformIO $ (cast3 ATen.chunk_tll) _self _chunks _dim
+type family ChunkShapes :: Maybe [[Nat]]
+
+type family ChunkImpl (chunkShapes :: Maybe [[Nat]]) (dtype :: D.DType) :: Maybe a where
+  ChunkImpl (Just '[]) _ = Just '[]
+  ChunkImpl (Just (shape ': shapes)) dtype = AppendToMaybe (Tensor dtype shape) (ChunkImpl (Just shapes) dtype)
+  ChunkImpl Nothing _ = Nothing
+
+type family ChunkCheck (shape :: [Nat]) (dim :: Nat) (result :: Maybe a) :: a where
+  ChunkCheck shape dim Nothing = DimOutOfBound shape dim
+  ChunkCheck _ _ (Just result) = result
+
+type Chunk chunks dim dtype shape = ChunkCheck shape dim (ChunkImpl (ChunkShapes) dtype)
+
+chunk
+  :: forall chunks dim dtype shape chunkShapes
+   . ( KnownNat chunks
+     , KnownNat dim
+     , chunkShapes ~ Chunk chunks dim dtype shape
+     , HFoldrM IO TensorListFolds [D.ATenTensor] chunkShapes
+     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] chunkShapes)
+     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] chunkShapes) chunkShapes
+     )
+  => Tensor dtype shape
+  -> HList chunkShapes
+chunk input = unsafePerformIO $ cast3 ATen.chunk_tll input (natValI @chunks::Int) (natValI @dim::Int)
 
 -- |
 -- >>> dtype &&& shape $ clamp (ones :: Tensor 'D.Float '[3,2]) 0 1
@@ -1176,8 +1199,11 @@ round _self = unsafePerformIO $ (cast1 ATen.round_t) _self
 -- prelu :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 -- prelu _self _weight = unsafePerformIO $ (cast2 ATen.prelu_tt) _self _weight
 
--- gelu :: Tensor dtype shape -> Tensor dtype shape
--- gelu _self = unsafePerformIO $ (cast1 ATen.gelu_t) _self
+-- |
+-- >>> dtype &&& shape $ round (ones @D.Float @[3,2])
+-- (Float,[3,2])
+gelu :: Tensor dtype shape -> Tensor dtype shape
+gelu t = unsafePerformIO $ cast1 ATen.gelu_t t
 
 -- hardshrink :: Tensor dtype shape -> Float -> Tensor dtype shape
 -- hardshrink _self _lambd = unsafePerformIO $ (cast2 ATen.hardshrink_ts) _self _lambd
