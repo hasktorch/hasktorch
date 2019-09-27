@@ -603,8 +603,23 @@ addmv
   -> Tensor dtype shape'
 addmv _input _mat _vec _beta _alpha = unsafePerformIO $ (cast5 ATen.addmv_tttss) _input _mat _vec _beta _alpha
 
--- addr :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Float -> Float -> Tensor dtype shape
--- addr _input _vec1 _vec2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addr_tttss) _input _vec1 _vec2 _beta _alpha
+-- |
+-- >>> t = addr (ones :: Tensor 'D.Float '[]) (ones :: Tensor 'D.Float '[3]) (zeros :: Tensor 'D.Float '[2]) 1 1
+-- >>> dtype &&& shape $ t
+-- (Float,[3,2])
+-- >>> :t t
+-- t :: Tensor 'D.Float '[3, 2]
+addr
+  :: forall shape' shape n m dtype
+   . (KnownNat n, KnownNat m,
+      shape' ~ Broadcast shape '[n,m])
+  => Tensor dtype shape
+  -> Tensor dtype '[n]
+  -> Tensor dtype '[m]
+  -> Float
+  -> Float
+  -> Tensor dtype shape'
+addr _input _vec1 _vec2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addr_tttss) _input _vec1 _vec2 _beta _alpha
 
 -- affine_grid_generator :: Tensor dtype shape -> [Int] -> Tensor dtype shape
 -- affine_grid_generator _theta _size = unsafePerformIO $ (cast2 ATen.affine_grid_generator_tl) _theta _size
