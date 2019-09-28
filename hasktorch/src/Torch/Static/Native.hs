@@ -623,22 +623,51 @@ type Chunk chunks dim dtype shape = ChunkCheck shape dim (ChunkImpl (ChunkShapes
 -- >>> :type chunk @3 @1 (ones @D.Float @[2, 2])
 -- chunk @3 @1 (ones @D.Float @[2, 2])
 --   :: HList '[Tensor 'D.Float '[2, 1], Tensor 'D.Float '[2, 1]]
--- >>> HCons t (HCons t' HNil) = chunk @3 @1 (ones @D.Float @[2, 2])
--- >>> dtype &&& shape $ t
+-- >>> HCons t0 (HCons t1 HNil) = chunk @3 @1 (ones @D.Float @[2, 2])
+-- >>> dtype &&& shape $ t0
 -- (Float,[2,1])
--- >>> dtype &&& shape $ t'
+-- >>> dtype &&& shape $ t1
 -- (Float,[2,1])
+-- >>> :type chunk @3 @1 (ones @D.Float @'[1, 0, 3])
+-- chunk @3 @1 (ones @D.Float @'[1, 0, 3])
+--   :: HList
+--        '[Tensor 'D.Float '[1, 0, 3], Tensor 'D.Float '[1, 0, 3],
+--          Tensor 'D.Float '[1, 0, 3]]
+-- >>> HCons t0 (HCons t1 (HCons t2 HNil)) = chunk @3 @1 (ones @D.Float @'[1, 0, 3])
+-- >>> dtype &&& shape $ t0
+-- (Float,[1,0,3])
+-- >>> dtype &&& shape $ t1
+-- (Float,[1,0,3])
+-- >>> dtype &&& shape $ t2
+-- (Float,[1,0,3])
+-- >>> :type chunk @6 @0 (ones @D.Float @[19, 4])
+-- chunk @6 @0 (ones @D.Float @[19, 4])
+--   :: HList
+--        '[Tensor 'D.Float '[4, 4], Tensor 'D.Float '[4, 4],
+--          Tensor 'D.Float '[4, 4], Tensor 'D.Float '[4, 4],
+--          Tensor 'D.Float '[3, 4]]
+-- >>> HCons t0 (HCons t1 (HCons t2 (HCons t3 (HCons t4 HNil)))) = chunk @6 @0 (ones @D.Float @[19, 4])
+-- >>> dtype &&& shape $ t0
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ t1
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ t2
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ t3
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ t4
+-- (Float,[3,4])
 chunk
-  :: forall chunks dim dtype shape chunkShapes
+  :: forall chunks dim dtype shape tensorChunks
    . ( KnownNat chunks
      , KnownNat dim
-     , chunkShapes ~ Chunk chunks dim dtype shape
-     , HFoldrM IO TensorListFolds [D.ATenTensor] chunkShapes
-     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] chunkShapes)
-     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] chunkShapes) chunkShapes
+     , tensorChunks ~ Chunk chunks dim dtype shape
+     , HFoldrM IO TensorListFolds [D.ATenTensor] tensorChunks
+     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorChunks)
+     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensorChunks) tensorChunks
      )
   => Tensor dtype shape
-  -> HList chunkShapes
+  -> HList tensorChunks
 chunk input = unsafePerformIO $ cast3 ATen.chunk_tll input (natValI @chunks::Int) (natValI @dim::Int)
 
 -- chunkShapes'' :: Int -> Int -> [Int]
