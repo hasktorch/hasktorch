@@ -36,6 +36,6 @@ string_c_str
   -> IO String
 string_c_str str = cast1 Unmanaged.string_c_str str
 
-instance Castable (ForeignPtr StdString) String where
+instance Castable String (ForeignPtr StdString) where
   cast str f = newStdString_s str >>= f
   uncast xs f = string_c_str xs >>= f

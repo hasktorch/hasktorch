@@ -49,7 +49,7 @@ data Tri = Upper | Lower
 -- https://github.com/pytorch/pytorch/blob/3762cf9cc63e2032410d50f218c1406668177c23/aten/src/ATen/core/Reduction.h
 data Reduction = ReduceNone | ReduceMean | ReduceSum
 
-instance Castable Int64 Reduction where
+instance Castable Reduction Int64 where
   cast ReduceNone f = f 0
   cast ReduceMean f = f 1
   cast ReduceSum f = f 2

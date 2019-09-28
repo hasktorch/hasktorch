@@ -20,7 +20,7 @@ type ATenTensorOptions = ForeignPtr ATen.TensorOptions
 
 data TensorOptions = TensorOptions ATenTensorOptions
 
-instance Castable ATenTensorOptions TensorOptions where
+instance Castable TensorOptions ATenTensorOptions where
   cast (TensorOptions aten_opts) f = f aten_opts
   uncast aten_opts f = f $ TensorOptions aten_opts
 

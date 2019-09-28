@@ -13,19 +13,19 @@ import ATen.Managed.Cast
 import ATen.Class (Castable(..))
 import ATen.Cast
 
-instance Castable (ForeignPtr ATen.Scalar) Float where
+instance Castable Float (ForeignPtr ATen.Scalar) where
   cast x f = ATen.newScalar_d (realToFrac x) >>= f
   uncast x f = undefined
 
-instance Castable (ForeignPtr ATen.Scalar) Double where
+instance Castable Double (ForeignPtr ATen.Scalar) where
   cast x f = ATen.newScalar_d (realToFrac x) >>= f
   uncast x f = undefined
 
-instance Castable (ForeignPtr ATen.Scalar) Int where
+instance Castable Int (ForeignPtr ATen.Scalar) where
   cast x f = ATen.newScalar_i (fromIntegral x) >>= f
   uncast x f = undefined
 
-class (Castable (ForeignPtr ATen.Scalar) a) => Scalar a
+class (Castable a (ForeignPtr ATen.Scalar)) => Scalar a
 instance Scalar Float
 instance Scalar Double
 instance Scalar Int

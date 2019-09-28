@@ -12,7 +12,7 @@ import ATen.Type
 import ATen.Managed.Type.IntArray
 import ATen.Managed.Type.TensorList
 
-instance Castable (ForeignPtr IntArray) Int where
+instance Castable Int (ForeignPtr IntArray) where
   cast xs f = do
     arr <- newIntArray
     intArray_push_back_l arr $ fromIntegral xs
@@ -21,7 +21,7 @@ instance Castable (ForeignPtr IntArray) Int where
     v <- intArray_at_s xs 0
     f (fromIntegral v)
 
-instance Castable (ForeignPtr IntArray) [Int] where
+instance Castable [Int] (ForeignPtr IntArray) where
   cast xs f = do
     arr <- newIntArray
     forM_ xs $ (intArray_push_back_l arr) . fromIntegral
@@ -34,7 +34,7 @@ instance Castable (ForeignPtr IntArray) [Int] where
       then f []
       else f =<< mapM (\i -> intArray_at_s xs i >>= return . fromIntegral) [0..(len - 1)]
 
-instance Castable (ForeignPtr TensorList) [ForeignPtr Tensor] where
+instance Castable [ForeignPtr Tensor] (ForeignPtr TensorList) where
   cast xs f = do
     l <- newTensorList
     forM_ xs $ (tensorList_push_back_t l)

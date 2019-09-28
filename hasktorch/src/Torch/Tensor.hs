@@ -46,7 +46,7 @@ type ATenTensor = ForeignPtr ATen.Tensor
 -- do not use the constructor
 newtype Tensor = Unsafe ATenTensor
 
-instance Castable ATenTensor Tensor where
+instance Castable Tensor ATenTensor where
   cast (Unsafe aten_tensor) f = f aten_tensor
   uncast aten_tensor f = f $ Unsafe aten_tensor
 
@@ -271,7 +271,7 @@ instance Show Tensor where
 --------------------------------------------------------------------------------
 
 -- NB: ATen only defines Castable [ForeignPtr ATen.Tensor] (ForeignPtr ATen.TensorList)
-instance Castable (ForeignPtr ATen.TensorList) [Tensor] where
+instance Castable [Tensor] (ForeignPtr ATen.TensorList) where
   cast xs f = do
     ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
     cast ptr_list f

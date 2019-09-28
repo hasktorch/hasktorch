@@ -63,7 +63,7 @@ instance Reifies Double DType where
 instance Reifies 'Double DType where
   reflect _ = Float
 
-instance Castable ATen.ScalarType DType where
+instance Castable DType ATen.ScalarType where
   cast Bool   f = f ATen.kBool
   cast UInt8  f = f ATen.kByte
   cast Int8   f = f ATen.kChar
