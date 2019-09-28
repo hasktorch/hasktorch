@@ -28,6 +28,7 @@ import Control.Arrow ((&&&))
 import GHC.TypeLits
 import GHC.TypeLits.Extra
 import System.IO.Unsafe
+import Data.Singletons.Prelude.List (Product)
 
 import Foreign.ForeignPtr
 import qualified ATen.Managed.Native as ATen
@@ -1063,6 +1064,15 @@ expm1 _input = unsafePerformIO $ (cast1 ATen.expm1_t) _input
 
 -- flatten :: Tensor dtype shape -> Int -> Int -> Tensor dtype shape
 -- flatten _input _start_dim _end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) _input _start_dim _end_dim
+
+-- |
+-- >>> t = flattenAll (ones :: Tensor 'D.Float '[3,2])
+-- >>> dtype &&& shape $ t
+-- (Float,[6])
+-- >>> :t t
+-- t :: Tensor 'D.Float '[6]
+flattenAll :: KnownShape shape => Tensor dtype shape -> Tensor dtype '[Product shape]
+flattenAll _input = unsafePerformIO $ (cast3 ATen.flatten_tll) _input (0::Int) (-1::Int)
 
 -- |
 -- >>> dtype &&& shape $ frac (ones :: Tensor 'D.Float '[3,2])
