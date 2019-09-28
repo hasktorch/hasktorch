@@ -1278,8 +1278,11 @@ logsumexp t = unsafePerformIO $ cast3 ATen.logsumexp_tlb t (natValI @dim) (keepO
 -- margin_ranking_loss :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Double -> Int -> Tensor dtype shape
 -- margin_ranking_loss _input1 _input2 _target _margin _reduction = unsafePerformIO $ (cast5 ATen.margin_ranking_loss_tttdl) _input1 _input2 _target _margin _reduction
 
--- matrix_power :: Tensor dtype shape -> Int -> Tensor dtype shape
--- matrix_power _input _n = unsafePerformIO $ (cast2 ATen.matrix_power_tl) _input _n
+-- |
+-- >>> dtype &&& shape $ matrixPower (ones :: Tensor 'D.Float '[3,4,4]) 2
+-- (Float,[3,4,4])
+matrixPower :: Tensor dtype shape -> Int -> Tensor dtype (Square shape)
+matrixPower _input _n = unsafePerformIO $ (cast2 ATen.matrix_power_tl) _input _n
 
 -- |
 -- >>> dtype &&& shape $ maxValues @0 @KeepDim (ones :: Tensor 'D.Float '[3,4,5])
