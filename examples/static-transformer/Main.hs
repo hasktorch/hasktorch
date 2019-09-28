@@ -72,6 +72,7 @@ multiheadAttention
   -> (Tensor dtype '[batchSize, something], Tensor dtype '[batchSize, somethingElse])
 multiheadAttention MultiheadAttention {..} input =
   let projected = linear inProj input
+      HCons q (HCons k (HCons v HNil)) = chunk @3 @1 projected
   in undefined
 
 data TransformerLMLayer (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat) where

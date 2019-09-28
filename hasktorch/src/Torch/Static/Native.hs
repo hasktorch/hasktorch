@@ -604,20 +604,33 @@ type family ComputeChunksChunkGo (n' :: Nat) (r :: Nat) (cmp :: Ordering) (cmp' 
   ComputeChunksChunkGo n' r _  GT = '[r]
   ComputeChunksChunkGo n' _ _  _  = '[]
 
-type family ComputeChunks (n :: Maybe Nat) (chunks :: Nat) :: Maybe [Nat] where
-  ComputeChunks (Just 0) 0      = Just '[]
-  ComputeChunks (Just 0) chunks = AppendToMaybe 0 (ComputeChunks (Just 0) (chunks - 1))
-  ComputeChunks (Just n) chunks = Just (ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0))
-  ComputeChunks Nothing  _      = Nothing
+type family ComputeChunks (n :: Maybe Nat) (chunks :: Nat) (dummy :: Nat) :: Maybe [Nat] where
+  ComputeChunks (Just 0) 0      _     = Just '[]
+  ComputeChunks (Just 0) chunks dummy = AppendToMaybe 0 (ComputeChunks (Just 0) (chunks - 1) dummy)
+  ComputeChunks (Just n) chunks dummy = Just (ComputeChunks' n chunks (n ~ (chunks * dummy)))
+  -- ComputeChunks (Just n) chunks _     = Just (ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0))
+  ComputeChunks Nothing  _      _     = Nothing
+
+type family ComputeChunks' (n :: Nat) (chunks :: Nat) (constraint :: Constraint) :: [Nat] where
+  ComputeChunks n chunks constraint = ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0)
 
 type family ChunkShapesImpl (chunks :: Maybe [Nat]) (dim :: Nat) (shape :: [Nat]) :: Maybe [[Nat]] where
   ChunkShapesImpl (Just (n ': ns)) dim shape = AppendToMaybe' (ReplaceDim dim shape n) (ChunkShapesImpl (Just ns) dim shape)
   ChunkShapesImpl (Just '[])       _   _     = Just '[]
   ChunkShapesImpl Nothing          _   _     = Nothing
 
-type ChunkShapes chunks dim shape = ChunkShapesImpl (ComputeChunks (ExtractDim dim shape) chunks) dim shape
+type ChunkShapes chunks dim shape dummy = ChunkShapesImpl (ComputeChunks (ExtractDim dim shape) chunks dummy) dim shape
 
-type Chunk chunks dim dtype shape = ChunkCheck shape dim (ChunkImpl (ChunkShapes chunks dim shape) dtype)
+type Chunk chunks dim dtype shape dummy = ChunkCheck shape dim (ChunkImpl (ChunkShapes chunks dim shape dummy) dtype)
+
+proxyFun :: forall y chunks dummy . (y ~ (chunks * dummy)) => Proxy y -> Proxy chunks -> ()
+proxyFun = const . const ()
+
+foo
+  :: forall dtype batchSize n
+   . Tensor dtype [batchSize, 2 * n]
+  -> HList [Tensor dtype [batchSize, n], Tensor dtype [batchSize, n]]
+foo = chunk @2 @1
 
 -- | chunk
 -- >>> :type chunk @3 @1 (ones @D.Float @[2, 2])
@@ -658,10 +671,10 @@ type Chunk chunks dim dtype shape = ChunkCheck shape dim (ChunkImpl (ChunkShapes
 -- >>> dtype &&& shape $ t4
 -- (Float,[3,4])
 chunk
-  :: forall chunks dim dtype shape tensorChunks
+  :: forall chunks dim dtype shape tensorChunks dummy
    . ( KnownNat chunks
      , KnownNat dim
-     , tensorChunks ~ Chunk chunks dim dtype shape
+     , tensorChunks ~ Chunk chunks dim dtype shape dummy
      , HFoldrM IO TensorListFolds [D.ATenTensor] tensorChunks
      , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorChunks)
      , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensorChunks) tensorChunks
