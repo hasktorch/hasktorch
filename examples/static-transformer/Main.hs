@@ -74,7 +74,7 @@ multiheadAttention
   -> (Tensor dtype '[batchSize, something], Tensor dtype '[batchSize, somethingElse])
 multiheadAttention MultiheadAttention {..} input scaling =
   let projected = linear inProj input
-      HCons q (HCons k (HCons v HNil)) = chunk @3 @1 projected
+      HCons q (HCons k (HCons v HNil)) = chunk @3 @2 projected
       qScaled = mul q scaling
   in undefined
 
@@ -104,9 +104,26 @@ data Linear (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) =
          } deriving (Show, Generic)
 
 linear
-  :: Linear dtype inputFeatures outputFeatures
-  -> Tensor dtype (shape ': [batchSize, inputFeatures])
-  -> Tensor dtype (shape ': [batchSize, outputFeatures])
+  :: forall dtype (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat])
+   . ( CheckBroadcast (CheckMatMul
+                         shape
+                         '[inputFeatures, outputFeatures]
+                         (ComputeMatMul
+                            (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
+                      '[outputFeatures]
+                      (ComputeBroadcast
+                         (ReverseImpl
+                            (CheckMatMul
+                               shape
+                               '[inputFeatures, outputFeatures]
+                               (ComputeMatMul
+                                  (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
+                            '[])
+                         '[outputFeatures])
+                    ~ shape')
+  => Linear dtype inputFeatures outputFeatures
+  -> Tensor dtype shape
+  -> Tensor dtype shape'
 linear Linear {..} input =
   add (matmul input (toDependent weight)) (toDependent bias)
 

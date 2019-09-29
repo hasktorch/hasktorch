@@ -201,12 +201,12 @@ type family ComputeBroadcast (reversedShape :: [Nat]) (reversedShape' :: [Nat]) 
     ComputeBroadcast _             _             = Nothing
 
 type family CheckBroadcast (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
-    CheckBroadcast shape shape' Nothing = TypeError (Text "The shapes " :<>:
-                                                       ShowType shape :<>:
-                                                       Text " and " :<>:
-                                                       ShowType shape' :<>:
-                                                       Text " cannot be broadcast")
-    CheckBroadcast _ _ (Just result) = (Reverse result)
+    CheckBroadcast shape shape' Nothing       = TypeError (Text "The shapes " :<>:
+                                                           ShowType shape :<>:
+                                                           Text " and " :<>:
+                                                           ShowType shape' :<>:
+                                                           Text " cannot be broadcast")
+    CheckBroadcast _     _      (Just result) = (Reverse result)
 
 type Broadcast shape shape' = CheckBroadcast shape shape' (ComputeBroadcast (Reverse shape)
                                                                             (Reverse shape'))
@@ -236,7 +236,7 @@ type family IndexOutOfBound (shape :: [a]) (dim :: Nat) (idx :: Nat) where
 --------------------------------------------------------------------------------
 
 type family ListLength (l :: [a]) :: Nat where
-    ListLength '[] = 0
+    ListLength '[]      = 0
     ListLength (_ ': t) = 1 + ListLength t
 
                     ----------------------------------------
