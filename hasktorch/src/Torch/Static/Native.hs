@@ -26,6 +26,7 @@ import Data.Proxy
 import Data.Reflection
 import Control.Arrow ((&&&))
 import GHC.TypeLits
+import GHC.TypeLits.Extra
 import System.IO.Unsafe
 
 import Foreign.ForeignPtr
@@ -604,32 +605,45 @@ type family ComputeChunksChunkGo (n' :: Nat) (r :: Nat) (cmp :: Ordering) (cmp' 
   ComputeChunksChunkGo n' r _  GT = '[r]
   ComputeChunksChunkGo n' _ _  _  = '[]
 
-type family ComputeChunks (n :: Maybe Nat) (chunks :: Nat) (dummy :: Nat) :: Maybe [Nat] where
-  ComputeChunks (Just 0) 0      _     = Just '[]
-  ComputeChunks (Just 0) chunks dummy = AppendToMaybe 0 (ComputeChunks (Just 0) (chunks - 1) dummy)
-  ComputeChunks (Just n) chunks dummy = Just (ComputeChunks' n chunks (n ~ (chunks * dummy)))
-  -- ComputeChunks (Just n) chunks _     = Just (ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0))
-  ComputeChunks Nothing  _      _     = Nothing
+type family ComputeChunksChunkGo0 (n' :: Nat) (chunks :: Nat) :: [Nat] where
+  ComputeChunksChunkGo0 _  0      = '[]
+  ComputeChunksChunkGo0 n' chunks = n' ': (ComputeChunksChunkGo0 n' (chunks - 1))
 
-type family ComputeChunks' (n :: Nat) (chunks :: Nat) (constraint :: Constraint) :: [Nat] where
-  ComputeChunks n chunks constraint = ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0)
+type family ComputeChunks (n :: Maybe Nat) (chunks :: Nat) :: Maybe [Nat] where
+  -- ComputeChunks (Just 0) 0      = Just '[]
+  -- ComputeChunks (Just 0) chunks = AppendToMaybe 0 (ComputeChunks (Just 0) (chunks - 1))
+  -- ComputeChunks (Just n) chunks = Just (ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0))
+  -- ComputeChunks Nothing  _      = Nothing
+  ComputeChunks (Just n) chunks = Just (ComputeChunks' n chunks (Mod n chunks))
+  ComputeChunks Nothing  _      = Nothing
+
+type family ComputeChunks' (n :: Nat) (chunks :: Nat) (m :: Nat) :: [Nat] where
+  ComputeChunks' n chunks 0 = ComputeChunksChunkGo0 (Div n chunks) chunks
+  ComputeChunks' n chunks _ = ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0)
 
 type family ChunkShapesImpl (chunks :: Maybe [Nat]) (dim :: Nat) (shape :: [Nat]) :: Maybe [[Nat]] where
   ChunkShapesImpl (Just (n ': ns)) dim shape = AppendToMaybe' (ReplaceDim dim shape n) (ChunkShapesImpl (Just ns) dim shape)
   ChunkShapesImpl (Just '[])       _   _     = Just '[]
   ChunkShapesImpl Nothing          _   _     = Nothing
 
-type ChunkShapes chunks dim shape dummy = ChunkShapesImpl (ComputeChunks (ExtractDim dim shape) chunks dummy) dim shape
+type ChunkShapes chunks dim shape = ChunkShapesImpl (ComputeChunks (ExtractDim dim shape) chunks) dim shape
 
-type Chunk chunks dim dtype shape dummy = ChunkCheck shape dim (ChunkImpl (ChunkShapes chunks dim shape dummy) dtype)
+type Chunk chunks dim dtype shape = ChunkCheck shape dim (ChunkImpl (ChunkShapes chunks dim shape) dtype)
 
 proxyFun :: forall y chunks dummy . (y ~ (chunks * dummy)) => Proxy y -> Proxy chunks -> ()
 proxyFun = const . const ()
 
+-- test :: Proxy (Mod (chunks * n) chunks) -> Proxy 0
+-- test = id
+
+-- test :: (1 <= a) => Proxy (Div (n * a) a) -> Proxy n
+-- test = id
+
 foo
   :: forall dtype batchSize n
-   . Tensor dtype [batchSize, 2 * n]
-  -> HList [Tensor dtype [batchSize, n], Tensor dtype [batchSize, n]]
+   . (Mod (2 * n) 2 ~ 0, Div (2 * n) 2 ~ n)
+  => Tensor dtype '[batchSize, 2 * n]
+  -> HList '[Tensor dtype '[batchSize, n], Tensor dtype '[batchSize, n]]
 foo = chunk @2 @1
 
 -- | chunk
@@ -671,10 +685,10 @@ foo = chunk @2 @1
 -- >>> dtype &&& shape $ t4
 -- (Float,[3,4])
 chunk
-  :: forall chunks dim dtype shape tensorChunks dummy
+  :: forall chunks dim dtype shape tensorChunks
    . ( KnownNat chunks
      , KnownNat dim
-     , tensorChunks ~ Chunk chunks dim dtype shape dummy
+     , tensorChunks ~ Chunk chunks dim dtype shape
      , HFoldrM IO TensorListFolds [D.ATenTensor] tensorChunks
      , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorChunks)
      , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensorChunks) tensorChunks
