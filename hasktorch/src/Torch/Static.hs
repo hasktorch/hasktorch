@@ -183,11 +183,11 @@ withTensor d f = case someShape (D.shape d) of
 -- Broadcast type-level function
 --------------------------------------------------------------------------------
 
-type family AppendToMaybe (h :: a) (mt :: Maybe [a]) where
-    AppendToMaybe h Nothing = Nothing
+type family AppendToMaybe (h :: a) (mt :: Maybe [a]) :: Maybe [a]  where
+    AppendToMaybe h Nothing  = Nothing
     AppendToMaybe h (Just t) = Just (h : t)
 
-type family AppendToMaybe' (h :: Maybe a) (mt :: Maybe [a]) where
+type family AppendToMaybe' (h :: Maybe a) (mt :: Maybe [a]) :: Maybe [a] where
   AppendToMaybe' Nothing  _        = Nothing
   AppendToMaybe' _        Nothing  = Nothing
   AppendToMaybe' (Just h) (Just t) = Just (h : t)
@@ -214,6 +214,13 @@ type Broadcast shape shape' = CheckBroadcast shape shape' (ComputeBroadcast (Rev
 --------------------------------------------------------------------------------
 -- Nice error messages for type checking failures
 --------------------------------------------------------------------------------
+
+type family DimOutOfBoundCheckImpl (shape :: [a]) (dim :: Nat) (xs :: [a]) (n :: Nat) :: Constraint where
+  DimOutOfBoundCheckImpl shape dim '[]       _ = DimOutOfBound shape dim
+  DimOutOfBoundCheckImpl _     _   _         0 = ()
+  DimOutOfBoundCheckImpl shape dim (_ ': xs) n = DimOutOfBoundCheckImpl shape dim xs (n - 1)
+
+type DimOutOfBoundCheck shape dim = DimOutOfBoundCheckImpl shape dim shape dim
 
 type family DimOutOfBound (shape :: [a]) (dim :: Nat) where
     DimOutOfBound shape dim = TypeError (Text "Out of bound dimension: " :<>:
@@ -463,9 +470,6 @@ type family Numel (shape :: [Nat]) :: Nat where
 
 reshape :: forall shape' dtype shape. (KnownShape shape', Numel shape ~ Numel shape') => Tensor dtype shape -> Tensor dtype shape'
 reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
-
-logSoftmax :: KnownShape shape => Tensor dtype shape -> Int -> Tensor dtype shape
-logSoftmax input dim = UnsafeMkTensor $ D.logSoftmax (toDynamic input) dim
 
 
 instance Castable (Tensor dtype shape) D.ATenTensor where

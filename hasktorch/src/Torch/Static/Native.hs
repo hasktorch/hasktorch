@@ -252,14 +252,29 @@ binary_cross_entropy t target weight = unsafePerformIO $ (cast4 ATen.binary_cros
 mse_loss :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype '[]
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 
--- |
--- >>> dtype &&& shape $ log_softmax (ones :: Tensor 'D.Float '[2,2]) 0
+-- | softmax
+-- >>> dtype &&& shape $ softmax @0 (ones @D.Float @[2,2])
 -- (Float,[2,2])
--- >>> dtype &&& shape $ log_softmax (ones :: Tensor 'D.Float '[2,2]) 1
+-- >>> dtype &&& shape $ softmax @1 (ones @D.Float @[2,2])
 -- (Float,[2,2])
-log_softmax :: Tensor dtype shape -> Int -> Tensor dtype shape
-log_softmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
+softmax
+  :: forall dim dtype shape
+   . (KnownNat dim, KnownDType dtype, DimOutOfBoundCheck shape dim)
+  => Tensor dtype shape
+  -> Tensor dtype shape
+softmax a = unsafePerformIO $ cast3 ATen.softmax_tls a (natValI @dim) (dtypeVal @dtype)
 
+-- | logSoftmax
+-- >>> dtype &&& shape $ logSoftmax @0 (ones @D.Float @[2,2])
+-- (Float,[2,2])
+-- >>> dtype &&& shape $ logSoftmax @1 (ones @D.Float @[2,2])
+-- (Float,[2,2])
+logSoftmax
+  :: forall dim dtype shape
+   . (KnownNat dim, KnownDType dtype, DimOutOfBoundCheck shape dim)
+  => Tensor dtype shape
+  -> Tensor dtype shape
+logSoftmax a = unsafePerformIO $ cast3 ATen.log_softmax_tls a (natValI @dim) (dtypeVal @dtype)
 
 type family Square (shape :: [Nat]) :: [Nat] where
     Square (n:n:'[]) = '[n,n]
@@ -447,8 +462,28 @@ any' t = unsafePerformIO $ cast3 ATen.any_tlb t (natValI @dim) (keepOrDropDimVal
 
 ---
 
--- dropout :: Tensor dtype shape -> Double -> Bool -> Tensor dtype shape
--- dropout _input _p _train = unsafePerformIO $ (cast3 ATen.dropout_tdb) _input _p _train
+-- | dropout
+-- >>> t = ones @D.Float @[3,2]
+-- >>> t' <- dropout 0.5 False t
+-- >>> dtype &&& shape $ t'
+-- (Float,[3,2])
+-- >>> t'' <- dropout 0.5 False t
+-- >>> t ==. t''
+-- Tensor Bool [3,2] [[ 1,  1],
+--                    [ 1,  1],
+--                    [ 1,  1]]
+-- >>> t''' <- dropout 0.0 True t
+-- >>> t ==. t'''
+-- Tensor Bool [3,2] [[ 1,  1],
+--                    [ 1,  1],
+--                    [ 1,  1]]
+-- >>> t'''' <- dropout 1.0 True t
+-- >>> t''''
+-- Tensor Float [3,2] [[ 0.0000,  0.0000],
+--                     [ 0.0000,  0.0000],
+--                     [ 0.0000,  0.0000]]
+dropout :: Double -> Bool -> Tensor dtype shape -> IO (Tensor dtype shape)
+dropout p train t = cast3 ATen.dropout_tdb t p train
 
 -- feature_dropout :: Tensor dtype shape -> Double -> Bool -> Tensor dtype shape
 -- feature_dropout _input _p _train = unsafePerformIO $ (cast3 ATen.feature_dropout_tdb) _input _p _train
@@ -459,7 +494,7 @@ any' t = unsafePerformIO $ cast3 ATen.any_tlb t (natValI @dim) (keepOrDropDimVal
 -- feature_alpha_dropout :: Tensor dtype shape -> Double -> Bool -> Tensor dtype shape
 -- feature_alpha_dropout _input _p _train = unsafePerformIO $ (cast3 ATen.feature_alpha_dropout_tdb) _input _p _train
 
--- |
+-- | acos
 -- >>> dtype &&& shape $ acos (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 acos :: Tensor dtype shape -> Tensor dtype shape
@@ -1640,30 +1675,30 @@ l1_loss _self _target = unsafePerformIO $ (cast3 ATen.l1_loss_ttl) _self _target
 -- >>> input <- randn @'D.Float @[3, 5]
 -- >>> target = fromJust [1, 0, 4] :: Tensor 'D.Int64 '[3]
 -- >>> weight = ones @'D.Float @'[5]
--- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[] (logSoftmax @1 input) target weight (-100)
 -- (Float,[3])
--- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[] (logSoftmax @1 input) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @'D.Float @[3, 5, 2]
 -- >>> target = fromJust [[1, 1], [0, 1], [4, 0]] :: Tensor 'D.Int64 '[3, 2]
 -- >>> weight = ones @'D.Float @'[5]
--- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[3,2])
--- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @'D.Float @[3, 5, 1, 2]
 -- >>> target = fromJust [[[1, 1]], [[0, 1]], [[4, 0]]] :: Tensor 'D.Int64 '[3, 1, 2]
 -- >>> weight = ones @'D.Float @'[5]
--- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[1, 2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[3,1,2])
--- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @[1, 2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @'D.Float @[3, 5, 2, 1, 2]
 -- >>> target = fromJust [[[[1, 1]], [[0, 2]]], [[[0, 1]], [[1, 0]]], [[[4, 0]], [[1, 2]]]] :: Tensor 'D.Int64 '[3, 2, 1, 2]
 -- >>> weight = ones @'D.Float @'[5]
--- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[2, 1, 2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[2, 1, 2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[3,2,1,2])
--- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @[2, 1, 2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @[2, 1, 2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[])
 nll_loss
   :: forall reduction dtype n c ds

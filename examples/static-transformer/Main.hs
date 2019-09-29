@@ -17,6 +17,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
+{-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
+{-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
+{-# OPTIONS_GHC -fconstraint-solver-iterations=0 #-}
 
 module Main where
 
@@ -31,6 +35,7 @@ import           Data.List                      ( foldl'
 import           Data.Reflection
 import           GHC.Generics
 import           GHC.TypeLits
+import           GHC.TypeLits.Extra
 
 import           Torch.Static
 import           Torch.Static.Native     hiding ( linear )
@@ -67,16 +72,42 @@ data MultiheadAttention (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) w
 
 multiheadAttention
   :: forall dtype embedDim numHeads headDim seqLen batchSize something somethingElse
-   . (embedDim ~ (headDim * numHeads), Mod (embedDim  * 3) 3 ~ 0, Div (embedDim * 3) 3 ~ embedDim)
+   . ( embedDim ~ (headDim * numHeads)
+     , Mod (embedDim * 3) 3 ~ 0
+     , Div (embedDim * 3) 3 ~ embedDim
+     , KnownDType dtype
+     , KnownNat embedDim
+     , KnownNat numHeads
+     , KnownNat headDim
+     , KnownNat seqLen
+     , KnownNat batchSize
+     )
   => MultiheadAttention dtype embedDim numHeads
+  -> Dropout
   -> Tensor dtype '[seqLen, batchSize, embedDim]
   -> Tensor dtype '[]
-  -> (Tensor dtype '[batchSize, something], Tensor dtype '[batchSize, somethingElse])
-multiheadAttention MultiheadAttention {..} input scaling =
+  -> IO (Tensor dtype '[seqLen, batchSize, embedDim], Tensor dtype '[batchSize, seqLen, seqLen])
+multiheadAttention MultiheadAttention {..} Dropout {..} input scaling = do
   let projected = linear inProj input
       HCons q (HCons k (HCons v HNil)) = chunk @3 @2 projected
       qScaled = mul q scaling
-  in undefined
+      f = transpose @0 @1 . reshape @[seqLen, batchSize * numHeads, headDim]
+      q' = f qScaled
+      k' = f k
+      v' = f v
+      attnWeights = matmul q' $ transpose @1 @2 k'
+  attnWeights' <- dropout dropoutProb dropoutTrain . softmax @2 $ attnWeights
+  let attn'' = linear outProj . reshape @[seqLen, batchSize, embedDim] . transpose @0 @1 . matmul attnWeights' $ v'
+      attnWeights'' = reshape @[batchSize, numHeads, seqLen, seqLen] attnWeights'
+      attnWeights''' = sumDim @1 attnWeights''
+  return (attn'', attnWeights''')
+
+data Dropout where
+  Dropout
+    :: { dropoutProb :: Double
+       , dropoutTrain :: Bool
+       }
+    -> Dropout
 
 data TransformerLMLayer (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat) where
   TransformerLMLayer
