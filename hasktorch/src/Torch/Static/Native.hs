@@ -586,7 +586,7 @@ adaptiveMaxPool1d
      (All KnownNat [channelSize, inputSize, batchSize, outputSize])
   => Tensor dtype '[batchSize, channelSize, inputSize]
   -> Tensor dtype '[batchSize, channelSize, outputSize]
-adaptiveMaxPool1d _input = fst $ (unsafePerformIO $ (cast2 ATen.adaptive_max_pool1d_tl) _input (natValI @outputSize) :: (Tensor dtype '[batchSize, channelSize, outputSize], Tensor dtype '[batchSize, channelSize, outputSize]))
+adaptiveMaxPool1d _input = fst $ (unsafePerformIO $ (cast2 ATen.adaptive_max_pool1d_tl) _input (natValI @outputSize) :: (Tensor dtype '[batchSize, channelSize, outputSize], Tensor 'D.Int64 '[batchSize, channelSize, outputSize]))
 
 
 -- |
@@ -2146,7 +2146,7 @@ adaptiveMaxPool2d _input = fst $ (unsafePerformIO $ (cast2 ATen.adaptive_max_poo
   _input
   ([natValI @(Fst outputSize), natValI @(Snd outputSize)] :: [Int])
   :: (Tensor dtype '[batchSize, channelSize, Fst outputSize, Snd outputSize],
-      Tensor dtype '[batchSize, channelSize, Fst outputSize, Snd outputSize]))
+      Tensor 'D.Int64 '[batchSize, channelSize, Fst outputSize, Snd outputSize]))
 
 -- |
 -- >>> t = adaptiveMaxPool3d @'(8,16,2) (ones::Tensor 'D.Float '[1,3,16,32,4])
@@ -2166,7 +2166,7 @@ adaptiveMaxPool3d _input = fst $ (unsafePerformIO $ (cast2 ATen.adaptive_max_poo
   _input
   ([natValI @(Fst3 outputSize), natValI @(Snd3 outputSize), natValI @(Trd3 outputSize)] :: [Int])
   :: (Tensor dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
-     ,Tensor dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]))
+     ,Tensor 'D.Int64 '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]))
 
 -- |
 -- >>> t = avgPool2d @'(1,1) @'(1,1) @'(0,0) (ones::Tensor 'D.Float '[1,3,4,5])
