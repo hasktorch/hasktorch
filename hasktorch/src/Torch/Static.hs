@@ -192,13 +192,13 @@ type family AppendToMaybe' (h :: Maybe a) (mt :: Maybe [a]) where
   AppendToMaybe' _        Nothing  = Nothing
   AppendToMaybe' (Just h) (Just t) = Just (h : t)
 
-type family ComputeBroadcast (shape :: [Nat]) (shape' :: [Nat]) :: Maybe [Nat] where
-    ComputeBroadcast '[] shape = Just shape
-    ComputeBroadcast shape '[] = Just shape
-    ComputeBroadcast (h ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-    ComputeBroadcast (h ': t) (1 ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-    ComputeBroadcast (1 ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-    ComputeBroadcast _ _ = Nothing
+type family ComputeBroadcast (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
+    ComputeBroadcast '[]           reversedShape = Just reversedShape
+    ComputeBroadcast reversedShape '[]           = Just reversedShape
+    ComputeBroadcast (h ': t)      (h ': t2)     = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast (h ': t)      (1 ': t2)     = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast (1 ': t)      (h ': t2)     = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast _             _             = Nothing
 
 type family CheckBroadcast (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
     CheckBroadcast shape shape' Nothing = TypeError (Text "The shapes " :<>:
@@ -362,8 +362,31 @@ ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
 relu :: Tensor dtype shape -> Tensor dtype shape
 relu t = UnsafeMkTensor $ D.relu (toDynamic t)
 
-mm :: Tensor dtype [n, k] -> Tensor dtype [k, m] -> Tensor dtype [n, m]
-mm a b = UnsafeMkTensor $ D.matmul (toDynamic a) (toDynamic b)
+type family ComputeMatMul (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
+  ComputeMatMul (k ': '[])                         (k ': '[])                          = Just '[]
+  ComputeMatMul (k ': '[])                         (m ': k ': reversedBroadcastShape') = AppendToMaybe m (ComputeBroadcast '[] reversedBroadcastShape')
+  ComputeMatMul (k ': n ': reversedBroadcastShape) (k ': '[])                          = AppendToMaybe n (ComputeBroadcast '[] reversedBroadcastShape)
+  ComputeMatMul (k ': n ': reversedBroadcastShape) (m ': k ': reversedBroadcastShape') = AppendToMaybe m (AppendToMaybe n (ComputeBroadcast reversedBroadcastShape reversedBroadcastShape'))
+
+type family CheckMatMul (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
+  CheckMatMul shape shape' Nothing       = TypeError (Text "The shapes " :<>:
+                                                      ShowType shape :<>:
+                                                      Text " and " :<>:
+                                                      ShowType shape' :<>:
+                                                      Text " are not compatible with matrix multiplication")
+  CheckMatMul _     _      (Just result) = (Reverse result)
+
+type MatMul shape shape' = CheckMatMul shape shape' (ComputeMatMul (Reverse shape) (Reverse shape'))
+
+-- | matmul, see https://pytorch.org/docs/stable/torch.html#torch.matmul
+-- TODO: support cases in which either or both tensors are 1-dimensional
+matmul
+  :: forall dtype shape shape' shape'' n k m
+   . (shape'' ~ MatMul shape shape')
+  => Tensor dtype shape
+  -> Tensor dtype shape'
+  -> Tensor dtype shape''
+matmul a b = UnsafeMkTensor $ D.matmul (toDynamic a) (toDynamic b)
 
 select :: forall dim idx shape dtype shape'.
           (KnownNat dim, KnownNat idx,

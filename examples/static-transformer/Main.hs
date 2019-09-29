@@ -66,13 +66,16 @@ data MultiheadAttention (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) w
     -> MultiheadAttention dtype embedDim numHeads
 
 multiheadAttention
-  :: forall dtype embedDim numHeads batchSize something somethingElse
-   . MultiheadAttention dtype embedDim numHeads
-  -> Tensor dtype '[batchSize, embedDim]
+  :: forall dtype embedDim numHeads headDim seqLen batchSize something somethingElse
+   . (embedDim ~ (headDim * numHeads), Mod (embedDim  * 3) 3 ~ 0, Div (embedDim * 3) 3 ~ embedDim)
+  => MultiheadAttention dtype embedDim numHeads
+  -> Tensor dtype '[seqLen, batchSize, embedDim]
+  -> Tensor dtype '[]
   -> (Tensor dtype '[batchSize, something], Tensor dtype '[batchSize, somethingElse])
-multiheadAttention MultiheadAttention {..} input =
+multiheadAttention MultiheadAttention {..} input scaling =
   let projected = linear inProj input
       HCons q (HCons k (HCons v HNil)) = chunk @3 @1 projected
+      qScaled = mul q scaling
   in undefined
 
 data TransformerLMLayer (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat) where
@@ -102,10 +105,10 @@ data Linear (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) =
 
 linear
   :: Linear dtype inputFeatures outputFeatures
-  -> Tensor dtype '[batchSize, inputFeatures]
-  -> Tensor dtype '[batchSize, outputFeatures]
+  -> Tensor dtype (shape ': [batchSize, inputFeatures])
+  -> Tensor dtype (shape ': [batchSize, outputFeatures])
 linear Linear {..} input =
-  add (mm input (toDependent weight)) (toDependent bias)
+  add (matmul input (toDependent weight)) (toDependent bias)
 
 makeIndependent :: Tensor dtype shape -> IO (Parameter dtype shape)
 makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)

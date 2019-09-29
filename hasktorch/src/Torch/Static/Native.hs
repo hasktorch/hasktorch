@@ -109,11 +109,11 @@ median t = unsafePerformIO $ (cast1 ATen.median_t) t
 cmul :: D.Scalar a => Tensor dtype shape -> a -> Tensor dtype shape
 cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
 
--- |
--- >>> dtype &&& shape $ matmul (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2,4])
--- (Float,[3,4])
-matmul :: Tensor dtype '[n,k] -> Tensor dtype '[k,m] -> Tensor dtype '[n,m]
-matmul a b = unsafePerformIO $ cast2 ATen.mm_tt a b
+-- -- |
+-- -- >>> dtype &&& shape $ matmul (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2,4])
+-- -- (Float,[3,4])
+-- matmul :: Tensor dtype '[n,k] -> Tensor dtype '[k,m] -> Tensor dtype '[n,m]
+-- matmul a b = unsafePerformIO $ cast2 ATen.mm_tt a b
 
 -- |
 -- >>> dtype &&& shape $ erf (ones :: Tensor 'D.Float '[3,2])

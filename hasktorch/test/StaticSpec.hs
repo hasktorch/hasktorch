@@ -176,7 +176,56 @@ spec = do
       let c = ne a b :: Tensor 'D.Bool '[3, 2, 4, 1]
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]]] :: [[[[Bool]]]])
+  describe "matmul" $ do
+    it "returns the dot product if both tensors are 1-dimensional" $ do
+      let a = ones :: Tensor 'D.Float '[3]
+      let b = ones :: Tensor 'D.Float '[3]
+      let c = matmul a b :: Tensor 'D.Float '[]
+      0 `shouldBe` 0
+      -- checkDynamicTensorAttributes c
+      -- D.asValue (toDynamic c) `shouldBe` (3 :: Float)
+    it "returns the matrix-matrix product if both arguments are 2-dimensional" $ do
+      let a = ones :: Tensor 'D.Float '[3, 2]
+      let b = ones :: Tensor 'D.Float '[2, 4]
+      let c = matmul a b :: Tensor 'D.Float '[3, 4]
+      checkDynamicTensorAttributes c
+      D.asValue (toDynamic c) `shouldBe` ([[2,2,2,2],[2,2,2,2],[2,2,2,2]] :: [[Float]])
+    it "returns the matrix-matrix product if the first argument is 1-dimensional and the second argument is 2-dimensional by temporarily adding a 1 to the dimension of the first argument" $ do
+      let a = ones :: Tensor 'D.Float '[3]
+      let b = ones :: Tensor 'D.Float '[3, 4]
+      let c = matmul a b :: Tensor 'D.Float '[4]
+      0 `shouldBe` 0
+      -- checkDynamicTensorAttributes c
+      -- D.asValue (toDynamic c) `shouldBe` ([3,3,3,3] :: [Float])
+    it "returns the matrix-vector product if the first argument is 2-dimensional and the second argument is 1-dimensional" $ do
+      let a = ones :: Tensor 'D.Float '[3, 4]
+      let b = ones :: Tensor 'D.Float '[4]
+      let c = matmul a b :: Tensor 'D.Float '[3]
+      0 `shouldBe` 0
+      -- checkDynamicTensorAttributes c
+      -- D.asValue (toDynamic c) `shouldBe` ([4,4,4] :: [Float])
+    it "returns a batched matrix-matrix product if both arguments are at least 2-dimensional and the batch (i.e. non-matrix) dimensions are broadcastable" $ do
+      let a = ones :: Tensor 'D.Float '[2, 1, 4, 3]
+      let b = ones :: Tensor 'D.Float '[3, 3, 2]
+      let c = matmul a b :: Tensor 'D.Float '[2, 3, 4, 2]
+      0 `shouldBe` 0
+      -- checkDynamicTensorAttributes c
+      -- D.asValue (toDynamic c) `shouldBe` ([[[[3,3],[3,3],[3,3],[3,3]],[[3,3],[3,3],[3,3],[3,3]],[[3,3],[3,3],[3,3],[3,3]]],[[[3,3],[3,3],[3,3],[3,3]],[[3,3],[3,3],[3,3],[3,3]],[[3,3],[3,3],[3,3],[3,3]]]] :: [[[[Float]]]])
+    it "returns a batched matrix-matrix product if the first argument is 1-dimensional and the second argument has more than 2 dimensions" $ do
+      let a = ones :: Tensor 'D.Float '[3]
+      let b = ones :: Tensor 'D.Float '[2, 3, 4]
+      let c = matmul a b :: Tensor 'D.Float '[2, 4]
+      0 `shouldBe` 0
+      -- checkDynamicTensorAttributes c
+      -- D.asValue (toDynamic c) `shouldBe` ([[3,3,3,3],[3,3,3,3]] :: [[Float]])
+    it "returns a batched matrix-vector product if the first argument has more than 2 dimensions and the second argument is 1-dimensional" $ do
+      let a = ones :: Tensor 'D.Float '[2, 3, 4]
+      let b = ones :: Tensor 'D.Float '[4]
+      let c = matmul a b :: Tensor 'D.Float '[2, 3]
+      0 `shouldBe` 0
+      -- checkDynamicTensorAttributes c
+      -- D.asValue (toDynamic c) `shouldBe` ([[4,4,4],[4,4,4]] :: [[Float]])
   describe "eyeSquare" $ it "works" $ do
     let t = eyeSquare @'D.Float @2
-    -- checkDynamicTensorAttributes t
+    checkDynamicTensorAttributes t
     D.asValue (toDynamic t) `shouldBe` ([[1, 0], [0, 1]] :: [[Float]])
