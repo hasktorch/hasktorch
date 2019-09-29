@@ -146,8 +146,11 @@ log10 t = unsafePerformIO $ (cast1 ATen.log10_t) t
 pow :: D.Scalar a => Tensor dtype shape -> a -> Tensor dtype shape
 pow t s = unsafePerformIO $ (cast2 ATen.pow_ts) t s
 
--- relu :: Tensor dtype shape -> Tensor dtype shape
--- relu t = unsafePerformIO $ (cast1 ATen.relu_t) t
+-- |
+-- >>> dtype &&& shape $ relu (ones :: Tensor 'D.Float '[3,2])
+-- (Float,[3,2])
+relu :: Tensor dtype shape -> Tensor dtype shape
+relu t = unsafePerformIO $ (cast1 ATen.relu_t) t
 
 -- |
 -- >>> dtype &&& shape $ selu (ones :: Tensor 'D.Float '[3,2])
@@ -1569,8 +1572,11 @@ neg _input = unsafePerformIO $ (cast1 ATen.neg_t) _input
 round :: Tensor dtype shape -> Tensor dtype shape
 round _input = unsafePerformIO $ (cast1 ATen.round_t) _input
 
--- prelu :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- prelu _input _weight = unsafePerformIO $ (cast2 ATen.prelu_tt) _input _weight
+-- |
+-- >>> dtype &&& shape $ prelu (ones :: Tensor 'D.Float '[3,2]) (ones :: Tensor 'D.Float '[])
+-- (Float,[3,2])
+prelu :: Tensor dtype shape -> Tensor dtype '[] -> Tensor dtype shape
+prelu _input _weight = unsafePerformIO $ (cast2 ATen.prelu_tt) _input _weight
 
 -- |
 -- >>> dtype &&& shape $ round (ones @D.Float @[3,2])
