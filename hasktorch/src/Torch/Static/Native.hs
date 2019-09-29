@@ -285,6 +285,11 @@ type family Square (shape :: [Nat]) :: [Nat] where
     Square (b:n:n:'[]) = '[b,n,n]
     Square _  = TypeError (Text "This shape must be square matrix or batch + square matrix.")
 
+type family VectorOfSquare (shape :: [Nat]) :: [Nat] where
+    VectorOfSquare (n:n:'[]) = '[n]
+    VectorOfSquare (b:n:n:'[]) = '[b,n]
+    VectorOfSquare _  = TypeError (Text "This shape must be square matrix or batch + square matrix.")
+
 type family FstDim (shape :: [Nat]) :: Nat where
     FstDim (n:m:'[]) = n
     FstDim (b:n:m:'[]) = n
@@ -300,9 +305,19 @@ type family FstDim (shape :: [Nat]) :: Nat where
 inverse :: Tensor dtype shape -> Tensor dtype (Square shape)
 inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 
--- symeig :: Tensor dtype shape -> Bool -> Tri -> (Tensor dtype shape, Tensor dtype shape)
--- symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
---   where boolUpper = isUpper upper
+-- |
+-- >>> (eigenVals,eigenVecs) = symeig (ones :: Tensor 'D.Float '[3,2,2]) True Upper
+-- >>> dtype &&& shape $ eigenVals
+-- (Float,[3,2])
+-- >>> :t eigenVals
+-- eigenVals :: Tensor 'D.Float '[3, 2]
+-- >>> dtype &&& shape $ eigenVecs
+-- (Float,[3,2,2])
+-- >>> :t eigenVecs
+-- eigenVecs :: Tensor 'D.Float '[3, 2, 2]
+symeig :: Tensor dtype shape -> Bool -> Tri -> (Tensor dtype (VectorOfSquare shape), Tensor dtype (Square shape))
+symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
+  where boolUpper = isUpper upper
 
 -- eig :: Tensor dtype shape -> Bool -> (Tensor dtype shape, Tensor dtype shape)
 -- eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
