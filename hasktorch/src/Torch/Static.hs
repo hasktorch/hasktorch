@@ -379,9 +379,8 @@ type family CheckMatMul (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat
 type MatMul shape shape' = CheckMatMul shape shape' (ComputeMatMul (Reverse shape) (Reverse shape'))
 
 -- | matmul, see https://pytorch.org/docs/stable/torch.html#torch.matmul
--- TODO: support cases in which either or both tensors are 1-dimensional
 matmul
-  :: forall dtype shape shape' shape'' n k m
+  :: forall dtype shape shape' shape''
    . (shape'' ~ MatMul shape shape')
   => Tensor dtype shape
   -> Tensor dtype shape'

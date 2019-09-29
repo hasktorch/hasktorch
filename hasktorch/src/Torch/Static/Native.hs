@@ -109,12 +109,6 @@ median t = unsafePerformIO $ (cast1 ATen.median_t) t
 cmul :: D.Scalar a => Tensor dtype shape -> a -> Tensor dtype shape
 cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
 
--- -- |
--- -- >>> dtype &&& shape $ matmul (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2,4])
--- -- (Float,[3,4])
--- matmul :: Tensor dtype '[n,k] -> Tensor dtype '[k,m] -> Tensor dtype '[n,m]
--- matmul a b = unsafePerformIO $ cast2 ATen.mm_tt a b
-
 -- |
 -- >>> dtype &&& shape $ erf (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
@@ -1197,8 +1191,11 @@ max_pool3d _self =
 -- miopen_rnn :: Tensor dtype shape -> [Tensor dtype shape] -> Int -> Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> Int -> Bool -> Double -> Bool -> Bool -> [Int] -> Tensor dtype shape -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape,Tensor dtype shape,Tensor dtype shape)
 -- miopen_rnn _input _weight _weight_stride0 _hx _cx _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state = unsafePerformIO $ (cast14 ATen.miopen_rnn_tllttlllbdbblt) _input _weight _weight_stride0 _hx _cx _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state
 
--- mm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- mm _self _mat2 = unsafePerformIO $ (cast2 ATen.mm_tt) _self _mat2
+-- | mm
+-- >>> dtype &&& shape $ mm (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2,4])
+-- (Float,[3,4])
+mm :: Tensor dtype '[n,k] -> Tensor dtype '[k,m] -> Tensor dtype '[n,m]
+mm a b = unsafePerformIO $ cast2 ATen.mm_tt a b
 
 -- mode :: Tensor dtype shape -> Int -> Bool -> (Tensor dtype shape,Tensor dtype shape)
 -- mode _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.mode_tlb) _self _dim _keepdim
