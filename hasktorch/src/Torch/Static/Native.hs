@@ -315,12 +315,52 @@ inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t
 -- (Float,[3,2,2])
 -- >>> :t eigenVecs
 -- eigenVecs :: Tensor 'D.Float '[3, 2, 2]
+-- >>> (eigenVals,eigenVecs) = symeig (ones :: Tensor 'D.Float '[3,2,2]) False Upper
+-- >>> dtype &&& shape $ eigenVals
+-- (Float,[3,2])
+-- >>> dtype &&& shape $ eigenVecs
+-- (Float,[3,2,2])
 symeig :: Tensor dtype shape -> Bool -> Tri -> (Tensor dtype (VectorOfSquare shape), Tensor dtype (Square shape))
 symeig t eigenvectors upper = unsafePerformIO $ (cast3 ATen.symeig_tbb) t eigenvectors boolUpper
   where boolUpper = isUpper upper
 
--- eig :: Tensor dtype shape -> Bool -> (Tensor dtype shape, Tensor dtype shape)
--- eig t eigenvectors = unsafePerformIO $ (cast2 ATen.eig_tb) t eigenvectors
+data EigenVectors = EnableEigenVectors | DisableEigenVectors
+
+class KnownEigenVectors a where
+  enableEigenVectors :: Bool
+
+instance KnownEigenVectors EnableEigenVectors where
+  enableEigenVectors = True
+instance KnownEigenVectors DisableEigenVectors where
+  enableEigenVectors = False
+
+type family ConditionalEigenVectors (eigenvectors :: EigenVectors) (n:: Nat) :: [Nat] where
+  ConditionalEigenVectors EnableEigenVectors n = '[n,n]
+  ConditionalEigenVectors DisableEigenVectors _ = '[0]
+
+-- |
+-- >>> (eigenVals,eigenVecs) = eig @EnableEigenVectors (ones :: Tensor 'D.Float '[3,3])
+-- >>> dtype &&& shape $ eigenVals
+-- (Float,[3,2])
+-- >>> :t eigenVals
+-- eigenVals :: Tensor 'D.Float '[3, 2]
+-- >>> dtype &&& shape $ eigenVecs
+-- (Float,[3,3])
+-- >>> :t eigenVecs
+-- eigenVecs :: Tensor 'D.Float '[3, 3]
+-- >>> (eigenVals,eigenVecs) = eig @DisableEigenVectors (ones :: Tensor 'D.Float '[3,3])
+-- >>> dtype &&& shape $ eigenVals
+-- (Float,[3,3])
+-- >>> dtype &&& shape $ eigenVecs
+-- (Float,[0])
+-- >>> :t eigenVecs
+-- eigenVecs :: Tensor 'D.Float '[0]
+eig
+  :: forall eigenvectors n dtype
+   . (KnownNat n, KnownEigenVectors eigenvectors)
+  => Tensor dtype '[n,n]
+  -> (Tensor dtype '[n,2], Tensor dtype (ConditionalEigenVectors eigenvectors n))
+eig t = unsafePerformIO $ (cast2 ATen.eig_tb) t (enableEigenVectors @eigenvectors)
 
 -- svd :: Tensor dtype shape -> Bool -> Bool -> (Tensor dtype shape, Tensor dtype shape, Tensor dtype shape)
 -- svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
