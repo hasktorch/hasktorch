@@ -29,7 +29,7 @@ jobs:
       - run: stack test codegen --jobs 2
       - run: stack test libtorch-ffi --jobs 2
       - run: stack test hasktorch --jobs 2
-      - run: stack exec xor_mlp
+      - run: stack exec xor-mlp
   cabal-build:
     docker:
       - image: "ubuntu:18.04"
@@ -58,7 +58,7 @@ jobs:
       - run: cabal new-test all --jobs=2 --write-ghc-environment-files=always
       - run: cabal new-exec codegen-exe
       - run: cabal new-test all --jobs=2 --write-ghc-environment-files=always
-      - run: cabal exec xor_mlp
+      - run: cabal exec xor-mlp
   osx-stack-build:
     macos:
       xcode: "10.2.1"
@@ -87,7 +87,7 @@ jobs:
       - run: stack test --jobs 2
       - run: stack exec codegen-exe
       - run: stack test --jobs 2
-      - run: stack exec xor_mlp
+      - run: stack exec xor-mlp
       - run: stack exec regression
       - run: stack exec gaussian_process
       - run: stack exec vae
