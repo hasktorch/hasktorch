@@ -107,7 +107,7 @@ workflows:
   version: 2
   build:
     jobs:
-      - "stack-build"
-      - "cabal-build"
+#      - "stack-build"
       - "osx-stack-build"
-      - "nix-build"
+#      - "cabal-build"
+#      - "nix-build"

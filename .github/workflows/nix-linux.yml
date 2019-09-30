@@ -1,11 +1,11 @@
-name: Haskell CI
+name: nix-linux
 
 on: [push, pull_request]
 
 jobs:
   build:
 
-    runs-on: macOS-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - name: Setup nix
@@ -14,10 +14,10 @@ jobs:
         curl https://nixos.org/nix/install | sh
     - name: Setup cachix
       run: |
-        . /Users/runner/.nix-profile/etc/profile.d/nix.sh
+        . ~/.nix-profile/etc/profile.d/nix.sh
         nix-env -iA cachix -f https://cachix.org/api/v1/install
     - name: Build
       run: |
-        . /Users/runner/.nix-profile/etc/profile.d/nix.sh
+        . ~/.nix-profile/etc/profile.d/nix.sh
         cachix use pytorch-world
         nix-build
