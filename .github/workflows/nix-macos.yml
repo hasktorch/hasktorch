@@ -1,0 +1,23 @@
+name: nix-macos
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup nix
+      run: |
+        git submodule init && git submodule update
+        curl https://nixos.org/nix/install | sh
+    - name: Setup cachix
+      run: |
+        . /Users/runner/.nix-profile/etc/profile.d/nix.sh
+        nix-env -iA cachix -f https://cachix.org/api/v1/install
+    - name: Build
+      run: |
+        . /Users/runner/.nix-profile/etc/profile.d/nix.sh
+        cachix use pytorch-world
+        nix-build
