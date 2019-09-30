@@ -89,7 +89,7 @@ jobs:
       - run: stack test --jobs 2
       - run: stack exec xor-mlp
       - run: stack exec regression
-      - run: stack exec gaussian_process
+      - run: stack exec gaussian-process
       - run: stack exec vae
   nix-build:
     docker:
