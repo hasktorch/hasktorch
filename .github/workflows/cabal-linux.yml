@@ -33,4 +33,4 @@ jobs:
         source setenv
         cabal new-test all --jobs=2 --write-ghc-environment-files=always
         cabal new-exec codegen-exe
-        cabal exec xor_mlp
+        cabal exec xor-mlp
