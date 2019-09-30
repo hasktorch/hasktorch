@@ -71,8 +71,9 @@ data MultiheadAttention (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) w
     -> MultiheadAttention dtype embedDim numHeads
 
 multiheadAttention
-  :: forall dtype embedDim numHeads headDim seqLen batchSize something somethingElse
-   . ( embedDim ~ (headDim * numHeads)
+  :: forall dtype embedDim numHeads headDim seqLen batchSize
+   . ( 1 <= numHeads
+     , embedDim ~ (headDim * numHeads)
      , Mod (embedDim * 3) 3 ~ 0
      , Div (embedDim * 3) 3 ~ embedDim
      , KnownDType dtype
@@ -85,22 +86,28 @@ multiheadAttention
   => MultiheadAttention dtype embedDim numHeads
   -> Dropout
   -> Tensor dtype '[seqLen, batchSize, embedDim]
-  -> Tensor dtype '[]
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim], Tensor dtype '[batchSize, seqLen, seqLen])
-multiheadAttention MultiheadAttention {..} Dropout {..} input scaling = do
-  let projected = linear inProj input
-      HCons q (HCons k (HCons v HNil)) = chunk @3 @2 projected
-      qScaled = mul q scaling
-      f = transpose @0 @1 . reshape @[seqLen, batchSize * numHeads, headDim]
-      q' = f qScaled
-      k' = f k
-      v' = f v
-      attnWeights = matmul q' $ transpose @1 @2 k'
+multiheadAttention MultiheadAttention {..} Dropout {..} input = do
+  let HCons q (HCons k (HCons v HNil)) = chunk @3 @2 . linear inProj $ input
+      scaling     = pow (-0.5) (natValI @headDim) :: Tensor dtype '[]
+      f           = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
+      attnWeights = ((. (transpose @1 @2 . f)) . matmul . f . mul scaling) q k
+  -- TODO: mask future timesteps
+  -- TODO: apply key padding mask
   attnWeights' <- dropout dropoutProb dropoutTrain . softmax @2 $ attnWeights
-  let attn'' = linear outProj . reshape @[seqLen, batchSize, embedDim] . transpose @0 @1 . matmul attnWeights' $ v'
-      attnWeights'' = reshape @[batchSize, numHeads, seqLen, seqLen] attnWeights'
-      attnWeights''' = sumDim @1 attnWeights''
-  return (attn'', attnWeights''')
+  let attn =
+        linear outProj
+          . reshape @'[seqLen, batchSize, embedDim]
+          . transpose @0 @1
+          . matmul attnWeights'
+          . f
+          $ v
+      avgAttnWeights =
+        mul (pow (-1) (natValI @numHeads) :: Tensor dtype '[])
+          . sumDim @1
+          . reshape @'[batchSize, numHeads, seqLen, seqLen]
+          $ attnWeights'
+  return (attn, avgAttnWeights)
 
 data Dropout where
   Dropout
