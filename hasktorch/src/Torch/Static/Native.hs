@@ -350,7 +350,7 @@ type family ConditionalEigenVectors (eigenvectors :: EigenVectors) (n:: Nat) :: 
 -- eigenVecs :: Tensor 'D.Float '[3, 3]
 -- >>> (eigenVals,eigenVecs) = eig @DisableEigenVectors (ones :: Tensor 'D.Float '[3,3])
 -- >>> dtype &&& shape $ eigenVals
--- (Float,[3,3])
+-- (Float,[3,2])
 -- >>> dtype &&& shape $ eigenVecs
 -- (Float,[0])
 -- >>> :t eigenVecs
