@@ -19,7 +19,7 @@ import qualified Torch.Tensor as D
 import qualified Torch.Autograd as A
 import qualified Torch.DType as DType
 import Torch.Static
-import Torch.Static.Native
+import Torch.Static.Native hiding (linear)
 
 --------------------------------------------------------------------------------
 

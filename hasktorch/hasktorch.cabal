@@ -43,6 +43,7 @@ library
                     , mtl
                     , safe-exceptions
                     , reflection
+                    , singletons
 
 test-suite spec
   type:               exitcode-stdio-1.0

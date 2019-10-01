@@ -223,3 +223,7 @@ spec = do
     let t = eyeSquare @'D.Float @2
     checkDynamicTensorAttributes t
     D.asValue (toDynamic t) `shouldBe` ([[1, 0], [0, 1]] :: [[Float]])
+  describe "maxPool2d" $ it "works" $ do
+    let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones::Tensor 'D.Float '[1,3,4,5])
+    checkDynamicTensorAttributes c
+
