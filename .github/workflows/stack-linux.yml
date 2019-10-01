@@ -30,4 +30,4 @@ jobs:
         stack test libtorch-ffi
         stack test hasktorch
         stack exec codegen-exe
-        stack exec xor_mlp
+        stack exec xor-mlp

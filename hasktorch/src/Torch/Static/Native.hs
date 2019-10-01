@@ -20,12 +20,13 @@ module Torch.Static.Native where
 import Prelude hiding (all, any, sin, sinh, cos, cosh, tan, tanh, asin, asinh, acos, acosh, atan, atanh, abs, max, min, exp, log, round)
 import Data.Finite
 import qualified Data.Int as I
-import Data.Kind (Constraint)
+import Data.Kind (Constraint, Type)
 import Data.Maybe
 import Data.Proxy
 import Data.Reflection
 import Control.Arrow ((&&&))
 import GHC.TypeLits
+import GHC.TypeLits.Extra
 import System.IO.Unsafe
 
 import Foreign.ForeignPtr
@@ -107,12 +108,6 @@ median t = unsafePerformIO $ (cast1 ATen.median_t) t
 
 cmul :: D.Scalar a => Tensor dtype shape -> a -> Tensor dtype shape
 cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
-
--- |
--- >>> dtype &&& shape $ matmul (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2,4])
--- (Float,[3,4])
-matmul :: Tensor dtype '[n,k] -> Tensor dtype '[k,m] -> Tensor dtype '[n,m]
-matmul a b = unsafePerformIO $ cast2 ATen.mm_tt a b
 
 -- |
 -- >>> dtype &&& shape $ erf (ones :: Tensor 'D.Float '[3,2])
@@ -257,14 +252,29 @@ binary_cross_entropy t target weight = unsafePerformIO $ (cast4 ATen.binary_cros
 mse_loss :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype '[]
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 
--- |
--- >>> dtype &&& shape $ log_softmax (ones :: Tensor 'D.Float '[2,2]) 0
+-- | softmax
+-- >>> dtype &&& shape $ softmax @0 (ones @D.Float @[2,2])
 -- (Float,[2,2])
--- >>> dtype &&& shape $ log_softmax (ones :: Tensor 'D.Float '[2,2]) 1
+-- >>> dtype &&& shape $ softmax @1 (ones @D.Float @[2,2])
 -- (Float,[2,2])
-log_softmax :: Tensor dtype shape -> Int -> Tensor dtype shape
-log_softmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
+softmax
+  :: forall dim dtype shape
+   . (KnownNat dim, KnownDType dtype, DimOutOfBoundCheck shape dim)
+  => Tensor dtype shape
+  -> Tensor dtype shape
+softmax a = unsafePerformIO $ cast3 ATen.softmax_tls a (natValI @dim) (dtypeVal @dtype)
 
+-- | logSoftmax
+-- >>> dtype &&& shape $ logSoftmax @0 (ones @D.Float @[2,2])
+-- (Float,[2,2])
+-- >>> dtype &&& shape $ logSoftmax @1 (ones @D.Float @[2,2])
+-- (Float,[2,2])
+logSoftmax
+  :: forall dim dtype shape
+   . (KnownNat dim, KnownDType dtype, DimOutOfBoundCheck shape dim)
+  => Tensor dtype shape
+  -> Tensor dtype shape
+logSoftmax a = unsafePerformIO $ cast3 ATen.log_softmax_tls a (natValI @dim) (dtypeVal @dtype)
 
 type family Square (shape :: [Nat]) :: [Nat] where
     Square (n:n:'[]) = '[n,n]
@@ -452,8 +462,28 @@ any' t = unsafePerformIO $ cast3 ATen.any_tlb t (natValI @dim) (keepOrDropDimVal
 
 ---
 
--- dropout :: Tensor dtype shape -> Double -> Bool -> Tensor dtype shape
--- dropout _input _p _train = unsafePerformIO $ (cast3 ATen.dropout_tdb) _input _p _train
+-- | dropout
+-- >>> t = ones @D.Float @[3,2]
+-- >>> t' <- dropout 0.5 False t
+-- >>> dtype &&& shape $ t'
+-- (Float,[3,2])
+-- >>> t'' <- dropout 0.5 False t
+-- >>> t ==. t''
+-- Tensor Bool [3,2] [[ 1,  1],
+--                    [ 1,  1],
+--                    [ 1,  1]]
+-- >>> t''' <- dropout 0.0 True t
+-- >>> t ==. t'''
+-- Tensor Bool [3,2] [[ 1,  1],
+--                    [ 1,  1],
+--                    [ 1,  1]]
+-- >>> t'''' <- dropout 1.0 True t
+-- >>> t''''
+-- Tensor Float [3,2] [[ 0.0000,  0.0000],
+--                     [ 0.0000,  0.0000],
+--                     [ 0.0000,  0.0000]]
+dropout :: Double -> Bool -> Tensor dtype shape -> IO (Tensor dtype shape)
+dropout p train t = cast3 ATen.dropout_tdb t p train
 
 -- feature_dropout :: Tensor dtype shape -> Double -> Bool -> Tensor dtype shape
 -- feature_dropout _input _p _train = unsafePerformIO $ (cast3 ATen.feature_dropout_tdb) _input _p _train
@@ -464,7 +494,7 @@ any' t = unsafePerformIO $ cast3 ATen.any_tlb t (natValI @dim) (keepOrDropDimVal
 -- feature_alpha_dropout :: Tensor dtype shape -> Double -> Bool -> Tensor dtype shape
 -- feature_alpha_dropout _input _p _train = unsafePerformIO $ (cast3 ATen.feature_alpha_dropout_tdb) _input _p _train
 
--- |
+-- | acos
 -- >>> dtype &&& shape $ acos (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 acos :: Tensor dtype shape -> Tensor dtype shape
@@ -589,8 +619,112 @@ atan _self = unsafePerformIO $ (cast1 ATen.atan_t) _self
 -- chain_matmul :: [Tensor dtype shape] -> Tensor dtype shape
 -- chain_matmul _matrices = unsafePerformIO $ (cast1 ATen.chain_matmul_l) _matrices
 
--- chunk :: Tensor dtype shape -> Int -> Int -> [Tensor dtype shape]
--- chunk _self _chunks _dim = unsafePerformIO $ (cast3 ATen.chunk_tll) _self _chunks _dim
+type family ChunkImpl (chunkShapes :: Maybe [[Nat]]) (dtype :: D.DType) :: Maybe a where
+  ChunkImpl (Just '[]) _ = Just '[]
+  ChunkImpl (Just (shape ': shapes)) dtype = AppendToMaybe (Tensor dtype shape) (ChunkImpl (Just shapes) dtype)
+  ChunkImpl Nothing _ = Nothing
+
+type family ChunkCheck (shape :: [Nat]) (dim :: Nat) (result :: Maybe a) :: a where
+  ChunkCheck shape dim Nothing = DimOutOfBound shape dim
+  ChunkCheck _ _ (Just result) = result
+
+type family ComputeChunksChunkGo (n' :: Nat) (r :: Nat) (cmp :: Ordering) (cmp' :: Ordering) :: [Nat] where
+  ComputeChunksChunkGo n' r GT _  = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
+  ComputeChunksChunkGo n' r EQ _  = n' ': ComputeChunksChunkGo n' (r - n') (CmpNat (r - n') n') (CmpNat (r - n') 0)
+  ComputeChunksChunkGo n' r _  GT = '[r]
+  ComputeChunksChunkGo n' _ _  _  = '[]
+
+type family ComputeChunksChunkGo0 (n' :: Nat) (chunks :: Nat) :: [Nat] where
+  ComputeChunksChunkGo0 _  0      = '[]
+  ComputeChunksChunkGo0 n' chunks = n' ': (ComputeChunksChunkGo0 n' (chunks - 1))
+
+type family ComputeChunks (n :: Maybe Nat) (chunks :: Nat) :: Maybe [Nat] where
+  -- ComputeChunks (Just 0) 0      = Just '[]
+  -- ComputeChunks (Just 0) chunks = AppendToMaybe 0 (ComputeChunks (Just 0) (chunks - 1))
+  -- ComputeChunks (Just n) chunks = Just (ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0))
+  -- ComputeChunks Nothing  _      = Nothing
+  ComputeChunks (Just n) chunks = Just (ComputeChunks' n chunks (Mod n chunks))
+  ComputeChunks Nothing  _      = Nothing
+
+type family ComputeChunks' (n :: Nat) (chunks :: Nat) (m :: Nat) :: [Nat] where
+  ComputeChunks' n chunks 0 = ComputeChunksChunkGo0 (Div n chunks) chunks
+  ComputeChunks' n chunks _ = ComputeChunksChunkGo (Div (n + chunks - 1) chunks) n (CmpNat n (Div (n + chunks - 1) chunks)) (CmpNat n 0)
+
+type family ChunkShapesImpl (chunks :: Maybe [Nat]) (dim :: Nat) (shape :: [Nat]) :: Maybe [[Nat]] where
+  ChunkShapesImpl (Just (n ': ns)) dim shape = AppendToMaybe' (ReplaceDim dim shape n) (ChunkShapesImpl (Just ns) dim shape)
+  ChunkShapesImpl (Just '[])       _   _     = Just '[]
+  ChunkShapesImpl Nothing          _   _     = Nothing
+
+type ChunkShapes chunks dim shape = ChunkShapesImpl (ComputeChunks (ExtractDim dim shape) chunks) dim shape
+
+type Chunk chunks dim dtype shape = ChunkCheck shape dim (ChunkImpl (ChunkShapes chunks dim shape) dtype)
+
+proxyFun :: forall y chunks dummy . (y ~ (chunks * dummy)) => Proxy y -> Proxy chunks -> ()
+proxyFun = const . const ()
+
+-- test :: Proxy (Mod (chunks * n) chunks) -> Proxy 0
+-- test = id
+
+-- test :: (1 <= a) => Proxy (Div (n * a) a) -> Proxy n
+-- test = id
+
+foo
+  :: forall dtype batchSize n
+   . (Mod (2 * n) 2 ~ 0, Div (2 * n) 2 ~ n)
+  => Tensor dtype '[batchSize, 2 * n]
+  -> HList '[Tensor dtype '[batchSize, n], Tensor dtype '[batchSize, n]]
+foo = chunk @2 @1
+
+-- | chunk
+-- >>> :type chunk @3 @1 (ones @D.Float @[2, 2])
+-- chunk @3 @1 (ones @D.Float @[2, 2])
+--   :: HList '[Tensor 'D.Float '[2, 1], Tensor 'D.Float '[2, 1]]
+-- >>> HCons t0 (HCons t1 HNil) = chunk @3 @1 (ones @D.Float @[2, 2])
+-- >>> dtype &&& shape $ t0
+-- (Float,[2,1])
+-- >>> dtype &&& shape $ t1
+-- (Float,[2,1])
+-- >>> :type chunk @3 @1 (ones @D.Float @'[1, 0, 3])
+-- chunk @3 @1 (ones @D.Float @'[1, 0, 3])
+--   :: HList
+--        '[Tensor 'D.Float '[1, 0, 3], Tensor 'D.Float '[1, 0, 3],
+--          Tensor 'D.Float '[1, 0, 3]]
+-- >>> HCons t0 (HCons t1 (HCons t2 HNil)) = chunk @3 @1 (ones @D.Float @'[1, 0, 3])
+-- >>> dtype &&& shape $ t0
+-- (Float,[1,0,3])
+-- >>> dtype &&& shape $ t1
+-- (Float,[1,0,3])
+-- >>> dtype &&& shape $ t2
+-- (Float,[1,0,3])
+-- >>> :type chunk @6 @0 (ones @D.Float @[19, 4])
+-- chunk @6 @0 (ones @D.Float @[19, 4])
+--   :: HList
+--        '[Tensor 'D.Float '[4, 4], Tensor 'D.Float '[4, 4],
+--          Tensor 'D.Float '[4, 4], Tensor 'D.Float '[4, 4],
+--          Tensor 'D.Float '[3, 4]]
+-- >>> HCons t0 (HCons t1 (HCons t2 (HCons t3 (HCons t4 HNil)))) = chunk @6 @0 (ones @D.Float @[19, 4])
+-- >>> dtype &&& shape $ t0
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ t1
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ t2
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ t3
+-- (Float,[4,4])
+-- >>> dtype &&& shape $ t4
+-- (Float,[3,4])
+chunk
+  :: forall chunks dim dtype shape tensorChunks
+   . ( KnownNat chunks
+     , KnownNat dim
+     , tensorChunks ~ Chunk chunks dim dtype shape
+     , HFoldrM IO TensorListFolds [D.ATenTensor] tensorChunks
+     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorChunks)
+     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensorChunks) tensorChunks
+     )
+  => Tensor dtype shape
+  -> HList tensorChunks
+chunk input = unsafePerformIO $ cast3 ATen.chunk_tll input (natValI @chunks::Int) (natValI @dim::Int)
 
 -- |
 -- >>> dtype &&& shape $ clamp (ones :: Tensor 'D.Float '[3,2]) 0 1
@@ -1092,8 +1226,11 @@ max_pool3d _self =
 -- miopen_rnn :: Tensor dtype shape -> [Tensor dtype shape] -> Int -> Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> Int -> Bool -> Double -> Bool -> Bool -> [Int] -> Tensor dtype shape -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape,Tensor dtype shape,Tensor dtype shape)
 -- miopen_rnn _input _weight _weight_stride0 _hx _cx _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state = unsafePerformIO $ (cast14 ATen.miopen_rnn_tllttlllbdbblt) _input _weight _weight_stride0 _hx _cx _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state
 
--- mm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- mm _self _mat2 = unsafePerformIO $ (cast2 ATen.mm_tt) _self _mat2
+-- | mm
+-- >>> dtype &&& shape $ mm (ones :: Tensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2,4])
+-- (Float,[3,4])
+mm :: Tensor dtype '[n,k] -> Tensor dtype '[k,m] -> Tensor dtype '[n,m]
+mm a b = unsafePerformIO $ cast2 ATen.mm_tt a b
 
 -- mode :: Tensor dtype shape -> Int -> Bool -> (Tensor dtype shape,Tensor dtype shape)
 -- mode _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.mode_tlb) _self _dim _keepdim
@@ -1176,8 +1313,11 @@ round _self = unsafePerformIO $ (cast1 ATen.round_t) _self
 -- prelu :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 -- prelu _self _weight = unsafePerformIO $ (cast2 ATen.prelu_tt) _self _weight
 
--- gelu :: Tensor dtype shape -> Tensor dtype shape
--- gelu _self = unsafePerformIO $ (cast1 ATen.gelu_t) _self
+-- |
+-- >>> dtype &&& shape $ round (ones @D.Float @[3,2])
+-- (Float,[3,2])
+gelu :: Tensor dtype shape -> Tensor dtype shape
+gelu t = unsafePerformIO $ cast1 ATen.gelu_t t
 
 -- hardshrink :: Tensor dtype shape -> Float -> Tensor dtype shape
 -- hardshrink _self _lambd = unsafePerformIO $ (cast2 ATen.hardshrink_ts) _self _lambd
@@ -1535,30 +1675,30 @@ l1_loss _self _target = unsafePerformIO $ (cast3 ATen.l1_loss_ttl) _self _target
 -- >>> input <- randn @'D.Float @[3, 5]
 -- >>> target = fromJust [1, 0, 4] :: Tensor 'D.Int64 '[3]
 -- >>> weight = ones @'D.Float @'[5]
--- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[] (logSoftmax @1 input) target weight (-100)
 -- (Float,[3])
--- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[] (logSoftmax @1 input) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @'D.Float @[3, 5, 2]
 -- >>> target = fromJust [[1, 1], [0, 1], [4, 0]] :: Tensor 'D.Int64 '[3, 2]
 -- >>> weight = ones @'D.Float @'[5]
--- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @'[2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[3,2])
--- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @'[2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @'D.Float @[3, 5, 1, 2]
 -- >>> target = fromJust [[[1, 1]], [[0, 1]], [[4, 0]]] :: Tensor 'D.Int64 '[3, 1, 2]
 -- >>> weight = ones @'D.Float @'[5]
--- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[1, 2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[3,1,2])
--- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @[1, 2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @[1, 2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[])
 -- >>> input <- randn @'D.Float @[3, 5, 2, 1, 2]
 -- >>> target = fromJust [[[[1, 1]], [[0, 2]]], [[[0, 1]], [[1, 0]]], [[[4, 0]], [[1, 2]]]] :: Tensor 'D.Int64 '[3, 2, 1, 2]
 -- >>> weight = ones @'D.Float @'[5]
--- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[2, 1, 2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceNone @'D.Float @3 @5 @[2, 1, 2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[3,2,1,2])
--- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @[2, 1, 2] (log_softmax input 1) target weight (-100)
+-- >>> dtype &&& shape $ nll_loss @ReduceMean @'D.Float @3 @5 @[2, 1, 2] (logSoftmax @1 input) target weight (-100)
 -- (Float,[])
 nll_loss
   :: forall reduction dtype n c ds
