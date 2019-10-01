@@ -366,9 +366,6 @@ ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
 
 (/=.) = ne
 
-relu :: Tensor dtype shape -> Tensor dtype shape
-relu t = UnsafeMkTensor $ D.relu (toDynamic t)
-
 type family ComputeMatMul (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
   ComputeMatMul (k ': '[])                         (k ': '[])                          = Just '[]
   ComputeMatMul (k ': '[])                         (m ': k ': reversedBroadcastShape') = AppendToMaybe m (ComputeBroadcast '[] reversedBroadcastShape')
