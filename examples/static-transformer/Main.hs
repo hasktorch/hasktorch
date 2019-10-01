@@ -65,34 +65,34 @@ instance A.Parameterized (Parameter dtype shape) where
 data MultiheadAttention (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) where
   MultiheadAttention
     :: (1 <= numHeads)
-    => { inProj :: Linear dtype embedDim (embedDim * 3)
-       , outProj :: Linear dtype embedDim embedDim
+    => { mhInProj :: Linear dtype embedDim (embedDim * 3)
+       , mhOutProj :: Linear dtype embedDim embedDim
+       , mhDropout :: Dropout
        }
     -> MultiheadAttention dtype embedDim numHeads
 
 multiheadAttention
-  :: forall dtype embedDim numHeads headDim seqLen batchSize
+  :: forall dtype embedDim numHeads seqLen batchSize headDim
    . ( 1 <= numHeads
      , embedDim ~ (headDim * numHeads)
      , Mod (embedDim * 3) 3 ~ 0
      , Div (embedDim * 3) 3 ~ embedDim
      , KnownDType dtype
-     , All KnownNat [embedDim, numHeads, headDim, seqLen, batchSize]
+     , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
      )
   => MultiheadAttention dtype embedDim numHeads
-  -> Dropout
   -> Tensor dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim], Tensor dtype '[batchSize, seqLen, seqLen])
-multiheadAttention MultiheadAttention {..} Dropout {..} input = do
-  let q :. k :. v :. HNil = chunk @3 @2 . linear inProj $ input
+multiheadAttention MultiheadAttention {..} input = do
+  let q :. k :. v :. HNil = chunk @3 @2 . linear mhInProj $ input
       scaling     = pow (-0.5) (natValI @headDim) :: Tensor dtype '[]
       f           = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
       attnWeights = (f . mul scaling $ q) `matmul` (transpose  @1 @2 . f $ k)
   -- TODO: mask future timesteps
   -- TODO: apply key padding mask
-  attnWeights' <- dropout dropoutProb dropoutTrain . softmax @2 $ attnWeights
+  attnWeights' <- Main.dropout mhDropout . softmax @2 $ attnWeights
   let attn =
-        linear outProj
+        linear mhOutProj
           . reshape @'[seqLen, batchSize, embedDim]
           . transpose @0 @1
           . matmul attnWeights'
@@ -112,22 +112,61 @@ data Dropout where
        }
     -> Dropout
 
+dropout :: Dropout -> Tensor dtype shape -> IO (Tensor dtype shape)
+dropout Dropout {..} = Torch.Static.Native.dropout dropoutProb dropoutTrain
+
 data TransformerLMLayer (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat) where
   TransformerLMLayer
-    :: { selfAttention :: MultiheadAttention dtype embedDim numHeads
-       , fc0 :: Linear dtype embedDim ffnDim
-       , fc1 :: Linear dtype ffnDim embedDim
-       , ln0 :: LayerNorm dtype '[embedDim]
-       , ln1 :: LayerNorm dtype '[embedDim]
+    :: { tSelfAttention :: MultiheadAttention dtype embedDim numHeads
+       , tFc0 :: Linear dtype embedDim ffnDim
+       , tFc1 :: Linear dtype ffnDim embedDim
+       , tLn0 :: LayerNorm dtype '[embedDim]
+       , tLn1 :: LayerNorm dtype '[embedDim]
+       , tDropout :: Dropout
+       , tActivation :: forall shape . Tensor dtype shape -> Tensor dtype shape
        }
     -> TransformerLMLayer dtype embedDim numHeads ffnDim
+
+transformerLMLayer
+  :: forall dtype embedDim numHeads seqLen batchSize ffnDim headDim
+   . ( 1 <= numHeads
+     , embedDim ~ (headDim * numHeads)
+     , Mod (embedDim * 3) 3 ~ 0
+     , Div (embedDim * 3) 3 ~ embedDim
+     , KnownDType dtype
+     , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
+     , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
+     )
+  => TransformerLMLayer dtype embedDim numHeads ffnDim
+  -> Tensor dtype '[seqLen, batchSize, embedDim]
+  -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
+transformerLMLayer TransformerLMLayer {..} input = do
+  (attn, _) <- multiheadAttention tSelfAttention input
+  x         <- Main.layerNorm tLn0 . add input <$> Main.dropout tDropout attn
+  x'        <- Main.dropout tDropout . tActivation . linear tFc0 $ x
+  x''       <- Main.dropout tDropout . tActivation . linear tFc1 $ x'
+  return $ Main.layerNorm tLn1 (x'' `add` x)
 
 data LayerNorm (dtype :: D.DType) (normalizedShape :: [Nat]) where
   LayerNorm
     :: { layerNormWeight :: Parameter dtype normalizedShape
        , layerNormBias :: Parameter dtype normalizedShape
+       , layerNormEps :: Double
        }
     -> LayerNorm dtype normalizedShape
+
+layerNorm
+  :: forall normalizedShape dtype shape
+   . ( EndsWith shape normalizedShape
+     , KnownShape normalizedShape
+     )
+  => LayerNorm dtype normalizedShape
+  -> Tensor dtype shape
+  -> Tensor dtype shape
+layerNorm LayerNorm {..} = Torch.Static.Native.layerNorm @normalizedShape
+  (toDependent layerNormWeight)
+  (toDependent layerNormBias)
+  layerNormEps
 
 data LinearSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) = LinearSpec
   deriving (Show, Eq)

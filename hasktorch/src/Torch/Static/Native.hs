@@ -1224,8 +1224,54 @@ is_signed _input = unsafePerformIO $ (cast1 ATen.is_signed_t) _input
 -- kthvalue :: Tensor dtype shape -> Int -> Int -> Bool -> (Tensor dtype shape,Tensor dtype shape)
 -- kthvalue _input _k _dim _keepdim = unsafePerformIO $ (cast4 ATen.kthvalue_tllb) _input _k _dim _keepdim
 
--- layer_norm :: Tensor dtype shape -> [Int] -> Tensor dtype shape -> Tensor dtype shape -> Double -> Bool -> Tensor dtype shape
--- layer_norm _input _normalized_shape _weight _bias _eps _cudnn_enable = unsafePerformIO $ (cast6 ATen.layer_norm_tlttdb) _input _normalized_shape _weight _bias _eps _cudnn_enable
+-- | EndsWith
+-- >>> :kind! EndsWith '[1] '[1]
+-- EndsWith '[1] '[1] :: Constraint
+-- = () :: Constraint
+-- >>> :kind! EndsWith '[2, 1] '[1]
+-- EndsWith '[2, 1] '[1] :: Constraint
+-- = () :: Constraint
+-- >>> :kind! EndsWith '[2, 1] '[2]
+-- EndsWith '[2, 1] '[2] :: Constraint
+-- = EndsWith '[1] '[]
+-- >>> :kind! EndsWith '[2, 1] '[1, 1]
+-- EndsWith '[2, 1] '[1, 1] :: Constraint
+-- = EndsWith '[] '[1]
+-- >>> :kind! EndsWith '[2, 1] '[2, 1]
+-- EndsWith '[2, 1] '[2, 1] :: Constraint
+-- = () :: Constraint
+type family EndsWith (xs :: [a]) (ys :: [a]) :: Constraint where
+  EndsWith '[]      '[]      = ()
+  EndsWith (x : xs) (x : ys) = EndsWith xs ys
+  EndsWith (x : xs) (y : ys) = EndsWith xs (y : ys)
+
+-- | layerNorm
+-- >>> t = layerNorm @'[1, 2] @'D.Float @'[2, 1, 2] ones ones 0.01 ones
+-- >>> :type t
+-- t :: Tensor 'D.Float '[2, 1, 2]
+-- >>> dtype &&& shape $ t
+-- (Float,[2,1,2])
+layerNorm
+  :: forall normalizedShape dtype shape
+   . ( KnownShape normalizedShape
+     , EndsWith shape normalizedShape
+     )
+  => Tensor dtype normalizedShape -- ^ weight
+  -> Tensor dtype normalizedShape -- ^ bias
+  -> Double -- ^ eps
+  -> Tensor dtype shape -- ^ input tensor
+  -> Tensor dtype shape -- ^ output tensor
+layerNorm weight bias eps input = unsafePerformIO $ cast6
+  ATen.layer_norm_tlttdb
+  input
+  (shapeVal @normalizedShape)
+  weight
+  bias
+  eps
+  (  cudnn_is_acceptable weight
+  && cudnn_is_acceptable bias
+  && cudnn_is_acceptable input
+  )
 
 -- native_layer_norm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> Double -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape)
 -- native_layer_norm _input _weight _bias _M _N _eps = unsafePerformIO $ (cast6 ATen.native_layer_norm_tttlld) _input _weight _bias _M _N _eps
@@ -1247,7 +1293,7 @@ linear
 linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.linear_ttt) _input _weight _bias
 
 -- |
--- >>> t = linear @5 @3 @2 @'D.Float (toMKLDNN ones) (toMKLDNN ones) (toMKLDNN ones)
+-- >>> t = mkldnnLinear @5 @3 @2 @'D.Float (toMKLDNN ones) (toMKLDNN ones) (toMKLDNN ones)
 -- >>> dtype &&& shape $ t
 -- (Float,[5,2])
 -- >>> :t t
