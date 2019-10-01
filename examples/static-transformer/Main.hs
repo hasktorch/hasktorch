@@ -77,21 +77,17 @@ multiheadAttention
      , Mod (embedDim * 3) 3 ~ 0
      , Div (embedDim * 3) 3 ~ embedDim
      , KnownDType dtype
-     , KnownNat embedDim
-     , KnownNat numHeads
-     , KnownNat headDim
-     , KnownNat seqLen
-     , KnownNat batchSize
+     , All KnownNat [embedDim, numHeads, headDim, seqLen, batchSize]
      )
   => MultiheadAttention dtype embedDim numHeads
   -> Dropout
   -> Tensor dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim], Tensor dtype '[batchSize, seqLen, seqLen])
 multiheadAttention MultiheadAttention {..} Dropout {..} input = do
-  let HCons q (HCons k (HCons v HNil)) = chunk @3 @2 . linear inProj $ input
+  let q :. k :. v :. HNil = chunk @3 @2 . linear inProj $ input
       scaling     = pow (-0.5) (natValI @headDim) :: Tensor dtype '[]
       f           = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
-      attnWeights = ((. (transpose @1 @2 . f)) . matmul . f . mul scaling) q k
+      attnWeights = (f . mul scaling $ q) `matmul` (transpose  @1 @2 . f $ k)
   -- TODO: mask future timesteps
   -- TODO: apply key padding mask
   attnWeights' <- dropout dropoutProb dropoutTrain . softmax @2 $ attnWeights

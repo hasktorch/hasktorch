@@ -469,14 +469,16 @@ instance Castable [Tensor dtype shape] (ForeignPtr ATen.TensorList) where
 
 data family HList (l :: [Type])
 data instance HList '[] = HNil
-newtype instance HList (x ': xs) = HCons1 (x, HList xs)
-pattern HCons x xs = HCons1 (x, xs)
+newtype instance HList (x ': xs) = HCons (x, HList xs)
+pattern (:.) x xs = HCons (x, xs)
+
+infixr 2 :.
 
 instance Eq (HList '[]) where
   HNil == HNil = True
 
 instance (Eq x, Eq (HList xs)) => Eq (HList (x ': xs)) where
-  (HCons x xs) == (HCons y ys) = x == y && xs == ys
+  (x :. xs) == (y :. ys) = x == y && xs == ys
 
 class Apply f a b where
   apply :: f -> a -> b
@@ -488,7 +490,7 @@ instance HMap f '[] '[] where
   hmap _ _ = HNil
 
 instance (Apply f x y, HMap f xs ys) => HMap f (x ': xs) (y ': ys) where
-  hmap f (HCons x xs) = HCons (apply f x) (hmap f xs)
+  hmap f (x :. xs) = (apply f x) :. (hmap f xs)
 
 class HFoldr f acc xs where
   hfoldr :: f -> acc -> HList xs -> acc
@@ -497,7 +499,7 @@ instance HFoldr f acc '[] where
   hfoldr _ acc _ = acc
 
 instance (Apply f x (acc -> acc), HFoldr f acc xs) => HFoldr f acc (x ': xs) where
-  hfoldr f acc (HCons x xs) = apply f x $ hfoldr f acc xs
+  hfoldr f acc (x :. xs) = apply f x $ hfoldr f acc xs
 
 class HFoldrM m f acc xs where
   hfoldrM :: f -> acc -> HList xs -> m acc
@@ -506,7 +508,7 @@ instance (Monad m) => HFoldrM m f acc '[] where
   hfoldrM _ acc _ = pure acc
 
 instance (Monad m, Apply f x (acc -> m acc), HFoldrM m f acc xs) => HFoldrM m f acc (x ': xs) where
-  hfoldrM f acc (HCons x xs) = apply f x =<< hfoldrM f acc xs
+  hfoldrM f acc (x :. xs) = apply f x =<< hfoldrM f acc xs
 
 data HNothing  = HNothing
 data HJust x   = HJust x
@@ -522,7 +524,7 @@ instance HUnfold f HNothing '[] where
   hunfoldr' _ _ = HNil
 
 instance (Apply f s res, HUnfold f res xs, res ~ HUnfoldRes s xs) => HUnfold f (HJust (x, s)) (x ': xs) where
-  hunfoldr' f (HJust (x, s)) = HCons x (hunfoldr' f (apply f s :: res))
+  hunfoldr' f (HJust (x, s)) = x :. (hunfoldr' f (apply f s :: res))
 
 hunfoldr
   :: forall f res (xs :: [Type]) a
@@ -546,7 +548,7 @@ instance (Monad m, HUnfoldM m f res xs, Apply f s res, res ~ HUnfoldMRes m s xs)
   hunfoldrM' f just = do
     HJust (x, s) <- just
     xs <- hunfoldrM' f (apply f s :: res)
-    return (HCons x xs)
+    return (x :. xs)
 
 hunfoldrM
   :: forall (m :: Type -> Type) f res (xs :: [Type]) a
@@ -590,7 +592,7 @@ instance Castable (HList l) [D.ATenTensor] => Castable (HList l) (ForeignPtr ATe
     f ts
 
 test :: forall dtype shape . Tensor dtype shape -> IO [D.ATenTensor]
-test t = hfoldrM TensorListFolds [] (HCons t HNil)
+test t = hfoldrM TensorListFolds [] (t :. HNil)
 
 test' :: forall dtype shape dtype' shape' . [D.ATenTensor] -> IO (HList '[Tensor dtype shape, Tensor dtype' shape'])
 test' xs = hunfoldrM TensorListFolds xs

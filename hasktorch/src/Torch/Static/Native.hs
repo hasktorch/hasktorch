@@ -851,7 +851,7 @@ foo = chunk @2 @1
 -- >>> :type chunk @3 @1 (ones @D.Float @[2, 2])
 -- chunk @3 @1 (ones @D.Float @[2, 2])
 --   :: HList '[Tensor 'D.Float '[2, 1], Tensor 'D.Float '[2, 1]]
--- >>> HCons t0 (HCons t1 HNil) = chunk @3 @1 (ones @D.Float @[2, 2])
+-- >>> t0 :. t1 :. HNil = chunk @3 @1 (ones @D.Float @[2, 2])
 -- >>> dtype &&& shape $ t0
 -- (Float,[2,1])
 -- >>> dtype &&& shape $ t1
@@ -861,7 +861,7 @@ foo = chunk @2 @1
 --   :: HList
 --        '[Tensor 'D.Float '[1, 0, 3], Tensor 'D.Float '[1, 0, 3],
 --          Tensor 'D.Float '[1, 0, 3]]
--- >>> HCons t0 (HCons t1 (HCons t2 HNil)) = chunk @3 @1 (ones @D.Float @'[1, 0, 3])
+-- >>> t0 :. t1 :. t2 :. HNil = chunk @3 @1 (ones @D.Float @'[1, 0, 3])
 -- >>> dtype &&& shape $ t0
 -- (Float,[1,0,3])
 -- >>> dtype &&& shape $ t1
@@ -874,7 +874,7 @@ foo = chunk @2 @1
 --        '[Tensor 'D.Float '[4, 4], Tensor 'D.Float '[4, 4],
 --          Tensor 'D.Float '[4, 4], Tensor 'D.Float '[4, 4],
 --          Tensor 'D.Float '[3, 4]]
--- >>> HCons t0 (HCons t1 (HCons t2 (HCons t3 (HCons t4 HNil)))) = chunk @6 @0 (ones @D.Float @[19, 4])
+-- >>> t0 :. t1 :. t2 :. t3 :. t4 :. HNil = chunk @6 @0 (ones @D.Float @[19, 4])
 -- >>> dtype &&& shape $ t0
 -- (Float,[4,4])
 -- >>> dtype &&& shape $ t1
