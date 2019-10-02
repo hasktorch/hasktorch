@@ -246,6 +246,10 @@ type family ListLength (l :: [a]) :: Nat where
     ListLength '[]      = 0
     ListLength (_ ': t) = 1 + ListLength t
 
+type family LastDim (l :: [a]) :: Nat where
+  LastDim (_ ': '[]) = 0
+  LastDim (_ ': t)   = 1 + LastDim t
+
                     ----------------------------------------
 
 type family RemoveImpl (l :: [a]) (n :: Nat) :: Maybe [a] where
@@ -452,7 +456,6 @@ type family Numel (shape :: [Nat]) :: Nat where
 
 reshape :: forall shape' dtype shape. (KnownShape shape', Numel shape ~ Numel shape') => Tensor dtype shape -> Tensor dtype shape'
 reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
-
 
 instance Castable (Tensor dtype shape) D.ATenTensor where
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor

@@ -1095,8 +1095,26 @@ det _input = unsafePerformIO $ (cast1 ATen.det_t) _input
 -- einsum :: String -> [Tensor dtype shape] -> Tensor dtype shape
 -- einsum _equation _tensors = unsafePerformIO $ (cast2 ATen.einsum_sl) _equation _tensors
 
--- embedding :: Tensor dtype shape -> Tensor dtype shape -> Int -> Bool -> Bool -> Tensor dtype shape
--- embedding _weight _indices _padding_idx _scale_grad_by_freq _sparse = unsafePerformIO $ (cast5 ATen.embedding_ttlbb) _weight _indices _padding_idx _scale_grad_by_freq _sparse
+-- | embedding
+-- >>> weights = fromJust [[0, 0], [1, 1], [2, 2], [3, 3]] :: Tensor 'D.Float '[4, 2]
+-- >>> indices = fromJust [[0], [2], [0], [1]] :: Tensor 'D.Int64 '[4, 1]
+-- >>> t = embedding @0 False False weights indices
+-- >>> :type t
+-- t :: Tensor 'D.Float '[4, 1, 2]
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
+-- (Float,([4,1,2],[[[0.0,0.0]],[[2.0,2.0]],[[0.0,0.0]],[[1.0,1.0]]]))
+embedding
+  :: forall paddingIdx dtype shape numEmbeds embedDim
+   . ( KnownNat paddingIdx
+     , paddingIdx + 1 <= numEmbeds
+     )
+  => Bool
+  -> Bool
+  -> Tensor dtype '[numEmbeds, embedDim]
+  -> Tensor 'D.Int64 shape
+  -> Tensor dtype (Reverse (embedDim ': Reverse shape))
+embedding scaleGradByFreq sparse weights indices =
+  unsafePerformIO $ cast5 ATen.embedding_ttlbb weights indices (natValI @paddingIdx) scaleGradByFreq sparse
 
 -- embedding_bag :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Bool -> Int -> Bool -> Tensor dtype shape -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape,Tensor dtype shape)
 -- embedding_bag _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights = unsafePerformIO $ (cast7 ATen.embedding_bag_tttblbt) _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights
@@ -1119,6 +1137,26 @@ erfc _input = unsafePerformIO $ (cast1 ATen.erfc_t) _input
 -- (Float,[3,2])
 expm1 :: Tensor dtype shape -> Tensor dtype shape
 expm1 _input = unsafePerformIO $ (cast1 ATen.expm1_t) _input
+
+-- | expand
+-- >>> t = ones :: Tensor 'D.Float '[2]
+-- >>> t' = expand @[3, 1, 2] False t
+-- >>> dtype &&& shape $ t'
+-- (Float,[3,1,2])
+-- >>> t'' = expand @[3, 1, 2] True t
+-- >>> dtype &&& shape $ t''
+-- (Float,[3,1,2])
+-- >>> toInt (all (t' ==. t'')) == 1
+-- True
+expand
+  :: forall shape' dtype shape
+   . ( KnownShape shape'
+     , shape' ~ Broadcast shape shape'
+     )
+  => Bool
+  -> Tensor dtype shape
+  -> Tensor dtype shape'
+expand someBool input = unsafePerformIO $ cast3 ATen.tensor_expand_lb input (shapeVal @shape') someBool
 
 -- flatten :: Tensor dtype shape -> Int -> Int -> Tensor dtype shape
 -- flatten _input _start_dim _end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) _input _start_dim _end_dim

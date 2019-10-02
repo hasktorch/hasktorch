@@ -117,13 +117,16 @@ dropout Dropout {..} = Torch.Static.Native.dropout dropoutProb dropoutTrain
 
 data TransformerLMLayer (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat) where
   TransformerLMLayer
-    :: { tSelfAttention :: MultiheadAttention dtype embedDim numHeads
-       , tFc0 :: Linear dtype embedDim ffnDim
-       , tFc1 :: Linear dtype ffnDim embedDim
-       , tLn0 :: LayerNorm dtype '[embedDim]
-       , tLn1 :: LayerNorm dtype '[embedDim]
-       , tDropout :: Dropout
-       , tActivation :: forall shape . Tensor dtype shape -> Tensor dtype shape
+    :: { tAttn :: MultiheadAttention dtype embedDim numHeads
+       , tAttnDropout :: Dropout
+       , tLinear0 :: Linear dtype embedDim ffnDim
+       , tLinear1 :: Linear dtype ffnDim embedDim
+       , tLN0 :: LayerNorm dtype '[embedDim]
+       , tLN1 :: LayerNorm dtype '[embedDim]
+       , tDropout0 :: Dropout
+       , tDropout1 :: Dropout
+       , tActivation0 :: forall shape . Tensor dtype shape -> Tensor dtype shape
+       , tActivation1 :: forall shape . Tensor dtype shape -> Tensor dtype shape
        }
     -> TransformerLMLayer dtype embedDim numHeads ffnDim
 
@@ -141,11 +144,63 @@ transformerLMLayer
   -> Tensor dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
 transformerLMLayer TransformerLMLayer {..} input = do
-  (attn, _) <- multiheadAttention tSelfAttention input
-  x         <- Main.layerNorm tLn0 . add input <$> Main.dropout tDropout attn
-  x'        <- Main.dropout tDropout . tActivation . linear tFc0 $ x
-  x''       <- Main.dropout tDropout . tActivation . linear tFc1 $ x'
-  return $ Main.layerNorm tLn1 (x'' `add` x)
+  (attn, _) <- multiheadAttention tAttn input
+  x         <- Main.dropout tAttnDropout attn
+  let x' = Main.layerNorm tLN0 (x `add` input)
+  x''       <- Main.dropout tDropout0 . tActivation0 . linear tLinear0 $ x'
+  x'''      <- Main.dropout tDropout1 . tActivation1 . linear tLinear1 $ x''
+  return $ Main.layerNorm tLN1 (x''' `add` x')
+
+data TransformerLM (dtype :: D.DType) where
+  TransformerLM
+    :: { }
+    -> TransformerLM dtype
+
+data Embedding (paddingIdx :: Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) where
+  Embedding
+    :: forall paddingIdx dtype numEmbeds embedDim
+     . (paddingIdx + 1 <= numEmbeds)
+    => { embedWeights :: Parameter dtype '[numEmbeds, embedDim]
+       }
+    -> Embedding paddingIdx dtype numEmbeds embedDim
+
+embed
+  :: forall paddingIdx dtype shape numEmbeds embedDim
+   . ( KnownNat paddingIdx
+     , paddingIdx + 1 <= numEmbeds
+     )
+  => Embedding paddingIdx dtype numEmbeds embedDim
+  -> Tensor 'D.Int64 shape
+  -> Tensor dtype (Reverse (embedDim ': (Reverse shape)))
+embed Embedding {..} input = Torch.Static.Native.embedding @paddingIdx
+  False
+  False
+  (toDependent embedWeights)
+  input
+
+getHidden
+  :: forall paddingIdx dtype numEmbeds embedDim numHeads seqLen batchSize ffnDim headDim
+   . ( KnownNat paddingIdx
+     , paddingIdx + 1 <= numEmbeds
+     )
+  => Embedding paddingIdx dtype numEmbeds embedDim
+  -> Tensor 'D.Int64 '[batchSize, seqLen]
+  -> IO (Tensor dtype '[batchSize, seqLen])
+getHidden embedding input = do
+  let srcTokens = transpose @0 @1 input
+      positions = expand '[batchSize, seqLen] True (_ :: Tensor 'D.Int64 '[seqLen])
+      src = embed embedding srcTokens
+  return _undefined
+
+-- transformerLM
+--   :: forall dtype embedDim numHeads seqLen batchSize ffnDim headDim
+--    . ()
+--   => TransformerLM dtype
+--   -> Tensor dtype shape
+--   -> Tensor dtype shape
+-- transformerLM = _undefined
+--   where 
+
 
 data LayerNorm (dtype :: D.DType) (normalizedShape :: [Nat]) where
   LayerNorm
