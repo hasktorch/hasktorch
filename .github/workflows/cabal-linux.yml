@@ -24,13 +24,13 @@ jobs:
         source setenv
         pushd deps/ ; ./get-deps.sh -a cpu -c; popd
         ./setup-cabal.sh
-        cabal new-update
-        cabal new-install hspec-discover
-        cabal new-build all --jobs=2 --write-ghc-environment-files=always
+        cabal v2-update
+        cabal v2-install hspec-discover
+        cabal v2-build all --jobs=2 --write-ghc-environment-files=always
     - name: Test
       run: |
         export PATH=/opt/ghc/bin:$PATH
         source setenv
-        cabal new-test all --jobs=2 --write-ghc-environment-files=always
-        cabal new-exec codegen-exe
+        cabal v2-test all --jobs=2 --write-ghc-environment-files=always
+        cabal v2-exec codegen-exe
         cabal exec xor-mlp
