@@ -156,18 +156,18 @@ data TransformerLM (dtype :: D.DType) where
     :: { }
     -> TransformerLM dtype
 
-data Embedding (paddingIdx :: Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) where
+data Embedding (paddingIdx :: Maybe Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) where
   Embedding
     :: forall paddingIdx dtype numEmbeds embedDim
-     . (paddingIdx + 1 <= numEmbeds)
+     . (PaddingIdxCheck paddingIdx numEmbeds)
     => { embedWeights :: Parameter dtype '[numEmbeds, embedDim]
        }
     -> Embedding paddingIdx dtype numEmbeds embedDim
 
 embed
   :: forall paddingIdx dtype shape numEmbeds embedDim
-   . ( KnownNat paddingIdx
-     , paddingIdx + 1 <= numEmbeds
+   . ( KnownMaybeNat paddingIdx
+     , PaddingIdxCheck paddingIdx numEmbeds
      )
   => Embedding paddingIdx dtype numEmbeds embedDim
   -> Tensor 'D.Int64 shape
@@ -180,15 +180,16 @@ embed Embedding {..} input = Torch.Static.Native.embedding @paddingIdx
 
 getHidden
   :: forall paddingIdx dtype numEmbeds embedDim numHeads seqLen batchSize ffnDim headDim
-   . ( All KnownNat [paddingIdx, seqLen, batchSize]
+   . ( All KnownNat [paddingIdx, embedDim, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
      )
-  => Embedding paddingIdx dtype numEmbeds embedDim
+  => Embedding ('Just paddingIdx) dtype numEmbeds embedDim
+  -> Embedding 'Nothing dtype 2048 embedDim
   -> Tensor 'D.Int64 '[batchSize, seqLen]
   -> IO (Tensor dtype '[batchSize, seqLen])
-getHidden embedding input = do
+getHidden embedding posEmbedding input = do
   let srcTokens = transpose @0 @1 input
-      positions = expand @'[batchSize, seqLen] True (_ :: Tensor 'D.Int64 '[seqLen])
+      positions = expand @'[batchSize, seqLen, embedDim] True . embed posEmbedding $ (_ :: Tensor 'D.Int64 '[seqLen])
       src = embed embedding srcTokens :: Tensor dtype '[seqLen, batchSize, embedDim]
   return _undefined
 

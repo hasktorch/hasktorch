@@ -25,6 +25,7 @@ import Data.Maybe
 import Data.Proxy
 import Data.Reflection
 import Control.Arrow ((&&&))
+import GHC.Natural (Natural)
 import GHC.TypeLits
 import GHC.TypeLits.Extra
 import System.IO.Unsafe
@@ -1095,18 +1096,36 @@ det _input = unsafePerformIO $ (cast1 ATen.det_t) _input
 -- einsum :: String -> [Tensor dtype shape] -> Tensor dtype shape
 -- einsum _equation _tensors = unsafePerformIO $ (cast2 ATen.einsum_sl) _equation _tensors
 
+class KnownMaybeNat (n :: Maybe Nat) where
+  maybeNatVal :: Maybe Integer
+
+instance (KnownNat n) => KnownMaybeNat (Just n) where
+  maybeNatVal = Just . natVal $ Proxy @n
+
+instance KnownMaybeNat Nothing where
+  maybeNatVal = Nothing
+
+type family PaddingIdxCheck (idx :: Maybe Nat) (numEmbeds :: Nat) :: Constraint where
+  PaddingIdxCheck (Just n) numEmbeds = n + 1 <= numEmbeds
+  PaddingIdxCheck Nothing  _         = ()
+
 -- | embedding
--- >>> weights = fromJust [[0, 0], [1, 1], [2, 2], [3, 3]] :: Tensor 'D.Float '[4, 2]
+-- >>> weights = fromJust [[1, 1], [2, 2], [3, 3], [4, 4]] :: Tensor 'D.Float '[4, 2]
 -- >>> indices = fromJust [[0], [2], [0], [1]] :: Tensor 'D.Int64 '[4, 1]
--- >>> t = embedding @0 False False weights indices
+-- >>> t = embedding @('Just 0) False False weights indices
 -- >>> :type t
 -- t :: Tensor 'D.Float '[4, 1, 2]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
--- (Float,([4,1,2],[[[0.0,0.0]],[[2.0,2.0]],[[0.0,0.0]],[[1.0,1.0]]]))
+-- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
+-- >>> t = embedding @'Nothing False False weights indices
+-- >>> :type t
+-- t :: Tensor 'D.Float '[4, 1, 2]
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
+-- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
 embedding
-  :: forall paddingIdx dtype shape numEmbeds embedDim
-   . ( KnownNat paddingIdx
-     , paddingIdx + 1 <= numEmbeds
+  :: forall (paddingIdx :: Maybe Nat) dtype shape numEmbeds embedDim
+   . ( KnownMaybeNat paddingIdx
+     , PaddingIdxCheck paddingIdx numEmbeds
      )
   => Bool
   -> Bool
@@ -1114,7 +1133,11 @@ embedding
   -> Tensor 'D.Int64 shape
   -> Tensor dtype (Reverse (embedDim ': Reverse shape))
 embedding scaleGradByFreq sparse weights indices =
-  unsafePerformIO $ cast5 ATen.embedding_ttlbb weights indices (natValI @paddingIdx) scaleGradByFreq sparse
+  unsafePerformIO $ cast5 ATen.embedding_ttlbb weights indices paddingIdx scaleGradByFreq sparse
+ where paddingIdx :: Int
+       paddingIdx = case maybeNatVal @paddingIdx of
+                      Just idx -> fromIntegral idx
+                      Nothing  -> -1
 
 -- embedding_bag :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Bool -> Int -> Bool -> Tensor dtype shape -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape,Tensor dtype shape)
 -- embedding_bag _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights = unsafePerformIO $ (cast7 ATen.embedding_bag_tttblbt) _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights
