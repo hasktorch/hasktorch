@@ -1833,8 +1833,49 @@ trunc _input = unsafePerformIO $ (cast1 ATen.trunc_t) _input
 -- unique_dim_consecutive :: Tensor dtype shape -> Int -> Bool -> Bool -> (Tensor dtype shape,Tensor dtype shape,Tensor dtype shape)
 -- unique_dim_consecutive _input _dim _return_inverse _return_counts = unsafePerformIO $ (cast4 ATen.unique_dim_consecutive_tlbb) _input _dim _return_inverse _return_counts
 
--- unsqueeze :: Tensor dtype shape -> Int -> Tensor dtype shape
--- unsqueeze _input _dim = unsafePerformIO $ (cast2 ATen.unsqueeze_tl) _input _dim
+-- | UnsqueezeImpl
+-- >>> :kind! UnsqueezeImpl '[4] 0
+-- UnsqueezeImpl '[4] 0 :: Maybe [Nat]
+-- = 'Just '[1, 4]
+-- >>> :kind! UnsqueezeImpl '[4] 1
+-- UnsqueezeImpl '[4] 1 :: Maybe [Nat]
+-- = 'Just '[4, 1]
+-- >>> :kind! UnsqueezeImpl '[4] 2
+-- UnsqueezeImpl '[4] 2 :: Maybe [Nat]
+-- = 'Nothing
+type family UnsqueezeImpl (shape :: [a]) (dim :: Nat) :: Maybe [a] where
+  UnsqueezeImpl xs        0   = Just (1 ': xs)
+  UnsqueezeImpl (x ': xs) dim = AppendToMaybe x (UnsqueezeImpl xs (dim - 1))
+  UnsqueezeImpl '[]       _   = Nothing
+
+type family UnsqueezeCheck (shape :: [a]) (dim :: Nat) (result :: Maybe [a]) :: [a] where
+  UnsqueezeCheck shape dim Nothing       = TypeError (Text "Cannot unsqueeze the tensor since the specified dimension " :<>:
+                                                      ShowType dim :<>:
+                                                      Text " is too large (the tensor is only " :<>:
+                                                      ShowType (ListLength shape) :<>:
+                                                      Text "D)")
+  UnsqueezeCheck _     _   (Just shape') = shape'
+
+type Unsqueeze shape dim = UnsqueezeCheck shape dim (UnsqueezeImpl shape dim)
+
+-- | unsqueeze
+-- >>> t = fromJust [1, 2, 3, 4] :: Tensor 'D.Int64 '[4]
+-- >>> t' = unsqueeze @0 t
+-- >>> :type t'
+-- t' :: Tensor 'D.Int64 '[1, 4]
+-- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[Int]]) $ t'
+-- (Int64,([1,4],[[1,2,3,4]]))
+-- >>> t'' = unsqueeze @1 t
+-- >>> :type t''
+-- t'' :: Tensor 'D.Int64 '[4, 1]
+-- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[Int]]) $ t''
+-- (Int64,([4,1],[[1],[2],[3],[4]]))
+unsqueeze
+  :: forall dim dtype shape shape'
+   . (KnownNat dim, shape' ~ Unsqueeze shape dim)
+  => Tensor dtype shape
+  -> Tensor dtype shape'
+unsqueeze input = unsafePerformIO $ cast2 ATen.unsqueeze_tl input (natValI @dim)
 
 -- where' :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 -- where' _condition _input _other = unsafePerformIO $ (cast3 ATen.where_ttt) _condition _input _other

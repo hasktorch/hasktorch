@@ -189,7 +189,7 @@ getHidden
   -> IO (Tensor dtype '[batchSize, seqLen])
 getHidden embedding posEmbedding input = do
   let srcTokens = transpose @0 @1 input
-      positions = expand @'[batchSize, seqLen, embedDim] True . embed posEmbedding $ (_ :: Tensor 'D.Int64 '[seqLen])
+      positions = expand @'[seqLen, batchSize, embedDim] True . unsqueeze @1 . embed posEmbedding $ (_ :: Tensor 'D.Int64 '[seqLen])
       src = embed embedding srcTokens :: Tensor dtype '[seqLen, batchSize, embedDim]
   return _undefined
 
