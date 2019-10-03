@@ -189,7 +189,7 @@ getHidden
 getHidden embedding input = do
   let srcTokens = transpose @0 @1 input
       positions = expand @'[batchSize, seqLen] True (_ :: Tensor 'D.Int64 '[seqLen])
-      src = embed embedding srcTokens
+      src = embed embedding srcTokens :: Tensor dtype '[seqLen, batchSize, embedDim]
   return _undefined
 
 -- transformerLM
