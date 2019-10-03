@@ -180,7 +180,7 @@ embed Embedding {..} input = Torch.Static.Native.embedding @paddingIdx
 
 getHidden
   :: forall paddingIdx dtype numEmbeds embedDim numHeads seqLen batchSize ffnDim headDim
-   . ( KnownNat paddingIdx
+   . ( All KnownNat [paddingIdx, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
      )
   => Embedding paddingIdx dtype numEmbeds embedDim
@@ -188,7 +188,7 @@ getHidden
   -> IO (Tensor dtype '[batchSize, seqLen])
 getHidden embedding input = do
   let srcTokens = transpose @0 @1 input
-      positions = expand '[batchSize, seqLen] True (_ :: Tensor 'D.Int64 '[seqLen])
+      positions = expand @'[batchSize, seqLen] True (_ :: Tensor 'D.Int64 '[seqLen])
       src = embed embedding srcTokens
   return _undefined
 
