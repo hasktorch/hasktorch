@@ -606,6 +606,24 @@ test'' xs = cast xs return
 test''' :: [D.ATenTensor] -> IO (HList '[Tensor dtype shape])
 test''' xs = uncast xs return
 
+class (ListLength es ~ n) => HReplicate' (n :: Nat) e es where
+    hReplicate :: Proxy n -> e -> HList es
+
+instance HReplicate' 0 e '[] where
+    hReplicate _ _ = HNil
+
+instance (HReplicate' (n - 1) e es, e ~ e', 1 <= n) => HReplicate' n e (e' ': es) where
+    hReplicate n e = e :. hReplicate (Proxy @(n - 1)) e
+
+type HReplicate n e = HReplicate' n e (HReplicateR n e)
+
+type family HReplicateR (n :: Nat) (e :: a) :: [a] where
+  HReplicateR 0 e = '[]
+  HReplicateR n e = e ': HReplicateR (n - 1) e
+
+testReplicate :: forall dtype shape . Tensor dtype shape -> HList (HReplicateR 3 (Tensor dtype shape))
+testReplicate t = hReplicate Proxy t
+
 --------------------------------------------------------------------------------
 -- Move backend
 --------------------------------------------------------------------------------

@@ -141,11 +141,11 @@ log2 t = unsafePerformIO $ (cast1 ATen.log2_t) t
 log10 :: Tensor dtype shape -> Tensor dtype shape
 log10 t = unsafePerformIO $ (cast1 ATen.log10_t) t
 
--- |
--- >>> dtype &&& shape $ pow (ones :: Tensor 'D.Float '[3,2]) 2
+-- | pow
+-- >>> dtype &&& shape $ pow 2 (ones @'D.Float @'[3,2])
 -- (Float,[3,2])
-pow :: D.Scalar a => Tensor dtype shape -> a -> Tensor dtype shape
-pow t s = unsafePerformIO $ (cast2 ATen.pow_ts) t s
+pow :: D.Scalar a => a -> Tensor dtype shape -> Tensor dtype shape
+pow s t = unsafePerformIO $ (cast2 ATen.pow_ts) t s
 
 -- |
 -- >>> dtype &&& shape $ relu (ones :: Tensor 'D.Float '[3,2])
@@ -831,15 +831,6 @@ type family ChunkShapesImpl (chunks :: Maybe [Nat]) (dim :: Nat) (shape :: [Nat]
 type ChunkShapes chunks dim shape = ChunkShapesImpl (ComputeChunks (ExtractDim dim shape) chunks) dim shape
 
 type Chunk chunks dim dtype shape = ChunkCheck shape dim (ChunkImpl (ChunkShapes chunks dim shape) dtype)
-
-proxyFun :: forall y chunks dummy . (y ~ (chunks * dummy)) => Proxy y -> Proxy chunks -> ()
-proxyFun = const . const ()
-
--- test :: Proxy (Mod (chunks * n) chunks) -> Proxy 0
--- test = id
-
--- test :: (1 <= a) => Proxy (Div (n * a) a) -> Proxy n
--- test = id
 
 foo
   :: forall dtype batchSize n

@@ -33,6 +33,7 @@ import           Data.List                      ( foldl'
                                                 , intersperse
                                                 )
 import           Data.Reflection
+import           Data.Proxy
 import           GHC.Generics
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
@@ -85,9 +86,7 @@ multiheadAttention
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim], Tensor dtype '[batchSize, seqLen, seqLen])
 multiheadAttention MultiheadAttention {..} input = do
   let q :. k :. v :. HNil = chunk @3 @2 . linear mhInProj $ input
-      scaling     = pow (-0.5) (natValI @headDim) :: Tensor dtype '[]
-      f           = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
-      attnWeights = (f . mul scaling $ q) `matmul` (transpose  @1 @2 . f $ k)
+      attnWeights         = (mul scaling . f $ q) `matmul` (transpose  @1 @2 . f $ k)
   -- TODO: mask future timesteps
   -- TODO: apply key padding mask
   attnWeights' <- Main.dropout mhDropout . softmax @2 $ attnWeights
@@ -99,11 +98,14 @@ multiheadAttention MultiheadAttention {..} input = do
           . f
           $ v
       avgAttnWeights =
-        mul (pow (-1) (natValI @numHeads) :: Tensor dtype '[])
+        mul (pow (fromInteger $ -1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor dtype '[])
           . sumDim @1
           . reshape @'[batchSize, numHeads, seqLen, seqLen]
           $ attnWeights'
   return (attn, avgAttnWeights)
+ where
+  f       = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
+  scaling = pow (fromRational $ -1/2 :: Double) (fromInteger . natVal $ Proxy @headDim) :: Tensor dtype '[]
 
 data Dropout where
   Dropout
@@ -178,19 +180,45 @@ embed Embedding {..} input = Torch.Static.Native.embedding @paddingIdx
   (toDependent embedWeights)
   input
 
+data FoldAttnLayers
+
+instance Apply FoldAttnLayers (MultiheadAttention dtype embedDim numHeads) (Tensor dtype '[seqLen, batchSize, embedDim] -> IO (Tensor dtype '[seqLen, batchSize, embedDim])) where
+  apply _ attn = \t -> do
+    t', _ <- attn t
+    return t'
+
 getHidden
-  :: forall paddingIdx dtype numEmbeds embedDim numHeads seqLen batchSize ffnDim headDim
-   . ( All KnownNat [paddingIdx, embedDim, seqLen, batchSize]
+  :: forall
+       paddingIdx
+       dtype
+       numEmbeds
+       embedDim
+       numHeads
+       seqLen
+       batchSize
+       ffnDim
+       headDim
+       numAttnLayers
+   . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
      )
-  => Embedding ('Just paddingIdx) dtype numEmbeds embedDim
+  => Embedding ( 'Just paddingIdx) dtype numEmbeds embedDim
   -> Embedding 'Nothing dtype 2048 embedDim
+  -> Dropout
+  -> HList (HReplicateR numAttnLayers (MultiheadAttention dtype embedDim numHeads))
   -> Tensor 'D.Int64 '[batchSize, seqLen]
   -> IO (Tensor dtype '[batchSize, seqLen])
-getHidden embedding posEmbedding input = do
+getHidden embedding posEmbedding dropout input attnLayers = do
   let srcTokens = transpose @0 @1 input
-      positions = expand @'[seqLen, batchSize, embedDim] True . unsqueeze @1 . embed posEmbedding $ (_ :: Tensor 'D.Int64 '[seqLen])
-      src = embed embedding srcTokens :: Tensor dtype '[seqLen, batchSize, embedDim]
+      positions =
+        expand @'[seqLen, batchSize, embedDim] True
+          . unsqueeze @1
+          . embed posEmbedding
+          $ (_ :: Tensor 'D.Int64 '[seqLen])
+      src =
+        embed embedding srcTokens :: Tensor dtype '[seqLen, batchSize, embedDim]
+  x <- Main.dropout dropout (src `add` positions)
+  let paddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[]) -- :: Tensor 'D.Bool '[seqLen, batchSize]
   return _undefined
 
 -- transformerLM
