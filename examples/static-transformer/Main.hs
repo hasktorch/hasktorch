@@ -153,17 +153,11 @@ transformerLMLayer TransformerLMLayer {..} input = do
   x'''      <- Main.dropout tDropout1 . tActivation1 . linear tLinear1 $ x''
   return $ Main.layerNorm tLN1 (x''' `add` x')
 
-data TransformerLM (dtype :: D.DType) where
-  TransformerLM
-    :: { }
-    -> TransformerLM dtype
-
 data Embedding (paddingIdx :: Maybe Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) where
   Embedding
     :: forall paddingIdx dtype numEmbeds embedDim
      . (PaddingIdxCheck paddingIdx numEmbeds)
-    => { embedWeights :: Parameter dtype '[numEmbeds, embedDim]
-       }
+    => { embedWeights :: Parameter dtype '[numEmbeds, embedDim] }
     -> Embedding paddingIdx dtype numEmbeds embedDim
 
 embed
@@ -174,41 +168,56 @@ embed
   => Embedding paddingIdx dtype numEmbeds embedDim
   -> Tensor 'D.Int64 shape
   -> Tensor dtype (Reverse (embedDim ': (Reverse shape)))
-embed Embedding {..} input = Torch.Static.Native.embedding @paddingIdx
+embed Embedding {..} input = embedding @paddingIdx
   False
   False
   (toDependent embedWeights)
   input
 
-data FoldAttnLayers
+data FoldAttnLayers = FoldAttnLayers
 
-instance Apply FoldAttnLayers (MultiheadAttention dtype embedDim numHeads) (Tensor dtype '[seqLen, batchSize, embedDim] -> IO (Tensor dtype '[seqLen, batchSize, embedDim])) where
+instance ( 1 <= numHeads
+         , embedDim ~ (headDim * numHeads)
+         , Mod (embedDim * 3) 3 ~ 0
+         , Div (embedDim * 3) 3 ~ embedDim
+         , KnownDType dtype
+         , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
+         , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
+         )
+    => Apply
+         FoldAttnLayers
+         (MultiheadAttention dtype embedDim numHeads)
+         (Tensor dtype '[seqLen, batchSize, embedDim] -> IO (Tensor dtype '[seqLen, batchSize, embedDim]))
+    where
   apply _ attn = \t -> do
-    t', _ <- attn t
+    (t', _) <- multiheadAttention attn t
     return t'
 
 getHidden
   :: forall
+       numAttnLayers
+       numHeads
        paddingIdx
        dtype
        numEmbeds
        embedDim
-       numHeads
        seqLen
        batchSize
-       ffnDim
-       headDim
-       numAttnLayers
    . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
+     , HFoldrM
+         IO
+         FoldAttnLayers
+         (Tensor dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (MultiheadAttention dtype embedDim numHeads))
      )
-  => Embedding ( 'Just paddingIdx) dtype numEmbeds embedDim
+  => Embedding ('Just paddingIdx) dtype numEmbeds embedDim
   -> Embedding 'Nothing dtype 2048 embedDim
   -> Dropout
   -> HList (HReplicateR numAttnLayers (MultiheadAttention dtype embedDim numHeads))
   -> Tensor 'D.Int64 '[batchSize, seqLen]
-  -> IO (Tensor dtype '[batchSize, seqLen])
-getHidden embedding posEmbedding dropout input attnLayers = do
+  -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
+getHidden embedding posEmbedding dropout attnLayers input = do
   let srcTokens = transpose @0 @1 input
       positions =
         expand @'[seqLen, batchSize, embedDim] True
@@ -218,18 +227,66 @@ getHidden embedding posEmbedding dropout input attnLayers = do
       src =
         embed embedding srcTokens :: Tensor dtype '[seqLen, batchSize, embedDim]
   x <- Main.dropout dropout (src `add` positions)
-  let paddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[]) -- :: Tensor 'D.Bool '[seqLen, batchSize]
-  return _undefined
+  let paddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[])
+  x' <- hfoldrM FoldAttnLayers x attnLayers
+  return x'
 
--- transformerLM
---   :: forall dtype embedDim numHeads seqLen batchSize ffnDim headDim
---    . ()
---   => TransformerLM dtype
---   -> Tensor dtype shape
---   -> Tensor dtype shape
--- transformerLM = _undefined
---   where 
-
+data TransformerLM
+       (numAttnLayers :: Nat)
+       (numHeads :: Nat)
+       (paddingIdx :: Nat)
+       (dtype :: D.DType)
+       (numEmbeds :: Nat)
+       (embedDim :: Nat)
+       (seqLen :: Nat)
+ where
+  TransformerLM
+    :: forall
+         numAttnLayers
+         numHeads
+         paddingIdx
+         dtype
+         numEmbeds
+         embedDim
+         seqLen
+     . { tEmbedding :: Embedding ('Just paddingIdx) dtype numEmbeds embedDim
+       , tPosEmbedding :: Embedding 'Nothing dtype 2048 embedDim
+       , tDropout :: Dropout
+       , tAttnLayers :: HList (HReplicateR numAttnLayers (MultiheadAttention dtype embedDim numHeads))
+       , tProj :: Linear dtype embedDim seqLen
+       }
+    -> TransformerLM numAttnLayers numHeads paddingIdx dtype numEmbeds embedDim seqLen
+  
+logits
+  :: forall
+       numAttnLayers
+       numHeads
+       paddingIdx
+       dtype
+       numEmbeds
+       embedDim
+       seqLen
+       batchSize
+   . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
+     , paddingIdx + 1 <= numEmbeds
+     , HFoldrM
+         IO
+         FoldAttnLayers
+         (Tensor dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (MultiheadAttention dtype embedDim numHeads))
+     )
+  => TransformerLM numAttnLayers numHeads paddingIdx dtype numEmbeds embedDim seqLen
+  -> Tensor 'D.Int64 '[batchSize, seqLen]
+  -> IO (Tensor dtype '[batchSize, seqLen, seqLen])
+logits TransformerLM {..} input = do
+  hidden <-
+    transpose @0 @1
+      <$> getHidden @numAttnLayers @numHeads tEmbedding
+                                             tPosEmbedding
+                                             tDropout
+                                             tAttnLayers
+                                             input
+  return $ linear tProj hidden
 
 data LayerNorm (dtype :: D.DType) (normalizedShape :: [Nat]) where
   LayerNorm
