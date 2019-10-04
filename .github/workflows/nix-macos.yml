@@ -12,10 +12,7 @@ jobs:
     - name: Setup repo
       run: |
         git submodule init && git submodule update
-    - name: Setup cachix
-      run: |
-        nix-env -iA cachix -f https://cachix.org/api/v1/install
-    - name: Build
-      run: |
-        cachix use pytorch-world
-        nix-build
+    - uses: cachix/cachix-action@v2
+      with:
+        name: hasktorch
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
