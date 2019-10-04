@@ -188,7 +188,7 @@ instance ( 1 <= numHeads
          FoldAttnLayers
          (MultiheadAttention dtype embedDim numHeads)
          (Tensor dtype '[seqLen, batchSize, embedDim] -> IO (Tensor dtype '[seqLen, batchSize, embedDim]))
-    where
+ where
   apply _ attn = \t -> do
     (t', _) <- multiheadAttention attn t
     return t'
@@ -205,6 +205,7 @@ getHidden
        batchSize
    . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
+     , 1 <= seqLen
      , HFoldrM
          IO
          FoldAttnLayers
@@ -219,13 +220,14 @@ getHidden
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
 getHidden embedding posEmbedding dropout attnLayers input = do
   let srcTokens = transpose @0 @1 input
-      positions =
-        expand @'[seqLen, batchSize, embedDim] True
-          . unsqueeze @1
-          . embed posEmbedding
-          $ (_ :: Tensor 'D.Int64 '[seqLen])
-      src =
-        embed embedding srcTokens :: Tensor dtype '[seqLen, batchSize, embedDim]
+      src       = embed embedding srcTokens
+      positions = expand @'[seqLen, batchSize, embedDim] True
+                    . unsqueeze @1
+                    . embed posEmbedding
+                    . toDType @D.Int64
+                    . linspace @seqLen 0
+                    . fromIntegral
+                    $ natValI @(seqLen - 1)
   x <- Main.dropout dropout (src `add` positions)
   let paddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[])
   x' <- hfoldrM FoldAttnLayers x attnLayers
@@ -269,6 +271,7 @@ logits
        batchSize
    . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
+     , 1 <= seqLen
      , HFoldrM
          IO
          FoldAttnLayers
@@ -281,11 +284,12 @@ logits
 logits TransformerLM {..} input = do
   hidden <-
     transpose @0 @1
-      <$> getHidden @numAttnLayers @numHeads tEmbedding
-                                             tPosEmbedding
-                                             tDropout
-                                             tAttnLayers
-                                             input
+      <$> getHidden @numAttnLayers @numHeads -- TODO: these type applications shouldn't be necessary
+            tEmbedding
+            tPosEmbedding
+            tDropout
+            tAttnLayers
+            input
   return $ linear tProj hidden
 
 data LayerNorm (dtype :: D.DType) (normalizedShape :: [Nat]) where

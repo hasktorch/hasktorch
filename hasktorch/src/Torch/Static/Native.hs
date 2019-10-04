@@ -50,19 +50,6 @@ import Torch.Functions (Reduction(..), Tri(..), isUpper, kOne)
 import Torch.Static
 import Torch.Static.Factories
 
----
-
-dim :: Tensor dtype shape -> Int
-dim t = D.dim $ toDynamic t
-
-shape :: Tensor dtype shape -> [Int]
-shape t = D.shape $ toDynamic t
-
-dtype :: Tensor dtype shape -> D.DType
-dtype t = D.dtype $ toDynamic t
-
-toInt :: Tensor dtype shape -> Int
-toInt t = D.toInt $ toDynamic t
 
 sumAll :: Tensor dtype shape -> Tensor dtype shape
 sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t

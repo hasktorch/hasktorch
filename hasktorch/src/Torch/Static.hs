@@ -642,3 +642,19 @@ toCPU t = UnsafeMkTensor $ D.toCPU (toDynamic t)
 
 toCUDA :: Tensor dtype shape -> Tensor dtype shape
 toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
+
+--------------------------------------------------------------------------------
+-- Auxiliary functions for accessing tensor properties as values
+--------------------------------------------------------------------------------
+
+dim :: Tensor dtype shape -> Int
+dim t = D.dim $ toDynamic t
+
+shape :: Tensor dtype shape -> [Int]
+shape t = D.shape $ toDynamic t
+
+dtype :: Tensor dtype shape -> D.DType
+dtype t = D.dtype $ toDynamic t
+
+toInt :: Tensor dtype shape -> Int
+toInt t = D.toInt $ toDynamic t
