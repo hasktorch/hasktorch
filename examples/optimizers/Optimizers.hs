@@ -10,12 +10,13 @@ import Torch.Functions
 import Torch.Autograd
 import Torch.NN
 
--- type aliases for readability
 type LearningRate = Tensor
-type Gradient = Tensor
+newtype Gradients = Gradients [Tensor] deriving Show
+
+grad' t p = Gradients (grad t p)
 
 class Optimizer o where
-    step :: LearningRate -> [Gradient] -> [Tensor] -> o -> ([Tensor], o)
+    step :: LearningRate -> Gradients -> [Tensor] -> o -> ([Tensor], o)
 
 --
 -- Gradient Descent
@@ -24,22 +25,17 @@ class Optimizer o where
 data GD = GD deriving Show
 
 -- | Stateless gradient descent step
-gd :: LearningRate -> [Gradient] -> [Tensor] -> [Tensor]
-gd lr parameters gradients = zipWith step parameters gradients
+gd :: LearningRate -> Gradients -> [Tensor] -> [Tensor]
+gd lr (Gradients gradients) parameters = zipWith step parameters gradients
   where
     step p dp = p - (lr * dp)
 
--- | Gradient descent step with a dummy state variable patterned for a State monad
-gd' :: LearningRate -> [Gradient] -> [Tensor] -> GD -> ([Tensor], GD) 
+-- | Gradient descent step with a dummy state variable
+gd' :: LearningRate -> Gradients -> [Tensor] -> GD -> ([Tensor], GD) 
 gd' lr gradients depParameters dummy = (gd lr gradients depParameters, dummy)
 
 instance Optimizer GD where
-    step lr gradients parameters dummy = (gd lr gradients parameters, dummy) 
-
--- construct a GD optimizer as a state monad
-
-initGD :: (LearningRate -> [Gradient] -> [Tensor] -> State GD [Tensor])
-initGD = \lr gradients depParameters -> state (gd' lr gradients depParameters)
+    step = gd'
 
 --
 -- Gradient Descent with Momentum
@@ -50,14 +46,15 @@ data GDM = GDM { beta :: Float, momentum :: [Tensor] } deriving Show
 -- gradient descent with momentum step
 gdm 
     :: LearningRate -- ^ learning rate
-    -> [Gradient] -- ^ model parameter gradients
+    -> Gradients -- ^ model parameter gradients
     -> [Tensor] -- ^ model parameters
     -> GDM -- ^ beta & momentum
     -> ([Tensor], GDM) -- ^ returns new parameters + updated momentum
-gdm lr gradients parameters GDM{..} = (fmap fst runStep, GDM beta (fmap snd runStep))
-  where
-    step p dp z = let z' = mulScalar z beta + dp in (p - lr * z', z')
-    runStep = (zipWith3 step) parameters gradients momentum
+gdm lr (Gradients gradients) parameters (GDM beta momentum) = 
+    (fmap fst runStep, GDM beta (fmap snd runStep))
+    where
+        step p dp z = let z' = mulScalar z beta + dp in (p - lr * z', z')
+        runStep = (zipWith3 step) parameters gradients momentum
 
 instance Optimizer GDM where
     step = gdm
@@ -68,21 +65,21 @@ instance Optimizer GDM where
 
 -- | State representation for Adam Optimizer
 data Adam = Adam { 
-    beta1 :: Float,
-    beta2 :: Float,
+    beta1 :: Float, -- 1st moment forgetting factor
+    beta2 :: Float, -- 2nd moment forgetting factor
     m1 :: [Tensor], -- 1st moment
     m2 :: [Tensor], -- 2nd moment
     iter :: Int -- iteration
     } deriving Show
 
--- | Adap step
+-- | Adam step
 adam 
     :: LearningRate  -- ^ learning rate
-    -> [Gradient] -- ^ model parameter gradients
+    -> Gradients -- ^ model parameter gradients
     -> [Tensor] -- ^ model parameters
     -> Adam -- ^ adam parameters - beta1, beta2, moments, iteration
     -> ([Tensor], Adam) -- ^ returns new parameters + updated adam parameters
-adam lr gradients parameters Adam{..} = (parameters', Adam beta1 beta2 m1' m2' (iter+1))
+adam lr (Gradients gradients) parameters Adam{..} = (parameters', Adam beta1 beta2 m1' m2' (iter+1))
     where
         -- decaying averages of 1st & 2nd moments
         f1 m1 dp = mulScalar m1 beta1 + mulScalar dp (1 - beta1)

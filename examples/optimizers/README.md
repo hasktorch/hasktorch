@@ -11,13 +11,22 @@ Optimizers are represented by types encapsulating the state of the optimizer (mo
 The `step` function can be called for any optimizer, and is defined as:
 
 ```
-class Optimizer a where
+class Optimizer o where
     step :: 
-        Tensor -- ^ learning rate
-        -> a -- ^ optimizer state
-        -> [Parameter] -- ^ model parameters
-        -> [Tensor] -- ^ gradient
-        -> ([Tensor], a) -- ^ new model parameters and optimizer state
+        LearningRate -- ^ learning rate (Tensor alias)
+        -> [Gradient] -- ^ gradients (Tensor alias)
+        -> [Tensor] -- ^ model parameters
+        -> o -- ^ optimizer state
+        -> ([Tensor], o) -- ^ new model parameters and optimizer state
+
+class Optimizer o where
+    step :: LearningRate -> [Gradient] -> [Tensor] -> o -> ([Tensor], o)
 ```
 
 The `step` function is responsible for computing gradients, returning a tuple containing the new set of parameters and an updated version of the state of the optimizer.
+
+## Test Functions and OptimizersTest Functions
+
+3 Test functions are currently implemented - convex quadratic, rosenbrock, and ackley function.
+
+Optimization over convex quadratic and rosenbrock should converge, while optimization over the ackley function does not.
