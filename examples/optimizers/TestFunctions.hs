@@ -65,6 +65,11 @@ lossConvQuad :: Tensor -> Tensor -> ConvQuad -> Tensor
 lossConvQuad a b (ConvQuad w) = convexQuadratic a b w'
     where w' = toDependent w
 
+-- Sphere function
+
+-- data Sphere = Sphere { n :: Int }
+-- data Sphere = Sphere { w :: Parameter } deriving (Show, Generic)
+
 -- Ackley function
 
 data AckleySpec = AckleySpec deriving (Show, Eq)

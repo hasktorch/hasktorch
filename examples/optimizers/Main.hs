@@ -39,13 +39,14 @@ runIter :: (Show p, Parameterized p, Optimizer o) =>
         p -> o -> (p -> Tensor) -> Tensor -> Int -> Int -> IO ([Parameter], o)
 runIter paramState optState lossFunction lr iter maxIter = do
     showLog 1000 iter maxIter lossValue paramState
-    let (flatParameters', optState') = step lr optState flatParameters gradients
+    let (flatParameters', optState') = step lr gradients depParameters optState 
     newFlatParam <- mapM makeIndependent flatParameters'
     pure (newFlatParam, optState')
     where
         lossValue = lossFunction paramState
         flatParameters = flattenParameters paramState
         gradients = grad lossValue flatParameters
+        depParameters = fmap toDependent flatParameters
 
 -- | foldM as a loop with action block as the last argument
 foldLoop :: Monad m => a -> Int -> (a -> Int -> m a) -> m a
