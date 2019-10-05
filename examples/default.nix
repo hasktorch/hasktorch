@@ -1,1 +1,1 @@
-(import ../nix/shared.nix { }).hasktorch-examples
+(import ../nix/shared.nix { }).hasktorch-examples_cpu

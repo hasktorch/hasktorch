@@ -1,48 +1,67 @@
+cabal-version:       2.2
 name:                examples
 version:             0.2.0.0
 synopsis:            examples for the new version of hasktorch
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
-license:             BSD3
+license:             BSD-3-Clause
 author:              Austin Huang
 maintainer:          hasktorch@gmail.com
 copyright:           2019 Austin Huang
 category:            Codegen
 build-type:          Simple
-cabal-version:       >=1.10
 
-executable xor_mlp
-  hs-source-dirs:      xor_mlp
-  main-is:             Main.hs
+common config
   default-language:    Haskell2010
+  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
+                    --  , ghc-typelits-extra >= 0.3.1
+                    --  , ghc-typelits-knownnat >= 0.7
+                    --  , ghc-typelits-natnormalise >= 0.7
+                     , ghc-typelits-extra
+                     , ghc-typelits-knownnat
+                     , ghc-typelits-natnormalise
                      , mtl
 
-
-executable static_xor_mlp
-  hs-source-dirs:      static_xor_mlp
+executable xor-mlp
+  import:              config
+  hs-source-dirs:      xor-mlp
   main-is:             Main.hs
-  default-language:    Haskell2010
+
+executable static-xor-mlp
+  import:              config
+  hs-source-dirs:      static-xor-mlp
+  main-is:             Main.hs
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl
                      , reflection
 
+executable static-cnn
+  import:              config
+  hs-source-dirs:      static-cnn
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+
+executable static-transformer
+  import:              config
+  hs-source-dirs:      static-transformer
+  main-is:             Main.hs
+  build-depends:       reflection
+
 executable rnn
+  import:              config
   hs-source-dirs:      rnn
   main-is:             Main.hs
   other-modules:       RecurrentLayer,
                        Elman,
                        LSTM,
                        GRU
-  default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch
-                     , mtl
-                     , libtorch-ffi
+  build-depends:       libtorch-ffi
 
 executable minimal-text-example
+  import:              config
   hs-source-dirs:      minimal-text-example,
                        rnn
   main-is:             Hello.hs
@@ -50,59 +69,33 @@ executable minimal-text-example
                        Elman,
                        LSTM,
                        GRU
-  default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch
-                     , mtl
-                     , libtorch-ffi
-
+  build-depends:       libtorch-ffi
 
 executable regression
+  import:              config
   hs-source-dirs:      regression
   main-is:             Main.hs
-  default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch
-                     , mtl
-                     , libtorch-ffi
+  build-depends:       libtorch-ffi
 
-executable cnn
-  hs-source-dirs:      cnn
+executable gaussian-process
+  import:              config
+  hs-source-dirs:      gaussian-process
   main-is:             Main.hs
-  default-language:    Haskell2010
   ghc-options:         -fno-warn-partial-type-signatures
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch
-                     , mtl
-
-executable gaussian_process
-  hs-source-dirs:      gaussian_process
-  main-is:             Main.hs
-  default-language:    Haskell2010
-  ghc-options:         -fno-warn-partial-type-signatures
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch
-                     , mtl
 
 executable vae
+  import:              config
   hs-source-dirs:      vae
   main-is:             Main.hs
-  default-language:    Haskell2010
   ghc-options:         -fno-warn-partial-type-signatures
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch
-                     , mtl
 
 executable serialization
+  import:              config
   hs-source-dirs:      serialization
   main-is:             Main.hs
-  default-language:    Haskell2010
   ghc-options:         -fno-warn-partial-type-signatures
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch
-                     , mtl
+  build-depends:       bytestring
                      , serialise
-                     , bytestring
 
 executable optimizers
   hs-source-dirs:      optimizers

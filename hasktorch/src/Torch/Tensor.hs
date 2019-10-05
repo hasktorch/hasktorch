@@ -91,11 +91,15 @@ toSparse t = unsafePerformIO $ (cast1 ATen.tensor_to_sparse) t
 toDense :: Tensor -> Tensor
 toDense t = unsafePerformIO $ (cast1 ATen.tensor_to_dense) t
 
+toMKLDNN :: Tensor -> Tensor
+toMKLDNN t = unsafePerformIO $ (cast1 ATen.tensor_to_mkldnn) t
+
 toCPU :: Tensor -> Tensor
 toCPU t = unsafePerformIO $ (cast1 ATen.tensor_cpu) t
 
 toCUDA :: Tensor -> Tensor
 toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
+
 
 --------------------------------------------------------------------------------
 -- Indexing support

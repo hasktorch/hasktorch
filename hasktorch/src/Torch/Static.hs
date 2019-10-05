@@ -15,6 +15,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Torch.Static where
 
@@ -33,7 +35,7 @@ import Foreign.ForeignPtr
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.Functions as D
-import qualified Torch.DType as DType
+import qualified Torch.DType as D
 
 natValI :: forall n. KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n
@@ -51,50 +53,50 @@ getFiniteI :: Finite n -> Int
 getFiniteI = fromIntegral . getFinite
 
 class KnownDType dtype where
-  dtypeVal :: DType.DType
+  dtypeVal :: D.DType
 
-instance KnownDType 'DType.Bool where
-  dtypeVal = DType.Bool
-instance KnownDType 'DType.UInt8 where
-  dtypeVal = DType.UInt8
-instance KnownDType 'DType.Int8 where
-  dtypeVal = DType.Int8
-instance KnownDType 'DType.Int16 where
-  dtypeVal = DType.Int16
-instance KnownDType 'DType.Int32 where
-  dtypeVal = DType.Int32
-instance KnownDType 'DType.Int64 where
-  dtypeVal = DType.Int64
-instance KnownDType 'DType.Half where
-  dtypeVal = DType.Half
-instance KnownDType 'DType.Float where
-  dtypeVal = DType.Float
-instance KnownDType 'DType.Double where
-  dtypeVal = DType.Double
+instance KnownDType 'D.Bool where
+  dtypeVal = D.Bool
+instance KnownDType 'D.UInt8 where
+  dtypeVal = D.UInt8
+instance KnownDType 'D.Int8 where
+  dtypeVal = D.Int8
+instance KnownDType 'D.Int16 where
+  dtypeVal = D.Int16
+instance KnownDType 'D.Int32 where
+  dtypeVal = D.Int32
+instance KnownDType 'D.Int64 where
+  dtypeVal = D.Int64
+instance KnownDType 'D.Half where
+  dtypeVal = D.Half
+instance KnownDType 'D.Float where
+  dtypeVal = D.Float
+instance KnownDType 'D.Double where
+  dtypeVal = D.Double
 
-type family ComputeDType (dtype' :: dtype) :: DType.DType where
-  ComputeDType Bool = DType.Bool
-  ComputeDType DType.Bool = DType.Bool
-  ComputeDType DType.UInt8 = DType.UInt8
-  ComputeDType DType.Int8 = DType.Int8
-  ComputeDType DType.Int16 = DType.Int16
-  ComputeDType DType.Int32 = DType.Int32
-  ComputeDType Int = DType.Int64
-  ComputeDType DType.Int64 = DType.Int64
-  ComputeDType Float = DType.Float
-  ComputeDType DType.Float = DType.Float
-  ComputeDType Double = DType.Double
-  ComputeDType DType.Double = DType.Double
+type family ComputeDType (dtype' :: dtype) :: D.DType where
+  ComputeDType Bool = D.Bool
+  ComputeDType D.Bool = D.Bool
+  ComputeDType D.UInt8 = D.UInt8
+  ComputeDType D.Int8 = D.Int8
+  ComputeDType D.Int16 = D.Int16
+  ComputeDType D.Int32 = D.Int32
+  ComputeDType Int = D.Int64
+  ComputeDType D.Int64 = D.Int64
+  ComputeDType Float = D.Float
+  ComputeDType D.Float = D.Float
+  ComputeDType Double = D.Double
+  ComputeDType D.Double = D.Double
   ComputeDType dtype' = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype')
 
-data Tensor (dtype :: DType.DType) (shape :: [Nat]) where
+data Tensor (dtype :: D.DType) (shape :: [Nat]) where
   UnsafeMkTensor :: forall dtype shape . { toDynamic :: D.Tensor } -> Tensor dtype shape
 
-type family ComputeHaskellType (dtype :: DType.DType) :: Type where
-  ComputeHaskellType DType.Bool = Bool
-  ComputeHaskellType DType.Int64 = Int
-  ComputeHaskellType DType.Float = Float
-  ComputeHaskellType DType.Double = Double
+type family ComputeHaskellType (dtype :: D.DType) :: Type where
+  ComputeHaskellType D.Bool = Bool
+  ComputeHaskellType D.Int64 = Int
+  ComputeHaskellType D.Float = Float
+  ComputeHaskellType D.Double = Double
   ComputeHaskellType dtype = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype)
   
 type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
@@ -129,8 +131,8 @@ instance Fractional (Tensor dtype shape) where
 instance Show (Tensor dtype shape) where
     show (UnsafeMkTensor dynamic) = show dynamic
 
-class TensorOptions (dtype :: DType.DType) (shape :: [Nat]) where
-  optionsRuntimeDType :: DType.DType
+class TensorOptions (dtype :: D.DType) (shape :: [Nat]) where
+  optionsRuntimeDType :: D.DType
   optionsRuntimeShape :: [Int]
 
 instance (KnownDType dtype) => TensorOptions dtype '[] where
@@ -144,6 +146,9 @@ instance (KnownDType dtype, KnownNat h, TensorOptions dtype t) => TensorOptions 
 --------------------------------------------------------------------------------
 -- Dynamic -> Static typecasts
 --------------------------------------------------------------------------------
+
+-- type family Flip (constraint :: a -> b -> Constraint) (fst :: b) (snd :: a) :: Constraint where
+--   Flip constraint b a = constraint a b
 
 type family All (pred :: a -> Constraint) (l :: [a]) :: Constraint where
     All _    '[] = ()
@@ -160,13 +165,13 @@ someShape (h : t) = case someNatVal (fromIntegral h) of
         (SomeShape (Proxy :: Proxy tt)) -> SomeShape $ Proxy @(ht ': tt)
 
 data SomeDType where
-    SomeDType :: forall (dtype :: DType.DType). Proxy dtype -> SomeDType
+    SomeDType :: forall (dtype :: D.DType). Proxy dtype -> SomeDType
 
-someDType :: DType.DType -> SomeDType
-someDType DType.Float = SomeDType $ Proxy @DType.Float
+someDType :: D.DType -> SomeDType
+someDType D.Float = SomeDType $ Proxy @D.Float
 
 withTensor :: D.Tensor ->
-              (forall (dtype :: DType.DType) (shape :: [Nat]).
+              (forall (dtype :: D.DType) (shape :: [Nat]).
                     KnownShape shape => Tensor dtype shape -> r) ->
               r
 
@@ -178,25 +183,30 @@ withTensor d f = case someShape (D.shape d) of
 -- Broadcast type-level function
 --------------------------------------------------------------------------------
 
-type family AppendToMaybe (n :: Nat) (l :: Maybe [Nat]) where
-    AppendToMaybe n Nothing = Nothing
-    AppendToMaybe n (Just l) = Just (n : l)
+type family AppendToMaybe (h :: a) (mt :: Maybe [a]) :: Maybe [a]  where
+    AppendToMaybe h Nothing  = Nothing
+    AppendToMaybe h (Just t) = Just (h : t)
 
-type family ComputeBroadcast (shape :: [Nat]) (shape' :: [Nat]) :: Maybe [Nat] where
-    ComputeBroadcast '[] shape = Just shape
-    ComputeBroadcast shape '[] = Just shape
-    ComputeBroadcast (h ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-    ComputeBroadcast (h ': t) (1 ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-    ComputeBroadcast (1 ': t) (h ': t2) = AppendToMaybe h (ComputeBroadcast t t2)
-    ComputeBroadcast _ _ = Nothing
+type family AppendToMaybe' (h :: Maybe a) (mt :: Maybe [a]) :: Maybe [a] where
+  AppendToMaybe' Nothing  _        = Nothing
+  AppendToMaybe' _        Nothing  = Nothing
+  AppendToMaybe' (Just h) (Just t) = Just (h : t)
+
+type family ComputeBroadcast (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
+    ComputeBroadcast '[]           reversedShape = Just reversedShape
+    ComputeBroadcast reversedShape '[]           = Just reversedShape
+    ComputeBroadcast (h ': t)      (h ': t2)     = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast (h ': t)      (1 ': t2)     = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast (1 ': t)      (h ': t2)     = AppendToMaybe h (ComputeBroadcast t t2)
+    ComputeBroadcast _             _             = Nothing
 
 type family CheckBroadcast (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
-    CheckBroadcast shape shape' Nothing = TypeError (Text "The shapes " :<>:
-                                                       ShowType shape :<>:
-                                                       Text " and " :<>:
-                                                       ShowType shape' :<>:
-                                                       Text " cannot be broadcast")
-    CheckBroadcast _ _ (Just result) = (Reverse result)
+    CheckBroadcast shape shape' Nothing       = TypeError (Text "The shapes " :<>:
+                                                           ShowType shape :<>:
+                                                           Text " and " :<>:
+                                                           ShowType shape' :<>:
+                                                           Text " cannot be broadcast")
+    CheckBroadcast _     _      (Just result) = (Reverse result)
 
 type Broadcast shape shape' = CheckBroadcast shape shape' (ComputeBroadcast (Reverse shape)
                                                                             (Reverse shape'))
@@ -204,6 +214,13 @@ type Broadcast shape shape' = CheckBroadcast shape shape' (ComputeBroadcast (Rev
 --------------------------------------------------------------------------------
 -- Nice error messages for type checking failures
 --------------------------------------------------------------------------------
+
+type family DimOutOfBoundCheckImpl (shape :: [a]) (dim :: Nat) (xs :: [a]) (n :: Nat) :: Constraint where
+  DimOutOfBoundCheckImpl shape dim '[]       _ = DimOutOfBound shape dim
+  DimOutOfBoundCheckImpl _     _   _         0 = ()
+  DimOutOfBoundCheckImpl shape dim (_ ': xs) n = DimOutOfBoundCheckImpl shape dim xs (n - 1)
+
+type DimOutOfBoundCheck shape dim = DimOutOfBoundCheckImpl shape dim shape dim
 
 type family DimOutOfBound (shape :: [a]) (dim :: Nat) where
     DimOutOfBound shape dim = TypeError (Text "Out of bound dimension: " :<>:
@@ -226,7 +243,7 @@ type family IndexOutOfBound (shape :: [a]) (dim :: Nat) (idx :: Nat) where
 --------------------------------------------------------------------------------
 
 type family ListLength (l :: [a]) :: Nat where
-    ListLength '[] = 0
+    ListLength '[]      = 0
     ListLength (_ ': t) = 1 + ListLength t
 
                     ----------------------------------------
@@ -271,6 +288,16 @@ type family ReverseImpl (l :: [a]) (acc :: [a]) :: [a] where
 
 type Reverse l = ReverseImpl l '[]
 
+type family ExtractDim (dim :: Nat) (shape :: [Nat]) :: Maybe Nat where
+  ExtractDim 0   (h ': _) = Just h
+  ExtractDim dim (_ ': t) = ExtractDim (dim - 1) t
+  ExtractDim _   _        = Nothing
+
+type family ReplaceDim (dim :: Nat) (shape :: [Nat]) (n :: Nat) :: Maybe [Nat] where
+  ReplaceDim 0   (_ ': t) n = Just (n ': t)
+  ReplaceDim dim (h ': t) n = AppendToMaybe h (ReplaceDim (dim - 1) t n)
+  ReplaceDim _   _        _ = Nothing
+
 --------------------------------------------------------------------------------
 -- Operations
 --------------------------------------------------------------------------------
@@ -303,11 +330,66 @@ mul :: (shape'' ~ Broadcast shape shape') =>
         Tensor dtype shape -> Tensor dtype shape' -> Tensor dtype shape''
 mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
 
-relu :: Tensor dtype shape -> Tensor dtype shape
-relu t = UnsafeMkTensor $ D.relu (toDynamic t)
+gt :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+gt a b = UnsafeMkTensor $ D.gt (toDynamic a) (toDynamic b)
 
-mm :: Tensor dtype [n, k] -> Tensor dtype [k, m] -> Tensor dtype [n, m]
-mm a b = UnsafeMkTensor $ D.matmul (toDynamic a) (toDynamic b)
+(>.) = gt
+
+lt :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+lt a b = UnsafeMkTensor $ D.lt (toDynamic a) (toDynamic b)
+
+(<.) = lt
+
+ge :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+ge a b = UnsafeMkTensor $ D.ge (toDynamic a) (toDynamic b)
+
+(>=.) = ge
+
+le :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+le a b = UnsafeMkTensor $ D.le (toDynamic a) (toDynamic b)
+
+(<=.) = le
+
+eq :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+eq a b = UnsafeMkTensor $ D.eq (toDynamic a) (toDynamic b)
+
+(==.) = eq
+
+ne :: (shape'' ~ Broadcast shape shape') =>
+      Tensor dtype shape -> Tensor dtype shape' -> Tensor 'D.Bool shape''
+ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
+
+(/=.) = ne
+
+type family ComputeMatMul (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
+  ComputeMatMul (k ': '[])                         (k ': '[])                          = Just '[]
+  ComputeMatMul (k ': '[])                         (m ': k ': reversedBroadcastShape') = AppendToMaybe m (ComputeBroadcast '[] reversedBroadcastShape')
+  ComputeMatMul (k ': n ': reversedBroadcastShape) (k ': '[])                          = AppendToMaybe n (ComputeBroadcast '[] reversedBroadcastShape)
+  ComputeMatMul (k ': n ': reversedBroadcastShape) (m ': k ': reversedBroadcastShape') = AppendToMaybe m (AppendToMaybe n (ComputeBroadcast reversedBroadcastShape reversedBroadcastShape'))
+
+type family CheckMatMul (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
+  CheckMatMul shape shape' Nothing       = TypeError (Text "The shapes " :<>:
+                                                      ShowType shape :<>:
+                                                      Text " and " :<>:
+                                                      ShowType shape' :<>:
+                                                      Text " are not compatible with matrix multiplication")
+  CheckMatMul _     _      (Just result) = (Reverse result)
+
+type MatMul shape shape' = CheckMatMul shape shape' (ComputeMatMul (Reverse shape) (Reverse shape'))
+
+-- | matmul, see https://pytorch.org/docs/stable/torch.html#torch.matmul
+matmul
+  :: forall dtype shape shape' shape''
+   . (shape'' ~ MatMul shape shape')
+  => Tensor dtype shape
+  -> Tensor dtype shape'
+  -> Tensor dtype shape''
+matmul a b = UnsafeMkTensor $ D.matmul (toDynamic a) (toDynamic b)
 
 select :: forall dim idx shape dtype shape'.
           (KnownNat dim, KnownNat idx,
@@ -364,21 +446,6 @@ conv2dBias input weight bias = UnsafeMkTensor $
              (natValI @(Fst stride), natValI @(Snd stride))
              (natValI @(Fst padding), natValI @(Snd padding))
 
-maxPool2d :: forall kernel_size stride padding dtype n c ih iw oh ow.
-             ( All KnownNat [ Fst kernel_size, Snd kernel_size
-                            , Fst stride, Snd stride
-                            , Fst padding, Snd padding ]
-             , ConvSideCheck ih (Fst kernel_size) (Fst stride) (Fst padding) oh
-             , ConvSideCheck iw (Snd kernel_size) (Snd stride) (Snd padding) ow ) =>
-               Tensor dtype '[n, c, ih, iw] ->
-               Tensor dtype '[n, c, oh, ow]
-maxPool2d input = UnsafeMkTensor $
-    D.maxPool2d (toDynamic input)
-                (natValI @(Fst kernel_size), natValI @(Snd kernel_size))
-                (natValI @(Fst stride), natValI @(Snd stride))
-                (natValI @(Fst padding), natValI @(Snd padding))
-
-
 type family Numel (shape :: [Nat]) :: Nat where
     Numel '[] = 1
     Numel (h ': t) = h * (Numel t)
@@ -386,16 +453,10 @@ type family Numel (shape :: [Nat]) :: Nat where
 reshape :: forall shape' dtype shape. (KnownShape shape', Numel shape ~ Numel shape') => Tensor dtype shape -> Tensor dtype shape'
 reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
 
-logSoftmax :: KnownShape shape => Tensor dtype shape -> Int -> Tensor dtype shape
-logSoftmax input dim = UnsafeMkTensor $ D.logSoftmax (toDynamic input) dim
-
---instance Castable (Tensor dtype shape) D.Tensor where
---  cast (UnsafeMkTensor dtensor) f = f dtensor
---  uncast dtensor f = f $ UnsafeMkTensor dtensor
 
 instance Castable (Tensor dtype shape) D.ATenTensor where
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
-  uncast aten_tensor f = f $ (UnsafeMkTensor (D.Unsafe aten_tensor))
+  uncast aten_tensor f = f $ UnsafeMkTensor (D.Unsafe aten_tensor)
 
 instance Castable [Tensor dtype shape] (ForeignPtr ATen.TensorList) where
   cast xs f = do
@@ -404,3 +465,157 @@ instance Castable [Tensor dtype shape] (ForeignPtr ATen.TensorList) where
   uncast xs f = uncast xs $ \ptr_list -> do
     tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
     f tensor_list
+
+
+data family HList (l :: [Type])
+data instance HList '[] = HNil
+newtype instance HList (x ': xs) = HCons1 (x, HList xs)
+pattern HCons x xs = HCons1 (x, xs)
+
+instance Eq (HList '[]) where
+  HNil == HNil = True
+
+instance (Eq x, Eq (HList xs)) => Eq (HList (x ': xs)) where
+  (HCons x xs) == (HCons y ys) = x == y && xs == ys
+
+class Apply f a b where
+  apply :: f -> a -> b
+
+class HMap f xs ys where
+  hmap :: f -> HList xs -> HList ys
+
+instance HMap f '[] '[] where
+  hmap _ _ = HNil
+
+instance (Apply f x y, HMap f xs ys) => HMap f (x ': xs) (y ': ys) where
+  hmap f (HCons x xs) = HCons (apply f x) (hmap f xs)
+
+class HFoldr f acc xs where
+  hfoldr :: f -> acc -> HList xs -> acc
+
+instance HFoldr f acc '[] where
+  hfoldr _ acc _ = acc
+
+instance (Apply f x (acc -> acc), HFoldr f acc xs) => HFoldr f acc (x ': xs) where
+  hfoldr f acc (HCons x xs) = apply f x $ hfoldr f acc xs
+
+class HFoldrM m f acc xs where
+  hfoldrM :: f -> acc -> HList xs -> m acc
+
+instance (Monad m) => HFoldrM m f acc '[] where
+  hfoldrM _ acc _ = pure acc
+
+instance (Monad m, Apply f x (acc -> m acc), HFoldrM m f acc xs) => HFoldrM m f acc (x ': xs) where
+  hfoldrM f acc (HCons x xs) = apply f x =<< hfoldrM f acc xs
+
+data HNothing  = HNothing
+data HJust x   = HJust x
+
+class HUnfold f res xs where
+  hunfoldr' :: f -> res -> HList xs
+
+type family HUnfoldRes s xs where
+  HUnfoldRes _ '[] = HNothing
+  HUnfoldRes s (x ': _) = HJust (x, s)
+
+instance HUnfold f HNothing '[] where
+  hunfoldr' _ _ = HNil
+
+instance (Apply f s res, HUnfold f res xs, res ~ HUnfoldRes s xs) => HUnfold f (HJust (x, s)) (x ': xs) where
+  hunfoldr' f (HJust (x, s)) = HCons x (hunfoldr' f (apply f s :: res))
+
+hunfoldr
+  :: forall f res (xs :: [Type]) a
+   . (Apply f a res, HUnfold f res xs)
+  => f
+  -> a
+  -> HList xs
+hunfoldr f s = hunfoldr' f (apply f s :: res)
+
+class HUnfoldM m f res xs where
+  hunfoldrM' :: f -> res -> m (HList xs)
+
+type family HUnfoldMRes m s xs where
+  HUnfoldMRes m _ '[] = m HNothing
+  HUnfoldMRes m s (x ': _) = m (HJust (x, s))
+
+instance (Monad m) => HUnfoldM m f (m HNothing) '[] where
+  hunfoldrM' _ _ = pure HNil
+
+instance (Monad m, HUnfoldM m f res xs, Apply f s res, res ~ HUnfoldMRes m s xs) => HUnfoldM m f (m (HJust (x, s))) (x ': xs) where
+  hunfoldrM' f just = do
+    HJust (x, s) <- just
+    xs <- hunfoldrM' f (apply f s :: res)
+    return (HCons x xs)
+
+hunfoldrM
+  :: forall (m :: Type -> Type) f res (xs :: [Type]) a
+   . (HUnfoldM m f res xs, Apply f a res, res ~ HUnfoldMRes m a xs)
+  => f
+  -> a
+  -> m (HList xs)
+hunfoldrM f s = hunfoldrM' f (apply f s :: res)
+
+data TensorListFolds = TensorListFolds
+
+instance (Castable x D.ATenTensor) => Apply TensorListFolds x ([D.ATenTensor] -> IO [D.ATenTensor]) where
+  apply _ x = \xs -> do
+    x' <- cast x return
+    return (x' : xs)
+
+instance Apply TensorListFolds [D.ATenTensor] (IO HNothing) where
+  apply _ [] = pure HNothing
+
+instance (Castable x D.ATenTensor) => Apply TensorListFolds [D.ATenTensor] (IO (HJust (x, [D.ATenTensor]))) where
+  apply _ (x : xs) = do
+    x' <- uncast x return
+    return $ HJust (x', xs)
+
+instance (HFoldrM IO TensorListFolds [D.ATenTensor] l, Apply TensorListFolds [D.ATenTensor] res, HUnfoldM IO TensorListFolds res l, res ~ (HUnfoldMRes IO [D.ATenTensor] l)) => Castable (HList l) [D.ATenTensor] where
+  cast xs f = f =<< go xs
+   where
+    go :: HList l -> IO [D.ATenTensor]
+    go xs = hfoldrM TensorListFolds [] xs
+  uncast xs f = f =<< go xs
+   where
+    go :: [D.ATenTensor] -> IO (HList l)
+    go xs = hunfoldrM TensorListFolds xs
+
+instance Castable (HList l) [D.ATenTensor] => Castable (HList l) (ForeignPtr ATen.TensorList) where
+  cast xs f = do
+    ts <- cast xs return :: IO [ForeignPtr ATen.Tensor]
+    cast ts f
+  uncast xs f = uncast xs $ \(ptrList :: [ForeignPtr ATen.Tensor]) -> do
+    ts <- uncast ptrList return :: IO (HList l)
+    f ts
+
+test :: forall dtype shape . Tensor dtype shape -> IO [D.ATenTensor]
+test t = hfoldrM TensorListFolds [] (HCons t HNil)
+
+test' :: forall dtype shape dtype' shape' . [D.ATenTensor] -> IO (HList '[Tensor dtype shape, Tensor dtype' shape'])
+test' xs = hunfoldrM TensorListFolds xs
+
+test'' :: HList '[Tensor dtype shape] -> IO [D.ATenTensor]
+test'' xs = cast xs return
+
+test''' :: [D.ATenTensor] -> IO (HList '[Tensor dtype shape])
+test''' xs = uncast xs return
+
+--------------------------------------------------------------------------------
+-- Move backend
+--------------------------------------------------------------------------------
+
+toSparse :: Tensor dtype shape -> Tensor dtype shape
+toSparse t = UnsafeMkTensor $ D.toSparse (toDynamic t)
+
+toDense :: Tensor dtype shape -> Tensor dtype shape
+toDense t = UnsafeMkTensor $ D.toDense (toDynamic t)
+
+toMKLDNN :: Tensor dtype shape -> Tensor dtype shape
+toMKLDNN t = UnsafeMkTensor $ D.toMKLDNN (toDynamic t)
+
+toCPU :: Tensor dtype shape -> Tensor dtype shape
+toCPU t = UnsafeMkTensor $ D.toCPU (toDynamic t)
+
+toCUDA :: Tensor dtype shape -> Tensor dtype shape
+toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)

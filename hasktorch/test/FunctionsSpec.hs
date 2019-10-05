@@ -97,6 +97,12 @@ spec = do
     shape y `shouldBe` [5, 5]
 
   -- decomposition / solvers
+  it "solve" $ do
+    a <- rand' [10,10]
+    b <- rand' [10,3]
+    let (x,lu) = solve b a
+    shape x `shouldBe` [10,3]
+    shape lu `shouldBe` [10,10]
 
   it "cholesky decomposes" $ do
     let x = asTensor ([[4.0, 12.0, -16.0], [12.0, 37.0, -43.0], [-16.0, -43.0, 98.0]] :: [[Double]])

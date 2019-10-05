@@ -1,4 +1,3 @@
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -20,6 +19,7 @@ import qualified Torch.Tensor as D
 import qualified Torch.Autograd as A
 import qualified Torch.DType as DType
 import Torch.Static
+import Torch.Static.Native hiding (linear)
 
 --------------------------------------------------------------------------------
 
@@ -63,14 +63,14 @@ data Model dtype = Model { conv1 :: Conv2d dtype 1   20 '(5, 5) NoStrides NoPadd
 model :: forall dtype n. _ => Model dtype -> Tensor dtype [n, 1, 28, 28] -> Tensor dtype [n, 10]
 model Model{..} x = output
   where
-    c1     = relu $ conv2d conv1 x
+    c1     = relu $ Main.conv2d conv1 x
     p1     = maxPool2d @'(2, 2) @'(2, 2) @NoPadding c1
-    c2     = relu $ conv2d conv2 p1
+    c2     = relu $ Main.conv2d conv2 p1
     p2     = maxPool2d @'(2, 2) @'(2, 2) @NoPadding c2
     flat   = reshape @'[n, 4*4*50] p2
     f1     = relu $ linear fc1 flat
     logits = linear fc2 f1
-    output = logSoftmax logits 1
+    output = logSoftmax @1 logits
 
 
 main = undefined

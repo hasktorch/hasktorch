@@ -103,12 +103,7 @@ divScalar :: Scalar a => Tensor -> a -> Tensor
 divScalar t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
 
 matmul :: Tensor -> Tensor -> Tensor
-matmul a b =
-    unsafePerformIO $ case (dim a, dim b) of
-      (2, 2) -> mm a b
-      _ -> error "Unsupported case in matmul!"
-  where
-    mm = cast2 ATen.mm_tt
+matmul a b = unsafePerformIO $ (cast2 ATen.matmul_tt) a b
 
 erf :: Tensor -> Tensor
 erf t = unsafePerformIO $ (cast1 ATen.erf_t) t

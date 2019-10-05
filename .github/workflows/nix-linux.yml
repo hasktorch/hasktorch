@@ -1,0 +1,18 @@
+name: nix-linux
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: cachix/install-nix-action@v3
+    - name: Setup repo
+      run: |
+        git submodule init && git submodule update
+    - uses: cachix/cachix-action@v2
+      with:
+        name: hasktorch
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'

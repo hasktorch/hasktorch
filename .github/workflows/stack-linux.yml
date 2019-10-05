@@ -1,0 +1,33 @@
+name: stack-linux
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup packages
+      run: |
+        sudo apt update -qq
+        sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install cmake curl wget unzip git libtinfo-dev python3 python3-yaml
+        (wget -qO- https://get.haskellstack.org/ | sh) || true
+    - name: Setup repos
+      run: |
+        git submodule init && git submodule update
+    - name: Build
+      run: |
+        export PATH=/opt/ghc/bin:$PATH
+        source setenv
+        pushd deps/ ; ./get-deps.sh -a cpu -c; popd
+        stack build
+    - name: Test
+      run: |
+        export PATH=/opt/ghc/bin:$PATH
+        source setenv
+        stack test codegen
+        stack test libtorch-ffi
+        stack test hasktorch
+        stack exec codegen-exe
+        stack exec xor-mlp

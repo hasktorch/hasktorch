@@ -1,19 +1,22 @@
 { compiler ? "ghc865" }:
 
 let
-  overlayShared = pkgsNew: pkgsOld: {
-    libtorch =
-      let src = pkgsOld.fetchFromGitHub {
+  libtorch_src = pkgs:
+    let src = pkgs.fetchFromGitHub {
           owner  = "stites";
           repo   = "pytorch-world";
-          rev    = "7178a0e61edee422266dae5d984034c3705fce91";
-          sha256 = "0hzl3l3s1nalfiwbh30qswi31irz6bgvrr17brg04hzdspq7rygn";
-        };
-      in
-      (pkgsOld.python37Packages.callPackage "${src}/pytorch/default.nix" { mklSupport = true; }).dev;
-    #pytorch = pkgsOld.python3Packages.pytorchWithoutCuda.override {
-    #  mklSupport = true;
-    #};
+          rev    = "72a8ab0149e6da91b0d7b97adfb73872335c6bc9";
+          sha256 = "0pdld2rpjmliaw0ii0fg62x4q0zk2khwzny4s2sspwmk3d57w3mp";
+    };
+    in (pkgs.callPackage "${src}/libtorch/release.nix" { });
+
+  overlayShared = pkgsNew: pkgsOld: {
+    inherit (libtorch_src pkgsOld)
+      libtorch_cpu
+      libtorch_cudatoolkit_9_2
+      libtorch_cudatoolkit_10_0
+    ;
+
     haskell = pkgsOld.haskell // {
       packages = pkgsOld.haskell.packages // {
         "${compiler}" = pkgsOld.haskell.packages."${compiler}".override (old: {
@@ -26,14 +29,32 @@ let
                 optionalString = pkgsNew.stdenv.lib.optionalString;
                 isDarwin = pkgsNew.stdenv.isDarwin;
 
-                extension =
+                mkHasktorchExtension = postfix:
                   haskellPackagesNew: haskellPackagesOld: {
-                    hasktorch =
+                    "libtorch-ffi_${postfix}" =
+                        appendConfigureFlag
+                          (overrideCabal
+                            (haskellPackagesOld.callCabal2nix
+                              "libtorch-ffi"
+                              ../libtorch-ffi
+                              { c10 = pkgsNew."libtorch_${postfix}"
+                              ; torch = pkgsNew."libtorch_${postfix}"
+                              ; }
+                            )
+                            (old: {
+                                preConfigure = (old.preConfigure or "") + optionalString isDarwin ''
+                                  sed -i -e 's/-optc-std=c++11 -optc-xc++/-optc-xc++/g' ../libtorch-ffi/libtorch-ffi.cabal;
+                                '';
+                              }
+                            )
+                          )
+                        "--extra-include-dirs=${pkgsNew."libtorch_${postfix}"}/include/torch/csrc/api/include";
+                    "hasktorch_${postfix}" =
                       overrideCabal
-                        (haskellPackagesNew.callCabal2nix
+                        (haskellPackagesOld.callCabal2nix
                           "hasktorch"
                           ../hasktorch
-                          { }
+                          { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"; }
                         )
                         (old: {
                               preConfigure = (old.preConfigure or "") + optionalString (!isDarwin) ''
@@ -41,6 +62,19 @@ let
                               '';
                             }
                         );
+                    "hasktorch-examples_${postfix}" =
+                      # failOnAllWarnings
+                        (haskellPackagesOld.callCabal2nix
+                          "examples"
+                          ../examples
+                          { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"
+                          ; hasktorch = haskellPackagesNew."hasktorch_${postfix}"
+                          ; }
+                        );
+                  };
+
+                extension =
+                  haskellPackagesNew: haskellPackagesOld: {
                     hasktorch-codegen =
                       # failOnAllWarnings
                         (haskellPackagesNew.callCabal2nix
@@ -48,29 +82,6 @@ let
                           ../codegen
                           { }
                         );
-                    hasktorch-examples =
-                      # failOnAllWarnings
-                        (haskellPackagesNew.callCabal2nix
-                          "examples"
-                          ../examples
-                          { }
-                        );
-                    libtorch-ffi =
-                      appendConfigureFlag
-                        (overrideCabal
-                          (haskellPackagesNew.callCabal2nix
-                            "libtorch-ffi"
-                            ../libtorch-ffi
-                            { c10 = pkgsNew.libtorch; iomp5 = pkgsNew.mkl; torch = pkgsNew.libtorch; }
-                          )
-                          (old: {
-                              preConfigure = (old.preConfigure or "") + optionalString isDarwin ''
-                                sed -i -e 's/-optc-std=c++11 -optc-xc++/-optc-xc++/g' ../libtorch-ffi/libtorch-ffi.cabal;
-                              '';
-                            }
-                          )
-                        )
-                        "--extra-include-dirs=${pkgsNew.libtorch}/include/torch/csrc/api/include";
                     inline-c =
                       # failOnAllWarnings
                         (haskellPackagesNew.callCabal2nix
@@ -91,9 +102,11 @@ let
                 pkgsNew.lib.fold
                   pkgsNew.lib.composeExtensions
                   (old.overrides or (_: _: {}))
-                  [ (pkgsNew.haskell.lib.packagesFromDirectory { directory = ./.; })
-
+                  [ (pkgsNew.haskell.lib.packagesFromDirectory { directory = ./haskellExtensions/.; })
                     extension
+                    (mkHasktorchExtension "cpu")
+                    (mkHasktorchExtension "cudatoolkit_9_2")
+                    (mkHasktorchExtension "cudatoolkit_10_0")
                   ];
           }
         );
@@ -116,36 +129,48 @@ let
     overlays = [ overlayShared ];
   };
 
+  nullIfDarwin = arg: if pkgs.stdenv.hostPlatform.system == "x86_64-darwin" then null else arg;
+
+  fixmkl = old: old // {
+      shellHook = ''
+        export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_rt.so
+      '';
+    };
+  fixcpath = libtorch: old: old // {
+      shellHook = ''
+        export CPATH=${libtorch}/include/torch/csrc/api/include
+      '';
+    };
 in
   rec {
+    inherit nullIfDarwin;
+
     inherit (pkgs.haskell.packages."${compiler}")
-      hasktorch
       hasktorch-codegen
-      hasktorch-examples
-      libtorch-ffi
       inline-c
       inline-c-cpp
+      libtorch-ffi_cpu
+      libtorch-ffi_cudatoolkit_9_2
+      libtorch-ffi_cudatoolkit_10_0
+      hasktorch_cpu
+      hasktorch_cudatoolkit_9_2
+      hasktorch_cudatoolkit_10_0
+      hasktorch-examples_cpu
+      hasktorch-examples_cudatoolkit_9_2
+      hasktorch-examples_cudatoolkit_10_0
     ;
 
-    shell-hasktorch = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch).env.overrideAttrs
-      (oldAttrs:
-        oldAttrs // {
-          shellHook = ''
-            export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_rt.so
-          '';
-        }
-      );
     shell-hasktorch-codegen = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-codegen).env;
-    shell-hasktorch-examples = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples).env;
-    shell-libtorch-ffi = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi).env.overrideAttrs
-      (oldAttrs:
-        oldAttrs // {
-          shellHook = ''
-            export CPATH=${pkgs.libtorch}/include/torch/csrc/api/include
-          '';
-        }
-      );
     shell-inline-c = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c).env;
     shell-inline-c-cpp = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c-cpp).env;
+    shell-libtorch-ffi_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cpu).env.overrideAttrs (fixcpath pkgs.libtorch_cpu);
+    shell-libtorch-ffi_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cudatoolkit_9_2).env.overrideAttrs (fixcpath pkgs.libtorch_cudatoolkit_9_2);
+    shell-libtorch-ffi_cudatoolkit_10_0 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cudatoolkit_10_0).env.overrideAttrs (fixcpath pkgs.libtorch_cudatoolkit_10_0);
+    shell-hasktorch_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cpu).env.overrideAttrs fixmkl;
+    shell-hasktorch_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cudatoolkit_9_2).env.overrideAttrs fixmkl;
+    shell-hasktorch_cudatoolkit_10_0 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cudatoolkit_10_0).env.overrideAttrs fixmkl;
+    shell-hasktorch-examples_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cpu).env.overrideAttrs fixmkl;
+    shell-hasktorch-examples_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_9_2).env.overrideAttrs fixmkl;
+    shell-hasktorch-examples_cudatoolkit_10_0 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_0).env.overrideAttrs fixmkl;
   }
 
