@@ -48,10 +48,6 @@ mvnCholesky (CovMatrix cov) axisDim n = do
     where 
       l = cholesky cov Upper
 
-
-    :: LearningRate -- ^ learning rate
-    -> Gradients -- ^ model parameter gradients
-
 -- | Compute posterior mean and covariance parameters based on observed data y
 condition 
     :: MeanVector -- ^ mean of unobserved points X
