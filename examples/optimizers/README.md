@@ -30,3 +30,19 @@ The `step` function is responsible for computing gradients, returning a tuple co
 3 Test functions are currently implemented - convex quadratic, rosenbrock, and ackley function.
 
 Optimization over convex quadratic and rosenbrock should converge, while optimization over the ackley function does not.
+
+# Running the Example
+
+Setup environment variables (run this from the top-level hasktorch project 
+directory where the `setenv` file is):
+
+```
+source setenv
+```
+
+Building and running:
+
+```
+stack build examples:optimizers
+stack run optimizers
+```
