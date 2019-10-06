@@ -69,6 +69,12 @@ abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
 add :: Tensor -> Tensor -> Tensor
 add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne
 
+mul :: Tensor -> Tensor -> Tensor
+mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
+
+sub :: Tensor -> Tensor -> Tensor
+sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
+
 ceil :: Tensor -> Tensor
 ceil t = unsafePerformIO $ (cast1 ATen.ceil_t) t
 
@@ -84,14 +90,17 @@ max t = unsafePerformIO $ (cast1 ATen.max_t) t
 median :: Tensor -> Tensor
 median t = unsafePerformIO $ (cast1 ATen.median_t) t
 
-sub :: Tensor -> Tensor -> Tensor
-sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
+addScalar :: Scalar a => Tensor -> a -> Tensor
+addScalar t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
 
-mul :: Tensor -> Tensor -> Tensor
-mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
+subScalar :: Scalar a => Tensor -> a -> Tensor
+subScalar t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
 
-cmul :: Scalar a => Tensor -> a -> Tensor
-cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
+mulScalar :: Scalar a => Tensor -> a -> Tensor
+mulScalar t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
+
+divScalar :: Scalar a => Tensor -> a -> Tensor
+divScalar t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
 
 matmul :: Tensor -> Tensor -> Tensor
 matmul a b = unsafePerformIO $ (cast2 ATen.matmul_tt) a b
