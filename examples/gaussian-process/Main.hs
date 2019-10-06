@@ -14,6 +14,9 @@ import Torch.Functions
 import Torch.Autograd
 import Torch.NN
 
+newtype MeanVector = MeanVector Tensor deriving Show
+newtype CovMatrix = CovMatrix Tensor deriving Show
+
 -- | construct pairs of points on the axis
 makeAxis :: [Float] -> [Float] -> (Tensor, Tensor)
 makeAxis axis1 axis2 = (t, t')
@@ -31,43 +34,56 @@ kernel1d_rbf sigma length t t' = (sigma'^2) * exp eterm
         eterm = mulScalar (- (pow (t - t') (2 :: Int))) (1 / (2 * length^2) )
 
 -- | derive a covariance matrix from the kernel for points on the axis
-makeCovmatrix :: [Float] -> [Float] -> Tensor
+makeCovmatrix :: [Float] -> [Float] -> CovMatrix
 makeCovmatrix axis1 axis2 = 
-    reshape (kernel1d_rbf 1.0 1.0 t t') [length axis1, length axis2]
+    CovMatrix (reshape (kernel1d_rbf 1.0 1.0 t t') [length axis1, length axis2])
     where
       (t, t') = makeAxis axis1 axis2
 
 -- | Multivariate 0-mean normal via cholesky decomposition
-mvnCholesky :: Tensor -> Int -> Int -> IO Tensor
-mvnCholesky cov axisDim n = do
+mvnCholesky :: CovMatrix -> Int -> Int -> IO Tensor
+mvnCholesky (CovMatrix cov) axisDim n = do
     samples <- randn' [axisDim, n]
     pure $ matmul l samples
     where 
       l = cholesky cov Upper
 
 -- | Compute posterior mean and covariance parameters based on observed data y
-condition :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> (Tensor, Tensor)
-condition muX muY covXX covXY covYY y =
-    (postMu, postCov)
+condition 
+    :: MeanVector -- ^ mean of unobserved points X
+    -> MeanVector -- ^ mean of observed points Y
+    -> CovMatrix -- ^ covariance of unobserved points X
+    -> CovMatrix -- ^ cross-covariance between observed and unobserved points X <-> Y
+    -> CovMatrix -- ^ covariance of observed points Y
+    -> Tensor -- ^ values of observed points Y
+    -> (MeanVector, CovMatrix) -- ^ mean and covariance of unobserved points X
+condition (MeanVector muX) (MeanVector muY) (CovMatrix covXX) (CovMatrix covXY) (CovMatrix covYY) y =
+    (MeanVector postMu, CovMatrix postCov)
     where
         covYX = transpose2D covXY
         invY = inverse covYY
         postMu = muX + (matmul covXY (matmul invY (y - muY)))
         postCov = covXX - (matmul covXY (matmul invY covYX))
 
+-- | Add small values on the diagonal of a covariance matrix
+regularize :: CovMatrix -> CovMatrix
+regularize (CovMatrix cov) = CovMatrix (cov + reg)
+    where 
+        axisDim = shape cov !! 0
+        reg = 0.01 * (eye'  axisDim axisDim) -- regularization 
 
 -- | Given observations + points of interest derive covariance terms and condition on observation
-computePosterior :: [Float] -> [Float] -> [Float] -> IO (Tensor, Tensor)
+computePosterior :: [Float] -> [Float] -> [Float] -> IO (MeanVector, CovMatrix)
 computePosterior dataPredictors dataValues tRange = do
     let dataDim = length dataPredictors
     let axisDim = length tRange
 
     -- multivariate normal parameters for axis locations
-    let priorMuAxis = zeros' [axisDim, 1]
+    let priorMuAxis = MeanVector $ zeros' [axisDim, 1]
     let priorCov = makeCovmatrix tRange tRange
 
     -- multivariate normal parameters for observation locations
-    let priorMuData = zeros' [dataDim, 1]
+    let priorMuData = MeanVector $ zeros' [dataDim, 1]
     let obsCov = makeCovmatrix dataPredictors dataPredictors
     putStrLn $ "\nObservation coordinates covariance\n" ++ show obsCov
 
@@ -82,19 +98,21 @@ computePosterior dataPredictors dataValues tRange = do
                 priorMuAxis priorMuData 
                 priorCov crossCov obsCov
                 obsVals
-    pure $ (postMu, postCov)
+    pure $ (postMu, regularize postCov)
+
+addMean :: MeanVector -> Tensor -> Tensor
+addMean (MeanVector meanVec) x = meanVec + x
 
 main :: IO ()
 main = do
     -- Setup prediction axis
-    let cov =  makeCovmatrix tRange tRange
+    let cov =  regularize $ makeCovmatrix tRange tRange
     putStrLn $ "Predictor values\n" ++ show tRange
     putStrLn $ "\nCovariance based on radial basis function\n" ++ show cov
 
     -- Prior GP, take 4 example samples
     putStrLn "prior"
-    let reg = 0.01 * (eye'  axisDim axisDim) -- regularization
-    mvnSampPrior <- mvnCholesky (cov + reg) axisDim 4
+    mvnSampPrior <- mvnCholesky cov axisDim 4
     putStrLn $ "\nGP Samples (prior,  rows = values, cols = realizations)\n"
         ++ show mvnSampPrior
 
@@ -106,9 +124,9 @@ main = do
     -- Conditional GP
     putStrLn $ "\nConditional mu (posterior)\n" ++ show postMu
     putStrLn $ "\nConditional covariance (posterior)\n" ++ show postCov
-    mvnSampPost <- mvnCholesky (postCov + reg) (length tRange) 1
+    mvnSampPost <- mvnCholesky postCov (length tRange) 1
     putStrLn "\nGP Conditional Samples (posterior, rows = values, cols = realizations)"
-    print (postMu + mvnSampPost)
+    print $ addMean postMu mvnSampPost
 
     where 
       -- Axis points

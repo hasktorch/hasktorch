@@ -26,7 +26,6 @@ import GRU
 num_iters = 1000
 num_features = 4
 
-
 run :: (RecurrentCell a, Parameterized a)
     => Tensor
     -> Tensor
@@ -39,9 +38,9 @@ run input_tensor init_hidden expected_output model i = do
     let output = finalState model input_tensor init_hidden
     let loss = mse_loss output expected_output
 
---    if i `mod` 100 == 0
---    then print loss
---    else return ()
+    if i `mod` 100 == 0
+    then print loss
+    else return ()
 
     let flat_parameters = flattenParameters model
     let gradients = grad loss flat_parameters
@@ -111,18 +110,21 @@ main = do
     finalElman <- foldLoop rnnLayer num_iters (run input_tensor init_hidden expected_output)
     putStrLn "Testing Elman cell"
     let testElman = finalState finalElman input_tensor init_hidden
+    putStrLn "Final letter after 'h-el-l-':"
     print $ letter $ getIndex testElman
 
     putStrLn "\nTraining LSTM cell..."
     finaLSTM <- foldLoop lstmLayer num_iters (run input_tensor init_hidden expected_output)
     putStrLn "Testing LSTM cell"
     let testLSTM = finalState finaLSTM input_tensor init_hidden
+    putStrLn "Final letter after 'h-el-l-':"
     print $ letter $ getIndex testLSTM
 
     putStrLn "\nTraining GRU cell..."
     finalGRU <- foldLoop gruLayer num_iters (run input_tensor init_hidden expected_output)
     putStrLn "Testing GRU cell"
     let testGRU = finalState finalGRU input_tensor init_hidden
+    putStrLn "Final letter after 'h-el-l-':"
     print $ letter $ getIndex testGRU
 
     return ()

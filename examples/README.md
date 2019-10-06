@@ -1,22 +1,33 @@
 # Examples
 
-Most examples use untyped dimensions for now with the exception of `cnn`. More examples to be added prior to the 0.2 release.
+## Dynamic Tensor Examples
 
-- cnn - a convolutional neural network implemented with typed dimensions
-- elman - elman RNN
+These examples do not attempt to type-check tensor dimensions.
+
 - gaussian_process - basic gaussian process implementation
-- regression - simple linear regression
-- xor_mlp - a toy XOR multilayer perceptron
+- minimal-text-example - "hello" string test of `rnn` modules, uses `rnn` as dependency`
+- optimizers - experimental implementation of optimizers - gradient descent, gradient descent w/ momentum, adam, applied to optimization test functions
+- regression - linear regression
+- rnn - prototype implementations of Elman, LSTM, and GRU layers
+- serialization - test serialization / deserialization of model state
+- xor_mlp - an XOR multilayer perceptron
 - vae - variational autoencoder
+
+## Typed Tensor Examples
+
+Some examples demonstrate typed tensor functionality. 
+
+- static-xor-mlp - an XOR multilayer perceptron
+- static-cnn - a convolutional neural network
+- static-transformer - transformer with attention implementation
 
 ## Running the XOR MLP Example
 
-The following steps should run the xor mlp example, assuming hasktorch has only been cloned but dependencies have not been pulled yet.
+The following steps should run the xor mlp example, assumes hasktorch has only been cloned but dependencies have not been pulled yet.
 
-Start at the top-level directory of the project.
+Starting at the top-level directory of the project, go to the deps directory and run the `get-deps.sh` shell script to retrieve project dependencies:
 
 ```
-# Download libtorch-binary and other shared library dependencies
 pushd deps
 # For CPU
 ./get-deps.sh
@@ -25,11 +36,22 @@ pushd deps
 # For CUDA-10
 # ./get-deps.sh -a cu100
 popd
+```
 
-# Set shared library environment variables
+Set shared library environment variables:
+
+```
 source setenv
+```
 
+Build all examples:
+
+```
 stack build examples
+```
 
-stack exec xor_mlp
+Run the xor example:
+
+```
+stack run xor_mlp
 ```

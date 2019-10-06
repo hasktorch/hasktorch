@@ -39,8 +39,7 @@ instance Randomizable MLPSpec MLP where
           shift (a, b) c = (b, c)
 
 instance Parameterized MLP
--- This instance generates following codes.
---
+-- This instance generates the following code
 ---------------------------------------------------
 -- instance Parameterized MLP where
 --   flattenParameters MLP{..} = concat $ map flattenParameters layers
@@ -64,7 +63,8 @@ model params t = sigmoid (mlp params t)
 
 main :: IO ()
 main = do
-    init <- sample $ MLPSpec { feature_counts = [2, 20, 20, 1], nonlinearitySpec = Torch.Functions.tanh }
+    init <- sample $ MLPSpec { feature_counts = [2, 20, 20, 1], 
+                               nonlinearitySpec = Torch.Functions.tanh }
     trained <- foldLoop init num_iters $ \state i -> do
         input <- rand' [batch_size, 2] >>= return . (toDType Float) . (gt 0.5)
         let expected_output = tensorXOR input
