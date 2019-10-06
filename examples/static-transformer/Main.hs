@@ -24,7 +24,9 @@
 
 module Main where
 
-import           Prelude                 hiding ( tanh )
+import           Prelude                 hiding ( (.), id, tanh )
+import           Control.Arrow
+import           Control.Category
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
@@ -132,16 +134,36 @@ data TransformerLMLayer (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) (
   TransformerLMLayer
     :: { tAttn :: MultiheadAttention dtype embedDim numHeads
        , tAttnDropout :: Dropout
-       , tLinear0 :: Linear dtype embedDim ffnDim
-       , tLinear1 :: Linear dtype ffnDim embedDim
        , tLN0 :: LayerNorm dtype '[embedDim]
        , tLN1 :: LayerNorm dtype '[embedDim]
+       , tMLP :: TransformerLMMLP dtype embedDim ffnDim
+       }
+    -> TransformerLMLayer dtype embedDim numHeads ffnDim
+
+data TransformerLMMLP (dtype :: D.DType) (embedDim :: Nat) (ffnDim :: Nat) where
+  TransformerLMMLP
+    :: { tLinear0 :: Linear dtype embedDim ffnDim
+       , tLinear1 :: Linear dtype ffnDim embedDim
        , tDropout0 :: Dropout
        , tDropout1 :: Dropout
        , tActivation0 :: forall shape . Tensor dtype shape -> Tensor dtype shape
        , tActivation1 :: forall shape . Tensor dtype shape -> Tensor dtype shape
        }
-    -> TransformerLMLayer dtype embedDim numHeads ffnDim
+    -> TransformerLMMLP dtype embedDim ffnDim
+
+transformerLMMLP
+  :: forall dtype embedDim ffnDim seqLen batchSize
+   . TransformerLMMLP dtype embedDim ffnDim
+  -> Tensor dtype '[seqLen, batchSize, embedDim]
+  -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
+transformerLMMLP TransformerLMMLP {..} input =
+  Main.dropout tDropout1
+    .   tActivation1
+    .   linear tLinear1
+    =<< Main.dropout tDropout0
+    .   tActivation0
+    .   linear tLinear0
+    =<< pure input
 
 transformerLMLayer
   :: forall dtype numHeads ffnDim embedDim headDim seqLen batchSize
@@ -161,9 +183,8 @@ transformerLMLayer TransformerLMLayer {..} keyPaddingMask input = do
   (attn, _) <- multiheadAttention tAttn keyPaddingMask input
   x         <- Main.dropout tAttnDropout attn
   let x' = Main.layerNorm tLN0 (x `add` input)
-  x''       <- Main.dropout tDropout0 . tActivation0 . linear tLinear0 $ x'
-  x'''      <- Main.dropout tDropout1 . tActivation1 . linear tLinear1 $ x''
-  return $ Main.layerNorm tLN1 (x''' `add` x')
+  x''       <- transformerLMMLP tMLP x'
+  return $ Main.layerNorm tLN1 (x'' `add` x')
 
 data Embedding (paddingIdx :: Maybe Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) where
   Embedding
