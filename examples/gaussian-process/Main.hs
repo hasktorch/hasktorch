@@ -48,8 +48,19 @@ mvnCholesky (CovMatrix cov) axisDim n = do
     where 
       l = cholesky cov Upper
 
+
+    :: LearningRate -- ^ learning rate
+    -> Gradients -- ^ model parameter gradients
+
 -- | Compute posterior mean and covariance parameters based on observed data y
-condition :: MeanVector -> MeanVector -> CovMatrix -> CovMatrix -> CovMatrix -> Tensor -> (MeanVector, CovMatrix)
+condition 
+    :: MeanVector -- ^ mean of unobserved points X
+    -> MeanVector -- ^ mean of observed points Y
+    -> CovMatrix -- ^ covariance of unobserved points X
+    -> CovMatrix -- ^ cross-covariance between observed and unobserved points X <-> Y
+    -> CovMatrix -- ^ covariance of observed points Y
+    -> Tensor -- ^ values of observed points Y
+    -> (MeanVector, CovMatrix) -- ^ mean and covariance of unobserved points X
 condition (MeanVector muX) (MeanVector muY) (CovMatrix covXX) (CovMatrix covXY) (CovMatrix covYY) y =
     (MeanVector postMu, CovMatrix postCov)
     where
@@ -58,6 +69,7 @@ condition (MeanVector muX) (MeanVector muY) (CovMatrix covXX) (CovMatrix covXY) 
         postMu = muX + (matmul covXY (matmul invY (y - muY)))
         postCov = covXX - (matmul covXY (matmul invY covYX))
 
+-- | Add small values on the diagonal of a covariance matrix
 regularize :: CovMatrix -> CovMatrix
 regularize (CovMatrix cov) = CovMatrix (cov + reg)
     where 
