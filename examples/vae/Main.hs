@@ -70,7 +70,7 @@ model VAEState{..} input = do
         mu = (linear muFC) encoded
         logvar = (linear logvarFC) encoded
     z <- reparamaterize mu logvar
-    let output = mlp decoderState nonlinearity z -- TODO - try sampling output
+    let output = mlp decoderState nonlinearity z
     pure $ ModelOutput output mu logvar
 
 -- | MLP helper function for model used by both encoder & decoder
@@ -102,7 +102,6 @@ mvnCholesky cov n axisDim = do
 main :: IO ()
 main =
   let nSamples = 32768
-      -- TODO - use higher dimensions once functionality works
       dataDim = 4
       hDim = 2
       zDim = 2
