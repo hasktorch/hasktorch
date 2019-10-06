@@ -1548,6 +1548,24 @@ quantizedMaxPool2d _input =
     ([natValI @(Fst padding), natValI @(Snd padding)] :: [Int])
     ([1, 1] :: [Int])
 
+-- | maskedFill
+-- >>> t = ones @'D.Float @'[2, 1, 3]
+-- >>> m = fromJust [[False], [True], [False]] :: Tensor 'D.Bool '[3, 1]
+-- >>> t' = maskedFill @Float m 0.5 t
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[2, 3, 3]
+-- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[[Float]]]) $ t'
+-- (Float,([2,3,3],[[[1.0,1.0,1.0],[0.5,0.5,0.5],[1.0,1.0,1.0]],[[1.0,1.0,1.0],[0.5,0.5,0.5],[1.0,1.0,1.0]]]))
+maskedFill
+  :: forall a dtype shape shape' shape''
+   . (D.Scalar a, shape'' ~ Broadcast shape shape')
+  => Tensor 'D.Bool shape'
+  -> a
+  -> Tensor dtype shape
+  -> Tensor dtype shape''
+maskedFill mask value input =
+  unsafePerformIO $ cast3 ATen.masked_fill_tts input mask value
+
 -- |
 -- >>> t = maxPool3d @'(1,1,1) @'(1,1,1) @'(0,0,0) (ones::Tensor 'D.Float '[1,3,4,5,6])
 -- >>> shape t
