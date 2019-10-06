@@ -50,7 +50,7 @@ import qualified Torch.TensorFactories         as D
 
 
 --------------------------------------------------------------------------------
--- Multi-Layer Perceptron (MLP)
+-- Transformer Language Model (GPT-2)
 --------------------------------------------------------------------------------
 
 
@@ -82,30 +82,41 @@ multiheadAttention
      , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
      )
   => MultiheadAttention dtype embedDim numHeads
+  -> Tensor 'D.Bool '[seqLen, batchSize]
   -> Tensor dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim], Tensor dtype '[batchSize, seqLen, seqLen])
-multiheadAttention MultiheadAttention {..} input = do
+multiheadAttention MultiheadAttention {..} keyPaddingMask input = do
   let q :. k :. v :. HNil = chunk @3 @2 . linear mhInProj $ input
-      attnWeights         = (mul scaling . f $ q) `matmul` (transpose  @1 @2 . f $ k)
-  -- TODO: mask future timesteps
-  -- TODO: apply key padding mask
-  attnWeights' <- Main.dropout mhDropout . softmax @2 $ attnWeights
+  attnWeights <-
+    Main.dropout mhDropout
+      . softmax @2
+      . maskKeyPaddings
+      . maskFutureTimestamps
+      $ (mul scaling $ f q) `matmul` (transpose @1 @2 $ f k)
   let attn =
         linear mhOutProj
           . reshape @'[seqLen, batchSize, embedDim]
           . transpose @0 @1
-          . matmul attnWeights'
-          . f
-          $ v
+          $ attnWeights `matmul` (f v)
       avgAttnWeights =
-        mul (pow (fromInteger $ -1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor dtype '[])
+        mul (pow (-1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor dtype '[])
           . sumDim @1
           . reshape @'[batchSize, numHeads, seqLen, seqLen]
-          $ attnWeights'
+          $ attnWeights
   return (attn, avgAttnWeights)
  where
-  f       = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
-  scaling = pow (fromRational $ -1/2 :: Double) (fromInteger . natVal $ Proxy @headDim) :: Tensor dtype '[]
+  maskFutureTimestamps = maskedFill futureTimestampMask (-1 / 0 :: Double)
+  maskKeyPaddings =
+    reshape @'[batchSize * numHeads, seqLen, seqLen]
+      . maskedFill
+          (unsqueeze @2 . unsqueeze @1 . transpose @0 @1 $ keyPaddingMask)
+          (-1 / 0 :: Double)
+      . reshape @'[batchSize, numHeads, seqLen, seqLen]
+  f = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
+  scaling :: Tensor dtype '[]
+  scaling = pow (-1 / 2 :: Double) (fromInteger . natVal $ Proxy @headDim)
+  futureTimestampMask =
+    toDType @D.Bool . triu 1 $ ones @D.Int8 @'[seqLen, seqLen]
 
 data Dropout where
   Dropout
@@ -146,7 +157,7 @@ transformerLMLayer
   -> Tensor dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
 transformerLMLayer TransformerLMLayer {..} input = do
-  (attn, _) <- multiheadAttention tAttn input
+  (attn, _) <- multiheadAttention tAttn _ input
   x         <- Main.dropout tAttnDropout attn
   let x' = Main.layerNorm tLN0 (x `add` input)
   x''       <- Main.dropout tDropout0 . tActivation0 . linear tLinear0 $ x'
@@ -190,7 +201,7 @@ instance ( 1 <= numHeads
          (Tensor dtype '[seqLen, batchSize, embedDim] -> IO (Tensor dtype '[seqLen, batchSize, embedDim]))
  where
   apply _ attn = \t -> do
-    (t', _) <- multiheadAttention attn t
+    (t', _) <- multiheadAttention attn _ t
     return t'
 
 getHidden
@@ -229,7 +240,7 @@ getHidden embedding posEmbedding dropout attnLayers input = do
                     . fromIntegral
                     $ natValI @(seqLen - 1)
   x <- Main.dropout dropout (src `add` positions)
-  let paddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[])
+  let keyPaddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[])
   x' <- hfoldrM FoldAttnLayers x attnLayers
   return x'
 

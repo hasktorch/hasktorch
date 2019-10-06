@@ -2003,11 +2003,45 @@ q_zero_point _input = unsafePerformIO $ (cast1 ATen.q_zero_point_t) _input
 -- cross :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
 -- cross _input _other _dim = unsafePerformIO $ (cast3 ATen.cross_ttl) _input _other _dim
 
--- triu :: Tensor dtype shape -> Int -> Tensor dtype shape
--- triu _input _diagonal = unsafePerformIO $ (cast2 ATen.triu_tl) _input _diagonal
+type family MatrixOrMatrixBatch (shape :: [Nat]) :: [Nat] where
+  MatrixOrMatrixBatch (n : m : '[])     = '[n, m]
+  MatrixOrMatrixBatch (b : n : m : '[]) = '[b, n, m]
+  MatrixOrMatrixBatch _                 = TypeError (Text "The input must be matrix or a batch of matrices.")
 
--- tril :: Tensor dtype shape -> Int -> Tensor dtype shape
--- tril _input _diagonal = unsafePerformIO $ (cast2 ATen.tril_tl) _input _diagonal
+-- | triu
+-- TODO: triu is not implemented for D.Bool
+-- >>> t = ones @'D.Float @'[3, 4]
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ triu 0 t
+-- (Float,([3,4],[[1.0,1.0,1.0,1.0],[0.0,1.0,1.0,1.0],[0.0,0.0,1.0,1.0]]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ triu 1 t
+-- (Float,([3,4],[[0.0,1.0,1.0,1.0],[0.0,0.0,1.0,1.0],[0.0,0.0,0.0,1.0]]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ triu (-1) t
+-- (Float,([3,4],[[1.0,1.0,1.0,1.0],[1.0,1.0,1.0,1.0],[0.0,1.0,1.0,1.0]]))
+triu
+  :: forall dtype shape
+   . (shape ~ MatrixOrMatrixBatch shape)
+  => Int
+  -> Tensor dtype shape
+  -> Tensor dtype shape
+triu diagonal input = unsafePerformIO $ cast2 ATen.triu_tl input diagonal
+
+-- | tril
+-- TODO: tril is not implemented for D.Bool
+-- >>> t = ones @'D.Float @'[3, 4]
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ tril 0 t
+-- (Float,([3,4],[[1.0,0.0,0.0,0.0],[1.0,1.0,0.0,0.0],[1.0,1.0,1.0,0.0]]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ tril 1 t
+-- (Float,([3,4],[[1.0,1.0,0.0,0.0],[1.0,1.0,1.0,0.0],[1.0,1.0,1.0,1.0]]))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ tril (-1) t
+-- (Float,([3,4],[[0.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.0],[1.0,1.0,0.0,0.0]]))
+tril
+  :: forall dtype shape
+   . (shape ~ MatrixOrMatrixBatch shape)
+  => Int
+  -> Tensor dtype shape
+  -> Tensor dtype shape
+tril diagonal input = unsafePerformIO $ cast2 ATen.tril_tl input diagonal
+
 
 -- trace :: Tensor dtype shape -> Tensor dtype shape
 -- trace _input = unsafePerformIO $ (cast1 ATen.trace_t) _input
