@@ -144,7 +144,7 @@ data TransformerLMLayer (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) (
     -> TransformerLMLayer dtype embedDim numHeads ffnDim
 
 transformerLMLayer
-  :: forall dtype embedDim numHeads seqLen batchSize ffnDim headDim
+  :: forall dtype numHeads ffnDim embedDim headDim seqLen batchSize
    . ( 1 <= numHeads
      , embedDim ~ (headDim * numHeads)
      , Mod (embedDim * 3) 3 ~ 0
@@ -154,10 +154,11 @@ transformerLMLayer
      , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
      )
   => TransformerLMLayer dtype embedDim numHeads ffnDim
+  -> Tensor 'D.Bool '[seqLen, batchSize]
   -> Tensor dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
-transformerLMLayer TransformerLMLayer {..} input = do
-  (attn, _) <- multiheadAttention tAttn _ input
+transformerLMLayer TransformerLMLayer {..} keyPaddingMask input = do
+  (attn, _) <- multiheadAttention tAttn keyPaddingMask input
   x         <- Main.dropout tAttnDropout attn
   let x' = Main.layerNorm tLN0 (x `add` input)
   x''       <- Main.dropout tDropout0 . tActivation0 . linear tLinear0 $ x'
@@ -185,7 +186,7 @@ embed Embedding {..} input = embedding @paddingIdx
   (toDependent embedWeights)
   input
 
-data FoldAttnLayers = FoldAttnLayers
+data FoldLayers = FoldLayers
 
 instance ( 1 <= numHeads
          , embedDim ~ (headDim * numHeads)
@@ -196,18 +197,19 @@ instance ( 1 <= numHeads
          , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
          )
     => Apply
-         FoldAttnLayers
-         (MultiheadAttention dtype embedDim numHeads)
-         (Tensor dtype '[seqLen, batchSize, embedDim] -> IO (Tensor dtype '[seqLen, batchSize, embedDim]))
+         FoldLayers
+         (TransformerLMLayer dtype embedDim numHeads ffnDim)
+         ((Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim]) -> IO (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim]))
  where
-  apply _ attn = \t -> do
-    (t', _) <- multiheadAttention attn _ t
-    return t'
+  apply _ layer = \(keyPaddingMask, input) -> do
+    output <- transformerLMLayer layer keyPaddingMask input
+    return (keyPaddingMask, output)
 
 getHidden
   :: forall
        numAttnLayers
        numHeads
+       ffnDim
        paddingIdx
        dtype
        numEmbeds
@@ -219,17 +221,17 @@ getHidden
      , 1 <= seqLen
      , HFoldrM
          IO
-         FoldAttnLayers
-         (Tensor dtype '[seqLen, batchSize, embedDim])
-         (HReplicateR numAttnLayers (MultiheadAttention dtype embedDim numHeads))
+         FoldLayers
+         (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
      )
   => Embedding ('Just paddingIdx) dtype numEmbeds embedDim
   -> Embedding 'Nothing dtype 2048 embedDim
   -> Dropout
-  -> HList (HReplicateR numAttnLayers (MultiheadAttention dtype embedDim numHeads))
+  -> HList (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
   -> Tensor 'D.Int64 '[batchSize, seqLen]
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
-getHidden embedding posEmbedding dropout attnLayers input = do
+getHidden embedding posEmbedding dropout layers input = do
   let srcTokens = transpose @0 @1 input
       src       = embed embedding srcTokens
       positions = expand @'[seqLen, batchSize, embedDim] True
@@ -241,12 +243,13 @@ getHidden embedding posEmbedding dropout attnLayers input = do
                     $ natValI @(seqLen - 1)
   x <- Main.dropout dropout (src `add` positions)
   let keyPaddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[])
-  x' <- hfoldrM FoldAttnLayers x attnLayers
+  (_, x') <- hfoldrM FoldLayers (keyPaddingMask, x) layers
   return x'
 
 data TransformerLM
        (numAttnLayers :: Nat)
        (numHeads :: Nat)
+       (ffnDim :: Nat)
        (paddingIdx :: Nat)
        (dtype :: D.DType)
        (numEmbeds :: Nat)
@@ -257,6 +260,7 @@ data TransformerLM
     :: forall
          numAttnLayers
          numHeads
+         ffnDim
          paddingIdx
          dtype
          numEmbeds
@@ -265,15 +269,16 @@ data TransformerLM
      . { tEmbedding :: Embedding ('Just paddingIdx) dtype numEmbeds embedDim
        , tPosEmbedding :: Embedding 'Nothing dtype 2048 embedDim
        , tDropout :: Dropout
-       , tAttnLayers :: HList (HReplicateR numAttnLayers (MultiheadAttention dtype embedDim numHeads))
+       , tLayers :: HList (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
        , tProj :: Linear dtype embedDim seqLen
        }
-    -> TransformerLM numAttnLayers numHeads paddingIdx dtype numEmbeds embedDim seqLen
+    -> TransformerLM numAttnLayers numHeads ffnDim paddingIdx dtype numEmbeds embedDim seqLen
   
 logits
   :: forall
        numAttnLayers
        numHeads
+       ffnDim
        paddingIdx
        dtype
        numEmbeds
@@ -285,21 +290,21 @@ logits
      , 1 <= seqLen
      , HFoldrM
          IO
-         FoldAttnLayers
-         (Tensor dtype '[seqLen, batchSize, embedDim])
-         (HReplicateR numAttnLayers (MultiheadAttention dtype embedDim numHeads))
+         FoldLayers
+         (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
      )
-  => TransformerLM numAttnLayers numHeads paddingIdx dtype numEmbeds embedDim seqLen
+  => TransformerLM numAttnLayers numHeads ffnDim paddingIdx dtype numEmbeds embedDim seqLen
   -> Tensor 'D.Int64 '[batchSize, seqLen]
   -> IO (Tensor dtype '[batchSize, seqLen, seqLen])
 logits TransformerLM {..} input = do
   hidden <-
     transpose @0 @1
-      <$> getHidden @numAttnLayers @numHeads -- TODO: these type applications shouldn't be necessary
+      <$> getHidden @numAttnLayers @numHeads @ffnDim -- TODO: these type applications shouldn't be necessary
             tEmbedding
             tPosEmbedding
             tDropout
-            tAttnLayers
+            tLayers
             input
   return $ linear tProj hidden
 
