@@ -15,6 +15,5 @@ source setenv
 Building and running:
 
 ```
-stack build examples:serialization
 stack run serialization
 ```

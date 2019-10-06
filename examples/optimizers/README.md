@@ -43,6 +43,5 @@ source setenv
 Building and running:
 
 ```
-stack build examples:optimizers
 stack run optimizers
 ```

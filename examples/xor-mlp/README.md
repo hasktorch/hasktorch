@@ -13,6 +13,5 @@ source setenv
 Building and running:
 
 ```
-stack build examples:xor-mlp
 stack run xor-mlp
 ```

@@ -12,6 +12,5 @@ source setenv
 Building and running:
 
 ```
-stack build examples:vae
 stack run vae
 ```

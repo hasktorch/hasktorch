@@ -30,6 +30,5 @@ source setenv
 Building and running:
 
 ```
-stack build examples:gaussian-process
 stack run gaussian-process
 ```
