@@ -52,14 +52,14 @@ getLabel mnist imageIdx =
 
 getImage :: MnistData -> Int -> Tensor 'D.Float '[DataDim]
 getImage mnist imageIdx =
-  let imageBS = [fromIntegral $ BS.index (images mnist) ((fromIntegral imageIdx) * 28^2 + 16 + r) | r <- [0..28^2 - 1]] :: [Double]
+  let imageBS = [fromIntegral $ BS.index (images mnist) ((fromIntegral imageIdx) * 28^2 + 16 + r) | r <- [0..28^2 - 1]] :: [Float]
       (tensor :: Tensor 'D.Float '[DataDim]) = UnsafeMkTensor $ D.asTensor imageBS
   in tensor
 
 getImages :: forall n. KnownNat n => MnistData -> [Int] -> Tensor 'D.Float '[n, DataDim]
 getImages mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take (natValI @n) imageIdxs
   where
-    image idx = [fromIntegral $ BS.index (images mnist) ((fromIntegral idx) * 28^2 + 16 + r) | r <- [0..28^2 - 1]] :: [Double]
+    image idx = [fromIntegral $ BS.index (images mnist) ((fromIntegral idx) * 28^2 + 16 + r) | r <- [0..28^2 - 1]] :: [Float]
 
 length :: MnistData -> Int
 length mnist = fromIntegral $ (BS.length (labels mnist)) - 8

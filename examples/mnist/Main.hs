@@ -112,15 +112,20 @@ foldLoop
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 type BatchSize = 64
+type TestSize = 10000
+
+
+randomIndexes :: [Int]
+randomIndexes = map (`mod` natValI @I.DataDim) $ randoms seed
+  where
+    seed = mkStdGen 123
 
 main = do
-  let numIters = 100
-      seed = mkStdGen 123
+  let numIters = 10000
   (trainingData, testData) <- I.initMnist
   init    <- A.sample (MLPSpec :: MLPSpec 'D.Float I.DataDim I.ClassDim 128)
-  let randomIndexes = map (`div` natValI @I.DataDim) $ randoms seed
   
-  trained <- foldLoop (init,randomIndexes) numIters $ \(state, idxs) i -> do
+  (trained,_)  <- foldLoop (init,randomIndexes) numIters $ \(state, idxs) i -> do
     let (indexes,nextIndexes) = (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
     let input           = I.getImages @BatchSize trainingData indexes 
     let expected_output = I.getLabels @BatchSize trainingData indexes
@@ -130,9 +135,11 @@ main = do
     let flat_parameters = A.flattenParameters state
     let gradients       = A.grad (toDynamic loss) flat_parameters
 
-    when (i `mod` 2500 == 0) (print loss)
+    when (i `mod` 250 == 0) (print loss)
 
     new_flat_parameters <- mapM A.makeIndependent
       $ A.sgd 1e-1 flat_parameters gradients
     return $ (A.replaceParameters state new_flat_parameters, nextIndexes)
-  print trained
+
+  print $ "Learning loss:"
+  print $ mse_loss (model trained (I.getImages @TestSize testData [0..])) (I.getLabels @TestSize testData [0..])
