@@ -93,7 +93,7 @@ multiheadAttention MultiheadAttention {..} keyPaddingMask input = do
     Main.dropout mhDropout
       . softmax @2
       . maskKeyPaddings
-      . maskFutureTimestamps
+      . maskFutureTimesteps
       $ (mul scaling $ f q) `matmul` (transpose @1 @2 $ f k)
   let attn =
         linear mhOutProj
@@ -107,7 +107,7 @@ multiheadAttention MultiheadAttention {..} keyPaddingMask input = do
           $ attnWeights
   return (attn, avgAttnWeights)
  where
-  maskFutureTimestamps = maskedFill futureTimestampMask (-1 / 0 :: Double)
+  maskFutureTimesteps = maskedFill futureTimestampMask (-1 / 0 :: Double)
   maskKeyPaddings =
     reshape @'[batchSize * numHeads, seqLen, seqLen]
       . maskedFill
@@ -139,76 +139,46 @@ multiheadAttention'
        , Tensor dtype '[batchSize, seqLen, seqLen]
        )
 multiheadAttention' MultiheadAttention {..} =
-  Kleisli $ \(keyPaddingMask, input) -> do
-    let q :. k :. v :. HNil = chunk @3 @2 . linear mhInProj $ input
-        maskKeyPaddings =
-          reshape @'[batchSize * numHeads, seqLen, seqLen]
-            . maskedFill
-                (unsqueeze @2 . unsqueeze @1 . transpose @0 @1 $ keyPaddingMask)
-                (-1 / 0 :: Double)
-            . reshape @'[batchSize, numHeads, seqLen, seqLen]
-    attnWeights <-
-      Main.dropout mhDropout
-      .        softmax @2
-      .        maskKeyPaddings
-      .        maskFutureTimestamps
-      $        (mul scaling $ f q)
-      `matmul` (transpose @1 @2 $ f k)
-    let attn =
-          linear mhOutProj
-            .        reshape @'[seqLen, batchSize, embedDim]
-            .        transpose @0 @1
-            $        attnWeights
-            `matmul` (f v)
-        avgAttnWeights =
-          mul
-              (pow (-1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor
-                  dtype
-                  '[]
-              )
-            . sumDim @1
-            . reshape @'[batchSize, numHeads, seqLen, seqLen]
-            $ attnWeights
-    return (attn, avgAttnWeights)
+  second (linear mhInProj ^>> split)
+    >>> assoc
+    >>> first attnWeights
+    >>> (attn &&& (first avgAttnWeights >>^ fst))
  where
-  chunk' :: Kleisli IO (Tensor dtype '[seqLen, batchSize, embedDim]) ((Tensor dtype '[seqLen, batchSize, embedDim], Tensor dtype '[seqLen, batchSize, embedDim]), Tensor dtype '[seqLen, batchSize, embedDim])
-  chunk' = arr $ \input -> let q :. k :. v :. HNil = (chunk @3 @2 . linear mhInProj) input in ((q, k), v)
-
-  mkAttnWeights
-    :: Kleisli
-         IO
-         ( Tensor dtype '[seqLen, batchSize, embedDim]
-         , Tensor dtype '[seqLen, batchSize, embedDim]
-         )
-         (Tensor dtype '[batchSize * numHeads, seqLen, seqLen])
-  mkAttnWeights = 
-    (arr (mul scaling . f) *** arr (transpose @1 @2 . f))
-      >>> uncurry matmul
-      ^>> maskFutureTimestamps
-      ^>> softmax @2
+  split = arr $ \t ->
+    let q :. k :. v :. HNil = chunk @3 @2 t
+    in  ((q, k), v)
+  assoc = arr $ \(keyPaddingMask, ((q, k), v)) -> ((keyPaddingMask, (q, k)), v)
+  attnWeights =
+    second dotProduct
+      >>> second maskFutureTimestamps
+      >>> maskKeyPaddings
+      >>> softmax @2
       ^>> Kleisli (Main.dropout mhDropout)
-  -- mkAttenWeights'
-  --   :: Kleisli
-  --        IO
-  --        ( Tensor 'D.Bool '[seqLen, batchSize]
-  --        , ( Tensor dtype '[seqLen, batchSize, embedDim]
-  --          , Tensor dtype '[seqLen, batchSize, embedDim]
-  --          )
-  --        )
-  --        (Tensor dtype '[batchSize * numHeads, seqLen, seqLen])
-  -- mkAttenWeights' = 
-  --     ^>> softmax @2
-  --     ^>> Kleisli (Main.dropout mhDropout)
-
-  maskedFill' :: Kleisli IO (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[batchSize, numHeads, seqLen, seqLen]) (Tensor dtype '[batchSize, numHeads, seqLen, seqLen])
-  maskedFill' = arr $ \(keyPaddingMask, input) -> maskedFill (unsqueeze @2 . unsqueeze @1 . transpose @0 @1 $ keyPaddingMask) (-1 / 0 :: Double) input
-
-  maskFutureTimestamps = maskedFill futureTimestampMask (-1 / 0 :: Double)
-  f = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
-  scaling :: Tensor dtype '[]
-  scaling = pow (-1 / 2 :: Double) (fromInteger . natVal $ Proxy @headDim)
-  futureTimestampMask =
-    toDType @D.Bool . triu 1 $ ones @D.Int8 @'[seqLen, seqLen]
+   where
+    dotProduct =
+      let scaling = pow (-1 / 2 :: Double) (fromInteger . natVal $ Proxy @headDim) :: Tensor dtype '[]
+      in  ((f >>^ mul scaling) *** (f >>^ transpose @1 @2)) >>^ uncurry matmul
+    maskFutureTimestamps =
+      let futureTimestampMask = toDType @D.Bool . triu 1 $ ones @D.Int8 @'[seqLen, seqLen]
+      in  arr $ maskedFill futureTimestampMask (-1 / 0 :: Double)
+    maskKeyPaddings =
+      first (transpose @0 @1 ^>> unsqueeze @1 ^>> unsqueeze @2 ^>> returnA)
+        >>> second (arr $ reshape @'[batchSize, numHeads, seqLen, seqLen])
+        >>^ (uncurry $ flip maskedFill (-1 / 0 :: Double))
+        >>^ reshape @'[batchSize * numHeads, seqLen, seqLen]
+  attn =
+    (id *** f)
+      >>^ uncurry matmul
+      >>^ transpose @0 @1
+      >>^ reshape @'[seqLen, batchSize, embedDim]
+      >>^ linear mhOutProj
+  avgAttnWeights =
+    let factor = pow (-1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor dtype '[]
+    in  reshape @'[batchSize, numHeads, seqLen, seqLen]
+          ^>> sumDim @1
+          ^>> mul factor
+          ^>> returnA
+  f = reshape @'[seqLen, batchSize * numHeads, headDim] ^>> transpose @0 @1 ^>> returnA
 
 data Dropout where
   Dropout
