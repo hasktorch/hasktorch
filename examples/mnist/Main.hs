@@ -20,14 +20,10 @@
 
 module Main where
 
-import           Prelude                 hiding ( tanh )
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
-import           Data.List                      ( foldl'
-                                                , scanl'
-                                                , intersperse
-                                                )
+import           Control.Exception.Safe         (try, SomeException(..))
 import           GHC.Generics
 import           GHC.TypeLits
 
@@ -42,6 +38,7 @@ import qualified Torch.Functions               as D
 import qualified Torch.TensorFactories         as D
 import qualified Image                         as I
 import           System.Random
+import           System.Environment
 
 --------------------------------------------------------------------------------
 -- Multi-Layer Perceptron (MLP)
@@ -120,15 +117,30 @@ randomIndexes = map (`mod` natValI @I.DataDim) $ randoms seed
   where
     seed = mkStdGen 123
 
+
+toBackend :: String -> Tensor dtype shape -> Tensor dtype shape
+toBackend backend t =
+  case backend of
+    "CUDA" -> toCUDA t
+    _ -> toCPU t
+
+
+
 main = do
+  backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
+  let backend = 
+        case backend' of
+          Right "CUDA" -> "CUDA"
+          _ -> "CPU"
   let numIters = 10000
   (trainingData, testData) <- I.initMnist
   init    <- A.sample (MLPSpec :: MLPSpec 'D.Float I.DataDim I.ClassDim 128)
   
+  
   (trained,_)  <- foldLoop (init,randomIndexes) numIters $ \(state, idxs) i -> do
     let (indexes,nextIndexes) = (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
-    let input           = I.getImages @BatchSize trainingData indexes 
-    let expected_output = I.getLabels @BatchSize trainingData indexes
+    let input           = toBackend backend $ I.getImages @BatchSize trainingData indexes 
+    let expected_output = toBackend backend $ I.getLabels @BatchSize trainingData indexes
     let actual_output   = model state $ input
     let loss            = mse_loss actual_output expected_output
 
@@ -141,5 +153,7 @@ main = do
       $ A.sgd 1e-1 flat_parameters gradients
     return $ (A.replaceParameters state new_flat_parameters, nextIndexes)
 
-  print $ "Learning loss:"
-  print $ mse_loss (model trained (I.getImages @TestSize testData [0..])) (I.getLabels @TestSize testData [0..])
+  putStrLn $ "Learning loss:"
+  let test_data = toBackend backend $ I.getImages @TestSize testData [0..]
+      test_label = toBackend backend $ I.getLabels @TestSize testData [0..]
+  print $ mse_loss (model trained test_data) test_label
