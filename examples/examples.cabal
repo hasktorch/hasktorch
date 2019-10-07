@@ -109,9 +109,9 @@ executable optimizers
 
 executable mnist
   import:              config
-  main-is:             MNIST.hs
   hs-source-dirs:      mnist
-  default-language:    Haskell2010
+  main-is:             Main.hs
+  other-modules:       Image
   build-depends:       base (==4.7 || >4.7) && <5,
                        microlens ==0.4.8 || >0.4.8,
                        dimensions ==1.0 || >1.0,
