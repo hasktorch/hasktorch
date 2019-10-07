@@ -120,6 +120,96 @@ multiheadAttention MultiheadAttention {..} keyPaddingMask input = do
   futureTimestampMask =
     toDType @D.Bool . triu 1 $ ones @D.Int8 @'[seqLen, seqLen]
 
+multiheadAttention'
+  :: forall dtype embedDim numHeads seqLen batchSize headDim
+   . ( 1 <= numHeads
+     , embedDim ~ (headDim * numHeads)
+     , Mod (embedDim * 3) 3 ~ 0
+     , Div (embedDim * 3) 3 ~ embedDim
+     , KnownDType dtype
+     , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
+     )
+  => MultiheadAttention dtype embedDim numHeads
+  -> Kleisli
+       IO
+       ( Tensor 'D.Bool '[seqLen, batchSize]
+       , Tensor dtype '[seqLen, batchSize, embedDim]
+       )
+       ( Tensor dtype '[seqLen, batchSize, embedDim]
+       , Tensor dtype '[batchSize, seqLen, seqLen]
+       )
+multiheadAttention' MultiheadAttention {..} =
+  Kleisli $ \(keyPaddingMask, input) -> do
+    let q :. k :. v :. HNil = chunk @3 @2 . linear mhInProj $ input
+        maskKeyPaddings =
+          reshape @'[batchSize * numHeads, seqLen, seqLen]
+            . maskedFill
+                (unsqueeze @2 . unsqueeze @1 . transpose @0 @1 $ keyPaddingMask)
+                (-1 / 0 :: Double)
+            . reshape @'[batchSize, numHeads, seqLen, seqLen]
+    attnWeights <-
+      Main.dropout mhDropout
+      .        softmax @2
+      .        maskKeyPaddings
+      .        maskFutureTimestamps
+      $        (mul scaling $ f q)
+      `matmul` (transpose @1 @2 $ f k)
+    let attn =
+          linear mhOutProj
+            .        reshape @'[seqLen, batchSize, embedDim]
+            .        transpose @0 @1
+            $        attnWeights
+            `matmul` (f v)
+        avgAttnWeights =
+          mul
+              (pow (-1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor
+                  dtype
+                  '[]
+              )
+            . sumDim @1
+            . reshape @'[batchSize, numHeads, seqLen, seqLen]
+            $ attnWeights
+    return (attn, avgAttnWeights)
+ where
+  chunk' :: Kleisli IO (Tensor dtype '[seqLen, batchSize, embedDim]) ((Tensor dtype '[seqLen, batchSize, embedDim], Tensor dtype '[seqLen, batchSize, embedDim]), Tensor dtype '[seqLen, batchSize, embedDim])
+  chunk' = arr $ \input -> let q :. k :. v :. HNil = (chunk @3 @2 . linear mhInProj) input in ((q, k), v)
+
+  mkAttnWeights
+    :: Kleisli
+         IO
+         ( Tensor dtype '[seqLen, batchSize, embedDim]
+         , Tensor dtype '[seqLen, batchSize, embedDim]
+         )
+         (Tensor dtype '[batchSize * numHeads, seqLen, seqLen])
+  mkAttnWeights = 
+    (arr (mul scaling . f) *** arr (transpose @1 @2 . f))
+      >>> uncurry matmul
+      ^>> maskFutureTimestamps
+      ^>> softmax @2
+      ^>> Kleisli (Main.dropout mhDropout)
+  -- mkAttenWeights'
+  --   :: Kleisli
+  --        IO
+  --        ( Tensor 'D.Bool '[seqLen, batchSize]
+  --        , ( Tensor dtype '[seqLen, batchSize, embedDim]
+  --          , Tensor dtype '[seqLen, batchSize, embedDim]
+  --          )
+  --        )
+  --        (Tensor dtype '[batchSize * numHeads, seqLen, seqLen])
+  -- mkAttenWeights' = 
+  --     ^>> softmax @2
+  --     ^>> Kleisli (Main.dropout mhDropout)
+
+  maskedFill' :: Kleisli IO (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[batchSize, numHeads, seqLen, seqLen]) (Tensor dtype '[batchSize, numHeads, seqLen, seqLen])
+  maskedFill' = arr $ \(keyPaddingMask, input) -> maskedFill (unsqueeze @2 . unsqueeze @1 . transpose @0 @1 $ keyPaddingMask) (-1 / 0 :: Double) input
+
+  maskFutureTimestamps = maskedFill futureTimestampMask (-1 / 0 :: Double)
+  f = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
+  scaling :: Tensor dtype '[]
+  scaling = pow (-1 / 2 :: Double) (fromInteger . natVal $ Proxy @headDim)
+  futureTimestampMask =
+    toDType @D.Bool . triu 1 $ ones @D.Int8 @'[seqLen, seqLen]
+
 data Dropout where
   Dropout
     :: { dropoutProb :: Double
@@ -139,6 +229,54 @@ data TransformerLMLayer (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) (
        , tMLP :: TransformerLMMLP dtype embedDim ffnDim
        }
     -> TransformerLMLayer dtype embedDim numHeads ffnDim
+
+transformerLMLayer
+  :: forall dtype numHeads ffnDim embedDim headDim seqLen batchSize
+   . ( 1 <= numHeads
+     , embedDim ~ (headDim * numHeads)
+     , Mod (embedDim * 3) 3 ~ 0
+     , Div (embedDim * 3) 3 ~ embedDim
+     , KnownDType dtype
+     , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
+     , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
+     )
+  => TransformerLMLayer dtype embedDim numHeads ffnDim
+  -> Tensor 'D.Bool '[seqLen, batchSize]
+  -> Tensor dtype '[seqLen, batchSize, embedDim]
+  -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
+transformerLMLayer TransformerLMLayer {..} keyPaddingMask input = do
+  (attn, _) <- multiheadAttention tAttn keyPaddingMask input
+  x         <- Main.dropout tAttnDropout attn
+  let x' = Main.layerNorm tLN0 (x `add` input)
+  x''       <- transformerLMMLP tMLP x'
+  return $ Main.layerNorm tLN1 (x'' `add` x')
+
+transformerLMLayer'
+  :: forall dtype numHeads ffnDim embedDim headDim seqLen batchSize
+   . ( 1 <= numHeads
+     , embedDim ~ (headDim * numHeads)
+     , Mod (embedDim * 3) 3 ~ 0
+     , Div (embedDim * 3) 3 ~ embedDim
+     , KnownDType dtype
+     , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
+     , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
+     )
+  => TransformerLMLayer dtype embedDim numHeads ffnDim
+  -> Kleisli
+       IO
+       ( Tensor 'D.Bool '[seqLen, batchSize]
+       , Tensor dtype '[seqLen, batchSize, embedDim]
+       )
+       (Tensor dtype '[seqLen, batchSize, embedDim])
+transformerLMLayer' TransformerLMLayer {..} =
+  (arr snd &&& attn)
+    >>> uncurry add
+    ^>> Main.layerNorm tLN0
+    ^>> (id &&& transformerLMMLP' tMLP)
+    >>^ uncurry add
+    >>^ Main.layerNorm tLN1
+ where
+  attn = multiheadAttention' tAttn >>> arr fst >>> Kleisli (Main.dropout tAttnDropout)
 
 data TransformerLMMLP (dtype :: D.DType) (embedDim :: Nat) (ffnDim :: Nat) where
   TransformerLMMLP
@@ -165,26 +303,20 @@ transformerLMMLP TransformerLMMLP {..} input =
     .   linear tLinear0
     =<< pure input
 
-transformerLMLayer
-  :: forall dtype numHeads ffnDim embedDim headDim seqLen batchSize
-   . ( 1 <= numHeads
-     , embedDim ~ (headDim * numHeads)
-     , Mod (embedDim * 3) 3 ~ 0
-     , Div (embedDim * 3) 3 ~ embedDim
-     , KnownDType dtype
-     , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
-     , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
-     )
-  => TransformerLMLayer dtype embedDim numHeads ffnDim
-  -> Tensor 'D.Bool '[seqLen, batchSize]
-  -> Tensor dtype '[seqLen, batchSize, embedDim]
-  -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
-transformerLMLayer TransformerLMLayer {..} keyPaddingMask input = do
-  (attn, _) <- multiheadAttention tAttn keyPaddingMask input
-  x         <- Main.dropout tAttnDropout attn
-  let x' = Main.layerNorm tLN0 (x `add` input)
-  x''       <- transformerLMMLP tMLP x'
-  return $ Main.layerNorm tLN1 (x'' `add` x')
+transformerLMMLP'
+  :: forall dtype embedDim ffnDim seqLen batchSize
+   . TransformerLMMLP dtype embedDim ffnDim
+  -> Kleisli
+       IO
+       (Tensor dtype '[seqLen, batchSize, embedDim])
+       (Tensor dtype '[seqLen, batchSize, embedDim])
+transformerLMMLP' TransformerLMMLP {..} =
+  linear tLinear0
+    ^>> tActivation0
+    ^>> Kleisli (Main.dropout tDropout0)
+    >>> linear tLinear1
+    ^>> tActivation1
+    ^>> Kleisli (Main.dropout tDropout1)
 
 data Embedding (paddingIdx :: Maybe Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) where
   Embedding
@@ -226,6 +358,23 @@ instance ( 1 <= numHeads
     output <- transformerLMLayer layer keyPaddingMask input
     return (keyPaddingMask, output)
 
+data FoldLayers' = FoldLayers'
+
+instance ( 1 <= numHeads
+         , embedDim ~ (headDim * numHeads)
+         , Mod (embedDim * 3) 3 ~ 0
+         , Div (embedDim * 3) 3 ~ embedDim
+         , KnownDType dtype
+         , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
+         , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
+         )
+    => Apply
+         FoldLayers'
+         (TransformerLMLayer dtype embedDim numHeads ffnDim)
+         (Kleisli IO (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim]) (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim]))
+ where
+  apply _ layer = arr fst &&& transformerLMLayer' layer
+
 getHidden
   :: forall
        numAttnLayers
@@ -266,6 +415,49 @@ getHidden embedding posEmbedding dropout layers input = do
   let keyPaddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[])
   (_, x') <- hfoldrM FoldLayers (keyPaddingMask, x) layers
   return x'
+
+getHidden'
+  :: forall
+       numAttnLayers
+       numHeads
+       ffnDim
+       paddingIdx
+       dtype
+       numEmbeds
+       embedDim
+       seqLen
+       batchSize
+   . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
+     , paddingIdx + 1 <= numEmbeds
+     , 1 <= seqLen
+     , HFoldrM'
+         IO
+         FoldLayers'
+         (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
+     )
+  => Embedding ('Just paddingIdx) dtype numEmbeds embedDim
+  -> Embedding 'Nothing dtype 2048 embedDim
+  -> Dropout
+  -> HList (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
+  -> Kleisli IO (Tensor 'D.Int64 '[batchSize, seqLen]) (Tensor dtype '[seqLen, batchSize, embedDim])
+getHidden' embedding posEmbedding dropout layers =
+  transpose @0 @1
+    ^>> (mkKeyPaddingMask &&& mkInput)
+    >>> hfoldrM' FoldLayers' layers
+    >>^ snd
+ where
+  mkKeyPaddingMask =
+    arr (==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[]))
+  mkInput = embed embedding ^>> add positions ^>> Kleisli (Main.dropout dropout)
+  positions =
+    expand @'[seqLen, batchSize, embedDim] True
+      . unsqueeze @1
+      . embed posEmbedding
+      . toDType @D.Int64
+      . linspace @seqLen 0
+      . fromIntegral
+      $ natValI @(seqLen - 1)
 
 data TransformerLM
        (numAttnLayers :: Nat)
@@ -328,6 +520,36 @@ logits TransformerLM {..} input = do
             tLayers
             input
   return $ linear tProj hidden
+
+logits'
+  :: forall
+       numAttnLayers
+       numHeads
+       ffnDim
+       paddingIdx
+       dtype
+       numEmbeds
+       embedDim
+       seqLen
+       batchSize
+   . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
+     , paddingIdx + 1 <= numEmbeds
+     , 1 <= seqLen
+     , HFoldrM'
+         IO
+         FoldLayers'
+         (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
+     )
+  => TransformerLM numAttnLayers numHeads ffnDim paddingIdx dtype numEmbeds embedDim seqLen
+  -> Kleisli IO (Tensor 'D.Int64 '[batchSize, seqLen]) (Tensor dtype '[batchSize, seqLen, seqLen])
+logits' TransformerLM {..} =
+  getHidden' @numAttnLayers @numHeads @ffnDim tEmbedding
+                                              tPosEmbedding
+                                              tDropout
+                                              tLayers
+    >>^ transpose @0 @1
+    >>^ linear tProj
 
 data LayerNorm (dtype :: D.DType) (normalizedShape :: [Nat]) where
   LayerNorm

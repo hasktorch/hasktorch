@@ -20,22 +20,31 @@
 
 module Torch.Static where
 
-import Data.Proxy
-import Data.Finite
-import Data.Kind (Constraint, Type)
-import Data.Reflection
-import Foreign.Storable
-import GHC.TypeLits
-import GHC.Exts
+import           Prelude                 hiding ( (.), id )
+import           Control.Arrow
+import           Control.Category
+import           Data.Finite
+import           Data.Kind                      ( Constraint
+                                                , Type
+                                                )
+import           Data.Proxy
+import           Data.Reflection
+import           Foreign.ForeignPtr
+import           Foreign.Storable
+import           GHC.TypeLits
+import           GHC.Exts
 
-import ATen.Cast
-import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
-import qualified ATen.Type as ATen
-import Foreign.ForeignPtr
-import qualified Torch.Tensor as D
-import qualified Torch.TensorFactories as D
-import qualified Torch.Functions as D
-import qualified Torch.DType as D
+import           ATen.Cast
+import           ATen.Class                     ( Castable(..)
+                                                , CppTuple2(..)
+                                                , CppTuple3(..)
+                                                , CppTuple4(..)
+                                                )
+import qualified ATen.Type                     as ATen
+import qualified Torch.Tensor                  as D
+import qualified Torch.TensorFactories         as D
+import qualified Torch.Functions               as D
+import qualified Torch.DType                   as D
 
 natValI :: forall n. KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n
@@ -512,6 +521,15 @@ instance (Monad m) => HFoldrM m f acc '[] where
 
 instance (Monad m, Apply f x (acc -> m acc), HFoldrM m f acc xs) => HFoldrM m f acc (x ': xs) where
   hfoldrM f acc (x :. xs) = apply f x =<< hfoldrM f acc xs
+
+class HFoldrM' m f acc xs where
+  hfoldrM' :: f -> HList xs -> Kleisli m acc acc
+
+instance (Monad m) => HFoldrM' m f acc '[] where
+  hfoldrM' _ _ = arr id
+
+instance (Monad m, Apply f x (Kleisli m acc acc), HFoldrM' m f acc xs) => HFoldrM' m f acc (x ': xs) where
+  hfoldrM' f (x :. xs) = hfoldrM' f xs >>> apply f x
 
 data HNothing  = HNothing
 data HJust x   = HJust x
