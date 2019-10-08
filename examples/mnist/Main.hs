@@ -112,8 +112,8 @@ toBackend backend t =
     "CUDA" -> toCUDA t
     _ -> toCPU t
 
-nll_loss' :: forall n m. (KnownNat n, KnownNat m) => Tensor 'D.Float '[n,m] -> Tensor 'D.Int64 '[n] -> Tensor 'D.Float '[n]
-nll_loss' actual_output expected_output = nll_loss @D.ReduceNone @'D.Float @n @m  @'[] actual_output expected_output weight (-100)
+nll_loss' :: forall n m. (KnownNat n, KnownNat m) => Tensor 'D.Float '[n,m] -> Tensor 'D.Int64 '[n] -> Tensor 'D.Float '[]
+nll_loss' actual_output expected_output = nll_loss @D.ReduceMean @'D.Float @n @m  @'[] actual_output expected_output weight (-100)
   where
     weight = ones :: Tensor 'D.Float '[m]
 
