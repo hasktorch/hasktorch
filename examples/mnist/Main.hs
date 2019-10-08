@@ -112,19 +112,16 @@ type BatchSize = 64
 type TestSize = 10000
 
 
-randomIndexes :: [Int]
-randomIndexes = map (`mod` natValI @I.DataDim) $ randoms seed
+randomIndexes :: Int -> [Int]
+randomIndexes size = map (`mod` size) $ randoms seed
   where
     seed = mkStdGen 123
-
 
 toBackend :: String -> Tensor dtype shape -> Tensor dtype shape
 toBackend backend t =
   case backend of
     "CUDA" -> toCUDA t
     _ -> toCPU t
-
-
 
 main = do
   backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
@@ -137,7 +134,7 @@ main = do
   init    <- A.sample (MLPSpec :: MLPSpec 'D.Float I.DataDim I.ClassDim 128)
   
   
-  (trained,_)  <- foldLoop (init,randomIndexes) numIters $ \(state, idxs) i -> do
+  (trained,_)  <- foldLoop (init,randomIndexes (I.length trainingData)) numIters $ \(state, idxs) i -> do
     let (indexes,nextIndexes) = (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
     let input           = toBackend backend $ I.getImages @BatchSize trainingData indexes 
     let expected_output = toBackend backend $ I.getLabels @BatchSize trainingData indexes
