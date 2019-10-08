@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
@@ -72,82 +73,98 @@ data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (
 
 data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) =
   MLP { layer0 :: Linear dtype inputFeatures hiddenFeatures
-      , layer1 :: Linear dtype hiddenFeatures hiddenFeatures
-      , layer2 :: Linear dtype hiddenFeatures outputFeatures
+      , layer1 :: Linear dtype hiddenFeatures outputFeatures
       } deriving (Show, Generic)
 
 instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures)
 
 instance (KnownDType dtype, KnownNat inputFeatures, KnownNat outputFeatures, KnownNat hiddenFeatures) => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures) (MLP dtype inputFeatures outputFeatures hiddenFeatures) where
   sample MLPSpec =
-    MLP <$> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample LinearSpec
+    MLP <$> A.sample LinearSpec <*> A.sample LinearSpec
 
 mlp
   :: MLP dtype inputFeatures outputFeatures hiddenFeatures
   -> Tensor dtype '[batchSize, inputFeatures]
   -> Tensor dtype '[batchSize, outputFeatures]
-mlp MLP {..} = linear layer2 . relu . linear layer1 . relu . linear layer0
-
-model
-  :: KnownDType dtype
-  => MLP dtype inputFeatures outputFeatures hiddenFeatures
-  -> Tensor dtype '[batchSize, inputFeatures]
-  -> Tensor dtype '[batchSize, outputFeatures]
-model = (softmax @1 .) . mlp
+mlp MLP {..} = linear layer1 . relu . linear layer0
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
-type BatchSize = 64
+type BatchSize = 100
+type HiddenFeatures = 500
 
 randomIndexes :: Int -> [Int]
-randomIndexes size = map (`mod` size) $ randoms seed
-  where
-    seed = mkStdGen 123
+randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
 
 toBackend :: String -> Tensor dtype shape -> Tensor dtype shape
-toBackend backend t =
-  case backend of
-    "CUDA" -> toCUDA t
-    _ -> toCPU t
+toBackend backend t = case backend of
+  "CUDA" -> toCUDA t
+  _      -> toCPU t
 
-nll_loss' :: forall n m. (KnownNat n, KnownNat m) => Tensor 'D.Float '[n,m] -> Tensor 'D.Int64 '[n] -> Tensor 'D.Float '[]
-nll_loss' actual_output expected_output = nll_loss @D.ReduceMean @'D.Float @n @m  @'[] actual_output expected_output weight (-100)
-  where
-    weight = ones :: Tensor 'D.Float '[m]
+crossEntropyLoss
+  :: forall batchSize outputFeatures
+   . (KnownNat batchSize, KnownNat outputFeatures)
+  => Tensor 'D.Float '[batchSize, outputFeatures]
+  -> Tensor 'D.Int64 '[batchSize]
+  -> Tensor 'D.Float '[]
+crossEntropyLoss result target = nll_loss @D.ReduceMean @ 'D.Float @batchSize @outputFeatures @'[]
+  (logSoftmax @1 result)
+  target
+  ones
+  (-100)
 
 main = do
   backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
-  let backend = 
-        case backend' of
-          Right "CUDA" -> "CUDA"
-          _ -> "CPU"
-  let numIters = 10000
+  let backend = case backend' of
+        Right "CUDA" -> "CUDA"
+        _            -> "CPU"
+  let (numIters, printEvery) = (10000, 25)
   (trainingData, testData) <- I.initMnist
-  init    <- A.sample (MLPSpec :: MLPSpec 'D.Float I.DataDim I.ClassDim 128)
-  
-  
-  (trained,_)  <- foldLoop (init,randomIndexes (I.length trainingData)) numIters $ \(state, idxs) i -> do
-    let (indexes,nextIndexes) = (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
-    let input           = toBackend backend $ I.getImages @BatchSize trainingData indexes 
-    let expected_output = toBackend backend $ I.getLabels @BatchSize trainingData indexes
-    let actual_output   = model state $ input
-    let weight          = ones :: Tensor 'D.Float '[I.ClassDim]
-    let loss            = nll_loss' actual_output expected_output
-    let flat_parameters = A.flattenParameters state
-    let gradients       = A.grad (toDynamic loss) flat_parameters
+  init <- A.sample (MLPSpec @'D.Float @I.DataDim @I.ClassDim @HiddenFeatures)
+  (trained, _) <-
+    foldLoop (init, randomIndexes (I.length trainingData)) numIters
+      $ \(state, idxs) i -> do
+          let (indexes, nextIndexes) =
+                (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
+          let trainingLoss =
+                computeLoss @BatchSize backend state indexes trainingData
+          let flat_parameters = A.flattenParameters state
+          let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
 
-    when (i `mod` 250 == 0) (print loss)
+          when (i `mod` printEvery == 0)
+            $ case someNatVal (fromIntegral $ I.length testData) of
+                Just (SomeNat (Proxy :: Proxy testSize)) -> do
+                  let testLoss =
+                        computeLoss @testSize backend state [0 ..] testData
+                  printLosses i trainingLoss testLoss
+                _ -> print "Can not get the number of test"
 
-    new_flat_parameters <- mapM A.makeIndependent
-      $ A.sgd 1e-1 flat_parameters gradients
-    return $ (A.replaceParameters state new_flat_parameters, nextIndexes)
-
-  case someNatVal (fromIntegral $ I.length testData)of
-    Just (SomeNat (Proxy :: Proxy numTest)) -> do
-      let test_data = toBackend backend $ I.getImages @numTest testData [0..]
-          test_label = toBackend backend $ I.getLabels @numTest testData [0..]
-      putStrLn $ "Learning loss: the number of test is " ++ show (natValI @numTest) ++ "."
-      print $ nll_loss' (model trained test_data) test_label
-    _ -> print "Can not get the number of test"
+          new_flat_parameters <- mapM A.makeIndependent
+            $ A.sgd 1e-03 flat_parameters gradients
+          return (A.replaceParameters state new_flat_parameters, nextIndexes)
+  print trained
+ where
+  computeLoss
+    :: forall n
+     . (KnownNat n)
+    => String
+    -> MLP 'D.Float I.DataDim I.ClassDim HiddenFeatures
+    -> [Int]
+    -> I.MnistData
+    -> Tensor 'D.Float '[]
+  computeLoss backend state indexes data' =
+    let input  = toBackend backend $ I.getImages @n data' indexes
+        target = toBackend backend $ I.getLabels @n data' indexes
+        result = mlp state input
+    in  crossEntropyLoss result target
+  printLosses i trainingLoss testLoss =
+    let asFloat t = D.asValue (toDynamic t) :: Float
+    in  putStrLn
+          $  "Iteration: "
+          <> show i
+          <> ". Training batch loss: "
+          <> show (asFloat trainingLoss)
+          <> ". Test loss: "
+          <> show (asFloat testLoss)
