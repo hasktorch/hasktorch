@@ -107,9 +107,9 @@ executable optimizers
                      , hasktorch
                      , mtl >= 2.2.2
 
-executable mnist
+executable static-mnist
   import:              config
-  hs-source-dirs:      mnist
+  hs-source-dirs:      static-mnist
   main-is:             Main.hs
   other-modules:       Image
   build-depends:       base (==4.7 || >4.7) && <5,
