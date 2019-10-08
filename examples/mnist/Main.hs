@@ -28,6 +28,7 @@ import qualified Torch.TensorFactories         as D
 import qualified Image                         as I
 import           System.Random
 import           System.Environment
+import           Data.Proxy
 
 --------------------------------------------------------------------------------
 -- Multi-Layer Perceptron (MLP)
@@ -98,8 +99,6 @@ foldLoop
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 type BatchSize = 64
-type TestSize = 10000
-
 
 randomIndexes :: Int -> [Int]
 randomIndexes size = map (`mod` size) $ randoms seed
@@ -139,7 +138,10 @@ main = do
       $ A.sgd 1e-1 flat_parameters gradients
     return $ (A.replaceParameters state new_flat_parameters, nextIndexes)
 
-  putStrLn $ "Learning loss:"
-  let test_data = toBackend backend $ I.getImages @TestSize testData [0..]
-      test_label = toBackend backend $ I.getLabels @TestSize testData [0..]
-  print $ mse_loss (model trained test_data) test_label
+  case someNatVal (fromIntegral $ I.length testData)of
+    Just (SomeNat (Proxy :: Proxy numTest)) -> do
+      let test_data = toBackend backend $ I.getImages @numTest testData [0..]
+          test_label = toBackend backend $ I.getLabels @numTest testData [0..]
+      putStrLn $ "Learning loss: the number of test is " ++ show (natValI @numTest) ++ "."
+      print $ mse_loss (model trained test_data) test_label
+    _ -> print "Can not get the number of test"
