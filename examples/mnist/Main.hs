@@ -89,10 +89,11 @@ mlp
 mlp MLP {..} = linear layer2 . relu . linear layer1 . relu . linear layer0
 
 model
-  :: MLP dtype inputFeatures outputFeatures hiddenFeatures
+  :: KnownDType dtype
+  => MLP dtype inputFeatures outputFeatures hiddenFeatures
   -> Tensor dtype '[batchSize, inputFeatures]
   -> Tensor dtype '[batchSize, outputFeatures]
-model = (sigmoid .) . mlp
+model = (softmax @1 .) . mlp
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
