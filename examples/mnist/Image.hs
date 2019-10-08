@@ -28,23 +28,11 @@ data MnistData =
 type DataDim = 784
 type ClassDim = 10
 
-getLabels :: forall n. KnownNat n => MnistData -> [Int] -> Tensor 'D.Float '[n,ClassDim]
+getLabels :: forall n. KnownNat n => MnistData -> [Int] -> Tensor 'D.Int64 '[n]
 getLabels mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map (getLabel mnist) $ take (natValI @n) imageIdxs
 
-getLabel :: MnistData -> Int -> [Float]
-getLabel mnist imageIdx =
-  let v = fromIntegral $ BS.index (labels mnist) ((fromIntegral imageIdx) + 8) :: Word8
-  in case v of
-       1 -> [1,0,0,0,0,0,0,0,0,0]
-       2 -> [0,1,0,0,0,0,0,0,0,0]
-       3 -> [0,0,1,0,0,0,0,0,0,0]
-       4 -> [0,0,0,1,0,0,0,0,0,0]
-       5 -> [0,0,0,0,1,0,0,0,0,0]
-       6 -> [0,0,0,0,0,1,0,0,0,0]
-       7 -> [0,0,0,0,0,0,1,0,0,0]
-       8 -> [0,0,0,0,0,0,0,1,0,0]
-       9 -> [0,0,0,0,0,0,0,0,1,0]
-       _ -> [0,0,0,0,0,0,0,0,0,1]
+getLabel :: MnistData -> Int -> Int
+getLabel mnist imageIdx = fromIntegral $ BS.index (labels mnist) ((fromIntegral imageIdx) + 8)
 
 getImage :: MnistData -> Int -> Tensor 'D.Float '[DataDim]
 getImage mnist imageIdx =

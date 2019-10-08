@@ -112,6 +112,11 @@ toBackend backend t =
     "CUDA" -> toCUDA t
     _ -> toCPU t
 
+nll_loss' :: forall n m. (KnownNat n, KnownNat m) => Tensor 'D.Float '[n,m] -> Tensor 'D.Int64 '[n] -> Tensor 'D.Float '[n]
+nll_loss' actual_output expected_output = nll_loss @D.ReduceNone @'D.Float @n @m  @'[] actual_output expected_output weight (-100)
+  where
+    weight = ones :: Tensor 'D.Float '[m]
+
 main = do
   backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
   let backend = 
@@ -128,8 +133,8 @@ main = do
     let input           = toBackend backend $ I.getImages @BatchSize trainingData indexes 
     let expected_output = toBackend backend $ I.getLabels @BatchSize trainingData indexes
     let actual_output   = model state $ input
-    let loss            = mse_loss actual_output expected_output
-
+    let weight          = ones :: Tensor 'D.Float '[I.ClassDim]
+    let loss            = nll_loss' actual_output expected_output
     let flat_parameters = A.flattenParameters state
     let gradients       = A.grad (toDynamic loss) flat_parameters
 
@@ -144,5 +149,5 @@ main = do
       let test_data = toBackend backend $ I.getImages @numTest testData [0..]
           test_label = toBackend backend $ I.getLabels @numTest testData [0..]
       putStrLn $ "Learning loss: the number of test is " ++ show (natValI @numTest) ++ "."
-      print $ mse_loss (model trained test_data) test_label
+      print $ nll_loss' (model trained test_data) test_label
     _ -> print "Can not get the number of test"
