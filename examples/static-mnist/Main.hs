@@ -136,16 +136,21 @@ errorRate result target = (fromIntegral corrent) / (fromIntegral $ natValI @batc
     corrent = D.asValue $ toDynamic $ sumAll $ ne (argmax @1 @DropDim result) target
 
 main = do
+  debug' <- try (getEnv "DEBUG") :: IO (Either SomeException String)
   backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
   let backend = case backend' of
         Right "CUDA" -> "CUDA"
         _            -> "CPU"
+  let debug = case debug' of
+        Right "TRUE" -> True
+        _            -> False
   let (numIters, printEvery) = (10000, 25)
   (trainingData, testData) <- I.initMnist
   init <- A.sample (MLPSpec @ 'D.Float @I.DataDim @I.ClassDim @HiddenFeatures)
   init' <- A.replaceParameters init <$> traverse
     (A.makeIndependent . toBackend backend . A.toDependent)
     (A.flattenParameters init)
+  when debug $ print "init' is done."
   (trained, _) <-
     foldLoop (init', randomIndexes (I.length trainingData)) numIters
       $ \(state, idxs) i -> do
@@ -155,7 +160,9 @@ main = do
                 computeLoss @BatchSize backend state indexes trainingData
           let flat_parameters = A.flattenParameters state
           let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
-
+          when debug $ do
+            print $ "training loss:" ++ show trainingLoss
+            print $ "gradients:" ++ show gradients
           when (i `mod` printEvery == 0)
             $ case someNatVal (fromIntegral $ I.length testData) of
                 Just (SomeNat (Proxy :: Proxy testSize)) -> do
