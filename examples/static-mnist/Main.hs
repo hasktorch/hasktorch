@@ -114,13 +114,14 @@ toBackend backend t = unsafePerformIO $ case backend of
 crossEntropyLoss
   :: forall batchSize outputFeatures
    . (KnownNat batchSize, KnownNat outputFeatures)
-  => Tensor 'D.Float '[batchSize, outputFeatures]
+  => String
+  -> Tensor 'D.Float '[batchSize, outputFeatures]
   -> Tensor 'D.Int64 '[batchSize]
   -> Tensor 'D.Float '[]
-crossEntropyLoss result target = nll_loss @D.ReduceMean @ 'D.Float @batchSize @outputFeatures @'[]
+crossEntropyLoss backend result target = nll_loss @D.ReduceMean @ 'D.Float @batchSize @outputFeatures @'[]
   (logSoftmax @1 result)
   target
-  ones
+  (toBackend backend ones)
   (-100)
 
 errorRate
@@ -180,7 +181,7 @@ main = do
     let input  = toBackend backend $ I.getImages @n data' indexes
         target = toBackend backend $ I.getLabels @n data' indexes
         result = mlp state input
-    in  crossEntropyLoss result target
+    in  crossEntropyLoss backend result target
   computeErrorRate
     :: forall n
      . (KnownNat n)
