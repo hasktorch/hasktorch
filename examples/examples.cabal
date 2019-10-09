@@ -106,3 +106,16 @@ executable optimizers
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl >= 2.2.2
+
+executable static-mnist
+  import:              config
+  hs-source-dirs:      static-mnist
+  main-is:             Main.hs
+  other-modules:       Image
+  build-depends:       base >= 4.7 && < 5
+                     , bytestring >= 0.10.8
+                     , libtorch-ffi
+                     , random >= 1.1
+                     , safe-exceptions
+                     , zlib >= 0.6
+
