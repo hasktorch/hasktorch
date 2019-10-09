@@ -63,8 +63,43 @@ dtype t = D.dtype $ toDynamic t
 toInt :: Tensor dtype shape -> Int
 toInt t = D.toInt $ toDynamic t
 
-sumAll :: Tensor dtype shape -> Tensor dtype shape
-sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
+type family DTypeIsNotHalf (dtype :: D.DType) :: Constraint where
+  DTypeIsNotHalf D.Half = TypeError (Text "This operation does not support " :<>: ShowType D.Half :<>: Text " tensors.")
+  DTypeIsNotHalf _ = ()
+
+type family SumDType (dtype :: D.DType) :: D.DType where
+  SumDType D.Bool = D.Int64
+  SumDType D.UInt8 = D.Int64
+  SumDType D.Int8 = D.Int64
+  SumDType D.Int16 = D.Int64
+  SumDType D.Int32 = D.Int64
+  SumDType D.Int64 = D.Int64
+  SumDType D.Float = D.Float
+  SumDType D.Double = D.Double
+
+-- | sumAll
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Int) $ sumAll (ones @'D.Bool @'[2, 3])
+-- (Int64,([],6))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Int) $ sumAll (ones @'D.UInt8 @'[2, 3])
+-- (Int64,([],6))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Int) $ sumAll (ones @'D.Int8 @'[2, 3])
+-- (Int64,([],6))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Int) $ sumAll (ones @'D.Int16 @'[2, 3])
+-- (Int64,([],6))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Int) $ sumAll (ones @'D.Int32 @'[2, 3])
+-- (Int64,([],6))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Int) $ sumAll (ones @'D.Int64 @'[2, 3])
+-- (Int64,([],6))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Float) $ sumAll (ones @'D.Float @'[2, 3])
+-- (Float,([],6.0))
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Double) $ sumAll (ones @'D.Double @'[2, 3])
+-- (Double,([],6.0))
+sumAll
+  :: forall dtype shape
+   . (DTypeIsNotHalf dtype)
+  => Tensor dtype shape
+  -> Tensor (SumDType dtype) '[]
+sumAll t = unsafePerformIO $ cast1 ATen.sum_t t
 
 -- |
 -- >>> dtype &&& shape $ sumDim @0 (ones :: Tensor 'D.Float '[3,4,5])

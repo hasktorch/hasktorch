@@ -129,11 +129,10 @@ errorRate
    . (KnownNat batchSize, KnownNat outputFeatures)
   => Tensor 'D.Float '[batchSize, outputFeatures]
   -> Tensor 'D.Int64 '[batchSize]
-  -> Float
-errorRate result target = (fromIntegral corrent) / (fromIntegral $ natValI @batchSize)
-  where
-    corrent :: Int
-    corrent = D.asValue $ toDynamic $ sumAll $ ne (argmax @1 @DropDim result) target
+  -> Tensor 'D.Float '[]
+errorRate result target = 
+  let errorCount = toDType @D.Float . sumAll . ne (argmax @1 @DropDim result) $ target
+  in  cmul errorCount ((1.0 /) . fromIntegral $ natValI @batchSize :: Double)    
 
 main = do
   debug' <- try (getEnv "DEBUG") :: IO (Either SomeException String)
@@ -156,8 +155,7 @@ main = do
       $ \(state, idxs) i -> do
           let (indexes, nextIndexes) =
                 (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
-          let trainingLoss =
-                computeLoss @BatchSize backend state indexes trainingData
+          let (trainingLoss, _) = computeLossAndErrorRate @BatchSize backend state indexes trainingData
           let flat_parameters = A.flattenParameters state
           let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
           when debug $ do
@@ -166,8 +164,7 @@ main = do
           when (i `mod` printEvery == 0)
             $ case someNatVal (fromIntegral $ I.length testData) of
                 Just (SomeNat (Proxy :: Proxy testSize)) -> do
-                  let testLoss = computeLoss @testSize backend state [0 ..] testData
-                      testError = computeErrorRate @testSize backend state [0 ..] testData
+                  let (testLoss, testError) = computeLossAndErrorRate @testSize backend state [0 ..] testData
                   printLosses i trainingLoss testLoss testError
                 _ -> print "Can not get the number of test"
 
@@ -176,32 +173,19 @@ main = do
           return (A.replaceParameters state new_flat_parameters, nextIndexes)
   print trained
  where
-  computeLoss
+  computeLossAndErrorRate
     :: forall n
      . (KnownNat n)
     => String
     -> MLP 'D.Float I.DataDim I.ClassDim HiddenFeatures
     -> [Int]
     -> I.MnistData
-    -> Tensor 'D.Float '[]
-  computeLoss backend state indexes data' =
+    -> (Tensor 'D.Float '[], Tensor 'D.Float '[])
+  computeLossAndErrorRate backend state indexes data' =
     let input  = toBackend backend $ I.getImages @n data' indexes
         target = toBackend backend $ I.getLabels @n data' indexes
         result = mlp state input
-    in  crossEntropyLoss backend result target
-  computeErrorRate
-    :: forall n
-     . (KnownNat n)
-    => String
-    -> MLP 'D.Float I.DataDim I.ClassDim HiddenFeatures
-    -> [Int]
-    -> I.MnistData
-    -> Float
-  computeErrorRate backend state indexes data' =
-    let input  = toBackend backend $ I.getImages @n data' indexes
-        target = toBackend backend $ I.getLabels @n data' indexes
-        result = mlp state input
-    in  errorRate result target
+    in  (crossEntropyLoss backend result target, errorRate result target)
   printLosses i trainingLoss testLoss testError =
     let asFloat t = D.asValue (toDynamic t) :: Float
     in  putStrLn
@@ -212,4 +196,4 @@ main = do
           <> ". Test loss: "
           <> show (asFloat testLoss)
           <> ". Test error-rate: "
-          <> show testError
+          <> show (asFloat testError)
