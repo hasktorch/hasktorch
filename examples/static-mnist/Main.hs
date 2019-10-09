@@ -19,6 +19,7 @@ import           Data.Proxy
 import           Foreign.ForeignPtr
 import           GHC.Generics
 import           GHC.TypeLits
+import           GHC.TypeLits.Extra
 import           System.Environment
 import           System.IO.Unsafe
 import           System.Random
@@ -100,6 +101,7 @@ foldLoop
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 type BatchSize = 100
+type TestBatchSize = 1000
 type HiddenFeatures = 500
 
 randomIndexes :: Int -> [Int]
@@ -130,12 +132,12 @@ errorRate
   => Tensor 'D.Float '[batchSize, outputFeatures]
   -> Tensor 'D.Int64 '[batchSize]
   -> Tensor 'D.Float '[]
-errorRate result target = 
+errorRate result target =
   let errorCount = toDType @D.Float . sumAll . ne (argmax @1 @DropDim result) $ target
-  in  cmul errorCount ((1.0 /) . fromIntegral $ natValI @batchSize :: Double)    
+  in  cmul errorCount ((1.0 /) . fromIntegral $ natValI @batchSize :: Double)
 
 main = do
-  debug' <- try (getEnv "DEBUG") :: IO (Either SomeException String)
+  debug'   <- try (getEnv "DEBUG") :: IO (Either SomeException String)
   backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
   let backend = case backend' of
         Right "CUDA" -> "CUDA"
@@ -155,7 +157,11 @@ main = do
       $ \(state, idxs) i -> do
           let (indexes, nextIndexes) =
                 (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
-          let (trainingLoss, _) = computeLossAndErrorRate @BatchSize backend state indexes trainingData
+          let (trainingLoss, _) = computeLossAndErrorRate @BatchSize
+                backend
+                state
+                indexes
+                trainingData
           let flat_parameters = A.flattenParameters state
           let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
           when debug $ do
@@ -164,7 +170,12 @@ main = do
           when (i `mod` printEvery == 0)
             $ case someNatVal (fromIntegral $ I.length testData) of
                 Just (SomeNat (Proxy :: Proxy testSize)) -> do
-                  let (testLoss, testError) = computeLossAndErrorRate @testSize backend state [0 ..] testData
+                  let (testLoss, testError) =
+                        computeLossAndErrorRate @(Min TestBatchSize testSize)
+                          backend
+                          state
+                          (randomIndexes (I.length testData))
+                          testData
                   printLosses i trainingLoss testLoss testError
                 _ -> print "Can not get the number of test"
 
@@ -187,13 +198,13 @@ main = do
         result = mlp state input
     in  (crossEntropyLoss backend result target, errorRate result target)
   printLosses i trainingLoss testLoss testError =
-    let asFloat t = D.asValue (toDynamic t) :: Float
+    let asFloat t = D.asValue . toDynamic $ t :: Float
     in  putStrLn
           $  "Iteration: "
           <> show i
           <> ". Training batch loss: "
           <> show (asFloat trainingLoss)
-          <> ". Test loss: "
-          <> show (asFloat testLoss)
+          -- <> ". Test loss: "
+          -- <> show (asFloat testLoss)
           <> ". Test error-rate: "
           <> show (asFloat testError)
