@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PolyKinds #-}
@@ -14,9 +15,18 @@ import           Control.Monad                  ( foldM
                                                 , when
                                                 )
 import           Control.Exception.Safe         (try, SomeException(..))
+import           Data.Proxy
+import           Foreign.ForeignPtr
 import           GHC.Generics
 import           GHC.TypeLits
+import           System.Environment
+import           System.IO.Unsafe
+import           System.Random
 
+import qualified ATen.Cast                     as ATen
+import qualified ATen.Class                    as ATen
+import qualified ATen.Type                     as ATen
+import qualified ATen.Managed.Type.Tensor      as ATen
 import           Torch.Static
 import           Torch.Static.Native     hiding ( linear )
 import           Torch.Static.Factories
@@ -27,9 +37,6 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.Functions               as D
 import qualified Torch.TensorFactories         as D
 import qualified Image                         as I
-import           System.Random
-import           System.Environment
-import           Data.Proxy
 
 --------------------------------------------------------------------------------
 -- Multi-Layer Perceptron (MLP)
@@ -98,10 +105,11 @@ type HiddenFeatures = 500
 randomIndexes :: Int -> [Int]
 randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
 
-toBackend :: String -> Tensor dtype shape -> Tensor dtype shape
-toBackend backend t = case backend of
-  "CUDA" -> toCUDA t
-  _      -> toCPU t
+toBackend
+  :: forall t . (ATen.Castable t (ForeignPtr ATen.Tensor)) => String -> t -> t
+toBackend backend t = unsafePerformIO $ case backend of
+  "CUDA" -> ATen.cast1 ATen.tensor_cuda t
+  _      -> ATen.cast1 ATen.tensor_cpu t
 
 crossEntropyLoss
   :: forall batchSize outputFeatures
@@ -122,9 +130,12 @@ main = do
         _            -> "CPU"
   let (numIters, printEvery) = (10000, 25)
   (trainingData, testData) <- I.initMnist
-  init <- A.sample (MLPSpec @'D.Float @I.DataDim @I.ClassDim @HiddenFeatures)
+  init <- A.sample (MLPSpec @ 'D.Float @I.DataDim @I.ClassDim @HiddenFeatures)
+  init' <- A.replaceParameters init <$> traverse
+    (A.makeIndependent . toBackend backend . A.toDependent)
+    (A.flattenParameters init)
   (trained, _) <-
-    foldLoop (init, randomIndexes (I.length trainingData)) numIters
+    foldLoop (init', randomIndexes (I.length trainingData)) numIters
       $ \(state, idxs) i -> do
           let (indexes, nextIndexes) =
                 (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
