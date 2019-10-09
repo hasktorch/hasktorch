@@ -123,6 +123,17 @@ crossEntropyLoss result target = nll_loss @D.ReduceMean @ 'D.Float @batchSize @o
   ones
   (-100)
 
+errorRate
+  :: forall batchSize outputFeatures
+   . (KnownNat batchSize, KnownNat outputFeatures)
+  => Tensor 'D.Float '[batchSize, outputFeatures]
+  -> Tensor 'D.Int64 '[batchSize]
+  -> Float
+errorRate result target = (fromIntegral corrent) / (fromIntegral $ natValI @batchSize)
+  where
+    corrent :: Int
+    corrent = D.asValue $ toDynamic $ sumAll $ ne (argmax @1 @DropDim result) target
+
 main = do
   backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
   let backend = case backend' of
@@ -147,9 +158,9 @@ main = do
           when (i `mod` printEvery == 0)
             $ case someNatVal (fromIntegral $ I.length testData) of
                 Just (SomeNat (Proxy :: Proxy testSize)) -> do
-                  let testLoss =
-                        computeLoss @testSize backend state [0 ..] testData
-                  printLosses i trainingLoss testLoss
+                  let testLoss = computeLoss @testSize backend state [0 ..] testData
+                      testError = computeErrorRate @testSize backend state [0 ..] testData
+                  printLosses i trainingLoss testLoss testError
                 _ -> print "Can not get the number of test"
 
           new_flat_parameters <- mapM A.makeIndependent
@@ -170,7 +181,20 @@ main = do
         target = toBackend backend $ I.getLabels @n data' indexes
         result = mlp state input
     in  crossEntropyLoss result target
-  printLosses i trainingLoss testLoss =
+  computeErrorRate
+    :: forall n
+     . (KnownNat n)
+    => String
+    -> MLP 'D.Float I.DataDim I.ClassDim HiddenFeatures
+    -> [Int]
+    -> I.MnistData
+    -> Float
+  computeErrorRate backend state indexes data' =
+    let input  = toBackend backend $ I.getImages @n data' indexes
+        target = toBackend backend $ I.getLabels @n data' indexes
+        result = mlp state input
+    in  errorRate result target
+  printLosses i trainingLoss testLoss testError =
     let asFloat t = D.asValue (toDynamic t) :: Float
     in  putStrLn
           $  "Iteration: "
@@ -179,3 +203,5 @@ main = do
           <> show (asFloat trainingLoss)
           <> ". Test loss: "
           <> show (asFloat testLoss)
+          <> ". Test error-rate: "
+          <> show testError
