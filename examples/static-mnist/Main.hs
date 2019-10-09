@@ -198,13 +198,13 @@ main = do
         result = mlp state input
     in  (crossEntropyLoss backend result target, errorRate result target)
   printLosses i trainingLoss testLoss testError =
-    let asFloat t = D.asValue . toDynamic $ t :: Float
+    let asFloat t = D.asValue . toDynamic . toCPU $ t :: Float
     in  putStrLn
           $  "Iteration: "
           <> show i
           <> ". Training batch loss: "
           <> show (asFloat trainingLoss)
-          -- <> ". Test loss: "
-          -- <> show (asFloat testLoss)
+          <> ". Test loss: "
+          <> show (asFloat testLoss)
           <> ". Test error-rate: "
           <> show (asFloat testError)
