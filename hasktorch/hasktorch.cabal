@@ -23,6 +23,7 @@ library
                     , Torch.Static
                     , Torch.Static.Factories
                     , Torch.Static.Native
+                    , Torch.Static.NN
                     , Torch.NN
                     , Torch.Scalar
                     , Torch.Backend
