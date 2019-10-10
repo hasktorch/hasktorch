@@ -48,13 +48,6 @@ import qualified Torch.TensorFactories         as D
 -- Multi-Layer Perceptron (MLP)
 --------------------------------------------------------------------------------
 
-linear
-  :: Linear dtype inputFeatures outputFeatures
-  -> Tensor dtype '[batchSize, inputFeatures]
-  -> Tensor dtype '[batchSize, outputFeatures]
-linear Linear {..} input =
-  add (mm input (toDependent weight)) (toDependent bias)
-
 data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) = MLPSpec
 
 data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) =

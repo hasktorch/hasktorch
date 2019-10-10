@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -39,6 +40,30 @@ data Linear (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) =
   Linear { weight :: Parameter dtype '[inputFeatures, outputFeatures]
          , bias :: Parameter dtype '[outputFeatures]
          } deriving (Show, Generic)
+
+linear
+  :: forall dtype (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat])
+   . ( CheckBroadcast (CheckMatMul
+                         shape
+                         '[inputFeatures, outputFeatures]
+                         (ComputeMatMul
+                            (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
+                      '[outputFeatures]
+                      (ComputeBroadcast
+                         (ReverseImpl
+                            (CheckMatMul
+                               shape
+                               '[inputFeatures, outputFeatures]
+                               (ComputeMatMul
+                                  (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
+                            '[])
+                         '[outputFeatures])
+                    ~ shape')
+  => Linear dtype inputFeatures outputFeatures
+  -> Tensor dtype shape
+  -> Tensor dtype shape'
+linear Linear {..} input =
+  add (matmul input (toDependent weight)) (toDependent bias)
 
 makeIndependent :: Tensor dtype shape -> IO (Parameter dtype shape)
 makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
