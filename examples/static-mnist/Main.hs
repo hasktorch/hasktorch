@@ -14,7 +14,9 @@ module Main where
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
-import           Control.Exception.Safe         (try, SomeException(..))
+import           Control.Exception.Safe         ( try
+                                                , SomeException(..)
+                                                )
 import           Data.Proxy
 import           Foreign.ForeignPtr
 import           GHC.Generics
@@ -49,13 +51,13 @@ data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (
 data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) =
   MLP { layer0 :: Linear dtype inputFeatures hiddenFeatures
       , layer1 :: Linear dtype hiddenFeatures outputFeatures
+      , dropout :: Dropout
       } deriving (Show, Generic)
 
 instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures)
 
 instance (KnownDType dtype, KnownNat inputFeatures, KnownNat outputFeatures, KnownNat hiddenFeatures) => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures) (MLP dtype inputFeatures outputFeatures hiddenFeatures) where
-  sample MLPSpec =
-    MLP <$> A.sample LinearSpec <*> A.sample LinearSpec
+  sample MLPSpec = MLP <$> A.sample LinearSpec <*> A.sample LinearSpec
 
 mlp
   :: MLP dtype inputFeatures outputFeatures hiddenFeatures
@@ -87,11 +89,12 @@ crossEntropyLoss
   -> Tensor 'D.Float '[batchSize, outputFeatures]
   -> Tensor 'D.Int64 '[batchSize]
   -> Tensor 'D.Float '[]
-crossEntropyLoss backend result target = nll_loss @D.ReduceMean @ 'D.Float @batchSize @outputFeatures @'[]
-  (logSoftmax @1 result)
-  target
-  (toBackend backend ones)
-  (-100)
+crossEntropyLoss backend result target =
+  nll_loss @D.ReduceMean @ 'D.Float @batchSize @outputFeatures @'[]
+    (logSoftmax @1 result)
+    target
+    (toBackend backend ones)
+    (-100)
 
 errorRate
   :: forall batchSize outputFeatures
@@ -100,7 +103,8 @@ errorRate
   -> Tensor 'D.Int64 '[batchSize]
   -> Tensor 'D.Float '[]
 errorRate result target =
-  let errorCount = toDType @D.Float . sumAll . ne (argmax @1 @DropDim result) $ target
+  let errorCount =
+          toDType @D.Float . sumAll . ne (argmax @1 @DropDim result) $ target
   in  cmul errorCount ((1.0 /) . fromIntegral $ natValI @batchSize :: Double)
 
 main = do

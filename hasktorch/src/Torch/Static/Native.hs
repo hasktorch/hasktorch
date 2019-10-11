@@ -799,8 +799,8 @@ baddbmm _input _batch1 _batch2 _beta _alpha = unsafePerformIO $ (cast5 ATen.badd
 -- bitwise_not :: Tensor dtype shape -> Tensor dtype shape
 -- bitwise_not _input = unsafePerformIO $ (cast1 ATen.bitwise_not_t) _input
 
--- | mm(matrix multiply) for batch
--- >>> dtype &&& shape $ bmm (ones :: Tensor 'D.Float '[5,3,2]) (zeros :: Tensor 'D.Float '[5,2,4])
+-- | batched matrix multiplication
+-- >>> dtype &&& shape $ bmm (ones @'D.Float @'[5,3,2]) (zeros @'D.Float @'[5,2,4])
 -- (Float,[5,3,4])
 bmm :: Tensor dtype '[batchSize,n,k] -> Tensor dtype '[batchSize,k,m] -> Tensor dtype '[batchSize,n,m]
 bmm _input _mat2 = unsafePerformIO $ (cast2 ATen.bmm_tt) _input _mat2
@@ -808,8 +808,57 @@ bmm _input _mat2 = unsafePerformIO $ (cast2 ATen.bmm_tt) _input _mat2
 -- broadcast_tensors :: [Tensor dtype shape] -> [Tensor dtype shape]
 -- broadcast_tensors _tensors = unsafePerformIO $ (cast1 ATen.broadcast_tensors_l) _tensors
 
--- cat :: [Tensor dtype shape] -> Int -> Tensor dtype shape
--- cat _tensors _dim = unsafePerformIO $ (cast2 ATen.cat_ll) _tensors _dim
+type family CatImpl (dim :: Nat) (tensors :: [a]) (count :: Nat) :: Maybe (D.DType, [Nat]) where
+  CatImpl dim '[]                                                   count = Nothing
+  CatImpl dim (Tensor dtype shape ': '[])                           count = MaybePair (Just dtype) (ComputeCatShape shape dim count)
+  CatImpl dim (Tensor dtype shape ': Tensor dtype shape ': tensors) count = CatImpl dim (Tensor dtype shape ': tensors) (count + 1)
+  CatImpl _   _                                                     _     = Nothing
+
+type family ComputeCatShape (shape :: [Nat]) (dim  :: Nat) (count :: Nat) :: Maybe [Nat] where
+  ComputeCatShape _         _   0     = Nothing
+  ComputeCatShape xs        0   count = Just (count ': xs)
+  ComputeCatShape (x ': xs) dim count = AppendToMaybe x (ComputeCatShape xs (dim - 1) count)
+  ComputeCatShape '[]       _   _     = Nothing
+
+type family CatCheck (res :: Maybe (D.DType, [Nat])) :: (D.DType, [Nat]) where
+  CatCheck 'Nothing                = TypeError (Text "Concatenation impossible.")
+  CatCheck ('Just '(dtype, shape)) = '(dtype, shape)
+
+type Cat dim tensors = CatCheck (CatImpl dim tensors 1)
+
+-- | cat
+-- >>> t = ones @'D.Float @'[2,2]
+-- >>> t' = cat @0 (t :. HNil)
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[1, 2, 2]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
+-- (Float,([2,2],[[1.0,1.0],[1.0,1.0]]))
+-- >>> t' = cat @1 (t :. HNil)
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[2, 1, 2]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
+-- (Float,([2,2],[[1.0,1.0],[1.0,1.0]]))
+-- >>> t' = cat @0 (t :. t :. t :. HNil)
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[3, 2, 2]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
+-- (Float,([6,2],[[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0]]))
+-- >>> t' = cat @1 (t :. t :. t :. HNil)
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[2, 3, 2]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
+-- (Float,([2,6],[[1.0,1.0,1.0,1.0,1.0,1.0],[1.0,1.0,1.0,1.0,1.0,1.0]]))
+cat
+  :: forall dim dtype shape tensors
+   . ( KnownNat dim
+     , '(dtype, shape) ~ Stack dim tensors
+     , HFoldrM IO TensorListFolds [D.ATenTensor] tensors
+     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors)
+     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
+     )
+  => HList tensors
+  -> Tensor dtype shape
+cat tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors (natValI @dim :: Int)
 
 -- chain_matmul :: [Tensor dtype shape] -> Tensor dtype shape
 -- chain_matmul _matrices = unsafePerformIO $ (cast1 ATen.chain_matmul_l) _matrices
@@ -910,7 +959,8 @@ chunk
      )
   => Tensor dtype shape
   -> HList tensorChunks
-chunk input = unsafePerformIO $ cast3 ATen.chunk_tll input (natValI @chunks::Int) (natValI @dim::Int)
+chunk input = unsafePerformIO
+  $ cast3 ATen.chunk_tll input (natValI @chunks :: Int) (natValI @dim :: Int)
 
 -- |
 -- >>> dtype &&& shape $ clamp (ones :: Tensor 'D.Float '[3,2]) 0 1
@@ -1810,8 +1860,89 @@ celu _input _alpha = unsafePerformIO $ (cast2 ATen.celu_ts) _input _alpha
 -- sspaddmm :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Float -> Float -> Tensor dtype shape
 -- sspaddmm _input _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.sspaddmm_tttss) _input _mat1 _mat2 _beta _alpha
 
--- stack :: [Tensor dtype shape] -> Int -> Tensor dtype shape
--- stack _tensors _dim = unsafePerformIO $ (cast2 ATen.stack_ll) _tensors _dim
+type family StackImpl (dim :: Nat) (tensors :: [a]) (count :: Nat) :: Maybe (D.DType, [Nat]) where
+  StackImpl dim '[]                                                   count = Nothing
+  StackImpl dim (Tensor dtype shape ': '[])                           count = MaybePair (Just dtype) (ComputeStackShape shape dim count)
+  StackImpl dim (Tensor dtype shape ': Tensor dtype shape ': tensors) count = StackImpl dim (Tensor dtype shape ': tensors) (count + 1)
+  StackImpl _   _                                                     _     = Nothing
+
+type family MaybePair (a' :: Maybe a) (b' ::  Maybe b) :: Maybe (a, b) where
+  MaybePair Nothing   _         = Nothing
+  MaybePair _         Nothing   = Nothing
+  MaybePair (Just a') (Just b') = Just '(a', b')
+
+type family ComputeStackShape (shape :: [Nat]) (dim  :: Nat) (count :: Nat) :: Maybe [Nat] where
+  ComputeStackShape _         _   0     = Nothing
+  ComputeStackShape xs        0   count = Just (count ': xs)
+  ComputeStackShape (x ': xs) dim count = AppendToMaybe x (ComputeStackShape xs (dim - 1) count)
+  ComputeStackShape '[]       _   _     = Nothing
+
+type family StackCheck (res :: Maybe (D.DType, [Nat])) :: (D.DType, [Nat]) where
+  StackCheck 'Nothing                = TypeError (Text "Stacking impossible.")
+  StackCheck ('Just '(dtype, shape)) = '(dtype, shape)
+
+-- | Stack
+-- >>> type Ty = Stack 0 '[Tensor 'D.Float '[]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[1])
+-- >>> type Ty = Stack 0 '[Tensor 'D.Float '[2,2]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[1, 2, 2])
+-- >>> type Ty = Stack 1 '[Tensor 'D.Float '[2,2]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[2, 1, 2])
+-- >>> type Ty = Stack 2 '[Tensor 'D.Float '[2,2]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[2, 2, 1])
+-- >>> type Ty = Stack 2 '[Tensor 'D.Float '[2,2], Tensor 'D.Float '[2,2], Tensor 'D.Float '[2,2]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[2, 2, 3])
+type Stack dim tensors = StackCheck (StackImpl dim tensors 1)
+
+-- | stack
+-- >>> t = ones @'D.Float @'[]
+-- >>> t' = stack @0 (t :. HNil)
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[1]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [Float]) $ t'
+-- (Float,([1],[1.0]))
+-- >>> t = ones @'D.Float @'[2,2]
+-- >>> t' = stack @0 (t :. HNil)
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[1, 2, 2]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
+-- (Float,([1,2,2],[[[1.0,1.0],[1.0,1.0]]]))
+-- >>> t' = stack @1 (t :. HNil)
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[2, 1, 2]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
+-- (Float,([2,1,2],[[[1.0,1.0]],[[1.0,1.0]]]))
+-- >>> t' = stack @2 (t :. HNil)
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[2, 2, 1]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
+-- (Float,([2,2,1],[[[1.0],[1.0]],[[1.0],[1.0]]]))
+-- >>> t' = stack @2 (t :. t :. t :. HNil)
+-- >>> :type t'
+-- t' :: Tensor 'D.Float '[2, 2, 3]
+-- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
+-- (Float,([2,2,3],[[[1.0,1.0,1.0],[1.0,1.0,1.0]],[[1.0,1.0,1.0],[1.0,1.0,1.0]]]))
+stack
+  :: forall dim dtype shape tensors
+   . ( KnownNat dim
+     , '(dtype, shape) ~ Stack dim tensors
+     , HFoldrM IO TensorListFolds [D.ATenTensor] tensors
+     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors)
+     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
+     )
+  => HList tensors
+  -> Tensor dtype shape
+stack tensors = unsafePerformIO $ cast2 ATen.stack_ll tensors (natValI @dim :: Int)
 
 -- stft :: Tensor dtype shape -> Int -> Int -> Int -> Tensor dtype shape -> Bool -> Bool -> Tensor dtype shape
 -- stft _input _n_fft _hop_length _win_length _window _normalized _onesided = unsafePerformIO $ (cast7 ATen.stft_tllltbb) _input _n_fft _hop_length _win_length _window _normalized _onesided

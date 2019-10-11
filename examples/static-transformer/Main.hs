@@ -171,16 +171,6 @@ multiheadAttention' MultiheadAttention {..} =
           ^>> returnA
   f = reshape @'[seqLen, batchSize * numHeads, headDim] ^>> transpose @0 @1 ^>> returnA
 
-data Dropout where
-  Dropout
-    :: { dropoutProb :: Double
-       , dropoutTrain :: Bool
-       }
-    -> Dropout
-
-dropout :: Dropout -> Tensor dtype shape -> IO (Tensor dtype shape)
-dropout Dropout {..} = Torch.Static.Native.dropout dropoutProb dropoutTrain
-
 data TransformerLMLayer (dtype :: D.DType) (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat) where
   TransformerLMLayer
     :: { tAttn :: MultiheadAttention dtype embedDim numHeads
@@ -278,27 +268,6 @@ transformerLMMLP' TransformerLMMLP {..} =
     >>> linear tLinear1
     ^>> tActivation1
     ^>> Kleisli (Main.dropout tDropout1)
-
-data Embedding (paddingIdx :: Maybe Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) where
-  Embedding
-    :: forall paddingIdx dtype numEmbeds embedDim
-     . (PaddingIdxCheck paddingIdx numEmbeds)
-    => { embedWeights :: Parameter dtype '[numEmbeds, embedDim] }
-    -> Embedding paddingIdx dtype numEmbeds embedDim
-
-embed
-  :: forall paddingIdx dtype shape numEmbeds embedDim
-   . ( KnownMaybeNat paddingIdx
-     , PaddingIdxCheck paddingIdx numEmbeds
-     )
-  => Embedding paddingIdx dtype numEmbeds embedDim
-  -> Tensor 'D.Int64 shape
-  -> Tensor dtype (Reverse (embedDim ': (Reverse shape)))
-embed Embedding {..} input = embedding @paddingIdx
-  False
-  False
-  (toDependent embedWeights)
-  input
 
 data FoldLayers = FoldLayers
 
