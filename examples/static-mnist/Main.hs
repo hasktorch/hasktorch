@@ -141,7 +141,7 @@ main = do
       debug = case debug' of
         Right "TRUE" -> True
         _            -> False
-      (numIters, printEvery) = (10000, 25)
+      (numIters, printEvery) = (100000, 250)
       dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
   init                     <- A.sample
