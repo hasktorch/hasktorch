@@ -20,22 +20,31 @@
 
 module Torch.Static where
 
-import Data.Proxy
-import Data.Finite
-import Data.Kind (Constraint, Type)
-import Data.Reflection
-import Foreign.Storable
-import GHC.TypeLits
-import GHC.Exts
+import           Prelude                 hiding ( (.), id )
+import           Control.Arrow
+import           Control.Category
+import           Data.Finite
+import           Data.Kind                      ( Constraint
+                                                , Type
+                                                )
+import           Data.Proxy
+import           Data.Reflection
+import           Foreign.ForeignPtr
+import           Foreign.Storable
+import           GHC.TypeLits
+import           GHC.Exts
 
-import ATen.Cast
-import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
-import qualified ATen.Type as ATen
-import Foreign.ForeignPtr
-import qualified Torch.Tensor as D
-import qualified Torch.TensorFactories as D
-import qualified Torch.Functions as D
-import qualified Torch.DType as D
+import           ATen.Cast
+import           ATen.Class                     ( Castable(..)
+                                                , CppTuple2(..)
+                                                , CppTuple3(..)
+                                                , CppTuple4(..)
+                                                )
+import qualified ATen.Type                     as ATen
+import qualified Torch.Tensor                  as D
+import qualified Torch.TensorFactories         as D
+import qualified Torch.Functions               as D
+import qualified Torch.DType                   as D
 
 natValI :: forall n. KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n
@@ -246,6 +255,10 @@ type family ListLength (l :: [a]) :: Nat where
     ListLength '[]      = 0
     ListLength (_ ': t) = 1 + ListLength t
 
+type family LastDim (l :: [a]) :: Nat where
+  LastDim (_ ': '[]) = 0
+  LastDim (_ ': t)   = 1 + LastDim t
+
                     ----------------------------------------
 
 type family RemoveImpl (l :: [a]) (n :: Nat) :: Maybe [a] where
@@ -453,7 +466,6 @@ type family Numel (shape :: [Nat]) :: Nat where
 reshape :: forall shape' dtype shape. (KnownShape shape', Numel shape ~ Numel shape') => Tensor dtype shape -> Tensor dtype shape'
 reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
 
-
 instance Castable (Tensor dtype shape) D.ATenTensor where
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
   uncast aten_tensor f = f $ UnsafeMkTensor (D.Unsafe aten_tensor)
@@ -469,14 +481,16 @@ instance Castable [Tensor dtype shape] (ForeignPtr ATen.TensorList) where
 
 data family HList (l :: [Type])
 data instance HList '[] = HNil
-newtype instance HList (x ': xs) = HCons1 (x, HList xs)
-pattern HCons x xs = HCons1 (x, xs)
+newtype instance HList (x ': xs) = HCons (x, HList xs)
+pattern (:.) x xs = HCons (x, xs)
+
+infixr 2 :.
 
 instance Eq (HList '[]) where
   HNil == HNil = True
 
 instance (Eq x, Eq (HList xs)) => Eq (HList (x ': xs)) where
-  (HCons x xs) == (HCons y ys) = x == y && xs == ys
+  (x :. xs) == (y :. ys) = x == y && xs == ys
 
 class Apply f a b where
   apply :: f -> a -> b
@@ -488,7 +502,7 @@ instance HMap f '[] '[] where
   hmap _ _ = HNil
 
 instance (Apply f x y, HMap f xs ys) => HMap f (x ': xs) (y ': ys) where
-  hmap f (HCons x xs) = HCons (apply f x) (hmap f xs)
+  hmap f (x :. xs) = (apply f x) :. (hmap f xs)
 
 class HFoldr f acc xs where
   hfoldr :: f -> acc -> HList xs -> acc
@@ -497,7 +511,7 @@ instance HFoldr f acc '[] where
   hfoldr _ acc _ = acc
 
 instance (Apply f x (acc -> acc), HFoldr f acc xs) => HFoldr f acc (x ': xs) where
-  hfoldr f acc (HCons x xs) = apply f x $ hfoldr f acc xs
+  hfoldr f acc (x :. xs) = apply f x $ hfoldr f acc xs
 
 class HFoldrM m f acc xs where
   hfoldrM :: f -> acc -> HList xs -> m acc
@@ -506,7 +520,16 @@ instance (Monad m) => HFoldrM m f acc '[] where
   hfoldrM _ acc _ = pure acc
 
 instance (Monad m, Apply f x (acc -> m acc), HFoldrM m f acc xs) => HFoldrM m f acc (x ': xs) where
-  hfoldrM f acc (HCons x xs) = apply f x =<< hfoldrM f acc xs
+  hfoldrM f acc (x :. xs) = apply f x =<< hfoldrM f acc xs
+
+class HFoldrM' m f acc xs where
+  hfoldrM' :: f -> HList xs -> Kleisli m acc acc
+
+instance (Monad m) => HFoldrM' m f acc '[] where
+  hfoldrM' _ _ = arr id
+
+instance (Monad m, Apply f x (Kleisli m acc acc), HFoldrM' m f acc xs) => HFoldrM' m f acc (x ': xs) where
+  hfoldrM' f (x :. xs) = hfoldrM' f xs >>> apply f x
 
 data HNothing  = HNothing
 data HJust x   = HJust x
@@ -522,7 +545,7 @@ instance HUnfold f HNothing '[] where
   hunfoldr' _ _ = HNil
 
 instance (Apply f s res, HUnfold f res xs, res ~ HUnfoldRes s xs) => HUnfold f (HJust (x, s)) (x ': xs) where
-  hunfoldr' f (HJust (x, s)) = HCons x (hunfoldr' f (apply f s :: res))
+  hunfoldr' f (HJust (x, s)) = x :. (hunfoldr' f (apply f s :: res))
 
 hunfoldr
   :: forall f res (xs :: [Type]) a
@@ -546,7 +569,7 @@ instance (Monad m, HUnfoldM m f res xs, Apply f s res, res ~ HUnfoldMRes m s xs)
   hunfoldrM' f just = do
     HJust (x, s) <- just
     xs <- hunfoldrM' f (apply f s :: res)
-    return (HCons x xs)
+    return (x :. xs)
 
 hunfoldrM
   :: forall (m :: Type -> Type) f res (xs :: [Type]) a
@@ -590,7 +613,7 @@ instance Castable (HList l) [D.ATenTensor] => Castable (HList l) (ForeignPtr ATe
     f ts
 
 test :: forall dtype shape . Tensor dtype shape -> IO [D.ATenTensor]
-test t = hfoldrM TensorListFolds [] (HCons t HNil)
+test t = hfoldrM TensorListFolds [] (t :. HNil)
 
 test' :: forall dtype shape dtype' shape' . [D.ATenTensor] -> IO (HList '[Tensor dtype shape, Tensor dtype' shape'])
 test' xs = hunfoldrM TensorListFolds xs
@@ -600,6 +623,24 @@ test'' xs = cast xs return
 
 test''' :: [D.ATenTensor] -> IO (HList '[Tensor dtype shape])
 test''' xs = uncast xs return
+
+class (ListLength es ~ n) => HReplicate' (n :: Nat) e es where
+    hReplicate :: Proxy n -> e -> HList es
+
+instance HReplicate' 0 e '[] where
+    hReplicate _ _ = HNil
+
+instance (HReplicate' (n - 1) e es, e ~ e', 1 <= n) => HReplicate' n e (e' ': es) where
+    hReplicate n e = e :. hReplicate (Proxy @(n - 1)) e
+
+type HReplicate n e = HReplicate' n e (HReplicateR n e)
+
+type family HReplicateR (n :: Nat) (e :: a) :: [a] where
+  HReplicateR 0 e = '[]
+  HReplicateR n e = e ': HReplicateR (n - 1) e
+
+testReplicate :: forall dtype shape . Tensor dtype shape -> HList (HReplicateR 3 (Tensor dtype shape))
+testReplicate t = hReplicate Proxy t
 
 --------------------------------------------------------------------------------
 -- Move backend
@@ -619,3 +660,19 @@ toCPU t = UnsafeMkTensor $ D.toCPU (toDynamic t)
 
 toCUDA :: Tensor dtype shape -> Tensor dtype shape
 toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
+
+--------------------------------------------------------------------------------
+-- Auxiliary functions for accessing tensor properties as values
+--------------------------------------------------------------------------------
+
+dim :: Tensor dtype shape -> Int
+dim t = D.dim $ toDynamic t
+
+shape :: Tensor dtype shape -> [Int]
+shape t = D.shape $ toDynamic t
+
+dtype :: Tensor dtype shape -> D.DType
+dtype t = D.dtype $ toDynamic t
+
+toInt :: Tensor dtype shape -> Int
+toInt t = D.toInt $ toDynamic t

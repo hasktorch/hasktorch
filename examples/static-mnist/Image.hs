@@ -4,14 +4,9 @@
 
 module Image where
 
-import           Data.Int
-import           Data.Word
 import qualified Codec.Compression.GZip        as GZip
 import qualified Data.ByteString               as BS
 import qualified Data.ByteString.Lazy          as BS.Lazy
-
--- Torch deps
-
 import           GHC.TypeLits
 
 import           Torch.Static
@@ -83,3 +78,4 @@ initMnist = do
   testLabelsBS <- decompress'
     <$> BS.readFile (path <> "/" <> "t10k-labels-idx1-ubyte.gz")
   return (MnistData imagesBS labelsBS, MnistData testImagesBS testLabelsBS)
+
