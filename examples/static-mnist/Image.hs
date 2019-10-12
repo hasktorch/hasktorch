@@ -78,4 +78,3 @@ initMnist = do
   testLabelsBS <- decompress'
     <$> BS.readFile (path <> "/" <> "t10k-labels-idx1-ubyte.gz")
   return (MnistData imagesBS labelsBS, MnistData testImagesBS testLabelsBS)
-

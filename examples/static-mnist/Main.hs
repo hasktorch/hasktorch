@@ -11,6 +11,7 @@
 
 module Main where
 
+import           Prelude                 hiding ( tanh )
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
@@ -65,7 +66,12 @@ instance ( KnownDType dtype
          )
   => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1) (MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
  where
-  sample (MLPSpec prob) = MLP <$> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample (DropoutSpec prob)
+  sample (MLPSpec prob) =
+    MLP
+      <$> A.sample LinearSpec
+      <*> A.sample LinearSpec
+      <*> A.sample LinearSpec
+      <*> A.sample (DropoutSpec prob)
 
 mlp
   :: MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
@@ -76,7 +82,7 @@ mlp MLP {..} train input =
   return
     .   linear layer2
     =<< Torch.Static.NN.dropout dropout train
-    .   relu
+    .   tanh
     .   linear layer1
     =<< Torch.Static.NN.dropout dropout train
     .   relu
@@ -88,9 +94,9 @@ foldLoop
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 type BatchSize = 512
-type TestBatchSize = 1024
-type HiddenFeatures0 = 512
-type HiddenFeatures1 = 256
+type TestBatchSize = 8192
+type HiddenFeatures0 = 1024
+type HiddenFeatures1 = 512
 
 randomIndexes :: Int -> [Int]
 randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
@@ -175,7 +181,7 @@ main = do
                 _ -> print "Can not get the number of test"
 
           new_flat_parameters <- mapM A.makeIndependent
-            $ A.sgd 1e-02 flat_parameters gradients
+            $ A.sgd 1e-01 flat_parameters gradients
           return (A.replaceParameters state new_flat_parameters, nextIndexes)
   print trained
  where
