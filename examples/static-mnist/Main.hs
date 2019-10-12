@@ -87,7 +87,7 @@ foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
-type BatchSize = 128
+type BatchSize = 512
 type TestBatchSize = 1024
 type HiddenFeatures0 = 512
 type HiddenFeatures1 = 256
@@ -175,7 +175,7 @@ main = do
                 _ -> print "Can not get the number of test"
 
           new_flat_parameters <- mapM A.makeIndependent
-            $ A.sgd 1e-05 flat_parameters gradients
+            $ A.sgd 1e-02 flat_parameters gradients
           return (A.replaceParameters state new_flat_parameters, nextIndexes)
   print trained
  where
