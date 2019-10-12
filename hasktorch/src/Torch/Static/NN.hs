@@ -78,20 +78,33 @@ linear Linear {..} input =
 
 instance A.Parameterized (Linear dtype inputFeatures outputFeatures)
 
-instance (KnownDType dtype, KnownNat inputFeatures, KnownNat outputFeatures) => A.Randomizable (LinearSpec dtype inputFeatures outputFeatures) (Linear dtype inputFeatures outputFeatures) where
+instance ( KnownDType dtype
+         , KnownNat inputFeatures
+         , KnownNat outputFeatures
+         )
+  => A.Randomizable (LinearSpec dtype inputFeatures outputFeatures) (Linear dtype inputFeatures outputFeatures)
+ where
   sample LinearSpec =
     Linear <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
+data DropoutSpec = DropoutSpec Double
+  deriving (Show, Generic)
+
 data Dropout where
   Dropout
-    :: { dropoutProb :: Double
-       , dropoutTrain :: Bool
-       }
+    :: { dropoutProb :: Double }
     -> Dropout
   deriving (Show, Generic)
 
-dropout :: Dropout -> Tensor dtype shape -> IO (Tensor dtype shape)
-dropout Dropout {..} = Torch.Static.Native.dropout dropoutProb dropoutTrain
+dropout :: Dropout -> Bool -> Tensor dtype shape -> IO (Tensor dtype shape)
+dropout Dropout {..} dropoutTrain = Torch.Static.Native.dropout dropoutProb dropoutTrain
+
+instance A.Parameterized Dropout where
+  flattenParameters x = []
+  replaceOwnParameters x = return x
+
+instance A.Randomizable DropoutSpec Dropout where
+  sample (DropoutSpec prob) = return $ Dropout prob 
 
 data EmbeddingSpec (paddingIdx :: Maybe Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) = EmbeddingSpec
   deriving (Show, Eq)

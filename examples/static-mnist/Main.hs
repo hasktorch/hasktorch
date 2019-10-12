@@ -46,7 +46,7 @@ import qualified Image                         as I
 -- MNIST
 --------------------------------------------------------------------------------
 
-data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) = MLPSpec
+data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) = MLPSpec Double
 
 data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) =
   MLP { layer0 :: Linear dtype inputFeatures hiddenFeatures
@@ -57,7 +57,7 @@ data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hidd
 instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures)
 
 instance (KnownDType dtype, KnownNat inputFeatures, KnownNat outputFeatures, KnownNat hiddenFeatures) => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures) (MLP dtype inputFeatures outputFeatures hiddenFeatures) where
-  sample MLPSpec = MLP <$> A.sample LinearSpec <*> A.sample LinearSpec
+  sample (MLPSpec prob) = MLP <$> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample (DropoutSpec prob)
 
 mlp
   :: MLP dtype inputFeatures outputFeatures hiddenFeatures
@@ -113,12 +113,13 @@ main = do
   let backend = case backend' of
         Right "CUDA" -> "CUDA"
         _            -> "CPU"
-  let debug = case debug' of
+      debug = case debug' of
         Right "TRUE" -> True
         _            -> False
-  let (numIters, printEvery) = (10000, 25)
+      (numIters, printEvery) = (10000, 25)
+      dropoutProb = 0.25
   (trainingData, testData) <- I.initMnist
-  init <- A.sample (MLPSpec @ 'D.Float @I.DataDim @I.ClassDim @HiddenFeatures)
+  init <- A.sample (MLPSpec @'D.Float @I.DataDim @I.ClassDim @HiddenFeatures dropoutProb)
   init' <- A.replaceParameters init <$> traverse
     (A.makeIndependent . toBackend backend . A.toDependent)
     (A.flattenParameters init)
