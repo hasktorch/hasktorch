@@ -1,0 +1,11 @@
+signature: DimnameList
+cppname: std::vector<at::Dimname>
+hsname: DimnameList
+functions: []
+constructors:
+- new() -> DimnameList
+methods:
+- empty() -> bool
+- size() -> size_t
+- at(size_t s) -> Dimname
+- push_back(Dimname v) -> void

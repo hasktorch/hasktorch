@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module ATen.Managed.Type.TensorList where
+module ATen.Managed.Type.Dimname where
 
 
 import Foreign.C.String
@@ -30,39 +30,29 @@ import ATen.Unmanaged.Type.StdString
 import ATen.Unmanaged.Type.Dimname
 import ATen.Unmanaged.Type.DimnameList
 
-import qualified ATen.Unmanaged.Type.TensorList as Unmanaged
-
-
-
-newTensorList
-  :: IO (ForeignPtr TensorList)
-newTensorList = cast0 Unmanaged.newTensorList
+import qualified ATen.Unmanaged.Type.Dimname as Unmanaged
 
 
 
 
 
-tensorList_empty
-  :: ForeignPtr TensorList
+
+
+dimname_isBasic
+  :: ForeignPtr Dimname
   -> IO (CBool)
-tensorList_empty = cast1 Unmanaged.tensorList_empty
+dimname_isBasic = cast1 Unmanaged.dimname_isBasic
 
-tensorList_size
-  :: ForeignPtr TensorList
-  -> IO (CSize)
-tensorList_size = cast1 Unmanaged.tensorList_size
+dimname_isWildcard
+  :: ForeignPtr Dimname
+  -> IO (CBool)
+dimname_isWildcard = cast1 Unmanaged.dimname_isWildcard
 
-tensorList_at_s
-  :: ForeignPtr TensorList
-  -> CSize
-  -> IO (ForeignPtr Tensor)
-tensorList_at_s = cast2 Unmanaged.tensorList_at_s
-
-tensorList_push_back_t
-  :: ForeignPtr TensorList
-  -> ForeignPtr Tensor
-  -> IO (())
-tensorList_push_back_t = cast2 Unmanaged.tensorList_push_back_t
+dimname_matches_n
+  :: ForeignPtr Dimname
+  -> ForeignPtr Dimname
+  -> IO (CBool)
+dimname_matches_n = cast2 Unmanaged.dimname_matches_n
 
 
 

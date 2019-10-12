@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module ATen.Managed.Type.TensorList where
+module ATen.Managed.Type.DimnameList where
 
 
 import Foreign.C.String
@@ -30,39 +30,39 @@ import ATen.Unmanaged.Type.StdString
 import ATen.Unmanaged.Type.Dimname
 import ATen.Unmanaged.Type.DimnameList
 
-import qualified ATen.Unmanaged.Type.TensorList as Unmanaged
+import qualified ATen.Unmanaged.Type.DimnameList as Unmanaged
 
 
 
-newTensorList
-  :: IO (ForeignPtr TensorList)
-newTensorList = cast0 Unmanaged.newTensorList
+newDimnameList
+  :: IO (ForeignPtr DimnameList)
+newDimnameList = cast0 Unmanaged.newDimnameList
 
 
 
 
 
-tensorList_empty
-  :: ForeignPtr TensorList
+dimnameList_empty
+  :: ForeignPtr DimnameList
   -> IO (CBool)
-tensorList_empty = cast1 Unmanaged.tensorList_empty
+dimnameList_empty = cast1 Unmanaged.dimnameList_empty
 
-tensorList_size
-  :: ForeignPtr TensorList
+dimnameList_size
+  :: ForeignPtr DimnameList
   -> IO (CSize)
-tensorList_size = cast1 Unmanaged.tensorList_size
+dimnameList_size = cast1 Unmanaged.dimnameList_size
 
-tensorList_at_s
-  :: ForeignPtr TensorList
+dimnameList_at_s
+  :: ForeignPtr DimnameList
   -> CSize
-  -> IO (ForeignPtr Tensor)
-tensorList_at_s = cast2 Unmanaged.tensorList_at_s
+  -> IO (ForeignPtr Dimname)
+dimnameList_at_s = cast2 Unmanaged.dimnameList_at_s
 
-tensorList_push_back_t
-  :: ForeignPtr TensorList
-  -> ForeignPtr Tensor
+dimnameList_push_back_n
+  :: ForeignPtr DimnameList
+  -> ForeignPtr Dimname
   -> IO (())
-tensorList_push_back_t = cast2 Unmanaged.tensorList_push_back_t
+dimnameList_push_back_n = cast2 Unmanaged.dimnameList_push_back_n
 
 
 

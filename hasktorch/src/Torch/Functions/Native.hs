@@ -25,8 +25,10 @@ import ATen.Cast
 
 import Torch.Tensor
 import Torch.Scalar
-import Torch.Cast
 
+
+align_tensors :: [Tensor] -> [Tensor]
+align_tensors _tensors = unsafePerformIO $ (cast1 ATen.align_tensors_l) _tensors
 
 dropout :: Tensor -> Double -> Bool -> Tensor
 dropout _input _p _train = unsafePerformIO $ (cast3 ATen.dropout_tdb) _input _p _train
@@ -58,14 +60,20 @@ addmv _self _mat _vec _beta _alpha = unsafePerformIO $ (cast5 ATen.addmv_tttss) 
 addr :: Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor
 addr _self _vec1 _vec2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addr_tttss) _self _vec1 _vec2 _beta _alpha
 
-affine_grid_generator :: Tensor -> [Int] -> Tensor
-affine_grid_generator _theta _size = unsafePerformIO $ (cast2 ATen.affine_grid_generator_tl) _theta _size
+affine_grid_generator :: Tensor -> [Int] -> Bool -> Tensor
+affine_grid_generator _theta _size _align_corners = unsafePerformIO $ (cast3 ATen.affine_grid_generator_tlb) _theta _size _align_corners
 
-affine_grid_generator_backward :: Tensor -> [Int] -> Tensor
-affine_grid_generator_backward _grad _size = unsafePerformIO $ (cast2 ATen.affine_grid_generator_backward_tl) _grad _size
+affine_grid_generator_backward :: Tensor -> [Int] -> Bool -> Tensor
+affine_grid_generator_backward _grad _size _align_corners = unsafePerformIO $ (cast3 ATen.affine_grid_generator_backward_tlb) _grad _size _align_corners
+
+all :: Tensor -> Dimname -> Bool -> Tensor
+all _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.all_tnb) _self _dim _keepdim
 
 allclose :: Tensor -> Tensor -> Double -> Double -> Bool -> Bool
 allclose _self _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.allclose_ttddb) _self _other _rtol _atol _equal_nan
+
+any :: Tensor -> Dimname -> Bool -> Tensor
+any _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.any_tnb) _self _dim _keepdim
 
 argmax :: Tensor -> Int -> Bool -> Tensor
 argmax _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.argmax_tlb) _self _dim _keepdim
@@ -103,14 +111,17 @@ bincount _self _weights _minlength = unsafePerformIO $ (cast3 ATen.bincount_ttl)
 bitwise_not :: Tensor -> Tensor
 bitwise_not _self = unsafePerformIO $ (cast1 ATen.bitwise_not_t) _self
 
+logical_not :: Tensor -> Tensor
+logical_not _self = unsafePerformIO $ (cast1 ATen.logical_not_t) _self
+
+logical_xor :: Tensor -> Tensor -> Tensor
+logical_xor _self _other = unsafePerformIO $ (cast2 ATen.logical_xor_tt) _self _other
+
 bmm :: Tensor -> Tensor -> Tensor
 bmm _self _mat2 = unsafePerformIO $ (cast2 ATen.bmm_tt) _self _mat2
 
 broadcast_tensors :: [Tensor] -> [Tensor]
 broadcast_tensors _tensors = unsafePerformIO $ (cast1 ATen.broadcast_tensors_l) _tensors
-
-cat :: [Tensor] -> Int -> Tensor
-cat _tensors _dim = unsafePerformIO $ (cast2 ATen.cat_ll) _tensors _dim
 
 chain_matmul :: [Tensor] -> Tensor
 chain_matmul _matrices = unsafePerformIO $ (cast1 ATen.chain_matmul_l) _matrices
@@ -135,6 +146,12 @@ constant_pad_nd _self _pad _value = unsafePerformIO $ (cast3 ATen.constant_pad_n
 
 convolution :: Tensor -> Tensor -> Tensor -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor
 convolution _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups = unsafePerformIO $ (cast9 ATen.convolution_tttlllbll) _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups
+
+convolution_overrideable :: Tensor -> Tensor -> Tensor -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor
+convolution_overrideable _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups = unsafePerformIO $ (cast9 ATen.convolution_overrideable_tttlllbll) _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups
+
+convolution_backward_overrideable :: Tensor -> Tensor -> Tensor -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
+convolution_backward_overrideable _grad_output _input _weight _stride _padding _dilation _transposed _output_padding _groups _output_mask = unsafePerformIO $ (cast10 ATen.convolution_backward_overrideable_tttlllblla) _grad_output _input _weight _stride _padding _dilation _transposed _output_padding _groups _output_mask
 
 conv1d :: Tensor -> Tensor -> Tensor -> Int -> Int -> Int -> Int -> Tensor
 conv1d _input _weight _bias _stride _padding _dilation _groups = unsafePerformIO $ (cast7 ATen.conv1d_tttllll) _input _weight _bias _stride _padding _dilation _groups
@@ -205,6 +222,12 @@ cudnn_grid_sampler _self _grid = unsafePerformIO $ (cast2 ATen.cudnn_grid_sample
 cudnn_grid_sampler_backward :: Tensor -> Tensor -> Tensor -> (Tensor,Tensor)
 cudnn_grid_sampler_backward _self _grid _grad_output = unsafePerformIO $ (cast3 ATen.cudnn_grid_sampler_backward_ttt) _self _grid _grad_output
 
+cumsum :: Tensor -> Dimname -> DType -> Tensor
+cumsum _self _dim _dtype = unsafePerformIO $ (cast3 ATen.cumsum_tns) _self _dim _dtype
+
+cumprod :: Tensor -> Dimname -> DType -> Tensor
+cumprod _self _dim _dtype = unsafePerformIO $ (cast3 ATen.cumprod_tns) _self _dim _dtype
+
 det :: Tensor -> Tensor
 det _self = unsafePerformIO $ (cast1 ATen.det_t) _self
 
@@ -247,29 +270,26 @@ erfc _self = unsafePerformIO $ (cast1 ATen.erfc_t) _self
 expm1 :: Tensor -> Tensor
 expm1 _self = unsafePerformIO $ (cast1 ATen.expm1_t) _self
 
-flatten :: Tensor -> Int -> Int -> Tensor
-flatten _self _start_dim _end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) _self _start_dim _end_dim
-
 frac :: Tensor -> Tensor
 frac _self = unsafePerformIO $ (cast1 ATen.frac_t) _self
 
 full_like :: Tensor -> Float -> Tensor
 full_like _self _fill_value = unsafePerformIO $ (cast2 ATen.full_like_ts) _self _fill_value
 
-grid_sampler :: Tensor -> Tensor -> Int -> Int -> Tensor
-grid_sampler _input _grid _interpolation_mode _padding_mode = unsafePerformIO $ (cast4 ATen.grid_sampler_ttll) _input _grid _interpolation_mode _padding_mode
+grid_sampler :: Tensor -> Tensor -> Int -> Int -> Bool -> Tensor
+grid_sampler _input _grid _interpolation_mode _padding_mode _align_corners = unsafePerformIO $ (cast5 ATen.grid_sampler_ttllb) _input _grid _interpolation_mode _padding_mode _align_corners
 
-grid_sampler_2d :: Tensor -> Tensor -> Int -> Int -> Tensor
-grid_sampler_2d _input _grid _interpolation_mode _padding_mode = unsafePerformIO $ (cast4 ATen.grid_sampler_2d_ttll) _input _grid _interpolation_mode _padding_mode
+grid_sampler_2d :: Tensor -> Tensor -> Int -> Int -> Bool -> Tensor
+grid_sampler_2d _input _grid _interpolation_mode _padding_mode _align_corners = unsafePerformIO $ (cast5 ATen.grid_sampler_2d_ttllb) _input _grid _interpolation_mode _padding_mode _align_corners
 
-grid_sampler_2d_backward :: Tensor -> Tensor -> Tensor -> Int -> Int -> (Tensor,Tensor)
-grid_sampler_2d_backward _grad_output _input _grid _interpolation_mode _padding_mode = unsafePerformIO $ (cast5 ATen.grid_sampler_2d_backward_tttll) _grad_output _input _grid _interpolation_mode _padding_mode
+grid_sampler_2d_backward :: Tensor -> Tensor -> Tensor -> Int -> Int -> Bool -> (Tensor,Tensor)
+grid_sampler_2d_backward _grad_output _input _grid _interpolation_mode _padding_mode _align_corners = unsafePerformIO $ (cast6 ATen.grid_sampler_2d_backward_tttllb) _grad_output _input _grid _interpolation_mode _padding_mode _align_corners
 
-grid_sampler_3d :: Tensor -> Tensor -> Int -> Int -> Tensor
-grid_sampler_3d _input _grid _interpolation_mode _padding_mode = unsafePerformIO $ (cast4 ATen.grid_sampler_3d_ttll) _input _grid _interpolation_mode _padding_mode
+grid_sampler_3d :: Tensor -> Tensor -> Int -> Int -> Bool -> Tensor
+grid_sampler_3d _input _grid _interpolation_mode _padding_mode _align_corners = unsafePerformIO $ (cast5 ATen.grid_sampler_3d_ttllb) _input _grid _interpolation_mode _padding_mode _align_corners
 
-grid_sampler_3d_backward :: Tensor -> Tensor -> Tensor -> Int -> Int -> (Tensor,Tensor)
-grid_sampler_3d_backward _grad_output _input _grid _interpolation_mode _padding_mode = unsafePerformIO $ (cast5 ATen.grid_sampler_3d_backward_tttll) _grad_output _input _grid _interpolation_mode _padding_mode
+grid_sampler_3d_backward :: Tensor -> Tensor -> Tensor -> Int -> Int -> Bool -> (Tensor,Tensor)
+grid_sampler_3d_backward _grad_output _input _grid _interpolation_mode _padding_mode _align_corners = unsafePerformIO $ (cast6 ATen.grid_sampler_3d_backward_tttllb) _grad_output _input _grid _interpolation_mode _padding_mode _align_corners
 
 hinge_embedding_loss :: Tensor -> Tensor -> Double -> Int -> Tensor
 hinge_embedding_loss _self _target _margin _reduction = unsafePerformIO $ (cast4 ATen.hinge_embedding_loss_ttdl) _self _target _margin _reduction
@@ -294,9 +314,6 @@ irfft _self _signal_ndim _normalized _onesided _signal_sizes = unsafePerformIO $
 
 index :: Tensor -> [Tensor] -> Tensor
 index _self _indices = unsafePerformIO $ (cast2 ATen.index_tl) _self _indices
-
-index_copy :: Tensor -> Int -> Tensor -> Tensor -> Tensor
-index_copy _self _dim _index _source = unsafePerformIO $ (cast4 ATen.index_copy_tltt) _self _dim _index _source
 
 index_put :: Tensor -> [Tensor] -> Tensor -> Bool -> Tensor
 index_put _self _indices _values _accumulate = unsafePerformIO $ (cast4 ATen.index_put_tltb) _self _indices _values _accumulate
@@ -334,9 +351,6 @@ kl_div _self _target _reduction = unsafePerformIO $ (cast3 ATen.kl_div_ttl) _sel
 kl_div_backward :: Tensor -> Tensor -> Tensor -> Int -> Tensor
 kl_div_backward _grad_output _self _target _reduction = unsafePerformIO $ (cast4 ATen.kl_div_backward_tttl) _grad_output _self _target _reduction
 
-kthvalue :: Tensor -> Int -> Int -> Bool -> (Tensor,Tensor)
-kthvalue _self _k _dim _keepdim = unsafePerformIO $ (cast4 ATen.kthvalue_tllb) _self _k _dim _keepdim
-
 layer_norm :: Tensor -> [Int] -> Tensor -> Tensor -> Double -> Bool -> Tensor
 layer_norm _input _normalized_shape _weight _bias _eps _cudnn_enable = unsafePerformIO $ (cast6 ATen.layer_norm_tlttdb) _input _normalized_shape _weight _bias _eps _cudnn_enable
 
@@ -355,6 +369,9 @@ linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.linear_ttt) _input _
 mkldnn_linear :: Tensor -> Tensor -> Tensor -> Tensor
 mkldnn_linear _input _weight _bias = unsafePerformIO $ (cast3 ATen.mkldnn_linear_ttt) _input _weight _bias
 
+fbgemm_linear_int8_weight_fp32_activation :: Tensor -> Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor -> Tensor
+fbgemm_linear_int8_weight_fp32_activation _input _weight _packed _col_offsets _weight_scale _weight_zero_point _bias = unsafePerformIO $ (cast7 ATen.fbgemm_linear_int8_weight_fp32_activation_ttttsst) _input _weight _packed _col_offsets _weight_scale _weight_zero_point _bias
+
 fbgemm_linear_int8_weight :: Tensor -> Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor -> Tensor
 fbgemm_linear_int8_weight _input _weight _packed _col_offsets _weight_scale _weight_zero_point _bias = unsafePerformIO $ (cast7 ATen.fbgemm_linear_int8_weight_ttttsst) _input _weight _packed _col_offsets _weight_scale _weight_zero_point _bias
 
@@ -364,14 +381,11 @@ fbgemm_linear_quantize_weight _input = unsafePerformIO $ (cast1 ATen.fbgemm_line
 fbgemm_pack_gemm_matrix_fp16 :: Tensor -> Tensor
 fbgemm_pack_gemm_matrix_fp16 _input = unsafePerformIO $ (cast1 ATen.fbgemm_pack_gemm_matrix_fp16_t) _input
 
+fbgemm_linear_fp16_weight_fp32_activation :: Tensor -> Tensor -> Tensor -> Tensor
+fbgemm_linear_fp16_weight_fp32_activation _input _packed_weight _bias = unsafePerformIO $ (cast3 ATen.fbgemm_linear_fp16_weight_fp32_activation_ttt) _input _packed_weight _bias
+
 fbgemm_linear_fp16_weight :: Tensor -> Tensor -> Tensor -> Tensor
 fbgemm_linear_fp16_weight _input _packed_weight _bias = unsafePerformIO $ (cast3 ATen.fbgemm_linear_fp16_weight_ttt) _input _packed_weight _bias
-
-fbgemm_pack_quantized_matrix :: Tensor -> Int -> Int -> Tensor
-fbgemm_pack_quantized_matrix _input _K _N = unsafePerformIO $ (cast3 ATen.fbgemm_pack_quantized_matrix_tll) _input _K _N
-
---fbgemm_is_cpu_supported :: Bool
---fbgemm_is_cpu_supported  = unsafePerformIO $ (cast0 ATen.fbgemm_is_cpu_supported) 
 
 log :: Tensor -> Tensor
 log _self = unsafePerformIO $ (cast1 ATen.log_t) _self
@@ -379,8 +393,8 @@ log _self = unsafePerformIO $ (cast1 ATen.log_t) _self
 logdet :: Tensor -> Tensor
 logdet _self = unsafePerformIO $ (cast1 ATen.logdet_t) _self
 
-logsumexp :: Tensor -> Int -> Bool -> Tensor
-logsumexp _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.logsumexp_tlb) _self _dim _keepdim
+log_softmax :: Tensor -> Dimname -> DType -> Tensor
+log_softmax _self _dim _dtype = unsafePerformIO $ (cast3 ATen.log_softmax_tns) _self _dim _dtype
 
 margin_ranking_loss :: Tensor -> Tensor -> Tensor -> Double -> Int -> Tensor
 margin_ranking_loss _input1 _input2 _target _margin _reduction = unsafePerformIO $ (cast5 ATen.margin_ranking_loss_tttdl) _input1 _input2 _target _margin _reduction
@@ -388,8 +402,8 @@ margin_ranking_loss _input1 _input2 _target _margin _reduction = unsafePerformIO
 matrix_power :: Tensor -> Int -> Tensor
 matrix_power _self _n = unsafePerformIO $ (cast2 ATen.matrix_power_tl) _self _n
 
-max_values :: Tensor -> Int -> Bool -> Tensor
-max_values _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.max_values_tlb) _self _dim _keepdim
+max :: Tensor -> Dimname -> Bool -> (Tensor,Tensor)
+max _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.max_tnb) _self _dim _keepdim
 
 max_pool1d_with_indices :: Tensor -> Int -> Int -> Int -> Int -> Bool -> (Tensor,Tensor)
 max_pool1d_with_indices _self _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.max_pool1d_with_indices_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
@@ -403,14 +417,20 @@ max_pool2d _self _kernel_size _stride _padding _dilation _ceil_mode = unsafePerf
 mkldnn_max_pool2d :: Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Bool -> Tensor
 mkldnn_max_pool2d _self _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.mkldnn_max_pool2d_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
 
-quantized_max_pool2d :: Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor
-quantized_max_pool2d _self _kernel_size _stride _padding _dilation = unsafePerformIO $ (cast5 ATen.quantized_max_pool2d_tllll) _self _kernel_size _stride _padding _dilation
+quantized_max_pool2d :: Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Bool -> Tensor
+quantized_max_pool2d _self _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.quantized_max_pool2d_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
 
 max_pool3d :: Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Bool -> Tensor
 max_pool3d _self _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.max_pool3d_tllllb) _self _kernel_size _stride _padding _dilation _ceil_mode
 
-min_values :: Tensor -> Int -> Bool -> Tensor
-min_values _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.min_values_tlb) _self _dim _keepdim
+mean :: Tensor -> Dimname -> Bool -> DType -> Tensor
+mean _self _dim _keepdim _dtype = unsafePerformIO $ (cast4 ATen.mean_tnbs) _self _dim _keepdim _dtype
+
+median :: Tensor -> Dimname -> Bool -> (Tensor,Tensor)
+median _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.median_tnb) _self _dim _keepdim
+
+min :: Tensor -> Dimname -> Bool -> (Tensor,Tensor)
+min _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.min_tnb) _self _dim _keepdim
 
 mkldnn_convolution :: Tensor -> Tensor -> Tensor -> [Int] -> [Int] -> [Int] -> Int -> Tensor
 mkldnn_convolution _self _weight _bias _padding _stride _dilation _groups = unsafePerformIO $ (cast7 ATen.mkldnn_convolution_tttllll) _self _weight _bias _padding _stride _dilation _groups
@@ -478,9 +498,6 @@ miopen_rnn_backward _input _weight _weight_stride0 _weight_buf _hx _cx _output _
 mm :: Tensor -> Tensor -> Tensor
 mm _self _mat2 = unsafePerformIO $ (cast2 ATen.mm_tt) _self _mat2
 
-mode :: Tensor -> Int -> Bool -> (Tensor,Tensor)
-mode _self _dim _keepdim = unsafePerformIO $ (cast3 ATen.mode_tlb) _self _dim _keepdim
-
 mv :: Tensor -> Tensor -> Tensor
 mv _self _vec = unsafePerformIO $ (cast2 ATen.mv_tt) _self _vec
 
@@ -508,8 +525,8 @@ batch_norm_gather_stats_with_counts _input _mean _invstd _running_mean _running_
 native_batch_norm_backward :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Bool -> Double -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
 native_batch_norm_backward _grad_out _input _weight _running_mean _running_var _save_mean _save_invstd _train _eps _output_mask = unsafePerformIO $ (cast10 ATen.native_batch_norm_backward_tttttttbda) _grad_out _input _weight _running_mean _running_var _save_mean _save_invstd _train _eps _output_mask
 
-batch_norm_backward_reduce :: Tensor -> Tensor -> Tensor -> Tensor -> Bool -> Bool -> Bool -> (Tensor,Tensor,Tensor,Tensor)
-batch_norm_backward_reduce _grad_out _input _mean _invstd _input_g _weight_g _bias_g = unsafePerformIO $ (cast7 ATen.batch_norm_backward_reduce_ttttbbb) _grad_out _input _mean _invstd _input_g _weight_g _bias_g
+batch_norm_backward_reduce :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Bool -> Bool -> Bool -> (Tensor,Tensor,Tensor,Tensor)
+batch_norm_backward_reduce _grad_out _input _mean _invstd _weight _input_g _weight_g _bias_g = unsafePerformIO $ (cast8 ATen.batch_norm_backward_reduce_tttttbbb) _grad_out _input _mean _invstd _weight _input_g _weight_g _bias_g
 
 batch_norm_backward_elemt :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor
 batch_norm_backward_elemt _grad_out _input _mean _invstd _weight _mean_dy _mean_dy_xmu = unsafePerformIO $ (cast7 ATen.batch_norm_backward_elemt_ttttttt) _grad_out _input _mean _invstd _weight _mean_dy _mean_dy_xmu
@@ -535,20 +552,17 @@ cosine_similarity _x1 _x2 _dim _eps = unsafePerformIO $ (cast4 ATen.cosine_simil
 pixel_shuffle :: Tensor -> Int -> Tensor
 pixel_shuffle _self _upscale_factor = unsafePerformIO $ (cast2 ATen.pixel_shuffle_tl) _self _upscale_factor
 
-pin_memory :: Tensor -> Tensor
-pin_memory _self = unsafePerformIO $ (cast1 ATen.pin_memory_t) _self
-
 pinverse :: Tensor -> Double -> Tensor
 pinverse _self _rcond = unsafePerformIO $ (cast2 ATen.pinverse_td) _self _rcond
 
 poisson_nll_loss :: Tensor -> Tensor -> Bool -> Bool -> Double -> Int -> Tensor
 poisson_nll_loss _input _target _log_input _full _eps _reduction = unsafePerformIO $ (cast6 ATen.poisson_nll_loss_ttbbdl) _input _target _log_input _full _eps _reduction
 
-rand_like :: Tensor -> IO Tensor
-rand_like _self = (cast1 ATen.rand_like_t) _self
+rand_like :: Tensor -> Tensor
+rand_like _self = unsafePerformIO $ (cast1 ATen.rand_like_t) _self
 
-randn_like :: Tensor -> IO Tensor
-randn_like _self = (cast1 ATen.randn_like_t) _self
+randn_like :: Tensor -> Tensor
+randn_like _self = unsafePerformIO $ (cast1 ATen.randn_like_t) _self
 
 reciprocal :: Tensor -> Tensor
 reciprocal _self = unsafePerformIO $ (cast1 ATen.reciprocal_t) _self
@@ -580,8 +594,14 @@ hardshrink_backward _grad_out _self _lambd = unsafePerformIO $ (cast3 ATen.hards
 rsqrt :: Tensor -> Tensor
 rsqrt _self = unsafePerformIO $ (cast1 ATen.rsqrt_t) _self
 
+select :: Tensor -> Dimname -> Int -> Tensor
+select _self _dim _index = unsafePerformIO $ (cast3 ATen.select_tnl) _self _dim _index
+
 celu :: Tensor -> Float -> Tensor
 celu _self _alpha = unsafePerformIO $ (cast2 ATen.celu_ts) _self _alpha
+
+size :: Tensor -> Dimname -> Int
+size _self _dim = unsafePerformIO $ (cast2 ATen.size_tn) _self _dim
 
 slice :: Tensor -> Int -> Int -> Int -> Int -> Tensor
 slice _self _dim _start _end _step = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
@@ -592,11 +612,17 @@ slogdet _self = unsafePerformIO $ (cast1 ATen.slogdet_t) _self
 smm :: Tensor -> Tensor -> Tensor
 smm _self _mat2 = unsafePerformIO $ (cast2 ATen.smm_tt) _self _mat2
 
+softmax :: Tensor -> Dimname -> DType -> Tensor
+softmax _self _dim _dtype = unsafePerformIO $ (cast3 ATen.softmax_tns) _self _dim _dtype
+
 split :: Tensor -> Int -> Int -> [Tensor]
 split _self _split_size _dim = unsafePerformIO $ (cast3 ATen.split_tll) _self _split_size _dim
 
 split_with_sizes :: Tensor -> [Int] -> Int -> [Tensor]
 split_with_sizes _self _split_sizes _dim = unsafePerformIO $ (cast3 ATen.split_with_sizes_tll) _self _split_sizes _dim
+
+squeeze :: Tensor -> Dimname -> Tensor
+squeeze _self _dim = unsafePerformIO $ (cast2 ATen.squeeze_tn) _self _dim
 
 sspaddmm :: Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor
 sspaddmm _self _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.sspaddmm_tttss) _self _mat1 _mat2 _beta _alpha
@@ -607,8 +633,17 @@ stack _tensors _dim = unsafePerformIO $ (cast2 ATen.stack_ll) _tensors _dim
 stft :: Tensor -> Int -> Int -> Int -> Tensor -> Bool -> Bool -> Tensor
 stft _self _n_fft _hop_length _win_length _window _normalized _onesided = unsafePerformIO $ (cast7 ATen.stft_tllltbb) _self _n_fft _hop_length _win_length _window _normalized _onesided
 
-stride :: Tensor -> Int -> Int
-stride _self _dim = unsafePerformIO $ (cast2 ATen.stride_tl) _self _dim
+sum :: Tensor -> Dimname -> Bool -> DType -> Tensor
+sum _self _dim _keepdim _dtype = unsafePerformIO $ (cast4 ATen.sum_tnbs) _self _dim _keepdim _dtype
+
+std_mean :: Tensor -> Dimname -> Bool -> Bool -> (Tensor,Tensor)
+std_mean _self _dim _unbiased _keepdim = unsafePerformIO $ (cast4 ATen.std_mean_tnbb) _self _dim _unbiased _keepdim
+
+std :: Tensor -> Dimname -> Bool -> Bool -> Tensor
+std _self _dim _unbiased _keepdim = unsafePerformIO $ (cast4 ATen.std_tnbb) _self _dim _unbiased _keepdim
+
+prod :: Tensor -> Dimname -> Bool -> DType -> Tensor
+prod _self _dim _keepdim _dtype = unsafePerformIO $ (cast4 ATen.prod_tnbs) _self _dim _keepdim _dtype
 
 t :: Tensor -> Tensor
 t _self = unsafePerformIO $ (cast1 ATen.t_t) _self
@@ -624,6 +659,9 @@ threshold _self _threshold _value = unsafePerformIO $ (cast3 ATen.threshold_tss)
 
 threshold_backward :: Tensor -> Tensor -> Float -> Tensor
 threshold_backward _grad_output _self _threshold = unsafePerformIO $ (cast3 ATen.threshold_backward_tts) _grad_output _self _threshold
+
+transpose :: Tensor -> Dimname -> Dimname -> Tensor
+transpose _self _dim0 _dim1 = unsafePerformIO $ (cast3 ATen.transpose_tnn) _self _dim0 _dim1
 
 one_hot :: Tensor -> Int -> Tensor
 one_hot _self _num_classes = unsafePerformIO $ (cast2 ATen.one_hot_tl) _self _num_classes
@@ -655,11 +693,17 @@ unique_dim_consecutive _self _dim _return_inverse _return_counts = unsafePerform
 unsqueeze :: Tensor -> Int -> Tensor
 unsqueeze _self _dim = unsafePerformIO $ (cast2 ATen.unsqueeze_tl) _self _dim
 
+var :: Tensor -> Dimname -> Bool -> Bool -> Tensor
+var _self _dim _unbiased _keepdim = unsafePerformIO $ (cast4 ATen.var_tnbb) _self _dim _unbiased _keepdim
+
+var_mean :: Tensor -> Dimname -> Bool -> Bool -> (Tensor,Tensor)
+var_mean _self _dim _unbiased _keepdim = unsafePerformIO $ (cast4 ATen.var_mean_tnbb) _self _dim _unbiased _keepdim
+
 where' :: Tensor -> Tensor -> Tensor -> Tensor
 where' _condition _self _other = unsafePerformIO $ (cast3 ATen.where_ttt) _condition _self _other
 
-where_ :: Tensor -> [Tensor]
-where_ _condition = unsafePerformIO $ (cast1 ATen.where_t) _condition
+-- where :: Tensor -> [Tensor]
+-- where _condition = unsafePerformIO $ (cast1 ATen.where_t) _condition
 
 norm_except_dim :: Tensor -> Int -> Int -> Tensor
 norm_except_dim _v _pow _dim = unsafePerformIO $ (cast3 ATen.norm_except_dim_tll) _v _pow _dim
@@ -673,9 +717,6 @@ native_norm _self _p = unsafePerformIO $ (cast2 ATen.native_norm_ts) _self _p
 clone :: Tensor -> Tensor
 clone _self = unsafePerformIO $ (cast1 ATen.clone_t) _self
 
-s_native_addmm :: Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor
-s_native_addmm _self _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.s_native_addmm_tttss) _self _mat1 _mat2 _beta _alpha
-
 addmm :: Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor
 addmm _self _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addmm_tttss) _self _mat1 _mat2 _beta _alpha
 
@@ -688,20 +729,17 @@ hspmm _mat1 _mat2 = unsafePerformIO $ (cast2 ATen.hspmm_tt) _mat1 _mat2
 numel :: Tensor -> Int
 numel _self = unsafePerformIO $ (cast1 ATen.numel_t) _self
 
-unbind :: Tensor -> Int -> [Tensor]
-unbind _self _dim = unsafePerformIO $ (cast2 ATen.unbind_tl) _self _dim
-
 mkldnn_reorder_conv2d_weight :: Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Int -> Tensor
 mkldnn_reorder_conv2d_weight _self _padding _stride _dilation _groups = unsafePerformIO $ (cast5 ATen.mkldnn_reorder_conv2d_weight_tllll) _self _padding _stride _dilation _groups
 
 to_mkldnn_backward :: Tensor -> Tensor -> Tensor
 to_mkldnn_backward _grad _input = unsafePerformIO $ (cast2 ATen.to_mkldnn_backward_tt) _grad _input
 
---quantize_linear :: Tensor -> Double -> Int -> DType -> Tensor
---quantize_linear _self _scale _zero_point _dtype = unsafePerformIO $ (cast4 ATen.quantize_linear_tdls) _self _scale _zero_point _dtype
+quantize_per_tensor :: Tensor -> Double -> Int -> DType -> Tensor
+quantize_per_tensor _self _scale _zero_point _dtype = unsafePerformIO $ (cast4 ATen.quantize_per_tensor_tdls) _self _scale _zero_point _dtype
 
---quantize_linear_per_channel :: Tensor -> Tensor -> Tensor -> [Int] -> DType -> Tensor
---quantize_linear_per_channel _self _scales _zero_points _axis _dtype = unsafePerformIO $ (cast5 ATen.quantize_linear_per_channel_tttls) _self _scales _zero_points _axis _dtype
+quantize_per_channel :: Tensor -> Tensor -> Tensor -> Int -> DType -> Tensor
+quantize_per_channel _self _scales _zero_points _axis _dtype = unsafePerformIO $ (cast5 ATen.quantize_per_channel_tttls) _self _scales _zero_points _axis _dtype
 
 dequantize :: Tensor -> Tensor
 dequantize _self = unsafePerformIO $ (cast1 ATen.dequantize_t) _self
@@ -712,6 +750,15 @@ q_scale _self = unsafePerformIO $ (cast1 ATen.q_scale_t) _self
 q_zero_point :: Tensor -> Int
 q_zero_point _self = unsafePerformIO $ (cast1 ATen.q_zero_point_t) _self
 
+q_per_channel_scales :: Tensor -> Tensor
+q_per_channel_scales _self = unsafePerformIO $ (cast1 ATen.q_per_channel_scales_t) _self
+
+q_per_channel_zero_points :: Tensor -> Tensor
+q_per_channel_zero_points _self = unsafePerformIO $ (cast1 ATen.q_per_channel_zero_points_t) _self
+
+q_per_channel_axis :: Tensor -> Int
+q_per_channel_axis _self = unsafePerformIO $ (cast1 ATen.q_per_channel_axis_t) _self
+
 int_repr :: Tensor -> Tensor
 int_repr _self = unsafePerformIO $ (cast1 ATen.int_repr_t) _self
 
@@ -721,6 +768,12 @@ fake_quantize_per_tensor_affine _self _scale _zero_point _quant_min _quant_max =
 fake_quantize_per_tensor_affine_backward :: Tensor -> Tensor -> Double -> Int -> Int -> Int -> Tensor
 fake_quantize_per_tensor_affine_backward _grad _self _scale _zero_point _quant_min _quant_max = unsafePerformIO $ (cast6 ATen.fake_quantize_per_tensor_affine_backward_ttdlll) _grad _self _scale _zero_point _quant_min _quant_max
 
+fake_quantize_per_channel_affine :: Tensor -> Tensor -> Tensor -> Int -> Int -> Int -> Tensor
+fake_quantize_per_channel_affine _self _scale _zero_point _axis _quant_min _quant_max = unsafePerformIO $ (cast6 ATen.fake_quantize_per_channel_affine_tttlll) _self _scale _zero_point _axis _quant_min _quant_max
+
+fake_quantize_per_channel_affine_backward :: Tensor -> Tensor -> Tensor -> Tensor -> Int -> Int -> Int -> Tensor
+fake_quantize_per_channel_affine_backward _grad _self _scale _zero_point _axis _quant_min _quant_max = unsafePerformIO $ (cast7 ATen.fake_quantize_per_channel_affine_backward_ttttlll) _grad _self _scale _zero_point _axis _quant_min _quant_max
+
 meshgrid :: [Tensor] -> [Tensor]
 meshgrid _tensors = unsafePerformIO $ (cast1 ATen.meshgrid_l) _tensors
 
@@ -729,6 +782,12 @@ cartesian_prod _tensors = unsafePerformIO $ (cast1 ATen.cartesian_prod_l) _tenso
 
 combinations :: Tensor -> Int -> Bool -> Tensor
 combinations _self _r _with_replacement = unsafePerformIO $ (cast3 ATen.combinations_tlb) _self _r _with_replacement
+
+can_cast :: DType -> DType -> Bool
+can_cast _from _to = unsafePerformIO $ (cast2 ATen.can_cast_ss) _from _to
+
+promote_types :: DType -> DType -> DType
+promote_types _type1 _type2 = unsafePerformIO $ (cast2 ATen.promote_types_ss) _type1 _type2
 
 lstm_cell :: Tensor -> [Tensor] -> Tensor -> Tensor -> Tensor -> Tensor -> (Tensor,Tensor)
 lstm_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.lstm_cell_tltttt) _input _hx _w_ih _w_hh _b_ih _b_hh
@@ -742,8 +801,8 @@ rnn_tanh_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen
 rnn_relu_cell :: Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor
 rnn_relu_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.rnn_relu_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
 
---quantized_lstm :: Tensor -> [Tensor] -> [Tensor] -> Bool -> Int -> Double -> Bool -> Bool -> Bool -> DType -> (Tensor,Tensor,Tensor)
---quantized_lstm _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _dtype = unsafePerformIO $ (cast10 ATen.quantized_lstm_tllbldbbbs) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _dtype
+quantized_lstm :: Tensor -> [Tensor] -> [Tensor] -> Bool -> Int -> Double -> Bool -> Bool -> Bool -> DType -> Bool -> (Tensor,Tensor,Tensor)
+quantized_lstm _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _dtype _use_dynamic = unsafePerformIO $ (cast11 ATen.quantized_lstm_tllbldbbbsb) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _dtype _use_dynamic
 
 quantized_lstm_cell :: Tensor -> [Tensor] -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Tensor -> Float -> Float -> Float -> Float -> (Tensor,Tensor)
 quantized_lstm_cell _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh = unsafePerformIO $ (cast14 ATen.quantized_lstm_cell_tlttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
@@ -759,12 +818,6 @@ quantized_rnn_tanh_cell _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh
 
 masked_scatter :: Tensor -> Tensor -> Tensor -> Tensor
 masked_scatter _self _mask _source = unsafePerformIO $ (cast3 ATen.masked_scatter_ttt) _self _mask _source
-
-index_add :: Tensor -> Int -> Tensor -> Tensor -> Tensor
-index_add _self _dim _index _source = unsafePerformIO $ (cast4 ATen.index_add_tltt) _self _dim _index _source
-
-scatter_add :: Tensor -> Int -> Tensor -> Tensor -> Tensor
-scatter_add _self _dim _index _src = unsafePerformIO $ (cast4 ATen.scatter_add_tltt) _self _dim _index _src
 
 addbmm :: Tensor -> Tensor -> Tensor -> Float -> Float -> Tensor
 addbmm _self _batch1 _batch2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addbmm_tttss) _self _batch1 _batch2 _beta _alpha
@@ -784,9 +837,6 @@ trace _self = unsafePerformIO $ (cast1 ATen.trace_t) _self
 take :: Tensor -> Tensor -> Tensor
 take _self _index = unsafePerformIO $ (cast2 ATen.take_tt) _self _index
 
-index_select :: Tensor -> Int -> Tensor -> Tensor
-index_select _self _dim _index = unsafePerformIO $ (cast3 ATen.index_select_tlt) _self _dim _index
-
 masked_select :: Tensor -> Tensor -> Tensor
 masked_select _self _mask = unsafePerformIO $ (cast2 ATen.masked_select_tt) _self _mask
 
@@ -795,9 +845,6 @@ nonzero _self = unsafePerformIO $ (cast1 ATen.nonzero_t) _self
 
 nonzero_numpy :: Tensor -> [Tensor]
 nonzero_numpy _self = unsafePerformIO $ (cast1 ATen.nonzero_numpy_t) _self
-
-gather :: Tensor -> Int -> Tensor -> Bool -> Tensor
-gather _self _dim _index _sparse_grad = unsafePerformIO $ (cast4 ATen.gather_tltb) _self _dim _index _sparse_grad
 
 addcmul :: Tensor -> Tensor -> Tensor -> Float -> Tensor
 addcmul _self _tensor1 _tensor2 _value = unsafePerformIO $ (cast4 ATen.addcmul_ttts) _self _tensor1 _tensor2 _value
@@ -849,12 +896,6 @@ maxAll _self = unsafePerformIO $ (cast1 ATen.max_t) _self
 
 medianAll :: Tensor -> Tensor
 medianAll _self = unsafePerformIO $ (cast1 ATen.median_t) _self
-
-sort :: Tensor -> Int -> Bool -> (Tensor,Tensor)
-sort _self _dim _descending = unsafePerformIO $ (cast3 ATen.sort_tlb) _self _dim _descending
-
-argsort :: Tensor -> Int -> Bool -> Tensor
-argsort _self _dim _descending = unsafePerformIO $ (cast3 ATen.argsort_tlb) _self _dim _descending
 
 topk :: Tensor -> Int -> Int -> Bool -> Bool -> (Tensor,Tensor)
 topk _self _k _dim _largest _sorted = unsafePerformIO $ (cast5 ATen.topk_tllbb) _self _k _dim _largest _sorted
@@ -1126,11 +1167,17 @@ sigmoid_backward _grad_output _output = unsafePerformIO $ (cast2 ATen.sigmoid_ba
 tanh_backward :: Tensor -> Tensor -> Tensor
 tanh_backward _grad_output _output = unsafePerformIO $ (cast2 ATen.tanh_backward_tt) _grad_output _output
 
-conv_transpose2d_backward :: Tensor -> Tensor -> Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor -> Tensor -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
-conv_transpose2d_backward _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _columns _ones _output_mask = unsafePerformIO $ (cast11 ATen.conv_transpose2d_backward_tttllllltta) _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _columns _ones _output_mask
+slow_conv_transpose2d :: Tensor -> Tensor -> (Int,Int) -> Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor
+slow_conv_transpose2d _self _weight _kernel_size _bias _stride _padding _output_padding _dilation = unsafePerformIO $ (cast8 ATen.slow_conv_transpose2d_ttltllll) _self _weight _kernel_size _bias _stride _padding _output_padding _dilation
 
-conv_transpose3d_backward :: Tensor -> Tensor -> Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor -> Tensor -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
-conv_transpose3d_backward _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _finput _fgrad_input _output_mask = unsafePerformIO $ (cast11 ATen.conv_transpose3d_backward_tttllllltta) _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _finput _fgrad_input _output_mask
+slow_conv_transpose2d_backward :: Tensor -> Tensor -> Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor -> Tensor -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
+slow_conv_transpose2d_backward _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _columns _ones _output_mask = unsafePerformIO $ (cast11 ATen.slow_conv_transpose2d_backward_tttllllltta) _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _columns _ones _output_mask
+
+slow_conv_transpose3d :: Tensor -> Tensor -> (Int,Int,Int) -> Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor
+slow_conv_transpose3d _self _weight _kernel_size _bias _stride _padding _output_padding _dilation = unsafePerformIO $ (cast8 ATen.slow_conv_transpose3d_ttltllll) _self _weight _kernel_size _bias _stride _padding _output_padding _dilation
+
+slow_conv_transpose3d_backward :: Tensor -> Tensor -> Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor -> Tensor -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
+slow_conv_transpose3d_backward _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _finput _fgrad_input _output_mask = unsafePerformIO $ (cast11 ATen.slow_conv_transpose3d_backward_tttllllltta) _grad_output _self _weight _kernel_size _stride _padding _output_padding _dilation _finput _fgrad_input _output_mask
 
 thnn_conv2d :: Tensor -> Tensor -> (Int,Int) -> Tensor -> (Int,Int) -> (Int,Int) -> Tensor
 thnn_conv2d _self _weight _kernel_size _bias _stride _padding = unsafePerformIO $ (cast6 ATen.thnn_conv2d_ttltll) _self _weight _kernel_size _bias _stride _padding
@@ -1159,17 +1206,17 @@ thnn_conv3d_forward _self _weight _kernel_size _bias _stride _padding = unsafePe
 thnn_conv3d_backward :: Tensor -> Tensor -> Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor -> Tensor -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
 thnn_conv3d_backward _grad_output _self _weight _kernel_size _stride _padding _finput _fgrad_input _output_mask = unsafePerformIO $ (cast9 ATen.thnn_conv3d_backward_tttllltta) _grad_output _self _weight _kernel_size _stride _padding _finput _fgrad_input _output_mask
 
-conv_dilated2d :: Tensor -> Tensor -> (Int,Int) -> Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor
-conv_dilated2d _self _weight _kernel_size _bias _stride _padding _dilation = unsafePerformIO $ (cast7 ATen.conv_dilated2d_ttltlll) _self _weight _kernel_size _bias _stride _padding _dilation
+slow_conv_dilated2d :: Tensor -> Tensor -> (Int,Int) -> Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor
+slow_conv_dilated2d _self _weight _kernel_size _bias _stride _padding _dilation = unsafePerformIO $ (cast7 ATen.slow_conv_dilated2d_ttltlll) _self _weight _kernel_size _bias _stride _padding _dilation
 
-conv_dilated2d_backward :: Tensor -> Tensor -> Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
-conv_dilated2d_backward _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask = unsafePerformIO $ (cast8 ATen.conv_dilated2d_backward_tttlllla) _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask
+slow_conv_dilated2d_backward :: Tensor -> Tensor -> Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
+slow_conv_dilated2d_backward _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask = unsafePerformIO $ (cast8 ATen.slow_conv_dilated2d_backward_tttlllla) _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask
 
-conv_dilated3d :: Tensor -> Tensor -> (Int,Int,Int) -> Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor
-conv_dilated3d _self _weight _kernel_size _bias _stride _padding _dilation = unsafePerformIO $ (cast7 ATen.conv_dilated3d_ttltlll) _self _weight _kernel_size _bias _stride _padding _dilation
+slow_conv_dilated3d :: Tensor -> Tensor -> (Int,Int,Int) -> Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor
+slow_conv_dilated3d _self _weight _kernel_size _bias _stride _padding _dilation = unsafePerformIO $ (cast7 ATen.slow_conv_dilated3d_ttltlll) _self _weight _kernel_size _bias _stride _padding _dilation
 
-conv_dilated3d_backward :: Tensor -> Tensor -> Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
-conv_dilated3d_backward _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask = unsafePerformIO $ (cast8 ATen.conv_dilated3d_backward_tttlllla) _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask
+slow_conv_dilated3d_backward :: Tensor -> Tensor -> Tensor -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Bool,Bool,Bool) -> (Tensor,Tensor,Tensor)
+slow_conv_dilated3d_backward _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask = unsafePerformIO $ (cast8 ATen.slow_conv_dilated3d_backward_tttlllla) _grad_output _self _weight _kernel_size _stride _padding _dilation _output_mask
 
 col2im :: Tensor -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor
 col2im _self _output_size _kernel_size _dilation _padding _stride = unsafePerformIO $ (cast6 ATen.col2im_tlllll) _self _output_size _kernel_size _dilation _padding _stride

@@ -32,6 +32,8 @@ library
                     , ATen.Unmanaged.Type.Context
                     , ATen.Unmanaged.Type.ConstQuantizerPtr
                     , ATen.Unmanaged.Type.Extra
+                    , ATen.Unmanaged.Type.Dimname
+                    , ATen.Unmanaged.Type.DimnameList
                     , ATen.Managed.Cast
                     , ATen.Managed.Native
                     , ATen.Managed.Type.Tuple
@@ -47,6 +49,8 @@ library
                     , ATen.Managed.Type.Context
                     , ATen.Managed.Type.ConstQuantizerPtr
                     , ATen.Managed.Type.Extra
+                    , ATen.Managed.Type.Dimname
+                    , ATen.Managed.Type.DimnameList
                     , Torch.Unmanaged.Autograd
                     , Torch.Unmanaged.Native
                     , Torch.Managed.Autograd
@@ -74,11 +78,11 @@ library
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
-  ghc-options:       -optc-std=c++11 -optc-xc++
+  ghc-options:       -optc-std=c++17 -optc-xc++
  else
-  ghc-options:       -optc-std=c++11
- cc-options:        -std=c++11
- cxx-options:       -std=c++11
+  ghc-options:       -optc-std=c++17
+ cc-options:        -std=c++17
+ cxx-options:       -std=c++17
  default-extensions:          Strict
                             , StrictData
 
@@ -103,10 +107,10 @@ test-suite spec
                      , safe-exceptions
   if os(darwin)
     ld-options: -Wl,-keep_dwarf_unwind
-    ghc-options:       -optc-std=c++11 -optc-xc++
+    ghc-options:       -optc-std=c++17 -optc-xc++
   else
-    ghc-options:       -optc-std=c++11
-  cc-options:        -std=c++11
-  cxx-options:       -std=c++11
+    ghc-options:       -optc-std=c++17
+  cc-options:        -std=c++17
+  cxx-options:       -std=c++17
   default-extensions:          Strict
                              , StrictData
