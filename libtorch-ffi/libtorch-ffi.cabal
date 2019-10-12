@@ -1,7 +1,7 @@
 cabal-version:       2.1
 name:                libtorch-ffi
-version:             1.1.0.0
--- The prefix(1.1) of this version("1.1.0.0") is the same as libtorch's one.
+version:             1.3.0.0
+-- The prefix(1.3) of this version("1.3.0.0") is the same as libtorch's one.
 synopsis:            test out alternative options for ffi interface to libtorch 1.x
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
@@ -78,11 +78,11 @@ library
  extra-ghci-libraries: stdc++
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
-  ghc-options:       -optc-std=c++17 -optc-xc++
+  ghc-options:       -optc-std=c++11 -optc-xc++
  else
-  ghc-options:       -optc-std=c++17
- cc-options:        -std=c++17
- cxx-options:       -std=c++17
+  ghc-options:       -optc-std=c++11
+ cc-options:        -std=c++11
+ cxx-options:       -std=c++11
  default-extensions:          Strict
                             , StrictData
 
@@ -107,10 +107,10 @@ test-suite spec
                      , safe-exceptions
   if os(darwin)
     ld-options: -Wl,-keep_dwarf_unwind
-    ghc-options:       -optc-std=c++17 -optc-xc++
+    ghc-options:       -optc-std=c++11 -optc-xc++
   else
-    ghc-options:       -optc-std=c++17
-  cc-options:        -std=c++17
-  cxx-options:       -std=c++17
+    ghc-options:       -optc-std=c++11
+  cc-options:        -std=c++11
+  cxx-options:       -std=c++11
   default-extensions:          Strict
                              , StrictData
