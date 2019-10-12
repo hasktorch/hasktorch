@@ -142,7 +142,7 @@ main = do
         Right "TRUE" -> True
         _            -> False
       (numIters, printEvery) = (10000, 25)
-      dropoutProb            = 0.2
+      dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
   init                     <- A.sample
     (MLPSpec @ 'D.Float @I.DataDim @I.ClassDim @HiddenFeatures0 @HiddenFeatures1
@@ -181,7 +181,7 @@ main = do
                 _ -> print "Can not get the number of test"
 
           new_flat_parameters <- mapM A.makeIndependent
-            $ A.sgd 1e-02 flat_parameters gradients
+            $ A.sgd 1e-03 flat_parameters gradients
           return (A.replaceParameters state new_flat_parameters, nextIndexes)
   print trained
  where
