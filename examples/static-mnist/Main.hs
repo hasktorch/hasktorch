@@ -73,8 +73,7 @@ mlp
   -> Tensor dtype '[batchSize, inputFeatures]
   -> IO (Tensor dtype '[batchSize, outputFeatures])
 mlp MLP {..} train input =
-  Torch.Static.NN.dropout dropout train
-    .   relu
+  return
     .   linear layer2
     =<< Torch.Static.NN.dropout dropout train
     .   relu
@@ -88,10 +87,12 @@ foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
-type BatchSize = 128
+type BatchSize = 256
 type TestBatchSize = 1024
-type HiddenFeatures0 = 512
-type HiddenFeatures1 = 256
+-- type HiddenFeatures0 = 4096
+-- type HiddenFeatures1 = 2048
+type HiddenFeatures0 = 32
+type HiddenFeatures1 = 16
 
 randomIndexes :: Int -> [Int]
 randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
@@ -137,7 +138,7 @@ main = do
         Right "TRUE" -> True
         _            -> False
       (numIters, printEvery) = (10000, 25)
-      dropoutProb            = 0.25
+      dropoutProb            = 0.2
   (trainingData, testData) <- I.initMnist
   init                     <- A.sample
     (MLPSpec @ 'D.Float @I.DataDim @I.ClassDim @HiddenFeatures0 @HiddenFeatures1
@@ -160,8 +161,9 @@ main = do
           let flat_parameters = A.flattenParameters state
           let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
           when debug $ do
-            print $ "training loss:" ++ show trainingLoss
-            print $ "gradients:" ++ show gradients
+            print $ "last parameter:" ++ show (head . reverse $ flat_parameters)
+            -- print $ "training loss:" ++ show trainingLoss
+            -- print $ "gradients:" ++ show gradients
           when (i `mod` printEvery == 0)
             $ case someNatVal (fromIntegral $ I.length testData) of
                 Just (SomeNat (Proxy :: Proxy testSize)) -> do
@@ -176,7 +178,7 @@ main = do
                 _ -> print "Can not get the number of test"
 
           new_flat_parameters <- mapM A.makeIndependent
-            $ A.sgd 1e-02 flat_parameters gradients
+            $ A.sgd 1e-05 flat_parameters gradients
           return (A.replaceParameters state new_flat_parameters, nextIndexes)
   print trained
  where
