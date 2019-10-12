@@ -608,14 +608,14 @@ hardshrink_backward _grad_out _self _lambd = unsafePerformIO $ (cast3 ATen.hards
 rsqrt :: Tensor -> Tensor
 rsqrt _self = unsafePerformIO $ (cast1 ATen.rsqrt_t) _self
 
-select :: Tensor -> Dimname -> Int -> Tensor
-select _self _dim _index = unsafePerformIO $ (cast3 ATen.select_tnl) _self _dim _index
+-- select :: Tensor -> Dimname -> Int -> Tensor
+-- select _self _dim _index = unsafePerformIO $ (cast3 ATen.select_tnl) _self _dim _index
 
 celu :: Tensor -> Float -> Tensor
 celu _self _alpha = unsafePerformIO $ (cast2 ATen.celu_ts) _self _alpha
 
-size :: Tensor -> Dimname -> Int
-size _self _dim = unsafePerformIO $ (cast2 ATen.size_tn) _self _dim
+-- size :: Tensor -> Dimname -> Int
+-- size _self _dim = unsafePerformIO $ (cast2 ATen.size_tn) _self _dim
 
 slice :: Tensor -> Int -> Int -> Int -> Int -> Tensor
 slice _self _dim _start _end _step = unsafePerformIO $ (cast5 ATen.slice_tllll) _self _dim _start _end _step
