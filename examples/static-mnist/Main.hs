@@ -43,35 +43,55 @@ import qualified Torch.TensorFactories         as D
 import qualified Image                         as I
 
 --------------------------------------------------------------------------------
--- MNIST
+-- MLP for MNIST
 --------------------------------------------------------------------------------
 
-data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) = MLPSpec Double
+data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat) = MLPSpec Double
 
-data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) =
-  MLP { layer0 :: Linear dtype inputFeatures hiddenFeatures
-      , layer1 :: Linear dtype hiddenFeatures outputFeatures
+data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat) =
+  MLP { layer0 :: Linear dtype inputFeatures hiddenFeatures0
+      , layer1 :: Linear dtype hiddenFeatures0 hiddenFeatures1
+      , layer2 :: Linear dtype hiddenFeatures1 outputFeatures
       , dropout :: Dropout
       } deriving (Show, Generic)
 
-instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures)
+instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
 
-instance (KnownDType dtype, KnownNat inputFeatures, KnownNat outputFeatures, KnownNat hiddenFeatures) => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures) (MLP dtype inputFeatures outputFeatures hiddenFeatures) where
-  sample (MLPSpec prob) = MLP <$> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample (DropoutSpec prob)
+instance ( KnownDType dtype
+         , KnownNat inputFeatures
+         , KnownNat outputFeatures
+         , KnownNat hiddenFeatures0
+         , KnownNat hiddenFeatures1
+         )
+  => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1) (MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
+ where
+  sample (MLPSpec prob) = MLP <$> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample (DropoutSpec prob)
 
 mlp
-  :: MLP dtype inputFeatures outputFeatures hiddenFeatures
+  :: MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+  -> Bool
   -> Tensor dtype '[batchSize, inputFeatures]
-  -> Tensor dtype '[batchSize, outputFeatures]
-mlp MLP {..} = linear layer1 . relu . linear layer0
+  -> IO (Tensor dtype '[batchSize, outputFeatures])
+mlp MLP {..} train input =
+  Torch.Static.NN.dropout dropout train
+    .   relu
+    .   linear layer2
+    =<< Torch.Static.NN.dropout dropout train
+    .   relu
+    .   linear layer1
+    =<< Torch.Static.NN.dropout dropout train
+    .   relu
+    .   linear layer0
+    =<< pure input
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
-type BatchSize = 1000
-type TestBatchSize = 10000
-type HiddenFeatures = 500
+type BatchSize = 128
+type TestBatchSize = 1024
+type HiddenFeatures0 = 512
+type HiddenFeatures1 = 256
 
 randomIndexes :: Int -> [Int]
 randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
@@ -117,9 +137,12 @@ main = do
         Right "TRUE" -> True
         _            -> False
       (numIters, printEvery) = (10000, 25)
-      dropoutProb = 0.25
+      dropoutProb            = 0.25
   (trainingData, testData) <- I.initMnist
-  init <- A.sample (MLPSpec @'D.Float @I.DataDim @I.ClassDim @HiddenFeatures dropoutProb)
+  init                     <- A.sample
+    (MLPSpec @ 'D.Float @I.DataDim @I.ClassDim @HiddenFeatures0 @HiddenFeatures1
+      dropoutProb
+    )
   init' <- A.replaceParameters init <$> traverse
     (A.makeIndependent . toBackend backend . A.toDependent)
     (A.flattenParameters init)
@@ -129,11 +152,11 @@ main = do
       $ \(state, idxs) i -> do
           let (indexes, nextIndexes) =
                 (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
-          let (trainingLoss, _) = computeLossAndErrorRate @BatchSize
-                backend
-                state
-                indexes
-                trainingData
+          (trainingLoss, _) <- computeLossAndErrorRate @BatchSize backend
+                                                                  state
+                                                                  True
+                                                                  indexes
+                                                                  trainingData
           let flat_parameters = A.flattenParameters state
           let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
           when debug $ do
@@ -142,12 +165,13 @@ main = do
           when (i `mod` printEvery == 0)
             $ case someNatVal (fromIntegral $ I.length testData) of
                 Just (SomeNat (Proxy :: Proxy testSize)) -> do
-                  let (testLoss, testError) =
-                        computeLossAndErrorRate @(Min TestBatchSize testSize)
-                          backend
-                          state
-                          (randomIndexes (I.length testData))
-                          testData
+                  (testLoss, testError) <-
+                    computeLossAndErrorRate @(Min TestBatchSize testSize)
+                      backend
+                      state
+                      False
+                      (randomIndexes (I.length testData))
+                      testData
                   printLosses i trainingLoss testLoss testError
                 _ -> print "Can not get the number of test"
 
@@ -160,15 +184,16 @@ main = do
     :: forall n
      . (KnownNat n)
     => String
-    -> MLP 'D.Float I.DataDim I.ClassDim HiddenFeatures
+    -> MLP 'D.Float I.DataDim I.ClassDim HiddenFeatures0 HiddenFeatures1
+    -> Bool
     -> [Int]
     -> I.MnistData
-    -> (Tensor 'D.Float '[], Tensor 'D.Float '[])
-  computeLossAndErrorRate backend state indexes data' =
+    -> IO (Tensor 'D.Float '[], Tensor 'D.Float '[])
+  computeLossAndErrorRate backend state train indexes data' = do
     let input  = toBackend backend $ I.getImages @n data' indexes
         target = toBackend backend $ I.getLabels @n data' indexes
-        result = mlp state input
-    in  (crossEntropyLoss backend result target, errorRate result target)
+    result <- mlp state train input
+    return (crossEntropyLoss backend result target, errorRate result target)
   printLosses i trainingLoss testLoss testError =
     let asFloat t = D.asValue . toDynamic . toCPU $ t :: Float
     in  putStrLn
