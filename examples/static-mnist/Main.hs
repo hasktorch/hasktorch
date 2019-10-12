@@ -87,12 +87,10 @@ foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
-type BatchSize = 256
+type BatchSize = 128
 type TestBatchSize = 1024
--- type HiddenFeatures0 = 4096
--- type HiddenFeatures1 = 2048
-type HiddenFeatures0 = 32
-type HiddenFeatures1 = 16
+type HiddenFeatures0 = 512
+type HiddenFeatures1 = 256
 
 randomIndexes :: Int -> [Int]
 randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
@@ -161,9 +159,8 @@ main = do
           let flat_parameters = A.flattenParameters state
           let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
           when debug $ do
-            print $ "last parameter:" ++ show (head . reverse $ flat_parameters)
-            -- print $ "training loss:" ++ show trainingLoss
-            -- print $ "gradients:" ++ show gradients
+            print $ "training loss:" ++ show trainingLoss
+            print $ "gradients:" ++ show gradients
           when (i `mod` printEvery == 0)
             $ case someNatVal (fromIntegral $ I.length testData) of
                 Just (SomeNat (Proxy :: Proxy testSize)) -> do
