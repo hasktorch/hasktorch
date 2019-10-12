@@ -808,50 +808,75 @@ bmm _input _mat2 = unsafePerformIO $ (cast2 ATen.bmm_tt) _input _mat2
 -- broadcast_tensors :: [Tensor dtype shape] -> [Tensor dtype shape]
 -- broadcast_tensors _tensors = unsafePerformIO $ (cast1 ATen.broadcast_tensors_l) _tensors
 
-type family CatImpl (dim :: Nat) (tensors :: [a]) (count :: Nat) :: Maybe (D.DType, [Nat]) where
-  CatImpl dim '[]                                                   count = Nothing
-  CatImpl dim (Tensor dtype shape ': '[])                           count = MaybePair (Just dtype) (ComputeCatShape shape dim count)
-  CatImpl dim (Tensor dtype shape ': Tensor dtype shape ': tensors) count = CatImpl dim (Tensor dtype shape ': tensors) (count + 1)
-  CatImpl _   _                                                     _     = Nothing
+type family CatImpl (dim :: Nat) (tensors :: [a]) (acc :: Maybe (D.DType, [Nat])) :: Maybe (D.DType, [Nat]) where
+  CatImpl _   '[]                             acc = acc
+  CatImpl dim (Tensor dtype shape ': tensors) acc = CatImpl dim tensors (MaybePair (ComputeCatDType dtype acc) (ComputeCatShape dim shape acc))
 
-type family ComputeCatShape (shape :: [Nat]) (dim  :: Nat) (count :: Nat) :: Maybe [Nat] where
-  ComputeCatShape _         _   0     = Nothing
-  ComputeCatShape xs        0   count = Just (count ': xs)
-  ComputeCatShape (x ': xs) dim count = AppendToMaybe x (ComputeCatShape xs (dim - 1) count)
-  ComputeCatShape '[]       _   _     = Nothing
+type family ComputeCatShape (dim :: Nat) (shape :: [Nat]) (acc :: Maybe (D.DType, [Nat])) :: Maybe [Nat] where
+  ComputeCatShape 0   (x ': xs) Nothing                  = Just (x ': xs)
+  ComputeCatShape dim (x ': xs) Nothing                  = AppendToMaybe x (ComputeCatShape (dim - 1) xs Nothing)
+  ComputeCatShape 0   (x ': xs) (Just '(_, y ': xs))     = Just ((x + y) ': xs)
+  ComputeCatShape dim (x ': xs) (Just '(dtype, x ': ys)) = AppendToMaybe x (ComputeCatShape (dim - 1) xs (Just '(dtype, ys)))
+  ComputeCatShape _   _         _                        = Nothing
+
+type family ComputeCatDType (dtype :: D.DType) (acc :: Maybe (D.DType, [Nat])) :: Maybe D.DType where
+  ComputeCatDType dtype Nothing            = Just dtype
+  ComputeCatDType dtype (Just '(dtype, _)) = Just dtype
+  ComputeCatDType _     _                  = Nothing
 
 type family CatCheck (res :: Maybe (D.DType, [Nat])) :: (D.DType, [Nat]) where
   CatCheck 'Nothing                = TypeError (Text "Concatenation impossible.")
   CatCheck ('Just '(dtype, shape)) = '(dtype, shape)
 
-type Cat dim tensors = CatCheck (CatImpl dim tensors 1)
+-- | Cat
+-- >>> type Ty = Cat 0 '[Tensor 'D.Float '[1]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[1])
+-- >>> type Ty = Cat 0 '[Tensor 'D.Float '[1], Tensor 'D.Float '[2]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[3])
+-- >>> type Ty = Cat 0 '[Tensor 'D.Float '[1, 3], Tensor 'D.Float '[2, 3]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[3, 3])
+-- >>> type Ty = Cat 1 '[Tensor 'D.Float '[3, 1], Tensor 'D.Float '[3, 2]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[3, 3])
+-- >>> type Ty = Cat 1 '[Tensor 'D.Float '[2, 5, 4, 2], Tensor 'D.Float '[2, 1, 4, 2], Tensor 'D.Float '[2, 3, 4, 2], Tensor 'D.Float '[2, 1, 4, 2]]
+-- >>> :kind! Ty
+-- Ty :: (D.DType, [Nat])
+-- = '( 'D.Float, '[2, 10, 4, 2])
+type Cat dim tensors = CatCheck (CatImpl dim tensors Nothing)
 
 -- | cat
 -- >>> t = ones @'D.Float @'[2,2]
 -- >>> t' = cat @0 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[1, 2, 2]
+-- t' :: Tensor 'D.Float '[2, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([2,2],[[1.0,1.0],[1.0,1.0]]))
 -- >>> t' = cat @1 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[2, 1, 2]
+-- t' :: Tensor 'D.Float '[2, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([2,2],[[1.0,1.0],[1.0,1.0]]))
 -- >>> t' = cat @0 (t :. t :. t :. HNil)
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[3, 2, 2]
+-- t' :: Tensor 'D.Float '[6, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([6,2],[[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0]]))
 -- >>> t' = cat @1 (t :. t :. t :. HNil)
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[2, 3, 2]
+-- t' :: Tensor 'D.Float '[2, 6]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([2,6],[[1.0,1.0,1.0,1.0,1.0,1.0],[1.0,1.0,1.0,1.0,1.0,1.0]]))
 cat
   :: forall dim dtype shape tensors
    . ( KnownNat dim
-     , '(dtype, shape) ~ Stack dim tensors
+     , '(dtype, shape) ~ Cat dim tensors
      , HFoldrM IO TensorListFolds [D.ATenTensor] tensors
      , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors)
      , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensors) tensors

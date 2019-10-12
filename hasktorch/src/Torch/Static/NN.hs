@@ -11,11 +11,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Torch.Static.NN where
 
 import Control.Monad.State.Strict
 import GHC.TypeLits
+import GHC.TypeLits.Extra
 import GHC.Generics
 
 import qualified Torch.NN as A
@@ -118,10 +120,29 @@ embed Embedding {..} input = embedding @paddingIdx
 
 instance A.Parameterized (Embedding paddingIdx dtype numEmbeds embedDim)
 
-instance (KnownMaybeNat paddingIdx, KnownDType dtype, KnownNat numEmbeds, KnownNat embedDim) => A.Randomizable (EmbeddingSpec paddingIdx dtype numEmbeds embedDim) (Embedding paddingIdx dtype numEmbeds embedDim) where
-  sample EmbeddingSpec = do
-    r <- randn :: IO (Tensor dtype '[numEmbeds, embedDim])
-    -- let mask = _ :: Tensor 'D.Bool '[numEmbeds, embedDim]
-    --     r' = maskedFill mask (0 :: Int) r -- :: Tensor dtype '[numEmbeds, embedDim]
-    r'' <- makeIndependent r
-    return $ Embedding r''
+instance ( KnownDType dtype
+         , KnownNat numEmbeds
+         , KnownNat embedDim
+         )
+  => A.Randomizable (EmbeddingSpec 'Nothing dtype numEmbeds embedDim) (Embedding 'Nothing dtype numEmbeds embedDim)
+ where
+  sample EmbeddingSpec = Embedding <$> (makeIndependent =<< randn)
+
+instance ( paddingIdx <= numEmbeds
+         , 1 <= numEmbeds - paddingIdx
+         , (((numEmbeds - paddingIdx) - 1) + (1 + paddingIdx)) ~ numEmbeds
+         , KnownNat paddingIdx
+         , KnownDType dtype
+         , KnownNat numEmbeds
+         , KnownNat embedDim
+         )
+  => A.Randomizable (EmbeddingSpec ('Just paddingIdx) dtype numEmbeds embedDim) (Embedding ('Just paddingIdx) dtype numEmbeds embedDim)
+ where
+  sample EmbeddingSpec =
+    let mask = cat @0 (  zeros @'D.Bool @'[paddingIdx, embedDim]
+                      :. ones  @'D.Bool @'[1, embedDim]
+                      :. zeros @'D.Bool @'[numEmbeds - paddingIdx - 1, embedDim]
+                      :. HNil
+                      )
+    in  Embedding <$> (makeIndependent =<< (maskedFill mask (0 :: Int) <$> (randn @dtype @'[numEmbeds, embedDim])))
+
