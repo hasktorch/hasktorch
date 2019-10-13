@@ -85,7 +85,7 @@ mlp MLP {..} train input =
     .   tanh
     .   linear layer1
     =<< Torch.Static.NN.dropout dropout train
-    .   relu
+    .   tanh
     .   linear layer0
     =<< pure input
 
@@ -141,7 +141,7 @@ main = do
       debug = case debug' of
         Right "TRUE" -> True
         _            -> False
-      (numIters, printEvery) = (100000, 250)
+      (numIters, printEvery) = (1000000, 250)
       dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
   init                     <- A.sample
@@ -181,7 +181,7 @@ main = do
                 _ -> print "Can not get the number of test"
 
           new_flat_parameters <- mapM A.makeIndependent
-            $ A.sgd 1e-03 flat_parameters gradients
+            $ A.sgd 1e-02 flat_parameters gradients
           return (A.replaceParameters state new_flat_parameters, nextIndexes)
   print trained
  where
