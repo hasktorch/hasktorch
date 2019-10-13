@@ -416,18 +416,6 @@ selectIdx :: forall dim n shape dtype shape'.
               shape' ~ Remove shape dim) => Tensor dtype shape -> Finite n -> Tensor dtype shape'
 selectIdx t idx = UnsafeMkTensor $ D.select (toDynamic t) (natValI @dim) (getFiniteI idx)
 
-type ConvSideCheck h k d (p :: Nat) o =
-  (
-  -- kernel and step size must be > 0
-    k >= 1, d >= 1
-  -- kernel size can't be greater than actual input size
-  , ((h + (2 * p)) + 1) >= k
-  -- output size must be greater than 0
-  , o >= 1
-  -- output forumlation:
-  , o ~ ((Div ((h + (2 * p)) - k) d) + 1)
-  )
-
 type family Fst (t :: (a, b)) :: a where
     Fst '(x,_) = x
 
@@ -443,27 +431,15 @@ type family Snd3 (t :: (a, b, c)) :: b where
 type family Trd3 (t :: (a, b, c)) :: c where
     Trd3 '(_,_,x) = x
 
--- TODO: Perhaps use distinct types for stride and padding so that people
--- don't confuse them later?
-conv2dBias
-    :: forall stride padding dtype n ic oc ih iw oh ow kh kw.
-       ( All KnownNat [Fst stride, Snd stride, Fst padding, Snd padding, n, ic, oc, ih, iw, oh, ow, kh, kw]
-       , ConvSideCheck ih kh (Fst stride) (Fst padding) oh
-       , ConvSideCheck iw kw (Snd stride) (Snd padding) ow ) =>
-         Tensor dtype '[n, ic, ih, iw] ->
-         Tensor dtype '[oc, ic, kh, kw] ->
-         Tensor dtype '[oc] ->
-         Tensor dtype '[n, oc, oh, ow]
-conv2dBias input weight bias = UnsafeMkTensor $
-    D.conv2d (toDynamic input) (toDynamic weight) (toDynamic bias)
-             (natValI @(Fst stride), natValI @(Snd stride))
-             (natValI @(Fst padding), natValI @(Snd padding))
-
 type family Numel (shape :: [Nat]) :: Nat where
     Numel '[] = 1
     Numel (h ': t) = h * (Numel t)
 
-reshape :: forall shape' dtype shape. (KnownShape shape', Numel shape ~ Numel shape') => Tensor dtype shape -> Tensor dtype shape'
+reshape
+  :: forall shape' dtype shape
+   . (KnownShape shape', Numel shape ~ Numel shape')
+  => Tensor dtype shape
+  -> Tensor dtype shape'
 reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
 
 instance Castable (Tensor dtype shape) D.ATenTensor where

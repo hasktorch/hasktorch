@@ -12,21 +12,23 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Static.NN where
 
-import Control.Monad.State.Strict
-import GHC.TypeLits
-import GHC.TypeLits.Extra
-import GHC.Generics
+import           Control.Monad.State.Strict
+import           GHC.TypeLits
+import           GHC.TypeLits.Extra
+import           GHC.Generics
 
-import qualified Torch.NN as A
-import qualified Torch.Autograd as A
-import qualified Torch.Tensor as A
-import qualified Torch.DType as D
-import Torch.Static
-import Torch.Static.Factories
-import Torch.Static.Native
+import qualified Torch.NN                      as A
+import qualified Torch.Autograd                as A
+import qualified Torch.Tensor                  as A
+import qualified Torch.DType                   as D
+import           Torch.Static
+import           Torch.Static.Factories
+import           Torch.Static.Native
 
 newtype Parameter dtype shape = Parameter A.IndependentTensor deriving (Show)
 
@@ -40,41 +42,31 @@ instance A.Parameterized (Parameter dtype shape) where
   flattenParameters (Parameter x) = [x]
   replaceOwnParameters _ = Parameter <$> A.nextParameter
 
-data LinearSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) = LinearSpec
-  deriving (Show, Eq)
+data LinearSpec (dtype :: D.DType)
+                (inputFeatures :: Nat) (outputFeatures :: Nat)
+  = LinearSpec deriving (Show, Eq)
 
-data Linear (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) where
+data Linear (dtype :: D.DType)
+            (inputFeatures :: Nat) (outputFeatures :: Nat)
+ where
   Linear
     :: forall dtype inputFeatures outputFeatures
-     . { weight :: Parameter dtype '[inputFeatures, outputFeatures]
-       , bias :: Parameter dtype '[outputFeatures]
+     . { linearWeight :: Parameter dtype '[outputFeatures, inputFeatures]
+       , linearBias   :: Parameter dtype '[outputFeatures]
        }
     -> Linear dtype inputFeatures outputFeatures
-  deriving (Show, Generic)
+ deriving (Show, Generic)
 
+-- | linear
+-- The constraints on this one are _very_ involved, so the partial signatures
+-- make the code significantly cleaner.
 linear
-  :: forall dtype (inputFeatures :: Nat) (outputFeatures :: Nat) (shape :: [Nat]) (shape' :: [Nat])
-   . ( CheckBroadcast (CheckMatMul
-                         shape
-                         '[inputFeatures, outputFeatures]
-                         (ComputeMatMul
-                            (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
-                      '[outputFeatures]
-                      (ComputeBroadcast
-                         (ReverseImpl
-                            (CheckMatMul
-                               shape
-                               '[inputFeatures, outputFeatures]
-                               (ComputeMatMul
-                                  (ReverseImpl shape '[]) '[outputFeatures, inputFeatures]))
-                            '[])
-                         '[outputFeatures])
-                    ~ shape')
-  => Linear dtype inputFeatures outputFeatures
-  -> Tensor dtype shape
-  -> Tensor dtype shape'
+  :: _
+  => Linear _ _ _
+  -> Tensor _ _
+  -> Tensor _ _
 linear Linear {..} input =
-  add (matmul input (toDependent weight)) (toDependent bias)
+  Torch.Static.Native.linear' (toDependent linearWeight) (toDependent linearBias) input
 
 instance A.Parameterized (Linear dtype inputFeatures outputFeatures)
 
@@ -82,22 +74,23 @@ instance ( KnownDType dtype
          , KnownNat inputFeatures
          , KnownNat outputFeatures
          )
-  => A.Randomizable (LinearSpec dtype inputFeatures outputFeatures) (Linear dtype inputFeatures outputFeatures)
+  => A.Randomizable (LinearSpec dtype inputFeatures outputFeatures)
+                    (Linear     dtype inputFeatures outputFeatures)
  where
   sample LinearSpec =
     Linear <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
-data DropoutSpec = DropoutSpec Double
-  deriving (Show, Generic)
+data DropoutSpec = DropoutSpec Double deriving (Show, Generic)
 
 data Dropout where
   Dropout
     :: { dropoutProb :: Double }
     -> Dropout
-  deriving (Show, Generic)
+ deriving (Show, Generic)
 
 dropout :: Dropout -> Bool -> Tensor dtype shape -> IO (Tensor dtype shape)
-dropout Dropout {..} dropoutTrain = Torch.Static.Native.dropout dropoutProb dropoutTrain
+dropout Dropout {..} dropoutTrain =
+  Torch.Static.Native.dropout dropoutProb dropoutTrain
 
 instance A.Parameterized Dropout where
   flattenParameters x = []
@@ -106,16 +99,23 @@ instance A.Parameterized Dropout where
 instance A.Randomizable DropoutSpec Dropout where
   sample (DropoutSpec prob) = return $ Dropout prob 
 
-data EmbeddingSpec (paddingIdx :: Maybe Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) = EmbeddingSpec
-  deriving (Show, Eq)
+data EmbeddingSpec (paddingIdx :: Maybe Nat)
+                   (dtype :: D.DType)
+                   (numEmbeds :: Nat)
+                   (embedDim :: Nat)
+  = EmbeddingSpec deriving (Show, Eq)
 
-data Embedding (paddingIdx :: Maybe Nat) (dtype :: D.DType) (numEmbeds :: Nat) (embedDim :: Nat) where
+data Embedding (paddingIdx :: Maybe Nat)
+               (dtype :: D.DType)
+               (numEmbeds :: Nat)
+               (embedDim :: Nat)
+ where
   Embedding
     :: forall paddingIdx dtype numEmbeds embedDim
     --  . (PaddingIdxCheck paddingIdx numEmbeds)
      . { embedWeights :: Parameter dtype '[numEmbeds, embedDim] }
     -> Embedding paddingIdx dtype numEmbeds embedDim
-  deriving (Show, Generic)
+ deriving (Show, Generic)
 
 embed
   :: forall paddingIdx dtype shape numEmbeds embedDim
@@ -137,7 +137,8 @@ instance ( KnownDType dtype
          , KnownNat numEmbeds
          , KnownNat embedDim
          )
-  => A.Randomizable (EmbeddingSpec 'Nothing dtype numEmbeds embedDim) (Embedding 'Nothing dtype numEmbeds embedDim)
+  => A.Randomizable (EmbeddingSpec 'Nothing dtype numEmbeds embedDim)
+                    (Embedding     'Nothing dtype numEmbeds embedDim)
  where
   sample EmbeddingSpec = Embedding <$> (makeIndependent =<< randn)
 
@@ -149,7 +150,8 @@ instance ( paddingIdx <= numEmbeds
          , KnownNat numEmbeds
          , KnownNat embedDim
          )
-  => A.Randomizable (EmbeddingSpec ('Just paddingIdx) dtype numEmbeds embedDim) (Embedding ('Just paddingIdx) dtype numEmbeds embedDim)
+  => A.Randomizable (EmbeddingSpec ('Just paddingIdx) dtype numEmbeds embedDim)
+                    (Embedding     ('Just paddingIdx) dtype numEmbeds embedDim)
  where
   sample EmbeddingSpec =
     let mask = cat @0 (  zeros @'D.Bool @'[paddingIdx, embedDim]
@@ -159,3 +161,143 @@ instance ( paddingIdx <= numEmbeds
                       )
     in  Embedding <$> (makeIndependent =<< (maskedFill mask (0 :: Int) <$> (randn @dtype @'[numEmbeds, embedDim])))
 
+data Conv1dSpec (dtype :: D.DType)
+                (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+                (kernelSize :: Nat)
+  = Conv1dSpec deriving (Show, Eq)
+
+data Conv1d (dtype :: D.DType)
+            (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+            (kernelSize :: Nat)
+ where
+  Conv1d
+    :: forall dtype inputChannelSize outputChannelSize kernelSize
+     . { conv1dWeight :: Parameter dtype '[ outputChannelSize, inputChannelSize
+                                          , kernelSize
+                                          ]
+       , conv1dBias   :: Parameter dtype '[outputChannelSize]
+       }
+    -> Conv1d dtype inputChannelSize outputChannelSize kernelSize
+ deriving (Show, Generic)
+
+-- | conv1d
+-- The constraints on this one are _very_ involved, so the partial signatures
+-- make the code significantly cleaner.
+conv1d
+  :: forall stride padding
+   . _
+  => Conv1d _ _ _ _
+  -> Tensor _ _
+  -> Tensor _ _
+conv1d Conv1d {..} input = Torch.Static.Native.conv1d @stride @padding
+  (toDependent conv1dWeight)
+  (toDependent conv1dBias)
+  input
+
+instance A.Parameterized (Conv1d dtype inputChannelSize outputChannelSize kernelSize)
+
+instance ( KnownDType dtype
+         , KnownNat inputChannelSize
+         , KnownNat outputChannelSize
+         , KnownNat kernelSize
+         )
+  => A.Randomizable (Conv1dSpec dtype inputChannelSize outputChannelSize kernelSize)
+                    (Conv1d     dtype inputChannelSize outputChannelSize kernelSize)
+ where
+  sample Conv1dSpec =
+    Conv1d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
+data Conv2dSpec (dtype :: D.DType)
+                (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+                (kernelSize0 :: Nat) (kernelSize1 :: Nat)
+  = Conv2dSpec deriving (Show, Eq)
+
+data Conv2d (dtype :: D.DType)
+            (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+            (kernelSize0 :: Nat) (kernelSize1 :: Nat)
+ where
+  Conv2d
+    :: forall dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1
+     . { conv2dWeight :: Parameter dtype '[ outputChannelSize, inputChannelSize
+                                          , kernelSize0, kernelSize1
+                                          ]
+       , conv2dBias   :: Parameter dtype '[outputChannelSize]
+       }
+    -> Conv2d dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1
+ deriving (Show, Generic)
+
+-- | conv2d
+-- The constraints on this one are _very_ involved, so the partial signatures
+-- make the code significantly cleaner.
+conv2d
+  :: forall stride padding
+   . _
+  => Conv2d _ _ _ _ _
+  -> Tensor _ _
+  -> Tensor _ _
+conv2d Conv2d {..} input = Torch.Static.Native.conv2d @stride @padding
+  (toDependent conv2dWeight)
+  (toDependent conv2dBias)
+  input
+
+instance A.Parameterized (Conv2d dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1)
+
+instance ( KnownDType dtype
+         , KnownNat inputChannelSize
+         , KnownNat outputChannelSize
+         , KnownNat kernelSize0
+         , KnownNat kernelSize1
+         )
+  => A.Randomizable (Conv2dSpec dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1)
+                    (Conv2d     dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1)
+ where
+  sample Conv2dSpec =
+    Conv2d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
+data Conv3dSpec (dtype :: D.DType)
+                (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+                (kernelSize0 :: Nat) (kernelSize1 :: Nat) (kernelSize2 :: Nat)
+  = Conv3dSpec deriving (Show, Eq)
+
+data Conv3d (dtype :: D.DType)
+            (inputChannelSize :: Nat) (outputChannelSize :: Nat)
+            (kernelSize0 :: Nat) (kernelSize1 :: Nat) (kernelSize2 :: Nat)
+ where
+  Conv3d
+    :: forall dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2
+     . { conv3dWeight :: Parameter dtype '[ outputChannelSize, inputChannelSize
+                                          , kernelSize0, kernelSize1, kernelSize2
+                                          ]
+       , conv3dBias   :: Parameter dtype '[outputChannelSize]
+       }
+    -> Conv3d dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2
+ deriving (Show, Generic)
+
+-- | conv3d
+-- The constraints on this one are _very_ involved, so the partial signatures
+-- make the code significantly cleaner.
+conv3d
+  :: forall stride padding
+   . _
+  => Conv3d _ _ _ _ _ _
+  -> Tensor _ _
+  -> Tensor _ _
+conv3d Conv3d {..} input = Torch.Static.Native.conv3d @stride @padding
+  (toDependent conv3dWeight)
+  (toDependent conv3dBias)
+  input
+
+instance A.Parameterized (Conv3d dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2)
+
+instance ( KnownDType dtype
+         , KnownNat inputChannelSize
+         , KnownNat outputChannelSize
+         , KnownNat kernelSize0
+         , KnownNat kernelSize1
+         , KnownNat kernelSize2
+         )
+  => A.Randomizable (Conv3dSpec dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2)
+                    (Conv3d     dtype inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2)
+ where
+  sample Conv3dSpec =
+    Conv3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
