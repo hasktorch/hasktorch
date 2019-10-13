@@ -1,4 +1,4 @@
-# MNIST Example Using Safe Tensors
+# MNIST Classifier Using Safe Tensors
 
 Starting at the top level repo directory, set shell shared library paths paths by running: 
 
@@ -6,7 +6,7 @@ Starting at the top level repo directory, set shell shared library paths paths b
 source setenv
 ```
 
-Then enter the `example/static-mnist` directory and run the `.setup-data.sh` script to download the dataset:
+Enter the `example/static-mnist` directory and run the `.setup-data.sh` script to download the dataset:
 
 ```
 pushd examples/static-mnist

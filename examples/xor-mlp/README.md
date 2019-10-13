@@ -1,5 +1,4 @@
-# Logical xor implemented as a small multiplayer perceptron
-
+# MLP Implementation of Logical XOR
 
 # Running the Example
 

@@ -36,7 +36,7 @@ popd
 
 If you are using CUDA-9, replace `./get-deps.sh` with `./get-deps.sh -a cu90`. Likewise for CUDA-10, replace `./get-deps.sh` with `./get-deps.sh -a cu100`.
 
-These downloads include various pytorch shared libraries. Note step `get-deps.sh` only has to be run once when the repo is initially cloned.
+These downloads include various pytorch shared libraries. Note `get-deps.sh` only has to be run once when the repo is initially cloned.
 
 Next, set shell environment to reference the shared library locations:
 
