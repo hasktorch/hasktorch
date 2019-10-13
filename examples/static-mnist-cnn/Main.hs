@@ -2,21 +2,25 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GADTs #-}
 
 module Main where
 
-import           Prelude                 hiding ( tanh )
-import           Control.Monad                  ( foldM
-                                                , when
-                                                )
 import           Control.Exception.Safe         ( try
                                                 , SomeException(..)
+                                                )
+import           Control.Monad                  ( foldM
+                                                , when
                                                 )
 import           Data.Proxy
 import           Foreign.ForeignPtr
@@ -32,7 +36,7 @@ import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
 import           Torch.Static
-import           Torch.Static.Native     hiding ( linear )
+import           Torch.Static.Native
 import           Torch.Static.Factories
 import           Torch.Static.NN
 import qualified Torch.Autograd                as A
@@ -43,51 +47,59 @@ import qualified Torch.Functions               as D
 import qualified Torch.TensorFactories         as D
 import qualified Image                         as I
 
---------------------------------------------------------------------------------
--- MLP for MNIST
---------------------------------------------------------------------------------
+type NoStrides = '(1, 1)
+type NoPadding = '(0, 0)
 
-data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat) = MLPSpec Double
+type KernelSize = '(2, 2)
+type Strides = '(2, 2)
 
-data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat) =
-  MLP { layer0 :: Linear dtype inputFeatures hiddenFeatures0
-      , layer1 :: Linear dtype hiddenFeatures0 hiddenFeatures1
-      , layer2 :: Linear dtype hiddenFeatures1 outputFeatures
-      , dropout :: Dropout
-      } deriving (Show, Generic)
+data CNNSpec (dtype :: D.DType)
+  = CNNSpec deriving (Show, Eq)
 
-instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
-
-instance ( KnownDType dtype
-         , KnownNat inputFeatures
-         , KnownNat outputFeatures
-         , KnownNat hiddenFeatures0
-         , KnownNat hiddenFeatures1
-         )
-  => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1) (MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
+data CNN (dtype :: D.DType)
  where
-  sample (MLPSpec prob) =
-    MLP
-      <$> A.sample LinearSpec
-      <*> A.sample LinearSpec
-      <*> A.sample LinearSpec
-      <*> A.sample (DropoutSpec prob)
+  CNN
+    :: forall dtype
+     . { conv0 :: Conv2d dtype 1  20 5 5
+       , conv1 :: Conv2d dtype 20 50 5 5
+       , fc0   :: Linear dtype (4*4*50) 500
+       , fc1   :: Linear dtype 500      10
+       }
+    -> CNN dtype
+ deriving (Show, Generic)
 
-mlp
-  :: MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
-  -> Bool
-  -> Tensor dtype '[batchSize, inputFeatures]
-  -> IO (Tensor dtype '[batchSize, outputFeatures])
-mlp MLP {..} train input =
-  return
-    .   linear layer2
-    =<< Torch.Static.NN.dropout dropout train
-    .   tanh
-    .   linear layer1
-    =<< Torch.Static.NN.dropout dropout train
-    .   tanh
-    .   linear layer0
-    =<< pure input
+cnn
+  :: forall dtype batchSize
+   . _
+  => CNN dtype
+  -> Tensor dtype '[batchSize, I.DataDim]
+  -> Tensor dtype '[batchSize, I.ClassDim]
+cnn CNN {..} =
+  Torch.Static.NN.linear fc1
+    . relu
+    . Torch.Static.NN.linear fc0
+    . reshape @'[batchSize, 4*4*50]
+    . maxPool2d @KernelSize @Strides @NoPadding
+    . relu
+    . Torch.Static.NN.conv2d @NoStrides @NoPadding conv1
+    . maxPool2d @KernelSize @Strides @NoPadding
+    . relu
+    . Torch.Static.NN.conv2d @NoStrides @NoPadding conv0
+    . unsqueeze @1
+    . reshape @'[batchSize, I.Rows, I.Cols]
+
+instance A.Parameterized (CNN dtype)
+
+instance (KnownDType dtype)
+  => A.Randomizable (CNNSpec dtype)
+                    (CNN     dtype)
+ where
+  sample CNNSpec =
+    CNN
+      <$> A.sample (Conv2dSpec @dtype @1  @20 @5 @5)
+      <*> A.sample (Conv2dSpec @dtype @20 @50 @5 @5)
+      <*> A.sample (LinearSpec @dtype @(4*4*50) @500)
+      <*> A.sample (LinearSpec @dtype @500      @10)
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
@@ -133,25 +145,16 @@ errorRate result target =
   in  cmul errorCount ((1.0 /) . fromIntegral $ natValI @batchSize :: Double)
 
 main = do
-  debug'   <- try (getEnv "DEBUG") :: IO (Either SomeException String)
   backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
   let backend = case backend' of
         Right "CUDA" -> "CUDA"
         _            -> "CPU"
-      debug = case debug' of
-        Right "TRUE" -> True
-        _            -> False
       (numIters, printEvery) = (1000000, 250)
-      dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
-  init                     <- A.sample
-    (MLPSpec @ 'D.Float @I.DataDim @I.ClassDim @HiddenFeatures0 @HiddenFeatures1
-      dropoutProb
-    )
+  init                     <- A.sample (CNNSpec @'D.Float)
   init' <- A.replaceParameters init <$> traverse
     (A.makeIndependent . toBackend backend . A.toDependent)
     (A.flattenParameters init)
-  when debug $ print "init' is done."
   (trained, _) <-
     foldLoop (init', randomIndexes (I.length trainingData)) numIters
       $ \(state, idxs) i -> do
@@ -164,9 +167,6 @@ main = do
                                                                   trainingData
           let flat_parameters = A.flattenParameters state
           let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
-          when debug $ do
-            print $ "training loss:" ++ show trainingLoss
-            print $ "gradients:" ++ show gradients
           when (i `mod` printEvery == 0)
             $ case someNatVal (fromIntegral $ I.length testData) of
                 Just (SomeNat (Proxy :: Proxy testSize)) -> do
@@ -189,7 +189,7 @@ main = do
     :: forall n
      . (KnownNat n)
     => String
-    -> MLP 'D.Float I.DataDim I.ClassDim HiddenFeatures0 HiddenFeatures1
+    -> CNN 'D.Float
     -> Bool
     -> [Int]
     -> I.MnistData
@@ -197,7 +197,7 @@ main = do
   computeLossAndErrorRate backend state train indexes data' = do
     let input  = toBackend backend $ I.getImages @n data' indexes
         target = toBackend backend $ I.getLabels @n data' indexes
-    result <- mlp state train input
+        result = cnn state input
     return (crossEntropyLoss backend result target, errorRate result target)
   printLosses i trainingLoss testLoss testError =
     let asFloat t = D.asValue . toDynamic . toCPU $ t :: Float

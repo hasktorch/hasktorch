@@ -38,11 +38,31 @@ executable static-xor-mlp
                      , mtl
                      , reflection
 
-executable static-cnn
+library static-mnist
   import:              config
-  hs-source-dirs:      static-cnn
+  hs-source-dirs:      static-mnist
+  exposed-modules:     Image
+  build-depends:       bytestring >= 0.10.8
+                     , zlib >= 0.6
+
+executable static-mnist-cnn
+  import:              config
+  hs-source-dirs:      static-mnist-cnn
   main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , random >= 1.1
+                     , safe-exceptions
+                     , static-mnist
+
+executable static-mnist-mlp
+  import:              config
+  hs-source-dirs:      static-mnist-mlp
+  main-is:             Main.hs
+  build-depends:       libtorch-ffi
+                     , random >= 1.1
+                     , safe-exceptions
+                     , static-mnist
 
 executable static-transformer
   import:              config
@@ -106,16 +126,3 @@ executable optimizers
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl >= 2.2.2
-
-executable static-mnist
-  import:              config
-  hs-source-dirs:      static-mnist
-  main-is:             Main.hs
-  other-modules:       Image
-  build-depends:       base >= 4.7 && < 5
-                     , bytestring >= 0.10.8
-                     , libtorch-ffi
-                     , random >= 1.1
-                     , safe-exceptions
-                     , zlib >= 0.6
-

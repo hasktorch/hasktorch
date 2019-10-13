@@ -1603,7 +1603,8 @@ linear'
   -> Tensor dtype '[outputFeatures]
   -> Tensor dtype shape
   -> Tensor dtype shape'
-linear' weight bias input = Torch.Static.add (matmul input $ transpose @0 @1 weight) bias
+-- linear' weight bias input = Torch.Static.add (matmul input $ transpose @0 @1 weight) bias
+linear' weight bias input = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
 
 -- | mkldnnLinear
 -- TODO: mkldnnLinear does not return a usuable tensor value and is hence broken

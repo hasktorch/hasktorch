@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Image where
 
@@ -21,7 +23,9 @@ data MnistData =
   , labels :: BS.ByteString
   }
 
-type DataDim = 784
+type Rows = 28
+type Cols = 28
+type DataDim = Rows * Cols
 type ClassDim = 10
 
 getLabels
