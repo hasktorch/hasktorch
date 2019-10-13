@@ -53,5 +53,5 @@ stack build examples
 Run the xor example:
 
 ```
-stack run xor_mlp
+stack run xor-mlp
 ```
