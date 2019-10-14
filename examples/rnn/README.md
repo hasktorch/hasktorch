@@ -1,4 +1,7 @@
-# MLP Implementation of Logical XOR
+# RNN Modules
+
+Test implementation of RNN modules - Elman, LSTM, and GRU along with a test 
+training process.
 
 # Running the Example
 
@@ -12,5 +15,5 @@ source setenv
 Building and running:
 
 ```
-stack run xor-mlp
+stack run rnn
 ```

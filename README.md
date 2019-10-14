@@ -21,11 +21,40 @@ Internals (for contributing developers):
 - `libtorch-ffi/`- low level FFI bindings to libtorch
 - `spec/` - specification files used for `codegen/`
 
-Start with `examples/` if you are new to the project.
 
-## Getting dependencies
+## Getting Started
 
-`deps/` holds several external dependencies that are retrieved using the `deps/get-deps.sh` script.
+The following steps run a toy linear regression example, assuming the hasktorch repository has just been cloned.
+
+Starting at the top-level directory of the project, go to the `deps/` (dependencies) directory and run the `get-deps.sh` shell script to retrieve project dependencies with the following commands:
+
+```
+pushd deps
+./get-deps.sh
+popd
+```
+
+If you are using CUDA-9, replace `./get-deps.sh` with `./get-deps.sh -a cu90`. Likewise for CUDA-10, replace `./get-deps.sh` with `./get-deps.sh -a cu100`.
+
+These downloads include various pytorch shared libraries. Note `get-deps.sh` only has to be run once when the repo is initially cloned.
+
+Next, set shell environment to reference the shared library locations:
+
+
+```
+source setenv
+```
+
+Note `source setenv` should be run from the top-level directory of the repo.
+
+Finally, try building and running the linear regression example:
+
+```
+stack run regression
+```
+
+For additional examples, see the `examples/` directory.
+
 
 ## Contributing
 
