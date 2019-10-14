@@ -65,14 +65,14 @@ rand = mkFactory LibTorch.rand_lo
 randn :: [Int] -> TensorOptions -> IO Tensor
 randn = mkFactory LibTorch.randn_lo
 
+randnLike :: Tensor -> IO Tensor
+randnLike = cast1 ATen.randn_like_t
+
 fullLike :: Tensor -> Float -> TensorOptions -> IO Tensor
 fullLike input _fill_value opt = (cast3 LibTorch.full_like_tso) input _fill_value opt
 
 randLike :: Tensor -> TensorOptions -> IO Tensor
 randLike input opt = (cast2 LibTorch.rand_like_to) input opt
-
-randnLike :: Tensor -> TensorOptions -> IO Tensor
-randnLike input opt = (cast2 LibTorch.randn_like_to) input opt
 
 onesWithDimnames :: [(Int,Dimname)] -> TensorOptions -> Tensor
 onesWithDimnames = mkFactoryUnsafeWithDimnames LibTorch.ones_lNo
