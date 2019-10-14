@@ -19,7 +19,7 @@ methods:
 - sizes() -> IntArrayRef
 - strides() -> IntArrayRef
 #- opt_names() -> optional<DimnameList>
-- names() -> DimnameList
+#- names() -> DimnameList
 - ndimension() -> int64_t
 #- is_contiguous(at::MemoryFormat memory_format=at::MemoryFormat::Contiguous) -> bool
 - is_contiguous() -> bool
@@ -362,7 +362,7 @@ methods:
 - set_(Storage source, int64_t storage_offset, IntArrayRef size, IntArrayRef stride={}) -> Tensor
 - set_(Tensor  source) -> Tensor
 - set_() -> Tensor
-- set_quantizer_(ConstQuantizerPtr quantizer) -> Tensor
+#- set_quantizer_(ConstQuantizerPtr quantizer) -> Tensor
 - is_set_to(Tensor  tensor) -> bool
 - masked_fill_(Tensor  mask, Scalar value) -> Tensor
 - masked_fill(Tensor  mask, Scalar value) -> Tensor

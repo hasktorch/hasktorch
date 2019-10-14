@@ -145,13 +145,14 @@ tensor_strides _obj =
     ).vec());
   }|]
 
-tensor_names
-  :: Ptr Tensor
-  -> IO (Ptr DimnameList)
-tensor_names _obj =
-  [C.throwBlock| std::vector<at::Dimname>* { return new std::vector<at::Dimname>((*$(at::Tensor* _obj)).names(
-    ));
-  }|]
+-- -- For now, to avoid compilation-error this name-function is commented out.
+-- tensor_names
+--   :: Ptr Tensor
+--   -> IO (Ptr DimnameList)
+-- tensor_names _obj =
+--   [C.throwBlock| std::vector<at::Dimname>* { return new std::vector<at::Dimname>((*$(at::Tensor* _obj)).names(
+--     ));
+--   }|]
 
 tensor_ndimension
   :: Ptr Tensor
@@ -3163,14 +3164,15 @@ tensor_set_ _obj =
     ));
   }|]
 
-tensor_set_quantizer__Q
-  :: Ptr Tensor
-  -> Ptr ConstQuantizerPtr
-  -> IO (Ptr Tensor)
-tensor_set_quantizer__Q _obj _quantizer =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).set_quantizer_(
-    *$(at::ConstQuantizerPtr* _quantizer)));
-  }|]
+-- -- For now, to avoid compilation-error this function is commented out.
+-- tensor_set_quantizer__Q
+--   :: Ptr Tensor
+--   -> Ptr ConstQuantizerPtr
+--   -> IO (Ptr Tensor)
+-- tensor_set_quantizer__Q _obj _quantizer =
+--   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).set_quantizer_(
+--     *$(at::ConstQuantizerPtr* _quantizer)));
+--   }|]
 
 tensor_is_set_to_t
   :: Ptr Tensor
