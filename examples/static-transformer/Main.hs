@@ -716,14 +716,14 @@ toBackend backend t = unsafePerformIO $ case backend of
   _      -> ATen.cast1 ATen.tensor_cpu t
 
 crossEntropyLoss
-  :: forall batchSize outputFeatures paddingIdx
-   . (KnownNat batchSize, KnownNat outputFeatures, KnownNat paddingIdx)
+  :: forall paddingIdx batchSize seqLen dtype
+   . (KnownNat paddingIdx, KnownNat batchSize, KnownNat seqLen, KnownDType dtype)
   => String
-  -> Tensor 'D.Float '[batchSize, outputFeatures]
-  -> Tensor 'D.Int64 '[batchSize]
-  -> Tensor 'D.Float '[]
+  -> Tensor dtype '[batchSize, seqLen, seqLen]
+  -> Tensor 'D.Int64 '[batchSize, seqLen]
+  -> Tensor dtype '[]
 crossEntropyLoss backend result target =
-  nll_loss @D.ReduceMean @ 'D.Float @batchSize @outputFeatures @'[]
+  nll_loss @D.ReduceMean @dtype @batchSize @seqLen @'[seqLen]
     (logSoftmax @1 result)
     target
     (toBackend backend ones)
@@ -738,10 +738,21 @@ type NumHeads = 1
 type FFNDim = 1
 type PaddingIdx = 0
 type NumEmbeds = 10
-type EmbedDim = 1
+type EmbedDim = 5
 type SeqLen = 1
 
-type Spec
+type Model
+  = TransformerLM
+      NumAttnLayers
+      NumHeads
+      FFNDim
+      PaddingIdx
+      'D.Float
+      NumEmbeds
+      EmbedDim
+      SeqLen
+
+type ModelSpec
   = TransformerLMSpec
       NumAttnLayers
       NumHeads
@@ -762,23 +773,23 @@ main = do
         Right "CUDA" -> "CUDA"
         _            -> "CPU"
       numIters = 1
-  init  <- A.sample spec
+  init  <- A.sample spec :: IO Model
   init' <- A.replaceParameters init <$> traverse
     (A.makeIndependent . toBackend backend . A.toDependent)
     (A.flattenParameters init)
-  (trained, _) <- foldLoop (init', _) numIters $ \(state, _) i -> do
-    trainingLoss <- computeLoss @BatchSize backend state True _ _
+  (_trained, _) <- foldLoop (init', undefined) numIters $ \(state, _) i -> do
+    trainingLoss <- computeLoss @BatchSize backend state True undefined undefined
     let flat_parameters = A.flattenParameters state
     let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
     new_flat_parameters <- mapM A.makeIndependent
       $ A.sgd 1e-01 flat_parameters gradients
-    return (A.replaceParameters state new_flat_parameters, _)
-  print trained
+    return (A.replaceParameters state new_flat_parameters, undefined)
+  return ()
  where
-  spec :: Spec
+  spec :: ModelSpec
   spec = TransformerLMSpec
     { tDropoutProbSpec = 0.0
-    , tLayerSpec       = (TransformerLMLayerSpec
+    , tLayerSpec       = TransformerLMLayerSpec
                            { tMHDropoutProbSpec   = 0.0
                            , tAttnDropoutProbSpec = 0.0
                            , tLNEpsSpec           = 0.0
@@ -787,19 +798,18 @@ main = do
                            , tMLPActivation0Spec  = Activation relu
                            , tMLPActivation1Spec  = Activation relu
                            }
-                         )
     }
   computeLoss
     :: forall batchSize
-     . (KnownNat batchSize)
+     . (KnownNat batchSize, EndsWith '[batchSize, EmbedDim] '[EmbedDim])
     => String
-    -> Spec
+    -> Model
     -> Bool
     -> [Int]
     -> Data
     -> IO (Tensor 'D.Float '[])
-  computeLoss backend state train indexes data' = do
-    let input  = toBackend backend $ _
-        target = toBackend backend $ _
+  computeLoss backend state train _indexes _data = do
+    let input  = toBackend backend (undefined :: Tensor 'D.Int64 '[batchSize, SeqLen])
+        target = toBackend backend (undefined :: Tensor 'D.Int64 '[batchSize, SeqLen])
     result <- logits state train input
-    return $ crossEntropyLoss backend result target
+    return $ crossEntropyLoss @PaddingIdx backend result target
