@@ -50,7 +50,7 @@ methods:
 #- get_named_tensor_meta() -> NamedTensorMeta*
 #- get_named_tensor_meta() -> NamedTensorMeta*
 - options() -> TensorOptions
-#- data_ptr() -> void*
+- data_ptr() -> void*
 #- data_ptr() -> T*
 #- data() -> T*
 #- item() -> T

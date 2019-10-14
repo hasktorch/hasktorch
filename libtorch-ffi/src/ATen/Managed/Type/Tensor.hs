@@ -104,12 +104,6 @@ tensor_strides
   -> IO (ForeignPtr IntArray)
 tensor_strides = cast1 Unmanaged.tensor_strides
 
--- -- For now, to avoid compilation-error this name-function is commented out.
--- tensor_names
---   :: ForeignPtr Tensor
---   -> IO (ForeignPtr DimnameList)
--- tensor_names = cast1 Unmanaged.tensor_names
-
 tensor_ndimension
   :: ForeignPtr Tensor
   -> IO (Int64)
@@ -217,6 +211,11 @@ tensor_options
   :: ForeignPtr Tensor
   -> IO (ForeignPtr TensorOptions)
 tensor_options = cast1 Unmanaged.tensor_options
+
+tensor_data_ptr
+  :: ForeignPtr Tensor
+  -> IO (Ptr ())
+tensor_data_ptr = cast1 Unmanaged.tensor_data_ptr
 
 tensor_item_int64_t
   :: ForeignPtr Tensor
@@ -2019,13 +2018,6 @@ tensor_set_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_set_ = cast1 Unmanaged.tensor_set_
-
--- -- For now, to avoid compilation-error this function is commented out.
--- tensor_set_quantizer__Q
---   :: ForeignPtr Tensor
---   -> ForeignPtr ConstQuantizerPtr
---   -> IO (ForeignPtr Tensor)
--- tensor_set_quantizer__Q = cast2 Unmanaged.tensor_set_quantizer__Q
 
 tensor_is_set_to_t
   :: ForeignPtr Tensor
