@@ -1,4 +1,8 @@
-# MLP Implementation of Logical XOR
+# Toy text example
+
+Small character prediction unit test for elman/lstm/gru implementations. 
+
+Loosely based on https://www.youtube.com/watch?v=ogZi5oIo4fI
 
 # Running the Example
 
@@ -12,5 +16,6 @@ source setenv
 Building and running:
 
 ```
-stack run xor-mlp
+stack run minimal-text-example
 ```
+
