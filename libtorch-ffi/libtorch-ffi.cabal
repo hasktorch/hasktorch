@@ -34,6 +34,7 @@ library
                     , ATen.Unmanaged.Type.Extra
                     , ATen.Unmanaged.Type.Dimname
                     , ATen.Unmanaged.Type.DimnameList
+                    , ATen.Unmanaged.Type.Symbol
                     , ATen.Managed.Cast
                     , ATen.Managed.Native
                     , ATen.Managed.Type.Tuple
@@ -51,6 +52,7 @@ library
                     , ATen.Managed.Type.Extra
                     , ATen.Managed.Type.Dimname
                     , ATen.Managed.Type.DimnameList
+                    , ATen.Managed.Type.Symbol
                     , Torch.Unmanaged.Autograd
                     , Torch.Unmanaged.Native
                     , Torch.Managed.Autograd

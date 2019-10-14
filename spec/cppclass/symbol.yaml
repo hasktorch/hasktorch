@@ -1,0 +1,21 @@
+signature: Symbol
+cppname: at::Symbol
+hsname: Symbol
+functions:
+- attr(std::string s) -> Symbol
+- aten(std::string s) -> Symbol
+- onnx(std::string s) -> Symbol
+- prim(std::string s) -> Symbol
+- user(std::string s) -> Symbol
+- caffe2(std::string s) -> Symbol
+- dimname(std::string s) -> Symbol
+constructors:
+- new() -> Symbol
+methods:
+- is_attr() -> bool
+- is_aten() -> bool
+- is_prim() -> bool
+- is_onnx() -> bool
+- is_user() -> bool
+- is_caffe2() -> bool
+- is_dimname() -> bool

@@ -30,6 +30,14 @@ C.include "<vector>"
 
 
 
+newDimname_n
+  :: Ptr Dimname
+  -> IO (Ptr Dimname)
+newDimname_n _x =
+  [C.throwBlock| at::Dimname* { return new at::Dimname(
+    *$(at::Dimname* _x));
+  }|]
+
 
 
 deleteDimname :: Ptr Dimname -> IO ()
@@ -39,6 +47,14 @@ instance CppObject Dimname where
   fromPtr ptr = newForeignPtr ptr (deleteDimname ptr)
 
 
+
+dimname_symbol
+  :: Ptr Dimname
+  -> IO (Ptr Symbol)
+dimname_symbol _obj =
+  [C.throwBlock| at::Symbol* { return new at::Symbol((*$(at::Dimname* _obj)).symbol(
+    ));
+  }|]
 
 dimname_isBasic
   :: Ptr Dimname
@@ -66,4 +82,27 @@ dimname_matches_n _obj _other =
   }|]
 
 
+
+fromSymbol_s
+  :: Ptr Symbol
+  -> IO (Ptr Dimname)
+fromSymbol_s _name =
+  [C.throwBlock| at::Dimname* { return new at::Dimname(at::Dimname::fromSymbol(
+    *$(at::Symbol* _name)));
+  }|]
+
+wildcard
+  :: IO (Ptr Dimname)
+wildcard  =
+  [C.throwBlock| at::Dimname* { return new at::Dimname(at::Dimname::wildcard(
+    ));
+  }|]
+
+isValidName_s
+  :: Ptr StdString
+  -> IO (CBool)
+isValidName_s _name =
+  [C.throwBlock| bool { return (at::Dimname::isValidName(
+    *$(std::string* _name)));
+  }|]
 

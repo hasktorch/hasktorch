@@ -155,6 +155,9 @@ import ATen.Cast
 
 import Torch.Tensor
 import Torch.Scalar
+import Torch.Dimname
+import Torch.DType
+import Torch.Cast
 |]
 
 template :: Text -> Text -> Text

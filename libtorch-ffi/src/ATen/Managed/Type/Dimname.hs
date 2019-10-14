@@ -29,14 +29,25 @@ import ATen.Unmanaged.Type.Tuple
 import ATen.Unmanaged.Type.StdString
 import ATen.Unmanaged.Type.Dimname
 import ATen.Unmanaged.Type.DimnameList
+import ATen.Unmanaged.Type.Symbol
 
 import qualified ATen.Unmanaged.Type.Dimname as Unmanaged
 
 
 
+newDimname_n
+  :: ForeignPtr Dimname
+  -> IO (ForeignPtr Dimname)
+newDimname_n = cast1 Unmanaged.newDimname_n
 
 
 
+
+
+dimname_symbol
+  :: ForeignPtr Dimname
+  -> IO (ForeignPtr Symbol)
+dimname_symbol = cast1 Unmanaged.dimname_symbol
 
 dimname_isBasic
   :: ForeignPtr Dimname
@@ -55,4 +66,18 @@ dimname_matches_n
 dimname_matches_n = cast2 Unmanaged.dimname_matches_n
 
 
+
+fromSymbol_s
+  :: ForeignPtr Symbol
+  -> IO (ForeignPtr Dimname)
+fromSymbol_s = cast1 Unmanaged.fromSymbol_s
+
+wildcard
+  :: IO (ForeignPtr Dimname)
+wildcard = cast0 Unmanaged.wildcard
+
+isValidName_s
+  :: ForeignPtr StdString
+  -> IO (CBool)
+isValidName_s = cast1 Unmanaged.isValidName_s
 

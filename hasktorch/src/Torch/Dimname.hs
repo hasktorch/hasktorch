@@ -10,8 +10,20 @@ import Foreign.ForeignPtr
 import ATen.Class (Castable(..))
 import qualified ATen.Const as ATen
 import qualified ATen.Type as ATen
+import qualified ATen.Managed.Type.Symbol as ATen
+import qualified ATen.Managed.Type.Dimname as ATen
+import qualified ATen.Managed.Type.StdString as ATen
+import Data.String
+import System.IO.Unsafe
 
 newtype Dimname = Dimname (ForeignPtr ATen.Dimname)
+
+instance IsString Dimname where
+  fromString str = unsafePerformIO $ do
+    str' <- ATen.newStdString_s str
+    symbol <- ATen.dimname_s str'
+    dimname <- ATen.fromSymbol_s symbol
+    return $ Dimname dimname
 
 instance Castable Dimname (ForeignPtr ATen.Dimname) where
   cast (Dimname dname) f = f dname
@@ -24,3 +36,4 @@ instance Castable [Dimname] (ForeignPtr ATen.DimnameList) where
   uncast xs f = uncast xs $ \ptr_list -> do
     dname_list <- mapM (\(x :: ForeignPtr ATen.Dimname) -> uncast x return) $ map (\(Dimname dname) -> dname) ptr_list
     f dname_list
+
