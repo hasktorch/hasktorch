@@ -48,10 +48,15 @@ import qualified Image                         as I
 -- MLP for MNIST
 --------------------------------------------------------------------------------
 
-newtype MLPSpec (dtype :: D.DType)
-                (inputFeatures :: Nat) (outputFeatures :: Nat)
-                (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat)
-  = MLPSpec Double
+data MLPSpec (dtype :: D.DType)
+             (inputFeatures :: Nat) (outputFeatures :: Nat)
+             (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat)
+ where
+  MLPSpec
+    :: forall dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+     . { mlpDropoutProbSpec :: Double }
+    -> MLPSpec dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+ deriving (Show, Eq)
 
 data MLP (dtype :: D.DType)
          (inputFeatures :: Nat) (outputFeatures :: Nat)
@@ -59,10 +64,10 @@ data MLP (dtype :: D.DType)
  where
   MLP
     :: forall dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
-     . { layer0 :: Linear dtype inputFeatures hiddenFeatures0
-       , layer1 :: Linear dtype hiddenFeatures0 hiddenFeatures1
-       , layer2 :: Linear dtype hiddenFeatures1 outputFeatures
-       , dropout :: Dropout
+     . { mlpLayer0 :: Linear dtype inputFeatures hiddenFeatures0
+       , mlpLayer1 :: Linear dtype hiddenFeatures0 hiddenFeatures1
+       , mlpLayer2 :: Linear dtype hiddenFeatures1 outputFeatures
+       , mlpDropout :: Dropout
        }
     -> MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
  deriving (Show, Generic)
@@ -74,13 +79,13 @@ mlp
   -> IO (Tensor dtype '[batchSize, outputFeatures])
 mlp MLP {..} train input =
   return
-    .   linear layer2
-    =<< Torch.Static.NN.dropout dropout train
+    .   linear mlpLayer2
+    =<< Torch.Static.NN.dropout mlpDropout train
     .   tanh
-    .   linear layer1
-    =<< Torch.Static.NN.dropout dropout train
+    .   linear mlpLayer1
+    =<< Torch.Static.NN.dropout mlpDropout train
     .   tanh
-    .   linear layer0
+    .   linear mlpLayer0
     =<< pure input
 
 instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
@@ -94,12 +99,12 @@ instance ( KnownDType dtype
   => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
                     (MLP     dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
  where
-  sample (MLPSpec prob) =
+  sample MLPSpec {..} =
     MLP
       <$> A.sample LinearSpec
       <*> A.sample LinearSpec
       <*> A.sample LinearSpec
-      <*> A.sample (DropoutSpec prob)
+      <*> A.sample (DropoutSpec mlpDropoutProbSpec)
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
@@ -157,7 +162,7 @@ main = do
       dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
   init                     <- A.sample
-    (MLPSpec @ 'D.Float @I.DataDim @I.ClassDim @HiddenFeatures0 @HiddenFeatures1
+    (MLPSpec @D.Float @I.DataDim @I.ClassDim @HiddenFeatures0 @HiddenFeatures1
       dropoutProb
     )
   init' <- A.replaceParameters init <$> traverse

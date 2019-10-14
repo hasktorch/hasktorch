@@ -107,8 +107,6 @@ foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 type BatchSize = 512
 type TestBatchSize = 8192
-type HiddenFeatures0 = 512
-type HiddenFeatures1 = 256
 
 randomIndexes :: Int -> [Int]
 randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123

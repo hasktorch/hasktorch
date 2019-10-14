@@ -68,7 +68,8 @@ executable static-transformer
   import:              config
   hs-source-dirs:      static-transformer
   main-is:             Main.hs
-  build-depends:       reflection
+  build-depends:       libtorch-ffi
+                     , safe-exceptions
 
 executable rnn
   import:              config

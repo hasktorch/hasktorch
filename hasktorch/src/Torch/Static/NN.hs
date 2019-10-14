@@ -12,6 +12,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
@@ -41,6 +42,30 @@ makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
 instance A.Parameterized (Parameter dtype shape) where
   flattenParameters (Parameter x) = [x]
   replaceOwnParameters _ = Parameter <$> A.nextParameter
+
+instance A.Parameterized (HList '[]) where
+  flattenParameters _ = []
+  replaceOwnParameters = return
+
+instance (A.Parameterized x, A.Parameterized (HList xs))
+  => A.Parameterized (HList (x ': xs))
+ where
+  flattenParameters (x :. xs) = A.flattenParameters x <> A.flattenParameters xs
+  replaceOwnParameters (x :. xs) = do
+    x' <- A.replaceOwnParameters x
+    xs' <- A.replaceOwnParameters xs
+    return $ x' :. xs'
+
+instance A.Randomizable (HList '[]) (HList '[]) where
+  sample = return
+
+instance (A.Randomizable xSpec x, A.Randomizable (HList xsSpec) (HList xs))
+  => A.Randomizable (HList (xSpec ': xsSpec)) (HList (x ': xs))
+ where
+  sample (xSpec :. xsSpec) = do
+    x <- A.sample xSpec
+    xs <- A.sample xsSpec
+    return $ x :. xs
 
 data LinearSpec (dtype :: D.DType)
                 (inputFeatures :: Nat) (outputFeatures :: Nat)
@@ -80,7 +105,12 @@ instance ( KnownDType dtype
   sample LinearSpec =
     Linear <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
-data DropoutSpec = DropoutSpec Double deriving (Show, Generic)
+data DropoutSpec
+ where
+  DropoutSpec
+    :: { dropoutProbSpec :: Double }
+    -> DropoutSpec
+ deriving (Show, Generic)
 
 data Dropout where
   Dropout
@@ -92,12 +122,10 @@ dropout :: Dropout -> Bool -> Tensor dtype shape -> IO (Tensor dtype shape)
 dropout Dropout {..} dropoutTrain =
   Torch.Static.Native.dropout dropoutProb dropoutTrain
 
-instance A.Parameterized Dropout where
-  flattenParameters x = []
-  replaceOwnParameters x = return x
+instance A.Parameterized Dropout
 
 instance A.Randomizable DropoutSpec Dropout where
-  sample (DropoutSpec prob) = return $ Dropout prob 
+  sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
 
 data EmbeddingSpec (paddingIdx :: Maybe Nat)
                    (dtype :: D.DType)
@@ -301,3 +329,52 @@ instance ( KnownDType dtype
  where
   sample Conv3dSpec =
     Conv3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
+data LayerNormSpec (dtype :: D.DType) (normalizedShape :: [Nat])
+ where
+  LayerNormSpec
+    :: forall dtype normalizedShape
+     . { layerNormEpsSpec :: Double}
+    -> LayerNormSpec dtype normalizedShape
+ deriving (Show, Eq)
+
+data LayerNorm (dtype :: D.DType) (normalizedShape :: [Nat])
+ where
+  LayerNorm
+    :: { layerNormWeight :: Parameter dtype normalizedShape
+       , layerNormBias :: Parameter dtype normalizedShape
+       , layerNormEps :: Double
+       }
+    -> LayerNorm dtype normalizedShape
+ deriving (Show, Generic)
+
+layerNorm
+  :: forall normalizedShape dtype shape
+   . ( EndsWith shape normalizedShape
+     , KnownShape normalizedShape
+     )
+  => LayerNorm dtype normalizedShape
+  -> Tensor dtype shape
+  -> Tensor dtype shape
+layerNorm LayerNorm {..} = Torch.Static.Native.layerNorm @normalizedShape
+  (toDependent layerNormWeight)
+  (toDependent layerNormBias)
+  layerNormEps
+
+instance A.Parameterized (LayerNorm dtype normalizedShape) where
+  flattenParameters LayerNorm {..} =
+    A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
+  replaceOwnParameters LayerNorm {..} = do
+    layerNormWeight <- Parameter <$> A.nextParameter
+    layerNormBias   <- Parameter <$> A.nextParameter
+    return $ LayerNorm { .. }
+
+instance (TensorOptions dtype normalizedShape)
+  => A.Randomizable (LayerNormSpec dtype normalizedShape)
+                    (LayerNorm     dtype normalizedShape)
+ where
+  sample LayerNormSpec {..} =
+    LayerNorm
+      <$> (makeIndependent =<< randn)
+      <*> (makeIndependent =<< randn)
+      <*> pure layerNormEpsSpec
