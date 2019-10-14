@@ -20,4 +20,4 @@ spec = do
     -- ToDo:
     -- onesWithDimnames' does not work.
     -- When v is evaluated, cpu is running full speed!!
-    return ()
+    True `shouldBe` True
