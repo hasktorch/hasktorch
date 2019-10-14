@@ -86,12 +86,11 @@ spec = forM_ [
     t <- newTensor
     tensor_backward_tbb c t 0 0
     
-{-  libtorch-1.3 does not work this grad-function. But grad of higher level api works.
     a' <- tensor_grad a
     print "--a'--"
     forM_ [0..1] $ \i ->
       forM_ [0..1] $ \j ->
         (at2 a' i j >>= tensor_item_double) `shouldReturn` 1
--}
+
 
 
