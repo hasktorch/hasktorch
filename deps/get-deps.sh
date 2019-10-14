@@ -16,8 +16,8 @@ usage_exit() {
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
     echo "" 1>&2
     echo " -a cpu   # Use CPU without CUDA" 1>&2
-    echo " -a cu90  # Use CUDA-9" 1>&2
-    echo " -a cu100 # Use CUDA-10" 1>&2
+    echo " -a cu92  # Use CUDA-9" 1>&2
+    echo " -a cu101 # Use CUDA-10" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
@@ -84,7 +84,12 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
         unzip ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
         rm ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
       else
-        wget https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
+	case "${COMPUTE_ARCH}" in
+	      "cpu" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcpu.zip ;;
+	      "cu92" ) URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu92.zip ;;
+	      "cu101" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip ;;
+	esac
+	wget -O libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip "$URL"
         unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
         rm libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
       fi

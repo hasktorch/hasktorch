@@ -32,9 +32,9 @@ pushd deps
 # For CPU
 ./get-deps.sh
 # For CUDA-9
-# ./get-deps.sh -a cu90
+# ./get-deps.sh -a cu92
 # For CUDA-10
-# ./get-deps.sh -a cu100
+# ./get-deps.sh -a cu101
 popd
 ```
 
