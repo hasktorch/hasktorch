@@ -73,7 +73,7 @@ data MLP (dtype :: D.DType)
  deriving (Show, Generic)
 
 mlp
-  :: forall dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+  :: forall dtype batchSize inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
    . (IsFloatingPoint dtype)
   => MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
   -> Bool
@@ -112,8 +112,8 @@ foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
-type BatchSize = 512
-type TestBatchSize = 8192
+type BatchSize = 64
+type TestBatchSize = 1024
 type HiddenFeatures0 = 512
 type HiddenFeatures1 = 256
 
