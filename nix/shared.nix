@@ -5,8 +5,8 @@ let
     let src = pkgs.fetchFromGitHub {
           owner  = "stites";
           repo   = "pytorch-world";
-          rev    = "72a8ab0149e6da91b0d7b97adfb73872335c6bc9";
-          sha256 = "0pdld2rpjmliaw0ii0fg62x4q0zk2khwzny4s2sspwmk3d57w3mp";
+          rev    = "44a1795d253b37d4fa3a0d2f52ff718181599fb3";
+          sha256 = "1i012ld8j0j3x152g2ra4bqyy6sial6hwbai4z7na8ac1hbpicn8";
     };
     in (pkgs.callPackage "${src}/libtorch/release.nix" { });
 
@@ -14,7 +14,7 @@ let
     inherit (libtorch_src pkgsOld)
       libtorch_cpu
       libtorch_cudatoolkit_9_2
-      libtorch_cudatoolkit_10_0
+      libtorch_cudatoolkit_10_1
     ;
 
     haskell = pkgsOld.haskell // {
@@ -106,7 +106,7 @@ let
                     extension
                     (mkHasktorchExtension "cpu")
                     (mkHasktorchExtension "cudatoolkit_9_2")
-                    (mkHasktorchExtension "cudatoolkit_10_0")
+                    (mkHasktorchExtension "cudatoolkit_10_1")
                   ];
           }
         );
@@ -151,13 +151,13 @@ in
       inline-c-cpp
       libtorch-ffi_cpu
       libtorch-ffi_cudatoolkit_9_2
-      libtorch-ffi_cudatoolkit_10_0
+      libtorch-ffi_cudatoolkit_10_1
       hasktorch_cpu
       hasktorch_cudatoolkit_9_2
-      hasktorch_cudatoolkit_10_0
+      hasktorch_cudatoolkit_10_1
       hasktorch-examples_cpu
       hasktorch-examples_cudatoolkit_9_2
-      hasktorch-examples_cudatoolkit_10_0
+      hasktorch-examples_cudatoolkit_10_1
     ;
 
     shell-hasktorch-codegen = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-codegen).env;
@@ -165,12 +165,12 @@ in
     shell-inline-c-cpp = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c-cpp).env;
     shell-libtorch-ffi_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cpu).env.overrideAttrs (fixcpath pkgs.libtorch_cpu);
     shell-libtorch-ffi_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cudatoolkit_9_2).env.overrideAttrs (fixcpath pkgs.libtorch_cudatoolkit_9_2);
-    shell-libtorch-ffi_cudatoolkit_10_0 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cudatoolkit_10_0).env.overrideAttrs (fixcpath pkgs.libtorch_cudatoolkit_10_0);
+    shell-libtorch-ffi_cudatoolkit_10_1 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cudatoolkit_10_1).env.overrideAttrs (fixcpath pkgs.libtorch_cudatoolkit_10_1);
     shell-hasktorch_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cpu).env.overrideAttrs fixmkl;
     shell-hasktorch_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cudatoolkit_9_2).env.overrideAttrs fixmkl;
-    shell-hasktorch_cudatoolkit_10_0 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cudatoolkit_10_0).env.overrideAttrs fixmkl;
+    shell-hasktorch_cudatoolkit_10_1 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cudatoolkit_10_1).env.overrideAttrs fixmkl;
     shell-hasktorch-examples_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cpu).env.overrideAttrs fixmkl;
     shell-hasktorch-examples_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_9_2).env.overrideAttrs fixmkl;
-    shell-hasktorch-examples_cudatoolkit_10_0 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_0).env.overrideAttrs fixmkl;
+    shell-hasktorch-examples_cudatoolkit_10_1 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_1).env.overrideAttrs fixmkl;
   }
 

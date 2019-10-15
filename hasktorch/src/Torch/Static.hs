@@ -43,7 +43,7 @@ import           ATen.Class                     ( Castable(..)
 import qualified ATen.Type                     as ATen
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
-import qualified Torch.Functions               as D
+import qualified Torch.Functions               as D hiding (select)
 import qualified Torch.DType                   as D
 
 natValI :: forall n. KnownNat n => Int

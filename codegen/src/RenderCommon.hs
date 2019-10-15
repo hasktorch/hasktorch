@@ -97,6 +97,9 @@ parsableToCppType parsable =
     MemoryFormat -> "at::MemoryFormat"
     QScheme -> "at::QScheme"
     ConstQuantizerPtr -> "at::ConstQuantizerPtr"
+    Dimname -> "at::Dimname"
+    DimnameList -> "std::vector<at::Dimname>"
+    Symbol -> "at::Symbol"
 
 
 ------ To Haskell Type ------
@@ -224,6 +227,9 @@ parsableToHsType parsable =
     MemoryFormat -> "MemoryFormat"
     QScheme -> "QScheme"
     ConstQuantizerPtr -> "ConstQuantizerPtr"
+    Dimname -> "Dimname"
+    DimnameList -> "DimnameList"
+    Symbol -> "Symbol"
 
 parsableToHigherHsType :: Parsable -> Text
 parsableToHigherHsType parsable =
@@ -243,6 +249,9 @@ parsableToHigherHsType parsable =
     MemoryFormat -> "MemoryFormat"
     QScheme -> "QScheme"
     ConstQuantizerPtr -> "ConstQuantizerPtr"
+    Dimname -> "Dimname"
+    DimnameList -> "[Dimname]"
+    Symbol -> "Symbol"
 
 
 ------ To initial characters ------
@@ -311,6 +320,9 @@ parsableToInitial parsable =
     MemoryFormat -> "M"
     QScheme -> "S"
     ConstQuantizerPtr -> "Q"
+    Dimname -> "n"
+    DimnameList -> "N"
+    Symbol -> "s"
 
 isCType :: Parsable -> Bool
 isCType p =
@@ -349,6 +361,9 @@ retToCppType parsable =
     MemoryFormat -> "at::MemoryFormat"
     QScheme -> "at::QScheme"
     ConstQuantizerPtr -> "at::ConstQuantizerPtr"
+    Dimname -> "at::Dimname"
+    DimnameList -> "std::vector<at::Dimname>"
+    Symbol -> "at::Symbol"
 
 
 

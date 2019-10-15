@@ -19,6 +19,7 @@ import ATen.Cast
 import Torch.Tensor
 import Torch.TensorOptions
 import Torch.Scalar
+import Torch.Dimname
 
 -- XXX: We use the torch:: constructors, not at:: constructures, because
 --      otherwise we cannot use libtorch's AD.
@@ -27,14 +28,28 @@ type FactoryType = ForeignPtr ATen.IntArray
                     -> ForeignPtr ATen.TensorOptions
                     -> IO (ForeignPtr ATen.Tensor)
 
+type FactoryTypeWithDimnames = ForeignPtr ATen.IntArray
+                                -> ForeignPtr ATen.DimnameList
+                                -> ForeignPtr ATen.TensorOptions
+                                -> IO (ForeignPtr ATen.Tensor)
+
 mkFactory :: FactoryType -> [Int] -> TensorOptions -> IO Tensor
 mkFactory aten_impl shape opts = (cast2 aten_impl) shape opts
 
 mkFactoryUnsafe :: FactoryType -> [Int] -> TensorOptions -> Tensor
 mkFactoryUnsafe f shape opts = unsafePerformIO $ mkFactory f shape opts
 
+mkFactoryWithDimnames :: FactoryTypeWithDimnames -> [(Int,Dimname)] -> TensorOptions -> IO Tensor
+mkFactoryWithDimnames aten_impl shape opts = (cast3 aten_impl) (map fst shape) (map snd shape) opts
+
+mkFactoryUnsafeWithDimnames :: FactoryTypeWithDimnames -> [(Int,Dimname)] -> TensorOptions -> Tensor
+mkFactoryUnsafeWithDimnames f shape opts = unsafePerformIO $ mkFactoryWithDimnames f shape opts
+
 mkDefaultFactory :: ([Int] -> TensorOptions -> a) -> [Int] -> a
 mkDefaultFactory non_default shape = non_default shape defaultOpts
+
+mkDefaultFactoryWithDimnames :: ([(Int,Dimname)] -> TensorOptions -> a) -> [(Int,Dimname)] -> a
+mkDefaultFactoryWithDimnames non_default shape = non_default shape defaultOpts
 
 -------------------- Factories --------------------
 
@@ -50,8 +65,26 @@ rand = mkFactory LibTorch.rand_lo
 randn :: [Int] -> TensorOptions -> IO Tensor
 randn = mkFactory LibTorch.randn_lo
 
-randn_like :: Tensor -> IO Tensor
-randn_like = cast1 ATen.randn_like_t
+randnLike :: Tensor -> IO Tensor
+randnLike = cast1 ATen.randn_like_t
+
+fullLike :: Tensor -> Float -> TensorOptions -> IO Tensor
+fullLike input _fill_value opt = (cast3 LibTorch.full_like_tso) input _fill_value opt
+
+randLike :: Tensor -> TensorOptions -> IO Tensor
+randLike input opt = (cast2 LibTorch.rand_like_to) input opt
+
+onesWithDimnames :: [(Int,Dimname)] -> TensorOptions -> Tensor
+onesWithDimnames = mkFactoryUnsafeWithDimnames LibTorch.ones_lNo
+
+zerosWithDimnames :: [(Int,Dimname)] -> TensorOptions -> Tensor
+zerosWithDimnames = mkFactoryUnsafeWithDimnames LibTorch.zeros_lNo
+
+randWithDimnames :: [(Int,Dimname)] -> TensorOptions -> IO Tensor
+randWithDimnames = mkFactoryWithDimnames LibTorch.rand_lNo
+
+randnWithDimnames :: [(Int,Dimname)] -> TensorOptions -> IO Tensor
+randnWithDimnames = mkFactoryWithDimnames LibTorch.randn_lNo
 
 linspace :: (Scalar a, Scalar b) => a -> b -> Int -> TensorOptions -> Tensor
 linspace start end steps opts = unsafePerformIO $ (cast4 LibTorch.linspace_sslo) start end steps opts
@@ -93,6 +126,18 @@ rand' = mkDefaultFactory rand
 
 randn' :: [Int] -> IO Tensor
 randn' = mkDefaultFactory randn
+
+onesWithDimnames' :: [(Int,Dimname)] -> Tensor
+onesWithDimnames' = mkDefaultFactoryWithDimnames onesWithDimnames
+
+zerosWithDimnames' :: [(Int,Dimname)] -> Tensor
+zerosWithDimnames' = mkDefaultFactoryWithDimnames zerosWithDimnames
+
+randWithDimnames' :: [(Int,Dimname)] -> IO Tensor
+randWithDimnames' = mkDefaultFactoryWithDimnames randWithDimnames
+
+randnWithDimnames' :: [(Int,Dimname)] -> IO Tensor
+randnWithDimnames' = mkDefaultFactoryWithDimnames randnWithDimnames
 
 linspace' :: (Scalar a, Scalar b) => a -> b -> Int -> Tensor
 linspace' start end steps = linspace start end steps defaultOpts
