@@ -35,19 +35,23 @@ class Parameterized f where
 
   replaceOwnParameters :: f -> ParamStream f
   default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> ParamStream f
-  replaceOwnParameters f = fmap to $ replaceOwnParameters' (from f)
+  replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
 
 instance Parameterized Parameter where
-  flattenParameters x = [x]
+  flattenParameters = pure
   replaceOwnParameters _ = nextParameter
 
+instance Parameterized Double where
+  flattenParameters _ = []
+  replaceOwnParameters = return
+
 instance Parameterized [Int] where
-  flattenParameters x = []
-  replaceOwnParameters x = return x
+  flattenParameters _ = []
+  replaceOwnParameters = return
 
 instance Parameterized (Tensor -> Tensor) where
-  flattenParameters x = []
-  replaceOwnParameters x = return x
+  flattenParameters _ = []
+  replaceOwnParameters = return
 
 class Parameterized' f where
   flattenParameters' :: f a -> [Parameter]
@@ -126,4 +130,4 @@ sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
 sgd lr parameters gradients = zipWith step depParameters gradients
   where
     step p dp = p - (lr * dp)
-    depParameters = (map toDependent parameters)
+    depParameters = map toDependent parameters

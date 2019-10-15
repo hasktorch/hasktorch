@@ -1,22 +1,20 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Image where
 
-import Data.Int
-import Data.Word
-import Codec.Compression.GZip (decompress)
-import qualified Data.ByteString.Lazy as BS
+import qualified Codec.Compression.GZip        as GZip
+import qualified Data.ByteString               as BS
+import qualified Data.ByteString.Lazy          as BS.Lazy
+import           GHC.TypeLits
 
--- Torch deps
-
-import GHC.TypeLits
-
-import Torch.Static
-import Torch.Static.Native
-import qualified Torch.DType as D
-import qualified Torch.Tensor as D
+import           Torch.Static
+import           Torch.Static.Native
+import qualified Torch.DType                   as D
+import qualified Torch.Tensor                  as D
 
 
 data MnistData =
@@ -25,36 +23,62 @@ data MnistData =
   , labels :: BS.ByteString
   }
 
-type DataDim = 784
+type Rows = 28
+type Cols = 28
+type DataDim = Rows * Cols
 type ClassDim = 10
 
-getLabels :: forall n. KnownNat n => MnistData -> [Int] -> Tensor 'D.Int64 '[n]
-getLabels mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map (getLabel mnist) $ take (natValI @n) imageIdxs
+getLabels
+  :: forall n . KnownNat n => MnistData -> [Int] -> Tensor 'D.Int64 '[n]
+getLabels mnist imageIdxs =
+  UnsafeMkTensor $ D.asTensor $ map (getLabel mnist) $ take (natValI @n)
+                                                            imageIdxs
 
 getLabel :: MnistData -> Int -> Int
-getLabel mnist imageIdx = fromIntegral $ BS.index (labels mnist) ((fromIntegral imageIdx) + 8)
+getLabel mnist imageIdx =
+  fromIntegral $ BS.index (labels mnist) (fromIntegral imageIdx + 8)
 
 getImage :: MnistData -> Int -> Tensor 'D.Float '[DataDim]
 getImage mnist imageIdx =
-  let imageBS = [fromIntegral $ BS.index (images mnist) ((fromIntegral imageIdx) * 28^2 + 16 + r) | r <- [0..28^2 - 1]] :: [Float]
-      (tensor :: Tensor 'D.Float '[DataDim]) = UnsafeMkTensor $ D.asTensor imageBS
-  in tensor
+  let imageBS =
+          [ fromIntegral $ BS.index (images mnist)
+                                    (fromIntegral imageIdx * 28 ^ 2 + 16 + r)
+          | r <- [0 .. 28 ^ 2 - 1]
+          ] :: [Float]
+      (tensor :: Tensor 'D.Float '[DataDim]) =
+          UnsafeMkTensor $ D.asTensor imageBS
+  in  tensor
 
-getImages :: forall n. KnownNat n => MnistData -> [Int] -> Tensor 'D.Float '[n, DataDim]
-getImages mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take (natValI @n) imageIdxs
-  where
-    image idx = [fromIntegral $ BS.index (images mnist) ((fromIntegral idx) * 28^2 + 16 + r) | r <- [0..28^2 - 1]] :: [Float]
+getImages
+  :: forall n
+   . KnownNat n
+  => MnistData
+  -> [Int]
+  -> Tensor 'D.Float '[n, DataDim]
+getImages mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take
+  (natValI @n)
+  imageIdxs
+ where
+  image idx =
+    [ fromIntegral
+        $ BS.index (images mnist) (fromIntegral idx * 28 ^ 2 + 16 + r)
+    | r <- [0 .. 28 ^ 2 - 1]
+    ] :: [Float]
 
 length :: MnistData -> Int
-length mnist = fromIntegral $ (BS.length (labels mnist)) - 8
-
+length mnist = fromIntegral $ BS.length (labels mnist) - 8
 
 initMnist :: IO (MnistData, MnistData)
 initMnist = do
   let path = "data"
-  imagesBS <- decompress <$> BS.readFile (path <>  "/" <> "train-images-idx3-ubyte.gz")
-  labelsBS <- decompress <$> BS.readFile (path <>  "/" <> "train-labels-idx1-ubyte.gz")
-  testImagesBS <- decompress <$> BS.readFile (path <>  "/" <> "t10k-images-idx3-ubyte.gz")
-  testLabelsBS <- decompress <$> BS.readFile (path <>  "/" <> "t10k-labels-idx1-ubyte.gz")
+      decompress' =
+        BS.concat . BS.Lazy.toChunks . GZip.decompress . BS.Lazy.fromStrict
+  imagesBS <- decompress'
+    <$> BS.readFile (path <> "/" <> "train-images-idx3-ubyte.gz")
+  labelsBS <- decompress'
+    <$> BS.readFile (path <> "/" <> "train-labels-idx1-ubyte.gz")
+  testImagesBS <- decompress'
+    <$> BS.readFile (path <> "/" <> "t10k-images-idx3-ubyte.gz")
+  testLabelsBS <- decompress'
+    <$> BS.readFile (path <> "/" <> "t10k-labels-idx1-ubyte.gz")
   return (MnistData imagesBS labelsBS, MnistData testImagesBS testLabelsBS)
-
