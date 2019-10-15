@@ -73,7 +73,9 @@ data MLP (dtype :: D.DType)
  deriving (Show, Generic)
 
 mlp
-  :: MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+  :: forall dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+   . (IsFloatingPoint dtype)
+  => MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
   -> Bool
   -> Tensor dtype '[batchSize, inputFeatures]
   -> IO (Tensor dtype '[batchSize, outputFeatures])
@@ -81,10 +83,10 @@ mlp MLP {..} train input =
   return
     .   linear mlpLayer2
     =<< Torch.Static.NN.dropout mlpDropout train
-    .   tanh
+    .   relu
     .   linear mlpLayer1
     =<< Torch.Static.NN.dropout mlpDropout train
-    .   tanh
+    .   relu
     .   linear mlpLayer0
     =<< pure input
 

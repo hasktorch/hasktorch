@@ -2680,11 +2680,12 @@ hardtanh _input _min_val _max_val = unsafePerformIO $ (cast3 ATen.hardtanh_tss) 
 logSigmoid :: Tensor dtype shape -> Tensor dtype shape
 logSigmoid _input = unsafePerformIO $ (cast1 ATen.log_sigmoid_t) _input
 
--- |
--- -- >>> dtype &&& shape $ softplus (ones :: Tensor 'D.Float '[3,2])
--- -- (Float,[3,2])
--- softplus :: Tensor dtype shape -> Float -> Float -> Tensor dtype shape
--- softplus _input _beta _threshold = unsafePerformIO $ (cast3 ATen.softplus_tss) _input _beta _threshold
+-- | softplus
+-- See https://pytorch.org/docs/stable/nn.functional.html?highlight=softplus#torch.nn.functional.softplus.
+-- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[Float]]) $ softplus 1 20 (ones :: Tensor 'D.Float '[3,2])
+-- (Float,([3,2],[[1.3132616,1.3132616],[1.3132616,1.3132616],[1.3132616,1.3132616]]))
+softplus :: D.Scalar a => a -> a -> Tensor dtype shape -> Tensor dtype shape
+softplus beta threshold input = unsafePerformIO $ cast3 ATen.softplus_tss input beta threshold
 
 -- |
 -- >>> dtype &&& shape $ softshrink (ones :: Tensor 'D.Float '[3,2]) 0.2
@@ -2904,3 +2905,16 @@ avgPool3d _input =
 
 -- im2col :: Tensor dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor dtype shape
 -- im2col _input _kernel_size _dilation _padding _stride = unsafePerformIO $ (cast5 ATen.im2col_tllll) _input _kernel_size _dilation _padding _stride
+
+-- | mish
+-- See https://arxiv.org/abs/1908.08681.
+-- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[Float]]) $ mish (ones :: Tensor 'D.Float '[3,2])
+-- (Float,([3,2],[[0.86509836,0.86509836],[0.86509836,0.86509836],[0.86509836,0.86509836]]))
+mish
+  :: forall dtype shape
+   . ( IsFloatingPoint dtype
+     , shape ~ CheckBroadcast shape shape (ComputeBroadcast (ReverseImpl shape '[]) (ReverseImpl shape '[]))
+     )
+  => Tensor dtype shape
+  -> Tensor dtype shape
+mish = mul =<< tanh . softplus (1 :: Float) 20
