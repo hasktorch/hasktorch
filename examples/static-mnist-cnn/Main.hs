@@ -22,8 +22,10 @@ import           Control.Exception.Safe         ( try
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
+import           Data.Maybe
 import           Data.Proxy
 import           Foreign.ForeignPtr
+import           GHC.Exts
 import           GHC.Generics
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
@@ -100,6 +102,46 @@ instance (KnownDType dtype)
       <*> A.sample (Conv2dSpec @dtype @20 @50 @5 @5)
       <*> A.sample (LinearSpec @dtype @(4*4*50) @500)
       <*> A.sample (LinearSpec @dtype @500      @10)
+
+fakeRandom :: Int -> (Int, Float)
+fakeRandom i = (j, ans)
+ where
+  j   = 7 * i `mod` 101
+  ans = (-5.5 + (fromIntegral $ (j - 1) `mod` 10 + 1)) / 9.0
+
+iterate' :: (a -> (a, b)) -> a -> [b]
+iterate' f a = let (a', b) = f a in b : iterate' f a'
+
+mkFakeRandomCNN :: IO (CNN D.Float)
+mkFakeRandomCNN = do
+  conv0Weight <- makeIndependent . reshape @_ @_ @'[20*1*5*5] . fromJust . fromList . take (20*1*5*5) . iterate' fakeRandom $ 13 :: IO (Parameter D.Float '[20, 1, 5, 5])
+  conv0Bias <- makeIndependent . fromJust . fromList . take 20 . iterate' fakeRandom $ 13 :: IO (Parameter D.Float '[20])
+  let conv0 = Conv2d { conv2dWeight = conv0Weight
+                     , conv2dBias = conv0Bias
+                     } :: Conv2d D.Float 1 20 5 5
+  conv1Weight <- makeIndependent . reshape @_ @_ @'[50*20*5*5] . fromJust . fromList . take (50*20*5*5) . iterate' fakeRandom $ 82 :: IO (Parameter D.Float '[50, 20, 5, 5])
+  conv1Bias <- makeIndependent . fromJust . fromList . take 50 . iterate' fakeRandom $ 82 :: IO (Parameter D.Float '[50])
+  let conv1 = Conv2d { conv2dWeight = conv1Weight
+                     , conv2dBias = conv1Bias
+                     } :: Conv2d D.Float 20 50 5 5
+  fc0Weight <- makeIndependent . reshape @_ @_ @'[500*4*4*50] . fromJust . fromList . take (500*4*4*50) . iterate' fakeRandom $ 19 :: IO (Parameter D.Float '[500, 4*4*50])
+  fc0Bias <- makeIndependent . fromJust . fromList . take 500 . iterate' fakeRandom $ 19 :: IO (Parameter D.Float '[500])
+  let fc0 = Linear { linearWeight = fc0Weight
+                   , linearBias = fc0Bias
+                   } :: Linear D.Float (4*4*50) 500
+  fc1Weight <- makeIndependent . reshape @_ @_ @'[10*500] . fromJust . fromList . take (10*500) . iterate' fakeRandom $ 19 :: IO (Parameter D.Float '[10, 500])
+  fc1Bias <-  makeIndependent . fromJust . fromList . take 10 . iterate' fakeRandom $ 19 :: IO (Parameter D.Float '[10])
+  let fc1 = Linear { linearWeight = fc1Weight
+                   , linearBias = fc1Bias
+                   } :: Linear D.Float 500 10
+  return $ CNN { conv0 = conv0
+               , conv1 = conv1
+               , fc0 = fc0
+               , fc1 = fc1
+               }
+
+mkFakeRandomInput :: Tensor D.Float '[1, I.DataDim]
+mkFakeRandomInput = reshape @_ @_ @'[1*I.DataDim] . fromJust . fromList . take (1*natValI @I.DataDim) . iterate' fakeRandom $ 17
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
