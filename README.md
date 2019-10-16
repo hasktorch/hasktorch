@@ -34,7 +34,7 @@ pushd deps
 popd
 ```
 
-If you are using CUDA-9, replace `./get-deps.sh` with `./get-deps.sh -a cu90`. Likewise for CUDA-10, replace `./get-deps.sh` with `./get-deps.sh -a cu100`.
+If you are using CUDA-9, replace `./get-deps.sh` with `./get-deps.sh -a cu92`. Likewise for CUDA-10, replace `./get-deps.sh` with `./get-deps.sh -a cu101`.
 
 These downloads include various pytorch shared libraries. Note `get-deps.sh` only has to be run once when the repo is initially cloned.
 
