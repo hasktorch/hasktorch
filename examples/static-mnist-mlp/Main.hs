@@ -212,7 +212,7 @@ main = do
     -> I.MnistData
     -> IO (Tensor 'D.Float '[], Tensor 'D.Float '[])
   computeLossAndErrorRate backend state train indexes data' = do
-    let input  = toBackend backend $ I.getImages @n data' indexes
+    let input  = toBackend backend $ I.getImages' @n data' indexes
         target = toBackend backend $ I.getLabels @n data' indexes
     result <- mlp state train input
     return (crossEntropyLoss backend result target, errorRate result target)

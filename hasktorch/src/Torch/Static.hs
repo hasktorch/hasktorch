@@ -652,3 +652,6 @@ dtype t = D.dtype $ toDynamic t
 
 toInt :: Tensor dtype shape -> Int
 toInt t = D.toInt $ toDynamic t
+
+toType :: forall dtype' dtype shape. KnownDType dtype' => Tensor dtype shape -> Tensor dtype' shape
+toType t = UnsafeMkTensor $ D.toType (dtypeVal @dtype') (toDynamic t)

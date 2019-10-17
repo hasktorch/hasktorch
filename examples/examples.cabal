@@ -44,6 +44,7 @@ library static-mnist
   exposed-modules:     Image
   build-depends:       bytestring >= 0.10.8
                      , zlib >= 0.6
+                     , libtorch-ffi
 
 executable static-mnist-cnn
   import:              config
