@@ -35,6 +35,7 @@ import qualified ATen.Cast                     as ATen
 import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
+import qualified ATen.Managed.Type.Context     as ATen
 import           Torch.Static
 import           Torch.Static.Native
 import           Torch.Static.Factories
@@ -149,6 +150,7 @@ main = do
         _            -> "CPU"
       (numIters, printEvery) = (1000000, 250)
   (trainingData, testData) <- I.initMnist
+  ATen.manual_seed_L 123
   init                     <- A.sample (CNNSpec @'D.Float)
   init' <- A.replaceParameters init <$> traverse
     (A.makeIndependent . toBackend backend . A.toDependent)
