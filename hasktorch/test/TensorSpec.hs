@@ -149,5 +149,5 @@ spec = do
     (print (asTensor ([[1],[1,2]] :: [[Double]]))) `shouldThrow` anyException
   it "cast of Tensor" $ do
     let x = asTensor ([0..10] :: [Int])
-    (dtype (toType Float)) `shouldBe` Float
+    (dtype (toType Float x)) `shouldBe` Float
 

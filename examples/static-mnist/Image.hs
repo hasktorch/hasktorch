@@ -58,13 +58,13 @@ getImage mnist imageIdx =
           UnsafeMkTensor $ D.asTensor imageBS
   in  tensor
 
-getImages
+getImages'
   :: forall n
    . KnownNat n
   => MnistData
   -> [Int]
   -> Tensor 'D.Float '[n, DataDim]
-getImages mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take
+getImages' mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take
   (natValI @n)
   imageIdxs
  where
@@ -74,25 +74,24 @@ getImages mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take
     | r <- [0 .. 28 ^ 2 - 1]
     ] :: [Float]
 
-getImages'
+getImages
   :: forall n
    . KnownNat n
   => MnistData
   -> [Int]
   -> Tensor 'D.Float '[n, DataDim]
-getImages' mnist imageIdxs = UnsafeMkTensor $ unsafePerformIO $ do
+getImages mnist imageIdxs = UnsafeMkTensor $ unsafePerformIO $ do
   let (BSI.PS fptr off len) = images mnist
   t <- ((cast2 LibTorch.empty_lo) :: [Int] -> D.TensorOptions -> IO D.Tensor)
          [(natValI @n),(natValI @DataDim)]
          (D.withDType D.UInt8 D.defaultOpts)
-  forM_ (zip [0..((natValI @n)-1)] imageIdxs) $ \(i,idx) -> do
-    D.withTensor t $ \ptr1 -> do
-      F.withForeignPtr fptr $ \ptr2 -> do
+  D.withTensor t $ \ptr1 -> do
+    F.withForeignPtr fptr $ \ptr2 -> do
+      forM_ (zip [0..((natValI @n)-1)] imageIdxs) $ \(i,idx) -> do
         BSI.memcpy
           (F.plusPtr ptr1 ((natValI @DataDim)*i))
           (F.plusPtr ptr2 (off+16+(natValI @DataDim)*idx))
           (natValI @DataDim)
-        return ()
   return $ D.toType D.Float t
 
 length :: MnistData -> Int
