@@ -73,8 +73,8 @@ import           Torch.Functions                ( Reduction(..)
                                                 , isUpper
                                                 , kOne
                                                 )
-import           Torch.Typed
 import           Torch.Typed.Factories
+import           Torch.Typed.Tensor
 
 
 type family DTypeIsNotHalf (dtype :: D.DType) :: Constraint where

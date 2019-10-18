@@ -27,9 +27,9 @@ import qualified Torch.NN                      as A
 import qualified Torch.Autograd                as A
 import qualified Torch.Tensor                  as A
 import qualified Torch.DType                   as D
-import           Torch.Typed
 import           Torch.Typed.Factories
 import           Torch.Typed.Native
+import           Torch.Typed.Tensor
 
 newtype Parameter dtype shape = Parameter A.IndependentTensor deriving (Show)
 
