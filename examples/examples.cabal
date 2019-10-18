@@ -44,6 +44,21 @@ library static-mnist
   exposed-modules:     Image
   build-depends:       bytestring >= 0.10.8
                      , zlib >= 0.6
+                     , libtorch-ffi
+
+test-suite spec
+  import:             config
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test
+  main-is:            Spec.hs
+  other-modules:      ImageSpec
+  build-depends:      base >= 4.7 && < 5
+                    , hspec
+                    , hspec-discover
+                    , safe-exceptions
+                    , QuickCheck
+                    , mtl
+                    , static-mnist
 
 executable static-mnist-cnn
   import:              config

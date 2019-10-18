@@ -6,15 +6,24 @@
 
 module Image where
 
+import           Control.Monad (forM_)
+import           System.IO.Unsafe
 import qualified Codec.Compression.GZip        as GZip
 import qualified Data.ByteString               as BS
 import qualified Data.ByteString.Lazy          as BS.Lazy
+import qualified Data.ByteString.Internal      as BSI
 import           GHC.TypeLits
 
+import           ATen.Cast
 import           Torch.Static
 import           Torch.Static.Native
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
+import qualified Torch.TensorOptions           as D
+import qualified Foreign.ForeignPtr            as F
+import qualified Foreign.Ptr                   as F
+import qualified Torch.Managed.Native          as LibTorch
+
 
 
 data MnistData =
@@ -49,13 +58,13 @@ getImage mnist imageIdx =
           UnsafeMkTensor $ D.asTensor imageBS
   in  tensor
 
-getImages
+getImages'
   :: forall n
    . KnownNat n
   => MnistData
   -> [Int]
   -> Tensor 'D.Float '[n, DataDim]
-getImages mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take
+getImages' mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take
   (natValI @n)
   imageIdxs
  where
@@ -65,20 +74,39 @@ getImages mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take
     | r <- [0 .. 28 ^ 2 - 1]
     ] :: [Float]
 
+getImages
+  :: forall n
+   . KnownNat n
+  => MnistData
+  -> [Int]
+  -> Tensor 'D.Float '[n, DataDim]
+getImages mnist imageIdxs = UnsafeMkTensor $ unsafePerformIO $ do
+  let (BSI.PS fptr off len) = images mnist
+  t <- ((cast2 LibTorch.empty_lo) :: [Int] -> D.TensorOptions -> IO D.Tensor)
+         [(natValI @n),(natValI @DataDim)]
+         (D.withDType D.UInt8 D.defaultOpts)
+  D.withTensor t $ \ptr1 -> do
+    F.withForeignPtr fptr $ \ptr2 -> do
+      forM_ (zip [0..((natValI @n)-1)] imageIdxs) $ \(i,idx) -> do
+        BSI.memcpy
+          (F.plusPtr ptr1 ((natValI @DataDim)*i))
+          (F.plusPtr ptr2 (off+16+(natValI @DataDim)*idx))
+          (natValI @DataDim)
+  return $ D.toType D.Float t
+
 length :: MnistData -> Int
 length mnist = fromIntegral $ BS.length (labels mnist) - 8
+
+decompressFile :: String -> String -> IO BS.ByteString
+decompressFile path file = decompress' <$> BS.readFile (path <> "/" <> file)
+  where
+    decompress' = BS.concat . BS.Lazy.toChunks . GZip.decompress . BS.Lazy.fromStrict
 
 initMnist :: IO (MnistData, MnistData)
 initMnist = do
   let path = "data"
-      decompress' =
-        BS.concat . BS.Lazy.toChunks . GZip.decompress . BS.Lazy.fromStrict
-  imagesBS <- decompress'
-    <$> BS.readFile (path <> "/" <> "train-images-idx3-ubyte.gz")
-  labelsBS <- decompress'
-    <$> BS.readFile (path <> "/" <> "train-labels-idx1-ubyte.gz")
-  testImagesBS <- decompress'
-    <$> BS.readFile (path <> "/" <> "t10k-images-idx3-ubyte.gz")
-  testLabelsBS <- decompress'
-    <$> BS.readFile (path <> "/" <> "t10k-labels-idx1-ubyte.gz")
+  imagesBS <- decompressFile path "train-images-idx3-ubyte.gz"
+  labelsBS <- decompressFile path "train-labels-idx1-ubyte.gz"
+  testImagesBS <- decompressFile path "t10k-images-idx3-ubyte.gz"
+  testLabelsBS <- decompressFile path "t10k-labels-idx1-ubyte.gz"
   return (MnistData imagesBS labelsBS, MnistData testImagesBS testLabelsBS)
