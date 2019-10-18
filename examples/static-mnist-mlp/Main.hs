@@ -32,6 +32,7 @@ import qualified ATen.Cast                     as ATen
 import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
+import qualified ATen.Managed.Type.Context     as ATen
 import           Torch.Static
 import           Torch.Static.Native     hiding ( linear )
 import           Torch.Static.Factories
@@ -161,6 +162,7 @@ main = do
       (numIters, printEvery) = (1000000, 250)
       dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
+  ATen.manual_seed_L 123
   init                     <- A.sample
     (MLPSpec @D.Float @I.DataDim @I.ClassDim @HiddenFeatures0 @HiddenFeatures1
       dropoutProb
