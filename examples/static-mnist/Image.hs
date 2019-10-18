@@ -97,17 +97,16 @@ getImages mnist imageIdxs = UnsafeMkTensor $ unsafePerformIO $ do
 length :: MnistData -> Int
 length mnist = fromIntegral $ BS.length (labels mnist) - 8
 
+decompressFile :: String -> String -> IO BS.ByteString
+decompressFile path file = decompress' <$> BS.readFile (path <> "/" <> file)
+  where
+    decompress' = BS.concat . BS.Lazy.toChunks . GZip.decompress . BS.Lazy.fromStrict
+
 initMnist :: IO (MnistData, MnistData)
 initMnist = do
   let path = "data"
-      decompress' =
-        BS.concat . BS.Lazy.toChunks . GZip.decompress . BS.Lazy.fromStrict
-  imagesBS <- decompress'
-    <$> BS.readFile (path <> "/" <> "train-images-idx3-ubyte.gz")
-  labelsBS <- decompress'
-    <$> BS.readFile (path <> "/" <> "train-labels-idx1-ubyte.gz")
-  testImagesBS <- decompress'
-    <$> BS.readFile (path <> "/" <> "t10k-images-idx3-ubyte.gz")
-  testLabelsBS <- decompress'
-    <$> BS.readFile (path <> "/" <> "t10k-labels-idx1-ubyte.gz")
+  imagesBS <- decompressFile path "train-images-idx3-ubyte.gz"
+  labelsBS <- decompressFile path "train-labels-idx1-ubyte.gz"
+  testImagesBS <- decompressFile path "t10k-images-idx3-ubyte.gz"
+  testLabelsBS <- decompressFile path "t10k-labels-idx1-ubyte.gz"
   return (MnistData imagesBS labelsBS, MnistData testImagesBS testLabelsBS)
