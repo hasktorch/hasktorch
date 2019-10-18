@@ -78,6 +78,7 @@ executable static-mnist-mlp
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
+                     , hvega
 
 executable static-transformer
   import:              config

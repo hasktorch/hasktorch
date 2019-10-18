@@ -9,6 +9,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
@@ -27,6 +28,7 @@ import           GHC.TypeLits.Extra
 import           System.Environment
 import           System.IO.Unsafe
 import           System.Random
+import           Graphics.Vega.VegaLite        as VL
 
 import qualified ATen.Cast                     as ATen
 import qualified ATen.Class                    as ATen
@@ -169,9 +171,9 @@ main = do
     (A.makeIndependent . toBackend backend . A.toDependent)
     (A.flattenParameters init)
   when debug $ print "init' is done."
-  (trained, _) <-
-    foldLoop (init', randomIndexes (I.length trainingData)) numIters
-      $ \(state, idxs) i -> do
+  (trained, _, _) <-
+    foldLoop (init', randomIndexes (I.length trainingData), []) numIters
+      $ \(state, idxs, loss_for_plot) i -> do
           let (indexes, nextIndexes) =
                 (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
           (trainingLoss, _) <- computeLossAndErrorRate @BatchSize backend
@@ -184,22 +186,52 @@ main = do
           when debug $ do
             print $ "training loss:" ++ show trainingLoss
             print $ "gradients:" ++ show gradients
-          when (i `mod` printEvery == 0)
-            $ case someNatVal (fromIntegral $ I.length testData) of
-                Just (SomeNat (Proxy :: Proxy testSize)) -> do
-                  (testLoss, testError) <-
-                    computeLossAndErrorRate @(Min TestBatchSize testSize)
-                      backend
-                      state
-                      False
-                      (randomIndexes (I.length testData))
-                      testData
-                  printLosses i trainingLoss testLoss testError
-                _ -> print "Cannot get the size of the test dataset"
+          loss_for_plot' <-
+            if (i `mod` printEvery == 0)
+            then 
+              case someNatVal (fromIntegral $ I.length testData) of
+                  Just (SomeNat (Proxy :: Proxy testSize)) -> do
+                    (testLoss, testError) <-
+                      computeLossAndErrorRate @(Min TestBatchSize testSize)
+                        backend
+                        state
+                        False
+                        (randomIndexes (I.length testData))
+                        testData
+                    printLosses i trainingLoss testLoss testError
+                    VL.toHtmlFile "loss.html" $
+                      let enc = VL.encoding
+                                . VL.position VL.X [ VL.PName "Iterate", VL.PmType VL.Quantitative, binning, axis ]
+                                . VL.position VL.Y [ VL.PName "training loss", VL.PmType VL.Quantitative ]
+                                . VL.color [ VL.MName "Losses", VL.MmType VL.Nominal ]
+
+                          binning = VL.PBin [ VL.Step 1 ]
+                          axis = VL.PAxis [ VL.AxValues (map (\(i,_,_,_) -> fromIntegral i) $ reverse loss_for_plot)]
+                          dat = VL.dataFromColumns []
+                                . VL.dataColumn "Losses"
+                                    (VL.Strings $ map (\(i,_,_,_) -> "Training") $ reverse loss_for_plot)
+                                . VL.dataColumn "Iterate"
+                                    (VL.Numbers $ map (\(i,_,_,_) -> fromIntegral i) $ reverse loss_for_plot)
+                                . VL.dataColumn "training loss"
+                                    (VL.Numbers $ map (\(_,i,_,_) -> realToFrac (D.asValue (toDynamic i)::Float)) $ reverse loss_for_plot)
+                      in VL.toVegaLite [ dat []
+                                       , VL.mark Line []
+                                       , enc []
+                                       , VL.height 300
+                                       , VL.width 400
+                                       ] 
+                    return $ (i,trainingLoss,testLoss,testError):loss_for_plot
+                  _ -> do
+                    print "Cannot get the size of the test dataset"
+                    return loss_for_plot
+            else
+              return loss_for_plot
 
           new_flat_parameters <- mapM A.makeIndependent
             $ A.sgd 1e-01 flat_parameters gradients
-          return (A.replaceParameters state new_flat_parameters, nextIndexes)
+          return (A.replaceParameters state new_flat_parameters,
+                  nextIndexes,
+                  loss_for_plot')
   print trained
  where
   computeLossAndErrorRate
