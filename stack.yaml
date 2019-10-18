@@ -21,3 +21,7 @@ extra-lib-dirs:
 
 extra-deps:
 - template-0.2.0.10@sha256:f822de4d34c45bc84b33a61bc112c15fedee6fa6dc414c62b10456395a868f85
+
+build:
+  library-profiling: true
+  executable-profiling: true

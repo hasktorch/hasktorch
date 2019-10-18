@@ -28,6 +28,7 @@ let
                 overrideCabal = pkgsNew.haskell.lib.overrideCabal;
                 optionalString = pkgsNew.stdenv.lib.optionalString;
                 isDarwin = pkgsNew.stdenv.isDarwin;
+                enableLibraryProfiling = true;
 
                 mkHasktorchExtension = postfix:
                   haskellPackagesNew: haskellPackagesOld: {
