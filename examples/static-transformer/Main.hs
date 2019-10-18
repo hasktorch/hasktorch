@@ -46,10 +46,10 @@ import qualified ATen.Cast                     as ATen
 import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
-import           Torch.Static
-import           Torch.Static.Native     hiding ( linear )
-import           Torch.Static.Factories
-import           Torch.Static.NN
+import           Torch.Typed
+import           Torch.Typed.Native     hiding ( linear )
+import           Torch.Typed.Factories
+import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
 import qualified Torch.DType                   as D
@@ -112,7 +112,7 @@ multiheadAttention
 multiheadAttention MultiheadAttention {..} train keyPaddingMask input = do
   let q :. k :. v :. HNil = chunk @3 @2 . linear mhInProj $ input
   attnWeights <-
-    Torch.Static.NN.dropout mhDropout train
+    Torch.Typed.NN.dropout mhDropout train
       . softmax @2
       . maskKeyPaddings
       . maskFutureTimesteps
@@ -176,7 +176,7 @@ multiheadAttention' MultiheadAttention {..} train =
       >>> second maskFutureTimestamps
       >>> maskKeyPaddings
       >>> softmax @2
-      ^>> Kleisli (Torch.Static.NN.dropout mhDropout train)
+      ^>> Kleisli (Torch.Typed.NN.dropout mhDropout train)
    where
     dotProduct =
       let scaling = pow (-1 / 2 :: Double) (fromInteger . natVal $ Proxy @headDim) :: Tensor dtype '[]
@@ -263,10 +263,10 @@ transformerLMLayer
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
 transformerLMLayer TransformerLMLayer {..} train keyPaddingMask input = do
   (attn, _) <- multiheadAttention tAttn train keyPaddingMask input
-  x         <- Torch.Static.NN.dropout tAttnDropout train attn
-  let x' = Torch.Static.NN.layerNorm tLN0 (x `add` input)
+  x         <- Torch.Typed.NN.dropout tAttnDropout train attn
+  let x' = Torch.Typed.NN.layerNorm tLN0 (x `add` input)
   x''       <- transformerLMMLP tMLP train x'
-  return $ Torch.Static.NN.layerNorm tLN1 (x'' `add` x')
+  return $ Torch.Typed.NN.layerNorm tLN1 (x'' `add` x')
 
 transformerLMLayer'
   :: forall dtype numHeads ffnDim embedDim headDim seqLen batchSize
@@ -289,13 +289,13 @@ transformerLMLayer'
 transformerLMLayer' TransformerLMLayer {..} train =
   (arr snd &&& attn)
     >>> uncurry add
-    ^>> Torch.Static.NN.layerNorm tLN0
+    ^>> Torch.Typed.NN.layerNorm tLN0
     ^>> (id &&& transformerLMMLP' tMLP train)
     >>^ uncurry add
-    >>^ Torch.Static.NN.layerNorm tLN1
+    >>^ Torch.Typed.NN.layerNorm tLN1
  where
   attn = multiheadAttention' tAttn train >>> arr fst >>> Kleisli
-    (Torch.Static.NN.dropout tAttnDropout train)
+    (Torch.Typed.NN.dropout tAttnDropout train)
 
 instance A.Parameterized (TransformerLMLayer dtype embedDim numHeads ffnDim)
 
@@ -356,10 +356,10 @@ transformerLMMLP
   -> Tensor dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
 transformerLMMLP TransformerLMMLP {..} train input =
-  Torch.Static.NN.dropout tDropout1 train
+  Torch.Typed.NN.dropout tDropout1 train
     .   unActivation tActivation1
     .   linear tLinear1
-    =<< Torch.Static.NN.dropout tDropout0 train
+    =<< Torch.Typed.NN.dropout tDropout0 train
     .   unActivation tActivation0
     .   linear tLinear0
     =<< pure input
@@ -375,10 +375,10 @@ transformerLMMLP'
 transformerLMMLP' TransformerLMMLP {..} train =
   linear tLinear0
     ^>> unActivation tActivation0
-    ^>> Kleisli (Torch.Static.NN.dropout tDropout0 train)
+    ^>> Kleisli (Torch.Typed.NN.dropout tDropout0 train)
     >>> linear tLinear1
     ^>> unActivation tActivation1
-    ^>> Kleisli (Torch.Static.NN.dropout tDropout1 train)
+    ^>> Kleisli (Torch.Typed.NN.dropout tDropout1 train)
 
 instance A.Parameterized (TransformerLMMLP dtype embedDim ffnDim)
 
@@ -471,7 +471,7 @@ getHidden embedding posEmbedding dropout train layers input = do
                     . linspace @seqLen 0
                     . fromIntegral
                     $ natValI @(seqLen - 1)
-  x <- Torch.Static.NN.dropout dropout train (src `add` positions)
+  x <- Torch.Typed.NN.dropout dropout train (src `add` positions)
   let keyPaddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[])
   (_, x') <- hfoldrM (FoldLayers train) (keyPaddingMask, x) layers
   return x'
@@ -510,7 +510,7 @@ getHidden' embedding posEmbedding dropout train layers =
  where
   mkKeyPaddingMask =
     arr (==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[]))
-  mkInput = embed embedding ^>> add positions ^>> Kleisli (Torch.Static.NN.dropout dropout train)
+  mkInput = embed embedding ^>> add positions ^>> Kleisli (Torch.Typed.NN.dropout dropout train)
   positions =
     expand @'[seqLen, batchSize, embedDim] True
       . unsqueeze @1

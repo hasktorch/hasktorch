@@ -14,6 +14,6 @@ main = doctest
   , "-fplugin GHC.TypeLits.Extra.Solver"
   , "-fconstraint-solver-iterations=0"
   , "-isrc"
-  , "src/Torch/Static/Factories"
-  , "src/Torch/Static/Native"
+  , "src/Torch/Typed/Factories"
+  , "src/Torch/Typed/Native"
   ]

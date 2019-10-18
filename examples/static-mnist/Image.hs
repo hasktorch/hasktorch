@@ -15,8 +15,8 @@ import qualified Data.ByteString.Internal      as BSI
 import           GHC.TypeLits
 
 import           ATen.Cast
-import           Torch.Static
-import           Torch.Static.Native
+import           Torch.Typed
+import           Torch.Typed.Native
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorOptions           as D

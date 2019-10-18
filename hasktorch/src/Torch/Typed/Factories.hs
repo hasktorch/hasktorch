@@ -16,7 +16,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Torch.Static.Factories where
+module Torch.Typed.Factories where
 
 import Prelude hiding (sin)
 import Control.Arrow ((&&&))
@@ -34,7 +34,7 @@ import qualified Torch.TensorFactories as D
 import qualified Torch.Functions as D
 import qualified Torch.DType as D
 import qualified Torch.TensorOptions as D
-import Torch.Static
+import Torch.Typed
 
 zeros :: forall dtype shape. (TensorOptions dtype shape) => Tensor dtype shape
 zeros = UnsafeMkTensor $ D.zeros (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
