@@ -44,6 +44,7 @@ import qualified Torch.Functions               as D
 import qualified Torch.TensorFactories         as D
 import qualified Image                         as I
 import qualified Monitoring
+import           Common
 
 --------------------------------------------------------------------------------
 -- MLP for MNIST
@@ -107,58 +108,10 @@ instance ( KnownDType dtype
       <*> A.sample LinearSpec
       <*> A.sample (DropoutSpec mlpDropoutProbSpec)
 
-foldLoop
-  :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
-foldLoop x count block = foldM block x ([1 .. count] :: [a])
-
 type BatchSize = 512
 type TestBatchSize = 8192
 type HiddenFeatures0 = 512
 type HiddenFeatures1 = 256
-
-randomIndexes :: Int -> [Int]
-randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
-
-toBackend
-  :: forall t . (ATen.Castable t (ForeignPtr ATen.Tensor)) => String -> t -> t
-toBackend backend t = unsafePerformIO $ case backend of
-  "CUDA" -> ATen.cast1 ATen.tensor_cuda t
-  _      -> ATen.cast1 ATen.tensor_cpu t
-
-crossEntropyLoss
-  :: forall batchSize outputFeatures
-   . (KnownNat batchSize, KnownNat outputFeatures)
-  => String
-  -> Tensor 'D.Float '[batchSize, outputFeatures]
-  -> Tensor 'D.Int64 '[batchSize]
-  -> Tensor 'D.Float '[]
-crossEntropyLoss backend result target =
-  nll_loss @D.ReduceMean @ 'D.Float @batchSize @outputFeatures @'[]
-    (logSoftmax @1 result)
-    target
-    (toBackend backend ones)
-    (-100)
-
-errorRate
-  :: forall batchSize outputFeatures
-   . (KnownNat batchSize, KnownNat outputFeatures)
-  => Tensor 'D.Float '[batchSize, outputFeatures]
-  -> Tensor 'D.Int64 '[batchSize]
-  -> Tensor 'D.Float '[]
-errorRate result target =
-  let errorCount =
-          toDType @D.Float . sumAll . ne (argmax @1 @DropDim result) $ target
-  in  cmul errorCount ((1.0 /) . fromIntegral $ natValI @batchSize :: Double)
-
-
-withTestSize
-  :: Int
-  -> (forall testSize. KnownNat testSize => Proxy testSize -> a)
-  -> a
-withTestSize nat fn =
-  case someNatVal (fromIntegral $ nat) of
-    Just (SomeNat (Proxy :: Proxy testSize)) -> fn (Proxy @testSize)
-    _ -> error "Cannot get the size of the test dataset"
 
 main = do
   backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
