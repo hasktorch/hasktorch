@@ -31,25 +31,25 @@ plotLosses file metrics =
   let enc = encoding
             . position X [ PName "Iterate", PmType Quantitative, axis ]
             . position Y [ PName "Loss", PmType Quantitative ]
-            . color [ MName "Losses", MmType Nominal ]
+            . color [ MName "Lines", MmType Nominal ]
       enc2 = encoding
             . position X [ PName "Iterate", PmType Quantitative, axis ]
             . position Y [ PName "ErrorRate", PmType Quantitative ]
-            . color [ MName "ErrorRates", MmType Nominal ]
+            . color [ MName "Lines", MmType Nominal ]
       axis = PAxis [ AxValues (map (\(i,_) -> fromIntegral i) $ metrics)]
       dat = foldl
             (\sum' (iterate, Metric{..}) ->
                sum' .
                dataRow [ ("Iterate" , Number (fromIntegral iterate))
-                       , ("Losses"  , Str "training loss")
+                       , ("Lines"  , Str "training loss")
                        , ("Loss"    , Number (realToFrac (asFloat trainingLoss)))
                        ] .
                dataRow [ ("Iterate" , Number (fromIntegral iterate))
-                       , ("Losses"  , Str "test loss")
+                       , ("Lines"  , Str "test loss")
                        , ("Loss"    , Number (realToFrac (asFloat testLoss)))
                        ] .
                dataRow [ ("Iterate"    , Number (fromIntegral iterate))
-                       , ("ErrorRates" , Str "test error rate")
+                       , ("Lines" , Str "test error rate")
                        , ("ErrorRate"       , Number (realToFrac (asFloat testError)))
                        ]
             )
