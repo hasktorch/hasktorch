@@ -9,7 +9,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
@@ -28,7 +27,6 @@ import           GHC.TypeLits.Extra
 import           System.Environment
 import           System.IO.Unsafe
 import           System.Random
-import           Graphics.Vega.VegaLite        as VL
 
 import qualified ATen.Cast                     as ATen
 import qualified ATen.Class                    as ATen
@@ -45,6 +43,7 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.Functions               as D
 import qualified Torch.TensorFactories         as D
 import qualified Image                         as I
+import qualified Monitoring
 
 --------------------------------------------------------------------------------
 -- MLP for MNIST
@@ -151,15 +150,21 @@ errorRate result target =
           toDType @D.Float . sumAll . ne (argmax @1 @DropDim result) $ target
   in  cmul errorCount ((1.0 /) . fromIntegral $ natValI @batchSize :: Double)
 
+
+withTestSize
+  :: Int
+  -> (forall testSize. KnownNat testSize => Proxy testSize -> a)
+  -> a
+withTestSize nat fn =
+  case someNatVal (fromIntegral $ nat) of
+    Just (SomeNat (Proxy :: Proxy testSize)) -> fn (Proxy @testSize)
+    _ -> error "Cannot get the size of the test dataset"
+
 main = do
-  debug'   <- try (getEnv "DEBUG") :: IO (Either SomeException String)
   backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
   let backend = case backend' of
         Right "CUDA" -> "CUDA"
         _            -> "CPU"
-      debug = case debug' of
-        Right "TRUE" -> True
-        _            -> False
       (numIters, printEvery) = (1000000, 250)
       dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
@@ -170,10 +175,9 @@ main = do
   init' <- A.replaceParameters init <$> traverse
     (A.makeIndependent . toBackend backend . A.toDependent)
     (A.flattenParameters init)
-  when debug $ print "init' is done."
   (trained, _, _) <-
     foldLoop (init', randomIndexes (I.length trainingData), []) numIters
-      $ \(state, idxs, loss_for_plot) i -> do
+      $ \(state, idxs, metrics) i -> do
           let (indexes, nextIndexes) =
                 (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
           (trainingLoss, _) <- computeLossAndErrorRate @BatchSize backend
@@ -183,55 +187,30 @@ main = do
                                                                   trainingData
           let flat_parameters = A.flattenParameters state
           let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
-          when debug $ do
-            print $ "training loss:" ++ show trainingLoss
-            print $ "gradients:" ++ show gradients
-          loss_for_plot' <-
-            if (i `mod` printEvery == 0)
-            then 
-              case someNatVal (fromIntegral $ I.length testData) of
-                  Just (SomeNat (Proxy :: Proxy testSize)) -> do
-                    (testLoss, testError) <-
-                      computeLossAndErrorRate @(Min TestBatchSize testSize)
-                        backend
-                        state
-                        False
-                        (randomIndexes (I.length testData))
-                        testData
-                    printLosses i trainingLoss testLoss testError
-                    VL.toHtmlFile "loss.html" $
-                      let enc = VL.encoding
-                                . VL.position VL.X [ VL.PName "Iterate", VL.PmType VL.Quantitative, binning, axis ]
-                                . VL.position VL.Y [ VL.PName "training loss", VL.PmType VL.Quantitative ]
-                                . VL.color [ VL.MName "Losses", VL.MmType VL.Nominal ]
 
-                          binning = VL.PBin [ VL.Step 1 ]
-                          axis = VL.PAxis [ VL.AxValues (map (\(i,_,_,_) -> fromIntegral i) $ reverse loss_for_plot)]
-                          dat = VL.dataFromColumns []
-                                . VL.dataColumn "Losses"
-                                    (VL.Strings $ map (\(i,_,_,_) -> "Training") $ reverse loss_for_plot)
-                                . VL.dataColumn "Iterate"
-                                    (VL.Numbers $ map (\(i,_,_,_) -> fromIntegral i) $ reverse loss_for_plot)
-                                . VL.dataColumn "training loss"
-                                    (VL.Numbers $ map (\(_,i,_,_) -> realToFrac (D.asValue (toDynamic i)::Float)) $ reverse loss_for_plot)
-                      in VL.toVegaLite [ dat []
-                                       , VL.mark Line []
-                                       , enc []
-                                       , VL.height 300
-                                       , VL.width 400
-                                       ] 
-                    return $ (i,trainingLoss,testLoss,testError):loss_for_plot
-                  _ -> do
-                    print "Cannot get the size of the test dataset"
-                    return loss_for_plot
+          metrics' <-
+            if (i `mod` printEvery == 0) then do
+              (testLoss, testError) <-
+                 withTestSize (I.length testData) $ \(Proxy :: Proxy testSize) ->
+                   computeLossAndErrorRate @(Min TestBatchSize testSize)
+                     backend
+                     state
+                     False
+                     (randomIndexes (I.length testData))
+                     testData
+              let metric = (i, Monitoring.Metric trainingLoss testLoss testError)
+                  metrics' = metric:metrics
+              Monitoring.printLosses metric
+              Monitoring.plotLosses "loss.html" metrics'
+              return metrics'
             else
-              return loss_for_plot
+              return metrics
 
           new_flat_parameters <- mapM A.makeIndependent
             $ A.sgd 1e-01 flat_parameters gradients
           return (A.replaceParameters state new_flat_parameters,
                   nextIndexes,
-                  loss_for_plot')
+                  metrics')
   print trained
  where
   computeLossAndErrorRate
@@ -248,14 +227,3 @@ main = do
         target = toBackend backend $ I.getLabels @n data' indexes
     result <- mlp state train input
     return (crossEntropyLoss backend result target, errorRate result target)
-  printLosses i trainingLoss testLoss testError =
-    let asFloat t = D.asValue . toDynamic . toCPU $ t :: Float
-    in  putStrLn
-          $  "Iteration: "
-          <> show i
-          <> ". Training batch loss: "
-          <> show (asFloat trainingLoss)
-          <> ". Test loss: "
-          <> show (asFloat testLoss)
-          <> ". Test error-rate: "
-          <> show (asFloat testError)

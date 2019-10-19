@@ -42,9 +42,11 @@ library static-mnist
   import:              config
   hs-source-dirs:      static-mnist
   exposed-modules:     Image
+                     , Monitoring
   build-depends:       bytestring >= 0.10.8
                      , zlib >= 0.6
                      , libtorch-ffi
+                     , hvega
 
 test-suite spec
   import:             config
@@ -78,7 +80,6 @@ executable static-mnist-mlp
                      , random >= 1.1
                      , safe-exceptions
                      , static-mnist
-                     , hvega
 
 executable static-transformer
   import:              config
