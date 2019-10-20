@@ -100,8 +100,8 @@ type family ComputeDType (dtype' :: dtype) :: D.DType where
   ComputeDType D.Double = D.Double
   ComputeDType dtype' = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype')
 
-data Tensor (device :: (DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) where
-  UnsafeMkTensor :: forall device dtype shape . { toDynamic :: D.Tensor } -> Tensor device dtype shape
+data Tensor (shape :: [Nat]) (dtype :: D.DType) (device :: (DeviceType, Nat)) where
+  UnsafeMkTensor :: forall device dtype shape . { toDynamic :: D.Tensor } -> Tensor shape dtype device
 
 type family ComputeHaskellType (dtype :: D.DType) :: Type where
   ComputeHaskellType D.Bool = Bool
@@ -117,9 +117,9 @@ type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
 
 instance ( D.TensorLike [ComputeItemType (ComputeHaskellType dtype) shape]
          , KnownShape shape)
-  => IsList (Maybe (Tensor '( 'CPU, 0) dtype shape))
+  => IsList (Maybe (Tensor shape dtype '( 'CPU, 0)))
  where
-  type Item (Maybe (Tensor '( 'CPU, 0) dtype shape)) = ComputeItemType (ComputeHaskellType dtype) shape
+  type Item (Maybe (Tensor shape dtype '( 'CPU, 0))) = ComputeItemType (ComputeHaskellType dtype) shape
   fromList xs = do
     shapeXs <- D._deepDims xs
     if shapeVal @shape == shapeXs
@@ -128,7 +128,7 @@ instance ( D.TensorLike [ComputeItemType (ComputeHaskellType dtype) shape]
   toList Nothing = []
   toList (Just t) = D.asValue . toDynamic $ t
  
-instance Num (Tensor device dtype shape) where
+instance Num (Tensor shape dtype device) where
   (+) a b = UnsafeMkTensor $ toDynamic a + toDynamic b
   (-) a b = UnsafeMkTensor $ toDynamic a - toDynamic b
   (*) a b = UnsafeMkTensor $ toDynamic a * toDynamic b
@@ -137,28 +137,28 @@ instance Num (Tensor device dtype shape) where
   signum t = UnsafeMkTensor $ signum $ toDynamic t
   fromInteger i = UnsafeMkTensor $ D.asTensor @Int $ fromInteger @Int i
 
-instance Fractional (Tensor device dtype shape) where
+instance Fractional (Tensor shape dtype device) where
   a / b = UnsafeMkTensor $ toDynamic a / toDynamic b
   recip t = UnsafeMkTensor $ recip $ toDynamic t
   fromRational i = UnsafeMkTensor $ D.asTensor @Float $ fromRational @Float i
 
-instance Show (Tensor device dtype shape) where
+instance Show (Tensor shape dtype device) where
     show (UnsafeMkTensor dynamic) = show dynamic
 
-class TensorOptions (device :: (DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) where
+class TensorOptions (shape :: [Nat]) (dtype :: D.DType) (device :: (DeviceType, Nat)) where
   optionsRuntimeDevice :: Device
   optionsRuntimeDType :: D.DType
   optionsRuntimeShape :: [Int]
 
-instance (KnownDevice device, KnownDType dtype) => TensorOptions device dtype '[] where
+instance (KnownDType dtype, KnownDevice device) => TensorOptions '[] dtype device where
   optionsRuntimeDevice = deviceVal @device
   optionsRuntimeDType = dtypeVal @dtype
   optionsRuntimeShape = []
 
-instance (KnownNat h, TensorOptions device dtype t) => TensorOptions device dtype (h ': t) where
-  optionsRuntimeDevice = optionsRuntimeDevice @device @dtype @t
-  optionsRuntimeDType = optionsRuntimeDType @device @dtype @t
-  optionsRuntimeShape = natValI @h : optionsRuntimeShape @device @dtype @t
+instance (KnownNat h, TensorOptions t dtype device) => TensorOptions (h ': t) dtype device where
+  optionsRuntimeDevice = optionsRuntimeDevice @t @dtype @device
+  optionsRuntimeDType = optionsRuntimeDType @t @dtype @device
+  optionsRuntimeShape = natValI @h : optionsRuntimeShape @t @dtype @device
 
 --------------------------------------------------------------------------------
 -- Untyped -> Typed typecasts
@@ -204,7 +204,7 @@ someDevice Device {..} = case someNatVal (fromIntegral deviceIndex) of
 
 withTensor :: D.Tensor ->
               (forall (device :: (DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]).
-                    KnownShape shape => Tensor device dtype shape -> r) ->
+                    KnownShape shape => Tensor shape dtype device -> r) ->
               r
 
 withTensor untypedTensor f = case someShape (D.shape untypedTensor) of
@@ -355,88 +355,34 @@ type family IsAtLeast (n :: Nat) (m :: Nat) (cmp :: Ordering) :: Constraint wher
 --       funny error messages like "expected at least 5, got 29!".
 type (>=) (n :: Nat) (m :: Nat) = (IsAtLeast n m (CmpNat n m), KnownNat (n - m))
 
-add
-  :: forall shape'' shape shape' device dtype
+add, sub, mul
+  :: forall shape'' shape shape' dtype device
    . (shape'' ~ Broadcast shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device dtype shape''
+  => Tensor shape dtype device
+  -> Tensor shape' dtype device
+  -> Tensor shape'' dtype device
 add a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
-
-sub
-  :: forall shape'' shape shape' device dtype
-   . (shape'' ~ Broadcast shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device dtype shape''
 sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
-
-mul
-  :: forall shape'' shape shape' device dtype
-   . (shape'' ~ Broadcast shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device dtype shape''
 mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
 
-gt
-  :: forall shape'' shape shape' device dtype
+gt, lt, ge, le, eq, ne
+  :: forall shape'' shape shape' dtype device
    . (shape'' ~ Broadcast shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device 'D.Bool shape''
+  => Tensor shape dtype device
+  -> Tensor shape' dtype device
+  -> Tensor shape'' 'D.Bool device
 gt a b = UnsafeMkTensor $ D.gt (toDynamic a) (toDynamic b)
-
-(>.) = gt
-
-lt
-  :: forall shape'' shape shape' device dtype
-   . (shape'' ~ Broadcast shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device 'D.Bool shape''
 lt a b = UnsafeMkTensor $ D.lt (toDynamic a) (toDynamic b)
-
-(<.) = lt
-
-ge
-  :: forall shape'' shape shape' device dtype
-   . (shape'' ~ Broadcast shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device 'D.Bool shape''
 ge a b = UnsafeMkTensor $ D.ge (toDynamic a) (toDynamic b)
-
-(>=.) = ge
-
-le
-  :: forall shape'' shape shape' device dtype
-   . (shape'' ~ Broadcast shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device 'D.Bool shape''
 le a b = UnsafeMkTensor $ D.le (toDynamic a) (toDynamic b)
-
-(<=.) = le
-
-eq
-  :: forall shape'' shape shape' device dtype
-   . (shape'' ~ Broadcast shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device 'D.Bool shape''
 eq a b = UnsafeMkTensor $ D.eq (toDynamic a) (toDynamic b)
-
-(==.) = eq
-
-ne
-  :: forall shape'' shape shape' device dtype
-   . (shape'' ~ Broadcast shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device 'D.Bool shape''
 ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
 
+(>.) = gt
+(<.) = lt
+(>=.) = ge
+(<=.) = le
+(==.) = eq
 (/=.) = ne
 
 type family ComputeMatMul (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
@@ -455,35 +401,36 @@ type family CheckMatMul (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat
 
 type MatMul shape shape' = CheckMatMul shape shape' (ComputeMatMul (Reverse shape) (Reverse shape'))
 
--- | matmul, see https://pytorch.org/docs/stable/torch.html#torch.matmul
+-- | matrix multiplication
+-- See https://pytorch.org/docs/stable/torch.html#torch.matmul.
 matmul
-  :: forall shape'' shape shape' device dtype
+  :: forall shape'' shape shape' dtype device
    . (shape'' ~ MatMul shape shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device dtype shape''
+  => Tensor shape dtype device
+  -> Tensor shape' dtype device
+  -> Tensor shape'' dtype device
 matmul a b = UnsafeMkTensor $ D.matmul (toDynamic a) (toDynamic b)
 
 select
-  :: forall dim idx shape' shape device dtype
+  :: forall dim idx shape' shape dtype device
    . ( KnownNat dim
      , KnownNat idx
      , InRange shape dim idx
      , shape' ~ Remove shape dim
      )
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
+  => Tensor shape dtype device
+  -> Tensor shape' dtype device
 select t = UnsafeMkTensor $ D.select (toDynamic t) (natValI @dim) (natValI @idx)
 
 selectIdx
-  :: forall dim n shape' shape device dtype
+  :: forall dim n shape' shape dtype device
    . ( KnownNat dim
      , n ~ Index shape dim
      , shape' ~ Remove shape dim
      )
-  => Tensor device dtype shape
+  => Tensor shape dtype device
   -> Finite n
-  -> Tensor device dtype shape'
+  -> Tensor shape' dtype device
 selectIdx t idx = UnsafeMkTensor $ D.select (toDynamic t) (natValI @dim) (getFiniteI idx)
 
 type family Fst (t :: (a, b)) :: a where
@@ -506,17 +453,17 @@ type family Numel (shape :: [Nat]) :: Nat where
     Numel (h ': t) = h * (Numel t)
 
 reshape
-  :: forall shape' shape device dtype
+  :: forall shape' shape dtype device
    . (KnownShape shape', Numel shape ~ Numel shape')
-  => Tensor device dtype shape
-  -> Tensor device dtype shape'
+  => Tensor shape dtype device
+  -> Tensor shape' dtype device
 reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
 
-instance Castable (Tensor device dtype shape) D.ATenTensor where
+instance Castable (Tensor shape dtype device) D.ATenTensor where
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
   uncast aten_tensor f = f $ UnsafeMkTensor (D.Unsafe aten_tensor)
 
-instance Castable [Tensor device dtype shape] (ForeignPtr ATen.TensorList) where
+instance Castable [Tensor shape dtype device] (ForeignPtr ATen.TensorList) where
   cast xs f = do
     ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.Tensor))) xs
     cast ptr_list f
@@ -660,20 +607,20 @@ instance Castable (HList l) [D.ATenTensor] => Castable (HList l) (ForeignPtr ATe
 
 -- TODO: make it only possible to fold tensors on the same device
 test
-  :: forall device dtype shape . Tensor device dtype shape -> IO [D.ATenTensor]
+  :: forall device dtype shape . Tensor shape dtype device -> IO [D.ATenTensor]
 test t = hfoldrM TensorListFolds [] (t :. HNil)
 
 -- TODO: make it only possible to unfold to tensors on the same device
 test'
   :: forall device dtype shape device' dtype' shape'
    . [D.ATenTensor]
-  -> IO (HList '[Tensor device dtype shape, Tensor device' dtype' shape'])
+  -> IO (HList '[Tensor shape dtype device, Tensor device' dtype' shape'])
 test' xs = hunfoldrM TensorListFolds xs
 
 -- TODO: make it only possible to cast tensors on the same device
 test''
   :: forall device dtype shape
-   . HList '[Tensor device dtype shape]
+   . HList '[Tensor shape dtype device]
   -> IO [D.ATenTensor]
 test'' xs = cast xs return
 
@@ -681,7 +628,7 @@ test'' xs = cast xs return
 test'''
   :: forall device dtype shape
    . [D.ATenTensor]
-  -> IO (HList '[Tensor device dtype shape])
+  -> IO (HList '[Tensor shape dtype device])
 test''' xs = uncast xs return
 
 class (ListLength es ~ n) => HReplicate' (n :: Nat) e es where
@@ -699,7 +646,7 @@ type family HReplicateR (n :: Nat) (e :: a) :: [a] where
   HReplicateR 0 e = '[]
   HReplicateR n e = e ': HReplicateR (n - 1) e
 
-testReplicate :: forall device dtype shape . Tensor device dtype shape -> HList (HReplicateR 3 (Tensor device dtype shape))
+testReplicate :: forall device dtype shape . Tensor shape dtype device -> HList (HReplicateR 3 (Tensor shape dtype device))
 testReplicate t = hReplicate Proxy t
 
 --------------------------------------------------------------------------------
@@ -707,39 +654,39 @@ testReplicate t = hReplicate Proxy t
 --------------------------------------------------------------------------------
 
 -- TODO: track sparsity in tensor type
-toSparse :: Tensor device dtype shape -> Tensor device dtype shape
+toSparse :: Tensor shape dtype device -> Tensor shape dtype device
 toSparse t = UnsafeMkTensor $ D.toSparse (toDynamic t)
 
 -- TODO: track sparsity in tensor type
-toDense :: Tensor device dtype shape -> Tensor device dtype shape
+toDense :: Tensor shape dtype device -> Tensor shape dtype device
 toDense t = UnsafeMkTensor $ D.toDense (toDynamic t)
 
 -- TODO: is this a device?
 toMKLDNN
-  :: forall device' device dtype shape
-   . Tensor device dtype shape
-  -> Tensor device' dtype shape
+  :: forall device' device shape dtype
+   . Tensor shape dtype device
+  -> Tensor shape dtype device'
 toMKLDNN t = UnsafeMkTensor $ D.toMKLDNN (toDynamic t)
 
 -- TODO: compute the output device type
 toCPU
-  :: forall device' device dtype shape
-   . Tensor device dtype shape
-  -> Tensor device' dtype shape
+  :: forall device' device shape dtype
+   . Tensor shape dtype device
+  -> Tensor shape dtype device'
 toCPU input = UnsafeMkTensor $ D.toCPU (toDynamic input)
 
 -- TODO: compute the output device type
 toCUDA
-  :: forall device' device dtype shape
-   . Tensor device dtype shape
-  -> Tensor device' dtype shape
+  :: forall device' device shape dtype
+   . Tensor shape dtype device
+  -> Tensor shape dtype device'
 toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
 
 -- TODO: figure this one out
 toDevice
-  :: forall device' device dtype shape
-   . Tensor device dtype shape
-  -> Tensor device' dtype shape
+  :: forall device' device shape dtype
+   . Tensor shape dtype device
+  -> Tensor shape dtype device'
 toDevice input = UnsafeMkTensor (toDynamic input)
 
 --------------------------------------------------------------------------------
@@ -748,34 +695,34 @@ toDevice input = UnsafeMkTensor (toDynamic input)
 
 dim
   :: forall device dtype shape
-   . TensorOptions device dtype shape
-  => Tensor device dtype shape
+   . TensorOptions shape dtype device
+  => Tensor shape dtype device
   -> Int
-dim t = length $ optionsRuntimeShape @device @dtype @shape
+dim t = length $ optionsRuntimeShape @shape @dtype @device
 
 shape
   :: forall device dtype shape
-   . TensorOptions device dtype shape
-  => Tensor device dtype shape
+   . TensorOptions shape dtype device
+  => Tensor shape dtype device
   -> [Int]
-shape t = optionsRuntimeShape @device @dtype @shape
+shape t = optionsRuntimeShape @shape @dtype @device
 
 dtype
   :: forall device dtype shape
-   . TensorOptions device dtype shape
-  => Tensor device dtype shape
+   . TensorOptions shape dtype device
+  => Tensor shape dtype device
   -> D.DType
-dtype _ = optionsRuntimeDType @device @dtype @shape
+dtype _ = optionsRuntimeDType @shape @dtype @device
 
 device
   :: forall device dtype shape
-   . TensorOptions device dtype shape
-  => Tensor device dtype shape
+   . TensorOptions shape dtype device
+  => Tensor shape dtype device
   -> Device
-device _ = optionsRuntimeDevice @device @dtype @shape
+device _ = optionsRuntimeDevice @shape @dtype @device
 
 -- TODO: figure out what device, dtype, and shape we need for this
-toInt :: Tensor device dtype shape -> Int
+toInt :: Tensor shape dtype device -> Int
 toInt t = D.toInt $ toDynamic t
 
 toType :: forall dtype' dtype shape. KnownDType dtype' => Tensor dtype shape -> Tensor dtype' shape

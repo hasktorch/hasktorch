@@ -1,4 +1,3 @@
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
@@ -58,13 +57,14 @@ linspace
    . (KnownNat steps)
   => Float
   -> Float
-  -> Tensor 'D.Float '[steps]
-linspace start end = unsafePerformIO $ cast3 ATen.linspace_ssl start end (natValI @steps)
+  -> Tensor '[steps] 'D.Float device
+linspace start end =
+  unsafePerformIO $ cast3 ATen.linspace_ssl start end (natValI @steps)
 
 eyeSquare
-  :: forall dtype n
-   . (KnownNat n, TensorOptions dtype '[n, n])
-  => Tensor dtype '[n, n]
+  :: forall n dtype device
+   . (KnownNat n, TensorOptions '[n, n] dtype device)
+  => Tensor '[n, n] dtype device
 eyeSquare = UnsafeMkTensor $ D.eyeSquare
   (natValI @n)
-  (D.withDType (optionsRuntimeDType @dtype @'[n, n]) D.defaultOpts)
+  (D.withDType (optionsRuntimeDType @'[n, n] @dtype @device) D.defaultOpts)
