@@ -73,6 +73,7 @@ import           Torch.Functions                ( Reduction(..)
                                                 , isUpper
                                                 , kOne
                                                 )
+import           Torch.Typed.Aux
 import           Torch.Typed.Device
 import           Torch.Typed.Factories
 import           Torch.Typed.Tensor

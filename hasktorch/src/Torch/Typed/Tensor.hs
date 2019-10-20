@@ -46,10 +46,8 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.Functions               as D hiding (select)
 import qualified Torch.DType                   as D
+import           Torch.Typed.Aux
 import           Torch.Typed.Device
-
-natValI :: forall n. KnownNat n => Int
-natValI = fromIntegral $ natVal $ Proxy @n
 
 class KnownShape shape where
     shapeVal :: [Int]

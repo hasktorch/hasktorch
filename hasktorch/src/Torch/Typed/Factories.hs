@@ -26,14 +26,16 @@ import Data.Reflection
 import GHC.TypeLits
 import System.IO.Unsafe
 
-import qualified ATen.Managed.Native as ATen
-import ATen.Cast
-import qualified Torch.Tensor as D
-import qualified Torch.TensorFactories as D
-import qualified Torch.Functions as D
-import qualified Torch.DType as D
-import qualified Torch.TensorOptions as D
-import Torch.Typed
+import qualified ATen.Managed.Native           as ATen
+import           ATen.Cast
+import qualified Torch.Tensor                  as D
+import qualified Torch.TensorFactories         as D
+import qualified Torch.Functions               as D
+import qualified Torch.DType                   as D
+import qualified Torch.TensorOptions           as D
+import           Torch.Typed.Aux
+import           Torch.Typed.Device
+import           Torch.Typed.Tensor
 
 zeros
   :: forall shape dtype device

@@ -21,6 +21,7 @@ library
                     , Torch.Functions.Native
                     , Torch.Autograd
                     , Torch.Typed
+                    , Torch.Typed.Aux
                     , Torch.Typed.Device
                     , Torch.Typed.Factories
                     , Torch.Typed.Native
