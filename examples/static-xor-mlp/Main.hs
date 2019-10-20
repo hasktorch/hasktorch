@@ -32,10 +32,10 @@ import           Data.Reflection
 import           GHC.Generics
 import           GHC.TypeLits
 
-import           Torch.Static
-import           Torch.Static.Native     hiding ( linear )
-import           Torch.Static.Factories
-import           Torch.Static.NN
+import           Torch.Typed
+import           Torch.Typed.Native     hiding ( linear )
+import           Torch.Typed.Factories
+import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
 import qualified Torch.DType                   as D

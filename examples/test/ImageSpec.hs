@@ -12,7 +12,7 @@ import Control.Exception.Safe
 import Control.Monad.State.Strict
 
 import qualified Image as I
-import Torch.Static
+import Torch.Typed
 import qualified Torch.Tensor as D
 import GHC.Generics
 

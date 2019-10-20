@@ -16,7 +16,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module StaticSpec (spec) where
+module TypedSpec (spec) where
 
 import Test.Hspec
 import Test.QuickCheck
@@ -27,9 +27,9 @@ import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.Functions as D
 import qualified Torch.DType as D
-import Torch.Static
-import Torch.Static.Factories
-import Torch.Static.Native
+import Torch.Typed
+import Torch.Typed.Factories
+import Torch.Typed.Native
 import qualified Torch.TensorOptions as D
 import Data.Reflection
 

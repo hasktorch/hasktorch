@@ -18,7 +18,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Torch.Static where
+module Torch.Typed where
 
 import           Prelude                 hiding ( (.), id )
 import           Control.Arrow
@@ -153,7 +153,7 @@ instance (KnownDType dtype, KnownNat h, TensorOptions dtype t) => TensorOptions 
   optionsRuntimeShape = (natValI @h : optionsRuntimeShape @dtype @t)
 
 --------------------------------------------------------------------------------
--- Dynamic -> Static typecasts
+-- Dynamic -> Typed typecasts
 --------------------------------------------------------------------------------
 
 -- type family Flip (constraint :: a -> b -> Constraint) (fst :: b) (snd :: a) :: Constraint where

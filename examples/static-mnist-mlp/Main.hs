@@ -33,10 +33,10 @@ import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
 import qualified ATen.Managed.Type.Context     as ATen
-import           Torch.Static
-import           Torch.Static.Native     hiding ( linear )
-import           Torch.Static.Factories
-import           Torch.Static.NN
+import           Torch.Typed
+import           Torch.Typed.Native     hiding ( linear )
+import           Torch.Typed.Factories
+import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
 import qualified Torch.DType                   as D
@@ -81,10 +81,10 @@ mlp
 mlp MLP {..} train input =
   return
     .   linear mlpLayer2
-    =<< Torch.Static.NN.dropout mlpDropout train
+    =<< Torch.Typed.NN.dropout mlpDropout train
     .   tanh
     .   linear mlpLayer1
-    =<< Torch.Static.NN.dropout mlpDropout train
+    =<< Torch.Typed.NN.dropout mlpDropout train
     .   tanh
     .   linear mlpLayer0
     =<< pure input

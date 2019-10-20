@@ -36,10 +36,10 @@ import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
 import qualified ATen.Managed.Type.Context     as ATen
-import           Torch.Static
-import           Torch.Static.Native
-import           Torch.Static.Factories
-import           Torch.Static.NN
+import           Torch.Typed
+import           Torch.Typed.Native
+import           Torch.Typed.Factories
+import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
 import qualified Torch.DType                   as D
@@ -76,16 +76,16 @@ cnn
   -> Tensor dtype '[batchSize, I.DataDim]
   -> Tensor dtype '[batchSize, I.ClassDim]
 cnn CNN {..} =
-  Torch.Static.NN.linear fc1
+  Torch.Typed.NN.linear fc1
     . relu
-    . Torch.Static.NN.linear fc0
+    . Torch.Typed.NN.linear fc0
     . reshape @'[batchSize, 4*4*50]
     . maxPool2d @KernelSize @Strides @NoPadding
     . relu
-    . Torch.Static.NN.conv2d @NoStrides @NoPadding conv1
+    . Torch.Typed.NN.conv2d @NoStrides @NoPadding conv1
     . maxPool2d @KernelSize @Strides @NoPadding
     . relu
-    . Torch.Static.NN.conv2d @NoStrides @NoPadding conv0
+    . Torch.Typed.NN.conv2d @NoStrides @NoPadding conv0
     . unsqueeze @1
     . reshape @'[batchSize, I.Rows, I.Cols]
 

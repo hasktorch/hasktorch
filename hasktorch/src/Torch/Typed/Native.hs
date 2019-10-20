@@ -15,7 +15,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Torch.Static.Native where
+module Torch.Typed.Native where
 
 import           Prelude                 hiding ( all
                                                 , any
@@ -73,8 +73,8 @@ import           Torch.Functions                ( Reduction(..)
                                                 , isUpper
                                                 , kOne
                                                 )
-import           Torch.Static
-import           Torch.Static.Factories
+import           Torch.Typed
+import           Torch.Typed.Factories
 
 
 type family DTypeIsNotHalf (dtype :: D.DType) :: Constraint where
@@ -1603,7 +1603,7 @@ linear'
   -> Tensor dtype '[outputFeatures]
   -> Tensor dtype shape
   -> Tensor dtype shape'
--- linear' weight bias input = Torch.Static.add (matmul input $ transpose @0 @1 weight) bias
+-- linear' weight bias input = Torch.Typed.add (matmul input $ transpose @0 @1 weight) bias
 linear' weight bias input = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
 
 -- | mkldnnLinear
