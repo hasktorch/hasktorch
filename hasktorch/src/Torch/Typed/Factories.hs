@@ -35,17 +35,37 @@ import qualified Torch.DType as D
 import qualified Torch.TensorOptions as D
 import Torch.Typed
 
-zeros :: forall dtype shape. (TensorOptions dtype shape) => Tensor dtype shape
-zeros = UnsafeMkTensor $ D.zeros (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+zeros
+  :: forall shape dtype device
+   . (TensorOptions shape dtype device)
+  => Tensor shape dtype device
+zeros = UnsafeMkTensor $ D.zeros
+  (optionsRuntimeShape @shape @dtype @device)
+  (D.withDType (optionsRuntimeDType @shape @dtype @device) D.defaultOpts)
 
-ones :: forall dtype shape. (TensorOptions dtype shape) => Tensor dtype shape
-ones = UnsafeMkTensor $ D.ones (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+ones
+  :: forall shape dtype device
+   . (TensorOptions shape dtype device)
+  => Tensor shape dtype device
+ones = UnsafeMkTensor $ D.ones
+  (optionsRuntimeShape @shape @dtype @device)
+  (D.withDType (optionsRuntimeDType @shape @dtype @device) D.defaultOpts)
 
-rand :: forall dtype shape. (TensorOptions dtype shape) => IO (Tensor dtype shape)
-rand = UnsafeMkTensor <$> D.rand (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+rand
+  :: forall shape dtype device
+   . (TensorOptions shape dtype device)
+  => IO (Tensor shape dtype device)
+rand = UnsafeMkTensor <$> D.rand
+  (optionsRuntimeShape @shape @dtype @device)
+  (D.withDType (optionsRuntimeDType @shape @dtype @device) D.defaultOpts)
 
-randn :: forall dtype shape. (TensorOptions dtype shape) => IO (Tensor dtype shape)
-randn = UnsafeMkTensor <$> D.randn (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+randn
+  :: forall shape dtype device
+   . (TensorOptions shape dtype device)
+  => IO (Tensor shape dtype device)
+randn = UnsafeMkTensor <$> D.randn
+  (optionsRuntimeShape @shape @dtype @device)
+  (D.withDType (optionsRuntimeDType @shape @dtype @device) D.defaultOpts)
 
 -- | linspace
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @7 0 3
