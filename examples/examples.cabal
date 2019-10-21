@@ -50,6 +50,13 @@ executable static-transformer
   main-is:             Main.hs
   build-depends:       reflection
 
+executable static-lstm
+  import:              config
+  hs-source-dirs:      static-lstm
+  other-modules:       LSTM
+  main-is:             Main.hs
+  build-depends:       reflection
+
 executable rnn
   import:              config
   hs-source-dirs:      rnn
