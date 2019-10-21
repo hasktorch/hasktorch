@@ -32,9 +32,9 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.Functions               as D
 import qualified Torch.DType                   as D
+import qualified Torch.Device                  as D
 import qualified Torch.TensorOptions           as D
 import           Torch.Typed.Aux
-import           Torch.Typed.Device
 import           Torch.Typed.Tensor
 
 zeros

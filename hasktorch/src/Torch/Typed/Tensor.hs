@@ -46,8 +46,8 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.Functions               as D hiding (select)
 import qualified Torch.DType                   as D
+import qualified Torch.Device                  as D
 import           Torch.Typed.Aux
-import           Torch.Typed.Device
 
 class KnownShape shape where
     shapeVal :: [Int]
@@ -98,7 +98,16 @@ type family ComputeDType (dtype' :: dtype) :: D.DType where
   ComputeDType D.Double = D.Double
   ComputeDType dtype' = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype')
 
-data Tensor (shape :: [Nat]) (dtype :: D.DType) (device :: (DeviceType, Nat)) where
+class KnownDevice (device :: (D.DeviceType, Nat)) where
+  deviceVal :: D.Device
+
+instance (KnownNat n) => KnownDevice '( 'D.CPU, n) where
+  deviceVal = D.Device D.CPU (natValInt16 @n)
+
+instance (KnownNat n) => KnownDevice '( 'D.CUDA, n) where
+  deviceVal = D.Device D.CUDA (natValInt16 @n)
+
+data Tensor (shape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
   UnsafeMkTensor :: forall device dtype shape . { toDynamic :: D.Tensor } -> Tensor shape dtype device
 
 type family ComputeHaskellType (dtype :: D.DType) :: Type where
@@ -115,9 +124,9 @@ type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
 
 instance ( D.TensorLike [ComputeItemType (ComputeHaskellType dtype) shape]
          , KnownShape shape)
-  => IsList (Maybe (Tensor shape dtype '( 'CPU, 0)))
+  => IsList (Maybe (Tensor shape dtype '( 'D.CPU, 0)))
  where
-  type Item (Maybe (Tensor shape dtype '( 'CPU, 0))) = ComputeItemType (ComputeHaskellType dtype) shape
+  type Item (Maybe (Tensor shape dtype '( 'D.CPU, 0))) = ComputeItemType (ComputeHaskellType dtype) shape
   fromList xs = do
     shapeXs <- D._deepDims xs
     if shapeVal @shape == shapeXs
@@ -143,20 +152,20 @@ instance Fractional (Tensor shape dtype device) where
 instance Show (Tensor shape dtype device) where
     show (UnsafeMkTensor dynamic) = show dynamic
 
-class TensorOptions (shape :: [Nat]) (dtype :: D.DType) (device :: (DeviceType, Nat)) where
-  optionsRuntimeDevice :: Device
-  optionsRuntimeDType :: D.DType
+class TensorOptions (shape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) where
   optionsRuntimeShape :: [Int]
+  optionsRuntimeDType :: D.DType
+  optionsRuntimeDevice :: D.Device
 
 instance (KnownDType dtype, KnownDevice device) => TensorOptions '[] dtype device where
-  optionsRuntimeDevice = deviceVal @device
-  optionsRuntimeDType = dtypeVal @dtype
   optionsRuntimeShape = []
+  optionsRuntimeDType = dtypeVal @dtype
+  optionsRuntimeDevice = deviceVal @device
 
 instance (KnownNat h, TensorOptions t dtype device) => TensorOptions (h ': t) dtype device where
-  optionsRuntimeDevice = optionsRuntimeDevice @t @dtype @device
-  optionsRuntimeDType = optionsRuntimeDType @t @dtype @device
   optionsRuntimeShape = natValI @h : optionsRuntimeShape @t @dtype @device
+  optionsRuntimeDType = optionsRuntimeDType @t @dtype @device
+  optionsRuntimeDevice = optionsRuntimeDevice @t @dtype @device
 
 --------------------------------------------------------------------------------
 -- Untyped -> Typed typecasts
@@ -191,20 +200,23 @@ someDType D.Float  = SomeDType $ Proxy @D.Float
 someDType D.Double = SomeDType $ Proxy @D.Double
 
 data SomeDevice where
-  SomeDevice :: forall (device :: (DeviceType, Nat)) . Proxy device -> SomeDevice
+  SomeDevice :: forall (device :: (D.DeviceType, Nat)) . Proxy device -> SomeDevice
 
-someDevice :: Device -> SomeDevice
-someDevice Device {..} = case someNatVal (fromIntegral deviceIndex) of
+someDevice :: D.Device -> SomeDevice
+someDevice D.Device {..} = case someNatVal (fromIntegral deviceIndex) of
   Nothing -> error "Negative device index in someDevice!"
   Just (SomeNat (Proxy :: Proxy n)) -> case deviceType of
-    CPU  -> SomeDevice $ Proxy @'( 'CPU, n)
-    CUDA -> SomeDevice $ Proxy @'( 'CUDA, n)
+    D.CPU  -> SomeDevice $ Proxy @'( 'D.CPU, n)
+    D.CUDA -> SomeDevice $ Proxy @'( 'D.CUDA, n)
 
-withTensor :: D.Tensor ->
-              (forall (device :: (DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]).
-                    KnownShape shape => Tensor shape dtype device -> r) ->
-              r
-
+withTensor
+  :: D.Tensor
+  -> (  forall shape dtype device
+      . KnownShape shape
+     => Tensor shape dtype device
+     -> r
+     )
+  -> r
 withTensor untypedTensor f = case someShape (D.shape untypedTensor) of
     (SomeShape (Proxy :: Proxy shape)) -> case someDType (D.dtype untypedTensor) of
         (SomeDType (Proxy :: Proxy dtype)) -> case someDevice (undefined untypedTensor) of
@@ -716,7 +728,7 @@ device
   :: forall device dtype shape
    . TensorOptions shape dtype device
   => Tensor shape dtype device
-  -> Device
+  -> D.Device
 device _ = optionsRuntimeDevice @shape @dtype @device
 
 -- TODO: figure out what device, dtype, and shape we need for this

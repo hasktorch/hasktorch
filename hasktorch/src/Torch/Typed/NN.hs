@@ -27,12 +27,12 @@ import qualified Torch.NN                      as A
 import qualified Torch.Autograd                as A
 import qualified Torch.Tensor                  as A
 import qualified Torch.DType                   as D
-import           Torch.Typed.Device
+import qualified Torch.Device                  as D
 import           Torch.Typed.Factories
 import           Torch.Typed.Native
 import           Torch.Typed.Tensor
 
-newtype Parameter (shape :: [Nat]) (dtype :: D.DType) (device :: (DeviceType, Nat)) = Parameter A.IndependentTensor
+newtype Parameter (shape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) = Parameter A.IndependentTensor
   deriving (Show)
 
 toDependent
@@ -77,12 +77,12 @@ instance (A.Randomizable xSpec x, A.Randomizable (HList xsSpec) (HList xs))
 
 data LinearSpec (inputFeatures :: Nat) (outputFeatures :: Nat)
                 (dtype :: D.DType)
-                (device :: (DeviceType, Nat))
+                (device :: (D.DeviceType, Nat))
   = LinearSpec deriving (Show, Eq)
 
 data Linear (inputFeatures :: Nat) (outputFeatures :: Nat)
             (dtype :: D.DType)
-            (device :: (DeviceType, Nat))
+            (device :: (D.DeviceType, Nat))
  where
   Linear
     :: forall inputFeatures outputFeatures dtype device
@@ -147,14 +147,14 @@ data EmbeddingSpec (paddingIdx :: Maybe Nat)
                    (numEmbeds :: Nat)
                    (embedDim :: Nat)
                    (dtype :: D.DType)
-                   (device :: (DeviceType, Nat))
+                   (device :: (D.DeviceType, Nat))
   = EmbeddingSpec deriving (Show, Eq)
 
 data Embedding (paddingIdx :: Maybe Nat)
                (numEmbeds :: Nat)
                (embedDim :: Nat)
                (dtype :: D.DType)
-               (device :: (DeviceType, Nat))
+               (device :: (D.DeviceType, Nat))
  where
   Embedding
     :: forall paddingIdx numEmbeds embedDim dtype device
@@ -212,13 +212,13 @@ instance ( paddingIdx <= numEmbeds
 data Conv1dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize :: Nat)
                 (dtype :: D.DType)
-                (device :: (DeviceType, Nat))
+                (device :: (D.DeviceType, Nat))
   = Conv1dSpec deriving (Show, Eq)
 
 data Conv1d (inputChannelSize :: Nat) (outputChannelSize :: Nat)
             (kernelSize :: Nat)
             (dtype :: D.DType)
-            (device :: (DeviceType, Nat))
+            (device :: (D.DeviceType, Nat))
  where
   Conv1d
     :: forall inputChannelSize outputChannelSize kernelSize dtype device
@@ -263,13 +263,13 @@ instance ( KnownNat inputChannelSize
 data Conv2dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize0 :: Nat) (kernelSize1 :: Nat)
                 (dtype :: D.DType)
-                (device :: (DeviceType, Nat))
+                (device :: (D.DeviceType, Nat))
   = Conv2dSpec deriving (Show, Eq)
 
 data Conv2d (inputChannelSize :: Nat) (outputChannelSize :: Nat)
             (kernelSize0 :: Nat) (kernelSize1 :: Nat)
             (dtype :: D.DType)
-            (device :: (DeviceType, Nat))
+            (device :: (D.DeviceType, Nat))
  where
   Conv2d
     :: forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device
@@ -315,13 +315,13 @@ instance ( KnownNat inputChannelSize
 data Conv3dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize0 :: Nat) (kernelSize1 :: Nat) (kernelSize2 :: Nat)
                 (dtype :: D.DType)
-                (device :: (DeviceType, Nat))
+                (device :: (D.DeviceType, Nat))
   = Conv3dSpec deriving (Show, Eq)
 
 data Conv3d (inputChannelSize :: Nat) (outputChannelSize :: Nat)
             (kernelSize0 :: Nat) (kernelSize1 :: Nat) (kernelSize2 :: Nat)
             (dtype :: D.DType)
-            (device :: (DeviceType, Nat))
+            (device :: (D.DeviceType, Nat))
  where
   Conv3d
     :: forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device
@@ -365,7 +365,7 @@ instance ( KnownNat inputChannelSize
   sample Conv3dSpec =
     Conv3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
-data LayerNormSpec (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (DeviceType, Nat))
+data LayerNormSpec (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat))
  where
   LayerNormSpec
     :: forall normalizedShape dtype device
@@ -373,7 +373,7 @@ data LayerNormSpec (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (Dev
     -> LayerNormSpec normalizedShape dtype device
  deriving (Show, Eq)
 
-data LayerNorm (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (DeviceType, Nat))
+data LayerNorm (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat))
  where
   LayerNorm
     :: { layerNormWeight :: Parameter normalizedShape dtype device

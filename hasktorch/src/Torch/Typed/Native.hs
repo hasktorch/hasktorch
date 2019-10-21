@@ -67,6 +67,7 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
 import qualified Torch.DType                   as D
+import qualified Torch.Device                  as D
 import qualified Torch.Scalar                  as D
 import           Torch.Functions                ( Reduction(..)
                                                 , Tri(..)
@@ -74,7 +75,6 @@ import           Torch.Functions                ( Reduction(..)
                                                 , kOne
                                                 )
 import           Torch.Typed.Aux
-import           Torch.Typed.Device
 import           Torch.Typed.Factories
 import           Torch.Typed.Tensor
 
@@ -1090,14 +1090,14 @@ bmm input other = unsafePerformIO $ cast2 ATen.bmm_tt input other
 -- >>> :kind! Ty
 -- Ty :: Maybe (D.DType, [Nat])
 -- = 'Nothing
-type family BroadcastTensorsImpl (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (DeviceType, Nat))) :: Maybe ([Nat], D.DType, (DeviceType, Nat)) where
+type family BroadcastTensorsImpl (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
   BroadcastTensorsImpl '[]                                    'Nothing                                = 'Nothing
   BroadcastTensorsImpl '[]                                    ('Just '(reverseShape, dtype, device))  = 'Just '(Reverse reverseShape, dtype, device)
   BroadcastTensorsImpl (Tensor shape dtype device ': tensors) 'Nothing                                = BroadcastTensorsImpl tensors ('Just '(Reverse shape, dtype, device))
   BroadcastTensorsImpl (Tensor shape dtype device ': tensors) ('Just '(reverseShape', dtype, device)) = BroadcastTensorsImpl tensors (MaybeTriple (ComputeBroadcast (Reverse shape) reverseShape') ('Just dtype) ('Just device))
   BroadcastTensorsImpl (Tensor shape dtype device ': _)       ('Just _)                               = Nothing
 
-type family BroadcastTensorsCheck (tensors :: [a]) (result :: Maybe ([Nat], D.DType, (DeviceType, Nat))) :: [a] where
+type family BroadcastTensorsCheck (tensors :: [a]) (result :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: [a] where
   BroadcastTensorsCheck tensors 'Nothing                        = TypeError (    Text "Cannot broadcast tensors due to incompatible shapes and/or dtypes: "
                                                                             :<>: ShowType tensors
                                                                             )
@@ -1137,28 +1137,28 @@ broadcastTensors
   -> HList tensors' -- ^ output list of tensors
 broadcastTensors tensors = unsafePerformIO $ cast1 ATen.broadcast_tensors_l tensors
 
-type family CatImpl (dim :: Nat) (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (DeviceType, Nat))) :: Maybe ([Nat], D.DType, (DeviceType, Nat)) where
+type family CatImpl (dim :: Nat) (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
   CatImpl _   '[]                                    acc = acc
   CatImpl dim (Tensor shape dtype device ': tensors) acc = CatImpl dim tensors (MaybeTriple (ComputeCatShape dim shape acc) (ComputeCatDType dtype acc) (ComputeCatDevice device acc))
 
-type family ComputeCatShape (dim :: Nat) (shape :: [Nat]) (acc :: Maybe ([Nat], D.DType, (DeviceType, Nat))) :: Maybe [Nat] where
+type family ComputeCatShape (dim :: Nat) (shape :: [Nat]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe [Nat] where
   ComputeCatShape 0   (x ': xs) Nothing                          = Just (x ': xs)
   ComputeCatShape dim (x ': xs) Nothing                          = AppendToMaybe x (ComputeCatShape (dim - 1) xs Nothing)
   ComputeCatShape 0   (x ': xs) (Just '(y ': xs, _, _))          = Just ((x + y) ': xs)
   ComputeCatShape dim (x ': xs) (Just '(x ': ys, dtype, device)) = AppendToMaybe x (ComputeCatShape (dim - 1) xs (Just '(ys, dtype, device)))
   ComputeCatShape _   _         _                                = Nothing
 
-type family ComputeCatDType (dtype :: D.DType) (acc :: Maybe ([Nat], D.DType, (DeviceType, Nat))) :: Maybe D.DType where
+type family ComputeCatDType (dtype :: D.DType) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe D.DType where
   ComputeCatDType dtype Nothing               = Just dtype
   ComputeCatDType dtype (Just '(_, dtype, _)) = Just dtype
   ComputeCatDType _     _                     = Nothing
 
-type family ComputeCatDevice (device :: (DeviceType, Nat)) (acc :: Maybe ([Nat], D.DType, (DeviceType, Nat))) :: Maybe (DeviceType, Nat) where
+type family ComputeCatDevice (device :: (D.DeviceType, Nat)) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe (D.DeviceType, Nat) where
   ComputeCatDevice device Nothing                = Just device
   ComputeCatDevice device (Just '(_, _, device)) = Just device
   ComputeCatDevice _      _                      = Nothing
 
-type family CatCheck (res :: Maybe ([Nat], D.DType, (DeviceType, Nat))) :: ([Nat], D.DType, (DeviceType, Nat)) where
+type family CatCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: ([Nat], D.DType, (D.DeviceType, Nat)) where
   CatCheck 'Nothing                        = TypeError (Text "Concatenation impossible.")
   CatCheck ('Just '(shape, dtype, device)) = '(shape, dtype, device)
 
@@ -1222,7 +1222,7 @@ cat tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors (natValI @dim :: Int)
 -- chain_matmul :: [Tensor shape dtype device] -> Tensor shape dtype device
 -- chain_matmul _matrices = unsafePerformIO $ (cast1 ATen.chain_matmul_l) _matrices
 
-type family ChunkImpl (chunkShapes :: Maybe [[Nat]]) (dtype :: D.DType) (device :: (DeviceType, Nat)) :: Maybe a where
+type family ChunkImpl (chunkShapes :: Maybe [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: Maybe a where
   ChunkImpl (Just '[])               _     _     = Just '[]
   ChunkImpl (Just (shape ': shapes)) dtype device = AppendToMaybe (Tensor shape dtype device) (ChunkImpl (Just shapes) dtype device)
   ChunkImpl Nothing                  _     _     = Nothing
@@ -2514,7 +2514,7 @@ celu alpha input = unsafePerformIO $ cast2 ATen.celu_ts input alpha
 -- sspaddmm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Tensor shape dtype device
 -- sspaddmm _input _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.sspaddmm_tttss) _input _mat1 _mat2 _beta _alpha
 
-type family StackImpl (dim :: Nat) (tensors :: [a]) (count :: Nat) :: Maybe ([Nat], D.DType, (DeviceType, Nat)) where
+type family StackImpl (dim :: Nat) (tensors :: [a]) (count :: Nat) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
   StackImpl dim '[]                                                                 count = Nothing
   StackImpl dim (Tensor shape dtype device ': '[])                                  count = MaybeTriple (ComputeStackShape shape dim count) (Just dtype) (Just device)
   StackImpl dim (Tensor shape dtype device ': Tensor shape dtype device ': tensors) count = StackImpl dim (Tensor shape dtype device ': tensors) (count + 1)
@@ -2537,7 +2537,7 @@ type family ComputeStackShape (shape :: [Nat]) (dim  :: Nat) (count :: Nat) :: M
   ComputeStackShape (x ': xs) dim count = AppendToMaybe x (ComputeStackShape xs (dim - 1) count)
   ComputeStackShape '[]       _   _     = Nothing
 
-type family StackCheck (res :: Maybe ([Nat], D.DType, (DeviceType, Nat))) :: ([Nat], D.DType, (DeviceType, Nat)) where
+type family StackCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: ([Nat], D.DType, (D.DeviceType, Nat)) where
   StackCheck 'Nothing                        = TypeError (Text "Stacking impossible.")
   StackCheck ('Just '(shape, dtype, device)) = '(shape, dtype, device)
 
