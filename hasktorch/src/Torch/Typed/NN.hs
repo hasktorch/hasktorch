@@ -32,22 +32,22 @@ import           Torch.Typed.Factories
 import           Torch.Typed.Native
 import           Torch.Typed.Tensor
 
-newtype Parameter (shape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) = Parameter A.IndependentTensor
+newtype Parameter (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) = Parameter A.IndependentTensor
   deriving (Show)
 
 toDependent
   :: forall shape dtype device
-   . Parameter shape dtype device
-  -> Tensor shape dtype device
+   . Parameter device dtype shape
+  -> Tensor device dtype shape
 toDependent (Parameter t) = UnsafeMkTensor $ A.toDependent t
 
 makeIndependent
   :: forall shape dtype device
-   . Tensor shape dtype device
-  -> IO (Parameter shape dtype device)
+   . Tensor device dtype shape
+  -> IO (Parameter device dtype shape)
 makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
 
-instance A.Parameterized (Parameter shape dtype device) where
+instance A.Parameterized (Parameter device dtype shape) where
   flattenParameters (Parameter x) = [x]
   replaceOwnParameters _ = Parameter <$> A.nextParameter
 
@@ -86,8 +86,8 @@ data Linear (inputFeatures :: Nat) (outputFeatures :: Nat)
  where
   Linear
     :: forall inputFeatures outputFeatures dtype device
-     . { linearWeight :: Parameter '[outputFeatures, inputFeatures] dtype device
-       , linearBias   :: Parameter '[outputFeatures] dtype device
+     . { linearWeight :: Parameter device dtype '[outputFeatures, inputFeatures]
+       , linearBias   :: Parameter device dtype '[outputFeatures]
        }
     -> Linear inputFeatures outputFeatures dtype device
  deriving (Show, Generic)
@@ -133,8 +133,8 @@ dropout
   :: forall shape dtype device
    . Dropout
   -> Bool
-  -> Tensor shape dtype device
-  -> IO (Tensor shape dtype device)
+  -> Tensor device dtype shape
+  -> IO (Tensor device dtype shape)
 dropout Dropout {..} dropoutTrain =
   Torch.Typed.Native.dropout dropoutProb dropoutTrain
 
@@ -159,7 +159,7 @@ data Embedding (paddingIdx :: Maybe Nat)
   Embedding
     :: forall paddingIdx numEmbeds embedDim dtype device
     --  . (PaddingIdxCheck paddingIdx numEmbeds)
-     . { embedWeights :: Parameter '[numEmbeds, embedDim] dtype device }
+     . { embedWeights :: Parameter device dtype '[numEmbeds, embedDim] }
     -> Embedding paddingIdx numEmbeds embedDim dtype device
  deriving (Show, Generic)
 
@@ -169,8 +169,8 @@ embed
      , PaddingIdxCheck paddingIdx numEmbeds
      )
   => Embedding paddingIdx numEmbeds embedDim dtype device
-  -> Tensor shape 'D.Int64 device
-  -> Tensor (Reverse (embedDim ': (Reverse shape))) dtype device
+  -> Tensor device 'D.Int64 shape
+  -> Tensor device dtype    (Reverse (embedDim ': (Reverse shape)))
 embed Embedding {..} input = embedding @paddingIdx
   False
   False
@@ -222,12 +222,8 @@ data Conv1d (inputChannelSize :: Nat) (outputChannelSize :: Nat)
  where
   Conv1d
     :: forall inputChannelSize outputChannelSize kernelSize dtype device
-     . { conv1dWeight :: Parameter '[ outputChannelSize, inputChannelSize
-                                    , kernelSize
-                                    ]
-                                   dtype
-                                   device
-       , conv1dBias   :: Parameter '[outputChannelSize] dtype device
+     . { conv1dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize]
+       , conv1dBias   :: Parameter device dtype '[outputChannelSize]
        }
     -> Conv1d inputChannelSize outputChannelSize kernelSize dtype device
  deriving (Show, Generic)
@@ -273,12 +269,8 @@ data Conv2d (inputChannelSize :: Nat) (outputChannelSize :: Nat)
  where
   Conv2d
     :: forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device
-     . { conv2dWeight :: Parameter '[ outputChannelSize, inputChannelSize
-                                    , kernelSize0, kernelSize1
-                                    ]
-                                   dtype
-                                   device
-       , conv2dBias   :: Parameter '[outputChannelSize] dtype device
+     . { conv2dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1]
+       , conv2dBias   :: Parameter device dtype '[outputChannelSize]
        }
     -> Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device
  deriving (Show, Generic)
@@ -325,12 +317,8 @@ data Conv3d (inputChannelSize :: Nat) (outputChannelSize :: Nat)
  where
   Conv3d
     :: forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device
-     . { conv3dWeight :: Parameter '[ outputChannelSize, inputChannelSize
-                                    , kernelSize0, kernelSize1, kernelSize2
-                                    ]
-                                   dtype
-                                   device
-       , conv3dBias   :: Parameter '[outputChannelSize] dtype device
+     . { conv3dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2]
+       , conv3dBias   :: Parameter device dtype '[outputChannelSize]
        }
     -> Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device
  deriving (Show, Generic)
@@ -376,9 +364,9 @@ data LayerNormSpec (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.D
 data LayerNorm (normalizedShape :: [Nat]) (dtype :: D.DType) (device :: (D.DeviceType, Nat))
  where
   LayerNorm
-    :: { layerNormWeight :: Parameter normalizedShape dtype device
-       , layerNormBias :: Parameter normalizedShape dtype device
-       , layerNormEps :: Double
+    :: { layerNormWeight :: Parameter device dtype normalizedShape
+       , layerNormBias   :: Parameter device dtype normalizedShape
+       , layerNormEps    :: Double
        }
     -> LayerNorm normalizedShape dtype device
  deriving (Show, Generic)
@@ -389,8 +377,8 @@ layerNorm
      , KnownShape normalizedShape
      )
   => LayerNorm normalizedShape dtype device
-  -> Tensor shape dtype device
-  -> Tensor shape dtype device
+  -> Tensor device dtype shape
+  -> Tensor device dtype shape
 layerNorm LayerNorm {..} = Torch.Typed.Native.layerNorm @normalizedShape
   (toDependent layerNormWeight)
   (toDependent layerNormBias)

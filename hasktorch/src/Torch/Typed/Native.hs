@@ -113,8 +113,8 @@ type family SumDType (dtype :: D.DType) :: D.DType where
 sumAll
   :: forall shape dtype device
    . (DTypeIsNotHalf dtype)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor '[] (SumDType dtype) device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device (SumDType dtype) '[] -- ^ output
 sumAll input = unsafePerformIO $ cast1 ATen.sum_t input
 
 -- | sumDim
@@ -125,8 +125,8 @@ sumAll input = unsafePerformIO $ cast1 ATen.sum_t input
 sumDim
   :: forall d shape dtype device
    . (KnownNat d)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor (DropValue shape d) dtype device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (DropValue shape d) -- ^ output
 sumDim input = unsafePerformIO $ cast2 ATen.sum_tl input (natValI @d)
 
 -- | abs
@@ -134,22 +134,22 @@ sumDim input = unsafePerformIO $ cast2 ATen.sum_tl input (natValI @d)
 -- (Float,[2,2])
 abs
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 abs input = unsafePerformIO $ cast1 ATen.abs_t input
 
 -- | floor
 ceil
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 ceil input = unsafePerformIO $ cast1 ATen.ceil_t input
 
 -- | floor
 floor
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 floor input = unsafePerformIO $ cast1 ATen.floor_t input
 
 -- | min
@@ -157,8 +157,8 @@ floor input = unsafePerformIO $ cast1 ATen.floor_t input
 -- (Float,[])
 min
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor '[] dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype '[] -- ^ output
 min input = unsafePerformIO $ cast1 ATen.min_t input
 
 -- | max
@@ -166,8 +166,8 @@ min input = unsafePerformIO $ cast1 ATen.min_t input
 -- (Float,[])
 max
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor '[] dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype '[] -- ^ output
 max input = unsafePerformIO $ cast1 ATen.max_t input
 
 -- | median
@@ -175,8 +175,8 @@ max input = unsafePerformIO $ cast1 ATen.max_t input
 -- (Float,[])
 median
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor '[] dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype '[] -- ^ output
 median input = unsafePerformIO $ cast1 ATen.median_t input
 
 -- | cmul
@@ -185,8 +185,8 @@ cmul
   :: forall a shape dtype device
    . D.Scalar a
   => a -- ^ scalar input
-  -> Tensor shape dtype device -- ^ tensor input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ tensor input
+  -> Tensor device dtype shape -- ^ output
 cmul a input = unsafePerformIO $ cast2 ATen.mul_ts input a
 
 -- | erf
@@ -195,8 +195,8 @@ cmul a input = unsafePerformIO $ cast2 ATen.mul_ts input a
 -- (Float,[3,2])
 erf
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 erf input = unsafePerformIO $ cast1 ATen.erf_t input
 
 -- | exp
@@ -205,8 +205,8 @@ erf input = unsafePerformIO $ cast1 ATen.erf_t input
 -- (Float,[3,2])
 exp
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 exp input = unsafePerformIO $ cast1 ATen.exp_t input
 
 -- | log1p
@@ -215,8 +215,8 @@ exp input = unsafePerformIO $ cast1 ATen.exp_t input
 -- (Float,[3,2])
 log1p
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 log1p input = unsafePerformIO $ cast1 ATen.log1p_t input
 
 -- | log2
@@ -225,8 +225,8 @@ log1p input = unsafePerformIO $ cast1 ATen.log1p_t input
 -- (Float,[3,2])
 log2
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 log2 input = unsafePerformIO $ cast1 ATen.log2_t input
 
 -- | log10
@@ -235,8 +235,8 @@ log2 input = unsafePerformIO $ cast1 ATen.log2_t input
 -- (Float,[3,2])
 log10
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 log10 input = unsafePerformIO $ cast1 ATen.log10_t input
 
 -- | pow
@@ -247,8 +247,8 @@ pow
   :: forall a shape dtype device
    . D.Scalar a
   => a -- ^ power
-  -> Tensor shape dtype device -- ^ input tensor
-  -> Tensor shape dtype device -- ^ output tensor
+  -> Tensor device dtype shape -- ^ input tensor
+  -> Tensor device dtype shape -- ^ output tensor
 pow a input = unsafePerformIO $ cast2 ATen.pow_ts input a
 
 -- | relu activation function
@@ -257,8 +257,8 @@ pow a input = unsafePerformIO $ cast2 ATen.pow_ts input a
 -- (Float,[3,2])
 relu
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 relu input = unsafePerformIO $ cast1 ATen.relu_t input
 
 -- | selu
@@ -267,8 +267,8 @@ relu input = unsafePerformIO $ cast1 ATen.relu_t input
 -- (Float,[3,2])
 selu
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 selu input = unsafePerformIO $ cast1 ATen.selu_t input
 
 -- | sigmoid
@@ -277,8 +277,8 @@ selu input = unsafePerformIO $ cast1 ATen.selu_t input
 -- (Float,[3,2])
 sigmoid
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 sigmoid input = unsafePerformIO $ cast1 ATen.sigmoid_t input
 
 -- | sin
@@ -287,8 +287,8 @@ sigmoid input = unsafePerformIO $ cast1 ATen.sigmoid_t input
 -- (Float,[3,2])
 sin
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 sin input = unsafePerformIO $ cast1 ATen.sin_t input
 
 -- | sinh
@@ -297,8 +297,8 @@ sin input = unsafePerformIO $ cast1 ATen.sin_t input
 -- (Float,[3,2])
 sinh
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 sinh input = unsafePerformIO $ cast1 ATen.sinh_t input
 
 -- | cos
@@ -307,24 +307,24 @@ sinh input = unsafePerformIO $ cast1 ATen.sinh_t input
 -- (Float,[3,2])
 cos
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 cos input = unsafePerformIO $ cast1 ATen.cos_t input
 
 -- | sqrt
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 sqrt
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 sqrt input = unsafePerformIO $ cast1 ATen.sqrt_t input
 
 -- | tanh
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 tanh 
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 tanh input = unsafePerformIO $ cast1 ATen.tanh_t input
 
 -- | toDType
@@ -333,8 +333,8 @@ tanh input = unsafePerformIO $ cast1 ATen.tanh_t input
 toDType
   :: forall dtype' dtype shape device
    . (KnownDType dtype')
-  => Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype' device -- ^ output
+  => Tensor device dtype  shape -- ^ input
+  -> Tensor device dtype' shape -- ^ output
 toDType input = unsafePerformIO $ cast4 ATen.tensor_to_sbb input (dtypeVal @dtype') False False
 
 type family SqueezeAll (shape :: [Nat]) :: [Nat] where
@@ -347,8 +347,8 @@ type family SqueezeAll (shape :: [Nat]) :: [Nat] where
 -- (Float,[2,2,2])
 squeezeAll
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor (SqueezeAll shape) dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (SqueezeAll shape) -- ^ output
 squeezeAll input = unsafePerformIO $ cast1 ATen.squeeze_t input
 
 -- | ConditionalReduction
@@ -384,10 +384,10 @@ instance KnownReduction ReduceSum where
 binaryCrossEntropy
   :: forall (reduction :: Reduction) shape dtype device
    . (KnownReduction reduction)
-  => Tensor shape dtype device -- ^ weight
-  -> Tensor shape dtype device -- ^ prediction
-  -> Tensor shape dtype device -- ^ target
-  -> Tensor (ConditionalReduction shape reduction) dtype device -- ^ output
+  => Tensor device dtype shape -- ^ weight
+  -> Tensor device dtype shape -- ^ prediction
+  -> Tensor device dtype shape -- ^ target
+  -> Tensor device dtype (ConditionalReduction shape reduction) -- ^ output
 binaryCrossEntropy weight prediction target = unsafePerformIO $ cast4
   ATen.binary_cross_entropy_tttl
   prediction
@@ -402,9 +402,9 @@ binaryCrossEntropy weight prediction target = unsafePerformIO $ cast4
 -- (Float,[])
 mseLoss
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ prediction
-  -> Tensor shape dtype device -- ^ target
-  -> Tensor '[] dtype device -- ^ loss
+   . Tensor device dtype shape -- ^ prediction
+  -> Tensor device dtype shape -- ^ target
+  -> Tensor device dtype '[] -- ^ loss
 mseLoss prediction target = unsafePerformIO $ cast3 ATen.mse_loss_ttl prediction target ATen.kMean
 
 -- | softmax
@@ -416,8 +416,8 @@ mseLoss prediction target = unsafePerformIO $ cast3 ATen.mse_loss_ttl prediction
 softmax
   :: forall dim shape dtype device
    . (KnownNat dim, KnownDType dtype, DimOutOfBoundCheck shape dim)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 softmax input = unsafePerformIO
   $ cast3 ATen.softmax_tls input (natValI @dim) (dtypeVal @dtype)
 
@@ -431,8 +431,8 @@ softmax input = unsafePerformIO
 logSoftmax
   :: forall dim shape dtype device
    . (KnownNat dim, KnownDType dtype, DimOutOfBoundCheck shape dim)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 logSoftmax input = unsafePerformIO
   $ cast3 ATen.log_softmax_tls input (natValI @dim) (dtypeVal @dtype)
 
@@ -462,8 +462,8 @@ type family FstDim (shape :: [Nat]) :: Nat where
 -- (Float,[2,2])
 inverse
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ inverse
-  -> Tensor (Square shape) dtype device -- ^ output
+   . Tensor device dtype shape -- ^ inverse
+  -> Tensor device dtype (Square shape) -- ^ output
 inverse input = unsafePerformIO $ cast1 ATen.inverse_t input
 
 -- | symeig
@@ -486,9 +486,9 @@ symeig
   :: forall shape dtype device
    . Bool -- ^ whether or not to calculate eigenvectors
   -> Tri -- ^ upper or lower triagonal
-  -> Tensor shape dtype device -- ^ input
-  -> ( Tensor (VectorOfSquare shape) dtype device
-     , Tensor (Square shape) dtype device
+  -> Tensor device dtype shape -- ^ input
+  -> ( Tensor device dtype (VectorOfSquare shape) -- ^ eigenvalues
+     , Tensor device dtype (Square shape) -- ^ eigenvectors
      ) -- ^ output
 symeig eigenvectors upper input = unsafePerformIO
   $ cast3 ATen.symeig_tbb input eigenvectors boolUpper
@@ -529,14 +529,14 @@ type family ConditionalEigenVectors (eigenvectors :: EigenVectors) (n:: Nat) :: 
 eig
   :: forall eigenvectors n dtype device
    . (KnownNat n, KnownEigenVectors eigenvectors)
-  => Tensor '[n, n] dtype device -- ^ input matrix
-  -> ( Tensor '[n, 2] dtype device
-     , Tensor (ConditionalEigenVectors eigenvectors n) dtype device
-     ) -- ^ eigenvalues and eigenvectors
+  => Tensor device dtype '[n, n] -- ^ input matrix
+  -> ( Tensor device dtype '[n, 2] -- ^ eigenvalues
+     , Tensor device dtype (ConditionalEigenVectors eigenvectors n) -- ^ eigenvectors
+     ) -- ^ output
 eig input =
   unsafePerformIO $ cast2 ATen.eig_tb input (enableEigenVectors @eigenvectors)
 
--- svd :: Tensor shape dtype device -> Bool -> Bool -> (Tensor shape dtype device, Tensor shape dtype device, Tensor shape dtype device)
+-- svd :: Tensor device dtype shape -> Bool -> Bool -> (Tensor device dtype shape, Tensor device dtype shape, Tensor device dtype shape)
 -- svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
 
 -- | cholesky
@@ -550,16 +550,16 @@ eig input =
 cholesky
   :: forall shape dtype device
    . Tri -- ^ upper or lower triangular part of the matrix
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor (Square shape) dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (Square shape) -- ^ output
 cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
   where boolUpper = isUpper upper
 
--- cholesky_solve :: Tensor shape dtype device -> Tensor shape dtype device -> Tri -> Tensor shape dtype device
+-- cholesky_solve :: Tensor device dtype shape -> Tensor device dtype shape -> Tri -> Tensor device dtype shape
 -- cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
 --   where boolUpper = isUpper upper
 
--- | solve
+-- | solve the system of linear equations represented by `a c = b` and return the LU decomposition of `a`
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> a <- rand :: IO (Tensor 'D.Float '[10,10])
 -- >>> b <- rand :: IO (Tensor 'D.Float '[10,3])
@@ -575,19 +575,21 @@ cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
 solve
   :: forall m_k m_m dtype device
    . (Square m_m ~ m_m, FstDim m_m ~ FstDim m_k)
-  => Tensor m_k dtype device -- ^ b
-  -> Tensor m_m dtype device -- ^ a 
-  -> (Tensor m_k dtype device, Tensor m_m dtype device) -- ^ c and lu
+  => Tensor device dtype m_k -- ^ b
+  -> Tensor device dtype m_m -- ^ a 
+  -> ( Tensor device dtype m_k -- ^ c
+     , Tensor device dtype m_m -- ^ lu
+     ) -- ^ output
 solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
 
--- cholesky_inverse :: Tensor shape dtype device -> Tri -> Tensor shape dtype device
+-- cholesky_inverse :: Tensor device dtype shape -> Tri -> Tensor device dtype shape
 -- cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
 --   where boolUpper = isUpper upper
 
--- geqrf :: Tensor shape dtype device -> (Tensor shape dtype device, Tensor shape dtype device)
+-- geqrf :: Tensor device dtype shape -> (Tensor device dtype shape, Tensor device dtype shape)
 -- geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
 
--- orgqr :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- orgqr :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
 
 -- | sign
@@ -595,8 +597,8 @@ solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
 -- (Float,[3,2])
 sign
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 sign input = unsafePerformIO $ cast1 ATen.sign_t input
 
 type family SetValue (shape :: [Nat]) (i :: Nat) (j :: Nat)  :: [Nat] where
@@ -630,8 +632,8 @@ type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] wher
 transpose
   :: forall n m shape dtype device
    . (KnownNat n, KnownNat m)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor (Transpose shape n m) dtype device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (Transpose shape n m) -- ^ output
 transpose input =
   unsafePerformIO $ cast3 ATen.transpose_tll input (natValI @n) (natValI @m)
 
@@ -640,11 +642,11 @@ transpose input =
 -- (Float,[2,3])
 transpose2D
   :: forall (i :: Nat) (j :: Nat) dtype device
-   . Tensor '[i, j] dtype device -- ^ input
-  -> Tensor '[j, i] dtype device -- ^ output
+   . Tensor device dtype '[i, j] -- ^ input
+  -> Tensor device dtype '[j, i] -- ^ output
 transpose2D = transpose @0 @1
 
--- diag :: Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- diag :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- diag t index = unsafePerformIO $ (cast2 ATen.tensor_diag_l) t index
 
 -- | all
@@ -662,8 +664,8 @@ transpose2D = transpose @0 @1
 -- True
 all
   :: forall shape device
-   . Tensor shape 'D.Bool device -- ^ input
-  -> Tensor '[] 'D.Bool device -- ^ output
+   . Tensor device 'D.Bool shape -- ^ input
+  -> Tensor device 'D.Bool '[] -- ^ output
 all input = unsafePerformIO $ cast1 ATen.all_t input
 
 -- | any
@@ -681,8 +683,8 @@ all input = unsafePerformIO $ cast1 ATen.all_t input
 -- True
 any
   :: forall shape device
-  . Tensor shape 'D.Bool device -- ^ input
-  -> Tensor '[] 'D.Bool device -- ^ output
+   . Tensor device 'D.Bool shape -- ^ input
+  -> Tensor device 'D.Bool '[] -- ^ output
 any input = unsafePerformIO $ cast1 ATen.any_t input
 
 data KeepOrDropDim = KeepDim | DropDim
@@ -719,11 +721,8 @@ type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepOrDropDi
 all'
   :: forall dim keepOrDropDim shape device
    . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
-  => Tensor shape 'D.Bool device -- ^ input
-  -> Tensor
-       (ConditionalDropDimension shape dim keepOrDropDim)
-       'D.Bool
-       device -- ^ output
+  => Tensor device 'D.Bool shape -- ^ input
+  -> Tensor device 'D.Bool (ConditionalDropDimension shape dim keepOrDropDim) -- ^ output
 all' input = unsafePerformIO
   $ cast3 ATen.all_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
@@ -745,11 +744,8 @@ all' input = unsafePerformIO
 any'
   :: forall dim keepOrDropDim shape device
    . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
-  => Tensor shape 'D.Bool device -- ^ input
-  -> Tensor
-       (ConditionalDropDimension shape dim keepOrDropDim)
-       'D.Bool
-       device -- ^ output
+  => Tensor device 'D.Bool shape -- ^ input
+  -> Tensor device 'D.Bool (ConditionalDropDimension shape dim keepOrDropDim) -- ^ output
 any' input = unsafePerformIO $ cast3 ATen.any_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- | dropout
@@ -778,8 +774,8 @@ dropout
   :: forall shape dtype device
    . Double -- ^ dropout probability
   -> Bool -- ^ whether or not to activate dropout
-  -> Tensor shape dtype device -- ^ input
-  -> IO (Tensor shape dtype device) -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> IO (Tensor device dtype shape) -- ^ output
 dropout p train input = cast3 ATen.dropout_tdb input p train
 
 -- | featureDropout
@@ -792,8 +788,8 @@ featureDropout
   :: forall shape dtype device
    . Double -- ^ dropout probability
   -> Bool -- ^ whether or not to activate dropout
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 featureDropout p train input =
   unsafePerformIO $ cast3 ATen.feature_dropout_tdb input p train
 
@@ -806,8 +802,8 @@ alphaDropout
   :: forall shape dtype device
    . Double -- ^ dropout probability
   -> Bool -- ^ whether or not to activate dropout
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 alphaDropout p train input =
   unsafePerformIO $ cast3 ATen.alpha_dropout_tdb input p train
 
@@ -821,8 +817,8 @@ featureAlphaDropout
   :: forall shape dtype device
    . Double -- ^ dropout probability
   -> Bool -- ^ whether or not to activate dropout
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 featureAlphaDropout p train input =
   unsafePerformIO $ cast3 ATen.feature_alpha_dropout_tdb input p train
 
@@ -832,8 +828,8 @@ featureAlphaDropout p train input =
 -- (Float,[3,2])
 acos
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 acos input = unsafePerformIO $ cast1 ATen.acos_t input
 
 -- | avgPool1d
@@ -856,8 +852,8 @@ avgPool1d
    . ( All KnownNat '[kernelSize, stride, padding, channelSize, inputSize, batchSize]
      , ConvSideCheck inputSize kernelSize stride padding outputSize
      )
-  => Tensor '[batchSize, channelSize, inputSize] dtype device -- ^ input
-  -> Tensor '[batchSize, channelSize, outputSize] dtype device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, outputSize] -- ^ output
 avgPool1d input = unsafePerformIO $ cast6 ATen.avg_pool1d_tlllbb
   input
   (natValI @kernelSize)
@@ -876,8 +872,8 @@ avgPool1d input = unsafePerformIO $ cast6 ATen.avg_pool1d_tlllbb
 adaptiveAvgPool1d
   :: forall outputSize channelSize inputSize batchSize dtype device
    . (All KnownNat '[channelSize, inputSize, batchSize, outputSize])
-  => Tensor '[batchSize, channelSize, inputSize] dtype device -- ^ input
-  -> Tensor '[batchSize, channelSize, outputSize] dtype device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, outputSize] -- ^ output
 adaptiveAvgPool1d input = unsafePerformIO
   $ cast2 ATen.adaptive_avg_pool1d_tl input (natValI @outputSize)
 
@@ -891,9 +887,9 @@ adaptiveAvgPool1d input = unsafePerformIO
 adaptiveMaxPool1d
   :: forall outputSize channelSize inputSize batchSize dtype device
    . (All KnownNat '[channelSize, inputSize, batchSize, outputSize])
-  => Tensor '[batchSize, channelSize, inputSize] dtype device -- ^ input
-  -> ( Tensor '[batchSize, channelSize, outputSize] dtype device
-     , Tensor '[batchSize, channelSize, outputSize] 'D.Int64 device
+  => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
+  -> ( Tensor device dtype    '[batchSize, channelSize, outputSize]
+     , Tensor device 'D.Int64 '[batchSize, channelSize, outputSize]
      ) -- ^ output
 adaptiveMaxPool1d input = unsafePerformIO
   $ cast2 ATen.adaptive_max_pool1d_tl input (natValI @outputSize)
@@ -913,10 +909,10 @@ addmv
      )
   => Float -- ^ beta
   -> Float -- ^ alpha
-  -> Tensor '[n,m] dtype device -- ^ matrix
-  -> Tensor '[m] dtype device -- ^ vector
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape' dtype device -- ^ output
+  -> Tensor device dtype '[n,m] -- ^ matrix
+  -> Tensor device dtype '[m] -- ^ vector
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
 addmv beta alpha mat vec input = unsafePerformIO $ cast5 ATen.addmv_tttss input mat vec beta alpha
 
 -- | addr
@@ -934,16 +930,16 @@ addr
      )
   => Float -- ^ beta
   -> Float -- ^ alpha
-  -> Tensor '[n] dtype device -- ^ first input vector
-  -> Tensor '[m] dtype device -- ^ second input vector
-  -> Tensor shape dtype device -- ^ input tensor
-  -> Tensor shape' dtype device -- ^ output tensor
+  -> Tensor device dtype '[n] -- ^ first input vector
+  -> Tensor device dtype '[m] -- ^ second input vector
+  -> Tensor device dtype shape -- ^ input tensor
+  -> Tensor device dtype shape' -- ^ output tensor
 addr beta alpha vec1 vec2 input = unsafePerformIO $ cast5 ATen.addr_tttss input vec1 vec2 beta alpha
 
--- affine_grid_generator :: Tensor shape dtype device -> [Int] -> Tensor shape dtype device
+-- affine_grid_generator :: Tensor device dtype shape -> [Int] -> Tensor device dtype shape
 -- affine_grid_generator _theta _size = unsafePerformIO $ (cast2 ATen.affine_grid_generator_tl) _theta _size
 
--- allclose :: Tensor shape dtype device -> Tensor shape dtype device -> Double -> Double -> Bool -> Bool
+-- allclose :: Tensor device dtype shape -> Tensor device dtype shape -> Double -> Double -> Bool -> Bool
 -- allclose _input _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.allclose_ttddb) _input _other _rtol _atol _equal_nan
 
 -- | argmax
@@ -964,11 +960,8 @@ addr beta alpha vec1 vec2 input = unsafePerformIO $ cast5 ATen.addr_tttss input 
 argmax
   :: forall dim keepOrDropDim shape dtype device
    . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor
-       (ConditionalDropDimension shape dim keepOrDropDim)
-       'D.Int64
-       device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (ConditionalDropDimension shape dim keepOrDropDim) -- ^ output
 argmax input = unsafePerformIO $ cast3 ATen.argmax_tlb
                                        input
                                        (natValI @dim)
@@ -992,17 +985,14 @@ argmax input = unsafePerformIO $ cast3 ATen.argmax_tlb
 argmin
   :: forall dim keepOrDropDim shape dtype device
    . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor
-       (ConditionalDropDimension shape dim keepOrDropDim)
-       'D.Int64
-       device -- ^ output
+  => Tensor device dtype    shape -- ^ input
+  -> Tensor device 'D.Int64 (ConditionalDropDimension shape dim keepOrDropDim) -- ^ output
 argmin input = unsafePerformIO $ cast3 ATen.argmin_tlb
                                        input
                                        (natValI @dim)
                                        (keepOrDropDimVal @keepOrDropDim)
 
--- as_strided :: Tensor shape dtype device -> [Int] -> [Int] -> Int -> Tensor shape dtype device
+-- as_strided :: Tensor device dtype shape -> [Int] -> [Int] -> Int -> Tensor device dtype shape
 -- as_strided _input _size _stride _storage_offset = unsafePerformIO $ (cast4 ATen.as_strided_tlll) _input _size _stride _storage_offset
 
 -- | asin
@@ -1011,8 +1001,8 @@ argmin input = unsafePerformIO $ cast3 ATen.argmin_tlb
 -- (Float,[3,2])
 asin
   :: forall shape dtype device
-   . Tensor shape dtype device
-  -> Tensor shape dtype device
+   . Tensor device dtype shape
+  -> Tensor device dtype shape
 asin input = unsafePerformIO $ cast1 ATen.asin_t input
 
 -- | atan
@@ -1021,8 +1011,8 @@ asin input = unsafePerformIO $ cast1 ATen.asin_t input
 -- (Float,[3,2])
 atan
   :: forall shape dtype device
-   . Tensor shape dtype device
-  -> Tensor shape dtype device
+   . Tensor device dtype shape
+  -> Tensor device dtype shape
 atan input = unsafePerformIO $ cast1 ATen.atan_t input
 
 -- | baddbmm
@@ -1037,29 +1027,29 @@ baddbmm
    . ( KnownNat n
      , KnownNat m
      , KnownNat k
-     , shape' ~ Broadcast shape '[batchSize,n,m]
+     , shape' ~ Broadcast shape '[batchSize, n, m]
      )
   => Float -- ^ beta
   -> Float -- ^ alpha
-  -> Tensor '[batchSize,n,k] dtype device -- ^ first batch
-  -> Tensor '[batchSize,k,m] dtype device -- ^ second batch
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape' dtype device -- ^ output
+  -> Tensor device dtype '[batchSize, n, k] -- ^ first batch
+  -> Tensor device dtype '[batchSize, k, m] -- ^ second batch
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
 baddbmm beta alpha batch1 batch2 input = unsafePerformIO $ cast5 ATen.baddbmm_tttss input batch1 batch2 beta alpha
 
--- batch_norm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Bool -> Double -> Double -> Bool -> Tensor shape dtype device
+-- batch_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Double -> Double -> Bool -> Tensor device dtype shape
 -- batch_norm _input _weight _bias _running_mean _running_var _training _momentum _eps _cudnn_enabled = unsafePerformIO $ (cast9 ATen.batch_norm_tttttbddb) _input _weight _bias _running_mean _running_var _training _momentum _eps _cudnn_enabled
 
--- bilinear :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- bilinear :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- bilinear _input1 _input2 _weight _bias = unsafePerformIO $ (cast4 ATen.bilinear_tttt) _input1 _input2 _weight _bias
 
--- binary_cross_entropy_with_logits :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- binary_cross_entropy_with_logits :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- binary_cross_entropy_with_logits _input _target _weight _pos_weight _reduction = unsafePerformIO $ (cast5 ATen.binary_cross_entropy_with_logits_ttttl) _input _target _weight _pos_weight _reduction
 
--- bincount :: Tensor shape dtype device -> Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- bincount :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- bincount _input _weights _minlength = unsafePerformIO $ (cast3 ATen.bincount_ttl) _input _weights _minlength
 
--- bitwise_not :: Tensor shape dtype device -> Tensor shape dtype device
+-- bitwise_not :: Tensor device dtype shape -> Tensor device dtype shape
 -- bitwise_not _input = unsafePerformIO $ (cast1 ATen.bitwise_not_t) _input
 
 -- | batched matrix multiplication
@@ -1068,9 +1058,9 @@ baddbmm beta alpha batch1 batch2 input = unsafePerformIO $ cast5 ATen.baddbmm_tt
 -- (Float,[5,3,4])
 bmm
   :: forall batchSize n m k dtype device
-   . Tensor '[batchSize, n, k] dtype device-- ^ input
-  -> Tensor '[batchSize, k, m] dtype device -- ^ other input
-  -> Tensor '[batchSize, n, m] dtype device -- ^ output
+   . Tensor device dtype '[batchSize, n, k] -- ^ input
+  -> Tensor device dtype '[batchSize, k, m] -- ^ other input
+  -> Tensor device dtype '[batchSize, n, m] -- ^ output
 bmm input other = unsafePerformIO $ cast2 ATen.bmm_tt input other
 
 -- | BroadcastTensorsImpl
@@ -1093,15 +1083,15 @@ bmm input other = unsafePerformIO $ cast2 ATen.bmm_tt input other
 type family BroadcastTensorsImpl (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
   BroadcastTensorsImpl '[]                                    'Nothing                                = 'Nothing
   BroadcastTensorsImpl '[]                                    ('Just '(reverseShape, dtype, device))  = 'Just '(Reverse reverseShape, dtype, device)
-  BroadcastTensorsImpl (Tensor shape dtype device ': tensors) 'Nothing                                = BroadcastTensorsImpl tensors ('Just '(Reverse shape, dtype, device))
-  BroadcastTensorsImpl (Tensor shape dtype device ': tensors) ('Just '(reverseShape', dtype, device)) = BroadcastTensorsImpl tensors (MaybeTriple (ComputeBroadcast (Reverse shape) reverseShape') ('Just dtype) ('Just device))
-  BroadcastTensorsImpl (Tensor shape dtype device ': _)       ('Just _)                               = Nothing
+  BroadcastTensorsImpl (Tensor device dtype shape ': tensors) 'Nothing                                = BroadcastTensorsImpl tensors ('Just '(Reverse shape, dtype, device))
+  BroadcastTensorsImpl (Tensor device dtype shape ': tensors) ('Just '(reverseShape', dtype, device)) = BroadcastTensorsImpl tensors (MaybeTriple (ComputeBroadcast (Reverse shape) reverseShape') ('Just dtype) ('Just device))
+  BroadcastTensorsImpl (Tensor device dtype shape ': _)       ('Just _)                               = Nothing
 
 type family BroadcastTensorsCheck (tensors :: [a]) (result :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: [a] where
   BroadcastTensorsCheck tensors 'Nothing                        = TypeError (    Text "Cannot broadcast tensors due to incompatible shapes and/or dtypes: "
                                                                             :<>: ShowType tensors
                                                                             )
-  BroadcastTensorsCheck tensors ('Just '(shape, dtype, device)) = HReplicateR (ListLength tensors) (Tensor shape dtype device)
+  BroadcastTensorsCheck tensors ('Just '(shape, dtype, device)) = HReplicateR (ListLength tensors) (Tensor device dtype shape)
 
 type BroadcastTensors tensors
   = BroadcastTensorsCheck tensors (BroadcastTensorsImpl tensors 'Nothing)
@@ -1139,7 +1129,7 @@ broadcastTensors tensors = unsafePerformIO $ cast1 ATen.broadcast_tensors_l tens
 
 type family CatImpl (dim :: Nat) (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
   CatImpl _   '[]                                    acc = acc
-  CatImpl dim (Tensor shape dtype device ': tensors) acc = CatImpl dim tensors (MaybeTriple (ComputeCatShape dim shape acc) (ComputeCatDType dtype acc) (ComputeCatDevice device acc))
+  CatImpl dim (Tensor device dtype shape ': tensors) acc = CatImpl dim tensors (MaybeTriple (ComputeCatShape dim shape acc) (ComputeCatDType dtype acc) (ComputeCatDevice device acc))
 
 type family ComputeCatShape (dim :: Nat) (shape :: [Nat]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe [Nat] where
   ComputeCatShape 0   (x ': xs) Nothing                          = Just (x ': xs)
@@ -1216,15 +1206,15 @@ cat
      , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
      )
   => HList tensors -- ^ input list of tensors
-  -> Tensor shape dtype device -- ^ output tensor
+  -> Tensor device dtype shape -- ^ output tensor
 cat tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors (natValI @dim :: Int)
 
--- chain_matmul :: [Tensor shape dtype device] -> Tensor shape dtype device
+-- chain_matmul :: [Tensor device dtype shape] -> Tensor device dtype shape
 -- chain_matmul _matrices = unsafePerformIO $ (cast1 ATen.chain_matmul_l) _matrices
 
 type family ChunkImpl (chunkShapes :: Maybe [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: Maybe a where
   ChunkImpl (Just '[])               _     _     = Just '[]
-  ChunkImpl (Just (shape ': shapes)) dtype device = AppendToMaybe (Tensor shape dtype device) (ChunkImpl (Just shapes) dtype device)
+  ChunkImpl (Just (shape ': shapes)) dtype device = AppendToMaybe (Tensor device dtype shape) (ChunkImpl (Just shapes) dtype device)
   ChunkImpl Nothing                  _     _     = Nothing
 
 type family ChunkCheck (shape :: [Nat]) (dim :: Nat) (result :: Maybe a) :: a where
@@ -1305,7 +1295,7 @@ chunk
      , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorChunks)
      , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensorChunks) tensorChunks
      )
-  => Tensor shape dtype device -- ^ input tensor
+  => Tensor device dtype shape -- ^ input tensor
   -> HList tensorChunks -- ^ output list of tensors
 chunk input = unsafePerformIO
   $ cast3 ATen.chunk_tll input (natValI @chunks :: Int) (natValI @dim :: Int)
@@ -1318,8 +1308,8 @@ clamp
   :: forall shape dtype device
    . Float -- ^ minimum value
   -> Float -- ^ maximum value
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 clamp min max input = unsafePerformIO $ cast3 ATen.clamp_tss input min max
 
 -- | clampMax
@@ -1329,8 +1319,8 @@ clamp min max input = unsafePerformIO $ cast3 ATen.clamp_tss input min max
 clampMax
   :: forall shape dtype device
    . Float -- ^ maximum value
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 clampMax max input = unsafePerformIO $ cast2 ATen.clamp_max_ts input max
 
 -- | clampMin
@@ -1340,21 +1330,23 @@ clampMax max input = unsafePerformIO $ cast2 ATen.clamp_max_ts input max
 clampMin
   :: forall shape dtype device
    . Float -- ^ minimum value
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 clampMin min input = unsafePerformIO $ cast2 ATen.clamp_min_ts input min
 
 -- | cudnnIsAcceptable
 -- TODO: calling this probably makes only sense when the device is CUDA
 cudnnIsAcceptable
-  :: forall shape dtype device . Tensor shape dtype device -> Bool
+  :: forall shape dtype device
+   . Tensor device dtype shape -- ^ input
+  -> Bool -- ^ output
 cudnnIsAcceptable input =
   unsafePerformIO $ cast1 ATen.cudnn_is_acceptable_t input
 
--- constant_pad_nd :: Tensor shape dtype device -> [Int] -> Float -> Tensor shape dtype device
+-- constant_pad_nd :: Tensor device dtype shape -> [Int] -> Float -> Tensor device dtype shape
 -- constant_pad_nd _input _pad _value = unsafePerformIO $ (cast3 ATen.constant_pad_nd_tls) _input _pad _value
 
--- convolution :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor shape dtype device
+-- convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor device dtype shape
 -- convolution _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups = unsafePerformIO $ (cast9 ATen.convolution_tttlllbll) _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups
 
 type ConvSideCheck h k d (p :: Nat) o =
@@ -1404,10 +1396,10 @@ conv1d
                      ]
      , ConvSideCheck inputSize kernelSize stride padding outputSize
      )
-  => Tensor '[outputChannelSize, inputChannelSize, kernelSize] dtype device -- ^ weight
-  -> Tensor '[outputChannelSize] dtype device -- ^ bias
-  -> Tensor '[batchSize, inputChannelSize, inputSize] dtype device -- ^ input
-  -> Tensor '[batchSize, outputChannelSize, outputSize] dtype device -- ^ output
+  => Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize] -- ^ weight
+  -> Tensor device dtype '[outputChannelSize] -- ^ bias
+  -> Tensor device dtype '[batchSize, inputChannelSize, inputSize] -- ^ input
+  -> Tensor device dtype '[batchSize, outputChannelSize, outputSize] -- ^ output
 conv1d weight bias input = unsafePerformIO $ cast7 ATen.conv1d_tttllll
                                                    input
                                                    weight
@@ -1445,10 +1437,10 @@ conv2d
      , ConvSideCheck inputSize0 kernelSize0 (Fst stride) (Fst padding) outputSize0
      , ConvSideCheck inputSize1 kernelSize1 (Snd stride) (Snd padding) outputSize1
      )
-  => Tensor '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1] dtype device -- ^ weight
-  -> Tensor '[outputChannelSize] dtype device -- ^ bias
-  -> Tensor '[batchSize, inputChannelSize, inputSize0, inputSize1] dtype device -- ^ input
-  -> Tensor '[batchSize, outputChannelSize, outputSize0, outputSize1] dtype device -- ^ output
+  => Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1] -- ^ weight
+  -> Tensor device dtype '[outputChannelSize] -- ^ bias
+  -> Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1] -- ^ input
+  -> Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1] -- ^ output
 conv2d weight bias input = unsafePerformIO $ cast7
   ATen.conv2d_tttllll
   input
@@ -1487,10 +1479,10 @@ conv3d
      , ConvSideCheck inputSize1 kernelSize1 (Snd3 stride) (Snd3 padding) outputSize1
      , ConvSideCheck inputSize2 kernelSize2 (Trd3 stride) (Trd3 padding) outputSize2
      )
-  => Tensor '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2] dtype device -- ^ weight
-  -> Tensor '[outputChannelSize] dtype device -- ^ bias
-  -> Tensor '[batchSize, inputChannelSize, inputSize0, inputSize1, inputSize2] dtype device -- ^ input
-  -> Tensor '[batchSize, outputChannelSize, outputSize0, outputSize1, outputSize2] dtype device -- ^ output
+  => Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2] -- ^ weight
+  -> Tensor device dtype '[outputChannelSize] -- ^ bias
+  -> Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1, inputSize2] -- ^ input
+  -> Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1, outputSize2] -- ^ output
 conv3d weight bias input = unsafePerformIO $ cast7
   ATen.conv3d_tttllll
   input
@@ -1501,10 +1493,10 @@ conv3d weight bias input = unsafePerformIO $ cast7
   ([1, 1, 1] :: [Int])
   (1 :: Int)
 
--- conv_tbc :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- conv_tbc :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- conv_tbc _input _weight _bias _pad = unsafePerformIO $ (cast4 ATen.conv_tbc_tttl) _input _weight _bias _pad
 
--- conv_transpose1d :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Int -> Int -> Int -> Int -> Int -> Tensor shape dtype device
+-- conv_transpose1d :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Int -> Int -> Int -> Int -> Int -> Tensor device dtype shape
 -- conv_transpose1d _input _weight _bias _stride _padding _output_padding _groups _dilation = unsafePerformIO $ (cast8 ATen.conv_transpose1d_tttlllll) _input _weight _bias _stride _padding _output_padding _groups _dilation
 
 -- | cosh
@@ -1513,26 +1505,26 @@ conv3d weight bias input = unsafePerformIO $ cast7
 -- (Float,[3,2])
 cosh
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 cosh input = unsafePerformIO $ cast1 ATen.cosh_t input
 
--- cosine_embedding_loss :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Double -> Int -> Tensor shape dtype device
+-- cosine_embedding_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> Int -> Tensor device dtype shape
 -- cosine_embedding_loss _input1 _input2 _target _margin _reduction = unsafePerformIO $ (cast5 ATen.cosine_embedding_loss_tttdl) _input1 _input2 _target _margin _reduction
 
--- cudnn_affine_grid_generator :: Tensor shape dtype device -> Int -> Int -> Int -> Int -> Tensor shape dtype device
+-- cudnn_affine_grid_generator :: Tensor device dtype shape -> Int -> Int -> Int -> Int -> Tensor device dtype shape
 -- cudnn_affine_grid_generator _theta _N _C _H _W = unsafePerformIO $ (cast5 ATen.cudnn_affine_grid_generator_tllll) _theta _N _C _H _W
 
--- cudnn_batch_norm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Bool -> Double -> Double -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- cudnn_batch_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Double -> Double -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- cudnn_batch_norm _input _weight _bias _running_mean _running_var _training _exponential_average_factor _epsilon = unsafePerformIO $ (cast8 ATen.cudnn_batch_norm_tttttbdd) _input _weight _bias _running_mean _running_var _training _exponential_average_factor _epsilon
 
--- cudnn_convolution :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor shape dtype device
+-- cudnn_convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor device dtype shape
 -- cudnn_convolution _input _weight _bias _padding _stride _dilation _groups _benchmark _deterministic = unsafePerformIO $ (cast9 ATen.cudnn_convolution_tttllllbb) _input _weight _bias _padding _stride _dilation _groups _benchmark _deterministic
 
--- cudnn_convolution_transpose :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> [Int] -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor shape dtype device
+-- cudnn_convolution_transpose :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor device dtype shape
 -- cudnn_convolution_transpose _input _weight _bias _padding _output_padding _stride _dilation _groups _benchmark _deterministic = unsafePerformIO $ (cast10 ATen.cudnn_convolution_transpose_tttlllllbb) _input _weight _bias _padding _output_padding _stride _dilation _groups _benchmark _deterministic
 
--- cudnn_grid_sampler :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- cudnn_grid_sampler :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- cudnn_grid_sampler _input _grid = unsafePerformIO $ (cast2 ATen.cudnn_grid_sampler_tt) _input _grid
 
 -- | Det
@@ -1555,23 +1547,23 @@ type family Det (shape :: [Nat]) :: [Nat] where
 -- (Float,[3])
 det
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor (Det shape) dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (Det shape) -- ^ output
 det input = unsafePerformIO $ cast1 ATen.det_t input
 
--- diag_embed :: Tensor shape dtype device -> Int -> Int -> Int -> Tensor shape dtype device
+-- diag_embed :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
 -- diag_embed _input _offset _dim1 _dim2 = unsafePerformIO $ (cast4 ATen.diag_embed_tlll) _input _offset _dim1 _dim2
 
--- diagflat :: Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- diagflat :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- diagflat _input _offset = unsafePerformIO $ (cast2 ATen.diagflat_tl) _input _offset
 
--- diagonal :: Tensor shape dtype device -> Int -> Int -> Int -> Tensor shape dtype device
+-- diagonal :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
 -- diagonal _input _offset _dim1 _dim2 = unsafePerformIO $ (cast4 ATen.diagonal_tlll) _input _offset _dim1 _dim2
 
--- dot :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- dot :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- dot _input _tensor = unsafePerformIO $ (cast2 ATen.dot_tt) _input _tensor
 
--- einsum :: String -> [Tensor shape dtype device] -> Tensor shape dtype device
+-- einsum :: String -> [Tensor device dtype shape] -> Tensor device dtype shape
 -- einsum _equation _tensors = unsafePerformIO $ (cast2 ATen.einsum_sl) _equation _tensors
 
 class KnownMaybeNat (n :: Maybe Nat) where
@@ -1610,9 +1602,9 @@ embedding
      )
   => Bool -- ^ whether or not to scale the gradient by the frequencies
   -> Bool -- ^ whether or not the embedding is sparse
-  -> Tensor '[numEmbeds, embedDim] dtype device -- ^ weights
-  -> Tensor shape 'D.Int64 device -- ^ indices
-  -> Tensor (Reverse (embedDim ': Reverse shape)) dtype device -- ^ output
+  -> Tensor device dtype    '[numEmbeds, embedDim] -- ^ weights
+  -> Tensor device 'D.Int64 shape -- ^ indices
+  -> Tensor device dtype    (Reverse (embedDim ': Reverse shape)) -- ^ output
 embedding scaleGradByFreq sparse weights indices =
   unsafePerformIO $ cast5 ATen.embedding_ttlbb weights indices paddingIdx scaleGradByFreq sparse
  where paddingIdx :: Int
@@ -1620,7 +1612,7 @@ embedding scaleGradByFreq sparse weights indices =
                       Just idx -> fromIntegral idx
                       Nothing  -> -1
 
--- embedding_bag :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Bool -> Int -> Bool -> Tensor shape dtype device -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- embedding_bag :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Int -> Bool -> Tensor device dtype shape -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- embedding_bag _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights = unsafePerformIO $ (cast7 ATen.embedding_bag_tttblbt) _weight _indices _offsets _scale_grad_by_freq _mode _sparse _per_sample_weights
 
 -- | emptyLike
@@ -1630,8 +1622,8 @@ embedding scaleGradByFreq sparse weights indices =
 -- (Float,[3,4,5])
 emptyLike
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> IO (Tensor shape dtype device) -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> IO (Tensor device dtype shape) -- ^ output
 emptyLike input = cast1 ATen.empty_like_t input
 
 -- | erfc
@@ -1640,8 +1632,8 @@ emptyLike input = cast1 ATen.empty_like_t input
 -- (Float,[3,2])
 erfc
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 erfc input = unsafePerformIO $ cast1 ATen.erfc_t input
 
 -- | expm1
@@ -1650,8 +1642,8 @@ erfc input = unsafePerformIO $ cast1 ATen.erfc_t input
 -- (Float,[3,2])
 expm1
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 expm1 input = unsafePerformIO $ cast1 ATen.expm1_t input
 
 -- | expand
@@ -1671,11 +1663,11 @@ expand
      , shape' ~ Broadcast shape shape'
      )
   => Bool -- ^ some boolean value with unknown function
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape' dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
 expand someBool input = unsafePerformIO $ cast3 ATen.tensor_expand_lb input (shapeVal @shape') someBool
 
--- flatten :: Tensor shape dtype device -> Int -> Int -> Tensor shape dtype device
+-- flatten :: Tensor device dtype shape -> Int -> Int -> Tensor device dtype shape
 -- flatten _input _start_dim _end_dim = unsafePerformIO $ (cast3 ATen.flatten_tll) _input _start_dim _end_dim
 
 -- | flattenAll
@@ -1687,8 +1679,8 @@ expand someBool input = unsafePerformIO $ cast3 ATen.tensor_expand_lb input (sha
 flattenAll
   :: forall shape dtype device
    . KnownShape shape
-  => Tensor shape dtype device -- ^ input
-  -> Tensor '[Product shape] dtype device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype '[Product shape] -- ^ output
 flattenAll input =
   unsafePerformIO $ cast3 ATen.flatten_tll input (0 :: Int) (-1 :: Int)
 
@@ -1697,8 +1689,8 @@ flattenAll input =
 -- (Float,[3,2])
 frac
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 frac input = unsafePerformIO $ cast1 ATen.frac_t input
 
 -- | full like
@@ -1707,51 +1699,51 @@ frac input = unsafePerformIO $ cast1 ATen.frac_t input
 fullLike
   :: forall shape dtype device
    . Float -- ^ fill value
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 fullLike fillValue input =
   unsafePerformIO $ cast2 ATen.full_like_ts input fillValue
 
--- grid_sampler :: Tensor shape dtype device -> Tensor shape dtype device -> Int -> Int -> Tensor shape dtype device
+-- grid_sampler :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Int -> Tensor device dtype shape
 -- grid_sampler _input _grid _interpolation_mode _padding_mode = unsafePerformIO $ (cast4 ATen.grid_sampler_ttll) _input _grid _interpolation_mode _padding_mode
 
--- grid_sampler_2d :: Tensor shape dtype device -> Tensor shape dtype device -> Int -> Int -> Tensor shape dtype device
+-- grid_sampler_2d :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Int -> Tensor device dtype shape
 -- grid_sampler_2d _input _grid _interpolation_mode _padding_mode = unsafePerformIO $ (cast4 ATen.grid_sampler_2d_ttll) _input _grid _interpolation_mode _padding_mode
 
--- grid_sampler_3d :: Tensor shape dtype device -> Tensor shape dtype device -> Int -> Int -> Tensor shape dtype device
+-- grid_sampler_3d :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Int -> Tensor device dtype shape
 -- grid_sampler_3d _input _grid _interpolation_mode _padding_mode = unsafePerformIO $ (cast4 ATen.grid_sampler_3d_ttll) _input _grid _interpolation_mode _padding_mode
 
--- hinge_embedding_loss :: Tensor shape dtype device -> Tensor shape dtype device -> Double -> Int -> Tensor shape dtype device
+-- hinge_embedding_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Double -> Int -> Tensor device dtype shape
 -- hinge_embedding_loss _input _target _margin _reduction = unsafePerformIO $ (cast4 ATen.hinge_embedding_loss_ttdl) _input _target _margin _reduction
 
--- ger :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- ger :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- ger _input _vec2 = unsafePerformIO $ (cast2 ATen.ger_tt) _input _vec2
 
--- group_norm :: Tensor shape dtype device -> Int -> Tensor shape dtype device -> Tensor shape dtype device -> Double -> Bool -> Tensor shape dtype device
+-- group_norm :: Tensor device dtype shape -> Int -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> Bool -> Tensor device dtype shape
 -- group_norm _input _num_groups _weight _bias _eps _cudnn_enabled = unsafePerformIO $ (cast6 ATen.group_norm_tlttdb) _input _num_groups _weight _bias _eps _cudnn_enabled
 
--- fft :: Tensor shape dtype device -> Int -> Bool -> Tensor shape dtype device
+-- fft :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- fft _input _signal_ndim _normalized = unsafePerformIO $ (cast3 ATen.fft_tlb) _input _signal_ndim _normalized
 
--- ifft :: Tensor shape dtype device -> Int -> Bool -> Tensor shape dtype device
+-- ifft :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- ifft _input _signal_ndim _normalized = unsafePerformIO $ (cast3 ATen.ifft_tlb) _input _signal_ndim _normalized
 
--- rfft :: Tensor shape dtype device -> Int -> Bool -> Bool -> Tensor shape dtype device
+-- rfft :: Tensor device dtype shape -> Int -> Bool -> Bool -> Tensor device dtype shape
 -- rfft _input _signal_ndim _normalized _onesided = unsafePerformIO $ (cast4 ATen.rfft_tlbb) _input _signal_ndim _normalized _onesided
 
--- irfft :: Tensor shape dtype device -> Int -> Bool -> Bool -> [Int] -> Tensor shape dtype device
+-- irfft :: Tensor device dtype shape -> Int -> Bool -> Bool -> [Int] -> Tensor device dtype shape
 -- irfft _input _signal_ndim _normalized _onesided _signal_sizes = unsafePerformIO $ (cast5 ATen.irfft_tlbbl) _input _signal_ndim _normalized _onesided _signal_sizes
 
--- index :: Tensor shape dtype device -> [Tensor shape dtype device] -> Tensor shape dtype device
+-- index :: Tensor device dtype shape -> [Tensor device dtype shape] -> Tensor device dtype shape
 -- index _input _indices = unsafePerformIO $ (cast2 ATen.index_tl) _input _indices
 
--- index_copy :: Tensor shape dtype device -> Int -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- index_copy :: Tensor device dtype shape -> Int -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- index_copy _input _dim _index _source = unsafePerformIO $ (cast4 ATen.index_copy_tltt) _input _dim _index _source
 
--- index_put :: Tensor shape dtype device -> [Tensor shape dtype device] -> Tensor shape dtype device -> Bool -> Tensor shape dtype device
+-- index_put :: Tensor device dtype shape -> [Tensor device dtype shape] -> Tensor device dtype shape -> Bool -> Tensor device dtype shape
 -- index_put _input _indices _values _accumulate = unsafePerformIO $ (cast4 ATen.index_put_tltb) _input _indices _values _accumulate
 
--- instance_norm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Bool -> Double -> Double -> Bool -> Tensor shape dtype device
+-- instance_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Double -> Double -> Bool -> Tensor device dtype shape
 -- instance_norm _input _weight _bias _running_mean _running_var _use_input_stats _momentum _eps _cudnn_enabled = unsafePerformIO $ (cast9 ATen.instance_norm_tttttbddb) _input _weight _bias _running_mean _running_var _use_input_stats _momentum _eps _cudnn_enabled
 
 -- | isclose
@@ -1763,9 +1755,9 @@ isclose
    . Double -- ^ relative tolerance
   -> Double -- ^ absolute tolerance
   -> Bool -- ^ whether or not NaN equals NaN
-  -> Tensor shape dtype device -- ^ input tensor
-  -> Tensor shape dtype device -- ^ other input tensor
-  -> Tensor shape 'D.Bool device -- ^ output
+  -> Tensor device dtype   shape -- ^ input tensor
+  -> Tensor device dtype   shape -- ^ other input tensor
+  -> Tensor device 'D.Bool shape -- ^ output
 isclose rtol atol equalNaN input other =
   unsafePerformIO $ cast5 ATen.isclose_ttddb input other rtol atol equalNaN
 
@@ -1775,14 +1767,14 @@ isclose rtol atol equalNaN input other =
 -- (Bool,[3,2])
 isNaN
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape 'D.Bool device -- ^ output
+   . Tensor device dtype   shape -- ^ input
+  -> Tensor device 'D.Bool shape -- ^ output
 isNaN input = unsafePerformIO $ cast1 ATen.isnan_t input
 
 -- | is distributed
 isDistributed
   :: forall shape dtype device
-   . Tensor shape dtype device  -- ^ input
+   . Tensor device dtype shape  -- ^ input
   -> Bool -- ^ output
 isDistributed input = unsafePerformIO $ cast1 ATen.is_distributed_t input
 
@@ -1790,21 +1782,21 @@ isDistributed input = unsafePerformIO $ cast1 ATen.is_distributed_t input
 -- TODO: this can be decided statically
 isFloatingPoint
   :: forall shape dtype device
-   . Tensor shape dtype device  -- ^ input
+   . Tensor device dtype shape  -- ^ input
   -> Bool -- ^ output
 isFloatingPoint input = unsafePerformIO $ cast1 ATen.is_floating_point_t input
 
 -- | is complex
 isComplex
   :: forall shape dtype device
-   . Tensor shape dtype device  -- ^ input
+   . Tensor device dtype shape  -- ^ input
   -> Bool -- ^ output
 isComplex input = unsafePerformIO $ cast1 ATen.is_complex_t input
 
 -- | is non-zero
 isNonZero
   :: forall shape dtype device
-   . Tensor shape dtype device  -- ^ input
+   . Tensor device dtype shape  -- ^ input
   -> Bool -- ^ output
 isNonZero input = unsafePerformIO $ cast1 ATen.is_nonzero_t input
 
@@ -1812,22 +1804,22 @@ isNonZero input = unsafePerformIO $ cast1 ATen.is_nonzero_t input
 -- TODO: this can be decided statically
 isSameSize
   :: forall shape shape' dtype device
-   . Tensor shape dtype device -- ^ input tensor
-  -> Tensor shape' dtype device -- ^ other input tensor
+   . Tensor device dtype shape -- ^ input tensor
+  -> Tensor device dtype shape' -- ^ other input tensor
   -> Bool -- ^ output
 isSameSize input other =
   unsafePerformIO $ cast2 ATen.is_same_size_tt input other
 
 isSigned
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
+   . Tensor device dtype shape -- ^ input
   -> Bool -- ^ output
 isSigned input = unsafePerformIO $ cast1 ATen.is_signed_t input
 
--- kl_div :: Tensor shape dtype device -> Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- kl_div :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- kl_div _input _target _reduction = unsafePerformIO $ (cast3 ATen.kl_div_ttl) _input _target _reduction
 
--- kthvalue :: Tensor shape dtype device -> Int -> Int -> Bool -> (Tensor shape dtype device,Tensor shape dtype device)
+-- kthvalue :: Tensor device dtype shape -> Int -> Int -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- kthvalue _input _k _dim _keepdim = unsafePerformIO $ (cast4 ATen.kthvalue_tllb) _input _k _dim _keepdim
 
 -- | EndsWith
@@ -1864,11 +1856,11 @@ layerNorm
    . ( KnownShape normalizedShape
      , EndsWith shape normalizedShape
      )
-  => Tensor normalizedShape dtype device -- ^ weight
-  -> Tensor normalizedShape dtype device -- ^ bias
+  => Tensor device dtype normalizedShape -- ^ weight
+  -> Tensor device dtype normalizedShape -- ^ bias
   -> Double -- ^ eps
-  -> Tensor shape dtype device -- ^ input tensor
-  -> Tensor shape dtype device -- ^ output tensor
+  -> Tensor device dtype shape -- ^ input tensor
+  -> Tensor device dtype shape -- ^ output tensor
 layerNorm weight bias eps input = unsafePerformIO $ cast6
   ATen.layer_norm_tlttdb
   input
@@ -1881,7 +1873,7 @@ layerNorm weight bias eps input = unsafePerformIO $ cast6
   && cudnnIsAcceptable input
   )
 
--- native_layer_norm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Int -> Int -> Double -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- native_layer_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Int -> Int -> Double -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- native_layer_norm _input _weight _bias _M _N _eps = unsafePerformIO $ (cast6 ATen.native_layer_norm_tttlld) _input _weight _bias _M _N _eps
 
 -- | linear
@@ -1897,10 +1889,10 @@ layerNorm weight bias eps input = unsafePerformIO $ cast6
 -- (Float,([5,2],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]))
 linear
   :: forall batchSize inputFeatures outputFeatures dtype device
-   . Tensor '[outputFeatures, inputFeatures] dtype device
-  -> Tensor '[outputFeatures] dtype device
-  -> Tensor '[batchSize, inputFeatures] dtype device
-  -> Tensor '[batchSize, outputFeatures] dtype device
+   . Tensor device dtype '[outputFeatures, inputFeatures]
+  -> Tensor device dtype '[outputFeatures]
+  -> Tensor device dtype '[batchSize, inputFeatures]
+  -> Tensor device dtype '[batchSize, outputFeatures]
 linear weight bias input = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
 
 -- | linear'
@@ -1940,10 +1932,10 @@ linear'
                        '[])
                      '[outputFeatures])
      )
-  => Tensor '[outputFeatures, inputFeatures] dtype device -- ^ weight
-  -> Tensor '[outputFeatures] dtype device -- ^ bias
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape' dtype device -- ^ output
+  => Tensor device dtype '[outputFeatures, inputFeatures] -- ^ weight
+  -> Tensor device dtype '[outputFeatures] -- ^ bias
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
 -- linear' weight bias input = Torch.Static.add (matmul input $ transpose @0 @1 weight) bias
 linear' weight bias input = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
 
@@ -1962,25 +1954,25 @@ linear' weight bias input = unsafePerformIO $ cast3 ATen.linear_ttt input weight
 -- -- (Float,([5,2],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]))
 mkldnnLinear
   :: forall batchSize inputFeatures outputFeatures dtype device
-   . Tensor '[outputFeatures, inputFeatures] dtype device -- ^ weight
-  -> Tensor '[outputFeatures] dtype device -- ^ bias
-  -> Tensor '[batchSize, inputFeatures] dtype device -- ^ input
-  -> Tensor '[batchSize, outputFeatures] dtype device -- ^ output
+   . Tensor device dtype '[outputFeatures, inputFeatures] -- ^ weight
+  -> Tensor device dtype '[outputFeatures] -- ^ bias
+  -> Tensor device dtype '[batchSize, inputFeatures] -- ^ input
+  -> Tensor device dtype '[batchSize, outputFeatures] -- ^ output
 mkldnnLinear weight bias input = unsafePerformIO $ cast3 ATen.mkldnn_linear_ttt input weight bias
 
--- fbgemm_linear_int8_weight :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Tensor shape dtype device -> Tensor shape dtype device
+-- fbgemm_linear_int8_weight :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape -> Tensor device dtype shape
 -- fbgemm_linear_int8_weight _input _weight _packed _col_offsets _weight_scale _weight_zero_point _bias = unsafePerformIO $ (cast7 ATen.fbgemm_linear_int8_weight_ttttsst) _input _weight _packed _col_offsets _weight_scale _weight_zero_point _bias
 
--- fbgemm_linear_quantize_weight :: Tensor shape dtype device -> (Tensor shape dtype device,Tensor shape dtype device,Double,Int)
+-- fbgemm_linear_quantize_weight :: Tensor device dtype shape -> (Tensor device dtype shape,Tensor device dtype shape,Double,Int)
 -- fbgemm_linear_quantize_weight _input = unsafePerformIO $ (cast1 ATen.fbgemm_linear_quantize_weight_t) _input
 
--- fbgemm_pack_gemm_matrix_fp16 :: Tensor shape dtype device -> Tensor shape dtype device
+-- fbgemm_pack_gemm_matrix_fp16 :: Tensor device dtype shape -> Tensor device dtype shape
 -- fbgemm_pack_gemm_matrix_fp16 _input = unsafePerformIO $ (cast1 ATen.fbgemm_pack_gemm_matrix_fp16_t) _input
 
--- fbgemm_linear_fp16_weight :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- fbgemm_linear_fp16_weight :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- fbgemm_linear_fp16_weight _input _packed_weight _bias = unsafePerformIO $ (cast3 ATen.fbgemm_linear_fp16_weight_ttt) _input _packed_weight _bias
 
--- fbgemm_pack_quantized_matrix :: Tensor shape dtype device -> Int -> Int -> Tensor shape dtype device
+-- fbgemm_pack_quantized_matrix :: Tensor device dtype shape -> Int -> Int -> Tensor device dtype shape
 -- fbgemm_pack_quantized_matrix _input _K _N = unsafePerformIO $ (cast3 ATen.fbgemm_pack_quantized_matrix_tll) _input _K _N
 
 -- fbgemm_is_cpu_supported :: Bool
@@ -1993,8 +1985,8 @@ mkldnnLinear weight bias input = unsafePerformIO $ cast3 ATen.mkldnn_linear_ttt 
 -- (Float,[3,2])
 log
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 log input = unsafePerformIO $ cast1 ATen.log_t input
 
 -- | logDet
@@ -2006,8 +1998,8 @@ log input = unsafePerformIO $ cast1 ATen.log_t input
 -- (Float,[3])
 logDet
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor (Det shape) dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (Det shape) -- ^ output
 logDet input = unsafePerformIO $ cast1 ATen.logdet_t input
 
 type family IsFloatingPoint (dtype :: D.DType) :: Constraint where
@@ -2054,17 +2046,14 @@ logSumExp
      , Reifies dtype D.DType
      , IsFloatingPoint dtype
      )
-  => Tensor shape dtype device -- ^ input
-  -> Tensor
-       (ConditionalDropDimension shape dim keepOrDropDim)
-       dtype
-       device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (ConditionalDropDimension shape dim keepOrDropDim) -- ^ output
 logSumExp input = unsafePerformIO $ cast3 ATen.logsumexp_tlb
                                           input
                                           (natValI @dim)
                                           (keepOrDropDimVal @keepOrDropDim)
 
--- margin_ranking_loss :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Double -> Int -> Tensor shape dtype device
+-- margin_ranking_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> Int -> Tensor device dtype shape
 -- margin_ranking_loss _input1 _input2 _target _margin _reduction = unsafePerformIO $ (cast5 ATen.margin_ranking_loss_tttdl) _input1 _input2 _target _margin _reduction
 
 -- | matrixPower
@@ -2076,8 +2065,8 @@ logSumExp input = unsafePerformIO $ cast3 ATen.logsumexp_tlb
 matrixPower
   :: forall shape dtype device
    . Int -- ^ power
-  -> Tensor shape dtype device -- ^ input matrix
-  -> Tensor (Square shape) dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input matrix
+  -> Tensor device dtype (Square shape) -- ^ output
 matrixPower n input = unsafePerformIO $ cast2 ATen.matrix_power_tl input n
 
 -- | maxValues
@@ -2092,11 +2081,8 @@ matrixPower n input = unsafePerformIO $ cast2 ATen.matrix_power_tl input n
 maxValues
   :: forall dim keepOrDropDim shape dtype device
    . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor
-       (ConditionalDropDimension shape dim keepOrDropDim)
-       dtype
-       device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (ConditionalDropDimension shape dim keepOrDropDim) -- ^ output
 maxValues input = unsafePerformIO $ cast3 ATen.max_values_tlb
                                           input
                                           (natValI @dim)
@@ -2114,11 +2100,8 @@ maxValues input = unsafePerformIO $ cast3 ATen.max_values_tlb
 minValues
   :: forall dim keepOrDropDim shape dtype device
    . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor
-       (ConditionalDropDimension shape dim keepOrDropDim)
-       dtype
-       device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype (ConditionalDropDimension shape dim keepOrDropDim) -- ^ output
 minValues input = unsafePerformIO $ cast3 ATen.min_values_tlb
                                           input
                                           (natValI @dim)
@@ -2142,8 +2125,8 @@ maxPool1d
                      ]
      , ConvSideCheck inputSize kernelSize stride padding outputSize
      )
-  => Tensor '[batchSize, channelSize, inputSize] dtype device -- ^ input
-  -> Tensor '[batchSize, channelSize, outputSize] dtype device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, outputSize] -- ^ output
 maxPool1d input = unsafePerformIO $ cast6 ATen.max_pool1d_tllllb
                                           input
                                           (natValI @kernelSize)
@@ -2152,7 +2135,7 @@ maxPool1d input = unsafePerformIO $ cast6 ATen.max_pool1d_tllllb
                                           (1 :: Int)
                                           False
 
--- max_pool1d_with_indices :: Tensor shape dtype device -> Int -> Int -> Int -> Int -> Bool -> (Tensor shape dtype device,Tensor shape dtype device)
+-- max_pool1d_with_indices :: Tensor device dtype shape -> Int -> Int -> Int -> Int -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- max_pool1d_with_indices _input _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.max_pool1d_with_indices_tllllb) _input _kernel_size _stride _padding _dilation _ceil_mode
 
 -- | maxPool2d
@@ -2174,8 +2157,8 @@ maxPool2d
      , ConvSideCheck inputSize0 (Fst kernelSize) (Fst stride) (Fst padding) outputSize0
      , ConvSideCheck inputSize1 (Snd kernelSize) (Snd stride) (Snd padding) outputSize1
      )
-  => Tensor '[batchSize, channelSize, inputSize0, inputSize1] dtype device -- ^ input
-  -> Tensor '[batchSize, channelSize, outputSize0, outputSize1] dtype device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1] -- ^ output
 maxPool2d input = unsafePerformIO $ cast6
   ATen.max_pool2d_tllllb
   input
@@ -2206,8 +2189,8 @@ mkldnnMaxPool2d
      , ConvSideCheck inputSize0 (Fst kernelSize) (Fst stride) (Fst padding) outputSize0
      , ConvSideCheck inputSize1 (Snd kernelSize) (Snd stride) (Snd padding) outputSize1
      )
-  => Tensor '[batchSize, channelSize, inputSize0, inputSize1] dtype device -- ^ input
-  -> Tensor '[batchSize, channelSize, outputSize0, outputSize1] dtype device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1] -- ^ output
 mkldnnMaxPool2d input = unsafePerformIO $ cast6
   ATen.mkldnn_max_pool2d_tllllb
   input
@@ -2237,8 +2220,8 @@ quantizedMaxPool2d
      , ConvSideCheck inputSize0 (Fst kernelSize) (Fst stride) (Fst padding) outputSize0
      , ConvSideCheck inputSize1 (Snd kernelSize) (Snd stride) (Snd padding) outputSize1
      )
-  => Tensor '[batchSize, channelSize, inputSize0, inputSize1] dtype device -- ^ input
-  -> Tensor '[batchSize, channelSize, outputSize0, outputSize1] dtype device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1] -- ^ output
 quantizedMaxPool2d input = unsafePerformIO $ cast5
   ATen.quantized_max_pool2d_tllll
   input
@@ -2272,8 +2255,8 @@ maxPool3d
      , ConvSideCheck inputSize1 (Snd3 kernelSize) (Snd3 stride) (Snd3 padding) outputSize1
      , ConvSideCheck inputSize2 (Trd3 kernelSize) (Trd3 stride) (Trd3 padding) outputSize2
      )
-  => Tensor '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] dtype device -- ^ input
-  -> Tensor '[batchSize, channelSize, outputSize0, outputSize1, outputSize2] dtype device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1, outputSize2] -- ^ output
 maxPool3d input = unsafePerformIO $ cast6
   ATen.max_pool3d_tllllb
   input
@@ -2299,29 +2282,29 @@ maxPool3d input = unsafePerformIO $ cast6
 maskedFill
   :: forall a shape shape' shape'' dtype device
    . (D.Scalar a, shape'' ~ Broadcast shape shape')
-  => Tensor shape' 'D.Bool device -- ^ mask
+  => Tensor device 'D.Bool shape' -- ^ mask
   -> a -- ^ fill value
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape'' dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape'' -- ^ output
 maskedFill mask value input =
   unsafePerformIO $ cast3 ATen.masked_fill_tts input mask value
 
--- mkldnn_convolution :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> [Int] -> [Int] -> [Int] -> Int -> Tensor shape dtype device
+-- mkldnn_convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Int -> Tensor device dtype shape
 -- mkldnn_convolution _input _weight _bias _padding _stride _dilation _groups = unsafePerformIO $ (cast7 ATen.mkldnn_convolution_tttllll) _input _weight _bias _padding _stride _dilation _groups
 
--- miopen_batch_norm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Bool -> Double -> Double -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- miopen_batch_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Double -> Double -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- miopen_batch_norm _input _weight _bias _running_mean _running_var _training _exponential_average_factor _epsilon = unsafePerformIO $ (cast8 ATen.miopen_batch_norm_tttttbdd) _input _weight _bias _running_mean _running_var _training _exponential_average_factor _epsilon
 
--- miopen_convolution :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor shape dtype device
+-- miopen_convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor device dtype shape
 -- miopen_convolution _input _weight _bias _padding _stride _dilation _groups _benchmark _deterministic = unsafePerformIO $ (cast9 ATen.miopen_convolution_tttllllbb) _input _weight _bias _padding _stride _dilation _groups _benchmark _deterministic
 
--- miopen_convolution_transpose :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> [Int] -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor shape dtype device
+-- miopen_convolution_transpose :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor device dtype shape
 -- miopen_convolution_transpose _input _weight _bias _padding _output_padding _stride _dilation _groups _benchmark _deterministic = unsafePerformIO $ (cast10 ATen.miopen_convolution_transpose_tttlllllbb) _input _weight _bias _padding _output_padding _stride _dilation _groups _benchmark _deterministic
 
--- miopen_depthwise_convolution :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor shape dtype device
+-- miopen_depthwise_convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Int -> Bool -> Bool -> Tensor device dtype shape
 -- miopen_depthwise_convolution _input _weight _bias _padding _stride _dilation _groups _benchmark _deterministic = unsafePerformIO $ (cast9 ATen.miopen_depthwise_convolution_tttllllbb) _input _weight _bias _padding _stride _dilation _groups _benchmark _deterministic
 
--- miopen_rnn :: Tensor shape dtype device -> [Tensor shape dtype device] -> Int -> Tensor shape dtype device -> Tensor shape dtype device -> Int -> Int -> Int -> Bool -> Double -> Bool -> Bool -> [Int] -> Tensor shape dtype device -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- miopen_rnn :: Tensor device dtype shape -> [Tensor device dtype shape] -> Int -> Tensor device dtype shape -> Tensor device dtype shape -> Int -> Int -> Int -> Bool -> Double -> Bool -> Bool -> [Int] -> Tensor device dtype shape -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- miopen_rnn _input _weight _weight_stride0 _hx _cx _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state = unsafePerformIO $ (cast14 ATen.miopen_rnn_tllttlllbdbblt) _input _weight _weight_stride0 _hx _cx _mode _hidden_size _num_layers _batch_first _dropout _train _bidirectional _batch_sizes _dropout_state
 
 -- | matrix-matrix multiplication
@@ -2330,12 +2313,12 @@ maskedFill mask value input =
 -- (Float,[3,4])
 mm
   :: forall n k m dtype device
-   . Tensor '[n,k] dtype device -- ^ first input matrix
-  -> Tensor '[k,m] dtype device -- ^ second input matrix
-  -> Tensor '[n,m] dtype device -- ^ output matrix
+   . Tensor device dtype '[n, k] -- ^ first input matrix
+  -> Tensor device dtype '[k, m] -- ^ second input matrix
+  -> Tensor device dtype '[n, m] -- ^ output matrix
 mm a b = unsafePerformIO $ cast2 ATen.mm_tt a b
 
--- mode :: Tensor shape dtype device -> Int -> Bool -> (Tensor shape dtype device,Tensor shape dtype device)
+-- mode :: Tensor device dtype shape -> Int -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- mode _input _dim _keepdim = unsafePerformIO $ (cast3 ATen.mode_tlb) _input _dim _keepdim
 
 -- | matrix-vector multiplication
@@ -2344,33 +2327,33 @@ mm a b = unsafePerformIO $ cast2 ATen.mm_tt a b
 -- (Float,[3])
 mv
   :: forall n m dtype device
-   . Tensor '[n,m] dtype device -- ^ input matrix
-  -> Tensor '[m] dtype device -- ^ input vector
-  -> Tensor '[n] dtype device -- ^ output vector
+   . Tensor device dtype '[n, m] -- ^ input matrix
+  -> Tensor device dtype '[m] -- ^ input vector
+  -> Tensor device dtype '[n] -- ^ output vector
 mv input vec = unsafePerformIO $ cast2 ATen.mv_tt input vec
 
--- mvlgamma :: Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- mvlgamma :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- mvlgamma _input _p = unsafePerformIO $ (cast2 ATen.mvlgamma_tl) _input _p
 
--- narrow :: Tensor shape dtype device -> Int -> Int -> Int -> Tensor shape dtype device
+-- narrow :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
 -- narrow _input _dim _start _length = unsafePerformIO $ (cast4 ATen.narrow_tlll) _input _dim _start _length
 
--- native_batch_norm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Bool -> Double -> Double -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- native_batch_norm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Double -> Double -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- native_batch_norm _input _weight _bias _running_mean _running_var _training _momentum _eps = unsafePerformIO $ (cast8 ATen.native_batch_norm_tttttbdd) _input _weight _bias _running_mean _running_var _training _momentum _eps
 
--- batch_norm_stats :: Tensor shape dtype device -> Double -> (Tensor shape dtype device,Tensor shape dtype device)
+-- batch_norm_stats :: Tensor device dtype shape -> Double -> (Tensor device dtype shape,Tensor device dtype shape)
 -- batch_norm_stats _input _eps = unsafePerformIO $ (cast2 ATen.batch_norm_stats_td) _input _eps
 
--- batch_norm_elemt :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Double -> Tensor shape dtype device
+-- batch_norm_elemt :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> Tensor device dtype shape
 -- batch_norm_elemt _input _weight _bias _mean _invstd _eps = unsafePerformIO $ (cast6 ATen.batch_norm_elemt_tttttd) _input _weight _bias _mean _invstd _eps
 
--- batch_norm_gather_stats :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Double -> Double -> Int -> (Tensor shape dtype device,Tensor shape dtype device)
+-- batch_norm_gather_stats :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> Double -> Int -> (Tensor device dtype shape,Tensor device dtype shape)
 -- batch_norm_gather_stats _input _mean _invstd _running_mean _running_var _momentum _eps _count = unsafePerformIO $ (cast8 ATen.batch_norm_gather_stats_tttttddl) _input _mean _invstd _running_mean _running_var _momentum _eps _count
 
--- batch_norm_gather_stats_with_counts :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Double -> Double -> [Int] -> (Tensor shape dtype device,Tensor shape dtype device)
+-- batch_norm_gather_stats_with_counts :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> Double -> [Int] -> (Tensor device dtype shape,Tensor device dtype shape)
 -- batch_norm_gather_stats_with_counts _input _mean _invstd _running_mean _running_var _momentum _eps _counts = unsafePerformIO $ (cast8 ATen.batch_norm_gather_stats_with_counts_tttttddl) _input _mean _invstd _running_mean _running_var _momentum _eps _counts
 
--- batch_norm_update_stats :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Double -> (Tensor shape dtype device,Tensor shape dtype device)
+-- batch_norm_update_stats :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> (Tensor device dtype shape,Tensor device dtype shape)
 -- batch_norm_update_stats _input _running_mean _running_var _momentum = unsafePerformIO $ (cast4 ATen.batch_norm_update_stats_tttd) _input _running_mean _running_var _momentum
 
 -- | onesLike
@@ -2378,32 +2361,32 @@ mv input vec = unsafePerformIO $ cast2 ATen.mv_tt input vec
 -- (Float,[3,4,5])
 onesLike
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 onesLike input = unsafePerformIO $ cast1 ATen.ones_like_t input
 
--- pairwise_distance :: Tensor shape dtype device -> Tensor shape dtype device -> Double -> Double -> Bool -> Tensor shape dtype device
+-- pairwise_distance :: Tensor device dtype shape -> Tensor device dtype shape -> Double -> Double -> Bool -> Tensor device dtype shape
 -- pairwise_distance _x1 _x2 _p _eps _keepdim = unsafePerformIO $ (cast5 ATen.pairwise_distance_ttddb) _x1 _x2 _p _eps _keepdim
 
--- cdist :: Tensor shape dtype device -> Tensor shape dtype device -> Double -> Tensor shape dtype device
+-- cdist :: Tensor device dtype shape -> Tensor device dtype shape -> Double -> Tensor device dtype shape
 -- cdist _x1 _x2 _p = unsafePerformIO $ (cast3 ATen.cdist_ttd) _x1 _x2 _p
 
--- pdist :: Tensor shape dtype device -> Double -> Tensor shape dtype device
+-- pdist :: Tensor device dtype shape -> Double -> Tensor device dtype shape
 -- pdist _input _p = unsafePerformIO $ (cast2 ATen.pdist_td) _input _p
 
--- cosine_similarity :: Tensor shape dtype device -> Tensor shape dtype device -> Int -> Double -> Tensor shape dtype device
+-- cosine_similarity :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Double -> Tensor device dtype shape
 -- cosine_similarity _x1 _x2 _dim _eps = unsafePerformIO $ (cast4 ATen.cosine_similarity_ttld) _x1 _x2 _dim _eps
 
--- pixel_shuffle :: Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- pixel_shuffle :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- pixel_shuffle _input _upscale_factor = unsafePerformIO $ (cast2 ATen.pixel_shuffle_tl) _input _upscale_factor
 
--- pin_memory :: Tensor shape dtype device -> Tensor shape dtype device
+-- pin_memory :: Tensor device dtype shape -> Tensor device dtype shape
 -- pin_memory _input = unsafePerformIO $ (cast1 ATen.pin_memory_t) _input
 
--- pinverse :: Tensor shape dtype device -> Double -> Tensor shape dtype device
+-- pinverse :: Tensor device dtype shape -> Double -> Tensor device dtype shape
 -- pinverse _input _rcond = unsafePerformIO $ (cast2 ATen.pinverse_td) _input _rcond
 
--- poisson_nll_loss :: Tensor shape dtype device -> Tensor shape dtype device -> Bool -> Bool -> Double -> Int -> Tensor shape dtype device
+-- poisson_nll_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Bool -> Double -> Int -> Tensor device dtype shape
 -- poisson_nll_loss _input _target _log_input _full _eps _reduction = unsafePerformIO $ (cast6 ATen.poisson_nll_loss_ttbbdl) _input _target _log_input _full _eps _reduction
 
 -- | randLike
@@ -2413,8 +2396,8 @@ onesLike input = unsafePerformIO $ cast1 ATen.ones_like_t input
 -- (Float,[3,4,5])
 randLike
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> IO (Tensor shape dtype device) -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> IO (Tensor device dtype shape) -- ^ output
 randLike = cast1 ATen.rand_like_t
 
 -- | randnLike
@@ -2424,11 +2407,11 @@ randLike = cast1 ATen.rand_like_t
 -- (Float,[3,4,5])
 randnLike
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> IO (Tensor shape dtype device) -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> IO (Tensor device dtype shape) -- ^ output
 randnLike = cast1 ATen.randn_like_t
 
--- reciprocal :: Tensor shape dtype device -> Tensor shape dtype device
+-- reciprocal :: Tensor device dtype shape -> Tensor device dtype shape
 -- reciprocal _input = unsafePerformIO $ (cast1 ATen.reciprocal_t) _input
 
 -- | negate
@@ -2437,8 +2420,8 @@ randnLike = cast1 ATen.randn_like_t
 -- (Float,[3,2])
 neg
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 neg input = unsafePerformIO $ cast1 ATen.neg_t input
 
 -- | round
@@ -2447,8 +2430,8 @@ neg input = unsafePerformIO $ cast1 ATen.neg_t input
 -- (Float,[3,2])
 round
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 round input = unsafePerformIO $ cast1 ATen.round_t input
 
 -- | prelu activation function
@@ -2457,9 +2440,9 @@ round input = unsafePerformIO $ cast1 ATen.round_t input
 -- (Float,[3,2])
 prelu
   :: forall shape dtype device
-   . Tensor '[] dtype device -- ^ weight
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype '[] -- ^ weight
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 prelu weight input = unsafePerformIO $ cast2 ATen.prelu_tt input weight
 
 -- | gelu activation function
@@ -2468,11 +2451,11 @@ prelu weight input = unsafePerformIO $ cast2 ATen.prelu_tt input weight
 -- (Float,[3,2])
 gelu
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 gelu input = unsafePerformIO $ cast1 ATen.gelu_t input
 
--- hardshrink :: Tensor shape dtype device -> Float -> Tensor shape dtype device
+-- hardshrink :: Tensor device dtype shape -> Float -> Tensor device dtype shape
 -- hardshrink _input _lambd = unsafePerformIO $ (cast2 ATen.hardshrink_ts) _input _lambd
 
 -- | rsqrt
@@ -2481,8 +2464,8 @@ gelu input = unsafePerformIO $ cast1 ATen.gelu_t input
 -- (Float,[3,2])
 rsqrt
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 rsqrt input = unsafePerformIO $ cast1 ATen.rsqrt_t input
 
 -- | celu activation function
@@ -2492,32 +2475,32 @@ rsqrt input = unsafePerformIO $ cast1 ATen.rsqrt_t input
 celu
   :: forall shape dtype device
    . Float -- ^ alpha
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 celu alpha input = unsafePerformIO $ cast2 ATen.celu_ts input alpha
 
--- slice :: Tensor shape dtype device -> Int -> Int -> Int -> Int -> Tensor shape dtype device
+-- slice :: Tensor device dtype shape -> Int -> Int -> Int -> Int -> Tensor device dtype shape
 -- slice _input _dim _start _end _step = unsafePerformIO $ (cast5 ATen.slice_tllll) _input _dim _start _end _step
 
--- slogdet :: Tensor shape dtype device -> (Tensor shape dtype device,Tensor shape dtype device)
+-- slogdet :: Tensor device dtype shape -> (Tensor device dtype shape,Tensor device dtype shape)
 -- slogdet _input = unsafePerformIO $ (cast1 ATen.slogdet_t) _input
 
--- smm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- smm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- smm _input _mat2 = unsafePerformIO $ (cast2 ATen.smm_tt) _input _mat2
 
--- split :: Tensor shape dtype device -> Int -> Int -> [Tensor shape dtype device]
+-- split :: Tensor device dtype shape -> Int -> Int -> [Tensor device dtype shape]
 -- split _input _split_size _dim = unsafePerformIO $ (cast3 ATen.split_tll) _input _split_size _dim
 
--- split_with_sizes :: Tensor shape dtype device -> [Int] -> Int -> [Tensor shape dtype device]
+-- split_with_sizes :: Tensor device dtype shape -> [Int] -> Int -> [Tensor device dtype shape]
 -- split_with_sizes _input _split_sizes _dim = unsafePerformIO $ (cast3 ATen.split_with_sizes_tll) _input _split_sizes _dim
 
--- sspaddmm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Tensor shape dtype device
+-- sspaddmm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape
 -- sspaddmm _input _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.sspaddmm_tttss) _input _mat1 _mat2 _beta _alpha
 
 type family StackImpl (dim :: Nat) (tensors :: [a]) (count :: Nat) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
   StackImpl dim '[]                                                                 count = Nothing
-  StackImpl dim (Tensor shape dtype device ': '[])                                  count = MaybeTriple (ComputeStackShape shape dim count) (Just dtype) (Just device)
-  StackImpl dim (Tensor shape dtype device ': Tensor shape dtype device ': tensors) count = StackImpl dim (Tensor shape dtype device ': tensors) (count + 1)
+  StackImpl dim (Tensor device dtype shape ': '[])                                  count = MaybeTriple (ComputeStackShape shape dim count) (Just dtype) (Just device)
+  StackImpl dim (Tensor device dtype shape ': Tensor device dtype shape ': tensors) count = StackImpl dim (Tensor device dtype shape ': tensors) (count + 1)
   StackImpl _   _                                                                   _     = Nothing
 
 type family MaybePair (a' :: Maybe a) (b' ::  Maybe b) :: Maybe (a, b) where
@@ -2601,16 +2584,16 @@ stack
      , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
      )
   => HList tensors -- ^ input list of tensors
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ output
 stack tensors = unsafePerformIO $ cast2 ATen.stack_ll tensors (natValI @dim :: Int)
 
--- stft :: Tensor shape dtype device -> Int -> Int -> Int -> Tensor shape dtype device -> Bool -> Bool -> Tensor shape dtype device
+-- stft :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape -> Bool -> Bool -> Tensor device dtype shape
 -- stft _input _n_fft _hop_length _win_length _window _normalized _onesided = unsafePerformIO $ (cast7 ATen.stft_tllltbb) _input _n_fft _hop_length _win_length _window _normalized _onesided
 
--- stride :: Tensor shape dtype device -> Int -> Int
+-- stride :: Tensor device dtype shape -> Int -> Int
 -- stride _input _dim = unsafePerformIO $ (cast2 ATen.stride_tl) _input _dim
 
--- t :: Tensor shape dtype device -> Tensor shape dtype device
+-- t :: Tensor device dtype shape -> Tensor device dtype shape
 -- t _input = unsafePerformIO $ (cast1 ATen.t_t) _input
 
 -- | tan
@@ -2619,29 +2602,29 @@ stack tensors = unsafePerformIO $ cast2 ATen.stack_ll tensors (natValI @dim :: I
 -- (Float,[3,2])
 tan
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 tan input = unsafePerformIO $ cast1 ATen.tan_t input
 
--- tensordot :: Tensor shape dtype device -> Tensor shape dtype device -> [Int] -> [Int] -> Tensor shape dtype device
+-- tensordot :: Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> Tensor device dtype shape
 -- tensordot _input _other _dims_input _dims_other = unsafePerformIO $ (cast4 ATen.tensordot_ttll) _input _other _dims_input _dims_other
 
--- threshold :: Tensor shape dtype device -> Float -> Float -> Tensor shape dtype device
+-- threshold :: Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape
 -- threshold _input _threshold _value = unsafePerformIO $ (cast3 ATen.threshold_tss) _input _threshold _value
 
--- one_hot :: Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- one_hot :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- one_hot _input _num_classes = unsafePerformIO $ (cast2 ATen.one_hot_tl) _input _num_classes
 
--- flip :: Tensor shape dtype device -> [Int] -> Tensor shape dtype device
+-- flip :: Tensor device dtype shape -> [Int] -> Tensor device dtype shape
 -- flip _input _dims = unsafePerformIO $ (cast2 ATen.flip_tl) _input _dims
 
--- roll :: Tensor shape dtype device -> Int -> Int -> Tensor shape dtype device
+-- roll :: Tensor device dtype shape -> Int -> Int -> Tensor device dtype shape
 -- roll _input _shifts _dims = unsafePerformIO $ (cast3 ATen.roll_tll) _input _shifts _dims
 
--- rot90 :: Tensor shape dtype device -> Int -> [Int] -> Tensor shape dtype device
+-- rot90 :: Tensor device dtype shape -> Int -> [Int] -> Tensor device dtype shape
 -- rot90 _input _k _dims = unsafePerformIO $ (cast3 ATen.rot90_tll) _input _k _dims
 
--- triplet_margin_loss :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Double -> Double -> Double -> Bool -> Int -> Tensor shape dtype device
+-- triplet_margin_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Double -> Double -> Double -> Bool -> Int -> Tensor device dtype shape
 -- triplet_margin_loss _anchor _positive _negative _margin _p _eps _swap _reduction = unsafePerformIO $ (cast8 ATen.triplet_margin_loss_tttdddbl) _anchor _positive _negative _margin _p _eps _swap _reduction
 
 -- | trunc
@@ -2650,17 +2633,17 @@ tan input = unsafePerformIO $ cast1 ATen.tan_t input
 -- (Float,[3,2])
 trunc
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 trunc input = unsafePerformIO $ cast1 ATen.trunc_t input
 
--- unique_dim :: Tensor shape dtype device -> Int -> Bool -> Bool -> Bool -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- unique_dim :: Tensor device dtype shape -> Int -> Bool -> Bool -> Bool -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- unique_dim _input _dim _sorted _return_inverse _return_counts = unsafePerformIO $ (cast5 ATen.unique_dim_tlbbb) _input _dim _sorted _return_inverse _return_counts
 
--- unique_consecutive :: Tensor shape dtype device -> Bool -> Bool -> Int -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- unique_consecutive :: Tensor device dtype shape -> Bool -> Bool -> Int -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- unique_consecutive _input _return_inverse _return_counts _dim = unsafePerformIO $ (cast4 ATen.unique_consecutive_tbbl) _input _return_inverse _return_counts _dim
 
--- unique_dim_consecutive :: Tensor shape dtype device -> Int -> Bool -> Bool -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- unique_dim_consecutive :: Tensor device dtype shape -> Int -> Bool -> Bool -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- unique_dim_consecutive _input _dim _return_inverse _return_counts = unsafePerformIO $ (cast4 ATen.unique_dim_consecutive_tlbb) _input _dim _return_inverse _return_counts
 
 -- | UnsqueezeImpl
@@ -2703,17 +2686,17 @@ type Unsqueeze shape dim = UnsqueezeCheck shape dim (UnsqueezeImpl shape dim)
 unsqueeze
   :: forall dim shape shape' dtype device
    . (KnownNat dim, shape' ~ Unsqueeze shape dim)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor shape' dtype device -- ^ output
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
 unsqueeze input = unsafePerformIO $ cast2 ATen.unsqueeze_tl input (natValI @dim)
 
--- where' :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- where' :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- where' _condition _input _other = unsafePerformIO $ (cast3 ATen.where_ttt) _condition _input _other
 
--- where_ :: Tensor shape dtype device -> [Tensor shape dtype device]
+-- where_ :: Tensor device dtype shape -> [Tensor device dtype shape]
 -- where_ _condition = unsafePerformIO $ (cast1 ATen.where_t) _condition
 
--- norm_except_dim :: Tensor shape dtype device -> Int -> Int -> Tensor shape dtype device
+-- norm_except_dim :: Tensor device dtype shape -> Int -> Int -> Tensor device dtype shape
 -- norm_except_dim _v _pow _dim = unsafePerformIO $ (cast3 ATen.norm_except_dim_tll) _v _pow _dim
 
 -- | zerosLike
@@ -2721,11 +2704,11 @@ unsqueeze input = unsafePerformIO $ cast2 ATen.unsqueeze_tl input (natValI @dim)
 -- (Float,[3,4,5])
 zerosLike
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 zerosLike input = unsafePerformIO $ cast1 ATen.zeros_like_t input
 
--- native_norm :: Tensor shape dtype device -> Float -> Tensor shape dtype device
+-- native_norm :: Tensor device dtype shape -> Float -> Tensor device dtype shape
 -- native_norm _input _p = unsafePerformIO $ (cast2 ATen.native_norm_ts) _input _p
 
 -- | clone
@@ -2734,11 +2717,11 @@ zerosLike input = unsafePerformIO $ cast1 ATen.zeros_like_t input
 -- (Float,[3,2])
 clone
   :: forall shape dtype device
-   . Tensor shape dtype device
-  -> IO (Tensor shape dtype device)
+   . Tensor device dtype shape
+  -> IO (Tensor device dtype shape)
 clone input = cast1 ATen.clone_t input
 
--- s_native_addmm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Tensor shape dtype device
+-- s_native_addmm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape
 -- s_native_addmm _input _mat1 _mat2 _beta _alpha = unsafePerformIO $ (cast5 ATen.s_native_addmm_tttss) _input _mat1 _mat2 _beta _alpha
 
 -- | addmm
@@ -2755,43 +2738,43 @@ addmm
      )
   => Float -- ^ beta
   -> Float -- ^ alpha
-  -> Tensor '[n,k] dtype device -- ^ first input matrix
-  -> Tensor '[k,m] dtype device -- ^ second input matrix
-  -> Tensor shape dtype device -- ^ input tensor
-  -> Tensor shape' dtype device -- ^ output tensor
+  -> Tensor device dtype '[n, k] -- ^ first input matrix
+  -> Tensor device dtype '[k, m] -- ^ second input matrix
+  -> Tensor device dtype shape -- ^ input tensor
+  -> Tensor device dtype shape' -- ^ output tensor
 addmm beta alpha mat1 mat2 input = unsafePerformIO $ cast5 ATen.addmm_tttss input mat1 mat2 beta alpha
 
--- hspmm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- hspmm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- hspmm _mat1 _mat2 = unsafePerformIO $ (cast2 ATen.hspmm_tt) _mat1 _mat2
 
 -- | numel
 -- TODO: since this is decidable at compile time, this should probably be calculated from the tensor type instead
 numel
   :: forall shape dtype device
-   . Tensor shape dtype device
-  -> Int
+   . Tensor device dtype shape -- ^ input
+  -> Int -- ^ output
 numel input = unsafePerformIO $ cast1 ATen.numel_t input
 
--- unbind :: Tensor shape dtype device -> Int -> [Tensor shape dtype device]
+-- unbind :: Tensor device dtype shape -> Int -> [Tensor device dtype shape]
 -- unbind _input _dim = unsafePerformIO $ (cast2 ATen.unbind_tl) _input _dim
 
--- mkldnn_reorder_conv2d_weight :: Tensor shape dtype device -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Int -> Tensor shape dtype device
+-- mkldnn_reorder_conv2d_weight :: Tensor device dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Int -> Tensor device dtype shape
 -- mkldnn_reorder_conv2d_weight _input _padding _stride _dilation _groups = unsafePerformIO $ (cast5 ATen.mkldnn_reorder_conv2d_weight_tllll) _input _padding _stride _dilation _groups
 
---quantize_linear :: Tensor shape dtype device -> Double -> Int -> DType -> Tensor shape dtype device
+--quantize_linear :: Tensor device dtype shape -> Double -> Int -> DType -> Tensor device dtype shape
 --quantize_linear _input _scale _zero_point _dtype = unsafePerformIO $ (cast4 ATen.quantize_linear_tdls) _input _scale _zero_point _dtype
 
---quantize_linear_per_channel :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> [Int] -> DType -> Tensor shape dtype device
+--quantize_linear_per_channel :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> DType -> Tensor device dtype shape
 --quantize_linear_per_channel _input _scales _zero_points _axis _dtype = unsafePerformIO $ (cast5 ATen.quantize_linear_per_channel_tttls) _input _scales _zero_points _axis _dtype
 
--- dequantize :: Tensor shape dtype device -> Tensor shape dtype device
+-- dequantize :: Tensor device dtype shape -> Tensor device dtype shape
 -- dequantize _input = unsafePerformIO $ (cast1 ATen.dequantize_t) _input
 
 -- | qScale
 -- TODO: are there any restrictions on the dtype?
 qScale
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
+   . Tensor device dtype shape -- ^ input
   -> Double -- ^ output
 qScale input = unsafePerformIO $ cast1 ATen.q_scale_t input
 
@@ -2799,23 +2782,23 @@ qScale input = unsafePerformIO $ cast1 ATen.q_scale_t input
 -- TODO: are there any restrictions on the dtype?
 qZeroPoint
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
+   . Tensor device dtype shape -- ^ input
   -> Int -- ^ output
 qZeroPoint input = unsafePerformIO $ cast1 ATen.q_zero_point_t input
 
--- int_repr :: Tensor shape dtype device -> Tensor shape dtype device
+-- int_repr :: Tensor device dtype shape -> Tensor device dtype shape
 -- int_repr _input = unsafePerformIO $ (cast1 ATen.int_repr_t) _input
 
--- fake_quantize_per_tensor_affine :: Tensor shape dtype device -> Double -> Int -> Int -> Int -> Tensor shape dtype device
+-- fake_quantize_per_tensor_affine :: Tensor device dtype shape -> Double -> Int -> Int -> Int -> Tensor device dtype shape
 -- fake_quantize_per_tensor_affine _input _scale _zero_point _quant_min _quant_max = unsafePerformIO $ (cast5 ATen.fake_quantize_per_tensor_affine_tdlll) _input _scale _zero_point _quant_min _quant_max
 
--- meshgrid :: [Tensor shape dtype device] -> [Tensor shape dtype device]
+-- meshgrid :: [Tensor device dtype shape] -> [Tensor device dtype shape]
 -- meshgrid _tensors = unsafePerformIO $ (cast1 ATen.meshgrid_l) _tensors
 
--- cartesian_prod :: [Tensor shape dtype device] -> Tensor shape dtype device
+-- cartesian_prod :: [Tensor device dtype shape] -> Tensor device dtype shape
 -- cartesian_prod _tensors = unsafePerformIO $ (cast1 ATen.cartesian_prod_l) _tensors
 
--- combinations :: Tensor shape dtype device -> Int -> Bool -> Tensor shape dtype device
+-- combinations :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- combinations _input _r _with_replacement = unsafePerformIO $ (cast3 ATen.combinations_tlb) _input _r _with_replacement
 
 -- | lstm_cell
@@ -2833,43 +2816,43 @@ lstm_cell _input (_cc, _hc) _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 A
   where 
     _hx = [_cc, _hc] :: [Tensor dtype '[batchSize, hiddenSize]]
 
--- gru_cell :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- gru_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
 
--- rnn_tanh_cell :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- rnn_tanh_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- rnn_tanh_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.rnn_tanh_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
 
--- rnn_relu_cell :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- rnn_relu_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- rnn_relu_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.rnn_relu_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
 
--- quantized_lstm :: Tensor shape dtype device -> [Tensor shape dtype device] -> [Tensor shape dtype device] -> Bool -> Int -> Double -> Bool -> Bool -> Bool -> DType -> (Tensor shape dtype device,Tensor shape dtype device,Tensor shape dtype device)
+-- quantized_lstm :: Tensor device dtype shape -> [Tensor device dtype shape] -> [Tensor device dtype shape] -> Bool -> Int -> Double -> Bool -> Bool -> Bool -> DType -> (Tensor device dtype shape,Tensor device dtype shape,Tensor device dtype shape)
 -- quantized_lstm _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _dtype = unsafePerformIO $ (cast10 ATen.quantized_lstm_tllbldbbbs) _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first _dtype
 
--- quantized_lstm_cell :: Tensor shape dtype device -> [Tensor shape dtype device] -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Float -> Float -> (Tensor shape dtype device,Tensor shape dtype device)
+-- quantized_lstm_cell :: Tensor device dtype shape -> [Tensor device dtype shape] -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Float -> Float -> (Tensor device dtype shape,Tensor device dtype shape)
 -- quantized_lstm_cell _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh = unsafePerformIO $ (cast14 ATen.quantized_lstm_cell_tlttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
--- quantized_gru_cell :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Float -> Float -> Tensor shape dtype device
+-- quantized_gru_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Float -> Float -> Tensor device dtype shape
 -- quantized_gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh = unsafePerformIO $ (cast14 ATen.quantized_gru_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
--- quantized_rnn_relu_cell :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Float -> Float -> Tensor shape dtype device
+-- quantized_rnn_relu_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Float -> Float -> Tensor device dtype shape
 -- quantized_rnn_relu_cell _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh = unsafePerformIO $ (cast14 ATen.quantized_rnn_relu_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
--- quantized_rnn_tanh_cell :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Float -> Float -> Tensor shape dtype device
+-- quantized_rnn_tanh_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Float -> Float -> Tensor device dtype shape
 -- quantized_rnn_tanh_cell _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh = unsafePerformIO $ (cast14 ATen.quantized_rnn_tanh_cell_ttttttttttssss) _input _hx _w_ih _w_hh _b_ih _b_hh _packed_ih _packed_hh _col_offsets_ih _col_offsets_hh _scale_ih _scale_hh _zero_point_ih _zero_point_hh
 
--- masked_scatter :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- masked_scatter :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- masked_scatter _input _mask _source = unsafePerformIO $ (cast3 ATen.masked_scatter_ttt) _input _mask _source
 
--- index_add :: Tensor shape dtype device -> Int -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- index_add :: Tensor device dtype shape -> Int -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- index_add _input _dim _index _source = unsafePerformIO $ (cast4 ATen.index_add_tltt) _input _dim _index _source
 
--- scatter_add :: Tensor shape dtype device -> Int -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- scatter_add :: Tensor device dtype shape -> Int -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- scatter_add _input _dim _index _src = unsafePerformIO $ (cast4 ATen.scatter_add_tltt) _input _dim _index _src
 
--- addbmm :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Tensor shape dtype device
+-- addbmm :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape
 -- addbmm _input _batch1 _batch2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addbmm_tttss) _input _batch1 _batch2 _beta _alpha
 
--- cross :: Tensor shape dtype device -> Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- cross :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- cross _input _other _dim = unsafePerformIO $ (cast3 ATen.cross_ttl) _input _other _dim
 
 type family MatrixOrMatrixBatch (shape :: [Nat]) :: [Nat] where
@@ -2890,8 +2873,8 @@ triu
   :: forall shape dtype device
    . (shape ~ MatrixOrMatrixBatch shape)
   => Int -- ^ diagonal
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 triu diagonal input = unsafePerformIO $ cast2 ATen.triu_tl input diagonal
 
 -- | tril
@@ -2907,50 +2890,50 @@ tril
   :: forall shape dtype device
    . (shape ~ MatrixOrMatrixBatch shape)
   => Int -- ^ diagonal
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 tril diagonal input = unsafePerformIO $ cast2 ATen.tril_tl input diagonal
 
--- trace :: Tensor shape dtype device -> Tensor shape dtype device
+-- trace :: Tensor device dtype shape -> Tensor device dtype shape
 -- trace _input = unsafePerformIO $ (cast1 ATen.trace_t) _input
 
--- take :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- take :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- take _input _index = unsafePerformIO $ (cast2 ATen.take_tt) _input _index
 
--- index_select :: Tensor shape dtype device -> Int -> Tensor shape dtype device -> Tensor shape dtype device
+-- index_select :: Tensor device dtype shape -> Int -> Tensor device dtype shape -> Tensor device dtype shape
 -- index_select _input _dim _index = unsafePerformIO $ (cast3 ATen.index_select_tlt) _input _dim _index
 
--- masked_select :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- masked_select :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- masked_select _input _mask = unsafePerformIO $ (cast2 ATen.masked_select_tt) _input _mask
 
--- nonzero :: Tensor shape dtype device -> Tensor shape dtype device
+-- nonzero :: Tensor device dtype shape -> Tensor device dtype shape
 -- nonzero _input = unsafePerformIO $ (cast1 ATen.nonzero_t) _input
 
--- nonzero_numpy :: Tensor shape dtype device -> [Tensor shape dtype device]
+-- nonzero_numpy :: Tensor device dtype shape -> [Tensor device dtype shape]
 -- nonzero_numpy _input = unsafePerformIO $ (cast1 ATen.nonzero_numpy_t) _input
 
--- gather :: Tensor shape dtype device -> Int -> Tensor shape dtype device -> Bool -> Tensor shape dtype device
+-- gather :: Tensor device dtype shape -> Int -> Tensor device dtype shape -> Bool -> Tensor device dtype shape
 -- gather _input _dim _index _sparse_grad = unsafePerformIO $ (cast4 ATen.gather_tltb) _input _dim _index _sparse_grad
 
--- addcmul :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Tensor shape dtype device
+-- addcmul :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Tensor device dtype shape
 -- addcmul _input _tensor1 _tensor2 _value = unsafePerformIO $ (cast4 ATen.addcmul_ttts) _input _tensor1 _tensor2 _value
 
--- addcdiv :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Float -> Tensor shape dtype device
+-- addcdiv :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Float -> Tensor device dtype shape
 -- addcdiv _input _tensor1 _tensor2 _value = unsafePerformIO $ (cast4 ATen.addcdiv_ttts) _input _tensor1 _tensor2 _value
 
--- lstsq :: Tensor shape dtype device -> Tensor shape dtype device -> (Tensor shape dtype device,Tensor shape dtype device)
+-- lstsq :: Tensor device dtype shape -> Tensor device dtype shape -> (Tensor device dtype shape,Tensor device dtype shape)
 -- lstsq _input _A = unsafePerformIO $ (cast2 ATen.lstsq_tt) _input _A
 
--- triangular_solve :: Tensor shape dtype device -> Tensor shape dtype device -> Bool -> Bool -> Bool -> (Tensor shape dtype device,Tensor shape dtype device)
+-- triangular_solve :: Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Bool -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- triangular_solve _input _A _upper _transpose _unitriangular = unsafePerformIO $ (cast5 ATen.triangular_solve_ttbbb) _input _A _upper _transpose _unitriangular
 
--- qr :: Tensor shape dtype device -> Bool -> (Tensor shape dtype device,Tensor shape dtype device)
+-- qr :: Tensor device dtype shape -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- qr _input _some = unsafePerformIO $ (cast2 ATen.qr_tb) _input _some
 
--- ormqr :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Bool -> Bool -> Tensor shape dtype device
+-- ormqr :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Bool -> Bool -> Tensor device dtype shape
 -- ormqr _input _input2 _input3 _left _transpose = unsafePerformIO $ (cast5 ATen.ormqr_tttbb) _input _input2 _input3 _left _transpose
 
--- lu_solve :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- lu_solve :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- lu_solve _input _LU_data _LU_pivots = unsafePerformIO $ (cast3 ATen.lu_solve_ttt) _input _LU_data _LU_pivots
 
 -- | lgamma function
@@ -2959,8 +2942,8 @@ tril diagonal input = unsafePerformIO $ cast2 ATen.tril_tl input diagonal
 -- (Float,[3,2])
 lgamma
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 lgamma input = unsafePerformIO $ cast1 ATen.lgamma_t input
 
 -- | digamma function
@@ -2969,8 +2952,8 @@ lgamma input = unsafePerformIO $ cast1 ATen.lgamma_t input
 -- (Float,[3,2])
 digamma
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 digamma input = unsafePerformIO $ cast1 ATen.digamma_t input
 
 -- | polygamma function
@@ -2978,8 +2961,8 @@ digamma input = unsafePerformIO $ cast1 ATen.digamma_t input
 polygamma
   :: forall shape dtype device
    . Int -- ^ order
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 polygamma n input = unsafePerformIO $ cast2 ATen.polygamma_lt n input
 
 -- | inverse of the error function
@@ -2988,17 +2971,17 @@ polygamma n input = unsafePerformIO $ cast2 ATen.polygamma_lt n input
 -- (Float,[3,2])
 erfinv
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 erfinv input = unsafePerformIO $ cast1 ATen.erfinv_t input
 
--- dist :: Tensor shape dtype device -> Tensor shape dtype device -> Float -> Tensor shape dtype device
+-- dist :: Tensor device dtype shape -> Tensor device dtype shape -> Float -> Tensor device dtype shape
 -- dist _input _other _p = unsafePerformIO $ (cast3 ATen.dist_tts) _input _other _p
 
--- atan2 :: Tensor shape dtype device -> Tensor shape dtype device -> Tensor shape dtype device
+-- atan2 :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- atan2 _input _other = unsafePerformIO $ (cast2 ATen.atan2_tt) _input _other
 
--- histc :: Tensor shape dtype device -> Int -> Float -> Float -> Tensor shape dtype device
+-- histc :: Tensor device dtype shape -> Int -> Float -> Float -> Tensor device dtype shape
 -- histc _input _bins _min _max = unsafePerformIO $ (cast4 ATen.histc_tlss) _input _bins _min _max
 
 -- | minAll
@@ -3006,8 +2989,8 @@ erfinv input = unsafePerformIO $ cast1 ATen.erfinv_t input
 -- (Float,[])
 minAll
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor '[] dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype '[] -- ^ output
 minAll input = unsafePerformIO $ cast1 ATen.min_t input
 
 type family DropValue (shape :: [Nat]) (i :: Nat) :: [Nat] where
@@ -3025,24 +3008,19 @@ type family DropValue (shape :: [Nat]) (i :: Nat) :: [Nat] where
 minDim
   :: forall d shape dtype device
    . (KnownNat d)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor (DropValue shape d) dtype device -- ^ output
-minDim input = fst
-  (unsafePerformIO $ cast2 ATen.min_tl input (natValI @d) :: ( Tensor
-        (DropValue shape d)
-        dtype
-        device
-    , Tensor (DropValue shape d) 'D.Int64 device
-    )
-  )
+  => Tensor device dtype shape -- ^ input
+  -> ( Tensor device dtype    (DropValue shape d)
+     , Tensor device 'D.Int64 (DropValue shape d)
+     ) -- ^ output
+minDim input = unsafePerformIO $ cast2 ATen.min_tl input (natValI @d)
 
 -- | maxAll
 -- >>> dtype &&& shape $ maxAll (ones :: Tensor 'D.Float '[2,2])
 -- (Float,[])
 maxAll
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor '[] dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype '[] -- ^ output
 maxAll input = unsafePerformIO $ cast1 ATen.max_t input
 
 -- | maxDim
@@ -3055,24 +3033,19 @@ maxAll input = unsafePerformIO $ cast1 ATen.max_t input
 maxDim
   :: forall d shape dtype device
    . (KnownNat d)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor (DropValue shape d) dtype device -- ^ output
-maxDim input = fst
-  (unsafePerformIO $ cast2 ATen.max_tl input (natValI @d) :: ( Tensor
-        (DropValue shape d)
-        dtype
-        device
-    , Tensor (DropValue shape d) 'D.Int64 device
-    )
-  )
+  => Tensor device dtype shape -- ^ input
+  -> ( Tensor device dtype    (DropValue shape d)
+     , Tensor device 'D.Int64 (DropValue shape d)
+     ) -- ^ output
+maxDim input = unsafePerformIO $ cast2 ATen.max_tl input (natValI @d)
 
 -- | medianAll
 -- >>> dtype &&& shape $ medianAll (ones :: Tensor 'D.Float '[2,2])
 -- (Float,[])
 medianAll
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor '[] dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype '[] -- ^ output
 medianAll input = unsafePerformIO $ cast1 ATen.median_t input
 
 -- | medianDim
@@ -3085,16 +3058,11 @@ medianAll input = unsafePerformIO $ cast1 ATen.median_t input
 medianDim
   :: forall d shape dtype device
    . (KnownNat d)
-  => Tensor shape dtype device -- ^ input
-  -> Tensor (DropValue shape d) dtype device -- ^ output
-medianDim input = fst
-  (unsafePerformIO $ cast2 ATen.median_tl input (natValI @d) :: ( Tensor
-        (DropValue shape d)
-        dtype
-        device
-    , Tensor (DropValue shape d) 'D.Int64 device
-    )
-  )
+  => Tensor device dtype shape -- ^ input
+  -> ( Tensor device dtype    (DropValue shape d)
+     , Tensor device 'D.Int64 (DropValue shape d)
+     ) -- ^ output
+medianDim input = unsafePerformIO $ cast2 ATen.median_tl input (natValI @d)
 
 -- | median
 -- See https://pytorch.org/docs/stable/torch.html#torch.median.
@@ -3104,37 +3072,31 @@ medianDim input = fst
 median'
   :: forall dim keepOrDropDim shape dtype device
    . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
-  => Tensor shape dtype device
-  -> ( Tensor
-         (ConditionalDropDimension shape dim keepOrDropDim)
-         dtype
-         device
-     , Tensor
-         (ConditionalDropDimension shape dim keepOrDropDim)
-         'D.Int64
-         device
+  => Tensor device dtype shape
+  -> ( Tensor device dtype    (ConditionalDropDimension shape dim keepOrDropDim)
+     , Tensor device 'D.Int64 (ConditionalDropDimension shape dim keepOrDropDim)
      )
 median' input = unsafePerformIO $ cast3 ATen.median_tlb
                                         input
                                         (natValI @dim)
                                         (keepOrDropDimVal @keepOrDropDim)
 
--- sort :: Tensor shape dtype device -> Int -> Bool -> (Tensor shape dtype device,Tensor shape dtype device)
+-- sort :: Tensor device dtype shape -> Int -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- sort _input _dim _descending = unsafePerformIO $ (cast3 ATen.sort_tlb) _input _dim _descending
 
--- argsort :: Tensor shape dtype device -> Int -> Bool -> Tensor shape dtype device
+-- argsort :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- argsort _input _dim _descending = unsafePerformIO $ (cast3 ATen.argsort_tlb) _input _dim _descending
 
--- topk :: Tensor shape dtype device -> Int -> Int -> Bool -> Bool -> (Tensor shape dtype device,Tensor shape dtype device)
+-- topk :: Tensor device dtype shape -> Int -> Int -> Bool -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- topk _input _k _dim _largest _sorted = unsafePerformIO $ (cast5 ATen.topk_tllbb) _input _k _dim _largest _sorted
 
--- renorm :: Tensor shape dtype device -> Float -> Int -> Float -> Tensor shape dtype device
+-- renorm :: Tensor device dtype shape -> Float -> Int -> Float -> Tensor device dtype shape
 -- renorm _input _p _dim _maxnorm = unsafePerformIO $ (cast4 ATen.renorm_tsls) _input _p _dim _maxnorm
 
--- equal :: Tensor shape dtype device -> Tensor shape dtype device -> Bool
+-- equal :: Tensor device dtype shape -> Tensor device dtype shape -> Bool
 -- equal _input _other = unsafePerformIO $ (cast2 ATen.equal_tt) _input _other
 
--- alias :: Tensor shape dtype device -> Tensor shape dtype device
+-- alias :: Tensor device dtype shape -> Tensor device dtype shape
 -- alias _input = unsafePerformIO $ (cast1 ATen.alias_t) _input
 
 -- | L1 loss
@@ -3146,16 +3108,16 @@ median' input = unsafePerformIO $ cast3 ATen.median_tlb
 l1Loss
   :: forall reduction shape dtype device
    . (KnownReduction reduction)
-  => Tensor shape dtype device -- ^ prediciton
-  -> Tensor shape dtype device -- ^ target
-  -> Tensor (ConditionalReduction shape reduction) dtype device -- ^ loss
+  => Tensor device dtype shape -- ^ prediciton
+  -> Tensor device dtype shape -- ^ target
+  -> Tensor device dtype (ConditionalReduction shape reduction) -- ^ loss
 l1Loss prediction target = unsafePerformIO
   $ cast3 ATen.l1_loss_ttl prediction target (reductionVal @reduction)
 
--- multi_margin_loss :: Tensor shape dtype device -> Tensor shape dtype device -> Float -> Float -> Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- multi_margin_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- multi_margin_loss _input _target _p _margin _weight _reduction = unsafePerformIO $ (cast6 ATen.multi_margin_loss_ttsstl) _input _target _p _margin _weight _reduction
 
--- multilabel_margin_loss :: Tensor shape dtype device -> Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- multilabel_margin_loss :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- multilabel_margin_loss _input _target _reduction = unsafePerformIO $ (cast3 ATen.multilabel_margin_loss_ttl) _input _target _reduction
 
 -- | negative log likelihood loss
@@ -3192,14 +3154,11 @@ l1Loss prediction target = unsafePerformIO
 nllLoss
   :: forall reduction n c ds dtype device
    . (KnownReduction reduction, KnownNat n, KnownNat c, KnownShape ds)
-  => Tensor '[c] dtype device -- ^ weight
+  => Tensor device dtype '[c] -- ^ weight
   -> Int -- ^ ignore which index
-  -> Tensor (n ': c ': ds) dtype device -- ^ prediction
-  -> Tensor (n ': ds) 'D.Int64 device -- ^ target
-  -> Tensor
-       (ConditionalReduction (n ': ds) reduction)
-       dtype
-       device -- ^ loss
+  -> Tensor device dtype    (n ': c ': ds) -- ^ prediction
+  -> Tensor device 'D.Int64 (n ': ds) -- ^ target
+  -> Tensor device dtype    (ConditionalReduction (n ': ds) reduction) -- ^ loss
 nllLoss weight ignoreIndex prediction target = case shapeVal @ds of
   [] -> unsafePerformIO $ cast5 ATen.nll_loss_tttll
                                 prediction
@@ -3236,9 +3195,9 @@ nllLoss weight ignoreIndex prediction target = case shapeVal @ds of
 smoothL1Loss
   :: forall reduction shape dtype device
    . (KnownReduction reduction)
-  => Tensor shape dtype device -- ^ prediction
-  -> Tensor shape dtype device -- ^ target
-  -> Tensor (ConditionalReduction shape reduction) dtype device -- ^ loss
+  => Tensor device dtype shape -- ^ prediction
+  -> Tensor device dtype shape -- ^ target
+  -> Tensor device dtype (ConditionalReduction shape reduction) -- ^ loss
 smoothL1Loss prediction target = unsafePerformIO
   $ cast3 ATen.smooth_l1_loss_ttl prediction target (reductionVal @reduction)
 
@@ -3251,9 +3210,9 @@ smoothL1Loss prediction target = unsafePerformIO
 softMarginLoss
   :: forall reduction shape dtype device
    . (KnownReduction reduction)
-  => Tensor shape dtype device -- ^ prediction
-  -> Tensor shape dtype device -- ^ target
-  -> Tensor (ConditionalReduction shape reduction) dtype device -- ^ loss
+  => Tensor device dtype shape -- ^ prediction
+  -> Tensor device dtype shape -- ^ target
+  -> Tensor device dtype (ConditionalReduction shape reduction) -- ^ loss
 softMarginLoss prediciton target = unsafePerformIO $ cast3
   ATen.soft_margin_loss_ttl
   prediciton
@@ -3269,8 +3228,8 @@ elu
    . Float -- ^ alpha
   -> Float -- ^ scale
   -> Float -- ^ input scale
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 elu alpha scale inputScale input =
   unsafePerformIO $ cast4 ATen.elu_tsss input alpha scale inputScale
 
@@ -3279,7 +3238,7 @@ elu alpha scale inputScale input =
 -- -- (Float,[3,1])
 -- -- >>> dtype &&& shape $ glu (ones :: Tensor 'D.Float '[3,2]) 3
 -- -- (Float,[3,2])
--- glu :: Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- glu :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- glu _input _dim = unsafePerformIO $ (cast2 ATen.glu_tl) _input _dim
 
 -- | hard tanh
@@ -3290,12 +3249,12 @@ hardTanh
   :: forall shape dtype device
    . Float -- ^ minimum value
   -> Float -- ^ maximum value
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 hardTanh min_val max_val input =
   unsafePerformIO $ cast3 ATen.hardtanh_tss input min_val max_val
 
--- leaky_relu :: Tensor shape dtype device -> Float -> Tensor shape dtype device
+-- leaky_relu :: Tensor device dtype shape -> Float -> Tensor device dtype shape
 -- leaky_relu _input _negative_slope = unsafePerformIO $ (cast2 ATen.leaky_relu_ts) _input _negative_slope
 
 -- | logarithm of the sigmoid
@@ -3304,8 +3263,8 @@ hardTanh min_val max_val input =
 -- (Float,[3,2])
 logSigmoid
   :: forall shape dtype device
-   . Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+   . Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 logSigmoid input = unsafePerformIO $ cast1 ATen.log_sigmoid_t input
 
 -- -- | softPlus
@@ -3313,7 +3272,7 @@ logSigmoid input = unsafePerformIO $ cast1 ATen.log_sigmoid_t input
 -- -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- -- >>> dtype &&& shape $ softPlus (ones :: Tensor 'D.Float '[3,2])
 -- -- (Float,[3,2])
--- softPlus :: Tensor shape dtype device -> Float -> Float -> Tensor shape dtype device
+-- softPlus :: Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape
 -- softPlus _input _beta _threshold = unsafePerformIO $ (cast3 ATen.softplus_tss) _input _beta _threshold
 
 -- | soft shrink
@@ -3323,8 +3282,8 @@ logSigmoid input = unsafePerformIO $ cast1 ATen.log_sigmoid_t input
 softShrink
   :: forall shape dtype device
    . Float -- ^ lambda
-  -> Tensor shape dtype device -- ^ input
-  -> Tensor shape dtype device -- ^ output
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape -- ^ output
 softShrink lambda input =
   unsafePerformIO $ cast2 ATen.softshrink_ts input lambda
 
@@ -3343,11 +3302,8 @@ adaptiveAvgPool2d
                      , Fst outputSize, Snd outputSize
                      ]
      )
-  => Tensor '[batchSize, channelSize, inputSize0, inputSize1] dtype device -- ^ input
-  -> Tensor
-       '[batchSize, channelSize, Fst outputSize, Snd outputSize]
-       dtype
-       device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, Fst outputSize, Snd outputSize] -- ^ output
 adaptiveAvgPool2d input = unsafePerformIO $ cast2
   ATen.adaptive_avg_pool2d_tl
   input
@@ -3372,11 +3328,8 @@ mkldnnAdaptiveAvgPool2d
                      , Fst outputSize, Snd outputSize
                      ]
      )
-  => Tensor '[batchSize, channelSize, inputSize0, inputSize1] dtype device -- ^ input
-  -> Tensor
-       '[batchSize, channelSize, Fst outputSize, Snd outputSize]
-       dtype
-       device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, Fst outputSize, Snd outputSize] -- ^ output
 mkldnnAdaptiveAvgPool2d input = unsafePerformIO $ cast2
   ATen.adaptive_avg_pool2d_tl
   input
@@ -3402,14 +3355,8 @@ adaptiveAvgPool3d
                      , Fst3 outputSize, Snd3 outputSize, Trd3 outputSize
                      ]
      )
-  => Tensor
-       '[batchSize, channelSize, inputSize0, inputSize1, inputSize2]
-       dtype
-       device -- ^ input
-  -> Tensor
-       '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
-       dtype
-       device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize] -- ^ output
 adaptiveAvgPool3d input = unsafePerformIO $ cast2
   ATen.adaptive_avg_pool3d_tl
   input
@@ -3434,15 +3381,9 @@ adaptiveMaxPool2d
                      , Fst outputSize, Snd outputSize
                      ]
      )
-  => Tensor '[batchSize, channelSize, inputSize0, inputSize1] dtype device -- ^ input
-  -> ( Tensor
-        '[batchSize, channelSize, Fst outputSize, Snd outputSize]
-        dtype
-        device
-     , Tensor
-         '[batchSize, channelSize, Fst outputSize, Snd outputSize]
-         dtype
-         device
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
+  -> ( Tensor device dtype    '[batchSize, channelSize, Fst outputSize, Snd outputSize]
+     , Tensor device 'D.Int64 '[batchSize, channelSize, Fst outputSize, Snd outputSize]
      ) -- ^ output
 adaptiveMaxPool2d input = unsafePerformIO $ cast2
   ATen.adaptive_max_pool2d_tl
@@ -3469,18 +3410,9 @@ adaptiveMaxPool3d
                      , Fst3 outputSize, Snd3 outputSize, Trd3 outputSize
                      ]
      )
-  => Tensor
-       '[batchSize, channelSize, inputSize0, inputSize1, inputSize2]
-       dtype
-       device -- ^ input
-  -> ( Tensor
-         '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
-         dtype
-         device
-     , Tensor
-         '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
-         'D.Int64
-         device
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] -- ^ input
+  -> ( Tensor device dtype    '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
+     , Tensor device 'D.Int64 '[batchSize, channelSize, Fst3 outputSize, Snd3 outputSize, Trd3 outputSize]
      ) -- ^ output
 adaptiveMaxPool3d input = unsafePerformIO $ (cast2 ATen.adaptive_max_pool3d_tl)
   input
@@ -3517,11 +3449,8 @@ avgPool2d
      , ConvSideCheck inputSize0 (Fst kernelSize) (Fst stride) (Fst padding) outputSize0
      , ConvSideCheck inputSize1 (Snd kernelSize) (Snd stride) (Snd padding) outputSize1
      )
-  => Tensor '[batchSize, channelSize, inputSize0, inputSize1] dtype device -- ^ input
-  -> Tensor
-       '[batchSize, channelSize, outputSize0, outputSize1]
-       dtype
-       device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1] -- ^ output
 avgPool2d input = unsafePerformIO $ cast7
   ATen.avg_pool2d_tlllbbl
   input
@@ -3560,14 +3489,8 @@ avgPool3d
      , ConvSideCheck inputSize1 (Snd3 kernelSize) (Snd3 stride) (Snd3 padding) outputSize1
      , ConvSideCheck inputSize2 (Trd3 kernelSize) (Trd3 stride) (Trd3 padding) outputSize2
      )
-  => Tensor
-       '[batchSize, channelSize, inputSize0, inputSize1, inputSize2]
-       dtype
-       device -- ^ input
-  -> Tensor
-       '[batchSize, channelSize, outputSize0, outputSize1, outputSize2]
-       dtype
-       device -- ^ output
+  => Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1, inputSize2] -- ^ input
+  -> Tensor device dtype '[batchSize, channelSize, outputSize0, outputSize1, outputSize2] -- ^ output
 avgPool3d input = unsafePerformIO $ cast7
   ATen.avg_pool3d_tlllbbl
   input
@@ -3582,68 +3505,68 @@ avgPool3d input = unsafePerformIO $ cast7
   True
   (1 :: Int)
 
--- fractional_max_pool2d :: Tensor shape dtype device -> (Int,Int) -> (Int,Int) -> Tensor shape dtype device -> (Tensor shape dtype device,Tensor shape dtype device)
+-- fractional_max_pool2d :: Tensor device dtype shape -> (Int,Int) -> (Int,Int) -> Tensor device dtype shape -> (Tensor device dtype shape,Tensor device dtype shape)
 -- fractional_max_pool2d _input _kernel_size _output_size _random_samples = unsafePerformIO $ (cast4 ATen.fractional_max_pool2d_tllt) _input _kernel_size _output_size _random_samples
 
--- fractional_max_pool3d :: Tensor shape dtype device -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor shape dtype device -> (Tensor shape dtype device,Tensor shape dtype device)
+-- fractional_max_pool3d :: Tensor device dtype shape -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor device dtype shape -> (Tensor device dtype shape,Tensor device dtype shape)
 -- fractional_max_pool3d _input _kernel_size _output_size _random_samples = unsafePerformIO $ (cast4 ATen.fractional_max_pool3d_tllt) _input _kernel_size _output_size _random_samples
 
--- max_pool2d_with_indices :: Tensor shape dtype device -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Bool -> (Tensor shape dtype device,Tensor shape dtype device)
+-- max_pool2d_with_indices :: Tensor device dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- max_pool2d_with_indices _input _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.max_pool2d_with_indices_tllllb) _input _kernel_size _stride _padding _dilation _ceil_mode
 
--- max_pool3d_with_indices :: Tensor shape dtype device -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Bool -> (Tensor shape dtype device,Tensor shape dtype device)
+-- max_pool3d_with_indices :: Tensor device dtype shape -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Bool -> (Tensor device dtype shape,Tensor device dtype shape)
 -- max_pool3d_with_indices _input _kernel_size _stride _padding _dilation _ceil_mode = unsafePerformIO $ (cast6 ATen.max_pool3d_with_indices_tllllb) _input _kernel_size _stride _padding _dilation _ceil_mode
 
--- max_unpool2d :: Tensor shape dtype device -> Tensor shape dtype device -> (Int,Int) -> Tensor shape dtype device
+-- max_unpool2d :: Tensor device dtype shape -> Tensor device dtype shape -> (Int,Int) -> Tensor device dtype shape
 -- max_unpool2d _input _indices _output_size = unsafePerformIO $ (cast3 ATen.max_unpool2d_ttl) _input _indices _output_size
 
--- max_unpool3d :: Tensor shape dtype device -> Tensor shape dtype device -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor shape dtype device
+-- max_unpool3d :: Tensor device dtype shape -> Tensor device dtype shape -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor device dtype shape
 -- max_unpool3d _input _indices _output_size _stride _padding = unsafePerformIO $ (cast5 ATen.max_unpool3d_ttlll) _input _indices _output_size _stride _padding
 
--- reflection_pad1d :: Tensor shape dtype device -> (Int,Int) -> Tensor shape dtype device
+-- reflection_pad1d :: Tensor device dtype shape -> (Int,Int) -> Tensor device dtype shape
 -- reflection_pad1d _input _padding = unsafePerformIO $ (cast2 ATen.reflection_pad1d_tl) _input _padding
 
--- reflection_pad2d :: Tensor shape dtype device -> (Int,Int,Int,Int) -> Tensor shape dtype device
+-- reflection_pad2d :: Tensor device dtype shape -> (Int,Int,Int,Int) -> Tensor device dtype shape
 -- reflection_pad2d _input _padding = unsafePerformIO $ (cast2 ATen.reflection_pad2d_tl) _input _padding
 
--- replication_pad1d :: Tensor shape dtype device -> (Int,Int) -> Tensor shape dtype device
+-- replication_pad1d :: Tensor device dtype shape -> (Int,Int) -> Tensor device dtype shape
 -- replication_pad1d _input _padding = unsafePerformIO $ (cast2 ATen.replication_pad1d_tl) _input _padding
 
--- replication_pad2d :: Tensor shape dtype device -> (Int,Int,Int,Int) -> Tensor shape dtype device
+-- replication_pad2d :: Tensor device dtype shape -> (Int,Int,Int,Int) -> Tensor device dtype shape
 -- replication_pad2d _input _padding = unsafePerformIO $ (cast2 ATen.replication_pad2d_tl) _input _padding
 
--- replication_pad3d :: Tensor shape dtype device -> (Int,Int,Int,Int,Int,Int) -> Tensor shape dtype device
+-- replication_pad3d :: Tensor device dtype shape -> (Int,Int,Int,Int,Int,Int) -> Tensor device dtype shape
 -- replication_pad3d _input _padding = unsafePerformIO $ (cast2 ATen.replication_pad3d_tl) _input _padding
 
--- upsample_linear1d :: Tensor shape dtype device -> Int -> Bool -> Tensor shape dtype device
+-- upsample_linear1d :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- upsample_linear1d _input _output_size _align_corners = unsafePerformIO $ (cast3 ATen.upsample_linear1d_tlb) _input _output_size _align_corners
 
--- upsample_bilinear2d :: Tensor shape dtype device -> (Int,Int) -> Bool -> Tensor shape dtype device
+-- upsample_bilinear2d :: Tensor device dtype shape -> (Int,Int) -> Bool -> Tensor device dtype shape
 -- upsample_bilinear2d _input _output_size _align_corners = unsafePerformIO $ (cast3 ATen.upsample_bilinear2d_tlb) _input _output_size _align_corners
 
--- upsample_bicubic2d :: Tensor shape dtype device -> (Int,Int) -> Bool -> Tensor shape dtype device
+-- upsample_bicubic2d :: Tensor device dtype shape -> (Int,Int) -> Bool -> Tensor device dtype shape
 -- upsample_bicubic2d _input _output_size _align_corners = unsafePerformIO $ (cast3 ATen.upsample_bicubic2d_tlb) _input _output_size _align_corners
 
--- upsample_trilinear3d :: Tensor shape dtype device -> (Int,Int,Int) -> Bool -> Tensor shape dtype device
+-- upsample_trilinear3d :: Tensor device dtype shape -> (Int,Int,Int) -> Bool -> Tensor device dtype shape
 -- upsample_trilinear3d _input _output_size _align_corners = unsafePerformIO $ (cast3 ATen.upsample_trilinear3d_tlb) _input _output_size _align_corners
 
--- upsample_nearest1d :: Tensor shape dtype device -> Int -> Tensor shape dtype device
+-- upsample_nearest1d :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- upsample_nearest1d _input _output_size = unsafePerformIO $ (cast2 ATen.upsample_nearest1d_tl) _input _output_size
 
--- upsample_nearest2d :: Tensor shape dtype device -> (Int,Int) -> Tensor shape dtype device
+-- upsample_nearest2d :: Tensor device dtype shape -> (Int,Int) -> Tensor device dtype shape
 -- upsample_nearest2d _input _output_size = unsafePerformIO $ (cast2 ATen.upsample_nearest2d_tl) _input _output_size
 
--- upsample_nearest3d :: Tensor shape dtype device -> (Int,Int,Int) -> Tensor shape dtype device
+-- upsample_nearest3d :: Tensor device dtype shape -> (Int,Int,Int) -> Tensor device dtype shape
 -- upsample_nearest3d _input _output_size = unsafePerformIO $ (cast2 ATen.upsample_nearest3d_tl) _input _output_size
 
--- conv_dilated2d :: Tensor shape dtype device -> Tensor shape dtype device -> (Int,Int) -> Tensor shape dtype device -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor shape dtype device
+-- conv_dilated2d :: Tensor device dtype shape -> Tensor device dtype shape -> (Int,Int) -> Tensor device dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor device dtype shape
 -- conv_dilated2d _input _weight _kernel_size _bias _stride _padding _dilation = unsafePerformIO $ (cast7 ATen.conv_dilated2d_ttltlll) _input _weight _kernel_size _bias _stride _padding _dilation
 
--- conv_dilated3d :: Tensor shape dtype device -> Tensor shape dtype device -> (Int,Int,Int) -> Tensor shape dtype device -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor shape dtype device
+-- conv_dilated3d :: Tensor device dtype shape -> Tensor device dtype shape -> (Int,Int,Int) -> Tensor device dtype shape -> (Int,Int,Int) -> (Int,Int,Int) -> (Int,Int,Int) -> Tensor device dtype shape
 -- conv_dilated3d _input _weight _kernel_size _bias _stride _padding _dilation = unsafePerformIO $ (cast7 ATen.conv_dilated3d_ttltlll) _input _weight _kernel_size _bias _stride _padding _dilation
 
--- col2im :: Tensor shape dtype device -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor shape dtype device
+-- col2im :: Tensor device dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor device dtype shape
 -- col2im _input _output_size _kernel_size _dilation _padding _stride = unsafePerformIO $ (cast6 ATen.col2im_tlllll) _input _output_size _kernel_size _dilation _padding _stride
 
--- im2col :: Tensor shape dtype device -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor shape dtype device
+-- im2col :: Tensor device dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor device dtype shape
 -- im2col _input _kernel_size _dilation _padding _stride = unsafePerformIO $ (cast5 ATen.im2col_tllll) _input _kernel_size _dilation _padding _stride

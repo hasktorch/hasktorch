@@ -40,34 +40,34 @@ import           Torch.Typed.Tensor
 zeros
   :: forall shape dtype device
    . (TensorOptions shape dtype device)
-  => Tensor shape dtype device
+  => Tensor device dtype shape
 zeros = UnsafeMkTensor $ D.zeros
   (optionsRuntimeShape @shape @dtype @device)
-  (D.withDType (optionsRuntimeDType @shape @dtype @device) D.defaultOpts)
+  (D.withDevice (optionsRuntimeDevice @shape @dtype @device) . D.withDType (optionsRuntimeDType @shape @dtype @device) $ D.defaultOpts)
 
 ones
   :: forall shape dtype device
    . (TensorOptions shape dtype device)
-  => Tensor shape dtype device
+  => Tensor device dtype shape
 ones = UnsafeMkTensor $ D.ones
   (optionsRuntimeShape @shape @dtype @device)
-  (D.withDType (optionsRuntimeDType @shape @dtype @device) D.defaultOpts)
+  (D.withDevice (optionsRuntimeDevice @shape @dtype @device) . D.withDType (optionsRuntimeDType @shape @dtype @device) $ D.defaultOpts)
 
 rand
   :: forall shape dtype device
    . (TensorOptions shape dtype device)
-  => IO (Tensor shape dtype device)
+  => IO (Tensor device dtype shape)
 rand = UnsafeMkTensor <$> D.rand
   (optionsRuntimeShape @shape @dtype @device)
-  (D.withDType (optionsRuntimeDType @shape @dtype @device) D.defaultOpts)
+  (D.withDevice (optionsRuntimeDevice @shape @dtype @device) . D.withDType (optionsRuntimeDType @shape @dtype @device) $ D.defaultOpts)
 
 randn
   :: forall shape dtype device
    . (TensorOptions shape dtype device)
-  => IO (Tensor shape dtype device)
+  => IO (Tensor device dtype shape)
 randn = UnsafeMkTensor <$> D.randn
   (optionsRuntimeShape @shape @dtype @device)
-  (D.withDType (optionsRuntimeDType @shape @dtype @device) D.defaultOpts)
+  (D.withDevice (optionsRuntimeDevice @shape @dtype @device) . D.withDType (optionsRuntimeDType @shape @dtype @device) $ D.defaultOpts)
 
 -- | linspace
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @7 0 3
@@ -75,18 +75,18 @@ randn = UnsafeMkTensor <$> D.randn
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @3 0 2
 -- (Float,([3],[0.0,1.0,2.0]))
 linspace
-  :: forall steps
+  :: forall steps device
    . (KnownNat steps)
-  => Float
-  -> Float
-  -> Tensor '[steps] 'D.Float device
+  => Float -- ^ start
+  -> Float -- ^ end
+  -> Tensor device 'D.Float '[steps] -- ^ output
 linspace start end =
   unsafePerformIO $ cast3 ATen.linspace_ssl start end (natValI @steps)
 
 eyeSquare
   :: forall n dtype device
    . (KnownNat n, TensorOptions '[n, n] dtype device)
-  => Tensor '[n, n] dtype device
+  => Tensor device dtype '[n, n] -- ^ output
 eyeSquare = UnsafeMkTensor $ D.eyeSquare
   (natValI @n)
   (D.withDType (optionsRuntimeDType @'[n, n] @dtype @device) D.defaultOpts)
