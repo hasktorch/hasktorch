@@ -1,0 +1,16 @@
+signature: Dimname
+cppname: at::Dimname
+hsname: Dimname
+functions:
+- Dimname::fromSymbol(Symbol name) -> Dimname
+- Dimname::wildcard() -> Dimname
+- Dimname::isValidName(std::string name) -> bool
+constructors:
+- new(Dimname x) -> Dimname
+methods:
+#- type() -> NameType
+- symbol() -> Symbol
+- isBasic() -> bool
+- isWildcard() -> bool
+- matches(Dimname other) -> bool
+#- unify(Dimname other) -> Dimname

@@ -1,0 +1,37 @@
+name: stack-macos
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup repo
+      run: |
+        git submodule init && git submodule update
+    - name: Setup tool-chains
+      run: |
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        brew install libomp || true
+        pip3 install pyyaml || true
+        wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh || true
+        clang --version
+        stack --version
+        pushd deps/ ; ./get-deps.sh -a cpu -c ;popd 
+    - name: Build
+      run: |
+        . setenv
+        stack build
+    - name: Test
+      run: |
+        . setenv
+        stack test codegen
+        stack test libtorch-ffi
+        stack test hasktorch
+        stack exec codegen-exe
+        stack exec xor-mlp
+        stack exec regression
+        stack exec gaussian-process
+        stack exec vae
+        stack exec optimizers

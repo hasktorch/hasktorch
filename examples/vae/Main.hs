@@ -11,7 +11,7 @@ import Prelude hiding (exp)
 
 import Torch.Tensor
 import Torch.DType (DType (Float))
-import Torch.TensorFactories (ones', rand', randn', randn_like)
+import Torch.TensorFactories (ones', rand', randn', randnLike)
 import Torch.Functions hiding (linear)
 import Torch.Autograd
 import Torch.NN
@@ -70,7 +70,7 @@ model VAEState{..} input = do
         mu = (linear muFC) encoded
         logvar = (linear logvarFC) encoded
     z <- reparamaterize mu logvar
-    let output = mlp decoderState nonlinearity z -- TODO - try sampling output
+    let output = mlp decoderState nonlinearity z
     pure $ ModelOutput output mu logvar
 
 -- | MLP helper function for model used by both encoder & decoder
@@ -83,7 +83,7 @@ mlp mlpState nonlin input = foldl' revApply input layerFunctionsList
 -- | Reparamaterization trick to sample from latent space while allowing differentiation
 reparamaterize :: Tensor -> Tensor -> IO Tensor
 reparamaterize mu logvar = do
-    eps <- Torch.TensorFactories.randn_like mu
+    eps <- Torch.TensorFactories.randnLike mu
     pure $ mu + eps * exp (0.5 * logvar)
 
 -- | Given weights, apply linear layer to an input
@@ -102,7 +102,6 @@ mvnCholesky cov n axisDim = do
 main :: IO ()
 main =
   let nSamples = 32768
-      -- TODO - use higher dimensions once functionality works
       dataDim = 4
       hDim = 2
       zDim = 2

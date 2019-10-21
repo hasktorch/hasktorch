@@ -12,6 +12,6 @@ venv/
 **/result*
 **/hie.log
 **/hie.err
-
 *.swp
 *.lock
+examples/static-mnist/data

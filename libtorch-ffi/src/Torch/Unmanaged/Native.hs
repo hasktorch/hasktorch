@@ -191,6 +191,42 @@ blackman_window_lb _window_length _periodic =
   , $(bool _periodic)));
   }|]
 
+empty_lNoM
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+empty_lNoM _size _names _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
+empty_lNo
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+empty_lNo _size _names _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+empty_lN
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+empty_lN _size _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)));
+  }|]
+
 empty_loM
   :: Ptr IntArray
   -> Ptr TensorOptions
@@ -281,6 +317,54 @@ _empty_affine_quantized_l _size =
     *$(std::vector<int64_t>* _size)));
   }|]
 
+_empty_per_channel_affine_quantized_lttloM
+  :: Ptr IntArray
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+_empty_per_channel_affine_quantized_lttloM _size _scales _zero_points _axis _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_empty_per_channel_affine_quantized(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::Tensor* _scales)
+  , *$(at::Tensor* _zero_points)
+  , $(int64_t _axis)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
+_empty_per_channel_affine_quantized_lttlo
+  :: Ptr IntArray
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_empty_per_channel_affine_quantized_lttlo _size _scales _zero_points _axis _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_empty_per_channel_affine_quantized(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::Tensor* _scales)
+  , *$(at::Tensor* _zero_points)
+  , $(int64_t _axis)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_empty_per_channel_affine_quantized_lttl
+  :: Ptr IntArray
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+_empty_per_channel_affine_quantized_lttl _size _scales _zero_points _axis =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_empty_per_channel_affine_quantized(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::Tensor* _scales)
+  , *$(at::Tensor* _zero_points)
+  , $(int64_t _axis)));
+  }|]
+
 empty_like_toM
   :: Ptr Tensor
   -> Ptr TensorOptions
@@ -363,6 +447,32 @@ eye_ll _n _m =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::eye(
     $(int64_t _n)
   , $(int64_t _m)));
+  }|]
+
+full_lsNo
+  :: Ptr IntArray
+  -> Ptr Scalar
+  -> Ptr DimnameList
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+full_lsNo _size _fill_value _names _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::full(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::Scalar* _fill_value)
+  , *$(std::vector<at::Dimname>* _names)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+full_lsN
+  :: Ptr IntArray
+  -> Ptr Scalar
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+full_lsN _size _fill_value _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::full(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::Scalar* _fill_value)
+  , *$(std::vector<at::Dimname>* _names)));
   }|]
 
 full_lso
@@ -667,6 +777,28 @@ logspace_ss _start _end =
   , *$(at::Scalar* _end)));
   }|]
 
+ones_lNo
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+ones_lNo _size _names _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::ones(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+ones_lN
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+ones_lN _size _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::ones(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)));
+  }|]
+
 ones_lo
   :: Ptr IntArray
   -> Ptr TensorOptions
@@ -711,6 +843,54 @@ scalar_tensor_s
 scalar_tensor_s _s =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::scalar_tensor(
     *$(at::Scalar* _s)));
+  }|]
+
+rand_lNo
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+rand_lNo _size _names _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+rand_lN
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+rand_lN _size _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)));
+  }|]
+
+rand_lpNo
+  :: Ptr IntArray
+  -> Ptr Generator
+  -> Ptr DimnameList
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+rand_lpNo _size _generator _names _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand(
+    *$(std::vector<int64_t>* _size)
+  , $(at::Generator * _generator)
+  , *$(std::vector<at::Dimname>* _names)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+rand_lpN
+  :: Ptr IntArray
+  -> Ptr Generator
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+rand_lpN _size _generator _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand(
+    *$(std::vector<int64_t>* _size)
+  , $(at::Generator * _generator)
+  , *$(std::vector<at::Dimname>* _names)));
   }|]
 
 rand_lo
@@ -933,6 +1113,54 @@ randn_lp _size _generator =
   , $(at::Generator * _generator)));
   }|]
 
+randn_lNo
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+randn_lNo _size _names _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+randn_lN
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+randn_lN _size _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)));
+  }|]
+
+randn_lpNo
+  :: Ptr IntArray
+  -> Ptr Generator
+  -> Ptr DimnameList
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+randn_lpNo _size _generator _names _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn(
+    *$(std::vector<int64_t>* _size)
+  , $(at::Generator * _generator)
+  , *$(std::vector<at::Dimname>* _names)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+randn_lpN
+  :: Ptr IntArray
+  -> Ptr Generator
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+randn_lpN _size _generator _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn(
+    *$(std::vector<int64_t>* _size)
+  , $(at::Generator * _generator)
+  , *$(std::vector<at::Dimname>* _names)));
+  }|]
+
 randn_like_to
   :: Ptr Tensor
   -> Ptr TensorOptions
@@ -1029,6 +1257,28 @@ range_sso _start _end _options =
     *$(at::Scalar* _start)
   , *$(at::Scalar* _end)
   , *$(at::TensorOptions* _options)));
+  }|]
+
+zeros_lNo
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+zeros_lNo _size _names _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::zeros(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+zeros_lN
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+zeros_lN _size _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::zeros(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)));
   }|]
 
 zeros_lo

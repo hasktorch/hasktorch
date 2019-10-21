@@ -81,7 +81,6 @@
 - remove: {src: repeat_interleave_t}
 - remove: {src: repeat_interleave_ttl}
 - remove: {src: repeat_interleave_tll}
-- remove: {src: softmax_tls}
 - remove: {src: softmax_tl}
 - remove: {src: squeeze_t}
 - remove: {src: squeeze_tl}
@@ -160,3 +159,82 @@
 - remove: {src: quantized_gru_tttlbldbb}
 - remove: {src: conv_transpose2d_ttltllll}
 - remove: {src: conv_transpose3d_ttltllll}
+
+# functions for named tensor
+- rename: {src: cat_ll, dst: cat}
+- rename: {src: cat_ln, dst: catWithDimname}
+- rename: {src: all_tnb, dst: allWithDimname}
+- rename: {src: any_tnb, dst: anyWithDimname}
+- rename: {src: max_tnb, dst: maxWithDimname}
+- rename: {src: min_tnb, dst: minWithDimname}
+- rename: {src: mean_tNbs, dst: meanWithDimnames}
+- rename: {src: median_tnb, dst: medianWithDimname}
+- rename: {src: select_tnl, dst: selectWithDimname}
+- rename: {src: size_tn, dst: sizeWithDimname}
+- rename: {src: transpose_tnn, dst: transposeWithDimname}
+- rename: {src: flatten_tll, dst: flatten}
+- rename: {src: flatten_tnn, dst: flattenWithDimname}
+- rename: {src: sort_tlb, dst: sort}
+- rename: {src: sort_tnb, dst: sortWithDimname}
+- rename: {src: max_values_tlb, dst: maxValues}
+- rename: {src: max_values_tnb, dst: maxValuesWithDimname}
+- rename: {src: max_values_tNb, dst: maxValuesWithDimnames}
+- rename: {src: min_values_tlb, dst: minValues}
+- rename: {src: min_values_tnb, dst: minValuesWithDimname}
+- rename: {src: min_values_tNb, dst: minValuesWithDimnames}
+- rename: {src: index_copy_tltt, dst: indexCopy}
+- rename: {src: index_copy_tntt, dst: indexCopyWithDimname}
+- rename: {src: kthvalue_tllb, dst: kthvalue}
+- rename: {src: kthvalue_tlnb, dst: kthvalueWithDimname}
+- rename: {src: log_softmax_tns, dst: logSoftmaxWithDimname}
+- rename: {src: logsumexp_tlb, dst: logsumexp}
+- rename: {src: logsumexp_tnb, dst: logsumexpWithDimname}
+- rename: {src: logsumexp_tNb, dst: logsumexpWithDimnameList}
+- rename: {src: mode_tlb, dst: mode}
+- rename: {src: mode_tnb, dst: modeWithDimname}
+- rename: {src: stride_tl, dst: stride}
+- rename: {src: stride_tn, dst: strideWithDimname}
+- rename: {src: unbind_tl, dst: unbind}
+- rename: {src: unbind_tn, dst: unbindWithDimname}
+- rename: {src: scatter_add_tltt, dst: scatterAdd}
+- rename: {src: scatter_add_tntt, dst: scatterAddWithDimname}
+- rename: {src: index_add_tltt, dst: indexAdd}
+- rename: {src: index_add_tntt, dst: indexAddWithDimname}
+- rename: {src: index_select_tlt, dst: indexSelect}
+- rename: {src: index_select_tnt, dst: indexSelectWithDimname}
+- rename: {src: gather_tltb, dst: gather}
+- rename: {src: gather_tntb, dst: gatherWithDimname}
+- rename: {src: argsort_tlb, dst: argsort}
+- rename: {src: argsort_tnb, dst: argsortWithDimname}
+- rename: {src: squeeze_tn, dst: squeezeWithDimname}
+- rename: {src: sum_tNbs, dst: sumWithDimnames}
+- rename: {src: std_mean_tNbb, dst: stdMeanWithDimnames}
+- rename: {src: std_tNbb, dst: stdWithDimnames}
+- rename: {src: prod_tnbs, dst: prodWithDimnames}
+- rename: {src: var_tNbb, dst: varWithDimnames}
+- rename: {src: var_mean_tNbb, dst: varMeanWithDimnames}
+- rename: {src: softmax_tls, dst: softmax}
+- rename: {src: softmax_tns, dst: softmaxWithDimname}
+  
+# remove overloaded functions of libtorch-1.3 except for the above list
+- remove: {src: where_t}
+- remove: {src: cat_ll}
+- remove: {src: flatten_tlln}
+- remove: {src: flatten_tnnn}
+- remove: {src: flatten_tnn}
+- remove: {src: flatten_tNn}
+- remove: {src: fbgemm_pack_quantized_matrix_t}
+- remove: {src: fbgemm_pack_quantized_matrix_tll}
+- remove: {src: norm_tsnbs}
+- remove: {src: norm_tsnb}
+- remove: {src: norm_tsNbs}
+- remove: {src: norm_tsNb}
+- remove: {src: result_type_tt}
+- remove: {src: result_type_ts}
+- remove: {src: result_type_st}
+- remove: {src: result_type_ss}
+- remove: {src: index_fill_tnts}
+- remove: {src: index_fill_tntt}
+- remove: {src: scatter_tntt}
+- remove: {src: scatter_tnts}
+

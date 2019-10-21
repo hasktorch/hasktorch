@@ -75,6 +75,9 @@ toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double $ t
 toInt :: Tensor -> Int
 toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t $ t
 
+toType :: DType -> Tensor -> Tensor
+toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
+
 select :: Tensor -> Int -> Int -> Tensor
 select t dim idx = unsafePerformIO $ (cast3 ATen.tensor_select_ll) t dim idx
 
