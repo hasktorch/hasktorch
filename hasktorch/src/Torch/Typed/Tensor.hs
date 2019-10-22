@@ -226,6 +226,49 @@ withTensor untypedTensor f = case someShape (D.shape untypedTensor) of
           (SomeDevice (Proxy :: Proxy device)) -> f $ UnsafeMkTensor @device @dtype @shape untypedTensor
 
 --------------------------------------------------------------------------------
+-- DType Promotion
+--------------------------------------------------------------------------------
+
+type family CmpDType (dtype :: D.DType) (dtype' :: D.DType) :: Ordering where
+  CmpDType dtype   dtype    = 'EQ
+  CmpDType D.Bool  D.UInt8  = 'LT
+  CmpDType D.Bool  D.Int8   = 'LT
+  CmpDType D.Bool  D.Int16  = 'LT
+  CmpDType D.Bool  D.Int32  = 'LT
+  CmpDType D.Bool  D.Int64  = 'LT
+  CmpDType D.Bool  D.Float  = 'LT
+  CmpDType D.Bool  D.Double = 'LT
+  CmpDType D.UInt8 D.Int8   = 'LT
+  CmpDType D.UInt8 D.Int16  = 'LT
+  CmpDType D.UInt8 D.Int32  = 'LT
+  CmpDType D.UInt8 D.Int64  = 'LT
+  CmpDType D.UInt8 D.Float  = 'LT
+  CmpDType D.UInt8 D.Double = 'LT
+  CmpDType D.Int8  D.Int16  = 'LT
+  CmpDType D.Int8  D.Int32  = 'LT
+  CmpDType D.Int8  D.Int64  = 'LT
+  CmpDType D.Int8  D.Float  = 'LT
+  CmpDType D.Int8  D.Double = 'LT
+  CmpDType D.Int16 D.Int32  = 'LT
+  CmpDType D.Int16 D.Int64  = 'LT
+  CmpDType D.Int16 D.Float  = 'LT
+  CmpDType D.Int16 D.Double = 'LT
+  CmpDType D.Int32 D.Int64  = 'LT
+  CmpDType D.Int32 D.Float  = 'LT
+  CmpDType D.Int32 D.Double = 'LT
+  CmpDType D.Int64 D.Float  = 'LT
+  CmpDType D.Int64 D.Double = 'LT
+  CmpDType D.Float D.Double = 'LT
+  CmpDType _       _        = 'GT
+
+type family DTypePromotionImpl (dtype :: D.DType) (dtype' :: D.DType) (ord :: Ordering) :: D.DType where
+  DTypePromotionImpl dtype _     EQ = dtype
+  DTypePromotionImpl _     dtype LT = dtype
+  DTypePromotionImpl dtype _     GT = dtype
+
+type DTypePromotion dtype dtype' = DTypePromotionImpl dtype dtype' (CmpDType dtype dtype')
+
+--------------------------------------------------------------------------------
 -- Broadcast type-level function
 --------------------------------------------------------------------------------
 
@@ -369,20 +412,22 @@ type family IsAtLeast (n :: Nat) (m :: Nat) (cmp :: Ordering) :: Constraint wher
 type (>=) (n :: Nat) (m :: Nat) = (IsAtLeast n m (CmpNat n m), KnownNat (n - m))
 
 add, sub, mul
-  :: forall shape'' shape shape' dtype device
-   . (shape'' ~ Broadcast shape shape')
+  :: forall shape'' shape shape' dtype dtype' dtype'' device
+   . ( dtype'' ~ DTypePromotion dtype dtype'
+     , shape'' ~ Broadcast shape shape'
+     )
   => Tensor device dtype shape
-  -> Tensor device dtype shape'
-  -> Tensor device dtype shape''
+  -> Tensor device dtype' shape'
+  -> Tensor device dtype'' shape''
 add a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
 sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
 mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
 
 gt, lt, ge, le, eq, ne
-  :: forall shape'' shape shape' dtype device
+  :: forall shape'' shape shape' dtype dtype' device
    . (shape'' ~ Broadcast shape shape')
   => Tensor device dtype   shape
-  -> Tensor device dtype   shape'
+  -> Tensor device dtype'  shape'
   -> Tensor device 'D.Bool shape''
 gt a b = UnsafeMkTensor $ D.gt (toDynamic a) (toDynamic b)
 lt a b = UnsafeMkTensor $ D.lt (toDynamic a) (toDynamic b)
@@ -695,12 +740,19 @@ toCUDA
   -> Tensor device' dtype shape
 toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
 
--- TODO: figure this one out
 toDevice
-  :: forall device' device shape dtype
-   . Tensor device  dtype shape
+  :: forall device' device dtype shape
+   . KnownDevice device'
+  => Tensor device  dtype shape
   -> Tensor device' dtype shape
-toDevice input = UnsafeMkTensor (toDynamic input)
+toDevice input = undefined -- UnsafeMkTensor . D.toDevice (deviceVal @device') . toDynamic $ input
+
+toType
+  :: forall dtype' dtype device shape
+   . KnownDType dtype'
+  => Tensor device dtype  shape
+  -> Tensor device dtype' shape
+toType input = UnsafeMkTensor . D.toType (dtypeVal @dtype') . toDynamic $ input
 
 --------------------------------------------------------------------------------
 -- Auxiliary functions for accessing tensor options as values
@@ -739,10 +791,3 @@ toInt
   :: Tensor device dtype shape
   -> Int
 toInt t = D.toInt $ toDynamic t
-
-toType
-  :: forall dtype' dtype device shape
-   . KnownDType dtype'
-  => Tensor device dtype  shape
-  -> Tensor device dtype' shape
-toType t = UnsafeMkTensor $ D.toType (dtypeVal @dtype') (toDynamic t)

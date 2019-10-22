@@ -37,6 +37,7 @@ import qualified ATen.Type as ATen
 import qualified ATen.Const as ATen
 import qualified Torch.Managed.Native as LibTorch
 
+import Torch.Device
 import Torch.DType
 import Torch.TensorOptions
 
@@ -65,6 +66,16 @@ shape t = unsafePerformIO $ (cast1 ATen.tensor_sizes) t
 
 dim :: Tensor -> Int
 dim t = unsafePerformIO $ (cast1 ATen.tensor_dim) t
+
+device :: Tensor -> Device
+device t = if isCuda
+  then Device { deviceType  = CUDA
+              , deviceIndex = fromIntegral @Int . unsafePerformIO $ cast1 ATen.tensor_get_device t
+              }
+  else Device { deviceType = CPU, deviceIndex = 0 }
+ where
+  isCuda :: Bool
+  isCuda = unsafePerformIO $ cast1 ATen.tensor_is_cuda t
 
 dtype :: Tensor -> DType
 dtype t = unsafePerformIO $ (cast1 ATen.tensor_scalar_type) t
@@ -102,7 +113,6 @@ toCPU t = unsafePerformIO $ (cast1 ATen.tensor_cpu) t
 
 toCUDA :: Tensor -> Tensor
 toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
-
 
 --------------------------------------------------------------------------------
 -- Indexing support

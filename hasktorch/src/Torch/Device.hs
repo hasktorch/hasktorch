@@ -11,8 +11,10 @@ import qualified ATen.Type                     as ATen
 import           Torch.Typed.Aux
 
 data DeviceType = CPU | CUDA
+  deriving (Eq, Ord, Show)
 
 data Device = Device { deviceType :: DeviceType, deviceIndex :: I.Int16 }
+  deriving (Eq, Ord, Show)
 
 instance Castable DeviceType ATen.DeviceType where
   cast CPU   f = f ATen.kCPU
