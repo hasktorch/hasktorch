@@ -1,10 +1,10 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Torch.TensorOptions where
 
+import Data.Int
 import           Foreign.ForeignPtr
 import           System.IO.Unsafe
 
@@ -12,6 +12,7 @@ import           ATen.Cast
 import           ATen.Class                     ( Castable(..) )
 import qualified ATen.Type                     as ATen
 import qualified ATen.Const                    as ATen
+import qualified ATen.Managed.Type.Context     as ATen
 import qualified ATen.Managed.Type.TensorOptions
                                                as ATen
 
@@ -37,8 +38,22 @@ withDType dtype opts =
 
 withDevice :: Device -> TensorOptions -> TensorOptions
 withDevice Device {..} opts = unsafePerformIO $ do
-  opts' <- cast2 ATen.tensorOptions_device_D opts deviceType :: IO TensorOptions
-  cast2 ATen.tensorOptions_device_index_s opts' deviceIndex
+  hasCUDA <- cast0 ATen.hasCUDA
+  withDevice' deviceType deviceIndex hasCUDA opts
+ where
+  withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
+  withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
+  withDeviceIndex :: Int16 -> TensorOptions -> IO TensorOptions
+  withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di
+  withDevice'
+    :: DeviceType -> Int16 -> Bool -> TensorOptions -> IO TensorOptions
+  withDevice' CPU 0 False opts = pure opts
+  withDevice' dt@CPU di@0 True opts =
+    pure opts >>= withDeviceType dt >>= withDeviceIndex di
+  withDevice' dt@CUDA di True opts | di >= 0 =
+    pure opts >>= withDeviceType dt >>= withDeviceIndex di
+  withDevice' dt di _ _ =
+    error $ "cannot move tensor to \"" <> show dt <> ":" <> show di <> "\""
 
 withLayout :: Layout -> TensorOptions -> TensorOptions
 withLayout layout opts =

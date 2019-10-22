@@ -15,19 +15,22 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 
-module TypedSpec
+module Typed.TensorSpec
   ( spec
   )
 where
 
-import           Test.Hspec
-import           Test.QuickCheck
-import           Control.Exception.Safe
-
 import           Prelude                 hiding ( sin )
+import           Control.Exception.Safe
+import           Data.Proxy
 import           Data.Reflection
 
+import           Test.Hspec
+import           Test.QuickCheck
+
+import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Functions               as D
 import qualified Torch.Tensor                  as D
@@ -47,11 +50,31 @@ checkDynamicTensorAttributes t = do
   D.dtype (toDynamic t) `shouldBe` optionsRuntimeDType @shape @dtype @device
   D.shape (toDynamic t) `shouldBe` optionsRuntimeShape @shape @dtype @device
 
+data SinSpec = SinSpec
+
+instance (TensorOptions shape dtype device)
+  => Apply SinSpec (Proxy (Tensor device dtype shape)) (() -> IO ())
+ where
+  apply _ = \_ -> \_ -> do
+    let t = sin zeros :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+
+allDTypes :: forall device shape . _
+allDTypes =
+  Proxy @(Tensor device 'D.Bool shape)
+    :. Proxy @(Tensor device 'D.UInt8 shape)
+    :. Proxy @(Tensor device 'D.Int8 shape)
+    :. Proxy @(Tensor device 'D.Int16 shape)
+    :. Proxy @(Tensor device 'D.Int32 shape)
+    :. Proxy @(Tensor device 'D.Int64 shape)
+    :. Proxy @(Tensor device 'D.Half shape)
+    :. Proxy @(Tensor device 'D.Float shape)
+    :. Proxy @(Tensor device 'D.Double shape)
+    :. HNil
+
 spec :: Spec
 spec = do
-  it "sin" $ do
-    let t = sin zeros :: CPUTensor 'D.Float '[2,3]
-    checkDynamicTensorAttributes t
+  it "sin" (hfoldrM SinSpec () (allDTypes @'( 'D.CPU, 0) @'[2, 3]) :: IO ())
   it "ones" $ do
     let t = ones :: CPUTensor 'D.Float '[2,3]
     checkDynamicTensorAttributes t

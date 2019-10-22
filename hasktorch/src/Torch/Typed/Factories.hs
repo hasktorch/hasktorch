@@ -17,14 +17,14 @@
 
 module Torch.Typed.Factories where
 
-import Prelude hiding (sin)
-import Control.Arrow ((&&&))
-import Data.Proxy
-import Data.Finite
-import Data.Kind (Constraint)
-import Data.Reflection
-import GHC.TypeLits
-import System.IO.Unsafe
+import           Prelude                 hiding ( sin )
+import           Control.Arrow                  ( (&&&) )
+import           Data.Proxy
+import           Data.Finite
+import           Data.Kind                      ( Constraint )
+import           Data.Reflection
+import           GHC.TypeLits
+import           System.IO.Unsafe
 
 import qualified ATen.Managed.Native           as ATen
 import           ATen.Cast
@@ -43,7 +43,10 @@ zeros
   => Tensor device dtype shape
 zeros = UnsafeMkTensor $ D.zeros
   (optionsRuntimeShape @shape @dtype @device)
-  (D.withDevice (optionsRuntimeDevice @shape @dtype @device) . D.withDType (optionsRuntimeDType @shape @dtype @device) $ D.defaultOpts)
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
 
 ones
   :: forall shape dtype device
@@ -51,7 +54,10 @@ ones
   => Tensor device dtype shape
 ones = UnsafeMkTensor $ D.ones
   (optionsRuntimeShape @shape @dtype @device)
-  (D.withDevice (optionsRuntimeDevice @shape @dtype @device) . D.withDType (optionsRuntimeDType @shape @dtype @device) $ D.defaultOpts)
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
 
 rand
   :: forall shape dtype device
@@ -59,7 +65,10 @@ rand
   => IO (Tensor device dtype shape)
 rand = UnsafeMkTensor <$> D.rand
   (optionsRuntimeShape @shape @dtype @device)
-  (D.withDevice (optionsRuntimeDevice @shape @dtype @device) . D.withDType (optionsRuntimeDType @shape @dtype @device) $ D.defaultOpts)
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
 
 randn
   :: forall shape dtype device
@@ -67,7 +76,10 @@ randn
   => IO (Tensor device dtype shape)
 randn = UnsafeMkTensor <$> D.randn
   (optionsRuntimeShape @shape @dtype @device)
-  (D.withDevice (optionsRuntimeDevice @shape @dtype @device) . D.withDType (optionsRuntimeDType @shape @dtype @device) $ D.defaultOpts)
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
 
 -- | linspace
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @7 0 3

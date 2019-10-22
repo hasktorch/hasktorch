@@ -222,7 +222,7 @@ withTensor
   -> r
 withTensor untypedTensor f = case someShape (D.shape untypedTensor) of
     (SomeShape (Proxy :: Proxy shape)) -> case someDType (D.dtype untypedTensor) of
-        (SomeDType (Proxy :: Proxy dtype)) -> case someDevice (undefined untypedTensor) of
+        (SomeDType (Proxy :: Proxy dtype)) -> case someDevice (D.device untypedTensor) of
           (SomeDevice (Proxy :: Proxy device)) -> f $ UnsafeMkTensor @device @dtype @shape untypedTensor
 
 --------------------------------------------------------------------------------
@@ -645,7 +645,13 @@ instance (Castable x D.ATenTensor) => Apply TensorListFolds [D.ATenTensor] (IO (
     x' <- uncast x return
     return $ HJust (x', xs)
 
-instance (HFoldrM IO TensorListFolds [D.ATenTensor] l, Apply TensorListFolds [D.ATenTensor] res, HUnfoldM IO TensorListFolds res l, res ~ (HUnfoldMRes IO [D.ATenTensor] l)) => Castable (HList l) [D.ATenTensor] where
+instance ( HFoldrM IO TensorListFolds [D.ATenTensor] l
+         , Apply TensorListFolds [D.ATenTensor] res
+         , HUnfoldM IO TensorListFolds res l
+         , res ~ (HUnfoldMRes IO [D.ATenTensor] l)
+         )
+  => Castable (HList l) [D.ATenTensor]
+ where
   cast xs f = f =<< go xs
    where
     go :: HList l -> IO [D.ATenTensor]
@@ -719,33 +725,34 @@ toSparse t = UnsafeMkTensor $ D.toSparse (toDynamic t)
 toDense :: Tensor device dtype shape -> Tensor device dtype shape
 toDense t = UnsafeMkTensor $ D.toDense (toDynamic t)
 
--- TODO: is this a device?
-toMKLDNN
-  :: forall device' device shape dtype
-   . Tensor device  dtype shape
-  -> Tensor device' dtype shape
-toMKLDNN t = UnsafeMkTensor $ D.toMKLDNN (toDynamic t)
+-- -- TODO: is this a device?
+-- toMKLDNN
+--   :: forall device' device shape dtype
+--    . Tensor device  dtype shape
+--   -> Tensor device' dtype shape
+-- toMKLDNN t = UnsafeMkTensor $ D.toMKLDNN (toDynamic t)
 
--- TODO: compute the output device type
+-- TODO: can this fail?
 toCPU
-  :: forall device' device shape dtype
+  :: forall device shape dtype
    . Tensor device  dtype shape
-  -> Tensor device' dtype shape
+  -> CPUTensor dtype shape
 toCPU input = UnsafeMkTensor $ D.toCPU (toDynamic input)
 
--- TODO: compute the output device type
+-- TODO: what if this fails?
 toCUDA
   :: forall device' device shape dtype
    . Tensor device  dtype shape
-  -> Tensor device' dtype shape
+  -> CUDATensor 0 dtype shape
 toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
 
+-- TODO: what if this fails?
 toDevice
   :: forall device' device dtype shape
    . KnownDevice device'
   => Tensor device  dtype shape
   -> Tensor device' dtype shape
-toDevice input = undefined -- UnsafeMkTensor . D.toDevice (deviceVal @device') . toDynamic $ input
+toDevice input = UnsafeMkTensor . D.toDevice (deviceVal @device') . toDynamic $ input
 
 toType
   :: forall dtype' dtype device shape
@@ -770,7 +777,7 @@ shape
    . TensorOptions shape dtype device
   => Tensor device dtype shape
   -> [Int]
-shape t = optionsRuntimeShape @shape @dtype @device
+shape _ = optionsRuntimeShape @shape @dtype @device
 
 dtype
   :: forall device dtype shape
