@@ -112,6 +112,18 @@ spec = do
   it "inverse of an identity matrix is an identity matrix" $ do
     let soln = eq (inverse $ eye' 3 3) (eye' 3 3)
     all soln `shouldBe` True
-    
-
-
+  it "conv2d" $ do
+    let batch = 10
+        in_channel = 3
+        out_channel = 10
+        kernel0 = 1
+        kernel1 = 1
+        input0 = 5
+        input1 = 6
+        x = conv2d
+              (ones' [batch, in_channel, input0, input1])
+              (ones' [out_channel, in_channel, kernel0, kernel1])
+              (ones' [out_channel])
+              (1,1)
+              (0,0)
+    shape x `shouldBe` [batch, out_channel, input0, input1]
