@@ -82,12 +82,12 @@ writeBitmap file tensor = do
 writePng :: FilePath -> D.Tensor -> IO ()
 writePng file tensor = do
   case (D.shape tensor,D.dtype tensor) of
-    ([1,height,width,1],D.UInt8) -> writeImage width height 1 (0 :: I.Pixel8) tensor >>= I.writeBitmap file
-    ([1,height,width],  D.UInt8) -> writeImage width height 1 (0 :: I.Pixel8) tensor >>= I.writeBitmap file
-    ([1,height,width,3],D.UInt8) -> writeImage width height 3 (I.PixelRGB8 0 0 0) tensor >>= I.writeBitmap file
-    ([height,width,1],D.UInt8) -> writeImage width height 1 (0 :: I.Pixel8) tensor >>= I.writeBitmap file
-    ([height,width],  D.UInt8) -> writeImage width height 1 (0 :: I.Pixel8) tensor >>= I.writeBitmap file
-    ([height,width,3],D.UInt8) -> writeImage width height 3 (I.PixelRGB8 0 0 0) tensor >>= I.writeBitmap file
+    ([1,height,width,1],D.UInt8) -> writeImage width height 1 (0 :: I.Pixel8) tensor >>= I.writePng file
+    ([1,height,width],  D.UInt8) -> writeImage width height 1 (0 :: I.Pixel8) tensor >>= I.writePng file
+    ([1,height,width,3],D.UInt8) -> writeImage width height 3 (I.PixelRGB8 0 0 0) tensor >>= I.writePng file
+    ([height,width,1],D.UInt8) -> writeImage width height 1 (0 :: I.Pixel8) tensor >>= I.writePng file
+    ([height,width],  D.UInt8) -> writeImage width height 1 (0 :: I.Pixel8) tensor >>= I.writePng file
+    ([height,width,3],D.UInt8) -> writeImage width height 3 (I.PixelRGB8 0 0 0) tensor >>= I.writePng file
     format -> throwIO $ userError $ "Can not write a image. " ++ show format ++ " is unsupported format."
 
 -- [batch, height, width, channel] -> [batch, channel, height, width]
@@ -150,5 +150,7 @@ main = do
     Right tensor -> do
       writeBitmap "output_sharpness.bmp" $ sharpness tensor
       writeBitmap "output_lowpass.bmp" $ lowpass tensor
+      writePng "output_sharpness.png" $ sharpness tensor
+      writePng "output_lowpass.png" $ lowpass tensor
     Left err -> print err
   return ()
