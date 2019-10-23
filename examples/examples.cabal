@@ -154,4 +154,3 @@ executable initializers
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
-                     , mtl >= 2.2.2
