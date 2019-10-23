@@ -28,12 +28,15 @@ let
                 overrideCabal = pkgsNew.haskell.lib.overrideCabal;
                 optionalString = pkgsNew.stdenv.lib.optionalString;
                 isDarwin = pkgsNew.stdenv.isDarwin;
-                enableLibraryProfiling = pkgsNew.stdenv.lib.enableLibraryProfiling;
+                enableLibraryProfiling = pkgsNew.haskell.lib.enableLibraryProfiling;
+                disableLibraryProfiling = pkgsNew.haskell.lib.disableLibraryProfiling;
+                enableExecutableProfiling = pkgsNew.haskell.lib.enableExecutableProfiling;
 
                 mkHasktorchExtension = postfix:
                   haskellPackagesNew: haskellPackagesOld: {
                     "libtorch-ffi_${postfix}" =
-                        appendConfigureFlag
+                      enableLibraryProfiling
+                        (appendConfigureFlag
                           (overrideCabal
                             (haskellPackagesOld.callCabal2nix
                               "libtorch-ffi"
@@ -49,7 +52,8 @@ let
                               }
                             )
                           )
-                        "--extra-include-dirs=${pkgsNew."libtorch_${postfix}"}/include/torch/csrc/api/include";
+                          "--extra-include-dirs=${pkgsNew."libtorch_${postfix}"}/include/torch/csrc/api/include"
+                        );
                     "hasktorch_${postfix}" =
                       enableLibraryProfiling
                         (overrideCabal
@@ -64,15 +68,18 @@ let
                                  '';
                                }
                            )
-                         );
+                        );
                     "hasktorch-examples_${postfix}" =
                       # failOnAllWarnings
-                        (haskellPackagesOld.callCabal2nix
-                          "examples"
-                          ../examples
-                          { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"
-                          ; hasktorch = haskellPackagesNew."hasktorch_${postfix}"
-                          ; }
+                      enableLibraryProfiling
+                        (enableExecutableProfiling
+                          (haskellPackagesOld.callCabal2nix
+                            "examples"
+                            ../examples
+                            { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"
+                              ; hasktorch = haskellPackagesNew."hasktorch_${postfix}"
+                              ; }
+                          )
                         );
                   };
 
