@@ -51,18 +51,20 @@ let
                           )
                         "--extra-include-dirs=${pkgsNew."libtorch_${postfix}"}/include/torch/csrc/api/include";
                     "hasktorch_${postfix}" =
-                      overrideCabal
-                        (haskellPackagesOld.callCabal2nix
-                          "hasktorch"
-                          ../hasktorch
-                          { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"; }
-                        )
-                        (old: {
-                              preConfigure = (old.preConfigure or "") + optionalString (!isDarwin) ''
-                                export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_rt.so
-                              '';
-                            }
-                        );
+                      enableLibraryProfiling
+                        (overrideCabal
+                           (haskellPackagesOld.callCabal2nix
+                             "hasktorch"
+                             ../hasktorch
+                             { libtorch-ffi = haskellPackagesNew."libtorch-ffi_${postfix}"; }
+                           )
+                           (old: {
+                                 preConfigure = (old.preConfigure or "") + optionalString (!isDarwin) ''
+                                   export LD_PRELOAD=${pkgs.mkl}/lib/libmkl_rt.so
+                                 '';
+                               }
+                           )
+                         );
                     "hasktorch-examples_${postfix}" =
                       # failOnAllWarnings
                         (haskellPackagesOld.callCabal2nix
