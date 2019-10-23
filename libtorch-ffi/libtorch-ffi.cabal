@@ -83,9 +83,10 @@ library
  if os(darwin)
   ld-options: -Wl,-keep_dwarf_unwind
   ghc-options:       -optc-std=c++11 -optc-xc++
+  cc-options:        -std=c++11 -xc++
  else
   ghc-options:       -optc-std=c++11
- cc-options:        -std=c++11
+  cc-options:        -std=c++11
  cxx-options:       -std=c++11
  default-extensions:          Strict
                             , StrictData
@@ -114,9 +115,10 @@ test-suite spec
   if os(darwin)
     ld-options: -Wl,-keep_dwarf_unwind
     ghc-options:       -optc-std=c++11 -optc-xc++
+    cc-options:        -std=c++11 -xc++
   else
     ghc-options:       -optc-std=c++11
-  cc-options:        -std=c++11
+    cc-options:        -std=c++11
   cxx-options:       -std=c++11
   default-extensions:          Strict
                              , StrictData

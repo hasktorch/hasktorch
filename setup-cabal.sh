@@ -14,4 +14,6 @@ extra-lib-dirs:
     $(pwd)/deps/libtorch/lib
   , $(pwd)/deps/mklml/lib
 
+profiling: True
+
 EOF

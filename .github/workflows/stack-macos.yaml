@@ -30,8 +30,9 @@ jobs:
         stack test libtorch-ffi
         stack test hasktorch
         stack exec codegen-exe
-        stack exec xor-mlp
         stack exec regression
         stack exec gaussian-process
         stack exec vae
         stack exec optimizers
+        stack exec xor-mlp -- +RTS -hc -p
+        cat xor-mlp.prof
