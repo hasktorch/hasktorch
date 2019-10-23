@@ -12,8 +12,9 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
- exposed-modules:     Torch
-                      Torch.Tensor
+ exposed-modules:     Data.HList
+                    , Torch
+                    , Torch.Tensor
                     , Torch.TensorOptions
                     , Torch.DType
                     , Torch.Device

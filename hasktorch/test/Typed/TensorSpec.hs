@@ -24,6 +24,8 @@ where
 
 import           Prelude                 hiding ( sin )
 import           Control.Exception.Safe
+import           Foreign.Storable
+import           Data.HList
 import           Data.Proxy
 import           Data.Reflection
 
@@ -46,18 +48,43 @@ checkDynamicTensorAttributes
   => Tensor device dtype shape
   -> IO ()
 checkDynamicTensorAttributes t = do
-  D.device (toDynamic t) `shouldBe` optionsRuntimeDevice @shape @dtype @device
-  D.dtype (toDynamic t) `shouldBe` optionsRuntimeDType @shape @dtype @device
-  D.shape (toDynamic t) `shouldBe` optionsRuntimeShape @shape @dtype @device
+  D.device untyped `shouldBe` optionsRuntimeDevice @shape @dtype @device
+  D.dtype  untyped `shouldBe` optionsRuntimeDType  @shape @dtype @device
+  D.shape  untyped `shouldBe` optionsRuntimeShape  @shape @dtype @device
+ where untyped = toDynamic t
 
-data SinSpec = SinSpec
+data UnarySpec = SinSpec
 
 instance (TensorOptions shape dtype device)
-  => Apply SinSpec (Proxy (Tensor device dtype shape)) (() -> IO ())
+  => Apply UnarySpec (Proxy (Tensor device dtype shape)) (() -> IO ())
  where
-  apply _ = \_ -> \_ -> do
+  apply SinSpec _ _ = do
     let t = sin zeros :: Tensor device dtype shape
     checkDynamicTensorAttributes t
+
+data BinarySpec = AddSpec
+
+instance ( TensorOptions shape   dtype   device
+         , TensorOptions shape'  dtype'  device'
+         , TensorOptions shape'' dtype'' device'
+         , device ~ device'
+         , shape'' ~ Broadcast shape shape'
+         , dtype'' ~ DTypePromotion dtype dtype'
+         )
+  => Apply BinarySpec (Proxy (Tensor device dtype shape), Proxy (Tensor device' dtype' shape')) (() -> IO ())
+ where
+  apply AddSpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = add a b
+    checkDynamicTensorAttributes c
+
+floatingPointDTypes :: forall device shape . _
+floatingPointDTypes =
+  Proxy @(Tensor device 'D.Half shape)
+    :. Proxy @(Tensor device 'D.Float shape)
+    :. Proxy @(Tensor device 'D.Double shape)
+    :. HNil
 
 allDTypes :: forall device shape . _
 allDTypes =
@@ -74,7 +101,7 @@ allDTypes =
 
 spec :: Spec
 spec = do
-  it "sin" (hfoldrM SinSpec () (allDTypes @'( 'D.CPU, 0) @'[2, 3]) :: IO ())
+  it "sin" (hfoldrM SinSpec () (floatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]) :: IO ())
   it "ones" $ do
     let t = ones :: CPUTensor 'D.Float '[2,3]
     checkDynamicTensorAttributes t
@@ -94,6 +121,8 @@ spec = do
       let c = add a b :: CPUTensor 'D.Float '[2, 3]
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[2, 2, 2], [2, 2, 2]] :: [[Float]])
+    it "works on tensors of identical shapes"
+      (hfoldrM AddSpec () ((Proxy @(Tensor '( 'D.CPU, 0) 'D.Int64 '[2, 3]), Proxy @(Tensor '( 'D.CPU, 0) 'D.Int64 '[2, 3])) :. HNil) :: IO ())
     it "works on broadcastable tensors of different shapes" $ do
       let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
       let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
