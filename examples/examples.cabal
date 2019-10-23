@@ -90,12 +90,14 @@ executable static-transformer
   build-depends:       libtorch-ffi
                      , safe-exceptions
 
-executable static-lstm
+executable static-gridLSTM
   import:              config
-  hs-source-dirs:      static-lstm
+  hs-source-dirs:      static-gridLSTM
   other-modules:       LSTM
   main-is:             Main.hs
-  build-depends:       reflection
+  build-depends:       libtorch-ffi
+                     , reflection
+                     , safe-exceptions
 
 executable rnn
   import:              config
