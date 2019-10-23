@@ -28,10 +28,10 @@ import qualified ATen.Cast                     as ATen
 import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
-import           Torch.Static
-import           Torch.Static.Native
-import           Torch.Static.Factories
-import           Torch.Static.NN
+import           Torch.Typed
+import           Torch.Typed.Native
+import           Torch.Typed.Factories
+import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
 import qualified Torch.DType                   as D
