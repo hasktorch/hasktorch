@@ -146,3 +146,12 @@ executable optimizers
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl >= 2.2.2
+
+executable initializers
+  hs-source-dirs:      initializers
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , mtl >= 2.2.2
