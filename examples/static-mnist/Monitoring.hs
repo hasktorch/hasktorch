@@ -10,7 +10,7 @@ module Monitoring where
 
 import qualified Torch.DType as D
 import qualified Torch.Tensor as D
-import           Torch.Static
+import           Torch.Typed
 import           Graphics.Vega.VegaLite
 
 type Iterate = Int
