@@ -19,6 +19,7 @@
 module Torch.Typed.NN where
 
 import           Control.Monad.State.Strict
+import           Data.HList
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics

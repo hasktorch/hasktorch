@@ -122,7 +122,7 @@ spec = do
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[2, 2, 2], [2, 2, 2]] :: [[Float]])
     it "works on tensors of identical shapes"
-      (hfoldrM AddSpec () ((Proxy @(Tensor '( 'D.CPU, 0) 'D.Int64 '[2, 3]), Proxy @(Tensor '( 'D.CPU, 0) 'D.Int64 '[2, 3])) :. HNil) :: IO ())
+      (hfoldrM AddSpec () (hZipList (allDTypes @'( 'D.CPU, 0) @'[2, 3]) (allDTypes @'( 'D.CPU, 0) @'[2, 3])) :: IO ())
     it "works on broadcastable tensors of different shapes" $ do
       let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
       let b = ones :: CPUTensor 'D.Float '[2, 1, 1]

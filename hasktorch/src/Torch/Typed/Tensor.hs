@@ -332,10 +332,6 @@ type family IndexOutOfBound (shape :: [a]) (dim :: Nat) (idx :: Nat) where
 -- Type-level helpers for working with dimension lists
 --------------------------------------------------------------------------------
 
-type family ListLength (l :: [a]) :: Nat where
-    ListLength '[]      = 0
-    ListLength (_ ': t) = 1 + ListLength t
-
 type family LastDim (l :: [a]) :: Nat where
   LastDim (_ ': '[]) = 0
   LastDim (_ ': t)   = 1 + LastDim t
@@ -492,21 +488,6 @@ selectIdx
   -> Tensor device dtype shape'
 selectIdx t idx = UnsafeMkTensor $ D.select (toDynamic t) (natValI @dim) (getFiniteI idx)
 
-type family Fst (t :: (a, b)) :: a where
-    Fst '(x,_) = x
-
-type family Snd (t :: (a, b)) :: b where
-    Snd '(_,x) = x
-
-type family Fst3 (t :: (a, b, c)) :: a where
-    Fst3 '(x,_,_) = x
-
-type family Snd3 (t :: (a, b, c)) :: b where
-    Snd3 '(_,x,_) = x
-
-type family Trd3 (t :: (a, b, c)) :: c where
-    Trd3 '(_,_,x) = x
-
 type family Numel (shape :: [Nat]) :: Nat where
     Numel '[] = 1
     Numel (h ': t) = h * (Numel t)
@@ -530,24 +511,26 @@ instance Castable [Tensor device dtype shape] (ForeignPtr ATen.TensorList) where
     tensor_list <- mapM (\(x :: ForeignPtr ATen.Tensor) -> uncast x return) ptr_list
     f tensor_list
 
-data TensorListFolds = TensorListFolds
+data TensorListFold = TensorListFold
 
-instance (Castable x D.ATenTensor) => Apply TensorListFolds x ([D.ATenTensor] -> IO [D.ATenTensor]) where
+instance (Castable x D.ATenTensor) => Apply TensorListFold x ([D.ATenTensor] -> IO [D.ATenTensor]) where
   apply _ x = \xs -> do
     x' <- cast x return
     return (x' : xs)
 
-instance Apply TensorListFolds [D.ATenTensor] (IO HNothing) where
+data TensorListUnfold = TensorListUnfold
+
+instance Apply TensorListUnfold [D.ATenTensor] (IO HNothing) where
   apply _ [] = pure HNothing
 
-instance (Castable x D.ATenTensor) => Apply TensorListFolds [D.ATenTensor] (IO (HJust (x, [D.ATenTensor]))) where
+instance (Castable x D.ATenTensor) => Apply TensorListUnfold [D.ATenTensor] (IO (HJust (x, [D.ATenTensor]))) where
   apply _ (x : xs) = do
     x' <- uncast x return
     return $ HJust (x', xs)
 
-instance ( HFoldrM IO TensorListFolds [D.ATenTensor] l
-         , Apply TensorListFolds [D.ATenTensor] res
-         , HUnfoldM IO TensorListFolds res l
+instance ( HFoldrM IO TensorListFold [D.ATenTensor] l
+         , Apply TensorListUnfold [D.ATenTensor] res
+         , HUnfoldM IO TensorListUnfold res l
          , res ~ (HUnfoldMRes IO [D.ATenTensor] l)
          )
   => Castable (HList l) [D.ATenTensor]
@@ -555,11 +538,11 @@ instance ( HFoldrM IO TensorListFolds [D.ATenTensor] l
   cast xs f = f =<< go xs
    where
     go :: HList l -> IO [D.ATenTensor]
-    go xs = hfoldrM TensorListFolds [] xs
+    go xs = hfoldrM TensorListFold [] xs
   uncast xs f = f =<< go xs
    where
     go :: [D.ATenTensor] -> IO (HList l)
-    go xs = hunfoldrM TensorListFolds xs
+    go xs = hunfoldrM TensorListUnfold xs
 
 instance Castable (HList l) [D.ATenTensor] => Castable (HList l) (ForeignPtr ATen.TensorList) where
   cast xs f = do
@@ -572,14 +555,14 @@ instance Castable (HList l) [D.ATenTensor] => Castable (HList l) (ForeignPtr ATe
 -- TODO: make it only possible to fold tensors on the same device
 test
   :: forall device dtype shape . Tensor device dtype shape -> IO [D.ATenTensor]
-test t = hfoldrM TensorListFolds [] (t :. HNil)
+test t = hfoldrM TensorListFold [] (t :. HNil)
 
 -- TODO: make it only possible to unfold to tensors on the same device
 test'
   :: forall device dtype shape device' dtype' shape'
    . [D.ATenTensor]
   -> IO (HList '[Tensor device dtype shape, Tensor device' dtype' shape'])
-test' xs = hunfoldrM TensorListFolds xs
+test' xs = hunfoldrM TensorListUnfold xs
 
 -- TODO: make it only possible to cast tensors on the same device
 test''
@@ -594,21 +577,6 @@ test'''
    . [D.ATenTensor]
   -> IO (HList '[Tensor device dtype shape])
 test''' xs = uncast xs return
-
-class (ListLength es ~ n) => HReplicate' (n :: Nat) e es where
-    hReplicate :: Proxy n -> e -> HList es
-
-instance HReplicate' 0 e '[] where
-    hReplicate _ _ = HNil
-
-instance (HReplicate' (n - 1) e es, e ~ e', 1 <= n) => HReplicate' n e (e' ': es) where
-    hReplicate n e = e :. hReplicate (Proxy @(n - 1)) e
-
-type HReplicate n e = HReplicate' n e (HReplicateR n e)
-
-type family HReplicateR (n :: Nat) (e :: a) :: [a] where
-  HReplicateR 0 e = '[]
-  HReplicateR n e = e ': HReplicateR (n - 1) e
 
 testReplicate :: forall device dtype shape . Tensor device dtype shape -> HList (HReplicateR 3 (Tensor device dtype shape))
 testReplicate t = hReplicate Proxy t

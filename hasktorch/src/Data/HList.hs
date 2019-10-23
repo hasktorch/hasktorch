@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -23,6 +24,12 @@ import           Control.Category
 import           Data.Kind                      ( Constraint
                                                 , Type
                                                 )
+import           Data.Proxy
+import           GHC.TypeLits
+
+type family ListLength (l :: [a]) :: Nat where
+  ListLength '[]      = 0
+  ListLength (_ ': t) = 1 + ListLength t
 
 data family HList (l :: [Type])
 data instance HList '[] = HNil
@@ -139,6 +146,56 @@ hunfoldrM
   -> m (HList xs)
 hunfoldrM f s = hunfoldrM' f (apply f s :: res)
 
+class (ListLength es ~ n) => HReplicate' (n :: Nat) e es where
+  hReplicate :: Proxy n -> e -> HList es
+
+instance HReplicate' 0 e '[] where
+  hReplicate _ _ = HNil
+
+instance (HReplicate' (n - 1) e es, e ~ e', 1 <= n) => HReplicate' n e (e' ': es) where
+  hReplicate n e = e :. hReplicate (Proxy @(n - 1)) e
+
+type HReplicate n e = HReplicate' n e (HReplicateR n e)
+
+type family HReplicateR (n :: Nat) (e :: a) :: [a] where
+  HReplicateR 0 e = '[]
+  HReplicateR n e = e ': HReplicateR (n - 1) e
+
+type HConcat xs = HConcatFD xs (HConcatR xs)
+
+hConcat :: HConcat xs => HList xs -> HList (HConcatR xs)
+hConcat = hConcatFD
+
+type family HConcatR (a :: [Type]) :: [Type]
+type instance HConcatR '[] = '[]
+type instance HConcatR (x ': xs) = HAppendListR (UnHList x) (HConcatR xs)
+
+type family UnHList a :: [Type]
+type instance UnHList (HList a) = a
+
+-- for the benefit of ghc-7.10.1
+class HConcatFD xxs xs | xxs -> xs
+  where hConcatFD :: HList xxs -> HList xs
+
+instance HConcatFD '[] '[] where
+  hConcatFD _ = HNil
+
+instance (HConcatFD as bs, HAppendFD a bs cs) => HConcatFD (HList a ': as) cs where
+  hConcatFD (x :. xs) = x `hAppendFD` hConcatFD xs
+
+class HAppendFD a b ab | a b -> ab where
+  hAppendFD :: HList a -> HList b -> HList ab
+
+type family HAppendListR (l1 :: [k]) (l2 :: [k]) :: [k]
+type instance HAppendListR '[] l = l
+type instance HAppendListR (e ': l) l' = e ': HAppendListR l l'
+
+instance HAppendFD '[] b b where
+  hAppendFD _ b = b
+
+instance HAppendFD as bs cs => HAppendFD (a ': as) bs (a ': cs) where
+  hAppendFD (a :. as) bs = a :. hAppendFD as bs
+
 class HZipList x y l | x y -> l, l -> x y where
   hZipList   :: HList x -> HList y -> HList l
   hUnzipList :: HList l -> (HList x, HList y)
@@ -152,11 +209,24 @@ instance ((x, y) ~ z, HZipList xs ys zs) => HZipList (x ': xs) (y ': ys) (z ': z
   hUnzipList (~(x, y) :. zs) =
     let ~(xs, ys) = hUnzipList zs in (x :. xs, y :. ys)
 
--- class HCartesianProduct x y l | x y -> l, l -> x y where
---   hCartesianProduct :: HList x -> HList y -> HList l
+-- newtype HCartesianProductF x = HCartesianProductF x
 
--- instance HCartesianProduct '[] '[] '[] where
+-- instance Apply (HCartesianProductF x) y (x, y) where
+--   apply (HCartesianProductF x) y = (x, y)
+
+-- class HCartesianProduct xs ys zs | xs ys -> zs where
+--   hCartesianProduct :: HList xs -> HList ys -> HList zs
+
+-- instance HCartesianProduct '[] ys '[] where
 --   hCartesianProduct _ _ = HNil
 
--- instance ((x, y) ~ z, HCartesianProduct xs ys zs) => HCartesianProduct (x ': xs) (y ': ys) (z ': zs) where
---   hCartesianProduct (x :. xs) (y :. ys) = (x, y) :. hCartesianProduct xs ys
+-- instance ( HCartesianProduct xs ys zs
+--          , HMap (HCartesianProductF x) ys xys
+--          , HAppendFD xys zs zs'
+--          )
+--   => HCartesianProduct (x ': xs) ys zs'
+--  where
+--   hCartesianProduct (x :. xs) ys =
+--     (hmap (HCartesianProductF x) ys :: HList xys)
+--       `hAppendFD` (hCartesianProduct xs ys :: HList zs)
+

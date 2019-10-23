@@ -1117,12 +1117,12 @@ type BroadcastTensors tensors
 broadcastTensors
   :: forall tensors tensors'
    . ( tensors' ~ BroadcastTensors tensors
-     , HFoldrM IO TensorListFolds [D.ATenTensor] tensors
-     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors)
-     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
-     , HFoldrM IO TensorListFolds [D.ATenTensor] tensors'
-     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors')
-     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensors') tensors'
+     , HFoldrM IO TensorListFold [D.ATenTensor] tensors
+     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors)
+     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
+     , HFoldrM IO TensorListFold [D.ATenTensor] tensors'
+     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors')
+     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensors') tensors'
      )
   => HList tensors -- ^ input list of tensors
   -> HList tensors' -- ^ output list of tensors
@@ -1202,9 +1202,9 @@ cat
   :: forall dim shape dtype device tensors
    . ( KnownNat dim
      , '(shape, dtype, device) ~ Cat dim tensors
-     , HFoldrM IO TensorListFolds [D.ATenTensor] tensors
-     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors)
-     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
+     , HFoldrM IO TensorListFold [D.ATenTensor] tensors
+     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors)
+     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
      )
   => HList tensors -- ^ input list of tensors
   -> Tensor device dtype shape -- ^ output tensor
@@ -1292,9 +1292,9 @@ chunk
    . ( KnownNat chunks
      , KnownNat dim
      , tensorChunks ~ Chunk chunks dim shape dtype device
-     , HFoldrM IO TensorListFolds [D.ATenTensor] tensorChunks
-     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorChunks)
-     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensorChunks) tensorChunks
+     , HFoldrM IO TensorListFold [D.ATenTensor] tensorChunks
+     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorChunks)
+     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensorChunks) tensorChunks
      )
   => Tensor device dtype shape -- ^ input tensor
   -> HList tensorChunks -- ^ output list of tensors
@@ -2580,9 +2580,9 @@ stack
   :: forall dim shape dtype device tensors
    . ( KnownNat dim
      , '(shape, dtype, device) ~ Stack dim tensors
-     , HFoldrM IO TensorListFolds [D.ATenTensor] tensors
-     , Apply TensorListFolds [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors)
-     , HUnfoldM IO TensorListFolds (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
+     , HFoldrM IO TensorListFold [D.ATenTensor] tensors
+     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors)
+     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
      )
   => HList tensors -- ^ input list of tensors
   -> Tensor device dtype shape -- ^ output
