@@ -1,10 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes     #-}
-{-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DataKinds               #-}
 {-# LANGUAGE DeriveGeneric           #-}
 {-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE FlexibleInstances       #-}
-{-# LANGUAGE GADTs                   #-}
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE NoStarIsType            #-}
 {-# LANGUAGE OverloadedLists         #-}
@@ -24,36 +22,13 @@
 
 module Torch.Typed.NN.Recurrent.Cell.LSTM where
 
-import           Control.Monad                  ( foldM
-                                                , when
-                                                , void
-                                                )
-import           Control.Exception.Safe         ( try
-                                                , SomeException(..)
-                                                )
 import           Data.List                      ( foldl'
-                                                , intersperse
                                                 , scanl'
                                                 )
-import           Data.Maybe                     ( catMaybes, fromMaybe )
-import           Data.Reflection
-import           Foreign.ForeignPtr
 import           GHC.Generics
 import           GHC.TypeLits
-import           GHC.TypeLits.Extra
-import           System.Environment
-import           System.IO.Unsafe
-import           Prelude                 hiding ( tanh )
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Class                    as ATen
-import qualified ATen.Type                     as ATen
-import qualified ATen.Managed.Type.Tensor      as ATen
-import qualified Torch.Autograd                as A
 import qualified Torch.DType                   as D
-import qualified Torch.Functions               as D
 import qualified Torch.NN                      as A
-import qualified Torch.Tensor                  as D
-import qualified Torch.TensorFactories         as D
 import           Torch.Typed
 import           Torch.Typed.Factories
 import           Torch.Typed.Native      hiding ( linear )
@@ -61,15 +36,15 @@ import           Torch.Typed.NN
 
 
 -- | A specification for a long, short-term memory cell.
--- 
+--
 data LSTMCellSpec (dtype :: D.DType) (inputDim :: Nat) (hiddenDim :: Nat) =
     LSTMCellSpec -- ^ Weights and biases are drawn from the standard normal distibution (having mean 0 and variance 1)
     deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 -- | A long, short-term memory cell.
--- 
+--
 data LSTMCell (dtype :: D.DType) (inputDim :: Nat) (hiddenDim :: Nat) =  LSTMCell {
-      lstmCell_w_ih  :: Parameter dtype '[4 * hiddenDim, inputDim] -- ^ input-to-hidden weights
+      lstmCell_w_ih :: Parameter dtype '[4 * hiddenDim, inputDim] -- ^ input-to-hidden weights
     , lstmCell_w_hh :: Parameter dtype '[4 * hiddenDim, hiddenDim] -- ^ hidden-to-hidden weights
     , lstmCell_b_ih :: Parameter dtype '[4 * hiddenDim] -- ^ input-to-hidden bias
     , lstmCell_b_hh :: Parameter dtype '[4 * hiddenDim] -- ^ hidden-to-hidden bias
@@ -86,7 +61,7 @@ instance (KnownDType dtype, KnownNat inputDim, KnownNat hiddenDim) => A.Randomiz
 instance A.Parameterized (LSTMCell d i h)
 
 -- | A single recurrent step of an `LSTMCell`
--- 
+--
 forwardStep
     :: forall d i h b
      . (KnownDType d, KnownNat i, KnownNat h, KnownNat b)
@@ -107,19 +82,17 @@ forwardStep LSTMCell {..} input (hs, cs) = lstm_cell
 forward
     :: (KnownDType d, KnownNat i, KnownNat h, KnownNat b)
     => LSTMCell d i h
-    -> (Tensor d '[b, h], Tensor d '[b, h]) 
+    -> (Tensor d '[b, h], Tensor d '[b, h])
     -> [Tensor d '[b, i]]
     -> (Tensor d '[b, h], Tensor d '[b, h])
-forward lc st inputs =
-    foldl' (\acc i -> forwardStep lc i acc) st inputs
+forward lc st inputs = foldl' (\acc i -> forwardStep lc i acc) st inputs
 
 -- | scanl' for lists of tensors unsing an `LSTMCell`
 --
 forwardScan
     :: (KnownDType d, KnownNat i, KnownNat h, KnownNat b)
     => LSTMCell d i h
-    -> (Tensor d '[b, h], Tensor d '[b, h]) 
+    -> (Tensor d '[b, h], Tensor d '[b, h])
     -> [Tensor d '[b, i]]
     -> [(Tensor d '[b, h], Tensor d '[b, h])]
-forwardScan lc st inputs =
-    scanl' (\acc i -> forwardStep lc i acc) st inputs
+forwardScan lc st inputs = scanl' (\acc i -> forwardStep lc i acc) st inputs

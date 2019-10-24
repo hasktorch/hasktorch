@@ -90,7 +90,6 @@ executable static-transformer
   build-depends:       libtorch-ffi
                      , safe-exceptions
 
-
 executable rnn
   import:              config
   hs-source-dirs:      rnn
