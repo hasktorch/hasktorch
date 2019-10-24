@@ -57,10 +57,11 @@ import           Torch.Typed
 import           Torch.Typed.Factories
 import           Torch.Typed.Native      hiding ( linear )
 import           Torch.Typed.NN
-import           Torch.Typed.NN.Recurrent.LSTM
+import           Torch.Typed.NN.Recurrent.Cell.LSTM
 
 run
-    :: (KnownDType d, KnownNat i, KnownNat h, KnownNat b)
+    :: forall d i h b
+     . (KnownDType d, KnownNat i, KnownNat h, KnownNat b)
     => [(Tensor d '[b, i])]
     -> Tensor d '[b, h]
     -> LSTMCell d i h
@@ -68,8 +69,11 @@ run
     -> IO (LSTMCell d i h)
 run input_tensors expected_output model i = do
 
-    let Just output = snd <$> forward model input_tensors
-    let loss        = mse_loss output expected_output
+    let output = snd $ forward
+            model
+            ((zeros, zeros) :: (Tensor d '[b, h], Tensor d '[b, h]))
+            input_tensors
+    let loss = mse_loss output expected_output
 
     print loss
 
@@ -96,17 +100,17 @@ main = do
             _            -> "CPU"
     let foldLoop x count block = foldM @[] block x [1 .. count]
 
-    -- randomly initializing training values
+    -- Memorization test:  just check to see that the cell learns to recall the last value of the expected sequence
     (input_tensor :: [Tensor D.Float '[1, 2]]) <- mapM
         (const (randn :: IO (Tensor D.Float '[1, 2])))
         [0 .. 4]
     expected_output                 <- randn :: IO (Tensor D.Float '[1, 2])
 
-    (init :: LSTMCell 'D.Float 2 2) <- A.sample LSTMCellZeroInitState
+    (init :: LSTMCell 'D.Float 2 2) <- A.sample LSTMCellSpec
     init'                           <- A.replaceParameters init <$> traverse
         (A.makeIndependent . toBackend backend . A.toDependent)
         (A.flattenParameters init)
     putStrLn "\nLSTM Training Loop"
-    -- training loop for LSTM cell
+    -- training loop 
     foldLoop init' 10 (run input_tensor expected_output)
     return ()
