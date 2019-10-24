@@ -224,5 +224,10 @@ instance HPoop x '[] '[] where
 instance (HPoop x ys xys) => HPoop x (y ': ys) ((x, y) ': xys) where
   hpoop x (y :. ys) = (x, y) :. hpoop x ys
 
-instance (HCartesianProduct xs ys zs, HPoop x ys xys, HAppendFD xys zs zs') => HCartesianProduct (x ': xs) ys zs' where
+instance ( HCartesianProduct xs ys zs
+         , HPoop x ys xys
+         , HAppendFD xys zs zs'
+         )
+  => HCartesianProduct (x ': xs) ys zs'
+ where
   hCartesianProduct (x :. xs) ys = hpoop x ys `hAppendFD` hCartesianProduct xs ys

@@ -28,6 +28,7 @@ import           System.IO.Unsafe
 
 import qualified ATen.Managed.Native           as ATen
 import           ATen.Cast
+import qualified Torch.Scalar                  as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.Functions               as D
@@ -87,13 +88,23 @@ randn = UnsafeMkTensor <$> D.randn
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @3 0 2
 -- (Float,([3],[0.0,1.0,2.0]))
 linspace
-  :: forall steps device
-   . (KnownNat steps)
-  => Float -- ^ start
-  -> Float -- ^ end
+  :: forall steps device start end
+   . ( D.Scalar start
+     , D.Scalar end
+     , KnownNat steps
+     , TensorOptions '[steps] 'D.Float device
+     )
+  => start -- ^ start
+  -> end -- ^ end
   -> Tensor device 'D.Float '[steps] -- ^ output
-linspace start end =
-  unsafePerformIO $ cast3 ATen.linspace_ssl start end (natValI @steps)
+linspace start end = UnsafeMkTensor $ D.linspace
+  start
+  end
+  (natValI @steps)
+  ( D.withDevice (optionsRuntimeDevice @'[steps] @D.Float @device)
+  . D.withDType (optionsRuntimeDType @'[steps] @D.Float @device)
+  $ D.defaultOpts
+  )
 
 eyeSquare
   :: forall n dtype device
@@ -101,4 +112,7 @@ eyeSquare
   => Tensor device dtype '[n, n] -- ^ output
 eyeSquare = UnsafeMkTensor $ D.eyeSquare
   (natValI @n)
-  (D.withDType (optionsRuntimeDType @'[n, n] @dtype @device) D.defaultOpts)
+  ( D.withDevice (optionsRuntimeDevice @'[n, n] @dtype @device)
+  . D.withDType (optionsRuntimeDType @'[n, n] @dtype @device)
+  $ D.defaultOpts
+  )

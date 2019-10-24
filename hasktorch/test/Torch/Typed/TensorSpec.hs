@@ -18,8 +18,8 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
-module Typed.TensorSpec
-  ( spec
+module Torch.Typed.TensorSpec
+  ( Torch.Typed.TensorSpec.spec
   )
 where
 
@@ -42,29 +42,7 @@ import qualified Torch.TensorOptions           as D
 import           Torch.Typed.Factories
 import           Torch.Typed.Native
 import           Torch.Typed.Tensor
-
-checkDynamicTensorAttributes
-  :: forall device dtype shape
-   . (TensorOptions shape dtype device)
-  => Tensor device dtype shape
-  -> IO ()
-checkDynamicTensorAttributes t = do
-  D.device untyped `shouldBe` optionsRuntimeDevice @shape @dtype @device
-  D.dtype  untyped `shouldBe` optionsRuntimeDType  @shape @dtype @device
-  D.shape  untyped `shouldBe` optionsRuntimeShape  @shape @dtype @device
- where untyped = toDynamic t
-
-data UnarySpec = SinSpec
-
-instance (TensorOptions shape dtype device)
-  => Apply
-       UnarySpec
-       (Proxy (Tensor device dtype shape))
-       (() -> IO ())
- where
-  apply SinSpec _ _ = do
-    let t = sin zeros :: Tensor device dtype shape
-    checkDynamicTensorAttributes t
+import           Torch.Typed.AuxSpec
 
 data BinarySpec = AddSpec | SubSpec | MulSpec
 
@@ -77,7 +55,7 @@ instance ( TensorOptions shape   dtype   device
          )
   => Apply
        BinarySpec
-       (Proxy (Tensor device dtype shape), Proxy (Tensor device' dtype' shape'))
+       (Proxy '(device, dtype, shape), Proxy '(device', dtype', shape'))
        (() -> IO ())
  where
   apply AddSpec _ _ = do
@@ -107,7 +85,7 @@ instance ( TensorOptions shape   dtype  device
          )
   => Apply
        MatmulSpec
-       (Proxy (Tensor device dtype shape), Proxy (Tensor device' dtype' shape'))
+       (Proxy '(device, dtype, shape), Proxy '(device', dtype', shape'))
        (() -> IO ())
  where
   apply MatmulSpec _ _ = do
@@ -126,7 +104,7 @@ instance ( TensorOptions shape   dtype  device
          )
   => Apply
        BinaryCmpSpec
-       (Proxy (Tensor device dtype shape), Proxy (Tensor device' dtype' shape'))
+       (Proxy '(device, dtype, shape), Proxy '(device', dtype', shape'))
        (() -> IO ())
  where
   apply GTSpec _ _ = do
@@ -160,50 +138,8 @@ instance ( TensorOptions shape   dtype  device
     let c = ne a b
     checkDynamicTensorAttributes c
 
-allFloatingPointDTypes :: forall device shape . _
-allFloatingPointDTypes =
-  withHalf @device @shape (standardFloatingPointDTypes @device @shape)
-
-standardFloatingPointDTypes :: forall device shape . _
-standardFloatingPointDTypes =
-  Proxy @(Tensor device 'D.Float shape)
-    :. Proxy @(Tensor device 'D.Double shape)
-    :. HNil
-
-allDTypes :: forall device shape . _
-allDTypes =
-  withBool @device @shape (withHalf @device @shape (standardDTypes @device @shape))
-
-withBool :: forall device shape . (forall device' shape' . _) -> _
-withBool dtypes = Proxy @(Tensor device 'D.Bool shape) :. dtypes @device @shape
-
-withHalf :: forall device shape . (forall device' shape' . _) -> _
-withHalf dtypes = Proxy @(Tensor device 'D.Half shape) :. dtypes @device @shape
-
-standardDTypes :: forall device shape . _
-standardDTypes =
-  Proxy @(Tensor device 'D.UInt8 shape)
-    :. Proxy @(Tensor device 'D.Int8 shape)
-    :. Proxy @(Tensor device 'D.Int16 shape)
-    :. Proxy @(Tensor device 'D.Int32 shape)
-    :. Proxy @(Tensor device 'D.Int64 shape)
-    :. standardFloatingPointDTypes @device @shape
-
 spec :: Spec
 spec = do
-  it "sin" (hfoldrM @IO SinSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-  it "ones" $ do
-    let t = ones :: CPUTensor 'D.Float '[2,3]
-    checkDynamicTensorAttributes t
-  it "zeros" $ do
-    let t = zeros :: CPUTensor 'D.Float '[2,3]
-    checkDynamicTensorAttributes t
-  it "zeros with double" $ do
-    let t = zeros :: CPUTensor 'D.Double '[2,3]
-    checkDynamicTensorAttributes t
-  it "randn" $ do
-    t <- randn :: IO (CPUTensor 'D.Double '[2,3])
-    checkDynamicTensorAttributes t
   let identicalShapes = hCartesianProduct (standardDTypes @'( 'D.CPU, 0) @'[2, 3]) (standardDTypes @'( 'D.CPU, 0) @'[2, 3])
       broadcastableShapes = hCartesianProduct (standardDTypes @'( 'D.CPU, 0) @'[3, 1, 4, 1]) (standardDTypes @'( 'D.CPU, 0) @'[2, 1, 1])
   describe "binary operators" $ do
@@ -275,11 +211,3 @@ spec = do
         (hfoldrM @IO NESpec () identicalShapes)
       it "works on broadcastable tensors of different shapes"
         (hfoldrM @IO NESpec () broadcastableShapes)
-  describe "eyeSquare" $ it "works" $ do
-    let t = eyeSquare @2 :: CPUTensor 'D.Float '[2, 2]
-    checkDynamicTensorAttributes t
-    D.asValue (toDynamic t) `shouldBe` ([[1, 0], [0, 1]] :: [[Float]])
-  describe "maxPool2d" $ it "works" $ do
-    let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5])
-    checkDynamicTensorAttributes c
-
