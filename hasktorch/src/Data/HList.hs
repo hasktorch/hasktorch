@@ -209,24 +209,20 @@ instance ((x, y) ~ z, HZipList xs ys zs) => HZipList (x ': xs) (y ': ys) (z ': z
   hUnzipList (~(x, y) :. zs) =
     let ~(xs, ys) = hUnzipList zs in (x :. xs, y :. ys)
 
--- newtype HCartesianProductF x = HCartesianProductF x
+class HCartesianProduct xs ys zs | xs ys -> zs where
+  hCartesianProduct :: HList xs -> HList ys -> HList zs
 
--- instance Apply (HCartesianProductF x) y (x, y) where
---   apply (HCartesianProductF x) y = (x, y)
+instance HCartesianProduct '[] ys '[] where
+  hCartesianProduct _ _ = HNil
 
--- class HCartesianProduct xs ys zs | xs ys -> zs where
---   hCartesianProduct :: HList xs -> HList ys -> HList zs
+class HPoop x ys zs | x ys -> zs where
+  hpoop :: x -> HList ys -> HList zs
 
--- instance HCartesianProduct '[] ys '[] where
---   hCartesianProduct _ _ = HNil
+instance HPoop x '[] '[] where
+  hpoop _ _ = HNil
 
--- instance ( HCartesianProduct xs ys zs
---          , HMap (HCartesianProductF x) ys xys
---          , HAppendFD xys zs zs'
---          )
---   => HCartesianProduct (x ': xs) ys zs'
---  where
---   hCartesianProduct (x :. xs) ys =
---     (hmap (HCartesianProductF x) ys :: HList xys)
---       `hAppendFD` (hCartesianProduct xs ys :: HList zs)
+instance (HPoop x ys xys) => HPoop x (y ': ys) ((x, y) ': xys) where
+  hpoop x (y :. ys) = (x, y) :. hpoop x ys
 
+instance (HCartesianProduct xs ys zs, HPoop x ys xys, HAppendFD xys zs zs') => HCartesianProduct (x ': xs) ys zs' where
+  hCartesianProduct (x :. xs) ys = hpoop x ys `hAppendFD` hCartesianProduct xs ys

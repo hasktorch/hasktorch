@@ -237,35 +237,45 @@ type family CmpDType (dtype :: D.DType) (dtype' :: D.DType) :: Ordering where
   CmpDType D.Bool  D.Int16  = 'LT
   CmpDType D.Bool  D.Int32  = 'LT
   CmpDType D.Bool  D.Int64  = 'LT
+  CmpDType D.Bool  D.Half   = 'LT
   CmpDType D.Bool  D.Float  = 'LT
   CmpDType D.Bool  D.Double = 'LT
   CmpDType D.UInt8 D.Int8   = 'LT
   CmpDType D.UInt8 D.Int16  = 'LT
   CmpDType D.UInt8 D.Int32  = 'LT
   CmpDType D.UInt8 D.Int64  = 'LT
+  CmpDType D.UInt8 D.Half   = 'LT
   CmpDType D.UInt8 D.Float  = 'LT
   CmpDType D.UInt8 D.Double = 'LT
   CmpDType D.Int8  D.Int16  = 'LT
   CmpDType D.Int8  D.Int32  = 'LT
   CmpDType D.Int8  D.Int64  = 'LT
+  CmpDType D.Int8  D.Half   = 'LT
   CmpDType D.Int8  D.Float  = 'LT
   CmpDType D.Int8  D.Double = 'LT
   CmpDType D.Int16 D.Int32  = 'LT
   CmpDType D.Int16 D.Int64  = 'LT
+  CmpDType D.Int16 D.Half   = 'LT
   CmpDType D.Int16 D.Float  = 'LT
   CmpDType D.Int16 D.Double = 'LT
   CmpDType D.Int32 D.Int64  = 'LT
+  CmpDType D.Int32 D.Half   = 'LT
   CmpDType D.Int32 D.Float  = 'LT
   CmpDType D.Int32 D.Double = 'LT
+  CmpDType D.Int64 D.Half   = 'LT
   CmpDType D.Int64 D.Float  = 'LT
   CmpDType D.Int64 D.Double = 'LT
+  CmpDType D.Half  D.Float  = 'LT
+  CmpDType D.Half  D.Double = 'LT
   CmpDType D.Float D.Double = 'LT
   CmpDType _       _        = 'GT
 
 type family DTypePromotionImpl (dtype :: D.DType) (dtype' :: D.DType) (ord :: Ordering) :: D.DType where
-  DTypePromotionImpl dtype _     EQ = dtype
-  DTypePromotionImpl _     dtype LT = dtype
-  DTypePromotionImpl dtype _     GT = dtype
+  DTypePromotionImpl D.UInt8 D.Int8  _  = D.Int16
+  DTypePromotionImpl D.Int8  D.UInt8 _  = D.Int16
+  DTypePromotionImpl dtype   _       EQ = dtype
+  DTypePromotionImpl _       dtype   LT = dtype
+  DTypePromotionImpl dtype   _       GT = dtype
 
 type DTypePromotion dtype dtype' = DTypePromotionImpl dtype dtype' (CmpDType dtype dtype')
 

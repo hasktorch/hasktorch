@@ -16,6 +16,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Typed.TensorSpec
   ( spec
@@ -79,29 +80,37 @@ instance ( TensorOptions shape   dtype   device
     let c = add a b
     checkDynamicTensorAttributes c
 
-floatingPointDTypes :: forall device shape . _
-floatingPointDTypes =
+allFloatingPointDTypes :: forall device shape . _
+allFloatingPointDTypes =
   Proxy @(Tensor device 'D.Half shape)
-    :. Proxy @(Tensor device 'D.Float shape)
+    :. standardFloatingPointDTypes
+
+standardFloatingPointDTypes :: forall device shape . _
+standardFloatingPointDTypes =
+  Proxy @(Tensor device 'D.Float shape)
     :. Proxy @(Tensor device 'D.Double shape)
     :. HNil
 
 allDTypes :: forall device shape . _
 allDTypes =
+  Proxy @(Tensor device 'D.Half shape)
+    :. standardDTypes
+
+standardDTypes :: forall device shape . _
+standardDTypes =
   Proxy @(Tensor device 'D.Bool shape)
     :. Proxy @(Tensor device 'D.UInt8 shape)
     :. Proxy @(Tensor device 'D.Int8 shape)
     :. Proxy @(Tensor device 'D.Int16 shape)
     :. Proxy @(Tensor device 'D.Int32 shape)
     :. Proxy @(Tensor device 'D.Int64 shape)
-    :. Proxy @(Tensor device 'D.Half shape)
     :. Proxy @(Tensor device 'D.Float shape)
     :. Proxy @(Tensor device 'D.Double shape)
     :. HNil
 
 spec :: Spec
 spec = do
-  it "sin" (hfoldrM SinSpec () (floatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]) :: IO ())
+  it "sin" (hfoldrM SinSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]) :: IO ())
   it "ones" $ do
     let t = ones :: CPUTensor 'D.Float '[2,3]
     checkDynamicTensorAttributes t
@@ -122,7 +131,7 @@ spec = do
       checkDynamicTensorAttributes c
       D.asValue (toDynamic c) `shouldBe` ([[2, 2, 2], [2, 2, 2]] :: [[Float]])
     it "works on tensors of identical shapes"
-      (hfoldrM AddSpec () (hZipList (allDTypes @'( 'D.CPU, 0) @'[2, 3]) (allDTypes @'( 'D.CPU, 0) @'[2, 3])) :: IO ())
+      (hfoldrM AddSpec () (hCartesianProduct (standardDTypes @'( 'D.CPU, 0) @'[2, 3]) (standardDTypes @'( 'D.CPU, 0) @'[2, 3])) :: IO ())
     it "works on broadcastable tensors of different shapes" $ do
       let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
       let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
