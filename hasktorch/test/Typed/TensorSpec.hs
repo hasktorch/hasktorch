@@ -57,13 +57,16 @@ checkDynamicTensorAttributes t = do
 data UnarySpec = SinSpec
 
 instance (TensorOptions shape dtype device)
-  => Apply UnarySpec (Proxy (Tensor device dtype shape)) (() -> IO ())
+  => Apply
+       UnarySpec
+       (Proxy (Tensor device dtype shape))
+       (() -> IO ())
  where
   apply SinSpec _ _ = do
     let t = sin zeros :: Tensor device dtype shape
     checkDynamicTensorAttributes t
 
-data BinarySpec = AddSpec
+data BinarySpec = AddSpec | SubSpec | MulSpec
 
 instance ( TensorOptions shape   dtype   device
          , TensorOptions shape'  dtype'  device'
@@ -72,18 +75,94 @@ instance ( TensorOptions shape   dtype   device
          , shape'' ~ Broadcast shape shape'
          , dtype'' ~ DTypePromotion dtype dtype'
          )
-  => Apply BinarySpec (Proxy (Tensor device dtype shape), Proxy (Tensor device' dtype' shape')) (() -> IO ())
+  => Apply
+       BinarySpec
+       (Proxy (Tensor device dtype shape), Proxy (Tensor device' dtype' shape'))
+       (() -> IO ())
  where
   apply AddSpec _ _ = do
     let a = ones @shape  @dtype  @device
     let b = ones @shape' @dtype' @device'
     let c = add a b
     checkDynamicTensorAttributes c
+  apply SubSpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = sub a b
+    checkDynamicTensorAttributes c
+  apply MulSpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = mul a b
+    checkDynamicTensorAttributes c
+
+data MatmulSpec = MatmulSpec
+
+instance ( TensorOptions shape   dtype  device
+         , TensorOptions shape'  dtype' device'
+         , TensorOptions shape'' dtype' device'
+         , device ~ device'
+         , dtype ~ dtype'
+         , shape'' ~ MatMul shape shape'
+         )
+  => Apply
+       MatmulSpec
+       (Proxy (Tensor device dtype shape), Proxy (Tensor device' dtype' shape'))
+       (() -> IO ())
+ where
+  apply MatmulSpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = matmul a b
+    checkDynamicTensorAttributes c
+
+data BinaryCmpSpec = GTSpec | LTSpec | GESpec | LESpec | EQSpec | NESpec
+
+instance ( TensorOptions shape   dtype  device
+         , TensorOptions shape'  dtype' device'
+         , TensorOptions shape'' D.Bool device'
+         , device ~ device'
+         , shape'' ~ Broadcast shape shape'
+         )
+  => Apply
+       BinaryCmpSpec
+       (Proxy (Tensor device dtype shape), Proxy (Tensor device' dtype' shape'))
+       (() -> IO ())
+ where
+  apply GTSpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = gt a b
+    checkDynamicTensorAttributes c
+  apply LTSpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = lt a b
+    checkDynamicTensorAttributes c
+  apply GESpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = ge a b
+    checkDynamicTensorAttributes c
+  apply LESpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = le a b
+    checkDynamicTensorAttributes c
+  apply EQSpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = eq a b
+    checkDynamicTensorAttributes c
+  apply NESpec _ _ = do
+    let a = ones @shape  @dtype  @device
+    let b = ones @shape' @dtype' @device'
+    let c = ne a b
+    checkDynamicTensorAttributes c
 
 allFloatingPointDTypes :: forall device shape . _
 allFloatingPointDTypes =
-  Proxy @(Tensor device 'D.Half shape)
-    :. standardFloatingPointDTypes
+  withHalf @device @shape (standardFloatingPointDTypes @device @shape)
 
 standardFloatingPointDTypes :: forall device shape . _
 standardFloatingPointDTypes =
@@ -93,24 +172,26 @@ standardFloatingPointDTypes =
 
 allDTypes :: forall device shape . _
 allDTypes =
-  Proxy @(Tensor device 'D.Half shape)
-    :. standardDTypes
+  withBool @device @shape (withHalf @device @shape (standardDTypes @device @shape))
+
+withBool :: forall device shape . (forall device' shape' . _) -> _
+withBool dtypes = Proxy @(Tensor device 'D.Bool shape) :. dtypes @device @shape
+
+withHalf :: forall device shape . (forall device' shape' . _) -> _
+withHalf dtypes = Proxy @(Tensor device 'D.Half shape) :. dtypes @device @shape
 
 standardDTypes :: forall device shape . _
 standardDTypes =
-  Proxy @(Tensor device 'D.Bool shape)
-    :. Proxy @(Tensor device 'D.UInt8 shape)
+  Proxy @(Tensor device 'D.UInt8 shape)
     :. Proxy @(Tensor device 'D.Int8 shape)
     :. Proxy @(Tensor device 'D.Int16 shape)
     :. Proxy @(Tensor device 'D.Int32 shape)
     :. Proxy @(Tensor device 'D.Int64 shape)
-    :. Proxy @(Tensor device 'D.Float shape)
-    :. Proxy @(Tensor device 'D.Double shape)
-    :. HNil
+    :. standardFloatingPointDTypes @device @shape
 
 spec :: Spec
 spec = do
-  it "sin" (hfoldrM SinSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]) :: IO ())
+  it "sin" (hfoldrM @IO SinSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
   it "ones" $ do
     let t = ones :: CPUTensor 'D.Float '[2,3]
     checkDynamicTensorAttributes t
@@ -123,168 +204,77 @@ spec = do
   it "randn" $ do
     t <- randn :: IO (CPUTensor 'D.Double '[2,3])
     checkDynamicTensorAttributes t
-  describe "add" $ do
-    it "works on tensors of identical shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3]
-      let c = add a b :: CPUTensor 'D.Float '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[2, 2, 2], [2, 2, 2]] :: [[Float]])
-    it "works on tensors of identical shapes"
-      (hfoldrM AddSpec () (hCartesianProduct (standardDTypes @'( 'D.CPU, 0) @'[2, 3]) (standardDTypes @'( 'D.CPU, 0) @'[2, 3])) :: IO ())
-    it "works on broadcastable tensors of different shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
-      let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
-      let c = add a b :: CPUTensor 'D.Float '[3, 2, 4, 1]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[2],[2],[2],[2]],[[2],[2],[2],[2]]],[[[2],[2],[2],[2]],[[2],[2],[2],[2]]],[[[2],[2],[2],[2]],[[2],[2],[2],[2]]]] :: [[[[Float]]]])
-  describe "sub" $ do
-    it "works on tensors of identical shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3]
-      let c = sub a b :: CPUTensor 'D.Float '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[0, 0, 0], [0, 0, 0]] :: [[Float]])
-    it "works on broadcastable tensors of different shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
-      let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
-      let c = sub a b :: CPUTensor 'D.Float '[3, 2, 4, 1]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[0],[0],[0],[0]],[[0],[0],[0],[0]]],[[[0],[0],[0],[0]],[[0],[0],[0],[0]]],[[[0],[0],[0],[0]],[[0],[0],[0],[0]]]] :: [[[[Float]]]])
-  describe "mul" $ do
-    it "works on tensors of identical shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3]
-      let c = mul a b :: CPUTensor 'D.Float '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[1, 1, 1], [1, 1, 1]] :: [[Float]])
-    it "works on broadcastable tensors of different shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
-      let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
-      let c = mul a b :: CPUTensor 'D.Float '[3, 2, 4, 1]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[1],[1],[1],[1]],[[1],[1],[1],[1]]],[[[1],[1],[1],[1]],[[1],[1],[1],[1]]],[[[1],[1],[1],[1]],[[1],[1],[1],[1]]]] :: [[[[Float]]]])
-  describe "gt" $ do
-    it "works on tensors of identical shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3]
-      let c = gt a b :: CPUTensor 'D.Bool '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[False, False, False], [False, False, False]] :: [[Bool]])
-    it "works on broadcastable tensors of different shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
-      let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
-      let c = gt a b :: CPUTensor 'D.Bool '[3, 2, 4, 1]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]]] :: [[[[Bool]]]])
-  describe "lt" $ do
-    it "works on tensors of identical shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3]
-      let c = lt a b :: CPUTensor 'D.Bool '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[False, False, False], [False, False, False]] :: [[Bool]])
-    it "works on broadcastable tensors of different shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
-      let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
-      let c = lt a b :: CPUTensor 'D.Bool '[3, 2, 4, 1]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]]] :: [[[[Bool]]]])
-  describe "ge" $ do
-    it "works on tensors of identical shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3]
-      let c = ge a b :: CPUTensor 'D.Bool '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[True, True, True], [True, True, True]] :: [[Bool]])
-    it "works on broadcastable tensors of different shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
-      let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
-      let c = ge a b :: CPUTensor 'D.Bool '[3, 2, 4, 1]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]]] :: [[[[Bool]]]])
-  describe "le" $ do
-    it "works on tensors of identical shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3]
-      let c = le a b :: CPUTensor 'D.Bool '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[True, True, True], [True, True, True]] :: [[Bool]])
-    it "works on broadcastable tensors of different shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
-      let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
-      let c = le a b :: CPUTensor 'D.Bool '[3, 2, 4, 1]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]]] :: [[[[Bool]]]])
-  describe "eq" $ do
-    it "works on tensors of identical shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3]
-      let c = eq a b :: CPUTensor 'D.Bool '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[True, True, True], [True, True, True]] :: [[Bool]])
-    it "works on broadcastable tensors of different shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
-      let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
-      let c = eq a b :: CPUTensor 'D.Bool '[3, 2, 4, 1]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]],[[[True],[True],[True],[True]],[[True],[True],[True],[True]]]] :: [[[[Bool]]]])
-  describe "ne" $ do
-    it "works on tensors of identical shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3]
-      let c = ne a b :: CPUTensor 'D.Bool '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[False, False, False], [False, False, False]] :: [[Bool]])
-    it "works on broadcastable tensors of different shapes" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 1, 4, 1]
-      let b = ones :: CPUTensor 'D.Float '[2, 1, 1]
-      let c = ne a b :: CPUTensor 'D.Bool '[3, 2, 4, 1]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]],[[[False],[False],[False],[False]],[[False],[False],[False],[False]]]] :: [[[[Bool]]]])
-  describe "matmul" $ do
-    it "returns the dot product if both tensors are 1-dimensional" $ do
-      let a = ones :: CPUTensor 'D.Float '[3]
-      let b = ones :: CPUTensor 'D.Float '[3]
-      let c = matmul a b :: CPUTensor 'D.Float '[]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` (3 :: Float)
-    it "returns the matrix-matrix product if both arguments are 2-dimensional" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 2]
-      let b = ones :: CPUTensor 'D.Float '[2, 4]
-      let c = matmul a b :: CPUTensor 'D.Float '[3, 4]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[2,2,2,2],[2,2,2,2],[2,2,2,2]] :: [[Float]])
-    it "returns the matrix-matrix product if the first argument is 1-dimensional and the second argument is 2-dimensional by temporarily adding a 1 to the dimension of the first argument" $ do
-      let a = ones :: CPUTensor 'D.Float '[3]
-      let b = ones :: CPUTensor 'D.Float '[3, 4]
-      let c = matmul a b :: CPUTensor 'D.Float '[4]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([3,3,3,3] :: [Float])
-    it "returns the matrix-vector product if the first argument is 2-dimensional and the second argument is 1-dimensional" $ do
-      let a = ones :: CPUTensor 'D.Float '[3, 4]
-      let b = ones :: CPUTensor 'D.Float '[4]
-      let c = matmul a b :: CPUTensor 'D.Float '[3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([4,4,4] :: [Float])
-    it "returns a batched matrix-matrix product if both arguments are at least 2-dimensional and the batch (i.e. non-matrix) dimensions are broadcastable" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 1, 4, 3]
-      let b = ones :: CPUTensor 'D.Float '[3, 3, 2]
-      let c = matmul a b :: CPUTensor 'D.Float '[2, 3, 4, 2]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[[[3,3],[3,3],[3,3],[3,3]],[[3,3],[3,3],[3,3],[3,3]],[[3,3],[3,3],[3,3],[3,3]]],[[[3,3],[3,3],[3,3],[3,3]],[[3,3],[3,3],[3,3],[3,3]],[[3,3],[3,3],[3,3],[3,3]]]] :: [[[[Float]]]])
-    it "returns a batched matrix-matrix product if the first argument is 1-dimensional and the second argument has more than 2 dimensions" $ do
-      let a = ones :: CPUTensor 'D.Float '[3]
-      let b = ones :: CPUTensor 'D.Float '[2, 3, 4]
-      let c = matmul a b :: CPUTensor 'D.Float '[2, 4]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[3,3,3,3],[3,3,3,3]] :: [[Float]])
-    it "returns a batched matrix-vector product if the first argument has more than 2 dimensions and the second argument is 1-dimensional" $ do
-      let a = ones :: CPUTensor 'D.Float '[2, 3, 4]
-      let b = ones :: CPUTensor 'D.Float '[4]
-      let c = matmul a b :: CPUTensor 'D.Float '[2, 3]
-      checkDynamicTensorAttributes c
-      D.asValue (toDynamic c) `shouldBe` ([[4,4,4],[4,4,4]] :: [[Float]])
+  let identicalShapes = hCartesianProduct (standardDTypes @'( 'D.CPU, 0) @'[2, 3]) (standardDTypes @'( 'D.CPU, 0) @'[2, 3])
+      broadcastableShapes = hCartesianProduct (standardDTypes @'( 'D.CPU, 0) @'[3, 1, 4, 1]) (standardDTypes @'( 'D.CPU, 0) @'[2, 1, 1])
+  describe "binary operators" $ do
+    describe "add" $ do
+      it "works on tensors of identical shapes"
+        (hfoldrM @IO AddSpec () identicalShapes)
+      it "works on broadcastable tensors of different shapes"
+        (hfoldrM @IO AddSpec () broadcastableShapes)
+    describe "sub" $ do
+      it "works on tensors of identical shapes"
+        (hfoldrM @IO SubSpec () identicalShapes)
+      it "works on broadcastable tensors of different shapes"
+        (hfoldrM @IO SubSpec () broadcastableShapes)
+    describe "mul" $ do
+      it "works on tensors of identical shapes"
+        (hfoldrM @IO MulSpec () identicalShapes)
+      it "works on broadcastable tensors of different shapes"
+        (hfoldrM @IO MulSpec () broadcastableShapes)
+    describe "matmul" $ do
+      it "returns the dot product if both tensors are 1-dimensional" $ do
+        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3]) (standardDTypes @'( 'D.CPU, 0) @'[3])
+        hfoldrM @IO MatmulSpec () shapes
+      it "returns the matrix-matrix product if both arguments are 2-dimensional" $ do
+        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3, 2]) (standardDTypes @'( 'D.CPU, 0) @'[2, 4])
+        hfoldrM @IO MatmulSpec () shapes
+      it "returns the matrix-matrix product if the first argument is 1-dimensional and the second argument is 2-dimensional by temporarily adding a 1 to the dimension of the first argument" $ do
+        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3]) (standardDTypes @'( 'D.CPU, 0) @'[3, 4])
+        hfoldrM @IO MatmulSpec () shapes
+      it "returns the matrix-vector product if the first argument is 2-dimensional and the second argument is 1-dimensional" $ do
+        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3, 4]) (standardDTypes @'( 'D.CPU, 0) @'[4])
+        hfoldrM @IO MatmulSpec () shapes
+      it "returns a batched matrix-matrix product if both arguments are at least 2-dimensional and the batch (i.e. non-matrix) dimensions are broadcastable" $ do
+        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[2, 1, 4, 3]) (standardDTypes @'( 'D.CPU, 0) @'[3, 3, 2])
+        hfoldrM @IO MatmulSpec () shapes
+      it "returns a batched matrix-matrix product if the first argument is 1-dimensional and the second argument has more than 2 dimensions" $ do
+        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3]) (standardDTypes @'( 'D.CPU, 0) @'[2, 3, 4])
+        hfoldrM @IO MatmulSpec () shapes
+      it "returns a batched matrix-vector product if the first argument has more than 2 dimensions and the second argument is 1-dimensional" $ do
+        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[2, 3, 4]) (standardDTypes @'( 'D.CPU, 0) @'[4])
+        hfoldrM @IO MatmulSpec () shapes
+  describe "binary comparison operators" $ do
+    describe "gt" $ do
+      it "works on tensors of identical shapes"
+        (hfoldrM @IO GTSpec () identicalShapes)
+      it "works on broadcastable tensors of different shapes"
+        (hfoldrM @IO GTSpec () broadcastableShapes)
+    describe "lt" $ do
+      it "works on tensors of identical shapes"
+        (hfoldrM @IO GTSpec () identicalShapes)
+      it "works on broadcastable tensors of different shapes"
+        (hfoldrM @IO GTSpec () broadcastableShapes)
+    describe "ge" $ do
+      it "works on tensors of identical shapes"
+        (hfoldrM @IO GESpec () identicalShapes)
+      it "works on broadcastable tensors of different shapes"
+        (hfoldrM @IO GESpec () broadcastableShapes)
+    describe "le" $ do
+      it "works on tensors of identical shapes"
+        (hfoldrM @IO LESpec () identicalShapes)
+      it "works on broadcastable tensors of different shapes"
+        (hfoldrM @IO LESpec () broadcastableShapes)
+    describe "eq" $ do
+      it "works on tensors of identical shapes"
+        (hfoldrM @IO EQSpec () identicalShapes)
+      it "works on broadcastable tensors of different shapes"
+        (hfoldrM @IO EQSpec () broadcastableShapes)
+    describe "ne" $ do
+      it "works on tensors of identical shapes"
+        (hfoldrM @IO NESpec () identicalShapes)
+      it "works on broadcastable tensors of different shapes"
+        (hfoldrM @IO NESpec () broadcastableShapes)
   describe "eyeSquare" $ it "works" $ do
     let t = eyeSquare @2 :: CPUTensor 'D.Float '[2, 2]
     checkDynamicTensorAttributes t
