@@ -24,7 +24,7 @@ library
                     , Torch.Typed.Factories
                     , Torch.Typed.Native
                     , Torch.Typed.NN
-                    , Torch.Typed.NN.Recurrent.LSTM
+                    , Torch.Typed.NN.Recurrent.Cell.LSTM
                     , Torch.NN
                     , Torch.Scalar
                     , Torch.Backend
