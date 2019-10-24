@@ -68,7 +68,7 @@ withHalf :: forall device shape . _ -> _
 withHalf dtypes = Proxy @'(device, 'D.Half, shape) :. dtypes
 
 almostAllDTypes :: forall device shape . _
-almostAllDTypes = withHalf @device @shape $ standardDTypes @device @shape
+almostAllDTypes = withBool @device @shape $ standardDTypes @device @shape
 
 withBool :: forall device shape . _ -> _
 withBool dtypes = Proxy @'(device, 'D.Bool, shape) :. dtypes

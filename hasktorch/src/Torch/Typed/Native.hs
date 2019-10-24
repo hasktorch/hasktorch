@@ -80,10 +80,6 @@ import           Torch.Typed.Factories
 import           Torch.Typed.Tensor
 
 
-type family DTypeIsNotHalf (dtype :: D.DType) :: Constraint where
-  DTypeIsNotHalf D.Half = TypeError (Text "This operation does not support " :<>: ShowType D.Half :<>: Text " tensors.")
-  DTypeIsNotHalf _      = ()
-
 type family SumDType (dtype :: D.DType) :: D.DType where
   SumDType D.Bool = D.Int64
   SumDType D.UInt8 = D.Int64
@@ -131,25 +127,29 @@ sumDim
 sumDim input = unsafePerformIO $ cast2 ATen.sum_tl input (natValI @d)
 
 -- | abs
+-- TODO: not half and not bool
 -- >>> dtype &&& shape $ abs (ones :: Tensor 'D.Float '[2,2])
 -- (Float,[2,2])
 abs
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (DTypeIsNotHalf dtype, DTypeIsNotBool dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 abs input = unsafePerformIO $ cast1 ATen.abs_t input
 
 -- | floor
 ceil
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 ceil input = unsafePerformIO $ cast1 ATen.ceil_t input
 
 -- | floor
 floor
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 floor input = unsafePerformIO $ cast1 ATen.floor_t input
 
@@ -191,52 +191,52 @@ cmul
 cmul a input = unsafePerformIO $ cast2 ATen.mul_ts input a
 
 -- | erf
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ erf (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 erf
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 erf input = unsafePerformIO $ cast1 ATen.erf_t input
 
 -- | exp
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ exp (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 exp
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 exp input = unsafePerformIO $ cast1 ATen.exp_t input
 
 -- | log1p
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ log1p (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 log1p
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 log1p input = unsafePerformIO $ cast1 ATen.log1p_t input
 
 -- | log2
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ log2 (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 log2
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 log2 input = unsafePerformIO $ cast1 ATen.log2_t input
 
 -- | log10
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ log10 (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 log10
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 log10 input = unsafePerformIO $ cast1 ATen.log10_t input
 
@@ -594,6 +594,7 @@ solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
 -- orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
 
 -- | sign
+-- works for all dtypes
 -- >>> dtype &&& shape $ sign (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 sign
@@ -1628,12 +1629,12 @@ emptyLike
 emptyLike input = cast1 ATen.empty_like_t input
 
 -- | erfc
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ erfc (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 erfc
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 erfc input = unsafePerformIO $ cast1 ATen.erfc_t input
 
@@ -1643,7 +1644,8 @@ erfc input = unsafePerformIO $ cast1 ATen.erfc_t input
 -- (Float,[3,2])
 expm1
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 expm1 input = unsafePerformIO $ cast1 ATen.expm1_t input
 
@@ -1690,7 +1692,8 @@ flattenAll input =
 -- (Float,[3,2])
 frac
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 frac input = unsafePerformIO $ cast1 ATen.frac_t input
 
@@ -2634,7 +2637,8 @@ tan input = unsafePerformIO $ cast1 ATen.tan_t input
 -- (Float,[3,2])
 trunc
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 trunc input = unsafePerformIO $ cast1 ATen.trunc_t input
 
@@ -2938,22 +2942,22 @@ tril diagonal input = unsafePerformIO $ cast2 ATen.tril_tl input diagonal
 -- lu_solve _input _LU_data _LU_pivots = unsafePerformIO $ (cast3 ATen.lu_solve_ttt) _input _LU_data _LU_pivots
 
 -- | lgamma function
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ lgamma (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 lgamma
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 lgamma input = unsafePerformIO $ cast1 ATen.lgamma_t input
 
 -- | digamma function
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ digamma (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 digamma
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 digamma input = unsafePerformIO $ cast1 ATen.digamma_t input
 
@@ -2967,12 +2971,12 @@ polygamma
 polygamma n input = unsafePerformIO $ cast2 ATen.polygamma_lt n input
 
 -- | inverse of the error function
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ erfinv (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 erfinv
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 erfinv input = unsafePerformIO $ cast1 ATen.erfinv_t input
 
