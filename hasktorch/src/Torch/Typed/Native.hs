@@ -133,7 +133,6 @@ sumDim
 sumDim input = unsafePerformIO $ cast2 ATen.sum_tl input (natValI @d)
 
 -- | abs
--- TODO: not half and not bool
 -- >>> dtype &&& shape $ abs (ones :: Tensor 'D.Float '[2,2])
 -- (Float,[2,2])
 abs
@@ -164,7 +163,8 @@ floor input = unsafePerformIO $ cast1 ATen.floor_t input
 -- (Float,[])
 min
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype '[] -- ^ output
 min input = unsafePerformIO $ cast1 ATen.min_t input
 
@@ -173,7 +173,8 @@ min input = unsafePerformIO $ cast1 ATen.min_t input
 -- (Float,[])
 max
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype '[] -- ^ output
 max input = unsafePerformIO $ cast1 ATen.max_t input
 
@@ -182,7 +183,8 @@ max input = unsafePerformIO $ cast1 ATen.max_t input
 -- (Float,[])
 median
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype '[] -- ^ output
 median input = unsafePerformIO $ cast1 ATen.median_t input
 
@@ -354,9 +356,10 @@ type family SqueezeAll (shape :: [Nat]) :: [Nat] where
 -- >>> dtype &&& shape $ (squeezeAll (ones :: Tensor 'D.Float '[2,1,2,1,2]) :: Tensor 'D.Float '[2,2,2])
 -- (Float,[2,2,2])
 squeezeAll
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
-  -> Tensor device dtype (SqueezeAll shape) -- ^ output
+  :: forall shape shape' dtype device
+   . (shape' ~ SqueezeAll shape)
+  => Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
 squeezeAll input = unsafePerformIO $ cast1 ATen.squeeze_t input
 
 -- | ConditionalReduction
@@ -381,7 +384,6 @@ instance KnownReduction ReduceSum where
     reductionVal = 2
 
 -- | binary cross entropy
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> tt = ones :: Tensor 'D.Float '[2,2]
 -- >>> dtype &&& shape $ (binary_cross_entropy @ReduceNone tt tt tt :: Tensor 'D.Float '[2,2])
 -- (Float,[2,2])
@@ -390,12 +392,15 @@ instance KnownReduction ReduceSum where
 -- >>> dtype &&& shape $ (binary_cross_entropy @ReduceSum tt tt tt :: Tensor 'D.Float '[])
 -- (Float,[])
 binaryCrossEntropy
-  :: forall (reduction :: Reduction) shape dtype device
-   . (KnownReduction reduction)
+  :: forall (reduction :: Reduction) shape shape' dtype device
+   . ( KnownReduction reduction
+     , shape' ~ ConditionalReduction shape reduction
+     , IsFloatingPoint dtype, DTypeIsNotHalf dtype
+     )
   => Tensor device dtype shape -- ^ weight
   -> Tensor device dtype shape -- ^ prediction
   -> Tensor device dtype shape -- ^ target
-  -> Tensor device dtype (ConditionalReduction shape reduction) -- ^ output
+  -> Tensor device dtype shape' -- ^ output
 binaryCrossEntropy weight prediction target = unsafePerformIO $ cast4
   ATen.binary_cross_entropy_tttl
   prediction
@@ -404,41 +409,50 @@ binaryCrossEntropy weight prediction target = unsafePerformIO $ cast4
   (reductionVal @reduction)
 
 -- | mseLoss
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- TODO: parameterize reduction
 -- >>> dtype &&& shape $ mse_loss (ones :: Tensor 'D.Float '[2,2]) (ones :: Tensor 'D.Float '[2,2])
 -- (Float,[])
 mseLoss
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ prediction
+  :: forall (reduction :: Reduction) shape shape' dtype device
+   . ( KnownReduction reduction
+     , shape' ~ ConditionalReduction shape reduction
+     , IsFloatingPoint dtype, DTypeIsNotHalf dtype
+     )
+  => Tensor device dtype shape -- ^ prediction
   -> Tensor device dtype shape -- ^ target
-  -> Tensor device dtype '[] -- ^ loss
-mseLoss prediction target = unsafePerformIO $ cast3 ATen.mse_loss_ttl prediction target ATen.kMean
+  -> Tensor device dtype shape' -- ^ output
+mseLoss prediction target = unsafePerformIO $ cast3
+  ATen.mse_loss_ttl
+  prediction
+  target
+  (reductionVal @reduction)
 
 -- | softmax
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> dtype &&& shape $ softmax @0 (ones @D.Float @[2,2])
+--- >>> dtype &&& shape $ softmax @0 (ones @D.Float @[2,2])
 -- (Float,[2,2])
 -- >>> dtype &&& shape $ softmax @1 (ones @D.Float @[2,2])
 -- (Float,[2,2])
 softmax
   :: forall dim shape dtype device
-   . (KnownNat dim, KnownDType dtype, DimOutOfBoundCheck shape dim)
+   . ( KnownNat dim, DimOutOfBoundCheck shape dim
+     , KnownDType dtype
+     , IsFloatingPoint dtype, DTypeIsNotHalf dtype
+     )
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 softmax input = unsafePerformIO
   $ cast3 ATen.softmax_tls input (natValI @dim) (dtypeVal @dtype)
 
 -- | logSoftmax
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- TODO: return Nothing if this returns NaNs?
 -- >>> dtype &&& shape $ logSoftmax @0 (ones @D.Float @[2,2])
 -- (Float,[2,2])
 -- >>> dtype &&& shape $ logSoftmax @1 (ones @D.Float @[2,2])
 -- (Float,[2,2])
 logSoftmax
   :: forall dim shape dtype device
-   . (KnownNat dim, KnownDType dtype, DimOutOfBoundCheck shape dim)
+   . ( KnownNat dim, DimOutOfBoundCheck shape dim
+     , KnownDType dtype
+     , IsFloatingPoint dtype, DTypeIsNotHalf dtype
+     )
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 logSoftmax input = unsafePerformIO
