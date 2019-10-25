@@ -44,6 +44,7 @@ import           Prelude                 hiding ( all
                                                 , log
                                                 , round
                                                 , floor
+                                                , sqrt
                                                 )
 import           Control.Exception.Safe
 import           Foreign.Storable
@@ -68,11 +69,13 @@ import           Torch.Typed.AuxSpec
 
 data UnaryAllDTypesSpec =
     SignSpec
+  | OnesLikeSpec
+  | ZerosLikeSpec
 
 data UnaryStandardDTypesSpec =
     AbsSpec
 
-data UnaryFloatingPointDTypesSpec =
+data UnaryStandardFloatingPointDTypesSpec =
     FracSpec
   | CeilSpec
   | FloorSpec
@@ -93,18 +96,22 @@ data UnaryFloatingPointDTypesSpec =
   | SeluSpec
   | GeluSpec
   | SigmoidSpec
+  | LogSigmoidSpec
   | SinSpec
   | SinhSpec
+  | AsinSpec
   | CosSpec
+  | CoshSpec
   | AcosSpec
   | TanSpec
   | TanhSpec
+  | AtanSpec
   | SqrtSpec
   | RsqrtSpec
-  | OnesLikeSpec
-  | ZerosLikeSpec
   | RandLikeSpec
   | RandnLikeSpec
+
+-- data UnaryAllFloatingPointDTypesSpec =
 
 instance ( TensorOptions shape dtype device
          , DTypeIsNotHalf dtype
@@ -128,13 +135,19 @@ instance (TensorOptions shape dtype device)
   apply SignSpec _ _ = do
     let t = sign ones :: Tensor device dtype shape
     checkDynamicTensorAttributes t
+  apply OnesLikeSpec _ _ = do
+    let t = onesLike ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply ZerosLikeSpec _ _ = do
+    let t = zerosLike ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
 
 instance ( TensorOptions shape dtype device
          , IsFloatingPoint dtype
          , DTypeIsNotHalf dtype
          )
   => Apply
-       UnaryFloatingPointDTypesSpec
+       UnaryStandardFloatingPointDTypesSpec
        (Proxy '(device, dtype, shape))
        (() -> IO ())
  where
@@ -183,33 +196,115 @@ instance ( TensorOptions shape dtype device
   apply DigammaSpec _ _ = do
     let t = digamma ones :: Tensor device dtype shape
     checkDynamicTensorAttributes t
+  apply ReluSpec _ _ = do
+    let t = relu ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply SeluSpec _ _ = do
+    let t = selu ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply GeluSpec _ _ = do
+    let t = gelu ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply SigmoidSpec _ _ = do
+    let t = sigmoid ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply LogSigmoidSpec _ _ = do
+    let t = logSigmoid ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
   apply SinSpec _ _ = do
     let t = sin ones :: Tensor device dtype shape
     checkDynamicTensorAttributes t
+  apply SinhSpec _ _ = do
+    let t = sinh ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply AsinSpec _ _ = do
+    let t = asin ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply CosSpec _ _ = do
+    let t = cos ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply CoshSpec _ _ = do
+    let t = cosh ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply AcosSpec _ _ = do
+    let t = acos ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply TanSpec _ _ = do
+    let t = tan ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply TanhSpec _ _ = do
+    let t = tanh ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply AtanSpec _ _ = do
+    let t = atan ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply SqrtSpec _ _ = do
+    let t = sqrt ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply RsqrtSpec _ _ = do
+    let t = rsqrt ones :: Tensor device dtype shape
+    checkDynamicTensorAttributes t
+  apply RandLikeSpec _ _ = do
+    t <- randLike ones :: IO (Tensor device dtype shape)
+    checkDynamicTensorAttributes t
+  apply RandnLikeSpec _ _ = do
+    t <- randnLike ones :: IO (Tensor device dtype shape)
+    checkDynamicTensorAttributes t
 
+-- instance ( TensorOptions shape dtype device
+--          , IsFloatingPoint dtype
+--          )
+--   => Apply
+--        UnaryAllFloatingPointDTypesSpec
+--        (Proxy '(device, dtype, shape))
+--        (() -> IO ())
+--  where
 
 spec :: Spec
 spec = do
   describe "unary native ops" $ do
-    it "abs" (hfoldrM @IO AbsSpec () (standardDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "sign" (hfoldrM @IO SignSpec () (allDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "frac" (hfoldrM @IO FracSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "ceil" (hfoldrM @IO CeilSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "abs"   (hfoldrM @IO AbsSpec   () (standardDTypes              @'( 'D.CPU, 0) @'[2, 3]))
+    it "sign"  (hfoldrM @IO SignSpec  () (allDTypes                   @'( 'D.CPU, 0) @'[2, 3]))
+    it "frac"  (hfoldrM @IO FracSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "ceil"  (hfoldrM @IO CeilSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
     it "floor" (hfoldrM @IO FloorSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
     it "trunc" (hfoldrM @IO TruncSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "erf" (hfoldrM @IO ErfSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "erfc" (hfoldrM @IO ErfcSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "erfinv" (hfoldrM @IO ErfinvSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "exp" (hfoldrM @IO ExpSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "expm1" (hfoldrM @IO Expm1Spec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "log" (hfoldrM @IO LogSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "log1p" (hfoldrM @IO Log1pSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "log2" (hfoldrM @IO Log2Spec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "log10" (hfoldrM @IO Log10Spec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "lgamma" (hfoldrM @IO LgammaSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+
+    it "erf"     (hfoldrM @IO ErfSpec     () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "erfc"    (hfoldrM @IO ErfcSpec    () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "erfinv"  (hfoldrM @IO ErfinvSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "exp"     (hfoldrM @IO ExpSpec     () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "expm1"   (hfoldrM @IO Expm1Spec   () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "log"     (hfoldrM @IO LogSpec     () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "log1p"   (hfoldrM @IO Log1pSpec   () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "log2"    (hfoldrM @IO Log2Spec    () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "log10"   (hfoldrM @IO Log10Spec   () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "lgamma"  (hfoldrM @IO LgammaSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
     it "digamma" (hfoldrM @IO DigammaSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
 
-    it "sin" (hfoldrM @IO SinSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "relu"       (hfoldrM @IO ReluSpec       () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "selu"       (hfoldrM @IO SeluSpec       () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "gelu"       (hfoldrM @IO GeluSpec       () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "sigmoid"    (hfoldrM @IO SigmoidSpec    () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "logSigmoid" (hfoldrM @IO LogSigmoidSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+
+    it "sin"   (hfoldrM @IO SinSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "sinh"  (hfoldrM @IO SinhSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "asin"  (hfoldrM @IO AsinSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "cos"   (hfoldrM @IO CosSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "cosh"  (hfoldrM @IO CoshSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "acos"  (hfoldrM @IO AcosSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "tan"   (hfoldrM @IO TanSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "tanh"  (hfoldrM @IO TanhSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "atan"  (hfoldrM @IO AtanSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "sqrt"  (hfoldrM @IO SqrtSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "rsqrt" (hfoldrM @IO SinhSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+
+    it "onesLike"  (hfoldrM @IO OnesLikeSpec  () (allDTypes                   @'( 'D.CPU, 0) @'[2, 3]))
+    it "zerosLike" (hfoldrM @IO ZerosLikeSpec () (allDTypes                   @'( 'D.CPU, 0) @'[2, 3]))
+    it "randLike"  (hfoldrM @IO RandLikeSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "randnLike" (hfoldrM @IO RandnLikeSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+
     it "maxPool2d" $ do
       let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5])
       checkDynamicTensorAttributes c

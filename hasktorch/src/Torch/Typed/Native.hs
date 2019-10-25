@@ -258,73 +258,74 @@ pow a input = unsafePerformIO $ cast2 ATen.pow_ts input a
 -- (Float,[3,2])
 relu
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 relu input = unsafePerformIO $ cast1 ATen.relu_t input
 
 -- | selu
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ selu (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 selu
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 selu input = unsafePerformIO $ cast1 ATen.selu_t input
 
 -- | sigmoid
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ sigmoid (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 sigmoid
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 sigmoid input = unsafePerformIO $ cast1 ATen.sigmoid_t input
 
 -- | sin
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ sin (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 sin
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 sin input = unsafePerformIO $ cast1 ATen.sin_t input
 
 -- | sinh
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ sinh (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 sinh
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 sinh input = unsafePerformIO $ cast1 ATen.sinh_t input
 
 -- | cos
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ cos (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 cos
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 cos input = unsafePerformIO $ cast1 ATen.cos_t input
 
 -- | sqrt
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 sqrt
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 sqrt input = unsafePerformIO $ cast1 ATen.sqrt_t input
 
 -- | tanh
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 tanh 
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 tanh input = unsafePerformIO $ cast1 ATen.tanh_t input
 
@@ -825,12 +826,12 @@ featureAlphaDropout p train input =
   unsafePerformIO $ cast3 ATen.feature_alpha_dropout_tdb input p train
 
 -- | acos
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ acos (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 acos
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 acos input = unsafePerformIO $ cast1 ATen.acos_t input
 
@@ -998,22 +999,22 @@ argmin input = unsafePerformIO $ cast3 ATen.argmin_tlb
 -- as_strided _input _size _stride _storage_offset = unsafePerformIO $ (cast4 ATen.as_strided_tlll) _input _size _stride _storage_offset
 
 -- | asin
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ asin (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 asin
   :: forall shape dtype device
-   . Tensor device dtype shape
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape
   -> Tensor device dtype shape
 asin input = unsafePerformIO $ cast1 ATen.asin_t input
 
 -- | atan
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ atan (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 atan
   :: forall shape dtype device
-   . Tensor device dtype shape
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape
   -> Tensor device dtype shape
 atan input = unsafePerformIO $ cast1 ATen.atan_t input
 
@@ -1502,12 +1503,12 @@ conv3d weight bias input = unsafePerformIO $ cast7
 -- conv_transpose1d _input _weight _bias _stride _padding _output_padding _groups _dilation = unsafePerformIO $ (cast8 ATen.conv_transpose1d_tttlllll) _input _weight _bias _stride _padding _output_padding _groups _dilation
 
 -- | cosh
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ cosh (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 cosh
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 cosh input = unsafePerformIO $ cast1 ATen.cosh_t input
 
@@ -2450,12 +2451,12 @@ prelu
 prelu weight input = unsafePerformIO $ cast2 ATen.prelu_tt input weight
 
 -- | gelu activation function
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ round (ones @'D.Float @'[3,2])
 -- (Float,[3,2])
 gelu
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 gelu input = unsafePerformIO $ cast1 ATen.gelu_t input
 
@@ -2463,12 +2464,12 @@ gelu input = unsafePerformIO $ cast1 ATen.gelu_t input
 -- hardshrink _input _lambd = unsafePerformIO $ (cast2 ATen.hardshrink_ts) _input _lambd
 
 -- | rsqrt
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ rsqrt (ones @'D.Float @'[3,2])
 -- (Float,[3,2])
 rsqrt
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 rsqrt input = unsafePerformIO $ cast1 ATen.rsqrt_t input
 
@@ -2601,12 +2602,12 @@ stack tensors = unsafePerformIO $ cast2 ATen.stack_ll tensors (natValI @dim :: I
 -- t _input = unsafePerformIO $ (cast1 ATen.t_t) _input
 
 -- | tan
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ tan (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 tan
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 tan input = unsafePerformIO $ cast1 ATen.tan_t input
 
@@ -3263,12 +3264,12 @@ hardTanh min_val max_val input =
 -- leaky_relu _input _negative_slope = unsafePerformIO $ (cast2 ATen.leaky_relu_ts) _input _negative_slope
 
 -- | logarithm of the sigmoid
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ logSigmoid (ones :: Tensor 'D.Float '[3,2])
 -- (Float,[3,2])
 logSigmoid
   :: forall shape dtype device
-   . Tensor device dtype shape -- ^ input
+   . (IsFloatingPoint dtype, DTypeIsNotHalf dtype)
+  => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 logSigmoid input = unsafePerformIO $ cast1 ATen.log_sigmoid_t input
 
