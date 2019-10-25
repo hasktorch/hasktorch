@@ -51,6 +51,7 @@ import           Foreign.Storable
 import           Data.HList
 import           Data.Proxy
 import           Data.Reflection
+import           GHC.TypeLits
 
 import           Test.Hspec
 import           Test.QuickCheck
@@ -119,7 +120,7 @@ instance ( TensorOptions shape dtype device
          )
   => Apply
        UnaryStandardDTypesSpec
-       (Proxy '(device, dtype, shape))
+       (Proxy device, (Proxy dtype, Proxy shape))
        (() -> IO ())
  where
   apply AbsSpec _ _ = do
@@ -129,7 +130,7 @@ instance ( TensorOptions shape dtype device
 instance (TensorOptions shape dtype device)
   => Apply
        UnaryAllDTypesSpec
-       (Proxy '(device, dtype, shape))
+       (Proxy device, (Proxy dtype, Proxy shape))
        (() -> IO ())
  where
   apply SignSpec _ _ = do
@@ -148,7 +149,7 @@ instance ( TensorOptions shape dtype device
          )
   => Apply
        UnaryStandardFloatingPointDTypesSpec
-       (Proxy '(device, dtype, shape))
+       (Proxy device, (Proxy dtype, Proxy shape))
        (() -> IO ())
  where
   apply FracSpec _ _ = do
@@ -260,50 +261,114 @@ instance ( TensorOptions shape dtype device
 --        (() -> IO ())
 --  where
 
+data ToDTypeSpec = ToDTypeSpec
+
+instance ( TensorOptions shape  dtype  device
+         , TensorOptions shape' dtype' device'
+         , shape' ~ shape
+         , device' ~ device
+         , KnownDType dtype'
+         )
+  => Apply
+       ToDTypeSpec
+       ((Proxy device, (Proxy dtype, Proxy shape)), (Proxy device', (Proxy dtype', Proxy shape')))
+       (() -> IO ())
+ where
+  apply ToDTypeSpec _ _ = do
+    let t = ones @shape @dtype @device
+        t' = toDType @dtype' t
+    checkDynamicTensorAttributes t'
+
+data SumAllSpec = SumAllSpec
+
+instance ( TensorOptions shape dtype device
+         , DTypeIsNotHalf dtype
+         , KnownDType (SumDType dtype)
+         , KnownDevice device
+         )
+  => Apply
+       SumAllSpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
+  apply SumAllSpec _ _ = do
+    let t = ones @shape @dtype @device
+        t' = sumAll t
+    checkDynamicTensorAttributes t'
+
+data SumDimSpec = SumDimSpec
+
+instance ( TensorOptions shape  dtype  device
+         , TensorOptions shape' dtype' device
+         , KnownNat d
+         , shape' ~ DropValue shape d
+         , dtype' ~ SumDType dtype
+         , DTypeIsNotHalf dtype
+         )
+  => Apply
+       SumDimSpec
+       (Proxy d, (Proxy device, (Proxy dtype, Proxy shape)))
+       (() -> IO ())
+ where
+  apply SumDimSpec _ _ = do
+    let t = ones @shape @dtype @device
+        t' = sumDim @d t
+    checkDynamicTensorAttributes t'
+
 spec :: Spec
 spec = do
+  let standardShapes               = Proxy @'[2, 3] :. HNil
+      standardDTypes'              = hCartesianProduct3 justCPU standardDTypes              standardShapes
+      almostAllDTypes'             = hCartesianProduct3 justCPU almostAllDTypes             standardShapes
+      allDTypes'                   = hCartesianProduct3 justCPU allDTypes                   standardShapes
+      standardFloatingPointDTypes' = hCartesianProduct3 justCPU standardFloatingPointDTypes standardShapes
   describe "unary native ops" $ do
-    it "abs"   (hfoldrM @IO AbsSpec   () (standardDTypes              @'( 'D.CPU, 0) @'[2, 3]))
-    it "sign"  (hfoldrM @IO SignSpec  () (allDTypes                   @'( 'D.CPU, 0) @'[2, 3]))
-    it "frac"  (hfoldrM @IO FracSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "ceil"  (hfoldrM @IO CeilSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "floor" (hfoldrM @IO FloorSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "trunc" (hfoldrM @IO TruncSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "abs"   (hfoldrM @IO AbsSpec   () standardDTypes')
+    it "sign"  (hfoldrM @IO SignSpec  () allDTypes')
+    it "frac"  (hfoldrM @IO FracSpec  () standardFloatingPointDTypes')
+    it "ceil"  (hfoldrM @IO CeilSpec  () standardFloatingPointDTypes')
+    it "floor" (hfoldrM @IO FloorSpec () standardFloatingPointDTypes')
+    it "trunc" (hfoldrM @IO TruncSpec () standardFloatingPointDTypes')
 
-    it "erf"     (hfoldrM @IO ErfSpec     () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "erfc"    (hfoldrM @IO ErfcSpec    () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "erfinv"  (hfoldrM @IO ErfinvSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "exp"     (hfoldrM @IO ExpSpec     () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "expm1"   (hfoldrM @IO Expm1Spec   () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "log"     (hfoldrM @IO LogSpec     () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "log1p"   (hfoldrM @IO Log1pSpec   () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "log2"    (hfoldrM @IO Log2Spec    () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "log10"   (hfoldrM @IO Log10Spec   () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "lgamma"  (hfoldrM @IO LgammaSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "digamma" (hfoldrM @IO DigammaSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "erf"     (hfoldrM @IO ErfSpec     () standardFloatingPointDTypes')
+    it "erfc"    (hfoldrM @IO ErfcSpec    () standardFloatingPointDTypes')
+    it "erfinv"  (hfoldrM @IO ErfinvSpec  () standardFloatingPointDTypes')
+    it "exp"     (hfoldrM @IO ExpSpec     () standardFloatingPointDTypes')
+    it "expm1"   (hfoldrM @IO Expm1Spec   () standardFloatingPointDTypes')
+    it "log"     (hfoldrM @IO LogSpec     () standardFloatingPointDTypes')
+    it "log1p"   (hfoldrM @IO Log1pSpec   () standardFloatingPointDTypes')
+    it "log2"    (hfoldrM @IO Log2Spec    () standardFloatingPointDTypes')
+    it "log10"   (hfoldrM @IO Log10Spec   () standardFloatingPointDTypes')
+    it "lgamma"  (hfoldrM @IO LgammaSpec  () standardFloatingPointDTypes')
+    it "digamma" (hfoldrM @IO DigammaSpec () standardFloatingPointDTypes')
 
-    it "relu"       (hfoldrM @IO ReluSpec       () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "selu"       (hfoldrM @IO SeluSpec       () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "gelu"       (hfoldrM @IO GeluSpec       () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "sigmoid"    (hfoldrM @IO SigmoidSpec    () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "logSigmoid" (hfoldrM @IO LogSigmoidSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "relu"       (hfoldrM @IO ReluSpec       () standardFloatingPointDTypes')
+    it "selu"       (hfoldrM @IO SeluSpec       () standardFloatingPointDTypes')
+    it "gelu"       (hfoldrM @IO GeluSpec       () standardFloatingPointDTypes')
+    it "sigmoid"    (hfoldrM @IO SigmoidSpec    () standardFloatingPointDTypes')
+    it "logSigmoid" (hfoldrM @IO LogSigmoidSpec () standardFloatingPointDTypes')
 
-    it "sin"   (hfoldrM @IO SinSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "sinh"  (hfoldrM @IO SinhSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "asin"  (hfoldrM @IO AsinSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "cos"   (hfoldrM @IO CosSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "cosh"  (hfoldrM @IO CoshSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "acos"  (hfoldrM @IO AcosSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "tan"   (hfoldrM @IO TanSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "tanh"  (hfoldrM @IO TanhSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "atan"  (hfoldrM @IO AtanSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "sqrt"  (hfoldrM @IO SqrtSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "rsqrt" (hfoldrM @IO SinhSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "sin"   (hfoldrM @IO SinSpec  () standardFloatingPointDTypes')
+    it "sinh"  (hfoldrM @IO SinhSpec () standardFloatingPointDTypes')
+    it "asin"  (hfoldrM @IO AsinSpec () standardFloatingPointDTypes')
+    it "cos"   (hfoldrM @IO CosSpec  () standardFloatingPointDTypes')
+    it "cosh"  (hfoldrM @IO CoshSpec () standardFloatingPointDTypes')
+    it "acos"  (hfoldrM @IO AcosSpec () standardFloatingPointDTypes')
+    it "tan"   (hfoldrM @IO TanSpec  () standardFloatingPointDTypes')
+    it "tanh"  (hfoldrM @IO TanhSpec () standardFloatingPointDTypes')
+    it "atan"  (hfoldrM @IO AtanSpec () standardFloatingPointDTypes')
+    it "sqrt"  (hfoldrM @IO SqrtSpec () standardFloatingPointDTypes')
+    it "rsqrt" (hfoldrM @IO SinhSpec () standardFloatingPointDTypes')
 
-    it "onesLike"  (hfoldrM @IO OnesLikeSpec  () (allDTypes                   @'( 'D.CPU, 0) @'[2, 3]))
-    it "zerosLike" (hfoldrM @IO ZerosLikeSpec () (allDTypes                   @'( 'D.CPU, 0) @'[2, 3]))
-    it "randLike"  (hfoldrM @IO RandLikeSpec  () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "randnLike" (hfoldrM @IO RandnLikeSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "onesLike"  (hfoldrM @IO OnesLikeSpec  () allDTypes')
+    it "zerosLike" (hfoldrM @IO ZerosLikeSpec () allDTypes')
+    it "randLike"  (hfoldrM @IO RandLikeSpec  () standardFloatingPointDTypes')
+    it "randnLike" (hfoldrM @IO RandnLikeSpec () standardFloatingPointDTypes')
+
+    it "toDType" (hfoldrM @IO ToDTypeSpec () (hCartesianProduct allDTypes' allDTypes'))
+
+    it "sumAll" (hfoldrM @IO SumAllSpec () almostAllDTypes')
+    it "sumDim" (hfoldrM @IO SumDimSpec () (hCartesianProduct (Proxy @1 :. HNil) almostAllDTypes'))
 
     it "maxPool2d" $ do
       let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5])

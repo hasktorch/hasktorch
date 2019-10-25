@@ -215,19 +215,34 @@ class HCartesianProduct xs ys zs | xs ys -> zs where
 instance HCartesianProduct '[] ys '[] where
   hCartesianProduct _ _ = HNil
 
-class HPoop x ys zs | x ys -> zs where
-  hpoop :: x -> HList ys -> HList zs
+class HAttach x ys zs | x ys -> zs where
+  hattach :: x -> HList ys -> HList zs
 
-instance HPoop x '[] '[] where
-  hpoop _ _ = HNil
+instance HAttach x '[] '[] where
+  hattach _ _ = HNil
 
-instance (HPoop x ys xys) => HPoop x (y ': ys) ((x, y) ': xys) where
-  hpoop x (y :. ys) = (x, y) :. hpoop x ys
+instance (HAttach x ys xys) => HAttach x (y ': ys) ((x, y) ': xys) where
+  hattach x (y :. ys) = (x, y) :. hattach x ys
 
 instance ( HCartesianProduct xs ys zs
-         , HPoop x ys xys
+         , HAttach x ys xys
          , HAppendFD xys zs zs'
          )
   => HCartesianProduct (x ': xs) ys zs'
  where
-  hCartesianProduct (x :. xs) ys = hpoop x ys `hAppendFD` hCartesianProduct xs ys
+  hCartesianProduct (x :. xs) ys = hattach x ys `hAppendFD` hCartesianProduct xs ys
+
+class HCartesianProduct3 as bs cs zs | as bs cs -> zs where
+  hCartesianProduct3 :: HList as -> HList bs -> HList cs -> HList zs
+
+instance HCartesianProduct3 '[] bs cs '[] where
+  hCartesianProduct3 _ _ _ = HNil
+
+instance ( HCartesianProduct3 as bs cs zs
+         , HCartesianProduct bs cs bcs
+         , HAttach a bcs abcs
+         , HAppendFD abcs zs zs'
+         )
+  => HCartesianProduct3 (a ': as) bs cs zs'
+ where
+  hCartesianProduct3 (a :. as) bs cs = hattach a (hCartesianProduct bs cs) `hAppendFD` hCartesianProduct3 as bs cs

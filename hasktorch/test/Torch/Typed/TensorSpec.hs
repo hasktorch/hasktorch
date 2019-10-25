@@ -59,7 +59,7 @@ instance ( TensorOptions shape   dtype   device
          )
   => Apply
        BinarySpec
-       (Proxy '(device, dtype, shape), Proxy '(device', dtype', shape'))
+       ((Proxy device, (Proxy dtype, Proxy shape)), (Proxy device', (Proxy dtype', Proxy shape')))
        (() -> IO ())
  where
   apply AddSpec _ _ = do
@@ -90,7 +90,7 @@ instance ( TensorOptions shape   dtype  device
          )
   => Apply
        MatmulSpec
-       (Proxy '(device, dtype, shape), Proxy '(device', dtype', shape'))
+       ((Proxy device, (Proxy dtype, Proxy shape)), (Proxy device', (Proxy dtype', Proxy shape')))
        (() -> IO ())
  where
   apply MatmulSpec _ _ = do
@@ -111,7 +111,7 @@ instance ( TensorOptions shape   dtype  device
          )
   => Apply
        BinaryCmpSpec
-       (Proxy '(device, dtype, shape), Proxy '(device', dtype', shape'))
+       ((Proxy device, (Proxy dtype, Proxy shape)), (Proxy device', (Proxy dtype', Proxy shape')))
        (() -> IO ())
  where
   apply GTSpec _ _ = do
@@ -147,8 +147,12 @@ instance ( TensorOptions shape   dtype  device
 
 spec :: Spec
 spec = do
-  let identicalShapes = hCartesianProduct (standardDTypes @'( 'D.CPU, 0) @'[2, 3]) (standardDTypes @'( 'D.CPU, 0) @'[2, 3])
-      broadcastableShapes = hCartesianProduct (standardDTypes @'( 'D.CPU, 0) @'[3, 1, 4, 1]) (standardDTypes @'( 'D.CPU, 0) @'[2, 1, 1])
+  let standardShapes = Proxy @'[2, 3] :. HNil
+      broadcastableShapes0 = Proxy @'[3, 1, 4, 1] :. HNil
+      broadcastableShapes1 = Proxy @'[2, 1, 1] :. HNil
+      standardDTypes' = hCartesianProduct3 justCPU standardDTypes standardShapes
+      identicalShapes = hCartesianProduct standardDTypes' standardDTypes'
+      broadcastableShapes = hCartesianProduct (hCartesianProduct3 justCPU standardDTypes broadcastableShapes0) (hCartesianProduct3 justCPU standardDTypes broadcastableShapes1)
   describe "binary operators" $ do
     describe "add" $ do
       it "works on tensors of identical shapes"
@@ -167,25 +171,25 @@ spec = do
         (hfoldrM @IO MulSpec () broadcastableShapes)
     describe "matmul" $ do
       it "returns the dot product if both tensors are 1-dimensional" $ do
-        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3]) (standardDTypes @'( 'D.CPU, 0) @'[3])
+        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3] :. HNil))
         hfoldrM @IO MatmulSpec () shapes
       it "returns the matrix-matrix product if both arguments are 2-dimensional" $ do
-        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3, 2]) (standardDTypes @'( 'D.CPU, 0) @'[2, 4])
+        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3, 2] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[2, 4] :. HNil))
         hfoldrM @IO MatmulSpec () shapes
       it "returns the matrix-matrix product if the first argument is 1-dimensional and the second argument is 2-dimensional by temporarily adding a 1 to the dimension of the first argument" $ do
-        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3]) (standardDTypes @'( 'D.CPU, 0) @'[3, 4])
+        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3, 4] :. HNil))
         hfoldrM @IO MatmulSpec () shapes
       it "returns the matrix-vector product if the first argument is 2-dimensional and the second argument is 1-dimensional" $ do
-        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3, 4]) (standardDTypes @'( 'D.CPU, 0) @'[4])
+        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3, 4] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[4] :. HNil))
         hfoldrM @IO MatmulSpec () shapes
       it "returns a batched matrix-matrix product if both arguments are at least 2-dimensional and the batch (i.e. non-matrix) dimensions are broadcastable" $ do
-        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[2, 1, 4, 3]) (standardDTypes @'( 'D.CPU, 0) @'[3, 3, 2])
+        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[2, 1, 4, 3] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3, 3, 2] :. HNil))
         hfoldrM @IO MatmulSpec () shapes
       it "returns a batched matrix-matrix product if the first argument is 1-dimensional and the second argument has more than 2 dimensions" $ do
-        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[3]) (standardDTypes @'( 'D.CPU, 0) @'[2, 3, 4])
+        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[2, 3, 4] :. HNil))
         hfoldrM @IO MatmulSpec () shapes
       it "returns a batched matrix-vector product if the first argument has more than 2 dimensions and the second argument is 1-dimensional" $ do
-        let shapes = hZipList (standardDTypes @'( 'D.CPU, 0) @'[2, 3, 4]) (standardDTypes @'( 'D.CPU, 0) @'[4])
+        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[2, 3, 4] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[4] :. HNil))
         hfoldrM @IO MatmulSpec () shapes
   describe "binary comparison operators" $ do
     describe "gt" $ do

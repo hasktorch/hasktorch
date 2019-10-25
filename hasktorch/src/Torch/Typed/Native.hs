@@ -108,10 +108,12 @@ type family SumDType (dtype :: D.DType) :: D.DType where
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Double) $ sumAll (ones @'D.Double @'[2, 3])
 -- (Double,([],6.0))
 sumAll
-  :: forall shape dtype device
-   . (DTypeIsNotHalf dtype)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device (SumDType dtype) '[] -- ^ output
+  :: forall shape dtype' dtype device
+   . ( DTypeIsNotHalf dtype
+     , dtype' ~ SumDType dtype
+     )
+  => Tensor device dtype  shape -- ^ input
+  -> Tensor device dtype' '[] -- ^ output
 sumAll input = unsafePerformIO $ cast1 ATen.sum_t input
 
 -- | sumDim
@@ -120,10 +122,14 @@ sumAll input = unsafePerformIO $ cast1 ATen.sum_t input
 -- >>> sumDim @1 (ones :: Tensor 'D.Float '[2,4])
 -- Tensor Float [2] [ 4.0000   ,  4.0000   ]
 sumDim
-  :: forall d shape dtype device
-   . (KnownNat d)
-  => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype (DropValue shape d) -- ^ output
+  :: forall d shape shape' dtype dtype' device
+   . ( KnownNat d
+     , shape' ~ DropValue shape d
+     , DTypeIsNotHalf dtype
+     , dtype' ~ SumDType dtype
+     )
+  => Tensor device dtype  shape -- ^ input
+  -> Tensor device dtype' shape' -- ^ output
 sumDim input = unsafePerformIO $ cast2 ATen.sum_tl input (natValI @d)
 
 -- | abs

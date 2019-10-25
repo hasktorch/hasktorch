@@ -47,40 +47,42 @@ checkDynamicTensorAttributes
   -> IO ()
 checkDynamicTensorAttributes t = do
   D.device untyped `shouldBe` optionsRuntimeDevice @shape @dtype @device
-  D.dtype  untyped `shouldBe` optionsRuntimeDType  @shape @dtype @device
-  D.shape  untyped `shouldBe` optionsRuntimeShape  @shape @dtype @device
- where untyped = toDynamic t
+  D.dtype untyped `shouldBe` optionsRuntimeDType @shape @dtype @device
+  D.shape untyped `shouldBe` optionsRuntimeShape @shape @dtype @device
+  where untyped = toDynamic t
 
-allFloatingPointDTypes :: forall device shape . _
-allFloatingPointDTypes =
-  withHalf @device @shape (standardFloatingPointDTypes @device @shape)
+allFloatingPointDTypes :: _
+allFloatingPointDTypes = withHalf standardFloatingPointDTypes
 
-standardFloatingPointDTypes :: forall device shape . _
-standardFloatingPointDTypes =
-  Proxy @'(device, 'D.Float, shape)
-    :. Proxy @'(device, 'D.Double, shape)
-    :. HNil
+standardFloatingPointDTypes :: _
+standardFloatingPointDTypes = Proxy @ 'D.Float :. Proxy @ 'D.Double :. HNil
 
-allDTypes :: forall device shape . _
-allDTypes = withHalf @device @shape $ almostAllDTypes @device @shape
+allDTypes :: _
+allDTypes = withHalf almostAllDTypes
 
-withHalf :: forall device shape . _ -> _
-withHalf dtypes = Proxy @'(device, 'D.Half, shape) :. dtypes
+withHalf :: _ -> _
+withHalf dtypes = Proxy @ 'D.Half :. dtypes
 
-almostAllDTypes :: forall device shape . _
-almostAllDTypes = withBool @device @shape $ standardDTypes @device @shape
+almostAllDTypes :: _
+almostAllDTypes = withBool standardDTypes
 
-withBool :: forall device shape . _ -> _
-withBool dtypes = Proxy @'(device, 'D.Bool, shape) :. dtypes
+withBool :: _ -> _
+withBool dtypes = Proxy @ 'D.Bool :. dtypes
 
-standardDTypes :: forall device shape . _
+standardDTypes :: _
 standardDTypes =
-  Proxy @'(device, 'D.UInt8, shape)
-    :. Proxy @'(device, 'D.Int8, shape)
-    :. Proxy @'(device, 'D.Int16, shape)
-    :. Proxy @'(device, 'D.Int32, shape)
-    :. Proxy @'(device, 'D.Int64, shape)
-    :. standardFloatingPointDTypes @device @shape
+  Proxy @ 'D.UInt8
+    :. Proxy @ 'D.Int8
+    :. Proxy @ 'D.Int16
+    :. Proxy @ 'D.Int32
+    :. Proxy @ 'D.Int64
+    :. standardFloatingPointDTypes
+
+justCPU :: _
+justCPU = Proxy @'( 'D.CPU, 0) :. HNil
+
+justCUDA :: forall deviceIndex . _
+justCUDA = Proxy @'( 'D.CUDA, deviceIndex) :. HNil
 
 spec :: Spec
 spec = return ()

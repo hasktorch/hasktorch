@@ -48,7 +48,7 @@ data SimpleFactoriesSpec = ZerosSpec | OnesSpec | RandSpec | RandnSpec
 instance (TensorOptions shape dtype device)
   => Apply
        SimpleFactoriesSpec
-       (Proxy '(device, dtype, shape))
+       (Proxy device, (Proxy dtype, Proxy shape))
        (() -> IO ())
  where
   apply ZerosSpec _ _ = do
@@ -66,11 +66,12 @@ instance (TensorOptions shape dtype device)
 
 spec :: Spec
 spec = do
+  let standardShapes = Proxy @'[2, 3] :. HNil
   describe "simple factories" $ do
-    it "ones" (hfoldrM @IO ZerosSpec () (allDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "zeros" (hfoldrM @IO OnesSpec () (allDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "rand" (hfoldrM @IO RandSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
-    it "randn" (hfoldrM @IO RandnSpec () (standardFloatingPointDTypes @'( 'D.CPU, 0) @'[2, 3]))
+    it "ones"  (hfoldrM @IO ZerosSpec () (hCartesianProduct3 justCPU allDTypes                   standardShapes))
+    it "zeros" (hfoldrM @IO OnesSpec  () (hCartesianProduct3 justCPU allDTypes                   standardShapes))
+    it "rand"  (hfoldrM @IO RandSpec  () (hCartesianProduct3 justCPU standardFloatingPointDTypes standardShapes))
+    it "randn" (hfoldrM @IO RandnSpec () (hCartesianProduct3 justCPU standardFloatingPointDTypes standardShapes))
   describe "advanced factories" $ do
     it "linspace" $ do
       let t = linspace @3 @'( 'D.CPU, 0) (1 :: Int) (3 :: Int)
