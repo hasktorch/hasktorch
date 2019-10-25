@@ -39,6 +39,7 @@ import qualified Torch.Functions               as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
+import           Torch.Typed.Aux
 import           Torch.Typed.Factories
 import           Torch.Typed.Native
 import           Torch.Typed.Tensor
@@ -52,6 +53,9 @@ instance ( TensorOptions shape   dtype   device
          , device ~ device'
          , shape'' ~ Broadcast shape shape'
          , dtype'' ~ DTypePromotion dtype dtype'
+         , DTypeIsNotBool dtype,   DTypeIsNotHalf dtype
+         , DTypeIsNotBool dtype',  DTypeIsNotHalf dtype'
+         , DTypeIsNotBool dtype'', DTypeIsNotHalf dtype''
          )
   => Apply
        BinarySpec
@@ -82,6 +86,7 @@ instance ( TensorOptions shape   dtype  device
          , device ~ device'
          , dtype ~ dtype'
          , shape'' ~ MatMul shape shape'
+         , DTypeIsNotBool dtype, DTypeIsNotHalf dtype
          )
   => Apply
        MatmulSpec
@@ -101,6 +106,8 @@ instance ( TensorOptions shape   dtype  device
          , TensorOptions shape'' D.Bool device'
          , device ~ device'
          , shape'' ~ Broadcast shape shape'
+         , DTypeIsNotBool dtype,  DTypeIsNotHalf dtype
+         , DTypeIsNotBool dtype', DTypeIsNotHalf dtype'
          )
   => Apply
        BinaryCmpSpec

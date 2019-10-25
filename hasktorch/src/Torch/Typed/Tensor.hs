@@ -422,6 +422,9 @@ add, sub, mul
   :: forall shape'' shape shape' dtype dtype' dtype'' device
    . ( dtype'' ~ DTypePromotion dtype dtype'
      , shape'' ~ Broadcast shape shape'
+     , DTypeIsNotBool dtype,   DTypeIsNotHalf dtype
+     , DTypeIsNotBool dtype',  DTypeIsNotHalf dtype'
+     , DTypeIsNotBool dtype'', DTypeIsNotHalf dtype''
      )
   => Tensor device dtype shape
   -> Tensor device dtype' shape'
@@ -430,9 +433,12 @@ add a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
 sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
 mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
 
-gt, lt, ge, le, eq, ne
+gt, lt, ge, le, eq, ne, (>.), (<.), (>=.), (<=.), (==.), (/=.)
   :: forall shape'' shape shape' dtype dtype' device
-   . (shape'' ~ Broadcast shape shape')
+   . ( shape'' ~ Broadcast shape shape'
+     , DTypeIsNotBool dtype,  DTypeIsNotHalf dtype
+     , DTypeIsNotBool dtype', DTypeIsNotHalf dtype'
+     )
   => Tensor device dtype   shape
   -> Tensor device dtype'  shape'
   -> Tensor device 'D.Bool shape''
@@ -442,7 +448,6 @@ ge a b = UnsafeMkTensor $ D.ge (toDynamic a) (toDynamic b)
 le a b = UnsafeMkTensor $ D.le (toDynamic a) (toDynamic b)
 eq a b = UnsafeMkTensor $ D.eq (toDynamic a) (toDynamic b)
 ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
-
 (>.) = gt
 (<.) = lt
 (>=.) = ge
@@ -470,7 +475,9 @@ type MatMul shape shape' = CheckMatMul shape shape' (ComputeMatMul (Reverse shap
 -- See https://pytorch.org/docs/stable/torch.html#torch.matmul.
 matmul
   :: forall shape'' shape shape' dtype device
-   . (shape'' ~ MatMul shape shape')
+   . ( shape'' ~ MatMul shape shape'
+     , DTypeIsNotBool dtype, DTypeIsNotHalf dtype
+     )
   => Tensor device dtype shape
   -> Tensor device dtype shape'
   -> Tensor device dtype shape''
