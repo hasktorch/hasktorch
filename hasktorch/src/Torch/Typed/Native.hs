@@ -445,15 +445,32 @@ solve
   => Tensor dtype m_k -> Tensor dtype m_m -> (Tensor dtype m_k,Tensor dtype m_m)
 solve b a = unsafePerformIO $ (cast2 ATen.solve_tt) b a
 
--- cholesky_inverse :: Tensor dtype shape -> Tri -> Tensor dtype shape
--- cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
---   where boolUpper = isUpper upper
+-- | cholesky_inverse
+-- >>> dtype &&& shape $ cholesky_inverse (ones :: Tensor 'D.Float '[3,3])
+-- (Float,[3,3])
+cholesky_inverse :: Tensor dtype shape -> Tri -> Tensor dtype (Square shape)
+cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
+  where boolUpper = isUpper upper
 
--- geqrf :: Tensor dtype shape -> (Tensor dtype shape, Tensor dtype shape)
--- geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
+-- | geqrf
+-- >>> (a,b) = geqrf (ones :: Tensor 'D.Float '[3,4])
+-- >>> dtype &&& shape $ a
+-- (Float,[3,4])
+-- >>> dtype &&& shape $ b
+-- (Float,[3])
+-- >>> (a,b) = geqrf (ones :: Tensor 'D.Float '[4,3])
+-- >>> dtype &&& shape $ a
+-- (Float,[4,3])
+-- >>> dtype &&& shape $ b
+-- (Float,[3])
+geqrf :: Tensor dtype '[n,m] -> (Tensor dtype '[n,m], Tensor dtype '[Min n m])
+geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
 
--- orgqr :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
--- orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
+-- | orgqr
+-- >>> dtype &&& shape $ geqrf (ones :: Tensor 'D.Float '[3,4]) (ones :: Tensor 'D.Float '[5])
+-- (Float,[3,4])
+orgqr :: Tensor dtype '[n,m] -> Tensor dtype shape -> Tensor dtype '[n,m]
+orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
 
 -- | sign
 -- >>> dtype &&& shape $ sign (ones :: Tensor 'D.Float '[3,2])
@@ -733,8 +750,11 @@ addr _input _vec1 _vec2 _beta _alpha = unsafePerformIO $ (cast5 ATen.addr_tttss)
 -- affine_grid_generator :: Tensor dtype shape -> [Int] -> Tensor dtype shape
 -- affine_grid_generator _theta _size = unsafePerformIO $ (cast2 ATen.affine_grid_generator_tl) _theta _size
 
--- allclose :: Tensor dtype shape -> Tensor dtype shape -> Double -> Double -> Bool -> Bool
--- allclose _input _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.allclose_ttddb) _input _other _rtol _atol _equal_nan
+-- | allclose
+-- >>> dtype &&& shape $ allclose (ones :: Tensor 'D.Float '[3,3]) (ones :: Tensor 'D.Float '[3,3]) 0.1 0.1 True
+-- True
+allclose :: Tensor dtype shape -> Tensor dtype shape -> Double -> Double -> Bool -> Bool
+allclose _input _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.allclose_ttddb) _input _other _rtol _atol _equal_nan
 
 -- | argmax
 -- See https://pytorch.org/docs/stable/torch.html#torch.argmax.
@@ -825,8 +845,11 @@ baddbmm _input _batch1 _batch2 _beta _alpha = unsafePerformIO $ (cast5 ATen.badd
 -- bincount :: Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
 -- bincount _input _weights _minlength = unsafePerformIO $ (cast3 ATen.bincount_ttl) _input _weights _minlength
 
--- bitwise_not :: Tensor dtype shape -> Tensor dtype shape
--- bitwise_not _input = unsafePerformIO $ (cast1 ATen.bitwise_not_t) _input
+-- | bitwise_not
+-- >>> dtype &&& shape $ bitwise_not (ones :: Tensor 'D.Bool [3,3])
+-- (Bool,[33])
+bitwise_not :: Tensor 'D.Bool shape -> Tensor 'D.Bool shape
+bitwise_not _input = unsafePerformIO $ (cast1 ATen.bitwise_not_t) _input
 
 -- | batched matrix multiplication
 -- >>> dtype &&& shape $ bmm (ones @'D.Float @'[5,3,2]) (zeros @'D.Float @'[5,2,4])
@@ -1101,6 +1124,14 @@ cudnn_is_acceptable _input = unsafePerformIO $ (cast1 ATen.cudnn_is_acceptable_t
 -- constant_pad_nd :: Tensor dtype shape -> [Int] -> Float -> Tensor dtype shape
 -- constant_pad_nd _input _pad _value = unsafePerformIO $ (cast3 ATen.constant_pad_nd_tls) _input _pad _value
 
+constantPadNd1d
+  :: forall (pad :: (Nat, Nat)) n dtype
+   . ( All KnownNat [ Fst pad, Snd pad, n])
+  => Tensor dtype '[n]
+  -> Float
+  -> Tensor dtype '[n + Fst pad + Snd pad]
+constantPadNd1d _input _value = unsafePerformIO $ (cast3 ATen.constant_pad_nd_tls) _input [natValI @(Fst pad), natValI @(Snd pad)] _value
+
 -- convolution :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor dtype shape
 -- convolution _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups = unsafePerformIO $ (cast9 ATen.convolution_tttlllbll) _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups
 
@@ -1241,8 +1272,21 @@ conv3d weight bias input = unsafePerformIO $ cast7
   ([1, 1, 1] :: [Int])
   (1 :: Int)
 
--- conv_tbc :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Tensor dtype shape
--- conv_tbc _input _weight _bias _pad = unsafePerformIO $ (cast4 ATen.conv_tbc_tttl) _input _weight _bias _pad
+-- | convTbc
+-- >>> dtype &&& shape $ convTbc @1 (ones' [3,3,4]) (ones' [1,4,5]) (ones'[5])
+-- (Float,[5,3,5])
+-- >>> dtype &&& shape $ convTbc @0 (ones' [2,3,4]) (ones' [1,4,5]) (ones'[5])
+-- (Float,[3,3,5])
+-- >>> dtype &&& shape $ convTbc @0 (ones' [2,3,4]) (ones' [2,4,5]) (ones'[5])
+-- (Float,[2,3,5])
+convTbc
+  :: paddding timeSize batchSize kernelSize inputChannels outputChannels
+   . _
+  => Tensor dtype '[timeSize,batchSize,inputChannels]
+  -> Tensor dtype '[kernelSize,inputChannels,outputChannels]
+  -> Tensor dtype '[outputChannels]
+  -> Tensor dtype '[timeSize+padding*2+1-kernelSize,batchSize,outputChannels]
+convTbc _input _weight _bias  = unsafePerformIO $ (cast4 ATen.conv_tbc_tttl) _input _weight _bias (natValI @pad)
 
 -- conv_transpose1d :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Int -> Int -> Int -> Int -> Int -> Tensor dtype shape
 -- conv_transpose1d _input _weight _bias _stride _padding _output_padding _groups _dilation = unsafePerformIO $ (cast8 ATen.conv_transpose1d_tttlllll) _input _weight _bias _stride _padding _output_padding _groups _dilation
