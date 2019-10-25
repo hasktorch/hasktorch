@@ -60,15 +60,20 @@ import qualified Torch.Functions               as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
+import           Torch.Typed.Aux
 import           Torch.Typed.Factories
 import           Torch.Typed.Native
 import           Torch.Typed.Tensor
 import           Torch.Typed.AuxSpec
 
-data UnarySpec =
+data UnaryAllDTypesSpec =
+    SignSpec
+
+data UnaryStandardDTypesSpec =
     AbsSpec
-  | SignSpec
-  | FracSpec
+
+data UnaryFloatingPointDTypesSpec =
+    FracSpec
   | CeilSpec
   | FloorSpec
   | RoundSpec
@@ -77,42 +82,62 @@ data UnarySpec =
   | ErfcSpec
   | ErfinvSpec
   | ExpSpec
-  | Expm1Spec 
-  | LogSpec 
-  | Log1pSpec 
-  | Log2Spec 
+  | Expm1Spec
+  | LogSpec
+  | Log1pSpec
+  | Log2Spec
   | Log10Spec
-  | LgammaSpec 
-  | DigammaSpec 
-  | ReluSpec 
-  | SeluSpec 
-  | GeluSpec 
-  | SigmoidSpec 
-  | SinSpec 
-  | SinhSpec 
-  | CosSpec 
-  | AcosSpec 
-  | TanSpec 
+  | LgammaSpec
+  | DigammaSpec
+  | ReluSpec
+  | SeluSpec
+  | GeluSpec
+  | SigmoidSpec
+  | SinSpec
+  | SinhSpec
+  | CosSpec
+  | AcosSpec
+  | TanSpec
   | TanhSpec
-  | SqrtSpec 
+  | SqrtSpec
   | RsqrtSpec
   | OnesLikeSpec
   | ZerosLikeSpec
   | RandLikeSpec
   | RandnLikeSpec
 
-instance (TensorOptions shape dtype device)
+instance ( TensorOptions shape dtype device
+         , DTypeIsNotHalf dtype
+         , DTypeIsNotBool dtype
+         )
   => Apply
-       UnarySpec
+       UnaryStandardDTypesSpec
        (Proxy '(device, dtype, shape))
        (() -> IO ())
  where
   apply AbsSpec _ _ = do
     let t = abs ones :: Tensor device dtype shape
     checkDynamicTensorAttributes t
+
+instance (TensorOptions shape dtype device)
+  => Apply
+       UnaryAllDTypesSpec
+       (Proxy '(device, dtype, shape))
+       (() -> IO ())
+ where
   apply SignSpec _ _ = do
     let t = sign ones :: Tensor device dtype shape
     checkDynamicTensorAttributes t
+
+instance ( TensorOptions shape dtype device
+         , IsFloatingPoint dtype
+         , DTypeIsNotHalf dtype
+         )
+  => Apply
+       UnaryFloatingPointDTypesSpec
+       (Proxy '(device, dtype, shape))
+       (() -> IO ())
+ where
   apply FracSpec _ _ = do
     let t = frac ones :: Tensor device dtype shape
     checkDynamicTensorAttributes t

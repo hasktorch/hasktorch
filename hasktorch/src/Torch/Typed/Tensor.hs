@@ -120,7 +120,7 @@ type family ComputeHaskellType (dtype :: D.DType) :: Type where
   ComputeHaskellType D.Float = Float
   ComputeHaskellType D.Double = Double
   ComputeHaskellType dtype = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype)
-  
+
 type family ComputeItemType (ty :: Type) (shape :: [Nat]) :: Type where
   ComputeItemType _ '[] = TypeError (Text "Scalars are not supported")
   ComputeItemType ty (_ ': '[]) = ty
@@ -138,7 +138,7 @@ instance ( D.TensorLike [ComputeItemType (ComputeHaskellType dtype) shape]
     else Nothing
   toList Nothing = []
   toList (Just t) = D.asValue . toDynamic $ t
- 
+
 instance Num (Tensor device dtype shape) where
   (+) a b = UnsafeMkTensor $ toDynamic a + toDynamic b
   (-) a b = UnsafeMkTensor $ toDynamic a - toDynamic b
