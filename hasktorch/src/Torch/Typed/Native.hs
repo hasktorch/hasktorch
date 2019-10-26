@@ -2352,6 +2352,73 @@ lstm_cell _input (_cc, _hc) _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 A
   where 
     _hx = [_cc, _hc]
 
+-- The order of the params used by pytorch is:
+-- for each layer: 'weight_ih_l{}{}', 'weight_hh_l{}{}', 'bias_ih_l{}{}', 'bias_hh_l{}
+-- https://pytorch.org/docs/stable/_modules/torch/nn/modules/rnn.html#LSTM
+
+
+-- | lstm
+-- >>> let input = (ones :: Tensor 'D.Float '[3,16,10])
+-- >>> let (cc, hc) = (zeros, zeros) :: (Tensor 'D.Float '[2,16,10*2], Tensor 'D.Float '[2,16,10*2])
+-- >>> let w = ones :: Tensor 'D.Float '[10,10]
+-- >>> let b = ones :: Tensor 'D.Float '[10,10]
+-- >>> let ws = [(w,w), (w,w)]
+-- >>> let bs = [(b,b), (b,b)]
+-- >>> let output (a,_,_) = a
+-- >>> dtype &&& shape $ output $ lstm input (cc, hc) ws bs 0 False
+-- (Float,[3,16,20])
+
+lstm
+  :: forall numLayers numDirections dtype seqLen batchSize inputDim hiddenSize
+   . (KnownNat numLayers, KnownNat numDirections, KnownNat hiddenSize)
+  => Tensor dtype '[seqLen, batchSize, inputDim]
+  -> ( Tensor dtype '[numLayers, batchSize, hiddenSize * numDirections]
+     , Tensor dtype '[numLayers, batchSize, hiddenSize * numDirections]
+     )
+  -> [ ( Tensor dtype '[inputDim, hiddenSize]
+       , Tensor dtype '[hiddenSize, hiddenSize]
+       )
+     ]
+  -> [ ( Tensor dtype '[inputDim, hiddenSize]
+       , Tensor dtype '[hiddenSize, hiddenSize]
+       )
+     ]
+  -> Double
+  -> Bool
+  -> ( Tensor
+         dtype
+         '[seqLen, batchSize, hiddenSize * numDirections]
+     , Tensor
+         dtype
+         '[numLayers * numDirections, batchSize, hiddenSize]
+     , Tensor
+         dtype
+         '[numLayers * numDirections, batchSize, hiddenSize]
+     )
+lstm _input (_cc, _hc) _ws _bs _dropout _train =
+  unsafePerformIO $ (cast9 ATen.lstm_tllbldbbb) _input
+                                                _hx
+                                                _params
+                                                True -- _has_biases
+                                                _num_layers
+                                                _dropout
+                                                _train
+                                                _bidirectional
+                                                False -- _batch_first
+ where
+  _hx = [_cc, _hc]
+  (_num_layers :: I.Int64) =
+    fromIntegral $ natVal (undefined :: Proxy numLayers)
+  _bidirectional = case natVal (undefined :: Proxy numDirections) of
+    1 -> False
+    2 -> True
+    _ -> error "lstm: numDirections must be 1 or 2!"
+  _params = concat $ zipWith
+    (\(wi2h, wh2h) (bi2h, bh2h) ->
+      [toDynamic wi2h, toDynamic wh2h, toDynamic bi2h, toDynamic bh2h]
+    )
+    _ws
+    _bs
 
 -- gru_cell :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 -- gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
