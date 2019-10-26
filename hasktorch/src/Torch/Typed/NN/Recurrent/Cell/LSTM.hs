@@ -69,9 +69,9 @@ forwardStep
     -> Tensor d '[b, i] -- ^ The input
     -> (Tensor d '[b, h], Tensor d '[b, h]) -- ^ The current (Hidden, Cell) state
     -> (Tensor d '[b, h], Tensor d '[b, h]) -- ^ The subequent (Hidden, Cell) state
-forwardStep LSTMCell {..} input (hs, cs) = lstm_cell
+forwardStep LSTMCell {..} input hx = lstm_cell
     input
-    [hs, cs]
+    hx
     (toDependent lstmCell_w_ih)
     (toDependent lstmCell_w_hh)
     (toDependent lstmCell_b_ih)
