@@ -772,7 +772,7 @@ all'
   :: forall dim keepOrDropDim shape' shape device
    . ( KnownNat dim
      , KnownKeepOrDropDim keepOrDropDim
-     , shape' ~ (ConditionalDropDimension shape dim keepOrDropDim)
+     , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
      )
   => Tensor device 'D.Bool shape -- ^ input
   -> Tensor device 'D.Bool shape' -- ^ output
@@ -795,10 +795,13 @@ all' input = unsafePerformIO
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (any' @0 @KeepDim t :: Tensor 'D.Bool '[1, 2])
 -- (Bool,([1,2],[[True,True]]))
 any'
-  :: forall dim keepOrDropDim shape device
-   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
+  :: forall dim keepOrDropDim shape' shape device
+   . ( KnownNat dim
+     , KnownKeepOrDropDim keepOrDropDim
+     , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+     )
   => Tensor device 'D.Bool shape -- ^ input
-  -> Tensor device 'D.Bool (ConditionalDropDimension shape dim keepOrDropDim) -- ^ output
+  -> Tensor device 'D.Bool shape' -- ^ output
 any' input = unsafePerformIO $ cast3 ATen.any_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
 -- | dropout
