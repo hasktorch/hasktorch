@@ -17,6 +17,7 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.NativeSpec
   ( Torch.Typed.NativeSpec.spec
@@ -263,15 +264,13 @@ instance ( TensorOptions shape dtype device
 
 data ToDTypeSpec = ToDTypeSpec
 
-instance ( TensorOptions shape  dtype  device
-         , TensorOptions shape' dtype' device'
-         , shape' ~ shape
-         , device' ~ device
+instance ( TensorOptions shape dtype  device
+         , TensorOptions shape dtype' device
          , KnownDType dtype'
          )
   => Apply
        ToDTypeSpec
-       ((Proxy device, (Proxy dtype, Proxy shape)), (Proxy device', (Proxy dtype', Proxy shape')))
+       (Proxy device, ((Proxy dtype, Proxy dtype'), Proxy shape))
        (() -> IO ())
  where
   apply ToDTypeSpec _ _ = do
@@ -324,6 +323,7 @@ instance ( TensorOptions shape dtype device
          , KnownDType dtype
          , KnownDevice device
          , DTypeIsNotHalf dtype
+         , AllDimsPositive shape
          )
   => Apply
        AggregationSpec
@@ -455,10 +455,150 @@ instance ( TensorOptions shape   dtype device
       )
       ((,) <$> [True, False] <*> [D.Upper, D.Lower])
 
+data EigSpec = EigSpec
+
+instance ( TensorOptions '[n, n] dtype device
+         , TensorOptions shape   dtype device
+         , KnownNat n
+         , KnownEigenVectors eigenvectors
+         , shape ~ ConditionalEigenVectors eigenvectors n
+         , KnownDType dtype
+         , KnownDevice device
+         , IsFloatingPoint dtype
+         , DTypeIsNotHalf dtype
+         )
+  => Apply
+       EigSpec
+       (Proxy eigenvectors, (Proxy device, (Proxy dtype, Proxy n)))
+       (() -> IO ())
+ where
+  apply EigSpec _ _ = do
+    t <- rand @'[n, n] @dtype @device
+    let (t', t'') = eig @eigenvectors @n @shape @dtype @device t
+    checkDynamicTensorAttributes t'
+    checkDynamicTensorAttributes t''
+
+data CholeskySpec = CholeskySpec
+
+instance ( TensorOptions shape  dtype device
+         , TensorOptions shape' dtype device
+         , shape' ~ Square shape
+         , IsFloatingPoint dtype
+         , DTypeIsNotHalf dtype
+         )
+  => Apply
+       CholeskySpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
+  apply CholeskySpec _ _ = do
+    t <- rand @shape @dtype @device
+    foldMap
+      (\tri -> do
+        let t' = cholesky tri t
+        checkDynamicTensorAttributes t
+      )
+      [D.Upper, D.Lower]
+
+data SolveSpec = SolveSpec
+
+instance ( TensorOptions m_k dtype device
+         , TensorOptions m_m dtype device
+         , Square m_m ~ m_m
+         , FstSquareDim m_m ~ FstSquareDim m_k
+         , 1 <= FstSquareDim m_m
+         , IsFloatingPoint dtype
+         , DTypeIsNotHalf dtype
+         )
+  => Apply
+       SolveSpec
+       (Proxy device, (Proxy dtype, (Proxy m_k, Proxy m_m)))
+       (() -> IO ())
+ where
+  apply SolveSpec _ _ = do
+    b <- rand @m_k @dtype @device
+    a <- rand @m_m
+    let (c, lu) = solve b a
+    checkDynamicTensorAttributes c
+    checkDynamicTensorAttributes lu
+
+data TransposeSpec = TransposeSpec
+
+instance ( TensorOptions shape dtype device
+         , TensorOptions shape' dtype device
+         , shape' ~ Transpose shape n m
+         , KnownNat n, KnownNat m
+         )
+  => Apply
+       TransposeSpec
+       ((Proxy n, Proxy m), (Proxy device, (Proxy dtype, Proxy shape)))
+       (() -> IO ())
+ where
+  apply TransposeSpec _ _ = do
+    let t = ones @shape @dtype @device
+        t' = transpose @n @m t
+    checkDynamicTensorAttributes t'
+
+data Transpose2DSpec = Transpose2DSpec
+
+instance ( TensorOptions '[i, j] dtype device
+         , TensorOptions '[j, i] dtype device
+         )
+  => Apply
+       Transpose2DSpec
+       (Proxy device, (Proxy dtype, Proxy '[i, j]))
+       (() -> IO ())
+ where
+  apply Transpose2DSpec _ _ = do
+    let t = ones @'[i, j] @dtype @device
+        t' = transpose2D t
+    checkDynamicTensorAttributes t'
+
+data AnyAllSpec = AnySpec | AllSpec
+
+instance ( TensorOptions shape 'D.Bool device
+         , KnownDevice device
+         )
+  => Apply
+       AnyAllSpec
+       (Proxy device, Proxy shape)
+       (() -> IO ())
+ where
+  apply AnySpec _ _ = do
+    let t = ones @shape @'D.Bool @device
+        t' = any t
+    checkDynamicTensorAttributes t'
+  apply AllSpec _ _ = do
+    let t = ones @shape @'D.Bool @device
+        t' = all t
+    checkDynamicTensorAttributes t'
+
+data AnyPrimeAllPrimeSpec = AnyPrimeSpec | AllPrimeSpec
+
+instance ( TensorOptions shape  'D.Bool device
+         , TensorOptions shape' 'D.Bool device
+         , KnownNat dim
+         , KnownKeepOrDropDim keepOrDropDim
+         , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
+         )
+  => Apply
+       AnyPrimeAllPrimeSpec
+       ((Proxy dim, Proxy keepOrDropDim), (Proxy device, Proxy shape))
+       (() -> IO ())
+ where
+  apply AnyPrimeSpec _ _ = do
+    let t = ones @shape @'D.Bool @device
+        t' = any' @dim @keepOrDropDim t
+    checkDynamicTensorAttributes t'
+  apply AllPrimeSpec _ _ = do
+    let t = ones @shape @'D.Bool @device
+        t' = all' @dim @keepOrDropDim t
+    checkDynamicTensorAttributes t'
+
 spec :: Spec
 spec = do
-  let standardShapes               = Proxy @'[2, 3] :. HNil
-      squareShapes                 = Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil
+  let standardShapes               = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
+      squareShapes                 = Proxy @'[0, 0] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[0, 0, 0] :. Proxy @'[0, 1, 1] :. Proxy @'[1, 0, 0] :. Proxy @'[3, 2, 2] :. HNil
       reductions                   = Proxy @D.ReduceNone :. Proxy @D.ReduceMean :. Proxy @D.ReduceSum :. HNil
       standardDTypes'              = hCartesianProduct3 justCPU standardDTypes              standardShapes
       almostAllDTypes'             = hCartesianProduct3 justCPU almostAllDTypes             standardShapes
@@ -508,26 +648,63 @@ spec = do
     it "randLike"  (hfoldrM @IO RandLikeSpec  () standardFloatingPointDTypes')
     it "randnLike" (hfoldrM @IO RandnLikeSpec () standardFloatingPointDTypes')
 
-    it "toDType" (hfoldrM @IO ToDTypeSpec () (hCartesianProduct allDTypes' allDTypes'))
+    it "toDType" (hfoldrM @IO ToDTypeSpec () (hCartesianProduct3 justCPU (hCartesianProduct allDTypes allDTypes) standardShapes))
 
     it "sumAll" (hfoldrM @IO SumAllSpec () almostAllDTypes')
-    it "sumDim" (hfoldrM @IO SumDimSpec () (hCartesianProduct (Proxy @1 :. HNil) almostAllDTypes'))
+    let sumDimDims = Proxy @0 :. Proxy @1 :. HNil
+        sumDimShapes = Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
+        sumDimDTypes = hCartesianProduct3 justCPU almostAllDTypes sumDimShapes
+        sumDimSpec = hCartesianProduct sumDimDims sumDimDTypes
+    it "sumDim" (hfoldrM @IO SumDimSpec () sumDimSpec)
 
-    it "min"    (hfoldrM @IO MinSpec    () almostAllDTypes')
-    it "max"    (hfoldrM @IO MaxSpec    () almostAllDTypes')
-    it "median" (hfoldrM @IO MedianSpec () almostAllDTypes')
+    let aggregationShapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
+    it "min"    (hfoldrM @IO MinSpec    () (hCartesianProduct3 justCPU almostAllDTypes aggregationShapes))
+    it "max"    (hfoldrM @IO MaxSpec    () (hCartesianProduct3 justCPU almostAllDTypes aggregationShapes))
+    it "median" (hfoldrM @IO MedianSpec () (hCartesianProduct3 justCPU almostAllDTypes aggregationShapes))
 
     it "squeezeAll" (hfoldrM @IO SqueezeAllSpec () allDTypes')
 
     it "binaryCrossEntropy" (hfoldrM @IO BinaryCrossEntropySpec () (hCartesianProduct reductions standardFloatingPointDTypes'))
     it "mseLoss"            (hfoldrM @IO MSELossSpec            () (hCartesianProduct reductions standardFloatingPointDTypes'))
 
-    it "softmax"    (hfoldrM @IO SoftmaxSpec    () (hCartesianProduct (Proxy @0 :. Proxy @1 :. HNil) standardFloatingPointDTypes'))
-    it "logSoftmax" (hfoldrM @IO LogSoftmaxSpec () (hCartesianProduct (Proxy @0 :. Proxy @1 :. HNil) standardFloatingPointDTypes'))
+    let softmaxDims = Proxy @0 :. Proxy @1 :. HNil
+        softmaxShapes = Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
+        softmaxDTypes = hCartesianProduct3 justCPU standardFloatingPointDTypes softmaxShapes
+        softmaxSpec = hCartesianProduct softmaxDims softmaxDTypes
+    it "softmax"    (hfoldrM @IO SoftmaxSpec    () softmaxSpec)
+    it "logSoftmax" (hfoldrM @IO LogSoftmaxSpec () softmaxSpec)
 
     it "inverse" (hfoldrM @IO InverseSpec () (hCartesianProduct3 justCPU standardFloatingPointDTypes squareShapes))
+    it "symeig"  (hfoldrM @IO SymeigSpec  () (hCartesianProduct3 justCPU standardFloatingPointDTypes squareShapes))
+    it "eig"     (hfoldrM @IO EigSpec     () (hCartesianProduct
+                                               (Proxy @'EnableEigenVectors :. Proxy @'DisableEigenVectors :. HNil)
+                                               (hCartesianProduct3
+                                                 justCPU
+                                                 standardFloatingPointDTypes
+                                                 (Proxy @0 :. Proxy @2 :. Proxy @10 :. HNil))))
+    it "cholesky" (hfoldrM @IO CholeskySpec () (hCartesianProduct3 justCPU standardFloatingPointDTypes squareShapes))
+    let solveShapes = hZipList
+                        (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
+                        (Proxy @'[1, 1] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
+    it "solve" (hfoldrM @IO SolveSpec () (hCartesianProduct3 justCPU standardFloatingPointDTypes solveShapes))
 
-    it "symeig" (hfoldrM @IO SymeigSpec () (hCartesianProduct3 justCPU standardFloatingPointDTypes squareShapes))
+    let transposeDims = hZipList
+                          (Proxy @0 :. Proxy @0 :. Proxy @1 :. HNil)
+                          (Proxy @0 :. Proxy @1 :. Proxy @0 :. HNil)
+        transposeShapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. Proxy @'[0, 1, 1]  :. Proxy @'[1, 0, 1] :. HNil
+    it "transpose" (hfoldrM @IO TransposeSpec () (hCartesianProduct transposeDims (hCartesianProduct3 justCPU allDTypes transposeShapes)))
+    it "transpose2d" (hfoldrM @IO Transpose2DSpec () (hCartesianProduct3 justCPU allDTypes (Proxy @'[2, 3] :. HNil)))
+
+    it "all" (hfoldrM @IO AllSpec () (hCartesianProduct justCPU standardShapes))
+    it "any" (hfoldrM @IO AnySpec () (hCartesianProduct justCPU standardShapes))
+    let anyPrimeAllPrimeDims = Proxy @0 :. Proxy @1 :. HNil
+        keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
+        anyPrimeAllPrimeShapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. Proxy @'[0, 1, 1]  :. Proxy @'[1, 0, 1] :. HNil
+        anyPrimeAllPrimeSpec = hCartesianProduct
+                                 (hCartesianProduct anyPrimeAllPrimeDims keepOrDropDims)
+                                 (hCartesianProduct justCPU anyPrimeAllPrimeShapes)
+    it "all'" (hfoldrM @IO AllPrimeSpec () anyPrimeAllPrimeSpec)
+    it "any'" (hfoldrM @IO AnyPrimeSpec () anyPrimeAllPrimeSpec)
 
     it "maxPool2d" $ do
       let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5])

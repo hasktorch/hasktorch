@@ -158,12 +158,19 @@ floor
   -> Tensor device dtype shape -- ^ output
 floor input = unsafePerformIO $ cast1 ATen.floor_t input
 
+-- TODO: better error messages, "Couldn't match type ‘'False’ with ‘'True’" isn't great
+type family AllDimsPositive (shape :: [Nat]) :: Constraint where
+  AllDimsPositive '[] = ()
+  AllDimsPositive (x ': xs) = (1 <= x, AllDimsPositive xs)
+
 -- | min
 -- >>> dtype &&& shape $ min (ones :: Tensor 'D.Float '[2,2])
 -- (Float,[])
 min
   :: forall shape dtype device
-   . (DTypeIsNotHalf dtype)
+   . ( DTypeIsNotHalf dtype
+     , AllDimsPositive shape
+     )
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype '[] -- ^ output
 min input = unsafePerformIO $ cast1 ATen.min_t input
@@ -173,7 +180,9 @@ min input = unsafePerformIO $ cast1 ATen.min_t input
 -- (Float,[])
 max
   :: forall shape dtype device
-   . (DTypeIsNotHalf dtype)
+  . ( DTypeIsNotHalf dtype
+    , AllDimsPositive shape
+    )
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype '[] -- ^ output
 max input = unsafePerformIO $ cast1 ATen.max_t input
@@ -183,7 +192,9 @@ max input = unsafePerformIO $ cast1 ATen.max_t input
 -- (Float,[])
 median
   :: forall shape dtype device
-   . (DTypeIsNotHalf dtype)
+  . ( DTypeIsNotHalf dtype
+    , AllDimsPositive shape
+    )
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype '[] -- ^ output
 median input = unsafePerformIO $ cast1 ATen.median_t input
@@ -468,13 +479,13 @@ type family VectorOfSquare (shape :: [Nat]) :: [Nat] where
   VectorOfSquare (b:n:n:'[]) = '[b,n]
   VectorOfSquare _           = TypeError (Text "This shape must be square matrix or batch + square matrix.")
 
-type family FstDim (shape :: [Nat]) :: Nat where
-  FstDim (n:m:'[])   = n
-  FstDim (b:n:m:'[]) = n
-  FstDim _           = TypeError (Text "Can not get first dimention of matrix or batch + matrix.")
+type family FstSquareDim (shape :: [Nat]) :: Nat where
+  FstSquareDim (n:m:'[])   = n
+  FstSquareDim (b:n:m:'[]) = n
+  FstSquareDim _           = TypeError (Text "Can not get first dimention of matrix or batch + matrix.")
 
 -- | inverse
--- TODO: if rank < n for any tensors in the batch, then this will not work. we can't decide this statically, but we should prevent runtime errors. therefore, return Maybe
+-- TODO: if rank < n for any tensors in the batch, then this will not work. we can't decide this statically, but we should prevent runtime errors. therefore, return Maybe?
 -- >>> t <- randn :: IO (Tensor 'D.Float '[3,2,2])
 -- >>> dtype &&& shape $ inverse t
 -- (Float,[3,2,2])
@@ -533,11 +544,10 @@ instance KnownEigenVectors DisableEigenVectors where
   enableEigenVectors = False
 
 type family ConditionalEigenVectors (eigenvectors :: EigenVectors) (n:: Nat) :: [Nat] where
-  ConditionalEigenVectors EnableEigenVectors  n = '[n,n]
+  ConditionalEigenVectors EnableEigenVectors  n = '[n, n]
   ConditionalEigenVectors DisableEigenVectors _ = '[0]
 
 -- | eig
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> (eigenVals,eigenVecs) = eig @EnableEigenVectors (ones :: Tensor 'D.Float '[3,3])
 -- >>> dtype &&& shape $ eigenVals
 -- (Float,[3,2])
@@ -559,6 +569,7 @@ eig
    . ( KnownNat n
      , KnownEigenVectors eigenvectors
      , shape ~ ConditionalEigenVectors eigenvectors n
+     , IsFloatingPoint dtype, DTypeIsNotHalf dtype
      )
   => Tensor device dtype '[n, n] -- ^ input matrix
   -> ( Tensor device dtype '[n, 2] -- ^ eigenvalues
@@ -571,7 +582,6 @@ eig input =
 -- svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
 
 -- | cholesky
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> t <- rand :: IO (Tensor 'D.Float '[2,2])
 -- >>> c = cholesky (t `matmul` transpose2D t) Upper
 -- >>> dtype &&& shape $ c
@@ -579,10 +589,13 @@ eig input =
 -- >>> :t c
 -- c :: Tensor 'D.Float '[2, 2]
 cholesky
-  :: forall shape dtype device
-   . Tri -- ^ upper or lower triangular part of the matrix
+  :: forall shape shape' dtype device
+   . ( shape' ~ Square shape
+     , IsFloatingPoint dtype, DTypeIsNotHalf dtype
+     )
+  => Tri -- ^ upper or lower triangular part of the matrix
   -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype (Square shape) -- ^ output
+  -> Tensor device dtype shape' -- ^ output
 cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
   where boolUpper = isUpper upper
 
@@ -591,7 +604,6 @@ cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
 --   where boolUpper = isUpper upper
 
 -- | solve the system of linear equations represented by `a c = b` and return the LU decomposition of `a`
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> a <- rand :: IO (Tensor 'D.Float '[10,10])
 -- >>> b <- rand :: IO (Tensor 'D.Float '[10,3])
 -- >>> (c,lu) = solve b a
@@ -605,7 +617,11 @@ cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
 -- lu :: Tensor 'D.Float '[10, 10]
 solve
   :: forall m_k m_m dtype device
-   . (Square m_m ~ m_m, FstDim m_m ~ FstDim m_k)
+   . ( Square m_m ~ m_m
+     , FstSquareDim m_m ~ FstSquareDim m_k
+     , 1 <= FstSquareDim m_m
+     , IsFloatingPoint dtype, DTypeIsNotHalf dtype
+     )
   => Tensor device dtype m_k -- ^ b
   -> Tensor device dtype m_m -- ^ a 
   -> ( Tensor device dtype m_k -- ^ c
@@ -662,10 +678,12 @@ type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] wher
 -- >>> dtype &&& shape $ transpose @1 @2 (ones :: Tensor 'D.Float '[3,2,1])
 -- (Float,[3,1,2])
 transpose
-  :: forall n m shape dtype device
-   . (KnownNat n, KnownNat m)
+  :: forall n m shape shape' dtype device
+   . ( KnownNat n, KnownNat m
+     , shape' ~ Transpose shape n m
+     )
   => Tensor device dtype shape -- ^ input
-  -> Tensor device dtype (Transpose shape n m) -- ^ output
+  -> Tensor device dtype shape' -- ^ output
 transpose input =
   unsafePerformIO $ cast3 ATen.transpose_tll input (natValI @n) (natValI @m)
 
@@ -751,10 +769,13 @@ type family ConditionalDropDimension (shape :: [Nat]) (dim :: Nat) (keepOrDropDi
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Bool]]) $ (all' @0 @KeepDim t :: Tensor 'D.Bool '[1, 2])
 -- (Bool,([1,2],[[True,False]]))
 all'
-  :: forall dim keepOrDropDim shape device
-   . (KnownNat dim, KnownKeepOrDropDim keepOrDropDim)
+  :: forall dim keepOrDropDim shape' shape device
+   . ( KnownNat dim
+     , KnownKeepOrDropDim keepOrDropDim
+     , shape' ~ (ConditionalDropDimension shape dim keepOrDropDim)
+     )
   => Tensor device 'D.Bool shape -- ^ input
-  -> Tensor device 'D.Bool (ConditionalDropDimension shape dim keepOrDropDim) -- ^ output
+  -> Tensor device 'D.Bool shape' -- ^ output
 all' input = unsafePerformIO
   $ cast3 ATen.all_tlb input (natValI @dim) (keepOrDropDimVal @keepOrDropDim)
 
