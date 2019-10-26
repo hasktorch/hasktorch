@@ -2350,7 +2350,7 @@ lstm_cell :: Tensor dtype '[batchSize, inputDim]
   -> (Tensor dtype '[batchSize, hiddenSize],Tensor dtype '[batchSize, hiddenSize])
 lstm_cell _input (_cc, _hc) _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.lstm_cell_tltttt) _input _hx _w_ih _w_hh _b_ih _b_hh
   where 
-    _hx = [_cc, _hc]
+    _hx = [toDynamic _cc, toDynamic _hc]
 
 -- The order of the params used by pytorch is:
 -- for each layer: 'weight_ih_l{}{}', 'weight_hh_l{}{}', 'bias_ih_l{}{}', 'bias_hh_l{}
