@@ -474,7 +474,6 @@ type family FstDim (shape :: [Nat]) :: Nat where
   FstDim _           = TypeError (Text "Can not get first dimention of matrix or batch + matrix.")
 
 -- | inverse
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- TODO: if rank < n for any tensors in the batch, then this will not work. we can't decide this statically, but we should prevent runtime errors. therefore, return Maybe
 -- >>> t <- randn :: IO (Tensor 'D.Float '[3,2,2])
 -- >>> dtype &&& shape $ inverse t
@@ -483,13 +482,16 @@ type family FstDim (shape :: [Nat]) :: Nat where
 -- >>> dtype &&& shape $ inverse t
 -- (Float,[2,2])
 inverse
-  :: forall shape dtype device
-   . Tensor device dtype shape -- ^ inverse
-  -> Tensor device dtype (Square shape) -- ^ output
+  :: forall shape shape' dtype device
+   . ( shape' ~ Square shape
+     , IsFloatingPoint dtype, DTypeIsNotHalf dtype
+     )
+  => Tensor device dtype shape -- ^ inverse
+  -> Tensor device dtype shape' -- ^ output
 inverse input = unsafePerformIO $ cast1 ATen.inverse_t input
 
 -- | symeig
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+-- TODO: split this function into two, one that calculates the eigenvectors and another that does not?
 -- >>> (eigenVals,eigenVecs) = symeig (ones :: Tensor 'D.Float '[3,2,2]) True Upper
 -- >>> dtype &&& shape $ eigenVals
 -- (Float,[3,2])
@@ -505,12 +507,16 @@ inverse input = unsafePerformIO $ cast1 ATen.inverse_t input
 -- >>> dtype &&& shape $ eigenVecs
 -- (Float,[3,2,2])
 symeig
-  :: forall shape dtype device
-   . Bool -- ^ whether or not to calculate eigenvectors
+  :: forall shape shape' shape'' dtype device
+   . ( shape' ~ VectorOfSquare shape
+     , shape'' ~ Square shape
+     , IsFloatingPoint dtype, DTypeIsNotHalf dtype
+     )
+  => Bool -- ^ whether or not to calculate eigenvectors
   -> Tri -- ^ upper or lower triagonal
   -> Tensor device dtype shape -- ^ input
-  -> ( Tensor device dtype (VectorOfSquare shape) -- ^ eigenvalues
-     , Tensor device dtype (Square shape) -- ^ eigenvectors
+  -> ( Tensor device dtype shape' -- ^ eigenvalues
+     , Tensor device dtype shape'' -- ^ eigenvectors
      ) -- ^ output
 symeig eigenvectors upper input = unsafePerformIO
   $ cast3 ATen.symeig_tbb input eigenvectors boolUpper
@@ -549,11 +555,14 @@ type family ConditionalEigenVectors (eigenvectors :: EigenVectors) (n:: Nat) :: 
 -- >>> :t eigenVecs
 -- eigenVecs :: Tensor 'D.Float '[0]
 eig
-  :: forall eigenvectors n dtype device
-   . (KnownNat n, KnownEigenVectors eigenvectors)
+  :: forall eigenvectors n shape dtype device
+   . ( KnownNat n
+     , KnownEigenVectors eigenvectors
+     , shape ~ ConditionalEigenVectors eigenvectors n
+     )
   => Tensor device dtype '[n, n] -- ^ input matrix
   -> ( Tensor device dtype '[n, 2] -- ^ eigenvalues
-     , Tensor device dtype (ConditionalEigenVectors eigenvectors n) -- ^ eigenvectors
+     , Tensor device dtype shape -- ^ eigenvectors
      ) -- ^ output
 eig input =
   unsafePerformIO $ cast2 ATen.eig_tb input (enableEigenVectors @eigenvectors)

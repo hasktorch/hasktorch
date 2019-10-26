@@ -412,9 +412,53 @@ instance ( TensorOptions shape dtype device
         t' = logSoftmax @dim t
     checkDynamicTensorAttributes t'
 
+data InverseSpec = InverseSpec
+
+instance ( TensorOptions shape  dtype device
+         , TensorOptions shape' dtype device
+         , shape' ~ Square shape
+         , IsFloatingPoint dtype
+         , DTypeIsNotHalf dtype
+         )
+  => Apply
+       InverseSpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
+  apply InverseSpec _ _ = do
+    t <- rand @shape @dtype @device
+    let t' = inverse t
+    checkDynamicTensorAttributes t'
+
+data SymeigSpec = SymeigSpec
+
+instance ( TensorOptions shape   dtype device
+         , TensorOptions shape'  dtype device
+         , TensorOptions shape'' dtype device
+         , shape' ~ VectorOfSquare shape
+         , shape'' ~ Square shape
+         , IsFloatingPoint dtype
+         , DTypeIsNotHalf dtype
+         )
+  => Apply
+       SymeigSpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
+  apply SymeigSpec _ _ = do
+    t <- rand @shape @dtype @device
+    foldMap
+      (\(eigenvectors, upper) -> do
+        let (t', t'') = symeig eigenvectors upper t
+        checkDynamicTensorAttributes t'
+        checkDynamicTensorAttributes t''
+      )
+      ((,) <$> [True, False] <*> [D.Upper, D.Lower])
+
 spec :: Spec
 spec = do
   let standardShapes               = Proxy @'[2, 3] :. HNil
+      squareShapes                 = Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil
       reductions                   = Proxy @D.ReduceNone :. Proxy @D.ReduceMean :. Proxy @D.ReduceSum :. HNil
       standardDTypes'              = hCartesianProduct3 justCPU standardDTypes              standardShapes
       almostAllDTypes'             = hCartesianProduct3 justCPU almostAllDTypes             standardShapes
@@ -480,6 +524,10 @@ spec = do
 
     it "softmax"    (hfoldrM @IO SoftmaxSpec    () (hCartesianProduct (Proxy @0 :. Proxy @1 :. HNil) standardFloatingPointDTypes'))
     it "logSoftmax" (hfoldrM @IO LogSoftmaxSpec () (hCartesianProduct (Proxy @0 :. Proxy @1 :. HNil) standardFloatingPointDTypes'))
+
+    it "inverse" (hfoldrM @IO InverseSpec () (hCartesianProduct3 justCPU standardFloatingPointDTypes squareShapes))
+
+    it "symeig" (hfoldrM @IO SymeigSpec () (hCartesianProduct3 justCPU standardFloatingPointDTypes squareShapes))
 
     it "maxPool2d" $ do
       let c = maxPool2d @'(1,1) @'(1,1) @'(0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5])
