@@ -5,8 +5,9 @@ import Torch.TensorFactories
 
 data NonLinearity = Linear | Sigmoid | Tanh | Relu | LeakyRelu
 
-data Fan = FanIn | FanOut
+data FanMode = FanIn | FanOut
 
+-- | Gain scaling value for He initialization
 calculateGain :: NonLinearity -> Maybe Float -> Float
 calculateGain Linear _ = 1.0
 calculateGain Sigmoid _ = 1.0
@@ -16,7 +17,8 @@ calculateGain LeakyRelu param = sqrt (2.0 / (1.0 + (negativeSlope param) ^^ 2))
         negativeSlope Nothing = 0.01
         negativeSlope (Just value) = value
 
-calculateFan :: Tensor -> Fan -> (Int, Int)
+-- | Fan-in / Fan-out scaling calculation for He Initialization
+calculateFan :: Tensor -> FanMode -> (Int, Int)
 calculateFan t mode =
     if dim t < 2 then
         error "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
@@ -30,11 +32,16 @@ calculateFan t mode =
         numOutputFmaps = size t 0
         receptiveFieldSize = numel (select t 0 0)
 
+-- | He initialization (TODO - needs checking)
+kaimingUniform :: Tensor -> Float -> FanMode -> NonLinearity -> Tensor
 kaimingUniform t a mode nonlinearity = undefined
     where 
-        fan = calculateFan t FanIn 
-        gain = calculateGain nonlinearity a
-        -- std = gain / sqrt fan
+        gain = calculateGain nonlinearity (Just a)
+        getter FanIn = fst
+        getter FanOut = snd
+        fanValue = fromIntegral $ (getter mode) (calculateFan t mode)
+        std = gain / (sqrt fanValue)
+        bound = (sqrt 3.0) * std
 
 main :: IO ()
 main = do
