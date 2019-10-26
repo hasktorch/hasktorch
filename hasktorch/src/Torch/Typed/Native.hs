@@ -2341,7 +2341,8 @@ q_zero_point _input = unsafePerformIO $ (cast1 ATen.q_zero_point_t) _input
 -- | lstm_cell
 -- >>> dtype &&& shape $ fst $ lstm_cell (ones :: Tensor 'D.Float '[2,2]) ((ones :: Tensor 'D.Float '[2,3]), (ones :: Tensor 'D.Float '[2,3])) (ones :: Tensor 'D.Float '[12,2]) (ones :: Tensor 'D.Float '[12,3]) (ones :: Tensor 'D.Float '[12]) (ones :: Tensor 'D.Float '[12])
 -- (Float,[2,3])
-lstm_cell :: Tensor dtype '[batchSize, inputDim] 
+lstm_cell :: forall dtype batchSize inputDim hiddenSize . 
+  Tensor dtype '[batchSize, inputDim] 
   -> (Tensor dtype '[batchSize, hiddenSize], Tensor dtype '[batchSize, hiddenSize])
   -> Tensor dtype '[4 * hiddenSize, inputDim] 
   -> Tensor dtype '[4 * hiddenSize, hiddenSize] 
@@ -2350,7 +2351,7 @@ lstm_cell :: Tensor dtype '[batchSize, inputDim]
   -> (Tensor dtype '[batchSize, hiddenSize],Tensor dtype '[batchSize, hiddenSize])
 lstm_cell _input (_cc, _hc) _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.lstm_cell_tltttt) _input _hx _w_ih _w_hh _b_ih _b_hh
   where 
-    _hx = [toDynamic _cc, toDynamic _hc]
+    _hx = [_cc, _hc] :: [Tensor dtype '[batchSize, hiddenSize]]
 
 -- The order of the params used by pytorch is:
 -- for each layer: 'weight_ih_l{}{}', 'weight_hh_l{}{}', 'bias_ih_l{}{}', 'bias_hh_l{}
