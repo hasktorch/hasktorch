@@ -2360,7 +2360,7 @@ lstm_cell _input (_cc, _hc) _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 A
 
 -- | lstm
 -- >>> let input = (ones :: Tensor 'D.Float '[3,16,10])
--- >>> let (cc, hc) = (zeros, zeros) :: (Tensor 'D.Float '[2,16,10*2], Tensor 'D.Float '[2,16,10*2])
+-- >>> let (cc, hc) = (zeros, zeros) :: (Tensor 'D.Float '[2,16,20], Tensor 'D.Float '[2,16,20])
 -- >>> let w = ones :: Tensor 'D.Float '[10,10]
 -- >>> let b = ones :: Tensor 'D.Float '[10,10]
 -- >>> let ws = [(w,w), (w,w)]
