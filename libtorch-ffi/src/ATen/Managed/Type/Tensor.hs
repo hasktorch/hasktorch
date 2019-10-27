@@ -563,28 +563,28 @@ tensor_baddbmm__ttss = cast5 Unmanaged.tensor_baddbmm__ttss
 
 tensor_bernoulli_p
   :: ForeignPtr Tensor
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_bernoulli_p = cast2 Unmanaged.tensor_bernoulli_p
 
 tensor_bernoulli__tp
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_bernoulli__tp = cast3 Unmanaged.tensor_bernoulli__tp
 
 tensor_bernoulli__dp
   :: ForeignPtr Tensor
   -> CDouble
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_bernoulli__dp = cast3 Unmanaged.tensor_bernoulli__dp
 
 tensor_bernoulli_dp
   :: ForeignPtr Tensor
   -> CDouble
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_bernoulli_dp = cast3 Unmanaged.tensor_bernoulli_dp
 
@@ -2555,20 +2555,20 @@ tensor_random__llp
   :: ForeignPtr Tensor
   -> Int64
   -> Int64
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_random__llp = cast4 Unmanaged.tensor_random__llp
 
 tensor_random__lp
   :: ForeignPtr Tensor
   -> Int64
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_random__lp = cast3 Unmanaged.tensor_random__lp
 
 tensor_random__p
   :: ForeignPtr Tensor
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_random__p = cast2 Unmanaged.tensor_random__p
 
@@ -2576,7 +2576,7 @@ tensor_uniform__ddp
   :: ForeignPtr Tensor
   -> CDouble
   -> CDouble
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_uniform__ddp = cast4 Unmanaged.tensor_uniform__ddp
 
@@ -2584,7 +2584,7 @@ tensor_normal__ddp
   :: ForeignPtr Tensor
   -> CDouble
   -> CDouble
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_normal__ddp = cast4 Unmanaged.tensor_normal__ddp
 
@@ -2592,7 +2592,7 @@ tensor_cauchy__ddp
   :: ForeignPtr Tensor
   -> CDouble
   -> CDouble
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_cauchy__ddp = cast4 Unmanaged.tensor_cauchy__ddp
 
@@ -2600,21 +2600,21 @@ tensor_log_normal__ddp
   :: ForeignPtr Tensor
   -> CDouble
   -> CDouble
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_log_normal__ddp = cast4 Unmanaged.tensor_log_normal__ddp
 
 tensor_exponential__dp
   :: ForeignPtr Tensor
   -> CDouble
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_exponential__dp = cast3 Unmanaged.tensor_exponential__dp
 
 tensor_geometric__dp
   :: ForeignPtr Tensor
   -> CDouble
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_geometric__dp = cast3 Unmanaged.tensor_geometric__dp
 
@@ -2886,7 +2886,7 @@ tensor_multinomial_lbp
   :: ForeignPtr Tensor
   -> Int64
   -> CBool
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 tensor_multinomial_lbp = cast4 Unmanaged.tensor_multinomial_lbp
 

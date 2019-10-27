@@ -1,6 +1,14 @@
 signature: Generator
-cppname: at::Generator
+cppname: at::Generator*
 hsname: Generator
-functions: []
-constructors: []
-methods: []
+functions:
+- getDefaultCUDAGenerator(uint16_t device_index) -> Generator*
+- getDefaultCPUGenerator() -> Generator*
+constructors:
+- new(uint16_t device_index) -> Generator*
+- new(uint64_t seed_in) -> Generator*
+methods:
+- set_current_seed(uint64_t seed) -> void
+- current_seed() -> uint64_t
+- seed() -> uint64_t
+#- device() -> Device
