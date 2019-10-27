@@ -2361,12 +2361,13 @@ lstm_cell _input (_cc, _hc) _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 A
 -- | lstm
 -- >>> let input = (ones :: Tensor 'D.Float '[3,16,10])
 -- >>> let (cc, hc) = (zeros, zeros) :: (Tensor 'D.Float '[4,16,10], Tensor 'D.Float '[4,16,10])
--- >>> let w = ones :: Tensor 'D.Float '[40,10]
+-- >>> let wi = ones :: Tensor 'D.Float '[40,20]
+-- >>> let wh = ones :: Tensor 'D.Float '[40,10]
 -- >>> let b = ones :: Tensor 'D.Float '[40]
--- >>> let ws = [(w,w), (w,w)]
+-- >>> let ws = [(wi,wh), (wi,wh)]
 -- >>> let bs = [(b,b), (b,b)]
 -- >>> let output (a,_,_) = a
--- >>> dtype &&& shape $ output $ lstm @2 @1 input (cc, hc) ws bs 0 False
+-- >>> dtype &&& shape $ output $ lstm @2 @2 input (cc, hc) ws bs 0 False
 -- (Float,[3,16,20])
 
 lstm
