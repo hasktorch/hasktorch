@@ -60,9 +60,18 @@ ones = UnsafeMkTensor $ D.ones
   $ D.defaultOpts
   )
 
+type family RandDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  RandDTypeIsValid '( 'D.CPU, 0)    dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
+                                            , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                            )
+  RandDTypeIsValid '( 'D.CUDA, _)   dtype = ()
+  RandDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
+
 rand
   :: forall shape dtype device
-   . (TensorOptions shape dtype device)
+   . ( TensorOptions shape dtype device
+     , RandDTypeIsValid device dtype
+     )
   => IO (Tensor device dtype shape)
 rand = UnsafeMkTensor <$> D.rand
   (optionsRuntimeShape @shape @dtype @device)
@@ -73,7 +82,9 @@ rand = UnsafeMkTensor <$> D.rand
 
 randn
   :: forall shape dtype device
-   . (TensorOptions shape dtype device)
+   . ( TensorOptions shape dtype device
+     , RandDTypeIsValid device dtype
+     )
   => IO (Tensor device dtype shape)
 randn = UnsafeMkTensor <$> D.randn
   (optionsRuntimeShape @shape @dtype @device)
@@ -108,7 +119,9 @@ linspace start end = UnsafeMkTensor $ D.linspace
 
 eyeSquare
   :: forall n dtype device
-   . (KnownNat n, TensorOptions '[n, n] dtype device)
+   . ( KnownNat n
+     , TensorOptions '[n, n] dtype device
+     )
   => Tensor device dtype '[n, n] -- ^ output
 eyeSquare = UnsafeMkTensor $ D.eyeSquare
   (natValI @n)

@@ -28,6 +28,7 @@ import           Foreign.Storable
 import           Data.HList
 import           Data.Proxy
 import           Data.Reflection
+import           GHC.TypeLits
 
 import           Test.Hspec
 import           Test.QuickCheck
@@ -43,7 +44,7 @@ import           Torch.Typed.Native
 import           Torch.Typed.Tensor
 import           Torch.Typed.AuxSpec
 
-data SimpleFactoriesSpec = ZerosSpec | OnesSpec | RandSpec | RandnSpec
+data SimpleFactoriesSpec = ZerosSpec | OnesSpec
 
 instance (TensorOptions shape dtype device)
   => Apply
@@ -57,6 +58,18 @@ instance (TensorOptions shape dtype device)
   apply OnesSpec _ _ = do
     let t = ones :: Tensor device dtype shape
     checkDynamicTensorAttributes t
+
+
+data RandomFactoriesSpec = RandSpec | RandnSpec
+
+instance ( TensorOptions shape dtype device
+         , RandDTypeIsValid device dtype
+         )
+  => Apply
+       RandomFactoriesSpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
   apply RandSpec _ _ = do
     t <- rand :: IO (Tensor device dtype shape)
     checkDynamicTensorAttributes t
@@ -64,18 +77,42 @@ instance (TensorOptions shape dtype device)
     t <- randn :: IO (Tensor device dtype shape)
     checkDynamicTensorAttributes t
 
-spec :: Spec
-spec = do
-  let standardShapes = Proxy @'[2, 3] :. HNil
-  describe "simple factories" $ do
-    it "ones"  (hfoldrM @IO ZerosSpec () (hCartesianProduct3 justCPU allDTypes                   standardShapes))
-    it "zeros" (hfoldrM @IO OnesSpec  () (hCartesianProduct3 justCPU allDTypes                   standardShapes))
-    it "rand"  (hfoldrM @IO RandSpec  () (hCartesianProduct3 justCPU standardFloatingPointDTypes standardShapes))
-    it "randn" (hfoldrM @IO RandnSpec () (hCartesianProduct3 justCPU standardFloatingPointDTypes standardShapes))
-  describe "advanced factories" $ do
-    it "linspace" $ do
-      let t = linspace @3 @'( 'D.CPU, 0) (1 :: Int) (3 :: Int)
-      checkDynamicTensorAttributes t
-    it "eyeSquare" $ do
-      let t = eyeSquare @10 @'D.Float @'( 'D.CPU, 0)
-      checkDynamicTensorAttributes t
+spec = foldMap spec' [D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }, D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }]
+
+spec' :: D.Device -> Spec
+spec' device =
+  describe ("for " <> show device) $ do
+    let standardShapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
+    describe "simple factories" $ do
+      let dispatch simpleFactoriesSpec = 
+            case device of
+              D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+                hfoldrM @IO simpleFactoriesSpec () (hattach cpu   (hCartesianProduct allDTypes standardShapes))
+              D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+                hfoldrM @IO simpleFactoriesSpec () (hattach cuda0 (hCartesianProduct allDTypes standardShapes))
+      it "ones"  $ dispatch ZerosSpec
+      it "zeros" $ dispatch OnesSpec
+    describe "random factories" $ do
+      let dispatch randomFactoriesSpec = 
+            case device of
+              D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+                hfoldrM @IO randomFactoriesSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes standardShapes))
+              D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+                hfoldrM @IO randomFactoriesSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      standardShapes))
+      it "rand"  $ dispatch RandSpec
+      it "randn" $ dispatch RandnSpec
+    describe "advanced factories" $ do
+      it "linspace" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } -> do
+          let t = linspace @3 @'( 'D.CPU, 0)  (1 :: Int) (3 :: Int)
+          checkDynamicTensorAttributes t
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } -> do
+          let t = linspace @3 @'( 'D.CUDA, 0) (1 :: Int) (3 :: Int)
+          checkDynamicTensorAttributes t
+      it "eyeSquare" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } -> do
+          let t = eyeSquare @10 @'D.Float @'( 'D.CPU, 0)
+          checkDynamicTensorAttributes t
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } -> do
+          let t = eyeSquare @10 @'D.Float @'( 'D.CUDA, 0)
+          checkDynamicTensorAttributes t

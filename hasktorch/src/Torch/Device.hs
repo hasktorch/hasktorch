@@ -8,7 +8,6 @@ import qualified Data.Int as I
 import           ATen.Class                     ( Castable(..) )
 import qualified ATen.Const                    as ATen
 import qualified ATen.Type                     as ATen
-import           Torch.Typed.Aux
 
 data DeviceType = CPU | CUDA
   deriving (Eq, Ord, Show)

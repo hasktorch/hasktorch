@@ -15,6 +15,7 @@ import           Data.Kind                      ( Constraint )
 import           Data.Proxy
 import           GHC.TypeLits
 
+import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 
 type family Fst (t :: (a, b)) :: a where
@@ -38,10 +39,33 @@ natValI = fromIntegral $ natVal $ Proxy @n
 natValInt16 :: forall n . KnownNat n => I.Int16
 natValInt16 = fromIntegral $ natVal $ Proxy @n
 
-type family DTypeIsNotHalf (dtype :: D.DType) :: Constraint where
-  DTypeIsNotHalf D.Half = TypeError (Text "This operation does not support " :<>: ShowType D.Half :<>: Text " tensors.")
-  DTypeIsNotHalf _      = ()
+type family DTypeIsFloatingPoint (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  DTypeIsFloatingPoint _                'D.Half   = ()
+  DTypeIsFloatingPoint _                'D.Float  = ()
+  DTypeIsFloatingPoint _                'D.Double = ()
+  DTypeIsFloatingPoint '(deviceType, _) dtype     = UnsupportedDTypeForDevice deviceType dtype
 
-type family DTypeIsNotBool (dtype :: D.DType) :: Constraint where
-  DTypeIsNotHalf D.Bool = TypeError (Text "This operation does not support " :<>: ShowType D.Bool :<>: Text " tensors.")
-  DTypeIsNotHalf _      = ()
+type family DTypeIsIntegral (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  DTypeIsIntegral _                     'D.Bool  = ()
+  DTypeIsIntegral _                     'D.UInt8 = ()
+  DTypeIsIntegral _                     'D.Int8  = ()
+  DTypeIsIntegral _                     'D.Int16 = ()
+  DTypeIsIntegral _                     'D.Int32 = ()
+  DTypeIsIntegral _                     'D.Int64 = ()
+  DTypeIsFloatingPoint '(deviceType, _) dtype    = UnsupportedDTypeForDevice deviceType dtype
+
+type family DTypeIsNotHalf (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  DTypeIsNotHalf '(deviceType, _) D.Half = UnsupportedDTypeForDevice deviceType D.Half
+  DTypeIsNotHalf _                _      = ()
+
+type family DTypeIsNotBool (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  DTypeIsNotHalf '(deviceType, _) D.Bool = UnsupportedDTypeForDevice deviceType D.Bool
+  DTypeIsNotHalf _                _      = ()
+
+type family UnsupportedDTypeForDevice (deviceType :: D.DeviceType) (dtype :: D.DType) :: Constraint where
+  UnsupportedDTypeForDevice deviceType dtype = TypeError (    Text "This operation does not support "
+                                                         :<>: ShowType dtype
+                                                         :<>: Text " tensors on devices of type "
+                                                         :<>: ShowType deviceType
+                                                         :<>: Text "."
+                                                         )

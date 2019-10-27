@@ -22,7 +22,7 @@ import           Torch.Layout
 
 type ATenTensorOptions = ForeignPtr ATen.TensorOptions
 
-newtype TensorOptions = TensorOptions ATenTensorOptions
+newtype TensorOptions = TensorOptions ATenTensorOptions deriving (Show)
 
 instance Castable TensorOptions ATenTensorOptions where
   cast (TensorOptions aten_opts) f = f aten_opts
@@ -44,12 +44,12 @@ withDevice Device {..} opts = unsafePerformIO $ do
   withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
   withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
   withDeviceIndex :: Int16 -> TensorOptions -> IO TensorOptions
-  withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di
+  withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di -- careful, this somehow implies deviceType = CUDA
   withDevice'
     :: DeviceType -> Int16 -> Bool -> TensorOptions -> IO TensorOptions
   withDevice' CPU 0 False opts = pure opts
   withDevice' dt@CPU di@0 True opts =
-    pure opts >>= withDeviceType dt >>= withDeviceIndex di
+    pure opts >>= withDeviceType dt
   withDevice' dt@CUDA di True opts | di >= 0 =
     pure opts >>= withDeviceType dt >>= withDeviceIndex di
   withDevice' dt di _ _ =

@@ -72,10 +72,11 @@ test-suite spec
                     , hasktorch
                     , hspec
                     , hspec-discover
-                    , safe-exceptions
-                    , QuickCheck
+                    , libtorch-ffi
                     , mtl
                     , reflection
+                    , safe-exceptions
+                    , QuickCheck
 
 test-suite doctests
   type:               exitcode-stdio-1.0

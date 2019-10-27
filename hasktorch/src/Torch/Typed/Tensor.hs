@@ -176,21 +176,21 @@ instance (KnownNat h, TensorOptions t dtype device) => TensorOptions (h ': t) dt
 --------------------------------------------------------------------------------
 
 type family All (pred :: a -> Constraint) (l :: [a]) :: Constraint where
-    All _    '[] = ()
-    All pred (h ': t) = (pred h, All pred t)
+  All _    '[] = ()
+  All pred (h ': t) = (pred h, All pred t)
 
 data SomeShape where
-    SomeShape :: forall (shape :: [Nat]). KnownShape shape => Proxy shape -> SomeShape
+  SomeShape :: forall (shape :: [Nat]) . KnownShape shape => Proxy shape -> SomeShape
 
 someShape :: [Int] -> SomeShape
-someShape [] = SomeShape $ Proxy @'[]
+someShape []      = SomeShape $ Proxy @'[]
 someShape (h : t) = case someNatVal (fromIntegral h) of
-    Nothing -> error "Negative dimension in someShape!"
-    (Just (SomeNat (Proxy :: Proxy ht))) -> case someShape t of
-        (SomeShape (Proxy :: Proxy tt)) -> SomeShape $ Proxy @(ht ': tt)
+  Nothing -> error "Negative dimension in someShape!"
+  (Just (SomeNat (Proxy :: Proxy ht))) -> case someShape t of
+    (SomeShape (Proxy :: Proxy tt)) -> SomeShape $ Proxy @(ht ': tt)
 
 data SomeDType where
-  SomeDType :: forall (dtype :: D.DType). Proxy dtype -> SomeDType
+  SomeDType :: forall (dtype :: D.DType) . KnownDType dtype => Proxy dtype -> SomeDType
 
 someDType :: D.DType -> SomeDType
 someDType D.Bool   = SomeDType $ Proxy @D.Bool
@@ -204,7 +204,7 @@ someDType D.Float  = SomeDType $ Proxy @D.Float
 someDType D.Double = SomeDType $ Proxy @D.Double
 
 data SomeDevice where
-  SomeDevice :: forall (device :: (D.DeviceType, Nat)) . Proxy device -> SomeDevice
+  SomeDevice :: forall (device :: (D.DeviceType, Nat)) . KnownDevice device => Proxy device -> SomeDevice
 
 someDevice :: D.Device -> SomeDevice
 someDevice D.Device {..} = case someNatVal (fromIntegral deviceIndex) of
@@ -418,26 +418,40 @@ type family IsAtLeast (n :: Nat) (m :: Nat) (cmp :: Ordering) :: Constraint wher
 --       funny error messages like "expected at least 5, got 29!".
 type (>=) (n :: Nat) (m :: Nat) = (IsAtLeast n m (CmpNat n m), KnownNat (n - m))
 
+type family BasicArithmeticDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  BasicArithmeticDTypeIsValid '( 'D.CPU, 0)    dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
+                                                       , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                       )
+  BasicArithmeticDTypeIsValid '( 'D.CUDA, _)   dtype = ()
+  BasicArithmeticDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
+
 add, sub, mul
   :: forall shape'' shape shape' dtype dtype' dtype'' device
    . ( dtype'' ~ DTypePromotion dtype dtype'
      , shape'' ~ Broadcast shape shape'
-     , DTypeIsNotBool dtype,   DTypeIsNotHalf dtype
-     , DTypeIsNotBool dtype',  DTypeIsNotHalf dtype'
-     , DTypeIsNotBool dtype'', DTypeIsNotHalf dtype''
+     , BasicArithmeticDTypeIsValid device dtype
+     , BasicArithmeticDTypeIsValid device dtype'
+     , BasicArithmeticDTypeIsValid device dtype''
      )
-  => Tensor device dtype shape
-  -> Tensor device dtype' shape'
+  => Tensor device dtype   shape
+  -> Tensor device dtype'  shape'
   -> Tensor device dtype'' shape''
 add a b = UnsafeMkTensor $ D.add (toDynamic a) (toDynamic b)
 sub a b = UnsafeMkTensor $ D.sub (toDynamic a) (toDynamic b)
 mul a b = UnsafeMkTensor $ D.mul (toDynamic a) (toDynamic b)
 
+type family ComparisonDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  ComparisonDTypeIsValid '( 'D.CPU, 0)    dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
+                                                  , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                  )
+  ComparisonDTypeIsValid '( 'D.CUDA, _)   dtype = ()
+  ComparisonDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
+
 gt, lt, ge, le, eq, ne, (>.), (<.), (>=.), (<=.), (==.), (/=.)
   :: forall shape'' shape shape' dtype dtype' device
    . ( shape'' ~ Broadcast shape shape'
-     , DTypeIsNotBool dtype,  DTypeIsNotHalf dtype
-     , DTypeIsNotBool dtype', DTypeIsNotHalf dtype'
+     , ComparisonDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device dtype'
      )
   => Tensor device dtype   shape
   -> Tensor device dtype'  shape'
@@ -471,12 +485,19 @@ type family CheckMatMul (shape :: [Nat]) (shape' :: [Nat]) (result :: Maybe [Nat
 
 type MatMul shape shape' = CheckMatMul shape shape' (ComputeMatMul (Reverse shape) (Reverse shape'))
 
+type family MatMulDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  MatMulDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
+                                                      , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                      )
+  MatMulDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+  MatMulDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
 -- | matrix multiplication
 -- See https://pytorch.org/docs/stable/torch.html#torch.matmul.
 matmul
   :: forall shape'' shape shape' dtype device
    . ( shape'' ~ MatMul shape shape'
-     , DTypeIsNotBool dtype, DTypeIsNotHalf dtype
+     , MatMulDTypeIsValid device dtype
      )
   => Tensor device dtype shape
   -> Tensor device dtype shape'
@@ -568,35 +589,6 @@ instance Castable (HList l) [D.ATenTensor] => Castable (HList l) (ForeignPtr ATe
   uncast xs f = uncast xs $ \(ptrList :: [ForeignPtr ATen.Tensor]) -> do
     ts <- uncast ptrList return :: IO (HList l)
     f ts
-
--- TODO: make it only possible to fold tensors on the same device
-test
-  :: forall device dtype shape . Tensor device dtype shape -> IO [D.ATenTensor]
-test t = hfoldrM TensorListFold [] (t :. HNil)
-
--- TODO: make it only possible to unfold to tensors on the same device
-test'
-  :: forall device dtype shape device' dtype' shape'
-   . [D.ATenTensor]
-  -> IO (HList '[Tensor device dtype shape, Tensor device' dtype' shape'])
-test' xs = hunfoldrM TensorListUnfold xs
-
--- TODO: make it only possible to cast tensors on the same device
-test''
-  :: forall device dtype shape
-   . HList '[Tensor device dtype shape]
-  -> IO [D.ATenTensor]
-test'' xs = cast xs return
-
--- TODO: make it only possible uncast tensors on the same device
-test'''
-  :: forall device dtype shape
-   . [D.ATenTensor]
-  -> IO (HList '[Tensor device dtype shape])
-test''' xs = uncast xs return
-
-testReplicate :: forall device dtype shape . Tensor device dtype shape -> HList (HReplicateR 3 (Tensor device dtype shape))
-testReplicate t = hReplicate Proxy t
 
 --------------------------------------------------------------------------------
 -- Move backend

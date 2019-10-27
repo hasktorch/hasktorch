@@ -16,6 +16,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.AuxSpec where
@@ -26,10 +27,13 @@ import           Foreign.Storable
 import           Data.HList
 import           Data.Proxy
 import           Data.Reflection
+import           GHC.TypeLits
+import           System.IO.Unsafe
 
 import           Test.Hspec
 import           Test.QuickCheck
 
+-- import qualified ATen.Managed.Type.Context     as ATen
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Functions               as D
@@ -39,6 +43,12 @@ import qualified Torch.TensorOptions           as D
 import           Torch.Typed.Factories
 import           Torch.Typed.Native
 import           Torch.Typed.Tensor
+
+instance Semigroup Spec where
+  (<>) a b = a >> b
+
+instance Monoid Spec where
+  mempty = pure ()
 
 checkDynamicTensorAttributes
   :: forall device dtype shape
@@ -81,8 +91,54 @@ standardDTypes =
 justCPU :: _
 justCPU = Proxy @'( 'D.CPU, 0) :. HNil
 
-justCUDA :: forall deviceIndex . _
-justCUDA = Proxy @'( 'D.CUDA, deviceIndex) :. HNil
+cpu = Proxy @'( 'D.CPU, 0)
+cuda0 = Proxy @'( 'D.CUDA, 0)
+
+-- data SomeDevices where
+--   SomeDevices :: forall (devices :: [(D.DeviceType, Nat)]) deviceList . (All KnownDevice devices, HasDeviceHList devices deviceList) => Proxy devices -> SomeDevices
+
+-- someDevices :: [D.Device] -> SomeDevices
+-- someDevices [] = SomeDevices $ Proxy @'[]
+-- someDevices (h : t) = case someDevice h of
+--   (SomeDevice (Proxy :: Proxy ht)) -> case someDevices t of
+--       (SomeDevices (Proxy :: Proxy tt)) -> SomeDevices $ Proxy @(ht ': tt)
+
+-- class HasDeviceHList (devices :: [(D.DeviceType, Nat)]) deviceList | devices -> deviceList where
+--   deviceHList :: HList deviceList
+
+-- instance HasDeviceHList '[] '[] where
+--   deviceHList = HNil
+
+-- instance HasDeviceHList ds ds' => HasDeviceHList (d ': ds) (Proxy d ': ds') where
+--   deviceHList = Proxy @d :. deviceHList @ds
+
+-- spec' :: [D.Device] -> Spec
+-- spec' devices = case someDevices devices of
+--   (SomeDevices (Proxy :: Proxy devices)) -> do
+--     let poop = deviceHList @devices
+--     return ()
+
+-- someDeviceProxies :: [D.Device] -> SomeDeviceProxies
+-- someDeviceProxies [] = SomeDeviceProxies $ Proxy @'[]
+-- someDeviceProxies (h : t) = case someDevice h of
+--   (SomeDevice proxy@(Proxy :: Proxy ht)) -> case someDeviceProxies t of
+--       (SomeDeviceProxies (Proxy :: Proxy tt)) -> SomeDeviceProxies $ Proxy @(proxy ': tt)
+
+-- withCUDA :: forall deviceIndex . _ -> _
+-- withCUDA devices =
+--   let hasCUDA = unsafePerformIO $ cast0 ATen.hasCUDA in
+--   if hasCUDA then (Proxy @'( 'D.CUDA, deviceIndex) :. devices) else devices
+
+-- data AllAvailableDevices = AllAvailableDevices
+
+-- instance Apply AllAvailableDevices [D.Device] HNothing where
+--   apply _ [] = HNothing
+
+-- instance Apply AllAvailableDevices [D.Device] (HJust (Proxy '( deviceType, Nat), [D.Device])) where
+--   apply _ (device : devices) = case someDevice device of
+--     (SomeDevice proxy@(Proxy :: Proxy device)) -> HJust (proxy, devices)
+
+-- allAvailableDevices = hunfoldrM 
 
 spec :: Spec
 spec = return ()

@@ -17,6 +17,7 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.TensorSpec
   ( Torch.Typed.TensorSpec.spec
@@ -27,12 +28,15 @@ import           Prelude                 hiding ( sin )
 import           Control.Exception.Safe
 import           Foreign.Storable
 import           Data.HList
+import           Data.Kind
 import           Data.Proxy
 import           Data.Reflection
+import           GHC.TypeLits
 
 import           Test.Hspec
 import           Test.QuickCheck
 
+import           ATen.Class                     ( Castable(..) )
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Functions               as D
@@ -48,177 +52,223 @@ import           Torch.Typed.AuxSpec
 data BinarySpec = AddSpec | SubSpec | MulSpec
 
 instance ( TensorOptions shape   dtype   device
-         , TensorOptions shape'  dtype'  device'
-         , TensorOptions shape'' dtype'' device'
-         , device ~ device'
+         , TensorOptions shape'  dtype'  device
+         , TensorOptions shape'' dtype'' device
          , shape'' ~ Broadcast shape shape'
          , dtype'' ~ DTypePromotion dtype dtype'
-         , DTypeIsNotBool dtype,   DTypeIsNotHalf dtype
-         , DTypeIsNotBool dtype',  DTypeIsNotHalf dtype'
-         , DTypeIsNotBool dtype'', DTypeIsNotHalf dtype''
+         , BasicArithmeticDTypeIsValid device dtype
+         , BasicArithmeticDTypeIsValid device dtype'
+         , BasicArithmeticDTypeIsValid device dtype''
          )
   => Apply
        BinarySpec
-       ((Proxy device, (Proxy dtype, Proxy shape)), (Proxy device', (Proxy dtype', Proxy shape')))
+       (Proxy device, ((Proxy dtype, Proxy dtype'), (Proxy shape, Proxy shape')))
        (() -> IO ())
  where
   apply AddSpec _ _ = do
     let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+    let b = ones @shape' @dtype' @device
     let c = add a b
     checkDynamicTensorAttributes c
   apply SubSpec _ _ = do
     let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+    let b = ones @shape' @dtype' @device
     let c = sub a b
     checkDynamicTensorAttributes c
   apply MulSpec _ _ = do
     let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+    let b = ones @shape' @dtype' @device
     let c = mul a b
     checkDynamicTensorAttributes c
 
-data MatmulSpec = MatmulSpec
+data MatMulSpec = MatMulSpec
 
-instance ( TensorOptions shape   dtype  device
-         , TensorOptions shape'  dtype' device'
-         , TensorOptions shape'' dtype' device'
-         , device ~ device'
-         , dtype ~ dtype'
+instance ( TensorOptions shape   dtype device
+         , TensorOptions shape'  dtype device
+         , TensorOptions shape'' dtype device
          , shape'' ~ MatMul shape shape'
-         , DTypeIsNotBool dtype, DTypeIsNotHalf dtype
+         , MatMulDTypeIsValid device dtype
          )
   => Apply
-       MatmulSpec
-       ((Proxy device, (Proxy dtype, Proxy shape)), (Proxy device', (Proxy dtype', Proxy shape')))
+       MatMulSpec
+       (Proxy device, (Proxy dtype, (Proxy shape, Proxy shape')))
        (() -> IO ())
  where
-  apply MatmulSpec _ _ = do
-    let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+  apply MatMulSpec _ _ = do
+    let a = ones @shape  @dtype @device
+    let b = ones @shape' @dtype @device
     let c = matmul a b
     checkDynamicTensorAttributes c
 
 data BinaryCmpSpec = GTSpec | LTSpec | GESpec | LESpec | EQSpec | NESpec
 
 instance ( TensorOptions shape   dtype  device
-         , TensorOptions shape'  dtype' device'
-         , TensorOptions shape'' D.Bool device'
-         , device ~ device'
+         , TensorOptions shape'  dtype' device
+         , TensorOptions shape'' D.Bool device
          , shape'' ~ Broadcast shape shape'
-         , DTypeIsNotBool dtype,  DTypeIsNotHalf dtype
-         , DTypeIsNotBool dtype', DTypeIsNotHalf dtype'
+         , ComparisonDTypeIsValid device dtype
+         , ComparisonDTypeIsValid device dtype'
          )
   => Apply
        BinaryCmpSpec
-       ((Proxy device, (Proxy dtype, Proxy shape)), (Proxy device', (Proxy dtype', Proxy shape')))
+       (Proxy device, ((Proxy dtype, Proxy dtype'), (Proxy shape, Proxy shape')))
        (() -> IO ())
  where
   apply GTSpec _ _ = do
     let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+    let b = ones @shape' @dtype' @device
     let c = gt a b
     checkDynamicTensorAttributes c
   apply LTSpec _ _ = do
     let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+    let b = ones @shape' @dtype' @device
     let c = lt a b
     checkDynamicTensorAttributes c
   apply GESpec _ _ = do
     let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+    let b = ones @shape' @dtype' @device
     let c = ge a b
     checkDynamicTensorAttributes c
   apply LESpec _ _ = do
     let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+    let b = ones @shape' @dtype' @device
     let c = le a b
     checkDynamicTensorAttributes c
   apply EQSpec _ _ = do
     let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+    let b = ones @shape' @dtype' @device
     let c = eq a b
     checkDynamicTensorAttributes c
   apply NESpec _ _ = do
     let a = ones @shape  @dtype  @device
-    let b = ones @shape' @dtype' @device'
+    let b = ones @shape' @dtype' @device
     let c = ne a b
     checkDynamicTensorAttributes c
 
-spec :: Spec
-spec = do
-  let standardShapes = Proxy @'[2, 3] :. HNil
-      broadcastableShapes0 = Proxy @'[3, 1, 4, 1] :. HNil
-      broadcastableShapes1 = Proxy @'[2, 1, 1] :. HNil
-      standardDTypes' = hCartesianProduct3 justCPU standardDTypes standardShapes
-      identicalShapes = hCartesianProduct standardDTypes' standardDTypes'
-      broadcastableShapes = hCartesianProduct (hCartesianProduct3 justCPU standardDTypes broadcastableShapes0) (hCartesianProduct3 justCPU standardDTypes broadcastableShapes1)
-  describe "binary operators" $ do
-    describe "add" $ do
-      it "works on tensors of identical shapes"
-        (hfoldrM @IO AddSpec () identicalShapes)
-      it "works on broadcastable tensors of different shapes"
-        (hfoldrM @IO AddSpec () broadcastableShapes)
-    describe "sub" $ do
-      it "works on tensors of identical shapes"
-        (hfoldrM @IO SubSpec () identicalShapes)
-      it "works on broadcastable tensors of different shapes"
-        (hfoldrM @IO SubSpec () broadcastableShapes)
-    describe "mul" $ do
-      it "works on tensors of identical shapes"
-        (hfoldrM @IO MulSpec () identicalShapes)
-      it "works on broadcastable tensors of different shapes"
-        (hfoldrM @IO MulSpec () broadcastableShapes)
-    describe "matmul" $ do
+spec = foldMap spec' [D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }, D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }]
+
+spec' :: D.Device -> Spec
+spec' device =
+  describe ("for " <> show device) $ do
+    let standardShapes       = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
+        broadcastableShapes0 = Proxy @'[3, 1, 4, 1] :. HNil
+        broadcastableShapes1 = Proxy @'[2, 1, 1] :. HNil
+        standardDTypes2      = hCartesianProduct standardDTypes            standardDTypes
+        almostAllDTypes2     = hCartesianProduct (withHalf standardDTypes) (withHalf standardDTypes)
+        identicalShapes      = hZipList standardShapes       standardShapes
+        broadcastableShapes  = hZipList broadcastableShapes0 broadcastableShapes1
+    describe "basic arithmetic" $ do
+      let dispatch binarySpec = do
+            it "works on tensors of identical shapes" $
+              case device of
+                D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+                  hfoldrM @IO binarySpec () (hattach cpu   (hCartesianProduct standardDTypes2  identicalShapes))
+                D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+                  hfoldrM @IO binarySpec () (hattach cuda0 (hCartesianProduct almostAllDTypes2 identicalShapes))
+            it "works on broadcastable tensors of different shapes" $
+              case device of
+                D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+                  hfoldrM @IO binarySpec () (hattach cpu   (hCartesianProduct standardDTypes2  broadcastableShapes))
+                D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+                  hfoldrM @IO binarySpec () (hattach cuda0 (hCartesianProduct almostAllDTypes2 broadcastableShapes))
+      describe "addition" $ dispatch AddSpec
+      describe "subtraction" $ dispatch SubSpec
+      describe "multiplication" $ dispatch MulSpec
+    describe "matrix multiplication" $ do
       it "returns the dot product if both tensors are 1-dimensional" $ do
-        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3] :. HNil))
-        hfoldrM @IO MatmulSpec () shapes
+        let shapes = hZipList (Proxy @'[3] :. HNil) (Proxy @'[3] :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
       it "returns the matrix-matrix product if both arguments are 2-dimensional" $ do
-        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3, 2] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[2, 4] :. HNil))
-        hfoldrM @IO MatmulSpec () shapes
+        let shapes = hZipList (Proxy @'[3, 2] :. HNil) (Proxy @'[2, 4] :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
       it "returns the matrix-matrix product if the first argument is 1-dimensional and the second argument is 2-dimensional by temporarily adding a 1 to the dimension of the first argument" $ do
-        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3, 4] :. HNil))
-        hfoldrM @IO MatmulSpec () shapes
+        let shapes = hZipList (Proxy @'[3] :. HNil) (Proxy @'[3, 4] :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
       it "returns the matrix-vector product if the first argument is 2-dimensional and the second argument is 1-dimensional" $ do
-        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3, 4] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[4] :. HNil))
-        hfoldrM @IO MatmulSpec () shapes
+        let shapes = hZipList (Proxy @'[3, 4] :. HNil) (Proxy @'[4] :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
       it "returns a batched matrix-matrix product if both arguments are at least 2-dimensional and the batch (i.e. non-matrix) dimensions are broadcastable" $ do
-        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[2, 1, 4, 3] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3, 3, 2] :. HNil))
-        hfoldrM @IO MatmulSpec () shapes
+        let shapes = hZipList (Proxy @'[2, 1, 4, 3] :. HNil) (Proxy @'[3, 3, 2] :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
       it "returns a batched matrix-matrix product if the first argument is 1-dimensional and the second argument has more than 2 dimensions" $ do
-        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[3] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[2, 3, 4] :. HNil))
-        hfoldrM @IO MatmulSpec () shapes
+        let shapes = hZipList (Proxy @'[3] :. HNil) (Proxy @'[2, 3, 4] :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
       it "returns a batched matrix-vector product if the first argument has more than 2 dimensions and the second argument is 1-dimensional" $ do
-        let shapes = hZipList (hCartesianProduct3 justCPU standardDTypes (Proxy @'[2, 3, 4] :. HNil)) (hCartesianProduct3 justCPU standardDTypes (Proxy @'[4] :. HNil))
-        hfoldrM @IO MatmulSpec () shapes
-  describe "binary comparison operators" $ do
-    describe "gt" $ do
-      it "works on tensors of identical shapes"
-        (hfoldrM @IO GTSpec () identicalShapes)
-      it "works on broadcastable tensors of different shapes"
-        (hfoldrM @IO GTSpec () broadcastableShapes)
-    describe "lt" $ do
-      it "works on tensors of identical shapes"
-        (hfoldrM @IO GTSpec () identicalShapes)
-      it "works on broadcastable tensors of different shapes"
-        (hfoldrM @IO GTSpec () broadcastableShapes)
-    describe "ge" $ do
-      it "works on tensors of identical shapes"
-        (hfoldrM @IO GESpec () identicalShapes)
-      it "works on broadcastable tensors of different shapes"
-        (hfoldrM @IO GESpec () broadcastableShapes)
-    describe "le" $ do
-      it "works on tensors of identical shapes"
-        (hfoldrM @IO LESpec () identicalShapes)
-      it "works on broadcastable tensors of different shapes"
-        (hfoldrM @IO LESpec () broadcastableShapes)
-    describe "eq" $ do
-      it "works on tensors of identical shapes"
-        (hfoldrM @IO EQSpec () identicalShapes)
-      it "works on broadcastable tensors of different shapes"
-        (hfoldrM @IO EQSpec () broadcastableShapes)
-    describe "ne" $ do
-      it "works on tensors of identical shapes"
-        (hfoldrM @IO NESpec () identicalShapes)
-      it "works on broadcastable tensors of different shapes"
-        (hfoldrM @IO NESpec () broadcastableShapes)
+        let shapes = hZipList (Proxy @'[2, 3, 4] :. HNil) (Proxy @'[4] :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
+    describe "binary comparison" $ do
+      let dispatch binaryCmpSpec = do
+            it "works on tensors of identical shapes" $
+              case device of
+                D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+                  hfoldrM @IO binaryCmpSpec () (hattach cpu   (hCartesianProduct standardDTypes2  identicalShapes))
+                D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+                  hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hCartesianProduct almostAllDTypes2 identicalShapes))
+            it "works on broadcastable tensors of different shapes" $
+              case device of
+                D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+                  hfoldrM @IO binaryCmpSpec () (hattach cpu   (hCartesianProduct standardDTypes2  broadcastableShapes))
+                D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+                  hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hCartesianProduct almostAllDTypes2 broadcastableShapes))
+      describe "greater than" $ dispatch GTSpec
+      describe "lower than" $ dispatch GTSpec
+      describe "greater or equal than" $ dispatch GESpec
+      describe "lower or equal than" $ dispatch LESpec
+      describe "equal to" $ dispatch EQSpec
+      describe "not equal to" $ dispatch NESpec
+
+testTensorListFold
+  :: forall device dtype shape . Tensor device dtype shape -> IO [D.ATenTensor]
+testTensorListFold t = hfoldrM TensorListFold [] (t :. HNil)
+
+testTensorListUnfold
+  :: forall device dtype shape device' dtype' shape'
+   . [D.ATenTensor]
+  -> IO (HList '[Tensor device dtype shape, Tensor device' dtype' shape'])
+testTensorListUnfold = hunfoldrM TensorListUnfold
+
+testCast
+  :: forall device dtype shape
+   . HList '[Tensor device dtype shape]
+  -> IO [D.ATenTensor]
+testCast xs = cast xs return
+
+testUncast
+  :: forall device dtype shape
+   . [D.ATenTensor]
+  -> IO (HList '[Tensor device dtype shape])
+testUncast xs = uncast xs return
+
+testReplicate
+  :: forall device dtype shape
+   . Tensor device dtype shape
+  -> HList (HReplicateR 3 (Tensor device dtype shape))
+testReplicate = hReplicate Proxy

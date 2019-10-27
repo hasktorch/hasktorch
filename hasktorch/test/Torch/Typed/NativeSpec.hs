@@ -116,8 +116,8 @@ data UnaryStandardFloatingPointDTypesSpec =
 -- data UnaryAllFloatingPointDTypesSpec =
 
 instance ( TensorOptions shape dtype device
-         , DTypeIsNotHalf dtype
-         , DTypeIsNotBool dtype
+         , DTypeIsNotHalf device dtype
+         , DTypeIsNotBool device dtype
          )
   => Apply
        UnaryStandardDTypesSpec
@@ -145,8 +145,8 @@ instance (TensorOptions shape dtype device)
     checkDynamicTensorAttributes t
 
 instance ( TensorOptions shape dtype device
-         , IsFloatingPoint dtype
-         , DTypeIsNotHalf dtype
+         , DTypeIsFloatingPoint device dtype
+         , DTypeIsNotHalf device dtype
          )
   => Apply
        UnaryStandardFloatingPointDTypesSpec
@@ -254,7 +254,7 @@ instance ( TensorOptions shape dtype device
     checkDynamicTensorAttributes t
 
 -- instance ( TensorOptions shape dtype device
---          , IsFloatingPoint dtype
+--          , DTypeIsFloatingPoint device dtype
 --          )
 --   => Apply
 --        UnaryAllFloatingPointDTypesSpec
@@ -281,7 +281,7 @@ instance ( TensorOptions shape dtype  device
 data SumAllSpec = SumAllSpec
 
 instance ( TensorOptions shape dtype device
-         , DTypeIsNotHalf dtype
+         , DTypeIsNotHalf device dtype
          , KnownDType (SumDType dtype)
          , KnownDevice device
          )
@@ -302,7 +302,7 @@ instance ( TensorOptions shape  dtype  device
          , KnownNat d
          , shape' ~ DropValue shape d
          , dtype' ~ SumDType dtype
-         , DTypeIsNotHalf dtype
+         , DTypeIsNotHalf device dtype
          )
   => Apply
        SumDimSpec
@@ -322,7 +322,7 @@ data AggregationSpec =
 instance ( TensorOptions shape dtype device
          , KnownDType dtype
          , KnownDevice device
-         , DTypeIsNotHalf dtype
+         , DTypeIsNotHalf device dtype
          , AllDimsPositive shape
          )
   => Apply
@@ -367,8 +367,8 @@ instance ( TensorOptions shape  dtype device
          , TensorOptions shape' dtype device
          , KnownReduction reduction
          , shape' ~ ConditionalReduction shape reduction
-         , IsFloatingPoint dtype
-         , DTypeIsNotHalf dtype
+         , DTypeIsFloatingPoint device dtype
+         , DTypeIsNotHalf device dtype
          )
   => Apply
        LossSpec
@@ -395,8 +395,8 @@ instance ( TensorOptions shape dtype device
          , KnownNat dim
          , DimOutOfBoundCheck shape dim
          , KnownDType dtype
-         , IsFloatingPoint dtype
-         , DTypeIsNotHalf dtype
+         , DTypeIsFloatingPoint device dtype
+         , DTypeIsNotHalf device dtype
          )
   => Apply
        SoftmaxSpec
@@ -417,8 +417,9 @@ data InverseSpec = InverseSpec
 instance ( TensorOptions shape  dtype device
          , TensorOptions shape' dtype device
          , shape' ~ Square shape
-         , IsFloatingPoint dtype
-         , DTypeIsNotHalf dtype
+         , DTypeIsFloatingPoint device dtype
+         , DTypeIsNotHalf device dtype
+         , RandDTypeIsValid device dtype
          )
   => Apply
        InverseSpec
@@ -437,8 +438,9 @@ instance ( TensorOptions shape   dtype device
          , TensorOptions shape'' dtype device
          , shape' ~ VectorOfSquare shape
          , shape'' ~ Square shape
-         , IsFloatingPoint dtype
-         , DTypeIsNotHalf dtype
+         , DTypeIsFloatingPoint device dtype
+         , DTypeIsNotHalf device dtype
+         , RandDTypeIsValid device dtype
          )
   => Apply
        SymeigSpec
@@ -464,8 +466,9 @@ instance ( TensorOptions '[n, n] dtype device
          , shape ~ ConditionalEigenVectors eigenvectors n
          , KnownDType dtype
          , KnownDevice device
-         , IsFloatingPoint dtype
-         , DTypeIsNotHalf dtype
+         , DTypeIsFloatingPoint device dtype
+         , DTypeIsNotHalf device dtype
+         , RandDTypeIsValid device dtype
          )
   => Apply
        EigSpec
@@ -483,8 +486,9 @@ data CholeskySpec = CholeskySpec
 instance ( TensorOptions shape  dtype device
          , TensorOptions shape' dtype device
          , shape' ~ Square shape
-         , IsFloatingPoint dtype
-         , DTypeIsNotHalf dtype
+         , DTypeIsFloatingPoint device dtype
+         , DTypeIsNotHalf device dtype
+         , RandDTypeIsValid device dtype
          )
   => Apply
        CholeskySpec
@@ -507,8 +511,9 @@ instance ( TensorOptions m_k dtype device
          , Square m_m ~ m_m
          , FstSquareDim m_m ~ FstSquareDim m_k
          , 1 <= FstSquareDim m_m
-         , IsFloatingPoint dtype
-         , DTypeIsNotHalf dtype
+         , DTypeIsFloatingPoint device dtype
+         , DTypeIsNotHalf device dtype
+         , RandDTypeIsValid device dtype
          )
   => Apply
        SolveSpec

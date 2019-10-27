@@ -110,6 +110,7 @@ instance ( KnownNat inputFeatures
          , KnownNat outputFeatures
          , KnownDType dtype
          , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
   => A.Randomizable (LinearSpec inputFeatures outputFeatures dtype device)
                     (Linear     inputFeatures outputFeatures dtype device)
@@ -184,6 +185,7 @@ instance ( KnownNat numEmbeds
          , KnownNat embedDim
          , KnownDType dtype
          , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
   => A.Randomizable (EmbeddingSpec 'Nothing numEmbeds embedDim dtype device)
                     (Embedding     'Nothing numEmbeds embedDim dtype device)
@@ -198,6 +200,7 @@ instance ( paddingIdx <= numEmbeds
          , KnownNat embedDim
          , KnownDType dtype
          , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
   => A.Randomizable (EmbeddingSpec ('Just paddingIdx) numEmbeds embedDim dtype device)
                     (Embedding     ('Just paddingIdx) numEmbeds embedDim dtype device)
@@ -250,6 +253,7 @@ instance ( KnownNat inputChannelSize
          , KnownNat kernelSize
          , KnownDType dtype
          , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
   => A.Randomizable (Conv1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
                     (Conv1d     inputChannelSize outputChannelSize kernelSize dtype device)
@@ -298,6 +302,7 @@ instance ( KnownNat inputChannelSize
          , KnownNat kernelSize1
          , KnownDType dtype
          , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
   => A.Randomizable (Conv2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
                     (Conv2d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
@@ -347,6 +352,7 @@ instance ( KnownNat inputChannelSize
          , KnownNat kernelSize2
          , KnownDType dtype
          , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
   => A.Randomizable (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
                     (Conv3d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
@@ -393,7 +399,9 @@ instance A.Parameterized (LayerNorm normalizedShape dtype device) where
     layerNormBias   <- Parameter <$> A.nextParameter
     return $ LayerNorm { .. }
 
-instance (TensorOptions normalizedShape dtype device)
+instance ( TensorOptions normalizedShape dtype device
+         , RandDTypeIsValid device dtype
+         )
   => A.Randomizable (LayerNormSpec normalizedShape dtype device)
                     (LayerNorm     normalizedShape dtype device)
  where
