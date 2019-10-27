@@ -2407,7 +2407,7 @@ lstm _input (_cc, _hc) _ws _bs _dropout _train =
                                                 _bidirectional
                                                 False -- _batch_first
  where
-  _hx = [_cc, _hc] :: [Tensor dtype '[numLayers, batchSize, hiddenSize * numDirections]]
+  _hx = [_cc, _hc] :: [Tensor dtype '[numLayers * numDirections, batchSize, hiddenSize]]
   (_num_layers :: I.Int64) =
     fromIntegral $ natVal (undefined :: Proxy numLayers)
   _bidirectional = case natVal (undefined :: Proxy numDirections) of
