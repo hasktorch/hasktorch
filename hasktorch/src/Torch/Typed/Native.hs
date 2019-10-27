@@ -2361,8 +2361,8 @@ lstm_cell _input (_cc, _hc) _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 A
 -- | lstm
 -- >>> let input = (ones :: Tensor 'D.Float '[3,16,10])
 -- >>> let (cc, hc) = (zeros, zeros) :: (Tensor 'D.Float '[4,16,10], Tensor 'D.Float '[4,16,10])
--- >>> let w = ones :: Tensor 'D.Float '[10,10]
--- >>> let b = ones :: Tensor 'D.Float '[10,10]
+-- >>> let w = ones :: Tensor 'D.Float '[40,10]
+-- >>> let b = ones :: Tensor 'D.Float '[40]
 -- >>> let ws = [(w,w), (w,w)]
 -- >>> let bs = [(b,b), (b,b)]
 -- >>> let output (a,_,_) = a
@@ -2376,12 +2376,12 @@ lstm
   -> ( Tensor dtype '[numLayers * numDirections, batchSize, hiddenSize]
      , Tensor dtype '[numLayers * numDirections, batchSize, hiddenSize]
      )
-  -> [ ( Tensor dtype '[inputDim, hiddenSize]
-       , Tensor dtype '[hiddenSize, hiddenSize]
+  -> [ ( Tensor dtype '[4 * hiddenSize, inputDim]
+       , Tensor dtype '[4 * hiddenSize,  hiddenSize]
        )
      ]
-  -> [ ( Tensor dtype '[inputDim, hiddenSize]
-       , Tensor dtype '[hiddenSize, hiddenSize]
+  -> [ ( Tensor dtype '[4 * hiddenSize ]
+       , Tensor dtype '[4 * hiddenSize ]
        )
      ]
   -> Double
