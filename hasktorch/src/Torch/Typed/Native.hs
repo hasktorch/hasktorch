@@ -2317,11 +2317,11 @@ quantizedMaxPool2d input = unsafePerformIO $ cast5
 
 -- | maxPool3d
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> t = maxPool3d @'(1,1,1) @'(1,1,1) @'(0,0,0) (ones @'D.Float @'[1,3,4,5,6])
+-- >>> t = maxPool3d @'(1,1,1) @'(1,1,1) @'(0,0,0) (ones :: CPUTensor 'D.Float '[1,3,4,5,6])
 -- >>> shape t
 -- [1,3,4,5,6]
 -- >>> :t t
--- t :: Tensor 'D.Float '[1, 3, 4, 5, 6]
+-- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5, 6]
 maxPool3d
   :: forall kernelSize stride padding channelSize
             inputSize0 inputSize1 inputSize2
@@ -2357,11 +2357,11 @@ maxPool3d input = unsafePerformIO $ cast6
 
 -- | maskedFill
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> t = ones @'D.Float @'[2, 1, 3]
--- >>> m = fromJust [[False], [True], [False]] :: Tensor 'D.Bool '[3, 1]
+-- >>> t = ones :: CPUTensor 'D.Float '[2, 1, 3]
+-- >>> m = fromJust [[False], [True], [False]] :: CPUTensor 'D.Bool '[3, 1]
 -- >>> t' = maskedFill @Float m 0.5 t
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[2, 3, 3]
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 3, 3]
 -- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[[Float]]]) $ t'
 -- (Float,([2,3,3],[[[1.0,1.0,1.0],[0.5,0.5,0.5],[1.0,1.0,1.0]],[[1.0,1.0,1.0],[0.5,0.5,0.5],[1.0,1.0,1.0]]]))
 maskedFill
@@ -2394,7 +2394,7 @@ maskedFill mask value input =
 
 -- | matrix-matrix multiplication
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> dtype &&& shape $ mm (ones @'D.Float @'[3,2]) (zeros @'D.Float @'[2,4])
+-- >>> dtype &&& shape $ mm (ones :: CPUTensor 'D.Float '[3,2]) (zeros :: CPUTensor 'D.Float '[2,4])
 -- (Float,[3,4])
 mm
   :: forall n k m dtype device
@@ -2408,7 +2408,7 @@ mm a b = unsafePerformIO $ cast2 ATen.mm_tt a b
 
 -- | matrix-vector multiplication
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> dtype &&& shape $ mv (ones @'D.Float @'[3,2]) (zeros @'D.Float @'[2])
+-- >>> dtype &&& shape $ mv (ones :: CPUTensor :: 'D.Float '[3,2]) (zeros :: CPUTensor 'D.Float '[2])
 -- (Float,[3])
 mv
   :: forall n m dtype device
@@ -2442,7 +2442,7 @@ mv input vec = unsafePerformIO $ cast2 ATen.mv_tt input vec
 -- batch_norm_update_stats _input _running_mean _running_var _momentum = unsafePerformIO $ (cast4 ATen.batch_norm_update_stats_tttd) _input _running_mean _running_var _momentum
 
 -- | onesLike
--- >>> dtype &&& shape $ onesLike (ones @'D.Float @'[3,4,5])
+-- >>> dtype &&& shape $ onesLike (ones :: CPUTensor 'D.Float '[3,4,5])
 -- (Float,[3,4,5])
 onesLike
   :: forall shape dtype device
@@ -2476,7 +2476,7 @@ onesLike input = unsafePerformIO $ cast1 ATen.ones_like_t input
 
 -- | randLike
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> t <- randLike (ones @'D.Float @'[3,4,5])
+-- >>> t <- randLike (ones :: CPUTensor 'D.Float '[3,4,5])
 -- >>> dtype &&& shape $ t
 -- (Float,[3,4,5])
 randLike
@@ -2487,7 +2487,7 @@ randLike = cast1 ATen.rand_like_t
 
 -- | randnLike
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> t <- randnLike (ones @'D.Float @'[3,4,5])
+-- >>> t <- randnLike (ones :: CPUTensor 'D.Float '[3,4,5])
 -- >>> dtype &&& shape $ t
 -- (Float,[3,4,5])
 randnLike
@@ -2501,7 +2501,7 @@ randnLike = cast1 ATen.randn_like_t
 
 -- | negate
 -- TODO: probably not defined for `D.Bool` tensors
--- >>> dtype &&& shape $ neg (ones @'D.Float @'[3,2])
+-- >>> dtype &&& shape $ neg (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 neg
   :: forall shape dtype device
@@ -2511,7 +2511,7 @@ neg input = unsafePerformIO $ cast1 ATen.neg_t input
 
 -- | round
 -- TODO: probably only defined for floating point tensors
--- >>> dtype &&& shape $ round (ones @'D.Float @'[3,2])
+-- >>> dtype &&& shape $ round (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 round
   :: forall shape dtype device
@@ -2521,7 +2521,7 @@ round input = unsafePerformIO $ cast1 ATen.round_t input
 
 -- | prelu activation function
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> dtype &&& shape $ prelu (ones @'D.Float @'[]) (ones @'D.Float @'[3,2])
+-- >>> dtype &&& shape $ prelu (ones :: CPUTensor 'D.Float '[]) (ones :: CPUTensor :: 'D.Float '[3,2])
 -- (Float,[3,2])
 prelu
   :: forall shape dtype device
@@ -2540,7 +2540,7 @@ type family GeluDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) 
   GeluDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | gelu activation function
--- >>> dtype &&& shape $ round (ones @'D.Float @'[3,2])
+-- >>> dtype &&& shape $ round (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 gelu
   :: forall shape dtype device
@@ -2564,7 +2564,7 @@ rsqrt input = unsafePerformIO $ cast1 ATen.rsqrt_t input
 
 -- | celu activation function
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> dtype &&& shape $ celu 3.0 (ones @'D.Float @'[3,2])
+-- >>> dtype &&& shape $ celu 3.0 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 celu
   :: forall shape dtype device
@@ -2642,31 +2642,31 @@ type family StackCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: (
 type Stack dim tensors = StackCheck (StackImpl dim tensors 1)
 
 -- | stack
--- >>> t = ones @'D.Float @'[]
+-- >>> t = ones :: CPUTensor 'D.Float '[]
 -- >>> t' = stack @0 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[1]
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[1]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [Float]) $ t'
 -- (Float,([1],[1.0]))
--- >>> t = ones @'D.Float @'[2,2]
+-- >>> t = ones :: CPUTensor 'D.Float '[2,2]
 -- >>> t' = stack @0 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[1, 2, 2]
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 2, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
 -- (Float,([1,2,2],[[[1.0,1.0],[1.0,1.0]]]))
 -- >>> t' = stack @1 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[2, 1, 2]
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 1, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
 -- (Float,([2,1,2],[[[1.0,1.0]],[[1.0,1.0]]]))
 -- >>> t' = stack @2 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[2, 2, 1]
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2, 1]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
 -- (Float,([2,2,1],[[[1.0],[1.0]],[[1.0],[1.0]]]))
 -- >>> t' = stack @2 (t :. t :. t :. HNil)
 -- >>> :type t'
--- t' :: Tensor 'D.Float '[2, 2, 3]
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2, 3]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
 -- (Float,([2,2,3],[[[1.0,1.0,1.0],[1.0,1.0,1.0]],[[1.0,1.0,1.0],[1.0,1.0,1.0]]]))
 stack
@@ -2767,15 +2767,15 @@ type family UnsqueezeCheck (shape :: [a]) (dim :: Nat) (result :: Maybe [a]) :: 
 type Unsqueeze shape dim = UnsqueezeCheck shape dim (UnsqueezeImpl shape dim)
 
 -- | unsqueeze
--- >>> t = fromJust [1, 2, 3, 4] :: Tensor 'D.Int64 '[4]
+-- >>> t = fromJust [1, 2, 3, 4] :: CPUTensor 'D.Int64 '[4]
 -- >>> t' = unsqueeze @0 t
 -- >>> :type t'
--- t' :: Tensor 'D.Int64 '[1, 4]
+-- t' :: Tensor '( 'D.CPU, 0) 'D.Int64 '[1, 4]
 -- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[Int]]) $ t'
 -- (Int64,([1,4],[[1,2,3,4]]))
 -- >>> t'' = unsqueeze @1 t
 -- >>> :type t''
--- t'' :: Tensor 'D.Int64 '[4, 1]
+-- t'' :: Tensor '( 'D.CPU, 0) 'D.Int64 '[4, 1]
 -- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[Int]]) $ t''
 -- (Int64,([4,1],[[1],[2],[3],[4]]))
 unsqueeze
@@ -2821,7 +2821,8 @@ clone input = cast1 ATen.clone_t input
 
 -- | addmm
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- >>> t = addmm (ones :: CPUTensor 'D.Float '[]) (ones :: CPUTensor 'D.Float '[3,2]) (zeros :: Tensor 'D.Float '[2,4]) 1 1
+-- TODO: can we use D.Scalar here for beta and alpha?
+-- >>> t = addmm 1 1 (ones :: CPUTensor 'D.Float '[3,2]) (zeros :: CPUTensor 'D.Float '[2,4]) (ones :: CPUTensor 'D.Float '[])
 -- >>> dtype &&& shape $ t
 -- (Float,[3,4])
 -- >>> :t t
@@ -2896,8 +2897,8 @@ qZeroPoint input = unsafePerformIO $ cast1 ATen.q_zero_point_t input
 -- combinations :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- combinations _input _r _with_replacement = unsafePerformIO $ (cast3 ATen.combinations_tlb) _input _r _with_replacement
 
--- | lstm_cell
--- >>> dtype &&& shape $ fst $ lstm_cell (ones :: CPUTensor 'D.Float '[2,2]) ((ones :: CPUTensor 'D.Float '[2,3]), (ones :: CPUTensor 'D.Float '[2,3])) (ones :: CPUTensor 'D.Float '[12,2]) (ones :: CPUTensor 'D.Float '[12,3]) (ones :: CPUTensor 'D.Float '[12]) (ones :: CPUTensor 'D.Float '[12])
+-- | lstmCell
+-- >>> dtype &&& shape $ fst $ lstmCell (ones :: CPUTensor 'D.Float '[12,2]) (ones :: CPUTensor 'D.Float '[12,3]) (ones :: CPUTensor 'D.Float '[12]) (ones :: CPUTensor 'D.Float '[12]) ((ones :: CPUTensor 'D.Float '[2,3]), (ones :: CPUTensor 'D.Float '[2,3])) (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,3])
 lstmCell
   :: forall inputDim hiddenSize batchSize dtype device 
@@ -2963,7 +2964,7 @@ type family MatrixOrMatrixBatch (shape :: [Nat]) :: [Nat] where
 
 -- | triu
 -- TODO: triu is not implemented for D.Bool, or maybe numeric type is lifted?
--- >>> t = ones @'D.Float @'[3, 4]
+-- >>> t = ones :: CPUTensor 'D.Float '[3, 4]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ triu 0 t
 -- (Float,([3,4],[[1.0,1.0,1.0,1.0],[0.0,1.0,1.0,1.0],[0.0,0.0,1.0,1.0]]))
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ triu 1 t
@@ -2980,7 +2981,7 @@ triu diagonal input = unsafePerformIO $ cast2 ATen.triu_tl input diagonal
 
 -- | tril
 -- TODO: tril is not implemented for D.Bool, or maybe numeric type is lifted?
--- >>> t = ones @'D.Float @'[3, 4]
+-- >>> t = ones :: CPUTensor 'D.Float '[3, 4]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ tril 0 t
 -- (Float,([3,4],[[1.0,0.0,0.0,0.0],[1.0,1.0,0.0,0.0],[1.0,1.0,1.0,0.0]]))
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[Float]]) $ tril 1 t
@@ -3101,11 +3102,11 @@ type family DropValue (shape :: [Nat]) (i :: Nat) :: [Nat] where
 
 -- | minDim
 -- >>> t = ones :: CPUTensor 'D.Float '[3,4,5]
--- >>> dtype &&& shape $ minDim @0 t
+-- >>> dtype &&& shape $ fst $ minDim @0 t
 -- (Float,[4,5])
--- >>> dtype &&& shape $ minDim @1 t
+-- >>> dtype &&& shape $ fst $ minDim @1 t
 -- (Float,[3,5])
--- >>> dtype &&& shape $ minDim @2 t
+-- >>> dtype &&& shape $ fst $ minDim @2 t
 -- (Float,[3,4])
 minDim
   :: forall d shape dtype device
