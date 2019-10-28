@@ -1,6 +1,6 @@
 # Initializers Test for Untyped Tensors
 
-See [pytorch initializer implementaitons](https://github.com/pytorch/pytorch/blob/6301d62e0b205c53a445ffb87ce7be1ac52d9cb9/torch/nn/init.py)
+See [pytorch initializer implementaitons](https://github.com/pytorch/pytorch/blob/6301d62e0b205c53a445ffb87ce7be1ac52d9cb9/torch/nn/init.py) and [libtorch initializer implementations](https://github.com/pytorch/pytorch/blob/dd277e90869cabfaca1e2f36464480935682b281/torch/csrc/api/src/nn/init.cpp)
 
 ## Linear layer
 
@@ -15,3 +15,8 @@ https://github.com/pytorch/pytorch/blob/6301d62e0b205c53a445ffb87ce7be1ac52d9cb9
 
 ## Transformer
 https://github.com/pytorch/pytorch/blob/6301d62e0b205c53a445ffb87ce7be1ac52d9cb9/torch/nn/modules/transformer.py#L132
+
+# Useful Reviews
+
+- [Weight Initialization in Neural Networks: A Journey From the Basics to Kaiming](Weight Initialization in Neural Networks: A Journey From the Basics to Kaiming)
+- [Understand Kaiming Initialization and Implementation Detail in PyTorch](https://towardsdatascience.com/understand-kaiming-initialization-and-implementation-detail-in-pytorch-f7aa967e9138)
