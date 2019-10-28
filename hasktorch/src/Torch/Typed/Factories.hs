@@ -94,9 +94,9 @@ randn = UnsafeMkTensor <$> D.randn
   )
 
 -- | linspace
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @7 0 3
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @7 @'( 'D.CPU, 0) 0 3
 -- (Float,([7],[0.0,0.5,1.0,1.5,2.0,2.5,3.0]))
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @3 0 2
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @3 @'( 'D.CPU, 0) 0 2
 -- (Float,([3],[0.0,1.0,2.0]))
 linspace
   :: forall steps device start end
