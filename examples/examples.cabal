@@ -154,10 +154,12 @@ executable initializers
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
+                     , hspec
 
 executable image-processing
   hs-source-dirs:      image-processing
   main-is:             Main.hs
+  other-modules:       Initializers, InitializerSpec
   default-language:    Haskell2010
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       base >= 4.7 && < 5
