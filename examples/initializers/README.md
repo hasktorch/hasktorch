@@ -24,7 +24,7 @@ Weights are initialized with kaiming uniform, a=sqrt(0.5), mode="fan in" (defaul
 ## Xavier Initialization
 
 $$
-std = \sqrt{\frac{2.0}{fan_in + fan_out}}
+std = \sqrt{\frac{2.0}{fan_{in} + fan_{out}}}
 $$
 
 ## Kaiming Initialization
@@ -35,10 +35,10 @@ $$
 
 With some variations depending on whether the input or output dimensions are used for the van value
 
-For default values, $a = 0$ corresponding to recommended gain for a relu non-linearity, and fan mode is $fan_in$:
+For default values, $a = 0$ corresponding to recommended gain for a relu non-linearity, and fan mode is $fan_{in}$:
 
 $$
-std = \sqrt{\frac{2}{fan_in}}
+std = \sqrt{\frac{2}{fan_{in}}}
 $$
 
 ## Uniform vs. Normal Versions
@@ -53,10 +53,10 @@ $$
 \frac{1}{2 \sqrt{3}} width = std
 $$
 
-So the half-width is:
+the half-width is:
 
 $$
 \frac{1}{2} width = \sqrt{3} std
 $$
 
-This is the value assigned to the `bound` variable (following the naming convention of [pytorch]((https://github.com/pytorch/pytorch/blob/6301d62e0b205c53a445ffb87ce7be1ac52d9cb9/torch/nn/init.py))
+which is assigned to the `bound` variable (following the naming convention of [pytorch]((https://github.com/pytorch/pytorch/blob/6301d62e0b205c53a445ffb87ce7be1ac52d9cb9/torch/nn/init.py))
