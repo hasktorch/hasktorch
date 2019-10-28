@@ -2338,8 +2338,21 @@ q_zero_point _input = unsafePerformIO $ (cast1 ATen.q_zero_point_t) _input
 -- combinations :: Tensor dtype shape -> Int -> Bool -> Tensor dtype shape
 -- combinations _input _r _with_replacement = unsafePerformIO $ (cast3 ATen.combinations_tlb) _input _r _with_replacement
 
--- lstm_cell :: Tensor dtype shape -> [Tensor dtype shape] -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> (Tensor dtype shape,Tensor dtype shape)
--- lstm_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.lstm_cell_tltttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+-- | lstm_cell
+-- >>> dtype &&& shape $ fst $ lstm_cell (ones :: Tensor 'D.Float '[2,2]) ((ones :: Tensor 'D.Float '[2,3]), (ones :: Tensor 'D.Float '[2,3])) (ones :: Tensor 'D.Float '[12,2]) (ones :: Tensor 'D.Float '[12,3]) (ones :: Tensor 'D.Float '[12]) (ones :: Tensor 'D.Float '[12])
+-- (Float,[2,3])
+lstm_cell :: forall dtype batchSize inputDim hiddenSize . 
+  Tensor dtype '[batchSize, inputDim] 
+  -> (Tensor dtype '[batchSize, hiddenSize], Tensor dtype '[batchSize, hiddenSize])
+  -> Tensor dtype '[4 * hiddenSize, inputDim] 
+  -> Tensor dtype '[4 * hiddenSize, hiddenSize] 
+  -> Tensor dtype '[4 * hiddenSize] 
+  -> Tensor dtype '[4 * hiddenSize]  
+  -> (Tensor dtype '[batchSize, hiddenSize],Tensor dtype '[batchSize, hiddenSize])
+lstm_cell _input (_cc, _hc) _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.lstm_cell_tltttt) _input _hx _w_ih _w_hh _b_ih _b_hh
+  where 
+    _hx = [_cc, _hc] :: [Tensor dtype '[batchSize, hiddenSize]]
+
 
 -- gru_cell :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 -- gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
