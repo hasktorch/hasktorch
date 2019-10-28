@@ -8,6 +8,8 @@ data NonLinearity = Linear | Sigmoid | Tanh | Relu | LeakyRelu
 
 data FanMode = FanIn | FanOut
 
+newtype Shape = Shape [Int]
+
 -- | Gain scaling value for He initialization
 calculateGain :: NonLinearity -> Maybe Float -> Float
 calculateGain Linear _ = 1.0
