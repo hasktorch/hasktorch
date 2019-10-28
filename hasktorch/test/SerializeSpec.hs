@@ -17,4 +17,4 @@ spec = do
     length tensors `shouldBe` 2
     let (ii,vv) = tensors
     (asValue ii :: [[Int]]) `shouldBe` i
-    (asValue vv :: [[Float]]) `shouldBe` v
+    (asValue vv :: [Float]) `shouldBe` v
