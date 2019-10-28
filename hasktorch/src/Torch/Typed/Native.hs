@@ -87,8 +87,14 @@ type family SumDType (dtype :: D.DType) :: D.DType where
   SumDType D.Int16 = D.Int64
   SumDType D.Int32 = D.Int64
   SumDType D.Int64 = D.Int64
+  SumDType D.Half = D.Half
   SumDType D.Float = D.Float
   SumDType D.Double = D.Double
+
+type family SumDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  SumDTypeIsValid '( 'D.CPU, 0)    dtype = DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  SumDTypeIsValid '( 'D.CUDA, _)   dtype = ()
+  SumDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | sumAll
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: Int) $ sumAll (ones @'D.Bool @'[2, 3])
@@ -109,7 +115,7 @@ type family SumDType (dtype :: D.DType) :: D.DType where
 -- (Double,([],6.0))
 sumAll
   :: forall shape dtype' dtype device
-   . ( DTypeIsNotHalf device dtype
+   . ( SumDTypeIsValid device dtype
      , dtype' ~ SumDType dtype
      )
   => Tensor device dtype  shape -- ^ input
@@ -125,7 +131,7 @@ sumDim
   :: forall d shape shape' dtype dtype' device
    . ( KnownNat d
      , shape' ~ DropValue shape d
-     , DTypeIsNotHalf device dtype
+     , SumDTypeIsValid device dtype
      , dtype' ~ SumDType dtype
      )
   => Tensor device dtype  shape -- ^ input
@@ -145,7 +151,7 @@ abs input = unsafePerformIO $ cast1 ATen.abs_t input
 -- | floor
 ceil
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 ceil input = unsafePerformIO $ cast1 ATen.ceil_t input
@@ -153,7 +159,7 @@ ceil input = unsafePerformIO $ cast1 ATen.ceil_t input
 -- | floor
 floor
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 floor input = unsafePerformIO $ cast1 ATen.floor_t input
@@ -163,12 +169,17 @@ type family AllDimsPositive (shape :: [Nat]) :: Constraint where
   AllDimsPositive '[] = ()
   AllDimsPositive (x ': xs) = (1 <= x, AllDimsPositive xs)
 
+type family AggregationDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  AggregationDTypeIsValid '( 'D.CPU, 0)    dtype = DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  AggregationDTypeIsValid '( 'D.CUDA, _)   dtype = ()
+  AggregationDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
+
 -- | min
 -- >>> dtype &&& shape $ min (ones :: Tensor 'D.Float '[2,2])
 -- (Float,[])
 min
   :: forall shape dtype device
-   . ( DTypeIsNotHalf device dtype
+   . ( AggregationDTypeIsValid device dtype
      , AllDimsPositive shape
      )
   => Tensor device dtype shape -- ^ input
@@ -180,7 +191,7 @@ min input = unsafePerformIO $ cast1 ATen.min_t input
 -- (Float,[])
 max
   :: forall shape dtype device
-  . ( DTypeIsNotHalf device dtype
+  . ( AggregationDTypeIsValid device dtype
     , AllDimsPositive shape
     )
   => Tensor device dtype shape -- ^ input
@@ -192,7 +203,7 @@ max input = unsafePerformIO $ cast1 ATen.max_t input
 -- (Float,[])
 median
   :: forall shape dtype device
-  . ( DTypeIsNotHalf device dtype
+  . ( AggregationDTypeIsValid device dtype
     , AllDimsPositive shape
     )
   => Tensor device dtype shape -- ^ input
@@ -214,7 +225,7 @@ cmul a input = unsafePerformIO $ cast2 ATen.mul_ts input a
 -- (Float,[3,2])
 erf
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 erf input = unsafePerformIO $ cast1 ATen.erf_t input
@@ -224,7 +235,7 @@ erf input = unsafePerformIO $ cast1 ATen.erf_t input
 -- (Float,[3,2])
 exp
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 exp input = unsafePerformIO $ cast1 ATen.exp_t input
@@ -234,7 +245,7 @@ exp input = unsafePerformIO $ cast1 ATen.exp_t input
 -- (Float,[3,2])
 log1p
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 log1p input = unsafePerformIO $ cast1 ATen.log1p_t input
@@ -244,7 +255,7 @@ log1p input = unsafePerformIO $ cast1 ATen.log1p_t input
 -- (Float,[3,2])
 log2
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 log2 input = unsafePerformIO $ cast1 ATen.log2_t input
@@ -254,7 +265,7 @@ log2 input = unsafePerformIO $ cast1 ATen.log2_t input
 -- (Float,[3,2])
 log10
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 log10 input = unsafePerformIO $ cast1 ATen.log10_t input
@@ -277,7 +288,7 @@ pow a input = unsafePerformIO $ cast2 ATen.pow_ts input a
 -- (Float,[3,2])
 relu
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 relu input = unsafePerformIO $ cast1 ATen.relu_t input
@@ -287,7 +298,7 @@ relu input = unsafePerformIO $ cast1 ATen.relu_t input
 -- (Float,[3,2])
 selu
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 selu input = unsafePerformIO $ cast1 ATen.selu_t input
@@ -297,7 +308,7 @@ selu input = unsafePerformIO $ cast1 ATen.selu_t input
 -- (Float,[3,2])
 sigmoid
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 sigmoid input = unsafePerformIO $ cast1 ATen.sigmoid_t input
@@ -307,7 +318,7 @@ sigmoid input = unsafePerformIO $ cast1 ATen.sigmoid_t input
 -- (Float,[3,2])
 sin
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 sin input = unsafePerformIO $ cast1 ATen.sin_t input
@@ -317,7 +328,7 @@ sin input = unsafePerformIO $ cast1 ATen.sin_t input
 -- (Float,[3,2])
 sinh
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 sinh input = unsafePerformIO $ cast1 ATen.sinh_t input
@@ -327,7 +338,7 @@ sinh input = unsafePerformIO $ cast1 ATen.sinh_t input
 -- (Float,[3,2])
 cos
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 cos input = unsafePerformIO $ cast1 ATen.cos_t input
@@ -335,7 +346,7 @@ cos input = unsafePerformIO $ cast1 ATen.cos_t input
 -- | sqrt
 sqrt
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 sqrt input = unsafePerformIO $ cast1 ATen.sqrt_t input
@@ -343,12 +354,13 @@ sqrt input = unsafePerformIO $ cast1 ATen.sqrt_t input
 -- | tanh
 tanh 
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 tanh input = unsafePerformIO $ cast1 ATen.tanh_t input
 
 -- | toDType
+-- TODO: since we have Torch.Typed.Tensor.toType, do we need this one?
 -- >>> dtype &&& shape $ (toDType (ones :: Tensor 'D.Float '[2,2]) :: Tensor 'D.Double '[2,2])
 -- (Double,[2,2])
 toDType
@@ -406,7 +418,7 @@ binaryCrossEntropy
   :: forall (reduction :: Reduction) shape shape' dtype device
    . ( KnownReduction reduction
      , shape' ~ ConditionalReduction shape reduction
-     , DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype
+     , StandardFloatingPointDTypeValidation device dtype
      )
   => Tensor device dtype shape -- ^ weight
   -> Tensor device dtype shape -- ^ prediction
@@ -426,7 +438,7 @@ mseLoss
   :: forall (reduction :: Reduction) shape shape' dtype device
    . ( KnownReduction reduction
      , shape' ~ ConditionalReduction shape reduction
-     , DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype
+     , StandardFloatingPointDTypeValidation device dtype
      )
   => Tensor device dtype shape -- ^ prediction
   -> Tensor device dtype shape -- ^ target
@@ -446,7 +458,7 @@ softmax
   :: forall dim shape dtype device
    . ( KnownNat dim, DimOutOfBoundCheck shape dim
      , KnownDType dtype
-     , DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype
+     , StandardFloatingPointDTypeValidation device dtype
      )
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
@@ -462,7 +474,7 @@ logSoftmax
   :: forall dim shape dtype device
    . ( KnownNat dim, DimOutOfBoundCheck shape dim
      , KnownDType dtype
-     , DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype
+     , StandardFloatingPointDTypeValidation device dtype
      )
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
@@ -495,11 +507,20 @@ type family FstSquareDim (shape :: [Nat]) :: Nat where
 inverse
   :: forall shape shape' dtype device
    . ( shape' ~ Square shape
-     , DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype
+     , StandardFloatingPointDTypeValidation device dtype
      )
   => Tensor device dtype shape -- ^ inverse
   -> Tensor device dtype shape' -- ^ output
 inverse input = unsafePerformIO $ cast1 ATen.inverse_t input
+
+type family SymeigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  SymeigDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
+                                                      , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                      )
+  SymeigDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+                                                      , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                      )
+  SymeigDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | symeig
 -- TODO: split this function into two, one that calculates the eigenvectors and another that does not?
@@ -521,7 +542,7 @@ symeig
   :: forall shape shape' shape'' dtype device
    . ( shape' ~ VectorOfSquare shape
      , shape'' ~ Square shape
-     , DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype
+     , SymeigDTypeIsValid device dtype
      )
   => Bool -- ^ whether or not to calculate eigenvectors
   -> Tri -- ^ upper or lower triagonal
@@ -547,6 +568,15 @@ type family ConditionalEigenVectors (eigenvectors :: EigenVectors) (n:: Nat) :: 
   ConditionalEigenVectors EnableEigenVectors  n = '[n, n]
   ConditionalEigenVectors DisableEigenVectors _ = '[0]
 
+type family EigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  EigDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
+                                                   , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                   )
+  EigDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+                                                   , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                   )
+  EigDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
 -- | eig
 -- >>> (eigenVals,eigenVecs) = eig @EnableEigenVectors (ones :: Tensor 'D.Float '[3,3])
 -- >>> dtype &&& shape $ eigenVals
@@ -569,7 +599,7 @@ eig
    . ( KnownNat n
      , KnownEigenVectors eigenvectors
      , shape ~ ConditionalEigenVectors eigenvectors n
-     , DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype
+     , EigDTypeIsValid device dtype
      )
   => Tensor device dtype '[n, n] -- ^ input matrix
   -> ( Tensor device dtype '[n, 2] -- ^ eigenvalues
@@ -581,6 +611,15 @@ eig input =
 -- svd :: Tensor device dtype shape -> Bool -> Bool -> (Tensor device dtype shape, Tensor device dtype shape, Tensor device dtype shape)
 -- svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
 
+type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  CholeskyDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
+                                                        , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                        )
+  CholeskyDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+                                                        , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                        )
+  CholeskyDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
 -- | cholesky
 -- >>> t <- rand :: IO (Tensor 'D.Float '[2,2])
 -- >>> c = cholesky (t `matmul` transpose2D t) Upper
@@ -591,7 +630,7 @@ eig input =
 cholesky
   :: forall shape shape' dtype device
    . ( shape' ~ Square shape
-     , DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype
+     , CholeskyDTypeIsValid device dtype
      )
   => Tri -- ^ upper or lower triangular part of the matrix
   -> Tensor device dtype shape -- ^ input
@@ -602,6 +641,15 @@ cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
 -- cholesky_solve :: Tensor device dtype shape -> Tensor device dtype shape -> Tri -> Tensor device dtype shape
 -- cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
 --   where boolUpper = isUpper upper
+
+type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  SolveDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
+                                                     , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                     )
+  SolveDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+                                                     , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                     )
+  SolveDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | solve the system of linear equations represented by `a c = b` and return the LU decomposition of `a`
 -- >>> a <- rand :: IO (Tensor 'D.Float '[10,10])
@@ -620,7 +668,7 @@ solve
    . ( Square m_m ~ m_m
      , FstSquareDim m_m ~ FstSquareDim m_k
      , 1 <= FstSquareDim m_m
-     , DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype
+     , SolveDTypeIsValid device dtype
      )
   => Tensor device dtype m_k -- ^ b
   -> Tensor device dtype m_m -- ^ a 
@@ -883,7 +931,7 @@ featureAlphaDropout p train input =
 -- (Float,[3,2])
 acos
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 acos input = unsafePerformIO $ cast1 ATen.acos_t input
@@ -1056,7 +1104,7 @@ argmin input = unsafePerformIO $ cast3 ATen.argmin_tlb
 -- (Float,[3,2])
 asin
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape
   -> Tensor device dtype shape
 asin input = unsafePerformIO $ cast1 ATen.asin_t input
@@ -1066,7 +1114,7 @@ asin input = unsafePerformIO $ cast1 ATen.asin_t input
 -- (Float,[3,2])
 atan
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape
   -> Tensor device dtype shape
 atan input = unsafePerformIO $ cast1 ATen.atan_t input
@@ -1560,7 +1608,7 @@ conv3d weight bias input = unsafePerformIO $ cast7
 -- (Float,[3,2])
 cosh
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 cosh input = unsafePerformIO $ cast1 ATen.cosh_t input
@@ -1687,7 +1735,7 @@ emptyLike input = cast1 ATen.empty_like_t input
 -- (Float,[3,2])
 erfc
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 erfc input = unsafePerformIO $ cast1 ATen.erfc_t input
@@ -1698,7 +1746,7 @@ erfc input = unsafePerformIO $ cast1 ATen.erfc_t input
 -- (Float,[3,2])
 expm1
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 expm1 input = unsafePerformIO $ cast1 ATen.expm1_t input
@@ -1746,7 +1794,7 @@ flattenAll input =
 -- (Float,[3,2])
 frac
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 frac input = unsafePerformIO $ cast1 ATen.frac_t input
@@ -2482,12 +2530,21 @@ prelu
   -> Tensor device dtype shape -- ^ output
 prelu weight input = unsafePerformIO $ cast2 ATen.prelu_tt input weight
 
+type family GeluDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  GeluDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
+                                                    , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                    )
+  GeluDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+                                                    , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                    )
+  GeluDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
 -- | gelu activation function
 -- >>> dtype &&& shape $ round (ones @'D.Float @'[3,2])
 -- (Float,[3,2])
 gelu
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (GeluDTypeIsValid device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 gelu input = unsafePerformIO $ cast1 ATen.gelu_t input
@@ -2500,7 +2557,7 @@ gelu input = unsafePerformIO $ cast1 ATen.gelu_t input
 -- (Float,[3,2])
 rsqrt
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 rsqrt input = unsafePerformIO $ cast1 ATen.rsqrt_t input
@@ -2638,7 +2695,7 @@ stack tensors = unsafePerformIO $ cast2 ATen.stack_ll tensors (natValI @dim :: I
 -- (Float,[3,2])
 tan
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 tan input = unsafePerformIO $ cast1 ATen.tan_t input
@@ -2670,7 +2727,7 @@ tan input = unsafePerformIO $ cast1 ATen.tan_t input
 -- (Float,[3,2])
 trunc
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 trunc input = unsafePerformIO $ cast1 ATen.trunc_t input
@@ -2979,7 +3036,7 @@ tril diagonal input = unsafePerformIO $ cast2 ATen.tril_tl input diagonal
 -- (Float,[3,2])
 lgamma
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 lgamma input = unsafePerformIO $ cast1 ATen.lgamma_t input
@@ -2989,7 +3046,7 @@ lgamma input = unsafePerformIO $ cast1 ATen.lgamma_t input
 -- (Float,[3,2])
 digamma
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 digamma input = unsafePerformIO $ cast1 ATen.digamma_t input
@@ -3008,7 +3065,7 @@ polygamma n input = unsafePerformIO $ cast2 ATen.polygamma_lt n input
 -- (Float,[3,2])
 erfinv
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 erfinv input = unsafePerformIO $ cast1 ATen.erfinv_t input
@@ -3300,7 +3357,7 @@ hardTanh min_val max_val input =
 -- (Float,[3,2])
 logSigmoid
   :: forall shape dtype device
-   . (DTypeIsFloatingPoint device dtype, DTypeIsNotHalf device dtype)
+   . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape -- ^ output
 logSigmoid input = unsafePerformIO $ cast1 ATen.log_sigmoid_t input

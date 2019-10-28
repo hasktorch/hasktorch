@@ -69,3 +69,10 @@ type family UnsupportedDTypeForDevice (deviceType :: D.DeviceType) (dtype :: D.D
                                                          :<>: ShowType deviceType
                                                          :<>: Text "."
                                                          )
+
+type family StandardFloatingPointDTypeValidation (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  StandardFloatingPointDTypeValidation '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
+                                                                        , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                                        )
+  StandardFloatingPointDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+  StandardFloatingPointDTypeValidation '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype

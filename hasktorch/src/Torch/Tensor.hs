@@ -124,11 +124,11 @@ toDevice device' t = unsafePerformIO $ do
   withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
   withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
   withDeviceIndex :: Int16 -> TensorOptions -> IO TensorOptions
-  withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di
+  withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di -- careful, setting the device index implies setting the device type to CUDA!
   to :: Tensor -> TensorOptions -> IO Tensor
   to t opts = cast4 ATen.tensor_to_obb t opts True True
   copyTo dt di t =
-    getOpts t >>= withDeviceType dt >>= withDeviceIndex di >>= to t
+    getOpts t >>= withDeviceIndex di >>= withDeviceType dt >>= to t
 
 select :: Tensor -> Int -> Int -> Tensor
 select t dim idx = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx

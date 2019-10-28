@@ -145,18 +145,60 @@ instance ( TensorOptions shape   dtype  device
     let c = ne a b
     checkDynamicTensorAttributes c
 
+data ToTypeSpec = ToTypeSpec
+
+instance ( TensorOptions shape dtype  device
+         , TensorOptions shape dtype' device
+         , KnownDType dtype'
+         )
+  => Apply
+       ToTypeSpec
+       (Proxy device, ((Proxy dtype, Proxy dtype'), Proxy shape))
+       (() -> IO ())
+ where
+  apply ToTypeSpec _ _ = do
+    let t = ones @shape @dtype @device
+        t' = toType @dtype' t
+    checkDynamicTensorAttributes t'
+
+data ToDeviceSpec = ToDeviceSpec
+
+instance ( TensorOptions shape dtype device
+         , KnownDevice device
+         )
+  => Apply
+       ToDeviceSpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
+  apply ToDeviceSpec _ _ = 
+    foldMap 
+      (\device' -> case someDevice device' of
+        (SomeDevice (Proxy :: Proxy device')) -> do
+          let t = ones @shape @dtype @device
+          checkDynamicTensorAttributes t
+          let t' = toDevice @device' t
+          D.device (toDynamic t') `shouldBe` deviceVal @device'
+          let t'' = toDevice @device t'
+          D.device (toDynamic t'') `shouldBe` deviceVal @device
+      )
+      [ D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 }
+      , D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }
+      ]
+
 spec = foldMap spec' [D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }, D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }]
 
 spec' :: D.Device -> Spec
 spec' device =
   describe ("for " <> show device) $ do
-    let standardShapes       = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
+    let standardShapes       = Proxy @'[2, 3] :. HNil -- (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
         broadcastableShapes0 = Proxy @'[3, 1, 4, 1] :. HNil
         broadcastableShapes1 = Proxy @'[2, 1, 1] :. HNil
         standardDTypes2      = hCartesianProduct standardDTypes            standardDTypes
         almostAllDTypes2     = hCartesianProduct (withHalf standardDTypes) (withHalf standardDTypes)
         identicalShapes      = hZipList standardShapes       standardShapes
         broadcastableShapes  = hZipList broadcastableShapes0 broadcastableShapes1
+
     describe "basic arithmetic" $ do
       let dispatch binarySpec = do
             it "works on tensors of identical shapes" $
@@ -174,6 +216,7 @@ spec' device =
       describe "addition" $ dispatch AddSpec
       describe "subtraction" $ dispatch SubSpec
       describe "multiplication" $ dispatch MulSpec
+
     describe "matrix multiplication" $ do
       it "returns the dot product if both tensors are 1-dimensional" $ do
         let shapes = hZipList (Proxy @'[3] :. HNil) (Proxy @'[3] :. HNil)
@@ -224,6 +267,7 @@ spec' device =
             hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
             hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
+
     describe "binary comparison" $ do
       let dispatch binaryCmpSpec = do
             it "works on tensors of identical shapes" $
@@ -244,6 +288,18 @@ spec' device =
       describe "lower or equal than" $ dispatch LESpec
       describe "equal to" $ dispatch EQSpec
       describe "not equal to" $ dispatch NESpec
+
+    describe "tensor conversion" $ do
+      it "toDevice" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          hfoldrM @IO ToDeviceSpec () (hattach cpu   (hCartesianProduct allDTypes standardShapes))
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          hfoldrM @IO ToDeviceSpec () (hattach cuda0 (hCartesianProduct allDTypes standardShapes))
+      it "toType" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          hfoldrM @IO ToTypeSpec () (hattach cpu   (hCartesianProduct (hCartesianProduct allDTypes allDTypes) standardShapes))
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          hfoldrM @IO ToTypeSpec () (hattach cuda0 (hCartesianProduct (hCartesianProduct allDTypes allDTypes) standardShapes))
 
 testTensorListFold
   :: forall device dtype shape . Tensor device dtype shape -> IO [D.ATenTensor]
