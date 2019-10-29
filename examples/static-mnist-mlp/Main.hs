@@ -10,6 +10,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 
 module Main where
 
@@ -135,12 +136,7 @@ type HiddenFeatures1 = 256
 
 train
   :: forall (device :: (D.DeviceType, Nat))
-   . ( KnownDevice device
-     , RandDTypeIsValid device 'D.Float
-     , StandardFloatingPointDTypeValidation device 'D.Float
-     , SumDTypeIsValid device 'D.Bool
-     , ComparisonDTypeIsValid device 'D.Int64
-     )
+   . _
   => IO ()
 train = do
   let (numIters, printEvery) = (1000000, 250)
@@ -196,13 +192,10 @@ train = do
   computeLossAndErrorRate
     :: forall n
      . (KnownNat n)
-    => MLP
-         I.DataDim
-         I.ClassDim
-         HiddenFeatures0
-         HiddenFeatures1
-         'D.Float
-         device
+    => MLP I.DataDim I.ClassDim
+           HiddenFeatures0 HiddenFeatures1
+           'D.Float
+           device
     -> Bool
     -> [Int]
     -> I.MnistData
