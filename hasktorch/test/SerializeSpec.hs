@@ -15,6 +15,6 @@ spec = do
     save [(asTensor i),(asTensor v)] "test.pt"
     tensors <- load "test.pt"
     length tensors `shouldBe` 2
-    let (ii,vv) = tensors
+    let [ii,vv] = tensors
     (asValue ii :: [[Int]]) `shouldBe` i
     (asValue vv :: [Float]) `shouldBe` v
