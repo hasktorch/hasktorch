@@ -182,11 +182,9 @@ instance ( TensorOptions shape dtype device
           let t'' = toDevice @device t'
           D.device (toDynamic t'') `shouldBe` deviceVal @device
       )
-      [ D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 }
-      , D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }
-      ]
+      availableDevices
 
-spec = foldMap spec' [D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }, D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }]
+spec = foldMap spec' availableDevices
 
 spec' :: D.Device -> Spec
 spec' device =

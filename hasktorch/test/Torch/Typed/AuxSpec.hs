@@ -33,7 +33,8 @@ import           System.IO.Unsafe
 import           Test.Hspec
 import           Test.QuickCheck
 
--- import qualified ATen.Managed.Type.Context     as ATen
+import           ATen.Cast
+import qualified ATen.Managed.Type.Context     as ATen
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Functions               as D
@@ -88,10 +89,10 @@ standardDTypes =
     :. Proxy @ 'D.Int64
     :. standardFloatingPointDTypes
 
-justCPU :: _
-justCPU = Proxy @'( 'D.CPU, 0) :. HNil
-
+cpu :: _
 cpu = Proxy @'( 'D.CPU, 0)
+
+cuda0 :: _
 cuda0 = Proxy @'( 'D.CUDA, 0)
 
 -- data SomeDevices where
@@ -115,7 +116,7 @@ cuda0 = Proxy @'( 'D.CUDA, 0)
 -- spec' :: [D.Device] -> Spec
 -- spec' devices = case someDevices devices of
 --   (SomeDevices (Proxy :: Proxy devices)) -> do
---     let poop = deviceHList @devices
+--     let devices' = deviceHList @devices
 --     return ()
 
 -- someDeviceProxies :: [D.Device] -> SomeDeviceProxies
@@ -124,21 +125,9 @@ cuda0 = Proxy @'( 'D.CUDA, 0)
 --   (SomeDevice proxy@(Proxy :: Proxy ht)) -> case someDeviceProxies t of
 --       (SomeDeviceProxies (Proxy :: Proxy tt)) -> SomeDeviceProxies $ Proxy @(proxy ': tt)
 
--- withCUDA :: forall deviceIndex . _ -> _
--- withCUDA devices =
---   let hasCUDA = unsafePerformIO $ cast0 ATen.hasCUDA in
---   if hasCUDA then (Proxy @'( 'D.CUDA, deviceIndex) :. devices) else devices
-
--- data AllAvailableDevices = AllAvailableDevices
-
--- instance Apply AllAvailableDevices [D.Device] HNothing where
---   apply _ [] = HNothing
-
--- instance Apply AllAvailableDevices [D.Device] (HJust (Proxy '( deviceType, Nat), [D.Device])) where
---   apply _ (device : devices) = case someDevice device of
---     (SomeDevice proxy@(Proxy :: Proxy device)) -> HJust (proxy, devices)
-
--- allAvailableDevices = hunfoldrM 
+availableDevices =
+  let hasCuda = unsafePerformIO $ cast0 ATen.hasCUDA in
+    [ D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ] <> (if hasCuda then [D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }] else mempty)
 
 spec :: Spec
 spec = return ()

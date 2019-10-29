@@ -77,7 +77,7 @@ instance ( TensorOptions shape dtype device
     t <- randn :: IO (Tensor device dtype shape)
     checkDynamicTensorAttributes t
 
-spec = foldMap spec' [D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }, D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }]
+spec = foldMap spec' availableDevices
 
 spec' :: D.Device -> Spec
 spec' device =

@@ -602,7 +602,7 @@ instance ( TensorOptions shape  'D.Bool device
         t' = all' @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
 
-spec = foldMap spec' [D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }, D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }]
+spec = foldMap spec' availableDevices
 
 spec' :: D.Device -> Spec
 spec' device =
@@ -610,11 +610,6 @@ spec' device =
     let standardShapes               = Proxy @'[2, 3] :. HNil -- (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
         squareShapes                 = Proxy @'[0, 0] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[0, 0, 0] :. Proxy @'[0, 1, 1] :. Proxy @'[1, 0, 0] :. Proxy @'[3, 2, 2] :. HNil
         reductions                   = Proxy @D.ReduceNone :. Proxy @D.ReduceMean :. Proxy @D.ReduceSum :. HNil
-        standardDTypes'              = hCartesianProduct3 justCPU standardDTypes              standardShapes
-        almostAllDTypes'             = hCartesianProduct3 justCPU almostAllDTypes             standardShapes
-        allDTypes'                   = hCartesianProduct3 justCPU allDTypes                   standardShapes
-        allFloatingPointDTypes'      = hCartesianProduct3 justCPU allFloatingPointDTypes      standardShapes
-        standardFloatingPointDTypes' = hCartesianProduct3 justCPU standardFloatingPointDTypes standardShapes
 
     describe "unary ops" $ do
       let dispatch unaryAllDTypesSpec = case device of
@@ -801,9 +796,6 @@ spec' device =
         let anyPrimeAllPrimeDims = Proxy @0 :. Proxy @1 :. HNil
             keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
             anyPrimeAllPrimeShapes = Proxy @'[0, 0] :. Proxy @'[0, 1]  :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. Proxy @'[0, 1, 1]  :. Proxy @'[1, 0, 1] :. HNil
-            anyPrimeAllPrimeSpec = hCartesianProduct
-                                    (hCartesianProduct anyPrimeAllPrimeDims keepOrDropDims)
-                                    (hCartesianProduct justCPU anyPrimeAllPrimeShapes)
             dispatch anyPrimeAllPrimeSpec = case device of
               D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
                 hfoldrM @IO anyPrimeAllPrimeSpec () (hCartesianProduct
@@ -822,4 +814,3 @@ spec' device =
         checkDynamicTensorAttributes c
 
     describe "binary native ops" $ return ()
-
