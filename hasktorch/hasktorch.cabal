@@ -70,6 +70,7 @@ test-suite spec
                     , QuickCheck
                     , mtl
                     , reflection
+                    , directory
 
 test-suite doctests
   type:               exitcode-stdio-1.0
