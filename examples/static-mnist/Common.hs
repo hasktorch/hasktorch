@@ -54,21 +54,20 @@ toBackend backend t = unsafePerformIO $ case backend of
   _      -> ATen.cast1 ATen.tensor_cpu t
 
 crossEntropyLoss
-  :: forall paddingIdx batchSize seqLen dtype device
-   . ( KnownNat paddingIdx
-     , KnownNat batchSize
+  :: forall batchSize seqLen dtype device
+   . ( KnownNat batchSize
      , KnownNat seqLen
      , KnownDType dtype
      , KnownDevice device
      , StandardFloatingPointDTypeValidation device dtype
      )
-  => Tensor device dtype '[batchSize, seqLen, seqLen]
-  -> Tensor device 'D.Int64 '[batchSize, seqLen]
+  => Tensor device dtype '[batchSize, seqLen]
+  -> Tensor device 'D.Int64 '[batchSize]
   -> Tensor device dtype '[]
 crossEntropyLoss prediction target =
-  nllLoss @D.ReduceMean @batchSize @seqLen @'[seqLen]
+  nllLoss @D.ReduceMean @batchSize @seqLen @'[]
     ones
-    (natValI @paddingIdx)
+    (-100)
     (logSoftmax @1 prediction)
     target
 
