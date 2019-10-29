@@ -746,7 +746,7 @@ logits
 logits TransformerLM {..} train input = do
   hidden <-
     transpose @0 @1
-      <$> getHidden @numAttnLayers @numHeads @ffnDim -- TODO: these type applications shouldn't be necessary
+      <$> getHidden @numAttnLayers @numHeads @ffnDim
             tEmbedding
             tPosEmbedding
             tDropout
@@ -823,7 +823,7 @@ type NumEmbeds = 10
 type EmbedDim = 5
 type SeqLen = 1
 
-type Model
+type Model device
   = TransformerLM
       NumAttnLayers
       NumHeads
@@ -833,9 +833,9 @@ type Model
       EmbedDim
       SeqLen
       'D.Float
-      '( 'D.CPU, 0)
+      device
 
-type ModelSpec
+type ModelSpec device
   = TransformerLMSpec
       NumAttnLayers
       NumHeads
@@ -845,24 +845,29 @@ type ModelSpec
       EmbedDim
       SeqLen
       'D.Float
-      '( 'D.CPU, 0)
+      device
 
 data Data
 
 type BatchSize = 1
 
-main = do
-  backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
-  let backend = case backend' of
-        Right "CUDA" -> "CUDA"
-        _            -> "CPU"
-      numIters = 1
-  init  <- A.sample spec :: IO Model
-  init' <- A.replaceParameters init <$> traverse
-    (A.makeIndependent . toBackend backend . A.toDependent)
-    (A.flattenParameters init)
-  (_trained, _) <- foldLoop (init', undefined) numIters $ \(state, _) i -> do
-    trainingLoss <- computeLoss @BatchSize backend state True undefined undefined
+train
+  :: forall (device :: (D.DeviceType, Nat))
+   . ( KnownDevice device
+     , RandDTypeIsValid device 'D.Float
+     , StandardFloatingPointDTypeValidation device 'D.Float
+     , MatMulDTypeIsValid device 'D.Float
+     , BasicArithmeticDTypeIsValid device 'D.Float
+     , SumDTypeIsValid device 'D.Float
+     , ComparisonDTypeIsValid device 'D.Float
+     , ComparisonDTypeIsValid device 'D.Int64
+     )
+  => Int
+  -> IO ()
+train numIters = do
+  init          <- A.sample spec :: IO (Model device)
+  (_trained, _) <- foldLoop (init, undefined) numIters $ \(state, _) i -> do
+    trainingLoss <- computeLoss @BatchSize state True undefined undefined
     let flat_parameters = A.flattenParameters state
     let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
     new_flat_parameters <- mapM A.makeIndependent
@@ -870,7 +875,7 @@ main = do
     return (A.replaceParameters state new_flat_parameters, undefined)
   return ()
  where
-  spec :: ModelSpec
+  spec :: ModelSpec device
   spec = TransformerLMSpec
     { tDropoutProbSpec = 0.0
     , tLayerSpec       = TransformerLMLayerSpec
@@ -884,11 +889,9 @@ main = do
                            }
     }
   computeLoss
-    :: forall batchSize device
-     . ( KnownNat batchSize
-       , EndsWith '[batchSize, EmbedDim] '[EmbedDim]
-       )
-    => Model
+    :: forall batchSize
+     . (KnownNat batchSize, EndsWith '[batchSize, EmbedDim] '[EmbedDim])
+    => Model device
     -> Bool
     -> [Int]
     -> Data
@@ -896,5 +899,13 @@ main = do
   computeLoss state train _indexes _data = do
     let input  = (undefined :: Tensor device 'D.Int64 '[batchSize, SeqLen])
         target = (undefined :: Tensor device 'D.Int64 '[batchSize, SeqLen])
-    prediction <- logits state train (toDevice input)
+    prediction <- logits state train input
     return $ crossEntropyLoss @PaddingIdx prediction (toDevice target)
+
+main :: IO ()
+main = do
+  deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
+  case deviceStr of
+    Right "cpu"    -> train @'( 'D.CPU, 0)  1
+    Right "cuda:0" -> train @'( 'D.CUDA, 0) 1
+    _              -> error "Don't know what to do or how."

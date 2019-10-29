@@ -34,7 +34,9 @@ import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
 import qualified ATen.Managed.Type.Context     as ATen
 import           Torch.Typed
-import           Torch.Typed.Native     hiding ( linear )
+import           Torch.Typed.Native      hiding ( linear
+                                                , dropout
+                                                )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
@@ -51,56 +53,72 @@ import           Common
 -- MLP for MNIST
 --------------------------------------------------------------------------------
 
-data MLPSpec (dtype :: D.DType)
-             (inputFeatures :: Nat) (outputFeatures :: Nat)
+data MLPSpec (inputFeatures :: Nat) (outputFeatures :: Nat)
              (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat)
+             (dtype :: D.DType)
+             (device :: (D.DeviceType, Nat))
  where
   MLPSpec
-    :: forall dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+    :: forall inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
      . { mlpDropoutProbSpec :: Double }
-    -> MLPSpec dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+    -> MLPSpec inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
  deriving (Show, Eq)
 
-data MLP (dtype :: D.DType)
-         (inputFeatures :: Nat) (outputFeatures :: Nat)
+data MLP (inputFeatures :: Nat) (outputFeatures :: Nat)
          (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat)
+         (dtype :: D.DType)
+         (device :: (D.DeviceType, Nat))
  where
   MLP
-    :: forall dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
-     . { mlpLayer0 :: Linear dtype inputFeatures hiddenFeatures0
-       , mlpLayer1 :: Linear dtype hiddenFeatures0 hiddenFeatures1
-       , mlpLayer2 :: Linear dtype hiddenFeatures1 outputFeatures
+    :: forall inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
+     . { mlpLayer0  :: Linear inputFeatures   hiddenFeatures0 dtype device
+       , mlpLayer1  :: Linear hiddenFeatures0 hiddenFeatures1 dtype device
+       , mlpLayer2  :: Linear hiddenFeatures1 outputFeatures  dtype device
        , mlpDropout :: Dropout
        }
-    -> MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+    -> MLP inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
  deriving (Show, Generic)
 
 mlp
-  :: MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+  :: forall
+       batchSize
+       inputFeatures
+       outputFeatures
+       hiddenFeatures0
+       hiddenFeatures1
+       dtype
+       device
+   . MLP inputFeatures
+         outputFeatures
+         hiddenFeatures0
+         hiddenFeatures1
+         dtype
+         device
   -> Bool
-  -> Tensor dtype '[batchSize, inputFeatures]
-  -> IO (Tensor dtype '[batchSize, outputFeatures])
+  -> Tensor device dtype '[batchSize, inputFeatures]
+  -> IO (Tensor device dtype '[batchSize, outputFeatures])
 mlp MLP {..} train input =
   return
     .   linear mlpLayer2
-    =<< Torch.Typed.NN.dropout mlpDropout train
+    =<< dropout mlpDropout train
     .   tanh
     .   linear mlpLayer1
-    =<< Torch.Typed.NN.dropout mlpDropout train
+    =<< dropout mlpDropout train
     .   tanh
     .   linear mlpLayer0
     =<< pure input
 
-instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
+instance A.Parameterized (MLP inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
 
-instance ( KnownDType dtype
-         , KnownNat inputFeatures
+instance ( KnownNat inputFeatures
          , KnownNat outputFeatures
          , KnownNat hiddenFeatures0
          , KnownNat hiddenFeatures1
+         , KnownDType dtype
+         , KnownDevice device
          )
-  => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
-                    (MLP     dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
+  => A.Randomizable (MLPSpec inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
+                    (MLP     inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
  where
   sample MLPSpec {..} =
     MLP
