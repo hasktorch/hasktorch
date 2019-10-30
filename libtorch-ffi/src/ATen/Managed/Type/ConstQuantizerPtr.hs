@@ -26,6 +26,9 @@ import ATen.Unmanaged.Type.Tensor
 import ATen.Unmanaged.Type.TensorList
 import ATen.Unmanaged.Type.TensorOptions
 import ATen.Unmanaged.Type.Tuple
+import ATen.Unmanaged.Type.StdString
+import ATen.Unmanaged.Type.Dimname
+import ATen.Unmanaged.Type.DimnameList
 
 import qualified ATen.Unmanaged.Type.ConstQuantizerPtr as Unmanaged
 

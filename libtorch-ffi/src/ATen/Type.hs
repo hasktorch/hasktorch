@@ -41,6 +41,9 @@ data Generator
 data Device
 data Context
 data ConstQuantizerPtr
+data Dimname
+data DimnameList
+data Symbol
 
 typeTable = Map.fromList [
         (C.TypeName "at::Scalar", [t|Scalar|])
@@ -72,4 +75,7 @@ typeTable = Map.fromList [
       , (C.TypeName "at::Context", [t|Context|])
       , (C.TypeName "at::ConstQuantizerPtr", [t|ConstQuantizerPtr|])
       , (C.TypeName "at::QScheme", [t|QScheme|])
+      , (C.TypeName "at::Dimname", [t|Dimname|])
+      , (C.TypeName "std::vector<at::Dimname>", [t|DimnameList|])
+      , (C.TypeName "at::Symbol", [t|Symbol|])
     ]

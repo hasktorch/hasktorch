@@ -59,6 +59,9 @@ main = do
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/tensorlist.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/context.yaml"
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/constquantizerptr.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/dimname.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/dimnamelist.yaml"
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/symbol.yaml"
   RTL.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RP.decodeAndCodeGen (outputDir opts) (specFileDL opts) "spec/bindings.yaml"

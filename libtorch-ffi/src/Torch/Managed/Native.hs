@@ -28,7 +28,8 @@ import ATen.Unmanaged.Type.TensorOptions
 import ATen.Unmanaged.Type.Tuple
 import ATen.Unmanaged.Type.StdString
 import ATen.Unmanaged.Type.StdArray
-
+import ATen.Unmanaged.Type.Dimname
+import ATen.Unmanaged.Type.DimnameList
 
 _cudnn_init_dropout_state_dblo
   :: CDouble
@@ -125,6 +126,27 @@ blackman_window_lb
   -> IO (ForeignPtr Tensor)
 blackman_window_lb = cast2 Unmanaged.blackman_window_lb
 
+empty_lNoM
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+empty_lNoM = cast4 Unmanaged.empty_lNoM
+
+empty_lNo
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+empty_lNo = cast3 Unmanaged.empty_lNo
+
+empty_lN
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+empty_lN = cast2 Unmanaged.empty_lN
+
 empty_loM
   :: ForeignPtr IntArray
   -> ForeignPtr TensorOptions
@@ -178,6 +200,33 @@ _empty_affine_quantized_l
   -> IO (ForeignPtr Tensor)
 _empty_affine_quantized_l = cast1 Unmanaged._empty_affine_quantized_l
 
+_empty_per_channel_affine_quantized_lttloM
+  :: ForeignPtr IntArray
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+_empty_per_channel_affine_quantized_lttloM = cast6 Unmanaged._empty_per_channel_affine_quantized_lttloM
+
+_empty_per_channel_affine_quantized_lttlo
+  :: ForeignPtr IntArray
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_empty_per_channel_affine_quantized_lttlo = cast5 Unmanaged._empty_per_channel_affine_quantized_lttlo
+
+_empty_per_channel_affine_quantized_lttl
+  :: ForeignPtr IntArray
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+_empty_per_channel_affine_quantized_lttl = cast4 Unmanaged._empty_per_channel_affine_quantized_lttl
+
 empty_like_toM
   :: ForeignPtr Tensor
   -> ForeignPtr TensorOptions
@@ -227,6 +276,21 @@ eye_ll
   -> Int64
   -> IO (ForeignPtr Tensor)
 eye_ll = cast2 Unmanaged.eye_ll
+
+full_lsNo
+  :: ForeignPtr IntArray
+  -> ForeignPtr Scalar
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+full_lsNo = cast4 Unmanaged.full_lsNo
+
+full_lsN
+  :: ForeignPtr IntArray
+  -> ForeignPtr Scalar
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+full_lsN = cast3 Unmanaged.full_lsN
 
 full_lso
   :: ForeignPtr IntArray
@@ -405,6 +469,19 @@ logspace_ss
   -> IO (ForeignPtr Tensor)
 logspace_ss = cast2 Unmanaged.logspace_ss
 
+ones_lNo
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+ones_lNo = cast3 Unmanaged.ones_lNo
+
+ones_lN
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+ones_lN = cast2 Unmanaged.ones_lN
+
 ones_lo
   :: ForeignPtr IntArray
   -> ForeignPtr TensorOptions
@@ -433,6 +510,34 @@ scalar_tensor_s
   -> IO (ForeignPtr Tensor)
 scalar_tensor_s = cast1 Unmanaged.scalar_tensor_s
 
+rand_lNo
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+rand_lNo = cast3 Unmanaged.rand_lNo
+
+rand_lN
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+rand_lN = cast2 Unmanaged.rand_lN
+
+rand_lpNo
+  :: ForeignPtr IntArray
+  -> ForeignPtr Generator
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+rand_lpNo = cast4 Unmanaged.rand_lpNo
+
+rand_lpN
+  :: ForeignPtr IntArray
+  -> ForeignPtr Generator
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+rand_lpN = cast3 Unmanaged.rand_lpN
+
 rand_lo
   :: ForeignPtr IntArray
   -> ForeignPtr TensorOptions
@@ -446,14 +551,14 @@ rand_l = cast1 Unmanaged.rand_l
 
 rand_lpo
   :: ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 rand_lpo = cast3 Unmanaged.rand_lpo
 
 rand_lp
   :: ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 rand_lp = cast2 Unmanaged.rand_lp
 
@@ -479,7 +584,7 @@ randint_ll = cast2 Unmanaged.randint_ll
 randint_llpo
   :: Int64
   -> ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randint_llpo = cast4 Unmanaged.randint_llpo
@@ -487,7 +592,7 @@ randint_llpo = cast4 Unmanaged.randint_llpo
 randint_llp
   :: Int64
   -> ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 randint_llp = cast3 Unmanaged.randint_llp
 
@@ -510,7 +615,7 @@ randint_lllpo
   :: Int64
   -> Int64
   -> ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randint_lllpo = cast5 Unmanaged.randint_lllpo
@@ -519,7 +624,7 @@ randint_lllp
   :: Int64
   -> Int64
   -> ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 randint_lllp = cast4 Unmanaged.randint_lllp
 
@@ -551,16 +656,44 @@ randn_l = cast1 Unmanaged.randn_l
 
 randn_lpo
   :: ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randn_lpo = cast3 Unmanaged.randn_lpo
 
 randn_lp
   :: ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 randn_lp = cast2 Unmanaged.randn_lp
+
+randn_lNo
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+randn_lNo = cast3 Unmanaged.randn_lNo
+
+randn_lN
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+randn_lN = cast2 Unmanaged.randn_lN
+
+randn_lpNo
+  :: ForeignPtr IntArray
+  -> ForeignPtr Generator
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+randn_lpNo = cast4 Unmanaged.randn_lpNo
+
+randn_lpN
+  :: ForeignPtr IntArray
+  -> ForeignPtr Generator
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+randn_lpN = cast3 Unmanaged.randn_lpN
 
 randn_like_to
   :: ForeignPtr Tensor
@@ -581,14 +714,14 @@ randperm_l = cast1 Unmanaged.randperm_l
 
 randperm_lpo
   :: Int64
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randperm_lpo = cast3 Unmanaged.randperm_lpo
 
 randperm_lp
   :: Int64
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 randperm_lp = cast2 Unmanaged.randperm_lp
 
@@ -619,6 +752,19 @@ range_sso
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 range_sso = cast3 Unmanaged.range_sso
+
+zeros_lNo
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+zeros_lNo = cast3 Unmanaged.zeros_lNo
+
+zeros_lN
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+zeros_lN = cast2 Unmanaged.zeros_lN
 
 zeros_lo
   :: ForeignPtr IntArray
@@ -750,7 +896,7 @@ normal_ddlpo
   :: CDouble
   -> CDouble
   -> ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 normal_ddlpo = cast5 Unmanaged.normal_ddlpo
@@ -759,7 +905,7 @@ normal_ddlp
   :: CDouble
   -> CDouble
   -> ForeignPtr IntArray
-  -> Ptr Generator
+  -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 normal_ddlp = cast4 Unmanaged.normal_ddlp
 

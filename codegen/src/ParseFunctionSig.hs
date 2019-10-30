@@ -79,6 +79,9 @@ data Parsable
     | MemoryFormat
     | QScheme
     | ConstQuantizerPtr
+    | Dimname
+    | DimnameList
+    | Symbol
     deriving (Eq, Show, Generic)
 
 data CType
@@ -237,6 +240,12 @@ identifier = (lexm . try) (p >>= check)
 -- MemoryFormat
 -- >>> parseTest typ "QScheme"
 -- QScheme
+-- >>> parseTest typ "Dimname"
+-- Dimname
+-- >>> parseTest typ "DimnameList"
+-- DimnameList
+-- >>> parseTest typ "Symbol"
+-- Symbol
 -- >>> parseTest typ "Storage"
 -- StorageType
 -- >>> parseTest typ "Tensor"
@@ -309,6 +318,9 @@ typ =
     ((lexm $ string "Layout") >> (pure $ Layout)) <|>
     ((lexm $ string "MemoryFormat") >> (pure $ MemoryFormat)) <|>
     ((lexm $ string "QScheme") >> (pure $ QScheme)) <|>
+    ((lexm $ string "DimnameList") >> (pure $ DimnameList)) <|>
+    try ((lexm $ string "Dimname") >> (pure $ Dimname)) <|>
+    ((lexm $ string "Symbol") >> (pure $ Symbol)) <|>
     ((lexm $ string "Device") >> (pure $ DeviceType)) <|>
     ((lexm $ string "Generator *") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType)) <|>

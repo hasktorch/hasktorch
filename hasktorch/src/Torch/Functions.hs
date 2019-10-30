@@ -69,6 +69,12 @@ abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
 add :: Tensor -> Tensor -> Tensor
 add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne
 
+mul :: Tensor -> Tensor -> Tensor
+mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
+
+sub :: Tensor -> Tensor -> Tensor
+sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
+
 ceil :: Tensor -> Tensor
 ceil t = unsafePerformIO $ (cast1 ATen.ceil_t) t
 
@@ -84,14 +90,17 @@ max t = unsafePerformIO $ (cast1 ATen.max_t) t
 median :: Tensor -> Tensor
 median t = unsafePerformIO $ (cast1 ATen.median_t) t
 
-sub :: Tensor -> Tensor -> Tensor
-sub a b = unsafePerformIO $ (cast3 ATen.sub_tts) a b kOne
+addScalar :: Scalar a => Tensor -> a -> Tensor
+addScalar t a = unsafePerformIO $ (cast2 ATen.add_ts) t a
 
-mul :: Tensor -> Tensor -> Tensor
-mul a b = unsafePerformIO $ (cast2 ATen.mul_tt) a b
+subScalar :: Scalar a => Tensor -> a -> Tensor
+subScalar t a = unsafePerformIO $ (cast2 ATen.sub_ts) t a
 
-cmul :: Scalar a => Tensor -> a -> Tensor
-cmul t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
+mulScalar :: Scalar a => Tensor -> a -> Tensor
+mulScalar t a = unsafePerformIO $ (cast2 ATen.mul_ts) t a
+
+divScalar :: Scalar a => Tensor -> a -> Tensor
+divScalar t a = unsafePerformIO $ (cast2 ATen.div_ts) t a
 
 matmul :: Tensor -> Tensor -> Tensor
 matmul a b = unsafePerformIO $ (cast2 ATen.matmul_tt) a b
@@ -183,7 +192,7 @@ mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
 conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $
     (cast7 ATen.conv2d_tttllll) input weight bias
-                                ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) (0 :: Int)
+                                ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) (1 :: Int)
 
 maxPool2d :: Tensor -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor
 maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
@@ -258,3 +267,5 @@ all' t dim keepdim = unsafePerformIO $ (cast3 ATen.all_tlb) t dim keepdim
 any' :: Tensor -> Int -> Bool -> Tensor
 any' t dim keepdim = unsafePerformIO $ (cast3 ATen.any_tlb) t dim keepdim
 
+permute :: Tensor -> [Int] -> Tensor
+permute t dims = unsafePerformIO $ (cast2 ATen.tensor_permute_l) t dims

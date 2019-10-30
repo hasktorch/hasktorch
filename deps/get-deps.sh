@@ -8,16 +8,16 @@
 set -eu
 
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu90" or "cu100"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu92" or "cu101"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
-    echo "    # Use libtorch-1.2.0   w/o -l" 1>&2
+    echo "    # Use libtorch-1.3.0   w/o -l" 1>&2
     echo "" 1>&2
     echo " -c # Download libtorch from hasktorch's site w/ -c" 1>&2
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
     echo "" 1>&2
     echo " -a cpu   # Use CPU without CUDA" 1>&2
-    echo " -a cu90  # Use CUDA-9" 1>&2
-    echo " -a cu100 # Use CUDA-10" 1>&2
+    echo " -a cu92  # Use CUDA-9" 1>&2
+    echo " -a cu101 # Use CUDA-10" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
@@ -29,7 +29,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
-VERSION=1.2.0
+VERSION=1.3.0
 
 while getopts nca:sh OPT
 do
@@ -84,7 +84,12 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
         unzip ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
         rm ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
       else
-        wget https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
+	case "${COMPUTE_ARCH}" in
+	      "cpu" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcpu.zip ;;
+	      "cu92" ) URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu92.zip ;;
+	      "cu101" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip ;;
+	esac
+	wget -O libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip "$URL"
         unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
         rm libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
       fi

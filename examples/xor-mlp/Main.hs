@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Main where
 
@@ -13,7 +14,7 @@ import Torch.Autograd
 import Torch.NN
 import GHC.Generics
 
-import Control.Monad (foldM)
+import Control.Monad (foldM, when)
 import Data.List (foldl', scanl', intersperse)
 
 --------------------------------------------------------------------------------
@@ -39,8 +40,7 @@ instance Randomizable MLPSpec MLP where
           shift (a, b) c = (b, c)
 
 instance Parameterized MLP
--- This instance generates following codes.
---
+-- This instance generates the following code
 ---------------------------------------------------
 -- instance Parameterized MLP where
 --   flattenParameters MLP{..} = concat $ map flattenParameters layers
@@ -56,15 +56,16 @@ mlp MLP{..} input = foldl' revApply input $ intersperse nonlinearity $ map linea
 -- Training code
 --------------------------------------------------------------------------------
 
-batch_size = 32
-num_iters = 10000
+batch_size = 2
+num_iters = 2000
 
 model :: MLP -> Tensor -> Tensor
-model params t = sigmoid (mlp params t)
+model params t = mlp params t
 
 main :: IO ()
 main = do
-    init <- sample $ MLPSpec { feature_counts = [2, 20, 20, 1], nonlinearitySpec = Torch.Functions.tanh }
+    init <- sample $ MLPSpec { feature_counts = [2, 3, 2, 1], 
+                               nonlinearitySpec = Torch.Functions.tanh } 
     trained <- foldLoop init num_iters $ \state i -> do
         input <- rand' [batch_size, 2] >>= return . (toDType Float) . (gt 0.5)
         let expected_output = tensorXOR input
@@ -75,12 +76,16 @@ main = do
         let flat_parameters = flattenParameters state
         let gradients = grad loss flat_parameters
 
-        if i `mod` 100 == 0
-          then do putStrLn $ show loss
-          else return ()
+        when (i `mod` 100 == 0) do
+            putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
 
-        new_flat_parameters <- mapM makeIndependent $ sgd 5e-4 flat_parameters gradients
+        new_flat_parameters <- mapM makeIndependent $ sgd 1e-1 flat_parameters gradients
         return $ replaceParameters state $ new_flat_parameters
+    putStrLn "Final Model:"
+    putStrLn $ "0, 0 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 0 :: Float]))
+    putStrLn $ "0, 1 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 1 :: Float]))
+    putStrLn $ "1, 0 => " ++ (show $ squeezeAll $ model trained (asTensor [1, 0 :: Float]))
+    putStrLn $ "1, 1 => " ++ (show $ squeezeAll $ model trained (asTensor [1, 1 :: Float]))
     return ()
   where
     foldLoop x count block = foldM block x [1..count]
