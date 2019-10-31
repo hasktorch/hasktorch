@@ -35,6 +35,7 @@ library
                     , Torch.Layout
                     , Torch.Cast
                     , Torch.Dimname
+                    , Torch.Serialize
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
@@ -67,6 +68,7 @@ test-suite spec
                     , Torch.Typed.TensorSpec
                     , Torch.Typed.FactoriesSpec
                     , Torch.Typed.NativeSpec
+                    , SerializeSpec
   default-language: Haskell2010
   build-depends:      base >= 4.7 && < 5
                     , hasktorch
@@ -77,6 +79,7 @@ test-suite spec
                     , reflection
                     , safe-exceptions
                     , QuickCheck
+                    , directory
 
 test-suite doctests
   type:               exitcode-stdio-1.0
