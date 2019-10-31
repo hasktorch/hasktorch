@@ -15,7 +15,8 @@ import qualified Data.ByteString.Internal      as BSI
 import           GHC.TypeLits
 
 import           ATen.Cast
-import           Torch.Typed
+import           Torch.Typed.Aux
+import           Torch.Typed.Tensor
 import           Torch.Typed.Native
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
@@ -23,8 +24,6 @@ import qualified Torch.TensorOptions           as D
 import qualified Foreign.ForeignPtr            as F
 import qualified Foreign.Ptr                   as F
 import qualified Torch.Managed.Native          as LibTorch
-
-
 
 data MnistData =
   MnistData
@@ -38,23 +37,22 @@ type DataDim = Rows * Cols
 type ClassDim = 10
 
 getLabels
-  :: forall n . KnownNat n => MnistData -> [Int] -> Tensor 'D.Int64 '[n]
+  :: forall n . KnownNat n => MnistData -> [Int] -> CPUTensor 'D.Int64 '[n]
 getLabels mnist imageIdxs =
-  UnsafeMkTensor $ D.asTensor $ map (getLabel mnist) $ take (natValI @n)
-                                                            imageIdxs
+  UnsafeMkTensor . D.asTensor . map (getLabel mnist) . take (natValI @n) $ imageIdxs
 
 getLabel :: MnistData -> Int -> Int
 getLabel mnist imageIdx =
   fromIntegral $ BS.index (labels mnist) (fromIntegral imageIdx + 8)
 
-getImage :: MnistData -> Int -> Tensor 'D.Float '[DataDim]
+getImage :: MnistData -> Int -> CPUTensor 'D.Float '[DataDim]
 getImage mnist imageIdx =
   let imageBS =
           [ fromIntegral $ BS.index (images mnist)
                                     (fromIntegral imageIdx * 28 ^ 2 + 16 + r)
           | r <- [0 .. 28 ^ 2 - 1]
           ] :: [Float]
-      (tensor :: Tensor 'D.Float '[DataDim]) =
+      (tensor :: CPUTensor 'D.Float '[DataDim]) =
           UnsafeMkTensor $ D.asTensor imageBS
   in  tensor
 
@@ -63,7 +61,7 @@ getImages'
    . KnownNat n
   => MnistData
   -> [Int]
-  -> Tensor 'D.Float '[n, DataDim]
+  -> CPUTensor 'D.Float '[n, DataDim]
 getImages' mnist imageIdxs = UnsafeMkTensor $ D.asTensor $ map image $ take
   (natValI @n)
   imageIdxs
@@ -79,11 +77,11 @@ getImages
    . KnownNat n
   => MnistData
   -> [Int]
-  -> Tensor 'D.Float '[n, DataDim]
+  -> CPUTensor 'D.Float '[n, DataDim]
 getImages mnist imageIdxs = UnsafeMkTensor $ unsafePerformIO $ do
   let (BSI.PS fptr off len) = images mnist
-  t <- ((cast2 LibTorch.empty_lo) :: [Int] -> D.TensorOptions -> IO D.Tensor)
-         [(natValI @n),(natValI @DataDim)]
+  t <- (cast2 LibTorch.empty_lo :: [Int] -> D.TensorOptions -> IO D.Tensor)
+         [natValI @n, natValI @DataDim]
          (D.withDType D.UInt8 D.defaultOpts)
   D.withTensor t $ \ptr1 -> do
     F.withForeignPtr fptr $ \ptr2 -> do
