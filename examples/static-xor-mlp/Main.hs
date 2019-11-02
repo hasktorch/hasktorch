@@ -32,12 +32,14 @@ import           Data.Reflection
 import           GHC.Generics
 import           GHC.TypeLits
 
-import           Torch.Typed
+import           Torch.Typed.Aux
+import           Torch.Typed.Tensor
 import           Torch.Typed.Native     hiding ( linear )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
+import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.Functions               as D
@@ -48,30 +50,49 @@ import qualified Torch.TensorFactories         as D
 -- Multi-Layer Perceptron (MLP)
 --------------------------------------------------------------------------------
 
-data MLPSpec (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) = MLPSpec
+data MLPSpec (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat)
+             (dtype :: D.DType)
+             (device :: (D.DeviceType, Nat))
+  = MLPSpec
 
-data MLP (dtype :: D.DType) (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat) =
-  MLP { layer0 :: Linear dtype inputFeatures hiddenFeatures
-      , layer1 :: Linear dtype hiddenFeatures hiddenFeatures
-      , layer2 :: Linear dtype hiddenFeatures outputFeatures
-      } deriving (Show, Generic)
+data MLP (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat)
+         (dtype :: D.DType) 
+         (device :: (D.DeviceType, Nat))
+  = MLP { layer0 :: Linear inputFeatures  hiddenFeatures dtype device
+        , layer1 :: Linear hiddenFeatures hiddenFeatures dtype device
+        , layer2 :: Linear hiddenFeatures outputFeatures dtype device
+        } deriving (Show, Generic)
 
-instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures)
+instance A.Parameterized (MLP inputFeatures outputFeatures hiddenFeatures dtype device)
 
-instance (KnownDType dtype, KnownNat inputFeatures, KnownNat outputFeatures, KnownNat hiddenFeatures) => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures) (MLP dtype inputFeatures outputFeatures hiddenFeatures) where
+instance ( KnownDevice device
+         , KnownDType dtype
+         , KnownNat inputFeatures
+         , KnownNat outputFeatures
+         , KnownNat hiddenFeatures
+         , RandDTypeIsValid device dtype
+         )
+  => A.Randomizable
+       (MLPSpec inputFeatures outputFeatures hiddenFeatures dtype device)
+       (MLP     inputFeatures outputFeatures hiddenFeatures dtype device)
+ where
   sample MLPSpec =
     MLP <$> A.sample LinearSpec <*> A.sample LinearSpec <*> A.sample LinearSpec
 
 mlp
-  :: MLP dtype inputFeatures outputFeatures hiddenFeatures
-  -> Tensor dtype '[batchSize, inputFeatures]
-  -> Tensor dtype '[batchSize, outputFeatures]
+  :: forall batchSize inputFeatures outputFeatures hiddenFeatures dtype device
+   . (StandardFloatingPointDTypeValidation device dtype)
+  => MLP inputFeatures outputFeatures hiddenFeatures dtype device
+  -> Tensor device dtype '[batchSize, inputFeatures]
+  -> Tensor device dtype '[batchSize, outputFeatures]
 mlp MLP {..} = linear layer2 . tanh . linear layer1 . tanh . linear layer0
 
 model
-  :: MLP dtype inputFeatures outputFeatures hiddenFeatures
-  -> Tensor dtype '[batchSize, inputFeatures]
-  -> Tensor dtype '[batchSize, outputFeatures]
+  :: forall batchSize inputFeatures outputFeatures hiddenFeatures dtype device
+   . (StandardFloatingPointDTypeValidation device dtype)
+  => MLP inputFeatures outputFeatures hiddenFeatures dtype device
+  -> Tensor device dtype '[batchSize, inputFeatures]
+  -> Tensor device dtype '[batchSize, outputFeatures]
 model = (sigmoid .) . mlp
 
 foldLoop
@@ -79,9 +100,9 @@ foldLoop
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 xor
-  :: forall dtype batchSize
-   . Tensor dtype '[batchSize, 2]
-  -> Tensor dtype '[batchSize]
+  :: forall batchSize dtype device
+   . Tensor device dtype '[batchSize, 2]
+  -> Tensor device dtype '[batchSize]
 xor t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
  where
   a = select @1 @0 t
@@ -89,23 +110,23 @@ xor t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
 
 main = do
   let numIters = 100000
-  init    <- A.sample (MLPSpec :: MLPSpec 'D.Float 2 1 4)
+  init    <- A.sample (MLPSpec :: MLPSpec 2 1 4 'D.Float '( 'D.CPU, 0))
   trained <- foldLoop init numIters $ \state i -> do
     input <-
       toDType @D.Float
-      .   gt (0.5 :: Tensor 'D.Float '[])
-      <$> rand @D.Float @'[256, 2]
+      .   gt (0.5 :: CPUTensor 'D.Float '[])
+      <$> rand @'[256, 2] @'D.Float @'( 'D.CPU, 0)
 
-    let expected_output = xor input
-    let actual_output   = squeezeAll . model state $ input
-    let loss            = mse_loss actual_output expected_output
+    let expectedOutput = xor input
+    let actualOutput   = squeezeAll . model state $ input
+    let loss           = mseLoss @D.ReduceMean actualOutput expectedOutput
 
-    let flat_parameters = A.flattenParameters state
-    let gradients       = A.grad (toDynamic loss) flat_parameters
+    let flatParameters = A.flattenParameters state
+    let gradients      = A.grad (toDynamic loss) flatParameters
 
     when (i `mod` 2500 == 0) (print loss)
 
-    new_flat_parameters <- mapM A.makeIndependent
-      $ A.sgd 1e-1 flat_parameters gradients
-    return $ A.replaceParameters state new_flat_parameters
+    newFlatParameters <- mapM A.makeIndependent
+      $ A.sgd 1e-1 flatParameters gradients
+    return $ A.replaceParameters state newFlatParameters
   print trained

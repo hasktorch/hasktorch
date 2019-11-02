@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Torch.Tensor where
 
@@ -17,7 +18,7 @@ import Foreign.Ptr
 import Foreign.Storable
 import Foreign.C.Types
 import System.IO.Unsafe
-import Data.Int (Int64)
+import Data.Int (Int16, Int64)
 import Data.Word (Word8)
 import Data.List (intercalate)
 import Data.Proxy
@@ -27,6 +28,7 @@ import Numeric
 import ATen.Cast
 import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
 import qualified ATen.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
+import qualified ATen.Managed.Type.Context as ATen
 import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Managed.Type.TensorOptions as ATen
 import qualified ATen.Managed.Type.StdArray as ATen
@@ -37,6 +39,7 @@ import qualified ATen.Type as ATen
 import qualified ATen.Const as ATen
 import qualified Torch.Managed.Native as LibTorch
 
+import Torch.Device
 import Torch.DType
 import Torch.TensorOptions
 
@@ -66,23 +69,75 @@ shape t = unsafePerformIO $ (cast1 ATen.tensor_sizes) t
 dim :: Tensor -> Int
 dim t = unsafePerformIO $ (cast1 ATen.tensor_dim) t
 
+device :: Tensor -> Device
+device t = unsafePerformIO $ do
+  hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
+  if hasCUDA
+    then do
+      isCUDA <- cast1 ATen.tensor_is_cuda t :: IO Bool
+      if isCUDA then cuda <$> cast1 ATen.tensor_get_device t else pure cpu
+    else pure cpu
+ where
+  cpu = Device { deviceType = CPU, deviceIndex = 0 }
+  cuda :: Int -> Device
+  cuda di = Device { deviceType = CUDA, deviceIndex = fromIntegral di }
+
 dtype :: Tensor -> DType
-dtype t = unsafePerformIO $ (cast1 ATen.tensor_scalar_type) t
+dtype t = unsafePerformIO $ cast1 ATen.tensor_scalar_type t
 
 toDouble :: Tensor -> Double
-toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double $ t
+toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double t
 
 toInt :: Tensor -> Int
-toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t $ t
+toInt t = unsafePerformIO $ cast1 ATen.tensor_item_int64_t t
 
 toType :: DType -> Tensor -> Tensor
 toType dtype t = unsafePerformIO $ cast2 ATen.tensor_toType_s t dtype
 
+toDevice :: Device -> Tensor -> Tensor
+toDevice device' t = unsafePerformIO $ do
+  hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
+  let device = Torch.Tensor.device t
+  toDevice' (deviceType device)
+            (deviceType device')
+            (deviceIndex device)
+            (deviceIndex device')
+            hasCUDA
+ where
+  toDevice' dt dt' di di' _ | dt == dt' && di == di' = getOpts t >>= to t -- just copy
+  toDevice' CUDA dt'@CUDA di di' True | di /= di'    = copyTo dt' di' t -- copy from di to di'
+  toDevice' CPU dt'@CUDA 0 di' True | di' >= 0       = copyTo dt' di' t -- copy from cpu:0 to cuda:di'
+  toDevice' CUDA dt'@CPU _ di'@0 True                = copyTo dt' di' t -- copy from cuda:di to cpu:0
+  toDevice' dt dt' di di' _ =
+    error
+      $  "cannot move tensor from \""
+      <> show dt
+      <> ":"
+      <> show di
+      <> "\" to \""
+      <> show dt'
+      <> ":"
+      <> show di'
+      <> "\""
+  getOpts :: Tensor -> IO TensorOptions
+  getOpts = cast1 ATen.tensor_options
+  withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
+  withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
+  withDeviceIndex :: Int16 -> TensorOptions -> IO TensorOptions
+  withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di -- careful, setting the device index implies setting the device type to CUDA!
+  to :: Tensor -> TensorOptions -> IO Tensor
+  to t opts = cast4 ATen.tensor_to_obb t opts nonBlocking copy
+   where
+    nonBlocking = False
+    copy = False
+  copyTo dt di t =
+    getOpts t >>= withDeviceIndex di >>= withDeviceType dt >>= to t
+
 select :: Tensor -> Int -> Int -> Tensor
-select t dim idx = unsafePerformIO $ (cast3 ATen.tensor_select_ll) t dim idx
+select t dim idx = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx
 
 reshape :: Tensor -> [Int] -> Tensor
-reshape t shape = unsafePerformIO $ (cast2 ATen.reshape_tl) t shape
+reshape t shape = unsafePerformIO $ cast2 ATen.reshape_tl t shape
 
 --------------------------------------------------------------------------------
 -- Move backend
@@ -102,7 +157,6 @@ toCPU t = unsafePerformIO $ (cast1 ATen.tensor_cpu) t
 
 toCUDA :: Tensor -> Tensor
 toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
-
 
 --------------------------------------------------------------------------------
 -- Indexing support
