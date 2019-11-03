@@ -22,23 +22,25 @@
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
 
-module Torch.Typed.NN.Recurrent.LSTM where
+module Torch.Typed.NN.Recurrent.LSTM
+    (LSTMSpec(..)
+    , Directionality(..)
+    , NumberOfDirections
+    , LSTM(..)
+    , LSTMParams(..)
+    , ParamsPerDirection(..)
+    , forwardNoDropout
+    , forwardWithDropout)
+where
 
 import qualified ATen.Cast                as ATen
 import qualified ATen.Class               as ATen
 import qualified ATen.Managed.Type.Tensor as ATen
 import qualified ATen.Type                as ATen
-import           Control.Monad            (foldM, void, when)
 import           Data.Kind
-import           Data.List                (foldl', intersperse, scanl')
-import           Data.Proxy               (Proxy (..))
-import           Data.Reflection
-import           Data.Type.Equality       ((:~:) (..))
 import           Foreign.ForeignPtr
 import           GHC.Generics
-import           GHC.Generics
 import           GHC.TypeLits
-import           GHC.TypeLits.Extra
 import           GHC.TypeLits.Extra
 import           Prelude                  hiding (tanh)
 import           System.Environment
@@ -52,9 +54,10 @@ import qualified Torch.Tensor             as D
 import qualified Torch.TensorFactories    as D
 import           Torch.Typed
 import           Torch.Typed.Factories
-import           Torch.Typed.Native       hiding (linear)
+import           Torch.Typed.Native       (expand, lstm)
 import           Torch.Typed.NN
 import           Torch.Typed.Tensor
+
 
 -- | A specification for a long, short-term memory layer.
 --
@@ -249,7 +252,7 @@ data LSTM device (dir :: Directionality)
 -- TODO: when we have cannonical initializers do this correctly:
 -- https://github.com/pytorch/pytorch/issues/9221
 -- https://discuss.pytorch.org/t/initializing-rnn-gru-and-lstm-correctly/23605
--- for now, do as pytoch does.
+
 -- | helper to do xavier uniform initializations on weight matrices and
 -- orthagonal initializations for the gates.
 xavierUniormLSTM
@@ -258,8 +261,7 @@ xavierUniormLSTM
     => IO (Tensor device dtype '[4 * hiddenSize, d])
 xavierUniormLSTM = do
     init <- randn
-    pure init -- pure $ init * (expand @[4 * hiddenSize, d] False std)
-    --where std = Prelude.sqrt (1.0 / (natValI @d))
+    pure $ init
 
 instance (KnownDType dtype
     , KnownNat inputDim
