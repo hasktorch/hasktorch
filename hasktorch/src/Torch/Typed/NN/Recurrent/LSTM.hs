@@ -260,8 +260,8 @@ xavierUniormLSTM
      . (KnownDType dtype, KnownNat d, KnownNat hiddenSize, KnownDevice device, RandDTypeIsValid device dtype)
     => IO (Tensor device dtype '[4 * hiddenSize, d])
 xavierUniormLSTM = do
-    init <- randn
-    pure $ init
+    fixme <- randn
+    pure $ fixme -- TODO: what's the story with the initializers code?
 
 instance (KnownDType dtype
     , KnownNat inputDim
