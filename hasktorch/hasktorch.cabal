@@ -25,6 +25,7 @@ library
                     , Torch.Typed.Native
                     , Torch.Typed.NN
                     , Torch.Typed.NN.Recurrent.Cell.LSTM
+                    , Torch.Typed.NN.Recurrent.LSTM
                     , Torch.NN
                     , Torch.Scalar
                     , Torch.Backend

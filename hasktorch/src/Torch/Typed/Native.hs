@@ -2354,6 +2354,53 @@ lstm_cell _input (_cc, _hc) _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 A
     _hx = [_cc, _hc] :: [Tensor dtype '[batchSize, hiddenSize]]
 
 
+-- | lstm
+-- Parameters for this ATen function are non-trivially provided.  See the
+-- `Typed.NN.LSTM` module for doctests.
+--
+lstm
+  :: forall numLayers numDirections dtype seqLen batchSize inputDim hiddenSize
+   . (KnownNat numLayers, KnownNat numDirections, KnownNat hiddenSize)
+  => Tensor dtype '[seqLen, batchSize, inputDim]
+  -> ( Tensor dtype '[numLayers * numDirections, batchSize, hiddenSize]
+     , Tensor dtype '[numLayers * numDirections, batchSize, hiddenSize]
+     )
+  -> [D.Tensor]
+  -> Double
+  -> Bool
+  -> ( Tensor
+         dtype
+         '[seqLen, batchSize, hiddenSize * numDirections]
+     , Tensor
+         dtype
+         '[numLayers * numDirections, batchSize, hiddenSize]
+     , Tensor
+         dtype
+         '[numLayers * numDirections, batchSize, hiddenSize]
+     )
+lstm _input (_cc, _hc) _params _dropout _train =
+  unsafePerformIO $ (cast9 ATen.lstm_tllbldbbb) _input
+                                                _hx
+                                                _params
+                                                True -- _has_biases
+                                                _num_layers
+                                                _dropout
+                                                _train
+                                                _bidirectional
+                                                False -- _batch_first
+ where
+  _hx =
+    [_cc, _hc] :: [ Tensor
+          dtype
+          '[numLayers * numDirections, batchSize, hiddenSize]
+      ]
+  (_num_layers :: I.Int64) =
+    fromIntegral $ natVal (undefined :: Proxy numLayers)
+  _bidirectional = case natVal (undefined :: Proxy numDirections) of
+    1 -> False
+    2 -> True
+    _ -> error "lstm: numDirections must be 1 or 2!"
+
 -- gru_cell :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 -- gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
 
