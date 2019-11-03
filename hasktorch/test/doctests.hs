@@ -7,6 +7,7 @@ main = doctest
   [ "-XOverloadedStrings"
   , "-XOverloadedLists"
   , "-XDataKinds"
+  , "-XScopedTypeVariables"
   , "-XTypeFamilies"
   , "-XTypeApplications"
   , "-fplugin GHC.TypeLits.Normalise"
