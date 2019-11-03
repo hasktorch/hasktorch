@@ -38,6 +38,8 @@ import           Prelude                 hiding ( all
                                                 , log
                                                 , round
                                                 , isNaN
+                                                , floor
+                                                , ceil
                                                 )
 import           Data.Finite
 import qualified Data.Int                      as I
@@ -288,7 +290,6 @@ pow
 pow a input = unsafePerformIO $ cast2 ATen.pow_ts input a
 
 -- | relu activation function
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ relu (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 relu
@@ -692,18 +693,17 @@ solve
 solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
 
 -- | choleskyInverse
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ choleskyInverse Upper (ones :: CPUTensor 'D.Float '[3,3])
 -- (Float,[3,3])
 choleskyInverse
   :: forall shape shape' dtype device
-   . (shape' ~ Square shape)
-  => Tri
-  -> Tensor device dtype shape
-  -> Tensor device dtype shape'
-choleskyInverse upper input =
-  unsafePerformIO $ cast2 ATen.cholesky_inverse_tb input boolUpper
- where boolUpper = isUpper upper
+   . (shape' ~ Square shape, CholeskyDTypeIsValid device dtype)
+  => Tri -- ^ upper or lower triangular part of the matrix
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape' -- ^ output
+choleskyInverse upper input = unsafePerformIO
+  $ cast2 ATen.cholesky_inverse_tb input boolUpper
+  where boolUpper = isUpper upper
 
 -- | geqrf
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?

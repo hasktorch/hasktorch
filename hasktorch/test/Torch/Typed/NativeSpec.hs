@@ -485,7 +485,7 @@ instance ( TensorOptions '[n, n] dtype device
     checkDynamicTensorAttributes t'
     checkDynamicTensorAttributes t''
 
-data CholeskySpec = CholeskySpec
+data CholeskySpec = CholeskySpec | CholeskyInverseSpec
 
 instance ( TensorOptions shape  dtype device
          , TensorOptions shape' dtype device
@@ -503,6 +503,14 @@ instance ( TensorOptions shape  dtype device
     foldMap
       (\tri -> do
         let t' = cholesky tri t
+        checkDynamicTensorAttributes t
+      )
+      [D.Upper, D.Lower]
+  apply CholeskyInverseSpec _ _ = do
+    t <- rand @shape @dtype @device
+    foldMap
+      (\tri -> do
+        let t' = choleskyInverse tri t
         checkDynamicTensorAttributes t
       )
       [D.Upper, D.Lower]
@@ -773,6 +781,11 @@ spec' device =
           hfoldrM @IO CholeskySpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO CholeskySpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes squareShapes))
+      it "choleskyInverse" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          hfoldrM @IO CholeskyInverseSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          hfoldrM @IO CholeskyInverseSpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes squareShapes))
       it "solve" $ do
         let solveShapes = hZipList
                             (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
@@ -781,7 +794,7 @@ spec' device =
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
             hfoldrM @IO SolveSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes solveShapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO SolveSpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes solveShapes))
+            hfoldrM @IO SolveSpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes solveShapes)) 
 
     describe "boolean algebra" $ do
       do
