@@ -448,7 +448,7 @@ params (UniDirectionalParams fwd) = lstmParamsToTlist' [] fwd
 -- >>> input :: Tensor '(D.CPU,0) 'D.Float '[5,16,10]            <- randn
 -- >>> lstm  :: (LSTM 'Bidirectional D.Float 3 10 30 '(D.CPU,0) ) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec 'Bidirectional D.Float 3 10 30 '(D.CPU,0) )
 -- >>> forwardNoDropout lstm input
--- >>> (Tensor Float [5,16,60] ,Tensor Float [6,16,30] ,Tensor Float [6,16,30] )
+-- (Tensor Float [5,16,60] ,Tensor Float [6,16,30] ,Tensor Float [6,16,30] )
 forwardWithDropout
     :: forall dtype dir numLayers inputDim hiddenDim seqLen batchSize device
      . ( KnownNat numLayers
@@ -480,7 +480,7 @@ forwardWithDropout = forward' True
 -- >>> input ::Tensor '(D.CPU,0) 'D.Float '[5,16,10]             <- randn
 -- >>> lstm :: (LSTM 'Unidirectional D.Float 1 10 30 '(D.CPU,0)) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec 'Unidirectional D.Float 1 10 30 '(D.CPU,0))
 -- >>> forwardNoDropout lstm input
--- >>> (Tensor Float [5,16,30] ,Tensor Float [1,16,30] ,Tensor Float [1,16,30] )
+-- (Tensor Float [5,16,30] ,Tensor Float [1,16,30] ,Tensor Float [1,16,30] )
 forwardNoDropout
     :: forall dtype dir numLayers inputDim hiddenDim seqLen batchSize device
      . ( KnownNat numLayers
