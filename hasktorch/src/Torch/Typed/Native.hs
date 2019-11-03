@@ -149,7 +149,9 @@ abs
   -> Tensor device dtype shape -- ^ output
 abs input = unsafePerformIO $ cast1 ATen.abs_t input
 
--- | floor
+-- | ceil
+-- >>> dtype &&& shape $ ceil (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[2,2])
 ceil
   :: forall shape dtype device
    . (StandardFloatingPointDTypeValidation device dtype)
@@ -158,6 +160,8 @@ ceil
 ceil input = unsafePerformIO $ cast1 ATen.ceil_t input
 
 -- | floor
+-- >>> dtype &&& shape $ floor (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[2,2])
 floor
   :: forall shape dtype device
    . (StandardFloatingPointDTypeValidation device dtype)
@@ -688,6 +692,7 @@ solve
 solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
 
 -- | choleskyInverse
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ choleskyInverse Upper (ones :: CPUTensor 'D.Float '[3,3])
 -- (Float,[3,3])
 choleskyInverse
@@ -701,6 +706,7 @@ choleskyInverse upper input =
  where boolUpper = isUpper upper
 
 -- | geqrf
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- `geqrf` computes a QR decomposition of the given `input` matrix,
 -- but without constructing `Q` and `R` as explicit separate matrices.
 -- Rather, this function directly calls the underlying LAPACK function `?geqrf`
@@ -732,6 +738,7 @@ geqrf
 geqrf input = unsafePerformIO $ cast1 ATen.geqrf_t input
 
 -- | orgqr
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- Computes the orthogonal matrix `Q` of a QR factorization
 -- from the `(a, tau)` tuple returned by `geqrf`.
 -- 
@@ -1711,6 +1718,7 @@ conv3d weight bias input = unsafePerformIO $ cast7
   (1 :: Int)
 
 -- | convTBC
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- 1D convolution over an input of shape `[timeSize, batchSize, inputChannels]`.
 
 -- >>> dtype &&& shape $ convTBC @1 (ones :: CPUTensor 'D.Float '[1,4,5]) (ones :: CPUTensor 'D.Float '[5]) (ones :: CPUTensor 'D.Float '[3,3,4])
