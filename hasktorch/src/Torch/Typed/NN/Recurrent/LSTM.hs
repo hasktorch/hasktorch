@@ -23,14 +23,15 @@
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
 
 module Torch.Typed.NN.Recurrent.LSTM
-    (LSTMSpec(..)
+    ( LSTMSpec(..)
     , Directionality(..)
     , NumberOfDirections
     , LSTM(..)
     , LSTMParams(..)
     , ParamsPerDirection(..)
     , forwardNoDropout
-    , forwardWithDropout)
+    , forwardWithDropout
+    )
 where
 
 import qualified ATen.Cast                as ATen
@@ -54,7 +55,8 @@ import qualified Torch.Tensor             as D
 import qualified Torch.TensorFactories    as D
 import           Torch.Typed
 import           Torch.Typed.Factories
-import           Torch.Typed.Native       (expand, lstm)
+import           Torch.Typed.Native       (Directionality (..),
+                                           NumberOfDirections, expand, lstm)
 import           Torch.Typed.NN
 import           Torch.Typed.Tensor
 
@@ -65,7 +67,7 @@ data LSTMSpec (dir :: Directionality)
         (dtype :: D.DType)
         (numLayers:: Nat)
         (inputDim :: Nat)
-        (hiddenDim :: Nat) 
+        (hiddenDim :: Nat)
         (device :: (D.DeviceType, Nat)) =
     LSTMSpecZerosInit DropoutSpec -- ^ Weights drawn from Xavier-Uniform with zeros-value
                                   --   initialized biases and cell states.
@@ -155,17 +157,6 @@ instance A.Parameterized (LSTMParams dtype numDirections inputDim hiddenSize num
             <*> A.replaceOwnParameters c
             <*> A.replaceOwnParameters d
 
--- | The directional specification of the LSTM
---
-data Directionality =
-    Bidirectional    -- ^ Forward and backward along the sequential axis using independant parameters for each.
-    | Unidirectional -- ^ Forward along the sequential axis.
-    deriving (Show, Generic) -- TODO:  We could also have BidirectionalTied weights.
-
-type family NumberOfDirections (a :: Directionality) :: Nat where
-    NumberOfDirections Bidirectional = 2
-    NumberOfDirections Unidirectional = 1
-
 data ParamsPerDirection dtype inputDim hiddenSize numLayers (dir :: Directionality) device where
     BidirectionalParams ::LSTMParams dtype (NumberOfDirections 'Bidirectional) inputDim hiddenSize numLayers device
         -> LSTMParams dtype (NumberOfDirections 'Bidirectional) inputDim hiddenSize numLayers device
@@ -232,11 +223,11 @@ instance A.Parameterized  (ParamsPerDirection dtype inputDim hiddenDim numLayers
 -- states for the memory cells and hidden state or learnable
 -- inital states for the memory cells and hidden state.
 --
-data LSTM (dir :: Directionality) 
+data LSTM (dir :: Directionality)
             (dtype :: D.DType)
             (numLayers :: Nat)
             (inputDim :: Nat)
-            (hiddenDim :: Nat) 
+            (hiddenDim :: Nat)
             device
             =  LSTM {
       lstm_params :: ParamsPerDirection dtype inputDim hiddenDim numLayers dir device
@@ -260,7 +251,12 @@ data LSTM (dir :: Directionality)
 -- orthagonal initializations for the gates. (When implemented.)
 xavierUniormLSTM
     :: forall device dtype hiddenSize d
-     . (KnownDType dtype, KnownNat d, KnownNat hiddenSize, KnownDevice device, RandDTypeIsValid device dtype)
+     . ( KnownDType dtype
+       , KnownNat d
+       , KnownNat hiddenSize
+       , KnownDevice device
+       , RandDTypeIsValid device dtype
+       )
     => IO (Tensor device dtype '[4 * hiddenSize, d])
 xavierUniormLSTM = do
     fixme <- randn
@@ -389,12 +385,12 @@ forward'
              dtype
              '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
        )
-forward' doDropout (LSTM p (Dropout d) cc hc) input =
-    lstm @numLayers @(NumberOfDirections dir) input
-                                              (cc', hc')
-                                              (params p)
-                                              d
-                                              doDropout
+forward' doDropout (LSTM p (Dropout d) cc hc) input = lstm @dir @numLayers
+    input
+    (cc', hc')
+    (params p)
+    d
+    doDropout
   where
     cc' =
         reshape @'[numLayers * (NumberOfDirections dir), batchSize, hiddenDim]
