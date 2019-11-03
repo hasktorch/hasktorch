@@ -44,6 +44,7 @@ import           Prelude                  hiding (tanh)
 import           System.Environment
 import           System.IO.Unsafe
 import qualified Torch.Autograd           as A
+import qualified Torch.Device             as D
 import qualified Torch.DType              as D
 import qualified Torch.Functions          as D
 import qualified Torch.NN                 as A
@@ -53,10 +54,11 @@ import           Torch.Typed
 import           Torch.Typed.Factories
 import           Torch.Typed.Native       hiding (linear)
 import           Torch.Typed.NN
+import           Torch.Typed.Tensor
 
 -- | A specification for a long, short-term memory layer.
 --
-data LSTMSpec (dir :: Directionality)
+data LSTMSpec device (dir :: Directionality)
         (dtype :: D.DType)
         (numLayers:: Nat)
         (inputDim :: Nat)
@@ -66,16 +68,16 @@ data LSTMSpec (dir :: Directionality)
     | LSTMSpec                        -- ^ Weights drawn from Xavier-Uniform
                                       --   with zeros-value initialized biases
                                       --   and user-provided cell states.
-        (Tensor dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial values of the memory cell
-        (Tensor dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial values of the hidden state
+        (Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial values of the memory cell
+        (Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial values of the hidden state
         DropoutSpec
 
     | LSTMSpecLearnedInit             -- ^ Weights drawn from Xavier-Uniform
                                       --   with zeros-value initialized biases
                                       --   and learned cell states.
-        (Tensor dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial (learnable)
+        (Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial (learnable)
                                       -- values of the memory cell
-        (Tensor dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial (learnable)
+        (Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial (learnable)
                                       -- values of the hidden state
         DropoutSpec
     deriving (Show, Generic)
@@ -85,26 +87,26 @@ data LSTMSpec (dir :: Directionality)
 -- Input-to-hidden, hidden-to-hidden, and bias parameters for a mulilayered
 -- (and optionally) bidirectional LSTM.
 --
-data LSTMParams (dtype :: D.DType) (numDirections :: Nat) (inputDim :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) where
-    LSTMLayer1 ::Parameter dtype '[4 * hiddenSize, inputDim]
-                    -> (Parameter dtype '[4 * hiddenSize, hiddenSize])
-                    -> (Parameter dtype '[4 * hiddenSize ])
-                    -> (Parameter dtype '[4 * hiddenSize ])
-                    -> LSTMParams dtype numDirections inputDim hiddenSize 1
+data LSTMParams (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (numDirections :: Nat) (inputDim :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) where
+    LSTMLayer1 ::Parameter device dtype '[4 * hiddenSize, inputDim]
+                    -> (Parameter device dtype '[4 * hiddenSize, hiddenSize])
+                    -> (Parameter device dtype '[4 * hiddenSize ])
+                    -> (Parameter device dtype '[4 * hiddenSize ])
+                    -> LSTMParams device dtype numDirections inputDim hiddenSize 1
     LSTMLayerK ::(1 <= numLayers)
-                    => LSTMParams dtype numDirections inputDim hiddenSize numLayers
-                    -> (Parameter dtype '[4 * hiddenSize, numDirections * hiddenSize])
-                    -> (Parameter dtype '[4 * hiddenSize, hiddenSize])
-                    -> (Parameter dtype '[4 * hiddenSize ])
-                    -> (Parameter dtype '[4 * hiddenSize ])
-                    -> LSTMParams dtype numDirections inputDim hiddenSize (numLayers + 1)
+                    => LSTMParams device dtype numDirections inputDim hiddenSize numLayers
+                    -> (Parameter device dtype '[4 * hiddenSize, numDirections * hiddenSize])
+                    -> (Parameter device dtype '[4 * hiddenSize, hiddenSize])
+                    -> (Parameter device dtype '[4 * hiddenSize ])
+                    -> (Parameter device dtype '[4 * hiddenSize ])
+                    -> LSTMParams device dtype numDirections inputDim hiddenSize (numLayers + 1)
 
 --  TODO: Generics? see https://gist.github.com/RyanGlScott/71d9f933e823b4a03f99de54d4b94d51
 
 -- A specialized singlton helper for initializing parameters
 class (KnownNat n) => LayerSong (n :: Nat) where
-    singLayerSing :: (KnownDType dtype, KnownNat numDirections, KnownNat inputDim, KnownNat hiddenSize)
-        =>  IO (LSTMParams dtype numDirections inputDim hiddenSize n)
+    singLayerSing :: (RandDTypeIsValid device dtype, KnownDevice device, KnownDType dtype, KnownNat numDirections, KnownNat inputDim, KnownNat hiddenSize)
+        =>  IO (LSTMParams device dtype numDirections inputDim hiddenSize n)
 
 instance {-# OVERLAPS #-} LayerSong 1 where
     singLayerSing =
@@ -123,7 +125,7 @@ instance {-# OVERLAPPABLE #-} (KnownNat n, KnownNat m, LayerSong n, m ~ (n + 1),
             <*> (makeIndependent =<< (pure zeros))
             <*> (makeIndependent =<< (pure zeros))
 
-instance A.Parameterized (LSTMParams dtype numDirections inputDim hiddenSize numLayers) where
+instance A.Parameterized (LSTMParams device dtype numDirections inputDim hiddenSize numLayers) where
     flattenParameters (LSTMLayer1 a b c d) =
         A.flattenParameters a
             <> A.flattenParameters b
@@ -160,34 +162,35 @@ type family NumberOfDirections a where
     NumberOfDirections Bidirectional = 2
     NumberOfDirections Unidirectional = 1
 
-data ParamsPerDirection dtype inputDim hiddenSize numLayers (dir :: Directionality) where
-    BidirectionalParams ::LSTMParams dtype (NumberOfDirections 'Bidirectional) inputDim hiddenSize numLayers
-        -> LSTMParams dtype (NumberOfDirections 'Bidirectional) inputDim hiddenSize numLayers
-        -> ParamsPerDirection dtype inputDim hiddenSize numLayers 'Bidirectional
-    UniDirectionalParams ::LSTMParams dtype (NumberOfDirections 'Unidirectional)  inputDim hiddenSize numLayers
-        -> ParamsPerDirection dtype inputDim hiddenSize numLayers 'Unidirectional
+data ParamsPerDirection device dtype inputDim hiddenSize numLayers (dir :: Directionality) where
+    BidirectionalParams ::LSTMParams device dtype (NumberOfDirections 'Bidirectional) inputDim hiddenSize numLayers
+        -> LSTMParams device dtype (NumberOfDirections 'Bidirectional) inputDim hiddenSize numLayers
+        -> ParamsPerDirection device dtype inputDim hiddenSize numLayers 'Bidirectional
+    UniDirectionalParams ::LSTMParams device dtype (NumberOfDirections 'Unidirectional)  inputDim hiddenSize numLayers
+        -> ParamsPerDirection device dtype inputDim hiddenSize numLayers 'Unidirectional
 
 
 sampleBidirectionalParams
-    :: forall dtype inputDim hiddenDim numLayers
+    :: forall device dtype inputDim hiddenDim numLayers
      . ( KnownNat hiddenDim
        , KnownNat inputDim
        , KnownNat numLayers
        , KnownDType dtype
        , LayerSong numLayers
+       , KnownDevice device
+       , RandDTypeIsValid device dtype
        )
     => IO
            ( ParamsPerDirection
+                 device
                  dtype
                  inputDim
                  hiddenDim
                  numLayers
                  'Bidirectional
            )
-sampleBidirectionalParams = 
-    BidirectionalParams 
-        <$> singLayerSing 
-        <*> singLayerSing 
+sampleBidirectionalParams =
+    BidirectionalParams <$> singLayerSing <*> singLayerSing
 
 
 sampleUniDirectionalParams
@@ -196,9 +199,12 @@ sampleUniDirectionalParams
        , KnownNat numLayers
        , KnownDType dtype
        , LayerSong numLayers
+       , KnownDevice device
+       , RandDTypeIsValid device dtype
        )
     => IO
            ( ParamsPerDirection
+                 device
                  dtype
                  inputDim
                  hiddenDim
@@ -207,7 +213,7 @@ sampleUniDirectionalParams
            )
 sampleUniDirectionalParams = UniDirectionalParams <$> singLayerSing
 
-instance A.Parameterized  (ParamsPerDirection dtype inputDim hiddenDim numLayers dir) where
+instance A.Parameterized  (ParamsPerDirection device dtype inputDim hiddenDim numLayers dir) where
     flattenParameters (UniDirectionalParams ps) = A.flattenParameters ps
     flattenParameters (BidirectionalParams as bs) =
         A.flattenParameters as <> A.flattenParameters bs
@@ -217,26 +223,26 @@ instance A.Parameterized  (ParamsPerDirection dtype inputDim hiddenDim numLayers
         BidirectionalParams
             <$> A.replaceOwnParameters as
             <*> A.replaceOwnParameters bs
- 
+
 -- | A long, short-term memory layer with either fixed initial
 -- states for the memory cells and hidden state or learnable
 -- inital states for the memory cells and hidden state.
 --
-data LSTM (dir :: Directionality)
+data LSTM device (dir :: Directionality)
             (dtype :: D.DType)
             (numLayers :: Nat)
             (inputDim :: Nat)
             (hiddenDim :: Nat) =  LSTM {
-      lstm_params :: ParamsPerDirection dtype inputDim hiddenDim numLayers dir
+      lstm_params :: ParamsPerDirection device dtype inputDim hiddenDim numLayers dir
       , lstm_dropout :: Dropout
-      , lstm_init_c     :: Tensor dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
-      , lstm_init_h     :: Tensor dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
+      , lstm_init_c     :: Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
+      , lstm_init_h     :: Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
     }
     | LSTMLearnedInit {
-        lstmLearnedInit_params :: ParamsPerDirection dtype inputDim hiddenDim numLayers dir
+        lstmLearnedInit_params :: ParamsPerDirection device dtype inputDim hiddenDim numLayers dir
         , lstmLearnedInit_dropout :: Dropout
-        , lstmLearnedInit_init_c     :: Parameter dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
-        , lstmLearnedInit_init_h     :: Parameter dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
+        , lstmLearnedInit_init_c     :: Parameter device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
+        , lstmLearnedInit_init_h     :: Parameter device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
     }
     deriving Generic
 
@@ -247,9 +253,9 @@ data LSTM (dir :: Directionality)
 -- | helper to do xavier uniform initializations on weight matrices and
 -- orthagonal initializations for the gates.
 xavierUniormLSTM
-    :: forall dtype hiddenSize d
-     . (KnownDType dtype, KnownNat d, KnownNat hiddenSize)
-    => IO (Tensor dtype '[4 * hiddenSize, d])
+    :: forall device dtype hiddenSize d
+     . (KnownDType dtype, KnownNat d, KnownNat hiddenSize, KnownDevice device, RandDTypeIsValid device dtype)
+    => IO (Tensor device dtype '[4 * hiddenSize, d])
 xavierUniormLSTM = do
     init <- randn
     pure init -- pure $ init * (expand @[4 * hiddenSize, d] False std)
@@ -259,9 +265,11 @@ instance (KnownDType dtype
     , KnownNat inputDim
     , KnownNat hiddenDim
     , KnownNat numLayers
+    , KnownDevice device
+    , RandDTypeIsValid device dtype
     , LayerSong numLayers) => A.Randomizable
-        (LSTMSpec 'Bidirectional dtype numLayers inputDim hiddenDim)
-        (LSTM 'Bidirectional dtype numLayers inputDim hiddenDim) where
+        (LSTMSpec device 'Bidirectional dtype numLayers inputDim hiddenDim)
+        (LSTM device 'Bidirectional dtype numLayers inputDim hiddenDim) where
     sample (LSTMSpecZerosInit d) =
         LSTM
             <$> sampleBidirectionalParams
@@ -285,9 +293,11 @@ instance (KnownDType dtype
     , KnownNat inputDim
     , KnownNat hiddenDim
     , KnownNat numLayers
+    , KnownDevice device
+    , RandDTypeIsValid device dtype
     , LayerSong numLayers) => A.Randomizable
-        (LSTMSpec 'Unidirectional dtype numLayers inputDim hiddenDim)
-        (LSTM 'Unidirectional dtype numLayers inputDim hiddenDim) where
+        (LSTMSpec device 'Unidirectional dtype numLayers inputDim hiddenDim)
+        (LSTM device 'Unidirectional dtype numLayers inputDim hiddenDim) where
     sample (LSTMSpecZerosInit d) =
         LSTM
             <$> sampleUniDirectionalParams
@@ -307,7 +317,7 @@ instance (KnownDType dtype
             <*> (makeIndependent =<< pure c)
             <*> (makeIndependent =<< pure h)
 
-instance A.Parameterized  (LSTM dir dtype numLayers inputDim hiddenDim) where
+instance A.Parameterized  (LSTM device dir dtype numLayers inputDim hiddenDim) where
     flattenParameters (LSTM p _ _ _) = A.flattenParameters p
     flattenParameters (LSTMLearnedInit p _ lc lh) =
         A.flattenParameters p
@@ -318,13 +328,15 @@ instance A.Parameterized  (LSTM dir dtype numLayers inputDim hiddenDim) where
         pure $ LSTM p' d c h
     replaceOwnParameters (LSTMLearnedInit p d lc lh) = do
         p' <- A.replaceOwnParameters p
-        LSTMLearnedInit p' d <$> A.replaceOwnParameters lc <*> A.replaceOwnParameters lh
+        LSTMLearnedInit p' d
+            <$> A.replaceOwnParameters lc
+            <*> A.replaceOwnParameters lh
 
 -- helpers to get params in the right order for Aten.
 lstmParamsToTlist'
-    :: forall dtype numDirections inputDim hiddenSize numLayers
+    :: forall device dtype numDirections inputDim hiddenSize numLayers
      . [D.Tensor]
-    -> LSTMParams dtype numDirections inputDim hiddenSize numLayers
+    -> LSTMParams device dtype numDirections inputDim hiddenSize numLayers
     -> [D.Tensor]
 lstmParamsToTlist' acc (LSTMLayerK l wi wh bi bh) =
     lstmParamsToTlist' acc l
@@ -348,7 +360,7 @@ ziplstmLayers acc (a : b : c : d : xs) (a' : b' : c' : d' : xs') =
     a : b : c : d : a' : b' : c' : d' : ziplstmLayers acc xs xs'
 
 forward'
-    :: forall dtype dir numLayers inputDim hiddenDim seqLen batchSize
+    :: forall device dtype dir numLayers inputDim hiddenDim seqLen batchSize
      . ( KnownNat numLayers
        , KnownNat inputDim
        , KnownNat hiddenDim
@@ -357,15 +369,18 @@ forward'
        , KnownNat (NumberOfDirections dir)
        )
     => Bool
-    -> LSTM dir dtype numLayers inputDim hiddenDim
-    -> Tensor dtype '[seqLen, batchSize, inputDim]
+    -> LSTM device dir dtype numLayers inputDim hiddenDim
+    -> Tensor device dtype '[seqLen, batchSize, inputDim]
     -> ( Tensor
+             device
              dtype
              '[seqLen, batchSize, hiddenDim * NumberOfDirections dir]
        , Tensor
+             device
              dtype
              '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
        , Tensor
+             device
              dtype
              '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
        )
@@ -389,8 +404,8 @@ forward' doDropout (LSTM p (Dropout d) cc hc) input =
                   False
                   hc
 params
-    :: forall dtype inputDim hiddenDim numLayers dir
-     . ParamsPerDirection dtype inputDim hiddenDim numLayers dir
+    :: forall device dtype inputDim hiddenDim numLayers dir
+     . ParamsPerDirection device dtype inputDim hiddenDim numLayers dir
     -> [D.Tensor]
 params (BidirectionalParams fwd rvs) =
     ziplstmLayers [] (lstmParamsToTlist' [] fwd) (lstmParamsToTlist' [] rvs)
@@ -399,11 +414,11 @@ params (UniDirectionalParams fwd) = lstmParamsToTlist' [] fwd
 -- | Forward propagage the `LSTM` module and apply dropout on the outputs of each layer.
 --
 -- >>> input ::Tensor 'D.Float '[5,16,10]          <- randn
--- >>> lstm :: (LSTM 'Bidirectional D.Float 3 10 30) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec 'Bidirectional D.Float 3 10 30)
+-- >>> lstm :: (LSTM '(D.CPU,0) 'Bidirectional D.Float 3 10 30) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec '(D.CPU,0) 'Bidirectional D.Float 3 10 30)
 -- >>> forwardNoDropout lstm input
 -- >>> (Tensor Float [5,16,60] ,Tensor Float [2,16,30] ,Tensor Float [2,16,30] )
 forwardWithDropout
-    :: forall dtype dir numLayers inputDim hiddenDim seqLen batchSize
+    :: forall device dtype dir numLayers inputDim hiddenDim seqLen batchSize
      . ( KnownNat numLayers
        , KnownNat inputDim
        , KnownNat hiddenDim
@@ -411,15 +426,18 @@ forwardWithDropout
        , KnownNat batchSize
        , KnownNat (NumberOfDirections dir)
        )
-    => LSTM dir dtype numLayers inputDim hiddenDim
-    -> Tensor dtype '[seqLen, batchSize, inputDim]
+    => LSTM device dir dtype numLayers inputDim hiddenDim
+    -> Tensor device dtype '[seqLen, batchSize, inputDim]
     -> ( Tensor
+             device
              dtype
              '[seqLen, batchSize, hiddenDim * NumberOfDirections dir]
        , Tensor
+             device
              dtype
              '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
        , Tensor
+             device
              dtype
              '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
        )
@@ -428,11 +446,11 @@ forwardWithDropout = forward' True
 -- | Forward propagage the `LSTM` module (without applying dropout on the outputs of each layer).
 --
 -- >>> input ::Tensor 'D.Float '[5,16,10]          <- randn
--- >>> lstm :: (LSTM 'Unidirectional D.Float 1 10 30) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec 'Unidirectional D.Float 1 10 30)
+-- >>> lstm :: (LSTM '(D.CPU,0) 'Unidirectional D.Float 1 10 30) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec '(D.CPU,0) 'Unidirectional D.Float 1 10 30)
 -- >>> forwardNoDropout lstm input
 -- >>> (Tensor Float [5,16,30] ,Tensor Float [1,16,30] ,Tensor Float [1,16,30] )
 forwardNoDropout
-    :: forall dtype dir numLayers inputDim hiddenDim seqLen batchSize
+    :: forall device dtype dir numLayers inputDim hiddenDim seqLen batchSize
      . ( KnownNat numLayers
        , KnownNat inputDim
        , KnownNat hiddenDim
@@ -440,15 +458,18 @@ forwardNoDropout
        , KnownNat batchSize
        , KnownNat (NumberOfDirections dir)
        )
-    => LSTM dir dtype numLayers inputDim hiddenDim
-    -> Tensor dtype '[seqLen, batchSize, inputDim]
+    => LSTM device dir dtype numLayers inputDim hiddenDim
+    -> Tensor device dtype '[seqLen, batchSize, inputDim]
     -> ( Tensor
+             device
              dtype
              '[seqLen, batchSize, hiddenDim * NumberOfDirections dir]
        , Tensor
+             device
              dtype
              '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
        , Tensor
+             device
              dtype
              '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
        )
@@ -456,6 +477,14 @@ forwardNoDropout = forward' False
 
 
 tmp = do
-    input ::Tensor 'D.Float '[5,16,10]          <- randn
-    lstm :: (LSTM 'Unidirectional D.Float 1 10 30) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec 'Unidirectional D.Float 1 10 30)
+    input :: Tensor '(D.CPU,0) 'D.Float '[5, 16, 10]          <- randn
+    lstm :: (LSTM '(D.CPU,0) 'Unidirectional D.Float 1 10 30) <- A.sample
+        (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec
+                '(D.CPU,0)
+              'Unidirectional
+              D.Float
+              1
+              10
+              30
+        )
     pure $ forwardNoDropout lstm input

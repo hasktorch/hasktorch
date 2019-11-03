@@ -34,6 +34,7 @@ import           Control.Exception.Safe         ( try
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
+import           Data.HList
 import           Data.Proxy
 import           Foreign.ForeignPtr
 import           GHC.Generics
@@ -46,12 +47,14 @@ import qualified ATen.Cast                     as ATen
 import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
-import           Torch.Typed
+import           Torch.Typed.Aux
+import           Torch.Typed.Tensor
 import           Torch.Typed.Native     hiding ( linear )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
+import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.Functions               as D
@@ -62,53 +65,64 @@ import qualified Torch.TensorFactories         as D
 -- Transformer Language Model (GPT-2)
 --------------------------------------------------------------------------------
 
-data Activation (dtype :: D.DType)
+data Activation (dtype :: D.DType) (device :: (D.DeviceType, Nat))
  where
   Activation
-    :: forall dtype
-     . { unActivation :: forall shape . Tensor dtype shape -> Tensor dtype shape }
-    -> Activation dtype
+    :: forall dtype device
+     . { unActivation :: forall shape . Tensor device dtype shape -> Tensor device dtype shape }
+    -> Activation dtype device
 
-instance Show (Activation dtype) where
+instance Show (Activation dtype device) where
   show _ = mempty
 
-instance A.Parameterized (Activation dtype) where
+instance A.Parameterized (Activation dtype device) where
   flattenParameters _ = []
   replaceOwnParameters = return
 
-data MultiheadAttentionSpec (dtype :: D.DType)
-                            (embedDim :: Nat) (numHeads :: Nat)
+data MultiheadAttentionSpec (embedDim :: Nat) (numHeads :: Nat)
+                            (dtype :: D.DType)
+                            (device :: (D.DeviceType, Nat))
  where
   MultiheadAttentionSpec
     :: { mhDropoutProbSpec :: Double }
-    -> MultiheadAttentionSpec dtype embedDim numHeads
+    -> MultiheadAttentionSpec embedDim numHeads dtype device
  deriving (Show, Eq)
 
-data MultiheadAttention (dtype :: D.DType)
-                        (embedDim :: Nat) (numHeads :: Nat)
+data MultiheadAttention (embedDim :: Nat) (numHeads :: Nat)
+                        (dtype :: D.DType)
+                        (device :: (D.DeviceType, Nat))
  where
   MultiheadAttention
-    :: { mhInProj :: Linear dtype embedDim (embedDim * 3)
-       , mhOutProj :: Linear dtype embedDim embedDim
+    :: { mhInProj  :: Linear embedDim (embedDim * 3) dtype device
+       , mhOutProj :: Linear embedDim embedDim       dtype device
        , mhDropout :: Dropout
        }
-    -> MultiheadAttention dtype embedDim numHeads
+    -> MultiheadAttention embedDim numHeads dtype device
  deriving (Show, Generic)
 
 multiheadAttention
-  :: forall dtype embedDim numHeads seqLen batchSize headDim
+  :: forall embedDim numHeads seqLen batchSize headDim dtype device
    . ( 1 <= numHeads
      , embedDim ~ (headDim * numHeads)
      , Mod (embedDim * 3) 3 ~ 0
      , Div (embedDim * 3) 3 ~ embedDim
-     , KnownDType dtype
      , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
+     , KnownDType dtype
+     , dtype ~ DTypePromotion dtype (SumDType dtype)
+     , StandardFloatingPointDTypeValidation device dtype
+     , MatMulDTypeIsValid device dtype
+     , BasicArithmeticDTypeIsValid device dtype
+     , BasicArithmeticDTypeIsValid device (SumDType dtype)
+     , SumDTypeIsValid device dtype
+     , KnownDevice device
      )
-  => MultiheadAttention dtype embedDim numHeads
+  => MultiheadAttention embedDim numHeads dtype device
   -> Bool
-  -> Tensor 'D.Bool '[seqLen, batchSize]
-  -> Tensor dtype '[seqLen, batchSize, embedDim]
-  -> IO (Tensor dtype '[seqLen, batchSize, embedDim], Tensor dtype '[batchSize, seqLen, seqLen])
+  -> Tensor device 'D.Bool '[seqLen, batchSize]
+  -> Tensor device dtype   '[seqLen, batchSize, embedDim]
+  -> IO ( Tensor device dtype '[seqLen, batchSize, embedDim]
+        , Tensor device dtype '[batchSize, seqLen, seqLen]
+        )
 multiheadAttention MultiheadAttention {..} train keyPaddingMask input = do
   let q :. k :. v :. HNil = chunk @3 @2 . linear mhInProj $ input
   attnWeights <-
@@ -123,7 +137,7 @@ multiheadAttention MultiheadAttention {..} train keyPaddingMask input = do
           . transpose @0 @1
           $ attnWeights `matmul` (f v)
       avgAttnWeights =
-        mul (pow (-1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor dtype '[])
+        mul (pow (-1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor device dtype '[])
           . sumDim @1
           . reshape @'[batchSize, numHeads, seqLen, seqLen]
           $ attnWeights
@@ -137,29 +151,35 @@ multiheadAttention MultiheadAttention {..} train keyPaddingMask input = do
           (-1 / 0 :: Double)
       . reshape @'[batchSize, numHeads, seqLen, seqLen]
   f = transpose @0 @1 . reshape @'[seqLen, batchSize * numHeads, headDim]
-  scaling :: Tensor dtype '[]
+  scaling :: Tensor device dtype '[]
   scaling = pow (-1 / 2 :: Double) (fromInteger . natVal $ Proxy @headDim)
   futureTimestampMask =
-    toDType @D.Bool . triu 1 $ ones @D.Int8 @'[seqLen, seqLen]
+    toDType @D.Bool . triu 1 $ ones @'[seqLen, seqLen] @D.Int8 @device
 
 multiheadAttention'
-  :: forall dtype embedDim numHeads seqLen batchSize headDim
+  :: forall embedDim numHeads seqLen batchSize headDim dtype device
    . ( 1 <= numHeads
      , embedDim ~ (headDim * numHeads)
      , Mod (embedDim * 3) 3 ~ 0
      , Div (embedDim * 3) 3 ~ embedDim
-     , KnownDType dtype
      , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
+     , KnownDType dtype
+     , dtype ~ SumDType dtype
+     , StandardFloatingPointDTypeValidation device dtype
+     , MatMulDTypeIsValid device dtype
+     , BasicArithmeticDTypeIsValid device dtype
+     , SumDTypeIsValid device dtype
+     , KnownDevice device
      )
-  => MultiheadAttention dtype embedDim numHeads
+  => MultiheadAttention embedDim numHeads dtype device
   -> Bool
   -> Kleisli
        IO
-       ( Tensor 'D.Bool '[seqLen, batchSize]
-       , Tensor dtype '[seqLen, batchSize, embedDim]
+       ( Tensor device 'D.Bool '[seqLen, batchSize]
+       , Tensor device dtype   '[seqLen, batchSize, embedDim]
        )
-       ( Tensor dtype '[seqLen, batchSize, embedDim]
-       , Tensor dtype '[batchSize, seqLen, seqLen]
+       ( Tensor device dtype '[seqLen, batchSize, embedDim]
+       , Tensor device dtype '[batchSize, seqLen, seqLen]
        )
 multiheadAttention' MultiheadAttention {..} train =
   second (linear mhInProj ^>> split)
@@ -179,10 +199,10 @@ multiheadAttention' MultiheadAttention {..} train =
       ^>> Kleisli (Torch.Typed.NN.dropout mhDropout train)
    where
     dotProduct =
-      let scaling = pow (-1 / 2 :: Double) (fromInteger . natVal $ Proxy @headDim) :: Tensor dtype '[]
+      let scaling = pow (-1 / 2 :: Double) (fromInteger . natVal $ Proxy @headDim) :: Tensor device dtype '[]
       in  ((f >>^ mul scaling) *** (f >>^ transpose @1 @2)) >>^ uncurry matmul
     maskFutureTimestamps =
-      let futureTimestampMask = toDType @D.Bool . triu 1 $ ones @D.Int8 @'[seqLen, seqLen]
+      let futureTimestampMask = toDType @D.Bool . triu 1 $ ones @'[seqLen, seqLen] @D.Int8 @device
       in  arr $ maskedFill futureTimestampMask (-1 / 0 :: Double)
     maskKeyPaddings =
       first (transpose @0 @1 ^>> unsqueeze @1 ^>> unsqueeze @2 ^>> returnA)
@@ -196,21 +216,23 @@ multiheadAttention' MultiheadAttention {..} train =
       >>^ reshape @'[seqLen, batchSize, embedDim]
       >>^ linear mhOutProj
   avgAttnWeights =
-    let factor = pow (-1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor dtype '[]
+    let factor = pow (-1 :: Double) (fromInteger . natVal $ Proxy @numHeads) :: Tensor device dtype '[]
     in  reshape @'[batchSize, numHeads, seqLen, seqLen]
           ^>> sumDim @1
           ^>> mul factor
           ^>> returnA
   f = reshape @'[seqLen, batchSize * numHeads, headDim] ^>> transpose @0 @1 ^>> returnA
 
-instance A.Parameterized (MultiheadAttention dtype embedDim numHeads)  
+instance A.Parameterized (MultiheadAttention embedDim numHeads dtype device)  
 
-instance ( KnownDType dtype
-         , KnownNat embedDim
+instance ( KnownNat embedDim
          , KnownNat numHeads
+         , KnownDType dtype
+         , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
-  => A.Randomizable (MultiheadAttentionSpec dtype embedDim numHeads)
-                    (MultiheadAttention     dtype embedDim numHeads)
+  => A.Randomizable (MultiheadAttentionSpec embedDim numHeads dtype device)
+                    (MultiheadAttention     embedDim numHeads dtype device)
  where
   sample MultiheadAttentionSpec {..} =
     MultiheadAttention
@@ -218,49 +240,59 @@ instance ( KnownDType dtype
       <*> A.sample LinearSpec
       <*> A.sample (DropoutSpec mhDropoutProbSpec)
 
-data TransformerLMLayerSpec (dtype :: D.DType)
-                            (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat)
+data TransformerLMLayerSpec (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat)
+                            (dtype :: D.DType)
+                            (device :: (D.DeviceType, Nat))
  where
   TransformerLMLayerSpec
-    :: { tMHDropoutProbSpec :: Double
+    :: forall embedDim numHeads ffnDim dtype device
+     . { tMHDropoutProbSpec   :: Double
        , tAttnDropoutProbSpec :: Double
-       , tLNEpsSpec :: Double
+       , tLNEpsSpec           :: Double
        , tMLPDropout0ProbSpec :: Double
        , tMLPDropout1ProbSpec :: Double
-       , tMLPActivation0Spec :: Activation dtype
-       , tMLPActivation1Spec :: Activation dtype
+       , tMLPActivation0Spec  :: Activation dtype device
+       , tMLPActivation1Spec  :: Activation dtype device
        }
-    -> TransformerLMLayerSpec dtype embedDim numHeads ffnDim
+    -> TransformerLMLayerSpec embedDim numHeads ffnDim dtype device
  deriving (Show)
 
-data TransformerLMLayer (dtype :: D.DType)
-                        (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat)
+data TransformerLMLayer (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat)
+                        (dtype :: D.DType)
+                        (device :: (D.DeviceType, Nat))
  where
   TransformerLMLayer
-    :: { tAttn :: MultiheadAttention dtype embedDim numHeads
+    :: forall embedDim numHeads ffnDim dtype device
+     . { tAttn        :: MultiheadAttention embedDim numHeads dtype device
        , tAttnDropout :: Dropout
-       , tLN0 :: LayerNorm dtype '[embedDim]
-       , tLN1 :: LayerNorm dtype '[embedDim]
-       , tMLP :: TransformerLMMLP dtype embedDim ffnDim
+       , tLN0         :: LayerNorm '[embedDim] dtype device
+       , tLN1         :: LayerNorm '[embedDim] dtype device
+       , tMLP         :: TransformerLMMLP embedDim ffnDim dtype device
        }
-    -> TransformerLMLayer dtype embedDim numHeads ffnDim
+    -> TransformerLMLayer embedDim numHeads ffnDim dtype device
  deriving (Show, Generic)
 
 transformerLMLayer
-  :: forall dtype numHeads ffnDim embedDim headDim seqLen batchSize
+  :: forall numHeads ffnDim embedDim headDim seqLen batchSize dtype device
    . ( 1 <= numHeads
      , embedDim ~ (headDim * numHeads)
      , Mod (embedDim * 3) 3 ~ 0
      , Div (embedDim * 3) 3 ~ embedDim
-     , KnownDType dtype
      , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
      , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
+     , KnownDType dtype
+     , dtype ~ SumDType dtype
+     , StandardFloatingPointDTypeValidation device dtype
+     , MatMulDTypeIsValid device dtype
+     , BasicArithmeticDTypeIsValid device dtype
+     , SumDTypeIsValid device dtype
+     , KnownDevice device
      )
-  => TransformerLMLayer dtype embedDim numHeads ffnDim
+  => TransformerLMLayer embedDim numHeads ffnDim dtype device
   -> Bool
-  -> Tensor 'D.Bool '[seqLen, batchSize]
-  -> Tensor dtype '[seqLen, batchSize, embedDim]
-  -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
+  -> Tensor device 'D.Bool '[seqLen, batchSize]
+  -> Tensor device dtype   '[seqLen, batchSize, embedDim]
+  -> IO (Tensor device dtype '[seqLen, batchSize, embedDim])
 transformerLMLayer TransformerLMLayer {..} train keyPaddingMask input = do
   (attn, _) <- multiheadAttention tAttn train keyPaddingMask input
   x         <- Torch.Typed.NN.dropout tAttnDropout train attn
@@ -269,23 +301,29 @@ transformerLMLayer TransformerLMLayer {..} train keyPaddingMask input = do
   return $ Torch.Typed.NN.layerNorm tLN1 (x'' `add` x')
 
 transformerLMLayer'
-  :: forall dtype numHeads ffnDim embedDim headDim seqLen batchSize
+  :: forall numHeads ffnDim embedDim headDim seqLen batchSize dtype device
    . ( 1 <= numHeads
      , embedDim ~ (headDim * numHeads)
      , Mod (embedDim * 3) 3 ~ 0
      , Div (embedDim * 3) 3 ~ embedDim
-     , KnownDType dtype
      , All KnownNat '[embedDim, numHeads, seqLen, batchSize, headDim]
      , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
+     , KnownDType dtype
+     , dtype ~ SumDType dtype
+     , StandardFloatingPointDTypeValidation device dtype
+     , MatMulDTypeIsValid device dtype
+     , BasicArithmeticDTypeIsValid device dtype
+     , SumDTypeIsValid device dtype
+     , KnownDevice device
      )
-  => TransformerLMLayer dtype embedDim numHeads ffnDim
+  => TransformerLMLayer embedDim numHeads ffnDim dtype device
   -> Bool
   -> Kleisli
        IO
-       ( Tensor 'D.Bool '[seqLen, batchSize]
-       , Tensor dtype '[seqLen, batchSize, embedDim]
+       ( Tensor device 'D.Bool '[seqLen, batchSize]
+       , Tensor device dtype   '[seqLen, batchSize, embedDim]
        )
-       (Tensor dtype '[seqLen, batchSize, embedDim])
+       (Tensor device dtype '[seqLen, batchSize, embedDim])
 transformerLMLayer' TransformerLMLayer {..} train =
   (arr snd &&& attn)
     >>> uncurry add
@@ -297,24 +335,26 @@ transformerLMLayer' TransformerLMLayer {..} train =
   attn = multiheadAttention' tAttn train >>> arr fst >>> Kleisli
     (Torch.Typed.NN.dropout tAttnDropout train)
 
-instance A.Parameterized (TransformerLMLayer dtype embedDim numHeads ffnDim)
+instance A.Parameterized (TransformerLMLayer embedDim numHeads ffnDim dtype device)
 
-instance ( KnownDType dtype
-         , KnownNat embedDim
+instance ( KnownNat embedDim
          , KnownNat numHeads
          , KnownNat ffnDim
+         , KnownDType dtype
+         , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
-  => A.Randomizable (TransformerLMLayerSpec dtype embedDim numHeads ffnDim)
-                    (TransformerLMLayer     dtype embedDim numHeads ffnDim)
+  => A.Randomizable (TransformerLMLayerSpec embedDim numHeads ffnDim dtype device)
+                    (TransformerLMLayer     embedDim numHeads ffnDim dtype device)
  where
   sample TransformerLMLayerSpec {..} =
     let mhDropoutProbSpec = tMHDropoutProbSpec
-        dropoutProbSpec = tAttnDropoutProbSpec
-        layerNormEpsSpec = tLNEpsSpec
+        dropoutProbSpec   = tAttnDropoutProbSpec
+        layerNormEpsSpec  = tLNEpsSpec
         tDropout0ProbSpec = tMLPDropout0ProbSpec
         tDropout1ProbSpec = tMLPDropout1ProbSpec
-        tActivation0Spec = tMLPActivation0Spec
-        tActivation1Spec = tMLPActivation1Spec
+        tActivation0Spec  = tMLPActivation0Spec
+        tActivation1Spec  = tMLPActivation1Spec
     in  TransformerLMLayer
           <$> A.sample MultiheadAttentionSpec {..}
           <*> A.sample DropoutSpec {..}
@@ -322,39 +362,41 @@ instance ( KnownDType dtype
           <*> A.sample LayerNormSpec {..}
           <*> A.sample TransformerLMMLPSpec {..}
 
-data TransformerLMMLPSpec (dtype :: D.DType)
-                          (embedDim :: Nat) (ffnDim :: Nat)
+data TransformerLMMLPSpec (embedDim :: Nat) (ffnDim :: Nat)
+                          (dtype :: D.DType)
+                          (device :: (D.DeviceType, Nat))
  where
   TransformerLMMLPSpec
-    :: forall dtype embedDim ffnDim
+    :: forall embedDim ffnDim dtype device
      . { tDropout0ProbSpec :: Double
        , tDropout1ProbSpec :: Double
-       , tActivation0Spec :: Activation dtype
-       , tActivation1Spec :: Activation dtype
+       , tActivation0Spec :: Activation dtype device
+       , tActivation1Spec :: Activation dtype device
        }
-    -> TransformerLMMLPSpec dtype embedDim ffnDim
+    -> TransformerLMMLPSpec embedDim ffnDim dtype device
 
-data TransformerLMMLP (dtype :: D.DType)
-                      (embedDim :: Nat) (ffnDim :: Nat)
+data TransformerLMMLP (embedDim :: Nat) (ffnDim :: Nat)
+                      (dtype :: D.DType)
+                      (device :: (D.DeviceType, Nat))
  where
   TransformerLMMLP
-    :: forall dtype embedDim ffnDim
-     . { tLinear0 :: Linear dtype embedDim ffnDim
-       , tLinear1 :: Linear dtype ffnDim embedDim
-       , tDropout0 :: Dropout
-       , tDropout1 :: Dropout
-       , tActivation0 :: Activation dtype
-       , tActivation1 :: Activation dtype
+    :: forall embedDim ffnDim dtype device
+     . { tLinear0     :: Linear embedDim ffnDim dtype device
+       , tLinear1     :: Linear ffnDim embedDim dtype device
+       , tDropout0    :: Dropout
+       , tDropout1    :: Dropout
+       , tActivation0 :: Activation dtype device
+       , tActivation1 :: Activation dtype device
        }
-    -> TransformerLMMLP dtype embedDim ffnDim
+    -> TransformerLMMLP embedDim ffnDim dtype device
  deriving (Show, Generic)
 
 transformerLMMLP
-  :: forall dtype embedDim ffnDim seqLen batchSize
-   . TransformerLMMLP dtype embedDim ffnDim
+  :: forall embedDim ffnDim seqLen batchSize dtype device
+   . TransformerLMMLP embedDim ffnDim dtype device
   -> Bool
-  -> Tensor dtype '[seqLen, batchSize, embedDim]
-  -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
+  -> Tensor device dtype '[seqLen, batchSize, embedDim]
+  -> IO (Tensor device dtype '[seqLen, batchSize, embedDim])
 transformerLMMLP TransformerLMMLP {..} train input =
   Torch.Typed.NN.dropout tDropout1 train
     .   unActivation tActivation1
@@ -365,13 +407,13 @@ transformerLMMLP TransformerLMMLP {..} train input =
     =<< pure input
 
 transformerLMMLP'
-  :: forall dtype embedDim ffnDim seqLen batchSize
-   . TransformerLMMLP dtype embedDim ffnDim
+  :: forall embedDim ffnDim seqLen batchSize dtype device
+   . TransformerLMMLP embedDim ffnDim dtype device
   -> Bool
   -> Kleisli
        IO
-       (Tensor dtype '[seqLen, batchSize, embedDim])
-       (Tensor dtype '[seqLen, batchSize, embedDim])
+       (Tensor device dtype '[seqLen, batchSize, embedDim])
+       (Tensor device dtype '[seqLen, batchSize, embedDim])
 transformerLMMLP' TransformerLMMLP {..} train =
   linear tLinear0
     ^>> unActivation tActivation0
@@ -380,14 +422,16 @@ transformerLMMLP' TransformerLMMLP {..} train =
     ^>> unActivation tActivation1
     ^>> Kleisli (Torch.Typed.NN.dropout tDropout1 train)
 
-instance A.Parameterized (TransformerLMMLP dtype embedDim ffnDim)
+instance A.Parameterized (TransformerLMMLP embedDim ffnDim dtype device)
 
-instance ( KnownDType dtype
-         , KnownNat embedDim
+instance ( KnownNat embedDim
          , KnownNat ffnDim
+         , KnownDType dtype
+         , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
-  => A.Randomizable (TransformerLMMLPSpec dtype embedDim ffnDim)
-                    (TransformerLMMLP     dtype embedDim ffnDim)
+  => A.Randomizable (TransformerLMMLPSpec embedDim ffnDim dtype device)
+                    (TransformerLMMLP     embedDim ffnDim dtype device)
  where
   sample TransformerLMMLPSpec {..} =
     TransformerLMMLP
@@ -404,14 +448,20 @@ instance ( 1 <= numHeads
          , embedDim ~ (headDim * numHeads)
          , Mod (embedDim * 3) 3 ~ 0
          , Div (embedDim * 3) 3 ~ embedDim
-         , KnownDType dtype
          , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
          , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
+         , KnownDType dtype
+         , dtype ~ SumDType dtype
+         , StandardFloatingPointDTypeValidation device dtype
+         , MatMulDTypeIsValid device dtype
+         , BasicArithmeticDTypeIsValid device dtype
+         , SumDTypeIsValid device dtype
+         , KnownDevice device
          )
     => Apply
          FoldLayers
-         (TransformerLMLayer dtype embedDim numHeads ffnDim)
-         ((Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim]) -> IO (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim]))
+         (TransformerLMLayer embedDim numHeads ffnDim dtype device)
+         ((Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim]) -> IO (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim]))
  where
   apply FoldLayers {..} layer = \(keyPaddingMask, input) -> do
     output <- transformerLMLayer layer foldLayersTrain keyPaddingMask input
@@ -423,14 +473,20 @@ instance ( 1 <= numHeads
          , embedDim ~ (headDim * numHeads)
          , Mod (embedDim * 3) 3 ~ 0
          , Div (embedDim * 3) 3 ~ embedDim
-         , KnownDType dtype
          , All KnownNat [embedDim, numHeads, seqLen, batchSize, headDim]
          , EndsWith '[seqLen, batchSize, embedDim] '[embedDim]
+         , KnownDType dtype
+         , dtype ~ SumDType dtype
+         , StandardFloatingPointDTypeValidation device dtype
+         , MatMulDTypeIsValid device dtype
+         , BasicArithmeticDTypeIsValid device dtype
+         , SumDTypeIsValid device dtype
+         , KnownDevice device
          )
     => Apply
          FoldLayers'
-         (TransformerLMLayer dtype embedDim numHeads ffnDim)
-         (Kleisli IO (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim]) (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim]))
+         (TransformerLMLayer embedDim numHeads ffnDim dtype device)
+         (Kleisli IO (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim]) (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim]))
  where
   apply FoldLayers' {..} layer = arr fst &&& transformerLMLayer' layer foldLayersTrain'
 
@@ -440,27 +496,32 @@ getHidden
        numHeads
        ffnDim
        paddingIdx
-       dtype
        numEmbeds
        embedDim
        seqLen
        batchSize
+       dtype
+       device
    . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
      , 1 <= seqLen
      , HFoldrM
          IO
          FoldLayers
-         (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim])
-         (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
+         (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
+     , BasicArithmeticDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device 'D.Int64
+     , KnownDevice device
      )
-  => Embedding ('Just paddingIdx) dtype numEmbeds embedDim
-  -> Embedding 'Nothing dtype 2048 embedDim
+  => Embedding ('Just paddingIdx) numEmbeds embedDim dtype device
+  -> Embedding 'Nothing           2048      embedDim dtype device
   -> Dropout
   -> Bool
-  -> HList (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
-  -> Tensor 'D.Int64 '[batchSize, seqLen]
-  -> IO (Tensor dtype '[seqLen, batchSize, embedDim])
+  -> HList (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
+  -> Tensor device 'D.Int64 '[batchSize, seqLen]
+  -> IO (Tensor device dtype '[seqLen, batchSize, embedDim])
 getHidden embedding posEmbedding dropout train layers input = do
   let srcTokens = transpose @0 @1 input
       src       = embed embedding srcTokens
@@ -468,11 +529,10 @@ getHidden embedding posEmbedding dropout train layers input = do
                     . unsqueeze @1
                     . embed posEmbedding
                     . toDType @D.Int64
-                    . linspace @seqLen 0
-                    . fromIntegral
+                    . linspace @seqLen (0 :: Int)
                     $ natValI @(seqLen - 1)
   x <- Torch.Typed.NN.dropout dropout train (src `add` positions)
-  let keyPaddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[])
+  let keyPaddingMask = srcTokens ==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor device 'D.Int64 '[])
   (_, x') <- hfoldrM (FoldLayers train) (keyPaddingMask, x) layers
   return x'
 
@@ -482,26 +542,31 @@ getHidden'
        numHeads
        ffnDim
        paddingIdx
-       dtype
        numEmbeds
        embedDim
        seqLen
        batchSize
+       dtype
+       device
    . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
      , 1 <= seqLen
      , HFoldrM'
          IO
          FoldLayers'
-         (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim])
-         (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
+         (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
+     , BasicArithmeticDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device 'D.Int64
+     , KnownDevice device
      )
-  => Embedding ('Just paddingIdx) dtype numEmbeds embedDim
-  -> Embedding 'Nothing dtype 2048 embedDim
+  => Embedding ('Just paddingIdx) numEmbeds embedDim dtype device
+  -> Embedding 'Nothing           2048      embedDim dtype device
   -> Dropout
   -> Bool
-  -> HList (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
-  -> Kleisli IO (Tensor 'D.Int64 '[batchSize, seqLen]) (Tensor dtype '[seqLen, batchSize, embedDim])
+  -> HList (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
+  -> Kleisli IO (Tensor device 'D.Int64 '[batchSize, seqLen]) (Tensor device dtype '[seqLen, batchSize, embedDim])
 getHidden' embedding posEmbedding dropout train layers =
   transpose @0 @1
     ^>> (mkKeyPaddingMask &&& mkInput)
@@ -509,15 +574,14 @@ getHidden' embedding posEmbedding dropout train layers =
     >>^ snd
  where
   mkKeyPaddingMask =
-    arr (==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor 'D.Int64 '[]))
+    arr (==. (fromInteger . natVal $ Proxy @paddingIdx :: Tensor device 'D.Int64 '[]))
   mkInput = embed embedding ^>> add positions ^>> Kleisli (Torch.Typed.NN.dropout dropout train)
   positions =
     expand @'[seqLen, batchSize, embedDim] True
       . unsqueeze @1
       . embed posEmbedding
       . toDType @D.Int64
-      . linspace @seqLen 0
-      . fromIntegral
+      . linspace @seqLen (0 :: Int)
       $ natValI @(seqLen - 1)
 
 data TransformerLMSpec
@@ -525,10 +589,11 @@ data TransformerLMSpec
        (numHeads :: Nat)
        (ffnDim :: Nat)
        (paddingIdx :: Nat)
-       (dtype :: D.DType)
        (numEmbeds :: Nat)
        (embedDim :: Nat)
        (seqLen :: Nat)
+       (dtype :: D.DType)
+       (device :: (D.DeviceType, Nat))
  where
   TransformerLMSpec
     :: forall
@@ -536,14 +601,15 @@ data TransformerLMSpec
          numHeads
          ffnDim
          paddingIdx
-         dtype
          numEmbeds
          embedDim
          seqLen
+         dtype
+         device
      . { tDropoutProbSpec :: Double
-       , tLayerSpec :: TransformerLMLayerSpec dtype embedDim numHeads ffnDim
+       , tLayerSpec :: TransformerLMLayerSpec embedDim numHeads ffnDim dtype device
        }
-    -> TransformerLMSpec numAttnLayers numHeads ffnDim paddingIdx dtype numEmbeds embedDim seqLen
+    -> TransformerLMSpec numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
  deriving (Show)
 
 data TransformerLM
@@ -551,10 +617,11 @@ data TransformerLM
        (numHeads :: Nat)
        (ffnDim :: Nat)
        (paddingIdx :: Nat)
-       (dtype :: D.DType)
        (numEmbeds :: Nat)
        (embedDim :: Nat)
        (seqLen :: Nat)
+       (dtype :: D.DType)
+       (device :: (D.DeviceType, Nat))
  where
   TransformerLM
     :: forall
@@ -562,70 +629,76 @@ data TransformerLM
          numHeads
          ffnDim
          paddingIdx
-         dtype
          numEmbeds
          embedDim
          seqLen
-     . { tEmbedding :: Embedding ('Just paddingIdx) dtype numEmbeds embedDim
-       , tPosEmbedding :: Embedding 'Nothing dtype 2048 embedDim
-       , tDropout :: Dropout
-       , tLayers :: HList (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
-       , tProj :: Linear dtype embedDim seqLen
+         dtype
+         device
+     . { tEmbedding    :: Embedding ('Just paddingIdx) numEmbeds embedDim dtype device
+       , tPosEmbedding :: Embedding 'Nothing           2048      embedDim dtype device
+       , tDropout      :: Dropout
+       , tLayers       :: HList (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
+       , tProj         :: Linear embedDim seqLen dtype device
        }
-    -> TransformerLM numAttnLayers numHeads ffnDim paddingIdx dtype numEmbeds embedDim seqLen
+    -> TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
  deriving (Generic)
 
-instance (A.Parameterized (HList (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))))
+instance (A.Parameterized (HList (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))))
   => A.Parameterized (TransformerLM numAttnLayers
                                     numHeads
                                     ffnDim
                                     paddingIdx
-                                    dtype
                                     numEmbeds
                                     embedDim
-                                    seqLen)
+                                    seqLen
+                                    dtype
+                                    device)
 
 instance ( paddingIdx <= numEmbeds
          , 1 <= numEmbeds - paddingIdx
          , (((numEmbeds - paddingIdx) - 1) + (1 + paddingIdx)) ~ numEmbeds
          , KnownNat ffnDim
          , KnownNat paddingIdx
-         , KnownDType dtype
          , KnownNat numEmbeds
          , KnownNat embedDim
          , KnownNat seqLen
          , HReplicate'
              numAttnLayers
-             (TransformerLMLayerSpec dtype embedDim numHeads ffnDim)
+             (TransformerLMLayerSpec embedDim numHeads ffnDim dtype device)
              (HReplicateR
                numAttnLayers
-               (TransformerLMLayerSpec dtype embedDim numHeads ffnDim))
+               (TransformerLMLayerSpec embedDim numHeads ffnDim dtype device))
          , A.Randomizable
              (HList
                (HReplicateR
                  numAttnLayers
-                 (TransformerLMLayerSpec dtype embedDim numHeads ffnDim)))
+                 (TransformerLMLayerSpec embedDim numHeads ffnDim dtype device)))
              (HList
                (HReplicateR
                  numAttnLayers
-                 (TransformerLMLayer dtype embedDim numHeads ffnDim)))
+                 (TransformerLMLayer embedDim numHeads ffnDim dtype device)))
+         , KnownDType dtype
+         , RandDTypeIsValid device dtype
+         , KnownDevice device
          )
   => A.Randomizable (TransformerLMSpec numAttnLayers
                                        numHeads
                                        ffnDim
                                        paddingIdx
-                                       dtype
                                        numEmbeds
                                        embedDim
-                                       seqLen)
+                                       seqLen
+                                       dtype
+                                       device)
                     (TransformerLM     numAttnLayers
                                        numHeads
                                        ffnDim
                                        paddingIdx
-                                       dtype
                                        numEmbeds
                                        embedDim
-                                       seqLen)
+                                       seqLen
+                                       dtype
+                                       device)
  where
   sample TransformerLMSpec {..} =
     TransformerLM
@@ -636,7 +709,7 @@ instance ( paddingIdx <= numEmbeds
             (hReplicate (Proxy @numAttnLayers) tLayerSpec :: HList
                 ( HReplicateR
                     numAttnLayers
-                    (TransformerLMLayerSpec dtype embedDim numHeads ffnDim)
+                    (TransformerLMLayerSpec embedDim numHeads ffnDim dtype device)
                 )
             )
       <*> A.sample LinearSpec
@@ -647,28 +720,33 @@ logits
        numHeads
        ffnDim
        paddingIdx
-       dtype
        numEmbeds
        embedDim
        seqLen
        batchSize
+       dtype
+       device
    . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
      , 1 <= seqLen
      , HFoldrM
          IO
          FoldLayers
-         (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim])
-         (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
+         (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
+     , BasicArithmeticDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device 'D.Int64
+     , KnownDevice device
      )
-  => TransformerLM numAttnLayers numHeads ffnDim paddingIdx dtype numEmbeds embedDim seqLen
+  => TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
   -> Bool
-  -> Tensor 'D.Int64 '[batchSize, seqLen]
-  -> IO (Tensor dtype '[batchSize, seqLen, seqLen])
+  -> Tensor device 'D.Int64 '[batchSize, seqLen]
+  -> IO (Tensor device dtype '[batchSize, seqLen, seqLen])
 logits TransformerLM {..} train input = do
   hidden <-
     transpose @0 @1
-      <$> getHidden @numAttnLayers @numHeads @ffnDim -- TODO: these type applications shouldn't be necessary
+      <$> getHidden @numAttnLayers @numHeads @ffnDim
             tEmbedding
             tPosEmbedding
             tDropout
@@ -683,23 +761,28 @@ logits'
        numHeads
        ffnDim
        paddingIdx
-       dtype
        numEmbeds
        embedDim
        seqLen
        batchSize
+       dtype
+       device
    . ( All KnownNat '[paddingIdx, embedDim, seqLen, batchSize]
      , paddingIdx + 1 <= numEmbeds
      , 1 <= seqLen
      , HFoldrM'
          IO
          FoldLayers'
-         (Tensor 'D.Bool '[seqLen, batchSize], Tensor dtype '[seqLen, batchSize, embedDim])
-         (HReplicateR numAttnLayers (TransformerLMLayer dtype embedDim numHeads ffnDim))
+         (Tensor device 'D.Bool '[seqLen, batchSize], Tensor device dtype '[seqLen, batchSize, embedDim])
+         (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
+     , BasicArithmeticDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device dtype
+     , ComparisonDTypeIsValid device 'D.Int64
+     , KnownDevice device
      )
-  => TransformerLM numAttnLayers numHeads ffnDim paddingIdx dtype numEmbeds embedDim seqLen
+  => TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
   -> Bool
-  -> Kleisli IO (Tensor 'D.Int64 '[batchSize, seqLen]) (Tensor dtype '[batchSize, seqLen, seqLen])
+  -> Kleisli IO (Tensor device 'D.Int64 '[batchSize, seqLen]) (Tensor device dtype '[batchSize, seqLen, seqLen])
 logits' TransformerLM {..} train =
   getHidden' @numAttnLayers @numHeads @ffnDim tEmbedding
                                               tPosEmbedding
@@ -709,25 +792,24 @@ logits' TransformerLM {..} train =
     >>^ transpose @0 @1
     >>^ linear tProj
 
-toBackend
-  :: forall t . (ATen.Castable t (ForeignPtr ATen.Tensor)) => String -> t -> t
-toBackend backend t = unsafePerformIO $ case backend of
-  "CUDA" -> ATen.cast1 ATen.tensor_cuda t
-  _      -> ATen.cast1 ATen.tensor_cpu t
-
 crossEntropyLoss
-  :: forall paddingIdx batchSize seqLen dtype
-   . (KnownNat paddingIdx, KnownNat batchSize, KnownNat seqLen, KnownDType dtype)
-  => String
-  -> Tensor dtype '[batchSize, seqLen, seqLen]
-  -> Tensor 'D.Int64 '[batchSize, seqLen]
-  -> Tensor dtype '[]
-crossEntropyLoss backend result target =
-  nll_loss @D.ReduceMean @dtype @batchSize @seqLen @'[seqLen]
-    (logSoftmax @1 result)
-    target
-    (toBackend backend ones)
+  :: forall paddingIdx batchSize seqLen dtype device
+   . ( KnownNat paddingIdx
+     , KnownNat batchSize
+     , KnownNat seqLen
+     , KnownDType dtype
+     , KnownDevice device
+     , StandardFloatingPointDTypeValidation device dtype
+     )
+  => Tensor device dtype '[batchSize, seqLen, seqLen]
+  -> Tensor device 'D.Int64 '[batchSize, seqLen]
+  -> Tensor device dtype '[]
+crossEntropyLoss prediction target =
+  nllLoss @D.ReduceMean @batchSize @seqLen @'[seqLen]
+    ones
     (natValI @paddingIdx)
+    (logSoftmax @1 prediction)
+    target
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
@@ -741,44 +823,51 @@ type NumEmbeds = 10
 type EmbedDim = 5
 type SeqLen = 1
 
-type Model
+type Model device
   = TransformerLM
       NumAttnLayers
       NumHeads
       FFNDim
       PaddingIdx
-      'D.Float
       NumEmbeds
       EmbedDim
       SeqLen
+      'D.Float
+      device
 
-type ModelSpec
+type ModelSpec device
   = TransformerLMSpec
       NumAttnLayers
       NumHeads
       FFNDim
       PaddingIdx
-      'D.Float
       NumEmbeds
       EmbedDim
       SeqLen
+      'D.Float
+      device
 
 data Data
 
 type BatchSize = 1
 
-main = do
-  backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
-  let backend = case backend' of
-        Right "CUDA" -> "CUDA"
-        _            -> "CPU"
-      numIters = 1
-  init  <- A.sample spec :: IO Model
-  init' <- A.replaceParameters init <$> traverse
-    (A.makeIndependent . toBackend backend . A.toDependent)
-    (A.flattenParameters init)
-  (_trained, _) <- foldLoop (init', undefined) numIters $ \(state, _) i -> do
-    trainingLoss <- computeLoss @BatchSize backend state True undefined undefined
+train
+  :: forall (device :: (D.DeviceType, Nat))
+   . ( KnownDevice device
+     , RandDTypeIsValid device 'D.Float
+     , StandardFloatingPointDTypeValidation device 'D.Float
+     , MatMulDTypeIsValid device 'D.Float
+     , BasicArithmeticDTypeIsValid device 'D.Float
+     , SumDTypeIsValid device 'D.Float
+     , ComparisonDTypeIsValid device 'D.Float
+     , ComparisonDTypeIsValid device 'D.Int64
+     )
+  => Int
+  -> IO ()
+train numIters = do
+  init          <- A.sample spec :: IO (Model device)
+  (_trained, _) <- foldLoop (init, undefined) numIters $ \(state, _) i -> do
+    trainingLoss <- computeLoss @BatchSize state True undefined undefined
     let flat_parameters = A.flattenParameters state
     let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
     new_flat_parameters <- mapM A.makeIndependent
@@ -786,7 +875,7 @@ main = do
     return (A.replaceParameters state new_flat_parameters, undefined)
   return ()
  where
-  spec :: ModelSpec
+  spec :: ModelSpec device
   spec = TransformerLMSpec
     { tDropoutProbSpec = 0.0
     , tLayerSpec       = TransformerLMLayerSpec
@@ -802,14 +891,21 @@ main = do
   computeLoss
     :: forall batchSize
      . (KnownNat batchSize, EndsWith '[batchSize, EmbedDim] '[EmbedDim])
-    => String
-    -> Model
+    => Model device
     -> Bool
     -> [Int]
     -> Data
-    -> IO (Tensor 'D.Float '[])
-  computeLoss backend state train _indexes _data = do
-    let input  = toBackend backend (undefined :: Tensor 'D.Int64 '[batchSize, SeqLen])
-        target = toBackend backend (undefined :: Tensor 'D.Int64 '[batchSize, SeqLen])
-    result <- logits state train input
-    return $ crossEntropyLoss @PaddingIdx backend result target
+    -> IO (Tensor device 'D.Float '[])
+  computeLoss state train _indexes _data = do
+    let input  = (undefined :: Tensor device 'D.Int64 '[batchSize, SeqLen])
+        target = (undefined :: Tensor device 'D.Int64 '[batchSize, SeqLen])
+    prediction <- logits state train input
+    return $ crossEntropyLoss @PaddingIdx prediction (toDevice target)
+
+main :: IO ()
+main = do
+  deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
+  case deviceStr of
+    Right "cpu"    -> train @'( 'D.CPU, 0)  1
+    Right "cuda:0" -> train @'( 'D.CUDA, 0) 1
+    _              -> error "Don't know what to do or how."
