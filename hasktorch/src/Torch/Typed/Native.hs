@@ -687,8 +687,8 @@ solve
      ) -- ^ c and lu
 solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
 
--- | cholesky_inverse
--- >>> dtype &&& shape $ choleskyInverse (ones :: CPUTensor 'D.Float '[3,3])
+-- | choleskyInverse
+-- >>> dtype &&& shape $ choleskyInverse Upper (ones :: CPUTensor 'D.Float '[3,3])
 -- (Float,[3,3])
 choleskyInverse
   :: forall shape shape' dtype device
@@ -696,38 +696,57 @@ choleskyInverse
   => Tri
   -> Tensor device dtype shape
   -> Tensor device dtype shape'
-cholesky_inverse upper input =
+choleskyInverse upper input =
   unsafePerformIO $ cast2 ATen.cholesky_inverse_tb input boolUpper
  where boolUpper = isUpper upper
 
 -- | geqrf
--- >>> (a, b) = geqrf (ones :: CPUTensor 'D.Float '[3,4])
+-- `geqrf` computes a QR decomposition of the given `input` matrix,
+-- but without constructing `Q` and `R` as explicit separate matrices.
+-- Rather, this function directly calls the underlying LAPACK function `?geqrf`
+-- which produces a tuple `(a, tau)` of intermediate results as defined in
+-- the LAPACK documentation for `?geqrf`.
+--
+-- You can use `orgqr` on `(a, tau)` to compute the real orthogonal matrix `Q`,
+-- but in general you may just want to use `qr` instead.
+--
+-- See the LAPACK documentation for `?geqrf` for further details,
+-- https://software.intel.com/en-us/node/521004.
+-- 
+-- >>> (a, tau) = geqrf (ones :: CPUTensor 'D.Float '[3,4])
 -- >>> dtype &&& shape $ a
 -- (Float,[3,4])
--- >>> dtype &&& shape $ b
+-- >>> dtype &&& shape $ tau
 -- (Float,[3])
--- >>> (a, b) = geqrf (ones :: CPUTensor 'D.Float '[4,3])
+-- >>> (a, tau) = geqrf (ones :: CPUTensor 'D.Float '[4,3])
 -- >>> dtype &&& shape $ a
 -- (Float,[4,3])
--- >>> dtype &&& shape $ b
+-- >>> dtype &&& shape $ tau
 -- (Float,[3])
 geqrf
-  :: forall dtype device
-   . Tensor device dtype '[n, m]
-  -> ( Tensor device dtype '[n, m]
-     , Tensor device dtype '[Min n m]
-     )
+  :: forall m n dtype device
+   . Tensor device dtype '[m, n] -- ^ input matrix
+  -> ( Tensor device dtype '[m, n]
+     , Tensor device dtype '[Min m n]
+     ) -- ^ tuple `(a, tau)` of output matrices
 geqrf input = unsafePerformIO $ cast1 ATen.geqrf_t input
 
 -- | orgqr
--- >>> dtype &&& shape $ geqrf (ones :: CPUTensor 'D.Float '[3,4]) (ones :: CPUTensor 'D.Float '[5])
+-- Computes the orthogonal matrix `Q` of a QR factorization
+-- from the `(a, tau)` tuple returned by `geqrf`.
+-- 
+-- This directly calls the underlying LAPACK function `?orgqr`.
+-- See the LAPACK documentation for `?orgqr` for further details,
+-- https://software.intel.com/en-us/mkl-developer-reference-c-orgqr.
+-- 
+-- >>> dtype &&& shape $ orgqr (ones :: CPUTensor 'D.Float '[3,4]) (ones :: CPUTensor 'D.Float '[3])
 -- (Float,[3,4])
 orgqr
-  :: forall shape dtype device
-   . Tensor device dtype '[n, m]
-  -> Tensor device dtype shape
-  -> Tensor device dtype '[n, m]
-orgqr b a = unsafePerformIO $ cast2 ATen.orgqr_tt b a
+  :: forall m n dtype device
+   . Tensor device dtype '[m, n]
+  -> Tensor device dtype '[Min m n]
+  -> Tensor device dtype '[m, n]
+orgqr a tau = unsafePerformIO $ cast2 ATen.orgqr_tt a tau
 
 -- | sign
 -- works for all dtypes
@@ -1226,8 +1245,8 @@ baddbmm beta alpha batch1 batch2 input = unsafePerformIO $ cast5 ATen.baddbmm_tt
 -- (Bool,[3,3])
 bitwiseNot
   :: forall shape device
-   . Tensor 'D.Bool shape
-  -> Tensor 'D.Bool shape
+   . Tensor device 'D.Bool shape
+  -> Tensor device 'D.Bool shape
 bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
 
 -- | batched matrix multiplication
@@ -1534,12 +1553,15 @@ cudnnIsAcceptable input =
 
 constantPadNd1d
   :: forall (pad :: (Nat, Nat)) n dtype device
-   . ( All KnownNat '[Fst pad, Snd pad, n] )
+   . (All KnownNat '[Fst pad, Snd pad, n])
   => Float
-  -> Tensor dtype '[n]
-  -> Tensor dtype '[n + Fst pad + Snd pad]
-constantPadNd1d value input =
-  unsafePerformIO $ cast3 ATen.constant_pad_nd_tls input [natValI @(Fst pad), natValI @(Snd pad)] value
+  -> Tensor device dtype '[n]
+  -> Tensor device dtype '[n + Fst pad + Snd pad]
+constantPadNd1d value input = unsafePerformIO $ cast3
+  ATen.constant_pad_nd_tls
+  input
+  ([natValI @(Fst pad), natValI @(Snd pad)] :: [Int])
+  value
 
 -- convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor device dtype shape
 -- convolution _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups = unsafePerformIO $ (cast9 ATen.convolution_tttlllbll) _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups
@@ -1688,22 +1710,24 @@ conv3d weight bias input = unsafePerformIO $ cast7
   ([1, 1, 1] :: [Int])
   (1 :: Int)
 
--- | convTbc
--- >>> dtype &&& shape $ convTbc @1 (ones :: CPUTensor 'D.Float '[3,3,4]) (ones :: CPUTensor 'D.Float '[1,4,5]) (ones :: CPUTensor 'D.Float '[5])
+-- | convTBC
+-- 1D convolution over an input of shape `[timeSize, batchSize, inputChannels]`.
+
+-- >>> dtype &&& shape $ convTBC @1 (ones :: CPUTensor 'D.Float '[1,4,5]) (ones :: CPUTensor 'D.Float '[5]) (ones :: CPUTensor 'D.Float '[3,3,4])
 -- (Float,[5,3,5])
--- >>> dtype &&& shape $ convTbc @0 (ones :: CPUTensor 'D.Float '[2,3,4]) (ones :: CPUTensor 'D.Float '[1,4,5]) (ones :: CPUTensor 'D.Float '[5])
+-- >>> dtype &&& shape $ convTBC @0 (ones :: CPUTensor 'D.Float '[1,4,5]) (ones :: CPUTensor 'D.Float '[5]) (ones :: CPUTensor 'D.Float '[2,3,4])
 -- (Float,[3,3,5])
--- >>> dtype &&& shape $ convTbc @0 (ones :: CPUTensor 'D.Float '[2,3,4]) (ones :: CPUTensor 'D.Float '[2,4,5]) (ones :: CPUTensor 'D.Float '[5])
+-- >>> dtype &&& shape $ convTBC @0 (ones :: CPUTensor 'D.Float '[2,4,5]) (ones :: CPUTensor 'D.Float '[5]) (ones :: CPUTensor 'D.Float '[2,3,4])
 -- (Float,[2,3,5])
-convTbc
+convTBC
   :: forall padding timeSize batchSize kernelSize inputChannels outputChannels dtype device
-   . _
+   . (KnownNat padding)
   => Tensor device dtype '[kernelSize, inputChannels, outputChannels]
   -> Tensor device dtype '[outputChannels]
   -> Tensor device dtype '[timeSize, batchSize, inputChannels]
-  -> Tensor deivce dtype '[timeSize+padding*2+1-kernelSize, batchSize, outputChannels]
-convTbc weight bias input =
-  unsafePerformIO $ cast4 ATen.conv_tbc_tttl input weight bias (natValI @pad)
+  -> Tensor device dtype '[timeSize+padding*2+1-kernelSize, batchSize, outputChannels]
+convTBC weight bias input =
+  unsafePerformIO $ cast4 ATen.conv_tbc_tttl input weight bias (natValI @padding)
 
 -- conv_transpose1d :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Int -> Int -> Int -> Int -> Int -> Tensor device dtype shape
 -- conv_transpose1d _input _weight _bias _stride _padding _output_padding _groups _dilation = unsafePerformIO $ (cast8 ATen.conv_transpose1d_tttlllll) _input _weight _bias _stride _padding _output_padding _groups _dilation
