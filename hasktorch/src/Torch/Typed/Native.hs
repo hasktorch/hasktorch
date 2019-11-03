@@ -3001,14 +3001,17 @@ lstm _input (_cc, _hc) _params _dropout _train =
           dtype
           '[numLayers * numDirections, batchSize, hiddenSize]
       ]
-  (_num_layers :: I.Int64) =
-    fromIntegral $ natVal (undefined :: Proxy numLayers)
-  _bidirectional = case natVal (undefined :: Proxy numDirections) of
+  (_num_layers :: I.Int64) = fromIntegral $ natValI @numLayers
+  _bidirectional = case natValI @numDirections of
     1 -> False
     2 -> True
     _ -> error "lstm: numDirections must be 1 or 2!"
 
 -- gru_cell :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
+
+-- | lstmCell
+-- >>> dtype &&& shape $ fst $ lstmCell (ones :: CPUTensor 'D.Float '[12,2]) (ones :: CPUTensor 'D.Float '[12,3]) (ones :: CPUTensor 'D.Float '[12]) (ones :: CPUTensor 'D.Float '[12]) ((ones :: CPUTensor 'D.Float '[2,3]), (ones :: CPUTensor 'D.Float '[2,3])) (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[2,3])
 lstmCell
   :: forall inputDim hiddenSize batchSize dtype device 
    . Tensor device dtype '[4 * hiddenSize, inputDim]

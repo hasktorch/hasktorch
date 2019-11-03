@@ -16,4 +16,5 @@ main = doctest
   , "-isrc"
   , "src/Torch/Typed/Factories"
   , "src/Torch/Typed/Native"
+  , "src/Torch/Typed/NN/Recurrent/LSTM"
   ]
