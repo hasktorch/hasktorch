@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -49,6 +50,7 @@ import           Data.Maybe
 import           Data.Proxy
 import           Data.Reflection
 import           Control.Arrow                  ( (&&&) )
+import           GHC.Generics                   ( Generic )
 import           GHC.Natural                    ( Natural )
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
@@ -2942,6 +2944,82 @@ qZeroPoint input = unsafePerformIO $ cast1 ATen.q_zero_point_t input
 
 -- combinations :: Tensor device dtype shape -> Int -> Bool -> Tensor device dtype shape
 -- combinations _input _r _with_replacement = unsafePerformIO $ (cast3 ATen.combinations_tlb) _input _r _with_replacement
+
+-- | The directional specification of a recurrent function
+--
+data Directionality =
+  Bidirectional    -- ^ Forward and backward along the sequential axis using independant parameters for each.
+  | Unidirectional -- ^ Forward along the sequential axis.
+  deriving (Show, Generic) -- TODO:  We could also have BidirectionalTied weights.
+
+type family NumberOfDirections (a :: Directionality) :: Nat where
+  NumberOfDirections Bidirectional = 2
+  NumberOfDirections Unidirectional = 1
+
+-- | lstm
+-- Parameters for this ATen function are non-trivially provided.  See the
+-- `Typed.NN.LSTM` module for doctests.
+--
+lstm
+  :: forall direction
+       numLayers
+       dtype
+       seqLen
+       batchSize
+       inputDim
+       hiddenSize
+       device
+   . (KnownNat numLayers, KnownNat hiddenSize, KnownNat (NumberOfDirections direction))
+  => Tensor device dtype '[seqLen, batchSize, inputDim]
+  -> ( Tensor
+         device
+         dtype
+         '[numLayers * (NumberOfDirections direction), batchSize, hiddenSize]
+     , Tensor
+         device
+         dtype
+         '[numLayers * (NumberOfDirections direction), batchSize, hiddenSize]
+     )
+  -> [D.Tensor]
+  -> Double
+  -> Bool
+  -> ( Tensor
+         device
+         dtype
+         '[seqLen, batchSize, hiddenSize * (NumberOfDirections direction)]
+     , Tensor
+         device
+         dtype
+         '[numLayers * (NumberOfDirections direction), batchSize, hiddenSize]
+     , Tensor
+         device
+         dtype
+         '[numLayers * (NumberOfDirections direction), batchSize, hiddenSize]
+     )
+lstm _input (_cc, _hc) _params _dropout _train =
+  unsafePerformIO $ (cast9 ATen.lstm_tllbldbbb) _input
+                                                _hx
+                                                _params
+                                                True -- _has_biases
+                                                _num_layers
+                                                _dropout
+                                                _train
+                                                _bidirectional
+                                                False -- _batch_first
+ where
+  _hx =
+    [_cc, _hc] :: [ Tensor
+          device
+          dtype
+          '[numLayers * (NumberOfDirections direction), batchSize, hiddenSize]
+      ]
+  (_num_layers :: I.Int64) = fromIntegral $ natValI @numLayers
+  _bidirectional = case natValI @(NumberOfDirections direction) of
+    1 -> False
+    2 -> True
+    _ -> error "lstm: numDirections must be 1 or 2!"
+
+-- gru_cell :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
 
 -- | lstmCell
 -- >>> dtype &&& shape $ fst $ lstmCell (ones :: CPUTensor 'D.Float '[12,2]) (ones :: CPUTensor 'D.Float '[12,3]) (ones :: CPUTensor 'D.Float '[12]) (ones :: CPUTensor 'D.Float '[12]) ((ones :: CPUTensor 'D.Float '[2,3]), (ones :: CPUTensor 'D.Float '[2,3])) (ones :: CPUTensor 'D.Float '[2,2])
