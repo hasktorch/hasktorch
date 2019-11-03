@@ -158,7 +158,7 @@ instance A.Parameterized (LSTMParams device dtype numDirections inputDim hiddenS
 --
 data Directionality =
     Bidirectional -- ^ Forward and backward along the sequential axis using independant parameters for each.
-    | Unidirectional -- ^ Forward along the sequential axis using tied parameter for each.
+    | Unidirectional -- ^ Forward along the sequential axis.
     deriving (Show, Generic) -- TODO:  We could also have BidirectionalTied weights.
 
 type family NumberOfDirections a where
