@@ -476,17 +476,3 @@ forwardNoDropout
              '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
        )
 forwardNoDropout = forward' False
-
-
-tmp = do
-    input :: Tensor '(D.CPU,0) 'D.Float '[5, 16, 10]          <- randn
-    lstm :: (LSTM '(D.CPU,0) 'Unidirectional D.Float 1 10 30) <- A.sample
-        (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec
-                '(D.CPU,0)
-              'Unidirectional
-              D.Float
-              1
-              10
-              30
-        )
-    pure $ forwardNoDropout lstm input
