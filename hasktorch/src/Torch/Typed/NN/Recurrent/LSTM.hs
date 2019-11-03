@@ -259,8 +259,39 @@ xavierUniormLSTM
        )
     => IO (Tensor device dtype '[4 * hiddenSize, d])
 xavierUniormLSTM = do
-    fixme <- randn
-    pure $ fixme -- TODO: what's the story with the initializers code?
+    init <- (randn :: IO (Tensor device dtype '[4 * hiddenSize, d]))
+    UnsafeMkTensor <$> xavierUniformFIXME
+        (toDynamic init)
+        (5.0 / 3)
+        (shape @device @dtype @'[4 * hiddenSize, d] init)
+
+-- TODO: This is taken from the initializers examplee code and should be replaced with cannonical,
+-- tested versions.  However, even a potentially incorrect implementation will likly perform
+-- better than an ad-hoc random-normal distribution.
+-- | Fan-in / Fan-out scaling calculation
+calculateFan :: [Int] -> (Int, Int)
+calculateFan shape =
+    if dimT < 2 then
+        error "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
+    else if dimT == 2 then
+        (shape !! 1, shape !! 0)
+        else 
+            (numInputFmaps * receptiveFieldSize,
+            numOutputFmaps * receptiveFieldSize)
+    where
+        dimT = length shape
+        numInputFmaps = shape !! 1 -- size t 1
+        numOutputFmaps = shape !! 0 -- size t 0
+        receptiveFieldSize = product $ tail shape
+
+-- | Xavier Initialization - Uniform
+xavierUniformFIXME :: D.Tensor -> Float -> [Int] -> IO D.Tensor
+xavierUniformFIXME init gain shape = do
+    pure $ D.subScalar (D.mulScalar init (bound * 2.0)) bound
+    where
+        (fanIn, fanOut) = calculateFan shape
+        std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
+        bound = sqrt 3.0 * std
 
 instance (KnownDType dtype
     , KnownNat inputDim
