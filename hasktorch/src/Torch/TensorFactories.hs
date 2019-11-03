@@ -127,6 +127,9 @@ rand' = mkDefaultFactory rand
 randn' :: [Int] -> IO Tensor
 randn' = mkDefaultFactory randn
 
+randLike' :: Tensor -> IO Tensor
+randLike' t = randLike t defaultOpts
+
 onesWithDimnames' :: [(Int,Dimname)] -> Tensor
 onesWithDimnames' = mkDefaultFactoryWithDimnames onesWithDimnames
 

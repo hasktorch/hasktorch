@@ -78,6 +78,7 @@ executable static-mnist-mlp
   import:              config
   hs-source-dirs:      static-mnist-mlp
   main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , random >= 1.1
                      , safe-exceptions
@@ -87,6 +88,7 @@ executable static-transformer
   import:              config
   hs-source-dirs:      static-transformer
   main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , safe-exceptions
 
@@ -146,6 +148,16 @@ executable optimizers
   build-depends:       base >= 4.7 && < 5
                      , hasktorch
                      , mtl >= 2.2.2
+
+executable initializers
+  hs-source-dirs:      initializers
+  main-is:             Main.hs
+  other-modules:       Initializers, InitializerSpec
+  default-language:    Haskell2010
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , hspec
 
 executable image-processing
   hs-source-dirs:      image-processing
