@@ -487,9 +487,52 @@ instance ( TensorOptions '[n, n] dtype device
 
 data CholeskySpec = CholeskySpec | CholeskyInverseSpec
 
-instance ( TensorOptions shape  dtype device
-         , TensorOptions shape' dtype device
-         , shape' ~ Square shape
+instance ( TensorOptions shape   dtype device
+         , TensorOptions shape'  dtype device
+         , TensorOptions shape'' dtype device
+         , TensorOptions
+             (Square
+               (CheckMatMul
+                 shape
+                 (SetValue
+                   (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
+                   (LastDim shape - 1)
+                   (GetValue shape (LastDim shape)))
+                (ComputeMatMul
+                   (ReverseImpl shape '[])
+                   (ReverseImpl
+                     (SetValue
+                       (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
+                       (LastDim shape - 1)
+                       (GetValue shape (LastDim shape)))
+                     '[]))))
+             dtype
+             device
+         , TensorOptions
+             (Square
+               (Square
+                 (CheckMatMul
+                   shape
+                   (SetValue
+                     (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
+                     (LastDim shape - 1)
+                     (GetValue shape (LastDim shape)))
+                   (ComputeMatMul
+                     (ReverseImpl shape '[])
+                     (ReverseImpl
+                       (SetValue
+                         (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
+                         (LastDim shape - 1)
+                         (GetValue shape (LastDim shape)))
+                       '[])))))
+             dtype
+             device
+         , shape'  ~ Square shape
+         , shape'' ~ Square shape'
+         , 1 <= LastDim shape
+         , KnownNat (LastDim shape)
+         , KnownNat (LastDim shape - 1)
+         , MatMulDTypeIsValid device dtype
          , CholeskyDTypeIsValid device dtype
          , RandDTypeIsValid device dtype
          )
@@ -500,18 +543,21 @@ instance ( TensorOptions shape  dtype device
  where
   apply CholeskySpec _ _ = do
     t <- rand @shape @dtype @device
+    let t' = t `matmul` transpose @(Backwards shape 0) @(Backwards shape 1) t
     foldMap
       (\tri -> do
-        let t' = cholesky tri t
-        checkDynamicTensorAttributes t
+        let t'' = cholesky tri t'
+        checkDynamicTensorAttributes t''
       )
       [D.Upper, D.Lower]
   apply CholeskyInverseSpec _ _ = do
     t <- rand @shape @dtype @device
+    let t' = t `matmul` transpose @(Backwards shape 0) @(Backwards shape 1) t
     foldMap
       (\tri -> do
-        let t' = choleskyInverse tri t
-        checkDynamicTensorAttributes t
+        let t'' = cholesky tri t'
+        let t''' = choleskyInverse tri t''
+        checkDynamicTensorAttributes t'''
       )
       [D.Upper, D.Lower]
 

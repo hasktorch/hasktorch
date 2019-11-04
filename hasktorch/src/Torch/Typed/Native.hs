@@ -636,21 +636,47 @@ type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
   CholeskyDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | cholesky
+-- Computes the Cholesky decomposition of a symmetric positive-definite matrix.
+-- The operation supports batching.
+--
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[2,2])
--- >>> c = cholesky Upper (t `matmul` transpose2D t)
--- >>> dtype &&& shape $ c
+-- >>> u = cholesky Upper (t `matmul` transpose2D t)
+-- >>> dtype &&& shape $ u
 -- (Float,[2,2])
--- >>> :t c
--- c :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2]
+-- >>> :t u
+-- u :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2]
 cholesky
   :: forall shape shape' dtype device
    . ( shape' ~ Square shape
      , CholeskyDTypeIsValid device dtype
      )
-  => Tri -- ^ upper or lower triangular part of the matrix
+  => Tri -- ^ indicate whether to return an upper or lower triangular matrix.
   -> Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape' -- ^ output
 cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
+  where boolUpper = isUpper upper
+
+-- | choleskyInverse
+-- Computes the inverse of a symmetric positive-definite matrix
+-- using its Cholesky factor, returned, e.g., by `cholesky`.
+-- Like `cholesky`, this operation supports batching.
+-- The inverse is computed using the LAPACK routine `?potri`.
+-- 
+-- >>> t <- rand :: IO (CPUTensor 'D.Float '[2,2])
+-- >>> tri = Upper
+-- >>> u = cholesky tri (t `matmul` transpose2D t)
+-- >>> dtype &&& shape $ choleskyInverse tri u
+-- (Float,[2,2])
+choleskyInverse
+  :: forall shape shape' dtype device
+   . ( shape' ~ Square shape
+     , CholeskyDTypeIsValid device dtype
+     )
+  => Tri -- ^ decides whether the upper or the lower triangular part of the input tensor is used
+  -> Tensor device dtype shape -- ^ the (batched) input 2-D tensor `u`, an upper or lower triangular Cholesky factor
+  -> Tensor device dtype shape' -- ^ the (batched) output 2-D tensor
+choleskyInverse upper input = unsafePerformIO
+  $ cast2 ATen.cholesky_inverse_tb input boolUpper
   where boolUpper = isUpper upper
 
 -- cholesky_solve :: Tensor device dtype shape -> Tensor device dtype shape -> Tri -> Tensor device dtype shape
@@ -691,19 +717,6 @@ solve
      , Tensor device dtype m_m
      ) -- ^ c and lu
 solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
-
--- | choleskyInverse
--- >>> dtype &&& shape $ choleskyInverse Upper (ones :: CPUTensor 'D.Float '[3,3])
--- (Float,[3,3])
-choleskyInverse
-  :: forall shape shape' dtype device
-   . (shape' ~ Square shape, CholeskyDTypeIsValid device dtype)
-  => Tri -- ^ upper or lower triangular part of the matrix
-  -> Tensor device dtype shape -- ^ input
-  -> Tensor device dtype shape' -- ^ output
-choleskyInverse upper input = unsafePerformIO
-  $ cast2 ATen.cholesky_inverse_tb input boolUpper
-  where boolUpper = isUpper upper
 
 -- | geqrf
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
