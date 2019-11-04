@@ -485,7 +485,7 @@ instance ( TensorOptions '[n, n] dtype device
     checkDynamicTensorAttributes t'
     checkDynamicTensorAttributes t''
 
-data CholeskySpec = CholeskySpec | CholeskyInverseSpec
+data CholeskySpec = CholeskySpec
 
 instance ( TensorOptions shape   dtype device
          , TensorOptions shape'  dtype device
@@ -550,6 +550,63 @@ instance ( TensorOptions shape   dtype device
         checkDynamicTensorAttributes t''
       )
       [D.Upper, D.Lower]
+
+data CholeskyInverseSpec = CholeskyInverseSpec
+
+instance ( TensorOptions shape   dtype device
+         , TensorOptions shape'  dtype device
+         , TensorOptions shape'' dtype device
+         , TensorOptions
+             (Square
+               (CheckMatMul
+                 shape
+                 (SetValue
+                   (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
+                   (LastDim shape - 1)
+                   (GetValue shape (LastDim shape)))
+                (ComputeMatMul
+                   (ReverseImpl shape '[])
+                   (ReverseImpl
+                     (SetValue
+                       (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
+                       (LastDim shape - 1)
+                       (GetValue shape (LastDim shape)))
+                     '[]))))
+             dtype
+             device
+         , TensorOptions
+             (Square
+               (Square
+                 (CheckMatMul
+                   shape
+                   (SetValue
+                     (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
+                     (LastDim shape - 1)
+                     (GetValue shape (LastDim shape)))
+                   (ComputeMatMul
+                     (ReverseImpl shape '[])
+                     (ReverseImpl
+                       (SetValue
+                         (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
+                         (LastDim shape - 1)
+                         (GetValue shape (LastDim shape)))
+                       '[])))))
+             dtype
+             device
+         , shape'  ~ Square shape
+         , shape'' ~ Square shape'
+         , 1 <= LastDim shape
+         , KnownNat (LastDim shape)
+         , KnownNat (LastDim shape - 1)
+         , MatMulDTypeIsValid device dtype
+         , CholeskyDTypeIsValid device dtype
+         , RandDTypeIsValid device dtype
+         )
+  => Apply
+       CholeskyInverseSpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
   apply CholeskyInverseSpec _ _ = do
     t <- rand @shape @dtype @device
     let t' = t `matmul` transpose @(Backwards shape 0) @(Backwards shape 1) t
@@ -662,7 +719,8 @@ spec' :: D.Device -> Spec
 spec' device =
   describe ("for " <> show device) $ do
     let standardShapes               = Proxy @'[2, 3] :. HNil -- (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
-        squareShapes                 = Proxy @'[0, 0] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[0, 0, 0] :. Proxy @'[0, 1, 1] :. Proxy @'[1, 0, 0] :. Proxy @'[3, 2, 2] :. HNil
+        -- squareShapes                 = Proxy @'[0, 0] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[0, 0, 0] :. Proxy @'[0, 1, 1] :. Proxy @'[1, 0, 0] :. Proxy @'[3, 2, 2] :. HNil
+        squareShapes                 = Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 2, 2] :. HNil -- :. Proxy @'[0, 0, 0] :. Proxy @'[0, 1, 1] :. Proxy @'[1, 0, 0] :. HNil
         reductions                   = Proxy @D.ReduceNone :. Proxy @D.ReduceMean :. Proxy @D.ReduceSum :. HNil
 
     describe "unary ops" $ do
