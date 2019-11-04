@@ -39,6 +39,8 @@ import           Prelude                 hiding ( all
                                                 , log
                                                 , round
                                                 , isNaN
+                                                , floor
+                                                , ceil
                                                 )
 import           Data.Finite
 import qualified Data.Int                      as I
@@ -151,7 +153,9 @@ abs
   -> Tensor device dtype shape -- ^ output
 abs input = unsafePerformIO $ cast1 ATen.abs_t input
 
--- | floor
+-- | ceil
+-- >>> dtype &&& shape $ ceil (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[2,2])
 ceil
   :: forall shape dtype device
    . (StandardFloatingPointDTypeValidation device dtype)
@@ -160,6 +164,8 @@ ceil
 ceil input = unsafePerformIO $ cast1 ATen.ceil_t input
 
 -- | floor
+-- >>> dtype &&& shape $ floor (ones :: CPUTensor 'D.Float '[2,2])
+-- (Float,[2,2])
 floor
   :: forall shape dtype device
    . (StandardFloatingPointDTypeValidation device dtype)
@@ -286,7 +292,6 @@ pow
 pow a input = unsafePerformIO $ cast2 ATen.pow_ts input a
 
 -- | relu activation function
--- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- >>> dtype &&& shape $ relu (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 relu
@@ -633,21 +638,47 @@ type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
   CholeskyDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | cholesky
+-- Computes the Cholesky decomposition of a symmetric positive-definite matrix.
+-- The operation supports batching.
+--
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[2,2])
--- >>> c = cholesky Upper (t `matmul` transpose2D t)
--- >>> dtype &&& shape $ c
+-- >>> u = cholesky Upper (t `matmul` transpose2D t)
+-- >>> dtype &&& shape $ u
 -- (Float,[2,2])
--- >>> :t c
--- c :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2]
+-- >>> :t u
+-- u :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2]
 cholesky
   :: forall shape shape' dtype device
    . ( shape' ~ Square shape
      , CholeskyDTypeIsValid device dtype
      )
-  => Tri -- ^ upper or lower triangular part of the matrix
+  => Tri -- ^ indicate whether to return an upper or lower triangular matrix.
   -> Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape' -- ^ output
 cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
+  where boolUpper = isUpper upper
+
+-- | choleskyInverse
+-- Computes the inverse of a symmetric positive-definite matrix
+-- using its Cholesky factor, returned, e.g., by `cholesky`.
+-- Unlike `cholesky`, this operation does not support batching.
+-- The inverse is computed using the LAPACK routine `?potri`.
+-- 
+-- >>> t <- rand :: IO (CPUTensor 'D.Float '[2,2])
+-- >>> tri = Upper
+-- >>> u = cholesky tri (t `matmul` transpose2D t)
+-- >>> dtype &&& shape $ choleskyInverse tri u
+-- (Float,[2,2])
+choleskyInverse
+  :: forall n dtype device
+   . ( 1 <= n
+     , CholeskyDTypeIsValid device dtype
+     )
+  => Tri -- ^ decides whether the upper or the lower triangular part of the input tensor is used
+  -> Tensor device dtype '[n, n] -- ^ the input 2-D tensor `u`, an upper or lower triangular Cholesky factor
+  -> Tensor device dtype '[n, n] -- ^ the output 2-D tensor
+choleskyInverse upper input = unsafePerformIO
+  $ cast2 ATen.cholesky_inverse_tb input boolUpper
   where boolUpper = isUpper upper
 
 -- cholesky_solve :: Tensor device dtype shape -> Tensor device dtype shape -> Tri -> Tensor device dtype shape
@@ -689,15 +720,55 @@ solve
      ) -- ^ c and lu
 solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
 
--- cholesky_inverse :: Tensor device dtype shape -> Tri -> Tensor device dtype shape
--- cholesky_inverse t upper = unsafePerformIO $ (cast2 ATen.cholesky_inverse_tb) t boolUpper
---   where boolUpper = isUpper upper
+-- | geqrf
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+-- `geqrf` computes a QR decomposition of the given `input` matrix,
+-- but without constructing `Q` and `R` as explicit separate matrices.
+-- Rather, this function directly calls the underlying LAPACK function `?geqrf`
+-- which produces a tuple `(a, tau)` of intermediate results as defined in
+-- the LAPACK documentation for `?geqrf`.
+--
+-- You can use `orgqr` on `(a, tau)` to compute the real orthogonal matrix `Q`,
+-- but in general you may just want to use `qr` instead.
+--
+-- See the LAPACK documentation for `?geqrf` for further details,
+-- https://software.intel.com/en-us/node/521004.
+-- 
+-- >>> (a, tau) = geqrf (ones :: CPUTensor 'D.Float '[3,4])
+-- >>> dtype &&& shape $ a
+-- (Float,[3,4])
+-- >>> dtype &&& shape $ tau
+-- (Float,[3])
+-- >>> (a, tau) = geqrf (ones :: CPUTensor 'D.Float '[4,3])
+-- >>> dtype &&& shape $ a
+-- (Float,[4,3])
+-- >>> dtype &&& shape $ tau
+-- (Float,[3])
+geqrf
+  :: forall m n dtype device
+   . Tensor device dtype '[m, n] -- ^ input matrix
+  -> ( Tensor device dtype '[m, n]
+     , Tensor device dtype '[Min m n]
+     ) -- ^ tuple `(a, tau)` of output matrices
+geqrf input = unsafePerformIO $ cast1 ATen.geqrf_t input
 
--- geqrf :: Tensor device dtype shape -> (Tensor device dtype shape, Tensor device dtype shape)
--- geqrf t = unsafePerformIO $ (cast1 ATen.geqrf_t) t
-
--- orgqr :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
--- orgqr b a = unsafePerformIO $ (cast2 ATen.orgqr_tt) b a
+-- | orgqr
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+-- Computes the orthogonal matrix `Q` of a QR factorization
+-- from the `(a, tau)` tuple returned by `geqrf`.
+-- 
+-- This directly calls the underlying LAPACK function `?orgqr`.
+-- See the LAPACK documentation for `?orgqr` for further details,
+-- https://software.intel.com/en-us/mkl-developer-reference-c-orgqr.
+-- 
+-- >>> dtype &&& shape $ orgqr (ones :: CPUTensor 'D.Float '[3,4]) (ones :: CPUTensor 'D.Float '[3])
+-- (Float,[3,4])
+orgqr
+  :: forall m n dtype device
+   . Tensor device dtype '[m, n]
+  -> Tensor device dtype '[Min m n]
+  -> Tensor device dtype '[m, n]
+orgqr a tau = unsafePerformIO $ cast2 ATen.orgqr_tt a tau
 
 -- | sign
 -- works for all dtypes
@@ -1064,8 +1135,19 @@ addr beta alpha vec1 vec2 input = unsafePerformIO $ cast5 ATen.addr_tttss input 
 -- affine_grid_generator :: Tensor device dtype shape -> [Int] -> Tensor device dtype shape
 -- affine_grid_generator _theta _size = unsafePerformIO $ (cast2 ATen.affine_grid_generator_tl) _theta _size
 
--- allclose :: Tensor device dtype shape -> Tensor device dtype shape -> Double -> Double -> Bool -> Bool
--- allclose _input _other _rtol _atol _equal_nan = unsafePerformIO $ (cast5 ATen.allclose_ttddb) _input _other _rtol _atol _equal_nan
+-- | allclose
+-- >>> allclose 0.1 0.1 True (ones :: CPUTensor 'D.Float '[3,3]) (ones :: CPUTensor 'D.Float '[3,3])
+-- True
+allclose
+  :: forall shape dtype device
+   . Double -- ^ relative tolerance
+  -> Double -- ^ absolute tolerance
+  -> Bool -- ^ whether or not NaN equals NaN
+  -> Tensor device dtype shape -- ^ input tensor
+  -> Tensor device dtype shape -- ^ other input tensor
+  -> Bool -- ^ output
+allclose rtol atol equalNaN input other =
+  unsafePerformIO $ cast5 ATen.allclose_ttddb input other rtol atol equalNaN
 
 -- | argmax
 -- See https://pytorch.org/docs/stable/torch.html#torch.argmax.
@@ -1180,8 +1262,14 @@ baddbmm beta alpha batch1 batch2 input = unsafePerformIO $ cast5 ATen.baddbmm_tt
 -- bincount :: Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- bincount _input _weights _minlength = unsafePerformIO $ (cast3 ATen.bincount_ttl) _input _weights _minlength
 
--- bitwise_not :: Tensor device dtype shape -> Tensor device dtype shape
--- bitwise_not _input = unsafePerformIO $ (cast1 ATen.bitwise_not_t) _input
+-- | bitwise_not
+-- >>> dtype &&& shape $ bitwiseNot (ones :: CPUTensor 'D.Bool [3,3])
+-- (Bool,[3,3])
+bitwiseNot
+  :: forall shape device
+   . Tensor device 'D.Bool shape
+  -> Tensor device 'D.Bool shape
+bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
 
 -- | batched matrix multiplication
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -1485,6 +1573,18 @@ cudnnIsAcceptable input =
 -- constant_pad_nd :: Tensor device dtype shape -> [Int] -> Float -> Tensor device dtype shape
 -- constant_pad_nd _input _pad _value = unsafePerformIO $ (cast3 ATen.constant_pad_nd_tls) _input _pad _value
 
+constantPadNd1d
+  :: forall (pad :: (Nat, Nat)) n dtype device
+   . (All KnownNat '[Fst pad, Snd pad, n])
+  => Float
+  -> Tensor device dtype '[n]
+  -> Tensor device dtype '[n + Fst pad + Snd pad]
+constantPadNd1d value input = unsafePerformIO $ cast3
+  ATen.constant_pad_nd_tls
+  input
+  ([natValI @(Fst pad), natValI @(Snd pad)] :: [Int])
+  value
+
 -- convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor device dtype shape
 -- convolution _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups = unsafePerformIO $ (cast9 ATen.convolution_tttlllbll) _input _weight _bias _stride _padding _dilation _transposed _output_padding _groups
 
@@ -1632,8 +1732,25 @@ conv3d weight bias input = unsafePerformIO $ cast7
   ([1, 1, 1] :: [Int])
   (1 :: Int)
 
--- conv_tbc :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Int -> Tensor device dtype shape
--- conv_tbc _input _weight _bias _pad = unsafePerformIO $ (cast4 ATen.conv_tbc_tttl) _input _weight _bias _pad
+-- | convTBC
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+-- 1D convolution over an input of shape `[timeSize, batchSize, inputChannels]`.
+
+-- >>> dtype &&& shape $ convTBC @1 (ones :: CPUTensor 'D.Float '[1,4,5]) (ones :: CPUTensor 'D.Float '[5]) (ones :: CPUTensor 'D.Float '[3,3,4])
+-- (Float,[5,3,5])
+-- >>> dtype &&& shape $ convTBC @0 (ones :: CPUTensor 'D.Float '[1,4,5]) (ones :: CPUTensor 'D.Float '[5]) (ones :: CPUTensor 'D.Float '[2,3,4])
+-- (Float,[3,3,5])
+-- >>> dtype &&& shape $ convTBC @0 (ones :: CPUTensor 'D.Float '[2,4,5]) (ones :: CPUTensor 'D.Float '[5]) (ones :: CPUTensor 'D.Float '[2,3,4])
+-- (Float,[2,3,5])
+convTBC
+  :: forall padding timeSize batchSize kernelSize inputChannels outputChannels dtype device
+   . (KnownNat padding)
+  => Tensor device dtype '[kernelSize, inputChannels, outputChannels]
+  -> Tensor device dtype '[outputChannels]
+  -> Tensor device dtype '[timeSize, batchSize, inputChannels]
+  -> Tensor device dtype '[timeSize+padding*2+1-kernelSize, batchSize, outputChannels]
+convTBC weight bias input =
+  unsafePerformIO $ cast4 ATen.conv_tbc_tttl input weight bias (natValI @padding)
 
 -- conv_transpose1d :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Int -> Int -> Int -> Int -> Int -> Tensor device dtype shape
 -- conv_transpose1d _input _weight _bias _stride _padding _output_padding _groups _dilation = unsafePerformIO $ (cast8 ATen.conv_transpose1d_tttlllll) _input _weight _bias _stride _padding _output_padding _groups _dilation
