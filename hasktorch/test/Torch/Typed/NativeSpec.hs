@@ -464,11 +464,12 @@ instance ( TensorOptions shape   dtype device
 
 data EigSpec = EigSpec
 
-instance ( TensorOptions '[n, n] dtype device
-         , TensorOptions shape   dtype device
+instance ( TensorOptions shape  dtype device
+         , TensorOptions shape' dtype device
+         , shape  ~ '[n, n]
+         , shape' ~ ConditionalEigenVectors eigenvectors n
          , KnownNat n
          , KnownEigenVectors eigenvectors
-         , shape ~ ConditionalEigenVectors eigenvectors n
          , KnownDType dtype
          , KnownDevice device
          , EigDTypeIsValid device dtype
@@ -480,55 +481,18 @@ instance ( TensorOptions '[n, n] dtype device
        (() -> IO ())
  where
   apply EigSpec _ _ = do
-    t <- rand @'[n, n] @dtype @device
-    let (t', t'') = eig @eigenvectors @n @shape @dtype @device t
+    t <- rand @shape @dtype @device
+    let (t', t'') = eig @eigenvectors @n @shape' @dtype @device t
     checkDynamicTensorAttributes t'
     checkDynamicTensorAttributes t''
 
-data CholeskySpec = CholeskySpec | CholeskyInverseSpec
+data CholeskySpec = CholeskySpec
 
 instance ( TensorOptions shape   dtype device
          , TensorOptions shape'  dtype device
          , TensorOptions shape'' dtype device
-         , TensorOptions
-             (Square
-               (CheckMatMul
-                 shape
-                 (SetValue
-                   (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
-                   (LastDim shape - 1)
-                   (GetValue shape (LastDim shape)))
-                (ComputeMatMul
-                   (ReverseImpl shape '[])
-                   (ReverseImpl
-                     (SetValue
-                       (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
-                       (LastDim shape - 1)
-                       (GetValue shape (LastDim shape)))
-                     '[]))))
-             dtype
-             device
-         , TensorOptions
-             (Square
-               (Square
-                 (CheckMatMul
-                   shape
-                   (SetValue
-                     (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
-                     (LastDim shape - 1)
-                     (GetValue shape (LastDim shape)))
-                   (ComputeMatMul
-                     (ReverseImpl shape '[])
-                     (ReverseImpl
-                       (SetValue
-                         (SetValue shape (LastDim shape) (GetValue shape (LastDim shape - 1)))
-                         (LastDim shape - 1)
-                         (GetValue shape (LastDim shape)))
-                       '[])))))
-             dtype
-             device
-         , shape'  ~ Square shape
-         , shape'' ~ Square shape'
+         , shape' ~ Square shape
+         , shape'' ~ Square (MatMul shape (Transpose shape (LastDim shape) (LastDim shape - 1)))
          , 1 <= LastDim shape
          , KnownNat (LastDim shape)
          , KnownNat (LastDim shape - 1)
@@ -550,9 +514,24 @@ instance ( TensorOptions shape   dtype device
         checkDynamicTensorAttributes t''
       )
       [D.Upper, D.Lower]
+
+data CholeskyInverseSpec = CholeskyInverseSpec
+
+instance ( TensorOptions shape dtype device
+         , shape ~ '[n, n]
+         , 1 <= n
+         , RandDTypeIsValid device dtype
+         , MatMulDTypeIsValid device dtype
+         , CholeskyDTypeIsValid device dtype
+         )
+  => Apply
+       CholeskyInverseSpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
   apply CholeskyInverseSpec _ _ = do
     t <- rand @shape @dtype @device
-    let t' = t `matmul` transpose @(Backwards shape 0) @(Backwards shape 1) t
+    let t' = t `matmul` transpose @0 @1 t
     foldMap
       (\tri -> do
         let t'' = cholesky tri t'
@@ -827,11 +806,13 @@ spec' device =
           hfoldrM @IO CholeskySpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO CholeskySpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes squareShapes))
-      it "choleskyInverse" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-          hfoldrM @IO CholeskyInverseSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-          hfoldrM @IO CholeskyInverseSpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes squareShapes))
+      it "choleskyInverse" $ do
+        let shapes = Proxy @'[1, 1] :. Proxy @'[2, 2] :. HNil
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO CholeskyInverseSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO CholeskyInverseSpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes shapes))
       it "solve" $ do
         let solveShapes = hZipList
                             (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)

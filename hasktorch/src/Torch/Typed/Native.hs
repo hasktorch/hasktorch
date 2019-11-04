@@ -659,7 +659,7 @@ cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
 -- | choleskyInverse
 -- Computes the inverse of a symmetric positive-definite matrix
 -- using its Cholesky factor, returned, e.g., by `cholesky`.
--- Like `cholesky`, this operation supports batching.
+-- Unlike `cholesky`, this operation does not support batching.
 -- The inverse is computed using the LAPACK routine `?potri`.
 -- 
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[2,2])
@@ -668,13 +668,13 @@ cholesky upper input = unsafePerformIO $ cast2 ATen.cholesky_tb input boolUpper
 -- >>> dtype &&& shape $ choleskyInverse tri u
 -- (Float,[2,2])
 choleskyInverse
-  :: forall shape shape' dtype device
-   . ( shape' ~ Square shape
+  :: forall n dtype device
+   . ( 1 <= n
      , CholeskyDTypeIsValid device dtype
      )
   => Tri -- ^ decides whether the upper or the lower triangular part of the input tensor is used
-  -> Tensor device dtype shape -- ^ the (batched) input 2-D tensor `u`, an upper or lower triangular Cholesky factor
-  -> Tensor device dtype shape' -- ^ the (batched) output 2-D tensor
+  -> Tensor device dtype '[n, n] -- ^ the input 2-D tensor `u`, an upper or lower triangular Cholesky factor
+  -> Tensor device dtype '[n, n] -- ^ the output 2-D tensor
 choleskyInverse upper input = unsafePerformIO
   $ cast2 ATen.cholesky_inverse_tb input boolUpper
   where boolUpper = isUpper upper
