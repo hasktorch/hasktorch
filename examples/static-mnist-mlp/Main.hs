@@ -9,6 +9,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 
 module Main where
 
@@ -33,12 +35,16 @@ import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
 import qualified ATen.Managed.Type.Context     as ATen
-import           Torch.Typed
-import           Torch.Typed.Native     hiding ( linear )
+import           Torch.Typed.Aux
+import           Torch.Typed.Tensor
+import           Torch.Typed.Native      hiding ( linear
+                                                , dropout
+                                                )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
+import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.Functions               as D
@@ -51,56 +57,70 @@ import           Common
 -- MLP for MNIST
 --------------------------------------------------------------------------------
 
-data MLPSpec (dtype :: D.DType)
-             (inputFeatures :: Nat) (outputFeatures :: Nat)
+data MLPSpec (inputFeatures :: Nat) (outputFeatures :: Nat)
              (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat)
+             (dtype :: D.DType)
+             (device :: (D.DeviceType, Nat))
  where
   MLPSpec
-    :: forall dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+    :: forall inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
      . { mlpDropoutProbSpec :: Double }
-    -> MLPSpec dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+    -> MLPSpec inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
  deriving (Show, Eq)
 
-data MLP (dtype :: D.DType)
-         (inputFeatures :: Nat) (outputFeatures :: Nat)
+data MLP (inputFeatures :: Nat) (outputFeatures :: Nat)
          (hiddenFeatures0 :: Nat) (hiddenFeatures1 :: Nat)
+         (dtype :: D.DType)
+         (device :: (D.DeviceType, Nat))
  where
   MLP
-    :: forall dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
-     . { mlpLayer0 :: Linear dtype inputFeatures hiddenFeatures0
-       , mlpLayer1 :: Linear dtype hiddenFeatures0 hiddenFeatures1
-       , mlpLayer2 :: Linear dtype hiddenFeatures1 outputFeatures
+    :: forall inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
+     . { mlpLayer0  :: Linear inputFeatures   hiddenFeatures0 dtype device
+       , mlpLayer1  :: Linear hiddenFeatures0 hiddenFeatures1 dtype device
+       , mlpLayer2  :: Linear hiddenFeatures1 outputFeatures  dtype device
        , mlpDropout :: Dropout
        }
-    -> MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+    -> MLP inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device
  deriving (Show, Generic)
 
 mlp
-  :: MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1
+  :: forall
+       batchSize
+       inputFeatures outputFeatures
+       hiddenFeatures0 hiddenFeatures1
+       dtype
+       device
+   . (StandardFloatingPointDTypeValidation device dtype)
+  => MLP inputFeatures outputFeatures
+         hiddenFeatures0 hiddenFeatures1
+         dtype
+         device
   -> Bool
-  -> Tensor dtype '[batchSize, inputFeatures]
-  -> IO (Tensor dtype '[batchSize, outputFeatures])
+  -> Tensor device dtype '[batchSize, inputFeatures]
+  -> IO (Tensor device dtype '[batchSize, outputFeatures])
 mlp MLP {..} train input =
   return
     .   linear mlpLayer2
-    =<< Torch.Typed.NN.dropout mlpDropout train
+    =<< dropout mlpDropout train
     .   tanh
     .   linear mlpLayer1
-    =<< Torch.Typed.NN.dropout mlpDropout train
+    =<< dropout mlpDropout train
     .   tanh
     .   linear mlpLayer0
     =<< pure input
 
-instance A.Parameterized (MLP dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
+instance A.Parameterized (MLP inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
 
-instance ( KnownDType dtype
-         , KnownNat inputFeatures
+instance ( KnownNat inputFeatures
          , KnownNat outputFeatures
          , KnownNat hiddenFeatures0
          , KnownNat hiddenFeatures1
+         , KnownDType dtype
+         , KnownDevice device
+         , RandDTypeIsValid device dtype
          )
-  => A.Randomizable (MLPSpec dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
-                    (MLP     dtype inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1)
+  => A.Randomizable (MLPSpec inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
+                    (MLP     inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
  where
   sample MLPSpec {..} =
     MLP
@@ -114,71 +134,85 @@ type TestBatchSize = 8192
 type HiddenFeatures0 = 512
 type HiddenFeatures1 = 256
 
-main = do
-  backend' <- try (getEnv "BACKEND") :: IO (Either SomeException String)
-  let backend = case backend' of
-        Right "CUDA" -> "CUDA"
-        _            -> "CPU"
-      (numIters, printEvery) = (1000000, 250)
+train
+  :: forall (device :: (D.DeviceType, Nat))
+   . _
+  => IO ()
+train = do
+  let (numIters, printEvery) = (1000000, 250)
       dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
   ATen.manual_seed_L 123
-  init                     <- A.sample
-    (MLPSpec @D.Float @I.DataDim @I.ClassDim @HiddenFeatures0 @HiddenFeatures1
+  init <- A.sample
+    (MLPSpec @I.DataDim @I.ClassDim
+             @HiddenFeatures0 @HiddenFeatures1
+             @D.Float
+             @device
       dropoutProb
     )
-  init' <- A.replaceParameters init <$> traverse
-    (A.makeIndependent . toBackend backend . A.toDependent)
-    (A.flattenParameters init)
   (trained, _, _) <-
-    foldLoop (init', randomIndexes (I.length trainingData), []) numIters
+    foldLoop (init, randomIndexes (I.length trainingData), []) numIters
       $ \(state, idxs, metrics) i -> do
           let (indexes, nextIndexes) =
                 (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
-          (trainingLoss, _) <- computeLossAndErrorRate @BatchSize backend
-                                                                  state
+          (trainingLoss, _) <- computeLossAndErrorRate @BatchSize state
                                                                   True
                                                                   indexes
                                                                   trainingData
           let flat_parameters = A.flattenParameters state
           let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
 
-          metrics' <-
-            if (i `mod` printEvery == 0) then do
+          metrics' <- if (i `mod` printEvery == 0)
+            then do
               (testLoss, testError) <-
-                 withTestSize (I.length testData) $ \(Proxy :: Proxy testSize) ->
-                   computeLossAndErrorRate @(Min TestBatchSize testSize)
-                     backend
-                     state
-                     False
-                     (randomIndexes (I.length testData))
-                     testData
-              let metric = (i, Monitoring.Metric trainingLoss testLoss testError)
-                  metrics' = metric:metrics
+                withTestSize (I.length testData)
+                  $ \(Proxy :: Proxy testSize) ->
+                      computeLossAndErrorRate @(Min TestBatchSize testSize)
+                        state
+                        False
+                        (randomIndexes (I.length testData))
+                        testData
+              let metric =
+                    (i, Monitoring.Metric trainingLoss testLoss testError)
+                  metrics' = metric : metrics
               Monitoring.printLosses metric
               Monitoring.plotLosses "loss.html" metrics'
               return metrics'
-            else
-              return metrics
+            else return metrics
 
           new_flat_parameters <- mapM A.makeIndependent
             $ A.sgd 1e-01 flat_parameters gradients
-          return (A.replaceParameters state new_flat_parameters,
-                  nextIndexes,
-                  metrics')
+          return
+            ( A.replaceParameters state new_flat_parameters
+            , nextIndexes
+            , metrics'
+            )
   print trained
  where
   computeLossAndErrorRate
     :: forall n
      . (KnownNat n)
-    => String
-    -> MLP 'D.Float I.DataDim I.ClassDim HiddenFeatures0 HiddenFeatures1
+    => MLP I.DataDim I.ClassDim
+           HiddenFeatures0 HiddenFeatures1
+           'D.Float
+           device
     -> Bool
     -> [Int]
     -> I.MnistData
-    -> IO (Tensor 'D.Float '[], Tensor 'D.Float '[])
-  computeLossAndErrorRate backend state train indexes data' = do
-    let input  = toBackend backend $ I.getImages @n data' indexes
-        target = toBackend backend $ I.getLabels @n data' indexes
-    result <- mlp state train input
-    return (crossEntropyLoss backend result target, errorRate result target)
+    -> IO
+         ( Tensor device 'D.Float '[]
+         , Tensor device 'D.Float '[]
+         )
+  computeLossAndErrorRate state train indexes data' = do
+    let input  = toDevice @device $ I.getImages @n data' indexes
+        target = toDevice @device $ I.getLabels @n data' indexes
+    prediction <- mlp state train input
+    return (crossEntropyLoss prediction target, errorRate prediction target)
+
+main :: IO ()
+main = do
+  deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
+  case deviceStr of
+    Right "cpu"    -> train @'( 'D.CPU, 0)
+    Right "cuda:0" -> train @'( 'D.CUDA, 0)
+    _              -> error "Don't know what to do or how."

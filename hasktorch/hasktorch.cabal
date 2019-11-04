@@ -12,24 +12,30 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
- exposed-modules:     Torch
-                      Torch.Tensor
+ exposed-modules:     Data.HList
+                    , Torch
+                    , Torch.Tensor
                     , Torch.TensorOptions
                     , Torch.DType
+                    , Torch.Device
                     , Torch.TensorFactories
                     , Torch.Functions
                     , Torch.Functions.Native
                     , Torch.Autograd
                     , Torch.Typed
+                    , Torch.Typed.Aux
                     , Torch.Typed.Factories
                     , Torch.Typed.Native
                     , Torch.Typed.NN
+                    , Torch.Typed.NN.Recurrent.Cell.LSTM
+                    , Torch.Typed.Tensor
                     , Torch.NN
                     , Torch.Scalar
                     , Torch.Backend
                     , Torch.Layout
                     , Torch.Cast
                     , Torch.Dimname
+                    , Torch.Serialize
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
@@ -57,17 +63,23 @@ test-suite spec
                     , SparseSpec
                     , TensorSpec
                     , NNSpec
-                    , TypedSpec
                     , DimnameSpec
+                    , Torch.Typed.AuxSpec
+                    , Torch.Typed.TensorSpec
+                    , Torch.Typed.FactoriesSpec
+                    , Torch.Typed.NativeSpec
+                    , SerializeSpec
   default-language: Haskell2010
   build-depends:      base >= 4.7 && < 5
                     , hasktorch
                     , hspec
                     , hspec-discover
-                    , safe-exceptions
-                    , QuickCheck
+                    , libtorch-ffi
                     , mtl
                     , reflection
+                    , safe-exceptions
+                    , QuickCheck
+                    , directory
 
 test-suite doctests
   type:               exitcode-stdio-1.0

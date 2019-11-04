@@ -55,8 +55,10 @@ library
                     , ATen.Managed.Type.Symbol
                     , Torch.Unmanaged.Autograd
                     , Torch.Unmanaged.Native
+                    , Torch.Unmanaged.Serialize
                     , Torch.Managed.Autograd
                     , Torch.Managed.Native
+                    , Torch.Managed.Serialize
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
@@ -98,6 +100,7 @@ test-suite spec
 --  libtorch-1.3 does not work this grad-function. But grad of higher level api works.
 --                 , BackwardSpec
                  , CudaSpec
+                 , GeneratorSpec
   default-language: Haskell2010
   build-depends:       base >= 4.7 && < 5
                      , inline-c-cpp >= 0.3.0.1

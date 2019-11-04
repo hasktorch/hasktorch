@@ -6,8 +6,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 
 module Common where
@@ -28,12 +26,14 @@ import qualified ATen.Cast                     as ATen
 import qualified ATen.Class                    as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
-import           Torch.Typed
+import           Torch.Typed.Aux
+import           Torch.Typed.Tensor
 import           Torch.Typed.Native
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
+import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.Functions               as D
@@ -54,35 +54,40 @@ toBackend backend t = unsafePerformIO $ case backend of
   _      -> ATen.cast1 ATen.tensor_cpu t
 
 crossEntropyLoss
-  :: forall batchSize outputFeatures
-   . (KnownNat batchSize, KnownNat outputFeatures)
-  => String
-  -> Tensor 'D.Float '[batchSize, outputFeatures]
-  -> Tensor 'D.Int64 '[batchSize]
-  -> Tensor 'D.Float '[]
-crossEntropyLoss backend result target =
-  nll_loss @D.ReduceMean @ 'D.Float @batchSize @outputFeatures @'[]
-    (logSoftmax @1 result)
-    target
-    (toBackend backend ones)
+  :: forall batchSize seqLen dtype device
+   . ( KnownNat batchSize
+     , KnownNat seqLen
+     , KnownDType dtype
+     , KnownDevice device
+     , StandardFloatingPointDTypeValidation device dtype
+     )
+  => Tensor device dtype '[batchSize, seqLen]
+  -> Tensor device 'D.Int64 '[batchSize]
+  -> Tensor device dtype '[]
+crossEntropyLoss prediction target =
+  nllLoss @D.ReduceMean @batchSize @seqLen @'[]
+    ones
     (-100)
+    (logSoftmax @1 prediction)
+    target
 
 errorRate
-  :: forall batchSize outputFeatures
-   . (KnownNat batchSize, KnownNat outputFeatures)
-  => Tensor 'D.Float '[batchSize, outputFeatures]
-  -> Tensor 'D.Int64 '[batchSize]
-  -> Tensor 'D.Float '[]
-errorRate result target =
+  :: forall batchSize outputFeatures device
+   . ( KnownNat batchSize
+     , KnownNat outputFeatures
+     , SumDTypeIsValid device 'D.Bool
+     , ComparisonDTypeIsValid device 'D.Int64
+     )
+  => Tensor device 'D.Float '[batchSize, outputFeatures]
+  -> Tensor device 'D.Int64 '[batchSize]
+  -> Tensor device 'D.Float '[]
+errorRate prediction target =
   let errorCount =
-          toDType @D.Float . sumAll . ne (argmax @1 @DropDim result) $ target
-  in  cmul errorCount ((1.0 /) . fromIntegral $ natValI @batchSize :: Double)
+          toDType @D.Float . sumAll . ne (argmax @1 @DropDim prediction) $ target
+  in  cmul ((1.0 /) . fromIntegral $ natValI @batchSize :: Double) errorCount
 
 withTestSize
-  :: Int
-  -> (forall testSize. KnownNat testSize => Proxy testSize -> a)
-  -> a
-withTestSize nat fn =
-  case someNatVal (fromIntegral $ nat) of
-    Just (SomeNat (Proxy :: Proxy testSize)) -> fn (Proxy @testSize)
-    _ -> error "Cannot get the size of the test dataset"
+  :: Int -> (forall testSize . KnownNat testSize => Proxy testSize -> a) -> a
+withTestSize nat fn = case someNatVal (fromIntegral nat) of
+  Just (SomeNat (Proxy :: Proxy testSize)) -> fn (Proxy @testSize)
+  _ -> error "Cannot get the size of the test dataset"

@@ -1,4 +1,3 @@
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
@@ -18,53 +17,115 @@
 
 module Torch.Typed.Factories where
 
-import Prelude hiding (sin)
-import Control.Arrow ((&&&))
-import Data.Proxy
-import Data.Finite
-import Data.Kind (Constraint)
-import Data.Reflection
-import GHC.TypeLits
-import System.IO.Unsafe
+import           Prelude                 hiding ( sin )
+import           Control.Arrow                  ( (&&&) )
+import           Data.Proxy
+import           Data.Finite
+import           Data.Kind                      ( Constraint )
+import           Data.Reflection
+import           GHC.TypeLits
+import           System.IO.Unsafe
 
-import qualified ATen.Managed.Native as ATen
-import ATen.Cast
-import qualified Torch.Tensor as D
-import qualified Torch.TensorFactories as D
-import qualified Torch.Functions as D
-import qualified Torch.DType as D
-import qualified Torch.TensorOptions as D
-import Torch.Typed
+import qualified ATen.Managed.Native           as ATen
+import           ATen.Cast
+import qualified Torch.Scalar                  as D
+import qualified Torch.Tensor                  as D
+import qualified Torch.TensorFactories         as D
+import qualified Torch.Functions               as D
+import qualified Torch.DType                   as D
+import qualified Torch.Device                  as D
+import qualified Torch.TensorOptions           as D
+import           Torch.Typed.Aux
+import           Torch.Typed.Tensor
 
-zeros :: forall dtype shape. (TensorOptions dtype shape) => Tensor dtype shape
-zeros = UnsafeMkTensor $ D.zeros (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+zeros
+  :: forall shape dtype device
+   . (TensorOptions shape dtype device)
+  => Tensor device dtype shape
+zeros = UnsafeMkTensor $ D.zeros
+  (optionsRuntimeShape @shape @dtype @device)
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
 
-ones :: forall dtype shape. (TensorOptions dtype shape) => Tensor dtype shape
-ones = UnsafeMkTensor $ D.ones (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+ones
+  :: forall shape dtype device
+   . (TensorOptions shape dtype device)
+  => Tensor device dtype shape
+ones = UnsafeMkTensor $ D.ones
+  (optionsRuntimeShape @shape @dtype @device)
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
 
-rand :: forall dtype shape. (TensorOptions dtype shape) => IO (Tensor dtype shape)
-rand = UnsafeMkTensor <$> D.rand (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+type family RandDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  RandDTypeIsValid '( 'D.CPU, 0)    dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
+                                            , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                            )
+  RandDTypeIsValid '( 'D.CUDA, _)   dtype = ()
+  RandDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
-randn :: forall dtype shape. (TensorOptions dtype shape) => IO (Tensor dtype shape)
-randn = UnsafeMkTensor <$> D.randn (optionsRuntimeShape @dtype @shape) (D.withDType (optionsRuntimeDType @dtype @shape) D.defaultOpts)
+rand
+  :: forall shape dtype device
+   . ( TensorOptions shape dtype device
+     , RandDTypeIsValid device dtype
+     )
+  => IO (Tensor device dtype shape)
+rand = UnsafeMkTensor <$> D.rand
+  (optionsRuntimeShape @shape @dtype @device)
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
+
+randn
+  :: forall shape dtype device
+   . ( TensorOptions shape dtype device
+     , RandDTypeIsValid device dtype
+     )
+  => IO (Tensor device dtype shape)
+randn = UnsafeMkTensor <$> D.randn
+  (optionsRuntimeShape @shape @dtype @device)
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
 
 -- | linspace
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @7 0 3
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @7 @'( 'D.CPU, 0) 0 3
 -- (Float,([7],[0.0,0.5,1.0,1.5,2.0,2.5,3.0]))
--- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @3 0 2
+-- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @3 @'( 'D.CPU, 0) 0 2
 -- (Float,([3],[0.0,1.0,2.0]))
 linspace
-  :: forall steps
-   . (KnownNat steps)
-  => Float
-  -> Float
-  -> Tensor 'D.Float '[steps]
-linspace start end = unsafePerformIO $ cast3 ATen.linspace_ssl start end (natValI @steps)
+  :: forall steps device start end
+   . ( D.Scalar start
+     , D.Scalar end
+     , KnownNat steps
+     , TensorOptions '[steps] 'D.Float device
+     )
+  => start -- ^ start
+  -> end -- ^ end
+  -> Tensor device 'D.Float '[steps] -- ^ output
+linspace start end = UnsafeMkTensor $ D.linspace
+  start
+  end
+  (natValI @steps)
+  ( D.withDevice (optionsRuntimeDevice @'[steps] @D.Float @device)
+  . D.withDType (optionsRuntimeDType @'[steps] @D.Float @device)
+  $ D.defaultOpts
+  )
 
 eyeSquare
-  :: forall dtype n
-   . (KnownNat n, TensorOptions dtype '[n, n])
-  => Tensor dtype '[n, n]
+  :: forall n dtype device
+   . ( KnownNat n
+     , TensorOptions '[n, n] dtype device
+     )
+  => Tensor device dtype '[n, n] -- ^ output
 eyeSquare = UnsafeMkTensor $ D.eyeSquare
   (natValI @n)
-  (D.withDType (optionsRuntimeDType @dtype @'[n, n]) D.defaultOpts)
+  ( D.withDevice (optionsRuntimeDevice @'[n, n] @dtype @device)
+  . D.withDType (optionsRuntimeDType @'[n, n] @dtype @device)
+  $ D.defaultOpts
+  )
