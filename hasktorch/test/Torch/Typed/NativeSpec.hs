@@ -495,6 +495,7 @@ instance ( TensorOptions shape  dtype device
          , KnownReducedSVD reduced
          , '(shapeU, shapeS, shapeV) ~ SVDShapes shape reduced
          , RandDTypeIsValid device dtype
+         , SVDDTypeIsValid device dtype
          )
   => Apply
        SVDSpec

@@ -632,6 +632,7 @@ type family SVDShapes (shape :: [Nat]) (reduced :: ReducedSVD) :: ([Nat], [Nat],
   SVDShapes '[b, 0, n] 'ThinSVD = '( '[b, 0, 0],       '[b, 0],       '[b, n, n])
   SVDShapes '[b, m, n] 'ThinSVD = '( '[b, m, Min m n], '[b, Min m n], '[b, n, Min m n])
   SVDShapes '[b, m, n] 'FullSVD = '( '[b, m, m],       '[b, Min m n], '[b, n, n])
+  SVDShapes _          _        = TypeError (Text "A singular value decomposition can only be computed for 2D matrices for at most one batch dimension.")
 
 data ReducedSVD = ThinSVD | FullSVD
 
@@ -642,6 +643,16 @@ instance KnownReducedSVD ThinSVD where
   reducedSVD = True
 instance KnownReducedSVD FullSVD where
   reducedSVD = False
+
+type family SVDDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  SVDDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
+                                                   , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                   )
+  SVDDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+                                                   --, DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                   )
+  SVDDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
 
 -- | Singular Value Decomposition
 -- TODO: When `compute_uv` is `False`, backward cannot be performed since `u` and `v` from the forward pass are required for the backward operation. Thus, only `True` is supported at this point in time.
@@ -685,6 +696,7 @@ svd
   :: forall reduced shape shapeU shapeS shapeV dtype device
    . ( KnownReducedSVD reduced
      , '(shapeU, shapeS, shapeV) ~ SVDShapes shape reduced
+     , SVDDTypeIsValid device dtype
      )
   => Tensor device dtype shape -- ^ (batched) input real matrix
   -> ( Tensor device dtype shapeU
