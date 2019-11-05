@@ -486,6 +486,29 @@ instance ( TensorOptions shape  dtype device
     checkDynamicTensorAttributes t'
     checkDynamicTensorAttributes t''
 
+data SVDSpec = SVDSpec
+
+instance ( TensorOptions shape  dtype device
+         , TensorOptions shapeU dtype device
+         , TensorOptions shapeS dtype device
+         , TensorOptions shapeV dtype device
+         , KnownReducedSVD reduced
+         , '(shapeU, shapeS, shapeV) ~ SVDShapes shape reduced
+         , RandDTypeIsValid device dtype
+         , SVDDTypeIsValid device dtype
+         )
+  => Apply
+       SVDSpec
+       (Proxy reduced, (Proxy device, (Proxy dtype, Proxy shape)))
+       (() -> IO ())
+ where
+  apply SVDSpec _ _ = do
+    a <- randn @shape @dtype @device
+    let (u, s, v) = svd @reduced a
+    checkDynamicTensorAttributes u
+    checkDynamicTensorAttributes s
+    checkDynamicTensorAttributes v
+
 data CholeskySpec = CholeskySpec
 
 instance ( TensorOptions shape   dtype device
@@ -539,6 +562,40 @@ instance ( TensorOptions shape dtype device
         checkDynamicTensorAttributes t'''
       )
       [D.Upper, D.Lower]
+
+data CholeskySolveSpec = CholeskySolveSpec
+
+instance ( TensorOptions m_k dtype device
+         , TensorOptions m_m dtype device
+         , Square m_m ~ m_m
+         , MatMul m_m (Transpose m_m (LastDim m_m) (LastDim m_m - 1)) ~ m_m
+         , FstSquareDim m_m ~ FstSquareDim m_k
+         , 1 <= FstSquareDim m_m
+         , 1 <= LastDim m_m
+         , KnownNat (LastDim m_m)
+         , KnownNat (LastDim m_m - 1)
+         , MatMulDTypeIsValid device dtype
+         , CholeskyDTypeIsValid device dtype
+         , RandDTypeIsValid device dtype
+         )
+  => Apply
+       CholeskySolveSpec
+       (Proxy device, (Proxy dtype, (Proxy m_k, Proxy m_m)))
+       (() -> IO ())
+ where
+  apply CholeskySolveSpec _ _ = do
+    t <- rand @m_m @dtype @device
+    let a = t `matmul` transpose @(Backwards m_m 0) @(Backwards m_m 1) t
+    b <- rand @m_k
+    foldMap
+      (\tri -> do
+        let u = cholesky tri a
+        checkDynamicTensorAttributes u
+        let c = choleskySolve tri b u
+        checkDynamicTensorAttributes c
+      )
+      [D.Upper, D.Lower]
+
 
 data SolveSpec = SolveSpec
 
@@ -801,22 +858,41 @@ spec' device =
             hfoldrM @IO EigSpec () (hCartesianProduct eigenVectors (hattach cpu   (hCartesianProduct standardFloatingPointDTypes ns)))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
             hfoldrM @IO EigSpec () (hCartesianProduct eigenVectors (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes ns)))
+      it "svd" $ do
+        let svdShapes = Proxy @'[0, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[1, 1] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[0, 0, 0] :. Proxy @'[0, 0, 1] :. Proxy @'[0, 1, 0] :. Proxy @'[0, 1, 1] :. Proxy @'[1, 0, 0] :. Proxy @'[1, 0, 1] :. Proxy @'[1, 1, 0] :. Proxy @'[1, 1, 1] :. Proxy @'[3, 2, 3] :. Proxy @'[3, 3, 2] :. HNil
+            reducedSVD = Proxy @'ThinSVD :. Proxy @'FullSVD :. HNil
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO SVDSpec () (hCartesianProduct reducedSVD (hattach cpu   (hCartesianProduct standardFloatingPointDTypes svdShapes)))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO SVDSpec () (hCartesianProduct reducedSVD (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      svdShapes)))
       it "cholesky" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO CholeskySpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO CholeskySpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes squareShapes))
       it "choleskyInverse" $ do
-        let shapes = Proxy @'[1, 1] :. Proxy @'[2, 2] :. HNil
+        let choleskyInverseShapes = Proxy @'[1, 1] :. Proxy @'[2, 2] :. HNil
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO CholeskyInverseSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes shapes))
+            hfoldrM @IO CholeskyInverseSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes choleskyInverseShapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO CholeskyInverseSpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes shapes))
+            hfoldrM @IO CholeskyInverseSpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes choleskyInverseShapes))
+      it "choleskySolve" $ do
+        let choleskySolveShapes =
+              hZipList
+                (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
+                (Proxy @'[1, 1] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO CholeskySolveSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes choleskySolveShapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO CholeskySolveSpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes choleskySolveShapes))
       it "solve" $ do
-        let solveShapes = hZipList
-                            (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
-                            (Proxy @'[1, 1] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
+        let solveShapes =
+              hZipList
+                (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
+                (Proxy @'[1, 1] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
             hfoldrM @IO SolveSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes solveShapes))

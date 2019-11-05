@@ -625,8 +625,86 @@ eig
 eig input =
   unsafePerformIO $ cast2 ATen.eig_tb input (enableEigenVectors @eigenvectors)
 
--- svd :: Tensor device dtype shape -> Bool -> Bool -> (Tensor device dtype shape, Tensor device dtype shape, Tensor device dtype shape)
--- svd t some compute_uv = unsafePerformIO $ (cast3 ATen.svd_tbb) t some compute_uv
+type family SVDShapes (shape :: [Nat]) (reduced :: ReducedSVD) :: ([Nat], [Nat], [Nat]) where
+  SVDShapes '[0, n]    'ThinSVD = '( '[0, 0],          '[0],          '[n, n])
+  SVDShapes '[m, n]    'ThinSVD = '( '[m, Min m n],    '[Min m n],    '[n, Min m n])
+  SVDShapes '[m, n]    'FullSVD = '( '[m, m],          '[Min m n],    '[n, n])
+  SVDShapes '[b, 0, n] 'ThinSVD = '( '[b, 0, 0],       '[b, 0],       '[b, n, n])
+  SVDShapes '[b, m, n] 'ThinSVD = '( '[b, m, Min m n], '[b, Min m n], '[b, n, Min m n])
+  SVDShapes '[b, m, n] 'FullSVD = '( '[b, m, m],       '[b, Min m n], '[b, n, n])
+  SVDShapes _          _        = TypeError (Text "A singular value decomposition can only be computed for 2D matrices for at most one batch dimension.")
+
+data ReducedSVD = ThinSVD | FullSVD
+
+class KnownReducedSVD (reduced :: ReducedSVD) where
+  reducedSVD :: Bool
+
+instance KnownReducedSVD ThinSVD where
+  reducedSVD = True
+instance KnownReducedSVD FullSVD where
+  reducedSVD = False
+
+type family SVDDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  SVDDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
+                                                   , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                   )
+  SVDDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+                                                   --, DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                   )
+  SVDDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
+
+-- | Singular Value Decomposition
+-- TODO: When `compute_uv` is `False`, backward cannot be performed since `u` and `v` from the forward pass are required for the backward operation. Thus, only `True` is supported at this point in time.
+--
+-- This function returns a tuple `(u, s, v)`
+-- which is the singular value decomposition of a input real matrix
+-- or batches of real matrices input such that
+-- `input = U×diag(S)×V^T`.
+--
+-- >>> a <- randn :: IO (CPUTensor 'D.Float '[3, 5])
+-- >>> (u, s, v) = svd @'ThinSVD a
+-- >>> dtype &&& shape $ u
+-- (Float,[3,3])
+-- >>> dtype &&& shape $ s
+-- (Float,[3])
+-- >>> dtype &&& shape $ v
+-- (Float,[5,3])
+-- >>> (u, s, v) = svd @'FullSVD a
+-- >>> dtype &&& shape $ u
+-- (Float,[3,3])
+-- >>> dtype &&& shape $ s
+-- (Float,[3])
+-- >>> dtype &&& shape $ v
+-- (Float,[5,5])
+-- >>> a <- randn :: IO (CPUTensor 'D.Float '[5, 3])
+-- >>> (u, s, v) = svd @'ThinSVD a
+-- >>> dtype &&& shape $ u
+-- (Float,[5,3])
+-- >>> dtype &&& shape $ s
+-- (Float,[3])
+-- >>> dtype &&& shape $ v
+-- (Float,[3,3])
+-- >>> (u, s, v) = svd @'FullSVD a
+-- >>> dtype &&& shape $ u
+-- (Float,[5,5])
+-- >>> dtype &&& shape $ s
+-- (Float,[3])
+-- >>> dtype &&& shape $ v
+-- (Float,[3,3])
+svd
+  :: forall reduced shape shapeU shapeS shapeV dtype device
+   . ( KnownReducedSVD reduced
+     , '(shapeU, shapeS, shapeV) ~ SVDShapes shape reduced
+     , SVDDTypeIsValid device dtype
+     )
+  => Tensor device dtype shape -- ^ (batched) input real matrix
+  -> ( Tensor device dtype shapeU
+     , Tensor device dtype shapeS
+     , Tensor device dtype shapeV
+     ) -- ^ (batched) output tuple of `u`, `s`, and `v`
+svd input =
+  unsafePerformIO $ cast3 ATen.svd_tbb input (reducedSVD @reduced) True
 
 type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   CholeskyDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
@@ -638,6 +716,7 @@ type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
   CholeskyDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | cholesky
+-- TODO: cholesky can throw if the input is not positive-definite.
 -- Computes the Cholesky decomposition of a symmetric positive-definite matrix.
 -- The operation supports batching.
 --
@@ -681,9 +760,33 @@ choleskyInverse upper input = unsafePerformIO
   $ cast2 ATen.cholesky_inverse_tb input boolUpper
   where boolUpper = isUpper upper
 
--- cholesky_solve :: Tensor device dtype shape -> Tensor device dtype shape -> Tri -> Tensor device dtype shape
--- cholesky_solve t1 t2 upper = unsafePerformIO $ (cast3 ATen.cholesky_solve_ttb) t1 t2 boolUpper
---   where boolUpper = isUpper upper
+-- | choleskySolve
+-- Solves the system of linear equations represented by `a c = b`
+-- using the Cholesky factor matrix `u` of `a` (returned, e.g., by `cholesky`),
+-- where `a` is a positive semidefinite matrix.
+-- The operation supports batching.
+--
+-- >>> t <- rand :: IO (CPUTensor 'D.Float '[3,3])
+-- >>> a = t `matmul` transpose2D t
+-- >>> b <- rand :: IO (CPUTensor 'D.Float '[3,2])
+-- >>> tri = Upper
+-- >>> u = cholesky tri a
+-- >>> dtype &&& shape $ choleskySolve tri b u
+-- (Float,[3,2])
+choleskySolve
+  :: forall m_k m_m dtype device
+   . ( Square m_m ~ m_m
+     , FstSquareDim m_m ~ FstSquareDim m_k
+     , 1 <= FstSquareDim m_m
+     , CholeskyDTypeIsValid device dtype
+     )
+  => Tri -- ^ decides whether the upper or the lower triangular part of the input tensor `u` is used
+  -> Tensor device dtype m_k -- ^ the (batched) RHS tensor `b`
+  -> Tensor device dtype m_m -- ^ the (batched) input 2-D tensor `u`, an upper or lower triangular Cholesky factor
+  -> Tensor device dtype m_k -- ^ the (batched) output 2-D tensor
+choleskySolve upper b u = unsafePerformIO
+  $ cast3 ATen.cholesky_solve_ttb b u boolUpper
+  where boolUpper = isUpper upper
 
 type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   SolveDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
@@ -694,8 +797,13 @@ type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType)
                                                      )
   SolveDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
--- | solve the system of linear equations represented by `a c = b` and return the LU decomposition of `a`
--- >>> a <- rand :: IO (CPUTensor 'D.Float '[10,10])
+-- | solve
+-- Solves the system of linear equations represented by `a c = b` and also returns the LU decomposition of `a`.
+-- `a` has to be a positive semidefinite matrix.
+-- The operation supports batching.
+--
+-- >>> t <- rand :: IO (CPUTensor 'D.Float '[10,10])
+-- >>> a = t `matmul` transpose2D t
 -- >>> b <- rand :: IO (CPUTensor 'D.Float '[10,3])
 -- >>> (c,lu) = solve b a
 -- >>> dtype &&& shape $ c
@@ -713,11 +821,11 @@ solve
      , 1 <= FstSquareDim m_m
      , SolveDTypeIsValid device dtype
      )
-  => Tensor device dtype m_k -- ^ b
-  -> Tensor device dtype m_m -- ^ a
+  => Tensor device dtype m_k -- ^ the (batched) RHS tensor `b`
+  -> Tensor device dtype m_m -- ^ the (batched) positive semidefinite matrix `a`
   -> ( Tensor device dtype m_k
      , Tensor device dtype m_m
-     ) -- ^ c and lu
+     ) -- ^ the (batched) outputs c and lu
 solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
 
 -- | geqrf
