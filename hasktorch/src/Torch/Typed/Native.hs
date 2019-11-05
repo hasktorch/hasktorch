@@ -649,13 +649,13 @@ type family SVDDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
                                                    , DTypeIsNotHalf '( 'D.CPU, 0) dtype
                                                    )
   SVDDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-                                                   --, DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                   , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
                                                    )
   SVDDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 
 -- | Singular Value Decomposition
--- TODO: When `compute_uv` is `False`, backward cannot be performed since `u` and `v` from the forward pass are required for the backward operation. Thus, only `True` is supported at this point in time.
+-- TODO: When `compute_uv` is `False`, backward cannot be performed since `u` and `v` from the forward pass are required for the backward operation. There is no way to encode in the types at this point in time. Thus, only `True` is supported currently.
 --
 -- This function returns a tuple `(u, s, v)`
 -- which is the singular value decomposition of a input real matrix

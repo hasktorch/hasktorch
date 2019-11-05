@@ -865,7 +865,7 @@ spec' device =
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
             hfoldrM @IO SVDSpec () (hCartesianProduct reducedSVD (hattach cpu   (hCartesianProduct standardFloatingPointDTypes svdShapes)))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO SVDSpec () (hCartesianProduct reducedSVD (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      svdShapes)))
+            hfoldrM @IO SVDSpec () (hCartesianProduct reducedSVD (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes svdShapes)))
       it "cholesky" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO CholeskySpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))
