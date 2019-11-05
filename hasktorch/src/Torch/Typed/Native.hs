@@ -511,6 +511,19 @@ type family FstSquareDim (shape :: [Nat]) :: Nat where
   FstSquareDim (b:n:m:'[]) = n
   FstSquareDim _           = TypeError (Text "Can not get first dimention of matrix or batch + matrix.")
 
+type family InverseShapeIsValid (device :: (D.DeviceType, Nat)) (shape :: [Nat]) :: Constraint where
+  InverseShapeIsValid '( 'D.CPU, 0)  _     = ()
+  InverseShapeIsValid '( 'D.CUDA, _) shape = AllDimsPositive shape
+
+type family InverseDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  InverseDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype
+                                                       , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                       )
+  InverseDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+                                                       , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                       )
+  InverseDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
 -- | inverse
 -- TODO: if rank < n for any tensors in the batch, then this will not work. we can't decide this statically, but we should prevent runtime errors. therefore, return Maybe?
 -- >>> t <- randn :: IO (CPUTensor 'D.Float '[3,2,2])
@@ -522,7 +535,8 @@ type family FstSquareDim (shape :: [Nat]) :: Nat where
 inverse
   :: forall shape shape' dtype device
    . ( shape' ~ Square shape
-     , StandardFloatingPointDTypeValidation device dtype
+     , InverseShapeIsValid device shape
+     , InverseDTypeIsValid device dtype
      )
   => Tensor device dtype shape -- ^ inverse
   -> Tensor device dtype shape' -- ^ output
@@ -649,13 +663,13 @@ type family SVDDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
                                                    , DTypeIsNotHalf '( 'D.CPU, 0) dtype
                                                    )
   SVDDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
-                                                   --, DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+                                                   , DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
                                                    )
   SVDDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 
 -- | Singular Value Decomposition
--- TODO: When `compute_uv` is `False`, backward cannot be performed since `u` and `v` from the forward pass are required for the backward operation. Thus, only `True` is supported at this point in time.
+-- TODO: When `compute_uv` is `False`, backward cannot be performed since `u` and `v` from the forward pass are required for the backward operation. There is no way to encode in the types at this point in time. Thus, only `True` is supported currently.
 --
 -- This function returns a tuple `(u, s, v)`
 -- which is the singular value decomposition of a input real matrix

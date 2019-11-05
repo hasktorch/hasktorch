@@ -424,7 +424,8 @@ data InverseSpec = InverseSpec
 instance ( TensorOptions shape  dtype device
          , TensorOptions shape' dtype device
          , shape' ~ Square shape
-         , StandardFloatingPointDTypeValidation device dtype
+         , InverseShapeIsValid device shape
+         , InverseDTypeIsValid device dtype
          , RandDTypeIsValid device dtype
          )
   => Apply
@@ -844,7 +845,7 @@ spec' device =
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO InverseSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-          hfoldrM @IO InverseSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      squareShapes))
+          hfoldrM @IO InverseSpec () (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes (Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[1, 1, 1] :. Proxy @'[2, 2, 2] :. HNil)))
       it "symeig" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO SymeigSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))
@@ -865,7 +866,7 @@ spec' device =
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
             hfoldrM @IO SVDSpec () (hCartesianProduct reducedSVD (hattach cpu   (hCartesianProduct standardFloatingPointDTypes svdShapes)))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO SVDSpec () (hCartesianProduct reducedSVD (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      svdShapes)))
+            hfoldrM @IO SVDSpec () (hCartesianProduct reducedSVD (hattach cuda0 (hCartesianProduct standardFloatingPointDTypes svdShapes)))
       it "cholesky" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO CholeskySpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))
