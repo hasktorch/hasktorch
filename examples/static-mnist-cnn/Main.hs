@@ -34,6 +34,7 @@ import           System.Random
 
 import qualified ATen.Cast                     as ATen
 import qualified ATen.Class                    as ATen
+import qualified ATen.GC                       as ATen
 import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
 import qualified ATen.Managed.Type.Context     as ATen
@@ -115,9 +116,13 @@ instance ( KnownDType dtype
 type BatchSize = 512
 type TestBatchSize = 8192
 
-train :: forall (device :: (D.DeviceType, Nat)) . _ => IO ()
-train = do
-  let (numIters, printEvery) = (1000000, 250)
+train
+  :: forall (device :: (D.DeviceType, Nat))
+  . _
+  => Int
+  -> IO ()
+train numIters = do
+  let printEvery = 250
   (trainingData, testData) <- I.initMnist
   ATen.manual_seed_L 123
   init            <- A.sample (CNNSpec @ 'D.Float @device)
@@ -178,9 +183,13 @@ train = do
     return (crossEntropyLoss prediction target, errorRate prediction target)
 
 main :: IO ()
-main = do
+main = ATen.monitorMemory $ do
   deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
+  numItersStr <- try (getEnv "NUM_ITERS") :: IO (Either SomeException String)
+  numIters <- case numItersStr of
+    Right iters -> return $ read iters
+    _ -> return 1000000
   case deviceStr of
-    Right "cpu"    -> train @'( 'D.CPU, 0)
-    Right "cuda:0" -> train @'( 'D.CUDA, 0)
+    Right "cpu"    -> train @'( 'D.CPU, 0) numIters
+    Right "cuda:0" -> train @'( 'D.CUDA, 0) numIters
     _              -> error "Don't know what to do or how."
