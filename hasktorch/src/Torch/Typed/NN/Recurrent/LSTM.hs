@@ -138,11 +138,12 @@ instance A.Parameterized (LSTMParams dtype numDirections inputDim hiddenSize num
             <> A.flattenParameters c
             <> A.flattenParameters d
     flattenParameters (LSTMLayerK l a b c d) =
-        A.flattenParameters a
+        A.flattenParameters l
+            <> A.flattenParameters a
             <> A.flattenParameters b
             <> A.flattenParameters c
             <> A.flattenParameters d
-            <> A.flattenParameters l
+            
     replaceOwnParameters (LSTMLayer1 a b c d) =
         LSTMLayer1
             <$> A.replaceOwnParameters a
