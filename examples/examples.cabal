@@ -176,6 +176,7 @@ executable mnist-mlp
   import:              config
   hs-source-dirs:      mnist-mlp
   main-is:             Main.hs
+  other-modules:       UntypedImage
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       libtorch-ffi
                      , bytestring >= 0.10.8
