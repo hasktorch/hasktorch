@@ -171,3 +171,13 @@ executable image-processing
                      , vector
                      , bytestring
                      , safe-exceptions
+
+executable mnist-mlp
+  import:              config
+  hs-source-dirs:      mnist-mlp
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , random >= 1.1
+                     , safe-exceptions
+                     , static-mnist
