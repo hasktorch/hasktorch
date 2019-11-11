@@ -14,12 +14,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.NN where
 
 import           Control.Monad.State.Strict
 import           Data.HList
+import           Data.Kind                    (Type)
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
 import           GHC.Generics
@@ -48,6 +52,62 @@ makeIndependent
    . Tensor device dtype shape
   -> IO (Parameter device dtype shape)
 makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
+
+
+
+-- class Parameterized f where
+--   type Parameters f
+
+--   flattenParameters :: f -> HList (Parameters f)
+--   default flattenParameters :: (Generic f, Parameterized' (Rep f)) => f -> HList (Parameters f)
+--   flattenParameters f = flattenParameters' (from f)
+
+--   replaceOwnParameters :: f -> State (HList (Parameters f)) f
+--   default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> State (HList (Parameters f)) f
+--   replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
+
+
+-- class Parameterized
+--   (f :: Type)
+--   (as :: [Type]) | f -> as where
+
+--   flattenParameters :: f -> HList as
+--   default flattenParameters :: (Generic f, GParameterized (Rep f) as) => f -> HList as
+--   flattenParameters f = gFlattenParameters (from f)
+
+class GParameterized
+  (f :: Type -> Type)
+  (as :: [Type])
+  (as' :: [Type])
+  (as'' :: [Type]) | f -> as, as' f -> as'' where -- as'' -> as', as' f -> as'', as as'' -> f where
+
+  gFlattenParameters :: f a -> HList as
+  gReplaceOwnParameters :: f a -> HList as' -> (HList as'', f a)
+
+-- http://hackage.haskell.org/package/generic-lens-1.1.0.0/docs/src/Data.Generics.Product.Internal.HList.html#singleton
+instance
+  ( GParameterized l as as' as''
+  , GParameterized r bs bs' bs''
+  , HAppendFD as bs cs
+  , cs ~ (as ++ bs)
+  , cs' ~ (as' ++ bs')
+  , HAppendFD as'' bs'' cs''
+  , cs'' ~ (as'' ++ bs'')
+  ) => GParameterized (l :*: r) cs cs' cs'' where
+  gFlattenParameters (l :*: r) = gFlattenParameters l `hAppendFD` gFlattenParameters r
+  gReplaceOwnParameters (l :*: r) as' =
+    let (as'', l') = gReplaceOwnParameters l as'
+        (bs'', r') = gReplaceOwnParameters r bs'
+    in  (as'' `hAppendFD` bs'', l' :*: r')
+
+-- instance GParameterized (Rec0 a) '[a] where
+--   gFlattenParameters = (:. HNil) . unK1
+
+-- instance (GParameterized f as) => GParameterized (M1 i t f) as where
+--   gFlattenParameters = gFlattenParameters . unM1
+
+-- instance GParameterized U1 '[] where
+--   gFlattenParameters _ = HNil
 
 instance A.Parameterized (Parameter device dtype shape) where
   flattenParameters (Parameter x) = [x]

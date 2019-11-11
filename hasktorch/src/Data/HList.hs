@@ -44,6 +44,20 @@ instance Eq (HList '[]) where
 instance (Eq x, Eq (HList xs)) => Eq (HList (x ': xs)) where
   (x :. xs) == (y :. ys) = x == y && xs == ys
 
+instance Semigroup (HList '[]) where
+  _ <> _ = HNil
+
+instance (Semigroup a, Semigroup (HList as)) => Semigroup (HList (a ': as)) where
+  (x :. xs) <> (y :. ys) = (x <> y) :. (xs <> ys)
+
+instance Monoid (HList '[]) where
+  mempty  = HNil
+  mappend _ _ = HNil
+
+instance (Monoid a, Monoid (HList as)) => Monoid (HList (a ': as)) where
+  mempty = mempty :. mempty
+  mappend (x :. xs) (y :. ys) = mappend x y :. mappend xs ys
+
 class Apply f a b where
   apply :: f -> a -> b
 
@@ -168,7 +182,7 @@ hConcat = hConcatFD
 
 type family HConcatR (a :: [Type]) :: [Type]
 type instance HConcatR '[] = '[]
-type instance HConcatR (x ': xs) = HAppendListR (UnHList x) (HConcatR xs)
+type instance HConcatR (x ': xs) = (UnHList x) ++ (HConcatR xs)
 
 type family UnHList a :: [Type]
 type instance UnHList (HList a) = a
@@ -186,9 +200,9 @@ instance (HConcatFD as bs, HAppendFD a bs cs) => HConcatFD (HList a ': as) cs wh
 class HAppendFD a b ab | a b -> ab where
   hAppendFD :: HList a -> HList b -> HList ab
 
-type family HAppendListR (l1 :: [k]) (l2 :: [k]) :: [k]
-type instance HAppendListR '[] l = l
-type instance HAppendListR (e ': l) l' = e ': HAppendListR l l'
+type family ((as :: [k]) ++ (bs :: [k])) :: [k] where
+  '[]       ++ bs = bs
+  (a ': as) ++ bs = a ': as ++ bs
 
 instance HAppendFD '[] b b where
   hAppendFD _ b = b
@@ -231,18 +245,3 @@ instance ( HCartesianProduct xs ys zs
   => HCartesianProduct (x ': xs) ys zs'
  where
   hCartesianProduct (x :. xs) ys = hattach x ys `hAppendFD` hCartesianProduct xs ys
-
-class HCartesianProduct3 as bs cs zs | as bs cs -> zs where
-  hCartesianProduct3 :: HList as -> HList bs -> HList cs -> HList zs
-
-instance HCartesianProduct3 '[] bs cs '[] where
-  hCartesianProduct3 _ _ _ = HNil
-
-instance ( HCartesianProduct3 as bs cs zs
-         , HCartesianProduct bs cs bcs
-         , HAttach a bcs abcs
-         , HAppendFD abcs zs zs'
-         )
-  => HCartesianProduct3 (a ': as) bs cs zs'
- where
-  hCartesianProduct3 (a :. as) bs cs = hattach a (hCartesianProduct bs cs) `hAppendFD` hCartesianProduct3 as bs cs
