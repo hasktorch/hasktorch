@@ -11,6 +11,11 @@
 module Torch.NN where
 
 import Control.Monad.State.Strict
+import System.IO.Unsafe (unsafePerformIO)
+
+import qualified ATen.Managed.Native as ATen
+import qualified ATen.Managed.Type.Tensor as ATen
+import ATen.Cast (cast3)
 
 import Torch.Autograd
 import Torch.Tensor
@@ -106,6 +111,13 @@ data LinearSpec = LinearSpec { in_features :: Int, out_features :: Int }
   deriving (Show, Eq)
 
 data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
+
+linear' :: Linear -> Tensor -> Tensor
+linear' layer input = linear input w b
+    where
+        linear input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
+        w = toDependent (weight layer)
+        b = toDependent (bias layer)
 
 instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do
