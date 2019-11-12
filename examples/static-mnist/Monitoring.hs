@@ -13,6 +13,10 @@ module Monitoring where
 import           GHC.TypeLits
 import           Graphics.Vega.VegaLite
 
+import qualified Data.ByteString.Lazy as BS
+import qualified Prometheus as P
+import qualified Prometheus.Metric.GHC as P
+
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
@@ -91,3 +95,14 @@ printLosses (i, Metric {..}) =
         <> show (asFloat testLoss)
         <> ". Test error-rate: "
         <> show (asFloat testError)
+
+
+initPrometheus :: IO ()
+initPrometheus = do
+  _ <- P.register P.ghcMetrics
+  return ()
+  
+
+putPrometheus :: IO ()
+putPrometheus =
+  P.exportMetricsAsText >>= BS.writeFile "/var/lib/prometheus/node-exporter/ghc.prom"

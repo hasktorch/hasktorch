@@ -21,3 +21,4 @@ extra-lib-dirs:
 
 extra-deps:
 - template-0.2.0.10@sha256:f822de4d34c45bc84b33a61bc112c15fedee6fa6dc414c62b10456395a868f85
+- prometheus-metrics-ghc-1.0.0@sha256:0f4ecbefa810bd847e66c498ab3387bf21e426525a7c9a94841973c582719ba3,1231

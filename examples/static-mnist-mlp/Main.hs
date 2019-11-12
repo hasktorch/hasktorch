@@ -139,6 +139,7 @@ train
    . _
   => IO ()
 train = do
+  Monitoring.initPrometheus
   let (numIters, printEvery) = (1000000, 250)
       dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
@@ -177,6 +178,7 @@ train = do
                   metrics' = metric : metrics
               Monitoring.printLosses metric
               Monitoring.plotLosses "loss.html" metrics'
+              Monitoring.putPrometheus
               return metrics'
             else return metrics
 
