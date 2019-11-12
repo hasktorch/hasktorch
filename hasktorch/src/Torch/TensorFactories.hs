@@ -56,6 +56,10 @@ mkDefaultFactoryWithDimnames non_default shape = non_default shape defaultOpts
 ones :: [Int] -> TensorOptions -> Tensor
 ones = mkFactoryUnsafe LibTorch.ones_lo
 
+-- TODO - ones_like from Native.hs is redundant with this
+onesLike :: Tensor -> Tensor
+onesLike self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
+
 zeros :: [Int] -> TensorOptions -> Tensor
 zeros = mkFactoryUnsafe LibTorch.zeros_lo
 

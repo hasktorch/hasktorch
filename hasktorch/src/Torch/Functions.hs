@@ -24,6 +24,7 @@ import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
 import Torch.Functions.Native
+import Torch.TensorFactories (onesLike)
 
 kOne :: ForeignPtr ATen.Scalar
 kOne = unsafePerformIO $ ATen.newScalar_i 1
@@ -185,6 +186,10 @@ squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
 
 binary_cross_entropy_loss :: Tensor -> Tensor -> Tensor -> Reduction-> Tensor
 binary_cross_entropy_loss t target weight reduction = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction
+
+-- | BCE with weights defaulted to 1.0 & reduction defaulted to ReduceMean
+binary_cross_entropy_loss' :: Tensor -> Tensor -> Tensor
+binary_cross_entropy_loss' t target = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike t) ReduceMean
 
 mse_loss :: Tensor -> Tensor -> Tensor
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
