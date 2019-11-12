@@ -29,6 +29,7 @@ import           Data.HList
 import           Data.Kind                      ( Constraint
                                                 , Type
                                                 )
+import           Data.Maybe
 import           Data.Proxy
 import           Data.Reflection
 import           Foreign.ForeignPtr
@@ -361,9 +362,18 @@ type family Numel (shape :: [Nat]) :: Nat where
     Numel '[] = 1
     Numel (h ': t) = h * (Numel t)
 
+-- | reshape
+-- >>> t :: CPUTensor 'D.Int64 '[2,3,4] = fromJust [[[111,112,113,114],[121,122,123,124],[131,132,133,134]],[[211,212,213,214],[221,222,223,224],[231,232,233,234]]]
+-- >>> t' = reshape @'[24] t
+-- >>> toList . Just $ t'
+-- [111,112,113,114,121,122,123,124,131,132,133,134,211,212,213,214,221,222,223,224,231,232,233,234]
+-- >>> toList . Just $ reshape @'[2,3,4] t'
+-- [[[111,112,113,114],[121,122,123,124],[131,132,133,134]],[[211,212,213,214],[221,222,223,224],[231,232,233,234]]]
 reshape
   :: forall shape' shape dtype device
-   . (KnownShape shape', Numel shape ~ Numel shape')
+   . ( KnownShape shape'
+     , Numel shape ~ Numel shape'
+     )
   => Tensor device dtype shape
   -> Tensor device dtype shape'
 reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
