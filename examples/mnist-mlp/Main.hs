@@ -13,7 +13,7 @@ import Torch.NN
 
 import qualified Image as I
 import qualified UntypedImage as UI
-import Common (foldLoop)
+import Common (foldLoop, randomIndexes)
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -44,25 +44,32 @@ mlp MLP{..} input =
     . linear' l0
     $ input
 
-train trainingData = do
+
+train trainData = do
     init <- sample spec
+    let nImages = I.length trainData
+    let idx = randomIndexes nImages
+    randomized <- UI.getImages' nImages dataDim trainData idx
     trained <- foldLoop init numIters $ 
         \state -> do
             let input = undefined -- TODO - setup minibatching
+            let label = undefined -- TODO - setup minibatching
             let prediction = mlp state input
             let flatParameters = flattenParameters state
-            let loss = undefined -- TODO port loss calculation
+            let loss = binary_cross_entropy_loss' prediction label
             let gradients = A.grad loss flatParameters
             pure undefined -- TODO - iteration loop
     pure ()
     where
     spec = MLPSpec 768 10 512 256 
+    dataDim = 768
     numIters = 1000000
+    batchSize = 512
 
 main :: IO ()
 main = do
     (trainData, testData) <- I.initMnist
     let labels = UI.getLabels' 10 trainData [0..100]
-    let images = UI.getImages
     print labels
+    -- train trainData
     putStrLn "Done"

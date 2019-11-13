@@ -20,13 +20,13 @@ getLabels' :: Int -> I.MnistData -> [Int] -> Tensor
 getLabels' n mnist imageIdxs =
   asTensor $ map (I.getLabel mnist) . take n $ imageIdxs
 
-getImages ::
+getImages' ::
   Int
   -> Int
   -> I.MnistData
   -> [Int]
   -> IO Tensor
-getImages n dataDim mnist imageIdxs = do
+getImages' n dataDim mnist imageIdxs = do
   let (BSI.PS fptr off len) = I.images mnist
   t <- (cast2 LibTorch.empty_lo :: [Int] -> D.TensorOptions -> IO D.Tensor)
          [n, dataDim]
