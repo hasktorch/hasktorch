@@ -3195,12 +3195,26 @@ type family NumberOfDirections (a :: Directionality) :: Nat where
   NumberOfDirections Bidirectional = 2
   NumberOfDirections Unidirectional = 1
 
+-- | Specification for the sequential axis of a recurrent
+-- function.
+data SequentialInputShape = 
+    BatchFirst      -- ^ Input is of shape (Batch, Sequence, Features)
+    | SequenceFirst -- ^ Input is of shape (Sequence, Batch, Features)
+    deriving (Show, Generic)
+
+type family DimensionOfBatch (a :: SequentialInputShape) :: Nat where 
+  DimensionOfBatch BatchFirst = 0
+  DimensionOfBatch SequenceFirst = 1
+
+
 -- | lstm
 -- Parameters for this ATen function are non-trivially provided.  See the
 -- `Typed.NN.LSTM` module for doctests.
 --
 lstm
-  :: forall direction
+  :: forall 
+       (inputShape :: SequentialInputShape)
+       direction
        numLayers
        dtype
        seqLen
@@ -3208,7 +3222,10 @@ lstm
        inputDim
        hiddenSize
        device
-   . (KnownNat numLayers, KnownNat hiddenSize, KnownNat (NumberOfDirections direction))
+   . (KnownNat numLayers
+   , KnownNat (DimensionOfBatch inputShape)
+   , KnownNat hiddenSize
+   , KnownNat (NumberOfDirections direction))
   => Tensor device dtype '[seqLen, batchSize, inputDim]
   -> ( Tensor
          device
@@ -3244,7 +3261,7 @@ lstm _input (_cc, _hc) _params _dropout _train =
                                                 _dropout
                                                 _train
                                                 _bidirectional
-                                                False -- _batch_first
+                                                _batch_first
  where
   _hx =
     [_cc, _hc] :: [ Tensor
@@ -3253,6 +3270,10 @@ lstm _input (_cc, _hc) _params _dropout _train =
           '[numLayers * (NumberOfDirections direction), batchSize, hiddenSize]
       ]
   (_num_layers :: I.Int64) = fromIntegral $ natValI @numLayers
+  _batch_first = case natValI @(DimensionOfBatch inputShape) of 
+    0 -> True 
+    1 -> False
+    _ -> error "Batches for lstm must be first or second!"
   _bidirectional = case natValI @(NumberOfDirections direction) of
     1 -> False
     2 -> True
