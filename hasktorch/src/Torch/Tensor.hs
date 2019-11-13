@@ -136,6 +136,9 @@ toDevice device' t = unsafePerformIO $ do
 select :: Tensor -> Int -> Int -> Tensor
 select t dim idx = unsafePerformIO $ cast3 ATen.tensor_select_ll t dim idx
 
+indexSelect :: Tensor -> Int -> Tensor -> Tensor
+indexSelect t dim indexTensor = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim indexTensor
+
 reshape :: Tensor -> [Int] -> Tensor
 reshape t shape = unsafePerformIO $ cast2 ATen.reshape_tl t shape
 

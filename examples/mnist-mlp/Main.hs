@@ -7,7 +7,7 @@ module Main where
 import GHC.Generics
 
 import Torch.Autograd as A
-import Torch.Functions
+import Torch.Functions hiding (take)
 import Torch.Tensor
 import Torch.NN
 
@@ -44,27 +44,29 @@ mlp MLP{..} input =
     . linear' l0
     $ input
 
-
+train :: I.MnistData -> IO ()
 train trainData = do
     init <- sample spec
     let nImages = I.length trainData
-    let idx = randomIndexes nImages
-    randomized <- UI.getImages' nImages dataDim trainData idx
-    trained <- foldLoop init numIters $ 
-        \state -> do
-            let input = undefined -- TODO - setup minibatching
-            let label = undefined -- TODO - setup minibatching
+        idxList = randomIndexes nImages
+    trained <- foldLoop init numIters $
+        \state iter -> do
+            let idx = take batchSize (drop (iter * batchSize) idxList)
+            input <- UI.getImages' nImages dataDim trainData idx
+            let label = undefined -- TODO
             let prediction = mlp state input
-            let flatParameters = flattenParameters state
-            let loss = binary_cross_entropy_loss' prediction label
-            let gradients = A.grad loss flatParameters
-            pure undefined -- TODO - iteration loop
+                flatParameters = flattenParameters state
+                loss = binary_cross_entropy_loss' prediction label
+                gradients = A.grad loss flatParameters
+            newParam <- mapM A.makeIndependent
+                $ sgd 1e-01 flatParameters gradients
+            pure $ replaceParameters state newParam
     pure ()
     where
-    spec = MLPSpec 768 10 512 256 
-    dataDim = 768
-    numIters = 1000000
-    batchSize = 512
+        spec = MLPSpec 768 10 512 256 
+        dataDim = 768
+        numIters = 1000000
+        batchSize = 512
 
 main :: IO ()
 main = do
