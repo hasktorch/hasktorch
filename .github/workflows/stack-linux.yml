@@ -29,5 +29,9 @@ jobs:
         stack test codegen
         stack test libtorch-ffi
         stack test hasktorch
-        stack exec codegen-exe
-        stack exec xor-mlp
+        stack run codegen-exe
+        stack run regression
+        stack run gaussian-process
+        stack run vae
+        stack run optimizers
+        stack run xor-mlp

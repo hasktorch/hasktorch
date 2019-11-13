@@ -16,3 +16,19 @@ jobs:
       with:
         name: hasktorch
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+    - name: Run benchmark
+      run: |
+        nix-env -i mnist
+        ln -s ~/.nix-profile data
+        nix-build -A hasktorch-examples_cpu ./default.nix
+        export DEVICE=cpu
+        export NUM_ITERS=3000
+        ./result/bin/static-mnist-mlp +RTS -hc -p -A128m
+        cat static-mnist-mlp.prof
+        mkdir artifact
+        mv static-mnist-mlp.* artifact
+        mv loss.html artifact
+    - uses: actions/upload-artifact@master
+      with:
+        name: benchmark
+        path: artifact
