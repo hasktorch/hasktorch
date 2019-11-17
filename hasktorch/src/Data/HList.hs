@@ -38,6 +38,14 @@ pattern (:.) x xs = HCons (x, xs)
 
 infixr 2 :.
 
+instance Show (HList '[]) where
+  show _ = "H[]"
+
+instance (Show e, Show (HList l)) => Show (HList (e ': l)) where
+  show (x :. l) =
+    let 'H' : '[' : s = show l
+    in  "H[" ++ show x ++ (if s == "]" then s else "," ++ s)
+
 instance Eq (HList '[]) where
   HNil == HNil = True
 
@@ -197,8 +205,9 @@ instance HConcatFD '[] '[] where
 instance (HConcatFD as bs, HAppendFD a bs cs) => HConcatFD (HList a ': as) cs where
   hConcatFD (x :. xs) = x `hAppendFD` hConcatFD xs
 
-class HAppendFD a b ab | a b -> ab where
+class HAppendFD a b ab | a b -> ab, a ab -> b where
   hAppendFD :: HList a -> HList b -> HList ab
+  hUnappendFD :: HList ab -> (HList a, HList b)
 
 type family ((as :: [k]) ++ (bs :: [k])) :: [k] where
   '[]       ++ bs = bs
@@ -206,9 +215,11 @@ type family ((as :: [k]) ++ (bs :: [k])) :: [k] where
 
 instance HAppendFD '[] b b where
   hAppendFD _ b = b
+  hUnappendFD b = (HNil, b)
 
 instance HAppendFD as bs cs => HAppendFD (a ': as) bs (a ': cs) where
   hAppendFD (a :. as) bs = a :. hAppendFD as bs
+  hUnappendFD (a :. cs) = let (as, bs) = hUnappendFD cs in (a :. as, bs)
 
 class HZipList x y l | x y -> l, l -> x y where
   hZipList   :: HList x -> HList y -> HList l

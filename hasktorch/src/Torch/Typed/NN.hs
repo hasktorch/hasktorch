@@ -53,78 +53,93 @@ makeIndependent
   -> IO (Parameter device dtype shape)
 makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
 
+class Parameterized
+  (f :: Type)
+  (as :: [Type]) | f -> as where
 
+  flattenParameters :: f -> HList as
+  -- default flattenParameters :: (Generic f, GParameterized (Rep f) as) => f -> HList as
+  -- flattenParameters f = gFlattenParameters (from f)
 
--- class Parameterized f where
---   type Parameters f
+  replaceParameters :: f -> HList as -> f
+  -- default replaceParameters :: (Generic f, GParameterized (Rep f) as) => f -> HList as -> f
+  -- replaceParameters f as = to (gReplaceParameters (from f) as)
 
---   flattenParameters :: f -> HList (Parameters f)
---   default flattenParameters :: (Generic f, Parameterized' (Rep f)) => f -> HList (Parameters f)
---   flattenParameters f = flattenParameters' (from f)
-
---   replaceOwnParameters :: f -> State (HList (Parameters f)) f
---   default replaceOwnParameters :: (Generic f, Parameterized' (Rep f)) => f -> State (HList (Parameters f)) f
---   replaceOwnParameters f = to <$> replaceOwnParameters' (from f)
-
-
--- class Parameterized
---   (f :: Type)
---   (as :: [Type]) | f -> as where
-
---   flattenParameters :: f -> HList as
---   default flattenParameters :: (Generic f, GParameterized (Rep f) as) => f -> HList as
---   flattenParameters f = gFlattenParameters (from f)
+instance
+  ( Generic f
+  , GParameterized (Rep f) as
+  ) => Parameterized f as where
+  flattenParameters f = gFlattenParameters (from f)
+  replaceParameters f as = to (gReplaceParameters (from f) as)
 
 class GParameterized
   (f :: Type -> Type)
-  (as :: [Type])
-  (as' :: [Type])
-  (as'' :: [Type]) | f -> as, as' f -> as'' where -- as'' -> as', as' f -> as'', as as'' -> f where
+  (as :: [Type]) | f -> as where
 
   gFlattenParameters :: f a -> HList as
-  gReplaceOwnParameters :: f a -> HList as' -> (HList as'', f a)
+  gReplaceParameters :: f a -> HList as -> f a
 
--- http://hackage.haskell.org/package/generic-lens-1.1.0.0/docs/src/Data.Generics.Product.Internal.HList.html#singleton
 instance
-  ( GParameterized l as as' as''
-  , GParameterized r bs bs' bs''
+  ( GParameterized l as
+  , GParameterized r bs
   , HAppendFD as bs cs
   , cs ~ (as ++ bs)
-  , cs' ~ (as' ++ bs')
-  , HAppendFD as'' bs'' cs''
-  , cs'' ~ (as'' ++ bs'')
-  ) => GParameterized (l :*: r) cs cs' cs'' where
-  gFlattenParameters (l :*: r) = gFlattenParameters l `hAppendFD` gFlattenParameters r
-  gReplaceOwnParameters (l :*: r) as' =
-    let (as'', l') = gReplaceOwnParameters l as'
-        (bs'', r') = gReplaceOwnParameters r bs'
-    in  (as'' `hAppendFD` bs'', l' :*: r')
+  ) => GParameterized (l :*: r) cs where
+  gFlattenParameters (l :*: r) =
+    let as = gFlattenParameters l
+        bs = gFlattenParameters r
+    in  as `hAppendFD` bs
+  gReplaceParameters (l :*: r) cs =
+    let (as, bs) = hUnappendFD cs
+        l'       = gReplaceParameters l as
+        r'       = gReplaceParameters r bs
+    in  l' :*: r'
 
--- instance GParameterized (Rec0 a) '[a] where
---   gFlattenParameters = (:. HNil) . unK1
+instance GParameterized (K1 R (Parameter device dtype shape)) '[Parameter device dtype shape] where
+  gFlattenParameters = (:. HNil) . unK1
+  gReplaceParameters _ (parameter :. HNil) = K1 parameter
 
--- instance (GParameterized f as) => GParameterized (M1 i t f) as where
---   gFlattenParameters = gFlattenParameters . unM1
+instance GParameterized (K1 R Double) '[] where
+  gFlattenParameters _ = HNil
+  gReplaceParameters = const
 
--- instance GParameterized U1 '[] where
---   gFlattenParameters _ = HNil
+instance (GParameterized f as) => GParameterized (M1 i t f) as where
+  gFlattenParameters = gFlattenParameters . unM1
+  gReplaceParameters (M1 f) = M1 . gReplaceParameters f
 
-instance A.Parameterized (Parameter device dtype shape) where
-  flattenParameters (Parameter x) = [x]
-  replaceOwnParameters _ = Parameter <$> A.nextParameter
+instance GParameterized U1 '[] where
+  gFlattenParameters _ = HNil
+  gReplaceParameters = const
 
-instance A.Parameterized (HList '[]) where
-  flattenParameters _ = []
-  replaceOwnParameters = return
+-- instance Parameterized (HList '[]) '[] where
+--   flattenParameters _ = HNil
+--   replaceParameters _ _ = HNil
 
-instance (A.Parameterized x, A.Parameterized (HList xs))
-  => A.Parameterized (HList (x ': xs))
- where
-  flattenParameters (x :. xs) = A.flattenParameters x <> A.flattenParameters xs
-  replaceOwnParameters (x :. xs) = do
-    x' <- A.replaceOwnParameters x
-    xs' <- A.replaceOwnParameters xs
-    return $ x' :. xs'
+-- instance
+--   ( Parameterized a as
+--   , Parameterized (HList bs) bs
+--   , HAppendFD as bs cs
+--   , cs ~ (as ++ bs)
+--   ) => Parameterized (HList cs) cs where
+--   flattenParameters = id
+--   replaceParameters _ = id
+
+-- instance A.Parameterized (Parameter device dtype shape) where
+--   flattenParameters (Parameter x) = [x]
+--   replaceOwnParameters _ = Parameter <$> A.nextParameter
+
+-- instance A.Parameterized (HList '[]) where
+--   flattenParameters _ = []
+--   replaceOwnParameters = return
+
+-- instance (A.Parameterized x, A.Parameterized (HList xs))
+--   => A.Parameterized (HList (x ': xs))
+--  where
+--   flattenParameters (x :. xs) = A.flattenParameters x <> A.flattenParameters xs
+--   replaceOwnParameters (x :. xs) = do
+--     x' <- A.replaceOwnParameters x
+--     xs' <- A.replaceOwnParameters xs
+--     return $ x' :. xs'
 
 instance A.Randomizable (HList '[]) (HList '[]) where
   sample = return
@@ -165,16 +180,16 @@ linear
 linear Linear {..} input =
   Torch.Typed.Native.linear' (toDependent linearWeight) (toDependent linearBias) input
 
-instance A.Parameterized (Linear inputFeatures outputFeatures dtype device)
+-- instance A.Parameterized (Linear inputFeatures outputFeatures dtype device)
 
-instance ( KnownNat inputFeatures
-         , KnownNat outputFeatures
-         , KnownDType dtype
-         , KnownDevice device
-         , RandDTypeIsValid device dtype
-         )
-  => A.Randomizable (LinearSpec inputFeatures outputFeatures dtype device)
-                    (Linear     inputFeatures outputFeatures dtype device)
+instance
+  ( KnownNat inputFeatures
+  , KnownNat outputFeatures
+  , KnownDType dtype
+  , KnownDevice device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (LinearSpec inputFeatures outputFeatures dtype device)
+                      (Linear     inputFeatures outputFeatures dtype device)
  where
   sample LinearSpec =
     Linear <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
@@ -201,78 +216,78 @@ dropout
 dropout Dropout {..} dropoutTrain =
   Torch.Typed.Native.dropout dropoutProb dropoutTrain
 
-instance A.Parameterized Dropout
+-- instance A.Parameterized Dropout
 
 instance A.Randomizable DropoutSpec Dropout where
   sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
 
 data EmbeddingSpec (paddingIdx :: Maybe Nat)
                    (numEmbeds :: Nat)
-                   (embedDim :: Nat)
+                   (embedSize :: Nat)
                    (dtype :: D.DType)
                    (device :: (D.DeviceType, Nat))
   = EmbeddingSpec deriving (Show, Eq)
 
 data Embedding (paddingIdx :: Maybe Nat)
                (numEmbeds :: Nat)
-               (embedDim :: Nat)
+               (embedSize :: Nat)
                (dtype :: D.DType)
                (device :: (D.DeviceType, Nat))
  where
   Embedding
-    :: forall paddingIdx numEmbeds embedDim dtype device
+    :: forall paddingIdx numEmbeds embedSize dtype device
     --  . (PaddingIdxCheck paddingIdx numEmbeds)
-     . { embedWeights :: Parameter device dtype '[numEmbeds, embedDim] }
-    -> Embedding paddingIdx numEmbeds embedDim dtype device
+     . { embedWeights :: Parameter device dtype '[numEmbeds, embedSize] }
+    -> Embedding paddingIdx numEmbeds embedSize dtype device
  deriving (Show, Generic)
 
 embed
-  :: forall paddingIdx shape numEmbeds embedDim dtype device
+  :: forall paddingIdx shape numEmbeds embedSize dtype device
    . ( KnownMaybeNat paddingIdx
      , PaddingIdxCheck paddingIdx numEmbeds
      )
-  => Embedding paddingIdx numEmbeds embedDim dtype device
+  => Embedding paddingIdx numEmbeds embedSize dtype device
   -> Tensor device 'D.Int64 shape
-  -> Tensor device dtype    (Reverse (embedDim ': (Reverse shape)))
+  -> Tensor device dtype    (Reverse (embedSize ': (Reverse shape)))
 embed Embedding {..} input = embedding @paddingIdx
   False
   False
   (toDependent embedWeights)
   input
 
-instance A.Parameterized (Embedding paddingIdx numEmbeds embedDim dtype device)
+-- instance A.Parameterized (Embedding paddingIdx numEmbeds embedSize dtype device)
 
-instance ( KnownNat numEmbeds
-         , KnownNat embedDim
-         , KnownDType dtype
-         , KnownDevice device
-         , RandDTypeIsValid device dtype
-         )
-  => A.Randomizable (EmbeddingSpec 'Nothing numEmbeds embedDim dtype device)
-                    (Embedding     'Nothing numEmbeds embedDim dtype device)
+instance 
+  ( KnownNat numEmbeds
+  , KnownNat embedSize
+  , KnownDType dtype
+  , KnownDevice device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (EmbeddingSpec 'Nothing numEmbeds embedSize dtype device)
+                      (Embedding     'Nothing numEmbeds embedSize dtype device)
  where
   sample EmbeddingSpec = Embedding <$> (makeIndependent =<< randn)
 
-instance ( paddingIdx <= numEmbeds
-         , 1 <= numEmbeds - paddingIdx
-         , (((numEmbeds - paddingIdx) - 1) + (1 + paddingIdx)) ~ numEmbeds
-         , KnownNat paddingIdx
-         , KnownNat numEmbeds
-         , KnownNat embedDim
-         , KnownDType dtype
-         , KnownDevice device
-         , RandDTypeIsValid device dtype
-         )
-  => A.Randomizable (EmbeddingSpec ('Just paddingIdx) numEmbeds embedDim dtype device)
-                    (Embedding     ('Just paddingIdx) numEmbeds embedDim dtype device)
+instance
+  ( paddingIdx <= numEmbeds
+  , 1 <= numEmbeds - paddingIdx
+  , (((numEmbeds - paddingIdx) - 1) + (1 + paddingIdx)) ~ numEmbeds
+  , KnownNat paddingIdx
+  , KnownNat numEmbeds
+  , KnownNat embedSize
+  , KnownDType dtype
+  , KnownDevice device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (EmbeddingSpec ('Just paddingIdx) numEmbeds embedSize dtype device)
+                      (Embedding     ('Just paddingIdx) numEmbeds embedSize dtype device)
  where
   sample EmbeddingSpec =
-    let mask = cat @0 (  zeros @'[paddingIdx, embedDim]                 @'D.Bool @device
-                      :. ones  @'[1, embedDim]                          @'D.Bool @device
-                      :. zeros @'[numEmbeds - paddingIdx - 1, embedDim] @'D.Bool @device
+    let mask = cat @0 (  zeros @'[paddingIdx, embedSize]                 @'D.Bool @device
+                      :. ones  @'[1, embedSize]                          @'D.Bool @device
+                      :. zeros @'[numEmbeds - paddingIdx - 1, embedSize] @'D.Bool @device
                       :. HNil
                       )
-    in  Embedding <$> (makeIndependent =<< (maskedFill mask (0 :: Int) <$> (randn @'[numEmbeds, embedDim] @dtype @device)))
+    in  Embedding <$> (makeIndependent =<< (maskedFill mask (0 :: Int) <$> (randn @'[numEmbeds, embedSize] @dtype @device)))
 
 data Conv1dSpec (inputChannelSize :: Nat) (outputChannelSize :: Nat)
                 (kernelSize :: Nat)
@@ -307,7 +322,7 @@ conv1d Conv1d {..} input = Torch.Typed.Native.conv1d @stride @padding
   (toDependent conv1dBias)
   input
 
-instance A.Parameterized (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
+-- instance A.Parameterized (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
 
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
@@ -355,7 +370,7 @@ conv2d Conv2d {..} input = Torch.Typed.Native.conv2d @stride @padding
   (toDependent conv2dBias)
   input
 
-instance A.Parameterized (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+-- instance A.Parameterized (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
 
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
@@ -404,19 +419,19 @@ conv3d Conv3d {..} input = Torch.Typed.Native.conv3d @stride @padding
   (toDependent conv3dBias)
   input
 
-instance A.Parameterized (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+-- instance A.Parameterized (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
 
-instance ( KnownNat inputChannelSize
-         , KnownNat outputChannelSize
-         , KnownNat kernelSize0
-         , KnownNat kernelSize1
-         , KnownNat kernelSize2
-         , KnownDType dtype
-         , KnownDevice device
-         , RandDTypeIsValid device dtype
-         )
-  => A.Randomizable (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
-                    (Conv3d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+instance
+  ( KnownNat inputChannelSize
+  , KnownNat outputChannelSize
+  , KnownNat kernelSize0
+  , KnownNat kernelSize1
+  , KnownNat kernelSize2
+  , KnownDType dtype
+  , KnownDevice device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+                      (Conv3d     inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
  where
   sample Conv3dSpec =
     Conv3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
@@ -452,19 +467,19 @@ layerNorm LayerNorm {..} = Torch.Typed.Native.layerNorm @normalizedShape
   (toDependent layerNormBias)
   layerNormEps
 
-instance A.Parameterized (LayerNorm normalizedShape dtype device) where
-  flattenParameters LayerNorm {..} =
-    A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
-  replaceOwnParameters LayerNorm {..} = do
-    layerNormWeight <- Parameter <$> A.nextParameter
-    layerNormBias   <- Parameter <$> A.nextParameter
-    return $ LayerNorm { .. }
+-- instance A.Parameterized (LayerNorm normalizedShape dtype device) where
+--   flattenParameters LayerNorm {..} =
+--     A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
+--   replaceOwnParameters LayerNorm {..} = do
+--     layerNormWeight <- Parameter <$> A.nextParameter
+--     layerNormBias   <- Parameter <$> A.nextParameter
+--     return $ LayerNorm { .. }
 
-instance ( TensorOptions normalizedShape dtype device
-         , RandDTypeIsValid device dtype
-         )
-  => A.Randomizable (LayerNormSpec normalizedShape dtype device)
-                    (LayerNorm     normalizedShape dtype device)
+instance
+  ( TensorOptions normalizedShape dtype device
+  , RandDTypeIsValid device dtype
+  ) => A.Randomizable (LayerNormSpec normalizedShape dtype device)
+                      (LayerNorm     normalizedShape dtype device)
  where
   sample LayerNormSpec {..} =
     LayerNorm
