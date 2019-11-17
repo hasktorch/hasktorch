@@ -95,7 +95,6 @@ data LSTMSpec
       DropoutSpec
   deriving (Show, Generic)
 
-
 -- | LSTMParams
 -- Input-to-hidden, hidden-to-hidden, and bias parameters for a mulilayered
 -- (and optionally) bidirectional LSTM.
@@ -549,7 +548,7 @@ forwardWithDropout, forwardNoDropout
 -- ^ Forward propagage the `LSTM` module and apply dropout on the outputs of each layer.
 --
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
--- >>> lstm  :: (LSTM 'Bidirectional D.Float 3 10 30 'SequenceFirst '(D.CPU,0) ) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec 'Bidirectional D.Float 3 10 30 'SequenceFirst '(D.CPU,0) )
+-- >>> lstm <- A.sample (LSTMSpecZerosInit (DropoutSpec 0.5) :: LSTMSpec 'Bidirectional D.Float 3 10 30 'SequenceFirst '(D.CPU,0) )
 -- >>> forwardWithDropout lstm input
 -- (Tensor Float [5,16,60] ,Tensor Float [6,16,30] ,Tensor Float [6,16,30] )
 forwardWithDropout =
@@ -571,7 +570,7 @@ forwardWithDropout =
 -- ^ Forward propagage the `LSTM` module (without applying dropout on the outputs of each layer).
 --
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
--- >>> lstm :: (LSTM 'Unidirectional D.Float 1 10 30 'SequenceFirst '(D.CPU,0)) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec 'Unidirectional D.Float 1 10 30 'SequenceFirst '(D.CPU,0))
+-- >>> lstm <- A.sample (LSTMSpecZerosInit (DropoutSpec 0.5) :: LSTMSpec 'Unidirectional D.Float 1 10 30 'SequenceFirst '(D.CPU,0))
 -- >>> forwardNoDropout lstm input
 -- (Tensor Float [5,16,30] ,Tensor Float [1,16,30] ,Tensor Float [1,16,30] )
 forwardNoDropout =
