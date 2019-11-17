@@ -3186,118 +3186,117 @@ qZeroPoint input = unsafePerformIO $ cast1 ATen.q_zero_point_t input
 
 -- | The directional specification of a recurrent function
 --
-data Directionality =
+data RNNDirectionality =
     Bidirectional  -- ^ Forward and backward along the sequential axis using independant parameters for each.
   | Unidirectional -- ^ Forward along the sequential axis.
   deriving (Show, Generic) -- TODO:  We could also have BidirectionalTied weights.
 
-type family NumberOfDirections (a :: Directionality) :: Nat where
+type family NumberOfDirections (directionality :: RNNDirectionality) :: Nat where
   NumberOfDirections Bidirectional = 2
   NumberOfDirections Unidirectional = 1
 
--- | Specification for the sequential axis of a recurrent
--- function.
-data SequentialInputShape = 
-    BatchFirst      -- ^ Input is of shape (Batch, Sequence, Features)
-    | SequenceFirst -- ^ Input is of shape (Sequence, Batch, Features)
-    deriving (Show, Generic)
+class KnownRNNDirectionality (directionality :: RNNDirectionality) where
+  rnnBidirectional :: Bool
 
-type family DimensionOfBatch (a :: SequentialInputShape) :: Nat where 
-  DimensionOfBatch BatchFirst = 0
-  DimensionOfBatch SequenceFirst = 1
+instance KnownRNNDirectionality Bidirectional where
+  rnnBidirectional = True
 
+instance KnownRNNDirectionality Unidirectional where
+  rnnBidirectional = False
+
+-- | Specification for the sequential axis of a recurrent function.
+data RNNShapeOrder =
+    BatchFirst    -- ^ Input is of shape (Batch, Sequence, Features)
+  | SequenceFirst -- ^ Input is of shape (Sequence, Batch, Features)
+  deriving (Show, Generic)
+
+class KnownRNNShapeOrder (shapeOrder :: RNNShapeOrder) where
+  rnnBatchFirst :: Bool
+
+instance KnownRNNShapeOrder BatchFirst where
+  rnnBatchFirst = True
+
+instance KnownRNNShapeOrder SequenceFirst where
+  rnnBatchFirst = False
+
+type family RNNShape (shapeOrder :: RNNShapeOrder) (seqLen :: Nat) (batchSize :: Nat) (featureSize :: Nat) :: [Nat] where
+  RNNShape BatchFirst    seqLen batchSize featureSize = '[batchSize, seqLen, featureSize]
+  RNNShape SequenceFirst seqLen batchSize featureSize = '[seqLen, batchSize, featureSize]
 
 -- | lstm
 -- Parameters for this ATen function are non-trivially provided.  See the
 -- `Typed.NN.LSTM` module for doctests.
 --
 lstm
-  :: forall 
-       (inputShape :: SequentialInputShape)
-       direction
+  :: forall
+       shapeOrder
+       directionality
        numLayers
        dtype
        seqLen
        batchSize
-       inputDim
+       inputSize
+       outputSize
        hiddenSize
+       inputShape
+       outputShape
+       hxShape
        device
    . ( KnownNat numLayers
-     , KnownNat (DimensionOfBatch inputShape)
-     , KnownNat hiddenSize
-     , KnownNat (NumberOfDirections direction)
+     , KnownRNNShapeOrder shapeOrder
+     , KnownRNNDirectionality directionality
+     , outputSize ~ (hiddenSize * NumberOfDirections directionality)
+     , inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize
+     , outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize
+     , hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
      )
   => [D.Tensor]
   -> Double
   -> Bool
-  -> Tensor device dtype '[seqLen, batchSize, inputDim]
-  -> ( Tensor
-         device
-         dtype
-         '[numLayers * NumberOfDirections direction, batchSize, hiddenSize]
-     , Tensor
-         device
-         dtype
-         '[numLayers * NumberOfDirections direction, batchSize, hiddenSize]
+  -> (Tensor device dtype hxShape, Tensor device dtype hxShape)
+  -> Tensor device dtype inputShape
+  -> ( Tensor device dtype outputShape
+     , Tensor device dtype hxShape
+     , Tensor device dtype hxShape
      )
-  -> ( Tensor
-         device
-         dtype
-         '[seqLen, batchSize, hiddenSize * NumberOfDirections direction]
-     , Tensor
-         device
-         dtype
-         '[numLayers * NumberOfDirections direction, batchSize, hiddenSize]
-     , Tensor
-         device
-         dtype
-         '[numLayers * NumberOfDirections direction, batchSize, hiddenSize]
-     )
-lstm (cc, hc) flatWeights dropout train input =
-  unsafePerformIO $ cast9 ATen.lstm_tllbldbbb input
-                                              hx
-                                              flatWeights
-                                              hasBiases
-                                              numLayers
-                                              dropout
-                                              train
-                                              bidirectional
-                                              batchFirst
+lstm flatWeights dropoutProb dropoutOn (cc, hc) input = unsafePerformIO $ cast9
+  ATen.lstm_tllbldbbb
+  input
+  hx
+  flatWeights
+  hasBiases
+  numLayers
+  dropoutProb
+  dropoutOn
+  (rnnBidirectional @directionality)
+  (rnnBatchFirst @shapeOrder)
  where
   hasBiases = True
-  hx = [cc, hc] :: [Tensor device dtype '[numLayers * NumberOfDirections direction, batchSize, hiddenSize]]
-  (numLayers :: I.Int64) = fromIntegral $ natValI @numLayers
-  batchFirst = case natValI @(DimensionOfBatch inputShape) of 
-    0 -> True 
-    1 -> False
-    _ -> error "Batches for lstm must be first or second!"
-  bidirectional = case natValI @(NumberOfDirections direction) of
-    1 -> False
-    2 -> True
-    _ -> error "lstm: numDirections must be 1 or 2!"
-
--- gru_cell :: Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape -> Tensor dtype shape
+  hx :: [Tensor device dtype hxShape]
+  hx = [cc, hc]
+  numLayers :: I.Int64
+  numLayers  = fromIntegral $ natValI @numLayers
 
 -- | lstmCell
 -- >>> dtype &&& shape $ fst $ lstmCell (ones :: CPUTensor 'D.Float '[12,2]) (ones :: CPUTensor 'D.Float '[12,3]) (ones :: CPUTensor 'D.Float '[12]) (ones :: CPUTensor 'D.Float '[12]) ((ones :: CPUTensor 'D.Float '[2,3]), (ones :: CPUTensor 'D.Float '[2,3])) (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,3])
 lstmCell
-  :: forall inputDim hiddenSize batchSize dtype device 
-   . Tensor device dtype '[4 * hiddenSize, inputDim]
+  :: forall inputSize hiddenSize batchSize dtype device 
+   . Tensor device dtype '[4 * hiddenSize, inputSize]
   -> Tensor device dtype '[4 * hiddenSize, hiddenSize]
   -> Tensor device dtype '[4 * hiddenSize]
   -> Tensor device dtype '[4 * hiddenSize]
   -> ( Tensor device dtype '[batchSize, hiddenSize]
      , Tensor device dtype '[batchSize, hiddenSize]
      )
-  -> Tensor device dtype '[batchSize, inputDim]
+  -> Tensor device dtype '[batchSize, inputSize]
   -> ( Tensor device dtype '[batchSize, hiddenSize]
      , Tensor device dtype '[batchSize, hiddenSize]
      )
-lstmCell _w_ih _w_hh _b_ih _b_hh (_cc, _hc) _input =
+lstmCell wi wh bi bh (cc, hc) input =
   unsafePerformIO
-    $ cast6 ATen.lstm_cell_tltttt _input _hx _w_ih _w_hh _b_ih _b_hh
-  where _hx = [_cc, _hc] :: [Tensor device dtype '[batchSize, hiddenSize]]
+    $ cast6 ATen.lstm_cell_tltttt input hx wi wh bi bh
+  where hx = [cc, hc] :: [Tensor device dtype '[batchSize, hiddenSize]]
 
 -- gru_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (cast6 ATen.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
