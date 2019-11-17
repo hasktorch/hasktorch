@@ -145,6 +145,26 @@ instance ( TensorOptions shape   dtype  device
     let c = ne a b
     checkDynamicTensorAttributes c
 
+data ReshapeSpec = ReshapeSpec
+
+instance ( TensorOptions fromShape dtype device
+         , TensorOptions toShape   dtype device
+         , KnownShape fromShape
+         , KnownShape toShape
+         , Numel fromShape ~ Numel toShape
+         )
+  => Apply
+       ReshapeSpec
+       (Proxy device, (Proxy dtype, (Proxy fromShape, Proxy toShape)))
+       (() -> IO ())
+ where
+  apply ReshapeSpec _ _ = do
+    let t = ones @fromShape @dtype @device
+    let t' = reshape @toShape t
+    checkDynamicTensorAttributes t'
+    let t'' = reshape @fromShape t'
+    checkDynamicTensorAttributes t''
+
 data ToTypeSpec = ToTypeSpec
 
 instance ( TensorOptions shape dtype  device
@@ -288,6 +308,16 @@ spec' device =
       describe "not equal to" $ dispatch NESpec
 
     describe "tensor conversion" $ do
+      it "reshape" $ do
+        let fromShapes = Proxy @'[0]    :. Proxy @'[0, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1]       :. Proxy @'[1, 1] :. Proxy @'[1, 1, 1]               :. Proxy @'[1, 2]    :. Proxy @'[2, 1] :. Proxy @'[1, 4, 2] :. Proxy @'[1, 1, 8] :. Proxy @'[8]       :. Proxy @'[2, 2, 2] :. HNil
+            toShapes   = Proxy @'[1, 0] :. Proxy @'[0, 1] :. Proxy @'[0]    :. Proxy @'[0, 0] :. Proxy @'[1, 1]                  :. Proxy @'[1, 1, 1] :. Proxy @'[1]    :. (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1, 2, 1] :. Proxy @'[2]    :. Proxy @'[8]       :. Proxy @'[1, 1, 8] :. Proxy @'[2, 2, 2] :. Proxy @'[1, 1, 8] :. HNil
+            shapes     = hZipList fromShapes toShapes
+        case device of
+          D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+            hfoldrM @IO ReshapeSpec () (hattach cpu   (hCartesianProduct allDTypes shapes))
+          D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+            hfoldrM @IO ReshapeSpec () (hattach cuda0 (hCartesianProduct allDTypes shapes))
+
       it "toDevice" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO ToDeviceSpec () (hattach cpu   (hCartesianProduct allDTypes standardShapes))
