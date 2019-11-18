@@ -190,7 +190,7 @@ hConcat = hConcatFD
 
 type family HConcatR (a :: [Type]) :: [Type]
 type instance HConcatR '[] = '[]
-type instance HConcatR (x ': xs) = (UnHList x) ++ (HConcatR xs)
+type instance HConcatR (x ': xs) = UnHList x ++ HConcatR xs
 
 type family UnHList a :: [Type]
 type instance UnHList (HList a) = a

@@ -360,7 +360,7 @@ sqrt
 sqrt input = unsafePerformIO $ cast1 ATen.sqrt_t input
 
 -- | tanh
-tanh 
+tanh
   :: forall shape dtype device
    . (StandardFloatingPointDTypeValidation device dtype)
   => Tensor device dtype shape -- ^ input
@@ -2381,7 +2381,7 @@ logDet
    . (shape' ~ Det shape)
   => Tensor device dtype shape -- ^ input
   -> Tensor device dtype shape' -- ^ output
-logDet input = unsafePerformIO $ cast1 ATen.logdet_t input                       
+logDet input = unsafePerformIO $ cast1 ATen.logdet_t input
 
 -- | logarithm of the sum of the exponentials
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -3223,6 +3223,47 @@ type family RNNShape (shapeOrder :: RNNShapeOrder) (seqLen :: Nat) (batchSize ::
   RNNShape BatchFirst    seqLen batchSize featureSize = '[batchSize, seqLen, featureSize]
   RNNShape SequenceFirst seqLen batchSize featureSize = '[seqLen, batchSize, featureSize]
 
+type LSTMWIShape hiddenSize inputSize = '[4 * hiddenSize, inputSize]
+type LSTMWHShape hiddenSize inputSize = '[4 * hiddenSize, hiddenSize]
+type LSTMBIShape hiddenSize inputSize = '[4 * hiddenSize]
+type LSTMBHShape hiddenSize inputSize = '[4 * hiddenSize]
+
+type family LSTMRImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [[Nat]] where
+  LSTMRImpl inputSize hiddenSize 1         'Unidirectional = '[ LSTMWIShape hiddenSize inputSize
+                                                              , LSTMWHShape hiddenSize inputSize
+                                                              , LSTMBIShape hiddenSize inputSize
+                                                              , LSTMBHShape hiddenSize inputSize
+                                                              ]
+  LSTMRImpl inputSize hiddenSize numLayers 'Unidirectional = '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+                                                              , LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+                                                              , LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+                                                              , LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+                                                              ] ++ LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Unidirectional
+  LSTMRImpl inputSize hiddenSize 1         'Bidirectional =  '[ LSTMWIShape hiddenSize inputSize
+                                                              , LSTMWHShape hiddenSize inputSize
+                                                              , LSTMBIShape hiddenSize inputSize
+                                                              , LSTMBHShape hiddenSize inputSize
+                                                              , LSTMWIShape hiddenSize inputSize
+                                                              , LSTMWHShape hiddenSize inputSize
+                                                              , LSTMBIShape hiddenSize inputSize
+                                                              , LSTMBHShape hiddenSize inputSize
+                                                              ]
+  LSTMRImpl inputSize hiddenSize numLayers 'Bidirectional =  '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                              , LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                              , LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                              , LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                              , LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                              , LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                              , LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                              , LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                              ] ++ LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Bidirectional
+
+type family LSTMR' (shapes :: [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
+  LSTMR' '[]               dtype device = '[]
+  LSTMR' (shape ': shapes) dtype device = Tensor device dtype shape ': LSTMR' shapes dtype device
+
+type LSTMR inputSize hiddenSize numLayers directionality dtype device = LSTMR' (LSTMRImpl inputSize hiddenSize numLayers directionality) dtype device
+
 -- | lstm
 -- Parameters for this ATen function are non-trivially provided.  See the
 -- `Typed.NN.LSTM` module for doctests.
@@ -3232,7 +3273,6 @@ lstm
        shapeOrder
        directionality
        numLayers
-       dtype
        seqLen
        batchSize
        inputSize
@@ -3241,6 +3281,8 @@ lstm
        inputShape
        outputShape
        hxShape
+       tensorParameters
+       dtype
        device
    . ( KnownNat numLayers
      , KnownRNNShapeOrder shapeOrder
@@ -3249,8 +3291,12 @@ lstm
      , inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize
      , outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize
      , hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
+     , tensorParameters ~ LSTMR inputSize hiddenSize numLayers directionality dtype device
+     , HFoldrM IO TensorListFold [D.ATenTensor] tensorParameters
+     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorParameters)
+     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensorParameters) tensorParameters
      )
-  => [D.Tensor]
+  => HList tensorParameters
   -> Double
   -> Bool
   -> (Tensor device dtype hxShape, Tensor device dtype hxShape)
@@ -3259,11 +3305,11 @@ lstm
      , Tensor device dtype hxShape
      , Tensor device dtype hxShape
      )
-lstm flatWeights dropoutProb dropoutOn (cc, hc) input = unsafePerformIO $ cast9
+lstm tensorParameters dropoutProb dropoutOn (cc, hc) input = unsafePerformIO $ cast9
   ATen.lstm_tllbldbbb
   input
   hx
-  flatWeights
+  tensorParameters
   hasBiases
   numLayers
   dropoutProb
@@ -3281,7 +3327,7 @@ lstm flatWeights dropoutProb dropoutOn (cc, hc) input = unsafePerformIO $ cast9
 -- >>> dtype &&& shape $ fst $ lstmCell (ones :: CPUTensor 'D.Float '[12,2]) (ones :: CPUTensor 'D.Float '[12,3]) (ones :: CPUTensor 'D.Float '[12]) (ones :: CPUTensor 'D.Float '[12]) ((ones :: CPUTensor 'D.Float '[2,3]), (ones :: CPUTensor 'D.Float '[2,3])) (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,3])
 lstmCell
-  :: forall inputSize hiddenSize batchSize dtype device 
+  :: forall inputSize hiddenSize batchSize dtype device
    . Tensor device dtype '[4 * hiddenSize, inputSize]
   -> Tensor device dtype '[4 * hiddenSize, hiddenSize]
   -> Tensor device dtype '[4 * hiddenSize]
