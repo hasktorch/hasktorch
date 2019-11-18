@@ -168,7 +168,7 @@ deriving instance Show (LSTMLayerStack inputSize hiddenSize numLayers directiona
 --  TODO: Generics? see https://gist.github.com/RyanGlScott/71d9f933e823b4a03f99de54d4b94d51
 -- deriving instance Generic (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
 
-instance
+instance {-# OVERLAPS #-}
   ( GParameterized (K1 R (LSTMLayer inputSize hiddenSize directionality dtype device)) parameters
   ) => GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize 1 directionality dtype device)) parameters where
   gFlattenParameters (K1 (LSTMLayer1 lstmLayer))
@@ -176,7 +176,7 @@ instance
   gReplaceParameters (K1 (LSTMLayer1 lstmLayer)) parameters
     = K1 (LSTMLayer1 (unK1 (gReplaceParameters (K1 @R lstmLayer) parameters)))
 
-instance
+instance {-# OVERLAPPABLE #-}
   ( 2 <= numLayers
   , GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)) parameters
   , GParameterized (K1 R (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)) parameters'
@@ -341,10 +341,6 @@ class (KnownNat numLayers) => LayerSong (numLayers :: Nat) where
 --       <$> A.replaceOwnParameters as
 --       <*> A.replaceOwnParameters bs
 
--- | A long, short-term memory layer with either fixed initial
--- states for the memory cells and hidden state or learnable
--- inital states for the memory cells and hidden state.
---
 data LSTM
   (inputSize :: Nat)
   (hiddenSize :: Nat)
@@ -353,16 +349,31 @@ data LSTM
   (dtype :: D.DType)
   (device :: (D.DeviceType, Nat))
   = LSTM
-      { lstm_params  :: LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device
-      , lstm_dropout :: Dropout
-      , lstm_init_c  :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
-      , lstm_init_h  :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+      { lstm_layer_stack :: LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device
+      , lstm_dropout     :: Dropout
       }
-  | LSTMLearnedInit
-      { lstmLearnedInit_params  :: LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device
-      , lstmLearnedInit_dropout :: Dropout
-      , lstmLearnedInit_init_c  :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
-      , lstmLearnedInit_init_h  :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+  deriving (Show, Generic)
+
+-- | A long, short-term memory layer with either fixed initial
+-- states for the memory cells and hidden state or learnable
+-- inital states for the memory cells and hidden state.
+--
+data LSTMWithInit
+  (inputSize :: Nat)
+  (hiddenSize :: Nat)
+  (numLayers :: Nat)
+  (directionality :: RNNDirectionality)
+  (dtype :: D.DType)
+  (device :: (D.DeviceType, Nat))
+  = LSTMWithConstInit
+      { lstmWithConstInit_lstm :: LSTM inputSize hiddenSize numLayers directionality dtype device
+      , lstmWithConstInit_c    :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+      , lstmWithConstInit_h    :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+      }
+  | LSTMWithLearnedInit
+      { lstmWithLearnedInit_lstm :: LSTM inputSize hiddenSize numLayers directionality dtype device
+      , lstmWithLearnedInit_c    :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+      , lstmWithLearnedInit_h    :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
       }
   deriving (Show, Generic)
 
@@ -563,7 +574,7 @@ forward'
      , hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
      )
   => Bool
-  -> LSTM
+  -> LSTMWithInit
        inputSize
        hiddenSize
        numLayers
@@ -575,7 +586,7 @@ forward'
      , Tensor device dtype hxShape
      , Tensor device dtype hxShape
      )
-forward' dropoutOn lstm@(LSTM lstmLayerStack (Dropout dropoutProb) cc hc) input =
+forward' dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) input =
   Torch.Typed.Native.lstm
     @shapeOrder
     @directionality
@@ -596,7 +607,7 @@ forward' dropoutOn lstm@(LSTM lstmLayerStack (Dropout dropoutProb) cc hc) input 
     (cc', hc')
     input
  where
-  tmp :: HList as -> [D.Tensor]
+  tmp :: forall as . HList as -> [D.Tensor]
   tmp = _undefined
   cc' =
     reshape @hxShape
@@ -637,7 +648,7 @@ forwardWithDropout, forwardNoDropout
      , outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize
      , hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
      )
-  => LSTM
+  => LSTMWithInit
        inputSize
        hiddenSize
        numLayers
