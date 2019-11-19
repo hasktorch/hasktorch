@@ -96,6 +96,11 @@ instance
     in  l' :*: r'
 
 instance {-# OVERLAPS #-}
+  GParameterized (K1 R (Tensor device dtype shape)) '[] where
+  gFlattenParameters _ = HNil
+  gReplaceParameters = const
+
+instance {-# OVERLAPS #-}
   GParameterized (K1 R (Parameter device dtype shape)) '[Parameter device dtype shape] where
   gFlattenParameters = (:. HNil) . unK1
   gReplaceParameters _ (parameter :. HNil) = K1 parameter
