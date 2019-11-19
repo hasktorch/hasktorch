@@ -3234,12 +3234,13 @@ type family LSTMRImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) 
                                                               , LSTMBIShape hiddenSize inputSize
                                                               , LSTMBHShape hiddenSize inputSize
                                                               ]
-  LSTMRImpl inputSize hiddenSize numLayers 'Unidirectional = '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+  LSTMRImpl inputSize hiddenSize numLayers 'Unidirectional = LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Unidirectional ++
+                                                             '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
                                                               , LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
                                                               , LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
                                                               , LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
-                                                              ] ++ LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Unidirectional
-  LSTMRImpl inputSize hiddenSize 1         'Bidirectional =  '[ LSTMWIShape hiddenSize inputSize
+                                                              ]
+  LSTMRImpl inputSize hiddenSize 1         'Bidirectional  = '[ LSTMWIShape hiddenSize inputSize
                                                               , LSTMWHShape hiddenSize inputSize
                                                               , LSTMBIShape hiddenSize inputSize
                                                               , LSTMBHShape hiddenSize inputSize
@@ -3248,7 +3249,8 @@ type family LSTMRImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) 
                                                               , LSTMBIShape hiddenSize inputSize
                                                               , LSTMBHShape hiddenSize inputSize
                                                               ]
-  LSTMRImpl inputSize hiddenSize numLayers 'Bidirectional =  '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+  LSTMRImpl inputSize hiddenSize numLayers 'Bidirectional  = LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Bidirectional ++
+                                                             '[ LSTMWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
                                                               , LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
                                                               , LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
                                                               , LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
@@ -3256,7 +3258,7 @@ type family LSTMRImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) 
                                                               , LSTMWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
                                                               , LSTMBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
                                                               , LSTMBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
-                                                              ] ++ LSTMRImpl inputSize hiddenSize (numLayers - 1) 'Bidirectional
+                                                              ]
 
 type family LSTMR' (shapes :: [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
   LSTMR' '[]               dtype device = '[]
