@@ -109,6 +109,40 @@ dropout Dropout {..} dropoutTrain =
 instance A.Randomizable DropoutSpec Dropout where
   sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
 
+-- data ModelSpec inputFeatures outputFeatures dtype device
+--  where
+--   ModelSpec 
+--     :: forall inputFeatures outputFeatures dtype device
+--      . { modelLinearSpec  :: LinearSpec inputFeatures outputFeatures dtype device
+--        , modelDropoutSpec :: DropoutSpec
+--        }
+--     -> ModelSpec inputFeatures outputFeatures dtype device
+
+-- data Model (inputFeatures :: Nat) (outputFeatures :: Nat)
+--            (dtype :: D.DType)
+--            (device :: (D.DeviceType, Nat))
+--  where
+--   Model
+--     :: forall inputFeatures outputFeatures dtype device
+--      . { modelLinear  :: Linear inputFeatures outputFeatures dtype device
+--        , modelDropout :: Dropout
+--        }
+--     -> Model inputFeatures outputFeatures dtype device
+--  deriving (Show, Generic)
+
+-- instance
+--   ( RandDTypeIsValid device dtype
+--   , KnownNat inputFeatures
+--   , KnownNat outputFeatures
+--   , KnownDType dtype
+--   , KnownDevice device
+--   ) => A.Randomizable (ModelSpec inputFeatures outputFeatures dtype device)
+--                       (Model     inputFeatures outputFeatures dtype device) where
+--   sample ModelSpec {..} =
+--     Model
+--       <$> A.sample modelLinearSpec
+--       <*> A.sample modelDropoutSpec
+
 data EmbeddingSpec (paddingIdx :: Maybe Nat)
                    (numEmbeds :: Nat)
                    (embedSize :: Nat)

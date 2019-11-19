@@ -95,13 +95,22 @@ instance
         r'       = gReplaceParameters r bs
     in  l' :*: r'
 
-instance GParameterized (K1 R (Parameter device dtype shape)) '[Parameter device dtype shape] where
+instance {-# OVERLAPS #-}
+  GParameterized (K1 R (Parameter device dtype shape)) '[Parameter device dtype shape] where
   gFlattenParameters = (:. HNil) . unK1
   gReplaceParameters _ (parameter :. HNil) = K1 parameter
 
-instance GParameterized (K1 R Double) '[] where
+instance {-# OVERLAPS #-}
+  GParameterized (K1 R Double) '[] where
   gFlattenParameters _ = HNil
   gReplaceParameters = const
+
+instance {-# OVERLAPPABLE #-}
+  ( Generic f
+  , GParameterized (Rep f) as
+  ) => GParameterized (K1 i f) as where
+  gFlattenParameters = gFlattenParameters . from . unK1
+  gReplaceParameters (K1 f) = K1 . to . gReplaceParameters (from f)
 
 instance (GParameterized f as) => GParameterized (M1 i t f) as where
   gFlattenParameters = gFlattenParameters . unM1
