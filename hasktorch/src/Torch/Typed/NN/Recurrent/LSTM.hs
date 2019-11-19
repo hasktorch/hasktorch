@@ -312,22 +312,25 @@ data LSTMWithInitSpec
   (dtype :: D.DType)
   (device :: (D.DeviceType, Nat))
  where
-  LSTMWithZerosInitSpec   -- ^ Weights drawn from Xavier-Uniform with zeros-value
-                          --   initialized biases and cell states.
+  -- | Weights drawn from Xavier-Uniform
+  --   with zeros-value initialized biases and cell states.
+  LSTMWithZerosInitSpec
     :: forall inputSize hiddenSize numLayers directionality dtype device
      . LSTMSpec inputSize hiddenSize numLayers directionality dtype device
     -> LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device
-  LSTMWithConstInitSpec   -- ^ Weights drawn from Xavier-Uniform
-                          --   with zeros-value initialized biases
-                          --   and user-provided cell states.
+  -- | Weights drawn from Xavier-Uniform
+  --   with zeros-value initialized biases
+  --   and user-provided cell states.
+  LSTMWithConstInitSpec
     :: forall inputSize hiddenSize numLayers directionality dtype device
      . LSTMSpec inputSize hiddenSize numLayers directionality dtype device
     -> Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] -- ^ The initial values of the memory cell
     -> Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] -- ^ The initial values of the hidden state
     -> LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device
-  LSTMWithLearnedInitSpec -- ^ Weights drawn from Xavier-Uniform
-                          --   with zeros-value initialized biases
-                          --   and learned cell states.
+  -- | Weights drawn from Xavier-Uniform
+  --   with zeros-value initialized biases
+  --   and learned cell states.
+  LSTMWithLearnedInitSpec
     :: forall inputSize hiddenSize numLayers directionality dtype device
      . LSTMSpec inputSize hiddenSize numLayers directionality dtype device
     -> Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] -- ^ The initial (learnable)
@@ -597,9 +600,15 @@ lstmWithDropout, lstmWithoutDropout
 -- ^ Forward propagage the `LSTM` module and apply dropout on the outputs of each layer.
 --
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
--- >>> model <- A.sample (LSTMSpecZerosInit (DropoutSpec 0.5) :: LSTMSpec 'Bidirectional D.Float 3 10 30 'SequenceFirst '(D.CPU,0) )
--- >>> lstmWithDropout model input
--- (Tensor Float [5,16,60] ,Tensor Float [6,16,30] ,Tensor Float [6,16,30] )
+-- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
+-- >>> model <- A.sample spec
+-- >>> :t lstmWithDropout @'BatchFirst model input
+-- lstmWithDropout @'BatchFirst model input
+--   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
+--       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
+--       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+-- >>> lstmWithDropout @'BatchFirst model input
+-- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
 lstmWithDropout =
   Torch.Typed.NN.Recurrent.LSTM.lstm
     @shapeOrder
@@ -622,9 +631,15 @@ lstmWithDropout =
 -- ^ Forward propagage the `LSTM` module (without applying dropout on the outputs of each layer).
 --
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
--- >>> model <- A.sample (LSTMSpecZerosInit (DropoutSpec 0.5) :: LSTMSpec 'Unidirectional D.Float 1 10 30 'SequenceFirst '(D.CPU,0))
--- >>> lstmWithoutDropout model input
--- (Tensor Float [5,16,30] ,Tensor Float [1,16,30] ,Tensor Float [1,16,30] )
+-- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
+-- >>> model <- A.sample spec
+-- >>> :t lstmWithoutDropout @'BatchFirst model input
+-- lstmWithoutDropout @'BatchFirst model input
+--   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
+--       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
+--       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+-- >>> lstmWithoutDropout @'BatchFirst model input
+-- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
 lstmWithoutDropout =
   Torch.Typed.NN.Recurrent.LSTM.lstm
     @shapeOrder
