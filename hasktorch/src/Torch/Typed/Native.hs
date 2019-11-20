@@ -311,6 +311,20 @@ selu
   -> Tensor device dtype shape -- ^ output
 selu input = unsafePerformIO $ cast1 ATen.selu_t input
 
+-- | mish
+-- `mish` is a smooth activation function, see https://arxiv.org/abs/1908.08681 for details.
+-- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[Float]]) $ mish (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,([3,2],[[0.86509836,0.86509836],[0.86509836,0.86509836],[0.86509836,0.86509836]]))
+mish
+  :: forall shape dtype device
+   . ( StandardFloatingPointDTypeValidation device dtype
+     , BasicArithmeticDTypeIsValid device dtype
+     , shape ~ Broadcast shape shape
+     )
+  => Tensor device dtype shape
+  -> Tensor device dtype shape
+mish = mul =<< tanh . softplus (1 :: Float) 20
+
 -- | sigmoid
 -- >>> dtype &&& shape $ sigmoid (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
@@ -3756,13 +3770,19 @@ logSigmoid
   -> Tensor device dtype shape -- ^ output
 logSigmoid input = unsafePerformIO $ cast1 ATen.log_sigmoid_t input
 
--- -- | softPlus
--- -- TODO: what's wrong with this, why is it commented?
--- -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
--- -- >>> dtype &&& shape $ softPlus (ones :: CPUTensor 'D.Float '[3,2])
--- -- (Float,[3,2])
--- softPlus :: Tensor device dtype shape -> Float -> Float -> Tensor device dtype shape
--- softPlus _input _beta _threshold = unsafePerformIO $ (cast3 ATen.softplus_tss) _input _beta _threshold
+-- | softplus
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+-- See https://pytorch.org/docs/stable/nn.functional.html?highlight=softplus#torch.nn.functional.softplus.
+-- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[Float]]) $ softplus 1 20 (ones :: CPUTensor 'D.Float '[3,2])
+-- (Float,([3,2],[[1.3132616,1.3132616],[1.3132616,1.3132616],[1.3132616,1.3132616]]))
+softplus
+  :: forall a shape dtype device
+   . D.Scalar a
+  => a
+  -> a
+  -> Tensor device dtype shape
+  -> Tensor device dtype shape
+softplus beta threshold input = unsafePerformIO $ cast3 ATen.softplus_tss input beta threshold
 
 -- | soft shrink
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?

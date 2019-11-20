@@ -257,6 +257,22 @@ instance ( TensorOptions shape dtype device
 --        (() -> IO ())
 --  where
 
+data MishSpec = MishSpec
+
+instance ( TensorOptions shape dtype device
+         , StandardFloatingPointDTypeValidation device dtype
+         , BasicArithmeticDTypeIsValid device dtype
+         , shape ~ Broadcast shape shape
+         )
+  => Apply
+       MishSpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
+  apply MishSpec _ _ = do
+    let t = mish (ones @shape @dtype @device)
+    checkDynamicTensorAttributes t
+
 data GeluSpec = GeluSpec
 
 instance ( TensorOptions shape dtype device
@@ -744,6 +760,11 @@ spec' device =
 
       it "relu"       $ dispatch ReluSpec
       it "selu"       $ dispatch SeluSpec
+      it "mish" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          hfoldrM @IO MishSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes standardShapes))
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          hfoldrM @IO MishSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      standardShapes))
       it "gelu" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO GeluSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes standardShapes))
