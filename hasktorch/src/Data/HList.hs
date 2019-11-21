@@ -78,6 +78,15 @@ instance HMap f '[] '[] where
 instance (Apply f x y, HMap f xs ys) => HMap f (x ': xs) (y ': ys) where
   hmap f (x :. xs) = apply f x :. hmap f xs
 
+class HMapM m f xs ys where
+  hmapM :: f -> HList xs -> m (HList ys)
+
+instance (Monad m) => HMapM m f '[] '[] where
+  hmapM _ _ = pure HNil
+
+instance (Monad m, Apply f x (m y), HMapM m f xs ys) => HMapM m f (x ': xs) (y ': ys) where
+  hmapM f (x :. xs) = (:.) <$> (apply f x) <*> (hmapM f xs)
+
 class Applicative f => HSequence f xs ys | xs -> ys, ys f -> xs where
   hsequence :: HList xs -> f (HList ys)
 
