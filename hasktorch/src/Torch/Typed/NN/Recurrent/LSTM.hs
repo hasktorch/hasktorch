@@ -1,264 +1,239 @@
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoStarIsType          #-}
-{-# LANGUAGE OverloadedLists       #-}
+{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE StandaloneDeriving    #-}
-{-# LANGUAGE StrictData            #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StrictData #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
 
-module Torch.Typed.NN.Recurrent.LSTM
-    ( LSTMSpec(..)
-    , Directionality(..)
-    , SequentialInputShape(..)
-    , NumberOfDirections
-    , DimensionOfBatch
-    , LSTM(..)
-    , LSTMParams(..)
-    , ParamsPerDirection(..)
-    , forwardNoDropout
-    , forwardWithDropout
-    )
-where
+module Torch.Typed.NN.Recurrent.LSTM where
 
-import qualified ATen.Cast                as ATen
-import qualified ATen.Class               as ATen
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Type                as ATen
+import qualified ATen.Cast                     as ATen
+import qualified ATen.Class                    as ATen
+import qualified ATen.Managed.Type.Tensor      as ATen
+import qualified ATen.Type                     as ATen
 import           Data.Kind
+import           Data.HList
 import           Foreign.ForeignPtr
 import           GHC.Generics
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
-import           Prelude                  hiding (tanh)
+import           Prelude                 hiding ( tanh )
 import           System.Environment
 import           System.IO.Unsafe
-import qualified Torch.Autograd           as A
-import qualified Torch.Device             as D
-import qualified Torch.DType              as D
-import qualified Torch.Functions          as D
-import qualified Torch.NN                 as A
-import qualified Torch.Tensor             as D
-import qualified Torch.TensorFactories    as D
+import qualified Torch.Autograd                as A
+import qualified Torch.Device                  as D
+import qualified Torch.DType                   as D
+import qualified Torch.Functions               as D
+import qualified Torch.NN                      as A
+import qualified Torch.Tensor                  as D
+import qualified Torch.TensorFactories         as D
 import           Torch.Typed
 import           Torch.Typed.Factories
-import           Torch.Typed.Native       (DimensionOfBatch,
-                                           Directionality (..),
-                                           NumberOfDirections,
-                                           SequentialInputShape (..), expand,
-                                           lstm)
-import           Torch.Typed.NN
+import           Torch.Typed.Native      hiding ( sqrt )
 import           Torch.Typed.Tensor
+import           Torch.Typed.Parameter
+import           Torch.Typed.NN
 
+data LSTMLayer
+  (inputSize :: Nat)
+  (hiddenSize :: Nat)
+  (directionality :: RNNDirectionality)
+  (dtype :: D.DType)
+  (device :: (D.DeviceType, Nat))
+ where
+  LSTMUnidirectionalLayer
+    :: Parameter device dtype (LSTMWIShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMWHShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMBIShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMBHShape hiddenSize inputSize)
+    -> LSTMLayer inputSize hiddenSize 'Unidirectional dtype device
+  LSTMBidirectionalLayer
+    :: Parameter device dtype (LSTMWIShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMWHShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMBIShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMBHShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMWIShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMWHShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMBIShape hiddenSize inputSize)
+    -> Parameter device dtype (LSTMBHShape hiddenSize inputSize)
+    -> LSTMLayer inputSize hiddenSize 'Bidirectional dtype device
 
+deriving instance Show (LSTMLayer inputSize hiddenSize directionality dtype device)
+-- deriving instance Generic (LSTMLayer inputSize hiddenSize directionality dtype device)
 
--- | A specification for a long, short-term memory layer.
---
-data LSTMSpec (dir :: Directionality)
-        (dtype :: D.DType)
-        (numLayers:: Nat)
-        (inputDim :: Nat)
-        (hiddenDim :: Nat)
-        (inputShape :: SequentialInputShape)
-        (device :: (D.DeviceType, Nat)) =
-    LSTMSpecZerosInit DropoutSpec -- ^ Weights drawn from Xavier-Uniform with zeros-value
-                                  --   initialized biases and cell states.
-    | LSTMSpec                    -- ^ Weights drawn from Xavier-Uniform
-                                  --   with zeros-value initialized biases
-                                  --   and user-provided cell states.
-        (Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial values of the memory cell
-        (Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial values of the hidden state
-        DropoutSpec
+instance
+  ( wiShape ~ (LSTMWIShape hiddenSize inputSize)
+  , whShape ~ (LSTMWHShape hiddenSize inputSize)
+  , biShape ~ (LSTMBIShape hiddenSize inputSize)
+  , bhShape ~ (LSTMBHShape hiddenSize inputSize)
+  , parameters ~ '[Parameter device dtype wiShape, Parameter device dtype whShape, Parameter device dtype biShape, Parameter device dtype bhShape]
+  ) => GParameterized (K1 R (LSTMLayer inputSize hiddenSize 'Unidirectional dtype device)) parameters where
+  gFlattenParameters (K1 (LSTMUnidirectionalLayer wi wh bi bh)) =
+    wi :. wh :. bi :. bh :. HNil
+  gReplaceParameters _ (wi :. wh :. bi :. bh :. HNil) =
+    K1 (LSTMUnidirectionalLayer wi wh bi bh)
 
-    | LSTMSpecLearnedInit             -- ^ Weights drawn from Xavier-Uniform
-                                      --   with zeros-value initialized biases
-                                      --   and learned cell states.
-        (Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial (learnable)
-                                                                                 -- values of the memory cell
-        (Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]) -- ^ The initial (learnable)
-                                                                                 -- values of the hidden state
-        DropoutSpec
-    deriving (Show, Generic)
+instance
+  ( wiShape ~ (LSTMWIShape hiddenSize inputSize)
+  , whShape ~ (LSTMWHShape hiddenSize inputSize)
+  , biShape ~ (LSTMBIShape hiddenSize inputSize)
+  , bhShape ~ (LSTMBHShape hiddenSize inputSize)
+  , parameters ~ '[Parameter device dtype wiShape, Parameter device dtype whShape, Parameter device dtype biShape, Parameter device dtype bhShape, Parameter device dtype wiShape, Parameter device dtype whShape, Parameter device dtype biShape, Parameter device dtype bhShape]
+  ) => GParameterized (K1 R (LSTMLayer inputSize hiddenSize 'Bidirectional dtype device)) parameters where
+  gFlattenParameters (K1 (LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh'))
+    = wi :. wh :. bi :. bh :. wi' :. wh' :. bi' :. bh' :. HNil
+  gReplaceParameters _ (wi :. wh :. bi :. bh :. wi' :. wh' :. bi' :. bh' :. HNil)
+    = K1 (LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh')
 
-
--- | LSTMParams
 -- Input-to-hidden, hidden-to-hidden, and bias parameters for a mulilayered
 -- (and optionally) bidirectional LSTM.
 --
-data LSTMParams (dtype :: D.DType) 
-    (numDirections :: Nat) 
-    (inputDim :: Nat) 
-    (hiddenSize :: Nat) 
-    (numLayers :: Nat) 
-    (inputShape :: SequentialInputShape) 
-    (device :: (D.DeviceType, Nat)) where
-    LSTMLayer1 ::Parameter device dtype '[4 * hiddenSize, inputDim]
-                    -> (Parameter device dtype '[4 * hiddenSize, hiddenSize])
-                    -> (Parameter device dtype '[4 * hiddenSize ])
-                    -> (Parameter device dtype '[4 * hiddenSize ])
-                    -> LSTMParams dtype numDirections inputDim hiddenSize 1 inputShape device
-    LSTMLayerK ::(1 <= numLayers)
-                    => LSTMParams dtype numDirections inputDim hiddenSize numLayers inputShape device
-                    -> (Parameter device dtype '[4 * hiddenSize, numDirections * hiddenSize])
-                    -> (Parameter device dtype '[4 * hiddenSize, hiddenSize])
-                    -> (Parameter device dtype '[4 * hiddenSize ])
-                    -> (Parameter device dtype '[4 * hiddenSize ])
-                    -> LSTMParams dtype numDirections inputDim hiddenSize (numLayers + 1) inputShape device
+data LSTMLayerStack
+  (inputSize :: Nat)
+  (hiddenSize :: Nat)
+  (numLayers :: Nat)
+  (directionality :: RNNDirectionality)
+  (dtype :: D.DType)
+  (device :: (D.DeviceType, Nat))
+ where
+  LSTMLayer1
+    :: LSTMLayer inputSize hiddenSize directionality dtype device
+    -> LSTMLayerStack inputSize hiddenSize 1 directionality dtype device
+  LSTMLayerK
+    :: (2 <= numLayers)
+    => LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device
+    -> LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device
+    -> LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device
 
+deriving instance Show (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
 --  TODO: Generics? see https://gist.github.com/RyanGlScott/71d9f933e823b4a03f99de54d4b94d51
+-- deriving instance Generic (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
 
---  A specialized singlton helper for initializing parameters
-class (KnownNat n) => LayerSong (n :: Nat) where
-    singLayerSing :: (RandDTypeIsValid device dtype, KnownDevice device, KnownDType dtype, KnownNat numDirections, KnownNat inputDim, KnownNat hiddenSize)
-        =>  IO (LSTMParams dtype numDirections inputDim hiddenSize n inputShape device)
+instance {-# OVERLAPS #-}
+  ( GParameterized (K1 R (LSTMLayer inputSize hiddenSize directionality dtype device)) parameters
+  ) => GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize 1 directionality dtype device)) parameters where
+  gFlattenParameters (K1 (LSTMLayer1 lstmLayer))
+    = gFlattenParameters (K1 @R lstmLayer)
+  gReplaceParameters (K1 (LSTMLayer1 lstmLayer)) parameters
+    = K1 (LSTMLayer1 (unK1 (gReplaceParameters (K1 @R lstmLayer) parameters)))
 
-instance {-# OVERLAPS #-} LayerSong 1 where
-    singLayerSing =
-        LSTMLayer1
-            <$> (makeIndependent =<< xavierUniormLSTM)
-            <*> (makeIndependent =<< xavierUniormLSTM)
-            <*> (makeIndependent =<< (pure zeros))
-            <*> (makeIndependent =<< (pure zeros))
+instance {-# OVERLAPPABLE #-}
+  ( 2 <= numLayers
+  , GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device)) parameters
+  , GParameterized (K1 R (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)) parameters'
+  , HAppendFD parameters parameters' parameters''
+  , parameters'' ~ (parameters ++ parameters')
+  ) => GParameterized (K1 R (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)) parameters'' where
+  gFlattenParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer))
+    = let parameters  = gFlattenParameters (K1 @R lstmLayerStack)
+          parameters' = gFlattenParameters (K1 @R lstmLayer)
+      in  parameters `hAppendFD` parameters'
+  gReplaceParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer)) parameters''
+    = let (parameters, parameters') = hUnappendFD parameters''
+          lstmLayerStack'           = unK1 (gReplaceParameters (K1 @R lstmLayerStack) parameters)
+          lstmLayer'                = unK1 (gReplaceParameters (K1 @R lstmLayer)      parameters')
+      in  K1 (LSTMLayerK lstmLayerStack' lstmLayer')
 
-instance {-# OVERLAPPABLE #-} (KnownNat n, KnownNat m, LayerSong n, m ~ (n + 1), 1 <= n) => LayerSong m where
-    singLayerSing =
-        LSTMLayerK
-            <$> singLayerSing
-            <*> (makeIndependent =<< xavierUniormLSTM)
-            <*> (makeIndependent =<< xavierUniormLSTM)
-            <*> (makeIndependent =<< (pure zeros))
-            <*> (makeIndependent =<< (pure zeros))
-
-instance A.Parameterized (LSTMParams dtype numDirections inputDim hiddenSize numLayers inputShape device) where
-    flattenParameters (LSTMLayer1 a b c d) =
-        A.flattenParameters a
-            <> A.flattenParameters b
-            <> A.flattenParameters c
-            <> A.flattenParameters d
-    flattenParameters (LSTMLayerK l a b c d) =
-        A.flattenParameters l
-            <> A.flattenParameters a
-            <> A.flattenParameters b
-            <> A.flattenParameters c
-            <> A.flattenParameters d
-            
-    replaceOwnParameters (LSTMLayer1 a b c d) =
-        LSTMLayer1
-            <$> A.replaceOwnParameters a
-            <*> A.replaceOwnParameters b
-            <*> A.replaceOwnParameters c
-            <*> A.replaceOwnParameters d
-    replaceOwnParameters (LSTMLayerK l a b c d) =
-        LSTMLayerK
-            <$> A.replaceOwnParameters l
-            <*> A.replaceOwnParameters a
-            <*> A.replaceOwnParameters b
-            <*> A.replaceOwnParameters c
-            <*> A.replaceOwnParameters d
-
-data ParamsPerDirection dtype inputDim hiddenSize numLayers (dir :: Directionality) inputShape device where
-    BidirectionalParams ::LSTMParams dtype (NumberOfDirections 'Bidirectional) inputDim hiddenSize numLayers inputShape device
-        -> LSTMParams dtype (NumberOfDirections 'Bidirectional) inputDim hiddenSize numLayers inputShape device
-        -> ParamsPerDirection dtype inputDim hiddenSize numLayers 'Bidirectional inputShape device
-    UniDirectionalParams ::LSTMParams dtype (NumberOfDirections 'Unidirectional)  inputDim hiddenSize numLayers inputShape device
-        -> ParamsPerDirection dtype inputDim hiddenSize numLayers 'Unidirectional inputShape device
-
-
-sampleBidirectionalParams
-    :: forall dtype inputDim hiddenDim numLayers inputShape device
-     . ( KnownNat hiddenDim
-       , KnownNat inputDim
-       , KnownNat numLayers
+class HasSampleLSTMLayer (directionality :: RNNDirectionality) where
+  sampleLSTMLayer
+    :: ( RandDTypeIsValid device dtype
        , KnownDType dtype
-       , LayerSong numLayers
        , KnownDevice device
-       , RandDTypeIsValid device dtype
+       , KnownNat inputSize
+       , KnownNat hiddenSize
        )
-    => IO
-           ( ParamsPerDirection
-                 dtype
-                 inputDim
-                 hiddenDim
-                 numLayers
-                 'Bidirectional
-                 inputShape
-                 device
-           )
-sampleBidirectionalParams =
-    BidirectionalParams <$> singLayerSing <*> singLayerSing
+    => IO (LSTMLayer inputSize hiddenSize directionality dtype device)
 
+instance HasSampleLSTMLayer 'Unidirectional where
+  sampleLSTMLayer =
+    LSTMUnidirectionalLayer
+      <$> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< pure zeros)
+      <*> (makeIndependent =<< pure zeros)
 
-sampleUniDirectionalParams
-    :: ( KnownNat hiddenDim
-       , KnownNat inputDim
-       , KnownNat numLayers
+instance HasSampleLSTMLayer 'Bidirectional where
+  sampleLSTMLayer =
+    LSTMBidirectionalLayer
+      <$> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< pure zeros)
+      <*> (makeIndependent =<< pure zeros)
+      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< pure zeros)
+      <*> (makeIndependent =<< pure zeros)
+
+--  A specialized singleton helper for initializing parameters
+class (KnownNat numLayers, HasSampleLSTMLayer directionality) => HasSampleLSTMLayerStack (numLayers :: Nat) (directionality :: RNNDirectionality) where
+  sampleLSTMLayerStack
+    :: ( RandDTypeIsValid device dtype
        , KnownDType dtype
-       , LayerSong numLayers
        , KnownDevice device
-       , RandDTypeIsValid device dtype
+       , KnownNat inputSize
+       , KnownNat hiddenSize
+       , KnownNat (NumberOfDirections directionality)
        )
-    => IO
-           ( ParamsPerDirection
-                 dtype
-                 inputDim
-                 hiddenDim
-                 numLayers
-                 'Unidirectional
-                 inputShape
-                 device
-           )
-sampleUniDirectionalParams = UniDirectionalParams <$> singLayerSing
+    => IO (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
 
-instance A.Parameterized  (ParamsPerDirection dtype inputDim hiddenDim numLayers dir inputShape device) where
-    flattenParameters (UniDirectionalParams ps) = A.flattenParameters ps
-    flattenParameters (BidirectionalParams as bs) =
-        A.flattenParameters as <> A.flattenParameters bs
-    replaceOwnParameters (UniDirectionalParams ps) =
-        UniDirectionalParams <$> A.replaceOwnParameters ps
-    replaceOwnParameters (BidirectionalParams as bs) =
-        BidirectionalParams
-            <$> A.replaceOwnParameters as
-            <*> A.replaceOwnParameters bs
+instance {-# OVERLAPS #-}
+  ( HasSampleLSTMLayer directionality
+  ) => HasSampleLSTMLayerStack 1 directionality where
+  sampleLSTMLayerStack =
+    LSTMLayer1 <$> sampleLSTMLayer
 
--- | A long, short-term memory layer with either fixed initial
--- states for the memory cells and hidden state or learnable
--- inital states for the memory cells and hidden state.
---
-data LSTM (dir :: Directionality)
-            (dtype :: D.DType)
-            (numLayers :: Nat)
-            (inputDim :: Nat)
-            (hiddenDim :: Nat)
-            (inputShape :: SequentialInputShape)
-            device
-            =  LSTM {
-      lstm_params :: ParamsPerDirection dtype inputDim hiddenDim numLayers dir inputShape device
-      , lstm_dropout :: Dropout
-      , lstm_init_c     :: Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
-      , lstm_init_h     :: Tensor device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
-    }
-    | LSTMLearnedInit {
-        lstmLearnedInit_params :: ParamsPerDirection  dtype inputDim hiddenDim numLayers dir inputShape device
-        , lstmLearnedInit_dropout :: Dropout
-        , lstmLearnedInit_init_c     :: Parameter device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
-        , lstmLearnedInit_init_h     :: Parameter device dtype '[numLayers * (NumberOfDirections dir), hiddenDim]
-    }
-    deriving Generic
+instance {-# OVERLAPPABLE #-}
+  ( 2 <= numLayers
+  , HasSampleLSTMLayerStack (numLayers - 1) directionality
+  , HasSampleLSTMLayer directionality
+  ) => HasSampleLSTMLayerStack numLayers directionality where
+  sampleLSTMLayerStack =
+    LSTMLayerK
+      <$> sampleLSTMLayerStack
+      <*> sampleLSTMLayer
+
+newtype LSTMSpec
+  (inputSize :: Nat)
+  (hiddenSize :: Nat)
+  (numLayers :: Nat)
+  (directionality :: RNNDirectionality)
+  (dtype :: D.DType)
+  (device :: (D.DeviceType, Nat))
+  = LSTMSpec DropoutSpec
+  deriving (Show, Generic)
+
+data LSTM
+  (inputSize :: Nat)
+  (hiddenSize :: Nat)
+  (numLayers :: Nat)
+  (directionality :: RNNDirectionality)
+  (dtype :: D.DType)
+  (device :: (D.DeviceType, Nat))
+  = LSTM
+      { lstm_layer_stack :: LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device
+      , lstm_dropout     :: Dropout
+      }
+  deriving (Show, Generic)
 
 -- TODO: when we have cannonical initializers do this correctly:
 -- https://github.com/pytorch/pytorch/issues/9221
@@ -268,262 +243,419 @@ data LSTM (dir :: Directionality)
 -- orthagonal initializations for the gates. (When implemented.)
 --
 xavierUniormLSTM
-    :: forall device dtype hiddenSize d
-     . ( KnownDType dtype
-       , KnownNat d
-       , KnownNat hiddenSize
-       , KnownDevice device
-       , RandDTypeIsValid device dtype
-       )
-    => IO (Tensor device dtype '[4 * hiddenSize, d])
+  :: forall device dtype hiddenSize featureSize
+   . ( KnownDType dtype
+     , KnownNat hiddenSize
+     , KnownNat featureSize
+     , KnownDevice device
+     , RandDTypeIsValid device dtype
+     )
+  => IO (Tensor device dtype '[4 * hiddenSize, featureSize])
 xavierUniormLSTM = do
-    init <- (randn :: IO (Tensor device dtype '[4 * hiddenSize, d]))
-    UnsafeMkTensor <$> xavierUniformFIXME
-        (toDynamic init)
-        (5.0 / 3)
-        (shape @device @dtype @'[4 * hiddenSize, d] init)
+  init <- randn :: IO (Tensor device dtype '[4 * hiddenSize, featureSize])
+  UnsafeMkTensor <$> xavierUniformFIXME
+    (toDynamic init)
+    (5.0 / 3)
+    (shape @device @dtype @'[4 * hiddenSize, featureSize] init)
 
--- TODO: This is taken from the initializers examplee code and should be replaced with cannonical,
--- tested versions.  However, even a potentially incorrect implementation will likly perform
+-- TODO: This is taken from the initializers example code and should be replaced with cannonical,
+-- tested versions. However, even a potentially incorrect implementation will likely perform
 -- better than an ad-hoc random-normal distribution.
 -- | Fan-in / Fan-out scaling calculation
 calculateFan :: [Int] -> (Int, Int)
-calculateFan shape =
-    if dimT < 2 then
-        error "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-    else if dimT == 2 then
-        (shape !! 1, shape !! 0)
-        else 
-            (numInputFmaps * receptiveFieldSize,
-            numOutputFmaps * receptiveFieldSize)
-    where
-        dimT = length shape
-        numInputFmaps = shape !! 1 -- size t 1
-        numOutputFmaps = shape !! 0 -- size t 0
-        receptiveFieldSize = product $ tail shape
+calculateFan shape
+  | dimT < 2
+  = error
+    "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
+  | dimT == 2
+  = (numInputFmaps, numOutputFmaps)
+  | otherwise
+  = (numInputFmaps * receptiveFieldSize, numOutputFmaps * receptiveFieldSize)
+ where
+  dimT               = length shape
+  numInputFmaps      = shape !! 1
+  numOutputFmaps     = shape !! 0
+  receptiveFieldSize = product $ tail shape
 
 -- | Xavier Initialization - Uniform
 xavierUniformFIXME :: D.Tensor -> Float -> [Int] -> IO D.Tensor
-xavierUniformFIXME init gain shape = do
-    pure $ D.subScalar (D.mulScalar init (bound * 2.0)) bound
-    where
-        (fanIn, fanOut) = calculateFan shape
-        std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
-        bound = sqrt 3.0 * std
+xavierUniformFIXME init gain shape = pure
+  $ D.subScalar (D.mulScalar init (bound * 2.0)) bound
+ where
+  (fanIn, fanOut) = calculateFan shape
+  std = gain * sqrt (2.0 / (fromIntegral fanIn + fromIntegral fanOut))
+  bound = sqrt 3.0 * std
 
-instance (KnownDType dtype
-    , KnownNat inputDim
-    , KnownNat hiddenDim
-    , KnownNat numLayers
-    , KnownDevice device
-    , RandDTypeIsValid device dtype
-    , LayerSong numLayers) => A.Randomizable
-        (LSTMSpec 'Bidirectional dtype numLayers inputDim hiddenDim inputShape device)
-        (LSTM 'Bidirectional dtype numLayers inputDim hiddenDim inputShape device) where
-    sample (LSTMSpecZerosInit d) =
-        LSTM
-            <$> sampleBidirectionalParams
-            <*> A.sample d
-            <*> (pure zeros)
-            <*> (pure zeros)
-    sample s@(LSTMSpec c h d) =
-        LSTM
-            <$> sampleBidirectionalParams
-            <*> A.sample d
-            <*> (pure c)
-            <*> (pure h)
-    sample s@(LSTMSpecLearnedInit c h d) =
-        LSTMLearnedInit
-            <$> sampleBidirectionalParams
-            <*> A.sample d
-            <*> (makeIndependent =<< pure c)
-            <*> (makeIndependent =<< pure h)
+instance
+  ( KnownDType dtype
+  , KnownDevice device
+  , KnownNat inputSize
+  , KnownNat hiddenSize
+  , KnownNat (NumberOfDirections directionality)
+  , RandDTypeIsValid device dtype
+  , HasSampleLSTMLayerStack numLayers directionality
+  ) => A.Randomizable (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
+                      (LSTM     inputSize hiddenSize numLayers directionality dtype device) where
+  sample (LSTMSpec dropoutSpec) =
+    LSTM <$> sampleLSTMLayerStack <*> A.sample dropoutSpec
 
-instance (KnownDType dtype
-    , KnownNat inputDim
-    , KnownNat hiddenDim
-    , KnownNat numLayers
-    , KnownDevice device
-    , RandDTypeIsValid device dtype
-    , LayerSong numLayers) => A.Randomizable
-        (LSTMSpec 'Unidirectional dtype numLayers inputDim hiddenDim inputShape device)
-        (LSTM 'Unidirectional dtype numLayers inputDim hiddenDim inputShape device) where
-    sample (LSTMSpecZerosInit d) =
-        LSTM
-            <$> sampleUniDirectionalParams
-            <*> A.sample d
-            <*> (pure zeros)
-            <*> (pure zeros)
-    sample s@(LSTMSpec c h d) =
-        LSTM
-            <$> sampleUniDirectionalParams
-            <*> A.sample d
-            <*> (pure c)
-            <*> (pure h)
-    sample s@(LSTMSpecLearnedInit c h d) =
-        LSTMLearnedInit
-            <$> sampleUniDirectionalParams
-            <*> A.sample d
-            <*> (makeIndependent =<< pure c)
-            <*> (makeIndependent =<< pure h)
+data RNNInitialization = ConstantInitialization | LearnedInitialization deriving (Show, Generic)
 
-instance A.Parameterized  (LSTM dir dtype numLayers inputDim hiddenDim inputShape device) where
-    flattenParameters (LSTM p _ _ _) = A.flattenParameters p
-    flattenParameters (LSTMLearnedInit p _ lc lh) =
-        A.flattenParameters p
-            <> A.flattenParameters lc
-            <> A.flattenParameters lh
-    replaceOwnParameters (LSTM p d c h) = do
-        p' <- A.replaceOwnParameters p
-        pure $ LSTM p' d c h
-    replaceOwnParameters (LSTMLearnedInit p d lc lh) = do
-        p' <- A.replaceOwnParameters p
-        LSTMLearnedInit p' d
-            <$> A.replaceOwnParameters lc
-            <*> A.replaceOwnParameters lh
+-- | A specification for a long, short-term memory layer.
+--
+data LSTMWithInitSpec
+  (inputSize :: Nat)
+  (hiddenSize :: Nat)
+  (numLayers:: Nat)
+  (directionality :: RNNDirectionality)
+  (initialization :: RNNInitialization)
+  (dtype :: D.DType)
+  (device :: (D.DeviceType, Nat))
+ where
+  -- | Weights drawn from Xavier-Uniform
+  --   with zeros-value initialized biases and cell states.
+  LSTMWithZerosInitSpec
+    :: forall inputSize hiddenSize numLayers directionality dtype device
+     . LSTMSpec inputSize hiddenSize numLayers directionality dtype device
+    -> LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device
+  -- | Weights drawn from Xavier-Uniform
+  --   with zeros-value initialized biases
+  --   and user-provided cell states.
+  LSTMWithConstInitSpec
+    :: forall inputSize hiddenSize numLayers directionality dtype device
+     . LSTMSpec inputSize hiddenSize numLayers directionality dtype device
+    -> Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] -- ^ The initial values of the memory cell
+    -> Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] -- ^ The initial values of the hidden state
+    -> LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device
+  -- | Weights drawn from Xavier-Uniform
+  --   with zeros-value initialized biases
+  --   and learned cell states.
+  LSTMWithLearnedInitSpec
+    :: forall inputSize hiddenSize numLayers directionality dtype device
+     . LSTMSpec inputSize hiddenSize numLayers directionality dtype device
+    -> Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] -- ^ The initial (learnable)
+                                                                                        -- values of the memory cell
+    -> Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize] -- ^ The initial (learnable)
+                                                                                        -- values of the hidden state
+    -> LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device
 
--- helpers to get params in the right order for Aten.
-lstmParamsToTlist'
-    :: forall dtype numDirections inputDim hiddenSize numLayers inputShape device
-     . [D.Tensor]
-    -> LSTMParams dtype numDirections inputDim hiddenSize numLayers inputShape device
-    -> [D.Tensor]
-lstmParamsToTlist' acc (LSTMLayerK l wi wh bi bh) =
-    lstmParamsToTlist' acc l
-        <> ( (toDynamic $ toDependent wi)
-           : (toDynamic $ toDependent wh)
-           : (toDynamic $ toDependent bi)
-           : (toDynamic $ toDependent bh)
-           : []
-           )
-lstmParamsToTlist' acc (LSTMLayer1 wi wh bi bh) =
-    (toDynamic $ toDependent wi)
-        : (toDynamic $ toDependent wh)
-        : (toDynamic $ toDependent bi)
-        : (toDynamic $ toDependent bh)
-        : acc
-lstmParamsToTlist l = lstmParamsToTlist' [] l
+deriving instance Show (LSTMWithInitSpec inputSize hiddenSize numLayers directionality initialization dtype device)
+-- deriving instance Generic (LSTMWithInitSpec inputSize hiddenSize numLayers directionality initialization dtype device)
 
-ziplstmLayers :: [D.Tensor] -> [D.Tensor] -> [D.Tensor] -> [D.Tensor]
-ziplstmLayers acc [] [] = acc
-ziplstmLayers acc (a : b : c : d : xs) (a' : b' : c' : d' : xs') =
-    a : b : c : d : a' : b' : c' : d' : ziplstmLayers acc xs xs'
+-- | A long, short-term memory layer with either fixed initial
+-- states for the memory cells and hidden state or learnable
+-- inital states for the memory cells and hidden state.
+--
+data LSTMWithInit
+  (inputSize :: Nat)
+  (hiddenSize :: Nat)
+  (numLayers :: Nat)
+  (directionality :: RNNDirectionality)
+  (initialization :: RNNInitialization)
+  (dtype :: D.DType)
+  (device :: (D.DeviceType, Nat))
+ where
+  LSTMWithConstInit
+    :: forall inputSize hiddenSize numLayers directionality dtype device
+     . { lstmWithConstInit_lstm :: LSTM inputSize hiddenSize numLayers directionality dtype device
+       , lstmWithConstInit_c    :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+       , lstmWithConstInit_h    :: Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+       }
+    -> LSTMWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device
+  LSTMWithLearnedInit
+    :: forall inputSize hiddenSize numLayers directionality dtype device
+     . { lstmWithLearnedInit_lstm :: LSTM inputSize hiddenSize numLayers directionality dtype device
+       , lstmWithLearnedInit_c    :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+       , lstmWithLearnedInit_h    :: Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize]
+       }
+    -> LSTMWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device
 
-forward'
-    :: forall inputShape dtype dir numLayers inputDim hiddenDim seqLen batchSize device
-     . ( KnownNat numLayers
-       , KnownNat inputDim
-       , KnownNat hiddenDim
-       , KnownNat seqLen
-       , KnownNat batchSize
-       , KnownNat (NumberOfDirections dir)
-       , KnownNat (DimensionOfBatch inputShape)
-       )
-    => Bool
-    -> LSTM dir dtype numLayers inputDim hiddenDim inputShape device
-    -> Tensor device dtype '[seqLen, batchSize, inputDim]
-    -> ( Tensor
-             device
-             dtype
-             '[seqLen, batchSize, hiddenDim * NumberOfDirections dir]
-       , Tensor
-             device
-             dtype
-             '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
-       , Tensor
-             device
-             dtype
-             '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
-       )
-forward' doDropout (LSTM p (Dropout d) cc hc) input = lstm @inputShape @dir @numLayers
-    input
+deriving instance Show (LSTMWithInit inputSize hiddenSize numLayers directionality initialization dtype device)
+-- TODO: https://ryanglscott.github.io/2018/02/11/how-to-derive-generic-for-some-gadts/
+-- deriving instance Generic (LSTMWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
+
+instance Generic (LSTMWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device) where
+  type Rep (LSTMWithInit inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device) =
+    Rec0 (LSTM inputSize hiddenSize numLayers directionality dtype device)
+      :*: Rec0 (Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
+      :*: Rec0 (Tensor device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
+
+  from (LSTMWithConstInit {..}) = K1 lstmWithConstInit_lstm :*: K1 lstmWithConstInit_c :*: K1 lstmWithConstInit_h
+  to (K1 lstm :*: K1 c :*: K1 h) = LSTMWithConstInit lstm c h
+
+instance Generic (LSTMWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device) where
+  type Rep (LSTMWithInit inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device) =
+    Rec0 (LSTM inputSize hiddenSize numLayers directionality dtype device)
+      :*: Rec0 (Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
+      :*: Rec0 (Parameter device dtype '[numLayers * NumberOfDirections directionality, hiddenSize])
+
+  from (LSTMWithLearnedInit {..}) = K1 lstmWithLearnedInit_lstm :*: K1 lstmWithLearnedInit_c :*: K1 lstmWithLearnedInit_h
+  to (K1 lstm :*: K1 c :*: K1 h) = LSTMWithLearnedInit lstm c h
+
+instance
+  ( KnownNat hiddenSize
+  , KnownNat numLayers
+  , KnownNat (NumberOfDirections directionality)
+  , KnownDType dtype
+  , KnownDevice device
+  , A.Randomizable (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
+                   (LSTM     inputSize hiddenSize numLayers directionality dtype device)
+  ) => A.Randomizable (LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device)
+                      (LSTMWithInit     inputSize hiddenSize numLayers directionality 'ConstantInitialization dtype device) where
+  sample (LSTMWithZerosInitSpec lstmSpec) =
+    LSTMWithConstInit
+      <$> A.sample lstmSpec
+      <*> pure zeros
+      <*> pure zeros
+  sample s@(LSTMWithConstInitSpec lstmSpec c h) =
+    LSTMWithConstInit
+      <$> A.sample lstmSpec
+      <*> pure c
+      <*> pure h
+
+instance
+  ( KnownNat hiddenSize
+  , KnownNat numLayers
+  , KnownNat (NumberOfDirections directionality)
+  , KnownDType dtype
+  , KnownDevice device
+  , A.Randomizable (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
+                   (LSTM     inputSize hiddenSize numLayers directionality dtype device)
+  ) => A.Randomizable (LSTMWithInitSpec inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device)
+                      (LSTMWithInit     inputSize hiddenSize numLayers directionality 'LearnedInitialization dtype device) where
+  sample s@(LSTMWithLearnedInitSpec lstmSpec c h) =
+    LSTMWithLearnedInit
+      <$> A.sample lstmSpec
+      <*> (makeIndependent =<< pure c)
+      <*> (makeIndependent =<< pure h)
+
+lstm
+  :: forall
+       shapeOrder
+       batchSize
+       seqLen
+       directionality
+       initialization
+       numLayers
+       inputSize
+       outputSize
+       hiddenSize
+       inputShape
+       outputShape
+       hxShape
+       parameters
+       tensorParameters
+       dtype
+       device
+   . ( KnownNat (NumberOfDirections directionality)
+     , KnownNat numLayers
+     , KnownNat batchSize
+     , KnownNat hiddenSize
+     , KnownRNNShapeOrder shapeOrder
+     , KnownRNNDirectionality directionality
+     , outputSize ~ (hiddenSize * NumberOfDirections directionality)
+     , inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize
+     , outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize
+     , hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
+     , Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) parameters
+     , tensorParameters ~ LSTMR inputSize hiddenSize numLayers directionality dtype device
+     , HFoldrM IO TensorListFold [D.ATenTensor] tensorParameters
+     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorParameters)
+     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensorParameters) tensorParameters
+     , HMap ToDependent parameters tensorParameters
+     )
+  => Bool
+  -> LSTMWithInit
+       inputSize
+       hiddenSize
+       numLayers
+       directionality
+       initialization
+       dtype
+       device
+  -> Tensor device dtype inputShape
+  -> ( Tensor device dtype outputShape
+     , Tensor device dtype hxShape
+     , Tensor device dtype hxShape
+     )
+lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) input
+  = Torch.Typed.Native.lstm
+    @shapeOrder
+    @directionality
+    @numLayers
+    @seqLen
+    @batchSize
+    @inputSize
+    @outputSize
+    @hiddenSize
+    @inputShape
+    @outputShape
+    @hxShape
+    @tensorParameters
+    @dtype
+    @device
+    (hmap ToDependent . flattenParameters $ lstm)
+    dropoutProb
+    dropoutOn
     (cc', hc')
-    (params p)
-    d
-    doDropout
-  where
-    cc' =
-        reshape @'[numLayers * (NumberOfDirections dir), batchSize, hiddenDim]
-            $ expand
-                  @'[batchSize, numLayers * (NumberOfDirections dir), hiddenDim]
-                  False -- TODO: What does the bool do?
-                  cc
-    hc' =
-        reshape @'[numLayers * (NumberOfDirections dir), batchSize, hiddenDim]
-            $ expand
-                  @'[batchSize, numLayers * (NumberOfDirections dir), hiddenDim]
-                  False
-                  hc
-params
-    :: forall device dtype inputDim hiddenDim numLayers dir inputShape
-     . ParamsPerDirection device dtype inputDim hiddenDim numLayers inputShape dir
-    -> [D.Tensor]
-params (BidirectionalParams fwd rvs) =
-    ziplstmLayers [] (lstmParamsToTlist' [] fwd) (lstmParamsToTlist' [] rvs)
-params (UniDirectionalParams fwd) = lstmParamsToTlist' [] fwd
+    input
+ where
+  cc' =
+    reshape @hxShape
+      . expand
+          @'[batchSize, numLayers * NumberOfDirections directionality, hiddenSize]
+          False -- TODO: What does the bool do?
+      $ cc
+  hc' =
+    reshape @hxShape
+      . expand
+          @'[batchSize, numLayers * NumberOfDirections directionality, hiddenSize]
+          False -- TODO: What does the bool do?
+      $ hc
+lstm dropoutOn (LSTMWithLearnedInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) input
+  = Torch.Typed.Native.lstm
+    @shapeOrder
+    @directionality
+    @numLayers
+    @seqLen
+    @batchSize
+    @inputSize
+    @outputSize
+    @hiddenSize
+    @inputShape
+    @outputShape
+    @hxShape
+    @tensorParameters
+    @dtype
+    @device
+    (hmap ToDependent . flattenParameters $ lstm)
+    dropoutProb
+    dropoutOn
+    (cc', hc')
+    input
+ where
+  cc' =
+    reshape @hxShape
+      . expand
+          @'[batchSize, numLayers * NumberOfDirections directionality, hiddenSize]
+          False -- TODO: What does the bool do?
+      . toDependent
+      $ cc
+  hc' =
+    reshape @hxShape
+      . expand
+          @'[batchSize, numLayers * NumberOfDirections directionality, hiddenSize]
+          False -- TODO: What does the bool do?
+      . toDependent
+      $ hc
 
--- | Forward propagage the `LSTM` module and apply dropout on the outputs of each layer.
+lstmWithDropout, lstmWithoutDropout
+  :: forall
+       shapeOrder
+       batchSize
+       seqLen
+       directionality
+       initialization
+       numLayers
+       inputSize
+       outputSize
+       hiddenSize
+       inputShape
+       outputShape
+       hxShape
+       parameters
+       tensorParameters
+       dtype
+       device
+   . ( KnownNat (NumberOfDirections directionality)
+     , KnownNat numLayers
+     , KnownNat batchSize
+     , KnownNat hiddenSize
+     , KnownRNNShapeOrder shapeOrder
+     , KnownRNNDirectionality directionality
+     , outputSize ~ (hiddenSize * NumberOfDirections directionality)
+     , inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize
+     , outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize
+     , hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
+     , Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) parameters
+     , tensorParameters ~ LSTMR inputSize hiddenSize numLayers directionality dtype device
+     , HFoldrM IO TensorListFold [D.ATenTensor] tensorParameters
+     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorParameters)
+     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensorParameters) tensorParameters
+     , HMap ToDependent parameters tensorParameters
+     )
+  => LSTMWithInit
+       inputSize
+       hiddenSize
+       numLayers
+       directionality
+       initialization
+       dtype
+       device
+  -> Tensor device dtype inputShape
+  -> ( Tensor device dtype outputShape
+     , Tensor device dtype hxShape
+     , Tensor device dtype hxShape
+     )
+-- ^ Forward propagage the `LSTM` module and apply dropout on the outputs of each layer.
 --
--- >>> input :: Tensor '(D.CPU,0) 'D.Float '[5,16,10]            <- randn
--- >>> lstm  :: (LSTM 'Bidirectional D.Float 3 10 30 'SequenceFirst '(D.CPU,0) ) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec 'Bidirectional D.Float 3 10 30 'SequenceFirst '(D.CPU,0) )
--- >>> forwardNoDropout lstm input
--- (Tensor Float [5,16,60] ,Tensor Float [6,16,30] ,Tensor Float [6,16,30] )
-forwardWithDropout
-    :: forall dtype dir numLayers inputDim hiddenDim seqLen batchSize inputShape device
-     . ( KnownNat numLayers
-       , KnownNat inputDim
-       , KnownNat hiddenDim
-       , KnownNat seqLen
-       , KnownNat batchSize
-       , KnownNat (DimensionOfBatch inputShape)
-       , KnownNat (NumberOfDirections dir)
-       )
-    => LSTM dir dtype numLayers inputDim hiddenDim inputShape device
-    -> Tensor device dtype '[seqLen, batchSize, inputDim]
-    -> ( Tensor
-             device
-             dtype
-             '[seqLen, batchSize, hiddenDim * NumberOfDirections dir]
-       , Tensor
-             device
-             dtype
-             '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
-       , Tensor
-             device
-             dtype
-             '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
-       )
-forwardWithDropout = forward' @inputShape True
-
--- | Forward propagage the `LSTM` module (without applying dropout on the outputs of each layer).
+-- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
+-- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
+-- >>> model <- A.sample spec
+-- >>> :t lstmWithDropout @'BatchFirst model input
+-- lstmWithDropout @'BatchFirst model input
+--   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
+--       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
+--       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+-- >>> lstmWithDropout @'BatchFirst model input
+-- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
+lstmWithDropout =
+  Torch.Typed.NN.Recurrent.LSTM.lstm
+    @shapeOrder
+    @batchSize
+    @seqLen
+    @directionality
+    @initialization
+    @numLayers
+    @inputSize
+    @outputSize
+    @hiddenSize
+    @inputShape
+    @outputShape
+    @hxShape
+    @parameters
+    @tensorParameters
+    @dtype
+    @device
+    True
+-- ^ Forward propagage the `LSTM` module (without applying dropout on the outputs of each layer).
 --
--- >>> input ::Tensor '(D.CPU,0) 'D.Float '[5,16,10]             <- randn
--- >>> lstm :: (LSTM 'Unidirectional D.Float 1 10 30 'SequenceFirst '(D.CPU,0)) <- A.sample (LSTMSpecZerosInit (DropoutSpec 10) :: LSTMSpec 'Unidirectional D.Float 1 10 30 'SequenceFirst '(D.CPU,0))
--- >>> forwardNoDropout lstm input
--- (Tensor Float [5,16,30] ,Tensor Float [1,16,30] ,Tensor Float [1,16,30] )
-forwardNoDropout
-    :: forall dtype dir numLayers inputDim hiddenDim seqLen batchSize inputShape device
-     . ( KnownNat numLayers
-       , KnownNat inputDim
-       , KnownNat hiddenDim
-       , KnownNat seqLen
-       , KnownNat batchSize
-       , KnownNat (DimensionOfBatch inputShape)
-       , KnownNat (NumberOfDirections dir)
-       )
-    => LSTM dir dtype numLayers inputDim hiddenDim inputShape device
-    -> Tensor device dtype '[seqLen, batchSize, inputDim]
-    -> ( Tensor
-             device
-             dtype
-             '[seqLen, batchSize, hiddenDim * NumberOfDirections dir]
-       , Tensor
-             device
-             dtype
-             '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
-       , Tensor
-             device
-             dtype
-             '[numLayers * NumberOfDirections dir, batchSize, hiddenDim]
-       )
-forwardNoDropout = forward' @inputShape False
+-- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
+-- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
+-- >>> model <- A.sample spec
+-- >>> :t lstmWithoutDropout @'BatchFirst model input
+-- lstmWithoutDropout @'BatchFirst model input
+--   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
+--       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
+--       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+-- >>> lstmWithoutDropout @'BatchFirst model input
+-- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
+lstmWithoutDropout =
+  Torch.Typed.NN.Recurrent.LSTM.lstm
+    @shapeOrder
+    @batchSize
+    @seqLen
+    @directionality
+    @initialization
+    @numLayers
+    @inputSize
+    @outputSize
+    @hiddenSize
+    @inputShape
+    @outputShape
+    @hxShape
+    @parameters
+    @tensorParameters
+    @dtype
+    @device
+    False
