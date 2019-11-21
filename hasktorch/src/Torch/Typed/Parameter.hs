@@ -47,23 +47,27 @@ toDependent
   -> Tensor device dtype shape
 toDependent (Parameter t) = UnsafeMkTensor $ A.toDependent t
 
+data ToDependent = ToDependent
+
+instance Apply ToDependent (Parameter device dtype shape) (Tensor device dtype shape) where
+  apply _ = toDependent
+
 makeIndependent
   :: forall shape dtype device
    . Tensor device dtype shape
   -> IO (Parameter device dtype shape)
 makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
 
+data MakeIndependent = MakeIndependent
+
+instance Apply MakeIndependent (Tensor device dtype shape) (IO (Parameter device dtype shape)) where
+  apply _ = makeIndependent
+
 class Parameterized
   (f :: Type)
   (as :: [Type]) | f -> as where
-
   flattenParameters :: f -> HList as
-  -- default flattenParameters :: (Generic f, GParameterized (Rep f) as) => f -> HList as
-  -- flattenParameters f = gFlattenParameters (from f)
-
   replaceParameters :: f -> HList as -> f
-  -- default replaceParameters :: (Generic f, GParameterized (Rep f) as) => f -> HList as -> f
-  -- replaceParameters f as = to (gReplaceParameters (from f) as)
 
 instance
   ( Generic f
@@ -138,22 +142,22 @@ instance GParameterized U1 '[] where
 --   flattenParameters = id
 --   replaceParameters _ = id
 
--- instance A.Parameterized (Parameter device dtype shape) where
---   flattenParameters (Parameter x) = [x]
---   replaceOwnParameters _ = Parameter <$> A.nextParameter
+instance A.Parameterized (Parameter device dtype shape) where
+  flattenParameters (Parameter x) = [x]
+  replaceOwnParameters _ = Parameter <$> A.nextParameter
 
--- instance A.Parameterized (HList '[]) where
---   flattenParameters _ = []
---   replaceOwnParameters = return
+instance A.Parameterized (HList '[]) where
+  flattenParameters _ = []
+  replaceOwnParameters = return
 
--- instance (A.Parameterized x, A.Parameterized (HList xs))
---   => A.Parameterized (HList (x ': xs))
---  where
---   flattenParameters (x :. xs) = A.flattenParameters x <> A.flattenParameters xs
---   replaceOwnParameters (x :. xs) = do
---     x' <- A.replaceOwnParameters x
---     xs' <- A.replaceOwnParameters xs
---     return $ x' :. xs'
+instance (A.Parameterized x, A.Parameterized (HList xs))
+  => A.Parameterized (HList (x ': xs))
+ where
+  flattenParameters (x :. xs) = A.flattenParameters x <> A.flattenParameters xs
+  replaceOwnParameters (x :. xs) = do
+    x' <- A.replaceOwnParameters x
+    xs' <- A.replaceOwnParameters xs
+    return $ x' :. xs'
 
 instance A.Randomizable (HList '[]) (HList '[]) where
   sample = return
@@ -165,8 +169,3 @@ instance (A.Randomizable xSpec x, A.Randomizable (HList xsSpec) (HList xs))
     x <- A.sample xSpec
     xs <- A.sample xsSpec
     return $ x :. xs
-
-data ToDependent = ToDependent
-
-instance Apply ToDependent (Parameter device dtype shape) (Tensor device dtype shape) where
-  apply _ = toDependent

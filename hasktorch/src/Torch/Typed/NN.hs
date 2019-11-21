@@ -68,7 +68,7 @@ linear
 linear Linear {..} input =
   Torch.Typed.Native.linear' (toDependent linearWeight) (toDependent linearBias) input
 
--- instance A.Parameterized (Linear inputFeatures outputFeatures dtype device)
+instance A.Parameterized (Linear inputFeatures outputFeatures dtype device)
 
 instance
   ( KnownNat inputFeatures
@@ -104,44 +104,10 @@ dropout
 dropout Dropout {..} dropoutTrain =
   Torch.Typed.Native.dropout dropoutProb dropoutTrain
 
--- instance A.Parameterized Dropout
+instance A.Parameterized Dropout
 
 instance A.Randomizable DropoutSpec Dropout where
   sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
-
--- data ModelSpec inputFeatures outputFeatures dtype device
---  where
---   ModelSpec 
---     :: forall inputFeatures outputFeatures dtype device
---      . { modelLinearSpec  :: LinearSpec inputFeatures outputFeatures dtype device
---        , modelDropoutSpec :: DropoutSpec
---        }
---     -> ModelSpec inputFeatures outputFeatures dtype device
-
--- data Model (inputFeatures :: Nat) (outputFeatures :: Nat)
---            (dtype :: D.DType)
---            (device :: (D.DeviceType, Nat))
---  where
---   Model
---     :: forall inputFeatures outputFeatures dtype device
---      . { modelLinear  :: Linear inputFeatures outputFeatures dtype device
---        , modelDropout :: Dropout
---        }
---     -> Model inputFeatures outputFeatures dtype device
---  deriving (Show, Generic)
-
--- instance
---   ( RandDTypeIsValid device dtype
---   , KnownNat inputFeatures
---   , KnownNat outputFeatures
---   , KnownDType dtype
---   , KnownDevice device
---   ) => A.Randomizable (ModelSpec inputFeatures outputFeatures dtype device)
---                       (Model     inputFeatures outputFeatures dtype device) where
---   sample ModelSpec {..} =
---     Model
---       <$> A.sample modelLinearSpec
---       <*> A.sample modelDropoutSpec
 
 data EmbeddingSpec (paddingIdx :: Maybe Nat)
                    (numEmbeds :: Nat)
@@ -177,7 +143,7 @@ embed Embedding {..} input = embedding @paddingIdx
   (toDependent embedWeights)
   input
 
--- instance A.Parameterized (Embedding paddingIdx numEmbeds embedSize dtype device)
+instance A.Parameterized (Embedding paddingIdx numEmbeds embedSize dtype device)
 
 instance 
   ( KnownNat numEmbeds
@@ -244,7 +210,7 @@ conv1d Conv1d {..} input = Torch.Typed.Native.conv1d @stride @padding
   (toDependent conv1dBias)
   input
 
--- instance A.Parameterized (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
+instance A.Parameterized (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
 
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
@@ -292,7 +258,7 @@ conv2d Conv2d {..} input = Torch.Typed.Native.conv2d @stride @padding
   (toDependent conv2dBias)
   input
 
--- instance A.Parameterized (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+instance A.Parameterized (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
 
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
@@ -341,7 +307,7 @@ conv3d Conv3d {..} input = Torch.Typed.Native.conv3d @stride @padding
   (toDependent conv3dBias)
   input
 
--- instance A.Parameterized (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+instance A.Parameterized (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
 
 instance
   ( KnownNat inputChannelSize
@@ -389,13 +355,13 @@ layerNorm LayerNorm {..} = Torch.Typed.Native.layerNorm @normalizedShape
   (toDependent layerNormBias)
   layerNormEps
 
--- instance A.Parameterized (LayerNorm normalizedShape dtype device) where
---   flattenParameters LayerNorm {..} =
---     A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
---   replaceOwnParameters LayerNorm {..} = do
---     layerNormWeight <- Parameter <$> A.nextParameter
---     layerNormBias   <- Parameter <$> A.nextParameter
---     return $ LayerNorm { .. }
+instance A.Parameterized (LayerNorm normalizedShape dtype device) where
+  flattenParameters LayerNorm {..} =
+    A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
+  replaceOwnParameters LayerNorm {..} = do
+    layerNormWeight <- Parameter <$> A.nextParameter
+    layerNormBias   <- Parameter <$> A.nextParameter
+    return $ LayerNorm { .. }
 
 instance
   ( TensorOptions normalizedShape dtype device
