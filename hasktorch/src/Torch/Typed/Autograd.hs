@@ -12,7 +12,8 @@ import           Data.HList
 import           GHC.TypeLits
 import           System.IO.Unsafe
 
-import           ATen.Cast
+import qualified ATen.Cast as ATen
+import qualified ATen.Class as ATen
 import qualified Torch.Managed.Autograd
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
@@ -27,22 +28,13 @@ type family GradR (parameters :: [a]) (dtype :: D.DType) (device :: (D.DeviceTyp
 grad
   :: forall dtype device parameters gradients
    . ( gradients ~ GradR parameters dtype device
-     , HMap ToDependent parameters gradients
-     , HFoldrM IO TensorListFold [D.ATenTensor] gradients
-     , Apply
-         TensorListUnfold
-         [D.ATenTensor]
-         (HUnfoldMRes IO [D.ATenTensor] gradients)
-     , HUnfoldM
-         IO
-         TensorListUnfold
-         (HUnfoldMRes IO [D.ATenTensor] gradients)
-         gradients
+     , HMap' ToDependent parameters gradients
+     , ATen.Castable (HList gradients) [D.ATenTensor]
      )
   => Tensor device dtype '[]
   -> HList parameters
   -> HList gradients
-grad y inputs = unsafePerformIO $ cast2
+grad loss inputs = unsafePerformIO $ ATen.cast2
   Torch.Managed.Autograd.grad
-  y
-  (hmap ToDependent inputs :: HList gradients)
+  loss
+  (hmap' ToDependent inputs)

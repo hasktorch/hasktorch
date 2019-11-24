@@ -28,10 +28,10 @@ natValInt16 :: forall n . KnownNat n => I.Int16
 natValInt16 = fromIntegral $ natVal $ Proxy @n
 
 type family Fst (t :: (a, b)) :: a where
-  Fst '(x, _) = x
+  Torch.Typed.Aux.Fst '(x, _) = x
 
 type family Snd (t :: (a, b)) :: b where
-  Snd '(_, x) = x
+  Torch.Typed.Aux.Snd '(_, x) = x
 
 type family Fst3 (t :: (a, b, c)) :: a where
   Fst3 '(x, _, _) = x

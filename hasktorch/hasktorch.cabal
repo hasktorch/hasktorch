@@ -31,6 +31,8 @@ library
                     , Torch.Typed.NN.Recurrent.LSTM
                     , Torch.Typed.Tensor
                     , Torch.Typed.Parameter
+                    , Torch.Typed.Autograd
+                    , Torch.Typed.Optim
                     , Torch.NN
                     , Torch.Scalar
                     , Torch.Backend

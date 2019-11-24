@@ -69,6 +69,22 @@ instance (Monoid a, Monoid (HList as)) => Monoid (HList (a ': as)) where
 class Apply f a b where
   apply :: f -> a -> b
 
+-- | Stronger version of `Apply` that allows for better inference of the return type
+class Apply' f a b | f a -> b where
+  apply' :: f -> a -> b
+
+data Fst = Fst
+
+instance Apply' Fst (a, b) a
+  where
+    apply' _ (a, _) = a
+
+data Snd = Snd
+
+instance Apply' Snd (a, b) b
+  where
+    apply' _ (_, b) = b
+
 class HMap f xs ys where
   hmap :: f -> HList xs -> HList ys
 
@@ -78,6 +94,16 @@ instance HMap f '[] '[] where
 instance (Apply f x y, HMap f xs ys) => HMap f (x ': xs) (y ': ys) where
   hmap f (x :. xs) = apply f x :. hmap f xs
 
+-- | Alternative version of `HMap` with better type inference based on `Apply'`
+class HMap' f xs ys | f xs -> ys where
+  hmap' :: f -> HList xs -> HList ys
+
+instance HMap' f '[] '[] where
+  hmap' _ _ = HNil
+
+instance (Apply' f x y, HMap' f xs ys) => HMap' f (x ': xs) (y ': ys) where
+  hmap' f (x :. xs) = apply' f x :. hmap' f xs
+
 class HMapM m f xs ys where
   hmapM :: f -> HList xs -> m (HList ys)
 
@@ -85,7 +111,16 @@ instance (Monad m) => HMapM m f '[] '[] where
   hmapM _ _ = pure HNil
 
 instance (Monad m, Apply f x (m y), HMapM m f xs ys) => HMapM m f (x ': xs) (y ': ys) where
-  hmapM f (x :. xs) = (:.) <$> (apply f x) <*> (hmapM f xs)
+  hmapM f (x :. xs) = (:.) <$> apply f x <*> hmapM f xs
+
+class HMapM' m f xs ys | f xs -> ys where
+  hmapM' :: f -> HList xs -> m (HList ys)
+
+instance (Monad m) => HMapM' m f '[] '[] where
+  hmapM' _ _ = pure HNil
+
+instance (Monad m, Apply' f x (m y), HMapM' m f xs ys) => HMapM' m f (x ': xs) (y ': ys) where
+  hmapM' f (x :. xs) = (:.) <$> apply' f x <*> hmapM' f xs
 
 class Applicative f => HSequence f xs ys | xs -> ys, ys f -> xs where
   hsequence :: HList xs -> f (HList ys)
@@ -230,9 +265,9 @@ instance HAppendFD as bs cs => HAppendFD (a ': as) bs (a ': cs) where
   hAppendFD (a :. as) bs = a :. hAppendFD as bs
   hUnappendFD (a :. cs) = let (as, bs) = hUnappendFD cs in (a :. as, bs)
 
-class HZipList x y l | x y -> l, l -> x y where
-  hZipList   :: HList x -> HList y -> HList l
-  hUnzipList :: HList l -> (HList x, HList y)
+class HZipList xs ys zs | xs ys -> zs, zs -> xs ys where
+  hZipList   :: HList xs -> HList ys -> HList zs
+  hUnzipList :: HList zs -> (HList xs, HList ys)
 
 instance HZipList '[] '[] '[] where
   hZipList _ _ = HNil
@@ -242,6 +277,37 @@ instance ((x, y) ~ z, HZipList xs ys zs) => HZipList (x ': xs) (y ': ys) (z ': z
   hZipList (x :. xs) (y :. ys) = (x, y) :. hZipList xs ys
   hUnzipList (~(x, y) :. zs) =
     let ~(xs, ys) = hUnzipList zs in (x :. xs, y :. ys)
+
+class HZipWith f xs ys zs | f xs ys -> zs where
+  hZipWith :: f -> HList xs -> HList ys -> HList zs
+
+instance HZipWith f '[] '[] '[] where
+  hZipWith _ _ _ = HNil
+
+instance (Apply' f (x, y) z, HZipWith f xs ys zs) => HZipWith f (x ': xs) (y ': ys) (z ': zs) where
+  hZipWith f (x :. xs) (y :. ys) = apply' f (x, y) :. hZipWith f xs ys
+
+class HZipList3 as bs cs ds | as bs cs -> ds, ds -> as bs cs where
+  hZipList3   :: HList as -> HList bs -> HList cs -> HList ds
+  hUnzipList3 :: HList ds -> (HList as, HList bs, HList cs)
+
+instance HZipList3 '[] '[] '[] '[] where
+  hZipList3 _ _ _ = HNil
+  hUnzipList3 _ = (HNil, HNil, HNil)
+
+instance ((a, b, c) ~ d, HZipList3 as bs cs ds) => HZipList3 (a ': as) (b ': bs) (c ': cs) (d ': ds) where
+  hZipList3 (a :. as) (b :. bs) (c :. cs) = (a, b, c) :. hZipList3 as bs cs
+  hUnzipList3 (~(a, b, c) :. ds) =
+    let ~(as, bs, cs) = hUnzipList3 ds in (a :. as, b :. bs, c :. cs)
+
+class HZipWith3 f as bs cs ds | f as bs cs -> ds where
+  hZipWith3 :: f -> HList as -> HList bs -> HList cs -> HList ds
+
+instance HZipWith3 f '[] '[] '[] '[] where
+  hZipWith3 _ _ _ _ = HNil
+
+instance (Apply' f (a, b, c) d, HZipWith3 f as bs cs ds) => HZipWith3 f (a ': as) (b ': bs) (c ': cs) (d ': ds) where
+  hZipWith3 f (a :. as) (b :. bs) (c :. cs) = apply' f (a, b, c) :. hZipWith3 f as bs cs
 
 class HCartesianProduct xs ys zs | xs ys -> zs where
   hCartesianProduct :: HList xs -> HList ys -> HList zs

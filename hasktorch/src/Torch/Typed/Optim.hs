@@ -1,98 +1,226 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Torch.Typed.Optim where
 
-import           Control.Monad.State
 import           Prelude                 hiding ( sqrt )
+import           Control.Monad.State
+import           Data.HList
 
-import           Torch.Tensor
-import           Torch.Functions
-import           Torch.Autograd
-import           Torch.NN
+import qualified ATen.Cast                     as ATen
+import qualified ATen.Class                    as ATen
+import qualified Torch.Tensor                  as D
+import           Torch.Typed.Aux
+import           Torch.Typed.Tensor
+import           Torch.Typed.Autograd
+import           Torch.Typed.Parameter
+import           Torch.Typed.Native
 
-type LearningRate = Tensor
-newtype Gradients = Gradients [Tensor] deriving Show
+type LearningRate device dtype = Tensor device dtype '[]
+type Loss device dtype = Tensor device dtype '[]
 
-grad' t p = Gradients (grad t p)
+class Optimizer optim gradients tensors dtype device where
+  step :: LearningRate device dtype -> HList gradients -> HList tensors -> optim -> (HList tensors, optim)
 
-class Optimizer o where step :: LearningRate -> Gradients -> [Tensor] -> o -> ([Tensor], o)
+runStep
+  :: forall model optim parameters gradients dtype device
+   . ( Parameterized model parameters
+     , Optimizer optim gradients gradients dtype device
+     , gradients ~ GradR parameters dtype device
+     , ATen.Castable (HList gradients) [D.ATenTensor]
+     , HMap' ToDependent parameters gradients
+     , HMapM' IO MakeIndependent gradients parameters
+     )
+  => model
+  -> optim
+  -> Loss device dtype
+  -> LearningRate device dtype
+  -> IO (model, optim)
+runStep modelState optimState loss learningRate = do
+  let gradients               = grad loss parameters
+      tensors                 = hmap' ToDependent parameters
+      (tensors', optimState') = step learningRate gradients tensors optimState
+  parameters' <- hmapM' MakeIndependent tensors'
+  let modelState' = replaceParameters modelState parameters'
+  return (modelState', optimState')
+  where parameters = flattenParameters modelState
 
 --
--- Gradient Descent
+-- Gradient Descent (GD)
 --
 
-data GD = GD deriving Show
+-- | Dummy state representation for GD Optimizer
+data GD = GD
 
--- | Stateless gradient descent step
-gd :: LearningRate -> Gradients -> [Tensor] -> [Tensor]
-gd lr (Gradients gradients) parameters = zipWith step parameters gradients
-  where step p dp = p - (lr * dp)
+newtype GDStep device dtype = GDStep (LearningRate device dtype)
+
+instance
+  ( parameter ~ Tensor device dtype shape
+  , gradient ~ Tensor device dtype shape
+  , shape ~ MatMul '[] shape
+  , MatMulDTypeIsValid device dtype
+  ) => Apply' (GDStep device dtype) (parameter, gradient) parameter where
+  apply' (GDStep learningRate) (parameter, gradient) =
+    parameter - matmul learningRate gradient
 
 -- | Gradient descent step with a dummy state variable
-gd' :: LearningRate -> Gradients -> [Tensor] -> GD -> ([Tensor], GD)
-gd' lr gradients depParameters dummy = (gd lr gradients depParameters, dummy)
+gd
+  :: forall gradients tensors dtype device
+   . HZipWith (GDStep device dtype) tensors gradients tensors
+  => LearningRate device dtype
+  -> HList gradients
+  -> HList tensors
+  -> GD
+  -> (HList tensors, GD)
+gd learningRate gradients parameters gd =
+  let step = hZipWith (GDStep learningRate) parameters gradients in (step, gd)
 
-instance Optimizer GD where
-  step = gd'
+instance
+  ( HZipWith (GDStep device dtype) tensors gradients tensors
+  ) => Optimizer GD gradients tensors dtype device where
+  step = gd
 
 --
--- Gradient Descent with Momentum
+-- Gradient Descent with Momentum (GDM)
 --
 
-data GDM = GDM { beta :: Float, momentum :: [Tensor] } deriving Show
+-- | State representation for GDM Optimizer
+data GDM momenta = GDM
+  { beta :: Float -- moment forgetting factor
+  , momenta :: HList momenta -- momenta
+  }
 
--- gradient descent with momentum step
+data GDMStep device dtype = GDMStep Float (LearningRate device dtype)
+
+instance
+  ( parameter ~ Tensor device dtype shape
+  , gradient ~ Tensor device dtype shape
+  , momentum ~ Tensor device dtype shape
+  , shape ~ MatMul '[] shape
+  , MatMulDTypeIsValid device dtype
+  ) => Apply' (GDMStep device dtype) (parameter, gradient, momentum) (parameter, momentum) where
+  apply' (GDMStep beta learningRate) (parameter, gradient, momentum) =
+    let momentum'  = cmul beta momentum + gradient
+        parameter' = parameter - matmul learningRate momentum'
+    in  (parameter', momentum')
+
+-- | gradient descent with momentum step
 gdm
-  :: LearningRate -- ^ learning rate
-  -> Gradients -- ^ model parameter gradients
-  -> [Tensor] -- ^ model parameters
-  -> GDM -- ^ beta & momentum
-  -> ([Tensor], GDM) -- ^ returns new parameters + updated momentum
-gdm lr (Gradients gradients) parameters (GDM beta momentum) =
-  (fmap fst runStep, GDM beta (fmap snd runStep))
- where
-  step p dp z = let z' = mulScalar z beta + dp in (p - lr * z', z')
-  runStep = (zipWith3 step) parameters gradients momentum
+  :: forall gradients tensors momenta gdmStep dtype device
+   . ( HZipWith3 (GDMStep device dtype) tensors gradients momenta gdmStep
+     , HMap' Data.HList.Fst gdmStep tensors
+     , HMap' Data.HList.Snd gdmStep momenta
+     )
+  => LearningRate device dtype -- ^ learning rate
+  -> HList gradients -- ^ model parameter gradient tensors
+  -> HList tensors -- ^ model parameter tensors
+  -> GDM momenta -- ^ beta and model parameter momentum tensors
+  -> (HList tensors, GDM momenta) -- ^ returns updated parameters and momenta
+gdm learningRate gradients parameters (GDM beta momenta) =
+  let step = hZipWith3 (GDMStep beta learningRate) parameters gradients momenta
+  in  (hmap' Fst step, GDM beta (hmap' Snd step))
 
-instance Optimizer GDM where
+instance
+  ( HZipWith3 (GDMStep device dtype) tensors gradients momenta gdmStep
+  , HMap' Data.HList.Fst gdmStep tensors
+  , HMap' Data.HList.Snd gdmStep momenta
+  ) => Optimizer (GDM momenta) gradients tensors dtype device where
   step = gdm
 
 --
 -- Adam
+-- https://arxiv.org/pdf/1412.6980.pdf
 --
 
 -- | State representation for Adam Optimizer
-data Adam = Adam {
-    beta1 :: Float, -- 1st moment forgetting factor
-    beta2 :: Float, -- 2nd moment forgetting factor
-    m1 :: [Tensor], -- 1st moment
-    m2 :: [Tensor], -- 2nd moment
-    iter :: Int -- iteration
-    } deriving Show
+data Adam momenta = Adam
+  { beta1 :: Float -- 1st moment forgetting factor
+  , beta2 :: Float -- 2nd moment forgetting factor
+  , momenta1 :: HList momenta -- 1st momenta
+  , momenta2 :: HList momenta -- 2nd momenta
+  , iter :: Int -- iteration
+  }
+
+newtype AdamMomentum1Update = AdamMomentum1Update Float
+
+-- | decaying average of the first momenta
+instance
+  ( gradient ~ Tensor device dtype shape
+  , momentum1 ~ Tensor device dtype shape
+  ) => Apply' AdamMomentum1Update (momentum1, gradient) momentum1 where
+    apply' (AdamMomentum1Update beta1) (momentum1, gradient) =
+      cmul beta1 momentum1 + cmul (1 - beta1) gradient
+
+newtype AdamMomentum2Update = AdamMomentum2Update Float
+
+-- | decaying average of the second momenta
+instance
+  ( gradient ~ Tensor device dtype shape
+  , momentum2 ~ Tensor device dtype shape
+  , shape ~ MatMul shape shape
+  , MatMulDTypeIsValid device dtype
+  ) => Apply' AdamMomentum2Update (momentum2, gradient) momentum2 where
+    apply' (AdamMomentum2Update beta2) (momentum2, gradient) =
+      cmul beta2 momentum2 + cmul (1 - beta2) (matmul gradient gradient)
+
+data AdamBiasAdjustment = AdamBiasAdjustment Float Int
+
+-- | bias adjustment
+instance
+  ( momentum ~ Tensor device dtype shape
+  ) => Apply' AdamBiasAdjustment momentum momentum where
+    apply' (AdamBiasAdjustment beta iter) momentum =
+      cdiv (1 - beta ^ (iter + 1)) momentum
+
+data AdamParameterUpdate device dtype = AdamParameterUpdate Float (LearningRate device dtype)
+
+-- | parameter update
+instance
+  ( parameter ~ Tensor device dtype shape
+  , momentum ~ Tensor device dtype shape
+  , shape ~ MatMul '[] shape
+  , MatMulDTypeIsValid device dtype
+  , StandardFloatingPointDTypeValidation device dtype
+  ) => Apply' (AdamParameterUpdate device dtype) (parameter, momentum, momentum) parameter where
+  apply' (AdamParameterUpdate eps learningRate) (parameter, biasAdjustedMomentum1, biasAdjustedMomentum2) =
+    parameter - matmul learningRate biasAdjustedMomentum1 / cadd eps (sqrt biasAdjustedMomentum2)
 
 -- | Adam step
 adam
-  :: LearningRate  -- ^ learning rate
-  -> Gradients -- ^ model parameter gradients
-  -> [Tensor] -- ^ model parameters
-  -> Adam -- ^ adam parameters - beta1, beta2, moments, iteration
-  -> ([Tensor], Adam) -- ^ returns new parameters + updated adam parameters
-adam lr (Gradients gradients) parameters Adam {..} =
-  (parameters', Adam beta1 beta2 m1' m2' (iter + 1))
+  :: forall gradients tensors momenta adamStep dtype device
+   . ( HZipWith AdamMomentum1Update momenta gradients momenta
+     , HZipWith AdamMomentum2Update momenta gradients momenta
+     , HMap' AdamBiasAdjustment momenta momenta
+     , HZipWith3 (AdamParameterUpdate device dtype) tensors momenta momenta tensors
+     )
+  => LearningRate device dtype  -- ^ learning rate
+  -> HList gradients -- ^ model parameter gradient tensors
+  -> HList tensors -- ^ model parameter tensors
+  -> Adam momenta -- ^ adam parameters - beta1, beta2, momenta1, momenta2, iteration
+  -> (HList tensors, Adam momenta) -- ^ returns new parameters + updated adam parameters
+adam learningRate gradients parameters Adam {..} =
+  (parameters', Adam beta1 beta2 momenta1' momenta2' (iter + 1))
  where
-        -- decaying averages of 1st & 2nd moments
-  f1 m1 dp = mulScalar m1 beta1 + mulScalar dp (1 - beta1)
-  f2 m2 dp = mulScalar m2 beta2 + mulScalar (dp * dp) (1 - beta2)
-  m1' = zipWith f1 m1 gradients
-  m2' = zipWith f2 m2 gradients
-  -- bias adjustment
-  a beta m = divScalar m (1 - beta ^ (iter + 1))
-  a1  = fmap (a beta1) m1'
-  a2  = fmap (a beta2) m2'
-  -- parameter update
-  eps = 1e-37
-  update prevParam a1' a2' = prevParam - lr * a1' / (sqrt a2' + eps)
-  parameters' = zipWith3 update parameters a1 a2
+  momenta1' = hZipWith (AdamMomentum1Update beta1) momenta1 gradients
+  momenta2' = hZipWith (AdamMomentum2Update beta2) momenta2 gradients
+  biasAdjustedMomenta1 = hmap' (AdamBiasAdjustment beta1 iter) momenta1'
+  biasAdjustedMomenta2 = hmap' (AdamBiasAdjustment beta2 iter) momenta2'
+  parameters' = hZipWith3 (AdamParameterUpdate 1e-37 learningRate) parameters biasAdjustedMomenta1 biasAdjustedMomenta2
 
-instance Optimizer Adam where
+instance
+  ( HZipWith AdamMomentum1Update momenta gradients momenta
+  , HZipWith AdamMomentum2Update momenta gradients momenta
+  , HMap' AdamBiasAdjustment momenta momenta
+  , HZipWith3 (AdamParameterUpdate device dtype) tensors momenta momenta tensors
+  ) => Optimizer (Adam momenta) gradients tensors dtype device where
   step = adam
