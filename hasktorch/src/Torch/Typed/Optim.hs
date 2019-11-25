@@ -67,11 +67,11 @@ newtype GDStep device dtype = GDStep (LearningRate device dtype)
 instance
   ( parameter ~ Tensor device dtype shape
   , gradient ~ Tensor device dtype shape
-  , shape ~ MatMul '[] shape
-  , MatMulDTypeIsValid device dtype
+  , shape ~ Broadcast '[] shape
+  , BasicArithmeticDTypeIsValid device dtype
   ) => Apply' (GDStep device dtype) (parameter, gradient) parameter where
   apply' (GDStep learningRate) (parameter, gradient) =
-    parameter - matmul learningRate gradient
+    parameter - mul learningRate gradient
 
 -- | Gradient descent step with a dummy state variable
 gd
@@ -106,12 +106,12 @@ instance
   ( parameter ~ Tensor device dtype shape
   , gradient ~ Tensor device dtype shape
   , momentum ~ Tensor device dtype shape
-  , shape ~ MatMul '[] shape
-  , MatMulDTypeIsValid device dtype
+  , shape ~ Broadcast '[] shape
+  , BasicArithmeticDTypeIsValid device dtype
   ) => Apply' (GDMStep device dtype) (parameter, gradient, momentum) (parameter, momentum) where
   apply' (GDMStep beta learningRate) (parameter, gradient, momentum) =
     let momentum'  = cmul beta momentum + gradient
-        parameter' = parameter - matmul learningRate momentum'
+        parameter' = parameter - mul learningRate momentum'
     in  (parameter', momentum')
 
 -- | gradient descent with momentum step
@@ -167,11 +167,11 @@ newtype AdamMomentum2Update = AdamMomentum2Update Float
 instance
   ( gradient ~ Tensor device dtype shape
   , momentum2 ~ Tensor device dtype shape
-  , shape ~ MatMul shape shape
-  , MatMulDTypeIsValid device dtype
+  , shape ~ Broadcast shape shape
+  , BasicArithmeticDTypeIsValid device dtype
   ) => Apply' AdamMomentum2Update (momentum2, gradient) momentum2 where
     apply' (AdamMomentum2Update beta2) (momentum2, gradient) =
-      cmul beta2 momentum2 + cmul (1 - beta2) (matmul gradient gradient)
+      cmul beta2 momentum2 + cmul (1 - beta2) (mul gradient gradient)
 
 data AdamBiasAdjustment = AdamBiasAdjustment Float Int
 
@@ -188,12 +188,12 @@ data AdamParameterUpdate device dtype = AdamParameterUpdate Float (LearningRate 
 instance
   ( parameter ~ Tensor device dtype shape
   , momentum ~ Tensor device dtype shape
-  , shape ~ MatMul '[] shape
-  , MatMulDTypeIsValid device dtype
+  , shape ~ Broadcast '[] shape
+  , BasicArithmeticDTypeIsValid device dtype
   , StandardFloatingPointDTypeValidation device dtype
   ) => Apply' (AdamParameterUpdate device dtype) (parameter, momentum, momentum) parameter where
   apply' (AdamParameterUpdate eps learningRate) (parameter, biasAdjustedMomentum1, biasAdjustedMomentum2) =
-    parameter - matmul learningRate biasAdjustedMomentum1 / cadd eps (sqrt biasAdjustedMomentum2)
+    parameter - mul learningRate biasAdjustedMomentum1 / cadd eps (sqrt biasAdjustedMomentum2)
 
 -- | Adam step
 adam
