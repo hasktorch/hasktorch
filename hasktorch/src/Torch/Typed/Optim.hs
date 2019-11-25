@@ -33,13 +33,14 @@ class Optimizer optim gradients tensors dtype device where
   step :: LearningRate device dtype -> HList gradients -> HList tensors -> optim -> (HList tensors, optim)
 
 runStep
-  :: forall model optim parameters gradients dtype device
+  :: forall model optim parameters gradients tensors dtype device
    . ( Parameterized model parameters
-     , Optimizer optim gradients gradients dtype device
      , gradients ~ GradR parameters dtype device
+     , tensors ~ gradients
+     , HMap' ToDependent parameters tensors
      , ATen.Castable (HList gradients) [D.ATenTensor]
-     , HMap' ToDependent parameters gradients
-     , HMapM' IO MakeIndependent gradients parameters
+     , Optimizer optim gradients tensors dtype device
+     , HMapM' IO MakeIndependent tensors parameters
      )
   => model
   -> optim
@@ -47,13 +48,13 @@ runStep
   -> LearningRate device dtype
   -> IO (model, optim)
 runStep modelState optimState loss learningRate = do
-  let gradients               = grad loss parameters
+  let parameters              = flattenParameters modelState
+      gradients               = grad loss parameters
       tensors                 = hmap' ToDependent parameters
       (tensors', optimState') = step learningRate gradients tensors optimState
   parameters' <- hmapM' MakeIndependent tensors'
   let modelState' = replaceParameters modelState parameters'
   return (modelState', optimState')
-  where parameters = flattenParameters modelState
 
 --
 -- Gradient Descent (GD)

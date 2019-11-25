@@ -25,10 +25,12 @@ type family GradR (parameters :: [a]) (dtype :: D.DType) (device :: (D.DeviceTyp
   GradR '[] _ _ = '[]
   GradR (Parameter device dtype shape ': parameters) dtype device = Tensor device dtype shape ': GradR parameters dtype device
 
+-- | calculate gradients of a zero-dimensional tensor with respect to a list of parameters
 grad
-  :: forall dtype device parameters gradients
+  :: forall dtype device parameters gradients tensors
    . ( gradients ~ GradR parameters dtype device
-     , HMap' ToDependent parameters gradients
+     , tensors ~ gradients
+     , HMap' ToDependent parameters tensors
      , ATen.Castable (HList gradients) [D.ATenTensor]
      )
   => Tensor device dtype '[]
