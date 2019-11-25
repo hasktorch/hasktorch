@@ -50,7 +50,10 @@ do
 done
 
 if [ "$SKIP_DOWNLOAD" = 0 ] ; then
-  git submodule update --init --recursive
+  # git submodule update --init --recursive
+  # pytorch v1.3 has unlinked submodule of https://github.com/IvanKobzarev/fbjni.git
+  # For now, we can not update recursively.
+  git submodule update --init
 
   case "$(uname)" in
     "Darwin")

@@ -119,7 +119,7 @@ spec = forM_ [
 -- }
   it "TestSort" $ do
     b <- new' rand_lo [3,4] dtype
-    z <- tensor_sort_lb b 1 0 :: IO (ForeignPtr (Tensor,Tensor))
+    z <- tensor_sort_lb b 1 0 :: IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
     z_sorted <- get0 z
     z00 <- at2 z_sorted 0 0 >>= tensor_item_float
     z01 <- at2 z_sorted 0 1 >>= tensor_item_float
