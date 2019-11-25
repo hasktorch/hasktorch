@@ -27,48 +27,55 @@ type Layout = Int8
 type MemoryFormat = Int8
 type QScheme = Int8
 
+-- std::vector<a>
+data StdVector a
+
+-- std::array<a>
+data StdArray a
+
+-- std::tuple<a>
+data StdTuple a
+
+-- at::Tensor
 data Tensor
+
+-- std::vector<at::Tensor>
+type TensorList = StdVector Tensor
+
 data Scalar
 data TensorOptions
-data TensorList
+
 data IntArrayRef
-data IntArray
-data TensorAVector
+-- std::vector<int64>
+type IntArray = StdVector Int64
+
 data Storage
-data StdArray a b
+
 data StdString
 data Generator
 data Device
 data Context
 data ConstQuantizerPtr
+
 data Dimname
-data DimnameList
+type DimnameList = StdVector Dimname
+
 data Symbol
 
 typeTable = Map.fromList [
-        (C.TypeName "at::Scalar", [t|Scalar|])
+        (C.TypeName "std::array", [t|StdArray|])
+      , (C.TypeName "std::vector", [t|StdVector|])
+      , (C.TypeName "std::tuple", [t|StdTuple|])
+      , (C.TypeName "at::Scalar", [t|Scalar|])
       , (C.TypeName "at::Tensor", [t|Tensor|])
       , (C.TypeName "at::TensorOptions", [t|TensorOptions|])
-      , (C.TypeName "std::vector<at::Tensor>", [t|TensorList|])
       , (C.TypeName "at::IntArrayRef", [t|IntArrayRef|])
-      , (C.TypeName "std::vector<int64_t>", [t|IntArray|])
       , (C.TypeName "at::ScalarType", [t|ScalarType|])
       , (C.TypeName "at::DeviceType", [t|DeviceType|])
       , (C.TypeName "at::Storage", [t|Storage|])
       , (C.TypeName "at::Device", [t|Device|])
       , (C.TypeName "at::Generator", [t|Generator|])
       , (C.TypeName "std::string", [t|StdString|])
-      , (C.TypeName "std::array<bool,2>", [t|StdArray CBool 2|])
-      , (C.TypeName "std::array<bool,3>", [t|StdArray CBool 3|])
-      , (C.TypeName "std::array<bool,4>", [t|StdArray CBool 4|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor>", [t|(Tensor,Tensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>", [t|(Tensor,Tensor,Tensor,Tensor,Tensor)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>", [t|(Tensor,Tensor,Tensor,TensorList)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,double,int64_t>", [t|(Tensor,Tensor,CDouble,Int64)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,float,int>", [t|(Tensor,Tensor,CFloat,CInt)|])
-      , (C.TypeName "std::tuple<at::Tensor,at::Tensor,at::Tensor,int64_t>", [t|(Tensor,Tensor,Tensor,Int64)|])
       , (C.TypeName "at::Backend", [t|Backend|])
       , (C.TypeName "at::Layout", [t|Layout|])
       , (C.TypeName "at::MemoryFormat", [t|MemoryFormat|])
@@ -76,6 +83,5 @@ typeTable = Map.fromList [
       , (C.TypeName "at::ConstQuantizerPtr", [t|ConstQuantizerPtr|])
       , (C.TypeName "at::QScheme", [t|QScheme|])
       , (C.TypeName "at::Dimname", [t|Dimname|])
-      , (C.TypeName "std::vector<at::Dimname>", [t|DimnameList|])
       , (C.TypeName "at::Symbol", [t|Symbol|])
     ]
