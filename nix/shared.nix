@@ -91,10 +91,18 @@ let
                         );
                     inline-c-cpp =
                       # failOnAllWarnings
-                        (haskellPackagesNew.callCabal2nix
-                          "inline-c-cpp"
-                          ../inline-c/inline-c-cpp
-                          { }
+                        (overrideCabal
+                          (haskellPackagesNew.callCabal2nix
+                            "inline-c-cpp"
+                            ../inline-c/inline-c-cpp
+                            { }
+                          )
+                          (old: {
+                              preConfigure = (old.preConfigure or "") + optionalString isDarwin ''
+                                sed -i -e 's/-optc-std=c++11//g' inline-c-cpp.cabal;
+                              '';
+                            }
+                          )
                         );
                   };
 
