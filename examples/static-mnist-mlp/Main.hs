@@ -173,7 +173,7 @@ train = do
                         (randomIndexes (I.length testData))
                         testData
               let metric =
-                    (i, Monitoring.Metric trainingLoss testLoss testError)
+                    (i, Monitoring.Metric (Monitoring.asFLoat trainingLoss) (Monitoring.asFLoat testLoss) (Monitoring.asFLoat testError))
                   metrics' = metric : metrics
               Monitoring.printLosses metric
               Monitoring.plotLosses "loss.html" metrics'

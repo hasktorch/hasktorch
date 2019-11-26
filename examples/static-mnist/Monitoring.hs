@@ -19,23 +19,22 @@ import qualified Torch.Tensor                  as D
 import           Torch.Typed.Tensor
 
 type Iterate = Int
-type Metrics device = [(Iterate, Metric device)]
+type Metrics = [(Iterate, Metric)]
 
-data Metric (device :: (D.DeviceType, Nat))
+data Metric
  where
   Metric
-    :: forall device
-     . { trainingLoss :: Tensor device 'D.Float '[]
-       , testLoss     :: Tensor device 'D.Float '[]
-       , testError    :: Tensor device 'D.Float '[]
+    :: { trainingLoss :: Float
+       , testLoss     :: Float
+       , testError    :: Float
        }
-    -> Metric device
+    -> Metric
  deriving Show
 
 asFloat :: forall device . Tensor device 'D.Float '[] -> Float
 asFloat t = D.asValue . toDynamic . toCPU $ t
 
-plotLosses :: forall device . String -> Metrics device -> IO ()
+plotLosses :: String -> Metrics -> IO ()
 plotLosses file metrics =
   toHtmlFile file $
   let enc = encoding
@@ -79,7 +78,7 @@ plotLosses file metrics =
                           ]
                 ] 
 
-printLosses :: forall device . (Iterate, Metric device) -> IO ()
+printLosses :: (Iterate, Metric) -> IO ()
 printLosses (i, Metric {..}) =
   let asFloat t = D.asValue . toDynamic . toCPU $ t :: Float
   in  putStrLn
