@@ -3,5 +3,3 @@ packages:
     libtorch-ffi/*.cabal
     hasktorch/*.cabal
     examples/*.cabal
-    inline-c/inline-c/*.cabal
-    inline-c/inline-c-cpp/*.cabal
