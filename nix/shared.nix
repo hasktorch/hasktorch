@@ -94,6 +94,7 @@ let
                         );
                     inline-c-cpp =
                       # failOnAllWarnings
+                      dontCheck
                         (overrideCabal
                           (haskellPackagesNew.callHackageDirect
                             {
