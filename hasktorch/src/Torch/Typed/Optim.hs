@@ -25,9 +25,19 @@ import           Torch.Typed.Tensor
 import           Torch.Typed.Autograd
 import           Torch.Typed.Parameter
 import           Torch.Typed.Native
+import           Torch.Typed.Factories
 
 type LearningRate device dtype = Tensor device dtype '[]
 type Loss device dtype = Tensor device dtype '[]
+
+data ZerosLike = ZerosLike
+
+instance
+  ( parameter ~ Parameter device dtype shape
+  , momentum ~ Tensor device dtype shape
+  , TensorOptions shape dtype device
+  ) => Apply' ZerosLike parameter momentum where
+  apply' _ _ = zeros
 
 class Optimizer optim gradients tensors dtype device where
   step :: LearningRate device dtype -> HList gradients -> HList tensors -> optim -> (HList tensors, optim)
@@ -62,6 +72,9 @@ runStep modelState optimState loss learningRate = do
 
 -- | Dummy state representation for GD Optimizer
 data GD = GD
+
+mkGD :: GD
+mkGD = GD
 
 newtype GDStep device dtype = GDStep (LearningRate device dtype)
 
@@ -100,6 +113,14 @@ data GDM momenta = GDM
   { beta :: Float -- moment forgetting factor
   , momenta :: HList momenta -- momenta
   }
+
+mkGDM
+  :: forall parameters momenta
+   . (HMap' ZerosLike parameters momenta)
+  => Float
+  -> HList parameters
+  -> GDM momenta
+mkGDM beta parameters = GDM beta (hmap' ZerosLike parameters)
 
 data GDMStep device dtype = GDMStep Float (LearningRate device dtype)
 
@@ -145,12 +166,26 @@ instance
 
 -- | State representation for Adam Optimizer
 data Adam momenta = Adam
-  { beta1 :: Float -- 1st moment forgetting factor
+  { iter :: Int -- iteration
+  , beta1 :: Float -- 1st moment forgetting factor
   , beta2 :: Float -- 2nd moment forgetting factor
   , momenta1 :: HList momenta -- 1st momenta
   , momenta2 :: HList momenta -- 2nd momenta
-  , iter :: Int -- iteration
   }
+
+mkAdam
+  :: forall parameters momenta
+   . (HMap' ZerosLike parameters momenta)
+  => Int
+  -> Float
+  -> Float
+  -> HList parameters
+  -> Adam momenta
+mkAdam iter beta1 beta2 parameters = Adam iter
+                                          beta1
+                                          beta2
+                                          (hmap' ZerosLike parameters)
+                                          (hmap' ZerosLike parameters)
 
 newtype AdamMomentum1Update = AdamMomentum1Update Float
 
@@ -174,13 +209,13 @@ instance
     apply' (AdamMomentum2Update beta2) (momentum2, gradient) =
       cmul beta2 momentum2 + cmul (1 - beta2) (mul gradient gradient)
 
-data AdamBiasAdjustment = AdamBiasAdjustment Float Int
+data AdamBiasAdjustment = AdamBiasAdjustment Int Float
 
 -- | bias adjustment
 instance
   ( momentum ~ Tensor device dtype shape
   ) => Apply' AdamBiasAdjustment momentum momentum where
-    apply' (AdamBiasAdjustment beta iter) momentum =
+    apply' (AdamBiasAdjustment iter beta) momentum =
       cdiv (1 - beta ^ (iter + 1)) momentum
 
 data AdamParameterUpdate device dtype = AdamParameterUpdate Float (LearningRate device dtype)
@@ -210,12 +245,12 @@ adam
   -> Adam momenta -- ^ adam parameters - beta1, beta2, momenta1, momenta2, iteration
   -> (HList tensors, Adam momenta) -- ^ returns new parameters + updated adam parameters
 adam learningRate gradients parameters Adam {..} =
-  (parameters', Adam beta1 beta2 momenta1' momenta2' (iter + 1))
+  (parameters', Adam (iter + 1) beta1 beta2 momenta1' momenta2')
  where
   momenta1' = hZipWith (AdamMomentum1Update beta1) momenta1 gradients
   momenta2' = hZipWith (AdamMomentum2Update beta2) momenta2 gradients
-  biasAdjustedMomenta1 = hmap' (AdamBiasAdjustment beta1 iter) momenta1'
-  biasAdjustedMomenta2 = hmap' (AdamBiasAdjustment beta2 iter) momenta2'
+  biasAdjustedMomenta1 = hmap' (AdamBiasAdjustment iter beta1) momenta1'
+  biasAdjustedMomenta2 = hmap' (AdamBiasAdjustment iter beta2) momenta2'
   parameters' = hZipWith3 (AdamParameterUpdate 1e-37 learningRate) parameters biasAdjustedMomenta1 biasAdjustedMomenta2
 
 instance
