@@ -139,7 +139,7 @@ train
    . _
   => IO ()
 train = do
-  let numEpochs = 14
+  let numEpochs = 1000
       dropoutProb            = 0.5
   (trainingData, testData) <- I.initMnist
   ATen.manual_seed_L 123

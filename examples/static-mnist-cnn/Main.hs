@@ -117,15 +117,15 @@ type TestBatchSize = 8192
 
 train :: forall (device :: (D.DeviceType, Nat)) . _ => IO ()
 train = do
-  let numEpochs = 14
+  let numEpochs = 1000
   (trainingData, testData) <- I.initMnist
   ATen.manual_seed_L 123
   init            <- A.sample (CNNSpec @ 'D.Float @device)
   foldLoop_ init numEpochs $ \state' epoch -> do
     let numIters = I.length trainingData `div` natValI @BatchSize
     nextState <- foldLoop state' numIters $ \state i -> do
-      let from = i * natValI @BatchSize
-          to = ((i+1) * natValI @BatchSize) - 1
+      let from = (i-1) * natValI @BatchSize
+          to = (i * natValI @BatchSize) - 1
           indexes = [from .. to]
       (trainingLoss,_) <- computeLossAndErrorCount @BatchSize state
                                                               indexes
@@ -141,8 +141,8 @@ train = do
     (testLoss, testError) <- do
       let numIters = I.length testData `div` natValI @BatchSize
       foldLoop (0,0) numIters $ \(org_loss,org_err) i -> do
-        let from = i * natValI @BatchSize
-            to = ((i+1) * natValI @BatchSize) - 1
+        let from = (i-1) * natValI @BatchSize
+            to = (i * natValI @BatchSize) - 1
             indexes = [from .. to]
         (loss,err) <- computeLossAndErrorCount @BatchSize nextState
                                                           indexes
