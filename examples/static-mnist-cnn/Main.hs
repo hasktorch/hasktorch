@@ -51,8 +51,8 @@ import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.Functions               as D
 import qualified Torch.TensorFactories         as D
+import qualified Torch.Serialize               as D
 import qualified Image                         as I
-import qualified Monitoring
 import           Common
 
 type NoStrides = '(1, 1)
@@ -117,65 +117,60 @@ type TestBatchSize = 8192
 
 train :: forall (device :: (D.DeviceType, Nat)) . _ => IO ()
 train = do
-  let (numIters, printEvery) = (1000000, 250)
+  let numEpochs = 14
   (trainingData, testData) <- I.initMnist
   ATen.manual_seed_L 123
   init            <- A.sample (CNNSpec @ 'D.Float @device)
-  (trained, _, _) <-
-    foldLoop (init, randomIndexes (I.length trainingData), []) numIters
-      $ \(state, idxs, metrics) i -> do
-          let (indexes, nextIndexes) =
-                (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
-          (trainingLoss, _) <- computeLossAndErrorRate @BatchSize state
-                                                                  True
-                                                                  indexes
-                                                                  trainingData
-          let flat_parameters = A.flattenParameters state
-          let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
+  foldLoop_ init numEpochs $ \state' epoch -> do
+    let numIters = I.length trainingData `div` natValI @BatchSize
+    nextState <- foldLoop state' numIters $ \state i -> do
+      let from = i * natValI @BatchSize
+          to = ((i+1) * natValI @BatchSize) - 1
+          indexes = [from .. to]
+      (trainingLoss,_) <- computeLossAndErrorCount @BatchSize state
+                                                              indexes
+                                                              trainingData
 
-          metrics' <- if (i `mod` printEvery == 0)
-            then do
-              (testLoss, testError) <-
-                withTestSize (I.length testData)
-                  $ \(Proxy :: Proxy testSize) ->
-                      computeLossAndErrorRate @(Min TestBatchSize testSize)
-                        state
-                        False
-                        (randomIndexes (I.length testData))
-                        testData
-              let metric =
-                    (i, Monitoring.Metric (Monitoring.asFLoat trainingLoss) (Monitoring.asFLoat testLoss) (Monitoring.asFLoat testError))
-                  metrics' = metric : metrics
-              Monitoring.printLosses metric
-              Monitoring.plotLosses "loss.html" metrics'
-              return metrics'
-            else return metrics
+      let flat_parameters = A.flattenParameters state
+          gradients       = A.grad (toDynamic trainingLoss) flat_parameters
+      new_flat_parameters <- mapM A.makeIndependent
+        $ A.sgd 1e-01 flat_parameters gradients
+      return
+        $ A.replaceParameters state new_flat_parameters
 
-          new_flat_parameters <- mapM A.makeIndependent
-            $ A.sgd 1e-01 flat_parameters gradients
-          return
-            ( A.replaceParameters state new_flat_parameters
-            , nextIndexes
-            , metrics'
-            )
-  print trained
+    (testLoss, testError) <- do
+      let numIters = I.length testData `div` natValI @BatchSize
+      foldLoop (0,0) numIters $ \(org_loss,org_err) i -> do
+        let from = i * natValI @BatchSize
+            to = ((i+1) * natValI @BatchSize) - 1
+            indexes = [from .. to]
+        (loss,err) <- computeLossAndErrorCount @BatchSize nextState
+                                                          indexes
+                                                          testData
+        return (org_loss + asFloat loss,org_err + asFloat err)
+    putStrLn
+      $  "Epoch: "
+      <> show epoch
+      <> ". Test loss: "
+      <> show (testLoss / realToFrac (I.length testData))
+      <> ". Test error-rate: "
+      <> show (testError / realToFrac (I.length testData))
+    
+    D.save (map A.toDependent $ A.flattenParameters nextState) "static-mnist-cnn.pt"
+    return nextState
  where
-  computeLossAndErrorRate
+  computeLossAndErrorCount
     :: forall n
      . (KnownNat n)
     => CNN 'D.Float device
-    -> Bool
     -> [Int]
     -> I.MnistData
-    -> IO
-         ( Tensor device 'D.Float '[]
-         , Tensor device 'D.Float '[]
-         )
-  computeLossAndErrorRate state train indexes data' = do
+    -> IO ( Tensor device 'D.Float '[], Tensor device 'D.Float '[] )
+  computeLossAndErrorCount state indexes data' = do
     let input      = toDevice @device $ I.getImages @n data' indexes
         target     = toDevice @device $ I.getLabels @n data' indexes
         prediction = cnn state input
-    return (crossEntropyLoss prediction target, errorRate prediction target)
+    return (crossEntropyLoss prediction target,errorCount prediction target)
 
 main :: IO ()
 main = do

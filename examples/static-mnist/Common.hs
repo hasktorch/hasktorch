@@ -12,6 +12,7 @@ module Common where
 
 import           Control.Monad                  ( foldM
                                                 , when
+                                                , void
                                                 )
 import           Data.Proxy
 import           Foreign.ForeignPtr
@@ -44,14 +45,9 @@ foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
 foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
-randomIndexes :: Int -> [Int]
-randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
-
-toBackend
-  :: forall t . (ATen.Castable t (ForeignPtr ATen.Tensor)) => String -> t -> t
-toBackend backend t = unsafePerformIO $ case backend of
-  "CUDA" -> ATen.cast1 ATen.tensor_cuda t
-  _      -> ATen.cast1 ATen.tensor_cpu t
+foldLoop_
+  :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m ()
+foldLoop_ x count block = void $ foldLoop x count block
 
 crossEntropyLoss
   :: forall batchSize seqLen dtype device
@@ -71,7 +67,7 @@ crossEntropyLoss prediction target =
     (logSoftmax @1 prediction)
     target
 
-errorRate
+errorCount
   :: forall batchSize outputFeatures device
    . ( KnownNat batchSize
      , KnownNat outputFeatures
@@ -81,13 +77,9 @@ errorRate
   => Tensor device 'D.Float '[batchSize, outputFeatures]
   -> Tensor device 'D.Int64 '[batchSize]
   -> Tensor device 'D.Float '[]
-errorRate prediction target =
-  let errorCount =
-          toDType @D.Float . sumAll . ne (argmax @1 @DropDim prediction) $ target
-  in  cmul ((1.0 /) . fromIntegral $ natValI @batchSize :: Double) errorCount
+errorCount prediction target =
+  toDType @D.Float . sumAll . ne (argmax @1 @DropDim prediction) $ target
 
-withTestSize
-  :: Int -> (forall testSize . KnownNat testSize => Proxy testSize -> a) -> a
-withTestSize nat fn = case someNatVal (fromIntegral nat) of
-  Just (SomeNat (Proxy :: Proxy testSize)) -> fn (Proxy @testSize)
-  _ -> error "Cannot get the size of the test dataset"
+asFloat :: forall device . Tensor device 'D.Float '[] -> Float
+asFloat t = D.asValue . toDynamic . toCPU $ t
+
