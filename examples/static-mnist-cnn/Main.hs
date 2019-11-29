@@ -124,11 +124,8 @@ train = do
   foldLoop_ init numEpochs $ \state' epoch -> do
     let numIters = I.length trainingData `div` natValI @BatchSize
     nextState <- foldLoop state' numIters $ \state i -> do
-      let from = (i-1) * natValI @BatchSize
-          to = (i * natValI @BatchSize) - 1
-          indexes = [from .. to]
       (trainingLoss,_) <- computeLossAndErrorCount @BatchSize state
-                                                              indexes
+                                                              i
                                                               trainingData
 
       let flat_parameters = A.flattenParameters state
@@ -141,11 +138,8 @@ train = do
     (testLoss, testError) <- do
       let numIters = I.length testData `div` natValI @BatchSize
       foldLoop (0,0) numIters $ \(org_loss,org_err) i -> do
-        let from = (i-1) * natValI @BatchSize
-            to = (i * natValI @BatchSize) - 1
-            indexes = [from .. to]
         (loss,err) <- computeLossAndErrorCount @BatchSize nextState
-                                                          indexes
+                                                          i
                                                           testData
         return (org_loss + toFloat loss,org_err + toFloat err)
     putStrLn
@@ -163,11 +157,14 @@ train = do
     :: forall n
      . (KnownNat n)
     => CNN 'D.Float device
-    -> [Int]
+    -> Int
     -> I.MnistData
     -> IO ( Tensor device 'D.Float '[], Tensor device 'D.Float '[] )
-  computeLossAndErrorCount state indexes data' = do
-    let input      = toDevice @device $ I.getImages @n data' indexes
+  computeLossAndErrorCount state index_of_batch data' = do
+    let from = (index_of_batch-1) * natValI @BatchSize
+        to = (index_of_batch * natValI @BatchSize) - 1
+        indexes = [from .. to]
+        input      = toDevice @device $ I.getImages @n data' indexes
         target     = toDevice @device $ I.getLabels @n data' indexes
         prediction = cnn state input
     return (crossEntropyLoss prediction target,errorCount prediction target)
