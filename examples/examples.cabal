@@ -41,13 +41,12 @@ executable static-xor-mlp
 library static-mnist
   import:              config
   hs-source-dirs:      static-mnist
+  ghc-options:         -fno-warn-partial-type-signatures
   exposed-modules:     Image
-                     , Monitoring
                      , Common
   build-depends:       bytestring >= 0.10.8
                      , zlib >= 0.6
                      , libtorch-ffi
-                     , hvega
                      , random >= 1.1
 
 test-suite spec

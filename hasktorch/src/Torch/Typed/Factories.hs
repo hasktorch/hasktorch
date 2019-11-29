@@ -93,6 +93,21 @@ randn = UnsafeMkTensor <$> D.randn
   $ D.defaultOpts
   )
 
+randint
+  :: forall shape dtype device
+   . ( TensorOptions shape dtype device
+     , RandDTypeIsValid device dtype
+     )
+  => Int
+  -> Int
+  -> IO (Tensor device dtype shape)
+randint low high = UnsafeMkTensor <$> (D.randint low high)
+  (optionsRuntimeShape @shape @dtype @device)
+  ( D.withDevice (optionsRuntimeDevice @shape @dtype @device)
+  . D.withDType (optionsRuntimeDType @shape @dtype @device)
+  $ D.defaultOpts
+  )
+
 -- | linspace
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [Float]) $ linspace @7 @'( 'D.CPU, 0) 0 3
 -- (Float,([7],[0.0,0.5,1.0,1.5,2.0,2.5,3.0]))

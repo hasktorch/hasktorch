@@ -52,7 +52,6 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.Functions               as D
 import qualified Torch.TensorFactories         as D
 import qualified Image                         as I
-import qualified Monitoring
 import           Common
 
 type NoStrides = '(1, 1)
@@ -113,74 +112,20 @@ instance ( KnownDType dtype
       <*> A.sample (LinearSpec @500      @10)
 
 type BatchSize = 512
-type TestBatchSize = 8192
 
-train :: forall (device :: (D.DeviceType, Nat)) . _ => IO ()
-train = do
-  let (numIters, printEvery) = (1000000, 250)
-  (trainingData, testData) <- I.initMnist
+train'
+  :: forall (device :: (D.DeviceType, Nat))
+   . _
+  => IO ()
+train' = do
   ATen.manual_seed_L 123
-  init            <- A.sample (CNNSpec @ 'D.Float @device)
-  (trained, _, _) <-
-    foldLoop (init, randomIndexes (I.length trainingData), []) numIters
-      $ \(state, idxs, metrics) i -> do
-          let (indexes, nextIndexes) =
-                (take (natValI @I.DataDim) idxs, drop (natValI @I.DataDim) idxs)
-          (trainingLoss, _) <- computeLossAndErrorRate @BatchSize state
-                                                                  True
-                                                                  indexes
-                                                                  trainingData
-          let flat_parameters = A.flattenParameters state
-          let gradients       = A.grad (toDynamic trainingLoss) flat_parameters
-
-          metrics' <- if (i `mod` printEvery == 0)
-            then do
-              (testLoss, testError) <-
-                withTestSize (I.length testData)
-                  $ \(Proxy :: Proxy testSize) ->
-                      computeLossAndErrorRate @(Min TestBatchSize testSize)
-                        state
-                        False
-                        (randomIndexes (I.length testData))
-                        testData
-              let metric =
-                    (i, Monitoring.Metric trainingLoss testLoss testError)
-                  metrics' = metric : metrics
-              Monitoring.printLosses metric
-              Monitoring.plotLosses "loss.html" metrics'
-              return metrics'
-            else return metrics
-
-          new_flat_parameters <- mapM A.makeIndependent
-            $ A.sgd 1e-01 flat_parameters gradients
-          return
-            ( A.replaceParameters state new_flat_parameters
-            , nextIndexes
-            , metrics'
-            )
-  print trained
- where
-  computeLossAndErrorRate
-    :: forall n
-     . (KnownNat n)
-    => CNN 'D.Float device
-    -> Bool
-    -> [Int]
-    -> I.MnistData
-    -> IO
-         ( Tensor device 'D.Float '[]
-         , Tensor device 'D.Float '[]
-         )
-  computeLossAndErrorRate state train indexes data' = do
-    let input      = toDevice @device $ I.getImages @n data' indexes
-        target     = toDevice @device $ I.getLabels @n data' indexes
-        prediction = cnn state input
-    return (crossEntropyLoss prediction target, errorRate prediction target)
+  init <- A.sample (CNNSpec @ 'D.Float @device)
+  train @BatchSize init (\state _ input -> return $ cnn state input) "static-mnist-cnn.pt"
 
 main :: IO ()
 main = do
   deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
   case deviceStr of
-    Right "cpu"    -> train @'( 'D.CPU, 0)
-    Right "cuda:0" -> train @'( 'D.CUDA, 0)
+    Right "cpu"    -> train' @'( 'D.CPU, 0)
+    Right "cuda:0" -> train' @'( 'D.CUDA, 0)
     _              -> error "Don't know what to do or how."
