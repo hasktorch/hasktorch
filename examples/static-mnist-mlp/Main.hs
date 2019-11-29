@@ -130,18 +130,15 @@ instance ( KnownNat inputFeatures
       <*> A.sample (DropoutSpec mlpDropoutProbSpec)
 
 type BatchSize = 512
-type TestBatchSize = 8192
 type HiddenFeatures0 = 512
 type HiddenFeatures1 = 256
 
-train
+train'
   :: forall (device :: (D.DeviceType, Nat))
    . _
   => IO ()
-train = do
-  let numEpochs = 1000
-      dropoutProb            = 0.5
-  (trainingData, testData) <- I.initMnist
+train' = do
+  let dropoutProb            = 0.5
   ATen.manual_seed_L 123
   init <- A.sample
     (MLPSpec @I.DataDim @I.ClassDim
@@ -150,68 +147,12 @@ train = do
              @device
              dropoutProb
     )
-  foldLoop_ init numEpochs $ \state' epoch -> do
-    let numIters = I.length trainingData `div` natValI @BatchSize
-    nextState <- foldLoop state' numIters $ \state i -> do
-      (trainingLoss,_) <- computeLossAndErrorCount @BatchSize state
-                                                              True
-                                                              i
-                                                              trainingData
-
-      let flat_parameters = A.flattenParameters state
-          gradients       = A.grad (toDynamic trainingLoss) flat_parameters
-      new_flat_parameters <- mapM A.makeIndependent
-        $ A.sgd 1e-01 flat_parameters gradients
-      return
-        $ A.replaceParameters state new_flat_parameters
-
-    (testLoss, testError) <- do
-      let numIters = I.length testData `div` natValI @BatchSize
-      foldLoop (0,0) numIters $ \(org_loss,org_err) i -> do
-        (loss,err) <- computeLossAndErrorCount @BatchSize nextState
-                                                          False
-                                                          i
-                                                          testData
-        return (org_loss + toFloat loss,org_err + toFloat err)
-    putStrLn
-      $  "Epoch: "
-      <> show epoch
-      <> ". Test loss: "
-      <> show (testLoss / realToFrac (I.length testData))
-      <> ". Test error-rate: "
-      <> show (testError / realToFrac (I.length testData))
-    
-    D.save (map A.toDependent $ A.flattenParameters nextState) "static-mnist-mlp.pt"
-    return nextState
-    
- where
-  computeLossAndErrorCount
-    :: forall n
-     . (KnownNat n)
-    => MLP I.DataDim I.ClassDim
-           HiddenFeatures0 HiddenFeatures1
-           'D.Float
-           device
-    -> Bool
-    -> Int
-    -> I.MnistData
-    -> IO
-         ( Tensor device 'D.Float '[]
-         , Tensor device 'D.Float '[]
-         )
-  computeLossAndErrorCount state train index_of_batch data' = do
-    let from = (index_of_batch-1) * natValI @BatchSize
-        to = (index_of_batch * natValI @BatchSize) - 1
-        indexes = [from .. to]
-        input  = toDevice @device $ I.getImages @n data' indexes
-        target = toDevice @device $ I.getLabels @n data' indexes
-    prediction <- mlp state train input
-    return (crossEntropyLoss prediction target, errorCount prediction target)
+  train @BatchSize init mlp "static-mnist-mlp.pt"
 
 main :: IO ()
 main = do
   deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
   case deviceStr of
-    Right "cpu"    -> train @'( 'D.CPU, 0)
-    Right "cuda:0" -> train @'( 'D.CUDA, 0)
+    Right "cpu"    -> train' @'( 'D.CPU, 0)
+    Right "cuda:0" -> train' @'( 'D.CUDA, 0)
     _              -> error "Don't know what to do or how."
