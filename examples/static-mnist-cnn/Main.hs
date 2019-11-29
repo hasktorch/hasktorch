@@ -147,7 +147,7 @@ train = do
         (loss,err) <- computeLossAndErrorCount @BatchSize nextState
                                                           indexes
                                                           testData
-        return (org_loss + asFloat loss,org_err + asFloat err)
+        return (org_loss + toFloat loss,org_err + toFloat err)
     putStrLn
       $  "Epoch: "
       <> show epoch

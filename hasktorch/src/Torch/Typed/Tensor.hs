@@ -512,7 +512,11 @@ device
 device _ = optionsRuntimeDevice @shape @dtype @device
 
 -- TODO: figure out what device, dtype, and shape we need for this
-toInt
-  :: Tensor device dtype shape
-  -> Int
-toInt t = D.toInt $ toDynamic t
+toInt :: forall device . Tensor device 'D.Int64 '[] -> Int
+toInt t = D.asValue . toDynamic . toCPU $ t
+
+toFloat :: forall device . Tensor device 'D.Float '[] -> Float
+toFloat t = D.asValue . toDynamic . toCPU $ t
+
+toDouble :: forall device . Tensor device 'D.Double '[] -> Double
+toDouble t = D.asValue . toDynamic . toCPU $ t

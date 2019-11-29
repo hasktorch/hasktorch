@@ -47,7 +47,7 @@ foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 foldLoop_
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m ()
-foldLoop_ x count block = void $ foldLoop x count block
+foldLoop_ = ((void .) .) . foldLoop
 
 crossEntropyLoss
   :: forall batchSize seqLen dtype device
@@ -79,7 +79,4 @@ errorCount
   -> Tensor device 'D.Float '[]
 errorCount prediction target =
   toDType @D.Float . sumAll . ne (argmax @1 @DropDim prediction) $ target
-
-asFloat :: forall device . Tensor device 'D.Float '[] -> Float
-asFloat t = D.asValue . toDynamic . toCPU $ t
 
