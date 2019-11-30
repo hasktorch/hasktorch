@@ -28,6 +28,7 @@ data MLP = MLP {
     l2 :: Linear
     } deriving (Generic, Show)
 
+
 instance Parameterized MLP
 instance Randomizable MLPSpec MLP where
     sample MLPSpec {..} = MLP 
@@ -52,10 +53,10 @@ train trainData = do
     trained <- foldLoop init numIters $
         \state iter -> do
             let idx = take batchSize (drop (iter * batchSize) idxList)
-            input <- UI.getImages' nImages dataDim trainData idx
-            let label = undefined -- TODO
+            input <- UI.getImages' batchSize dataDim trainData idx
+            let label = UI.getLabels' batchSize trainData [0..50000]
             let prediction = mlp state input
-                flatParameters = flattenParameters state
+            let flatParameters = flattenParameters state
                 loss = binary_cross_entropy_loss' prediction label
                 gradients = A.grad loss flatParameters
             newParam <- mapM A.makeIndependent
@@ -66,12 +67,13 @@ train trainData = do
         spec = MLPSpec 768 10 512 256 
         dataDim = 768
         numIters = 1000000
-        batchSize = 512
+        batchSize = 64
+
 
 main :: IO ()
 main = do
     (trainData, testData) <- I.initMnist
     let labels = UI.getLabels' 10 trainData [0..100]
     print labels
-    -- train trainData
+    train trainData
     putStrLn "Done"

@@ -121,7 +121,7 @@ linear' layer input = linear input w b
 
 instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do
-      w <- makeIndependent =<< randn' [in_features, out_features]
+      w <- makeIndependent =<< randn' [out_features, in_features]
       b <- makeIndependent =<< randn' [out_features]
       return $ Linear w b
 
