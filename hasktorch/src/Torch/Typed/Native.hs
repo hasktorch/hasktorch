@@ -3720,12 +3720,12 @@ nllLoss weight ignoreIndex prediction target = case shapeVal @ds of
                                       (reductionVal @reduction)
                                       ignoreIndex
   h : t -> case reductionVal @reduction of
-    0 -> UnsafeMkTensor . D.reshape out $ (natValI @n) : h : t
+    0 -> UnsafeMkTensor . (D.reshape ((natValI @n) : h : t)) $ out
     _ -> UnsafeMkTensor out
    where
     t'      = [1, foldl (*) h t]
-    input'  = D.reshape (toDynamic prediction) (natValI @n : natValI @c : t')
-    target' = D.reshape (toDynamic target) (natValI @n : t')
+    input'  = D.reshape (natValI @n : natValI @c : t') (toDynamic prediction)
+    target' = D.reshape (natValI @n : t') (toDynamic target)
     out     = unsafePerformIO $ cast5 ATen.nll_loss2d_tttll
                                       input'
                                       target'

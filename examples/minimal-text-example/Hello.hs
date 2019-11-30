@@ -77,7 +77,7 @@ letter index = case index of
     3 -> 'o'
 
 letters :: [Tensor]
-letters = map (((Prelude.flip reshape) [1, 4]) . (fromList . repr)) "helo"
+letters = map ((reshape [1, 4]) . (fromList . repr)) "helo"
 
 getIndex :: Tensor -> Int
 getIndex result = case index of

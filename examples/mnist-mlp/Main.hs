@@ -65,14 +65,14 @@ train trainData = do
                 gradients = A.grad loss flatParameters
             putStrLn $ "Iteration " ++ show iter ++ " | Loss " ++ show loss
             newParam <- mapM A.makeIndependent
-                $ sgd 1e-01 flatParameters gradients
+                $ sgd 1e-06 flatParameters gradients
             pure $ replaceParameters state newParam
     pure ()
     where
         spec = MLPSpec 768 10 512 256 
         dataDim = 768
-        numIters = 10
-        batchSize = 64
+        numIters = 1000
+        batchSize = 256
 
 
 main :: IO ()

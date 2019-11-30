@@ -4,7 +4,8 @@ import Torch.Functions hiding (sqrt)
 import Torch.Tensor
 import Torch.TensorFactories
 
-data NonLinearity = Linear | Sigmoid | Tanh | Relu | LeakyRelu Float
+-- Note: Identity = linear w/o activation
+data NonLinearity = Identity | Sigmoid | Tanh | Relu | LeakyRelu Float
 
 data FanMode = FanIn | FanOut
 
@@ -12,7 +13,7 @@ newtype Shape = Shape [Int]
 
 -- | Gain scaling value for He initialization
 calculateGain :: NonLinearity -> Float
-calculateGain Linear = 1.0
+calculateGain Identity = 1.0
 calculateGain Sigmoid = 1.0
 calculateGain Tanh = 5.0 / 3
 calculateGain Relu = sqrt 2.0

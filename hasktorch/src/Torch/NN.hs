@@ -18,6 +18,7 @@ import qualified ATen.Managed.Type.Tensor as ATen
 import ATen.Cast (cast3)
 
 import Torch.Autograd
+import Torch.Initializers
 import Torch.Tensor
 import Torch.TensorFactories (ones', rand', randn')
 import Torch.Functions
@@ -121,7 +122,8 @@ linear' layer input = linear input w b
 
 instance Randomizable LinearSpec Linear where
   sample LinearSpec{..} = do
-      w <- makeIndependent =<< randn' [out_features, in_features]
+      w <- makeIndependent =<< kaimingUniform' [out_features, in_features]
+      -- w <- makeIndependent =<< randn' [out_features, in_features]
       b <- makeIndependent =<< randn' [out_features]
       return $ Linear w b
 
