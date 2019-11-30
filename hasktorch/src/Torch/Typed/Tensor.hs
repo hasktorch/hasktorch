@@ -516,3 +516,9 @@ toInt
   :: Tensor device dtype shape
   -> Int
 toInt t = D.toInt $ toDynamic t
+
+toFloat :: forall device . Tensor device 'D.Float '[] -> Float
+toFloat t = D.asValue . toDynamic . toCPU $ t
+
+toDouble :: forall device . Tensor device 'D.Double '[] -> Double
+toDouble t = D.asValue . toDynamic . toCPU $ t

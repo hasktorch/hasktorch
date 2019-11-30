@@ -1631,7 +1631,7 @@ tensor_kthvalue_llb
   -> Int64
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_kthvalue_llb _obj _k _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).kthvalue(
     $(int64_t _k)
@@ -1644,7 +1644,7 @@ tensor_kthvalue_lnb
   -> Int64
   -> Ptr Dimname
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_kthvalue_lnb _obj _k _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).kthvalue(
     $(int64_t _k)
@@ -1768,7 +1768,7 @@ tensor_max_lb
   :: Ptr Tensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_max_lb _obj _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).max(
     $(int64_t _dim)
@@ -1790,7 +1790,7 @@ tensor_max_nb
   :: Ptr Tensor
   -> Ptr Dimname
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_max_nb _obj _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).max(
     *$(at::Dimname* _dim)
@@ -1812,7 +1812,7 @@ tensor_median_lb
   :: Ptr Tensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_median_lb _obj _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).median(
     $(int64_t _dim)
@@ -1823,7 +1823,7 @@ tensor_median_nb
   :: Ptr Tensor
   -> Ptr Dimname
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_median_nb _obj _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).median(
     *$(at::Dimname* _dim)
@@ -1834,7 +1834,7 @@ tensor_min_lb
   :: Ptr Tensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_min_lb _obj _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).min(
     $(int64_t _dim)
@@ -1856,7 +1856,7 @@ tensor_min_nb
   :: Ptr Tensor
   -> Ptr Dimname
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_min_nb _obj _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).min(
     *$(at::Dimname* _dim)
@@ -1887,7 +1887,7 @@ tensor_mode_lb
   :: Ptr Tensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_mode_lb _obj _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).mode(
     $(int64_t _dim)
@@ -1898,7 +1898,7 @@ tensor_mode_nb
   :: Ptr Tensor
   -> Ptr Dimname
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_mode_nb _obj _dim _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).mode(
     *$(at::Dimname* _dim)
@@ -2140,7 +2140,7 @@ tensor_prelu_backward_tt
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_prelu_backward_tt _obj _grad_output _weight =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).prelu_backward(
     *$(at::Tensor* _grad_output)
@@ -2304,7 +2304,7 @@ tensor_slice_llll _obj _dim _start _end _step =
 
 tensor_slogdet
   :: Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_slogdet _obj =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).slogdet(
     ));
@@ -4366,7 +4366,7 @@ tensor_addcdiv_tts _obj _tensor1 _tensor2 _value =
 tensor_lstsq_t
   :: Ptr Tensor
   -> Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_lstsq_t _obj _A =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).lstsq(
     *$(at::Tensor* _A)));
@@ -4378,7 +4378,7 @@ tensor_triangular_solve_tbbb
   -> CBool
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_triangular_solve_tbbb _obj _A _upper _transpose _unitriangular =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).triangular_solve(
     *$(at::Tensor* _A)
@@ -4391,7 +4391,7 @@ tensor_symeig_bb
   :: Ptr Tensor
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_symeig_bb _obj _eigenvectors _upper =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).symeig(
     $(bool _eigenvectors)
@@ -4401,7 +4401,7 @@ tensor_symeig_bb _obj _eigenvectors _upper =
 tensor_eig_b
   :: Ptr Tensor
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_eig_b _obj _eigenvectors =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).eig(
     $(bool _eigenvectors)));
@@ -4411,7 +4411,7 @@ tensor_svd_bb
   :: Ptr Tensor
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
 tensor_svd_bb _obj _some _compute_uv =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).svd(
     $(bool _some)
@@ -4441,7 +4441,7 @@ tensor_cholesky_solve_tb _obj _input2 _upper =
 tensor_solve_t
   :: Ptr Tensor
   -> Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_solve_t _obj _A =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).solve(
     *$(at::Tensor* _A)));
@@ -4459,7 +4459,7 @@ tensor_cholesky_inverse_b _obj _upper =
 tensor_qr_b
   :: Ptr Tensor
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_qr_b _obj _some =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).qr(
     $(bool _some)));
@@ -4467,7 +4467,7 @@ tensor_qr_b _obj _some =
 
 tensor_geqrf
   :: Ptr Tensor
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_geqrf _obj =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).geqrf(
     ));
@@ -4715,7 +4715,7 @@ tensor_sort_lb
   :: Ptr Tensor
   -> Int64
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_sort_lb _obj _dim _descending =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).sort(
     $(int64_t _dim)
@@ -4726,7 +4726,7 @@ tensor_sort_nb
   :: Ptr Tensor
   -> Ptr Dimname
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_sort_nb _obj _dim _descending =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).sort(
     *$(at::Dimname* _dim)
@@ -4761,7 +4761,7 @@ tensor_topk_llbb
   -> Int64
   -> CBool
   -> CBool
-  -> IO (Ptr (Tensor,Tensor))
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_topk_llbb _obj _k _dim _largest _sorted =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).topk(
     $(int64_t _k)

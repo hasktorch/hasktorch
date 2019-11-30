@@ -30,6 +30,7 @@ import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.NN                      as A
 import           Torch.Typed.Tensor
+import           Torch.Typed.Parameter
 import           Torch.Typed.Factories
 import           Torch.Typed.Native      hiding ( linear )
 import           Torch.Typed.NN
@@ -72,7 +73,7 @@ instance ( KnownDevice device
       <*> (makeIndependent =<< randn)
       <*> (makeIndependent =<< randn)
 
-instance A.Parameterized (LSTMCell inputDim hiddenDim dtype device)
+-- instance A.Parameterized (LSTMCell inputDim hiddenDim dtype device)
 
 -- | A single recurrent step of an `LSTMCell`
 --

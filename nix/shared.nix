@@ -84,17 +84,32 @@ let
                         );
                     inline-c =
                       # failOnAllWarnings
-                        (haskellPackagesNew.callCabal2nix
-                          "inline-c"
-                          ../inline-c/inline-c
+                        (haskellPackagesNew.callHackageDirect
+                          {
+                            pkg = "inline-c";
+                            ver = "0.9.0.0";
+                            sha256 = "07i75g55ffggj9n7f5y6cqb0n17da53f1v03m9by7s4fnipxny5m";
+                          }
                           { }
                         );
                     inline-c-cpp =
                       # failOnAllWarnings
-                        (haskellPackagesNew.callCabal2nix
-                          "inline-c-cpp"
-                          ../inline-c/inline-c-cpp
-                          { }
+                      dontCheck
+                        (overrideCabal
+                          (haskellPackagesNew.callHackageDirect
+                            {
+                              pkg = "inline-c-cpp";
+                              ver = "0.4.0.0";
+                              sha256 = "15als1sfyp5xwf5wqzjsac3sswd20r2mlizdyc59jvnc662dcr57";
+                            }
+                            { }
+                          )
+                          (old: {
+                              preConfigure = (old.preConfigure or "") + optionalString isDarwin ''
+                                sed -i -e 's/-optc-std=c++11//g' inline-c-cpp.cabal;
+                              '';
+                            }
+                          )
                         );
                   };
 

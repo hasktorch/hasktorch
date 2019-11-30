@@ -69,6 +69,9 @@ rand = mkFactory LibTorch.rand_lo
 randn :: [Int] -> TensorOptions -> IO Tensor
 randn = mkFactory LibTorch.randn_lo
 
+randint :: Int -> Int -> [Int] -> TensorOptions -> IO Tensor
+randint low high = mkFactory (LibTorch.randint_lllo (fromIntegral low) (fromIntegral high))
+
 randnLike :: Tensor -> IO Tensor
 randnLike = cast1 ATen.randn_like_t
 
@@ -130,6 +133,9 @@ rand' = mkDefaultFactory rand
 
 randn' :: [Int] -> IO Tensor
 randn' = mkDefaultFactory randn
+
+randint' :: Int -> Int -> [Int] -> IO Tensor
+randint' low high = mkDefaultFactory (randint low high)
 
 randLike' :: Tensor -> IO Tensor
 randLike' t = randLike t defaultOpts
