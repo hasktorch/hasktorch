@@ -60,6 +60,9 @@ ones = mkFactoryUnsafe LibTorch.ones_lo
 onesLike :: Tensor -> Tensor
 onesLike self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
 
+onesLike' :: Tensor -> Tensor
+onesLike' self = unsafePerformIO $ (cast1 ATen.ones_like_t) self
+
 zeros :: [Int] -> TensorOptions -> Tensor
 zeros = mkFactoryUnsafe LibTorch.zeros_lo
 

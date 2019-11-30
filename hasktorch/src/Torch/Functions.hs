@@ -24,7 +24,7 @@ import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
 import Torch.Functions.Native
-import Torch.TensorFactories (onesLike)
+import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
 kOne = unsafePerformIO $ ATen.newScalar_i 1
@@ -195,7 +195,10 @@ mse_loss :: Tensor -> Tensor -> Tensor
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 
 nll_loss' :: Tensor -> Tensor -> Tensor
-nll_loss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target (onesLike target) ReduceMean (-100 :: Int)
+nll_loss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weight ReduceMean (-100 :: Int)
+    where
+        nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
+        weight = ones' [nClass]
 
 conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
 conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $

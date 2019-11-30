@@ -60,10 +60,10 @@ train trainData = do
             input <- UI.getImages' batchSize dataDim trainData idx
             let label = UI.getLabels' batchSize trainData [0..50000]
             let prediction = mlp state input
-            print prediction
             let flatParameters = flattenParameters state
                 loss = nll_loss' prediction label
                 gradients = A.grad loss flatParameters
+            putStrLn $ "Iteration " ++ show iter ++ " | Loss " ++ show loss
             newParam <- mapM A.makeIndependent
                 $ sgd 1e-01 flatParameters gradients
             pure $ replaceParameters state newParam
@@ -71,7 +71,7 @@ train trainData = do
     where
         spec = MLPSpec 768 10 512 256 
         dataDim = 768
-        numIters = 1000000
+        numIters = 10
         batchSize = 64
 
 
