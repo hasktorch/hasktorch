@@ -189,10 +189,13 @@ binary_cross_entropy_loss t target weight reduction = unsafePerformIO $ (cast4 A
 
 -- | BCE with weights defaulted to 1.0 & reduction defaulted to ReduceMean
 binary_cross_entropy_loss' :: Tensor -> Tensor -> Tensor
-binary_cross_entropy_loss' t target = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike t) ReduceMean
+binary_cross_entropy_loss' t target = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
 
 mse_loss :: Tensor -> Tensor -> Tensor
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
+
+nll_loss' :: Tensor -> Tensor -> Tensor
+nll_loss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target (onesLike target) ReduceMean (-100 :: Int)
 
 conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
 conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $

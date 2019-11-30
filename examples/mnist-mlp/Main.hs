@@ -5,6 +5,7 @@
 module Main where
 
 import GHC.Generics
+import System.Random (mkStdGen, randoms)
 
 import Torch.Autograd as A
 import Torch.Functions hiding (take)
@@ -13,7 +14,7 @@ import Torch.NN
 
 import qualified Image as I
 import qualified UntypedImage as UI
-import Common (foldLoop, randomIndexes)
+import Common (foldLoop)
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -36,6 +37,9 @@ instance Randomizable MLPSpec MLP where
         <*> sample (LinearSpec hiddenFeatures0 hiddenFeatures1)
         <*> sample (LinearSpec hiddenFeatures1 outputFeatures)
 
+randomIndexes :: Int -> [Int]
+randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
+
 mlp :: MLP -> Tensor -> Tensor
 mlp MLP{..} input = 
     linear' l2
@@ -56,8 +60,9 @@ train trainData = do
             input <- UI.getImages' batchSize dataDim trainData idx
             let label = UI.getLabels' batchSize trainData [0..50000]
             let prediction = mlp state input
+            print prediction
             let flatParameters = flattenParameters state
-                loss = binary_cross_entropy_loss' prediction label
+                loss = nll_loss' prediction label
                 gradients = A.grad loss flatParameters
             newParam <- mapM A.makeIndependent
                 $ sgd 1e-01 flatParameters gradients
