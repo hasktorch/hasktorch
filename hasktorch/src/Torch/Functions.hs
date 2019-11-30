@@ -194,8 +194,8 @@ binary_cross_entropy_loss' t target = unsafePerformIO $ (cast4 ATen.binary_cross
 mse_loss :: Tensor -> Tensor -> Tensor
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
 
-nll_loss' :: Tensor -> Tensor -> Tensor
-nll_loss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weight ReduceMean (-100 :: Int)
+nllLoss' :: Tensor -> Tensor -> Tensor
+nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weight ReduceMean (-100 :: Int)
     where
         nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
         weight = ones' [nClass]

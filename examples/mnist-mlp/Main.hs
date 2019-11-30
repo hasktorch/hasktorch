@@ -61,7 +61,7 @@ train trainData = do
             let label = UI.getLabels' batchSize trainData [0..50000]
             let prediction = mlp state input
             let flatParameters = flattenParameters state
-                loss = nll_loss' prediction label
+                loss = nllLoss' prediction label
                 gradients = A.grad loss flatParameters
             putStrLn $ "Iteration " ++ show iter ++ " | Loss " ++ show loss
             newParam <- mapM A.makeIndependent
