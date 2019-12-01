@@ -80,6 +80,19 @@ kaimingNormal mode nonlinearity shape = do
         fanValue = fromIntegral $ (getter mode) (calculateFan shape)
         std = gain / (sqrt fanValue)
 
+-- | Handle weights + bias
+-- based on https://github.com/pytorch/pytorch/blob/master/torch/nn/modules/linear.py#L79
+kaimingFC :: [Int] -> IO (Tensor, Tensor)
+kaimingFC weightShape = do
+    weight <- kaimingUniform' weightShape
+    biasInit <- rand' biasShape
+    let bias = subScalar (mulScalar biasInit (bound * 2.0)) bound
+    pure (weight, bias)
+    where
+        (fanIn, _) = calculateFan weightShape
+        bound = 1.0 / (sqrt . fromIntegral $ fanIn) :: Float
+        biasShape = [weightShape !! 0]
+
 {- PyTorch defaults -}
 
 kaimingUniform' :: [Int] -> IO Tensor
