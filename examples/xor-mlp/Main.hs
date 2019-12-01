@@ -21,9 +21,6 @@ import Data.List (foldl', scanl', intersperse)
 -- MLP
 --------------------------------------------------------------------------------
 
-linear :: Linear -> Tensor -> Tensor
-linear Linear{..} input = (matmul input (toDependent weight)) + (toDependent bias)
-
 data MLPSpec = MLPSpec { feature_counts :: [Int], nonlinearitySpec :: Tensor -> Tensor }
 
 data MLP = MLP { layers :: [Linear], nonlinearity :: Tensor -> Tensor } deriving (Generic)
@@ -49,7 +46,7 @@ instance Parameterized MLP
 --     return $ mlp { layers = new_layers }
 
 mlp :: MLP -> Tensor -> Tensor
-mlp MLP{..} input = foldl' revApply input $ intersperse nonlinearity $ map linear layers
+mlp MLP{..} input = foldl' revApply input $ intersperse nonlinearity $ map linear' layers
   where revApply x f = f x
 
 --------------------------------------------------------------------------------
