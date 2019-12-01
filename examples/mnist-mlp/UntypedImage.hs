@@ -21,10 +21,10 @@ getLabels' n mnist imageIdxs =
   asTensor $ map (I.getLabel mnist) . take n $ imageIdxs
 
 getImages' ::
-  Int
-  -> Int
-  -> I.MnistData
-  -> [Int]
+  Int -- number of observations in minibatch
+  -> Int -- dimensionality of the data
+  -> I.MnistData -- mnist data representation
+  -> [Int] -- indices of the dataset
   -> IO Tensor
 getImages' n dataDim mnist imageIdxs = do
   let (BSI.PS fptr off len) = I.images mnist

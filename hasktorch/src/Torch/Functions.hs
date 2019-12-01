@@ -23,7 +23,7 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functions.Native
+import Torch.Functions.Native hiding (softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
@@ -209,8 +209,11 @@ maxPool2d :: Tensor -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor
 maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
     (cast6 ATen.max_pool2d_tllllb) input ([kh, kw] :: [Int]) ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) False
 
-logSoftmax :: Tensor -> Int -> Tensor
-logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
+softmax :: Int -> Tensor -> Tensor
+softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls) input dim (dtype input)
+
+logSoftmax :: Int -> Tensor -> Tensor
+logSoftmax dim input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
 
 inverse :: Tensor -> Tensor
 inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t

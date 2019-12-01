@@ -1,9 +1,11 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
+import Control.Monad (when)
 import GHC.Generics
 import System.Random (mkStdGen, randoms)
 
@@ -29,7 +31,6 @@ data MLP = MLP {
     l2 :: Linear
     } deriving (Generic, Show)
 
-
 instance Parameterized MLP
 instance Randomizable MLPSpec MLP where
     sample MLPSpec {..} = MLP 
@@ -42,14 +43,15 @@ randomIndexes size = (`mod` size) <$> randoms seed where seed = mkStdGen 123
 
 mlp :: MLP -> Tensor -> Tensor
 mlp MLP{..} input = 
-    linear' l2
+    logSoftmax 1
+    . linear' l2
     . relu
     . linear' l1
     . relu
     . linear' l0
     $ input
 
-train :: I.MnistData -> IO ()
+train :: I.MnistData -> IO MLP
 train trainData = do
     init <- sample spec
     let nImages = I.length trainData
@@ -57,19 +59,20 @@ train trainData = do
     trained <- foldLoop init numIters $
         \state iter -> do
             let idx = take batchSize (drop (iter * batchSize) idxList)
+            -- print (head idx)
             input <- UI.getImages' batchSize dataDim trainData idx
-            let label = UI.getLabels' batchSize trainData [0..50000]
-            let prediction = mlp state input
-            let flatParameters = flattenParameters state
-                loss = nllLoss' prediction label
+            let label = UI.getLabels' batchSize trainData [0..50000] -- TODO - review/fix chunking logic
+                loss = nllLoss' (mlp state input) label
+                flatParameters = flattenParameters state
                 gradients = A.grad loss flatParameters
-            putStrLn $ "Iteration " ++ show iter ++ " | Loss " ++ show loss
+            when (iter `mod` 20 == 0) do
+                putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
             newParam <- mapM A.makeIndependent
-                $ sgd 1e-06 flatParameters gradients
+                $ sgd 1e-04 flatParameters gradients
             pure $ replaceParameters state newParam
-    pure ()
+    pure trained
     where
-        spec = MLPSpec 768 10 512 256 
+        spec = MLPSpec 768 10 64 32
         dataDim = 768
         numIters = 1000
         batchSize = 256
