@@ -42,6 +42,8 @@ import           Torch.Typed.Native      hiding ( linear
                                                 )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
+import           Torch.Typed.Optim
+import           Torch.Typed.Parameter
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
 import qualified Torch.Device                  as D
@@ -109,8 +111,6 @@ mlp MLP {..} train input =
     .   linear mlpLayer0
     =<< pure input
 
-instance A.Parameterized (MLP inputFeatures outputFeatures hiddenFeatures0 hiddenFeatures1 dtype device)
-
 instance ( KnownNat inputFeatures
          , KnownNat outputFeatures
          , KnownNat hiddenFeatures0
@@ -138,16 +138,18 @@ train'
    . _
   => IO ()
 train' = do
-  let dropoutProb            = 0.5
+  let dropoutProb  = 0.5
+      learningRate = 0.1
   ATen.manual_seed_L 123
-  init <- A.sample
+  initModel <- A.sample
     (MLPSpec @I.DataDim @I.ClassDim
              @HiddenFeatures0 @HiddenFeatures1
              @D.Float
              @device
              dropoutProb
     )
-  train @BatchSize init mlp "static-mnist-mlp.pt"
+  let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
+  train @BatchSize @device initModel initOptim mlp learningRate "static-mnist-mlp.pt"
 
 main :: IO ()
 main = do

@@ -33,6 +33,7 @@ library
                     , Torch.Typed.Parameter
                     , Torch.Typed.Autograd
                     , Torch.Typed.Optim
+                    , Torch.Typed.Serialize
                     , Torch.NN
                     , Torch.Scalar
                     , Torch.Backend
