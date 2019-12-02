@@ -50,14 +50,13 @@ getImages' n dataDim mnist imageIdxs = do
 grayScale10 = " .:-=+*#%@"
 grayScale70 = reverse "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
 
+-- Display an MNIST image tensor as ascii text
 dispImage :: Tensor -> IO ()
 dispImage img = do
-    mapM (\row -> do
-        mapM (\col -> do
-            let val = (P.floor $ scaled !! row !! col)
-            putStr $ [grayScale !! val]
-            ) [0..27]
-        putStrLn ""
+    mapM (\row ->
+        mapM (\col -> 
+            putChar $ grayScale !! (P.floor $ scaled !! row !! col)
+            ) [0..27] >>  putStrLn ""
         ) [0..27]
     pure ()
     where 

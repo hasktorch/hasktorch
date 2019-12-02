@@ -88,12 +88,10 @@ main = do
 
     train trainData
 
-    -- show test images
-    testImg <- reshape [28, 28] <$> UI.getImages' 1 784 trainData [0]
-    UI.dispImage testImg
-    putStrLn $ "Label : " ++ (show $ UI.getLabels' 1 trainData [0])
-    testImg <- reshape [28, 28] <$> UI.getImages' 1 784 trainData [1]
-    UI.dispImage testImg
-    putStrLn $ "Label : " ++ (show $ UI.getLabels' 1 trainData [1])
+    -- show test images + labels
+    foldLoop undefined 5 \_ idx -> do
+        testImg <- reshape [28, 28] <$> UI.getImages' 1 784 trainData [idx]
+        UI.dispImage testImg
+        putStrLn $ "Label : " ++ (show $ UI.getLabels' 1 trainData [idx])
 
     putStrLn "Done"
