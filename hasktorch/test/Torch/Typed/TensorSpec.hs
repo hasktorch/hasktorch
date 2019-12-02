@@ -301,7 +301,7 @@ spec' device =
                 D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
                   hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hCartesianProduct almostAllDTypes2 broadcastableShapes))
       describe "greater than" $ dispatch GTSpec
-      describe "lower than" $ dispatch GTSpec
+      describe "lower than" $ dispatch LTSpec
       describe "greater or equal than" $ dispatch GESpec
       describe "lower or equal than" $ dispatch LESpec
       describe "equal to" $ dispatch EQSpec
