@@ -1,4 +1,9 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module UntypedImage where
+
+import Prelude hiding (min, max)
+import qualified Prelude as P
 
 import Control.Monad (forM_)
 
@@ -13,6 +18,7 @@ import qualified Foreign.Ptr                   as F
 import qualified Torch.Managed.Native as LibTorch
 
 import qualified Image as I
+import Torch.Functions hiding (take)
 import Torch.Tensor
 import Torch.NN
 
@@ -39,3 +45,23 @@ getImages' n dataDim mnist imageIdxs = do
           (F.plusPtr ptr2 (off+16+dataDim*idx))
           dataDim
   return $ D.toType D.Float t
+
+-- http://paulbourke.net/dataformats/asciiart/
+grayScale10 = " .:-=+*#%@"
+grayScale70 = reverse "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
+
+dispImage :: Tensor -> IO ()
+dispImage img = do
+    mapM (\row -> do
+        mapM (\col -> do
+            let val = (P.floor $ scaled !! row !! col)
+            putStr $ [grayScale !! val]
+            ) [0..27]
+        putStrLn ""
+        ) [0..27]
+    pure ()
+    where 
+        grayScale = grayScale10
+        paletteMax = (fromIntegral $ length grayScale) - 1.0
+        scaled :: [[Float]] = let (mn, mx) = (min img, max img)  
+            in asValue $ (img - mn) / (mx - mn) * paletteMax

@@ -37,7 +37,7 @@ executable static-xor-mlp
                      , hasktorch
                      , mtl
                      , reflection
-
+ 
 library static-mnist
   import:              config
   hs-source-dirs:      static-mnist

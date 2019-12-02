@@ -72,8 +72,8 @@ train trainData = do
             pure $ replaceParameters state newParam
     pure trained
     where
-        spec = MLPSpec 768 10 64 32
-        dataDim = 768
+        spec = MLPSpec 784 10 64 32
+        dataDim = 784
         numIters = 1000
         batchSize = 256
 
@@ -81,7 +81,19 @@ train trainData = do
 main :: IO ()
 main = do
     (trainData, testData) <- I.initMnist
+
+    -- print a few labels 
     let labels = UI.getLabels' 10 trainData [0..100]
     print labels
+
     train trainData
+
+    -- show test images
+    testImg <- reshape [28, 28] <$> UI.getImages' 1 784 trainData [0]
+    UI.dispImage testImg
+    putStrLn $ "Label : " ++ (show $ UI.getLabels' 1 trainData [0])
+    testImg <- reshape [28, 28] <$> UI.getImages' 1 784 trainData [1]
+    UI.dispImage testImg
+    putStrLn $ "Label : " ++ (show $ UI.getLabels' 1 trainData [1])
+
     putStrLn "Done"
