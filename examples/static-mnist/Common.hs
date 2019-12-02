@@ -15,6 +15,7 @@ import           Control.Monad                  ( foldM
                                                 , when
                                                 , void
                                                 )
+import           Data.HList
 import           Data.Proxy
 import           Foreign.ForeignPtr
 import           GHC.Generics
@@ -30,9 +31,13 @@ import qualified ATen.Type                     as ATen
 import qualified ATen.Managed.Type.Tensor      as ATen
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
+import           Torch.Typed.Parameter
 import           Torch.Typed.Native
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
+import           Torch.Typed.Autograd
+import           Torch.Typed.Optim
+import           Torch.Typed.Serialize
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
 import qualified Torch.Device                  as D
@@ -40,7 +45,6 @@ import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.Functions               as D
 import qualified Torch.TensorFactories         as D
-import qualified Torch.Serialize               as D
 import qualified Image                         as I
 
 foldLoop
@@ -83,33 +87,42 @@ errorCount prediction target =
   toDType @D.Float . sumAll . ne (argmax @1 @DropDim prediction) $ target
 
 train
-  :: forall (batchSize :: Nat) (device :: (D.DeviceType, Nat)) state
-   . _
-  => state
-  -> (state -> Bool -> Tensor device 'D.Float '[batchSize, I.DataDim] -> IO (Tensor device 'D.Float '[batchSize, I.ClassDim]))
+  :: forall (batchSize :: Nat) (device :: (D.DeviceType, Nat)) model optim gradients parameters tensors
+   . ( KnownNat batchSize
+     , StandardFloatingPointDTypeValidation device 'D.Float
+     , SumDTypeIsValid device 'D.Bool
+     , ComparisonDTypeIsValid device 'D.Int64
+     , KnownDevice device
+     , gradients ~ GradR parameters 'D.Float device
+     , tensors ~ gradients
+     , HMap' ToDependent parameters tensors
+     , ATen.Castable (HList gradients) [D.ATenTensor]
+     , Parameterized model parameters
+     , Optimizer optim gradients tensors 'D.Float device
+     , HMapM' IO MakeIndependent tensors parameters
+     )
+  => model
+  -> optim
+  -> (model -> Bool -> Tensor device 'D.Float '[batchSize, I.DataDim] -> IO (Tensor device 'D.Float '[batchSize, I.ClassDim]))
+  -> LearningRate device 'D.Float
   -> String
   -> IO ()
-train init predictFunction ptFile = do
+train initModel initOptim forward learningRate ptFile = do
   let numEpochs = 1000
   (trainingData, testData) <- I.initMnist
-  foldLoop_ init numEpochs $ \state' epoch -> do
+  foldLoop_ (initModel, initOptim) numEpochs $ \(epochModel, epochOptim) epoch -> do
     let numIters = I.length trainingData `div` natValI @batchSize
-    nextState <- foldLoop state' numIters $ \state i -> do
-      (trainingLoss,_) <- computeLossAndErrorCount @batchSize (predictFunction state True) 
+    (epochModel', epochOptim') <- foldLoop (epochModel, epochOptim) numIters $ \(model, optim) i -> do
+      (trainingLoss,_) <- computeLossAndErrorCount @batchSize (forward model True) 
                                                               i
                                                               trainingData
-
-      let flat_parameters = A.flattenParameters state
-          gradients       = A.grad (toDynamic trainingLoss) flat_parameters
-      new_flat_parameters <- mapM A.makeIndependent
-        $ A.sgd 1e-01 flat_parameters gradients
-      return
-        $ A.replaceParameters state new_flat_parameters
+      (model', optim') <- runStep model optim trainingLoss learningRate
+      return (model', optim')
 
     (testLoss, testError) <- do
       let numIters = I.length testData `div` natValI @batchSize
       foldLoop (0,0) numIters $ \(org_loss,org_err) i -> do
-        (loss,err) <- computeLossAndErrorCount @batchSize (predictFunction nextState False)
+        (loss,err) <- computeLossAndErrorCount @batchSize (forward epochModel' False)
                                                           i
                                                           testData
         return (org_loss + toFloat loss,org_err + toFloat err)
@@ -121,8 +134,8 @@ train init predictFunction ptFile = do
       <> ". Test error-rate: "
       <> show (testError / realToFrac (I.length testData))
     
-    D.save (map A.toDependent $ A.flattenParameters nextState) ptFile
-    return nextState
+    save (hmap' ToDependent . flattenParameters $ epochModel') ptFile
+    return (epochModel', epochOptim')
     
  where
   computeLossAndErrorCount
@@ -135,11 +148,11 @@ train init predictFunction ptFile = do
          ( Tensor device 'D.Float '[]
          , Tensor device 'D.Float '[]
          )
-  computeLossAndErrorCount mlp index_of_batch data' = do
+  computeLossAndErrorCount forward' index_of_batch data' = do
     let from = (index_of_batch-1) * natValI @n
         to = (index_of_batch * natValI @n) - 1
         indexes = [from .. to]
         input  = toDevice @device $ I.getImages @n data' indexes
         target = toDevice @device $ I.getLabels @n data' indexes
-    prediction <- mlp input
+    prediction <- forward' input
     return (crossEntropyLoss prediction target, errorCount prediction target)

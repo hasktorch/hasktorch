@@ -49,8 +49,8 @@ toDependent (Parameter t) = UnsafeMkTensor $ A.toDependent t
 
 data ToDependent = ToDependent
 
-instance Apply ToDependent (Parameter device dtype shape) (Tensor device dtype shape) where
-  apply _ = toDependent
+instance Apply' ToDependent (Parameter device dtype shape) (Tensor device dtype shape) where
+  apply' _ = toDependent
 
 makeIndependent
   :: forall shape dtype device
@@ -60,8 +60,8 @@ makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
 
 data MakeIndependent = MakeIndependent
 
-instance Apply MakeIndependent (Tensor device dtype shape) (IO (Parameter device dtype shape)) where
-  apply _ = makeIndependent
+instance Apply' MakeIndependent (Tensor device dtype shape) (IO (Parameter device dtype shape)) where
+  apply' _ = makeIndependent
 
 class Parameterized
   (f :: Type)
