@@ -1,12 +1,12 @@
 name: nix-haddock-linux
 
 # If you need to debug this action, use following action.
-on: [push, pull_request]
+# on: [push, pull_request]
 
-# on:
-#   push:
-#     branches:
-#       - master
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
@@ -23,7 +23,9 @@ jobs:
         cachix use hasktorch
         nix-build -A hasktorch-docs
         pwd
-        find result |head
+        find result/ |head
+        mkdir public
+        cp -r ./result/share/doc/* public/
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v2.5.0
       env:
@@ -32,5 +34,4 @@ jobs:
         # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         EXTERNAL_REPOSITORY: hasktorch/hasktorch.github.io
         PUBLISH_BRANCH: master
-        PUBLISH_DIR: ./result/share/doc
-        GITHUB_WORKSPACE: /home/runner/work/hasktorch/hasktorch
+        PUBLISH_DIR: public
