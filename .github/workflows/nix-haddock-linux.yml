@@ -17,6 +17,7 @@ jobs:
         git submodule init && git submodule update
     - name: Build
       run: |
+        nix-env -i cachix
         cachix use hasktorch
         nix-build -A hasktorch-docs
     - name: Deploy
