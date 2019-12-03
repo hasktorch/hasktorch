@@ -1,4 +1,4 @@
-name: nix-haddoc-linux
+name: nix-haddock-linux
 on:
   push:
     branches:
