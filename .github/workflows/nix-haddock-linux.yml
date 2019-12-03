@@ -1,12 +1,12 @@
 name: nix-haddock-linux
 
 # If you need to debug this action, use following action.
-# on: [push, pull_request]
+on: [push, pull_request]
 
-on:
-  push:
-    branches:
-      - master
+#on:
+#  push:
+#    branches:
+#      - master
 
 jobs:
   build:
