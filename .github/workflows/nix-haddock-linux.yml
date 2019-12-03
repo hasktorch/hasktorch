@@ -22,6 +22,8 @@ jobs:
         nix-env -i cachix
         cachix use hasktorch
         nix-build -A hasktorch-docs
+        pwd
+        find result |head
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v2.5.0
       env:
