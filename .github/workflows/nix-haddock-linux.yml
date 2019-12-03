@@ -3,10 +3,10 @@ name: nix-haddock-linux
 # If you need to debug this action, use following action.
 on: [push, pull_request]
 
-#on:
-#  push:
-#    branches:
-#      - master
+# on:
+#   push:
+#     branches:
+#       - master
 
 jobs:
   build:
@@ -33,3 +33,4 @@ jobs:
         EXTERNAL_REPOSITORY: hasktorch/hasktorch.github.io
         PUBLISH_BRANCH: master
         PUBLISH_DIR: ./result/share/doc
+        GITHUB_WORKSPACE: /home/runner/work/hasktorch/hasktorch
