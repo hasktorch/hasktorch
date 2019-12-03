@@ -6,6 +6,7 @@ in
       libtorch-ffi_cpu
       hasktorch_cpu
       hasktorch-examples_cpu
+      hasktorch-docs
     ;
 
     ${shared.nullIfDarwin "libtorch-ffi_cudatoolkit_9_2"} = shared.libtorch-ffi_cudatoolkit_9_2;
