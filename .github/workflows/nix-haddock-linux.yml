@@ -1,8 +1,10 @@
 name: nix-haddock-linux
-on:
-  push:
-    branches:
-      - master
+on: [push, pull_request]
+
+#on:
+#  push:
+#    branches:
+#      - master
 
 jobs:
   build:
