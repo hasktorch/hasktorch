@@ -22,6 +22,10 @@ jobs:
         nix-env -i cachix
         cachix use hasktorch
         nix-build -A hasktorch-docs
+        pwd
+        find result/ |head
+        mkdir public
+        cp -r ./result/share/doc/* public/
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v2.5.0
       env:
@@ -30,4 +34,4 @@ jobs:
         # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         EXTERNAL_REPOSITORY: hasktorch/hasktorch.github.io
         PUBLISH_BRANCH: master
-        PUBLISH_DIR: ./result/share/doc
+        PUBLISH_DIR: public
