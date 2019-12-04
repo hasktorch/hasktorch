@@ -58,6 +58,7 @@ library
                     , safe-exceptions
                     , reflection
                     , singletons
+                    , stm
 
 test-suite spec
   type:               exitcode-stdio-1.0

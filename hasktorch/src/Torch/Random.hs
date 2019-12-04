@@ -2,7 +2,18 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Torch.Random where
+module Torch.Random
+  ( mkGenerator
+  , Generator
+  , randn
+  , randn'
+  , rand
+  , rand'
+  , randint
+  , randint'
+  , normal
+  , normal'
+  ) where
 
 import ATen.Cast
 import ATen.Class (Castable(..))
@@ -16,31 +27,59 @@ import Torch.TensorOptions
 import Torch.Tensor
 import Foreign.ForeignPtr
 import System.IO.Unsafe
+import           Control.Concurrent
+import           Control.Concurrent.STM
+import           Control.Monad.IO.Class
+import           Control.Monad.STM
+
+instance Show (TVar (Maybe (ForeignPtr ATen.Generator))) where
+  show _ = "_"
 
 data Generator
   = Generator
   { device :: Device
   , seed :: Word64
+  , generator :: TVar (Maybe (ForeignPtr ATen.Generator))
   }
-  deriving (Eq, Show)
+  deriving (Eq,Show)
 
-cpuGenerator :: Word64 -> Generator
-cpuGenerator seed = Generator (Device CPU 0) seed
+mkGenerator :: Device -> Word64 -> IO Generator
+mkGenerator device seed =
+  case device of
+    Device CPU _ -> do
+      genPtr <- ATen.newCPUGenerator seed
+      genenerator <- newTVarIO (Just genPtr)
+      return $ Generator device seed genenerator
+    Device CUDA idx -> do
+      genPtr <- ATen.newCUDAGenerator (fromIntegral idx)
+      ATen.generator_set_current_seed genPtr seed
+      genenerator <- newTVarIO (Just genPtr)
+      return $ Generator device seed genenerator
 
 type RandomGenFunc = ForeignPtr ATen.IntArray -> ForeignPtr ATen.Generator -> ForeignPtr ATen.TensorOptions -> IO (ForeignPtr ATen.Tensor)
 
 generatorFactory :: RandomGenFunc -> [Int] -> TensorOptions -> Generator -> (Tensor,Generator)
 generatorFactory func size options Generator{..} =
   unsafePerformIO $ do
-    gen <- case device of
-             Device CPU _ -> ATen.newCPUGenerator seed
-             Device CUDA idx -> do
-               gen <- ATen.newCUDAGenerator (fromIntegral idx)
-               ATen.generator_set_current_seed gen seed
-               return gen
-    tensor <- (cast3 func) size gen options
-    nextSeed <- ATen.generator_current_seed gen
-    return (tensor,Generator device nextSeed)
+    mGenerator <- atomically $ do
+      v <- readTVar generator
+      case v of
+        Just v' -> do
+          writeTVar generator Nothing
+          return $ Just v'
+        Nothing -> return Nothing
+    genPtr <- case mGenerator of
+                Just gen -> return gen
+                Nothing -> case device of
+                  Device CPU _ -> ATen.newCPUGenerator seed
+                  Device CUDA idx -> do
+                    gen <- ATen.newCUDAGenerator (fromIntegral idx)
+                    ATen.generator_set_current_seed gen seed
+                    return gen
+    tensor <- (cast3 func) size genPtr options
+    nextSeed <- ATen.generator_current_seed genPtr
+    nextGenenerator <- newTVarIO (Just genPtr)
+    return (tensor,Generator device nextSeed nextGenenerator)
 
 
 randn :: [Int] -> TensorOptions -> Generator -> (Tensor,Generator)

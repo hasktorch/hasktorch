@@ -12,9 +12,10 @@ import Torch.TensorOptions
 spec :: Spec
 spec = do
   it "pure functional random with seed" $ do
-    let (t,next) = randn' [4] (cpuGenerator 0)
+    generator <- mkGenerator (Device CPU 0) 0
+    let (t,next) = randn' [4] generator
         (_,next') = randn' [4] next
         (t2,next'') = randn' [4] next'
-        (t3,_) = randn' [5] (cpuGenerator 0)
+        (t3,_) = randn' [5] generator
     shape t2 `shouldBe` [4]
     ((asValue t) :: [Float]) `shouldBe` take 4 (asValue t3)
