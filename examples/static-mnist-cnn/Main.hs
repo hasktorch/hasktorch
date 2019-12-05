@@ -44,6 +44,8 @@ import           Torch.Typed.Native      hiding ( linear
                                                 )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
+import           Torch.Typed.Optim
+import           Torch.Typed.Parameter
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
 import qualified Torch.Device                  as D
@@ -118,9 +120,11 @@ train'
    . _
   => IO ()
 train' = do
+  let learningRate = 0.1
   ATen.manual_seed_L 123
-  init <- A.sample (CNNSpec @ 'D.Float @device)
-  train @BatchSize init (\state _ input -> return $ cnn state input) "static-mnist-cnn.pt"
+  initModel <- A.sample (CNNSpec @ 'D.Float @device)
+  let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
+  train @BatchSize @device initModel initOptim (\model _ input -> return $ cnn model input) learningRate "static-mnist-cnn.pt"
 
 main :: IO ()
 main = do

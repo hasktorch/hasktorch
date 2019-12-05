@@ -174,7 +174,17 @@ in
       hasktorch-examples_cudatoolkit_9_2
       hasktorch-examples_cudatoolkit_10_1
     ;
-
+    hasktorch-docs = (
+      (import ./haddock-combine.nix {
+        runCommand = pkgs.runCommand;
+        lib = pkgs.lib;
+        haskellPackages = pkgs.haskellPackages;
+      }) {hspkgs = [
+            pkgs.haskell.packages."${compiler}".hasktorch_cpu
+            pkgs.haskell.packages."${compiler}".libtorch-ffi_cpu
+          ];
+         }
+    );
     shell-hasktorch-codegen = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-codegen).env;
     shell-inline-c = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c).env;
     shell-inline-c-cpp = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c-cpp).env;

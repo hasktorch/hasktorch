@@ -32,6 +32,9 @@ library
                     , Torch.Typed.NN.Recurrent.LSTM
                     , Torch.Typed.Tensor
                     , Torch.Typed.Parameter
+                    , Torch.Typed.Autograd
+                    , Torch.Typed.Optim
+                    , Torch.Typed.Serialize
                     , Torch.NN
                     , Torch.Scalar
                     , Torch.Backend
@@ -39,6 +42,7 @@ library
                     , Torch.Cast
                     , Torch.Dimname
                     , Torch.Serialize
+                    , Torch.Random
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
@@ -55,6 +59,7 @@ library
                     , safe-exceptions
                     , reflection
                     , singletons
+                    , stm
 
 test-suite spec
   type:               exitcode-stdio-1.0
@@ -72,6 +77,7 @@ test-suite spec
                     , Torch.Typed.FactoriesSpec
                     , Torch.Typed.NativeSpec
                     , SerializeSpec
+                    , RandomSpec
   default-language: Haskell2010
   build-depends:      base >= 4.7 && < 5
                     , hasktorch

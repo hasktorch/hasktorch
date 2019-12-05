@@ -27,19 +27,20 @@
 
 module Torch.Typed.NN.Recurrent.LSTM where
 
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Class                    as ATen
-import qualified ATen.Managed.Type.Tensor      as ATen
-import qualified ATen.Type                     as ATen
+import           Prelude                 hiding ( tanh )
 import           Data.Kind
 import           Data.HList
 import           Foreign.ForeignPtr
 import           GHC.Generics
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
-import           Prelude                 hiding ( tanh )
 import           System.Environment
 import           System.IO.Unsafe
+
+import qualified ATen.Cast                     as ATen
+import qualified ATen.Class                    as ATen
+import qualified ATen.Managed.Type.Tensor      as ATen
+import qualified ATen.Type                     as ATen
 import qualified Torch.Autograd                as A
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
@@ -459,10 +460,8 @@ lstm
      , hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
      , Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) parameters
      , tensorParameters ~ LSTMR inputSize hiddenSize numLayers directionality dtype device
-     , HFoldrM IO TensorListFold [D.ATenTensor] tensorParameters
-     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorParameters)
-     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensorParameters) tensorParameters
-     , HMap ToDependent parameters tensorParameters
+     , ATen.Castable (HList tensorParameters) [D.ATenTensor]
+     , HMap' ToDependent parameters tensorParameters
      )
   => Bool
   -> LSTMWithInit
@@ -494,7 +493,7 @@ lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) inp
     @tensorParameters
     @dtype
     @device
-    (hmap ToDependent . flattenParameters $ lstm)
+    (hmap' ToDependent . flattenParameters $ lstm)
     dropoutProb
     dropoutOn
     (cc', hc')
@@ -528,7 +527,7 @@ lstm dropoutOn (LSTMWithLearnedInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) i
     @tensorParameters
     @dtype
     @device
-    (hmap ToDependent . flattenParameters $ lstm)
+    (hmap' ToDependent . flattenParameters $ lstm)
     dropoutProb
     dropoutOn
     (cc', hc')
@@ -579,10 +578,8 @@ lstmWithDropout, lstmWithoutDropout
      , hxShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
      , Parameterized (LSTM inputSize hiddenSize numLayers directionality dtype device) parameters
      , tensorParameters ~ LSTMR inputSize hiddenSize numLayers directionality dtype device
-     , HFoldrM IO TensorListFold [D.ATenTensor] tensorParameters
-     , Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensorParameters)
-     , HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensorParameters) tensorParameters
-     , HMap ToDependent parameters tensorParameters
+     , ATen.Castable (HList tensorParameters) [D.ATenTensor]
+     , HMap' ToDependent parameters tensorParameters
      )
   => LSTMWithInit
        inputSize
