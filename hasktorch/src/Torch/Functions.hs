@@ -23,7 +23,7 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functions.Native hiding (softmax)
+import Torch.Functions.Native hiding (argmax, softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
@@ -44,11 +44,15 @@ instance Fractional Tensor where
   fromRational i = asTensor @Float $ fromRational @Float i
 
 -- Return upper or lower triangular matrices
-data Tri = Upper | Lower
+data Tri = Upper | Lower deriving (Eq, Show)
 
 -- Reductions, used by BCE loss, see -
 -- https://github.com/pytorch/pytorch/blob/3762cf9cc63e2032410d50f218c1406668177c23/aten/src/ATen/core/Reduction.h
-data Reduction = ReduceNone | ReduceMean | ReduceSum
+data Reduction = ReduceNone | ReduceMean | ReduceSum deriving (Eq, Show)
+
+data Dim = Dim Int
+
+data KeepDim = KeepDim | RemoveDim deriving (Eq, Show)
 
 instance Castable Reduction Int64 where
   cast ReduceNone f = f 0
@@ -66,6 +70,13 @@ sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
 abs :: Tensor -> Tensor
 abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
+
+keepdim KeepDim = True
+keepdim RemoveDim = False
+
+-- deprecates Native version
+argmax :: Dim -> KeepDim -> Tensor -> Tensor
+argmax (Dim d) k t = unsafePerformIO $ (cast3 ATen.argmax_tlb) t d (keepdim k)
 
 add :: Tensor -> Tensor -> Tensor
 add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne

@@ -8,6 +8,7 @@ module Main where
 import Control.Monad (when)
 import GHC.Generics
 import System.Random (mkStdGen, randoms)
+import Prelude hiding (exp)
 
 import Torch.Autograd as A
 import Torch.Functions hiding (take)
@@ -20,9 +21,9 @@ import Common (foldLoop)
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
-    outputFeatures :: Int,
     hiddenFeatures0 :: Int,
-    hiddenFeatures1 :: Int
+    hiddenFeatures1 :: Int,
+    outputFeatures :: Int
     } deriving (Show, Eq)
 
 data MLP = MLP { 
@@ -59,39 +60,35 @@ train trainData = do
     trained <- foldLoop init numIters $
         \state iter -> do
             let idx = take batchSize (drop (iter * batchSize) idxList)
-            -- print (head idx)
             input <- UI.getImages' batchSize dataDim trainData idx
-            let label = UI.getLabels' batchSize trainData [0..50000] -- TODO - review/fix chunking logic
+            let label = UI.getLabels' batchSize trainData idx
                 loss = nllLoss' (mlp state input) label
                 flatParameters = flattenParameters state
                 gradients = A.grad loss flatParameters
-            when (iter `mod` 20 == 0) do
+            when (iter `mod` 50 == 0) do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
             newParam <- mapM A.makeIndependent
-                $ sgd 1e-04 flatParameters gradients
+                $ sgd 1e-3 flatParameters gradients
             pure $ replaceParameters state newParam
     pure trained
     where
-        spec = MLPSpec 784 10 64 32
+        spec = MLPSpec 784 64 32 10
         dataDim = 784
-        numIters = 1000
+        numIters = 3000
         batchSize = 256
 
 
 main :: IO ()
 main = do
     (trainData, testData) <- I.initMnist
-
-    -- print a few labels 
-    let labels = UI.getLabels' 10 trainData [0..100]
-    print labels
-
-    train trainData
+    model <- train trainData
 
     -- show test images + labels
-    foldLoop undefined 5 \_ idx -> do
-        testImg <- reshape [28, 28] <$> UI.getImages' 1 784 trainData [idx]
+    mapM (\idx -> do
+        testImg <- UI.getImages' 1 784 trainData [idx]
         UI.dispImage testImg
-        putStrLn $ "Label : " ++ (show $ UI.getLabels' 1 trainData [idx])
+        putStrLn $ "Model        : " ++ (show . (argmax (Dim 1) RemoveDim) . exp $ mlp model testImg)
+        putStrLn $ "Ground Truth : " ++ (show $ UI.getLabels' 1 trainData [idx])
+        ) [0..10]
 
     putStrLn "Done"

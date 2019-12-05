@@ -62,5 +62,6 @@ dispImage img = do
     where 
         grayScale = grayScale10
         paletteMax = (fromIntegral $ length grayScale) - 1.0
-        scaled :: [[Float]] = let (mn, mx) = (min img, max img)  
-            in asValue $ (img - mn) / (mx - mn) * paletteMax
+        img' = reshape [28, 28] img
+        scaled :: [[Float]] = let (mn, mx) = (min img', max img')  
+            in asValue $ (img' - mn) / (mx - mn) * paletteMax
