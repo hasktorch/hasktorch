@@ -37,13 +37,13 @@ import           Foreign.Storable
 import           GHC.TypeLits
 import           GHC.Exts
 
-import           ATen.Cast
-import           ATen.Class                     ( Castable(..)
+import           LibTorch.ATen.Cast
+import           LibTorch.ATen.Class                     ( Castable(..)
                                                 , CppTuple2(..)
                                                 , CppTuple3(..)
                                                 , CppTuple4(..)
                                                 )
-import qualified ATen.Type                     as ATen
+import qualified LibTorch.ATen.Type                     as ATen
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.Functions               as D hiding (select)

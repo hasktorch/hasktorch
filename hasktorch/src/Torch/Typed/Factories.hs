@@ -26,8 +26,8 @@ import           Data.Reflection
 import           GHC.TypeLits
 import           System.IO.Unsafe
 
-import qualified ATen.Managed.Native           as ATen
-import           ATen.Cast
+import qualified LibTorch.ATen.Managed.Native           as ATen
+import           LibTorch.ATen.Cast
 import qualified Torch.Scalar                  as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D

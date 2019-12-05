@@ -25,19 +25,19 @@ import Data.Proxy
 import Data.Reflection
 import Numeric
 
-import ATen.Cast
-import ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
-import qualified ATen.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
-import qualified ATen.Managed.Type.Context as ATen
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Managed.Type.TensorOptions as ATen
-import qualified ATen.Managed.Type.StdArray as ATen
-import qualified ATen.Managed.Type.StdString as ATen
-import qualified ATen.Managed.Native as ATen
-import qualified ATen.Managed.Cast as ATen
-import qualified ATen.Type as ATen
-import qualified ATen.Const as ATen
-import qualified Torch.Managed.Native as LibTorch
+import LibTorch.ATen.Cast
+import LibTorch.ATen.Class (Castable(..), CppTuple2(..), CppTuple3(..), CppTuple4(..))
+import qualified LibTorch.ATen.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
+import qualified LibTorch.ATen.Managed.Type.Context as ATen
+import qualified LibTorch.ATen.Managed.Type.Tensor as ATen
+import qualified LibTorch.ATen.Managed.Type.TensorOptions as ATen
+import qualified LibTorch.ATen.Managed.Type.StdArray as ATen
+import qualified LibTorch.ATen.Managed.Type.StdString as ATen
+import qualified LibTorch.ATen.Managed.Native as ATen
+import qualified LibTorch.ATen.Managed.Cast as ATen
+import qualified LibTorch.ATen.Type as ATen
+import qualified LibTorch.ATen.Const as ATen
+import qualified LibTorch.Torch.Managed.Native as LibTorch
 
 import Torch.Device
 import Torch.DType

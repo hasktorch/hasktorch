@@ -14,7 +14,7 @@ import qualified Data.ByteString.Lazy          as BS.Lazy
 import qualified Data.ByteString.Internal      as BSI
 import           GHC.TypeLits
 
-import           ATen.Cast
+import           LibTorch.ATen.Cast
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Native
@@ -23,7 +23,7 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.TensorOptions           as D
 import qualified Foreign.ForeignPtr            as F
 import qualified Foreign.Ptr                   as F
-import qualified Torch.Managed.Native          as LibTorch
+import qualified LibTorch.Torch.Managed.Native          as LibTorch
 
 data MnistData =
   MnistData

@@ -36,7 +36,7 @@ import           GHC.TypeLits
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ATen.Class                     ( Castable(..) )
+import           LibTorch.ATen.Class                     ( Castable(..) )
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Functions               as D

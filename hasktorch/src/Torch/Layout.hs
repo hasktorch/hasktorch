@@ -4,9 +4,9 @@
 
 module Torch.Layout where
 
-import ATen.Class (Castable(..))
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
+import LibTorch.ATen.Class (Castable(..))
+import qualified LibTorch.ATen.Const as ATen
+import qualified LibTorch.ATen.Type as ATen
 
 data Layout = Strided | Sparse | Mkldnn
   deriving (Eq, Show)

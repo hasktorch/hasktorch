@@ -9,15 +9,15 @@ module Torch.Functions (
 import System.IO.Unsafe
 import Foreign.ForeignPtr
 
-import qualified ATen.Managed.Native as ATen
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Managed.Type.Scalar as ATen
-import qualified ATen.Managed.Type.Tuple as ATen
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
-import qualified ATen.Managed.Cast
-import ATen.Cast
-import ATen.Class
+import qualified LibTorch.ATen.Managed.Native as ATen
+import qualified LibTorch.ATen.Managed.Type.Tensor as ATen
+import qualified LibTorch.ATen.Managed.Type.Scalar as ATen
+import qualified LibTorch.ATen.Managed.Type.Tuple as ATen
+import qualified LibTorch.ATen.Const as ATen
+import qualified LibTorch.ATen.Type as ATen
+import qualified LibTorch.ATen.Managed.Cast
+import LibTorch.ATen.Cast
+import LibTorch.ATen.Class
 import Data.Int
 
 import Torch.Scalar

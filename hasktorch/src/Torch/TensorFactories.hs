@@ -5,16 +5,16 @@ module Torch.TensorFactories where
 import System.IO.Unsafe
 import Foreign.ForeignPtr
 
-import qualified ATen.Const as ATen
-import qualified ATen.Managed.Native as ATen
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Managed.Type.TensorOptions as ATen
-import qualified ATen.Type as ATen
-import qualified Torch.Managed.Native as LibTorch
-import qualified Torch.Managed.Autograd as LibTorch
-import ATen.Managed.Cast
-import ATen.Class (Castable(..))
-import ATen.Cast
+import qualified LibTorch.ATen.Const as ATen
+import qualified LibTorch.ATen.Managed.Native as ATen
+import qualified LibTorch.ATen.Managed.Type.Tensor as ATen
+import qualified LibTorch.ATen.Managed.Type.TensorOptions as ATen
+import qualified LibTorch.ATen.Type as ATen
+import qualified LibTorch.Torch.Managed.Native as LibTorch
+import qualified LibTorch.Torch.Managed.Autograd as LibTorch
+import LibTorch.ATen.Managed.Cast
+import LibTorch.ATen.Class (Castable(..))
+import LibTorch.ATen.Cast
 
 import Torch.Tensor
 import Torch.TensorOptions

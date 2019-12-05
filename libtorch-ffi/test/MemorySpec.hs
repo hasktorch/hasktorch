@@ -8,13 +8,13 @@ import Control.Exception (bracket)
 import Control.Monad (forM_,forM)
 import Data.Int
 import Foreign
-import ATen.Const
-import ATen.Type
-import ATen.Managed.Type.TensorOptions
-import ATen.Managed.Type.Tensor
-import ATen.Managed.Type.IntArray
-import ATen.Managed.Type.Context
-import ATen.Managed.Native
+import LibTorch.ATen.Const
+import LibTorch.ATen.Type
+import LibTorch.ATen.Managed.Type.TensorOptions
+import LibTorch.ATen.Managed.Type.Tensor
+import LibTorch.ATen.Managed.Type.IntArray
+import LibTorch.ATen.Managed.Type.Context
+import LibTorch.ATen.Managed.Native
 
 import System.Mem ()
 

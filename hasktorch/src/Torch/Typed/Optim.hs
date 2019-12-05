@@ -17,8 +17,8 @@ import           Prelude                 hiding ( sqrt )
 import           Control.Monad.State
 import           Data.HList
 
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Class                    as ATen
+import qualified LibTorch.ATen.Cast                     as ATen
+import qualified LibTorch.ATen.Class                    as ATen
 import qualified Torch.Tensor                  as D
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor

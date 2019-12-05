@@ -33,8 +33,8 @@ import           System.IO.Unsafe
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ATen.Cast
-import qualified ATen.Managed.Type.Context     as ATen
+import           LibTorch.ATen.Cast
+import qualified LibTorch.ATen.Managed.Type.Context     as ATen
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Functions               as D

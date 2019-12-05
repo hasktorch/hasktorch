@@ -7,10 +7,10 @@ module Torch.Cast where
 
 import Foreign.ForeignPtr
 
-import ATen.Managed.Type.IntArray
-import ATen.Type
-import ATen.Class
-import ATen.Cast
+import LibTorch.ATen.Managed.Type.IntArray
+import LibTorch.ATen.Type
+import LibTorch.ATen.Class
+import LibTorch.ATen.Cast
 
 -- define useful casts
 

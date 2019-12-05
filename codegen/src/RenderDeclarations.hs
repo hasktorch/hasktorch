@@ -60,23 +60,23 @@ decodeAndCodeGen basedir fileName = do
     Left err' -> print err'
     Right fns' -> do
       let fns = concat $ map addFunctionWithDefaultArguments fns' 
-      createDirectoryIfMissing True (basedir <> "/ATen")
-      T.writeFile (basedir <> "/ATen/Type.hs") $
+      createDirectoryIfMissing True (basedir <> "/LibTorch/ATen")
+      T.writeFile (basedir <> "/LibTorch/ATen/Type.hs") $
         typeTemplate
-      T.writeFile (basedir <> "/ATen/Managed/Native.hs") $
-        template False True "ATen.Managed.Native" $
+      T.writeFile (basedir <> "/LibTorch/ATen/Managed/Native.hs") $
+        template False True "LibTorch.ATen.Managed.Native" $
         renderFunctions True True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
-      T.writeFile (basedir <> "/ATen/Unmanaged/Native.hs") $
-        template False False "ATen.Unmanaged.Native" $
+      T.writeFile (basedir <> "/LibTorch/ATen/Unmanaged/Native.hs") $
+        template False False "LibTorch.ATen.Unmanaged.Native" $
         renderFunctions False True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
 
-      createDirectoryIfMissing True (basedir <> "/Torch/Managed")
-      createDirectoryIfMissing True (basedir <> "/Torch/Unmanaged")
-      T.writeFile (basedir <> "/Torch/Managed/Native.hs") $
-        template True True "Torch.Managed.Native" $
+      createDirectoryIfMissing True (basedir <> "/LibTorch/Torch/Managed")
+      createDirectoryIfMissing True (basedir <> "/LibTorch/Torch/Unmanaged")
+      T.writeFile (basedir <> "/LibTorch/Torch/Managed/Native.hs") $
+        template True True "LibTorch.Torch.Managed.Native" $
         renderFunctions True True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just True) fns)
-      T.writeFile (basedir <> "/Torch/Unmanaged/Native.hs") $
-        template True False "Torch.Unmanaged.Native" $
+      T.writeFile (basedir <> "/LibTorch/Torch/Unmanaged/Native.hs") $
+        template True False "LibTorch.Torch.Unmanaged.Native" $
         renderFunctions False True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just True) fns)
 
 
@@ -87,26 +87,26 @@ renderImport is_torch_factory_method is_managed module_name =  if is_managed the
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import ATen.Type
-import ATen.Class
-import ATen.Cast
+import LibTorch.ATen.Type
+import LibTorch.ATen.Class
+import LibTorch.ATen.Cast
 import qualified #{replace "Managed" "Unmanaged" module_name} as Unmanaged
-import ATen.Unmanaged.Type.Generator
-import ATen.Unmanaged.Type.IntArray
-import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.Storage
-import ATen.Unmanaged.Type.Tensor
-import ATen.Unmanaged.Type.TensorList
-import ATen.Unmanaged.Type.TensorOptions
-import ATen.Unmanaged.Type.Tuple
-import ATen.Unmanaged.Type.StdString
-import ATen.Unmanaged.Type.StdArray
+import LibTorch.ATen.Unmanaged.Type.Generator
+import LibTorch.ATen.Unmanaged.Type.IntArray
+import LibTorch.ATen.Unmanaged.Type.Scalar
+import LibTorch.ATen.Unmanaged.Type.Storage
+import LibTorch.ATen.Unmanaged.Type.Tensor
+import LibTorch.ATen.Unmanaged.Type.TensorList
+import LibTorch.ATen.Unmanaged.Type.TensorOptions
+import LibTorch.ATen.Unmanaged.Type.Tuple
+import LibTorch.ATen.Unmanaged.Type.StdString
+import LibTorch.ATen.Unmanaged.Type.StdArray
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import ATen.Type
-import ATen.Class
+import LibTorch.ATen.Type
+import LibTorch.ATen.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -151,7 +151,7 @@ typeTemplate = [st|
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ATen.Type where
+module LibTorch.ATen.Type where
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C

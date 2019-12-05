@@ -6,11 +6,11 @@ module Torch.Typed.Serialize where
 import Data.HList
 import           Foreign.ForeignPtr
 
-import qualified Torch.Managed.Serialize as S
+import qualified LibTorch.Torch.Managed.Serialize as S
 import Torch.Typed.Tensor
-import qualified ATen.Class                    as ATen
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Type                     as ATen
+import qualified LibTorch.ATen.Class                    as ATen
+import qualified LibTorch.ATen.Cast                     as ATen
+import qualified LibTorch.ATen.Type                     as ATen
 
 save
   :: forall tensors

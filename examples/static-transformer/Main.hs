@@ -43,10 +43,10 @@ import           GHC.TypeLits.Extra
 import           System.Environment
 import           System.IO.Unsafe
 
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Class                    as ATen
-import qualified ATen.Type                     as ATen
-import qualified ATen.Managed.Type.Tensor      as ATen
+import qualified LibTorch.ATen.Cast                     as ATen
+import qualified LibTorch.ATen.Class                    as ATen
+import qualified LibTorch.ATen.Type                     as ATen
+import qualified LibTorch.ATen.Managed.Type.Tensor      as ATen
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Native     hiding ( linear )

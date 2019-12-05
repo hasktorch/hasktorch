@@ -7,12 +7,12 @@ module Torch.Dimname where
 
 
 import Foreign.ForeignPtr
-import ATen.Class (Castable(..))
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
-import qualified ATen.Managed.Type.Symbol as ATen
-import qualified ATen.Managed.Type.Dimname as ATen
-import qualified ATen.Managed.Type.StdString as ATen
+import LibTorch.ATen.Class (Castable(..))
+import qualified LibTorch.ATen.Const as ATen
+import qualified LibTorch.ATen.Type as ATen
+import qualified LibTorch.ATen.Managed.Type.Symbol as ATen
+import qualified LibTorch.ATen.Managed.Type.Dimname as ATen
+import qualified LibTorch.ATen.Managed.Type.StdString as ATen
 import Data.String
 import System.IO.Unsafe
 
