@@ -1,8 +1,12 @@
 # Untyped MNIST Example
 
-To run, go to the `static-mnist` directory (from the top level `examples/`) and run `setup-data.sh`. (note in the future - will reorganize the location of the mnist data download to avoid confusion).
+This is a simple MLP implementation of an MNIST classifier using untyped tensors
 
-Build and run this example from inside the `static-mnist` directory (the reason for this is the example loads images from the `data/` relative path which is there with
+First, run:
+
+`./setup-data.sh` 
+
+This downloads the mnist dataset. Then run:
 
 `stack run mnist-mlp`
 
