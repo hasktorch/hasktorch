@@ -3757,7 +3757,7 @@ nllLoss weight ignoreIndex prediction target = case shapeVal @ds of
     t'      = [1, foldl (*) h t]
     input'  = D.reshape (natValI @n : natValI @c : t') (toDynamic prediction)
     target' = D.reshape (natValI @n : t') (toDynamic target)
-    out     = unsafePerformIO $ cast5 ATen.nll_loss2d_tttll
+    out     = unsafePerformIO $ ATen.cast5 ATen.Managed.nll_loss2d_tttll
                                       input'
                                       target'
                                       weight
