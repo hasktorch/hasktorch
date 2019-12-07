@@ -36,7 +36,7 @@ kernel1d_rbf sigma length t t' = (sigma'^2) * exp eterm
 -- | derive a covariance matrix from the kernel for points on the axis
 makeCovmatrix :: [Float] -> [Float] -> CovMatrix
 makeCovmatrix axis1 axis2 = 
-    CovMatrix (reshape (kernel1d_rbf 1.0 1.0 t t') [length axis1, length axis2])
+    CovMatrix (reshape [length axis1, length axis2] (kernel1d_rbf 1.0 1.0 t t'))
     where
       (t, t') = makeAxis axis1 axis2
 
@@ -92,7 +92,7 @@ computePosterior dataPredictors dataValues tRange = do
     putStrLn $ "\nCross covariance\n" ++ show crossCov
 
     -- conditional distribution
-    let obsVals = reshape (asTensor dataValues) [dataDim, 1]
+    let obsVals = reshape [dataDim, 1] (asTensor dataValues)
     let (postMu, postCov) = 
             condition
                 priorMuAxis priorMuData 

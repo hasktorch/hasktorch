@@ -37,7 +37,7 @@ executable static-xor-mlp
                      , hasktorch
                      , mtl
                      , reflection
-
+ 
 library static-mnist
   import:              config
   hs-source-dirs:      static-mnist
@@ -170,3 +170,15 @@ executable image-processing
                      , vector
                      , bytestring
                      , safe-exceptions
+
+executable mnist-mlp
+  import:              config
+  hs-source-dirs:      mnist-mlp
+  main-is:             Main.hs
+  other-modules:       UntypedImage
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , bytestring >= 0.10.8
+                     , random >= 1.1
+                     , safe-exceptions
+                     , static-mnist

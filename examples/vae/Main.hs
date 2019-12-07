@@ -86,11 +86,6 @@ reparamaterize mu logvar = do
     eps <- Torch.TensorFactories.randnLike mu
     pure $ mu + eps * exp (0.5 * logvar)
 
--- | Given weights, apply linear layer to an input
-linear :: Linear -> Tensor -> Tensor
-linear Linear{..} input = squeezeAll $ matmul input depWeight + depBias
-  where (depWeight, depBias) = (toDependent weight, toDependent bias)
-
 -- | Multivariate 0-mean normal via cholesky decomposition
 mvnCholesky :: Tensor -> Int -> Int -> IO Tensor
 mvnCholesky cov n axisDim = do

@@ -39,8 +39,7 @@ deriving instance Generic LinearSpec
 deriving instance Serialise LinearSpec
 
 model :: Linear -> Tensor -> Tensor
-model Linear {..} input = squeezeAll $ matmul input depWeight + depBias
-  where (depWeight, depBias) = (toDependent weight, toDependent bias)
+model state input = squeezeAll $ linear state input
 
 groundTruth :: Tensor -> Tensor
 groundTruth t = squeezeAll $ matmul t weight + bias

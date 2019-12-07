@@ -21,6 +21,7 @@ library
                     , Torch.TensorFactories
                     , Torch.Functions
                     , Torch.Functions.Native
+                    , Torch.Initializers
                     , Torch.Autograd
                     , Torch.Typed
                     , Torch.Typed.Aux

@@ -23,7 +23,8 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functions.Native
+import Torch.Functions.Native hiding (argmax, linear, softmax)
+import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar
 kOne = unsafePerformIO $ ATen.newScalar_i 1
@@ -43,11 +44,15 @@ instance Fractional Tensor where
   fromRational i = asTensor @Float $ fromRational @Float i
 
 -- Return upper or lower triangular matrices
-data Tri = Upper | Lower
+data Tri = Upper | Lower deriving (Eq, Show)
 
 -- Reductions, used by BCE loss, see -
 -- https://github.com/pytorch/pytorch/blob/3762cf9cc63e2032410d50f218c1406668177c23/aten/src/ATen/core/Reduction.h
-data Reduction = ReduceNone | ReduceMean | ReduceSum
+data Reduction = ReduceNone | ReduceMean | ReduceSum deriving (Eq, Show)
+
+data Dim = Dim Int
+
+data KeepDim = KeepDim | RemoveDim deriving (Eq, Show)
 
 instance Castable Reduction Int64 where
   cast ReduceNone f = f 0
@@ -65,6 +70,13 @@ sumAll t = unsafePerformIO $ (cast1 ATen.sum_t) t
 
 abs :: Tensor -> Tensor
 abs t = unsafePerformIO $ (cast1 ATen.abs_t) t
+
+keepdim KeepDim = True
+keepdim RemoveDim = False
+
+-- deprecates Native version
+argmax :: Dim -> KeepDim -> Tensor -> Tensor
+argmax (Dim d) k t = unsafePerformIO $ (cast3 ATen.argmax_tlb) t d (keepdim k)
 
 add :: Tensor -> Tensor -> Tensor
 add a b = unsafePerformIO $ (cast3 ATen.add_tts) a b kOne
@@ -186,8 +198,18 @@ squeezeAll t = unsafePerformIO $ (cast1 ATen.squeeze_t) t
 binary_cross_entropy_loss :: Tensor -> Tensor -> Tensor -> Reduction-> Tensor
 binary_cross_entropy_loss t target weight reduction = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target weight reduction
 
+-- | BCE with weights defaulted to 1.0 & reduction defaulted to ReduceMean
+binary_cross_entropy_loss' :: Tensor -> Tensor -> Tensor
+binary_cross_entropy_loss' t target = unsafePerformIO $ (cast4 ATen.binary_cross_entropy_tttl) t target (onesLike target) ReduceMean
+
 mse_loss :: Tensor -> Tensor -> Tensor
 mse_loss a b = unsafePerformIO $ (cast3 ATen.mse_loss_ttl) a b ATen.kMean
+
+nllLoss' :: Tensor -> Tensor -> Tensor
+nllLoss' t target = unsafePerformIO $ (cast5 ATen.nll_loss_tttll) t target weight ReduceMean (-100 :: Int)
+    where
+        nClass = (shape t) !! 1 -- TODO nicer runtime error if input dimensions don't conform
+        weight = ones' [nClass]
 
 conv2d :: Tensor -> Tensor -> Tensor -> (Int, Int) -> (Int, Int) -> Tensor
 conv2d input weight bias (dh, dw) (ph, pw) = unsafePerformIO $
@@ -198,8 +220,11 @@ maxPool2d :: Tensor -> (Int, Int) -> (Int, Int) -> (Int, Int) -> Tensor
 maxPool2d input (kh, kw) (dh, dw) (ph, pw) = unsafePerformIO $
     (cast6 ATen.max_pool2d_tllllb) input ([kh, kw] :: [Int]) ([dh, dw] :: [Int]) ([ph, pw] :: [Int]) ([1, 1] :: [Int]) False
 
-logSoftmax :: Tensor -> Int -> Tensor
-logSoftmax input dim = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
+softmax :: Int -> Tensor -> Tensor
+softmax dim input = unsafePerformIO $ (cast3 ATen.softmax_tls) input dim (dtype input)
+
+logSoftmax :: Int -> Tensor -> Tensor
+logSoftmax dim input = unsafePerformIO $ (cast3 ATen.log_softmax_tls) input dim (dtype input)
 
 inverse :: Tensor -> Tensor
 inverse t = unsafePerformIO $ (cast1 ATen.inverse_t) t

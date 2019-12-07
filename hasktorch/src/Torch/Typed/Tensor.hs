@@ -376,7 +376,7 @@ reshape
      )
   => Tensor device dtype shape
   -> Tensor device dtype shape'
-reshape t = UnsafeMkTensor $ D.reshape (toDynamic t) (shapeVal @shape')
+reshape t = UnsafeMkTensor $ D.reshape (shapeVal @shape') (toDynamic t)
 
 instance Castable (Tensor device dtype shape) D.ATenTensor where
   cast (UnsafeMkTensor (D.Unsafe aten_tensor)) f = f aten_tensor
