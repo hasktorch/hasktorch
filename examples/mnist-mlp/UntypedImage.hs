@@ -56,10 +56,11 @@ dispImage img = do
     mapM (\row ->
         mapM (\col -> 
             putChar $ grayScale !! (P.floor $ scaled !! row !! col)
-            ) [0..27] >>  putStrLn ""
-        ) [0..27]
+            ) [0,downSamp..27] >>  putStrLn ""
+        ) [0,downSamp..27]
     pure ()
     where 
+        downSamp = 2
         grayScale = grayScale10
         paletteMax = (fromIntegral $ length grayScale) - 1.0
         img' = reshape [28, 28] img

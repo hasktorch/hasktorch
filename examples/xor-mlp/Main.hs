@@ -46,7 +46,7 @@ instance Parameterized MLP
 --     return $ mlp { layers = new_layers }
 
 mlp :: MLP -> Tensor -> Tensor
-mlp MLP{..} input = foldl' revApply input $ intersperse nonlinearity $ map linear' layers
+mlp MLP{..} input = foldl' revApply input $ intersperse nonlinearity $ map linear layers
   where revApply x f = f x
 
 --------------------------------------------------------------------------------

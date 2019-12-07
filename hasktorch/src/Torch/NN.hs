@@ -113,10 +113,10 @@ data LinearSpec = LinearSpec { in_features :: Int, out_features :: Int }
 
 data Linear = Linear { weight :: Parameter, bias :: Parameter } deriving (Show, Generic)
 
-linear' :: Linear -> Tensor -> Tensor
-linear' layer input = linear input w b
+linear :: Linear -> Tensor -> Tensor
+linear layer input = linear' input w b
     where
-        linear input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
+        linear' input weight bias = unsafePerformIO $ (cast3 ATen.linear_ttt) input weight bias
         w = toDependent (weight layer)
         b = toDependent (bias layer)
 

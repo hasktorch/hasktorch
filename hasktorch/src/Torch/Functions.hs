@@ -23,7 +23,7 @@ import Data.Int
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functions.Native hiding (argmax, softmax)
+import Torch.Functions.Native hiding (argmax, linear, softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar

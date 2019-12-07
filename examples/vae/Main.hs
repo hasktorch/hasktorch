@@ -67,8 +67,8 @@ vaeLoss recon_x x mu logvar = reconLoss + kld
 model :: VAEState -> Tensor -> IO ModelOutput
 model VAEState{..} input = do
     let encoded = mlp encoderState nonlinearity input
-        mu = (linear' muFC) encoded
-        logvar = (linear' logvarFC) encoded
+        mu = (linear muFC) encoded
+        logvar = (linear logvarFC) encoded
     z <- reparamaterize mu logvar
     let output = mlp decoderState nonlinearity z
     pure $ ModelOutput output mu logvar
@@ -77,7 +77,7 @@ model VAEState{..} input = do
 mlp :: [Linear] -> (Tensor -> Tensor) -> Tensor -> Tensor
 mlp mlpState nonlin input = foldl' revApply input layerFunctionsList
   where
-    layerFunctionsList = intersperse nonlin $ (map linear' mlpState)
+    layerFunctionsList = intersperse nonlin $ (map linear mlpState)
     revApply x f = f x
 
 -- | Reparamaterization trick to sample from latent space while allowing differentiation

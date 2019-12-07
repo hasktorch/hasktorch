@@ -18,7 +18,7 @@ num_iters = 2000
 num_features = 3
 
 model :: Linear -> Tensor -> Tensor
-model state input = squeezeAll $ linear' state input
+model state input = squeezeAll $ linear state input
 
 groundTruth :: Tensor -> Tensor
 groundTruth t = squeezeAll $ matmul t weight + bias
