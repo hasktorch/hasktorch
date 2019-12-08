@@ -76,6 +76,7 @@ test-suite spec
                     , Torch.Typed.TensorSpec
                     , Torch.Typed.FactoriesSpec
                     , Torch.Typed.NativeSpec
+                    , Torch.Typed.AutogradSpec
                     , Torch.Typed.OptimSpec
                     , SerializeSpec
                     , RandomSpec
