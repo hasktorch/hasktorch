@@ -18,6 +18,7 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Torch.Typed.OptimSpec
   ( Torch.Typed.OptimSpec.spec
@@ -34,9 +35,11 @@ import           Foreign.Storable
 import           Data.HList
 import           Data.Kind
 import           Data.Proxy
+import           Data.Maybe
 import           Data.Reflection
 import           GHC.Generics
 import           GHC.TypeLits
+import           GHC.Exts
 
 import           Test.Hspec
 import           Test.QuickCheck
@@ -126,7 +129,7 @@ rosenbrock Rosenbrock {..} a b =
   let x' = toDependent x
       y' = toDependent y
       square c = pow (2 :: Int) c
-  in  reshape $ square (cadd a (neg x')) + cmul b (square (y' - x' * x'))
+  in  reshape $ square (csub a x') + cmul b (square (y' - square x'))
 
 instance
   ( RandDTypeIsValid device dtype
@@ -135,8 +138,7 @@ instance
   ) => A.Randomizable (RosenbrockSpec dtype device)
                       (Rosenbrock     dtype device)
  where
-  sample _ =
-    Rosenbrock <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+  sample _ = Rosenbrock <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
 data AckleySpec (features :: Nat)
                 (dtype :: D.DType)
@@ -170,12 +172,12 @@ ackley
   -> a
   -> Tensor device dtype '[]
 ackley Ackley {..} a b c =
-  cmul (-a) (exp . cmul b . sqrt . cdiv d . sumAll $ pos' * pos')
-    - exp (cdiv d . sumAll . cos . cmul c $ pos')
+  cmul (-a) (exp . cmul (-b) . sqrt . cdiv d . sumAll $ pos' * pos')
     + cadd a (exp ones)
+    - exp (cdiv d . sumAll . cos . cmul c $ pos')
  where
-  pos' = toDependent pos
   d    = product . shape $ pos'
+  pos' = toDependent pos
 
 instance
   ( RandDTypeIsValid device dtype
@@ -201,6 +203,7 @@ optimize
      , Parameterized model parameters
      , Optimizer optim gradients tensors dtype device
      , HMapM' IO MakeIndependent tensors parameters
+     , Show model
      )
   => model
   -> optim
@@ -236,9 +239,7 @@ instance
         learningRate = 0.1
         numIter      = 1000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
-    let finalLoss = loss model
-    print finalLoss
-    isNonZero (isclose 1e-03 1e-04 False finalLoss zeros) `shouldBe` True
+    isNonZero (isclose 1e-03 1e-04 False (loss model) zeros) `shouldBe` True
   apply GDMConvQuadSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (ConvQuadSpec @features @dtype @device)
@@ -249,9 +250,7 @@ instance
         learningRate = 0.1
         numIter      = 1000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
-    let finalLoss = loss model
-    print finalLoss
-    isNonZero (isclose 1e-03 1e-04 False finalLoss zeros) `shouldBe` True
+    isNonZero (isclose 1e-03 1e-04 False (loss model) zeros) `shouldBe` True
   apply AdamConvQuadSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (ConvQuadSpec @features @dtype @device)
@@ -262,9 +261,7 @@ instance
         learningRate = 0.1
         numIter      = 1000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
-    let finalLoss = loss model
-    print finalLoss
-    isNonZero (isclose 1e-03 1e-04 False finalLoss zeros) `shouldBe` True
+    isNonZero (isclose 1e-03 1e-04 False (loss model) zeros) `shouldBe` True
 
 data OptimRosenbrockSpec = GDRosenbrockSpec | GDMRosenbrockSpec | AdamRosenbrockSpec
 
@@ -285,12 +282,11 @@ instance
         a :: Float   = 1.0
         b :: Float   = 100.0
         loss model   = rosenbrock model a b
-        learningRate = 0.1
-        numIter      = 1000
+        learningRate = 0.001
+        numIter      = 50000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
-    let finalLoss = loss model
-    print finalLoss
-    isNonZero (isclose 1e-03 1e-04 False finalLoss zeros) `shouldBe` True
+    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-08 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
+    isNonZero (isclose 1e-05 1e-08 False (loss model) zeros) `shouldBe` True
   apply GDMRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (RosenbrockSpec @dtype @device)
@@ -298,12 +294,11 @@ instance
         a :: Float   = 1.0
         b :: Float   = 100.0
         loss model   = rosenbrock model a b
-        learningRate = 0.1
-        numIter      = 1000
+        learningRate = 0.001
+        numIter      = 5000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
-    let finalLoss = loss model
-    print finalLoss
-    isNonZero (isclose 1e-03 1e-04 False finalLoss zeros) `shouldBe` True
+    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-05 1e-08 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
+    isNonZero (isclose 1e-05 1e-08 False (loss model) zeros) `shouldBe` True
   apply AdamRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (RosenbrockSpec @dtype @device)
@@ -311,18 +306,16 @@ instance
         a :: Float   = 1.0
         b :: Float   = 100.0
         loss model   = rosenbrock model a b
-        learningRate = 0.1
-        numIter      = 1000
+        learningRate = 0.005
+        numIter      = 10000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
-    let finalLoss = loss model
-    print finalLoss
-    isNonZero (isclose 1e-03 1e-04 False finalLoss zeros) `shouldBe` True
+    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-07 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
+    isNonZero (isclose 1e-05 1e-07 False (loss model) zeros) `shouldBe` True
 
 data OptimAckleySpec = GDAckleySpec | GDMAckleySpec | AdamAckleySpec
 
 instance
-  ( KnownNat features
-  , KnownDType dtype
+  ( KnownDType dtype
   , KnownDevice device
   , BasicArithmeticDTypeIsValid device dtype
   , StandardFloatingPointDTypeValidation device dtype
@@ -330,51 +323,51 @@ instance
   , RandDTypeIsValid device dtype
   , dtype ~ SumDType dtype
   ) => Apply OptimAckleySpec
-             (Proxy device, (Proxy dtype, Proxy features))
+             (Proxy device, Proxy dtype)
              (() -> IO ())
  where
   apply GDAckleySpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (AckleySpec @features @dtype @device)
+    initModel <- A.sample (AckleySpec @2 @dtype @device)
     let initOptim = mkGD
         a :: Float = 20.0
         b :: Float = 0.2
         c :: Float = 2 * pi
         loss model = ackley model a b c
-        learningRate = 0.1
-        numIter      = 1000
+        learningRate = 0.00002
+        numIter      = 10000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
     let finalLoss = loss model
-    print finalLoss
-    isNonZero (isclose 1e-03 1e-04 False finalLoss zeros) `shouldBe` True
+    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
+    isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
   apply GDMAckleySpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (AckleySpec @features @dtype @device)
+    initModel <- A.sample (AckleySpec @2 @dtype @device)
     let initOptim = mkGDM 0.9 (flattenParameters initModel)
         a :: Float = 20.0
         b :: Float = 0.2
         c :: Float = 2 * pi
         loss model = ackley model a b c
-        learningRate = 0.1
-        numIter      = 1000
+        learningRate = 0.00001
+        numIter      = 10000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
     let finalLoss = loss model
-    print finalLoss
-    isNonZero (isclose 1e-03 1e-04 False finalLoss zeros) `shouldBe` True
+    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
+    isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
   apply AdamAckleySpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (AckleySpec @features @dtype @device)
+    initModel <- A.sample (AckleySpec @2 @dtype @device)
     let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
         a :: Float = 20.0
         b :: Float = 0.2
         c :: Float = 2 * pi
         loss model = ackley model a b c
-        learningRate = 0.1
-        numIter      = 1000
+        learningRate = 0.00001
+        numIter      = 20000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
     let finalLoss = loss model
-    print finalLoss
-    isNonZero (isclose 1e-03 1e-04 False finalLoss zeros) `shouldBe` True
+    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
+    isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
 
 spec = foldMap spec' availableDevices
 
@@ -382,139 +375,49 @@ spec' :: D.Device -> Spec
 spec' device = describe ("for " <> show device) $ do
   describe "GD" $ do
     it "convex quadratic" $ case device of
-      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDConvQuadSpec
-        ()
-        (hattach
-          cpu
-          (hCartesianProduct standardFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
-      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDConvQuadSpec
-        ()
-        (hattach
-          cuda0
-          (hCartesianProduct allFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
+      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDConvQuadSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDConvQuadSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
     it "Rosenbrock" $ case device of
-      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDRosenbrockSpec
-        ()
-        (hattach cpu standardFloatingPointDTypes)
+      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDRosenbrockSpec () (hattach cpu   standardFloatingPointDTypes)
       D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
         hfoldrM @IO GDRosenbrockSpec () (hattach cuda0 allFloatingPointDTypes)
     it "Ackley" $ case device of
-      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDAckleySpec
-        ()
-        (hattach
-          cpu
-          (hCartesianProduct standardFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
-      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDAckleySpec
-        ()
-        (hattach
-          cuda0
-          (hCartesianProduct allFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
+      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDAckleySpec () (hattach cpu   standardFloatingPointDTypes)
+      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDAckleySpec () (hattach cuda0 allFloatingPointDTypes)
   describe "GDM" $ do
     it "convex quadratic" $ case device of
-      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDMConvQuadSpec
-        ()
-        (hattach
-          cpu
-          (hCartesianProduct standardFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
-      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDMConvQuadSpec
-        ()
-        (hattach
-          cuda0
-          (hCartesianProduct allFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
+      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDMConvQuadSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDMConvQuadSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
     it "Rosenbrock" $ case device of
-      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDMRosenbrockSpec
-        ()
-        (hattach cpu standardFloatingPointDTypes)
+      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDMRosenbrockSpec () (hattach cpu   standardFloatingPointDTypes)
       D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
         hfoldrM @IO GDMRosenbrockSpec () (hattach cuda0 allFloatingPointDTypes)
     it "Ackley" $ case device of
-      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDMAckleySpec
-        ()
-        (hattach
-          cpu
-          (hCartesianProduct standardFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
-      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } -> hfoldrM @IO
-        GDMAckleySpec
-        ()
-        (hattach
-          cuda0
-          (hCartesianProduct allFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
+      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDMAckleySpec () (hattach cpu   standardFloatingPointDTypes)
+      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        hfoldrM @IO GDMAckleySpec () (hattach cuda0 allFloatingPointDTypes)
   describe "Adam" $ do
     it "convex quadratic" $ case device of
-      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } -> hfoldrM @IO
-        AdamConvQuadSpec
-        ()
-        (hattach
-          cpu
-          (hCartesianProduct standardFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
-      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } -> hfoldrM @IO
-        AdamConvQuadSpec
-        ()
-        (hattach
-          cuda0
-          (hCartesianProduct allFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
+      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
+        hfoldrM @IO AdamConvQuadSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        hfoldrM @IO AdamConvQuadSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
     it "Rosenbrock" $ case device of
-      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } -> hfoldrM @IO
-        AdamRosenbrockSpec
-        ()
-        (hattach cpu standardFloatingPointDTypes)
+      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
+        hfoldrM @IO AdamRosenbrockSpec () (hattach cpu   standardFloatingPointDTypes)
       D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
         hfoldrM @IO AdamRosenbrockSpec () (hattach cuda0 allFloatingPointDTypes)
     it "Ackley" $ case device of
-      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } -> hfoldrM @IO
-        AdamAckleySpec
-        ()
-        (hattach
-          cpu
-          (hCartesianProduct standardFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
-      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } -> hfoldrM @IO
-        AdamAckleySpec
-        ()
-        (hattach
-          cuda0
-          (hCartesianProduct allFloatingPointDTypes
-                             (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)
-          )
-        )
+      D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
+        hfoldrM @IO AdamAckleySpec () (hattach cpu   standardFloatingPointDTypes)
+      D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+        hfoldrM @IO AdamAckleySpec () (hattach cuda0 allFloatingPointDTypes)

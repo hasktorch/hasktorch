@@ -2237,9 +2237,11 @@ isComplex
 isComplex input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_complex_t input
 
 -- | is non-zero
+-- this operation is only defined for tensors with shape '[] or '[1]
 isNonZero
   :: forall shape dtype device
-   . Tensor device dtype shape  -- ^ input
+   . (Numel shape ~ 1)
+  => Tensor device dtype shape  -- ^ input
   -> Bool -- ^ output
 isNonZero input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_nonzero_t input
 
