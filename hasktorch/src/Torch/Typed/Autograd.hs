@@ -21,9 +21,9 @@ import qualified Torch.Tensor                  as D
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 
-type family GradR (parameters :: [a]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
-  GradR '[] _ _ = '[]
-  GradR (Parameter device dtype shape ': parameters) dtype device = Tensor device dtype shape ': GradR parameters dtype device
+type family GradR (parameters :: [a]) :: [a] where
+  GradR '[] = '[]
+  GradR (Parameter device dtype shape ': parameters) = Tensor device dtype shape ': GradR parameters
 
 -- | calculate gradients of a zero-dimensional tensor with respect to a list of parameters
 grad
