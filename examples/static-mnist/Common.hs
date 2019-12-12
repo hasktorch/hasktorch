@@ -80,11 +80,10 @@ errorCount
      , SumDTypeIsValid device 'D.Bool
      , ComparisonDTypeIsValid device 'D.Int64
      )
-  => Tensor device 'D.Float '[batchSize, outputFeatures]
-  -> Tensor device 'D.Int64 '[batchSize]
+  => Tensor device 'D.Float '[batchSize, outputFeatures] -- ^ prediction
+  -> Tensor device 'D.Int64 '[batchSize] -- ^ target
   -> Tensor device 'D.Float '[]
-errorCount prediction target =
-  toDType @D.Float . sumAll . ne (argmax @1 @DropDim prediction) $ target
+errorCount prediction = toDType @D.Float . sumAll . ne (argmax @1 @DropDim prediction)
 
 train
   :: forall (batchSize :: Nat) (device :: (D.DeviceType, Nat)) model optim gradients parameters tensors
@@ -93,7 +92,7 @@ train
      , SumDTypeIsValid device 'D.Bool
      , ComparisonDTypeIsValid device 'D.Int64
      , KnownDevice device
-     , gradients ~ GradR parameters 'D.Float device
+     , gradients ~ GradR parameters
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
      , ATen.Castable (HList gradients) [D.ATenTensor]
