@@ -196,7 +196,7 @@ foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 optimize
   :: forall model optim parameters tensors gradients dtype device
-   . ( gradients ~ GradR parameters dtype device
+   . ( gradients ~ GradR parameters
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
      , ATen.Castable (HList gradients) [D.ATenTensor]

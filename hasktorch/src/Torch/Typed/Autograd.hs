@@ -28,7 +28,7 @@ type family GradR (parameters :: [a]) :: [a] where
 -- | calculate gradients of a zero-dimensional tensor with respect to a list of parameters
 grad
   :: forall dtype device parameters gradients tensors
-   . ( gradients ~ GradR parameters dtype device
+   . ( gradients ~ GradR parameters
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
      , ATen.Castable (HList gradients) [D.ATenTensor]

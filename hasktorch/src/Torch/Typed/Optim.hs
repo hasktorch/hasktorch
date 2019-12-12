@@ -45,7 +45,7 @@ class Optimizer optim gradients tensors dtype device where
 runStep
   :: forall model optim parameters gradients tensors dtype device
    . ( Parameterized model parameters
-     , gradients ~ GradR parameters dtype device
+     , gradients ~ GradR parameters
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
      , ATen.Castable (HList gradients) [D.ATenTensor]
