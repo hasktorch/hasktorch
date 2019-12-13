@@ -5,6 +5,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Torch.Typed.Autograd where
 
@@ -24,6 +26,22 @@ import           Torch.Typed.Parameter
 type family GradR (parameters :: [a]) :: [a] where
   GradR '[] = '[]
   GradR (Parameter device dtype shape ': parameters) = Tensor device dtype shape ': GradR parameters
+
+class HasGrad a b | a -> b where
+  grad' :: forall dtype device . Tensor device dtype '[] -> a -> b
+
+instance HasGrad (Tensor dtype device shape) (Tensor dtype device shape) where
+  grad' = _undefined
+
+instance HasGrad (Parameter dtype device shape) (Tensor dtype device shape) where
+  grad' = _undefined
+
+instance HasGrad (HList '[]) (HList '[])  where
+  grad' = _undefined
+
+instance (HasGrad a b, HasGrad (HList as) (HList bs)) => HasGrad (HList (a ': as)) (HList (b ': bs)) where
+  grad' = _undefined
+
 
 -- | calculate gradients of a zero-dimensional tensor with respect to a list of parameters
 grad
