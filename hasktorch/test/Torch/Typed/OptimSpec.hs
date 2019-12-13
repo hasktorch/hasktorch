@@ -83,16 +83,6 @@ data ConvQuad (features :: Nat)
     -> ConvQuad features dtype device
  deriving (Show, Generic)
 
-convQuad
-  :: forall features dtype device
-   . DotDTypeIsValid device dtype
-  => ConvQuad features dtype device
-  -> Tensor device dtype '[features, features]
-  -> Tensor device dtype '[features]
-  -> Tensor device dtype '[]
-convQuad ConvQuad {..} a b =
-  let w' = toDependent w in cmul (0.5 :: Float) (dot w' (mv a w')) - dot b w'
-
 instance
   ( RandDTypeIsValid device dtype
   , KnownNat features
@@ -102,6 +92,16 @@ instance
                       (ConvQuad     features dtype device)
  where
   sample _ = ConvQuad <$> (makeIndependent =<< randn)
+
+convQuad
+  :: forall features dtype device
+   . DotDTypeIsValid device dtype
+  => ConvQuad features dtype device
+  -> Tensor device dtype '[features, features]
+  -> Tensor device dtype '[features]
+  -> Tensor device dtype '[]
+convQuad ConvQuad {..} a b =
+  let w' = toDependent w in cmul (0.5 :: Float) (dot w' (mv a w')) - dot b w'
 
 data RosenbrockSpec (dtype :: D.DType)
                     (device :: (D.DeviceType, Nat))
@@ -118,6 +118,15 @@ data Rosenbrock (dtype :: D.DType)
     -> Rosenbrock dtype device
  deriving (Show, Generic)
 
+instance
+  ( RandDTypeIsValid device dtype
+  , KnownDType dtype
+  , KnownDevice device
+  ) => A.Randomizable (RosenbrockSpec dtype device)
+                      (Rosenbrock     dtype device)
+ where
+  sample _ = Rosenbrock <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
+
 rosenbrock
   :: forall a dtype device
    . D.Scalar a
@@ -130,15 +139,6 @@ rosenbrock Rosenbrock {..} a b =
       y' = toDependent y
       square c = pow (2 :: Int) c
   in  reshape $ square (csub a x') + cmul b (square (y' - square x'))
-
-instance
-  ( RandDTypeIsValid device dtype
-  , KnownDType dtype
-  , KnownDevice device
-  ) => A.Randomizable (RosenbrockSpec dtype device)
-                      (Rosenbrock     dtype device)
- where
-  sample _ = Rosenbrock <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
 
 data AckleySpec (features :: Nat)
                 (dtype :: D.DType)
@@ -154,6 +154,17 @@ data Ackley (features :: Nat)
      . { pos :: Parameter device dtype '[features] }
     -> Ackley features dtype device
  deriving (Show, Generic)
+
+instance
+  ( RandDTypeIsValid device dtype
+  , KnownNat features
+  , KnownDType dtype
+  , KnownDevice device
+  ) => A.Randomizable (AckleySpec features dtype device)
+                      (Ackley     features dtype device)
+ where
+  sample _ =
+    Ackley <$> (makeIndependent =<< randn)
 
 ackley
   :: forall features a dtype device
@@ -178,17 +189,6 @@ ackley Ackley {..} a b c =
  where
   d    = product . shape $ pos'
   pos' = toDependent pos
-
-instance
-  ( RandDTypeIsValid device dtype
-  , KnownNat features
-  , KnownDType dtype
-  , KnownDevice device
-  ) => A.Randomizable (AckleySpec features dtype device)
-                      (Ackley     features dtype device)
- where
-  sample _ =
-    Ackley <$> (makeIndependent =<< randn)
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b

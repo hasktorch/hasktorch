@@ -22,12 +22,12 @@
 
 module Torch.Typed.AutogradSpec
   ( Torch.Typed.AutogradSpec.spec
+  , Torch.Typed.AutogradSpec.gradientsTest'
   )
 where
 
-import           Prelude                 hiding ( exp
-                                                , cos
-                                                , sqrt
+import           Prelude                 hiding ( cos
+                                                , sin
                                                 )
 import           Control.Monad                  ( foldM )
 import           Control.Exception.Safe
@@ -40,6 +40,7 @@ import           Data.Reflection
 import           GHC.Generics
 import           GHC.TypeLits
 import           GHC.Exts
+import           System.IO.Unsafe
 
 import           Test.Hspec
 import           Test.QuickCheck
@@ -83,6 +84,17 @@ data Rastrigin1 (features :: Nat)
     -> Rastrigin1 features dtype device
  deriving (Show, Generic)
 
+instance
+  ( RandDTypeIsValid device dtype
+  , KnownNat features
+  , KnownDType dtype
+  , KnownDevice device
+  ) => A.Randomizable (Rastrigin1Spec features dtype device)
+                      (Rastrigin1     features dtype device)
+ where
+  sample _ =
+    Rastrigin1 <$> (makeIndependent =<< randn)
+
 rastrigin1
   :: forall features a dtype device
    . ( KnownNat features
@@ -101,6 +113,25 @@ rastrigin1 Rastrigin1 {..} a =
       n = natValI @features
   in  (cmul a . cmul n $ ones) + sumAll (x' * x' - (cmul a . cos . cmul (2 * pi :: Double)) x')
 
+gradientsRastrigin1 Rastrigin1 {..} a =
+  let x' = toDependent x
+  in  (cmul (2 :: Int) (x' + (cmul a . cmul (pi :: Double) . sin . cmul (2 * pi :: Double)) x')) :. HNil
+
+gradients model a = grad (rastrigin1 model a) (flattenParameters model)
+
+data Isclose = Isclose
+
+instance Apply' Isclose (Tensor device dtype shape, Tensor device dtype shape) (Tensor device 'D.Bool shape)
+  where apply' _ (a, b) = unsafePerformIO $ do
+                            print a
+                            print b
+                            pure $ isclose 1e-05 1e-08 False a b
+
+gradientsTest model a = hZipWith Isclose (gradients model a) (gradientsRastrigin1 model a)
+
+gradientsTest' = do
+  model <- A.sample (Rastrigin1Spec @10 @'D.Float @'( 'D.CPU, 0))
+  pure $ gradientsTest model (10 :: Int)
 
 spec :: Spec
 spec = return ()
