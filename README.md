@@ -24,6 +24,8 @@ Internals (for contributing developers):
 
 ## Getting Started
 
+### on OSX or Ubuntu-like OS's
+
 The following steps run a toy linear regression example, assuming the hasktorch repository has just been cloned.
 
 Starting at the top-level directory of the project, go to the `deps/` (dependencies) directory and run the `get-deps.sh` shell script to retrieve project dependencies with the following commands:
@@ -46,6 +48,15 @@ source setenv
 ```
 
 Note `source setenv` should be run from the top-level directory of the repo.
+
+### on NixOS
+
+```
+(cd hasktorch && nix-shell)
+```
+If you are running cabal or stack to develop hasktorch, there is a shell hook to tell you which `extra-lib-dirs` and `extra-include-dirs` fields to include in your stack.yaml or cabal.project.local
+
+### Building examples
 
 Finally, try building and running the linear regression example:
 
