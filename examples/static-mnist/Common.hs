@@ -92,7 +92,7 @@ train
      , SumDTypeIsValid device 'D.Bool
      , ComparisonDTypeIsValid device 'D.Int64
      , KnownDevice device
-     , gradients ~ GradR parameters
+     , HasGrad (HList parameters) (HList gradients)
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
      , ATen.Castable (HList gradients) [D.ATenTensor]
