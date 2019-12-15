@@ -126,8 +126,12 @@ cuda0 = Proxy @'( 'D.CUDA, 0)
 --       (SomeDeviceProxies (Proxy :: Proxy tt)) -> SomeDeviceProxies $ Proxy @(proxy ': tt)
 
 availableDevices =
-  let hasCuda = unsafePerformIO $ cast0 ATen.hasCUDA in
-    [ D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ] <> (if hasCuda then [D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }] else mempty)
+  let hasCuda = unsafePerformIO $ cast0 ATen.hasCUDA
+  in  [D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }]
+        <> (if hasCuda
+             then [D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }]
+             else mempty
+           )
 
 spec :: Spec
 spec = return ()

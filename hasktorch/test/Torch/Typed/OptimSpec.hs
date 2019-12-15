@@ -101,7 +101,7 @@ convQuad
   -> Tensor device dtype '[features]
   -> Tensor device dtype '[]
 convQuad ConvQuad {..} a b =
-  let w' = toDependent w in cmul (0.5 :: Float) (dot w' (mv a w')) - dot b w'
+  let w' = Torch.Typed.Parameter.toDependent w in cmul (0.5 :: Float) (dot w' (mv a w')) - dot b w'
 
 data RosenbrockSpec (dtype :: D.DType)
                     (device :: (D.DeviceType, Nat))
@@ -135,8 +135,8 @@ rosenbrock
   -> a
   -> Tensor device dtype '[]
 rosenbrock Rosenbrock {..} a b =
-  let x' = toDependent x
-      y' = toDependent y
+  let x' = Torch.Typed.Parameter.toDependent x
+      y' = Torch.Typed.Parameter.toDependent y
       square c = pow (2 :: Int) c
   in  reshape $ square (csub a x') + cmul b (square (y' - square x'))
 
@@ -188,7 +188,7 @@ ackley Ackley {..} a b c =
     - exp (cdiv d . sumAll . cos . cmul c $ pos')
  where
   d    = product . shape $ pos'
-  pos' = toDependent pos
+  pos' = Torch.Typed.Parameter.toDependent pos
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
@@ -196,7 +196,8 @@ foldLoop x count block = foldM block x ([1 .. count] :: [a])
 
 optimize
   :: forall model optim parameters tensors gradients dtype device
-   . ( gradients ~ GradR parameters
+   . ( -- gradients ~ GradR parameters
+       HasGrad (HList parameters) (HList gradients)
      , tensors ~ gradients
      , HMap' ToDependent parameters tensors
      , ATen.Castable (HList gradients) [D.ATenTensor]
