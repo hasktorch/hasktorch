@@ -1,4 +1,4 @@
-{ withCuda ? true }:
+{ withCuda ? false }:
 
 if withCuda
   then (import ../nix/shared.nix { }).shell-hasktorch_cudatoolkit_10_1
