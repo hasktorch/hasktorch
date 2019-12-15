@@ -34,13 +34,13 @@ class HasGrad a b | a -> b where
 
   toDependent :: a -> b
 
-instance HasGrad (Tensor dtype device shape) (Tensor dtype device shape) where
-  grad loss input = head . unsafePerformIO $ ATen.cast2
-    Torch.Managed.Autograd.grad
-    loss
-    [Torch.Typed.Autograd.toDependent input]
+-- instance HasGrad (Tensor dtype device shape) (Tensor dtype device shape) where
+--   grad loss input = head . unsafePerformIO $ ATen.cast2
+--     Torch.Managed.Autograd.grad
+--     loss
+--     [Torch.Typed.Autograd.toDependent input]
 
-  toDependent = id
+--   toDependent = id
 
 instance HasGrad (Parameter dtype device shape) (Tensor dtype device shape) where
   grad loss input = head . unsafePerformIO $ ATen.cast2
@@ -62,23 +62,3 @@ instance (HasGrad a b, HasGrad (HList as) (HList bs), ATen.Castable (HList (b ':
 
   toDependent (a :. as) =
     Torch.Typed.Autograd.toDependent a :. Torch.Typed.Autograd.toDependent as
-
--- type family GradR (parameters :: [a]) :: [a] where
---   GradR '[] = '[]
---   GradR (Parameter device dtype shape ': parameters) = Tensor device dtype shape ': GradR parameters
-
--- -- | calculate gradients of a zero-dimensional tensor with respect to a list of parameters
--- grad
---   :: forall dtype device parameters gradients tensors
---    . ( gradients ~ GradR parameters
---      , tensors ~ gradients
---      , HMap' ToDependent parameters tensors
---      , ATen.Castable (HList gradients) [D.ATenTensor]
---      )
---   => Tensor device dtype '[]
---   -> HList parameters
---   -> HList gradients
--- grad loss inputs = unsafePerformIO $ ATen.cast2
---   Torch.Managed.Autograd.grad
---   loss
---   (hmap' ToDependent inputs)

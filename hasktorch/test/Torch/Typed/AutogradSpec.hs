@@ -96,24 +96,6 @@ instance
  where
   sample _ = RastriginLayer <$> (makeIndependent =<< randn)
 
--- rastriginLayer
---   :: forall n a dtype device
---    . ( KnownNat n
---      , D.Scalar a
---      , KnownDType dtype
---      , dtype ~ SumDType dtype
---      , SumDTypeIsValid device dtype
---      , StandardFloatingPointDTypeValidation device dtype
---      , KnownDevice device
---      )
---   => RastriginLayer n dtype device
---   -> a
---   -> Tensor device dtype '[]
--- rastriginLayer RastriginLayer {..} a =
---   let x' = Torch.Typed.Parameter.toDependent x
---       n = natValI @n
---   in  rastriginLayer' x' a n
-
 rastriginLayer'
   :: forall device dtype a n shape
    . ( SumDTypeIsValid device dtype
@@ -129,10 +111,6 @@ rastriginLayer'
   -> Tensor device (SumDType dtype) '[]
 rastriginLayer' x a n = (cmul a . cmul n $ ones)
   + sumAll (x * x - (cmul a . cos . cmul (2 * pi :: Double)) x)
-
--- gradientsRastriginLayer RastriginLayer {..} a =
---   let x' = Torch.Typed.Parameter.toDependent x
---   in  gradientsRastriginLayer' x' a  :. HNil
 
 gradientsRastriginLayer'
   :: forall device dtype a shape
@@ -296,74 +274,6 @@ gradientsRastrigin
   -> HList gradients
 gradientsRastrigin model a = hmap' (GradientsRastriginA a) . flattenParameters $ model
 
--- gradients
---   :: forall
---        device
---        dtype
---        shape
---        a
---        num
---        ns
---        dtypes
---        devices
---        tensors
---        parameters
---        gradients
---    . ( HasGrad (HList parameters) (HList gradients)
---      , SumDType dtype ~ dtype
---      , SumDTypeIsValid device dtype
---      , Parameterized (Rastrigin num ns dtypes devices) parameters
---      , HMap' (RastriginA a (Proxy device) (Proxy dtype)) parameters tensors
---      , ATen.Castable (HList tensors) [D.ATenTensor]
---      , '(shape, dtype, device) ~ Stack 0 tensors
---      , DropValue shape 0 ~ '[]
---      )
---   => Rastrigin num ns dtypes devices
---   -> a
---   -> HList gradients
--- gradients model a = grad (rastrigin @a @dtype @device model a) (flattenParameters model)
-
--- data Isclose = Isclose
-
--- instance Apply' Isclose (Tensor device dtype shape, Tensor device dtype shape) (Tensor device 'D.Bool shape)
---   where apply' _ (a, b) = isclose 1e-05 1e-08 False a b
-
--- gradientsTest
---   :: forall
---        a
---        (dtype :: D.DType)
---        (device :: (D.DeviceType, Nat))
---        (num :: Nat)
---        (ns :: [Nat])
---        (dtypes :: [D.DType])
---        (devices :: [(D.DeviceType, Nat)])
---        (tensors :: [Type])
---        parameters
---        gradients
---        gradients'
---        (shape :: [Nat])
---        (zs :: [Type])
---    . ( HasGrad (HList parameters) (HList gradients)
---      , SumDType dtype ~ dtype
---      , SumDTypeIsValid device dtype
---      , Parameterized (Rastrigin num ns dtypes devices) parameters
---      , HMap' (RastriginA a (Proxy device) (Proxy dtype)) parameters tensors
---      , ATen.Castable (HList tensors) [D.ATenTensor]
---      , '(shape, dtype, device) ~ Stack 0 tensors
---      , DropValue shape 0 ~ '[]
---      , HMap' (GradientsRastriginA a) parameters gradients'
---      , HZipWith Isclose gradients gradients' zs
---      )
---   => Rastrigin num ns dtypes devices
---   -> a
---   -> HList zs
--- gradientsTest model a = hZipWith Isclose (grad (rastrigin @a @dtype @device @tensors model a) (flattenParameters model)) (gradientsRastrigin @gradients' model a)
-
--- gradientsTest' = do
---   model <- A.sample (RastriginSpec @4 @'[2, 3, 1, 13] @'[ 'D.Float, 'D.Double, 'D.Float, 'D.Double] @'[ '( 'D.CPU, 0), '( 'D.CPU, 0), '( 'D.CPU, 0), '( 'D.CPU, 0)])
---   -- pure $ rastrigin @Int @'D.Float @'( 'D.CPU, 0) model 10
---   pure . gradientsTest @Int @'D.Float @'( 'D.CPU, 0) model $ 10
-
 data GradientsTestInner = GradientsTestInner
 
 instance
@@ -394,14 +304,6 @@ instance
       model <- A.sample rastriginSpec
       let zipped = hZipList (grad (rastrigin @a @dtype @device @tensors @parameters model a) (flattenParameters model)) (gradientsRastrigin @gradients' model a)
       hfoldrM @IO GradientsTestInner () zipped
-
--- gradients model a = grad (rastriginLayer model a) (flattenParameters model)
-
--- gradientsTest model a = hZipWith Isclose (gradients model a) (gradientsRastriginLayer model a)
-
--- gradientsTest' = do
---   model <- A.sample (RastriginLayerSpec @10 @'D.Float @'( 'D.CPU, 0))
---   pure $ gradientsTest model (10 :: Int)
 
 spec :: Spec
 spec = describe "grad" $ do
