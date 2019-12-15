@@ -1,5 +1,11 @@
-{ withCuda ? false }:
+{ cudaVersion ? null }:
+let
+  shared = import ../nix/shared.nix { };
+in
+assert cudaVersion == null || cudaVersion == 9 || cudaVersion == 10;
 
-if withCuda
-  then (import ../nix/shared.nix { }).shell-hasktorch_cudatoolkit_10_1
-  else (import ../nix/shared.nix { }).shell-hasktorch_cpu
+if cudaVersion == null
+then shared.shell-hasktorch_cpu
+else if cudaVersion == 9
+  then shared.shell-hasktorch_cudatoolkit_9_2
+  else shared.shell-hasktorch_cudatoolkit_10_1
