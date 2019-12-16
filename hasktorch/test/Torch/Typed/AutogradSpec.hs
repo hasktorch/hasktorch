@@ -279,10 +279,12 @@ data GradientsTestInner = GradientsTestInner
 instance
   ( TensorOptions shape dtype device
   ) => Apply GradientsTestInner (Tensor device dtype shape, Tensor device dtype shape) (() -> IO ()) where
-    apply _ (a, b) _ = do
-      checkDynamicTensorAttributes a
-      checkDynamicTensorAttributes b
-      (toList . Just . toDevice @'( 'D.CPU, 0) . unsqueeze @0 . all) (isclose 1e-05 1e-08 False a b) `shouldBe` [True]
+  apply _ (a, b) _ = do
+    checkDynamicTensorAttributes a
+    checkDynamicTensorAttributes b
+    (toList . Just . toDevice @'( 'D.CPU, 0) . unsqueeze @0 . all)
+        (isclose 1e-05 1e-08 False a b)
+      `shouldBe` [True]
 
 data GradientsTestOuter a = GradientsTestOuter a
 
@@ -300,15 +302,24 @@ instance
   , HZipList gradients gradients' zs
   , HFoldrM IO GradientsTestInner () zs
   ) => Apply (GradientsTestOuter a) ((Proxy device, Proxy dtype), RastriginSpec num ns dtypes devices) (() -> IO ()) where
-    apply (GradientsTestOuter a) (_, rastriginSpec) _ = do
-      model <- A.sample rastriginSpec
-      let zipped = hZipList (grad (rastrigin @a @dtype @device @tensors @parameters model a) (flattenParameters model)) (gradientsRastrigin @gradients' model a)
-      hfoldrM @IO GradientsTestInner () zipped
+  apply (GradientsTestOuter a) (_, rastriginSpec) _ = do
+    model <- A.sample rastriginSpec
+    let zipped = hZipList
+          (grad (rastrigin @a @dtype @device @tensors @parameters model a)
+                (flattenParameters model)
+          )
+          (gradientsRastrigin @gradients' model a)
+    hfoldrM @IO GradientsTestInner () zipped
 
 spec :: Spec
 spec = describe "grad" $ do
   it "works if everything has identical device and dtype" $ do
-    hfoldrM @IO (GradientsTestOuter (10 :: Int)) () (hattach (Proxy @'( 'D.CPU, 0), Proxy @'D.Float) (RastriginSpec @1 @'[2] @'[ 'D.Float] @'[ '( 'D.CPU, 0)] :. RastriginSpec @2 @'[2, 3] @'[ 'D.Float, 'D.Float] @'[ '( 'D.CPU, 0), '( 'D.CPU, 0)] :. HNil))
+    hfoldrM @IO (GradientsTestOuter (10 :: Int)) () $ hattach
+      (Proxy @'( 'D.CPU, 0), Proxy @'D.Float)
+      (  RastriginSpec @1 @'[2] @'[ 'D.Float] @'[ '( 'D.CPU, 0)]
+      :. RastriginSpec @2 @'[2, 3] @'[ 'D.Float, 'D.Float] @'[ '( 'D.CPU, 0), '( 'D.CPU, 0)]
+      :. HNil
+      )
   it "works if model and loss have different dtypes but live on the same device" $ do
     hfoldrM @IO (GradientsTestOuter (10 :: Int)) () $ hCartesianProduct
       (  (Proxy @'( 'D.CPU, 0), Proxy @'D.Double)
@@ -319,7 +330,9 @@ spec = describe "grad" $ do
       :. RastriginSpec @4 @'[2, 3, 1, 13] @'[ 'D.Float, 'D.Double, 'D.Float, 'D.Double] @'[ '( 'D.CPU, 0), '( 'D.CPU, 0), '( 'D.CPU, 0), '( 'D.CPU, 0)]
       :. HNil
       )
-  when (elem (D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 }) availableDevices && elem (D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }) availableDevices) $ do
+  when (  elem (D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 }) availableDevices
+       && elem (D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }) availableDevices
+       ) $ do
     it "works if individual model layers and loss have different dtypes and live on different devices" $ do
       hfoldrM @IO (GradientsTestOuter (10 :: Int)) () $ hCartesianProduct
         (  (Proxy @'( 'D.CPU, 0), Proxy @'D.Double)
