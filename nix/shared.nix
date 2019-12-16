@@ -194,9 +194,9 @@ let
           nl
           (echo "as well as a freeze file from stack's resolver:")
           # $(which curl) is used to bypass an alias to 'curl'. This is safe so long as we use gnu's which
-          (echo "$(which curl) https://www.stackage.org/${findAndReplaceLTS (splitString "\n" (readFile ../stack.yaml))}/cabal.config \\")
-          (echo "  | sed -e 's/inline-c ==.*,/inline-c ==0.9.0.0,/g' -e 's/inline-c-cpp ==.*,/inline-c-cpp ==0.4.0.0,/g' \\")
-          (echo "  > cabal.project.freeze")
+          (echo ''$(which curl) https://www.stackage.org/${findAndReplaceLTS (splitString "\n" (readFile ../stack.yaml))}/cabal.config \\ '')
+          (echo ("   "+''  | sed -e 's/inline-c ==.*,/inline-c ==0.9.0.0,/g' -e 's/inline-c-cpp ==.*,/inline-c-cpp ==0.4.0.0,/g' \\ ''))
+          (echo ("   "+''  > cabal.project.freeze''))
           nl
         ];
         buildInputs = with pkgs; old.buildInputs ++ [ zlib.dev zlib.out ];
