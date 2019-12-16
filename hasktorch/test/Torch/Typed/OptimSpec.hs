@@ -212,9 +212,17 @@ optimize
   -> LearningRate device dtype
   -> Int
   -> IO (model, optim)
-optimize initModel initOptim loss learningRate numIters =
-  foldLoop (initModel, initOptim) numIters
+-- optimize initModel initOptim loss learningRate numIters =
+--   foldLoop (initModel, initOptim) numIters
+--     $ \(model, optim) _ -> runStep model optim (loss model) learningRate
+optimize initModel initOptim loss learningRate numIters = do
+  print $ "initial model: " <> show initModel
+  print $ "initial loss:" <> show (loss initModel)
+  (finalModel, finalOptim) <- foldLoop (initModel, initOptim) numIters
     $ \(model, optim) _ -> runStep model optim (loss model) learningRate
+  print $ "final model: " <> show finalModel
+  print $ "final loss:" <> show (loss finalModel)
+  pure (finalModel, finalOptim)
 
 data OptimConvQuadSpec = GDConvQuadSpec | GDMConvQuadSpec | AdamConvQuadSpec
 
