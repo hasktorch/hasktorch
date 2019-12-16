@@ -24,7 +24,7 @@
 --
 -----------------------------------------------------------------------------
 
-module ATen.Cast where
+module Torch.Internal.Cast where
 
 import Control.Monad         ((>=>))
 import Data.ByteString.Char8 (ByteString,packCString, useAsCString)
@@ -37,8 +37,8 @@ import Foreign.ForeignPtr
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.Storable
-import ATen.Class
-import ATen.GC
+import Torch.Internal.Class
+import Torch.Internal.GC
 
 instance Castable a a where
   cast x f = f x

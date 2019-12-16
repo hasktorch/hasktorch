@@ -6,12 +6,12 @@ module Torch.Scalar where
 
 import Foreign.ForeignPtr
 
-import qualified ATen.Const as ATen
-import qualified ATen.Managed.Type.Scalar as ATen
-import qualified ATen.Type as ATen
-import ATen.Managed.Cast
-import ATen.Class (Castable(..))
-import ATen.Cast
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Managed.Type.Scalar as ATen
+import qualified Torch.Internal.Type as ATen
+import Torch.Internal.Managed.Cast
+import Torch.Internal.Class (Castable(..))
+import Torch.Internal.Cast
 
 instance Castable Float (ForeignPtr ATen.Scalar) where
   cast x f = ATen.newScalar_d (realToFrac x) >>= f

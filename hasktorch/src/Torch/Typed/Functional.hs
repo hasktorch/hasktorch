@@ -16,7 +16,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module Torch.Typed.Native where
+module Torch.Typed.Functional where
 
 import           Prelude                 hiding ( all
                                                 , any
@@ -60,15 +60,15 @@ import           System.IO.Unsafe
 import           Data.Singletons.Prelude.List   ( Product )
 
 import           Foreign.ForeignPtr
-import qualified ATen.Const                    as ATen
-import qualified ATen.Type                     as ATen
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Class                    as ATen
-import qualified ATen.Managed.Cast             as ATen.Managed
-import qualified ATen.Managed.Native           as ATen.Managed
-import qualified ATen.Managed.Type.Tensor      as ATen.Managed
-import qualified ATen.Managed.Type.Scalar      as ATen.Managed
-import qualified ATen.Managed.Type.Tuple       as ATen.Managed
+import qualified Torch.Internal.Const                    as ATen
+import qualified Torch.Internal.Type                     as ATen
+import qualified Torch.Internal.Cast                     as ATen
+import qualified Torch.Internal.Class                    as ATen
+import qualified Torch.Internal.Managed.Cast             as ATen.Managed
+import qualified Torch.Internal.Managed.Native           as ATen.Managed
+import qualified Torch.Internal.Managed.Type.Tensor      as ATen.Managed
+import qualified Torch.Internal.Managed.Type.Scalar      as ATen.Managed
+import qualified Torch.Internal.Managed.Type.Tuple       as ATen.Managed
 
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
@@ -76,7 +76,7 @@ import qualified Torch.TensorOptions           as D
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import qualified Torch.Scalar                  as D
-import           Torch.Functions                ( Reduction(..)
+import           Torch.Functional                ( Reduction(..)
                                                 , Tri(..)
                                                 , isUpper
                                                 , kOne

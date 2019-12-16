@@ -16,7 +16,7 @@ import           Torch.TensorFactories          ( ones'
                                                 , rand'
                                                 , randn'
                                                 )
-import           Torch.Functions
+import           Torch.Functional
 import           Torch.Autograd
 import           Torch.NN
 import           Codec.Serialise

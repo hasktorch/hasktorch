@@ -15,13 +15,13 @@ module Torch.Random
   , normal'
   ) where
 
-import ATen.Cast
-import ATen.Class (Castable(..))
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
+import Torch.Internal.Cast
+import Torch.Internal.Class (Castable(..))
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Type as ATen
 import Data.Word
-import qualified ATen.Managed.Type.Generator as ATen
-import qualified Torch.Managed.Native as LibTorch
+import qualified Torch.Internal.Managed.Type.Generator as ATen
+import qualified Torch.Internal.Managed.Native as LibTorch
 import Torch.Device
 import Torch.TensorOptions
 import Torch.Tensor

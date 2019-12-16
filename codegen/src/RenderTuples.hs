@@ -28,26 +28,26 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import ATen.Type
-import ATen.Class
-import ATen.Cast
+import Torch.Internal.Type
+import Torch.Internal.Class
+import Torch.Internal.Cast
 
-import qualified ATen.Unmanaged.Type.Tuple as Unmanaged
-import ATen.Unmanaged.Type.Generator
-import ATen.Unmanaged.Type.IntArray
-import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.Storage
-import ATen.Unmanaged.Type.Tensor
-import ATen.Unmanaged.Type.TensorList
-import ATen.Unmanaged.Type.TensorOptions
-import ATen.Unmanaged.Type.Tuple
+import qualified Torch.Internal.Unmanaged.Type.Tuple as Unmanaged
+import Torch.Internal.Unmanaged.Type.Generator
+import Torch.Internal.Unmanaged.Type.IntArray
+import Torch.Internal.Unmanaged.Type.Scalar
+import Torch.Internal.Unmanaged.Type.Storage
+import Torch.Internal.Unmanaged.Type.Tensor
+import Torch.Internal.Unmanaged.Type.TensorList
+import Torch.Internal.Unmanaged.Type.TensorOptions
+import Torch.Internal.Unmanaged.Type.Tuple
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import ATen.Type
-import ATen.Class
+import Torch.Internal.Type
+import Torch.Internal.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -204,12 +204,12 @@ decodeAndCodeGen basedir fileName = do
     Left err' -> print err'
     Right decls -> do
       let tuples = nubBy tupleHsTypeEq $ mapMaybe (getTupleType . D.returns) decls
-      createDirectoryIfMissing True (basedir <> "/ATen/Unmanaged/Type")
-      T.writeFile (basedir <> "/ATen/Unmanaged/Type/Tuple.hs") $
-        template False "ATen.Unmanaged.Type.Tuple" tuples
-      createDirectoryIfMissing True (basedir <> "/ATen/Managed/Type")
-      T.writeFile (basedir <> "/ATen/Managed/Type/Tuple.hs") $
-        template True "ATen.Managed.Type.Tuple" tuples
+      createDirectoryIfMissing True (basedir <> "/Torch/Internal/Unmanaged/Type")
+      T.writeFile (basedir <> "/Torch/Internal/Unmanaged/Type/Tuple.hs") $
+        template False "Torch.Internal.Unmanaged.Type.Tuple" tuples
+      createDirectoryIfMissing True (basedir <> "/Torch/Internal/Managed/Type")
+      T.writeFile (basedir <> "/Torch/Internal/Managed/Type/Tuple.hs") $
+        template True "Torch.Internal.Managed.Type.Tuple" tuples
   where
     getTupleType :: [D.Type] -> Maybe PT.Tuple
     getTupleType [] = Nothing

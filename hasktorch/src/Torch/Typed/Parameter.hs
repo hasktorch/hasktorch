@@ -35,7 +35,7 @@ import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import           Torch.Typed.Aux
 import           Torch.Typed.Factories
-import           Torch.Typed.Native
+import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 
 newtype Parameter (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) = Parameter A.IndependentTensor

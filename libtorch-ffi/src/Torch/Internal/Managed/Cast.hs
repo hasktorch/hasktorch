@@ -1,16 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module ATen.Managed.Cast where
+module Torch.Internal.Managed.Cast where
 
 import Foreign.ForeignPtr
 import Control.Monad
 
-import ATen.Class
-import ATen.Cast
-import ATen.Type
-import ATen.Managed.Type.IntArray
-import ATen.Managed.Type.TensorList
+import Torch.Internal.Class
+import Torch.Internal.Cast
+import Torch.Internal.Type
+import Torch.Internal.Managed.Type.IntArray
+import Torch.Internal.Managed.Type.TensorList
 
 instance Castable Int (ForeignPtr IntArray) where
   cast xs f = do

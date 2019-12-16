@@ -9,7 +9,7 @@ import Control.Exception.Safe
 import Torch.Tensor
 import Torch.DType
 import Torch.TensorFactories
-import Torch.Functions
+import Torch.Functional
 import Torch.TensorOptions
 import Data.Word
 import Data.Int

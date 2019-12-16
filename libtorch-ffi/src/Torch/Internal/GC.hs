@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module ATen.GC where
+module Torch.Internal.GC where
 
 import Control.Exception.Safe (catch,throwIO)
 import Data.List (isPrefixOf)

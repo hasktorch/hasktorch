@@ -35,12 +35,12 @@ import           Test.QuickCheck
 
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
-import qualified Torch.Functions               as D
+import qualified Torch.Functional               as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
 import           Torch.Typed.Factories
-import           Torch.Typed.Native
+import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.AuxSpec
 

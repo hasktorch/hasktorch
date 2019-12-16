@@ -8,12 +8,12 @@ import Data.Int
 import           Foreign.ForeignPtr
 import           System.IO.Unsafe
 
-import           ATen.Cast
-import           ATen.Class                     ( Castable(..) )
-import qualified ATen.Type                     as ATen
-import qualified ATen.Const                    as ATen
-import qualified ATen.Managed.Type.Context     as ATen
-import qualified ATen.Managed.Type.TensorOptions
+import           Torch.Internal.Cast
+import           Torch.Internal.Class                     ( Castable(..) )
+import qualified Torch.Internal.Type                     as ATen
+import qualified Torch.Internal.Const                    as ATen
+import qualified Torch.Internal.Managed.Type.Context     as ATen
+import qualified Torch.Internal.Managed.Type.TensorOptions
                                                as ATen
 
 import           Torch.DType

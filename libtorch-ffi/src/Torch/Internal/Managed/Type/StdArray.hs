@@ -8,17 +8,17 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module ATen.Managed.Type.StdArray where
+module Torch.Internal.Managed.Type.StdArray where
 
 
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import ATen.Type
-import ATen.Class
-import ATen.Cast
-import qualified ATen.Unmanaged.Type.StdArray as Unmanaged
+import Torch.Internal.Type
+import Torch.Internal.Class
+import Torch.Internal.Cast
+import qualified Torch.Internal.Unmanaged.Type.StdArray as Unmanaged
 
 
 

@@ -11,7 +11,7 @@ import System.Random (mkStdGen, randoms)
 import Prelude hiding (exp)
 
 import Torch.Autograd as A
-import Torch.Functions hiding (take)
+import Torch.Functional hiding (take)
 import Torch.Tensor
 import Torch.NN
 

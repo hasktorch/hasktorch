@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module ATen.Unmanaged.Type.ConstQuantizerPtr where
+module Torch.Internal.Unmanaged.Type.ConstQuantizerPtr where
 
 
 import qualified Language.C.Inline.Cpp as C
@@ -20,8 +20,8 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import ATen.Type
-import ATen.Class
+import Torch.Internal.Type
+import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 

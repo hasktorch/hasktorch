@@ -5,9 +5,9 @@ module Torch.Device where
 
 import qualified Data.Int as I
 
-import           ATen.Class                     ( Castable(..) )
-import qualified ATen.Const                    as ATen
-import qualified ATen.Type                     as ATen
+import           Torch.Internal.Class                     ( Castable(..) )
+import qualified Torch.Internal.Const                    as ATen
+import qualified Torch.Internal.Type                     as ATen
 
 data DeviceType = CPU | CUDA
   deriving (Eq, Ord, Show)

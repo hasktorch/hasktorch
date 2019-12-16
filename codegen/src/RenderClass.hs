@@ -23,22 +23,22 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import ATen.Type
-import ATen.Class
-import ATen.Cast
-import ATen.Unmanaged.Type.Generator
-import ATen.Unmanaged.Type.IntArray
-import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.Storage
-import ATen.Unmanaged.Type.Tensor
-import ATen.Unmanaged.Type.TensorList
-import ATen.Unmanaged.Type.TensorOptions
-import ATen.Unmanaged.Type.Tuple
-import ATen.Unmanaged.Type.StdString
-import ATen.Unmanaged.Type.Dimname
-import ATen.Unmanaged.Type.DimnameList
+import Torch.Internal.Type
+import Torch.Internal.Class
+import Torch.Internal.Cast
+import Torch.Internal.Unmanaged.Type.Generator
+import Torch.Internal.Unmanaged.Type.IntArray
+import Torch.Internal.Unmanaged.Type.Scalar
+import Torch.Internal.Unmanaged.Type.Storage
+import Torch.Internal.Unmanaged.Type.Tensor
+import Torch.Internal.Unmanaged.Type.TensorList
+import Torch.Internal.Unmanaged.Type.TensorOptions
+import Torch.Internal.Unmanaged.Type.Tuple
+import Torch.Internal.Unmanaged.Type.StdString
+import Torch.Internal.Unmanaged.Type.Dimname
+import Torch.Internal.Unmanaged.Type.DimnameList
 
-import qualified #{"ATen.Unmanaged.Type." <> (PC.hsnameWithoutSpace typ_)} as Unmanaged
+import qualified #{"Torch.Internal.Unmanaged.Type." <> (PC.hsnameWithoutSpace typ_)} as Unmanaged
 |] else [st|
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -49,8 +49,8 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import ATen.Type
-import ATen.Class
+import Torch.Internal.Type
+import Torch.Internal.Class
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
@@ -84,12 +84,12 @@ decodeAndCodeGen basedir fileName = do
   case funcs of
     Left err' -> print err'
     Right fns -> do
-      createDirectoryIfMissing True (basedir <> "/ATen/Unmanaged/Type")
-      T.writeFile (basedir <> "/ATen/Unmanaged/Type/" <> PC.hsnameWithoutSpace fns <> ".hs") $
-        template False ("ATen.Unmanaged.Type." <> fromString (PC.hsnameWithoutSpace fns)) fns
-      createDirectoryIfMissing True (basedir <> "/ATen/Managed/Type")
-      T.writeFile (basedir <> "/ATen/Managed/Type/" <> PC.hsnameWithoutSpace fns <> ".hs") $
-        template True ("ATen.Managed.Type." <> fromString (PC.hsnameWithoutSpace fns)) fns
+      createDirectoryIfMissing True (basedir <> "/Torch/Internal/Unmanaged/Type")
+      T.writeFile (basedir <> "/Torch/Internal/Unmanaged/Type/" <> PC.hsnameWithoutSpace fns <> ".hs") $
+        template False ("Torch.Internal.Unmanaged.Type." <> fromString (PC.hsnameWithoutSpace fns)) fns
+      createDirectoryIfMissing True (basedir <> "/Torch/Internal/Managed/Type")
+      T.writeFile (basedir <> "/Torch/Internal/Managed/Type/" <> PC.hsnameWithoutSpace fns <> ".hs") $
+        template True ("Torch.Internal.Managed.Type." <> fromString (PC.hsnameWithoutSpace fns)) fns
 
 
 template :: Bool -> Text -> PC.CppClassSpec -> Text

@@ -8,10 +8,10 @@ import System.IO.Unsafe
 import Foreign.ForeignPtr
 
 import qualified Torch.Managed.Autograd
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Type as ATen
-import ATen.Class
-import ATen.Cast
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Type as ATen
+import Torch.Internal.Class
+import Torch.Internal.Cast
 
 import Torch.Tensor
 

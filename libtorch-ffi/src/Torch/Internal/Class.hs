@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module ATen.Class where
+module Torch.Internal.Class where
 
 import Foreign (Ptr, ForeignPtr)
 

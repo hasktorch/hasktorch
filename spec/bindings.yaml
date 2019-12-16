@@ -1,4 +1,4 @@
-# This file controls functions in hasktorch/src/Torch/Functions/Native.hs.
+# This file controls functions in hasktorch/src/Torch/Functional/Internal.hs.
 # The functions are pure-functions not using IO-monad.
 - rename: {src: where_ttt, dst: where'}
 - rename: {src: min_t, dst: minAll}

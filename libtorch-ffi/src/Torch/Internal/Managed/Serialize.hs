@@ -4,11 +4,11 @@ module Torch.Managed.Serialize where
 import Foreign.ForeignPtr
 
 import qualified Torch.Unmanaged.Serialize as Unmanaged
-import qualified ATen.Unmanaged.Type.Tensor
-import qualified ATen.Unmanaged.Type.TensorList
-import ATen.Type
-import ATen.Class
-import ATen.Cast
+import qualified Torch.Internal.Unmanaged.Type.Tensor
+import qualified Torch.Internal.Unmanaged.Type.TensorList
+import Torch.Internal.Type
+import Torch.Internal.Class
+import Torch.Internal.Cast
 
 
 save :: ForeignPtr TensorList -> FilePath -> IO ()

@@ -36,16 +36,16 @@ import           GHC.TypeLits
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ATen.Class                     ( Castable(..) )
+import           Torch.Internal.Class                     ( Castable(..) )
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
-import qualified Torch.Functions               as D
+import qualified Torch.Functional               as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
 import           Torch.Typed.Aux
 import           Torch.Typed.Factories
-import           Torch.Typed.Native
+import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.AuxSpec
 

@@ -37,20 +37,20 @@ import           GHC.TypeLits.Extra
 import           System.Environment
 import           System.IO.Unsafe
 
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Class                    as ATen
-import qualified ATen.Managed.Type.Tensor      as ATen
-import qualified ATen.Type                     as ATen
+import qualified Torch.Internal.Cast                     as ATen
+import qualified Torch.Internal.Class                    as ATen
+import qualified Torch.Internal.Managed.Type.Tensor      as ATen
+import qualified Torch.Internal.Type                     as ATen
 import qualified Torch.Autograd                as A
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
-import qualified Torch.Functions               as D
+import qualified Torch.Functional               as D
 import qualified Torch.NN                      as A
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import           Torch.Typed
 import           Torch.Typed.Factories
-import           Torch.Typed.Native      hiding ( sqrt )
+import           Torch.Typed.Functional      hiding ( sqrt )
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 import           Torch.Typed.NN
@@ -478,7 +478,7 @@ lstm
      , Tensor device dtype hxShape
      )
 lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) input
-  = Torch.Typed.Native.lstm
+  = Torch.Typed.Functional.lstm
     @shapeOrder
     @directionality
     @numLayers
@@ -512,7 +512,7 @@ lstm dropoutOn (LSTMWithConstInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) inp
           False -- TODO: What does the bool do?
       $ hc
 lstm dropoutOn (LSTMWithLearnedInit lstm@(LSTM _ (Dropout dropoutProb)) cc hc) input
-  = Torch.Typed.Native.lstm
+  = Torch.Typed.Functional.lstm
     @shapeOrder
     @directionality
     @numLayers

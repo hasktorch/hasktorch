@@ -8,20 +8,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Torch.Functions.Native where
+module Torch.Functional.Internal where
 
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
 
-import qualified ATen.Managed.Native as ATen
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Managed.Type.Scalar as ATen
-import qualified ATen.Managed.Type.Tuple as ATen
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
-import qualified ATen.Managed.Cast
-import ATen.Cast
+import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.Scalar as ATen
+import qualified Torch.Internal.Managed.Type.Tuple as ATen
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Type as ATen
+import qualified Torch.Internal.Managed.Cast
+import Torch.Internal.Cast
 
 import Torch.Tensor
 import Torch.Scalar

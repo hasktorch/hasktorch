@@ -6,7 +6,7 @@ import Control.Monad.State
 import Prelude hiding (sqrt)
 
 import Torch.Tensor
-import Torch.Functions
+import Torch.Functional
 import Torch.Autograd
 import Torch.NN
 

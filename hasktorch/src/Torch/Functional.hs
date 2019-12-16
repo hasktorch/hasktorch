@@ -1,29 +1,29 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Torch.Functions (
-    module Torch.Functions
-  , module Torch.Functions.Native
+module Torch.Functional (
+    module Torch.Functional
+  , module Torch.Functional.Internal
 ) where
 
 import System.IO.Unsafe
 import Foreign.ForeignPtr
 
-import qualified ATen.Managed.Native as ATen
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Managed.Type.Scalar as ATen
-import qualified ATen.Managed.Type.Tuple as ATen
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
-import qualified ATen.Managed.Cast
-import ATen.Cast
-import ATen.Class
+import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.Scalar as ATen
+import qualified Torch.Internal.Managed.Type.Tuple as ATen
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Type as ATen
+import qualified Torch.Internal.Managed.Cast
+import Torch.Internal.Cast
+import Torch.Internal.Class
 import Data.Int
 
 import Torch.Scalar
 import Torch.Tensor
 import Torch.DType
-import Torch.Functions.Native hiding (argmax, linear, softmax)
+import Torch.Functional.Internal hiding (argmax, linear, softmax)
 import Torch.TensorFactories (onesLike, ones')
 
 kOne :: ForeignPtr ATen.Scalar

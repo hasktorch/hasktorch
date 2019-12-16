@@ -8,17 +8,17 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module ATen.Managed.Type.StdString where
+module Torch.Internal.Managed.Type.StdString where
 
 
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign hiding (newForeignPtr)
 import Foreign.Concurrent
-import ATen.Type
-import ATen.Class
-import ATen.Cast
-import qualified ATen.Unmanaged.Type.StdString as Unmanaged
+import Torch.Internal.Type
+import Torch.Internal.Class
+import Torch.Internal.Cast
+import qualified Torch.Internal.Unmanaged.Type.StdString as Unmanaged
 
 
 

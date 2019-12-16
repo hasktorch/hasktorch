@@ -33,16 +33,16 @@ import           System.IO.Unsafe
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ATen.Cast
-import qualified ATen.Managed.Type.Context     as ATen
+import           Torch.Internal.Cast
+import qualified Torch.Internal.Managed.Type.Context     as ATen
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
-import qualified Torch.Functions               as D
+import qualified Torch.Functional               as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
 import           Torch.Typed.Factories
-import           Torch.Typed.Native
+import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 
 instance Semigroup Spec where

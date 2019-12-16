@@ -8,14 +8,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ATen.Unmanaged.Native where
+module Torch.Internal.Unmanaged.Native where
 
 
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import ATen.Type
-import ATen.Class
+import Torch.Internal.Type
+import Torch.Internal.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C

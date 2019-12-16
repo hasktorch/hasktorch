@@ -17,14 +17,14 @@ import           Prelude                 hiding ( sqrt )
 import           Control.Monad.State
 import           Data.HList
 
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Class                    as ATen
+import qualified Torch.Internal.Cast                     as ATen
+import qualified Torch.Internal.Class                    as ATen
 import qualified Torch.Tensor                  as D
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Autograd
 import           Torch.Typed.Parameter
-import           Torch.Typed.Native
+import           Torch.Typed.Functional
 import           Torch.Typed.Factories
 
 type LearningRate device dtype = Tensor device dtype '[]

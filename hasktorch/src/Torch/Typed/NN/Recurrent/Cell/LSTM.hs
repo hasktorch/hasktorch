@@ -32,7 +32,7 @@ import qualified Torch.NN                      as A
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 import           Torch.Typed.Factories
-import           Torch.Typed.Native      hiding ( linear )
+import           Torch.Typed.Functional      hiding ( linear )
 import           Torch.Typed.NN
 
 

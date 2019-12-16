@@ -11,7 +11,7 @@ import Text.Printf (printf)
 
 import Torch.Tensor
 import Torch.TensorFactories (eye', zeros')
-import Torch.Functions
+import Torch.Functional
 import Torch.Autograd
 import Torch.NN
 

@@ -12,16 +12,16 @@ import           Control.Exception.Safe         ( try
 import           Foreign.ForeignPtr
 import           System.IO.Unsafe
 
-import qualified Torch.Managed.Native          as LibTorch
+import qualified Torch.Internal.Managed.TensorFactories          as LibTorch
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
-import qualified Torch.Functions               as D
+import qualified Torch.Functional               as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
 
 import qualified Codec.Picture                 as I
 import           System.IO                     (FilePath)
-import           ATen.Cast
+import           Torch.Internal.Cast
 import qualified Data.Vector.Storable          as V
 import qualified Foreign.ForeignPtr            as F
 import qualified Foreign.Ptr                   as F

@@ -7,7 +7,7 @@ import qualified Prelude as P
 
 import Control.Monad (forM_)
 
-import           ATen.Cast
+import           Torch.Internal.Cast
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BSI
 import qualified Torch.DType as D
@@ -15,10 +15,10 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.TensorOptions           as D
 import qualified Foreign.ForeignPtr            as F
 import qualified Foreign.Ptr                   as F
-import qualified Torch.Managed.Native as LibTorch
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 
 import qualified Image as I
-import Torch.Functions hiding (take)
+import Torch.Functional hiding (take)
 import Torch.Tensor
 import Torch.NN
 

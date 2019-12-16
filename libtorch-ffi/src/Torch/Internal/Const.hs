@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ATen.Const where
+module Torch.Internal.Const where
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -19,7 +19,7 @@ import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import ATen.Type
+import Torch.Internal.Type
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 

@@ -34,7 +34,7 @@ import           GHC.TypeLits
 
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
-import           Torch.Typed.Native     hiding ( linear )
+import           Torch.Typed.Functional     hiding ( linear )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
@@ -42,7 +42,7 @@ import qualified Torch.NN                      as A
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
-import qualified Torch.Functions               as D
+import qualified Torch.Functional               as D
 import qualified Torch.TensorFactories         as D
 
 

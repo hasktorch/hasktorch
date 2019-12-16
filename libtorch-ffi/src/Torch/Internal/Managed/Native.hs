@@ -8,28 +8,28 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ATen.Managed.Native where
+module Torch.Internal.Managed.Native where
 
 
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import ATen.Type
-import ATen.Class
-import ATen.Cast
-import qualified ATen.Unmanaged.Native as Unmanaged
-import ATen.Unmanaged.Type.Generator
-import ATen.Unmanaged.Type.IntArray
-import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.Storage
-import ATen.Unmanaged.Type.Tensor
-import ATen.Unmanaged.Type.TensorList
-import ATen.Unmanaged.Type.TensorOptions
-import ATen.Unmanaged.Type.Tuple
-import ATen.Unmanaged.Type.StdString
-import ATen.Unmanaged.Type.StdArray
-import ATen.Unmanaged.Type.Dimname
-import ATen.Unmanaged.Type.DimnameList
+import Torch.Internal.Type
+import Torch.Internal.Class
+import Torch.Internal.Cast
+import qualified Torch.Internal.Unmanaged.Native as Unmanaged
+import Torch.Internal.Unmanaged.Type.Generator
+import Torch.Internal.Unmanaged.Type.IntArray
+import Torch.Internal.Unmanaged.Type.Scalar
+import Torch.Internal.Unmanaged.Type.Storage
+import Torch.Internal.Unmanaged.Type.Tensor
+import Torch.Internal.Unmanaged.Type.TensorList
+import Torch.Internal.Unmanaged.Type.TensorOptions
+import Torch.Internal.Unmanaged.Type.Tuple
+import Torch.Internal.Unmanaged.Type.StdString
+import Torch.Internal.Unmanaged.Type.StdArray
+import Torch.Internal.Unmanaged.Type.Dimname
+import Torch.Internal.Unmanaged.Type.DimnameList
 
 
 _cast_Byte_tb
