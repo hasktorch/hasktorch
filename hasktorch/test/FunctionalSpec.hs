@@ -1,6 +1,6 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
-module FunctionsSpec(spec) where
+module FunctionalSpec(spec) where
 
 import Prelude hiding (all, abs, exp, floor, log, min, max)
 
