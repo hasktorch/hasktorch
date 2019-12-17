@@ -25,7 +25,7 @@ where
 
 import           Control.Exception.Safe
 import           Foreign.Storable
-import           Data.HList
+import           Torch.HList
 import           Data.Proxy
 import           Data.Reflection
 import           GHC.TypeLits

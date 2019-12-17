@@ -15,7 +15,7 @@ module Torch.Typed.Optim where
 
 import           Prelude                 hiding ( sqrt )
 import           Control.Monad.State
-import           Data.HList
+import           Torch.HList
 
 import qualified Torch.Internal.Cast                     as ATen
 import qualified Torch.Internal.Class                    as ATen
@@ -140,8 +140,8 @@ instance
 gdm
   :: forall gradients tensors momenta gdmStep dtype device
    . ( HZipWith3 (GDMStep device dtype) tensors gradients momenta gdmStep
-     , HMap' Data.HList.Fst gdmStep tensors
-     , HMap' Data.HList.Snd gdmStep momenta
+     , HMap' Torch.HList.Fst gdmStep tensors
+     , HMap' Torch.HList.Snd gdmStep momenta
      )
   => LearningRate device dtype -- ^ learning rate
   -> HList gradients -- ^ model parameter gradient tensors
@@ -154,8 +154,8 @@ gdm learningRate gradients parameters (GDM beta momenta) =
 
 instance
   ( HZipWith3 (GDMStep device dtype) tensors gradients momenta gdmStep
-  , HMap' Data.HList.Fst gdmStep tensors
-  , HMap' Data.HList.Snd gdmStep momenta
+  , HMap' Torch.HList.Fst gdmStep tensors
+  , HMap' Torch.HList.Snd gdmStep momenta
   ) => Optimizer (GDM momenta) gradients tensors dtype device where
   step = gdm
 

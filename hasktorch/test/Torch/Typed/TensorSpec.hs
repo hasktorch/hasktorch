@@ -27,7 +27,7 @@ where
 import           Prelude                 hiding ( sin )
 import           Control.Exception.Safe
 import           Foreign.Storable
-import           Data.HList
+import           Torch.HList
 import           Data.Kind
 import           Data.Proxy
 import           Data.Reflection

@@ -44,7 +44,7 @@ import           Prelude                 hiding ( all
                                                 )
 import           Data.Finite
 import qualified Data.Int                      as I
-import           Data.HList
+import           Torch.HList
 import           Data.Kind                      ( Constraint
                                                 , Type
                                                 )

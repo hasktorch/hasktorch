@@ -16,7 +16,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Data.HList where
+module Torch.HList where
 
 import           Prelude                 hiding ( (.), id )
 import           Control.Arrow

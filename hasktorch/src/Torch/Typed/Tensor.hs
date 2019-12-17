@@ -25,7 +25,7 @@ import           Prelude                 hiding ( (.), id )
 import           Control.Arrow
 import           Control.Category
 import           Data.Finite
-import           Data.HList
+import           Torch.HList
 import           Data.Kind                      ( Constraint
                                                 , Type
                                                 )

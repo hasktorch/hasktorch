@@ -29,7 +29,7 @@ module Torch.Typed.NN.Recurrent.LSTM where
 
 import           Prelude                 hiding ( tanh )
 import           Data.Kind
-import           Data.HList
+import           Torch.HList
 import           Foreign.ForeignPtr
 import           GHC.Generics
 import           GHC.TypeLits

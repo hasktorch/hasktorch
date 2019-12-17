@@ -8,7 +8,7 @@
 
 module Torch.Typed.Autograd where
 
-import           Data.HList
+import           Torch.HList
 import           GHC.TypeLits
 import           System.IO.Unsafe
 

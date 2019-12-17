@@ -15,7 +15,7 @@ import           Control.Monad                  ( foldM
                                                 , when
                                                 , void
                                                 )
-import           Data.HList
+import           Torch.HList
 import           Data.Proxy
 import           Foreign.ForeignPtr
 import           GHC.Generics

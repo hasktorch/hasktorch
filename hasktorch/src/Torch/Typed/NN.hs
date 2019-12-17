@@ -22,7 +22,7 @@
 module Torch.Typed.NN where
 
 import           Control.Monad.State.Strict
-import           Data.HList
+import           Torch.HList
 import           Data.Kind                    (Type)
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra

@@ -34,7 +34,7 @@ import           Control.Exception.Safe         ( try
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
-import           Data.HList
+import           Torch.HList
 import           Data.Proxy
 import           Foreign.ForeignPtr
 import           GHC.Generics

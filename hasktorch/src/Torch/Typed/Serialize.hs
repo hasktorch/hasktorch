@@ -3,7 +3,7 @@
 
 module Torch.Typed.Serialize where
 
-import Data.HList
+import Torch.HList
 import           Foreign.ForeignPtr
 
 import qualified Torch.Managed.Serialize as S
