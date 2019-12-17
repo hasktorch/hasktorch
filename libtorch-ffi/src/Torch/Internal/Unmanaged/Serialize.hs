@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Torch.Unmanaged.Serialize where
+module Torch.Internal.Unmanaged.Serialize where
 
 import Foreign.Ptr
 import Foreign.C.String

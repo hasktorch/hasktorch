@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Torch.Unmanaged.Autograd where
+module Torch.Internal.Unmanaged.Autograd where
 
 import Foreign.Ptr
 import qualified Language.C.Inline.Cpp as C
