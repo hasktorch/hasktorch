@@ -6,7 +6,7 @@ module Torch.Typed.Serialize where
 import Torch.HList
 import           Foreign.ForeignPtr
 
-import qualified Torch.Managed.Serialize as S
+import qualified Torch.Internal.Managed.Serialize as S
 import Torch.Typed.Tensor
 import qualified Torch.Internal.Class                    as ATen
 import qualified Torch.Internal.Cast                     as ATen

@@ -37,7 +37,7 @@ import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Cast as ATen
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Const as ATen
-import qualified Torch.Internal.Managed.TonsorFactories as LibTorch
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 
 import Torch.Device
 import Torch.DType

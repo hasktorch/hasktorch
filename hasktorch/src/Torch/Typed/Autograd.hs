@@ -14,7 +14,7 @@ import           System.IO.Unsafe
 
 import qualified Torch.Internal.Cast as ATen
 import qualified Torch.Internal.Class as ATen
-import qualified Torch.Managed.Autograd
+import qualified Torch.Internal.Managed.Autograd as LibTorch
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import qualified Torch.Tensor                  as D
@@ -37,6 +37,6 @@ grad
   -> HList parameters
   -> HList gradients
 grad loss inputs = unsafePerformIO $ ATen.cast2
-  Torch.Managed.Autograd.grad
+  LibTorch.grad
   loss
   (hmap' ToDependent inputs)

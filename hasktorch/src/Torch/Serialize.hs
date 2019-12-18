@@ -1,6 +1,6 @@
 module Torch.Serialize where
 
-import qualified Torch.Managed.Serialize as S
+import qualified Torch.Internal.Managed.Serialize as S
 import Torch.Tensor
 import Torch.Internal.Cast
 
