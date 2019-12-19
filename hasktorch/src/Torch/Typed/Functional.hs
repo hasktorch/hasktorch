@@ -1987,8 +1987,22 @@ det input = unsafePerformIO $ ATen.cast1 ATen.Managed.det_t input
 -- diagonal :: Tensor device dtype shape -> Int -> Int -> Int -> Tensor device dtype shape
 -- diagonal _input _offset _dim1 _dim2 = unsafePerformIO $ (ATen.cast4 ATen.Managed.diagonal_tlll) _input _offset _dim1 _dim2
 
--- dot :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
--- dot _input _tensor = unsafePerformIO $ (ATen.cast2 ATen.Managed.dot_tt) _input _tensor
+type family DotDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  DotDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
+                                                   , DTypeIsNotHalf '( 'D.CPU, 0) dtype
+                                                   )
+  DotDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+  DotDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
+
+-- | dot product
+-- Note that this function does not broadcast.
+dot
+  :: forall size dtype device
+   . DotDTypeIsValid device dtype
+  => Tensor device dtype '[size] -- ^ input 
+  -> Tensor device dtype '[size] -- ^ other input
+  -> Tensor device dtype '[] -- ^ dot product
+dot input other = unsafePerformIO $ ATen.cast2 ATen.Managed.dot_tt input other
 
 -- einsum :: String -> [Tensor device dtype shape] -> Tensor device dtype shape
 -- einsum _equation _tensors = unsafePerformIO $ (ATen.cast2 ATen.Managed.einsum_sl) _equation _tensors
@@ -2223,9 +2237,11 @@ isComplex
 isComplex input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_complex_t input
 
 -- | is non-zero
+-- this operation is only defined for tensors with shape '[] or '[1]
 isNonZero
   :: forall shape dtype device
-   . Tensor device dtype shape  -- ^ input
+   . (Numel shape ~ 1)
+  => Tensor device dtype shape  -- ^ input
   -> Bool -- ^ output
 isNonZero input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_nonzero_t input
 
