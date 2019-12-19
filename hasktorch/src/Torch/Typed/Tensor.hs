@@ -25,7 +25,7 @@ import           Prelude                 hiding ( (.), id )
 import           Control.Arrow
 import           Control.Category
 import           Data.Finite
-import           Data.HList
+import           Torch.HList
 import           Data.Kind                      ( Constraint
                                                 , Type
                                                 )
@@ -37,16 +37,16 @@ import           Foreign.Storable
 import           GHC.TypeLits
 import           GHC.Exts
 
-import           ATen.Cast
-import           ATen.Class                     ( Castable(..)
+import           Torch.Internal.Cast
+import           Torch.Internal.Class                     ( Castable(..)
                                                 , CppTuple2(..)
                                                 , CppTuple3(..)
                                                 , CppTuple4(..)
                                                 )
-import qualified ATen.Type                     as ATen
+import qualified Torch.Internal.Type                     as ATen
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
-import qualified Torch.Functions               as D hiding (select)
+import qualified Torch.Functional               as D hiding (select)
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import           Torch.Typed.Aux

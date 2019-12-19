@@ -34,7 +34,7 @@ import           Control.Exception.Safe         ( try
 import           Control.Monad                  ( foldM
                                                 , when
                                                 )
-import           Data.HList
+import           Torch.HList
 import           Data.Proxy
 import           Foreign.ForeignPtr
 import           GHC.Generics
@@ -43,13 +43,13 @@ import           GHC.TypeLits.Extra
 import           System.Environment
 import           System.IO.Unsafe
 
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Class                    as ATen
-import qualified ATen.Type                     as ATen
-import qualified ATen.Managed.Type.Tensor      as ATen
+import qualified Torch.Internal.Cast                     as ATen
+import qualified Torch.Internal.Class                    as ATen
+import qualified Torch.Internal.Type                     as ATen
+import qualified Torch.Internal.Managed.Type.Tensor      as ATen
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
-import           Torch.Typed.Native     hiding ( linear )
+import           Torch.Typed.Functional     hiding ( linear )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
@@ -57,7 +57,7 @@ import qualified Torch.NN                      as A
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
-import qualified Torch.Functions               as D
+import qualified Torch.Functional               as D
 import qualified Torch.TensorFactories         as D
 
 

@@ -8,7 +8,7 @@ module LSTM where
 import Torch.Tensor
 import Torch.DType
 import Torch.TensorFactories
-import Torch.Functions
+import Torch.Functional
 import Torch.TensorOptions
 import Torch.Autograd
 import Torch.NN
@@ -34,15 +34,15 @@ newCellState :: LSTMCell -> Tensor -> Tensor -> Tensor
 newCellState LSTMCell{..} input hidden =
   (fg * (toDependent cell_state)) + (ig * c')
   where
-    ig = gate input hidden Torch.Functions.sigmoid
+    ig = gate input hidden Torch.Functional.sigmoid
          (input_gate !! 0)
          (input_gate !! 1)
          (input_gate !! 2)
-    fg = gate input hidden Torch.Functions.sigmoid
+    fg = gate input hidden Torch.Functional.sigmoid
          (forget_gate !! 0)
          (forget_gate !! 1)
          (forget_gate !! 2)
-    c' = gate input hidden Torch.Functions.sigmoid
+    c' = gate input hidden Torch.Functional.sigmoid
          (hidden_gate !! 0)
          (hidden_gate !! 1)
          (hidden_gate !! 2)
@@ -50,10 +50,10 @@ newCellState LSTMCell{..} input hidden =
 
 instance RecurrentCell LSTMCell where
   nextState cell input hidden =
-    matmul og (Torch.Functions.tanh cNew)
+    matmul og (Torch.Functional.tanh cNew)
     where
       og' = output_gate cell
-      og = gate input hidden Torch.Functions.sigmoid
+      og = gate input hidden Torch.Functional.sigmoid
            (og' !! 0)
            (og' !! 1)
            (og' !! 2)

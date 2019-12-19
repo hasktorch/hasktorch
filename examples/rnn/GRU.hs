@@ -8,7 +8,7 @@ module GRU where
 import Torch.Tensor
 import Torch.DType
 import Torch.TensorFactories
-import Torch.Functions
+import Torch.Functional
 import Torch.TensorOptions
 import Torch.Autograd
 import Torch.NN
@@ -33,15 +33,15 @@ instance RecurrentCell GRUCell where
   nextState GRUCell{..} input hidden =
     (ug * hidden) + ((1 - ug) * h')
     where
-      rg = gate input hidden Torch.Functions.sigmoid
+      rg = gate input hidden Torch.Functional.sigmoid
                 (reset_gate !! 0)
                 (reset_gate !! 1)
                 (reset_gate !! 2)
-      ug = gate input hidden Torch.Functions.sigmoid
+      ug = gate input hidden Torch.Functional.sigmoid
                 (update_gate !! 0)
                 (update_gate !! 1)
                 (update_gate !! 2)
-      h' = gate input (rg * hidden) Torch.Functions.tanh
+      h' = gate input (rg * hidden) Torch.Functional.tanh
                 (gru_hidden_gate !! 0)
                 (gru_hidden_gate !! 1)
                 (gru_hidden_gate !! 2)

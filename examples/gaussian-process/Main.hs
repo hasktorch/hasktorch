@@ -10,7 +10,7 @@ import Prelude hiding (exp)
 import Torch.Tensor
 import Torch.DType (DType (Float))
 import Torch.TensorFactories (eye', ones', rand', randn', zeros')
-import Torch.Functions
+import Torch.Functional
 import Torch.Autograd
 import Torch.NN
 

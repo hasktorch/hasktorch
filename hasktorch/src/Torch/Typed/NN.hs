@@ -22,7 +22,7 @@
 module Torch.Typed.NN where
 
 import           Control.Monad.State.Strict
-import           Data.HList
+import           Torch.HList
 import           Data.Kind                    (Type)
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
@@ -35,7 +35,7 @@ import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import           Torch.Typed.Aux
 import           Torch.Typed.Factories
-import           Torch.Typed.Native
+import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 
@@ -66,7 +66,7 @@ linear
   -> Tensor _ _ _
   -> Tensor _ _ _
 linear Linear {..} input =
-  Torch.Typed.Native.linear' (toDependent linearWeight) (toDependent linearBias) input
+  Torch.Typed.Functional.linear' (toDependent linearWeight) (toDependent linearBias) input
 
 instance A.Parameterized (Linear inputFeatures outputFeatures dtype device)
 
@@ -102,7 +102,7 @@ dropout
   -> Tensor device dtype shape
   -> IO (Tensor device dtype shape)
 dropout Dropout {..} dropoutTrain =
-  Torch.Typed.Native.dropout dropoutProb dropoutTrain
+  Torch.Typed.Functional.dropout dropoutProb dropoutTrain
 
 instance A.Parameterized Dropout
 
@@ -205,7 +205,7 @@ conv1d
   => Conv1d _ _ _ _ _
   -> Tensor _ _ _
   -> Tensor _ _ _
-conv1d Conv1d {..} input = Torch.Typed.Native.conv1d @stride @padding
+conv1d Conv1d {..} input = Torch.Typed.Functional.conv1d @stride @padding
   (toDependent conv1dWeight)
   (toDependent conv1dBias)
   input
@@ -253,7 +253,7 @@ conv2d
   => Conv2d _ _ _ _ _ _
   -> Tensor _ _ _
   -> Tensor _ _ _
-conv2d Conv2d {..} input = Torch.Typed.Native.conv2d @stride @padding
+conv2d Conv2d {..} input = Torch.Typed.Functional.conv2d @stride @padding
   (toDependent conv2dWeight)
   (toDependent conv2dBias)
   input
@@ -302,7 +302,7 @@ conv3d
   => Conv3d _ _ _ _ _ _ _
   -> Tensor _ _ _
   -> Tensor _ _ _
-conv3d Conv3d {..} input = Torch.Typed.Native.conv3d @stride @padding
+conv3d Conv3d {..} input = Torch.Typed.Functional.conv3d @stride @padding
   (toDependent conv3dWeight)
   (toDependent conv3dBias)
   input
@@ -350,7 +350,7 @@ layerNorm
   => LayerNorm normalizedShape dtype device
   -> Tensor device dtype shape
   -> Tensor device dtype shape
-layerNorm LayerNorm {..} = Torch.Typed.Native.layerNorm @normalizedShape
+layerNorm LayerNorm {..} = Torch.Typed.Functional.layerNorm @normalizedShape
   (toDependent layerNormWeight)
   (toDependent layerNormBias)
   layerNormEps

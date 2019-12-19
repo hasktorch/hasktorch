@@ -3,14 +3,14 @@
 
 module Torch.Typed.Serialize where
 
-import Data.HList
+import Torch.HList
 import           Foreign.ForeignPtr
 
-import qualified Torch.Managed.Serialize as S
+import qualified Torch.Internal.Managed.Serialize as S
 import Torch.Typed.Tensor
-import qualified ATen.Class                    as ATen
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Type                     as ATen
+import qualified Torch.Internal.Class                    as ATen
+import qualified Torch.Internal.Cast                     as ATen
+import qualified Torch.Internal.Type                     as ATen
 
 save
   :: forall tensors

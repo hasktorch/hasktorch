@@ -13,15 +13,15 @@ module Torch.NN where
 import Control.Monad.State.Strict
 import System.IO.Unsafe (unsafePerformIO)
 
-import qualified ATen.Managed.Native as ATen
-import qualified ATen.Managed.Type.Tensor as ATen
-import ATen.Cast (cast3)
+import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import Torch.Internal.Cast (cast3)
 
 import Torch.Autograd
 import Torch.Initializers
 import Torch.Tensor
 import Torch.TensorFactories (ones', rand', randn')
-import Torch.Functions
+import Torch.Functional
 import GHC.Generics
 
 type Parameter = IndependentTensor

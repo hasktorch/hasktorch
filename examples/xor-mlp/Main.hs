@@ -8,7 +8,7 @@ module Main where
 import Torch.Tensor
 import Torch.DType
 import Torch.TensorFactories
-import Torch.Functions hiding (linear)
+import Torch.Functional hiding (linear)
 import Torch.TensorOptions
 import Torch.Autograd
 import Torch.NN
@@ -62,7 +62,7 @@ model params t = mlp params t
 main :: IO ()
 main = do
     init <- sample $ MLPSpec { feature_counts = [2, 3, 2, 1], 
-                               nonlinearitySpec = Torch.Functions.tanh } 
+                               nonlinearitySpec = Torch.Functional.tanh } 
     trained <- foldLoop init num_iters $ \state i -> do
         input <- rand' [batch_size, 2] >>= return . (toDType Float) . (gt 0.5)
         let expected_output = tensorXOR input

@@ -4,9 +4,9 @@
 
 module Torch.Backend where
 
-import ATen.Class (Castable(..))
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
+import Torch.Internal.Class (Castable(..))
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Type as ATen
 
 data Backend = CPU | CUDA | HIP | SparseCPU | SparseCUDA | MSNPU | XLA
   deriving (Eq, Show)

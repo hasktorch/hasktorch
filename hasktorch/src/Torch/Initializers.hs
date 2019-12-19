@@ -1,6 +1,6 @@
 module Torch.Initializers where
 
-import Torch.Functions hiding (sqrt)
+import Torch.Functional hiding (sqrt)
 import Torch.Tensor
 import Torch.TensorFactories
 

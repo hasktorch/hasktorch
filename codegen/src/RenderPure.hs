@@ -122,13 +122,13 @@ decodeAndCodeGen basedir yamlSpecFileName bindingsFileName = do
     (Left err', _) -> print err'
     (Right _  , Left err') -> print err'
     (Right fns, Right bnd) -> do
-      createDirectoryIfMissing True (basedir <> "/Torch/Functions/")
+      createDirectoryIfMissing True (basedir <> "/Torch/Functional/")
       let l = nativeFunctionsFilter fns bnd
 
       case notUniqList (map fst l) of
         [] -> do 
-          T.writeFile (basedir <> "/Torch/Functions/Native.hs") $
-            template "Torch.Functions.Native" $
+          T.writeFile (basedir <> "/Torch/Functional/Internal.hs") $
+            template "Torch.Functional.Internal" $
             renderFunctions l
         xs -> do
           putStrLn "---Duplicated functions are as follows. ----"
@@ -144,14 +144,14 @@ renderImport = [st|
 import System.IO.Unsafe
 import Foreign.ForeignPtr
 
-import qualified ATen.Managed.Native as ATen
-import qualified ATen.Managed.Type.Tensor as ATen
-import qualified ATen.Managed.Type.Scalar as ATen
-import qualified ATen.Managed.Type.Tuple as ATen
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
-import qualified ATen.Managed.Cast
-import ATen.Cast
+import qualified Torch.Internal.Managed.Native as ATen
+import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.Scalar as ATen
+import qualified Torch.Internal.Managed.Type.Tuple as ATen
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Type as ATen
+import qualified Torch.Internal.Managed.Cast
+import Torch.Internal.Cast
 
 import Torch.Tensor
 import Torch.Scalar

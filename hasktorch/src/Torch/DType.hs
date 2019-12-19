@@ -5,9 +5,9 @@
 
 module Torch.DType where
 
-import ATen.Class (Castable(..))
-import qualified ATen.Const as ATen
-import qualified ATen.Type as ATen
+import Torch.Internal.Class (Castable(..))
+import qualified Torch.Internal.Const as ATen
+import qualified Torch.Internal.Type as ATen
 import Data.Int
 import Data.Word
 import Data.Reflection

@@ -9,7 +9,7 @@ import Control.Monad (foldM, when)
 import Torch.Tensor
 import Torch.DType (DType (Float))
 import Torch.TensorFactories (ones', rand', randn')
-import Torch.Functions
+import Torch.Functional
 import Torch.Autograd
 import Torch.NN
 

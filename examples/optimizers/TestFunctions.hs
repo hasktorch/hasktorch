@@ -11,7 +11,7 @@ import qualified Prelude as P
 
 import Torch.Tensor
 import Torch.TensorFactories (eye', ones', rand', randn', zeros')
-import Torch.Functions
+import Torch.Functional
 import Torch.Autograd
 import Torch.NN hiding (sgd)
 

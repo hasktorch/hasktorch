@@ -22,7 +22,7 @@
 module Torch.Typed.Parameter where
 
 import           Control.Monad.State.Strict
-import           Data.HList
+import           Torch.HList
 import           Data.Kind                    (Type)
 import           GHC.TypeLits
 import           GHC.TypeLits.Extra
@@ -35,7 +35,7 @@ import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import           Torch.Typed.Aux
 import           Torch.Typed.Factories
-import           Torch.Typed.Native
+import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 
 newtype Parameter (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) = Parameter A.IndependentTensor

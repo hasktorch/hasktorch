@@ -60,23 +60,24 @@ decodeAndCodeGen basedir fileName = do
     Left err' -> print err'
     Right fns' -> do
       let fns = concat $ map addFunctionWithDefaultArguments fns' 
-      createDirectoryIfMissing True (basedir <> "/ATen")
-      T.writeFile (basedir <> "/ATen/Type.hs") $
+      createDirectoryIfMissing True (basedir <> "/Torch")
+      createDirectoryIfMissing True (basedir <> "/Torch/Internal")
+      T.writeFile (basedir <> "/Torch/Internal/Type.hs") $
         typeTemplate
-      T.writeFile (basedir <> "/ATen/Managed/Native.hs") $
-        template False True "ATen.Managed.Native" $
+      T.writeFile (basedir <> "/Torch/Internal/Managed/Native.hs") $
+        template False True "Torch.Internal.Managed.Native" $
         renderFunctions True True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
-      T.writeFile (basedir <> "/ATen/Unmanaged/Native.hs") $
-        template False False "ATen.Unmanaged.Native" $
+      T.writeFile (basedir <> "/Torch/Internal/Unmanaged/Native.hs") $
+        template False False "Torch.Internal.Unmanaged.Native" $
         renderFunctions False True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
 
-      createDirectoryIfMissing True (basedir <> "/Torch/Managed")
-      createDirectoryIfMissing True (basedir <> "/Torch/Unmanaged")
-      T.writeFile (basedir <> "/Torch/Managed/Native.hs") $
-        template True True "Torch.Managed.Native" $
+      createDirectoryIfMissing True (basedir <> "/Torch/Internal/Managed")
+      createDirectoryIfMissing True (basedir <> "/Torch/Internal/Unmanaged")
+      T.writeFile (basedir <> "/Torch/Internal/Managed/TensorFactories.hs") $
+        template True True "Torch.Internal.Managed.TensorFactories" $
         renderFunctions True True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just True) fns)
-      T.writeFile (basedir <> "/Torch/Unmanaged/Native.hs") $
-        template True False "Torch.Unmanaged.Native" $
+      T.writeFile (basedir <> "/Torch/Internal/Unmanaged/TensorFactories.hs") $
+        template True False "Torch.Internal.Unmanaged.TensorFactories" $
         renderFunctions False True "torch::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a) && D.is_factory_method a == Just True) fns)
 
 
@@ -87,26 +88,26 @@ renderImport is_torch_factory_method is_managed module_name =  if is_managed the
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import ATen.Type
-import ATen.Class
-import ATen.Cast
+import Torch.Internal.Type
+import Torch.Internal.Class
+import Torch.Internal.Cast
 import qualified #{replace "Managed" "Unmanaged" module_name} as Unmanaged
-import ATen.Unmanaged.Type.Generator
-import ATen.Unmanaged.Type.IntArray
-import ATen.Unmanaged.Type.Scalar
-import ATen.Unmanaged.Type.Storage
-import ATen.Unmanaged.Type.Tensor
-import ATen.Unmanaged.Type.TensorList
-import ATen.Unmanaged.Type.TensorOptions
-import ATen.Unmanaged.Type.Tuple
-import ATen.Unmanaged.Type.StdString
-import ATen.Unmanaged.Type.StdArray
+import Torch.Internal.Unmanaged.Type.Generator
+import Torch.Internal.Unmanaged.Type.IntArray
+import Torch.Internal.Unmanaged.Type.Scalar
+import Torch.Internal.Unmanaged.Type.Storage
+import Torch.Internal.Unmanaged.Type.Tensor
+import Torch.Internal.Unmanaged.Type.TensorList
+import Torch.Internal.Unmanaged.Type.TensorOptions
+import Torch.Internal.Unmanaged.Type.Tuple
+import Torch.Internal.Unmanaged.Type.StdString
+import Torch.Internal.Unmanaged.Type.StdArray
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
-import ATen.Type
-import ATen.Class
+import Torch.Internal.Type
+import Torch.Internal.Class
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C
@@ -151,7 +152,7 @@ typeTemplate = [st|
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ATen.Type where
+module Torch.Internal.Type where
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Exceptions as C

@@ -12,7 +12,7 @@ import Prelude hiding (exp)
 import Torch.Tensor
 import Torch.DType (DType (Float))
 import Torch.TensorFactories (ones', rand', randn', randnLike)
-import Torch.Functions hiding (linear)
+import Torch.Functional hiding (linear)
 import Torch.Autograd
 import Torch.NN
 
