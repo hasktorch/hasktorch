@@ -23,7 +23,7 @@ import qualified Torch.Tensor                  as D
 import qualified Torch.TensorOptions           as D
 import qualified Foreign.ForeignPtr            as F
 import qualified Foreign.Ptr                   as F
-import qualified Torch.Internal.Managed.Native as LibTorch
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 
 data MnistData =
   MnistData

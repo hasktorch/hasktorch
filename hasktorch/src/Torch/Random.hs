@@ -21,7 +21,7 @@ import qualified Torch.Internal.Const as ATen
 import qualified Torch.Internal.Type as ATen
 import Data.Word
 import qualified Torch.Internal.Managed.Type.Generator as ATen
-import qualified Torch.Internal.Managed.Native as LibTorch
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import Torch.Device
 import Torch.TensorOptions
 import Torch.Tensor

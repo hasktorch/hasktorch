@@ -10,7 +10,7 @@ import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Type as ATen
-import qualified Torch.Internal.Managed.Native as LibTorch
+import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import qualified Torch.Internal.Managed.Autograd as LibTorch
 import Torch.Internal.Managed.Cast
 import Torch.Internal.Class (Castable(..))
@@ -79,10 +79,10 @@ randnLike :: Tensor -> IO Tensor
 randnLike = cast1 ATen.randn_like_t
 
 fullLike :: Tensor -> Float -> TensorOptions -> IO Tensor
-fullLike input _fill_value opt = (cast3 LibTorch.full_like_tso) input _fill_value opt
+fullLike input _fill_value opt = cast3 LibTorch.full_like_tso input _fill_value opt
 
 randLike :: Tensor -> TensorOptions -> IO Tensor
-randLike input opt = (cast2 LibTorch.rand_like_to) input opt
+randLike input opt = cast2 LibTorch.rand_like_to input opt
 
 onesWithDimnames :: [(Int,Dimname)] -> TensorOptions -> Tensor
 onesWithDimnames = mkFactoryUnsafeWithDimnames LibTorch.ones_lNo
