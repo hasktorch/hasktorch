@@ -205,7 +205,7 @@ let
   base-compiler = pkgs.haskell.packages."${compiler}";
 in
   rec {
-    inherit nullIfDarwin;
+    inherit nullIfDarwin overlayShared;
 
     inherit (base-compiler)
       hasktorch-codegen
