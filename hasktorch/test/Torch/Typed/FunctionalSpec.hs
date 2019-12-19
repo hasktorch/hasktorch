@@ -868,9 +868,9 @@ spec' device =
     describe "linear algrebra" $ do
       it "dot" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-          hfoldrM @IO DotSpec () (hattach cpu   (hCartesianProduct standardDTypes            (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+          hfoldrM @IO DotSpec () (hattach cpu   (hCartesianProduct standardDTypes         (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-          hfoldrM @IO DotSpec () (hattach cuda0 (hCartesianProduct (withHalf standardDTypes) (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+          hfoldrM @IO DotSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
       it "inverse" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO InverseSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))

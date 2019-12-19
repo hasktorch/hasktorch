@@ -12,7 +12,16 @@ import Data.Int
 import Data.Word
 import Data.Reflection
 
-data DType = Bool | UInt8 | Int8 | Int16 | Int32 | Int64 | Half | Float | Double
+data DType =
+    Bool   -- ^ Bool
+  | UInt8  -- ^ Byte
+  | Int8   -- ^ Char
+  | Int16  -- ^ Short
+  | Int32  -- ^ Int
+  | Int64  -- ^ Long
+  | Half   -- ^ Half
+  | Float  -- ^ Float
+  | Double -- ^ Double
   deriving (Eq, Show)
 
 instance Reifies Bool DType where

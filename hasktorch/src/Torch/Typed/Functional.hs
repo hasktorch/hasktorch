@@ -1991,7 +1991,7 @@ type family DotDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
   DotDTypeIsValid '( 'D.CPU, 0)            dtype = ( DTypeIsNotBool '( 'D.CPU, 0) dtype
                                                    , DTypeIsNotHalf '( 'D.CPU, 0) dtype
                                                    )
-  DotDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = DTypeIsNotBool '( 'D.CUDA, deviceIndex) dtype
+  DotDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
   DotDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | dot product
