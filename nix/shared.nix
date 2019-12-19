@@ -158,7 +158,7 @@ let
     };
 in
   rec {
-    inherit nullIfDarwin;
+    inherit nullIfDarwin overlayShared;
 
     inherit (pkgs.haskell.packages."${compiler}")
       hasktorch-codegen
