@@ -156,11 +156,58 @@ let
         export CPATH=${libtorch}/include/torch/csrc/api/include
       '';
     };
+  altdev-announce = libtorch: old: with builtins; with pkgs.lib.strings; with pkgs.lib.lists;
+    let
+      echo = str: "echo \"${str}\"";
+      nl = echo "";
+      findFirstPrefix = pre: def: xs: findFirst (x: hasPrefix pre x) def xs;
+      removeStrings = strs: xs: replaceStrings strs (map (x: "") strs) xs;
+
+      # findAndReplaceLTS :: [String] -> String -- something like "lts-14.7"
+      findAndReplaceLTS = xs:
+        let pre = "resolver:";
+        in removeStrings [" " "\n" pre] (findFirstPrefix pre "resolver: lts-14.7" xs);
+    in
+      old // {
+        shellHook = old.shellHook + concatStringsSep "\n" [
+          nl
+          (echo "Suggested NixOS development uses cabal v1-*. If you plan on developing on NixOS")
+          (echo "with stack, you may still need to add the following to your stack.yaml:")
+          nl
+          (echo "  extra-lib-dirs:")
+          (echo "    - ${libtorch}/lib")
+          (echo "  extra-include-dirs:")
+          (echo "    - ${libtorch}/include")
+          (echo "    - ${libtorch}/include/torch/csrc/api/include")
+          nl
+          (echo "cabal v2-* development on NixOS may also need an updated cabal.project.local:")
+          nl
+          (echo "  package libtorch-ffi")
+          (echo "    extra-lib-dirs:     ${libtorch}/lib")
+          (echo "    extra-include-dirs: ${libtorch}/include")
+          (echo "    extra-include-dirs: ${libtorch}/include/torch/csrc/api/include")
+          # zlib.out and zlib.dev are strictly for developing with a nix-shell using stack- or cabal v2- based builds.
+          # this is a similar patch to https://github.com/commercialhaskell/stack/issues/2975
+          (echo "  package zlib")
+          (echo "    extra-lib-dirs: ${pkgs.zlib.dev}/lib")
+          (echo "    extra-lib-dirs: ${pkgs.zlib.out}/lib")
+          nl
+          (echo "as well as a freeze file from stack's resolver:")
+          # $(which curl) is used to bypass an alias to 'curl'. This is safe so long as we use gnu's which
+          (echo ''$(which curl) https://www.stackage.org/${findAndReplaceLTS (splitString "\n" (readFile ../stack.yaml))}/cabal.config \\ '')
+          (echo ("   "+''  | sed -e 's/inline-c ==.*,/inline-c ==0.9.0.0,/g' -e 's/inline-c-cpp ==.*,/inline-c-cpp ==0.4.0.0,/g' \\ ''))
+          (echo ("   "+''  > cabal.project.freeze''))
+          nl
+        ];
+        buildInputs = with pkgs; old.buildInputs ++ [ zlib.dev zlib.out ];
+      };
+  doBenchmark = pkgs.haskell.lib.doBenchmark;
+  base-compiler = pkgs.haskell.packages."${compiler}";
 in
   rec {
     inherit nullIfDarwin;
 
-    inherit (pkgs.haskell.packages."${compiler}")
+    inherit (base-compiler)
       hasktorch-codegen
       inline-c
       inline-c-cpp
@@ -180,22 +227,22 @@ in
         lib = pkgs.lib;
         haskellPackages = pkgs.haskellPackages;
       }) {hspkgs = [
-            pkgs.haskell.packages."${compiler}".hasktorch_cpu
-            pkgs.haskell.packages."${compiler}".libtorch-ffi_cpu
+            base-compiler.hasktorch_cpu
+            base-compiler.libtorch-ffi_cpu
           ];
          }
     );
-    shell-hasktorch-codegen = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-codegen).env;
-    shell-inline-c = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c).env;
-    shell-inline-c-cpp = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".inline-c-cpp).env;
-    shell-libtorch-ffi_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cpu).env.overrideAttrs (fixcpath pkgs.libtorch_cpu);
-    shell-libtorch-ffi_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cudatoolkit_9_2).env.overrideAttrs (fixcpath pkgs.libtorch_cudatoolkit_9_2);
-    shell-libtorch-ffi_cudatoolkit_10_1 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".libtorch-ffi_cudatoolkit_10_1).env.overrideAttrs (fixcpath pkgs.libtorch_cudatoolkit_10_1);
-    shell-hasktorch_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cpu).env.overrideAttrs fixmkl;
-    shell-hasktorch_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cudatoolkit_9_2).env.overrideAttrs fixmkl;
-    shell-hasktorch_cudatoolkit_10_1 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch_cudatoolkit_10_1).env.overrideAttrs fixmkl;
-    shell-hasktorch-examples_cpu = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cpu).env.overrideAttrs fixmkl;
-    shell-hasktorch-examples_cudatoolkit_9_2 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_9_2).env.overrideAttrs fixmkl;
-    shell-hasktorch-examples_cudatoolkit_10_1 = (pkgs.haskell.lib.doBenchmark pkgs.haskell.packages."${compiler}".hasktorch-examples_cudatoolkit_10_1).env.overrideAttrs fixmkl;
+    shell-hasktorch-codegen                   = (doBenchmark base-compiler.hasktorch-codegen).env;
+    shell-inline-c                            = (doBenchmark base-compiler.inline-c).env;
+    shell-inline-c-cpp                        = (doBenchmark base-compiler.inline-c-cpp).env;
+    shell-libtorch-ffi_cpu                    = (doBenchmark base-compiler.libtorch-ffi_cpu                   ).env.overrideAttrs(fixcpath pkgs.libtorch_cpu);
+    shell-libtorch-ffi_cudatoolkit_9_2        = (doBenchmark base-compiler.libtorch-ffi_cudatoolkit_9_2       ).env.overrideAttrs(fixcpath pkgs.libtorch_cudatoolkit_9_2);
+    shell-libtorch-ffi_cudatoolkit_10_1       = (doBenchmark base-compiler.libtorch-ffi_cudatoolkit_10_1      ).env.overrideAttrs(fixcpath pkgs.libtorch_cudatoolkit_10_1);
+    shell-hasktorch_cpu                       = (doBenchmark base-compiler.hasktorch_cpu                      ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cpu (fixmkl old));
+    shell-hasktorch_cudatoolkit_9_2           = (doBenchmark base-compiler.hasktorch_cudatoolkit_9_2          ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cudatoolkit_9_2 (fixmkl old));
+    shell-hasktorch_cudatoolkit_10_1          = (doBenchmark base-compiler.hasktorch_cudatoolkit_10_1         ).env.overrideAttrs(old: altdev-announce pkgs.libtorch_cudatoolkit_10_1 (fixmkl old));
+    shell-hasktorch-examples_cpu              = (doBenchmark base-compiler.hasktorch-examples_cpu             ).env.overrideAttrs(fixmkl);
+    shell-hasktorch-examples_cudatoolkit_9_2  = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_9_2 ).env.overrideAttrs(fixmkl);
+    shell-hasktorch-examples_cudatoolkit_10_1 = (doBenchmark base-compiler.hasktorch-examples_cudatoolkit_10_1).env.overrideAttrs(fixmkl);
   }
 
