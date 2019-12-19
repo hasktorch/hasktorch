@@ -34,7 +34,7 @@ import           Prelude                 hiding ( all
 import           Control.Monad                  ( when )
 import           Control.Exception.Safe
 import           Foreign.Storable
-import           Data.HList
+import           Torch.HList
 import           Data.Kind
 import           Data.Proxy
 import           Data.Maybe
@@ -47,14 +47,14 @@ import           System.IO.Unsafe
 import           Test.Hspec
 import           Test.QuickCheck
 
-import qualified ATen.Cast                     as ATen
-import qualified ATen.Class                    as ATen
-import qualified ATen.Type                     as ATen
-import qualified ATen.Managed.Type.Tensor      as ATen
-import qualified ATen.Managed.Type.Context     as ATen
+import qualified Torch.Internal.Cast                     as ATen
+import qualified Torch.Internal.Class                    as ATen
+import qualified Torch.Internal.Type                     as ATen
+import qualified Torch.Internal.Managed.Type.Tensor      as ATen
+import qualified Torch.Internal.Managed.Type.Context     as ATen
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
-import qualified Torch.Functions               as D
+import qualified Torch.Functional              as D
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.TensorOptions           as D
@@ -63,7 +63,7 @@ import qualified Torch.NN                      as A
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
-import           Torch.Typed.Native
+import           Torch.Typed.Functional
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import           Torch.Typed.Autograd
