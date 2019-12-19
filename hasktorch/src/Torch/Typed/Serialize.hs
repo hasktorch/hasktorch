@@ -1,28 +1,32 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Torch.Typed.Serialize where
 
-import Torch.HList
-import           Foreign.ForeignPtr
+import           Torch.HList
 
+import qualified Torch.Internal.Class             as ATen
+import qualified Torch.Internal.Cast              as ATen
+import qualified Torch.Internal.Type              as ATen
 import qualified Torch.Internal.Managed.Serialize as S
-import Torch.Typed.Tensor
-import qualified Torch.Internal.Class                    as ATen
-import qualified Torch.Internal.Cast                     as ATen
-import qualified Torch.Internal.Type                     as ATen
+import qualified Torch.Tensor                     as D
+import           Torch.Typed.Tensor
 
+-- | save list of tensors to file
 save
   :: forall tensors
-   . (ATen.Castable (HList tensors) (ForeignPtr ATen.TensorList))
-  => HList tensors
-  -> FilePath
+   . ATen.Castable (HList tensors) [D.ATenTensor]
+  => HList tensors -- ^ list of input tensors
+  -> FilePath -- ^ file
   -> IO ()
-save inputs file = ATen.cast2 S.save inputs file
+save = ATen.cast2 S.save
 
+-- | load list of tensors from file
 load
   :: forall tensors
-   . (ATen.Castable (HList tensors) (ForeignPtr ATen.TensorList))
-  => FilePath
+   . ATen.Castable (HList tensors) [D.ATenTensor]
+  => FilePath -- ^ file
   -> IO (HList tensors)
-load file = ATen.cast1 S.load file
+load = ATen.cast1 S.load

@@ -74,8 +74,36 @@ data UnaryAllDTypesSpec =
   | OnesLikeSpec
   | ZerosLikeSpec
 
+instance
+  ( TensorOptions shape dtype device
+  ) => Apply UnaryAllDTypesSpec
+             (Proxy device, (Proxy dtype, Proxy shape))
+             (() -> IO ())
+ where
+  apply SignSpec _ _ = do
+    let t = sign (ones @shape @dtype @device)
+    checkDynamicTensorAttributes t
+  apply OnesLikeSpec _ _ = do
+    let t = onesLike (ones @shape @dtype @device)
+    checkDynamicTensorAttributes t
+  apply ZerosLikeSpec _ _ = do
+    let t = zerosLike (ones @shape @dtype @device)
+    checkDynamicTensorAttributes t
+
 data UnaryStandardDTypesSpec =
     AbsSpec
+
+instance
+  ( TensorOptions shape dtype device
+  , DTypeIsNotHalf device dtype
+  , DTypeIsNotBool device dtype
+  ) => Apply UnaryStandardDTypesSpec
+             (Proxy device, (Proxy dtype, Proxy shape))
+             (() -> IO ())
+ where
+  apply AbsSpec _ _ = do
+    let t = abs (ones @shape @dtype @device)
+    checkDynamicTensorAttributes t
 
 data UnaryStandardFloatingPointDTypesSpec =
     FracSpec
@@ -112,44 +140,12 @@ data UnaryStandardFloatingPointDTypesSpec =
   | RandLikeSpec
   | RandnLikeSpec
 
--- data UnaryAllFloatingPointDTypesSpec =
-
-instance ( TensorOptions shape dtype device
-         , DTypeIsNotHalf device dtype
-         , DTypeIsNotBool device dtype
-         )
-  => Apply
-       UnaryStandardDTypesSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply AbsSpec _ _ = do
-    let t = abs (ones @shape @dtype @device)
-    checkDynamicTensorAttributes t
-
-instance (TensorOptions shape dtype device)
-  => Apply
-       UnaryAllDTypesSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
-  apply SignSpec _ _ = do
-    let t = sign (ones @shape @dtype @device)
-    checkDynamicTensorAttributes t
-  apply OnesLikeSpec _ _ = do
-    let t = onesLike (ones @shape @dtype @device)
-    checkDynamicTensorAttributes t
-  apply ZerosLikeSpec _ _ = do
-    let t = zerosLike (ones @shape @dtype @device)
-    checkDynamicTensorAttributes t
-
-instance ( TensorOptions shape dtype device
-         , StandardFloatingPointDTypeValidation device dtype
-         )
-  => Apply
-       UnaryStandardFloatingPointDTypesSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
+instance
+  ( TensorOptions shape dtype device
+  , StandardFloatingPointDTypeValidation device dtype
+  ) => Apply UnaryStandardFloatingPointDTypesSpec
+             (Proxy device, (Proxy dtype, Proxy shape))
+             (() -> IO ())
  where
   apply FracSpec _ _ = do
     let t = frac (ones @shape @dtype @device)
@@ -247,15 +243,6 @@ instance ( TensorOptions shape dtype device
   apply RandnLikeSpec _ _ = do
     t <- randnLike (ones @shape @dtype @device)
     checkDynamicTensorAttributes t
-
--- instance ( TensorOptions shape dtype device
---          , DTypeIsFloatingPoint device dtype
---          )
---   => Apply
---        UnaryAllFloatingPointDTypesSpec
---        (Proxy '(device, dtype, shape))
---        (() -> IO ())
---  where
 
 data MishSpec = MishSpec
 
@@ -434,6 +421,23 @@ instance ( TensorOptions shape dtype device
     let t = ones @shape @dtype @device
         t' = logSoftmax @dim t
     checkDynamicTensorAttributes t'
+
+data DotSpec = DotSpec
+
+instance
+  ( TensorOptions '[size] dtype device
+  , DotDTypeIsValid device dtype
+  , KnownDType dtype
+  , KnownDevice device
+  ) => Apply DotSpec
+             (Proxy device, (Proxy dtype, Proxy size))
+             (() -> IO ())
+ where
+  apply DotSpec _ _ = do
+    let a = ones @'[size] @dtype @device
+        b = ones @'[size] @dtype @device
+        t = dot a b
+    checkDynamicTensorAttributes t
 
 data InverseSpec = InverseSpec
 
@@ -862,6 +866,11 @@ spec' device =
       it "logSoftmax" $ dispatch LogSoftmaxSpec
 
     describe "linear algrebra" $ do
+      it "dot" $ case device of
+        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+          hfoldrM @IO DotSpec () (hattach cpu   (hCartesianProduct standardDTypes            (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+          hfoldrM @IO DotSpec () (hattach cuda0 (hCartesianProduct (withHalf standardDTypes) (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
       it "inverse" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
           hfoldrM @IO InverseSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes squareShapes))

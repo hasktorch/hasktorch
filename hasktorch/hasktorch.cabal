@@ -76,6 +76,8 @@ test-suite spec
                     , Torch.Typed.TensorSpec
                     , Torch.Typed.FactoriesSpec
                     , Torch.Typed.FunctionalSpec
+                    , Torch.Typed.AutogradSpec
+                    , Torch.Typed.OptimSpec
                     , SerializeSpec
                     , RandomSpec
   default-language: Haskell2010

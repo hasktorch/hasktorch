@@ -51,7 +51,7 @@ import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import           Torch.Typed.Aux
 
-class KnownShape shape where
+class KnownShape (shape :: [Nat]) where
     shapeVal :: [Int]
 
 instance KnownShape '[] where
@@ -63,7 +63,7 @@ instance (KnownNat h, KnownShape t) => KnownShape (h ': t) where
 getFiniteI :: Finite n -> Int
 getFiniteI = fromIntegral . getFinite
 
-class KnownDType dtype where
+class KnownDType (dtype :: D.DType) where
   dtypeVal :: D.DType
 
 instance KnownDType 'D.Bool where
