@@ -68,6 +68,7 @@ test-suite spec
   other-modules:      FactorySpec
                     , FunctionalSpec
                     , GradSpec
+                    , InitializerSpec
                     , SparseSpec
                     , TensorSpec
                     , NNSpec
