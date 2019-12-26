@@ -32,6 +32,7 @@ library
                     , Torch.Typed.NN.Recurrent.LSTM
                     , Torch.Typed.Tensor
                     , Torch.Typed.Parameter
+                    , Torch.Typed.Device
                     , Torch.Typed.Autograd
                     , Torch.Typed.Optim
                     , Torch.Typed.Serialize

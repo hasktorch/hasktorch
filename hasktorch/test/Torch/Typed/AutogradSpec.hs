@@ -234,7 +234,7 @@ instance
   , StandardFloatingPointDTypeValidation device dtype
   ) => Apply' (RastriginA a (Proxy device') (Proxy dtype')) (Parameter device dtype '[n]) (Tensor device' dtype' '[]) where
   apply' (RastriginA a _ _) parameter =
-    toDevice @device' . toDType @dtype' . rastriginLayer' (toDependent parameter) a $ natValI @n
+    Torch.Typed.Tensor.toDevice @device' . toDType @dtype' . rastriginLayer' (toDependent parameter) a $ natValI @n
 
 rastrigin
   :: forall a dtype device tensors parameters num ns dtypes devices shape
@@ -282,7 +282,7 @@ instance
   apply _ (a, b) _ = do
     checkDynamicTensorAttributes a
     checkDynamicTensorAttributes b
-    (toList . Just . toDevice @'( 'D.CPU, 0) . unsqueeze @0 . all)
+    (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0) . unsqueeze @0 . all)
         (isclose 1e-05 1e-08 False a b)
       `shouldBe` [True]
 

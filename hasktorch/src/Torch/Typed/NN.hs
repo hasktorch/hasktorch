@@ -359,8 +359,8 @@ instance A.Parameterized (LayerNorm normalizedShape dtype device) where
   flattenParameters LayerNorm {..} =
     A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
   replaceOwnParameters LayerNorm {..} = do
-    layerNormWeight <- Parameter <$> A.nextParameter
-    layerNormBias   <- Parameter <$> A.nextParameter
+    layerNormWeight <- UnsafeMkParameter <$> A.nextParameter
+    layerNormBias   <- UnsafeMkParameter <$> A.nextParameter
     return $ LayerNorm { .. }
 
 instance

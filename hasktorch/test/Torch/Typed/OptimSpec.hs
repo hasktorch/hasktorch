@@ -294,7 +294,7 @@ instance
         learningRate = 0.001
         numIter      = 50000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
-    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-08 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
+    (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-08 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
     isNonZero (isclose 1e-05 1e-08 False (loss model) zeros) `shouldBe` True
   apply GDMRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
@@ -306,7 +306,7 @@ instance
         learningRate = 0.001
         numIter      = 5000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
-    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-05 1e-08 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
+    (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-05 1e-08 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
     isNonZero (isclose 1e-05 1e-08 False (loss model) zeros) `shouldBe` True
   apply AdamRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
@@ -318,7 +318,7 @@ instance
         learningRate = 0.005
         numIter      = 10000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
-    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-07 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
+    (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-07 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
     isNonZero (isclose 1e-05 1e-07 False (loss model) zeros) `shouldBe` True
 
 data OptimAckleySpec = GDAckleySpec | GDMAckleySpec | AdamAckleySpec
@@ -347,7 +347,7 @@ instance
         numIter      = 10000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
     let finalLoss = loss model
-    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
+    (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
     isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
   apply GDMAckleySpec _ _ = do
     ATen.manual_seed_L 123
@@ -361,7 +361,7 @@ instance
         numIter      = 10000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
     let finalLoss = loss model
-    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
+    (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
     isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
   apply AdamAckleySpec _ _ = do
     ATen.manual_seed_L 123
@@ -375,7 +375,7 @@ instance
         numIter      = 20000
     (model, _optim) <- optimize initModel initOptim loss learningRate numIter
     let finalLoss = loss model
-    (toList . Just . toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
+    (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
     isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
 
 spec = foldMap spec' availableDevices

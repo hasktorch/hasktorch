@@ -470,14 +470,14 @@ toDevice
    . KnownDevice device'
   => Tensor device  dtype shape
   -> Tensor device' dtype shape
-toDevice input = UnsafeMkTensor . D.toDevice (deviceVal @device') . toDynamic $ input
+toDevice = UnsafeMkTensor . D.toDevice (deviceVal @device') . toDynamic
 
 toType
   :: forall dtype' dtype device shape
    . KnownDType dtype'
   => Tensor device dtype  shape
   -> Tensor device dtype' shape
-toType input = UnsafeMkTensor . D.toType (dtypeVal @dtype') . toDynamic $ input
+toType = UnsafeMkTensor . D.toType (dtypeVal @dtype') . toDynamic
 
 --------------------------------------------------------------------------------
 -- Auxiliary functions for accessing tensor options as values
