@@ -67,6 +67,8 @@ import           Torch.Typed.Autograd
 import           Torch.Typed.Optim
 import           Torch.Typed.Serialize
 import           Torch.Typed.AuxSpec
+import           Torch.Typed.Device
+import           Torch.Typed.DType
 
 data ConvQuadSpec (features :: Nat)
                   (dtype :: D.DType)
@@ -230,7 +232,7 @@ instance
   ( KnownNat features
   , KnownDType dtype
   , KnownDevice device
-  , RandDTypeIsValid device dtype
+  , RandDTypeIsValid '( 'D.CPU, 0) 'D.Float
   , DotDTypeIsValid device dtype
   , BasicArithmeticDTypeIsValid device dtype
   , StandardFloatingPointDTypeValidation device dtype
@@ -240,36 +242,39 @@ instance
  where
   apply GDConvQuadSpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (ConvQuadSpec @features @dtype @device)
-    let initOptim = mkGD
-        a         = eyeSquare @features @dtype @device
-        b         = zeros @'[features] @dtype @device
-        loss model = convQuad model a b
+    initModel <- A.sample (ConvQuadSpec @features @'D.Float @'( 'D.CPU, 0))
+    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+        initOptim    = mkGD
+        a            = eyeSquare @features @dtype @device
+        b            = zeros @'[features] @dtype @device
+        loss model   = convQuad model a b
         learningRate = 0.1
         numIter      = 1000
-    (model, _optim) <- optimize initModel initOptim loss learningRate numIter
+    (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     isNonZero (isclose 1e-03 1e-04 False (loss model) zeros) `shouldBe` True
   apply GDMConvQuadSpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (ConvQuadSpec @features @dtype @device)
-    let initOptim = mkGDM 0.9 (flattenParameters initModel)
-        a         = eyeSquare @features @dtype @device
-        b         = zeros @'[features] @dtype @device
-        loss model = convQuad model a b
+    initModel <- A.sample (ConvQuadSpec @features @'D.Float @'( 'D.CPU, 0))
+    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+        initOptim    = mkGDM 0.9 (flattenParameters initModel')
+        a            = eyeSquare @features @dtype @device
+        b            = zeros @'[features] @dtype @device
+        loss model   = convQuad model a b
         learningRate = 0.1
         numIter      = 1000
-    (model, _optim) <- optimize initModel initOptim loss learningRate numIter
+    (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     isNonZero (isclose 1e-03 1e-04 False (loss model) zeros) `shouldBe` True
   apply AdamConvQuadSpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (ConvQuadSpec @features @dtype @device)
-    let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-        a         = eyeSquare @features @dtype @device
-        b         = zeros @'[features] @dtype @device
-        loss model = convQuad model a b
+    initModel <- A.sample (ConvQuadSpec @features @'D.Float @'( 'D.CPU, 0))
+    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+        initOptim    = mkAdam 0 0.9 0.999 (flattenParameters initModel')
+        a            = eyeSquare @features @dtype @device
+        b            = zeros @'[features] @dtype @device
+        loss model   = convQuad model a b
         learningRate = 0.1
         numIter      = 1000
-    (model, _optim) <- optimize initModel initOptim loss learningRate numIter
+    (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     isNonZero (isclose 1e-03 1e-04 False (loss model) zeros) `shouldBe` True
 
 data OptimRosenbrockSpec = GDRosenbrockSpec | GDMRosenbrockSpec | AdamRosenbrockSpec

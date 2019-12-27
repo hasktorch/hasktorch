@@ -234,7 +234,7 @@ instance
   , StandardFloatingPointDTypeValidation device dtype
   ) => Apply' (RastriginA a (Proxy device') (Proxy dtype')) (Parameter device dtype '[n]) (Tensor device' dtype' '[]) where
   apply' (RastriginA a _ _) parameter =
-    Torch.Typed.Tensor.toDevice @device' . toDType @dtype' . rastriginLayer' (toDependent parameter) a $ natValI @n
+    Torch.Typed.Tensor.toDevice @device' . Torch.Typed.Tensor.toDType @dtype' . rastriginLayer' (toDependent parameter) a $ natValI @n
 
 rastrigin
   :: forall a dtype device tensors parameters num ns dtypes devices shape

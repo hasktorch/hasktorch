@@ -33,6 +33,7 @@ library
                     , Torch.Typed.Tensor
                     , Torch.Typed.Parameter
                     , Torch.Typed.Device
+                    , Torch.Typed.DType
                     , Torch.Typed.Autograd
                     , Torch.Typed.Optim
                     , Torch.Typed.Serialize

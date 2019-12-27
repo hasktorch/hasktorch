@@ -178,7 +178,7 @@ instance ( TensorOptions shape dtype  device
  where
   apply ToTypeSpec _ _ = do
     let t = ones @shape @dtype @device
-        t' = toType @dtype' t
+        t' = Torch.Typed.Tensor.toDType @dtype' t
     checkDynamicTensorAttributes t'
 
 data ToDeviceSpec = ToDeviceSpec

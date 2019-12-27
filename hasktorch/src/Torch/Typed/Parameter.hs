@@ -70,6 +70,13 @@ toDevice
   -> Parameter device' dtype shape
 toDevice (UnsafeMkParameter t) = UnsafeMkParameter . A.IndependentTensor . D.toDevice (deviceVal @device') . A.toDependent $ t
 
+toDType
+  :: forall dtype' dtype device shape
+   . KnownDType dtype'
+  => Parameter device dtype  shape
+  -> Parameter device dtype' shape
+toDType (UnsafeMkParameter t) = UnsafeMkParameter . A.IndependentTensor . D.toType (dtypeVal @dtype') . A.toDependent $ t
+
 class Parameterized
   (f :: Type)
   (as :: [Type]) | f -> as where
