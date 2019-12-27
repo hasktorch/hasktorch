@@ -232,7 +232,6 @@ instance
   ( KnownNat features
   , KnownDType dtype
   , KnownDevice device
-  , RandDTypeIsValid '( 'D.CPU, 0) 'D.Float
   , DotDTypeIsValid device dtype
   , BasicArithmeticDTypeIsValid device dtype
   , StandardFloatingPointDTypeValidation device dtype
@@ -282,7 +281,6 @@ data OptimRosenbrockSpec = GDRosenbrockSpec | GDMRosenbrockSpec | AdamRosenbrock
 instance
   ( KnownDType dtype
   , KnownDevice device
-  , RandDTypeIsValid device dtype
   , BasicArithmeticDTypeIsValid device dtype
   , StandardFloatingPointDTypeValidation device dtype
   ) => Apply OptimRosenbrockSpec
@@ -291,38 +289,41 @@ instance
  where
   apply GDRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (RosenbrockSpec @dtype @device)
-    let initOptim    = mkGD
+    initModel <- A.sample (RosenbrockSpec @'D.Float @'( 'D.CPU, 0))
+    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+        initOptim    = mkGD
         a :: Float   = 1.0
         b :: Float   = 100.0
         loss model   = rosenbrock model a b
         learningRate = 0.001
         numIter      = 50000
-    (model, _optim) <- optimize initModel initOptim loss learningRate numIter
+    (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-08 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
     isNonZero (isclose 1e-05 1e-08 False (loss model) zeros) `shouldBe` True
   apply GDMRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (RosenbrockSpec @dtype @device)
-    let initOptim    = mkGDM 0.9 (flattenParameters initModel)
+    initModel <- A.sample (RosenbrockSpec @'D.Float @'( 'D.CPU, 0))
+    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+        initOptim    = mkGDM 0.9 (flattenParameters initModel')
         a :: Float   = 1.0
         b :: Float   = 100.0
         loss model   = rosenbrock model a b
         learningRate = 0.001
         numIter      = 5000
-    (model, _optim) <- optimize initModel initOptim loss learningRate numIter
+    (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-05 1e-08 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
     isNonZero (isclose 1e-05 1e-08 False (loss model) zeros) `shouldBe` True
   apply AdamRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (RosenbrockSpec @dtype @device)
-    let initOptim    = mkAdam 0 0.9 0.999 (flattenParameters initModel)
+    initModel <- A.sample (RosenbrockSpec @'D.Float @'( 'D.CPU, 0))
+    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+        initOptim    = mkAdam 0 0.9 0.999 (flattenParameters initModel')
         a :: Float   = 1.0
         b :: Float   = 100.0
         loss model   = rosenbrock model a b
         learningRate = 0.005
         numIter      = 10000
-    (model, _optim) <- optimize initModel initOptim loss learningRate numIter
+    (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-07 False (cat @0 . hmap' ToDependent . flattenParameters $ model) ones) `shouldBe` [True, True]
     isNonZero (isclose 1e-05 1e-07 False (loss model) zeros) `shouldBe` True
 
@@ -334,7 +335,6 @@ instance
   , BasicArithmeticDTypeIsValid device dtype
   , StandardFloatingPointDTypeValidation device dtype
   , SumDTypeIsValid device dtype
-  , RandDTypeIsValid device dtype
   , dtype ~ SumDType dtype
   ) => Apply OptimAckleySpec
              (Proxy device, Proxy dtype)
@@ -342,43 +342,46 @@ instance
  where
   apply GDAckleySpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (AckleySpec @2 @dtype @device)
-    let initOptim = mkGD
-        a :: Float = 20.0
-        b :: Float = 0.2
-        c :: Float = 2 * pi
-        loss model = ackley model a b c
+    initModel <- A.sample (AckleySpec @2 @'D.Float @'( 'D.CPU, 0))
+    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+        initOptim    = mkGD
+        a :: Float   = 20.0
+        b :: Float   = 0.2
+        c :: Float   = 2 * pi
+        loss model   = ackley model a b c
         learningRate = 0.00002
         numIter      = 10000
-    (model, _optim) <- optimize initModel initOptim loss learningRate numIter
+    (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     let finalLoss = loss model
     (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
     isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
   apply GDMAckleySpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (AckleySpec @2 @dtype @device)
-    let initOptim = mkGDM 0.9 (flattenParameters initModel)
-        a :: Float = 20.0
-        b :: Float = 0.2
-        c :: Float = 2 * pi
-        loss model = ackley model a b c
+    initModel <- A.sample (AckleySpec @2 @'D.Float @'( 'D.CPU, 0))
+    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+        initOptim    = mkGDM 0.9 (flattenParameters initModel')
+        a :: Float   = 20.0
+        b :: Float   = 0.2
+        c :: Float   = 2 * pi
+        loss model   = ackley model a b c
         learningRate = 0.00001
         numIter      = 10000
-    (model, _optim) <- optimize initModel initOptim loss learningRate numIter
+    (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     let finalLoss = loss model
     (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
     isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
   apply AdamAckleySpec _ _ = do
     ATen.manual_seed_L 123
-    initModel <- A.sample (AckleySpec @2 @dtype @device)
-    let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-        a :: Float = 20.0
-        b :: Float = 0.2
-        c :: Float = 2 * pi
-        loss model = ackley model a b c
+    initModel <- A.sample (AckleySpec @2 @'D.Float @'( 'D.CPU, 0))
+    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+        initOptim    = mkAdam 0 0.9 0.999 (flattenParameters initModel')
+        a :: Float   = 20.0
+        b :: Float   = 0.2
+        c :: Float   = 2 * pi
+        loss model   = ackley model a b c
         learningRate = 0.00001
         numIter      = 20000
-    (model, _optim) <- optimize initModel initOptim loss learningRate numIter
+    (model, _optim) <- optimize initModel' initOptim loss learningRate numIter
     let finalLoss = loss model
     (toList . Just . Torch.Typed.Tensor.toDevice @'( 'D.CPU, 0)) (isclose 1e-04 1e-04 False (cat @0 . hmap' ToDependent . flattenParameters $ model) zeros) `shouldBe` [True, True]
     isNonZero (isclose 1e-04 1e-04 False (loss model) zeros) `shouldBe` True
