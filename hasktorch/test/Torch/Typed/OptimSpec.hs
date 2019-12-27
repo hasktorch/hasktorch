@@ -242,7 +242,7 @@ instance
   apply GDConvQuadSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (ConvQuadSpec @features @'D.Float @'( 'D.CPU, 0))
-    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+    let initModel'   = Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) . Torch.Typed.DType.toDType @dtype @'D.Float $ initModel
         initOptim    = mkGD
         a            = eyeSquare @features @dtype @device
         b            = zeros @'[features] @dtype @device
@@ -254,7 +254,7 @@ instance
   apply GDMConvQuadSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (ConvQuadSpec @features @'D.Float @'( 'D.CPU, 0))
-    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+    let initModel'   = Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) . Torch.Typed.DType.toDType @dtype @'D.Float $ initModel
         initOptim    = mkGDM 0.9 (flattenParameters initModel')
         a            = eyeSquare @features @dtype @device
         b            = zeros @'[features] @dtype @device
@@ -266,7 +266,7 @@ instance
   apply AdamConvQuadSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (ConvQuadSpec @features @'D.Float @'( 'D.CPU, 0))
-    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+    let initModel'   = Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) . Torch.Typed.DType.toDType @dtype @'D.Float $ initModel
         initOptim    = mkAdam 0 0.9 0.999 (flattenParameters initModel')
         a            = eyeSquare @features @dtype @device
         b            = zeros @'[features] @dtype @device
@@ -290,7 +290,7 @@ instance
   apply GDRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (RosenbrockSpec @'D.Float @'( 'D.CPU, 0))
-    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+    let initModel'   = Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) . Torch.Typed.DType.toDType @dtype @'D.Float $ initModel
         initOptim    = mkGD
         a :: Float   = 1.0
         b :: Float   = 100.0
@@ -303,7 +303,7 @@ instance
   apply GDMRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (RosenbrockSpec @'D.Float @'( 'D.CPU, 0))
-    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+    let initModel'   = Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) . Torch.Typed.DType.toDType @dtype @'D.Float $ initModel
         initOptim    = mkGDM 0.9 (flattenParameters initModel')
         a :: Float   = 1.0
         b :: Float   = 100.0
@@ -316,7 +316,7 @@ instance
   apply AdamRosenbrockSpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (RosenbrockSpec @'D.Float @'( 'D.CPU, 0))
-    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+    let initModel'   = Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) . Torch.Typed.DType.toDType @dtype @'D.Float $ initModel
         initOptim    = mkAdam 0 0.9 0.999 (flattenParameters initModel')
         a :: Float   = 1.0
         b :: Float   = 100.0
@@ -343,7 +343,7 @@ instance
   apply GDAckleySpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (AckleySpec @2 @'D.Float @'( 'D.CPU, 0))
-    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+    let initModel'   = Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) . Torch.Typed.DType.toDType @dtype @'D.Float $ initModel
         initOptim    = mkGD
         a :: Float   = 20.0
         b :: Float   = 0.2
@@ -358,7 +358,7 @@ instance
   apply GDMAckleySpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (AckleySpec @2 @'D.Float @'( 'D.CPU, 0))
-    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+    let initModel'   = Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) . Torch.Typed.DType.toDType @dtype @'D.Float $ initModel
         initOptim    = mkGDM 0.9 (flattenParameters initModel')
         a :: Float   = 20.0
         b :: Float   = 0.2
@@ -373,7 +373,7 @@ instance
   apply AdamAckleySpec _ _ = do
     ATen.manual_seed_L 123
     initModel <- A.sample (AckleySpec @2 @'D.Float @'( 'D.CPU, 0))
-    let initModel'   = Torch.Typed.Device.toDevice @'( 'D.CPU, 0) @device . Torch.Typed.DType.toDType @'D.Float @dtype $ initModel
+    let initModel'   = Torch.Typed.Device.toDevice @device @'( 'D.CPU, 0) . Torch.Typed.DType.toDType @dtype @'D.Float $ initModel
         initOptim    = mkAdam 0 0.9 0.999 (flattenParameters initModel')
         a :: Float   = 20.0
         b :: Float   = 0.2
