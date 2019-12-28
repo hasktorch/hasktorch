@@ -23,6 +23,7 @@ library
                     , Torch.Functional.Internal
                     , Torch.Initializers
                     , Torch.Autograd
+                    , Torch.Optim
                     , Torch.Typed
                     , Torch.Typed.Aux
                     , Torch.Typed.Factories
