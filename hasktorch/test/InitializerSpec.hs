@@ -13,9 +13,9 @@ spec = do
         it "runs kaiming normal" $ do
             x <- kaimingNormal' [4, 5]
             print x
-        it "runs Xavier Uniform"
+        it "runs Xavier Uniform" $ do
             x <- xavierUniform' [4, 5]
             print x
-        it "runs Xavier Normal"
+        it "runs Xavier Normal" $ do
             x <- xavierNormal' [4, 5]
             print x
