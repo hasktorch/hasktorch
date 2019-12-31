@@ -1,21 +1,23 @@
 module InitializerSpec where
 
+import Prelude hiding (abs, mean, var)
 import Test.Hspec
-import Initializers
+import Torch.Functional
+import Torch.Initializers
+import Torch.Tensor (asValue)
 
 spec :: Spec
 spec = do
-    -- TODO - add validation conditions
     describe "Check initializers" $ do
-        it "runs kaiming uniform" $ do
-            x <- kaimingUniform' [4, 5]
-            print x
-        it "runs kaiming normal" $ do
-            x <- kaimingNormal' [4, 5]
-            print x
-        it "runs Xavier Uniform" $ do
-            x <- xavierUniform' [4, 5]
-            print x
-        it "runs Xavier Normal" $ do
-            x <- xavierNormal' [4, 5]
-            print x
+        it "kaiming uniform is 0-centered" $ do
+            x <- kaimingUniform' [50, 500]
+            (asValue (abs . mean $ x) :: Float) < 0.01 `shouldBe` True
+        it "kaiming normal is 0-centered" $ do
+            x <- kaimingNormal' [50, 500]
+            (asValue (abs . mean $ x) :: Float) < 0.01 `shouldBe` True
+        it "xavier uniform is 0-centered" $ do
+            x <- xavierUniform' [50, 500]
+            (asValue (abs . mean $ x) :: Float) < 0.01 `shouldBe` True
+        it "xavier normal is 0-centered" $ do
+            x <- xavierNormal' [50, 500]
+            (asValue (abs . mean $ x) :: Float) < 0.01 `shouldBe` True
