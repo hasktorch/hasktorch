@@ -16,7 +16,8 @@ import Torch.Autograd
 import Torch.NN
 
 import TestFunctions
-import Optimizers
+-- import Optimizers
+import Torch.Optim
 
 -- | show output after n iterations
 showLog :: (Show a) => Int -> Int -> Int -> Tensor -> a -> IO ()
