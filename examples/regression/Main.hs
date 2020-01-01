@@ -11,6 +11,7 @@ import Torch.Device ( Device(..), DeviceType(..) )
 import Torch.DType (DType (Float))
 import Torch.Functional
 import Torch.NN
+import Torch.Optim
 import Torch.Tensor
 import Torch.TensorFactories (full')
 import Torch.Random (mkGenerator, randn')

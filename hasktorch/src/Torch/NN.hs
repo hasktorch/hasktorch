@@ -139,9 +139,3 @@ instance Parameterized Linear
 --     return $ Linear{..}
 
 instance Parameterized [Linear]
-
-sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
-sgd lr parameters gradients = zipWith step depParameters gradients
-  where
-    step p dp = p - (lr * dp)
-    depParameters = map toDependent parameters

@@ -50,6 +50,15 @@ gd' lr gradients depParameters dummy = (gd lr gradients depParameters, dummy)
 instance Optimizer GD where
     step = gd'
 
+-- TODO - alias sgd to gd once dependencies are migrated
+-- sgd = gd
+
+sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
+sgd lr parameters gradients = zipWith step depParameters gradients
+  where
+    step p dp = p - (lr * dp)
+    depParameters = map toDependent parameters
+
 --
 -- Gradient Descent with Momentum
 --

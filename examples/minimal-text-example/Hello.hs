@@ -12,6 +12,7 @@ import Torch.Functional
 import Torch.TensorOptions
 import Torch.Autograd
 import Torch.NN
+import Torch.Optim
 import GHC.Generics
 
 import Control.Monad.State.Strict

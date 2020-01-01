@@ -15,6 +15,7 @@ import Torch.TensorFactories (ones', rand', randn', randnLike)
 import Torch.Functional hiding (linear)
 import Torch.Autograd
 import Torch.NN
+import Torch.Optim
 
 -- Model Specification
 

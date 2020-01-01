@@ -11,6 +11,7 @@ import Torch.TensorFactories
 import Torch.Functional
 import Torch.TensorOptions
 import Torch.Autograd
+import Torch.Optim
 import Torch.NN
 import GHC.Generics
 

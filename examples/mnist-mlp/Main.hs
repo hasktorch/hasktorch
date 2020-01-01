@@ -14,6 +14,7 @@ import Torch.Autograd as A
 import Torch.Functional hiding (take)
 import Torch.Tensor
 import Torch.NN
+import Torch.Optim
 
 import qualified Image as I
 import qualified UntypedImage as UI

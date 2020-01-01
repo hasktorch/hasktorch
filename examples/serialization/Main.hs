@@ -19,6 +19,7 @@ import           Torch.TensorFactories          ( ones'
 import           Torch.Functional
 import           Torch.Autograd
 import           Torch.NN
+import           Torch.Optim
 import           Codec.Serialise
 import           GHC.Generics                   ( Generic )
 
