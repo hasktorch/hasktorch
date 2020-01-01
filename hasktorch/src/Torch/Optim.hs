@@ -11,12 +11,25 @@ import Torch.Autograd
 import Torch.NN
 
 type LearningRate = Tensor
+type Loss = Tensor -- TODO - consider newtype wrapping?
 newtype Gradients = Gradients [Tensor] deriving Show
 
 grad' t p = Gradients (grad t p)
 
 class Optimizer o where
     step :: LearningRate -> Gradients -> [Tensor] -> o -> ([Tensor], o)
+
+-- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
+runStep :: (Show p, Parameterized p, Optimizer o) =>
+        p -> o -> Loss -> LearningRate -> IO ([Parameter], o)
+runStep paramState optState lossValue lr = do
+    let (flatParameters', optState') = step lr gradients depParameters optState 
+    newFlatParam <- mapM makeIndependent flatParameters'
+    pure (newFlatParam, optState')
+    where
+        flatParameters = flattenParameters paramState
+        gradients = grad' lossValue flatParameters
+        depParameters = fmap toDependent flatParameters
 
 --
 -- Gradient Descent

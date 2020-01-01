@@ -16,7 +16,6 @@ import Torch.Autograd
 import Torch.NN
 
 import TestFunctions
--- import Optimizers
 import Torch.Optim
 
 -- | show output after n iterations
@@ -26,20 +25,6 @@ showLog n i maxIter lossValue state =
         putStrLn ("Iter: " ++ printf "%6d" i
             ++ " | Loss:" ++ printf "%05.4f" (asValue lossValue :: Float)
             ++ " | Parameters: " ++ show state)
-
--- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
-runIter :: (Show p, Parameterized p, Optimizer o) =>
-        p -> o -> (p -> Tensor) -> Tensor -> Int -> Int -> IO ([Parameter], o)
-runIter paramState optState lossFunction lr iter maxIter = do
-    showLog 1000 iter maxIter lossValue paramState
-    let (flatParameters', optState') = step lr gradients depParameters optState 
-    newFlatParam <- mapM makeIndependent flatParameters'
-    pure (newFlatParam, optState')
-    where
-        lossValue = lossFunction paramState
-        flatParameters = flattenParameters paramState
-        gradients = grad' lossValue flatParameters
-        depParameters = fmap toDependent flatParameters
 
 -- | foldM as a loop with action block as the last argument
 foldLoop :: Monad m => a -> Int -> (a -> Int -> m a) -> m a
@@ -54,7 +39,9 @@ optConvQuad numIter optInit = do
     paramInit <- sample $ ConvQuadSpec dim
     putStrLn ("Initial :" ++ show paramInit)
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
-        (paramState' , optState') <- runIter paramState optState (lossConvQuad a b) 5e-4 i numIter
+        let lossValue = (lossConvQuad a b) paramState
+        showLog 1000 i numIter lossValue paramState
+        (paramState' , optState') <- runStep paramState optState lossValue 5e-4
         pure (replaceParameters paramState paramState', optState')
     pure ()
 
@@ -64,7 +51,9 @@ optRosen numIter optInit = do
     paramInit <- sample RosenSpec
     putStrLn ("Initial :" ++ show paramInit)
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
-        (paramState', optState') <- runIter paramState optState lossRosen 5e-4 i numIter
+        let lossValue = lossRosen paramState
+        showLog 1000 i numIter lossValue paramState
+        (paramState', optState') <- runStep paramState optState lossValue 5e-4
         pure (replaceParameters paramState paramState', optState')
     pure ()
 
@@ -74,7 +63,9 @@ optAckley numIter optInit = do
     paramInit <- sample AckleySpec
     putStrLn ("Initial :" ++ show paramInit)
     trained <- foldLoop (paramInit, optInit) numIter $ \(paramState, optState) i -> do
-        (paramState', optState') <- runIter paramState optState lossAckley 5e-4 i numIter
+        let lossValue = lossAckley paramState
+        showLog 1000 i numIter lossValue paramState
+        (paramState', optState') <- runStep paramState optState lossValue 5e-4
         pure (replaceParameters paramState paramState', optState')
     pure ()
 
