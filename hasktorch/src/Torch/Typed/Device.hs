@@ -31,7 +31,7 @@ import           Torch.Typed.Parameter
 
 class HasToDevice (device' :: (D.DeviceType, Nat)) (device :: (D.DeviceType, Nat)) f g | device' device f -> g, device' device g -> f where
   -- >>> model <- A.sample (Torch.Typed.NN.LinearSpec @1 @1 @'D.Float @'( 'D.CPU, 0))
-  -- >>> :type Torch.Typed.Device.device' @'( 'D.CUDA, 0) @'( 'D.CPU, 0) model
+  -- >>> :type Torch.Typed.Device.toDevice @'( 'D.CUDA, 0) @'( 'D.CPU, 0) model
   -- Torch.Typed.Device.device' @'( 'D.CUDA, 0) @'( 'D.CPU, 0) model
   -- :: Torch.Typed.NN.Linear 1 1 'Float '( 'CUDA, 0)
   toDevice :: f -> g
