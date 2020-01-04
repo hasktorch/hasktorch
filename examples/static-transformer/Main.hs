@@ -54,6 +54,7 @@ import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
+import qualified Torch.Optim                   as A
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D

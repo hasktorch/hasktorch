@@ -53,7 +53,7 @@ instance Optimizer GD where
 -- TODO - alias sgd to gd once dependencies are migrated
 -- sgd = gd
 
-sgd :: Tensor -> [Parameter] -> [Tensor] -> [Tensor]
+sgd :: LearningRate -> [Parameter] -> [Tensor] -> [Tensor]
 sgd lr parameters gradients = zipWith step depParameters gradients
   where
     step p dp = p - (lr * dp)

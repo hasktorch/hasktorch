@@ -67,12 +67,10 @@ main = do
     trained <- foldLoop init num_iters $ \state i -> do
         input <- rand' [batch_size, 2] >>= return . (toDType Float) . (gt 0.5)
         let expected_output = tensorXOR input
-
-        let output = squeezeAll $ model state input
-        let loss = mse_loss output expected_output
-
-        let flat_parameters = flattenParameters state
-        let gradients = grad loss flat_parameters
+            output = squeezeAll $ model state input
+            loss = mse_loss output expected_output
+            flat_parameters = flattenParameters state
+            gradients = grad loss flat_parameters
 
         when (i `mod` 100 == 0) do
             putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
