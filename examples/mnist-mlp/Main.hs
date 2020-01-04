@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -18,7 +17,6 @@ import Torch.Optim
 
 import qualified Image as I
 import qualified UntypedImage as UI
-import Common (foldLoop)
 
 data MLPSpec = MLPSpec {
     inputFeatures :: Int,
@@ -64,12 +62,9 @@ train trainData = do
             input <- UI.getImages' batchSize dataDim trainData idx
             let label = UI.getLabels' batchSize trainData idx
                 loss = nllLoss' (mlp state input) label
-                flatParameters = flattenParameters state
-                gradients = A.grad loss flatParameters
-            when (iter `mod` 50 == 0) do
+            when (iter `mod` 50 == 0) $ do
                 putStrLn $ "Iteration: " ++ show iter ++ " | Loss: " ++ show loss
-            newParam <- mapM A.makeIndependent
-                $ sgd 1e-3 flatParameters gradients
+            (newParam, _) <- runStep state optimizer loss 1e-3
             pure $ replaceParameters state newParam
     pure trained
     where
@@ -77,6 +72,7 @@ train trainData = do
         dataDim = 784
         numIters = 3000
         batchSize = 256
+        optimizer = GD
 
 
 main :: IO ()
