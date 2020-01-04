@@ -20,7 +20,7 @@ class Optimizer o where
     step :: LearningRate -> Gradients -> [Tensor] -> o -> ([Tensor], o)
 
 -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
-runStep :: (Show p, Parameterized p, Optimizer o) =>
+runStep :: (Parameterized p, Optimizer o) =>
         p -> o -> Loss -> LearningRate -> IO ([Parameter], o)
 runStep paramState optState lossValue lr = do
     let (flatParameters', optState') = step lr gradients depParameters optState 

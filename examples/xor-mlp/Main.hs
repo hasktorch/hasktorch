@@ -38,8 +38,8 @@ instance Randomizable MLPSpec MLP where
           shift (a, b) c = (b, c)
 
 instance Parameterized MLP
--- This instance generates the following code
----------------------------------------------------
+-- This instance automatically generates the following code
+-----------------------------------------------------------
 -- instance Parameterized MLP where
 --   flattenParameters MLP{..} = concat $ map flattenParameters layers
 --   replaceOwnParameters mlp = do
@@ -69,14 +69,10 @@ main = do
         let expected_output = tensorXOR input
             output = squeezeAll $ model state input
             loss = mse_loss output expected_output
-            flat_parameters = flattenParameters state
-            gradients = grad loss flat_parameters
-
         when (i `mod` 100 == 0) do
             putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
-
-        new_flat_parameters <- mapM makeIndependent $ sgd 1e-1 flat_parameters gradients
-        return $ replaceParameters state $ new_flat_parameters
+        (newParam, _) <- runStep state optimizer loss 1e-1
+        return $ replaceParameters state $ newParam
     putStrLn "Final Model:"
     putStrLn $ "0, 0 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 0 :: Float]))
     putStrLn $ "0, 1 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 1 :: Float]))
@@ -84,8 +80,7 @@ main = do
     putStrLn $ "1, 1 => " ++ (show $ squeezeAll $ model trained (asTensor [1, 1 :: Float]))
     return ()
   where
-    foldLoop x count block = foldM block x [1..count]
-
+    optimizer = GD
     tensorXOR :: Tensor -> Tensor
     tensorXOR t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
       where
