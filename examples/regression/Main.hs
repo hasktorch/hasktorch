@@ -1,10 +1,9 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
 module Main where
 
-import Control.Monad (foldM, when)
+import Control.Monad (when)
 
 import Torch.Autograd
 import Torch.Device (Device(..), DeviceType(..))
@@ -39,7 +38,7 @@ main = do
         let (input, randGen') = randn' [batchSize, numFeatures] randGen
             (y, y') = (groundTruth input, model state input)
             loss = mse_loss y' y
-        when (i `mod` 100 == 0) do
+        when (i `mod` 100 == 0) $ do
             putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
         (newParam, _) <- runStep state optimizer loss 5e-3 
         pure (replaceParameters state newParam, randGen')

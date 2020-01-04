@@ -1,7 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE BlockArguments #-}
 
 module Main where
 
@@ -15,7 +14,7 @@ import Torch.NN
 import Torch.Optim
 import GHC.Generics
 
-import Control.Monad (foldM, when)
+import Control.Monad (when)
 import Data.List (foldl', scanl', intersperse)
 
 --------------------------------------------------------------------------------
@@ -54,8 +53,8 @@ mlp MLP{..} input = foldl' revApply input $ intersperse nonlinearity $ map linea
 -- Training code
 --------------------------------------------------------------------------------
 
-batch_size = 2
-num_iters = 2000
+batchSize = 2
+numIters = 2000
 
 model :: MLP -> Tensor -> Tensor
 model params t = mlp params t
@@ -64,14 +63,13 @@ main :: IO ()
 main = do
     init <- sample $ MLPSpec { feature_counts = [2, 3, 2, 1], 
                                nonlinearitySpec = Torch.Functional.tanh } 
-    trained <- foldLoop init num_iters $ \state i -> do
-        input <- rand' [batch_size, 2] >>= return . (toDType Float) . (gt 0.5)
-        let expected_output = tensorXOR input
-            output = squeezeAll $ model state input
-            loss = mse_loss output expected_output
-        when (i `mod` 100 == 0) do
-            putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
+    trained <- foldLoop init numIters $ \state i -> do
+        input <- rand' [batchSize, 2] >>= return . (toDType Float) . (gt 0.5)
+        let (y, y') = (tensorXOR input, squeezeAll $ model state input)
+            loss = mse_loss y' y
         (newParam, _) <- runStep state optimizer loss 1e-1
+        when (i `mod` 100 == 0) $ do
+            putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
         return $ replaceParameters state $ newParam
     putStrLn "Final Model:"
     putStrLn $ "0, 0 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 0 :: Float]))
