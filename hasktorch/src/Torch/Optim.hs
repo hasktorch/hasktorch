@@ -50,9 +50,6 @@ gd' lr gradients depParameters dummy = (gd lr gradients depParameters, dummy)
 instance Optimizer GD where
     step = gd'
 
--- TODO - alias sgd to gd once dependencies are migrated
--- sgd = gd
-
 sgd :: LearningRate -> [Parameter] -> [Tensor] -> [Tensor]
 sgd lr parameters gradients = zipWith step depParameters gradients
   where
@@ -119,3 +116,7 @@ adam lr (Gradients gradients) parameters Adam{..} = (parameters', Adam beta1 bet
 
 instance Optimizer Adam where
     step = adam
+
+-- | syntactic sugar for looping with foldM
+foldLoop :: a -> Int -> (a -> Int -> IO a) -> IO a
+foldLoop x count block = foldM block x [1..count]
