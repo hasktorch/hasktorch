@@ -11,7 +11,7 @@ import Torch.Autograd
 import Torch.NN
 
 type LearningRate = Tensor
-type Loss = Tensor -- TODO - consider newtype wrapping?
+type Loss = Tensor
 newtype Gradients = Gradients [Tensor] deriving Show
 
 grad' t p = Gradients (grad t p)

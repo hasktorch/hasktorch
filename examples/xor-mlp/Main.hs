@@ -61,15 +61,15 @@ model params t = mlp params t
 
 main :: IO ()
 main = do
-    init <- sample $ MLPSpec { feature_counts = [2, 3, 2, 1], 
+    init <- sample $ MLPSpec { feature_counts = [2, 2, 1], 
                                nonlinearitySpec = Torch.Functional.tanh } 
     trained <- foldLoop init numIters $ \state i -> do
         input <- rand' [batchSize, 2] >>= return . (toDType Float) . (gt 0.5)
         let (y, y') = (tensorXOR input, squeezeAll $ model state input)
             loss = mse_loss y' y
-        (newParam, _) <- runStep state optimizer loss 1e-1
         when (i `mod` 100 == 0) $ do
             putStrLn $ "Iteration: " ++ show i ++ " | Loss: " ++ show loss
+        (newParam, _) <- runStep state optimizer loss 1e-1
         return $ replaceParameters state $ newParam
     putStrLn "Final Model:"
     putStrLn $ "0, 0 => " ++ (show $ squeezeAll $ model trained (asTensor [0, 0 :: Float]))
