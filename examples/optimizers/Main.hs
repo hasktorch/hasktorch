@@ -26,10 +26,6 @@ showLog n i maxIter lossValue state =
             ++ " | Loss:" ++ printf "%05.4f" (asValue lossValue :: Float)
             ++ " | Parameters: " ++ show state)
 
--- | foldM as a loop with action block as the last argument
-foldLoop :: Monad m => a -> Int -> (a -> Int -> m a) -> m a
-foldLoop x count block = foldM block x [0..count-1]
-
 -- | Optimize convex quadratic with specified optimizer
 optConvQuad :: (Optimizer o) => Int -> o -> IO ()
 optConvQuad numIter optInit = do
