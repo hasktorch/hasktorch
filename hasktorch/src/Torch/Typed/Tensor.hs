@@ -432,7 +432,7 @@ instance Castable (HList l) [D.ATenTensor] => Castable (HList l) (ForeignPtr ATe
     f ts
 
 --------------------------------------------------------------------------------
--- Move backend
+-- Move tensors
 --------------------------------------------------------------------------------
 
 -- TODO: track sparsity in tensor type
@@ -450,6 +450,7 @@ toDense t = UnsafeMkTensor $ D.toDense (toDynamic t)
 --   -> Tensor device' dtype shape
 -- toMKLDNN t = UnsafeMkTensor $ D.toMKLDNN (toDynamic t)
 
+-- | move tensor to CPU
 -- TODO: can this fail?
 toCPU
   :: forall device shape dtype
@@ -457,6 +458,7 @@ toCPU
   -> CPUTensor dtype shape
 toCPU input = UnsafeMkTensor $ D.toCPU (toDynamic input)
 
+-- | move tensor to the first CUDA device
 -- TODO: what if this fails?
 toCUDA
   :: forall device' device shape dtype
@@ -464,25 +466,29 @@ toCUDA
   -> CUDATensor 0 dtype shape
 toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
 
+-- | move tensor to device
 -- TODO: what if this fails?
 toDevice
   :: forall device' device dtype shape
    . KnownDevice device'
   => Tensor device  dtype shape
   -> Tensor device' dtype shape
-toDevice input = UnsafeMkTensor . D.toDevice (deviceVal @device') . toDynamic $ input
+toDevice = UnsafeMkTensor . D.toDevice (deviceVal @device') . toDynamic
 
-toType
+-- | change tensor data type
+toDType
   :: forall dtype' dtype device shape
    . KnownDType dtype'
   => Tensor device dtype  shape
   -> Tensor device dtype' shape
-toType input = UnsafeMkTensor . D.toType (dtypeVal @dtype') . toDynamic $ input
+toDType = UnsafeMkTensor . D.toType (dtypeVal @dtype') . toDynamic
 
 --------------------------------------------------------------------------------
 -- Auxiliary functions for accessing tensor options as values
 --------------------------------------------------------------------------------
 
+-- | returns tensor dimension
+--   uses compile-time information only
 dim
   :: forall device dtype shape
    . TensorOptions shape dtype device
@@ -490,6 +496,8 @@ dim
   -> Int
 dim t = length $ optionsRuntimeShape @shape @dtype @device
 
+-- | returns tensor shape as list
+--   uses compile-time information only
 shape
   :: forall device dtype shape
    . TensorOptions shape dtype device
@@ -497,6 +505,8 @@ shape
   -> [Int]
 shape _ = optionsRuntimeShape @shape @dtype @device
 
+-- | returns tensor data type
+--   uses compile-time information only
 dtype
   :: forall device dtype shape
    . TensorOptions shape dtype device
@@ -504,12 +514,18 @@ dtype
   -> D.DType
 dtype _ = optionsRuntimeDType @shape @dtype @device
 
+-- | returns tensor device
+--   uses compile-time information only
 device
   :: forall device dtype shape
    . TensorOptions shape dtype device
   => Tensor device dtype shape
   -> D.Device
 device _ = optionsRuntimeDevice @shape @dtype @device
+
+--------------------------------------------------------------------------------
+-- Auxiliary functions for accessing tensors as values
+--------------------------------------------------------------------------------
 
 -- TODO: figure out what device, dtype, and shape we need for this
 toInt

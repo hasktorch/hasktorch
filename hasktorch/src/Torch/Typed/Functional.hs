@@ -424,17 +424,6 @@ tanh
   -> Tensor device dtype shape -- ^ output
 tanh input = unsafePerformIO $ ATen.cast1 ATen.Managed.tanh_t input
 
--- | toDType
--- TODO: since we have Torch.Typed.Tensor.toType, do we need this one?
--- >>> dtype &&& shape $ toDType @'D.Double (ones :: CPUTensor 'D.Float '[2,2])
--- (Double,[2,2])
-toDType
-  :: forall dtype' dtype shape device
-   . (KnownDType dtype')
-  => Tensor device dtype  shape -- ^ input
-  -> Tensor device dtype' shape -- ^ output
-toDType input = unsafePerformIO $ ATen.cast4 ATen.Managed.tensor_to_sbb input (dtypeVal @dtype') False False
-
 type family SqueezeAll (shape :: [Nat]) :: [Nat] where
   SqueezeAll '[] = '[]
   SqueezeAll (1: xs) = SqueezeAll xs

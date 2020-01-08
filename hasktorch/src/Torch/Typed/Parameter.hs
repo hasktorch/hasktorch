@@ -30,7 +30,7 @@ import           GHC.Generics
 
 import qualified Torch.NN                      as A
 import qualified Torch.Autograd                as A
-import qualified Torch.Tensor                  as A
+import qualified Torch.Tensor                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import           Torch.Typed.Aux
@@ -38,14 +38,14 @@ import           Torch.Typed.Factories
 import           Torch.Typed.Functional
 import           Torch.Typed.Tensor
 
-newtype Parameter (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) = Parameter A.IndependentTensor
-  deriving (Show)
+newtype Parameter (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) = UnsafeMkParameter A.IndependentTensor
+  deriving Show
 
 toDependent
   :: forall shape dtype device
    . Parameter device dtype shape
   -> Tensor device dtype shape
-toDependent (Parameter t) = UnsafeMkTensor $ A.toDependent t
+toDependent (UnsafeMkParameter t) = UnsafeMkTensor $ A.toDependent t
 
 data ToDependent = ToDependent
 
@@ -56,12 +56,26 @@ makeIndependent
   :: forall shape dtype device
    . Tensor device dtype shape
   -> IO (Parameter device dtype shape)
-makeIndependent t = Parameter <$> A.makeIndependent (toDynamic t)
+makeIndependent t = UnsafeMkParameter <$> A.makeIndependent (toDynamic t)
 
 data MakeIndependent = MakeIndependent
 
 instance Apply' MakeIndependent (Tensor device dtype shape) (IO (Parameter device dtype shape)) where
   apply' _ = makeIndependent
+
+toDevice
+  :: forall device' device dtype shape
+   . KnownDevice device'
+  => Parameter device  dtype shape
+  -> Parameter device' dtype shape
+toDevice (UnsafeMkParameter t) = UnsafeMkParameter . A.IndependentTensor . D.toDevice (deviceVal @device') . A.toDependent $ t
+
+toDType
+  :: forall dtype' dtype device shape
+   . KnownDType dtype'
+  => Parameter device dtype  shape
+  -> Parameter device dtype' shape
+toDType (UnsafeMkParameter t) = UnsafeMkParameter . A.IndependentTensor . D.toType (dtypeVal @dtype') . A.toDependent $ t
 
 class Parameterized
   (f :: Type)
@@ -79,7 +93,6 @@ instance
 class GParameterized
   (f :: Type -> Type)
   (as :: [Type]) | f -> as where
-
   gFlattenParameters :: f a -> HList as
   gReplaceParameters :: f a -> HList as -> f a
 
@@ -143,8 +156,8 @@ instance GParameterized U1 '[] where
 --   replaceParameters _ = id
 
 instance A.Parameterized (Parameter device dtype shape) where
-  flattenParameters (Parameter x) = [x]
-  replaceOwnParameters _ = Parameter <$> A.nextParameter
+  flattenParameters (UnsafeMkParameter x) = [x]
+  replaceOwnParameters _ = UnsafeMkParameter <$> A.nextParameter
 
 instance A.Parameterized (HList '[]) where
   flattenParameters _ = []

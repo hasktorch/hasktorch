@@ -33,14 +33,14 @@ class HasGrad a b | a -> b where
   grad :: forall dtype device . Tensor device dtype '[] -> a -> b
   toDependent :: a -> b
 
--- instance HasGrad (Tensor dtype device shape) (Tensor dtype device shape) where
+-- instance HasGrad (Tensor device dtype shape) (Tensor device dtype shape) where
 --   grad loss input = head . unsafePerformIO $ ATen.cast2
 --     Torch.Managed.Autograd.grad
 --     loss
 --     [Torch.Typed.Autograd.toDependent input]
 --   toDependent = id
 
-instance HasGrad (Parameter dtype device shape) (Tensor dtype device shape) where
+instance HasGrad (Parameter device dtype shape) (Tensor device dtype shape) where
   grad loss input = head . unsafePerformIO $ ATen.cast2
     LibTorch.grad
     loss

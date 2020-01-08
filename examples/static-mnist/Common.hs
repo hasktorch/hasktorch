@@ -83,7 +83,7 @@ errorCount
   => Tensor device 'D.Float '[batchSize, outputFeatures] -- ^ prediction
   -> Tensor device 'D.Int64 '[batchSize] -- ^ target
   -> Tensor device 'D.Float '[]
-errorCount prediction = toDType @D.Float . sumAll . ne (argmax @1 @DropDim prediction)
+errorCount prediction = Torch.Typed.Tensor.toDType @D.Float . sumAll . ne (argmax @1 @DropDim prediction)
 
 train
   :: forall (batchSize :: Nat) (device :: (D.DeviceType, Nat)) model optim gradients parameters tensors
@@ -151,7 +151,7 @@ train initModel initOptim forward learningRate ptFile = do
     let from = (index_of_batch-1) * natValI @n
         to = (index_of_batch * natValI @n) - 1
         indexes = [from .. to]
-        input  = toDevice @device $ I.getImages @n data' indexes
-        target = toDevice @device $ I.getLabels @n data' indexes
+        input  = Torch.Typed.Tensor.toDevice @device $ I.getImages @n data' indexes
+        target = Torch.Typed.Tensor.toDevice @device $ I.getLabels @n data' indexes
     prediction <- forward' input
     return (crossEntropyLoss prediction target, errorCount prediction target)
