@@ -607,10 +607,9 @@ gruWithDropout, gruWithoutDropout
 -- >>> :t gruWithDropout @'BatchFirst model input
 -- gruWithDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
 -- >>> gruWithDropout @'BatchFirst model input
--- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
+-- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] )
 gruWithDropout =
   Torch.Typed.NN.Recurrent.GRU.gru
     @shapeOrder
@@ -638,10 +637,9 @@ gruWithDropout =
 -- >>> :t gruWithoutDropout @'BatchFirst model input
 -- gruWithoutDropout @'BatchFirst model input
 --   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
 --       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
 -- >>> gruWithoutDropout @'BatchFirst model input
--- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] ,Tensor Float [6,5,30] )
+-- (Tensor Float [5,16,60] ,Tensor Float [6,5,30] )
 gruWithoutDropout =
   Torch.Typed.NN.Recurrent.GRU.gru
     @shapeOrder
