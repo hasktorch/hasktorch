@@ -19,4 +19,5 @@ main = doctest
   , "src/Torch/Typed/Factories"
   , "src/Torch/Typed/Functional"
   , "src/Torch/Typed/NN/Recurrent/LSTM"
+  , "src/Torch/Typed/NN/Recurrent/GRU"
   ]
