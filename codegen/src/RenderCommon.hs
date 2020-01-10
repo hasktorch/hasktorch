@@ -100,6 +100,7 @@ parsableToCppType parsable =
     Dimname -> "at::Dimname"
     DimnameList -> "std::vector<at::Dimname>"
     Symbol -> "at::Symbol"
+    IValue -> "at::IValue"
 
 
 ------ To Haskell Type ------
@@ -230,6 +231,7 @@ parsableToHsType parsable =
     Dimname -> "Dimname"
     DimnameList -> "DimnameList"
     Symbol -> "Symbol"
+    IValue -> "IValue"
 
 parsableToHigherHsType :: Parsable -> Text
 parsableToHigherHsType parsable =
@@ -252,6 +254,7 @@ parsableToHigherHsType parsable =
     Dimname -> "Dimname"
     DimnameList -> "[Dimname]"
     Symbol -> "Symbol"
+    IValue -> "IValue"
 
 
 ------ To initial characters ------
@@ -323,6 +326,7 @@ parsableToInitial parsable =
     Dimname -> "n"
     DimnameList -> "N"
     Symbol -> "s"
+    IValue -> "V"
 
 isCType :: Parsable -> Bool
 isCType p =
@@ -364,6 +368,7 @@ retToCppType parsable =
     Dimname -> "at::Dimname"
     DimnameList -> "std::vector<at::Dimname>"
     Symbol -> "at::Symbol"
+    IValue -> "at::IValue"
 
 
 

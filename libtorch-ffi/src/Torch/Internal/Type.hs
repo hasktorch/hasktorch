@@ -65,6 +65,7 @@ data Dimname
 type DimnameList = StdVector Dimname
 
 data Symbol
+data IValue
 
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
@@ -89,4 +90,5 @@ typeTable = Map.fromList [
       , (C.TypeName "at::Symbol", [t|Symbol|])
       , (C.TypeName "c10::intrusive_ptr", [t|C10Ptr|])
       , (C.TypeName "Quantizer", [t|Quantizer|])
+      , (C.TypeName "at::IValue", [t|IValue|])
     ]

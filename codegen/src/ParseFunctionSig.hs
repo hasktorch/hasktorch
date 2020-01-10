@@ -82,6 +82,7 @@ data Parsable
     | Dimname
     | DimnameList
     | Symbol
+    | IValue
     deriving (Eq, Show, Generic)
 
 data CType
@@ -246,6 +247,8 @@ identifier = (lexm . try) (p >>= check)
 -- DimnameList
 -- >>> parseTest typ "Symbol"
 -- Symbol
+-- >>> parseTest typ "IValue"
+-- IValue
 -- >>> parseTest typ "Storage"
 -- StorageType
 -- >>> parseTest typ "Tensor"
@@ -326,7 +329,8 @@ typ =
     ((lexm $ string "Generator*") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Generator?") >> (pure $ Ptr GeneratorType)) <|>
     ((lexm $ string "Storage") >> (pure $ StorageType)) <|>
-    ((lexm $ string "ConstQuantizerPtr") >> (pure $ ConstQuantizerPtr))
+    ((lexm $ string "ConstQuantizerPtr") >> (pure $ ConstQuantizerPtr)) <|>
+    ((lexm $ string "IValue") >> (pure $ IValue))
   cppclass = foldl (<|>) (fail "Can not parse cpptype.") $ map (\(sig,cpptype,hstype) -> ((lexm $ string sig) >> (pure $ CppClass sig cpptype hstype))) cppClassList
   scalar =
     ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ)) <|>

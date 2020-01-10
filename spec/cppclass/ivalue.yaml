@@ -1,0 +1,55 @@
+signature: IValue
+cppname: at::IValue
+hsname: IValue
+functions: []
+constructors:
+#- new() -> IValue
+- new(IValue x) -> IValue
+- new(Tensor x) -> IValue
+- new(TensorList x) -> IValue
+- new(Scalar x) -> IValue
+- new(double x) -> IValue
+- new(int64_t x) -> IValue
+- new(int32_t x) -> IValue
+- new(bool x) -> IValue
+methods:
+#- dump() -> void
+- isAliasOf(IValue rhs) -> bool
+- use_count() -> size_t
+- swap(IValue  rhs) -> void
+- isTensor() -> bool
+- toIValue() -> IValue
+- isBlob() -> bool
+- isCapsule() -> bool
+- isTuple() -> bool
+- isDouble() -> bool
+- toDouble() -> double
+- isFuture() -> bool
+- isInt() -> bool
+- toInt() -> int64_t
+- isIntList() -> bool
+- isString() -> bool
+- toStringRef() -> std::string
+- isDoubleList() -> bool
+- isBoolList() -> bool
+- isTensorList() -> bool
+- isGenericList() -> bool
+- isGenericDict() -> bool
+#- toObjectRef() -> ivalue::Object
+- isNone() -> bool
+- toNone() -> std::string
+- isScalar() -> bool
+- toScalar() -> Scalar
+- isDevice() -> bool
+- toScalarType() -> ScalarType
+- toLayout() -> Layout
+- toMemoryFormat() -> MemoryFormat
+- toQScheme() -> QScheme
+- tagKind() -> std::string
+#- to() -> T
+#- toOptional() -> optional<T>
+- isSameIdentity(IValue rhs) -> bool
+- isPtrType() -> bool
+- internalToPointer() -> void*
+#- type() -> TypePtr
+- clearToNone() -> void
