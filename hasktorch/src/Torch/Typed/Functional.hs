@@ -3396,6 +3396,103 @@ lstmCell wi wh bi bh (cc, hc) input =
     $ ATen.cast6 ATen.Managed.lstm_cell_tltttt input hx wi wh bi bh
   where hx = [cc, hc] :: [Tensor device dtype '[batchSize, hiddenSize]]
 
+type GRUWIShape hiddenSize inputSize = '[3 * hiddenSize, inputSize]
+type GRUWHShape hiddenSize inputSize = '[3 * hiddenSize, hiddenSize]
+type GRUBIShape hiddenSize inputSize = '[3 * hiddenSize]
+type GRUBHShape hiddenSize inputSize = '[3 * hiddenSize]
+
+type family GRURImpl (inputSize :: Nat) (hiddenSize :: Nat) (numLayers :: Nat) (directionality :: RNNDirectionality) :: [[Nat]] where
+  GRURImpl inputSize hiddenSize 1         'Unidirectional = '[ GRUWIShape hiddenSize inputSize
+                                                             , GRUWHShape hiddenSize inputSize
+                                                             , GRUBIShape hiddenSize inputSize
+                                                             , GRUBHShape hiddenSize inputSize
+                                                             ]
+  GRURImpl inputSize hiddenSize numLayers 'Unidirectional = GRURImpl inputSize hiddenSize (numLayers - 1) 'Unidirectional ++
+                                                            '[ GRUWIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+                                                             , GRUWHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+                                                             , GRUBIShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+                                                             , GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Unidirectional)
+                                                             ]
+  GRURImpl inputSize hiddenSize 1         'Bidirectional  = '[ GRUWIShape hiddenSize inputSize
+                                                             , GRUWHShape hiddenSize inputSize
+                                                             , GRUBIShape hiddenSize inputSize
+                                                             , GRUBHShape hiddenSize inputSize
+                                                             , GRUWIShape hiddenSize inputSize
+                                                             , GRUWHShape hiddenSize inputSize
+                                                             , GRUBIShape hiddenSize inputSize
+                                                             , GRUBHShape hiddenSize inputSize
+                                                             ]
+  GRURImpl inputSize hiddenSize numLayers 'Bidirectional  = GRURImpl inputSize hiddenSize (numLayers - 1) 'Bidirectional ++
+                                                            '[ GRUWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                             , GRUWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                             , GRUBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                             , GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                             , GRUWIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                             , GRUWHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                             , GRUBIShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                             , GRUBHShape hiddenSize (hiddenSize * NumberOfDirections 'Bidirectional)
+                                                             ]
+
+type family GRUR' (shapes :: [[Nat]]) (dtype :: D.DType) (device :: (D.DeviceType, Nat)) :: [a] where
+  GRUR' '[]               dtype device = '[]
+  GRUR' (shape ': shapes) dtype device = Tensor device dtype shape ': GRUR' shapes dtype device
+
+type GRUR inputSize hiddenSize numLayers directionality dtype device = GRUR' (GRURImpl inputSize hiddenSize numLayers directionality) dtype device
+
+-- | gru
+-- Parameters for this ATen function are non-trivially provided.  See the
+-- `Typed.NN.GRU` module for doctests.
+--
+gru
+  :: forall
+       shapeOrder
+       directionality
+       numLayers
+       seqLen
+       batchSize
+       inputSize
+       outputSize
+       hiddenSize
+       inputShape
+       outputShape
+       hcShape
+       tensorParameters
+       dtype
+       device
+   . ( KnownNat numLayers
+     , KnownRNNShapeOrder shapeOrder
+     , KnownRNNDirectionality directionality
+     , outputSize ~ (hiddenSize * NumberOfDirections directionality)
+     , inputShape ~ RNNShape shapeOrder seqLen batchSize inputSize
+     , outputShape ~ RNNShape shapeOrder seqLen batchSize outputSize
+     , hcShape ~ '[numLayers * NumberOfDirections directionality, batchSize, hiddenSize]
+     , tensorParameters ~ GRUR inputSize hiddenSize numLayers directionality dtype device
+     , ATen.Castable (HList tensorParameters) [D.ATenTensor]
+     )
+  => HList tensorParameters
+  -> Double
+  -> Bool
+  -> Tensor device dtype hcShape
+  -> Tensor device dtype inputShape
+  -> ( Tensor device dtype outputShape
+     , Tensor device dtype hcShape
+     )
+gru tensorParameters dropoutProb dropoutOn hc input = unsafePerformIO $ ATen.cast9
+  ATen.Managed.gru_ttlbldbbb
+  input
+  hc
+  tensorParameters
+  hasBiases
+  numLayers
+  dropoutProb
+  dropoutOn
+  (rnnBidirectional @directionality)
+  (rnnBatchFirst @shapeOrder)
+ where
+  hasBiases = True
+  numLayers :: I.Int64
+  numLayers  = fromIntegral $ natValI @numLayers
+
 -- gru_cell :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
 -- gru_cell _input _hx _w_ih _w_hh _b_ih _b_hh = unsafePerformIO $ (ATen.cast6 ATen.Managed.gru_cell_tttttt) _input _hx _w_ih _w_hh _b_ih _b_hh
 
