@@ -31,6 +31,7 @@ library
                     , Torch.Typed.NN.Recurrent.Cell.LSTM
                     , Torch.Typed.NN.Recurrent.LSTM
                     , Torch.Typed.NN.Recurrent.GRU
+                    , Torch.Typed.NN.Transformer
                     , Torch.Typed.Tensor
                     , Torch.Typed.Parameter
                     , Torch.Typed.Device
