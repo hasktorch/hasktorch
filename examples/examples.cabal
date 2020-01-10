@@ -207,3 +207,14 @@ executable gd-field
                      , hvega
                      , hasktorch
                      , libtorch-ffi
+
+executable dataloader-cifar10
+  import:              config
+  hs-source-dirs:      dataloader-cifar10
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       libtorch-ffi
+                     , bytestring >= 0.10.8
+                     , random >= 1.1
+                     , safe-exceptions
+                     , datasets
