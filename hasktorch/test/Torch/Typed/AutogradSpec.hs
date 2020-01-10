@@ -164,9 +164,9 @@ instance {-# OVERLAPPABLE #-}
   gFlattenParameters (K1 (RastriginK rastriginStack rastriginLayer))
     = let parameters  = gFlattenParameters (K1 @R rastriginStack)
           parameters' = gFlattenParameters (K1 @R rastriginLayer)
-      in  parameters `hAppendFD` parameters'
+      in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (RastriginK rastriginStack rastriginLayer)) parameters''
-    = let (parameters, parameters') = hUnappendFD parameters''
+    = let (parameters, parameters') = hunappendFD parameters''
           rastriginStack'           = unK1 (gReplaceParameters (K1 @R rastriginStack) parameters)
           rastriginLayer'           = unK1 (gReplaceParameters (K1 @R rastriginLayer) parameters')
       in  K1 (RastriginK rastriginStack' rastriginLayer')
@@ -299,12 +299,12 @@ instance
   , '(shape, dtype, device) ~ Stack 0 tensors
   , DropValue shape 0 ~ '[]
   , HMap' (GradientsRastriginA a) parameters gradients'
-  , HZipList gradients gradients' zs
+  , HZip gradients gradients' zs
   , HFoldrM IO GradientsTestInner () zs
   ) => Apply (GradientsTestOuter a) ((Proxy device, Proxy dtype), RastriginSpec num ns dtypes devices) (() -> IO ()) where
   apply (GradientsTestOuter a) (_, rastriginSpec) _ = do
     model <- A.sample rastriginSpec
-    let zipped = hZipList
+    let zipped = hzip
           (grad (rastrigin @a @dtype @device @tensors @parameters model a)
                 (flattenParameters model)
           )
@@ -321,7 +321,7 @@ spec = describe "grad" $ do
       :. HNil
       )
   it "works if model and loss have different dtypes but live on the same device" $ do
-    hfoldrM @IO (GradientsTestOuter (10 :: Int)) () $ hCartesianProduct
+    hfoldrM @IO (GradientsTestOuter (10 :: Int)) () $ hproduct
       (  (Proxy @'( 'D.CPU, 0), Proxy @'D.Double)
       :. (Proxy @'( 'D.CPU, 0), Proxy @'D.Float)
       :. HNil
@@ -334,7 +334,7 @@ spec = describe "grad" $ do
        && elem (D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 }) availableDevices
        ) $ do
     it "works if individual model layers and loss have different dtypes and live on different devices" $ do
-      hfoldrM @IO (GradientsTestOuter (10 :: Int)) () $ hCartesianProduct
+      hfoldrM @IO (GradientsTestOuter (10 :: Int)) () $ hproduct
         (  (Proxy @'( 'D.CPU, 0), Proxy @'D.Double)
         :. (Proxy @'( 'D.CUDA, 0), Proxy @'D.Double)
         :. HNil

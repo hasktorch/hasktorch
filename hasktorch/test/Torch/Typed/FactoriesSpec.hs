@@ -87,18 +87,18 @@ spec' device =
       let dispatch simpleFactoriesSpec = 
             case device of
               D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-                hfoldrM @IO simpleFactoriesSpec () (hattach cpu   (hCartesianProduct allDTypes standardShapes))
+                hfoldrM @IO simpleFactoriesSpec () (hattach cpu   (hproduct allDTypes standardShapes))
               D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-                hfoldrM @IO simpleFactoriesSpec () (hattach cuda0 (hCartesianProduct allDTypes standardShapes))
+                hfoldrM @IO simpleFactoriesSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
       it "ones"  $ dispatch ZerosSpec
       it "zeros" $ dispatch OnesSpec
     describe "random factories" $ do
       let dispatch randomFactoriesSpec = 
             case device of
               D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-                hfoldrM @IO randomFactoriesSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes standardShapes))
+                hfoldrM @IO randomFactoriesSpec () (hattach cpu   (hproduct standardFloatingPointDTypes standardShapes))
               D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-                hfoldrM @IO randomFactoriesSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      standardShapes))
+                hfoldrM @IO randomFactoriesSpec () (hattach cuda0 (hproduct allFloatingPointDTypes      standardShapes))
       it "rand"  $ dispatch RandSpec
       it "randn" $ dispatch RandnSpec
     describe "advanced factories" $ do

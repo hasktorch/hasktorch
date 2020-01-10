@@ -201,9 +201,9 @@ instance {-# OVERLAPPABLE #-}
   gFlattenParameters (K1 (GRULayerK gruLayerStack gruLayer))
     = let parameters  = gFlattenParameters (K1 @R gruLayerStack)
           parameters' = gFlattenParameters (K1 @R gruLayer)
-      in  parameters `hAppendFD` parameters'
+      in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (GRULayerK gruLayerStack gruLayer)) parameters''
-    = let (parameters, parameters') = hUnappendFD parameters''
+    = let (parameters, parameters') = hunappendFD parameters''
           gruLayerStack'           = unK1 (gReplaceParameters (K1 @R gruLayerStack) parameters)
           gruLayer'                = unK1 (gReplaceParameters (K1 @R gruLayer)      parameters')
       in  K1 (GRULayerK gruLayerStack' gruLayer')
@@ -659,3 +659,20 @@ gruWithoutDropout =
     @dtype
     @device
     False
+
+testGRU = do
+  let spec = GRUSpec @5 @7 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (DropoutSpec 0.1)
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+testGRUWithConstInitSpec = do
+  let spec = GRUSpec @5 @7 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (DropoutSpec 0.1)
+      spec' = GRUWithConstInitSpec spec Torch.Typed.Factories.zeros
+  model <- A.sample spec'
+  pure . flattenParameters $ model
+
+testGRUWithLearnedInitSpec = do
+  let spec = GRUSpec @5 @7 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (DropoutSpec 0.1)
+      spec' = GRUWithLearnedInitSpec spec Torch.Typed.Factories.zeros
+  model <- A.sample spec'
+  pure . flattenParameters $ model

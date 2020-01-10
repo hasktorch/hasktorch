@@ -39,6 +39,7 @@ import qualified Torch.Internal.Type                     as ATen
 import qualified Torch.Internal.Managed.Type.Tensor      as ATen
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
+import           Torch.Typed.Parameter
 import           Torch.Typed.Functional     hiding ( linear )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
@@ -140,7 +141,7 @@ multiheadAttention MultiheadAttention {..} train keyPaddingMask input = do
   scaling :: Tensor device dtype '[]
   scaling = pow (-1 / 2 :: Double) (fromInteger . natVal $ Proxy @headDim)
   futureTimestampMask =
-    toDType @D.Bool . triu 1 $ ones @'[seqLen, seqLen] @D.Int8 @device
+    Torch.Typed.Tensor.toDType @D.Bool . triu 1 $ ones @'[seqLen, seqLen] @D.Int8 @device
 
 instance ( All KnownNat '[embedDim, numHeads]
          , KnownDType dtype
@@ -363,7 +364,7 @@ getHidden embedding posEmbedding dropout train layers input = do
       positions = expand @'[seqLen, batchSize, embedDim] True
                     . unsqueeze @1
                     . embed posEmbedding
-                    . toDType @D.Int64
+                    . Torch.Typed.Tensor.toDType @D.Int64
                     . linspace @seqLen (0 :: Int)
                     $ natValI @(seqLen - 1)
   x <- Torch.Typed.NN.dropout dropout train (src `add` positions)
@@ -412,6 +413,11 @@ data TransformerLM
     -> TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
  deriving (Generic)
 
+testTransformerLM = do
+  let spec = TransformerLMSpec @2 @3 @10 @0 @16 @32 @128 @'D.Float @'( 'D.CPU, 0) 0.2 (TransformerLMLayerSpec 0.2 0.2 0.001 0.2 0.2 (Activation Torch.Typed.Functional.relu) (Activation Torch.Typed.Functional.relu))
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
 instance
   ( paddingIdx <= numEmbeds
   , 1 <= numEmbeds - paddingIdx
@@ -431,13 +437,7 @@ instance
       <$> A.sample (EmbeddingSpec @( 'Just paddingIdx))
       <*> A.sample (EmbeddingSpec @ 'Nothing)
       <*> A.sample (DropoutSpec tDropoutProbSpec)
-      <*> A.sample
-            (hReplicate (Proxy @numAttnLayers) tLayerSpec :: HList
-                ( HReplicateR
-                    numAttnLayers
-                    (TransformerLMLayerSpec embedDim numHeads ffnDim dtype device)
-                )
-            )
+      <*> A.sample (hreplicate @numAttnLayers tLayerSpec)
       <*> A.sample LinearSpec
 
 logits

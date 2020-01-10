@@ -393,9 +393,9 @@ spec' device = describe ("for " <> show device) $ do
   describe "GD" $ do
     it "convex quadratic" $ case device of
       D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
-        hfoldrM @IO GDConvQuadSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+        hfoldrM @IO GDConvQuadSpec () (hattach cpu   (hproduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
       D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-        hfoldrM @IO GDConvQuadSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+        hfoldrM @IO GDConvQuadSpec () (hattach cuda0 (hproduct allFloatingPointDTypes      (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
     it "Rosenbrock" $ case device of
       D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
         hfoldrM @IO GDRosenbrockSpec () (hattach cpu   standardFloatingPointDTypes)
@@ -409,9 +409,9 @@ spec' device = describe ("for " <> show device) $ do
   describe "GDM" $ do
     it "convex quadratic" $ case device of
       D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
-        hfoldrM @IO GDMConvQuadSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+        hfoldrM @IO GDMConvQuadSpec () (hattach cpu   (hproduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
       D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-        hfoldrM @IO GDMConvQuadSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+        hfoldrM @IO GDMConvQuadSpec () (hattach cuda0 (hproduct allFloatingPointDTypes      (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
     it "Rosenbrock" $ case device of
       D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
         hfoldrM @IO GDMRosenbrockSpec () (hattach cpu   standardFloatingPointDTypes)
@@ -425,9 +425,9 @@ spec' device = describe ("for " <> show device) $ do
   describe "Adam" $ do
     it "convex quadratic" $ case device of
       D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
-        hfoldrM @IO AdamConvQuadSpec () (hattach cpu   (hCartesianProduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+        hfoldrM @IO AdamConvQuadSpec () (hattach cpu   (hproduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
       D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-        hfoldrM @IO AdamConvQuadSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes      (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+        hfoldrM @IO AdamConvQuadSpec () (hattach cuda0 (hproduct allFloatingPointDTypes      (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
     it "Rosenbrock" $ case device of
       D.Device { D.deviceType = D.CPU, D.deviceIndex = 0 } ->
         hfoldrM @IO AdamRosenbrockSpec () (hattach cpu   standardFloatingPointDTypes)

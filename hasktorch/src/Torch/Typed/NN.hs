@@ -68,7 +68,12 @@ linear
 linear Linear {..} input =
   Torch.Typed.Functional.linear' (toDependent linearWeight) (toDependent linearBias) input
 
-instance A.Parameterized (Linear inputFeatures outputFeatures dtype device)
+testLinear = do
+  let spec = LinearSpec @10 @5 @'D.Float @'( 'D.CPU, 0)
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+-- instance A.Parameterized (Linear inputFeatures outputFeatures dtype device)
 
 instance
   ( KnownNat inputFeatures
@@ -104,7 +109,12 @@ dropout
 dropout Dropout {..} dropoutTrain =
   Torch.Typed.Functional.dropout dropoutProb dropoutTrain
 
-instance A.Parameterized Dropout
+testDropout = do
+  let spec = DropoutSpec 0.1
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+-- instance A.Parameterized Dropout
 
 instance A.Randomizable DropoutSpec Dropout where
   sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
@@ -143,7 +153,12 @@ embed Embedding {..} input = embedding @paddingIdx
   (toDependent embedWeights)
   input
 
-instance A.Parameterized (Embedding paddingIdx numEmbeds embedSize dtype device)
+testEmbedding = do
+  let spec = EmbeddingSpec @'Nothing @10 @8 @'D.Float @'( 'D.CPU, 0)
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+-- instance A.Parameterized (Embedding paddingIdx numEmbeds embedSize dtype device)
 
 instance 
   ( KnownNat numEmbeds
@@ -210,7 +225,12 @@ conv1d Conv1d {..} input = Torch.Typed.Functional.conv1d @stride @padding
   (toDependent conv1dBias)
   input
 
-instance A.Parameterized (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
+testConv1d = do
+  let spec = Conv1dSpec @10 @5 @3 @'D.Float @'( 'D.CPU, 0)
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+-- instance A.Parameterized (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
 
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
@@ -258,7 +278,12 @@ conv2d Conv2d {..} input = Torch.Typed.Functional.conv2d @stride @padding
   (toDependent conv2dBias)
   input
 
-instance A.Parameterized (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+testConv2d = do
+  let spec = Conv2dSpec @10 @5 @3 @2 @'D.Float @'( 'D.CPU, 0)
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+-- instance A.Parameterized (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
 
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
@@ -307,7 +332,12 @@ conv3d Conv3d {..} input = Torch.Typed.Functional.conv3d @stride @padding
   (toDependent conv3dBias)
   input
 
-instance A.Parameterized (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+testConv3d = do
+  let spec = Conv3dSpec @10 @5 @3 @2 @1 @'D.Float @'( 'D.CPU, 0)
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+-- instance A.Parameterized (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
 
 instance
   ( KnownNat inputChannelSize
@@ -355,13 +385,18 @@ layerNorm LayerNorm {..} = Torch.Typed.Functional.layerNorm @normalizedShape
   (toDependent layerNormBias)
   layerNormEps
 
-instance A.Parameterized (LayerNorm normalizedShape dtype device) where
-  flattenParameters LayerNorm {..} =
-    A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
-  replaceOwnParameters LayerNorm {..} = do
-    layerNormWeight <- UnsafeMkParameter <$> A.nextParameter
-    layerNormBias   <- UnsafeMkParameter <$> A.nextParameter
-    return $ LayerNorm { .. }
+testLayerNorm = do
+  let spec = LayerNormSpec @'[5] @'D.Float @'( 'D.CPU, 0) 0.1
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+-- instance A.Parameterized (LayerNorm normalizedShape dtype device) where
+--   flattenParameters LayerNorm {..} =
+--     A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
+--   replaceOwnParameters LayerNorm {..} = do
+--     layerNormWeight <- UnsafeMkParameter <$> A.nextParameter
+--     layerNormBias   <- UnsafeMkParameter <$> A.nextParameter
+--     return $ LayerNorm { .. }
 
 instance
   ( TensorOptions normalizedShape dtype device
