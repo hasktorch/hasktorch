@@ -65,7 +65,17 @@ data Dimname
 type DimnameList = StdVector Dimname
 
 data Symbol
+
 data IValue
+data C10Ptr a
+data C10Dict a
+data C10List a
+data C10Optional a
+
+data IVObject
+data IVTuple
+data IVFuture
+data IVConstantString
 
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
@@ -91,4 +101,12 @@ typeTable = Map.fromList [
       , (C.TypeName "c10::intrusive_ptr", [t|C10Ptr|])
       , (C.TypeName "Quantizer", [t|Quantizer|])
       , (C.TypeName "at::IValue", [t|IValue|])
+      , (C.TypeName "c10::intrusive_ptr", [t|C10Ptr|])
+      , (C.TypeName "c10::Dict", [t|C10Dict|])
+      , (C.TypeName "c10::List", [t|C10List|])
+      , (C.TypeName "c10::optional", [t|C10Optional|])
+      , (C.TypeName "at::ivalue::Tuple", [t|IVTuple|])
+      , (C.TypeName "at::ivalue::Future", [t|IVFuture|])
+      , (C.TypeName "at::ivalue::ConstantString", [t|IVConstantString|])
+      , (C.TypeName "at::ivalue::Object", [t|IVObject|])
     ]

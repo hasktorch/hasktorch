@@ -7,6 +7,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 
 module Torch.Internal.Unmanaged.Type.IValue where
 
@@ -29,71 +31,139 @@ C.include "<ATen/ATen.h>"
 C.include "<vector>"
 
 
+class IValueLike a b where
+  toIValue :: a -> IO (b IValue)
+  fromIValue :: b IValue -> IO a
 
-newIValue_V
-  :: Ptr IValue
-  -> IO (Ptr IValue)
-newIValue_V _x =
-  [C.throwBlock| at::IValue* { return new at::IValue(
-    *$(at::IValue* _x));
-  }|]
+instance IValueLike (Ptr IValue) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(at::IValue* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| at::IValue* { return new at::IValue((*$(at::IValue* _obj)).toIValue(
+      ));
+    }|]
 
-newIValue_t
-  :: Ptr Tensor
-  -> IO (Ptr IValue)
-newIValue_t _x =
-  [C.throwBlock| at::IValue* { return new at::IValue(
-    *$(at::Tensor* _x));
-  }|]
+instance IValueLike (Ptr Tensor) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(at::Tensor* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::IValue* _obj)).toTensor(
+      ));
+    }|]
 
-newIValue_l
-  :: Ptr TensorList
-  -> IO (Ptr IValue)
-newIValue_l _x =
-  [C.throwBlock| at::IValue* { return new at::IValue(
-    *$(std::vector<at::Tensor>* _x));
-  }|]
+instance IValueLike (Ptr (C10Ptr IVTuple)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::intrusive_ptr<at::ivalue::Tuple>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::intrusive_ptr<at::ivalue::Tuple>* { return new c10::intrusive_ptr<at::ivalue::Tuple>((*$(at::IValue* _obj)).toTuple(
+      ));
+    }|]
 
-newIValue_s
-  :: Ptr Scalar
-  -> IO (Ptr IValue)
-newIValue_s _x =
-  [C.throwBlock| at::IValue* { return new at::IValue(
-    *$(at::Scalar* _x));
-  }|]
+instance IValueLike (Ptr (C10Dict '(IValue,IValue))) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::Dict<at::IValue,at::IValue>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::Dict<at::IValue,at::IValue>* { return new c10::Dict<at::IValue,at::IValue>((*$(at::IValue* _obj)).toGenericDict(
+      ));
+    }|]
 
-newIValue_d
-  :: CDouble
-  -> IO (Ptr IValue)
-newIValue_d _x =
-  [C.throwBlock| at::IValue* { return new at::IValue(
-    $(double _x));
-  }|]
+instance IValueLike (Ptr (C10List Tensor)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::List<at::Tensor>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::List<at::Tensor>* { return new c10::List<at::Tensor>((*$(at::IValue* _obj)).toTensorList(
+      ));
+    }|]
 
-newIValue_l
-  :: Int64
-  -> IO (Ptr IValue)
-newIValue_l _x =
-  [C.throwBlock| at::IValue* { return new at::IValue(
-    $(int64_t _x));
-  }|]
+instance IValueLike (Ptr (C10Ptr IVObject)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::intrusive_ptr<at::ivalue::Object>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::intrusive_ptr<at::ivalue::Object>* { return new c10::intrusive_ptr<at::ivalue::Object>((*$(at::IValue* _obj)).toObject(
+      ));
+    }|]
 
-newIValue_i
-  :: Int32
-  -> IO (Ptr IValue)
-newIValue_i _x =
-  [C.throwBlock| at::IValue* { return new at::IValue(
-    $(int32_t _x));
-  }|]
+instance IValueLike (Ptr (C10Ptr IVFuture)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::intrusive_ptr<at::ivalue::Future>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::intrusive_ptr<at::ivalue::Future>* { return new c10::intrusive_ptr<at::ivalue::Future>((*$(at::IValue* _obj)).toFuture(
+      ));
+    }|]
 
-newIValue_b
-  :: CBool
-  -> IO (Ptr IValue)
-newIValue_b _x =
-  [C.throwBlock| at::IValue* { return new at::IValue(
-    $(bool _x));
-  }|]
+instance IValueLike (Ptr (C10Ptr IVConstantString)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::intrusive_ptr<at::ivalue::ConstantString>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::intrusive_ptr<at::ivalue::ConstantString>* { return new c10::intrusive_ptr<at::ivalue::ConstantString>((*$(at::IValue* _obj)).toString(
+      ));
+    }|]
 
+instance IValueLike (Ptr Scalar) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(at::Scalar* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| at::Scalar* { return new at::Scalar((*$(at::IValue* _obj)).toScalar(
+      ));
+    }|]
+
+instance IValueLike CDouble Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      $(double _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| double { return ((*$(at::IValue* _obj)).toDouble(
+      ));
+    }|]
+
+instance IValueLike Int64 Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      $(int64_t _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| int64_t { return ((*$(at::IValue* _obj)).toInt(
+      ));
+    }|]
+
+instance IValueLike Int32 Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      $(int32_t _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| int32_t { return ((*$(at::IValue* _obj)).toInt(
+      ));
+    }|]
+
+instance IValueLike CBool Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      $(bool _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| bool { return ((*$(at::IValue* _obj)).toBool(
+      ));
+    }|]
 
 
 deleteIValue :: Ptr IValue -> IO ()
@@ -370,22 +440,4 @@ iValue_isPtrType _obj =
   [C.throwBlock| bool { return (*$(at::IValue* _obj)).isPtrType(
     );
   }|]
-
-iValue_internalToPointer
-  :: Ptr IValue
-  -> IO (Ptr ())
-iValue_internalToPointer _obj =
-  [C.throwBlock| void * { return (*$(at::IValue* _obj)).internalToPointer(
-    );
-  }|]
-
-iValue_clearToNone
-  :: Ptr IValue
-  -> IO (())
-iValue_clearToNone _obj =
-  [C.throwBlock| void {  (*$(at::IValue* _obj)).clearToNone(
-    );
-  }|]
-
-
 

@@ -7,6 +7,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+
 
 module Torch.Internal.Managed.Type.IValue where
 
@@ -31,52 +36,15 @@ import Torch.Internal.Unmanaged.Type.Dimname
 import Torch.Internal.Unmanaged.Type.DimnameList
 
 import qualified Torch.Internal.Unmanaged.Type.IValue as Unmanaged
+import Torch.Internal.Unmanaged.Type.IValue (IValueLike)
 
+instance (IValueLike a Ptr) => IValueLike a ForeignPtr where
+  toIValue x = cast1 (Unmanaged.toIValue :: a -> IO (Ptr IValue)) x
+  fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO a) x
 
-
-newIValue_V
-  :: ForeignPtr IValue
-  -> IO (ForeignPtr IValue)
-newIValue_V = cast1 Unmanaged.newIValue_V
-
-newIValue_t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr IValue)
-newIValue_t = cast1 Unmanaged.newIValue_t
-
-newIValue_l
-  :: ForeignPtr TensorList
-  -> IO (ForeignPtr IValue)
-newIValue_l = cast1 Unmanaged.newIValue_l
-
-newIValue_s
-  :: ForeignPtr Scalar
-  -> IO (ForeignPtr IValue)
-newIValue_s = cast1 Unmanaged.newIValue_s
-
-newIValue_d
-  :: CDouble
-  -> IO (ForeignPtr IValue)
-newIValue_d = cast1 Unmanaged.newIValue_d
-
-newIValue_l
-  :: Int64
-  -> IO (ForeignPtr IValue)
-newIValue_l = cast1 Unmanaged.newIValue_l
-
-newIValue_i
-  :: Int32
-  -> IO (ForeignPtr IValue)
-newIValue_i = cast1 Unmanaged.newIValue_i
-
-newIValue_b
-  :: CBool
-  -> IO (ForeignPtr IValue)
-newIValue_b = cast1 Unmanaged.newIValue_b
-
-
-
-
+instance (CppObject a, IValueLike (Ptr a) Ptr) =>  IValueLike (ForeignPtr a) ForeignPtr where
+  toIValue x = cast1 (Unmanaged.toIValue :: Ptr a -> IO (Ptr IValue)) x
+  fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO (Ptr a)) x
 
 iValue_isAliasOf_V
   :: ForeignPtr IValue
@@ -245,16 +213,4 @@ iValue_isPtrType
   :: ForeignPtr IValue
   -> IO (CBool)
 iValue_isPtrType = cast1 Unmanaged.iValue_isPtrType
-
-iValue_internalToPointer
-  :: ForeignPtr IValue
-  -> IO (Ptr ())
-iValue_internalToPointer = cast1 Unmanaged.iValue_internalToPointer
-
-iValue_clearToNone
-  :: ForeignPtr IValue
-  -> IO (())
-iValue_clearToNone = cast1 Unmanaged.iValue_clearToNone
-
-
 
