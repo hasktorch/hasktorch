@@ -146,9 +146,23 @@ instance {-# OVERLAPS #-} Parameterized Double '[] where
   flattenParameters _ = HNil
   replaceParameters = const
 
-instance {-# OVERLAPS #-} Parameterized (HList as) as where
-  flattenParameters = id
-  replaceParameters _ = id
+instance {-# OVERLAPS #-} Parameterized (HList '[]) '[] where
+  flattenParameters _ = HNil
+  replaceParameters = const
+
+instance {-# OVERLAPS #-}
+  ( Parameterized f as
+  , Parameterized (HList fs) bs
+  , HAppendFD as bs cs
+  , cs ~ (as ++ bs)
+  ) => Parameterized (HList (f ': fs)) cs
+ where
+  flattenParameters (f :. fs) = flattenParameters f `happendFD` flattenParameters fs
+  replaceParameters (f :. fs) cs =
+    let (as, bs) = hunappendFD cs
+        f'       = replaceParameters f as
+        fs'      = replaceParameters fs bs
+    in  f' :. fs'
 
 instance {-# OVERLAPPABLE #-}
   ( Parameterized f as

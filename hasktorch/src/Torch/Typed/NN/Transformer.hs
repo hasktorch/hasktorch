@@ -56,22 +56,12 @@ import qualified Torch.TensorFactories         as D
 -- Transformer Language Model (GPT-2)
 --------------------------------------------------------------------------------
 
-data Activation (dtype :: D.DType) (device :: (D.DeviceType, Nat))
- where
-  Activation
-    :: forall dtype device
-     . { unActivation :: forall shape . Tensor device dtype shape -> Tensor device dtype shape }
-    -> Activation dtype device
-
-instance Show (Activation dtype device) where
-  show _ = mempty
-
 data MultiheadAttentionSpec (embedDim :: Nat) (numHeads :: Nat)
                             (dtype :: D.DType)
                             (device :: (D.DeviceType, Nat))
  where
   MultiheadAttentionSpec
-    :: { mhDropoutProbSpec :: Double }
+    :: { mhaDropoutSpec :: DropoutSpec }
     -> MultiheadAttentionSpec embedDim numHeads dtype device
  deriving (Show, Eq)
 
@@ -80,9 +70,9 @@ data MultiheadAttention (embedDim :: Nat) (numHeads :: Nat)
                         (device :: (D.DeviceType, Nat))
  where
   MultiheadAttention
-    :: { mhInProj  :: Linear embedDim (embedDim * 3) dtype device
-       , mhOutProj :: Linear embedDim embedDim       dtype device
-       , mhDropout :: Dropout
+    :: { mhaInProj  :: Linear embedDim (embedDim * 3) dtype device
+       , mhaOutProj :: Linear embedDim embedDim       dtype device
+       , mhaDropout :: Dropout
        }
     -> MultiheadAttention embedDim numHeads dtype device
  deriving (Show, Generic)
@@ -111,15 +101,15 @@ multiheadAttention
         , Tensor device dtype '[batchSize, seqLen, seqLen]
         )
 multiheadAttention MultiheadAttention {..} train keyPaddingMask input = do
-  let q :. k :. v :. HNil = chunk @3 @2 . linear mhInProj $ input
+  let q :. k :. v :. HNil = chunk @3 @2 . linear mhaInProj $ input
   attnWeights <-
-    Torch.Typed.NN.dropout mhDropout train
+    Torch.Typed.NN.dropout mhaDropout train
       . softmax @2
       . maskKeyPaddings
       . maskFutureTimesteps
       $ (mul scaling $ f q) `matmul` (transpose @1 @2 $ f k)
   let attn =
-        linear mhOutProj
+        linear mhaOutProj
           . reshape @'[seqLen, batchSize, embedDim]
           . transpose @0 @1
           $ attnWeights `matmul` (f v)
@@ -155,7 +145,7 @@ instance ( All KnownNat '[embedDim, numHeads]
     MultiheadAttention
       <$> A.sample LinearSpec
       <*> A.sample LinearSpec
-      <*> A.sample (DropoutSpec mhDropoutProbSpec)
+      <*> A.sample mhaDropoutSpec
 
 data TransformerLMLayerSpec (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat)
                             (dtype :: D.DType)
@@ -163,13 +153,10 @@ data TransformerLMLayerSpec (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat)
  where
   TransformerLMLayerSpec
     :: forall embedDim numHeads ffnDim dtype device
-     . { tMHDropoutProbSpec   :: Double
-       , tAttnDropoutProbSpec :: Double
-       , tLNEpsSpec           :: Double
-       , tMLPDropout0ProbSpec :: Double
-       , tMLPDropout1ProbSpec :: Double
-       , tMLPActivation0Spec  :: Activation dtype device
-       , tMLPActivation1Spec  :: Activation dtype device
+     . { mhaSpec         :: MultiheadAttentionSpec embedDim numHeads dtype device
+       , attnDropoutSpec :: DropoutSpec
+       , epsSpec         :: Double
+       , mlpSpec         :: TransformerLMMLPSpec embedDim ffnDim dtype device
        }
     -> TransformerLMLayerSpec embedDim numHeads ffnDim dtype device
  deriving (Show)
@@ -180,11 +167,11 @@ data TransformerLMLayer (embedDim :: Nat) (numHeads :: Nat) (ffnDim :: Nat)
  where
   TransformerLMLayer
     :: forall embedDim numHeads ffnDim dtype device
-     . { tAttn        :: MultiheadAttention embedDim numHeads dtype device
-       , tAttnDropout :: Dropout
-       , tLN0         :: LayerNorm '[embedDim] dtype device
-       , tLN1         :: LayerNorm '[embedDim] dtype device
-       , tMLP         :: TransformerLMMLP embedDim ffnDim dtype device
+     . { mha         :: MultiheadAttention embedDim numHeads dtype device
+       , attnDropout :: Dropout
+       , ln0         :: LayerNorm '[embedDim] dtype device
+       , ln1         :: LayerNorm '[embedDim] dtype device
+       , mlp         :: TransformerLMMLP embedDim ffnDim dtype device
        }
     -> TransformerLMLayer embedDim numHeads ffnDim dtype device
  deriving (Show, Generic)
@@ -211,11 +198,11 @@ transformerLMLayer
   -> Tensor device dtype   '[seqLen, batchSize, embedDim]
   -> IO (Tensor device dtype '[seqLen, batchSize, embedDim])
 transformerLMLayer TransformerLMLayer {..} train keyPaddingMask input = do
-  (attn, _) <- multiheadAttention tAttn train keyPaddingMask input
-  x         <- Torch.Typed.NN.dropout tAttnDropout train attn
-  let x' = Torch.Typed.NN.layerNorm tLN0 (x `add` input)
-  x''       <- transformerLMMLP tMLP train x'
-  return $ Torch.Typed.NN.layerNorm tLN1 (x'' `add` x')
+  (attn, _) <- multiheadAttention mha train keyPaddingMask input
+  x         <- Torch.Typed.NN.dropout attnDropout train attn
+  let x' = Torch.Typed.NN.layerNorm ln0 (x `add` input)
+  x''       <- transformerLMMLP mlp train x'
+  return $ Torch.Typed.NN.layerNorm ln1 (x'' `add` x')
 
 instance ( All KnownNat '[embedDim, numHeads, ffnDim]
          , KnownDType dtype
@@ -226,19 +213,27 @@ instance ( All KnownNat '[embedDim, numHeads, ffnDim]
                     (TransformerLMLayer     embedDim numHeads ffnDim dtype device)
  where
   sample TransformerLMLayerSpec {..} =
-    let mhDropoutProbSpec = tMHDropoutProbSpec
-        dropoutProbSpec   = tAttnDropoutProbSpec
-        layerNormEpsSpec  = tLNEpsSpec
-        tDropout0ProbSpec = tMLPDropout0ProbSpec
-        tDropout1ProbSpec = tMLPDropout1ProbSpec
-        tActivation0Spec  = tMLPActivation0Spec
-        tActivation1Spec  = tMLPActivation1Spec
-    in  TransformerLMLayer
-          <$> A.sample MultiheadAttentionSpec {..}
-          <*> A.sample DropoutSpec {..}
-          <*> A.sample LayerNormSpec {..}
-          <*> A.sample LayerNormSpec {..}
-          <*> A.sample TransformerLMMLPSpec {..}
+    TransformerLMLayer
+      <$> A.sample mhaSpec
+      <*> A.sample attnDropoutSpec
+      <*> A.sample (LayerNormSpec epsSpec)
+      <*> A.sample (LayerNormSpec epsSpec)
+      <*> A.sample mlpSpec
+
+data Activation (dtype :: D.DType) (device :: (D.DeviceType, Nat))
+ where
+  Activation
+    :: forall dtype device
+     . { unActivation :: forall shape . Tensor device dtype shape -> Tensor device dtype shape }
+    -> Activation dtype device
+
+instance Show (Activation dtype device) where
+  -- we can't show functions :(
+  show _ = mempty
+
+instance {-# OVERLAPS #-} Parameterized (Activation dtype device) '[] where
+  flattenParameters _ = HNil
+  replaceParameters = const
 
 data TransformerLMMLPSpec (embedDim :: Nat) (ffnDim :: Nat)
                           (dtype :: D.DType)
@@ -246,12 +241,13 @@ data TransformerLMMLPSpec (embedDim :: Nat) (ffnDim :: Nat)
  where
   TransformerLMMLPSpec
     :: forall embedDim ffnDim dtype device
-     . { tDropout0ProbSpec :: Double
-       , tDropout1ProbSpec :: Double
-       , tActivation0Spec :: Activation dtype device
-       , tActivation1Spec :: Activation dtype device
+     . { dropout0Spec :: DropoutSpec
+       , dropout1Spec :: DropoutSpec
+       , activation0Spec :: Activation dtype device
+       , activation1Spec :: Activation dtype device
        }
     -> TransformerLMMLPSpec embedDim ffnDim dtype device
+ deriving Show
 
 data TransformerLMMLP (embedDim :: Nat) (ffnDim :: Nat)
                       (dtype :: D.DType)
@@ -259,12 +255,12 @@ data TransformerLMMLP (embedDim :: Nat) (ffnDim :: Nat)
  where
   TransformerLMMLP
     :: forall embedDim ffnDim dtype device
-     . { tLinear0     :: Linear embedDim ffnDim dtype device
-       , tLinear1     :: Linear ffnDim embedDim dtype device
-       , tDropout0    :: Dropout
-       , tDropout1    :: Dropout
-       , tActivation0 :: Activation dtype device
-       , tActivation1 :: Activation dtype device
+     . { linear0     :: Linear embedDim ffnDim dtype device
+       , linear1     :: Linear ffnDim embedDim dtype device
+       , dropout0    :: Dropout
+       , dropout1    :: Dropout
+       , activation0 :: Activation dtype device
+       , activation1 :: Activation dtype device
        }
     -> TransformerLMMLP embedDim ffnDim dtype device
  deriving (Show, Generic)
@@ -276,12 +272,12 @@ transformerLMMLP
   -> Tensor device dtype '[seqLen, batchSize, embedDim]
   -> IO (Tensor device dtype '[seqLen, batchSize, embedDim])
 transformerLMMLP TransformerLMMLP {..} train input =
-  Torch.Typed.NN.dropout tDropout1 train
-    .   unActivation tActivation1
-    .   linear tLinear1
-    =<< Torch.Typed.NN.dropout tDropout0 train
-    .   unActivation tActivation0
-    .   linear tLinear0
+  Torch.Typed.NN.dropout dropout1 train
+    .   unActivation activation1
+    .   linear linear1
+    =<< Torch.Typed.NN.dropout dropout0 train
+    .   unActivation activation0
+    .   linear linear0
     =<< pure input
 
 instance ( All KnownNat '[embedDim, ffnDim]
@@ -296,10 +292,10 @@ instance ( All KnownNat '[embedDim, ffnDim]
     TransformerLMMLP
       <$> A.sample LinearSpec
       <*> A.sample LinearSpec
-      <*> A.sample (DropoutSpec tDropout0ProbSpec)
-      <*> A.sample (DropoutSpec tDropout1ProbSpec)
-      <*> pure tActivation0Spec
-      <*> pure tActivation1Spec
+      <*> A.sample dropout0Spec
+      <*> A.sample dropout1Spec
+      <*> pure activation0Spec
+      <*> pure activation1Spec
 
 data FoldLayers = FoldLayers { foldLayersTrain :: Bool }
 
@@ -385,8 +381,8 @@ data TransformerLMSpec
  where
   TransformerLMSpec
     :: forall numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
-     . { tDropoutProbSpec :: Double
-       , tLayerSpec :: TransformerLMLayerSpec embedDim numHeads ffnDim dtype device
+     . { lmDropoutSpec :: DropoutSpec
+       , lmLayerSpec   :: TransformerLMLayerSpec embedDim numHeads ffnDim dtype device
        }
     -> TransformerLMSpec numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
  deriving (Show)
@@ -413,8 +409,54 @@ data TransformerLM
     -> TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
  deriving (Generic)
 
+testTransformerLM
+  :: IO
+       (HList
+          '[Parameter '( 'D.CPU, 0) 'D.Float '[16, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[2048, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[96, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[96],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[10, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[10],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32, 10],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[96, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[96],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[10, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[10],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32, 10],
+            Parameter '( 'D.CPU, 0) 'D.Float '[32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[128, 32],
+            Parameter '( 'D.CPU, 0) 'D.Float '[128]])
 testTransformerLM = do
-  let spec = TransformerLMSpec @2 @3 @10 @0 @16 @32 @128 @'D.Float @'( 'D.CPU, 0) 0.2 (TransformerLMLayerSpec 0.2 0.2 0.001 0.2 0.2 (Activation Torch.Typed.Functional.relu) (Activation Torch.Typed.Functional.relu))
+  let spec =
+        TransformerLMSpec @2 @3 @10 @0 @16 @32 @128 @'D.Float @'( 'D.CPU, 0)
+          (DropoutSpec 0.2)
+          (TransformerLMLayerSpec
+            (MultiheadAttentionSpec
+              (DropoutSpec 0.2)
+            )
+            (DropoutSpec 0.2)
+            0.001
+            (TransformerLMMLPSpec
+              (DropoutSpec 0.2)
+              (DropoutSpec 0.2)
+              (Activation Torch.Typed.Functional.relu)
+              (Activation Torch.Typed.Functional.relu)
+            )
+          )
   model <- A.sample spec
   pure . flattenParameters $ model
 
@@ -436,8 +478,8 @@ instance
     TransformerLM
       <$> A.sample (EmbeddingSpec @( 'Just paddingIdx))
       <*> A.sample (EmbeddingSpec @ 'Nothing)
-      <*> A.sample (DropoutSpec tDropoutProbSpec)
-      <*> A.sample (hreplicate @numAttnLayers tLayerSpec)
+      <*> A.sample lmDropoutSpec
+      <*> A.sample (hreplicate @numAttnLayers lmLayerSpec)
       <*> A.sample LinearSpec
 
 logits
