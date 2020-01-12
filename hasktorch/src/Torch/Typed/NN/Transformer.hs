@@ -522,22 +522,3 @@ logits TransformerLM {..} train input = do
             tLayers
             input
   return $ linear tProj hidden
-
-crossEntropyLoss
-  :: forall paddingIdx batchSize seqLen dtype device
-   . ( KnownNat paddingIdx
-     , KnownNat batchSize
-     , KnownNat seqLen
-     , KnownDType dtype
-     , KnownDevice device
-     , StandardFloatingPointDTypeValidation device dtype
-     )
-  => Tensor device dtype '[batchSize, seqLen, seqLen]
-  -> Tensor device 'D.Int64 '[batchSize, seqLen]
-  -> Tensor device dtype '[]
-crossEntropyLoss prediction target =
-  nllLoss @D.ReduceMean @batchSize @seqLen @'[seqLen]
-    ones
-    (natValI @paddingIdx)
-    (logSoftmax @1 prediction)
-    target
