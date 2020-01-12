@@ -31,10 +31,10 @@ C.include "<ATen/ATen.h>"
 C.include "<vector>"
 
 class IValueLike a b where
-  toIValue :: a -> IO (b IValue)
-  fromIValue :: b IValue -> IO a
+  toIValue :: a -> IO b
+  fromIValue :: b -> IO a
 
-instance IValueLike (Ptr IValue) Ptr where
+instance IValueLike (Ptr IValue) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(at::IValue* _x));
@@ -44,7 +44,7 @@ instance IValueLike (Ptr IValue) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr Tensor) Ptr where
+instance IValueLike (Ptr Tensor) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(at::Tensor* _x));
@@ -54,7 +54,7 @@ instance IValueLike (Ptr Tensor) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10Ptr IVTuple)) Ptr where
+instance IValueLike (Ptr (C10Ptr IVTuple)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::intrusive_ptr<at::ivalue::Tuple>* _x));
@@ -64,7 +64,7 @@ instance IValueLike (Ptr (C10Ptr IVTuple)) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10Dict '(IValue,IValue))) Ptr where
+instance IValueLike (Ptr (C10Dict '(IValue,IValue))) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::Dict<at::IValue,at::IValue>* _x));
@@ -74,7 +74,7 @@ instance IValueLike (Ptr (C10Dict '(IValue,IValue))) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10List Tensor)) Ptr where
+instance IValueLike (Ptr (C10List Tensor)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::List<at::Tensor>* _x));
@@ -84,7 +84,7 @@ instance IValueLike (Ptr (C10List Tensor)) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10List CBool)) Ptr where
+instance IValueLike (Ptr (C10List CBool)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::List<bool>* _x));
@@ -94,7 +94,7 @@ instance IValueLike (Ptr (C10List CBool)) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10List Int64)) Ptr where
+instance IValueLike (Ptr (C10List Int64)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::List<int64_t>* _x));
@@ -104,7 +104,7 @@ instance IValueLike (Ptr (C10List Int64)) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10List CDouble)) Ptr where
+instance IValueLike (Ptr (C10List CDouble)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::List<double>* _x));
@@ -114,7 +114,7 @@ instance IValueLike (Ptr (C10List CDouble)) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10Ptr IVObject)) Ptr where
+instance IValueLike (Ptr (C10Ptr IVObject)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::intrusive_ptr<at::ivalue::Object>* _x));
@@ -124,7 +124,7 @@ instance IValueLike (Ptr (C10Ptr IVObject)) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10Ptr IVFuture)) Ptr where
+instance IValueLike (Ptr (C10Ptr IVFuture)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::intrusive_ptr<at::ivalue::Future>* _x));
@@ -134,7 +134,7 @@ instance IValueLike (Ptr (C10Ptr IVFuture)) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10Ptr IVConstantString)) Ptr where
+instance IValueLike (Ptr (C10Ptr IVConstantString)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::intrusive_ptr<at::ivalue::ConstantString>* _x));
@@ -144,7 +144,7 @@ instance IValueLike (Ptr (C10Ptr IVConstantString)) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr Scalar) Ptr where
+instance IValueLike (Ptr Scalar) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(at::Scalar* _x));
@@ -154,7 +154,7 @@ instance IValueLike (Ptr Scalar) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10Ptr Capsule)) Ptr where
+instance IValueLike (Ptr (C10Ptr Capsule)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::intrusive_ptr<torch::jit::CustomClassHolder>* _x));
@@ -164,7 +164,7 @@ instance IValueLike (Ptr (C10Ptr Capsule)) Ptr where
       ));
     }|]
 
-instance IValueLike (Ptr (C10Ptr Blob)) Ptr where
+instance IValueLike (Ptr (C10Ptr Blob)) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::intrusive_ptr<caffe2::Blob>* _x));
@@ -174,7 +174,7 @@ instance IValueLike (Ptr (C10Ptr Blob)) Ptr where
       ));
     }|]
 
-instance IValueLike CDouble Ptr where
+instance IValueLike CDouble (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       $(double _x));
@@ -184,7 +184,7 @@ instance IValueLike CDouble Ptr where
       ));
     }|]
 
-instance IValueLike Int64 Ptr where
+instance IValueLike Int64 (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       $(int64_t _x));
@@ -194,7 +194,7 @@ instance IValueLike Int64 Ptr where
       ));
     }|]
 
-instance IValueLike Int32 Ptr where
+instance IValueLike Int32 (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       $(int32_t _x));
@@ -204,7 +204,7 @@ instance IValueLike Int32 Ptr where
       ));
     }|]
 
-instance IValueLike CBool Ptr where
+instance IValueLike CBool (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       $(bool _x));
@@ -215,7 +215,7 @@ instance IValueLike CBool Ptr where
     }|]
 
 
-instance IValueLike (Ptr Device) Ptr where
+instance IValueLike (Ptr Device) (Ptr IValue) where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
       *$(c10::Device* _x));

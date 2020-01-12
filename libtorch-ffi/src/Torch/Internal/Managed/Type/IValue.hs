@@ -38,11 +38,11 @@ import Torch.Internal.Unmanaged.Type.DimnameList
 import qualified Torch.Internal.Unmanaged.Type.IValue as Unmanaged
 import Torch.Internal.Unmanaged.Type.IValue (IValueLike)
 
-instance (IValueLike a Ptr) => IValueLike a ForeignPtr where
+instance (IValueLike a (Ptr IValue)) => IValueLike a (ForeignPtr IValue) where
   toIValue x = cast1 (Unmanaged.toIValue :: a -> IO (Ptr IValue)) x
   fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO a) x
 
-instance (CppObject a, IValueLike (Ptr a) Ptr) =>  IValueLike (ForeignPtr a) ForeignPtr where
+instance (CppObject a, IValueLike (Ptr a) (Ptr IValue)) =>  IValueLike (ForeignPtr a) (ForeignPtr IValue) where
   toIValue x = cast1 (Unmanaged.toIValue :: Ptr a -> IO (Ptr IValue)) x
   fromIValue x = cast1 (Unmanaged.fromIValue :: Ptr IValue -> IO (Ptr a)) x
 
