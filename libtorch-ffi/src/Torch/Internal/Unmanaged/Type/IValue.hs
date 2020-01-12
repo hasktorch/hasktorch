@@ -30,7 +30,6 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 C.include "<ATen/ATen.h>"
 C.include "<vector>"
 
-
 class IValueLike a b where
   toIValue :: a -> IO (b IValue)
   fromIValue :: b IValue -> IO a
@@ -85,6 +84,36 @@ instance IValueLike (Ptr (C10List Tensor)) Ptr where
       ));
     }|]
 
+instance IValueLike (Ptr (C10List CBool)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::List<bool>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::List<bool>* { return new c10::List<bool>((*$(at::IValue* _obj)).toBoolList(
+      ));
+    }|]
+
+instance IValueLike (Ptr (C10List Int64)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::List<int64_t>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::List<int64_t>* { return new c10::List<int64_t>((*$(at::IValue* _obj)).toIntList(
+      ));
+    }|]
+
+instance IValueLike (Ptr (C10List CDouble)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::List<double>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::List<double>* { return new c10::List<double>((*$(at::IValue* _obj)).toDoubleList(
+      ));
+    }|]
+
 instance IValueLike (Ptr (C10Ptr IVObject)) Ptr where
   toIValue _x =
     [C.throwBlock| at::IValue* { return new at::IValue(
@@ -122,6 +151,26 @@ instance IValueLike (Ptr Scalar) Ptr where
     }|]
   fromIValue _obj = 
     [C.throwBlock| at::Scalar* { return new at::Scalar((*$(at::IValue* _obj)).toScalar(
+      ));
+    }|]
+
+instance IValueLike (Ptr (C10Ptr Capsule)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::intrusive_ptr<torch::jit::CustomClassHolder>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::intrusive_ptr<torch::jit::CustomClassHolder>* { return new c10::intrusive_ptr<torch::jit::CustomClassHolder>((*$(at::IValue* _obj)).toCapsule(
+      ));
+    }|]
+
+instance IValueLike (Ptr (C10Ptr Blob)) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::intrusive_ptr<caffe2::Blob>* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::intrusive_ptr<caffe2::Blob>* { return new c10::intrusive_ptr<caffe2::Blob>((*$(at::IValue* _obj)).toBlob(
       ));
     }|]
 
@@ -166,13 +215,21 @@ instance IValueLike CBool Ptr where
     }|]
 
 
+instance IValueLike (Ptr Device) Ptr where
+  toIValue _x =
+    [C.throwBlock| at::IValue* { return new at::IValue(
+      *$(c10::Device* _x));
+    }|]
+  fromIValue _obj = 
+    [C.throwBlock| c10::Device* { return new c10::Device((*$(at::IValue* _obj)).toDevice(
+      ));
+    }|]
+
 deleteIValue :: Ptr IValue -> IO ()
 deleteIValue object = [C.throwBlock| void { delete $(at::IValue* object);}|]
 
 instance CppObject IValue where
   fromPtr ptr = newForeignPtr ptr (deleteIValue ptr)
-
-
 
 iValue_isAliasOf_V
   :: Ptr IValue
@@ -208,14 +265,6 @@ iValue_isTensor _obj =
     );
   }|]
 
-iValue_toIValue
-  :: Ptr IValue
-  -> IO (Ptr IValue)
-iValue_toIValue _obj =
-  [C.throwBlock| at::IValue* { return new at::IValue((*$(at::IValue* _obj)).toIValue(
-    ));
-  }|]
-
 iValue_isBlob
   :: Ptr IValue
   -> IO (CBool)
@@ -248,14 +297,6 @@ iValue_isDouble _obj =
     );
   }|]
 
-iValue_toDouble
-  :: Ptr IValue
-  -> IO (CDouble)
-iValue_toDouble _obj =
-  [C.throwBlock| double { return (*$(at::IValue* _obj)).toDouble(
-    );
-  }|]
-
 iValue_isFuture
   :: Ptr IValue
   -> IO (CBool)
@@ -269,14 +310,6 @@ iValue_isInt
   -> IO (CBool)
 iValue_isInt _obj =
   [C.throwBlock| bool { return (*$(at::IValue* _obj)).isInt(
-    );
-  }|]
-
-iValue_toInt
-  :: Ptr IValue
-  -> IO (Int64)
-iValue_toInt _obj =
-  [C.throwBlock| int64_t { return (*$(at::IValue* _obj)).toInt(
     );
   }|]
 
@@ -366,14 +399,6 @@ iValue_isScalar
 iValue_isScalar _obj =
   [C.throwBlock| bool { return (*$(at::IValue* _obj)).isScalar(
     );
-  }|]
-
-iValue_toScalar
-  :: Ptr IValue
-  -> IO (Ptr Scalar)
-iValue_toScalar _obj =
-  [C.throwBlock| at::Scalar* { return new at::Scalar((*$(at::IValue* _obj)).toScalar(
-    ));
   }|]
 
 iValue_isDevice

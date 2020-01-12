@@ -68,11 +68,6 @@ iValue_isTensor
   -> IO (CBool)
 iValue_isTensor = cast1 Unmanaged.iValue_isTensor
 
-iValue_toIValue
-  :: ForeignPtr IValue
-  -> IO (ForeignPtr IValue)
-iValue_toIValue = cast1 Unmanaged.iValue_toIValue
-
 iValue_isBlob
   :: ForeignPtr IValue
   -> IO (CBool)
@@ -93,11 +88,6 @@ iValue_isDouble
   -> IO (CBool)
 iValue_isDouble = cast1 Unmanaged.iValue_isDouble
 
-iValue_toDouble
-  :: ForeignPtr IValue
-  -> IO (CDouble)
-iValue_toDouble = cast1 Unmanaged.iValue_toDouble
-
 iValue_isFuture
   :: ForeignPtr IValue
   -> IO (CBool)
@@ -107,11 +97,6 @@ iValue_isInt
   :: ForeignPtr IValue
   -> IO (CBool)
 iValue_isInt = cast1 Unmanaged.iValue_isInt
-
-iValue_toInt
-  :: ForeignPtr IValue
-  -> IO (Int64)
-iValue_toInt = cast1 Unmanaged.iValue_toInt
 
 iValue_isIntList
   :: ForeignPtr IValue
@@ -167,11 +152,6 @@ iValue_isScalar
   :: ForeignPtr IValue
   -> IO (CBool)
 iValue_isScalar = cast1 Unmanaged.iValue_isScalar
-
-iValue_toScalar
-  :: ForeignPtr IValue
-  -> IO (ForeignPtr Scalar)
-iValue_toScalar = cast1 Unmanaged.iValue_toScalar
 
 iValue_isDevice
   :: ForeignPtr IValue

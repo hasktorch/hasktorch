@@ -67,15 +67,21 @@ type DimnameList = StdVector Dimname
 data Symbol
 
 data IValue
+
 data C10Ptr a
 data C10Dict a
 data C10List a
 data C10Optional a
 
+data IVNone
 data IVObject
 data IVTuple
 data IVFuture
 data IVConstantString
+data Capsule
+data Blob
+
+data Module
 
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
@@ -88,7 +94,7 @@ typeTable = Map.fromList [
       , (C.TypeName "at::ScalarType", [t|ScalarType|])
       , (C.TypeName "at::DeviceType", [t|DeviceType|])
       , (C.TypeName "at::Storage", [t|Storage|])
-      , (C.TypeName "at::Device", [t|Device|])
+      , (C.TypeName "c10::Device", [t|Device|])
       , (C.TypeName "at::Generator", [t|Generator|])
       , (C.TypeName "std::string", [t|StdString|])
       , (C.TypeName "at::Backend", [t|Backend|])
@@ -109,4 +115,7 @@ typeTable = Map.fromList [
       , (C.TypeName "at::ivalue::Future", [t|IVFuture|])
       , (C.TypeName "at::ivalue::ConstantString", [t|IVConstantString|])
       , (C.TypeName "at::ivalue::Object", [t|IVObject|])
+      , (C.TypeName "torch::jit::CustomClassHolder", [t|Capsule|])
+      , (C.TypeName "caffe2::Blob", [t|Blob|])
+      , (C.TypeName "torch::jit::script::Module", [t|Module|])
     ]

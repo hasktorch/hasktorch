@@ -36,6 +36,7 @@ library
                     , Torch.Internal.Unmanaged.Type.DimnameList
                     , Torch.Internal.Unmanaged.Type.Symbol
                     , Torch.Internal.Unmanaged.Type.IValue
+                    , Torch.Internal.Unmanaged.Type.Module
                     , Torch.Internal.Managed.Cast
                     , Torch.Internal.Managed.Native
                     , Torch.Internal.Managed.Type.Tuple
