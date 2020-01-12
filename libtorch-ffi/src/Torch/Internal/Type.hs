@@ -67,6 +67,7 @@ type DimnameList = StdVector Dimname
 data Symbol
 
 data IValue
+type IValueList = StdVector IValue
 
 data C10Ptr a
 data C10Dict a

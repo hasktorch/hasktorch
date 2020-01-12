@@ -32,6 +32,12 @@ C.include "<vector>"
 
 -- From libtorch/include/torch/csrc/jit/script/module.h
 
+deleteModule :: Ptr Module -> IO ()
+deleteModule object = [C.throwBlock| void { delete $(torch::jit::script::Module* object);}|]
+instance CppObject Module where
+  fromPtr ptr = newForeignPtr ptr (deleteModule ptr)
+
+
 save :: Ptr Module -> FilePath -> IO ()
 save obj file = withCString file $ \cfile -> [C.throwBlock| void {
     $(torch::jit::script::Module* obj)->save($(char* cfile));
@@ -43,6 +49,6 @@ load file = withCString file $ \cfile -> [C.throwBlock| torch::jit::script::Modu
   }|]
 
 forward :: Ptr Module -> (Ptr (StdVector IValue)) -> IO (Ptr IValue)
-forward obj inputs = withCString file $ \cfile -> [C.throwBlock| at::IValue* {
-    return new at::IValue($(torch::jit::script::Module* input)->forward($(char* cfile)));
+forward obj inputs = [C.throwBlock| at::IValue* {
+    return new at::IValue($(torch::jit::script::Module* obj)->forward(*$(std::vector<at::IValue>* inputs)));
   }|]
