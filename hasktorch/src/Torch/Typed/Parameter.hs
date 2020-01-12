@@ -112,28 +112,6 @@ instance
         r'       = gReplaceParameters r bs
     in  l' :*: r'
 
--- instance {-# OVERLAPS #-}
---   GParameterized (K1 R (Tensor device dtype shape)) '[] where
---   gFlattenParameters _ = HNil
---   gReplaceParameters = const
-
--- instance {-# OVERLAPS #-}
---   GParameterized (K1 R (Parameter device dtype shape)) '[Parameter device dtype shape] where
---   gFlattenParameters = (:. HNil) . unK1
---   gReplaceParameters _ (parameter :. HNil) = K1 parameter
-
--- instance {-# OVERLAPS #-}
---   GParameterized (K1 R Double) '[] where
---   gFlattenParameters _ = HNil
---   gReplaceParameters = const
-
--- instance {-# OVERLAPPABLE #-}
---   ( Generic f
---   , GParameterized (Rep f) as
---   ) => GParameterized (K1 i f) as where
---   gFlattenParameters = gFlattenParameters . from . unK1
---   gReplaceParameters (K1 f) = K1 . to . gReplaceParameters (from f)
-
 instance {-# OVERLAPS #-} Parameterized (Tensor device dtype shape) '[] where
   flattenParameters _ = HNil
   replaceParameters = const
@@ -177,23 +155,6 @@ instance (GParameterized f as) => GParameterized (M1 i t f) as where
 instance GParameterized U1 '[] where
   gFlattenParameters _ = HNil
   gReplaceParameters = const
-
--- instance A.Parameterized (Parameter device dtype shape) where
---   flattenParameters (UnsafeMkParameter x) = [x]
---   replaceOwnParameters _ = UnsafeMkParameter <$> A.nextParameter
-
--- instance A.Parameterized (HList '[]) where
---   flattenParameters _ = []
---   replaceOwnParameters = return
-
--- instance (A.Parameterized x, A.Parameterized (HList xs))
---   => A.Parameterized (HList (x ': xs))
---  where
---   flattenParameters (x :. xs) = A.flattenParameters x <> A.flattenParameters xs
---   replaceOwnParameters (x :. xs) = do
---     x' <- A.replaceOwnParameters x
---     xs' <- A.replaceOwnParameters xs
---     return $ x' :. xs'
 
 instance A.Randomizable (HList '[]) (HList '[]) where
   sample = return

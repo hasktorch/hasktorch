@@ -78,8 +78,6 @@ testLinear = do
   model <- A.sample spec
   pure . flattenParameters $ model
 
--- instance A.Parameterized (Linear inputFeatures outputFeatures dtype device)
-
 instance
   ( KnownNat inputFeatures
   , KnownNat outputFeatures
@@ -119,8 +117,6 @@ testDropout = do
   let spec = DropoutSpec 0.1
   model <- A.sample spec
   pure . flattenParameters $ model
-
--- instance A.Parameterized Dropout
 
 instance A.Randomizable DropoutSpec Dropout where
   sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
@@ -164,8 +160,6 @@ testEmbedding = do
   let spec = EmbeddingSpec @'Nothing @10 @8 @'D.Float @'( 'D.CPU, 0)
   model <- A.sample spec
   pure . flattenParameters $ model
-
--- instance A.Parameterized (Embedding paddingIdx numEmbeds embedSize dtype device)
 
 instance 
   ( KnownNat numEmbeds
@@ -241,8 +235,6 @@ testConv1d = do
   model <- A.sample spec
   pure . flattenParameters $ model
 
--- instance A.Parameterized (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
-
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
          , KnownNat kernelSize
@@ -297,8 +289,6 @@ testConv2d = do
   let spec = Conv2dSpec @10 @5 @3 @2 @'D.Float @'( 'D.CPU, 0)
   model <- A.sample spec
   pure . flattenParameters $ model
-
--- instance A.Parameterized (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
 
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
@@ -356,8 +346,6 @@ testConv3d = do
   model <- A.sample spec
   pure . flattenParameters $ model
 
--- instance A.Parameterized (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
-
 instance
   ( KnownNat inputChannelSize
   , KnownNat outputChannelSize
@@ -413,14 +401,6 @@ testLayerNorm = do
   let spec = LayerNormSpec @'[5] @'D.Float @'( 'D.CPU, 0) 0.1
   model <- A.sample spec
   pure . flattenParameters $ model
-
--- instance A.Parameterized (LayerNorm normalizedShape dtype device) where
---   flattenParameters LayerNorm {..} =
---     A.flattenParameters layerNormWeight <> A.flattenParameters layerNormBias
---   replaceOwnParameters LayerNorm {..} = do
---     layerNormWeight <- UnsafeMkParameter <$> A.nextParameter
---     layerNormBias   <- UnsafeMkParameter <$> A.nextParameter
---     return $ LayerNorm { .. }
 
 instance
   ( TensorOptions normalizedShape dtype device
