@@ -68,16 +68,6 @@ linear
 linear Linear {..} input =
   Torch.Typed.Functional.linear' (toDependent linearWeight) (toDependent linearBias) input
 
-testLinear
-  :: IO
-       (HList
-          '[Parameter '( 'D.CPU, 0) 'D.Float '[5, 10],
-            Parameter '( 'D.CPU, 0) 'D.Float '[5]])
-testLinear = do
-  let spec = LinearSpec @10 @5 @'D.Float @'( 'D.CPU, 0)
-  model <- A.sample spec
-  pure . flattenParameters $ model
-
 instance
   ( KnownNat inputFeatures
   , KnownNat outputFeatures
@@ -111,12 +101,6 @@ dropout
   -> IO (Tensor device dtype shape)
 dropout Dropout {..} dropoutTrain =
   Torch.Typed.Functional.dropout dropoutProb dropoutTrain
-
-testDropout :: IO (HList '[])
-testDropout = do
-  let spec = DropoutSpec 0.1
-  model <- A.sample spec
-  pure . flattenParameters $ model
 
 instance A.Randomizable DropoutSpec Dropout where
   sample DropoutSpec {..} = return $ Dropout dropoutProbSpec 
@@ -154,12 +138,6 @@ embed Embedding {..} input = embedding @paddingIdx
   False
   (toDependent embedWeights)
   input
-
-testEmbedding :: IO (HList '[Parameter '( 'D.CPU, 0) 'D.Float '[10, 8]])
-testEmbedding = do
-  let spec = EmbeddingSpec @'Nothing @10 @8 @'D.Float @'( 'D.CPU, 0)
-  model <- A.sample spec
-  pure . flattenParameters $ model
 
 instance 
   ( KnownNat numEmbeds
@@ -226,15 +204,6 @@ conv1d Conv1d {..} input = Torch.Typed.Functional.conv1d @stride @padding
   (toDependent conv1dBias)
   input
 
-testConv1d
-  :: IO (HList '[ Parameter '( 'D.CPU, 0) 'D.Float '[5, 10, 3]
-                , Parameter '( 'D.CPU, 0) 'D.Float '[5]
-                ])
-testConv1d = do
-  let spec = Conv1dSpec @10 @5 @3 @'D.Float @'( 'D.CPU, 0)
-  model <- A.sample spec
-  pure . flattenParameters $ model
-
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
          , KnownNat kernelSize
@@ -280,15 +249,6 @@ conv2d Conv2d {..} input = Torch.Typed.Functional.conv2d @stride @padding
   (toDependent conv2dWeight)
   (toDependent conv2dBias)
   input
-
-testConv2d
-  :: IO (HList '[ Parameter '( 'D.CPU, 0) 'D.Float '[5, 10, 3, 2]
-                , Parameter '( 'D.CPU, 0) 'D.Float '[5]
-                ])
-testConv2d = do
-  let spec = Conv2dSpec @10 @5 @3 @2 @'D.Float @'( 'D.CPU, 0)
-  model <- A.sample spec
-  pure . flattenParameters $ model
 
 instance ( KnownNat inputChannelSize
          , KnownNat outputChannelSize
@@ -337,15 +297,6 @@ conv3d Conv3d {..} input = Torch.Typed.Functional.conv3d @stride @padding
   (toDependent conv3dBias)
   input
 
-testConv3d
-  :: IO (HList '[ Parameter '( 'D.CPU, 0) 'D.Float '[5, 10, 3, 2, 1]
-                , Parameter '( 'D.CPU, 0) 'D.Float '[5]
-                ])
-testConv3d = do
-  let spec = Conv3dSpec @10 @5 @3 @2 @1 @'D.Float @'( 'D.CPU, 0)
-  model <- A.sample spec
-  pure . flattenParameters $ model
-
 instance
   ( KnownNat inputChannelSize
   , KnownNat outputChannelSize
@@ -391,16 +342,6 @@ layerNorm LayerNorm {..} = Torch.Typed.Functional.layerNorm @normalizedShape
   (toDependent layerNormWeight)
   (toDependent layerNormBias)
   layerNormEps
-
-testLayerNorm
-  :: IO
-       (HList
-          '[Parameter '( 'D.CPU, 0) 'D.Float '[5],
-            Parameter '( 'D.CPU, 0) 'D.Float '[5]])
-testLayerNorm = do
-  let spec = LayerNormSpec @'[5] @'D.Float @'( 'D.CPU, 0) 0.1
-  model <- A.sample spec
-  pure . flattenParameters $ model
 
 instance
   ( TensorOptions normalizedShape dtype device

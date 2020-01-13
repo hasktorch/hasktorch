@@ -409,57 +409,6 @@ data TransformerLM
     -> TransformerLM numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
  deriving (Generic)
 
-testTransformerLM
-  :: IO
-       (HList
-          '[Parameter '( 'D.CPU, 0) 'D.Float '[16, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[2048, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[96, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[96],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[10, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[10],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32, 10],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[96, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[96],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[10, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[10],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32, 10],
-            Parameter '( 'D.CPU, 0) 'D.Float '[32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[128, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[128]])
-testTransformerLM = do
-  let spec =
-        TransformerLMSpec @2 @3 @10 @0 @16 @32 @128 @'D.Float @'( 'D.CPU, 0)
-          (DropoutSpec 0.2)
-          (TransformerLMLayerSpec
-            (MultiheadAttentionSpec
-              (DropoutSpec 0.2)
-            )
-            (DropoutSpec 0.2)
-            0.001
-            (TransformerLMMLPSpec
-              (DropoutSpec 0.2)
-              (DropoutSpec 0.2)
-              (Activation Torch.Typed.Functional.relu)
-              (Activation Torch.Typed.Functional.relu)
-            )
-          )
-  model <- A.sample spec
-  pure . flattenParameters $ model
-
 instance
   ( paddingIdx <= numEmbeds
   , 1 <= numEmbeds - paddingIdx

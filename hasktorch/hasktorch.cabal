@@ -82,6 +82,10 @@ test-suite spec
                     , Torch.Typed.FunctionalSpec
                     , Torch.Typed.AutogradSpec
                     , Torch.Typed.OptimSpec
+                    , Torch.Typed.NNSpec
+                    , Torch.Typed.NN.Recurrent.LSTMSpec
+                    , Torch.Typed.NN.Recurrent.GRUSpec
+                    , Torch.Typed.NN.TransformerSpec
                     , SerializeSpec
                     , RandomSpec
   default-language: Haskell2010
