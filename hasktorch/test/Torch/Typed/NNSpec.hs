@@ -36,9 +36,21 @@ testDropout = do
   model <- A.sample spec
   pure . flattenParameters $ model
 
-testEmbedding :: IO (HList '[Parameter '( 'D.CPU, 0) 'D.Float '[10, 8]])
-testEmbedding = do
-  let spec = EmbeddingSpec @'Nothing @10 @8 @'D.Float @'( 'D.CPU, 0)
+testConstEmbedding :: IO (HList '[])
+testConstEmbedding = do
+  let spec = ConstEmbeddingSpec @'Nothing @10 @8 @'D.Float @'( 'D.CPU, 0) zeros
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+testLearnedEmbeddingWithRandomInit :: IO (HList '[Parameter '( 'D.CPU, 0) 'D.Float '[10, 8]])
+testLearnedEmbeddingWithRandomInit = do
+  let spec = LearnedEmbeddingWithRandomInitSpec @'Nothing @10 @8 @'D.Float @'( 'D.CPU, 0)
+  model <- A.sample spec
+  pure . flattenParameters $ model
+
+testLearnedEmbeddingWithCustomInit :: IO (HList '[Parameter '( 'D.CPU, 0) 'D.Float '[10, 8]])
+testLearnedEmbeddingWithCustomInit = do
+  let spec = LearnedEmbeddingWithCustomInitSpec @'Nothing @10 @8 @'D.Float @'( 'D.CPU, 0) zeros
   model <- A.sample spec
   pure . flattenParameters $ model
 

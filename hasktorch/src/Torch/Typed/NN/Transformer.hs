@@ -347,8 +347,8 @@ getHidden
      , ComparisonDTypeIsValid device 'D.Int64
      , KnownDevice device
      )
-  => Embedding ('Just paddingIdx) numEmbeds embedDim dtype device
-  -> Embedding 'Nothing           2048      embedDim dtype device
+  => Embedding ('Just paddingIdx) numEmbeds embedDim 'Learned dtype device
+  -> Embedding 'Nothing           2048      embedDim 'Constant dtype device
   -> Dropout
   -> Bool
   -> HList (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
@@ -400,8 +400,8 @@ data TransformerLM
  where
   TransformerLM
     :: forall numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device
-     . { tEmbedding    :: Embedding ('Just paddingIdx) numEmbeds embedDim dtype device
-       , tPosEmbedding :: Embedding 'Nothing           2048      embedDim dtype device
+     . { tEmbedding    :: Embedding ('Just paddingIdx) numEmbeds embedDim 'Learned dtype device
+       , tPosEmbedding :: Embedding 'Nothing           2048      embedDim 'Constant dtype device
        , tDropout      :: Dropout
        , tLayers       :: HList (HReplicateR numAttnLayers (TransformerLMLayer embedDim numHeads ffnDim dtype device))
        , tProj         :: Linear embedDim seqLen dtype device
@@ -425,8 +425,8 @@ instance
  where
   sample TransformerLMSpec {..} =
     TransformerLM
-      <$> A.sample (EmbeddingSpec @( 'Just paddingIdx))
-      <*> A.sample (EmbeddingSpec @ 'Nothing)
+      <$> A.sample (LearnedEmbeddingWithRandomInitSpec @( 'Just paddingIdx))
+      <*> A.sample (ConstEmbeddingSpec @ 'Nothing zeros)
       <*> A.sample lmDropoutSpec
       <*> A.sample (hreplicate @numAttnLayers lmLayerSpec)
       <*> A.sample LinearSpec

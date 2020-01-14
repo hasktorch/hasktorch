@@ -25,7 +25,6 @@ testTransformerLM
   :: IO
        (HList
           '[Parameter '( 'D.CPU, 0) 'D.Float '[16, 32],
-            Parameter '( 'D.CPU, 0) 'D.Float '[2048, 32],
             Parameter '( 'D.CPU, 0) 'D.Float '[96, 32],
             Parameter '( 'D.CPU, 0) 'D.Float '[96],
             Parameter '( 'D.CPU, 0) 'D.Float '[32, 32],
