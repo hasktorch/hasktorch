@@ -99,8 +99,8 @@ type NumAttnLayers = 1
 type NumHeads = 1
 type FFNDim = 1
 type PaddingIdx = 0
-type NumEmbeds = 10
-type EmbedDim = 5
+type NumEmbeds = 16
+type EmbedDim = 8
 type SeqLen = 1
 
 type Model device
