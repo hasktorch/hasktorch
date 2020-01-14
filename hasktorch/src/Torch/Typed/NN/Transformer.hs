@@ -25,7 +25,7 @@
 
 module Torch.Typed.NN.Transformer where
 
-import           Prelude
+import           Prelude hiding (exp, sin, cos)
 import           Torch.HList
 import           Data.Proxy
 import           Foreign.ForeignPtr
@@ -40,7 +40,7 @@ import qualified Torch.Internal.Managed.Type.Tensor      as ATen
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
-import           Torch.Typed.Functional     hiding ( linear )
+import           Torch.Typed.Functional     hiding ( linear, log )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
 import qualified Torch.Autograd                as A
@@ -413,12 +413,15 @@ instance
   ( paddingIdx <= numEmbeds
   , 1 <= numEmbeds - paddingIdx
   , (((numEmbeds - paddingIdx) - 1) + (1 + paddingIdx)) ~ numEmbeds
+  , (Div embedDim 2 * 2) ~ embedDim
   , All KnownNat '[ffnDim, paddingIdx, numEmbeds, embedDim, seqLen]
   , HReplicate numAttnLayers (TransformerLMLayerSpec embedDim numHeads ffnDim dtype device)
   , A.Randomizable (HList (HReplicateR numAttnLayers (TransformerLMLayerSpec embedDim numHeads ffnDim dtype device)))
                    (HList (HReplicateR numAttnLayers (TransformerLMLayer     embedDim numHeads ffnDim dtype device)))
   , KnownDType dtype
   , RandDTypeIsValid device dtype
+  , StandardFloatingPointDTypeValidation device 'D.Float
+  , BasicArithmeticDTypeIsValid device 'D.Float
   , KnownDevice device
   ) => A.Randomizable (TransformerLMSpec numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device)
                       (TransformerLM     numAttnLayers numHeads ffnDim paddingIdx numEmbeds embedDim seqLen dtype device)
@@ -426,10 +429,35 @@ instance
   sample TransformerLMSpec {..} =
     TransformerLM
       <$> A.sample (LearnedEmbeddingWithRandomInitSpec @( 'Just paddingIdx))
-      <*> A.sample (ConstEmbeddingSpec @ 'Nothing zeros)
+      <*> A.sample (ConstEmbeddingSpec @ 'Nothing (Torch.Typed.Tensor.toDType sinusoidal))
       <*> A.sample lmDropoutSpec
       <*> A.sample (hreplicate @numAttnLayers lmLayerSpec)
       <*> A.sample LinearSpec
+
+sinusoidal
+  :: forall numEmbeds embedDim device
+   . ( All KnownNat '[numEmbeds, embedDim]
+     , 1 <= numEmbeds
+     , 1 <= Div embedDim 2
+     , (Div embedDim 2 * 2) ~ embedDim
+     , StandardFloatingPointDTypeValidation device 'D.Float
+     , BasicArithmeticDTypeIsValid device 'D.Float
+     , KnownDevice device
+     )
+  => Tensor device 'D.Float '[numEmbeds, embedDim]
+sinusoidal =
+  let positions =
+        unsqueeze @1
+          . linspace @numEmbeds (0 :: Int)
+          $ natValI @(numEmbeds - 1)
+      scalingFactors =
+        exp 
+          . cmul (- log (10000 :: Double) / (fromInteger . natVal $ Proxy @(Div embedDim 2)))
+          . linspace @(Div embedDim 2) (0 :: Int)
+          $ natValI @((Div embedDim 2) - 1)
+      radians = mul positions scalingFactors
+      weights = stack @2 (sin radians :. cos radians :. HNil)
+  in  reshape weights
 
 logits
   :: forall
