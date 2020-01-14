@@ -184,11 +184,11 @@ train initModel initOptim forward learningRate ptFile = do
     -> Int
     -> IO (Tensor device 'D.Float '[])
   computeLoss forward' index_of_batch = do
-    let from = (index_of_batch-1) * natValI @n
-        to = (index_of_batch * natValI @n) - 1
+    let from    = (index_of_batch-1) * natValI @n
+        to      = (index_of_batch * natValI @n) - 1
         indexes = [from .. to]
-        input  = getInput @n indexes
-        target = getTarget @n indexes
+        input   = getInput @n indexes
+        target  = getTarget @n indexes
     prediction <- forward' input
     return $ crossEntropyLoss @PaddingIdx prediction (Torch.Typed.Tensor.toDevice target)
   getInput :: forall (n :: Nat) . [Int] -> Tensor device 'D.Int64 '[n, seqLen]
