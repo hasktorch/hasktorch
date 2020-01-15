@@ -201,9 +201,9 @@ instance {-# OVERLAPPABLE #-}
   gFlattenParameters (K1 (GRULayerK gruLayerStack gruLayer))
     = let parameters  = gFlattenParameters (K1 @R gruLayerStack)
           parameters' = gFlattenParameters (K1 @R gruLayer)
-      in  parameters `hAppendFD` parameters'
+      in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (GRULayerK gruLayerStack gruLayer)) parameters''
-    = let (parameters, parameters') = hUnappendFD parameters''
+    = let (parameters, parameters') = hunappendFD parameters''
           gruLayerStack'           = unK1 (gReplaceParameters (K1 @R gruLayerStack) parameters)
           gruLayer'                = unK1 (gReplaceParameters (K1 @R gruLayer)      parameters')
       in  K1 (GRULayerK gruLayerStack' gruLayer')

@@ -201,9 +201,9 @@ instance {-# OVERLAPPABLE #-}
   gFlattenParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer))
     = let parameters  = gFlattenParameters (K1 @R lstmLayerStack)
           parameters' = gFlattenParameters (K1 @R lstmLayer)
-      in  parameters `hAppendFD` parameters'
+      in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer)) parameters''
-    = let (parameters, parameters') = hUnappendFD parameters''
+    = let (parameters, parameters') = hunappendFD parameters''
           lstmLayerStack'           = unK1 (gReplaceParameters (K1 @R lstmLayerStack) parameters)
           lstmLayer'                = unK1 (gReplaceParameters (K1 @R lstmLayer)      parameters')
       in  K1 (LSTMLayerK lstmLayerStack' lstmLayer')
