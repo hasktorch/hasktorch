@@ -212,16 +212,19 @@ hunfoldrM
   -> m (HList xs)
 hunfoldrM f s = hunfoldrM' f (apply f s :: res)
 
-class (ListLength es ~ n) => HReplicate' (n :: Nat) e es where
-  hReplicate :: Proxy n -> e -> HList es
+type HReplicate n e = HReplicateFD n e (HReplicateR n e)
 
-instance HReplicate' 0 e '[] where
-  hReplicate _ _ = HNil
+hreplicate :: forall n e . HReplicate n e => e -> HList (HReplicateR n e)
+hreplicate = hreplicateFD @n
 
-instance (HReplicate' (n - 1) e es, e ~ e', 1 <= n) => HReplicate' n e (e' ': es) where
-  hReplicate n e = e :. hReplicate (Proxy @(n - 1)) e
+class HReplicateFD (n :: Nat) e es | n e -> es where
+  hreplicateFD :: e -> HList es
 
-type HReplicate n e = HReplicate' n e (HReplicateR n e)
+instance {-# OVERLAPS #-} HReplicateFD 0 e '[] where
+  hreplicateFD _ = HNil
+
+instance {-# OVERLAPPABLE #-} (HReplicateFD (n - 1) e es, es' ~ (e ': es), 1 <= n) => HReplicateFD n e es' where
+  hreplicateFD e = e :. hreplicateFD @(n - 1) e
 
 type family HReplicateR (n :: Nat) (e :: a) :: [a] where
   HReplicateR 0 e = '[]
@@ -229,8 +232,8 @@ type family HReplicateR (n :: Nat) (e :: a) :: [a] where
 
 type HConcat xs = HConcatFD xs (HConcatR xs)
 
-hConcat :: HConcat xs => HList xs -> HList (HConcatR xs)
-hConcat = hConcatFD
+hconcat :: HConcat xs => HList xs -> HList (HConcatR xs)
+hconcat = hconcatFD
 
 type family HConcatR (a :: [Type]) :: [Type]
 type instance HConcatR '[] = '[]
@@ -241,42 +244,49 @@ type instance UnHList (HList a) = a
 
 -- for the benefit of ghc-7.10.1
 class HConcatFD xxs xs | xxs -> xs
-  where hConcatFD :: HList xxs -> HList xs
+  where hconcatFD :: HList xxs -> HList xs
 
 instance HConcatFD '[] '[] where
-  hConcatFD _ = HNil
+  hconcatFD _ = HNil
 
 instance (HConcatFD as bs, HAppendFD a bs cs) => HConcatFD (HList a ': as) cs where
-  hConcatFD (x :. xs) = x `hAppendFD` hConcatFD xs
+  hconcatFD (x :. xs) = x `happendFD` hconcatFD xs
+
+type HAppend as bs = HAppendFD as bs (as ++ bs)
+
+happend :: HAppend as bs => HList as -> HList bs -> HList (as ++ bs)
+happend = happendFD
+
+hunappend :: (cs ~ (as ++ bs), HAppend as bs) => HList cs -> (HList as, HList bs)
+hunappend = hunappendFD
 
 class HAppendFD a b ab | a b -> ab, a ab -> b where
-  hAppendFD :: HList a -> HList b -> HList ab
-  hUnappendFD :: HList ab -> (HList a, HList b)
+  happendFD :: HList a -> HList b -> HList ab
+  hunappendFD :: HList ab -> (HList a, HList b)
 
 type family ((as :: [k]) ++ (bs :: [k])) :: [k] where
   '[]       ++ bs = bs
   (a ': as) ++ bs = a ': as ++ bs
 
 instance HAppendFD '[] b b where
-  hAppendFD _ b = b
-  hUnappendFD b = (HNil, b)
+  happendFD _ b = b
+  hunappendFD b = (HNil, b)
 
 instance HAppendFD as bs cs => HAppendFD (a ': as) bs (a ': cs) where
-  hAppendFD (a :. as) bs = a :. hAppendFD as bs
-  hUnappendFD (a :. cs) = let (as, bs) = hUnappendFD cs in (a :. as, bs)
+  happendFD (a :. as) bs = a :. happendFD as bs
+  hunappendFD (a :. cs) = let (as, bs) = hunappendFD cs in (a :. as, bs)
 
-class HZipList xs ys zs | xs ys -> zs, zs -> xs ys where
-  hZipList   :: HList xs -> HList ys -> HList zs
-  hUnzipList :: HList zs -> (HList xs, HList ys)
+class HZip xs ys zs | xs ys -> zs, zs -> xs ys where
+  hzip   :: HList xs -> HList ys -> HList zs
+  hunzip :: HList zs -> (HList xs, HList ys)
 
-instance HZipList '[] '[] '[] where
-  hZipList _ _ = HNil
-  hUnzipList _ = (HNil, HNil)
+instance HZip '[] '[] '[] where
+  hzip _ _ = HNil
+  hunzip _ = (HNil, HNil)
 
-instance ((x, y) ~ z, HZipList xs ys zs) => HZipList (x ': xs) (y ': ys) (z ': zs) where
-  hZipList (x :. xs) (y :. ys) = (x, y) :. hZipList xs ys
-  hUnzipList (~(x, y) :. zs) =
-    let ~(xs, ys) = hUnzipList zs in (x :. xs, y :. ys)
+instance ((x, y) ~ z, HZip xs ys zs) => HZip (x ': xs) (y ': ys) (z ': zs) where
+  hzip (x :. xs) (y :. ys) = (x, y) :. hzip xs ys
+  hunzip (~(x, y) :. zs) = let ~(xs, ys) = hunzip zs in (x :. xs, y :. ys)
 
 class HZipWith f xs ys zs | f xs ys -> zs where
   hZipWith :: f -> HList xs -> HList ys -> HList zs
@@ -310,10 +320,10 @@ instance (Apply' f (a, b, c) d, HZipWith3 f as bs cs ds) => HZipWith3 f (a ': as
   hZipWith3 f (a :. as) (b :. bs) (c :. cs) = apply' f (a, b, c) :. hZipWith3 f as bs cs
 
 class HCartesianProduct xs ys zs | xs ys -> zs where
-  hCartesianProduct :: HList xs -> HList ys -> HList zs
+  hproduct :: HList xs -> HList ys -> HList zs
 
 instance HCartesianProduct '[] ys '[] where
-  hCartesianProduct _ _ = HNil
+  hproduct _ _ = HNil
 
 class HAttach x ys zs | x ys -> zs where
   hattach :: x -> HList ys -> HList zs
@@ -330,4 +340,4 @@ instance ( HCartesianProduct xs ys zs
          )
   => HCartesianProduct (x ': xs) ys zs'
  where
-  hCartesianProduct (x :. xs) ys = hattach x ys `hAppendFD` hCartesianProduct xs ys
+  hproduct (x :. xs) ys = hattach x ys `happendFD` hproduct xs ys

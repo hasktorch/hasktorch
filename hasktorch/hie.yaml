@@ -1,0 +1,8 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:hasktorch"
+    - path: "./test"
+      component: "spec"
+    - path: "./test"
+      component: "doctests"

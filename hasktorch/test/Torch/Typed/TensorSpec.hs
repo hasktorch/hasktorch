@@ -178,7 +178,7 @@ instance ( TensorOptions shape dtype  device
  where
   apply ToTypeSpec _ _ = do
     let t = ones @shape @dtype @device
-        t' = toType @dtype' t
+        t' = Torch.Typed.Tensor.toDType @dtype' t
     checkDynamicTensorAttributes t'
 
 data ToDeviceSpec = ToDeviceSpec
@@ -212,94 +212,94 @@ spec' device =
     let standardShapes       = Proxy @'[2, 3] :. HNil -- (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[0]  :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
         broadcastableShapes0 = Proxy @'[3, 1, 4, 1] :. HNil
         broadcastableShapes1 = Proxy @'[2, 1, 1] :. HNil
-        standardDTypes2      = hCartesianProduct standardDTypes            standardDTypes
-        almostAllDTypes2     = hCartesianProduct (withHalf standardDTypes) (withHalf standardDTypes)
-        identicalShapes      = hZipList standardShapes       standardShapes
-        broadcastableShapes  = hZipList broadcastableShapes0 broadcastableShapes1
+        standardDTypes2      = hproduct standardDTypes            standardDTypes
+        almostAllDTypes2     = hproduct (withHalf standardDTypes) (withHalf standardDTypes)
+        identicalShapes      = hzip standardShapes       standardShapes
+        broadcastableShapes  = hzip broadcastableShapes0 broadcastableShapes1
 
     describe "basic arithmetic" $ do
       let dispatch binarySpec = do
             it "works on tensors of identical shapes" $
               case device of
                 D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-                  hfoldrM @IO binarySpec () (hattach cpu   (hCartesianProduct standardDTypes2  identicalShapes))
+                  hfoldrM @IO binarySpec () (hattach cpu   (hproduct standardDTypes2  identicalShapes))
                 D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-                  hfoldrM @IO binarySpec () (hattach cuda0 (hCartesianProduct almostAllDTypes2 identicalShapes))
+                  hfoldrM @IO binarySpec () (hattach cuda0 (hproduct almostAllDTypes2 identicalShapes))
             it "works on broadcastable tensors of different shapes" $
               case device of
                 D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-                  hfoldrM @IO binarySpec () (hattach cpu   (hCartesianProduct standardDTypes2  broadcastableShapes))
+                  hfoldrM @IO binarySpec () (hattach cpu   (hproduct standardDTypes2  broadcastableShapes))
                 D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-                  hfoldrM @IO binarySpec () (hattach cuda0 (hCartesianProduct almostAllDTypes2 broadcastableShapes))
+                  hfoldrM @IO binarySpec () (hattach cuda0 (hproduct almostAllDTypes2 broadcastableShapes))
       describe "addition" $ dispatch AddSpec
       describe "subtraction" $ dispatch SubSpec
       describe "multiplication" $ dispatch MulSpec
 
     describe "matrix multiplication" $ do
       it "returns the dot product if both tensors are 1-dimensional" $ do
-        let shapes = hZipList (Proxy @'[3] :. HNil) (Proxy @'[3] :. HNil)
+        let shapes = hzip (Proxy @'[3] :. HNil) (Proxy @'[3] :. HNil)
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hproduct standardDTypes shapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
       it "returns the matrix-matrix product if both arguments are 2-dimensional" $ do
-        let shapes = hZipList (Proxy @'[3, 2] :. HNil) (Proxy @'[2, 4] :. HNil)
+        let shapes = hzip (Proxy @'[3, 2] :. HNil) (Proxy @'[2, 4] :. HNil)
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hproduct standardDTypes shapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
       it "returns the matrix-matrix product if the first argument is 1-dimensional and the second argument is 2-dimensional by temporarily adding a 1 to the dimension of the first argument" $ do
-        let shapes = hZipList (Proxy @'[3] :. HNil) (Proxy @'[3, 4] :. HNil)
+        let shapes = hzip (Proxy @'[3] :. HNil) (Proxy @'[3, 4] :. HNil)
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hproduct standardDTypes shapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
       it "returns the matrix-vector product if the first argument is 2-dimensional and the second argument is 1-dimensional" $ do
-        let shapes = hZipList (Proxy @'[3, 4] :. HNil) (Proxy @'[4] :. HNil)
+        let shapes = hzip (Proxy @'[3, 4] :. HNil) (Proxy @'[4] :. HNil)
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hproduct standardDTypes shapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
       it "returns a batched matrix-matrix product if both arguments are at least 2-dimensional and the batch (i.e. non-matrix) dimensions are broadcastable" $ do
-        let shapes = hZipList (Proxy @'[2, 1, 4, 3] :. HNil) (Proxy @'[3, 3, 2] :. HNil)
+        let shapes = hzip (Proxy @'[2, 1, 4, 3] :. HNil) (Proxy @'[3, 3, 2] :. HNil)
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hproduct standardDTypes shapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
       it "returns a batched matrix-matrix product if the first argument is 1-dimensional and the second argument has more than 2 dimensions" $ do
-        let shapes = hZipList (Proxy @'[3] :. HNil) (Proxy @'[2, 3, 4] :. HNil)
+        let shapes = hzip (Proxy @'[3] :. HNil) (Proxy @'[2, 3, 4] :. HNil)
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hproduct standardDTypes shapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
       it "returns a batched matrix-vector product if the first argument has more than 2 dimensions and the second argument is 1-dimensional" $ do
-        let shapes = hZipList (Proxy @'[2, 3, 4] :. HNil) (Proxy @'[4] :. HNil)
+        let shapes = hzip (Proxy @'[2, 3, 4] :. HNil) (Proxy @'[4] :. HNil)
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cpu   (hCartesianProduct standardDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cpu   (hproduct standardDTypes shapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO MatMulSpec () (hattach cuda0 (hCartesianProduct allFloatingPointDTypes shapes))
+            hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
 
     describe "binary comparison" $ do
       let dispatch binaryCmpSpec = do
             it "works on tensors of identical shapes" $
               case device of
                 D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-                  hfoldrM @IO binaryCmpSpec () (hattach cpu   (hCartesianProduct standardDTypes2  identicalShapes))
+                  hfoldrM @IO binaryCmpSpec () (hattach cpu   (hproduct standardDTypes2  identicalShapes))
                 D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-                  hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hCartesianProduct almostAllDTypes2 identicalShapes))
+                  hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hproduct almostAllDTypes2 identicalShapes))
             it "works on broadcastable tensors of different shapes" $
               case device of
                 D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-                  hfoldrM @IO binaryCmpSpec () (hattach cpu   (hCartesianProduct standardDTypes2  broadcastableShapes))
+                  hfoldrM @IO binaryCmpSpec () (hattach cpu   (hproduct standardDTypes2  broadcastableShapes))
                 D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-                  hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hCartesianProduct almostAllDTypes2 broadcastableShapes))
+                  hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hproduct almostAllDTypes2 broadcastableShapes))
       describe "greater than" $ dispatch GTSpec
       describe "lower than" $ dispatch LTSpec
       describe "greater or equal than" $ dispatch GESpec
@@ -311,23 +311,23 @@ spec' device =
       it "reshape" $ do
         let fromShapes = Proxy @'[0]    :. Proxy @'[0, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1]       :. Proxy @'[1, 1] :. Proxy @'[1, 1, 1]               :. Proxy @'[1, 2]    :. Proxy @'[2, 1] :. Proxy @'[1, 4, 2] :. Proxy @'[1, 1, 8] :. Proxy @'[8]       :. Proxy @'[2, 2, 2] :. HNil
             toShapes   = Proxy @'[1, 0] :. Proxy @'[0, 1] :. Proxy @'[0]    :. Proxy @'[0, 0] :. Proxy @'[1, 1]                  :. Proxy @'[1, 1, 1] :. Proxy @'[1]    :. (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1, 2, 1] :. Proxy @'[2]    :. Proxy @'[8]       :. Proxy @'[1, 1, 8] :. Proxy @'[2, 2, 2] :. Proxy @'[1, 1, 8] :. HNil
-            shapes     = hZipList fromShapes toShapes
+            shapes     = hzip fromShapes toShapes
         case device of
           D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-            hfoldrM @IO ReshapeSpec () (hattach cpu   (hCartesianProduct allDTypes shapes))
+            hfoldrM @IO ReshapeSpec () (hattach cpu   (hproduct allDTypes shapes))
           D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-            hfoldrM @IO ReshapeSpec () (hattach cuda0 (hCartesianProduct allDTypes shapes))
+            hfoldrM @IO ReshapeSpec () (hattach cuda0 (hproduct allDTypes shapes))
 
       it "toDevice" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-          hfoldrM @IO ToDeviceSpec () (hattach cpu   (hCartesianProduct allDTypes standardShapes))
+          hfoldrM @IO ToDeviceSpec () (hattach cpu   (hproduct allDTypes standardShapes))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-          hfoldrM @IO ToDeviceSpec () (hattach cuda0 (hCartesianProduct allDTypes standardShapes))
+          hfoldrM @IO ToDeviceSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
       it "toType" $ case device of
         D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-          hfoldrM @IO ToTypeSpec () (hattach cpu   (hCartesianProduct (hCartesianProduct allDTypes allDTypes) standardShapes))
+          hfoldrM @IO ToTypeSpec () (hattach cpu   (hproduct (hproduct allDTypes allDTypes) standardShapes))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-          hfoldrM @IO ToTypeSpec () (hattach cuda0 (hCartesianProduct (hCartesianProduct allDTypes allDTypes) standardShapes))
+          hfoldrM @IO ToTypeSpec () (hattach cuda0 (hproduct (hproduct allDTypes allDTypes) standardShapes))
 
 testTensorListFold
   :: forall device dtype shape . Tensor device dtype shape -> IO [D.ATenTensor]
@@ -355,4 +355,4 @@ testReplicate
   :: forall device dtype shape
    . Tensor device dtype shape
   -> HList (HReplicateR 3 (Tensor device dtype shape))
-testReplicate = hReplicate Proxy
+testReplicate = hreplicate @3

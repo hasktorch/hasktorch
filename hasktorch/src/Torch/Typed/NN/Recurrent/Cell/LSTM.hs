@@ -73,8 +73,6 @@ instance ( KnownDevice device
       <*> (makeIndependent =<< randn)
       <*> (makeIndependent =<< randn)
 
--- instance A.Parameterized (LSTMCell inputDim hiddenDim dtype device)
-
 -- | A single recurrent step of an `LSTMCell`
 --
 forwardStep

@@ -97,8 +97,6 @@ cnn CNN {..} =
     . unsqueeze @1
     . reshape @'[batchSize, I.Rows, I.Cols]
 
-instance A.Parameterized (CNN dtype device)
-
 instance ( KnownDType dtype
          , KnownDevice device
          , RandDTypeIsValid device dtype

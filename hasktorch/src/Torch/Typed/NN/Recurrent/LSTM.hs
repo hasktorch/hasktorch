@@ -44,7 +44,7 @@ import qualified Torch.Internal.Type                     as ATen
 import qualified Torch.Autograd                as A
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
-import qualified Torch.Functional               as D
+import qualified Torch.Functional              as D
 import qualified Torch.NN                      as A
 import qualified Torch.Tensor                  as D
 import qualified Torch.TensorFactories         as D
@@ -54,6 +54,14 @@ import           Torch.Typed.Functional      hiding ( sqrt )
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
 import           Torch.Typed.NN
+
+data LSTMLayerSpec
+  (inputSize :: Nat)
+  (hiddenSize :: Nat)
+  (directionality :: RNNDirectionality)
+  (dtype :: D.DType)
+  (device :: (D.DeviceType, Nat))
+ = LSTMLayerSpec deriving (Show, Eq)
 
 data LSTMLayer
   (inputSize :: Nat)
@@ -106,6 +114,51 @@ instance
   gReplaceParameters _ (wi :. wh :. bi :. bh :. wi' :. wh' :. bi' :. bh' :. HNil)
     = K1 (LSTMBidirectionalLayer wi wh bi bh wi' wh' bi' bh')
 
+instance
+  ( RandDTypeIsValid device dtype
+  , KnownNat inputSize
+  , KnownNat hiddenSize
+  , KnownDType dtype
+  , KnownDevice device
+  ) => A.Randomizable (LSTMLayerSpec inputSize hiddenSize 'Unidirectional dtype device)
+                      (LSTMLayer     inputSize hiddenSize 'Unidirectional dtype device)
+ where
+  sample _ =
+    LSTMUnidirectionalLayer
+      <$> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< pure zeros)
+      <*> (makeIndependent =<< pure zeros)
+
+instance
+  ( RandDTypeIsValid device dtype
+  , KnownNat inputSize
+  , KnownNat hiddenSize
+  , KnownDType dtype
+  , KnownDevice device
+  ) => A.Randomizable (LSTMLayerSpec inputSize hiddenSize 'Bidirectional dtype device)
+                      (LSTMLayer     inputSize hiddenSize 'Bidirectional dtype device)
+ where
+  sample _ =
+    LSTMBidirectionalLayer
+      <$> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< pure zeros)
+      <*> (makeIndependent =<< pure zeros)
+      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< xavierUniormLSTM)
+      <*> (makeIndependent =<< pure zeros)
+      <*> (makeIndependent =<< pure zeros)
+
+data LSTMLayerStackSpec
+  (inputSize :: Nat)
+  (hiddenSize :: Nat)
+  (numLayers :: Nat)
+  (directionality :: RNNDirectionality)
+  (dtype :: D.DType)
+  (device :: (D.DeviceType, Nat))
+  = LSTMLayerStackSpec deriving (Show, Eq)
+
 -- Input-to-hidden, hidden-to-hidden, and bias parameters for a mulilayered
 -- (and optionally) bidirectional LSTM.
 --
@@ -148,70 +201,44 @@ instance {-# OVERLAPPABLE #-}
   gFlattenParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer))
     = let parameters  = gFlattenParameters (K1 @R lstmLayerStack)
           parameters' = gFlattenParameters (K1 @R lstmLayer)
-      in  parameters `hAppendFD` parameters'
+      in  parameters `happendFD` parameters'
   gReplaceParameters (K1 (LSTMLayerK lstmLayerStack lstmLayer)) parameters''
-    = let (parameters, parameters') = hUnappendFD parameters''
+    = let (parameters, parameters') = hunappendFD parameters''
           lstmLayerStack'           = unK1 (gReplaceParameters (K1 @R lstmLayerStack) parameters)
           lstmLayer'                = unK1 (gReplaceParameters (K1 @R lstmLayer)      parameters')
       in  K1 (LSTMLayerK lstmLayerStack' lstmLayer')
 
-class HasSampleLSTMLayer (directionality :: RNNDirectionality) where
-  sampleLSTMLayer
-    :: ( RandDTypeIsValid device dtype
-       , KnownDType dtype
-       , KnownDevice device
-       , KnownNat inputSize
-       , KnownNat hiddenSize
-       )
-    => IO (LSTMLayer inputSize hiddenSize directionality dtype device)
-
-instance HasSampleLSTMLayer 'Unidirectional where
-  sampleLSTMLayer =
-    LSTMUnidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< pure zeros)
-      <*> (makeIndependent =<< pure zeros)
-
-instance HasSampleLSTMLayer 'Bidirectional where
-  sampleLSTMLayer =
-    LSTMBidirectionalLayer
-      <$> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< pure zeros)
-      <*> (makeIndependent =<< pure zeros)
-      <*> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< xavierUniormLSTM)
-      <*> (makeIndependent =<< pure zeros)
-      <*> (makeIndependent =<< pure zeros)
-
---  A specialized singleton helper for initializing parameters
-class (KnownNat numLayers, HasSampleLSTMLayer directionality) => HasSampleLSTMLayerStack (numLayers :: Nat) (directionality :: RNNDirectionality) where
-  sampleLSTMLayerStack
-    :: ( RandDTypeIsValid device dtype
-       , KnownDType dtype
-       , KnownDevice device
-       , KnownNat inputSize
-       , KnownNat hiddenSize
-       , KnownNat (NumberOfDirections directionality)
-       )
-    => IO (LSTMLayerStack inputSize hiddenSize numLayers directionality dtype device)
-
 instance {-# OVERLAPS #-}
-  ( HasSampleLSTMLayer directionality
-  ) => HasSampleLSTMLayerStack 1 directionality where
-  sampleLSTMLayerStack =
-    LSTMLayer1 <$> sampleLSTMLayer
+  ( RandDTypeIsValid device dtype
+  , KnownNat inputSize
+  , KnownNat hiddenSize
+  , KnownDType dtype
+  , KnownDevice device
+  , A.Randomizable (LSTMLayerSpec inputSize hiddenSize directionality dtype device)
+                   (LSTMLayer     inputSize hiddenSize directionality dtype device)
+  ) => A.Randomizable (LSTMLayerStackSpec inputSize hiddenSize 1 directionality dtype device)
+                      (LSTMLayerStack     inputSize hiddenSize 1 directionality dtype device)
+ where
+  sample _ = LSTMLayer1 <$> (A.sample $ LSTMLayerSpec @inputSize @hiddenSize @directionality @dtype @device)
 
 instance {-# OVERLAPPABLE #-}
   ( 2 <= numLayers
-  , HasSampleLSTMLayerStack (numLayers - 1) directionality
-  , HasSampleLSTMLayer directionality
-  ) => HasSampleLSTMLayerStack numLayers directionality where
-  sampleLSTMLayerStack =
+  , RandDTypeIsValid device dtype
+  , KnownNat inputSize
+  , KnownNat hiddenSize
+  , KnownDType dtype
+  , KnownDevice device
+  , A.Randomizable (LSTMLayerStackSpec inputSize hiddenSize (numLayers - 1) directionality dtype device)
+                   (LSTMLayerStack     inputSize hiddenSize (numLayers - 1) directionality dtype device)
+  , A.Randomizable (LSTMLayerSpec (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+                   (LSTMLayer     (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
+  ) => A.Randomizable (LSTMLayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
+                      (LSTMLayerStack     inputSize hiddenSize numLayers directionality dtype device)
+ where
+  sample _ =
     LSTMLayerK
-      <$> sampleLSTMLayerStack
-      <*> sampleLSTMLayer
+      <$> (A.sample $ LSTMLayerStackSpec @inputSize @hiddenSize @(numLayers - 1) @directionality @dtype @device)
+      <*> (A.sample $ LSTMLayerSpec @(hiddenSize * NumberOfDirections directionality) @hiddenSize @directionality @dtype @device)
 
 newtype LSTMSpec
   (inputSize :: Nat)
@@ -294,11 +321,14 @@ instance
   , KnownNat hiddenSize
   , KnownNat (NumberOfDirections directionality)
   , RandDTypeIsValid device dtype
-  , HasSampleLSTMLayerStack numLayers directionality
+  , A.Randomizable (LSTMLayerStackSpec inputSize hiddenSize numLayers directionality dtype device)
+                   (LSTMLayerStack     inputSize hiddenSize numLayers directionality dtype device)
   ) => A.Randomizable (LSTMSpec inputSize hiddenSize numLayers directionality dtype device)
                       (LSTM     inputSize hiddenSize numLayers directionality dtype device) where
   sample (LSTMSpec dropoutSpec) =
-    LSTM <$> sampleLSTMLayerStack <*> A.sample dropoutSpec
+    LSTM
+      <$> A.sample (LSTMLayerStackSpec @inputSize @hiddenSize @numLayers @directionality @dtype @device)
+      <*> A.sample dropoutSpec
 
 data RNNInitialization = ConstantInitialization | LearnedInitialization deriving (Show, Generic)
 
@@ -408,7 +438,7 @@ instance
       <$> A.sample lstmSpec
       <*> pure zeros
       <*> pure zeros
-  sample s@(LSTMWithConstInitSpec lstmSpec c h) =
+  sample (LSTMWithConstInitSpec lstmSpec c h) =
     LSTMWithConstInit
       <$> A.sample lstmSpec
       <*> pure c
@@ -594,7 +624,7 @@ lstmWithDropout, lstmWithoutDropout
      , Tensor device dtype hxShape
      , Tensor device dtype hxShape
      )
--- ^ Forward propagage the `LSTM` module and apply dropout on the outputs of each layer.
+-- ^ Forward propagate the `LSTM` module and apply dropout on the outputs of each layer.
 --
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
@@ -625,7 +655,7 @@ lstmWithDropout =
     @dtype
     @device
     True
--- ^ Forward propagage the `LSTM` module (without applying dropout on the outputs of each layer).
+-- ^ Forward propagate the `LSTM` module (without applying dropout on the outputs of each layer).
 --
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
 -- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))

@@ -49,7 +49,7 @@ import qualified Torch.NN                      as A
 import qualified Torch.Device                  as D
 import qualified Torch.DType                   as D
 import qualified Torch.Tensor                  as D
-import qualified Torch.Functional               as D
+import qualified Torch.Functional              as D
 import qualified Torch.TensorFactories         as D
 import qualified Torch.Serialize               as D
 import qualified Image                         as I

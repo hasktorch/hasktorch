@@ -34,9 +34,12 @@ import           GHC.TypeLits
 
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
+import           Torch.Typed.Parameter
 import           Torch.Typed.Functional     hiding ( linear )
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
+import           Torch.Typed.Autograd
+import           Torch.Typed.Optim
 import qualified Torch.Autograd                as A
 import qualified Torch.NN                      as A
 import qualified Torch.Optim                   as A
@@ -64,8 +67,6 @@ data MLP (inputFeatures :: Nat) (outputFeatures :: Nat) (hiddenFeatures :: Nat)
         , layer2 :: Linear hiddenFeatures outputFeatures dtype device
         } deriving (Show, Generic)
 
-instance A.Parameterized (MLP inputFeatures outputFeatures hiddenFeatures dtype device)
-
 instance ( KnownDevice device
          , KnownDType dtype
          , KnownNat inputFeatures
@@ -88,13 +89,13 @@ mlp
   -> Tensor device dtype '[batchSize, outputFeatures]
 mlp MLP {..} = linear layer2 . tanh . linear layer1 . tanh . linear layer0
 
-model
+forward
   :: forall batchSize inputFeatures outputFeatures hiddenFeatures dtype device
    . (StandardFloatingPointDTypeValidation device dtype)
   => MLP inputFeatures outputFeatures hiddenFeatures dtype device
   -> Tensor device dtype '[batchSize, inputFeatures]
   -> Tensor device dtype '[batchSize, outputFeatures]
-model = (sigmoid .) . mlp
+forward = (sigmoid .) . mlp
 
 foldLoop
   :: forall a b m . (Num a, Enum a, Monad m) => b -> a -> (b -> a -> m b) -> m b
@@ -111,23 +112,21 @@ xor t = (1 - (1 - a) * (1 - b)) * (1 - (a * b))
 
 main = do
   let numIters = 100000
-  init    <- A.sample (MLPSpec :: MLPSpec 2 1 4 'D.Float '( 'D.CPU, 0))
-  trained <- foldLoop init numIters $ \state i -> do
+      learningRate = 0.1
+  initModel <- A.sample (MLPSpec :: MLPSpec 2 1 4 'D.Float '( 'D.CPU, 0))
+  let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
+  (trained, _) <- foldLoop (initModel, initOptim) numIters $ \(model, optim) i -> do
     input <-
-      toDType @D.Float
+      Torch.Typed.Tensor.toDType @D.Float
       .   gt (0.5 :: CPUTensor 'D.Float '[])
       <$> rand @'[256, 2] @'D.Float @'( 'D.CPU, 0)
 
     let expectedOutput = xor input
-    let actualOutput   = squeezeAll . model state $ input
+    let actualOutput   = squeezeAll . forward model $ input
     let loss           = mseLoss @D.ReduceMean actualOutput expectedOutput
-
-    let flatParameters = A.flattenParameters state
-    let gradients      = A.grad (toDynamic loss) flatParameters
 
     when (i `mod` 2500 == 0) (print loss)
 
-    newFlatParameters <- mapM A.makeIndependent
-      $ A.sgd 1e-1 flatParameters gradients
-    return $ A.replaceParameters state newFlatParameters
+    (model', optim') <- runStep model optim loss learningRate
+    return (model', optim')
   print trained

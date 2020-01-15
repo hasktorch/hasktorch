@@ -31,8 +31,12 @@ library
                     , Torch.Typed.NN
                     , Torch.Typed.NN.Recurrent.Cell.LSTM
                     , Torch.Typed.NN.Recurrent.LSTM
+                    , Torch.Typed.NN.Recurrent.GRU
+                    , Torch.Typed.NN.Transformer
                     , Torch.Typed.Tensor
                     , Torch.Typed.Parameter
+                    , Torch.Typed.Device
+                    , Torch.Typed.DType
                     , Torch.Typed.Autograd
                     , Torch.Typed.Optim
                     , Torch.Typed.Serialize
@@ -81,6 +85,10 @@ test-suite spec
                     , Torch.Typed.FunctionalSpec
                     , Torch.Typed.AutogradSpec
                     , Torch.Typed.OptimSpec
+                    , Torch.Typed.NNSpec
+                    , Torch.Typed.NN.Recurrent.LSTMSpec
+                    , Torch.Typed.NN.Recurrent.GRUSpec
+                    , Torch.Typed.NN.TransformerSpec
                     , SerializeSpec
                     , RandomSpec
   default-language: Haskell2010
