@@ -5,13 +5,20 @@
 module Main where
 
 import Control.Monad (foldM, when)
-
-import Torch.Tensor
+import Torch.Autograd (grad, makeIndependent, toDependent)
 import Torch.DType (DType (Float))
-import Torch.TensorFactories (ones', rand', randn')
-import Torch.Functional
-import Torch.Autograd
+import Torch.Functional (squeezeAll, matmul, mse_loss)
 import Torch.NN
+  ( Linear (Linear, bias, weight),
+    LinearSpec (LinearSpec, in_features, out_features),
+    flattenParameters,
+    linear,
+    replaceParameters,
+    sample,
+    sgd,
+  )
+import Torch.Tensor (Tensor, asTensor)
+import Torch.TensorFactories (ones', rand', randn')
 
 batch_size = 64
 num_iters = 2000
