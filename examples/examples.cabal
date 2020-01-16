@@ -87,7 +87,8 @@ executable static-transformer
   hs-source-dirs:      static-transformer
   main-is:             Main.hs
   ghc-options:         -fno-warn-partial-type-signatures
-  build-depends:       libtorch-ffi
+  build-depends:       async
+                     , libtorch-ffi
                      , safe-exceptions
 
 executable rnn
