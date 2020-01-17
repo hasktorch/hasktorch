@@ -362,9 +362,5 @@ spec = describe "grad" $ do
           output' = Torch.Typed.NN.linear model input
           loss' = mseLoss @D.ReduceMean output' zeros
           gradientWeight' :. gradientBias' :. HNil = grad loss' (Torch.Typed.Parameter.flattenParameters model)
-      print gradientWeight
-      print gradientWeight'
       (toInt . all) (isclose 1e-08 1e-05 False gradientWeight gradientWeight') `shouldBe` 1
-      print gradientBias
-      print gradientBias'
       (toInt . all) (isclose 1e-08 1e-05 False gradientBias gradientBias') `shouldBe` 1
