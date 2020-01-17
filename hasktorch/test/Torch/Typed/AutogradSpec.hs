@@ -353,8 +353,8 @@ spec = describe "grad" $ do
       let spec = LinearSpec @10 @5 @'D.Float @'( 'D.CPU, 0)
       model <- A.sample spec
       let models = Torch.Typed.Device.replicate @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model
-          input = ones @'[20,10] @'D.Float @'( 'D.CPU, 0)
-          inputs = scatter @0 @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] input
+      input <- randn @'[20,10] @'D.Float @'( 'D.CPU, 0)
+      let inputs = scatter @0 @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] input
           outputs = hZipWith LinearForward models inputs
           output = gather @0 @'( 'D.CPU, 0) outputs
           loss = mseLoss @D.ReduceMean output zeros
@@ -362,5 +362,9 @@ spec = describe "grad" $ do
           output' = Torch.Typed.NN.linear model input
           loss' = mseLoss @D.ReduceMean output' zeros
           gradientWeight' :. gradientBias' :. HNil = grad loss' (Torch.Typed.Parameter.flattenParameters model)
-      (toInt . all) (isclose 1e-04 1e-04 False gradientWeight gradientWeight') `shouldBe` 1
-      (toInt . all) (isclose 1e-04 1e-04 False gradientBias gradientBias') `shouldBe` 1
+      print gradientWeight
+      print gradientWeight'
+      (toInt . all) (isclose 1e-08 1e-05 False gradientWeight gradientWeight') `shouldBe` 1
+      print gradientBias
+      print gradientBias'
+      (toInt . all) (isclose 1e-08 1e-05 False gradientBias gradientBias') `shouldBe` 1
