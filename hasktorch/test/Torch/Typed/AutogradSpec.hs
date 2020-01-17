@@ -63,6 +63,7 @@ import qualified Torch.NN                      as A
 import           Torch.Typed.Aux
 import           Torch.Typed.Tensor
 import           Torch.Typed.Parameter
+import           Torch.Typed.Device
 import           Torch.Typed.Functional
 import           Torch.Typed.Factories
 import           Torch.Typed.NN
@@ -311,6 +312,11 @@ instance
           (gradientsRastrigin @gradients' model a)
     hfoldrM @IO GradientsTestInner () zipped
 
+data LinearForward = LinearForward
+
+instance Apply' LinearForward (Linear inputFeatures outputFeatures dtype device, Tensor device dtype '[batchSize, inputFeatures]) (Tensor device dtype '[batchSize, outputFeatures]) where
+  apply' _ (model, input) = Torch.Typed.NN.linear model input
+
 spec :: Spec
 spec = describe "grad" $ do
   it "works if everything has identical device and dtype" $ do
@@ -343,3 +349,18 @@ spec = describe "grad" $ do
         :. RastriginSpec @4 @'[2, 3, 1, 13] @'[ 'D.Float, 'D.Double, 'D.Float, 'D.Double] @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0), '( 'D.CPU, 0), '( 'D.CUDA, 0)]
         :. HNil
         )
+    it "works in a data-parallel setting" $ do
+      let spec = LinearSpec @10 @5 @'D.Float @'( 'D.CPU, 0)
+      model <- A.sample spec
+      let models = Torch.Typed.Device.replicate @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] @'( 'D.CPU, 0) model
+          input = ones @'[20,10] @'D.Float @'( 'D.CPU, 0)
+          inputs = scatter @0 @'[ '( 'D.CPU, 0), '( 'D.CUDA, 0)] input
+          outputs = hZipWith LinearForward models inputs
+          output = gather @0 @'( 'D.CPU, 0) outputs
+          loss = mseLoss @D.ReduceMean output zeros
+          gradientWeight :. gradientBias :. HNil = grad loss (Torch.Typed.Parameter.flattenParameters model)
+          output' = Torch.Typed.NN.linear model input
+          loss' = mseLoss @D.ReduceMean output' zeros
+          gradientWeight' :. gradientBias' :. HNil = grad loss' (Torch.Typed.Parameter.flattenParameters model)
+      (toInt . all) (isclose 1e-04 1e-04 False gradientWeight gradientWeight') `shouldBe` 1
+      (toInt . all) (isclose 1e-04 1e-04 False gradientBias gradientBias') `shouldBe` 1

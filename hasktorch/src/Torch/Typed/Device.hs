@@ -14,8 +14,10 @@
 
 module Torch.Typed.Device (
     HasToDevice
+  , HasToDevices
   , PutDevice
   , Torch.Typed.Device.toDevice
+  , toDevices
   , Torch.Typed.Device.replicate
   , scatter
   , gather
@@ -94,52 +96,50 @@ instance (GHasToDevice device' device f g) => GHasToDevice device' device (M1 i 
 instance GHasToDevice device' device U1 U1 where
   gToDevice = id
 
-data ToDevice f = ToDevice f
+class HasReplicate (devices' :: [(D.DeviceType, Nat)]) (device :: (D.DeviceType, Nat)) (f :: Type) (gs :: [Type]) | devices' device f -> gs where
+  replicate :: f -> HList gs
+
+instance HasReplicate '[] device f '[] where
+  replicate _ = HNil
 
 instance
-  ( HasToDevice device' device f g
-  ) => Apply' (ToDevice f) (Proxy device, Proxy device') g where
-  apply' (ToDevice f) (Proxy, Proxy) =
-    Torch.Typed.Device.toDevice @device' @device f
+  ( HasReplicate devices' device f gs
+  , HasToDevice device' device f g
+  ) => HasReplicate (device' ': devices') device f (g ': gs) where
+  replicate f = Torch.Typed.Device.toDevice @device' @device f :. Torch.Typed.Device.replicate @devices' @device @f @gs f
 
-replicate
-  :: forall device devices f gs xs
-   . ( HAttach (Proxy device) devices xs
-     , HMap' (ToDevice f) xs gs
-     )
-  => f
-  -> HList devices
-  -> HList gs
-replicate f devices =
-  hmap' (ToDevice f) $ hattach (Proxy @device) devices
+class HasToDevices (devices' :: [(D.DeviceType, Nat)]) (devices :: [(D.DeviceType, Nat)]) (fs :: [Type]) (gs :: [Type]) | devices' devices fs -> gs, devices' devices gs -> fs where
+  toDevices :: HList fs -> HList gs
 
-data ToDevice' = ToDevice'
+instance HasToDevices '[] '[] '[] '[] where
+  toDevices HNil = HNil
 
 instance
-  ( KnownDevice device'
-  ) => Apply' ToDevice' (Tensor device dtype shape, Proxy device') (Tensor device' dtype shape) where
-  apply' _ (t, Proxy) =
-    Torch.Typed.Tensor.toDevice @device' t
+  ( HasToDevices devices' devices fs gs
+  , HasToDevice device' device f g
+  ) => HasToDevices (device' ': devices') (device ': devices) (f ': fs) (g ': gs) where
+  toDevices (f :. fs) = Torch.Typed.Device.toDevice @device' @device f :. toDevices @devices' @devices @fs @gs fs
 
 -- | scatter tensor over devices
 --
--- >>> :type scatter @0 (ones @'[2,1] @'D.Float @'( 'D.CPU, 0)) (Proxy @'( 'D.CPU, 0) :. HNil)
--- scatter @0 (ones @'[2,1] @'D.Float @'( 'D.CPU, 0)) (Proxy @'( 'D.CUDA, 0) :. Proxy @'( 'D.CUDA, 1) :. HNil)
+-- >>> :type scatter @0 @'[ '( 'D.CUDA, 0), '( 'D.CUDA, 1)] (ones @'[2,1] @'D.Float @'( 'D.CPU, 0))
+-- scatter @0 @'[ '( 'D.CUDA, 0), '( 'D.CUDA, 1)] (ones @'[2,1] @'D.Float @'( 'D.CPU, 0))
 --  :: HList
 --       '[Tensor '( 'D.CUDA, 0) 'D.Float '[1, 1],
 --         Tensor '( 'D.CUDA, 1) 'D.Float '[1, 1]]
 scatter
-  :: forall dim devices device dtype shape gs chunks tensorChunks
+  :: forall (dim :: Nat) (devices :: [(D.DeviceType, Nat)]) device dtype shape gs chunks tensorChunks
    . ( chunks ~ ListLength devices
      , tensorChunks ~ Chunk chunks dim shape dtype device
      , ATen.Castable (HList tensorChunks) [D.ATenTensor]
-     , HZipWith ToDevice' tensorChunks devices gs
+     , HasToDevices devices (HReplicateR chunks device) tensorChunks gs
      , All KnownNat '[dim, chunks]
      )
   => Tensor device dtype shape
-  -> HList devices
   -> HList gs
-scatter input devices = hZipWith ToDevice' (chunk @chunks @dim input) devices
+scatter = toDevices @devices @(HReplicateR chunks device) . chunk @chunks @dim
+
+data ToDevice f = ToDevice f
 
 instance
   ( KnownDevice device'
