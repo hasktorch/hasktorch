@@ -159,6 +159,12 @@
 - remove: {src: quantized_gru_tttlbldbb}
 - remove: {src: conv_transpose2d_ttltllll}
 - remove: {src: conv_transpose3d_ttltllll}
+- remove: {src: randint_like_tlM}
+- remove: {src: randint_like_tllM}
+- remove: {src: quantized_lstm_tllbldbbbsb}
+- remove: {src: quantized_lstm_ttllbldbbsb}
+- remove: {src: bitwise_xor_ts}
+- remove: {src: bitwise_xor_tt}
 
 # functions for named tensor
 - rename: {src: cat_ll, dst: cat}
@@ -237,4 +243,3 @@
 - remove: {src: index_fill_tntt}
 - remove: {src: scatter_tntt}
 - remove: {src: scatter_tnts}
-

@@ -3188,7 +3188,7 @@ numel
   :: forall shape dtype device
    . Tensor device dtype shape -- ^ input
   -> Int -- ^ output
-numel input = unsafePerformIO $ ATen.cast1 ATen.Managed.numel_t input
+numel input = unsafePerformIO $ ATen.cast1 ATen.Managed.tensor_numel input
 
 -- unbind :: Tensor device dtype shape -> Int -> [Tensor device dtype shape]
 -- unbind _input _dim = unsafePerformIO $ (ATen.cast2 ATen.Managed.unbind_tl) _input _dim
