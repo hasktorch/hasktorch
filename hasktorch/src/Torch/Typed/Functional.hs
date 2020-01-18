@@ -203,6 +203,7 @@ min
 min input = unsafePerformIO $ ATen.cast1 ATen.Managed.min_t input
 
 -- | max
+--
 -- >>> dtype &&& shape $ max (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[])
 max
@@ -258,6 +259,7 @@ csub a input = unsafePerformIO $ ATen.cast2 ATen.Managed.sub_ts input a
 -- | cmul
 -- TODO: what dtypes is this defined for?
 -- TODO: what scalar types is this defined for?
+--
 -- >>> dtype &&& shape $ cmul 2 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
 cmul
@@ -271,6 +273,7 @@ cmul a input = unsafePerformIO $ ATen.cast2 ATen.Managed.mul_ts input a
 -- | cdiv
 -- TODO: what dtypes is this defined for?
 -- TODO: what scalar types is this defined for?
+--
 -- >>> dtype &&& shape $ cdiv 2 (ones :: CPUTensor 'D.Float '[2,2])
 -- (Float,[2,2])
 cdiv
@@ -282,6 +285,7 @@ cdiv
 cdiv a input = unsafePerformIO $ ATen.cast2 ATen.Managed.div_ts input a
 
 -- | erf
+--
 -- >>> dtype &&& shape $ erf (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 erf
@@ -292,6 +296,7 @@ erf
 erf input = unsafePerformIO $ ATen.cast1 ATen.Managed.erf_t input
 
 -- | exp
+--
 -- >>> dtype &&& shape $ exp (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 exp
@@ -302,6 +307,7 @@ exp
 exp input = unsafePerformIO $ ATen.cast1 ATen.Managed.exp_t input
 
 -- | log1p
+--
 -- >>> dtype &&& shape $ log1p (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 log1p
@@ -322,6 +328,7 @@ log2
 log2 input = unsafePerformIO $ ATen.cast1 ATen.Managed.log2_t input
 
 -- | log10
+--
 -- >>> dtype &&& shape $ log10 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 log10
@@ -333,6 +340,7 @@ log10 input = unsafePerformIO $ ATen.cast1 ATen.Managed.log10_t input
 
 -- | pow
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+--
 -- >>> dtype &&& shape $ pow 2 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 pow
@@ -344,6 +352,7 @@ pow
 pow a input = unsafePerformIO $ ATen.cast2 ATen.Managed.pow_ts input a
 
 -- | relu activation function
+--
 -- >>> dtype &&& shape $ relu (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 relu
@@ -354,6 +363,7 @@ relu
 relu input = unsafePerformIO $ ATen.cast1 ATen.Managed.relu_t input
 
 -- | selu
+--
 -- >>> dtype &&& shape $ selu (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 selu
@@ -365,6 +375,7 @@ selu input = unsafePerformIO $ ATen.cast1 ATen.Managed.selu_t input
 
 -- | mish
 -- `mish` is a smooth activation function, see https://arxiv.org/abs/1908.08681 for details.
+--
 -- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[Float]]) $ mish (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,([3,2],[[0.86509836,0.86509836],[0.86509836,0.86509836],[0.86509836,0.86509836]]))
 mish
@@ -378,6 +389,7 @@ mish
 mish = mul =<< tanh . softplus (1 :: Float) 20
 
 -- | sigmoid
+--
 -- >>> dtype &&& shape $ sigmoid (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 sigmoid
@@ -388,6 +400,7 @@ sigmoid
 sigmoid input = unsafePerformIO $ ATen.cast1 ATen.Managed.sigmoid_t input
 
 -- | sin
+--
 -- >>> dtype &&& shape $ sin (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 sin
@@ -398,6 +411,7 @@ sin
 sin input = unsafePerformIO $ ATen.cast1 ATen.Managed.sin_t input
 
 -- | sinh
+--
 -- >>> dtype &&& shape $ sinh (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 sinh
@@ -408,6 +422,7 @@ sinh
 sinh input = unsafePerformIO $ ATen.cast1 ATen.Managed.sinh_t input
 
 -- | cos
+--
 -- >>> dtype &&& shape $ cos (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 cos
@@ -439,6 +454,7 @@ type family SqueezeAll (shape :: [Nat]) :: [Nat] where
   SqueezeAll (x: xs) = x ': SqueezeAll xs
 
 -- | squeezeAll
+--
 -- >>> dtype &&& shape $ squeezeAll (ones :: CPUTensor 'D.Float '[2,1,2,1,2])
 -- (Float,[2,2,2])
 squeezeAll
@@ -449,6 +465,7 @@ squeezeAll
 squeezeAll input = unsafePerformIO $ ATen.cast1 ATen.Managed.squeeze_t input
 
 -- | ConditionalReduction
+--
 -- >>> :kind! ConditionalReduction '[3,2] ReduceNone
 -- ConditionalReduction '[3,2] ReduceNone :: [Nat]
 -- = '[3, 2]
@@ -470,6 +487,7 @@ instance KnownReduction ReduceSum where
     reductionVal = 2
 
 -- | binary cross entropy
+--
 -- >>> t = ones :: CPUTensor 'D.Float '[2,2]
 -- >>> dtype &&& shape $ binaryCrossEntropy @ReduceNone t t t
 -- (Float,[2,2])
@@ -495,6 +513,7 @@ binaryCrossEntropy weight prediction target = unsafePerformIO $ ATen.cast4
   (reductionVal @reduction)
 
 -- | mseLoss
+--
 -- >>> t = ones :: CPUTensor 'D.Float '[2,2]
 -- >>> dtype &&& shape $ mseLoss @ReduceNone t t
 -- (Float,[2,2])
@@ -518,6 +537,7 @@ mseLoss prediction target = unsafePerformIO $ ATen.cast3
   (reductionVal @reduction)
 
 -- | softmax
+--
 -- >>> t = ones :: CPUTensor 'D.Float '[2,2]
 -- >>> dtype &&& shape $ softmax @0 t
 -- (Float,[2,2])
@@ -535,6 +555,7 @@ softmax input = unsafePerformIO
   $ ATen.cast3 ATen.Managed.softmax_tls input (natValI @dim) (dtypeVal @dtype)
 
 -- | logSoftmax
+--
 -- >>> t = ones :: CPUTensor 'D.Float '[2,2]
 -- >>> dtype &&& shape $ logSoftmax @0 t
 -- (Float,[2,2])
@@ -581,6 +602,7 @@ type family InverseDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTyp
 
 -- | inverse
 -- TODO: if rank < n for any tensors in the batch, then this will not work. we can't decide this statically, but we should prevent runtime errors. therefore, return Maybe?
+--
 -- >>> t <- randn :: IO (CPUTensor 'D.Float '[3,2,2])
 -- >>> dtype &&& shape $ inverse t
 -- (Float,[3,2,2])
@@ -1001,7 +1023,7 @@ type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] wher
   Transpose s d0 d1 = (SetValue (SetValue s d0 (GetValue s d1)) d1 (GetValue s d0))
 
 -- | transpose
--- See ../../../../deps/pytorch/aten/src/ATen/native/TensorShape.cpp.
+-- See "../../../../deps/pytorch/aten/src/ATen/native/TensorShape.cpp".
 --
 -- >>> dtype &&& shape $ transpose @0 @1 (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[2,3])
@@ -2846,6 +2868,7 @@ mm a b = unsafePerformIO $ ATen.cast2 ATen.Managed.mm_tt a b
 
 -- | matrix-vector multiplication
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+--
 -- >>> dtype &&& shape $ mv (ones :: CPUTensor 'D.Float '[3,2]) (zeros :: CPUTensor 'D.Float '[2])
 -- (Float,[3])
 mv
@@ -2942,6 +2965,7 @@ randnLike = ATen.cast1 ATen.Managed.randn_like_t
 
 -- | negate
 -- TODO: probably not defined for `D.Bool` tensors
+--
 -- >>> dtype &&& shape $ neg (ones :: CPUTensor 'D.Float '[3,2])
 -- (Float,[3,2])
 neg
@@ -3258,6 +3282,7 @@ zerosLike input = unsafePerformIO $ ATen.cast1 ATen.Managed.zeros_like_t input
 -- native_norm _input _p = unsafePerformIO $ (ATen.cast2 ATen.Managed.native_norm_ts) _input _p
 
 -- | clone
+--
 -- >>> t <- clone (ones :: CPUTensor 'D.Float '[3,2])
 -- >>> dtype &&& shape $ t
 -- (Float,[3,2])
@@ -4044,13 +4069,14 @@ elu
 elu alpha scale inputScale input =
   unsafePerformIO $ ATen.cast4 ATen.Managed.elu_tsss input alpha scale inputScale
 
--- |
+-- | glu
 -- -- >>> dtype &&& shape $ glu (ones :: CPUTensor 'D.Float '[3,2]) 1
 -- -- (Float,[3,1])
 -- -- >>> dtype &&& shape $ glu (ones :: CPUTensor 'D.Float '[3,2]) 3
 -- -- (Float,[3,2])
 -- glu :: Tensor device dtype shape -> Int -> Tensor device dtype shape
 -- glu _input _dim = unsafePerformIO $ (ATen.cast2 ATen.Managed.glu_tl) _input _dim
+
 
 -- | hard tanh
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -4137,6 +4163,7 @@ adaptiveAvgPool2d input = unsafePerformIO $ ATen.cast2
 -- TODO: only defined for MKLDNN device?
 -- TODO: test for availability of MKLDNN device?
 -- TODO: merge with adaptiveAvgPool2d and dispatch based on (availability of MKLDNN) device in the function body?
+--
 -- -- >>> t = mkldnnAdaptiveAvgPool2d @'(8,16) (toMKLDNN (ones :: CPUTensor 'D.Float '[1,3,16,32]))
 -- -- >>> shape t
 -- -- [1,3,8,16]
