@@ -76,7 +76,7 @@ import qualified Torch.TensorOptions           as D
 import qualified Torch.DType                   as D
 import qualified Torch.Device                  as D
 import qualified Torch.Scalar                  as D
-import           Torch.Functional                ( Reduction(..)
+import           Torch.Functional               ( Reduction(..)
                                                 , Tri(..)
                                                 , isUpper
                                                 , kOne
@@ -607,9 +607,9 @@ type family SymeigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType
   SymeigDTypeIsValid '(deviceType, _)         dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | symeig
--- TODO: split this function into two, one that calculates the eigenvectors and another that does not?
+--
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[3,2,2])
--- >>> (eigenVals,eigenVecs) = symeig True Upper t
+-- >>> (eigenVals,eigenVecs) = symeig Upper t
 -- >>> dtype &&& shape $ eigenVals
 -- (Float,[3,2])
 -- >>> :t eigenVals
@@ -618,7 +618,7 @@ type family SymeigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType
 -- (Float,[3,2,2])
 -- >>> :t eigenVecs
 -- eigenVecs :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2, 2]
--- >>> (eigenVals,eigenVecs) = symeig False Upper t
+-- >>> (eigenVals,eigenVecs) = symeig Lower t
 -- >>> dtype &&& shape $ eigenVals
 -- (Float,[3,2])
 -- >>> dtype &&& shape $ eigenVecs
@@ -629,15 +629,36 @@ symeig
      , shape'' ~ Square shape
      , SymeigDTypeIsValid device dtype
      )
-  => Bool -- ^ whether or not to calculate eigenvectors
-  -> Tri -- ^ upper or lower triagonal
+  => Tri -- ^ upper or lower triagonal
   -> Tensor device dtype shape -- ^ input
   -> ( Tensor device dtype shape'
      , Tensor device dtype shape''
      ) -- ^ eigenvalues and eigenvectors
-symeig eigenvectors upper input = unsafePerformIO
-  $ ATen.cast3 ATen.Managed.symeig_tbb input eigenvectors boolUpper
+symeig upper input = unsafePerformIO
+  $ ATen.cast3 ATen.Managed.symeig_tbb input True boolUpper
   where boolUpper = isUpper upper
+
+-- | symeigvalues
+--
+-- >>> t <- rand :: IO (CPUTensor 'D.Float '[3,2,2])
+-- >>> eigenVals = symeigvalues Upper t
+-- >>> dtype &&& shape $ eigenVals
+-- (Float,[3,2])
+-- >>> :t eigenVals
+-- eigenVals :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]
+symeigvalues
+  :: forall shape shape' dtype device
+   . ( shape' ~ VectorOfSquare shape
+     , SymeigDTypeIsValid device dtype
+     )
+  => Tri -- ^ upper or lower triagonal
+  -> Tensor device dtype shape -- ^ input
+  -> Tensor device dtype shape'
+symeigvalues upper input = fst symeig'
+  where
+    boolUpper = isUpper upper
+    symeig' :: ( Tensor device dtype shape', Tensor device dtype shape'')
+    symeig' = unsafePerformIO $ ATen.cast3 ATen.Managed.symeig_tbb input False boolUpper
 
 data EigenVectors = EnableEigenVectors | DisableEigenVectors
 

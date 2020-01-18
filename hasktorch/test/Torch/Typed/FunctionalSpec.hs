@@ -476,12 +476,35 @@ instance ( TensorOptions shape   dtype device
   apply SymeigSpec _ _ = do
     t <- rand @shape @dtype @device
     foldMap
-      (\(eigenvectors, upper) -> do
-        let (t', t'') = symeig eigenvectors upper t
+      (\upper -> do
+        let (t', t'') = symeig upper t
         checkDynamicTensorAttributes t'
         checkDynamicTensorAttributes t''
       )
-      ((,) <$> [True, False] <*> [D.Upper, D.Lower])
+      [D.Upper, D.Lower]
+
+data SymeigvaluesSpec = SymeigvaluesSpec
+
+instance ( TensorOptions shape   dtype device
+         , TensorOptions shape'  dtype device
+         , TensorOptions shape'' dtype device
+         , shape' ~ VectorOfSquare shape
+         , SymeigDTypeIsValid device dtype
+         , RandDTypeIsValid device dtype
+         )
+  => Apply
+       SymeigvaluesSpec
+       (Proxy device, (Proxy dtype, Proxy shape))
+       (() -> IO ())
+ where
+  apply SymeigvaluesSpec _ _ = do
+    t <- rand @shape @dtype @device
+    foldMap
+      (\upper -> do
+        let t' = symeigvalues upper t
+        checkDynamicTensorAttributes t'
+      )
+      [D.Upper, D.Lower]
 
 data EigSpec = EigSpec
 
