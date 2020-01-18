@@ -458,7 +458,7 @@ instance ( TensorOptions shape  dtype device
     let t' = inverse t
     checkDynamicTensorAttributes t'
 
-data SymeigSpec = SymeigSpec
+data SymeigSpec = SymeigSpec | SymeigvaluesSpec
 
 instance ( TensorOptions shape   dtype device
          , TensorOptions shape'  dtype device
@@ -482,21 +482,6 @@ instance ( TensorOptions shape   dtype device
         checkDynamicTensorAttributes t''
       )
       [D.Upper, D.Lower]
-
-data SymeigvaluesSpec = SymeigvaluesSpec
-
-instance ( TensorOptions shape   dtype device
-         , TensorOptions shape'  dtype device
-         , TensorOptions shape'' dtype device
-         , shape' ~ VectorOfSquare shape
-         , SymeigDTypeIsValid device dtype
-         , RandDTypeIsValid device dtype
-         )
-  => Apply
-       SymeigvaluesSpec
-       (Proxy device, (Proxy dtype, Proxy shape))
-       (() -> IO ())
- where
   apply SymeigvaluesSpec _ _ = do
     t <- rand @shape @dtype @device
     foldMap
