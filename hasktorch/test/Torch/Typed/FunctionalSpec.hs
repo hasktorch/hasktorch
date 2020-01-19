@@ -884,11 +884,15 @@ spec' device =
           hfoldrM @IO InverseSpec () (hattach cpu   (hproduct standardFloatingPointDTypes squareShapes))
         D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
           hfoldrM @IO InverseSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes (Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[1, 1, 1] :. Proxy @'[2, 2, 2] :. HNil)))
-      it "symeig" $ case device of
-        D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
-          hfoldrM @IO SymeigSpec () (hattach cpu   (hproduct standardFloatingPointDTypes squareShapes))
-        D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
-          hfoldrM @IO SymeigSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes squareShapes))
+      let dispatchSymeigSpec symeigSpec = case device of
+            D.Device { D.deviceType = D.CPU,  D.deviceIndex = 0 } ->
+              hfoldrM @IO symeigSpec () (hattach cpu   (hproduct standardFloatingPointDTypes squareShapes))
+            D.Device { D.deviceType = D.CUDA, D.deviceIndex = 0 } ->
+              hfoldrM @IO symeigSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes squareShapes))
+      it "symeig" $ do
+        dispatchSymeigSpec SymeigSpec
+      it "symeigvalues" $ do
+        dispatchSymeigSpec SymeigvaluesSpec
       it "eig" $ do
         let eigenVectors = Proxy @'EnableEigenVectors :. Proxy @'DisableEigenVectors :. HNil
             ns = Proxy @0 :. Proxy @2 :. Proxy @10 :. HNil
