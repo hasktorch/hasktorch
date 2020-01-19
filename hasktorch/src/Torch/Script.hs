@@ -8,6 +8,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Torch.Script where
 
@@ -42,20 +43,46 @@ import qualified Torch.Internal.Managed.Type.Module as LibTorch
 
 import Torch.Device
 import Torch.DType
+import Torch.Tensor (Tensor(..))
 import Torch.TensorOptions
 
 newtype Module = UnsafeModule (ForeignPtr ATen.Module)
-newtype IValue = UnsafeIValue (ForeignPtr ATen.IValue)
+newtype RawIValue = UnsafeIValue (ForeignPtr ATen.IValue)
+newtype Blob = UnsafeBlob (ForeignPtr (ATen.C10Ptr ATen.Blob))
+newtype Object = UnsafeObject (ForeignPtr (ATen.C10Ptr ATen.IVObject))
+newtype Future = UnsafeFuture (ForeignPtr (ATen.C10Ptr ATen.IVFuture))
+newtype Capsule = UnsafeCapsule (ForeignPtr (ATen.C10Ptr ATen.Capsule))
+
+data IValue
+  = IVNone
+  | IVTensor Tensor
+  | IVDouble Double
+  | IVInt Int64
+  | IVBool Bool
+  | IVTuple [IValue]
+  | IVIntList [Int64]
+  | IVDoubleList [Double]
+  | IVBoolList [Bool]
+  | IVString String
+  | IVTensorList [Tensor]
+  | IVBlob Blob
+  | IVGenericList [IValue]
+  | IVGenericDict [(IValue,IValue)]
+  | IVFuture Future
+  | IVDevice Device
+  | IVObject Object
+  | IVUninitialized
+  | IVCapsule Capsule
 
 instance Castable Module (ForeignPtr ATen.Module) where
   cast (UnsafeModule obj) f = f obj
   uncast obj f = f $ UnsafeModule obj
 
-instance Castable IValue (ForeignPtr ATen.IValue) where
+instance Castable RawIValue (ForeignPtr ATen.IValue) where
   cast (UnsafeIValue obj) f = f obj
   uncast obj f = f $ UnsafeIValue obj
 
-instance Castable [IValue] (ForeignPtr ATen.IValueList) where
+instance Castable [RawIValue] (ForeignPtr ATen.IValueList) where
   cast xs f = do
     ptr_list <- mapM (\x -> (cast x return :: IO (ForeignPtr ATen.IValue))) xs
     cast ptr_list f
@@ -63,15 +90,17 @@ instance Castable [IValue] (ForeignPtr ATen.IValueList) where
     tensor_list <- mapM (\(x :: ForeignPtr ATen.IValue) -> uncast x return) ptr_list
     f tensor_list
 
+{-
 instance (IValueLike a (ForeignPtr ATen.IValue))
-  => IValueLike a IValue where
+  => IValueLike a RawIValue where
   toIValue x = cast1 (toIValue :: a -> IO (ForeignPtr ATen.IValue)) x
   fromIValue x = cast1 (fromIValue :: ForeignPtr ATen.IValue -> IO a) x
 
 instance (CppObject a, IValueLike (ForeignPtr a) (ForeignPtr ATen.IValue))
-  =>  IValueLike (ForeignPtr a) (ForeignPtr ATen.IValue) where
+  =>  IValueLike (ForeignPtr a) RawIValue where
   toIValue x = cast1 (toIValue :: ForeignPtr a -> IO (ForeignPtr ATen.IValue)) x
   fromIValue x = cast1 (fromIValue :: ForeignPtr ATen.IValue -> IO (ForeignPtr a)) x
+-}
 
 save :: Module -> FilePath -> IO ()
 save = cast2 LibTorch.save
@@ -79,5 +108,33 @@ save = cast2 LibTorch.save
 load :: FilePath -> IO Module
 load = cast1 LibTorch.load
 
-forward :: Module -> [IValue] -> IO IValue
+forward :: Module -> [RawIValue] -> IO RawIValue
 forward = cast2 LibTorch.forward
+
+instance Castable IValue RawIValue where
+--  cast (IVNone) f = f "None"
+  cast (IVTensor (Unsafe v)) f = toIValue v >>= f
+  cast (IVDouble v) f = toIValue v >>= f
+  cast (IVInt v) f = toIValue v >>= f
+  cast (IVBool v) f = toIValue v >>= f
+  cast (IVTuple v) f = toIValue v >>= f
+  cast (IVIntList v) f = toIValue v >>= f
+  cast (IVDoubleList v) f = toIValue v >>= f
+  cast (IVBoolList v) f = toIValue v >>= f
+  cast (IVString v) f = toIValue v >>= f
+  cast (IVTensorList v) f = toIValue v >>= f
+  cast (IVBlob v) f = toIValue v >>= f
+  cast (IVGenericList v) f = toIValue v >>= f
+  cast (IVGenericDict v) f = toIValue v >>= f
+  cast (IVFuture v) f = toIValue v >>= f
+  cast (IVDevice v) f = toIValue v >>= f
+  cast (IVObject v) f = toIValue v >>= f
+  --  cast (IVUninitialized) f = f (toIValue v)
+  cast (IVCapsule v) f = toIValue v >>= f
+  uncast (UnsafeIValue obj) f = do
+    ivalue_isTensor obj >>= \case
+      True -> fromIValue obj >>= f.IVTensor
+      False -> 
+        ivalue_isDouble obj >>= \case
+          True -> fromIValue obj >>= f.IVDouble
+          False -> undefined
