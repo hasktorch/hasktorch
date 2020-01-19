@@ -78,7 +78,7 @@ forwardConcurrently
      )
   => model
   -> input
-  -> IO prediction
+  -> IO output
 forwardConcurrently model input = do
   let models = Torch.Typed.Device.replicate @devices' @device model
       inputs = scatter @devices' @device input
