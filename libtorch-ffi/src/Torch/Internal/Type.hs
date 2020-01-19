@@ -55,7 +55,11 @@ data StdString
 data Generator
 data Device
 data Context
-data ConstQuantizerPtr
+
+data C10Ptr a
+data Quantizer
+-- c10::intrusive_ptr<Quantizer>
+type ConstQuantizerPtr = C10Ptr Quantizer
 
 data Dimname
 type DimnameList = StdVector Dimname
@@ -80,8 +84,9 @@ typeTable = Map.fromList [
       , (C.TypeName "at::Layout", [t|Layout|])
       , (C.TypeName "at::MemoryFormat", [t|MemoryFormat|])
       , (C.TypeName "at::Context", [t|Context|])
-      , (C.TypeName "at::ConstQuantizerPtr", [t|ConstQuantizerPtr|])
       , (C.TypeName "at::QScheme", [t|QScheme|])
       , (C.TypeName "at::Dimname", [t|Dimname|])
       , (C.TypeName "at::Symbol", [t|Symbol|])
+      , (C.TypeName "c10::intrusive_ptr", [t|C10Ptr|])
+      , (C.TypeName "Quantizer", [t|Quantizer|])
     ]

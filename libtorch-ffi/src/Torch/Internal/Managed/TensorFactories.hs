@@ -31,6 +31,7 @@ import Torch.Internal.Unmanaged.Type.StdArray
 import Torch.Internal.Unmanaged.Type.Dimname
 import Torch.Internal.Unmanaged.Type.DimnameList
 
+
 _cudnn_init_dropout_state_dblo
   :: CDouble
   -> CBool
@@ -305,6 +306,14 @@ full_ls
   -> IO (ForeignPtr Tensor)
 full_ls = cast2 Unmanaged.full_ls
 
+full_like_tsoM
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+full_like_tsoM = cast4 Unmanaged.full_like_tsoM
+
 full_like_tso
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
@@ -493,6 +502,13 @@ ones_l
   -> IO (ForeignPtr Tensor)
 ones_l = cast1 Unmanaged.ones_l
 
+ones_like_toM
+  :: ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+ones_like_toM = cast3 Unmanaged.ones_like_toM
+
 ones_like_to
   :: ForeignPtr Tensor
   -> ForeignPtr TensorOptions
@@ -562,6 +578,13 @@ rand_lp
   -> IO (ForeignPtr Tensor)
 rand_lp = cast2 Unmanaged.rand_lp
 
+rand_like_toM
+  :: ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+rand_like_toM = cast3 Unmanaged.rand_like_toM
+
 rand_like_to
   :: ForeignPtr Tensor
   -> ForeignPtr TensorOptions
@@ -628,12 +651,29 @@ randint_lllp
   -> IO (ForeignPtr Tensor)
 randint_lllp = cast4 Unmanaged.randint_lllp
 
+randint_like_tloM
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+randint_like_tloM = cast4 Unmanaged.randint_like_tloM
+
 randint_like_tlo
   :: ForeignPtr Tensor
   -> Int64
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 randint_like_tlo = cast3 Unmanaged.randint_like_tlo
+
+randint_like_tlloM
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+randint_like_tlloM = cast5 Unmanaged.randint_like_tlloM
 
 randint_like_tllo
   :: ForeignPtr Tensor
@@ -695,6 +735,13 @@ randn_lpN
   -> IO (ForeignPtr Tensor)
 randn_lpN = cast3 Unmanaged.randn_lpN
 
+randn_like_toM
+  :: ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+randn_like_toM = cast3 Unmanaged.randn_like_toM
+
 randn_like_to
   :: ForeignPtr Tensor
   -> ForeignPtr TensorOptions
@@ -746,12 +793,12 @@ range_sss = cast3 Unmanaged.range_sss
 --   -> IO (ForeignPtr Tensor)
 -- range_ss = cast2 Unmanaged.range_ss
 
-range_sso
-  :: ForeignPtr Scalar
-  -> ForeignPtr Scalar
-  -> ForeignPtr TensorOptions
-  -> IO (ForeignPtr Tensor)
-range_sso = cast3 Unmanaged.range_sso
+-- range_sso
+--   :: ForeignPtr Scalar
+--   -> ForeignPtr Scalar
+--   -> ForeignPtr TensorOptions
+--   -> IO (ForeignPtr Tensor)
+-- range_sso = cast3 Unmanaged.range_sso
 
 zeros_lNo
   :: ForeignPtr IntArray
@@ -776,6 +823,13 @@ zeros_l
   :: ForeignPtr IntArray
   -> IO (ForeignPtr Tensor)
 zeros_l = cast1 Unmanaged.zeros_l
+
+zeros_like_toM
+  :: ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+zeros_like_toM = cast3 Unmanaged.zeros_like_toM
 
 zeros_like_to
   :: ForeignPtr Tensor

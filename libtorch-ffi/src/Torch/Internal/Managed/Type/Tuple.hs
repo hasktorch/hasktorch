@@ -71,19 +71,23 @@ instance CppTuple4 (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,TensorList))) wh
   type D (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,TensorList))) = ForeignPtr TensorList
   get3 v = cast1 (get3 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,TensorList)) -> IO (Ptr TensorList)) v
 
-instance CppTuple2 (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Int64))) where
-  type A (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Int64))) = ForeignPtr Tensor
-  type B (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Int64))) = ForeignPtr Tensor
-  get0 v = cast1 (get0 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64)) -> IO (Ptr Tensor)) v
-  get1 v = cast1 (get1 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64)) -> IO (Ptr Tensor)) v
+instance CppTuple2 (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
+  type A (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = ForeignPtr Tensor
+  type B (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = ForeignPtr Tensor
+  get0 v = cast1 (get0 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) -> IO (Ptr Tensor)) v
+  get1 v = cast1 (get1 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) -> IO (Ptr Tensor)) v
 
-instance CppTuple3 (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Int64))) where
-  type C (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Int64))) = ForeignPtr Tensor
-  get2 v = cast1 (get2 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64)) -> IO (Ptr Tensor)) v
+instance CppTuple3 (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
+  type C (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = ForeignPtr Tensor
+  get2 v = cast1 (get2 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) -> IO (Ptr Tensor)) v
 
-instance CppTuple4 (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Int64))) where
-  type D (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Int64))) = Int64
-  get3 v = cast1 (get3 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Int64)) -> IO (Int64)) v
+instance CppTuple4 (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
+  type D (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = ForeignPtr Tensor
+  get3 v = cast1 (get3 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) -> IO (Ptr Tensor)) v
+
+instance CppTuple5 (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) where
+  type E (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64))) = Int64
+  get4 v = cast1 (get4 :: Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64)) -> IO (Int64)) v
 
 instance CppTuple2 (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor))) where
   type A (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor))) = ForeignPtr Tensor

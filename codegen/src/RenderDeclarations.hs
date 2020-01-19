@@ -36,6 +36,7 @@ toFunction dl = P.Function
   , P.parameters = map (\a -> P.Parameter (D.type2type a) (D.name' a) Nothing) $ D.arguments dl
   , P.retType = case D.returns dl of
       [a] -> D.type2type a
+      [] -> P.CType P.CVoid
       ax -> P.Tuple $ map D.type2type ax
   , P.variant = P.VFunction
   }
@@ -62,8 +63,8 @@ decodeAndCodeGen basedir fileName = do
       let fns = concat $ map addFunctionWithDefaultArguments fns' 
       createDirectoryIfMissing True (basedir <> "/Torch")
       createDirectoryIfMissing True (basedir <> "/Torch/Internal")
-      T.writeFile (basedir <> "/Torch/Internal/Type.hs") $
-        typeTemplate
+      --T.writeFile (basedir <> "/Torch/Internal/Type.hs") $
+      --  typeTemplate
       T.writeFile (basedir <> "/Torch/Internal/Managed/Native.hs") $
         template False True "Torch.Internal.Managed.Native" $
         renderFunctions True True "at::" (filter (\a -> D.mode a == D.Native && "namespace" `elem` (D.method_of a)) fns)
@@ -102,6 +103,8 @@ import Torch.Internal.Unmanaged.Type.TensorOptions
 import Torch.Internal.Unmanaged.Type.Tuple
 import Torch.Internal.Unmanaged.Type.StdString
 import Torch.Internal.Unmanaged.Type.StdArray
+import Torch.Internal.Unmanaged.Type.Dimname
+import Torch.Internal.Unmanaged.Type.DimnameList
 |] else [st|
 import Foreign.C.String
 import Foreign.C.Types

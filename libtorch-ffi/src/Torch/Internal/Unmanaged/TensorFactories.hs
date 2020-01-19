@@ -497,6 +497,20 @@ full_ls _size _fill_value =
   , *$(at::Scalar* _fill_value)));
   }|]
 
+full_like_tsoM
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+full_like_tsoM _self _fill_value _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::full_like(
+    *$(at::Tensor* _self)
+  , *$(at::Scalar* _fill_value)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
 full_like_tso
   :: Ptr Tensor
   -> Ptr Scalar
@@ -817,6 +831,18 @@ ones_l _size =
     *$(std::vector<int64_t>* _size)));
   }|]
 
+ones_like_toM
+  :: Ptr Tensor
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+ones_like_toM _self _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::ones_like(
+    *$(at::Tensor* _self)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
 ones_like_to
   :: Ptr Tensor
   -> Ptr TensorOptions
@@ -933,6 +959,18 @@ rand_lp _size _generator =
   , $(at::Generator * _generator)));
   }|]
 
+rand_like_toM
+  :: Ptr Tensor
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+rand_like_toM _self _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::rand_like(
+    *$(at::Tensor* _self)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
 rand_like_to
   :: Ptr Tensor
   -> Ptr TensorOptions
@@ -1047,6 +1085,20 @@ randint_lllp _low _high _size _generator =
   , $(at::Generator * _generator)));
   }|]
 
+randint_like_tloM
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+randint_like_tloM _self _high _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randint_like(
+    *$(at::Tensor* _self)
+  , $(int64_t _high)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
 randint_like_tlo
   :: Ptr Tensor
   -> Int64
@@ -1057,6 +1109,22 @@ randint_like_tlo _self _high _options =
     *$(at::Tensor* _self)
   , $(int64_t _high)
   , *$(at::TensorOptions* _options)));
+  }|]
+
+randint_like_tlloM
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+randint_like_tlloM _self _low _high _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randint_like(
+    *$(at::Tensor* _self)
+  , $(int64_t _low)
+  , $(int64_t _high)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
   }|]
 
 randint_like_tllo
@@ -1161,6 +1229,18 @@ randn_lpN _size _generator _names =
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
+randn_like_toM
+  :: Ptr Tensor
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+randn_like_toM _self _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::randn_like(
+    *$(at::Tensor* _self)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
 randn_like_to
   :: Ptr Tensor
   -> Ptr TensorOptions
@@ -1247,17 +1327,17 @@ range_sss _start _end _step =
 --   , *$(at::Scalar* _end)));
 --   }|]
 
-range_sso
-  :: Ptr Scalar
-  -> Ptr Scalar
-  -> Ptr TensorOptions
-  -> IO (Ptr Tensor)
-range_sso _start _end _options =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::range(
-    *$(at::Scalar* _start)
-  , *$(at::Scalar* _end)
-  , *$(at::TensorOptions* _options)));
-  }|]
+-- range_sso
+--   :: Ptr Scalar
+--   -> Ptr Scalar
+--   -> Ptr TensorOptions
+--   -> IO (Ptr Tensor)
+-- range_sso _start _end _options =
+--   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::range(
+--     *$(at::Scalar* _start)
+--   , *$(at::Scalar* _end)
+--   , *$(at::TensorOptions* _options)));
+--   }|]
 
 zeros_lNo
   :: Ptr IntArray
@@ -1297,6 +1377,18 @@ zeros_l
 zeros_l _size =
   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::zeros(
     *$(std::vector<int64_t>* _size)));
+  }|]
+
+zeros_like_toM
+  :: Ptr Tensor
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+zeros_like_toM _self _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::zeros_like(
+    *$(at::Tensor* _self)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
   }|]
 
 zeros_like_to
